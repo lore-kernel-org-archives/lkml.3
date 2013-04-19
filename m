@@ -1,65 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968142Ab3DSLEJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 07:04:09 -0400
-Received: from mail-ea0-f180.google.com ([209.85.215.180]:43426 "EHLO
-	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757192Ab3DSLEH (ORCPT
+	id S968096Ab3DSLFu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 07:05:50 -0400
+Received: from smtp-out-143.synserver.de ([212.40.185.143]:1141 "EHLO
+	smtp-out-141.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S967914Ab3DSLFt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 07:04:07 -0400
-Date: Fri, 19 Apr 2013 13:04:03 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: X86 ML <x86@kernel.org>, linux-edac <linux-edac@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>,
-        Borislav Petkov <bp@suse.de>
-Subject: Re: [GIT PULL] amd64_edac: Add Family 16h support
-Message-ID: <20130419110403.GA30207@gmail.com>
-References: <20130419110042.GC21981@pd.tnic>
+	Fri, 19 Apr 2013 07:05:49 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 20002
+Message-ID: <517124D6.7090008@metafoo.de>
+Date: Fri, 19 Apr 2013 13:04:54 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130419110042.GC21981@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Vinod Koul <vinod.koul@intel.com>, Jon Hunter <jon-hunter@ti.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] dma:of: Use a mutex to protect the of_dma_list
+References: <1366364534-3298-1-git-send-email-lars@metafoo.de> <1366364534-3298-2-git-send-email-lars@metafoo.de> <201304191213.48631.arnd@arndb.de>
+In-Reply-To: <201304191213.48631.arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 04/19/2013 12:13 PM, Arnd Bergmann wrote:
+> On Friday 19 April 2013, Lars-Peter Clausen wrote:
+> 
+>> This is rather ugly and unnecessary and non of the current users of
+>> of_dma_controller_free() check it's return value anyway. Instead protect the
+>> list by a mutex. The mutex will be held as long as a request operation is in
+>> progress. So if of_dma_controller_free() is called while a request operation is
+>> in progress it will be put to sleep and only wake up once the request operation
+>> has finished.
+>>
+>> This means that it is no longer possible to register or unregister OF DMA
+>> controllers from a context where it's not possible to sleep. But I doubt that
+>> we'll ever need this.
+>>
+>> Also rename of_dma_get_controller back to of_dma_find_controller.
+>>
+>> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+> 
+> I guess we could also fix it by turning the reference count into a proper
+> kref with kref_put calling the destructor, but your solution seems to solve
+> the problem just as well.
 
-* Borislav Petkov <bp@alien8.de> wrote:
-
-> Hi,
-> 
-> please pull the below tag to receive AMD F16h support for amd64_edac.
-> 
-> Thanks.
-> 
-> The following changes since commit 41ef2d5678d83af030125550329b6ae8b74618fa:
-> 
->   Linux 3.9-rc7 (2013-04-14 17:45:16 -0700)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/ras/ras.git tags/edac_amd_f16h
-> 
-> for you to fetch changes up to 94c1acf2c85b03a59a42d931a94a13a76c123a62:
-> 
->   amd64_edac: Add Family 16h support (2013-04-19 12:46:50 +0200)
-> 
-> ----------------------------------------------------------------
-> Add required support for AMD F16h to amd64_edac.
-> 
-> ----------------------------------------------------------------
-> Aravind Gopalakrishnan (1):
->       amd64_edac: Add Family 16h support
-> 
->  arch/x86/kernel/amd_nb.c  |  3 ++-
->  drivers/edac/amd64_edac.c | 65 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-
->  drivers/edac/amd64_edac.h |  4 +++-
->  include/linux/pci_ids.h   |  2 ++
->  4 files changed, 71 insertions(+), 3 deletions(-)
-
-Pulled, thanks guys!
-
-	Ingo
+Well, It's not only about the of_dma struct, e.g. the of_dma's of_dma_data
+field usually points to some driver allocated data. If we do not block in
+of_dma_controller_free() this data might be freed while the controller is
+still in use.
