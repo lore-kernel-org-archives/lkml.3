@@ -1,70 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030934Ab3DSPF5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 11:05:57 -0400
-Received: from smtpfb1-g21.free.fr ([212.27.42.9]:37896 "EHLO
-	smtpfb1-g21.free.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030601Ab3DSPFy (ORCPT
+	id S1030693Ab3DSPJg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 11:09:36 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:57798 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030512Ab3DSPJe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 11:05:54 -0400
-From: =?UTF-8?q?Eric=20B=C3=A9nard?= <eric@eukrea.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: shawn.guo@linaro.org, linux-kernel@vger.kernel.org, kernel@pengutronix.de
-Subject: [PATCH] ARM: mx28: add dma channels for all auarts
-Date: Fri, 19 Apr 2013 17:05:06 +0200
-Message-Id: <1366383906-25747-1-git-send-email-eric@eukrea.com>
-X-Mailer: git-send-email 1.7.11.7
+	Fri, 19 Apr 2013 11:09:34 -0400
+Date: Fri, 19 Apr 2013 17:09:27 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: kernel@pengutronix.de, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Jonathan Austin <jonathan.austin@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH v3] irqchip: Add support for ARMv7-M's NVIC
+Message-ID: <20130419150927.GE15233@pengutronix.de>
+References: <1366214540-31166-1-git-send-email-u.kleine-koenig@pengutronix.de>
+ <alpine.LFD.2.02.1304180947070.21884@ionos>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <alpine.LFD.2.02.1304180947070.21884@ionos>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Only auart0 was filled.
-Tested on a custom i.MX283 board for ttyAPP1/2/3/4.
+On Thu, Apr 18, 2013 at 11:35:22AM +0200, Thomas Gleixner wrote:
+> On Wed, 17 Apr 2013, Uwe Kleine-König wrote:
+> > +struct nvic_bank_data {
+> > +	/*
+> > +	 * For irq i base holds nvic_base + 4 * i / 32. So you can access the
+> > +	 * right ISER register (i.e ISER[i / 32]) by just taking base + ISER.
+> > +	 * Ditto for ICER.
+> > +	 */
+> > +	void __iomem *base;
+> > +};
+> 
+> What's the point of a struct with a single member? Why not having an
+> array of base pointers ?
+It gives a name to that single member and maybe makes future changes
+easier. Obviously you could argue ...
 
-Signed-off-by: Eric BÃ©nard <eric@eukrea.com>
----
- arch/arm/boot/dts/imx28.dtsi | 4 ++++
- 1 file changed, 4 insertions(+)
+When switching to generic irq chip this struct probably goes away, so I
+suggest to postpone this discussion.
 
-diff --git a/arch/arm/boot/dts/imx28.dtsi b/arch/arm/boot/dts/imx28.dtsi
-index 25f2243..15933ed 100644
---- a/arch/arm/boot/dts/imx28.dtsi
-+++ b/arch/arm/boot/dts/imx28.dtsi
-@@ -886,6 +886,7 @@
- 				compatible = "fsl,imx28-auart", "fsl,imx23-auart";
- 				reg = <0x8006c000 0x2000>;
- 				interrupts = <113 72 73>;
-+				fsl,auart-dma-channel = <10 11>;
- 				clocks = <&clks 45>;
- 				status = "disabled";
- 			};
-@@ -894,6 +895,7 @@
- 				compatible = "fsl,imx28-auart", "fsl,imx23-auart";
- 				reg = <0x8006e000 0x2000>;
- 				interrupts = <114 74 75>;
-+				fsl,auart-dma-channel = <12 13>;
- 				clocks = <&clks 45>;
- 				status = "disabled";
- 			};
-@@ -902,6 +904,7 @@
- 				compatible = "fsl,imx28-auart", "fsl,imx23-auart";
- 				reg = <0x80070000 0x2000>;
- 				interrupts = <115 76 77>;
-+				fsl,auart-dma-channel = <14 15>;
- 				clocks = <&clks 45>;
- 				status = "disabled";
- 			};
-@@ -910,6 +913,7 @@
- 				compatible = "fsl,imx28-auart", "fsl,imx23-auart";
- 				reg = <0x80072000 0x2000>;
- 				interrupts = <116 78 79>;
-+				fsl,auart-dma-channel = <0 1>;
- 				clocks = <&clks 45>;
- 				status = "disabled";
- 			};
+> > +static struct nvic_chip_data {
+> > +	struct irq_domain *domain;
+> > +	struct nvic_bank_data bdata[NVIC_MAX_BANKS];
+> > +} nvic_chip_data;
+> > +
+> > +asmlinkage void __exception_irq_entry
+> > +nvic_do_IRQ(irq_hw_number_t hwirq, struct pt_regs *regs)
+> > +{
+> > +	unsigned int irq = irq_linear_revmap(nvic_chip_data.domain, hwirq);
+> > +
+> > +	handle_IRQ(irq, regs);
+> > +}
+> > +
+> > +static inline void __iomem *nvic_bank_base(struct irq_data *d)
+> > +{
+> > +	struct nvic_bank_data *bank_data = irq_data_get_irq_chip_data(d);
+> > +	return bank_data->base;
+> > +}
+> > +
+> > +static void nvic_mask_irq(struct irq_data *d)
+> > +{
+> > +	u32 mask = 1 << (d->hwirq % 32);
+> > +
+> > +	writel_relaxed(mask, nvic_bank_base(d) + NVIC_ICER);
+> > +}
+> > +
+> > +static void nvic_unmask_irq(struct irq_data *d)
+> > +{
+> > +	u32 mask = 1 << (d->hwirq % 32);
+> > +
+> > +	writel_relaxed(mask, nvic_bank_base(d) + NVIC_ISER);
+> > +}
+> 
+> How is that different from what the generic irq chip implementation
+> does? The only difference is that mask is generated by d->hwirq and
+> not by d->irq. And due to the fact, that you use a full linear mapping
+> between hwirq and virq the generic code simply works.
+I'm not sure what you mean when you say "full linear mapping". AFAICT
+using irq_domain_add_linear doesn't imply that two consecutive hardware
+irq numbers get consecutive Linux irq numbers, so using d->irq won't work.
+ 
+> Even if it would not work, it would be trivial to extend the generic
+> chip with that functionality instead of hacking another slightly
+> different copy of the same thing.
+I will try that and report back.
+
+Best regards
+Uwe
+
 -- 
-1.7.11.7
-
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
