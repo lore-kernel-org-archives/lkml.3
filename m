@@ -1,83 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753598Ab3DSTBf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 15:01:35 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:53962 "EHLO e9.ny.us.ibm.com"
+	id S1753779Ab3DSTCE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 15:02:04 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:54513 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753041Ab3DSTBe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 15:01:34 -0400
-Date: Fri, 19 Apr 2013 12:01:24 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
-        acme@ghostprotocols.net
-Cc: linux-kernel@vger.kernel.org, ajax@redhat.com, gusld@br.ibm.com
-Subject: [PATCH] events: Protect access via task_subsys_state_check()
-Message-ID: <20130419190124.GA8638@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
+	id S1753655Ab3DSTCB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Apr 2013 15:02:01 -0400
+Date: Fri, 19 Apr 2013 12:01:51 -0700
+From: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
+To: netdev@vger.kernel.org
+Cc: Matt Carlson <mcarlson@broadcom.com>, Michael Chan <mchan@broadcom.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org
+Subject: tg3: possible irq lock inversion dependency detected
+Message-ID: <20130419190150.GA15355@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+X-Operating-System: Linux 3.5.0-27-generic (x86_64)
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13041919-7182-0000-0000-000006515B2C
+x-cbid: 13041919-7182-0000-0000-000006515CD4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following RCU splat indicates lack of RCU protection:
+Running 3.9-rc7-ish, tripped the following (also being seen in FC19
+alpha) on ppc64:
 
-[  953.267649] ===============================
-[  953.267652] [ INFO: suspicious RCU usage. ]
-[  953.267657] 3.9.0-0.rc6.git2.4.fc19.ppc64p7 #1 Not tainted
-[  953.267661] -------------------------------
-[  953.267664] include/linux/cgroup.h:534 suspicious rcu_dereference_check() usage!
-[  953.267669]
-[  953.267669] other info that might help us debug this:
-[  953.267669]
-[  953.267675]
-[  953.267675] rcu_scheduler_active = 1, debug_locks = 0
-[  953.267680] 1 lock held by glxgears/1289:
-[  953.267683]  #0:  (&sig->cred_guard_mutex){+.+.+.}, at: [<c00000000027f884>] .prepare_bprm_creds+0x34/0xa0
-[  953.267700]
-[  953.267700] stack backtrace:
-[  953.267704] Call Trace:
-[  953.267709] [c0000001f0d1b6e0] [c000000000016e30] .show_stack+0x130/0x200 (unreliable)
-[  953.267717] [c0000001f0d1b7b0] [c0000000001267f8] .lockdep_rcu_suspicious+0x138/0x180
-[  953.267724] [c0000001f0d1b840] [c0000000001d43a4] .perf_event_comm+0x4c4/0x690
-[  953.267731] [c0000001f0d1b950] [c00000000027f6e4] .set_task_comm+0x84/0x1f0
-[  953.267737] [c0000001f0d1b9f0] [c000000000280414] .setup_new_exec+0x94/0x220
-[  953.267744] [c0000001f0d1ba70] [c0000000002f665c] .load_elf_binary+0x58c/0x19b0
-[  953.267751] [c0000001f0d1bbc0] [c00000000027e724] .search_binary_handler+0x254/0x680
-[  953.267758] [c0000001f0d1bca0] [c0000000002800dc] .do_execve_common.isra.17+0x76c/0x860
-[  953.267764] [c0000001f0d1bd90] [c000000000280698] .SyS_execve+0x58/0x90
-[  953.267771] [c0000001f0d1be30] [c000000000009e60] syscall_exit+0x0/0x98
-
-This commit therefore adds the required RCU read-side critical section to
-perf_event_comm().
-
-Reported-by: Adam Jackson <ajax@redhat.com>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Tested-by: Gustavo Luiz Duarte <gusld@br.ibm.com>
-
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index b0cd865..8db9551 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -4593,6 +4593,7 @@ void perf_event_comm(struct task_struct *task)
- 	struct perf_event_context *ctx;
- 	int ctxn;
+[  117.026196] =========================================================
+[  117.026216] [ INFO: possible irq lock inversion dependency detected ]
+[  117.026238] 3.9.0-rc7+ #8 Not tainted
+[  117.026251] ---------------------------------------------------------
+[  117.026271] swapper/7/0 just changed the state of lock:
+[  117.026286]  (&(&tp->lock)->rlock){+.-...}, at: [<c00000000064effc>] .tg3_timer+0x9c/0x10f0
+[  117.026334] but this lock took another, SOFTIRQ-unsafe lock in the past:
+[  117.026353]  (devtree_lock){+.+...}
  
-+	rcu_read_lock();
- 	for_each_task_context_nr(ctxn) {
- 		ctx = task->perf_event_ctxp[ctxn];
- 		if (!ctx)
-@@ -4600,6 +4601,7 @@ void perf_event_comm(struct task_struct *task)
+and interrupts could create inverse lock ordering between them.
  
- 		perf_event_enable_on_exec(ctx);
- 	}
-+	rcu_read_unlock();
+[  117.026389]
+other info that might help us debug this:
+[  117.026409] Chain exists of:
+  &(&tp->lock)->rlock --> pci_lock --> devtree_lock
  
- 	if (!atomic_read(&nr_comm_events))
- 		return;
+[  117.026452]  Possible interrupt unsafe locking scenario:
+ 
+[  117.026472]        CPU0                    CPU1
+[  117.026488]        ----                    ----
+[  117.026503]   lock(devtree_lock);
+[  117.026521]                                local_irq_disable();
+[  117.026540]                                lock(&(&tp->lock)->rlock);
+[  117.026567]                                lock(pci_lock);
+[  117.026591]   <Interrupt>
+[  117.026600]     lock(&(&tp->lock)->rlock);
+[  117.026621]
+ *** DEADLOCK ***
+ 
+[  117.026644] 1 lock held by swapper/7/0:
+[  117.026657]  #0:  ((&tp->timer)){+.-...}, at: [<c0000000000bbc50>] .call_timer_fn+0x0/0x3e0
+[  117.026698]
+the shortest dependencies between 2nd lock and 1st lock:
+[  117.026722]   -> (devtree_lock){+.+...} ops: 13864154431488 {
+[  117.026758]      HARDIRQ-ON-W at:
+[  117.026772]      SOFTIRQ-ON-W at:
+[  117.026786]      INITIAL USE at:
+[  117.026799]    }
+[  117.026809]    ... key      at: [<c00000000159b208>] devtree_lock+0x18/0x48
+[  117.026835]    ... acquired at:
+ 
+[  117.026857]  -> (pci_lock){......} ops: 3955664879616 {
+[  117.026893]     INITIAL USE at:
+[  117.026906]   }
+[  117.026915]   ... key      at: [<c00000000157abe8>] pci_lock+0x18/0x48
+[  117.026942]   ... acquired at:
+ 
+[  117.026963] -> (&(&tp->lock)->rlock){+.-...} ops: 154618822656 {
+[  117.027001]    HARDIRQ-ON-W at:
+[  117.027015]    IN-SOFTIRQ-W at:
+[  117.027029]    INITIAL USE at:
+[  117.027042]  }
+[  117.027051]  ... key      at: [<c0000000023a0311>] __key.48770+0x0/0x8
+[  117.027078]  ... acquired at:
+ 
+[  117.027100]
+stack backtrace:
+[  117.027116] Call Trace:
+[  117.027129] [c0000003a7c7ad10] [c000000000016ee0] .show_stack+0xd0/0x1f0 (unreliable)
+[  117.027161] [c0000003a7c7ade0] [c000000000137d78] .print_irq_inversion_bug+0x298/0x2f0
+[  117.027189] [c0000003a7c7ae80] [c000000000137e70] .check_usage_forwards+0xa0/0x150
+[  117.027217] [c0000003a7c7af70] [c000000000138b68] .mark_lock+0x258/0x7b0
+[  117.027242] [c0000003a7c7b030] [c0000000001396f8] .__lock_acquire+0x638/0x1c20
+[  117.027270] [c0000003a7c7b1b0] [c00000000013b480] .lock_acquire+0xb0/0x250
+[  117.027296] [c0000003a7c7b290] [c00000000093a1cc] ._raw_spin_lock+0x5c/0xc0
+[  117.027321] [c0000003a7c7b320] [c00000000064effc] .tg3_timer+0x9c/0x10f0
+[  117.027345] [c0000003a7c7b3d0] [c0000000000bbd0c] .call_timer_fn+0xbc/0x3e0
+[  117.027369] [c0000003a7c7b4b0] [c0000000000bc328] .run_timer_softirq+0x2f8/0x440
+[  117.027398] [c0000003a7c7b5c0] [c0000000000afef8] .__do_softirq+0x1b8/0x540
+[  117.027423] [c0000003a7c7b6f0] [c0000000000b04e8] .irq_exit+0xe8/0x100
+[  117.027448] [c0000003a7c7b770] [c000000000020464] .timer_interrupt+0x174/0x510
+[  117.027477] [c0000003a7c7b830] [c0000000000024f4] decrementer_common+0x174/0x180
+[  117.027509] --- Exception: 901 at .plpar_hcall_norets+0x84/0xd4
+    LR = .check_and_cede_processor+0x48/0x80
+[  117.027544] [c0000003a7c7bb20] [c000000000085168] .check_and_cede_processor+0x18/0x80 (unreliable)
+[  117.027577] [c0000003a7c7bb90] [c000000000085258] .dedicated_cede_loop+0x88/0x150
+[  117.027606] [c0000003a7c7bc50] [c00000000075808c] .cpuidle_enter+0x2c/0x40
+[  117.027632] [c0000003a7c7bcc0] [c0000000007589bc] .cpuidle_idle_call+0xfc/0x4e0
+[  117.027660] [c0000003a7c7bd70] [c000000000074be8] .pSeries_idle+0x18/0x40
+[  117.027685] [c0000003a7c7bde0] [c000000000018ec0] .cpu_idle+0x180/0x360
+[  117.027711] [c0000003a7c7bea0] [c00000000095391c] .start_secondary+0x534/0x53c
+[  117.027739] [c0000003a7c7bf90] [c0000000000097fc] .start_secondary_prolog+0x10/0x14
 
