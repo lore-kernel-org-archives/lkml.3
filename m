@@ -1,58 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967783Ab3DSBi2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 21:38:28 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:56312 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967641Ab3DSBi0 (ORCPT
+	id S967782Ab3DSBu4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 21:50:56 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:52071 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967641Ab3DSBuz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 21:38:26 -0400
-Date: Fri, 19 Apr 2013 09:38:04 +0800
-From: Wang YanQing <udknight@gmail.com>
-To: dwmw2@infradead.org
-Cc: linux-kernel@vger.kernel.org, joro@8bytes.org, alex.williamson@redhat.com
-Subject: [PATCH] iommu: Include linux/err.h
-Message-ID: <20130419013804.GA7552@udknight>
-Mail-Followup-To: Wang YanQing <udknight@gmail.com>, dwmw2@infradead.org,
-	linux-kernel@vger.kernel.org, joro@8bytes.org,
-	alex.williamson@redhat.com
+	Thu, 18 Apr 2013 21:50:55 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID r3J1oWv2000481
+Message-ID: <5170A2E9.1030704@realsil.com.cn>
+Date: Fri, 19 Apr 2013 09:50:33 +0800
+From: wwang <wei_wang@realsil.com.cn>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Samuel Ortiz <sameo@linux.intel.com>
+CC: <cjb@laptop.org>, <devel@linuxdriverproject.org>,
+        <linux-kernel@vger.kernel.org>, <linux-mmc@vger.kernel.org>,
+        <gregkh@linuxfoundation.org>, <rogerable@realtek.com>
+Subject: Re: [PATCH v2] mfd:rtsx: Support RTS5249
+References: <cover.1365648007.git.wei_wang@realsil.com.cn> <6b09b5138a549e49ea2d27bfee0e36c7aebb0a1b.1365648007.git.wei_wang@realsil.com.cn> <20130418225022.GF8798@zurbaran>
+In-Reply-To: <20130418225022.GF8798@zurbaran>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [172.29.41.8]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The linux/iommu.h header uses ERR_PTR defined
-in linux/err.h but doesn't include it.
+于 2013年04月19日 06:50, Samuel Ortiz 写道:
+> Hi Wei,
+>
+> On Thu, Apr 11, 2013 at 10:43:40AM +0800, wei_wang@realsil.com.cn wrote:
+>> From: Wei WANG <wei_wang@realsil.com.cn>
+>>
+>> Support new model: RTS5249
+> Could you please provide me with a more detailled changelog (What's so
+> different with this model that the current driver does not support ?) before I
+> apply it ?
+>
+> Cheers,
+> Samuel.
+>
 
-Cc:joro@8bytes.org
-Reviewed-by: Alex Williamson <alex.williamson@redhat.com>
-Signed-off-by: Wang YanQing <udknight@gmail.com>
----
- This patch has been in LKML for more than 2 months,
- I even forget it, but the compile error when I compile
- a kernel module for 3.8.8 failed due without CONFIG_IOMMU_API
- in my .config remind me.
- 
- I really hope someone accept it.
+The difference is minor except that RTS5249 supports SD UHS-II interface.
 
- Thanks. 
- include/linux/iommu.h | 1 +
- 1 file changed, 1 insertion(+)
+In order to support SD UHS-II，the definitions of some internal 
+registers of RTS5249 have to be modified and are different from its 
+predecessors. So we need this patch to ensure RTS5249 can work, even 
+SD/MMC stack doesn't support UHS-II interface.
 
-diff --git a/include/linux/iommu.h b/include/linux/iommu.h
-index f3b99e1..f4a49a6 100644
---- a/include/linux/iommu.h
-+++ b/include/linux/iommu.h
-@@ -20,6 +20,7 @@
- #define __LINUX_IOMMU_H
- 
- #include <linux/errno.h>
-+#include <linux/err.h>
- #include <linux/types.h>
- 
- #define IOMMU_READ	(1)
--- 
-1.7.12.4.dirty
