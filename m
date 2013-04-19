@@ -1,120 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967888Ab3DSH2H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 03:28:07 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:53225 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756760Ab3DSH2E (ORCPT
+	id S1757161Ab3DSH3n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 03:29:43 -0400
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:21418
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754241Ab3DSH3m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 03:28:04 -0400
-Date: Fri, 19 Apr 2013 17:27:53 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pawel Moll <pawel.moll@arm.com>, Rob Herring <rob.herring@calxeda.com>,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: linux-next: manual merge of the clk tree with the arm-soc tree
-Message-Id: <20130419172753.0e604e9bad0b7a26a8b52787@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__19_Apr_2013_17_27_53_+1000_BNfprMtcbLVFwfu7"
+	Fri, 19 Apr 2013 03:29:42 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 3
+X-BigFish: VS3(zzc8kzz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275bhz2dh2a8h668h839he5bhf0ah1288h12a5h12a9h12bdh12e5h1354h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1155h)
+From: Chunhe Lan <Chunhe.Lan@freescale.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <davem@davemloft.net>, Chunhe Lan <Chunhe.Lan@freescale.com>,
+        Michael Johnston <michael.johnston@freescale.com>
+Subject: [PATCH] net/phy: Add Atheros AR8035 PHY support
+Date: Fri, 19 Apr 2013 15:33:32 +0800
+Message-ID: <1366356812-18844-1-git-send-email-Chunhe.Lan@freescale.com>
+X-Mailer: git-send-email 1.7.6.5
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__19_Apr_2013_17_27_53_+1000_BNfprMtcbLVFwfu7
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The AR8035 is a single port 10/100/1000 Mbps tri-speed Ethernet PHY.
+It supports an RGMII interface to the MAC with wide RGMII I/O voltage
+support from 1.5V to 3.3V.
 
-Hi Mike,
+Signed-off-by: Michael Johnston <michael.johnston@freescale.com>
+Signed-off-by: Chunhe Lan <Chunhe.Lan@freescale.com>
+---
+ drivers/net/phy/Kconfig   |    5 ++
+ drivers/net/phy/Makefile  |    1 +
+ drivers/net/phy/atheros.c |   95 +++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 101 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/net/phy/atheros.c
 
-Today's linux-next merge of the clk tree got a conflict in
-arch/arm/mach-vexpress/v2m.c between commit dabfd8fb84ab ("ARM: vexpress:
-remove sp804 OF init") from the arm-soc tree and commit 6e973d2c4385
-("clk: vexpress: Add separate SP810 driver") from the clk tree.
+diff --git a/drivers/net/phy/Kconfig b/drivers/net/phy/Kconfig
+index 4503452..c8d40d4 100644
+--- a/drivers/net/phy/Kconfig
++++ b/drivers/net/phy/Kconfig
+@@ -24,6 +24,11 @@ config AMD_PHY
+ 	---help---
+ 	  Currently supports the am79c874
+ 
++config ATHEROS_PHY
++	tristate "Drivers for Atheros PHYs"
++	---help---
++	  Currently supports the AR8035 PHY
++
+ config MARVELL_PHY
+ 	tristate "Drivers for Marvell PHYs"
+ 	---help---
+diff --git a/drivers/net/phy/Makefile b/drivers/net/phy/Makefile
+index 9645e38..762e77e 100644
+--- a/drivers/net/phy/Makefile
++++ b/drivers/net/phy/Makefile
+@@ -3,6 +3,7 @@
+ libphy-objs			:= phy.o phy_device.o mdio_bus.o
+ 
+ obj-$(CONFIG_PHYLIB)		+= libphy.o
++obj-$(CONFIG_ATHEROS_PHY)	+= atheros.o
+ obj-$(CONFIG_MARVELL_PHY)	+= marvell.o
+ obj-$(CONFIG_DAVICOM_PHY)	+= davicom.o
+ obj-$(CONFIG_CICADA_PHY)	+= cicada.o
+diff --git a/drivers/net/phy/atheros.c b/drivers/net/phy/atheros.c
+new file mode 100644
+index 0000000..9a4aa29
+--- /dev/null
++++ b/drivers/net/phy/atheros.c
+@@ -0,0 +1,95 @@
++/*
++ * drivers/net/phy/atheros.c
++ *
++ * Driver for Atheros PHYs
++ *
++ * Author: Michael Johnston <michael.johnston@freescale.com>
++ *	   Chunhe Lan <Chunhe.Lan@freescale.com>
++ *
++ * Copyright (c) 2013 Freescale Semiconductor, Inc.
++ *
++ * This program is free software; you can redistribute  it and/or modify it
++ * under  the terms of  the GNU General  Public License as published by the
++ * Free Software Foundation;  either version 2 of the  License, or (at your
++ * option) any later version.
++ *
++ */
++#include <linux/phy.h>
++#include <linux/module.h>
++#include <linux/string.h>
++#include <linux/netdevice.h>
++#include <linux/etherdevice.h>
++
++#define AR8035_PHYSR		0x0011
++#define AR8035_PHYSR_DUPLEX	0x2000
++#define AR8035_PHYSR_SPEED	0xc000
++#define AR8035_INER		0x0012
++#define AR8035_INER_INIT	0xec00
++#define AR8035_INSR		0x0013
++
++MODULE_DESCRIPTION("Atheros PHY driver");
++MODULE_AUTHOR("Michael Johnston");
++MODULE_LICENSE("GPL");
++
++static int ar8035_ack_interrupt(struct phy_device *phydev)
++{
++	int err;
++
++	err = phy_read(phydev, AR8035_INSR);
++
++	return (err < 0) ? err : 0;
++}
++
++static int ar8035_config_intr(struct phy_device *phydev)
++{
++	int err;
++
++	if (phydev->interrupts == PHY_INTERRUPT_ENABLED)
++		err = phy_write(phydev, AR8035_INER, AR8035_INER_INIT);
++	else
++		err = phy_write(phydev, AR8035_INER, 0);
++
++	return err;
++}
++
++/* AR8035 */
++static struct phy_driver ar8035_driver = {
++	.phy_id		= 0x004dd072,
++	.name		= "AR8035 Gigabit Ethernet",
++	.phy_id_mask	= 0x007fffff,
++	.features	= PHY_GBIT_FEATURES,
++	.flags		= PHY_HAS_INTERRUPT,
++	.config_aneg	= &genphy_config_aneg,
++	.read_status	= &genphy_read_status,
++	.ack_interrupt	= &ar8035_ack_interrupt,
++	.config_intr	= &ar8035_config_intr,
++	.driver		= {
++		.owner = THIS_MODULE,
++	},
++};
++
++static int __init atheros_init(void)
++{
++	int ret;
++
++	ret = phy_driver_register(&ar8035_driver);
++	if (ret < 0)
++		pr_warn("AR8035: phy_driver_register is error\n");
++
++	return ret;
++}
++
++static void __exit atheros_exit(void)
++{
++	phy_driver_unregister(&ar8035_driver);
++}
++
++module_init(atheros_init);
++module_exit(atheros_exit);
++
++static struct mdio_device_id __maybe_unused atheros_tbl[] = {
++	{ 0x004dd072, 0x007fffff },
++	{ }
++};
++
++MODULE_DEVICE_TABLE(mdio, atheros_tbl);
+-- 
+1.7.6.5
 
-I fixed it up (I thnk - see below) and can carry the fix as necessary (no
-action is required).
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc arch/arm/mach-vexpress/v2m.c
-index d8e2954,c5e20b5..0000000
---- a/arch/arm/mach-vexpress/v2m.c
-+++ b/arch/arm/mach-vexpress/v2m.c
-@@@ -23,9 -21,13 +23,11 @@@
-  #include <linux/regulator/fixed.h>
-  #include <linux/regulator/machine.h>
-  #include <linux/vexpress.h>
-+ #include <linux/clk-provider.h>
-+ #include <linux/clkdev.h>
- =20
- -#include <asm/arch_timer.h>
-  #include <asm/mach-types.h>
-  #include <asm/sizes.h>
- -#include <asm/smp_twd.h>
-  #include <asm/mach/arch.h>
-  #include <asm/mach/map.h>
-  #include <asm/mach/time.h>
-@@@ -425,11 -433,29 +427,11 @@@ void __init v2m_dt_init_early(void
- =20
-  static void __init v2m_dt_timer_init(void)
-  {
-- 	vexpress_clk_of_init();
- -	struct device_node *node =3D NULL;
- -
-+ 	of_clk_init(NULL);
- =20
- -	do {
- -		node =3D of_find_compatible_node(node, NULL, "arm,sp804");
- -	} while (node && vexpress_get_site_by_node(node) !=3D VEXPRESS_SITE_MB);
- -	if (node) {
- -		pr_info("Using SP804 '%s' as a clock & events source\n",
- -				node->full_name);
- -		WARN_ON(clk_register_clkdev(of_clk_get_by_name(node,
- -				"timclken1"), "v2m-timer0", "sp804"));
- -		WARN_ON(clk_register_clkdev(of_clk_get_by_name(node,
- -				"timclken2"), "v2m-timer1", "sp804"));
- -		v2m_sp804_init(of_iomap(node, 0),
- -				irq_of_parse_and_map(node, 0));
- -	}
- -
- -	if (arch_timer_of_register() !=3D 0)
- -		twd_local_timer_of_register();
- +	clocksource_of_init();
- =20
- -	if (arch_timer_sched_clock_init() !=3D 0)
- -		versatile_sched_clock_init(vexpress_get_24mhz_clock_base(),
- +	versatile_sched_clock_init(vexpress_get_24mhz_clock_base(),
-  				24000000);
-  }
- =20
-
---Signature=_Fri__19_Apr_2013_17_27_53_+1000_BNfprMtcbLVFwfu7
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRcPH5AAoJEECxmPOUX5FEOu4QAJcuq2e7zFYRMvFxJftgIUIz
-E+OGWa4OwRI2zoMPuxw6+ZE6uU1FS5T248/8sJ2c5lkzfe8JJhyIpHG2J6aP59pX
-OFpYngNeNVOK0MdxjNLD6xKWkV8FNJv/UM+IznK7XbXHAYFdA2Ez+moIuBbZoXnP
-M/c4LFR2l61B4On3nzHIcWt8x4/iFWy1fkFjejYjRgyCLCR4a3UWxpgfN+WNeId/
-f/ESFZ4/4OPwBA4KBHayse2CAjLeY1Wyeh82ucnvrPRNZOI2A/jL8rhXxgdWCST4
-MZWCB2W2kNQ1IUOFzWxm1YS5dyHX3Ru7uUYBPB1m7zfJQ/sne+zuTaei8nh+CQfY
-UpeZrgYTLgnRRWlw3NWnxhPdmmD66DwJkl/xqFFynv7BtcbH3G/dcYnPGYifFVN4
-SfJI92+10UByEPaf/za8txne8Qvt0EAwcJLkHGUXcgR8g/0rmUjXu7lklF6x5q3M
-zT4e7Ruka06Dg5glB77VH0Jnf0JdfQIyN4SIKVi5v6wtQ9ZMS4Nq77zKVwnfBZOD
-r75U6JQZf7MbfoSnqMyib8KxgilV2cNWA0d96IymkFq2+FUIYcnQce8khUSAAHe0
-8N1Hq/bMYwbSxkebwlHAgDeWqnNLDrFrNoGLD0rlBzQQlme6noyaAeWsYOl2o9Nj
-xAfhTVdjKU0NuG1Gitah
-=zs5A
------END PGP SIGNATURE-----
-
---Signature=_Fri__19_Apr_2013_17_27_53_+1000_BNfprMtcbLVFwfu7--
