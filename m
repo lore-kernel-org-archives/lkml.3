@@ -1,66 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751734Ab3DSElD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 00:41:03 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:61219 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751353Ab3DSElA (ORCPT
+	id S1751876Ab3DSEx2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 00:53:28 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:1599 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751109Ab3DSEx1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 00:41:00 -0400
-Date: Fri, 19 Apr 2013 12:40:46 +0800
-From: Wang YanQing <udknight@gmail.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Renninger <trenn@suse.de>
-Subject: Re: [PATCH]drivers:acpi: Fix wrong parameter passed to
- memblock_reserve
-Message-ID: <20130419044046.GA9028@udknight>
-Mail-Followup-To: Wang YanQing <udknight@gmail.com>,
-	Yinghai Lu <yinghai@kernel.org>,
-	"Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	"H. Peter Anvin" <hpa@zytor.com>, Thomas Renninger <trenn@suse.de>
-References: <20130416014411.GA14671@udknight>
- <CAE9FiQUtvgB6zO9uqDQeC8K1kdH5uCwXkagAYUEEoF+Z+QHTdw@mail.gmail.com>
+	Fri, 19 Apr 2013 00:53:27 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 18 Apr 2013 21:53:25 -0700
+Message-ID: <5170CCD1.6000600@nvidia.com>
+Date: Fri, 19 Apr 2013 10:19:21 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAE9FiQUtvgB6zO9uqDQeC8K1kdH5uCwXkagAYUEEoF+Z+QHTdw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Axel Lin <axel.lin@ingics.com>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Graeme Gregory <gg@slimlogic.co.uk>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RFT] regulator: palmas: Remove wrong voltage setting for
+ enabling LDO8 tracking mode
+References: <1366341289.18636.2.camel@phoenix>
+In-Reply-To: <1366341289.18636.2.camel@phoenix>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 15, 2013 at 07:47:38PM -0700, Yinghai Lu wrote:
-> On Mon, Apr 15, 2013 at 6:44 PM, Wang YanQing <udknight@gmail.com> wrote:
-> >
-> > The parameter of memblock_reserve is start address,
-> > and size, not address range.
-> >
-> > Signed-off-by: Wang YanQing <udknight@gmail.com>
-> > ---
-> >  drivers/acpi/osl.c | 2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> >
-> > diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-> > index 586e7e9..bcb7a3b 100644
-> > --- a/drivers/acpi/osl.c
-> > +++ b/drivers/acpi/osl.c
-> > @@ -641,7 +641,7 @@ void __init acpi_initrd_override(void *data, size_t size)
-> >          * Both memblock_reserve and e820_add_region (via arch_reserve_mem_area)
-> >          * works fine.
-> >          */
-> > -       memblock_reserve(acpi_tables_addr, acpi_tables_addr + all_tables_size);
-> > +       memblock_reserve(acpi_tables_addr, all_tables_size);
-> >         arch_reserve_mem_area(acpi_tables_addr, all_tables_size);
-> 
-> Acked-by: Yinghai Lu <yinghai@kernel.org>
-> 
-> And it should go to stable for v3.8
+On Friday 19 April 2013 08:44 AM, Axel Lin wrote:
+> When SMPS45 is set to off and LDO8 tracking is enabled, LDO8 output can be set
+> from 0.45 to 1.65V and the steps of voltage change is 25mV.
+>
+> This is done by setting:
+>          pmic->desc[id].min_uV = 450000;
+>          pmic->desc[id].uV_step = 25000;
+>
+> I don't see the point of reading vsel register, multiple the register value by
+> 2 and then write back to the register.
+>
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+> ---
+> Hi Laxman,
+>
+> Current code looks strange (and wrong) to me.
+> I don't see the point of reading vsel register, multiple the register value by
+> 2 and then write back to the register.
+> Can you double check this patch, in case I might misunderstand the code.
 
-Hi all, I think this fix should be merged before 3.9 is out,
-it make no much sense to backport it for 3.9 later, but we don't have 
-much time before 3.9 is out, so...
+When we configure for tracking mode, the equation of voltage out put change:
+Vnt = 0.9 + reg*0.05
+to
+Vt = 0.45 + reg*0.025
 
-Thanks.
+So we need to adjust the current register setting to have the same 
+voltage output when smps45 is OFF.
+
+But however, just doubling the register content is not suffice here. I 
+did math again and it should be
+
+reg = reg << 2 + 18.
+
++18 because we need to adjust the Vmin also (18 * 0.25 = 0.45).
+So here we need to fix this.
+
