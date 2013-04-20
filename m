@@ -1,54 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754987Ab3DTTUd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Apr 2013 15:20:33 -0400
-Received: from p3plsmtpa11-06.prod.phx3.secureserver.net ([68.178.252.107]:55798
-	"EHLO p3plsmtpa11-06.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932154Ab3DTTUD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Apr 2013 15:20:03 -0400
-X-Greylist: delayed 366 seconds by postgrey-1.27 at vger.kernel.org; Sat, 20 Apr 2013 15:20:03 EDT
-From: David King <amigadave@amigadave.com>
-To: jkosina@suse.cz
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David King <amigadave@amigadave.com>
-Subject: [PATCH] HID: clarify Magic Mouse KConfig description
-Date: Sat, 20 Apr 2013 20:13:52 +0100
-Message-Id: <1366485232-3692-1-git-send-email-amigadave@amigadave.com>
-X-Mailer: git-send-email 1.8.1.5
+	id S932101Ab3DTTUC (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Apr 2013 15:20:02 -0400
+Received: from mga11.intel.com ([192.55.52.93]:52670 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753549Ab3DTTT3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Apr 2013 15:19:29 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,515,1363158000"; 
+   d="scan'208";a="325492677"
+From: Andi Kleen <andi@firstfloor.org>
+To: mingo@elte.hu
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 02/15] perf, x86: Disable software LBR filter for Sandy Bridge/Haswell
+Date: Sat, 20 Apr 2013 12:19:10 -0700
+Message-Id: <1366485563-16209-3-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1366485563-16209-1-git-send-email-andi@firstfloor.org>
+References: <1366485563-16209-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Magic Mouse driver also supports the Magic Trackpad, so mention it
-in the KConfig description for the driver.
+From: Stephane Eranian <eranian@google.com>
 
-Signed-off-by: David King <amigadave@amigadave.com>
+Sandy Bridge and Haswell support all required LBR filters natively,
+so there is no need to do instruction decoding in branch_type.
+This lowers the overhead of LBR sampling with filters.
+
+We enable far calls for call, so calls include exceptions, but that
+seems like a acceptable trade off for much faster LBR sampling.
+
+[Description and changes from AK]
+
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- drivers/hid/Kconfig | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ arch/x86/kernel/cpu/perf_event.h           |    1 +
+ arch/x86/kernel/cpu/perf_event_intel_lbr.c |   12 ++++++++----
+ 2 files changed, 9 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
-index 5f07d85..a5984f0 100644
---- a/drivers/hid/Kconfig
-+++ b/drivers/hid/Kconfig
-@@ -373,13 +373,13 @@ config LOGIWHEELS_FF
- 	  - Logitech Formula Force EX
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index 563d6e8..2341d9f 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -428,6 +428,7 @@ struct x86_pmu {
+ 	u64		lbr_sel_mask;		   /* LBR_SELECT valid bits */
+ 	const int	*lbr_sel_map;		   /* lbr_select mappings */
+ 	bool		lbr_double_abort;	   /* duplicated lbr aborts */
++	bool		lbr_no_sw_filter;	   /* HW does all filters */
  
- config HID_MAGICMOUSE
--	tristate "Apple MagicMouse multi-touch support"
-+	tristate "Apple Magic Mouse/Trackpad multi-touch support"
- 	depends on BT_HIDP
- 	---help---
--	Support for the Apple Magic Mouse multi-touch.
-+	Support for the Apple Magic Mouse/Trackpad multi-touch.
+ 	/*
+ 	 * Extra registers for events
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+index 33b6b5f..18f5a08 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+@@ -608,6 +608,9 @@ intel_pmu_lbr_filter(struct cpu_hw_events *cpuc)
+ 	int i, j, type;
+ 	bool compress = false;
  
- 	Say Y here if you want support for the multi-touch features of the
--	Apple Wireless "Magic" Mouse.
-+	Apple Wireless "Magic" Mouse and the Apple Wireless "Magic" Trackpad.
++	if (x86_pmu.lbr_no_sw_filter)
++		return;
++
+ 	/* if sampling all branches, then nothing to filter */
+ 	if ((br_sel & X86_BR_ALL) == X86_BR_ALL)
+ 		return;
+@@ -727,12 +730,13 @@ void intel_pmu_lbr_init_snb(void)
  
- config HID_MICROSOFT
- 	tristate "Microsoft non-fully HID-compliant devices" if EXPERT
+ 	x86_pmu.lbr_sel_mask = LBR_SEL_MASK;
+ 	x86_pmu.lbr_sel_map  = snb_lbr_sel_map;
++	x86_pmu.lbr_no_sw_filter = true;
+ 
+ 	/*
+-	 * SW branch filter usage:
+-	 * - support syscall, sysret capture.
+-	 *   That requires LBR_FAR but that means far
+-	 *   jmp need to be filtered out
++	 * We include interrupts/exceptions
++	 * with calls. While technically they are not,
++	 * it's not worth extra filtering just to
++	 * get rid of them.
+ 	 */
+ 	pr_cont("16-deep LBR, ");
+ }
 -- 
-1.8.1.5
+1.7.7.6
 
