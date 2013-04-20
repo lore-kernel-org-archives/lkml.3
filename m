@@ -1,83 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932455Ab3DTQMR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Apr 2013 12:12:17 -0400
-Received: from mail-ia0-f169.google.com ([209.85.210.169]:38329 "EHLO
-	mail-ia0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932187Ab3DTQMP (ORCPT
+	id S932478Ab3DTQP1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Apr 2013 12:15:27 -0400
+Received: from mail-ye0-f201.google.com ([209.85.213.201]:34666 "EHLO
+	mail-ye0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752278Ab3DTQP0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Apr 2013 12:12:15 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130404141229.GD9425@htj.dyndns.org>
-References: <1365041143-3088-1-git-send-email-laijs@cn.fujitsu.com>
-	<20130404141229.GD9425@htj.dyndns.org>
-Date: Sun, 21 Apr 2013 00:12:14 +0800
-Message-ID: <CACvQF53uo0KCY20PyO8LKhs9g0Mt-OSJdv4F0P-cODWyL-TxQg@mail.gmail.com>
-Subject: Re: [PATCH 1/7] workqueue: add __WQ_FREEZING and remove POOL_FREEZING
-From: Lai Jiangshan <eag0628@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Sat, 20 Apr 2013 12:15:26 -0400
+From: Anatol Pomozov <anatol.pomozov@gmail.com>
+To: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org
+Cc: Anatol Pomozov <anatol.pomozov@gmail.com>
+Subject: [PATCH] kref: minor cleanup
+Date: Sat, 20 Apr 2013 09:15:10 -0700
+Message-Id: <1366474510-9427-1-git-send-email-anatol.pomozov@gmail.com>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <1366421634-20773-1-git-send-email-anatol.pomozov@gmail.com>
+References: <1366421634-20773-1-git-send-email-anatol.pomozov@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please forget all my other patches.
+Follow-up for https://lkml.org/lkml/2013/4/12/391
 
-But these 1/7 and 2/7 __WQ_FREEZING patches can be in 3.10
+* make warning smp-safe
+* result of atomic _unless_zero functions should be checked by caller
+    to avoid use-after-free error
 
-On Thu, Apr 4, 2013 at 10:12 PM, Tejun Heo <tj@kernel.org> wrote:
-> Hello, Lai.
->
-> On Thu, Apr 04, 2013 at 10:05:32AM +0800, Lai Jiangshan wrote:
->> @@ -4757,25 +4747,16 @@ void thaw_workqueues(void)
->>  {
->>       struct workqueue_struct *wq;
->>       struct pool_workqueue *pwq;
->> -     struct worker_pool *pool;
->> -     int pi;
->>
->>       mutex_lock(&wq_pool_mutex);
->>
->>       if (!workqueue_freezing)
->>               goto out_unlock;
->>
->> -     /* clear FREEZING */
->> -     for_each_pool(pool, pi) {
->> -             spin_lock_irq(&pool->lock);
->> -             WARN_ON_ONCE(!(pool->flags & POOL_FREEZING));
->> -             pool->flags &= ~POOL_FREEZING;
->> -             spin_unlock_irq(&pool->lock);
->> -     }
->> -
->>       /* restore max_active and repopulate worklist */
->>       list_for_each_entry(wq, &workqueues, list) {
->>               mutex_lock(&wq->mutex);
->> +             wq->flags &= ~__WQ_FREEZING;
->
-> I want an assertion here.
+Signed-off-by: Anatol Pomozov <anatol.pomozov@gmail.com>
+---
+ include/linux/kobject.h | 1 +
+ include/linux/kref.h    | 9 ++++++---
+ lib/kobject.c           | 2 +-
+ 3 files changed, 8 insertions(+), 4 deletions(-)
 
-freezing codes is very simple for verifying.
+diff --git a/include/linux/kobject.h b/include/linux/kobject.h
+index 939b112..bfad936 100644
+--- a/include/linux/kobject.h
++++ b/include/linux/kobject.h
+@@ -101,6 +101,7 @@ extern int __must_check kobject_rename(struct kobject *, const char *new_name);
+ extern int __must_check kobject_move(struct kobject *, struct kobject *);
+ 
+ extern struct kobject *kobject_get(struct kobject *kobj);
++extern struct kobject * __must_check kobject_get_unless_zero(struct kobject *kobj);
+ extern void kobject_put(struct kobject *kobj);
+ 
+ extern char *kobject_get_path(struct kobject *kobj, gfp_t flag);
+diff --git a/include/linux/kref.h b/include/linux/kref.h
+index 4972e6e..817d7f1 100644
+--- a/include/linux/kref.h
++++ b/include/linux/kref.h
+@@ -39,8 +39,11 @@ static inline void kref_init(struct kref *kref)
+  */
+ static inline void kref_get(struct kref *kref)
+ {
+-	WARN_ON(!atomic_read(&kref->refcount));
+-	atomic_inc(&kref->refcount);
++	/* If refcount was 0 before incrementing then we have a race
++	 * condition when this kref is freeing by some other thread right now.
++	 * In this case one should use kref_get_unless_zero()
++	 */
++	WARN_ON(atomic_inc_return(&kref->refcount) < 2);
+ }
+ 
+ /**
+@@ -100,7 +103,7 @@ static inline int kref_put_mutex(struct kref *kref,
+ 				 struct mutex *lock)
+ {
+ 	WARN_ON(release == NULL);
+-        if (unlikely(!atomic_add_unless(&kref->refcount, -1, 1))) {
++	if (unlikely(!atomic_add_unless(&kref->refcount, -1, 1))) {
+ 		mutex_lock(lock);
+ 		if (unlikely(!atomic_dec_and_test(&kref->refcount))) {
+ 			mutex_unlock(lock);
+diff --git a/lib/kobject.c b/lib/kobject.c
+index a654866..af32119 100644
+--- a/lib/kobject.c
++++ b/lib/kobject.c
+@@ -529,7 +529,7 @@ struct kobject *kobject_get(struct kobject *kobj)
+ 	return kobj;
+ }
+ 
+-static struct kobject *kobject_get_unless_zero(struct kobject *kobj)
++struct kobject *kobject_get_unless_zero(struct kobject *kobj)
+ {
+ 	if (!kref_get_unless_zero(&kobj->kref))
+ 		kobj = NULL;
+-- 
+1.8.2.1
 
-> Maybe we can fold the next patch into this
-> one and add WARN_ON_ONCE() here?
-
-I consider the two patches are different intent.
-
-Thanks,
-Lai
-
->
->>               for_each_pwq(pwq, wq)
->>                       pwq_adjust_max_active(pwq);
->>               mutex_unlock(&wq->mutex);
->
-> Thanks.
->
-> --
-> tejun
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
