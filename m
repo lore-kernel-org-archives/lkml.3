@@ -1,109 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965621Ab3DTC3l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 22:29:41 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:20347 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965552Ab3DTC3k (ORCPT
+	id S965663Ab3DTCaY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 22:30:24 -0400
+Received: from mail-da0-f47.google.com ([209.85.210.47]:35861 "EHLO
+	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965552Ab3DTCaX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 22:29:40 -0400
-X-Spam-Score: -100.8
-Message-ID: <5171FD67.2080104@asianux.com>
-Date: Sat, 20 Apr 2013 10:28:55 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Tony Lindgren <tony@atomide.com>,
-        "olof@lixom.net" <olof@lixom.net>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Suggestion] ARM64: kernel: compiling issue, need implement cmpxchg64
- with assembler language.
-References: <51712E5E.2020809@asianux.com> <201304191412.54601.arnd@arndb.de>
-In-Reply-To: <201304191412.54601.arnd@arndb.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Fri, 19 Apr 2013 22:30:23 -0400
+Message-ID: <1366425017.8200.1.camel@phoenix>
+Subject: [PATCH] regulator: tps65910: Convert to use
+ regulator_map_voltage_ascend
+From: Axel Lin <axel.lin@ingics.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Graeme Gregory <gg@slimlogic.co.uk>, Liam Girdwood <lgirdwood@gmail.com>,
+        linux-kernel@vger.kernel.org, Laxman Dewangan <ldewangan@nvidia.com>,
+        AnilKumar Ch <anilkumar@ti.com>
+Date: Sat, 20 Apr 2013 10:30:17 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013年04月19日 20:12, Arnd Bergmann wrote:
-> On Friday 19 April 2013, Chen Gang wrote:
->> in arch/arm64/include/asm, not define the function cmpxchg64
->>
->>   when compiling with allmodconfig,
->>     drivers/block/blockconsole.c will need this function.
->>
->>   I am not quite familiar with ARM64 (neither ARM64 assembler)
->>
->>   can any member helps to send related patch ?
->>     if no one have time to send related patch, I should try.
->>     and I am glad to try, but need additional time resources,
->>     if I try, I should finish it within this month (2013-4-30).
->>
->>   welcome any suggestions or completions.
-> 
-> cmpxchg64 is the same as cmpxchg on 64-bit platforms, can't the
-> driver be changed to use the latter?
-> 
-> 	Arnd
-> 
-> 
+All regulators have ascendant voltage list in this driver.
+Some regulators have more than 200 supported voltages.
+e.g.
+For TPS65910_REG_VDD1 and TPS65910_REG_VDD2:
+n_voltages = VDD1_2_NUM_VOLT_FINE * VDD1_2_NUM_VOLT_COARSE
+           = 73 * 3
+           = 219
 
-  can we be sure that cmpxchg64 is equal to cmpchg on all 64-bit platforms ?
-    (I guess, the driver may need cross multiple platforms)
-    (it seems, under x86, s390, better use cmpxchg64, at least they define it).
+Thus it worth converting to regulator_map_voltage_ascend rather than use
+default regulator_map_voltage_iterate.
 
-  whether we can be sure or not,
-    I still prefer to define the macro cmpxchg64 just the alias of cmpxchg.
-      (and I also guess ARM64 is always on 64-bit platform)
+For consistent, convert all regulators to regulator_map_voltage_ascend.
 
-  the related patch may be like below.
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+ drivers/regulator/tps65910-regulator.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
--------------------------------patch begin--------------------------------------
-
-diff --git a/arch/arm64/include/asm/cmpxchg.h b/arch/arm64/include/asm/cmpxchg.h
-index 968b5cb..b572d2b 100644
---- a/arch/arm64/include/asm/cmpxchg.h
-+++ b/arch/arm64/include/asm/cmpxchg.h
-@@ -170,4 +170,6 @@ static inline unsigned long __cmpxchg_mb(volatile void *ptr, unsigned long old,
- 				       (unsigned long)(n),		\
- 				       sizeof(*(ptr))))
+diff --git a/drivers/regulator/tps65910-regulator.c b/drivers/regulator/tps65910-regulator.c
+index 6ba6931..45c1644 100644
+--- a/drivers/regulator/tps65910-regulator.c
++++ b/drivers/regulator/tps65910-regulator.c
+@@ -748,6 +748,7 @@ static struct regulator_ops tps65910_ops_dcdc = {
+ 	.set_voltage_sel	= tps65910_set_voltage_dcdc_sel,
+ 	.set_voltage_time_sel	= regulator_set_voltage_time_sel,
+ 	.list_voltage		= tps65910_list_voltage_dcdc,
++	.map_voltage		= regulator_map_voltage_ascend,
+ };
  
-+#define cmpxchg64(ptr,o,n)	cmpxchg((ptr),(o),(n))
-+
- #endif	/* __ASM_CMPXCHG_H */
-
--------------------------------patch end----------------------------------------
-
-
-
-  I think, we can also reference the implementation of s390:
-    it is in arch/s390/include/asm/cmpxchg.h.
-    since we are ARM64, excluding ARM(32,16...), we can only consider 64-bit.
-    if in the future, ARM64 and ARM are merged together:
-      we can use CONFIG_64BIT to switch the cmpxchg64 definition.
-      if define CONFIG_64BIT, use cmpxchg instead of cmpxchg64.
-      else, use the definition of ARM (arch/arm/include/asm/cmpxchg.h already defines cmpxchg64)
-
--------------------------------reference begin----------------------------------
-
-#ifdef CONFIG_64BIT
-#define cmpxchg64(ptr, o, n)						\
-({									\
-	cmpxchg((ptr), (o), (n));					\
-})
-#else /* CONFIG_64BIT */
-...
--------------------------------reference end------------------------------------
-
-  :-)
-
+ static struct regulator_ops tps65910_ops_vdd3 = {
+@@ -758,6 +759,7 @@ static struct regulator_ops tps65910_ops_vdd3 = {
+ 	.get_mode		= tps65910_get_mode,
+ 	.get_voltage		= tps65910_get_voltage_vdd3,
+ 	.list_voltage		= regulator_list_voltage_table,
++	.map_voltage		= regulator_map_voltage_ascend,
+ };
+ 
+ static struct regulator_ops tps65910_ops = {
+@@ -769,6 +771,7 @@ static struct regulator_ops tps65910_ops = {
+ 	.get_voltage_sel	= tps65910_get_voltage_sel,
+ 	.set_voltage_sel	= tps65910_set_voltage_sel,
+ 	.list_voltage		= regulator_list_voltage_table,
++	.map_voltage		= regulator_map_voltage_ascend,
+ };
+ 
+ static struct regulator_ops tps65911_ops = {
+@@ -780,6 +783,7 @@ static struct regulator_ops tps65911_ops = {
+ 	.get_voltage_sel	= tps65911_get_voltage_sel,
+ 	.set_voltage_sel	= tps65911_set_voltage_sel,
+ 	.list_voltage		= tps65911_list_voltage,
++	.map_voltage		= regulator_map_voltage_ascend,
+ };
+ 
+ static int tps65910_set_ext_sleep_config(struct tps65910_reg *pmic,
 -- 
-Chen Gang
+1.7.10.4
 
-Asianux Corporation
+
+
