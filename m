@@ -1,76 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965513Ab3DTBk7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 21:40:59 -0400
-Received: from mail-vc0-f202.google.com ([209.85.220.202]:61897 "EHLO
-	mail-vc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965453Ab3DTBk6 (ORCPT
+	id S965541Ab3DTByq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 21:54:46 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:29059 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965470Ab3DTByp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 21:40:58 -0400
-From: Anatol Pomozov <anatol.pomozov@gmail.com>
-To: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org
-Cc: torvalds@linux-foundation.org, Anatol Pomozov <anatol.pomozov@gmail.com>
-Subject: [PATCH] kref: minor cleanup
-Date: Fri, 19 Apr 2013 18:33:54 -0700
-Message-Id: <1366421634-20773-1-git-send-email-anatol.pomozov@gmail.com>
-X-Mailer: git-send-email 1.8.2.1
+	Fri, 19 Apr 2013 21:54:45 -0400
+X-Spam-Score: -100.8
+Message-ID: <5171F539.90604@asianux.com>
+Date: Sat, 20 Apr 2013 09:54:01 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Catalin Marinas <catalin.marinas@arm.com>
+CC: Will Deacon <Will.Deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        Tony Lindgren <tony@atomide.com>, "olof@lixom.net" <olof@lixom.net>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM64: kernel: compiling issue: need define readq and
+ writeq for driver module using.
+References: <51712975.8030104@asianux.com> <20130419123513.GB18443@arm.com>
+In-Reply-To: <20130419123513.GB18443@arm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Follow-up for https://lkml.org/lkml/2013/4/12/391
+On 2013年04月19日 20:35, Catalin Marinas wrote:
+> On Fri, Apr 19, 2013 at 12:24:37PM +0100, Chen Gang wrote:
+>> > 
+>> >   when compiling with allmodconfig, CONFIG_64BIT=y
+>> >     the file drivers/base/regmap/regmap-mmio.c will use readq and writeq.
+>> > 
+>> >   so we need implement these functions.
+>> > 
+>> > BTW:
+>> >   the coding style can not pass ./scripts/checkpatch.pl.
+>> >   it seems better to provide additional patch for beautifying code.
+> If it complains about long lines, just ignore it. I wouldn't worry too
+> much about checkpatch.pl and coding style warnings ;)
+> 
 
-* make warning smp-safe
-* result of atomic _unless_zero functions should be checked by caller
-    to avoid use-after-free error
+  ok, I can understand.
 
-Signed-off-by: Anatol Pomozov <anatol.pomozov@gmail.com>
----
- include/linux/kref.h | 9 ++++++---
- lib/kobject.c        | 3 ++-
- 2 files changed, 8 insertions(+), 4 deletions(-)
+  :-)
 
-diff --git a/include/linux/kref.h b/include/linux/kref.h
-index 4972e6e..092529a 100644
---- a/include/linux/kref.h
-+++ b/include/linux/kref.h
-@@ -39,8 +39,11 @@ static inline void kref_init(struct kref *kref)
-  */
- static inline void kref_get(struct kref *kref)
- {
--	WARN_ON(!atomic_read(&kref->refcount));
--	atomic_inc(&kref->refcount);
-+	/* If refcount was 0 before incrementing then we have a race
-+	 * condition when this kref is freing by some other thread right now.
-+	 * In this case one should use kref_get_unless_zero()
-+	 */
-+	WARN_ON(atomic_inc_return(&kref->refcount) < 2);
- }
- 
- /**
-@@ -100,7 +103,7 @@ static inline int kref_put_mutex(struct kref *kref,
- 				 struct mutex *lock)
- {
- 	WARN_ON(release == NULL);
--        if (unlikely(!atomic_add_unless(&kref->refcount, -1, 1))) {
-+	if (unlikely(!atomic_add_unless(&kref->refcount, -1, 1))) {
- 		mutex_lock(lock);
- 		if (unlikely(!atomic_dec_and_test(&kref->refcount))) {
- 			mutex_unlock(lock);
-diff --git a/lib/kobject.c b/lib/kobject.c
-index a654866..bbd7362 100644
---- a/lib/kobject.c
-+++ b/lib/kobject.c
-@@ -529,7 +529,8 @@ struct kobject *kobject_get(struct kobject *kobj)
- 	return kobj;
- }
- 
--static struct kobject *kobject_get_unless_zero(struct kobject *kobj)
-+static struct kobject *__must_check kobject_get_unless_zero(
-+		struct kobject *kobj)
- {
- 	if (!kref_get_unless_zero(&kobj->kref))
- 		kobj = NULL;
 -- 
-1.8.2.1
+Chen Gang
 
+Asianux Corporation
