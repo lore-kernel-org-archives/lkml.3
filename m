@@ -1,59 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932422Ab3DTQC2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Apr 2013 12:02:28 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:46742 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932253Ab3DTQC1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Apr 2013 12:02:27 -0400
+	id S932441Ab3DTQIo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Apr 2013 12:08:44 -0400
+Received: from tundra.namei.org ([65.99.196.166]:47822 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932187Ab3DTQIm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Apr 2013 12:08:42 -0400
+Date: Sun, 21 Apr 2013 02:09:48 +1000 (EST)
+From: James Morris <jmorris@namei.org>
+To: Kent Yoder <key@linux.vnet.ibm.com>
+cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        tpmdd-devel@lists.sourceforge.net
+Subject: Re: [PULL] TPM driver updates
+In-Reply-To: <20130418153025.GA12339@ennui.austin.ibm.com>
+Message-ID: <alpine.LRH.2.02.1304210209290.13368@tundra.namei.org>
+References: <20130418153025.GA12339@ennui.austin.ibm.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <20130419181155.GA13811@mtj.dyndns.org>
-References: <1365957716-7631-1-git-send-email-laijs@cn.fujitsu.com>
-	<CACvQF509UnU5RLtoxhnwmfdkudAR+_oWDKLfpq28WeKcUst5qw@mail.gmail.com>
-	<20130419181155.GA13811@mtj.dyndns.org>
-Date: Sun, 21 Apr 2013 00:02:26 +0800
-Message-ID: <CACvQF52ge=8iQ86a7iyx-Oq1WtrQqDOiEv8AfLJMfwBKj6kj_w@mail.gmail.com>
-Subject: Re: [PATCH 0/8] workqueue: advance concurrency management
-From: Lai Jiangshan <eag0628@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 20, 2013 at 2:11 AM, Tejun Heo <tj@kernel.org> wrote:
-> Hey,
->
-> On Fri, Apr 19, 2013 at 06:10:57AM +0800, Lai Jiangshan wrote:
->> Ping.
->
-> Sorry, I've been at collab summit / lsf.  Plus, it's a bit too late
-> for for-3.10 anyway.  Anyways, after glancing over it, here are my
-> preliminary thoughts.  The first one looks good but I'm not sure about
-> dropping nr_running adjustment.  The only real benefit coming from
-> that is dropping a sched callback and if there's any performance /
-> overhead impact, I'm afraid it's gonna be negative.  There are actual
-> benefits in using as few tasks as possible -
+On Thu, 18 Apr 2013, Kent Yoder wrote:
 
-waking_up() callback doesn't win too much in this.
+> Hi James,
+> 
+> The following changes since commit 958d2c2f4ad905e3ffa1711d19184d21d9b00cc1:
+> 
+>   Smack: include magic.h in smackfs.c (2013-04-03 13:13:51 +1100)
+> 
+> are available in the git repository at:
+> 
+>   git://github.com/shpedoikal/linux.git tpmdd-04-17-13
 
+Thanks, applied.
 
-> the cache footprint gets smaller,
-
-cache footprint also be reduced in different way in the patchset.
-and memory atomic operations are reduced.
-
-> so unless there's a clear indication that the suggested
-
-Only simple.
-and remove the optimization from rare cases.
-
-> behavior is better in some way, I'm not sure what we're buying with
-> the proposed changes.
->
-> Thanks.
->
-> --
-> tejun
