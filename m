@@ -1,117 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755351Ab3DTOky (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Apr 2013 10:40:54 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46594 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755295Ab3DTOkx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Apr 2013 10:40:53 -0400
-Date: Sat, 20 Apr 2013 16:40:37 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH] random: fix accounting race condition with lockless irq
- entropy_count update
-Message-ID: <alpine.LNX.2.00.1304201633440.11076@pobox.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1755450Ab3DTPUD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Apr 2013 11:20:03 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:43097 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755331Ab3DTPUA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Apr 2013 11:20:00 -0400
+Date: Sat, 20 Apr 2013 11:19:45 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: CAI Qian <caiqian@redhat.com>
+Cc: Eric Whitney <enwlinux@gmail.com>, Dmitry Monakhov <dmonakhov@openvz.org>,
+        Christian Kujau <lists@nerdbynature.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-s390 <linux-s390@vger.kernel.org>, Steve Best <sbest@redhat.com>,
+        linux-ext4@vger.kernel.org
+Subject: Re: [PATCH] ext4: fix a big-endian bug when an extent is zeroed out
+Message-ID: <20130420151945.GA8575@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	CAI Qian <caiqian@redhat.com>, Eric Whitney <enwlinux@gmail.com>,
+	Dmitry Monakhov <dmonakhov@openvz.org>,
+	Christian Kujau <lists@nerdbynature.de>,
+	LKML <linux-kernel@vger.kernel.org>,
+	linux-s390 <linux-s390@vger.kernel.org>,
+	Steve Best <sbest@redhat.com>, linux-ext4@vger.kernel.org
+References: <alpine.DEB.2.10.1304012249440.5874@trent.utfs.org>
+ <alpine.DEB.2.10.1304021611020.13746@trent.utfs.org>
+ <87li90q9mx.fsf@openvz.org>
+ <87hajoq6s2.fsf@openvz.org>
+ <20130403102204.GA15383@gmail.com>
+ <20130403122058.GB7741@thunk.org>
+ <20130403143406.GA3006@wallace>
+ <20130403144114.GB13668@thunk.org>
+ <683906006.1314495.1365476711254.JavaMail.root@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <683906006.1314495.1365476711254.JavaMail.root@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ted,
+On Mon, Apr 08, 2013 at 11:05:11PM -0400, CAI Qian wrote:
+> I can help run xfstests for ext4 dev tree on x64, Power7, Z10 and
+> KVM platforms with back-storage like SAN/multipath, iSCSI and FCoE.
+> I plan to run this weekly and setup a wiki page to update the testing
+> status by every Friday.
 
-the patch below has been now preliminarily verified to fix the read() on 
-/dev/urandom returning 0 -- the bug we have been discussing in San 
-Francisco last week.
+Hi CAI,
 
-I think it should be applied to the current Linus' tree as soon as 
-possible, and also all the way back to all the affected -stable trees (the 
-backport to 3.0. is trivial, just a simple context change); on 
-architectures affected by this (apparently not x86_64, at least to my 
-knowledge), this causes severe malfunctioning of userspace which relies on 
-/dev/urandom never returning EOF (sshd, apache, ...). Observed on s390.
+Sorry for not getting back to you sooner; I was at Collaboration
+Summit and LSF/MM last week.
 
-BTW, do we have some numbers that would prove how and why exactly is
-902c098a3663 fixing real-time throughput by removing the spinlock?
+It would be great if you could help run xfstests on the ext4 dev tree
+on various platforms.  We don't have any coverage on Power7 or
+s390/Z10 at the moment, so that would be especially welcome.  Coverage
+on alternate storage backends can be interesting in finding timing
+problems so they would be valuable as well.
 
-Basically what we have now is producer and consumer over r->entropy_count
-being serialized by retried cmpxchg loops, and I would think this could
-actually make the whole situation less fair. The reason being that we are
-basically spinning anyway in case of conflict on the critical section but
-we are lacking the fairness comfort ticket-based spinlocks do provide
-us ... hmm?
+If you have any Itanium platforms, that would be great too, since we
+don't have that today.
 
-Thanks in advance.
+The various ext4 configurations which I test can be found in the
+kvm-autorun/conf directory in my xfstests-bld git repository:
 
+	git://git.kernel.org/pub/scm/fs/ext2/xfstests-bld.git
 
+(This repository is a convenient setup to do build xfstests in a
+hermetic environment, and convenience scripts to run xfstests under
+kvm, and scripts on the host OS kick off the kvm test run and parse
+the test output afterwards.)
 
+Thanks for offering to test the dev branch!
 
-From: Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH] random: fix accounting race condition with lockless irq entropy_count update
-
-Commit 902c098a3663 ("random: use lockless techniques in the interrupt path")
-turned IRQ path from being spinlock protected into lockless cmpxchg-retry
-update.
-
-That commit removed r->lock serialization between crediting entropy bits
-from IRQ context and accounting when extracting entropy on userspace read
-path, but didn't turn the r->entropy_count reads/updates in account() to
-use cmpxchg as well.
-
-It has been observed, that under certain circumstances this leads to read()
-on /dev/urandom to return 0 (EOF), as r->entropy_count gets corrupted and
-becomes negative, which in turn results in propagating 0 all the way from
-account() to the actual read() call.
-
-Convert the accounting code to be the proper lockless counterpart of what
-has been partially done by 902c098a3663.
-
-Cc: stable@vger.kernel.org
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
----
- drivers/char/random.c |   26 +++++++++++++++++---------
- 1 files changed, 17 insertions(+), 9 deletions(-)
-
-diff --git a/drivers/char/random.c b/drivers/char/random.c
-index 32a6c57..442377c 100644
---- a/drivers/char/random.c
-+++ b/drivers/char/random.c
-@@ -865,16 +865,24 @@ static size_t account(struct entropy_store *r, size_t nbytes, int min,
- 	if (r->entropy_count / 8 < min + reserved) {
- 		nbytes = 0;
- 	} else {
-+		int entropy_count, orig;
-+retry:
-+		entropy_count = orig = ACCESS_ONCE(r->entropy_count);
- 		/* If limited, never pull more than available */
--		if (r->limit && nbytes + reserved >= r->entropy_count / 8)
--			nbytes = r->entropy_count/8 - reserved;
--
--		if (r->entropy_count / 8 >= nbytes + reserved)
--			r->entropy_count -= nbytes*8;
--		else
--			r->entropy_count = reserved;
-+		if (r->limit && nbytes + reserved >= entropy_count / 8)
-+			nbytes = entropy_count/8 - reserved;
-+
-+		if (entropy_count / 8 >= nbytes + reserved) {
-+			entropy_count -= nbytes*8;
-+			if (cmpxchg(&r->entropy_count, orig, entropy_count) != orig)
-+				goto retry;
-+		} else {
-+			entropy_count = reserved;
-+			if (cmpxchg(&r->entropy_count, orig, entropy_count) != orig)
-+				goto retry;
-+		}
- 
--		if (r->entropy_count < random_write_wakeup_thresh)
-+		if (entropy_count < random_write_wakeup_thresh)
- 			wakeup_write = 1;
- 	}
- 
--- 
-Jiri Kosina
-SUSE Labs
+					- Ted
