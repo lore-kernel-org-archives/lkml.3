@@ -1,49 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932344Ab3DTPq6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Apr 2013 11:46:58 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:33619 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755440Ab3DTPq5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Apr 2013 11:46:57 -0400
-Message-ID: <5172B86C.5030606@suse.cz>
-Date: Sat, 20 Apr 2013 17:46:52 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130124 Thunderbird/19.0
+	id S932386Ab3DTPxQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Apr 2013 11:53:16 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33974 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932191Ab3DTPxP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Apr 2013 11:53:15 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <51725ED4.8020001@nexus-software.ie>
+References: <1366392183-4149-1-git-send-email-bryan.odonoghue.lkml@nexus-software.ie> <20130419191128.GA21991@pd.tnic> <5171AA86.604@nexus-software.ie> <20130419205515.GA3075@pd.tnic> <20130419212514.GC3075@pd.tnic> <5171BAD6.4040003@nexus-software.ie> <5171CF86.30708@zytor.com> <51725ED4.8020001@nexus-software.ie>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>, John Stultz <john.stultz@linaro.org>,
-        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Resume does not work after timekeeping change
-X-Enigmail-Version: 1.6a1pre
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH] x86: Add check for P5 to microcode_intel_early
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Sat, 20 Apr 2013 08:52:55 -0700
+To: "Bryan O'Donoghue" <bryan.odonoghue.lkml@nexus-software.ie>
+CC: Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, fenghua.yu@intel.com
+Message-ID: <2cca7cab-e8b2-41fc-b757-22f37b78f99b@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+I committed my own patch yesterday; at this point it would be most helpful if you could test it out to make sure it works as it should...
 
-my machine does not wake from suspend to RAM on my box running the -next
-kernel. The last thing I see is "Disabling non-boot CPUs ...". I
-bisected it to this commit:
+Bryan O'Donoghue <bryan.odonoghue.lkml@nexus-software.ie> wrote:
 
-commit 7ec98e15aa049b7a2ca73485f31cf4f90c34e2dd
-Author: Thomas Gleixner <tglx@linutronix.de>
-Date:   Thu Feb 21 22:51:39 2013 +0000
+>On 20/04/13 00:13, H. Peter Anvin wrote:
+>> On 04/19/2013 02:44 PM, Bryan O'Donoghue wrote:
+>>> On 19/04/13 22:25, Borislav Petkov wrote:
+>>>> On Fri, Apr 19, 2013 at 10:55:15PM +0200, Borislav Petkov wrote:
+>>>>> Just filter out P5 and earlier. The code already does that for
+>CPUs
+>>>>> which don't have CPUID.
+>>>>
+>>>> Actually, an alternative - more practical albeit not very accurate
+>>>
+>>> More practical ? Hmm - the MSRs don't exist for<  P5
+>>>
+>>>> solution would be to check for which families Intel delivers
+>microcode
+>>>> and do the cut off there with a comment as to why you do it like
+>>>> that.void
+>>>
+>>> You mean return !intel so this function will never be called.
+>>>
+>>> __init load_ucode_bsp(void)
+>>> {
+>>>          int vendor = x86_vendor();
+>>>
+>>>          if (vendor == X86_VENDOR_INTEL)
+>>>                  load_ucode_intel_bsp();
+>>> }
+>>>
+>>> Ah yes. That would work and be less code.
+>>>
+>>> We should do it that way.
+>>
+>> Do you think you can have a patch for me in the next few hours?
+>
+>Sure.
+>
+>I'm in Ireland (sleeping @ 00:15 on a Friday night sadly).
+>
+>Give me ~ 40 minutes
 
-    timekeeping: Delay update of clock->cycle_last
-
-
-Reverting that one on the top of -next-20130419 makes it work again.
-
-
-I also tried it inside a VM using suspend to disk. There, it behaves
-like it takes a minute or so to wake up. So I tried to wait on the real
-HW too, but it never resumes there.
-
-regards,
 -- 
-js
-suse labs
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
