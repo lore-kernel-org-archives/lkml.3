@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754262Ab3DTTTy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Apr 2013 15:19:54 -0400
-Received: from mga03.intel.com ([143.182.124.21]:3737 "EHLO mga03.intel.com"
+	id S1755115Ab3DTTVx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Apr 2013 15:21:53 -0400
+Received: from mga02.intel.com ([134.134.136.20]:30110 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752652Ab3DTTT2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753399Ab3DTTT2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 20 Apr 2013 15:19:28 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,515,1363158000"; 
-   d="scan'208";a="229707691"
+   d="scan'208";a="298141408"
 From: Andi Kleen <andi@firstfloor.org>
 To: mingo@elte.hu
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 11/15] perf, x86: Add Haswell specific transaction flag reporting
-Date: Sat, 20 Apr 2013 12:19:19 -0700
-Message-Id: <1366485563-16209-12-git-send-email-andi@firstfloor.org>
+        Andi Kleen <ak@linux.intel.com>, gleb@redhat.com
+Subject: [PATCH 08/15] perf, kvm: Support the intx/intx_cp modifiers in KVM arch perfmon emulation v5
+Date: Sat, 20 Apr 2013 12:19:16 -0700
+Message-Id: <1366485563-16209-9-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1366485563-16209-1-git-send-email-andi@firstfloor.org>
 References: <1366485563-16209-1-git-send-email-andi@firstfloor.org>
@@ -25,40 +25,117 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-In the PEBS handler report the transaction flags using the new
-generic transaction flags facility. Most of them come from
-the "tsx_tuning" field in PEBSv2, but the abort code is derived
-from the RAX register reported in the PEBS record.
+This is not arch perfmon, but older CPUs will just ignore it. This makes
+it possible to do at least some TSX measurements from a KVM guest
 
+Cc: gleb@redhat.com
+v2: Various fixes to address review feedback
+v3: Ignore the bits when no CPUID. No #GP. Force raw events with TSX bits.
+v4: Use reserved bits for #GP
+v5: Remove obsolete argument
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/kernel/cpu/perf_event_intel_ds.c |   13 +++++++++++++
- 1 files changed, 13 insertions(+), 0 deletions(-)
+ arch/x86/include/asm/kvm_host.h |    1 +
+ arch/x86/kvm/pmu.c              |   25 ++++++++++++++++++++-----
+ 2 files changed, 21 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-index 60683c4..f9bb903 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -812,6 +812,19 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
- 		x86_pmu.intel_cap.pebs_format >= 1)
- 		data.addr = pebs->dla;
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index 4979778..7c7e207 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -315,6 +315,7 @@ struct kvm_pmu {
+ 	u64 global_ovf_ctrl;
+ 	u64 counter_bitmask[2];
+ 	u64 global_ctrl_mask;
++	u64 reserved_bits;
+ 	u8 version;
+ 	struct kvm_pmc gp_counters[INTEL_PMC_MAX_GENERIC];
+ 	struct kvm_pmc fixed_counters[INTEL_PMC_MAX_FIXED];
+diff --git a/arch/x86/kvm/pmu.c b/arch/x86/kvm/pmu.c
+index cfc258a..9317c43 100644
+--- a/arch/x86/kvm/pmu.c
++++ b/arch/x86/kvm/pmu.c
+@@ -160,7 +160,7 @@ static void stop_counter(struct kvm_pmc *pmc)
  
-+	if ((event->attr.sample_type & PERF_SAMPLE_WEIGHT) &&
-+	    (x86_pmu.intel_cap.pebs_format >= 2) &&
-+	    pebs_hsw->tsx_tuning)
-+		data.weight = pebs_hsw->tsx_tuning & 0xffffffff;
-+
-+	if ((event->attr.sample_type & PERF_SAMPLE_TRANSACTION) &&
-+	    x86_pmu.intel_cap.pebs_format >= 2) {
-+		data.transaction = pebs_hsw->tsx_tuning >> 32;
-+		if ((data.transaction & PERF_SAMPLE_TXN_TRANSACTION) &&
-+		    (pebs->ax & 1))
-+			data.transaction |= pebs->ax & 0xff000000;
-+	}
-+
- 	if (has_branch_stack(event))
- 		data.br_stack = &cpuc->lbr_stack;
+ static void reprogram_counter(struct kvm_pmc *pmc, u32 type,
+ 		unsigned config, bool exclude_user, bool exclude_kernel,
+-		bool intr)
++		bool intr, bool intx, bool intx_cp)
+ {
+ 	struct perf_event *event;
+ 	struct perf_event_attr attr = {
+@@ -173,6 +173,10 @@ static void reprogram_counter(struct kvm_pmc *pmc, u32 type,
+ 		.exclude_kernel = exclude_kernel,
+ 		.config = config,
+ 	};
++	if (intx)
++		attr.config |= HSW_INTX;
++	if (intx_cp)
++		attr.config |= HSW_INTX_CHECKPOINTED;
  
+ 	attr.sample_period = (-pmc->counter) & pmc_bitmask(pmc);
+ 
+@@ -226,7 +230,9 @@ static void reprogram_gp_counter(struct kvm_pmc *pmc, u64 eventsel)
+ 
+ 	if (!(eventsel & (ARCH_PERFMON_EVENTSEL_EDGE |
+ 				ARCH_PERFMON_EVENTSEL_INV |
+-				ARCH_PERFMON_EVENTSEL_CMASK))) {
++				ARCH_PERFMON_EVENTSEL_CMASK |
++				HSW_INTX |
++				HSW_INTX_CHECKPOINTED))) {
+ 		config = find_arch_event(&pmc->vcpu->arch.pmu, event_select,
+ 				unit_mask);
+ 		if (config != PERF_COUNT_HW_MAX)
+@@ -239,7 +245,9 @@ static void reprogram_gp_counter(struct kvm_pmc *pmc, u64 eventsel)
+ 	reprogram_counter(pmc, type, config,
+ 			!(eventsel & ARCH_PERFMON_EVENTSEL_USR),
+ 			!(eventsel & ARCH_PERFMON_EVENTSEL_OS),
+-			eventsel & ARCH_PERFMON_EVENTSEL_INT);
++			eventsel & ARCH_PERFMON_EVENTSEL_INT,
++			(eventsel & HSW_INTX),
++			(eventsel & HSW_INTX_CHECKPOINTED));
+ }
+ 
+ static void reprogram_fixed_counter(struct kvm_pmc *pmc, u8 en_pmi, int idx)
+@@ -256,7 +264,7 @@ static void reprogram_fixed_counter(struct kvm_pmc *pmc, u8 en_pmi, int idx)
+ 			arch_events[fixed_pmc_events[idx]].event_type,
+ 			!(en & 0x2), /* exclude user */
+ 			!(en & 0x1), /* exclude kernel */
+-			pmi);
++			pmi, false, false);
+ }
+ 
+ static inline u8 fixed_en_pmi(u64 ctrl, int idx)
+@@ -400,7 +408,7 @@ int kvm_pmu_set_msr(struct kvm_vcpu *vcpu, u32 index, u64 data)
+ 		} else if ((pmc = get_gp_pmc(pmu, index, MSR_P6_EVNTSEL0))) {
+ 			if (data == pmc->eventsel)
+ 				return 0;
+-			if (!(data & 0xffffffff00200000ull)) {
++			if (!(data & pmu->reserved_bits)) {
+ 				reprogram_gp_counter(pmc, data);
+ 				return 0;
+ 			}
+@@ -442,6 +450,7 @@ void kvm_pmu_cpuid_update(struct kvm_vcpu *vcpu)
+ 	pmu->counter_bitmask[KVM_PMC_GP] = 0;
+ 	pmu->counter_bitmask[KVM_PMC_FIXED] = 0;
+ 	pmu->version = 0;
++	pmu->reserved_bits = 0xffffffff00200000ull;
+ 
+ 	entry = kvm_find_cpuid_entry(vcpu, 0xa, 0);
+ 	if (!entry)
+@@ -470,6 +479,12 @@ void kvm_pmu_cpuid_update(struct kvm_vcpu *vcpu)
+ 	pmu->global_ctrl = ((1 << pmu->nr_arch_gp_counters) - 1) |
+ 		(((1ull << pmu->nr_arch_fixed_counters) - 1) << INTEL_PMC_IDX_FIXED);
+ 	pmu->global_ctrl_mask = ~pmu->global_ctrl;
++
++	entry = kvm_find_cpuid_entry(vcpu, 7, 0);
++	if (entry &&
++	    (boot_cpu_has(X86_FEATURE_HLE) || boot_cpu_has(X86_FEATURE_RTM)) &&
++	    (entry->ebx & (X86_FEATURE_HLE|X86_FEATURE_RTM)))
++		pmu->reserved_bits ^= HSW_INTX|HSW_INTX_CHECKPOINTED;
+ }
+ 
+ void kvm_pmu_init(struct kvm_vcpu *vcpu)
 -- 
 1.7.7.6
 
