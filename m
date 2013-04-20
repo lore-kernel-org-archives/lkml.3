@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754133Ab3DTTTb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Apr 2013 15:19:31 -0400
+	id S1754706Ab3DTTT6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Apr 2013 15:19:58 -0400
 Received: from mga02.intel.com ([134.134.136.20]:30110 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752200Ab3DTTT1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Apr 2013 15:19:27 -0400
+	id S1753078Ab3DTTT2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Apr 2013 15:19:28 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,515,1363158000"; 
-   d="scan'208";a="298141406"
+   d="scan'208";a="298141409"
 From: Andi Kleen <andi@firstfloor.org>
 To: mingo@elte.hu
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org,
         Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 06/15] perf, x86: Support the TSX intx/intx_cp qualifiers v4
-Date: Sat, 20 Apr 2013 12:19:14 -0700
-Message-Id: <1366485563-16209-7-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 13/15] tools, perf: Add a precise event qualifier v2
+Date: Sat, 20 Apr 2013 12:19:21 -0700
+Message-Id: <1366485563-16209-14-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1366485563-16209-1-git-send-email-andi@firstfloor.org>
 References: <1366485563-16209-1-git-send-email-andi@firstfloor.org>
@@ -25,65 +25,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Export the TSX transaction and checkpointed qualifiers in sysfs,
-so that they can be used like this
+Add a precise qualifier, like cpu/event=0x3c,precise=1/
 
-cpu/...,intx=1/
+This is needed so that the kernel can request enabling PEBS
+for TSX events. The parser bails out on any sysfs parse errors,
+so this is needed in any case to handle any event on the TSX
+perf kernel.
 
-v2: Moved bad hunk. Forbid some bad combinations.
-v3: Use EOPNOTSUPP. White space fixes (Stephane Eranian)
-v4: Only sysfs code for now
+v2: Allow 3 as value
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/kernel/cpu/perf_event_intel.c |   21 +++++++++++++++++++++
- 1 files changed, 21 insertions(+), 0 deletions(-)
+ tools/perf/util/parse-events.c |    6 ++++++
+ tools/perf/util/parse-events.h |    1 +
+ tools/perf/util/parse-events.l |    1 +
+ 3 files changed, 8 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 3f2afb2..8aa1326 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1697,6 +1697,8 @@ PMU_FORMAT_ATTR(pc,	"config:19"	);
- PMU_FORMAT_ATTR(any,	"config:21"	); /* v3 + */
- PMU_FORMAT_ATTR(inv,	"config:23"	);
- PMU_FORMAT_ATTR(cmask,	"config:24-31"	);
-+PMU_FORMAT_ATTR(intx,	"config:32"	);
-+PMU_FORMAT_ATTR(intx_cp, "config:33"	);
- 
- static struct attribute *intel_arch_formats_attr[] = {
- 	&format_attr_event.attr,
-@@ -1857,6 +1859,24 @@ static struct attribute *intel_arch3_formats_attr[] = {
- 	NULL,
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index 6c8bb0f..68d8476 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -568,6 +568,12 @@ do {								\
+ 	case PARSE_EVENTS__TERM_TYPE_NAME:
+ 		CHECK_TYPE_VAL(STR);
+ 		break;
++	case PARSE_EVENTS__TERM_TYPE_PRECISE:
++		CHECK_TYPE_VAL(NUM);
++		if ((unsigned)term->val.num > 3)
++			return -EINVAL;
++		attr->precise_ip = term->val.num;
++		break;
+ 	default:
+ 		return -EINVAL;
+ 	}
+diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
+index 8a48593..13d7c66 100644
+--- a/tools/perf/util/parse-events.h
++++ b/tools/perf/util/parse-events.h
+@@ -48,6 +48,7 @@ enum {
+ 	PARSE_EVENTS__TERM_TYPE_NAME,
+ 	PARSE_EVENTS__TERM_TYPE_SAMPLE_PERIOD,
+ 	PARSE_EVENTS__TERM_TYPE_BRANCH_SAMPLE_TYPE,
++	PARSE_EVENTS__TERM_TYPE_PRECISE,
  };
  
-+/* Arch3 + TSX support */
-+static struct attribute *intel_hsw_formats_attr[] __read_mostly = {
-+	&format_attr_event.attr,
-+	&format_attr_umask.attr,
-+	&format_attr_edge.attr,
-+	&format_attr_pc.attr,
-+	&format_attr_any.attr,
-+	&format_attr_inv.attr,
-+	&format_attr_cmask.attr,
-+	&format_attr_intx.attr,
-+	&format_attr_intx_cp.attr,
-+
-+	&format_attr_offcore_rsp.attr, /* XXX do NHM/WSM + SNB breakout */
-+	&format_attr_ldlat.attr, /* PEBS load latency */
-+	NULL,
-+};
-+
-+
- static __initconst const struct x86_pmu intel_pmu = {
- 	.name			= "Intel",
- 	.handle_irq		= intel_pmu_handle_irq,
-@@ -2247,6 +2267,7 @@ __init int intel_pmu_init(void)
+ struct parse_events_term {
+diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
+index e9d1134..32a9000 100644
+--- a/tools/perf/util/parse-events.l
++++ b/tools/perf/util/parse-events.l
+@@ -169,6 +169,7 @@ period			{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_SAMPLE_PERIOD); }
+ branch_type		{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_BRANCH_SAMPLE_TYPE); }
+ ,			{ return ','; }
+ "/"			{ BEGIN(INITIAL); return '/'; }
++precise			{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_PRECISE); }
+ {name_minus}		{ return str(yyscanner, PE_NAME); }
+ }
  
- 		x86_pmu.hw_config = hsw_hw_config;
- 		x86_pmu.get_event_constraints = hsw_get_event_constraints;
-+		x86_pmu.format_attrs = intel_hsw_formats_attr;
- 		x86_pmu.lbr_double_abort = true;
- 		pr_cont("Haswell events, ");
- 		break;
 -- 
 1.7.7.6
 
