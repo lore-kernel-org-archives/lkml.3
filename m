@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753572Ab3DTTGx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Apr 2013 15:06:53 -0400
-Received: from mga01.intel.com ([192.55.52.88]:20174 "EHLO mga01.intel.com"
+	id S1753820Ab3DTTHt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Apr 2013 15:07:49 -0400
+Received: from mga11.intel.com ([192.55.52.93]:41198 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752803Ab3DTTGv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Apr 2013 15:06:51 -0400
+	id S1751523Ab3DTTGb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Apr 2013 15:06:31 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,515,1363158000"; 
-   d="scan'208";a="325488739"
+   d="scan'208";a="322242201"
 From: Andi Kleen <andi@firstfloor.org>
 To: mingo@elte.hu
 Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 5/5] perf, x86: Support Haswell v4 LBR format v2
-Date: Sat, 20 Apr 2013 12:06:23 -0700
-Message-Id: <1366484783-15613-6-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 1/5] perf, x86: Add Haswell PEBS record support v5
+Date: Sat, 20 Apr 2013 12:06:19 -0700
+Message-Id: <1366484783-15613-2-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1366484783-15613-1-git-send-email-andi@firstfloor.org>
 References: <1366484783-15613-1-git-send-email-andi@firstfloor.org>
@@ -24,200 +24,209 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Haswell has two additional LBR from flags for TSX: intx and abort, implemented
-as a new v4 version of the LBR format.
+Add support for the Haswell extended (fmt2) PEBS format.
 
-Handle those in and adjust the sign extension code to still correctly extend.
-The flags are exported similarly in the LBR record to the existing misprediction
-flag
+It has a superset of the nhm (fmt1) PEBS fields, but has a longer record so
+we need to adjust the code paths.
 
-v2: Add some _
+The main advantage is the new "EventingRip" support which directly
+gives the instruction, not off-by-one instruction. So with precise == 2
+we use that directly and don't try to use LBRs and walking basic blocks.
+This lowers the overhead of using precise significantly.
+
+Some other features are added in later patches.
+
+Reviewed-by: Stephane Eranian <eranian@google.com>
+v2: Rename various identifiers. Add more comments. Get rid of a cast.
+v3: fmt2->hsw rename
+v4: ip_of_the_event->real_ip rename
+v5: use pr_cont. white space changes.
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/kernel/cpu/perf_event_intel_lbr.c |   56 +++++++++++++++++++++++++--
- include/linux/perf_event.h                 |    7 +++-
- include/uapi/linux/perf_event.h            |    5 ++-
- 3 files changed, 61 insertions(+), 7 deletions(-)
+ arch/x86/kernel/cpu/perf_event.c          |    3 +-
+ arch/x86/kernel/cpu/perf_event_intel_ds.c |  111 +++++++++++++++++++++++------
+ 2 files changed, 92 insertions(+), 22 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-index da02e9c..6f9b794 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-@@ -12,6 +12,16 @@ enum {
- 	LBR_FORMAT_LIP		= 0x01,
- 	LBR_FORMAT_EIP		= 0x02,
- 	LBR_FORMAT_EIP_FLAGS	= 0x03,
-+	LBR_FORMAT_EIP_FLAGS2	= 0x04,
-+	LBR_FORMAT_MAX_KNOWN    = LBR_FORMAT_EIP_FLAGS2,
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 5ed7a4c..21cfc52 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -397,7 +397,8 @@ int x86_pmu_hw_config(struct perf_event *event)
+ 		 * check that PEBS LBR correction does not conflict with
+ 		 * whatever the user is asking with attr->branch_sample_type
+ 		 */
+-		if (event->attr.precise_ip > 1) {
++		if (event->attr.precise_ip > 1 &&
++		    x86_pmu.intel_cap.pebs_format < 2) {
+ 			u64 *br_type = &event->attr.branch_sample_type;
+ 
+ 			if (has_branch_stack(event)) {
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+index d467561..e91d7fa 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -165,6 +165,22 @@ struct pebs_record_nhm {
+ 	u64 status, dla, dse, lat;
+ };
+ 
++/*
++ * Same as pebs_record_nhm, with two additional fields.
++ */
++struct pebs_record_hsw {
++	struct pebs_record_nhm nhm;
++	/*
++	 * Real IP of the event. In the Intel documentation this
++	 * is called eventingrip.
++	 */
++	u64 real_ip;
++	/*
++	 * TSX tuning information field: abort cycles and abort flags.
++	 */
++	u64 tsx_tuning;
 +};
 +
-+static enum {
-+	LBR_EIP_FLAGS		= 1,
-+	LBR_TSX			= 2,
-+} lbr_desc[LBR_FORMAT_MAX_KNOWN + 1] = {
-+	[LBR_FORMAT_EIP_FLAGS]  = LBR_EIP_FLAGS,
-+	[LBR_FORMAT_EIP_FLAGS2] = LBR_EIP_FLAGS | LBR_TSX,
- };
- 
- /*
-@@ -56,6 +66,8 @@ enum {
- 	 LBR_FAR)
- 
- #define LBR_FROM_FLAG_MISPRED  (1ULL << 63)
-+#define LBR_FROM_FLAG_IN_TX    (1ULL << 62)
-+#define LBR_FROM_FLAG_ABORT    (1ULL << 61)
- 
- #define for_each_branch_sample_type(x) \
- 	for ((x) = PERF_SAMPLE_BRANCH_USER; \
-@@ -81,9 +93,13 @@ enum {
- 	X86_BR_JMP      = 1 << 9, /* jump */
- 	X86_BR_IRQ      = 1 << 10,/* hw interrupt or trap or fault */
- 	X86_BR_IND_CALL = 1 << 11,/* indirect calls */
-+	X86_BR_ABORT    = 1 << 12,/* transaction abort */
-+	X86_BR_IN_TX    = 1 << 13,/* in transaction */
-+	X86_BR_NO_TX    = 1 << 14,/* not in transaction */
- };
- 
- #define X86_BR_PLM (X86_BR_USER | X86_BR_KERNEL)
-+#define X86_BR_ANYTX (X86_BR_NO_TX | X86_BR_IN_TX)
- 
- #define X86_BR_ANY       \
- 	(X86_BR_CALL    |\
-@@ -95,6 +111,7 @@ enum {
- 	 X86_BR_JCC     |\
- 	 X86_BR_JMP	 |\
- 	 X86_BR_IRQ	 |\
-+	 X86_BR_ABORT	 |\
- 	 X86_BR_IND_CALL)
- 
- #define X86_BR_ALL (X86_BR_PLM | X86_BR_ANY)
-@@ -270,21 +287,31 @@ static void intel_pmu_lbr_read_64(struct cpu_hw_events *cpuc)
- 
- 	for (i = 0; i < x86_pmu.lbr_nr; i++) {
- 		unsigned long lbr_idx = (tos - i) & mask;
--		u64 from, to, mis = 0, pred = 0;
-+		u64 from, to, mis = 0, pred = 0, in_tx = 0, abort = 0;
-+		int skip = 0;
-+		int lbr_flags = lbr_desc[lbr_format];
- 
- 		rdmsrl(x86_pmu.lbr_from + lbr_idx, from);
- 		rdmsrl(x86_pmu.lbr_to   + lbr_idx, to);
- 
--		if (lbr_format == LBR_FORMAT_EIP_FLAGS) {
-+		if (lbr_flags & LBR_EIP_FLAGS) {
- 			mis = !!(from & LBR_FROM_FLAG_MISPRED);
- 			pred = !mis;
--			from = (u64)((((s64)from) << 1) >> 1);
-+			skip = 1;
-+		}
-+		if (lbr_flags & LBR_TSX) {
-+			in_tx = !!(from & LBR_FROM_FLAG_IN_TX);
-+			abort = !!(from & LBR_FROM_FLAG_ABORT);
-+			skip = 3;
- 		}
-+		from = (u64)((((s64)from) << skip) >> skip);
- 
- 		cpuc->lbr_entries[i].from	= from;
- 		cpuc->lbr_entries[i].to		= to;
- 		cpuc->lbr_entries[i].mispred	= mis;
- 		cpuc->lbr_entries[i].predicted	= pred;
-+		cpuc->lbr_entries[i].in_tx	= in_tx;
-+		cpuc->lbr_entries[i].abort	= abort;
- 		cpuc->lbr_entries[i].reserved	= 0;
- 	}
- 	cpuc->lbr_stack.nr = i;
-@@ -334,6 +361,16 @@ static void intel_pmu_setup_sw_lbr_filter(struct perf_event *event)
- 
- 	if (br_type & PERF_SAMPLE_BRANCH_IND_CALL)
- 		mask |= X86_BR_IND_CALL;
-+
-+	if (br_type & PERF_SAMPLE_BRANCH_ABORT_TX)
-+		mask |= X86_BR_ABORT;
-+
-+	if (br_type & PERF_SAMPLE_BRANCH_IN_TX)
-+		mask |= X86_BR_IN_TX;
-+
-+	if (br_type & PERF_SAMPLE_BRANCH_NO_TX)
-+		mask |= X86_BR_NO_TX;
-+
- 	/*
- 	 * stash actual user request into reg, it may
- 	 * be used by fixup code for some CPU
-@@ -408,7 +445,7 @@ int intel_pmu_setup_lbr_filter(struct perf_event *event)
-  * decoded (e.g., text page not present), then X86_BR_NONE is
-  * returned.
-  */
--static int branch_type(unsigned long from, unsigned long to)
-+static int branch_type(unsigned long from, unsigned long to, int abort)
+ void init_debug_store_on_cpu(int cpu)
  {
- 	struct insn insn;
- 	void *addr;
-@@ -428,6 +465,9 @@ static int branch_type(unsigned long from, unsigned long to)
- 	if (from == 0 || to == 0)
- 		return X86_BR_NONE;
+ 	struct debug_store *ds = per_cpu(cpu_hw_events, cpu).ds;
+@@ -696,6 +712,7 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
+ 	 */
+ 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+ 	struct pebs_record_nhm *pebs = __pebs;
++	struct pebs_record_hsw *pebs_hsw = __pebs;
+ 	struct perf_sample_data data;
+ 	struct pt_regs regs;
+ 	u64 sample_type;
+@@ -752,7 +769,10 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
+ 	regs.bp = pebs->bp;
+ 	regs.sp = pebs->sp;
  
-+	if (abort)
-+		return X86_BR_ABORT | to_plm;
+-	if (event->attr.precise_ip > 1 && intel_pmu_pebs_fixup_ip(&regs))
++	if (event->attr.precise_ip > 1 && x86_pmu.intel_cap.pebs_format >= 2) {
++		regs.ip = pebs_hsw->real_ip;
++		regs.flags |= PERF_EFLAGS_EXACT;
++	} else if (event->attr.precise_ip > 1 && intel_pmu_pebs_fixup_ip(&regs))
+ 		regs.flags |= PERF_EFLAGS_EXACT;
+ 	else
+ 		regs.flags &= ~PERF_EFLAGS_EXACT;
+@@ -805,35 +825,22 @@ static void intel_pmu_drain_pebs_core(struct pt_regs *iregs)
+ 	__intel_pmu_pebs_event(event, iregs, at);
+ }
+ 
+-static void intel_pmu_drain_pebs_nhm(struct pt_regs *iregs)
++static void __intel_pmu_drain_pebs_nhm(struct pt_regs *iregs, void *at,
++					void *top)
+ {
+ 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+ 	struct debug_store *ds = cpuc->ds;
+-	struct pebs_record_nhm *at, *top;
+ 	struct perf_event *event = NULL;
+ 	u64 status = 0;
+-	int bit, n;
+-
+-	if (!x86_pmu.pebs_active)
+-		return;
+-
+-	at  = (struct pebs_record_nhm *)(unsigned long)ds->pebs_buffer_base;
+-	top = (struct pebs_record_nhm *)(unsigned long)ds->pebs_index;
++	int bit;
+ 
+ 	ds->pebs_index = ds->pebs_buffer_base;
+ 
+-	n = top - at;
+-	if (n <= 0)
+-		return;
+-
+-	/*
+-	 * Should not happen, we program the threshold at 1 and do not
+-	 * set a reset value.
+-	 */
+-	WARN_ONCE(n > x86_pmu.max_pebs_events, "Unexpected number of pebs records %d\n", n);
++	for ( ; at < top; at += x86_pmu.pebs_record_size) {
++		struct pebs_record_nhm *p = at;
+ 
+-	for ( ; at < top; at++) {
+-		for_each_set_bit(bit, (unsigned long *)&at->status, x86_pmu.max_pebs_events) {
++		for_each_set_bit(bit, (unsigned long *)&p->status,
++				 x86_pmu.max_pebs_events) {
+ 			event = cpuc->events[bit];
+ 			if (!test_bit(bit, cpuc->active_mask))
+ 				continue;
+@@ -856,6 +863,61 @@ static void intel_pmu_drain_pebs_nhm(struct pt_regs *iregs)
+ 	}
+ }
+ 
++static void intel_pmu_drain_pebs_nhm(struct pt_regs *iregs)
++{
++	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct debug_store *ds = cpuc->ds;
++	struct pebs_record_nhm *at, *top;
++	int n;
 +
- 	if (from_plm == X86_BR_USER) {
- 		/*
- 		 * can happen if measuring at the user level only
-@@ -564,7 +604,13 @@ intel_pmu_lbr_filter(struct cpu_hw_events *cpuc)
- 		from = cpuc->lbr_entries[i].from;
- 		to = cpuc->lbr_entries[i].to;
- 
--		type = branch_type(from, to);
-+		type = branch_type(from, to, cpuc->lbr_entries[i].abort);
-+		if (type != X86_BR_NONE && (br_sel & X86_BR_ANYTX)) {
-+			if (cpuc->lbr_entries[i].in_tx)
-+				type |= X86_BR_IN_TX;
-+			else
-+				type |= X86_BR_NO_TX;
-+		}
- 
- 		/* if type does not correspond, then discard */
- 		if (type == X86_BR_NONE || (br_sel & type) != type) {
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index e0373d2..466e378 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -73,13 +73,18 @@ struct perf_raw_record {
-  *
-  * support for mispred, predicted is optional. In case it
-  * is not supported mispred = predicted = 0.
-+ *
-+ *     in_tx: running in a hardware transaction
-+ *     abort: aborting a hardware transaction
-  */
- struct perf_branch_entry {
- 	__u64	from;
- 	__u64	to;
- 	__u64	mispred:1,  /* target mispredicted */
- 		predicted:1,/* target predicted */
--		reserved:62;
-+		in_tx:1,    /* in transaction */
-+		abort:1,    /* transaction abort */
-+		reserved:60;
- };
- 
++	if (!x86_pmu.pebs_active)
++		return;
++
++	at  = (struct pebs_record_nhm *)(unsigned long)ds->pebs_buffer_base;
++	top = (struct pebs_record_nhm *)(unsigned long)ds->pebs_index;
++
++	ds->pebs_index = ds->pebs_buffer_base;
++
++	n = top - at;
++	if (n <= 0)
++		return;
++
++	/*
++	 * Should not happen, we program the threshold at 1 and do not
++	 * set a reset value.
++	 */
++	WARN_ONCE(n > x86_pmu.max_pebs_events,
++		  "Unexpected number of pebs records %d\n", n);
++
++	return __intel_pmu_drain_pebs_nhm(iregs, at, top);
++}
++
++static void intel_pmu_drain_pebs_hsw(struct pt_regs *iregs)
++{
++	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct debug_store *ds = cpuc->ds;
++	struct pebs_record_hsw *at, *top;
++	int n;
++
++	if (!x86_pmu.pebs_active)
++		return;
++
++	at  = (struct pebs_record_hsw *)(unsigned long)ds->pebs_buffer_base;
++	top = (struct pebs_record_hsw *)(unsigned long)ds->pebs_index;
++
++	n = top - at;
++	if (n <= 0)
++		return;
++	/*
++	 * Should not happen, we program the threshold at 1 and do not
++	 * set a reset value.
++	 */
++	WARN_ONCE(n > x86_pmu.max_pebs_events,
++		  "Unexpected number of pebs records %d\n", n);
++
++	return __intel_pmu_drain_pebs_nhm(iregs, at, top);
++}
++
  /*
-diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-index fb104e5..0b1df41 100644
---- a/include/uapi/linux/perf_event.h
-+++ b/include/uapi/linux/perf_event.h
-@@ -157,8 +157,11 @@ enum perf_branch_sample_type {
- 	PERF_SAMPLE_BRANCH_ANY_CALL	= 1U << 4, /* any call branch */
- 	PERF_SAMPLE_BRANCH_ANY_RETURN	= 1U << 5, /* any return branch */
- 	PERF_SAMPLE_BRANCH_IND_CALL	= 1U << 6, /* indirect calls */
-+	PERF_SAMPLE_BRANCH_ABORT_TX	= 1U << 7, /* transaction aborts */
-+	PERF_SAMPLE_BRANCH_IN_TX	= 1U << 8, /* in transaction */
-+	PERF_SAMPLE_BRANCH_NO_TX	= 1U << 9, /* not in transaction */
+  * BTS, PEBS probe and setup
+  */
+@@ -887,6 +949,13 @@ void intel_ds_init(void)
+ 			x86_pmu.drain_pebs = intel_pmu_drain_pebs_nhm;
+ 			break;
  
--	PERF_SAMPLE_BRANCH_MAX		= 1U << 7, /* non-ABI */
-+	PERF_SAMPLE_BRANCH_MAX		= 1U << 10, /* non-ABI */
- };
- 
- #define PERF_SAMPLE_BRANCH_PLM_ALL \
++		case 2:
++			pr_cont("PEBS fmt2%c, ", pebs_type);
++			x86_pmu.pebs_record_size =
++				sizeof(struct pebs_record_hsw);
++			x86_pmu.drain_pebs = intel_pmu_drain_pebs_hsw;
++			break;
++
+ 		default:
+ 			printk(KERN_CONT "no PEBS fmt%d%c, ", format, pebs_type);
+ 			x86_pmu.pebs = 0;
 -- 
 1.7.7.6
 
