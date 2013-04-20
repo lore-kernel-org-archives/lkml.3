@@ -1,145 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755657Ab3DTSCu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Apr 2013 14:02:50 -0400
-Received: from mga14.intel.com ([143.182.124.37]:46607 "EHLO mga14.intel.com"
+	id S1755723Ab3DTSDD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Apr 2013 14:03:03 -0400
+Received: from mga02.intel.com ([134.134.136.20]:61011 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754532Ab3DTSCs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Apr 2013 14:02:48 -0400
+	id S1755670Ab3DTSC4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Apr 2013 14:02:56 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,515,1363158000"; 
-   d="scan'208";a="229695263"
+   d="scan'208";a="298118200"
 From: Andi Kleen <andi@firstfloor.org>
 To: acme@redhat.com
 Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 1/2] perf, tools: Default to cpu// for events v5
-Date: Sat, 20 Apr 2013 11:02:28 -0700
-Message-Id: <1366480949-32292-1-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 2/2] perf, tools: List kernel supplied event aliases in perf list v3
+Date: Sat, 20 Apr 2013 11:02:29 -0700
+Message-Id: <1366480949-32292-2-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1366480949-32292-1-git-send-email-andi@firstfloor.org>
+References: <1366480949-32292-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-When an event fails to parse and it's not in a new style format,
-try to parse it again as a cpu event.
+List the kernel supplied pmu event aliases in perf list
 
-This allows to use sysfs exported events directly without //, so you can use
+It's better when the users can actually see them.
 
-perf record -e mem-loads ...
-
-instead of
-
-perf record -e cpu/mem-loads/
-
-v2: Handle multiple events
-v3: Move to separate function
-v4: Move library function to util/string.c
-v5: Handle unhandleable errors
+v2: Fix pattern matching
+v3: perf_pmu__alias -> perf_pmu_alias
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- tools/perf/util/include/linux/string.h |    1 +
- tools/perf/util/parse-events.c         |   30 +++++++++++++++++++++++++++++-
- tools/perf/util/string.c               |   24 ++++++++++++++++++++++++
- 3 files changed, 54 insertions(+), 1 deletions(-)
+ tools/perf/Documentation/perf-list.txt |    4 +-
+ tools/perf/builtin-list.c              |    3 +
+ tools/perf/util/parse-events.c         |    5 ++-
+ tools/perf/util/pmu.c                  |   73 ++++++++++++++++++++++++++++++++
+ tools/perf/util/pmu.h                  |    3 +
+ 5 files changed, 86 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/util/include/linux/string.h b/tools/perf/util/include/linux/string.h
-index 6f19c54..97a8007 100644
---- a/tools/perf/util/include/linux/string.h
-+++ b/tools/perf/util/include/linux/string.h
-@@ -1,3 +1,4 @@
- #include <string.h>
+diff --git a/tools/perf/Documentation/perf-list.txt b/tools/perf/Documentation/perf-list.txt
+index d1e39dc..826f3d6 100644
+--- a/tools/perf/Documentation/perf-list.txt
++++ b/tools/perf/Documentation/perf-list.txt
+@@ -8,7 +8,7 @@ perf-list - List all symbolic event types
+ SYNOPSIS
+ --------
+ [verse]
+-'perf list' [hw|sw|cache|tracepoint|event_glob]
++'perf list' [hw|sw|cache|tracepoint|pmu|event_glob]
  
- void *memdup(const void *src, size_t len);
-+int str_append(char **s, int *len, const char *a);
+ DESCRIPTION
+ -----------
+@@ -104,6 +104,8 @@ To limit the list use:
+   'subsys_glob:event_glob' to filter by tracepoint subsystems such as sched,
+   block, etc.
+ 
++. 'pmu' to print the kernel supplied PMU events.
++
+ . If none of the above is matched, it will apply the supplied glob to all
+   events, printing the ones that match.
+ 
+diff --git a/tools/perf/builtin-list.c b/tools/perf/builtin-list.c
+index 1948ece..e79f423 100644
+--- a/tools/perf/builtin-list.c
++++ b/tools/perf/builtin-list.c
+@@ -13,6 +13,7 @@
+ 
+ #include "util/parse-events.h"
+ #include "util/cache.h"
++#include "util/pmu.h"
+ 
+ int cmd_list(int argc, const char **argv, const char *prefix __maybe_unused)
+ {
+@@ -37,6 +38,8 @@ int cmd_list(int argc, const char **argv, const char *prefix __maybe_unused)
+ 			else if (strcmp(argv[i], "cache") == 0 ||
+ 				 strcmp(argv[i], "hwcache") == 0)
+ 				print_hwcache_events(NULL, false);
++			else if (strcmp(argv[i], "pmu") == 0)
++				print_pmu_events(NULL, false);
+ 			else if (strcmp(argv[i], "--raw-dump") == 0)
+ 				print_events(NULL, true);
+ 			else {
 diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index 68d8476..e0feaed 100644
+index e0feaed..febe022 100644
 --- a/tools/perf/util/parse-events.c
 +++ b/tools/perf/util/parse-events.c
-@@ -6,7 +6,7 @@
- #include "parse-options.h"
- #include "parse-events.h"
- #include "exec_cmd.h"
--#include "string.h"
-+#include "linux/string.h"
- #include "symbol.h"
- #include "cache.h"
- #include "header.h"
-@@ -826,6 +826,32 @@ int parse_events_name(struct list_head *list, char *name)
- 	return 0;
+@@ -1112,6 +1112,8 @@ int print_hwcache_events(const char *event_glob, bool name_only)
+ 		}
+ 	}
+ 
++	if (printed)
++		printf("\n");
+ 	return printed;
  }
  
-+static int parse_events__scanner(const char *str, void *data, int start_token);
+@@ -1166,11 +1168,12 @@ void print_events(const char *event_glob, bool name_only)
+ 
+ 	print_hwcache_events(event_glob, name_only);
+ 
++	print_pmu_events(event_glob, name_only);
 +
-+static int parse_events_fixup(int ret, const char *str, void *data,
-+			      int start_token)
+ 	if (event_glob != NULL)
+ 		return;
+ 
+ 	if (!name_only) {
+-		printf("\n");
+ 		printf("  %-50s [%s]\n",
+ 		       "rNNN",
+ 		       event_type_descriptors[PERF_TYPE_RAW]);
+diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
+index 4c6f9c4..29aaac3 100644
+--- a/tools/perf/util/pmu.c
++++ b/tools/perf/util/pmu.c
+@@ -564,3 +564,76 @@ void perf_pmu__set_format(unsigned long *bits, long from, long to)
+ 	for (b = from; b <= to; b++)
+ 		set_bit(b, bits);
+ }
++
++static char *format_alias(char *buf, int len, struct perf_pmu *pmu,
++			  struct perf_pmu_alias *alias)
 +{
-+	char *o = strdup(str);
-+	char *s = NULL;
-+	char *t = o;
-+	char *p;
-+	int len = 0;
-+
-+	if (!o)
-+		return ret;
-+	while ((p = strsep(&t, ",")) != NULL) {
-+		if (s)
-+			str_append(&s, &len, ",");
-+		str_append(&s, &len, "cpu/");
-+		str_append(&s, &len, p);
-+		str_append(&s, &len, "/");
-+	}
-+	free(o);
-+	if (!s)
-+		return -ENOMEM;
-+	return parse_events__scanner(s, data, start_token);
++	snprintf(buf, len, "%s/%s/", pmu->name, alias->name);
++	return buf;
 +}
 +
- static int parse_events__scanner(const char *str, void *data, int start_token)
- {
- 	YY_BUFFER_STATE buffer;
-@@ -846,6 +872,8 @@ static int parse_events__scanner(const char *str, void *data, int start_token)
- 	parse_events__flush_buffer(buffer, scanner);
- 	parse_events__delete_buffer(buffer, scanner);
- 	parse_events_lex_destroy(scanner);
-+	if (ret && !strchr(str, '/'))
-+		ret = parse_events_fixup(ret, str, data, start_token);
- 	return ret;
- }
- 
-diff --git a/tools/perf/util/string.c b/tools/perf/util/string.c
-index 29c7b2c..f0b0c00 100644
---- a/tools/perf/util/string.c
-+++ b/tools/perf/util/string.c
-@@ -387,3 +387,27 @@ void *memdup(const void *src, size_t len)
- 
- 	return p;
- }
-+
-+/**
-+ * str_append - reallocate string and append another
-+ * @s: pointer to string pointer
-+ * @len: pointer to len (initialized)
-+ * @a: string to append.
-+ */
-+int str_append(char **s, int *len, const char *a)
++static char *format_alias_or(char *buf, int len, struct perf_pmu *pmu,
++			     struct perf_pmu_alias *alias)
 +{
-+	int olen = *s ? strlen(*s) : 0;
-+	int nlen = olen + strlen(a) + 1;
-+	if (*len < nlen) {
-+		*len = *len * 2;
-+		if (*len < nlen)
-+			*len = nlen;
-+		*s = realloc(*s, *len);
-+		if (!*s)
-+			return -ENOMEM;
-+		if (olen == 0)
-+			**s = 0;
-+	}
-+	strcat(*s, a);
-+	return 0;
++	snprintf(buf, len, "%s OR %s/%s/", alias->name, pmu->name, alias->name);
++	return buf;
 +}
++
++static int cmp_string(const void *a, const void *b)
++{
++	const char * const *as = a;
++	const char * const *bs = b;
++	return strcmp(*as, *bs);
++}
++
++void print_pmu_events(const char *event_glob, bool name_only)
++{
++	struct perf_pmu *pmu;
++	struct perf_pmu_alias *alias;
++	char buf[1024];
++	int printed = 0;
++	int len, j;
++	char **aliases;
++
++	pmu = NULL;
++	len = 0;
++	while ((pmu = perf_pmu__scan(pmu)) != NULL)
++		list_for_each_entry(alias, &pmu->aliases, list)
++			len++;
++	aliases = malloc(sizeof(char *) * len);
++	if (!aliases)
++		return;
++	pmu = NULL;
++	j = 0;
++	while ((pmu = perf_pmu__scan(pmu)) != NULL)
++		list_for_each_entry(alias, &pmu->aliases, list) {
++			char *name = format_alias(buf, sizeof(buf), pmu, alias);
++			bool is_cpu = !strcmp(pmu->name, "cpu");
++
++			if (event_glob != NULL &&
++			    !(strglobmatch(name, event_glob) ||
++			      (!is_cpu && strglobmatch(alias->name,
++						       event_glob))))
++				continue;
++			aliases[j] = name;
++			if (is_cpu && !name_only)
++				aliases[j] = format_alias_or(buf, sizeof(buf),
++							      pmu, alias);
++			aliases[j] = strdup(aliases[j]);
++			j++;
++		}
++	len = j;
++	qsort(aliases, len, sizeof(char *), cmp_string);
++	for (j = 0; j < len; j++) {
++		if (name_only) {
++			printf("%s ", aliases[j]);
++			continue;
++		}
++		printf("  %-50s [Kernel PMU event]\n", aliases[j]);
++		free(aliases[j]);
++		printed++;
++	}
++	if (printed)
++		printf("\n");
++	free(aliases);
++}
+diff --git a/tools/perf/util/pmu.h b/tools/perf/util/pmu.h
+index 32fe55b..20d7494 100644
+--- a/tools/perf/util/pmu.h
++++ b/tools/perf/util/pmu.h
+@@ -3,6 +3,7 @@
+ 
+ #include <linux/bitops.h>
+ #include <linux/perf_event.h>
++#include <stdbool.h>
+ 
+ enum {
+ 	PERF_PMU_FORMAT_VALUE_CONFIG,
+@@ -40,5 +41,7 @@ int perf_pmu__format_parse(char *dir, struct list_head *head);
+ 
+ struct perf_pmu *perf_pmu__scan(struct perf_pmu *pmu);
+ 
++void print_pmu_events(const char *event_glob, bool name_only);
++
+ int perf_pmu__test(void);
+ #endif /* __PMU_H */
 -- 
 1.7.7.6
 
