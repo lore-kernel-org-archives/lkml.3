@@ -1,188 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754653Ab3DTHcm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Apr 2013 03:32:42 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:27866 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753908Ab3DTHck (ORCPT
+	id S1754652Ab3DTHhb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Apr 2013 03:37:31 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:3308 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753917Ab3DTHh3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Apr 2013 03:32:40 -0400
-X-Spam-Score: -100.8
-Message-ID: <5172446D.2070903@asianux.com>
-Date: Sat, 20 Apr 2013 15:31:57 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Sat, 20 Apr 2013 03:37:29 -0400
+Message-ID: <517245A4.7050601@huawei.com>
+Date: Sat, 20 Apr 2013 15:37:08 +0800
+From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Chen Gang F T <chen.gang.flying.transformer@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, Eric Paris <eparis@redhat.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] kernel: audit_tree: resource management: need put_tree
- and goto Err when failure occures
-References: <516790ED.6060202@asianux.com> <516CFF2C.7010509@asianux.com> <516E1F32.6010009@asianux.com> <20130417130739.03fb8d9ccb908afc0a1db861@linux-foundation.org> <516F4A28.2050806@gmail.com>
-In-Reply-To: <516F4A28.2050806@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        <linux-rt-users@vger.kernel.org>
+Subject: [PATCH] relay: fix timer madness
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.66.58.241]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013年04月18日 09:19, Chen Gang F T wrote:
-> On 2013年04月18日 04:07, Andrew Morton wrote:
->> > On Wed, 17 Apr 2013 12:04:02 +0800 Chen Gang <gang.chen@asianux.com> wrote:
->> > 
->>>> >> >   since "normally audit_add_tree_rule() will free it on failure",
->>>> >> >   need free it completely, when failure occures.
->>>> >> > 
->>>> >> >     need additional put_tree before return, since get_tree was called.
->>>> >> >     always need goto error processing area for list_del_init.
->> > Isn't that get_tree() in audit_add_tree_rule() simply unneeded?  In
->> > other words, is this patch correct:
->> > 
+Hi,
+
+Ingo, Steven, I get this patch from 3.4 preempt-rt patch set, It seems that this patch
+fix relayfs bug not only for rt kernel, but also for mainline.
+
+When I'm using below ktap script to tracing all event tracepoints, without this patch,
+the system will hang in few seconds, the patch indeed fix the problem as the changelog pointed.
+
+	function eventfun (e) {
+        	printf("%d %d\t%s\t%s", cpu(), pid(), execname(), e.annotate)
+	}
+
+	kdebug.probe("tp:", eventfun)
+
+	kdebug.probe_end(function () {
+        	printf("probe end\n")
+	})
 
 
-after reading code again, I think:
+This patch is old, I can found the original patch discussion in 2007.
+	http://marc.info/?l=linux-kernel&m=118544794717162&w=2
+(In that mail thread, the patch didn't fix that problem, but it fix the problem I encountered now)
 
-  we can remove the pair of get_tree() and put_tree(),
+I hope you can remember this :)
 
-    a. the author want to pretect tree not to be freed after unlock audit_filter_mutex
-         when tree is really freed by others, we have chance to check tree->goner
+so why we didn't commit this patch into mainline? any concern?
 
-    b. it just like another functions done (audit_tag_tree, audit_trim_trees)
-         for audit_add_tree_rule, also need let get_tree() protected by audit_filter_mutex.
-           (move 'get_tree' before unlock audit_filter_mutex)
+Thanks.
 
-    c. but after read code (at least for audit_add_tree_rule)
-       during unlock audit_filter_mutex in audit_add_tree_rule:
-         I find only one posible related work flow which may happen (maybe it can not happen either).
-           fsnotify_destroy_mark_locked ->
-             audit_tree_freeing_mark ->
-               evict_chunk ->
-                 kill_rules ->
-                   call_rcu -> 
-                     audit_free_rule_rcu ->
-                       audit_free_rule
-         it will free rules and entry, but it does not call put_tree().
+------------------------------------->
+Subject: relay: fix timer madness
+From: Ingo Molnar <mingo@elte.hu>
 
-    so I think, at least for audit_add_tree_rule, we can remove the pair of get_tree() and put_tree()
-      (maybe also need give a check for audit_tag_tree and audit_trim_trees, whether can remove 'get_tree' too)
+remove timer calls (!!!) from deep within the tracing infrastructure.
+This was totally bogus code that can cause lockups and worse.
+Poll the buffer every 2 jiffies for now.
 
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ kernel/relay.c |   14 +++++---------
+ 1 file changed, 5 insertions(+), 9 deletions(-)
 
-  and the process is incorrect after lock audit_filter_mutex again (line 701..705)
+Index: linux-rt-rebase.q/kernel/relay.c
+===================================================================
+--- linux-rt-rebase.q.orig/kernel/relay.c
++++ linux-rt-rebase.q/kernel/relay.c
+@@ -319,6 +319,10 @@ static void wakeup_readers(unsigned long
+ {
+ 	struct rchan_buf *buf = (struct rchan_buf *)data;
+ 	wake_up_interruptible(&buf->read_wait);
++	/*
++	 * Stupid polling for now:
++	 */
++	mod_timer(&buf->timer, jiffies + 1);
+ }
 
-    a. if rule->rlist was really empty
-        the 'rule' itself would already be freed.
-        the caller and the caller of caller, need notice this (not double free)
-        instead, we need check tree->gonar (and also need spin_lock protected).
+ /**
+@@ -336,6 +340,7 @@ static void __relay_reset(struct rchan_b
+ 		init_waitqueue_head(&buf->read_wait);
+ 		kref_init(&buf->kref);
+ 		setup_timer(&buf->timer, wakeup_readers, (unsigned long)buf);
++		mod_timer(&buf->timer, jiffies + 1);
+ 	} else
+ 		del_timer_sync(&buf->timer);
 
-    b. we do not need set "rule->tree = tree" again.
-         i. if 'rule' is not touched by any other thread
-              it should be rule->tree == tree.
+@@ -604,15 +609,6 @@ size_t relay_switch_subbuf(struct rchan_
+ 		buf->subbufs_produced++;
+ 		buf->dentry->d_inode->i_size += buf->chan->subbuf_size -
+ 			buf->padding[old_subbuf];
+-		smp_mb();
+-		if (waitqueue_active(&buf->read_wait))
+-			/*
+-			 * Calling wake_up_interruptible() from here
+-			 * will deadlock if we happen to be logging
+-			 * from the scheduler (trying to re-grab
+-			 * rq->lock), so defer it.
+-			 */
+-			__mod_timer(&buf->timer, jiffies + 1);
+ 	}
 
-        ii. else if rule->tree == NULL (freed by other thread)
-              'rule' itself might be freed too, we'd better return by failure.
+ 	old = buf->data;
 
-       iii. else (!rule->tree && rule->tree != tree) (reused by other thread)
-              firstly, it should not happen.
-              if could happen, 'rule->tree = tree' would cause original rule->tree memory leak.
-
-
-  my conclusion is only by reading code (and still I am not quite expert about it, either)
-  so welcome experts (especially maintainers) to providing suggestions or completions.
-
-  thanks.
-
-
-  if no reply within a week (2013-04-28), I should send related patch.
-
-gchen.
-
-653 /* called with audit_filter_mutex */
-654 int audit_add_tree_rule(struct audit_krule *rule)
-655 {
-656         struct audit_tree *seed = rule->tree, *tree;
-657         struct path path;
-658         struct vfsmount *mnt;
-659         int err;
-660 
-661         list_for_each_entry(tree, &tree_list, list) {
-662                 if (!strcmp(seed->pathname, tree->pathname)) {
-663                         put_tree(seed);
-664                         rule->tree = tree;
-665                         list_add(&rule->rlist, &tree->rules);
-666                         return 0;
-667                 }
-668         }
-669         tree = seed;
-670         list_add(&tree->list, &tree_list);
-671         list_add(&rule->rlist, &tree->rules);
-672         /* do not set rule->tree yet */
-673         mutex_unlock(&audit_filter_mutex);
-674 
-675         err = kern_path(tree->pathname, 0, &path);
-676         if (err)
-677                 goto Err;
-678         mnt = collect_mounts(&path);
-679         path_put(&path);
-680         if (IS_ERR(mnt)) {
-681                 err = PTR_ERR(mnt);
-682                 goto Err;
-683         }
-684 
-685         get_tree(tree);
-686         err = iterate_mounts(tag_mount, tree, mnt);
-687         drop_collected_mounts(mnt);
-688 
-689         if (!err) {
-690                 struct node *node;
-691                 spin_lock(&hash_lock);
-692                 list_for_each_entry(node, &tree->chunks, list)
-693                         node->index &= ~(1U<<31);
-694                 spin_unlock(&hash_lock);
-695         } else {
-696                 trim_marked(tree);
-697                 goto Err;
-698         }
-699 
-700         mutex_lock(&audit_filter_mutex);
-701         if (list_empty(&rule->rlist)) {
-702                 put_tree(tree);
-703                 return -ENOENT;
-704         }
-705         rule->tree = tree;
-706         put_tree(tree);
-707 
-708         return 0;
-709 Err:
-710         mutex_lock(&audit_filter_mutex);
-711         list_del_init(&tree->list);
-712         list_del_init(&tree->rules);
-713         put_tree(tree);
-714         return err;
-715 }
-
-
-
-
->   excuse me:
->     I am not quite familiar with it, and also have to do another things.
->     so I have to spend additional time resource to make sure about it.
-> 
->   is it ok ?
->     I should make sure about it within this week (2013-04-21)
->     I should finish related test (if need), within next week (2013-4-28)
-> 
->   if have additional suggestions or completions, please reply.
->     (if no reply, I will follow the time point above)
-> 
->   thanks.
-> 
-> gchen.
-> 
-> 
-
-
--- 
-Chen Gang
-
-Asianux Corporation
