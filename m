@@ -1,164 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756217Ab3DWIfd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 04:35:33 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:61901 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755686Ab3DWIbR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 04:31:17 -0400
-X-AuditID: 9c930197-b7bb3ae000000fa9-8f-517646d11ca9
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
-Subject: [PATCH 04/14] perf util: Add more debug message on failure path
-Date: Tue, 23 Apr 2013 17:31:02 +0900
-Message-Id: <1366705872-12132-5-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1366705872-12132-1-git-send-email-namhyung@kernel.org>
-References: <1366705872-12132-1-git-send-email-namhyung@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	id S1756281Ab3DWIgv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 04:36:51 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36244 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755283Ab3DWIgr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Apr 2013 04:36:47 -0400
+Date: Sat, 20 Apr 2013 15:43:16 +0200
+From: Jan Kara <jack@suse.cz>
+To: Lukas Czerner <lczerner@redhat.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH v3 18/18] ext4: Allow punch hole with bigalloc enabled
+Message-ID: <20130420134316.GB2461@quack.suse.cz>
+References: <1365498867-27782-1-git-send-email-lczerner@redhat.com>
+ <1365498867-27782-19-git-send-email-lczerner@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1365498867-27782-19-git-send-email-lczerner@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+On Tue 09-04-13 11:14:27, Lukas Czerner wrote:
+> In commits 5f95d21fb6f2aaa52830e5b7fb405f6c71d3ab85 and
+> 30bc2ec9598a1b156ad75217f2e7d4560efdeeab we've reworked punch_hole
+> implementation and there is noting holding us back from using punch hole
+> on file system with bigalloc feature enabled.
+> 
+> This has been tested with fsx and xfstests.
+  Looks good. You can add:
+Reviewed-by: Jan Kara <jack@suse.cz>
 
-It's helpful for debugging on tracing features.
+									Honza
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/util/header.c           |  4 ++-
- tools/perf/util/trace-event-read.c | 53 ++++++++++++++++++++++++++------------
- 2 files changed, 39 insertions(+), 18 deletions(-)
-
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 326068a593a5..31bd962801a1 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -2756,8 +2756,10 @@ static int perf_evsel__prepare_tracepoint_event(struct perf_evsel *evsel,
- 	}
- 
- 	event = pevent_find_event(pevent, evsel->attr.config);
--	if (event == NULL)
-+	if (event == NULL) {
-+		pr_debug("cannot find event format for %d\n", (int)evsel->attr.config);
- 		return -1;
-+	}
- 
- 	if (!evsel->name) {
- 		snprintf(bf, sizeof(bf), "%s:%s", event->system, event->name);
-diff --git a/tools/perf/util/trace-event-read.c b/tools/perf/util/trace-event-read.c
-index e084e5e654b6..0e3b3f527320 100644
---- a/tools/perf/util/trace-event-read.c
-+++ b/tools/perf/util/trace-event-read.c
-@@ -262,39 +262,53 @@ static int read_header_files(struct pevent *pevent)
- 
- static int read_ftrace_file(struct pevent *pevent, unsigned long long size)
- {
-+	int ret;
- 	char *buf;
- 
- 	buf = malloc(size);
--	if (buf == NULL)
-+	if (buf == NULL) {
-+		pr_debug("memory allocation failure\n");
- 		return -1;
-+	}
- 
--	if (do_read(buf, size) < 0) {
--		free(buf);
--		return -1;
-+	ret = do_read(buf, size);
-+	if (ret < 0) {
-+		pr_debug("error reading ftrace file.\n");
-+		goto out;
- 	}
- 
--	parse_ftrace_file(pevent, buf, size);
-+	ret = parse_ftrace_file(pevent, buf, size);
-+	if (ret < 0)
-+		pr_debug("error parsing ftrace file.\n");
-+out:
- 	free(buf);
--	return 0;
-+	return ret;
- }
- 
- static int read_event_file(struct pevent *pevent, char *sys,
- 			    unsigned long long size)
- {
-+	int ret;
- 	char *buf;
- 
- 	buf = malloc(size);
--	if (buf == NULL)
-+	if (buf == NULL) {
-+		pr_debug("memory allocation failure\n");
- 		return -1;
-+	}
- 
--	if (do_read(buf, size) < 0) {
-+	ret = do_read(buf, size);
-+	if (ret < 0) {
- 		free(buf);
--		return -1;
-+		goto out;
- 	}
- 
--	parse_event_file(pevent, buf, size, sys);
-+	ret = parse_event_file(pevent, buf, size, sys);
-+	if (ret < 0)
-+		pr_debug("error parsing event file.\n");
-+out:
- 	free(buf);
--	return 0;
-+	return ret;
- }
- 
- static int read_ftrace_files(struct pevent *pevent)
-@@ -347,6 +361,7 @@ static int read_saved_cmdline(struct pevent *pevent)
- {
- 	unsigned long long size;
- 	char *buf;
-+	int ret;
- 
- 	/* it can have 0 size */
- 	size = read8(pevent);
-@@ -354,18 +369,22 @@ static int read_saved_cmdline(struct pevent *pevent)
- 		return 0;
- 
- 	buf = malloc(size + 1);
--	if (buf == NULL)
-+	if (buf == NULL) {
-+		pr_debug("memory allocation failure\n");
- 		return -1;
-+	}
- 
--	if (do_read(buf, size) < 0) {
--		free(buf);
--		return -1;
-+	ret = do_read(buf, size);
-+	if (ret < 0) {
-+		pr_debug("error reading saved cmdlines\n");
-+		goto out;
- 	}
- 
- 	parse_saved_cmdline(pevent, buf, size);
--
-+	ret = 0;
-+out:
- 	free(buf);
--	return 0;
-+	return ret;
- }
- 
- ssize_t trace_report(int fd, struct pevent **ppevent, bool __repipe)
+> 
+> Signed-off-by: Lukas Czerner <lczerner@redhat.com>
+> ---
+>  fs/ext4/inode.c |    5 -----
+>  1 files changed, 0 insertions(+), 5 deletions(-)
+> 
+> diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+> index 0d452c1..87d6171 100644
+> --- a/fs/ext4/inode.c
+> +++ b/fs/ext4/inode.c
+> @@ -3536,11 +3536,6 @@ int ext4_punch_hole(struct file *file, loff_t offset, loff_t length)
+>  	if (!S_ISREG(inode->i_mode))
+>  		return -EOPNOTSUPP;
+>  
+> -	if (EXT4_SB(sb)->s_cluster_ratio > 1) {
+> -		/* TODO: Add support for bigalloc file systems */
+> -		return -EOPNOTSUPP;
+> -	}
+> -
+>  	trace_ext4_punch_hole(inode, offset, length);
+>  
+>  	/*
+> -- 
+> 1.7.7.6
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 -- 
-1.7.11.7
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
