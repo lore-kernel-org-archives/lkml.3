@@ -1,52 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754823Ab3DTTX2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Apr 2013 15:23:28 -0400
-Received: from mga03.intel.com ([143.182.124.21]:51316 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752256Ab3DTTT1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Apr 2013 15:19:27 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,515,1363158000"; 
-   d="scan'208";a="229707687"
-From: Andi Kleen <andi@firstfloor.org>
-To: mingo@elte.hu
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org
-Subject: perf PMU support for Haswell v8
-Date: Sat, 20 Apr 2013 12:19:08 -0700
-Message-Id: <1366485563-16209-1-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.7.7.6
+	id S1754153Ab3DTTtT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Apr 2013 15:49:19 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:34584 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753020Ab3DTTtS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Apr 2013 15:49:18 -0400
+Date: Sat, 20 Apr 2013 15:49:15 -0400 (EDT)
+Message-Id: <20130420.154915.406609194782936166.davem@davemloft.net>
+To: jovi.zhangwei@huawei.com
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 6/8] spare/sysrq: fix inconstistent help message of
+ sysrq key
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <5172468F.7070909@huawei.com>
+References: <51385730.7020606@huawei.com>
+	<20130307.162724.2043364205781900432.davem@davemloft.net>
+	<5172468F.7070909@huawei.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Sat, 20 Apr 2013 12:49:17 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a heavily updated version of the Haswell PMU TSX and other
-patchkit, on top of the separate "basic haswell" patchkit
+From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+Date: Sat, 20 Apr 2013 15:41:03 +0800
 
-This adds perf PMU support for the upcoming Haswell core. The patchkit 
-is fairly large, mainly due to various enhancement for TSX. TSX tuning
-relies heavily on the PMU, so I tried hard to make all facilities 
-easily available. In addition it also has some other enhancements.
+> On 2013/3/8 5:27, David Miller wrote:
+>> From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+>> Date: Thu, 7 Mar 2013 17:00:32 +0800
+>> 
+>>> Currently help message of /proc/sysrq-trigger highlight its
+>>> upper-case characters, like below:
+>>>
+>>>       SysRq : HELP : loglevel(0-9) reBoot Crash terminate-all-tasks(E)
+>>>       memory-full-oom-kill(F) kill-all-tasks(I) ...
+>>>
+>>> this would confuse user trigger sysrq by upper-case character, which is
+>>> inconsistent with the real lower-case character registed key.
+>>>
+>>> This inconsistent help message will also lead more confused when
+>>> 26 upper-case letters put into use in future.
+>>>
+>>> This patch fix spare sysrq key: "global-regs(y)"
+>>>
+>>> Signed-off-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
+>> 
+>> Acked-by: David S. Miller <davem@davemloft.net>
+>> 
+> David, this patch is already got your ack,
+> so would you please pick up this patch into your tree for next 3.10?
 
-Overview:
-- perf stat -T to get high level transaction statistics
-- A generic set of transaction events
-- Support for transaction abort flags to distingush abort types
-- Support for transaction abort weight
-- Full support for transaction LBR flags
-- KVM support to run perf stat -T in a guest
-- Full width counters and checkpointed counter support
-- Address support for all PEBS events
-
-This includes changes to the core perf code, to the x86 specific part,
-to the perf user land tools and to KVM
-
-Available at 
-git://git.kernel.org/pub/scm/linux/kernel/ak/linux-misc.git hsw/pmu6
-
-For more details on the Haswell PMU please see the SDM. For more details on TSX
-please see http://halobates.de/adding-lock-elision-to-linux.pdf
-
-[dropped old changelog]
-
--Andi
+Sparc patches should be sent to sparclinux@vger.kernel.org so that they
+are properly queued up and tracked in patchwork.
