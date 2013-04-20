@@ -1,59 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754153Ab3DTTtT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Apr 2013 15:49:19 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:34584 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753020Ab3DTTtS (ORCPT
+	id S1754366Ab3DTTup (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Apr 2013 15:50:45 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:40785 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753020Ab3DTTun (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Apr 2013 15:49:18 -0400
-Date: Sat, 20 Apr 2013 15:49:15 -0400 (EDT)
-Message-Id: <20130420.154915.406609194782936166.davem@davemloft.net>
-To: jovi.zhangwei@huawei.com
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/8] spare/sysrq: fix inconstistent help message of
- sysrq key
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <5172468F.7070909@huawei.com>
-References: <51385730.7020606@huawei.com>
-	<20130307.162724.2043364205781900432.davem@davemloft.net>
-	<5172468F.7070909@huawei.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+	Sat, 20 Apr 2013 15:50:43 -0400
+Message-ID: <1366487439.1993.9.camel@dabdike>
+Subject: Re: [PATCH v2 0/9] fix max discard sectors limit
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: dwmw2@infradead.org, axboe@kernel.dk, shli@kernel.org,
+        Paul.Clements@steeleye.com, npiggin@kernel.dk, neilb@suse.de,
+        cjb@laptop.org, adrian.hunter@intel.com, linux-scsi@vger.kernel.org,
+        linux-mtd@lists.infradead.org, nbd-general@lists.sourceforge.net,
+        linux-raid@vger.kernel.org, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jcmvbkbc@gmail.com,
+        Namjae Jeon <namjae.jeon@samsung.com>
+Date: Sat, 20 Apr 2013 12:50:39 -0700
+In-Reply-To: <1366389602-19313-1-git-send-email-linkinjeon@gmail.com>
+References: <1366389602-19313-1-git-send-email-linkinjeon@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.6.3 
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Sat, 20 Apr 2013 12:49:17 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-Date: Sat, 20 Apr 2013 15:41:03 +0800
+On Sat, 2013-04-20 at 01:40 +0900, Namjae Jeon wrote:
+> From: Namjae Jeon <namjae.jeon@samsung.com>
+> 
+> linux-v3.8-rc1 and later support for plug for blkdev_issue_discard with
+> commit 0cfbcafcae8b7364b5fa96c2b26ccde7a3a296a9 
+> (block: add plug for blkdev_issue_discard )
+> 
+> For example,
+> 1) DISCARD rq-1 with size size 4GB
+> 2) DISCARD rq-2 with size size 1GB
+> 
+> If these 2 discard requests get merged, final request size will be 5GB.
+> 
+> In this case, request's __data_len field may overflow as it can store
+> max 4GB(unsigned int).
+> 
+> This issue was observed while doing mkfs.f2fs on 5GB SD card:
+> https://lkml.org/lkml/2013/4/1/292
+> 
+> # mkfs.f2fs /dev/mmcblk0p3
+> Info: sector size = 512
+> Info: total sectors = 11370496 (in 512bytes)
+> Info: zone aligned segment0 blkaddr: 512
+> [  257.789764] blk_update_request: bio idx 0 >= vcnt 0
+> 
+> mkfs process gets stuck in D state and I see the following in the dmesg:
+> 
+> [  257.789733] __end_that: dev mmcblk0: type=1, flags=122c8081
+> [  257.789764]   sector 4194304, nr/cnr 2981888/4294959104
+> [  257.789764]   bio df3840c0, biotail df3848c0, buffer   (null), len 1526726656
+> [  257.789764] blk_update_request: bio idx 0 >= vcnt 0
+> [  257.794921] request botched: dev mmcblk0: type=1, flags=122c8081
+> [  257.794921]   sector 4194304, nr/cnr 2981888/4294959104
+> [  257.794921]   bio df3840c0, biotail df3848c0, buffer   (null), len 1526726656
+> 
+> Few drivers(e.g. mmc, mtd..) set q->limits.max_discard_sectors
+> more than UINT_MAX >> 9 sectors which is incorrect and it may lead to overflow
+> of request's __data_len field if merged discard request's size exceeds 4GB.
+> 
+> This patchset fixes this issue by updating helper function
+> blk_queue_max_discard_sectors which is used to set max_discard_sectors limit.
+> 
+> This patchset also replaces "q->limits.max_discard_sector = max_discard_sectors"
+> with blk_queue_max_discard_sectors call in other drivers like mmc, mtd etc.
 
-> On 2013/3/8 5:27, David Miller wrote:
->> From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
->> Date: Thu, 7 Mar 2013 17:00:32 +0800
->> 
->>> Currently help message of /proc/sysrq-trigger highlight its
->>> upper-case characters, like below:
->>>
->>>       SysRq : HELP : loglevel(0-9) reBoot Crash terminate-all-tasks(E)
->>>       memory-full-oom-kill(F) kill-all-tasks(I) ...
->>>
->>> this would confuse user trigger sysrq by upper-case character, which is
->>> inconsistent with the real lower-case character registed key.
->>>
->>> This inconsistent help message will also lead more confused when
->>> 26 upper-case letters put into use in future.
->>>
->>> This patch fix spare sysrq key: "global-regs(y)"
->>>
->>> Signed-off-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
->> 
->> Acked-by: David S. Miller <davem@davemloft.net>
->> 
-> David, this patch is already got your ack,
-> so would you please pick up this patch into your tree for next 3.10?
+I really don't understand this explanation.  How can you be affected by
+the incorrect setting of q->limits.max_discard sectors when  n the
+blkdev_issue_discard() code you see:
 
-Sparc patches should be sent to sparclinux@vger.kernel.org so that they
-are properly queued up and tracked in patchwork.
+	max_discard_sectors = min(q->limits.max_discard_sectors, UINT_MAX >>
+9);
+
+?
+
+The problem is not that we issue discards bigger than __data_len can
+allow, the problem is that we merge them larger than __data_len will
+allow.  That means the merge code needs fixing to pay attention to
+max_discard_sectors, so isn't this the correct fix:
+
+James
+
+---
+
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index 78feda9..33f358f 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -838,7 +838,7 @@ static inline unsigned int blk_queue_get_max_sectors(struct request_queue *q,
+ 						     unsigned int cmd_flags)
+ {
+ 	if (unlikely(cmd_flags & REQ_DISCARD))
+-		return q->limits.max_discard_sectors;
++		return min(q->limits.max_discard_sectors, UINT_MAX >> 9);
+ 
+ 	if (unlikely(cmd_flags & REQ_WRITE_SAME))
+ 		return q->limits.max_write_same_sectors;
+
+
