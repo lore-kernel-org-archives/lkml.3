@@ -1,61 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755582Ab3DTRtI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Apr 2013 13:49:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57045 "EHLO mx1.redhat.com"
+	id S1755657Ab3DTSCu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Apr 2013 14:02:50 -0400
+Received: from mga14.intel.com ([143.182.124.37]:46607 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751997Ab3DTRtG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Apr 2013 13:49:06 -0400
-Date: Sat, 20 Apr 2013 14:18:59 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: gleb@redhat.com, avi.kivity@gmail.com, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org
-Subject: Re: [PATCH v3 15/15] KVM: MMU: replace kvm_zap_all with
- kvm_mmu_invalid_all_pages
-Message-ID: <20130420171859.GA15140@amt.cnet>
-References: <1366093973-2617-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
- <1366093973-2617-16-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
- <20130418000812.GF31059@amt.cnet>
- <516F70A1.7010007@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <516F70A1.7010007@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754532Ab3DTSCs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Apr 2013 14:02:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,515,1363158000"; 
+   d="scan'208";a="229695263"
+From: Andi Kleen <andi@firstfloor.org>
+To: acme@redhat.com
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 1/2] perf, tools: Default to cpu// for events v5
+Date: Sat, 20 Apr 2013 11:02:28 -0700
+Message-Id: <1366480949-32292-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 18, 2013 at 12:03:45PM +0800, Xiao Guangrong wrote:
-> On 04/18/2013 08:08 AM, Marcelo Tosatti wrote:
-> > On Tue, Apr 16, 2013 at 02:32:53PM +0800, Xiao Guangrong wrote:
-> >> Use kvm_mmu_invalid_all_pages in kvm_arch_flush_shadow_all and
-> >> rename kvm_zap_all to kvm_free_all which is used to free all
-> >> memmory used by kvm mmu when vm is being destroyed, at this time,
-> >> no vcpu exists and mmu-notify has been unregistered, so we can
-> >> free the shadow pages out of mmu-lock
-> > 
-> > Since there is no contention for mmu-lock its also not a problem to 
-> > grab the lock right?
-> 
-> This still has contention. Other mmu-notify can happen when we handle
-> ->release(). On the other handle, spin-lock is not preemptable.
+From: Andi Kleen <ak@linux.intel.com>
 
-Don't think so:
+When an event fails to parse and it's not in a new style format,
+try to parse it again as a cpu event.
 
-        kvm_coalesced_mmio_free(kvm);
-#if defined(CONFIG_MMU_NOTIFIER) && defined(KVM_ARCH_WANT_MMU_NOTIFIER)
-        mmu_notifier_unregister(&kvm->mmu_notifier, kvm->mm);
-#else
-        kvm_arch_flush_shadow_all(kvm);
-#endif
-        kvm_arch_destroy_vm(kvm);
+This allows to use sysfs exported events directly without //, so you can use
 
-> > Automated verification of locking/srcu might complain.
-> 
-> We hold slot-lock to free shadow page out of mmu-lock, it can avoid
-> the complain. No?
+perf record -e mem-loads ...
 
-Not if it realizes srcu is required to access the data structures.
+instead of
+
+perf record -e cpu/mem-loads/
+
+v2: Handle multiple events
+v3: Move to separate function
+v4: Move library function to util/string.c
+v5: Handle unhandleable errors
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ tools/perf/util/include/linux/string.h |    1 +
+ tools/perf/util/parse-events.c         |   30 +++++++++++++++++++++++++++++-
+ tools/perf/util/string.c               |   24 ++++++++++++++++++++++++
+ 3 files changed, 54 insertions(+), 1 deletions(-)
+
+diff --git a/tools/perf/util/include/linux/string.h b/tools/perf/util/include/linux/string.h
+index 6f19c54..97a8007 100644
+--- a/tools/perf/util/include/linux/string.h
++++ b/tools/perf/util/include/linux/string.h
+@@ -1,3 +1,4 @@
+ #include <string.h>
+ 
+ void *memdup(const void *src, size_t len);
++int str_append(char **s, int *len, const char *a);
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index 68d8476..e0feaed 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -6,7 +6,7 @@
+ #include "parse-options.h"
+ #include "parse-events.h"
+ #include "exec_cmd.h"
+-#include "string.h"
++#include "linux/string.h"
+ #include "symbol.h"
+ #include "cache.h"
+ #include "header.h"
+@@ -826,6 +826,32 @@ int parse_events_name(struct list_head *list, char *name)
+ 	return 0;
+ }
+ 
++static int parse_events__scanner(const char *str, void *data, int start_token);
++
++static int parse_events_fixup(int ret, const char *str, void *data,
++			      int start_token)
++{
++	char *o = strdup(str);
++	char *s = NULL;
++	char *t = o;
++	char *p;
++	int len = 0;
++
++	if (!o)
++		return ret;
++	while ((p = strsep(&t, ",")) != NULL) {
++		if (s)
++			str_append(&s, &len, ",");
++		str_append(&s, &len, "cpu/");
++		str_append(&s, &len, p);
++		str_append(&s, &len, "/");
++	}
++	free(o);
++	if (!s)
++		return -ENOMEM;
++	return parse_events__scanner(s, data, start_token);
++}
++
+ static int parse_events__scanner(const char *str, void *data, int start_token)
+ {
+ 	YY_BUFFER_STATE buffer;
+@@ -846,6 +872,8 @@ static int parse_events__scanner(const char *str, void *data, int start_token)
+ 	parse_events__flush_buffer(buffer, scanner);
+ 	parse_events__delete_buffer(buffer, scanner);
+ 	parse_events_lex_destroy(scanner);
++	if (ret && !strchr(str, '/'))
++		ret = parse_events_fixup(ret, str, data, start_token);
+ 	return ret;
+ }
+ 
+diff --git a/tools/perf/util/string.c b/tools/perf/util/string.c
+index 29c7b2c..f0b0c00 100644
+--- a/tools/perf/util/string.c
++++ b/tools/perf/util/string.c
+@@ -387,3 +387,27 @@ void *memdup(const void *src, size_t len)
+ 
+ 	return p;
+ }
++
++/**
++ * str_append - reallocate string and append another
++ * @s: pointer to string pointer
++ * @len: pointer to len (initialized)
++ * @a: string to append.
++ */
++int str_append(char **s, int *len, const char *a)
++{
++	int olen = *s ? strlen(*s) : 0;
++	int nlen = olen + strlen(a) + 1;
++	if (*len < nlen) {
++		*len = *len * 2;
++		if (*len < nlen)
++			*len = nlen;
++		*s = realloc(*s, *len);
++		if (!*s)
++			return -ENOMEM;
++		if (olen == 0)
++			**s = 0;
++	}
++	strcat(*s, a);
++	return 0;
++}
+-- 
+1.7.7.6
 
