@@ -1,53 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754084Ab3DTG6K (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Apr 2013 02:58:10 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:34723 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751232Ab3DTG6I (ORCPT
+	id S1754447Ab3DTHZu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Apr 2013 03:25:50 -0400
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:61517 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754272Ab3DTHZt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Apr 2013 02:58:08 -0400
-From: Wei Hu <wei@aristanetworks.com>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        Wei Hu <wei@aristanetworks.com>
-Subject: [PATCH 1/1] intel-iommu: Disable DMA Remapping when intel_iommu=off
-Date: Fri, 19 Apr 2013 23:58:00 -0700
-Message-Id: <1366441080-5937-1-git-send-email-wei@aristanetworks.com>
-X-Mailer: git-send-email 1.7.4.4
+	Sat, 20 Apr 2013 03:25:49 -0400
+Message-ID: <51724393.1060608@metafoo.de>
+Date: Sat, 20 Apr 2013 09:28:19 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Icedove/3.0.11
+MIME-Version: 1.0
+To: Jon Hunter <jon-hunter@ti.com>
+CC: Vinod Koul <vinod.koul@intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] dma:of: Use a mutex to protect the of_dma_list
+References: <1366364534-3298-1-git-send-email-lars@metafoo.de> <1366364534-3298-2-git-send-email-lars@metafoo.de> <5171C8F6.6010702@ti.com>
+In-Reply-To: <5171C8F6.6010702@ti.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On a VT-d capable machine Linux will enable IOMMU by default. If it
-then kexec's a second kernel with intel_iommu=off, this second kernel
-will leave the DMA remapping engine on with no code handling it. The
-symptom is at least USB and SATA drives stop working. This patch fixes
-the problem by always disabling DMA remapping when intel_iommu=off.
+On 04/20/2013 12:45 AM, Jon Hunter wrote:
+[...]
+>> @@ -219,15 +183,15 @@ struct dma_chan *of_dma_request_slave_channel(struct device_node *np,
+>>  		if (of_dma_match_channel(np, name, i, &dma_spec))
+>>  			continue;
+>>  
+>> -		ofdma = of_dma_get_controller(&dma_spec);
+>> +		mutex_lock(&of_dma_lock);
+>> +		ofdma = of_dma_find_controller(&dma_spec);
+>>  
+>> -		if (ofdma) {
+>> +		if (ofdma)
+>>  			chan = ofdma->of_dma_xlate(&dma_spec, ofdma);
+> 
+> I think that there is a problem here. For controllers using the
+> of_dma_simple_xlate(), this will call dma_request_channel() which also
+> uses a mutex.
 
-Signed-off-by: Wei Hu <wei@aristanetworks.com>
----
- drivers/iommu/intel-iommu.c |    6 +++++-
- 1 files changed, 5 insertions(+), 1 deletions(-)
+That would only be a problem if it'd use the same mutex. Holding two mutexes at
+the same time is not a problem per se.
 
-diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index 0099667..0b8f8bb 100644
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -3681,8 +3681,12 @@ int __init intel_iommu_init(void)
- 		return 	-ENODEV;
- 	}
- 
--	if (no_iommu || dmar_disabled)
-+	if (no_iommu || dmar_disabled) {
-+		struct dmar_drhd_unit *drhd;
-+		for_each_drhd_unit(drhd)
-+			iommu_disable_translation(drhd->iommu);
- 		return -ENODEV;
-+	}
- 
- 	if (iommu_init_mempool()) {
- 		if (force_on)
--- 
-1.7.4.4
-
+- Lars
