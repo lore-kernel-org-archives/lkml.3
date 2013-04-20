@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753201Ab3DTTT2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Apr 2013 15:19:28 -0400
-Received: from mga02.intel.com ([134.134.136.20]:30110 "EHLO mga02.intel.com"
+	id S1754843Ab3DTTWm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Apr 2013 15:22:42 -0400
+Received: from mga02.intel.com ([134.134.136.20]:3592 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752184Ab3DTTT0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Apr 2013 15:19:26 -0400
+	id S1752813Ab3DTTT1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Apr 2013 15:19:27 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,515,1363158000"; 
-   d="scan'208";a="298141404"
+   d="scan'208";a="298141407"
 From: Andi Kleen <andi@firstfloor.org>
 To: mingo@elte.hu
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org,
         Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 03/15] perf, x86: Support full width counting v3
-Date: Sat, 20 Apr 2013 12:19:11 -0700
-Message-Id: <1366485563-16209-4-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 07/15] perf, x86: Avoid checkpointed counters causing excessive TSX aborts v4
+Date: Sat, 20 Apr 2013 12:19:15 -0700
+Message-Id: <1366485563-16209-8-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1366485563-16209-1-git-send-email-andi@firstfloor.org>
 References: <1366485563-16209-1-git-send-email-andi@firstfloor.org>
@@ -25,71 +25,98 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Recent Intel CPUs like Haswell and IvyBridge have a new alternative MSR
-range for perfctrs that allows writing the full counter width. Enable this
-range if the hardware reports it using a new capability bit.
+With checkpointed counters there can be a situation where the counter
+is overflowing, aborts the transaction, is set back to a non overflowing
+checkpoint, causes interupt. The interrupt doesn't see the overflow
+because it has been checkpointed.  This is then a spurious PMI, typically with
+a ugly NMI message.  It can also lead to excessive aborts.
 
-This lowers the overhead of perf stat slightly because it has to do less
-interrupts to accumulate the counter value. On Haswell it also avoids some
-problems with TSX aborting when the end of the counter range is reached.
+Avoid this problem by:
+- Using the full counter width for counting counters (earlier patch)
+- Forbid sampling for checkpointed counters. It's not too useful anyways,
+checkpointing is mainly for counting. The check is approximate
+(to still handle KVM), but should catch the majority of cases.
+- On a PMI always set back checkpointed counters to zero.
 
-v2: Print the feature at boot
-v3: Rename field. Add comment.
-Reviewed-by: Stephane Eranian <eranian@google.com>
+v2: Add unlikely. Add comment
+v3: Allow large sampling periods with CP for KVM
+v4: Use event_is_checkpointed. Use EOPNOTSUPP. (Stephane Eranian)
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/include/uapi/asm/msr-index.h  |    3 +++
- arch/x86/kernel/cpu/perf_event.h       |    5 +++++
- arch/x86/kernel/cpu/perf_event_intel.c |    7 +++++++
- 3 files changed, 15 insertions(+), 0 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel.c |   39 ++++++++++++++++++++++++++++++++
+ 1 files changed, 39 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/include/uapi/asm/msr-index.h b/arch/x86/include/uapi/asm/msr-index.h
-index bf7bb68..dbe5b52 100644
---- a/arch/x86/include/uapi/asm/msr-index.h
-+++ b/arch/x86/include/uapi/asm/msr-index.h
-@@ -167,6 +167,9 @@
- #define MSR_KNC_EVNTSEL0               0x00000028
- #define MSR_KNC_EVNTSEL1               0x00000029
- 
-+/* Alternative perfctr range with full access. */
-+#define MSR_IA32_PMC0			0x000004c1
-+
- /* AMD64 MSRs. Not complete. See the architecture manual for a more
-    complete list. */
- 
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index 2341d9f..0da5713 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -304,6 +304,11 @@ union perf_capabilities {
- 		u64	pebs_arch_reg:1;
- 		u64	pebs_format:4;
- 		u64	smm_freeze:1;
-+		/*
-+		 * PMU supports separate counter range for writing
-+		 * values > 32bit.
-+		 */
-+		u64	full_width_write:1;
- 	};
- 	u64	capabilities;
- };
 diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 5a0d73c..3f2afb2 100644
+index 8aa1326..f24fb6f 100644
 --- a/arch/x86/kernel/cpu/perf_event_intel.c
 +++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -2299,5 +2299,12 @@ __init int intel_pmu_init(void)
- 		}
+@@ -1122,6 +1122,11 @@ static void intel_pmu_enable_event(struct perf_event *event)
+ 	__x86_pmu_enable_event(hwc, ARCH_PERFMON_EVENTSEL_ENABLE);
+ }
+ 
++static inline bool event_is_checkpointed(struct perf_event *event)
++{
++	return (event->hw.config & HSW_INTX_CHECKPOINTED) != 0;
++}
++
+ /*
+  * Save and restart an expired event. Called by NMI contexts,
+  * so it has to be careful about preempting normal event ops:
+@@ -1129,6 +1134,17 @@ static void intel_pmu_enable_event(struct perf_event *event)
+ int intel_pmu_save_and_restart(struct perf_event *event)
+ {
+ 	x86_perf_event_update(event);
++	/*
++	 * For a checkpointed counter always reset back to 0.  This
++	 * avoids a situation where the counter overflows, aborts the
++	 * transaction and is then set back to shortly before the
++	 * overflow, and overflows and aborts again.
++	 */
++	if (unlikely(event_is_checkpointed(event))) {
++		/* No race with NMIs because the counter should not be armed */
++		wrmsrl(event->hw.event_base, 0);
++		local64_set(&event->hw.prev_count, 0);
++	}
+ 	return x86_perf_event_set_period(event);
+ }
+ 
+@@ -1202,6 +1218,15 @@ again:
+ 		x86_pmu.drain_pebs(regs);
  	}
  
-+	/* Support full width counters using alternative MSR range */
-+	if (x86_pmu.intel_cap.full_width_write) {
-+		x86_pmu.max_period = x86_pmu.cntval_mask;
-+		x86_pmu.perfctr = MSR_IA32_PMC0;
-+		pr_cont("full-width counters, ");
-+	}
++	/*
++	 * To avoid spurious interrupts with perf stat always reset checkpointed
++	 * counters.
++	 *
++	 * XXX move somewhere else.
++	 */
++	if (cpuc->events[2] && event_is_checkpointed(cpuc->events[2]))
++		status |= (1ULL << 2);
 +
+ 	for_each_set_bit(bit, (unsigned long *)&status, X86_PMC_IDX_MAX) {
+ 		struct perf_event *event = cpuc->events[bit];
+ 
+@@ -1669,6 +1694,20 @@ static int hsw_hw_config(struct perf_event *event)
+ 	      event->attr.precise_ip > 0))
+ 		return -EOPNOTSUPP;
+ 
++	if (event_is_checkpointed(event)) {
++		/*
++		 * Sampling of checkpointed events can cause situations where
++		 * the CPU constantly aborts because of a overflow, which is
++		 * then checkpointed back and ignored. Forbid checkpointing
++		 * for sampling.
++		 *
++		 * But still allow a long sampling period, so that perf stat
++		 * from KVM works.
++		 */
++		if (event->attr.sample_period > 0 &&
++		    event->attr.sample_period < 0x7fffffff)
++			return -EOPNOTSUPP;
++	}
  	return 0;
  }
+ 
 -- 
 1.7.7.6
 
