@@ -1,215 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755723Ab3DTSDD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Apr 2013 14:03:03 -0400
-Received: from mga02.intel.com ([134.134.136.20]:61011 "EHLO mga02.intel.com"
+	id S1751295Ab3DTSl6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Apr 2013 14:41:58 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:40254 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755670Ab3DTSC4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Apr 2013 14:02:56 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,515,1363158000"; 
-   d="scan'208";a="298118200"
-From: Andi Kleen <andi@firstfloor.org>
-To: acme@redhat.com
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 2/2] perf, tools: List kernel supplied event aliases in perf list v3
-Date: Sat, 20 Apr 2013 11:02:29 -0700
-Message-Id: <1366480949-32292-2-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1366480949-32292-1-git-send-email-andi@firstfloor.org>
-References: <1366480949-32292-1-git-send-email-andi@firstfloor.org>
+	id S1750724Ab3DTSl5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Apr 2013 14:41:57 -0400
+Date: Sat, 20 Apr 2013 20:41:52 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Jiri Slaby <jslaby@suse.cz>, Ingo Molnar <mingo@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, John Stultz <john.stultz@linaro.org>,
+        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Resume does not work after timekeeping change
+Message-ID: <20130420184152.GA4649@pd.tnic>
+References: <5172B86C.5030606@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <5172B86C.5030606@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On Sat, Apr 20, 2013 at 05:46:52PM +0200, Jiri Slaby wrote:
+> Hi,
+> 
+> my machine does not wake from suspend to RAM on my box running the -next
+> kernel. The last thing I see is "Disabling non-boot CPUs ...". I
+> bisected it to this commit:
+> 
+> commit 7ec98e15aa049b7a2ca73485f31cf4f90c34e2dd
+> Author: Thomas Gleixner <tglx@linutronix.de>
+> Date:   Thu Feb 21 22:51:39 2013 +0000
+> 
+>     timekeeping: Delay update of clock->cycle_last
+> 
+> 
+> Reverting that one on the top of -next-20130419 makes it work again.
+> 
+> 
+> I also tried it inside a VM using suspend to disk. There, it behaves
+> like it takes a minute or so to wake up. So I tried to wait on the real
+> HW too, but it never resumes there.
 
-List the kernel supplied pmu event aliases in perf list
+Right, and I'm seeing it here too but it sometimes does resume after
+about a minute or so and sometimes it doesn't.
 
-It's better when the users can actually see them.
+Reverting the patch by hand ontop of tip/master fixes the issue here
+too.
 
-v2: Fix pattern matching
-v3: perf_pmu__alias -> perf_pmu_alias
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- tools/perf/Documentation/perf-list.txt |    4 +-
- tools/perf/builtin-list.c              |    3 +
- tools/perf/util/parse-events.c         |    5 ++-
- tools/perf/util/pmu.c                  |   73 ++++++++++++++++++++++++++++++++
- tools/perf/util/pmu.h                  |    3 +
- 5 files changed, 86 insertions(+), 2 deletions(-)
+Btw, Ingo, remember how I was telling you that I'm seeing
+temporary lockups with tip/master and resume issues
+with the last line being "Disabling non-boot CPUs ..."
+http://marc.info/?l=linux-kernel&m=136610574502492 - this commit was the
+culprit.
 
-diff --git a/tools/perf/Documentation/perf-list.txt b/tools/perf/Documentation/perf-list.txt
-index d1e39dc..826f3d6 100644
---- a/tools/perf/Documentation/perf-list.txt
-+++ b/tools/perf/Documentation/perf-list.txt
-@@ -8,7 +8,7 @@ perf-list - List all symbolic event types
- SYNOPSIS
- --------
- [verse]
--'perf list' [hw|sw|cache|tracepoint|event_glob]
-+'perf list' [hw|sw|cache|tracepoint|pmu|event_glob]
- 
- DESCRIPTION
- -----------
-@@ -104,6 +104,8 @@ To limit the list use:
-   'subsys_glob:event_glob' to filter by tracepoint subsystems such as sched,
-   block, etc.
- 
-+. 'pmu' to print the kernel supplied PMU events.
-+
- . If none of the above is matched, it will apply the supplied glob to all
-   events, printing the ones that match.
- 
-diff --git a/tools/perf/builtin-list.c b/tools/perf/builtin-list.c
-index 1948ece..e79f423 100644
---- a/tools/perf/builtin-list.c
-+++ b/tools/perf/builtin-list.c
-@@ -13,6 +13,7 @@
- 
- #include "util/parse-events.h"
- #include "util/cache.h"
-+#include "util/pmu.h"
- 
- int cmd_list(int argc, const char **argv, const char *prefix __maybe_unused)
- {
-@@ -37,6 +38,8 @@ int cmd_list(int argc, const char **argv, const char *prefix __maybe_unused)
- 			else if (strcmp(argv[i], "cache") == 0 ||
- 				 strcmp(argv[i], "hwcache") == 0)
- 				print_hwcache_events(NULL, false);
-+			else if (strcmp(argv[i], "pmu") == 0)
-+				print_pmu_events(NULL, false);
- 			else if (strcmp(argv[i], "--raw-dump") == 0)
- 				print_events(NULL, true);
- 			else {
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index e0feaed..febe022 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -1112,6 +1112,8 @@ int print_hwcache_events(const char *event_glob, bool name_only)
- 		}
- 	}
- 
-+	if (printed)
-+		printf("\n");
- 	return printed;
- }
- 
-@@ -1166,11 +1168,12 @@ void print_events(const char *event_glob, bool name_only)
- 
- 	print_hwcache_events(event_glob, name_only);
- 
-+	print_pmu_events(event_glob, name_only);
-+
- 	if (event_glob != NULL)
- 		return;
- 
- 	if (!name_only) {
--		printf("\n");
- 		printf("  %-50s [%s]\n",
- 		       "rNNN",
- 		       event_type_descriptors[PERF_TYPE_RAW]);
-diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
-index 4c6f9c4..29aaac3 100644
---- a/tools/perf/util/pmu.c
-+++ b/tools/perf/util/pmu.c
-@@ -564,3 +564,76 @@ void perf_pmu__set_format(unsigned long *bits, long from, long to)
- 	for (b = from; b <= to; b++)
- 		set_bit(b, bits);
- }
-+
-+static char *format_alias(char *buf, int len, struct perf_pmu *pmu,
-+			  struct perf_pmu_alias *alias)
-+{
-+	snprintf(buf, len, "%s/%s/", pmu->name, alias->name);
-+	return buf;
-+}
-+
-+static char *format_alias_or(char *buf, int len, struct perf_pmu *pmu,
-+			     struct perf_pmu_alias *alias)
-+{
-+	snprintf(buf, len, "%s OR %s/%s/", alias->name, pmu->name, alias->name);
-+	return buf;
-+}
-+
-+static int cmp_string(const void *a, const void *b)
-+{
-+	const char * const *as = a;
-+	const char * const *bs = b;
-+	return strcmp(*as, *bs);
-+}
-+
-+void print_pmu_events(const char *event_glob, bool name_only)
-+{
-+	struct perf_pmu *pmu;
-+	struct perf_pmu_alias *alias;
-+	char buf[1024];
-+	int printed = 0;
-+	int len, j;
-+	char **aliases;
-+
-+	pmu = NULL;
-+	len = 0;
-+	while ((pmu = perf_pmu__scan(pmu)) != NULL)
-+		list_for_each_entry(alias, &pmu->aliases, list)
-+			len++;
-+	aliases = malloc(sizeof(char *) * len);
-+	if (!aliases)
-+		return;
-+	pmu = NULL;
-+	j = 0;
-+	while ((pmu = perf_pmu__scan(pmu)) != NULL)
-+		list_for_each_entry(alias, &pmu->aliases, list) {
-+			char *name = format_alias(buf, sizeof(buf), pmu, alias);
-+			bool is_cpu = !strcmp(pmu->name, "cpu");
-+
-+			if (event_glob != NULL &&
-+			    !(strglobmatch(name, event_glob) ||
-+			      (!is_cpu && strglobmatch(alias->name,
-+						       event_glob))))
-+				continue;
-+			aliases[j] = name;
-+			if (is_cpu && !name_only)
-+				aliases[j] = format_alias_or(buf, sizeof(buf),
-+							      pmu, alias);
-+			aliases[j] = strdup(aliases[j]);
-+			j++;
-+		}
-+	len = j;
-+	qsort(aliases, len, sizeof(char *), cmp_string);
-+	for (j = 0; j < len; j++) {
-+		if (name_only) {
-+			printf("%s ", aliases[j]);
-+			continue;
-+		}
-+		printf("  %-50s [Kernel PMU event]\n", aliases[j]);
-+		free(aliases[j]);
-+		printed++;
-+	}
-+	if (printed)
-+		printf("\n");
-+	free(aliases);
-+}
-diff --git a/tools/perf/util/pmu.h b/tools/perf/util/pmu.h
-index 32fe55b..20d7494 100644
---- a/tools/perf/util/pmu.h
-+++ b/tools/perf/util/pmu.h
-@@ -3,6 +3,7 @@
- 
- #include <linux/bitops.h>
- #include <linux/perf_event.h>
-+#include <stdbool.h>
- 
- enum {
- 	PERF_PMU_FORMAT_VALUE_CONFIG,
-@@ -40,5 +41,7 @@ int perf_pmu__format_parse(char *dir, struct list_head *head);
- 
- struct perf_pmu *perf_pmu__scan(struct perf_pmu *pmu);
- 
-+void print_pmu_events(const char *event_glob, bool name_only);
-+
- int perf_pmu__test(void);
- #endif /* __PMU_H */
+Good job Jiri.
+
 -- 
-1.7.7.6
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
