@@ -1,52 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965568Ab3DTB4k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 21:56:40 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:29255 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965470Ab3DTB4j (ORCPT
+	id S965593Ab3DTCYW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 22:24:22 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:60455 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965552Ab3DTCYV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 21:56:39 -0400
-X-Spam-Score: -100.8
-Message-ID: <5171F57B.7090305@asianux.com>
-Date: Sat, 20 Apr 2013 09:55:07 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Fri, 19 Apr 2013 22:24:21 -0400
+Date: Fri, 19 Apr 2013 19:24:15 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Anatol Pomozov <anatol.pomozov@gmail.com>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
+Subject: Re: [PATCH] kref: minor cleanup
+Message-ID: <20130420022415.GA24713@kroah.com>
+References: <1366421634-20773-1-git-send-email-anatol.pomozov@gmail.com>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Christopher Covington <cov@codeaurora.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        "anup.patel@linaro.org" <anup.patel@linaro.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>, Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] ARM64: kernel: compiling issue, duplicate definition
- of early_console
-References: <5152DB83.8080703@asianux.com> <516E66F9.9070904@asianux.com> <51712213.4060607@asianux.com> <201304191415.31986.arnd@arndb.de>
-In-Reply-To: <201304191415.31986.arnd@arndb.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1366421634-20773-1-git-send-email-anatol.pomozov@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013年04月19日 20:15, Arnd Bergmann wrote:
-> On Friday 19 April 2013, Chen Gang wrote:
->> >   when compiling with allmodconfig.
->> >     early_console is already defined as an extern global pointer.
->> > 
->> >   need let it point to the object which we intend to (like ARM32 done).
->> > 
->> > 
->> > Signed-off-by: Chen Gang <gang.chen@asianux.com>
-> Acked-by: Arnd Bergmann <arnd@arndb.de>
+On Fri, Apr 19, 2013 at 06:33:54PM -0700, Anatol Pomozov wrote:
+> Follow-up for https://lkml.org/lkml/2013/4/12/391
 > 
+> * make warning smp-safe
+> * result of atomic _unless_zero functions should be checked by caller
+>     to avoid use-after-free error
 > 
+> Signed-off-by: Anatol Pomozov <anatol.pomozov@gmail.com>
+> ---
+>  include/linux/kref.h | 9 ++++++---
+>  lib/kobject.c        | 3 ++-
+>  2 files changed, 8 insertions(+), 4 deletions(-)
+> 
+> diff --git a/include/linux/kref.h b/include/linux/kref.h
+> index 4972e6e..092529a 100644
+> --- a/include/linux/kref.h
+> +++ b/include/linux/kref.h
+> @@ -39,8 +39,11 @@ static inline void kref_init(struct kref *kref)
+>   */
+>  static inline void kref_get(struct kref *kref)
+>  {
+> -	WARN_ON(!atomic_read(&kref->refcount));
+> -	atomic_inc(&kref->refcount);
+> +	/* If refcount was 0 before incrementing then we have a race
+> +	 * condition when this kref is freing by some other thread right now.
+> +	 * In this case one should use kref_get_unless_zero()
+> +	 */
+> +	WARN_ON(atomic_inc_return(&kref->refcount) < 2);
 
-  thanks
+What happens if you disable WARN_ON(), does the atomic_inc_return() go
+away as well?  Or did we fix that?
 
--- 
-Chen Gang
+>  }
+>  
+>  /**
+> @@ -100,7 +103,7 @@ static inline int kref_put_mutex(struct kref *kref,
+>  				 struct mutex *lock)
+>  {
+>  	WARN_ON(release == NULL);
+> -        if (unlikely(!atomic_add_unless(&kref->refcount, -1, 1))) {
+> +	if (unlikely(!atomic_add_unless(&kref->refcount, -1, 1))) {
+>  		mutex_lock(lock);
+>  		if (unlikely(!atomic_dec_and_test(&kref->refcount))) {
+>  			mutex_unlock(lock);
+> diff --git a/lib/kobject.c b/lib/kobject.c
+> index a654866..bbd7362 100644
+> --- a/lib/kobject.c
+> +++ b/lib/kobject.c
+> @@ -529,7 +529,8 @@ struct kobject *kobject_get(struct kobject *kobj)
+>  	return kobj;
+>  }
+>  
+> -static struct kobject *kobject_get_unless_zero(struct kobject *kobj)
+> +static struct kobject *__must_check kobject_get_unless_zero(
+> +		struct kobject *kobj)
 
-Asianux Corporation
+__must_check needs to be in the .h file, not the .c file.
+
+thanks,
+
+greg k-h
