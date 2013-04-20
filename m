@@ -1,38 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755162Ab3DTLw5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Apr 2013 07:52:57 -0400
-Received: from [89.144.129.18] ([89.144.129.18]:1535 "EHLO host2-askiran"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755068Ab3DTLwy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Apr 2013 07:52:54 -0400
-Reply-To: <info@webmail.co>
-From: "Web-Mail Helpdesk" <p.imanzadeh@iautalesh.ac.ir>
-Subject: Warning!!  Virus Detected On Your Mail Box
-Date: Sat, 20 Apr 2013 12:11:31 +0100
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-X-Antivirus: avast! (VPS 130419-1, 04/19/2013), Outbound message
-X-Antivirus-Status: Clean
-Message-ID: <auto-000006307704@host2-askiran>
-To: unlisted-recipients:; (no To-header on input)
+	id S1755085Ab3DTMAW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Apr 2013 08:00:22 -0400
+Received: from relay2.blacknight.com ([78.153.203.205]:42382 "EHLO
+	relay2.blacknight.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754945Ab3DTMAV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Apr 2013 08:00:21 -0400
+From: "Bryan O'Donoghue" <bryan.odonoghue.lkml@nexus-software.ie>
+To: hpa@zytor.com, linux-kernel@vger.kernel.org, x86@kernel.org,
+        fenghua.yu@intel.com, bp@alien8.de
+Cc: "Bryan O'Donoghue" <bryan.odonoghue.lkml@nexus-software.ie>
+Subject: [PATCH] x86: Add check for P5 to microcode_intel_early v2
+Date: Sat, 20 Apr 2013 13:02:24 +0100
+Message-Id: <1366459344-10190-1-git-send-email-bryan.odonoghue.lkml@nexus-software.ie>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear email user, Web-Mail Helpdesk has detected a hard virus in your mail box, it might cause you to loose your email account, to delete this virus, click link below 
-in order for us to install the 2013 Avast! antivirus on your mailbox, to prevent viruses from entering into your email box. 
-Failure to do this within three days of this notification, we will terminate the existence of your email account in our data base.
+Architectural MSRs associated with microcode are for P6 or higher.
+Add a check to early microcode to detect < P6.
 
-  http://www.webmailhelpdeskonline.org/
+Without a check for < P6 - we end up reading from unimplemented MSRs
+on Pentium.
 
-Fill in your details as required for the 2013 Avast! antivirus installation. 
+Thanks to Borislav Petkov for suggestion on where to intercept the P5
+resulting in fewer cycles and less code to accomplish the fix.
 
-Thank you for using our email.
-Copyright 2013 Web-Mail Helpdesk
+Signed-off-by: Bryan O'Donoghue <bryan.odonoghue.lkml@nexus-software.ie>
+---
+ arch/x86/kernel/microcode_core_early.c |   11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
+
+diff --git a/arch/x86/kernel/microcode_core_early.c b/arch/x86/kernel/microcode_core_early.c
+index 577db84..bd251b3 100644
+--- a/arch/x86/kernel/microcode_core_early.c
++++ b/arch/x86/kernel/microcode_core_early.c
+@@ -50,8 +50,17 @@ static int __cpuinit x86_vendor(void)
+ 
+ 	native_cpuid(&eax, &ebx, &ecx, &edx);
+ 
+-	if (CPUID_IS(CPUID_INTEL1, CPUID_INTEL2, CPUID_INTEL3, ebx, ecx, edx))
++	if (CPUID_IS(CPUID_INTEL1, CPUID_INTEL2, CPUID_INTEL3, ebx, ecx, edx)) {
++
++		eax = 0x00000001;
++		ecx = 0;
++		native_cpuid(&eax, &ebx, &ecx, &edx);
++
++		if (((edx >> 8) & 0xf) < 0x6)
++			return X86_VENDOR_UNKNOWN;
++
+ 		return X86_VENDOR_INTEL;
++	}
+ 
+ 	if (CPUID_IS(CPUID_AMD1, CPUID_AMD2, CPUID_AMD3, ebx, ecx, edx))
+ 		return X86_VENDOR_AMD;
+-- 
+1.7.10.4
+
