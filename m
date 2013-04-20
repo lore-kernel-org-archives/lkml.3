@@ -1,499 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932890Ab3DTReu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Apr 2013 13:34:50 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:65180 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750905Ab3DTRes (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Apr 2013 13:34:48 -0400
-X-Originating-IP: 108.223.40.66
-Date: Sat, 20 Apr 2013 10:35:13 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Anthony Olech <anthony.olech.opensource@diasemi.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Randy Dunlap <rdunlap@xenotime.net>, lm-sensors@lm-sensors.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Dajun Chen <david.chen@diasemi.com>
-Subject: Re: [NEW DRIVER V6 6/7] drivers/hwmon: DA9058 HWMON driver
-Message-ID: <20130420173513.GA8275@roeck-us.net>
-References: <201304191712.r3JHCEmr017829@latitude>
- <51718BFE.7060409@metafoo.de>
+	id S1755582Ab3DTRtI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Apr 2013 13:49:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57045 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751997Ab3DTRtG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Apr 2013 13:49:06 -0400
+Date: Sat, 20 Apr 2013 14:18:59 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: gleb@redhat.com, avi.kivity@gmail.com, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org
+Subject: Re: [PATCH v3 15/15] KVM: MMU: replace kvm_zap_all with
+ kvm_mmu_invalid_all_pages
+Message-ID: <20130420171859.GA15140@amt.cnet>
+References: <1366093973-2617-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+ <1366093973-2617-16-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+ <20130418000812.GF31059@amt.cnet>
+ <516F70A1.7010007@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51718BFE.7060409@metafoo.de>
+In-Reply-To: <516F70A1.7010007@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 19, 2013 at 08:25:02PM +0200, Lars-Peter Clausen wrote:
-> Same comment as before, I'd like to see this using the generic IIO to HWMON
-> bridge instead of recreating it.
+On Thu, Apr 18, 2013 at 12:03:45PM +0800, Xiao Guangrong wrote:
+> On 04/18/2013 08:08 AM, Marcelo Tosatti wrote:
+> > On Tue, Apr 16, 2013 at 02:32:53PM +0800, Xiao Guangrong wrote:
+> >> Use kvm_mmu_invalid_all_pages in kvm_arch_flush_shadow_all and
+> >> rename kvm_zap_all to kvm_free_all which is used to free all
+> >> memmory used by kvm mmu when vm is being destroyed, at this time,
+> >> no vcpu exists and mmu-notify has been unregistered, so we can
+> >> free the shadow pages out of mmu-lock
+> > 
+> > Since there is no contention for mmu-lock its also not a problem to 
+> > grab the lock right?
 > 
-... and I agree. Seems we are getting more and more of those, and at some point
-it makes really sense to find a generic solution.
+> This still has contention. Other mmu-notify can happen when we handle
+> ->release(). On the other handle, spin-lock is not preemptable.
 
-Anthony, can you please look into that ?
+Don't think so:
 
-Thanks,
-Guenter
+        kvm_coalesced_mmio_free(kvm);
+#if defined(CONFIG_MMU_NOTIFIER) && defined(KVM_ARCH_WANT_MMU_NOTIFIER)
+        mmu_notifier_unregister(&kvm->mmu_notifier, kvm->mm);
+#else
+        kvm_arch_flush_shadow_all(kvm);
+#endif
+        kvm_arch_destroy_vm(kvm);
 
-
-> On 04/19/2013 06:56 PM, Anthony Olech wrote:
-> > This patch is relative to next-20130419 of linux-next
-> > 
-> > This is the HWMON component driver of the Dialog DA9058 PMIC.
-> > This driver is just one component of the whole DA9058 PMIC driver.
-> > It depends on the CORE and ADC component drivers of the DA9058 MFD.
-> > 
-> > Please note that this driver does use regmap via the CORE and ADC
-> > component drivers of the DA9058 MFD.
-> > 
-> > Changes relative to V5 of this patch:
-> > - rebased to next-20130419 in git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-> > - removed redundant #include <linux/mfd/da9058/version.h>
-> > - corrected dates on copyright statements
-> > Documentation/hwmon/da9058
-> > - removed trailing blank line to prevent 'git apply' warning
-> > drivers/hwmon/da9058-hwmon.c
-> > - put spaces aount the '*' multiply operator
-> > - use the word 'extract' rather than 'recover' in a comment
-> > - use da9058_labels[] in show_label instead of switch case
-> > - use multiple exit points in functions when no common code
-> >   is to be executed.
-> > - aligned continuation lines to preceeding '(' or indent + 2 tabs
-> > - removed redundant mutex hwmon_lock
-> > - merged 6 duplicate lines from 2 branches of if statement
-> > 
-> > Signed-off-by: Anthony Olech <anthony.olech.opensource@diasemi.com>
-> > Signed-off-by: David Dajun Chen <david.chen@diasemi.com>
-> > ---
-> >  Documentation/hwmon/da9058   |   38 +++++
-> >  drivers/hwmon/Kconfig        |   10 ++
-> >  drivers/hwmon/Makefile       |    3 +-
-> >  drivers/hwmon/da9058-hwmon.c |  330 ++++++++++++++++++++++++++++++++++++++++++
-> >  4 files changed, 380 insertions(+), 1 deletion(-)
-> >  create mode 100644 Documentation/hwmon/da9058
-> >  create mode 100644 drivers/hwmon/da9058-hwmon.c
-> > 
-> > diff --git a/Documentation/hwmon/da9058 b/Documentation/hwmon/da9058
-> > new file mode 100644
-> > index 0000000..841148f
-> > --- /dev/null
-> > +++ b/Documentation/hwmon/da9058
-> > @@ -0,0 +1,38 @@
-> > +Kernel driver da9058-hwmon
-> > +==========================
-> > +
-> > +Supported chips:
-> > +  * Dialog Semiconductor DA9058 PMIC
-> > +    Prefix: 'da9058'
-> > +    Datasheet:
-> > +	http://www.dialog-semiconductor.com/products/power-management/da9058
-> > +
-> > +Authors: Opensource [Anthony Olech] <anthony.olech.opensource@diasemi.com>
-> > +
-> > +Description
-> > +-----------
-> > +
-> > +The DA9058 PMIC contains a 5 channel ADC which can be used to monitor a
-> > +range of system operating parameters, including the battery voltage and
-> > +temperature.  The ADC measures voltage, but two of the ADC channels can
-> > +be configured to supply a current, so that if an NTC termister is connected
-> > +then the voltage reading can be converted to a temperature. Currently the
-> > +driver provides reporting of all the input values but does not provide any
-> > +alarms.
-> > +
-> > +Voltage Monitoring
-> > +------------------
-> > +
-> > +Voltages are sampled in either 'automatic' or 'manual' mode, which is an
-> > +initialization parameter set in the platform data by the machine driver.
-> > +In manual mode the ADC conversion is 12 bit and in automatic mode it is
-> > +10 bit. However all the raw readings are reported as 12 bit numbers.
-> > +
-> > +Physical Limits
-> > +---------------
-> > +
-> > +vbat   2500 - 4500 milliVolts
-> > +tbat   0    - 2500 milliVolts
-> > +adc    0    - 2500 milliVolts
-> > +vfpin  0    - 4095 milliVolts
-> > +tjunc  there is a correction factor programmed during manufacturing
-> > diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
-> > index 79bc431..cb074c4 100644
-> > --- a/drivers/hwmon/Kconfig
-> > +++ b/drivers/hwmon/Kconfig
-> > @@ -337,6 +337,16 @@ config SENSORS_ATXP1
-> >  	  This driver can also be built as a module.  If so, the module
-> >  	  will be called atxp1.
-> >  
-> > +config SENSORS_DA9058
-> > +	tristate "Dialog Semiconductor DA9058 ADC"
-> > +	depends on MFD_DA9058 && DA9058_ADC
-> > +	help
-> > +	  If you say yes here you get support for the hardware monitoring
-> > +	  functionality of the Dialog Semiconductor DA9058 PMIC.
-> > +
-> > +	  This driver can also be built as a module.  If so, the module
-> > +	  will be called da9058-hwmon.
-> > +
-> >  config SENSORS_DS620
-> >  	tristate "Dallas Semiconductor DS620"
-> >  	depends on I2C
-> > diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
-> > index d17d3e6..6001549 100644
-> > --- a/drivers/hwmon/Makefile
-> > +++ b/drivers/hwmon/Makefile
-> > @@ -47,7 +47,8 @@ obj-$(CONFIG_SENSORS_ASC7621)	+= asc7621.o
-> >  obj-$(CONFIG_SENSORS_ATXP1)	+= atxp1.o
-> >  obj-$(CONFIG_SENSORS_CORETEMP)	+= coretemp.o
-> >  obj-$(CONFIG_SENSORS_DA9052_ADC)+= da9052-hwmon.o
-> > -obj-$(CONFIG_SENSORS_DA9055)+= da9055-hwmon.o
-> > +obj-$(CONFIG_SENSORS_DA9055)	+= da9055-hwmon.o
-> > +obj-$(CONFIG_SENSORS_DA9058)	+= da9058-hwmon.o
-> >  obj-$(CONFIG_SENSORS_DME1737)	+= dme1737.o
-> >  obj-$(CONFIG_SENSORS_DS620)	+= ds620.o
-> >  obj-$(CONFIG_SENSORS_DS1621)	+= ds1621.o
-> > diff --git a/drivers/hwmon/da9058-hwmon.c b/drivers/hwmon/da9058-hwmon.c
-> > new file mode 100644
-> > index 0000000..ff3fcbf
-> > --- /dev/null
-> > +++ b/drivers/hwmon/da9058-hwmon.c
-> > @@ -0,0 +1,330 @@
-> > +/*
-> > + *  Copyright (C) 2012, 2013 Dialog Semiconductor Ltd.
-> > + *
-> > + *  This program is free software; you can redistribute it and/or modify
-> > + *  it under the terms of the GNU General Public License as published by
-> > + *  the Free Software Foundation; either version 2 of the License, or
-> > + *  (at your option) any later version.
-> > + *
-> > + */
-> > +
-> > +#include <linux/module.h>
-> > +#include <linux/err.h>
-> > +#include <linux/hwmon.h>
-> > +#include <linux/hwmon-sysfs.h>
-> > +#include <linux/regmap.h>
-> > +#include <linux/mfd/core.h>
-> > +
-> > +#include <linux/mfd/da9058/registers.h>
-> > +#include <linux/mfd/da9058/core.h>
-> > +#include <linux/mfd/da9058/hwmon.h>
-> > +
-> > +static ssize_t da9058_vbat_show_adc(struct device *dev,
-> > +				    struct device_attribute *devattr,
-> > +				    char *buf)
-> > +{
-> > +	struct da9058_hwmon *hwmon = dev_get_drvdata(dev);
-> > +	unsigned int voltage; /* x000 .. xFFF = 2500 .. 4500 mV */
-> > +	int ret;
-> > +
-> > +	ret = da9058_adc_read(hwmon->da9058, DA9058_ADCMAN_MUXSEL_VBAT,
-> > +			      hwmon->use_automatic_adc, &voltage);
-> > +	if (ret)
-> > +		return ret;
-> > +
-> > +	return sprintf(buf, "%d\n", 2500 + voltage * 2000 / 0xFFF);
-> > +}
-> > +
-> > +static ssize_t da9058_tbat_show_type(struct device *dev,
-> > +				     struct device_attribute *devattr,
-> > +				     char *buf)
-> > +{
-> > +	struct da9058_hwmon *hwmon = dev_get_drvdata(dev);
-> > +
-> > +	return sprintf(buf, "%d\n", hwmon->battery_sensor_type);
-> > +}
-> > +
-> > +static ssize_t da9058_tbat_show_adc(struct device *dev,
-> > +				    struct device_attribute *devattr,
-> > +				    char *buf)
-> > +{
-> > +	struct da9058_hwmon *hwmon = dev_get_drvdata(dev);
-> > +	unsigned int voltage; /* x000 .. xFFF = 0 .. 2500 mV */
-> > +	int ret;
-> > +
-> > +	ret = da9058_adc_read(hwmon->da9058, DA9058_ADCMAN_MUXSEL_TEMP,
-> > +			      hwmon->use_automatic_adc, &voltage);
-> > +	if (ret)
-> > +		return ret;
-> > +
-> > +	return sprintf(buf, "%d\n", voltage * 2500 / 0xFFF);
-> > +}
-> > +
-> > +static ssize_t da9058_gp_show_adc(struct device *dev,
-> > +				  struct device_attribute *devattr,
-> > +				  char *buf)
-> > +{
-> > +	struct da9058_hwmon *hwmon = dev_get_drvdata(dev);
-> > +	unsigned int voltage; /* xFFF .. x800 = 0 .. 2500 mV */
-> > +	int ret;
-> > +
-> > +	ret = da9058_adc_read(hwmon->da9058, DA9058_ADCMAN_MUXSEL_ADCIN,
-> > +			      hwmon->use_automatic_adc, &voltage);
-> > +	if (ret)
-> > +		return ret;
-> > +
-> > +	return sprintf(buf, "%d\n", (0xFFF - voltage) * 2500 / 0x7FF);
-> > +}
-> > +
-> > +static ssize_t da9058_tjunc_show_min(struct device *dev,
-> > +				     struct device_attribute *devattr,
-> > +				     char *buf)
-> > +{
-> > +	struct da9058_hwmon *hwmon = dev_get_drvdata(dev);
-> > +	unsigned int toffreg;
-> > +	int ret = da9058_reg_read(hwmon->da9058, DA9058_TOFFSET_REG, &toffreg);
-> > +
-> > +	if (ret)
-> > +		return ret;
-> > +
-> > +	return sprintf(buf, "%d\n", -(1708 * (s8)((u8)toffreg) + 108800));
-> > +}
-> > +
-> > +static ssize_t da9058_tjunc_show_max(struct device *dev,
-> > +				     struct device_attribute *devattr,
-> > +				     char *buf)
-> > +{
-> > +	struct da9058_hwmon *hwmon = dev_get_drvdata(dev);
-> > +	unsigned int toffreg;
-> > +	int ret = da9058_reg_read(hwmon->da9058, DA9058_TOFFSET_REG, &toffreg);
-> > +
-> > +	if (ret)
-> > +		return ret;
-> > +
-> > +	return sprintf(buf, "%d\n", 1708 * (255 - (s8)((u8)toffreg)) - 108800);
-> > +}
-> > +
-> > +/*
-> > + *  The algorithm for converting the value is
-> > + *  Degrees celsius = 1.708 * (TJUNC_RES - T_OFFSET) - 108.8
-> > + *  T_OFFSET is a trim value used to improve accuracy of the result
-> > + */
-> > +static ssize_t da9058_tjunc_show_adc(struct device *dev,
-> > +				     struct device_attribute *devattr,
-> > +				     char *buf)
-> > +{
-> > +	struct da9058_hwmon *hwmon = dev_get_drvdata(dev);
-> > +	int tjunc;
-> > +	unsigned int toffreg;
-> > +	int ret;
-> > +
-> > +	ret = da9058_reg_read(hwmon->da9058, DA9058_TOFFSET_REG, &toffreg);
-> > +	if (ret < 0)
-> > +		return ret;
-> > +
-> > +	ret = da9058_adc_read(hwmon->da9058, DA9058_ADCMAN_MUXSEL_TJUNC,
-> > +			      hwmon->use_automatic_adc, &tjunc);
-> > +	if (ret < 0)
-> > +		return ret;
-> > +
-> > +	tjunc >>= 4;	/* extract most sig 8 bits as a pos/zero number */
-> > +
-> > +	return sprintf(buf, "%d\n",
-> > +		       1708 * (tjunc - (s8)((u8)toffreg)) - 108800);
-> > +}
-> > +static ssize_t da9058_tjunc_show_offset(struct device *dev,
-> > +					struct device_attribute *devattr,
-> > +					char *buf)
-> > +{
-> > +	struct da9058_hwmon *hwmon = dev_get_drvdata(dev);
-> > +	unsigned int toffreg;
-> > +	int ret;
-> > +
-> > +	ret = da9058_reg_read(hwmon->da9058, DA9058_TOFFSET_REG, &toffreg);
-> > +	if (ret < 0)
-> > +		return ret;
-> > +
-> > +	return sprintf(buf, "%d\n", -1708 * (s8)((u8)toffreg) - 108800);
-> > +}
-> > +
-> > +static ssize_t da9058_vfpin_show_adc(struct device *dev,
-> > +				     struct device_attribute *devattr,
-> > +				     char *buf)
-> > +{
-> > +	struct da9058_hwmon *hwmon = dev_get_drvdata(dev);
-> > +	unsigned int voltage; /* x000 .. xFFF = 0 .. 4095 mV */
-> > +	int ret;
-> > +
-> > +	ret = da9058_adc_read(hwmon->da9058, DA9058_ADCMAN_MUXSEL_VF,
-> > +			      hwmon->use_automatic_adc, &voltage);
-> > +	if (ret)
-> > +		return ret;
-> > +
-> > +	return sprintf(buf, "%d\n", voltage);
-> > +}
-> > +
-> > +static ssize_t da9058_hwmon_show_name(struct device *dev,
-> > +				      struct device_attribute *devattr,
-> > +				      char *buf)
-> > +{
-> > +	return sprintf(buf, "da9058\n");
-> > +}
-> > +
-> > +static const char * const da9058_labels[] = {
-> > +	"vbat", "tbat", "vfpin", "adc", "tjunc",
-> > +};
-> > +
-> > +static ssize_t da9058_show_label(struct device *dev,
-> > +				 struct device_attribute *devattr,
-> > +				 char *buf)
-> > +{
-> > +	unsigned int channel = to_sensor_dev_attr(devattr)->index;
-> > +
-> > +	if (channel < ARRAY_SIZE(da9058_labels))
-> > +		return sprintf(buf, "%s\n", da9058_labels[channel]);
-> > +	else
-> > +		return -EINVAL;
-> > +}
-> > +
-> > +static DEVICE_ATTR(name, S_IRUGO, da9058_hwmon_show_name, NULL);
-> > +
-> > +static SENSOR_DEVICE_ATTR(in0_label, S_IRUGO, da9058_show_label, NULL, 0);
-> > +static SENSOR_DEVICE_ATTR(in0_input, S_IRUGO, da9058_vbat_show_adc, NULL, 0);
-> > +
-> > +static SENSOR_DEVICE_ATTR(temp1_label, S_IRUGO, da9058_show_label, NULL, 1);
-> > +static SENSOR_DEVICE_ATTR(temp1_type, S_IRUGO, da9058_tbat_show_type, NULL, 1);
-> > +static SENSOR_DEVICE_ATTR(temp1_input, S_IRUGO, da9058_tbat_show_adc, NULL, 1);
-> > +
-> > +static SENSOR_DEVICE_ATTR(in1_label, S_IRUGO, da9058_show_label, NULL, 2);
-> > +static SENSOR_DEVICE_ATTR(in1_input, S_IRUGO, da9058_vfpin_show_adc, NULL, 2);
-> > +
-> > +static SENSOR_DEVICE_ATTR(in2_label, S_IRUGO, da9058_show_label, NULL, 3);
-> > +static SENSOR_DEVICE_ATTR(in2_input, S_IRUGO, da9058_gp_show_adc, NULL, 3);
-> > +
-> > +static SENSOR_DEVICE_ATTR(temp2_label, S_IRUGO, da9058_show_label, NULL, 4);
-> > +static SENSOR_DEVICE_ATTR(temp2_min, S_IRUGO, da9058_tjunc_show_min, NULL, 4);
-> > +static SENSOR_DEVICE_ATTR(temp2_max, S_IRUGO, da9058_tjunc_show_max, NULL, 4);
-> > +static SENSOR_DEVICE_ATTR(temp2_input, S_IRUGO, da9058_tjunc_show_adc, NULL, 4);
-> > +static SENSOR_DEVICE_ATTR(temp2_offset, S_IRUGO, da9058_tjunc_show_offset, NULL,
-> > +			  4);
-> > +
-> > +static struct attribute *da9058_attr[] = {
-> > +	&dev_attr_name.attr,
-> > +	&sensor_dev_attr_in0_label.dev_attr.attr,
-> > +	&sensor_dev_attr_in0_input.dev_attr.attr,
-> > +	&sensor_dev_attr_temp1_label.dev_attr.attr,
-> > +	&sensor_dev_attr_temp1_type.dev_attr.attr,
-> > +	&sensor_dev_attr_temp1_input.dev_attr.attr,
-> > +	&sensor_dev_attr_in1_label.dev_attr.attr,
-> > +	&sensor_dev_attr_in1_input.dev_attr.attr,
-> > +	&sensor_dev_attr_in2_label.dev_attr.attr,
-> > +	&sensor_dev_attr_in2_input.dev_attr.attr,
-> > +	&sensor_dev_attr_temp2_label.dev_attr.attr,
-> > +	&sensor_dev_attr_temp2_min.dev_attr.attr,
-> > +	&sensor_dev_attr_temp2_max.dev_attr.attr,
-> > +	&sensor_dev_attr_temp2_input.dev_attr.attr,
-> > +	&sensor_dev_attr_temp2_offset.dev_attr.attr,
-> > +	NULL
-> > +};
-> > +
-> > +static const struct attribute_group da9058_attr_group = {.attrs = da9058_attr};
-> > +
-> > +static int da9058_hwmon_probe(struct platform_device *pdev)
-> > +{
-> > +	struct da9058 *da9058 = dev_get_drvdata(pdev->dev.parent);
-> > +	const struct mfd_cell *cell = mfd_get_cell(pdev);
-> > +	struct da9058_hwmon_pdata *hwmon_pdata;
-> > +	struct da9058_hwmon *hwmon;
-> > +	unsigned int mode;
-> > +	int ret;
-> > +
-> > +	if (cell == NULL)
-> > +		return -ENODEV;
-> > +
-> > +	hwmon_pdata = cell->platform_data;
-> > +
-> > +	if (hwmon_pdata == NULL)
-> > +		return -EINVAL;
-> > +
-> > +	if (hwmon_pdata->use_automatic_adc &&
-> > +	    !hwmon_pdata->temp_adc_resistance)
-> > +		return -EINVAL; /* impossible setting */
-> > +
-> > +	hwmon = devm_kzalloc(&pdev->dev, sizeof(struct da9058_hwmon),
-> > +			     GFP_KERNEL);
-> > +	if (!hwmon)
-> > +		return -ENOMEM;
-> > +
-> > +	platform_set_drvdata(pdev, hwmon);
-> > +
-> > +	hwmon->da9058 = da9058;
-> > +	hwmon->pdev = pdev;
-> > +	hwmon->use_automatic_adc = hwmon_pdata->use_automatic_adc;
-> > +	hwmon->temp_adc_resistance = hwmon_pdata->temp_adc_resistance;
-> > +	hwmon->vf_adc_resistance = hwmon_pdata->vf_adc_resistance;
-> > +	hwmon->battery_sensor_type = hwmon_pdata->battery_sensor_type;
-> > +
-> > +	if (hwmon->use_automatic_adc) {
-> > +		mode = DA9058_ADCCONT_AUTOADCEN |
-> > +				DA9058_ADCCONT_TEMPISRCEN |
-> > +				DA9058_ADCCONT_AUTOVBATEN |
-> > +				DA9058_ADCCONT_AUTOVFEN |
-> > +				DA9058_ADCCONT_AUTOAINEN;
-> > +	} else {
-> > +		if (hwmon->temp_adc_resistance)
-> > +			mode = DA9058_ADCCONT_TEMPISRCEN;
-> > +		else
-> > +			mode = 0;
-> > +	}
-> > +	if (hwmon->vf_adc_resistance)
-> > +		mode |= DA9058_ADCCONT_VFISRCEN;
-> > +
-> > +	ret = da9058_reg_write(da9058, DA9058_ADCCONT_REG, mode);
-> > +	if (ret)
-> > +		return ret;
-> > +
-> > +	hwmon->class_device = hwmon_device_register(&pdev->dev);
-> > +	if (IS_ERR(hwmon->class_device)) {
-> > +		ret = PTR_ERR(hwmon->class_device);
-> > +		goto failed_to_register_device;
-> > +	}
-> > +
-> > +	ret = sysfs_create_group(&pdev->dev.kobj, &da9058_attr_group);
-> > +	if (ret)
-> > +		goto failed_to_create_sysfs_group;
-> > +
-> > +	return ret;
-> > +
-> > +failed_to_create_sysfs_group:
-> > +	hwmon_device_unregister(hwmon->class_device);
-> > +failed_to_register_device:
-> > +	sysfs_remove_group(&pdev->dev.kobj, &da9058_attr_group);
-> > +	return ret;
-> > +}
-> > +
-> > +static int da9058_hwmon_remove(struct platform_device *pdev)
-> > +{
-> > +	struct da9058_hwmon *hwmon = platform_get_drvdata(pdev);
-> > +
-> > +	sysfs_remove_group(&pdev->dev.kobj, &da9058_attr_group);
-> > +
-> > +	hwmon_device_unregister(hwmon->class_device);
-> > +
-> > +	return 0;
-> > +}
-> > +
-> > +static struct platform_driver da9058_hwmon_driver = {
-> > +	.probe = da9058_hwmon_probe,
-> > +	.remove = da9058_hwmon_remove,
-> > +	.driver = {
-> > +		.name = "da9058-hwmon",
-> > +		.owner = THIS_MODULE,
-> > +	},
-> > +};
-> > +
-> > +module_platform_driver(da9058_hwmon_driver);
-> > +
-> > +MODULE_DESCRIPTION("Dialog DA9058 PMIC HardWare Monitor Driver");
-> > +MODULE_AUTHOR("Anthony Olech <Anthony.Olech@diasemi.com>");
-> > +MODULE_LICENSE("GPL v2");
-> > +MODULE_ALIAS("platform:da9058-hwmon");
+> > Automated verification of locking/srcu might complain.
 > 
-> 
+> We hold slot-lock to free shadow page out of mmu-lock, it can avoid
+> the complain. No?
+
+Not if it realizes srcu is required to access the data structures.
+
