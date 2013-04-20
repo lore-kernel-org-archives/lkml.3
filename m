@@ -1,143 +1,348 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754415Ab3DTUAm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Apr 2013 16:00:42 -0400
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:37051 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753817Ab3DTUAk (ORCPT
+	id S1755401Ab3DTVDV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Apr 2013 17:03:21 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:54082 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755012Ab3DTVDT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Apr 2013 16:00:40 -0400
-Message-ID: <1366488035.1805.9.camel@buesod1.americas.hpqcorp.net>
+	Sat, 20 Apr 2013 17:03:19 -0400
+MIME-Version: 1.0
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <1366488035.1805.9.camel@buesod1.americas.hpqcorp.net>
+References: <CA+icZUVWC+Rgd9wh4Z4CPZkEa9Pm2=2udnY5=UD1nnH0Wot1pQ@mail.gmail.com>
+	<CAKMK7uFEaiT_1siQBcp_-S0RwLvy3XSjqLn1ksq70VhNTZSfLw@mail.gmail.com>
+	<CA+icZUWQEiGecR8jgw4P-2YCKyqSDMMP0Ufwn8aBU_-AOf0a-Q@mail.gmail.com>
+	<CA+icZUWcwvFFVesJDoFNT3DbgRMXvDp7QLn+S5Ze_5d8gJRx1g@mail.gmail.com>
+	<CA+icZUXjTGSG+tejOAFgXr8EpKd7dL=-W41ha_-0N=roAxN3eg@mail.gmail.com>
+	<CA+icZUVE-ikxEp65bUHMp0WEPX_MDbA06ykzeSxygJv=9f45ig@mail.gmail.com>
+	<CA+icZUUp84vzF_0n77wsJ6dBOS26vSRCXaFUDbCQi-wG0b-Osg@mail.gmail.com>
+	<517198A7.8020904@surriel.com>
+	<1366402328.5317.9.camel@buesod1.americas.hpqcorp.net>
+	<CA+icZUVjx7pDJWo3tGxX3ANXtiTP0_Q1YyOowANhn1wzcSgWaA@mail.gmail.com>
+	<CA+55aFzU5C9UQGNFx+wQ_Rp0gZAAwLj77qO7fH7LEduD7bk1Kg@mail.gmail.com>
+	<CA+icZUV+Y90uuEoBXQWGsZTYT5h4HXqWvAW_fU4vxL-N2TmXhQ@mail.gmail.com>
+	<CA+icZUVuU9Cbx+d=uyDk=csH01re56NsvBo-wHjjLg1gOt5uzw@mail.gmail.com>
+	<CA+55aFxsMRKn8kkMr7Q1vGryR=E-E2hPJfdf2XUh6WLMZ3wLNw@mail.gmail.com>
+	<CA+icZUWhB=BTaQp0XuC8+PocQf3FzxBoytbzYFh=kup0LsapRg@mail.gmail.com>
+	<CA+55aFx0ogTF9F6wsk2ECkB41Ufd1SzcTYWE0aW3RQ2ijdsJ3A@mail.gmail.com>
+	<CA+icZUUb6sWo0MvgdOXYGBBfJqZ5QeUtQDDPVxGb70sZ6JyG4A@mail.gmail.com>
+	<CA+icZUWJRRLtrKU+pP9svYvX=V8mAbFBx+ufENWLq3rnGO63hw@mail.gmail.com>
+	<1366488035.1805.9.camel@buesod1.americas.hpqcorp.net>
+Date: Sat, 20 Apr 2013 23:03:17 +0200
+Message-ID: <CA+icZUWS+Qk-T9bZj6mxQeYW4B0mAhwUh9RoJOZoB0u8hb3ovw@mail.gmail.com>
 Subject: Re: linux-next: Tree for Apr 18 [ call-trace: drm | x86 | smp | rcu
  related? ]
-From: Davidlohr Bueso <davidlohr.bueso@hp.com>
-To: sedat.dilek@gmail.com
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Davidlohr Bueso <davidlohr.bueso@hp.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Rik van Riel <riel@surriel.com>,
         Daniel Vetter <daniel.vetter@ffwll.ch>,
         Stephen Rothwell <sfr@canb.auug.org.au>,
         linux-next <linux-next@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
         Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
         Paul McKenney <paulmck@linux.vnet.ibm.com>,
         Paul McKenney <paul.mckenney@linaro.org>,
         DRI <dri-devel@lists.freedesktop.org>,
         Dave Airlie <airlied@redhat.com>,
         Emmanuel Benisty <benisty.e@gmail.com>
-Date: Sat, 20 Apr 2013 13:00:35 -0700
-In-Reply-To: <CA+icZUWJRRLtrKU+pP9svYvX=V8mAbFBx+ufENWLq3rnGO63hw@mail.gmail.com>
-References: <CA+icZUVWC+Rgd9wh4Z4CPZkEa9Pm2=2udnY5=UD1nnH0Wot1pQ@mail.gmail.com>
-	 <CAKMK7uFEaiT_1siQBcp_-S0RwLvy3XSjqLn1ksq70VhNTZSfLw@mail.gmail.com>
-	 <CA+icZUWQEiGecR8jgw4P-2YCKyqSDMMP0Ufwn8aBU_-AOf0a-Q@mail.gmail.com>
-	 <CA+icZUWcwvFFVesJDoFNT3DbgRMXvDp7QLn+S5Ze_5d8gJRx1g@mail.gmail.com>
-	 <CA+icZUXjTGSG+tejOAFgXr8EpKd7dL=-W41ha_-0N=roAxN3eg@mail.gmail.com>
-	 <CA+icZUVE-ikxEp65bUHMp0WEPX_MDbA06ykzeSxygJv=9f45ig@mail.gmail.com>
-	 <CA+icZUUp84vzF_0n77wsJ6dBOS26vSRCXaFUDbCQi-wG0b-Osg@mail.gmail.com>
-	 <517198A7.8020904@surriel.com>
-	 <1366402328.5317.9.camel@buesod1.americas.hpqcorp.net>
-	 <CA+icZUVjx7pDJWo3tGxX3ANXtiTP0_Q1YyOowANhn1wzcSgWaA@mail.gmail.com>
-	 <CA+55aFzU5C9UQGNFx+wQ_Rp0gZAAwLj77qO7fH7LEduD7bk1Kg@mail.gmail.com>
-	 <CA+icZUV+Y90uuEoBXQWGsZTYT5h4HXqWvAW_fU4vxL-N2TmXhQ@mail.gmail.com>
-	 <CA+icZUVuU9Cbx+d=uyDk=csH01re56NsvBo-wHjjLg1gOt5uzw@mail.gmail.com>
-	 <CA+55aFxsMRKn8kkMr7Q1vGryR=E-E2hPJfdf2XUh6WLMZ3wLNw@mail.gmail.com>
-	 <CA+icZUWhB=BTaQp0XuC8+PocQf3FzxBoytbzYFh=kup0LsapRg@mail.gmail.com>
-	 <CA+55aFx0ogTF9F6wsk2ECkB41Ufd1SzcTYWE0aW3RQ2ijdsJ3A@mail.gmail.com>
-	 <CA+icZUUb6sWo0MvgdOXYGBBfJqZ5QeUtQDDPVxGb70sZ6JyG4A@mail.gmail.com>
-	 <CA+icZUWJRRLtrKU+pP9svYvX=V8mAbFBx+ufENWLq3rnGO63hw@mail.gmail.com>
-Content-Type: multipart/mixed; boundary="=-Jrqb9gy8fdYS7kV1qH0c"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
+Content-Type: multipart/mixed; boundary=047d7bae43a22c8ccb04dad12a8b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--047d7bae43a22c8ccb04dad12a8b
+Content-Type: text/plain; charset=UTF-8
 
---=-Jrqb9gy8fdYS7kV1qH0c
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+On Sat, Apr 20, 2013 at 10:00 PM, Davidlohr Bueso
+<davidlohr.bueso@hp.com> wrote:
+> On Sat, 2013-04-20 at 02:19 +0200, Sedat Dilek wrote:
+>> On Sat, Apr 20, 2013 at 2:06 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>> > On Sat, Apr 20, 2013 at 1:02 AM, Linus Torvalds
+>> > <torvalds@linux-foundation.org> wrote:
+>> >> On Fri, Apr 19, 2013 at 3:55 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>> >>>
+>> >>> Davidlohr pointed to this patch (tested the triplet):
+>> >>>
+>> >>> ipc, sem: do not call sem_lock when bogus sma:
+>> >>> https://lkml.org/lkml/2013/3/31/12
+>> >>>
+>> >>> Is that what you mean?
+>> >>
+>> >> Yup.
+>> >>
+>> >
+>> > Davidlohr Bueso (1):
+>> >       ipc, sem: do not call sem_lock when bogus sma
+>> >
+>> > Linus Torvalds (1):
+>> >       crazy rcu double free debug hack
+>> >
+>> > With ***both*** patches applied I am able to build a Linux-kernel with
+>> > 4 parallel-make-jobs again.
+>> > David's or your patch alone are not sufficient!
+>> >
+>>
+>> [ Still both patches applied ]
+>>
+>> To correct myself... The 1st run was OK.
+>>
+>> The 2nd run shows a NULL-pointer-deref (excerpt):
+>>
+>> [  178.490583] BUG: spinlock bad magic on CPU#1, sh/8066
+>> [  178.490595]  lock: 0xffff88008b53ea18, .magic: 6b6b6b6b, .owner:
+>> make/8068, .owner_cpu: 3
+>> [  178.490599] BUG: unable to handle kernel NULL pointer dereference
+>> at           (null)
+>> [  178.490608] IP: [<ffffffff812bacd0>] update_queue+0x70/0x210
+>> [  178.490610] PGD 0
+>> [  178.490612] Oops: 0000 [#1] SMP
+>> ...
+>
+> The exit_sem() >> do_smart_update() >> update_queue() calls seem pretty
+> well protected. Furthermore we're asserting that sma->sem_perm.lock is
+> taken. This could just be a consequence of another issue. Earlier this
+> week Andrew pointed out a potential race in semctl_main() where
+> sma->sem_perm.deleted could be changed when cmd == GETALL.
+>
+> Sedat, could you try the attached patch to keep the ipc lock acquired
+> (on top of the three patches you're already using) and let us know how
+> it goes? We could also just have the RCU read lock instead of
+> ->sem.perm.lock for GETALL, but lets play it safe for now.
+>
 
-On Sat, 2013-04-20 at 02:19 +0200, Sedat Dilek wrote:
-> On Sat, Apr 20, 2013 at 2:06 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> > On Sat, Apr 20, 2013 at 1:02 AM, Linus Torvalds
-> > <torvalds@linux-foundation.org> wrote:
-> >> On Fri, Apr 19, 2013 at 3:55 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> >>>
-> >>> Davidlohr pointed to this patch (tested the triplet):
-> >>>
-> >>> ipc, sem: do not call sem_lock when bogus sma:
-> >>> https://lkml.org/lkml/2013/3/31/12
-> >>>
-> >>> Is that what you mean?
-> >>
-> >> Yup.
-> >>
-> >
-> > Davidlohr Bueso (1):
-> >       ipc, sem: do not call sem_lock when bogus sma
-> >
-> > Linus Torvalds (1):
-> >       crazy rcu double free debug hack
-> >
-> > With ***both*** patches applied I am able to build a Linux-kernel with
-> > 4 parallel-make-jobs again.
-> > David's or your patch alone are not sufficient!
-> >
-> 
-> [ Still both patches applied ]
-> 
-> To correct myself... The 1st run was OK.
-> 
-> The 2nd run shows a NULL-pointer-deref (excerpt):
-> 
-> [  178.490583] BUG: spinlock bad magic on CPU#1, sh/8066
-> [  178.490595]  lock: 0xffff88008b53ea18, .magic: 6b6b6b6b, .owner:
-> make/8068, .owner_cpu: 3
-> [  178.490599] BUG: unable to handle kernel NULL pointer dereference
-> at           (null)
-> [  178.490608] IP: [<ffffffff812bacd0>] update_queue+0x70/0x210
-> [  178.490610] PGD 0
-> [  178.490612] Oops: 0000 [#1] SMP
-> ...
+I had to refresh your patch and it contain strange ^M charachters as well.
 
-The exit_sem() >> do_smart_update() >> update_queue() calls seem pretty
-well protected. Furthermore we're asserting that sma->sem_perm.lock is
-taken. This could just be a consequence of another issue. Earlier this
-week Andrew pointed out a potential race in semctl_main() where
-sma->sem_perm.deleted could be changed when cmd == GETALL.
+NOPE, the machine gets FROZEN (cold reboot).
 
-Sedat, could you try the attached patch to keep the ipc lock acquired
-(on top of the three patches you're already using) and let us know how
-it goes? We could also just have the RCU read lock instead of
-->sem.perm.lock for GETALL, but lets play it safe for now.
+- Sedat -
 
-Thanks,
-Davidlohr
+P.S.: I have attached all 4 patches against next-20130419 in case
+someone wants to follow.
 
+> Thanks,
+> Davidlohr
+>
 
---=-Jrqb9gy8fdYS7kV1qH0c
-Content-Disposition: attachment; filename="ipc-fix.patch"
-Content-Type: text/x-patch; name="ipc-fix.patch"; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+--047d7bae43a22c8ccb04dad12a8b
+Content-Type: application/octet-stream; 
+	name="0001-ipc-sem-untangle-RCU-locking-with-find_alloc_undo.patch"
+Content-Disposition: attachment; 
+	filename="0001-ipc-sem-untangle-RCU-locking-with-find_alloc_undo.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hfr9vc3v1
 
-diff --git a/ipc/sem.c b/ipc/sem.c
-index 5711616..1dfc3c1 100644
---- a/ipc/sem.c
-+++ b/ipc/sem.c
-@@ -1243,10 +1243,11 @@ static int semctl_main(struct ipc_namespace *ns, int semid, int semnum,
- 				err = -EIDRM;
- 				goto out_free;
- 			}
--			sem_unlock(sma, -1);
- 		}
- 
--		sem_lock(sma, NULL, -1);
-+		/* has the ipc lock already been taken? */
-+		if(nsems <= SEMMSL_FAST)
-+			sem_lock(sma, NULL, -1);
- 		for (i = 0; i < sma->sem_nsems; i++)
- 			sem_io[i] = sma->sem_base[i].semval;
- 		sem_unlock(sma, -1);
+RnJvbSBmOTEwYWUzZTc4ZThlNjcyZDE5ZTVjOTUyYjIzYTU4ZGMzYzM1N2I5IE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBSaWsgdmFuIFJpZWwgPHJpZWxAc3VycmllbC5jb20+CkRhdGU6
+IFRodSwgMjggTWFyIDIwMTMgMTU6MzI6MjIgKzAwMDAKU3ViamVjdDogW1BBVENIIDEvNF0gaXBj
+LHNlbTogdW50YW5nbGUgUkNVIGxvY2tpbmcgd2l0aCBmaW5kX2FsbG9jX3VuZG8KCk9uIFR1ZSwg
+MjYgTWFyIDIwMTMgMTM6MzM6MDcgLTA0MDAKU2FzaGEgTGV2aW4gPHNhc2hhLmxldmluQG9yYWNs
+ZS5jb20+IHdyb3RlOgoKPiBbICAgOTYuMzQ3MzQxXSA9PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT0KPiBbICAgOTYuMzQ4MDg1XSBbIEJVRzogbG9jayBoZWxk
+IHdoZW4gcmV0dXJuaW5nIHRvIHVzZXIgc3BhY2UhIF0KPiBbICAgOTYuMzQ4ODM0XSAzLjkuMC1y
+YzQtbmV4dC0yMDEzMDMyNi1zYXNoYS0wMDAxMS1nYmNiMjMxMyAjMzE4IFRhaW50ZWQ6IEcgICAg
+ICAgIFcKPiBbICAgOTYuMzYwMzAwXSAtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t
+LS0tLS0tLS0tLS0tLS0KPiBbICAgOTYuMzYxMDg0XSB0cmluaXR5LWNoaWxkOS83NTgzIGlzIGxl
+YXZpbmcgdGhlIGtlcm5lbCB3aXRoIGxvY2tzIHN0aWxsIGhlbGQhCj4gWyAgIDk2LjM2MjAxOV0g
+MSBsb2NrIGhlbGQgYnkgdHJpbml0eS1jaGlsZDkvNzU4MzoKPiBbICAgOTYuMzYyNjEwXSAgIzA6
+ICAocmN1X3JlYWRfbG9jayl7LisuKy4ufSwgYXQ6IFs8ZmZmZmZmZmY4MTkyZWFmYj5dIFNZU0Nf
+c2VtdGltZWRvcCsweDFmYi8weGVjMAo+Cj4gSXQgc2VlbXMgdGhhdCB3ZSBjYW4gbGVhdmUgc2Vt
+dGltZWRvcCB3aXRob3V0IHJlbGVhc2luZyB0aGUgcmN1IHJlYWQgbG9jay4KClNhc2hhLCB0aGlz
+IHBhdGNoIHVudGFuZ2xlcyB0aGUgUkNVIGxvY2tpbmcgd2l0aCBmaW5kX2FsbG9jX3VuZG8sCmFu
+ZCBzaG91bGQgZml4IHRoZSBhYm92ZSBpc3N1ZS4gQXMgYSBzaWRlIGJlbmVmaXQsIHRoaXMgbWFr
+ZXMgdGhlCmNvZGUgYSBsaXR0bGUgY2xlYW5lci4KCk5leHQgdXA6IGltcGxlbWVudCBsb2NraW5n
+IGluIGEgd2F5IHRoYXQgZG9lcyBub3QgdHJpZ2dlciBhbnkKbG9ja2RlcCB3YXJuaW5ncy4uLgoK
+LS0tODwtLS0KClN1YmplY3Q6IGlwYyxzZW06IHVudGFuZ2xlIFJDVSBsb2NraW5nIHdpdGggZmlu
+ZF9hbGxvY191bmRvCgpUaGUgaXBjIHNlbWFwaG9yZSBjb2RlIGhhcyBhIG5hc3R5IFJDVSBsb2Nr
+aW5nIHRhbmdsZSwgd2l0aCBib3RoCmZpbmRfYWxsb2NfdW5kbyBhbmQgc2VtdGltZWRvcCB0YWtp
+bmcgdGhlIHJjdV9yZWFkX2xvY2soKS4gVGhlCmNvZGUgY2FuIGJlIGNsZWFuZWQgdXAgc29tZXdo
+YXQgYnkgb25seSB0YWtpbmcgdGhlIHJjdV9yZWFkX2xvY2sKb25jZS4KClRoZSBvbmx5IGNhbGxl
+ciBvZiBmaW5kX2FsbG9jX3VuZG8gaXMgaW4gc2VtdGltZWRvcC4KClRoaXMgc2hvdWxkIHNvbHZl
+IHRoZSB0cmluaXR5IGlzc3VlIHJlcG9ydGVkIGJ5IFNhc2hhIExldmluLgoKUmVwb3J0ZWQtYnk6
+IFNhc2hhIExldmluIDxzYXNoYS5sZXZpbkBvcmFjbGUuY29tPgpTaWduZWQtb2ZmLWJ5OiBSaWsg
+dmFuIFJpZWwgPHJpZWxAcmVkaGF0LmNvbT4KUmV2aWV3ZWQtYnk6IERhdmlkbG9ociBCdWVzbyA8
+ZGF2aWRsb2hyLmJ1ZXNvQGhwLmNvbT4KUmV2aWV3ZWQtYnk6IE1pY2hlbCBMZXNwaW5hc3NlIDx3
+YWxrZW5AZ29vZ2xlLmNvbT4KLS0tCiBpcGMvc2VtLmMgfCAzMSArKysrKysrKystLS0tLS0tLS0t
+LS0tLS0tLS0tLS0tCiAxIGZpbGUgY2hhbmdlZCwgOSBpbnNlcnRpb25zKCspLCAyMiBkZWxldGlv
+bnMoLSkKCmRpZmYgLS1naXQgYS9pcGMvc2VtLmMgYi9pcGMvc2VtLmMKaW5kZXggNTcxMTYxNi4u
+NGM1NzhhYiAxMDA2NDQKLS0tIGEvaXBjL3NlbS5jCisrKyBiL2lwYy9zZW0uYwpAQCAtMTY1MCwy
+MiArMTY1MCwyMyBAQCBTWVNDQUxMX0RFRklORTQoc2VtdGltZWRvcCwgaW50LCBzZW1pZCwgc3Ry
+dWN0IHNlbWJ1ZiBfX3VzZXIgKiwgdHNvcHMsCiAJCQlhbHRlciA9IDE7CiAJfQogCisJSU5JVF9M
+SVNUX0hFQUQoJnRhc2tzKTsKKwogCWlmICh1bmRvcykgeworCQkvKiBPbiBzdWNjZXNzLCBmaW5k
+X2FsbG9jX3VuZG8gdGFrZXMgdGhlIHJjdV9yZWFkX2xvY2sgKi8KIAkJdW4gPSBmaW5kX2FsbG9j
+X3VuZG8obnMsIHNlbWlkKTsKIAkJaWYgKElTX0VSUih1bikpIHsKIAkJCWVycm9yID0gUFRSX0VS
+Uih1bik7CiAJCQlnb3RvIG91dF9mcmVlOwogCQl9Ci0JfSBlbHNlCisJfSBlbHNlIHsKIAkJdW4g
+PSBOVUxMOworCQlyY3VfcmVhZF9sb2NrKCk7CisJfQogCi0JSU5JVF9MSVNUX0hFQUQoJnRhc2tz
+KTsKLQotCXJjdV9yZWFkX2xvY2soKTsKIAlzbWEgPSBzZW1fb2J0YWluX29iamVjdF9jaGVjayhu
+cywgc2VtaWQpOwogCWlmIChJU19FUlIoc21hKSkgewotCQlpZiAodW4pCi0JCQlyY3VfcmVhZF91
+bmxvY2soKTsKKwkJcmN1X3JlYWRfdW5sb2NrKCk7CiAJCWVycm9yID0gUFRSX0VSUihzbWEpOwog
+CQlnb3RvIG91dF9mcmVlOwogCX0KQEAgLTE2OTcsMjIgKzE2OTgsOCBAQCBTWVNDQUxMX0RFRklO
+RTQoc2VtdGltZWRvcCwgaW50LCBzZW1pZCwgc3RydWN0IHNlbWJ1ZiBfX3VzZXIgKiwgdHNvcHMs
+CiAJICovCiAJZXJyb3IgPSAtRUlEUk07CiAJbG9ja251bSA9IHNlbV9sb2NrKHNtYSwgc29wcywg
+bnNvcHMpOwotCWlmICh1bikgewotCQlpZiAodW4tPnNlbWlkID09IC0xKSB7Ci0JCQlyY3VfcmVh
+ZF91bmxvY2soKTsKLQkJCWdvdG8gb3V0X3VubG9ja19mcmVlOwotCQl9IGVsc2UgewotCQkJLyoK
+LQkJCSAqIHJjdSBsb2NrIGNhbiBiZSByZWxlYXNlZCwgInVuIiBjYW5ub3QgZGlzYXBwZWFyOgot
+CQkJICogLSBzZW1fbG9jayBpcyBhY3F1aXJlZCwgdGh1cyBJUENfUk1JRCBpcwotCQkJICogICBp
+bXBvc3NpYmxlLgotCQkJICogLSBleGl0X3NlbSBpcyBpbXBvc3NpYmxlLCBpdCBhbHdheXMgb3Bl
+cmF0ZXMgb24KLQkJCSAqICAgY3VycmVudCAob3IgYSBkZWFkIHRhc2spLgotCQkJICovCi0KLQkJ
+CXJjdV9yZWFkX3VubG9jaygpOwotCQl9Ci0JfQorCWlmICh1biAmJiB1bi0+c2VtaWQgPT0gLTEp
+CisJCWdvdG8gb3V0X3VubG9ja19mcmVlOwogCiAJZXJyb3IgPSB0cnlfYXRvbWljX3NlbW9wIChz
+bWEsIHNvcHMsIG5zb3BzLCB1biwgdGFza190Z2lkX3ZucihjdXJyZW50KSk7CiAJaWYgKGVycm9y
+IDw9IDApIHsKLS0gCjEuOC4yLjEKCg==
+--047d7bae43a22c8ccb04dad12a8b
+Content-Type: application/octet-stream; 
+	name="0002-ipc-sem-fix-lockdep-false-positive.patch"
+Content-Disposition: attachment; 
+	filename="0002-ipc-sem-fix-lockdep-false-positive.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hfr9vej72
 
---=-Jrqb9gy8fdYS7kV1qH0c--
+RnJvbSA4ODk0MGQyYjk5YjJjMjdmY2NjYjIxYzk5MzFiNjJlYzc0NDFjNTMxIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBSaWsgdmFuIFJpZWwgPHJpZWxAc3VycmllbC5jb20+CkRhdGU6
+IEZyaSwgMjkgTWFyIDIwMTMgMTM6NTU6NTggKzAwMDAKU3ViamVjdDogW1BBVENIIDIvNF0gaXBj
+LHNlbTogZml4IGxvY2tkZXAgZmFsc2UgcG9zaXRpdmUKCk9uIFRodSwgMjggTWFyIDIwMTMgMTk6
+NTA6NDcgLTA3MDAKTWljaGVsIExlc3BpbmFzc2UgPHdhbGtlbkBnb29nbGUuY29tPiB3cm90ZToK
+Cj4gVGhpcyBpcyBJTU8gd2hlcmUgdGhlIHNwaW5fdW5sb2NrX3dhaXQoJnNtYS0+c2VtX3Blcm0u
+bG9jaykgd291bGQKPiBiZWxvbmcgLSByaWdodCBiZWZvcmUgdGhlIGdvdG8gYWdhaW4uCgpIZXJl
+IGlzIHRoZSBzbGlnaHRseSBtb3JlIG9wdGltaXN0aWMgKGFuZCBwcm9iYWJseSBtb3JlIHJlYWRh
+YmxlKQp2ZXJzaW9uIG9mIHRoZSBwYXRjaDoKCi0tLTg8LS0tClVuZm9ydHVuYXRlbHkgdGhlIGxv
+Y2tpbmcgc2NoZW1lIG9yaWdpbmFsbHkgcHJvcG9zZWQgaGFzIGZhbHNlIHBvc2l0aXZlcwp3aXRo
+IGxvY2tkZXAuICBUaGlzIGNhbiBiZSBmaXhlZCBieSBjaGFuZ2luZyB0aGUgY29kZSB0byBvbmx5
+IGV2ZXIgdGFrZQpvbmUgbG9jaywgYW5kIG1ha2luZyBzdXJlIHRoYXQgb3RoZXIgcmVsZXZhbnQg
+bG9ja3MgYXJlIG5vdCBsb2NrZWQsIGJlZm9yZQplbnRlcmluZyBhIGNyaXRpY2FsIHNlY3Rpb24u
+CgpGb3IgdGhlICJnbG9iYWwgbG9jayIgY2FzZSwgdGhpcyBpcyBkb25lIGJ5IHRha2luZyB0aGUg
+c2VtX2FycmF5IGxvY2ssCmFuZCB0aGVuIChwb3RlbnRpYWxseSkgd2FpdGluZyBmb3IgYWxsIHRo
+ZSBzZW1hcGhvcmUncyBzcGlubG9ja3MgdG8gYmUKdW5sb2NrZWQuCgpGb3IgdGhlICJsb2NhbCBs
+b2NrIiBjYXNlLCB3ZSB3YWl0IG9uIHRoZSBzZW1fYXJyYXkncyBsb2NrIHRvIGJlIGZyZWUsCmJl
+Zm9yZSB0YWtpbmcgdGhlIHNlbWFwaG9yZSBsb2NhbCBsb2NrLiBUbyBwcmV2ZW50IHJhY2VzLCB3
+ZSBuZWVkIHRvCmNoZWNrIGFnYWluIGFmdGVyIHdlIGhhdmUgdGFrZW4gdGhlIGxvY2FsIGxvY2su
+CgpTdWdnZXN0ZWQtYnk6IFBldGVyIFppamxzdHJhIDxwZXRlcnpAaW5mcmFkZWFkLm9yZz4KUmVw
+b3J0ZWQtYnk6IFNhc2hhIExldmluIDxzYXNoYS5sZXZpbkBvcmFjbGUuY29tPgpTaWduZWQtb2Zm
+LWJ5OiBSaWsgdmFuIFJpZWwgPHJpZWxAcmVkaGF0LmNvbT4KUmV2aWV3ZWQtYnk6IE1pY2hlbCBM
+ZXNwaW5hc3NlIDx3YWxrZW5AZ29vZ2xlLmNvbT4KLS0tCiBpcGMvc2VtLmMgfCA0NiArKysrKysr
+KysrKysrKysrKysrKysrKysrKysrKysrLS0tLS0tLS0tLS0tLS0tCiAxIGZpbGUgY2hhbmdlZCwg
+MzEgaW5zZXJ0aW9ucygrKSwgMTUgZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0IGEvaXBjL3NlbS5j
+IGIvaXBjL3NlbS5jCmluZGV4IDRjNTc4YWIuLjkyNmM0YjcgMTAwNjQ0Ci0tLSBhL2lwYy9zZW0u
+YworKysgYi9pcGMvc2VtLmMKQEAgLTMyMCwyMSArMzIwLDI2IEBAIHZvaWQgX19pbml0IHNlbV9p
+bml0ICh2b2lkKQogfQogCiAvKgotICogSWYgdGhlIHNlbV9hcnJheSBjb250YWlucyBqdXN0IG9u
+ZSBzZW1hcGhvcmUsIG9yIGlmIG11bHRpcGxlCi0gKiBzZW1vcHMgYXJlIHBlcmZvcm1lZCBpbiBv
+bmUgc3lzY2FsbCwgb3IgaWYgdGhlcmUgYXJlIGNvbXBsZXgKLSAqIG9wZXJhdGlvbnMgcGVuZGlu
+ZywgdGhlIHdob2xlIHNlbV9hcnJheSBpcyBsb2NrZWQuCi0gKiBJZiBvbmUgc2Vtb3AgaXMgcGVy
+Zm9ybWVkIG9uIGFuIGFycmF5IHdpdGggbXVsdGlwbGUgc2VtYXBob3JlcywKLSAqIGdldCBhIHNo
+YXJlZCBsb2NrIG9uIHRoZSBhcnJheSwgYW5kIGxvY2sgdGhlIGluZGl2aWR1YWwgc2VtYXBob3Jl
+LgorICogSWYgdGhlIHJlcXVlc3QgY29udGFpbnMgb25seSBvbmUgc2VtYXBob3JlIG9wZXJhdGlv
+biwgYW5kIHRoZXJlIGFyZQorICogbm8gY29tcGxleCB0cmFuc2FjdGlvbnMgcGVuZGluZywgbG9j
+ayBvbmx5IHRoZSBzZW1hcGhvcmUgaW52b2x2ZWQuCisgKiBPdGhlcndpc2UsIGxvY2sgdGhlIGVu
+dGlyZSBzZW1hcGhvcmUgYXJyYXksIHNpbmNlIHdlIGVpdGhlciBoYXZlCisgKiBtdWx0aXBsZSBz
+ZW1hcGhvcmVzIGluIG91ciBvd24gc2Vtb3BzLCBvciB3ZSBuZWVkIHRvIGxvb2sgYXQKKyAqIHNl
+bWFwaG9yZXMgZnJvbSBvdGhlciBwZW5kaW5nIGNvbXBsZXggb3BlcmF0aW9ucy4KICAqCiAgKiBD
+YXJlZnVsbHkgZ3VhcmQgYWdhaW5zdCBzbWEtPmNvbXBsZXhfY291bnQgY2hhbmdpbmcgYmV0d2Vl
+biB6ZXJvCiAgKiBhbmQgbm9uLXplcm8gd2hpbGUgd2UgYXJlIHNwaW5uaW5nIGZvciB0aGUgbG9j
+ay4gVGhlIHZhbHVlIG9mCiAgKiBzbWEtPmNvbXBsZXhfY291bnQgY2Fubm90IGNoYW5nZSB3aGls
+ZSB3ZSBhcmUgaG9sZGluZyB0aGUgbG9jaywKICAqIHNvIHNlbV91bmxvY2sgc2hvdWxkIGJlIGZp
+bmUuCisgKgorICogVGhlIGdsb2JhbCBsb2NrIHBhdGggY2hlY2tzIHRoYXQgYWxsIHRoZSBsb2Nh
+bCBsb2NrcyBoYXZlIGJlZW4gcmVsZWFzZWQsCisgKiBjaGVja2luZyBlYWNoIGxvY2FsIGxvY2sg
+b25jZS4gVGhpcyBtZWFucyB0aGF0IHRoZSBsb2NhbCBsb2NrIHBhdGhzCisgKiBjYW5ub3Qgc3Rh
+cnQgdGhlaXIgY3JpdGljYWwgc2VjdGlvbnMgd2hpbGUgdGhlIGdsb2JhbCBsb2NrIGlzIGhlbGQu
+CiAgKi8KIHN0YXRpYyBpbmxpbmUgaW50IHNlbV9sb2NrKHN0cnVjdCBzZW1fYXJyYXkgKnNtYSwg
+c3RydWN0IHNlbWJ1ZiAqc29wcywKIAkJCSAgICAgIGludCBuc29wcykKIHsKIAlpbnQgbG9ja251
+bTsKKyBhZ2FpbjoKIAlpZiAobnNvcHMgPT0gMSAmJiAhc21hLT5jb21wbGV4X2NvdW50KSB7CiAJ
+CXN0cnVjdCBzZW0gKnNlbSA9IHNtYS0+c2VtX2Jhc2UgKyBzb3BzLT5zZW1fbnVtOwogCkBAIC0z
+NDcsMTcgKzM1MiwzNCBAQCBzdGF0aWMgaW5saW5lIGludCBzZW1fbG9jayhzdHJ1Y3Qgc2VtX2Fy
+cmF5ICpzbWEsIHN0cnVjdCBzZW1idWYgKnNvcHMsCiAJCSAqLwogCQlpZiAodW5saWtlbHkoc21h
+LT5jb21wbGV4X2NvdW50KSkgewogCQkJc3Bpbl91bmxvY2soJnNlbS0+bG9jayk7Ci0JCQlnb3Rv
+IGxvY2tfYWxsOworCQkJZ290byBsb2NrX2FycmF5OworCQl9CisKKwkJLyoKKwkJICogQW5vdGhl
+ciBwcm9jZXNzIGlzIGhvbGRpbmcgdGhlIGdsb2JhbCBsb2NrIG9uIHRoZQorCQkgKiBzZW1fYXJy
+YXk7IHdlIGNhbm5vdCBlbnRlciBvdXIgY3JpdGljYWwgc2VjdGlvbiwKKwkJICogYnV0IGhhdmUg
+dG8gd2FpdCBmb3IgdGhlIGdsb2JhbCBsb2NrIHRvIGJlIHJlbGVhc2VkLgorCQkgKi8KKwkJaWYg
+KHVubGlrZWx5KHNwaW5faXNfbG9ja2VkKCZzbWEtPnNlbV9wZXJtLmxvY2spKSkgeworCQkJc3Bp
+bl91bmxvY2soJnNlbS0+bG9jayk7CisJCQlzcGluX3VubG9ja193YWl0KCZzbWEtPnNlbV9wZXJt
+LmxvY2spOworCQkJZ290byBhZ2FpbjsKIAkJfQorCiAJCWxvY2tudW0gPSBzb3BzLT5zZW1fbnVt
+OwogCX0gZWxzZSB7CiAJCWludCBpOwotCQkvKiBMb2NrIHRoZSBzZW1fYXJyYXksIGFuZCBhbGwg
+dGhlIHNlbWFwaG9yZSBsb2NrcyAqLwotIGxvY2tfYWxsOgorCQkvKgorCQkgKiBMb2NrIHRoZSBz
+ZW1hcGhvcmUgYXJyYXksIGFuZCB3YWl0IGZvciBhbGwgb2YgdGhlCisJCSAqIGluZGl2aWR1YWwg
+c2VtYXBob3JlIGxvY2tzIHRvIGdvIGF3YXkuICBUaGUgY29kZQorCQkgKiBhYm92ZSBlbnN1cmVz
+IG5vIG5ldyBzaW5nbGUtbG9jayBob2xkZXJzIHdpbGwgZW50ZXIKKwkJICogdGhlaXIgY3JpdGlj
+YWwgc2VjdGlvbiB3aGlsZSB0aGUgYXJyYXkgbG9jayBpcyBoZWxkLgorCQkgKi8KKyBsb2NrX2Fy
+cmF5OgogCQlzcGluX2xvY2soJnNtYS0+c2VtX3Blcm0ubG9jayk7CiAJCWZvciAoaSA9IDA7IGkg
+PCBzbWEtPnNlbV9uc2VtczsgaSsrKSB7CiAJCQlzdHJ1Y3Qgc2VtICpzZW0gPSBzbWEtPnNlbV9i
+YXNlICsgaTsKLQkJCXNwaW5fbG9jaygmc2VtLT5sb2NrKTsKKwkJCXNwaW5fdW5sb2NrX3dhaXQo
+JnNlbS0+bG9jayk7CiAJCX0KIAkJbG9ja251bSA9IC0xOwogCX0KQEAgLTM2NywxMSArMzg5LDYg
+QEAgc3RhdGljIGlubGluZSBpbnQgc2VtX2xvY2soc3RydWN0IHNlbV9hcnJheSAqc21hLCBzdHJ1
+Y3Qgc2VtYnVmICpzb3BzLAogc3RhdGljIGlubGluZSB2b2lkIHNlbV91bmxvY2soc3RydWN0IHNl
+bV9hcnJheSAqc21hLCBpbnQgbG9ja251bSkKIHsKIAlpZiAobG9ja251bSA9PSAtMSkgewotCQlp
+bnQgaTsKLQkJZm9yIChpID0gMDsgaSA8IHNtYS0+c2VtX25zZW1zOyBpKyspIHsKLQkJCXN0cnVj
+dCBzZW0gKnNlbSA9IHNtYS0+c2VtX2Jhc2UgKyBpOwotCQkJc3Bpbl91bmxvY2soJnNlbS0+bG9j
+ayk7Ci0JCX0KIAkJc3Bpbl91bmxvY2soJnNtYS0+c2VtX3Blcm0ubG9jayk7CiAJfSBlbHNlIHsK
+IAkJc3RydWN0IHNlbSAqc2VtID0gc21hLT5zZW1fYmFzZSArIGxvY2tudW07CkBAIC01NTksNyAr
+NTc2LDYgQEAgc3RhdGljIGludCBuZXdhcnkoc3RydWN0IGlwY19uYW1lc3BhY2UgKm5zLCBzdHJ1
+Y3QgaXBjX3BhcmFtcyAqcGFyYW1zKQogCWZvciAoaSA9IDA7IGkgPCBuc2VtczsgaSsrKSB7CiAJ
+CUlOSVRfTElTVF9IRUFEKCZzbWEtPnNlbV9iYXNlW2ldLnNlbV9wZW5kaW5nKTsKIAkJc3Bpbl9s
+b2NrX2luaXQoJnNtYS0+c2VtX2Jhc2VbaV0ubG9jayk7Ci0JCXNwaW5fbG9jaygmc21hLT5zZW1f
+YmFzZVtpXS5sb2NrKTsKIAl9CiAKIAlzbWEtPmNvbXBsZXhfY291bnQgPSAwOwotLSAKMS44LjIu
+MQoK
+--047d7bae43a22c8ccb04dad12a8b
+Content-Type: application/octet-stream; 
+	name="0003-ipc-sem-do-not-call-sem_lock-when-bogus-sma.patch"
+Content-Disposition: attachment; 
+	filename="0003-ipc-sem-do-not-call-sem_lock-when-bogus-sma.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hfr9vgrn3
 
+RnJvbSA4NTEyZDY0NWU2YmEzN2U2YjAwMzIwNjE3Yjg4NzljNTAyZTVlYjMxIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBEYXZpZGxvaHIgQnVlc28gPGRhdmlkbG9oci5idWVzb0BocC5j
+b20+CkRhdGU6IEZyaSwgMTkgQXByIDIwMTMgMjI6MzQ6MTkgKzAyMDAKU3ViamVjdDogW1BBVENI
+IDMvNF0gaXBjLCBzZW06IGRvIG5vdCBjYWxsIHNlbV9sb2NrIHdoZW4gYm9ndXMgc21hCgpJbiBl
+eGl0X3NlbSgpIHdlIGF0dGVtcHQgdG8gYWNxdWlyZSB0aGUgc21hLT5zZW1fcGVybS5sb2NrIGJ5
+IGNhbGxpbmcKc2VtX2xvY2soKSBpbW1lZGlhdGVseSBhZnRlciBvYnRhaW5pbmcgc21hLiBIb3dl
+dmVyLCBpZiBzbWEgaXNuJ3QgdmFsaWQsCnRoZW4gY2FsbGluZyBzZW1fbG9jaygpIHdpbGwgdGVu
+ZCB0byBkbyBiYWQgdGhpbmdzLgoKTW92ZSB0aGUgc21hIGVycm9yIGNoZWNrIHJpZ2h0IGFmdGVy
+IHRoZSBzZW1fb2J0YWluX29iamVjdF9jaGVjaygpIGNhbGwgaW5zdGVhZC4KClNpZ25lZC1vZmYt
+Ynk6IERhdmlkbG9ociBCdWVzbyA8ZGF2aWRsb2hyLmJ1ZXNvQGhwLmNvbT4KLS0tCiBpcGMvc2Vt
+LmMgfCAxMCArKysrKy0tLS0tCiAxIGZpbGUgY2hhbmdlZCwgNSBpbnNlcnRpb25zKCspLCA1IGRl
+bGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL2lwYy9zZW0uYyBiL2lwYy9zZW0uYwppbmRleCA5MjZj
+NGI3Li5hY2FkYTlmIDEwMDY0NAotLS0gYS9pcGMvc2VtLmMKKysrIGIvaXBjL3NlbS5jCkBAIC0x
+ODcyLDggKzE4NzIsNyBAQCB2b2lkIGV4aXRfc2VtKHN0cnVjdCB0YXNrX3N0cnVjdCAqdHNrKQog
+CQlzdHJ1Y3Qgc2VtX2FycmF5ICpzbWE7CiAJCXN0cnVjdCBzZW1fdW5kbyAqdW47CiAJCXN0cnVj
+dCBsaXN0X2hlYWQgdGFza3M7Ci0JCWludCBzZW1pZDsKLQkJaW50IGk7CisJCWludCBzZW1pZCwg
+aTsKIAogCQlyY3VfcmVhZF9sb2NrKCk7CiAJCXVuID0gbGlzdF9lbnRyeV9yY3UodWxwLT5saXN0
+X3Byb2MubmV4dCwKQEAgLTE4ODksMTIgKzE4ODgsMTMgQEAgdm9pZCBleGl0X3NlbShzdHJ1Y3Qg
+dGFza19zdHJ1Y3QgKnRzaykKIAkJfQogCiAJCXNtYSA9IHNlbV9vYnRhaW5fb2JqZWN0X2NoZWNr
+KHRzay0+bnNwcm94eS0+aXBjX25zLCB1bi0+c2VtaWQpOwotCQlzZW1fbG9jayhzbWEsIE5VTEws
+IC0xKTsKLQogCQkvKiBleGl0X3NlbSByYWNlZCB3aXRoIElQQ19STUlELCBub3RoaW5nIHRvIGRv
+ICovCi0JCWlmIChJU19FUlIoc21hKSkKKwkJaWYgKElTX0VSUihzbWEpKSB7CisJCQlyY3VfcmVh
+ZF91bmxvY2soKTsKIAkJCWNvbnRpbnVlOworCQl9CiAKKwkJc2VtX2xvY2soc21hLCBOVUxMLCAt
+MSk7CiAJCXVuID0gX19sb29rdXBfdW5kbyh1bHAsIHNlbWlkKTsKIAkJaWYgKHVuID09IE5VTEwp
+IHsKIAkJCS8qIGV4aXRfc2VtIHJhY2VkIHdpdGggSVBDX1JNSUQrc2VtZ2V0KCkgdGhhdCBjcmVh
+dGVkCi0tIAoxLjguMi4xCgo=
+--047d7bae43a22c8ccb04dad12a8b
+Content-Type: application/octet-stream; 
+	name="0004-ipc-sem-check-if-the-ipc-lock-has-been-already-taken.patch"
+Content-Disposition: attachment; 
+	filename="0004-ipc-sem-check-if-the-ipc-lock-has-been-already-taken.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hfr9viuy4
+
+RnJvbSA4NGZiZjFkYTAxYmFkYjFhNTYzNTk3ZjIzMzU4YThjOGJmNzdiZmY2IE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBEYXZpZGxvaHIgQnVlc28gPGRhdmlkbG9oci5idWVzb0BocC5j
+b20+CkRhdGU6IFNhdCwgMjAgQXByIDIwMTMgMjI6MzA6MDAgKzAyMDAKU3ViamVjdDogW1BBVENI
+IDQvNF0gaXBjLCBzZW06IGNoZWNrIGlmIHRoZSBpcGMgbG9jayBoYXMgYmVlbiBhbHJlYWR5IHRh
+a2VuCgpPcmlnaW5hbCBwYXRjaCBmcm9tIFsxXS4KClsgZGlsZWtzOiBDaGFuZ2VMb2cgdjEtPnYy
+OgogIC0gUmVmcmVzaGVkIGFnYWluc3QgbmV4dC0yMDEzMDQxOSBwbHVzIDMgaXBjLXNlbS1uZXh0
+IHBhdGNoZXMgZnJvbSBbMl0KICAtIEJlYXV0aWZ5IGNvbW1lbnQgYW5kIGlmLXN0YXRlbWVudApd
+CgpbMV0gaHR0cDovL21hcmMuaW5mby8/dD0xMzY2MzE0NTc5MDAwMDUmcj0xJnc9MgpbMl0gaHR0
+cDovL21hcmMuaW5mby8/bD1saW51eC1uZXh0Jm09MTM2NjQwMjMzNjAxOTEzJnc9MgotLS0KIGlw
+Yy9zZW0uYyB8IDUgKysrLS0KIDEgZmlsZSBjaGFuZ2VkLCAzIGluc2VydGlvbnMoKyksIDIgZGVs
+ZXRpb25zKC0pCgpkaWZmIC0tZ2l0IGEvaXBjL3NlbS5jIGIvaXBjL3NlbS5jCmluZGV4IGFjYWRh
+OWYuLmMxZGZiZmIgMTAwNjQ0Ci0tLSBhL2lwYy9zZW0uYworKysgYi9pcGMvc2VtLmMKQEAgLTEy
+NTksMTAgKzEyNTksMTEgQEAgc3RhdGljIGludCBzZW1jdGxfbWFpbihzdHJ1Y3QgaXBjX25hbWVz
+cGFjZSAqbnMsIGludCBzZW1pZCwgaW50IHNlbW51bSwKIAkJCQllcnIgPSAtRUlEUk07CiAJCQkJ
+Z290byBvdXRfZnJlZTsKIAkJCX0KLQkJCXNlbV91bmxvY2soc21hLCAtMSk7CiAJCX0KIAotCQlz
+ZW1fbG9jayhzbWEsIE5VTEwsIC0xKTsKKwkJLyogSGFzIHRoZSBpcGMgbG9jayBhbHJlYWR5IGJl
+ZW4gdGFrZW4/ICovCisJCWlmIChuc2VtcyA8PSBTRU1NU0xfRkFTVCkKKwkJCXNlbV9sb2NrKHNt
+YSwgTlVMTCwgLTEpOwogCQlmb3IgKGkgPSAwOyBpIDwgc21hLT5zZW1fbnNlbXM7IGkrKykKIAkJ
+CXNlbV9pb1tpXSA9IHNtYS0+c2VtX2Jhc2VbaV0uc2VtdmFsOwogCQlzZW1fdW5sb2NrKHNtYSwg
+LTEpOwotLSAKMS44LjIuMQoK
+--047d7bae43a22c8ccb04dad12a8b--
