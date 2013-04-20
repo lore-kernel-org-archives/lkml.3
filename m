@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755115Ab3DTTVx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Apr 2013 15:21:53 -0400
-Received: from mga02.intel.com ([134.134.136.20]:30110 "EHLO mga02.intel.com"
+	id S1754961Ab3DTTVw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Apr 2013 15:21:52 -0400
+Received: from mga03.intel.com ([143.182.124.21]:51316 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753399Ab3DTTT2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752184Ab3DTTT2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 20 Apr 2013 15:19:28 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,515,1363158000"; 
-   d="scan'208";a="298141408"
+   d="scan'208";a="229707689"
 From: Andi Kleen <andi@firstfloor.org>
 To: mingo@elte.hu
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>, gleb@redhat.com
-Subject: [PATCH 08/15] perf, kvm: Support the intx/intx_cp modifiers in KVM arch perfmon emulation v5
-Date: Sat, 20 Apr 2013 12:19:16 -0700
-Message-Id: <1366485563-16209-9-git-send-email-andi@firstfloor.org>
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 04/15] perf, tools: Support sorting by in_tx, abort branch flags v3
+Date: Sat, 20 Apr 2013 12:19:12 -0700
+Message-Id: <1366485563-16209-5-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1366485563-16209-1-git-send-email-andi@firstfloor.org>
 References: <1366485563-16209-1-git-send-email-andi@firstfloor.org>
@@ -25,117 +25,201 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-This is not arch perfmon, but older CPUs will just ignore it. This makes
-it possible to do at least some TSX measurements from a KVM guest
+Extend the perf branch sorting code to support sorting by in_tx
+or abort qualifiers. Also print out those qualifiers.
 
-Cc: gleb@redhat.com
-v2: Various fixes to address review feedback
-v3: Ignore the bits when no CPUID. No #GP. Force raw events with TSX bits.
-v4: Use reserved bits for #GP
-v5: Remove obsolete argument
+This also fixes up some of the existing sort key documentation.
+
+We do not support notx here, because it's simply not showing
+the in_tx flag.
+
+v2: Readd flags to man pages
+v3: Rename intx
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/include/asm/kvm_host.h |    1 +
- arch/x86/kvm/pmu.c              |   25 ++++++++++++++++++++-----
- 2 files changed, 21 insertions(+), 5 deletions(-)
+ tools/perf/Documentation/perf-report.txt |    4 ++-
+ tools/perf/Documentation/perf-top.txt    |    3 +-
+ tools/perf/builtin-report.c              |    2 +-
+ tools/perf/builtin-top.c                 |    3 +-
+ tools/perf/perf.h                        |    4 ++-
+ tools/perf/util/hist.h                   |    2 +
+ tools/perf/util/sort.c                   |   51 ++++++++++++++++++++++++++++++
+ tools/perf/util/sort.h                   |    2 +
+ 8 files changed, 66 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index 4979778..7c7e207 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -315,6 +315,7 @@ struct kvm_pmu {
- 	u64 global_ovf_ctrl;
- 	u64 counter_bitmask[2];
- 	u64 global_ctrl_mask;
-+	u64 reserved_bits;
- 	u8 version;
- 	struct kvm_pmc gp_counters[INTEL_PMC_MAX_GENERIC];
- 	struct kvm_pmc fixed_counters[INTEL_PMC_MAX_FIXED];
-diff --git a/arch/x86/kvm/pmu.c b/arch/x86/kvm/pmu.c
-index cfc258a..9317c43 100644
---- a/arch/x86/kvm/pmu.c
-+++ b/arch/x86/kvm/pmu.c
-@@ -160,7 +160,7 @@ static void stop_counter(struct kvm_pmc *pmc)
+diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
+index 7d5f4f3..06d5d9b 100644
+--- a/tools/perf/Documentation/perf-report.txt
++++ b/tools/perf/Documentation/perf-report.txt
+@@ -71,7 +71,7 @@ OPTIONS
+ 	entries are displayed as "[other]".
+ 	- cpu: cpu number the task ran at the time of sample
+ 	- srcline: filename and line number executed at the time of sample.  The
+-	DWARF debuggin info must be provided.
++	DWARF debugging info must be provided.
  
- static void reprogram_counter(struct kvm_pmc *pmc, u32 type,
- 		unsigned config, bool exclude_user, bool exclude_kernel,
--		bool intr)
-+		bool intr, bool intx, bool intx_cp)
- {
- 	struct perf_event *event;
- 	struct perf_event_attr attr = {
-@@ -173,6 +173,10 @@ static void reprogram_counter(struct kvm_pmc *pmc, u32 type,
- 		.exclude_kernel = exclude_kernel,
- 		.config = config,
- 	};
-+	if (intx)
-+		attr.config |= HSW_INTX;
-+	if (intx_cp)
-+		attr.config |= HSW_INTX_CHECKPOINTED;
+ 	By default, comm, dso and symbol keys are used.
+ 	(i.e. --sort comm,dso,symbol)
+@@ -85,6 +85,8 @@ OPTIONS
+ 	- symbol_from: name of function branched from
+ 	- symbol_to: name of function branched to
+ 	- mispredict: "N" for predicted branch, "Y" for mispredicted branch
++	- in_tx: branch in TSX transaction
++	- abort: TSX transaction abort.
  
- 	attr.sample_period = (-pmc->counter) & pmc_bitmask(pmc);
+ 	And default sort keys are changed to comm, dso_from, symbol_from, dso_to
+ 	and symbol_to, see '--branch-stack'.
+diff --git a/tools/perf/Documentation/perf-top.txt b/tools/perf/Documentation/perf-top.txt
+index 9f1a2fe..1f5192a 100644
+--- a/tools/perf/Documentation/perf-top.txt
++++ b/tools/perf/Documentation/perf-top.txt
+@@ -112,7 +112,8 @@ Default is to monitor all CPUS.
  
-@@ -226,7 +230,9 @@ static void reprogram_gp_counter(struct kvm_pmc *pmc, u64 eventsel)
+ -s::
+ --sort::
+-	Sort by key(s): pid, comm, dso, symbol, parent, srcline, weight, local_weight.
++	Sort by key(s): pid, comm, dso, symbol, parent, srcline, weight,
++	local_weight, abort, in_tx
  
- 	if (!(eventsel & (ARCH_PERFMON_EVENTSEL_EDGE |
- 				ARCH_PERFMON_EVENTSEL_INV |
--				ARCH_PERFMON_EVENTSEL_CMASK))) {
-+				ARCH_PERFMON_EVENTSEL_CMASK |
-+				HSW_INTX |
-+				HSW_INTX_CHECKPOINTED))) {
- 		config = find_arch_event(&pmc->vcpu->arch.pmu, event_select,
- 				unit_mask);
- 		if (config != PERF_COUNT_HW_MAX)
-@@ -239,7 +245,9 @@ static void reprogram_gp_counter(struct kvm_pmc *pmc, u64 eventsel)
- 	reprogram_counter(pmc, type, config,
- 			!(eventsel & ARCH_PERFMON_EVENTSEL_USR),
- 			!(eventsel & ARCH_PERFMON_EVENTSEL_OS),
--			eventsel & ARCH_PERFMON_EVENTSEL_INT);
-+			eventsel & ARCH_PERFMON_EVENTSEL_INT,
-+			(eventsel & HSW_INTX),
-+			(eventsel & HSW_INTX_CHECKPOINTED));
- }
+ -n::
+ --show-nr-samples::
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index bd0ca81..9a85d66 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -752,7 +752,7 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		   "sort by key(s): pid, comm, dso, symbol, parent, cpu, srcline,"
+ 		   " dso_to, dso_from, symbol_to, symbol_from, mispredict,"
+ 		   " weight, local_weight, mem, symbol_daddr, dso_daddr, tlb, "
+-		   "snoop, locked"),
++		   "snoop, locked, abort, in_tx"),
+ 	OPT_BOOLEAN(0, "showcpuutilization", &symbol_conf.show_cpu_utilization,
+ 		    "Show sample percentage for different cpu modes"),
+ 	OPT_STRING('p', "parent", &parent_pattern, "regex",
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 67bdb9f..c83b1fd 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -1089,7 +1089,8 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_INCR('v', "verbose", &verbose,
+ 		    "be more verbose (show counter open errors, etc)"),
+ 	OPT_STRING('s', "sort", &sort_order, "key[,key2...]",
+-		   "sort by key(s): pid, comm, dso, symbol, parent, weight, local_weight"),
++		   "sort by key(s): pid, comm, dso, symbol, parent, weight, local_weight,"
++		   " abort, in_tx"),
+ 	OPT_BOOLEAN('n', "show-nr-samples", &symbol_conf.show_nr_samples,
+ 		    "Show a column with the number of samples"),
+ 	OPT_CALLBACK_DEFAULT('G', "call-graph", &top.record_opts,
+diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+index 32bd102..4fb573b 100644
+--- a/tools/perf/perf.h
++++ b/tools/perf/perf.h
+@@ -179,7 +179,9 @@ struct ip_callchain {
+ struct branch_flags {
+ 	u64 mispred:1;
+ 	u64 predicted:1;
+-	u64 reserved:62;
++	u64 intx:1;
++	u64 abort:1;
++	u64 reserved:60;
+ };
  
- static void reprogram_fixed_counter(struct kvm_pmc *pmc, u8 en_pmi, int idx)
-@@ -256,7 +264,7 @@ static void reprogram_fixed_counter(struct kvm_pmc *pmc, u8 en_pmi, int idx)
- 			arch_events[fixed_pmc_events[idx]].event_type,
- 			!(en & 0x2), /* exclude user */
- 			!(en & 0x1), /* exclude kernel */
--			pmi);
-+			pmi, false, false);
- }
+ struct branch_entry {
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index 14c2fe2..284a748 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -44,6 +44,8 @@ enum hist_column {
+ 	HISTC_PARENT,
+ 	HISTC_CPU,
+ 	HISTC_MISPREDICT,
++	HISTC_INTX,
++	HISTC_ABORT,
+ 	HISTC_SYMBOL_FROM,
+ 	HISTC_SYMBOL_TO,
+ 	HISTC_DSO_FROM,
+diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
+index 5f52d49..480c2da 100644
+--- a/tools/perf/util/sort.c
++++ b/tools/perf/util/sort.c
+@@ -855,6 +855,55 @@ struct sort_entry sort_mem_snoop = {
+ 	.se_width_idx	= HISTC_MEM_SNOOP,
+ };
  
- static inline u8 fixed_en_pmi(u64 ctrl, int idx)
-@@ -400,7 +408,7 @@ int kvm_pmu_set_msr(struct kvm_vcpu *vcpu, u32 index, u64 data)
- 		} else if ((pmc = get_gp_pmc(pmu, index, MSR_P6_EVNTSEL0))) {
- 			if (data == pmc->eventsel)
- 				return 0;
--			if (!(data & 0xffffffff00200000ull)) {
-+			if (!(data & pmu->reserved_bits)) {
- 				reprogram_gp_counter(pmc, data);
- 				return 0;
- 			}
-@@ -442,6 +450,7 @@ void kvm_pmu_cpuid_update(struct kvm_vcpu *vcpu)
- 	pmu->counter_bitmask[KVM_PMC_GP] = 0;
- 	pmu->counter_bitmask[KVM_PMC_FIXED] = 0;
- 	pmu->version = 0;
-+	pmu->reserved_bits = 0xffffffff00200000ull;
- 
- 	entry = kvm_find_cpuid_entry(vcpu, 0xa, 0);
- 	if (!entry)
-@@ -470,6 +479,12 @@ void kvm_pmu_cpuid_update(struct kvm_vcpu *vcpu)
- 	pmu->global_ctrl = ((1 << pmu->nr_arch_gp_counters) - 1) |
- 		(((1ull << pmu->nr_arch_fixed_counters) - 1) << INTEL_PMC_IDX_FIXED);
- 	pmu->global_ctrl_mask = ~pmu->global_ctrl;
++static int64_t
++sort__abort_cmp(struct hist_entry *left, struct hist_entry *right)
++{
++	return left->branch_info->flags.abort !=
++		right->branch_info->flags.abort;
++}
 +
-+	entry = kvm_find_cpuid_entry(vcpu, 7, 0);
-+	if (entry &&
-+	    (boot_cpu_has(X86_FEATURE_HLE) || boot_cpu_has(X86_FEATURE_RTM)) &&
-+	    (entry->ebx & (X86_FEATURE_HLE|X86_FEATURE_RTM)))
-+		pmu->reserved_bits ^= HSW_INTX|HSW_INTX_CHECKPOINTED;
- }
++static int hist_entry__abort_snprintf(struct hist_entry *self, char *bf,
++				    size_t size, unsigned int width)
++{
++	static const char *out = ".";
++
++	if (self->branch_info->flags.abort)
++		out = "A";
++	return repsep_snprintf(bf, size, "%-*s", width, out);
++}
++
++struct sort_entry sort_abort = {
++	.se_header	= "Transaction abort",
++	.se_cmp		= sort__abort_cmp,
++	.se_snprintf	= hist_entry__abort_snprintf,
++	.se_width_idx	= HISTC_ABORT,
++};
++
++static int64_t
++sort__intx_cmp(struct hist_entry *left, struct hist_entry *right)
++{
++	return left->branch_info->flags.intx !=
++		right->branch_info->flags.intx;
++}
++
++static int hist_entry__intx_snprintf(struct hist_entry *self, char *bf,
++				    size_t size, unsigned int width)
++{
++	static const char *out = ".";
++
++	if (self->branch_info->flags.intx)
++		out = "T";
++
++	return repsep_snprintf(bf, size, "%-*s", width, out);
++}
++
++struct sort_entry sort_intx = {
++	.se_header	= "Branch in transaction",
++	.se_cmp		= sort__intx_cmp,
++	.se_snprintf	= hist_entry__intx_snprintf,
++	.se_width_idx	= HISTC_INTX,
++};
++
+ struct sort_dimension {
+ 	const char		*name;
+ 	struct sort_entry	*entry;
+@@ -891,6 +940,8 @@ static struct sort_dimension bstack_sort_dimensions[] = {
+ 	DIM(SORT_SYM_FROM, "symbol_from", sort_sym_from),
+ 	DIM(SORT_SYM_TO, "symbol_to", sort_sym_to),
+ 	DIM(SORT_MISPREDICT, "mispredict", sort_mispredict),
++	DIM(SORT_INTX, "in_tx", sort_intx),
++	DIM(SORT_ABORT, "abort", sort_abort),
+ };
  
- void kvm_pmu_init(struct kvm_vcpu *vcpu)
+ #undef DIM
+diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
+index f24bdf6..e053d70 100644
+--- a/tools/perf/util/sort.h
++++ b/tools/perf/util/sort.h
+@@ -148,6 +148,8 @@ enum sort_type {
+ 	SORT_SYM_FROM,
+ 	SORT_SYM_TO,
+ 	SORT_MISPREDICT,
++	SORT_ABORT,
++	SORT_INTX,
+ };
+ 
+ /*
 -- 
 1.7.7.6
 
