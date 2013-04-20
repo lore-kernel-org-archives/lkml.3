@@ -1,109 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754366Ab3DTTup (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Apr 2013 15:50:45 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:40785 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753020Ab3DTTun (ORCPT
+	id S1754415Ab3DTUAm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Apr 2013 16:00:42 -0400
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:37051 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753817Ab3DTUAk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Apr 2013 15:50:43 -0400
-Message-ID: <1366487439.1993.9.camel@dabdike>
-Subject: Re: [PATCH v2 0/9] fix max discard sectors limit
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: dwmw2@infradead.org, axboe@kernel.dk, shli@kernel.org,
-        Paul.Clements@steeleye.com, npiggin@kernel.dk, neilb@suse.de,
-        cjb@laptop.org, adrian.hunter@intel.com, linux-scsi@vger.kernel.org,
-        linux-mtd@lists.infradead.org, nbd-general@lists.sourceforge.net,
-        linux-raid@vger.kernel.org, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jcmvbkbc@gmail.com,
-        Namjae Jeon <namjae.jeon@samsung.com>
-Date: Sat, 20 Apr 2013 12:50:39 -0700
-In-Reply-To: <1366389602-19313-1-git-send-email-linkinjeon@gmail.com>
-References: <1366389602-19313-1-git-send-email-linkinjeon@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.6.3 
+	Sat, 20 Apr 2013 16:00:40 -0400
+Message-ID: <1366488035.1805.9.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: linux-next: Tree for Apr 18 [ call-trace: drm | x86 | smp | rcu
+ related? ]
+From: Davidlohr Bueso <davidlohr.bueso@hp.com>
+To: sedat.dilek@gmail.com
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Rik van Riel <riel@surriel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next <linux-next@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Paul McKenney <paul.mckenney@linaro.org>,
+        DRI <dri-devel@lists.freedesktop.org>,
+        Dave Airlie <airlied@redhat.com>,
+        Emmanuel Benisty <benisty.e@gmail.com>
+Date: Sat, 20 Apr 2013 13:00:35 -0700
+In-Reply-To: <CA+icZUWJRRLtrKU+pP9svYvX=V8mAbFBx+ufENWLq3rnGO63hw@mail.gmail.com>
+References: <CA+icZUVWC+Rgd9wh4Z4CPZkEa9Pm2=2udnY5=UD1nnH0Wot1pQ@mail.gmail.com>
+	 <CAKMK7uFEaiT_1siQBcp_-S0RwLvy3XSjqLn1ksq70VhNTZSfLw@mail.gmail.com>
+	 <CA+icZUWQEiGecR8jgw4P-2YCKyqSDMMP0Ufwn8aBU_-AOf0a-Q@mail.gmail.com>
+	 <CA+icZUWcwvFFVesJDoFNT3DbgRMXvDp7QLn+S5Ze_5d8gJRx1g@mail.gmail.com>
+	 <CA+icZUXjTGSG+tejOAFgXr8EpKd7dL=-W41ha_-0N=roAxN3eg@mail.gmail.com>
+	 <CA+icZUVE-ikxEp65bUHMp0WEPX_MDbA06ykzeSxygJv=9f45ig@mail.gmail.com>
+	 <CA+icZUUp84vzF_0n77wsJ6dBOS26vSRCXaFUDbCQi-wG0b-Osg@mail.gmail.com>
+	 <517198A7.8020904@surriel.com>
+	 <1366402328.5317.9.camel@buesod1.americas.hpqcorp.net>
+	 <CA+icZUVjx7pDJWo3tGxX3ANXtiTP0_Q1YyOowANhn1wzcSgWaA@mail.gmail.com>
+	 <CA+55aFzU5C9UQGNFx+wQ_Rp0gZAAwLj77qO7fH7LEduD7bk1Kg@mail.gmail.com>
+	 <CA+icZUV+Y90uuEoBXQWGsZTYT5h4HXqWvAW_fU4vxL-N2TmXhQ@mail.gmail.com>
+	 <CA+icZUVuU9Cbx+d=uyDk=csH01re56NsvBo-wHjjLg1gOt5uzw@mail.gmail.com>
+	 <CA+55aFxsMRKn8kkMr7Q1vGryR=E-E2hPJfdf2XUh6WLMZ3wLNw@mail.gmail.com>
+	 <CA+icZUWhB=BTaQp0XuC8+PocQf3FzxBoytbzYFh=kup0LsapRg@mail.gmail.com>
+	 <CA+55aFx0ogTF9F6wsk2ECkB41Ufd1SzcTYWE0aW3RQ2ijdsJ3A@mail.gmail.com>
+	 <CA+icZUUb6sWo0MvgdOXYGBBfJqZ5QeUtQDDPVxGb70sZ6JyG4A@mail.gmail.com>
+	 <CA+icZUWJRRLtrKU+pP9svYvX=V8mAbFBx+ufENWLq3rnGO63hw@mail.gmail.com>
+Content-Type: multipart/mixed; boundary="=-Jrqb9gy8fdYS7kV1qH0c"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-04-20 at 01:40 +0900, Namjae Jeon wrote:
-> From: Namjae Jeon <namjae.jeon@samsung.com>
-> 
-> linux-v3.8-rc1 and later support for plug for blkdev_issue_discard with
-> commit 0cfbcafcae8b7364b5fa96c2b26ccde7a3a296a9 
-> (block: add plug for blkdev_issue_discard )
-> 
-> For example,
-> 1) DISCARD rq-1 with size size 4GB
-> 2) DISCARD rq-2 with size size 1GB
-> 
-> If these 2 discard requests get merged, final request size will be 5GB.
-> 
-> In this case, request's __data_len field may overflow as it can store
-> max 4GB(unsigned int).
-> 
-> This issue was observed while doing mkfs.f2fs on 5GB SD card:
-> https://lkml.org/lkml/2013/4/1/292
-> 
-> # mkfs.f2fs /dev/mmcblk0p3
-> Info: sector size = 512
-> Info: total sectors = 11370496 (in 512bytes)
-> Info: zone aligned segment0 blkaddr: 512
-> [  257.789764] blk_update_request: bio idx 0 >= vcnt 0
-> 
-> mkfs process gets stuck in D state and I see the following in the dmesg:
-> 
-> [  257.789733] __end_that: dev mmcblk0: type=1, flags=122c8081
-> [  257.789764]   sector 4194304, nr/cnr 2981888/4294959104
-> [  257.789764]   bio df3840c0, biotail df3848c0, buffer   (null), len 1526726656
-> [  257.789764] blk_update_request: bio idx 0 >= vcnt 0
-> [  257.794921] request botched: dev mmcblk0: type=1, flags=122c8081
-> [  257.794921]   sector 4194304, nr/cnr 2981888/4294959104
-> [  257.794921]   bio df3840c0, biotail df3848c0, buffer   (null), len 1526726656
-> 
-> Few drivers(e.g. mmc, mtd..) set q->limits.max_discard_sectors
-> more than UINT_MAX >> 9 sectors which is incorrect and it may lead to overflow
-> of request's __data_len field if merged discard request's size exceeds 4GB.
-> 
-> This patchset fixes this issue by updating helper function
-> blk_queue_max_discard_sectors which is used to set max_discard_sectors limit.
-> 
-> This patchset also replaces "q->limits.max_discard_sector = max_discard_sectors"
-> with blk_queue_max_discard_sectors call in other drivers like mmc, mtd etc.
 
-I really don't understand this explanation.  How can you be affected by
-the incorrect setting of q->limits.max_discard sectors when  n the
-blkdev_issue_discard() code you see:
+--=-Jrqb9gy8fdYS7kV1qH0c
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 
-	max_discard_sectors = min(q->limits.max_discard_sectors, UINT_MAX >>
-9);
+On Sat, 2013-04-20 at 02:19 +0200, Sedat Dilek wrote:
+> On Sat, Apr 20, 2013 at 2:06 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+> > On Sat, Apr 20, 2013 at 1:02 AM, Linus Torvalds
+> > <torvalds@linux-foundation.org> wrote:
+> >> On Fri, Apr 19, 2013 at 3:55 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+> >>>
+> >>> Davidlohr pointed to this patch (tested the triplet):
+> >>>
+> >>> ipc, sem: do not call sem_lock when bogus sma:
+> >>> https://lkml.org/lkml/2013/3/31/12
+> >>>
+> >>> Is that what you mean?
+> >>
+> >> Yup.
+> >>
+> >
+> > Davidlohr Bueso (1):
+> >       ipc, sem: do not call sem_lock when bogus sma
+> >
+> > Linus Torvalds (1):
+> >       crazy rcu double free debug hack
+> >
+> > With ***both*** patches applied I am able to build a Linux-kernel with
+> > 4 parallel-make-jobs again.
+> > David's or your patch alone are not sufficient!
+> >
+> 
+> [ Still both patches applied ]
+> 
+> To correct myself... The 1st run was OK.
+> 
+> The 2nd run shows a NULL-pointer-deref (excerpt):
+> 
+> [  178.490583] BUG: spinlock bad magic on CPU#1, sh/8066
+> [  178.490595]  lock: 0xffff88008b53ea18, .magic: 6b6b6b6b, .owner:
+> make/8068, .owner_cpu: 3
+> [  178.490599] BUG: unable to handle kernel NULL pointer dereference
+> at           (null)
+> [  178.490608] IP: [<ffffffff812bacd0>] update_queue+0x70/0x210
+> [  178.490610] PGD 0
+> [  178.490612] Oops: 0000 [#1] SMP
+> ...
 
-?
+The exit_sem() >> do_smart_update() >> update_queue() calls seem pretty
+well protected. Furthermore we're asserting that sma->sem_perm.lock is
+taken. This could just be a consequence of another issue. Earlier this
+week Andrew pointed out a potential race in semctl_main() where
+sma->sem_perm.deleted could be changed when cmd == GETALL.
 
-The problem is not that we issue discards bigger than __data_len can
-allow, the problem is that we merge them larger than __data_len will
-allow.  That means the merge code needs fixing to pay attention to
-max_discard_sectors, so isn't this the correct fix:
+Sedat, could you try the attached patch to keep the ipc lock acquired
+(on top of the three patches you're already using) and let us know how
+it goes? We could also just have the RCU read lock instead of
+->sem.perm.lock for GETALL, but lets play it safe for now.
 
-James
+Thanks,
+Davidlohr
 
----
 
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index 78feda9..33f358f 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -838,7 +838,7 @@ static inline unsigned int blk_queue_get_max_sectors(struct request_queue *q,
- 						     unsigned int cmd_flags)
- {
- 	if (unlikely(cmd_flags & REQ_DISCARD))
--		return q->limits.max_discard_sectors;
-+		return min(q->limits.max_discard_sectors, UINT_MAX >> 9);
+--=-Jrqb9gy8fdYS7kV1qH0c
+Content-Disposition: attachment; filename="ipc-fix.patch"
+Content-Type: text/x-patch; name="ipc-fix.patch"; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+
+diff --git a/ipc/sem.c b/ipc/sem.c
+index 5711616..1dfc3c1 100644
+--- a/ipc/sem.c
++++ b/ipc/sem.c
+@@ -1243,10 +1243,11 @@ static int semctl_main(struct ipc_namespace *ns, int semid, int semnum,
+ 				err = -EIDRM;
+ 				goto out_free;
+ 			}
+-			sem_unlock(sma, -1);
+ 		}
  
- 	if (unlikely(cmd_flags & REQ_WRITE_SAME))
- 		return q->limits.max_write_same_sectors;
+-		sem_lock(sma, NULL, -1);
++		/* has the ipc lock already been taken? */
++		if(nsems <= SEMMSL_FAST)
++			sem_lock(sma, NULL, -1);
+ 		for (i = 0; i < sma->sem_nsems; i++)
+ 			sem_io[i] = sma->sem_base[i].semval;
+ 		sem_unlock(sma, -1);
 
+--=-Jrqb9gy8fdYS7kV1qH0c--
 
