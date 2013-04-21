@@ -1,64 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751980Ab3DUGjN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Apr 2013 02:39:13 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:38187 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751706Ab3DUGjM (ORCPT
+	id S1752096Ab3DUG7v (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Apr 2013 02:59:51 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:46577 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751993Ab3DUG7t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Apr 2013 02:39:12 -0400
-Message-ID: <51738972.5040005@ahsoftware.de>
-Date: Sun, 21 Apr 2013 08:38:42 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
+	Sun, 21 Apr 2013 02:59:49 -0400
+Message-ID: <51738E5B.3030700@linux.vnet.ibm.com>
+Date: Sun, 21 Apr 2013 14:59:39 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-CC: linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Jonathan Cameron <jic23@cam.ac.uk>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 0/3] rtc: rtc-hid-sensor-time
-References: <1366384452-14367-1-git-send-email-holler@ahsoftware.de> <alpine.LNX.2.00.1304210144050.11076@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1304210144050.11076@pobox.suse.cz>
-Content-Type: text/plain; charset=US-ASCII; format=flowed
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: gleb@redhat.com, avi.kivity@gmail.com, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org
+Subject: Re: [PATCH v3 15/15] KVM: MMU: replace kvm_zap_all with kvm_mmu_invalid_all_pages
+References: <1366093973-2617-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <1366093973-2617-16-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <20130418000812.GF31059@amt.cnet> <516F70A1.7010007@linux.vnet.ibm.com> <20130420171859.GA15140@amt.cnet>
+In-Reply-To: <20130420171859.GA15140@amt.cnet>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13042106-8878-0000-0000-000006C9D549
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 21.04.2013 01:46, schrieb Jiri Kosina:
-> On Fri, 19 Apr 2013, Alexander Holler wrote:
->
->> as I'm not sure if the maintainer of the RTC subsystem is active again,
->> I've added the people which where involved with rtc-hid-sensor-time
->> before to cc too. That might be a good idea even he is active again,
->> as the driver depends on hid-sensor-hub and as such works a bit
->> outside the stuff other RTC drivers do use.
->
-> Agreed. I'd say let's wait if RTC maintainer(s) step up and have anything
-> to say to this patchset.
->
-> If there's a silence, it'll probably be ok taking it through my review
-> process and my tree, but at least for 3/3 I'd definitely like to have Ack
-> from someone else as well.
->
-> For this reason, this is likely not be 3.10 material, but 3.11.
+On 04/21/2013 01:18 AM, Marcelo Tosatti wrote:
+> On Thu, Apr 18, 2013 at 12:03:45PM +0800, Xiao Guangrong wrote:
+>> On 04/18/2013 08:08 AM, Marcelo Tosatti wrote:
+>>> On Tue, Apr 16, 2013 at 02:32:53PM +0800, Xiao Guangrong wrote:
+>>>> Use kvm_mmu_invalid_all_pages in kvm_arch_flush_shadow_all and
+>>>> rename kvm_zap_all to kvm_free_all which is used to free all
+>>>> memmory used by kvm mmu when vm is being destroyed, at this time,
+>>>> no vcpu exists and mmu-notify has been unregistered, so we can
+>>>> free the shadow pages out of mmu-lock
+>>>
+>>> Since there is no contention for mmu-lock its also not a problem to 
+>>> grab the lock right?
+>>
+>> This still has contention. Other mmu-notify can happen when we handle
+>> ->release(). On the other handle, spin-lock is not preemptable.
+> 
+> Don't think so:
 
-Thanks a lot.
+Hi Marcelo,
 
-I already have another patch here to support milliseconds (for hctosys), 
-and I might have another patch ready in a few days, which adjusts the 
-system time whenever the HID device sends a timestamp which includes 
-milliseconds (enabled by a new module option named adjtime for 
-rtc-hid-sensor-time, which is by default off). The basics do already 
-work, but I'm just starting to look at how to adjust the system time 
-best, so suggestions are welcome. ;)
+The comment of ->release() says:
 
-(Therefor I've now added the maintainers for kernel/time/timekeeping.c 
-to cc).
+/*
+	 * Called either by mmu_notifier_unregister or when the mm is
+	 * being destroyed by exit_mmap, always before all pages are
+	 * freed. This can run concurrently with other mmu notifier
+	 * methods (the ones invoked outside the mm context)
+> 
+>         kvm_coalesced_mmio_free(kvm);
+> #if defined(CONFIG_MMU_NOTIFIER) && defined(KVM_ARCH_WANT_MMU_NOTIFIER)
+>         mmu_notifier_unregister(&kvm->mmu_notifier, kvm->mm);
+> #else
+>         kvm_arch_flush_shadow_all(kvm);
+> #endif
+>         kvm_arch_destroy_vm(kvm);
 
-Regards,
+The contention does not exist in the code you listed above. It happens when
+vm abnormally exits (for example, VM is killed). Please refer to
+commit 3ad3d90 (mm: mmu_notifier: fix freed page still mapped in secondary MMU).
+The current mmu-notify code is wrong and i have posted a patch to fix it which
+can be found at:
+http://marc.info/?l=kvm&m=136609583232031&w=2
 
-Alexander
+Maybe i misunderstand your meaning. This patch tries to use kvm_mmu_invalid_all_pages
+in ->release and rename kvm_zap_all to kvm_free_all. Do you mean we can still use
+mmu-lock in kvm_free_all()? If yes, I do not have strong opinion on this point and
+will keep kvm_free_all under the protection of mmu-lock.
+
+> 
+>>> Automated verification of locking/srcu might complain.
+>>
+>> We hold slot-lock to free shadow page out of mmu-lock, it can avoid
+>> the complain. No?
+> 
+> Not if it realizes srcu is required to access the data structures.
+
+It seems that kvm->srcu is only used to protect kvm->memslots, in kvm_memslots:
+
+static inline struct kvm_memslots *kvm_memslots(struct kvm *kvm)
+{
+	return rcu_dereference_check(kvm->memslots,
+			srcu_read_lock_held(&kvm->srcu)
+			|| lockdep_is_held(&kvm->slots_lock));
+}
+
+kvm->memslots can be safely accessed when hold kvm->srcu _or_ slots_lock.
+
+Thanks!
+
