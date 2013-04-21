@@ -1,62 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752265Ab3DUVrt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Apr 2013 17:47:49 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:48314 "EHLO mail.skyhub.de"
+	id S1753038Ab3DUVx6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Apr 2013 17:53:58 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:40148 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751919Ab3DUVrs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Apr 2013 17:47:48 -0400
-Date: Sun, 21 Apr 2013 23:47:44 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Jake <client.alive@gmx.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: 3.6.11  AMD-Vi: Completion-Wait loop timed out
-Message-ID: <20130421214744.GA6977@pd.tnic>
-References: <50FBC7EF.6040207@xs4all.nl>
- <20130120103652.GB16800@pd.tnic>
- <50FBC994.8020409@xs4all.nl>
- <20130120111920.GL25591@8bytes.org>
- <50FBD413.1000406@xs4all.nl>
- <20130120114011.GN25591@8bytes.org>
- <20130120114828.GB16519@pd.tnic>
- <20130120115755.GO25591@8bytes.org>
- <20130121130942.GB4445@pd.tnic>
- <loom.20130421T025332-280@post.gmane.org>
+	id S1752084Ab3DUVx4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Apr 2013 17:53:56 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: David Howells <dhowells@redhat.com>
+Cc: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
+        linux-pci@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-acpi@vger.kernel.org, netfilter-devel@vger.kernel.org,
+        viro@zeniv.linux.org.uk, netdev@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org,
+        openipmi-developer@lists.sourceforge.net
+Subject: Re: [PATCH 26/28] proc: Supply a function to remove a proc entry by PDE [RFC]
+Date: Mon, 22 Apr 2013 00:01:56 +0200
+Message-ID: <13676870.MCxoVzgcmR@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.9.0-rc6+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <20130416182734.27773.47452.stgit@warthog.procyon.org.uk>
+References: <20130416182550.27773.89310.stgit@warthog.procyon.org.uk> <20130416182734.27773.47452.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <loom.20130421T025332-280@post.gmane.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 21, 2013 at 01:03:16AM +0000, Jake wrote:
-> ACPI BIOS Bug: Warning: Optional FADT field Pm2CintrolBlock has no address or length: 0x0000000000000000/0x1 (20121018/tbfadt-589)
+On Tuesday, April 16, 2013 07:27:34 PM David Howells wrote:
+> Supply a function (proc_remove()) to remove a proc entry (and any subtree
+> rooted there) by proc_dir_entry pointer rather than by name and (optionally)
+> root dir entry pointer.  This allows us to eliminate all remaining pde->name
+> accesses outside of procfs.
+> 
+> Signed-off-by: David Howells <dhowells@redhat.com>
+> cc: linux-acpi@vger.kernel.org
+> cc: openipmi-developer@lists.sourceforge.net
+> cc: devicetree-discuss@lists.ozlabs.org
+> cc: linux-pci@vger.kernel.org
+> cc: netdev@vger.kernel.org
+> cc: netfilter-devel@vger.kernel.org
+> cc: alsa-devel@alsa-project.org
 
-I have the same one:
+The ACPI changes look good to me.
 
-[    0.000000] ACPI BIOS Bug: Warning: Optional FADT field Pm2ControlBlock has zero address or length: 0x0000000000000000/0x1 (20130117/tbfadt-599)
+Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-We probably have the same ASUS crap for a board.
+> ---
+> 
+>  drivers/acpi/sbs.c                  |   21 ++++-----------------
+>  drivers/char/ipmi/ipmi_msghandler.c |    2 +-
+>  drivers/misc/sgi-gru/gruprocfs.c    |    2 +-
+>  drivers/of/base.c                   |   11 +----------
+>  drivers/pci/proc.c                  |   12 +++---------
+>  fs/proc/generic.c                   |    7 +++++++
+>  fs/proc/vmcore.c                    |    2 +-
+>  include/linux/proc_fs.h             |    2 ++
+>  kernel/irq/proc.c                   |    6 +-----
+>  net/8021q/vlanproc.c                |    9 ++-------
+>  net/core/pktgen.c                   |    6 ++----
+>  net/ipv4/netfilter/ipt_CLUSTERIP.c  |    4 ++--
+>  net/ipv6/proc.c                     |    3 +--
+>  net/netfilter/xt_hashlimit.c        |    4 ++--
+>  sound/core/info.c                   |   19 +++++--------------
+>  15 files changed, 35 insertions(+), 75 deletions(-)
+> 
+> diff --git a/drivers/acpi/sbs.c b/drivers/acpi/sbs.c
+> index a296e08..b6241ee 100644
+> --- a/drivers/acpi/sbs.c
+> +++ b/drivers/acpi/sbs.c
+> @@ -521,19 +521,6 @@ acpi_sbs_add_fs(struct proc_dir_entry **dir,
+>  	return 0;
+>  }
+>  
+> -static void
+> -acpi_sbs_remove_fs(struct proc_dir_entry **dir,
+> -			   struct proc_dir_entry *parent_dir)
+> -{
+> -	if (*dir) {
+> -		remove_proc_entry(ACPI_SBS_FILE_INFO, *dir);
+> -		remove_proc_entry(ACPI_SBS_FILE_STATE, *dir);
+> -		remove_proc_entry(ACPI_SBS_FILE_ALARM, *dir);
+> -		remove_proc_entry((*dir)->name, parent_dir);
+> -		*dir = NULL;
+> -	}
+> -}
+> -
+>  /* Smart Battery Interface */
+>  static struct proc_dir_entry *acpi_battery_dir = NULL;
+>  
+> @@ -836,8 +823,8 @@ static void acpi_battery_remove(struct acpi_sbs *sbs, int id)
+>  		power_supply_unregister(&battery->bat);
+>  	}
+>  #ifdef CONFIG_ACPI_PROCFS_POWER
+> -	if (battery->proc_entry)
+> -		acpi_sbs_remove_fs(&battery->proc_entry, acpi_battery_dir);
+> +	proc_remove(battery->proc_entry);
+> +	battery->proc_entry = NULL;
+>  #endif
+>  }
+>  
+> @@ -873,8 +860,8 @@ static void acpi_charger_remove(struct acpi_sbs *sbs)
+>  	if (sbs->charger.dev)
+>  		power_supply_unregister(&sbs->charger);
+>  #ifdef CONFIG_ACPI_PROCFS_POWER
+> -	if (sbs->charger_entry)
+> -		acpi_sbs_remove_fs(&sbs->charger_entry, acpi_ac_dir);
+> +	proc_remove(sbs->charger_entry);
+> +	sbs->charger_entry = NULL;
+>  #endif
+>  }
+>  
 
-> I have no idea whether this is related to my shutdown problem or not and
-
-I don't think so as I can suspend/resume/shutdown my box just fine. :)
-
-> what I was hoping is if someone would advise me how to find help for
-> my problem. I have tried all the normal routes for my distro (forum
-> and irc) repeatedly, and googled my weeping eyes out - but to no
-> avail.
-
-Have you tried the upstream kernel yet? I hear 3.9-rc8 will be out
-tomorrow :-)
-
-HTH.
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
