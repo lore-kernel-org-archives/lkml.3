@@ -1,110 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752452Ab3DUIQj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Apr 2013 04:16:39 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:48818 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752359Ab3DUIQg (ORCPT
+	id S1752794Ab3DUIwk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Apr 2013 04:52:40 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:8229 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752447Ab3DUIwj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Apr 2013 04:16:36 -0400
-Date: Sun, 21 Apr 2013 10:16:30 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] perf fixes
-Message-ID: <20130421081630.GA28643@gmail.com>
+	Sun, 21 Apr 2013 04:52:39 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Sun, 21 Apr 2013 01:50:33 -0700
+Message-ID: <5173A7D9.8030300@nvidia.com>
+Date: Sun, 21 Apr 2013 14:18:25 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Axel Lin <axel.lin@ingics.com>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Graeme Gregory <gg@slimlogic.co.uk>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC/RFT][PATCH] regulator: palmas: Convert to use regulator_set_voltage_time_sel()
+References: <1366459972.3833.2.camel@phoenix>
+In-Reply-To: <1366459972.3833.2.camel@phoenix>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Saturday 20 April 2013 05:42 PM, Axel Lin wrote:
+> Use regulator_set_voltage_time_sel() instead of open coded.
+>
+> If rdev->constraints->ramp_delay is specified, the setting will be used in
+> regulator_set_voltage_time_sel(). And then pmic->ramp_delay[] is not used and
+> can be removed.
+>
+> There is a different behavior change here:
+> regulator_set_voltage_time_sel() always returns
+> 	DIV_ROUND_UP(abs(new_volt - old_volt), ramp_delay);
+>
+> palma_smps_set_voltage_smps_time_sel() actually returns
+> 	DIV_ROUND_UP(abs(new_volt - old_volt), modified_ramp_delay);
+> where the modified_ramp_delay is not exactly specified by
+> rdev->constraints->ramp_delay but a value from pmic->ramp_delay[id].
+>
+> So palma_smps_set_voltage_smps_time_sel() may return a smaller delay than
+> regulator_set_voltage_time_sel() depend on rdev->constraints->ramp_delay value.
+>
+> I think the delay in both version are *safe* for the operation.
+>
+Nack,
+This approach does not look good and the reason for which I did not use 
+this core api here was:
+- The palma device support ramp of 10mV/us, 5mV/us and 2.5mV/us. So if 
+client pass the other than this value then register is programmed to 
+nearest high value.
+In this case, the constraint->ramp_delay is not much accurate with 
+register level programming and need to update with actual register 
+programmed. Hence we need to have local equivalent to the register 
+programmed and use this new value instead of constraints->ramp_delay.
 
-Please pull the latest perf-urgent-for-linus git tree from:
+- Second reason is that TPS65913 ES1.0/ES2.0 has the hw errata on which 
+the output voltage become slow ramp near to final value. TI suggested to 
+use 1.5x as SWAR. So we need to use the local implementation to adjust this.
+The changes for this errata is not there because we will need to read 
+the version register and Ian has posted the series which is not merged 
+yet. So waiting for his series to be merged for this errata implementation.
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git perf-urgent-for-linus
-
-   HEAD: f1923820c447e986a9da0fc6bf60c1dccdf0408e perf/x86: Fix offcore_rsp valid mask for SNB/IVB
-
-Misc fixes.
-
- Thanks,
-
-	Ingo
-
------------------->
-Stephane Eranian (1):
-      perf/x86: Fix offcore_rsp valid mask for SNB/IVB
-
-Tommi Rantala (1):
-      perf: Treat attr.config as u64 in perf_swevent_init()
-
-
- arch/x86/kernel/cpu/perf_event_intel.c | 20 ++++++++++++++++----
- kernel/events/core.c                   |  2 +-
- 2 files changed, 17 insertions(+), 5 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index dab7580..cc45deb 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -153,8 +153,14 @@ static struct event_constraint intel_gen_event_constraints[] __read_mostly =
- };
- 
- static struct extra_reg intel_snb_extra_regs[] __read_mostly = {
--	INTEL_EVENT_EXTRA_REG(0xb7, MSR_OFFCORE_RSP_0, 0x3fffffffffull, RSP_0),
--	INTEL_EVENT_EXTRA_REG(0xbb, MSR_OFFCORE_RSP_1, 0x3fffffffffull, RSP_1),
-+	INTEL_EVENT_EXTRA_REG(0xb7, MSR_OFFCORE_RSP_0, 0x3f807f8fffull, RSP_0),
-+	INTEL_EVENT_EXTRA_REG(0xbb, MSR_OFFCORE_RSP_1, 0x3f807f8fffull, RSP_1),
-+	EVENT_EXTRA_END
-+};
-+
-+static struct extra_reg intel_snbep_extra_regs[] __read_mostly = {
-+	INTEL_EVENT_EXTRA_REG(0xb7, MSR_OFFCORE_RSP_0, 0x3fffff8fffull, RSP_0),
-+	INTEL_EVENT_EXTRA_REG(0xbb, MSR_OFFCORE_RSP_1, 0x3fffff8fffull, RSP_1),
- 	EVENT_EXTRA_END
- };
- 
-@@ -2097,7 +2103,10 @@ __init int intel_pmu_init(void)
- 		x86_pmu.event_constraints = intel_snb_event_constraints;
- 		x86_pmu.pebs_constraints = intel_snb_pebs_event_constraints;
- 		x86_pmu.pebs_aliases = intel_pebs_aliases_snb;
--		x86_pmu.extra_regs = intel_snb_extra_regs;
-+		if (boot_cpu_data.x86_model == 45)
-+			x86_pmu.extra_regs = intel_snbep_extra_regs;
-+		else
-+			x86_pmu.extra_regs = intel_snb_extra_regs;
- 		/* all extra regs are per-cpu when HT is on */
- 		x86_pmu.er_flags |= ERF_HAS_RSP_1;
- 		x86_pmu.er_flags |= ERF_NO_HT_SHARING;
-@@ -2123,7 +2132,10 @@ __init int intel_pmu_init(void)
- 		x86_pmu.event_constraints = intel_ivb_event_constraints;
- 		x86_pmu.pebs_constraints = intel_ivb_pebs_event_constraints;
- 		x86_pmu.pebs_aliases = intel_pebs_aliases_snb;
--		x86_pmu.extra_regs = intel_snb_extra_regs;
-+		if (boot_cpu_data.x86_model == 62)
-+			x86_pmu.extra_regs = intel_snbep_extra_regs;
-+		else
-+			x86_pmu.extra_regs = intel_snb_extra_regs;
- 		/* all extra regs are per-cpu when HT is on */
- 		x86_pmu.er_flags |= ERF_HAS_RSP_1;
- 		x86_pmu.er_flags |= ERF_NO_HT_SHARING;
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 7e0962e..4d3124b 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -5331,7 +5331,7 @@ static void sw_perf_event_destroy(struct perf_event *event)
- 
- static int perf_swevent_init(struct perf_event *event)
- {
--	int event_id = event->attr.config;
-+	u64 event_id = event->attr.config;
- 
- 	if (event->attr.type != PERF_TYPE_SOFTWARE)
- 		return -ENOENT;
