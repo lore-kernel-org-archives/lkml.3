@@ -1,66 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753128Ab3DUJFQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Apr 2013 05:05:16 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:41010 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752445Ab3DUJFO (ORCPT
+	id S1753141Ab3DUJFz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Apr 2013 05:05:55 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:12134 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752550Ab3DUJFy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Apr 2013 05:05:14 -0400
-Date: Sun, 21 Apr 2013 11:05:10 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@linaro.org>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [GIT PULL] nohz: Full dynticks timekeeping and RCU improvement
-Message-ID: <20130421090510.GC31470@gmail.com>
-References: <1366215889-2635-1-git-send-email-fweisbec@gmail.com>
- <CAFTL4hy48=qsSk4wpV=w70iPxoYmE6TJbw4W_4H43vvs+=Oj3A@mail.gmail.com>
+	Sun, 21 Apr 2013 05:05:54 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Sun, 21 Apr 2013 02:05:52 -0700
+Message-ID: <5173AAF4.9010205@nvidia.com>
+Date: Sun, 21 Apr 2013 14:31:40 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFTL4hy48=qsSk4wpV=w70iPxoYmE6TJbw4W_4H43vvs+=Oj3A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Axel Lin <axel.lin@ingics.com>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Graeme Gregory <gg@slimlogic.co.uk>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] regulator: palmas: Add missing ctrl_addr setting for
+ SMPS10
+References: <1366374825.4345.1.camel@phoenix>
+In-Reply-To: <1366374825.4345.1.camel@phoenix>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Friday 19 April 2013 06:03 PM, Axel Lin wrote:
+> The ctrl_addr setting for SMPS10 is missed, thus palmas_smps_init() read/write
+> wrong register for SMPS10 in current code. Fix it.
+>
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+> ---
 
-* Frederic Weisbecker <fweisbec@gmail.com> wrote:
+Acked-by: Laxman Dewangan<ldewangan@nvidia.com>
 
-> 2013/4/17 Frederic Weisbecker <fweisbec@gmail.com>:
-> > Hi Ingo,
-> >
-> > So with this we are mostly done with the RCU and timekeeping sides.
-> > The interface is still a bit spartan:
-> >
-> > * Need to keep the boot CPU outside full dynticks range.
-> > * Need to have nohz_full= be a subset of rcu_nocbs=
-> >
-> > Note that none of this is thought to be fixed on the rock. It's
-> > just a KISS interface settlement so that we can focus on the
-> > central things.
-> >
-> > These constraints will likely be removed in the future.
-> >
-> > Please pull from:
-> >
-> > git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
-> >         timers/nohz
-> 
-> And there is the branch "timers/nohz-reviewed" which contain the exact
-> same patches but rebased to add Paul's Reviewed-by: tags.
-
-Pulled, thanks Frederic!
-
-	Ingo
