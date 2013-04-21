@@ -1,62 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753224Ab3DUJvd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Apr 2013 05:51:33 -0400
-Received: from nctlincom01.orcon.net.nz ([60.234.4.69]:43115 "EHLO
-	nctlincom01.orcon.net.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752875Ab3DUJvb (ORCPT
+	id S1753249Ab3DUJvy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Apr 2013 05:51:54 -0400
+Received: from lvps176-28-13-145.dedicated.hosteurope.de ([176.28.13.145]:58922
+	"EHLO lvps176-28-13-145.dedicated.hosteurope.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752946Ab3DUJvx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Apr 2013 05:51:31 -0400
-Date: Sun, 21 Apr 2013 21:51:20 +1200
-From: Michael Cree <mcree@orcon.net.nz>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: "Maciej W. Rozycki" <macro@linux-mips.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Arch Mailing List <linux-arch@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Using __int128 on 64-bit architectures
-Message-ID: <20130421095120.GA6508@omega>
-Mail-Followup-To: Michael Cree <mcree@orcon.net.nz>,
-	Stephen Rothwell <sfr@canb.auug.org.au>,
-	"Maciej W. Rozycki" <macro@linux-mips.org>,
-	"H. Peter Anvin" <hpa@zytor.com>,
-	Linux Arch Mailing List <linux-arch@vger.kernel.org>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <51464C00.5090107@zytor.com>
- <alpine.LFD.2.03.1304210450490.17443@linux-mips.org>
- <20130421193531.43965f592f00dfd6e3cfcf45@canb.auug.org.au>
+	Sun, 21 Apr 2013 05:51:53 -0400
+X-Greylist: delayed 518 seconds by postgrey-1.27 at vger.kernel.org; Sun, 21 Apr 2013 05:51:53 EDT
+From: Tim Sander <tim@krieglstein.org>
+Organization: Sander & Lightning
+To: linux-arm-kernel@lists.infradead.org
+Subject: Pinmuxing with devicetree (beaglebone)
+Date: Sun, 21 Apr 2013 11:43:50 +0200
+User-Agent: KMail/1.13.7 (Linux/3.8.0-rc6-00008-g8b31849; KDE/4.8.4; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130421193531.43965f592f00dfd6e3cfcf45@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Check: by mx5.orcon.net.nz on Sun, 21 Apr 2013 21:51:26 +1200
-X-DSPAM-Result: Innocent
-X-DSPAM-Processed: Sun Apr 21 21:51:28 2013
-X-DSPAM-Confidence: 0.8509
-X-DSPAM-Probability: 0.0000
-X-Bayes-Prob: 0.0001 (Score 0, tokens from: @@RPTN, default)
-X-Spam-Score: -3.00 () [Hold at 4.00] CC(NZ:-3)
-X-CanIt-Geo: ip=60.234.221.162; country=NZ; region=E7; city=Auckland; latitude=-36.8667; longitude=174.7667; http://maps.google.com/maps?q=-36.8667,174.7667&z=6
-X-CanItPRO-Stream: base:default
-X-Canit-Stats-ID: 06JqxXUlF - c7fe49f4589f - 20130421
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201304211143.50961.tim@krieglstein.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 21, 2013 at 07:35:31PM +1000, Stephen Rothwell wrote:
-> On Sun, 21 Apr 2013 05:29:28 +0100 (BST) "Maciej W. Rozycki" <macro@linux-mips.org> wrote:
-> >
-> >  Hmm, nobody has replied, so just FYI such widening multiplication is 
-> > available in all 64-bit MIPS hardware and GCC has supported it since 4.4 
-> > or mid 2008 (older versions used a libgcc __multi3 helper, not quite so 
-> > efficient as you can imagine).
-> 
-> i.e. for gcc 4.6.3, 64 bit powerpc calls out to __multi3
-> 
-> The same is true for sparc64.
+Hi
 
-Likewise, with gcc-4.6.3, alpha calls out to __multi3.
+I am currently trying to get pinmuxing working on a beaglebone board with an 
+offtree driver. This is for a custom handbuild hardware so i guess there is no 
+point in bringing this mainline.
 
-Cheers
-Michael.
+While this is havyly patched 3.8.4 version running over here i think the
+pinmux infrastructure is the new standard way. At least there is a 
+pinctrl/44e10800.pinmux directory in debugfs?
+
+My last aproach was using the devicetree but beeing new to this devicetree 
+stuff i just got stuck: 
+http://comments.gmane.org/gmane.linux.ports.arm.kernel/231204
+
+Now i tried use the way it is described in Documentation/pinctrl.txt but still 
+there are the includes missing: #include <linux/pinctrl/consumer.h>.
+
+Also while there is a /sys/kernel/debug/pinctrl/44e10800.pinmux in debugfs i 
+found that not so intuitive as the omap_mux which disappeared. Also i didn't 
+find any documentation for this debugfs stuff.
+
+So what is the recommended way to get this stupid pinmuxing going. In pre 
+devicetree days one would just pick the mux.h include of the platform and 
+initialized the muxers which was pretty straight forward. Now with device tree 
+its much more complicated. No proper syntax checking as with the c definitions 
+and no documentation how to get this magic stuff working :-(.
+
+The whole stuff is build by a ptxdist (a embedded buildsystem) and can be 
+found over here:
+https://gitorious.org/ptxdist-beaglebone/ptxdist-beaglebone
+
+Best regards
+Tim
