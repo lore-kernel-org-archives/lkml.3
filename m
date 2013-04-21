@@ -1,57 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753503Ab3DUNTH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Apr 2013 09:19:07 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:55837 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753398Ab3DUNTF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Apr 2013 09:19:05 -0400
-Date: Sun, 21 Apr 2013 08:19:02 -0500
-From: Robin Holt <holt@sgi.com>
-To: walter harms <wharms@bfs.de>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        Dimitri Sivanich <sivanich@sgi.com>, Robin Holt <holt@sgi.com>,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [patch] gru: info leak in gru_get_config_info()
-Message-ID: <20130421131902.GT3658@sgi.com>
-References: <20130421111031.GE6171@elgon.mountain>
- <5173D409.8010405@bfs.de>
+	id S1753512Ab3DUNXN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Apr 2013 09:23:13 -0400
+Received: from mail-la0-f49.google.com ([209.85.215.49]:61782 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753398Ab3DUNXM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Apr 2013 09:23:12 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5173D409.8010405@bfs.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Originating-IP: [85.250.125.78]
+In-Reply-To: <37C860A02101E749A747FA2D3C1E3C504A4F77@DLEE11.ent.ti.com>
+References: <1366133111-5412-1-git-send-email-s-anna@ti.com>
+ <CAK=WgbbfT=Ft3GnN1W5A4fg8BDrypgvfeiM3zoRMbW=JS8m+6w@mail.gmail.com> <37C860A02101E749A747FA2D3C1E3C504A4F77@DLEE11.ent.ti.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Sun, 21 Apr 2013 16:22:48 +0300
+Message-ID: <CAK=Wgbbqh3ugSj=Gc9bN6a1YgLy2M+EOgTOraC04uB3tT=3Rrg@mail.gmail.com>
+Subject: Re: [PATCH 1/2] remoteproc: fix kconfig dependencies for VIRTIO
+To: "Anna, Suman" <s-anna@ti.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        virtualization <virtualization@lists.linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 21, 2013 at 01:56:57PM +0200, walter harms wrote:
-> 
-> 
-> Am 21.04.2013 13:10, schrieb Dan Carpenter:
-> > The "info.fill" array isn't initialized so it can leak uninitialized
-> > stack information to user space.
-> > 
-> > Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-> > 
-> > diff --git a/drivers/misc/sgi-gru/grufile.c b/drivers/misc/sgi-gru/grufile.c
-> > index 44d273c..ed5fc43 100644
-> > --- a/drivers/misc/sgi-gru/grufile.c
-> > +++ b/drivers/misc/sgi-gru/grufile.c
-> > @@ -176,6 +176,7 @@ static long gru_get_config_info(unsigned long arg)
-> >  	info.nodes = num_online_nodes();
-> >  	info.blades = info.nodes / nodesperblade;
-> >  	info.chiplets = GRU_CHIPLETS_PER_BLADE * info.blades;
-> > +	memset(&info.fill, 0, sizeof(info.fill));
-> >  
-> 
-> the other way around (clear first all bytes) looks more easy
-> in case someone will add more elements to the struct.
-> 
-> memset(&info, 0, sizeof(info));
-> info.nodes = num_online_nodes();
-> info.blades = info.nodes / nodesperblade;
+On Thu, Apr 18, 2013 at 6:51 PM, Anna, Suman <s-anna@ti.com> wrote:
+>>
+>> On Tue, Apr 16, 2013 at 8:25 PM, Suman Anna <s-anna@ti.com> wrote:
+>> > remoteproc configuration selects VIRTIO, but VIRTIO is now subordinate
+>> > to VIRTUALIZATION. VIRTUALIZATION has to be selected as well to honor
+>> > the kconfig menu hierarchy and fix the dependency warnings.
+>>
+>> Thanks Suman. Is this stable material as well or not relevant before 3.9?
+>
+> No, it is not applicable before 3.9.
 
-That does seem more safe.
-
-Robin
+Thanks. We're already at rc7 and it's not urgent, so I plan to push
+this when the merge windows opens with cc stable
