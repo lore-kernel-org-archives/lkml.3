@@ -1,36 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753713Ab3DURNF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Apr 2013 13:13:05 -0400
-Received: from one.firstfloor.org ([193.170.194.197]:50249 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752888Ab3DURNE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Apr 2013 13:13:04 -0400
-Date: Sun, 21 Apr 2013 19:13:02 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Andi Kleen <andi@firstfloor.org>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH] x86: Fix AMD K6 indirect call check v2
-Message-ID: <20130421171302.GX16732@two.firstfloor.org>
-References: <1366562995-20530-1-git-send-email-andi@firstfloor.org>
- <51741CB2.3090209@zytor.com>
+	id S1753838Ab3DURNR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Apr 2013 13:13:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14302 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752888Ab3DURNG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Apr 2013 13:13:06 -0400
+Date: Sun, 21 Apr 2013 19:10:03 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Jacob Shin <jacob.shin@amd.com>
+Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        x86@kernel.org, Stephane Eranian <eranian@google.com>,
+        Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
+        Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+Subject: Re: [PATCH 3/5] perf tools: Add breakpoint address mask to the mem
+	event parser
+Message-ID: <20130421171003.GA6163@redhat.com>
+References: <1365528113-5458-1-git-send-email-jacob.shin@amd.com> <1365528113-5458-4-git-send-email-jacob.shin@amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51741CB2.3090209@zytor.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1365528113-5458-4-git-send-email-jacob.shin@amd.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Maybe it would be even better to just code the indirect call instruction
-> in assembly?
+Well, I am not going to argue, just the question...
 
-I only have the simple low risk fix to offer. If you want something
-gold plated you have to do/test it yourself.
+On 04/09, Jacob Shin wrote:
+>
+>   $ perf stat -e mem:0x1000:w:0xf a.out
 
--Andi
+perhaps, say, perf -e mem:0x1000/0xf:w will look better?
+
+No, I do not understand .y so I do not know if it is simple to
+implement or not ;)
+
+Hmm. I did "grep bp_len tools/perf" and it seems that there is
+no way to specify bp_len ? Looks like it is always LEN_4...
+
+Once again, I am just asking.
+
+Oleg.
 
