@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751854Ab3DUDnF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Apr 2013 23:43:05 -0400
-Received: from mga09.intel.com ([134.134.136.24]:38369 "EHLO mga09.intel.com"
+	id S1751957Ab3DUDnn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Apr 2013 23:43:43 -0400
+Received: from mga11.intel.com ([192.55.52.93]:63115 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751573Ab3DUDnD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Apr 2013 23:43:03 -0400
+	id S1751812Ab3DUDnm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Apr 2013 23:43:42 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,517,1363158000"; 
-   d="scan'208";a="298287535"
+   d="scan'208";a="322357139"
 From: Andi Kleen <andi@firstfloor.org>
-To: rusty@rustcorp.com.au
-Cc: linux-kernel@vger.kernel.org, dhowells@redhat.com,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH] initconst fixes for module signing
-Date: Sat, 20 Apr 2013 20:42:58 -0700
-Message-Id: <1366515778-18039-1-git-send-email-andi@firstfloor.org>
+To: mingo@elte.hu
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH] perf, x86: Fix some broken initconsts
+Date: Sat, 20 Apr 2013 20:43:39 -0700
+Message-Id: <1366515819-18081-1-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,25 +24,25 @@ From: Andi Kleen <ak@linux.intel.com>
 
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
-diff --git a/kernel/modsign_pubkey.c b/kernel/modsign_pubkey.c
-index 2b6e699..7cbd450 100644
---- a/kernel/modsign_pubkey.c
-+++ b/kernel/modsign_pubkey.c
-@@ -18,14 +18,14 @@
+diff --git a/arch/x86/kernel/cpu/perf_event_knc.c b/arch/x86/kernel/cpu/perf_event_knc.c
+index 4b7731b..2cfe648 100644
+--- a/arch/x86/kernel/cpu/perf_event_knc.c
++++ b/arch/x86/kernel/cpu/perf_event_knc.c
+@@ -17,7 +17,7 @@ static const u64 knc_perfmon_event_map[] =
+   [PERF_COUNT_HW_BRANCH_MISSES]		= 0x002b,
+ };
  
- struct key *modsign_keyring;
+-static __initconst u64 knc_hw_cache_event_ids
++static __initconst const u64 knc_hw_cache_event_ids
+ 				[PERF_COUNT_HW_CACHE_MAX]
+ 				[PERF_COUNT_HW_CACHE_OP_MAX]
+ 				[PERF_COUNT_HW_CACHE_RESULT_MAX] =
+@@ -284,7 +284,7 @@ static struct attribute *intel_knc_formats_attr[] = {
+ 	NULL,
+ };
  
--extern __initdata const u8 modsign_certificate_list[];
--extern __initdata const u8 modsign_certificate_list_end[];
-+extern __initconst const u8 modsign_certificate_list[];
-+extern __initconst const u8 modsign_certificate_list_end[];
- 
- /*
-  * We need to make sure ccache doesn't cache the .o file as it doesn't notice
-  * if modsign.pub changes.
-  */
--static __initdata const char annoy_ccache[] = __TIME__ "foo";
-+static __initconst const char annoy_ccache[] = __TIME__ "foo";
- 
- /*
-  * Load the compiled-in keys
+-static __initconst struct x86_pmu knc_pmu = {
++static __initconst const struct x86_pmu knc_pmu = {
+ 	.name			= "knc",
+ 	.handle_irq		= knc_pmu_handle_irq,
+ 	.disable_all		= knc_pmu_disable_all,
