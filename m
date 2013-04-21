@@ -1,72 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754096Ab3DUS4o (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Apr 2013 14:56:44 -0400
-Received: from mail-we0-f169.google.com ([74.125.82.169]:49694 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754056Ab3DUS4n (ORCPT
+	id S1754115Ab3DUTFC (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Apr 2013 15:05:02 -0400
+Received: from mail-qe0-f47.google.com ([209.85.128.47]:34093 "EHLO
+	mail-qe0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754035Ab3DUTFB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Apr 2013 14:56:43 -0400
-Message-ID: <51743666.2070006@gmail.com>
-Date: Sun, 21 Apr 2013 20:56:38 +0200
-From: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120412 Thunderbird/11.0.1
+	Sun, 21 Apr 2013 15:05:01 -0400
+X-Greylist: delayed 435 seconds by postgrey-1.27 at vger.kernel.org; Sun, 21 Apr 2013 15:05:00 EDT
+Date: Sat, 20 Apr 2013 22:59:24 -0500
+From: Rob Landley <rob@landley.net>
+Subject: Re: [PATCH 3/3] Add Documentation for MMC boot_enable attribute
+To: narmstrong@neotion.com
+Cc: linux-mmc@vger.kernel.org, Chris Ball <cjb@laptop.org>,
+        Namjae Jeon <linkinjeon@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        Subhash Jadavani <subhashj@codeaurora.org>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <51713CA1.7020204@neotion.com> (from narmstrong@neotion.com on
+	Fri Apr 19 07:46:25 2013)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1366516764.18069.124@driftwood>
 MIME-Version: 1.0
-To: Ming Lei <ming.lei@canonical.com>
-CC: linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH] of: export of_get_next_parent
-References: <1365587227-26137-1-git-send-email-ming.lei@canonical.com> <CACVXFVMuUn=0LLWxJO62gp6uugNej-kwC0k_LMGWozGRxcx6Vg@mail.gmail.com>
-In-Reply-To: <CACVXFVMuUn=0LLWxJO62gp6uugNej-kwC0k_LMGWozGRxcx6Vg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 04/19/2013 07:46:25 AM, Neil Armstrong wrote:
+> Add documentation on the enable_boot sysfs attribute.
+> 
+> Signed-off-by: Neil Armstrong <narmstrong@neotion.com>
+> ---
+>  Documentation/mmc/mmc-dev-parts.txt |    6 ++++++
+>  1 files changed, 6 insertions(+), 0 deletions(-)
+> 
+> diff --git a/Documentation/mmc/mmc-dev-parts.txt
+> b/Documentation/mmc/mmc-dev-parts.txt
+> index f08d078..78228de 100644
+> --- a/Documentation/mmc/mmc-dev-parts.txt
+> +++ b/Documentation/mmc/mmc-dev-parts.txt
+> @@ -38,3 +38,9 @@ feature has been disabled on the card, the file will
+> be read-only.
+>  The boot partitions can also be locked permanently, but this feature  
+> is
+>  not accessible through sysfs in order to avoid accidental or  
+> malicious
+>  bricking.
+> +
+> +A special attribute named boot_enable is available to configure the
+> +selected partition for the eMMC 4.3+ boot operation mode.
 
-On 04/21/2013 02:11 PM, Ming Lei wrote:
-> On Wed, Apr 10, 2013 at 5:47 PM, Ming Lei<ming.lei@canonical.com>  wrote:
->> The function is called by at least three drivers now:
->>
->>          pinctrl
->>          mfd/vexpress
->>          v4l2-core
->>
->> The 3rd one can be built as module, so export the function to
->> avoid build failure.
->>
->> Cc: Grant Likely<grant.likely@secretlab.ca>
->> Cc: Rob Herring<rob.herring@calxeda.com>
->> Cc: devicetree-discuss@lists.ozlabs.org
->> Signed-off-by: Ming Lei<ming.lei@canonical.com>
->> ---
->>   drivers/of/base.c |    1 +
->>   1 file changed, 1 insertion(+)
->>
->> diff --git a/drivers/of/base.c b/drivers/of/base.c
->> index c6443de..a2a0ddc 100644
->> --- a/drivers/of/base.c
->> +++ b/drivers/of/base.c
->> @@ -382,6 +382,7 @@ struct device_node *of_get_next_parent(struct device_node *node)
->>          raw_spin_unlock_irqrestore(&devtree_lock, flags);
->>          return parent;
->>   }
->> +EXPORT_SYMBOL(of_get_next_parent);
->
-> Gentle ping.
->
-> Without the patch, the below build failure is produced every time on -next tree:
+So "In eMMC version 4.3 or later, the boot_enable attribute selects the  
+partition to boot from."
 
-A similar patch has been queued in the media tree [1]. It should soon 
-appear in -next.
+> +When selected between the two factory boot partitions and the main
+> +user partition, at boot time a special sequence enables makes the
+> +eMMC device to output the content of the selected partition.
 
-[1] 
-http://git.linuxtv.org/mchehab/media-next.git/commitdiff/6695be6863b75620ffa6d422965680ce785cb7c8
+enables makes?
 
-Sorry for the trouble.
+Does this sentence actually add any information to the previous  
+sentence? (Maybe I'm not reading it right, I'm not entirely sure what  
+"selected between" or "special sequence" are referring to here...)
 
-Thanks,
-Sylwester
+Rob
