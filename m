@@ -1,48 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753557Ab3DUQuA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Apr 2013 12:50:00 -0400
-Received: from mga02.intel.com ([134.134.136.20]:31124 "EHLO mga02.intel.com"
+	id S1753692Ab3DUQvM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Apr 2013 12:51:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58339 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753437Ab3DUQt7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Apr 2013 12:49:59 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,520,1363158000"; 
-   d="scan'208";a="298519245"
-From: Andi Kleen <andi@firstfloor.org>
-To: x86@kernel.org
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH] x86: Fix AMD K6 indirect call check v2
-Date: Sun, 21 Apr 2013 09:49:55 -0700
-Message-Id: <1366562995-20530-1-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.7.7.6
+	id S1753610Ab3DUQvK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Apr 2013 12:51:10 -0400
+Date: Sun, 21 Apr 2013 18:47:59 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Michael Neuling <mikey@neuling.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>
+Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] ptrace/powerpc: dont flush_ptrace_hw_breakpoint() on fork()
+Message-ID: <20130421164759.GA5537@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+arch_dup_task_struct() does flush_ptrace_hw_breakpoint(src), this
+destroys the parent's breakpoints for no reason. We should clear
+child->thread.ptrace_bps[] copied by dup_task_struct() instead.
 
-The AMD K6 errata check relies on timing a indirect call.
-But the way it was written it could be optimized to a direct call.
-Force gcc to actually do a indirect call and not just
-constant resolve the target address.
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Acked-by: Michael Neuling <mikey@neuling.org>
 
-Found during code review, no runtime testing due to lack
-of hardware.
-
-v2: More description
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-
-diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-index 4a549db..11ea6f6 100644
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -115,7 +115,7 @@ static void __cpuinit init_amd_k6(struct cpuinfo_x86 *c)
- 		 */
+--- x/arch/powerpc/kernel/process.c
++++ x/arch/powerpc/kernel/process.c
+@@ -910,10 +910,6 @@ int arch_dup_task_struct(struct task_str
+ 	flush_altivec_to_thread(src);
+ 	flush_vsx_to_thread(src);
+ 	flush_spe_to_thread(src);
+-#ifdef CONFIG_HAVE_HW_BREAKPOINT
+-	flush_ptrace_hw_breakpoint(src);
+-#endif /* CONFIG_HAVE_HW_BREAKPOINT */
+-
+ 	*dst = *src;
+ 	return 0;
+ }
+@@ -984,6 +980,10 @@ int copy_thread(unsigned long clone_flag
+ 	p->thread.ksp_limit = (unsigned long)task_stack_page(p) +
+ 				_ALIGN_UP(sizeof(struct thread_info), 16);
  
- 		n = K6_BUG_LOOP;
--		f_vide = vide;
-+		asm("" : "=g" (f_vide) : "0" (vide));
- 		rdtscl(d);
- 		while (n--)
- 			f_vide();
++#ifdef CONFIG_HAVE_HW_BREAKPOINT
++	p->thread.ptrace_bps[0] = NULL;
++#endif
++
+ #ifdef CONFIG_PPC_STD_MMU_64
+ 	if (mmu_has_feature(MMU_FTR_SLB)) {
+ 		unsigned long sp_vsid;
+
