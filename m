@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753283Ab3DUXXa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Apr 2013 19:23:30 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:40202 "EHLO hydra.sisk.pl"
+	id S1753392Ab3DUXYR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Apr 2013 19:24:17 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:40205 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751264Ab3DUXX2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Apr 2013 19:23:28 -0400
+	id S1751819Ab3DUXYP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Apr 2013 19:24:15 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Shawn Guo <shawn.guo@linaro.org>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        robin.randhawa@arm.com, Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
-        charles.garcia-tobin@arm.com, arvind.chauhan@arm.com,
-        linaro-kernel@lists.linaro.org, patches@linaro.org
-Subject: Re: [PATCH] cpufreq: cpu0: Put cpu parent node after using it
-Date: Mon, 22 Apr 2013 01:31:30 +0200
-Message-ID: <3264633.p6VbhCnLVY@vostro.rjw.lan>
+To: Amit Daniel Kachhap <amit.daniel@samsung.com>
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Kukjin Kim <kgene.kim@samsung.com>, cpufreq@vger.kernel.org,
+        Nishanth Menon <nm@ti.com>
+Subject: Re: [PATCH] cpufreq: exynos5440: Protect opp search calls with rcu lock
+Date: Mon, 22 Apr 2013 01:32:17 +0200
+Message-ID: <27334831.finUCxlqRS@vostro.rjw.lan>
 User-Agent: KMail/4.9.5 (Linux/3.9.0-rc8+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <20130416084013.GB11245@S2101-09.ap.freescale.net>
-References: <377acb684be024176e1c64f7ca5b1937c3a23878.1366009701.git.viresh.kumar@linaro.org> <20130416084013.GB11245@S2101-09.ap.freescale.net>
+In-Reply-To: <1366007087-12090-1-git-send-email-amit.daniel@samsung.com>
+References: <1366007087-12090-1-git-send-email-amit.daniel@samsung.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -26,14 +26,15 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, April 16, 2013 04:40:15 PM Shawn Guo wrote:
-> On Mon, Apr 15, 2013 at 12:39:37PM +0530, Viresh Kumar wrote:
-> > Parent node must be put after using it to balance its usage count. This was
-> > missing in cpufreq-cpu0 driver. Fix it.
-> > 
-> > Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+On Monday, April 15, 2013 11:54:47 AM Amit Daniel Kachhap wrote:
+> As per the OPP library documentation(Documentation/power/opp.txt) all
+> opp find/get calls should be protected by rcu locks.
 > 
-> Acked-by: Shawn Guo <shawn.guo@linaro.org>
+> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+> ---
+> 
+> This patch is created against linux-next tree and is suggested by
+> Nishanth Menon. (https://lkml.org/lkml/2013/4/12/119)
 
 Applied.
 
@@ -41,27 +42,36 @@ Thanks,
 Rafael
 
 
-> > ---
-> >  drivers/cpufreq/cpufreq-cpu0.c | 1 +
-> >  1 file changed, 1 insertion(+)
-> > 
-> > diff --git a/drivers/cpufreq/cpufreq-cpu0.c b/drivers/cpufreq/cpufreq-cpu0.c
-> > index 31282fc..3ab8294 100644
-> > --- a/drivers/cpufreq/cpufreq-cpu0.c
-> > +++ b/drivers/cpufreq/cpufreq-cpu0.c
-> > @@ -257,6 +257,7 @@ static int cpu0_cpufreq_probe(struct platform_device *pdev)
-> >  	}
-> >  
-> >  	of_node_put(np);
-> > +	of_node_put(parent);
-> >  	return 0;
-> >  
-> >  out_free_table:
+>  drivers/cpufreq/exynos5440-cpufreq.c |    3 +++
+>  1 files changed, 3 insertions(+), 0 deletions(-)
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe cpufreq" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> diff --git a/drivers/cpufreq/exynos5440-cpufreq.c b/drivers/cpufreq/exynos5440-cpufreq.c
+> index ead7ed4..0c74018 100644
+> --- a/drivers/cpufreq/exynos5440-cpufreq.c
+> +++ b/drivers/cpufreq/exynos5440-cpufreq.c
+> @@ -120,11 +120,13 @@ static int init_div_table(void)
+>  	int i = 0;
+>  	struct opp *opp;
+>  
+> +	rcu_read_lock();
+>  	for (i = 0; freq_tbl[i].frequency != CPUFREQ_TABLE_END; i++) {
+>  
+>  		opp = opp_find_freq_exact(dvfs_info->dev,
+>  					freq_tbl[i].frequency * 1000, true);
+>  		if (IS_ERR(opp)) {
+> +			rcu_read_unlock();
+>  			dev_err(dvfs_info->dev,
+>  				"failed to find valid OPP for %u KHZ\n",
+>  				freq_tbl[i].frequency);
+> @@ -159,6 +161,7 @@ static int init_div_table(void)
+>  		__raw_writel(tmp, dvfs_info->base + XMU_PMU_P0_7 + 4 * i);
+>  	}
+>  
+> +	rcu_read_unlock();
+>  	return 0;
+>  }
+>  
+> 
 -- 
 I speak only for myself.
 Rafael J. Wysocki, Intel Open Source Technology Center.
