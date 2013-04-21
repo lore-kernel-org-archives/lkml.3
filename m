@@ -1,71 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753313Ab3DUMMD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Apr 2013 08:12:03 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:33948 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753212Ab3DUMMB (ORCPT
+	id S1753335Ab3DUMoG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Apr 2013 08:44:06 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:40629 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751012Ab3DUMoD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Apr 2013 08:12:01 -0400
+	Sun, 21 Apr 2013 08:44:03 -0400
+Date: Sun, 21 Apr 2013 05:43:43 -0700
+From: "tip-bot for Yan, Zheng" <tipbot@zytor.com>
+Message-ID: <tip-22cc4ccf63e10e361531bf61e6e6c96c53a2f665@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, zheng.z.yan@intel.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, zheng.z.yan@intel.com, tglx@linutronix.de
+In-Reply-To: <1366113067-3262-2-git-send-email-zheng.z.yan@intel.com>
+References: <1366113067-3262-2-git-send-email-zheng.z.yan@intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf/x86: Avoid kfree() in CPU_{STARTING,DYING}
+Git-Commit-ID: 22cc4ccf63e10e361531bf61e6e6c96c53a2f665
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <1365587227-26137-1-git-send-email-ming.lei@canonical.com>
-References: <1365587227-26137-1-git-send-email-ming.lei@canonical.com>
-Date: Sun, 21 Apr 2013 20:11:58 +0800
-Message-ID: <CACVXFVMuUn=0LLWxJO62gp6uugNej-kwC0k_LMGWozGRxcx6Vg@mail.gmail.com>
-Subject: Re: [PATCH] of: export of_get_next_parent
-From: Ming Lei <ming.lei@canonical.com>
-To: linux-kernel@vger.kernel.org
-Cc: Ming Lei <ming.lei@canonical.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        devicetree-discuss@lists.ozlabs.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Sun, 21 Apr 2013 05:43:50 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Commit-ID:  22cc4ccf63e10e361531bf61e6e6c96c53a2f665
+Gitweb:     http://git.kernel.org/tip/22cc4ccf63e10e361531bf61e6e6c96c53a2f665
+Author:     Yan, Zheng <zheng.z.yan@intel.com>
+AuthorDate: Tue, 16 Apr 2013 19:51:05 +0800
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Sun, 21 Apr 2013 10:59:01 +0200
 
-On Wed, Apr 10, 2013 at 5:47 PM, Ming Lei <ming.lei@canonical.com> wrote:
-> The function is called by at least three drivers now:
->
->         pinctrl
->         mfd/vexpress
->         v4l2-core
->
-> The 3rd one can be built as module, so export the function to
-> avoid build failure.
->
-> Cc: Grant Likely <grant.likely@secretlab.ca>
-> Cc: Rob Herring <rob.herring@calxeda.com>
-> Cc: devicetree-discuss@lists.ozlabs.org
-> Signed-off-by: Ming Lei <ming.lei@canonical.com>
-> ---
->  drivers/of/base.c |    1 +
->  1 file changed, 1 insertion(+)
->
-> diff --git a/drivers/of/base.c b/drivers/of/base.c
-> index c6443de..a2a0ddc 100644
-> --- a/drivers/of/base.c
-> +++ b/drivers/of/base.c
-> @@ -382,6 +382,7 @@ struct device_node *of_get_next_parent(struct device_node *node)
->         raw_spin_unlock_irqrestore(&devtree_lock, flags);
->         return parent;
->  }
-> +EXPORT_SYMBOL(of_get_next_parent);
+perf/x86: Avoid kfree() in CPU_{STARTING,DYING}
 
-Gentle ping.
+On -rt kfree() can schedule, but CPU_{STARTING,DYING} should be
+atomic. So use a list to defer kfree until CPU_{ONLINE,DEAD}.
 
-Without the patch, the below build failure is produced every time on -next tree:
+Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: peterz@infradead.org
+Cc: eranian@google.com
+Cc: ak@linux.intel.com
+Link: http://lkml.kernel.org/r/1366113067-3262-2-git-send-email-zheng.z.yan@intel.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/kernel/cpu/perf_event_intel_uncore.c | 28 ++++++++++++++++++++++++---
+ 1 file changed, 25 insertions(+), 3 deletions(-)
 
-  Building modules, stage 2.
-  MODPOST 72 modules
-ERROR: "of_get_next_parent" [drivers/media/v4l2-core/videodev.ko] undefined!
-make[1]: *** [__modpost] Error 1
-make: *** [modules] Error 2
-install kernel and modules
-
-
-Thanks,
---
-Ming Lei
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+index 75da9e1..50d4a1c 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+@@ -2622,6 +2622,21 @@ static void __init uncore_pci_exit(void)
+ 	}
+ }
+ 
++/* CPU hot plug/unplug are serialized by cpu_add_remove_lock mutex */
++static LIST_HEAD(boxes_to_free);
++
++static void __cpuinit uncore_kfree_boxes(void)
++{
++	struct intel_uncore_box *box;
++
++	while (!list_empty(&boxes_to_free)) {
++		box = list_entry(boxes_to_free.next,
++				 struct intel_uncore_box, list);
++		list_del(&box->list);
++		kfree(box);
++	}
++}
++
+ static void __cpuinit uncore_cpu_dying(int cpu)
+ {
+ 	struct intel_uncore_type *type;
+@@ -2636,7 +2651,7 @@ static void __cpuinit uncore_cpu_dying(int cpu)
+ 			box = *per_cpu_ptr(pmu->box, cpu);
+ 			*per_cpu_ptr(pmu->box, cpu) = NULL;
+ 			if (box && atomic_dec_and_test(&box->refcnt))
+-				kfree(box);
++				list_add(&box->list, &boxes_to_free);
+ 		}
+ 	}
+ }
+@@ -2666,8 +2681,11 @@ static int __cpuinit uncore_cpu_starting(int cpu)
+ 				if (exist && exist->phys_id == phys_id) {
+ 					atomic_inc(&exist->refcnt);
+ 					*per_cpu_ptr(pmu->box, cpu) = exist;
+-					kfree(box);
+-					box = NULL;
++					if (box) {
++						list_add(&box->list,
++							 &boxes_to_free);
++						box = NULL;
++					}
+ 					break;
+ 				}
+ 			}
+@@ -2806,6 +2824,10 @@ static int
+ 	case CPU_DYING:
+ 		uncore_cpu_dying(cpu);
+ 		break;
++	case CPU_ONLINE:
++	case CPU_DEAD:
++		uncore_kfree_boxes();
++		break;
+ 	default:
+ 		break;
+ 	}
