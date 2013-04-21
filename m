@@ -1,73 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753435Ab3DUXHz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Apr 2013 19:07:55 -0400
-Received: from mb2i1mx.ns.pitt.edu ([136.142.11.142]:64206 "EHLO
-	mb2i1.ns.pitt.edu" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752618Ab3DUXHx (ORCPT
+	id S1753522Ab3DUXL3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Apr 2013 19:11:29 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:53106 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751881Ab3DUXL2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Apr 2013 19:07:53 -0400
-Date: Sun, 21 Apr 2013 19:07:51 -0400
-From: Jiannan Ouyang <ouyang@cs.pitt.edu>
-Subject: Re: Preemptable Ticket Spinlock
-In-reply-to: <51745650.9050204@redhat.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Avi Kivity <avi.kivity@gmail.com>, Gleb Natapov <gleb@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Srikar <srikar@linux.vnet.ibm.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        KVM <kvm@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Chegu Vinod <chegu_vinod@hp.com>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Andrew Jones <drjones@redhat.com>, Karen Noel <knoel@redhat.com>
-Message-id: <CAJocwccDznaMGkBgWpZ9M5k3JUqf0pnvK2hDyRBR_JEseNrQ_g@mail.gmail.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=ISO-8859-1
-References: <CAJocwccu5QQyuKRvgNyPSFz2K_rzCW419W9-XdSUYOL7+KqQKg@mail.gmail.com>
- <51745650.9050204@redhat.com>
+	Sun, 21 Apr 2013 19:11:28 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Kamal Mostafa <kamal@canonical.com>
+Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: Re: [PATCH] [media] uvcvideo: quirk PROBE_DEF for Dell Studio / OmniVision webcam
+Date: Mon, 22 Apr 2013 01:11:20 +0200
+Message-ID: <2645710.Gpj91p3W0i@avalon>
+User-Agent: KMail/4.10.2 (Linux/3.7.10-gentoo; KDE/4.10.2; x86_64; ; )
+In-Reply-To: <1366216723.20385.7.camel@fourier>
+References: <1366052511-27284-1-git-send-email-kamal@canonical.com> <3233904.U6nm1cedXx@avalon> <1366216723.20385.7.camel@fourier>
+MIME-Version: 1.0
+Content-Type: multipart/signed; boundary="nextPart7389361.xNRVaurBPr"; micalg="pgp-sha1"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 21, 2013 at 5:12 PM, Rik van Riel <riel@redhat.com> wrote:
-> Your algorithm is very clever, and very promising.
->
-> However, it does increase the size of the struct spinlock, and adds
-> an additional atomic operation to spin_unlock, neither of which I
-> suspect are necessary.
->
-> If we always incremented the ticket number by 2 (instead of 1), then
-> we could use the lower bit of the ticket number as the spinlock.
->
-> If we do NOT run virtualized, we simply increment the ticket by 2
-> in spin_unlock, and the code can remain otherwise the same.
->
-> If we do run virtualized, we take that spinlock after acquiring
-> the ticket (or timing out), just like in your code. In the
-> virtualized spin_unlock, we can then release the spinlock and
-> increment the ticket in one operation: by simply increasing the
-> ticket by 1.
->
-> In other words, we should be able to keep the overhead of this
-> to an absolute minimum, and keep spin_unlock to be always the
-> same cost it is today.
->
-> --
-> All rights reversed
 
-Hi Rik,
+--nextPart7389361.xNRVaurBPr
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 
-Thanks for your feedback.
+Hi Kamal,
 
-Yes I agree with you
-- increase the size of struct spinlock is unnecessary
-- your idea of utilize the lower bit and save one atomic operation
-from unlock is cool!
+On Wednesday 17 April 2013 09:38:43 Kamal Mostafa wrote:
+> On Wed, 2013-04-17 at 01:05 +0200, Laurent Pinchart wrote:
+> > Hi Kamal,
+> > 
+> > On Monday 15 April 2013 12:01:51 Kamal Mostafa wrote:
+> > > BugLink: https://bugs.launchpad.net/bugs/1168430
+> > > 
+> > > OminiVision webcam 0x05a9:0x264a (in Dell Studio Hybrid 140g) needs the
+> > > same UVC_QUIRK_PROBE_DEF as other OmniVision model to be recognized
+> > > consistently.
+> > > 
+> > > Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+> > 
+> > Thank you for the patch.
+> > 
+> > Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> > 
+> > I've taken the patch in my tree and will submit it upstream for v3.11.
+> > 
+> > Could you please try to get the full 'lsusb -v -d 05a9:264a' output from
+> > the bug reporter ?
+> 
+> Thanks Laurent.  The requested lsusb dump is now available at
+> https://launchpadlibrarian.net/137633994/lsusb-omnivision-264a.txt
 
-I can come up with a updated patch soon.
+Thank you for the information.
 
---Jiannan
+-- 
+Regards,
+
+Laurent Pinchart
+
+--nextPart7389361.xNRVaurBPr
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part.
+Content-Transfer-Encoding: 7Bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQEcBAABAgAGBQJRdHInAAoJEIkPb2GL7hl1PJ8IALT00s4t2Ac0awsAbZQB1ID2
+fW2EEzGt38ixPMdPX/Qa5iwYjQlrQXBQorwA1g9oGfmaMFLuZBCTnTpNwnRGL2CT
+5P/P/cRb8bHeYHjEBQ8RfjGkzVj53Vamj17VrK3IBWDo58XVujXTq8H+XoH7/DBT
+znZa8jlD1cY/aML8rAm6rW6oUA1LtDjrczhUb9vPSxz3GPrd49chuD3mFNlQcgqC
+b4pu2sWD8yeHI4ZYm4m6HcF8S8L/qFrvIajmK8q0YN55yLQeBf3fjEc1X4V0bdPP
+PUKWPeDlDzzYfZbQGBcLQLbe0IZxh7Zz+NcjWrOhHyv0ll/VRpD1FMhc4fgcjBY=
+=6NYv
+-----END PGP SIGNATURE-----
+
+--nextPart7389361.xNRVaurBPr--
+
