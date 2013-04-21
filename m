@@ -1,117 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753335Ab3DUMoG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Apr 2013 08:44:06 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40629 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751012Ab3DUMoD (ORCPT
+	id S1753374Ab3DUMpA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Apr 2013 08:45:00 -0400
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:52224 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751012Ab3DUMo6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Apr 2013 08:44:03 -0400
-Date: Sun, 21 Apr 2013 05:43:43 -0700
-From: "tip-bot for Yan, Zheng" <tipbot@zytor.com>
-Message-ID: <tip-22cc4ccf63e10e361531bf61e6e6c96c53a2f665@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, zheng.z.yan@intel.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, zheng.z.yan@intel.com, tglx@linutronix.de
-In-Reply-To: <1366113067-3262-2-git-send-email-zheng.z.yan@intel.com>
-References: <1366113067-3262-2-git-send-email-zheng.z.yan@intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf/x86: Avoid kfree() in CPU_{STARTING,DYING}
-Git-Commit-ID: 22cc4ccf63e10e361531bf61e6e6c96c53a2f665
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Sun, 21 Apr 2013 08:44:58 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Sun, 21 Apr 2013 05:43:50 -0700 (PDT)
+In-Reply-To: <1366024056-8429-1-git-send-email-draviv@codeaurora.org>
+References: <1366024056-8429-1-git-send-email-draviv@codeaurora.org>
+From: Santosh Y <santoshsy@gmail.com>
+Date: Sun, 21 Apr 2013 21:44:34 +0900
+Message-ID: <CALMYJDuUprWnGSk2jQi=sFLa82PDPoTmg5-tqwwvaYwSFm_yLQ@mail.gmail.com>
+Subject: Re: [PATCH V2] scsi: ufs: add support for query requests
+To: Dolev Raviv <draviv@codeaurora.org>
+Cc: linux-scsi@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        open list <linux-kernel@vger.kernel.org>,
+        vinayak holikatti <vinholikatti@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  22cc4ccf63e10e361531bf61e6e6c96c53a2f665
-Gitweb:     http://git.kernel.org/tip/22cc4ccf63e10e361531bf61e6e6c96c53a2f665
-Author:     Yan, Zheng <zheng.z.yan@intel.com>
-AuthorDate: Tue, 16 Apr 2013 19:51:05 +0800
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Sun, 21 Apr 2013 10:59:01 +0200
+> + * ufshcd_compose_upiu - form UFS Protocol Information Unit(UPIU)
+> + * @hba - UFS hba
+> + * @lrb - pointer to local reference block
+> + */
+> +static int ufshcd_compose_upiu(struct ufs_hba *hba, struct ufshcd_lrb
+> *lrbp)
+> +{
+> +       u32 upiu_flags;
+> +       int ret = 0;
+> +
+> +       if (!lrbp) {
+> +               dev_err(hba->dev, "%s: lrbp can not be NULL\n", __func__);
+> +               ret = -EINVAL;
+> +       } else if (!lrbp->ucd_req_ptr) {
+> +               dev_err(hba->dev, "%s: ucd_req_ptr can not be NULL\n",
+> +                       __func__);
+> +               ret = -EINVAL;
+> +       } else if (!lrbp->utr_descriptor_ptr) {
+> +               dev_err(hba->dev, "%s: utr_descriptor_ptr can not be
+> NULL\n",
+> +                       __func__);
+> +               ret = -EINVAL;
+> +       }
+> +       if (!ret)
+> +               goto exit;
+> +
 
-perf/x86: Avoid kfree() in CPU_{STARTING,DYING}
+ufshcd_compose_upiu() is not being called from anywhere else other
+than ufshcd_queuecommand(), *lrbp* is being used before calling
+ufshcd_compose_upiu(). So, if lrbp is NULL, it will give a problem in
+ufshcd_queuecommand() itself and lrbp->ucd_req_ptr,
+lrbp->utr_descriptor_ptr are being configured in
+ufshcd_memory_config(). Also if lrbp can be NULL then why not hba? So,
+the right thing would be to remove these checks.
 
-On -rt kfree() can schedule, but CPU_{STARTING,DYING} should be
-atomic. So use a list to defer kfree until CPU_{ONLINE,DEAD}.
+>         switch (ocs) {
+>         case OCS_SUCCESS:
+> -
+>                 /* check if the returned transfer response is valid */
+> -               result = ufshcd_is_valid_req_rsp(lrbp->ucd_rsp_ptr);
+> +               expected_rsp_code = ufshcd_is_query_req(lrbp) ?
+> +                       UPIU_TRANSACTION_QUERY_RSP :
+> UPIU_TRANSACTION_RESPONSE;
+> +               result = ufshcd_is_valid_req_rsp(lrbp->ucd_rsp_ptr,
+> +
+> expected_rsp_code);
+> +
+>                 if (result) {
+>                         dev_err(hba->dev,
+>                                 "Invalid response = %x\n", result);
+>                         break;
+>                 }
+>
+> -               /*
+> -                * get the response UPIU result to extract
+> -                * the SCSI command status
+> -                */
+> -               result = ufshcd_get_rsp_upiu_result(lrbp->ucd_rsp_ptr);
+> +               if (ufshcd_is_query_req(lrbp)) {
+> +                       /*
+> +                        *  Return result = ok, since SCSI layer wouldn't
+> +                        *  know how to handle errors from query requests.
+> +                        *  The result is saved with the response so that
+> +                        *  the ufs_core layer will handle it.
+> +                        */
+> +                       result |= DID_OK << 16;
+> +                       ufshcd_copy_query_response(hba, lrbp);
+> +               } else {
+> +                       /*
+> +                        * get the response UPIU result to extract
+> +                        * the SCSI command status
+> +                        */
+> +                       result =
+> ufshcd_get_rsp_upiu_result(lrbp->ucd_rsp_ptr);
+>
+> -               /*
+> -                * get the result based on SCSI status response
+> -                * to notify the SCSI midlayer of the command status
+> -                */
+> -               scsi_status = result & MASK_SCSI_STATUS;
+> -               result = ufshcd_scsi_cmd_status(lrbp, scsi_status);
+> +                       /*
+> +                        * get the result based on SCSI status response
+> +                        * to notify the SCSI midlayer of the command
+> status
+> +                        */
+> +                       scsi_status = result & MASK_SCSI_STATUS;
+> +                       result = ufshcd_scsi_cmd_status(lrbp,
+> scsi_status);
+> +               }
+>                 break;
 
-Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: peterz@infradead.org
-Cc: eranian@google.com
-Cc: ak@linux.intel.com
-Link: http://lkml.kernel.org/r/1366113067-3262-2-git-send-email-zheng.z.yan@intel.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/kernel/cpu/perf_event_intel_uncore.c | 28 ++++++++++++++++++++++++---
- 1 file changed, 25 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-index 75da9e1..50d4a1c 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-@@ -2622,6 +2622,21 @@ static void __init uncore_pci_exit(void)
- 	}
- }
- 
-+/* CPU hot plug/unplug are serialized by cpu_add_remove_lock mutex */
-+static LIST_HEAD(boxes_to_free);
-+
-+static void __cpuinit uncore_kfree_boxes(void)
-+{
-+	struct intel_uncore_box *box;
-+
-+	while (!list_empty(&boxes_to_free)) {
-+		box = list_entry(boxes_to_free.next,
-+				 struct intel_uncore_box, list);
-+		list_del(&box->list);
-+		kfree(box);
-+	}
-+}
-+
- static void __cpuinit uncore_cpu_dying(int cpu)
- {
- 	struct intel_uncore_type *type;
-@@ -2636,7 +2651,7 @@ static void __cpuinit uncore_cpu_dying(int cpu)
- 			box = *per_cpu_ptr(pmu->box, cpu);
- 			*per_cpu_ptr(pmu->box, cpu) = NULL;
- 			if (box && atomic_dec_and_test(&box->refcnt))
--				kfree(box);
-+				list_add(&box->list, &boxes_to_free);
- 		}
- 	}
- }
-@@ -2666,8 +2681,11 @@ static int __cpuinit uncore_cpu_starting(int cpu)
- 				if (exist && exist->phys_id == phys_id) {
- 					atomic_inc(&exist->refcnt);
- 					*per_cpu_ptr(pmu->box, cpu) = exist;
--					kfree(box);
--					box = NULL;
-+					if (box) {
-+						list_add(&box->list,
-+							 &boxes_to_free);
-+						box = NULL;
-+					}
- 					break;
- 				}
- 			}
-@@ -2806,6 +2824,10 @@ static int
- 	case CPU_DYING:
- 		uncore_cpu_dying(cpu);
- 		break;
-+	case CPU_ONLINE:
-+	case CPU_DEAD:
-+		uncore_kfree_boxes();
-+		break;
- 	default:
- 		break;
- 	}
+The following would be better,
+
+ static int
+  ufshcd_get_req_rsp(struct utp_upiu_rsp *ucd_rsp_ptr)
+  {
+         return (be32_to_cpu(ucd_rsp_ptr->header.dword_0) >> 24);
+   }
+
+
+switch (ocs) {
+         case OCS_SUCCESS:
+
+                 /* check if the returned transfer response is valid */
+               result = ufshcd_get_req_rsp(lrbp->ucd_rsp_ptr);
+
+               switch (result) {
+                 case UPIU_TRANSACTION_RESPONSE:
+                              /* perform required steps */
+                 break;
+                 case UPIU_TRANSACTION_QUERY_RSP:
+                          /* perform required steps */
+                 break;
+                 case /* reject upiu */:
+                       you can add a check for Reject UPIU also if you want.
+                        /* return error */
+                 break;
+                 default:
+                             /* return error */
+                }
+                  ...
+}
+
+--
+~Santosh
