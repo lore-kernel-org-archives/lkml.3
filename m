@@ -1,24 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753446Ab3DUMq1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Apr 2013 08:46:27 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40670 "EHLO
+	id S1753462Ab3DUMt0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Apr 2013 08:49:26 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:40685 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751012Ab3DUMqZ (ORCPT
+	with ESMTP id S1751012Ab3DUMtY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Apr 2013 08:46:25 -0400
-Date: Sun, 21 Apr 2013 05:46:09 -0700
-From: "tip-bot for Yan, Zheng" <tipbot@zytor.com>
-Message-ID: <tip-e850f9c33c0c7cc4097ae29f6f8d633237d235e6@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, zheng.z.yan@intel.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, zheng.z.yan@intel.com, tglx@linutronix.de
-In-Reply-To: <1366113067-3262-4-git-send-email-zheng.z.yan@intel.com>
-References: <1366113067-3262-4-git-send-email-zheng.z.yan@intel.com>
+	Sun, 21 Apr 2013 08:49:24 -0400
+Date: Sun, 21 Apr 2013 05:48:36 -0700
+From: tip-bot for Jacob Shin <tipbot@zytor.com>
+Message-ID: <tip-c43ca5091a374c1f6778bd7e4a39a5a10735a917@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
+        mingo@kernel.org, a.p.zijlstra@chello.nl, acme@ghostprotocols.net,
+        jolsa@redhat.com, jacob.shin@amd.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+        acme@ghostprotocols.net, jolsa@redhat.com, jacob.shin@amd.com,
+        tglx@linutronix.de
+In-Reply-To: <20130419213428.GA8229@jshin-Toonie>
+References: <20130419213428.GA8229@jshin-Toonie>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf/x86/intel: Add Ivy Bridge-EP uncore support
-Git-Commit-ID: e850f9c33c0c7cc4097ae29f6f8d633237d235e6
+Subject: [tip:perf/core] perf/x86/amd: Add support for AMD NB and L2I "
+ uncore" counters
+Git-Commit-ID: c43ca5091a374c1f6778bd7e4a39a5a10735a917
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -27,759 +31,642 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Sun, 21 Apr 2013 05:46:16 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Sun, 21 Apr 2013 05:48:43 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e850f9c33c0c7cc4097ae29f6f8d633237d235e6
-Gitweb:     http://git.kernel.org/tip/e850f9c33c0c7cc4097ae29f6f8d633237d235e6
-Author:     Yan, Zheng <zheng.z.yan@intel.com>
-AuthorDate: Tue, 16 Apr 2013 19:51:07 +0800
+Commit-ID:  c43ca5091a374c1f6778bd7e4a39a5a10735a917
+Gitweb:     http://git.kernel.org/tip/c43ca5091a374c1f6778bd7e4a39a5a10735a917
+Author:     Jacob Shin <jacob.shin@amd.com>
+AuthorDate: Fri, 19 Apr 2013 16:34:28 -0500
 Committer:  Ingo Molnar <mingo@kernel.org>
 CommitDate: Sun, 21 Apr 2013 11:01:24 +0200
 
-perf/x86/intel: Add Ivy Bridge-EP uncore support
+perf/x86/amd: Add support for AMD NB and L2I "uncore" counters
 
-The uncore subsystem in Ivy Bridge-EP is similar to Sandy
-Bridge-EP. There are some differences in config register
-encoding and pci device IDs. The Ivy Bridge-EP uncore also
-supports a few new events.
+Add support for AMD Family 15h [and above] northbridge
+performance counters. MSRs 0xc0010240 ~ 0xc0010247 are shared
+across all cores that share a common northbridge.
 
-Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: peterz@infradead.org
-Cc: eranian@google.com
-Cc: ak@linux.intel.com
-Link: http://lkml.kernel.org/r/1366113067-3262-4-git-send-email-zheng.z.yan@intel.com
+Add support for AMD Family 16h L2 performance counters. MSRs
+0xc0010230 ~ 0xc0010237 are shared across all cores that share a
+common L2 cache.
+
+We do not enable counter overflow interrupts. Sampling mode and
+per-thread events are not supported.
+
+Signed-off-by: Jacob Shin <jacob.shin@amd.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/20130419213428.GA8229@jshin-Toonie
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/kernel/cpu/perf_event_intel_uncore.c | 520 ++++++++++++++++++++++++--
- arch/x86/kernel/cpu/perf_event_intel_uncore.h |  51 ++-
- 2 files changed, 543 insertions(+), 28 deletions(-)
+ arch/x86/include/asm/cpufeature.h           |   2 +
+ arch/x86/include/uapi/asm/msr-index.h       |   4 +
+ arch/x86/kernel/cpu/Makefile                |   2 +-
+ arch/x86/kernel/cpu/perf_event_amd_uncore.c | 546 ++++++++++++++++++++++++++++
+ 4 files changed, 553 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-index 8f590ea..d0f9e5a 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-@@ -34,9 +34,13 @@ DEFINE_UNCORE_FORMAT_ATTR(occ_sel, occ_sel, "config:14-15");
- DEFINE_UNCORE_FORMAT_ATTR(occ_invert, occ_invert, "config:30");
- DEFINE_UNCORE_FORMAT_ATTR(occ_edge, occ_edge, "config:14-51");
- DEFINE_UNCORE_FORMAT_ATTR(filter_tid, filter_tid, "config1:0-4");
-+DEFINE_UNCORE_FORMAT_ATTR(filter_link, filter_link, "config1:5-8");
- DEFINE_UNCORE_FORMAT_ATTR(filter_nid, filter_nid, "config1:10-17");
-+DEFINE_UNCORE_FORMAT_ATTR(filter_nid2, filter_nid, "config1:32-47");
- DEFINE_UNCORE_FORMAT_ATTR(filter_state, filter_state, "config1:18-22");
-+DEFINE_UNCORE_FORMAT_ATTR(filter_state2, filter_state, "config1:17-22");
- DEFINE_UNCORE_FORMAT_ATTR(filter_opc, filter_opc, "config1:23-31");
-+DEFINE_UNCORE_FORMAT_ATTR(filter_opc2, filter_opc, "config1:52-60");
- DEFINE_UNCORE_FORMAT_ATTR(filter_band0, filter_band0, "config1:0-7");
- DEFINE_UNCORE_FORMAT_ATTR(filter_band1, filter_band1, "config1:8-15");
- DEFINE_UNCORE_FORMAT_ATTR(filter_band2, filter_band2, "config1:16-23");
-@@ -367,6 +371,7 @@ static struct event_constraint snbep_uncore_cbox_constraints[] = {
- 	UNCORE_EVENT_CONSTRAINT(0x04, 0x3),
- 	UNCORE_EVENT_CONSTRAINT(0x05, 0x3),
- 	UNCORE_EVENT_CONSTRAINT(0x07, 0x3),
-+	UNCORE_EVENT_CONSTRAINT(0x09, 0x3),
- 	UNCORE_EVENT_CONSTRAINT(0x11, 0x1),
- 	UNCORE_EVENT_CONSTRAINT(0x12, 0x3),
- 	UNCORE_EVENT_CONSTRAINT(0x13, 0x3),
-@@ -416,6 +421,14 @@ static struct event_constraint snbep_uncore_r3qpi_constraints[] = {
- 	UNCORE_EVENT_CONSTRAINT(0x24, 0x3),
- 	UNCORE_EVENT_CONSTRAINT(0x25, 0x3),
- 	UNCORE_EVENT_CONSTRAINT(0x26, 0x3),
-+	UNCORE_EVENT_CONSTRAINT(0x28, 0x3),
-+	UNCORE_EVENT_CONSTRAINT(0x29, 0x3),
-+	UNCORE_EVENT_CONSTRAINT(0x2a, 0x3),
-+	UNCORE_EVENT_CONSTRAINT(0x2b, 0x3),
-+	UNCORE_EVENT_CONSTRAINT(0x2c, 0x3),
-+	UNCORE_EVENT_CONSTRAINT(0x2d, 0x3),
-+	UNCORE_EVENT_CONSTRAINT(0x2e, 0x3),
-+	UNCORE_EVENT_CONSTRAINT(0x2f, 0x3),
- 	UNCORE_EVENT_CONSTRAINT(0x30, 0x3),
- 	UNCORE_EVENT_CONSTRAINT(0x31, 0x3),
- 	UNCORE_EVENT_CONSTRAINT(0x32, 0x3),
-@@ -423,6 +436,8 @@ static struct event_constraint snbep_uncore_r3qpi_constraints[] = {
- 	UNCORE_EVENT_CONSTRAINT(0x34, 0x3),
- 	UNCORE_EVENT_CONSTRAINT(0x36, 0x3),
- 	UNCORE_EVENT_CONSTRAINT(0x37, 0x3),
-+	UNCORE_EVENT_CONSTRAINT(0x38, 0x3),
-+	UNCORE_EVENT_CONSTRAINT(0x39, 0x3),
- 	EVENT_CONSTRAINT_END
- };
+diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
+index 93fe929..ac10df7 100644
+--- a/arch/x86/include/asm/cpufeature.h
++++ b/arch/x86/include/asm/cpufeature.h
+@@ -168,6 +168,7 @@
+ #define X86_FEATURE_TOPOEXT	(6*32+22) /* topology extensions CPUID leafs */
+ #define X86_FEATURE_PERFCTR_CORE (6*32+23) /* core performance counter extensions */
+ #define X86_FEATURE_PERFCTR_NB  (6*32+24) /* NB performance counter extensions */
++#define X86_FEATURE_PERFCTR_L2	(6*32+28) /* L2 performance counter extensions */
  
-@@ -772,55 +787,63 @@ static struct intel_uncore_type snbep_uncore_r3qpi = {
- 	SNBEP_UNCORE_PCI_COMMON_INIT(),
- };
- 
-+enum {
-+	SNBEP_PCI_UNCORE_HA,
-+	SNBEP_PCI_UNCORE_IMC,
-+	SNBEP_PCI_UNCORE_QPI,
-+	SNBEP_PCI_UNCORE_R2PCIE,
-+	SNBEP_PCI_UNCORE_R3QPI,
-+};
-+
- static struct intel_uncore_type *snbep_pci_uncores[] = {
--	&snbep_uncore_ha,
--	&snbep_uncore_imc,
--	&snbep_uncore_qpi,
--	&snbep_uncore_r2pcie,
--	&snbep_uncore_r3qpi,
-+	[SNBEP_PCI_UNCORE_HA]		= &snbep_uncore_ha,
-+	[SNBEP_PCI_UNCORE_IMC]		= &snbep_uncore_imc,
-+	[SNBEP_PCI_UNCORE_QPI]		= &snbep_uncore_qpi,
-+	[SNBEP_PCI_UNCORE_R2PCIE]	= &snbep_uncore_r2pcie,
-+	[SNBEP_PCI_UNCORE_R3QPI]	= &snbep_uncore_r3qpi,
- 	NULL,
- };
- 
- static DEFINE_PCI_DEVICE_TABLE(snbep_uncore_pci_ids) = {
- 	{ /* Home Agent */
- 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_UNC_HA),
--		.driver_data = (unsigned long)&snbep_uncore_ha,
-+		.driver_data = SNBEP_PCI_UNCORE_HA,
- 	},
- 	{ /* MC Channel 0 */
- 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_UNC_IMC0),
--		.driver_data = (unsigned long)&snbep_uncore_imc,
-+		.driver_data = SNBEP_PCI_UNCORE_IMC,
- 	},
- 	{ /* MC Channel 1 */
- 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_UNC_IMC1),
--		.driver_data = (unsigned long)&snbep_uncore_imc,
-+		.driver_data = SNBEP_PCI_UNCORE_IMC,
- 	},
- 	{ /* MC Channel 2 */
- 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_UNC_IMC2),
--		.driver_data = (unsigned long)&snbep_uncore_imc,
-+		.driver_data = SNBEP_PCI_UNCORE_IMC,
- 	},
- 	{ /* MC Channel 3 */
- 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_UNC_IMC3),
--		.driver_data = (unsigned long)&snbep_uncore_imc,
-+		.driver_data = SNBEP_PCI_UNCORE_IMC,
- 	},
- 	{ /* QPI Port 0 */
- 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_UNC_QPI0),
--		.driver_data = (unsigned long)&snbep_uncore_qpi,
-+		.driver_data = SNBEP_PCI_UNCORE_QPI,
- 	},
- 	{ /* QPI Port 1 */
- 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_UNC_QPI1),
--		.driver_data = (unsigned long)&snbep_uncore_qpi,
-+		.driver_data = SNBEP_PCI_UNCORE_QPI,
- 	},
--	{ /* P2PCIe */
-+	{ /* R2PCIe */
- 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_UNC_R2PCIE),
--		.driver_data = (unsigned long)&snbep_uncore_r2pcie,
-+		.driver_data = SNBEP_PCI_UNCORE_R2PCIE,
- 	},
- 	{ /* R3QPI Link 0 */
- 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_UNC_R3QPI0),
--		.driver_data = (unsigned long)&snbep_uncore_r3qpi,
-+		.driver_data = SNBEP_PCI_UNCORE_R3QPI,
- 	},
- 	{ /* R3QPI Link 1 */
- 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_UNC_R3QPI1),
--		.driver_data = (unsigned long)&snbep_uncore_r3qpi,
-+		.driver_data = SNBEP_PCI_UNCORE_R3QPI,
- 	},
- 	{ /* end: all zeroes */ }
- };
-@@ -833,7 +856,7 @@ static struct pci_driver snbep_uncore_pci_driver = {
  /*
-  * build pci bus to socket mapping
-  */
--static int snbep_pci2phy_map_init(void)
-+static int snbep_pci2phy_map_init(int devid)
- {
- 	struct pci_dev *ubox_dev = NULL;
- 	int i, bus, nodeid;
-@@ -842,9 +865,7 @@ static int snbep_pci2phy_map_init(void)
+  * Auxiliary flags: Linux defined - For features scattered in various
+@@ -311,6 +312,7 @@ extern const char * const x86_power_flags[32];
+ #define cpu_has_pclmulqdq	boot_cpu_has(X86_FEATURE_PCLMULQDQ)
+ #define cpu_has_perfctr_core	boot_cpu_has(X86_FEATURE_PERFCTR_CORE)
+ #define cpu_has_perfctr_nb	boot_cpu_has(X86_FEATURE_PERFCTR_NB)
++#define cpu_has_perfctr_l2	boot_cpu_has(X86_FEATURE_PERFCTR_L2)
+ #define cpu_has_cx8		boot_cpu_has(X86_FEATURE_CX8)
+ #define cpu_has_cx16		boot_cpu_has(X86_FEATURE_CX16)
+ #define cpu_has_eager_fpu	boot_cpu_has(X86_FEATURE_EAGER_FPU)
+diff --git a/arch/x86/include/uapi/asm/msr-index.h b/arch/x86/include/uapi/asm/msr-index.h
+index bf7bb68..b575788 100644
+--- a/arch/x86/include/uapi/asm/msr-index.h
++++ b/arch/x86/include/uapi/asm/msr-index.h
+@@ -196,6 +196,10 @@
+ #define MSR_AMD64_IBSBRTARGET		0xc001103b
+ #define MSR_AMD64_IBS_REG_COUNT_MAX	8 /* includes MSR_AMD64_IBSBRTARGET */
  
- 	while (1) {
- 		/* find the UBOX device */
--		ubox_dev = pci_get_device(PCI_VENDOR_ID_INTEL,
--					PCI_DEVICE_ID_INTEL_JAKETOWN_UBOX,
--					ubox_dev);
-+		ubox_dev = pci_get_device(PCI_VENDOR_ID_INTEL, devid, ubox_dev);
- 		if (!ubox_dev)
- 			break;
- 		bus = ubox_dev->bus->number;
-@@ -867,7 +888,7 @@ static int snbep_pci2phy_map_init(void)
- 				break;
- 			}
- 		}
--	};
++/* Fam 16h MSRs */
++#define MSR_F16H_L2I_PERF_CTL		0xc0010230
++#define MSR_F16H_L2I_PERF_CTR		0xc0010231
++
+ /* Fam 15h MSRs */
+ #define MSR_F15H_PERF_CTL		0xc0010200
+ #define MSR_F15H_PERF_CTR		0xc0010201
+diff --git a/arch/x86/kernel/cpu/Makefile b/arch/x86/kernel/cpu/Makefile
+index a0e067d..0074572 100644
+--- a/arch/x86/kernel/cpu/Makefile
++++ b/arch/x86/kernel/cpu/Makefile
+@@ -31,7 +31,7 @@ obj-$(CONFIG_CPU_SUP_UMC_32)		+= umc.o
+ obj-$(CONFIG_PERF_EVENTS)		+= perf_event.o
+ 
+ ifdef CONFIG_PERF_EVENTS
+-obj-$(CONFIG_CPU_SUP_AMD)		+= perf_event_amd.o
++obj-$(CONFIG_CPU_SUP_AMD)		+= perf_event_amd.o perf_event_amd_uncore.o
+ obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_p6.o perf_event_knc.o perf_event_p4.o
+ obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_intel_lbr.o perf_event_intel_ds.o perf_event_intel.o
+ obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_intel_uncore.o
+diff --git a/arch/x86/kernel/cpu/perf_event_amd_uncore.c b/arch/x86/kernel/cpu/perf_event_amd_uncore.c
+new file mode 100644
+index 0000000..6dc6227
+--- /dev/null
++++ b/arch/x86/kernel/cpu/perf_event_amd_uncore.c
+@@ -0,0 +1,546 @@
++/*
++ * Copyright (C) 2013 Advanced Micro Devices, Inc.
++ *
++ * Author: Jacob Shin <jacob.shin@amd.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/perf_event.h>
++#include <linux/percpu.h>
++#include <linux/types.h>
++#include <linux/slab.h>
++#include <linux/init.h>
++#include <linux/cpu.h>
++#include <linux/cpumask.h>
++
++#include <asm/cpufeature.h>
++#include <asm/perf_event.h>
++#include <asm/msr.h>
++
++#define NUM_COUNTERS_NB		4
++#define NUM_COUNTERS_L2		4
++#define MAX_COUNTERS		NUM_COUNTERS_NB
++
++#define RDPMC_BASE_NB		6
++#define RDPMC_BASE_L2		10
++
++#define COUNTER_SHIFT		16
++
++struct amd_uncore {
++	int id;
++	int refcnt;
++	int cpu;
++	int num_counters;
++	int rdpmc_base;
++	u32 msr_base;
++	cpumask_t *active_mask;
++	struct pmu *pmu;
++	struct perf_event *events[MAX_COUNTERS];
++	struct amd_uncore *free_when_cpu_online;
++};
++
++static struct amd_uncore * __percpu *amd_uncore_nb;
++static struct amd_uncore * __percpu *amd_uncore_l2;
++
++static struct pmu amd_nb_pmu;
++static struct pmu amd_l2_pmu;
++
++static cpumask_t amd_nb_active_mask;
++static cpumask_t amd_l2_active_mask;
++
++static bool is_nb_event(struct perf_event *event)
++{
++	return event->pmu->type == amd_nb_pmu.type;
++}
++
++static bool is_l2_event(struct perf_event *event)
++{
++	return event->pmu->type == amd_l2_pmu.type;
++}
++
++static struct amd_uncore *event_to_amd_uncore(struct perf_event *event)
++{
++	if (is_nb_event(event) && amd_uncore_nb)
++		return *per_cpu_ptr(amd_uncore_nb, event->cpu);
++	else if (is_l2_event(event) && amd_uncore_l2)
++		return *per_cpu_ptr(amd_uncore_l2, event->cpu);
++
++	return NULL;
++}
++
++static void amd_uncore_read(struct perf_event *event)
++{
++	struct hw_perf_event *hwc = &event->hw;
++	u64 prev, new;
++	s64 delta;
++
++	/*
++	 * since we do not enable counter overflow interrupts,
++	 * we do not have to worry about prev_count changing on us
++	 */
++
++	prev = local64_read(&hwc->prev_count);
++	rdpmcl(hwc->event_base_rdpmc, new);
++	local64_set(&hwc->prev_count, new);
++	delta = (new << COUNTER_SHIFT) - (prev << COUNTER_SHIFT);
++	delta >>= COUNTER_SHIFT;
++	local64_add(delta, &event->count);
++}
++
++static void amd_uncore_start(struct perf_event *event, int flags)
++{
++	struct hw_perf_event *hwc = &event->hw;
++
++	if (flags & PERF_EF_RELOAD)
++		wrmsrl(hwc->event_base, (u64)local64_read(&hwc->prev_count));
++
++	hwc->state = 0;
++	wrmsrl(hwc->config_base, (hwc->config | ARCH_PERFMON_EVENTSEL_ENABLE));
++	perf_event_update_userpage(event);
++}
++
++static void amd_uncore_stop(struct perf_event *event, int flags)
++{
++	struct hw_perf_event *hwc = &event->hw;
++
++	wrmsrl(hwc->config_base, hwc->config);
++	hwc->state |= PERF_HES_STOPPED;
++
++	if ((flags & PERF_EF_UPDATE) && !(hwc->state & PERF_HES_UPTODATE)) {
++		amd_uncore_read(event);
++		hwc->state |= PERF_HES_UPTODATE;
 +	}
- 
- 	if (ubox_dev)
- 		pci_dev_put(ubox_dev);
-@@ -876,6 +897,440 @@ static int snbep_pci2phy_map_init(void)
- }
- /* end of Sandy Bridge-EP uncore support */
- 
-+/* IvyTown uncore support */
-+static void ivt_uncore_msr_init_box(struct intel_uncore_box *box)
-+{
-+	unsigned msr = uncore_msr_box_ctl(box);
-+	if (msr)
-+		wrmsrl(msr, IVT_PMON_BOX_CTL_INT);
 +}
 +
-+static void ivt_uncore_pci_init_box(struct intel_uncore_box *box)
++static int amd_uncore_add(struct perf_event *event, int flags)
 +{
-+	struct pci_dev *pdev = box->pci_dev;
++	int i;
++	struct amd_uncore *uncore = event_to_amd_uncore(event);
++	struct hw_perf_event *hwc = &event->hw;
 +
-+	pci_write_config_dword(pdev, SNBEP_PCI_PMON_BOX_CTL, IVT_PMON_BOX_CTL_INT);
-+}
++	/* are we already assigned? */
++	if (hwc->idx != -1 && uncore->events[hwc->idx] == event)
++		goto out;
 +
-+#define IVT_UNCORE_MSR_OPS_COMMON_INIT()			\
-+	.init_box	= ivt_uncore_msr_init_box,		\
-+	.disable_box	= snbep_uncore_msr_disable_box,		\
-+	.enable_box	= snbep_uncore_msr_enable_box,		\
-+	.disable_event	= snbep_uncore_msr_disable_event,	\
-+	.enable_event	= snbep_uncore_msr_enable_event,	\
-+	.read_counter	= uncore_msr_read_counter
-+
-+static struct intel_uncore_ops ivt_uncore_msr_ops = {
-+	IVT_UNCORE_MSR_OPS_COMMON_INIT(),
-+};
-+
-+static struct intel_uncore_ops ivt_uncore_pci_ops = {
-+	.init_box	= ivt_uncore_pci_init_box,
-+	.disable_box	= snbep_uncore_pci_disable_box,
-+	.enable_box	= snbep_uncore_pci_enable_box,
-+	.disable_event	= snbep_uncore_pci_disable_event,
-+	.enable_event	= snbep_uncore_pci_enable_event,
-+	.read_counter	= snbep_uncore_pci_read_counter,
-+};
-+
-+#define IVT_UNCORE_PCI_COMMON_INIT()				\
-+	.perf_ctr	= SNBEP_PCI_PMON_CTR0,			\
-+	.event_ctl	= SNBEP_PCI_PMON_CTL0,			\
-+	.event_mask	= IVT_PMON_RAW_EVENT_MASK,		\
-+	.box_ctl	= SNBEP_PCI_PMON_BOX_CTL,		\
-+	.ops		= &ivt_uncore_pci_ops,			\
-+	.format_group	= &ivt_uncore_format_group
-+
-+static struct attribute *ivt_uncore_formats_attr[] = {
-+	&format_attr_event.attr,
-+	&format_attr_umask.attr,
-+	&format_attr_edge.attr,
-+	&format_attr_inv.attr,
-+	&format_attr_thresh8.attr,
-+	NULL,
-+};
-+
-+static struct attribute *ivt_uncore_ubox_formats_attr[] = {
-+	&format_attr_event.attr,
-+	&format_attr_umask.attr,
-+	&format_attr_edge.attr,
-+	&format_attr_inv.attr,
-+	&format_attr_thresh5.attr,
-+	NULL,
-+};
-+
-+static struct attribute *ivt_uncore_cbox_formats_attr[] = {
-+	&format_attr_event.attr,
-+	&format_attr_umask.attr,
-+	&format_attr_edge.attr,
-+	&format_attr_tid_en.attr,
-+	&format_attr_thresh8.attr,
-+	&format_attr_filter_tid.attr,
-+	&format_attr_filter_link.attr,
-+	&format_attr_filter_state2.attr,
-+	&format_attr_filter_nid2.attr,
-+	&format_attr_filter_opc2.attr,
-+	NULL,
-+};
-+
-+static struct attribute *ivt_uncore_pcu_formats_attr[] = {
-+	&format_attr_event_ext.attr,
-+	&format_attr_occ_sel.attr,
-+	&format_attr_edge.attr,
-+	&format_attr_thresh5.attr,
-+	&format_attr_occ_invert.attr,
-+	&format_attr_occ_edge.attr,
-+	&format_attr_filter_band0.attr,
-+	&format_attr_filter_band1.attr,
-+	&format_attr_filter_band2.attr,
-+	&format_attr_filter_band3.attr,
-+	NULL,
-+};
-+
-+static struct attribute *ivt_uncore_qpi_formats_attr[] = {
-+	&format_attr_event_ext.attr,
-+	&format_attr_umask.attr,
-+	&format_attr_edge.attr,
-+	&format_attr_thresh8.attr,
-+	NULL,
-+};
-+
-+static struct attribute_group ivt_uncore_format_group = {
-+	.name = "format",
-+	.attrs = ivt_uncore_formats_attr,
-+};
-+
-+static struct attribute_group ivt_uncore_ubox_format_group = {
-+	.name = "format",
-+	.attrs = ivt_uncore_ubox_formats_attr,
-+};
-+
-+static struct attribute_group ivt_uncore_cbox_format_group = {
-+	.name = "format",
-+	.attrs = ivt_uncore_cbox_formats_attr,
-+};
-+
-+static struct attribute_group ivt_uncore_pcu_format_group = {
-+	.name = "format",
-+	.attrs = ivt_uncore_pcu_formats_attr,
-+};
-+
-+static struct attribute_group ivt_uncore_qpi_format_group = {
-+	.name = "format",
-+	.attrs = ivt_uncore_qpi_formats_attr,
-+};
-+
-+static struct intel_uncore_type ivt_uncore_ubox = {
-+	.name		= "ubox",
-+	.num_counters   = 2,
-+	.num_boxes	= 1,
-+	.perf_ctr_bits	= 44,
-+	.fixed_ctr_bits	= 48,
-+	.perf_ctr	= SNBEP_U_MSR_PMON_CTR0,
-+	.event_ctl	= SNBEP_U_MSR_PMON_CTL0,
-+	.event_mask	= IVT_U_MSR_PMON_RAW_EVENT_MASK,
-+	.fixed_ctr	= SNBEP_U_MSR_PMON_UCLK_FIXED_CTR,
-+	.fixed_ctl	= SNBEP_U_MSR_PMON_UCLK_FIXED_CTL,
-+	.ops		= &ivt_uncore_msr_ops,
-+	.format_group	= &ivt_uncore_ubox_format_group,
-+};
-+
-+static struct extra_reg ivt_uncore_cbox_extra_regs[] = {
-+	SNBEP_CBO_EVENT_EXTRA_REG(SNBEP_CBO_PMON_CTL_TID_EN,
-+				  SNBEP_CBO_PMON_CTL_TID_EN, 0x1),
-+	SNBEP_CBO_EVENT_EXTRA_REG(0x1031, 0x10ff, 0x2),
-+	SNBEP_CBO_EVENT_EXTRA_REG(0x0334, 0xffff, 0x4),
-+	SNBEP_CBO_EVENT_EXTRA_REG(0x0534, 0xffff, 0x4),
-+	SNBEP_CBO_EVENT_EXTRA_REG(0x0934, 0xffff, 0x4),
-+	SNBEP_CBO_EVENT_EXTRA_REG(0x4134, 0xffff, 0xc),
-+	SNBEP_CBO_EVENT_EXTRA_REG(0x0135, 0xffff, 0x10),
-+	SNBEP_CBO_EVENT_EXTRA_REG(0x0335, 0xffff, 0x10),
-+	SNBEP_CBO_EVENT_EXTRA_REG(0x2135, 0xffff, 0x10),
-+	SNBEP_CBO_EVENT_EXTRA_REG(0x2335, 0xffff, 0x10),
-+	SNBEP_CBO_EVENT_EXTRA_REG(0x4135, 0xffff, 0x18),
-+	SNBEP_CBO_EVENT_EXTRA_REG(0x4335, 0xffff, 0x18),
-+	SNBEP_CBO_EVENT_EXTRA_REG(0x4435, 0xffff, 0x8),
-+	SNBEP_CBO_EVENT_EXTRA_REG(0x4835, 0xffff, 0x8),
-+	SNBEP_CBO_EVENT_EXTRA_REG(0x4a35, 0xffff, 0x8),
-+	SNBEP_CBO_EVENT_EXTRA_REG(0x5035, 0xffff, 0x8),
-+	SNBEP_CBO_EVENT_EXTRA_REG(0x8135, 0xffff, 0x10),
-+	SNBEP_CBO_EVENT_EXTRA_REG(0x8335, 0xffff, 0x10),
-+	SNBEP_CBO_EVENT_EXTRA_REG(0x0136, 0xffff, 0x10),
-+	SNBEP_CBO_EVENT_EXTRA_REG(0x0336, 0xffff, 0x10),
-+	SNBEP_CBO_EVENT_EXTRA_REG(0x2336, 0xffff, 0x10),
-+	SNBEP_CBO_EVENT_EXTRA_REG(0x2336, 0xffff, 0x10),
-+	SNBEP_CBO_EVENT_EXTRA_REG(0x4136, 0xffff, 0x18),
-+	SNBEP_CBO_EVENT_EXTRA_REG(0x4336, 0xffff, 0x18),
-+	SNBEP_CBO_EVENT_EXTRA_REG(0x4436, 0xffff, 0x8),
-+	SNBEP_CBO_EVENT_EXTRA_REG(0x4836, 0xffff, 0x8),
-+	SNBEP_CBO_EVENT_EXTRA_REG(0x4a36, 0xffff, 0x8),
-+	SNBEP_CBO_EVENT_EXTRA_REG(0x5036, 0xffff, 0x8),
-+	SNBEP_CBO_EVENT_EXTRA_REG(0x8136, 0xffff, 0x10),
-+	SNBEP_CBO_EVENT_EXTRA_REG(0x8336, 0xffff, 0x10),
-+	SNBEP_CBO_EVENT_EXTRA_REG(0x4037, 0x40ff, 0x8),
-+	EVENT_EXTRA_END
-+};
-+
-+static u64 ivt_cbox_filter_mask(int fields)
-+{
-+	u64 mask = 0;
-+
-+	if (fields & 0x1)
-+		mask |= IVT_CB0_MSR_PMON_BOX_FILTER_TID;
-+	if (fields & 0x2)
-+		mask |= IVT_CB0_MSR_PMON_BOX_FILTER_LINK;
-+	if (fields & 0x4)
-+		mask |= IVT_CB0_MSR_PMON_BOX_FILTER_STATE;
-+	if (fields & 0x8)
-+		mask |= IVT_CB0_MSR_PMON_BOX_FILTER_NID;
-+	if (fields & 0x10)
-+		mask |= IVT_CB0_MSR_PMON_BOX_FILTER_OPC;
-+
-+	return mask;
-+}
-+
-+static struct event_constraint *
-+ivt_cbox_get_constraint(struct intel_uncore_box *box, struct perf_event *event)
-+{
-+	return __snbep_cbox_get_constraint(box, event, ivt_cbox_filter_mask);
-+}
-+
-+static int ivt_cbox_hw_config(struct intel_uncore_box *box, struct perf_event *event)
-+{
-+	struct hw_perf_event_extra *reg1 = &event->hw.extra_reg;
-+	struct extra_reg *er;
-+	int idx = 0;
-+
-+	for (er = ivt_uncore_cbox_extra_regs; er->msr; er++) {
-+		if (er->event != (event->hw.config & er->config_mask))
-+			continue;
-+		idx |= er->idx;
++	for (i = 0; i < uncore->num_counters; i++) {
++		if (uncore->events[i] == event) {
++			hwc->idx = i;
++			goto out;
++		}
 +	}
 +
-+	if (idx) {
-+		reg1->reg = SNBEP_C0_MSR_PMON_BOX_FILTER +
-+			SNBEP_CBO_MSR_OFFSET * box->pmu->pmu_idx;
-+		reg1->config = event->attr.config1 & ivt_cbox_filter_mask(idx);
-+		reg1->idx = idx;
++	/* if not, take the first available counter */
++	hwc->idx = -1;
++	for (i = 0; i < uncore->num_counters; i++) {
++		if (cmpxchg(&uncore->events[i], NULL, event) == NULL) {
++			hwc->idx = i;
++			break;
++		}
 +	}
++
++out:
++	if (hwc->idx == -1)
++		return -EBUSY;
++
++	hwc->config_base = uncore->msr_base + (2 * hwc->idx);
++	hwc->event_base = uncore->msr_base + 1 + (2 * hwc->idx);
++	hwc->event_base_rdpmc = uncore->rdpmc_base + hwc->idx;
++	hwc->state = PERF_HES_UPTODATE | PERF_HES_STOPPED;
++
++	if (flags & PERF_EF_START)
++		amd_uncore_start(event, PERF_EF_RELOAD);
++
 +	return 0;
 +}
 +
-+static void ivt_cbox_enable_event(struct intel_uncore_box *box, struct perf_event *event)
++static void amd_uncore_del(struct perf_event *event, int flags)
 +{
++	int i;
++	struct amd_uncore *uncore = event_to_amd_uncore(event);
 +	struct hw_perf_event *hwc = &event->hw;
-+	struct hw_perf_event_extra *reg1 = &hwc->extra_reg;
 +
-+	if (reg1->idx != EXTRA_REG_NONE) {
-+		u64 filter = uncore_shared_reg_config(box, 0);
-+		wrmsrl(reg1->reg, filter & 0xffffffff);
-+		wrmsrl(reg1->reg + 6, filter >> 32);
++	amd_uncore_stop(event, PERF_EF_UPDATE);
++
++	for (i = 0; i < uncore->num_counters; i++) {
++		if (cmpxchg(&uncore->events[i], event, NULL) == event)
++			break;
 +	}
 +
-+	wrmsrl(hwc->config_base, hwc->config | SNBEP_PMON_CTL_EN);
++	hwc->idx = -1;
 +}
 +
-+static struct intel_uncore_ops ivt_uncore_cbox_ops = {
-+	.init_box		= ivt_uncore_msr_init_box,
-+	.disable_box		= snbep_uncore_msr_disable_box,
-+	.enable_box		= snbep_uncore_msr_enable_box,
-+	.disable_event		= snbep_uncore_msr_disable_event,
-+	.enable_event		= ivt_cbox_enable_event,
-+	.read_counter		= uncore_msr_read_counter,
-+	.hw_config		= ivt_cbox_hw_config,
-+	.get_constraint		= ivt_cbox_get_constraint,
-+	.put_constraint		= snbep_cbox_put_constraint,
-+};
++static int amd_uncore_event_init(struct perf_event *event)
++{
++	struct amd_uncore *uncore;
++	struct hw_perf_event *hwc = &event->hw;
 +
-+static struct intel_uncore_type ivt_uncore_cbox = {
-+	.name			= "cbox",
-+	.num_counters		= 4,
-+	.num_boxes		= 15,
-+	.perf_ctr_bits		= 44,
-+	.event_ctl		= SNBEP_C0_MSR_PMON_CTL0,
-+	.perf_ctr		= SNBEP_C0_MSR_PMON_CTR0,
-+	.event_mask		= IVT_CBO_MSR_PMON_RAW_EVENT_MASK,
-+	.box_ctl		= SNBEP_C0_MSR_PMON_BOX_CTL,
-+	.msr_offset		= SNBEP_CBO_MSR_OFFSET,
-+	.num_shared_regs	= 1,
-+	.constraints		= snbep_uncore_cbox_constraints,
-+	.ops			= &ivt_uncore_cbox_ops,
-+	.format_group		= &ivt_uncore_cbox_format_group,
-+};
++	if (event->attr.type != event->pmu->type)
++		return -ENOENT;
 +
-+static struct intel_uncore_ops ivt_uncore_pcu_ops = {
-+	IVT_UNCORE_MSR_OPS_COMMON_INIT(),
-+	.hw_config		= snbep_pcu_hw_config,
-+	.get_constraint		= snbep_pcu_get_constraint,
-+	.put_constraint		= snbep_pcu_put_constraint,
-+};
++	/*
++	 * NB and L2 counters (MSRs) are shared across all cores that share the
++	 * same NB / L2 cache. Interrupts can be directed to a single target
++	 * core, however, event counts generated by processes running on other
++	 * cores cannot be masked out. So we do not support sampling and
++	 * per-thread events.
++	 */
++	if (is_sampling_event(event) || event->attach_state & PERF_ATTACH_TASK)
++		return -EINVAL;
 +
-+static struct intel_uncore_type ivt_uncore_pcu = {
-+	.name			= "pcu",
-+	.num_counters		= 4,
-+	.num_boxes		= 1,
-+	.perf_ctr_bits		= 48,
-+	.perf_ctr		= SNBEP_PCU_MSR_PMON_CTR0,
-+	.event_ctl		= SNBEP_PCU_MSR_PMON_CTL0,
-+	.event_mask		= IVT_PCU_MSR_PMON_RAW_EVENT_MASK,
-+	.box_ctl		= SNBEP_PCU_MSR_PMON_BOX_CTL,
-+	.num_shared_regs	= 1,
-+	.ops			= &ivt_uncore_pcu_ops,
-+	.format_group		= &ivt_uncore_pcu_format_group,
-+};
++	/* NB and L2 counters do not have usr/os/guest/host bits */
++	if (event->attr.exclude_user || event->attr.exclude_kernel ||
++	    event->attr.exclude_host || event->attr.exclude_guest)
++		return -EINVAL;
 +
-+static struct intel_uncore_type *ivt_msr_uncores[] = {
-+	&ivt_uncore_ubox,
-+	&ivt_uncore_cbox,
-+	&ivt_uncore_pcu,
++	/* and we do not enable counter overflow interrupts */
++	hwc->config = event->attr.config & AMD64_RAW_EVENT_MASK_NB;
++	hwc->idx = -1;
++
++	if (event->cpu < 0)
++		return -EINVAL;
++
++	uncore = event_to_amd_uncore(event);
++	if (!uncore)
++		return -ENODEV;
++
++	/*
++	 * since request can come in to any of the shared cores, we will remap
++	 * to a single common cpu.
++	 */
++	event->cpu = uncore->cpu;
++
++	return 0;
++}
++
++static ssize_t amd_uncore_attr_show_cpumask(struct device *dev,
++					    struct device_attribute *attr,
++					    char *buf)
++{
++	int n;
++	cpumask_t *active_mask;
++	struct pmu *pmu = dev_get_drvdata(dev);
++
++	if (pmu->type == amd_nb_pmu.type)
++		active_mask = &amd_nb_active_mask;
++	else if (pmu->type == amd_l2_pmu.type)
++		active_mask = &amd_l2_active_mask;
++	else
++		return 0;
++
++	n = cpulist_scnprintf(buf, PAGE_SIZE - 2, active_mask);
++	buf[n++] = '\n';
++	buf[n] = '\0';
++	return n;
++}
++static DEVICE_ATTR(cpumask, S_IRUGO, amd_uncore_attr_show_cpumask, NULL);
++
++static struct attribute *amd_uncore_attrs[] = {
++	&dev_attr_cpumask.attr,
 +	NULL,
 +};
 +
-+static struct intel_uncore_type ivt_uncore_ha = {
-+	.name		= "ha",
-+	.num_counters   = 4,
-+	.num_boxes	= 2,
-+	.perf_ctr_bits	= 48,
-+	IVT_UNCORE_PCI_COMMON_INIT(),
++static struct attribute_group amd_uncore_attr_group = {
++	.attrs = amd_uncore_attrs,
 +};
 +
-+static struct intel_uncore_type ivt_uncore_imc = {
-+	.name		= "imc",
-+	.num_counters   = 4,
-+	.num_boxes	= 8,
-+	.perf_ctr_bits	= 48,
-+	.fixed_ctr_bits	= 48,
-+	.fixed_ctr	= SNBEP_MC_CHy_PCI_PMON_FIXED_CTR,
-+	.fixed_ctl	= SNBEP_MC_CHy_PCI_PMON_FIXED_CTL,
-+	IVT_UNCORE_PCI_COMMON_INIT(),
-+};
++PMU_FORMAT_ATTR(event, "config:0-7,32-35");
++PMU_FORMAT_ATTR(umask, "config:8-15");
 +
-+static struct intel_uncore_type ivt_uncore_qpi = {
-+	.name		= "qpi",
-+	.num_counters   = 4,
-+	.num_boxes	= 3,
-+	.perf_ctr_bits	= 48,
-+	.perf_ctr	= SNBEP_PCI_PMON_CTR0,
-+	.event_ctl	= SNBEP_PCI_PMON_CTL0,
-+	.event_mask	= IVT_QPI_PCI_PMON_RAW_EVENT_MASK,
-+	.box_ctl	= SNBEP_PCI_PMON_BOX_CTL,
-+	.ops		= &ivt_uncore_pci_ops,
-+	.format_group	= &ivt_uncore_qpi_format_group,
-+};
-+
-+static struct intel_uncore_type ivt_uncore_r2pcie = {
-+	.name		= "r2pcie",
-+	.num_counters   = 4,
-+	.num_boxes	= 1,
-+	.perf_ctr_bits	= 44,
-+	.constraints	= snbep_uncore_r2pcie_constraints,
-+	IVT_UNCORE_PCI_COMMON_INIT(),
-+};
-+
-+static struct intel_uncore_type ivt_uncore_r3qpi = {
-+	.name		= "r3qpi",
-+	.num_counters   = 3,
-+	.num_boxes	= 2,
-+	.perf_ctr_bits	= 44,
-+	.constraints	= snbep_uncore_r3qpi_constraints,
-+	IVT_UNCORE_PCI_COMMON_INIT(),
-+};
-+
-+enum {
-+	IVT_PCI_UNCORE_HA,
-+	IVT_PCI_UNCORE_IMC,
-+	IVT_PCI_UNCORE_QPI,
-+	IVT_PCI_UNCORE_R2PCIE,
-+	IVT_PCI_UNCORE_R3QPI,
-+};
-+
-+static struct intel_uncore_type *ivt_pci_uncores[] = {
-+	[IVT_PCI_UNCORE_HA]	= &ivt_uncore_ha,
-+	[IVT_PCI_UNCORE_IMC]	= &ivt_uncore_imc,
-+	[IVT_PCI_UNCORE_QPI]	= &ivt_uncore_qpi,
-+	[IVT_PCI_UNCORE_R2PCIE]	= &ivt_uncore_r2pcie,
-+	[IVT_PCI_UNCORE_R3QPI]	= &ivt_uncore_r3qpi,
++static struct attribute *amd_uncore_format_attr[] = {
++	&format_attr_event.attr,
++	&format_attr_umask.attr,
 +	NULL,
 +};
 +
-+static DEFINE_PCI_DEVICE_TABLE(ivt_uncore_pci_ids) = {
-+	{ /* Home Agent 0 */
-+		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0xe30),
-+		.driver_data = IVT_PCI_UNCORE_HA,
-+	},
-+	{ /* Home Agent 1 */
-+		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0xe38),
-+		.driver_data = IVT_PCI_UNCORE_HA,
-+	},
-+	{ /* MC0 Channel 0 */
-+		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0xeb4),
-+		.driver_data = IVT_PCI_UNCORE_IMC,
-+	},
-+	{ /* MC0 Channel 1 */
-+		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0xeb5),
-+		.driver_data = IVT_PCI_UNCORE_IMC,
-+	},
-+	{ /* MC0 Channel 3 */
-+		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0xeb0),
-+		.driver_data = IVT_PCI_UNCORE_IMC,
-+	},
-+	{ /* MC0 Channel 4 */
-+		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0xeb1),
-+		.driver_data = IVT_PCI_UNCORE_IMC,
-+	},
-+	{ /* MC1 Channel 0 */
-+		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0xef4),
-+		.driver_data = IVT_PCI_UNCORE_IMC,
-+	},
-+	{ /* MC1 Channel 1 */
-+		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0xef5),
-+		.driver_data = IVT_PCI_UNCORE_IMC,
-+	},
-+	{ /* MC1 Channel 3 */
-+		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0xef0),
-+		.driver_data = IVT_PCI_UNCORE_IMC,
-+	},
-+	{ /* MC1 Channel 4 */
-+		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0xef1),
-+		.driver_data = IVT_PCI_UNCORE_IMC,
-+	},
-+	{ /* QPI0 Port 0 */
-+		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0xe32),
-+		.driver_data = IVT_PCI_UNCORE_QPI,
-+	},
-+	{ /* QPI0 Port 1 */
-+		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0xe33),
-+		.driver_data = IVT_PCI_UNCORE_QPI,
-+	},
-+	{ /* QPI1 Port 2 */
-+		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0xe3a),
-+		.driver_data = IVT_PCI_UNCORE_QPI,
-+	},
-+	{ /* R2PCIe */
-+		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0xe34),
-+		.driver_data = IVT_PCI_UNCORE_R2PCIE,
-+	},
-+	{ /* R3QPI0 Link 0 */
-+		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0xe36),
-+		.driver_data = IVT_PCI_UNCORE_R3QPI,
-+	},
-+	{ /* R3QPI0 Link 1 */
-+		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0xe37),
-+		.driver_data = IVT_PCI_UNCORE_R3QPI,
-+	},
-+	{ /* R3QPI1 Link 2 */
-+		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0xe3e),
-+		.driver_data = IVT_PCI_UNCORE_R3QPI,
-+	},
-+	{ /* end: all zeroes */ }
++static struct attribute_group amd_uncore_format_group = {
++	.name = "format",
++	.attrs = amd_uncore_format_attr,
 +};
 +
-+static struct pci_driver ivt_uncore_pci_driver = {
-+	.name		= "ivt_uncore",
-+	.id_table	= ivt_uncore_pci_ids,
++static const struct attribute_group *amd_uncore_attr_groups[] = {
++	&amd_uncore_attr_group,
++	&amd_uncore_format_group,
++	NULL,
 +};
-+/* end of IvyTown uncore support */
 +
- /* Sandy Bridge uncore support */
- static void snb_uncore_msr_enable_event(struct intel_uncore_box *box, struct perf_event *event)
- {
-@@ -2766,6 +3221,8 @@ static void uncore_pci_remove(struct pci_dev *pdev)
- 	if (WARN_ON_ONCE(phys_id != box->phys_id))
- 		return;
- 
-+	pci_set_drvdata(pdev, NULL);
++static struct pmu amd_nb_pmu = {
++	.attr_groups	= amd_uncore_attr_groups,
++	.name		= "amd_nb",
++	.event_init	= amd_uncore_event_init,
++	.add		= amd_uncore_add,
++	.del		= amd_uncore_del,
++	.start		= amd_uncore_start,
++	.stop		= amd_uncore_stop,
++	.read		= amd_uncore_read,
++};
 +
- 	raw_spin_lock(&uncore_box_lock);
- 	list_del(&box->list);
- 	raw_spin_unlock(&uncore_box_lock);
-@@ -2784,11 +3241,7 @@ static void uncore_pci_remove(struct pci_dev *pdev)
- static int uncore_pci_probe(struct pci_dev *pdev,
- 			    const struct pci_device_id *id)
- {
--	struct intel_uncore_type *type;
--
--	type = (struct intel_uncore_type *)id->driver_data;
--
--	return uncore_pci_add(type, pdev);
-+	return uncore_pci_add(pci_uncores[id->driver_data], pdev);
- }
- 
- static int __init uncore_pci_init(void)
-@@ -2797,12 +3250,19 @@ static int __init uncore_pci_init(void)
- 
- 	switch (boot_cpu_data.x86_model) {
- 	case 45: /* Sandy Bridge-EP */
--		ret = snbep_pci2phy_map_init();
-+		ret = snbep_pci2phy_map_init(0x3ce0);
- 		if (ret)
- 			return ret;
- 		pci_uncores = snbep_pci_uncores;
- 		uncore_pci_driver = &snbep_uncore_pci_driver;
- 		break;
-+	case 62: /* IvyTown */
-+		ret = snbep_pci2phy_map_init(0x0e1e);
-+		if (ret)
-+			return ret;
-+		pci_uncores = ivt_pci_uncores;
-+		uncore_pci_driver = &ivt_uncore_pci_driver;
++static struct pmu amd_l2_pmu = {
++	.attr_groups	= amd_uncore_attr_groups,
++	.name		= "amd_l2",
++	.event_init	= amd_uncore_event_init,
++	.add		= amd_uncore_add,
++	.del		= amd_uncore_del,
++	.start		= amd_uncore_start,
++	.stop		= amd_uncore_stop,
++	.read		= amd_uncore_read,
++};
++
++static struct amd_uncore * __cpuinit amd_uncore_alloc(unsigned int cpu)
++{
++	return kzalloc_node(sizeof(struct amd_uncore), GFP_KERNEL,
++			cpu_to_node(cpu));
++}
++
++static void __cpuinit amd_uncore_cpu_up_prepare(unsigned int cpu)
++{
++	struct amd_uncore *uncore;
++
++	if (amd_uncore_nb) {
++		uncore = amd_uncore_alloc(cpu);
++		uncore->cpu = cpu;
++		uncore->num_counters = NUM_COUNTERS_NB;
++		uncore->rdpmc_base = RDPMC_BASE_NB;
++		uncore->msr_base = MSR_F15H_NB_PERF_CTL;
++		uncore->active_mask = &amd_nb_active_mask;
++		uncore->pmu = &amd_nb_pmu;
++		*per_cpu_ptr(amd_uncore_nb, cpu) = uncore;
++	}
++
++	if (amd_uncore_l2) {
++		uncore = amd_uncore_alloc(cpu);
++		uncore->cpu = cpu;
++		uncore->num_counters = NUM_COUNTERS_L2;
++		uncore->rdpmc_base = RDPMC_BASE_L2;
++		uncore->msr_base = MSR_F16H_L2I_PERF_CTL;
++		uncore->active_mask = &amd_l2_active_mask;
++		uncore->pmu = &amd_l2_pmu;
++		*per_cpu_ptr(amd_uncore_l2, cpu) = uncore;
++	}
++}
++
++static struct amd_uncore *
++__cpuinit amd_uncore_find_online_sibling(struct amd_uncore *this,
++					 struct amd_uncore * __percpu *uncores)
++{
++	unsigned int cpu;
++	struct amd_uncore *that;
++
++	for_each_online_cpu(cpu) {
++		that = *per_cpu_ptr(uncores, cpu);
++
++		if (!that)
++			continue;
++
++		if (this == that)
++			continue;
++
++		if (this->id == that->id) {
++			that->free_when_cpu_online = this;
++			this = that;
++			break;
++		}
++	}
++
++	this->refcnt++;
++	return this;
++}
++
++static void __cpuinit amd_uncore_cpu_starting(unsigned int cpu)
++{
++	unsigned int eax, ebx, ecx, edx;
++	struct amd_uncore *uncore;
++
++	if (amd_uncore_nb) {
++		uncore = *per_cpu_ptr(amd_uncore_nb, cpu);
++		cpuid(0x8000001e, &eax, &ebx, &ecx, &edx);
++		uncore->id = ecx & 0xff;
++
++		uncore = amd_uncore_find_online_sibling(uncore, amd_uncore_nb);
++		*per_cpu_ptr(amd_uncore_nb, cpu) = uncore;
++	}
++
++	if (amd_uncore_l2) {
++		unsigned int apicid = cpu_data(cpu).apicid;
++		unsigned int nshared;
++
++		uncore = *per_cpu_ptr(amd_uncore_l2, cpu);
++		cpuid_count(0x8000001d, 2, &eax, &ebx, &ecx, &edx);
++		nshared = ((eax >> 14) & 0xfff) + 1;
++		uncore->id = apicid - (apicid % nshared);
++
++		uncore = amd_uncore_find_online_sibling(uncore, amd_uncore_l2);
++		*per_cpu_ptr(amd_uncore_l2, cpu) = uncore;
++	}
++}
++
++static void __cpuinit uncore_online(unsigned int cpu,
++				    struct amd_uncore * __percpu *uncores)
++{
++	struct amd_uncore *uncore = *per_cpu_ptr(uncores, cpu);
++
++	kfree(uncore->free_when_cpu_online);
++	uncore->free_when_cpu_online = NULL;
++
++	if (cpu == uncore->cpu)
++		cpumask_set_cpu(cpu, uncore->active_mask);
++}
++
++static void __cpuinit amd_uncore_cpu_online(unsigned int cpu)
++{
++	if (amd_uncore_nb)
++		uncore_online(cpu, amd_uncore_nb);
++
++	if (amd_uncore_l2)
++		uncore_online(cpu, amd_uncore_l2);
++}
++
++static void __cpuinit uncore_down_prepare(unsigned int cpu,
++					  struct amd_uncore * __percpu *uncores)
++{
++	unsigned int i;
++	struct amd_uncore *this = *per_cpu_ptr(uncores, cpu);
++
++	if (this->cpu != cpu)
++		return;
++
++	/* this cpu is going down, migrate to a shared sibling if possible */
++	for_each_online_cpu(i) {
++		struct amd_uncore *that = *per_cpu_ptr(uncores, i);
++
++		if (cpu == i)
++			continue;
++
++		if (this == that) {
++			perf_pmu_migrate_context(this->pmu, cpu, i);
++			cpumask_clear_cpu(cpu, that->active_mask);
++			cpumask_set_cpu(i, that->active_mask);
++			that->cpu = i;
++			break;
++		}
++	}
++}
++
++static void __cpuinit amd_uncore_cpu_down_prepare(unsigned int cpu)
++{
++	if (amd_uncore_nb)
++		uncore_down_prepare(cpu, amd_uncore_nb);
++
++	if (amd_uncore_l2)
++		uncore_down_prepare(cpu, amd_uncore_l2);
++}
++
++static void __cpuinit uncore_dead(unsigned int cpu,
++				  struct amd_uncore * __percpu *uncores)
++{
++	struct amd_uncore *uncore = *per_cpu_ptr(uncores, cpu);
++
++	if (cpu == uncore->cpu)
++		cpumask_clear_cpu(cpu, uncore->active_mask);
++
++	if (!--uncore->refcnt)
++		kfree(uncore);
++	*per_cpu_ptr(amd_uncore_nb, cpu) = NULL;
++}
++
++static void __cpuinit amd_uncore_cpu_dead(unsigned int cpu)
++{
++	if (amd_uncore_nb)
++		uncore_dead(cpu, amd_uncore_nb);
++
++	if (amd_uncore_l2)
++		uncore_dead(cpu, amd_uncore_l2);
++}
++
++static int __cpuinit
++amd_uncore_cpu_notifier(struct notifier_block *self, unsigned long action,
++			void *hcpu)
++{
++	unsigned int cpu = (long)hcpu;
++
++	switch (action & ~CPU_TASKS_FROZEN) {
++	case CPU_UP_PREPARE:
++		amd_uncore_cpu_up_prepare(cpu);
 +		break;
- 	default:
- 		return 0;
- 	}
-@@ -3103,6 +3563,12 @@ static int __init uncore_cpu_init(void)
- 			nhmex_uncore_cbox.num_boxes = max_cores;
- 		msr_uncores = nhmex_msr_uncores;
- 		break;
-+	case 62: /* IvyTown */
-+		if (ivt_uncore_cbox.num_boxes > max_cores)
-+			ivt_uncore_cbox.num_boxes = max_cores;
-+		msr_uncores = ivt_msr_uncores;
++
++	case CPU_STARTING:
++		amd_uncore_cpu_starting(cpu);
 +		break;
 +
- 	default:
- 		return 0;
- 	}
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.h b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-index f14a341..f952891 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-@@ -76,7 +76,7 @@
- #define SNBEP_PMON_CTL_UMASK_MASK	0x0000ff00
- #define SNBEP_PMON_CTL_RST		(1 << 17)
- #define SNBEP_PMON_CTL_EDGE_DET		(1 << 18)
--#define SNBEP_PMON_CTL_EV_SEL_EXT	(1 << 21)	/* only for QPI */
-+#define SNBEP_PMON_CTL_EV_SEL_EXT	(1 << 21)
- #define SNBEP_PMON_CTL_EN		(1 << 22)
- #define SNBEP_PMON_CTL_INVERT		(1 << 23)
- #define SNBEP_PMON_CTL_TRESH_MASK	0xff000000
-@@ -171,6 +171,55 @@
- #define SNBEP_PCU_MSR_CORE_C3_CTR		0x3fc
- #define SNBEP_PCU_MSR_CORE_C6_CTR		0x3fd
- 
-+/* IVT event control */
-+#define IVT_PMON_BOX_CTL_INT		(SNBEP_PMON_BOX_CTL_RST_CTRL | \
-+					 SNBEP_PMON_BOX_CTL_RST_CTRS)
-+#define IVT_PMON_RAW_EVENT_MASK		(SNBEP_PMON_CTL_EV_SEL_MASK | \
-+					 SNBEP_PMON_CTL_UMASK_MASK | \
-+					 SNBEP_PMON_CTL_EDGE_DET | \
-+					 SNBEP_PMON_CTL_TRESH_MASK)
-+/* IVT Ubox */
-+#define IVT_U_MSR_PMON_GLOBAL_CTL		0xc00
-+#define IVT_U_PMON_GLOBAL_FRZ_ALL		(1 << 31)
-+#define IVT_U_PMON_GLOBAL_UNFRZ_ALL		(1 << 29)
++	case CPU_ONLINE:
++		amd_uncore_cpu_online(cpu);
++		break;
 +
-+#define IVT_U_MSR_PMON_RAW_EVENT_MASK	\
-+				(SNBEP_PMON_CTL_EV_SEL_MASK | \
-+				 SNBEP_PMON_CTL_UMASK_MASK | \
-+				 SNBEP_PMON_CTL_EDGE_DET | \
-+				 SNBEP_U_MSR_PMON_CTL_TRESH_MASK)
-+/* IVT Cbo */
-+#define IVT_CBO_MSR_PMON_RAW_EVENT_MASK		(IVT_PMON_RAW_EVENT_MASK | \
-+						 SNBEP_CBO_PMON_CTL_TID_EN)
++	case CPU_DOWN_PREPARE:
++		amd_uncore_cpu_down_prepare(cpu);
++		break;
 +
-+#define IVT_CB0_MSR_PMON_BOX_FILTER_TID		(0x1fULL << 0)
-+#define IVT_CB0_MSR_PMON_BOX_FILTER_LINK	(0xfULL << 5)
-+#define IVT_CB0_MSR_PMON_BOX_FILTER_STATE	(0x3fULL << 17)
-+#define IVT_CB0_MSR_PMON_BOX_FILTER_NID		(0xffffULL << 32)
-+#define IVT_CB0_MSR_PMON_BOX_FILTER_OPC		(0x1ffULL << 52)
-+#define IVT_CB0_MSR_PMON_BOX_FILTER_C6		(0x1ULL << 61)
-+#define IVT_CB0_MSR_PMON_BOX_FILTER_NC		(0x1ULL << 62)
-+#define IVT_CB0_MSR_PMON_BOX_FILTER_IOSC	(0x1ULL << 63)
++	case CPU_UP_CANCELED:
++	case CPU_DEAD:
++		amd_uncore_cpu_dead(cpu);
++		break;
 +
-+/* IVT home agent */
-+#define IVT_HA_PCI_PMON_CTL_Q_OCC_RST		(1 << 16)
-+#define IVT_HA_PCI_PMON_RAW_EVENT_MASK		\
-+				(IVT_PMON_RAW_EVENT_MASK | \
-+				 IVT_HA_PCI_PMON_CTL_Q_OCC_RST)
-+/* IVT PCU */
-+#define IVT_PCU_MSR_PMON_RAW_EVENT_MASK	\
-+				(SNBEP_PMON_CTL_EV_SEL_MASK | \
-+				 SNBEP_PMON_CTL_EV_SEL_EXT | \
-+				 SNBEP_PCU_MSR_PMON_CTL_OCC_SEL_MASK | \
-+				 SNBEP_PMON_CTL_EDGE_DET | \
-+				 SNBEP_PCU_MSR_PMON_CTL_TRESH_MASK | \
-+				 SNBEP_PCU_MSR_PMON_CTL_OCC_INVERT | \
-+				 SNBEP_PCU_MSR_PMON_CTL_OCC_EDGE_DET)
-+/* IVT QPI */
-+#define IVT_QPI_PCI_PMON_RAW_EVENT_MASK	\
-+				(IVT_PMON_RAW_EVENT_MASK | \
-+				 SNBEP_PMON_CTL_EV_SEL_EXT)
++	default:
++		break;
++	}
 +
- /* NHM-EX event control */
- #define NHMEX_PMON_CTL_EV_SEL_MASK	0x000000ff
- #define NHMEX_PMON_CTL_UMASK_MASK	0x0000ff00
++	return NOTIFY_OK;
++}
++
++static struct notifier_block amd_uncore_cpu_notifier_block __cpuinitdata = {
++	.notifier_call	= amd_uncore_cpu_notifier,
++	.priority	= CPU_PRI_PERF + 1,
++};
++
++static void __init init_cpu_already_online(void *dummy)
++{
++	unsigned int cpu = smp_processor_id();
++
++	amd_uncore_cpu_up_prepare(cpu);
++	amd_uncore_cpu_starting(cpu);
++	amd_uncore_cpu_online(cpu);
++}
++
++static int __init amd_uncore_init(void)
++{
++	unsigned int cpu;
++	int ret = -ENODEV;
++
++	if (boot_cpu_data.x86_vendor != X86_VENDOR_AMD)
++		return -ENODEV;
++
++	if (!cpu_has_topoext)
++		return -ENODEV;
++
++	if (cpu_has_perfctr_nb) {
++		amd_uncore_nb = alloc_percpu(struct amd_uncore *);
++		perf_pmu_register(&amd_nb_pmu, amd_nb_pmu.name, -1);
++
++		printk(KERN_INFO "perf: AMD NB counters detected\n");
++		ret = 0;
++	}
++
++	if (cpu_has_perfctr_l2) {
++		amd_uncore_l2 = alloc_percpu(struct amd_uncore *);
++		perf_pmu_register(&amd_l2_pmu, amd_l2_pmu.name, -1);
++
++		printk(KERN_INFO "perf: AMD L2I counters detected\n");
++		ret = 0;
++	}
++
++	if (ret)
++		return -ENODEV;
++
++	get_online_cpus();
++	/* init cpus already online before registering for hotplug notifier */
++	for_each_online_cpu(cpu)
++		smp_call_function_single(cpu, init_cpu_already_online, NULL, 1);
++
++	register_cpu_notifier(&amd_uncore_cpu_notifier_block);
++	put_online_cpus();
++
++	return 0;
++}
++device_initcall(amd_uncore_init);
