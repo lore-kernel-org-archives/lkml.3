@@ -1,64 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753854Ab3DUOsx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Apr 2013 10:48:53 -0400
-Received: from www.linutronix.de ([62.245.132.108]:54688 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753749Ab3DUOsw (ORCPT
+	id S1752968Ab3DUQaX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Apr 2013 12:30:23 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:40903 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751854Ab3DUQaW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Apr 2013 10:48:52 -0400
-Date: Sun, 21 Apr 2013 16:48:45 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Jiri Slaby <jslaby@suse.cz>
-cc: John Stultz <john.stultz@linaro.org>,
-        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Resume does not work after timekeeping change
-In-Reply-To: <5172B86C.5030606@suse.cz>
-Message-ID: <alpine.LFD.2.02.1304211648150.21884@ionos>
-References: <5172B86C.5030606@suse.cz>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Sun, 21 Apr 2013 12:30:22 -0400
+Date: Sun, 21 Apr 2013 09:30:02 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: x86-ml <x86@kernel.org>, lkml <linux-kernel@vger.kernel.org>,
+        tiwai@suse.de
+Subject: Re: irq 16: nobody cared
+Message-ID: <20130421163002.GB3509@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130420185330.GA4654@pd.tnic>
+ <20130420235206.GA3509@linux.vnet.ibm.com>
+ <20130421103403.GA4594@pd.tnic>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130421103403.GA4594@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13042116-2876-0000-0000-000007BB2FF1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 20 Apr 2013, Jiri Slaby wrote:
-> Hi,
+On Sun, Apr 21, 2013 at 12:34:03PM +0200, Borislav Petkov wrote:
+> On Sat, Apr 20, 2013 at 04:52:07PM -0700, Paul E. McKenney wrote:
+> > Hmmm... Does this problem occur only with CONFIG_RCU_FAST_NO_HZ=y, or
+> > does it occur unconditionally? (My guess is the former, but figured I
+> > should check.)
 > 
-> my machine does not wake from suspend to RAM on my box running the -next
-> kernel. The last thing I see is "Disabling non-boot CPUs ...". I
-> bisected it to this commit:
+> Your guess is correct, sir.
 > 
-> commit 7ec98e15aa049b7a2ca73485f31cf4f90c34e2dd
-> Author: Thomas Gleixner <tglx@linutronix.de>
-> Date:   Thu Feb 21 22:51:39 2013 +0000
-> 
->     timekeeping: Delay update of clock->cycle_last
-> 
-> 
-> Reverting that one on the top of -next-20130419 makes it work again.
+> >From quickly grepping in /boot/, I have CONFIG_RCU_FAST_NO_HZ=y in all
+> my 3.9 configs. So I went and turned it off and the issue doesn't appear
+> anymore.
 
-Does the patch below fix the issue?
+Thank you for the info!  Now to figure out what the heck is causing this.
 
-Thanks,
+I am also guessing that your system does have hardware that could do an
+irq 16.  Of course, if removing or disabing this hardware is an option,
+it would be interesting to see what happens.  Especially given that at the
+very bottom of the .jpg, there is a chopped-off line that appears to read
+"Disabling IRQ #16".  Which of course leads me to wonder whether we hit
+a race between the last interrupt arriving and the device being disabled.
 
-	tglx
----
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 675f720..98cd470 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -951,7 +951,7 @@ static void timekeeping_resume(void)
- 		__timekeeping_inject_sleeptime(tk, &ts_delta);
- 
- 	/* Re-base the last cycle value */
--	clock->cycle_last = cycle_now;
-+	tk->cycle_last = clock->cycle_last = cycle_now;
- 	tk->ntp_error = 0;
- 	timekeeping_suspended = 0;
- 	timekeeping_update(tk, false, true);
+Hmmm...  Do you have either CONFIG_PM_SLEEP, SUPPORT_VGA_SWITCHEROO,
+or CONFIG_PM_RUNTIME set for these runs?
+
+Adding Takashi Iwai on CC in case he has any insight.
+
+							Thanx, Paul
+
