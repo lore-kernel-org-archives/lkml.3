@@ -1,65 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753237Ab3DUMGG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Apr 2013 08:06:06 -0400
-Received: from mx01.sz.bfs.de ([194.94.69.103]:17775 "EHLO mx01.sz.bfs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753015Ab3DUMGE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Apr 2013 08:06:04 -0400
-X-Greylist: delayed 523 seconds by postgrey-1.27 at vger.kernel.org; Sun, 21 Apr 2013 08:06:04 EDT
-Message-ID: <5173D409.8010405@bfs.de>
-Date: Sun, 21 Apr 2013 13:56:57 +0200
-From: walter harms <wharms@bfs.de>
-Reply-To: wharms@bfs.de
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+	id S1753313Ab3DUMMD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Apr 2013 08:12:03 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:33948 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753212Ab3DUMMB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Apr 2013 08:12:01 -0400
 MIME-Version: 1.0
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: Dimitri Sivanich <sivanich@sgi.com>, Robin Holt <holt@sgi.com>,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [patch] gru: info leak in gru_get_config_info()
-References: <20130421111031.GE6171@elgon.mountain>
-In-Reply-To: <20130421111031.GE6171@elgon.mountain>
+In-Reply-To: <1365587227-26137-1-git-send-email-ming.lei@canonical.com>
+References: <1365587227-26137-1-git-send-email-ming.lei@canonical.com>
+Date: Sun, 21 Apr 2013 20:11:58 +0800
+Message-ID: <CACVXFVMuUn=0LLWxJO62gp6uugNej-kwC0k_LMGWozGRxcx6Vg@mail.gmail.com>
+Subject: Re: [PATCH] of: export of_get_next_parent
+From: Ming Lei <ming.lei@canonical.com>
+To: linux-kernel@vger.kernel.org
+Cc: Ming Lei <ming.lei@canonical.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        devicetree-discuss@lists.ozlabs.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
+
+On Wed, Apr 10, 2013 at 5:47 PM, Ming Lei <ming.lei@canonical.com> wrote:
+> The function is called by at least three drivers now:
+>
+>         pinctrl
+>         mfd/vexpress
+>         v4l2-core
+>
+> The 3rd one can be built as module, so export the function to
+> avoid build failure.
+>
+> Cc: Grant Likely <grant.likely@secretlab.ca>
+> Cc: Rob Herring <rob.herring@calxeda.com>
+> Cc: devicetree-discuss@lists.ozlabs.org
+> Signed-off-by: Ming Lei <ming.lei@canonical.com>
+> ---
+>  drivers/of/base.c |    1 +
+>  1 file changed, 1 insertion(+)
+>
+> diff --git a/drivers/of/base.c b/drivers/of/base.c
+> index c6443de..a2a0ddc 100644
+> --- a/drivers/of/base.c
+> +++ b/drivers/of/base.c
+> @@ -382,6 +382,7 @@ struct device_node *of_get_next_parent(struct device_node *node)
+>         raw_spin_unlock_irqrestore(&devtree_lock, flags);
+>         return parent;
+>  }
+> +EXPORT_SYMBOL(of_get_next_parent);
+
+Gentle ping.
+
+Without the patch, the below build failure is produced every time on -next tree:
+
+  Building modules, stage 2.
+  MODPOST 72 modules
+ERROR: "of_get_next_parent" [drivers/media/v4l2-core/videodev.ko] undefined!
+make[1]: *** [__modpost] Error 1
+make: *** [modules] Error 2
+install kernel and modules
 
 
-Am 21.04.2013 13:10, schrieb Dan Carpenter:
-> The "info.fill" array isn't initialized so it can leak uninitialized
-> stack information to user space.
-> 
-> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-> 
-> diff --git a/drivers/misc/sgi-gru/grufile.c b/drivers/misc/sgi-gru/grufile.c
-> index 44d273c..ed5fc43 100644
-> --- a/drivers/misc/sgi-gru/grufile.c
-> +++ b/drivers/misc/sgi-gru/grufile.c
-> @@ -176,6 +176,7 @@ static long gru_get_config_info(unsigned long arg)
->  	info.nodes = num_online_nodes();
->  	info.blades = info.nodes / nodesperblade;
->  	info.chiplets = GRU_CHIPLETS_PER_BLADE * info.blades;
-> +	memset(&info.fill, 0, sizeof(info.fill));
->  
-
-the other way around (clear first all bytes) looks more easy
-in case someone will add more elements to the struct.
-
-memset(&info, 0, sizeof(info));
-info.nodes = num_online_nodes();
-info.blades = info.nodes / nodesperblade;
-....
-
-re,
- wh
-
-
->  	if (copy_to_user((void __user *)arg, &info, sizeof(info)))
->  		return -EFAULT;
-> --
-> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+Thanks,
+--
+Ming Lei
