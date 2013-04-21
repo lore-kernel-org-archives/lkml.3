@@ -1,70 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754115Ab3DUTFC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Apr 2013 15:05:02 -0400
-Received: from mail-qe0-f47.google.com ([209.85.128.47]:34093 "EHLO
-	mail-qe0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754035Ab3DUTFB convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Apr 2013 15:05:01 -0400
-X-Greylist: delayed 435 seconds by postgrey-1.27 at vger.kernel.org; Sun, 21 Apr 2013 15:05:00 EDT
-Date: Sat, 20 Apr 2013 22:59:24 -0500
-From: Rob Landley <rob@landley.net>
-Subject: Re: [PATCH 3/3] Add Documentation for MMC boot_enable attribute
-To: narmstrong@neotion.com
-Cc: linux-mmc@vger.kernel.org, Chris Ball <cjb@laptop.org>,
-        Namjae Jeon <linkinjeon@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        Subhash Jadavani <subhashj@codeaurora.org>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <51713CA1.7020204@neotion.com> (from narmstrong@neotion.com on
-	Fri Apr 19 07:46:25 2013)
-X-Mailer: Balsa 2.4.11
-Message-Id: <1366516764.18069.124@driftwood>
+	id S1754159Ab3DUTHD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Apr 2013 15:07:03 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:60768 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754039Ab3DUTHB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Apr 2013 15:07:01 -0400
+Date: Sun, 21 Apr 2013 21:06:55 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: x86-ml <x86@kernel.org>, lkml <linux-kernel@vger.kernel.org>,
+        tiwai@suse.de
+Subject: Re: irq 16: nobody cared
+Message-ID: <20130421190655.GA5807@pd.tnic>
+References: <20130420185330.GA4654@pd.tnic>
+ <20130420235206.GA3509@linux.vnet.ibm.com>
+ <20130421103403.GA4594@pd.tnic>
+ <20130421163002.GB3509@linux.vnet.ibm.com>
+ <20130421165653.GA4623@pd.tnic>
+ <20130421181035.GC4559@pd.tnic>
+ <20130421185609.GD3509@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20130421185609.GD3509@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/19/2013 07:46:25 AM, Neil Armstrong wrote:
-> Add documentation on the enable_boot sysfs attribute.
+On Sun, Apr 21, 2013 at 11:56:09AM -0700, Paul E. McKenney wrote:
+> CONFIG_RCU_FAST_NO_HZ will definitely change the timing, for example,
+> increasing grace-period durations by up to a factor of four.
+>
+> One way to figure out if this is the problem would be to either (1)
+> apply the following patch (assuming you have no more than a few tens
+> of CPUs)
+
+Only 8 - I'm modest that way :)
+
+> or (2) setting the sysfs rcutree.rcu_expedited variable to 1 just before
+> suspending the system.
 > 
-> Signed-off-by: Neil Armstrong <narmstrong@neotion.com>
-> ---
->  Documentation/mmc/mmc-dev-parts.txt |    6 ++++++
->  1 files changed, 6 insertions(+), 0 deletions(-)
-> 
-> diff --git a/Documentation/mmc/mmc-dev-parts.txt
-> b/Documentation/mmc/mmc-dev-parts.txt
-> index f08d078..78228de 100644
-> --- a/Documentation/mmc/mmc-dev-parts.txt
-> +++ b/Documentation/mmc/mmc-dev-parts.txt
-> @@ -38,3 +38,9 @@ feature has been disabled on the card, the file will
-> be read-only.
->  The boot partitions can also be locked permanently, but this feature  
-> is
->  not accessible through sysfs in order to avoid accidental or  
-> malicious
->  bricking.
-> +
-> +A special attribute named boot_enable is available to configure the
-> +selected partition for the eMMC 4.3+ boot operation mode.
+> Either approach will force RCU to always use the faster expedited
+> grace periods for synchronize_rcu() and friends.  They will -not- help
+> if someone has open-coded synchronize_rcu() in terms of call_rcu(),
+> though.
 
-So "In eMMC version 4.3 or later, the boot_enable attribute selects the  
-partition to boot from."
+Right,
 
-> +When selected between the two factory boot partitions and the main
-> +user partition, at boot time a special sequence enables makes the
-> +eMMC device to output the content of the selected partition.
+# echo 1 > /sys/kernel/rcu_expedited
 
-enables makes?
+helped.
 
-Does this sentence actually add any information to the previous  
-sentence? (Maybe I'm not reading it right, I'm not entirely sure what  
-"selected between" or "special sequence" are referring to here...)
+No warning, no delay, 2 suspend/resume cycles back-to-back. So, a
+probable fix could be to force-enable the expedited grace periods during
+suspend...?
 
-Rob
+Hmmm.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
