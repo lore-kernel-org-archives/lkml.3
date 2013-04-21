@@ -1,48 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753838Ab3DURNR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Apr 2013 13:13:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14302 "EHLO mx1.redhat.com"
+	id S1753597Ab3DURW0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Apr 2013 13:22:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9201 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752888Ab3DURNG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Apr 2013 13:13:06 -0400
-Date: Sun, 21 Apr 2013 19:10:03 +0200
+	id S1753128Ab3DURWZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Apr 2013 13:22:25 -0400
+Date: Sun, 21 Apr 2013 19:19:21 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Jacob Shin <jacob.shin@amd.com>
 Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
         x86@kernel.org, Stephane Eranian <eranian@google.com>,
-        Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
-        Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
-Subject: Re: [PATCH 3/5] perf tools: Add breakpoint address mask to the mem
-	event parser
-Message-ID: <20130421171003.GA6163@redhat.com>
-References: <1365528113-5458-1-git-send-email-jacob.shin@amd.com> <1365528113-5458-4-git-send-email-jacob.shin@amd.com>
+        Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/5] perf, x86: AMD implementation for hardware
+	breakpoint address mask
+Message-ID: <20130421171921.GA6645@redhat.com>
+References: <1365528113-5458-1-git-send-email-jacob.shin@amd.com> <1365528113-5458-3-git-send-email-jacob.shin@amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1365528113-5458-4-git-send-email-jacob.shin@amd.com>
+In-Reply-To: <1365528113-5458-3-git-send-email-jacob.shin@amd.com>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Well, I am not going to argue, just the question...
+Not a comment, but the question...
 
 On 04/09, Jacob Shin wrote:
 >
->   $ perf stat -e mem:0x1000:w:0xf a.out
+> --- a/arch/x86/include/asm/hw_breakpoint.h
+> +++ b/arch/x86/include/asm/hw_breakpoint.h
+> @@ -14,6 +14,7 @@ struct arch_hw_breakpoint {
+>  	unsigned long	address;
+>  	u8		len;
+>  	u8		type;
+> +	u32		mask;
+>  };
+...
+> @@ -254,6 +258,7 @@ static int arch_build_bp_info(struct perf_event *bp)
+>  	struct arch_hw_breakpoint *info = counter_arch_bp(bp);
+>
+>  	info->address = bp->attr.bp_addr;
+> +	info->mask = bp->attr.bp_addr_mask;
 
-perhaps, say, perf -e mem:0x1000/0xf:w will look better?
+OK, this matches the usage of info->address so I think this change
+is right.
 
-No, I do not understand .y so I do not know if it is simple to
-implement or not ;)
+But otoh, why do we need info->address (or mask added by this patch)?
+we could use bp->attr.bp_addr instead. arch_hw_breakpoint could have
+a single filed = "type | len" for encode_dr7().
 
-Hmm. I did "grep bp_len tools/perf" and it seems that there is
-no way to specify bp_len ? Looks like it is always LEN_4...
-
-Once again, I am just asking.
+Yes, off-topic, sorry for noise.
 
 Oleg.
 
