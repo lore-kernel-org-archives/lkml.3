@@ -1,94 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752146Ab3DUVms (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Apr 2013 17:42:48 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:39456 "EHLO mail.skyhub.de"
+	id S1752265Ab3DUVrt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Apr 2013 17:47:49 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:48314 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751702Ab3DUVmq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Apr 2013 17:42:46 -0400
-Date: Sun, 21 Apr 2013 23:42:41 +0200
+	id S1751919Ab3DUVrs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Apr 2013 17:47:48 -0400
+Date: Sun, 21 Apr 2013 23:47:44 +0200
 From: Borislav Petkov <bp@alien8.de>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: x86-ml <x86@kernel.org>, lkml <linux-kernel@vger.kernel.org>,
-        tiwai@suse.de
-Subject: Re: irq 16: nobody cared
-Message-ID: <20130421214241.GA4593@pd.tnic>
-References: <20130420185330.GA4654@pd.tnic>
- <20130420235206.GA3509@linux.vnet.ibm.com>
- <20130421103403.GA4594@pd.tnic>
- <20130421163002.GB3509@linux.vnet.ibm.com>
- <20130421165653.GA4623@pd.tnic>
- <20130421181035.GC4559@pd.tnic>
- <20130421185609.GD3509@linux.vnet.ibm.com>
- <20130421190655.GA5807@pd.tnic>
- <20130421203447.GE3509@linux.vnet.ibm.com>
- <20130421205139.GC5807@pd.tnic>
+To: Jake <client.alive@gmx.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: 3.6.11  AMD-Vi: Completion-Wait loop timed out
+Message-ID: <20130421214744.GA6977@pd.tnic>
+References: <50FBC7EF.6040207@xs4all.nl>
+ <20130120103652.GB16800@pd.tnic>
+ <50FBC994.8020409@xs4all.nl>
+ <20130120111920.GL25591@8bytes.org>
+ <50FBD413.1000406@xs4all.nl>
+ <20130120114011.GN25591@8bytes.org>
+ <20130120114828.GB16519@pd.tnic>
+ <20130120115755.GO25591@8bytes.org>
+ <20130121130942.GB4445@pd.tnic>
+ <loom.20130421T025332-280@post.gmane.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20130421205139.GC5807@pd.tnic>
+In-Reply-To: <loom.20130421T025332-280@post.gmane.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 21, 2013 at 10:51:39PM +0200, Borislav Petkov wrote:
-> A similar oneliner at the end of the resume path.
->
-> Maybe have rcu suspend/resume callbacks where you can do this stuff
-> and maybe more in the future.
+On Sun, Apr 21, 2013 at 01:03:16AM +0000, Jake wrote:
+> ACPI BIOS Bug: Warning: Optional FADT field Pm2CintrolBlock has no address or length: 0x0000000000000000/0x1 (20121018/tbfadt-589)
 
-Ok, here's one - it is pretty straight-forward using that notifier
-abomination :-). It is only in rcutree.c, it could probably be shared
-with rcutiny.c. And it has a section mismatch but I'll fix that too.
+I have the same one:
 
-It works though - two suspend/resume cycles looked ok.
+[    0.000000] ACPI BIOS Bug: Warning: Optional FADT field Pm2ControlBlock has zero address or length: 0x0000000000000000/0x1 (20130117/tbfadt-599)
 
---
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 986d1d3a34f5..cb1f61ede2f9 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -53,6 +53,7 @@
- #include <linux/delay.h>
- #include <linux/stop_machine.h>
- #include <linux/random.h>
-+#include <linux/suspend.h>
- 
- #include "rcutree.h"
- #include <trace/events/rcu.h>
-@@ -3097,6 +3098,22 @@ static int __cpuinit rcu_cpu_notify(struct notifier_block *self,
- 	return NOTIFY_OK;
- }
- 
-+static int __cpuinit rcu_pm_notify(struct notifier_block *self,
-+				   unsigned long action, void *hcpu)
-+{
-+	switch (action) {
-+	case PM_HIBERNATION_PREPARE:
-+		rcu_expedited = 1;
-+		break;
-+	case PM_POST_RESTORE:
-+		rcu_expedited = 0;
-+		break;
-+	default:
-+		break;
-+	}
-+	return NOTIFY_OK;
-+}
-+
- /*
-  * Spawn the kthread that handles this RCU flavor's grace periods.
-  */
-@@ -3323,6 +3340,7 @@ void __init rcu_init(void)
- 	 * or the scheduler are operational.
- 	 */
- 	cpu_notifier(rcu_cpu_notify, 0);
-+	pm_notifier(rcu_pm_notify, 0);
- 	for_each_online_cpu(cpu)
- 		rcu_cpu_notify(NULL, CPU_UP_PREPARE, (void *)(long)cpu);
- }
+We probably have the same ASUS crap for a board.
 
+> I have no idea whether this is related to my shutdown problem or not and
+
+I don't think so as I can suspend/resume/shutdown my box just fine. :)
+
+> what I was hoping is if someone would advise me how to find help for
+> my problem. I have tried all the normal routes for my distro (forum
+> and irc) repeatedly, and googled my weeping eyes out - but to no
+> avail.
+
+Have you tried the upstream kernel yet? I hear 3.9-rc8 will be out
+tomorrow :-)
+
+HTH.
 
 -- 
 Regards/Gruss,
