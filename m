@@ -1,84 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752009Ab3DUVNc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Apr 2013 17:13:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24361 "EHLO mx1.redhat.com"
+	id S1752146Ab3DUVms (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Apr 2013 17:42:48 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:39456 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751693Ab3DUVNa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Apr 2013 17:13:30 -0400
-Message-ID: <51745650.9050204@redhat.com>
-Date: Sun, 21 Apr 2013 17:12:48 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
+	id S1751702Ab3DUVmq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Apr 2013 17:42:46 -0400
+Date: Sun, 21 Apr 2013 23:42:41 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: x86-ml <x86@kernel.org>, lkml <linux-kernel@vger.kernel.org>,
+        tiwai@suse.de
+Subject: Re: irq 16: nobody cared
+Message-ID: <20130421214241.GA4593@pd.tnic>
+References: <20130420185330.GA4654@pd.tnic>
+ <20130420235206.GA3509@linux.vnet.ibm.com>
+ <20130421103403.GA4594@pd.tnic>
+ <20130421163002.GB3509@linux.vnet.ibm.com>
+ <20130421165653.GA4623@pd.tnic>
+ <20130421181035.GC4559@pd.tnic>
+ <20130421185609.GD3509@linux.vnet.ibm.com>
+ <20130421190655.GA5807@pd.tnic>
+ <20130421203447.GE3509@linux.vnet.ibm.com>
+ <20130421205139.GC5807@pd.tnic>
 MIME-Version: 1.0
-To: Jiannan Ouyang <ouyang@cs.pitt.edu>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Avi Kivity <avi.kivity@gmail.com>, Gleb Natapov <gleb@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Srikar <srikar@linux.vnet.ibm.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        KVM <kvm@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Chegu Vinod <chegu_vinod@hp.com>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Andrew Jones <drjones@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        Karen Noel <knoel@redhat.com>
-Subject: Re: Preemptable Ticket Spinlock
-References: <CAJocwccu5QQyuKRvgNyPSFz2K_rzCW419W9-XdSUYOL7+KqQKg@mail.gmail.com>
-In-Reply-To: <CAJocwccu5QQyuKRvgNyPSFz2K_rzCW419W9-XdSUYOL7+KqQKg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130421205139.GC5807@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/20/2013 06:12 PM, Jiannan Ouyang wrote:
-> Hello Everyone,
+On Sun, Apr 21, 2013 at 10:51:39PM +0200, Borislav Petkov wrote:
+> A similar oneliner at the end of the resume path.
 >
-> I recently came up with a spinlock algorithm that can adapt to
-> preemption, which you may be interested in. The intuition is to
-> downgrade a fair lock to an unfair lock automatically upon preemption,
-> and preserve the fairness otherwise. It is a guest side optimization,
-> and can be used as a complementary technique to host side optimizations
-> like co-scheduling and Pause-Loop Exiting.
->
-> In my experiments, it improves VM performance by 5:32X on average, when
-> running on a non paravirtual VMM, and by 7:91X when running on a VMM
-> that supports a paravirtual locking interface (using a pv preemptable
-> ticket spinlock), when executing a set of microbenchmarks as well as a
-> realistic e-commerce benchmark.
->
-> A detailed algorithm description can be found in my VEE 2013 paper,
-> Preemptable Ticket Spinlocks: Improving Consolidated Performance in the
-> Cloud
-> Jiannan Ouyang, John R. Lange
-> ouyang,jacklange@cs.pitt.edu <mailto:jacklange@cs.pitt.edu>
-> University of Pittsburgh
-> http://people.cs.pitt.edu/~ouyang/files/publication/preemptable_lock-ouyang-vee13.pdf
+> Maybe have rcu suspend/resume callbacks where you can do this stuff
+> and maybe more in the future.
 
-Your algorithm is very clever, and very promising.
+Ok, here's one - it is pretty straight-forward using that notifier
+abomination :-). It is only in rcutree.c, it could probably be shared
+with rcutiny.c. And it has a section mismatch but I'll fix that too.
 
-However, it does increase the size of the struct spinlock, and adds
-an additional atomic operation to spin_unlock, neither of which I
-suspect are necessary.
+It works though - two suspend/resume cycles looked ok.
 
-If we always incremented the ticket number by 2 (instead of 1), then
-we could use the lower bit of the ticket number as the spinlock.
+--
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index 986d1d3a34f5..cb1f61ede2f9 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -53,6 +53,7 @@
+ #include <linux/delay.h>
+ #include <linux/stop_machine.h>
+ #include <linux/random.h>
++#include <linux/suspend.h>
+ 
+ #include "rcutree.h"
+ #include <trace/events/rcu.h>
+@@ -3097,6 +3098,22 @@ static int __cpuinit rcu_cpu_notify(struct notifier_block *self,
+ 	return NOTIFY_OK;
+ }
+ 
++static int __cpuinit rcu_pm_notify(struct notifier_block *self,
++				   unsigned long action, void *hcpu)
++{
++	switch (action) {
++	case PM_HIBERNATION_PREPARE:
++		rcu_expedited = 1;
++		break;
++	case PM_POST_RESTORE:
++		rcu_expedited = 0;
++		break;
++	default:
++		break;
++	}
++	return NOTIFY_OK;
++}
++
+ /*
+  * Spawn the kthread that handles this RCU flavor's grace periods.
+  */
+@@ -3323,6 +3340,7 @@ void __init rcu_init(void)
+ 	 * or the scheduler are operational.
+ 	 */
+ 	cpu_notifier(rcu_cpu_notify, 0);
++	pm_notifier(rcu_pm_notify, 0);
+ 	for_each_online_cpu(cpu)
+ 		rcu_cpu_notify(NULL, CPU_UP_PREPARE, (void *)(long)cpu);
+ }
 
-If we do NOT run virtualized, we simply increment the ticket by 2
-in spin_unlock, and the code can remain otherwise the same.
-
-If we do run virtualized, we take that spinlock after acquiring
-the ticket (or timing out), just like in your code. In the
-virtualized spin_unlock, we can then release the spinlock and
-increment the ticket in one operation: by simply increasing the
-ticket by 1.
-
-In other words, we should be able to keep the overhead of this
-to an absolute minimum, and keep spin_unlock to be always the
-same cost it is today.
 
 -- 
-All rights reversed
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
