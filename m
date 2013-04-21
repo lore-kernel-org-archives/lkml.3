@@ -1,102 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756093Ab3DUAHZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Apr 2013 20:07:25 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:43170 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756022Ab3DUAHX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Apr 2013 20:07:23 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Ext4 Developers List <linux-ext4@vger.kernel.org>
-Cc: linux-mm@kvack.org,
-        Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
-        mgorman@suse.de, "Theodore Ts'o" <tytso@mit.edu>
-Subject: [PATCH 1/3] ext4: mark all metadata I/O with REQ_META
-Date: Sat, 20 Apr 2013 20:07:06 -0400
-Message-Id: <1366502828-7793-1-git-send-email-tytso@mit.edu>
-X-Mailer: git-send-email 1.7.12.rc0.22.gcdd159b
-In-Reply-To: <20130421000522.GA5054@thunk.org>
-References: <20130421000522.GA5054@thunk.org>
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	id S1750944Ab3DUAuM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Apr 2013 20:50:12 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60587 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750864Ab3DUAuK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Apr 2013 20:50:10 -0400
+Date: Sun, 21 Apr 2013 02:49:31 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+X-X-Sender: jikos@twin.jikos.cz
+To: Han Pingtian <hanpt@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, David Rientjes <rientjes@google.com>,
+        Michal Hocko <mhocko@suse.cz>
+Subject: Re: OOM-killer and strange RSS value in 3.9-rc7
+In-Reply-To: <20130417084615.GA2672@localhost.localdomain>
+Message-ID: <alpine.LRH.2.00.1304210247270.15075@twin.jikos.cz>
+References: <20130416110009.GA2664@localhost.localdomain> <alpine.DEB.2.02.1304161315290.30779@chino.kir.corp.google.com> <20130417084615.GA2672@localhost.localdomain>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As Dave Chinner pointed out at the 2013 LSF/MM workshop, it's
-important that metadata I/O requests are marked as such to avoid
-priority inversions caused by I/O bandwidth throttling.
+On Wed, 17 Apr 2013, Han Pingtian wrote:
 
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
----
- fs/ext4/balloc.c | 2 +-
- fs/ext4/ialloc.c | 2 +-
- fs/ext4/mmp.c    | 4 ++--
- fs/ext4/super.c  | 2 +-
- 4 files changed, 5 insertions(+), 5 deletions(-)
+> > > On a power7 system, we have installed 3.9-rc7 and crash 6.1.6. If I run
+> > > something like "make -j 64" to compile linux kernel from source, sooner
+> > > or latter, oom-killer will be triggered. Before that, when I trying to
+> > > analyse the live system with crash, some processes' %MEM and RSS looks
+> > > too big:
+> > > 
+> > 
+> > Do you have the oom killer log from /var/log/messages with 
+> > /proc/sys/vm/oom_dump_tasks enabled?  Have you tried to reproduce this 
+> > issue with CONFIG_DEBUG_VM and CONFIG_DEBUG_PAGEALLOC enabled (you may 
+> > even want to consider CONFIG_KMEMLEAK)?
+> 
+> I have enabled CONFIG_KMEMLEAK and recompiled kernel. This is the
+> /sys/kernel/debug/kmemleak after the reboot. Please have a look. Thanks.
 
-diff --git a/fs/ext4/balloc.c b/fs/ext4/balloc.c
-index 8dcaea6..d0f13ea 100644
---- a/fs/ext4/balloc.c
-+++ b/fs/ext4/balloc.c
-@@ -441,7 +441,7 @@ ext4_read_block_bitmap_nowait(struct super_block *sb, ext4_group_t block_group)
- 	trace_ext4_read_block_bitmap_load(sb, block_group);
- 	bh->b_end_io = ext4_end_bitmap_read;
- 	get_bh(bh);
--	submit_bh(READ, bh);
-+	submit_bh(READ | REQ_META | REQ_PRIO, bh);
- 	return bh;
- verify:
- 	ext4_validate_block_bitmap(sb, desc, block_group, bh);
-diff --git a/fs/ext4/ialloc.c b/fs/ext4/ialloc.c
-index 18d36d8..00a818d 100644
---- a/fs/ext4/ialloc.c
-+++ b/fs/ext4/ialloc.c
-@@ -166,7 +166,7 @@ ext4_read_inode_bitmap(struct super_block *sb, ext4_group_t block_group)
- 	trace_ext4_load_inode_bitmap(sb, block_group);
- 	bh->b_end_io = ext4_end_bitmap_read;
- 	get_bh(bh);
--	submit_bh(READ, bh);
-+	submit_bh(READ | REQ_META | REQ_PRIO, bh);
- 	wait_on_buffer(bh);
- 	if (!buffer_uptodate(bh)) {
- 		put_bh(bh);
-diff --git a/fs/ext4/mmp.c b/fs/ext4/mmp.c
-index b3b1f7d..214461e 100644
---- a/fs/ext4/mmp.c
-+++ b/fs/ext4/mmp.c
-@@ -54,7 +54,7 @@ static int write_mmp_block(struct super_block *sb, struct buffer_head *bh)
- 	lock_buffer(bh);
- 	bh->b_end_io = end_buffer_write_sync;
- 	get_bh(bh);
--	submit_bh(WRITE_SYNC, bh);
-+	submit_bh(WRITE_SYNC | REQ_META | REQ_PRIO, bh);
- 	wait_on_buffer(bh);
- 	sb_end_write(sb);
- 	if (unlikely(!buffer_uptodate(bh)))
-@@ -86,7 +86,7 @@ static int read_mmp_block(struct super_block *sb, struct buffer_head **bh,
- 		get_bh(*bh);
- 		lock_buffer(*bh);
- 		(*bh)->b_end_io = end_buffer_read_sync;
--		submit_bh(READ_SYNC, *bh);
-+		submit_bh(READ_SYNC | REQ_META | REQ_PRIO, *bh);
- 		wait_on_buffer(*bh);
- 		if (!buffer_uptodate(*bh)) {
- 			brelse(*bh);
-diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index bfa29ec..dbc7c09 100644
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -4252,7 +4252,7 @@ static journal_t *ext4_get_dev_journal(struct super_block *sb,
- 		goto out_bdev;
- 	}
- 	journal->j_private = sb;
--	ll_rw_block(READ, 1, &journal->j_sb_buffer);
-+	ll_rw_block(READ | REQ_META | REQ_PRIO, 1, &journal->j_sb_buffer);
- 	wait_on_buffer(journal->j_sb_buffer);
- 	if (!buffer_uptodate(journal->j_sb_buffer)) {
- 		ext4_msg(sb, KERN_ERR, "I/O error on journal device");
+Either kmemleak is very wrong about some false positive in selinux, or 
+selinux is leaking memory quite heavily.
+
+Could you try disabling selinux completely, to see if the leak goes away?
+
 -- 
-1.7.12.rc0.22.gcdd159b
+Jiri Kosina
+SUSE Labs
 
