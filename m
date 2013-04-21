@@ -1,115 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753676Ab3DUQ6u (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Apr 2013 12:58:50 -0400
-Received: from mail-da0-f45.google.com ([209.85.210.45]:34028 "EHLO
-	mail-da0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753050Ab3DUQ6t (ORCPT
+	id S1753744Ab3DURBR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Apr 2013 13:01:17 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:45370 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753249Ab3DURBP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Apr 2013 12:58:49 -0400
-Message-ID: <1366563522.10770.1.camel@phoenix>
-Subject: [PATCH RFT] regulator: palmas: Fix off-by-one for ramp_delay and
- register value mapping
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Laxman Dewangan <ldewangan@nvidia.com>,
-        Graeme Gregory <gg@slimlogic.co.uk>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Date: Mon, 22 Apr 2013 00:58:42 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sun, 21 Apr 2013 13:01:15 -0400
+Date: Sun, 21 Apr 2013 20:01:07 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Dimitri Sivanich <sivanich@sgi.com>
+Cc: Robin Holt <holt@sgi.com>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org, walter harms <wharms@bfs.de>
+Subject: [patch v2] gru: info leak in gru_get_config_info()
+Message-ID: <20130421170107.GA16118@elgon.mountain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130421131902.GT3658@sgi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In probe(), we have below code to set ramp_delay:
-e.g. When reg is 2, current code set
-pmic->desc[id].ramp_delay = palmas_smps_ramp_delay[reg & 0x3];
-                          = 5000
-which means ramp_delay = 5000 is mapping to reg value = 2;
+The "info.fill" array isn't initialized so it can leak uninitialized
+stack information to user space.
 
-However, in palmas_smps_set_ramp_delay()
-        ramp_delay = 5000 is mapping to reg value = 1.
-
-This patch fixes the off-by-one value range checking for ramp_delay in
-palmas_smps_set_ramp_delay().
-
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 ---
-Hi Laxman,
-I don't have the datasheet, so please check if this fix is correct.
+v2: style changes
 
-Thanks,
-Axel
- drivers/regulator/palmas-regulator.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/regulator/palmas-regulator.c b/drivers/regulator/palmas-regulator.c
-index 8fed60c..e3e8373 100644
---- a/drivers/regulator/palmas-regulator.c
-+++ b/drivers/regulator/palmas-regulator.c
-@@ -447,9 +447,9 @@ static int palmas_smps_set_ramp_delay(struct regulator_dev *rdev,
- 
- 	if (ramp_delay <= 0)
- 		reg = 0;
--	else if (ramp_delay < 2500)
-+	else if (ramp_delay <= 2500)From 6f6875db93eeff52d39623dd68522e1875cf5ef1 Mon Sep 17 00:00:00 2001
-From: Axel Lin <axel.lin@ingics.com>
-Date: Mon, 22 Apr 2013 00:50:55 +0800
-Subject: [PATCH RFT] regulator: palmas: Fix off-by-one for ramp_delay and register value mapping
-
-In probe(), we have below code to set ramp_delay:
-e.g. When reg is 2, current code set
-pmic->desc[id].ramp_delay = palmas_smps_ramp_delay[reg & 0x3];
-                          = 5000
-which means ramp_delay = 5000 is mapping to reg value = 2;
-
-However, in palmas_smps_set_ramp_delay()
-        ramp_delay = 5000 is mapping to reg value = 1.
-
-This patch fixes the off-by-one value range checking for ramp_delay in
-palmas_smps_set_ramp_delay().
-
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
-Hi Laxman,
-I don't have the datasheet, so please check if this fix is correct.
-
-Thanks,
-Axel
- drivers/regulator/palmas-regulator.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/regulator/palmas-regulator.c b/drivers/regulator/palmas-regulator.c
-index 8fed60c..e3e8373 100644
---- a/drivers/regulator/palmas-regulator.c
-+++ b/drivers/regulator/palmas-regulator.c
-@@ -447,9 +447,9 @@ static int palmas_smps_set_ramp_delay(struct regulator_dev *rdev,
- 
- 	if (ramp_delay <= 0)
- 		reg = 0;
--	else if (ramp_delay < 2500)
-+	else if (ramp_delay <= 2500)
- 		reg = 3;
--	else if (ramp_delay < 5000)
-+	else if (ramp_delay <= 5000)
- 		reg = 2;
+diff --git a/drivers/misc/sgi-gru/grufile.c b/drivers/misc/sgi-gru/grufile.c
+index 44d273c..0535d1e 100644
+--- a/drivers/misc/sgi-gru/grufile.c
++++ b/drivers/misc/sgi-gru/grufile.c
+@@ -172,6 +172,7 @@ static long gru_get_config_info(unsigned long arg)
+ 		nodesperblade = 2;
  	else
- 		reg = 1;
--- 
-1.7.10.4
-
-
- 		reg = 3;
--	else if (ramp_delay < 5000)
-+	else if (ramp_delay <= 5000)
- 		reg = 2;
- 	else
- 		reg = 1;
--- 
-1.7.10.4
-
-
-
+ 		nodesperblade = 1;
++	memset(&info, 0, sizeof(info));
+ 	info.cpus = num_online_cpus();
+ 	info.nodes = num_online_nodes();
+ 	info.blades = info.nodes / nodesperblade;
