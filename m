@@ -1,71 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753615Ab3DUOJj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Apr 2013 10:09:39 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:42352 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753499Ab3DUOJh (ORCPT
+	id S1753657Ab3DUONu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Apr 2013 10:13:50 -0400
+Received: from eu1sys200aog110.obsmtp.com ([207.126.144.129]:52007 "EHLO
+	eu1sys200aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753543Ab3DUONs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Apr 2013 10:09:37 -0400
-Message-ID: <5173F319.2040106@linux.vnet.ibm.com>
-Date: Sun, 21 Apr 2013 22:09:29 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Sun, 21 Apr 2013 10:13:48 -0400
+Message-ID: <5173F411.1030806@mellanox.com>
+Date: Sun, 21 Apr 2013 17:13:37 +0300
+From: Or Gerlitz <ogerlitz@mellanox.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: mtosatti@redhat.com, avi.kivity@gmail.com, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org
-Subject: Re: [PATCH v3 00/15] KVM: MMU: fast zap all shadow pages
-References: <1366093973-2617-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <20130421130346.GE8997@redhat.com>
-In-Reply-To: <20130421130346.GE8997@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+CC: target-devel <target-devel@vger.kernel.org>,
+        linux-rdma <linux-rdma@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Roland Dreier <roland@kernel.org>,
+        Alexander Nezhinsky <alexandern@mellanox.com>
+Subject: Re: [RFC-v4 9/9] iser-target: Add iSCSI Extensions for RDMA (iSER)
+ target driver
+References: <1365799962-13543-1-git-send-email-nab@linux-iscsi.org> <1365799962-13543-10-git-send-email-nab@linux-iscsi.org>
+In-Reply-To: <1365799962-13543-10-git-send-email-nab@linux-iscsi.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13042114-5816-0000-0000-000007A3FFCC
+X-Originating-IP: [10.222.66.109]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/21/2013 09:03 PM, Gleb Natapov wrote:
-> On Tue, Apr 16, 2013 at 02:32:38PM +0800, Xiao Guangrong wrote:
->> This patchset is based on my previous two patchset:
->> [PATCH 0/2] KVM: x86: avoid potential soft lockup and unneeded mmu reload
->> (https://lkml.org/lkml/2013/4/1/2)
->>
->> [PATCH v2 0/6] KVM: MMU: fast invalid all mmio sptes
->> (https://lkml.org/lkml/2013/4/1/134)
->>
->> Changlog:
->> V3:
->>   completely redesign the algorithm, please see below.
->>
-> This looks pretty complicated. Is it still needed in order to avoid soft
-> lockups after "avoid potential soft lockup and unneeded mmu reload" patch?
+On 12/04/2013 23:52, Nicholas A. Bellinger wrote:
+> From: Nicholas Bellinger<nab@linux-iscsi.org>
+>
+> This patch adds support for iSCSI Extensions for RDMA target mode,
+> and includes CQ pooling per isert_device context distributed across
+> multiple active iser target sessions.
 
-Yes.
+Cool, feel free to ad my S.O.B here
 
-I discussed this point with Marcelo:
-
-======
-BTW, to my honest, i do not think spin_needbreak is a good way - it does
-not fix the hot-lock contention and it just occupies more cpu time to avoid
-possible soft lock-ups.
-
-Especially, zap-all-shadow-pages can let other vcpus fault and vcpus contest
-mmu-lock, then zap-all-shadow-pages release mmu-lock and wait, other vcpus
-create page tables again. zap-all-shadow-page need long time to be finished,
-the worst case is, it can not completed forever on intensive vcpu and memory
-usage.
-
-I still think the right way to fix this kind of thing is optimization for
-mmu-lock.
-======
-
-Which parts scare you? Let's find a way to optimize for it. ;). For example,
-if you do not like unmap_memslot_rmap_nolock(), we can simplify it - We can
-use walk_shadow_page_lockless_begin() and walk_shadow_page_lockless_end() to
-protect spte instead of kvm->being_unmaped_rmap.
-
-Thanks!
-
+Signed-off-by: Or Gerlitz <ogerlitz@mellanox.com>
