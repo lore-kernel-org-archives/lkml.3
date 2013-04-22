@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932316Ab3DVOqo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 10:46:44 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51484 "EHLO
+	id S1754673Ab3DVO3t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 10:29:49 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51425 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754428Ab3DVO3u (ORCPT
+	by vger.kernel.org with ESMTP id S1754428Ab3DVO3g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 10:29:50 -0400
+	Mon, 22 Apr 2013 10:29:36 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Jani Nikula" <jani.nikula@intel.com>,
-        "Egbert Eich" <eich@suse.de>, "Daniel Vetter" <daniel.vetter@ffwll.ch>
+CC: akpm@linux-foundation.org, "Gleb Natapov" <gleb@redhat.com>,
+        "Andrew Honig" <ahonig@google.com>
 Date: Mon, 22 Apr 2013 15:25:59 +0100
-Message-ID: <lsq.1366640759.273946242@decadent.org.uk>
+Message-ID: <lsq.1366640759.928878588@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [59/75] DRM/i915: Add QUIRK_INVERT_BRIGHTNESS for NCR machines.
+Subject: [74/75] KVM: Allow cross page reads and writes from cached
+ translations.
 In-Reply-To: <lsq.1366640759.151900666@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:6834:ff73:7553:7f84
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,81 +32,160 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Egbert Eich <eich@suse.de>
+From: Andrew Honig <ahonig@google.com>
 
-commit 5f85f176c2f1c9d2a23f60ca0b99e4d0aa5a26a7 upstream.
+commit 8f964525a121f2ff2df948dac908dcc65be21b5b upstream.
 
-NCR machines with LVDS panels using Intel chipsets need to have the
-QUIRK_INVERT_BRIGHTNESS bit set.
-Unfortunately NCR doesn't set a meaningful subvendor/subdevice ID,
-therefore we add a DMI dependent quirk list.
+This patch adds support for kvm_gfn_to_hva_cache_init functions for
+reads and writes that will cross a page.  If the range falls within
+the same memslot, then this will be a fast operation.  If the range
+is split between two memslots, then the slower kvm_read_guest and
+kvm_write_guest are used.
 
-Signed-off-by: Egbert Eich <eich@suse.de>
-[danvet: fixup whitespace fail.]
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Acked-by: Jani Nikula <jani.nikula@intel.com>
+Tested: Test against kvm_clock unit tests.
+
+Signed-off-by: Andrew Honig <ahonig@google.com>
+Signed-off-by: Gleb Natapov <gleb@redhat.com>
 [bwh: Backported to 3.2:
- - Adjust context
- - Add #include <linux/dmi.h>]
+ - Drop change in lapic.c
+ - Keep using __gfn_to_memslot() in kvm_gfn_to_hva_cache_init()]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpu/drm/i915/intel_display.c |   32 ++++++++++++++++++++++++++++++++
- 1 file changed, 32 insertions(+)
-
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -25,6 +25,7 @@
-  */
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -1480,7 +1480,8 @@ static int kvm_pv_enable_async_pf(struct
+ 		return 0;
+ 	}
  
- #include <linux/cpufreq.h>
-+#include <linux/dmi.h>
- #include <linux/module.h>
- #include <linux/input.h>
- #include <linux/i2c.h>
-@@ -8848,6 +8849,34 @@ struct intel_quirk {
- 	void (*hook)(struct drm_device *dev);
+-	if (kvm_gfn_to_hva_cache_init(vcpu->kvm, &vcpu->arch.apf.data, gpa))
++	if (kvm_gfn_to_hva_cache_init(vcpu->kvm, &vcpu->arch.apf.data, gpa,
++					sizeof(u32)))
+ 		return 1;
+ 
+ 	vcpu->arch.apf.send_user_only = !(data & KVM_ASYNC_PF_SEND_ALWAYS);
+@@ -1594,12 +1595,9 @@ int kvm_set_msr_common(struct kvm_vcpu *
+ 
+ 		gpa_offset = data & ~(PAGE_MASK | 1);
+ 
+-		/* Check that the address is 32-byte aligned. */
+-		if (gpa_offset & (sizeof(struct pvclock_vcpu_time_info) - 1))
+-			break;
+-
+ 		if (kvm_gfn_to_hva_cache_init(vcpu->kvm,
+-		     &vcpu->arch.pv_time, data & ~1ULL))
++		     &vcpu->arch.pv_time, data & ~1ULL,
++		     sizeof(struct pvclock_vcpu_time_info)))
+ 			vcpu->arch.pv_time_enabled = false;
+ 		else
+ 			vcpu->arch.pv_time_enabled = true;
+@@ -1618,7 +1616,8 @@ int kvm_set_msr_common(struct kvm_vcpu *
+ 			return 1;
+ 
+ 		if (kvm_gfn_to_hva_cache_init(vcpu->kvm, &vcpu->arch.st.stime,
+-							data & KVM_STEAL_VALID_BITS))
++						data & KVM_STEAL_VALID_BITS,
++						sizeof(struct kvm_steal_time)))
+ 			return 1;
+ 
+ 		vcpu->arch.st.msr_val = data;
+--- a/include/linux/kvm_host.h
++++ b/include/linux/kvm_host.h
+@@ -396,7 +396,7 @@ int kvm_write_guest(struct kvm *kvm, gpa
+ int kvm_write_guest_cached(struct kvm *kvm, struct gfn_to_hva_cache *ghc,
+ 			   void *data, unsigned long len);
+ int kvm_gfn_to_hva_cache_init(struct kvm *kvm, struct gfn_to_hva_cache *ghc,
+-			      gpa_t gpa);
++			      gpa_t gpa, unsigned long len);
+ int kvm_clear_guest_page(struct kvm *kvm, gfn_t gfn, int offset, int len);
+ int kvm_clear_guest(struct kvm *kvm, gpa_t gpa, unsigned long len);
+ struct kvm_memory_slot *gfn_to_memslot(struct kvm *kvm, gfn_t gfn);
+--- a/include/linux/kvm_types.h
++++ b/include/linux/kvm_types.h
+@@ -71,6 +71,7 @@ struct gfn_to_hva_cache {
+ 	u64 generation;
+ 	gpa_t gpa;
+ 	unsigned long hva;
++	unsigned long len;
+ 	struct kvm_memory_slot *memslot;
  };
  
-+/* For systems that don't have a meaningful PCI subdevice/subvendor ID */
-+struct intel_dmi_quirk {
-+	void (*hook)(struct drm_device *dev);
-+	const struct dmi_system_id (*dmi_id_list)[];
-+};
-+
-+static int intel_dmi_reverse_brightness(const struct dmi_system_id *id)
-+{
-+	DRM_INFO("Backlight polarity reversed on %s\n", id->ident);
-+	return 1;
-+}
-+
-+static const struct intel_dmi_quirk intel_dmi_quirks[] = {
-+	{
-+		.dmi_id_list = &(const struct dmi_system_id[]) {
-+			{
-+				.callback = intel_dmi_reverse_brightness,
-+				.ident = "NCR Corporation",
-+				.matches = {DMI_MATCH(DMI_SYS_VENDOR, "NCR Corporation"),
-+					    DMI_MATCH(DMI_PRODUCT_NAME, ""),
-+				},
-+			},
-+			{ }  /* terminating entry */
-+		},
-+		.hook = quirk_invert_brightness,
-+	},
-+};
-+
- struct intel_quirk intel_quirks[] = {
- 	/* HP Compaq 2730p needs pipe A force quirk (LP: #291555) */
- 	{ 0x2a42, 0x103c, 0x30eb, quirk_pipea_force },
-@@ -8895,6 +8924,10 @@ static void intel_init_quirks(struct drm
- 		     q->subsystem_device == PCI_ANY_ID))
- 			q->hook(dev);
- 	}
-+	for (i = 0; i < ARRAY_SIZE(intel_dmi_quirks); i++) {
-+		if (dmi_check_system(*intel_dmi_quirks[i].dmi_id_list) != 0)
-+			intel_dmi_quirks[i].hook(dev);
-+	}
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -1401,21 +1401,38 @@ int kvm_write_guest(struct kvm *kvm, gpa
  }
  
- /* Disable the VGA plane that we never use */
+ int kvm_gfn_to_hva_cache_init(struct kvm *kvm, struct gfn_to_hva_cache *ghc,
+-			      gpa_t gpa)
++			      gpa_t gpa, unsigned long len)
+ {
+ 	struct kvm_memslots *slots = kvm_memslots(kvm);
+ 	int offset = offset_in_page(gpa);
+-	gfn_t gfn = gpa >> PAGE_SHIFT;
++	gfn_t start_gfn = gpa >> PAGE_SHIFT;
++	gfn_t end_gfn = (gpa + len - 1) >> PAGE_SHIFT;
++	gfn_t nr_pages_needed = end_gfn - start_gfn + 1;
++	gfn_t nr_pages_avail;
+ 
+ 	ghc->gpa = gpa;
+ 	ghc->generation = slots->generation;
+-	ghc->memslot = __gfn_to_memslot(slots, gfn);
+-	ghc->hva = gfn_to_hva_many(ghc->memslot, gfn, NULL);
+-	if (!kvm_is_error_hva(ghc->hva))
++	ghc->len = len;
++	ghc->memslot = __gfn_to_memslot(slots, start_gfn);
++	ghc->hva = gfn_to_hva_many(ghc->memslot, start_gfn, &nr_pages_avail);
++	if (!kvm_is_error_hva(ghc->hva) && nr_pages_avail >= nr_pages_needed) {
+ 		ghc->hva += offset;
+-	else
+-		return -EFAULT;
+-
++	} else {
++		/*
++		 * If the requested region crosses two memslots, we still
++		 * verify that the entire region is valid here.
++		 */
++		while (start_gfn <= end_gfn) {
++			ghc->memslot = __gfn_to_memslot(slots, start_gfn);
++			ghc->hva = gfn_to_hva_many(ghc->memslot, start_gfn,
++						   &nr_pages_avail);
++			if (kvm_is_error_hva(ghc->hva))
++				return -EFAULT;
++			start_gfn += nr_pages_avail;
++		}
++		/* Use the slow path for cross page reads and writes. */
++		ghc->memslot = NULL;
++	}
+ 	return 0;
+ }
+ EXPORT_SYMBOL_GPL(kvm_gfn_to_hva_cache_init);
+@@ -1426,8 +1443,13 @@ int kvm_write_guest_cached(struct kvm *k
+ 	struct kvm_memslots *slots = kvm_memslots(kvm);
+ 	int r;
+ 
++	BUG_ON(len > ghc->len);
++
+ 	if (slots->generation != ghc->generation)
+-		kvm_gfn_to_hva_cache_init(kvm, ghc, ghc->gpa);
++		kvm_gfn_to_hva_cache_init(kvm, ghc, ghc->gpa, ghc->len);
++
++	if (unlikely(!ghc->memslot))
++		return kvm_write_guest(kvm, ghc->gpa, data, len);
+ 
+ 	if (kvm_is_error_hva(ghc->hva))
+ 		return -EFAULT;
+@@ -1447,8 +1469,13 @@ int kvm_read_guest_cached(struct kvm *kv
+ 	struct kvm_memslots *slots = kvm_memslots(kvm);
+ 	int r;
+ 
++	BUG_ON(len > ghc->len);
++
+ 	if (slots->generation != ghc->generation)
+-		kvm_gfn_to_hva_cache_init(kvm, ghc, ghc->gpa);
++		kvm_gfn_to_hva_cache_init(kvm, ghc, ghc->gpa, ghc->len);
++
++	if (unlikely(!ghc->memslot))
++		return kvm_read_guest(kvm, ghc->gpa, data, len);
+ 
+ 	if (kvm_is_error_hva(ghc->hva))
+ 		return -EFAULT;
 
