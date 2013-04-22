@@ -1,155 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754692Ab3DVPiv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 11:38:51 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:41832 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754533Ab3DVPiu (ORCPT
+	id S1754532Ab3DVPsr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 11:48:47 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:51359 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753076Ab3DVPsq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 11:38:50 -0400
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        peterz@infradead.org, mingo@kernel.org, fweisbec@gmail.com,
-        pjt@google.com, rostedt@goodmis.org, efault@gmx.de
-Cc: Vincent Guittot <vincent.guittot@linaro.org>
-Subject: [PATCH v7] sched: fix init NOHZ_IDLE flag
-Date: Mon, 22 Apr 2013 17:38:06 +0200
-Message-Id: <1366645086-20345-1-git-send-email-vincent.guittot@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 22 Apr 2013 11:48:46 -0400
+Date: Mon, 22 Apr 2013 10:48:39 -0500
+From: Rob Landley <rob@landley.net>
+Subject: Re: [PATCH 6/6] add documentation on proc.txt
+To: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Michael Kerrisk <mtk.manpages@gmail.com>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan@kernel.org>
+References: <1366620306-30940-1-git-send-email-minchan@kernel.org>
+	<1366620306-30940-6-git-send-email-minchan@kernel.org>
+In-Reply-To: <1366620306-30940-6-git-send-email-minchan@kernel.org> (from
+	minchan@kernel.org on Mon Apr 22 03:45:06 2013)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1366645719.18069.147@driftwood>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On my smp platform which is made of 5 cores in 2 clusters, I have the
-nr_busy_cpu field of sched_group_power struct that is not null when the
-platform is fully idle. The root cause is:
-During the boot sequence, some CPUs reach the idle loop and set their
-NOHZ_IDLE flag while waiting for others CPUs to boot. But the nr_busy_cpus
-field is initialized later with the assumption that all CPUs are in the busy
-state whereas some CPUs have already set their NOHZ_IDLE flag.
+On 04/22/2013 03:45:06 AM, Minchan Kim wrote:
+> This patch adds documentation about new reclaim field in proc.txt
+> 
+> Cc: Rob Landley <rob@landley.net>
+> Signed-off-by: Minchan Kim <minchan@kernel.org>
+> ---
+>  Documentation/filesystems/proc.txt | 24 ++++++++++++++++++++++++
+>  1 file changed, 24 insertions(+)
+> 
+> diff --git a/Documentation/filesystems/proc.txt  
+> b/Documentation/filesystems/proc.txt
+> index 488c094..c1f5ee4 100644
+> --- a/Documentation/filesystems/proc.txt
+> +++ b/Documentation/filesystems/proc.txt
+> @@ -136,6 +136,7 @@ Table 1-1: Process specific entries in /proc
+>   maps		Memory maps to executables and library files	 
+> (2.4)
+>   mem		Memory held by this process
+>   root		Link to the root directory of this process
+> + reclaim	Reclaim pages in this process
+>   stat		Process status
+>   statm		Process memory status information
+>   status		Process status in human readable form
+> @@ -489,6 +490,29 @@ To clear the soft-dirty bit
+> 
+>  Any other value written to /proc/PID/clear_refs will have no effect.
+> 
+> +The /proc/PID/reclaim is used to reclaim pages in this process.
 
-More generally, the NOHZ_IDLE flag must be initialized when new sched_domains
-are created in order to ensure that NOHZ_IDLE and nr_busy_cpus are aligned.
+Trivial nitpick: Either start with "The file" or just /proc/PID/reclaim
 
-This condition can be ensured by adding a synchronize_rcu between the
-destruction of old sched_domains and the creation of new ones so the NOHZ_IDLE
-flag will not be updated with old sched_domain once it has been initialized.
-But this solution introduces a additionnal latency in the rebuild sequence
-that is called during cpu hotplug.
+> +To reclaim file-backed pages,
+> +    > echo 1 > /proc/PID/reclaim
+> +
+> +To reclaim anonymous pages,
+> +    > echo 2 > /proc/PID/reclaim
+> +
+> +To reclaim both pages,
+> +    > echo 3 > /proc/PID/reclaim
+> +
+> +Also, you can specify address range of process so part of address  
+> space
+> +will be reclaimed. The format is following as
+> +    > echo 4 addr size > /proc/PID/reclaim
 
-As suggested by Frederic Weisbecker, another solution is to have the same
-rcu lifecycle for both NOHZ_IDLE and sched_domain struct.
-A new nohz_flags has been added to sched_domain so both flags and sched_domain
-will share the same RCU lifecycle and will be always synchronized. This
-solution is prefered to the creation of a new struct with an extra pointer
-indirection.
+Size is in bytes or pages? (I'm guessing bytes. It must be a multiple  
+of pages?)
 
-The synchronization is done at the cost of :
- - An additional indirection and a rcu_dereference for accessing the NOHZ_IDLE
-   flag.
- - We use only the nohz_flags field of the top sched_domain.
+So the following examples are telling it to reclaim a specific page?
 
-Change since v6:
- - Add the flags in struct sched_domain instead of creating a sched_domain_rq.
+> +To reclaim file-backed pages in address range,
+> +    > echo 4 $((1<<20) 4096 > /proc/PID/reclaim
+> +
+> +To reclaim anonymous pages in address range,
+> +    > echo 5 $((1<<20) 4096 > /proc/PID/reclaim
+> +
+> +To reclaim both pages in address range,
+> +    > echo 6 $((1<<20) 4096 > /proc/PID/reclaim
+> +
+>  The /proc/pid/pagemap gives the PFN, which can be used to find the  
+> pageflags
+>  using /proc/kpageflags and number of times a page is mapped using
+>  /proc/kpagecount. For detailed explanation, see  
+> Documentation/vm/pagemap.txt.
 
-Change since v5:
- - minor variable and function name change.
- - remove a useless null check before kfree
- - fix a compilation error when NO_HZ is not set.
+Otherwise, if the series goes in I'm fine with this going in with it.
 
-Change since v4:
- - link both sched_domain and NOHZ_IDLE flag in one RCU object so
-   their states are always synchronized.
+Acked-by: Rob Landley <rob@landley.net>
 
-Change since V3;
- - NOHZ flag is not cleared if a NULL domain is attached to the CPU
- - Remove patch 2/2 which becomes useless with latest modifications
-
-Change since V2:
- - change the initialization to idle state instead of busy state so a CPU that
-   enters idle during the build of the sched_domain will not corrupt the
-   initialization state
-
-Change since V1:
- - remove the patch for SCHED softirq on an idle core use case as it was
-   a side effect of the other use cases.
-
-Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
----
- include/linux/sched.h |    1 +
- kernel/sched/fair.c   |   34 ++++++++++++++++++++++++----------
- 2 files changed, 25 insertions(+), 10 deletions(-)
-
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index d35d2b6..cde4f7f 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -899,6 +899,7 @@ struct sched_domain {
- 	unsigned int wake_idx;
- 	unsigned int forkexec_idx;
- 	unsigned int smt_gain;
-+	unsigned long nohz_flags;	/* NOHZ_IDLE flag status */
- 	int flags;			/* See SD_* */
- 	int level;
- 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 7a33e59..09e440f 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -5394,14 +5394,21 @@ static inline void set_cpu_sd_state_busy(void)
- {
- 	struct sched_domain *sd;
- 	int cpu = smp_processor_id();
--
--	if (!test_bit(NOHZ_IDLE, nohz_flags(cpu)))
--		return;
--	clear_bit(NOHZ_IDLE, nohz_flags(cpu));
-+	int first_nohz_idle = 1;
- 
- 	rcu_read_lock();
--	for_each_domain(cpu, sd)
-+	for_each_domain(cpu, sd) {
-+		if (first_nohz_idle) {
-+			if (!test_bit(NOHZ_IDLE, &sd->nohz_flags))
-+				goto unlock;
-+
-+			clear_bit(NOHZ_IDLE, &sd->nohz_flags);
-+			first_nohz_idle = 0;
-+		}
-+
- 		atomic_inc(&sd->groups->sgp->nr_busy_cpus);
-+	}
-+unlock:
- 	rcu_read_unlock();
- }
- 
-@@ -5409,14 +5416,21 @@ void set_cpu_sd_state_idle(void)
- {
- 	struct sched_domain *sd;
- 	int cpu = smp_processor_id();
--
--	if (test_bit(NOHZ_IDLE, nohz_flags(cpu)))
--		return;
--	set_bit(NOHZ_IDLE, nohz_flags(cpu));
-+	int first_nohz_idle = 1;
- 
- 	rcu_read_lock();
--	for_each_domain(cpu, sd)
-+	for_each_domain(cpu, sd) {
-+		if (first_nohz_idle) {
-+			if (test_bit(NOHZ_IDLE, &sd->nohz_flags))
-+				goto unlock;
-+
-+			set_bit(NOHZ_IDLE, &sd->nohz_flags);
-+			first_nohz_idle = 0;
-+		}
-+
- 		atomic_dec(&sd->groups->sgp->nr_busy_cpus);
-+	}
-+unlock:
- 	rcu_read_unlock();
- }
- 
--- 
-1.7.9.5
-
+Rob
