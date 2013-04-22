@@ -1,24 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755708Ab3DVOjj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 10:39:39 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51597 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754862Ab3DVOaN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754922Ab3DVOaN (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 22 Apr 2013 10:30:13 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51555 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754862Ab3DVOaE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Apr 2013 10:30:04 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Thomas Hellstrom" <thellstrom@vmware.com>,
-        "Dave Airlie" <airlied@redhat.com>
+CC: akpm@linux-foundation.org,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "HATAYAMA Daisuke" <d.hatayama@jp.fujitsu.com>,
+        "Naoya Horiguchi" <n-horiguchi@ah.jp.nec.com>,
+        "Rik van Riel" <riel@redhat.com>,
+        "David Rientjes" <rientjes@google.com>,
+        "KOSAKI Motohiro" <kosaki.motohiro@jp.fujitsu.com>,
+        "Michal Hocko" <mhocko@suse.cz>
 Date: Mon, 22 Apr 2013 15:25:59 +0100
-Message-ID: <lsq.1366640759.537909420@decadent.org.uk>
+Message-ID: <lsq.1366640759.438356119@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [40/75] kref: Implement kref_get_unless_zero v3
+Subject: [50/75] hugetlbfs: add swap entry check in follow_hugetlb_page()
 In-Reply-To: <lsq.1366640759.151900666@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:6834:ff73:7553:7f84
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,63 +37,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Hellstrom <thellstrom@vmware.com>
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 
-commit 4b20db3de8dab005b07c74161cb041db8c5ff3a7 upstream.
+commit 9cc3a5bd40067b9a0fbd49199d0780463fc2140f upstream.
 
-This function is intended to simplify locking around refcounting for
-objects that can be looked up from a lookup structure, and which are
-removed from that lookup structure in the object destructor.
-Operations on such objects require at least a read lock around
-lookup + kref_get, and a write lock around kref_put + remove from lookup
-structure. Furthermore, RCU implementations become extremely tricky.
-With a lookup followed by a kref_get_unless_zero *with return value check*
-locking in the kref_put path can be deferred to the actual removal from
-the lookup structure and RCU lookups become trivial.
+With applying the previous patch "hugetlbfs: stop setting VM_DONTDUMP in
+initializing vma(VM_HUGETLB)" to reenable hugepage coredump, if a memory
+error happens on a hugepage and the affected processes try to access the
+error hugepage, we hit VM_BUG_ON(atomic_read(&page->_count) <= 0) in
+get_page().
 
-v2: Formatting fixes.
-v3: Invert the return value.
+The reason for this bug is that coredump-related code doesn't recognise
+"hugepage hwpoison entry" with which a pmd entry is replaced when a memory
+error occurs on a hugepage.
 
-Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
-[bwh: Backported to 3.2:
- - Adjust context
- - Add #include <linux/atomic.h>]
+In other words, physical address information is stored in different bit
+layout between hugepage hwpoison entry and pmd entry, so
+follow_hugetlb_page() which is called in get_dump_page() returns a wrong
+page from a given address.
+
+The expected behavior is like this:
+
+  absent   is_swap_pte   FOLL_DUMP   Expected behavior
+  -------------------------------------------------------------------
+   true     false         false       hugetlb_fault
+   false    true          false       hugetlb_fault
+   false    false         false       return page
+   true     false         true        skip page (to avoid allocation)
+   false    true          true        hugetlb_fault
+   false    false         true        return page
+
+With this patch, we can call hugetlb_fault() and take proper actions (we
+wait for migration entries, fail with VM_FAULT_HWPOISON_LARGE for
+hwpoisoned entries,) and as the result we can dump all hugepages except
+for hwpoisoned ones.
+
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Rik van Riel <riel@redhat.com>
+Acked-by: Michal Hocko <mhocko@suse.cz>
+Cc: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Acked-by: David Rientjes <rientjes@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
---- a/include/linux/kref.h
-+++ b/include/linux/kref.h
-@@ -16,6 +16,7 @@
- #define _KREF_H_
+ mm/hugetlb.c |   12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
+
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -2889,7 +2889,17 @@ int follow_hugetlb_page(struct mm_struct
+ 			break;
+ 		}
  
- #include <linux/types.h>
-+#include <linux/atomic.h>
+-		if (absent ||
++		/*
++		 * We need call hugetlb_fault for both hugepages under migration
++		 * (in which case hugetlb_fault waits for the migration,) and
++		 * hwpoisoned hugepages (in which case we need to prevent the
++		 * caller from accessing to them.) In order to do this, we use
++		 * here is_swap_pte instead of is_hugetlb_entry_migration and
++		 * is_hugetlb_entry_hwpoisoned. This is because it simply covers
++		 * both cases, and because we can't follow correct pages
++		 * directly from any kind of swap entries.
++		 */
++		if (absent || is_swap_pte(huge_ptep_get(pte)) ||
+ 		    ((flags & FOLL_WRITE) && !pte_write(huge_ptep_get(pte)))) {
+ 			int ret;
  
- struct kref {
- 	atomic_t refcount;
-@@ -27,4 +28,24 @@ int kref_put(struct kref *kref, void (*r
- int kref_sub(struct kref *kref, unsigned int count,
- 	     void (*release) (struct kref *kref));
- 
-+/**
-+ * kref_get_unless_zero - Increment refcount for object unless it is zero.
-+ * @kref: object.
-+ *
-+ * Return non-zero if the increment succeeded. Otherwise return 0.
-+ *
-+ * This function is intended to simplify locking around refcounting for
-+ * objects that can be looked up from a lookup structure, and which are
-+ * removed from that lookup structure in the object destructor.
-+ * Operations on such objects require at least a read lock around
-+ * lookup + kref_get, and a write lock around kref_put + remove from lookup
-+ * structure. Furthermore, RCU implementations become extremely tricky.
-+ * With a lookup followed by a kref_get_unless_zero *with return value check*
-+ * locking in the kref_put path can be deferred to the actual removal from
-+ * the lookup structure and RCU lookups become trivial.
-+ */
-+static inline int __must_check kref_get_unless_zero(struct kref *kref)
-+{
-+	return atomic_add_unless(&kref->refcount, 1, 0);
-+}
- #endif /* _KREF_H_ */
 
