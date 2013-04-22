@@ -1,175 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754011Ab3DVXjh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 19:39:37 -0400
-Received: from mail.afriserver.de ([5.9.107.143]:47142 "EHLO
-	mail.afriserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752511Ab3DVXjg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 19:39:36 -0400
-Message-ID: <5175CA2F.2030206@felixbecker.name>
-Date: Tue, 23 Apr 2013 01:39:27 +0200
-From: Felix Becker <mail@felixbecker.name>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
+	id S1753191Ab3DVXuX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 19:50:23 -0400
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:58411 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752674Ab3DVXuV convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Apr 2013 19:50:21 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -1
+X-BigFish: VS-1(zzbb2dI98dI9371I1432Ic8kzz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275bhz2dh2a8h668h839h944hd2bhf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h16a6h1758h1898h18e1h1946h19b5h1ad9h1b0ah1155h)
+Date: Mon, 22 Apr 2013 18:50:09 -0500
+From: Scott Wood <scottwood@freescale.com>
+Subject: Re: [PATCH 2/3 v13] iommu/fsl: Add additional iommu attributes
+ required by the PAMU driver.
+To: Varun Sethi <Varun.Sethi@freescale.com>
+CC: <joro@8bytes.org>, <iommu@lists.linux-foundation.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <galak@kernel.crashing.org>, <benh@kernel.crashing.org>,
+        <stuart.yoder@freescale.com>, Varun Sethi <Varun.Sethi@freescale.com>
+In-Reply-To: <1366608716-1704-2-git-send-email-Varun.Sethi@freescale.com>
+	(from Varun.Sethi@freescale.com on Mon Apr 22 00:31:55 2013)
+X-Mailer: Balsa 2.4.12
+Message-ID: <1366674609.10399.12@snotra>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: socket file descriptor a/m/c-timestamps broken in <= 3.8.8?
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"; delsp=Yes; format=Flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 04/22/2013 12:31:55 AM, Varun Sethi wrote:
+> Added the following domain attributes for the FSL PAMU driver:
+> 1. Added new iommu stash attribute, which allows setting of the
+>    LIODN specific stash id parameter through IOMMU API.
+> 2. Added an attribute for enabling/disabling DMA to a particular
+>    memory window.
+> 3. Added domain attribute to check for PAMUV1 specific constraints.
+> 
+> Signed-off-by: Varun Sethi <Varun.Sethi@freescale.com>
+> ---
+> v13 changes:
+> - created a new file include/linux/fsl_pamu_stash.h for stash
+> attributes.
+> v12 changes:
+> - Moved PAMU specifc stash ids and structures to PAMU header file.
+> - no change in v11.
+> - no change in v10.
+>  include/linux/fsl_pamu_stash.h |   39  
+> +++++++++++++++++++++++++++++++++++++++
+>  include/linux/iommu.h          |   16 ++++++++++++++++
+>  2 files changed, 55 insertions(+), 0 deletions(-)
+>  create mode 100644 include/linux/fsl_pamu_stash.h
+> 
+> diff --git a/include/linux/fsl_pamu_stash.h  
+> b/include/linux/fsl_pamu_stash.h
+> new file mode 100644
+> index 0000000..caa1b21
+> --- /dev/null
+> +++ b/include/linux/fsl_pamu_stash.h
+> @@ -0,0 +1,39 @@
+> +/*
+> + * This program is free software; you can redistribute it and/or  
+> modify
+> + * it under the terms of the GNU General Public License, version 2,  
+> as
+> + * published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program; if not, write to the Free Software
+> + * Foundation, 51 Franklin Street, Fifth Floor, Boston, MA   
+> 02110-1301, USA.
+> + *
+> + * Copyright (C) 2013 Freescale Semiconductor, Inc.
+> + *
+> + */
+> +
+> +#ifndef __FSL_PAMU_STASH_H
+> +#define __FSL_PAMU_STASH_H
+> +
+> +/* cache stash targets */
+> +enum pamu_stash_target {
+> +	PAMU_ATTR_CACHE_L1 = 1,
+> +	PAMU_ATTR_CACHE_L2,
+> +	PAMU_ATTR_CACHE_L3,
+> +};
+> +
+> +/*
+> + * This attribute allows configuring stashig specific parameters
+> + * in the PAMU hardware.
+> + */
+> +
+> +struct pamu_stash_attribute {
+> +	u32 	cpu;	/* cpu number */
+> +	u32 	cache;	/* cache to stash to: L1,L2,L3 */
+> +};
+> +
+> +#endif  /* __FSL_PAMU_STASH_H */
+> diff --git a/include/linux/iommu.h b/include/linux/iommu.h
+> index 2727810..c5dc2b9 100644
+> --- a/include/linux/iommu.h
+> +++ b/include/linux/iommu.h
+> @@ -57,10 +57,26 @@ struct iommu_domain {
+>  #define IOMMU_CAP_CACHE_COHERENCY	0x1
+>  #define IOMMU_CAP_INTR_REMAP		0x2	/* isolates device  
+> intrs */
+> 
+> +/*
+> + * Following constraints are specifc to PAMUV1:
 
-I tried to figure out how old my TCP connections are and took a look
-at /proc/<pid>/fd/<socketfdnum> using 'ls -la' / 'stat'.
+FSL_PAMUV1
 
-When I'm creating a new socket in my application, the time stamps
-returned by stat / ls -la are correct - as expected. After closing the
-socket, the fd isn't visible in /proc/<pid>/fd anymore - as expected.
-When creating a new socket a few minutes later (which gets the same
-number as the socket closed before), the newly created socket has the
-same time stamps (access / modify / change) as the old socket - I
-didn't expect this.
+> + *  -aperture must be power of 2, and naturally aligned
+> + *  -number of windows must be power of 2, and address space size
+> + *   of each window is determined by aperture size / # of windows
+> + *  -the actual size of the mapped region of a window must be power
+> + *   of 2 starting with 4KB and physical address must be naturally
+> + *   aligned.
+> + * DOMAIN_ATTR_FSL_PAMUV1 corresponds to the above mentioned  
+> contraints.
+> + * The caller can invoke iommu_domain_get_attr to check if the  
+> underlying
+> + * iommu implementation supports these constraints.
+> + */
+> +
+>  enum iommu_attr {
+>  	DOMAIN_ATTR_GEOMETRY,
+>  	DOMAIN_ATTR_PAGING,
+>  	DOMAIN_ATTR_WINDOWS,
+> +	DOMAIN_ATTR_PAMU_STASH,
+> +	DOMAIN_ATTR_PAMU_ENABLE,
+> +	DOMAIN_ATTR_FSL_PAMUV1,
+>  	DOMAIN_ATTR_MAX,
 
-When using fstat() from <sys/stat.h> I'm getting 0 for a/m/c-time.
-Only in /proc/<pid>/fd/ i can see (the wrong) times.
+Please be consistent on whether "PAMU" gets an "FSL_" namespace prefix  
+(I'd prefer that it does).
 
-I attached a test code for reproducing the issue. In my production
-environments i have new socket file descriptors which have timestamps
-indicating that they are many hours old.
-
-Q1: is it a bug that fstat() returns 0-values for a/m/c-time?
-
-Q2: is it a bug that a new socket, with the file descriptor number of
-an older socket which existed before, have the a/m/c-times of the old
-socket in /proc/<pid>/fd/?
-
-Best regards
-
-Felix
-
-p.s. test setup is a normal x86_64 architecture (intel xeon).
-
-=======================================================================
-// sockettest.c
-
-#include <sys/socket.h>
-#include <time.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <sys/un.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <unistd.h>
-
-
-void print_socket_stats(int sfd){
-   struct stat socket_stats;
-   fstat(sfd, &socket_stats);
-   printf("Socket stats for socket %d\n", sfd);
-   printf("socket stat: st_atime: %ld\n", socket_stats.st_atime);
-   printf("socket stat: st_mtime: %ld\n", socket_stats.st_mtime);
-   printf("socket stat: st_ctime: %ld\n", socket_stats.st_ctime);
-}
-
-void print_with_time(const char* message){
-        time_t t;
-        time(&t);
-        printf("%s @ %s\n", message, ctime(&t));
-
-}
-
-int main(int argc, char *argv[]) {
-
-   int sfd;
-
-   printf("pid: %d\n", getpid());
-
-   print_with_time("Opening socket");
-   sfd = socket(AF_UNIX, SOCK_STREAM, 0);
-   printf("opened socket: %d\n",sfd);
-   print_socket_stats(sfd);
-
-   print_with_time("sleeping 30\n");
-
-   sleep(30);
-
-   printf("closing socket %d", sfd);
-   close(sfd);
-
-   printf("closed socket: %d\n",sfd);
-   print_with_time("sleeping 61 seconds");
-
-   sleep(61);
-
-   print_with_time("opening new socket");
-   sfd = socket(AF_UNIX, SOCK_STREAM, 0);
-   printf("opened socket: %d\n",sfd);
-   print_socket_stats(sfd);
-   print_with_time("sleeping 999");
-
-   sleep(999);
-}
-
-=======================================================================
-
-./sockettest &
-
-pid: 18267
-Opening socket @ Mon Apr 22 23:05:37 2013
-
-opened socket: 3
-Socket stats for socket 3
-socket stat: st_atime: 0
-socket stat: st_mtime: 0
-socket stat: st_ctime: 0
-sleeping 30 @ Mon Apr 22 23:05:37 2013
-
->>> ls -la /proc/18267/fd/3
-lrwx------ 1 becker becker 64 Apr 22 23:05 /proc/18267/fd/3 ->
-socket:[210268]
-
-
->>> stat /proc/18267/fd/3
-  File: `/proc/18267/fd/3' -> `socket:[210268]'
-  Size: 64              Blocks: 0          IO Block: 1024   symbolic link
-Device: 3h/3d   Inode: 52177       Links: 1
-Access: (0700/lrwx------)  Uid: ( 1001/  becker)   Gid: ( 1001/  becker)
-Access: 2013-04-22 23:05:46.179813835 +0000
-Modify: 2013-04-22 23:05:46.175813886 +0000
-Change: 2013-04-22 23:05:46.175813886 +0000
-
-closing socket 3
-closed socket: 3
-
-sleeping 61 seconds @ Mon Apr 22 23:06:07 2013
-
-opening new socket @ Mon Apr 22 23:07:08 2013
-
-opened socket: 3
-Socket stats for socket 3
-socket stat: st_atime: 0
-socket stat: st_mtime: 0
-socket stat: st_ctime: 0
-sleeping 999 @ Mon Apr 22 23:07:08 2013
-
-
->>> ls -la /proc/18267/fd/3
-lrwx------ 1 becker becker 64 Apr 22 23:05 /proc/18267/fd/3 ->
-socket:[210320]
-
->>> stat /proc/18267/fd/3
-
-
-
-  File: `/proc/18267/fd/3' -> `socket:[210320]'
-  Size: 64              Blocks: 0          IO Block: 1024   symbolic link
-Device: 3h/3d   Inode: 52177       Links: 1
-Access: (0700/lrwx------)  Uid: ( 1001/  becker)   Gid: ( 1001/  becker)
-Access: 2013-04-22 23:05:46.179813835 +0000
-Modify: 2013-04-22 23:05:46.175813886 +0000
-Change: 2013-04-22 23:05:46.175813886 +0000
+-Scott
