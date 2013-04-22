@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755425Ab3DVOeJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 10:34:09 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51674 "EHLO
+	id S1752966Ab3DVOaV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 10:30:21 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51612 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755092Ab3DVOaZ (ORCPT
+	by vger.kernel.org with ESMTP id S1754856Ab3DVOaQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 10:30:25 -0400
+	Mon, 22 Apr 2013 10:30:16 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Jeff Garzik" <jgarzik@redhat.com>,
-        "Youquan Song" <youquan.song@intel.com>,
-        "Lee, Chun-Yi" <jlee@suse.com>
+CC: akpm@linux-foundation.org, "Ingo Molnar" <mingo@kernel.org>,
+        "Namhyung Kim" <namhyung.kim@lge.com>,
+        "Namhyung Kim" <namhyung@kernel.org>,
+        "Frederic Weisbecker" <fweisbec@gmail.com>,
+        "Steven Rostedt" <rostedt@goodmis.org>
 Date: Mon, 22 Apr 2013 15:25:59 +0100
-Message-ID: <lsq.1366640759.726537958@decadent.org.uk>
+Message-ID: <lsq.1366640759.32194437@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [22/75] ata_piix: Fix DVD not dectected at some Haswell platforms
+Subject: [38/75] tracing: Fix possible NULL pointer dereferences
 In-Reply-To: <lsq.1366640759.151900666@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:6834:ff73:7553:7f84
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,73 +34,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Youquan Song <youquan.song@intel.com>
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-commit b55f84e2d527182e7c611d466cd0bb6ddce201de upstream.
+commit 6a76f8c0ab19f215af2a3442870eeb5f0e81998d upstream.
 
-There is a quirk patch 5e5a4f5d5a08c9c504fe956391ac3dae2c66556d
-"ata_piix: make DVD Drive recognisable on systems with Intel Sandybridge
- chipsets(v2)" fixing the 4 ports IDE controller 32bit PIO mode.
+Currently set_ftrace_pid and set_graph_function files use seq_lseek
+for their fops.  However seq_open() is called only for FMODE_READ in
+the fops->open() so that if an user tries to seek one of those file
+when she open it for writing, it sees NULL seq_file and then panic.
 
-We've hit a problem with DVD not recognized on Haswell Desktop platform which
-includes Lynx Point 2-port SATA controller.
+It can be easily reproduced with following command:
 
-This quirk patch disables 32bit PIO on this controller in IDE mode.
+  $ cd /sys/kernel/debug/tracing
+  $ echo 1234 | sudo tee -a set_ftrace_pid
 
-v2: Change spelling error in statememnt pointed by Sergei Shtylyov.
-v3: Change comment statememnt and spliting line over 80 characters pointed by
-    Libor Pechacek and also rebase the patch against 3.8-rc7 kernel.
+In this example, GNU coreutils' tee opens the file with fopen(, "a")
+and then the fopen() internally calls lseek().
 
-Tested-by: Lee, Chun-Yi <jlee@suse.com>
-Signed-off-by: Youquan Song <youquan.song@intel.com>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+Link: http://lkml.kernel.org/r/1365663302-2170-1-git-send-email-namhyung@kernel.org
+
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+[bwh: Backported to 3.2: ftrace_regex_lseek() is static]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/ata/ata_piix.c |   14 +++++++++++++-
- 1 file changed, 13 insertions(+), 1 deletion(-)
-
---- a/drivers/ata/ata_piix.c
-+++ b/drivers/ata/ata_piix.c
-@@ -150,6 +150,7 @@ enum piix_controller_ids {
- 	tolapai_sata,
- 	piix_pata_vmw,			/* PIIX4 for VMware, spurious DMA_ERR */
- 	ich8_sata_snb,
-+	ich8_2port_sata_snb,
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -2316,7 +2316,7 @@ ftrace_notrace_open(struct inode *inode,
+ }
+ 
+ static loff_t
+-ftrace_regex_lseek(struct file *file, loff_t offset, int origin)
++ftrace_filter_lseek(struct file *file, loff_t offset, int origin)
+ {
+ 	loff_t ret;
+ 
+@@ -3134,7 +3134,7 @@ static const struct file_operations ftra
+ 	.open = ftrace_filter_open,
+ 	.read = seq_read,
+ 	.write = ftrace_filter_write,
+-	.llseek = ftrace_regex_lseek,
++	.llseek = ftrace_filter_lseek,
+ 	.release = ftrace_regex_release,
  };
  
- struct piix_map_db {
-@@ -326,7 +327,7 @@ static const struct pci_device_id piix_p
- 	/* SATA Controller IDE (Lynx Point) */
- 	{ 0x8086, 0x8c01, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
- 	/* SATA Controller IDE (Lynx Point) */
--	{ 0x8086, 0x8c08, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
-+	{ 0x8086, 0x8c08, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata_snb },
- 	/* SATA Controller IDE (Lynx Point) */
- 	{ 0x8086, 0x8c09, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
- 	/* SATA Controller IDE (Lynx Point-LP) */
-@@ -519,6 +520,7 @@ static const struct piix_map_db *piix_ma
- 	[ich8m_apple_sata]	= &ich8m_apple_map_db,
- 	[tolapai_sata]		= &tolapai_map_db,
- 	[ich8_sata_snb]		= &ich8_map_db,
-+	[ich8_2port_sata_snb]	= &ich8_2port_map_db,
+@@ -3142,7 +3142,7 @@ static const struct file_operations ftra
+ 	.open = ftrace_notrace_open,
+ 	.read = seq_read,
+ 	.write = ftrace_notrace_write,
+-	.llseek = ftrace_regex_lseek,
++	.llseek = ftrace_filter_lseek,
+ 	.release = ftrace_regex_release,
  };
  
- static struct ata_port_info piix_port_info[] = {
-@@ -657,6 +659,16 @@ static struct ata_port_info piix_port_in
- 		.pio_mask	= ATA_PIO4,
- 		.mwdma_mask	= ATA_MWDMA2,
- 		.udma_mask	= ATA_UDMA6,
-+		.port_ops	= &piix_sata_ops,
-+	},
-+
-+	[ich8_2port_sata_snb] =
-+	{
-+		.flags		= PIIX_SATA_FLAGS | PIIX_FLAG_SIDPR
-+					| PIIX_FLAG_PIO16,
-+		.pio_mask	= ATA_PIO4,
-+		.mwdma_mask	= ATA_MWDMA2,
-+		.udma_mask	= ATA_UDMA6,
- 		.port_ops	= &piix_sata_ops,
- 	},
+@@ -3350,8 +3350,8 @@ static const struct file_operations ftra
+ 	.open		= ftrace_graph_open,
+ 	.read		= seq_read,
+ 	.write		= ftrace_graph_write,
++	.llseek		= ftrace_filter_lseek,
+ 	.release	= ftrace_graph_release,
+-	.llseek		= seq_lseek,
+ };
+ #endif /* CONFIG_FUNCTION_GRAPH_TRACER */
+ 
+@@ -3843,7 +3843,7 @@ static const struct file_operations ftra
+ 	.open		= ftrace_pid_open,
+ 	.write		= ftrace_pid_write,
+ 	.read		= seq_read,
+-	.llseek		= seq_lseek,
++	.llseek		= ftrace_filter_lseek,
+ 	.release	= ftrace_pid_release,
+ };
  
 
