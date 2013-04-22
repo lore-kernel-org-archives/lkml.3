@@ -1,94 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755488Ab3DVOgM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 10:36:12 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:38516 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754277Ab3DVOgJ (ORCPT
+	id S1755434Ab3DVOgl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 10:36:41 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:36372 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754854Ab3DVOgi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 10:36:09 -0400
-Date: Mon, 22 Apr 2013 17:35:37 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Sourav Poddar <sourav.poddar@ti.com>
-CC: <gregkh@linuxfoundation.org>, <tony@atomide.com>,
-        <rmk+kernel@arm.linux.org.uk>, <khilman@linaro.org>,
-        <linux-serial@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Benoit Cousson <b-cousson@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Felipe Balbi <balbi@ti.com>, Rajendra nayak <rnayak@ti.com>
-Subject: Re: [PATCHv2 4/5] arm: dts: am33xx: Remove "ti,no_idle_on_suspend"
- property.
-Message-ID: <20130422143537.GD7508@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1366638237-6880-1-git-send-email-sourav.poddar@ti.com>
- <1366638237-6880-5-git-send-email-sourav.poddar@ti.com>
+	Mon, 22 Apr 2013 10:36:38 -0400
+Date: Mon, 22 Apr 2013 15:36:16 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: =?iso-8859-1?Q?Andr=E9?= Hentschel <nerv@dawncrow.de>
+Cc: linux-arch@vger.kernel.org, will.deacon@arm.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org
+Subject: Re: [PATCHv2] arm: Preserve TPIDRURW on context switch
+Message-ID: <20130422143616.GP14496@n2100.arm.linux.org.uk>
+References: <517168BB.3070903@dawncrow.de>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="at6+YcpfzWZg/htY"
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1366638237-6880-5-git-send-email-sourav.poddar@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <517168BB.3070903@dawncrow.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---at6+YcpfzWZg/htY
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, Apr 19, 2013 at 05:54:35PM +0200, André Hentschel wrote:
+> From: =?UTF-8?q?Andr=C3=A9=20Hentschel?= <nerv@dawncrow.de>
+> 
+> There are more and more applications coming to WinRT, Wine could support them,
+> but mostly they expect to have the thread environment block (TEB) in TPIDRURW.
+> This register must be preserved per thread instead of being cleared.
+> 
+> Signed-off-by: André Hentschel <nerv@dawncrow.de>
 
-Hi,
+This actually makes things less efficient all round, because you
+now use the value immediately after loading, which means it will cause
+pipeline stalls, certainly on older CPUs.
 
-On Mon, Apr 22, 2013 at 07:13:56PM +0530, Sourav Poddar wrote:
-> The "ti,no_idle_on_suspend" property was required to keep ocmcram
-> clocks running during idle.
->=20
-> But the commit below[1], added in v3.6 should prevent the
-> any automaic clock gating for devices without drivers bound.  Since
-> there is no driver for the OCM RAM block, we are not affected by
-> the automatic idle on suspend anyways.
-> [1]:
-> commit 72bb6f9b51c82c820ddef892455a85b115460904
-
-your commit log can be improved a bit, it could look like below:
-
-The "ti,no_idle_on_suspend" property was required to keep ocmcram clocks
-running during idle.
-
-But commit 72bb6f9 (ARM: OMAP: omap_device: don't attempt late suspend
-if no driver bound), added in v3.6 should prevent any automatic clock
-gating for devices without drivers bound.  Since there is no driver for
-the OCM RAM block, we are not affected by the automatic idle on suspend
-anyways which means "ti,no_idle_on_suspend" can be safely removed since
-there are no users for it.
-
-other than that:
-
-Reviewed-by: Felipe Balbi <balbi@ti.com>
-
---=20
-balbi
-
---at6+YcpfzWZg/htY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRdUq5AAoJEIaOsuA1yqREL9EQAIoFHiv8p3YSlxJKzW2LUbKL
-HY5Wk6t+K3dmsz6cUHP9t0FhIXJnanXk/0OKgqf0CxN+tJcqmRVQB68Fz5LNsVYo
-8453QvjSTtOgH2YlpyKoL80IbcOBMuOL9JGyLygtlGS0Boop3ip9Qi43kCeT4hBD
-m17ctA7PGwKcrU7c+WQfmxRj4XXffm6+cGFzKSfcyvqqguLuh5UQHbBr9Kxsl+9k
-HLK1mSbNTzau1bhGCFaER5fHYff5zBKaucaPfik9hpnkUb+a5H4xxVMRdRvjjhTf
-sUDiPepWG79ABgnCgqYn1bt3psQjosxEyYFqLu1nf9LLVlGUPAdIKyf4YK1kUXNc
-Q9PmuhyHdsiOy6Hfx+KFI0QdCt4rJDC0/8nw3cLid1jz5NqXIX/slzyg+BeMJyl4
-yAEVeY3KHnO8DsWSINqppPWmfVbPFChJ3XDJrbDyuxWIve813Jg7M6g+R6L2s4qj
-TTG2KF98rdrYTkn1aZ7NaDQq4XIFmlvaNGw9GVxLZTHV+wyGMeS8XT61hCtAZZiu
-o5d9QGe0RdJcv+VNdCWHA8UCFWXz+f2p8gF+BIOIJ2nAfEfnqd62gzwVBWhMPpQo
-Xv0oJJhyFlPSLG/VrpKzDHRgihDMqOqGPGq+09hvCvoQZp3MmnH6nZN04fnJ8nLc
-HHvo9h8fZ+HRRMMtw5n3
-=drMv
------END PGP SIGNATURE-----
-
---at6+YcpfzWZg/htY--
+Could you please rework the patch to try avoiding soo many modifications
+to the way things have been done here?
