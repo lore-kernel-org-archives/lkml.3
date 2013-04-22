@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755417Ab3DVUsk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 16:48:40 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:40432
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754945Ab3DVUsi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 16:48:38 -0400
-Message-ID: <1366663714.8337.12.camel@laptop>
-Subject: Re: Preemptable Ticket Spinlock
-From: Peter Zijlstra <peterz@infradead.org>
-To: Rik van Riel <riel@redhat.com>
-Cc: Jiannan Ouyang <ouyang@cs.pitt.edu>, LKML <linux-kernel@vger.kernel.org>,
+	id S1752277Ab3DVUua (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 16:50:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18206 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751152Ab3DVUu3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Apr 2013 16:50:29 -0400
+Message-ID: <5175A277.5080208@redhat.com>
+Date: Mon, 22 Apr 2013 16:49:59 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Jiannan Ouyang <ouyang@cs.pitt.edu>
+CC: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
         Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
         Avi Kivity <avi.kivity@gmail.com>, Gleb Natapov <gleb@redhat.com>,
         Ingo Molnar <mingo@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
@@ -22,39 +23,28 @@ Cc: Jiannan Ouyang <ouyang@cs.pitt.edu>, LKML <linux-kernel@vger.kernel.org>,
         "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
         Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
         Andrew Jones <drjones@redhat.com>, Karen Noel <knoel@redhat.com>
-Date: Mon, 22 Apr 2013 22:48:34 +0200
-In-Reply-To: <1366663475.8337.10.camel@laptop>
-References: <CAJocwccu5QQyuKRvgNyPSFz2K_rzCW419W9-XdSUYOL7+KqQKg@mail.gmail.com>
-	 <51745650.9050204@redhat.com> <1366631460.4443.3.camel@laptop>
-	 <51753289.70406@redhat.com> <1366660147.6454.6.camel@laptop>
-	 <517595FA.800@redhat.com> <1366661294.6454.18.camel@laptop>
-	 <51759E43.2080003@redhat.com> <1366663475.8337.10.camel@laptop>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
+Subject: Re: Preemptable Ticket Spinlock
+References: <CAJocwccu5QQyuKRvgNyPSFz2K_rzCW419W9-XdSUYOL7+KqQKg@mail.gmail.com> <51745650.9050204@redhat.com> <1366631460.4443.3.camel@laptop> <51753289.70406@redhat.com> <1366660147.6454.6.camel@laptop> <517595FA.800@redhat.com> <1366661294.6454.18.camel@laptop> <CAJocwceW6BuEu0Yuyv472aarpcziZH1wd-Xbc+Om81ES8+w+SA@mail.gmail.com>
+In-Reply-To: <CAJocwceW6BuEu0Yuyv472aarpcziZH1wd-Xbc+Om81ES8+w+SA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-04-22 at 22:44 +0200, Peter Zijlstra wrote:
-> On Mon, 2013-04-22 at 16:32 -0400, Rik van Riel wrote:
-> > 
-> > IIRC one of the reasons was that the performance improvement wasn't
-> > as obvious.  Rescheduling VCPUs takes a fair amount of time, quite
-> > probably more than the typical hold time of a spinlock.
-> 
-> IIRC it would spin for a while before blocking..
-> 
-> /me goes re-read some of that thread...
-> 
-> Ah, its because PLE is curing most of it.. !PLE it had huge gains but
-> apparently nobody cares about !PLE hardware anymore :-)
+On 04/22/2013 04:46 PM, Jiannan Ouyang wrote:
 
-Hmm.. it looked like under light overcommit the paravirt ticket lock
-still had some gain (~10%) and of course it brings the fairness thing
-which is always good.
+> It would still be very interesting to conduct more experiments to
+> compare these two, to see if the fairness enforced by pv_lock is
+> mandatory, and if preemptable-lock outperforms pv_lock in most cases,
+> and how do they work with PLE.
 
-I can only imagine the mess unfair + vcpu preemption can bring to guest
-tasks.
+Given the fairly high cost of rescheduling a VCPU (which is likely
+to include an IPI), versus the short hold time of most spinlocks,
+I have the strong suspicion that your approach would win.
 
+The fairness is only compromised in a limited way and in certain
+circumstances, so I am not too worried about that.
+
+-- 
+All rights reversed
