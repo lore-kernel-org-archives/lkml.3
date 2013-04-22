@@ -1,1382 +1,1205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756131Ab3DVIqk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 04:46:40 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:46825 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756005Ab3DVIpQ (ORCPT
+	id S1756141Ab3DVIum (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 04:50:42 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:44123 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754760Ab3DVIuk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 04:45:16 -0400
-Date: Mon, 22 Apr 2013 18:44:45 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: <linux-next@vger.kernel.org>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: linux-next: Tree for Apr 22
-Message-Id: <20130422184445.7776fb6c089e93b8ae38d7b9@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__22_Apr_2013_18_44_45_+1000_Dg.tDD_U0Arr4GH2"
+	Mon, 22 Apr 2013 04:50:40 -0400
+From: Mathias Leblanc <mathias.leblanc@st.com>
+To: Kent Yoder <key@linux.vnet.ibm.com>, Rajiv Andrade <mail@srajiv.net>,
+        Marcel Selhorst <tpmdd@selhorst.net>, Sirrix AG <tpmdd@sirrix.com>,
+        tpmdd-devel@lists.sourceforge.net
+Cc: linux-kernel@vger.kernel.org, Jean-Luc Blanc <jean-luc.blanc@st.com>,
+        Mathias Leblanc <mathias.leblanc@st.com>
+Subject: [PATCH 1/1] TPM: STMicroelectronics st33 driver SPI
+Date: Mon, 22 Apr 2013 10:50:06 +0200
+Message-Id: <1366620606-2952-1-git-send-email-mathias.leblanc@st.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__22_Apr_2013_18_44_45_+1000_Dg.tDD_U0Arr4GH2
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+ * STMicroelectronics version 1.2.0, Copyright (C) 2010
+ * STMicroelectronics comes with ABSOLUTELY NO WARRANTY.
+ * This is free software, and you are welcome to redistribute it
+ * under certain conditions.
 
-Hi all,
+This is the driver for TPM chip from ST Microelectronics.
 
-Changes since 20130419:
+If you have a TPM security chip from STMicroelectronics working with
+an SPI, in menuconfig or .config choose the tpm driver on
+device --> tpm and activate the protocol of your choice before compiling
+the kernel.
+The driver will be accessible from within Linux.
 
-New tree: kvm-arm
+Tested on linux x86/x64 and beagleboard REV B & XM REV C
 
-The net-next tree gained conflicts against Linus' tree and a build
-failure so I used the version from next-20130419.
+Signed-off-by: Mathias Leblanc <mathias.leblanc@st.com>
+---
+ drivers/char/tpm/Kconfig            |   10 +
+ drivers/char/tpm/Makefile           |    1 +
+ drivers/char/tpm/tpm_spi_stm_st33.c | 1027 +++++++++++++++++++++++++++++++++++
+ drivers/char/tpm/tpm_spi_stm_st33.h |   86 +++
+ 4 files changed, 1124 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/char/tpm/tpm_spi_stm_st33.c
+ create mode 100644 drivers/char/tpm/tpm_spi_stm_st33.h
 
-The ftrace tree gained a conflict against Linus' tree.
+diff --git a/drivers/char/tpm/Kconfig b/drivers/char/tpm/Kconfig
+index dbfd564..2fc1254 100644
+--- a/drivers/char/tpm/Kconfig
++++ b/drivers/char/tpm/Kconfig
+@@ -91,4 +91,14 @@ config TCG_ST33_I2C
+         To compile this driver as a module, choose M here; the module will be
+         called tpm_stm_st33_i2c.
+ 
++config TCG_ST33_SPI
++       tristate "STMicroelectronics ST33 SPI"
++       depends on SPI
++       depends on GPIOLIB
++       ---help---
++       If you have a TPM security chip from STMicroelectronics working with
++       an SPI bus say Yes and it will be accessible from within Linux.
++       To compile this driver as a module, choose M here; the module will be
++       called tpm_stm_st33_spi.
++
+ endif # TCG_TPM
+diff --git a/drivers/char/tpm/Makefile b/drivers/char/tpm/Makefile
+index a3736c9..a1db3dd 100644
+--- a/drivers/char/tpm/Makefile
++++ b/drivers/char/tpm/Makefile
+@@ -18,3 +18,4 @@ obj-$(CONFIG_TCG_ATMEL) += tpm_atmel.o
+ obj-$(CONFIG_TCG_INFINEON) += tpm_infineon.o
+ obj-$(CONFIG_TCG_IBMVTPM) += tpm_ibmvtpm.o
+ obj-$(CONFIG_TCG_ST33_I2C) += tpm_i2c_stm_st33.o
++obj-$(CONFIG_TCG_ST33_SPI) += tpm_spi_stm_st33.o
+diff --git a/drivers/char/tpm/tpm_spi_stm_st33.c b/drivers/char/tpm/tpm_spi_stm_st33.c
+new file mode 100644
+index 0000000..70828dc
+--- /dev/null
++++ b/drivers/char/tpm/tpm_spi_stm_st33.c
+@@ -0,0 +1,1028 @@
++/*
++ * STMicroelectronics TPM SPI Linux driver for TPM ST33ZP24
++ * Copyright (C) 2009, 2010  STMicroelectronics
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License along
++ * with this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
++ *
++ * STMicroelectronics version 1.2.0, Copyright (C) 2010
++ * STMicroelectronics comes with ABSOLUTELY NO WARRANTY.
++ * This is free software, and you are welcome to redistribute it
++ * under certain conditions.
++ *
++ * @Author: Christophe RICARD tpmsupport@st.com
++ *
++ * @File: tpm_stm_st33_spi.c
++ *
++ * @Synopsis:
++ *	09/15/2010:	First shot driver tpm_tis driver for lpc is
++ *			used as model.
++ */
++
++#define pr_fmt(fmt)	KBUILD_MODNAME ": " fmt
++
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/delay.h>
++#include <linux/init.h>
++#include <linux/spi/spi.h>
++#include <linux/wait.h>
++#include <linux/string.h>
++#include <linux/interrupt.h>
++#include <linux/spinlock.h>
++#include <linux/sysfs.h>
++#include <linux/gpio.h>
++#include <linux/sched.h>
++#include <linux/uaccess.h>
++#include <linux/io.h>
++#include <linux/slab.h>
++#include <linux/sched.h>
++
++#include "tpm.h"
++
++#include "tpm_spi_stm_st33.h"
++
++enum stm33zp24_access {
++	TPM_ACCESS_VALID = 0x80,
++	TPM_ACCESS_ACTIVE_LOCALITY = 0x20,
++	TPM_ACCESS_REQUEST_PENDING = 0x04,
++	TPM_ACCESS_REQUEST_USE = 0x02,
++};
++
++enum stm33zp24_status {
++	TPM_STS_VALID = 0x80,
++	TPM_STS_COMMAND_READY = 0x40,
++	TPM_STS_GO = 0x20,
++	TPM_STS_DATA_AVAIL = 0x10,
++	TPM_STS_DATA_EXPECT = 0x08,
++};
++
++enum stm33zp24_int_flags {
++	TPM_GLOBAL_INT_ENABLE = 0x80,
++	TPM_INTF_CMD_READY_INT = 0x080,
++	TPM_INTF_FIFO_AVALAIBLE_INT = 0x040,
++	TPM_INTF_WAKE_UP_READY_INT = 0x020,
++	TPM_INTF_LOC4SOFTRELEASE_INT = 0x008,
++	TPM_INTF_LOCALITY_CHANGE_INT = 0x004,
++	TPM_INTF_STS_VALID_INT = 0x002,
++	TPM_INTF_DATA_AVAIL_INT = 0x001,
++};
++
++enum tis_defaults {
++	TIS_SHORT_TIMEOUT = 750,	/* ms */
++	TIS_LONG_TIMEOUT = 2000,	/* 2 sec */
++};
++
++/*
++ * write8_reg
++ * Send byte to the TIS register according to the ST33ZP24 SPI protocol.
++ * @param: tpm, the chip description
++ * @param: tpm_register, the tpm tis register where the data should be written
++ * @param: tpm_data, the tpm_data to write inside the tpm_register
++ * @param: tpm_size, The length of the data
++ * @return: should be zero if success else a negative error code.
++ */
++static int write8_reg(struct tpm_chip *tpm, u8 tpm_register,
++		      u8 *tpm_data, u16 tpm_size)
++{
++	u8 data;
++	int total_length = 0, nbr_dummy_bytes;
++	int value = 0;
++	struct spi_device *dev = (struct spi_device *)tpm->vendor.iobase;
++	struct st33zp24_platform_data *platform_data = dev->dev.platform_data;
++	u8 *data_buffer = platform_data->tpm_spi_buffer[0];
++	struct spi_transfer xfer = {
++		.tx_buf	 = data_buffer,
++		.rx_buf	 = platform_data->tpm_spi_buffer[1],
++	};
++	struct spi_message msg;
++	u8 latency = platform_data->latency + tpm_size + 1;
++
++	/* Pre-Header */
++	data = TPM_WRITE_DIRECTION | tpm->vendor.locality;
++	memcpy(data_buffer + total_length, &data, sizeof(data));
++	total_length++;
++	data = tpm_register;
++	memcpy(data_buffer + total_length, &data, sizeof(data));
++	total_length++;
++
++	if (tpm_size > 0 &&
++	     (tpm_register == TPM_DATA_FIFO ||
++	      tpm_register == TPM_HASH_DATA)) {
++		data = (tpm_size >> 8) & 0x00ff;
++		data_buffer[total_length++] = data;
++		data = tpm_size & 0x00ff;
++		data_buffer[total_length++] = data;
++		latency -= 2;
++	}
++
++	memcpy(&data_buffer[total_length], tpm_data, tpm_size);
++	total_length += tpm_size;
++
++	nbr_dummy_bytes = platform_data->latency + 1;
++	memset(&data_buffer[total_length], TPM_DUMMY_BYTE,
++					 platform_data->latency + 1);
++
++	xfer.len = total_length;
++	spi_message_init(&msg);
++	spi_message_add_tail(&xfer, &msg);
++	value = spi_sync(dev, &msg);
++
++	if (value == 0) {
++		nbr_dummy_bytes = total_length - 1 - nbr_dummy_bytes;
++		for (; nbr_dummy_bytes < total_length &&
++			 ((u8 *)xfer.rx_buf)[nbr_dummy_bytes] == 0;
++				 nbr_dummy_bytes++)
++			;
++
++		if (((u8 *)xfer.rx_buf)[nbr_dummy_bytes] != 0)
++			value = ((u8 *)xfer.rx_buf)[nbr_dummy_bytes];
++	}
++
++	return value;
++} /* write8_reg() */
++
++/*
++ * read8_reg
++ * Recv byte from the TIS register according to the ST33ZP24 SPI protocol.
++ * @param: tpm, the chip description
++ * @param: tpm_register, the tpm tis register where the data should be read
++ * @param: tpm_data, the TPM response
++ * @param: tpm_size, tpm TPM response size to read.
++ * @return: should be zero if success else a negative error code.
++ */
++static u8 read8_reg(struct tpm_chip *tpm, u8 tpm_register,
++		    u8 *tpm_data, u16 tpm_size)
++{
++	u8 data;
++	int total_length = 0, nbr_dummy_bytes;
++	int value = 0;
++	struct spi_device *dev = (struct spi_device *)tpm->vendor.iobase;
++	struct st33zp24_platform_data *platform_data = dev->dev.platform_data;
++	u8 *data_buffer = platform_data->tpm_spi_buffer[0];
++	struct spi_transfer xfer = {
++		.tx_buf	 = data_buffer,
++		.rx_buf	 = platform_data->tpm_spi_buffer[1],
++	};
++	struct spi_message msg;
++
++	u8 latency = platform_data->latency + tpm_size + 1;
++
++	/* Pre-Header */
++
++	data = tpm->vendor.locality;
++	memcpy(data_buffer + total_length, &data, sizeof(data));
++	total_length++;
++	data = tpm_register;
++	memcpy(data_buffer + total_length, &data, sizeof(data));
++	total_length++;
++
++	nbr_dummy_bytes = platform_data->latency + 1;
++	memset(&data_buffer[total_length], TPM_DUMMY_BYTE,
++					 platform_data->latency + 1);
++
++	xfer.len = total_length;
++
++	/* header + status byte + size of the data + status byte */
++	spi_message_init(&msg);
++	spi_message_add_tail(&xfer, &msg);
++	value = spi_sync(dev, &msg);
++
++	if (tpm_size > 0 && value == 0) {
++		nbr_dummy_bytes = 2;
++		for (; nbr_dummy_bytes < total_length &&
++			 ((u8 *)xfer.rx_buf)[nbr_dummy_bytes] == 0;
++			 nbr_dummy_bytes++)
++			;
++
++		if (nbr_dummy_bytes + 1 < total_length) {
++			value = ((u8 *)xfer.rx_buf)[nbr_dummy_bytes];
++
++			if (tpm_size > 0)
++				memcpy(tpm_data, xfer.rx_buf +
++							 nbr_dummy_bytes + 1,
++								 tpm_size);
++		}
++	}
++	return value;
++} /* read8_reg() */
++
++/*
++ * SPI_WRITE_DATA
++ * Send byte to the TIS register according to the ST33ZP24 SPI protocol.
++ * @param: tpm, the chip description
++ * @param: tpm_register, the tpm tis register where the data should be written
++ * @param: tpm_data, the tpm_data to write inside the tpm_register
++ * @param: tpm_size, The length of the data
++ * @return: should be zero if success else the negative error code.
++ */
++static u32 SPI_WRITE_DATA(struct tpm_chip *tpm, u8 tpm_register,
++			  u8 *tpm_data, u16 tpm_size)
++{
++	u8 value = 0;
++	value = write8_reg(tpm, tpm_register, tpm_data, tpm_size);
++
++	switch (value) {
++	case TPM_ST_SPI_OK:
++		return TPM_ST_SPI_OK;
++	case 0:
++		return 0;
++	default:
++		return -EBUSY;
++	}
++} /* SPI_WRITE_DATA() */
++
++/*
++ * SPI_READ_DATA
++ * Recv byte from the TIS register according to the ST33ZP24 SPI protocol.
++ * @param: tpm, the chip description
++ * @param: tpm_register, the tpm tis register where the data should be read
++ * @param: tpm_data, the TPM response
++ * @param: tpm_size, tpm TPM response size to read.
++ * @return: should be zero if success else the negative error code.
++ */
++static u32 SPI_READ_DATA(struct tpm_chip *tpm, u8 tpm_register,
++			u8 *tpm_data, u16 tpm_size)
++{
++	u8 value = 0;
++
++	value = read8_reg(tpm, tpm_register, tpm_data, tpm_size);
++
++	switch (value) {
++	case TPM_ST_SPI_OK:
++		return TPM_ST_SPI_OK;
++	case 0:
++		return 0;
++	default:
++		return -EBUSY;
++	}
++} /* SPI_READ_DATA () */
++
++/*
++ * clear_interruption
++ * clear the TPM interrupt register.
++ * @param: tpm, the chip description
++ */
++static void clear_interruption(struct tpm_chip *tpm)
++{
++	u8 interrupt;
++	SPI_READ_DATA(tpm, TPM_INT_STATUS, &interrupt, 1);
++	/* Clear interrupts handled with TPM_EOI */
++	SPI_WRITE_DATA(tpm, TPM_INT_STATUS, &interrupt, 1);
++	SPI_READ_DATA(tpm, TPM_INT_STATUS, &interrupt, 1);
++} /* clear_interruption() */
++
++/*
++ * _wait_for_interrupt_serirq_timeout
++ * @param: tpm, the chip description
++ * @param: timeout, the timeout of the interrupt
++ * @return: the status of the interruption.
++ */
++static int _wait_for_interrupt_serirq_timeout(struct tpm_chip *chip,
++					unsigned long timeout)
++{
++	unsigned long status;
++	struct spi_device *client;
++	struct st33zp24_platform_data *pin_infos;
++
++	client = (struct spi_device *)chip->vendor.iobase;
++	pin_infos = client->dev.platform_data;
++
++	status = wait_for_completion_interruptible_timeout(
++				&pin_infos->irq_detection, timeout);
++	if (status > 0)
++		enable_irq(gpio_to_irq(pin_infos->io_serirq));
++	gpio_direction_input(pin_infos->io_serirq);
++
++	return status;
++} /* wait_for_interrupt_serirq_timeout() */
++
++unsigned long wait_for_serirq_timeout(struct tpm_chip *chip, bool condition,
++				 unsigned long timeout)
++{
++	unsigned long status = 0;
++
++	status = _wait_for_interrupt_serirq_timeout(chip, timeout);
++	if (!status) {
++		status = -EBUSY;
++		goto wait_end;
++	}
++	clear_interruption(chip);
++	if (condition)
++		status = 1;
++
++wait_end:
++	return status;
++}
++
++
++/*
++ * tpm_stm_spi_cancel, cancel is not implemented.
++ * @param: chip, the tpm chip description as specified in
++ * driver/char/tpm/tpm.h.
++ */
++static void tpm_stm_spi_cancel(struct tpm_chip *chip)
++{
++	u8 data = TPM_STS_COMMAND_READY;
++
++	/* this causes the current command to be aborted */
++	SPI_WRITE_DATA(chip, TPM_STS, &data, 1);
++} /* tpm_stm_spi_cancel() */
++
++/*
++ * tpm_stm_spi_status return the TPM_STS register
++ * @param: chip, the tpm chip description
++ * @return: the TPM_STS register value.
++ */
++static u8 tpm_stm_spi_status(struct tpm_chip *chip)
++{
++	u8 data;
++
++	SPI_READ_DATA(chip, TPM_STS, &data, 1);
++	return data;
++} /* tpm_stm_spi_status() */
++
++
++
++/*
++ * check_locality if the locality is active
++ * @param: chip, the tpm chip description
++ * @return: the active locality or -EACCESS.
++ */
++static int check_locality(struct tpm_chip *chip)
++{
++	u8 data;
++	u8 status;
++
++	status = SPI_READ_DATA(chip, TPM_ACCESS, &data, 1);
++	if (status && (data &
++		(TPM_ACCESS_ACTIVE_LOCALITY | TPM_ACCESS_VALID)) ==
++		(TPM_ACCESS_ACTIVE_LOCALITY | TPM_ACCESS_VALID))
++		return chip->vendor.locality;
++
++	return -EACCES;
++} /* check_locality() */
++
++/*
++ * request_locality request the TPM locality
++ * @param: chip, the chip description
++ * @return: the active locality or EACCESS.
++ */
++static int request_locality(struct tpm_chip *chip)
++{
++	unsigned long stop;
++	long rc;
++	u8 data;
++
++	/* Check locality */
++	if (check_locality(chip) == chip->vendor.locality)
++		return chip->vendor.locality;
++
++	/* Request locality */
++	data = TPM_ACCESS_REQUEST_USE;
++	rc = SPI_WRITE_DATA(chip, TPM_ACCESS, &data, 1);
++	if (rc < 0)
++		goto end;
++
++	/* wait for burstcount */
++	if (chip->vendor.irq) {
++		rc = wait_for_serirq_timeout(chip, (check_locality
++						(chip) >= 0),
++						chip->vendor.timeout_a);
++		if (rc > 0)
++			return chip->vendor.locality;
++	} else {
++		stop = jiffies + chip->vendor.timeout_a;
++		do {
++			if (check_locality(chip) >= 0)
++				return chip->vendor.locality;
++			msleep(TPM_TIMEOUT);
++		} while (time_before(jiffies, stop));
++	}
++end:
++	return -EACCES;
++} /* request_locality() */
++
++/*
++ * release_locality release the active locality
++ * @param: chip, the tpm chip description.
++ */
++static void release_locality(struct tpm_chip *chip)
++{
++	u8 data;
++
++	data = TPM_ACCESS_ACTIVE_LOCALITY;
++	SPI_WRITE_DATA(chip, TPM_ACCESS, &data, 1);
++} /* release_locality()*/
++
++/*
++ * get_burstcount return the burstcount address 0x19 0x1A
++ * @param: chip, the chip description
++ * return: the burstcount.
++ */
++static int get_burstcount(struct tpm_chip *chip)
++{
++	unsigned long stop;
++	u32 burstcnt, status;
++	u8 tpm_reg, temp;
++
++	/* wait for burstcount */
++	/* which timeout value, spec has 2 answers (c & d) */
++	stop = jiffies + chip->vendor.timeout_d;
++	do {
++		tpm_reg = TPM_STS + 1;
++		status = SPI_READ_DATA(chip, tpm_reg, &temp, 1);
++		if (status < 0)
++			goto end;
++
++		tpm_reg = tpm_reg + 1;
++		burstcnt = temp;
++		status = SPI_READ_DATA(chip, tpm_reg, &temp, 1);
++		if (status < 0)
++			goto end;
++
++		burstcnt |= temp << 8;
++		if (burstcnt)
++			return burstcnt;
++		msleep(TPM_TIMEOUT);
++	} while (time_before(jiffies, stop));
++
++end:
++	return -EBUSY;
++} /* get_burstcount() */
++
++/*
++ * wait_for_stat wait for a TPM_STS value
++ * @param: chip, the tpm chip description
++ * @param: mask, the value mask to wait
++ * @param: timeout, the timeout
++ * @param: queue, the wait queue.
++ * @return: the tpm status, 0 if success, -ETIME if timeout is reached.
++ */
++static int wait_for_stat(struct tpm_chip *chip, u8 mask, unsigned long timeout,
++			 wait_queue_head_t *queue)
++{
++	unsigned long stop;
++	long rc;
++	u8 status;
++
++	/* check current status */
++	status = tpm_stm_spi_status(chip);
++	if (!chip->vendor.irq && (status & mask) == mask)
++		return 0;
++
++	if (chip->vendor.irq) {
++		rc = wait_for_serirq_timeout(chip, ((tpm_stm_spi_status
++						    (chip) & mask) ==
++						     mask), timeout);
++		if (rc > 0)
++			return 0;
++	} else {
++		stop = jiffies + timeout;
++		do {
++			msleep(TPM_TIMEOUT);
++			status = tpm_stm_spi_status(chip);
++			if ((status & mask) == mask)
++				return 0;
++		} while (time_before(jiffies, stop));
++	}
++	return -ETIME;
++} /* wait_for_stat() */
++
++/*
++ * recv_data receive data
++ * @param: chip, the tpm chip description
++ * @param: buf, the buffer where the data are received
++ * @param: count, the number of data to receive
++ * @return: the tpm status, 0 if success, -ETIME if timeout is reached.
++ */
++static int recv_data(struct tpm_chip *chip, u8 *buf, size_t count)
++{
++	u32 size = 0, burstcnt, status, len;
++
++	while (size < count &&
++	       wait_for_stat(chip,
++			     TPM_STS_DATA_AVAIL | TPM_STS_VALID,
++			     chip->vendor.timeout_c,
++			     &chip->vendor.read_queue)
++						== 0) {
++		burstcnt = get_burstcount(chip);
++		len = min_t(int, burstcnt, count - size);
++		status = SPI_READ_DATA(chip, TPM_DATA_FIFO, buf + size, len);
++		if (status < 0)
++			return status;
++
++
++		size += len;
++	}
++	return size;
++}
++
++/*
++ * tpm_ioserirq_handler the serirq irq handler
++ * @param: irq, the tpm chip description
++ * @param: dev_id, the description of the chip
++ * @return: the status of the handler.
++ */
++static irqreturn_t tpm_ioserirq_handler(int irq, void *dev_id)
++{
++	struct tpm_chip *chip = dev_id;
++	struct spi_device *client;
++	struct st33zp24_platform_data *pin_infos;
++
++	disable_irq_nosync(irq);
++
++	client = (struct spi_device *)chip->vendor.iobase;
++	pin_infos = client->dev.platform_data;
++
++	complete(&pin_infos->irq_detection);
++	return IRQ_HANDLED;
++} /* tpm_ioserirq_handler() */
++
++/*
++ * tpm_stm_spi_send send TPM commands through the SPI bus.
++ * @param: chip, the tpm chip description
++ * @param: buf, the tpm command buffer
++ * @param: len, the tpm command size
++ * @return: should be zero if success else the negative error code.
++ */
++static int tpm_stm_spi_send(struct tpm_chip *chip, unsigned char *buf,
++			    size_t len)
++{
++	u32 ret = 0, status, burstcnt = 0, i, size = 0;
++	u8 data;
++
++	if (chip == NULL)
++		return -EBUSY;
++	if (len < TPM_HEADER_SIZE)
++		return -EBUSY;
++
++	ret = request_locality(chip);
++	if (ret < 0)
++		return ret;
++
++	status = tpm_stm_spi_status(chip);
++	if ((status & TPM_STS_COMMAND_READY) == 0) {
++		tpm_stm_spi_cancel(chip);
++		if (wait_for_stat
++		    (chip, TPM_STS_COMMAND_READY, chip->vendor.timeout_b,
++		     &chip->vendor.int_queue) < 0) {
++			ret = -ETIME;
++			goto out_err;
++		}
++	}
++
++	for (i = 0; i < len - 1;) {
++		burstcnt = get_burstcount(chip);
++		size = min_t(int, len - i - 1, burstcnt);
++		ret = SPI_WRITE_DATA(chip, TPM_DATA_FIFO, buf, size);
++		if (ret < 0)
++			goto out_err;
++		i += size;
++	}
++
++	status = tpm_stm_spi_status(chip);
++	if ((status & TPM_STS_DATA_EXPECT) == 0) {
++		ret = -EIO;
++		goto out_err;
++	}
++
++	/* write last byte */
++	SPI_WRITE_DATA(chip, TPM_DATA_FIFO, buf + len - 1, 1);
++
++	status = tpm_stm_spi_status(chip);
++	if ((status & TPM_STS_DATA_EXPECT) != 0) {
++		ret = -EIO;
++		goto out_err;
++	}
++
++	/* go and do it */
++	data = TPM_STS_GO;
++	ret = SPI_WRITE_DATA(chip, TPM_STS, &data, 1);
++	if (ret < 0)
++		goto out_err;
++
++	return len;
++out_err:
++	tpm_stm_spi_cancel(chip);
++	release_locality(chip);
++	return ret;
++}
++
++/*
++ * tpm_stm_spi_recv received TPM response through the SPI bus.
++ * @param: chip, the tpm chip description
++ * @param: buf, the tpm command buffer
++ * @param: len, the tpm command size
++* @return: should be zero if success else the negative error code.
++ */
++static int tpm_stm_spi_recv(struct tpm_chip *chip, unsigned char *buf,
++			    size_t count)
++{
++	int size = 0;
++	int expected;
++
++	if (chip == NULL)
++		return -EBUSY;
++	if (count < TPM_HEADER_SIZE) {
++		size = -EIO;
++		goto out;
++	}
++
++	size = recv_data(chip, buf, TPM_HEADER_SIZE);
++
++	/* read first 10 bytes, including tag, paramsize, and result */
++	if (size < TPM_HEADER_SIZE) {
++		dev_err(chip->dev, "Unable to read header\n");
++		goto out;
++	}
++
++	expected = be32_to_cpu(*(__be32 *)(buf + 2));
++	if (expected > count) {
++		size = -EIO;
++		goto out;
++	}
++
++	size += recv_data(chip, &buf[TPM_HEADER_SIZE],
++					expected - TPM_HEADER_SIZE);
++	if (size < expected) {
++		dev_err(chip->dev, "Unable to read remainder of result\n");
++		size = -ETIME;
++		goto out;
++	}
++
++out:
++	chip->vendor.cancel(chip);
++	release_locality(chip);
++	return size;
++}
++
++
++static const struct file_operations tpm_st33_spi_fops = {
++	.owner = THIS_MODULE,
++	.llseek = no_llseek,
++	.read = tpm_read,
++	.write = tpm_write,
++	.open = tpm_open,
++	.release = tpm_release,
++};
++
++static DEVICE_ATTR(pubek, S_IRUGO, tpm_show_pubek, NULL);
++static DEVICE_ATTR(pcrs, S_IRUGO, tpm_show_pcrs, NULL);
++static DEVICE_ATTR(enabled, S_IRUGO, tpm_show_enabled, NULL);
++static DEVICE_ATTR(active, S_IRUGO, tpm_show_active, NULL);
++static DEVICE_ATTR(owned, S_IRUGO, tpm_show_owned, NULL);
++static DEVICE_ATTR(temp_deactivated, S_IRUGO, tpm_show_temp_deactivated, NULL);
++static DEVICE_ATTR(caps, S_IRUGO, tpm_show_caps_1_2, NULL);
++static DEVICE_ATTR(cancel, S_IWUSR | S_IWGRP, NULL, tpm_store_cancel);
++
++static struct attribute *stm_tpm_attrs[] = {
++	&dev_attr_pubek.attr,
++	&dev_attr_pcrs.attr,
++	&dev_attr_enabled.attr,
++	&dev_attr_active.attr,
++	&dev_attr_owned.attr,
++	&dev_attr_temp_deactivated.attr,
++	&dev_attr_caps.attr,
++	&dev_attr_cancel.attr, NULL,
++};
++
++static struct attribute_group stm_tpm_attr_grp = {
++	.attrs = stm_tpm_attrs
++};
++
++static struct tpm_vendor_specific st_spi_tpm = {
++	.send = tpm_stm_spi_send,
++	.recv = tpm_stm_spi_recv,
++	.cancel = tpm_stm_spi_cancel,
++	.status = tpm_stm_spi_status,
++	.attr_group = &stm_tpm_attr_grp,
++	.miscdev = {.fops = &tpm_st33_spi_fops,},
++};
++
++static int evaluate_latency(struct tpm_chip *chip)
++{
++	int latency = 0;
++	struct spi_device *dev = (struct spi_device *)chip->vendor.iobase;
++	struct st33zp24_platform_data *platform_data = dev->dev.platform_data;
++	int status = 0;
++	u8 data;
++
++	for (; status == 0x00 && latency < MAX_SPI_LATENCY; latency++) {
++		platform_data->latency = latency;
++		status = SPI_READ_DATA(chip, TPM_INTF_CAPABILITY, &data, 1);
++	}
++	return latency - 1;
++} /* evaluate_latency() */
++
++static int interrupts;
++module_param(interrupts, int, 0444);
++MODULE_PARM_DESC(interrupts, "Enable interrupts");
++
++static int power_mgt = 1;
++module_param(power_mgt, int, 0444);
++MODULE_PARM_DESC(power_mgt, "Power Management");
++
++/*
++ * tpm_st33_spi_probe initialize the TPM device
++ * @param: client, the spi_device drescription (TPM SPI description).
++ * @param: id, the spi_device_id struct.
++ * @return: 0 in case of success.
++ *	 -1 in other case.
++ */
++static int
++tpm_st33_spi_probe(struct spi_device *dev)
++{
++	u32 err = 0;
++	u8 intmask;
++	struct tpm_chip *chip;
++	struct st33zp24_platform_data *platform_data;
++
++	/* Check SPI platform functionnalities */
++	if (dev == NULL) {
++		pr_info("dev is NULL. exiting.\n");
++		err = -ENODEV;
++		goto end;
++	}
++
++	chip = tpm_register_hardware(&dev->dev, &st_spi_tpm);
++	if (!chip) {
++		err = -ENODEV;
++		goto end;
++	}
++
++	/* Allocation of SPI buffers MISO and MOSI		*/
++	/* Size is as follow:					*/
++	/* Request burstcount value  = 0x800 = 2048		*/
++	/* +							*/
++	/* Response burstcount value = 0x400 = 1024		*/
++	/* +							*/
++	/* At least:						*/
++	/* 1 byte for direction/locality			*/
++	/* 1 byte tpm tis register				*/
++	/* 2 bytes spi data length (for request only)		*/
++	/* 2 latency bytes					*/
++	/* 1 status byte					*/
++	/* = 2048 + 1024 + 7					*/
++	/* We reserved 2048 + 1024 + 20 in case latency byte	*/
++	/* change						*/
++	platform_data = dev->dev.platform_data;
++	platform_data->tpm_spi_buffer[0] =
++	    kmalloc((TPM_BUFSIZE + (TPM_BUFSIZE / 2) +
++				 TPM_DIGEST_SIZE) * sizeof(u8), GFP_KERNEL);
++	if (platform_data->tpm_spi_buffer[0] == NULL) {
++		err = -ENOMEM;
++		goto _tpm_clean_answer;
++	}
++	platform_data->tpm_spi_buffer[1] =
++	    kmalloc((TPM_BUFSIZE + (TPM_BUFSIZE / 2) +
++				 TPM_DIGEST_SIZE) * sizeof(u8) , GFP_KERNEL);
++	if (platform_data->tpm_spi_buffer[1] == NULL) {
++		err = -ENOMEM;
++		goto _tpm_clean_response;
++	}
++
++	chip->vendor.iobase = dev;
++
++	/* Default timeouts */
++	chip->vendor.timeout_a = msecs_to_jiffies(TIS_SHORT_TIMEOUT);
++	chip->vendor.timeout_b = msecs_to_jiffies(TIS_LONG_TIMEOUT);
++	chip->vendor.timeout_c = msecs_to_jiffies(TIS_SHORT_TIMEOUT);
++	chip->vendor.timeout_d = msecs_to_jiffies(TIS_SHORT_TIMEOUT);
++	chip->vendor.locality = LOCALITY0;
++
++	if (power_mgt) {
++		err = gpio_request(platform_data->io_lpcpd, "TPM IO_LPCPD");
++		if (err)
++			goto _gpio_init1;
++		gpio_set_value(platform_data->io_lpcpd, 1);
++	}
++
++	platform_data->latency = evaluate_latency(chip);
++	if (platform_data->latency <= 0x00) {
++		err = -ENODEV;
++		goto _gpio_init1;
++	}
++
++	/* Enable interrupt */
++	/* Register GPIO pin through generic Linux GPIO API */
++	if (interrupts) {
++		init_completion(&platform_data->irq_detection);
++		if (request_locality(chip) != LOCALITY0) {
++			err = -ENODEV;
++			goto _tpm_clean_response;
++		}
++		err = gpio_request(platform_data->io_serirq, "TPM IO_SERIRQ");
++		if (err)
++			goto _gpio_init2;
++
++		/* Clear all existing */
++		clear_interruption(chip);
++		err = request_irq(gpio_to_irq(platform_data->io_serirq),
++							&tpm_ioserirq_handler,
++				IRQF_TRIGGER_HIGH | IRQF_SHARED,
++				"TPM SERIRQ management", chip);
++		if (err < 0) {
++			pr_info("TPM SERIRQ signals %d not available\n",
++			gpio_to_irq(platform_data->io_serirq));
++			goto _irq_set;
++		}
++		err = SPI_READ_DATA(chip, TPM_INT_ENABLE, &intmask, 1);
++		if (err < 0)
++			goto _irq_set;
++
++		intmask |= TPM_INTF_CMD_READY_INT
++			|  TPM_INTF_FIFO_AVALAIBLE_INT
++			|  TPM_INTF_WAKE_UP_READY_INT
++			|  TPM_INTF_LOC4SOFTRELEASE_INT
++			|  TPM_INTF_LOCALITY_CHANGE_INT
++			|  TPM_INTF_STS_VALID_INT
++			|  TPM_INTF_DATA_AVAIL_INT;
++
++		err = SPI_WRITE_DATA(chip, TPM_INT_ENABLE, &intmask, 1);
++		if (err < 0)
++			goto _irq_set;
++
++		intmask = TPM_GLOBAL_INT_ENABLE;
++		err = SPI_WRITE_DATA(chip, TPM_INT_ENABLE + 3, &intmask, 1);
++		if (err < 0)
++			goto _irq_set;
++
++		err = SPI_READ_DATA(chip, TPM_INT_STATUS, &intmask, 1);
++		if (err < 0)
++			goto _irq_set;
++
++		chip->vendor.irq = interrupts;
++
++		tpm_gen_interrupt(chip);
++	}
++
++	tpm_get_timeouts(chip);
++
++	/* attach chip datas to client */
++	spi_set_drvdata(dev, chip);
++	platform_data->bchipf = false;
++
++	pr_info("TPM SPI Initialized\n");
++	return 0;
++_irq_set:
++	free_irq(gpio_to_irq(platform_data->io_serirq), chip);
++_gpio_init2:
++	if (platform_data && interrupts)
++		gpio_free(platform_data->io_serirq);
++_gpio_init1:
++	if (platform_data && power_mgt)
++		gpio_free(platform_data->io_lpcpd);
++_tpm_clean_response:
++	tpm_remove_hardware(chip->dev);
++	if (platform_data->tpm_spi_buffer[1] != NULL) {
++		kfree(platform_data->tpm_spi_buffer[1]);
++		platform_data->tpm_spi_buffer[1] = NULL;
++	}
++_tpm_clean_answer:
++	if (platform_data->tpm_spi_buffer[0] != NULL) {
++		kfree(platform_data->tpm_spi_buffer[0]);
++		platform_data->tpm_spi_buffer[0] = NULL;
++	}
++
++	platform_data->bchipf = true;
++end:
++	pr_info("TPM SPI initialisation fail\n");
++	return err;
++}
++
++/*
++ * tpm_st33_spi_remove remove the TPM device
++ * @param: client, the spi_device drescription (TPM SPI description).
++		clear_bit(0, &chip->is_open);
++ * @return: 0 in case of success.
++ */
++static int tpm_st33_spi_remove(struct spi_device *client)
++{
++	struct tpm_chip *chip = (struct tpm_chip *)spi_get_drvdata(client);
++	struct st33zp24_platform_data *pin_infos =
++		((struct spi_device *)chip->vendor.iobase)->dev.platform_data;
++
++	if (pin_infos != NULL) {
++		gpio_free(pin_infos->io_lpcpd);
++
++		/* Check if chip has been previously clean */
++		if (pin_infos->bchipf != true)
++			tpm_remove_hardware(chip->dev);
++		if (pin_infos->tpm_spi_buffer[1] != NULL) {
++			kfree(pin_infos->tpm_spi_buffer[1]);
++			pin_infos->tpm_spi_buffer[1] = NULL;
++		}
++		if (pin_infos->tpm_spi_buffer[0] != NULL) {
++			kfree(pin_infos->tpm_spi_buffer[0]);
++			pin_infos->tpm_spi_buffer[0] = NULL;
++		}
++	}
++
++	return 0;
++}
++
++/*
++ * tpm_st33_spi_pm_suspend suspend the TPM device
++ * Added: Work around when suspend and no tpm application is running, suspend
++ * may fail because chip->data_buffer is not set (only set in tpm_open in Linux
++ * TPM core)
++ * @param: client, the spi_device drescription (TPM SPI description).
++ * @param: mesg, the power management message.
++ * @return: 0 in case of success.
++ */
++static int tpm_st33_spi_pm_suspend(struct spi_device *client,
++							 pm_message_t mesg)
++{
++	struct tpm_chip *chip =
++	    (struct tpm_chip *)spi_get_drvdata(client);
++	struct st33zp24_platform_data *pin_infos =
++		((struct spi_device *)chip->vendor.iobase)->dev.platform_data;
++	int ret = 0;
++
++	if (power_mgt)
++		gpio_set_value(pin_infos->io_lpcpd, 0);
++	else {
++		if (chip->data_buffer == NULL)
++			chip->data_buffer = pin_infos->tpm_spi_buffer[0];
++		ret = tpm_pm_suspend(&client->dev);
++		}
++	return ret;
++}				/* tpm_st33_spi_suspend() */
++
++/*
++ * tpm_st33_spi_pm_resume resume the TPM device
++ * @param: spi, the spi_device drescription (TPM SPI description).
++ * @return: 0 in case of success.
++ */
++static int tpm_st33_spi_pm_resume(struct spi_device *spi)
++{
++	struct tpm_chip *chip =
++	    (struct tpm_chip *)spi_get_drvdata(spi);
++	struct st33zp24_platform_data *pin_infos =
++		((struct spi_device *)chip->vendor.iobase)->dev.platform_data;
++
++	int ret = 0;
++	if (power_mgt) {
++		gpio_set_value(pin_infos->io_lpcpd, 1);
++		ret = wait_for_serirq_timeout(chip,
++					 (chip->vendor.status(chip) &&
++					  TPM_STS_VALID) == TPM_STS_VALID,
++					  chip->vendor.timeout_b);
++	} else {
++		if (chip->data_buffer == NULL)
++			chip->data_buffer = pin_infos->tpm_spi_buffer[0];
++		ret = tpm_pm_resume(&spi->dev);
++		if (!ret)
++			tpm_do_selftest(chip);
++	}
++	return ret;
++}				/* tpm_st33_spi_pm_resume() */
++
++static struct spi_driver tpm_st33_spi_driver = {
++	.driver = {
++		   .owner = THIS_MODULE,
++		   .name = TPM_ST33_SPI,
++		   },
++	.probe = tpm_st33_spi_probe,
++	.remove = tpm_st33_spi_remove,
++	.resume = tpm_st33_spi_pm_resume,
++	.suspend = tpm_st33_spi_pm_suspend,
++};
++
++/*
++ * tpm_st33_spi_init initialize driver
++ * @return: 0 if successful, else non zero value.
++ */
++static int __init tpm_st33_spi_init(void)
++{
++	return spi_register_driver(&tpm_st33_spi_driver);
++}
++
++/*
++ * tpm_st33_spi_exit The kernel calls this function during unloading the
++ * module or during shut down process
++ */
++static void __exit tpm_st33_spi_exit(void)
++{
++	spi_unregister_driver(&tpm_st33_spi_driver);
++}
++
++module_init(tpm_st33_spi_init);
++module_exit(tpm_st33_spi_exit);
++
++MODULE_AUTHOR("Christophe Ricard (tpmsupport@st.com)");
++MODULE_DESCRIPTION("STM TPM SPI ST33 Driver");
++MODULE_VERSION("1.2.0");
++MODULE_LICENSE("GPL");
+diff --git a/drivers/char/tpm/tpm_spi_stm_st33.h b/drivers/char/tpm/tpm_spi_stm_st33.h
+new file mode 100644
+index 0000000..752158e
+--- /dev/null
++++ b/drivers/char/tpm/tpm_spi_stm_st33.h
+@@ -0,0 +1,86 @@
++/*
++ * STMicroelectronics TPM SPI Linux driver for TPM ST33NP18
++ * Copyright (C) 2009, 2010  STMicroelectronics
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License along
++ * with this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
++ *
++ * STMicroelectronics version 1.2.0, Copyright (C) 2010
++ * STMicroelectronics comes with ABSOLUTELY NO WARRANTY.
++ * This is free software, and you are welcome to redistribute it
++ * under certain conditions.
++ *
++ * @Author: Christophe RICARD tpmsupport@st.com
++ *
++ * @File: tpm_spi_stm_st33.h
++ *
++ * @Date: 09/15/2010
++ */
++#ifndef __STM_ST33_TPM_SPI_MAIN_H__
++#define __STM_ST33_TPM_SPI_MAIN_H__
++
++#include <linux/pci.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/fs.h>
++#include <linux/miscdevice.h>
++
++#define MINOR_NUM_SPI		224
++
++#define TPM_ACCESS			(0x0)
++#define TPM_STS				(0x18)
++#define TPM_HASH_END			(0x20)
++#define TPM_DATA_FIFO			(0x24)
++#define TPM_HASH_DATA			(0x24)
++#define TPM_HASH_START			(0x28)
++#define TPM_INTF_CAPABILITY		(0x14)
++#define TPM_INT_STATUS			(0x10)
++#define TPM_INT_ENABLE			(0x08)
++
++#define TPM_DUMMY_BYTE			0x00
++#define TPM_WRITE_DIRECTION		0x80
++#define TPM_HEADER_SIZE			10
++#define TPM_BUFSIZE			2048
++
++/* ioctl commands */
++#define TPMIOC_CANCEL		_IO('T', 0x00)
++#define TPMIOC_TRANSMIT		_IO('T', 0x01)
++#define TPMIOC_HASH		_IO('T', 0x02)
++#define TPMIOC_CHANGELOCALITY	_IO('T', 0x03)
++
++#define LOCALITY0		0
++#define LOCALITY4		4
++
++#define TPM_ST_SPI_OK		0x5A
++
++
++#define MAX_SPI_LATENCY		15
++
++#define TPM_ST33_SPI		"st33zp24_spi"
++
++struct st33zp24_platform_data {
++	int io_serirq;
++	int io_lpcpd;
++	int latency;
++	bool bchipf;
++	u8 *tpm_spi_buffer[2]; /* 0 Request 1 Response */
++	struct completion irq_detection;
++};
++
++struct st_tpm_hash_t {
++	int size;
++	u8 *data;
++};
++
++#endif /* __STM_ST33_TPM_SPI_MAIN_H__ */
+-- 
+1.7.1
 
-The arm-soc tree lost its build failure.
-
-The akpm tree lost some patches that turned up elsewhere.
-
-----------------------------------------------------------------------------
-
-I have created today's linux-next tree at
-git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-(patches at http://www.kernel.org/pub/linux/kernel/next/ ).  If you
-are tracking the linux-next tree using git, you should not use "git pull"
-to do so as that will try to merge the new linux-next release with the
-old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
-(see below).
-
-You can see which trees have been included by looking in the Next/Trees
-file in the source.  There are also quilt-import.log and merge.log files
-in the Next directory.  Between each merge, the tree was built with
-a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
-final fixups (if any), it is also built with powerpc allnoconfig (32 and
-64 bit), ppc44x_defconfig and allyesconfig (minus
-CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc,
-sparc64 and arm defconfig. These builds also have
-CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
-CONFIG_DEBUG_INFO disabled when necessary.
-
-Below is a summary of the state of the merge.
-
-We are up to 225 trees (counting Linus' and 31 trees of patches pending
-for Linus' tree), more are welcome (even if they are currently empty).
-Thanks to those who have contributed, and to those who haven't, please do.
-
-Status of my local build tests will be at
-http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
-advice about cross compilers/configs that work, we are always open to add
-more builds.
-
-Thanks to Randy Dunlap for doing many randconfig builds.  And to Paul
-Gortmaker for triage and bug fixes.
-
-There is a wiki covering stuff to do with linux-next at
-http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-$ git checkout master
-$ git reset --hard stable
-Merging origin/master (60d509f Linux 3.9-rc8)
-Merging fixes/master (96d8683 Merge branch 'for-linus' of git://git.kernel.=
-org/pub/scm/linux/kernel/git/sage/ceph-client)
-Merging kbuild-current/rc-fixes (a54292f kbuild: generate generic headers b=
-efore recursing into scripts)
-Merging arc-current/for-curr (db9582b ARC: Add support for nSIM OSCI System=
- C model)
-Merging arm-current/fixes (cea1509 ARM: 7699/1: sched_clock: Add more notra=
-ce to prevent recursion)
-Merging m68k-current/for-linus (5618395 m68k: Sort out !CONFIG_MMU_SUN3 vs.=
- CONFIG_HAS_DMA)
-Merging powerpc-merge/merge (af81d78 powerpc: Rename USER_ESID_BITS* to ESI=
-D_BITS*)
-Merging sparc/master (3125929 Merge branch 'perf-urgent-for-linus' of git:/=
-/git.kernel.org/pub/scm/linux/kernel/git/tip/tip)
-Merging net/master (3125929 Merge branch 'perf-urgent-for-linus' of git://g=
-it.kernel.org/pub/scm/linux/kernel/git/tip/tip)
-Merging ipsec/master (da241ef Merge git://git.kernel.org/pub/scm/linux/kern=
-el/git/davem/net)
-Merging sound-current/for-linus (c5a4698 Merge tag 'asoc-maintainers-v3.9-r=
-c6' of git://git.kernel.org/pub/scm/linux/kernel/git/broonie/sound into for=
--linus)
-Merging pci-current/for-linus (bfcf1ba PCI: Avoid work_on_cpu() for nested =
-SR-IOV probes)
-Merging wireless/master (f09a878 ath9k_hw: change AR9580 initvals to fix a =
-stability issue)
-Merging driver-core.current/driver-core-linus (41ef2d5 Linux 3.9-rc7)
-Merging tty.current/tty-linus (41ef2d5 Linux 3.9-rc7)
-Merging usb.current/usb-linus (31880c3 Linux 3.9-rc6)
-Merging staging.current/staging-linus (41ef2d5 Linux 3.9-rc7)
-Merging char-misc.current/char-misc-linus (41ef2d5 Linux 3.9-rc7)
-Merging input-current/for-linus (5846115 Input: wacom - fix "can not retrie=
-ve extra class descriptor" for DTH2242)
-Merging md-current/for-linus (238f590 md: remove CONFIG_MULTICORE_RAID456 e=
-ntirely)
-Merging audit-current/for-linus (c158a35 audit: no leading space in audit_l=
-og_d_path prefix)
-Merging crypto-current/master (72a763d crypto: algif - suppress sending sou=
-rce address information in recvmsg)
-Merging ide/master (bf6b438 ide: gayle: use module_platform_driver_probe())
-Merging dwmw2/master (5950f08 pcmcia: remove RPX board stuff)
-Merging sh-current/sh-fixes-for-linus (4403310 SH: Convert out[bwl] macros =
-to inline functions)
-Merging irqdomain-current/irqdomain/merge (a0d271c Linux 3.6)
-Merging devicetree-current/devicetree/merge (ab28698 of: define struct devi=
-ce in of_platform.h if !OF_DEVICE and !OF_ADDRESS)
-Merging spi-current/spi/merge (0d2d0cc spi/davinci: fix module build error)
-Merging gpio-current/gpio/merge (e97f9b5 gpio/gpio-ich: fix ichx_gpio_check=
-_available() return what callers expect)
-Merging rr-fixes/fixes (9ba5c80 virtio: console: add locking around c_ovq o=
-perations)
-Merging mfd-fixes/master (31880c3 Linux 3.9-rc6)
-Merging vfio-fixes/for-linus (904c680 vfio-pci: Fix possible integer overfl=
-ow)
-Merging asm-generic/master (fb9de7e xtensa: Use generic asm/mmu.h for nommu)
-Merging arc/for-next (07961ac Linux 3.9-rc5)
-Merging arm/for-next (839387f Merge branches 'devel-stable', 'entry', 'fixe=
-s', 'mach-types' and 'misc' into for-next)
-Merging arm-perf/for-next/perf (ab87304 Merge branches 'perf/fixes' and 'hw=
--breakpoint' into for-next/perf)
-Merging davinci/davinci-next (fe0d422 Linux 3.0-rc6)
-Merging xilinx/arm-next (64e3fd3 arm: zynq: Add support for pmu)
-Merging arm64/upstream (12f8839 arm64: Define readq and writeq for driver m=
-odule using)
-Merging blackfin/for-linus (f656c24 blackfin: time-ts: Remove duplicate ass=
-ignment)
-Merging c6x/for-linux-next (f934af0 add memory barrier to arch_local_irq_re=
-store)
-Merging cris/for-next (90712ac CRIS: remove unused current_regs)
-Merging hexagon/linux-next (e0e34de Hexagon: add v4 CS regs to core copyout=
- macro)
-Merging ia64/next (797f6a6 Add size restriction to the kdump documentation)
-Merging m68k/for-next (e00c73e m68k: Remove inline strlen() implementation)
-Merging m68knommu/for-next (4f24620 m68k: define a local gpio_request_one()=
- function)
-Merging metag/for-next (82bbb83 metag: add exported <asm/ech.h> for extende=
-d context handling)
-Merging microblaze/next (01cc2cb microblaze: intc: set the default irq_doma=
-in)
-Merging mips/mips-for-linux-next (77a8b90 Merge branches 'next/3.9-fixes', =
-'next/kvm' and 'next/micromips' into mips-for-linux-next)
-Merging openrisc/for-upstream (6af6095 openrisc: remove HAVE_VIRT_TO_BUS)
-Merging parisc/for-next (6c700d7 [PARISC] hpux: Remove obsolete regs parame=
-ter from do_execve() in hpux_execve())
-Merging powerpc/next (9e2d59a Merge branch 'for-linus' of git://git.kernel.=
-org/pub/scm/linux/kernel/git/viro/signal)
-Merging ppc-temp/master (016af59 powerpc: Try to insert the hptes repeatedl=
-y in kernel_map_linear_page())
-CONFLICT (content): Merge conflict in arch/metag/mm/Kconfig
-Merging 4xx/next (2074b1d powerpc: Fix irq distribution)
-Merging mpc5xxx/next (0d76b3d3 powerpc/512x: add ifm ac14xx board)
-Merging galak/next (f0b0b48 powerpc/85xx: Fix MPC8536DS 36-bit device tree)
-Applying: powerpc: fix usage of setup_pci_atmu()
-Merging s390/features (4e4d035 s390/pci: remove disable_device implementati=
-on)
-Merging sh/sh-latest (37284bd Merge branches 'sh/hw-breakpoints' and 'sh/se=
-rial-of' into sh-latest)
-Merging sparc-next/master (07df841 sparc64: Do not save/restore interrupts =
-in get_new_mmu_context())
-Merging tile/master (39e8202 tile: ns2cycles should use __raw_get_cpu_var)
-Merging unicore32/unicore32 (c284464 arch/unicore32: remove CONFIG_EXPERIME=
-NTAL)
-Merging xtensa/for_next (4e34bf6 xtensa: provide default platform_pcibios_i=
-nit implementation)
-Merging btrfs/next (6aec51f Merge branch 'master' of git://git.kernel.org/p=
-ub/scm/linux/kernel/git/torvalds/linux into for-linus-3.9)
-Merging ceph/testing (2f40fd4 rbd: issue stat request before layered write)
-CONFLICT (content): Merge conflict in net/ceph/osdmap.c
-CONFLICT (content): Merge conflict in fs/ceph/addr.c
-CONFLICT (content): Merge conflict in drivers/block/rbd.c
-Merging cifs/for-next (bf81710 Merge git://git.kernel.org/pub/scm/linux/ker=
-nel/git/nab/target-pending)
-Merging configfs/linux-next (b930c26 Merge branch 'for-linus' of git://git.=
-kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs)
-Merging ecryptfs/next (f6161aa Linux 3.9-rc2)
-Merging ext3/for_next (e678a4f jbd: don't wait (forever) for stale tid caus=
-ed by wraparound)
-Merging ext4/dev (85dd166 jbd2: reduce journal_head size)
-Merging f2fs/dev (6224da8 f2fs: fix typo mistakes)
-Merging fuse/for-next (efb9fa9 fuse: truncate file if async dio failed)
-Merging gfs2/master (7bd8b2e GFS2: Add origin indicator to glock demote tra=
-cing)
-Merging jfs/jfs-next (9d48017 jfs: avoid undefined behavior from left-shift=
-ing by 32 bits)
-Merging logfs/master (3394661 Fix the call to BUG() caused by no free segme=
-nt found)
-Merging nfs/linux-next (0f7e7ca Merge branch 'rpcsec_gss-from_cel' into lin=
-ux-next)
-Merging nfsd/nfsd-next (ba13843 nfsd4: put_client_renew_locked can be stati=
-c)
-Merging ocfs2/linux-next (4538df6 ocfs2: Don't spam on -EDQUOT.)
-Merging omfs/for-next (976d167 Linux 3.1-rc9)
-Merging squashfs/master (4b0180a Squashfs: add mount time sanity check for =
-block_size and block_log match)
-Merging v9fs/for-next (b6f4bee fs/9p: Fix atomic_open)
-Merging ubifs/linux-next (67e753c UBIFS: make space fixup work in the remou=
-nt case)
-Merging xfs/for-next (7fe3258 xfs: Update xfs_log_commit_cil() comments)
-CONFLICT (content): Merge conflict in fs/xfs/xfs_iomap.c
-Merging vfs/for-next (05c0ae2 try a saner locking for pde_opener...)
-Merging pci/next (42c3470 Merge branch 'pci/rafael-pm' into next)
-Merging hid/for-next (6922705 Merge branch 'for-3.10/upstream' into for-nex=
-t)
-Merging i2c/i2c/for-next (2637e5f i2c: octeon: Fix i2c fail problem when a =
-process is terminated by a signal)
-Merging jdelvare-hwmon/master (c662b7a hwmon: (lm75) Add support for the Da=
-llas/Maxim DS7505)
-Merging hwmon-staging/hwmon-next (b4e665c hwmon: (tmp401) Use sysfs_create_=
-group / sysfs_remove_group)
-Merging v4l-dvb/master (50e95aa Merge /home/v4l/v4l/patchwork)
-CONFLICT (content): Merge conflict in drivers/staging/media/go7007/go7007-d=
-river.c
-CONFLICT (content): Merge conflict in drivers/media/platform/Kconfig
-CONFLICT (content): Merge conflict in drivers/media/pci/bt8xx/bttv-input.c
-Applying: i2c: fixup for code movement from bttv_input.c
-Merging kbuild/for-next (2325a90 Merge branch 'kbuild/misc' into kbuild/for=
--next)
-Merging kconfig/for-next (4eae518 localmodconfig: Fix localyesconfig to set=
- to 'y' not 'm')
-Merging libata/NEXT (3f1317a2b [libata] SCSI: really use SATL version in VP=
-D)
-Merging infiniband/for-next (2445ec4 Merge branches 'cxgb4', 'ipoib', 'misc=
-', 'mlx4', 'qib' and 'srp' into for-next)
-Merging pstore/master (bd08ec3 pstore/ram: Restore ecc information block)
-Merging pm/linux-next (0bea57f Merge branch 'pm-cpufreq-next' into linux-ne=
-xt)
-CONFLICT (content): Merge conflict in drivers/acpi/scan.c
-Merging idle/next (5c99726b Merge branch 'fspin' into next)
-Merging apm/for-next (fb9d78a Merge branch 'for-linus' of git://git.kernel.=
-org/pub/scm/linux/kernel/git/jikos/apm)
-Merging cpuidle/cpuidle-next (817c876 Merge branch 'pm-fixes-next' into fix=
-es-next)
-CONFLICT (content): Merge conflict in drivers/base/power/qos.c
-Merging cpupowerutils/master (f166033 cpupower tools: add install target to=
- the debug tools' makefiles)
-Merging thermal/next (4f89038 Thermal: cpufreq cooling: endian bug in cpufr=
-eq_get_max_state())
-Merging ieee1394/for-next (6dbe51c Linux 3.9-rc1)
-Merging ubi/linux-next (f6161aa Linux 3.9-rc2)
-Merging dlm/next (9000831 dlm: avoid unnecessary posix unlock)
-Merging swiotlb/linux-next (af51a9f swiotlb: Do not export swiotlb_bounce s=
-ince there are no external consumers)
-Merging scsi/for-next (73b22ec Merge branch 'misc' into for-next)
-Merging target-updates/for-next (6641719 iscsi-target: Add iser network por=
-tal attribute)
-Merging target-merge/for-next-merge (ede3827 iser-target: Add iSCSI Extensi=
-ons for RDMA (iSER) target driver)
-Merging ibft/linux-next (935a9fe ibft: Fix finding IBFT ACPI table on UEFI)
-Merging isci/all (6734092 isci: add a couple __iomem annotations)
-Merging slave-dma/next (0b03930 Merge branch 'for-linus' into next)
-Merging dmaengine/next (41ef2d5 Linux 3.9-rc7)
-Merging net-next/master (91b1c1a qeth: fix VLAN related compilation errors)
-CONFLICT (content): Merge conflict in net/ipv4/tcp_input.c
-CONFLICT (content): Merge conflict in net/batman-adv/routing.c
-CONFLICT (content): Merge conflict in include/net/scm.h
-CONFLICT (content): Merge conflict in drivers/net/wireless/brcm80211/brcmsm=
-ac/mac80211_if.c
-CONFLICT (content): Merge conflict in drivers/net/ethernet/intel/igb/igb_ma=
-in.c
-CONFLICT (content): Merge conflict in drivers/net/ethernet/emulex/benet/be_=
-main.c
-CONFLICT (coRecorded preimage for 'drivers/net/ethernet/emulex/benet/be_mai=
-n.c'
-Applying: drivers:net: fix up for code movement from rt2x00pci.c
-Applying: batman-adv: merge fix for batadv_is_my_mac() API change
-Applying: net: af_unix fix for incorrect credentials passing
-$ git reset --hard HEAD^
-Merging 20130419 version of net-next
-CONFLICT (content): Merge conflict in net/ipv4/tcp_input.c
-CONFLICT (content): Merge conflict in net/batman-adv/routing.c
-CONFLICT (content): Merge conflict in include/net/scm.h
-CONFLICT (content): Merge conflict in drivers/net/wireless/brcm80211/brcmsm=
-ac/mac80211_if.c
-CONFLICT (content): Merge conflict in drivers/infiniband/hw/cxgb4/qp.c
-Applying: drivers:net: fix up for code movement from rt2x00pci.c
-Applying: batman-adv: merge fix for batadv_is_my_mac() API change
-Applying: net: af_unix fix for incorrect credentials passing
-Merging ipsec-next/master (05600a7 xfrm_user: constify netlink dispatch tab=
-le)
-Merging wireless-next/master (9b38367 b43: use bcma_pmu_spuravoid_pllupdate=
-())
-Merging bluetooth/master (07dc93d Bluetooth: Fix HCI command send functions=
- to use const specifier)
-Merging mtd/master (cdb6404 mtd: omap2: Use module_platform_driver())
-Merging l2-mtd/master (98927a2 mtd: get the ECC info from the parameter pag=
-e for ONFI nand)
-Merging crypto/master (110e761 crypto: aesni_intel - fix Kconfig problem wi=
-th CRYPTO_GLUE_HELPER_X86)
-Merging drm/drm-next (e1adc78 drm/qxl: fix build with debugfs turned off.)
-Merging drm-intel/drm-intel-next-queued (80ad920 drm/i915: Make struct dpll=
- =3D=3D intel_clock_t)
-Merging sound/for-next (f0283b5 ALSA: compress_core: Rework writes to use c=
-umulative values)
-Merging sound-asoc/for-next (24568ea Merge remote-tracking branch 'asoc/top=
-ic/max98088' into asoc-next)
-Merging modules/modules-next (944a1fa module: don't unlink the module until=
- we've removed all exposure.)
-Merging virtio/virtio-next (74ff582 virtio: console: replace EMFILE with EB=
-USY for already-open port)
-CONFLICT (content): Merge conflict in drivers/char/virtio_console.c
-Merging input/next (0c6a616 Input: trackpoint - Optimize trackpoint init to=
- use power-on reset)
-Merging input-mt/for-next (194664e Input: MT - handle semi-mt devices in co=
-re)
-Merging cgroup/for-next (712317a cgroup: fix broken file xattrs)
-CONFLICT (content): Merge conflict in include/linux/res_counter.h
-Merging block/for-next (02c78eb Merge branch 'for-3.10/drivers' into for-ne=
-xt)
-CONFLICT (content): Merge conflict in drivers/block/drbd/drbd_proc.c
-Merging device-mapper/master (583a170 Correct the documented requirement on=
- the return code from dm cache policy lookup functions stated in the policy=
- module header file.)
-Merging embedded/master (4744b43 embedded: fix vc_translate operator preced=
-ence)
-Merging firmware/master (6e03a20 firmware: speed up request_firmware(), v3)
-Merging pcmcia/master (80af9e6 pcmcia at91_cf: fix raw gpio number usage)
-Merging mmc/mmc-next (a08b17b mmc: core: fix init controller performance re=
-gression, updated patch)
-Merging kgdb/kgdb-next (6bedf31 kdb: Remove unhandled ssb command)
-Merging slab/for-next (7cccd80 slub: tid must be retrieved from the percpu =
-area of the current processor)
-Merging uclinux/for-next (6dbe51c Linux 3.9-rc1)
-Merging md/for-next (023a4ef raid5: make release_stripe lockless)
-Merging mfd/master (4adedc5 mfd: si476x: Fix i2c warning)
-Merging battery/master (6b17080 pm2301-charger: Fix suspend/resume)
-Merging fbdev/fbdev-next (a49f0d1 Linux 3.8-rc1)
-Merging viafb/viafb-next (838ac78 viafb: avoid refresh and mode lookup in s=
-et_par)
-Merging omap_dss2/for-next (e45f265 video: vt8500: fix Kconfig for videomod=
-e)
-CONFLICT (content): Merge conflict in drivers/video/fbmon.c
-Merging regulator/for-next (e8558ca Merge remote-tracking branch 'regulator=
-/topic/wm8994' into regulator-next)
-Merging security/next (b7ae9f0 Merge branch 'tpmdd-04-17-13' of git://githu=
-b.com/shpedoikal/linux into my-next)
-Merging selinux/master (c2d7b24 Merge tag 'v3.4' into 20120409)
-Merging lblnet/master (7e27d6e Linux 2.6.35-rc3)
-Merging watchdog/master (69c6612 watchdog: Fix race condition in registrati=
-on code)
-Merging dwmw2-iommu/master (6491d4d intel-iommu: Free old page tables befor=
-e creating superpage)
-Merging iommu/next (baeb88c Merge branches 'iommu/fixes', 'x86/vt-d', 'x86/=
-amd', 'ppc/pamu' and 'core' into next)
-Merging vfio/next (aa2cba5 PCI/VFIO: use pcie_flags_reg instead of access P=
-CI-E Capabilities Register)
-Merging osd/linux-next (861d666 exofs: don't leak io_state and pages on rea=
-d error)
-Merging jc_docs/docs-next (5c050fb docs: update the development process doc=
-ument)
-Merging trivial/for-next (59affa5 pata_pdc2027x: Fix compiler warning)
-CONFLICT (modify/delete): Documentation/virtual/virtio-spec.txt deleted in =
-HEAD and modified in trivial/for-next. Version trivial/for-next of Document=
-ation/virtual/virtio-spec.txt left in tree.
-$ git rm -f Documentation/virtual/virtio-spec.txt
-Merging audit/for-next (dcd6c92 Linux 3.3-rc1)
-Merging fsnotify/for-next (1ca39ab inotify: automatically restart syscalls)
-Merging edac/linux_next (b076989 i5100_edac: convert to use simple_open())
-Merging edac-amd/for-next (9713fae EDAC: Merge mci.mem_is_per_rank with mci=
-.csbased)
-Merging devicetree/devicetree/next (d347bc5 Merge branch 'robherring/for-ne=
-xt' from git://sources.calxeda.com/kernel/linux.git)
-Merging dt-rh/for-next (a2f682a Merge tag 'tegra-for-3.10-dtc-cpp-chroot-st=
-d-headers' of git://git.kernel.org/pub/scm/linux/kernel/git/swarren/linux-t=
-egra into for-next)
-Merging spi/spi/next (00ab539 spi/s3c64xx: let device core setup the defaul=
-t pin configuration)
-CONFLICT (content): Merge conflict in MAINTAINERS
-Merging spi-mb/for-next (e7e4e13 MAINTAINERS: Add git repository and update=
- my address)
-Merging tip/auto-latest (6503ac9 Merge branch 'x86/urgent')
-CONFLICT (content): Merge conflict in tools/Makefile
-CONFLICT (content): Merge conflict in include/linux/clockchips.h
-CONFLICT (content): Merge conflict in drivers/clocksource/Makefile
-Merging ftrace/for-next (c192c83 tracing: Remove obsolete macro guard _TRAC=
-E_PROFILE_INIT)
-CONFLICT (content): Merge conflict in kernel/trace/trace.c
-CONFLICT (content): Merge conflict in kernel/trace/ftrace.c
-Merging rcu/rcu/next (6d87669 Merge branches 'doc.2013.03.12a', 'fixes.2013=
-.03.13a' and 'idlenocb.2013.03.26b' into HEAD)
-Merging cputime/cputime (c3e0ef9 [S390] fix cputime overflow in uptime_proc=
-_show)
-Merging uprobes/for-next (0326f5a uprobes/core: Handle breakpoint and singl=
-estep exceptions)
-Merging kvm/linux-next (e606264 KVM: ia64: Fix kvm_vm_ioctl_irq_line)
-CONFLICT (content): Merge conflict in drivers/s390/kvm/virtio_ccw.c
-Merging kvm-arm/kvm-arm-next (b8022d7 arm: kvm: arch_timer: use symbolic co=
-nstants)
-Merging kvm-ppc/kvm-ppc-next (be28a27 kvm/ppc: don't call complete_mmio_loa=
-d when it's a store)
-Merging oprofile/for-next (23995bb oprofile, s390: Add support for IBM zEnt=
-erprise EC12)
-Merging fw-nohz/nohz/next (74876a9 printk: Wake up klogd using irq_work)
-Merging xen/upstream/xen (af3a3ab Merge git://git.kernel.org/pub/scm/linux/=
-kernel/git/steve/gfs2-3.0-fixes)
-Merging xen-two/linux-next (6461b07 Merge branch 'stable/for-linus-3.10' in=
-to linux-next)
-Merging xen-pvhvm/linux-next (b056b6a xen: suspend: remove xen_hvm_suspend)
-Merging percpu/for-next (a1b2a55 percpu: add documentation on this_cpu oper=
-ations)
-Merging workqueues/for-next (46aed11 Merge branch 'for-3.10' into for-next)
-Merging drivers-x86/linux-next (e6e5224 ideapad-laptop: Depend on BACKLIGHT=
-_CLASS_DEVICE instead of selecting it)
-CONFLICT (content): Merge conflict in drivers/platform/x86/chromeos_laptop.c
-Merging hwpoison/hwpoison (46e387b Merge branch 'hwpoison-hugepages' into h=
-wpoison)
-Merging sysctl/master (4e474a0 sysctl: protect poll() in entries that may g=
-o away)
-Merging regmap/for-next (38a8179 Merge remote-tracking branch 'regmap/topic=
-/range' into regmap-next)
-Merging hsi/for-next (43139a6 HSI: hsi_char: Update ioctl-number.txt)
-Merging leds/for-next (df92d5f leds: leds-asic3: switch to using SIMPLE_DEV=
-_PM_OPS)
-Merging driver-core/driver-core-next (0d1d392 Merge 3.9-rc7 into driver-cor=
-e-next)
-CONFLICT (content): Merge conflict in kernel/rtmutex-tester.c
-Merging tty/tty-next (78506f2 ARM: PL011: add support for extended FIFO-siz=
-e of PL011-r1p5)
-Merging usb/usb-next (4601de8 USB: storage: convert to use module_usb_drive=
-r())
-CONFLICT (content): Merge conflict in drivers/usb/serial/usb-serial.c
-Merging usb-gadget/next (9b192de usb: gadget: nokia: include f_ecm.c)
-Merging staging/staging-next (3d1fe3f staging: comedi: drivers: free_irq() =
-in comedi_legacy_detach())
-CONFLICT (content): Merge conflict in drivers/staging/vt6655/device_main.c
-CONFLICT (content): Merge conflict in drivers/staging/dgrp/dgrp_specproc.c
-CONFLICT (content): Merge conflict in drivers/staging/dgrp/dgrp_ports_ops.c
-CONFLICT (content): Merge conflict in drivers/staging/dgrp/dgrp_net_ops.c
-CONFLICT (content): Merge conflict in drivers/staging/dgrp/dgrp_mon_ops.c
-CONFLICT (content): Merge conflict in drivers/staging/dgrp/dgrp_dpa_ops.c
-CONFLICT (modify/delete): drivers/staging/ccg/rndis.c deleted in staging/st=
-aging-next and modified in HEAD. Version HEAD of drivers/staging/ccg/rndis.=
-c left in tree.
-CONFLICT (modify/delete): drivers/staging/ccg/f_fs.c deleted in staging/sta=
-ging-next and modified in HEAD. Version HEAD of drivers/staging/ccg/f_fs.c =
-left in tree.
-$ git rm -f drivers/staging/ccg/f_fs.c drivers/staging/ccg/rndis.c
-Merging char-misc/char-misc-next (0cfee51 mei: reseting -> resetting)
-CONFLICT (content): Merge conflict in drivers/misc/mei/interrupt.c
-CONFLICT (content): Merge conflict in drivers/mfd/Kconfig
-Merging bcon/master (06c6942 blockconsole: Mark a local work struct static)
-CONFLICT (content): Merge conflict in drivers/block/Kconfig
-Merging tmem/linux-next (8f0d816 Linux 3.7-rc3)
-Merging writeback/writeback-for-next (ed84825 Negative (setpoint-dirty) in =
-bdi_position_ratio())
-Merging arm-dt/devicetree/arm-next (ede338f dt: add documentation of ARM dt=
- boot interface)
-Merging hwspinlock/linux-next (8b37fcf hwspinlock: add MAINTAINERS entries)
-Merging pinctrl/for-next (8dbe24a Merge branch 'devel' into for-next)
-Merging vhost/linux-next (4697e2c kvm: add PV MMIO EVENTFD)
-CONFLICT (content): Merge conflict in virt/kvm/eventfd.c
-CONFLICT (content): Merge conflict in include/uapi/linux/kvm.h
-CONFLICT (content): Merge conflict in include/linux/kvm_host.h
-Merging memblock/memblock-kill-early_node_map (7bd0b0f memblock: Reimplemen=
-t memblock allocation using reverse free area iterator)
-Merging remoteproc/for-next (b977785 remoteproc: fix kconfig dependencies f=
-or VIRTIO)
-CONFLICT (content): Merge conflict in drivers/remoteproc/Kconfig
-Merging rpmsg/for-next (397944d rpmsg: fix kconfig dependencies for VIRTIO)
-Merging irqdomain/irqdomain/next (560aa53 irqdomain: document the simple do=
-main first_irq)
-Merging gpio/gpio/next (753c598 gpio/em: Add Device Tree support)
-Merging gpio-lw/for-next (5c231e8 Merge branch 'next' into for-next)
-Merging gen-gpio/for_next (f4c5405 gpio: update gpio Chinese documentation)
-CONFLICT (modify/delete): drivers/usb/otg/Kconfig deleted in HEAD and modif=
-ied in gen-gpio/for_next. Version gen-gpio/for_next of drivers/usb/otg/Kcon=
-fig left in tree.
-CONFLICT (content): Merge conflict in arch/sh/kernel/cpu/sh2a/Makefile
-$ git rm -f drivers/usb/otg/Kconfig
-Applying: gen-gpio: GPIOLIB merge fix up
-Applying: merge fix for Convert selectors of GENERIC_GPIO to GPIOLIB
-Applying: merge fix 2 for Convert selectors of GENERIC_GPIO to GPIOLIB
-Merging mailbox/dbx500-prcmu-mailbox (c497eba mailbox: fix invalid use of s=
-izeof in mailbox_msg_send())
-Merging arm-soc/for-next (bc776fe Merge branch 'for-next' of git://git.kern=
-el.org/pub/scm/linux/kernel/git/arm/arm-soc into for-next)
-CONFLICT (content): Merge conflict in drivers/usb/host/ohci-exynos.c
-CONFLICT (content): Merge conflict in drivers/pinctrl/pinctrl-samsung.h
-CONFLICT (content): Merge conflict in drivers/pinctrl/pinctrl-samsung.c
-CONFLICT (content): Merge conflict in drivers/pinctrl/Makefile
-CONFLICT (modify/delete): drivers/gpio/gpio-vt8500.c deleted in arm-soc/for=
--next and modified in HEAD. Version HEAD of drivers/gpio/gpio-vt8500.c left=
- in tree.
-CONFLICT (content): Merge conflict in drivers/clocksource/tegra20_timer.c
-CONFLICT (content): Merge conflict in drivers/clocksource/Makefile
-CONFLICT (content): Merge conflict in arch/arm/plat-orion/Makefile
-CONFLICT (add/add): Merge conflict in arch/arm/mach-zynq/platsmp.c
-CONFLICT (content): Merge conflict in arch/arm/mach-vexpress/v2m.c
-CONFLICT (content): Merge conflict in arch/arm/mach-tegra/tegra.c
-CONFLICT (content): Merge conflict in arch/arm/mach-spear/spear13xx.c
-CONFLICT (content): Merge conflict in arch/arm/mach-shmobile/board-armadill=
-o800eva.c
-CONFLICT (content): Merge conflict in arch/arm/mach-s3c24xx/dma-s3c2443.c
-CONFLICT (content): Merge conflict in arch/arm/mach-s3c24xx/dma-s3c2440.c
-CONFLICT (content): Merge conflict in arch/arm/mach-s3c24xx/dma-s3c2412.c
-CONFLICT (content): Merge conflict in arch/arm/mach-s3c24xx/dma-s3c2410.c
-CONFLICT (content): Merge conflict in arch/arm/mach-omap2/omap_hwmod.c
-CONFLICT (content): Merge conflict in arch/arm/mach-imx/mach-imx6q.c
-CONFLICT (modify/delete): arch/arm/mach-imx/cpufreq.c deleted in arm-soc/fo=
-r-next and modified in HEAD. Version HEAD of arch/arm/mach-imx/cpufreq.c le=
-ft in tree.
-CONFLICT (content): Merge conflict in arch/arm/mach-highbank/highbank.c
-CONFLICT (content): Merge conflict in arch/arm/Kconfig
-$ git rm -f drivers/gpio/gpio-vt8500.c arch/arm/mach-imx/cpufreq.c
-Merging bcm2835/for-next (31880c3 Linux 3.9-rc6)
-Merging cortex/for-next (4477ca4 ARM: ARMv7-M: Allow the building of new ke=
-rnel port)
-Merging ep93xx/ep93xx-for-next (7ec4429 Merge branch 'ep93xx-fixes' into ep=
-93xx-for-next)
-Merging imx-mxs/for-next (3795b56 Merge branches 'mxs/dt-3.11' and 'imx/dt-=
-3.11' into for-next)
-Merging ixp4xx/next (19f949f Linux 3.8)
-Merging msm/for-next (1df357a Merge branch 'msm-defconfig' into for-next)
-Merging renesas/next (468d696 Merge branch 'heads/soc-sh73a0' into next)
-CONFLICT (content): Merge conflict in drivers/pinctrl/sh-pfc/Kconfig
-CONFLICT (content): Merge conflict in arch/arm/mach-shmobile/setup-r8a7740.c
-Merging samsung/for-next (d4f7152 ARM: dts: Disable the RTC by default on e=
-xynos5)
-CONFLICT (content): Merge conflict in drivers/usb/host/ohci-exynos.c
-CONFLICT (content): Merge conflict in drivers/cpufreq/Makefile
-CONFLICT (content): Merge conflict in drivers/clocksource/exynos_mct.c
-CONFLICT (content): Merge conflict in arch/arm/mach-s3c24xx/Kconfig
-CONFLICT (content): Merge conflict in arch/arm/boot/dts/exynos5250.dtsi
-CONFLICT (content): Merge conflict in arch/arm/boot/dts/exynos4412-smdk4412=
-.dts
-CONFLICT (content): Merge conflict in arch/arm/Kconfig
-CONFLICT (content): Merge conflict in Documentation/devicetree/bindings/usb=
-/exynos-usb.txt
-Merging tegra/for-next (c0c1cb1 Merge branch 'for-3.10/defconfig' into for-=
-next)
-Merging dma-mapping/dma-mapping-next (a937536 Linux 3.9-rc3)
-Merging pwm/for-next (bdd7cf9 pwm: pwm-tiehrpwm: Update device-tree binding=
- document)
-Merging dma-buf/for-next (5320c97 dma-buf: double unlock in debugfs code)
-Merging userns/for-next (78008c4 proc: Restrict mounting the proc filesyste=
-m)
-Merging ktest/for-next (7328735 ktest: Remove indexes from warnings check)
-Merging signal/for-next (99e621f syscalls.h: slightly reduce the jungles of=
- macros)
-CONFLICT (content): Merge conflict in include/asm-generic/unistd.h
-CONFLICT (content): Merge conflict in fs/splice.c
-CONFLICT (content): Merge conflict in fs/read_write.h
-CONFLICT (content): Merge conflict in fs/read_write.c
-CONFLICT (content): Merge conflict in fs/compat.c
-CONFLICT (content): Merge conflict in arch/tile/kernel/compat.c
-CONFLICT (content): Merge conflict in arch/tile/Kconfig
-CONFLICT (content): Merge conflict in arch/mips/kernel/linux32.c
-Applying: cond_syscall and SYSCALL_ALIAS merge fixup
-Merging clk/clk-next (6e973d2 clk: vexpress: Add separate SP810 driver)
-CONFLICT (content): Merge conflict in drivers/clk/mvebu/clk-core.c
-CONFLICT (content): Merge conflict in arch/arm/mach-vexpress/v2m.c
-Merging random/dev (b980955 random: fix locking dependency with the tasklis=
-t_lock)
-Merging lzo-update/lzo-update (42b775a lib/lzo: huge LZO decompression spee=
-dup on ARM by using unaligned access)
-Merging scsi-post-merge/merge-base:master (65112dc Merge git://git.samba.or=
-g/sfrench/cifs-2.6)
-Merging akpm-current/current (eb6d98e kernel/signal.c: stop info leak via t=
-he tkill and the tgkill syscalls)
-$ git checkout -b akpm remotes/origin/akpm/master
-Applying: revert "ipc: don't allocate a copy larger than max"
-Applying: drivers/char/random.c: fix priming of last_data
-Applying: kthread: introduce to_live_kthread()
-Applying: kthread: kill task_get_live_kthread()
-Applying: x86: make 'mem=3D' option to work for efi platform
-Applying: kernel/auditsc.c: use kzalloc instead of kmalloc+memset
-Applying: auditsc-use-kzalloc-instead-of-kmallocmemset-fix
-Applying: audit: don't check if kauditd is valid every time
-Applying: audit: remove duplicate export of audit_enabled
-Applying: audit: remove unnecessary #if CONFIG_AUDIT
-Applying: kernel/auditfilter.c: tree and watch will memory leak when failur=
-e occurs
-Applying: mm: remove free_area_cache use in powerpc architecture
-Applying: mm: use vm_unmapped_area() on powerpc architecture
-Applying: drm/fb-helper: don't sleep for screen unblank when an oops is in =
-progress
-Applying: matroxfb: convert struct i2c_msg initialization to C99 format
-Applying: drivers/video/console/fbcon_cw.c: fix compiler warning in cw_upda=
-te_attr
-Applying: drivers/video: add Hyper-V Synthetic Video Frame Buffer Driver
-Applying: video: fix a type warning in hyperv_fb.c
-Applying: drivers/video/exynos/exynos_mipi_dsi.c: convert to devm_ioremap_r=
-esource()
-Applying: drivers/video/ep93xx-fb.c: fix section mismatch and use module_pl=
-atform_driver
-Applying: drivers/video/mmp: remove legacy hw definitions
-Applying: drivers/video: implement a simple framebuffer driver
-Applying: drivers-video-implement-a-simple-framebuffer-driver-fix
-Applying: cyber2000fb: avoid palette corruption at higher clocks
-Applying: posix_cpu_timer: consolidate expiry time type
-Applying: posix_cpu_timers: consolidate timer list cleanups
-Applying: posix_cpu_timers: consolidate expired timers check
-Applying: selftests: add basic posix timers selftests
-Applying: posix-timers: correctly get dying task time sample in posix_cpu_t=
-imer_schedule()
-Applying: posix_timers: Fix racy timer delta caching on task exit
-Applying: mkcapflags.pl: convert to mkcapflags.sh
-Applying: scripts/decodecode: make faulting insn ptr more robust
-Applying: ipvs: change type of netns_ipvs->sysctl_sync_qlen_max
-Applying: ocfs2: delay inode update transactions after verifying the input =
-flags
-Applying: ocfs2: fix error return code in ocfs2_info_handle_freefrag()
-Applying: ocfs2: fix error handling in ocfs2_ioctl_move_extents()
-Applying: ocfs2: fix NULL dereference for moving extents
-Applying: debug_locks.h: make warning more verbose
-Applying: lockdep: introduce lock_acquire_exclusive/shared helper macros
-Applying: lglock: update lockdep annotations to report recursive local locks
-Applying: drivers/block/mg_disk.c: add CONFIG_PM_SLEEP to suspend/resume fu=
-nctions
-Applying: block: restore /proc/partitions to not display non-partitionable =
-removable devices
-Applying: fs/block_dev.c: no need to check inode->i_bdev in bd_forget()
-Applying: fs/dcache.c: add cond_resched() to shrink_dcache_parent()
-Applying: watchdog: trigger all-cpu backtrace when locked up and going to p=
-anic
-Applying: HWPOISON: check dirty flag to match against clean page
-Applying: mm: trace filemap add and del
-Applying: mm-trace-filemap-add-and-del-v2
-Applying: mm, show_mem: suppress page counts in non-blockable contexts
-Applying: mm/shmem.c: remove an ifdef
-Applying: vm: adjust ifdef for TINY_RCU
-Applying: mm: frontswap: lazy initialization to allow tmem backends to buil=
-d/run as modules
-Applying: frontswap: make frontswap_init use a pointer for the ops
-Applying: mm: frontswap: cleanup code
-Applying: frontswap: get rid of swap_lock dependency
-Applying: mm: cleancache: lazy initialization to allow tmem backends to bui=
-ld/run as modules
-Applying: cleancache: Make cleancache_init use a pointer for the ops
-Applying: mm: cleancache: clean up cleancache_enabled
-Applying: xen: tmem: enable Xen tmem shim to be built/loaded as a module
-Applying: xen-tmem-enable-xen-tmem-shim-to-be-built-loaded-as-a-module-fix
-Applying: zcache/tmem: Better error checking on frontswap_register_ops retu=
-rn value.
-Applying: staging: zcache: enable ramster to be built/loaded as a module
-Applying: staging-zcache-enable-ramster-to-be-built-loaded-as-a-module-fix
-Applying: staging: zcache: enable zcache to be built/loaded as a module
-Applying: rmap: recompute pgoff for unmapping huge page
-Applying: memblock: add assertion for zero allocation alignment
-Applying: mm: walk_memory_range(): fix typo in comment
-Applying: direct-io: fix boundary block handling
-Applying: direct-io: submit bio after boundary buffer is added to it
-Applying: mm/vmscan.c: minor cleanup for kswapd
-Applying: mm: introduce common help functions to deal with reserved/managed=
- pages
-Applying: mm/alpha: use common help functions to free reserved pages
-Applying: mm/ARM: use common help functions to free reserved pages
-Applying: mm/avr32: use common help functions to free reserved pages
-Applying: mm/blackfin: use common help functions to free reserved pages
-Applying: mm/c6x: use common help functions to free reserved pages
-Applying: mm/cris: use common help functions to free reserved pages
-Applying: mm/FRV: use common help functions to free reserved pages
-Applying: mm/h8300: use common help functions to free reserved pages
-Applying: mm/IA64: use common help functions to free reserved pages
-Applying: mm/m32r: use common help functions to free reserved pages
-Applying: mm/m68k: use common help functions to free reserved pages
-Applying: mm/microblaze: use common help functions to free reserved pages
-Applying: mm/MIPS: use common help functions to free reserved pages
-Applying: mm/mn10300: use common help functions to free reserved pages
-Applying: mm/openrisc: use common help functions to free reserved pages
-Applying: mm/parisc: use common help functions to free reserved pages
-Applying: mm/ppc: use common help functions to free reserved pages
-Applying: mm/s390: use common help functions to free reserved pages
-Applying: mm/score: use common help functions to free reserved pages
-Applying: mm/SH: use common help functions to free reserved pages
-Applying: mm/SPARC: use common help functions to free reserved pages
-Applying: mm/um: use common help functions to free reserved pages
-Applying: mm/unicore32: use common help functions to free reserved pages
-Applying: mm/x86: use common help functions to free reserved pages
-Applying: mm/xtensa: use common help functions to free reserved pages
-Applying: mm/arc: use common help functions to free reserved pages
-Applying: mm/metag: use common help functions to free reserved pages
-Applying: mm,kexec: use common help functions to free reserved pages
-Applying: mm: introduce free_highmem_page() helper to free highmem pages in=
-to buddy system
-Applying: mm/ARM: use free_highmem_page() to free highmem pages into buddy =
-system
-Applying: mm/FRV: use free_highmem_page() to free highmem pages into buddy =
-system
-Applying: mm/metag: use free_highmem_page() to free highmem pages into budd=
-y system
-Applying: mm/microblaze: use free_highmem_page() to free highmem pages into=
- buddy system
-Applying: mm/MIPS: use free_highmem_page() to free highmem pages into buddy=
- system
-Applying: mm/PPC: use free_highmem_page() to free highmem pages into buddy =
-system
-Applying: mm/SPARC: use free_highmem_page() to free highmem pages into budd=
-y system
-Applying: mm/um: use free_highmem_page() to free highmem pages into buddy s=
-ystem
-Applying: mm/x86: use free_highmem_page() to free highmem pages into buddy =
-system
-Applying: memcg: keep prev's css alive for the whole mem_cgroup_iter
-Applying: memcg: rework mem_cgroup_iter to use cgroup iterators
-Applying: memcg: relax memcg iter caching
-Applying: memcg-relax-memcg-iter-caching-checkpatch-fixes
-Applying: memcg: simplify mem_cgroup_iter
-Applying: memcg: further simplify mem_cgroup_iter
-Applying: cgroup: remove css_get_next
-Applying: fs: don't compile in drop_caches.c when CONFIG_SYSCTL=3Dn
-Applying: mm/hugetlb: add more arch-defined huge_pte functions
-Applying: mm-hugetlb-add-more-arch-defined-huge_pte-functions-fix
-Applying: mm: make snapshotting pages for stable writes a per-bio operation
-Applying: mm-make-snapshotting-pages-for-stable-writes-a-per-bio-operation-=
-v3
-Applying: mm, vmalloc: change iterating a vmlist to find_vm_area()
-Applying: mm, vmalloc: move get_vmalloc_info() to vmalloc.c
-Applying: mm, vmalloc: protect va->vm by vmap_area_lock
-Applying: mm, vmalloc: iterate vmap_area_list, instead of vmlist in vread/v=
-write()
-Applying: mm, vmalloc: iterate vmap_area_list in get_vmalloc_info()
-Applying: mm, vmalloc: iterate vmap_area_list, instead of vmlist, in vmallo=
-cinfo()
-Applying: mm, vmalloc: export vmap_area_list, instead of vmlist
-Applying: mm, vmalloc: remove list management of vmlist after initializing =
-vmalloc
-Applying: kexec, vmalloc: export additional vmalloc layer information
-Applying: kexec-vmalloc-export-additional-vmalloc-layer-information-fix
-Applying: mmap: find_vma: remove the WARN_ON_ONCE(!mm) check
-Applying: memcg: do not check for do_swap_account in mem_cgroup_{read,write=
-,reset}
-Applying: mm: allow arch code to control the user page table ceiling
-Applying: arm: set the page table freeing ceiling to TASK_SIZE
-Applying: mm: merging memory blocks resets mempolicy
-Applying: mm, hugetlb: include hugepages in meminfo
-Applying: mm-hugetlb-include-hugepages-in-meminfo-checkpatch-fixes
-Applying: mm: try harder to allocate vmemmap blocks
-Applying: sparse-vmemmap: specify vmemmap population range in bytes
-Applying: sparse-vmemmap-specify-vmemmap-population-range-in-bytes-fix
-Applying: x86-64: remove dead debugging code for !pse setups
-Applying: x86-64: use vmemmap_populate_basepages() for !pse setups
-Applying: x86-64: use vmemmap_populate_basepages() for !pse setups fix
-Applying: x86-64: fall back to regular page vmemmap on allocation failure
-Applying: mm: page_alloc: avoid marking zones full prematurely after zone_r=
-eclaim()
-Applying: mm-page_alloc-avoid-marking-zones-full-prematurely-after-zone_rec=
-laim-fix
-Applying: mm/migrate: fix comment typo syncronous->synchronous
-Applying: mm: speedup in __early_pfn_to_nid
-Applying: mm-speedup-in-__early_pfn_to_nid-fix
-Applying: page_alloc: make setup_nr_node_ids() usable for arch init code
-Applying: x86/mm/numa: use setup_nr_node_ids() instead of opencoding.
-Applying: powerpc/mm/numa: use setup_nr_node_ids() instead of opencoding.
-Applying: powerpc-mm-numa-use-setup_nr_node_ids-instead-of-opencoding-fix
-Applying: include/linux/memory.h: implement register_hotmemory_notifier()
-Applying: ipc/util.c: use register_hotmemory_notifier()
-Applying: mm/slub.c: use register_hotmemory_notifier()
-Applying: drivers/base/node.c: switch to register_hotmemory_notifier()
-Applying: fs/proc/kcore.c: use register_hotmemory_notifier()
-Applying: kernel/cpuset.c: use register_hotmemory_notifier()
-Applying: mm: limit growth of 3% hardcoded other user reserve
-Applying: mm: replace hardcoded 3% with admin_reserve_pages knob
-Applying: mm: reinititalise user and admin reserves if memory is added or r=
-emoved
-Applying: mm-reinititalise-user-and-admin-reserves-if-memory-is-added-or-re=
-moved-v9
-Applying: mm-reinititalise-user-and-admin-reserves-if-memory-is-added-or-re=
-moved-v9-checkpatch-fixes
-Applying: mm/memcontrol.c: remove unnecessary ;
-Applying: mm: remove CONFIG_HOTPLUG ifdefs
-Applying: THP: fix comment about memory barrier
-Applying: mm: Rewrite the comment over migrate_pages() more comprehensibly
-Applying: resource: add __adjust_resource() for internal use
-Applying: resource: add release_mem_region_adjustable()
-Applying: resource-add-release_mem_region_adjustable-fix
-Applying: resource-add-release_mem_region_adjustable-fix-fix
-Applying: resource-add-release_mem_region_adjustable-fix-fix-fix
-Applying: resource: update config option of release_mem_region_adjustable()
-Applying: mm: change __remove_pages() to call release_mem_region_adjustable=
-()
-Applying: mm, hotplug: avoid compiling memory hotremove functions when disa=
-bled
-Applying: mm: madvise: complete input validation before taking lock
-Applying: mm-madvise-complete-input-validation-before-taking-lock-fix
-Applying: clear_refs: sanitize accepted commands declaration
-Applying: clear_refs-sanitize-accepted-commands-declaration-fix
-Applying: clear_refs: introduce private struct for mm_walk
-Applying: pagemap: introduce pagemap_entry_t without pmshift bits
-Applying: pagemap: introduce the /proc/PID/pagemap2 file
-Applying: mm: soft-dirty bits for user memory changes tracking
-Applying: mem-soft-dirty: Reshuffle CONFIG_ options to be more Arch-friendly
-Applying: selftest: add simple test for soft-dirty bit
-Applying: memcg: Add memory.pressure_level events
-Applying: memcg-add-memorypressure_level-events-checkpatch-fixes
-Applying: memcg-add-memorypressure_level-events-fix
-Applying: mm/mmap: check for RLIMIT_AS before unmapping
-Applying: mm: break up swap_writepage() for frontswap backends
-Applying: mm: allow for outstanding swap writeback accounting
-Applying: mm: thp: add split tail pages to shrink page list in page reclaim
-Applying: mm-thp-add-split-tail-pages-to-shrink-page-list-in-page-reclaim-f=
-ix
-Applying: mm-thp-add-split-tail-pages-to-shrink-page-list-in-page-reclaim-f=
-ix-fix
-Applying: mm/vmstat: add note on safety of drain_zonestat
-Applying: firmware, memmap: fix firmware_map_entry leak
-Applying: mm: Remove unused parameter of pages_correctly_reserved()
-Applying: memblock: fix missing comment of memblock_insert_region()
-Applying: fs: fix fsync() error reporting
-Applying: memcg: avoid accessing memcg after releasing reference
-Applying: thp: fix huge zero page logic for page with pfn =3D=3D 0
-Applying: mm: remove free_area_cache
-Applying: include/linux/mmzone.h: cleanups
-Applying: include-linux-mmzoneh-cleanups-fix
-Applying: mm: memmap_init_zone() performance improvement
-Applying: drop_caches: add some documentation and info message
-Applying: drivers/usb/gadget/amd5536udc.c: avoid calling dma_pool_create() =
-with NULL dev
-Applying: mm/dmapool.c: fix null dev in dma_pool_create()
-Applying: memcg: debugging facility to access dangling memcgs
-Applying: memcg-debugging-facility-to-access-dangling-memcgs-fix
-Applying: mm: add vm event counters for balloon pages compaction
-Applying: drivers/rpmsg/virtio_rpmsg_bus.c: fix error return code in rpmsg_=
-probe()
-Applying: genalloc: add devres support, allow to find a managed pool by dev=
-ice
-Applying: genalloc-add-devres-support-allow-to-find-a-managed-pool-by-devic=
-e-fix
-Applying: genalloc-add-devres-support-allow-to-find-a-managed-pool-by-devic=
-e-fix-fix
-Applying: misc: generic on-chip SRAM allocation driver
-Applying: misc-generic-on-chip-sram-allocation-driver-fix
-Applying: media: coda: use genalloc API
-Applying: gcc4: disable __compiletime_object_size for GCC 4.6+
-Applying: kernel/range.c: subtract_range: fix the broken phrase issued by p=
-rintk
-Applying: smp: Give WARN()ing when calling smp_call_function_many()/single(=
-) in serving irq
-Applying: x86: don't show trace beyond show_stack(NULL, NULL)
-Applying: sparc32: make show_stack() acquire %fp if @_ksp is not specified
-Applying: dump_stack: consolidate dump_stack() implementations and unify th=
-eir behaviors
-Applying: dmi: morph dmi_dump_ids() into dmi_format_ids() which formats int=
-o a buffer
-Applying: dump_stack: implement arch-specific hardware description in task =
-dumps
-Applying: dump_stack: unify debug information printed by show_regs()
-Applying: arc, print-fatal-signals: reduce duplicated information
-Applying: kthread: implement probe_kthread_data()
-Applying: workqueue: include workqueue info when printing debug dump of a w=
-orker task
-Applying: writeback: set worker desc to identify writeback workers in task =
-dumps
-Applying: include/linux/fs.h: disable preempt when acquire i_size_seqcount =
-write lock
-Applying: kernel/smp.c: cleanups
-Applying: printk/tracing: rework console tracing
-Applying: early_printk: consolidate random copies of identical code
-Applying: early_printk: consolidate random copies of identical code
-Applying: early_printk-consolidate-random-copies-of-identical-code-v3-fix
-Applying: sh4: make the bios early console support depend on EARLY_PRINTK
-Applying: include/linux/printk.h: include stdarg.h
-Applying: printk: fix failure to return error in devkmsg_poll()
-Applying: kmsg: honor dmesg_restrict sysctl on /dev/kmsg
-Applying: get_maintainer: use filename-only regex match for Tegra
-Applying: get_maintainer-use-filename-only-regex-match-for-tegra-fix
-Applying: MAINTAINERS: i8k driver is orphan
-Applying: MAINTAINERS: Petko has moved
-Applying: drivers/video/backlight/ams369fg06.c: convert ams369fg06 to dev_p=
-m_ops
-Applying: drivers-video-backlight-ams369fg06c-convert-ams369fg06-to-dev_pm_=
-ops-fix
-Applying: drivers/video/backlight/platform_lcd.c: remove unnecessary ifdefs
-Applying: drivers/video/backlight/ep93xx_bl.c: remove incorrect __init anno=
-tation
-Applying: drivers/video/backlight/atmel-pwm-bl.c: use module_platform_drive=
-r_probe()
-Applying: drivers/video/backlight/atmel-pwm-bl.c: add __init annotation
-Applying: drivers/video/backlight/lp855x_bl.c: fix compiler warning in lp85=
-5x_probe
-Applying: drivers/video/backlight/jornada720_*.c: use dev_err()/dev_info() =
-instead of pr_err()/pr_info()
-Applying: drivers/video/backlight/omap1_bl.c: use dev_info() instead of pr_=
-info()
-Applying: drivers/video/backlight/generic_bl.c: use dev_info() instead of p=
-r_info()
-Applying: drivers/video/backlight/adp8870_bl.c: add missing braces
-Applying: drivers/video/backlight/l4f00242t03.c: check return value of regu=
-lator_enable()
-Applying: drivers-video-backlight-l4f00242t03c-check-return-value-of-regula=
-tor_enable-fix
-Applying: backlight: ld9040: convert ld9040 to dev_pm_ops
-Applying: backlight: lms501kf03: convert lms501kf03 to dev_pm_ops
-Applying: backlight: s6e63m0: convert s6e63m0 to dev_pm_ops
-Applying: backlight: adp5520: convert adp5520_bl to dev_pm_ops
-Applying: backlight: adp8860: convert adp8860 to dev_pm_ops
-Applying: backlight: adp8870: convert adp8870 to dev_pm_ops
-Applying: backlight: corgi_lcd: convert corgi_lcd to dev_pm_ops
-Applying: backlight: ep93xx: convert ep93xx to dev_pm_ops
-Applying: backlight: hp680_bl: convert hp680bl to dev_pm_ops
-Applying: backlight: kb3886_bl: convert kb3886bl to dev_pm_ops
-Applying: backlight: lm3533_bl: convert lm3533_bl to dev_pm_ops
-Applying: backlight: locomolcd: convert locomolcd to dev_pm_ops
-Applying: backlight: ltv350qv: convert ltv350qv to dev_pm_ops
-Applying: backlight: tdo24m: convert tdo24m to dev_pm_ops
-Applying: drivers/video/backlight/Kconfig: fix typo "MACH_SAM9...EK" three =
-times
-Applying: drivers/video/backlight/adp5520_bl.c: fix compiler warning in adp=
-5520_show()
-Applying: video: backlight: add ili922x lcd driver
-Applying: backlight: da903x_bl: use BL_CORE_SUSPENDRESUME option
-Applying: drivers/video/backlight/lp855x_bl.c: use PAGE_SIZE for the sysfs =
-read operation
-Applying: drivers/video/backlight/adp8860_bl.c: fix error return code in ad=
-p8860_led_probe()
-Applying: drivers/video/backlight/adp8870_bl.c: fix error return code in ad=
-p8870_led_probe()
-Applying: drivers/video/backlight/as3711_bl.c: add OF support
-Applying: backlight: ili9320: use spi_set_drvdata()
-Applying: backlight: ili922x: use spi_set_drvdata()
-Applying: drivers/video/backlight/platform_lcd.c: introduce probe callback
-Applying: backlight: omap1: convert omapbl to dev_pm_ops
-Applying: backlight: tosa: convert tosa to dev_pm_ops
-Applying: backlight: vgg2432a4: convert vgg2432a4_driver to dev_pm_ops
-Applying: drivers/leds/leds-ot200.c: fix error caused by shifted mask
-Applying: lib/int_sqrt.c: optimize square root algorithm
-Applying: argv_split(): teach it to handle mutable strings
-Applying: argv_split-teach-it-to-handle-mutable-strings-fix
-Applying: argv_split-teach-it-to-handle-mutable-strings-fix-2
-Applying: lib, net: make isodigit() public and use it
-Applying: lib/string_helpers: introduce generic string_unescape
-Applying: lib-string_helpers-introduce-generic-string_unescape-fix
-Applying: staging: speakup: remove custom string_unescape_any_inplace
-Applying: dynamic_debug: reuse generic string_unescape function
-Applying: binfmt_misc: reuse string_unescape_inplace()
-Applying: kernel/compat.c: make do_sysinfo() static
-Applying: kernel/timer.c: convert compat_sys_sysinfo to COMPAT_SYSCALL_DEFI=
-NE
-Applying: kernel/timer.c: move some non timer related syscalls to kernel/sy=
-s.c
-Applying: kernel-timerc-ove-some-non-timer-related-syscalls-to-kernel-sysc-=
-checkpatch-fixes
-Applying: checkpatch: add check for reuse of krealloc arg
-Applying: checkpatch: Prefer seq_puts to seq_printf
-Applying: checkpatch: Complain about executable files
-Applying: checkpatch: warn on space before semicolon
-Applying: checkpatch: only warn for empty lines before closing braces by th=
-emselves
-Applying: epoll: trim epitem by one cache line
-Applying: epoll-trim-epitem-by-one-cache-line-on-x86_64-fix
-Applying: epoll: comment + BUILD_BUG_ON to prevent epitem bloat
-Applying: epoll: use RCU to protect wakeup_source in epitem
-Applying: epoll: fix suspicious RCU usage in ep_poll_callback
-Applying: epoll: lock ep->mtx in ep_free to silence lockdep
-Applying: epoll: cleanup: hoist out f_op->poll calls
-Applying: fs: make binfmt support for #! scripts modular and removable
-Applying: binfmt_elf: PIE: make PF_RANDOMIZE check comment more accurate
-Applying: binfmt_elf.c: use get_random_int() to fix entropy depleting
-Applying: init: scream bloody murder if interrupts are enabled too early
-Applying: init: raise log level
-Applying: init/main.c: convert to pr_foo()
-Applying: dmi_scan: refactor dmi_scan_machine(), {smbios,dmi}_present()
-Applying: dmi_scan: proper buf type in dmi_present()
-Applying: i2o: check copy_from_user() size parameter
-Applying: rtc: rtc-mv: add __init annotation
-Applying: rtc: rtc-davinci: add __exit annotation
-Applying: rtc: rtc-ds1302: add __exit annotation
-Applying: rtc: rtc-imxdi: add __init/__exit annotation
-Applying: rtc: rtc-nuc900: add __init/__exit annotation
-Applying: rtc: rtc-pcap: add __init/__exit annotation
-Applying: rtc: rtc-tegra: add __init/__exit annotation
-Applying: rtc: add devm_rtc_device_{register,unregister}()
-Applying: drivers/rtc/rtc-max77686.c: use module_platform_driver()
-Applying: drivers/rtc/rtc-max77686.c: add missing module author name
-Applying: drivers/rtc/rtc-max77686.c: use devm_kzalloc()
-Applying: drivers/rtc/rtc-max77686.c: fix indentation of bit definitions
-Applying: drivers/rtc/rtc-max77686.c: use dev_info()/dev_emerg() instead of=
- pr_info()/pr_emerg()
-Applying: drivers/rtc/rtc-v3020.c: use gpio_request_array()
-Applying: drivers/rtc/class.c: use struct device as the first argument for =
-devm_rtc_device_register()
-Applying: rtc: rtc-ab3100: use module_platform_driver_probe()
-Applying: rtc: rtc-at32ap700x: use module_platform_driver_probe()
-Applying: rtc: rtc-at91rm9200: use module_platform_driver_probe()
-Applying: rtc: rtc-au1xxx: use module_platform_driver_probe()
-Applying: rtc: rtc-coh901331: use module_platform_driver_probe()
-Applying: rtc: rtc-davinci: use module_platform_driver_probe()
-Applying: rtc: rtc-ds1302: use module_platform_driver_probe()
-Applying: rtc: rtc-efi: use module_platform_driver_probe()
-Applying: rtc: rtc-generic: use module_platform_driver_probe()
-Applying: rtc: rtc-imxdi: use module_platform_driver_probe()
-Applying: rtc: rtc-mc13xxx: use module_platform_driver_probe()
-Applying: rtc: rtc-msm6242: use module_platform_driver_probe()
-Applying: rtc: rtc-mv: use module_platform_driver_probe()
-Applying: rtc: rtc-nuc900: use module_platform_driver_probe()
-Applying: rtc: rtc-omap: use module_platform_driver_probe()
-Applying: rtc: rtc-pcap: use module_platform_driver_probe()
-Applying: rtc: rtc-ps3: use module_platform_driver_probe()
-Applying: rtc: rtc-pxa: use module_platform_driver_probe()
-Applying: rtc: rtc-rp5c01: use module_platform_driver_probe()
-Applying: rtc: rtc-sh: use module_platform_driver_probe()
-Applying: rtc: rtc-starfire: use module_platform_driver_probe()
-Applying: rtc: rtc-sun4v: use module_platform_driver_probe()
-Applying: rtc: rtc-tegra: use module_platform_driver_probe()
-Applying: rtc: rtc-tx4939: use module_platform_driver_probe()
-Applying: rtc: rtc-88pm80x: use devm_rtc_device_register()
-Applying: rtc: rtc-coh90133: use devm_rtc_device_register()
-Applying: rtc: rtc-da9052: use devm_rtc_device_register()
-Applying: rtc: rtc-da9055: use devm_rtc_device_register()
-Applying: rtc: rtc-davinci: use devm_rtc_device_register()
-Applying: rtc: rtc-ds1511: use devm_rtc_device_register()
-Applying: rtc: rtc-ds1553: use devm_rtc_device_register()
-Applying: rtc: rtc-ds1742: use devm_rtc_device_register()
-Applying: rtc: rtc-ep93xx: use devm_rtc_device_register()
-Applying: rtc: rtc-imxdi: use devm_rtc_device_register()
-Applying: rtc: rtc-lp8788: use devm_rtc_device_register()
-Applying: rtc: rtc-lpc32xx: use devm_rtc_device_register()
-Applying: rtc: rtc-max77686: use devm_rtc_device_register()
-Applying: rtc: rtc-max8907: use devm_rtc_device_register()
-Applying: rtc: rtc-max8997: use devm_rtc_device_register()
-Applying: rtc: rtc-mv: use devm_rtc_device_register()
-Applying: rtc: rtc-mxc: use devm_rtc_device_register()
-Applying: rtc: rtc-palmas: use devm_rtc_device_register() and devm_request_=
-threaded_irq()
-Applying: rtc: rtc-pcf8523: use devm_rtc_device_register()
-Applying: rtc: rtc-s3c: use devm_rtc_device_register()
-Applying: rtc: rtc-snvs: use devm_rtc_device_register()
-Applying: rtc: rtc-spear: use devm_rtc_device_register()
-Applying: rtc: rtc-stk17ta8: use devm_rtc_device_register()
-Applying: rtc: rtc-tps6586x: use devm_rtc_device_register()
-Applying: rtc: rtc-tps65910: use devm_rtc_device_register()
-Applying: rtc: rtc-tps80031: use devm_rtc_device_register()
-Applying: rtc: rtc-tx4939: use devm_rtc_device_register()
-Applying: rtc: rtc-vt8500: use devm_rtc_device_register()
-Applying: rtc: rtc-wm831x: use devm_rtc_device_register()
-Applying: below is the warning reported with the gcc (gcc (GCC) 4.7.2 20121=
-109 (Red
-Applying: drivers/rtc/rtc-pxa.c: fix set time sync time issue
-Applying: drivers-rtc-rtc-pxac-fix-set-time-sync-time-issue-fix
-Applying: drivers/rtc/rtc-tegra.c: protect suspend/resume callbacks with CO=
-NFIG_PM_SLEEP
-Applying: drivers/rtc/rtc-tegra.c: use struct dev_pm_ops for power manageme=
-nt
-Applying: drivers/rtc/rtc-tegra.c: set irq name as device name
-Applying: drivers/rtc/rtc-tegra.c: use managed rtc_device_register()
-Applying: drivers/rtc/rtc-tegra.c: fix build warning
-Applying: drivers/rtc/rtc-ds1307.c: long block operations bugfix
-Applying: drivers/rtc/rtc-s3c.c: convert s3c_rtc to dev_pm_ops
-Applying: rtc: rtc-ds1307: use dev_dbg() instead of pr_debug()
-Applying: rtc: rtc-fm3130: use dev_dbg() instead of pr_debug()
-Applying: rtc: rtc-ab3100: use devm_rtc_device_register()
-Applying: rtc: rtc-au1xxx: use devm_rtc_device_register()
-Applying: rtc: rtc-bq32k: use devm_rtc_device_register()
-Applying: rtc: rtc-dm355evm: use devm_rtc_device_register()
-Applying: rtc: rtc-ds1302: use devm_rtc_device_register()
-Applying: rtc: rtc-ds1672: use devm_rtc_device_register()
-Applying: rtc: rtc-ds3234: use devm_rtc_device_register()
-Applying: rtc: rtc-efi: use devm_rtc_device_register()
-Applying: rtc: rtc-em3027: use devm_rtc_device_register()
-Applying: rtc: rtc-generic: use devm_rtc_device_register()
-Applying: rtc: hid-sensor-time: use devm_rtc_device_register()
-Applying: rtc: rtc-ls1x: use devm_rtc_device_register()
-Applying: rtc: rtc-m41t93: use devm_rtc_device_register()
-Applying: rtc: rtc-m41t94: use devm_rtc_device_register()
-Applying: rtc: rtc-m48t86: use devm_rtc_device_register()
-Applying: rtc: rtc-max6900: use devm_rtc_device_register()
-Applying: rtc: rtc-max6902: use devm_rtc_device_register()
-Applying: rtc: rtc-ps3: use devm_rtc_device_register()
-Applying: rtc: rtc-r9701: use devm_rtc_device_register()
-Applying: rtc: rtc-rc5t583: use devm_rtc_device_register()
-Applying: rtc: rtc-rs5c313: use devm_rtc_device_register()
-Applying: rtc: rtc-rv3029c2: use devm_rtc_device_register()
-Applying: rtc: rtc-rx4581: use devm_rtc_device_register()
-Applying: rtc: rtc-rx8581: use devm_rtc_device_register()
-Applying: rtc: rtc-starfire: use devm_rtc_device_register()
-Applying: rtc: rtc-sun4v: use devm_rtc_device_register()
-Applying: rtc: rtc-test: use devm_rtc_device_register()
-Applying: rtc: rtc-tile: use devm_rtc_device_register()
-Applying: rtc: rtc-wm8350: use devm_rtc_device_register()
-Applying: rtc: rtc-x1205: use devm_rtc_device_register()
-Applying: rtc: rtc-at91rm9200: switch to using SIMPLE_DEV_PM_OPS
-Applying: rtc: rtc-mxc: switch to using SIMPLE_DEV_PM_OPS
-Applying: rtc: rtc-pxa: switch to using SIMPLE_DEV_PM_OPS
-Applying: rtc: rtc-rc5t583: switch to using SIMPLE_DEV_PM_OPS
-Applying: rtc: rtc-sa1100: switch to using SIMPLE_DEV_PM_OPS
-Applying: rtc: rtc-sh: switch to using SIMPLE_DEV_PM_OPS
-Applying: rtc: rtc-wm8350: switch to using SIMPLE_DEV_PM_OPS
-Applying: rtc: rtc-tps6586x: switch to using SIMPLE_DEV_PM_OPS
-Applying: rtc: rtc-tps65910: switch to using SIMPLE_DEV_PM_OPS
-Applying: rtc: rtc-tps80031: switch to using SIMPLE_DEV_PM_OPS
-Applying: drivers/rtc/rtc-omap.c: update to devm_* API
-Applying: drivers/rtc/rtc-palmas.c: add dt support
-Applying: drivers/rtc/rtc-ds1374.c: add CONFIG_PM_SLEEP to suspend/resume f=
-unctions
-Applying: drivers/rtc/rtc-88pm80x.c: add CONFIG_PM_SLEEP to suspend/resume =
-functions
-Applying: drivers/rtc/rtc-tps6586x.c: remove incorrect use of rtc_device_un=
-register
-Applying: drivers/rtc/rtc-tps65910.c: fix incorrect return value on error
-Applying: drivers/rtc/rtc-max8997.c: fix incorrect return value on error
-Applying: drivers/rtc/rtc-max77686.c: fix incorrect return value on error
-Applying: drivers/rtc/rtc-max8907.c: remove redundant code
-Applying: drivers/rtc/rtc-at91rm9200.c: add DT support
-Applying: drivers/rtc/rtc-ds1307.c: change sysfs function pointer assignment
-Applying: rtc: rtc-rx4581: use spi_set_drvdata()
-Applying: rtc: rtc-m41t94: use spi_set_drvdata()
-Applying: rtc: rtc-r9701: use spi_set_drvdata()
-Applying: rtc: rtc-ds3234: use spi_set_drvdata()
-Applying: rtc: rtc-ds1390: use spi_set_drvdata()
-Applying: rtc: rtc-m41t93: use spi_set_drvdata()
-Applying: rtc: rtc-max6902: use spi_set_drvdata()
-Applying: drivers/rtc/rtc-cmos.c: don't disable hpet emulation on suspend
-Applying: drivers/rtc/rtc-s3c.c: use clk_prepare_enable and clk_disable_unp=
-repare
-Applying: drivers/rtc/rtc-max77686.c: use devm_regmap_init_i2c()
-Applying: drivers/rtc/rtc-88pm860x.c: use devm_* APIs
-Applying: drivers/rtc/rtc-at32ap700x.c: use devm_* APIs
-Applying: drivers/rtc/rtc-ds1305.c: use devm_* APIs
-Applying: drivers/rtc/rtc-ds1374.c: use devm_* APIs
-Applying: drivers/rtc/rtc-ds3232.c: use devm_* APIs
-Applying: drivers/rtc/rtc-m48t35.c: use devm_* APIs
-Applying: drivers/rtc/rtc-max8925.c: use devm_* APIs
-Applying: drivers/rtc/rtc-pxa.c: use devm_* APIs
-Applying: rtc: rtc-ab8500: use devm_*() functions
-Applying: rtc: rtc-at91sam9: use devm_*() functions
-Applying: rtc: rtc-bfin: use devm_*() functions
-Applying: rtc: rtc-bq4802: use devm_*() functions
-Applying: rtc: rtc-ds1216: use devm_*() functions
-Applying: rtc: rtc-ds1286: use devm_*() functions
-Applying: rtc: rtc-ds1390: use devm_*() functions
-Applying: rtc: rtc-ds2404: use devm_*() functions
-Applying: rtc: rtc-fm3130: use devm_*() functions
-Applying: rtc: rtc-isl12022: use devm_*() functions
-Applying: rtc: rtc-m41t80: use devm_*() functions
-Applying: rtc: rtc-max8998: use devm_*() functions
-Applying: rtc: rtc-mc13xxx: use devm_*() functions
-Applying: rtc: rtc-msm6242: use devm_*() functions
-Applying: rtc: rtc-nuc900: use devm_*() functions
-Applying: rtc: rtc-pcap: use devm_*() functions
-Applying: rtc: rtc-pcf2123: use devm_*() functions
-Applying: rtc: rtc-pcf50633: use devm_*() functions
-Applying: rtc: rtc-pcf8563: use devm_*() functions
-Applying: rtc: rtc-pcf8583: use devm_*() functions
-Applying: rtc: rtc-rp5c01: use devm_*() functions
-Applying: rtc: rtc-rs5c348: use devm_*() functions
-Applying: rtc: rtc-rs5c372: use devm_*() functions
-Applying: rtc: rtc-s35390a: use devm_*() functions
-Applying: rtc: rtc-sa1100: use devm_*() functions
-Applying: rtc: rtc-stmp3xxx: use devm_*() functions
-Applying: rtc: rtc-v3020: use devm_*() functions
-Applying: drivers/rtc/rtc-max6902.c: use register defines instead of magic =
-numbers
-Applying: rtc: rtc-at91sam9: convert at91_rtc_driver to dev_pm_ops
-Applying: rtc: rtc-bfin: convert bfin_rtc_driver to dev_pm_ops
-Applying: rtc: rtc-coh901331: convert coh901331_driver to dev_pm_ops
-Applying: rtc: rtc-omap: convert omap_rtc_driver to dev_pm_ops
-Applying: rtc: rtc-puv3: convert puv3_rtc_driver to dev_pm_ops
-Applying: rtc: rtc-spear: convert spear_rtc_driver to dev_pm_ops
-Applying: rtc: rtc-stmp3xxx: convert stmp3xxx_rtcdrv to dev_pm_ops
-Applying: rtc: rtc-twl: convert twl4030rtc_driver to dev_pm_ops
-Applying: nilfs2: fix issue with flush kernel thread after remount in RO mo=
-de because of driver's internal error or metadata corruption
-Applying: hfs: add error checking for hfs_find_init()
-Applying: hfsplus: fix warnings in fs/hfsplus/bfind.c
-Applying: hfsplus-fix-warnings-in-fs-hfsplus-bfindc-in-function-hfs_find_1s=
-t_rec_by_cnid-fix
-Applying: hfs/hfsplus: convert dprint to hfs_dbg
-Applying: hfs/hfsplus: convert printks to pr_<level>
-Applying: hfsplus: add error propagation to __hfsplus_ext_write_extent()
-Applying: fat: introduce 2 new values for the -o nfs mount option
-Applying: fat: move fat_i_pos_read to fat.h
-Applying: fat: introduce a helper fat_get_blknr_offset()
-Applying: fat: restructure export_operations
-Applying: fat (exportfs): rebuild inode if ilookup() fails
-Applying: fat (exportfs): rebuild directory-inode if fat_dget()
-Applying: Documentation: update nfs option in filesystem/vfat.txt
-Applying: fat: additions to support fat_fallocate
-Applying: ptrace: add ability to retrieve signals without removing from a q=
-ueue (v4)
-Applying: selftest: add a test case for PTRACE_PEEKSIGINFO
-Applying: usermodehelper: export call_usermodehelper_exec() and call_usermo=
-dehelper_setup()
-Applying: usermodehelper-export-_exec-and-_setup-functions-fix
-Applying: kmod: split call to call_usermodehelper_fns()
-Applying: KEYS: split call to call_usermodehelper_fns()
-Applying: coredump: remove trailling whitespace
-Applying: usermodehelper: split remaining calls to call_usermodehelper_fns()
-Applying: kmod: remove call_usermodehelper_fns()
-Applying: coredump: only SIGKILL should interrupt the coredumping task
-Applying: coredump: ensure that SIGKILL always kills the dumping thread
-Applying: coredump: sanitize the setting of signal->group_exit_code
-Applying: coredump: introduce dump_interrupted()
-Applying: coredump: factor out the setting of PF_DUMPCORE
-Applying: coredump: change wait_for_dump_helpers() to use wait_event_interr=
-uptible()
-Applying: fs, proc: truncate /proc/pid/comm writes to first TASK_COMM_LEN b=
-ytes
-Applying: set_task_comm: kill the pointless memset() + wmb()
-Applying: exec: do not abuse ->cred_guard_mutex in threadgroup_lock()
-Applying: kexec: fix wrong types of some local variables
-Applying: kexec: Use min() and min_t() to simplify logic
-Applying: kexec-use-min_t-to-simplify-logic-fix
-Applying: idr: introduce idr_alloc_cyclic()
-Applying: drivers/infiniband/hw/amso1100: convert to using idr_alloc_cyclic
-Applying: drivers/infiniband/hw/mlx4: convert to using idr_alloc_cyclic()
-Applying: nfsd: convert nfs4_alloc_stid() to use idr_alloc_cyclic()
-Applying: inotify: convert inotify_add_to_idr() to use idr_alloc_cyclic()
-Applying: sctp: convert sctp_assoc_set_id() to use idr_alloc_cyclic()
-Applying: ipc: clamp with min()
-Applying: ipc: separate msg allocation from userspace copy
-Applying: ipc: tighten msg copy loops
-Applying: ipc: set EFAULT as default error in load_msg()
-Applying: ipc: remove msg handling from queue scan
-Applying: ipc: implement MSG_COPY as a new receive mode
-Applying: ipc: simplify msg list search
-Applying: ipc: refactor msg list search into separate function
-Applying: ipc: find_msg can be static
-Applying: ipc/msgutil.c: use linux/uaccess.h
-Applying: ipc: remove bogus lock comment for ipc_checkid
-Applying: ipc: introduce obtaining a lockless ipc object
-Applying: ipc-introduce-obtaining-a-lockless-ipc-object-fix
-Applying: ipc: introduce lockless pre_down ipcctl
-Applying: ipc,sem: do not hold ipc lock more than necessary
-Applying: ipc,sem: prevent releasing RCU read lock twice in semctl_main
-Applying: ipcsem-do-not-hold-ipc-lock-more-than-necessary-fix-checkpatch-fi=
-xes
-Applying: ipc,sem: open code and rename sem_lock
-Applying: ipcsem-open-code-and-rename-sem_lock-fix
-Applying: ipc,sem: have only one list in struct sem_queue
-Applying: ipc,sem: fine grained locking for semtimedop
-Applying: fix for sem_lock
-Applying: ipc, sem: prevent possible deadlock
-Applying: ipc/msg.c: use list_for_each_entry_[safe] for list traversing
-Applying: ipc: sysv shared memory limited to 8TiB
-Applying: ipc-sysv-shared-memory-limited-to-8tib-fix
-Applying: ipc/sem.c: alternatives to preempt_disable()
-Applying: mwave: fix info leak in mwave_ioctl()
-Applying: rbtree_test: add extra rbtree integrity check
-Applying: rbtree_test: add __init/__exit annotations
-Applying: kernel/pid.c: improve flow of a loop inside alloc_pidmap.
-Applying: kernel-pidc-improve-flow-of-a-loop-inside-alloc_pidmap-fix
-Applying: pid_namespace.c/.h: simplify defines
-Applying: pid_namespacec-h-simplify-defines-fix
-Applying: nbd: increase default and max request sizes
-Applying: aoe: replace kmalloc and then memcpy with kmemdup
-Applying: raid6test: use prandom_bytes()
-Applying: uuid: use prandom_bytes()
-Applying: x86: pageattr-test: remove srandom32 call
-Applying: x86: rename random32() to prandom_u32()
-Applying: lib/: rename random32() to prandom_u32()
-Applying: mm/: rename random32() to prandom_u32()
-Applying: kernel/: rename random32() to prandom_u32()
-Applying: drbd: rename random32() to prandom_u32()
-Applying: mmc: rename random32() to prandom_u32()
-Applying: video/uvesafb: rename random32() to prandom_u32()
-Applying: uwb: rename random32() to prandom_u32()
-Applying: lguest: rename random32() to prandom_u32()
-Applying: scsi: rename random32() to prandom_u32()
-Applying: drivers/net: rename random32() to prandom_u32()
-Applying: drivers-net-rename-random32-to-prandom_u32-fix
-Applying: net/sunrpc: rename random32() to prandom_u32()
-Applying: net/sched: rename random32() to prandom_u32()
-Applying: net/netfilter: rename random32() to prandom_u32()
-Applying: net/core: rename random32() to prandom_u32()
-Applying: net/core: remove duplicate statements by do-while loop
-Applying: net: rename random32 to prandom
-Applying: remove unused random32() and srandom32()
-Applying: pps: hide more configuration symbols behind CONFIG_PPS
-Applying: semaphore: use unlikely() for down's timeout
-Applying: semaphore: use `bool' type for semaphore_waiter's up
-Applying: drivers/memstick/host/r592.c: make r592_pm_ops static
-Applying: kernel/relay.c: remove unused function argument actor
-Applying: kernel/relay.c: move FIX_SIZE macro into relay.c
-Applying: relay: use macro PAGE_ALIGN instead of FIX_SIZE
-Applying: mm: remove old aio use_mm() comment
-Applying: aio: remove dead code from aio.h
-Applying: gadget: remove only user of aio retry
-Applying: gadget-remove-only-user-of-aio-retry-checkpatch-fixes
-Applying: aio: remove retry-based AIO
-Applying: aio-remove-retry-based-aio-checkpatch-fixes
-Applying: char: add aio_{read,write} to /dev/{null,zero}
-Applying: aio: kill return value of aio_complete()
-Applying: aio: add kiocb_cancel()
-Applying: aio: move private stuff out of aio.h
-Applying: aio: dprintk() -> pr_debug()
-Applying: aio: do fget() after aio_get_req()
-Applying: aio: make aio_put_req() lockless
-Applying: aio-make-aio_put_req-lockless-checkpatch-fixes
-Applying: aio: refcounting cleanup
-Applying: aio-refcounting-cleanup-checkpatch-fixes
-Applying: wait: add wait_event_hrtimeout()
-Applying: aio: make aio_read_evt() more efficient, convert to hrtimers
-Applying: aio-make-aio_read_evt-more-efficient-convert-to-hrtimers-checkpat=
-ch-fixes
-Applying: aio: use flush_dcache_page()
-Applying: aio: use cancellation list lazily
-Applying: aio: change reqs_active to include unreaped completions
-Applying: aio: kill batch allocation
-Applying: aio: kill struct aio_ring_info
-Applying: aio: give shared kioctx fields their own cachelines
-Applying: aio: reqs_active -> reqs_available
-Applying: aio: percpu reqs_available
-Applying: generic dynamic per cpu refcounting
-Applying: generic-dynamic-per-cpu-refcounting-checkpatch-fixes
-Applying: generic-dynamic-per-cpu-refcounting-fix
-Applying: aio: percpu ioctx refcount
-Applying: aio: use xchg() instead of completion_lock
-Applying: aio: don't include aio.h in sched.h
-Applying: aio-dont-include-aioh-in-schedh-fix
-Applying: aio: kill ki_key
-Applying: aio: kill ki_retry
-Applying: aio-kill-ki_retry-fix
-Applying: aio-kill-ki_retry-checkpatch-fixes
-Applying: block: prep work for batch completion
-Applying: block-prep-work-for-batch-completion-checkpatch-fixes
-Applying: block-prep-work-for-batch-completion-checkpatch merge fixes
-Applying: block-prep-work-for-batch-completion-fix-2
-Applying: block-prep-work-for-batch-completion-fix-3
-Applying: block-prep-work-for-batch-completion-fix-3-fix
-Applying: block-prep-work-for-batch-completion-fix-4
-Applying: block, aio: batch completion for bios/kiocbs
-Applying: block-aio-batch-completion-for-bios-kiocbs-checkpatch-fixes
-Applying: block-aio-batch-completion-for-bios-kiocbs-fix
-Applying: virtio-blk: convert to batch completion
-Applying: mtip32xx: convert to batch completion
-Applying: aio: fix kioctx not being freed after cancellation at exit time
-Applying: Kconfig: consolidate CONFIG_DEBUG_STRICT_USER_COPY_CHECKS
-Applying: kconfig-consolidate-config_debug_strict_user_copy_checks-fix
-Applying: kconfig menu: move Virtualization drivers near other virtualizati=
-on options
-Applying: init/Kconfig: make EXPERT as config instead of menuconfig
-Applying: UAPI: remove empty Kbuild files
-Applying: kernel/sys.c: make prctl(PR_SET_MM) generally available
-Applying: decompressor: add LZ4 decompressor module
-Applying: lib: add support for LZ4-compressed kernel
-Applying: arm: add support for LZ4-compressed kernel
-Applying: x86: add support for LZ4-compressed kernel
-Applying: lib: add lz4 compressor module
-Applying: lib-add-lz4-compressor-module-fix
-Applying: crypto: add lz4 Cryptographic API
-Applying: crypto-add-lz4-cryptographic-api-fix
-Merging akpm/master (b56776a crypto-add-lz4-cryptographic-api-fix)
-
---Signature=_Mon__22_Apr_2013_18_44_45_+1000_Dg.tDD_U0Arr4GH2
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRdPh9AAoJEECxmPOUX5FEF6QP/jlx0RXeLjpRI/AOjAyzNjaQ
-5CQ/6DW6fEOPM896+5gkyTtFLkF5q8cEKR96gs5ajux7rABvW+TVa3vosFI28kdU
-EGcCnyff9yZD/ndBlWm32fZSWgJBb3/7wBEcKB2ImZUDIYU5IXvrnBiYh/kNlNJ1
-0+0DpoSa4VZJuQbvvO/kPEvXt//jNucqSc9BTt8OTTJF+mHSSO1shMdpPnw/5ERs
-YpSZfCAQzv5pktxDsQ6UyqIMFzN4ffLQI3hzmp2I5hm8yDDGGR5LS+QMBClU8rd6
-TSuUtqQ5N5I9vVqSGOgd3RzcsYrLITgxAdLQDYflG6HJQY2PsetnspSx73/j8BHq
-AQxUXktEuSLouKFEsj+IQrXr97+lSg0b+fyqZLH0IBtMmTcQzQTjI6b+U/79Y7kS
-QJ4cGQnNg599lPKaHAl4s5fZIV1W7M8Fj3HbGygHF8MpriYUdW+f0Bpn3yG/8NqI
-pgqjbaTLVdH7XCUkbavDObtHd13WqRMqsdywvo3YSa1nauoE29x50yOZ1EywqQAn
-Aen9fRGWPfROnlFA4bkqmqJxl94kHzhuB/2Fkjcha8ZuerfCpvzrAAATRKtoKu2y
-yKG5GTRK7qvwUf4+pdilSGpZnOFPuWIrKWb2ImrxHEx+IBV3pCaVZXpBg98KauUr
-k984hNW1rdLlmmMCyJ00
-=ha+i
------END PGP SIGNATURE-----
-
---Signature=_Mon__22_Apr_2013_18_44_45_+1000_Dg.tDD_U0Arr4GH2--
