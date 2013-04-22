@@ -1,62 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751624Ab3DVEzM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 00:55:12 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:41460 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751141Ab3DVEzG (ORCPT
+	id S1752079Ab3DVFIA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 01:08:00 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:38993 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751794Ab3DVFH7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 00:55:06 -0400
-MIME-Version: 1.0
-In-Reply-To: <51713B86.2090001@neotion.com>
-References: <51713B86.2090001@neotion.com>
-Date: Mon, 22 Apr 2013 13:55:04 +0900
-Message-ID: <CAKYAXd_xa--1QpFCdz3Kj0mKF3cvtxFn-xL3QGWZyXPO4Y79ng@mail.gmail.com>
-Subject: Re: [PATCH 0/3] Add boot_enable attribute to eMMC device for boot
- mode operation selection
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: narmstrong@neotion.com
-Cc: linux-mmc@vger.kernel.org, Chris Ball <cjb@laptop.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        Subhash Jadavani <subhashj@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Nam-Jae Jeon <namjae.jeon@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 22 Apr 2013 01:07:59 -0400
+From: Damian Hobson-Garcia <dhobsong@igel.co.jp>
+To: linux-kernel@vger.kernel.org
+Cc: linux-s390@vger.kernel.org, catalin.marinas@arm.com, will.deacon@arm.com,
+        linux-arm-kernel@lists.infradead.org, msalter@redhat.com,
+        linux-c6x-dev@linux-c6x.org, deller@gmx.de,
+        linux-parisc@vger.kernel.org,
+        Damian Hobson-Garcia <dhobsong@igel.co.jp>
+Subject: [RFC/PATCH 0/4] dma-mapping: Define dma_{alloc,free}_attrs() for all archs
+Date: Mon, 22 Apr 2013 14:07:40 +0900
+Message-Id: <1366607260-2852-1-git-send-email-dhobsong@igel.co.jp>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/4/19, Neil Armstrong <narmstrong@neotion.com>:
-> Since eMMC 4.3 a special boot mode operation was introduced to retrieve
-> data from the eMMC device with a very simple procedure. Since the Linux
-> kernel exports these device boot partitions, it may be useful to select
-> the boot partition from the user space.
->
-> The patch has been tested on a Toshiba eMMC conforming with eMMC 4.5
-> specifications.
-Hi Neil.
-We can be enable boot partition using mmc-utils.
-See this address.
-https://git.kernel.org/cgit/linux/kernel/git/cjb/mmc-utils.git/commit/?id=7bd1320b2cb38f040ab5cf017d17e283496690bf
+Most architectures that define CONFIG_HAVE_DMA=y, have implementations for
+both dma_alloc_attrs() and dma_free_attrs().  All achitectures that do
+not define CONFIG_HAVE_DMA also have both of these definitions provided by
+dma-mapping-broken.h.
 
-So, I don't think this patch is useful.
-If you consider to be disable boot partition, you can try to update
-mmc-utils base on the address I shared.
+Provide a default definition for the archs that define CONFIG_HAVE_DMA=y,
+but have no implementation for dma_{alloc,free}_attrs() by simply calling
+dma_{alloc,free}_coherent() and throwing away the attrs argument.
 
-Thanks.
->
-> Neil Armstrong (3):
->   Add BOOT_PARTITION_ENABLE definition to MMC EXT_CSD PART_CONFIG
->   Add boot_enable sysfs attribute to select MMC boot operation
->     partition
->   Add Documentation for MMC boot_enable attribute
->
->  Documentation/mmc/mmc-dev-parts.txt |    6 +++
->  drivers/mmc/card/block.c            |   72
-> ++++++++++++++++++++++++++++++++++-
->  include/linux/mmc/mmc.h             |    1 +
->  3 files changed, 78 insertions(+), 1 deletions(-)
->
->
->
+Damian Hobson-Garcia (4):
+  Provide default implementation for dma_{alloc,free}_attrs on arm64
+  Provide default implementation for dma_{alloc,free}_attrs on c6x
+  Provide default implementation for dma_{alloc,free}_attrs on parisc
+  Provide default implementation for dma_{alloc,free}_attrs on s390
+
+ arch/arm64/include/asm/dma-mapping.h  |    3 +++
+ arch/c6x/include/asm/dma-mapping.h    |    3 +++
+ arch/parisc/include/asm/dma-mapping.h |    3 +++
+ arch/s390/include/asm/dma-mapping.h   |    3 +++
+ 4 files changed, 12 insertions(+), 0 deletions(-)
+
+-- 
+1.7.5.4
+
