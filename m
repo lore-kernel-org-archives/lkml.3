@@ -1,87 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754764Ab3DVG2z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 02:28:55 -0400
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:51359 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753129Ab3DVG2x (ORCPT
+	id S1754785Ab3DVGaT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 02:30:19 -0400
+Received: from mail-we0-f177.google.com ([74.125.82.177]:38367 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754051Ab3DVGaR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 02:28:53 -0400
+	Mon, 22 Apr 2013 02:30:17 -0400
 MIME-Version: 1.0
-X-Originating-IP: [85.143.161.18]
-In-Reply-To: <20130422083549.7c1cff84@notabene.brown>
-References: <CACaajQv+HhzStC-U1RGz4ZWdn0-w4X3MyMM9GTJPOFeyrxtP3w@mail.gmail.com>
- <20130422083549.7c1cff84@notabene.brown>
-From: Vasiliy Tolstov <v.tolstov@selfip.ru>
-Date: Mon, 22 Apr 2013 10:28:37 +0400
-X-Google-Sender-Auth: h9jZHua6aF3g_xELV74k6KLkuX0
-Message-ID: <CACaajQuq=rAvm-uJLyhv3ufP=R4WGeXef5o9Tdi3EvTuoX=YRw@mail.gmail.com>
-Subject: Re: mdadm raid1 regression
-To: NeilBrown <neilb@suse.de>
-Cc: stable@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-raid@vger.kernel.org
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <1366611749.27110.6.camel@liguang.fnst.cn.fujitsu.com>
+References: <1366609643-17628-1-git-send-email-lig.fnst@cn.fujitsu.com>
+	<CA+icZUVd3zp-pJDspBUsipH4725uUvaufXrK0QBzcrozF2m+aA@mail.gmail.com>
+	<1366611749.27110.6.camel@liguang.fnst.cn.fujitsu.com>
+Date: Mon, 22 Apr 2013 08:30:16 +0200
+Message-ID: <CA+icZUVmERfNzAMNBpOqvjcQSaCQe3izrK2=E4Rm05Y=1x==jQ@mail.gmail.com>
+Subject: Re: [PATCH 1/2] smp: use '|=' for csd_lock
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: li guang <lig.fnst@cn.fujitsu.com>
+Cc: tglx@linutronix.de, peterz@infradead.org, akpm@linux-foundation.org,
+        shli@fusionio.com, srivatsa.bhat@linux.vnet.ibm.com,
+        suresh.b.siddha@intel.com, fweisbec@gmail.com,
+        paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/4/22 NeilBrown <neilb@suse.de>:
->> Hello. I'm using linux 3.8.6 and mdadm 3.2.6 (from git).
->> I have many raid1 arrays that have data offset 2048 (metadata 1.2,
->> created with various mdadm versions but mostly 3.2.1 on linux 2.6.32).
->> If i create raid1 with never mdadm on 3.8.6 i have data offset 8192?? Why?
+On Mon, Apr 22, 2013 at 8:22 AM, li guang <lig.fnst@cn.fujitsu.com> wrote:
+> 在 2013-04-22一的 08:18 +0200，Sedat Dilek写道：
+>> On Mon, Apr 22, 2013 at 7:47 AM, liguang <lig.fnst@cn.fujitsu.com> wrote:
+>> > originally, 'data->flags = CSD_FLAG_LOCK',
+>> > and we use 'data->flags &= ~CSD_FLAG_LOCK'
+>> > for csd_unlock, they are not symmetrix operations
+>> > so use '|=' instead of '='.
+>> > though, now data->flags only hold CSD_FLAG_LOCK,
+>> > it's not so meaningful to use '|=' to set 1 bit,
+>> > and '&= ~' to clear 1 bit.
+>> >
+>>
+>> Hi,
+>>
+>> what's the reason I got CCed on this two patches? The ipc-sem-next
+>> issue I reported?
 >
-> More room for various useful things.
-> In particular, if you one day want to convert this raid1 to a raid5, then
-> having a bit of extra space at the front will mean you can avoid a 'backup
-> file' and all the problems they cause (code for this isn't quite ready, but
-> is getting there).
+> sorry,
+> just use the result of scripts/get_maintainer.pl
 >
 
-Very good news =)
+Hmm, really this script memyselfandI as a result?
 
 >>
->> My problem:
->> Sometimes i'm doing mdadm --zero-superblock on both parts of array and
->> re-create it. On older systems i have no errors. On new (linux 3.8.6
->> and mdadm 3.2.6) i get corrupted ext3 fs and partition table. Why this
->> happening?
+>> Against what tree are those patches?
+>> They are not compatible with Linux-Next (next-20130419).
 >
-> Why are you doing that?
-
-Our storage have two nodes each provides disk via srp to nodes. On
-each node we create separate lvm (we not using clvm) and assemble md.
-Sometimes we resize lvm and need to zero superblock, becouse sometimes
-we can still have old mdadm data on lvm part (from previous user for
-example). And then we add disk to raid we can get sometimes broken
-data (invalid sync).
-
+> main
 >
->> P.S. If i use mdadm 3.2.2 i get data offset 4096 that not breaks data,
->> but inconsistent with older versions.
+
+Andrew renamed data/csd,so it's only 1/2 needing a refresh.
+Testing...
+
+Regards,
+- Sedat -
+
+>>
+>> Thanks.
+>>
+>> Regards,
+>> - Sedat -
+>>
+>> [1] http://marc.info/?t=136631457900005&r=1&w=2
+>>
+>> > Signed-off-by: liguang <lig.fnst@cn.fujitsu.com>
+>> > ---
+>> >  kernel/smp.c |    2 +-
+>> >  1 files changed, 1 insertions(+), 1 deletions(-)
+>> >
+>> > diff --git a/kernel/smp.c b/kernel/smp.c
+>> > index 1818dc0..2d5deb4 100644
+>> > --- a/kernel/smp.c
+>> > +++ b/kernel/smp.c
+>> > @@ -109,7 +109,7 @@ static void csd_lock_wait(struct call_single_data *data)
+>> >  static void csd_lock(struct call_single_data *data)
+>> >  {
+>> >         csd_lock_wait(data);
+>> > -       data->flags = CSD_FLAG_LOCK;
+>> > +       data->flags |= CSD_FLAG_LOCK;
+>> >
+>> >         /*
+>> >          * prevent CPU from reordering the above assignment
+>> > --
+>> > 1.7.2.5
+>> >
 >
-> I suggest you use mdadm 3.2.2 then.
-
-Yes, i'm already do that, but i think that lates mdadm version with
-data-offset patches can solve my problems. Is that possible to correct
-it behaviour and write in docs which data offset used in which version
-of mdadm?
-
 >
->> P.P.S. I'm try to specify --data-offset when create array but as i see
->> - its ignored and data offset still have 8192).
->
-> I'll try to make sure that works correctly for the next release.
-> Thanks for the report.
->
-> NeilBrown
-
-Thanks!
-
-P.S. Very big thanks for all.
-
-
---
-Vasiliy Tolstov,
-e-mail: v.tolstov@selfip.ru
-jabber: vase@selfip.ru
