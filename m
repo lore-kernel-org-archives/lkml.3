@@ -1,60 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755327Ab3DVUoS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 16:44:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52524 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755287Ab3DVUoR (ORCPT
+	id S1755360Ab3DVUol (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 16:44:41 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:40402
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754852Ab3DVUok (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 16:44:17 -0400
-Date: Mon, 22 Apr 2013 13:44:15 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Pekka Enberg <penberg@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Christoph Lameter <cl@linux.com>,
-        Behan Webster <behanw@converseincode.com>
-Subject: Re: [PATCH] slab: Remove unnecessary __builtin_constant_p()
-Message-Id: <20130422134415.32c7f2cac07c924bff3017a4@linux-foundation.org>
-In-Reply-To: <alpine.DEB.2.02.1304171702380.24494@chino.kir.corp.google.com>
-References: <1366225776.8817.28.camel@pippen.local.home>
-	<alpine.DEB.2.02.1304171702380.24494@chino.kir.corp.google.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+	Mon, 22 Apr 2013 16:44:40 -0400
+Message-ID: <1366663475.8337.10.camel@laptop>
+Subject: Re: Preemptable Ticket Spinlock
+From: Peter Zijlstra <peterz@infradead.org>
+To: Rik van Riel <riel@redhat.com>
+Cc: Jiannan Ouyang <ouyang@cs.pitt.edu>, LKML <linux-kernel@vger.kernel.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Avi Kivity <avi.kivity@gmail.com>, Gleb Natapov <gleb@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Srikar <srikar@linux.vnet.ibm.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Chegu Vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Andrew Jones <drjones@redhat.com>, Karen Noel <knoel@redhat.com>
+Date: Mon, 22 Apr 2013 22:44:35 +0200
+In-Reply-To: <51759E43.2080003@redhat.com>
+References: <CAJocwccu5QQyuKRvgNyPSFz2K_rzCW419W9-XdSUYOL7+KqQKg@mail.gmail.com>
+	    <51745650.9050204@redhat.com> <1366631460.4443.3.camel@laptop>
+	   <51753289.70406@redhat.com> <1366660147.6454.6.camel@laptop>
+	  <517595FA.800@redhat.com> <1366661294.6454.18.camel@laptop>
+	 <51759E43.2080003@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Apr 2013 17:03:21 -0700 (PDT) David Rientjes <rientjes@google.com> wrote:
+On Mon, 2013-04-22 at 16:32 -0400, Rik van Riel wrote:
+> 
+> IIRC one of the reasons was that the performance improvement wasn't
+> as obvious.  Rescheduling VCPUs takes a fair amount of time, quite
+> probably more than the typical hold time of a spinlock.
 
-> On Wed, 17 Apr 2013, Steven Rostedt wrote:
-> 
-> > The slab.c code has a size check macro that checks the size of the
-> > following structs:
-> > 
-> > struct arraycache_init
-> > struct kmem_list3
-> > 
-> > The index_of() function that takes the sizeof() of the above two structs
-> > and does an unnecessary __builtin_constant_p() on that. As sizeof() will
-> > always end up being a constant making this always be true. The code is
-> > not incorrect, but it just adds added complexity, and confuses users and
-> > wastes the time of reviewers of the code, who spends time trying to
-> > figure out why the builtin_constant_p() was used.
-> > 
-> > This patch is just a clean up that makes the index_of() code a little
-> > bit less complex.
-> > 
-> > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> 
-> Acked-by: David Rientjes <rientjes@google.com>
-> 
-> Adding Pekka to the cc.
+IIRC it would spin for a while before blocking..
 
-I ducked this patch because it seemed rather pointless - but a little
-birdie told me that there is a secret motivation which seems pretty
-reasonable to me.  So I shall await chirp-the-second, which hopefully
-will have a fuller and franker changelog ;)
+/me goes re-read some of that thread...
+
+Ah, its because PLE is curing most of it.. !PLE it had huge gains but
+apparently nobody cares about !PLE hardware anymore :-)
 
