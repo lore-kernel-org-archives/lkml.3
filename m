@@ -1,63 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752929Ab3DVKFB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 06:05:01 -0400
-Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:53161 "EHLO
-	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752563Ab3DVKE7 (ORCPT
+	id S1753571Ab3DVKFc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 06:05:32 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:44572 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753082Ab3DVKFF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 06:04:59 -0400
-Message-ID: <51750B26.4000607@de.ibm.com>
-Date: Mon, 22 Apr 2013 12:04:22 +0200
-From: Christian Borntraeger <borntraeger@de.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
-MIME-Version: 1.0
-To: "Theodore Ts'o" <tytso@mit.edu>
-CC: CAI Qian <caiqian@redhat.com>, Eric Whitney <enwlinux@gmail.com>,
-        Dmitry Monakhov <dmonakhov@openvz.org>,
-        Christian Kujau <lists@nerdbynature.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-s390 <linux-s390@vger.kernel.org>, Steve Best <sbest@redhat.com>,
-        linux-ext4@vger.kernel.org
-Subject: Re: [PATCH] ext4: fix a big-endian bug when an extent is zeroed out
-References: <alpine.DEB.2.10.1304012249440.5874@trent.utfs.org> <alpine.DEB.2.10.1304021611020.13746@trent.utfs.org> <87li90q9mx.fsf@openvz.org> <87hajoq6s2.fsf@openvz.org> <20130403102204.GA15383@gmail.com> <20130403122058.GB7741@thunk.org> <20130403143406.GA3006@wallace> <20130403144114.GB13668@thunk.org> <683906006.1314495.1365476711254.JavaMail.root@redhat.com> <20130420151945.GA8575@thunk.org>
-In-Reply-To: <20130420151945.GA8575@thunk.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13042210-3548-0000-0000-0000052C32F0
+	Mon, 22 Apr 2013 06:05:05 -0400
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Cc: linux-fbdev@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 4/4] ssd1307fb: Make use of horizontal addressing mode
+Date: Mon, 22 Apr 2013 12:02:25 +0200
+Message-Id: <1366624945-5708-5-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1366624945-5708-1-git-send-email-maxime.ripard@free-electrons.com>
+References: <1366624945-5708-1-git-send-email-maxime.ripard@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20/04/13 17:19, Theodore Ts'o wrote:
-> On Mon, Apr 08, 2013 at 11:05:11PM -0400, CAI Qian wrote:
->> I can help run xfstests for ext4 dev tree on x64, Power7, Z10 and
->> KVM platforms with back-storage like SAN/multipath, iSCSI and FCoE.
->> I plan to run this weekly and setup a wiki page to update the testing
->> status by every Friday.
-> 
-> Hi CAI,
-> 
-> Sorry for not getting back to you sooner; I was at Collaboration
-> Summit and LSF/MM last week.
-> 
-> It would be great if you could help run xfstests on the ext4 dev tree
-> on various platforms.  We don't have any coverage on Power7 or
-> s390/Z10 at the moment, so that would be especially welcome.  Coverage
-> on alternate storage backends can be interesting in finding timing
-> problems so they would be valuable as well.
+By default, the ssd1307 controller uses an addressing mode called page
+addressing. This mode only increments the column cursor in memory when
+writing data but will not increments the page cursor when we are at the
+end of the page.
 
-It is probably easier to get access to a Power system (gcc compile farm?).
-Having said that, there is a service available to get access to a System z
-for open source development:
-http://www-03.ibm.com/systems/z/os/linux/support/community.html
+However, the controller supports another addressing mode, called
+horizontal addressing, that will maintain both the page and column
+cursors when writing data to the controller.
 
-When we did the valgrind port we used that a lot to gave access to 
-non-IBMers.
-Dont know if it is ok to install a private kernel, though. Will double
-check.
+That means that we can just remove the code that increments the current
+page address and reset the column cursor when reaching the end of the
+line, allowing to have a lower data overhead, and a simpler driver.
 
-Christian
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+---
+ drivers/video/ssd1307fb.c |   51 +++++++++++++++++++++++++++++++++------------
+ 1 file changed, 38 insertions(+), 13 deletions(-)
+
+diff --git a/drivers/video/ssd1307fb.c b/drivers/video/ssd1307fb.c
+index cab5f7c..259c9ee 100644
+--- a/drivers/video/ssd1307fb.c
++++ b/drivers/video/ssd1307fb.c
+@@ -19,6 +19,12 @@
+ #define SSD1307FB_DATA			0x40
+ #define SSD1307FB_COMMAND		0x80
+ 
++#define SSD1307FB_SET_ADDRESS_MODE	0x20
++#define SSD1307FB_SET_ADDRESS_MODE_HORIZONTAL	(0x00)
++#define SSD1307FB_SET_ADDRESS_MODE_VERTICAL	(0x01)
++#define SSD1307FB_SET_ADDRESS_MODE_PAGE		(0x02)
++#define SSD1307FB_SET_COL_RANGE		0x21
++#define SSD1307FB_SET_PAGE_RANGE	0x22
+ #define SSD1307FB_CONTRAST		0x81
+ #define	SSD1307FB_CHARGE_PUMP		0x8d
+ #define SSD1307FB_SEG_REMAP_ON		0xa1
+@@ -135,9 +141,15 @@ static inline int ssd1307fb_write_data(struct i2c_client *client, u8 data)
+ 
+ static void ssd1307fb_update_display(struct ssd1307fb_par *par)
+ {
++	struct ssd1307fb_array *array;
+ 	u8 *vmem = par->info->screen_base;
+ 	int i, j, k;
+ 
++	array = ssd1307fb_alloc_array(par->width * par->height / 8,
++				      SSD1307FB_DATA);
++	if (!array)
++		return;
++
+ 	/*
+ 	 * The screen is divided in pages, each having a height of 8
+ 	 * pixels, and the width of the screen. When sending a byte of
+@@ -168,29 +180,22 @@ static void ssd1307fb_update_display(struct ssd1307fb_par *par)
+ 	 */
+ 
+ 	for (i = 0; i < (par->height / 8); i++) {
+-		struct ssd1307fb_array *array;
+-		ssd1307fb_write_cmd(par->client,
+-				    SSD1307FB_START_PAGE_ADDRESS + i + par->page_offset);
+-		ssd1307fb_write_cmd(par->client, 0x00);
+-		ssd1307fb_write_cmd(par->client, 0x10);
+-
+-		array = ssd1307fb_alloc_array(par->width, SSD1307FB_DATA);
+-
+ 		for (j = 0; j < par->width; j++) {
+-			array->data[j] = 0;
++			u32 array_idx = i * par->width + j;
++			array->data[array_idx] = 0;
+ 			for (k = 0; k < 8; k++) {
+ 				u32 page_length = par->width * i;
+ 				u32 index = page_length + (par->width * k + j) / 8;
+ 				u8 byte = *(vmem + index);
+ 				u8 bit = byte & (1 << (j % 8));
+ 				bit = bit >> (j % 8);
+-				array->data[j] |= bit << k;
++				array->data[array_idx] |= bit << k;
+ 			}
+ 		}
+-
+-		ssd1307fb_write_array(par->client, array, par->width);
+-		kfree(array);
+ 	}
++
++	ssd1307fb_write_array(par->client, array, par->width * par->height / 8);
++	kfree(array);
+ }
+ 
+ 
+@@ -371,6 +376,26 @@ static int ssd1307fb_ssd1306_init(struct ssd1307fb_par *par)
+ 	if (ret < 0)
+ 		return ret;
+ 
++	/* Switch to horizontal addressing mode */
++	ret = ssd1307fb_write_cmd(par->client, SSD1307FB_SET_ADDRESS_MODE);
++	ret = ret & ssd1307fb_write_cmd(par->client,
++					SSD1307FB_SET_ADDRESS_MODE_HORIZONTAL);
++	if (ret < 0)
++		return ret;
++
++	ret = ssd1307fb_write_cmd(par->client, SSD1307FB_SET_COL_RANGE);
++	ret = ret & ssd1307fb_write_cmd(par->client, 0x0);
++	ret = ret & ssd1307fb_write_cmd(par->client, par->width - 1);
++	if (ret < 0)
++		return ret;
++
++	ret = ssd1307fb_write_cmd(par->client, SSD1307FB_SET_PAGE_RANGE);
++	ret = ret & ssd1307fb_write_cmd(par->client, 0x0);
++	ret = ret & ssd1307fb_write_cmd(par->client,
++					par->page_offset + (par->height / 8) - 1);
++	if (ret < 0)
++		return ret;
++
+ 	/* Turn on the display */
+ 	ret = ssd1307fb_write_cmd(par->client, SSD1307FB_DISPLAY_ON);
+ 	if (ret < 0)
+-- 
+1.7.10.4
 
