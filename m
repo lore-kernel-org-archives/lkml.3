@@ -1,66 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752651Ab3DVLoR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 07:44:17 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:51525 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751168Ab3DVLoP (ORCPT
+	id S1752993Ab3DVLtB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 07:49:01 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:59595 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751435Ab3DVLs7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 07:44:15 -0400
-Message-ID: <51752241.40701@huawei.com>
-Date: Mon, 22 Apr 2013 19:42:57 +0800
-From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Mon, 22 Apr 2013 07:48:59 -0400
+Date: Mon, 22 Apr 2013 20:06:11 +0800
+From: Zheng Liu <gnehzuil.liu@gmail.com>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Ext4 Developers List <linux-ext4@vger.kernel.org>, linux-mm@kvack.org,
+        Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
+        mgorman@suse.de
+Subject: Re: [PATCH 1/3] ext4: mark all metadata I/O with REQ_META
+Message-ID: <20130422120611.GB2039@gmail.com>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Ext4 Developers List <linux-ext4@vger.kernel.org>,
+	linux-mm@kvack.org,
+	Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
+	mgorman@suse.de
+References: <20130421000522.GA5054@thunk.org>
+ <1366502828-7793-1-git-send-email-tytso@mit.edu>
 MIME-Version: 1.0
-To: Randy Dunlap <rdunlap@infradead.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 1/8] sysrq: fix inconstistent help message of sysrq key
-References: <51385712.3050104@huawei.com> <5138F518.1080808@infradead.org>
-In-Reply-To: <5138F518.1080808@infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.66.58.241]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1366502828-7793-1-git-send-email-tytso@mit.edu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/3/8 4:14, Randy Dunlap wrote:
-> On 03/07/13 01:00, zhangwei(Jovi) wrote:
->> Currently help message of /proc/sysrq-trigger highlight its
->> upper-case characters, like below:
->>
->>       SysRq : HELP : loglevel(0-9) reBoot Crash terminate-all-tasks(E)
->>       memory-full-oom-kill(F) kill-all-tasks(I) ...
->>
->> this would confuse user trigger sysrq by upper-case character, which is
->> inconsistent with the real lower-case character registed key.
->>
->> This inconsistent help message will also lead more confused when
->> 26 upper-case letters put into use in future.
->>
->> This patch fix it.
->>
->> Thanks the comments from Andrew and Randy.
->>
->> Signed-off-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
->> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->> Cc: Andrew Morton <akpm@linux-foundation.org>
->> Cc: Randy Dunlap <rdunlap@infradead.org>
+On Sat, Apr 20, 2013 at 08:07:06PM -0400, Theodore Ts'o wrote:
+> As Dave Chinner pointed out at the 2013 LSF/MM workshop, it's
+> important that metadata I/O requests are marked as such to avoid
+> priority inversions caused by I/O bandwidth throttling.
 > 
-> for the patch series (1-8):
-> Acked-by: Randy Dunlap <rdunlap@infradead.org>
+> Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+
+Reviewed-by: Zheng Liu <wenqing.lz@taobao.com>
+
+Regards,
+                                                - Zheng
+> ---
+>  fs/ext4/balloc.c | 2 +-
+>  fs/ext4/ialloc.c | 2 +-
+>  fs/ext4/mmp.c    | 4 ++--
+>  fs/ext4/super.c  | 2 +-
+>  4 files changed, 5 insertions(+), 5 deletions(-)
 > 
-> Thanks.
+> diff --git a/fs/ext4/balloc.c b/fs/ext4/balloc.c
+> index 8dcaea6..d0f13ea 100644
+> --- a/fs/ext4/balloc.c
+> +++ b/fs/ext4/balloc.c
+> @@ -441,7 +441,7 @@ ext4_read_block_bitmap_nowait(struct super_block *sb, ext4_group_t block_group)
+>  	trace_ext4_read_block_bitmap_load(sb, block_group);
+>  	bh->b_end_io = ext4_end_bitmap_read;
+>  	get_bh(bh);
+> -	submit_bh(READ, bh);
+> +	submit_bh(READ | REQ_META | REQ_PRIO, bh);
+>  	return bh;
+>  verify:
+>  	ext4_validate_block_bitmap(sb, desc, block_group, bh);
+> diff --git a/fs/ext4/ialloc.c b/fs/ext4/ialloc.c
+> index 18d36d8..00a818d 100644
+> --- a/fs/ext4/ialloc.c
+> +++ b/fs/ext4/ialloc.c
+> @@ -166,7 +166,7 @@ ext4_read_inode_bitmap(struct super_block *sb, ext4_group_t block_group)
+>  	trace_ext4_load_inode_bitmap(sb, block_group);
+>  	bh->b_end_io = ext4_end_bitmap_read;
+>  	get_bh(bh);
+> -	submit_bh(READ, bh);
+> +	submit_bh(READ | REQ_META | REQ_PRIO, bh);
+>  	wait_on_buffer(bh);
+>  	if (!buffer_uptodate(bh)) {
+>  		put_bh(bh);
+> diff --git a/fs/ext4/mmp.c b/fs/ext4/mmp.c
+> index b3b1f7d..214461e 100644
+> --- a/fs/ext4/mmp.c
+> +++ b/fs/ext4/mmp.c
+> @@ -54,7 +54,7 @@ static int write_mmp_block(struct super_block *sb, struct buffer_head *bh)
+>  	lock_buffer(bh);
+>  	bh->b_end_io = end_buffer_write_sync;
+>  	get_bh(bh);
+> -	submit_bh(WRITE_SYNC, bh);
+> +	submit_bh(WRITE_SYNC | REQ_META | REQ_PRIO, bh);
+>  	wait_on_buffer(bh);
+>  	sb_end_write(sb);
+>  	if (unlikely(!buffer_uptodate(bh)))
+> @@ -86,7 +86,7 @@ static int read_mmp_block(struct super_block *sb, struct buffer_head **bh,
+>  		get_bh(*bh);
+>  		lock_buffer(*bh);
+>  		(*bh)->b_end_io = end_buffer_read_sync;
+> -		submit_bh(READ_SYNC, *bh);
+> +		submit_bh(READ_SYNC | REQ_META | REQ_PRIO, *bh);
+>  		wait_on_buffer(*bh);
+>  		if (!buffer_uptodate(*bh)) {
+>  			brelse(*bh);
+> diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+> index bfa29ec..dbc7c09 100644
+> --- a/fs/ext4/super.c
+> +++ b/fs/ext4/super.c
+> @@ -4252,7 +4252,7 @@ static journal_t *ext4_get_dev_journal(struct super_block *sb,
+>  		goto out_bdev;
+>  	}
+>  	journal->j_private = sb;
+> -	ll_rw_block(READ, 1, &journal->j_sb_buffer);
+> +	ll_rw_block(READ | REQ_META | REQ_PRIO, 1, &journal->j_sb_buffer);
+>  	wait_on_buffer(journal->j_sb_buffer);
+>  	if (!buffer_uptodate(journal->j_sb_buffer)) {
+>  		ext4_msg(sb, KERN_ERR, "I/O error on journal device");
+> -- 
+> 1.7.12.rc0.22.gcdd159b
 > 
-Andrew, Could you pick up the other patches(2,3,4,5,7,8) into your -mm tree?
-first patch was already merged by Grey.
-
-Thanks.
-
-
-
-
-
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
