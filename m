@@ -1,107 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753868Ab3DVWd1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 18:33:27 -0400
-Received: from mail-qe0-f49.google.com ([209.85.128.49]:54561 "EHLO
-	mail-qe0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753668Ab3DVWdZ (ORCPT
+	id S1753839Ab3DVWfo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 18:35:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53554 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753460Ab3DVWfn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 18:33:25 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130422214159.GG12543@htj.dyndns.org>
-References: <20130406012159.GA17159@mtj.dyndns.org> <CAAAKZwvh_R2Xz--bmSLiN33fsqKanOJMq_6+6hoFWFRx38O4gA@mail.gmail.com>
- <20130422214159.GG12543@htj.dyndns.org>
-From: Tim Hockin <thockin@hockin.org>
-Date: Tue, 23 Apr 2013 00:33:04 +0200
-X-Google-Sender-Auth: IYKiYMWeSb1DtnGaUwt9Zq82DPk
-Message-ID: <CAAAKZwuXJwwyj7KSqb7rZ+nrTwBWEaUCWfa7kWecTBnHL8koGw@mail.gmail.com>
-Subject: Re: cgroup: status-quo and userland efforts
-To: Tejun Heo <tj@kernel.org>
-Cc: Li Zefan <lizefan@huawei.com>,
-        Containers <containers@lists.linux-foundation.org>,
-        Cgroups <cgroups@vger.kernel.org>, bsingharora <bsingharora@gmail.com>,
-        "dhaval.giani" <dhaval.giani@gmail.com>,
-        Kay Sievers <kay.sievers@vrfy.org>, jpoimboe <jpoimboe@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        lpoetter <lpoetter@redhat.com>,
-        workman-devel <workman-devel@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 22 Apr 2013 18:35:43 -0400
+Date: Mon, 22 Apr 2013 15:35:41 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: <kosaki.motohiro@gmail.com>, <mingo@kernel.org>, <hpa@zytor.com>,
+        <srivatsa.bhat@linux.vnet.ibm.com>, <linux-kernel@vger.kernel.org>,
+        <x86@kernel.org>, <linux-mm@kvack.org>
+Subject: Re: [Bug fix PATCH v2] numa, cpu hotplug: Change links of CPU and
+ node when changing node number by onlining CPU
+Message-Id: <20130422153541.04ba682f13910cfede0d2ff7@linux-foundation.org>
+In-Reply-To: <5170D4CB.20900@jp.fujitsu.com>
+References: <5170D4CB.20900@jp.fujitsu.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 22, 2013 at 11:41 PM, Tejun Heo <tj@kernel.org> wrote:
-> Hello, Tim.
+On Fri, 19 Apr 2013 14:23:23 +0900 Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com> wrote:
+
+> When booting x86 system contains memoryless node, node numbers of CPUs
+> on memoryless node were changed to nearest online node number by
+> init_cpu_to_node() because the node is not online.
+> 
+> ...
 >
-> On Mon, Apr 22, 2013 at 11:26:48PM +0200, Tim Hockin wrote:
->> We absolutely depend on the ability to split cgroup hierarchies.  It
->> pretty much saved our fleet from imploding, in a way that a unified
->> hierarchy just could not do.  A mandated unified hierarchy is madness.
->>  Please step away from the ledge.
->
-> You need to be a lot more specific about why unified hierarchy can't
-> be implemented.  The last time I asked around blk/memcg people in
-> google, while they said that they'll need different levels of
-> granularities for different controllers, google's use of cgroup
-> doesn't require multiple orthogonal classifications of the same group
-> of tasks.
+> If we hot add memory to memoryless node and offine/online all CPUs on
+> the node, node numbers of these CPUs are changed to correct node numbers
+> by srat_detect_node() because the node become online.
 
-I'll pull some concrete examples together.  I don't have them on hand,
-and I am out of country this week.  I have looped in the gang at work
-(though some are here with me).
+OK, here's a dumb question.
 
-> Also, cgroup isn't dropping multiple hierarchy support over-night.
-> What has been working till now will continue to work for very long
-> time.  If there is no fundamental conflict with the future changes,
-> there should be enough time to migrate gradually as desired.
->
->> More, going towards a unified hierarchy really limits what we can
->> delegate, and that is the word of the day.  We've got a central
->> authority agent running which manages cgroups, and we want out of this
->> business.  At least, we want to be able to grant users a set of
->> constraints, and then let them run wild within those constraints.
->> Forcing all such work to go through a daemon has proven to be very
->> problematic, and it has been great now that users can have DIY
->> sub-cgroups.
->
-> Sorry, but that doesn't work properly now.  It gives you the illusion
-> of proper delegation but it's inherently dangerous.  If that sort of
-> illusion has been / is good enough for your setup, fine.  Delegate at
-> your own risks, but cgroup in itself doesn't support delegation to
-> lesser security domains and it won't in the foreseeable future.
+At boot time the CPUs are assigned to the "nearest online node" rather
+than to their real memoryless node.  The patch arranges for those CPUs
+to still be assigned to the "nearest online node" _after_ some memory
+is hot-added to their real node.  Correct?
 
-We've had great success letting users create sub-cgroups in a few
-specific controller types (cpu, cpuacct, memory).  This is, of course,
-with some restrictions.  We do not just give them blanket access to
-all knobs.  We don't need ALL cgroups, just the important ones.
+Would it not be better to fix this by assigning those CPUs to their real,
+memoryless node right at the initial boot?  Or is there something in
+the kernel which makes cpus-on-a-memoryless-node not work correctly?
 
-For a simple example, letting users create sub-groups in freezer or
-job (we have a job group that we've been carrying) lets them launch
-sub-tasks and manage them in a very clean way.
-
-We've been doing a LOT of development internally to make user-defined
-sub-memcgs work in our cluster scheduling system, and it's made some
-of our biggest, more insane users very happy.
-
-And for some cgroups, like cpuset, hierarchy just doesn't really make
-sense to me.  I just don't care if that never works, though I have no
-problem with others wanting it. :)   Aside: if the last CPU in your
-cpuset goes offline, you should go into a state akin to freezer.
-Running on any other CPU is an overt violation of policy that the
-user, or worse - the admin, set up.  Just my 2cents.
-
->> Strong disagreement, here.  We use split hierarchies to great effect.
->> Containment should be composable.  If your users or abstractions can't
->> handle it, please feel free to co-mount the universe, but please
->> PLEASE don't force us to.
->>
->> I'm happy to talk more about what we do and why.
->
-> Please do so.  Why do you need multiple orthogonal hierarchies?
-
-Look for this in the next few days/weeks.  From our point of view,
-cgroups are the ideal match for how we want to manage things (no
-surprise, really, since Mr. Menage worked on both).
-
-Tim
