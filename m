@@ -1,76 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755251Ab3DVHYF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 03:24:05 -0400
-Received: from mail.neotion.com ([91.121.222.125]:50799 "EHLO mail.neotion.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753929Ab3DVHYE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 03:24:04 -0400
-Message-ID: <5174E58E.8090307@neotion.com>
-Date: Mon, 22 Apr 2013 09:23:58 +0200
-From: Neil Armstrong <narmstrong@neotion.com>
-Organization: Neotion
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S1754843Ab3DVH56 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 03:57:58 -0400
+Received: from mail-la0-f45.google.com ([209.85.215.45]:44292 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751009Ab3DVH55 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Apr 2013 03:57:57 -0400
+From: Dmitry Monakhov <dmonakhov@openvz.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] relay: move remove_buf_file inside relay_close_buf
+User-Agent: Notmuch/0.6.1 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-redhat-linux-gnu)
+CC: Andrew Morton <akpm@linux-foundation.org>, Jens Axboe <axboe@kernel.dk>,
+        gregkh@linuxfoundation.org, viro@zeniv.linux.org.uk
+Date: Mon, 22 Apr 2013 11:57:52 +0400
+Message-ID: <87ppxnhu9r.fsf@openvz.org>
 MIME-Version: 1.0
-To: Namjae Jeon <linkinjeon@gmail.com>
-CC: linux-mmc@vger.kernel.org, Chris Ball <cjb@laptop.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        Subhash Jadavani <subhashj@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Nam-Jae Jeon <namjae.jeon@samsung.com>
-Subject: Re: [PATCH 0/3] Add boot_enable attribute to eMMC device for boot
- mode operation selection
-References: <51713B86.2090001@neotion.com> <CAKYAXd_xa--1QpFCdz3Kj0mKF3cvtxFn-xL3QGWZyXPO4Y79ng@mail.gmail.com>
-In-Reply-To: <CAKYAXd_xa--1QpFCdz3Kj0mKF3cvtxFn-xL3QGWZyXPO4Y79ng@mail.gmail.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/mixed; boundary="=-=-="
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/22/2013 06:55 AM, Namjae Jeon wrote:
-> 2013/4/19, Neil Armstrong <narmstrong@neotion.com>:
->> Since eMMC 4.3 a special boot mode operation was introduced to retrieve
->> data from the eMMC device with a very simple procedure. Since the Linux
->> kernel exports these device boot partitions, it may be useful to select
->> the boot partition from the user space.
->>
->> The patch has been tested on a Toshiba eMMC conforming with eMMC 4.5
->> specifications.
-> Hi Neil.
-> We can be enable boot partition using mmc-utils.
-> See this address.
-> https://git.kernel.org/cgit/linux/kernel/git/cjb/mmc-utils.git/commit/?id=7bd1320b2cb38f040ab5cf017d17e283496690bf
-> 
-> So, I don't think this patch is useful.
-> If you consider to be disable boot partition, you can try to update
-> mmc-utils base on the address I shared.
-> 
-> Thanks.
->>
->> Neil Armstrong (3):
->>   Add BOOT_PARTITION_ENABLE definition to MMC EXT_CSD PART_CONFIG
->>   Add boot_enable sysfs attribute to select MMC boot operation
->>     partition
->>   Add Documentation for MMC boot_enable attribute
->>
->>  Documentation/mmc/mmc-dev-parts.txt |    6 +++
->>  drivers/mmc/card/block.c            |   72
->> ++++++++++++++++++++++++++++++++++-
->>  include/linux/mmc/mmc.h             |    1 +
->>  3 files changed, 78 insertions(+), 1 deletions(-)
->>
->>
->>
-> 
+--=-=-=
 
-Hi,
-Thanks for the reply, I was not aware of the mmc-utils tools. I think
-the tool and the MMC_IOC_CMD interface should be documented in the kernel.
 
-Please ignore my patch.
+Hi, 
+Let someone please finally take care of this patch.
+Originally it was submitted here https://lkml.org/lkml/2010/2/28/103
+This patch fix very annoying issue. I've got OK from Jens and Tom
+Zanussi but no one accept it. MAINTAINERS file has no info about relayfs.
+So I've added to CC all people which may be interested in that.
 
-Regards,
-Neil
+
+--=-=-=
+Content-Type: text/x-patch
+Content-Disposition: inline;
+ filename=0001-relay-move-remove_buf_file-inside-relay_close_buf.patch
+
+>From 1c0d96aece60a8a81c3f0cf1f681a5ff4333a2ff Mon Sep 17 00:00:00 2001
+From: Dmitry Monakhov <dmonakhov@openvz.org>
+Date: Mon, 22 Apr 2013 11:41:41 +0400
+Subject: [PATCH] relay: move remove_buf_file inside relay_close_buf
+
+Currently remove_buf_file callback is called from from kobject
+release method. This result in follow issue:
+# blktrace -d /dev/sda1 -d /dev/sda -o test
+
+blktrace_setup()
+ dir = create_dir()
+ rchan = relay_open(dir,...)
+ ->create_buf_file_callback
+    buf_file  = debugfs_create_file(dir, )
+
+Userspace will open buf_file.
+Later we make a decision to stop tracing
+blktrace_down()
+  relay_close(rhcan)  /* just decrement kobj reference  */
+                      /* since it is not zero then callback not called */
+  debugfs_remove(dir) /* FAIL due to non empty dir   */
+
+Later user space will close the file and file will be deleted,
+but directory still exist.
+user_space_close()
+ ->file_release
+   ->release_buf_file_callback
+     ->debugfs_remove(buf_file
+## TESTCASE:
+# blktrace -d /dev/sda1 -d /dev/sda -o test
+# After that blktrace infrastructure will remain broken in
+# an unusable state so: blktrace -d /dev/sda1 will not work.
+
+In fact this is general issue, blktrace is just one of examples.
+We can not reliably remove parent dir until all users close the
+buf_file.
+
+Solution: We don't have to wait that long. File should be deleted inside
+relay_close_buf().
+
+Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
+Acked-by : Jens Axboe <axboe@kernel.dk>
+
+---
+ kernel/relay.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/relay.c b/kernel/relay.c
+index 01ab081..a0d2000 100644
+--- a/kernel/relay.c
++++ b/kernel/relay.c
+@@ -234,7 +234,6 @@ static void relay_destroy_buf(struct rchan_buf *buf)
+ static void relay_remove_buf(struct kref *kref)
+ {
+ 	struct rchan_buf *buf = container_of(kref, struct rchan_buf, kref);
+-	buf->chan->cb->remove_buf_file(buf->dentry);
+ 	relay_destroy_buf(buf);
+ }
+ 
+@@ -484,6 +483,7 @@ static void relay_close_buf(struct rchan_buf *buf)
+ {
+ 	buf->finalized = 1;
+ 	del_timer_sync(&buf->timer);
++	buf->chan->cb->remove_buf_file(buf->dentry);
+ 	kref_put(&buf->kref, relay_remove_buf);
+ }
+ 
+-- 
+1.7.1
+
+
+--=-=-=--
