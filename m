@@ -1,264 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753600Ab3DVV1O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 17:27:14 -0400
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:55429 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752630Ab3DVV1M (ORCPT
+	id S1753778Ab3DVV3J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 17:29:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52848 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753115Ab3DVV3H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 17:27:12 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130406012159.GA17159@mtj.dyndns.org>
-References: <20130406012159.GA17159@mtj.dyndns.org>
-From: Tim Hockin <thockin@hockin.org>
-Date: Mon, 22 Apr 2013 23:26:48 +0200
-X-Google-Sender-Auth: PpAfPhkWS2Ger4TbCTGR2j2hOtc
-Message-ID: <CAAAKZwvh_R2Xz--bmSLiN33fsqKanOJMq_6+6hoFWFRx38O4gA@mail.gmail.com>
-Subject: Re: cgroup: status-quo and userland efforts
-To: Tejun Heo <tj@kernel.org>
-Cc: Li Zefan <lizefan@huawei.com>,
-        Containers <containers@lists.linux-foundation.org>,
-        Cgroups <cgroups@vger.kernel.org>, bsingharora@gmail.com,
-        dhaval.giani@gmail.com, Kay Sievers <kay.sievers@vrfy.org>,
-        jpoimboe@redhat.com, "Daniel P. Berrange" <berrange@redhat.com>,
-        lpoetter@redhat.com, workman-devel@redhat.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 22 Apr 2013 17:29:07 -0400
+Date: Mon, 22 Apr 2013 14:29:05 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Chanho Min <chanho.min@lge.com>, "Darrick J. Wong" <djwong@us.ibm.com>,
+        Bob Pearson <rpearson@systemfabricworks.com>,
+        Richard Weinberger <richard@nod.at>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-crypto@vger.kernel.org, Yann Collet <yann.collet.73@gmail.com>,
+        Kyungsik Lee <kyungsik.lee@lge.com>,
+        "Linux/m68k" <linux-m68k@vger.kernel.org>,
+        sparclinux <sparclinux@vger.kernel.org>,
+        Linux-Next <linux-next@vger.kernel.org>
+Subject: Re: [PATCH 1/2] lib: Add lz4 compressor module
+Message-Id: <20130422142905.3e4fff72671bb3e245055eee@linux-foundation.org>
+In-Reply-To: <CAMuHMdUv=GR6s=BYXHR7KyaKCUSxmkJO8dzZJMRktu3cUCTbsw@mail.gmail.com>
+References: <CAOAMb1D8rokZpQpp6mEJw6KXcQq8fJUWBJoC5+ZfkNaE6WvAZA@mail.gmail.com>
+	<CAMuHMdXXoaQjb9sRK=X3gEDwqQBJcJQtaJbUGB8cJmteHSN3vQ@mail.gmail.com>
+	<51750159.07d70e0a.5461.ffffec64SMTPIN_ADDED_BROKEN@mx.google.com>
+	<CAMuHMdUv=GR6s=BYXHR7KyaKCUSxmkJO8dzZJMRktu3cUCTbsw@mail.gmail.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun,
+On Mon, 22 Apr 2013 11:24:21 +0200 Geert Uytterhoeven <geert@linux-m68k.org> wrote:
 
-This email worries me.  A lot.  It sounds very much like retrograde
-motion from our (Google's) point of view.
+> On Mon, Apr 22, 2013 at 11:22 AM, Chanho Min <chanho.min@lge.com> wrote:
+> >>> +#define HTYPE const u8*
+> >>> +
+> >>> +#ifdef __BIG_ENDIAN
+> >>> +#define LZ4_NBCOMMONBYTES(val) (__builtin_clz(val) >> 3)
+> >>> +#else
+> >>> +#define LZ4_NBCOMMONBYTES(val) (__builtin_ctz(val) >> 3)
+> >>> +#endif
+> >>
+> >>It seems at least m68k and sparc don't have the __builtin_clz() functions:
+> >>
+> >>m68k-allmodconfig (http://kisskb.ellerman.id.au/kisskb/buildresult/8572593/):
+> >>
+> >>ERROR: "__clzsi2" [lib/lz4/lz4hc_compress.ko] undefined!
+> >>ERROR: "__clzsi2" [lib/lz4/lz4_compress.ko] undefined!
+> >
+> > gcc seems to define __builtin_clz as __clzsi2 in some architecture.
+> > But, kernel doesn't link libgcc.a.
+> > If kernel should use gcc's built-in function without libgcc.a,
+> > do we need to port __clzsi2 to 'arch/*/lib/*'?
+> 
+> That's another option.
 
-We absolutely depend on the ability to split cgroup hierarchies.  It
-pretty much saved our fleet from imploding, in a way that a unified
-hierarchy just could not do.  A mandated unified hierarchy is madness.
- Please step away from the ledge.
+Without having seen the patch ....  Yes, if we fix it this way then we
+also fix it for future callers of __builtin_clz().
 
-More, going towards a unified hierarchy really limits what we can
-delegate, and that is the word of the day.  We've got a central
-authority agent running which manages cgroups, and we want out of this
-business.  At least, we want to be able to grant users a set of
-constraints, and then let them run wild within those constraints.
-Forcing all such work to go through a daemon has proven to be very
-problematic, and it has been great now that users can have DIY
-sub-cgroups.
-
-berrange@redhat.com said, downthread:
-
-> We ultimately do need the ability to delegate hierarchy creation to
-> unprivileged users / programs, in order to allow containerized OS to
-> have the ability to use cgroups. Requiring any applications inside a
-> container to talk to a cgroups "authority" existing on the host OS is
-> not a satisfactory architecture. We need to allow for a container to
-> be self-contained in its usage of cgroups.
-
-This!  A thousand times, this!
-
-> At the same time, we don't need/want to give them unrestricted ability
-> to create arbitarily complex hiearchies - we need some limits on it
-> to avoid them exposing pathelogically bad kernel behaviour.
->
-> This could be as simple as saying that each cgroup controller directory
-> has a tunable "cgroups.max_children" and/or "cgroups.max_depth" which
-> allow limits to be placed when delegating administration of part of a
->cgroups tree to an unprivileged user.
-
-We've been bitten by this, and more limitations would be great.  We've
-got some less-than-perfect patches that impose limits for us now.
-
-> I've no disagreement that we need a unified hiearchy. The workman
-> app explicitly does /not/ expose the concept of differing hiearchies
-> per controller. Likewise libvirt will not allow the user to configure
-> non-unified hiearchies.
-
-Strong disagreement, here.  We use split hierarchies to great effect.
-Containment should be composable.  If your users or abstractions can't
-handle it, please feel free to co-mount the universe, but please
-PLEASE don't force us to.
-
-I'm happy to talk more about what we do and why.
-
-Tim
-
-
-
-
-On Sat, Apr 6, 2013 at 3:21 AM, Tejun Heo <tj@kernel.org> wrote:
-> Hello, guys.
->
->  Status-quo
->  ==========
->
-> It's been about a year since I wrote up a summary on cgroup status quo
-> and future plans.  We're not there yet but much closer than we were
-> before.  At least the locking and object life-time management aren't
-> crazy anymore and most controllers now support proper hierarchy
-> although not all of them agree on how to treat inheritance.
->
-> IIRC, the yet-to-be-converted ones are blk-throttle and perf.  cpu
-> needs to be updated so that it at least supports a similar mechanism
-> as cfq-iosched for configuring ratio between tasks on an internal
-> cgroup and its children.  Also, we really should update how cpuset
-> handles a cgroup becoming empty (no cpus or memory node left due to
-> hot-unplug).  It currently transfers all its tasks to the nearest
-> ancestor with executing resources, which is an irreversible process
-> which would affect all other co-mounted controllers.  We probably want
-> it to just take on the masks of the ancestor until its own executing
-> resources become online again, and the new behavior should be gated
-> behind a switch (Li, can you please look into this?).
->
-> While we have still ways to go, I feel relatively confident saying
-> that we aren't too far out now, well, except for the writeback mess
-> that still needs to be tackled.  Anyways, once the remaining bits are
-> settled, we can proceed to implement the unified hierarchy mode I've
-> been talking about forever.  I can't think of any fundamental
-> roadblocks at the moment but who knows?  The devil usually is in the
-> details.  Let's hope it goes okay.
->
-> So, while we aren't moving as fast as we wish we were, the kernel side
-> of things are falling into places.  At least, that's how I see it.
-> From now on, I think how to make it actually useable to userland
-> deserves a bit more focus, and by "useable to userland", I don't mean
-> some group hacking up an elaborate, manual configuration which is
-> tailored to the point of being eccentric to suit the needs of the said
-> group.  There's nothing wrong with that and they can continue to do
-> so, but it just isn't generically useable or useful.  It should be
-> possible to generically and automatically split resources among, say,
-> several servers and a couple users sharing a system without resorting
-> to indecipherable ad-hoc shell script running off rc.local.
->
->
->  Userland efforts
->  ================
->
-> There are currently a few userland efforts trying to make interfacing
-> with cgroup less painful.
->
-> * libcg: Make cgroup interface accessible from programming languages
->   with support for configuration persistency, which also brings its
->   own config files to remember what to do on the next boot.  Sans the
->   persistence part, it just seems to directly translate the filesystem
->   interface to function interface.
->
->   http://libcg.sourceforge.net/
->
-> * Workman: It's a rather young project but as its name (workload
->   management) implies, its aims are higher level than that of libcg.
->   It aims to provide high-level resource allocation and management and
->   introduces new concepts like resource partitions to represent its
->   view of resource hierarchy.  Like libcg, this one is implemented as
->   a library but provides bindings for more languages.
->
->   https://gitorious.org/workman/pages/Home
->
-> * Pax Controla Groupiana: A document on how not to step on other's
->   toes while using cgroup.  It's not a software project but tries to
->   define precautions that a software or user can take to avoid
->   breaking or confusing other users of the cgroup filesystem.
->
->   http://www.freedesktop.org/wiki/Software/systemd/PaxControlGroups
->
-> All try to play nice with other possible users of the cgroup
-> filesystem - be it libvirt cgroup, applications doing their own cgroup
-> tricks, or hand-crafted custom scripts.  While the approach is
-> understandable given that those usages already exist, I don't think
-> it's a workable solution in the long term.  There are several reasons
-> for that.
->
-> * The configurations aren't independent.  e.g. for weight-based
->   controllers, your weight is only meaningful in relation to other
->   weights at that level.  Distributing configuration to whatever
->   entities which may write to cgroupfs simply cannot work.  It's
->   fundamentally flawed.
->
-> * It's fragile like hell.  There's no accountability.  Nobody really
->   knows what's going on.  Is this subdirectory still there due to a
->   bug in this program, or something or someone else created it and
->   crashed / forgot to remove it, or what?  Oh, the cgroup I wanted to
->   create already exists.  Maybe the previous instance created it and
->   then crashed or maybe some other program just happened to choose the
->   same name.  Who owns config knobs in that directory?  This way lies
->   madness.  I understand why the Pax doc exists but I'm not sure its
->   long-term effect would be positive - best practices which ultimately
->   lead to utter confusion and fragility.
->
-> * In many cases, resource distribution is system-wide policy decisions
->   and determining what to do often requires system-wide knowledge.
->   You can't provision memory limits without knowing what's available
->   in the system and what else is going on in the system, and you want
->   to be able to adjust them as situation and configuration changes.
->   Without anybody having full picture of how resources are
->   provisioned, how would any of that be possible?
->
-> I think this anything-goes approach is prevalent largely because the
-> cgroup filesystem interface encourages such usage.  From the looks of
-> it, the filesystem permissions combined with hierarchy should be able
-> to handle delegation perfectly.  Well, as it currently stands, it's
-> anything but and the interface is just misleading.  Hierarchy support
-> was an utter mess, configuration schemes aren't uniform across
-> controllers, and, more fundamentally, hierarchy itself is expensive -
-> we can't delegate hierarchy creation to unpriviledged users or
-> programs safely.
->
-> It is in the realm of possibility to make all cgroup operations and
-> controllers to do all that; however, it's a very tall order.  Just
-> think about how much effort it has been to achieve and maintain proper
-> delegation in the core elements of the kernel - processes and
-> filesystems, and there will be security implications with cgroup
-> likely involving a lot of gotchas and extensions of security
-> infrastructures, and, even then, I'm pretty sure it's gonna require
-> helps from userland to effect proper policy decisions and config
-> changes.  We have things like polkit for a reason and are likely to
-> need finer-grained, domain-aware access control than is possible with
-> tweaking directory permissions.
->
-> Given the above and how relatively marginal cgroup is, I'm extremely
-> skeptical that implementing full delegation in kernel is the right
-> course of action and likely to scream like a banshee at any attempt
-> driving things that way.
->
-> I think the only logical thing to do is creating a centralized
-> userland authority which takes full ownership of the cgroup filesystem
-> interface, gives it a sane structure, represents available resources
-> in a sane form, and makes policy decisions based on configuration and
-> requests.  I don't have a concerete idea what that authority should be
-> like, but I think there already are pretty similar facilities in our
-> userland, and don't see why this should be much different.
->
-> Another reason why this could be helpful is that we're gonna be
-> morphing towards unified hierarchy and it'd very nice to have
-> something which can match impedance between the old and new ways and
-> not require each individual consumer of cgroup to handle such changes.
-> As for the unified hierarchy, we just have to.  It's currently
-> fundamentally broken in that it's impossible to tell which cgroup a
-> resource belongs to independent of which task is looking at it.  It's
-> like this damn thing is designed to honor Hisenberg and Einstein.  No
-> disrespect for the great minds, but it just doens't look like the
-> proper place.
->
-> Even apart from the unified hierarchy thing, I think it generally is a
-> good idea to have a buffer layer between the kernel interface and
-> individual consumers for cgroup, which is still very immature and
-> kinda tightly coupled with internal implementation details.
->
-> So, umm, that's what I want.  When I first heard of WorkMan, I was
-> excited thinking maybe the universe is being really nice and making
-> things happen to my wishes without me actually doing anything. :) Oh
-> well, one can dream, but everything is still early, so hopefully we
-> have enough time to figure things out.
->
-> What do you guys think?
->
-> Thanks.
->
-> --
-> tejun
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
