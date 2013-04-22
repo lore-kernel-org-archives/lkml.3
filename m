@@ -1,45 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752837Ab3DVOX2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 10:23:28 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:36313 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751987Ab3DVOX1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 10:23:27 -0400
-Date: Mon, 22 Apr 2013 15:23:18 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "will.deacon@arm.com" <will.deacon@arm.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "marc.zyngier@arm.com" <marc.zyngier@arm.com>
-Subject: Re: [PATCH v6 1/4] arm: introduce psci_smp_ops
-Message-ID: <20130422142318.GL14496@n2100.arm.linux.org.uk>
-References: <alpine.DEB.2.02.1304031239550.5078@kaball.uk.xensource.com> <1365167495-18508-1-git-send-email-stefano.stabellini@eu.citrix.com> <20130418161341.GB14496@n2100.arm.linux.org.uk> <alpine.DEB.2.02.1304181714560.7254@kaball.uk.xensource.com> <alpine.LFD.2.03.1304181233580.17375@syhkavp.arg> <alpine.DEB.2.02.1304181748010.7254@kaball.uk.xensource.com>
+	id S1753282Ab3DVOYD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 10:24:03 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:36973 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752570Ab3DVOX6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Apr 2013 10:23:58 -0400
+Date: Mon, 22 Apr 2013 16:23:56 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Takashi Iwai <tiwai@suse.de>, paulmck@linux.vnet.ibm.com,
+        x86-ml <x86@kernel.org>, lkml <linux-kernel@vger.kernel.org>
+Subject: Re: irq 16: nobody cared
+Message-ID: <20130422142356.GA4658@pd.tnic>
+References: <20130420185330.GA4654@pd.tnic>
+ <20130420235206.GA3509@linux.vnet.ibm.com>
+ <20130421103403.GA4594@pd.tnic>
+ <20130421163002.GB3509@linux.vnet.ibm.com>
+ <s5hfvyj55ke.wl%tiwai@suse.de>
+ <20130422091310.GA4637@pd.tnic>
+ <s5hzjwq53ec.wl%tiwai@suse.de>
+ <alpine.LFD.2.02.1304221432570.21884@ionos>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1304181748010.7254@kaball.uk.xensource.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <alpine.LFD.2.02.1304221432570.21884@ionos>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 18, 2013 at 05:49:21PM +0100, Stefano Stabellini wrote:
-> On Thu, 18 Apr 2013, Nicolas Pitre wrote:
-> > Please let's keep the order as we discussed.  Otherwise this is just too 
-> > confusing (Russell's comment is a good example of that).
-> 
-> You are right, it is confusing.
-> By "keep the order as we discussed", do you mean merge the second patch
-> into the first one, correct?
+On Mon, Apr 22, 2013 at 02:56:08PM +0200, Thomas Gleixner wrote:
+> Boris, can you please provide the irq16 line of /proc/interrupts
+> before you invoke suspend?
+>
+> If it's shared we know which driver is shutdown before hda_intel and
+> perhaps leaves its device in a weird state.
+>
+> If it's not shared, it still might be shared behind the scene. The
+> other device uses MSI(X) and when shutdown MSI is disabled so the
+> default IRQ route which points to IRQ16 would be active again.
+>
+> I assume, that the RCU stuff just causes enough timing difference to
+> uncover the underlying issue.
 
-Well, the solution to this kind of confusion is to ignore comments on the
-older patches and post a new set of patches and ask for all relevant
-comments to be against that set and that set only.
+Hmm, as Takashi reminded me, this box has two audio controllers. So
+could it be that when we shutdown and disable MSI, the interrupts get
+routed to to IRQ16 and they overflow there? Just a wild guess, I guess.
+
+I very well can imagine that those two audio controllers to be one where
+some f*cked up BIOS shim switches between the two but can't keep them
+apart properly.
+
+Something like the HPET fiascos...
+
+* This is irq counts with my patch to expedite RCU grace periods:
+
+- before suspend:
+# grep snd /proc/interrupts
+  16:       1304       1340       1335       1329       1293       1348       1357       1363   IO-APIC-fasteoi   snd_hda_intel
+  90:          3          3          4          4          4          4          3          3   PCI-MSI-edge      snd_hda_intel
+
+- after resume:
+# grep snd /proc/interrupts
+  16:       1354       1389       1386       1380       1344       1400       1409       1495   IO-APIC-fasteoi   snd_hda_intel
+  90:          0          0          0          0          0          0          0          5   PCI-MSI-edge      snd_hda_intel
+
+
+* "normal" RCU grace periods:
+
+- before suspend:
+# grep snd /proc/interrupts
+  16:        109        108        107        108        108        108        109        111   IO-APIC-fasteoi   snd_hda_intel
+  90:          3          3          4          4          4          4          3          3   PCI-MSI-edge      snd_hda_intel
+
+- after resume:
+# grep snd /proc/interrupts
+  16:        154        154        153        155        157        157        235        164   IO-APIC-fasteoi   snd_hda_intel
+  90:          0          0          0          0          0          0          5          0   PCI-MSI-edge      snd_hda_intel
+
+More "hmm.."
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
