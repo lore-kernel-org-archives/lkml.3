@@ -1,86 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756035Ab3DVOuE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 10:50:04 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:38540 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754900Ab3DVOuA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 10:50:00 -0400
-Message-ID: <51754DD7.6040904@ti.com>
-Date: Mon, 22 Apr 2013 17:48:55 +0300
-From: Grygorii Strashko <grygorii.strashko@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	id S932361Ab3DVOu3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 10:50:29 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51403 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754337Ab3DVO33 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Apr 2013 10:29:29 -0400
+Content-Type: text/plain; charset="UTF-8"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
-To: Sourav Poddar <sourav.poddar@ti.com>
-CC: <gregkh@linuxfoundation.org>, <tony@atomide.com>,
-        <rmk+kernel@arm.linux.org.uk>, <khilman@linaro.org>,
-        <linux-serial@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv2 2/5] driver: serial: omap: prevent runtime PM for "no_console_suspend"
-References: <1366638237-6880-1-git-send-email-sourav.poddar@ti.com> <1366638237-6880-3-git-send-email-sourav.poddar@ti.com>
-In-Reply-To: <1366638237-6880-3-git-send-email-sourav.poddar@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.145.172]
-X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+CC: akpm@linux-foundation.org,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "Johan Hovold" <jhovold@gmail.com>
+Date: Mon, 22 Apr 2013 15:25:59 +0100
+Message-ID: <lsq.1366640759.731560258@decadent.org.uk>
+X-Mailer: LinuxStableQueue (scripts by bwh)
+Subject: [16/75] USB: ti_usb_3410_5052: fix use-after-free in TIOCMIWAIT
+In-Reply-To: <lsq.1366640759.151900666@decadent.org.uk>
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:6834:ff73:7553:7f84
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/22/2013 04:43 PM, Sourav Poddar wrote:
-> The driver manages "no_console_suspend" by preventing runtime PM
-> during the suspend path, which forces the console UART to stay awake.
->
-> Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
-> ---
->   drivers/tty/serial/omap-serial.c |    5 ++++-
->   1 files changed, 4 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/tty/serial/omap-serial.c b/drivers/tty/serial/omap-serial.c
-> index 08332f3..640b14e 100644
-> --- a/drivers/tty/serial/omap-serial.c
-> +++ b/drivers/tty/serial/omap-serial.c
-> @@ -1582,7 +1582,7 @@ static int serial_omap_runtime_suspend(struct device *dev)
->   	struct uart_omap_port *up = dev_get_drvdata(dev);
->   	struct omap_uart_port_info *pdata = dev->platform_data;
->   
-> -	if (!up)
-> +	if (!up || (!console_suspend_enabled && uart_console(&up->port)))
->   		return -EINVAL;
-Hi Sourav,
-No ) You will block Runtime PM for console UART forever, but instead
-it need to be blocked only during suspend - autosuspend should continue 
-working.
-But this will be not easy, again, -
-because System suspend isn't synchronized with Runtime PM (I mean,
-serial_omap_suspend/resume() may be called from one thread and
-serial_omap_runtime_suspend/resume() from another at same time).
-And now, serial_omap_suspend() callback is the only one place where you
-can detect that system is going to sleep.
+3.2.44-rc1 review patch.  If anyone has any objections, please let me know.
 
-Personally, i don't believe in such approach (my experiences from K3.4 
-said me
-that there will be more problems than benefits).
+------------------
 
-And, I like combination of "no_console_suspend" in bootargs +
-"ti,no_idle_on_suspend" for console UART in DT, because 1) it's debug 
-option and 2) until
-smth. will be decided about OMAP OCP Bus it can be used.
+From: Johan Hovold <jhovold@gmail.com>
 
-It's just my opinion.
+commit fc98ab873aa3dbe783ce56a2ffdbbe7c7609521a upstream.
 
-Regards,
--grygorii
->   
->   	if (!pdata)
-> @@ -1614,6 +1614,9 @@ static int serial_omap_runtime_resume(struct device *dev)
->   
->   	int loss_cnt = serial_omap_get_context_loss_count(up);
->   
-> +	if (!console_suspend_enabled && uart_console(&up->port))
-> +		return -EINVAL;
-> +
->   	if (loss_cnt < 0) {
->   		dev_err(dev, "serial_omap_get_context_loss_count failed : %d\n",
->   			loss_cnt);
+Use the port wait queue and make sure to check the serial disconnected
+flag before accessing private port data after waking up.
+
+This is is needed as the private port data (including the wait queue
+itself) can be gone when waking up after a disconnect.
+
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ drivers/usb/serial/ti_usb_3410_5052.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
+
+--- a/drivers/usb/serial/ti_usb_3410_5052.c
++++ b/drivers/usb/serial/ti_usb_3410_5052.c
+@@ -75,7 +75,6 @@ struct ti_port {
+ 	int			tp_flags;
+ 	int			tp_closing_wait;/* in .01 secs */
+ 	struct async_icount	tp_icount;
+-	wait_queue_head_t	tp_msr_wait;	/* wait for msr change */
+ 	wait_queue_head_t	tp_write_wait;
+ 	struct ti_device	*tp_tdev;
+ 	struct usb_serial_port	*tp_port;
+@@ -447,7 +446,6 @@ static int ti_startup(struct usb_serial
+ 		tport->tp_uart_base_addr = (i == 0 ?
+ 				TI_UART1_BASE_ADDR : TI_UART2_BASE_ADDR);
+ 		tport->tp_closing_wait = closing_wait;
+-		init_waitqueue_head(&tport->tp_msr_wait);
+ 		init_waitqueue_head(&tport->tp_write_wait);
+ 		if (kfifo_alloc(&tport->write_fifo, TI_WRITE_BUF_SIZE,
+ 								GFP_KERNEL)) {
+@@ -848,9 +846,13 @@ static int ti_ioctl(struct tty_struct *t
+ 		dbg("%s - (%d) TIOCMIWAIT", __func__, port->number);
+ 		cprev = tport->tp_icount;
+ 		while (1) {
+-			interruptible_sleep_on(&tport->tp_msr_wait);
++			interruptible_sleep_on(&port->delta_msr_wait);
+ 			if (signal_pending(current))
+ 				return -ERESTARTSYS;
++
++			if (port->serial->disconnected)
++				return -EIO;
++
+ 			cnow = tport->tp_icount;
+ 			if (cnow.rng == cprev.rng && cnow.dsr == cprev.dsr &&
+ 			    cnow.dcd == cprev.dcd && cnow.cts == cprev.cts)
+@@ -1481,7 +1483,7 @@ static void ti_handle_new_msr(struct ti_
+ 			icount->dcd++;
+ 		if (msr & TI_MSR_DELTA_RI)
+ 			icount->rng++;
+-		wake_up_interruptible(&tport->tp_msr_wait);
++		wake_up_interruptible(&tport->tp_port->delta_msr_wait);
+ 		spin_unlock_irqrestore(&tport->tp_lock, flags);
+ 	}
+ 
 
