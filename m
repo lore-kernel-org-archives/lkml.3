@@ -1,83 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754456Ab3DVCuH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Apr 2013 22:50:07 -0400
-Received: from ozlabs.org ([203.10.76.45]:40736 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754126Ab3DVCuF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Apr 2013 22:50:05 -0400
-From: Michael Neuling <mikey@neuling.org>
-To: Michael Ellerman <michael@ellerman.id.au>
-cc: Anshuman Khandual <khandual@linux.vnet.ibm.com>, linuxppc-dev@ozlabs.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V3 1/5] powerpc, perf: Add new BHRB related instructions for POWER8
-In-reply-to: <20130422024546.GA24739@concordia>
-References: <1366287976-3900-1-git-send-email-khandual@linux.vnet.ibm.com> <1366287976-3900-2-git-send-email-khandual@linux.vnet.ibm.com> <20130421234109.GC22246@concordia> <14010.1366593223@ale.ozlabs.ibm.com> <20130422024546.GA24739@concordia>
-Comments: In-reply-to Michael Ellerman <michael@ellerman.id.au>
-   message dated "Mon, 22 Apr 2013 12:45:46 +1000."
-X-Mailer: MH-E 8.2; nmh 1.5; GNU Emacs 23.4.1
-Date: Mon, 22 Apr 2013 12:50:03 +1000
-Message-ID: <14063.1366599003@ale.ozlabs.ibm.com>
+	id S1754533Ab3DVCub (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Apr 2013 22:50:31 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:31586 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754137Ab3DVCu3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Apr 2013 22:50:29 -0400
+X-AuditID: cbfee68e-b7efc6d000000b36-21-5174a574bb04
+Message-id: <1366598966.31792.1.camel@kjgkr>
+Subject: Re: [PATCH 2/2] f2fs: add REQ_META about metadata requests for submit
+ bio
+From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Reply-to: jaegeuk.kim@samsung.com
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Date: Mon, 22 Apr 2013 11:49:26 +0900
+In-reply-to: <1366388860-18735-1-git-send-email-linkinjeon@gmail.com>
+References: <1366388860-18735-1-git-send-email-linkinjeon@gmail.com>
+Organization: samsung
+Content-type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature"; boundary="=-g20TwTWUuRq3HjrG/5MM"
+X-Mailer: Evolution 3.2.3-0ubuntu6
+MIME-version: 1.0
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmphleLIzCtJLcpLzFFi42I5/e+ZgW7J0pJAg74FHBYXd6daXL97i9ni
+	0iJ3iz17T7JYXN41h83ix/R6BzaPnbPusnvsXvCZyaNvyypGj8+b5AJYorhsUlJzMstSi/Tt
+	ErgyZk97yFgwSbhia9s+5gbG6wJdjJwcEgImEjOPn2SBsMUkLtxbz9bFyMUhJLCMUeL2vUNs
+	MEU9Z74xQySmM0ps+TCBFcJ5zSjx6MN6dpAqXgEdid8fWhlBbGGBEIk7++YAFXFwsAloS2ze
+	bwASFhJQlHi7/y5YWERATWLCs1SQMcwCuxglTv6dC7aMRUBV4szV40wgNqeAq8TH2S9ZIHpd
+	JC682wa2il9AVOJk6yewVcwCVRKnGjYwQRyqJLG7vRPqHEGJH5PvsYAskBCYyCFx/t05FogF
+	AhLfJh9iATlCQkBWYtMBZoheSYmDK26wTGAUn4Vk7CwkoyDimhKt23+zQ9jaEssWvmaGsG0l
+	1q17D1VjI7Hp6gJGCFteYvvbOcwLGNlXMYqmFiQXFCelFxnpFSfmFpfmpesl5+duYoREdd8O
+	xpsHrA8xVgGdOJFZSjQ5H5gU8kriDY3NjCxMTUyNjcwtzagirCTOq9ZiHSgkkJ5YkpqdmlqQ
+	WhRfVJqTWnyIkYmDU6qBcdVz+6AZKZt8W3v3bPT/f+3R9tt3vqldkE1rEgp+c0c7MD/d+c86
+	b/f33caZoVX/L7QHbigpOBNyiz1PhOfQ3CVvV5y61aP8I2DpPa87b1c8v6Cu8etijvoDs+kZ
+	awyMHTNmqp0zTNENnHLu8os9fuVsKW5HvWXdZ38qiH+4deJps3B1lWSu70osxRmJhlrMRcWJ
+	ALHc/JUXAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmplk+LIzCtJLcpLzFFi42I5/e+xoG7J0pJAg08zmS0u7k61uH73FrPF
+	pUXuFnv2nmSxuLxrDpvFj+n1DmweO2fdZffYveAzk0ffllWMHp83yQWwRDUw2mSkJqakFimk
+	5iXnp2TmpdsqeQfHO8ebmhkY6hpaWpgrKeQl5qbaKrn4BOi6ZeYArVZSKEvMKQUKBSQWFyvp
+	22GaEBripmsB0xih6xsSBNdjZIAGEtYxZsye9pCxYJJwxda2fcwNjNcFuhg5OSQETCR6znxj
+	hrDFJC7cW8/WxcjFISQwnVFiy4cJrBDOa0aJRx/Ws4NU8QroSPz+0MoIYgsLhEjc2TcHqIiD
+	g01AW2LzfgOQsJCAosTb/XfBwiICahITnqWCjGEW2MUocfLvXDaQGhYBVYkzV48zgdicAq4S
+	H2e/ZIHodZG48G4b2Cp+AVGJk62fwFYxC1RJnGrYwARxqJLE7vZOqHMEJX5MvscygVFwFpKy
+	WUhSEHFNidbtv9khbG2JZQtfM0PYthLr1r2HqrGR2HR1ASOELS+x/e0c5gWM7KsYRVMLkguK
+	k9JzjfSKE3OLS/PS9ZLzczcxglPGM+kdjKsaLA4xCnAwKvHwTuguCRRiTSwrrsw9xKgCNOfR
+	htUXGKVY8vLzUpVEeD93AqV5UxIrq1KL8uOLSnNSiw8xTmQEBsdEZinR5HxgossriTc0NjEz
+	sjQyszAyMTenpbCSOO/BVutAIYH0xJLU7NTUgtQimKOYODilGhgTAmy+Cz/dd/oAX0zOrVju
+	pZMFpwuGZ1Qo3y78GX3rWsOlz3eTTy/sd9v9grf4MV+E/p05NduL01kf/ulPr3rEkfI1gvHU
+	jTsX27bsM3z3UkrI847xpv3RAZdse6rK8gsqU4wYmAMrM0/ZnzmgnHa/JeBg/34Z0VeWVz8/
+	mKG9/uiDptdbnnkosRRnJBpqMRcVJwIAldqW6ZgDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michael Ellerman <michael@ellerman.id.au> wrote:
 
-> On Mon, Apr 22, 2013 at 11:13:43AM +1000, Michael Neuling wrote:
-> > Michael Ellerman <michael@ellerman.id.au> wrote:
-> > 
-> > > On Thu, Apr 18, 2013 at 05:56:12PM +0530, Anshuman Khandual wrote:
-> > > > This patch adds new POWER8 instruction encoding for reading
-> > > > the BHRB buffer entries and also clearing it. Encoding for
-> > > > "clrbhrb" instruction is straight forward.
-> > > 
-> > > Which is "clear branch history rolling buffer" ?
-> > > 
-> > > > But "mfbhrbe"
-> > > > encoding involves reading a certain index of BHRB buffer
-> > > > into a particular GPR register.
-> > > 
-> > > And "Move from branch history rolling buffer entry" ?
-> > > 
-> > > > diff --git a/arch/powerpc/include/asm/ppc-opcode.h b/arch/powerpc/include/asm/ppc-opcode.h
-> > > > index 8752bc8..93ae5a1 100644
-> > > > --- a/arch/powerpc/include/asm/ppc-opcode.h
-> > > > +++ b/arch/powerpc/include/asm/ppc-opcode.h
-> > > > @@ -82,6 +82,7 @@
-> > > >  #define	__REGA0_R31	31
-> > > >  
-> > > >  /* sorted alphabetically */
-> > > > +#define PPC_INST_BHRBE			0x7c00025c
-> > > 
-> > > I don't think you really need this, just use the literal value below.
-> > 
-> > The rest of the defines in this file do this, so Anshuman's right. 
-> 
-> I don't see the point, but sure let's be consistent. Though in that case
-> he should do the same for PPC_CLRBHRB below.
+--=-g20TwTWUuRq3HjrG/5MM
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Agreed.
+2013-04-20 (=ED=86=A0), 01:27 +0900, Namjae Jeon:
+> From: Namjae Jeon <namjae.jeon@samsung.com>
+>=20
+> Adding REQ_META for all the metadata requests can help in improving the
+> FS performance, if the underlying device supports TAGGING.
+> So, when considering the submit_bio path for all the f2fs requests. We ca=
+n
+> add REQ_META for all the META requests.
+> As a precursor to this change we considered the commit
+> 4265900e0be653f5b78baf2816857ef57cf1332f 'mmc: MMC-4.5 Data Tag Support'
+>=20
+> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+> Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
+> ---
+>  fs/f2fs/segment.c |    3 +++
+>  1 file changed, 3 insertions(+)
+>=20
+> diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
+> index 1193a26..a2e5de7 100644
+> --- a/fs/f2fs/segment.c
+> +++ b/fs/f2fs/segment.c
+> @@ -689,6 +689,9 @@ static void do_submit_bio(struct f2fs_sb_info *sbi,
+>  	if (type >=3D META_FLUSH)
+>  		rw =3D WRITE_FLUSH_FUA;
+> =20
+> +	if (type =3D=3D META)
 
-Mikey
+Should be if (btype =3D=3D META).
+Thanks,
 
-> 
-> > > > @@ -297,6 +298,12 @@
-> > > >  #define PPC_NAP			stringify_in_c(.long PPC_INST_NAP)
-> > > >  #define PPC_SLEEP		stringify_in_c(.long PPC_INST_SLEEP)
-> > > >  
-> > > > +/* BHRB instructions */
-> > > > +#define PPC_CLRBHRB		stringify_in_c(.long 0x7c00035c)
-> > > > +#define PPC_MFBHRBE(r, n)	stringify_in_c(.long PPC_INST_BHRBE | \
-> > > > +						__PPC_RS(r) | \
-> > > > +							(((n) & 0x1f) << 11))
-> > > 
-> > > Why are you not using ___PPC_RB(n) here ?
-> > 
-> > Actually, this is wrong.  The number field should be 10 bits (0x3ff),
-> > not 5 (0x1f)  Anshuman please fix.
-> 
-> ACK.
-> 
-> cheers
-> 
+> +		rw |=3D REQ_META;
+> +
+>  	if (sbi->bio[btype]) {
+>  		struct bio_private *p =3D sbi->bio[btype]->bi_private;
+>  		trace_f2fs_do_submit_bio(sbi->sb, btype, sync,
+
+--=20
+Jaegeuk Kim
+Samsung
+
+--=-g20TwTWUuRq3HjrG/5MM
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAABAgAGBQJRdKU2AAoJEEAUqH6CSFDS1+EP/1eIx9sHNoWdPNXKM9X8kG1E
+/0jKevODrDQFrr3uJuzpXdm7OrpxsUZgruvSuWifpzpw57AkMpOTfv7VYWClkOR/
+9yzPP7dBKtg115tVZb6DathpMSZys8xawBvyCCohyiAVI0Gke/oBKTLUC/T4pas+
+kw4g5mvGYnqx5gj/Nn6HUGQV0LYOCrHzqwbng91sAb3nhUETqbCg9HfjtkVbijBs
+itBpBP47hTvdzMHdZjW7m/n6RRFqlF9jNmFbjTpDgGttKubHQ8VN6WBLRWd1WgmE
+bwUb4nkFZMSbZff74AoI/49ZxXhkCS4/5QfT/idSpdDNoTlHS6Er+oE1cnk2YVR6
+WuEEFBZJUGGJ0lLyAta6lC52TRYo8f5M1ymKvwV3Gc4PyWn14Fmm+EqZCMbQH0XO
+UKxEoCh5Qf/ACOUgPaeh0eW+BLk5hqVXEC9Oexpda7LVTbAidwB3rx+tIXAbJGAl
+sewojqrOTXYAskgtXMMcW0ZkaUUu/ca1ItO6sgCqLI1R29TmDVGU14iAMQvbH4Wj
+C5vUNL6Qjid1+ucqsIu0IJbhJ1mIifsz/eyapIcy8AbqN/SDXU1JQ38rb22KxQMd
+sztrBmQiepfDizoX0/CIkcx3Iqeg7wG/qZbxYRrrSfwFMYaeUxk3S9iz7qIUE48H
+rvVrB9uRxNY1vBSDOW7M
+=d+60
+-----END PGP SIGNATURE-----
+
+--=-g20TwTWUuRq3HjrG/5MM--
+
