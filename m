@@ -1,132 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754025Ab3DVFzf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 01:55:35 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:35307 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752462Ab3DVFzd (ORCPT
+	id S1754137Ab3DVF4F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 01:56:05 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:37078 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754045Ab3DVF4E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 01:55:33 -0400
-Message-ID: <5174D18E.4090506@linux.vnet.ibm.com>
-Date: Mon, 22 Apr 2013 11:28:38 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Jiannan Ouyang <ouyang@cs.pitt.edu>
-CC: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Avi Kivity <avi.kivity@gmail.com>, Gleb Natapov <gleb@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Srikar <srikar@linux.vnet.ibm.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        KVM <kvm@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Chegu Vinod <chegu_vinod@hp.com>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Andrew Jones <drjones@redhat.com>
-Subject: Re: Preemptable Ticket Spinlock
-References: <CAJocwccu5QQyuKRvgNyPSFz2K_rzCW419W9-XdSUYOL7+KqQKg@mail.gmail.com>
-In-Reply-To: <CAJocwccu5QQyuKRvgNyPSFz2K_rzCW419W9-XdSUYOL7+KqQKg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13042205-4790-0000-0000-000007F436B2
+	Mon, 22 Apr 2013 01:56:04 -0400
+Date: Mon, 22 Apr 2013 15:55:51 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: linux-next: manual merge of the ftrace tree with Linus' tree
+Message-Id: <20130422155551.0e9891130bb56f374d00e9fc@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__22_Apr_2013_15_55_51_+1000_wfXsUwkOXWcFNwO="
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/21/2013 03:42 AM, Jiannan Ouyang wrote:
-> Hello Everyone,
->
-> I recently came up with a spinlock algorithm that can adapt to
-> preemption, which you may be interested in.
+--Signature=_Mon__22_Apr_2013_15_55_51_+1000_wfXsUwkOXWcFNwO=
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-It is overall a great and clever idea as Rik mentioned already.
+Hi Steven,
 
-  The intuition is to
-> downgrade a fair lock to an unfair lock automatically upon preemption,
-> and preserve the fairness otherwise.
+Today's linux-next merge of the ftrace tree got a conflict in
+kernel/trace/ftrace.c between commit b67bfe0d42ca ("hlist: drop the node
+parameter from iterators") from Linus' tree and commit f1943977e664
+("tracing: Get rid of unneeded key calculation in ftrace_hash_move()")
+and e1df4cb682ab ("ftrace: Fix function probe to only enable needed
+functions") from the ftrace tree.
 
-I also hope being little unfair, does not affect the original intention
-of introducing ticket spinlocks too.
-Some discussions were here long back in this thead,
-https://lkml.org/lkml/2010/6/3/331
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-It is a guest side optimization,
-> and can be used as a complementary technique to host side optimizations
-> like co-scheduling and Pause-Loop Exiting.
->
-> In my experiments, it improves VM performance by 5:32X on average, when
-> running on a non paravirtual VMM, and by 7:91X when running on a VMM
-> that supports a paravirtual locking interface (using a pv preemptable
-> ticket spinlock), when executing a set of microbenchmarks as well as a
-> realistic e-commerce benchmark.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-AFAIU, the experiments are on non PLE machines and it would be worth 
-experimenting on PLE machines too. and also bigger machines.
-(we may get some surprises there otherwise).
-'ll wait for your next iteration of the patches with "using lower bit"
-changes.
+diff --cc kernel/trace/ftrace.c
+index b3fde6d,9b44abb..0000000
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@@ -761,9 -755,10 +754,9 @@@ ftrace_find_profiled_func(struct ftrace
+  {
+  	struct ftrace_profile *rec;
+  	struct hlist_head *hhd;
+ -	struct hlist_node *n;
+  	unsigned long key;
+ =20
+- 	key =3D hash_long(ip, ftrace_profile_bits);
++ 	key =3D hash_long(ip, FTRACE_PROFILE_HASH_BITS);
+  	hhd =3D &stat->hash[key];
+ =20
+  	if (hlist_empty(hhd))
+@@@ -1371,11 -1354,7 +1363,7 @@@ ftrace_hash_move(struct ftrace_ops *ops
+  	size =3D 1 << src->size_bits;
+  	for (i =3D 0; i < size; i++) {
+  		hhd =3D &src->buckets[i];
+ -		hlist_for_each_entry_safe(entry, tp, tn, hhd, hlist) {
+ +		hlist_for_each_entry_safe(entry, tn, hhd, hlist) {
+- 			if (bits > 0)
+- 				key =3D hash_long(entry->ip, bits);
+- 			else
+- 				key =3D 0;
+  			remove_hash_entry(src, entry);
+  			__add_hash_entry(new_hash, entry);
+  		}
+@@@ -3062,8 -3075,13 +3070,13 @@@ static voi
+  __unregister_ftrace_function_probe(char *glob, struct ftrace_probe_ops *o=
+ps,
+  				  void *data, int flags)
+  {
++ 	struct ftrace_func_entry *rec_entry;
+  	struct ftrace_func_probe *entry;
++ 	struct ftrace_func_probe *p;
++ 	struct ftrace_hash **orig_hash =3D &trace_probe_ops.filter_hash;
++ 	struct list_head free_list;
++ 	struct ftrace_hash *hash;
+ -	struct hlist_node *n, *tmp;
+ +	struct hlist_node *tmp;
+  	char str[KSYM_SYMBOL_LEN];
+  	int type =3D MATCH_FULL;
+  	int i, len =3D 0;
 
+--Signature=_Mon__22_Apr_2013_15_55_51_+1000_wfXsUwkOXWcFNwO=
+Content-Type: application/pgp-signature
 
->
-> A detailed algorithm description can be found in my VEE 2013 paper,
-> Preemptable Ticket Spinlocks: Improving Consolidated Performance in the
-> Cloud
-> Jiannan Ouyang, John R. Lange
-> ouyang,jacklange@cs.pitt.edu <mailto:jacklange@cs.pitt.edu>
-> University of Pittsburgh
-> http://people.cs.pitt.edu/~ouyang/files/publication/preemptable_lock-ouyang-vee13.pdf
->
-> The patch is based on stock Linux kernel 3.5.0, and tested on kernel
-> 3.4.41 as well.
-> http://www.cs.pitt.edu/~ouyang/files/preemptable_lock.tar.gz
->
-> Thanks
-> --Jiannan
->
-> I'm not familiar with patch over email, so I just paste it below, sorry
-> for the inconvenience.
-> ======================
-> diff --git a/arch/x86/include/asm/spinlock.h
-> b/arch/x86/include/asm/spinlock.h
-> index b315a33..895d3b3 100644
-> --- a/arch/x86/include/asm/spinlock.h
-> +++ b/arch/x86/include/asm/spinlock.h
-> @@ -48,18 +48,35 @@
->    * in the high part, because a wide xadd increment of the low part
-> would carry
->    * up and contaminate the high part.
->    */
-> +#define TIMEOUT_UNIT (1<<14)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-This value seem to be at the higher end. But I hope you have 
-experimented enough to come up with this. Better again to test all these 
-tunables?? on PLE machines too.
+iQIcBAEBCAAGBQJRdNDnAAoJEECxmPOUX5FE3KMP/An8WLFnmIbvo2mKvsbnWtY8
+vjU48MsoVsYCC3c4PFLCaoKWiBEpRyWS3vJ8mfBgmCyNnqFZ034SXBhCZaKU3BNO
+9YKQD0ZU7sUiY8rI5l4yHpwRu/wAAVt1N5Km4YdMCeMBIEPxHkmnWWXqLm1cODsq
+ApJatp90wWUXIYnAnW3AAkYH7/Dj9nvcbI+ThvPSZFfmfnO6hg4uJ38WBQX7EFWo
+anMjMqa65X88T8Is9DtwQ/uCRtZ+yaJEfPHnfz6lOPCtKsjp6zNHYvi3FUMfaReE
+4GGviCBojoZyXGkCWi3wHI/dbPUTFhbM32dMBHr6EL6axbsXe4TAnq7fcu6CdrxQ
+2toGEvhg7sXsrGxH0sP0vox7RHslpyMbsUIQL40Pw9zU1CUnmMM7bIul7jVXy+UG
+GTHwMYR00RvYYJDK2LpD32ZysWBR6T1PyElf0eS1Z29Hw/qOITyOV+JJRjh60wCY
+/cF3voos3JfgFsQE0VUGuFPcLA0syDyCNDkSC8d/hSjjKKEaFlaWET3JvS/bO3cQ
+gqyINlahtpvaI0XT0YM18DZDmu86+OT6cRWoXr6HX3jVs2wiq9DUaZUpAPzvcabO
+WWejsCxo3SP4I4rjZxQTnz76taWdFeoxRqsNuJTtOVpd/Lshq7FdIkyFLeToBQFm
+cjNfcnUzO9yICOTpF8GT
+=Kx2k
+-----END PGP SIGNATURE-----
 
->   static __always_inline void __ticket_spin_lock(arch_spinlock_t *lock)
->   {
->          register struct __raw_tickets inc = { .tail = 1 };
-> +       unsigned int timeout = 0;
-> +       __ticket_t current_head;
->
->          inc = xadd(&lock->tickets, inc);
-> -
-> +       if (likely(inc.head == inc.tail))
-> +               goto spin;
-> +
-> +       timeout =  TIMEOUT_UNIT * (inc.tail - inc.head);
-> +       do {
-> +               current_head = ACCESS_ONCE(lock->tickets.head);
-> +               if (inc.tail <= current_head) {
-> +                       goto spin;
-> +               } else if (inc.head != current_head) {
-> +                       inc.head = current_head;
-> +                       timeout =  TIMEOUT_UNIT * (inc.tail - inc.head);
-
-Good idea indeed to base the loop on head and tail difference.. But for 
-virtualization I believe this "directly proportional notion" is little 
-tricky too.
-
+--Signature=_Mon__22_Apr_2013_15_55_51_+1000_wfXsUwkOXWcFNwO=--
