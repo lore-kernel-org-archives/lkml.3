@@ -1,58 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753913Ab3DVKr6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 06:47:58 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:62392 "EHLO multi.imgtec.com"
+	id S1754970Ab3DVKtH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 06:49:07 -0400
+Received: from mga09.intel.com ([134.134.136.24]:37901 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751771Ab3DVKr5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 06:47:57 -0400
-From: James Hogan <james.hogan@imgtec.com>
-To: <linux-kbuild@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: James Hogan <james.hogan@imgtec.com>, Michal Marek <mmarek@suse.cz>,
-        Dirk Brandewie <dirk.brandewie@gmail.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: [PATCH 1/1] Makefile.lib: align DTB quiet_cmd
-Date: Mon, 22 Apr 2013 11:47:31 +0100
-Message-ID: <1366627651-19845-1-git-send-email-james.hogan@imgtec.com>
-X-Mailer: git-send-email 1.8.1.2
+	id S1751085Ab3DVKtF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Apr 2013 06:49:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,525,1363158000"; 
+   d="scan'208";a="322217011"
+Date: Mon, 22 Apr 2013 15:47:41 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arnd@arndb.de, linus.walleij@stericsson.com,
+        Dan Williams <djbw@fb.com>, Per Forlin <per.forlin@stericsson.com>,
+        Rabin Vincent <rabin@rab.in>
+Subject: Re: [PATCH 24/32 v2] dmaengine: ste_dma40: Supply full Device Tree
+ parsing support
+Message-ID: <20130422101741.GS24632@intel.com>
+References: <1366279934-30761-1-git-send-email-lee.jones@linaro.org>
+ <1366279934-30761-25-git-send-email-lee.jones@linaro.org>
+ <20130418121253.GF27903@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-SEF-Processed: 7_3_0_01181__2013_04_22_11_47_53
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130418121253.GF27903@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The unaligned dtb.S filename in make output started to irritate me:
-  DTC     arch/metag/boot/dts/skeleton.dtb
-  DTB    arch/metag/boot/dts/skeleton.dtb.S
-  AS      arch/metag/boot/dts/skeleton.dtb.o
-  LD      arch/metag/boot/dts/built-in.o
+On Thu, Apr 18, 2013 at 01:12:53PM +0100, Lee Jones wrote:
+> Using the new DMA DT bindings and API, we can register the DMA40 driver
+> as Device Tree capable. Now, when a client attempts to allocate a
+> channel using the DMA DT bindings via its own node, we are able to parse
+> the request and allocate a channel in the correct manner.
+> +
+> +	switch (D40_DT_FLAGS_MODE(flags)) {
+> +	case 0: cfg.mode = STEDMA40_MODE_LOGICAL; break;
+> +	case 1: cfg.mode = STEDMA40_MODE_PHYSICAL; break;
+ah there was a v2, i need to see the thread, this one still needs to be fixed
+though
 
-Add an extra space to quiet_cmd_dt_S_dtb so the dtb.S filename aligns
-with all the others.
-
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
-Cc: Michal Marek <mmarek@suse.cz>
-Cc: Dirk Brandewie <dirk.brandewie@gmail.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>
----
- scripts/Makefile.lib | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/scripts/Makefile.lib b/scripts/Makefile.lib
-index 07125e6..e13fff1 100644
---- a/scripts/Makefile.lib
-+++ b/scripts/Makefile.lib
-@@ -251,7 +251,7 @@ cmd_gzip = (cat $(filter-out FORCE,$^) | gzip -n -f -9 > $@) || \
- # ---------------------------------------------------------------------------
- 
- # Generate an assembly file to wrap the output of the device tree compiler
--quiet_cmd_dt_S_dtb= DTB    $@
-+quiet_cmd_dt_S_dtb= DTB     $@
- cmd_dt_S_dtb=						\
- (							\
- 	echo '\#include <asm-generic/vmlinux.lds.h>'; 	\
--- 
-1.8.1.2
-
-
+--
+~Vinod
