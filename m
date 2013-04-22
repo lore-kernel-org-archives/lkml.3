@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753479Ab3DVFkg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 01:40:36 -0400
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:48269
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752630Ab3DVFke (ORCPT
+	id S1753735Ab3DVFkp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 01:40:45 -0400
+Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:2558
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752630Ab3DVFkl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 01:40:34 -0400
+	Mon, 22 Apr 2013 01:40:41 -0400
 X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
 X-SpamScore: 3
 X-BigFish: VS3(zzc8kzz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275bhz2dh2a8h668h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1155h)
@@ -16,10 +16,12 @@ To: <joro@8bytes.org>, <iommu@lists.linux-foundation.org>,
         <galak@kernel.crashing.org>, <benh@kernel.crashing.org>,
         <stuart.yoder@freescale.com>, <scottwood@freescale.com>
 CC: Varun Sethi <Varun.Sethi@freescale.com>
-Subject: [PATCH 1/3 v2] iommu: Move swap_pci_ref function to pci.h.
-Date: Mon, 22 Apr 2013 11:01:54 +0530
-Message-ID: <1366608716-1704-1-git-send-email-Varun.Sethi@freescale.com>
+Subject: [PATCH 2/3 v13] iommu/fsl: Add additional iommu attributes required by the PAMU driver.
+Date: Mon, 22 Apr 2013 11:01:55 +0530
+Message-ID: <1366608716-1704-2-git-send-email-Varun.Sethi@freescale.com>
 X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1366608716-1704-1-git-send-email-Varun.Sethi@freescale.com>
+References: <1366608716-1704-1-git-send-email-Varun.Sethi@freescale.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-OriginatorOrg: freescale.com
@@ -27,79 +29,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-swap_pci_ref function is used by the IOMMU API code for swapping pci device
-pointers, while determining the iommu group for the device.
-Currently this function was being implemented for different IOMMU drivers.
-This patch moves the function to a new file, drivers/iommu/pci.h so that the
-implementation can be shared across various IOMMU drivers.
+Added the following domain attributes for the FSL PAMU driver:
+1. Added new iommu stash attribute, which allows setting of the
+   LIODN specific stash id parameter through IOMMU API.
+2. Added an attribute for enabling/disabling DMA to a particular
+   memory window.
+3. Added domain attribute to check for PAMUV1 specific constraints.
 
 Signed-off-by: Varun Sethi <Varun.Sethi@freescale.com>
 ---
-v2 changes:
-- created a new file drivers/iommu/pci.h.
+v13 changes:
+- created a new file include/linux/fsl_pamu_stash.h for stash
+attributes.
+v12 changes:
+- Moved PAMU specifc stash ids and structures to PAMU header file.
+- no change in v11.
+- no change in v10.
+ include/linux/fsl_pamu_stash.h |   39 +++++++++++++++++++++++++++++++++++++++
+ include/linux/iommu.h          |   16 ++++++++++++++++
+ 2 files changed, 55 insertions(+), 0 deletions(-)
+ create mode 100644 include/linux/fsl_pamu_stash.h
 
- drivers/iommu/amd_iommu.c   |    7 +------
- drivers/iommu/intel-iommu.c |    7 +------
- drivers/iommu/pci.h         |   29 +++++++++++++++++++++++++++++
- 3 files changed, 31 insertions(+), 12 deletions(-)
- create mode 100644 drivers/iommu/pci.h
-
-diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
-index a7f6b04..2463464 100644
---- a/drivers/iommu/amd_iommu.c
-+++ b/drivers/iommu/amd_iommu.c
-@@ -46,6 +46,7 @@
- #include "amd_iommu_proto.h"
- #include "amd_iommu_types.h"
- #include "irq_remapping.h"
-+#include "pci.h"
- 
- #define CMD_SET_TYPE(cmd, t) ((cmd)->data[1] |= ((t) << 28))
- 
-@@ -263,12 +264,6 @@ static bool check_device(struct device *dev)
- 	return true;
- }
- 
--static void swap_pci_ref(struct pci_dev **from, struct pci_dev *to)
--{
--	pci_dev_put(*from);
--	*from = to;
--}
--
- static struct pci_bus *find_hosted_bus(struct pci_bus *bus)
- {
- 	while (!bus->self) {
-diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index 6e0b9ff..81ad7b8 100644
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -47,6 +47,7 @@
- #include <asm/iommu.h>
- 
- #include "irq_remapping.h"
-+#include "pci.h"
- 
- #define ROOT_SIZE		VTD_PAGE_SIZE
- #define CONTEXT_SIZE		VTD_PAGE_SIZE
-@@ -4137,12 +4138,6 @@ static int intel_iommu_domain_has_cap(struct iommu_domain *domain,
- 	return 0;
- }
- 
--static void swap_pci_ref(struct pci_dev **from, struct pci_dev *to)
--{
--	pci_dev_put(*from);
--	*from = to;
--}
--
- #define REQ_ACS_FLAGS	(PCI_ACS_SV | PCI_ACS_RR | PCI_ACS_CR | PCI_ACS_UF)
- 
- static int intel_iommu_add_device(struct device *dev)
-diff --git a/drivers/iommu/pci.h b/drivers/iommu/pci.h
+diff --git a/include/linux/fsl_pamu_stash.h b/include/linux/fsl_pamu_stash.h
 new file mode 100644
-index 0000000..d460646
+index 0000000..caa1b21
 --- /dev/null
-+++ b/drivers/iommu/pci.h
-@@ -0,0 +1,29 @@
++++ b/include/linux/fsl_pamu_stash.h
+@@ -0,0 +1,39 @@
 +/*
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License, version 2, as
@@ -114,21 +70,62 @@ index 0000000..d460646
 + * along with this program; if not, write to the Free Software
 + * Foundation, 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 + *
-+ * Copyright (C) 2013 Red Hat, Inc.
 + * Copyright (C) 2013 Freescale Semiconductor, Inc.
 + *
 + */
-+#ifndef __PCI_H
-+#define __PCI_H
 +
-+/* Helper function for swapping pci device reference */
-+static inline void swap_pci_ref(struct pci_dev **from, struct pci_dev *to)
-+{
-+	pci_dev_put(*from);
-+	*from = to;
-+}
++#ifndef __FSL_PAMU_STASH_H
++#define __FSL_PAMU_STASH_H
 +
-+#endif  /* __PCI_H */
++/* cache stash targets */
++enum pamu_stash_target {
++	PAMU_ATTR_CACHE_L1 = 1,
++	PAMU_ATTR_CACHE_L2,
++	PAMU_ATTR_CACHE_L3,
++};
++
++/*
++ * This attribute allows configuring stashig specific parameters
++ * in the PAMU hardware.
++ */
++
++struct pamu_stash_attribute {
++	u32 	cpu;	/* cpu number */
++	u32 	cache;	/* cache to stash to: L1,L2,L3 */
++};
++
++#endif  /* __FSL_PAMU_STASH_H */
+diff --git a/include/linux/iommu.h b/include/linux/iommu.h
+index 2727810..c5dc2b9 100644
+--- a/include/linux/iommu.h
++++ b/include/linux/iommu.h
+@@ -57,10 +57,26 @@ struct iommu_domain {
+ #define IOMMU_CAP_CACHE_COHERENCY	0x1
+ #define IOMMU_CAP_INTR_REMAP		0x2	/* isolates device intrs */
+ 
++/*
++ * Following constraints are specifc to PAMUV1:
++ *  -aperture must be power of 2, and naturally aligned
++ *  -number of windows must be power of 2, and address space size
++ *   of each window is determined by aperture size / # of windows
++ *  -the actual size of the mapped region of a window must be power
++ *   of 2 starting with 4KB and physical address must be naturally
++ *   aligned.
++ * DOMAIN_ATTR_FSL_PAMUV1 corresponds to the above mentioned contraints.
++ * The caller can invoke iommu_domain_get_attr to check if the underlying
++ * iommu implementation supports these constraints.
++ */
++
+ enum iommu_attr {
+ 	DOMAIN_ATTR_GEOMETRY,
+ 	DOMAIN_ATTR_PAGING,
+ 	DOMAIN_ATTR_WINDOWS,
++	DOMAIN_ATTR_PAMU_STASH,
++	DOMAIN_ATTR_PAMU_ENABLE,
++	DOMAIN_ATTR_FSL_PAMUV1,
+ 	DOMAIN_ATTR_MAX,
+ };
+ 
 -- 
 1.7.4.1
 
