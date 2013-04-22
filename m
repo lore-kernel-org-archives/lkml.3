@@ -1,116 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753889Ab3DVQmx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 12:42:53 -0400
-Received: from mb1i1mx.ns.pitt.edu ([136.142.11.141]:60768 "EHLO
-	mb1i1.ns.pitt.edu" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752474Ab3DVQmv (ORCPT
+	id S1754025Ab3DVQnd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 12:43:33 -0400
+Received: from co1ehsobe004.messaging.microsoft.com ([216.32.180.187]:30805
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753028Ab3DVQnc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 12:42:51 -0400
-Date: Mon, 22 Apr 2013 12:42:49 -0400
-From: Jiannan Ouyang <ouyang@cs.pitt.edu>
-Subject: Re: Preemptable Ticket Spinlock
-In-reply-to: <5174D18E.4090506@linux.vnet.ibm.com>
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Avi Kivity <avi.kivity@gmail.com>, Gleb Natapov <gleb@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Srikar <srikar@linux.vnet.ibm.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        KVM <kvm@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Chegu Vinod <chegu_vinod@hp.com>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Andrew Jones <drjones@redhat.com>
-Message-id: <CAJocwcc0M2Xr=ozpwLRM1vejMVfofr9n-TpAXU_efB_3MaCF5Q@mail.gmail.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=ISO-8859-1
-References: <CAJocwccu5QQyuKRvgNyPSFz2K_rzCW419W9-XdSUYOL7+KqQKg@mail.gmail.com>
- <5174D18E.4090506@linux.vnet.ibm.com>
+	Mon, 22 Apr 2013 12:43:32 -0400
+X-Forefront-Antispam-Report: CIP:157.56.236.101;KIP:(null);UIP:(null);IPV:NLI;H:BY2PRD0510HT004.namprd05.prod.outlook.com;RD:none;EFVD:NLI
+X-SpamScore: -5
+X-BigFish: PS-5(zzbb2dI98dI9371I936eI1432Izz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275dhz2fh2a8h668h839h93fhd24he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1155h)
+From: Matthew Garrett <matthew.garrett@nebula.com>
+To: Jiri Slaby <jslaby@suse.cz>
+CC: Matt Fleming <matt@console-pimps.org>, joeyli <jlee@suse.com>,
+        "cbouatmailru@gmail.com" <cbouatmailru@gmail.com>,
+        "ccross@android.com" <ccross@android.com>,
+        "keescook@chromium.org" <keescook@chromium.org>,
+        Tony Luck <tony.luck@intel.com>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        Linux kernel mailing list <linux-kernel@vger.kernel.org>
+Subject: Re: Cannot add new efi boot entry
+Thread-Topic: Cannot add new efi boot entry
+Thread-Index: AQHOOVacfIOhDacBfk6nkcHsTUzbI5jYno4AgAAEKYCAAdp1AIAABj0AgAHJGgCAAnV2gIADXnGAgAAGt4CAAA3bgIAAAToAgABIHwA=
+Date: Mon, 22 Apr 2013 16:43:25 +0000
+Message-ID: <1366649004.13667.23.camel@x230.lan>
+References: <516B1ED3.9040900@suse.cz>
+	  <1366106168.23707.9.camel@linux-s257.site> <516D23B5.4070209@intel.com>
+	  <516EB1B6.7050506@suse.cz> <516EB6F2.6070806@console-pimps.org>
+	  <51703664.40003@suse.cz> <5172466B.9080105@suse.cz>
+	  <517519E3.2030409@console-pimps.org>
+	 <1366630277.23707.132.camel@linux-s257.site>
+	 <51752B25.9020809@console-pimps.org> <51752C2C.4090707@suse.cz>
+In-Reply-To: <51752C2C.4090707@suse.cz>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.255.84.4]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <434B760AE3EEBA44AC089CE3024DF7EB@namprd05.prod.outlook.com>
+MIME-Version: 1.0
+X-OriginatorOrg: nebula.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r3MGhdnU007121
 
-On Mon, Apr 22, 2013 at 1:58 AM, Raghavendra K T
-<raghavendra.kt@linux.vnet.ibm.com> wrote:
+On Mon, 2013-04-22 at 14:25 +0200, Jiri Slaby wrote:
+> On 04/22/2013 02:20 PM, Matt Fleming wrote:
+> > On 22/04/13 12:31, joeyli wrote:
+> >> Does garbage collection only trigger by UEFI BIOS when system reboot? or
+> >> garbage collection also triggered at run time?
+> > 
+> > That is implementation specific. AFAIK, there are implementations for
+> > both schemes.
+> 
+> Just a point from the abstract level. Is there a way to find out? And
+> what do Windows do?
 
->  The intuition is to
->>
->> downgrade a fair lock to an unfair lock automatically upon preemption,
->> and preserve the fairness otherwise.
->
->
-> I also hope being little unfair, does not affect the original intention
-> of introducing ticket spinlocks too.
-> Some discussions were here long back in this thead,
-> https://lkml.org/lkml/2010/6/3/331
->
+Windows kills Samsungs.
 
-Good point. I also have the question that why not use unfair lock
-under virtual environment,
-and is fairness really a big issue. However, given that current kernel
-is using ticket lock, I
-assume fairness is a necessary spinlock feature.
-
-Regard the fairness of preemptable-lock, I did a user space experiment
-using 8 pCPU to
-compete on one spinlock, and count the lock acquisition times. Results
-show that lock acquisition
-counts are *almost* evenly distributed between threads in preemptable-lock.
-
->
-> AFAIU, the experiments are on non PLE machines and it would be worth
-> experimenting on PLE machines too. and also bigger machines.
-> (we may get some surprises there otherwise).
-> 'll wait for your next iteration of the patches with "using lower bit"
-> changes.
->
-
-Yes, they are on PLE machines. Current implementation and evaluation
-is still at the stage of
-concept proving. More experiments (with PLE, bigger machiens, etc) are
-needed to better understand
-the lock behavior.
-
->> +#define TIMEOUT_UNIT (1<<14)
->
->
-> This value seem to be at the higher end. But I hope you have experimented
-> enough to come up with this. Better again to test all these tunables?? on
-> PLE machines too.
->
->
-I actually didn't tune this parameter at all... But yes, find a better
-value is necessary if it is in industry code.
-
->>   static __always_inline void __ticket_spin_lock(arch_spinlock_t *lock)
->>   {
->>          register struct __raw_tickets inc = { .tail = 1 };
->> +       unsigned int timeout = 0;
->> +       __ticket_t current_head;
->>
->>          inc = xadd(&lock->tickets, inc);
->> -
->> +       if (likely(inc.head == inc.tail))
->> +               goto spin;
->> +
->> +       timeout =  TIMEOUT_UNIT * (inc.tail - inc.head);
->> +       do {
->> +               current_head = ACCESS_ONCE(lock->tickets.head);
->> +               if (inc.tail <= current_head) {
->> +                       goto spin;
->> +               } else if (inc.head != current_head) {
->> +                       inc.head = current_head;
->> +                       timeout =  TIMEOUT_UNIT * (inc.tail - inc.head);
->
->
-> Good idea indeed to base the loop on head and tail difference.. But for
-> virtualization I believe this "directly proportional notion" is little
-> tricky too.
->
-
-Could you explain your concern a little bit more?
-
-Thanks
---Jiannan
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
