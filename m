@@ -1,77 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755746Ab3DVJbK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 05:31:10 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:60443 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752045Ab3DVJbI (ORCPT
+	id S1755851Ab3DVJiv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 05:38:51 -0400
+Received: from mercuryimc.plus.com ([80.229.200.144]:43384 "EHLO
+	centos1.newflow.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752525Ab3DVJiu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 05:31:08 -0400
-Message-ID: <1366623052.2721.6.camel@laptop>
-Subject: Re: [PATCH v6] sched: fix init NOHZ_IDLE flag
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        mingo@kernel.org, fweisbec@gmail.com, pjt@google.com,
-        rostedt@goodmis.org, efault@gmx.de
-Date: Mon, 22 Apr 2013 11:30:52 +0200
-In-Reply-To: <1366377044-23989-1-git-send-email-vincent.guittot@linaro.org>
-References: <1366377044-23989-1-git-send-email-vincent.guittot@linaro.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
+	Mon, 22 Apr 2013 05:38:50 -0400
+Message-ID: <51750526.70508@newflow.co.uk>
+Date: Mon, 22 Apr 2013 10:38:46 +0100
+From: Mark Jackson <mpfj-list@newflow.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>
+CC: dedekind1@gmail.com,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: MTD : cannot reserve enough PEBs for bad PEB handling
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-04-19 at 15:10 +0200, Vincent Guittot wrote:
-> As suggested by Frederic Weisbecker, another solution is to have the
-> same
-> rcu lifecycle for both NOHZ_IDLE and sched_domain struct. I have
-> introduce
-> a new sched_domain_rq struct that is the entry point for both
-> sched_domains
-> and objects that must follow the same lifecycle like NOHZ_IDLE flags.
-> They
-> will share the same RCU lifecycle and will be always synchronized.
-> 
-> The synchronization is done at the cost of :
->  - an additional indirection for accessing the first sched_domain
-> level
->  - an additional indirection and a rcu_dereference before accessing to
-> the
->    NOHZ_IDLE flag.
+I'm trying to work out how to generate a "valid" UBI image, but I keep
+getting a "cannot get enough PEBs" warning.
 
-> diff --git a/include/linux/sched.h b/include/linux/sched.h
-> index d35d2b6..61ad5f1 100644
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -959,6 +959,18 @@ struct sched_domain {
->         unsigned long span[0];
->  };
->  
-> +/*
-> + * Some flags must stay synchronized with fields of sched_group_power
-> and as a
-> + * consequence they must follow the same lifecycle for the lockless
-> scheme.
-> + * sched_domain_rq encapsulates those flags and sched_domains in one
-> RCU
-> + * object.
-> + */
-> +struct sched_domain_rq {
-> +       struct sched_domain *sd;
-> +       unsigned long flags;
-> +       struct rcu_head rcu;    /* used during destruction */
-> +};
+I generate my image (destined for a 64MB NAND partition) using:-
 
-I'm not quite getting things.. what's wrong with adding this flags
-thing to sched_domain itself? That's already RCU destroyed so why add a
-second RCU layer?
+$ mkfs.ubifs -d output/target -e 0x1f000 -c 483 -m 0x800 -x none -F -o
+output/images/rootfs.ubifs
+$ ubinize -o output/images/rootfs.ubi -m 0x800 -p 0x20000 -s 512 -O 2048
+ubinize.cfg
 
-We also have the root_domain for things that don't need to go in a
-hierarchy but are once per cpu -- it sounds like this is one of those
-things; iirc the root_domain life-time is the same as the entire
-sched_domain tree so adding it to the root_domain is also an option.
+My .cfg file is:-
 
+[ubifs]
+mode=ubi
+vol_id=0
+vol_type=dynamic
+vol_name=rootfs
+vol_alignment=1
+vol_flags=autoresize
+vol_size=61MiB
+image=output/images/rootfs.ubifs
+
+And the resulting image is:-
+
+-rw-rw-r-- 1 mpfj mpfj 9437184 Apr 16 10:19 rootfs.ubi
+
+This is then written to a freshly erased 64MB NAND partition, and
+appears to mount correctly, apart from the warning about not enough
+reserved PEBs, as follows:-
+
+...
+[    0.792456] UBI: attaching mtd7 to ubi0
+[    1.540858] UBI: scanning is finished
+[    1.557578] UBI warning: print_rsvd_warning: cannot reserve enough
+PEBs for bad PEB handling, reserved 4, need 40
+[    1.561346] UBI: attached mtd7 (name "rootfs", size 64 MiB) to ubi0
+[    1.561404] UBI: PEB size: 131072 bytes (128 KiB), LEB size: 126976 bytes
+[    1.561434] UBI: min./max. I/O unit sizes: 2048/2048, sub-page size 512
+[    1.561464] UBI: VID header offset: 2048 (aligned 2048), data offset:
+4096
+[    1.561493] UBI: good PEBs: 512, bad PEBs: 0, corrupted PEBs: 0
+[    1.561520] UBI: user volume: 1, internal volumes: 1, max. volumes
+count: 128
+[    1.561554] UBI: max/mean erase counter: 2/1, WL threshold: 4096,
+image sequence number: 1434266085
+[    1.561591] UBI: available PEBs: 0, total reserved PEBs: 512, PEBs
+reserved for bad PEB handling: 4
+[    1.562374] UBI: background thread "ubi_bgt0d" started, PID 598
+...
+
+I think I've calculated the various option values correctly for
+mkfs.ubifs and ubinize.
+
+But since I'm getting the warning, can anyone explain where I've gone
+wrong ?
+
+Thanks in advance
+Mark J.
