@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754616Ab3DVO3p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 10:29:45 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51433 "EHLO
+	id S932335Ab3DVOrv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 10:47:51 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51474 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754440Ab3DVO3h (ORCPT
+	by vger.kernel.org with ESMTP id S1754102Ab3DVO3o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 10:29:37 -0400
+	Mon, 22 Apr 2013 10:29:44 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Herbert Xu" <herbert@gondor.hengli.com.au>,
-        "Chaoxing Lin" <Chaoxing.Lin@ultra-3eti.com>,
-        "Jussi Kivilinna" <jussi.kivilinna@iki.fi>
+CC: akpm@linux-foundation.org, "Andy Honig" <ahonig@google.com>,
+        "Marcelo Tosatti" <mtosatti@redhat.com>
 Date: Mon, 22 Apr 2013 15:25:59 +0100
-Message-ID: <lsq.1366640759.844047457@decadent.org.uk>
+Message-ID: <lsq.1366640759.419645361@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [18/75] crypto: gcm - fix assumption that assoc has one segment
+Subject: [71/75] KVM: x86: fix for buffer overflow in handling of
+ MSR_KVM_SYSTEM_TIME (CVE-2013-1796)
 In-Reply-To: <lsq.1366640759.151900666@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:6834:ff73:7553:7f84
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,55 +32,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jussi Kivilinna <jussi.kivilinna@iki.fi>
+From: Andy Honig <ahonig@google.com>
 
-commit d3dde52209ab571e4e2ec26c66f85ad1355f7475 upstream.
+commit c300aa64ddf57d9c5d9c898a64b36877345dd4a9 upstream.
 
-rfc4543(gcm(*)) code for GMAC assumes that assoc scatterlist always contains
-only one segment and only makes use of this first segment. However ipsec passes
-assoc with three segments when using 'extended sequence number' thus in this
-case rfc4543(gcm(*)) fails to function correctly. Patch fixes this issue.
+If the guest sets the GPA of the time_page so that the request to update the
+time straddles a page then KVM will write onto an incorrect page.  The
+write is done byusing kmap atomic to get a pointer to the page for the time
+structure and then performing a memcpy to that page starting at an offset
+that the guest controls.  Well behaved guests always provide a 32-byte aligned
+address, however a malicious guest could use this to corrupt host kernel
+memory.
 
-Reported-by: Chaoxing Lin <Chaoxing.Lin@ultra-3eti.com>
-Tested-by: Chaoxing Lin <Chaoxing.Lin@ultra-3eti.com>
-Signed-off-by: Jussi Kivilinna <jussi.kivilinna@iki.fi>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Tested: Tested against kvmclock unit test.
+
+Signed-off-by: Andrew Honig <ahonig@google.com>
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- crypto/gcm.c |   17 ++++++++++++++---
- 1 file changed, 14 insertions(+), 3 deletions(-)
+ arch/x86/kvm/x86.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/crypto/gcm.c
-+++ b/crypto/gcm.c
-@@ -44,6 +44,7 @@ struct crypto_rfc4543_ctx {
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -1603,6 +1603,11 @@ int kvm_set_msr_common(struct kvm_vcpu *
+ 		/* ...but clean it before doing the actual write */
+ 		vcpu->arch.time_offset = data & ~(PAGE_MASK | 1);
  
- struct crypto_rfc4543_req_ctx {
- 	u8 auth_tag[16];
-+	u8 assocbuf[32];
- 	struct scatterlist cipher[1];
- 	struct scatterlist payload[2];
- 	struct scatterlist assoc[2];
-@@ -1142,9 +1143,19 @@ static struct aead_request *crypto_rfc45
- 	scatterwalk_crypto_chain(payload, dst, vdst == req->iv + 8, 2);
- 	assoclen += 8 + req->cryptlen - (enc ? 0 : authsize);
- 
--	sg_init_table(assoc, 2);
--	sg_set_page(assoc, sg_page(req->assoc), req->assoc->length,
--		    req->assoc->offset);
-+	if (req->assoc->length == req->assoclen) {
-+		sg_init_table(assoc, 2);
-+		sg_set_page(assoc, sg_page(req->assoc), req->assoc->length,
-+			    req->assoc->offset);
-+	} else {
-+		BUG_ON(req->assoclen > sizeof(rctx->assocbuf));
++		/* Check that the address is 32-byte aligned. */
++		if (vcpu->arch.time_offset &
++				(sizeof(struct pvclock_vcpu_time_info) - 1))
++			break;
 +
-+		scatterwalk_map_and_copy(rctx->assocbuf, req->assoc, 0,
-+					 req->assoclen, 0);
-+
-+		sg_init_table(assoc, 2);
-+		sg_set_buf(assoc, rctx->assocbuf, req->assoclen);
-+	}
- 	scatterwalk_crypto_chain(assoc, payload, 0, 2);
+ 		vcpu->arch.time_page =
+ 				gfn_to_page(vcpu->kvm, data >> PAGE_SHIFT);
  
- 	aead_request_set_tfm(subreq, ctx->child);
 
