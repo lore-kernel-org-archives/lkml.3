@@ -1,72 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755472Ab3DVJYZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 05:24:25 -0400
-Received: from mail-ia0-f176.google.com ([209.85.210.176]:54049 "EHLO
-	mail-ia0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753001Ab3DVJYW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 05:24:22 -0400
+	id S1755603Ab3DVJZQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 05:25:16 -0400
+Received: from ozlabs.org ([203.10.76.45]:37367 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755478Ab3DVJZM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Apr 2013 05:25:12 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Anup Patel <anup.patel@linaro.org>
+Cc: Pranavkumar Sawargaonkar <pranavkumar@linaro.org>,
+        "kvmarm\@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
+        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] arm64: Early printk support for virtio-mmio console devices.
+In-Reply-To: <CALrVBkub+TABrrBwh4+P6S5TGL1qSmnZrd1cbGgj6JiRpY=rOA@mail.gmail.com>
+References: <1366264344-28025-1-git-send-email-pranavkumar@linaro.org> <87wqs02uws.fsf@rustcorp.com.au> <CAAHg+HiHKV+8hBT1QWe4hSxocCX6wpRd3bCPWB7zU8jVFmPuAA@mail.gmail.com> <87ehe3bbsm.fsf@rustcorp.com.au> <CALrVBkub+TABrrBwh4+P6S5TGL1qSmnZrd1cbGgj6JiRpY=rOA@mail.gmail.com>
+User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Mon, 22 Apr 2013 14:45:48 +0930
+Message-ID: <87mwsr9md7.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-In-Reply-To: <51750159.07d70e0a.5461.ffffec64SMTPIN_ADDED_BROKEN@mx.google.com>
-References: <CAOAMb1D8rokZpQpp6mEJw6KXcQq8fJUWBJoC5+ZfkNaE6WvAZA@mail.gmail.com>
-	<CAMuHMdXXoaQjb9sRK=X3gEDwqQBJcJQtaJbUGB8cJmteHSN3vQ@mail.gmail.com>
-	<51750159.07d70e0a.5461.ffffec64SMTPIN_ADDED_BROKEN@mx.google.com>
-Date: Mon, 22 Apr 2013 11:24:21 +0200
-X-Google-Sender-Auth: bSIJTM4wbMWTgaDHdyc-qgUT4Gw
-Message-ID: <CAMuHMdUv=GR6s=BYXHR7KyaKCUSxmkJO8dzZJMRktu3cUCTbsw@mail.gmail.com>
-Subject: Re: [PATCH 1/2] lib: Add lz4 compressor module
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Chanho Min <chanho.min@lge.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Darrick J. Wong" <djwong@us.ibm.com>,
-        Bob Pearson <rpearson@systemfabricworks.com>,
-        Richard Weinberger <richard@nod.at>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-crypto@vger.kernel.org, Yann Collet <yann.collet.73@gmail.com>,
-        Kyungsik Lee <kyungsik.lee@lge.com>,
-        "Linux/m68k" <linux-m68k@vger.kernel.org>,
-        sparclinux <sparclinux@vger.kernel.org>,
-        Linux-Next <linux-next@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 22, 2013 at 11:22 AM, Chanho Min <chanho.min@lge.com> wrote:
->>> +#define HTYPE const u8*
->>> +
->>> +#ifdef __BIG_ENDIAN
->>> +#define LZ4_NBCOMMONBYTES(val) (__builtin_clz(val) >> 3)
->>> +#else
->>> +#define LZ4_NBCOMMONBYTES(val) (__builtin_ctz(val) >> 3)
->>> +#endif
+Anup Patel <anup.patel@linaro.org> writes:
+> On 22 April 2013 06:51, Rusty Russell <rusty@rustcorp.com.au> wrote:
 >>
->>It seems at least m68k and sparc don't have the __builtin_clz() functions:
+>> Pranavkumar Sawargaonkar <pranavkumar@linaro.org> writes:
+>> > On 18 April 2013 12:21, Rusty Russell <rusty@rustcorp.com.au> wrote:
+>> >>
+>> >> PranavkumarSawargaonkar <pranavkumar@linaro.org> writes:
+>> >> > From: Pranavkumar Sawargaonkar <pranavkumar@linaro.org>
+>> >> >
+>> >> > This patch implements early printk support for virtio-mmio console
+>> >> > devices without using any hypercalls.
+>> >>
+>> >> This makes some sense, though not sure that early console *read* makes
+>> >> much sense.  I can see the PCI version of this being useful as well.
+>> >
+>> > Read can be useful for "mach-virt" which will have only virtio console
+>> > as a console device. Then if someone wants to have UEFI or any other
+>> > boot-loader emulation, which expects user to input few things, in that
+>> > case read might become handy.
 >>
->>m68k-allmodconfig (http://kisskb.ellerman.id.au/kisskb/buildresult/8572593/):
+>> But implementing virtio inside a bootloader has already been done for
+>> coreboot, for example.  A bootloader probably wants a virtio block
+>> device, so a console is trivial.
 >>
->>ERROR: "__clzsi2" [lib/lz4/lz4hc_compress.ko] undefined!
->>ERROR: "__clzsi2" [lib/lz4/lz4_compress.ko] undefined!
+>> A single writable field for debugging makes sense.  Anything more is far
+>> less certain.
 >
-> gcc seems to define __builtin_clz as __clzsi2 in some architecture.
-> But, kernel doesn't link libgcc.a.
-> If kernel should use gcc's built-in function without libgcc.a,
-> do we need to port __clzsi2 to 'arch/*/lib/*'?
+> The early read can be handy for bootloader who don't want to implement
+> complete VirtIO programming.
 
-That's another option.
+I've said this twice already.  This is the last time.
 
-So far no one used __builtin_c[lt]z in generic code. We always used
-__fls and __ffs.
+1) We do not add complexity unless we have to.
+2) Making it optional does not make it significantly less complex.
+3) Having two ways of doing the same thing is always ugly.
+4) Having an emergency output method makes sense for several use cases,
+   an emergency input method does not.
+5) A bootloader which uses virtio to get the images to boot can
+   implement a console in less than 10 lines.
+6) A bootloader which does not use any virtio devices but nonetheless
+   wants to obtain input can implement a simple console in well under 100
+   lines.  See below.
 
-Gr{oetje,eeting}s,
+Finally, in case you still don't understand:
 
-                        Geert
+My task is to make this decision, and I've made it.  Arguing with me is
+only useful if you bring new facts which you can change my mind.
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+Hope that clarifies,
+Rusty.
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+#define VIRTIO_MMIO_GUEST_PAGE_SIZE	0x028
+#define VIRTIO_MMIO_QUEUE_SEL		0x030
+#define VIRTIO_MMIO_QUEUE_NUM_MAX	0x034
+#define VIRTIO_MMIO_QUEUE_NUM		0x038
+#define VIRTIO_MMIO_QUEUE_ALIGN		0x03c
+#define VIRTIO_MMIO_QUEUE_PFN		0x040
+#define VIRTIO_MMIO_QUEUE_NOTIFY	0x050
+
+struct vring_desc {
+	__u64 addr;
+	__u32 len;
+	__u16 flags;
+	__u16 next;
+};
+
+struct vring_used_elem {
+	__u32 id;
+	__u32 len;
+};
+
+struct vconsole_ring {
+        struct vring_desc desc[2];
+	__u16 avail_flags;
+	__u16 avail_idx;
+	__u16 available[2];
+	__u16 used_event_idx;
+	__u16 pad; /* Hit 4-byte boundary */
+
+	// A ring of used descriptor heads with free-running index.
+	__u16 used_flags;
+	__u16 used_idx;
+	struct vring_used_elem used[2];
+	__u16 avail_event_idx;
+};
+
+static char console_in;
+static struct vconsole_ring vc_ring = {
+        { { PHYSICAL_ADDR(console_in), 1, 2, 0 } },
+        1, /* No interrupts */
+}
+
+static void post_buffer(void *base)
+{
+        vc_ring->avail_idx++;
+        wmb();
+        writel(0, base + VIRTIO_MMIO_QUEUE_NOTIFY);
+}
+
+bool vc_read(void *base, char *c)
+{
+        mb();
+        if (vc_ring->used_idx != vc_ring->avail_idx)
+                return false;
+        *c = console_in;
+        post_buffer(base);
+        return true;
+}
+
+void vc_init(void *base)
+{
+        /* Alignment of 4 bytes, don't waste any. */
+	writel(4, base + VIRTIO_MMIO_GUEST_PAGE_SIZE);
+
+        /* Setup incoming vq. */
+	writel(0, base + VIRTIO_MMIO_QUEUE_SEL);
+
+        /* 2 elements */
+	writel(2, base + VIRTIO_MMIO_QUEUE_NUM);
+        /* Alignment of 4 bytes */
+	writel(4, base + VIRTIO_MMIO_QUEUE_ALIGN);
+        /* Location of queue. */
+	writel(PHYSICAL_ADDR(&vc_ring) >> 4, base + VIRTIO_MMIO_QUEUE_PFN);
+
+        post_buffer(base);
+}
