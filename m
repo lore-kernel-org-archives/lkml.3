@@ -1,69 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754059Ab3DVNLI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 09:11:08 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:41482 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753422Ab3DVNLG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 09:11:06 -0400
-Date: Mon, 22 Apr 2013 14:11:01 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Johannes Berg <johannes@sipsolutions.net>
-Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, backports@vger.kernel.org,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/7] backports: add support for voltage / current
- regulator drivers
-Message-ID: <20130422131101.GA17463@sirena.org.uk>
-Mail-Followup-To: Johannes Berg <johannes@sipsolutions.net>,
-	"Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
-	backports@vger.kernel.org, Liam Girdwood <lgirdwood@gmail.com>,
-	linux-kernel@vger.kernel.org
-References: <1365862424-6530-1-git-send-email-mcgrof@do-not-panic.com>
- <1365862424-6530-6-git-send-email-mcgrof@do-not-panic.com>
- <1365886878.1089.5.camel@jlt4.sipsolutions.net>
- <20130415162652.GK15837@opensource.wolfsonmicro.com>
- <1366043632.8361.33.camel@jlt4.sipsolutions.net>
+	id S1754106Ab3DVNL2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 09:11:28 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:45200 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752401Ab3DVNL0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Apr 2013 09:11:26 -0400
+Message-ID: <517536F3.5050702@ti.com>
+Date: Mon, 22 Apr 2013 09:11:15 -0400
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1366043632.8361.33.camel@jlt4.sipsolutions.net>
-X-Cookie: No campfires allowed.
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+To: Pavel Machek <pavel@ucw.cz>
+CC: Eduardo Valentin <eduardo.valentin@ti.com>, <rui.zhang@intel.com>,
+        <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <durgadoss.r@intel.com>
+Subject: Re: [PATCHv2 0/3] thermal: lookup temperature
+References: <1365027197-2793-1-git-send-email-eduardo.valentin@ti.com> <20130422110647.GB24710@amd.pavel.ucw.cz>
+In-Reply-To: <20130422110647.GB24710@amd.pavel.ucw.cz>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 15, 2013 at 06:33:52PM +0200, Johannes Berg wrote:
-> On Mon, 2013-04-15 at 17:26 +0100, Mark Brown wrote:
+Hello Pavel,
 
-> > Please let's at least discuss the issues here, I'm not sure what this is
-> > supposed to do but the analysis of the subsystem didn't seem complete.
+On 22-04-2013 07:06, Pavel Machek wrote:
+> Hi!
+>
+>> Here is V2 of temperature lookup helper function. This has been
+>> split into two API as suggested on V1.
+>>
+>> The usage of it is exemplified on patch 03.
+>>
+>>
+>> Eduardo Valentin (3):
+>>    thermal: introduce thermal_zone_get_zone_by_name helper function
+>
+> Is the function name maybe a bit long? Perhaps using tz_ prefix
+> instead of "thermal_zone_" would help? or thermal_get_by_name? tz_get_by_name?
+>
+> 									Pavel
+>
+This patch follows the naming convention on this file. If we are  going 
+to use different prefixes, then I suggest sending a patch that changes 
+the functions that are exported by this file. Besides the names you 
+suggested do not reflect exactly the purpose of the introduced API.
 
-> I wouldn't worry about it too much. For some reason (media drivers
-> related?) Luis decided that it was worth including this in the backports
-> project (see http://backports.wiki.kernel.org) and I am currently
-> maintaining the git tree for that, at least while I was doing some
-> refactoring.
+Thanks for your suggestion.
 
-> I do notice that it doesn't quite work, there are a lot of unresolved
-> symbols :)
+All best,
 
-> If you think you'd be impacted by this because users demand support from
-> you for the backport or whatever I can revert this (or probably just
-> remove it from the copy list for now.) I don't really have an opinion on
-> it, I'm doing this because I'm interested in one specific wireless
-> driver.
-
-Well, I'd much rather have a sane backport if we're going to have one -
-whatever problem is being solved here it seems likely that someone else
-will have the same need and if there's a general kernel project for this
-(which preusmably has some overlap with LTSI?) it seems bad to have one
-that people have to be warned away from using.
-
-Given how big the misunderstandings in the cover letter for Luis' patch
-were I'd be really concerned about seeing this going into anything
-officialish without some discussion about what's going on.
+Thanks.
