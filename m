@@ -1,77 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754478Ab3DVR7V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 13:59:21 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:57329 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754126Ab3DVR7U (ORCPT
+	id S1754564Ab3DVSTF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 14:19:05 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:58481 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754496Ab3DVSTE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 13:59:20 -0400
+	Mon, 22 Apr 2013 14:19:04 -0400
+Message-ID: <51757F0B.1090104@gmail.com>
+Date: Mon, 22 Apr 2013 23:48:51 +0530
+From: vinayak <vinayakm.list@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120411 Thunderbird/11.0.1
 MIME-Version: 1.0
-In-Reply-To: <20130422080419.GB7080@gmail.com>
-References: <20130419231638.GA20133@www.outflux.net>
-	<20130421091342.GD31470@gmail.com>
-	<CAGXu5jKFSmBTQ5Ay+MypkAStvDMrkWMNHCz4XGyy4bVjyVAnHg@mail.gmail.com>
-	<20130422080419.GB7080@gmail.com>
-Date: Mon, 22 Apr 2013 10:59:19 -0700
-X-Google-Sender-Auth: Ib33rN-aOIRyEkOWfvNxBWQuEoA
-Message-ID: <CAGXu5jLJDWa5oLwFy7ZA1QdNKAQUCGEkCiVw+AD_1Bf9K8ULrQ@mail.gmail.com>
-Subject: Re: [PATCH] x86: kaslr: move ELF relocation handling to C
-From: Kees Cook <keescook@chromium.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        David Woodhouse <David.Woodhouse@intel.com>,
-        Jiri Kosina <jkosina@suse.cz>, Olaf Hering <olaf@aepfle.de>,
-        Yinghai Lu <yinghai@kernel.org>, Matt Fleming <matt.fleming@intel.com>,
-        Gokul Caushik <caushik1@gmail.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Joe Millenbach <jmillenbach@gmail.com>,
-        Alexander Duyck <alexander.h.duyck@intel.com>,
-        Jacob Shin <jacob.shin@amd.com>, Pekka Enberg <penberg@kernel.org>,
-        Eric Northup <digitaleric@google.com>,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: linux-mm@kvack.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        rientjes@google.com
+Subject: Re: [PATCH] mm: add an option to disable bounce
+References: <1366644180-6140-1-git-send-email-vinayakm.list@gmail.com> <20130422174712.GS14496@n2100.arm.linux.org.uk>
+In-Reply-To: <20130422174712.GS14496@n2100.arm.linux.org.uk>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 22, 2013 at 1:04 AM, Ingo Molnar <mingo@kernel.org> wrote:
->
-> * Kees Cook <keescook@chromium.org> wrote:
->
->> On Sun, Apr 21, 2013 at 2:13 AM, Ingo Molnar <mingo@kernel.org> wrote:
->> >
->> > * Kees Cook <keescook@chromium.org> wrote:
->> >
->> >> Moves the relocation handling into C, after decompression. Only
->> >> kernels that need relocation support will use the code. The new
->> >> CONFIG_RANDOMIZE_BASE does not yet do anything except turn on this logic
->> >> for 64-bit kernels.
->> >
->> > So why not keep the inactive CONFIG_RANDOMIZE_BASE hunks in a separate
->> > patch, and just have this one clean, orthogonal patch that moves
->> > relocation handling into C?
+On Monday 22 April 2013 11:17 PM, Russell King - ARM Linux wrote:
+
+> On Mon, Apr 22, 2013 at 08:53:00PM +0530, vinayakm.list@gmail.com wrote:
+>> From: Vinayak Menon <vinayakm.list@gmail.com>
 >>
->> I had wanted there to be a way to test building with 64-bit
->> relocations. With this patch and CONFIG_RANDOMIZE_BASE=y, I could do
->> that. Would you rather I remove those pieces?
->
-> But AFAICS CONFIG_RANDOMIZE_BASE is not an interactive config option, so
-> how did you turn it on?
+>> There are times when HIGHMEM is enabled, but
+>> we don't prefer CONFIG_BOUNCE to be enabled.
+>> CONFIG_BOUNCE can reduce the block device
+>> throughput, and this is not ideal for machines
+>> where we don't gain much by enabling it. So
+>> provide an option to deselect CONFIG_BOUNCE. The
+>> observation was made while measuring eMMC throughput
+>> using iozone on an ARM device with 1GB RAM.
+>>
+>> Signed-off-by: Vinayak Menon <vinayakm.list@gmail.com>
+>> ---
+>>  mm/Kconfig |    6 ++++++
+>>  1 file changed, 6 insertions(+)
+>>
+>> diff --git a/mm/Kconfig b/mm/Kconfig
+>> index 3bea74f..29f9736 100644
+>> --- a/mm/Kconfig
+>> +++ b/mm/Kconfig
+>> @@ -263,8 +263,14 @@ config ZONE_DMA_FLAG
+>>  	default "1"
+>>  
+>>  config BOUNCE
+>> +	bool "Enable bounce buffers"
+>>  	def_bool y
+>>  	depends on BLOCK && MMU && (ZONE_DMA || HIGHMEM)
+> 
+> I don't think this is correct.  You shouldn't use "bool" with "def_bool".
+> Sure, add the "bool", but also change "def_bool" to "default".
 
-I directly edited the .config file to enable it.
 
-> But no strong objections in any case.
-
-HPA, any opinion? How would you like to see arranged for tip/kaslr?
-
--Kees
-
---
-Kees Cook
-Chrome OS Security
+Yes. I will change it to "default" and this looks to be correct
+even from the definition in kconfig-language.txt. But I see other
+instances in mm/Kconfig, where bool and def_bool are used together. When
+I had tested this patch with def_bool, it worked as expected.
