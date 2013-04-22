@@ -1,48 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753647Ab3DVVpc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 17:45:32 -0400
-Received: from casper.infradead.org ([85.118.1.10]:37858 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752622Ab3DVVpb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 17:45:31 -0400
-Message-ID: <5175AF66.8070906@infradead.org>
-Date: Mon, 22 Apr 2013 14:45:10 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S1753958Ab3DVV5J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 17:57:09 -0400
+Received: from mga02.intel.com ([134.134.136.20]:33977 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753555Ab3DVV5G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Apr 2013 17:57:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,529,1363158000"; 
+   d="scan'208";a="322570886"
+From: Andi Kleen <andi@firstfloor.org>
+To: Rik van Riel <riel@redhat.com>
+Cc: Jiannan Ouyang <ouyang@cs.pitt.edu>, LKML <linux-kernel@vger.kernel.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Avi Kivity <avi.kivity@gmail.com>, Gleb Natapov <gleb@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Srikar <srikar@linux.vnet.ibm.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Chegu Vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Andrew Jones <drjones@redhat.com>, Karen Noel <knoel@redhat.com>
+Subject: Re: Preemptable Ticket Spinlock
+References: <CAJocwccu5QQyuKRvgNyPSFz2K_rzCW419W9-XdSUYOL7+KqQKg@mail.gmail.com>
+	<51745650.9050204@redhat.com>
+Date: Mon, 22 Apr 2013 14:56:44 -0700
+In-Reply-To: <51745650.9050204@redhat.com> (Rik van Riel's message of "Sun, 21
+	Apr 2013 17:12:48 -0400")
+Message-ID: <m2k3nuw7oj.fsf@firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-To: werner <w.landgraf@ru.ru>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: 3.9-rc2  this dont compile / link    dwc3_gadget , usb_gadget_map_request
-References: <web-853669895@zbackend1.aha.ru>
-In-Reply-To: <web-853669895@zbackend1.aha.ru>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/11/13 02:27, werner wrote:
-> 
-> drivers/built-in.o: In function `__dwc3_gadget_kick_transfer':
-> gadget.c:(.text+0xbb21d9): undefined reference to `usb_gadget_unmap_request'
-> drivers/built-in.o: In function `__dwc3_gadget_ep_queue':
-> gadget.c:(.text+0xbb22a9): undefined reference to `usb_gadget_map_request'
-> drivers/built-in.o: In function `dwc3_gadget_giveback':
-> (.text+0xbb24db): undefined reference to `usb_gadget_unmap_request'
-> drivers/built-in.o: In function `dwc3_gadget_exit':
-> (.text+0xbb2e52): undefined reference to `usb_del_gadget_udc'
-> drivers/built-in.o: In function `dwc3_gadget_init':
-> (.text+0xbb3a88): undefined reference to `usb_add_gadget_udc'
-> drivers/built-in.o: In function `__dwc3_ep0_do_control_data':
-> ep0.c:(.text+0xbb3f10): undefined reference to `usb_gadget_map_request'
-> ep0.c:(.text+0xbb3f6a): undefined reference to `usb_gadget_map_request'
+Rik van Riel <riel@redhat.com> writes:
+>
+> If we always incremented the ticket number by 2 (instead of 1), then
+> we could use the lower bit of the ticket number as the spinlock.
 
-Hi Werner,
+Spinning on a single bit is very inefficient, as you need to do
+try lock in a loop which is very unfriendly to the MESI state protocol.
+It's much better to have at least three states and allow
+spinning-while-reading-only.
 
-Has this been fixed?  If not, please provide your kernel .config file.
+This is typically very visible on systems with >2S.
 
-thanks,
+-Andi
+        
 -- 
-~Randy
+ak@linux.intel.com -- Speaking for myself only
