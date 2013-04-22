@@ -1,83 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753958Ab3DVKHE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 06:07:04 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:49327 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753763Ab3DVKHA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 06:07:00 -0400
-Date: Mon, 22 Apr 2013 12:06:57 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: paulmck@linux.vnet.ibm.com, x86-ml <x86@kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: irq 16: nobody cared
-Message-ID: <20130422100657.GF4637@pd.tnic>
-References: <20130420185330.GA4654@pd.tnic>
- <20130420235206.GA3509@linux.vnet.ibm.com>
- <20130421103403.GA4594@pd.tnic>
- <20130421163002.GB3509@linux.vnet.ibm.com>
- <s5hfvyj55ke.wl%tiwai@suse.de>
- <20130422091310.GA4637@pd.tnic>
- <s5hzjwq53ec.wl%tiwai@suse.de>
+	id S1751210Ab3DVKHn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 06:07:43 -0400
+Received: from mail-la0-f49.google.com ([209.85.215.49]:61052 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751474Ab3DVKHl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Apr 2013 06:07:41 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <s5hzjwq53ec.wl%tiwai@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130422055612.GE6081@intel.com>
+References: <1365505547-10552-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	<20130415163618.GF12436@intel.com>
+	<1366114487.7932.29.camel@smile>
+	<1525811.597RVDyDxu@vostro.rjw.lan>
+	<20130422055612.GE6081@intel.com>
+Date: Mon, 22 Apr 2013 13:07:39 +0300
+Message-ID: <CAHp75Ve+c01kSoOwUSW=D9tq+svuOTzkkEhM0Amn1vL9VdiXWg@mail.gmail.com>
+Subject: Re: [PATCH v2 0/5] dmaengine: add ACPI DMA helpers and use them in dw_dmac
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>,
+        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.jf.intel.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        spear-devel <spear-devel@list.st.com>, linux-acpi@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 22, 2013 at 11:19:07AM +0200, Takashi Iwai wrote:
-> Is the PCI device a HD-audio controller for the built-in analog or
-> a HDMI audio controller coupled with a graphics chip?
+On Mon, Apr 22, 2013 at 8:56 AM, Vinod Koul <vinod.koul@intel.com> wrote:
+> On Tue, Apr 16, 2013 at 08:11:57PM +0200, Rafael J. Wysocki wrote:
+>> On Tuesday, April 16, 2013 03:14:47 PM Andy Shevchenko wrote:
+>> > On Mon, 2013-04-15 at 22:06 +0530, Vinod Koul wrote:
+>> > > On Tue, Apr 09, 2013 at 02:05:42PM +0300, Andy Shevchenko wrote:
+>> > > > There is a patch series which introduces ACPI DMA helpers in similar way like
+>> > > > we have for DeviceTree.
+>> > > >
+>> > > > In addition it applies this to the first user, namely dw_dmac driver.
+>> > > Applied w/o 3 & 5.2 they failed, can you pls rebase and resend
+>> > >
+>> >
+>> > Actually those two (at least 5/5) can't be applied on top of slave-dma.
+>> > The patches requires slave-dma and linux-pm together. I heard it's
+>> > usually achieved by creating a specific branch in one subsystem
+>> > (linux-pm in our case) for another.
+>> >
+>> > Rafael, what could we do here?
+>>
+>> I suppose Vinod can pull from my acpi-lpss (which is guaranteed not to be
+>> rebased at this point) and apply the series on top of that.
+> Or I can wait for rc1 and apply afterwards...?
 
-Hmm:
+Mika and I have no objections to go this way.
 
-[    7.204020] snd_hda_intel 0000:01:00.1: irq 90 for MSI/MSI-X
-[    7.551912]   #0: HDA ATI SB at 0xfeb00000 irq 16
-[    7.551965]   #1: HDA ATI HDMI at 0xfea30000 irq 90
-[   70.870377] snd_hda_intel 0000:01:00.1: irq 90 for MSI/MSI-X
-
-# lspci -s 01:00.1 -vvv
-01:00.1 Audio device: Advanced Micro Devices [AMD] nee ATI RV635 HDMI Audio [Radeon HD 3600 Series]
-        Subsystem: ASUSTeK Computer Inc. Device aa20
-        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx+
-        Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-        Latency: 0, Cache Line Size: 64 bytes
-        Interrupt: pin B routed to IRQ 90
-        Region 0: Memory at fea30000 (64-bit, non-prefetchable) [size=16K]
-        Capabilities: [50] Power Management version 3
-                Flags: PMEClk- DSI- D1+ D2+ AuxCurrent=0mA PME(D0-,D1-,D2-,D3hot-,D3cold-)
-                Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
-        Capabilities: [58] Express (v2) Legacy Endpoint, MSI 00
-                DevCap: MaxPayload 128 bytes, PhantFunc 0, Latency L0s <4us, L1 unlimited
-                        ExtTag+ AttnBtn- AttnInd- PwrInd- RBE+ FLReset-
-                DevCtl: Report errors: Correctable- Non-Fatal- Fatal- Unsupported-
-                        RlxdOrd- ExtTag- PhantFunc- AuxPwr- NoSnoop+
-                        MaxPayload 128 bytes, MaxReadReq 128 bytes
-                DevSta: CorrErr- UncorrErr- FatalErr- UnsuppReq- AuxPwr- TransPend-
-                LnkCap: Port #0, Speed 5GT/s, Width x16, ASPM L0s L1, Latency L0 <64ns, L1 <1us
-                        ClockPM- Surprise- LLActRep- BwNot-
-                LnkCtl: ASPM Disabled; RCB 64 bytes Disabled- Retrain- CommClk+
-                        ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
-                LnkSta: Speed 5GT/s, Width x16, TrErr- Train- SlotClk+ DLActive- BWMgmt- ABWMgmt-
-                DevCap2: Completion Timeout: Not Supported, TimeoutDis-
-                DevCtl2: Completion Timeout: 50us to 50ms, TimeoutDis-
-                LnkCtl2: Target Link Speed: 2.5GT/s, EnterCompliance- SpeedDis-, Selectable De-emphasis: -6dB
-                         Transmit Margin: Normal Operating Range, EnterModifiedCompliance- ComplianceSOS-
-                         Compliance De-emphasis: -6dB
-                LnkSta2: Current De-emphasis Level: -6dB, EqualizationComplete-, EqualizationPhase1-
-                         EqualizationPhase2-, EqualizationPhase3-, LinkEqualizationRequest-
-        Capabilities: [a0] MSI: Enable+ Count=1/1 Maskable- 64bit+
-                Address: 00000000feeff00c  Data: 4164
-        Capabilities: [100 v1] Vendor Specific Information: ID=0001 Rev=1 Len=010 <?>
-        Kernel driver in use: snd_hda_intel
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
 --
+With Best Regards,
+Andy Shevchenko
