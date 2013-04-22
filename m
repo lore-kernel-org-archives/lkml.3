@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756093Ab3DVIpi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 04:45:38 -0400
+	id S1756055Ab3DVIpf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 04:45:35 -0400
 Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:58925 "EHLO
 	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756036Ab3DVIpb (ORCPT
+	with ESMTP id S1755966Ab3DVIpP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 04:45:31 -0400
-X-AuditID: 9c930197-b7bb3ae000000fa9-27-5174f8a753dd
+	Mon, 22 Apr 2013 04:45:15 -0400
+X-AuditID: 9c930197-b7bb3ae000000fa9-f4-5174f8976cb5
 From: Minchan Kim <minchan@kernel.org>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         Michael Kerrisk <mtk.manpages@gmail.com>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan@kernel.org>,
-        Rob Landley <rob@landley.net>
-Subject: [PATCH 6/6] add documentation on proc.txt
-Date: Mon, 22 Apr 2013 17:45:06 +0900
-Message-Id: <1366620306-30940-6-git-send-email-minchan@kernel.org>
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan@kernel.org>
+Subject: [PATCH 3/6] mm: Remove shrink_page
+Date: Mon, 22 Apr 2013 17:45:03 +0900
+Message-Id: <1366620306-30940-3-git-send-email-minchan@kernel.org>
 X-Mailer: git-send-email 1.8.2
 In-Reply-To: <1366620306-30940-1-git-send-email-minchan@kernel.org>
 References: <1366620306-30940-1-git-send-email-minchan@kernel.org>
@@ -25,56 +24,92 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds documentation about new reclaim field in proc.txt
+By previous patch, shrink_page_list can handle pages from
+multiple zone so let's remove shrink_page.
 
-Cc: Rob Landley <rob@landley.net>
 Signed-off-by: Minchan Kim <minchan@kernel.org>
 ---
- Documentation/filesystems/proc.txt | 24 ++++++++++++++++++++++++
- 1 file changed, 24 insertions(+)
+ mm/vmscan.c | 47 ++++++++++++++---------------------------------
+ 1 file changed, 14 insertions(+), 33 deletions(-)
 
-diff --git a/Documentation/filesystems/proc.txt b/Documentation/filesystems/proc.txt
-index 488c094..c1f5ee4 100644
---- a/Documentation/filesystems/proc.txt
-+++ b/Documentation/filesystems/proc.txt
-@@ -136,6 +136,7 @@ Table 1-1: Process specific entries in /proc
-  maps		Memory maps to executables and library files	(2.4)
-  mem		Memory held by this process
-  root		Link to the root directory of this process
-+ reclaim	Reclaim pages in this process
-  stat		Process status
-  statm		Process memory status information
-  status		Process status in human readable form
-@@ -489,6 +490,29 @@ To clear the soft-dirty bit
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 82f4d6c..42af075 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -924,6 +924,13 @@ free_it:
+ 		 * appear not as the counts should be low
+ 		 */
+ 		list_add(&page->lru, &free_pages);
++		/*
++		 * If pagelist are from multiple zones, we should decrease
++		 * NR_ISOLATED_ANON + x on freed pages in here.
++		 */
++		if (!zone)
++			dec_zone_page_state(page, NR_ISOLATED_ANON +
++					page_is_file_cache(page));
+ 		continue;
  
- Any other value written to /proc/PID/clear_refs will have no effect.
+ cull_mlocked:
+@@ -994,28 +1001,6 @@ unsigned long reclaim_clean_pages_from_list(struct zone *zone,
+ }
  
-+The /proc/PID/reclaim is used to reclaim pages in this process.
-+To reclaim file-backed pages,
-+    > echo 1 > /proc/PID/reclaim
+ #ifdef CONFIG_PROCESS_RECLAIM
+-static unsigned long shrink_page(struct page *page,
+-					struct zone *zone,
+-					struct scan_control *sc,
+-					enum ttu_flags ttu_flags,
+-					unsigned long *ret_nr_dirty,
+-					unsigned long *ret_nr_writeback,
+-					bool force_reclaim,
+-					struct list_head *ret_pages)
+-{
+-	int reclaimed;
+-	LIST_HEAD(page_list);
+-	list_add(&page->lru, &page_list);
+-
+-	reclaimed = shrink_page_list(&page_list, zone, sc, ttu_flags,
+-				ret_nr_dirty, ret_nr_writeback,
+-				force_reclaim);
+-	if (!reclaimed)
+-		list_splice(&page_list, ret_pages);
+-
+-	return reclaimed;
+-}
+-
+ unsigned long reclaim_pages_from_list(struct list_head *page_list)
+ {
+ 	struct scan_control sc = {
+@@ -1025,23 +1010,19 @@ unsigned long reclaim_pages_from_list(struct list_head *page_list)
+ 		.may_swap = 1,
+ 	};
+ 
+-	LIST_HEAD(ret_pages);
++	unsigned long nr_reclaimed;
+ 	struct page *page;
+ 	unsigned long dummy1, dummy2;
+-	unsigned long nr_reclaimed = 0;
+-
+-	while (!list_empty(page_list)) {
+-		page = lru_to_page(page_list);
+-		list_del(&page->lru);
+ 
++	list_for_each_entry(page, page_list, lru)
+ 		ClearPageActive(page);
+-		nr_reclaimed += shrink_page(page, page_zone(page), &sc,
 +
-+To reclaim anonymous pages,
-+    > echo 2 > /proc/PID/reclaim
-+
-+To reclaim both pages,
-+    > echo 3 > /proc/PID/reclaim
-+
-+Also, you can specify address range of process so part of address space
-+will be reclaimed. The format is following as
-+    > echo 4 addr size > /proc/PID/reclaim
-+
-+To reclaim file-backed pages in address range,
-+    > echo 4 $((1<<20) 4096 > /proc/PID/reclaim
-+
-+To reclaim anonymous pages in address range,
-+    > echo 5 $((1<<20) 4096 > /proc/PID/reclaim
-+
-+To reclaim both pages in address range,
-+    > echo 6 $((1<<20) 4096 > /proc/PID/reclaim
-+
- The /proc/pid/pagemap gives the PFN, which can be used to find the pageflags
- using /proc/kpageflags and number of times a page is mapped using
- /proc/kpagecount. For detailed explanation, see Documentation/vm/pagemap.txt.
++	nr_reclaimed = shrink_page_list(page_list, NULL, &sc,
+ 				TTU_UNMAP|TTU_IGNORE_ACCESS,
+-				&dummy1, &dummy2, true, &ret_pages);
+-	}
++				&dummy1, &dummy2, true);
+ 
+-	while (!list_empty(&ret_pages)) {
+-		page = lru_to_page(&ret_pages);
++	while (!list_empty(page_list)) {
++		page = lru_to_page(page_list);
+ 		list_del(&page->lru);
+ 		dec_zone_page_state(page, NR_ISOLATED_ANON +
+ 				page_is_file_cache(page));
 -- 
 1.8.2
 
