@@ -1,127 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754091Ab3DVXid (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 19:38:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53828 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752707Ab3DVXic (ORCPT
+	id S1754011Ab3DVXjh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 19:39:37 -0400
+Received: from mail.afriserver.de ([5.9.107.143]:47142 "EHLO
+	mail.afriserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752511Ab3DVXjg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 19:38:32 -0400
-Date: Mon, 22 Apr 2013 16:38:30 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Alexander Holler <holler@ahsoftware.de>
-Cc: linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Jonathan Cameron <jic23@cam.ac.uk>, Jiri Kosina <jkosina@suse.cz>
-Subject: Re: [PATCH 3/3] rtc: rtc-hid-sensor-time; add option hctosys to set
- time at boot
-Message-Id: <20130422163830.4aaaef240b1572dc778dd620@linux-foundation.org>
-In-Reply-To: <1366384452-14367-4-git-send-email-holler@ahsoftware.de>
-References: <1366384452-14367-1-git-send-email-holler@ahsoftware.de>
-	<1366384452-14367-4-git-send-email-holler@ahsoftware.de>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 22 Apr 2013 19:39:36 -0400
+Message-ID: <5175CA2F.2030206@felixbecker.name>
+Date: Tue, 23 Apr 2013 01:39:27 +0200
+From: Felix Becker <mail@felixbecker.name>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+Subject: socket file descriptor a/m/c-timestamps broken in <= 3.8.8?
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 19 Apr 2013 17:14:12 +0200 Alexander Holler <holler@ahsoftware.de> wrote:
+Hi,
 
-> drivers/rtc/hctosys (CONFIG_RTC_HCTOSYS) doesn't work for
-> rtc-hid-sensor-time because it will be called in late_init, and thus before
-> rtc-hid-sensor-time gets loaded.
+I tried to figure out how old my TCP connections are and took a look
+at /proc/<pid>/fd/<socketfdnum> using 'ls -la' / 'stat'.
 
-Isn't that true of all RTC drivers which are built as modules?  There's
-nothing special about hid-sensor-time here?
+When I'm creating a new socket in my application, the time stamps
+returned by stat / ls -la are correct - as expected. After closing the
+socket, the fd isn't visible in /proc/<pid>/fd anymore - as expected.
+When creating a new socket a few minutes later (which gets the same
+number as the socket closed before), the newly created socket has the
+same time stamps (access / modify / change) as the old socket - I
+didn't expect this.
 
-I assume the standard answer here is "your RTC driver should be built
-into vmlinux".  If we wish to make things work for modular RTC drivers
-then we should find a solution which addresses *all* RTC drivers?
+When using fstat() from <sys/stat.h> I'm getting 0 for a/m/c-time.
+Only in /proc/<pid>/fd/ i can see (the wrong) times.
 
-> To set the time through rtc-hid-sensor-time
-> at startup, the module now checks by default if the system time is before
-> 1970-01-02 and sets the system time (once) if this is the case.
-> 
-> To disable this behaviour, set the module option hctosys to zero, e.g. by
-> using rtc-hid-sensor-time.hctosys=0 at the kernel command line if the
-> driver is statically linked into the kernel.
+I attached a test code for reproducing the issue. In my production
+environments i have new socket file descriptors which have timestamps
+indicating that they are many hours old.
 
-Is a bit hacky, no?
+Q1: is it a bug that fstat() returns 0-values for a/m/c-time?
 
-> @@ -237,6 +279,22 @@ static const struct rtc_class_ops hid_time_rtc_ops = {
->  	.read_time = hid_rtc_read_time,
->  };
->  
-> +struct hid_time_work_time_state {
-> +	struct work_struct work;
-> +	struct hid_time_state *time_state;
-> +};
-> +
-> +static void hid_time_request_report_work(struct work_struct *work)
-> +{
-> +	struct hid_time_state *time_state =
-> +		((struct hid_time_work_time_state *)work)->time_state;
+Q2: is it a bug that a new socket, with the file descriptor number of
+an older socket which existed before, have the a/m/c-times of the old
+socket in /proc/<pid>/fd/?
 
-Yikes.  Use container_of() here.
+Best regards
 
-Also, you don't *have* to initialise things at their definition site.  So
+Felix
 
-	struct hid_time_state *time_state =
-		some-ginormous-expression-which-overflows-80-columns;
+p.s. test setup is a normal x86_64 architecture (intel xeon).
 
-becomes
+=======================================================================
+// sockettest.c
 
-	struct hid_time_state *time_state;
-	time_state = some-ginormous-expression-which-no-longer-overflows-80-columns;
+#include <sys/socket.h>
+#include <time.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/un.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
 
-Simple, no?
 
-> +	/* get a report with all values through requesting one value */
-> +	sensor_hub_input_attr_get_raw_value(
-> +		time_state->common_attributes.hsdev, HID_USAGE_SENSOR_TIME,
-> +		hid_time_addresses[0], time_state->info[0].report_id);
-> +	kfree(work);
-> +}
-> +
->  static int hid_time_probe(struct platform_device *pdev)
->  {
->  	int ret = 0;
-> @@ -287,6 +345,20 @@ static int hid_time_probe(struct platform_device *pdev)
->  		return PTR_ERR(time_state->rtc);
->  	}
->  
-> +	if (!hid_time_time_set_once && hid_time_hctosys_enabled) {
-> +		/*
-> +		 * Request a HID report to set the time.
-> +		 * Calling sensor_hub_..._get_raw_value() here directly
-> +		 * doesn't work, therefor we have to use a work.
-> +		 */
-> +		struct hid_time_work_time_state *hdwork =
-> +			kmalloc(sizeof(struct hid_time_work_time_state),
-> +				GFP_KERNEL);
+void print_socket_stats(int sfd){
+   struct stat socket_stats;
+   fstat(sfd, &socket_stats);
+   printf("Socket stats for socket %d\n", sfd);
+   printf("socket stat: st_atime: %ld\n", socket_stats.st_atime);
+   printf("socket stat: st_mtime: %ld\n", socket_stats.st_mtime);
+   printf("socket stat: st_ctime: %ld\n", socket_stats.st_ctime);
+}
 
-looky:
+void print_with_time(const char* message){
+        time_t t;
+        time(&t);
+        printf("%s @ %s\n", message, ctime(&t));
 
-		struct hid_time_work_time_state *hdwork;
+}
 
-		hdwork = kmalloc(sizeof(*hdwork), GFP_KERNEL);
+int main(int argc, char *argv[]) {
 
-> +		hdwork->time_state = time_state;
+   int sfd;
 
-Forgot to check for kmalloc() failure.
+   printf("pid: %d\n", getpid());
 
-> +		INIT_WORK(&hdwork->work, hid_time_request_report_work);
-> +		schedule_work(&hdwork->work);
+   print_with_time("Opening socket");
+   sfd = socket(AF_UNIX, SOCK_STREAM, 0);
+   printf("opened socket: %d\n",sfd);
+   print_socket_stats(sfd);
 
-The patch adds a schedule_work() but no flush_scheduled_work(), etc. 
-So if the driver is shut down or rmmodded while the work is still
-pending, the kernel will go kapow.
+   print_with_time("sleeping 30\n");
 
-> +	}
-> +
->  	return ret;
->  }
+   sleep(30);
 
+   printf("closing socket %d", sfd);
+   close(sfd);
+
+   printf("closed socket: %d\n",sfd);
+   print_with_time("sleeping 61 seconds");
+
+   sleep(61);
+
+   print_with_time("opening new socket");
+   sfd = socket(AF_UNIX, SOCK_STREAM, 0);
+   printf("opened socket: %d\n",sfd);
+   print_socket_stats(sfd);
+   print_with_time("sleeping 999");
+
+   sleep(999);
+}
+
+=======================================================================
+
+./sockettest &
+
+pid: 18267
+Opening socket @ Mon Apr 22 23:05:37 2013
+
+opened socket: 3
+Socket stats for socket 3
+socket stat: st_atime: 0
+socket stat: st_mtime: 0
+socket stat: st_ctime: 0
+sleeping 30 @ Mon Apr 22 23:05:37 2013
+
+>>> ls -la /proc/18267/fd/3
+lrwx------ 1 becker becker 64 Apr 22 23:05 /proc/18267/fd/3 ->
+socket:[210268]
+
+
+>>> stat /proc/18267/fd/3
+  File: `/proc/18267/fd/3' -> `socket:[210268]'
+  Size: 64              Blocks: 0          IO Block: 1024   symbolic link
+Device: 3h/3d   Inode: 52177       Links: 1
+Access: (0700/lrwx------)  Uid: ( 1001/  becker)   Gid: ( 1001/  becker)
+Access: 2013-04-22 23:05:46.179813835 +0000
+Modify: 2013-04-22 23:05:46.175813886 +0000
+Change: 2013-04-22 23:05:46.175813886 +0000
+
+closing socket 3
+closed socket: 3
+
+sleeping 61 seconds @ Mon Apr 22 23:06:07 2013
+
+opening new socket @ Mon Apr 22 23:07:08 2013
+
+opened socket: 3
+Socket stats for socket 3
+socket stat: st_atime: 0
+socket stat: st_mtime: 0
+socket stat: st_ctime: 0
+sleeping 999 @ Mon Apr 22 23:07:08 2013
+
+
+>>> ls -la /proc/18267/fd/3
+lrwx------ 1 becker becker 64 Apr 22 23:05 /proc/18267/fd/3 ->
+socket:[210320]
+
+>>> stat /proc/18267/fd/3
+
+
+
+  File: `/proc/18267/fd/3' -> `socket:[210320]'
+  Size: 64              Blocks: 0          IO Block: 1024   symbolic link
+Device: 3h/3d   Inode: 52177       Links: 1
+Access: (0700/lrwx------)  Uid: ( 1001/  becker)   Gid: ( 1001/  becker)
+Access: 2013-04-22 23:05:46.179813835 +0000
+Modify: 2013-04-22 23:05:46.175813886 +0000
+Change: 2013-04-22 23:05:46.175813886 +0000
