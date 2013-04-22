@@ -1,70 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753636Ab3DVMkS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 08:40:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31416 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753125Ab3DVMkQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 08:40:16 -0400
-Date: Mon, 22 Apr 2013 15:39:38 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>, avi.kivity@gmail.com,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH v3 00/15] KVM: MMU: fast zap all shadow pages
-Message-ID: <20130422123938.GB10970@redhat.com>
-References: <1366093973-2617-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
- <20130421130346.GE8997@redhat.com>
- <20130421152751.GB28437@amt.cnet>
- <20130421153508.GA28842@amt.cnet>
+	id S1753826Ab3DVMk0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 08:40:26 -0400
+Received: from fbr03.mfg.siteprotect.com ([64.26.60.138]:57795 "EHLO
+	fbr03.mfg.siteprotect.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753724Ab3DVMkX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Apr 2013 08:40:23 -0400
+X-Greylist: delayed 428 seconds by postgrey-1.27 at vger.kernel.org; Mon, 22 Apr 2013 08:40:23 EDT
+Date: Mon, 22 Apr 2013 08:33:04 -0400 (EDT)
+From: Vince Weaver <vince@deater.net>
+X-X-Sender: vince@pianoman.cluster.toy
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+cc: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@ghostprotocols.net,
+        tglx@linutronix.de, tt.rantala@gmail.com
+Subject: Re: [tip:perf/urgent] perf: Treat attr.config as u64 in
+ perf_swevent_init()
+In-Reply-To: <1366283828.19383.7.camel@laptop>
+Message-ID: <alpine.DEB.2.02.1304220831460.17487@pianoman.cluster.toy>
+References: <1365882554-30259-1-git-send-email-tt.rantala@gmail.com>  <tip-8176cced706b5e5d15887584150764894e94e02f@git.kernel.org> <1366283828.19383.7.camel@laptop>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130421153508.GA28842@amt.cnet>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-CTCH-Spam: Unknown
+X-CTCH-RefID: str=0001.0A020201.51752E09.00FB,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 21, 2013 at 12:35:08PM -0300, Marcelo Tosatti wrote:
-> On Sun, Apr 21, 2013 at 12:27:51PM -0300, Marcelo Tosatti wrote:
-> > On Sun, Apr 21, 2013 at 04:03:46PM +0300, Gleb Natapov wrote:
-> > > On Tue, Apr 16, 2013 at 02:32:38PM +0800, Xiao Guangrong wrote:
-> > > > This patchset is based on my previous two patchset:
-> > > > [PATCH 0/2] KVM: x86: avoid potential soft lockup and unneeded mmu reload
-> > > > (https://lkml.org/lkml/2013/4/1/2)
-> > > > 
-> > > > [PATCH v2 0/6] KVM: MMU: fast invalid all mmio sptes
-> > > > (https://lkml.org/lkml/2013/4/1/134)
-> > > > 
-> > > > Changlog:
-> > > > V3:
-> > > >   completely redesign the algorithm, please see below.
-> > > > 
-> > > This looks pretty complicated. Is it still needed in order to avoid soft
-> > > lockups after "avoid potential soft lockup and unneeded mmu reload" patch?
-> > 
-> > Do not want kvm_set_memory (cases: DELETE/MOVE/CREATES) to be
-> > suspectible to:
-> > 
-> > vcpu 1    		|	kvm_set_memory
-> > create shadow page 		
-> > 				nuke shadow page
-> > create shadow page
-> > 				nuke shadow page
-> > 
-> > Which is guest triggerable behavior with spinlock preemption algorithm.
-> 
-> Not only guest triggerable as in the sense of a malicious guest, 
-> but condition above can be induced by host workload with non-malicious
-> guest system.
-> 
-Is the problem that newly created shadow pages are immediately zapped?
-Shouldn't generation number/kvm_mmu_zap_all_invalid() idea described here
-https://lkml.org/lkml/2013/4/22/111 solve this?
+On Thu, 18 Apr 2013, Peter Zijlstra wrote:
 
-> Also kvm_set_memory being relatively fast with huge memory guests
-> is nice (which is what Xiaos idea allows).
+> On Mon, 2013-04-15 at 03:42 -0700, tip-bot for Tommi Rantala wrote:
+> > Commit-ID:  8176cced706b5e5d15887584150764894e94e02f
+> > Gitweb:     http://git.kernel.org/tip/8176cced706b5e5d15887584150764894e94e02f
+> > Author:     Tommi Rantala <tt.rantala@gmail.com>
+> > AuthorDate: Sat, 13 Apr 2013 22:49:14 +0300
+> > Committer:  Ingo Molnar <mingo@kernel.org>
+> > CommitDate: Mon, 15 Apr 2013 11:42:12 +0200
+> > 
+> > perf: Treat attr.config as u64 in perf_swevent_init()
+> > 
+> > Trinity discovered that we fail to check all 64 bits of
+> > attr.config passed by user space, resulting to out-of-bounds
+> > access of the perf_swevent_enabled array in
+> > sw_perf_event_destroy().
 > 
+> Gah, I so missed we could hide bits in the top word and then use them
+> in _destroy().
+> 
+> The alternative is of course to also truncate to int in _destroy(), but
+> yes keeping the natural size seems the best alternative.
 
---
-			Gleb.
+has this been marked for stable now that it's in 3.9-rc8?  It's trivial to 
+oops/lock the kernel with a few line program and the problem has been 
+around a while.
+
+Vince
+
