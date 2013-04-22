@@ -1,69 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753913Ab3DVBNq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Apr 2013 21:13:46 -0400
-Received: from ozlabs.org ([203.10.76.45]:51966 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752573Ab3DVBNp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Apr 2013 21:13:45 -0400
-From: Michael Neuling <mikey@neuling.org>
-To: Michael Ellerman <michael@ellerman.id.au>
-cc: Anshuman Khandual <khandual@linux.vnet.ibm.com>, linuxppc-dev@ozlabs.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V3 1/5] powerpc, perf: Add new BHRB related instructions for POWER8
-In-reply-to: <20130421234109.GC22246@concordia>
-References: <1366287976-3900-1-git-send-email-khandual@linux.vnet.ibm.com> <1366287976-3900-2-git-send-email-khandual@linux.vnet.ibm.com> <20130421234109.GC22246@concordia>
-Comments: In-reply-to Michael Ellerman <michael@ellerman.id.au>
-   message dated "Mon, 22 Apr 2013 09:41:10 +1000."
-X-Mailer: MH-E 8.2; nmh 1.5; GNU Emacs 23.4.1
-Date: Mon, 22 Apr 2013 11:13:43 +1000
-Message-ID: <14010.1366593223@ale.ozlabs.ibm.com>
+	id S1753973Ab3DVBOa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Apr 2013 21:14:30 -0400
+Received: from mailrelay1.diasemi.com ([82.210.246.133]:10753 "EHLO
+	mailrelay1.diasemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753510Ab3DVBO3 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Apr 2013 21:14:29 -0400
+From: "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
+To: Guenter Roeck <linux@roeck-us.net>, Lars-Peter Clausen <lars@metafoo.de>
+CC: "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>,
+        "Jean Delvare" <khali@linux-fr.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Dajun Chen <david.chen@diasemi.com>
+Subject: RE: [NEW DRIVER V6 6/7] drivers/hwmon: DA9058 HWMON driver
+Thread-Topic: [NEW DRIVER V6 6/7] drivers/hwmon: DA9058 HWMON driver
+Thread-Index: AQHOPSEubkz3P5Ym/UOAXwYREM+UHZjdy2MAgAGEaoCAAh99gA==
+Date: Mon, 22 Apr 2013 01:14:26 +0000
+Message-ID: <24DF37198A1E704D9811D8F72B87EB514191F1F7@NB-EX-MBX02.diasemi.com>
+References: <201304191712.r3JHCEmr017829@latitude>
+ <51718BFE.7060409@metafoo.de> <20130420173513.GA8275@roeck-us.net>
+In-Reply-To: <20130420173513.GA8275@roeck-us.net>
+Accept-Language: en-GB, de-DE, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.95.24.79]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michael Ellerman <michael@ellerman.id.au> wrote:
+> -----Original Message-----
+> From: Guenter Roeck [mailto:linux@roeck-us.net]
+> Sent: 20 April 2013 18:35
+> To: Lars-Peter Clausen
+> Cc: Opensource [Anthony Olech]; Jean Delvare; Mark Brown; Randy Dunlap;
+> lm-sensors@lm-sensors.org; LKML; David Dajun Chen
+> Subject: Re: [NEW DRIVER V6 6/7] drivers/hwmon: DA9058 HWMON driver
+> On Fri, Apr 19, 2013 at 08:25:02PM +0200, Lars-Peter Clausen wrote:
+> > Same comment as before, I'd like to see this using the generic IIO to
+> > HWMON bridge instead of recreating it.
+> ... and I agree. Seems we are getting more and more of those, and at some
+> point it makes really sense to find a generic solution.
+> Anthony, can you please look into that ?
+> Thanks,
+> Guenter
 
-> On Thu, Apr 18, 2013 at 05:56:12PM +0530, Anshuman Khandual wrote:
-> > This patch adds new POWER8 instruction encoding for reading
-> > the BHRB buffer entries and also clearing it. Encoding for
-> > "clrbhrb" instruction is straight forward.
-> 
-> Which is "clear branch history rolling buffer" ?
-> 
-> > But "mfbhrbe"
-> > encoding involves reading a certain index of BHRB buffer
-> > into a particular GPR register.
-> 
-> And "Move from branch history rolling buffer entry" ?
-> 
-> > diff --git a/arch/powerpc/include/asm/ppc-opcode.h b/arch/powerpc/include/asm/ppc-opcode.h
-> > index 8752bc8..93ae5a1 100644
-> > --- a/arch/powerpc/include/asm/ppc-opcode.h
-> > +++ b/arch/powerpc/include/asm/ppc-opcode.h
-> > @@ -82,6 +82,7 @@
-> >  #define	__REGA0_R31	31
-> >  
-> >  /* sorted alphabetically */
-> > +#define PPC_INST_BHRBE			0x7c00025c
-> 
-> I don't think you really need this, just use the literal value below.
+OK -- generic IIO to HWMON bridge
 
-The rest of the defines in this file do this, so Anshuman's right. 
+I will investigate - but if you know any prototypes or any useful starting point could you let me know as I don't want to re-invent the wheel.
 
-> > @@ -297,6 +298,12 @@
-> >  #define PPC_NAP			stringify_in_c(.long PPC_INST_NAP)
-> >  #define PPC_SLEEP		stringify_in_c(.long PPC_INST_SLEEP)
-> >  
-> > +/* BHRB instructions */
-> > +#define PPC_CLRBHRB		stringify_in_c(.long 0x7c00035c)
-> > +#define PPC_MFBHRBE(r, n)	stringify_in_c(.long PPC_INST_BHRBE | \
-> > +						__PPC_RS(r) | \
-> > +							(((n) & 0x1f) << 11))
-> 
-> Why are you not using ___PPC_RB(n) here ?
+Thanks,
 
-Actually, this is wrong.  The number field should be 10 bits (0x3ff),
-not 5 (0x1f)  Anshuman please fix.  
-
-Mikey
+Anthony Olech
