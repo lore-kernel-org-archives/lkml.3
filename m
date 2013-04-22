@@ -1,117 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754412Ab3DVCed (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Apr 2013 22:34:33 -0400
-Received: from mail-ia0-f176.google.com ([209.85.210.176]:41108 "EHLO
-	mail-ia0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754056Ab3DVCeb (ORCPT
+	id S1754432Ab3DVCnu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Apr 2013 22:43:50 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:37570 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753892Ab3DVCns (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Apr 2013 22:34:31 -0400
-MIME-Version: 1.0
-In-Reply-To: <516F06F5.9060200@ti.com>
-References: <1366218743-20841-1-git-send-email-eduardo.valentin@ti.com>
-	<516F06F5.9060200@ti.com>
-Date: Mon, 22 Apr 2013 08:04:30 +0530
-X-Google-Sender-Auth: x7dKsYCM6C3oWn6IaFSm1cvYrTk
-Message-ID: <CADGdYn7KxqLBtZAZSb0my7OSC_Q3As=G9vZuHVyB3zv=3TpxJg@mail.gmail.com>
-Subject: Re: [PATCH 00/30] thermal: cpu_cooling: code improvements
-From: amit daniel kachhap <amit.daniel@samsung.com>
-To: Eduardo Valentin <eduardo.valentin@ti.com>
-Cc: "Zhang, Rui" <rui.zhang@intel.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org >> \"linux-kernel@vger.kernel.org\"" 
-	<linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 21 Apr 2013 22:43:48 -0400
+Date: Mon, 22 Apr 2013 12:43:34 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ivan Vecera <ivecera@redhat.com>, Patrick McHardy <kaber@trash.net>
+Subject: linux-next: manual merge of the net-next tree with Linus' tree
+Message-Id: <20130422124334.92adfce6bdbcba7b08fe83a2@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__22_Apr_2013_12_43_34_+1000_PXABuKPIOl6vlyzx"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Eduardo,
+--Signature=_Mon__22_Apr_2013_12_43_34_+1000_PXABuKPIOl6vlyzx
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I looked at your whole series and they certainly looks useful, so for
-the entire series,
-Acked-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+Hi all,
 
-Thanks,
-Amit Daniel Kachhap
+Today's linux-next merge of the net-next tree got a conflict in
+drivers/net/ethernet/emulex/benet/be_main.c between commit f11a869d4e38
+("be2net: take care of __vlan_put_tag return value") from Linus' tree and
+commit 86a9bad3ab6b ("net: vlan: add protocol argument to packet tagging
+functions") from the net-next tree.
 
-On Thu, Apr 18, 2013 at 2:02 AM, Eduardo Valentin
-<eduardo.valentin@ti.com> wrote:
-> On 17-04-2013 13:11, Eduardo Valentin wrote:
->>
->> Rui,
->
->
->
-> Looks like I forgot to add the lists on patch 00. Doing so..
->>
->>
->> This is a series of patches to improve the code for cpu_cooling.
->> Majority of these changes are actually kernel-doc updates, as
->> they required to be revised. A part from these, there are some
->> changes regarding code style and readiness.
->>
->> Some may complain that these are a matter of taste, indeed.
->> But I tried to just be unbiased and just keep the changes related
->> to kernel-doc and checkpatch.pl. After this series, theses
->> tools should be generating decent output ;-).
->>
->> The remaining changes are actually a couple of fixes for defensive
->> coding. A part from updating the MAINTAINERS entry to cover cpu_cooling.
->>
->> This series has been tested on TI OMAP4430, together with the
->> thermal driver under staging tree.
->>
->> All these patches are based on current linux-next/master.
->>
->> They are also available here:
->>
->> All best,
->>
->> Eduardo Valentin (30):
->>    thermal: cpu_cooling: remove unused headers
->>    thermal: cpu_cooling: remove trailing white spaces
->>    thermal: cpu_cooling: fix kernel_doc for cpufreq_cooling_device
->>    thermal: cpu_cooling: use EXPORT_SYMBOL_GPL
->>    thermal: cpu_cooling: remove compiler warning
->>    thermal: cpu_cooling: standardize end of function
->>    thermal: cpu_cooling: fix kernel doc for is_cpufreq_valid
->>    thermal: cpu_cooling: add documentation for get_property
->>    thermal: cpu_cooling: standardize comment style
->>    thermal: cpu_cooling: align on open parenthesis
->>    thermal: cpu_cooling: remove trailing blank line
->>    thermal: cpu_cooling: document cpufreq_get_cooling_level
->>    thermal: cpu_cooling: remove checkpatch.pl warning
->>    thermal: cpu_cooling: improve documentation for get_cpu_frequency
->>    thermal: cpu_cooling: update documentation for cpufreq_apply_cooling
->>    thermal: cpu_cooling: update documentation for
->>      cpufreq_thermal_notifier
->>    thermal: cpu_cooling: update Kconfig entry
->>    thermal: cpu_cooling: alignment improvements
->>    thermal: cpu_cooling: update documentation for cpufreq_get_max_state
->>    thermal: cpu_cooling: update documentation for cpufreq_get_cur_state
->>    thermal: cpu_cooling: update documentation for cpufreq_set_cur_state
->>    thermal: cpu_cooling: update kernel-doc for cpufreq_cooling_register
->>    thermal: cpu_cooling: update kernel-doc comment for
->>      cpufreq_cooling_unregister
->>    thermal: cpu_cooling: use snprintf instead of sprintf
->>    thermal: cpu_cooling: remove not needed curl brackets
->>    thermal: cpu_cooling: remove unused symbols
->>    thermal: cpu_cooling: add needed header for cpu_cooling.h
->>    MAINTAINERS: update thermal entry by adding file cpu_cooling.h
->>    thermal: cpu_cooling: remove unused symbols on cpu_cooling.h
->>    thermal: cpu_cooling: improve line breaking
->>
->>   MAINTAINERS                   |   1 +
->>   drivers/thermal/Kconfig       |   5 +-
->>   drivers/thermal/cpu_cooling.c | 156
->> ++++++++++++++++++++++++++++++------------
->>   include/linux/cpu_cooling.h   |  20 +++---
->>   4 files changed, 125 insertions(+), 57 deletions(-)
->>
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc drivers/net/ethernet/emulex/benet/be_main.c
+index 2886c9b,811d0a4..0000000
+--- a/drivers/net/ethernet/emulex/benet/be_main.c
++++ b/drivers/net/ethernet/emulex/benet/be_main.c
+@@@ -759,9 -771,8 +771,9 @@@ static struct sk_buff *be_insert_vlan_i
+ =20
+  	if (vlan_tx_tag_present(skb)) {
+  		vlan_tag =3D be_get_tx_vlan_tag(adapter, skb);
+- 		skb =3D __vlan_put_tag(skb, vlan_tag);
+ -		__vlan_put_tag(skb, htons(ETH_P_8021Q), vlan_tag);
+ -		skb->vlan_tci =3D 0;
+++		skb =3D __vlan_put_tag(skb, htons(ETH_P_8021Q), vlan_tag);
+ +		if (skb)
+ +			skb->vlan_tci =3D 0;
+  	}
+ =20
+  	return skb;
+
+--Signature=_Mon__22_Apr_2013_12_43_34_+1000_PXABuKPIOl6vlyzx
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRdKPWAAoJEECxmPOUX5FE3Z4QAKQpZEsa06tp5n6CkozqKV6W
+FD+pCgfe+nL2GGUbsUJ/3xVK4XXCiL437tQQd/91hOf9t76dZLMbjULfKlF3gpvF
+dmLWdMuULQ8k/FMf/4ocR28XFHcszPUg8yTICxTS/D38YwM0GXNjrOLljZNjONtv
+BqMeN04sCqoIIu3j1BxnO1/n9YPDUx8DYP8A2hcuZMCExaFlRXQIzozaCeXLXohl
+bTvHUQQEi+0WnNgH9STfi/cZb9lKjmcHBRQR0hGIvsW82a7y59NDGpfuVIKEzUzv
+z+POD6vLkzhbqpSBCGQdcb1fkDZYlO1zyMDhU8OlVGGf+dEtp9IDrYzDvEYTjvII
+003KUDm7FUHJ8Zy3pby98DomouCUKpzp2fvTuXwDMmJ0zIB8mAmtGWZQKHHwoyzf
+39msC7TX6w0XqIXuN8M4pNTkd8s0iaGxtOITPdot0sw1cvS+Odf9+cETAVsE2gZL
+xkvL4jswVgZb5Y871jm/Jk/RsyS/XqDbAsLbaoBSKMOH+Ti9eLYWiaDA+euk6b/o
+YT9l00N3YzaUCuofVe4jflqeqXQ6oZqaKGzH7Ma52rE6UuWhKqnLYjHEa9a0DGq+
+GARKhlBQYlu6pxXWOFWlDDswQ66YH0ZMaIdQIDIvAYDPTEptOla/3GEK0CLFclVF
+UP34nO5Q4YRg7Zm1WzAn
+=Lb1t
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__22_Apr_2013_12_43_34_+1000_PXABuKPIOl6vlyzx--
