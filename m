@@ -1,48 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753348Ab3DVUvN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 16:51:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60418 "EHLO mx1.redhat.com"
+	id S1753254Ab3DVUwz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 16:52:55 -0400
+Received: from mail.pr.hu ([87.242.0.5]:58674 "EHLO mail.pr.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752396Ab3DVUvM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 16:51:12 -0400
-Message-ID: <5175A29E.1070704@redhat.com>
-Date: Mon, 22 Apr 2013 16:50:38 -0400
-From: Rik van Riel <riel@redhat.com>
+	id S1751210Ab3DVUwy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Apr 2013 16:52:54 -0400
+Message-ID: <5175A30F.2000906@pr.hu>
+Date: Mon, 22 Apr 2013 22:52:31 +0200
+From: Boszormenyi Zoltan <zboszor@pr.hu>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Jiannan Ouyang <ouyang@cs.pitt.edu>, LKML <linux-kernel@vger.kernel.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Avi Kivity <avi.kivity@gmail.com>, Gleb Natapov <gleb@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Srikar <srikar@linux.vnet.ibm.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        KVM <kvm@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Chegu Vinod <chegu_vinod@hp.com>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Andrew Jones <drjones@redhat.com>, Karen Noel <knoel@redhat.com>
-Subject: Re: Preemptable Ticket Spinlock
-References: <CAJocwccu5QQyuKRvgNyPSFz2K_rzCW419W9-XdSUYOL7+KqQKg@mail.gmail.com>  <51745650.9050204@redhat.com> <1366631460.4443.3.camel@laptop>  <51753289.70406@redhat.com> <1366660147.6454.6.camel@laptop>  <517595FA.800@redhat.com> <1366661294.6454.18.camel@laptop>  <51759E43.2080003@redhat.com> <1366663475.8337.10.camel@laptop> <1366663714.8337.12.camel@laptop>
-In-Reply-To: <1366663714.8337.12.camel@laptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Aaron Lu <aaron.lwe@gmail.com>
+CC: lkml <linux-kernel@vger.kernel.org>, Jeff Garzik <jgarzik@pobox.com>,
+        linux-ide@vger.kernel.org
+Subject: Re: ahci driver cannot suspend a CF card, ata_piix can
+References: <516D3CEF.6010202@pr.hu> <51715F5C.3050502@gmail.com>
+In-Reply-To: <51715F5C.3050502@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-2; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Spam-Score: -2.1 (--)
+X-Scan-Signature: 7572fbe1482f51d378d5cb517c4344f1
+X-Spam-Tracer: backend.mail.pr.hu -2.1 20130422205042Z
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/22/2013 04:48 PM, Peter Zijlstra wrote:
+Hi,
 
-> Hmm.. it looked like under light overcommit the paravirt ticket lock
-> still had some gain (~10%) and of course it brings the fairness thing
-> which is always good.
+2013-04-19 17:14 keltezéssel, Aaron Lu írta:
+> On 04/16/2013 07:58 PM, Boszormenyi Zoltan wrote:
+>> Hi,
+>>
+>> The SATA interface can be switched between AHCI and legacy modes as usual:
+>>
+>> 00:1f.2 SATA controller: Intel Corporation NM10/ICH7 Family SATA
+>> Controller [AHCI mode] (rev 02)
+>>
+>> The device attached to the SATA controller is always a CF card via a
+>> SiI3811 Serial ATA to Parallel ATA Device Bridge based converter board.
 >
-> I can only imagine the mess unfair + vcpu preemption can bring to guest
-> tasks.
+> Can you please attach a normal sata disk and try again with the
+> controller set to AHCI mode? I suspect it may be the SiI3811 bridge that
+> caused this command.
 
-If you think unfairness + vcpu preemption is bad, you haven't
-tried full fairness + vcpu preemption :)
+I have finally got around to testing a different beast, a Zotax ZBOX with
+mostly the same motherboard components that the previously mentioned
+embedded PC had. It turned out that this embedded PC (a POS machine)
+doesn't have regular SATA connectors but a special one to connect only
+this SATA-EIDE converter card with the SiI3811 chip.
 
--- 
-All rights reversed
+Anyway, using the Zotac box, both a shiny new Samsung 840 SSD
+and a CF card using a different IDE bridge chip (Sunplus SATALink SPIF223A)
+can suspend to RAM using AHCI mode.
+
+Your suspicion turned out to be correct.
+
+Best regards,
+Zoltán Böszörményi
+
