@@ -1,106 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752727Ab3DVMF0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 08:05:26 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:56809 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751919Ab3DVMFY (ORCPT
+	id S1752911Ab3DVMGD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 08:06:03 -0400
+Received: from mail-bk0-f50.google.com ([209.85.214.50]:33635 "EHLO
+	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752198Ab3DVMGB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 08:05:24 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Uwe =?iso-8859-1?q?Kleine-K=F6nig?=" 
-	<u.kleine-koenig@pengutronix.de>
-Subject: Re: [PATCH v3] irqchip: Add support for ARMv7-M's NVIC
-Date: Mon, 22 Apr 2013 14:04:31 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
-Cc: Thomas Gleixner <tglx@linutronix.de>, kernel@pengutronix.de,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Jonathan Austin <jonathan.austin@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Paul Mundt <lethal@linux-sh.org>, linux-sh@vger.kernel.org,
-        Tomasz Figa <tomasz.figa@gmail.com>
-References: <1366214540-31166-1-git-send-email-u.kleine-koenig@pengutronix.de> <20130419150927.GE15233@pengutronix.de> <20130422100219.GH15233@pengutronix.de>
-In-Reply-To: <20130422100219.GH15233@pengutronix.de>
+	Mon, 22 Apr 2013 08:06:01 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8bit
-Message-Id: <201304221404.31281.arnd@arndb.de>
-X-Provags-ID: V02:K0:QRAPyIvCGhm6h0OL4EdT75OAPAA5UeYBUFKRC0h4FPS
- FRGiggvpXwUf2NyGsYQSmrMeP9zn5C0Ydkd9atayCrTHhIbIw2
- Eb/fgCqHVFnek7H2ja4YxLkwCBHVuBBSEqFhZ8S9Wd46ajXKPh
- VktBIJ/jYFHHhLjQlaLbt2967H9+jTle+GyC/uIXk4E/OwlGS6
- D2S1vRh2AcrkLA03kypakB5UZxkA2oPhwmMI9rrqbrOGKTZMhp
- 3cfXaxwBHtNtZZJj2n7atuZDPqWLZk0ufVY5uyOWyfsJH2p3X5
- UC3IjJ/blcvrmoFoLuPkxpez71GMKNGHa/1qPX0iyLvhbS6LSV
- pF+Im90/iTpbqz2jaaJo=
+In-Reply-To: <1366630759.4077.6.camel@laptop>
+References: <1366377044-23989-1-git-send-email-vincent.guittot@linaro.org>
+	<1366623052.2721.6.camel@laptop>
+	<CAKfTPtBMG6KPSZsMFnJqEAajg2qjRXowKSfrWHED-EhUCLB2+Q@mail.gmail.com>
+	<1366630759.4077.6.camel@laptop>
+Date: Mon, 22 Apr 2013 14:05:59 +0200
+Message-ID: <CAKfTPtCO6JGDkqivtPfWZfxpTGxDZz5J3uQpJ6H4bGuBRgEMmQ@mail.gmail.com>
+Subject: Re: [PATCH v6] sched: fix init NOHZ_IDLE flag
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>,
+        Paul Turner <pjt@google.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Mike Galbraith <efault@gmx.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 22 April 2013, Uwe Kleine-König wrote:
-> Hello,
-> 
-> (for the new readers of this thread: This is about using
-> 
-> 	u32 mask = 1 << (d->hwirq % 32);
-> 
-> instead of
-> 
-> 	u32 mask = 1 << (d->irq - gc->irq_base);
+On 22 April 2013 13:39, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Mon, 2013-04-22 at 13:01 +0200, Vincent Guittot wrote:
+>> > I'm not quite getting things.. what's wrong with adding this flags
+>> > thing to sched_domain itself? That's already RCU destroyed so why
+>> add a
+>> > second RCU layer?
+>>
+>> We need one flags for all sched_domain so if we add it into
+>> sched_domain struct, we have to define which one will handle the flags
+>> for all other and find it in the sched_domain tree when we need it.
+>
+> Just pick rq->sd -- if the root_domain thing doesn't work out.
+>
+>>  In
+>> addition, the flags in other sched_domain will be a waste of space.
+>> The RCU in sched_domain might become useless as it is protected by the
+>> one that is in sched_domain_rq
+>
+> I'm all for wasting space instead over adding extra pointer chasing all
+> over the place. But also, look at pahole -C sched_domain, there's
+> plenty of 4 byte holes in there where we can stuff a single bit.
 
-While not technically any different, I would suggest writing the above
-as (d->hwirq & 0x1f), which makes it clear to the reader that this is
-intended to be a cheap bit mask operation rather than an expensive
-division.
-> 
-> arch/arm/mach-s5p64x0/common.c
-> 	-> uses irq_base=101 for irq_alloc_generic_chip
+Ok, I'm going to move the flags in sched_domain struct.
+This should make the fix simpler
 
-I think there are plans to replace this code with
-drivers/pinctrl/pinctrl-samsung.c, but I don't know if patches
-exist already.
-
-> arch/arm/plat-orion/gpio.c
-> 	-> depends on how orion_gpio_of_init is called. No callers
-> 	found.
-
-As of f9e7592230b, this code has been replaced with a pinctrl driver
-and can be killed.
-
-> arch/arm/plat-orion/irq.c
-> arch/arm/plat-samsung/irq-vic-timer.c
-> 	-> used for a single irq that isn't a multiple of 32
-
-Tomasz Figa has a patch set to remove this file, will likely get merged
-in 3.11.
-
-> arch/arm/plat-samsung/s5p-irq-gpioint.c
-> 	-> would need % 8?
-
-AFAICT this code is the same driver as arch/arm/mach-s5p64x0/common.c
-and will meet the same fate.
-
-> arch/sh/boards/mach-se/7343/irq.c
-> 	-> uses irq_base = irq_linear_revmap(se7343_irq_domain, 0) where
-> 	se7343_irq_domain is a linear domain.
-> 	AFAICT this is a bug. (After adding the domain they map all irqs
-> 	in increasing order which currently seems to guarantee that it
-> 	works. But IMHO it should use a legacy domain.)
-> 
-> arch/sh/boards/mach-se/7722/irq.c
-> 	as above.
-
-Right. I think irq_domain_add_simple() is the right interface to use
-here.
-
-> For the uncommented files using %32 instead of -gc->irq_base should
-> work.
-
-I'm not sure I understand why this doesn't work for the ones that use
-a base that isn't a multiple of 32. Since you are masking the hwirq
-rather than the irq number, it will still be zero-based, won't it?
-
-	Arnd
+>
+>> > We also have the root_domain for things that don't need to go in a
+>> > hierarchy but are once per cpu -- it sounds like this is one of
+>> those
+>> > things; iirc the root_domain life-time is the same as the entire
+>> > sched_domain tree so adding it to the root_domain is also an option.
+>>
+>> AFAICT, it doesn't share the same RCU object and as a result the same
+>> lifecycle than sched_domain so there is a time window where
+>> sched_domain and flags could lost their synchronization.
+>> Nevertheless, i'm going to have a look at root_domain
+>
+> They're set under the same write side lock at the same time rq->sd it
+> set, but yes I suppose that since its a separate pointer there might be
+> a tiny window where we could go wrong.
+>
