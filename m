@@ -1,71 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754071Ab3DVWNf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 18:13:35 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:59461 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753416Ab3DVWNe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 18:13:34 -0400
-Message-ID: <5175B602.3020701@ti.com>
-Date: Mon, 22 Apr 2013 17:13:22 -0500
-From: Jon Hunter <jon-hunter@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S1752993Ab3DVWOM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 18:14:12 -0400
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:8209 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753528Ab3DVWOK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Apr 2013 18:14:10 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VPS-4(zz98dI1432I168aJzz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzzz2dh668h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1155h)
+X-WSS-ID: 0MLOGFE-01-2ZY-02
+X-M-MSG: 
+Date: Mon, 22 Apr 2013 17:14:01 -0500
+From: Jacob Shin <jacob.shin@amd.com>
+To: Oleg Nesterov <oleg@redhat.com>
+CC: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        <x86@kernel.org>, Stephane Eranian <eranian@google.com>,
+        Jiri Olsa <jolsa@redhat.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/5] perf, x86: AMD implementation for hardware
+ breakpoint address mask
+Message-ID: <20130422221401.GA28525@jshin-Toonie>
+References: <1365528113-5458-1-git-send-email-jacob.shin@amd.com>
+ <1365528113-5458-3-git-send-email-jacob.shin@amd.com>
+ <20130421171921.GA6645@redhat.com>
 MIME-Version: 1.0
-To: Lars-Peter Clausen <lars@metafoo.de>
-CC: Vinod Koul <vinod.koul@intel.com>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] dma: of: Remove check on always true condition
-References: <1366619613-30639-1-git-send-email-lars@metafoo.de> <1366619613-30639-2-git-send-email-lars@metafoo.de> <5175A317.1010304@ti.com> <5175A4F5.1050304@metafoo.de>
-In-Reply-To: <5175A4F5.1050304@metafoo.de>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [172.24.115.140]
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20130421171921.GA6645@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On 04/22/2013 04:00 PM, Lars-Peter Clausen wrote:
-> On 04/22/2013 10:52 PM, Jon Hunter wrote:
->>
->> On 04/22/2013 03:33 AM, Lars-Peter Clausen wrote:
->>> Both of_dma_nbcells field of the of_dma_controller and the args_count field of
->>> the dma_spec are initialized by parsing the #dma-cells attribute of their device
->>> tree node. So if the device tree nodes of a DMA controller and the dma_spec
->>> match this means that of_dma_nbcells and args_count will also match. So the
->>> second test in the of_dma_find_controller loop is redundant because given the
->>> first test yields true the second test will also yield true. So we can safely
->>> remove the test whether of_dma_nbcells matches args_count. Since this was the
->>> last user of the of_dma_nbcells field we can remove it altogether.
->>
->> This assumes that someone has correctly added the dma information to the
->> dma slave binding. I could see systems where different dma controllers
->> have different of_dma_nbcells and so someone could put the enter wrong
->> number of cells for a dma slave binding. Its really to catch user error.
+On Sun, Apr 21, 2013 at 07:19:21PM +0200, Oleg Nesterov wrote:
+> Not a comment, but the question...
 > 
-> No, this assumes nothing. The condition will _always_ be true.
+> On 04/09, Jacob Shin wrote:
+> >
+> > --- a/arch/x86/include/asm/hw_breakpoint.h
+> > +++ b/arch/x86/include/asm/hw_breakpoint.h
+> > @@ -14,6 +14,7 @@ struct arch_hw_breakpoint {
+> >  	unsigned long	address;
+> >  	u8		len;
+> >  	u8		type;
+> > +	u32		mask;
+> >  };
+> ...
+> > @@ -254,6 +258,7 @@ static int arch_build_bp_info(struct perf_event *bp)
+> >  	struct arch_hw_breakpoint *info = counter_arch_bp(bp);
+> >
+> >  	info->address = bp->attr.bp_addr;
+> > +	info->mask = bp->attr.bp_addr_mask;
 > 
-> dma_spec->args_count is initialized by parsing the #dma-cells attribute of
-> dma_sepc->np. of_dma->of_dma_nbcells is initialized by parsing the #dma-cells
-> attribute of of_dma->of_node. If ofdma->of_node equals dma_spec->np then
-> dma_spec->args_count will also equal of_dma->of_dma_nbcells.
+> OK, this matches the usage of info->address so I think this change
+> is right.
+> 
+> But otoh, why do we need info->address (or mask added by this patch)?
+> we could use bp->attr.bp_addr instead. arch_hw_breakpoint could have
+> a single filed = "type | len" for encode_dr7().
 
-Thanks for the clarification. I should have looked more closely at
-of_parse_phandle_with_args().
+I understood this as maybe remapping arch independant uapi struct into
+x86 specific struct. I guess to future proof in cause uapi interfaces
+change.
 
-Yes I agree it will always be true if count is less than or equal to
-MAX_PHANDLE_ARGS (which defaults to 8). It is very unlikely that someone
-would use more than 8 and I guess it does warn on this condition.
+> 
+> Yes, off-topic, sorry for noise.
+> 
+> Oleg.
+> 
+> 
 
-if (out_args) {
-	int i;
-	if (WARN_ON(count > MAX_PHANDLE_ARGS))
-		count = MAX_PHANDLE_ARGS;
-	out_args->np = node;
-	out_args->args_count = count;
-	for (i = 0; i < count; i++)
-		out_args->args[i] = be32_to_cpup(list++);
-}
-
-Cheers
-Jon
