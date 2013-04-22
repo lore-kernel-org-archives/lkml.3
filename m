@@ -1,77 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754537Ab3DVG5y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 02:57:54 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:36933 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752114Ab3DVG5x (ORCPT
+	id S1754744Ab3DVHDV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 03:03:21 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:64792 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752138Ab3DVHDU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 02:57:53 -0400
-Message-ID: <5174DF58.7020506@linux.vnet.ibm.com>
-Date: Mon, 22 Apr 2013 12:27:28 +0530
-From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Mon, 22 Apr 2013 03:03:20 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Rob Herring <robherring2@gmail.com>
+Subject: Re: [PATCH 2/5] driver core: move to_platform_driver to platform_device.h
+Date: Mon, 22 Apr 2013 09:03:07 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+References: <1366596798-9457-1-git-send-email-robherring2@gmail.com> <1366596798-9457-3-git-send-email-robherring2@gmail.com>
+In-Reply-To: <1366596798-9457-3-git-send-email-robherring2@gmail.com>
 MIME-Version: 1.0
-To: Michael Ellerman <michael@ellerman.id.au>
-CC: linuxppc-dev@ozlabs.org, mikey@neuling.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V3 1/5] powerpc, perf: Add new BHRB related instructions
- for POWER8
-References: <1366287976-3900-1-git-send-email-khandual@linux.vnet.ibm.com> <1366287976-3900-2-git-send-email-khandual@linux.vnet.ibm.com> <20130421234109.GC22246@concordia>
-In-Reply-To: <20130421234109.GC22246@concordia>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13042206-4790-0000-0000-000007F51627
+Message-Id: <201304220903.07824.arnd@arndb.de>
+X-Provags-ID: V02:K0:lLLPhiSvJTTjzw17tLQGN4yMrI1XE4nk6xHqgkfOPkZ
+ 02jx4RqP2290iY35gXuYCPzn6KMb33hs4UVRa75bvObLuR8pk4
+ NoMbPsl033kOnbp7cSJ7SalrMXu8+f6D+CPM6k/uMGYEU4UC6o
+ NWWh7/UeX8myPgjnijUxAIdyVWMQSMvRs7IgfPCqGX9A8T6eGj
+ IRJ+jS4ejDPSCogpuvSUCkosOkmQMymbs+DP6ZTxCjZ44RLbo1
+ NCmEAXbTwx59HTUCT8PtiiwKBF4nzvr6DF2hzkCWPSjnM60xsY
+ pzVPCBvQzJOSntZZa2+XUg8eCAeRQP6MiYLk4bOKkeevRvB3ql
+ d53j9Dk6mYIDVZKbi0QY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/22/2013 05:11 AM, Michael Ellerman wrote:
-> On Thu, Apr 18, 2013 at 05:56:12PM +0530, Anshuman Khandual wrote:
->> This patch adds new POWER8 instruction encoding for reading
->> the BHRB buffer entries and also clearing it. Encoding for
->> "clrbhrb" instruction is straight forward.
+On Monday 22 April 2013, Rob Herring wrote:
+> From: Rob Herring <rob.herring@calxeda.com>
 > 
-> Which is "clear branch history rolling buffer" ?
+> In converting the last remaining of_platform_driver (ibmebus) to a regular
+> platform driver, to_platform_driver is needed to replace
+> to_of_platform_driver.
 > 
->> But "mfbhrbe"
->> encoding involves reading a certain index of BHRB buffer
->> into a particular GPR register.
-> 
-> And "Move from branch history rolling buffer entry" ?
-> 
+> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: Grant Likely <grant.likely@linaro.org>
 
-Sure, would add these descriptions in the change log.
+It sounds like this patch is needed first, so you should swap the first
+two patches in the series.
 
->> diff --git a/arch/powerpc/include/asm/ppc-opcode.h b/arch/powerpc/include/asm/ppc-opcode.h
->> index 8752bc8..93ae5a1 100644
->> --- a/arch/powerpc/include/asm/ppc-opcode.h
->> +++ b/arch/powerpc/include/asm/ppc-opcode.h
->> @@ -82,6 +82,7 @@
->>  #define	__REGA0_R31	31
->>  
->>  /* sorted alphabetically */
->> +#define PPC_INST_BHRBE			0x7c00025c
-> 
-> I don't think you really need this, just use the literal value below.
-> 
->> @@ -297,6 +298,12 @@
->>  #define PPC_NAP			stringify_in_c(.long PPC_INST_NAP)
->>  #define PPC_SLEEP		stringify_in_c(.long PPC_INST_SLEEP)
->>  
->> +/* BHRB instructions */
->> +#define PPC_CLRBHRB		stringify_in_c(.long 0x7c00035c)
->> +#define PPC_MFBHRBE(r, n)	stringify_in_c(.long PPC_INST_BHRBE | \
->> +						__PPC_RS(r) | \
->> +							(((n) & 0x1f) << 11))
-> 
-> Why are you not using ___PPC_RB(n) here ?
-> 
-
-I would replace __PPC_RS(r) with __PPC_RT(r) which makes more sense from
-instruction encoding point of view.
-
-Regards
-Anshuman
-
+	Arnd
