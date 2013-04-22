@@ -1,51 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755333Ab3DVUh4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 16:37:56 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:40384
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755238Ab3DVUhy (ORCPT
+	id S1755327Ab3DVUoS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 16:44:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52524 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755287Ab3DVUoR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 16:37:54 -0400
-Message-ID: <1366663056.8337.7.camel@laptop>
-Subject: Re: [PATCH v2] NMI: fix NMI period is not correct when cpu
- frequency changes issue.
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: "Pan, Zhenjie" <zhenjie.pan@intel.com>
-Cc: Don Zickus <dzickus@redhat.com>, Stephane Eranian <eranian@google.com>,
-        "paulus@samba.org" <paulus@samba.org>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "acme@ghostprotocols.net" <acme@ghostprotocols.net>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "Liu, Chuansheng" <chuansheng.liu@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 22 Apr 2013 22:37:36 +0200
-In-Reply-To: <F98D4B5C3D86834DB612ABF854C98B7FB5FACF@SHSMSX101.ccr.corp.intel.com>
-References: <F98D4B5C3D86834DB612ABF854C98B7FB5D7FE@SHSMSX101.ccr.corp.intel.com>
-	 <1366285369.19383.19.camel@laptop>
-	 <CABPqkBTpzSBEezx4ScwYYX6L8ir4GLBG9MMYJuAb6YA0QbiurQ@mail.gmail.com>
-	 <20130418133927.GJ79013@redhat.com>
-	 <F98D4B5C3D86834DB612ABF854C98B7FB5FACF@SHSMSX101.ccr.corp.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+	Mon, 22 Apr 2013 16:44:17 -0400
+Date: Mon, 22 Apr 2013 13:44:15 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Pekka Enberg <penberg@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Christoph Lameter <cl@linux.com>,
+        Behan Webster <behanw@converseincode.com>
+Subject: Re: [PATCH] slab: Remove unnecessary __builtin_constant_p()
+Message-Id: <20130422134415.32c7f2cac07c924bff3017a4@linux-foundation.org>
+In-Reply-To: <alpine.DEB.2.02.1304171702380.24494@chino.kir.corp.google.com>
+References: <1366225776.8817.28.camel@pippen.local.home>
+	<alpine.DEB.2.02.1304171702380.24494@chino.kir.corp.google.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-04-22 at 00:50 +0000, Pan, Zhenjie wrote:
-> This make watchdog reset happen before hard lockup detect.
+On Wed, 17 Apr 2013 17:03:21 -0700 (PDT) David Rientjes <rientjes@google.com> wrote:
 
-Doesn't your watchdog trigger an NMI you can use to print the panic?
+> On Wed, 17 Apr 2013, Steven Rostedt wrote:
+> 
+> > The slab.c code has a size check macro that checks the size of the
+> > following structs:
+> > 
+> > struct arraycache_init
+> > struct kmem_list3
+> > 
+> > The index_of() function that takes the sizeof() of the above two structs
+> > and does an unnecessary __builtin_constant_p() on that. As sizeof() will
+> > always end up being a constant making this always be true. The code is
+> > not incorrect, but it just adds added complexity, and confuses users and
+> > wastes the time of reviewers of the code, who spends time trying to
+> > figure out why the builtin_constant_p() was used.
+> > 
+> > This patch is just a clean up that makes the index_of() code a little
+> > bit less complex.
+> > 
+> > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> 
+> Acked-by: David Rientjes <rientjes@google.com>
+> 
+> Adding Pekka to the cc.
 
-ISTR some people (hi Don!) spending quite a lot of time to make this
-work for some other platforms.
-
-IIRC those things would fire an NMI at some point and then hard-reset
-the machine not much later.. the difficulty was detecting this
-'unclaimed' nmi and allowing drivers to register for it.
-
-NMI_UNKNOWN and unknown_nmi_panic are the result of that.
+I ducked this patch because it seemed rather pointless - but a little
+birdie told me that there is a secret motivation which seems pretty
+reasonable to me.  So I shall await chirp-the-second, which hopefully
+will have a fuller and franker changelog ;)
 
