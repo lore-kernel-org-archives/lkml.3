@@ -1,51 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753694Ab3DVB71 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Apr 2013 21:59:27 -0400
-Received: from ozlabs.org ([203.10.76.45]:51939 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753416Ab3DVB70 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Apr 2013 21:59:26 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Pranavkumar Sawargaonkar <pranavkumar@linaro.org>
-Cc: "kvmarm\@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
-        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, linux-kernel@vger.kernel.org,
-        Anup Patel <anup.patel@linaro.org>
-Subject: Re: [RFC] arm64: Early printk support for virtio-mmio console devices.
-In-Reply-To: <CAAHg+HiHKV+8hBT1QWe4hSxocCX6wpRd3bCPWB7zU8jVFmPuAA@mail.gmail.com>
-References: <1366264344-28025-1-git-send-email-pranavkumar@linaro.org> <87wqs02uws.fsf@rustcorp.com.au> <CAAHg+HiHKV+8hBT1QWe4hSxocCX6wpRd3bCPWB7zU8jVFmPuAA@mail.gmail.com>
-User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Mon, 22 Apr 2013 10:51:13 +0930
-Message-ID: <87ehe3bbsm.fsf@rustcorp.com.au>
+	id S1753944Ab3DVCB4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Apr 2013 22:01:56 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:41768 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753389Ab3DVCBz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Apr 2013 22:01:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <5173B254.7050804@redhat.com>
+References: <1366304318-29620-1-git-send-email-andrew.smirnov@gmail.com>
+	<20130419213152.GD11866@zurbaran>
+	<CAHQ1cqGnDvO+wkfdO-o-4JSBgT=0TEww01NM1+o7g=1Hy0QNxw@mail.gmail.com>
+	<5173B254.7050804@redhat.com>
+Date: Sun, 21 Apr 2013 19:01:53 -0700
+Message-ID: <CAHQ1cqGMZ7fK8dq5+BQwFqz8dWyMfch+i4pUhtANkffSV0zNWw@mail.gmail.com>
+Subject: Re: [PATCH v9 00/12] Driver for Si476x series of chips
+From: Andrey Smirnov <andrew.smirnov@gmail.com>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Hans Verkuil <hverkuil@xs4all.nl>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pranavkumar Sawargaonkar <pranavkumar@linaro.org> writes:
-> On 18 April 2013 12:21, Rusty Russell <rusty@rustcorp.com.au> wrote:
->>
->> PranavkumarSawargaonkar <pranavkumar@linaro.org> writes:
->> > From: Pranavkumar Sawargaonkar <pranavkumar@linaro.org>
->> >
->> > This patch implements early printk support for virtio-mmio console devices without using any hypercalls.
->>
->> This makes some sense, though not sure that early console *read* makes
->> much sense.  I can see the PCI version of this being useful as well.
+On Sun, Apr 21, 2013 at 2:33 AM, Mauro Carvalho Chehab
+<mchehab@redhat.com> wrote:
+> Em 21-04-2013 02:53, Andrey Smirnov escreveu:
 >
-> Read can be useful for "mach-virt" which will have only virtio console
-> as a console device. Then if someone wants to have UEFI or any other
-> boot-loader emulation, which expects user to input few things, in that
-> case read might become handy.
+>>> I applied all the MFD patches from this patchset (All 4 first ones), plus
+>>> a
+>>> follow up one for fixing the i2c related warning.
+>>> I also squashed the REGMAP_I2C dependency into patch #4.
+>>> It's all in mfd-next now, I'd appreciate if you could double check it's
+>>> all
+>>> fine.
+>>
+>>
+>> I checked out latest
+>> git://git.kernel.org/pub/scm/linux/kernel/git/sameo/mfd-next.git and
+>> applied patches 5 - 10, 12. There doesn't seem to be any problems, so
+>> I think MFD part of the driver is good to go.
+>>
+>>>
+>>> Mauro will take the rest, we made sure there won't be any merge conflict
+>>> between our trees.
+>>
+>>
+>> Mauro, I am not sure if you need me to rebase any of the patches(it
+>> doesn't seem like you had a chance to make any further changes related
+>> to this driver in media tree), but if you do, ping me and I'll get on
+>> it.
+>
+>
+> No, I don't need. The V4L parts are on my experimental tree:
+>
+> http://git.linuxtv.org/mchehab/experimental.git/shortlog/refs/heads/si476x
+>
+> I'll just merge it at the main tree or as a topic branch later today
+> or (more likely) tomorrow.
+>
+> Please ping me today if you find anything wrong there.
 
-But implementing virtio inside a bootloader has already been done for
-coreboot, for example.  A bootloader probably wants a virtio block
-device, so a console is trivial.
+It looks like everything is there(it's only one patch without mfd
+part, after all) except patch #12
+https://patchwork.kernel.org/patch/2461631/ of this patchset which is
+a modified version of this guy
+https://patchwork-mail.kernel.org/patch/2420751/
 
-A single writable field for debugging makes sense.  Anything more is far
-less certain.
+Other than that I think everything is fine.
 
-Thanks,
-Rusty.
+>
+> Regards,
+> Mauro
