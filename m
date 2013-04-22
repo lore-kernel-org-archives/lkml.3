@@ -1,57 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752347Ab3DVFJ2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 01:09:28 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:56100 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752227Ab3DVFJ0 (ORCPT
+	id S1752575Ab3DVFJw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 01:09:52 -0400
+Received: from mail-da0-f47.google.com ([209.85.210.47]:48747 "EHLO
+	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751684Ab3DVFJv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 01:09:26 -0400
-X-Spam-Score: -100.8
-Message-ID: <5174C5D9.3060109@asianux.com>
-Date: Mon, 22 Apr 2013 13:08:41 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Tony Lindgren <tony@atomide.com>,
-        "olof@lixom.net" <olof@lixom.net>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] ARM64: kernel: compiling issue, define cmpxchg64 and cmpxchg64_local
- for outside using.
-References: <51712E5E.2020809@asianux.com> <201304191412.54601.arnd@arndb.de> <5171FD67.2080104@asianux.com> <2182812.ymprEm6XBb@wuerfel>
-In-Reply-To: <2182812.ymprEm6XBb@wuerfel>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Mon, 22 Apr 2013 01:09:51 -0400
+From: Damian Hobson-Garcia <dhobsong@igel.co.jp>
+To: linux-kernel@vger.kernel.org
+Cc: msalter@redhat.com, linux-c6x-dev@linux-c6x.org,
+        Damian Hobson-Garcia <dhobsong@igel.co.jp>
+Subject: [RFC/PATCH 2/4] c6x: Provide default implementation for dma_{alloc,free}_attrs
+Date: Mon, 22 Apr 2013 14:09:38 +0900
+Message-Id: <1366607379-3055-1-git-send-email-dhobsong@igel.co.jp>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Most architectures that define CONFIG_HAVE_DMA, have implementations for
+both dma_alloc_attrs() and dma_free_attrs().  All achitectures that do
+not define CONFIG_HAVE_DMA also have both of these definitions provided by
+dma-mapping-broken.h.
 
-  drivers use cmpxchg64, cmpxchg64_local ... to perform 64-bit operation,
-  so they can cross 32-bit and 64-bit platforms (it is a standard way).
+Add default implementations for these functions on c6x.
 
-
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
+Signed-off-by: Damian Hobson-Garcia <dhobsong@igel.co.jp>
 ---
- arch/arm64/include/asm/cmpxchg.h |    3 +++
+ arch/c6x/include/asm/dma-mapping.h |    3 +++
  1 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm64/include/asm/cmpxchg.h b/arch/arm64/include/asm/cmpxchg.h
-index 968b5cb..8a8ce0e 100644
---- a/arch/arm64/include/asm/cmpxchg.h
-+++ b/arch/arm64/include/asm/cmpxchg.h
-@@ -170,4 +170,7 @@ static inline unsigned long __cmpxchg_mb(volatile void *ptr, unsigned long old,
- 				       (unsigned long)(n),		\
- 				       sizeof(*(ptr))))
+diff --git a/arch/c6x/include/asm/dma-mapping.h b/arch/c6x/include/asm/dma-mapping.h
+index 88bd0d8..8947605 100644
+--- a/arch/c6x/include/asm/dma-mapping.h
++++ b/arch/c6x/include/asm/dma-mapping.h
+@@ -89,6 +89,9 @@ extern void dma_free_coherent(struct device *, size_t, void *, dma_addr_t);
+ #define dma_alloc_noncoherent(d, s, h, f) dma_alloc_coherent((d), (s), (h), (f))
+ #define dma_free_noncoherent(d, s, v, h)  dma_free_coherent((d), (s), (v), (h))
  
-+#define cmpxchg64(ptr,o,n)		cmpxchg((ptr),(o),(n))
-+#define cmpxchg64_local(ptr,o,n)	cmpxchg_local((ptr),(o),(n))
++#define dma_alloc_attrs(d, s, h, f, a) dma_alloc_coherent(d, s, h, f)
++#define dma_free_attrs(d, s, h, f, a) dma_free_coherent(d, s, h, f)
 +
- #endif	/* __ASM_CMPXCHG_H */
+ /* Not supported for now */
+ static inline int dma_mmap_coherent(struct device *dev,
+ 				    struct vm_area_struct *vma, void *cpu_addr,
 -- 
-1.7.7.6
+1.7.5.4
+
