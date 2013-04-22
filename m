@@ -1,63 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755787Ab3DVIZ2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 04:25:28 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:59440 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753442Ab3DVIZ0 (ORCPT
+	id S1754904Ab3DVIbT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 04:31:19 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:47006 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751488Ab3DVIbS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 04:25:26 -0400
-Message-ID: <1366619120.2721.0.camel@laptop>
-Subject: Re: [PATCH] events: Protect access via task_subsys_state_check()
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: paulmck@linux.vnet.ibm.com
-Cc: paulus@samba.org, mingo@redhat.com, acme@ghostprotocols.net,
-        linux-kernel@vger.kernel.org, ajax@redhat.com, gusld@br.ibm.com
-Date: Mon, 22 Apr 2013 10:25:20 +0200
-In-Reply-To: <20130419190124.GA8638@linux.vnet.ibm.com>
-References: <20130419190124.GA8638@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 22 Apr 2013 04:31:18 -0400
+Date: Mon, 22 Apr 2013 01:29:39 -0700
+From: tip-bot for Jacob Shin <tipbot@zytor.com>
+Message-ID: <tip-94f4db3590893c600506105b88dab581c7f6f5c8@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
+        mingo@kernel.org, a.p.zijlstra@chello.nl, acme@ghostprotocols.net,
+        bp@alien8.de, jolsa@redhat.com, jacob.shin@amd.com, tglx@linutronix.de,
+        bp@suse.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+        acme@ghostprotocols.net, bp@alien8.de, jolsa@redhat.com,
+        jacob.shin@amd.com, tglx@linutronix.de, bp@suse.de
+In-Reply-To: <20130421180627.GA21049@jshin-Toonie>
+References: <20130421180627.GA21049@jshin-Toonie>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf/x86/amd: Fix AMD NB and L2I "uncore" support
+Git-Commit-ID: 94f4db3590893c600506105b88dab581c7f6f5c8
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 22 Apr 2013 01:29:45 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-04-19 at 12:01 -0700, Paul E. McKenney wrote:
-> The following RCU splat indicates lack of RCU protection:
+Commit-ID:  94f4db3590893c600506105b88dab581c7f6f5c8
+Gitweb:     http://git.kernel.org/tip/94f4db3590893c600506105b88dab581c7f6f5c8
+Author:     Jacob Shin <jacob.shin@amd.com>
+AuthorDate: Sun, 21 Apr 2013 13:06:27 -0500
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Mon, 22 Apr 2013 10:10:55 +0200
 
-...
+perf/x86/amd: Fix AMD NB and L2I "uncore" support
 
-> This commit therefore adds the required RCU read-side critical section to
-> perf_event_comm().
-> 
-> Reported-by: Adam Jackson <ajax@redhat.com>
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Tested-by: Gustavo Luiz Duarte <gusld@br.ibm.com>
+Borislav Petkov reported a lockdep splat warning about kzalloc()
+done in an IPI (hardirq) handler.
 
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+This is a real bug, do not call kzalloc() in a smp_call_function_single()
+handler because it can schedule and crash.
 
-> diff --git a/kernel/events/core.c b/kernel/events/core.c
-> index b0cd865..8db9551 100644
-> --- a/kernel/events/core.c
-> +++ b/kernel/events/core.c
-> @@ -4593,6 +4593,7 @@ void perf_event_comm(struct task_struct *task)
->  	struct perf_event_context *ctx;
->  	int ctxn;
->  
-> +	rcu_read_lock();
->  	for_each_task_context_nr(ctxn) {
->  		ctx = task->perf_event_ctxp[ctxn];
->  		if (!ctx)
-> @@ -4600,6 +4601,7 @@ void perf_event_comm(struct task_struct *task)
->  
->  		perf_event_enable_on_exec(ctx);
->  	}
-> +	rcu_read_unlock();
->  
->  	if (!atomic_read(&nr_comm_events))
->  		return;
-> 
+Reported-by: Borislav Petkov <bp@suse.de>
+Signed-off-by: Jacob Shin <jacob.shin@amd.com>
+Tested-by: Borislav Petkov <bp@suse.de>
+Cc: Borislav Petkov <bp@alien8.de>
+Cc: <eranian@google.com>
+Cc: <a.p.zijlstra@chello.nl>
+Cc: <acme@ghostprotocols.net>
+Cc: <jolsa@redhat.com>
+Link: http://lkml.kernel.org/r/20130421180627.GA21049@jshin-Toonie
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/kernel/cpu/perf_event_amd_uncore.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-
+diff --git a/arch/x86/kernel/cpu/perf_event_amd_uncore.c b/arch/x86/kernel/cpu/perf_event_amd_uncore.c
+index 6dc6227..c0c661a 100644
+--- a/arch/x86/kernel/cpu/perf_event_amd_uncore.c
++++ b/arch/x86/kernel/cpu/perf_event_amd_uncore.c
+@@ -498,7 +498,6 @@ static void __init init_cpu_already_online(void *dummy)
+ {
+ 	unsigned int cpu = smp_processor_id();
+ 
+-	amd_uncore_cpu_up_prepare(cpu);
+ 	amd_uncore_cpu_starting(cpu);
+ 	amd_uncore_cpu_online(cpu);
+ }
+@@ -535,8 +534,10 @@ static int __init amd_uncore_init(void)
+ 
+ 	get_online_cpus();
+ 	/* init cpus already online before registering for hotplug notifier */
+-	for_each_online_cpu(cpu)
++	for_each_online_cpu(cpu) {
++		amd_uncore_cpu_up_prepare(cpu);
+ 		smp_call_function_single(cpu, init_cpu_already_online, NULL, 1);
++	}
+ 
+ 	register_cpu_notifier(&amd_uncore_cpu_notifier_block);
+ 	put_online_cpus();
