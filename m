@@ -1,65 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753209Ab3DVLts (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 07:49:48 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:40591 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752212Ab3DVLtr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 07:49:47 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Andy Shevchenko <andy.shevchenko@gmail.com>
-Cc: Vinod Koul <vinod.koul@intel.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>,
-        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.jf.intel.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        spear-devel <spear-devel@list.st.com>, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH v2 0/5] dmaengine: add ACPI DMA helpers and use them in dw_dmac
-Date: Mon, 22 Apr 2013 13:57:49 +0200
-Message-ID: <2382527.O0vcbyEZOf@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0-rc8+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAHp75Ve+c01kSoOwUSW=D9tq+svuOTzkkEhM0Amn1vL9VdiXWg@mail.gmail.com>
-References: <1365505547-10552-1-git-send-email-andriy.shevchenko@linux.intel.com> <20130422055612.GE6081@intel.com> <CAHp75Ve+c01kSoOwUSW=D9tq+svuOTzkkEhM0Amn1vL9VdiXWg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1752622Ab3DVLvI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 07:51:08 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:35789 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751435Ab3DVLvH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Apr 2013 07:51:07 -0400
+Message-ID: <1366631460.4443.3.camel@laptop>
+Subject: Re: Preemptable Ticket Spinlock
+From: Peter Zijlstra <peterz@infradead.org>
+To: Rik van Riel <riel@redhat.com>
+Cc: Jiannan Ouyang <ouyang@cs.pitt.edu>, LKML <linux-kernel@vger.kernel.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Avi Kivity <avi.kivity@gmail.com>, Gleb Natapov <gleb@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Srikar <srikar@linux.vnet.ibm.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Chegu Vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Andrew Jones <drjones@redhat.com>, Karen Noel <knoel@redhat.com>
+Date: Mon, 22 Apr 2013 13:51:00 +0200
+In-Reply-To: <51745650.9050204@redhat.com>
+References: <CAJocwccu5QQyuKRvgNyPSFz2K_rzCW419W9-XdSUYOL7+KqQKg@mail.gmail.com>
+	 <51745650.9050204@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, April 22, 2013 01:07:39 PM Andy Shevchenko wrote:
-> On Mon, Apr 22, 2013 at 8:56 AM, Vinod Koul <vinod.koul@intel.com> wrote:
-> > On Tue, Apr 16, 2013 at 08:11:57PM +0200, Rafael J. Wysocki wrote:
-> >> On Tuesday, April 16, 2013 03:14:47 PM Andy Shevchenko wrote:
-> >> > On Mon, 2013-04-15 at 22:06 +0530, Vinod Koul wrote:
-> >> > > On Tue, Apr 09, 2013 at 02:05:42PM +0300, Andy Shevchenko wrote:
-> >> > > > There is a patch series which introduces ACPI DMA helpers in similar way like
-> >> > > > we have for DeviceTree.
-> >> > > >
-> >> > > > In addition it applies this to the first user, namely dw_dmac driver.
-> >> > > Applied w/o 3 & 5.2 they failed, can you pls rebase and resend
-> >> > >
-> >> >
-> >> > Actually those two (at least 5/5) can't be applied on top of slave-dma.
-> >> > The patches requires slave-dma and linux-pm together. I heard it's
-> >> > usually achieved by creating a specific branch in one subsystem
-> >> > (linux-pm in our case) for another.
-> >> >
-> >> > Rafael, what could we do here?
-> >>
-> >> I suppose Vinod can pull from my acpi-lpss (which is guaranteed not to be
-> >> rebased at this point) and apply the series on top of that.
-> > Or I can wait for rc1 and apply afterwards...?
+On Sun, 2013-04-21 at 17:12 -0400, Rik van Riel wrote:
 > 
-> Mika and I have no objections to go this way.
+> If we always incremented the ticket number by 2 (instead of 1), then
+> we could use the lower bit of the ticket number as the spinlock.
 
-That'd be fine by me too.
+ISTR that paravirt ticket locks already do that and use the lsb to
+indicate the unlock needs to perform wakeups.
 
-Thanks,
-Rafael
+Also, since all of this is virt nonsense, shouldn't it live in the
+paravirt ticket lock code and leave the native code as is?
 
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
