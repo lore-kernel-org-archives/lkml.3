@@ -1,141 +1,469 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756052Ab3DVJzx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 05:55:53 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:36551 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755989Ab3DVJzw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 05:55:52 -0400
-From: Andrey Vagin <avagin@openvz.org>
-To: linux-kernel@vger.kernel.org
-Cc: Andrey Vagin <avagin@openvz.org>, Roland McGrath <roland@redhat.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>
-Subject: [PATCH] ptrace: add ability to get/set signal-blocked mask
-Date: Mon, 22 Apr 2013 13:53:20 +0400
-Message-Id: <1366624400-9773-1-git-send-email-avagin@openvz.org>
-X-Mailer: git-send-email 1.8.1.4
+	id S1756195Ab3DVJ4H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 05:56:07 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:44416 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755307Ab3DVJ4D (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Apr 2013 05:56:03 -0400
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Cc: linux-fbdev@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] video: ssd1307fb: Add support for SSD1306 OLED controller
+Date: Mon, 22 Apr 2013 11:55:54 +0200
+Message-Id: <1366624555-5616-2-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1366624555-5616-1-git-send-email-maxime.ripard@free-electrons.com>
+References: <1366624555-5616-1-git-send-email-maxime.ripard@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-crtools uses a parasite code for dumping processes. The parasite code is
-injected into a process with help PTRACE_SEIZE.
+The Solomon SSD1306 OLED controller is very similar to the SSD1307,
+except for the fact that the power is given through an external PWM for
+the 1307, and while the 1306 can generate its own power without any PWM.
 
-Currently crtools blocks signals from a parasite code. If a process has
-pending signals, crtools wait while a process handles these signals.
-
-This method is not suitable for stopped tasks. A stopped task can have a
-few pending signals, when we will try to execute a parasite code, we
-will need to drop SIGSTOP, but all other signals must remain pending,
-because a state of processes must not be changed during checkpointing.
-
-This patch adds two ptrace commands to set/get signal-blocked mask.
-
-I think gdb can use this commands too.
-
-Cc: Roland McGrath <roland@redhat.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Michael Kerrisk <mtk.manpages@gmail.com>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Cc: Cyrill Gorcunov <gorcunov@openvz.org>
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- include/linux/signal.h      |  1 +
- include/uapi/linux/ptrace.h |  2 ++
- kernel/ptrace.c             | 36 ++++++++++++++++++++++++++++++++++++
- kernel/signal.c             |  2 +-
- 4 files changed, 40 insertions(+), 1 deletion(-)
+ .../devicetree/bindings/video/ssd1307fb.txt        |   10 +-
+ drivers/video/ssd1307fb.c                          |  273 +++++++++++++++-----
+ 2 files changed, 209 insertions(+), 74 deletions(-)
 
-diff --git a/include/linux/signal.h b/include/linux/signal.h
-index a2dcb94..706b88d 100644
---- a/include/linux/signal.h
-+++ b/include/linux/signal.h
-@@ -246,6 +246,7 @@ extern int do_sigtimedwait(const sigset_t *, siginfo_t *,
- extern int sigprocmask(int, sigset_t *, sigset_t *);
- extern void set_current_blocked(sigset_t *);
- extern void __set_current_blocked(const sigset_t *);
-+extern void __set_task_blocked(struct task_struct *tsk, const sigset_t *newset);
- extern int show_unhandled_signals;
- extern int sigsuspend(sigset_t *);
+diff --git a/Documentation/devicetree/bindings/video/ssd1307fb.txt b/Documentation/devicetree/bindings/video/ssd1307fb.txt
+index 3d0060c..7a12542 100644
+--- a/Documentation/devicetree/bindings/video/ssd1307fb.txt
++++ b/Documentation/devicetree/bindings/video/ssd1307fb.txt
+@@ -1,13 +1,17 @@
+ * Solomon SSD1307 Framebuffer Driver
  
-diff --git a/include/uapi/linux/ptrace.h b/include/uapi/linux/ptrace.h
-index 52ebcc8..1527684 100644
---- a/include/uapi/linux/ptrace.h
-+++ b/include/uapi/linux/ptrace.h
-@@ -54,6 +54,8 @@
- #define PTRACE_LISTEN		0x4208
+ Required properties:
+-  - compatible: Should be "solomon,ssd1307fb-<bus>". The only supported bus for
+-    now is i2c.
++  - compatible: Should be "solomon,<chip>fb-<bus>". The only supported bus for
++    now is i2c, and the supported chips are ssd1306 and ssd1307.
+   - reg: Should contain address of the controller on the I2C bus. Most likely
+          0x3c or 0x3d
+   - pwm: Should contain the pwm to use according to the OF device tree PWM
+-         specification [0]
++         specification [0]. Only required for the ssd1307.
+   - reset-gpios: Should contain the GPIO used to reset the OLED display
++  - solomon,height: Height in pixel of the screen driven by the controller
++  - solomon,width: Width in pixel of the screen driven by the controller
++  - solomon,page-offset: Offset of pages (band of 8 pixels) that the screen is
++    mapped to.
  
- #define PTRACE_PEEKSIGINFO	0x4209
-+#define PTRACE_GETSIGMASK	0x420a
-+#define PTRACE_SETSIGMASK	0x420b
+ Optional properties:
+   - reset-active-low: Is the reset gpio is active on physical low?
+diff --git a/drivers/video/ssd1307fb.c b/drivers/video/ssd1307fb.c
+index 395cb6a..5ab5281 100644
+--- a/drivers/video/ssd1307fb.c
++++ b/drivers/video/ssd1307fb.c
+@@ -16,24 +16,39 @@
+ #include <linux/pwm.h>
+ #include <linux/delay.h>
  
- struct ptrace_peeksiginfo_args {
- 	__u64 off;	/* from which siginfo to start */
-diff --git a/kernel/ptrace.c b/kernel/ptrace.c
-index 17ae54d..317a737 100644
---- a/kernel/ptrace.c
-+++ b/kernel/ptrace.c
-@@ -841,6 +841,42 @@ int ptrace_request(struct task_struct *child, long request,
- 			ret = ptrace_setsiginfo(child, &siginfo);
- 		break;
+-#define SSD1307FB_WIDTH			96
+-#define SSD1307FB_HEIGHT		16
+-
+ #define SSD1307FB_DATA			0x40
+ #define SSD1307FB_COMMAND		0x80
  
-+	case PTRACE_GETSIGMASK:
-+		if (addr != sizeof(sigset_t)) {
-+			ret = -EINVAL;
-+			break;
-+		}
+ #define SSD1307FB_CONTRAST		0x81
++#define	SSD1307FB_CHARGE_PUMP		0x8d
+ #define SSD1307FB_SEG_REMAP_ON		0xa1
+ #define SSD1307FB_DISPLAY_OFF		0xae
++#define SSD1307FB_SET_MULTIPLEX_RATIO	0xa8
+ #define SSD1307FB_DISPLAY_ON		0xaf
+ #define SSD1307FB_START_PAGE_ADDRESS	0xb0
++#define SSD1307FB_SET_DISPLAY_OFFSET	0xd3
++#define	SSD1307FB_SET_CLOCK_FREQ	0xd5
++#define	SSD1307FB_SET_PRECHARGE_PERIOD	0xd9
++#define	SSD1307FB_SET_COM_PINS_CONFIG	0xda
++#define	SSD1307FB_SET_VCOMH		0xdb
 +
-+		if (copy_to_user(datavp, &child->blocked, sizeof(sigset_t)))
-+			ret = -EFAULT;
-+		else
-+			ret = 0;
++struct ssd1307fb_par;
 +
-+		break;
++struct ssd1307fb_ops {
++	int (*init)(struct ssd1307fb_par *);
++	int (*remove)(struct ssd1307fb_par *);
++};
+ 
+ struct ssd1307fb_par {
+ 	struct i2c_client *client;
++	u32 height;
+ 	struct fb_info *info;
++	struct ssd1307fb_ops *ops;
++	u32 page_offset;
+ 	struct pwm_device *pwm;
+ 	u32 pwm_period;
+ 	int reset;
++	u32 width;
+ };
+ 
+ static struct fb_fix_screeninfo ssd1307fb_fix = {
+@@ -43,15 +58,10 @@ static struct fb_fix_screeninfo ssd1307fb_fix = {
+ 	.xpanstep	= 0,
+ 	.ypanstep	= 0,
+ 	.ywrapstep	= 0,
+-	.line_length	= SSD1307FB_WIDTH / 8,
+ 	.accel		= FB_ACCEL_NONE,
+ };
+ 
+ static struct fb_var_screeninfo ssd1307fb_var = {
+-	.xres		= SSD1307FB_WIDTH,
+-	.yres		= SSD1307FB_HEIGHT,
+-	.xres_virtual	= SSD1307FB_WIDTH,
+-	.yres_virtual	= SSD1307FB_HEIGHT,
+ 	.bits_per_pixel	= 1,
+ };
+ 
+@@ -134,16 +144,17 @@ static void ssd1307fb_update_display(struct ssd1307fb_par *par)
+ 	 *  (5) A4 B4 C4 D4 E4 F4 G4 H4
+ 	 */
+ 
+-	for (i = 0; i < (SSD1307FB_HEIGHT / 8); i++) {
+-		ssd1307fb_write_cmd(par->client, SSD1307FB_START_PAGE_ADDRESS + (i + 1));
++	for (i = 0; i < (par->height / 8); i++) {
++		ssd1307fb_write_cmd(par->client,
++				    SSD1307FB_START_PAGE_ADDRESS + i + par->page_offset);
+ 		ssd1307fb_write_cmd(par->client, 0x00);
+ 		ssd1307fb_write_cmd(par->client, 0x10);
+ 
+-		for (j = 0; j < SSD1307FB_WIDTH; j++) {
++		for (j = 0; j < par->width; j++) {
+ 			u8 buf = 0;
+ 			for (k = 0; k < 8; k++) {
+-				u32 page_length = SSD1307FB_WIDTH * i;
+-				u32 index = page_length + (SSD1307FB_WIDTH * k + j) / 8;
++				u32 page_length = par->width * i;
++				u32 index = page_length + (par->width * k + j) / 8;
+ 				u8 byte = *(vmem + index);
+ 				u8 bit = byte & (1 << (j % 8));
+ 				bit = bit >> (j % 8);
+@@ -227,16 +238,147 @@ static struct fb_deferred_io ssd1307fb_defio = {
+ 	.deferred_io	= ssd1307fb_deferred_io,
+ };
+ 
++static int ssd1307fb_ssd1307_init(struct ssd1307fb_par *par)
++{
++	int ret;
 +
-+	case PTRACE_SETSIGMASK:
-+	{
-+		sigset_t new_set;
-+
-+		if (addr != sizeof(sigset_t)) {
-+			ret = -EINVAL;
-+			break;
-+		}
-+
-+		if (copy_from_user(&new_set, datavp, sizeof(sigset_t))) {
-+			ret = -EFAULT;
-+			break;
-+		}
-+
-+		sigdelsetmask(&new_set, sigmask(SIGKILL)|sigmask(SIGSTOP));
-+
-+		spin_lock_irq(&child->sighand->siglock);
-+		__set_task_blocked(child, &new_set);
-+		spin_unlock_irq(&child->sighand->siglock);
-+
-+		ret = 0;
-+		break;
++	par->pwm = pwm_get(&par->client->dev, NULL);
++	if (IS_ERR(par->pwm)) {
++		dev_err(&par->client->dev, "Could not get PWM from device tree!\n");
++		return PTR_ERR(par->pwm);
 +	}
- 	case PTRACE_INTERRUPT:
- 		/*
- 		 * Stop tracee without any side-effect on signal or job
-diff --git a/kernel/signal.c b/kernel/signal.c
-index dd72567..d757e5b 100644
---- a/kernel/signal.c
-+++ b/kernel/signal.c
-@@ -2522,7 +2522,7 @@ long do_no_restart_syscall(struct restart_block *param)
- 	return -EINTR;
++
++	par->pwm_period = pwm_get_period(par->pwm);
++	/* Enable the PWM */
++	pwm_config(par->pwm, par->pwm_period / 2, par->pwm_period);
++	pwm_enable(par->pwm);
++
++	dev_dbg(&par->client->dev, "Using PWM%d with a %dns period.\n",
++		par->pwm->pwm, par->pwm_period);
++
++	/* Map column 127 of the OLED to segment 0 */
++	ret = ssd1307fb_write_cmd(par->client, SSD1307FB_SEG_REMAP_ON);
++	if (ret < 0)
++		return ret;
++
++	/* Turn on the display */
++	ret = ssd1307fb_write_cmd(par->client, SSD1307FB_DISPLAY_ON);
++	if (ret < 0)
++		return ret;
++
++	return 0;
++}
++
++static int ssd1307fb_ssd1307_remove(struct ssd1307fb_par *par)
++{
++	pwm_disable(par->pwm);
++	pwm_put(par->pwm);
++	return 0;
++}
++
++static struct ssd1307fb_ops ssd1307fb_ssd1307_ops = {
++	.init	= ssd1307fb_ssd1307_init,
++	.remove	= ssd1307fb_ssd1307_remove,
++};
++
++static int ssd1307fb_ssd1306_init(struct ssd1307fb_par *par)
++{
++	int ret;
++
++	/* Set initial contrast */
++	ret = ssd1307fb_write_cmd(par->client, SSD1307FB_CONTRAST);
++	ret = ret & ssd1307fb_write_cmd(par->client, 0x7f);
++	if (ret < 0)
++		return ret;
++
++	/* Set COM direction */
++	ret = ssd1307fb_write_cmd(par->client, 0xc8);
++	if (ret < 0)
++		return ret;
++
++	/* Set segment re-map */
++	ret = ssd1307fb_write_cmd(par->client, SSD1307FB_SEG_REMAP_ON);
++	if (ret < 0)
++		return ret;
++
++	/* Set multiplex ratio value */
++	ret = ssd1307fb_write_cmd(par->client, SSD1307FB_SET_MULTIPLEX_RATIO);
++	ret = ret & ssd1307fb_write_cmd(par->client, par->height - 1);
++	if (ret < 0)
++		return ret;
++
++	/* set display offset value */
++	ret = ssd1307fb_write_cmd(par->client, SSD1307FB_SET_DISPLAY_OFFSET);
++	ret = ssd1307fb_write_cmd(par->client, 0x20);
++	if (ret < 0)
++		return ret;
++
++	/* Set clock frequency */
++	ret = ssd1307fb_write_cmd(par->client, SSD1307FB_SET_CLOCK_FREQ);
++	ret = ret & ssd1307fb_write_cmd(par->client, 0xf0);
++	if (ret < 0)
++		return ret;
++
++	/* Set precharge period in number of ticks from the internal clock */
++	ret = ssd1307fb_write_cmd(par->client, SSD1307FB_SET_PRECHARGE_PERIOD);
++	ret = ret & ssd1307fb_write_cmd(par->client, 0x22);
++	if (ret < 0)
++		return ret;
++
++	/* Set COM pins configuration */
++	ret = ssd1307fb_write_cmd(par->client, SSD1307FB_SET_COM_PINS_CONFIG);
++	ret = ret & ssd1307fb_write_cmd(par->client, 0x22);
++	if (ret < 0)
++		return ret;
++
++	/* Set VCOMH */
++	ret = ssd1307fb_write_cmd(par->client, SSD1307FB_SET_VCOMH);
++	ret = ret & ssd1307fb_write_cmd(par->client, 0x49);
++	if (ret < 0)
++		return ret;
++
++	/* Turn on the DC-DC Charge Pump */
++	ret = ssd1307fb_write_cmd(par->client, SSD1307FB_CHARGE_PUMP);
++	ret = ret & ssd1307fb_write_cmd(par->client, 0x14);
++	if (ret < 0)
++		return ret;
++
++	/* Turn on the display */
++	ret = ssd1307fb_write_cmd(par->client, SSD1307FB_DISPLAY_ON);
++	if (ret < 0)
++		return ret;
++
++	return 0;
++}
++
++static struct ssd1307fb_ops ssd1307fb_ssd1306_ops = {
++	.init	= ssd1307fb_ssd1306_init,
++};
++
++static const struct of_device_id ssd1307fb_of_match[] = {
++	{
++		.compatible = "solomon,ssd1306fb-i2c",
++		.data = (void *)&ssd1307fb_ssd1306_ops,
++	},
++	{
++		.compatible = "solomon,ssd1307fb-i2c",
++		.data = (void *)&ssd1307fb_ssd1307_ops,
++	},
++	{},
++};
++MODULE_DEVICE_TABLE(of, ssd1307fb_of_match);
++
+ static int ssd1307fb_probe(struct i2c_client *client,
+ 			   const struct i2c_device_id *id)
+ {
+ 	struct fb_info *info;
+-	u32 vmem_size = SSD1307FB_WIDTH * SSD1307FB_HEIGHT / 8;
++	struct device_node *node = client->dev.of_node;
++	u32 vmem_size;
+ 	struct ssd1307fb_par *par;
+ 	u8 *vmem;
+ 	int ret;
+ 
+-	if (!client->dev.of_node) {
++	if (!node) {
+ 		dev_err(&client->dev, "No device tree data found!\n");
+ 		return -EINVAL;
+ 	}
+@@ -247,6 +389,31 @@ static int ssd1307fb_probe(struct i2c_client *client,
+ 		return -ENOMEM;
+ 	}
+ 
++	par = info->par;
++	par->info = info;
++	par->client = client;
++
++	par->ops = (struct ssd1307fb_ops *)of_match_device(ssd1307fb_of_match,
++							   &client->dev)->data;
++
++	par->reset = of_get_named_gpio(client->dev.of_node,
++					 "reset-gpios", 0);
++	if (!gpio_is_valid(par->reset)) {
++		ret = -EINVAL;
++		goto fb_alloc_error;
++	}
++
++	if (of_property_read_u32(node, "solomon,width", &par->width))
++		par->width = 96;
++
++	if (of_property_read_u32(node, "solomon,height", &par->height))
++		par->width = 16;
++
++	if (of_property_read_u32(node, "solomon,page-offset", &par->page_offset))
++		par->page_offset = 1;
++
++	vmem_size = par->width * par->height / 8;
++
+ 	vmem = devm_kzalloc(&client->dev, vmem_size, GFP_KERNEL);
+ 	if (!vmem) {
+ 		dev_err(&client->dev, "Couldn't allocate graphical memory.\n");
+@@ -256,9 +423,15 @@ static int ssd1307fb_probe(struct i2c_client *client,
+ 
+ 	info->fbops = &ssd1307fb_ops;
+ 	info->fix = ssd1307fb_fix;
++	info->fix.line_length = par->width / 8;
+ 	info->fbdefio = &ssd1307fb_defio;
+ 
+ 	info->var = ssd1307fb_var;
++	info->var.xres = par->width;
++	info->var.xres_virtual = par->width;
++	info->var.yres = par->height;
++	info->var.yres_virtual = par->height;
++
+ 	info->var.red.length = 1;
+ 	info->var.red.offset = 0;
+ 	info->var.green.length = 1;
+@@ -272,17 +445,6 @@ static int ssd1307fb_probe(struct i2c_client *client,
+ 
+ 	fb_deferred_io_init(info);
+ 
+-	par = info->par;
+-	par->info = info;
+-	par->client = client;
+-
+-	par->reset = of_get_named_gpio(client->dev.of_node,
+-					 "reset-gpios", 0);
+-	if (!gpio_is_valid(par->reset)) {
+-		ret = -EINVAL;
+-		goto reset_oled_error;
+-	}
+-
+ 	ret = devm_gpio_request_one(&client->dev, par->reset,
+ 				    GPIOF_OUT_INIT_HIGH,
+ 				    "oled-reset");
+@@ -293,23 +455,6 @@ static int ssd1307fb_probe(struct i2c_client *client,
+ 		goto reset_oled_error;
+ 	}
+ 
+-	par->pwm = pwm_get(&client->dev, NULL);
+-	if (IS_ERR(par->pwm)) {
+-		dev_err(&client->dev, "Could not get PWM from device tree!\n");
+-		ret = PTR_ERR(par->pwm);
+-		goto pwm_error;
+-	}
+-
+-	par->pwm_period = pwm_get_period(par->pwm);
+-
+-	dev_dbg(&client->dev, "Using PWM%d with a %dns period.\n", par->pwm->pwm, par->pwm_period);
+-
+-	ret = register_framebuffer(info);
+-	if (ret) {
+-		dev_err(&client->dev, "Couldn't register the framebuffer\n");
+-		goto fbreg_error;
+-	}
+-
+ 	i2c_set_clientdata(client, info);
+ 
+ 	/* Reset the screen */
+@@ -318,34 +463,25 @@ static int ssd1307fb_probe(struct i2c_client *client,
+ 	gpio_set_value(par->reset, 1);
+ 	udelay(4);
+ 
+-	/* Enable the PWM */
+-	pwm_config(par->pwm, par->pwm_period / 2, par->pwm_period);
+-	pwm_enable(par->pwm);
+-
+-	/* Map column 127 of the OLED to segment 0 */
+-	ret = ssd1307fb_write_cmd(client, SSD1307FB_SEG_REMAP_ON);
+-	if (ret < 0) {
+-		dev_err(&client->dev, "Couldn't remap the screen.\n");
+-		goto remap_error;
++	if (par->ops->init) {
++		ret = par->ops->init(par);
++		if (ret)
++			goto reset_oled_error;
+ 	}
+ 
+-	/* Turn on the display */
+-	ret = ssd1307fb_write_cmd(client, SSD1307FB_DISPLAY_ON);
+-	if (ret < 0) {
+-		dev_err(&client->dev, "Couldn't turn the display on.\n");
+-		goto remap_error;
++	ret = register_framebuffer(info);
++	if (ret) {
++		dev_err(&client->dev, "Couldn't register the framebuffer\n");
++		goto panel_init_error;
+ 	}
+ 
+ 	dev_info(&client->dev, "fb%d: %s framebuffer device registered, using %d bytes of video memory\n", info->node, info->fix.id, vmem_size);
+ 
+ 	return 0;
+ 
+-remap_error:
+-	unregister_framebuffer(info);
+-	pwm_disable(par->pwm);
+-fbreg_error:
+-	pwm_put(par->pwm);
+-pwm_error:
++panel_init_error:
++	if (par->ops->remove)
++		par->ops->remove(par);
+ reset_oled_error:
+ 	fb_deferred_io_cleanup(info);
+ fb_alloc_error:
+@@ -359,8 +495,8 @@ static int ssd1307fb_remove(struct i2c_client *client)
+ 	struct ssd1307fb_par *par = info->par;
+ 
+ 	unregister_framebuffer(info);
+-	pwm_disable(par->pwm);
+-	pwm_put(par->pwm);
++	if (par->ops->remove)
++		par->ops->remove(par);
+ 	fb_deferred_io_cleanup(info);
+ 	framebuffer_release(info);
+ 
+@@ -368,17 +504,12 @@ static int ssd1307fb_remove(struct i2c_client *client)
  }
  
--static void __set_task_blocked(struct task_struct *tsk, const sigset_t *newset)
-+void __set_task_blocked(struct task_struct *tsk, const sigset_t *newset)
- {
- 	if (signal_pending(tsk) && !thread_group_empty(tsk)) {
- 		sigset_t newblocked;
+ static const struct i2c_device_id ssd1307fb_i2c_id[] = {
++	{ "ssd1306fb", 0 },
+ 	{ "ssd1307fb", 0 },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(i2c, ssd1307fb_i2c_id);
+ 
+-static const struct of_device_id ssd1307fb_of_match[] = {
+-	{ .compatible = "solomon,ssd1307fb-i2c" },
+-	{},
+-};
+-MODULE_DEVICE_TABLE(of, ssd1307fb_of_match);
+-
+ static struct i2c_driver ssd1307fb_driver = {
+ 	.probe = ssd1307fb_probe,
+ 	.remove = ssd1307fb_remove,
 -- 
-1.8.1.4
+1.7.10.4
 
