@@ -1,49 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753623Ab3DVMid (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 08:38:33 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:53350 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753335Ab3DVMic (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 08:38:32 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Lars-Peter Clausen" <lars@metafoo.de>
-Subject: Re: [PATCH 2/2] dma: of: Remove check on always true condition
-Date: Mon, 22 Apr 2013 14:38:29 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
-Cc: Vinod Koul <vinod.koul@intel.com>, Jon Hunter <jon-hunter@ti.com>,
-        linux-kernel@vger.kernel.org
-References: <1366619613-30639-1-git-send-email-lars@metafoo.de> <1366619613-30639-2-git-send-email-lars@metafoo.de>
-In-Reply-To: <1366619613-30639-2-git-send-email-lars@metafoo.de>
+	id S1753769Ab3DVMiw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 08:38:52 -0400
+Received: from ns.iliad.fr ([212.27.33.1]:43457 "EHLO ns.iliad.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753696Ab3DVMiu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Apr 2013 08:38:50 -0400
+X-Greylist: delayed 447 seconds by postgrey-1.27 at vger.kernel.org; Mon, 22 Apr 2013 08:38:50 EDT
+Message-ID: <51752D98.8070709@freebox.fr>
+Date: Mon, 22 Apr 2013 14:31:20 +0200
+From: Nicolas Schichan <nschichan@freebox.fr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Serge Hallyn <serge.hallyn@canonical.com>, Will Drewry <wad@chromium.org>,
+        Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
+        Eric Paris <eparis@redhat.com>, Mircea Gherzan <mgherzan@gmail.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        James Morris <james.l.morris@oracle.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH V2 1/3] seccomp: add generic code for jitted seccomp filters.
+References: <1363618233-6375-1-git-send-email-nschichan@freebox.fr> <1363618233-6375-2-git-send-email-nschichan@freebox.fr> <20130417145628.88058f0f3104ab9ae551ddd3@linux-foundation.org>
+In-Reply-To: <20130417145628.88058f0f3104ab9ae551ddd3@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201304221438.29857.arnd@arndb.de>
-X-Provags-ID: V02:K0:n4gQjLQnis3h5LFR+cvs6D5WJXgD6Hc3n9HvuztxMqL
- dQGxdaE0bjdlhPP1SFIstLRNa0Ec48xKlxsanDkthKIMzEP8nT
- Vo7o2p1FyqwkJkq6PW77eOalhGEFiIMI5TtzVnxOl52MhLRvRm
- Qpk/0IIM3jyrtDhEAVvfjZrrVsVsMLexEbXsAIpNJNBv8w/7zP
- nCIwpwsdPA986uUnAXPMZRIu6pFq5ZdEnkkE/UyLVEpWslF/E5
- GFCGLjiNdbcp+4w93pV9QcWEtic/JLQzzRm3qaM6ESXM+eaU0+
- aSGeUHkG15IzQr2+jJal0BVRnX696kBDFEjDLhJOk28cNKZuJl
- P3paDdqMy+RuQqfA+mJI=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 22 April 2013, Lars-Peter Clausen wrote:
-> Both of_dma_nbcells field of the of_dma_controller and the args_count field of
-> the dma_spec are initialized by parsing the #dma-cells attribute of their device
-> tree node. So if the device tree nodes of a DMA controller and the dma_spec
-> match this means that of_dma_nbcells and args_count will also match. So the
-> second test in the of_dma_find_controller loop is redundant because given the
-> first test yields true the second test will also yield true. So we can safely
-> remove the test whether of_dma_nbcells matches args_count. Since this was the
-> last user of the of_dma_nbcells field we can remove it altogether.
-> 
-> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-> ---
+On 04/17/2013 11:56 PM, Andrew Morton wrote:
+> This patch is killing me.
+>
+>> --- a/include/linux/seccomp.h
+>> +++ b/include/linux/seccomp.h
+>> @@ -6,6 +6,7 @@
+>>   #ifdef CONFIG_SECCOMP
+>>
+>>   #include <linux/thread_info.h>
+>> +#include <linux/filter.h>
+>>   #include <asm/seccomp.h>
+>
+> In file included from include/linux/compat.h:18,
+>                   from include/linux/filter.h:9,
+>                   from include/linux/seccomp.h:9,
+>                   from include/linux/sched.h:39,
+>                   from arch/x86/kernel/asm-offsets.c:9:
+> /usr/src/25/arch/x86/include/asm/compat.h: In function 'arch_compat_alloc_user_space':
+> /usr/src/25/arch/x86/include/asm/compat.h:301: error: dereferencing pointer to incomplete type
+>
+> Problem is, compat.h's arch_compat_alloc_user_space() needs sched.h for
+> task_struct but as you can see from the above include tree, sched.h
+> includes seccomp.h and everything falls over.  The preprocessed code
+> contains the definition of arch_compat_alloc_user_space() *before* the
+> definition of task_struct.
+>
+> This is a basic x86_64 "make clean; make allmodconfig; make".
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+Hi,
+
+Would including <uapi/linux/filter.h> instead of <linux/filter.h> in seccomp.h 
+be an acceptable solution ?
+
+I have tried that and (with an additional forward declaration of struct 
+sk_buff) an x86_64 "make clean; make allmodconfig" run finishes succesfully.
+
+If that's ok with you, I can resend the serie with that fix.
+
+Regards,
+
+-- 
+Nicolas Schichan
+Freebox SAS
