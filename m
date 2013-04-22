@@ -1,53 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754726Ab3DVGUH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 02:20:07 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:36352 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752669Ab3DVGUF (ORCPT
+	id S1753453Ab3DVGY0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 02:24:26 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:21741 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752959Ab3DVGYZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 02:20:05 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130409183020.GD6186@mtj.dyndns.org>
-References: <cover.1364740180.git.viresh.kumar@linaro.org>
-	<91239cde99aaba2715f63db1f88241d9f4a36e13.1364740180.git.viresh.kumar@linaro.org>
-	<20130331181931.GA7533@htj.dyndns.org>
-	<CAKohpomGSkz6_YqDzaTYEsJfVmcg2=TvdgquWqTvd-nmtOmoaQ@mail.gmail.com>
-	<20130409183020.GD6186@mtj.dyndns.org>
-Date: Mon, 22 Apr 2013 11:50:04 +0530
-Message-ID: <CAKohpok_pLyVruwq6JLO95cqobpyYgsQnii0sB0oSh5j=rj-=A@mail.gmail.com>
-Subject: Re: [PATCH V4 3/4] block: queue work on unbound wq
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: linaro-kernel@lists.linaro.org, patches@linaro.org, robin.randhawa@arm.com,
-        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
-        charles.garcia-tobin@arm.com, arvind.chauhan@arm.com,
-        davem@davemloft.net, airlied@redhat.com, axboe@kernel.dk,
-        tglx@linutronix.de, peterz@infradead.org, mingo@redhat.com,
-        rostedt@goodmis.org, linux-rt-users@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 22 Apr 2013 02:24:25 -0400
+X-IronPort-AV: E=Sophos;i="4.87,524,1363104000"; 
+   d="scan'208";a="7110372"
+Subject: Re: [PATCH 1/2] smp: use '|=' for csd_lock
+From: li guang <lig.fnst@cn.fujitsu.com>
+To: sedat.dilek@gmail.com
+Cc: tglx@linutronix.de, peterz@infradead.org, akpm@linux-foundation.org,
+        shli@fusionio.com, srivatsa.bhat@linux.vnet.ibm.com,
+        suresh.b.siddha@intel.com, fweisbec@gmail.com,
+        paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
+In-Reply-To: <CA+icZUVd3zp-pJDspBUsipH4725uUvaufXrK0QBzcrozF2m+aA@mail.gmail.com>
+References: <1366609643-17628-1-git-send-email-lig.fnst@cn.fujitsu.com>
+	 <CA+icZUVd3zp-pJDspBUsipH4725uUvaufXrK0QBzcrozF2m+aA@mail.gmail.com>
+Date: Mon, 22 Apr 2013 14:22:29 +0800
+Message-ID: <1366611749.27110.6.camel@liguang.fnst.cn.fujitsu.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/04/22 14:22:50,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/04/22 14:22:51,
+	Serialize complete at 2013/04/22 14:22:51
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="UTF-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10 April 2013 00:00, Tejun Heo <tj@kernel.org> wrote:
-> On Tue, Apr 09, 2013 at 01:00:59PM +0530, Viresh Kumar wrote:
+在 2013-04-22一的 08:18 +0200，Sedat Dilek写道：
+> On Mon, Apr 22, 2013 at 7:47 AM, liguang <lig.fnst@cn.fujitsu.com> wrote:
+> > originally, 'data->flags = CSD_FLAG_LOCK',
+> > and we use 'data->flags &= ~CSD_FLAG_LOCK'
+> > for csd_unlock, they are not symmetrix operations
+> > so use '|=' instead of '='.
+> > though, now data->flags only hold CSD_FLAG_LOCK,
+> > it's not so meaningful to use '|=' to set 1 bit,
+> > and '&= ~' to clear 1 bit.
+> >
+> 
+> Hi,
+> 
+> what's the reason I got CCed on this two patches? The ipc-sem-next
+> issue I reported?
 
->> +#ifdef CONFIG_WQ_POWER_EFFICIENT
->> +static bool wq_power_efficient = 0;
->> +module_param_named(power_efficient, wq_power_efficient, bool, 0444);
->> +#endif
->
-> I don't think we need to make the whole thing configurable.  Turning
-> it off isn't gonna save much - my gut tells me it's gonna be four
-> instructions. :)
->
-> What I meant was that the default value for the parameter would
-> probably be need to be configurable so that mobile people don't have
-> to include the kernel param all the time or patch the kernel
-> themselves.
+sorry,
+just use the result of scripts/get_maintainer.pl
 
-I didn't get it completely.. Are you asking to set the default value
-to 1 instead
-to keep it enabled by default if config option is selected?
+> 
+> Against what tree are those patches?
+> They are not compatible with Linux-Next (next-20130419).
+
+main
+
+> 
+> Thanks.
+> 
+> Regards,
+> - Sedat -
+> 
+> [1] http://marc.info/?t=136631457900005&r=1&w=2
+> 
+> > Signed-off-by: liguang <lig.fnst@cn.fujitsu.com>
+> > ---
+> >  kernel/smp.c |    2 +-
+> >  1 files changed, 1 insertions(+), 1 deletions(-)
+> >
+> > diff --git a/kernel/smp.c b/kernel/smp.c
+> > index 1818dc0..2d5deb4 100644
+> > --- a/kernel/smp.c
+> > +++ b/kernel/smp.c
+> > @@ -109,7 +109,7 @@ static void csd_lock_wait(struct call_single_data *data)
+> >  static void csd_lock(struct call_single_data *data)
+> >  {
+> >         csd_lock_wait(data);
+> > -       data->flags = CSD_FLAG_LOCK;
+> > +       data->flags |= CSD_FLAG_LOCK;
+> >
+> >         /*
+> >          * prevent CPU from reordering the above assignment
+> > --
+> > 1.7.2.5
+> >
+
+
