@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753770Ab3DVO3S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 10:29:18 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51369 "EHLO
+	id S1753628Ab3DVO3Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 10:29:16 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51365 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753064Ab3DVO3N (ORCPT
+	by vger.kernel.org with ESMTP id S1753134Ab3DVO3N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 22 Apr 2013 10:29:13 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -17,9 +17,9 @@ CC: akpm@linux-foundation.org,
         "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
         "Johan Hovold" <jhovold@gmail.com>
 Date: Mon, 22 Apr 2013 15:25:59 +0100
-Message-ID: <lsq.1366640759.464968237@decadent.org.uk>
+Message-ID: <lsq.1366640759.969181393@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [07/75] USB: io_edgeport: fix use-after-free in TIOCMIWAIT
+Subject: [05/75] USB: cypress_m8: fix use-after-free in TIOCMIWAIT
 In-Reply-To: <lsq.1366640759.151900666@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:6834:ff73:7553:7f84
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,7 +34,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johan Hovold <jhovold@gmail.com>
 
-commit 333576255d4cfc53efd056aad438568184b36af6 upstream.
+commit 356050d8b1e526db093e9d2c78daf49d6bf418e3 upstream.
 
 Use the port wait queue and make sure to check the serial disconnected
 flag before accessing private port data after waking up.
@@ -42,58 +42,61 @@ flag before accessing private port data after waking up.
 This is is needed as the private port data (including the wait queue
 itself) can be gone when waking up after a disconnect.
 
+Also remove bogus test for private data pointer being NULL as it is
+never assigned in the loop.
+
 Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/serial/io_edgeport.c |   12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
+ drivers/usb/serial/cypress_m8.c |   14 ++++++++------
+ 1 file changed, 8 insertions(+), 6 deletions(-)
 
---- a/drivers/usb/serial/io_edgeport.c
-+++ b/drivers/usb/serial/io_edgeport.c
-@@ -114,7 +114,6 @@ struct edgeport_port {
- 	wait_queue_head_t	wait_chase;		/* for handling sleeping while waiting for chase to finish */
- 	wait_queue_head_t	wait_open;		/* for handling sleeping while waiting for open to finish */
- 	wait_queue_head_t	wait_command;		/* for handling sleeping while waiting for command to finish */
--	wait_queue_head_t	delta_msr_wait;		/* for handling sleeping while waiting for msr change to happen */
+--- a/drivers/usb/serial/cypress_m8.c
++++ b/drivers/usb/serial/cypress_m8.c
+@@ -150,7 +150,6 @@ struct cypress_private {
+ 	int baud_rate;			   /* stores current baud rate in
+ 					      integer form */
+ 	int isthrottled;		   /* if throttled, discard reads */
+-	wait_queue_head_t delta_msr_wait;  /* used for TIOCMIWAIT */
+ 	char prev_status, diff_status;	   /* used for TIOCMIWAIT */
+ 	/* we pass a pointer to this as the argument sent to
+ 	   cypress_set_termios old_termios */
+@@ -488,7 +487,6 @@ static int generic_startup(struct usb_se
+ 		kfree(priv);
+ 		return -ENOMEM;
+ 	}
+-	init_waitqueue_head(&priv->delta_msr_wait);
  
- 	struct async_icount	icount;
- 	struct usb_serial_port	*port;			/* loop back to the owner of this object */
-@@ -885,7 +884,6 @@ static int edge_open(struct tty_struct *
- 	/* initialize our wait queues */
- 	init_waitqueue_head(&edge_port->wait_open);
- 	init_waitqueue_head(&edge_port->wait_chase);
--	init_waitqueue_head(&edge_port->delta_msr_wait);
- 	init_waitqueue_head(&edge_port->wait_command);
+ 	usb_reset_configuration(serial->dev);
  
- 	/* initialize our icount structure */
-@@ -1703,13 +1701,17 @@ static int edge_ioctl(struct tty_struct
- 		dbg("%s (%d) TIOCMIWAIT", __func__,  port->number);
- 		cprev = edge_port->icount;
- 		while (1) {
--			prepare_to_wait(&edge_port->delta_msr_wait,
-+			prepare_to_wait(&port->delta_msr_wait,
- 						&wait, TASK_INTERRUPTIBLE);
- 			schedule();
--			finish_wait(&edge_port->delta_msr_wait, &wait);
-+			finish_wait(&port->delta_msr_wait, &wait);
+@@ -928,12 +926,16 @@ static int cypress_ioctl(struct tty_stru
+ 	switch (cmd) {
+ 	/* This code comes from drivers/char/serial.c and ftdi_sio.c */
+ 	case TIOCMIWAIT:
+-		while (priv != NULL) {
+-			interruptible_sleep_on(&priv->delta_msr_wait);
++		for (;;) {
++			interruptible_sleep_on(&port->delta_msr_wait);
  			/* see if a signal did it */
  			if (signal_pending(current))
  				return -ERESTARTSYS;
+-			else {
 +
 +			if (port->serial->disconnected)
 +				return -EIO;
 +
- 			cnow = edge_port->icount;
- 			if (cnow.rng == cprev.rng && cnow.dsr == cprev.dsr &&
- 			    cnow.dcd == cprev.dcd && cnow.cts == cprev.cts)
-@@ -2090,7 +2092,7 @@ static void handle_new_msr(struct edgepo
- 			icount->dcd++;
- 		if (newMsr & EDGEPORT_MSR_DELTA_RI)
- 			icount->rng++;
--		wake_up_interruptible(&edge_port->delta_msr_wait);
-+		wake_up_interruptible(&edge_port->port->delta_msr_wait);
++			{
+ 				char diff = priv->diff_status;
+ 				if (diff == 0)
+ 					return -EIO; /* no change => error */
+@@ -1261,7 +1263,7 @@ static void cypress_read_int_callback(st
+ 	if (priv->current_status != priv->prev_status) {
+ 		priv->diff_status |= priv->current_status ^
+ 			priv->prev_status;
+-		wake_up_interruptible(&priv->delta_msr_wait);
++		wake_up_interruptible(&port->delta_msr_wait);
+ 		priv->prev_status = priv->current_status;
  	}
- 
- 	/* Save the new modem status */
+ 	spin_unlock_irqrestore(&priv->lock, flags);
 
