@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752966Ab3DVOaV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 10:30:21 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51612 "EHLO
+	id S1755463Ab3DVOec (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 10:34:32 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51638 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754856Ab3DVOaQ (ORCPT
+	by vger.kernel.org with ESMTP id S1755037Ab3DVOaV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 10:30:16 -0400
+	Mon, 22 Apr 2013 10:30:21 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Ingo Molnar" <mingo@kernel.org>,
-        "Namhyung Kim" <namhyung.kim@lge.com>,
-        "Namhyung Kim" <namhyung@kernel.org>,
-        "Frederic Weisbecker" <fweisbec@gmail.com>,
-        "Steven Rostedt" <rostedt@goodmis.org>
+CC: akpm@linux-foundation.org, "Peter Zijlstra" <peterz@infradead.org>,
+        "Steven Rostedt" <rostedt@goodmis.org>,
+        "Siegfried Wulsch" <Siegfried.Wulsch@rovema.de>,
+        "Thomas Gleixner" <tglx@linutronix.de>
 Date: Mon, 22 Apr 2013 15:25:59 +0100
-Message-ID: <lsq.1366640759.32194437@decadent.org.uk>
+Message-ID: <lsq.1366640759.861340156@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [38/75] tracing: Fix possible NULL pointer dereferences
+Subject: [27/75] sched_clock: Prevent 64bit inatomicity on 32bit systems
 In-Reply-To: <lsq.1366640759.151900666@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:6834:ff73:7553:7f84
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,79 +33,137 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit 6a76f8c0ab19f215af2a3442870eeb5f0e81998d upstream.
+commit a1cbcaa9ea87b87a96b9fc465951dcf36e459ca2 upstream.
 
-Currently set_ftrace_pid and set_graph_function files use seq_lseek
-for their fops.  However seq_open() is called only for FMODE_READ in
-the fops->open() so that if an user tries to seek one of those file
-when she open it for writing, it sees NULL seq_file and then panic.
+The sched_clock_remote() implementation has the following inatomicity
+problem on 32bit systems when accessing the remote scd->clock, which
+is a 64bit value.
 
-It can be easily reproduced with following command:
+CPU0			CPU1
 
-  $ cd /sys/kernel/debug/tracing
-  $ echo 1234 | sudo tee -a set_ftrace_pid
+sched_clock_local()	sched_clock_remote(CPU0)
+...
+			remote_clock = scd[CPU0]->clock
+			    read_low32bit(scd[CPU0]->clock)
+cmpxchg64(scd->clock,...)
+			    read_high32bit(scd[CPU0]->clock)
 
-In this example, GNU coreutils' tee opens the file with fopen(, "a")
-and then the fopen() internally calls lseek().
+While the update of scd->clock is using an atomic64 mechanism, the
+readout on the remote cpu is not, which can cause completely bogus
+readouts.
 
-Link: http://lkml.kernel.org/r/1365663302-2170-1-git-send-email-namhyung@kernel.org
+It is a quite rare problem, because it requires the update to hit the
+narrow race window between the low/high readout and the update must go
+across the 32bit boundary.
 
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-[bwh: Backported to 3.2: ftrace_regex_lseek() is static]
+The resulting misbehaviour is, that CPU1 will see the sched_clock on
+CPU1 ~4 seconds ahead of it's own and update CPU1s sched_clock value
+to this bogus timestamp. This stays that way due to the clamping
+implementation for about 4 seconds until the synchronization with
+CLOCK_MONOTONIC undoes the problem.
+
+The issue is hard to observe, because it might only result in a less
+accurate SCHED_OTHER timeslicing behaviour. To create observable
+damage on realtime scheduling classes, it is necessary that the bogus
+update of CPU1 sched_clock happens in the context of an realtime
+thread, which then gets charged 4 seconds of RT runtime, which results
+in the RT throttler mechanism to trigger and prevent scheduling of RT
+tasks for a little less than 4 seconds. So this is quite unlikely as
+well.
+
+The issue was quite hard to decode as the reproduction time is between
+2 days and 3 weeks and intrusive tracing makes it less likely, but the
+following trace recorded with trace_clock=global, which uses
+sched_clock_local(), gave the final hint:
+
+  <idle>-0   0d..30 400269.477150: hrtimer_cancel: hrtimer=0xf7061e80
+  <idle>-0   0d..30 400269.477151: hrtimer_start:  hrtimer=0xf7061e80 ...
+irq/20-S-587 1d..32 400273.772118: sched_wakeup:   comm= ... target_cpu=0
+  <idle>-0   0dN.30 400273.772118: hrtimer_cancel: hrtimer=0xf7061e80
+
+What happens is that CPU0 goes idle and invokes
+sched_clock_idle_sleep_event() which invokes sched_clock_local() and
+CPU1 runs a remote wakeup for CPU0 at the same time, which invokes
+sched_remote_clock(). The time jump gets propagated to CPU0 via
+sched_remote_clock() and stays stale on both cores for ~4 seconds.
+
+There are only two other possibilities, which could cause a stale
+sched clock:
+
+1) ktime_get() which reads out CLOCK_MONOTONIC returns a sporadic
+   wrong value.
+
+2) sched_clock() which reads the TSC returns a sporadic wrong value.
+
+#1 can be excluded because sched_clock would continue to increase for
+   one jiffy and then go stale.
+
+#2 can be excluded because it would not make the clock jump
+   forward. It would just result in a stale sched_clock for one jiffy.
+
+After quite some brain twisting and finding the same pattern on other
+traces, sched_clock_remote() remained the only place which could cause
+such a problem and as explained above it's indeed racy on 32bit
+systems.
+
+So while on 64bit systems the readout is atomic, we need to verify the
+remote readout on 32bit machines. We need to protect the local->clock
+readout in sched_clock_remote() on 32bit as well because an NMI could
+hit between the low and the high readout, call sched_clock_local() and
+modify local->clock.
+
+Thanks to Siegfried Wulsch for bearing with my debug requests and
+going through the tedious tasks of running a bunch of reproducer
+systems to generate the debug information which let me decode the
+issue.
+
+Reported-by: Siegfried Wulsch <Siegfried.Wulsch@rovema.de>
+Acked-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/alpine.LFD.2.02.1304051544160.21884@ionos
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+[bwh: Backported to 3.2: adjust filename]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -2316,7 +2316,7 @@ ftrace_notrace_open(struct inode *inode,
- }
+--- a/kernel/sched_clock.c
++++ b/kernel/sched_clock.c
+@@ -176,10 +176,36 @@ static u64 sched_clock_remote(struct sch
+ 	u64 this_clock, remote_clock;
+ 	u64 *ptr, old_val, val;
  
- static loff_t
--ftrace_regex_lseek(struct file *file, loff_t offset, int origin)
-+ftrace_filter_lseek(struct file *file, loff_t offset, int origin)
- {
- 	loff_t ret;
++#if BITS_PER_LONG != 64
++again:
++	/*
++	 * Careful here: The local and the remote clock values need to
++	 * be read out atomic as we need to compare the values and
++	 * then update either the local or the remote side. So the
++	 * cmpxchg64 below only protects one readout.
++	 *
++	 * We must reread via sched_clock_local() in the retry case on
++	 * 32bit as an NMI could use sched_clock_local() via the
++	 * tracer and hit between the readout of
++	 * the low32bit and the high 32bit portion.
++	 */
++	this_clock = sched_clock_local(my_scd);
++	/*
++	 * We must enforce atomic readout on 32bit, otherwise the
++	 * update on the remote cpu can hit inbetween the readout of
++	 * the low32bit and the high 32bit portion.
++	 */
++	remote_clock = cmpxchg64(&scd->clock, 0, 0);
++#else
++	/*
++	 * On 64bit the read of [my]scd->clock is atomic versus the
++	 * update, so we can avoid the above 32bit dance.
++	 */
+ 	sched_clock_local(my_scd);
+ again:
+ 	this_clock = my_scd->clock;
+ 	remote_clock = scd->clock;
++#endif
  
-@@ -3134,7 +3134,7 @@ static const struct file_operations ftra
- 	.open = ftrace_filter_open,
- 	.read = seq_read,
- 	.write = ftrace_filter_write,
--	.llseek = ftrace_regex_lseek,
-+	.llseek = ftrace_filter_lseek,
- 	.release = ftrace_regex_release,
- };
- 
-@@ -3142,7 +3142,7 @@ static const struct file_operations ftra
- 	.open = ftrace_notrace_open,
- 	.read = seq_read,
- 	.write = ftrace_notrace_write,
--	.llseek = ftrace_regex_lseek,
-+	.llseek = ftrace_filter_lseek,
- 	.release = ftrace_regex_release,
- };
- 
-@@ -3350,8 +3350,8 @@ static const struct file_operations ftra
- 	.open		= ftrace_graph_open,
- 	.read		= seq_read,
- 	.write		= ftrace_graph_write,
-+	.llseek		= ftrace_filter_lseek,
- 	.release	= ftrace_graph_release,
--	.llseek		= seq_lseek,
- };
- #endif /* CONFIG_FUNCTION_GRAPH_TRACER */
- 
-@@ -3843,7 +3843,7 @@ static const struct file_operations ftra
- 	.open		= ftrace_pid_open,
- 	.write		= ftrace_pid_write,
- 	.read		= seq_read,
--	.llseek		= seq_lseek,
-+	.llseek		= ftrace_filter_lseek,
- 	.release	= ftrace_pid_release,
- };
- 
+ 	/*
+ 	 * Use the opportunity that we have both locks
 
