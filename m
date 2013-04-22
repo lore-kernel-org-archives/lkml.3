@@ -1,101 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754736Ab3DVG1o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 02:27:44 -0400
-Received: from mga02.intel.com ([134.134.136.20]:27887 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753291Ab3DVG1m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 02:27:42 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,524,1363158000"; 
-   d="scan'208";a="322103435"
-Date: Mon, 22 Apr 2013 11:26:12 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>,
-        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.jf.intel.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>, linux-kernel@vger.kernel.org,
-        spear-devel <spear-devel@list.st.com>, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH v2 0/5] dmaengine: add ACPI DMA helpers and use them in
- dw_dmac
-Message-ID: <20130422055612.GE6081@intel.com>
-References: <1365505547-10552-1-git-send-email-andriy.shevchenko@linux.intel.com>
- <20130415163618.GF12436@intel.com>
- <1366114487.7932.29.camel@smile>
- <1525811.597RVDyDxu@vostro.rjw.lan>
+	id S1754764Ab3DVG2z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 02:28:55 -0400
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:51359 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753129Ab3DVG2x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Apr 2013 02:28:53 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1525811.597RVDyDxu@vostro.rjw.lan>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Originating-IP: [85.143.161.18]
+In-Reply-To: <20130422083549.7c1cff84@notabene.brown>
+References: <CACaajQv+HhzStC-U1RGz4ZWdn0-w4X3MyMM9GTJPOFeyrxtP3w@mail.gmail.com>
+ <20130422083549.7c1cff84@notabene.brown>
+From: Vasiliy Tolstov <v.tolstov@selfip.ru>
+Date: Mon, 22 Apr 2013 10:28:37 +0400
+X-Google-Sender-Auth: h9jZHua6aF3g_xELV74k6KLkuX0
+Message-ID: <CACaajQuq=rAvm-uJLyhv3ufP=R4WGeXef5o9Tdi3EvTuoX=YRw@mail.gmail.com>
+Subject: Re: mdadm raid1 regression
+To: NeilBrown <neilb@suse.de>
+Cc: stable@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-raid@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 16, 2013 at 08:11:57PM +0200, Rafael J. Wysocki wrote:
-> On Tuesday, April 16, 2013 03:14:47 PM Andy Shevchenko wrote:
-> > On Mon, 2013-04-15 at 22:06 +0530, Vinod Koul wrote: 
-> > > On Tue, Apr 09, 2013 at 02:05:42PM +0300, Andy Shevchenko wrote:
-> > > > There is a patch series which introduces ACPI DMA helpers in similar way like
-> > > > we have for DeviceTree.
-> > > > 
-> > > > In addition it applies this to the first user, namely dw_dmac driver.
-> > > Applied w/o 3 & 5.2 they failed, can you pls rebase and resend
-> > > 
-> > 
-> > Actually those two (at least 5/5) can't be applied on top of slave-dma.
-> > The patches requires slave-dma and linux-pm together. I heard it's
-> > usually achieved by creating a specific branch in one subsystem
-> > (linux-pm in our case) for another.
-> > 
-> > Rafael, what could we do here?
-> 
-> I suppose Vinod can pull from my acpi-lpss (which is guaranteed not to be
-> rebased at this point) and apply the series on top of that.
-Or I can wait for rc1 and apply afterwards...?
-> 
-> Thanks,
-> Rafael
-> 
-> 
-> > > > Since v1:
-> > > >  - address one Vinod's comment
-> > > >  - replace 5/6 & 6/6 by 5/5 from Rafael
-> > > >  - tested on Intel Lynxpoint system
-> > > > 
-> > > > Andy Shevchenko (4):
-> > > >   dma: acpi-dma: introduce ACPI DMA helpers
-> > > >   dmaengine: call acpi_dma_request_slave_channel as well
-> > > >   dma: acpi-dma: parse CSRT to extract additional resources
-> > > >   dw_dmac: add ACPI support
-> > > > 
-> > > > Rafael J. Wysocki (1):
-> > > >   ACPI / LPSS: add support of shared clock
-> > > > 
-> > > >  Documentation/acpi/enumeration.txt     |  77 ++++++
-> > > >  drivers/acpi/Makefile                  |   1 -
-> > > >  drivers/acpi/acpi_lpss.c               |  26 +-
-> > > >  drivers/acpi/csrt.c                    | 159 ------------
-> > > >  drivers/acpi/internal.h                |   1 -
-> > > >  drivers/acpi/scan.c                    |   1 -
-> > > >  drivers/clk/x86/clk-lpt.c              |  15 +-
-> > > >  drivers/dma/Kconfig                    |   4 +
-> > > >  drivers/dma/Makefile                   |   1 +
-> > > >  drivers/dma/acpi-dma.c                 | 445 +++++++++++++++++++++++++++++++++
-> > > >  drivers/dma/dmaengine.c                |   6 +
-> > > >  drivers/dma/dw_dmac.c                  |  68 +++--
-> > > >  drivers/dma/dw_dmac_regs.h             |   1 -
-> > > >  include/linux/acpi_dma.h               | 120 +++++++++
-> > > >  include/linux/platform_data/clk-lpss.h |   5 +
-> > > >  15 files changed, 741 insertions(+), 189 deletions(-)
-> > > >  delete mode 100644 drivers/acpi/csrt.c
-> > > >  create mode 100644 drivers/dma/acpi-dma.c
-> > > >  create mode 100644 include/linux/acpi_dma.h
-> > > > 
-> > 
-> > 
-> -- 
-> I speak only for myself.
-> Rafael J. Wysocki, Intel Open Source Technology Center.
+2013/4/22 NeilBrown <neilb@suse.de>:
+>> Hello. I'm using linux 3.8.6 and mdadm 3.2.6 (from git).
+>> I have many raid1 arrays that have data offset 2048 (metadata 1.2,
+>> created with various mdadm versions but mostly 3.2.1 on linux 2.6.32).
+>> If i create raid1 with never mdadm on 3.8.6 i have data offset 8192?? Why?
+>
+> More room for various useful things.
+> In particular, if you one day want to convert this raid1 to a raid5, then
+> having a bit of extra space at the front will mean you can avoid a 'backup
+> file' and all the problems they cause (code for this isn't quite ready, but
+> is getting there).
+>
+
+Very good news =)
+
+>>
+>> My problem:
+>> Sometimes i'm doing mdadm --zero-superblock on both parts of array and
+>> re-create it. On older systems i have no errors. On new (linux 3.8.6
+>> and mdadm 3.2.6) i get corrupted ext3 fs and partition table. Why this
+>> happening?
+>
+> Why are you doing that?
+
+Our storage have two nodes each provides disk via srp to nodes. On
+each node we create separate lvm (we not using clvm) and assemble md.
+Sometimes we resize lvm and need to zero superblock, becouse sometimes
+we can still have old mdadm data on lvm part (from previous user for
+example). And then we add disk to raid we can get sometimes broken
+data (invalid sync).
+
+>
+>> P.S. If i use mdadm 3.2.2 i get data offset 4096 that not breaks data,
+>> but inconsistent with older versions.
+>
+> I suggest you use mdadm 3.2.2 then.
+
+Yes, i'm already do that, but i think that lates mdadm version with
+data-offset patches can solve my problems. Is that possible to correct
+it behaviour and write in docs which data offset used in which version
+of mdadm?
+
+>
+>> P.P.S. I'm try to specify --data-offset when create array but as i see
+>> - its ignored and data offset still have 8192).
+>
+> I'll try to make sure that works correctly for the next release.
+> Thanks for the report.
+>
+> NeilBrown
+
+Thanks!
+
+P.S. Very big thanks for all.
+
+
+--
+Vasiliy Tolstov,
+e-mail: v.tolstov@selfip.ru
+jabber: vase@selfip.ru
