@@ -1,120 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755215Ab3DVOaf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 10:30:35 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51648 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755080Ab3DVOaV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 10:30:21 -0400
-Content-Type: text/plain; charset="UTF-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+	id S1755256Ab3DVOar (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 10:30:47 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:49875 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754060Ab3DVOan (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Apr 2013 10:30:43 -0400
+Date: Mon, 22 Apr 2013 17:30:10 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Sourav Poddar <sourav.poddar@ti.com>
+CC: <gregkh@linuxfoundation.org>, <tony@atomide.com>,
+        <rmk+kernel@arm.linux.org.uk>, <khilman@linaro.org>,
+        <linux-serial@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Felipe Balbi <balbi@ti.com>, Rajendra nayak <rnayak@ti.com>
+Subject: Re: [PATCHv2 1/5] driver: tty: serial: Move "uart_console" def to
+ core header file.
+Message-ID: <20130422143010.GA7508@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1366638237-6880-1-git-send-email-sourav.poddar@ti.com>
+ <1366638237-6880-2-git-send-email-sourav.poddar@ti.com>
 MIME-Version: 1.0
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
-        "Samu Kallio" <samu.kallio@aberdeencloud.com>,
-        "Josh Boyer" <jwboyer@redhat.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Date: Mon, 22 Apr 2013 15:25:59 +0100
-Message-ID: <lsq.1366640759.219123809@decadent.org.uk>
-X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [34/75] x86, mm, paravirt: Fix vmalloc_fault oops during lazy MMU
- updates
-In-Reply-To: <lsq.1366640759.151900666@decadent.org.uk>
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:6834:ff73:7553:7f84
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Nq2Wo0NMKNjxTN9z"
+Content-Disposition: inline
+In-Reply-To: <1366638237-6880-2-git-send-email-sourav.poddar@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2.44-rc1 review patch.  If anyone has any objections, please let me know.
+--Nq2Wo0NMKNjxTN9z
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-------------------
+On Mon, Apr 22, 2013 at 07:13:53PM +0530, Sourav Poddar wrote:
+> Move "uart_console" definition to serial core header file, so that it can=
+ be
+> used by serial drivers.
+> Get rid of the uart_console defintion from mpc52xx_uart driver.
+>=20
+>=20
+> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> Cc: Felipe Balbi <balbi@ti.com>
+> Cc: Rajendra nayak <rnayak@ti.com>
+> Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
 
-From: Samu Kallio <samu.kallio@aberdeencloud.com>
+looks alright
 
-commit 1160c2779b826c6f5c08e5cc542de58fd1f667d5 upstream.
+Reviewed-by: Felipe Balbi <balbi@ti.com>
 
-In paravirtualized x86_64 kernels, vmalloc_fault may cause an oops
-when lazy MMU updates are enabled, because set_pgd effects are being
-deferred.
+--=20
+balbi
 
-One instance of this problem is during process mm cleanup with memory
-cgroups enabled. The chain of events is as follows:
+--Nq2Wo0NMKNjxTN9z
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-- zap_pte_range enables lazy MMU updates
-- zap_pte_range eventually calls mem_cgroup_charge_statistics,
-  which accesses the vmalloc'd mem_cgroup per-cpu stat area
-- vmalloc_fault is triggered which tries to sync the corresponding
-  PGD entry with set_pgd, but the update is deferred
-- vmalloc_fault oopses due to a mismatch in the PUD entries
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-The OOPs usually looks as so:
+iQIcBAEBAgAGBQJRdUlyAAoJEIaOsuA1yqRESEsP/30PjrZ0cfRwE0stjnBoOQNn
+gv+w/J8SFrInpDlFhs9OrC4uLSSZUNb1st76Idnyajz6hmxbFvLj5rvN91dMNU9r
+Lq1tjGETxjDYIRR3UlQEB+H098OO5Ta3CvMdie/fq5xguekPQIxtvoBwYNx0UtPh
+5VaW43IOrEhaUQw52jcgIRma860GD8/5h0G/Kdv1y/SK4Nw+se1YoSKUZwE7zlNU
+ZALPERo+kPymf0zswpKi2AkRafKYF6eEfzFqogVwPHHB9mE3x1zPUM8yMbxH5NDM
+282ouvDRd0ZA7gqz0H5RnINYq8S3NPUYYWXuzVp+NGFyX9FE4D2NAHAevLcVDopF
+3uwqMNvirt63g0aSZPf5TFoxODCYPGFx43CfwJkX3KLf5kB4D3Eq5zJmla0KEIE1
+D0AH4Vk/z3/YEmCE8coiSuDDigz9mLeifF+WbeTKhrAHWuMBs6ixPN5smKw9kQFH
+ViPNfV3Uge3/DbbtGRmEvcrsz2570Qz59l4QQ4BK3qXqff7jQ5NBgla3KQ6WwOpy
+RZpMXIXWXsVexsbk9Yg3aUY1tgNu0NXXtca+IJMHRa2jJdp2Z44lhSs8CQHtn/wQ
+yIO7Qo/UMx0LntDbO+iAiW53rsUegBP6Po5/l5raQ5AMBNKyRC8y9o/vMzI0/n9J
+xdCtps2hsIWht+arz4ko
+=xpms
+-----END PGP SIGNATURE-----
 
-------------[ cut here ]------------
-kernel BUG at arch/x86/mm/fault.c:396!
-invalid opcode: 0000 [#1] SMP
-.. snip ..
-CPU 1
-Pid: 10866, comm: httpd Not tainted 3.6.10-4.fc18.x86_64 #1
-RIP: e030:[<ffffffff816271bf>]  [<ffffffff816271bf>] vmalloc_fault+0x11f/0x208
-.. snip ..
-Call Trace:
- [<ffffffff81627759>] do_page_fault+0x399/0x4b0
- [<ffffffff81004f4c>] ? xen_mc_extend_args+0xec/0x110
- [<ffffffff81624065>] page_fault+0x25/0x30
- [<ffffffff81184d03>] ? mem_cgroup_charge_statistics.isra.13+0x13/0x50
- [<ffffffff81186f78>] __mem_cgroup_uncharge_common+0xd8/0x350
- [<ffffffff8118aac7>] mem_cgroup_uncharge_page+0x57/0x60
- [<ffffffff8115fbc0>] page_remove_rmap+0xe0/0x150
- [<ffffffff8115311a>] ? vm_normal_page+0x1a/0x80
- [<ffffffff81153e61>] unmap_single_vma+0x531/0x870
- [<ffffffff81154962>] unmap_vmas+0x52/0xa0
- [<ffffffff81007442>] ? pte_mfn_to_pfn+0x72/0x100
- [<ffffffff8115c8f8>] exit_mmap+0x98/0x170
- [<ffffffff810050d9>] ? __raw_callee_save_xen_pmd_val+0x11/0x1e
- [<ffffffff81059ce3>] mmput+0x83/0xf0
- [<ffffffff810624c4>] exit_mm+0x104/0x130
- [<ffffffff8106264a>] do_exit+0x15a/0x8c0
- [<ffffffff810630ff>] do_group_exit+0x3f/0xa0
- [<ffffffff81063177>] sys_exit_group+0x17/0x20
- [<ffffffff8162bae9>] system_call_fastpath+0x16/0x1b
-
-Calling arch_flush_lazy_mmu_mode immediately after set_pgd makes the
-changes visible to the consistency checks.
-
-RedHat-Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=914737
-Tested-by: Josh Boyer <jwboyer@redhat.com>
-Reported-and-Tested-by: Krishna Raman <kraman@redhat.com>
-Signed-off-by: Samu Kallio <samu.kallio@aberdeencloud.com>
-Link: http://lkml.kernel.org/r/1364045796-10720-1-git-send-email-konrad.wilk@oracle.com
-Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- arch/x86/mm/fault.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
-
---- a/arch/x86/mm/fault.c
-+++ b/arch/x86/mm/fault.c
-@@ -377,10 +377,12 @@ static noinline __kprobes int vmalloc_fa
- 	if (pgd_none(*pgd_ref))
- 		return -1;
- 
--	if (pgd_none(*pgd))
-+	if (pgd_none(*pgd)) {
- 		set_pgd(pgd, *pgd_ref);
--	else
-+		arch_flush_lazy_mmu_mode();
-+	} else {
- 		BUG_ON(pgd_page_vaddr(*pgd) != pgd_page_vaddr(*pgd_ref));
-+	}
- 
- 	/*
- 	 * Below here mismatches are bugs because these lower tables
-
+--Nq2Wo0NMKNjxTN9z--
