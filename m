@@ -1,43 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755434Ab3DVOgl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 10:36:41 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:36372 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754854Ab3DVOgi (ORCPT
+	id S1755523Ab3DVOhB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 10:37:01 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51622 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755006Ab3DVOaT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 10:36:38 -0400
-Date: Mon, 22 Apr 2013 15:36:16 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: =?iso-8859-1?Q?Andr=E9?= Hentschel <nerv@dawncrow.de>
-Cc: linux-arch@vger.kernel.org, will.deacon@arm.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org
-Subject: Re: [PATCHv2] arm: Preserve TPIDRURW on context switch
-Message-ID: <20130422143616.GP14496@n2100.arm.linux.org.uk>
-References: <517168BB.3070903@dawncrow.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+	Mon, 22 Apr 2013 10:30:19 -0400
+Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <517168BB.3070903@dawncrow.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+MIME-Version: 1.0
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+CC: akpm@linux-foundation.org, "Namhyung Kim" <namhyung.kim@lge.com>,
+        "Namhyung Kim" <namhyung@kernel.org>,
+        "Frederic Weisbecker" <fweisbec@gmail.com>,
+        "Steven Rostedt" <rostedt@goodmis.org>
+Date: Mon, 22 Apr 2013 15:25:59 +0100
+Message-ID: <lsq.1366640759.669509943@decadent.org.uk>
+X-Mailer: LinuxStableQueue (scripts by bwh)
+Subject: [33/75] tracing: Fix double free when function profile init failed
+In-Reply-To: <lsq.1366640759.151900666@decadent.org.uk>
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:6834:ff73:7553:7f84
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 19, 2013 at 05:54:35PM +0200, André Hentschel wrote:
-> From: =?UTF-8?q?Andr=C3=A9=20Hentschel?= <nerv@dawncrow.de>
-> 
-> There are more and more applications coming to WinRT, Wine could support them,
-> but mostly they expect to have the thread environment block (TEB) in TPIDRURW.
-> This register must be preserved per thread instead of being cleared.
-> 
-> Signed-off-by: André Hentschel <nerv@dawncrow.de>
+3.2.44-rc1 review patch.  If anyone has any objections, please let me know.
 
-This actually makes things less efficient all round, because you
-now use the value immediately after loading, which means it will cause
-pipeline stalls, certainly on older CPUs.
+------------------
 
-Could you please rework the patch to try avoiding soo many modifications
-to the way things have been done here?
+From: Namhyung Kim <namhyung.kim@lge.com>
+
+commit 83e03b3fe4daffdebbb42151d5410d730ae50bd1 upstream.
+
+On the failure path, stat->start and stat->pages will refer same page.
+So it'll attempt to free the same page again and get kernel panic.
+
+Link: http://lkml.kernel.org/r/1364820385-32027-1-git-send-email-namhyung@kernel.org
+
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ kernel/trace/ftrace.c |    1 -
+ 1 file changed, 1 deletion(-)
+
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -572,7 +572,6 @@ int ftrace_profile_pages_init(struct ftr
+ 		free_page(tmp);
+ 	}
+ 
+-	free_page((unsigned long)stat->pages);
+ 	stat->pages = NULL;
+ 	stat->start = NULL;
+ 
+
