@@ -1,71 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754087Ab3DVXXD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 19:23:03 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:41024 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753571Ab3DVXXB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 19:23:01 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Wang YanQing <udknight@gmail.com>
-Cc: Yinghai Lu <yinghai@kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Renninger <trenn@suse.de>
-Subject: Re: [PATCH]drivers:acpi: Fix wrong parameter passed to memblock_reserve
-Date: Tue, 23 Apr 2013 01:31:04 +0200
-Message-ID: <97631249.RDz9BWEgHg@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0-rc8+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <20130419044046.GA9028@udknight>
-References: <20130416014411.GA14671@udknight> <CAE9FiQUtvgB6zO9uqDQeC8K1kdH5uCwXkagAYUEEoF+Z+QHTdw@mail.gmail.com> <20130419044046.GA9028@udknight>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1754113Ab3DVXYM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 19:24:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53726 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753571Ab3DVXYK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Apr 2013 19:24:10 -0400
+Date: Mon, 22 Apr 2013 16:24:09 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Andreas Fenkart <andreas.fenkart@streamunlimited.com>
+Cc: tglx@linutronix.de, zonque@gmail.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] genirq: use irq_mask as fallback for irq_disable.
+Message-Id: <20130422162409.e66b1e6ac3111bd3995c5fd6@linux-foundation.org>
+In-Reply-To: <1366378862-22359-1-git-send-email-andreas.fenkart@streamunlimited.com>
+References: <1366378862-22359-1-git-send-email-andreas.fenkart@streamunlimited.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, April 19, 2013 12:40:46 PM Wang YanQing wrote:
-> On Mon, Apr 15, 2013 at 07:47:38PM -0700, Yinghai Lu wrote:
-> > On Mon, Apr 15, 2013 at 6:44 PM, Wang YanQing <udknight@gmail.com> wrote:
-> > >
-> > > The parameter of memblock_reserve is start address,
-> > > and size, not address range.
-> > >
-> > > Signed-off-by: Wang YanQing <udknight@gmail.com>
-> > > ---
-> > >  drivers/acpi/osl.c | 2 +-
-> > >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > >
-> > > diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-> > > index 586e7e9..bcb7a3b 100644
-> > > --- a/drivers/acpi/osl.c
-> > > +++ b/drivers/acpi/osl.c
-> > > @@ -641,7 +641,7 @@ void __init acpi_initrd_override(void *data, size_t size)
-> > >          * Both memblock_reserve and e820_add_region (via arch_reserve_mem_area)
-> > >          * works fine.
-> > >          */
-> > > -       memblock_reserve(acpi_tables_addr, acpi_tables_addr + all_tables_size);
-> > > +       memblock_reserve(acpi_tables_addr, all_tables_size);
-> > >         arch_reserve_mem_area(acpi_tables_addr, all_tables_size);
-> > 
-> > Acked-by: Yinghai Lu <yinghai@kernel.org>
-> > 
-> > And it should go to stable for v3.8
+On Fri, 19 Apr 2013 15:41:02 +0200 Andreas Fenkart <andreas.fenkart@streamunlimited.com> wrote:
+
+> This is in line with irq_enable that uses the same fallback.
+> When masked, interrupts are still latched into the status register
+> so when unmasked there is an interrupt straight away.
 > 
-> Hi all, I think this fix should be merged before 3.9 is out,
-> it make no much sense to backport it for 3.9 later, but we don't have 
-> much time before 3.9 is out, so...
-> 
-> Thanks.
+> ...
+>
+> --- a/kernel/irq/chip.c
+> +++ b/kernel/irq/chip.c
+> @@ -216,10 +216,11 @@ void irq_enable(struct irq_desc *desc)
+>  void irq_disable(struct irq_desc *desc)
+>  {
+>  	irq_state_set_disabled(desc);
+> -	if (desc->irq_data.chip->irq_disable) {
+> +	if (desc->irq_data.chip->irq_disable)
+>  		desc->irq_data.chip->irq_disable(&desc->irq_data);
+> -		irq_state_set_masked(desc);
+> -	}
+> +	else
+> +		desc->irq_data.chip->irq_mask(&desc->irq_data);
+> +	irq_state_set_masked(desc);
+>  }
+>  
+>  void irq_percpu_enable(struct irq_desc *desc, unsigned int cpu)
 
-Applied, but please send ACPI patches (and especially urgent fixes) to
-linux-acpi@vger.kernel.org in the future.
+Well I hope Thomas knows what this patch does, because I sure don't.
 
-Thanks,
-Rafael
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Does it fix a bug?  Does it add a bug?  Does it have any
+runtime-observable effects at all?  If so, what are they?
