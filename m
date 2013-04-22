@@ -1,102 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755373Ab3DVOc6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 10:32:58 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51680 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755096Ab3DVOa0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 10:30:26 -0400
-Content-Type: text/plain; charset="UTF-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+	id S1755403Ab3DVOdI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 10:33:08 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:58299 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755317Ab3DVOdF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Apr 2013 10:33:05 -0400
+Date: Mon, 22 Apr 2013 17:32:32 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Sourav Poddar <sourav.poddar@ti.com>
+CC: <gregkh@linuxfoundation.org>, <tony@atomide.com>,
+        <rmk+kernel@arm.linux.org.uk>, <khilman@linaro.org>,
+        <linux-serial@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Felipe Balbi <balbi@ti.com>, Rajendra nayak <rnayak@ti.com>
+Subject: Re: [PATCHv2 3/5] arm: omap2+: serial: remove no_console_suspend
+ support
+Message-ID: <20130422143232.GC7508@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1366638237-6880-1-git-send-email-sourav.poddar@ti.com>
+ <1366638237-6880-4-git-send-email-sourav.poddar@ti.com>
 MIME-Version: 1.0
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Eldad Zack" <eldad@fogrefinery.com>,
-        "Takashi Iwai" <tiwai@suse.de>, "Daniel Mack" <zonque@gmail.com>
-Date: Mon, 22 Apr 2013 15:25:59 +0100
-Message-ID: <lsq.1366640759.986123913@decadent.org.uk>
-X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [24/75] ALSA: usb-audio: fix endianness bug in snd_nativeinstruments_*
-In-Reply-To: <lsq.1366640759.151900666@decadent.org.uk>
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:6834:ff73:7553:7f84
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="bKyqfOwhbdpXa4YI"
+Content-Disposition: inline
+In-Reply-To: <1366638237-6880-4-git-send-email-sourav.poddar@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2.44-rc1 review patch.  If anyone has any objections, please let me know.
+--bKyqfOwhbdpXa4YI
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-------------------
+On Mon, Apr 22, 2013 at 07:13:55PM +0530, Sourav Poddar wrote:
+> "no_console_suspend" is no longer handled in platform file,
+> Since the omap serial driver is now adapted to prevent=20
+> console UART idleing during suspend.
+>=20
+> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> Cc: Felipe Balbi <balbi@ti.com>
+> Cc: Rajendra nayak <rnayak@ti.com>
+> Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
 
-From: Eldad Zack <eldad@fogrefinery.com>
+looks alright:
 
-commit 889d66848b12d891248b03abcb2a42047f8e172a upstream.
+Reviewed-by: Felipe Balbi <balbi@ti.com>
 
-The usb_control_msg() function expects __u16 types and performs
-the endianness conversions by itself.
-However, in three places, a conversion is performed before it is
-handed over to usb_control_msg(), which leads to a double conversion
-(= no conversion):
-* snd_usb_nativeinstruments_boot_quirk()
-* snd_nativeinstruments_control_get()
-* snd_nativeinstruments_control_put()
+--=20
+balbi
 
-Caught by sparse:
+--bKyqfOwhbdpXa4YI
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-sound/usb/mixer_quirks.c:512:38: warning: incorrect type in argument 6 (different base types)
-sound/usb/mixer_quirks.c:512:38:    expected unsigned short [unsigned] [usertype] index
-sound/usb/mixer_quirks.c:512:38:    got restricted __le16 [usertype] <noident>
-sound/usb/mixer_quirks.c:543:35: warning: incorrect type in argument 5 (different base types)
-sound/usb/mixer_quirks.c:543:35:    expected unsigned short [unsigned] [usertype] value
-sound/usb/mixer_quirks.c:543:35:    got restricted __le16 [usertype] <noident>
-sound/usb/mixer_quirks.c:543:56: warning: incorrect type in argument 6 (different base types)
-sound/usb/mixer_quirks.c:543:56:    expected unsigned short [unsigned] [usertype] index
-sound/usb/mixer_quirks.c:543:56:    got restricted __le16 [usertype] <noident>
-sound/usb/quirks.c:502:35: warning: incorrect type in argument 5 (different base types)
-sound/usb/quirks.c:502:35:    expected unsigned short [unsigned] [usertype] value
-sound/usb/quirks.c:502:35:    got restricted __le16 [usertype] <noident>
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Signed-off-by: Eldad Zack <eldad@fogrefinery.com>
-Acked-by: Daniel Mack <zonque@gmail.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- sound/usb/mixer_quirks.c |    4 ++--
- sound/usb/quirks.c       |    2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+iQIcBAEBAgAGBQJRdUoAAAoJEIaOsuA1yqREPlUP/0IA0x0biHeVTyBoaKEPU69z
+zC/0subtmuqyRLVqpcvG9y19QSDvAH58+jlOzr1ZRYZ7DFQ5d8kO+OtAKO1uikWh
+0DvqqAQ0VBcaG/+raY2gvvbumLy3JTkOlxJzDm5UwKzFRWfMcyz+RJXvhpQwduZi
+F760SYoYio0IbbrTIwbncxAPUb9gMXjXAccT2yecp3at3ddI6oI/4pyivGCQV1By
+Jzh2YIRsDsJB/tnyGyChkZO6tPxC/upnsOB7F3RYhBxmSiv2Uu59zQwjwLyGZatS
+WxkCTCDLw+CkySO0PsyeOnmTOgfnRYTX+YX/2//H9E7ddy2bmVNYIeeua7y7SMyz
+LLL1B98xJKpijAkL25zZFdC3t2Zo7h4aMxrNZ1fATM4cMFcbouUb5n3MEbTZLZHK
+7Y0aeRWiGGCTekgjuqROUqCc1x+MAKSclCbf8HWclRX68QZXVZGwa5vEdsWSBRsu
+fBwm3w7cZHDBfcFcZno5CafHZaTXB6xJanzyzR46tj798Vc5mVv6NS1IshzLNLQJ
+YnJv95/749iKy7qfvWqJ2vW7s6afMAgQzSoQr72NQoMLINHWKyG5YRLZdYnYO9sA
+ZQ1wrV1V+dExk8xofkMWV7SCrICBcZUchGtntczPO3FbztkfDYnOdA9gK5K0/GtC
+lz2wCPQ1QuWPrOqncRhF
+=9BNX
+-----END PGP SIGNATURE-----
 
---- a/sound/usb/mixer_quirks.c
-+++ b/sound/usb/mixer_quirks.c
-@@ -396,7 +396,7 @@ static int snd_nativeinstruments_control
- 	else
- 		ret = usb_control_msg(dev, usb_rcvctrlpipe(dev, 0), bRequest,
- 				  USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_DIR_IN,
--				  0, cpu_to_le16(wIndex),
-+				  0, wIndex,
- 				  &tmp, sizeof(tmp), 1000);
- 	up_read(&mixer->chip->shutdown_rwsem);
- 
-@@ -427,7 +427,7 @@ static int snd_nativeinstruments_control
- 	else
- 		ret = usb_control_msg(dev, usb_sndctrlpipe(dev, 0), bRequest,
- 				  USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_DIR_OUT,
--				  cpu_to_le16(wValue), cpu_to_le16(wIndex),
-+				  wValue, wIndex,
- 				  NULL, 0, 1000);
- 	up_read(&mixer->chip->shutdown_rwsem);
- 
---- a/sound/usb/quirks.c
-+++ b/sound/usb/quirks.c
-@@ -482,7 +482,7 @@ static int snd_usb_nativeinstruments_boo
- {
- 	int ret = usb_control_msg(dev, usb_sndctrlpipe(dev, 0),
- 				  0xaf, USB_TYPE_VENDOR | USB_RECIP_DEVICE,
--				  cpu_to_le16(1), 0, NULL, 0, 1000);
-+				  1, 0, NULL, 0, 1000);
- 
- 	if (ret < 0)
- 		return ret;
-
+--bKyqfOwhbdpXa4YI--
