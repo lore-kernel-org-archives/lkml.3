@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755545Ab3DVOhy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 10:37:54 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51617 "EHLO
+	id S1755595Ab3DVOiU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 10:38:20 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51610 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754969Ab3DVOaR (ORCPT
+	by vger.kernel.org with ESMTP id S1754961Ab3DVOaP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 10:30:17 -0400
+	Mon, 22 Apr 2013 10:30:15 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Peter Zijlstra" <peterz@infradead.org>,
-        "Steven Rostedt" <srostedt@redhat.com>
+CC: akpm@linux-foundation.org, "Christoph Fritz" <chf.fritz@googlemail.com>,
+        "Marc Kleine-Budde" <mkl@pengutronix.de>
 Date: Mon, 22 Apr 2013 15:25:59 +0100
-Message-ID: <lsq.1366640759.309572631@decadent.org.uk>
+Message-ID: <lsq.1366640759.637713788@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [32/75] spinlocks and preemption points need to be at least
- compiler barriers
+Subject: [46/75] can: sja1000: fix handling on dt properties on little
+ endian systems
 In-Reply-To: <lsq.1366640759.151900666@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:6834:ff73:7553:7f84
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,158 +32,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Christoph Fritz <chf.fritz@googlemail.com>
 
-commit 386afc91144b36b42117b0092893f15bc8798a80 upstream.
+commit 0443de5fbf224abf41f688d8487b0c307dc5a4b4 upstream.
 
-In UP and non-preempt respectively, the spinlocks and preemption
-disable/enable points are stubbed out entirely, because there is no
-regular code that can ever hit the kind of concurrency they are meant to
-protect against.
+To get correct endianes on little endian cpus (like arm) while reading device
+tree properties, this patch replaces of_get_property() with
+of_property_read_u32(). While there use of_property_read_bool() for the
+handling of the boolean "nxp,no-comparator-bypass" property.
 
-However, while there is no regular code that can cause scheduling, we
-_do_ end up having some exceptional (literally!) code that can do so,
-and that we need to make sure does not ever get moved into the critical
-region by the compiler.
-
-In particular, get_user() and put_user() is generally implemented as
-inline asm statements (even if the inline asm may then make a call
-instruction to call out-of-line), and can obviously cause a page fault
-and IO as a result.  If that inline asm has been scheduled into the
-middle of a preemption-safe (or spinlock-protected) code region, we
-obviously lose.
-
-Now, admittedly this is *very* unlikely to actually ever happen, and
-we've not seen examples of actual bugs related to this.  But partly
-exactly because it's so hard to trigger and the resulting bug is so
-subtle, we should be extra careful to get this right.
-
-So make sure that even when preemption is disabled, and we don't have to
-generate any actual *code* to explicitly tell the system that we are in
-a preemption-disabled region, we need to at least tell the compiler not
-to move things around the critical region.
-
-This patch grew out of the same discussion that caused commits
-79e5f05edcbf ("ARC: Add implicit compiler barrier to raw_local_irq*
-functions") and 3e2e0d2c222b ("tile: comment assumption about
-__insn_mtspr for <asm/irqflags.h>") to come about.
-
-Note for stable: use discretion when/if applying this.  As mentioned,
-this bug may never have actually bitten anybody, and gcc may never have
-done the required code motion for it to possibly ever trigger in
-practice.
-
-Cc: Steven Rostedt <srostedt@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[bwh: Backported to 3.2: drop sched_preempt_enable_no_resched()]
+Signed-off-by: Christoph Fritz <chf.fritz@googlemail.com>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- include/linux/preempt.h     |   22 ++++++++++++++--------
- include/linux/spinlock_up.h |   29 ++++++++++++++++++-----------
- 2 files changed, 32 insertions(+), 19 deletions(-)
+ drivers/net/can/sja1000/sja1000_of_platform.c |   31 ++++++++++++-------------
+ 1 file changed, 15 insertions(+), 16 deletions(-)
 
---- a/include/linux/preempt.h
-+++ b/include/linux/preempt.h
-@@ -91,13 +91,19 @@ do { \
+--- a/drivers/net/can/sja1000/sja1000_of_platform.c
++++ b/drivers/net/can/sja1000/sja1000_of_platform.c
+@@ -94,8 +94,8 @@ static int __devinit sja1000_ofp_probe(s
+ 	struct net_device *dev;
+ 	struct sja1000_priv *priv;
+ 	struct resource res;
+-	const u32 *prop;
+-	int err, irq, res_size, prop_size;
++	u32 prop;
++	int err, irq, res_size;
+ 	void __iomem *base;
  
- #else /* !CONFIG_PREEMPT_COUNT */
+ 	err = of_address_to_resource(np, 0, &res);
+@@ -136,27 +136,27 @@ static int __devinit sja1000_ofp_probe(s
+ 	priv->read_reg = sja1000_ofp_read_reg;
+ 	priv->write_reg = sja1000_ofp_write_reg;
  
--#define preempt_disable()		do { } while (0)
--#define preempt_enable_no_resched()	do { } while (0)
--#define preempt_enable()		do { } while (0)
-+/*
-+ * Even if we don't have any preemption, we need preempt disable/enable
-+ * to be barriers, so that we don't have things like get_user/put_user
-+ * that can cause faults and scheduling migrate into our preempt-protected
-+ * region.
-+ */
-+#define preempt_disable()		barrier()
-+#define preempt_enable_no_resched()	barrier()
-+#define preempt_enable()		barrier()
+-	prop = of_get_property(np, "nxp,external-clock-frequency", &prop_size);
+-	if (prop && (prop_size ==  sizeof(u32)))
+-		priv->can.clock.freq = *prop / 2;
++	err = of_property_read_u32(np, "nxp,external-clock-frequency", &prop);
++	if (!err)
++		priv->can.clock.freq = prop / 2;
+ 	else
+ 		priv->can.clock.freq = SJA1000_OFP_CAN_CLOCK; /* default */
  
--#define preempt_disable_notrace()		do { } while (0)
--#define preempt_enable_no_resched_notrace()	do { } while (0)
--#define preempt_enable_notrace()		do { } while (0)
-+#define preempt_disable_notrace()		barrier()
-+#define preempt_enable_no_resched_notrace()	barrier()
-+#define preempt_enable_notrace()		barrier()
+-	prop = of_get_property(np, "nxp,tx-output-mode", &prop_size);
+-	if (prop && (prop_size == sizeof(u32)))
+-		priv->ocr |= *prop & OCR_MODE_MASK;
++	err = of_property_read_u32(np, "nxp,tx-output-mode", &prop);
++	if (!err)
++		priv->ocr |= prop & OCR_MODE_MASK;
+ 	else
+ 		priv->ocr |= OCR_MODE_NORMAL; /* default */
  
- #endif /* CONFIG_PREEMPT_COUNT */
+-	prop = of_get_property(np, "nxp,tx-output-config", &prop_size);
+-	if (prop && (prop_size == sizeof(u32)))
+-		priv->ocr |= (*prop << OCR_TX_SHIFT) & OCR_TX_MASK;
++	err = of_property_read_u32(np, "nxp,tx-output-config", &prop);
++	if (!err)
++		priv->ocr |= (prop << OCR_TX_SHIFT) & OCR_TX_MASK;
+ 	else
+ 		priv->ocr |= OCR_TX0_PULLDOWN; /* default */
  
---- a/include/linux/spinlock_up.h
-+++ b/include/linux/spinlock_up.h
-@@ -16,7 +16,10 @@
-  * In the debug case, 1 means unlocked, 0 means locked. (the values
-  * are inverted, to catch initialization bugs)
-  *
-- * No atomicity anywhere, we are on UP.
-+ * No atomicity anywhere, we are on UP. However, we still need
-+ * the compiler barriers, because we do not want the compiler to
-+ * move potentially faulting instructions (notably user accesses)
-+ * into the locked sequence, resulting in non-atomic execution.
-  */
+-	prop = of_get_property(np, "nxp,clock-out-frequency", &prop_size);
+-	if (prop && (prop_size == sizeof(u32)) && *prop) {
+-		u32 divider = priv->can.clock.freq * 2 / *prop;
++	err = of_property_read_u32(np, "nxp,clock-out-frequency", &prop);
++	if (!err && prop) {
++		u32 divider = priv->can.clock.freq * 2 / prop;
  
- #ifdef CONFIG_DEBUG_SPINLOCK
-@@ -25,6 +28,7 @@
- static inline void arch_spin_lock(arch_spinlock_t *lock)
- {
- 	lock->slock = 0;
-+	barrier();
- }
+ 		if (divider > 1)
+ 			priv->cdr |= divider / 2 - 1;
+@@ -166,8 +166,7 @@ static int __devinit sja1000_ofp_probe(s
+ 		priv->cdr |= CDR_CLK_OFF; /* default */
+ 	}
  
- static inline void
-@@ -32,6 +36,7 @@ arch_spin_lock_flags(arch_spinlock_t *lo
- {
- 	local_irq_save(flags);
- 	lock->slock = 0;
-+	barrier();
- }
+-	prop = of_get_property(np, "nxp,no-comparator-bypass", NULL);
+-	if (!prop)
++	if (!of_property_read_bool(np, "nxp,no-comparator-bypass"))
+ 		priv->cdr |= CDR_CBP; /* default */
  
- static inline int arch_spin_trylock(arch_spinlock_t *lock)
-@@ -39,32 +44,34 @@ static inline int arch_spin_trylock(arch
- 	char oldval = lock->slock;
- 
- 	lock->slock = 0;
-+	barrier();
- 
- 	return oldval > 0;
- }
- 
- static inline void arch_spin_unlock(arch_spinlock_t *lock)
- {
-+	barrier();
- 	lock->slock = 1;
- }
- 
- /*
-  * Read-write spinlocks. No debug version.
-  */
--#define arch_read_lock(lock)		do { (void)(lock); } while (0)
--#define arch_write_lock(lock)		do { (void)(lock); } while (0)
--#define arch_read_trylock(lock)	({ (void)(lock); 1; })
--#define arch_write_trylock(lock)	({ (void)(lock); 1; })
--#define arch_read_unlock(lock)		do { (void)(lock); } while (0)
--#define arch_write_unlock(lock)	do { (void)(lock); } while (0)
-+#define arch_read_lock(lock)		do { barrier(); (void)(lock); } while (0)
-+#define arch_write_lock(lock)		do { barrier(); (void)(lock); } while (0)
-+#define arch_read_trylock(lock)	({ barrier(); (void)(lock); 1; })
-+#define arch_write_trylock(lock)	({ barrier(); (void)(lock); 1; })
-+#define arch_read_unlock(lock)		do { barrier(); (void)(lock); } while (0)
-+#define arch_write_unlock(lock)	do { barrier(); (void)(lock); } while (0)
- 
- #else /* DEBUG_SPINLOCK */
- #define arch_spin_is_locked(lock)	((void)(lock), 0)
- /* for sched.c and kernel_lock.c: */
--# define arch_spin_lock(lock)		do { (void)(lock); } while (0)
--# define arch_spin_lock_flags(lock, flags)	do { (void)(lock); } while (0)
--# define arch_spin_unlock(lock)	do { (void)(lock); } while (0)
--# define arch_spin_trylock(lock)	({ (void)(lock); 1; })
-+# define arch_spin_lock(lock)		do { barrier(); (void)(lock); } while (0)
-+# define arch_spin_lock_flags(lock, flags)	do { barrier(); (void)(lock); } while (0)
-+# define arch_spin_unlock(lock)	do { barrier(); (void)(lock); } while (0)
-+# define arch_spin_trylock(lock)	({ barrier(); (void)(lock); 1; })
- #endif /* DEBUG_SPINLOCK */
- 
- #define arch_spin_is_contended(lock)	(((void)(lock), 0))
+ 	priv->irq_flags = IRQF_SHARED;
 
