@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755027Ab3DVTBx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 15:01:53 -0400
-Received: from mail-we0-f177.google.com ([74.125.82.177]:45237 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754561Ab3DVTAF (ORCPT
+	id S1754780Ab3DVTAA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 15:00:00 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:51553 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754544Ab3DVS75 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 15:00:05 -0400
+	Mon, 22 Apr 2013 14:59:57 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -20,10 +20,11 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 05/10] sched: New helper to prevent from stopping the tick in full dynticks
-Date: Mon, 22 Apr 2013 20:59:41 +0200
-Message-Id: <1366657186-20556-6-git-send-email-fweisbec@gmail.com>
+        Thomas Gleixner <tglx@linutronix.de>,
+        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH 02/10] perf: Kick full dynticks CPU if events rotation is needed
+Date: Mon, 22 Apr 2013 20:59:38 +0200
+Message-Id: <1366657186-20556-3-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1366657186-20556-1-git-send-email-fweisbec@gmail.com>
 References: <1366657186-20556-1-git-send-email-fweisbec@gmail.com>
@@ -31,12 +32,10 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide a new helper to be called from the full dynticks engine
-before stopping the tick in order to make sure we don't stop
-it when there is more than one task running on the CPU.
-
-This way we make sure that the tick stays alive to maintain
-fairness.
+Kick the current CPU's tick by sending it a self IPI when
+an event is queued on the rotation list and it is the first
+element inserted. This makes sure that perf_event_task_tick()
+works on full dynticks CPUs.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Chris Metcalf <cmetcalf@tilera.com>
@@ -53,57 +52,38 @@ Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
 ---
- include/linux/sched.h |    6 ++++++
- kernel/sched/core.c   |   18 ++++++++++++++++++
- 2 files changed, 24 insertions(+), 0 deletions(-)
+ kernel/events/core.c |    7 ++++++-
+ 1 files changed, 6 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 1ff9e0a..a74aded 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1856,6 +1856,12 @@ extern void wake_up_nohz_cpu(int cpu);
- static inline void wake_up_nohz_cpu(int cpu) { }
- #endif
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index b0cd865..75b58bb 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -18,6 +18,7 @@
+ #include <linux/poll.h>
+ #include <linux/slab.h>
+ #include <linux/hash.h>
++#include <linux/tick.h>
+ #include <linux/sysfs.h>
+ #include <linux/dcache.h>
+ #include <linux/percpu.h>
+@@ -655,8 +656,12 @@ static void perf_pmu_rotate_start(struct pmu *pmu)
  
-+#ifdef CONFIG_NO_HZ_FULL
-+extern bool sched_can_stop_tick(void);
-+#else
-+static inline bool sched_can_stop_tick(void) { return false; }
-+#endif
-+
- #ifdef CONFIG_SCHED_AUTOGROUP
- extern void sched_autogroup_create_attach(struct task_struct *p);
- extern void sched_autogroup_detach(struct task_struct *p);
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 0f0a5b3..69f7133 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -650,6 +650,24 @@ static inline bool got_nohz_idle_kick(void)
+ 	WARN_ON(!irqs_disabled());
  
- #endif /* CONFIG_NO_HZ_COMMON */
+-	if (list_empty(&cpuctx->rotation_list))
++	if (list_empty(&cpuctx->rotation_list)) {
++		int was_empty = list_empty(head);
+ 		list_add(&cpuctx->rotation_list, head);
++		if (was_empty)
++			tick_nohz_full_kick();
++	}
+ }
  
-+#ifdef CONFIG_NO_HZ_FULL
-+bool sched_can_stop_tick(void)
-+{
-+       struct rq *rq;
-+
-+       rq = this_rq();
-+
-+       /* Make sure rq->nr_running update is visible after the IPI */
-+       smp_rmb();
-+
-+       /* More than one running task need preemption */
-+       if (rq->nr_running > 1)
-+               return false;
-+
-+       return true;
-+}
-+#endif /* CONFIG_NO_HZ_FULL */
-+
- void sched_avg_update(struct rq *rq)
- {
- 	s64 period = sched_avg_period();
+ static void get_ctx(struct perf_event_context *ctx)
 -- 
 1.7.5.4
 
