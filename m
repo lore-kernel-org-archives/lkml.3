@@ -1,130 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754128Ab3DVNpt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 09:45:49 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:35599 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753809Ab3DVNoQ (ORCPT
+	id S1754140Ab3DVNqC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 09:46:02 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:60955 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751466Ab3DVNp7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 09:44:16 -0400
-From: Sourav Poddar <sourav.poddar@ti.com>
-To: <gregkh@linuxfoundation.org>, <tony@atomide.com>,
-        <rmk+kernel@arm.linux.org.uk>, <khilman@linaro.org>
-CC: <linux-serial@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Sourav Poddar <sourav.poddar@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Felipe Balbi <balbi@ti.com>, Rajendra nayak <rnayak@ti.com>,
-        Grygorii Strashko <grygorii.strashko@ti.com>
-Subject: [RFC/PATCHv2 5/5] arm: omap2+: omap_device: remove no_idle_on_suspend
-Date: Mon, 22 Apr 2013 19:13:57 +0530
-Message-ID: <1366638237-6880-6-git-send-email-sourav.poddar@ti.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1366638237-6880-1-git-send-email-sourav.poddar@ti.com>
-References: <1366638237-6880-1-git-send-email-sourav.poddar@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Mon, 22 Apr 2013 09:45:59 -0400
+Date: Mon, 22 Apr 2013 22:45:53 +0900
+From: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        avi.kivity@gmail.com, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org
+Subject: Re: [PATCH v3 00/15] KVM: MMU: fast zap all shadow pages
+Message-Id: <20130422224553.b4dd57075cc7e32aacaadc01@gmail.com>
+In-Reply-To: <20130422123938.GB10970@redhat.com>
+References: <1366093973-2617-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+	<20130421130346.GE8997@redhat.com>
+	<20130421152751.GB28437@amt.cnet>
+	<20130421153508.GA28842@amt.cnet>
+	<20130422123938.GB10970@redhat.com>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the "OMAP_DEVICE_NO_IDLE_ON_SUSPEND" check, since 
-driver should be able to prevent idling of an omap device
-whenever required.
+On Mon, 22 Apr 2013 15:39:38 +0300
+Gleb Natapov <gleb@redhat.com> wrote:
 
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: Felipe Balbi <balbi@ti.com>
-Cc: Rajendra nayak <rnayak@ti.com>
-Cc: Grygorii Strashko <grygorii.strashko@ti.com>
-Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
----
-Hi Kevin,
+> > > Do not want kvm_set_memory (cases: DELETE/MOVE/CREATES) to be
+> > > suspectible to:
+> > > 
+> > > vcpu 1    		|	kvm_set_memory
+> > > create shadow page 		
+> > > 				nuke shadow page
+> > > create shadow page
+> > > 				nuke shadow page
+> > > 
+> > > Which is guest triggerable behavior with spinlock preemption algorithm.
+> > 
+> > Not only guest triggerable as in the sense of a malicious guest, 
+> > but condition above can be induced by host workload with non-malicious
+> > guest system.
+> > 
+> Is the problem that newly created shadow pages are immediately zapped?
+> Shouldn't generation number/kvm_mmu_zap_all_invalid() idea described here
+> https://lkml.org/lkml/2013/4/22/111 solve this?
 
-I have put this as an RFC, due to few comments on cover letter of
-the previous version by Grygorii Strashko.
-As, he has mentioned that there are Audio playback use cases which 
-also requires "no_idle_on_suspend" and using them on mainline after
-this series can cause regression.
+I guess so.  That's what Avi described when he tried to achieve
+lockless TLB flushes.  Mixing that idea with Xiao's approach will
+achieve reasonably nice performance, I think.
 
-What you think will be the right approach on this in relation to this patch? 
-I mean every driver(if possible) should  prevent 
-runtime PM for no_idle_on_suspend usecase and we get 
-rid of this OMAP_DEVICE_NO_IDLE_ON_SUSPEND check? OR we should
-drop this patch as of now? 
+Various improvements should be added later on top of that if needed.
 
-Hi Grygorii,
+> > Also kvm_set_memory being relatively fast with huge memory guests
+> > is nice (which is what Xiaos idea allows).
 
-Is it possible to handle ABE no_idle_on_suspend uscase the way I am
-trying to handle it for UART in the 2nd patch of this series? 
+I agree with this point.  But if so, it should be actually measured on
+such guests, even if the algorithm looks promising.
 
-
- arch/arm/mach-omap2/omap_device.c |   12 +++---------
- arch/arm/mach-omap2/omap_device.h |   10 ----------
- 2 files changed, 3 insertions(+), 19 deletions(-)
-
-diff --git a/arch/arm/mach-omap2/omap_device.c b/arch/arm/mach-omap2/omap_device.c
-index 381be7a..2043d71 100644
---- a/arch/arm/mach-omap2/omap_device.c
-+++ b/arch/arm/mach-omap2/omap_device.c
-@@ -170,9 +170,6 @@ static int omap_device_build_from_dt(struct platform_device *pdev)
- 			r->name = dev_name(&pdev->dev);
- 	}
- 
--	if (of_get_property(node, "ti,no_idle_on_suspend", NULL))
--		omap_device_disable_idle_on_suspend(pdev);
--
- 	pdev->dev.pm_domain = &omap_device_pm_domain;
- 
- odbfd_exit1:
-@@ -620,11 +617,9 @@ static int _od_suspend_noirq(struct device *dev)
- 	ret = pm_generic_suspend_noirq(dev);
- 
- 	if (!ret && !pm_runtime_status_suspended(dev)) {
--		if (pm_generic_runtime_suspend(dev) == 0) {
--			if (!(od->flags & OMAP_DEVICE_NO_IDLE_ON_SUSPEND))
--				omap_device_idle(pdev);
-+		if (pm_generic_runtime_suspend(dev) == 0)
-+			omap_device_idle(pdev);
- 			od->flags |= OMAP_DEVICE_SUSPENDED;
--		}
- 	}
- 
- 	return ret;
-@@ -638,8 +633,7 @@ static int _od_resume_noirq(struct device *dev)
- 	if ((od->flags & OMAP_DEVICE_SUSPENDED) &&
- 	    !pm_runtime_status_suspended(dev)) {
- 		od->flags &= ~OMAP_DEVICE_SUSPENDED;
--		if (!(od->flags & OMAP_DEVICE_NO_IDLE_ON_SUSPEND))
--			omap_device_enable(pdev);
-+		omap_device_enable(pdev);
- 		pm_generic_runtime_resume(dev);
- 	}
- 
-diff --git a/arch/arm/mach-omap2/omap_device.h b/arch/arm/mach-omap2/omap_device.h
-index 044c31d..17ca1ae 100644
---- a/arch/arm/mach-omap2/omap_device.h
-+++ b/arch/arm/mach-omap2/omap_device.h
-@@ -38,7 +38,6 @@ extern struct dev_pm_domain omap_device_pm_domain;
- 
- /* omap_device.flags values */
- #define OMAP_DEVICE_SUSPENDED		BIT(0)
--#define OMAP_DEVICE_NO_IDLE_ON_SUSPEND	BIT(1)
- 
- /**
-  * struct omap_device - omap_device wrapper for platform_devices
-@@ -101,13 +100,4 @@ static inline struct omap_device *to_omap_device(struct platform_device *pdev)
- {
- 	return pdev ? pdev->archdata.od : NULL;
- }
--
--static inline
--void omap_device_disable_idle_on_suspend(struct platform_device *pdev)
--{
--	struct omap_device *od = to_omap_device(pdev);
--
--	od->flags |= OMAP_DEVICE_NO_IDLE_ON_SUSPEND;
--}
--
- #endif
--- 
-1.7.1
-
+	Takuya
