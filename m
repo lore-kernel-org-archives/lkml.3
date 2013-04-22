@@ -1,61 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753254Ab3DVUwz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 16:52:55 -0400
-Received: from mail.pr.hu ([87.242.0.5]:58674 "EHLO mail.pr.hu"
+	id S1753559Ab3DVUxF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 16:53:05 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:41958 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751210Ab3DVUwy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 16:52:54 -0400
-Message-ID: <5175A30F.2000906@pr.hu>
-Date: Mon, 22 Apr 2013 22:52:31 +0200
-From: Boszormenyi Zoltan <zboszor@pr.hu>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
+	id S1753416Ab3DVUxB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Apr 2013 16:53:01 -0400
+Message-ID: <5175A317.1010304@ti.com>
+Date: Mon, 22 Apr 2013 15:52:39 -0500
+From: Jon Hunter <jon-hunter@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Aaron Lu <aaron.lwe@gmail.com>
-CC: lkml <linux-kernel@vger.kernel.org>, Jeff Garzik <jgarzik@pobox.com>,
-        linux-ide@vger.kernel.org
-Subject: Re: ahci driver cannot suspend a CF card, ata_piix can
-References: <516D3CEF.6010202@pr.hu> <51715F5C.3050502@gmail.com>
-In-Reply-To: <51715F5C.3050502@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-2; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Spam-Score: -2.1 (--)
-X-Scan-Signature: 7572fbe1482f51d378d5cb517c4344f1
-X-Spam-Tracer: backend.mail.pr.hu -2.1 20130422205042Z
+To: Lars-Peter Clausen <lars@metafoo.de>
+CC: Vinod Koul <vinod.koul@intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] dma: of: Remove check on always true condition
+References: <1366619613-30639-1-git-send-email-lars@metafoo.de> <1366619613-30639-2-git-send-email-lars@metafoo.de>
+In-Reply-To: <1366619613-30639-2-git-send-email-lars@metafoo.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [172.24.115.140]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-2013-04-19 17:14 keltezéssel, Aaron Lu írta:
-> On 04/16/2013 07:58 PM, Boszormenyi Zoltan wrote:
->> Hi,
->>
->> The SATA interface can be switched between AHCI and legacy modes as usual:
->>
->> 00:1f.2 SATA controller: Intel Corporation NM10/ICH7 Family SATA
->> Controller [AHCI mode] (rev 02)
->>
->> The device attached to the SATA controller is always a CF card via a
->> SiI3811 Serial ATA to Parallel ATA Device Bridge based converter board.
->
-> Can you please attach a normal sata disk and try again with the
-> controller set to AHCI mode? I suspect it may be the SiI3811 bridge that
-> caused this command.
+On 04/22/2013 03:33 AM, Lars-Peter Clausen wrote:
+> Both of_dma_nbcells field of the of_dma_controller and the args_count field of
+> the dma_spec are initialized by parsing the #dma-cells attribute of their device
+> tree node. So if the device tree nodes of a DMA controller and the dma_spec
+> match this means that of_dma_nbcells and args_count will also match. So the
+> second test in the of_dma_find_controller loop is redundant because given the
+> first test yields true the second test will also yield true. So we can safely
+> remove the test whether of_dma_nbcells matches args_count. Since this was the
+> last user of the of_dma_nbcells field we can remove it altogether.
 
-I have finally got around to testing a different beast, a Zotax ZBOX with
-mostly the same motherboard components that the previously mentioned
-embedded PC had. It turned out that this embedded PC (a POS machine)
-doesn't have regular SATA connectors but a special one to connect only
-this SATA-EIDE converter card with the SiI3811 chip.
+This assumes that someone has correctly added the dma information to the
+dma slave binding. I could see systems where different dma controllers
+have different of_dma_nbcells and so someone could put the enter wrong
+number of cells for a dma slave binding. Its really to catch user error.
 
-Anyway, using the Zotac box, both a shiny new Samsung 840 SSD
-and a CF card using a different IDE bridge chip (Sunplus SATALink SPIF223A)
-can suspend to RAM using AHCI mode.
+> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+> ---
+>  drivers/dma/of-dma.c   | 14 +-------------
+>  include/linux/of_dma.h |  1 -
+>  2 files changed, 1 insertion(+), 14 deletions(-)
+> 
+> diff --git a/drivers/dma/of-dma.c b/drivers/dma/of-dma.c
+> index 268cc8a..75334bd 100644
+> --- a/drivers/dma/of-dma.c
+> +++ b/drivers/dma/of-dma.c
+> @@ -35,8 +35,7 @@ static struct of_dma *of_dma_find_controller(struct of_phandle_args *dma_spec)
+>  	struct of_dma *ofdma;
+>  
+>  	list_for_each_entry(ofdma, &of_dma_list, of_dma_controllers)
+> -		if ((ofdma->of_node == dma_spec->np) &&
+> -		    (ofdma->of_dma_nbcells == dma_spec->args_count))
+> +		if (ofdma->of_node == dma_spec->np)
+>  			return ofdma;
 
-Your suspicion turned out to be correct.
+Other device-tree functions perform similar tests to this such as ...
 
-Best regards,
-Zoltán Böszörményi
+static int of_gpiochip_find_and_xlate(struct gpio_chip *gc, void *data)
+{
+         struct gg_data *gg_data = data;
+         int ret;
 
+         if ((gc->of_node != gg_data->gpiospec.np) ||
+             (gc->of_gpio_n_cells != gg_data->gpiospec.args_count) ||
+             (!gc->of_xlate))
+                 return false;
+
+...
+
+Cheers
+Jon
