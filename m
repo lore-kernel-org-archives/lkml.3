@@ -1,146 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753191Ab3DVXuX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 19:50:23 -0400
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:58411 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752674Ab3DVXuV convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 19:50:21 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -1
-X-BigFish: VS-1(zzbb2dI98dI9371I1432Ic8kzz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275bhz2dh2a8h668h839h944hd2bhf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h16a6h1758h1898h18e1h1946h19b5h1ad9h1b0ah1155h)
-Date: Mon, 22 Apr 2013 18:50:09 -0500
-From: Scott Wood <scottwood@freescale.com>
-Subject: Re: [PATCH 2/3 v13] iommu/fsl: Add additional iommu attributes
- required by the PAMU driver.
-To: Varun Sethi <Varun.Sethi@freescale.com>
-CC: <joro@8bytes.org>, <iommu@lists.linux-foundation.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        <galak@kernel.crashing.org>, <benh@kernel.crashing.org>,
-        <stuart.yoder@freescale.com>, Varun Sethi <Varun.Sethi@freescale.com>
-In-Reply-To: <1366608716-1704-2-git-send-email-Varun.Sethi@freescale.com>
-	(from Varun.Sethi@freescale.com on Mon Apr 22 00:31:55 2013)
-X-Mailer: Balsa 2.4.12
-Message-ID: <1366674609.10399.12@snotra>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"; delsp=Yes; format=Flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
+	id S1753617Ab3DVX4b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 19:56:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53899 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752423Ab3DVX4a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Apr 2013 19:56:30 -0400
+Date: Mon, 22 Apr 2013 16:56:29 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: kbuild test robot <fengguang.wu@intel.com>
+Cc: Jingoo Han <jg1.han@samsung.com>, kbuild-all@01.org,
+        linux-sparse@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [next:akpm 798/1000] drivers/rtc/rtc-ds1286.c:343:24: sparse:
+ incorrect type in argument 1 (different address spaces)
+Message-Id: <20130422165629.bae79e6c5251bf148a3bae73@linux-foundation.org>
+In-Reply-To: <5171d93a.0NZAGYYKNj8hjsAs%fengguang.wu@intel.com>
+References: <5171d93a.0NZAGYYKNj8hjsAs%fengguang.wu@intel.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/22/2013 12:31:55 AM, Varun Sethi wrote:
-> Added the following domain attributes for the FSL PAMU driver:
-> 1. Added new iommu stash attribute, which allows setting of the
->    LIODN specific stash id parameter through IOMMU API.
-> 2. Added an attribute for enabling/disabling DMA to a particular
->    memory window.
-> 3. Added domain attribute to check for PAMUV1 specific constraints.
+On Sat, 20 Apr 2013 07:54:34 +0800 kbuild test robot <fengguang.wu@intel.com> wrote:
+
+> tree:   git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git akpm
+> head:   c9941b7ec7840ad33f5822c7f238157558d40132
+> commit: d5e42b5769899607e1e4b0c9200340d24f370e8c [798/1000] rtc: rtc-ds1286: use devm_*() functions
 > 
-> Signed-off-by: Varun Sethi <Varun.Sethi@freescale.com>
-> ---
-> v13 changes:
-> - created a new file include/linux/fsl_pamu_stash.h for stash
-> attributes.
-> v12 changes:
-> - Moved PAMU specifc stash ids and structures to PAMU header file.
-> - no change in v11.
-> - no change in v10.
->  include/linux/fsl_pamu_stash.h |   39  
-> +++++++++++++++++++++++++++++++++++++++
->  include/linux/iommu.h          |   16 ++++++++++++++++
->  2 files changed, 55 insertions(+), 0 deletions(-)
->  create mode 100644 include/linux/fsl_pamu_stash.h
 > 
-> diff --git a/include/linux/fsl_pamu_stash.h  
-> b/include/linux/fsl_pamu_stash.h
-> new file mode 100644
-> index 0000000..caa1b21
-> --- /dev/null
-> +++ b/include/linux/fsl_pamu_stash.h
-> @@ -0,0 +1,39 @@
-> +/*
-> + * This program is free software; you can redistribute it and/or  
-> modify
-> + * it under the terms of the GNU General Public License, version 2,  
-> as
-> + * published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program; if not, write to the Free Software
-> + * Foundation, 51 Franklin Street, Fifth Floor, Boston, MA   
-> 02110-1301, USA.
-> + *
-> + * Copyright (C) 2013 Freescale Semiconductor, Inc.
-> + *
-> + */
-> +
-> +#ifndef __FSL_PAMU_STASH_H
-> +#define __FSL_PAMU_STASH_H
-> +
-> +/* cache stash targets */
-> +enum pamu_stash_target {
-> +	PAMU_ATTR_CACHE_L1 = 1,
-> +	PAMU_ATTR_CACHE_L2,
-> +	PAMU_ATTR_CACHE_L3,
-> +};
-> +
-> +/*
-> + * This attribute allows configuring stashig specific parameters
-> + * in the PAMU hardware.
-> + */
-> +
-> +struct pamu_stash_attribute {
-> +	u32 	cpu;	/* cpu number */
-> +	u32 	cache;	/* cache to stash to: L1,L2,L3 */
-> +};
-> +
-> +#endif  /* __FSL_PAMU_STASH_H */
-> diff --git a/include/linux/iommu.h b/include/linux/iommu.h
-> index 2727810..c5dc2b9 100644
-> --- a/include/linux/iommu.h
-> +++ b/include/linux/iommu.h
-> @@ -57,10 +57,26 @@ struct iommu_domain {
->  #define IOMMU_CAP_CACHE_COHERENCY	0x1
->  #define IOMMU_CAP_INTR_REMAP		0x2	/* isolates device  
-> intrs */
+> sparse warnings: (new ones prefixed by >>)
 > 
-> +/*
-> + * Following constraints are specifc to PAMUV1:
+> >> drivers/rtc/rtc-ds1286.c:343:24: sparse: incorrect type in argument 1 (different address spaces)
+>    drivers/rtc/rtc-ds1286.c:343:24:    expected void const *ptr
+>    drivers/rtc/rtc-ds1286.c:343:24:    got unsigned int [noderef] [usertype] <asn:2>*rtcregs
+> >> drivers/rtc/rtc-ds1286.c:344:36: sparse: incorrect type in argument 1 (different address spaces)
+>    drivers/rtc/rtc-ds1286.c:344:36:    expected void const *ptr
+>    drivers/rtc/rtc-ds1286.c:344:36:    got unsigned int [noderef] [usertype] <asn:2>*rtcregs
+> 
+> vim +343 drivers/rtc/rtc-ds1286.c
+> 
+>    337			return -ENODEV;
+>    338		priv = devm_kzalloc(&pdev->dev, sizeof(struct ds1286_priv), GFP_KERNEL);
+>    339		if (!priv)
+>    340			return -ENOMEM;
+>    341	
+>    342		priv->rtcregs = devm_ioremap_resource(&pdev->dev, res);
+>  > 343		if (IS_ERR(priv->rtcregs))
+>  > 344			return PTR_ERR(priv->rtcregs);
+>    345	
+>    346		spin_lock_init(&priv->lock);
+>    347		platform_set_drvdata(pdev, priv);
 
-FSL_PAMUV1
+I think doing IS_ERR() and PTR_ERR() on __iomem pointers is a natural
+thing, and we should be able to do this without adding call-site
+trickery to make sparse happy.
 
-> + *  -aperture must be power of 2, and naturally aligned
-> + *  -number of windows must be power of 2, and address space size
-> + *   of each window is determined by aperture size / # of windows
-> + *  -the actual size of the mapped region of a window must be power
-> + *   of 2 starting with 4KB and physical address must be naturally
-> + *   aligned.
-> + * DOMAIN_ATTR_FSL_PAMUV1 corresponds to the above mentioned  
-> contraints.
-> + * The caller can invoke iommu_domain_get_attr to check if the  
-> underlying
-> + * iommu implementation supports these constraints.
-> + */
-> +
->  enum iommu_attr {
->  	DOMAIN_ATTR_GEOMETRY,
->  	DOMAIN_ATTR_PAGING,
->  	DOMAIN_ATTR_WINDOWS,
-> +	DOMAIN_ATTR_PAMU_STASH,
-> +	DOMAIN_ATTR_PAMU_ENABLE,
-> +	DOMAIN_ATTR_FSL_PAMUV1,
->  	DOMAIN_ATTR_MAX,
+Is there some sort of annotation which we can add to the
+IS_ERR()/PTR_ERR() definitions so that sparse will stop warning about
+this usage?
 
-Please be consistent on whether "PAMU" gets an "FSL_" namespace prefix  
-(I'd prefer that it does).
-
--Scott
