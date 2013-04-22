@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752396Ab3DVKKK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 06:10:10 -0400
-Received: from mga09.intel.com ([134.134.136.24]:61708 "EHLO mga09.intel.com"
+	id S1752089Ab3DVKLh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 06:11:37 -0400
+Received: from mga03.intel.com ([143.182.124.21]:64148 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751353Ab3DVKKH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 06:10:07 -0400
+	id S1751304Ab3DVKLg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Apr 2013 06:11:36 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,525,1363158000"; 
-   d="scan'208";a="298892734"
-Date: Mon, 22 Apr 2013 15:08:44 +0530
+   d="scan'208";a="230224284"
+Date: Mon, 22 Apr 2013 15:10:10 +0530
 From: Vinod Koul <vinod.koul@intel.com>
 To: Lee Jones <lee.jones@linaro.org>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
@@ -18,7 +18,7 @@ Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Rabin Vincent <rabin@rab.in>
 Subject: Re: [PATCH 22/32] dmaengine: ste_dma40: Allocate plat_data on
  declaration
-Message-ID: <20130422093844.GG24632@intel.com>
+Message-ID: <20130422094010.GH24632@intel.com>
 References: <1366279934-30761-1-git-send-email-lee.jones@linaro.org>
  <1366279934-30761-23-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
