@@ -1,25 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755159Ab3DVOaa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 10:30:30 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51654 "EHLO
+	id S1755224Ab3DVObz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 10:31:55 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51696 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755086Ab3DVOaW (ORCPT
+	by vger.kernel.org with ESMTP id S1755120Ab3DVOa1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 10:30:22 -0400
+	Mon, 22 Apr 2013 10:30:27 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Marc Kleine-Budde" <mkl@pengutronix.de>,
-        "Oliver Hartkopp" <socketcan@hartkopp.net>,
-        "Wei Yongjun" <yongjun_wei@trendmicro.com.cn>
+CC: akpm@linux-foundation.org, "Gertjan van Wingerde" <gwingerde@gmail.com>,
+        "Tim Gardner" <tim.gardner@canonical.com>,
+        linux-wireless@vger.kernel.org,
+        "Helmut Schaa" <helmut.schaa@googlemail.com>,
+        "Ivo van Doorn" <IvDoorn@gmail.com>, netdev@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>,
+        users@rt2x00.serialmonkey.com
 Date: Mon, 22 Apr 2013 15:25:59 +0100
-Message-ID: <lsq.1366640759.140996636@decadent.org.uk>
+Message-ID: <lsq.1366640759.619028946@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [30/75] can: gw: use kmem_cache_free() instead of kfree()
+Subject: [19/75] rt2x00: rt2x00pci_regbusy_read() - only print register
+ access failure once
 In-Reply-To: <lsq.1366640759.151900666@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:6834:ff73:7553:7f84
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,48 +37,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+From: Tim Gardner <tim.gardner@canonical.com>
 
-commit 3480a2125923e4b7a56d79efc76743089bf273fc upstream.
+commit 83589b30f1e1dc9898986293c9336b8ce1705dec upstream.
 
-Memory allocated by kmem_cache_alloc() should be freed using
-kmem_cache_free(), not kfree().
+BugLink: http://bugs.launchpad.net/bugs/1128840
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-Acked-by: Oliver Hartkopp <socketcan@hartkopp.net>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+It appears that when this register read fails it never recovers, so
+I think there is no need to repeat the same error message ad infinitum.
+
+Cc: Ivo van Doorn <IvDoorn@gmail.com>
+Cc: Gertjan van Wingerde <gwingerde@gmail.com>
+Cc: Helmut Schaa <helmut.schaa@googlemail.com>
+Cc: "John W. Linville" <linville@tuxdriver.com>
+Cc: linux-wireless@vger.kernel.org
+Cc: users@rt2x00.serialmonkey.com
+Cc: netdev@vger.kernel.org
+Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/can/gw.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/net/wireless/rt2x00/rt2x00pci.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/can/gw.c
-+++ b/net/can/gw.c
-@@ -436,7 +436,7 @@ static int cgw_notifier(struct notifier_
- 			if (gwj->src.dev == dev || gwj->dst.dev == dev) {
- 				hlist_del(&gwj->list);
- 				cgw_unregister_filter(gwj);
--				kfree(gwj);
-+				kmem_cache_free(cgw_cache, gwj);
- 			}
- 		}
+--- a/drivers/net/wireless/rt2x00/rt2x00pci.c
++++ b/drivers/net/wireless/rt2x00/rt2x00pci.c
+@@ -52,8 +52,8 @@ int rt2x00pci_regbusy_read(struct rt2x00
+ 		udelay(REGISTER_BUSY_DELAY);
  	}
-@@ -850,7 +850,7 @@ static void cgw_remove_all_jobs(void)
- 	hlist_for_each_entry_safe(gwj, n, nx, &cgw_list, list) {
- 		hlist_del(&gwj->list);
- 		cgw_unregister_filter(gwj);
--		kfree(gwj);
-+		kmem_cache_free(cgw_cache, gwj);
- 	}
- }
  
-@@ -903,7 +903,7 @@ static int cgw_remove_job(struct sk_buff
+-	ERROR(rt2x00dev, "Indirect register access failed: "
+-	      "offset=0x%.08x, value=0x%.08x\n", offset, *reg);
++	printk_once(KERN_ERR "%s() Indirect register access failed: "
++	      "offset=0x%.08x, value=0x%.08x\n", __func__, offset, *reg);
+ 	*reg = ~0;
  
- 		hlist_del(&gwj->list);
- 		cgw_unregister_filter(gwj);
--		kfree(gwj);
-+		kmem_cache_free(cgw_cache, gwj);
- 		err = 0;
- 		break;
- 	}
+ 	return 0;
 
