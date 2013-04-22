@@ -1,55 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754208Ab3DVP6M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 11:58:12 -0400
-Received: from longford.logfs.org ([213.229.74.203]:58881 "EHLO
-	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751141Ab3DVP6L (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 11:58:11 -0400
-Date: Mon, 22 Apr 2013 10:31:18 -0400
-From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
-To: Joe Perches <joe@perches.com>
-Cc: Joern Engel <joern@lazybastard.org>, David Woodhouse <dwmw2@infradead.org>,
-        linux-mtd@lists.infradead.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mtd: Convert logging messages
-Message-ID: <20130422143118.GA12908@logfs.org>
-References: <1366394375.3901.36.camel@joe-AO722>
- <20130419165516.GA19480@logfs.org>
- <1366396053.3901.40.camel@joe-AO722>
+	id S1754441Ab3DVP6V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 11:58:21 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:36090 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752689Ab3DVP6R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Apr 2013 11:58:17 -0400
+Date: Mon, 22 Apr 2013 08:55:05 -0700
+From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+To: Michael Ellerman <michael@ellerman.id.au>
+Cc: Paul Mackerras <paulus@samba.org>, linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linuxppc-dev@ozlabs.org
+Subject: Re: [PATCH] perf: Power7: Make CPI stack events available in sysfs
+Message-ID: <20130422155505.GA26169@us.ibm.com>
+References: <20130406164803.GA408@us.ibm.com>
+ <20130415061508.GD21147@concordia>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1366396053.3901.40.camel@joe-AO722>
+In-Reply-To: <20130415061508.GD21147@concordia>
+X-Operating-System: Linux 2.0.32 on an i486
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13042215-9360-0000-0000-000011D698AD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 19 April 2013 11:27:33 -0700, Joe Perches wrote:
-> On Fri, 2013-04-19 at 12:55 -0400, Jörn Engel wrote:
-> > On Fri, 19 April 2013 10:59:35 -0700, Joe Perches wrote:
-> > >  	}
-> > >  	list_add(&dev->list, &blkmtd_device_list);
-> > > -	INFO("mtd%d: [%s] erase_size = %dKiB [%d]", dev->mtd.index,
-> > > -			dev->mtd.name + strlen("block2mtd: "),
-> > > -			dev->mtd.erasesize >> 10, dev->mtd.erasesize);
-> > > +	pr_info("mtd%d: [%s] erase_size = %dKiB [%d]\n",
-> > > +		dev->mtd.index,
-> > > +		dev->mtd.name + strlen("block2mtd: "),
-> > > +		dev->mtd.erasesize >> 10, dev->mtd.erasesize);
-> > 
-> > I personally dislike the indent-to-braces style because it causes
-> > unnecessary churn in patches like this.
-> 
-> It comes from an automated emacs conversion.
+Michael Ellerman [michael@ellerman.id.au] wrote:
+| On Sat, Apr 06, 2013 at 09:48:03AM -0700, Sukadev Bhattiprolu wrote:
+| > From bdeacf7175241f6c79b5b2be0fa6b20b0d0b7d1c Mon Sep 17 00:00:00 2001
+| > From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+| > Date: Sat, 6 Apr 2013 08:48:26 -0700
+| > Subject: [PATCH] perf: Power7: Make CPI stack events available in sysfs
+| > 
+| > A set of Power7 events are often used for Cycles Per Instruction (CPI) stack
+| > analysis. Make these events available in sysfs (/sys/devices/cpu/events/) so
+| > they can be identified using their symbolic names:
+| > 
+| > 	perf stat -e 'cpu/PM_CMPLU_STALL_DCACHE_MISS/' /bin/ls
+| 
+| Should we take these two via the powerpc tree? Or do you want to take
+| them Arnaldo?
 
-Then please teach your emacs to be a better tool.  I trust you are
-smart enough to do that.
+I think it can go through powerpc tree since it is all arch-specific.
 
-Jörn
+Sukadev
 
---
-He who knows that enough is enough will always have enough.
--- Lao Tsu
