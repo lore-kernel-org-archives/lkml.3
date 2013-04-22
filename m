@@ -1,193 +1,322 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755369Ab3DVH72 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 03:59:28 -0400
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:54906 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754332Ab3DVH7L (ORCPT
+	id S1754932Ab3DVH7x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 03:59:53 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:46785 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752607Ab3DVH7u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 03:59:11 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 3
-X-BigFish: VS3(zzzz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1082kzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1155h)
-From: Huang Shijie <b32955@freescale.com>
-To: <dwmw2@infradead.org>
-CC: <dedekind1@gmail.com>, <computersforpeace@gmail.com>,
-        <linux-mtd@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Huang Shijie <b32955@freescale.com>, Huang Shijie <shijie8@gmail.com>
-Subject: [PATCH v2 8/8] mtd: gpmi: set the BCH's geometry with the ecc info
-Date: Mon, 22 Apr 2013 15:47:58 +0800
-Message-ID: <1366616878-29481-9-git-send-email-b32955@freescale.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1366616878-29481-1-git-send-email-b32955@freescale.com>
-References: <1366616878-29481-1-git-send-email-b32955@freescale.com>
+	Mon, 22 Apr 2013 03:59:50 -0400
+Date: Mon, 22 Apr 2013 00:59:09 -0700
+From: tip-bot for Jacob Shin <tipbot@zytor.com>
+Message-ID: <tip-0cf5f4323b1b51ecca3e952f95110e03ea611882@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
+        mingo@kernel.org, a.p.zijlstra@chello.nl, acme@ghostprotocols.net,
+        jolsa@redhat.com, jacob.shin@amd.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+        acme@ghostprotocols.net, jolsa@redhat.com, jacob.shin@amd.com,
+        tglx@linutronix.de
+In-Reply-To: <1366046483-1765-2-git-send-email-jacob.shin@amd.com>
+References: <1366046483-1765-2-git-send-email-jacob.shin@amd.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf/x86/amd:
+  Remove old-style NB counter support from perf_event_amd.c
+Git-Commit-ID: 0cf5f4323b1b51ecca3e952f95110e03ea611882
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 22 Apr 2013 00:59:16 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the nand chip provides us the ECC info, we can use it firstly.
-The set_geometry_by_ecc_info() will use the ECC info, and
-calculate the parameters we need.
+Commit-ID:  0cf5f4323b1b51ecca3e952f95110e03ea611882
+Gitweb:     http://git.kernel.org/tip/0cf5f4323b1b51ecca3e952f95110e03ea611882
+Author:     Jacob Shin <jacob.shin@amd.com>
+AuthorDate: Mon, 15 Apr 2013 12:21:22 -0500
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Sun, 21 Apr 2013 17:21:59 +0200
 
-Rename the old code to lagacy_set_geometry() which will takes effect
-when there is no ECC info from the nand chip or we fails in the ECC info case.
+perf/x86/amd: Remove old-style NB counter support from perf_event_amd.c
 
-Signed-off-by: Huang Shijie <b32955@freescale.com>
-Signed-off-by: Huang Shijie <shijie8@gmail.com>
+Support for NB counters, MSRs 0xc0010240 ~ 0xc0010247, got
+moved to perf_event_amd_uncore.c in the following commit:
+
+  c43ca5091a37 perf/x86/amd: Add support for AMD NB and L2I "uncore" counters
+
+AMD Family 10h NB events (events 0xe0 ~ 0xff, on MSRs 0xc001000 ~
+0xc001007) will still continue to be handled by perf_event_amd.c
+
+Signed-off-by: Jacob Shin <jacob.shin@amd.com>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Jacob Shin <jacob.shin@amd.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Link: http://lkml.kernel.org/r/1366046483-1765-2-git-send-email-jacob.shin@amd.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- drivers/mtd/nand/gpmi-nand/gpmi-nand.c |  128 +++++++++++++++++++++++++++++++-
- 1 files changed, 127 insertions(+), 1 deletions(-)
+ arch/x86/kernel/cpu/perf_event_amd.c | 138 ++---------------------------------
+ 1 file changed, 5 insertions(+), 133 deletions(-)
 
-diff --git a/drivers/mtd/nand/gpmi-nand/gpmi-nand.c b/drivers/mtd/nand/gpmi-nand/gpmi-nand.c
-index 717881a..e085ade 100644
---- a/drivers/mtd/nand/gpmi-nand/gpmi-nand.c
-+++ b/drivers/mtd/nand/gpmi-nand/gpmi-nand.c
-@@ -113,7 +113,128 @@ static inline bool gpmi_check_ecc(struct gpmi_nand_data *this)
- 	return true;
+diff --git a/arch/x86/kernel/cpu/perf_event_amd.c b/arch/x86/kernel/cpu/perf_event_amd.c
+index dfdab42..7e28d94 100644
+--- a/arch/x86/kernel/cpu/perf_event_amd.c
++++ b/arch/x86/kernel/cpu/perf_event_amd.c
+@@ -132,14 +132,11 @@ static u64 amd_pmu_event_map(int hw_event)
+ 	return amd_perfmon_event_map[hw_event];
  }
  
--int common_nfc_set_geometry(struct gpmi_nand_data *this)
-+/*
-+ * If we can get the ECC information from the nand chip, we do not
-+ * need to calculate them ourselves.
-+ *
-+ * We may have available oob space in this case.
-+ */
-+static bool set_geometry_by_ecc_info(struct gpmi_nand_data *this)
-+{
-+	struct bch_geometry *geo = &this->bch_geometry;
-+	struct mtd_info *mtd = &this->mtd;
-+	struct nand_chip *chip = mtd->priv;
-+	struct nand_oobfree *of = gpmi_hw_ecclayout.oobfree;
-+	unsigned int block_mark_bit_offset;
-+
-+	if (!(chip->ecc_strength > 0 && chip->ecc_size > 0))
-+		return false;
-+
-+	switch (chip->ecc_size) {
-+	case SZ_512:
-+		geo->gf_len = 13;
-+		break;
-+	case SZ_1K:
-+		geo->gf_len = 14;
-+		break;
-+	default:
-+		dev_err(this->dev,
-+			"unsupported nand chip. ecc bits : %d, ecc size : %d\n",
-+			chip->ecc_strength, chip->ecc_size);
-+		return false;
-+	}
-+	geo->ecc_chunk_size = chip->ecc_size;
-+	geo->ecc_strength = round_up(chip->ecc_strength, 2);
-+	if (!gpmi_check_ecc(this))
-+		return false;
-+
-+	/* Keep the C >= O */
-+	if (geo->ecc_chunk_size < mtd->oobsize) {
-+		dev_err(this->dev,
-+			"unsupported nand chip. ecc size: %d, oob size : %d\n",
-+			chip->ecc_size, mtd->oobsize);
-+		return false;
-+	}
-+
-+	/* The default value, see comment in the lagacy_set_geometry(). */
-+	geo->metadata_size = 10;
-+
-+	geo->ecc_chunk_count = mtd->writesize / geo->ecc_chunk_size;
-+
-+	/*
-+	 * Now, the NAND chip with 2K page(data chunk is 512byte) shows below:
-+	 *
-+	 *    |                          P                            |
-+	 *    |<----------------------------------------------------->|
-+	 *    |                                                       |
-+	 *    |                                        (Block Mark)   |
-+	 *    |                      P'                      |      | |     |
-+	 *    |<-------------------------------------------->|  D   | |  O' |
-+	 *    |                                              |<---->| |<--->|
-+	 *    V                                              V      V V     V
-+	 *    +---+----------+-+----------+-+----------+-+----------+-+-----+
-+	 *    | M |   data   |E|   data   |E|   data   |E|   data   |E|     |
-+	 *    +---+----------+-+----------+-+----------+-+----------+-+-----+
-+	 *
-+	 *	P : the page size for BCH module.
-+	 *	E : The ECC strength.
-+	 *	G : the length of Galois Field.
-+	 *	N : The chunk count of per page.
-+	 *	M : the metasize of per page.
-+	 *	C : the ecc chunk size, aka the "data" above.
-+	 *	P': the nand chip's page size.
-+	 *	O : the nand chip's oob size.
-+	 *	O': the free oob.
-+	 *
-+	 *	The formula for P is :
-+	 *
-+	 *	            E * G * N
-+	 *	       P = ------------ + P' + M
-+	 *                      8
-+	 *
-+	 * The position of block mark moves forward in the ECC-based view
-+	 * of page, and the delta is:
-+	 *
-+	 *                   E * G * (N - 1)
-+	 *             D = (---------------- + M)
-+	 *                          8
-+	 *
-+	 * Please see the comment in lagacy_set_geometry().
-+	 * With the condition C >= O , we still can get same result.
-+	 * So the bit position of the physical block mark within the ECC-based
-+	 * view of the page is :
-+	 *             (P' - D) * 8
-+	 */
-+	geo->page_size = mtd->writesize + geo->metadata_size +
-+		(geo->gf_len * geo->ecc_strength * geo->ecc_chunk_count) / 8;
-+
-+	/* The available oob size we have. */
-+	if (geo->page_size < mtd->writesize + mtd->oobsize) {
-+		of->offset = geo->page_size - mtd->writesize;
-+		of->length = mtd->oobsize - of->offset;
-+		mtd->oobavail = gpmi_hw_ecclayout.oobavail = of->length;
-+	}
-+
-+	geo->payload_size = mtd->writesize;
-+
-+	geo->auxiliary_status_offset = ALIGN(geo->metadata_size, 4);
-+	geo->auxiliary_size = ALIGN(geo->metadata_size, 4)
-+				+ ALIGN(geo->ecc_chunk_count, 4);
-+
-+	if (!this->swap_block_mark)
-+		return true;
-+
-+	/* For bit swap. */
-+	block_mark_bit_offset = mtd->writesize * 8 -
-+		(geo->ecc_strength * geo->gf_len * (geo->ecc_chunk_count - 1)
-+				+ geo->metadata_size * 8);
-+
-+	geo->block_mark_byte_offset = block_mark_bit_offset / 8;
-+	geo->block_mark_bit_offset  = block_mark_bit_offset % 8;
-+	return true;
-+}
-+
-+static int lagacy_set_geometry(struct gpmi_nand_data *this)
+-static struct event_constraint *amd_nb_event_constraint;
+-
+ /*
+  * Previously calculated offsets
+  */
+ static unsigned int event_offsets[X86_PMC_IDX_MAX] __read_mostly;
+ static unsigned int count_offsets[X86_PMC_IDX_MAX] __read_mostly;
+-static unsigned int rdpmc_indexes[X86_PMC_IDX_MAX] __read_mostly;
+ 
+ /*
+  * Legacy CPUs:
+@@ -147,14 +144,10 @@ static unsigned int rdpmc_indexes[X86_PMC_IDX_MAX] __read_mostly;
+  *
+  * CPUs with core performance counter extensions:
+  *   6 counters starting at 0xc0010200 each offset by 2
+- *
+- * CPUs with north bridge performance counter extensions:
+- *   4 additional counters starting at 0xc0010240 each offset by 2
+- *   (indexed right above either one of the above core counters)
+  */
+ static inline int amd_pmu_addr_offset(int index, bool eventsel)
  {
- 	struct bch_geometry *geo = &this->bch_geometry;
- 	struct mtd_info *mtd = &this->mtd;
-@@ -225,6 +346,11 @@ int common_nfc_set_geometry(struct gpmi_nand_data *this)
+-	int offset, first, base;
++	int offset;
+ 
+ 	if (!index)
+ 		return index;
+@@ -167,23 +160,7 @@ static inline int amd_pmu_addr_offset(int index, bool eventsel)
+ 	if (offset)
+ 		return offset;
+ 
+-	if (amd_nb_event_constraint &&
+-	    test_bit(index, amd_nb_event_constraint->idxmsk)) {
+-		/*
+-		 * calculate the offset of NB counters with respect to
+-		 * base eventsel or perfctr
+-		 */
+-
+-		first = find_first_bit(amd_nb_event_constraint->idxmsk,
+-				       X86_PMC_IDX_MAX);
+-
+-		if (eventsel)
+-			base = MSR_F15H_NB_PERF_CTL - x86_pmu.eventsel;
+-		else
+-			base = MSR_F15H_NB_PERF_CTR - x86_pmu.perfctr;
+-
+-		offset = base + ((index - first) << 1);
+-	} else if (!cpu_has_perfctr_core)
++	if (!cpu_has_perfctr_core)
+ 		offset = index;
+ 	else
+ 		offset = index << 1;
+@@ -196,36 +173,6 @@ static inline int amd_pmu_addr_offset(int index, bool eventsel)
+ 	return offset;
+ }
+ 
+-static inline int amd_pmu_rdpmc_index(int index)
+-{
+-	int ret, first;
+-
+-	if (!index)
+-		return index;
+-
+-	ret = rdpmc_indexes[index];
+-
+-	if (ret)
+-		return ret;
+-
+-	if (amd_nb_event_constraint &&
+-	    test_bit(index, amd_nb_event_constraint->idxmsk)) {
+-		/*
+-		 * according to the mnual, ECX value of the NB counters is
+-		 * the index of the NB counter (0, 1, 2 or 3) plus 6
+-		 */
+-
+-		first = find_first_bit(amd_nb_event_constraint->idxmsk,
+-				       X86_PMC_IDX_MAX);
+-		ret = index - first + 6;
+-	} else
+-		ret = index;
+-
+-	rdpmc_indexes[index] = ret;
+-
+-	return ret;
+-}
+-
+ static int amd_core_hw_config(struct perf_event *event)
+ {
+ 	if (event->attr.exclude_host && event->attr.exclude_guest)
+@@ -245,34 +192,6 @@ static int amd_core_hw_config(struct perf_event *event)
+ }
+ 
+ /*
+- * NB counters do not support the following event select bits:
+- *   Host/Guest only
+- *   Counter mask
+- *   Invert counter mask
+- *   Edge detect
+- *   OS/User mode
+- */
+-static int amd_nb_hw_config(struct perf_event *event)
+-{
+-	/* for NB, we only allow system wide counting mode */
+-	if (is_sampling_event(event) || event->attach_state & PERF_ATTACH_TASK)
+-		return -EINVAL;
+-
+-	if (event->attr.exclude_user || event->attr.exclude_kernel ||
+-	    event->attr.exclude_host || event->attr.exclude_guest)
+-		return -EINVAL;
+-
+-	event->hw.config &= ~(ARCH_PERFMON_EVENTSEL_USR |
+-			      ARCH_PERFMON_EVENTSEL_OS);
+-
+-	if (event->hw.config & ~(AMD64_RAW_EVENT_MASK_NB |
+-				 ARCH_PERFMON_EVENTSEL_INT))
+-		return -EINVAL;
+-
+-	return 0;
+-}
+-
+-/*
+  * AMD64 events are detected based on their event codes.
+  */
+ static inline unsigned int amd_get_event_code(struct hw_perf_event *hwc)
+@@ -285,11 +204,6 @@ static inline int amd_is_nb_event(struct hw_perf_event *hwc)
+ 	return (hwc->config & 0xe0) == 0xe0;
+ }
+ 
+-static inline int amd_is_perfctr_nb_event(struct hw_perf_event *hwc)
+-{
+-	return amd_nb_event_constraint && amd_is_nb_event(hwc);
+-}
+-
+ static inline int amd_has_nb(struct cpu_hw_events *cpuc)
+ {
+ 	struct amd_nb *nb = cpuc->amd_nb;
+@@ -315,9 +229,6 @@ static int amd_pmu_hw_config(struct perf_event *event)
+ 	if (event->attr.type == PERF_TYPE_RAW)
+ 		event->hw.config |= event->attr.config & AMD64_RAW_EVENT_MASK;
+ 
+-	if (amd_is_perfctr_nb_event(&event->hw))
+-		return amd_nb_hw_config(event);
+-
+ 	return amd_core_hw_config(event);
+ }
+ 
+@@ -341,19 +252,6 @@ static void __amd_put_nb_event_constraints(struct cpu_hw_events *cpuc,
+ 	}
+ }
+ 
+-static void amd_nb_interrupt_hw_config(struct hw_perf_event *hwc)
+-{
+-	int core_id = cpu_data(smp_processor_id()).cpu_core_id;
+-
+-	/* deliver interrupts only to this core */
+-	if (hwc->config & ARCH_PERFMON_EVENTSEL_INT) {
+-		hwc->config |= AMD64_EVENTSEL_INT_CORE_ENABLE;
+-		hwc->config &= ~AMD64_EVENTSEL_INT_CORE_SEL_MASK;
+-		hwc->config |= (u64)(core_id) <<
+-			AMD64_EVENTSEL_INT_CORE_SEL_SHIFT;
+-	}
+-}
+-
+  /*
+   * AMD64 NorthBridge events need special treatment because
+   * counter access needs to be synchronized across all cores
+@@ -441,9 +339,6 @@ __amd_get_nb_event_constraints(struct cpu_hw_events *cpuc, struct perf_event *ev
+ 	if (new == -1)
+ 		return &emptyconstraint;
+ 
+-	if (amd_is_perfctr_nb_event(hwc))
+-		amd_nb_interrupt_hw_config(hwc);
+-
+ 	return &nb->event_constraints[new];
+ }
+ 
+@@ -543,8 +438,7 @@ amd_get_event_constraints(struct cpu_hw_events *cpuc, struct perf_event *event)
+ 	if (!(amd_has_nb(cpuc) && amd_is_nb_event(&event->hw)))
+ 		return &unconstrained;
+ 
+-	return __amd_get_nb_event_constraints(cpuc, event,
+-					      amd_nb_event_constraint);
++	return __amd_get_nb_event_constraints(cpuc, event, NULL);
+ }
+ 
+ static void amd_put_event_constraints(struct cpu_hw_events *cpuc,
+@@ -643,9 +537,6 @@ static struct event_constraint amd_f15_PMC30 = EVENT_CONSTRAINT_OVERLAP(0, 0x09,
+ static struct event_constraint amd_f15_PMC50 = EVENT_CONSTRAINT(0, 0x3F, 0);
+ static struct event_constraint amd_f15_PMC53 = EVENT_CONSTRAINT(0, 0x38, 0);
+ 
+-static struct event_constraint amd_NBPMC96 = EVENT_CONSTRAINT(0, 0x3C0, 0);
+-static struct event_constraint amd_NBPMC74 = EVENT_CONSTRAINT(0, 0xF0, 0);
+-
+ static struct event_constraint *
+ amd_get_event_constraints_f15h(struct cpu_hw_events *cpuc, struct perf_event *event)
+ {
+@@ -711,8 +602,8 @@ amd_get_event_constraints_f15h(struct cpu_hw_events *cpuc, struct perf_event *ev
+ 			return &amd_f15_PMC20;
+ 		}
+ 	case AMD_EVENT_NB:
+-		return __amd_get_nb_event_constraints(cpuc, event,
+-						      amd_nb_event_constraint);
++		/* moved to perf_event_amd_uncore.c */
++		return &emptyconstraint;
+ 	default:
+ 		return &emptyconstraint;
+ 	}
+@@ -738,7 +629,6 @@ static __initconst const struct x86_pmu amd_pmu = {
+ 	.eventsel		= MSR_K7_EVNTSEL0,
+ 	.perfctr		= MSR_K7_PERFCTR0,
+ 	.addr_offset            = amd_pmu_addr_offset,
+-	.rdpmc_index		= amd_pmu_rdpmc_index,
+ 	.event_map		= amd_pmu_event_map,
+ 	.max_events		= ARRAY_SIZE(amd_perfmon_event_map),
+ 	.num_counters		= AMD64_NUM_COUNTERS,
+@@ -790,23 +680,6 @@ static int setup_perfctr_core(void)
  	return 0;
  }
  
-+int common_nfc_set_geometry(struct gpmi_nand_data *this)
-+{
-+	return set_geometry_by_ecc_info(this) ? 0 : lagacy_set_geometry(this);
-+}
-+
- struct dma_chan *get_dma_chan(struct gpmi_nand_data *this)
+-static int setup_perfctr_nb(void)
+-{
+-	if (!cpu_has_perfctr_nb)
+-		return -ENODEV;
+-
+-	x86_pmu.num_counters += AMD64_NUM_COUNTERS_NB;
+-
+-	if (cpu_has_perfctr_core)
+-		amd_nb_event_constraint = &amd_NBPMC96;
+-	else
+-		amd_nb_event_constraint = &amd_NBPMC74;
+-
+-	printk(KERN_INFO "perf: AMD northbridge performance counters detected\n");
+-
+-	return 0;
+-}
+-
+ __init int amd_pmu_init(void)
  {
- 	int chipnr = this->current_chip;
--- 
-1.7.1
-
-
+ 	/* Performance-monitoring supported from K7 and later: */
+@@ -817,7 +690,6 @@ __init int amd_pmu_init(void)
+ 
+ 	setup_event_constraints();
+ 	setup_perfctr_core();
+-	setup_perfctr_nb();
+ 
+ 	/* Events are common for all AMDs */
+ 	memcpy(hw_cache_event_ids, amd_hw_cache_event_ids,
