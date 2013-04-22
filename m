@@ -1,80 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753466Ab3DVVmH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 17:42:07 -0400
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:59340 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752630Ab3DVVmF (ORCPT
+	id S1753384Ab3DVVoD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 17:44:03 -0400
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:37196 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751781Ab3DVVoA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 17:42:05 -0400
-Date: Mon, 22 Apr 2013 14:41:59 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Tim Hockin <thockin@hockin.org>
-Cc: Li Zefan <lizefan@huawei.com>,
-        Containers <containers@lists.linux-foundation.org>,
-        Cgroups <cgroups@vger.kernel.org>, bsingharora@gmail.com,
-        dhaval.giani@gmail.com, Kay Sievers <kay.sievers@vrfy.org>,
-        jpoimboe@redhat.com, "Daniel P. Berrange" <berrange@redhat.com>,
-        lpoetter@redhat.com, workman-devel@redhat.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: cgroup: status-quo and userland efforts
-Message-ID: <20130422214159.GG12543@htj.dyndns.org>
-References: <20130406012159.GA17159@mtj.dyndns.org>
- <CAAAKZwvh_R2Xz--bmSLiN33fsqKanOJMq_6+6hoFWFRx38O4gA@mail.gmail.com>
+	Mon, 22 Apr 2013 17:44:00 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VPS-4(zzbb2dI98dI9371I1432Izz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz17326ah8275dhz2dh668h839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1ad9h1b0ah1155h)
+X-WSS-ID: 0MLOF16-02-1Y7-02
+X-M-MSG: 
+Message-ID: <5175AF1B.2010409@amd.com>
+Date: Mon, 22 Apr 2013 16:43:55 -0500
+From: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAAAKZwvh_R2Xz--bmSLiN33fsqKanOJMq_6+6hoFWFRx38O4gA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Joerg Roedel <joro@8bytes.org>
+CC: <iommu@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2 V2] iommu/amd: Add workaround for ERBT1312
+References: <1366009666-44792-1-git-send-email-suravee.suthikulpanit@amd.com> <20130418160220.GA4153@8bytes.org> <51701B9F.10003@amd.com> <20130418162856.GA13891@8bytes.org> <5170268E.8080706@amd.com> <20130418183538.GA17148@8bytes.org> <517041EA.70407@amd.com> <20130418200613.GB17148@8bytes.org>
+In-Reply-To: <20130418200613.GB17148@8bytes.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Tim.
+On 4/18/2013 3:06 PM, Joerg Roedel wrote:
+> Yes, but the irq-thread function itself executes the handler function
+> repeatedly until the IRQTF_RUNTHREAD bit is cleared. And every new
+> interrupt will set this bit again. So when there is a new interrupt
+> while our handler function runs the handler will be called again by the
+> irq-thread.
+>
+>
+> 	Joerg
+Thank you for the clarification.  I have submitted a new patch based on 
+the new workaround code. 
+(http://lists.linuxfoundation.org/pipermail/iommu/2013-April/005574.html)
 
-On Mon, Apr 22, 2013 at 11:26:48PM +0200, Tim Hockin wrote:
-> We absolutely depend on the ability to split cgroup hierarchies.  It
-> pretty much saved our fleet from imploding, in a way that a unified
-> hierarchy just could not do.  A mandated unified hierarchy is madness.
->  Please step away from the ledge.
+Suravee
 
-You need to be a lot more specific about why unified hierarchy can't
-be implemented.  The last time I asked around blk/memcg people in
-google, while they said that they'll need different levels of
-granularities for different controllers, google's use of cgroup
-doesn't require multiple orthogonal classifications of the same group
-of tasks.
-
-Also, cgroup isn't dropping multiple hierarchy support over-night.
-What has been working till now will continue to work for very long
-time.  If there is no fundamental conflict with the future changes,
-there should be enough time to migrate gradually as desired.
-
-> More, going towards a unified hierarchy really limits what we can
-> delegate, and that is the word of the day.  We've got a central
-> authority agent running which manages cgroups, and we want out of this
-> business.  At least, we want to be able to grant users a set of
-> constraints, and then let them run wild within those constraints.
-> Forcing all such work to go through a daemon has proven to be very
-> problematic, and it has been great now that users can have DIY
-> sub-cgroups.
-
-Sorry, but that doesn't work properly now.  It gives you the illusion
-of proper delegation but it's inherently dangerous.  If that sort of
-illusion has been / is good enough for your setup, fine.  Delegate at
-your own risks, but cgroup in itself doesn't support delegation to
-lesser security domains and it won't in the foreseeable future.
-
-> Strong disagreement, here.  We use split hierarchies to great effect.
-> Containment should be composable.  If your users or abstractions can't
-> handle it, please feel free to co-mount the universe, but please
-> PLEASE don't force us to.
-> 
-> I'm happy to talk more about what we do and why.
-
-Please do so.  Why do you need multiple orthogonal hierarchies?
-
-Thanks.
-
--- 
-tejun
