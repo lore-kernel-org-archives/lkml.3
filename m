@@ -1,59 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753320Ab3DVO0V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 10:26:21 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:62606 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752739Ab3DVO0T (ORCPT
+	id S1753454Ab3DVO27 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 10:28:59 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:15372 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753064Ab3DVO26 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 10:26:19 -0400
-X-Nat-Received: from [202.181.97.72]:50030 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1366640763.5186
-To: andy.shevchenko@gmail.com, arjan@infradead.org, hpa@zytor.com
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: memcmp in modules
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <CAHp75VdDwh0wgCWrVDcPps1C2qfdDZra15y9BQvzfWHzSMqbWA@mail.gmail.com>
-	<CAHp75Vfh6Bpk4j3crVEAo3UtJEqpyucbQw+AzJvO85uRJ6gVgg@mail.gmail.com>
-In-Reply-To: <CAHp75Vfh6Bpk4j3crVEAo3UtJEqpyucbQw+AzJvO85uRJ6gVgg@mail.gmail.com>
-Message-Id: <201304222326.IJB21395.FOtVJFHFQMOOSL@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Mon, 22 Apr 2013 23:26:05 +0900
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 22042013 #9892721, status: clean
+	Mon, 22 Apr 2013 10:28:58 -0400
+X-AuditID: cbfec7f4-b7fb86d000007679-e6-517549271850
+Message-id: <51754923.8020609@samsung.com>
+Date: Mon, 22 Apr 2013 16:28:51 +0200
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130328
+ Thunderbird/17.0.5
+MIME-version: 1.0
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] regulator: lp3971: Convert to use
+ regulator_map_voltage_ascend
+References: <1366475731.7038.1.camel@phoenix>
+In-reply-to: <1366475731.7038.1.camel@phoenix>
+Content-type: text/plain; charset=UTF-8; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrJLMWRmVeSWpSXmKPExsVy+t/xa7rqnqWBBus/m1kcmfOV2eLf7FNs
+	Ft+udDBZXN41h82BxWPnrLvsHm0/yzxeTvzN5vF5k1wASxSXTUpqTmZZapG+XQJXxt0tU5kK
+	vnFV9P3vZGlgbOTsYuTkkBAwkeh4dIMVwhaTuHBvPVsXIxeHkMBSRokPj7ewQzjNTBLHbj9j
+	A6niFdCS+PR3BzOIzSKgKtH/8iOYzSZgKNH1tgusRlQgVOLzgzaoekGJH5PvsYDYIgJKEqvu
+	XwazmQUqJbob/4PVCAtESnQufgdmCwnoSqy/cgpsJqeAnsSZ7/uYIOrNJB61rGOGsOUlNq95
+	yzyBUWAWkhWzkJTNQlK2gJF5FaNoamlyQXFSeq6hXnFibnFpXrpecn7uJkZI8H7Zwbj4mNUh
+	RgEORiUeXkH30kAh1sSy4srcQ4wSHMxKIrx3X5cECvGmJFZWpRblxxeV5qQWH2Jk4uCUamAU
+	dTcWu7vz64ewDwsO+2z5e9T4Ntuen6eWCutFnmjs/Xg4webeHxvGNwqci2OzHsX5F3y6uIWx
+	MkrVuFb3XevvJC8ppdtrXn6atGxd882P5R/qHXw7OUNW23P/k9x565LILL8I22Jz5qCKa9NW
+	vJ99K0cw/6xxlo9grEFY63TRuDwl4YwA1ndKLMUZiYZazEXFiQBhfYa9PAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andy Shevchenko wrote:
-> What did I miss?
+Hello,
 
-Well, as of linux-next-20130422, memcmp() is not correctly exported to modules.
-Since linux-3.9-rc8 correctly exports memcmp(), this problem seems to be introduced
-in linux-next tree. Also, this problem seems to involve CONFIG_MODVERSIONS=y.
+On 2013-04-20 18:35, Axel Lin wrote:
+> All regulators have ascendant voltage list in this driver.
+> Thus use regulator_map_voltage_ascend is more efficient than the default
+> regulator_map_voltage_iterate.
+>
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
 
-  [root@localhost linux-next]# modprobe ipv6
-  FATAL: Error inserting ipv6 (/lib/modules/3.9.0-rc8-next-20130422/kernel/net/ipv6/ipv6.ko): Invalid argument
-  [root@localhost linux-next]# dmesg
-  ipv6: no symbol version for memcmp
-  ipv6: Unknown symbol memcmp (err -22)
+Acked-by: Marek Szyprowski <m.szyprowski@samsung.com>
 
-Since arch/x86/include/asm/string_64.h uses
+> ---
+>   drivers/regulator/lp3971.c |    2 ++
+>   1 file changed, 2 insertions(+)
+>
+> diff --git a/drivers/regulator/lp3971.c b/drivers/regulator/lp3971.c
+> index 9cb2c0f..d8af9e7 100644
+> --- a/drivers/regulator/lp3971.c
+> +++ b/drivers/regulator/lp3971.c
+> @@ -163,6 +163,7 @@ static int lp3971_ldo_set_voltage_sel(struct regulator_dev *dev,
+>   
+>   static struct regulator_ops lp3971_ldo_ops = {
+>   	.list_voltage = regulator_list_voltage_table,
+> +	.map_voltage = regulator_map_voltage_ascend,
+>   	.is_enabled = lp3971_ldo_is_enabled,
+>   	.enable = lp3971_ldo_enable,
+>   	.disable = lp3971_ldo_disable,
+> @@ -236,6 +237,7 @@ static int lp3971_dcdc_set_voltage_sel(struct regulator_dev *dev,
+>   
+>   static struct regulator_ops lp3971_dcdc_ops = {
+>   	.list_voltage = regulator_list_voltage_table,
+> +	.map_voltage = regulator_map_voltage_ascend,
+>   	.is_enabled = lp3971_dcdc_is_enabled,
+>   	.enable = lp3971_dcdc_enable,
+>   	.disable = lp3971_dcdc_disable,
 
-  int memcmp(const void *cs, const void *ct, size_t count);
+Best regards
+-- 
+Marek Szyprowski
+Samsung Poland R&D Center
 
-while arch/x86/include/asm/string_32.h uses
 
-  #define memcmp __builtin_memcmp
-
-changing to what you have tried
-
-  #define memcmp(a, b, n) __builtin_memcmp(a, b, n)
-
-or changing to what x86_64 does
-
-  int memcmp(const void *cs, const void *ct, size_t count);
-
-might solve this problem. But I don't know which one is correct solution...
