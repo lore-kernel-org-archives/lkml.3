@@ -1,91 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754007Ab3DVU6N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 16:58:13 -0400
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:58256 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753625Ab3DVU6M (ORCPT
+	id S1754092Ab3DVU6Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 16:58:25 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:2195 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754025Ab3DVU6X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 16:58:12 -0400
-Message-ID: <5175A4F5.1050304@metafoo.de>
-Date: Mon, 22 Apr 2013 23:00:37 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Icedove/3.0.11
-MIME-Version: 1.0
-To: Jon Hunter <jon-hunter@ti.com>
-CC: Vinod Koul <vinod.koul@intel.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] dma: of: Remove check on always true condition
-References: <1366619613-30639-1-git-send-email-lars@metafoo.de> <1366619613-30639-2-git-send-email-lars@metafoo.de> <5175A317.1010304@ti.com>
-In-Reply-To: <5175A317.1010304@ti.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 22 Apr 2013 16:58:23 -0400
+X-Authority-Analysis: v=2.0 cv=cOZiQyiN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=1tO4Y6a1dgIA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=T6oyPw_TvikA:10 a=1XWaLZrsAAAA:8 a=lt4ytdTB0OJW7cPjzzsA:9 a=QEXdDO2ut3YA:10 a=UTB_XpHje0EA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1366664301.9609.140.camel@gandalf.local.home>
+Subject: Re: [PATCH] slab: Remove unnecessary __builtin_constant_p()
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: David Rientjes <rientjes@google.com>, Pekka Enberg <penberg@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Christoph Lameter <cl@linux.com>,
+        Behan Webster <behanw@converseincode.com>
+Date: Mon, 22 Apr 2013 16:58:21 -0400
+In-Reply-To: <20130422134415.32c7f2cac07c924bff3017a4@linux-foundation.org>
+References: <1366225776.8817.28.camel@pippen.local.home>
+	 <alpine.DEB.2.02.1304171702380.24494@chino.kir.corp.google.com>
+	 <20130422134415.32c7f2cac07c924bff3017a4@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/22/2013 10:52 PM, Jon Hunter wrote:
+On Mon, 2013-04-22 at 13:44 -0700, Andrew Morton wrote:
+> On Wed, 17 Apr 2013 17:03:21 -0700 (PDT) David Rientjes <rientjes@google.com> wrote:
 > 
-> On 04/22/2013 03:33 AM, Lars-Peter Clausen wrote:
->> Both of_dma_nbcells field of the of_dma_controller and the args_count field of
->> the dma_spec are initialized by parsing the #dma-cells attribute of their device
->> tree node. So if the device tree nodes of a DMA controller and the dma_spec
->> match this means that of_dma_nbcells and args_count will also match. So the
->> second test in the of_dma_find_controller loop is redundant because given the
->> first test yields true the second test will also yield true. So we can safely
->> remove the test whether of_dma_nbcells matches args_count. Since this was the
->> last user of the of_dma_nbcells field we can remove it altogether.
+> > On Wed, 17 Apr 2013, Steven Rostedt wrote:
+> > 
+> > > The slab.c code has a size check macro that checks the size of the
+> > > following structs:
+> > > 
+> > > struct arraycache_init
+> > > struct kmem_list3
+> > > 
+> > > The index_of() function that takes the sizeof() of the above two structs
+> > > and does an unnecessary __builtin_constant_p() on that. As sizeof() will
+> > > always end up being a constant making this always be true. The code is
+> > > not incorrect, but it just adds added complexity, and confuses users and
+> > > wastes the time of reviewers of the code, who spends time trying to
+> > > figure out why the builtin_constant_p() was used.
+> > > 
+> > > This patch is just a clean up that makes the index_of() code a little
+> > > bit less complex.
+> > > 
+> > > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> > 
+> > Acked-by: David Rientjes <rientjes@google.com>
+> > 
+> > Adding Pekka to the cc.
 > 
-> This assumes that someone has correctly added the dma information to the
-> dma slave binding. I could see systems where different dma controllers
-> have different of_dma_nbcells and so someone could put the enter wrong
-> number of cells for a dma slave binding. Its really to catch user error.
+> I ducked this patch because it seemed rather pointless - but a little
+> birdie told me that there is a secret motivation which seems pretty
+> reasonable to me.  So I shall await chirp-the-second, which hopefully
+> will have a fuller and franker changelog ;)
 
-No, this assumes nothing. The condition will _always_ be true.
+<little birdie voice>
+The real motivation behind this patch was it prevents LLVM (Clang) from
+compiling the kernel. There's currently a bug in Clang where it can't
+determine if a variable is constant or not, so instead, when
+__builtin_constant_p() is used, it just treats it like it isn't a
+constant (always taking the slow *safe* path).
 
-dma_spec->args_count is initialized by parsing the #dma-cells attribute of
-dma_sepc->np. of_dma->of_dma_nbcells is initialized by parsing the #dma-cells
-attribute of of_dma->of_node. If ofdma->of_node equals dma_spec->np then
-dma_spec->args_count will also equal of_dma->of_dma_nbcells.
+Unfortunately, the "confusing" code of slub.c that unnecessarily uses
+the __builtin_constant_p() will fail to compile if the variable passed
+in is not constant. As Clang will say constants are not constant at this
+point, the compile fails.
 
-> 
->> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
->> ---
->>  drivers/dma/of-dma.c   | 14 +-------------
->>  include/linux/of_dma.h |  1 -
->>  2 files changed, 1 insertion(+), 14 deletions(-)
->>
->> diff --git a/drivers/dma/of-dma.c b/drivers/dma/of-dma.c
->> index 268cc8a..75334bd 100644
->> --- a/drivers/dma/of-dma.c
->> +++ b/drivers/dma/of-dma.c
->> @@ -35,8 +35,7 @@ static struct of_dma *of_dma_find_controller(struct of_phandle_args *dma_spec)
->>  	struct of_dma *ofdma;
->>  
->>  	list_for_each_entry(ofdma, &of_dma_list, of_dma_controllers)
->> -		if ((ofdma->of_node == dma_spec->np) &&
->> -		    (ofdma->of_dma_nbcells == dma_spec->args_count))
->> +		if (ofdma->of_node == dma_spec->np)
->>  			return ofdma;
-> 
-> Other device-tree functions perform similar tests to this such as ...
-> 
+When looking into this, we found the only two users of the index_of()
+static function that has this issue, passes in size_of(), which will
+always be a constant, making the check redundant.
 
-So it's redundant there as well ;)
+Note, this is a bug in Clang that will hopefully be fixed soon. But for
+now, this strange redundant compile time check is preventing Clang from
+even testing the Linux kernel build.
+</little birdie voice>
 
-> static int of_gpiochip_find_and_xlate(struct gpio_chip *gc, void *data)
-> {
->          struct gg_data *gg_data = data;
->          int ret;
-> 
->          if ((gc->of_node != gg_data->gpiospec.np) ||
->              (gc->of_gpio_n_cells != gg_data->gpiospec.args_count) ||
->              (!gc->of_xlate))
->                  return false;
-> 
-> ...
-> 
-> Cheers
-> Jon
+And I still think the original change log has rational for the change,
+as it does make it rather confusing to what is happening there.
+
+-- Steve
+
+
 
