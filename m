@@ -1,124 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755442Ab3DVIBQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 04:01:16 -0400
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:26095 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755282Ab3DVH66 (ORCPT
+	id S1755481Ab3DVIB1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 04:01:27 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:43925 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755452Ab3DVIBX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 03:58:58 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 5
-X-BigFish: VS5(z616jzzz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1082kzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1155h)
-From: Huang Shijie <b32955@freescale.com>
-To: <dwmw2@infradead.org>
-CC: <dedekind1@gmail.com>, <computersforpeace@gmail.com>,
-        <linux-mtd@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Huang Shijie <b32955@freescale.com>
-Subject: [PATCH v2 3/8] mtd: get the ECC info from the Extended Parameter Page
-Date: Mon, 22 Apr 2013 15:47:53 +0800
-Message-ID: <1366616878-29481-4-git-send-email-b32955@freescale.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1366616878-29481-1-git-send-email-b32955@freescale.com>
-References: <1366616878-29481-1-git-send-email-b32955@freescale.com>
+	Mon, 22 Apr 2013 04:01:23 -0400
+Message-ID: <5174EE51.4000606@free-electrons.com>
+Date: Mon, 22 Apr 2013 10:01:21 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+CC: Shawn Guo <shawn.guo@linaro.org>, Grant Likely <grant.likely@secretlab.ca>,
+        jimwall@q.com, brian@crystalfontz.com, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org,
+        Jonathan Cameron <jic23@cam.ac.uk>, Rob Landley <rob@landley.net>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: Re: [PATCH 1/3] iio: Add Nuvoton NAU7802 ADC driver
+References: <1366299536-18353-1-git-send-email-alexandre.belloni@free-electrons.com> <1366299536-18353-2-git-send-email-alexandre.belloni@free-electrons.com>
+In-Reply-To: <1366299536-18353-2-git-send-email-alexandre.belloni@free-electrons.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the ONFI 2.1, the onfi spec adds the Extended Parameter Page
-to store the ECC info.
+Hi Alexandre,
 
-The onfi spec tells us that if the nand chip's recommended ECC codeword
-size is not 512 bytes, then the @ecc_bits is 0xff. The host _SHOULD_ then
-read the Extended ECC information that is part of the extended parameter
-page to retrieve the ECC requirements for this device.
+Le 18/04/2013 17:38, Alexandre Belloni a écrit :
+> +	nau7802_i2c_write(st, NAU7802_REG_PUCTRL, data);
+> +	nau7802_i2c_write(st, NAU7802_REG_ADC_CTRL, 0x30);
+> +
+> +	if (tmp >= 2400) {
+> +		data = NAU7802_CTRL1_VLDO((4500 - tmp) / 300);
+> +		nau7802_i2c_write(st, NAU7802_REG_CTRL1, data);
+> +	}
 
-This patch implement the reading of the Extended Parameter Page, and parses
-the sections for ECC type, and get the ECC info from the ECC section.
+You should probably make a macro or inline function (with a comment) out
+of that computation explaining why you are doing this.
 
-Tested this patch with Micron MT29F64G08CBABAWP.
+> +
+> +	st->min_conversions = 6;
 
-Signed-off-by: Huang Shijie <b32955@freescale.com>
----
- drivers/mtd/nand/nand_base.c |   54 ++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 54 insertions(+), 0 deletions(-)
+I'd prefer to see this as a define.
 
-diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
-index beff911..48ff097 100644
---- a/drivers/mtd/nand/nand_base.c
-+++ b/drivers/mtd/nand/nand_base.c
-@@ -2846,6 +2846,56 @@ static u16 onfi_crc16(u16 crc, u8 const *p, size_t len)
- 	return crc;
- }
- 
-+/* Parse the Extended Parameter Page. */
-+static void nand_flash_detect_ext_param_page(struct mtd_info *mtd,
-+		struct nand_chip *chip, struct nand_onfi_params *p, int last)
-+{
-+	struct onfi_ext_param_page *ep;
-+	struct onfi_ext_section *s;
-+	struct onfi_ext_ecc_info *ecc;
-+	uint8_t *cursor;
-+	int len;
-+	int i;
-+
-+	len = le16_to_cpu(p->ext_param_page_length) * 16;
-+	ep = kcalloc(1, max_t(int, len, sizeof(*p)), GFP_KERNEL);
-+	if (!ep)
-+		goto ext_out;
-+
-+	/*
-+	 * Skip the ONFI Parameter Pages.
-+	 * The Change Read Columm command may does not works here.
-+	 */
-+	for (i = last + 1; i < p->num_of_param_pages; i++)
-+		chip->read_buf(mtd, (uint8_t *)ep, sizeof(*p));
-+
-+	/* Read out the Extended Parameter Page. */
-+	chip->read_buf(mtd, (uint8_t *)ep, len);
-+	if ((onfi_crc16(ONFI_CRC_BASE, ((uint8_t *)ep) + 2, len - 2)
-+		!= le16_to_cpu(ep->crc)) || strncmp(ep->sig, "EPPS", 4))
-+		goto ext_out;
-+
-+	/* find the ECC section. */
-+	cursor = (uint8_t *)(ep + 1);
-+	for (i = 0; i < ONFI_EXT_SECTION_MAX; i++) {
-+		s = ep->sections + i;
-+		if (s->type == ONFI_SECTION_TYPE_2)
-+			break;
-+		cursor += s->length * 16;
-+	}
-+	if (i == ONFI_EXT_SECTION_MAX)
-+		goto ext_out;
-+
-+	/* get the info we want. */
-+	ecc = (struct onfi_ext_ecc_info *)cursor;
-+	chip->ecc_strength = ecc->ecc_bits;
-+	chip->ecc_size = 1 << ecc->codeword_size;
-+
-+	pr_info("ONFI extended param page detected.\n");
-+ext_out:
-+	kfree(ep);
-+}
-+
- /*
-  * Check if the NAND chip is ONFI compliant, returns 1 if it is, 0 otherwise.
-  */
-@@ -2914,6 +2964,10 @@ static int nand_flash_detect_onfi(struct mtd_info *mtd, struct nand_chip *chip,
- 	if (p->ecc_bits != 0xff) {
- 		chip->ecc_strength = p->ecc_bits;
- 		chip->ecc_size = 512;
-+	} else if (chip->onfi_version >= 21 &&
-+		(onfi_feature(chip) & ONFI_FEATURE_EXT_PARAM_PAGE)) {
-+		/* The Extended Parameter Page is supported since ONFI 2.1. */
-+		nand_flash_detect_ext_param_page(mtd, chip, p, i);
- 	}
- 
- 	pr_info("ONFI flash detected\n");
+> +
+> +	/*
+> +	 * The ADC fires continuously and we can't do anything about
+> +	 * it. So we need to have the IRQ disabled by default, and we
+> +	 * will enable them back when we will need them..
+> +	 */
+> +	if (client->irq) {
+> +		irq_set_status_flags(client->irq, IRQ_NOAUTOEN);
+> +		ret = request_threaded_irq(client->irq,
+> +				NULL,
+> +				nau7802_eoc_trigger,
+> +				IRQF_TRIGGER_HIGH | IRQF_ONESHOT,
+> +				client->dev.driver->name,
+> +				idev);
+> +		if (ret) {
+> +			/*
+> +			 * What may happen here is that our IRQ controller is
+> +			 * not able to get level interrupt but this is required
+> +			 * by this ADC as when going over 40 sample per second,
+> +			 * the interrupt line may stay high between conversions.
+> +			 * So, we continue no matter what but we switch to
+> +			 * polling mode.
+> +			 */
+> +			dev_info(&client->dev,
+> +				"Failed to allocate IRQ, using polling mode\n");
+> +			client->irq = 0;
+> +			/*
+> +			 * We are polling, use the fastest sample rate by
+> +			 * default
+> +			 */
+> +			st->sample_rate = 0x7;
+
+Ditto.
+
+Maxime
+
 -- 
-1.7.1
-
-
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
