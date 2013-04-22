@@ -1,144 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752321Ab3DVFdZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 01:33:25 -0400
-Received: from mail-we0-f176.google.com ([74.125.82.176]:34968 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750861Ab3DVFdX (ORCPT
+	id S1753479Ab3DVFkg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 01:40:36 -0400
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:48269
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752630Ab3DVFke (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 01:33:23 -0400
+	Mon, 22 Apr 2013 01:40:34 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 3
+X-BigFish: VS3(zzc8kzz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275bhz2dh2a8h668h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1155h)
+From: Varun Sethi <Varun.Sethi@freescale.com>
+To: <joro@8bytes.org>, <iommu@lists.linux-foundation.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <galak@kernel.crashing.org>, <benh@kernel.crashing.org>,
+        <stuart.yoder@freescale.com>, <scottwood@freescale.com>
+CC: Varun Sethi <Varun.Sethi@freescale.com>
+Subject: [PATCH 1/3 v2] iommu: Move swap_pci_ref function to pci.h.
+Date: Mon, 22 Apr 2013 11:01:54 +0530
+Message-ID: <1366608716-1704-1-git-send-email-Varun.Sethi@freescale.com>
+X-Mailer: git-send-email 1.7.4.1
 MIME-Version: 1.0
-In-Reply-To: <20130419081801.0af7ad73@redhat.com>
-References: <1366364816-3567-1-git-send-email-prabhakar.csengg@gmail.com> <20130419081801.0af7ad73@redhat.com>
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Mon, 22 Apr 2013 11:03:02 +0530
-Message-ID: <CA+V-a8tOK=6iqWzK0KhQaL45LvfFCcs67bfECZE9tE251+8iUA@mail.gmail.com>
-Subject: Re: [PATCH RFC] media: videobuf2: fix the length check for mmap
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: LMML <linux-media@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Hans Verkuil <hans.verkuil@cisco.com>, Pawel Osciak <pawel@osciak.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Seung-Woo Kim <sw0312.kim@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 19, 2013 at 4:48 PM, Mauro Carvalho Chehab
-<mchehab@redhat.com> wrote:
-> Em Fri, 19 Apr 2013 15:16:56 +0530
-> Prabhakar lad <prabhakar.csengg@gmail.com> escreveu:
->
->> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
->>
->> From commit 068a0df76023926af958a336a78bef60468d2033
->> "[media] media: vb2: add length check for mmap"
->> patch verifies that the mmap() size requested by userspace
->> doesn't exceed the buffer size.
->>
->> As the mmap() size is rounded up to the next page boundary
->> the check will fail for buffer sizes that are not multiple
->> of the page size.
->>
->> This patch fixes the check by aligning the buffer size to page
->> size during the check. Alongside fixes the vmalloc allocator
->> to round up the size.
->>
->> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
->> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
->> Cc: Marek Szyprowski <m.szyprowski@samsung.com>
->> Cc: Seung-Woo Kim <sw0312.kim@samsung.com>
->> Cc: Hans Verkuil <hans.verkuil@cisco.com>
->> Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
->> ---
->>  drivers/media/v4l2-core/videobuf2-core.c    |    2 +-
->>  drivers/media/v4l2-core/videobuf2-vmalloc.c |    2 +-
->>  2 files changed, 2 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/media/v4l2-core/videobuf2-core.c b/drivers/media/v4l2-core/videobuf2-core.c
->> index 58c1744..223fcd4 100644
->> --- a/drivers/media/v4l2-core/videobuf2-core.c
->> +++ b/drivers/media/v4l2-core/videobuf2-core.c
->> @@ -1886,7 +1886,7 @@ int vb2_mmap(struct vb2_queue *q, struct vm_area_struct *vma)
->>
->>       vb = q->bufs[buffer];
->>
->> -     if (vb->v4l2_planes[plane].length < (vma->vm_end - vma->vm_start)) {
->> +     if (PAGE_ALIGN(vb->v4l2_planes[plane].length) < (vma->vm_end - vma->vm_start)) {
->>               dprintk(1, "Invalid length\n");
->>               return -EINVAL;
->>       }
->
-> That is tricky, as it assumes that vb->v4l2_planes[plane].length was round
-> up to PAGE_SIZE at each memops driver, but the vb2 core doesn't enforce it.
->
-> IMO, it would be cleaner to round vb->v4l2_planes[plane].length up
-> at VB2 core, before calling the memops alloc functions at the drivers.
->
-> Also, VB2 is already complex enough to put it there without proper
-> comments (and there's a minor codingstyle issue there: line is bigger
-> than 80 cols).
->
->> diff --git a/drivers/media/v4l2-core/videobuf2-vmalloc.c b/drivers/media/v4l2-core/videobuf2-vmalloc.c
->> index 313d977..bf3b95c 100644
->> --- a/drivers/media/v4l2-core/videobuf2-vmalloc.c
->> +++ b/drivers/media/v4l2-core/videobuf2-vmalloc.c
->> @@ -44,7 +44,7 @@ static void *vb2_vmalloc_alloc(void *alloc_ctx, unsigned long size, gfp_t gfp_fl
->>               return NULL;
->>
->>       buf->size = size;
->> -     buf->vaddr = vmalloc_user(buf->size);
->> +     buf->vaddr = vmalloc_user(PAGE_ALIGN(buf->size));
->
-> See? You needed to put an alignment here as well, not because vmalloc
-> needs it, but because this is needed by VB2 core.
->
-> Also, on the other drivers, buf->size is stored page aligned, while
-> here, you're doing different, without any documented reason for doing
-> that, instead of doing the same as on the other memops drivers.
->
-> That mistake reflects, for example, when the driver prints the failure:
->
->         if (!buf->vaddr) {
->                 pr_debug("vmalloc of size %ld failed\n", buf->size);
->
-> as it will show a different size than what you actually required.
-> As those memory starving errors can also produce a dump at the mm
-> core, the size there won't match the size on the above printed message.
->
-> Also, it is a very bad idea to delegate the core's requirement of
-> do page alignment from the core to the memops drivers, as other
-> patches may change the logic there, or a new memops could be added,
-> and the same problem will hit again (and unnoticed, as the check
-> routine do page alignments).
->
->>       buf->handler.refcount = &buf->refcount;
->>       buf->handler.put = vb2_vmalloc_put;
->>       buf->handler.arg = buf;
->
-> IMO, a cleaner version would be the following (untested) code.
->
-> -
->
-> [media] videobuf2: fix the length check for mmap
->
-> Memory maps typically require that the buffer size to be page
-> aligned. Currently, two memops drivers do such alignment
-> internally, but videobuf-vmalloc doesn't.
->
-> Also, the buffer overflow check doesn't take it into account.
->
-> So, instead of doing it at each memops driver, enforce it at
-> VB2 core.
->
-> Reported-by: Prabhakar lad <prabhakar.csengg@gmail.com>
-> Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
->
-Reported-and-tested-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+swap_pci_ref function is used by the IOMMU API code for swapping pci device
+pointers, while determining the iommu group for the device.
+Currently this function was being implemented for different IOMMU drivers.
+This patch moves the function to a new file, drivers/iommu/pci.h so that the
+implementation can be shared across various IOMMU drivers.
 
-Regards,
---Prabhakar
+Signed-off-by: Varun Sethi <Varun.Sethi@freescale.com>
+---
+v2 changes:
+- created a new file drivers/iommu/pci.h.
+
+ drivers/iommu/amd_iommu.c   |    7 +------
+ drivers/iommu/intel-iommu.c |    7 +------
+ drivers/iommu/pci.h         |   29 +++++++++++++++++++++++++++++
+ 3 files changed, 31 insertions(+), 12 deletions(-)
+ create mode 100644 drivers/iommu/pci.h
+
+diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
+index a7f6b04..2463464 100644
+--- a/drivers/iommu/amd_iommu.c
++++ b/drivers/iommu/amd_iommu.c
+@@ -46,6 +46,7 @@
+ #include "amd_iommu_proto.h"
+ #include "amd_iommu_types.h"
+ #include "irq_remapping.h"
++#include "pci.h"
+ 
+ #define CMD_SET_TYPE(cmd, t) ((cmd)->data[1] |= ((t) << 28))
+ 
+@@ -263,12 +264,6 @@ static bool check_device(struct device *dev)
+ 	return true;
+ }
+ 
+-static void swap_pci_ref(struct pci_dev **from, struct pci_dev *to)
+-{
+-	pci_dev_put(*from);
+-	*from = to;
+-}
+-
+ static struct pci_bus *find_hosted_bus(struct pci_bus *bus)
+ {
+ 	while (!bus->self) {
+diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
+index 6e0b9ff..81ad7b8 100644
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -47,6 +47,7 @@
+ #include <asm/iommu.h>
+ 
+ #include "irq_remapping.h"
++#include "pci.h"
+ 
+ #define ROOT_SIZE		VTD_PAGE_SIZE
+ #define CONTEXT_SIZE		VTD_PAGE_SIZE
+@@ -4137,12 +4138,6 @@ static int intel_iommu_domain_has_cap(struct iommu_domain *domain,
+ 	return 0;
+ }
+ 
+-static void swap_pci_ref(struct pci_dev **from, struct pci_dev *to)
+-{
+-	pci_dev_put(*from);
+-	*from = to;
+-}
+-
+ #define REQ_ACS_FLAGS	(PCI_ACS_SV | PCI_ACS_RR | PCI_ACS_CR | PCI_ACS_UF)
+ 
+ static int intel_iommu_add_device(struct device *dev)
+diff --git a/drivers/iommu/pci.h b/drivers/iommu/pci.h
+new file mode 100644
+index 0000000..d460646
+--- /dev/null
++++ b/drivers/iommu/pci.h
+@@ -0,0 +1,29 @@
++/*
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License, version 2, as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
++ *
++ * Copyright (C) 2013 Red Hat, Inc.
++ * Copyright (C) 2013 Freescale Semiconductor, Inc.
++ *
++ */
++#ifndef __PCI_H
++#define __PCI_H
++
++/* Helper function for swapping pci device reference */
++static inline void swap_pci_ref(struct pci_dev **from, struct pci_dev *to)
++{
++	pci_dev_put(*from);
++	*from = to;
++}
++
++#endif  /* __PCI_H */
+-- 
+1.7.4.1
+
+
