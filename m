@@ -1,286 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754069Ab3DVWlg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 18:41:36 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:57613 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753682Ab3DVWle (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 18:41:34 -0400
-X-Originating-IP: 108.223.40.66
-Date: Mon, 22 Apr 2013 15:42:03 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: =?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>
-Cc: Alan Cox <alan@linux.intel.com>, Hans de Goede <hdegoede@redhat.com>,
-        Wim Van Sebroeck <wim@iguana.be>, linux-kernel@vger.kernel.org,
-        linux-watchdog@vger.kernel.org
-Subject: Re: [PATCH] Watchdog: add pretimeout
-Message-ID: <20130422224203.GA8805@roeck-us.net>
-References: <20130422194347.GA14907@logfs.org>
+	id S1753958Ab3DVWoD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 18:44:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9789 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752993Ab3DVWoA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Apr 2013 18:44:00 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, Dave Chinner <david@fromorbit.com>,
+        Jan Kara <jack@suse.cz>, linux-ext4@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: Re: Excessive stall times on ext4 in 3.9-rc2
+References: <20130402142717.GH32241@suse.de>
+	<20130402150651.GB31577@thunk.org> <20130410105608.GC1910@suse.de>
+	<20130410131245.GC4862@thunk.org> <20130411170402.GB11656@suse.de>
+	<20130411183512.GA12298@thunk.org>
+	<20130411213335.GE9379@quack.suse.cz>
+	<20130412025708.GB7445@thunk.org> <20130412045042.GA30622@dastard>
+	<20130412151952.GA4944@thunk.org> <20130422143846.GA2675@suse.de>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Mon, 22 Apr 2013 18:42:23 -0400
+In-Reply-To: <20130422143846.GA2675@suse.de> (Mel Gorman's message of "Mon, 22
+	Apr 2013 15:38:46 +0100")
+Message-ID: <x49a9oqmblc.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130422194347.GA14907@logfs.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Copying the watchdog mailing list.
+Mel Gorman <mgorman@suse.de> writes:
 
-On Mon, Apr 22, 2013 at 03:43:47PM -0400, Jörn Engel wrote:
-> This patch adds a pretimeout with three actions to the generic watchdog
-> code:
-> 1) Print a kernel message.
-> 2) Send a signal to the userspace process holding /dev/watchdogX open.
-> 3) Call sys_sync.
-> 
-> I have found all of the above to be useful.  If the system gets rebooted
-> by a watchdog, you first want to notice that it happened (1).  Next you
-> want userspace logfiles from the time when it failed to acknowledge the
-> watchdog.  (2) gives cooperating userspace a chance to flush userspace
-> buffers and (3) increases the chances of those logfiles surviving the
-> reboot.
-> 
-> 
-> Given that this patch changes the userspace ABI, now would be a good
-> time to raise concerns.  The most likely problem I see is using SIGILL
-> to notify userspace.  Then again, whatever signal you pick will have
-> other meanings attached, so the only choices are not to notify
-> userspace or to pick some lesser of many evils.
-> 
-Hi Joern,
+> (Adding Jeff Moyer to the cc as I'm told he is interested in the blktrace)
 
-You could send a udev event, or a poll event, or both.
+Thanks.  I've got a few comments and corrections for you below.
 
-I think that sending a signal would be a bad idea, as it could inadvertently
-kill the very application responsible for pinging the watchdog. And you
-can not really expect that application to understand the difference
-between your SIGSomething and a real signal.
+> TLDR: Flusher writes pages very quickly after processes dirty a buffer. Reads
+> starve flusher writes.
+[snip]
 
-Also, I think there should be a callback into the watchdog drivers.
-There are watchdogs out there implementing a pre-timeout in hardware,
-and the watchdog code could make use of that functionality.
+> 3. The blktrace indicates that reads can starve writes from flusher
+>
+>    While there are people that can look at a blktrace and find problems
+>    like they are rain man, I'm more like an ADHD squirrel when looking at
+>    a trace.  I wrote a script to look for what unrelated requests completed
+>    while an request got stalled for over a second. It seemed like something
+>    that a tool shoudl already exist for but I didn't find one unless btt
+>    can give the information somehow.
 
-Thanks,
-Guenter
+Care to share that script?
 
-> Signed-off-by: Joern Engel <joern@logfs.org>
-> ---
->  drivers/watchdog/watchdog_core.c |   29 ++++++++++++++++++++++
->  drivers/watchdog/watchdog_dev.c  |   50 ++++++++++++++++++++++++++++++++++++++
->  include/linux/watchdog.h         |    8 ++++++
->  3 files changed, 87 insertions(+)
-> 
-> diff --git a/drivers/watchdog/watchdog_core.c b/drivers/watchdog/watchdog_core.c
-> index 3796434..349a2c4 100644
-> --- a/drivers/watchdog/watchdog_core.c
-> +++ b/drivers/watchdog/watchdog_core.c
-> @@ -36,12 +36,35 @@
->  #include <linux/init.h>		/* For __init/__exit/... */
->  #include <linux/idr.h>		/* For ida_* macros */
->  #include <linux/err.h>		/* For IS_ERR macros */
-> +#include <linux/signal.h>	/* For send_sig */
-> +#include <linux/sched.h>	/* For send_sig */
-> +#include <linux/syscalls.h>	/* For sys_sync */
->  
->  #include "watchdog_core.h"	/* For watchdog_dev_register/... */
->  
->  static DEFINE_IDA(watchdog_ida);
->  static struct class *watchdog_class;
->  
-> +static void watchdog_pretimeout_fire(unsigned long data)
-> +{
-> +	struct watchdog_device *wdd = (void *)data;
-> +
-> +	pr_emerg("Watchdog will fire in %ds\n", wdd->pretimeout_delta);
-> +	spin_lock(&wdd->pretimeout_task_lock);
-> +	if (wdd->pretimeout_task) {
-> +		send_sig(SIGILL, wdd->pretimeout_task, 0);
-> +		pr_emerg("Sent SIGILL to %d\n", wdd->pretimeout_task->pid);
-> +	} else
-> +		pr_emerg("Noone around to notify\n");
-> +	spin_unlock(&wdd->pretimeout_task_lock);
-> +	schedule_work(&wdd->pretimeout_work);
-> +}
-> +
-> +static void watchdog_pretimeout_sync(struct work_struct *unused)
-> +{
-> +	sys_sync();
-> +}
-> +
->  /**
->   * watchdog_register_device() - register a watchdog device
->   * @wdd: watchdog device
-> @@ -79,6 +102,12 @@ int watchdog_register_device(struct watchdog_device *wdd)
->  	 * corrupted in a later stage then we expect a kernel panic!
->  	 */
->  
-> +	init_timer(&wdd->pretimeout_timer);
-> +	wdd->pretimeout_timer.function = watchdog_pretimeout_fire;
-> +	wdd->pretimeout_timer.data = (unsigned long)wdd;
-> +	spin_lock_init(&wdd->pretimeout_task_lock);
-> +	INIT_WORK(&wdd->pretimeout_work, watchdog_pretimeout_sync);
-> +
->  	mutex_init(&wdd->lock);
->  	id = ida_simple_get(&watchdog_ida, 0, MAX_DOGS, GFP_KERNEL);
->  	if (id < 0)
-> diff --git a/drivers/watchdog/watchdog_dev.c b/drivers/watchdog/watchdog_dev.c
-> index ef8edec..d231228 100644
-> --- a/drivers/watchdog/watchdog_dev.c
-> +++ b/drivers/watchdog/watchdog_dev.c
-> @@ -73,6 +73,10 @@ static int watchdog_ping(struct watchdog_device *wddev)
->  	if (!watchdog_active(wddev))
->  		goto out_ping;
->  
-> +	if (wddev->pretimeout)
-> +		mod_timer(&wddev->pretimeout_timer,
-> +				jiffies + wddev->pretimeout * HZ);
-> +
->  	if (wddev->ops->ping)
->  		err = wddev->ops->ping(wddev);  /* ping the watchdog */
->  	else
-> @@ -106,6 +110,10 @@ static int watchdog_start(struct watchdog_device *wddev)
->  	if (watchdog_active(wddev))
->  		goto out_start;
->  
-> +	if (wddev->pretimeout)
-> +		mod_timer(&wddev->pretimeout_timer,
-> +				jiffies + wddev->pretimeout * HZ);
-> +
->  	err = wddev->ops->start(wddev);
->  	if (err == 0)
->  		set_bit(WDOG_ACTIVE, &wddev->status);
-> @@ -145,6 +153,9 @@ static int watchdog_stop(struct watchdog_device *wddev)
->  		goto out_stop;
->  	}
->  
-> +	if (wddev->pretimeout)
-> +		del_timer(&wddev->pretimeout_timer);
-> +
->  	err = wddev->ops->stop(wddev);
->  	if (err == 0)
->  		clear_bit(WDOG_ACTIVE, &wddev->status);
-> @@ -185,6 +196,24 @@ out_status:
->  	return err;
->  }
->  
-> +/**
-> + *	watchdog_set_pretimeout - set the watchdog timer pretimeout
-> + *	@wddev: the watchdog device to set the pretimeout for
-> + *	@new_delta: the new pretimeout (as delta to the timeout)
-> + *	@new_timeout: the new timeout
-> + */
-> +static int watchdog_set_pretimeout(struct watchdog_device *wddev,
-> +		unsigned int new_delta, unsigned int new_timeout)
-> +{
-> +	if (new_delta >= new_timeout)
-> +		return -EINVAL;
-> +	wddev->pretimeout_delta = new_delta;
-> +	wddev->pretimeout = new_timeout - new_delta;
-> +	pr_info("WATCHDOG: set pretimeout %d - %d = %d\n", new_timeout, new_delta,
-> +			wddev->pretimeout);
-> +	return 0;
-> +}
-> +
->  /*
->   *	watchdog_set_timeout: set the watchdog timer timeout
->   *	@wddev: the watchdog device to set the timeout for
-> @@ -373,9 +402,20 @@ static long watchdog_ioctl(struct file *file, unsigned int cmd,
->  			return -EOPNOTSUPP;
->  		watchdog_ping(wdd);
->  		return 0;
-> +	case WDIOC_SETPRETIMEOUT:
-> +		if (get_user(val, p))
-> +			return -EFAULT;
-> +		if (watchdog_set_pretimeout(wdd, val, wdd->timeout))
-> +			return -EINVAL;
-> +		/* Fall through */
-> +	case WDIOC_GETPRETIMEOUT:
-> +		return put_user(wdd->pretimeout_delta, p);
->  	case WDIOC_SETTIMEOUT:
->  		if (get_user(val, p))
->  			return -EFAULT;
-> +		err = watchdog_set_pretimeout(wdd, wdd->pretimeout_delta, val);
-> +		if (err < 0)
-> +			return err;
->  		err = watchdog_set_timeout(wdd, val);
->  		if (err < 0)
->  			return err;
-> @@ -413,6 +453,7 @@ static int watchdog_open(struct inode *inode, struct file *file)
->  {
->  	int err = -EBUSY;
->  	struct watchdog_device *wdd;
-> +	unsigned long flags;
->  
->  	/* Get the corresponding watchdog device */
->  	if (imajor(inode) == MISC_MAJOR)
-> @@ -435,6 +476,10 @@ static int watchdog_open(struct inode *inode, struct file *file)
->  	if (err < 0)
->  		goto out_mod;
->  
-> +	spin_lock_irqsave(&wdd->pretimeout_task_lock, flags);
-> +	wdd->pretimeout_task = current;
-> +	spin_unlock_irqrestore(&wdd->pretimeout_task_lock, flags);
-> +
->  	file->private_data = wdd;
->  
->  	if (wdd->ops->ref)
-> @@ -463,6 +508,7 @@ out:
->  static int watchdog_release(struct inode *inode, struct file *file)
->  {
->  	struct watchdog_device *wdd = file->private_data;
-> +	unsigned long flags;
->  	int err = -EBUSY;
->  
->  	/*
-> @@ -483,6 +529,10 @@ static int watchdog_release(struct inode *inode, struct file *file)
->  		watchdog_ping(wdd);
->  	}
->  
-> +	spin_lock_irqsave(&wdd->pretimeout_task_lock, flags);
-> +	wdd->pretimeout_task = NULL;
-> +	spin_unlock_irqrestore(&wdd->pretimeout_task_lock, flags);
-> +
->  	/* Allow the owner module to be unloaded again */
->  	module_put(wdd->ops->owner);
->  
-> diff --git a/include/linux/watchdog.h b/include/linux/watchdog.h
-> index 3a9df2f..90e7135 100644
-> --- a/include/linux/watchdog.h
-> +++ b/include/linux/watchdog.h
-> @@ -59,6 +59,8 @@ struct watchdog_ops {
->   * @info:	Pointer to a watchdog_info structure.
->   * @ops:	Pointer to the list of watchdog operations.
->   * @bootstatus:	Status of the watchdog device at boot.
-> + * @pretimeout_delta:	The watchdog devices pretimeout value (in s before timeout).
-> + * @pretimeout:	The watchdog devices pretimeout value (in absolute seconds).
->   * @timeout:	The watchdog devices timeout value.
->   * @min_timeout:The watchdog devices minimum timeout value.
->   * @max_timeout:The watchdog devices maximum timeout value.
-> @@ -82,7 +84,13 @@ struct watchdog_device {
->  	struct device *parent;
->  	const struct watchdog_info *info;
->  	const struct watchdog_ops *ops;
-> +	struct task_struct *pretimeout_task;
-> +	spinlock_t pretimeout_task_lock;
-> +	struct timer_list pretimeout_timer;
-> +	struct work_struct pretimeout_work;
->  	unsigned int bootstatus;
-> +	unsigned int pretimeout_delta;
-> +	unsigned int pretimeout;
->  	unsigned int timeout;
->  	unsigned int min_timeout;
->  	unsigned int max_timeout;
-> -- 
-> 1.7.10.4
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> 
-> 
+[snip]
+
+> I recognise that the output will have a WTF reaction but the key
+> observations to me are
+>
+> a) a single write request from flusher took over a second to complete
+> b) at the time it was queued, it was mostly other writes that were in
+>    the queue at the same time
+> c) The write request and the parallel writes were all asynchronous write
+>    requests
+> D) at the time the request completed, there were a LARGE number of
+>    other requested queued and completed at the same time.
+>
+> Of the requests queued and completed in the meantime the breakdown was
+>
+>      22 RM
+>      31 RA
+>      82 W
+>     445 R
+>
+> If I'm reading this correctly, it is saying that 22 reads were merged (RM),
+> 31 reads were remapped to another device (RA) which is probably reads from
+> the dm-crypt partition, 82 were writes (W) which is not far off the number
+> of writes that were in the queue and 445 were other reads. The delay was
+> dominated by reads that were queued after the write request and completed
+> before it.
+
+RM == Read Meta
+RA == Read Ahead  (remapping, by the way, does not happen across
+                   devices, just into partitions)
+W and R you understood correctly.
+
+> That's saying that the 27128th request in the trace took over 7 seconds
+> to complete and was an asynchronous write from flusher. The contents of
+> the queue are displayed at that time and the breakdown of requests is
+>
+>      23 WS  [JEM: write sync]
+>      86 RM  [JEM: Read Meta]
+>     124 RA  [JEM: Read Ahead]
+>     442 W
+>    1931 R
+>
+> 7 seconds later when it was completed the breakdown of completed
+> requests was
+>
+>      25 WS
+>     114 RM
+>     155 RA
+>     408 W
+>    2457 R
+>
+> In combination, that confirms for me that asynchronous writes from flush
+> are being starved by reads. When a process requires a buffer that is locked
+> by that asynchronous write from flusher, it stalls.
+>
+>> The thing is, we do want to make ext4 work well with cfq, and
+>> prioritizing non-readahead read requests ahead of data writeback does
+>> make sense.  The issue is with is that metadata writes going through
+>> the block device could in some cases effectively cause a priority
+>> inversion when what had previously been an asynchronous writeback
+>> starts blocking a foreground, user-visible process.
+>> 
+>> At least, that's the theory;
+>
+> I *think* the data more or less confirms the theory but it'd be nice if
+> someone else double checked in case I'm seeing what I want to see
+> instead of what is actually there.
+
+Looks sane.  You can also see a lot of "preempt"s in the blkparse
+output, which indicates exactly what you're saying.  Any sync request
+gets priority over the async requests.
+
+I'll also note that even though your I/O is going all over the place
+(D2C is pretty bad, 14ms), most of the time is spent waiting for a
+struct request allocation or between Queue and Merge:
+
+==================== All Devices ====================
+
+            ALL           MIN           AVG           MAX           N
+--------------- ------------- ------------- ------------- -----------
+
+Q2Q               0.000000001   0.000992259   8.898375882     2300861
+Q2G               0.000000843  10.193261239 2064.079501935     1016463 <====
+G2I               0.000000461   0.000044702   3.237065090     1015803
+Q2M               0.000000101   8.203147238 2064.079367557     1311662
+I2D               0.000002012   1.476824812 2064.089774419     1014890
+M2D               0.000003283   6.994306138 283.573348664     1284872
+D2C               0.000061889   0.014438316   0.857811758     2291996
+Q2C               0.000072284  13.363007244 2064.092228625     2292191
+
+==================== Device Overhead ====================
+
+       DEV |       Q2G       G2I       Q2M       I2D       D2C
+---------- | --------- --------- --------- --------- ---------
+ (  8,  0) |  33.8259%   0.0001%  35.1275%   4.8932%   0.1080%
+---------- | --------- --------- --------- --------- ---------
+   Overall |  33.8259%   0.0001%  35.1275%   4.8932%   0.1080%
+
+I'm not sure I believe that max value.  2064 seconds seems a bit high.
+Also, Q2M should not be anywhere near that big, so more investigation is
+required there.  A quick look over the data doesn't show any such delays
+(making me question the tools), but I'll write some code tomorrow to
+verify the btt output.
+
+Jan, if I were to come up with a way of promoting a particular async
+queue to the front of the line, where would I put such a call in the
+ext4/jbd2 code to be effective?
+
+Mel, can you reproduce this at will?  Do you have a reproducer that I
+could run so I'm not constantly bugging you?
+
+Cheers,
+Jeff
