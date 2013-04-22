@@ -1,33 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755177Ab3DVUIW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 16:08:22 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:40257
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754886Ab3DVUIV (ORCPT
+	id S1755199Ab3DVUKp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 16:10:45 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:45290 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754886Ab3DVUKo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 16:08:21 -0400
-Message-ID: <1366661294.6454.18.camel@laptop>
-Subject: Re: Preemptable Ticket Spinlock
+	Mon, 22 Apr 2013 16:10:44 -0400
+Message-ID: <1366661437.6454.20.camel@laptop>
+Subject: Re: [PATCH v7] sched: fix init NOHZ_IDLE flag
 From: Peter Zijlstra <peterz@infradead.org>
-To: Rik van Riel <riel@redhat.com>
-Cc: Jiannan Ouyang <ouyang@cs.pitt.edu>, LKML <linux-kernel@vger.kernel.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Avi Kivity <avi.kivity@gmail.com>, Gleb Natapov <gleb@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Srikar <srikar@linux.vnet.ibm.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        KVM <kvm@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Chegu Vinod <chegu_vinod@hp.com>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Andrew Jones <drjones@redhat.com>, Karen Noel <knoel@redhat.com>
-Date: Mon, 22 Apr 2013 22:08:14 +0200
-In-Reply-To: <517595FA.800@redhat.com>
-References: <CAJocwccu5QQyuKRvgNyPSFz2K_rzCW419W9-XdSUYOL7+KqQKg@mail.gmail.com>
-	   <51745650.9050204@redhat.com> <1366631460.4443.3.camel@laptop>
-	  <51753289.70406@redhat.com> <1366660147.6454.6.camel@laptop>
-	 <517595FA.800@redhat.com>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        mingo@kernel.org, fweisbec@gmail.com, pjt@google.com,
+        rostedt@goodmis.org, efault@gmx.de
+Date: Mon, 22 Apr 2013 22:10:37 +0200
+In-Reply-To: <1366645086-20345-1-git-send-email-vincent.guittot@linaro.org>
+References: <1366645086-20345-1-git-send-email-vincent.guittot@linaro.org>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.6.2-0ubuntu0.1 
 Mime-Version: 1.0
@@ -36,35 +25,118 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-04-22 at 15:56 -0400, Rik van Riel wrote:
-> On 04/22/2013 03:49 PM, Peter Zijlstra wrote:
-> > On Mon, 2013-04-22 at 08:52 -0400, Rik van Riel wrote:
-> 
-> >> If the native spin_lock code has been called already at
-> >> that time, the native code would still need to be modified
-> >> to increment the ticket number by 2, so we end up with a
-> >> compatible value in each spin lock's .tickets field, and
-> >> prevent a deadlock after we switch over to the paravirt
-> >> variant.
-> >
-> > I thought the stuff already made it upstream, but apparently not; the
-> > lastest posting I'm aware of is here:
-> >
-> >    https://lkml.org/lkml/2012/5/2/105
-> >
-> > That stuff changes the normal ticket increment as well..
-> 
-> Jiannan,
-> 
-> It looks like the patch above could make a good patch
-> 1 (or 2) in your patch series :)
+On Mon, 2013-04-22 at 17:38 +0200, Vincent Guittot wrote:
 
-I much prefer the entire series from Jeremy since it maintains the
-ticket semantics and doesn't degrade the lock to unfair under
-contention.
+> ---
+>  include/linux/sched.h |    1 +
+>  kernel/sched/fair.c   |   34 ++++++++++++++++++++++++----------
+>  2 files changed, 25 insertions(+), 10 deletions(-)
+> 
+> diff --git a/include/linux/sched.h b/include/linux/sched.h
+> index d35d2b6..cde4f7f 100644
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -899,6 +899,7 @@ struct sched_domain {
+>  	unsigned int wake_idx;
+>  	unsigned int forkexec_idx;
+>  	unsigned int smt_gain;
+> +	unsigned long nohz_flags;	/* NOHZ_IDLE flag status */
+>  	int flags;			/* See SD_* */
+>  	int level;
 
-Now I suppose there's a reason its not been merged yet and I suspect
-its !paravirt hotpath impact which wasn't rightly justified or somesuch
-so maybe someone can work on that or so.. dunno.
+There was a 4 byte hole here, I'm assuming you used unsigned long and
+not utilized the hole because of the whole atomic bitop interface
+taking unsigned long?
 
+Bit wasteful but ok.. 
+
+So we're only pulling NOHZ_IDLE out of nohz_flags()? Should we then not
+also amend the rq_nohz_flag_bits enum? And it seems pointless to me to
+set bit 2 our nohz_flags word if all other bits are unused.
+
+>  
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 7a33e59..09e440f 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -5394,14 +5394,21 @@ static inline void set_cpu_sd_state_busy(void)
+>  {
+>  	struct sched_domain *sd;
+>  	int cpu = smp_processor_id();
+> -
+> -	if (!test_bit(NOHZ_IDLE, nohz_flags(cpu)))
+> -		return;
+> -	clear_bit(NOHZ_IDLE, nohz_flags(cpu));
+> +	int first_nohz_idle = 1;
+>  
+>  	rcu_read_lock();
+> -	for_each_domain(cpu, sd)
+> +	for_each_domain(cpu, sd) {
+> +		if (first_nohz_idle) {
+> +			if (!test_bit(NOHZ_IDLE, &sd->nohz_flags))
+> +				goto unlock;
+> +
+> +			clear_bit(NOHZ_IDLE, &sd->nohz_flags);
+> +			first_nohz_idle = 0;
+> +		}
+> +
+>  		atomic_inc(&sd->groups->sgp->nr_busy_cpus);
+> +	}
+
+the mind boggles... what's wrong with something like:
+
+static inline unsigned long *rq_nohz_flags(int cpu)
+{
+	return rcu_dereference(cpu_rq(cpu)->sd)->nohz_flags;
+}
+
+	if (!test_bit(0, rq_nohz_flags(cpu)))
+		return;
+	clear_bit(0, rq_nohz_flags(cpu));
+
+> +unlock:
+>  	rcu_read_unlock();
+>  }
+>  
+> @@ -5409,14 +5416,21 @@ void set_cpu_sd_state_idle(void)
+>  {
+>  	struct sched_domain *sd;
+>  	int cpu = smp_processor_id();
+> -
+> -	if (test_bit(NOHZ_IDLE, nohz_flags(cpu)))
+> -		return;
+> -	set_bit(NOHZ_IDLE, nohz_flags(cpu));
+> +	int first_nohz_idle = 1;
+>  
+>  	rcu_read_lock();
+> -	for_each_domain(cpu, sd)
+> +	for_each_domain(cpu, sd) {
+> +		if (first_nohz_idle) {
+> +			if (test_bit(NOHZ_IDLE, &sd->nohz_flags))
+> +				goto unlock;
+> +
+> +			set_bit(NOHZ_IDLE, &sd->nohz_flags);
+> +			first_nohz_idle = 0;
+> +		}
+> +
+>  		atomic_dec(&sd->groups->sgp->nr_busy_cpus);
+> +	}
+> +unlock:
+
+Same here, .. why on earth do it for every sched_domain for that cpu?
+
+>  	rcu_read_unlock();
+>  }
+>  
+
+And since its now only a single bit in a single word, we can easily
+change it to something like:
+
+  if (*rq_nohz_idle(cpu))
+	return;
+  xchg(rq_nohz_idle(cpu), 1); /* set; use 0 for clear */
+
+which drops the unsigned long nonsense..
+
+Or am I completely missing something obvious here?
 
