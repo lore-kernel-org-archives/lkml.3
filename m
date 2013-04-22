@@ -1,115 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755321Ab3DVJaU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 05:30:20 -0400
-Received: from www.linutronix.de ([62.245.132.108]:56785 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754721Ab3DVJaS (ORCPT
+	id S1755746Ab3DVJbK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 05:31:10 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:60443 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752045Ab3DVJbI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 05:30:18 -0400
-Date: Mon, 22 Apr 2013 11:30:11 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Rob Herring <robherring2@gmail.com>
-cc: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>, netdev@vger.kernel.org,
-        Matt Carlson <mcarlson@broadcom.com>,
-        Michael Chan <mchan@broadcom.com>,
-        Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: Re: tg3: possible irq lock inversion dependency detected
-In-Reply-To: <517199A9.7060003@gmail.com>
-Message-ID: <alpine.LFD.2.02.1304221128400.21884@ionos>
-References: <20130419190150.GA15355@linux.vnet.ibm.com> <517199A9.7060003@gmail.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Mon, 22 Apr 2013 05:31:08 -0400
+Message-ID: <1366623052.2721.6.camel@laptop>
+Subject: Re: [PATCH v6] sched: fix init NOHZ_IDLE flag
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        mingo@kernel.org, fweisbec@gmail.com, pjt@google.com,
+        rostedt@goodmis.org, efault@gmx.de
+Date: Mon, 22 Apr 2013 11:30:52 +0200
+In-Reply-To: <1366377044-23989-1-git-send-email-vincent.guittot@linaro.org>
+References: <1366377044-23989-1-git-send-email-vincent.guittot@linaro.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 19 Apr 2013, Rob Herring wrote:
-> On 04/19/2013 02:01 PM, Nishanth Aravamudan wrote:
-> > Running 3.9-rc7-ish, tripped the following (also being seen in FC19
-> > alpha) on ppc64:
-> > 
-> > [  117.026196] =========================================================
-> > [  117.026216] [ INFO: possible irq lock inversion dependency detected ]
-> > [  117.026238] 3.9.0-rc7+ #8 Not tainted
-> > [  117.026251] ---------------------------------------------------------
-> > [  117.026271] swapper/7/0 just changed the state of lock:
-> > [  117.026286]  (&(&tp->lock)->rlock){+.-...}, at: [<c00000000064effc>] .tg3_timer+0x9c/0x10f0
-> > [  117.026334] but this lock took another, SOFTIRQ-unsafe lock in the past:
-> > [  117.026353]  (devtree_lock){+.+...}
+On Fri, 2013-04-19 at 15:10 +0200, Vincent Guittot wrote:
+> As suggested by Frederic Weisbecker, another solution is to have the
+> same
+> rcu lifecycle for both NOHZ_IDLE and sched_domain struct. I have
+> introduce
+> a new sched_domain_rq struct that is the entry point for both
+> sched_domains
+> and objects that must follow the same lifecycle like NOHZ_IDLE flags.
+> They
+> will share the same RCU lifecycle and will be always synchronized.
+> 
+> The synchronization is done at the cost of :
+>  - an additional indirection for accessing the first sched_domain
+> level
+>  - an additional indirection and a rcu_dereference before accessing to
+> the
+>    NOHZ_IDLE flag.
 
-Hmm. Looks like a few of the devtree functions do not disable
-interrupts. Does the patch below fix the issue?
+> diff --git a/include/linux/sched.h b/include/linux/sched.h
+> index d35d2b6..61ad5f1 100644
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -959,6 +959,18 @@ struct sched_domain {
+>         unsigned long span[0];
+>  };
+>  
+> +/*
+> + * Some flags must stay synchronized with fields of sched_group_power
+> and as a
+> + * consequence they must follow the same lifecycle for the lockless
+> scheme.
+> + * sched_domain_rq encapsulates those flags and sched_domains in one
+> RCU
+> + * object.
+> + */
+> +struct sched_domain_rq {
+> +       struct sched_domain *sd;
+> +       unsigned long flags;
+> +       struct rcu_head rcu;    /* used during destruction */
+> +};
 
-Thanks,
+I'm not quite getting things.. what's wrong with adding this flags
+thing to sched_domain itself? That's already RCU destroyed so why add a
+second RCU layer?
 
-	tglx
-
-diff --git a/drivers/of/base.c b/drivers/of/base.c
-index 321d3ef..a218b4c 100644
---- a/drivers/of/base.c
-+++ b/drivers/of/base.c
-@@ -192,14 +192,15 @@ EXPORT_SYMBOL(of_find_property);
- struct device_node *of_find_all_nodes(struct device_node *prev)
- {
- 	struct device_node *np;
-+	unsigned long flags;
- 
--	raw_spin_lock(&devtree_lock);
-+	raw_spin_lock_irqsave(&devtree_lock, flags);
- 	np = prev ? prev->allnext : of_allnodes;
- 	for (; np != NULL; np = np->allnext)
- 		if (of_node_get(np))
- 			break;
- 	of_node_put(prev);
--	raw_spin_unlock(&devtree_lock);
-+	raw_spin_unlock_irqrestore(&devtree_lock, flags);
- 	return np;
- }
- EXPORT_SYMBOL(of_find_all_nodes);
-@@ -420,8 +421,9 @@ struct device_node *of_get_next_available_child(const struct device_node *node,
- 	struct device_node *prev)
- {
- 	struct device_node *next;
-+	unsigned long flags;
- 
--	raw_spin_lock(&devtree_lock);
-+	raw_spin_lock_irqsave(&devtree_lock, flags);
- 	next = prev ? prev->sibling : node->child;
- 	for (; next; next = next->sibling) {
- 		if (!__of_device_is_available(next))
-@@ -430,7 +432,7 @@ struct device_node *of_get_next_available_child(const struct device_node *node,
- 			break;
- 	}
- 	of_node_put(prev);
--	raw_spin_unlock(&devtree_lock);
-+	raw_spin_unlock_irqrestore(&devtree_lock, flags);
- 	return next;
- }
- EXPORT_SYMBOL(of_get_next_available_child);
-@@ -734,13 +736,14 @@ EXPORT_SYMBOL_GPL(of_modalias_node);
- struct device_node *of_find_node_by_phandle(phandle handle)
- {
- 	struct device_node *np;
-+	unsigned long flags;
- 
--	raw_spin_lock(&devtree_lock);
-+	raw_spin_lock_irqsave(&devtree_lock, flags);
- 	for (np = of_allnodes; np; np = np->allnext)
- 		if (np->phandle == handle)
- 			break;
- 	of_node_get(np);
--	raw_spin_unlock(&devtree_lock);
-+	raw_spin_unlock_irqrestore(&devtree_lock, flags);
- 	return np;
- }
- EXPORT_SYMBOL(of_find_node_by_phandle);
-
-
-
+We also have the root_domain for things that don't need to go in a
+hierarchy but are once per cpu -- it sounds like this is one of those
+things; iirc the root_domain life-time is the same as the entire
+sched_domain tree so adding it to the root_domain is also an option.
 
