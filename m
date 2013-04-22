@@ -1,63 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753599Ab3DVMwq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 08:52:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42219 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752401Ab3DVMwp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 08:52:45 -0400
-Message-ID: <51753289.70406@redhat.com>
-Date: Mon, 22 Apr 2013 08:52:25 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Jiannan Ouyang <ouyang@cs.pitt.edu>, LKML <linux-kernel@vger.kernel.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Avi Kivity <avi.kivity@gmail.com>, Gleb Natapov <gleb@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Srikar <srikar@linux.vnet.ibm.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        KVM <kvm@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Chegu Vinod <chegu_vinod@hp.com>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Andrew Jones <drjones@redhat.com>, Karen Noel <knoel@redhat.com>
-Subject: Re: Preemptable Ticket Spinlock
-References: <CAJocwccu5QQyuKRvgNyPSFz2K_rzCW419W9-XdSUYOL7+KqQKg@mail.gmail.com>  <51745650.9050204@redhat.com> <1366631460.4443.3.camel@laptop>
-In-Reply-To: <1366631460.4443.3.camel@laptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753839Ab3DVMyB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 08:54:01 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:59938 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753613Ab3DVMx7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Apr 2013 08:53:59 -0400
+From: Will Deacon <will.deacon@arm.com>
+To: linux-parisc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Will Deacon <will.deacon@arm.com>,
+        Helge Deller <deller@gmx.de>
+Subject: [PATCH v2] parisc: uaccess: fix compiler warnings caused by __put_user casting
+Date: Mon, 22 Apr 2013 13:53:43 +0100
+Message-Id: <1366635223-4207-1-git-send-email-will.deacon@arm.com>
+X-Mailer: git-send-email 1.8.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/22/2013 07:51 AM, Peter Zijlstra wrote:
-> On Sun, 2013-04-21 at 17:12 -0400, Rik van Riel wrote:
->>
->> If we always incremented the ticket number by 2 (instead of 1), then
->> we could use the lower bit of the ticket number as the spinlock.
->
-> ISTR that paravirt ticket locks already do that and use the lsb to
-> indicate the unlock needs to perform wakeups.
->
-> Also, since all of this is virt nonsense, shouldn't it live in the
-> paravirt ticket lock code and leave the native code as is?
+When targetting 32-bit processors, __put_user emits a pair of stw
+instructions for the 8-byte case. If the type of __val is a pointer, the
+marshalling code casts it to the wider integer type of u64, resulting
+in the following compiler warnings:
 
-Sure, but that is still no reason not to have the virt
-implementation be as fast as possible, and share the same
-data type as the non-virt implementation.
+  kernel/signal.c: In function 'copy_siginfo_to_user':
+  kernel/signal.c:2752:11: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
+  kernel/signal.c:2752:11: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
+  [...]
 
-Also, is it guaranteed that the native spin_lock code has
-not been called yet before we switch over to the paravirt
-functions?
+This patch fixes the warnings by removing the marshalling code and using
+the correct output modifiers in the __put_{user,kernel}_asm64 macros
+so that GCC will allocate the right registers without the need to
+extract the two words explicitly.
 
-If the native spin_lock code has been called already at
-that time, the native code would still need to be modified
-to increment the ticket number by 2, so we end up with a
-compatible value in each spin lock's .tickets field, and
-prevent a deadlock after we switch over to the paravirt
-variant.
+Cc: Helge Deller <deller@gmx.de>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+---
 
+v1->v2: Put the output modifier on the correct word, so 64-bit put_user
+        doesn't end up word-swapped.
+
+ arch/parisc/include/asm/uaccess.h | 14 ++++----------
+ 1 file changed, 4 insertions(+), 10 deletions(-)
+
+diff --git a/arch/parisc/include/asm/uaccess.h b/arch/parisc/include/asm/uaccess.h
+index 4ba2c93..e0a8235 100644
+--- a/arch/parisc/include/asm/uaccess.h
++++ b/arch/parisc/include/asm/uaccess.h
+@@ -181,30 +181,24 @@ struct exception_data {
+ #if !defined(CONFIG_64BIT)
+ 
+ #define __put_kernel_asm64(__val,ptr) do {		    \
+-	u64 __val64 = (u64)(__val);			    \
+-	u32 hi = (__val64) >> 32;			    \
+-	u32 lo = (__val64) & 0xffffffff;		    \
+ 	__asm__ __volatile__ (				    \
+ 		"\n1:\tstw %2,0(%1)"			    \
+-		"\n2:\tstw %3,4(%1)\n\t"		    \
++		"\n2:\tstw %R2,4(%1)\n\t"		    \
+ 		ASM_EXCEPTIONTABLE_ENTRY(1b,fixup_put_user_skip_2)\
+ 		ASM_EXCEPTIONTABLE_ENTRY(2b,fixup_put_user_skip_1)\
+ 		: "=r"(__pu_err)                            \
+-		: "r"(ptr), "r"(hi), "r"(lo), "0"(__pu_err) \
++		: "r"(ptr), "r"(__val), "0"(__pu_err) \
+ 		: "r1");				    \
+ } while (0)
+ 
+ #define __put_user_asm64(__val,ptr) do {	    	    \
+-	u64 __val64 = (u64)(__val);			    \
+-	u32 hi = (__val64) >> 32;			    \
+-	u32 lo = (__val64) & 0xffffffff;		    \
+ 	__asm__ __volatile__ (				    \
+ 		"\n1:\tstw %2,0(%%sr3,%1)"		    \
+-		"\n2:\tstw %3,4(%%sr3,%1)\n\t"		    \
++		"\n2:\tstw %R2,4(%%sr3,%1)\n\t"		    \
+ 		ASM_EXCEPTIONTABLE_ENTRY(1b,fixup_put_user_skip_2)\
+ 		ASM_EXCEPTIONTABLE_ENTRY(2b,fixup_put_user_skip_1)\
+ 		: "=r"(__pu_err)                            \
+-		: "r"(ptr), "r"(hi), "r"(lo), "0"(__pu_err) \
++		: "r"(ptr), "r"(__val), "0"(__pu_err) \
+ 		: "r1");				    \
+ } while (0)
+ 
 -- 
-All rights reversed
+1.8.0
+
