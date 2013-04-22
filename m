@@ -1,70 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755614Ab3DVIL4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 04:11:56 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:43997 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754868Ab3DVILz (ORCPT
+	id S1755658Ab3DVIVA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 04:21:00 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:46102 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754802Ab3DVIU7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 04:11:55 -0400
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Shawn Guo <shawn.guo@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Marek Vasut <marex@denx.de>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Thomas Petazzoni <thomas@free-electrons.com>,
-        Brian Lilly <brian@crystalfontz.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH RESEND] video: mxsfb: Fix colors display on lower color depth
-Date: Mon, 22 Apr 2013 10:11:50 +0200
-Message-Id: <1366618310-7068-1-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 1.7.10.4
+	Mon, 22 Apr 2013 04:20:59 -0400
+X-AuditID: 9c930197-b7bb3ae000000fa9-30-5174f2e7712d
+Date: Mon, 22 Apr 2013 17:22:25 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Nicolas Pitre <nico@linaro.org>, Will Deacon <will.deacon@arm.com>
+Subject: Re: [RFC PATCH 0/6] ARM: use NO_BOOTMEM on default configuration
+Message-ID: <20130422082225.GB19454@lge.com>
+References: <1364184674-13798-1-git-send-email-iamjoonsoo.kim@lge.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1364184674-13798-1-git-send-email-iamjoonsoo.kim@lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current code always registers as a 32 bits display, and uses the
-hardware to drop the MSB of each color to abjust to the interface width
-used by the panel.
+On Mon, Mar 25, 2013 at 01:11:08PM +0900, Joonsoo Kim wrote:
+> Currently, ARM use traditional 'bootmem' allocator. It use a bitmap for
+> managing memory space, so initialize a bitmap at first step. It is
+> a needless overhead if we use 'nobootmem'. 'nobootmem' use a memblock
+> allocator internally, so there is no additional initializing overhead.
+> In addition, if we use 'nobootmem', we can save small amount of memory,
+> because 'nobootmem' manage memory space as byte unit. However, 
+> 'bootmem' manage it as page unit, so some space is wasted,
+> although it is very small. On my system, 20 KB memories can be saved. :)
+> Using 'nobootmem' have another advantage. Before initializing 'bootmem'
+> allocator, we use memblock allocator. If we use memblock allocator
+> after initializing 'bootmem' by mistake, there is possible problem.
+> Patch '1/6' is good example of this case. 'nobootmem' use memblock
+> allocator internally, so these risk will be disappeared.
+> 
+> There is one stopper to enable NO_BOOTMEM, it is max_low_pfn.
+> nobootmem use max_low_pfn for computing boundary in free_all_bootmem()
+> So we need proper value to max_low_pfn.
+> But, there is some difficulty related to max_low_pfn. max_low_pfn is used
+> for two meanings in various architectures. One is for number of pages
+> in lowmem and the other is for maximum lowmem pfn. Now, in ARM, it is used
+> as number of pages in lowmem. You can get more information in below link.
+> http://lwn.net/Articles/543408/
+> http://lwn.net/Articles/543424/
+>     
+> As I investigated, architectures which use max_low_pfn as maximum pfn are
+> more than others, so IMHO, to change meaning of max_low_pfn to maximum pfn
+> is preferable solution to me. This patchset change max_low_pfn as maximum
+> lowmem pfn in ARM. In addition, min_low_pfn, max_pfn is assigned according
+> to this criteria.
+> 
+> AFAIK, there is no real user for max_low_pfn except block/blk-setting.c
+> and blk-setting.c assume that max_low_pfn is maximum lowmem pfn,
+> so this patch may not harm anything. But, I'm not expert about this,
+> so please let me know what I am missing.
+> 
+> I did some working test on my android device and it worked. :)
+> Feel free to give me some opinion about this patset.
+> This patchset is based on v3.9-rc4.
+> 
+> Thanks.
+> 
+> Joonsoo Kim (6):
+>   ARM, TCM: initialize TCM in paging_init(), instead of setup_arch()
+>   ARM, crashkernel: use ___alloc_bootmem_node_nopanic() for reserving
+>     memory
+>   ARM, crashkernel: correct total_mem size in reserve_crashkernel()
+>   ARM, mm: don't do arm_bootmem_init() if CONFIG_NO_BOOTMEM
+>   ARM, mm: change meaning of max_low_pfn to maximum pfn for nobootmem
+>   ARM, mm: enable NO_BOOTMEM for default ARM build
+> 
+>  arch/arm/Kconfig        |    1 +
+>  arch/arm/kernel/setup.c |   22 ++++++++--------------
+>  arch/arm/kernel/tcm.c   |    1 -
+>  arch/arm/kernel/tcm.h   |   17 -----------------
+>  arch/arm/mm/init.c      |   19 ++++++++++++-------
+>  arch/arm/mm/mmu.c       |    2 ++
+>  arch/arm/mm/tcm.h       |   17 +++++++++++++++++
+>  7 files changed, 40 insertions(+), 39 deletions(-)
+>  delete mode 100644 arch/arm/kernel/tcm.h
+>  create mode 100644 arch/arm/mm/tcm.h
 
-This results on 18 bits (and probably 16 bits display as well) in colors
-being displayed poorly, because the MSB are obviously the most important
-bits for each color definition.
+Hello, guys.
 
-The default controller behaviour when using an interface width smaller
-than the color depth is to drop the LSBs of each color, which makes more
-sense because you lose the least important part of the color definition.
+Could you review and comment this patchset?
+[1/6] is already merged, but others wait for someone's review :)
 
-So, to fix the colors display, just get back to the default controller
-behaviour.
+Thanks.
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
----
-  - Copied Sascha
-
- drivers/video/mxsfb.c |    5 -----
- 1 file changed, 5 deletions(-)
-
-diff --git a/drivers/video/mxsfb.c b/drivers/video/mxsfb.c
-index 755556c..2cfaf8b 100644
---- a/drivers/video/mxsfb.c
-+++ b/drivers/video/mxsfb.c
-@@ -424,11 +424,6 @@ static int mxsfb_set_par(struct fb_info *fb_info)
- 			return -EINVAL;
- 		case STMLCDIF_16BIT:
- 		case STMLCDIF_18BIT:
--			/* 24 bit to 18 bit mapping */
--			ctrl |= CTRL_DF24; /* ignore the upper 2 bits in
--					    *  each colour component
--					    */
--			break;
- 		case STMLCDIF_24BIT:
- 			/* real 24 bit */
- 			break;
--- 
-1.7.10.4
-
+> 
+> -- 
+> 1.7.9.5
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
