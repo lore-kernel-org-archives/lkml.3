@@ -1,109 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754569Ab3DVDJo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Apr 2013 23:09:44 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:57707 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754495Ab3DVDJm (ORCPT
+	id S1754523Ab3DVDK6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Apr 2013 23:10:58 -0400
+Received: from mail-vb0-f45.google.com ([209.85.212.45]:62229 "EHLO
+	mail-vb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754133Ab3DVDK5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Apr 2013 23:09:42 -0400
-Date: Mon, 22 Apr 2013 13:09:39 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: linux-next: manual merge of the net-next tree with Linus' tree
-Message-Id: <20130422130939.9162d4f519402dcfc4cdbe0c@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__22_Apr_2013_13_09_39_+1000_haU4jeNQ36pD63Ll"
+	Sun, 21 Apr 2013 23:10:57 -0400
+MIME-Version: 1.0
+In-Reply-To: <87ehe3bbsm.fsf@rustcorp.com.au>
+References: <1366264344-28025-1-git-send-email-pranavkumar@linaro.org>
+	<87wqs02uws.fsf@rustcorp.com.au>
+	<CAAHg+HiHKV+8hBT1QWe4hSxocCX6wpRd3bCPWB7zU8jVFmPuAA@mail.gmail.com>
+	<87ehe3bbsm.fsf@rustcorp.com.au>
+Date: Mon, 22 Apr 2013 08:40:56 +0530
+Message-ID: <CALrVBkub+TABrrBwh4+P6S5TGL1qSmnZrd1cbGgj6JiRpY=rOA@mail.gmail.com>
+Subject: Re: [RFC] arm64: Early printk support for virtio-mmio console devices.
+From: Anup Patel <anup.patel@linaro.org>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Pranavkumar Sawargaonkar <pranavkumar@linaro.org>,
+        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
+        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__22_Apr_2013_13_09_39_+1000_haU4jeNQ36pD63Ll
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 22 April 2013 06:51, Rusty Russell <rusty@rustcorp.com.au> wrote:
+>
+> Pranavkumar Sawargaonkar <pranavkumar@linaro.org> writes:
+> > On 18 April 2013 12:21, Rusty Russell <rusty@rustcorp.com.au> wrote:
+> >>
+> >> PranavkumarSawargaonkar <pranavkumar@linaro.org> writes:
+> >> > From: Pranavkumar Sawargaonkar <pranavkumar@linaro.org>
+> >> >
+> >> > This patch implements early printk support for virtio-mmio console
+> >> > devices without using any hypercalls.
+> >>
+> >> This makes some sense, though not sure that early console *read* makes
+> >> much sense.  I can see the PCI version of this being useful as well.
+> >
+> > Read can be useful for "mach-virt" which will have only virtio console
+> > as a console device. Then if someone wants to have UEFI or any other
+> > boot-loader emulation, which expects user to input few things, in that
+> > case read might become handy.
+>
+> But implementing virtio inside a bootloader has already been done for
+> coreboot, for example.  A bootloader probably wants a virtio block
+> device, so a console is trivial.
+>
+> A single writable field for debugging makes sense.  Anything more is far
+> less certain.
 
-Hi all,
+The early read can be handy for bootloader who don't want to implement
+complete VirtIO programming.
 
-Today's linux-next merge of the net-next tree got a conflict in
-include/net/scm.h between commit 83f1b4ba917d ("net: fix incorrect
-credentials passing") from Linus' tree and commit 6b0ee8c036ec ("scm:
-Stop passing struct cred") from the net-next tree.
+IMHO, early read would be totally optional for host and will not
+introduce any new config register so it is good to have in VirtIO
+console spec. Also, without early read the read behavior of early_rw
+field would be undefined in VirtIO console spec.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).  I also applied the following merge fix patch (I am not
-sure if this is correct, but it seems to be consistent):
+>
+> Thanks,
+> Rusty.
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Mon, 22 Apr 2013 13:06:10 +1000
-Subject: [PATCH] net: af_unix fix for incorrect credentials passing
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- net/unix/af_unix.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
-index 5ca1631..9efe011 100644
---- a/net/unix/af_unix.c
-+++ b/net/unix/af_unix.c
-@@ -1414,7 +1414,7 @@ static void maybe_add_creds(struct sk_buff *skb, cons=
-t struct socket *sock,
- 	    !other->sk_socket ||
- 	    test_bit(SOCK_PASSCRED, &other->sk_socket->flags)) {
- 		UNIXCB(skb).pid  =3D get_pid(task_tgid(current));
--		current_euid_egid(&UNIXCB(skb).uid, &UNIXCB(skb).gid);
-+		current_uid_gid(&UNIXCB(skb).uid, &UNIXCB(skb).gid);
- 	}
- }
-=20
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc include/net/scm.h
-index b117081,5a4c6a9..0000000
---- a/include/net/scm.h
-+++ b/include/net/scm.h
-@@@ -81,8 -75,10 +75,10 @@@ static __inline__ int scm_send(struct s
-  			       struct scm_cookie *scm, bool forcecreds)
-  {
-  	memset(scm, 0, sizeof(*scm));
-+ 	scm->creds.uid =3D INVALID_UID;
-+ 	scm->creds.gid =3D INVALID_GID;
-  	if (forcecreds)
-- 		scm_set_cred(scm, task_tgid(current), current_cred());
- -		scm_set_cred(scm, task_tgid(current), current_euid(), current_egid());
-++		scm_set_cred(scm, task_tgid(current), current_uid(), current_gid());
-  	unix_get_peersec_dgram(sock, scm);
-  	if (msg->msg_controllen <=3D 0)
-  		return 0;
-
---Signature=_Mon__22_Apr_2013_13_09_39_+1000_haU4jeNQ36pD63Ll
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRdKnzAAoJEECxmPOUX5FEy+wP/2ZZsx/cbErMLaulHyCCBNMz
-ScX+KUXgezIVPblY0ysyUvYC5JIag2+72FWGfn3Yx1PpS8UxaImLq6wNTGsXN/wC
-TBxw7uFxcBlMrfSpkZImsCbvj92epfQztFAYNks3xax3UMOqIrdbTd/TI/0Fvvd4
-Ee09qUvf49wPnmtg+gPgZX4mVP5tpjUL0SDPXHG2QReC8Fm+GsYArE47elALkZVP
-0JzZ8WgWbFP52cl58BEp9vV2oKwcKI5qMTLfPIU3XrIuUkivi9UUadHDybimZ0Cf
-9GHtQote5rT/DG295pC3I+q+vwPOrYtV4/3Y9ZY9VpI6zNfpZzVDIz87fkuFAKJ6
-QoEpBLXbPBdmZ6ncw6uemoyBGOyPCjDQITxu1OW1/kWJym9jtrSrIt6/C14GCMIG
-ltWflWFdOb970ovHkbTROwJn971sEvxE/Jx4MHg833mhjrZhr3vjXSGrPdlRq6Jb
-XXZxjtBcpp0Uk7PdsTW2kG6HXpE7rf40LPhptAgoLP4NG47vq0YOJpWK/XLRbMXt
-b2fI+6/n5dz9lUT+xN/HyEBIoJFkIv8DAijDSpSSLyfciVibKuCeQiZfzyYaOVRl
-T+/pb/YeNV/iV8cf4jrdHzmFrxe+PiLaXbpq1EBcQMDlHQYRq1WeOL5N7Z3iRNLo
-YDofsj0J+yPtXgvBnZWW
-=yt+e
------END PGP SIGNATURE-----
-
---Signature=_Mon__22_Apr_2013_13_09_39_+1000_haU4jeNQ36pD63Ll--
+Best Regards,
+Anup
