@@ -1,120 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752993Ab3DVLtB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 07:49:01 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:59595 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751435Ab3DVLs7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 07:48:59 -0400
-Date: Mon, 22 Apr 2013 20:06:11 +0800
-From: Zheng Liu <gnehzuil.liu@gmail.com>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Ext4 Developers List <linux-ext4@vger.kernel.org>, linux-mm@kvack.org,
-        Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
-        mgorman@suse.de
-Subject: Re: [PATCH 1/3] ext4: mark all metadata I/O with REQ_META
-Message-ID: <20130422120611.GB2039@gmail.com>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Ext4 Developers List <linux-ext4@vger.kernel.org>,
-	linux-mm@kvack.org,
-	Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
-	mgorman@suse.de
-References: <20130421000522.GA5054@thunk.org>
- <1366502828-7793-1-git-send-email-tytso@mit.edu>
+	id S1753209Ab3DVLts (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 07:49:48 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:40591 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752212Ab3DVLtr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Apr 2013 07:49:47 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: Vinod Koul <vinod.koul@intel.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>,
+        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.jf.intel.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        spear-devel <spear-devel@list.st.com>, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH v2 0/5] dmaengine: add ACPI DMA helpers and use them in dw_dmac
+Date: Mon, 22 Apr 2013 13:57:49 +0200
+Message-ID: <2382527.O0vcbyEZOf@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.9.0-rc8+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CAHp75Ve+c01kSoOwUSW=D9tq+svuOTzkkEhM0Amn1vL9VdiXWg@mail.gmail.com>
+References: <1365505547-10552-1-git-send-email-andriy.shevchenko@linux.intel.com> <20130422055612.GE6081@intel.com> <CAHp75Ve+c01kSoOwUSW=D9tq+svuOTzkkEhM0Amn1vL9VdiXWg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1366502828-7793-1-git-send-email-tytso@mit.edu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 20, 2013 at 08:07:06PM -0400, Theodore Ts'o wrote:
-> As Dave Chinner pointed out at the 2013 LSF/MM workshop, it's
-> important that metadata I/O requests are marked as such to avoid
-> priority inversions caused by I/O bandwidth throttling.
+On Monday, April 22, 2013 01:07:39 PM Andy Shevchenko wrote:
+> On Mon, Apr 22, 2013 at 8:56 AM, Vinod Koul <vinod.koul@intel.com> wrote:
+> > On Tue, Apr 16, 2013 at 08:11:57PM +0200, Rafael J. Wysocki wrote:
+> >> On Tuesday, April 16, 2013 03:14:47 PM Andy Shevchenko wrote:
+> >> > On Mon, 2013-04-15 at 22:06 +0530, Vinod Koul wrote:
+> >> > > On Tue, Apr 09, 2013 at 02:05:42PM +0300, Andy Shevchenko wrote:
+> >> > > > There is a patch series which introduces ACPI DMA helpers in similar way like
+> >> > > > we have for DeviceTree.
+> >> > > >
+> >> > > > In addition it applies this to the first user, namely dw_dmac driver.
+> >> > > Applied w/o 3 & 5.2 they failed, can you pls rebase and resend
+> >> > >
+> >> >
+> >> > Actually those two (at least 5/5) can't be applied on top of slave-dma.
+> >> > The patches requires slave-dma and linux-pm together. I heard it's
+> >> > usually achieved by creating a specific branch in one subsystem
+> >> > (linux-pm in our case) for another.
+> >> >
+> >> > Rafael, what could we do here?
+> >>
+> >> I suppose Vinod can pull from my acpi-lpss (which is guaranteed not to be
+> >> rebased at this point) and apply the series on top of that.
+> > Or I can wait for rc1 and apply afterwards...?
 > 
-> Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+> Mika and I have no objections to go this way.
 
-Reviewed-by: Zheng Liu <wenqing.lz@taobao.com>
+That'd be fine by me too.
 
-Regards,
-                                                - Zheng
-> ---
->  fs/ext4/balloc.c | 2 +-
->  fs/ext4/ialloc.c | 2 +-
->  fs/ext4/mmp.c    | 4 ++--
->  fs/ext4/super.c  | 2 +-
->  4 files changed, 5 insertions(+), 5 deletions(-)
-> 
-> diff --git a/fs/ext4/balloc.c b/fs/ext4/balloc.c
-> index 8dcaea6..d0f13ea 100644
-> --- a/fs/ext4/balloc.c
-> +++ b/fs/ext4/balloc.c
-> @@ -441,7 +441,7 @@ ext4_read_block_bitmap_nowait(struct super_block *sb, ext4_group_t block_group)
->  	trace_ext4_read_block_bitmap_load(sb, block_group);
->  	bh->b_end_io = ext4_end_bitmap_read;
->  	get_bh(bh);
-> -	submit_bh(READ, bh);
-> +	submit_bh(READ | REQ_META | REQ_PRIO, bh);
->  	return bh;
->  verify:
->  	ext4_validate_block_bitmap(sb, desc, block_group, bh);
-> diff --git a/fs/ext4/ialloc.c b/fs/ext4/ialloc.c
-> index 18d36d8..00a818d 100644
-> --- a/fs/ext4/ialloc.c
-> +++ b/fs/ext4/ialloc.c
-> @@ -166,7 +166,7 @@ ext4_read_inode_bitmap(struct super_block *sb, ext4_group_t block_group)
->  	trace_ext4_load_inode_bitmap(sb, block_group);
->  	bh->b_end_io = ext4_end_bitmap_read;
->  	get_bh(bh);
-> -	submit_bh(READ, bh);
-> +	submit_bh(READ | REQ_META | REQ_PRIO, bh);
->  	wait_on_buffer(bh);
->  	if (!buffer_uptodate(bh)) {
->  		put_bh(bh);
-> diff --git a/fs/ext4/mmp.c b/fs/ext4/mmp.c
-> index b3b1f7d..214461e 100644
-> --- a/fs/ext4/mmp.c
-> +++ b/fs/ext4/mmp.c
-> @@ -54,7 +54,7 @@ static int write_mmp_block(struct super_block *sb, struct buffer_head *bh)
->  	lock_buffer(bh);
->  	bh->b_end_io = end_buffer_write_sync;
->  	get_bh(bh);
-> -	submit_bh(WRITE_SYNC, bh);
-> +	submit_bh(WRITE_SYNC | REQ_META | REQ_PRIO, bh);
->  	wait_on_buffer(bh);
->  	sb_end_write(sb);
->  	if (unlikely(!buffer_uptodate(bh)))
-> @@ -86,7 +86,7 @@ static int read_mmp_block(struct super_block *sb, struct buffer_head **bh,
->  		get_bh(*bh);
->  		lock_buffer(*bh);
->  		(*bh)->b_end_io = end_buffer_read_sync;
-> -		submit_bh(READ_SYNC, *bh);
-> +		submit_bh(READ_SYNC | REQ_META | REQ_PRIO, *bh);
->  		wait_on_buffer(*bh);
->  		if (!buffer_uptodate(*bh)) {
->  			brelse(*bh);
-> diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-> index bfa29ec..dbc7c09 100644
-> --- a/fs/ext4/super.c
-> +++ b/fs/ext4/super.c
-> @@ -4252,7 +4252,7 @@ static journal_t *ext4_get_dev_journal(struct super_block *sb,
->  		goto out_bdev;
->  	}
->  	journal->j_private = sb;
-> -	ll_rw_block(READ, 1, &journal->j_sb_buffer);
-> +	ll_rw_block(READ | REQ_META | REQ_PRIO, 1, &journal->j_sb_buffer);
->  	wait_on_buffer(journal->j_sb_buffer);
->  	if (!buffer_uptodate(journal->j_sb_buffer)) {
->  		ext4_msg(sb, KERN_ERR, "I/O error on journal device");
-> -- 
-> 1.7.12.rc0.22.gcdd159b
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+Thanks,
+Rafael
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
