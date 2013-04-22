@@ -1,67 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754568Ab3DVGta (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 02:49:30 -0400
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:55180 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754221Ab3DVGt2 (ORCPT
+	id S1754861Ab3DVGto (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 02:49:44 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:40041 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754349Ab3DVGtm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 02:49:28 -0400
+	Mon, 22 Apr 2013 02:49:42 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAKohpokpiw3zS32oDL+T09ToOQxc28w=2R2up5T3h3c2Agc0wg@mail.gmail.com>
-References: <cover.1365079581.git.viresh.kumar@linaro.org>
-	<027e8f1d4ac8de6351115f15a408431558510abb.1365079581.git.viresh.kumar@linaro.org>
-	<CAKohpokGkZ9m0v1QaoXEv1m0mZqY70adWpXf3edQGmZnToRRcg@mail.gmail.com>
-	<CAKohpokpiw3zS32oDL+T09ToOQxc28w=2R2up5T3h3c2Agc0wg@mail.gmail.com>
-Date: Mon, 22 Apr 2013 12:19:27 +0530
-Message-ID: <CAKohpo=SFauMyczEnxO_p_KQVQeznL+0V-FmLDtGmzL1Uv2iuA@mail.gmail.com>
-Subject: Re: [PATCH 17/18] cpufreq: powerpc: move cpufreq driver to drivers/cpufreq
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        deepthi@linux.vnet.ibm.com
-Cc: rjw@sisk.pl, robin.randhawa@arm.com, Steve.Bannister@arm.com,
-        Liviu.Dudau@arm.com, charles.garcia-tobin@arm.com,
-        arvind.chauhan@arm.com, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linaro-kernel@lists.linaro.org, patches@linaro.org,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Paul Mackerras <paulus@samba.org>, Olof Johansson <olof@lixom.net>,
-        linuxppc-dev@lists.ozlabs.org
-Content-Type: text/plain; charset=ISO-8859-1
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <CA+icZUVmERfNzAMNBpOqvjcQSaCQe3izrK2=E4Rm05Y=1x==jQ@mail.gmail.com>
+References: <1366609643-17628-1-git-send-email-lig.fnst@cn.fujitsu.com>
+	<CA+icZUVd3zp-pJDspBUsipH4725uUvaufXrK0QBzcrozF2m+aA@mail.gmail.com>
+	<1366611749.27110.6.camel@liguang.fnst.cn.fujitsu.com>
+	<CA+icZUVmERfNzAMNBpOqvjcQSaCQe3izrK2=E4Rm05Y=1x==jQ@mail.gmail.com>
+Date: Mon, 22 Apr 2013 08:49:10 +0200
+Message-ID: <CA+icZUUj9__mjbwoYHp_kxjy2xC3wwgtHK27zpAwV-p=zeC1-w@mail.gmail.com>
+Subject: Re: [PATCH 1/2] smp: use '|=' for csd_lock
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: li guang <lig.fnst@cn.fujitsu.com>
+Cc: tglx@linutronix.de, peterz@infradead.org, akpm@linux-foundation.org,
+        shli@fusionio.com, srivatsa.bhat@linux.vnet.ibm.com,
+        suresh.b.siddha@intel.com, fweisbec@gmail.com,
+        paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9 April 2013 14:05, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> On 5 April 2013 12:16, Viresh Kumar <viresh.kumar@linaro.org> wrote:
->> On 4 April 2013 18:24, Viresh Kumar <viresh.kumar@linaro.org> wrote:
->>> This patch moves cpufreq driver of powerpc platform to drivers/cpufreq.
+On Mon, Apr 22, 2013 at 8:30 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+> On Mon, Apr 22, 2013 at 8:22 AM, li guang <lig.fnst@cn.fujitsu.com> wrote:
+>> 在 2013-04-22一的 08:18 +0200，Sedat Dilek写道：
+>>> On Mon, Apr 22, 2013 at 7:47 AM, liguang <lig.fnst@cn.fujitsu.com> wrote:
+>>> > originally, 'data->flags = CSD_FLAG_LOCK',
+>>> > and we use 'data->flags &= ~CSD_FLAG_LOCK'
+>>> > for csd_unlock, they are not symmetrix operations
+>>> > so use '|=' instead of '='.
+>>> > though, now data->flags only hold CSD_FLAG_LOCK,
+>>> > it's not so meaningful to use '|=' to set 1 bit,
+>>> > and '&= ~' to clear 1 bit.
+>>> >
 >>>
->>> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
->>> Cc: Paul Mackerras <paulus@samba.org>
->>> Cc: Olof Johansson <olof@lixom.net>
->>> Cc: linuxppc-dev@lists.ozlabs.org
->>> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
->>> ---
->>> Compile Tested only.
+>>> Hi,
 >>>
->>>  arch/powerpc/platforms/Kconfig                     | 31 ----------------------
->>>  arch/powerpc/platforms/pasemi/Makefile             |  1 -
->>>  arch/powerpc/platforms/powermac/Makefile           |  2 --
->>>  drivers/cpufreq/Kconfig.powerpc                    | 26 ++++++++++++++++++
->>>  drivers/cpufreq/Makefile                           |  3 +++
->>>  .../cpufreq.c => drivers/cpufreq/pasemi-cpufreq.c  |  0
->>>  .../cpufreq/pmac32-cpufreq.c                       |  0
->>>  .../cpufreq/pmac64-cpufreq.c                       |  0
->>>  8 files changed, 29 insertions(+), 34 deletions(-)
->>>  rename arch/powerpc/platforms/pasemi/cpufreq.c => drivers/cpufreq/pasemi-cpufreq.c (100%)
->>>  rename arch/powerpc/platforms/powermac/cpufreq_32.c => drivers/cpufreq/pmac32-cpufreq.c (100%)
->>>  rename arch/powerpc/platforms/powermac/cpufreq_64.c => drivers/cpufreq/pmac64-cpufreq.c (100%)
+>>> what's the reason I got CCed on this two patches? The ipc-sem-next
+>>> issue I reported?
 >>
->> Hi Deepthi,
->>
->> Can you help testing this please?
->
-> Ping!!
 
-Ping!!
+NOPE.
+( I tried next-20130419 with 3 ipc-sem-next patches plus your two patches. )
+
+- Sedat -
+
+>> sorry,
+>> just use the result of scripts/get_maintainer.pl
+>>
+>
+> Hmm, really this script memyselfandI as a result?
+>
+>>>
+>>> Against what tree are those patches?
+>>> They are not compatible with Linux-Next (next-20130419).
+>>
+>> main
+>>
+>
+> Andrew renamed data/csd,so it's only 1/2 needing a refresh.
+> Testing...
+>
+> Regards,
+> - Sedat -
+>
+>>>
+>>> Thanks.
+>>>
+>>> Regards,
+>>> - Sedat -
+>>>
+>>> [1] http://marc.info/?t=136631457900005&r=1&w=2
+>>>
+>>> > Signed-off-by: liguang <lig.fnst@cn.fujitsu.com>
+>>> > ---
+>>> >  kernel/smp.c |    2 +-
+>>> >  1 files changed, 1 insertions(+), 1 deletions(-)
+>>> >
+>>> > diff --git a/kernel/smp.c b/kernel/smp.c
+>>> > index 1818dc0..2d5deb4 100644
+>>> > --- a/kernel/smp.c
+>>> > +++ b/kernel/smp.c
+>>> > @@ -109,7 +109,7 @@ static void csd_lock_wait(struct call_single_data *data)
+>>> >  static void csd_lock(struct call_single_data *data)
+>>> >  {
+>>> >         csd_lock_wait(data);
+>>> > -       data->flags = CSD_FLAG_LOCK;
+>>> > +       data->flags |= CSD_FLAG_LOCK;
+>>> >
+>>> >         /*
+>>> >          * prevent CPU from reordering the above assignment
+>>> > --
+>>> > 1.7.2.5
+>>> >
+>>
+>>
