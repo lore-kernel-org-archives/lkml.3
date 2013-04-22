@@ -1,30 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754922Ab3DVOaN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 10:30:13 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51555 "EHLO
+	id S932085Ab3DVOkq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 10:40:46 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51590 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754862Ab3DVOaE (ORCPT
+	by vger.kernel.org with ESMTP id S1754910Ab3DVOaN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 10:30:04 -0400
+	Mon, 22 Apr 2013 10:30:13 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "HATAYAMA Daisuke" <d.hatayama@jp.fujitsu.com>,
-        "Naoya Horiguchi" <n-horiguchi@ah.jp.nec.com>,
-        "Rik van Riel" <riel@redhat.com>,
-        "David Rientjes" <rientjes@google.com>,
-        "KOSAKI Motohiro" <kosaki.motohiro@jp.fujitsu.com>,
-        "Michal Hocko" <mhocko@suse.cz>
+CC: akpm@linux-foundation.org, "Chris Mason" <chris.mason@fusionio.com>,
+        "Josef Bacik" <jbacik@fusionio.com>
 Date: Mon, 22 Apr 2013 15:25:59 +0100
-Message-ID: <lsq.1366640759.438356119@decadent.org.uk>
+Message-ID: <lsq.1366640759.30729068@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [50/75] hugetlbfs: add swap entry check in follow_hugetlb_page()
+Subject: [39/75] Btrfs: make sure nbytes are right after log replay
 In-Reply-To: <lsq.1366640759.151900666@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:6834:ff73:7553:7f84
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -37,73 +31,126 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+From: Josef Bacik <jbacik@fusionio.com>
 
-commit 9cc3a5bd40067b9a0fbd49199d0780463fc2140f upstream.
+commit 4bc4bee4595662d8bff92180d5c32e3313a704b0 upstream.
 
-With applying the previous patch "hugetlbfs: stop setting VM_DONTDUMP in
-initializing vma(VM_HUGETLB)" to reenable hugepage coredump, if a memory
-error happens on a hugepage and the affected processes try to access the
-error hugepage, we hit VM_BUG_ON(atomic_read(&page->_count) <= 0) in
-get_page().
+While trying to track down a tree log replay bug I noticed that fsck was always
+complaining about nbytes not being right for our fsynced file.  That is because
+the new fsync stuff doesn't wait for ordered extents to complete, so the inodes
+nbytes are not necessarily updated properly when we log it.  So to fix this we
+need to set nbytes to whatever it is on the inode that is on disk, so when we
+replay the extents we can just add the bytes that are being added as we replay
+the extent.  This makes it work for the case that we have the wrong nbytes or
+the case that we logged everything and nbytes is actually correct.  With this
+I'm no longer getting nbytes errors out of btrfsck.
 
-The reason for this bug is that coredump-related code doesn't recognise
-"hugepage hwpoison entry" with which a pmd entry is replaced when a memory
-error occurs on a hugepage.
-
-In other words, physical address information is stored in different bit
-layout between hugepage hwpoison entry and pmd entry, so
-follow_hugetlb_page() which is called in get_dump_page() returns a wrong
-page from a given address.
-
-The expected behavior is like this:
-
-  absent   is_swap_pte   FOLL_DUMP   Expected behavior
-  -------------------------------------------------------------------
-   true     false         false       hugetlb_fault
-   false    true          false       hugetlb_fault
-   false    false         false       return page
-   true     false         true        skip page (to avoid allocation)
-   false    true          true        hugetlb_fault
-   false    false         true        return page
-
-With this patch, we can call hugetlb_fault() and take proper actions (we
-wait for migration entries, fail with VM_FAULT_HWPOISON_LARGE for
-hwpoisoned entries,) and as the result we can dump all hugepages except
-for hwpoisoned ones.
-
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Rik van Riel <riel@redhat.com>
-Acked-by: Michal Hocko <mhocko@suse.cz>
-Cc: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Acked-by: David Rientjes <rientjes@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Josef Bacik <jbacik@fusionio.com>
+Signed-off-by: Chris Mason <chris.mason@fusionio.com>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- mm/hugetlb.c |   12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
+ fs/btrfs/tree-log.c |   48 ++++++++++++++++++++++++++++++++++++++++++------
+ 1 file changed, 42 insertions(+), 6 deletions(-)
 
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -2889,7 +2889,17 @@ int follow_hugetlb_page(struct mm_struct
- 			break;
+--- a/fs/btrfs/tree-log.c
++++ b/fs/btrfs/tree-log.c
+@@ -316,6 +316,7 @@ static noinline int overwrite_item(struc
+ 	unsigned long src_ptr;
+ 	unsigned long dst_ptr;
+ 	int overwrite_root = 0;
++	bool inode_item = key->type == BTRFS_INODE_ITEM_KEY;
+ 
+ 	if (root->root_key.objectid != BTRFS_TREE_LOG_OBJECTID)
+ 		overwrite_root = 1;
+@@ -325,6 +326,9 @@ static noinline int overwrite_item(struc
+ 
+ 	/* look for the key in the destination tree */
+ 	ret = btrfs_search_slot(NULL, root, key, path, 0, 0);
++	if (ret < 0)
++		return ret;
++
+ 	if (ret == 0) {
+ 		char *src_copy;
+ 		char *dst_copy;
+@@ -366,6 +370,30 @@ static noinline int overwrite_item(struc
+ 			return 0;
  		}
  
--		if (absent ||
 +		/*
-+		 * We need call hugetlb_fault for both hugepages under migration
-+		 * (in which case hugetlb_fault waits for the migration,) and
-+		 * hwpoisoned hugepages (in which case we need to prevent the
-+		 * caller from accessing to them.) In order to do this, we use
-+		 * here is_swap_pte instead of is_hugetlb_entry_migration and
-+		 * is_hugetlb_entry_hwpoisoned. This is because it simply covers
-+		 * both cases, and because we can't follow correct pages
-+		 * directly from any kind of swap entries.
++		 * We need to load the old nbytes into the inode so when we
++		 * replay the extents we've logged we get the right nbytes.
 +		 */
-+		if (absent || is_swap_pte(huge_ptep_get(pte)) ||
- 		    ((flags & FOLL_WRITE) && !pte_write(huge_ptep_get(pte)))) {
- 			int ret;
++		if (inode_item) {
++			struct btrfs_inode_item *item;
++			u64 nbytes;
++
++			item = btrfs_item_ptr(path->nodes[0], path->slots[0],
++					      struct btrfs_inode_item);
++			nbytes = btrfs_inode_nbytes(path->nodes[0], item);
++			item = btrfs_item_ptr(eb, slot,
++					      struct btrfs_inode_item);
++			btrfs_set_inode_nbytes(eb, item, nbytes);
++		}
++	} else if (inode_item) {
++		struct btrfs_inode_item *item;
++
++		/*
++		 * New inode, set nbytes to 0 so that the nbytes comes out
++		 * properly when we replay the extents.
++		 */
++		item = btrfs_item_ptr(eb, slot, struct btrfs_inode_item);
++		btrfs_set_inode_nbytes(eb, item, 0);
+ 	}
+ insert:
+ 	btrfs_release_path(path);
+@@ -488,7 +516,7 @@ static noinline int replay_one_extent(st
+ 	u64 extent_end;
+ 	u64 alloc_hint;
+ 	u64 start = key->offset;
+-	u64 saved_nbytes;
++	u64 nbytes = 0;
+ 	struct btrfs_file_extent_item *item;
+ 	struct inode *inode = NULL;
+ 	unsigned long size;
+@@ -498,10 +526,19 @@ static noinline int replay_one_extent(st
+ 	found_type = btrfs_file_extent_type(eb, item);
  
+ 	if (found_type == BTRFS_FILE_EXTENT_REG ||
+-	    found_type == BTRFS_FILE_EXTENT_PREALLOC)
+-		extent_end = start + btrfs_file_extent_num_bytes(eb, item);
+-	else if (found_type == BTRFS_FILE_EXTENT_INLINE) {
++	    found_type == BTRFS_FILE_EXTENT_PREALLOC) {
++		nbytes = btrfs_file_extent_num_bytes(eb, item);
++		extent_end = start + nbytes;
++
++		/*
++		 * We don't add to the inodes nbytes if we are prealloc or a
++		 * hole.
++		 */
++		if (btrfs_file_extent_disk_bytenr(eb, item) == 0)
++			nbytes = 0;
++	} else if (found_type == BTRFS_FILE_EXTENT_INLINE) {
+ 		size = btrfs_file_extent_inline_len(eb, item);
++		nbytes = btrfs_file_extent_ram_bytes(eb, item);
+ 		extent_end = (start + size + mask) & ~mask;
+ 	} else {
+ 		ret = 0;
+@@ -550,7 +587,6 @@ static noinline int replay_one_extent(st
+ 	}
+ 	btrfs_release_path(path);
+ 
+-	saved_nbytes = inode_get_bytes(inode);
+ 	/* drop any overlapping extents */
+ 	ret = btrfs_drop_extents(trans, inode, start, extent_end,
+ 				 &alloc_hint, 1);
+@@ -638,7 +674,7 @@ static noinline int replay_one_extent(st
+ 		BUG_ON(ret);
+ 	}
+ 
+-	inode_set_bytes(inode, saved_nbytes);
++	inode_add_bytes(inode, nbytes);
+ 	btrfs_update_inode(trans, root, inode);
+ out:
+ 	if (inode)
 
