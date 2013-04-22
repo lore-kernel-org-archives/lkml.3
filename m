@@ -1,94 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754728Ab3DVSlr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 14:41:47 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:40723 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754627Ab3DVSlp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 14:41:45 -0400
-From: Kevin Hilman <khilman@linaro.org>
-To: Grygorii Strashko <grygorii.strashko@ti.com>
-Cc: Sourav Poddar <sourav.poddar@ti.com>, <gregkh@linuxfoundation.org>,
-        <tony@atomide.com>, <rmk+kernel@arm.linux.org.uk>,
-        <linux-serial@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Felipe Balbi <balbi@ti.com>, Rajendra nayak <rnayak@ti.com>
-Subject: Re: [RFC/PATCHv2 5/5] arm: omap2+: omap_device: remove no_idle_on_suspend
-References: <1366638237-6880-1-git-send-email-sourav.poddar@ti.com>
-	<1366638237-6880-6-git-send-email-sourav.poddar@ti.com>
-	<517545C2.3080006@ti.com>
-Date: Mon, 22 Apr 2013 11:41:41 -0700
-In-Reply-To: <517545C2.3080006@ti.com> (Grygorii Strashko's message of "Mon,
-	22 Apr 2013 17:14:26 +0300")
-Message-ID: <87y5ca76hm.fsf@linaro.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1754743Ab3DVSt2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 14:49:28 -0400
+Received: from mout.gmx.net ([212.227.15.19]:61228 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754640Ab3DVSt1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Apr 2013 14:49:27 -0400
+X-Authenticated: #41704822
+X-Provags-ID: V01U2FsdGVkX1+QQPhF7n2QlPz7uXIvCCwNDD8svNN2QMGMFXcJJd
+	EVwL9HmX7beipX
+Message-ID: <51758630.6000003@gmx.de>
+Date: Mon, 22 Apr 2013 20:49:20 +0200
+From: Heinrich Schuchardt <xypron.glpk@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Justin Maggard <jmaggard10@gmail.com>
+CC: linux-kernel@vger.kernel.org, eparis@redhat.com, LinoSanfilippo@gmx.de,
+        tzvetanc@commtouch.com
+Subject: Re: fanotify: fix support of large files
+References: <1360862966-6376-1-git-send-email-jmaggard10@gmail.com> <5169477D.1000400@gmx.de> <CAKgsxVT3_ge2vxcGWzy6NJYPEGwB1Wbw2eE7a=JtWWBb8o4XVg@mail.gmail.com>
+In-Reply-To: <CAKgsxVT3_ge2vxcGWzy6NJYPEGwB1Wbw2eE7a=JtWWBb8o4XVg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Grygorii Strashko <grygorii.strashko@ti.com> writes:
+Hello Justin,
 
-> On 04/22/2013 04:43 PM, Sourav Poddar wrote:
->> Remove the "OMAP_DEVICE_NO_IDLE_ON_SUSPEND" check, since
->> driver should be able to prevent idling of an omap device
->> whenever required.
+I downloaded the example,
+http://www.lanedo.com/~aleksander/fanotify/fanotify-example.c
+compiled it without modification
+$ gcc fanotify-example.c -o fanotify-example
+and started the executable. In a separate windows I executed
+truncate -s 2048m 2048m
+
+This is the output of the first window:
+$ sudo ./fanotify-example /home/user/temp/
+Started monitoring directory '/home/user/temp/'...
+Received event in path '/home/user/temp/2048m' pid=3659 (truncate):
+         FAN_OPEN
+Received event in path '/home/user/temp/2048m' pid=3659 (truncate):
+         FAN_CLOSE_WRITE
+
+$ uname -a
+Linux family2 3.8.0 #1 SMP Fri Feb 22 22:07:58 CET 2013 i686 GNU/Linux
+
+To reproduce your problem, could you, please, provide the Linux 
+configuration file (look in your /boot directory) and a link to the 
+source of the Linux kernel version you use. Then I can use your 
+configuration file to compile that kernel version.
+
+Best regards
+
+Heinrich Schuchardt
+
+On 19.04.2013 21:23, Justin Maggard wrote:
+> On Sat, Apr 13, 2013 at 4:54 AM, Heinrich Schuchardt<xypron.glpk@gmx.de>  wrote:
+>> Dear Justin,
 >>
->> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
->> Cc: Felipe Balbi <balbi@ti.com>
->> Cc: Rajendra nayak <rnayak@ti.com>
->> Cc: Grygorii Strashko <grygorii.strashko@ti.com>
->> Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
->> ---
->> Hi Kevin,
+>> looking at the example at
+>> http://www.lanedo.com/~aleksander/fanotify/fanotify-example.c
+>> the large file support is enabled by passing O_LARGEFILE to fanotify_init:
 >>
->> I have put this as an RFC, due to few comments on cover letter of
->> the previous version by Grygorii Strashko.
->> As, he has mentioned that there are Audio playback use cases which
->> also requires "no_idle_on_suspend" and using them on mainline after
->> this series can cause regression.
+>>    if ((fanotify_fd = fanotify_init (FAN_CLOEXEC,
+>>                                      O_RDONLY | O_CLOEXEC | O_LARGEFILE))<
+>> 0)
 >>
->> What you think will be the right approach on this in relation to this patch?
->> I mean every driver(if possible) should  prevent
->> runtime PM for no_idle_on_suspend usecase and we get
->> rid of this OMAP_DEVICE_NO_IDLE_ON_SUSPEND check? OR we should
->> drop this patch as of now?
-
-This is the correct approach, and AFAICT you've fixed the *mainline*
-users of this patch which is the important part.  If there are other
-mainline users of this feature, we need to know about them.
-
-Let me be clear: this OMAP_DEVICE_NO_IDLE_ON_SUSPEND feature is a hack
-(it was introduced by me, but still a hack.)  We've found a way to
-handle using the generic framework, and we should move to that.  There
-are already a handful of complications when combining runtime PM and
-system suspend, and this is just another one.  It makes the most sense
-for this handling to be in the drivers themselves.  IOW: if the driver
-wants to refuse to runtime suspend (during system suspend), it has the
-choice.
-
->> Hi Grygorii,
+>> Could you, please, check if this solves your issue.
 >>
->> Is it possible to handle ABE no_idle_on_suspend uscase the way I am
->> trying to handle it for UART in the 2nd patch of this series?
-> Unfortunately, I don't know ASOC details (my part is PM),  but from
-> the first look it
-> will be not easy, because map4-dmic have no Runtime PM handlers at
-> all, for example ((
-
-Are those drivers upstream?  If so, please point them out and show how
-this feature is being used in *mainline* by those drivers.
-
-For OMAP PM, we have been very clear for a long time all of our PM was
-based on runtime PM.  Any drivers that are not runtime PM are broken and
-need to be fixed.
-
-As long as Sourav is fixing up all the mainline users of this feature, my
-plan to merge/ack the changes unless there are some good arguemnts based
-on *upstream* users of the feature.
-
-Kevin
+>> (I am resending this message because HTML was rejected by
+>> linux-kernel@vger.kernel.org).
+>>
+>> Best regards
+>>
+>> Heinrich Schuchardt
+>>
+>
+> No, unfortunately that doesn't help.  I slightly modifed
+> fanotify-example.c to call perror() when read() fails, and here's the
+> output:
+>
+> jmaggard@jmaggard-W520:~/fanotify-test$ sudo ./fanotify-example .&
+> [1] 7248
+> jmaggard@jmaggard-W520:~/fanotify-test$ Started monitoring directory '.'...
+> truncate -s 2047m 2047m
+> Received event in path '/home/jmaggard/fanotify-test/2047m' pid=7250 (unknown):
+> FAN_OPEN
+> FAN_CLOSE_WRITE
+> jmaggard@jmaggard-W520:~/fanotify-test$ truncate -s 2048m 2048m
+> read: Value too large for defined data type
+>
+> -Justin
+>
 
