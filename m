@@ -1,28 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755131Ab3DVOa1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 10:30:27 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51647 "EHLO
+	id S1755373Ab3DVOc6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 10:32:58 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51680 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755073Ab3DVOaW (ORCPT
+	by vger.kernel.org with ESMTP id S1755096Ab3DVOa0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 10:30:22 -0400
+	Mon, 22 Apr 2013 10:30:26 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
-        "Boris Ostrovsky" <boris.ostrovsky@oracle.com>,
-        "Josh Boyer" <jwboyer@redhat.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, "Borislav Petkov" <bp@suse.de>
+CC: akpm@linux-foundation.org, "Eldad Zack" <eldad@fogrefinery.com>,
+        "Takashi Iwai" <tiwai@suse.de>, "Daniel Mack" <zonque@gmail.com>
 Date: Mon, 22 Apr 2013 15:25:59 +0100
-Message-ID: <lsq.1366640759.343105344@decadent.org.uk>
+Message-ID: <lsq.1366640759.986123913@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [35/75] x86, mm: Patch out arch_flush_lazy_mmu_mode() when
- running on bare metal
+Subject: [24/75] ALSA: usb-audio: fix endianness bug in snd_nativeinstruments_*
 In-Reply-To: <lsq.1366640759.151900666@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:6834:ff73:7553:7f84
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -35,136 +31,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+From: Eldad Zack <eldad@fogrefinery.com>
 
-commit 511ba86e1d386f671084b5d0e6f110bb30b8eeb2 upstream.
+commit 889d66848b12d891248b03abcb2a42047f8e172a upstream.
 
-Invoking arch_flush_lazy_mmu_mode() results in calls to
-preempt_enable()/disable() which may have performance impact.
+The usb_control_msg() function expects __u16 types and performs
+the endianness conversions by itself.
+However, in three places, a conversion is performed before it is
+handed over to usb_control_msg(), which leads to a double conversion
+(= no conversion):
+* snd_usb_nativeinstruments_boot_quirk()
+* snd_nativeinstruments_control_get()
+* snd_nativeinstruments_control_put()
 
-Since lazy MMU is not used on bare metal we can patch away
-arch_flush_lazy_mmu_mode() so that it is never called in such
-environment.
+Caught by sparse:
 
-[ hpa: the previous patch "Fix vmalloc_fault oops during lazy MMU
-  updates" may cause a minor performance regression on
-  bare metal.  This patch resolves that performance regression.  It is
-  somewhat unclear to me if this is a good -stable candidate. ]
+sound/usb/mixer_quirks.c:512:38: warning: incorrect type in argument 6 (different base types)
+sound/usb/mixer_quirks.c:512:38:    expected unsigned short [unsigned] [usertype] index
+sound/usb/mixer_quirks.c:512:38:    got restricted __le16 [usertype] <noident>
+sound/usb/mixer_quirks.c:543:35: warning: incorrect type in argument 5 (different base types)
+sound/usb/mixer_quirks.c:543:35:    expected unsigned short [unsigned] [usertype] value
+sound/usb/mixer_quirks.c:543:35:    got restricted __le16 [usertype] <noident>
+sound/usb/mixer_quirks.c:543:56: warning: incorrect type in argument 6 (different base types)
+sound/usb/mixer_quirks.c:543:56:    expected unsigned short [unsigned] [usertype] index
+sound/usb/mixer_quirks.c:543:56:    got restricted __le16 [usertype] <noident>
+sound/usb/quirks.c:502:35: warning: incorrect type in argument 5 (different base types)
+sound/usb/quirks.c:502:35:    expected unsigned short [unsigned] [usertype] value
+sound/usb/quirks.c:502:35:    got restricted __le16 [usertype] <noident>
 
-Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Link: http://lkml.kernel.org/r/1364045796-10720-2-git-send-email-konrad.wilk@oracle.com
-Tested-by: Josh Boyer <jwboyer@redhat.com>
-Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Acked-by: Borislav Petkov <bp@suse.de>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Eldad Zack <eldad@fogrefinery.com>
+Acked-by: Daniel Mack <zonque@gmail.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/x86/include/asm/paravirt.h       |    5 ++++-
- arch/x86/include/asm/paravirt_types.h |    2 ++
- arch/x86/kernel/paravirt.c            |   25 +++++++++++++------------
- arch/x86/lguest/boot.c                |    1 +
- arch/x86/xen/mmu.c                    |    1 +
- 5 files changed, 21 insertions(+), 13 deletions(-)
+ sound/usb/mixer_quirks.c |    4 ++--
+ sound/usb/quirks.c       |    2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
---- a/arch/x86/include/asm/paravirt.h
-+++ b/arch/x86/include/asm/paravirt.h
-@@ -740,7 +740,10 @@ static inline void arch_leave_lazy_mmu_m
- 	PVOP_VCALL0(pv_mmu_ops.lazy_mode.leave);
- }
+--- a/sound/usb/mixer_quirks.c
++++ b/sound/usb/mixer_quirks.c
+@@ -396,7 +396,7 @@ static int snd_nativeinstruments_control
+ 	else
+ 		ret = usb_control_msg(dev, usb_rcvctrlpipe(dev, 0), bRequest,
+ 				  USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_DIR_IN,
+-				  0, cpu_to_le16(wIndex),
++				  0, wIndex,
+ 				  &tmp, sizeof(tmp), 1000);
+ 	up_read(&mixer->chip->shutdown_rwsem);
  
--void arch_flush_lazy_mmu_mode(void);
-+static inline void arch_flush_lazy_mmu_mode(void)
-+{
-+	PVOP_VCALL0(pv_mmu_ops.lazy_mode.flush);
-+}
+@@ -427,7 +427,7 @@ static int snd_nativeinstruments_control
+ 	else
+ 		ret = usb_control_msg(dev, usb_sndctrlpipe(dev, 0), bRequest,
+ 				  USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_DIR_OUT,
+-				  cpu_to_le16(wValue), cpu_to_le16(wIndex),
++				  wValue, wIndex,
+ 				  NULL, 0, 1000);
+ 	up_read(&mixer->chip->shutdown_rwsem);
  
- static inline void __set_fixmap(unsigned /* enum fixed_addresses */ idx,
- 				phys_addr_t phys, pgprot_t flags)
---- a/arch/x86/include/asm/paravirt_types.h
-+++ b/arch/x86/include/asm/paravirt_types.h
-@@ -91,6 +91,7 @@ struct pv_lazy_ops {
- 	/* Set deferred update mode, used for batching operations. */
- 	void (*enter)(void);
- 	void (*leave)(void);
-+	void (*flush)(void);
- };
- 
- struct pv_time_ops {
-@@ -680,6 +681,7 @@ void paravirt_end_context_switch(struct
- 
- void paravirt_enter_lazy_mmu(void);
- void paravirt_leave_lazy_mmu(void);
-+void paravirt_flush_lazy_mmu(void);
- 
- void _paravirt_nop(void);
- u32 _paravirt_ident_32(u32);
---- a/arch/x86/kernel/paravirt.c
-+++ b/arch/x86/kernel/paravirt.c
-@@ -261,6 +261,18 @@ void paravirt_leave_lazy_mmu(void)
- 	leave_lazy(PARAVIRT_LAZY_MMU);
- }
- 
-+void paravirt_flush_lazy_mmu(void)
-+{
-+	preempt_disable();
-+
-+	if (paravirt_get_lazy_mode() == PARAVIRT_LAZY_MMU) {
-+		arch_leave_lazy_mmu_mode();
-+		arch_enter_lazy_mmu_mode();
-+	}
-+
-+	preempt_enable();
-+}
-+
- void paravirt_start_context_switch(struct task_struct *prev)
+--- a/sound/usb/quirks.c
++++ b/sound/usb/quirks.c
+@@ -482,7 +482,7 @@ static int snd_usb_nativeinstruments_boo
  {
- 	BUG_ON(preemptible());
-@@ -290,18 +302,6 @@ enum paravirt_lazy_mode paravirt_get_laz
- 	return percpu_read(paravirt_lazy_mode);
- }
+ 	int ret = usb_control_msg(dev, usb_sndctrlpipe(dev, 0),
+ 				  0xaf, USB_TYPE_VENDOR | USB_RECIP_DEVICE,
+-				  cpu_to_le16(1), 0, NULL, 0, 1000);
++				  1, 0, NULL, 0, 1000);
  
--void arch_flush_lazy_mmu_mode(void)
--{
--	preempt_disable();
--
--	if (paravirt_get_lazy_mode() == PARAVIRT_LAZY_MMU) {
--		arch_leave_lazy_mmu_mode();
--		arch_enter_lazy_mmu_mode();
--	}
--
--	preempt_enable();
--}
--
- struct pv_info pv_info = {
- 	.name = "bare hardware",
- 	.paravirt_enabled = 0,
-@@ -475,6 +475,7 @@ struct pv_mmu_ops pv_mmu_ops = {
- 	.lazy_mode = {
- 		.enter = paravirt_nop,
- 		.leave = paravirt_nop,
-+		.flush = paravirt_nop,
- 	},
- 
- 	.set_fixmap = native_set_fixmap,
---- a/arch/x86/lguest/boot.c
-+++ b/arch/x86/lguest/boot.c
-@@ -1328,6 +1328,7 @@ __init void lguest_init(void)
- 	pv_mmu_ops.read_cr3 = lguest_read_cr3;
- 	pv_mmu_ops.lazy_mode.enter = paravirt_enter_lazy_mmu;
- 	pv_mmu_ops.lazy_mode.leave = lguest_leave_lazy_mmu_mode;
-+	pv_mmu_ops.lazy_mode.flush = paravirt_flush_lazy_mmu;
- 	pv_mmu_ops.pte_update = lguest_pte_update;
- 	pv_mmu_ops.pte_update_defer = lguest_pte_update;
- 
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -2079,6 +2079,7 @@ static const struct pv_mmu_ops xen_mmu_o
- 	.lazy_mode = {
- 		.enter = paravirt_enter_lazy_mmu,
- 		.leave = xen_leave_lazy_mmu,
-+		.flush = paravirt_flush_lazy_mmu,
- 	},
- 
- 	.set_fixmap = xen_set_fixmap,
+ 	if (ret < 0)
+ 		return ret;
 
