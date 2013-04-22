@@ -1,49 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756166Ab3DVIv6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 04:51:58 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:39434 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756148Ab3DVIv4 (ORCPT
+	id S1756172Ab3DVIzX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 04:55:23 -0400
+Received: from www.linutronix.de ([62.245.132.108]:56650 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755217Ab3DVIzW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 04:51:56 -0400
-Date: Mon, 22 Apr 2013 09:51:45 +0100
-From: Luis Henriques <luis.henriques@canonical.com>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com, David Woodhouse <dwmw2@infradead.org>,
-        linux-mtd@lists.infradead.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 66/72] mtdchar: fix offset overflow detection
-Message-ID: <20130422085145.GC3222@hercules>
-References: <1366276617-3553-1-git-send-email-luis.henriques@canonical.com>
- <1366276617-3553-67-git-send-email-luis.henriques@canonical.com>
- <1366602998.3408.146.camel@deadeye.wl.decadent.org.uk>
+	Mon, 22 Apr 2013 04:55:22 -0400
+Message-ID: <5174FAF5.80503@linutronix.de>
+Date: Mon, 22 Apr 2013 10:55:17 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1366602998.3408.146.camel@deadeye.wl.decadent.org.uk>
+To: John Kacur <jkacur@redhat.com>
+CC: Paul Gortmaker <paul.gortmaker@windriver.com>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [ANNOUNCE] 3.8.4-rt2
+References: <20130326201722.GA14220@linutronix.de> <CAP=VYLoXfECaSBuvYdZ3qbsnR9QMYpoRnKGZdY=P6zS_TYOcCA@mail.gmail.com> <20130408183012.GA5778@linutronix.de> <CAONaPpFSf+Eh3K3BHCsPTQdxmbghHhtH=wMooh+Ers2QiCdH=g@mail.gmail.com>
+In-Reply-To: <CAONaPpFSf+Eh3K3BHCsPTQdxmbghHhtH=wMooh+Ers2QiCdH=g@mail.gmail.com>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 22, 2013 at 04:56:38AM +0100, Ben Hutchings wrote:
-> On Thu, 2013-04-18 at 10:16 +0100, Luis Henriques wrote:
-> > 3.5.7.11 -stable review patch.  If anyone has any objections, please let me know.
-> > 
-> > ------------------
-> > 
-> > From: Linus Torvalds <torvalds@linux-foundation.org>
-> > 
-> > commit 9c603e53d380459fb62fec7cd085acb0b74ac18f upstream.
-> [...]
+On 04/17/2013 06:25 PM, John Kacur wrote:
+> Where did you fix these up? Can we have access?
+
+I don't see reason why not. I just pushed my quilt queue to
+ git://git.kernel.org/pub/scm/linux/kernel/git/bigeasy/rt-v3.8-devel.git
+
+Remember it is not a kernel tree, it is a quilt queue.
+
+> Thanks
 > 
-> There are further problems with mtdchar_mmap(), and David recommended to
-> apply commit f5cf8f07423b 'mtd: Disable mtdchar mmap on MMU systems'
-> instead.
+> John
 
-Ok, I missed that.  I'll replace it by f5cf8f07423b.  Thanks.
-
-Cheers,
---
-Luis
+Sebastian
