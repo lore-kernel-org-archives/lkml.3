@@ -1,82 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754245Ab3DVOGT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 10:06:19 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:36280 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753660Ab3DVOGS (ORCPT
+	id S1754395Ab3DVOPa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 10:15:30 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:37269 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753233Ab3DVOP1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 10:06:18 -0400
-Date: Mon, 22 Apr 2013 15:06:01 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "will.deacon@arm.com" <will.deacon@arm.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "marc.zyngier@arm.com" <marc.zyngier@arm.com>,
-        "nico@linaro.org" <nico@linaro.org>
-Subject: Re: [PATCH v6 1/4] arm: introduce psci_smp_ops
-Message-ID: <20130422140601.GH14496@n2100.arm.linux.org.uk>
-References: <alpine.DEB.2.02.1304031239550.5078@kaball.uk.xensource.com> <1365167495-18508-1-git-send-email-stefano.stabellini@eu.citrix.com> <20130418161341.GB14496@n2100.arm.linux.org.uk> <alpine.DEB.2.02.1304181714560.7254@kaball.uk.xensource.com>
+	Mon, 22 Apr 2013 10:15:27 -0400
+Message-ID: <517545C2.3080006@ti.com>
+Date: Mon, 22 Apr 2013 17:14:26 +0300
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1304181714560.7254@kaball.uk.xensource.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Sourav Poddar <sourav.poddar@ti.com>
+CC: <gregkh@linuxfoundation.org>, <tony@atomide.com>,
+        <rmk+kernel@arm.linux.org.uk>, <khilman@linaro.org>,
+        <linux-serial@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Felipe Balbi <balbi@ti.com>, Rajendra nayak <rnayak@ti.com>
+Subject: Re: [RFC/PATCHv2 5/5] arm: omap2+: omap_device: remove no_idle_on_suspend
+References: <1366638237-6880-1-git-send-email-sourav.poddar@ti.com> <1366638237-6880-6-git-send-email-sourav.poddar@ti.com>
+In-Reply-To: <1366638237-6880-6-git-send-email-sourav.poddar@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.145.172]
+X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 18, 2013 at 05:20:23PM +0100, Stefano Stabellini wrote:
-> On Thu, 18 Apr 2013, Russell King - ARM Linux wrote:
-> > Remember, we're trying to move away from using "mdesc"s for platform
-> > stuff, relying on things like DT and such like.  We really should not
-> > be going for mdesc-overriding-newstuff but newstuff-overriding-mdesc.
-> 
-> That's correct, in fact if you look at the next patch you'll see that it
-> changes the order.
+On 04/22/2013 04:43 PM, Sourav Poddar wrote:
+> Remove the "OMAP_DEVICE_NO_IDLE_ON_SUSPEND" check, since
+> driver should be able to prevent idling of an omap device
+> whenever required.
+>
+> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> Cc: Felipe Balbi <balbi@ti.com>
+> Cc: Rajendra nayak <rnayak@ti.com>
+> Cc: Grygorii Strashko <grygorii.strashko@ti.com>
+> Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
+> ---
+> Hi Kevin,
+>
+> I have put this as an RFC, due to few comments on cover letter of
+> the previous version by Grygorii Strashko.
+> As, he has mentioned that there are Audio playback use cases which
+> also requires "no_idle_on_suspend" and using them on mainline after
+> this series can cause regression.
+>
+> What you think will be the right approach on this in relation to this patch?
+> I mean every driver(if possible) should  prevent
+> runtime PM for no_idle_on_suspend usecase and we get
+> rid of this OMAP_DEVICE_NO_IDLE_ON_SUSPEND check? OR we should
+> drop this patch as of now?
+>
+> Hi Grygorii,
+>
+> Is it possible to handle ABE no_idle_on_suspend uscase the way I am
+> trying to handle it for UART in the 2nd patch of this series?
+Unfortunately, I don't know ASOC details (my part is PM),  but from the 
+first look it
+will be not easy, because map4-dmic have no Runtime PM handlers at all, 
+for example ((
+>
+>   arch/arm/mach-omap2/omap_device.c |   12 +++---------
+>   arch/arm/mach-omap2/omap_device.h |   10 ----------
+>   2 files changed, 3 insertions(+), 19 deletions(-)
+>
+> diff --git a/arch/arm/mach-omap2/omap_device.c b/arch/arm/mach-omap2/omap_device.c
+> index 381be7a..2043d71 100644
+> --- a/arch/arm/mach-omap2/omap_device.c
+> +++ b/arch/arm/mach-omap2/omap_device.c
+> @@ -170,9 +170,6 @@ static int omap_device_build_from_dt(struct platform_device *pdev)
+>   			r->name = dev_name(&pdev->dev);
+>   	}
+>   
+> -	if (of_get_property(node, "ti,no_idle_on_suspend", NULL))
+> -		omap_device_disable_idle_on_suspend(pdev);
+> -
+>   	pdev->dev.pm_domain = &omap_device_pm_domain;
+>   
+>   odbfd_exit1:
+> @@ -620,11 +617,9 @@ static int _od_suspend_noirq(struct device *dev)
+>   	ret = pm_generic_suspend_noirq(dev);
+>   
+>   	if (!ret && !pm_runtime_status_suspended(dev)) {
+> -		if (pm_generic_runtime_suspend(dev) == 0) {
+> -			if (!(od->flags & OMAP_DEVICE_NO_IDLE_ON_SUSPEND))
+> -				omap_device_idle(pdev);
+> +		if (pm_generic_runtime_suspend(dev) == 0)
+> +			omap_device_idle(pdev);
+>   			od->flags |= OMAP_DEVICE_SUSPENDED;
+> -		}
+>   	}
+>   
+>   	return ret;
+> @@ -638,8 +633,7 @@ static int _od_resume_noirq(struct device *dev)
+>   	if ((od->flags & OMAP_DEVICE_SUSPENDED) &&
+>   	    !pm_runtime_status_suspended(dev)) {
+>   		od->flags &= ~OMAP_DEVICE_SUSPENDED;
+> -		if (!(od->flags & OMAP_DEVICE_NO_IDLE_ON_SUSPEND))
+> -			omap_device_enable(pdev);
+> +		omap_device_enable(pdev);
+>   		pm_generic_runtime_resume(dev);
+>   	}
+>   
+> diff --git a/arch/arm/mach-omap2/omap_device.h b/arch/arm/mach-omap2/omap_device.h
+> index 044c31d..17ca1ae 100644
+> --- a/arch/arm/mach-omap2/omap_device.h
+> +++ b/arch/arm/mach-omap2/omap_device.h
+> @@ -38,7 +38,6 @@ extern struct dev_pm_domain omap_device_pm_domain;
+>   
+>   /* omap_device.flags values */
+>   #define OMAP_DEVICE_SUSPENDED		BIT(0)
+> -#define OMAP_DEVICE_NO_IDLE_ON_SUSPEND	BIT(1)
+>   
+>   /**
+>    * struct omap_device - omap_device wrapper for platform_devices
+> @@ -101,13 +100,4 @@ static inline struct omap_device *to_omap_device(struct platform_device *pdev)
+>   {
+>   	return pdev ? pdev->archdata.od : NULL;
+>   }
+> -
+> -static inline
+> -void omap_device_disable_idle_on_suspend(struct platform_device *pdev)
+> -{
+> -	struct omap_device *od = to_omap_device(pdev);
+> -
+> -	od->flags |= OMAP_DEVICE_NO_IDLE_ON_SUSPEND;
+> -}
+> -
+>   #endif
 
-You may have noticed that I've been catching up with email, and it's
-exceedingly difficult to track what patches are obsolete and have been
-overridden by new versions.
-
-> I introduced the mechanism first and changed the priority later - it
-> should help bisectability.
-> I can fold the two patches into one if you prefer.
-
-On the face of it, I think that would be better.  I don't remember what
-your last version looks like though.
-
-> > Now, if the psci stuff can't be relied upon to provide the correct
-> > functionality, then that's a separate problem which needs addressing
-> > differently.
-> > 
-> > This should allow the Xen problem to be resolved, because Xen will
-> > provide the PSCI operations, and it's correct in that case to override
-> > the platform's SMP operations.
-> 
-> Yes, increasing the priority of PSCI helps Xen a lot.
-> In order to completely solve the issue for Xen though, another patch is
-> needed (http://marc.info/?l=linux-kernel&m=136630106201968&w=2) because
-> of the introduction of smp_init.
-
-Given the way the code in setup.c will work:
-
-+static bool __init xen_smp_init(void)
-+{
-+#ifdef CONFIG_SMP
-+	/* If we are running on Xen, use PSCI if available.
-+	 * In any case do not try to use the native smp_ops. */
-+	if (psci_smp_available())
-+		smp_set_ops(&psci_smp_ops);
-+#endif
-+	return true;
-+}
-
-Doesn't this just need to return false, and then we'll drop down to
-using PSCI if those operations are available?
