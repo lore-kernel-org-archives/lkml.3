@@ -1,79 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753339Ab3DVKFH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 06:05:07 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:44567 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753041Ab3DVKFE (ORCPT
+	id S1752929Ab3DVKFB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 06:05:01 -0400
+Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:53161 "EHLO
+	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752563Ab3DVKE7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 06:05:04 -0400
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Cc: linux-fbdev@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 3/4] ssd1307fb: Speed up the communication with the controller
-Date: Mon, 22 Apr 2013 12:02:24 +0200
-Message-Id: <1366624945-5708-4-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1366624945-5708-1-git-send-email-maxime.ripard@free-electrons.com>
-References: <1366624945-5708-1-git-send-email-maxime.ripard@free-electrons.com>
+	Mon, 22 Apr 2013 06:04:59 -0400
+Message-ID: <51750B26.4000607@de.ibm.com>
+Date: Mon, 22 Apr 2013 12:04:22 +0200
+From: Christian Borntraeger <borntraeger@de.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+MIME-Version: 1.0
+To: "Theodore Ts'o" <tytso@mit.edu>
+CC: CAI Qian <caiqian@redhat.com>, Eric Whitney <enwlinux@gmail.com>,
+        Dmitry Monakhov <dmonakhov@openvz.org>,
+        Christian Kujau <lists@nerdbynature.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-s390 <linux-s390@vger.kernel.org>, Steve Best <sbest@redhat.com>,
+        linux-ext4@vger.kernel.org
+Subject: Re: [PATCH] ext4: fix a big-endian bug when an extent is zeroed out
+References: <alpine.DEB.2.10.1304012249440.5874@trent.utfs.org> <alpine.DEB.2.10.1304021611020.13746@trent.utfs.org> <87li90q9mx.fsf@openvz.org> <87hajoq6s2.fsf@openvz.org> <20130403102204.GA15383@gmail.com> <20130403122058.GB7741@thunk.org> <20130403143406.GA3006@wallace> <20130403144114.GB13668@thunk.org> <683906006.1314495.1365476711254.JavaMail.root@redhat.com> <20130420151945.GA8575@thunk.org>
+In-Reply-To: <20130420151945.GA8575@thunk.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13042210-3548-0000-0000-0000052C32F0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The code until now was sending only 1pixel-wide page segment at once,
-and started a new transfer every time. It has proven very inefficient,
-because for one byte to display on the screen, we had to actually send 3
-bytes over I2C: the address, the type of data that was going to the
-controller, and then the actual data.
+On 20/04/13 17:19, Theodore Ts'o wrote:
+> On Mon, Apr 08, 2013 at 11:05:11PM -0400, CAI Qian wrote:
+>> I can help run xfstests for ext4 dev tree on x64, Power7, Z10 and
+>> KVM platforms with back-storage like SAN/multipath, iSCSI and FCoE.
+>> I plan to run this weekly and setup a wiki page to update the testing
+>> status by every Friday.
+> 
+> Hi CAI,
+> 
+> Sorry for not getting back to you sooner; I was at Collaboration
+> Summit and LSF/MM last week.
+> 
+> It would be great if you could help run xfstests on the ext4 dev tree
+> on various platforms.  We don't have any coverage on Power7 or
+> s390/Z10 at the moment, so that would be especially welcome.  Coverage
+> on alternate storage backends can be interesting in finding timing
+> problems so they would be valuable as well.
 
-This patches changes that by sending a whole page at once, avoiding most
-of this expensive overhead.
+It is probably easier to get access to a Power system (gcc compile farm?).
+Having said that, there is a service available to get access to a System z
+for open source development:
+http://www-03.ibm.com/systems/z/os/linux/support/community.html
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
----
- drivers/video/ssd1307fb.c |   11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+When we did the valgrind port we used that a lot to gave access to 
+non-IBMers.
+Dont know if it is ok to install a private kernel, though. Will double
+check.
 
-diff --git a/drivers/video/ssd1307fb.c b/drivers/video/ssd1307fb.c
-index 35f5348..cab5f7c 100644
---- a/drivers/video/ssd1307fb.c
-+++ b/drivers/video/ssd1307fb.c
-@@ -168,23 +168,28 @@ static void ssd1307fb_update_display(struct ssd1307fb_par *par)
- 	 */
- 
- 	for (i = 0; i < (par->height / 8); i++) {
-+		struct ssd1307fb_array *array;
- 		ssd1307fb_write_cmd(par->client,
- 				    SSD1307FB_START_PAGE_ADDRESS + i + par->page_offset);
- 		ssd1307fb_write_cmd(par->client, 0x00);
- 		ssd1307fb_write_cmd(par->client, 0x10);
- 
-+		array = ssd1307fb_alloc_array(par->width, SSD1307FB_DATA);
-+
- 		for (j = 0; j < par->width; j++) {
--			u8 buf = 0;
-+			array->data[j] = 0;
- 			for (k = 0; k < 8; k++) {
- 				u32 page_length = par->width * i;
- 				u32 index = page_length + (par->width * k + j) / 8;
- 				u8 byte = *(vmem + index);
- 				u8 bit = byte & (1 << (j % 8));
- 				bit = bit >> (j % 8);
--				buf |= bit << k;
-+				array->data[j] |= bit << k;
- 			}
--			ssd1307fb_write_data(par->client, buf);
- 		}
-+
-+		ssd1307fb_write_array(par->client, array, par->width);
-+		kfree(array);
- 	}
- }
- 
--- 
-1.7.10.4
+Christian
 
