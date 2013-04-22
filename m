@@ -1,199 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753781Ab3DVKG3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 06:06:29 -0400
-Received: from mga01.intel.com ([192.55.52.88]:50204 "EHLO mga01.intel.com"
+	id S1753958Ab3DVKHE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 06:07:04 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:49327 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753070Ab3DVKGZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 06:06:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,525,1363158000"; 
-   d="scan'208";a="326115515"
-Date: Mon, 22 Apr 2013 15:04:23 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, linus.walleij@stericsson.com,
-        Dan Williams <djbw@fb.com>, Per Forlin <per.forlin@stericsson.com>,
-        Rabin Vincent <rabin@rab.in>
-Subject: Re: [PATCH 17/32] dmaengine: ste_dma40: Remove redundant argument
- from d40_phy_cfg()
-Message-ID: <20130422093423.GD24632@intel.com>
-References: <1366279934-30761-1-git-send-email-lee.jones@linaro.org>
- <1366279934-30761-18-git-send-email-lee.jones@linaro.org>
+	id S1753763Ab3DVKHA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Apr 2013 06:07:00 -0400
+Date: Mon, 22 Apr 2013 12:06:57 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: paulmck@linux.vnet.ibm.com, x86-ml <x86@kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: irq 16: nobody cared
+Message-ID: <20130422100657.GF4637@pd.tnic>
+References: <20130420185330.GA4654@pd.tnic>
+ <20130420235206.GA3509@linux.vnet.ibm.com>
+ <20130421103403.GA4594@pd.tnic>
+ <20130421163002.GB3509@linux.vnet.ibm.com>
+ <s5hfvyj55ke.wl%tiwai@suse.de>
+ <20130422091310.GA4637@pd.tnic>
+ <s5hzjwq53ec.wl%tiwai@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1366279934-30761-18-git-send-email-lee.jones@linaro.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <s5hzjwq53ec.wl%tiwai@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 18, 2013 at 11:11:59AM +0100, Lee Jones wrote:
-> d40_phy_cfg is now only ever called to configure physical channels, so
-> there's no requirement to pass though an argument describing the type
-> of channel and to subsequently test for it.
-> 
-> Cc: Vinod Koul <vinod.koul@intel.com>
-> Cc: Dan Williams <djbw@fb.com>
-> Cc: Per Forlin <per.forlin@stericsson.com>
-> Cc: Rabin Vincent <rabin@rab.in>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> ---
->  drivers/dma/ste_dma40.c    |    3 +-
->  drivers/dma/ste_dma40_ll.c |  101 +++++++++++++++++++++-----------------------
->  drivers/dma/ste_dma40_ll.h |    3 +-
->  3 files changed, 50 insertions(+), 57 deletions(-)
-> 
-> diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
-> index 1c570b6..ff41972 100644
-> --- a/drivers/dma/ste_dma40.c
-> +++ b/drivers/dma/ste_dma40.c
-> @@ -2799,8 +2799,7 @@ static int d40_set_runtime_config(struct dma_chan *chan,
->  	if (chan_is_logical(d40c))
->  		d40_log_cfg(cfg, &d40c->log_def.lcsp1, &d40c->log_def.lcsp3);
->  	else
-> -		d40_phy_cfg(cfg, &d40c->src_def_cfg,
-> -			    &d40c->dst_def_cfg, false);
-> +		d40_phy_cfg(cfg, &d40c->src_def_cfg, &d40c->dst_def_cfg);
->  
->  	/* These settings will take precedence later */
->  	d40c->runtime_addr = config_addr;
-> diff --git a/drivers/dma/ste_dma40_ll.c b/drivers/dma/ste_dma40_ll.c
-> index b72d3e2..9ab9dff 100644
-> --- a/drivers/dma/ste_dma40_ll.c
-> +++ b/drivers/dma/ste_dma40_ll.c
-> @@ -56,63 +56,58 @@ void d40_log_gim_unmask(u32 *src_cfg, u32 *dst_cfg) {
->  	*dst_cfg |= 1 << D40_SREG_CFG_LOG_GIM_POS;
->  }
->  
-> -/* Sets up SRC and DST CFG register for both logical and physical channels */
-> -void d40_phy_cfg(struct stedma40_chan_cfg *cfg,
-> -		 u32 *src_cfg, u32 *dst_cfg, bool is_log)
-> +void d40_phy_cfg(struct stedma40_chan_cfg *cfg, u32 *src_cfg, u32 *dst_cfg)
->  {
->  	u32 src = 0;
->  	u32 dst = 0;
->  
-> -	if (!is_log) {
-> -		/* Physical channel */
-> -		if ((cfg->dir ==  STEDMA40_PERIPH_TO_MEM) ||
-> -		    (cfg->dir == STEDMA40_PERIPH_TO_PERIPH)) {
-> -			/* Set master port to 1 */
-> -			src |= 1 << D40_SREG_CFG_MST_POS;
-> -			src |= D40_TYPE_TO_EVENT(cfg->dev_type);
-> -
-> -			if (cfg->src_info.flow_ctrl == STEDMA40_NO_FLOW_CTRL)
-> -				src |= 1 << D40_SREG_CFG_PHY_TM_POS;
-> -			else
-> -				src |= 3 << D40_SREG_CFG_PHY_TM_POS;
-> -		}
-> -		if ((cfg->dir ==  STEDMA40_MEM_TO_PERIPH) ||
-> -		    (cfg->dir == STEDMA40_PERIPH_TO_PERIPH)) {
-> -			/* Set master port to 1 */
-> -			dst |= 1 << D40_SREG_CFG_MST_POS;
-> -			dst |= D40_TYPE_TO_EVENT(cfg->dev_type);
-> -
-> -			if (cfg->dst_info.flow_ctrl == STEDMA40_NO_FLOW_CTRL)
-> -				dst |= 1 << D40_SREG_CFG_PHY_TM_POS;
-> -			else
-> -				dst |= 3 << D40_SREG_CFG_PHY_TM_POS;
-> -		}
-> -		/* Interrupt on end of transfer for destination */
-> -		dst |= 1 << D40_SREG_CFG_TIM_POS;
-> -
-> -		/* Generate interrupt on error */
-> -		src |= 1 << D40_SREG_CFG_EIM_POS;
-> -		dst |= 1 << D40_SREG_CFG_EIM_POS;
-> -
-> -		/* PSIZE */
-> -		if (cfg->src_info.psize != STEDMA40_PSIZE_PHY_1) {
-> -			src |= 1 << D40_SREG_CFG_PHY_PEN_POS;
-> -			src |= cfg->src_info.psize << D40_SREG_CFG_PSIZE_POS;
-> -		}
-> -		if (cfg->dst_info.psize != STEDMA40_PSIZE_PHY_1) {
-> -			dst |= 1 << D40_SREG_CFG_PHY_PEN_POS;
-> -			dst |= cfg->dst_info.psize << D40_SREG_CFG_PSIZE_POS;
-> -		}
-> -
-> -		/* Element size */
-> -		src |= cfg->src_info.data_width << D40_SREG_CFG_ESIZE_POS;
-> -		dst |= cfg->dst_info.data_width << D40_SREG_CFG_ESIZE_POS;
-> -
-> -		/* Set the priority bit to high for the physical channel */
-> -		if (cfg->high_priority) {
-> -			src |= 1 << D40_SREG_CFG_PRI_POS;
-> -			dst |= 1 << D40_SREG_CFG_PRI_POS;
-> -		}
-> +	if ((cfg->dir ==  STEDMA40_PERIPH_TO_MEM) ||
-> +	    (cfg->dir == STEDMA40_PERIPH_TO_PERIPH)) {
-Why would you need your own direction defines, I see that there is not much
-diff between these and what dmaengine defines, so perhpas you could use
-those?
+On Mon, Apr 22, 2013 at 11:19:07AM +0200, Takashi Iwai wrote:
+> Is the PCI device a HD-audio controller for the built-in analog or
+> a HDMI audio controller coupled with a graphics chip?
 
-> +		/* Set master port to 1 */
-> +		src |= 1 << D40_SREG_CFG_MST_POS;
-> +		src |= D40_TYPE_TO_EVENT(cfg->dev_type);
-> +
-> +		if (cfg->src_info.flow_ctrl == STEDMA40_NO_FLOW_CTRL)
-> +			src |= 1 << D40_SREG_CFG_PHY_TM_POS;
-> +		else
-> +			src |= 3 << D40_SREG_CFG_PHY_TM_POS;
-> +	}
-> +	if ((cfg->dir ==  STEDMA40_MEM_TO_PERIPH) ||
-> +	    (cfg->dir == STEDMA40_PERIPH_TO_PERIPH)) {
-> +		/* Set master port to 1 */
-> +		dst |= 1 << D40_SREG_CFG_MST_POS;
-> +		dst |= D40_TYPE_TO_EVENT(cfg->dev_type);
-> +
-> +		if (cfg->dst_info.flow_ctrl == STEDMA40_NO_FLOW_CTRL)
-> +			dst |= 1 << D40_SREG_CFG_PHY_TM_POS;
-> +		else
-> +			dst |= 3 << D40_SREG_CFG_PHY_TM_POS;
-> +	}
-> +	/* Interrupt on end of transfer for destination */
-> +	dst |= 1 << D40_SREG_CFG_TIM_POS;
-> +
-> +	/* Generate interrupt on error */
-> +	src |= 1 << D40_SREG_CFG_EIM_POS;
-> +	dst |= 1 << D40_SREG_CFG_EIM_POS;
-> +
-> +	/* PSIZE */
-> +	if (cfg->src_info.psize != STEDMA40_PSIZE_PHY_1) {
-> +		src |= 1 << D40_SREG_CFG_PHY_PEN_POS;
-> +		src |= cfg->src_info.psize << D40_SREG_CFG_PSIZE_POS;
-> +	}
-> +	if (cfg->dst_info.psize != STEDMA40_PSIZE_PHY_1) {
-> +		dst |= 1 << D40_SREG_CFG_PHY_PEN_POS;
-> +		dst |= cfg->dst_info.psize << D40_SREG_CFG_PSIZE_POS;
-> +	}
-> +
-> +	/* Element size */
-> +	src |= cfg->src_info.data_width << D40_SREG_CFG_ESIZE_POS;
-> +	dst |= cfg->dst_info.data_width << D40_SREG_CFG_ESIZE_POS;
-> +
-> +	/* Set the priority bit to high for the physical channel */
-> +	if (cfg->high_priority) {
-> +		src |= 1 << D40_SREG_CFG_PRI_POS;
-> +		dst |= 1 << D40_SREG_CFG_PRI_POS;
->  	}
->  
->  	if (cfg->src_info.big_endian)
-> diff --git a/drivers/dma/ste_dma40_ll.h b/drivers/dma/ste_dma40_ll.h
-> index 8aad679..e54df09 100644
-> --- a/drivers/dma/ste_dma40_ll.h
-> +++ b/drivers/dma/ste_dma40_ll.h
-> @@ -434,8 +434,7 @@ void d40_log_gim_unmask(u32 *src_cfg, u32 *dst_cfg);
->  
->  void d40_phy_cfg(struct stedma40_chan_cfg *cfg,
->  		 u32 *src_cfg,
-> -		 u32 *dst_cfg,
-> -		 bool is_log);
-> +		 u32 *dst_cfg);
->  
->  void d40_log_cfg(struct stedma40_chan_cfg *cfg,
->  		 u32 *lcsp1,
-> -- 
-> 1.7.10.4
-> 
+Hmm:
+
+[    7.204020] snd_hda_intel 0000:01:00.1: irq 90 for MSI/MSI-X
+[    7.551912]   #0: HDA ATI SB at 0xfeb00000 irq 16
+[    7.551965]   #1: HDA ATI HDMI at 0xfea30000 irq 90
+[   70.870377] snd_hda_intel 0000:01:00.1: irq 90 for MSI/MSI-X
+
+# lspci -s 01:00.1 -vvv
+01:00.1 Audio device: Advanced Micro Devices [AMD] nee ATI RV635 HDMI Audio [Radeon HD 3600 Series]
+        Subsystem: ASUSTeK Computer Inc. Device aa20
+        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx+
+        Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+        Latency: 0, Cache Line Size: 64 bytes
+        Interrupt: pin B routed to IRQ 90
+        Region 0: Memory at fea30000 (64-bit, non-prefetchable) [size=16K]
+        Capabilities: [50] Power Management version 3
+                Flags: PMEClk- DSI- D1+ D2+ AuxCurrent=0mA PME(D0-,D1-,D2-,D3hot-,D3cold-)
+                Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
+        Capabilities: [58] Express (v2) Legacy Endpoint, MSI 00
+                DevCap: MaxPayload 128 bytes, PhantFunc 0, Latency L0s <4us, L1 unlimited
+                        ExtTag+ AttnBtn- AttnInd- PwrInd- RBE+ FLReset-
+                DevCtl: Report errors: Correctable- Non-Fatal- Fatal- Unsupported-
+                        RlxdOrd- ExtTag- PhantFunc- AuxPwr- NoSnoop+
+                        MaxPayload 128 bytes, MaxReadReq 128 bytes
+                DevSta: CorrErr- UncorrErr- FatalErr- UnsuppReq- AuxPwr- TransPend-
+                LnkCap: Port #0, Speed 5GT/s, Width x16, ASPM L0s L1, Latency L0 <64ns, L1 <1us
+                        ClockPM- Surprise- LLActRep- BwNot-
+                LnkCtl: ASPM Disabled; RCB 64 bytes Disabled- Retrain- CommClk+
+                        ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
+                LnkSta: Speed 5GT/s, Width x16, TrErr- Train- SlotClk+ DLActive- BWMgmt- ABWMgmt-
+                DevCap2: Completion Timeout: Not Supported, TimeoutDis-
+                DevCtl2: Completion Timeout: 50us to 50ms, TimeoutDis-
+                LnkCtl2: Target Link Speed: 2.5GT/s, EnterCompliance- SpeedDis-, Selectable De-emphasis: -6dB
+                         Transmit Margin: Normal Operating Range, EnterModifiedCompliance- ComplianceSOS-
+                         Compliance De-emphasis: -6dB
+                LnkSta2: Current De-emphasis Level: -6dB, EqualizationComplete-, EqualizationPhase1-
+                         EqualizationPhase2-, EqualizationPhase3-, LinkEqualizationRequest-
+        Capabilities: [a0] MSI: Enable+ Count=1/1 Maskable- 64bit+
+                Address: 00000000feeff00c  Data: 4164
+        Capabilities: [100 v1] Vendor Specific Information: ID=0001 Rev=1 Len=010 <?>
+        Kernel driver in use: snd_hda_intel
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
