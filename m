@@ -1,49 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752865Ab3DVLlk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 07:41:40 -0400
-Received: from void.printf.net ([89.145.121.20]:56334 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752136Ab3DVLlj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 07:41:39 -0400
-From: Chris Ball <cjb@laptop.org>
-To: Neil Armstrong <narmstrong@neotion.com>
-Cc: Namjae Jeon <linkinjeon@gmail.com>, linux-mmc@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        Subhash Jadavani <subhashj@codeaurora.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Nam-Jae Jeon <namjae.jeon@samsung.com>
-Subject: Re: [PATCH 0/3] Add boot_enable attribute to eMMC device for boot mode operation selection
-References: <51713B86.2090001@neotion.com>
-	<CAKYAXd_xa--1QpFCdz3Kj0mKF3cvtxFn-xL3QGWZyXPO4Y79ng@mail.gmail.com>
-	<5174E58E.8090307@neotion.com>
-Date: Mon, 22 Apr 2013 07:41:27 -0400
-In-Reply-To: <5174E58E.8090307@neotion.com> (Neil Armstrong's message of "Mon,
-	22 Apr 2013 09:23:58 +0200")
-Message-ID: <87a9oqvllk.fsf@octavius.laptop.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2 (gnu/linux)
+	id S1752651Ab3DVLoR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 07:44:17 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:51525 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751168Ab3DVLoP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Apr 2013 07:44:15 -0400
+Message-ID: <51752241.40701@huawei.com>
+Date: Mon, 22 Apr 2013 19:42:57 +0800
+From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Randy Dunlap <rdunlap@infradead.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 1/8] sysrq: fix inconstistent help message of sysrq key
+References: <51385712.3050104@huawei.com> <5138F518.1080808@infradead.org>
+In-Reply-To: <5138F518.1080808@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.66.58.241]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Neil,
+On 2013/3/8 4:14, Randy Dunlap wrote:
+> On 03/07/13 01:00, zhangwei(Jovi) wrote:
+>> Currently help message of /proc/sysrq-trigger highlight its
+>> upper-case characters, like below:
+>>
+>>       SysRq : HELP : loglevel(0-9) reBoot Crash terminate-all-tasks(E)
+>>       memory-full-oom-kill(F) kill-all-tasks(I) ...
+>>
+>> this would confuse user trigger sysrq by upper-case character, which is
+>> inconsistent with the real lower-case character registed key.
+>>
+>> This inconsistent help message will also lead more confused when
+>> 26 upper-case letters put into use in future.
+>>
+>> This patch fix it.
+>>
+>> Thanks the comments from Andrew and Randy.
+>>
+>> Signed-off-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
+>> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>> Cc: Andrew Morton <akpm@linux-foundation.org>
+>> Cc: Randy Dunlap <rdunlap@infradead.org>
+> 
+> for the patch series (1-8):
+> Acked-by: Randy Dunlap <rdunlap@infradead.org>
+> 
+> Thanks.
+> 
+Andrew, Could you pick up the other patches(2,3,4,5,7,8) into your -mm tree?
+first patch was already merged by Grey.
 
-On Mon, Apr 22 2013, Neil Armstrong wrote:
-> Thanks for the reply, I was not aware of the mmc-utils tools. I think
-> the tool and the MMC_IOC_CMD interface should be documented in the kernel.
+Thanks.
 
-Where do you think a good place for documentating the mmc tool would
-be, such that you would have seen it while investigating?
 
-It'd be nice to avoid having to document the commands themselves,
-since the userspace tool may be updated out of sync with the kernel.
 
-Thanks,
 
-- Chris.
--- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+
