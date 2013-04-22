@@ -1,60 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755114Ab3DVKvO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 06:51:14 -0400
-Received: from mga14.intel.com ([143.182.124.37]:63295 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751053Ab3DVKvN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 06:51:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,525,1363158000"; 
-   d="scan'208";a="289702741"
-Date: Mon, 22 Apr 2013 15:49:49 +0530
-From: Vinod Koul <vinod.koul@intel.com>
+	id S1755151Ab3DVKxP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 06:53:15 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:36118 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751474Ab3DVKxO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Apr 2013 06:53:14 -0400
+Date: Mon, 22 Apr 2013 11:52:45 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
 To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, linus.walleij@stericsson.com,
-        Dan Williams <djbw@fb.com>, Per Forlin <per.forlin@stericsson.com>,
-        Rabin Vincent <rabin@rab.in>
-Subject: Re: [PATCH 05/32] dmaengine: ste_dma40: Supply macros to resolve
- 'src' and 'dst' directions
-Message-ID: <20130422101949.GU24632@intel.com>
-References: <1366279934-30761-1-git-send-email-lee.jones@linaro.org>
- <1366279934-30761-6-git-send-email-lee.jones@linaro.org>
- <20130422094250.GJ24632@intel.com>
- <20130422102748.GJ3432@gmail.com>
+Cc: Vinod Koul <vinod.koul@intel.com>, Rabin Vincent <rabin@rab.in>,
+        linus.walleij@stericsson.com, arnd@arndb.de,
+        linux-kernel@vger.kernel.org, Per Forlin <per.forlin@stericsson.com>,
+        Dan Williams <djbw@fb.com>, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 21/32] dmaengine: ste_dma40: Also report the number of
+	logical channels
+Message-ID: <20130422105245.GG14496@n2100.arm.linux.org.uk>
+References: <1366279934-30761-1-git-send-email-lee.jones@linaro.org> <1366279934-30761-22-git-send-email-lee.jones@linaro.org> <20130422093631.GE24632@intel.com> <20130422101455.GH3432@gmail.com> <20130422094842.GL24632@intel.com> <20130422103715.GK3432@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130422102748.GJ3432@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130422103715.GK3432@gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 22, 2013 at 11:27:48AM +0100, Lee Jones wrote:
+On Mon, Apr 22, 2013 at 11:37:15AM +0100, Lee Jones wrote:
 > On Mon, 22 Apr 2013, Vinod Koul wrote:
 > 
-> > On Thu, Apr 18, 2013 at 11:11:47AM +0100, Lee Jones wrote:
-> > > There are lots of lengthy if() statements located sporadically up and
-> > > down the driver. This simple macro should make many of them a little
-> > > simpler to decipher. The remainder have to stay in place, as they
-> > > detail slightly more specific settings.
-> > I would like these to be DMAENGINE_IS_SRC...
-> 
-> I don't understand, as they're DMA40 specific?
-> 
-> > and this patch use the defines provided in dmaengine
-> 
-> I think a subsequent patch doing he following would be more suitable:
-> 
-> s/STEDMA40_MEM_TO_MEM/DMA_MEM_TO_MEM/
-> s/STEDMA40_MEM_TO_PERIPH/DMA_MEM_TO_DEV/
-> s/STEDMA40_PERIPH_TO_MEM/DMA_DEV_TO_MEM/
-> s/STEDMA40_PERIPH_TO_PERIPH/DMA_DEV_TO_DEV/
-> 
-> If you don't mind?
-sounds like a good plan
+> > On Mon, Apr 22, 2013 at 11:14:55AM +0100, Lee Jones wrote:
+> > > On Mon, 22 Apr 2013, Vinod Koul wrote:
+> > > 
+> > > > On Thu, Apr 18, 2013 at 11:12:03AM +0100, Lee Jones wrote:
+> > > > > +	dev_info(&pdev->dev, "hardware revision: %d @ 0x%x with "
+> > > > > +		"%d physical channels and %d logical channels\n",
+> > > > > +		rev, res->start, num_phy_chans, num_log_chans);
+> > > > Splitting log messages across lines is bad idea and sacrifces readablity... also
+> > > > wasnt splitting logging to multiple lines emit checkpatch warn
 
---
-~Vinod
+Yes, but for a different reason...
+
+> > > You also get a check-patch error if your lines are over 80 chars.
+> > No, you get a warn
+> 
+> You only get a warning for this too:
+> 
+>  WARNING: quoted string split across lines
+> #33: FILE: drivers/dma/ste_dma40.c:3204:
+> +	dev_info(&pdev->dev, "hardware revision: %d @ 0x%x with "
+> +		"%d physical channels and %d logical channels\n",
+
+>From coding style: "However, never break user-visible strings such as
+printk messages, because that breaks the ability to grep for them."
+
+You can argue that you wouldn't grep for the above string - but consider
+if you grepped for "hardware revision.*channels" to try and find the
+above message, which would be a reasonable thing to try if you got lots
+of hits on just "hardware revision".
