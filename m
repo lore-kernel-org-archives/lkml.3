@@ -1,92 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753453Ab3DVGY0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 02:24:26 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:21741 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752959Ab3DVGYZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 02:24:25 -0400
-X-IronPort-AV: E=Sophos;i="4.87,524,1363104000"; 
-   d="scan'208";a="7110372"
-Subject: Re: [PATCH 1/2] smp: use '|=' for csd_lock
-From: li guang <lig.fnst@cn.fujitsu.com>
-To: sedat.dilek@gmail.com
-Cc: tglx@linutronix.de, peterz@infradead.org, akpm@linux-foundation.org,
-        shli@fusionio.com, srivatsa.bhat@linux.vnet.ibm.com,
-        suresh.b.siddha@intel.com, fweisbec@gmail.com,
-        paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
-In-Reply-To: <CA+icZUVd3zp-pJDspBUsipH4725uUvaufXrK0QBzcrozF2m+aA@mail.gmail.com>
-References: <1366609643-17628-1-git-send-email-lig.fnst@cn.fujitsu.com>
-	 <CA+icZUVd3zp-pJDspBUsipH4725uUvaufXrK0QBzcrozF2m+aA@mail.gmail.com>
-Date: Mon, 22 Apr 2013 14:22:29 +0800
-Message-ID: <1366611749.27110.6.camel@liguang.fnst.cn.fujitsu.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/04/22 14:22:50,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/04/22 14:22:51,
-	Serialize complete at 2013/04/22 14:22:51
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="UTF-8"
+	id S1754736Ab3DVG1o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 02:27:44 -0400
+Received: from mga02.intel.com ([134.134.136.20]:27887 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753291Ab3DVG1m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Apr 2013 02:27:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,524,1363158000"; 
+   d="scan'208";a="322103435"
+Date: Mon, 22 Apr 2013 11:26:12 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>,
+        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.jf.intel.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>, linux-kernel@vger.kernel.org,
+        spear-devel <spear-devel@list.st.com>, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH v2 0/5] dmaengine: add ACPI DMA helpers and use them in
+ dw_dmac
+Message-ID: <20130422055612.GE6081@intel.com>
+References: <1365505547-10552-1-git-send-email-andriy.shevchenko@linux.intel.com>
+ <20130415163618.GF12436@intel.com>
+ <1366114487.7932.29.camel@smile>
+ <1525811.597RVDyDxu@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1525811.597RVDyDxu@vostro.rjw.lan>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-在 2013-04-22一的 08:18 +0200，Sedat Dilek写道：
-> On Mon, Apr 22, 2013 at 7:47 AM, liguang <lig.fnst@cn.fujitsu.com> wrote:
-> > originally, 'data->flags = CSD_FLAG_LOCK',
-> > and we use 'data->flags &= ~CSD_FLAG_LOCK'
-> > for csd_unlock, they are not symmetrix operations
-> > so use '|=' instead of '='.
-> > though, now data->flags only hold CSD_FLAG_LOCK,
-> > it's not so meaningful to use '|=' to set 1 bit,
-> > and '&= ~' to clear 1 bit.
-> >
+On Tue, Apr 16, 2013 at 08:11:57PM +0200, Rafael J. Wysocki wrote:
+> On Tuesday, April 16, 2013 03:14:47 PM Andy Shevchenko wrote:
+> > On Mon, 2013-04-15 at 22:06 +0530, Vinod Koul wrote: 
+> > > On Tue, Apr 09, 2013 at 02:05:42PM +0300, Andy Shevchenko wrote:
+> > > > There is a patch series which introduces ACPI DMA helpers in similar way like
+> > > > we have for DeviceTree.
+> > > > 
+> > > > In addition it applies this to the first user, namely dw_dmac driver.
+> > > Applied w/o 3 & 5.2 they failed, can you pls rebase and resend
+> > > 
+> > 
+> > Actually those two (at least 5/5) can't be applied on top of slave-dma.
+> > The patches requires slave-dma and linux-pm together. I heard it's
+> > usually achieved by creating a specific branch in one subsystem
+> > (linux-pm in our case) for another.
+> > 
+> > Rafael, what could we do here?
 > 
-> Hi,
+> I suppose Vinod can pull from my acpi-lpss (which is guaranteed not to be
+> rebased at this point) and apply the series on top of that.
+Or I can wait for rc1 and apply afterwards...?
 > 
-> what's the reason I got CCed on this two patches? The ipc-sem-next
-> issue I reported?
-
-sorry,
-just use the result of scripts/get_maintainer.pl
-
+> Thanks,
+> Rafael
 > 
-> Against what tree are those patches?
-> They are not compatible with Linux-Next (next-20130419).
-
-main
-
 > 
-> Thanks.
-> 
-> Regards,
-> - Sedat -
-> 
-> [1] http://marc.info/?t=136631457900005&r=1&w=2
-> 
-> > Signed-off-by: liguang <lig.fnst@cn.fujitsu.com>
-> > ---
-> >  kernel/smp.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> >
-> > diff --git a/kernel/smp.c b/kernel/smp.c
-> > index 1818dc0..2d5deb4 100644
-> > --- a/kernel/smp.c
-> > +++ b/kernel/smp.c
-> > @@ -109,7 +109,7 @@ static void csd_lock_wait(struct call_single_data *data)
-> >  static void csd_lock(struct call_single_data *data)
-> >  {
-> >         csd_lock_wait(data);
-> > -       data->flags = CSD_FLAG_LOCK;
-> > +       data->flags |= CSD_FLAG_LOCK;
-> >
-> >         /*
-> >          * prevent CPU from reordering the above assignment
-> > --
-> > 1.7.2.5
-> >
-
-
+> > > > Since v1:
+> > > >  - address one Vinod's comment
+> > > >  - replace 5/6 & 6/6 by 5/5 from Rafael
+> > > >  - tested on Intel Lynxpoint system
+> > > > 
+> > > > Andy Shevchenko (4):
+> > > >   dma: acpi-dma: introduce ACPI DMA helpers
+> > > >   dmaengine: call acpi_dma_request_slave_channel as well
+> > > >   dma: acpi-dma: parse CSRT to extract additional resources
+> > > >   dw_dmac: add ACPI support
+> > > > 
+> > > > Rafael J. Wysocki (1):
+> > > >   ACPI / LPSS: add support of shared clock
+> > > > 
+> > > >  Documentation/acpi/enumeration.txt     |  77 ++++++
+> > > >  drivers/acpi/Makefile                  |   1 -
+> > > >  drivers/acpi/acpi_lpss.c               |  26 +-
+> > > >  drivers/acpi/csrt.c                    | 159 ------------
+> > > >  drivers/acpi/internal.h                |   1 -
+> > > >  drivers/acpi/scan.c                    |   1 -
+> > > >  drivers/clk/x86/clk-lpt.c              |  15 +-
+> > > >  drivers/dma/Kconfig                    |   4 +
+> > > >  drivers/dma/Makefile                   |   1 +
+> > > >  drivers/dma/acpi-dma.c                 | 445 +++++++++++++++++++++++++++++++++
+> > > >  drivers/dma/dmaengine.c                |   6 +
+> > > >  drivers/dma/dw_dmac.c                  |  68 +++--
+> > > >  drivers/dma/dw_dmac_regs.h             |   1 -
+> > > >  include/linux/acpi_dma.h               | 120 +++++++++
+> > > >  include/linux/platform_data/clk-lpss.h |   5 +
+> > > >  15 files changed, 741 insertions(+), 189 deletions(-)
+> > > >  delete mode 100644 drivers/acpi/csrt.c
+> > > >  create mode 100644 drivers/dma/acpi-dma.c
+> > > >  create mode 100644 include/linux/acpi_dma.h
+> > > > 
+> > 
+> > 
+> -- 
+> I speak only for myself.
+> Rafael J. Wysocki, Intel Open Source Technology Center.
