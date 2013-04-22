@@ -1,53 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754357Ab3DVCY1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Apr 2013 22:24:27 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:49585 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753904Ab3DVCYX (ORCPT
+	id S1754254Ab3DVCaT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Apr 2013 22:30:19 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:56288 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753855Ab3DVCaR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Apr 2013 22:24:23 -0400
-X-AuditID: 9c930179-b7b5bae0000069d1-a8-51749f52cfc9
-From: "Jongsung Kim" <neidhard.kim@lge.com>
-To: "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>
-Cc: <gregkh@linuxfoundation.org>, <jslaby@suse.cz>,
-        <linux-serial@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-References: <201304151445.25151.neidhard.kim@lge.com> <20130419141748.GU14496@n2100.arm.linux.org.uk>
-In-Reply-To: <20130419141748.GU14496@n2100.arm.linux.org.uk>
-Subject: RE: [RESEND][PATCH] ARM: PL011: add support for extended FIFO-size	of PL011-r1p5
-Date: Mon, 22 Apr 2013 11:24:18 +0900
-Message-ID: <019701ce3f00$7e0c5390$7a24fab0$@lge.com>
+	Sun, 21 Apr 2013 22:30:17 -0400
+X-Originating-IP: 108.223.40.66
+Date: Sun, 21 Apr 2013 19:30:45 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
+Cc: Lars-Peter Clausen <lars@metafoo.de>, Jean Delvare <khali@linux-fr.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Dajun Chen <david.chen@diasemi.com>
+Subject: Re: [NEW DRIVER V6 6/7] drivers/hwmon: DA9058 HWMON driver
+Message-ID: <20130422023045.GA31508@roeck-us.net>
+References: <201304191712.r3JHCEmr017829@latitude>
+ <51718BFE.7060409@metafoo.de>
+ <20130420173513.GA8275@roeck-us.net>
+ <24DF37198A1E704D9811D8F72B87EB514191F1F7@NB-EX-MBX02.diasemi.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 15.0
-Thread-Index: AQJA+uJt7DT2d3XFxKZdxbxc1LBiMwIysIM1l+pvhhA=
-Content-Language: ko
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <24DF37198A1E704D9811D8F72B87EB514191F1F7@NB-EX-MBX02.diasemi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thank you for your comments, Russell. I'll happily apply your recommendation
-just after it come up to the merge window. Or, do you want me to send it by now?
+On Mon, Apr 22, 2013 at 01:14:26AM +0000, Opensource [Anthony Olech] wrote:
+> > -----Original Message-----
+> > From: Guenter Roeck [mailto:linux@roeck-us.net]
+> > Sent: 20 April 2013 18:35
+> > To: Lars-Peter Clausen
+> > Cc: Opensource [Anthony Olech]; Jean Delvare; Mark Brown; Randy Dunlap;
+> > lm-sensors@lm-sensors.org; LKML; David Dajun Chen
+> > Subject: Re: [NEW DRIVER V6 6/7] drivers/hwmon: DA9058 HWMON driver
+> > On Fri, Apr 19, 2013 at 08:25:02PM +0200, Lars-Peter Clausen wrote:
+> > > Same comment as before, I'd like to see this using the generic IIO to
+> > > HWMON bridge instead of recreating it.
+> > ... and I agree. Seems we are getting more and more of those, and at some
+> > point it makes really sense to find a generic solution.
+> > Anthony, can you please look into that ?
+> > Thanks,
+> > Guenter
+> 
+> OK -- generic IIO to HWMON bridge
+> 
+> I will investigate - but if you know any prototypes or any useful starting point could you let me know as I don't want to re-invent the wheel.
+> 
+The idea is that you would implement an IIO ADC driver (drivers/iio/adc has lots
+of examples). The IIO to HWMON bridge already exists (drivers/hwmon/iio_hwmon.c
+in linux-next or drivers/staging/iio/iio_hwmon.c in mainline). Setting it up
+would then then a matter of platform data or device tree data.
 
------Original Message-----
-From: Russell King - ARM Linux [mailto:linux@arm.linux.org.uk] 
-Sent: Friday, April 19, 2013 11:18 PM
-To: Jongsung Kim
-Cc: gregkh@linuxfoundation.org; jslaby@suse.cz; linux-serial@vger.kernel.org;
-linux-kernel@vger.kernel.org
-Subject: Re: [RESEND][PATCH] ARM: PL011: add support for extended FIFO-size of
-PL011-r1p5
-
-On Mon, Apr 15, 2013 at 02:45:25PM +0900, Jongsung Kim wrote:
-> The latest r1p5-revision of the ARM PL011 UART has 32-byte FIFOs,
-> while all earlier ones have 16-byte FIFOs. This patch suggests
-> a way to set the FIFO-size correctly & flexibly by using a member
-> function named get_fifosize, rather than using the fifosize member
-> variable. The function takes the UARTPeriphID, and returns the
-> correct FIFO size.
-
-Same comments as previous version.
-
+Thanks,
+Guenter
