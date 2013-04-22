@@ -1,61 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753973Ab3DVBOa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Apr 2013 21:14:30 -0400
-Received: from mailrelay1.diasemi.com ([82.210.246.133]:10753 "EHLO
-	mailrelay1.diasemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753510Ab3DVBO3 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Apr 2013 21:14:29 -0400
-From: "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
-To: Guenter Roeck <linux@roeck-us.net>, Lars-Peter Clausen <lars@metafoo.de>
-CC: "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>,
-        "Jean Delvare" <khali@linux-fr.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Dajun Chen <david.chen@diasemi.com>
-Subject: RE: [NEW DRIVER V6 6/7] drivers/hwmon: DA9058 HWMON driver
-Thread-Topic: [NEW DRIVER V6 6/7] drivers/hwmon: DA9058 HWMON driver
-Thread-Index: AQHOPSEubkz3P5Ym/UOAXwYREM+UHZjdy2MAgAGEaoCAAh99gA==
-Date: Mon, 22 Apr 2013 01:14:26 +0000
-Message-ID: <24DF37198A1E704D9811D8F72B87EB514191F1F7@NB-EX-MBX02.diasemi.com>
-References: <201304191712.r3JHCEmr017829@latitude>
- <51718BFE.7060409@metafoo.de> <20130420173513.GA8275@roeck-us.net>
-In-Reply-To: <20130420173513.GA8275@roeck-us.net>
-Accept-Language: en-GB, de-DE, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.95.24.79]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754063Ab3DVBSv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Apr 2013 21:18:51 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:60127 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753677Ab3DVBSu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Apr 2013 21:18:50 -0400
+Message-ID: <51748FEF.7050703@ti.com>
+Date: Sun, 21 Apr 2013 20:18:39 -0500
+From: Jon Hunter <jon-hunter@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Lars-Peter Clausen <lars@metafoo.de>, Vinod Koul <vinod.koul@intel.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] dma:of: Use a mutex to protect the of_dma_list
+References: <1366364534-3298-1-git-send-email-lars@metafoo.de> <5171C8F6.6010702@ti.com> <51724393.1060608@metafoo.de> <201304201238.08908.arnd@arndb.de>
+In-Reply-To: <201304201238.08908.arnd@arndb.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [172.24.1.145]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Guenter Roeck [mailto:linux@roeck-us.net]
-> Sent: 20 April 2013 18:35
-> To: Lars-Peter Clausen
-> Cc: Opensource [Anthony Olech]; Jean Delvare; Mark Brown; Randy Dunlap;
-> lm-sensors@lm-sensors.org; LKML; David Dajun Chen
-> Subject: Re: [NEW DRIVER V6 6/7] drivers/hwmon: DA9058 HWMON driver
-> On Fri, Apr 19, 2013 at 08:25:02PM +0200, Lars-Peter Clausen wrote:
-> > Same comment as before, I'd like to see this using the generic IIO to
-> > HWMON bridge instead of recreating it.
-> ... and I agree. Seems we are getting more and more of those, and at some
-> point it makes really sense to find a generic solution.
-> Anthony, can you please look into that ?
-> Thanks,
-> Guenter
 
-OK -- generic IIO to HWMON bridge
+On 04/20/2013 05:38 AM, Arnd Bergmann wrote:
+> On Saturday 20 April 2013, Lars-Peter Clausen wrote:
+>> On 04/20/2013 12:45 AM, Jon Hunter wrote:
+>>> I think that there is a problem here. For controllers using the
+>>> of_dma_simple_xlate(), this will call dma_request_channel() which also
+>>> uses a mutex.
+>>
+>> That would only be a problem if it'd use the same mutex. Holding two mutexes at
+>> the same time is not a problem per se.
+>>
+> 
+> I guess Jon originlly tried it with a spinlock as the outer lock, which indeed
+> does not work, but the new version does not have this problem.
 
-I will investigate - but if you know any prototypes or any useful starting point could you let me know as I don't want to re-invent the wheel.
+Yes the spinlock was a problem and hence for the put/get functions. Ok
+so that's fine then.
 
-Thanks,
-
-Anthony Olech
+Cheers
+Jon
