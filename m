@@ -1,111 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754843Ab3DVH56 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 03:57:58 -0400
-Received: from mail-la0-f45.google.com ([209.85.215.45]:44292 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751009Ab3DVH55 (ORCPT
+	id S1754965Ab3DVH6K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 03:58:10 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:43878 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751009Ab3DVH6G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 03:57:57 -0400
-From: Dmitry Monakhov <dmonakhov@openvz.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] relay: move remove_buf_file inside relay_close_buf
-User-Agent: Notmuch/0.6.1 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-redhat-linux-gnu)
-CC: Andrew Morton <akpm@linux-foundation.org>, Jens Axboe <axboe@kernel.dk>,
-        gregkh@linuxfoundation.org, viro@zeniv.linux.org.uk
-Date: Mon, 22 Apr 2013 11:57:52 +0400
-Message-ID: <87ppxnhu9r.fsf@openvz.org>
+	Mon, 22 Apr 2013 03:58:06 -0400
+Message-ID: <5174ED8A.5090802@free-electrons.com>
+Date: Mon, 22 Apr 2013 09:58:02 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="=-=-="
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+CC: Jonathan Cameron <jic23@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>, jimwall@q.com,
+        brian@crystalfontz.com, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org,
+        Jonathan Cameron <jic23@cam.ac.uk>, Rob Landley <rob@landley.net>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: Re: [PATCH 1/3] iio: Add Nuvoton NAU7802 ADC driver
+References: <1366299536-18353-1-git-send-email-alexandre.belloni@free-electrons.com> <1366299536-18353-2-git-send-email-alexandre.belloni@free-electrons.com> <51726541.6060304@kernel.org> <5172B68B.4010506@free-electrons.com>
+In-Reply-To: <5172B68B.4010506@free-electrons.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
+Hi Alexandre, Jonathan,
 
+Le 20/04/2013 17:38, Alexandre Belloni a écrit :
+> On 20/04/2013 11:52, Jonathan Cameron wrote:
+>>> +	&iio_dev_attr_gain.dev_attr.attr,
+>>> +	&iio_const_attr_gain_available.dev_attr.attr,
+>>> +	&iio_dev_attr_min_conversions.dev_attr.attr,
+>> What governs this?  Looks to me more like it should be hidden away
+>> in the device tree than be here.
+> 
+> I guess it will depend on what you connect to your adc. Do we want to
+> fix that in the DT or to be able to change it at runtime ?
 
-Hi, 
-Let someone please finally take care of this patch.
-Originally it was submitted here https://lkml.org/lkml/2010/2/28/103
-This patch fix very annoying issue. I've got OK from Jens and Tom
-Zanussi but no one accept it. MAINTAINERS file has no info about relayfs.
-So I've added to CC all people which may be interested in that.
+I don't think so. Unless I misunderstood it, this attribute is the
+number of conversions that must occur when switching from one channel to
+another to get a good-enough precision for the ADC, right?
 
+So I don't really see 1) why it could be changed by the user through
+sysfs in the first place 2) this is not hardware configuration at all,
+more some black magic within the driver, so it shouldn't be at all in
+the device tree anyway.
 
---=-=-=
-Content-Type: text/x-patch
-Content-Disposition: inline;
- filename=0001-relay-move-remove_buf_file-inside-relay_close_buf.patch
+Maxime
 
->From 1c0d96aece60a8a81c3f0cf1f681a5ff4333a2ff Mon Sep 17 00:00:00 2001
-From: Dmitry Monakhov <dmonakhov@openvz.org>
-Date: Mon, 22 Apr 2013 11:41:41 +0400
-Subject: [PATCH] relay: move remove_buf_file inside relay_close_buf
-
-Currently remove_buf_file callback is called from from kobject
-release method. This result in follow issue:
-# blktrace -d /dev/sda1 -d /dev/sda -o test
-
-blktrace_setup()
- dir = create_dir()
- rchan = relay_open(dir,...)
- ->create_buf_file_callback
-    buf_file  = debugfs_create_file(dir, )
-
-Userspace will open buf_file.
-Later we make a decision to stop tracing
-blktrace_down()
-  relay_close(rhcan)  /* just decrement kobj reference  */
-                      /* since it is not zero then callback not called */
-  debugfs_remove(dir) /* FAIL due to non empty dir   */
-
-Later user space will close the file and file will be deleted,
-but directory still exist.
-user_space_close()
- ->file_release
-   ->release_buf_file_callback
-     ->debugfs_remove(buf_file
-## TESTCASE:
-# blktrace -d /dev/sda1 -d /dev/sda -o test
-# After that blktrace infrastructure will remain broken in
-# an unusable state so: blktrace -d /dev/sda1 will not work.
-
-In fact this is general issue, blktrace is just one of examples.
-We can not reliably remove parent dir until all users close the
-buf_file.
-
-Solution: We don't have to wait that long. File should be deleted inside
-relay_close_buf().
-
-Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
-Acked-by : Jens Axboe <axboe@kernel.dk>
-
----
- kernel/relay.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/kernel/relay.c b/kernel/relay.c
-index 01ab081..a0d2000 100644
---- a/kernel/relay.c
-+++ b/kernel/relay.c
-@@ -234,7 +234,6 @@ static void relay_destroy_buf(struct rchan_buf *buf)
- static void relay_remove_buf(struct kref *kref)
- {
- 	struct rchan_buf *buf = container_of(kref, struct rchan_buf, kref);
--	buf->chan->cb->remove_buf_file(buf->dentry);
- 	relay_destroy_buf(buf);
- }
- 
-@@ -484,6 +483,7 @@ static void relay_close_buf(struct rchan_buf *buf)
- {
- 	buf->finalized = 1;
- 	del_timer_sync(&buf->timer);
-+	buf->chan->cb->remove_buf_file(buf->dentry);
- 	kref_put(&buf->kref, relay_remove_buf);
- }
- 
 -- 
-1.7.1
-
-
---=-=-=--
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
