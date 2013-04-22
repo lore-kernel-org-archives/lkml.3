@@ -1,738 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753063Ab3DVJ6G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 05:58:06 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:52669 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751394Ab3DVJ6E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 05:58:04 -0400
-From: Roger Quadros <rogerq@ti.com>
-To: <tony@atomide.com>
-CC: <balbi@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Roger Quadros <rogerq@ti.com>
-Subject: [PATCH] ARM: OMAP2+: omap-usb-host: clean up pin mux setup code
-Date: Mon, 22 Apr 2013 12:57:53 +0300
-Message-ID: <1366624673-2684-1-git-send-email-rogerq@ti.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1752658Ab3DVKCu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 06:02:50 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:54613 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751203Ab3DVKCt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Apr 2013 06:02:49 -0400
+Date: Mon, 22 Apr 2013 12:02:19 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: kernel@pengutronix.de, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Jonathan Austin <jonathan.austin@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Paul Mundt <lethal@linux-sh.org>, linux-sh@vger.kernel.org
+Subject: Re: [PATCH v3] irqchip: Add support for ARMv7-M's NVIC
+Message-ID: <20130422100219.GH15233@pengutronix.de>
+References: <1366214540-31166-1-git-send-email-u.kleine-koenig@pengutronix.de>
+ <alpine.LFD.2.02.1304180947070.21884@ionos>
+ <20130419150927.GE15233@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130419150927.GE15233@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The USB host pins are named quite differently between OMAP3 and
-OMAP4+ SoCs. To make this managable in code, we create a pin mapping
-table (pin_names) that maps pin function to pin name.
+Hello,
 
-This pin mapping table is populated at runtime based on a pin
-name template. Templates are provided for OMAP3 and 4 SoCs.
+(for the new readers of this thread: This is about using
 
-The setup_io_mux() function uses the pin mapping table to
-setup the pin mux.
+	u32 mask = 1 << (d->hwirq % 32);
 
-The resulting code is a lot more clean, manageable and scalable.
+instead of
 
-Signed-off-by: Roger Quadros <rogerq@ti.com>
----
- arch/arm/mach-omap2/usb-host.c |  648 ++++++++++++++--------------------------
- 1 files changed, 225 insertions(+), 423 deletions(-)
+	u32 mask = 1 << (d->irq - gc->irq_base);
 
-diff --git a/arch/arm/mach-omap2/usb-host.c b/arch/arm/mach-omap2/usb-host.c
-index aa27d7f..86cafee 100644
---- a/arch/arm/mach-omap2/usb-host.c
-+++ b/arch/arm/mach-omap2/usb-host.c
-@@ -10,6 +10,7 @@
-  *
-  * Generalization by:
-  * Felipe Balbi <balbi@ti.com>
-+ * Roger Quadros <rogerq@ti.com>
-  *
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License version 2 as
-@@ -41,439 +42,239 @@
- #define	USBHS_UHH_HWMODNAME	"usb_host_hs"
- #define USBHS_TLL_HWMODNAME	"usb_tll_hs"
- 
--/* MUX settings for EHCI pins */
-+#define MAX_PIN_NAME	20
-+
-+/* all possible USB pin configurations for one port */
-+enum usbhs_pin_function {
-+	/* EHCI PHY mode pins */
-+	PHY_STP, PHY_CLK, PHY_DIR, PHY_NXT, PHY_DAT0, PHY_DAT1,
-+	PHY_DAT2, PHY_DAT3, PHY_DAT4, PHY_DAT5, PHY_DAT6, PHY_DAT7,
-+
-+	/* EHCI TLL mode pins */
-+	TLL_STP, TLL_CLK, TLL_DIR, TLL_NXT, TLL_DAT0, TLL_DAT1,
-+	TLL_DAT2, TLL_DAT3, TLL_DAT4, TLL_DAT5, TLL_DAT6, TLL_DAT7,
-+
-+	/* OHCI mode pins */
-+	RXDP, RXDM, RXRCV, TXEN, TXSE0, TXDAT,
-+
-+	/* Terminator */
-+	MAX_PINS,
-+};
-+
- /*
-- * setup_ehci_io_mux - initialize IO pad mux for USBHOST
-+ * NOTE: In the pin templates, the pin names must contain %d
-+ * where port number is to be inserted.
-+ * e.g. hsusb%d_stp becomes hsusb1_stp
-  */
--static void __init setup_ehci_io_mux(const enum usbhs_omap_port_mode *port_mode)
--{
--	switch (port_mode[0]) {
--	case OMAP_EHCI_PORT_MODE_PHY:
--		omap_mux_init_signal("hsusb1_stp", OMAP_PIN_OUTPUT);
--		omap_mux_init_signal("hsusb1_clk", OMAP_PIN_OUTPUT);
--		omap_mux_init_signal("hsusb1_dir", OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("hsusb1_nxt", OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("hsusb1_data0", OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("hsusb1_data1", OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("hsusb1_data2", OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("hsusb1_data3", OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("hsusb1_data4", OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("hsusb1_data5", OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("hsusb1_data6", OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("hsusb1_data7", OMAP_PIN_INPUT_PULLDOWN);
--		break;
--	case OMAP_EHCI_PORT_MODE_TLL:
--		omap_mux_init_signal("hsusb1_tll_stp",
--			OMAP_PIN_INPUT_PULLUP);
--		omap_mux_init_signal("hsusb1_tll_clk",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("hsusb1_tll_dir",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("hsusb1_tll_nxt",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("hsusb1_tll_data0",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("hsusb1_tll_data1",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("hsusb1_tll_data2",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("hsusb1_tll_data3",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("hsusb1_tll_data4",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("hsusb1_tll_data5",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("hsusb1_tll_data6",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("hsusb1_tll_data7",
--			OMAP_PIN_INPUT_PULLDOWN);
--		break;
--	case OMAP_USBHS_PORT_MODE_UNUSED:
--		/* FALLTHROUGH */
--	default:
--		break;
--	}
- 
--	switch (port_mode[1]) {
--	case OMAP_EHCI_PORT_MODE_PHY:
--		omap_mux_init_signal("hsusb2_stp", OMAP_PIN_OUTPUT);
--		omap_mux_init_signal("hsusb2_clk", OMAP_PIN_OUTPUT);
--		omap_mux_init_signal("hsusb2_dir", OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("hsusb2_nxt", OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("hsusb2_data0",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("hsusb2_data1",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("hsusb2_data2",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("hsusb2_data3",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("hsusb2_data4",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("hsusb2_data5",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("hsusb2_data6",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("hsusb2_data7",
--			OMAP_PIN_INPUT_PULLDOWN);
--		break;
--	case OMAP_EHCI_PORT_MODE_TLL:
--		omap_mux_init_signal("hsusb2_tll_stp",
--			OMAP_PIN_INPUT_PULLUP);
--		omap_mux_init_signal("hsusb2_tll_clk",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("hsusb2_tll_dir",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("hsusb2_tll_nxt",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("hsusb2_tll_data0",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("hsusb2_tll_data1",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("hsusb2_tll_data2",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("hsusb2_tll_data3",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("hsusb2_tll_data4",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("hsusb2_tll_data5",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("hsusb2_tll_data6",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("hsusb2_tll_data7",
--			OMAP_PIN_INPUT_PULLDOWN);
--		break;
--	case OMAP_USBHS_PORT_MODE_UNUSED:
--		/* FALLTHROUGH */
--	default:
--		break;
--	}
-+/* Pin template for OMAP3 SoCs */
-+static const char __initdata omap3_pin_template[MAX_PINS][MAX_PIN_NAME] = {
-+	[PHY_STP] = "hsusb%d_stp",
-+	[PHY_CLK] = "hsusb%d_clk",
-+	[PHY_DIR] = "hsusb%d_dir",
-+	[PHY_NXT] = "hsusb%d_nxt",
-+	[PHY_DAT0] = "hsusb%d_data0",
-+	[PHY_DAT1] = "hsusb%d_data1",
-+	[PHY_DAT2] = "hsusb%d_data2",
-+	[PHY_DAT3] = "hsusb%d_data3",
-+	[PHY_DAT4] = "hsusb%d_data4",
-+	[PHY_DAT5] = "hsusb%d_data5",
-+	[PHY_DAT6] = "hsusb%d_data6",
-+	[PHY_DAT7] = "hsusb%d_data7",
-+
-+	[TLL_STP] = "hsusb%d_tll_stp",
-+	[TLL_CLK] = "hsusb%d_tll_clk",
-+	[TLL_DIR] = "hsusb%d_tll_dir",
-+	[TLL_NXT] = "hsusb%d_tll_nxt",
-+	[TLL_DAT0] = "hsusb%d_tll_data0",
-+	[TLL_DAT1] = "hsusb%d_tll_data1",
-+	[TLL_DAT2] = "hsusb%d_tll_data2",
-+	[TLL_DAT3] = "hsusb%d_tll_data3",
-+	[TLL_DAT4] = "hsusb%d_tll_data4",
-+	[TLL_DAT5] = "hsusb%d_tll_data5",
-+	[TLL_DAT6] = "hsusb%d_tll_data6",
-+	[TLL_DAT7] = "hsusb%d_tll_data7",
-+
-+	[RXDP] = "mm%d_rxdp",
-+	[RXDM] = "mm%d_rxdm",
-+	[RXRCV] = "mm%d_rxrcv",
-+	[TXEN] = "mm%d_txen_n",
-+	[TXSE0] = "mm%d_txse0",
-+	[TXDAT] = "mm%d_txdat",
-+};
- 
--	switch (port_mode[2]) {
--	case OMAP_EHCI_PORT_MODE_PHY:
--		printk(KERN_WARNING "Port3 can't be used in PHY mode\n");
--		break;
--	case OMAP_EHCI_PORT_MODE_TLL:
--		omap_mux_init_signal("hsusb3_tll_stp",
--			OMAP_PIN_INPUT_PULLUP);
--		omap_mux_init_signal("hsusb3_tll_clk",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("hsusb3_tll_dir",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("hsusb3_tll_nxt",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("hsusb3_tll_data0",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("hsusb3_tll_data1",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("hsusb3_tll_data2",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("hsusb3_tll_data3",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("hsusb3_tll_data4",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("hsusb3_tll_data5",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("hsusb3_tll_data6",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("hsusb3_tll_data7",
--			OMAP_PIN_INPUT_PULLDOWN);
--		break;
--	case OMAP_USBHS_PORT_MODE_UNUSED:
--		/* FALLTHROUGH */
--	default:
--		break;
--	}
-+/* Pin template for OMAP4+ SoCs */
-+static const char __initdata omap4_pin_template[MAX_PINS][MAX_PIN_NAME] = {
-+	[PHY_STP] = "usbb%d_ulpiphy_stp",
-+	[PHY_CLK] = "usbb%d_ulpiphy_clk",
-+	[PHY_DIR] = "usbb%d_ulpiphy_dir",
-+	[PHY_NXT] = "usbb%d_ulpiphy_nxt",
-+	[PHY_DAT0] = "usbb%d_ulpiphy_dat0",
-+	[PHY_DAT1] = "usbb%d_ulpiphy_dat1",
-+	[PHY_DAT2] = "usbb%d_ulpiphy_dat2",
-+	[PHY_DAT3] = "usbb%d_ulpiphy_dat3",
-+	[PHY_DAT4] = "usbb%d_ulpiphy_dat4",
-+	[PHY_DAT5] = "usbb%d_ulpiphy_dat5",
-+	[PHY_DAT6] = "usbb%d_ulpiphy_dat6",
-+	[PHY_DAT7] = "usbb%d_ulpiphy_dat7",
-+
-+	[TLL_STP] = "usbb%d_ulpitll_stp",
-+	[TLL_CLK] = "usbb%d_ulpitll_clk",
-+	[TLL_DIR] = "usbb%d_ulpitll_dir",
-+	[TLL_NXT] = "usbb%d_ulpitll_nxt",
-+	[TLL_DAT0] = "usbb%d_ulpitll_dat0",
-+	[TLL_DAT1] = "usbb%d_ulpitll_dat1",
-+	[TLL_DAT2] = "usbb%d_ulpitll_dat2",
-+	[TLL_DAT3] = "usbb%d_ulpitll_dat3",
-+	[TLL_DAT4] = "usbb%d_ulpitll_dat4",
-+	[TLL_DAT5] = "usbb%d_ulpitll_dat5",
-+	[TLL_DAT6] = "usbb%d_ulpitll_dat6",
-+	[TLL_DAT7] = "usbb%d_ulpitll_dat7",
-+
-+	[RXDP] = "usbb%d_mm_rxdp",
-+	[RXDM] = "usbb%d_mm_rxdm",
-+	[RXRCV] = "usbb%d_mm_rxrcv",
-+	[TXEN] = "usbb%d_mm_txen",
-+	[TXSE0] = "usbb%d_mm_txse0",
-+	[TXDAT] = "usbb%d_mm_txdat",
-+};
- 
--	return;
-+/**
-+ * populate_pin_names - populate the pin names based on the given template
-+ * @template: the name template for the pins
-+ * @pin_names: the table where the pin names will be stored
-+ *
-+ * This function populates the pin names into the pin_names table.
-+ */
-+static void __init populate_pin_names(const char (*template)[MAX_PIN_NAME],
-+				char (*pin_names)[MAX_PINS][MAX_PIN_NAME])
-+{
-+	int i, j;
-+
-+	for (i = 0; i < OMAP3_HS_USB_PORTS; i++) {
-+		for (j = 0; j < MAX_PINS; j++) {
-+			/* template contains %d */
-+			snprintf(pin_names[i][j], MAX_PIN_NAME,
-+						template[j], i + 1);
-+		}
-+	}
- }
- 
-+/**
-+ * usbhs_setup_io_mux - Setup IO mux for USB Host pins based on port_mode
-+ * @port_mode: port mode list
-+ * @template: pin name template for the SoC
-+ */
- static
--void __init setup_4430ehci_io_mux(const enum usbhs_omap_port_mode *port_mode)
-+void __init usbhs_setup_io_mux(const enum usbhs_omap_port_mode *port_mode,
-+					const char (*template)[MAX_PIN_NAME])
- {
--	switch (port_mode[0]) {
--	case OMAP_EHCI_PORT_MODE_PHY:
--		omap_mux_init_signal("usbb1_ulpiphy_stp",
--			OMAP_PIN_OUTPUT);
--		omap_mux_init_signal("usbb1_ulpiphy_clk",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("usbb1_ulpiphy_dir",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("usbb1_ulpiphy_nxt",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("usbb1_ulpiphy_dat0",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("usbb1_ulpiphy_dat1",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("usbb1_ulpiphy_dat2",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("usbb1_ulpiphy_dat3",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("usbb1_ulpiphy_dat4",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("usbb1_ulpiphy_dat5",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("usbb1_ulpiphy_dat6",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("usbb1_ulpiphy_dat7",
--			OMAP_PIN_INPUT_PULLDOWN);
--			break;
--	case OMAP_EHCI_PORT_MODE_TLL:
--		omap_mux_init_signal("usbb1_ulpitll_stp",
--			OMAP_PIN_INPUT_PULLUP);
--		omap_mux_init_signal("usbb1_ulpitll_clk",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("usbb1_ulpitll_dir",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("usbb1_ulpitll_nxt",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("usbb1_ulpitll_dat0",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("usbb1_ulpitll_dat1",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("usbb1_ulpitll_dat2",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("usbb1_ulpitll_dat3",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("usbb1_ulpitll_dat4",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("usbb1_ulpitll_dat5",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("usbb1_ulpitll_dat6",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("usbb1_ulpitll_dat7",
--			OMAP_PIN_INPUT_PULLDOWN);
--			break;
--	case OMAP_USBHS_PORT_MODE_UNUSED:
--	default:
--			break;
-+	int i;
-+
-+	char (*pin_names)[MAX_PINS][MAX_PIN_NAME];
-+
-+	pin_names  = kmalloc(sizeof(char [OMAP3_HS_USB_PORTS][MAX_PINS][MAX_PIN_NAME]),
-+						GFP_KERNEL);
-+	if (!pin_names) {
-+		pr_err("%s: memory allocation failed\n", __func__);
-+		return;
- 	}
--	switch (port_mode[1]) {
--	case OMAP_EHCI_PORT_MODE_PHY:
--		omap_mux_init_signal("usbb2_ulpiphy_stp",
--			OMAP_PIN_OUTPUT);
--		omap_mux_init_signal("usbb2_ulpiphy_clk",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("usbb2_ulpiphy_dir",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("usbb2_ulpiphy_nxt",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("usbb2_ulpiphy_dat0",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("usbb2_ulpiphy_dat1",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("usbb2_ulpiphy_dat2",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("usbb2_ulpiphy_dat3",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("usbb2_ulpiphy_dat4",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("usbb2_ulpiphy_dat5",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("usbb2_ulpiphy_dat6",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("usbb2_ulpiphy_dat7",
--			OMAP_PIN_INPUT_PULLDOWN);
--			break;
--	case OMAP_EHCI_PORT_MODE_TLL:
--		omap_mux_init_signal("usbb2_ulpitll_stp",
--			OMAP_PIN_INPUT_PULLUP);
--		omap_mux_init_signal("usbb2_ulpitll_clk",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("usbb2_ulpitll_dir",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("usbb2_ulpitll_nxt",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("usbb2_ulpitll_dat0",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("usbb2_ulpitll_dat1",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("usbb2_ulpitll_dat2",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("usbb2_ulpitll_dat3",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("usbb2_ulpitll_dat4",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("usbb2_ulpitll_dat5",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("usbb2_ulpitll_dat6",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("usbb2_ulpitll_dat7",
--			OMAP_PIN_INPUT_PULLDOWN);
-+
-+	populate_pin_names(template, pin_names);
-+
-+	for (i = 0; i < OMAP3_HS_USB_PORTS; i++) {
-+		switch (port_mode[i]) {
-+		/* EHCI cases */
-+		case OMAP_EHCI_PORT_MODE_PHY:
-+			omap_mux_init_signal(pin_names[i][PHY_STP],
-+				OMAP_PIN_OUTPUT);
-+			omap_mux_init_signal(pin_names[i][PHY_CLK],
-+				OMAP_PIN_INPUT_PULLDOWN);
-+			omap_mux_init_signal(pin_names[i][PHY_DIR],
-+				OMAP_PIN_INPUT_PULLDOWN);
-+			omap_mux_init_signal(pin_names[i][PHY_NXT],
-+				OMAP_PIN_INPUT_PULLDOWN);
-+			omap_mux_init_signal(pin_names[i][PHY_DAT0],
-+				OMAP_PIN_INPUT_PULLDOWN);
-+			omap_mux_init_signal(pin_names[i][PHY_DAT1],
-+				OMAP_PIN_INPUT_PULLDOWN);
-+			omap_mux_init_signal(pin_names[i][PHY_DAT2],
-+				OMAP_PIN_INPUT_PULLDOWN);
-+			omap_mux_init_signal(pin_names[i][PHY_DAT3],
-+				OMAP_PIN_INPUT_PULLDOWN);
-+			omap_mux_init_signal(pin_names[i][PHY_DAT4],
-+				OMAP_PIN_INPUT_PULLDOWN);
-+			omap_mux_init_signal(pin_names[i][PHY_DAT5],
-+				OMAP_PIN_INPUT_PULLDOWN);
-+			omap_mux_init_signal(pin_names[i][PHY_DAT6],
-+				OMAP_PIN_INPUT_PULLDOWN);
-+			omap_mux_init_signal(pin_names[i][PHY_DAT7],
-+				OMAP_PIN_INPUT_PULLDOWN);
- 			break;
--	case OMAP_USBHS_PORT_MODE_UNUSED:
--	default:
-+
-+		case OMAP_EHCI_PORT_MODE_TLL:
-+			omap_mux_init_signal(pin_names[i][TLL_STP],
-+				OMAP_PIN_OUTPUT);
-+			omap_mux_init_signal(pin_names[i][TLL_CLK],
-+				OMAP_PIN_INPUT_PULLDOWN);
-+			omap_mux_init_signal(pin_names[i][TLL_DIR],
-+				OMAP_PIN_INPUT_PULLDOWN);
-+			omap_mux_init_signal(pin_names[i][TLL_NXT],
-+				OMAP_PIN_INPUT_PULLDOWN);
-+			omap_mux_init_signal(pin_names[i][TLL_DAT0],
-+				OMAP_PIN_INPUT_PULLDOWN);
-+			omap_mux_init_signal(pin_names[i][TLL_DAT1],
-+				OMAP_PIN_INPUT_PULLDOWN);
-+			omap_mux_init_signal(pin_names[i][TLL_DAT2],
-+				OMAP_PIN_INPUT_PULLDOWN);
-+			omap_mux_init_signal(pin_names[i][TLL_DAT3],
-+				OMAP_PIN_INPUT_PULLDOWN);
-+			omap_mux_init_signal(pin_names[i][TLL_DAT4],
-+				OMAP_PIN_INPUT_PULLDOWN);
-+			omap_mux_init_signal(pin_names[i][TLL_DAT5],
-+				OMAP_PIN_INPUT_PULLDOWN);
-+			omap_mux_init_signal(pin_names[i][TLL_DAT6],
-+				OMAP_PIN_INPUT_PULLDOWN);
-+			omap_mux_init_signal(pin_names[i][TLL_DAT7],
-+				OMAP_PIN_INPUT_PULLDOWN);
- 			break;
--	}
--}
- 
--static void __init setup_ohci_io_mux(const enum usbhs_omap_port_mode *port_mode)
--{
--	switch (port_mode[0]) {
--	case OMAP_OHCI_PORT_MODE_PHY_6PIN_DATSE0:
--	case OMAP_OHCI_PORT_MODE_PHY_6PIN_DPDM:
--	case OMAP_OHCI_PORT_MODE_TLL_6PIN_DATSE0:
--	case OMAP_OHCI_PORT_MODE_TLL_6PIN_DPDM:
--		omap_mux_init_signal("mm1_rxdp",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("mm1_rxdm",
--			OMAP_PIN_INPUT_PULLDOWN);
--		/* FALLTHROUGH */
--	case OMAP_OHCI_PORT_MODE_PHY_4PIN_DPDM:
--	case OMAP_OHCI_PORT_MODE_TLL_4PIN_DPDM:
--		omap_mux_init_signal("mm1_rxrcv",
--			OMAP_PIN_INPUT_PULLDOWN);
--		/* FALLTHROUGH */
--	case OMAP_OHCI_PORT_MODE_PHY_3PIN_DATSE0:
--	case OMAP_OHCI_PORT_MODE_TLL_3PIN_DATSE0:
--		omap_mux_init_signal("mm1_txen_n", OMAP_PIN_OUTPUT);
--		/* FALLTHROUGH */
--	case OMAP_OHCI_PORT_MODE_TLL_2PIN_DATSE0:
--	case OMAP_OHCI_PORT_MODE_TLL_2PIN_DPDM:
--		omap_mux_init_signal("mm1_txse0",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("mm1_txdat",
--			OMAP_PIN_INPUT_PULLDOWN);
--		break;
--	case OMAP_USBHS_PORT_MODE_UNUSED:
--		/* FALLTHROUGH */
--	default:
--		break;
--	}
--	switch (port_mode[1]) {
--	case OMAP_OHCI_PORT_MODE_PHY_6PIN_DATSE0:
--	case OMAP_OHCI_PORT_MODE_PHY_6PIN_DPDM:
--	case OMAP_OHCI_PORT_MODE_TLL_6PIN_DATSE0:
--	case OMAP_OHCI_PORT_MODE_TLL_6PIN_DPDM:
--		omap_mux_init_signal("mm2_rxdp",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("mm2_rxdm",
--			OMAP_PIN_INPUT_PULLDOWN);
--		/* FALLTHROUGH */
--	case OMAP_OHCI_PORT_MODE_PHY_4PIN_DPDM:
--	case OMAP_OHCI_PORT_MODE_TLL_4PIN_DPDM:
--		omap_mux_init_signal("mm2_rxrcv",
--			OMAP_PIN_INPUT_PULLDOWN);
--		/* FALLTHROUGH */
--	case OMAP_OHCI_PORT_MODE_PHY_3PIN_DATSE0:
--	case OMAP_OHCI_PORT_MODE_TLL_3PIN_DATSE0:
--		omap_mux_init_signal("mm2_txen_n", OMAP_PIN_OUTPUT);
--		/* FALLTHROUGH */
--	case OMAP_OHCI_PORT_MODE_TLL_2PIN_DATSE0:
--	case OMAP_OHCI_PORT_MODE_TLL_2PIN_DPDM:
--		omap_mux_init_signal("mm2_txse0",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("mm2_txdat",
--			OMAP_PIN_INPUT_PULLDOWN);
--		break;
--	case OMAP_USBHS_PORT_MODE_UNUSED:
--		/* FALLTHROUGH */
--	default:
--		break;
--	}
--	switch (port_mode[2]) {
--	case OMAP_OHCI_PORT_MODE_PHY_6PIN_DATSE0:
--	case OMAP_OHCI_PORT_MODE_PHY_6PIN_DPDM:
--	case OMAP_OHCI_PORT_MODE_TLL_6PIN_DATSE0:
--	case OMAP_OHCI_PORT_MODE_TLL_6PIN_DPDM:
--		omap_mux_init_signal("mm3_rxdp",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("mm3_rxdm",
--			OMAP_PIN_INPUT_PULLDOWN);
--		/* FALLTHROUGH */
--	case OMAP_OHCI_PORT_MODE_PHY_4PIN_DPDM:
--	case OMAP_OHCI_PORT_MODE_TLL_4PIN_DPDM:
--		omap_mux_init_signal("mm3_rxrcv",
--			OMAP_PIN_INPUT_PULLDOWN);
--		/* FALLTHROUGH */
--	case OMAP_OHCI_PORT_MODE_PHY_3PIN_DATSE0:
--	case OMAP_OHCI_PORT_MODE_TLL_3PIN_DATSE0:
--		omap_mux_init_signal("mm3_txen_n", OMAP_PIN_OUTPUT);
--		/* FALLTHROUGH */
--	case OMAP_OHCI_PORT_MODE_TLL_2PIN_DATSE0:
--	case OMAP_OHCI_PORT_MODE_TLL_2PIN_DPDM:
--		omap_mux_init_signal("mm3_txse0",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("mm3_txdat",
--			OMAP_PIN_INPUT_PULLDOWN);
--		break;
--	case OMAP_USBHS_PORT_MODE_UNUSED:
--		/* FALLTHROUGH */
--	default:
--		break;
--	}
--}
-+		/* OHCI cases */
-+		case OMAP_OHCI_PORT_MODE_PHY_6PIN_DATSE0:
-+		case OMAP_OHCI_PORT_MODE_PHY_6PIN_DPDM:
-+		case OMAP_OHCI_PORT_MODE_TLL_6PIN_DATSE0:
-+		case OMAP_OHCI_PORT_MODE_TLL_6PIN_DPDM:
-+			omap_mux_init_signal(pin_names[i][RXDP],
-+					OMAP_PIN_INPUT_PULLDOWN);
-+			omap_mux_init_signal(pin_names[i][RXDM],
-+					OMAP_PIN_INPUT_PULLDOWN);
-+
-+		case OMAP_OHCI_PORT_MODE_PHY_4PIN_DPDM:
-+		case OMAP_OHCI_PORT_MODE_TLL_4PIN_DPDM:
-+			omap_mux_init_signal(pin_names[i][RXRCV],
-+					OMAP_PIN_INPUT_PULLDOWN);
-+
-+		case OMAP_OHCI_PORT_MODE_PHY_3PIN_DATSE0:
-+		case OMAP_OHCI_PORT_MODE_TLL_3PIN_DATSE0:
-+			omap_mux_init_signal(pin_names[i][TXEN],
-+					OMAP_PIN_INPUT_PULLDOWN);
-+
-+		case OMAP_OHCI_PORT_MODE_TLL_2PIN_DATSE0:
-+		case OMAP_OHCI_PORT_MODE_TLL_2PIN_DPDM:
-+			omap_mux_init_signal(pin_names[i][TXDAT],
-+					OMAP_PIN_INPUT_PULLDOWN);
-+			omap_mux_init_signal(pin_names[i][TXSE0],
-+					OMAP_PIN_INPUT_PULLDOWN);
-+			break;
- 
--static
--void __init setup_4430ohci_io_mux(const enum usbhs_omap_port_mode *port_mode)
--{
--	switch (port_mode[0]) {
--	case OMAP_OHCI_PORT_MODE_PHY_6PIN_DATSE0:
--	case OMAP_OHCI_PORT_MODE_PHY_6PIN_DPDM:
--	case OMAP_OHCI_PORT_MODE_TLL_6PIN_DATSE0:
--	case OMAP_OHCI_PORT_MODE_TLL_6PIN_DPDM:
--		omap_mux_init_signal("usbb1_mm_rxdp",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("usbb1_mm_rxdm",
--			OMAP_PIN_INPUT_PULLDOWN);
--
--	case OMAP_OHCI_PORT_MODE_PHY_4PIN_DPDM:
--	case OMAP_OHCI_PORT_MODE_TLL_4PIN_DPDM:
--		omap_mux_init_signal("usbb1_mm_rxrcv",
--			OMAP_PIN_INPUT_PULLDOWN);
--
--	case OMAP_OHCI_PORT_MODE_PHY_3PIN_DATSE0:
--	case OMAP_OHCI_PORT_MODE_TLL_3PIN_DATSE0:
--		omap_mux_init_signal("usbb1_mm_txen",
--			OMAP_PIN_INPUT_PULLDOWN);
--
--
--	case OMAP_OHCI_PORT_MODE_TLL_2PIN_DATSE0:
--	case OMAP_OHCI_PORT_MODE_TLL_2PIN_DPDM:
--		omap_mux_init_signal("usbb1_mm_txdat",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("usbb1_mm_txse0",
--			OMAP_PIN_INPUT_PULLDOWN);
--		break;
--
--	case OMAP_USBHS_PORT_MODE_UNUSED:
--	default:
--		break;
-+		/* unused */
-+		case OMAP_USBHS_PORT_MODE_UNUSED:
-+		default:
-+			break;
-+		}
- 	}
- 
--	switch (port_mode[1]) {
--	case OMAP_OHCI_PORT_MODE_PHY_6PIN_DATSE0:
--	case OMAP_OHCI_PORT_MODE_PHY_6PIN_DPDM:
--	case OMAP_OHCI_PORT_MODE_TLL_6PIN_DATSE0:
--	case OMAP_OHCI_PORT_MODE_TLL_6PIN_DPDM:
--		omap_mux_init_signal("usbb2_mm_rxdp",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("usbb2_mm_rxdm",
--			OMAP_PIN_INPUT_PULLDOWN);
--
--	case OMAP_OHCI_PORT_MODE_PHY_4PIN_DPDM:
--	case OMAP_OHCI_PORT_MODE_TLL_4PIN_DPDM:
--		omap_mux_init_signal("usbb2_mm_rxrcv",
--			OMAP_PIN_INPUT_PULLDOWN);
--
--	case OMAP_OHCI_PORT_MODE_PHY_3PIN_DATSE0:
--	case OMAP_OHCI_PORT_MODE_TLL_3PIN_DATSE0:
--		omap_mux_init_signal("usbb2_mm_txen",
--			OMAP_PIN_INPUT_PULLDOWN);
--
--
--	case OMAP_OHCI_PORT_MODE_TLL_2PIN_DATSE0:
--	case OMAP_OHCI_PORT_MODE_TLL_2PIN_DPDM:
--		omap_mux_init_signal("usbb2_mm_txdat",
--			OMAP_PIN_INPUT_PULLDOWN);
--		omap_mux_init_signal("usbb2_mm_txse0",
--			OMAP_PIN_INPUT_PULLDOWN);
--		break;
--
--	case OMAP_USBHS_PORT_MODE_UNUSED:
--	default:
--		break;
--	}
-+	kfree(pin_names);
- }
- 
- void __init usbhs_init(struct usbhs_omap_platform_data *pdata)
-@@ -482,18 +283,19 @@ void __init usbhs_init(struct usbhs_omap_platform_data *pdata)
- 	struct platform_device	*pdev;
- 	int			bus_id = -1;
- 
--	if (cpu_is_omap34xx()) {
--		setup_ehci_io_mux(pdata->port_mode);
--		setup_ohci_io_mux(pdata->port_mode);
-+	const char (*pin_template)[MAX_PIN_NAME];
-+
-+	pin_template = omap4_pin_template;
- 
-+	if (cpu_is_omap34xx()) {
- 		if (omap_rev() <= OMAP3430_REV_ES2_1)
- 			pdata->single_ulpi_bypass = true;
- 
--	} else if (cpu_is_omap44xx()) {
--		setup_4430ehci_io_mux(pdata->port_mode);
--		setup_4430ohci_io_mux(pdata->port_mode);
-+		pin_template = omap3_pin_template;
- 	}
- 
-+	usbhs_setup_io_mux(pdata->port_mode, pin_template);
-+
- 	uhh_hwm = omap_hwmod_lookup(USBHS_UHH_HWMODNAME);
- 	if (!uhh_hwm) {
- 		pr_err("Could not look up %s\n", USBHS_UHH_HWMODNAME);
+in the callbacks for the irq generic chip.)
+
+On Fri, Apr 19, 2013 at 05:09:27PM +0200, Uwe Kleine-König wrote:
+> On Thu, Apr 18, 2013 at 11:35:22AM +0200, Thomas Gleixner wrote:
+> > On Wed, 17 Apr 2013, Uwe Kleine-König wrote:
+> > How is that different from what the generic irq chip implementation
+> > does? The only difference is that mask is generated by d->hwirq and
+> > not by d->irq. And due to the fact, that you use a full linear mapping
+> > between hwirq and virq the generic code simply works.
+> I'm not sure what you mean when you say "full linear mapping". AFAICT
+> using irq_domain_add_linear doesn't imply that two consecutive hardware
+> irq numbers get consecutive Linux irq numbers, so using d->irq won't work.
+>  
+> > Even if it would not work, it would be trivial to extend the generic
+> > chip with that functionality instead of hacking another slightly
+> > different copy of the same thing.
+> I will try that and report back.
+I wonder if using hwirq % 32 should work everywhere where now d->irq -
+gc->irqbase is used. Depending on d->hwirq and not d->irq has the upside
+of working with non-legacy irq domains, too.
+
+Looking at next-20130419 the affected functions
+(irq_gc_mask_disable_reg, irq_gc_mask_set_bit, irq_gc_mask_clr_bit,
+irq_gc_unmask_enable_reg, irq_gc_ack_set_bit, irq_gc_ack_clr_bit,
+irq_gc_mask_disable_reg_and_ack, irq_gc_eoi, irq_gc_set_wake) are used
+in:
+
+arch/arm/mach-davinci/irq.c
+arch/arm/mach-imx/avic.c
+arch/arm/mach-imx/tzic.c
+arch/arm/mach-omap2/irq.c
+arch/arm/mach-omap2/prm_common.c
+
+arch/arm/mach-s5p64x0/common.c
+	-> uses irq_base=101 for irq_alloc_generic_chip
+arch/arm/plat-orion/gpio.c
+	-> depends on how orion_gpio_of_init is called. No callers
+	found.
+
+arch/arm/plat-orion/irq.c
+arch/arm/plat-samsung/irq-vic-timer.c
+	-> used for a single irq that isn't a multiple of 32
+
+arch/arm/plat-samsung/s5p-irq-gpioint.c
+	-> would need % 8?
+
+arch/mips/jz4740/gpio.c
+	-> JZ4740_IRQ_GPIO(0) != JZ4740_IRQ_GPIO0 ?
+	-> uses 56 + i * 32 as irqbase
+
+arch/mips/jz4740/irq.c
+	-> uses 8 as irqbase
+
+arch/sh/boards/mach-se/7343/irq.c
+	-> uses irq_base = irq_linear_revmap(se7343_irq_domain, 0) where
+	se7343_irq_domain is a linear domain.
+	AFAICT this is a bug. (After adding the domain they map all irqs
+	in increasing order which currently seems to guarantee that it
+	works. But IMHO it should use a legacy domain.)
+
+arch/sh/boards/mach-se/7722/irq.c
+	as above.
+
+drivers/gpio/gpio-mxc.c
+drivers/gpio/gpio-mxs.c
+drivers/gpio/gpio-omap.c
+drivers/gpio/gpio-sodaville.c
+drivers/irqchip/irq-sirfsoc.c
+drivers/mfd/jz4740-adc.c
+	-> uses platform_get_irq(pdev, 1) as irq_base for 5 irqs.
+
+For the uncommented files using %32 instead of -gc->irq_base should
+work.
+
+So it seems I cannot just substitute how the mask is called. 
+
+The options I see are:
+
+ - introduce a new set of functions
+   Do you have a nice naming scheme?
+   irq_gc_unmask_enable_reg_hwirqmod32? Or should I rename the existing
+   ones to irq_gc_unmask_enable_reg_irqbaseoffset?
+ - use
+ 	u32 mask = 1 << (d->hwirq - gc->irq_base) % 32;
+   This is ugly but might work assuming irq_base == 0 for chips with irq
+   domain support and hwirq == irq for the others.
+
+I'm not lucky with the options, so I'm looking forward to suggestions.
+
+Best regards
+Uwe
+
 -- 
-1.7.4.1
-
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
