@@ -1,85 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754209Ab3DVRkP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 13:40:15 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:37161 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753476Ab3DVRkL (ORCPT
+	id S1754445Ab3DVRr1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 13:47:27 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:36575 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754113Ab3DVRr0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 13:40:11 -0400
+	Mon, 22 Apr 2013 13:47:26 -0400
+Date: Mon, 22 Apr 2013 18:47:12 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: vinayakm.list@gmail.com
+Cc: linux-mm@kvack.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        rientjes@google.com
+Subject: Re: [PATCH] mm: add an option to disable bounce
+Message-ID: <20130422174712.GS14496@n2100.arm.linux.org.uk>
+References: <1366644180-6140-1-git-send-email-vinayakm.list@gmail.com>
 MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:c028]
-In-Reply-To: <CAD=FV=UUg9Apb0o+zLdidDUmkLZt1phgo80bxug=o6JmANCPfw@mail.gmail.com>
-References: <1364890840-20052-1-git-send-email-tushar.behera@linaro.org>
-	<20130404213331.8665.7028@quantum>
-	<2c9001ce3429$e5989a50$b0c9cef0$%kim@samsung.com>
-	<CAD=FV=UUg9Apb0o+zLdidDUmkLZt1phgo80bxug=o6JmANCPfw@mail.gmail.com>
-Date: Mon, 22 Apr 2013 10:40:09 -0700
-Message-ID: <CAOesGMj-wfWNwvP7iAyr0nB0HE_PBzj3DGeE-ixNc3MqtCH9Qg@mail.gmail.com>
-Subject: Re: [PATCH] clk: exynos5250: Fix divider values for sclk_mmc{0,1,2,3}
-From: Olof Johansson <olof@lixom.net>
-To: Doug Anderson <dianders@chromium.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Tushar Behera <tushar.behera@linaro.org>
-Cc: Mike Turquette <mturquette@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Patch Tracking <patches@linaro.org>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Olof Johansson <olofj@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1366644180-6140-1-git-send-email-vinayakm.list@gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, Apr 22, 2013 at 08:53:00PM +0530, vinayakm.list@gmail.com wrote:
+> From: Vinayak Menon <vinayakm.list@gmail.com>
+> 
+> There are times when HIGHMEM is enabled, but
+> we don't prefer CONFIG_BOUNCE to be enabled.
+> CONFIG_BOUNCE can reduce the block device
+> throughput, and this is not ideal for machines
+> where we don't gain much by enabling it. So
+> provide an option to deselect CONFIG_BOUNCE. The
+> observation was made while measuring eMMC throughput
+> using iozone on an ARM device with 1GB RAM.
+> 
+> Signed-off-by: Vinayak Menon <vinayakm.list@gmail.com>
+> ---
+>  mm/Kconfig |    6 ++++++
+>  1 file changed, 6 insertions(+)
+> 
+> diff --git a/mm/Kconfig b/mm/Kconfig
+> index 3bea74f..29f9736 100644
+> --- a/mm/Kconfig
+> +++ b/mm/Kconfig
+> @@ -263,8 +263,14 @@ config ZONE_DMA_FLAG
+>  	default "1"
+>  
+>  config BOUNCE
+> +	bool "Enable bounce buffers"
+>  	def_bool y
+>  	depends on BLOCK && MMU && (ZONE_DMA || HIGHMEM)
 
-On Tue, Apr 16, 2013 at 12:35 PM, Doug Anderson <dianders@chromium.org> wrote:
-> Hi,
->
-> On Mon, Apr 8, 2013 at 12:22 AM, Kukjin Kim <kgene.kim@samsung.com> wrote:
->> Mike Turquette wrote:
->>>
->>> Quoting Tushar Behera (2013-04-02 01:20:40)
->>> > In legacy setup, sclk_mmc{0,1,2,3} used PRE_RATIO bit-field (8-bit wide)
->>> > instead of RATIO bit-field (4-bit wide) for dividing clock rate.
->>> >
->>> > With current common clock setup, we are using RATIO bit-field which
->>> > is creating FIFO read errors while accessing eMMC. Changing over to
->>> > use PRE_RATIO bit-field fixes this issue.
->>> >
->>> > dwmmc_exynos 12200000.dwmmc0: data FIFO error (status=00008020)
->>> > mmcblk0: error -5 transferring data, sector 1, nr 7, cmd response 0x900,
->>> card status 0x0
->>> > end_request: I/O error, dev mmcblk0, sector 1
->>> >
->>> > Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
->>> > CC: Thomas Abraham <thomas.abraham@linaro.org>
->>>
->>> I guess this will be applied through the samsung tree, so:
->>>
->>> Acked-by: Mike Turquette <mturquette@linaro.org>
->>>
->> Thanks, applied.
->
-> I haven't yet had time to dig / track down why, but this patch totally
-> messes up access to the eMMC on the ARM Chromebook (exynos5250-snow).
-> I suddenly start getting FIFO errors like you show above.  When I
-> revert your change then I'm all happy.
->
-> Perhaps I need a device tree setting change as well?  I always forget
-> how the "samsung,dw-mshc-ciu-div" / "samsung,dw-mshc-sdr-timing"
-> properties work...
->
-> For the short term I'm going to revert locally since I've got a few
-> other things to do over the next few days.  If nobody else gets around
-> to it then I'll try to find time to dig further.
-
-Unless I hear differently within 24 hours, I am going to revert this
-in arm-soc (since that is where it is merged right now).
-
-It is obviously causing regressions on existing platforms. I am _NOT_
-happy to see dead silence about this for 6 days. Tushar??
-
-
-
--Olof
+I don't think this is correct.  You shouldn't use "bool" with "def_bool".
+Sure, add the "bool", but also change "def_bool" to "default".
