@@ -1,65 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753778Ab3DVV3J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 17:29:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52848 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753115Ab3DVV3H (ORCPT
+	id S1753854Ab3DVVbR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 17:31:17 -0400
+Received: from mb1i1mx.ns.pitt.edu ([136.142.11.141]:39874 "EHLO
+	mb1i1.ns.pitt.edu" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752630Ab3DVVbQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 17:29:07 -0400
-Date: Mon, 22 Apr 2013 14:29:05 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Chanho Min <chanho.min@lge.com>, "Darrick J. Wong" <djwong@us.ibm.com>,
-        Bob Pearson <rpearson@systemfabricworks.com>,
-        Richard Weinberger <richard@nod.at>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-crypto@vger.kernel.org, Yann Collet <yann.collet.73@gmail.com>,
-        Kyungsik Lee <kyungsik.lee@lge.com>,
-        "Linux/m68k" <linux-m68k@vger.kernel.org>,
-        sparclinux <sparclinux@vger.kernel.org>,
-        Linux-Next <linux-next@vger.kernel.org>
-Subject: Re: [PATCH 1/2] lib: Add lz4 compressor module
-Message-Id: <20130422142905.3e4fff72671bb3e245055eee@linux-foundation.org>
-In-Reply-To: <CAMuHMdUv=GR6s=BYXHR7KyaKCUSxmkJO8dzZJMRktu3cUCTbsw@mail.gmail.com>
-References: <CAOAMb1D8rokZpQpp6mEJw6KXcQq8fJUWBJoC5+ZfkNaE6WvAZA@mail.gmail.com>
-	<CAMuHMdXXoaQjb9sRK=X3gEDwqQBJcJQtaJbUGB8cJmteHSN3vQ@mail.gmail.com>
-	<51750159.07d70e0a.5461.ffffec64SMTPIN_ADDED_BROKEN@mx.google.com>
-	<CAMuHMdUv=GR6s=BYXHR7KyaKCUSxmkJO8dzZJMRktu3cUCTbsw@mail.gmail.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 22 Apr 2013 17:31:16 -0400
+Date: Mon, 22 Apr 2013 17:31:14 -0400
+From: Jiannan Ouyang <ouyang@cs.pitt.edu>
+Subject: Re: Preemptable Ticket Spinlock
+In-reply-to: <1366664138.8337.18.camel@laptop>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Rik van Riel <riel@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Avi Kivity <avi.kivity@gmail.com>, Gleb Natapov <gleb@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Srikar <srikar@linux.vnet.ibm.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Chegu Vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Andrew Jones <drjones@redhat.com>, Karen Noel <knoel@redhat.com>
+Message-id: <CAJocwce9e=fcnJomctC82H9t5EUMaTStzLSgqoaUoAzbYm3p+A@mail.gmail.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=ISO-8859-1
+References: <CAJocwccu5QQyuKRvgNyPSFz2K_rzCW419W9-XdSUYOL7+KqQKg@mail.gmail.com>
+ <51745650.9050204@redhat.com> <1366631460.4443.3.camel@laptop>
+ <51753289.70406@redhat.com> <1366660147.6454.6.camel@laptop>
+ <517595FA.800@redhat.com> <1366661294.6454.18.camel@laptop>
+ <CAJocwceW6BuEu0Yuyv472aarpcziZH1wd-Xbc+Om81ES8+w+SA@mail.gmail.com>
+ <1366664138.8337.18.camel@laptop>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 22 Apr 2013 11:24:21 +0200 Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+On Mon, Apr 22, 2013 at 4:55 PM, Peter Zijlstra <peterz@infradead.org> wrote:
 
-> On Mon, Apr 22, 2013 at 11:22 AM, Chanho Min <chanho.min@lge.com> wrote:
-> >>> +#define HTYPE const u8*
-> >>> +
-> >>> +#ifdef __BIG_ENDIAN
-> >>> +#define LZ4_NBCOMMONBYTES(val) (__builtin_clz(val) >> 3)
-> >>> +#else
-> >>> +#define LZ4_NBCOMMONBYTES(val) (__builtin_ctz(val) >> 3)
-> >>> +#endif
-> >>
-> >>It seems at least m68k and sparc don't have the __builtin_clz() functions:
-> >>
-> >>m68k-allmodconfig (http://kisskb.ellerman.id.au/kisskb/buildresult/8572593/):
-> >>
-> >>ERROR: "__clzsi2" [lib/lz4/lz4hc_compress.ko] undefined!
-> >>ERROR: "__clzsi2" [lib/lz4/lz4_compress.ko] undefined!
-> >
-> > gcc seems to define __builtin_clz as __clzsi2 in some architecture.
-> > But, kernel doesn't link libgcc.a.
-> > If kernel should use gcc's built-in function without libgcc.a,
-> > do we need to port __clzsi2 to 'arch/*/lib/*'?
-> 
-> That's another option.
+>
+> Which pv_lock? The current pv spinlock mess is basically the old unfair
+> thing. The later patch series I referred to earlier implemented a
+> paravirt ticket lock, that should perform much better under overcommit.
+>
 
-Without having seen the patch ....  Yes, if we fix it this way then we
-also fix it for future callers of __builtin_clz().
-
+Yes, it is a paravirt *ticket* spinck. I got the patch from
+Raghavendra K T through email
+http://lwn.net/Articles/495597/
