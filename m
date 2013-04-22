@@ -1,71 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754295Ab3DVHMP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 03:12:15 -0400
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:41001 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752799Ab3DVHMO (ORCPT
+	id S1755241Ab3DVHMl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 03:12:41 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:34177 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754640Ab3DVHMk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 03:12:14 -0400
+	Mon, 22 Apr 2013 03:12:40 -0400
+Message-ID: <5174E2E0.4030605@gmail.com>
+Date: Mon, 22 Apr 2013 15:12:32 +0800
+From: Simon Jeons <simon.jeons@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <5174E185.1040806@jp.fujitsu.com>
-References: <1366441080-5937-1-git-send-email-wei@aristanetworks.com>
- <5174CB26.9060908@jp.fujitsu.com> <CANwcMEZF+ehPeFuucRqcKSiNNoXL6bDy+GTHBHYjr3DfoZY7vg@mail.gmail.com>
- <5174E185.1040806@jp.fujitsu.com>
-From: Wei Hu <wei@aristanetworks.com>
-Date: Mon, 22 Apr 2013 00:11:33 -0700
-Message-ID: <CANwcMEZsH5YeuucyXLeA3MWE8tApAbLLzkkT=26cDZU=Y0yhtw@mail.gmail.com>
-Subject: Re: [PATCH 1/1] intel-iommu: Disable DMA Remapping when intel_iommu=off
-To: Takao Indoh <indou.takao@jp.fujitsu.com>
-Cc: dwmw2 <dwmw2@infradead.org>, iommu <iommu@lists.linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Zlatko Calusic <zcalusic@bitsync.net>
+CC: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Slaby <jslaby@suse.cz>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        dormando <dormando@rydia.net>, Satoru Moriya <satoru.moriya@hds.com>,
+        Michal Hocko <mhocko@suse.cz>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/10] Reduce system disruption due to kswapd V2
+References: <1365505625-9460-1-git-send-email-mgorman@suse.de> <51672331.6070605@bitsync.net> <20130412193947.GJ11656@suse.de> <5168699A.40407@bitsync.net> <5174DA8F.2020400@bitsync.net> <5174DC17.6000809@gmail.com> <5174DEA0.8010501@bitsync.net>
+In-Reply-To: <5174DEA0.8010501@bitsync.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 22, 2013 at 12:06 AM, Takao Indoh
-<indou.takao@jp.fujitsu.com> wrote:
-> (2013/04/22 15:50), Wei Hu wrote:
->> On Sun, Apr 21, 2013 at 10:31 PM, Takao Indoh
->> <indou.takao@jp.fujitsu.com> wrote:
->>> (2013/04/20 15:58), Wei Hu wrote:
->>>> On a VT-d capable machine Linux will enable IOMMU by default. If it
->>>> then kexec's a second kernel with intel_iommu=off, this second kernel
->>>> will leave the DMA remapping engine on with no code handling it. The
->>>> symptom is at least USB and SATA drives stop working. This patch fixes
->>>> the problem by always disabling DMA remapping when intel_iommu=off.
+Hi Zlatko,
+On 04/22/2013 02:54 PM, Zlatko Calusic wrote:
+> On 22.04.2013 08:43, Simon Jeons wrote:
+>> Hi Zlatko,
+>> On 04/22/2013 02:37 PM, Zlatko Calusic wrote:
+>>> On 12.04.2013 22:07, Zlatko Calusic wrote:
+>>>> On 12.04.2013 21:40, Mel Gorman wrote:
+>>>>> On Thu, Apr 11, 2013 at 10:55:13PM +0200, Zlatko Calusic wrote:
+>>>>>> On 09.04.2013 13:06, Mel Gorman wrote:
+>>>>>> <SNIP>
+>>>>>>
+>>>>>> - The only slightly negative thing I observed is that with the patch
+>>>>>> applied kswapd burns 10x - 20x more CPU. So instead of about 15
+>>>>>> seconds, it has now spent more than 4 minutes on one particular
+>>>>>> machine with a quite steady load (after about 12 days of uptime).
+>>>>>> Admittedly, that's still nothing too alarming, but...
+>>>>>>
+>>>>>
+>>>>> Would you happen to know what circumstances trigger the higher CPU
+>>>>> usage?
+>>>>>
+>>>>
+>>>> Really nothing special. The server is lightly loaded, but it does 
+>>>> enough
+>>>> reading from the disk so that pagecache is mostly populated and page
+>>>> reclaiming is active. So, kswapd is no doubt using CPU time gradually,
+>>>> nothing extraordinary.
+>>>>
+>>>> When I sent my reply yesterday, the server uptime was 12 days, and
+>>>> kswapd had accumulated 4:28 CPU time. Now, approx 24 hours later (13
+>>>> days uptime):
+>>>>
+>>>> root        23  0.0  0.0      0     0 ?        S    Mar30 4:52
+>>>> [kswapd0]
+>>>>
+>>>> I will apply your v3 series soon and see if there's any improvement 
+>>>> wrt
+>>>> CPU usage, although as I said I don't see that as a big issue. It's
+>>>> still only 0.013% of available CPU resources (dual core CPU).
+>>>>
 >>>
->>> Even when second kernel boots up with intel_iommu=on, dma-remapping need
->>> to be disabled as well before it is initialized and enabled again in
->>> init_dmars(). So, how about something like this?
+>>> JFTR, v3 kswapd uses about 15% more CPU time than v2. 2:50 kswapd CPU
+>>> time after 6 days 14h uptime.
 >>>
->>>          for_each_drhd_unit(drhd) {
->>>                  struct dmar_drhd_unit *drhd;
->>>                  if (drhd->ignored)
->>>                          continue;
+>>> And find attached another debugging graph that shows how ANON pages
+>>> are privileged in the ZONE_NORMAL on a 4GB machine. Take notice that
+>>> the number of pages in the ZONE_DMA32 is scaled (/5) to fit the graph
+>>> nicely.
 >>>
->>>                  iommu = drhd->iommu;
->>>                  if (iommu->gcmd & DMA_GCMD_TE)
->>>                          iommu_disable_translation(iommu);
->>>          }
->>>
->>> Note, if you agree above code and fix your patch like this, you need
->>> additinal fix to set iommu->gcmd flag sinse gcmd is always zero here.
->>> See first hunk of this patch.
->>> https://lkml.org/lkml/2013/3/20/707
 >>
->> Thanks for your reply. I reviewed your patch. Are you suggesting
->> keeping your change to dmar.c, and moving your change to intel-iommu.c
->> (i.e. the code you just showed) up after the call to
->> dmar_table_init()?
+>> Could you tell me how you draw this picture?
 >>
 >
-> Yes, exactly.
->
-> Thanks,
-> Takao Indoh
->
+> It's a home made server monitoring system. I just added the code 
+> needed to graph the size of active + inactive LRU lists, per zone and 
+> per type. Check out http://oss.oetiker.ch/rrdtool/
 
-Sounds great. If you want to make the change and get your patch
-accepted that's fine with me.
+Thanks Zlatko, I successfully install, could you tell me your options?
+
+
