@@ -1,101 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754146Ab3DVXZr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 19:25:47 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:52811 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753750Ab3DVXZq (ORCPT
+	id S1754091Ab3DVXid (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 19:38:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53828 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752707Ab3DVXic (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 19:25:46 -0400
-X-Originating-IP: 108.223.40.66
-Date: Mon, 22 Apr 2013 16:26:13 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: =?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>
-Cc: Alan Cox <alan@linux.intel.com>, Hans de Goede <hdegoede@redhat.com>,
-        Wim Van Sebroeck <wim@iguana.be>, linux-kernel@vger.kernel.org,
-        linux-watchdog@vger.kernel.org
-Subject: Re: [PATCH] Watchdog: add pretimeout
-Message-ID: <20130422232613.GA28472@roeck-us.net>
-References: <20130422194347.GA14907@logfs.org>
- <20130422224203.GA8805@roeck-us.net>
- <20130422213839.GB14907@logfs.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130422213839.GB14907@logfs.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 22 Apr 2013 19:38:32 -0400
+Date: Mon, 22 Apr 2013 16:38:30 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Alexander Holler <holler@ahsoftware.de>
+Cc: linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Jonathan Cameron <jic23@cam.ac.uk>, Jiri Kosina <jkosina@suse.cz>
+Subject: Re: [PATCH 3/3] rtc: rtc-hid-sensor-time; add option hctosys to set
+ time at boot
+Message-Id: <20130422163830.4aaaef240b1572dc778dd620@linux-foundation.org>
+In-Reply-To: <1366384452-14367-4-git-send-email-holler@ahsoftware.de>
+References: <1366384452-14367-1-git-send-email-holler@ahsoftware.de>
+	<1366384452-14367-4-git-send-email-holler@ahsoftware.de>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 22, 2013 at 05:38:39PM -0400, Jörn Engel wrote:
-> On Mon, 22 April 2013 15:42:03 -0700, Guenter Roeck wrote:
-> > 
-> > Copying the watchdog mailing list.
-> 
-> I had no idea it exists.  Thanks!
-> 
-> > On Mon, Apr 22, 2013 at 03:43:47PM -0400, Jörn Engel wrote:
-> > > This patch adds a pretimeout with three actions to the generic watchdog
-> > > code:
-> > > 1) Print a kernel message.
-> > > 2) Send a signal to the userspace process holding /dev/watchdogX open.
-> > > 3) Call sys_sync.
-> > > 
-> > > I have found all of the above to be useful.  If the system gets rebooted
-> > > by a watchdog, you first want to notice that it happened (1).  Next you
-> > > want userspace logfiles from the time when it failed to acknowledge the
-> > > watchdog.  (2) gives cooperating userspace a chance to flush userspace
-> > > buffers and (3) increases the chances of those logfiles surviving the
-> > > reboot.
-> > > 
-> > > 
-> > > Given that this patch changes the userspace ABI, now would be a good
-> > > time to raise concerns.  The most likely problem I see is using SIGILL
-> > > to notify userspace.  Then again, whatever signal you pick will have
-> > > other meanings attached, so the only choices are not to notify
-> > > userspace or to pick some lesser of many evils.
-> > 
-> > You could send a udev event, or a poll event, or both.
-> > 
-> > I think that sending a signal would be a bad idea, as it could inadvertently
-> > kill the very application responsible for pinging the watchdog. And you
-> > can not really expect that application to understand the difference
-> > between your SIGSomething and a real signal.
-> 
-> The counter-argument is that applications have to opt-in by setting a
-> pretimeout.  Although I have to admit to not testing applications that
-> don't opt-in.
-> 
-Still, how does the application distinguish SIGINT (real from SIGINT (watchdog) ?
+On Fri, 19 Apr 2013 17:14:12 +0200 Alexander Holler <holler@ahsoftware.de> wrote:
 
-> Udev sounds like a bad idea, as that usually means spawning a number
-> of shell scripts and is more likely to get lost in realtime systems or
-> similar.  Polling on a file descriptor would make sense.
-> 
-> I would be fine with removing the notification for now and have
-> someone else add a proper interface as time permits.  Someone else may
-> well be a future version of me.
-> 
-> > Also, I think there should be a callback into the watchdog drivers.
-> > There are watchdogs out there implementing a pre-timeout in hardware,
-> > and the watchdog code could make use of that functionality.
-> 
-> Sounds like a good idea in principle, but I can see few advantages in
-> reality.  The code gets slightly more complex, test coverage is
-> divided between platforms and it only matters if kernel timers are
-> somehow borked.  Not sure if you have a strong argument in favor.
-> 
-I am currently dealing with a watchdog which does support pre-timeouts.
-It would seem odd to me if the core watchdog API would support pre-timeouts,
-but not the pre-timeouts supported by the actual watchdog driver.
+> drivers/rtc/hctosys (CONFIG_RTC_HCTOSYS) doesn't work for
+> rtc-hid-sensor-time because it will be called in late_init, and thus before
+> rtc-hid-sensor-time gets loaded.
 
-For that specific driver, there would be two means to set a pre-timeout:
-The one in the watchdog core, and the one in the actual watchdog driver.
-Both would be independent of each other, and both would be set independently.
-That doesn't make much sense to me and would be just as good as implementing
-a softdog in the watchdog core and not supporting the actual hardware-watchdogs
-through its API.
+Isn't that true of all RTC drivers which are built as modules?  There's
+nothing special about hid-sensor-time here?
 
-Guenter
+I assume the standard answer here is "your RTC driver should be built
+into vmlinux".  If we wish to make things work for modular RTC drivers
+then we should find a solution which addresses *all* RTC drivers?
+
+> To set the time through rtc-hid-sensor-time
+> at startup, the module now checks by default if the system time is before
+> 1970-01-02 and sets the system time (once) if this is the case.
+> 
+> To disable this behaviour, set the module option hctosys to zero, e.g. by
+> using rtc-hid-sensor-time.hctosys=0 at the kernel command line if the
+> driver is statically linked into the kernel.
+
+Is a bit hacky, no?
+
+> @@ -237,6 +279,22 @@ static const struct rtc_class_ops hid_time_rtc_ops = {
+>  	.read_time = hid_rtc_read_time,
+>  };
+>  
+> +struct hid_time_work_time_state {
+> +	struct work_struct work;
+> +	struct hid_time_state *time_state;
+> +};
+> +
+> +static void hid_time_request_report_work(struct work_struct *work)
+> +{
+> +	struct hid_time_state *time_state =
+> +		((struct hid_time_work_time_state *)work)->time_state;
+
+Yikes.  Use container_of() here.
+
+Also, you don't *have* to initialise things at their definition site.  So
+
+	struct hid_time_state *time_state =
+		some-ginormous-expression-which-overflows-80-columns;
+
+becomes
+
+	struct hid_time_state *time_state;
+	time_state = some-ginormous-expression-which-no-longer-overflows-80-columns;
+
+Simple, no?
+
+> +	/* get a report with all values through requesting one value */
+> +	sensor_hub_input_attr_get_raw_value(
+> +		time_state->common_attributes.hsdev, HID_USAGE_SENSOR_TIME,
+> +		hid_time_addresses[0], time_state->info[0].report_id);
+> +	kfree(work);
+> +}
+> +
+>  static int hid_time_probe(struct platform_device *pdev)
+>  {
+>  	int ret = 0;
+> @@ -287,6 +345,20 @@ static int hid_time_probe(struct platform_device *pdev)
+>  		return PTR_ERR(time_state->rtc);
+>  	}
+>  
+> +	if (!hid_time_time_set_once && hid_time_hctosys_enabled) {
+> +		/*
+> +		 * Request a HID report to set the time.
+> +		 * Calling sensor_hub_..._get_raw_value() here directly
+> +		 * doesn't work, therefor we have to use a work.
+> +		 */
+> +		struct hid_time_work_time_state *hdwork =
+> +			kmalloc(sizeof(struct hid_time_work_time_state),
+> +				GFP_KERNEL);
+
+looky:
+
+		struct hid_time_work_time_state *hdwork;
+
+		hdwork = kmalloc(sizeof(*hdwork), GFP_KERNEL);
+
+> +		hdwork->time_state = time_state;
+
+Forgot to check for kmalloc() failure.
+
+> +		INIT_WORK(&hdwork->work, hid_time_request_report_work);
+> +		schedule_work(&hdwork->work);
+
+The patch adds a schedule_work() but no flush_scheduled_work(), etc. 
+So if the driver is shut down or rmmodded while the work is still
+pending, the kernel will go kapow.
+
+> +	}
+> +
+>  	return ret;
+>  }
+
