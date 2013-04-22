@@ -1,72 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755254Ab3DVUcc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 16:32:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50905 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754895Ab3DVUcb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 16:32:31 -0400
-Message-ID: <51759E43.2080003@redhat.com>
-Date: Mon, 22 Apr 2013 16:32:03 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Jiannan Ouyang <ouyang@cs.pitt.edu>, LKML <linux-kernel@vger.kernel.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Avi Kivity <avi.kivity@gmail.com>, Gleb Natapov <gleb@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Srikar <srikar@linux.vnet.ibm.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        KVM <kvm@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Chegu Vinod <chegu_vinod@hp.com>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Andrew Jones <drjones@redhat.com>, Karen Noel <knoel@redhat.com>
-Subject: Re: Preemptable Ticket Spinlock
-References: <CAJocwccu5QQyuKRvgNyPSFz2K_rzCW419W9-XdSUYOL7+KqQKg@mail.gmail.com>    <51745650.9050204@redhat.com> <1366631460.4443.3.camel@laptop>   <51753289.70406@redhat.com> <1366660147.6454.6.camel@laptop>  <517595FA.800@redhat.com> <1366661294.6454.18.camel@laptop>
-In-Reply-To: <1366661294.6454.18.camel@laptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1755301Ab3DVUht (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 16:37:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52512 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755238Ab3DVUhs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Apr 2013 16:37:48 -0400
+Date: Mon, 22 Apr 2013 13:37:46 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Jerome Marchand <jmarchan@redhat.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH] swap: redirty page if page write fails on swap file
+Message-Id: <20130422133746.ffbbb70c0394fdbf1096c7ee@linux-foundation.org>
+In-Reply-To: <516E918B.3050309@redhat.com>
+References: <516E918B.3050309@redhat.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/22/2013 04:08 PM, Peter Zijlstra wrote:
-> On Mon, 2013-04-22 at 15:56 -0400, Rik van Riel wrote:
->> On 04/22/2013 03:49 PM, Peter Zijlstra wrote:
->>> On Mon, 2013-04-22 at 08:52 -0400, Rik van Riel wrote:
->>
->>>> If the native spin_lock code has been called already at
->>>> that time, the native code would still need to be modified
->>>> to increment the ticket number by 2, so we end up with a
->>>> compatible value in each spin lock's .tickets field, and
->>>> prevent a deadlock after we switch over to the paravirt
->>>> variant.
->>>
->>> I thought the stuff already made it upstream, but apparently not; the
->>> lastest posting I'm aware of is here:
->>>
->>>     https://lkml.org/lkml/2012/5/2/105
->>>
->>> That stuff changes the normal ticket increment as well..
->>
->> Jiannan,
->>
->> It looks like the patch above could make a good patch
->> 1 (or 2) in your patch series :)
->
-> I much prefer the entire series from Jeremy since it maintains the
-> ticket semantics and doesn't degrade the lock to unfair under
-> contention.
->
-> Now I suppose there's a reason its not been merged yet and I suspect
-> its !paravirt hotpath impact which wasn't rightly justified or somesuch
-> so maybe someone can work on that or so.. dunno.
+On Wed, 17 Apr 2013 14:11:55 +0200 Jerome Marchand <jmarchan@redhat.com> wrote:
 
-IIRC one of the reasons was that the performance improvement wasn't
-as obvious.  Rescheduling VCPUs takes a fair amount of time, quite
-probably more than the typical hold time of a spinlock.
+> 
+> Since commit 62c230b, swap_writepage() calls direct_IO on swap files.
+> However, in that case page isn't redirtied if I/O fails, and is therefore
+> handled afterwards as if it has been successfully written to the swap
+> file, leading to memory corruption when the page is eventually swapped
+> back in.
+> This patch sets the page dirty when direct_IO() fails. It fixes a memory
+> corruption that happened while using swap-over-NFS.
+> 
+> ...
+>
+> --- a/mm/page_io.c
+> +++ b/mm/page_io.c
+> @@ -222,6 +222,8 @@ int swap_writepage(struct page *page, struct writeback_control *wbc)
+>  		if (ret == PAGE_SIZE) {
+>  			count_vm_event(PSWPOUT);
+>  			ret = 0;
+> +		} else {
+> +			set_page_dirty(page);
+>  		}
+>  		return ret;
+>  	}
 
--- 
-All rights reversed
+So what happens to the page now?  It remains dirty and the kernel later
+tries to write it again?  And if that write also fails, the page is
+effectively leaked until process exit?
+
+
+Aside: Mel, __swap_writepage() is fairly hair-raising.  It unlocks the
+page before doing the IO and doesn't set PageWriteback().  Why such an
+exception from normal handling?
+
+Also, what is protecting the page from concurrent reclaim or exit()
+during the above swap_writepage()?
+
+Seems that the code needs a bunch of fixes or a bunch of comments
+explaining why it is safe and why it has to be this way.
