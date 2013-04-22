@@ -1,77 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753559Ab3DVUxF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 16:53:05 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:41958 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753416Ab3DVUxB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 16:53:01 -0400
-Message-ID: <5175A317.1010304@ti.com>
-Date: Mon, 22 Apr 2013 15:52:39 -0500
-From: Jon Hunter <jon-hunter@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S1753556Ab3DVUym (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 16:54:42 -0400
+Received: from g5t0007.atlanta.hp.com ([15.192.0.44]:41805 "EHLO
+	g5t0007.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751781Ab3DVUyk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Apr 2013 16:54:40 -0400
+Message-ID: <5175A38D.4070002@hp.com>
+Date: Mon, 22 Apr 2013 13:54:37 -0700
+From: Chegu Vinod <chegu_vinod@hp.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Lars-Peter Clausen <lars@metafoo.de>
-CC: Vinod Koul <vinod.koul@intel.com>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] dma: of: Remove check on always true condition
-References: <1366619613-30639-1-git-send-email-lars@metafoo.de> <1366619613-30639-2-git-send-email-lars@metafoo.de>
-In-Reply-To: <1366619613-30639-2-git-send-email-lars@metafoo.de>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Jiannan Ouyang <ouyang@cs.pitt.edu>
+CC: Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Avi Kivity <avi.kivity@gmail.com>, Gleb Natapov <gleb@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Srikar <srikar@linux.vnet.ibm.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Andrew Jones <drjones@redhat.com>, Karen Noel <knoel@redhat.com>
+Subject: Re: Preemptable Ticket Spinlock
+References: <CAJocwccu5QQyuKRvgNyPSFz2K_rzCW419W9-XdSUYOL7+KqQKg@mail.gmail.com> <51745650.9050204@redhat.com> <1366631460.4443.3.camel@laptop> <51753289.70406@redhat.com> <1366660147.6454.6.camel@laptop> <517595FA.800@redhat.com> <1366661294.6454.18.camel@laptop> <51759E43.2080003@redhat.com> <1366663475.8337.10.camel@laptop> <CAJocwcf2=+oWmn3EvNnCA5U81LPA=Ue8=RNYDJb_J6wNYmgNMQ@mail.gmail.com>
+In-Reply-To: <CAJocwcf2=+oWmn3EvNnCA5U81LPA=Ue8=RNYDJb_J6wNYmgNMQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [172.24.115.140]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 4/22/2013 1:50 PM, Jiannan Ouyang wrote:
+> On Mon, Apr 22, 2013 at 4:44 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>> On Mon, 2013-04-22 at 16:32 -0400, Rik van Riel wrote:
+>>> IIRC one of the reasons was that the performance improvement wasn't
+>>> as obvious.  Rescheduling VCPUs takes a fair amount of time, quite
+>>> probably more than the typical hold time of a spinlock.
+>> IIRC it would spin for a while before blocking..
+>>
+>> /me goes re-read some of that thread...
+>>
+>> Ah, its because PLE is curing most of it.. !PLE it had huge gains but
+>> apparently nobody cares about !PLE hardware anymore :-)
+>>
+> For now, I don't know how good it can work with PLE. But I think it
+> should save the time of VMEXIT on PLE machine.
+> .
+>
+Thanks for sharing your patch. 'am waiting for your v2 patch(es) and 
+then let you any review feedback. Hoping to verify your changes on a 
+large box (PLE enabled) and get back to you with some data...
 
-On 04/22/2013 03:33 AM, Lars-Peter Clausen wrote:
-> Both of_dma_nbcells field of the of_dma_controller and the args_count field of
-> the dma_spec are initialized by parsing the #dma-cells attribute of their device
-> tree node. So if the device tree nodes of a DMA controller and the dma_spec
-> match this means that of_dma_nbcells and args_count will also match. So the
-> second test in the of_dma_find_controller loop is redundant because given the
-> first test yields true the second test will also yield true. So we can safely
-> remove the test whether of_dma_nbcells matches args_count. Since this was the
-> last user of the of_dma_nbcells field we can remove it altogether.
-
-This assumes that someone has correctly added the dma information to the
-dma slave binding. I could see systems where different dma controllers
-have different of_dma_nbcells and so someone could put the enter wrong
-number of cells for a dma slave binding. Its really to catch user error.
-
-> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-> ---
->  drivers/dma/of-dma.c   | 14 +-------------
->  include/linux/of_dma.h |  1 -
->  2 files changed, 1 insertion(+), 14 deletions(-)
-> 
-> diff --git a/drivers/dma/of-dma.c b/drivers/dma/of-dma.c
-> index 268cc8a..75334bd 100644
-> --- a/drivers/dma/of-dma.c
-> +++ b/drivers/dma/of-dma.c
-> @@ -35,8 +35,7 @@ static struct of_dma *of_dma_find_controller(struct of_phandle_args *dma_spec)
->  	struct of_dma *ofdma;
->  
->  	list_for_each_entry(ofdma, &of_dma_list, of_dma_controllers)
-> -		if ((ofdma->of_node == dma_spec->np) &&
-> -		    (ofdma->of_dma_nbcells == dma_spec->args_count))
-> +		if (ofdma->of_node == dma_spec->np)
->  			return ofdma;
-
-Other device-tree functions perform similar tests to this such as ...
-
-static int of_gpiochip_find_and_xlate(struct gpio_chip *gc, void *data)
-{
-         struct gg_data *gg_data = data;
-         int ret;
-
-         if ((gc->of_node != gg_data->gpiospec.np) ||
-             (gc->of_gpio_n_cells != gg_data->gpiospec.args_count) ||
-             (!gc->of_xlate))
-                 return false;
-
-...
-
-Cheers
-Jon
+Thanks
+Vinod
