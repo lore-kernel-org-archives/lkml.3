@@ -1,117 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753549Ab3DVPDb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 11:03:31 -0400
-Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:52631 "EHLO
-	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752510Ab3DVPD3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 11:03:29 -0400
-Message-ID: <1366643006.3251.14.camel@x61.thuisdomein>
-Subject: Re: [PATCH V6 2/3] efi: Pass boot services variable info to runtime
- code
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Matthew Garrett <matthew.garrett@nebula.com>,
-        Matt Fleming <matt.fleming@intel.com>
-Cc: linux-efi@vger.kernel.org, x86@kernel.org, linux-kernel@vger.kernel.org
-Date: Mon, 22 Apr 2013 17:03:26 +0200
-In-Reply-To: <1366056587-24414-3-git-send-email-matthew.garrett@nebula.com>
-References: <1365561717-12343-1-git-send-email-matthew.garrett@nebula.com>
-	 <1366056587-24414-1-git-send-email-matthew.garrett@nebula.com>
-	 <1366056587-24414-3-git-send-email-matthew.garrett@nebula.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 22 Apr 2013 15:03:26.0560 (UTC) FILETIME=[8AA6E600:01CE3F6A]
-X-RcptDomain: vger.kernel.org
+	id S1753755Ab3DVPGo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 11:06:44 -0400
+Received: from mga09.intel.com ([134.134.136.24]:1986 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752031Ab3DVPGn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Apr 2013 11:06:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,527,1363158000"; 
+   d="scan'208,223";a="299046968"
+Date: Mon, 22 Apr 2013 15:08:59 +0100 (IST)
+From: Josef Ahmad <josef.ahmad@linux.intel.com>
+X-X-Sender: joey@localhost
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+cc: Josef Ahmad <josef.ahmad@linux.intel.com>,
+        Wolfram Sang <wsa@the-dreams.de>, Ben Dooks <ben-linux@fluff.org>,
+        Jean Delvare <khali@linux-fr.org>, Stefan Roese <sr@denx.de>,
+        Axel Lin <axel.lin@gmail.com>, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Dirk Brandewie <dirk.brandewie@gmail.com>
+Subject: Re: [PATCH] i2c-designware: fix RX FIFO overrun
+In-Reply-To: <20130422122808.GO1283@intel.com>
+Message-ID: <alpine.DEB.2.02.1304221508050.31571@localhost>
+References: <alpine.DEB.2.02.1304191859570.17829@localhost> <20130422071943.GK1283@intel.com> <53398.163.33.213.79.1366630241.squirrel@linux.intel.com> <20130422122808.GO1283@intel.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-04-15 at 13:09 -0700, Matthew Garrett wrote:
-> EFI variables can be flagged as being accessible only within boot services.
-> This makes it awkward for us to figure out how much space they use at
-> runtime. In theory we could figure this out by simply comparing the results
-> from QueryVariableInfo() to the space used by all of our variables, but
-> that fails if the platform doesn't garbage collect on every boot. Thankfully,
-> calling QueryVariableInfo() while still inside boot services gives a more
-> reliable answer. This patch passes that information from the EFI boot stub
-> up to the efi platform code.
-> 
-> Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
+>From a969728248c3b439dc97a69e7dac133b5efa34e7 Mon Sep 17 00:00:00 2001
+From: Josef Ahmad <josef.ahmad@linux.intel.com>
+Date: Fri, 19 Apr 2013 17:28:10 +0100
+Subject: [PATCH] i2c-designware: fix RX FIFO overrun
 
-This seems to be the patch that has become commit
-cc5a080c5d40c36089bb08a8a16fa3fc7047fe0f ("efi: Pass boot services
-variable info to runtime code"), which is part of v3.9-rc8.
+i2c_dw_xfer_msg() pushes a number of bytes to transmit/receive
+to/from the bus into the TX FIFO.
+For master-rx transactions, the maximum amount of data that can be
+received is calculated depending solely on TX and RX FIFO load.
 
-It triggers this GCC warning (on Fedora 17, 32 bit):
-    arch/x86/boot/compressed/eboot.c: In function ‘setup_efi_vars’:
-    arch/x86/boot/compressed/eboot.c:269:2: warning: passing argument 1 of ‘efi_call_phys’ makes pointer from integer without a cast [enabled by default]
-    In file included from arch/x86/boot/compressed/eboot.c:12:0:
-    [...]/arch/x86/include/asm/efi.h:8:33: note: expected ‘void *’ but argument is of type ‘long unsigned int’
+This is racy - TX FIFO may contain master-rx data yet to be
+processed, which will eventually land into the RX FIFO. This
+data is not taken into account and the function may request more
+data than the controller is actually capable of storing.
 
-> --- a/arch/x86/boot/compressed/eboot.c
-> +++ b/arch/x86/boot/compressed/eboot.c
-> @@ -251,6 +251,51 @@ static void find_bits(unsigned long mask, u8 *pos, u8 *size)
->  	*size = len;
->  }
->  
-> +static efi_status_t setup_efi_vars(struct boot_params *params)
-> +{
-> +	struct setup_data *data;
-> +	struct efi_var_bootdata *efidata;
-> +	u64 store_size, remaining_size, var_size;
-> +	efi_status_t status;
-> +
-> +	if (!sys_table->runtime->query_variable_info)
-> +		return EFI_UNSUPPORTED;
-> +
-> +	data = (struct setup_data *)(unsigned long)params->hdr.setup_data;
-> +
-> +	while (data && data->next)
-> +		data = (struct setup_data *)(unsigned long)data->next;
-> +
-> +	status = efi_call_phys4(sys_table->runtime->query_variable_info,
+This patch ensures the driver takes into account the outstanding
+master-rx data in TX FIFO to prevent RX FIFO overrun.
 
-Casting to void * here makes the warning go away. But the code is
-sufficiently complicated (for me) to make it unobvious whether that is
-the right thing to do. Besides, I don't think I have hardware to test
-this.
+Signed-off-by: Josef Ahmad <josef.ahmad@linux.intel.com>
+Acked-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+---
+  drivers/i2c/busses/i2c-designware-core.c |   11 ++++++++++-
+  drivers/i2c/busses/i2c-designware-core.h |    2 ++
+  2 files changed, 12 insertions(+), 1 deletions(-)
 
-> +				EFI_VARIABLE_NON_VOLATILE |
-> +				EFI_VARIABLE_BOOTSERVICE_ACCESS |
-> +				EFI_VARIABLE_RUNTIME_ACCESS, &store_size,
-> +				&remaining_size, &var_size);
-> +
-> +	if (status != EFI_SUCCESS)
-> +		return status;
-> +
-> +	status = efi_call_phys3(sys_table->boottime->allocate_pool,
-> +				EFI_LOADER_DATA, sizeof(*efidata), &efidata);
-> +
-> +	if (status != EFI_SUCCESS)
-> +		return status;
-> +
-> +	efidata->data.type = SETUP_EFI_VARS;
-> +	efidata->data.len = sizeof(struct efi_var_bootdata) -
-> +		sizeof(struct setup_data);
-> +	efidata->data.next = 0;
-> +	efidata->store_size = store_size;
-> +	efidata->remaining_size = remaining_size;
-> +	efidata->max_var_size = var_size;
-> +
-> +	if (data)
-> +		data->next = (unsigned long)efidata;
-> +	else
-> +		params->hdr.setup_data = (unsigned long)efidata;
-> +
-> +}
-> +
->  static efi_status_t setup_efi_pci(struct boot_params *params)
->  {
->  	efi_pci_io_protocol *pci;
+diff --git a/drivers/i2c/busses/i2c-designware-core.c b/drivers/i2c/busses/i2c-designware-core.c
+index 94fd818..8dbeef1 100644
+--- a/drivers/i2c/busses/i2c-designware-core.c
++++ b/drivers/i2c/busses/i2c-designware-core.c
+@@ -426,8 +426,14 @@ i2c_dw_xfer_msg(struct dw_i2c_dev *dev)
+  				cmd |= BIT(9);
 
+  			if (msgs[dev->msg_write_idx].flags & I2C_M_RD) {
++
++				/* avoid rx buffer overrun */
++				if (rx_limit - dev->rx_outstanding <= 0)
++					break;
++
+  				dw_writel(dev, cmd | 0x100, DW_IC_DATA_CMD);
+  				rx_limit--;
++				dev->rx_outstanding++;
+  			} else
+  				dw_writel(dev, cmd | *buf++, DW_IC_DATA_CMD);
+  			tx_limit--; buf_len--;
+@@ -480,8 +486,10 @@ i2c_dw_read(struct dw_i2c_dev *dev)
 
-Paul Bolle
+  		rx_valid = dw_readl(dev, DW_IC_RXFLR);
+
+-		for (; len > 0 && rx_valid > 0; len--, rx_valid--)
++		for (; len > 0 && rx_valid > 0; len--, rx_valid--) {
+  			*buf++ = dw_readl(dev, DW_IC_DATA_CMD);
++			dev->rx_outstanding--;
++		}
+
+  		if (len > 0) {
+  			dev->status |= STATUS_READ_IN_PROGRESS;
+@@ -539,6 +547,7 @@ i2c_dw_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[], int num)
+  	dev->msg_err = 0;
+  	dev->status = STATUS_IDLE;
+  	dev->abort_source = 0;
++	dev->rx_outstanding = 0;
+
+  	ret = i2c_dw_wait_bus_not_busy(dev);
+  	if (ret < 0)
+diff --git a/drivers/i2c/busses/i2c-designware-core.h b/drivers/i2c/busses/i2c-designware-core.h
+index 9c1840e..e761ad1 100644
+--- a/drivers/i2c/busses/i2c-designware-core.h
++++ b/drivers/i2c/busses/i2c-designware-core.h
+@@ -60,6 +60,7 @@
+   * @adapter: i2c subsystem adapter node
+   * @tx_fifo_depth: depth of the hardware tx fifo
+   * @rx_fifo_depth: depth of the hardware rx fifo
++ * @rx_outstanding: current master-rx elements in tx fifo
+   */
+  struct dw_i2c_dev {
+  	struct device		*dev;
+@@ -88,6 +89,7 @@ struct dw_i2c_dev {
+  	u32			master_cfg;
+  	unsigned int		tx_fifo_depth;
+  	unsigned int		rx_fifo_depth;
++	int			rx_outstanding;
+  };
+
+  #define ACCESS_SWAP		0x00000001
+-- 
+1.7.0.7
+
 
