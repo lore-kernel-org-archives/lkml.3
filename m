@@ -1,89 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753749Ab3DVXFY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 19:05:24 -0400
-Received: from longford.logfs.org ([213.229.74.203]:58890 "EHLO
-	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752967Ab3DVXFX convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 19:05:23 -0400
-Date: Mon, 22 Apr 2013 17:38:39 -0400
-From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Alan Cox <alan@linux.intel.com>, Hans de Goede <hdegoede@redhat.com>,
-        Wim Van Sebroeck <wim@iguana.be>, linux-kernel@vger.kernel.org,
-        linux-watchdog@vger.kernel.org
-Subject: Re: [PATCH] Watchdog: add pretimeout
-Message-ID: <20130422213839.GB14907@logfs.org>
-References: <20130422194347.GA14907@logfs.org>
- <20130422224203.GA8805@roeck-us.net>
+	id S1753806Ab3DVXI3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 19:08:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42960 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752674Ab3DVXI1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Apr 2013 19:08:27 -0400
+Message-ID: <5175C2D6.9020202@redhat.com>
+Date: Mon, 22 Apr 2013 19:08:06 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <20130422224203.GA8805@roeck-us.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Jiannan Ouyang <ouyang@cs.pitt.edu>, LKML <linux-kernel@vger.kernel.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Avi Kivity <avi.kivity@gmail.com>, Gleb Natapov <gleb@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Srikar <srikar@linux.vnet.ibm.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Chegu Vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Andrew Jones <drjones@redhat.com>, Karen Noel <knoel@redhat.com>
+Subject: Re: Preemptable Ticket Spinlock
+References: <CAJocwccu5QQyuKRvgNyPSFz2K_rzCW419W9-XdSUYOL7+KqQKg@mail.gmail.com>  <51745650.9050204@redhat.com> <1366631460.4443.3.camel@laptop>  <51753289.70406@redhat.com> <1366660147.6454.6.camel@laptop>  <517595FA.800@redhat.com> <1366661294.6454.18.camel@laptop>  <CAJocwceW6BuEu0Yuyv472aarpcziZH1wd-Xbc+Om81ES8+w+SA@mail.gmail.com> <1366664138.8337.18.camel@laptop>
+In-Reply-To: <1366664138.8337.18.camel@laptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 22 April 2013 15:42:03 -0700, Guenter Roeck wrote:
-> 
-> Copying the watchdog mailing list.
+On 04/22/2013 04:55 PM, Peter Zijlstra wrote:
+> On Mon, 2013-04-22 at 16:46 -0400, Jiannan Ouyang wrote:
 
-I had no idea it exists.  Thanks!
+>> - pv-preemptable-lock has much less performance variance compare to
+>> pv_lock, because it adapts to preemption within  VM,
+>>    other than using rescheduling that increase VM interference
+>
+> I would say it has a _much_ worse worst case (and thus worse variance)
+> than the paravirt ticket implementation from Jeremy. While full
+> paravirt ticket lock results in vcpu scheduling it does maintain
+> fairness.
+>
+> If you drop strict fairness you can end up in unbounded starvation
+> cases and those are very ugly indeed.
 
-> On Mon, Apr 22, 2013 at 03:43:47PM -0400, Jörn Engel wrote:
-> > This patch adds a pretimeout with three actions to the generic watchdog
-> > code:
-> > 1) Print a kernel message.
-> > 2) Send a signal to the userspace process holding /dev/watchdogX open.
-> > 3) Call sys_sync.
-> > 
-> > I have found all of the above to be useful.  If the system gets rebooted
-> > by a watchdog, you first want to notice that it happened (1).  Next you
-> > want userspace logfiles from the time when it failed to acknowledge the
-> > watchdog.  (2) gives cooperating userspace a chance to flush userspace
-> > buffers and (3) increases the chances of those logfiles surviving the
-> > reboot.
-> > 
-> > 
-> > Given that this patch changes the userspace ABI, now would be a good
-> > time to raise concerns.  The most likely problem I see is using SIGILL
-> > to notify userspace.  Then again, whatever signal you pick will have
-> > other meanings attached, so the only choices are not to notify
-> > userspace or to pick some lesser of many evils.
-> 
-> You could send a udev event, or a poll event, or both.
-> 
-> I think that sending a signal would be a bad idea, as it could inadvertently
-> kill the very application responsible for pinging the watchdog. And you
-> can not really expect that application to understand the difference
-> between your SIGSomething and a real signal.
+If needed, Jiannan's scheme could easily be bounded to prevent
+infinite starvation. For example, we could allow only the first
+8 CPUs in line to jump the queue.
 
-The counter-argument is that applications have to opt-in by setting a
-pretimeout.  Although I have to admit to not testing applications that
-don't opt-in.
+However, given the way that virtual CPUs get scheduled in and
+out all the time, I suspect starvation is not a worry, and we
+will not need the additional complexity to deal with it.
 
-Udev sounds like a bad idea, as that usually means spawning a number
-of shell scripts and is more likely to get lost in realtime systems or
-similar.  Polling on a file descriptor would make sense.
+You may want to play around with virtualization a bit, to get
+a feel for how things work in virt land.
 
-I would be fine with removing the notification for now and have
-someone else add a proper interface as time permits.  Someone else may
-well be a future version of me.
-
-> Also, I think there should be a callback into the watchdog drivers.
-> There are watchdogs out there implementing a pre-timeout in hardware,
-> and the watchdog code could make use of that functionality.
-
-Sounds like a good idea in principle, but I can see few advantages in
-reality.  The code gets slightly more complex, test coverage is
-divided between platforms and it only matters if kernel timers are
-somehow borked.  Not sure if you have a strong argument in favor.
-
-Jörn
-
---
-The only real mistake is the one from which we learn nothing.
--- John Powell
+-- 
+All rights reversed
