@@ -1,103 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754903Ab3DVHQI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 03:16:08 -0400
-Received: from mga01.intel.com ([192.55.52.88]:11637 "EHLO mga01.intel.com"
+	id S1755251Ab3DVHYF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 03:24:05 -0400
+Received: from mail.neotion.com ([91.121.222.125]:50799 "EHLO mail.neotion.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754496Ab3DVHQG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 03:16:06 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,524,1363158000"; 
-   d="scan'208";a="326036303"
-Date: Mon, 22 Apr 2013 10:19:43 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Josef Ahmad <josef.ahmad@linux.intel.com>
-Cc: Wolfram Sang <wsa@the-dreams.de>, Ben Dooks <ben-linux@fluff.org>,
-        Jean Delvare <khali@linux-fr.org>, Stefan Roese <sr@denx.de>,
-        Axel Lin <axel.lin@gmail.com>, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Dirk Brandewie <dirk.brandewie@gmail.com>
-Subject: Re: [PATCH] i2c-designware: fix RX FIFO overrun
-Message-ID: <20130422071943.GK1283@intel.com>
-References: <alpine.DEB.2.02.1304191859570.17829@localhost>
+	id S1753929Ab3DVHYE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Apr 2013 03:24:04 -0400
+Message-ID: <5174E58E.8090307@neotion.com>
+Date: Mon, 22 Apr 2013 09:23:58 +0200
+From: Neil Armstrong <narmstrong@neotion.com>
+Organization: Neotion
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1304191859570.17829@localhost>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Namjae Jeon <linkinjeon@gmail.com>
+CC: linux-mmc@vger.kernel.org, Chris Ball <cjb@laptop.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        Subhash Jadavani <subhashj@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Nam-Jae Jeon <namjae.jeon@samsung.com>
+Subject: Re: [PATCH 0/3] Add boot_enable attribute to eMMC device for boot
+ mode operation selection
+References: <51713B86.2090001@neotion.com> <CAKYAXd_xa--1QpFCdz3Kj0mKF3cvtxFn-xL3QGWZyXPO4Y79ng@mail.gmail.com>
+In-Reply-To: <CAKYAXd_xa--1QpFCdz3Kj0mKF3cvtxFn-xL3QGWZyXPO4Y79ng@mail.gmail.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 19, 2013 at 07:05:30PM +0100, Josef Ahmad wrote:
-> >From a969728248c3b439dc97a69e7dac133b5efa34e7 Mon Sep 17 00:00:00 2001
-> From: Josef Ahmad <josef.ahmad@linux.intel.com>
-> Date: Fri, 19 Apr 2013 17:28:10 +0100
-> Subject: [PATCH] i2c-designware: fix RX FIFO overrun
+On 04/22/2013 06:55 AM, Namjae Jeon wrote:
+> 2013/4/19, Neil Armstrong <narmstrong@neotion.com>:
+>> Since eMMC 4.3 a special boot mode operation was introduced to retrieve
+>> data from the eMMC device with a very simple procedure. Since the Linux
+>> kernel exports these device boot partitions, it may be useful to select
+>> the boot partition from the user space.
+>>
+>> The patch has been tested on a Toshiba eMMC conforming with eMMC 4.5
+>> specifications.
+> Hi Neil.
+> We can be enable boot partition using mmc-utils.
+> See this address.
+> https://git.kernel.org/cgit/linux/kernel/git/cjb/mmc-utils.git/commit/?id=7bd1320b2cb38f040ab5cf017d17e283496690bf
 > 
-> i2c_dw_xfer_msg() pushes a number of bytes to transmit/receive
-> to/from the bus into the TX FIFO.
-> For master-rx transactions, the maximum amount of data that can be
-> received is calculated depending solely on TX and RX FIFO load.
+> So, I don't think this patch is useful.
+> If you consider to be disable boot partition, you can try to update
+> mmc-utils base on the address I shared.
 > 
-> This is racy - TX FIFO may contain master-rx data yet to be
-> processed, which will eventually land into the RX FIFO. This
-> data is not taken into account and the function may request more
-> data than the controller is actually capable of storing.
+> Thanks.
+>>
+>> Neil Armstrong (3):
+>>   Add BOOT_PARTITION_ENABLE definition to MMC EXT_CSD PART_CONFIG
+>>   Add boot_enable sysfs attribute to select MMC boot operation
+>>     partition
+>>   Add Documentation for MMC boot_enable attribute
+>>
+>>  Documentation/mmc/mmc-dev-parts.txt |    6 +++
+>>  drivers/mmc/card/block.c            |   72
+>> ++++++++++++++++++++++++++++++++++-
+>>  include/linux/mmc/mmc.h             |    1 +
+>>  3 files changed, 78 insertions(+), 1 deletions(-)
+>>
+>>
+>>
 > 
-> This patch ensures the driver takes into account the outstanding
-> master-rx data in TX FIFO to prevent RX FIFO overrun.
 
-Can you add something to the changelog to show what the error looks like
-(a dump from dmesg for example)?
+Hi,
+Thanks for the reply, I was not aware of the mmc-utils tools. I think
+the tool and the MMC_IOC_CMD interface should be documented in the kernel.
 
-> Signed-off-by: Josef Ahmad <josef.ahmad@linux.intel.com>
-> ---
->  drivers/i2c/busses/i2c-designware-core.c |   11 ++++++++++-
->  drivers/i2c/busses/i2c-designware-core.h |    2 ++
->  2 files changed, 12 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/i2c/busses/i2c-designware-core.c b/drivers/i2c/busses/i2c-designware-core.c
-> index 94fd818..8dbeef1 100644
-> --- a/drivers/i2c/busses/i2c-designware-core.c
-> +++ b/drivers/i2c/busses/i2c-designware-core.c
-> @@ -426,8 +426,14 @@ i2c_dw_xfer_msg(struct dw_i2c_dev *dev)
->  				cmd |= BIT(9);
-> 
->  			if (msgs[dev->msg_write_idx].flags & I2C_M_RD) {
-> +
-> +				/* avoid rx buffer overrun */
-> +				if (rx_limit - dev->rx_outstanding <= 0)
-> +					break;
-> +
->  				dw_writel(dev, cmd | 0x100, DW_IC_DATA_CMD);
->  				rx_limit--;
-> +				dev->rx_outstanding++;
+Please ignore my patch.
 
-Instead of adding a new variable, is there something preventing a use of
-DW_IC_STATUS bits RFNE and TFNF?
-
->  			} else
->  				dw_writel(dev, cmd | *buf++, DW_IC_DATA_CMD);
->  			tx_limit--; buf_len--;
-> @@ -480,8 +486,10 @@ i2c_dw_read(struct dw_i2c_dev *dev)
-> 
->  		rx_valid = dw_readl(dev, DW_IC_RXFLR);
-> 
-> -		for (; len > 0 && rx_valid > 0; len--, rx_valid--)
-> +		for (; len > 0 && rx_valid > 0; len--, rx_valid--) {
->  			*buf++ = dw_readl(dev, DW_IC_DATA_CMD);
-> +			dev->rx_outstanding--;
-> +		}
-> 
->  		if (len > 0) {
->  			dev->status |= STATUS_READ_IN_PROGRESS;
-> @@ -539,6 +547,7 @@ i2c_dw_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[], int num)
->  	dev->msg_err = 0;
->  	dev->status = STATUS_IDLE;
->  	dev->abort_source = 0;
-> +	dev->rx_outstanding = 0;
-> 
->  	ret = i2c_dw_wait_bus_not_busy(dev);
->  	if (ret < 0)
+Regards,
+Neil
