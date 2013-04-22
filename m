@@ -1,69 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755195Ab3DVKx7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 06:53:59 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:40304 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751241Ab3DVKx6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 06:53:58 -0400
-Date: Mon, 22 Apr 2013 11:53:53 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Vinod Koul <vinod.koul@intel.com>
+	id S1755200Ab3DVKzH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 06:55:07 -0400
+Received: from mga03.intel.com ([143.182.124.21]:63799 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751205Ab3DVKzF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Apr 2013 06:55:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,525,1363158000"; 
+   d="scan'208";a="289703699"
+Date: Mon, 22 Apr 2013 15:53:41 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Lee Jones <lee.jones@linaro.org>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         arnd@arndb.de, linus.walleij@stericsson.com,
         Dan Williams <djbw@fb.com>, Per Forlin <per.forlin@stericsson.com>,
         Rabin Vincent <rabin@rab.in>
-Subject: Re: [PATCH 08/32] dmaengine: ste_dma40: Optimise local MAX() macro
-Message-ID: <20130422105353.GN3432@gmail.com>
+Subject: Re: [PATCH 21/32] dmaengine: ste_dma40: Also report the number of
+ logical channels
+Message-ID: <20130422102341.GV24632@intel.com>
 References: <1366279934-30761-1-git-send-email-lee.jones@linaro.org>
- <1366279934-30761-9-git-send-email-lee.jones@linaro.org>
- <20130422101029.GP24632@intel.com>
+ <1366279934-30761-22-git-send-email-lee.jones@linaro.org>
+ <20130422093631.GE24632@intel.com>
+ <20130422101455.GH3432@gmail.com>
+ <20130422094842.GL24632@intel.com>
+ <20130422103715.GK3432@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130422101029.GP24632@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130422103715.GK3432@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 22 Apr 2013, Vinod Koul wrote:
+On Mon, Apr 22, 2013 at 11:37:15AM +0100, Lee Jones wrote:
+> On Mon, 22 Apr 2013, Vinod Koul wrote:
+> You only get a warning for this too:
+Yup, oh i wrongly mention error
+> 
+>  WARNING: quoted string split across lines
+> #33: FILE: drivers/dma/ste_dma40.c:3204:
+> +	dev_info(&pdev->dev, "hardware revision: %d @ 0x%x with "
+> +		"%d physical channels and %d logical channels\n",
+> 
+> > > How would you solve this?
+> > Use common sense :) I would never sacrfice readablity of code. Erring on 80chars
+> > is fine by me as long as it makes sense.
+> 
+> Common sense to me says split a string which goes over 100 chars. :)
+agreed :)
+> 
+> ... and I don't think readability is compromised all that much, if at all.
+I think if you start above at next line, you can be in 100chars and still be in
+single line...
+	dev_info(&pdev->dev,
+		"hardware revision: %d @ 0x%x with %d physical channels and %d logical channels\n",
+Plus a truncated one would help too...
+s/revision/rev
+s/channels/ch
+etc
 
-> On Thu, Apr 18, 2013 at 11:11:50AM +0100, Lee Jones wrote:
-> > The current implementation of the DMA40's local MAX() macro evaluates
-> > its arguments more times than is necessary. This patch strips it
-> > optimises it to only evaluate what's appropriate.
-> > 
-> > Cc: Vinod Koul <vinod.koul@intel.com>
-> > Cc: Dan Williams <djbw@fb.com>
-> > Cc: Per Forlin <per.forlin@stericsson.com>
-> > Cc: Rabin Vincent <rabin@rab.in>
-> > Reported-by: Harvey Harrison <harvey.harrison@gmail.com>
-> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> > ---
-> >  drivers/dma/ste_dma40.c |    2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > 
-> > diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
-> > index b21a8a3..7b451b2 100644
-> > --- a/drivers/dma/ste_dma40.c
-> > +++ b/drivers/dma/ste_dma40.c
-> > @@ -53,7 +53,7 @@
-> >  #define D40_ALLOC_PHY		BIT(30)
-> >  #define D40_ALLOC_LOG_FREE	BIT(0)
-> >  
-> > -#define MAX(a, b) (((a) < (b)) ? (b) : (a))
-> > +#define MAX(a, b) ((a > b) ? a : b)
-> Am not a big fan of own redefines, can you use kernel max() macro instead
+would bring this to saner levels :)
 
-Unfortunately not in this instance, as the kernel max() macro uses
-curly braces and is not suitable for this use-case. There is a thread
-regarding this on the MLs with Arnd Bergmann, Russell King and myself.
-
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+--
+~Vinod
