@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754897Ab3DVTAQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 15:00:16 -0400
-Received: from mail-we0-f182.google.com ([74.125.82.182]:47369 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754646Ab3DVTAL (ORCPT
+	id S1754863Ab3DVTAK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 15:00:10 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:41667 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754833Ab3DVTAI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 15:00:11 -0400
+	Mon, 22 Apr 2013 15:00:08 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -21,9 +21,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 09/10] nohz: Re-evaluate the tick for the new task after a context switch
-Date: Mon, 22 Apr 2013 20:59:45 +0200
-Message-Id: <1366657186-20556-10-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 07/10] nohz: Implement full dynticks kick
+Date: Mon, 22 Apr 2013 20:59:43 +0200
+Message-Id: <1366657186-20556-8-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1366657186-20556-1-git-send-email-fweisbec@gmail.com>
 References: <1366657186-20556-1-git-send-email-fweisbec@gmail.com>
@@ -31,14 +31,15 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a task is scheduled in, it may have some properties
-of its own that could make the CPU reconsider the need for
-the tick: posix cpu timers, perf events, ...
+Implement the full dynticks kick that is performed from
+IPIs sent by various subsystems (scheduler, posix timers, ...)
+when they want to notify about a new event that may
+reconsider the dependency on the tick.
 
-So notify the full dynticks subsystem when a task gets
-scheduled in and re-check the tick dependency at this
-stage. This is done through a self IPI to avoid messing
-up with any current lock scenario.
+Most of the time, such an event end up restarting the tick.
+
+(Part of the design with subsystems providing *_can_stop_tick()
+helpers suggested by Peter Zijlstra a while ago).
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Chris Metcalf <cmetcalf@tilera.com>
@@ -56,74 +57,75 @@ Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 ---
- include/linux/tick.h     |    2 ++
- kernel/sched/core.c      |    2 ++
- kernel/time/tick-sched.c |   20 ++++++++++++++++++++
- 3 files changed, 24 insertions(+), 0 deletions(-)
+ kernel/time/tick-sched.c |   42 ++++++++++++++++++++++++++++++++++++++----
+ 1 files changed, 38 insertions(+), 4 deletions(-)
 
-diff --git a/include/linux/tick.h b/include/linux/tick.h
-index e31e676..9180f4b 100644
---- a/include/linux/tick.h
-+++ b/include/linux/tick.h
-@@ -163,12 +163,14 @@ extern int tick_nohz_full_cpu(int cpu);
- extern void tick_nohz_full_check(void);
- extern void tick_nohz_full_kick(void);
- extern void tick_nohz_full_kick_all(void);
-+extern void tick_nohz_task_switch(struct task_struct *tsk);
- #else
- static inline void tick_nohz_init(void) { }
- static inline int tick_nohz_full_cpu(int cpu) { return 0; }
- static inline void tick_nohz_full_check(void) { }
- static inline void tick_nohz_full_kick(void) { }
- static inline void tick_nohz_full_kick_all(void) { }
-+static inline void tick_nohz_task_switch(struct task_struct *tsk) { }
- #endif
- 
- 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 9ad3500..dd09def 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1896,6 +1896,8 @@ static void finish_task_switch(struct rq *rq, struct task_struct *prev)
- 		kprobe_flush_task(prev);
- 		put_task_struct(prev);
- 	}
-+
-+	tick_nohz_task_switch(current);
- }
- 
- #ifdef CONFIG_SMP
 diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index d0ed190..12a900d 100644
+index 4d74a68..95d79ae 100644
 --- a/kernel/time/tick-sched.c
 +++ b/kernel/time/tick-sched.c
-@@ -232,6 +232,26 @@ void tick_nohz_full_kick_all(void)
- 	preempt_enable();
- }
+@@ -21,6 +21,8 @@
+ #include <linux/sched.h>
+ #include <linux/module.h>
+ #include <linux/irq_work.h>
++#include <linux/posix-timers.h>
++#include <linux/perf_event.h>
  
-+/*
-+ * Re-evaluate the need for the tick as we switch the current task.
-+ * It might need the tick due to per task/process properties:
-+ * perf events, posix cpu timers, ...
-+ */
-+void tick_nohz_task_switch(struct task_struct *tsk)
+ #include <asm/irq_regs.h>
+ 
+@@ -147,16 +149,48 @@ static void tick_sched_handle(struct tick_sched *ts, struct pt_regs *regs)
+ static cpumask_var_t nohz_full_mask;
+ bool have_nohz_full_mask;
+ 
++static bool can_stop_full_tick(void)
 +{
-+	unsigned long flags;
++	WARN_ON_ONCE(!irqs_disabled());
 +
-+	if (!tick_nohz_full_cpu(smp_processor_id()))
-+		return;
++	if (!sched_can_stop_tick())
++		return false;
 +
-+	local_irq_save(flags);
++	if (!posix_cpu_timers_can_stop_tick(current))
++		return false;
 +
-+	if (tick_nohz_tick_stopped() && !can_stop_full_tick())
-+		tick_nohz_full_kick();
++	if (!perf_event_can_stop_tick())
++		return false;
 +
-+	local_irq_restore(flags);
++	/* sched_clock_tick() needs us? */
++#ifdef CONFIG_HAVE_UNSTABLE_SCHED_CLOCK
++	/*
++	 * TODO: kick full dynticks CPUs when
++	 * sched_clock_stable is set.
++	 */
++	if (!sched_clock_stable)
++		return false;
++#endif
++
++	return true;
 +}
 +
- int tick_nohz_full_cpu(int cpu)
++static void tick_nohz_restart_sched_tick(struct tick_sched *ts, ktime_t now);
++
+ /*
+  * Re-evaluate the need for the tick on the current CPU
+  * and restart it if necessary.
+  */
+ void tick_nohz_full_check(void)
  {
- 	if (!have_nohz_full_mask)
+-	/*
+-	 * STUB for now, will be filled with the full tick stop/restart
+-	 * infrastructure patches
+-	 */
++	struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
++
++	if (tick_nohz_full_cpu(smp_processor_id())) {
++		if (ts->tick_stopped && !is_idle_task(current)) {
++			if (!can_stop_full_tick())
++				tick_nohz_restart_sched_tick(ts, ktime_get());
++		}
++	}
+ }
+ 
+ static void nohz_full_kick_work_func(struct irq_work *work)
 -- 
 1.7.5.4
 
