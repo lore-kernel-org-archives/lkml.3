@@ -1,91 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753742Ab3DVUzq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 16:55:46 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:45773 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753623Ab3DVUzo (ORCPT
+	id S1754007Ab3DVU6N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 16:58:13 -0400
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:58256 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753625Ab3DVU6M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 16:55:44 -0400
-Message-ID: <1366664138.8337.18.camel@laptop>
-Subject: Re: Preemptable Ticket Spinlock
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jiannan Ouyang <ouyang@cs.pitt.edu>
-Cc: Rik van Riel <riel@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Avi Kivity <avi.kivity@gmail.com>, Gleb Natapov <gleb@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Srikar <srikar@linux.vnet.ibm.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        KVM <kvm@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Chegu Vinod <chegu_vinod@hp.com>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Andrew Jones <drjones@redhat.com>, Karen Noel <knoel@redhat.com>
-Date: Mon, 22 Apr 2013 22:55:38 +0200
-In-Reply-To: <CAJocwceW6BuEu0Yuyv472aarpcziZH1wd-Xbc+Om81ES8+w+SA@mail.gmail.com>
-References: <CAJocwccu5QQyuKRvgNyPSFz2K_rzCW419W9-XdSUYOL7+KqQKg@mail.gmail.com>
-	 <51745650.9050204@redhat.com> <1366631460.4443.3.camel@laptop>
-	 <51753289.70406@redhat.com> <1366660147.6454.6.camel@laptop>
-	 <517595FA.800@redhat.com> <1366661294.6454.18.camel@laptop>
-	 <CAJocwceW6BuEu0Yuyv472aarpcziZH1wd-Xbc+Om81ES8+w+SA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
+	Mon, 22 Apr 2013 16:58:12 -0400
+Message-ID: <5175A4F5.1050304@metafoo.de>
+Date: Mon, 22 Apr 2013 23:00:37 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Icedove/3.0.11
+MIME-Version: 1.0
+To: Jon Hunter <jon-hunter@ti.com>
+CC: Vinod Koul <vinod.koul@intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] dma: of: Remove check on always true condition
+References: <1366619613-30639-1-git-send-email-lars@metafoo.de> <1366619613-30639-2-git-send-email-lars@metafoo.de> <5175A317.1010304@ti.com>
+In-Reply-To: <5175A317.1010304@ti.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-04-22 at 16:46 -0400, Jiannan Ouyang wrote:
-> On Mon, Apr 22, 2013 at 4:08 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+On 04/22/2013 10:52 PM, Jon Hunter wrote:
 > 
-> >
-> > I much prefer the entire series from Jeremy since it maintains the
-> > ticket semantics and doesn't degrade the lock to unfair under
-> > contention.
-> >
-> > Now I suppose there's a reason its not been merged yet and I suspect
-> > its !paravirt hotpath impact which wasn't rightly justified or somesuch
-> > so maybe someone can work on that or so.. dunno.
-> >
-> >
+> On 04/22/2013 03:33 AM, Lars-Peter Clausen wrote:
+>> Both of_dma_nbcells field of the of_dma_controller and the args_count field of
+>> the dma_spec are initialized by parsing the #dma-cells attribute of their device
+>> tree node. So if the device tree nodes of a DMA controller and the dma_spec
+>> match this means that of_dma_nbcells and args_count will also match. So the
+>> second test in the of_dma_find_controller loop is redundant because given the
+>> first test yields true the second test will also yield true. So we can safely
+>> remove the test whether of_dma_nbcells matches args_count. Since this was the
+>> last user of the of_dma_nbcells field we can remove it altogether.
 > 
-> In my paper, I comparable preemptable-lock and pv_lock on KVM from
-> Raghu and Jeremy.
+> This assumes that someone has correctly added the dma information to the
+> dma slave binding. I could see systems where different dma controllers
+> have different of_dma_nbcells and so someone could put the enter wrong
+> number of cells for a dma slave binding. Its really to catch user error.
 
-Which pv_lock? The current pv spinlock mess is basically the old unfair
-thing. The later patch series I referred to earlier implemented a
-paravirt ticket lock, that should perform much better under overcommit.
+No, this assumes nothing. The condition will _always_ be true.
 
-> Results show that:
-> - preemptable-lock improves performance significantly without paravirt support
+dma_spec->args_count is initialized by parsing the #dma-cells attribute of
+dma_sepc->np. of_dma->of_dma_nbcells is initialized by parsing the #dma-cells
+attribute of of_dma->of_node. If ofdma->of_node equals dma_spec->np then
+dma_spec->args_count will also equal of_dma->of_dma_nbcells.
 
-But completely wrecks our native spinlock implementation so that's not
-going to happen of course ;-)
+> 
+>> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+>> ---
+>>  drivers/dma/of-dma.c   | 14 +-------------
+>>  include/linux/of_dma.h |  1 -
+>>  2 files changed, 1 insertion(+), 14 deletions(-)
+>>
+>> diff --git a/drivers/dma/of-dma.c b/drivers/dma/of-dma.c
+>> index 268cc8a..75334bd 100644
+>> --- a/drivers/dma/of-dma.c
+>> +++ b/drivers/dma/of-dma.c
+>> @@ -35,8 +35,7 @@ static struct of_dma *of_dma_find_controller(struct of_phandle_args *dma_spec)
+>>  	struct of_dma *ofdma;
+>>  
+>>  	list_for_each_entry(ofdma, &of_dma_list, of_dma_controllers)
+>> -		if ((ofdma->of_node == dma_spec->np) &&
+>> -		    (ofdma->of_dma_nbcells == dma_spec->args_count))
+>> +		if (ofdma->of_node == dma_spec->np)
+>>  			return ofdma;
+> 
+> Other device-tree functions perform similar tests to this such as ...
+> 
 
-> - preemptable-lock can also be paravirtualized, which outperforms
-> pv_lock, especially when overcommited by 3 or more
+So it's redundant there as well ;)
 
-See above.. 
-
-> - pv-preemptable-lock has much less performance variance compare to
-> pv_lock, because it adapts to preemption within  VM,
->   other than using rescheduling that increase VM interference
-
-I would say it has a _much_ worse worst case (and thus worse variance)
-than the paravirt ticket implementation from Jeremy. While full
-paravirt ticket lock results in vcpu scheduling it does maintain
-fairness.
-
-If you drop strict fairness you can end up in unbounded starvation
-cases and those are very ugly indeed.
-
-> It would still be very interesting to conduct more experiments to
-> compare these two, to see if the fairness enforced by pv_lock is
-> mandatory, and if preemptable-lock outperforms pv_lock in most cases,
-> and how do they work with PLE.
-
-Be more specific, pv_lock as currently upstream is a trainwreck mostly
-done because pure ticket spinners and vcpu-preemption are even worse.
+> static int of_gpiochip_find_and_xlate(struct gpio_chip *gc, void *data)
+> {
+>          struct gg_data *gg_data = data;
+>          int ret;
+> 
+>          if ((gc->of_node != gg_data->gpiospec.np) ||
+>              (gc->of_gpio_n_cells != gg_data->gpiospec.args_count) ||
+>              (!gc->of_xlate))
+>                  return false;
+> 
+> ...
+> 
+> Cheers
+> Jon
 
