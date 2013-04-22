@@ -1,65 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755524Ab3DVUqY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 16:46:24 -0400
-Received: from mb1i1mx.ns.pitt.edu ([136.142.11.141]:42468 "EHLO
-	mb1i1.ns.pitt.edu" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755250Ab3DVUqW (ORCPT
+	id S1755534Ab3DVUqx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 16:46:53 -0400
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:43183 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755221Ab3DVUqv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 16:46:22 -0400
-Date: Mon, 22 Apr 2013 16:46:19 -0400
-From: Jiannan Ouyang <ouyang@cs.pitt.edu>
-Subject: Re: Preemptable Ticket Spinlock
-In-reply-to: <1366661294.6454.18.camel@laptop>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Rik van Riel <riel@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Avi Kivity <avi.kivity@gmail.com>, Gleb Natapov <gleb@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Srikar <srikar@linux.vnet.ibm.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        KVM <kvm@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Chegu Vinod <chegu_vinod@hp.com>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Andrew Jones <drjones@redhat.com>, Karen Noel <knoel@redhat.com>
-Message-id: <CAJocwceW6BuEu0Yuyv472aarpcziZH1wd-Xbc+Om81ES8+w+SA@mail.gmail.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=ISO-8859-1
-References: <CAJocwccu5QQyuKRvgNyPSFz2K_rzCW419W9-XdSUYOL7+KqQKg@mail.gmail.com>
- <51745650.9050204@redhat.com> <1366631460.4443.3.camel@laptop>
- <51753289.70406@redhat.com> <1366660147.6454.6.camel@laptop>
- <517595FA.800@redhat.com> <1366661294.6454.18.camel@laptop>
+	Mon, 22 Apr 2013 16:46:51 -0400
+Message-ID: <5175A1B8.1090202@gmail.com>
+Date: Mon, 22 Apr 2013 15:46:48 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: John Stultz <john.stultz@linaro.org>
+CC: Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>, arm@kernel.org,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 0/4] ARM 64 bit sched_clock take #2
+References: <51709FD7.8050408@gmail.com> <1366417746-24990-1-git-send-email-sboyd@codeaurora.org> <51756CB6.5060607@linaro.org>
+In-Reply-To: <51756CB6.5060607@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 22, 2013 at 4:08 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+On 04/22/2013 12:00 PM, John Stultz wrote:
+> On 04/19/2013 05:29 PM, Stephen Boyd wrote:
+>> This is what I was thinking. I don't see why we can't move this to
+>> generic code and have arm64 use it too. Those patches will follow once
+>> I find an arm64
+>> compiler.
+> 
+> I think moving this to generic code sounds like a good idea. You could
+> probably also prototype and test the 64bit code with x86_64, using the
+> TSC counter.
 
->
-> I much prefer the entire series from Jeremy since it maintains the
-> ticket semantics and doesn't degrade the lock to unfair under
-> contention.
->
-> Now I suppose there's a reason its not been merged yet and I suspect
-> its !paravirt hotpath impact which wasn't rightly justified or somesuch
-> so maybe someone can work on that or so.. dunno.
->
->
+I agree this should all be common, but I'd like to see the common
+version first. That is not going to make it for 3.10. For 3.10, the
+immediate need is to fix suspend and initial time for the arch timer. I
+think this should be fixed locally in arch timer code for 3.10. The
+alternative is to revert linux-next commit 023796b9be3a77481cd5 (ARM:
+arch_timer: use full 64-bit counter for sched_clock) which will cause
+the arch timer to not be used as sched_clock if another higher frequency
+sched_clock is registered.
 
-In my paper, I comparable preemptable-lock and pv_lock on KVM from
-Raghu and Jeremy.
-Results show that:
-- preemptable-lock improves performance significantly without paravirt support
-- preemptable-lock can also be paravirtualized, which outperforms
-pv_lock, especially when overcommited by 3 or more
-- pv-preemptable-lock has much less performance variance compare to
-pv_lock, because it adapts to preemption within  VM,
-  other than using rescheduling that increase VM interference
+Rob
 
-It would still be very interesting to conduct more experiments to
-compare these two, to see if the fairness enforced by pv_lock is
-mandatory, and if preemptable-lock outperforms pv_lock in most cases,
-and how do they work with PLE.
-
---Jiannan
