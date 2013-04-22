@@ -1,58 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754669Ab3DVJQY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 05:16:24 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:50333 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754506Ab3DVJQW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 05:16:22 -0400
-X-Auth-Info: xDaamkawbua6MeCmu5+gdtZrXBXkbnuJ38ZyQuwXSQo=
-From: Marek Vasut <marex@denx.de>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: Re: [PATCH RESEND] video: mxsfb: Fix colors display on lower color depth
-Date: Mon, 22 Apr 2013 11:16:17 +0200
-User-Agent: KMail/1.13.7 (Linux/3.8-trunk-amd64; KDE/4.8.4; x86_64; ; )
-Cc: Shawn Guo <shawn.guo@linaro.org>, linux-arm-kernel@lists.infradead.org,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Thomas Petazzoni <thomas@free-electrons.com>,
-        Brian Lilly <brian@crystalfontz.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1366618310-7068-1-git-send-email-maxime.ripard@free-electrons.com>
-In-Reply-To: <1366618310-7068-1-git-send-email-maxime.ripard@free-electrons.com>
+	id S1754893Ab3DVJSu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 05:18:50 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:48819 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753751Ab3DVJSt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Apr 2013 05:18:49 -0400
+Date: Mon, 22 Apr 2013 11:18:47 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, x86-ml <x86@kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>, tiwai@suse.de,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: irq 16: nobody cared
+Message-ID: <20130422091847.GB4637@pd.tnic>
+References: <20130421165653.GA4623@pd.tnic>
+ <20130421181035.GC4559@pd.tnic>
+ <20130421185609.GD3509@linux.vnet.ibm.com>
+ <20130421190655.GA5807@pd.tnic>
+ <20130421203447.GE3509@linux.vnet.ibm.com>
+ <20130421205139.GC5807@pd.tnic>
+ <20130421214241.GA4593@pd.tnic>
+ <20130421220015.GF3509@linux.vnet.ibm.com>
+ <20130421221242.GB4593@pd.tnic>
+ <20130422080136.GA7080@gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201304221116.18080.marex@denx.de>
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130422080136.GA7080@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Maxime Ripard,
+On Mon, Apr 22, 2013 at 10:01:36AM +0200, Ingo Molnar wrote:
+> Hm, this really smells like a workaround: treating the symptom, not
+> the cause.
 
-> The current code always registers as a 32 bits display, and uses the
-> hardware to drop the MSB of each color to abjust to the interface width
-> used by the panel.
-> 
-> This results on 18 bits (and probably 16 bits display as well) in colors
-> being displayed poorly, because the MSB are obviously the most important
-> bits for each color definition.
-> 
-> The default controller behaviour when using an interface width smaller
-> than the color depth is to drop the LSBs of each color, which makes more
-> sense because you lose the least important part of the color definition.
-> 
-> So, to fix the colors display, just get back to the default controller
-> behaviour.
-> 
-> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+Well, I just tested Takashi's add missing synchronize_irq() to the
+suspend path of snd_hda_intel and it doesn't help.
 
-Did you receive my latest email? Check M28EVK (imx28-m28evk.dts), it uses 18bit 
-LCD and works without this patch I think.
+So it could be an issue with this driver or only this hw/driver can
+exacerbate RCU this much to trigger the spurious irq machinery.
 
-Best regards,
-Marek Vasut
+> How can an increase in grace-periods break drivers and suspend? Do we
+> understand exactly what happens there?
+
+I'd rather look into Paul's direction here. :)
+
+> If we do, can we fix that instead of tweaking the RCU timeouts?
+
+Well, I was under the impression yesterday that we actually want
+to switch to expedited grace periods for suspend/resume *anyway*,
+regardless of drivers.
+
+Paul?
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
