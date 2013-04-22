@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755826Ab3DVJmb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 05:42:31 -0400
-Received: from fallback.hitachi.co.jp ([133.145.228.50]:41378 "EHLO
+	id S1756213Ab3DVJnk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 05:43:40 -0400
+Received: from fallback.hitachi.co.jp ([133.145.228.50]:41409 "EHLO
 	mailxx.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751583Ab3DVJm2 (ORCPT
+	with ESMTP id S1755258Ab3DVJnj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 05:42:28 -0400
-X-AuditID: 85900ec0-d24c6b900000151e-7a-517505665728
-Subject: [PATCH V2 2/3] trace-cmd: Add recording to trace_clock
+	Mon, 22 Apr 2013 05:43:39 -0400
+X-AuditID: 85900ec0-d42c9b900000151e-7b-51750569823b
+Subject: [PATCH V2 3/3] trace-cmd: Add support for extracting trace_clock in
+ report
 To: Steven Rostedt <rostedt@goodmis.org>
 From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
 Cc: Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         linux-kernel@vger.kernel.org, yrl.pp-manager.tt@hitachi.com
-Date: Mon, 22 Apr 2013 18:43:12 +0900
-Message-ID: <20130422094311.26615.48964.stgit@yunodevel>
+Date: Mon, 22 Apr 2013 18:43:14 +0900
+Message-ID: <20130422094314.26615.96343.stgit@yunodevel>
 In-Reply-To: <20130422094306.26615.70754.stgit@yunodevel>
 References: <20130422094306.26615.70754.stgit@yunodevel>
 User-Agent: StGit/0.16
@@ -27,107 +28,298 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In this patch, trace-cmd reads trace_clock on debugfs in the record mode and
-outputs the data to trace.dat file. This patch defines the flag
-TRACECMD_OPTION_TRACECLOCK for using the option feature. For supporting
-multiple buffers, this patch doesn't store data of trace_clock when add
-the flag to trace.dat. This is because the flag is globally used, but
-trace_clock can be changed for each buffer. So, this patch stores data of
-trace_clock after adding data information of each CPU. The binary format
-of trace.data is changed as follows:
+If trace-cmd extracts trace_clock, trace-cmd reads trace_clock data from
+the trace.dat and switches outputting format of timestamp for each trace_clock.
 
-<Current binary format>
-...
-"flyrecord"                     -----+
-[total cpu numer]                    |
-[file offset and size of cpu0]       |
-...                                  +--- info. of normal buffer
-[file offset and size of cpuX]       |
---skip--                             |
-[data of CPU0]                       |
-...                             -----+
---skip--
-"flyrecord"                     -----+
-[total cpu numer]                    |
-[file offset and size of cpu0]       |
-...                                  +--- info. of sub-buffer
-[file offset and size of cpuX]       |
---skip--                             |
-[data of CPU0]                       |
-...                             -----+
-
-<Changed binary format>
-...
-"flyrecord"                     -----+
-[total cpu numer]                    |
-[file offset and size of cpu0]       |
-...                                  +--- info. of normal buffer
-[file offset and size of cpuX]       |
-[size of trace_clock]  <== add       |
-[trace_clock contents] <== add       |
---skip--                             |
-[data of CPU0]                       |
-...                             -----+
---skip--
-"flyrecord"                     -----+
-[total cpu numer]                    |
-[file offset and size of cpu0]       |
-...                                  +--- info. of sub-buffer
-[file offset and size of cpuX]       |
-[size of trace_clock]  <== add       |
-[trace_clock contents] <== add       |
---skip--                             |
-[data of CPU0]                       |
-...                             -----+
-
-Changes in v2:
- - Define TRACECMD_OPTION_TRACECLOCK for extracting trace_clock
+Changed in v2:
+ - Check whether TRACECMD_OPTION_TRACECLOCK exists ot not in trace.dat
 
 Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
 ---
- trace-cmd.h    |    1 +
- trace-output.c |    3 +++
- trace-record.c |    3 +++
- 3 files changed, 7 insertions(+)
+ event-parse.c |   50 +++++++++++++++++++++++++++++++++++++++-----------
+ event-parse.h |    6 +++++-
+ trace-cmd.h   |    2 ++
+ trace-input.c |   33 +++++++++++++++++++++++++++++++++
+ trace-read.c  |    4 +++-
+ trace-util.c  |   26 ++++++++++++++++++++++++++
+ 6 files changed, 108 insertions(+), 13 deletions(-)
 
-diff --git a/trace-cmd.h b/trace-cmd.h
-index 116c2f6..0745dad 100644
---- a/trace-cmd.h
-+++ b/trace-cmd.h
-@@ -81,6 +81,7 @@ enum {
- 	TRACECMD_OPTION_DATE,
- 	TRACECMD_OPTION_CPUSTAT,
- 	TRACECMD_OPTION_BUFFER,
-+	TRACECMD_OPTION_TRACECLOCK,
+diff --git a/event-parse.c b/event-parse.c
+index a18a493..a188c0e 100644
+--- a/event-parse.c
++++ b/event-parse.c
+@@ -305,6 +305,11 @@ int pevent_register_comm(struct pevent *pevent, const char *comm, int pid)
+ 	return 0;
+ }
+ 
++void pevent_register_trace_clock(struct pevent *pevent, char *trace_clock)
++{
++	pevent->trace_clock = trace_clock;
++}
++
+ struct func_map {
+ 	unsigned long long		addr;
+ 	char				*func;
+@@ -4409,8 +4414,21 @@ void pevent_event_info(struct trace_seq *s, struct event_format *event,
+ 	trace_seq_terminate(s);
+ }
+ 
++static bool is_timestamp_in_us(char *trace_clock, bool use_trace_clock)
++{
++	if (!use_trace_clock)
++		return true;
++
++	if (!strcmp(trace_clock, "local") || !strcmp(trace_clock, "global")
++	    || !strcmp(trace_clock, "uptime") || !strcmp(trace_clock, "perf"))
++		return true;
++
++	/* trace_clock is setting in tsc or counter mode */
++	return false;
++}
++
+ void pevent_print_event(struct pevent *pevent, struct trace_seq *s,
+-			struct pevent_record *record)
++			struct pevent_record *record, bool use_trace_clock)
+ {
+ 	static char *spaces = "                    "; /* 20 spaces */
+ 	struct event_format *event;
+@@ -4423,9 +4441,14 @@ void pevent_print_event(struct pevent *pevent, struct trace_seq *s,
+ 	int pid;
+ 	int len;
+ 	int p;
++	bool use_usec_format;
+ 
+-	secs = record->ts / NSECS_PER_SEC;
+-	nsecs = record->ts - secs * NSECS_PER_SEC;
++	use_usec_format = is_timestamp_in_us(pevent->trace_clock,
++							use_trace_clock);
++	if (use_usec_format) {
++		secs = record->ts / NSECS_PER_SEC;
++		nsecs = record->ts - secs * NSECS_PER_SEC;
++	}
+ 
+ 	if (record->size < 0) {
+ 		do_warning("ug! negative record size %d", record->size);
+@@ -4450,15 +4473,20 @@ void pevent_print_event(struct pevent *pevent, struct trace_seq *s,
+ 	} else
+ 		trace_seq_printf(s, "%16s-%-5d [%03d]", comm, pid, record->cpu);
+ 
+-	if (pevent->flags & PEVENT_NSEC_OUTPUT) {
+-		usecs = nsecs;
+-		p = 9;
+-	} else {
+-		usecs = (nsecs + 500) / NSECS_PER_USEC;
+-		p = 6;
+-	}
++	if (use_usec_format) {
++		if (pevent->flags & PEVENT_NSEC_OUTPUT) {
++			usecs = nsecs;
++			p = 9;
++		} else {
++			usecs = (nsecs + 500) / NSECS_PER_USEC;
++			p = 6;
++		}
+ 
+-	trace_seq_printf(s, " %5lu.%0*lu: %s: ", secs, p, usecs, event->name);
++		trace_seq_printf(s, " %5lu.%0*lu: %s: ",
++					secs, p, usecs, event->name);
++	} else
++		trace_seq_printf(s, " %12llu: %s: ",
++					record->ts, event->name);
+ 
+ 	/* Space out the event names evenly. */
+ 	len = strlen(event->name);
+diff --git a/event-parse.h b/event-parse.h
+index 05e99fa..cd9f244 100644
+--- a/event-parse.h
++++ b/event-parse.h
+@@ -20,6 +20,7 @@
+ #ifndef _PARSE_EVENTS_H
+ #define _PARSE_EVENTS_H
+ 
++#include <stdbool.h>
+ #include <stdarg.h>
+ #include <regex.h>
+ 
+@@ -456,6 +457,8 @@ struct pevent {
+ 
+ 	/* cache */
+ 	struct event_format *last_event;
++
++	char *trace_clock;
  };
  
- enum {
-diff --git a/trace-output.c b/trace-output.c
-index 8697976..b771f08 100644
---- a/trace-output.c
-+++ b/trace-output.c
-@@ -1061,6 +1061,9 @@ static int __tracecmd_append_cpu_data(struct tracecmd_output *handle,
- 			goto out_free;
+ static inline void pevent_set_flag(struct pevent *pevent, int flag)
+@@ -533,6 +536,7 @@ enum trace_flag_type {
+ };
+ 
+ int pevent_register_comm(struct pevent *pevent, const char *comm, int pid);
++void pevent_register_trace_clock(struct pevent *pevent, char *trace_clock);
+ int pevent_register_function(struct pevent *pevent, char *name,
+ 			     unsigned long long addr, char *mod);
+ int pevent_register_print_string(struct pevent *pevent, const char *fmt,
+@@ -540,7 +544,7 @@ int pevent_register_print_string(struct pevent *pevent, const char *fmt,
+ int pevent_pid_is_registered(struct pevent *pevent, int pid);
+ 
+ void pevent_print_event(struct pevent *pevent, struct trace_seq *s,
+-			struct pevent_record *record);
++			struct pevent_record *record, bool use_trace_clock);
+ 
+ int pevent_parse_header_page(struct pevent *pevent, char *buf, unsigned long size,
+ 			     int long_size);
+diff --git a/trace-cmd.h b/trace-cmd.h
+index 0745dad..bae4cc1 100644
+--- a/trace-cmd.h
++++ b/trace-cmd.h
+@@ -30,6 +30,7 @@
+ #define TRACECMD_PTR2ERR(ptr)	((unisgned long)(ptr) & ~TRACECMD_ERR_MSK)
+ 
+ void parse_cmdlines(struct pevent *pevent, char *file, int size);
++void parse_trace_clock(struct pevent *pevent, char *file, int size);
+ void parse_proc_kallsyms(struct pevent *pevent, char *file, unsigned int size);
+ void parse_ftrace_printk(struct pevent *pevent, char *file, unsigned int size);
+ 
+@@ -171,6 +172,7 @@ tracecmd_get_cursor(struct tracecmd_input *handle, int cpu);
+ 
+ int tracecmd_ftrace_overrides(struct tracecmd_input *handle, struct tracecmd_ftrace *finfo);
+ struct pevent *tracecmd_get_pevent(struct tracecmd_input *handle);
++bool tracecmd_get_use_trace_clock(struct tracecmd_input *handle);
+ 
+ char *tracecmd_get_tracing_file(const char *name);
+ void tracecmd_put_tracing_file(char *name);
+diff --git a/trace-input.c b/trace-input.c
+index 232015a..369ad58 100644
+--- a/trace-input.c
++++ b/trace-input.c
+@@ -19,6 +19,7 @@
+  */
+ #define _LARGEFILE64_SOURCE
+ #include <dirent.h>
++#include <stdbool.h>
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
+@@ -89,6 +90,7 @@ struct tracecmd_input {
+ 	int			cpus;
+ 	int			ref;
+ 	int			nr_buffers;	/* buffer instances */
++	bool			use_trace_clock;
+ 	struct cpu_data 	*cpu_data;
+ 	unsigned long long	ts_offset;
+ 	char *			cpustats;
+@@ -1767,6 +1769,9 @@ static int handle_options(struct tracecmd_input *handle)
+ 			offset = *(unsigned long long *)buf;
+ 			buffer->offset = __data2host8(handle->pevent, offset);
+ 			break;
++		case TRACECMD_OPTION_TRACECLOCK:
++			handle->use_trace_clock = true;
++			break;
+ 		default:
+ 			warning("unknown option %d", option);
+ 			break;
+@@ -1901,6 +1906,20 @@ static int read_and_parse_cmdlines(struct tracecmd_input *handle,
+ 	return 0;
+ }
+ 
++static int read_and_parse_trace_clock(struct tracecmd_input *handle,
++							struct pevent *pevent)
++{
++	unsigned long long size;
++	char *trace_clock;
++
++	if (read_data_and_size(handle, &trace_clock, &size) < 0)
++		return -1;
++	trace_clock[size] = 0;
++	parse_trace_clock(pevent, trace_clock, size);
++	free(trace_clock);
++	return 0;
++}
++
+ /**
+  * tracecmd_init_data - prepare reading the data from trace.dat
+  * @handle: input handle for the trace.dat file
+@@ -1927,6 +1946,11 @@ int tracecmd_init_data(struct tracecmd_input *handle)
+ 	if (ret < 0)
+ 		return ret;
+ 
++	if (handle->use_trace_clock) {
++		if (read_and_parse_trace_clock(handle, pevent) < 0)
++			return -1;
++	}
++
+ 	tracecmd_blk_hack(handle);
+ 
+ 	return ret;
+@@ -2563,3 +2587,12 @@ struct pevent *tracecmd_get_pevent(struct tracecmd_input *handle)
+ {
+ 	return handle->pevent;
+ }
++
++/**
++ * tracecmd_get_use_trace_clock - return use_trace_clock
++ * @handle: input handle for the trace.dat file
++ */
++bool tracecmd_get_use_trace_clock(struct tracecmd_input *handle)
++{
++	return handle->use_trace_clock;
++}
+diff --git a/trace-read.c b/trace-read.c
+index 7fc9a7f..2e84d78 100644
+--- a/trace-read.c
++++ b/trace-read.c
+@@ -655,6 +655,7 @@ static void show_data(struct tracecmd_input *handle,
+ {
+ 	struct pevent *pevent;
+ 	struct trace_seq s;
++	bool use_trace_clock;
+ 
+ 	if (filter_record(handle, record))
+ 		return;
+@@ -674,7 +675,8 @@ static void show_data(struct tracecmd_input *handle,
+ 		trace_seq_printf(&s, "CPU:%d [SUBBUFFER START]\n",
+ 				 record->cpu);
+ 
+-	pevent_print_event(pevent, &s, record);
++	use_trace_clock = tracecmd_get_use_trace_clock(handle);
++	pevent_print_event(pevent, &s, record, use_trace_clock);
+ 	if (s.len && *(s.buffer + s.len - 1) == '\n')
+ 		s.len--;
+ 	trace_seq_do_printf(&s);
+diff --git a/trace-util.c b/trace-util.c
+index 9b26d1f..d6c1e29 100644
+--- a/trace-util.c
++++ b/trace-util.c
+@@ -375,6 +375,32 @@ void parse_cmdlines(struct pevent *pevent,
  	}
+ }
  
-+	if (save_tracing_file_data(handle, "trace_clock") < 0)
-+		goto out_free;
++static void extract_trace_clock(struct pevent *pevent, char *line)
++{
++	char *data;
++	char *clock;
++	char *next = NULL;
 +
- 	for (i = 0; i < cpus; i++) {
- 		fprintf(stderr, "CPU%d data recorded at offset=0x%llx\n",
- 			i, (unsigned long long) offsets[i]);
-diff --git a/trace-record.c b/trace-record.c
-index 0025cf3..407576f 100644
---- a/trace-record.c
-+++ b/trace-record.c
-@@ -1804,6 +1804,9 @@ static void record_data(char *date2ts, struct trace_seq *s)
- 			tracecmd_add_option(handle, TRACECMD_OPTION_CPUSTAT,
- 					    s[i].len+1, s[i].buffer);
- 
-+		tracecmd_add_option(handle, TRACECMD_OPTION_TRACECLOCK,
-+				    0, NULL);
++	data = strtok_r(line, "[]", &next);
++	sscanf(data, "%ms", &clock);
++	pevent_register_trace_clock(pevent, clock);
++}
 +
- 		if (buffers) {
- 			buffer_options = malloc_or_die(sizeof(*buffer_options) * buffers);
- 			i = 0;
++void parse_trace_clock(struct pevent *pevent,
++			char *file, int size __maybe_unused)
++{
++	char *line;
++	char *next = NULL;
++
++	line = strtok_r(file, " ", &next);
++	while (line) {
++		/* current trace_clock is shown as "[local]". */
++		if (*line == '[')
++			return extract_trace_clock(pevent, line);
++		line = strtok_r(NULL, " ", &next);
++	}
++}
++
+ void parse_proc_kallsyms(struct pevent *pevent,
+ 			 char *file, unsigned int size __maybe_unused)
+ {
 
