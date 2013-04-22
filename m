@@ -1,65 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756097Ab3DVOyG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 10:54:06 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51362 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753010Ab3DVO3O (ORCPT
+	id S1756160Ab3DVOyt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 10:54:49 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:62064 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756144Ab3DVOyr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 10:29:14 -0400
-Content-Type: text/plain; charset="UTF-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+	Mon, 22 Apr 2013 10:54:47 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Lars-Peter Clausen" <lars@metafoo.de>
+Subject: Re: [PATCH 1/2] dma: of: Remove restriction that #dma-cells can't be 0
+Date: Mon, 22 Apr 2013 16:54:37 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
+Cc: Vinod Koul <vinod.koul@intel.com>, Jon Hunter <jon-hunter@ti.com>,
+        linux-kernel@vger.kernel.org
+References: <1366619613-30639-1-git-send-email-lars@metafoo.de> <201304221438.15945.arnd@arndb.de> <51753170.2050902@metafoo.de>
+In-Reply-To: <51753170.2050902@metafoo.de>
 MIME-Version: 1.0
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Johan Hovold" <jhovold@gmail.com>, "Ming Lei" <tom.leiming@gmail.com>
-Date: Mon, 22 Apr 2013 15:25:59 +0100
-Message-ID: <lsq.1366640759.693995059@decadent.org.uk>
-X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [02/75] USB: serial: fix hang when opening port
-In-Reply-To: <lsq.1366640759.151900666@decadent.org.uk>
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:6834:ff73:7553:7f84
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201304221654.38159.arnd@arndb.de>
+X-Provags-ID: V02:K0:5w9BJeMiDpV6MZ2QSVCscXgWCwDlK3FjgYNPl0HEMOb
+ LAGv8qbZWJp5+bPNBwmFPo2llRtQ0Y3mMRN2yuNe7LRgy7FQUc
+ G63d9PxDHteFXSB8UGu3F0Rm6+BbL8en7DBHIQ2mfCQTW4GxsH
+ jGmHEjSR9F8MaDGISpIBaHBjSlB1mg0jYO5L/uN4Csyxc2VzBt
+ ZuJ6HUV/OWoYwzX7e90jSGQdD6LvKvdALNKMFUVGu+fSHHFy6n
+ wrwm9CpIfl7qP2PWXeVO7MkqtKKAH1/L2gKXO6S8yfnN+t/MVS
+ vQJDx7LGTgmtiSQeWEID3ixgPTHJKB7agDudqMmkce2bVBcpWO
+ LO9kxyb2joAQeLnkA5dI=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2.44-rc1 review patch.  If anyone has any objections, please let me know.
+On Monday 22 April 2013, Lars-Peter Clausen wrote:
+> 
+> On 04/22/2013 02:38 PM, Arnd Bergmann wrote:
+> > On Monday 22 April 2013, Lars-Peter Clausen wrote:
+> >>
+> >> There is no sensible reason why #dma-cells shouldn't be allowed to be 0. It is
+> >> completely up to the DMA controller how many additional parameters, besides the
+> >> phandle, it needs to identify a channel. E.g. for DMA controller with only one
+> >> channel or for DMA controllers which don't have a restriction on which channel
+> >> can be used for which peripheral it completely legitimate to not require any
+> >> additional parameters.
+> >>
+> >> Also fixes the following warning:
+> >>         drivers/dma/of-dma.c: In function 'of_dma_controller_register':
+> >>         drivers/dma/of-dma.c:67:7: warning: 'nbcells' may be used uninitialized in this function
+> >>
+> >> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+> > 
+> > Do you have an example for this? If a dma engine has only one request line,
+> > why would you even use the dmaengine subsystem for it, rather than including
+> > the code to program it in the slave driver?
+> 
+> Why wouldn't I use the dmaengine subsystem for a DMA controller? In my
+> particular case different instances of the same DMA core will be used with
+> different DMA slaves. And the DMA slaves can also have different DMA master
+> cores, depending on the system.
 
-------------------
+Right, that makes sense.
 
-From: Ming Lei <tom.leiming@gmail.com>
-
-commit eba0e3c3a0ba7b96f01cbe997680f6a4401a0bfc upstream.
-
-Johan's 'fix use-after-free in TIOCMIWAIT' patchset[1] introduces
-one bug which can cause kernel hang when opening port.
-
-This patch initialized the 'port->delta_msr_wait' waitqueue head
-to fix the bug which is introduced in 3.9-rc4.
-
-[1], http://marc.info/?l=linux-usb&m=136368139627876&w=2
-
-Signed-off-by: Ming Lei <tom.leiming@gmail.com>
-Acked-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- drivers/usb/serial/usb-serial.c |    1 +
- 1 file changed, 1 insertion(+)
-
---- a/drivers/usb/serial/usb-serial.c
-+++ b/drivers/usb/serial/usb-serial.c
-@@ -905,6 +905,7 @@ int usb_serial_probe(struct usb_interfac
- 		port->port.ops = &serial_port_ops;
- 		port->serial = serial;
- 		spin_lock_init(&port->lock);
-+		init_waitqueue_head(&port->delta_msr_wait);
- 		/* Keep this for private driver use for the moment but
- 		   should probably go away */
- 		INIT_WORK(&port->work, usb_serial_port_work);
-
+Acked-by: Arnd Bergmann <arnd@arndb.de>
