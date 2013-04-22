@@ -1,61 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754965Ab3DVH6K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 03:58:10 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:43878 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751009Ab3DVH6G (ORCPT
+	id S1755172Ab3DVH6x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 03:58:53 -0400
+Received: from co1ehsobe001.messaging.microsoft.com ([216.32.180.184]:22739
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755037Ab3DVH6v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 03:58:06 -0400
-Message-ID: <5174ED8A.5090802@free-electrons.com>
-Date: Mon, 22 Apr 2013 09:58:02 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Mon, 22 Apr 2013 03:58:51 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 6
+X-BigFish: VS6(z3121kzzz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1082kzzz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1155h)
+From: Huang Shijie <b32955@freescale.com>
+To: <dwmw2@infradead.org>
+CC: <dedekind1@gmail.com>, <computersforpeace@gmail.com>,
+        <linux-mtd@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Huang Shijie <b32955@freescale.com>
+Subject: [PATCH v2 0/8] mtd: add datasheet's ECC information to nand_chip{}
+Date: Mon, 22 Apr 2013 15:47:50 +0800
+Message-ID: <1366616878-29481-1-git-send-email-b32955@freescale.com>
+X-Mailer: git-send-email 1.7.1
 MIME-Version: 1.0
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-CC: Jonathan Cameron <jic23@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>, jimwall@q.com,
-        brian@crystalfontz.com, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Jonathan Cameron <jic23@cam.ac.uk>, Rob Landley <rob@landley.net>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [PATCH 1/3] iio: Add Nuvoton NAU7802 ADC driver
-References: <1366299536-18353-1-git-send-email-alexandre.belloni@free-electrons.com> <1366299536-18353-2-git-send-email-alexandre.belloni@free-electrons.com> <51726541.6060304@kernel.org> <5172B68B.4010506@free-electrons.com>
-In-Reply-To: <5172B68B.4010506@free-electrons.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alexandre, Jonathan,
+1.) Why add the ECC information to the nand_chip{} ?
+   Each nand chip has its requirement for the ECC correctability, such as
+   "4bit ECC for each 512Byte" or "40bit ECC for each 1024Byte".
+   This ECC info is very important to the nand controller, such as gpmi.
 
-Le 20/04/2013 17:38, Alexandre Belloni a écrit :
-> On 20/04/2013 11:52, Jonathan Cameron wrote:
->>> +	&iio_dev_attr_gain.dev_attr.attr,
->>> +	&iio_const_attr_gain_available.dev_attr.attr,
->>> +	&iio_dev_attr_min_conversions.dev_attr.attr,
->> What governs this?  Looks to me more like it should be hidden away
->> in the device tree than be here.
-> 
-> I guess it will depend on what you connect to your adc. Do we want to
-> fix that in the DT or to be able to change it at runtime ?
+   Take the Micron MT29F64G08CBABA for example, its geometry is
+   8k page size, 744 bytes oob size and it requires 40bit ECC per 1K bytes.
+   If we do not provide the ECC info to the gpmi nand driver, it has to
+   calculate the ECC correctability itself. The gpmi driver will gets the 56bit
+   ECC for per 1K bytes which is beyond its BCH's 40bit ecc capibility.
+   The gpmi will quits in this case. But in actually, the gpmi can supports
+   this nand chip if it can get the right ECC info.
 
-I don't think so. Unless I misunderstood it, this attribute is the
-number of conversions that must occur when switching from one channel to
-another to get a good-enough precision for the ADC, right?
+2.) About the patch set:
+   2.1) patch 1 ~ patch 4:
+	       Parse out the ecc info from the extended parameter page for
+	       ONFI nand.
+	       
+   2.2) patch 5 ~ patch 7:
+               Add the ECC info for full-id nand.
 
-So I don't really see 1) why it could be changed by the user through
-sysfs in the first place 2) this is not hardware configuration at all,
-more some black magic within the driver, so it shouldn't be at all in
-the device tree anyway.
+   2.3) patch 8
+               The gpmi uses the ecc info to set the BCH module. and with this
+	       patch set, the gpmi can supports the MT29F64G08CBABA now.
 
-Maxime
 
--- 
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+v1 --> v2:
+	[0] Since the first 3 patches are accepted, I do not send them in the
+	    version 2.
+	[1] add NAND_ prefix for macros used by the full-id nands.
+	[2] add nand_ prefix for the extend parameter page data structures.
+	[3] rename the onfi_get_feature() to onfi_feature().
+	[4] I re-test this patch set again.
+
+Huang Shijie (8):
+  mtd: add data structures for Extended Parameter Page
+  mtd: add a helper to get the supported features for ONFI nand
+  mtd: get the ECC info from the Extended Parameter Page
+  mtd: replace the hardcode with the onfi_get_feature()
+  mtd: add a new field for ecc info in the nand_flash_dev{}
+  mtd: parse out the ECC info for the full-id nand chips
+  mtd: add the ecc info for some full-id nand chips
+  mtd: gpmi: set the BCH's geometry with the ecc info
+
+ drivers/mtd/nand/gpmi-nand/gpmi-nand.c |  128 +++++++++++++++++++++++++++++++-
+ drivers/mtd/nand/nand_base.c           |   62 +++++++++++++++-
+ drivers/mtd/nand/nand_ids.c            |    8 +-
+ include/linux/mtd/nand.h               |   62 +++++++++++++++-
+ 4 files changed, 251 insertions(+), 9 deletions(-)
+
+
