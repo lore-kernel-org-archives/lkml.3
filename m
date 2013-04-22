@@ -1,70 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755543Ab3DVIE0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 04:04:26 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:65214 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754774Ab3DVIEY (ORCPT
+	id S1755163Ab3DVIID (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 04:08:03 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:43965 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752293Ab3DVIIA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 04:04:24 -0400
-Date: Mon, 22 Apr 2013 10:04:19 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Kees Cook <keescook@chromium.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        David Woodhouse <David.Woodhouse@intel.com>,
-        Jiri Kosina <jkosina@suse.cz>, Olaf Hering <olaf@aepfle.de>,
-        Yinghai Lu <yinghai@kernel.org>, Matt Fleming <matt.fleming@intel.com>,
-        Gokul Caushik <caushik1@gmail.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Joe Millenbach <jmillenbach@gmail.com>,
-        Alexander Duyck <alexander.h.duyck@intel.com>,
-        Jacob Shin <jacob.shin@amd.com>, Pekka Enberg <penberg@kernel.org>,
-        Eric Northup <digitaleric@google.com>,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>
-Subject: Re: [PATCH] x86: kaslr: move ELF relocation handling to C
-Message-ID: <20130422080419.GB7080@gmail.com>
-References: <20130419231638.GA20133@www.outflux.net>
- <20130421091342.GD31470@gmail.com>
- <CAGXu5jKFSmBTQ5Ay+MypkAStvDMrkWMNHCz4XGyy4bVjyVAnHg@mail.gmail.com>
+	Mon, 22 Apr 2013 04:08:00 -0400
+Message-ID: <5174EFDE.6080009@free-electrons.com>
+Date: Mon, 22 Apr 2013 10:07:58 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGXu5jKFSmBTQ5Ay+MypkAStvDMrkWMNHCz4XGyy4bVjyVAnHg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Shawn Guo <shawn.guo@linaro.org>
+CC: linux-arm-kernel@lists.infradead.org,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Marek Vasut <marex@denx.de>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Thomas Petazzoni <thomas@free-electrons.com>,
+        Brian Lilly <brian@crystalfontz.com>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Sascha Hauer <s.hauer@pengutronix.de>, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] video: mxsfb: Fix colors display on lower color depth
+References: <516EBCA4.1020609@free-electrons.com> <1366277032-671-1-git-send-email-maxime.ripard@free-electrons.com> <20130418144838.GD2222@S2101-09.ap.freescale.net>
+In-Reply-To: <20130418144838.GD2222@S2101-09.ap.freescale.net>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Shawn,
 
-* Kees Cook <keescook@chromium.org> wrote:
+Le 18/04/2013 16:48, Shawn Guo a écrit :
+> Copy Sascha.
 
-> On Sun, Apr 21, 2013 at 2:13 AM, Ingo Molnar <mingo@kernel.org> wrote:
-> >
-> > * Kees Cook <keescook@chromium.org> wrote:
-> >
-> >> Moves the relocation handling into C, after decompression. Only
-> >> kernels that need relocation support will use the code. The new
-> >> CONFIG_RANDOMIZE_BASE does not yet do anything except turn on this logic
-> >> for 64-bit kernels.
-> >
-> > So why not keep the inactive CONFIG_RANDOMIZE_BASE hunks in a separate
-> > patch, and just have this one clean, orthogonal patch that moves
-> > relocation handling into C?
-> 
-> I had wanted there to be a way to test building with 64-bit
-> relocations. With this patch and CONFIG_RANDOMIZE_BASE=y, I could do
-> that. Would you rather I remove those pieces?
+Ah, yes, sorry, I somehow got confused and thought you were the one that
+wrote the driver.
 
-But AFAICS CONFIG_RANDOMIZE_BASE is not an interactive config option, so 
-how did you turn it on?
+I'll resend the patch.
 
-But no strong objections in any case.
+Maxime
 
-Thanks,
-
-	Ingo
+-- 
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
