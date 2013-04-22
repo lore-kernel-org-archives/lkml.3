@@ -1,77 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755573Ab3DVIIN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 04:08:13 -0400
-Received: from mail-la0-f44.google.com ([209.85.215.44]:54794 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755189Ab3DVIII (ORCPT
+	id S1755614Ab3DVIL4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 04:11:56 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:43997 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754868Ab3DVILz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 04:08:08 -0400
-From: Dmitry Monakhov <dmonakhov@openvz.org>
-To: linux-kernel@vger.kernel.org
-Cc: viro@zeniv.linux.org.uk, eparis@redhat.com, linux-audit@redhat.com
-Subject: Re: [PATCH] audit: destroy filename correctly PING.
-In-Reply-To: <1364799600-10338-1-git-send-email-dmonakhov@openvz.org>
-References: <1364799600-10338-1-git-send-email-dmonakhov@openvz.org>
-User-Agent: Notmuch/0.6.1 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-redhat-linux-gnu)
-Date: Mon, 22 Apr 2013 12:08:03 +0400
-Message-ID: <87mwsrhtss.fsf@openvz.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Mon, 22 Apr 2013 04:11:55 -0400
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Shawn Guo <shawn.guo@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Marek Vasut <marex@denx.de>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Thomas Petazzoni <thomas@free-electrons.com>,
+        Brian Lilly <brian@crystalfontz.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH RESEND] video: mxsfb: Fix colors display on lower color depth
+Date: Mon, 22 Apr 2013 10:11:50 +0200
+Message-Id: <1366618310-7068-1-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon,  1 Apr 2013 11:00:00 +0400, Dmitry Monakhov <dmonakhov@openvz.org> wrote:
-Ping. Patch (https://lkml.org/lkml/2013/4/1/65) was not a 1'st April's joke. 
-Add CC:linux-audit@redhat.com
-> filename should be destroyed via final_putname() instead of __putname()
-> Otherwise this result in following BUGON() in case of long names:
->   kernel BUG at mm/slab.c:3006!
->   Call Trace:
->   kmem_cache_free+0x1c1/0x850
->   audit_putname+0x88/0x90
->   putname+0x73/0x80
->   sys_symlinkat+0x120/0x150
->   sys_symlink+0x16/0x20
->   system_call_fastpath+0x16/0x1b
-> 
-> Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
-> ---
->  kernel/auditsc.c |    6 +++---
->  1 files changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/kernel/auditsc.c b/kernel/auditsc.c
-> index a371f85..bfe7ca6 100644
-> --- a/kernel/auditsc.c
-> +++ b/kernel/auditsc.c
-> @@ -1010,7 +1010,7 @@ static inline void audit_free_names(struct audit_context *context)
->  	list_for_each_entry_safe(n, next, &context->names_list, list) {
->  		list_del(&n->list);
->  		if (n->name && n->name_put)
-> -			__putname(n->name);
-> +			final_putname(n->name);
->  		if (n->should_free)
->  			kfree(n);
->  	}
-> @@ -2036,7 +2036,7 @@ void audit_putname(struct filename *name)
->  	BUG_ON(!context);
->  	if (!context->in_syscall) {
->  #if AUDIT_DEBUG == 2
-> -		printk(KERN_ERR "%s:%d(:%d): __putname(%p)\n",
-> +		printk(KERN_ERR "%s:%d(:%d): final_putname(%p)\n",
->  		       __FILE__, __LINE__, context->serial, name);
->  		if (context->name_count) {
->  			struct audit_names *n;
-> @@ -2047,7 +2047,7 @@ void audit_putname(struct filename *name)
->  				       n->name, n->name->name ?: "(null)");
->  			}
->  #endif
-> -		__putname(name);
-> +		final_putname(name);
->  	}
->  #if AUDIT_DEBUG
->  	else {
-> -- 
-> 1.7.1
-> 
+The current code always registers as a 32 bits display, and uses the
+hardware to drop the MSB of each color to abjust to the interface width
+used by the panel.
+
+This results on 18 bits (and probably 16 bits display as well) in colors
+being displayed poorly, because the MSB are obviously the most important
+bits for each color definition.
+
+The default controller behaviour when using an interface width smaller
+than the color depth is to drop the LSBs of each color, which makes more
+sense because you lose the least important part of the color definition.
+
+So, to fix the colors display, just get back to the default controller
+behaviour.
+
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+---
+  - Copied Sascha
+
+ drivers/video/mxsfb.c |    5 -----
+ 1 file changed, 5 deletions(-)
+
+diff --git a/drivers/video/mxsfb.c b/drivers/video/mxsfb.c
+index 755556c..2cfaf8b 100644
+--- a/drivers/video/mxsfb.c
++++ b/drivers/video/mxsfb.c
+@@ -424,11 +424,6 @@ static int mxsfb_set_par(struct fb_info *fb_info)
+ 			return -EINVAL;
+ 		case STMLCDIF_16BIT:
+ 		case STMLCDIF_18BIT:
+-			/* 24 bit to 18 bit mapping */
+-			ctrl |= CTRL_DF24; /* ignore the upper 2 bits in
+-					    *  each colour component
+-					    */
+-			break;
+ 		case STMLCDIF_24BIT:
+ 			/* real 24 bit */
+ 			break;
+-- 
+1.7.10.4
+
