@@ -1,57 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754908Ab3DVHEV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 03:04:21 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:60311 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752739Ab3DVHES (ORCPT
+	id S1754956Ab3DVHG7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 03:06:59 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:49076 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754905Ab3DVHG6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 03:04:18 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Rob Herring <robherring2@gmail.com>
-Subject: Re: [PATCH 0/5] of_platform_driver and OF_DEVICE removal
-Date: Mon, 22 Apr 2013 09:03:54 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Christoph Raisch <raisch@de.ibm.com>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>,
-        "Hoang-Nam Nguyen" <hnguyen@de.ibm.com>, linuxppc-dev@lists.ozlabs.org,
-        linux-rdma@vger.kernel.org, linux-usb@vger.kernel.org,
-        netdev@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
-        Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
-        Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
-References: <1366596798-9457-1-git-send-email-robherring2@gmail.com>
-In-Reply-To: <1366596798-9457-1-git-send-email-robherring2@gmail.com>
+	Mon, 22 Apr 2013 03:06:58 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <5174E185.1040806@jp.fujitsu.com>
+Date: Mon, 22 Apr 2013 16:06:45 +0900
+From: Takao Indoh <indou.takao@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: wei@aristanetworks.com
+CC: dwmw2@infradead.org, iommu@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] intel-iommu: Disable DMA Remapping when intel_iommu=off
+References: <1366441080-5937-1-git-send-email-wei@aristanetworks.com> <5174CB26.9060908@jp.fujitsu.com> <CANwcMEZF+ehPeFuucRqcKSiNNoXL6bDy+GTHBHYjr3DfoZY7vg@mail.gmail.com>
+In-Reply-To: <CANwcMEZF+ehPeFuucRqcKSiNNoXL6bDy+GTHBHYjr3DfoZY7vg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
-Message-Id: <201304220903.54788.arnd@arndb.de>
-X-Provags-ID: V02:K0:+REZnCpi+ZTvvzkDSOlMGKnTRhIrUeMWiu11UHYrSNZ
- 08m3d95YiPXBExadrVlR/yeBiPzc+zicxXG5LuhT0sGsNh/JLy
- 63EPVYgms4lLqYR3PD7sr1gmYsqdrXIzJ1QZ1F/rrnR/BPudq6
- vbr1kOdNI3GX2a8QLnfQom4L5V7tzQcnM/JdpZV4iNTnlANPVi
- JB6SnzljMML6SGZC+VivpRRytEdw6j7FOROdSbz4PokOSmMf0/
- c9ry/5O1xsdYBsqQXOtOIY1/iF2/NnWDTMwc4imp7sxLcY+rjc
- 53ItNJXGa4liWudE4kPUqxsiRNBB+e1ZUpkPyUKu8YQajLVp6z
- 5PVlqANQppeZ1pKK3wo4=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 22 April 2013, Rob Herring wrote:
-> From: Rob Herring <rob.herring@calxeda.com>
+(2013/04/22 15:50), Wei Hu wrote:
+> On Sun, Apr 21, 2013 at 10:31 PM, Takao Indoh
+> <indou.takao@jp.fujitsu.com> wrote:
+>> (2013/04/20 15:58), Wei Hu wrote:
+>>> On a VT-d capable machine Linux will enable IOMMU by default. If it
+>>> then kexec's a second kernel with intel_iommu=off, this second kernel
+>>> will leave the DMA remapping engine on with no code handling it. The
+>>> symptom is at least USB and SATA drives stop working. This patch fixes
+>>> the problem by always disabling DMA remapping when intel_iommu=off.
+>>
+>> Even when second kernel boots up with intel_iommu=on, dma-remapping need
+>> to be disabled as well before it is initialized and enabled again in
+>> init_dmars(). So, how about something like this?
+>>
+>>          for_each_drhd_unit(drhd) {
+>>                  struct dmar_drhd_unit *drhd;
+>>                  if (drhd->ignored)
+>>                          continue;
+>>
+>>                  iommu = drhd->iommu;
+>>                  if (iommu->gcmd & DMA_GCMD_TE)
+>>                          iommu_disable_translation(iommu);
+>>          }
+>>
+>> Note, if you agree above code and fix your patch like this, you need
+>> additinal fix to set iommu->gcmd flag sinse gcmd is always zero here.
+>> See first hunk of this patch.
+>> https://lkml.org/lkml/2013/3/20/707
 > 
-> This series is a relatively straight-forward removal of the last remaining
-> user of of_platform_driver (ibmebus) and removal of CONFIG_OF_DEVICE which
-> is always enabled when CONFIG_OF is enabled.
+> Thanks for your reply. I reviewed your patch. Are you suggesting
+> keeping your change to dmar.c, and moving your change to intel-iommu.c
+> (i.e. the code you just showed) up after the call to
+> dmar_table_init()?
 > 
-> Compile tested on powerpc and sparc.
-> 
+ 
+Yes, exactly.
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+Thanks,
+Takao Indoh
+
