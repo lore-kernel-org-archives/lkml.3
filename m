@@ -1,105 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754861Ab3DVGto (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 02:49:44 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:40041 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754349Ab3DVGtm convert rfc822-to-8bit (ORCPT
+	id S1753360Ab3DVGvi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 02:51:38 -0400
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:32858 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752640Ab3DVGvh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 02:49:42 -0400
+	Mon, 22 Apr 2013 02:51:37 -0400
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CA+icZUVmERfNzAMNBpOqvjcQSaCQe3izrK2=E4Rm05Y=1x==jQ@mail.gmail.com>
-References: <1366609643-17628-1-git-send-email-lig.fnst@cn.fujitsu.com>
-	<CA+icZUVd3zp-pJDspBUsipH4725uUvaufXrK0QBzcrozF2m+aA@mail.gmail.com>
-	<1366611749.27110.6.camel@liguang.fnst.cn.fujitsu.com>
-	<CA+icZUVmERfNzAMNBpOqvjcQSaCQe3izrK2=E4Rm05Y=1x==jQ@mail.gmail.com>
-Date: Mon, 22 Apr 2013 08:49:10 +0200
-Message-ID: <CA+icZUUj9__mjbwoYHp_kxjy2xC3wwgtHK27zpAwV-p=zeC1-w@mail.gmail.com>
-Subject: Re: [PATCH 1/2] smp: use '|=' for csd_lock
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: li guang <lig.fnst@cn.fujitsu.com>
-Cc: tglx@linutronix.de, peterz@infradead.org, akpm@linux-foundation.org,
-        shli@fusionio.com, srivatsa.bhat@linux.vnet.ibm.com,
-        suresh.b.siddha@intel.com, fweisbec@gmail.com,
-        paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
+In-Reply-To: <5174CB26.9060908@jp.fujitsu.com>
+References: <1366441080-5937-1-git-send-email-wei@aristanetworks.com> <5174CB26.9060908@jp.fujitsu.com>
+From: Wei Hu <wei@aristanetworks.com>
+Date: Sun, 21 Apr 2013 23:50:56 -0700
+Message-ID: <CANwcMEZF+ehPeFuucRqcKSiNNoXL6bDy+GTHBHYjr3DfoZY7vg@mail.gmail.com>
+Subject: Re: [PATCH 1/1] intel-iommu: Disable DMA Remapping when intel_iommu=off
+To: Takao Indoh <indou.takao@jp.fujitsu.com>
+Cc: dwmw2@infradead.org, iommu@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 22, 2013 at 8:30 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> On Mon, Apr 22, 2013 at 8:22 AM, li guang <lig.fnst@cn.fujitsu.com> wrote:
->> 在 2013-04-22一的 08:18 +0200，Sedat Dilek写道：
->>> On Mon, Apr 22, 2013 at 7:47 AM, liguang <lig.fnst@cn.fujitsu.com> wrote:
->>> > originally, 'data->flags = CSD_FLAG_LOCK',
->>> > and we use 'data->flags &= ~CSD_FLAG_LOCK'
->>> > for csd_unlock, they are not symmetrix operations
->>> > so use '|=' instead of '='.
->>> > though, now data->flags only hold CSD_FLAG_LOCK,
->>> > it's not so meaningful to use '|=' to set 1 bit,
->>> > and '&= ~' to clear 1 bit.
->>> >
->>>
->>> Hi,
->>>
->>> what's the reason I got CCed on this two patches? The ipc-sem-next
->>> issue I reported?
->>
+On Sun, Apr 21, 2013 at 10:31 PM, Takao Indoh
+<indou.takao@jp.fujitsu.com> wrote:
+> (2013/04/20 15:58), Wei Hu wrote:
+>> On a VT-d capable machine Linux will enable IOMMU by default. If it
+>> then kexec's a second kernel with intel_iommu=off, this second kernel
+>> will leave the DMA remapping engine on with no code handling it. The
+>> symptom is at least USB and SATA drives stop working. This patch fixes
+>> the problem by always disabling DMA remapping when intel_iommu=off.
+>
+> Even when second kernel boots up with intel_iommu=on, dma-remapping need
+> to be disabled as well before it is initialized and enabled again in
+> init_dmars(). So, how about something like this?
+>
+>         for_each_drhd_unit(drhd) {
+>                 struct dmar_drhd_unit *drhd;
+>                 if (drhd->ignored)
+>                         continue;
+>
+>                 iommu = drhd->iommu;
+>                 if (iommu->gcmd & DMA_GCMD_TE)
+>                         iommu_disable_translation(iommu);
+>         }
+>
+> Note, if you agree above code and fix your patch like this, you need
+> additinal fix to set iommu->gcmd flag sinse gcmd is always zero here.
+> See first hunk of this patch.
+> https://lkml.org/lkml/2013/3/20/707
 
-NOPE.
-( I tried next-20130419 with 3 ipc-sem-next patches plus your two patches. )
-
-- Sedat -
-
->> sorry,
->> just use the result of scripts/get_maintainer.pl
->>
->
-> Hmm, really this script memyselfandI as a result?
->
->>>
->>> Against what tree are those patches?
->>> They are not compatible with Linux-Next (next-20130419).
->>
->> main
->>
->
-> Andrew renamed data/csd,so it's only 1/2 needing a refresh.
-> Testing...
->
-> Regards,
-> - Sedat -
->
->>>
->>> Thanks.
->>>
->>> Regards,
->>> - Sedat -
->>>
->>> [1] http://marc.info/?t=136631457900005&r=1&w=2
->>>
->>> > Signed-off-by: liguang <lig.fnst@cn.fujitsu.com>
->>> > ---
->>> >  kernel/smp.c |    2 +-
->>> >  1 files changed, 1 insertions(+), 1 deletions(-)
->>> >
->>> > diff --git a/kernel/smp.c b/kernel/smp.c
->>> > index 1818dc0..2d5deb4 100644
->>> > --- a/kernel/smp.c
->>> > +++ b/kernel/smp.c
->>> > @@ -109,7 +109,7 @@ static void csd_lock_wait(struct call_single_data *data)
->>> >  static void csd_lock(struct call_single_data *data)
->>> >  {
->>> >         csd_lock_wait(data);
->>> > -       data->flags = CSD_FLAG_LOCK;
->>> > +       data->flags |= CSD_FLAG_LOCK;
->>> >
->>> >         /*
->>> >          * prevent CPU from reordering the above assignment
->>> > --
->>> > 1.7.2.5
->>> >
->>
->>
+Thanks for your reply. I reviewed your patch. Are you suggesting
+keeping your change to dmar.c, and moving your change to intel-iommu.c
+(i.e. the code you just showed) up after the call to
+dmar_table_init()?
