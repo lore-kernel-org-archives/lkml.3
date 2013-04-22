@@ -1,179 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755662Ab3DVOjP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 10:39:15 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:37949 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755080Ab3DVOjL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 10:39:11 -0400
-Date: Mon, 22 Apr 2013 17:38:39 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Sourav Poddar <sourav.poddar@ti.com>
-CC: <gregkh@linuxfoundation.org>, <tony@atomide.com>,
-        <rmk+kernel@arm.linux.org.uk>, <khilman@linaro.org>,
-        <linux-serial@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Felipe Balbi <balbi@ti.com>, Rajendra nayak <rnayak@ti.com>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>
-Subject: Re: [RFC/PATCHv2 5/5] arm: omap2+: omap_device: remove
- no_idle_on_suspend
-Message-ID: <20130422143839.GE7508@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1366638237-6880-1-git-send-email-sourav.poddar@ti.com>
- <1366638237-6880-6-git-send-email-sourav.poddar@ti.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="pY3vCvL1qV+PayAL"
+	id S1755727Ab3DVOjk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 10:39:40 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51589 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754912Ab3DVOaN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Apr 2013 10:30:13 -0400
+Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
-In-Reply-To: <1366638237-6880-6-git-send-email-sourav.poddar@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+MIME-Version: 1.0
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+CC: akpm@linux-foundation.org,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Al Viro" <viro@zeniv.linux.org.uk>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+Date: Mon, 22 Apr 2013 15:25:59 +0100
+Message-ID: <lsq.1366640759.591824127@decadent.org.uk>
+X-Mailer: LinuxStableQueue (scripts by bwh)
+Subject: [41/75] kobject: fix kset_find_obj() race with concurrent last
+ kobject_put()
+In-Reply-To: <lsq.1366640759.151900666@decadent.org.uk>
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:6834:ff73:7553:7f84
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---pY3vCvL1qV+PayAL
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+3.2.44-rc1 review patch.  If anyone has any objections, please let me know.
 
-Hi,
+------------------
 
-On Mon, Apr 22, 2013 at 07:13:57PM +0530, Sourav Poddar wrote:
-> Remove the "OMAP_DEVICE_NO_IDLE_ON_SUSPEND" check, since=20
-> driver should be able to prevent idling of an omap device
-> whenever required.
->=20
-> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> Cc: Felipe Balbi <balbi@ti.com>
-> Cc: Rajendra nayak <rnayak@ti.com>
-> Cc: Grygorii Strashko <grygorii.strashko@ti.com>
-> Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
-> ---
-> Hi Kevin,
->=20
-> I have put this as an RFC, due to few comments on cover letter of
-> the previous version by Grygorii Strashko.
-> As, he has mentioned that there are Audio playback use cases which=20
-> also requires "no_idle_on_suspend" and using them on mainline after
-> this series can cause regression.
->=20
-> What you think will be the right approach on this in relation to this pat=
-ch?=20
-> I mean every driver(if possible) should  prevent=20
-> runtime PM for no_idle_on_suspend usecase and we get=20
-> rid of this OMAP_DEVICE_NO_IDLE_ON_SUSPEND check? OR we should
-> drop this patch as of now?=20
->=20
-> Hi Grygorii,
->=20
-> Is it possible to handle ABE no_idle_on_suspend uscase the way I am
-> trying to handle it for UART in the 2nd patch of this series?=20
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-let's ask P=E9ter.
+commit a49b7e82cab0f9b41f483359be83f44fbb6b4979 upstream.
 
-P=E9ter, OMAP_DEVICE_NO_IDLE_ON_SUSPEND should be removed as driver's can
-get same behavior by just returning -EBUSY from their ->runtime_suspend
-callbacks. Do you see any problems with patch below (left for
-reference) ? Would it be too difficult to add
-->runtime_suspend/->runtime_resume on ASoC layer ?
+Anatol Pomozov identified a race condition that hits module unloading
+and re-loading.  To quote Anatol:
 
-> diff --git a/arch/arm/mach-omap2/omap_device.c b/arch/arm/mach-omap2/omap=
-_device.c
-> index 381be7a..2043d71 100644
-> --- a/arch/arm/mach-omap2/omap_device.c
-> +++ b/arch/arm/mach-omap2/omap_device.c
-> @@ -170,9 +170,6 @@ static int omap_device_build_from_dt(struct platform_=
-device *pdev)
->  			r->name =3D dev_name(&pdev->dev);
->  	}
-> =20
-> -	if (of_get_property(node, "ti,no_idle_on_suspend", NULL))
-> -		omap_device_disable_idle_on_suspend(pdev);
-> -
->  	pdev->dev.pm_domain =3D &omap_device_pm_domain;
-> =20
->  odbfd_exit1:
-> @@ -620,11 +617,9 @@ static int _od_suspend_noirq(struct device *dev)
->  	ret =3D pm_generic_suspend_noirq(dev);
-> =20
->  	if (!ret && !pm_runtime_status_suspended(dev)) {
-> -		if (pm_generic_runtime_suspend(dev) =3D=3D 0) {
-> -			if (!(od->flags & OMAP_DEVICE_NO_IDLE_ON_SUSPEND))
-> -				omap_device_idle(pdev);
-> +		if (pm_generic_runtime_suspend(dev) =3D=3D 0)
-> +			omap_device_idle(pdev);
->  			od->flags |=3D OMAP_DEVICE_SUSPENDED;
-> -		}
->  	}
-> =20
->  	return ret;
-> @@ -638,8 +633,7 @@ static int _od_resume_noirq(struct device *dev)
->  	if ((od->flags & OMAP_DEVICE_SUSPENDED) &&
->  	    !pm_runtime_status_suspended(dev)) {
->  		od->flags &=3D ~OMAP_DEVICE_SUSPENDED;
-> -		if (!(od->flags & OMAP_DEVICE_NO_IDLE_ON_SUSPEND))
-> -			omap_device_enable(pdev);
-> +		omap_device_enable(pdev);
->  		pm_generic_runtime_resume(dev);
->  	}
-> =20
-> diff --git a/arch/arm/mach-omap2/omap_device.h b/arch/arm/mach-omap2/omap=
-_device.h
-> index 044c31d..17ca1ae 100644
-> --- a/arch/arm/mach-omap2/omap_device.h
-> +++ b/arch/arm/mach-omap2/omap_device.h
-> @@ -38,7 +38,6 @@ extern struct dev_pm_domain omap_device_pm_domain;
-> =20
->  /* omap_device.flags values */
->  #define OMAP_DEVICE_SUSPENDED		BIT(0)
-> -#define OMAP_DEVICE_NO_IDLE_ON_SUSPEND	BIT(1)
-> =20
->  /**
->   * struct omap_device - omap_device wrapper for platform_devices
-> @@ -101,13 +100,4 @@ static inline struct omap_device *to_omap_device(str=
-uct platform_device *pdev)
->  {
->  	return pdev ? pdev->archdata.od : NULL;
->  }
-> -
-> -static inline
-> -void omap_device_disable_idle_on_suspend(struct platform_device *pdev)
-> -{
-> -	struct omap_device *od =3D to_omap_device(pdev);
-> -
-> -	od->flags |=3D OMAP_DEVICE_NO_IDLE_ON_SUSPEND;
-> -}
-> -
->  #endif
-> --=20
-> 1.7.1
->=20
+ "This is a race codition that exists between kset_find_obj() and
+  kobject_put().  kset_find_obj() might return kobject that has refcount
+  equal to 0 if this kobject is freeing by kobject_put() in other
+  thread.
 
---=20
-balbi
+  Here is timeline for the crash in case if kset_find_obj() searches for
+  an object tht nobody holds and other thread is doing kobject_put() on
+  the same kobject:
 
---pY3vCvL1qV+PayAL
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+    THREAD A (calls kset_find_obj())     THREAD B (calls kobject_put())
+    splin_lock()
+                                         atomic_dec_return(kobj->kref), counter gets zero here
+                                         ... starts kobject cleanup ....
+                                         spin_lock() // WAIT thread A in kobj_kset_leave()
+    iterate over kset->list
+    atomic_inc(kobj->kref) (counter becomes 1)
+    spin_unlock()
+                                         spin_lock() // taken
+                                         // it does not know that thread A increased counter so it
+                                         remove obj from list
+                                         spin_unlock()
+                                         vfree(module) // frees module object with containing kobj
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+    // kobj points to freed memory area!!
+    kobject_put(kobj) // OOPS!!!!
 
-iQIcBAEBAgAGBQJRdUtvAAoJEIaOsuA1yqREx6wP/j47ziFp2nIF2xvBoeAFtB7V
-3uuZhE7vQoONRi+tuWQXKkXYW0GLeCw5nsxvr3pxOgiB+4k6sYO7dE5l4evEBh60
-JXtaRxJFmNaJtTFNjk/HiwPul1yl+UHwrsJULls1+xKlm9ad6TmSrQ0JceC8K0H0
-JPiRgWfMOeuqkYFF/aHrH0jIRMPR4cqMoN85n6GGhPQOoAZtzjrVUE2KS36Ustu/
-znCKneLB2rrsEnrJy6UkdqA4WqqElFyisyTHCTn5CTFJ8AB/kW9v8s+soiwIBmvv
-pcDL0VUN10svkeFqrrHVDa1LG1UKKvlOBtmv24amSsjKTXU4R4EjDHdyrA1DsvIT
-jObCDGb/Xnb2SyZ+jEXzV33drqAe2gZK0e6H5UXiO43y6kJ4GCJAz45DsM/LIVn9
-C7ZA58QLuhl+taQrd/8vAV10wgdcGIDdOD2HGZAlhQbqbMDIQEBdWph2eqwtEgQz
-IbBboayaI20KYdoXBXDhT6HG/MlFBH+ra75bxSoMn1M9ah2MJCjuJ/NveL3Yn7s2
-j10XAN6wG/vz5M+N/Voozmdpt5SN44EviadshAKNgc+9SL57Kcfawx2uBNTRmHyu
-TE6ONGtD2lAVeL7j2VLYnhd0T24YTidSJCT1Wu6S81Nmp/piAAQxPJSPlhaTvqXS
-THnq2XZjZddjHdEQ7ETQ
-=Z/AW
------END PGP SIGNATURE-----
+  The race above happens because module.c tries to use kset_find_obj()
+  when somebody unloads module.  The module.c code was introduced in
+  commit 6494a93d55fa"
 
---pY3vCvL1qV+PayAL--
+Anatol supplied a patch specific for module.c that worked around the
+problem by simply not using kset_find_obj() at all, but rather than make
+a local band-aid, this just fixes kset_find_obj() to be thread-safe
+using the proper model of refusing the get a new reference if the
+refcount has already dropped to zero.
+
+See examples of this proper refcount handling not only in the kref
+documentation, but in various other equivalent uses of this pattern by
+grepping for atomic_inc_not_zero().
+
+[ Side note: the module race does indicate that module loading and
+  unloading is not properly serialized wrt sysfs information using the
+  module mutex.  That may require further thought, but this is the
+  correct fix at the kobject layer regardless. ]
+
+Reported-analyzed-and-tested-by: Anatol Pomozov <anatol.pomozov@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+--- a/lib/kobject.c
++++ b/lib/kobject.c
+@@ -531,6 +531,13 @@ struct kobject *kobject_get(struct kobje
+ 	return kobj;
+ }
+ 
++static struct kobject *kobject_get_unless_zero(struct kobject *kobj)
++{
++	if (!kref_get_unless_zero(&kobj->kref))
++		kobj = NULL;
++	return kobj;
++}
++
+ /*
+  * kobject_cleanup - free kobject resources.
+  * @kobj: object to cleanup
+@@ -785,7 +792,7 @@ struct kobject *kset_find_obj_hinted(str
+ slow_search:
+ 	list_for_each_entry(k, &kset->list, entry) {
+ 		if (kobject_name(k) && !strcmp(kobject_name(k), name)) {
+-			ret = kobject_get(k);
++			ret = kobject_get_unless_zero(k);
+ 			break;
+ 		}
+ 	}
+
