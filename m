@@ -1,73 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753769Ab3DVMiw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 08:38:52 -0400
-Received: from ns.iliad.fr ([212.27.33.1]:43457 "EHLO ns.iliad.fr"
+	id S1753636Ab3DVMkS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 08:40:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31416 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753696Ab3DVMiu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 08:38:50 -0400
-X-Greylist: delayed 447 seconds by postgrey-1.27 at vger.kernel.org; Mon, 22 Apr 2013 08:38:50 EDT
-Message-ID: <51752D98.8070709@freebox.fr>
-Date: Mon, 22 Apr 2013 14:31:20 +0200
-From: Nicolas Schichan <nschichan@freebox.fr>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1753125Ab3DVMkQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Apr 2013 08:40:16 -0400
+Date: Mon, 22 Apr 2013 15:39:38 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>, avi.kivity@gmail.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH v3 00/15] KVM: MMU: fast zap all shadow pages
+Message-ID: <20130422123938.GB10970@redhat.com>
+References: <1366093973-2617-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+ <20130421130346.GE8997@redhat.com>
+ <20130421152751.GB28437@amt.cnet>
+ <20130421153508.GA28842@amt.cnet>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Serge Hallyn <serge.hallyn@canonical.com>, Will Drewry <wad@chromium.org>,
-        Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
-        Eric Paris <eparis@redhat.com>, Mircea Gherzan <mgherzan@gmail.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        James Morris <james.l.morris@oracle.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH V2 1/3] seccomp: add generic code for jitted seccomp filters.
-References: <1363618233-6375-1-git-send-email-nschichan@freebox.fr> <1363618233-6375-2-git-send-email-nschichan@freebox.fr> <20130417145628.88058f0f3104ab9ae551ddd3@linux-foundation.org>
-In-Reply-To: <20130417145628.88058f0f3104ab9ae551ddd3@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130421153508.GA28842@amt.cnet>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/17/2013 11:56 PM, Andrew Morton wrote:
-> This patch is killing me.
->
->> --- a/include/linux/seccomp.h
->> +++ b/include/linux/seccomp.h
->> @@ -6,6 +6,7 @@
->>   #ifdef CONFIG_SECCOMP
->>
->>   #include <linux/thread_info.h>
->> +#include <linux/filter.h>
->>   #include <asm/seccomp.h>
->
-> In file included from include/linux/compat.h:18,
->                   from include/linux/filter.h:9,
->                   from include/linux/seccomp.h:9,
->                   from include/linux/sched.h:39,
->                   from arch/x86/kernel/asm-offsets.c:9:
-> /usr/src/25/arch/x86/include/asm/compat.h: In function 'arch_compat_alloc_user_space':
-> /usr/src/25/arch/x86/include/asm/compat.h:301: error: dereferencing pointer to incomplete type
->
-> Problem is, compat.h's arch_compat_alloc_user_space() needs sched.h for
-> task_struct but as you can see from the above include tree, sched.h
-> includes seccomp.h and everything falls over.  The preprocessed code
-> contains the definition of arch_compat_alloc_user_space() *before* the
-> definition of task_struct.
->
-> This is a basic x86_64 "make clean; make allmodconfig; make".
+On Sun, Apr 21, 2013 at 12:35:08PM -0300, Marcelo Tosatti wrote:
+> On Sun, Apr 21, 2013 at 12:27:51PM -0300, Marcelo Tosatti wrote:
+> > On Sun, Apr 21, 2013 at 04:03:46PM +0300, Gleb Natapov wrote:
+> > > On Tue, Apr 16, 2013 at 02:32:38PM +0800, Xiao Guangrong wrote:
+> > > > This patchset is based on my previous two patchset:
+> > > > [PATCH 0/2] KVM: x86: avoid potential soft lockup and unneeded mmu reload
+> > > > (https://lkml.org/lkml/2013/4/1/2)
+> > > > 
+> > > > [PATCH v2 0/6] KVM: MMU: fast invalid all mmio sptes
+> > > > (https://lkml.org/lkml/2013/4/1/134)
+> > > > 
+> > > > Changlog:
+> > > > V3:
+> > > >   completely redesign the algorithm, please see below.
+> > > > 
+> > > This looks pretty complicated. Is it still needed in order to avoid soft
+> > > lockups after "avoid potential soft lockup and unneeded mmu reload" patch?
+> > 
+> > Do not want kvm_set_memory (cases: DELETE/MOVE/CREATES) to be
+> > suspectible to:
+> > 
+> > vcpu 1    		|	kvm_set_memory
+> > create shadow page 		
+> > 				nuke shadow page
+> > create shadow page
+> > 				nuke shadow page
+> > 
+> > Which is guest triggerable behavior with spinlock preemption algorithm.
+> 
+> Not only guest triggerable as in the sense of a malicious guest, 
+> but condition above can be induced by host workload with non-malicious
+> guest system.
+> 
+Is the problem that newly created shadow pages are immediately zapped?
+Shouldn't generation number/kvm_mmu_zap_all_invalid() idea described here
+https://lkml.org/lkml/2013/4/22/111 solve this?
 
-Hi,
+> Also kvm_set_memory being relatively fast with huge memory guests
+> is nice (which is what Xiaos idea allows).
+> 
 
-Would including <uapi/linux/filter.h> instead of <linux/filter.h> in seccomp.h 
-be an acceptable solution ?
-
-I have tried that and (with an additional forward declaration of struct 
-sk_buff) an x86_64 "make clean; make allmodconfig" run finishes succesfully.
-
-If that's ok with you, I can resend the serie with that fix.
-
-Regards,
-
--- 
-Nicolas Schichan
-Freebox SAS
+--
+			Gleb.
