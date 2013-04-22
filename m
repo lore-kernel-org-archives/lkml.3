@@ -1,174 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752221Ab3DVKOP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 06:14:15 -0400
-Received: from mga02.intel.com ([134.134.136.20]:29456 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751498Ab3DVKOO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 06:14:14 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,525,1363158000"; 
-   d="scan'208";a="322202615"
-Date: Mon, 22 Apr 2013 15:12:50 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Lee Jones <lee.jones@linaro.org>
+	id S1752799Ab3DVKPD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 06:15:03 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:38981 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751118Ab3DVKPB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Apr 2013 06:15:01 -0400
+Date: Mon, 22 Apr 2013 11:14:55 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Vinod Koul <vinod.koul@intel.com>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         arnd@arndb.de, linus.walleij@stericsson.com,
         Dan Williams <djbw@fb.com>, Per Forlin <per.forlin@stericsson.com>,
         Rabin Vincent <rabin@rab.in>
-Subject: Re: [PATCH 05/32] dmaengine: ste_dma40: Supply macros to resolve
- 'src' and 'dst' directions
-Message-ID: <20130422094250.GJ24632@intel.com>
+Subject: Re: [PATCH 21/32] dmaengine: ste_dma40: Also report the number of
+ logical channels
+Message-ID: <20130422101455.GH3432@gmail.com>
 References: <1366279934-30761-1-git-send-email-lee.jones@linaro.org>
- <1366279934-30761-6-git-send-email-lee.jones@linaro.org>
+ <1366279934-30761-22-git-send-email-lee.jones@linaro.org>
+ <20130422093631.GE24632@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1366279934-30761-6-git-send-email-lee.jones@linaro.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130422093631.GE24632@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 18, 2013 at 11:11:47AM +0100, Lee Jones wrote:
-> There are lots of lengthy if() statements located sporadically up and
-> down the driver. This simple macro should make many of them a little
-> simpler to decipher. The remainder have to stay in place, as they
-> detail slightly more specific settings.
-I would like these to be DMAENGINE_IS_SRC... and this patch use the defines
-provided in dmaengine
+On Mon, 22 Apr 2013, Vinod Koul wrote:
 
---
-~Vinod
-> 
-> Cc: Vinod Koul <vinod.koul@intel.com>
-> Cc: Dan Williams <djbw@fb.com>
-> Cc: Per Forlin <per.forlin@stericsson.com>
-> Cc: Rabin Vincent <rabin@rab.in>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> ---
->  drivers/dma/ste_dma40.c |   38 ++++++++++++++++++++------------------
->  1 file changed, 20 insertions(+), 18 deletions(-)
-> 
-> diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
-> index e50354d..b21a8a3 100644
-> --- a/drivers/dma/ste_dma40.c
-> +++ b/drivers/dma/ste_dma40.c
-> @@ -55,6 +55,10 @@
->  
->  #define MAX(a, b) (((a) < (b)) ? (b) : (a))
->  
-> +#define D40_IS_SRC(dir)  ((dir == STEDMA40_PERIPH_TO_MEM) ? true : false)
-> +#define D40_IS_DST(dir) (((dir == STEDMA40_MEM_TO_PERIPH) || \
-> +			  (dir == STEDMA40_MEM_TO_MEM)) ? true : false)
-> +
->  /* Reserved event lines for memcpy only. */
->  static int dma40_memcpy_channels[] = { 56, 57, 58, 59, 60 };
->  
-> @@ -823,7 +827,7 @@ static void d40_log_lli_to_lcxa(struct d40_chan *chan, struct d40_desc *desc)
->  		 * that uses linked lists.
->  		 */
->  		if (!(chan->phy_chan->use_soft_lli &&
-> -			chan->dma_cfg.dir == STEDMA40_PERIPH_TO_MEM))
-> +		      D40_IS_SRC(chan->dma_cfg.dir)))
->  			curr_lcla = d40_lcla_alloc_one(chan, desc);
->  
->  		first_lcla = curr_lcla;
-> @@ -1291,12 +1295,12 @@ static void d40_config_set_event(struct d40_chan *d40c,
->  	u32 event = D40_TYPE_TO_EVENT(d40c->dma_cfg.dev_type);
->  
->  	/* Enable event line connected to device (or memcpy) */
-> -	if ((d40c->dma_cfg.dir ==  STEDMA40_PERIPH_TO_MEM) ||
-> +	if (D40_IS_SRC(d40c->dma_cfg.dir) ||
->  	    (d40c->dma_cfg.dir == STEDMA40_PERIPH_TO_PERIPH))
->  		__d40_config_set_event(d40c, event_type, event,
->  				       D40_CHAN_REG_SSLNK);
->  
-> -	if (d40c->dma_cfg.dir !=  STEDMA40_PERIPH_TO_MEM)
-> +	if (!D40_IS_SRC(d40c->dma_cfg.dir))
->  		__d40_config_set_event(d40c, event_type, event,
->  				       D40_CHAN_REG_SDLNK);
->  }
-> @@ -1762,7 +1766,7 @@ static int d40_validate_conf(struct d40_chan *d40c,
->  		res = -EINVAL;
->  	}
->  
-> -	if (conf->dir == STEDMA40_PERIPH_TO_MEM &&
-> +	if (D40_IS_SRC(conf->dir) &&
->  	    d40c->base->plat_data->dev_rx[conf->dev_type] == 0 &&
->  	    d40c->runtime_addr == 0) {
->  		chan_err(d40c, "Invalid RX channel address (%d)\n",
-> @@ -1895,17 +1899,17 @@ static int d40_allocate_channel(struct d40_chan *d40c, bool *first_phy_user)
->  	int j;
->  	int log_num;
->  	int num_phy_chans;
-> +	int dir = d40c->dma_cfg.dir;
->  	bool is_src;
->  	bool is_log = d40c->dma_cfg.mode == STEDMA40_MODE_LOGICAL;
->  
->  	phys = d40c->base->phy_res;
->  	num_phy_chans = d40c->base->num_phy_chans;
->  
-> -	if (d40c->dma_cfg.dir == STEDMA40_PERIPH_TO_MEM) {
-> +	if (D40_IS_SRC(dir)) {
->  		log_num = 2 * dev_type;
->  		is_src = true;
-> -	} else if (d40c->dma_cfg.dir == STEDMA40_MEM_TO_PERIPH ||
-> -		   d40c->dma_cfg.dir == STEDMA40_MEM_TO_MEM) {
-> +	} else if (D40_IS_DST(dir)) {
->  		/* dst event lines are used for logical memcpy */
->  		log_num = 2 * dev_type + 1;
->  		is_src = false;
-> @@ -1916,7 +1920,7 @@ static int d40_allocate_channel(struct d40_chan *d40c, bool *first_phy_user)
->  	event_line = D40_TYPE_TO_EVENT(dev_type);
->  
->  	if (!is_log) {
-> -		if (d40c->dma_cfg.dir == STEDMA40_MEM_TO_MEM) {
-> +		if (dir == STEDMA40_MEM_TO_MEM) {
->  			/* Find physical half channel */
->  			if (d40c->dma_cfg.use_fixed_channel) {
->  				i = d40c->dma_cfg.phy_channel;
-> @@ -2053,11 +2057,10 @@ static int d40_free_dma(struct d40_chan *d40c)
->  		return -EINVAL;
->  	}
->  
-> -	if (d40c->dma_cfg.dir == STEDMA40_MEM_TO_PERIPH ||
-> -	    d40c->dma_cfg.dir == STEDMA40_MEM_TO_MEM)
-> -		is_src = false;
-> -	else if (d40c->dma_cfg.dir == STEDMA40_PERIPH_TO_MEM)
-> +	if (D40_IS_SRC(d40c->dma_cfg.dir))
->  		is_src = true;
-> +	else if (D40_IS_DST(d40c->dma_cfg.dir))
-> +		is_src = false;
->  	else {
->  		chan_err(d40c, "Unknown direction\n");
->  		return -EINVAL;
-> @@ -2118,12 +2121,11 @@ static bool d40_is_paused(struct d40_chan *d40c)
->  		goto _exit;
->  	}
->  
-> -	if (d40c->dma_cfg.dir == STEDMA40_MEM_TO_PERIPH ||
-> -	    d40c->dma_cfg.dir == STEDMA40_MEM_TO_MEM) {
-> -		status = readl(chanbase + D40_CHAN_REG_SDLNK);
-> -	} else if (d40c->dma_cfg.dir == STEDMA40_PERIPH_TO_MEM) {
-> +	if (D40_IS_SRC(d40c->dma_cfg.dir))
->  		status = readl(chanbase + D40_CHAN_REG_SSLNK);
-> -	} else {
-> +	else if (D40_IS_DST(d40c->dma_cfg.dir))
-> +		status = readl(chanbase + D40_CHAN_REG_SDLNK);
-> +	else {
->  		chan_err(d40c, "Unknown direction\n");
->  		goto _exit;
->  	}
-> @@ -2394,7 +2396,7 @@ static void d40_set_prio_realtime(struct d40_chan *d40c)
->  	if (d40c->base->rev < 3)
->  		return;
->  
-> -	if ((d40c->dma_cfg.dir ==  STEDMA40_PERIPH_TO_MEM) ||
-> +	if (D40_IS_SRC(d40c->dma_cfg.dir) ||
->  	    (d40c->dma_cfg.dir == STEDMA40_PERIPH_TO_PERIPH))
->  		__d40_set_prio_rt(d40c, d40c->dma_cfg.dev_type, true);
->  
-> -- 
-> 1.7.10.4
-> 
+> On Thu, Apr 18, 2013 at 11:12:03AM +0100, Lee Jones wrote:
+> > Now we know the total of physical and logical channels, we may as
+> > well report them within the information log.
+> > 
+> > Before:
+> > dma40 dma40.0: hardware revision: 3 @ 0x801c0000 with 8 physical channels
+> > 
+> > After:
+> > <as above ...> and 256 logical channels
+> > 
+> > Cc: Vinod Koul <vinod.koul@intel.com>
+> > Cc: Dan Williams <djbw@fb.com>
+> > Cc: Per Forlin <per.forlin@stericsson.com>
+> > Cc: Rabin Vincent <rabin@rab.in>
+> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> > ---
+> >  drivers/dma/ste_dma40.c |    5 +++--
+> >  1 file changed, 3 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
+> > index 282dd59..805049c 100644
+> > --- a/drivers/dma/ste_dma40.c
+> > +++ b/drivers/dma/ste_dma40.c
+> > @@ -3200,8 +3200,9 @@ static struct d40_base * __init d40_hw_detect_init(struct platform_device *pdev)
+> >  
+> >  	num_log_chans = num_phy_chans * D40_MAX_LOG_CHAN_PER_PHY;
+> >  
+> > -	dev_info(&pdev->dev, "hardware revision: %d @ 0x%x with %d physical channels\n",
+> > -		 rev, res->start, num_phy_chans);
+> > +	dev_info(&pdev->dev, "hardware revision: %d @ 0x%x with "
+> > +		"%d physical channels and %d logical channels\n",
+> > +		rev, res->start, num_phy_chans, num_log_chans);
+> Splitting log messages across lines is bad idea and sacrifces readablity... also
+> wasnt splitting logging to multiple lines emit checkpatch warn
+
+You also get a check-patch error if your lines are over 80 chars.
+
+How would you solve this?
+
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
