@@ -1,110 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755278Ab3DVH66 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 03:58:58 -0400
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:52197 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755123Ab3DVH6z (ORCPT
+	id S1755543Ab3DVIE0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 04:04:26 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:65214 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754774Ab3DVIEY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 03:58:55 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 3
-X-BigFish: VS3(zzzz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1082kzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1155h)
-From: Huang Shijie <b32955@freescale.com>
-To: <dwmw2@infradead.org>
-CC: <dedekind1@gmail.com>, <computersforpeace@gmail.com>,
-        <linux-mtd@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Huang Shijie <b32955@freescale.com>
-Subject: [PATCH v2 1/8] mtd: add data structures for Extended Parameter Page
-Date: Mon, 22 Apr 2013 15:47:51 +0800
-Message-ID: <1366616878-29481-2-git-send-email-b32955@freescale.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1366616878-29481-1-git-send-email-b32955@freescale.com>
-References: <1366616878-29481-1-git-send-email-b32955@freescale.com>
+	Mon, 22 Apr 2013 04:04:24 -0400
+Date: Mon, 22 Apr 2013 10:04:19 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Kees Cook <keescook@chromium.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "kernel-hardening@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        David Woodhouse <David.Woodhouse@intel.com>,
+        Jiri Kosina <jkosina@suse.cz>, Olaf Hering <olaf@aepfle.de>,
+        Yinghai Lu <yinghai@kernel.org>, Matt Fleming <matt.fleming@intel.com>,
+        Gokul Caushik <caushik1@gmail.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Joe Millenbach <jmillenbach@gmail.com>,
+        Alexander Duyck <alexander.h.duyck@intel.com>,
+        Jacob Shin <jacob.shin@amd.com>, Pekka Enberg <penberg@kernel.org>,
+        Eric Northup <digitaleric@google.com>,
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>
+Subject: Re: [PATCH] x86: kaslr: move ELF relocation handling to C
+Message-ID: <20130422080419.GB7080@gmail.com>
+References: <20130419231638.GA20133@www.outflux.net>
+ <20130421091342.GD31470@gmail.com>
+ <CAGXu5jKFSmBTQ5Ay+MypkAStvDMrkWMNHCz4XGyy4bVjyVAnHg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAGXu5jKFSmBTQ5Ay+MypkAStvDMrkWMNHCz4XGyy4bVjyVAnHg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the ONFI 2.1, the onfi spec adds the Extended Parameter Page
-to store the ECC info.
 
-The onfi spec tells us that if the nand chip's recommended ECC codeword
-size is not 512 bytes, then the @ecc_bits is 0xff. The host _SHOULD_ then
-read the Extended ECC information that is part of the extended parameter
-page to retrieve the ECC requirements for this device.
+* Kees Cook <keescook@chromium.org> wrote:
 
-This patch adds
-    [1] the neccessary fields for nand_onfi_params{},
-    [2] and adds the onfi_ext_ecc_info{} for Extended ECC information,
-    [3] adds onfi_ext_section{} for extended sections,
-    [4] and adds onfi_ext_param_page{} for the Extended Parameter Page.
+> On Sun, Apr 21, 2013 at 2:13 AM, Ingo Molnar <mingo@kernel.org> wrote:
+> >
+> > * Kees Cook <keescook@chromium.org> wrote:
+> >
+> >> Moves the relocation handling into C, after decompression. Only
+> >> kernels that need relocation support will use the code. The new
+> >> CONFIG_RANDOMIZE_BASE does not yet do anything except turn on this logic
+> >> for 64-bit kernels.
+> >
+> > So why not keep the inactive CONFIG_RANDOMIZE_BASE hunks in a separate
+> > patch, and just have this one clean, orthogonal patch that moves
+> > relocation handling into C?
+> 
+> I had wanted there to be a way to test building with 64-bit
+> relocations. With this patch and CONFIG_RANDOMIZE_BASE=y, I could do
+> that. Would you rather I remove those pieces?
 
-Signed-off-by: Huang Shijie <b32955@freescale.com>
----
- include/linux/mtd/nand.h |   39 ++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 38 insertions(+), 1 deletions(-)
+But AFAICS CONFIG_RANDOMIZE_BASE is not an interactive config option, so 
+how did you turn it on?
 
-diff --git a/include/linux/mtd/nand.h b/include/linux/mtd/nand.h
-index 5458021..210bf36 100644
---- a/include/linux/mtd/nand.h
-+++ b/include/linux/mtd/nand.h
-@@ -224,7 +224,10 @@ struct nand_onfi_params {
- 	__le16 revision;
- 	__le16 features;
- 	__le16 opt_cmd;
--	u8 reserved[22];
-+	u8 reserved0[2];
-+	__le16 ext_param_page_length; /* since ONFI 2.1 */
-+	u8 num_of_param_pages;        /* since ONFI 2.1 */
-+	u8 reserved1[17];
- 
- 	/* manufacturer information block */
- 	char manufacturer[12];
-@@ -281,6 +284,40 @@ struct nand_onfi_params {
- 
- #define ONFI_CRC_BASE	0x4F4E
- 
-+/* Extended ECC information Block Definition (since ONFI 2.1) */
-+struct onfi_ext_ecc_info {
-+	u8 ecc_bits;
-+	u8 codeword_size;
-+	__le16 bb_per_lun;
-+	__le16 block_endurance;
-+	u8 reserved[2];
-+} __attribute__((packed));
-+
-+#define ONFI_SECTION_TYPE_0	0	/* Unused section. */
-+#define ONFI_SECTION_TYPE_1	1	/* for additional sections. */
-+#define ONFI_SECTION_TYPE_2	2	/* for ECC information. */
-+struct onfi_ext_section {
-+	u8 type;
-+	u8 length;
-+} __attribute__((packed));
-+
-+#define ONFI_EXT_SECTION_MAX 8
-+
-+/* Extended Parameter Page Definition (since ONFI 2.1) */
-+struct onfi_ext_param_page {
-+	__le16 crc;
-+	u8 sig[4];             /* 'E' 'P' 'P' 'S' */
-+	u8 reserved0[10];
-+	struct onfi_ext_section sections[ONFI_EXT_SECTION_MAX];
-+
-+	/*
-+	 * The actual size of the Extended Parameter Page is in
-+	 * @ext_param_page_length of nand_onfi_params{}.
-+	 * The following are the variable length sections.
-+	 * So we do not add any fields below. Please see the ONFI spec.
-+	 */
-+} __attribute__((packed));
-+
- /**
-  * struct nand_hw_control - Control structure for hardware controller (e.g ECC generator) shared among independent devices
-  * @lock:               protection lock
--- 
-1.7.1
+But no strong objections in any case.
 
+Thanks,
 
+	Ingo
