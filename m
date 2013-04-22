@@ -1,83 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932065Ab3DVOjq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 10:39:46 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:38729 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754574Ab3DVOjn (ORCPT
+	id S1755708Ab3DVOjj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 10:39:39 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51597 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754862Ab3DVOaN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 10:39:43 -0400
-Date: Mon, 22 Apr 2013 17:39:11 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Sourav Poddar <sourav.poddar@ti.com>
-CC: <gregkh@linuxfoundation.org>, <tony@atomide.com>,
-        <rmk+kernel@arm.linux.org.uk>, <khilman@linaro.org>,
-        <linux-serial@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Felipe Balbi <balbi@ti.com>, Rajendra nayak <rnayak@ti.com>,
-        Grygorii Strashko <grygorii.strashko@ti.com>
-Subject: Re: [RFC/PATCHv2 5/5] arm: omap2+: omap_device: remove
- no_idle_on_suspend
-Message-ID: <20130422143911.GF7508@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1366638237-6880-1-git-send-email-sourav.poddar@ti.com>
- <1366638237-6880-6-git-send-email-sourav.poddar@ti.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="NQTVMVnDVuULnIzU"
+	Mon, 22 Apr 2013 10:30:13 -0400
+Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
-In-Reply-To: <1366638237-6880-6-git-send-email-sourav.poddar@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+MIME-Version: 1.0
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+CC: akpm@linux-foundation.org, "Thomas Hellstrom" <thellstrom@vmware.com>,
+        "Dave Airlie" <airlied@redhat.com>
+Date: Mon, 22 Apr 2013 15:25:59 +0100
+Message-ID: <lsq.1366640759.537909420@decadent.org.uk>
+X-Mailer: LinuxStableQueue (scripts by bwh)
+Subject: [40/75] kref: Implement kref_get_unless_zero v3
+In-Reply-To: <lsq.1366640759.151900666@decadent.org.uk>
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:6834:ff73:7553:7f84
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---NQTVMVnDVuULnIzU
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+3.2.44-rc1 review patch.  If anyone has any objections, please let me know.
 
-On Mon, Apr 22, 2013 at 07:13:57PM +0530, Sourav Poddar wrote:
-> Remove the "OMAP_DEVICE_NO_IDLE_ON_SUSPEND" check, since=20
-> driver should be able to prevent idling of an omap device
-> whenever required.
->=20
-> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> Cc: Felipe Balbi <balbi@ti.com>
-> Cc: Rajendra nayak <rnayak@ti.com>
-> Cc: Grygorii Strashko <grygorii.strashko@ti.com>
-> Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
+------------------
 
-Looks alright to me:
+From: Thomas Hellstrom <thellstrom@vmware.com>
 
-Reviewed-by: Felipe Balbi <balbi@ti.com>
+commit 4b20db3de8dab005b07c74161cb041db8c5ff3a7 upstream.
 
-but let's see what P=E9ter Ujfalusi says before applying this one.
+This function is intended to simplify locking around refcounting for
+objects that can be looked up from a lookup structure, and which are
+removed from that lookup structure in the object destructor.
+Operations on such objects require at least a read lock around
+lookup + kref_get, and a write lock around kref_put + remove from lookup
+structure. Furthermore, RCU implementations become extremely tricky.
+With a lookup followed by a kref_get_unless_zero *with return value check*
+locking in the kref_put path can be deferred to the actual removal from
+the lookup structure and RCU lookups become trivial.
 
---=20
-balbi
+v2: Formatting fixes.
+v3: Invert the return value.
 
---NQTVMVnDVuULnIzU
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
+[bwh: Backported to 3.2:
+ - Adjust context
+ - Add #include <linux/atomic.h>]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+--- a/include/linux/kref.h
++++ b/include/linux/kref.h
+@@ -16,6 +16,7 @@
+ #define _KREF_H_
+ 
+ #include <linux/types.h>
++#include <linux/atomic.h>
+ 
+ struct kref {
+ 	atomic_t refcount;
+@@ -27,4 +28,24 @@ int kref_put(struct kref *kref, void (*r
+ int kref_sub(struct kref *kref, unsigned int count,
+ 	     void (*release) (struct kref *kref));
+ 
++/**
++ * kref_get_unless_zero - Increment refcount for object unless it is zero.
++ * @kref: object.
++ *
++ * Return non-zero if the increment succeeded. Otherwise return 0.
++ *
++ * This function is intended to simplify locking around refcounting for
++ * objects that can be looked up from a lookup structure, and which are
++ * removed from that lookup structure in the object destructor.
++ * Operations on such objects require at least a read lock around
++ * lookup + kref_get, and a write lock around kref_put + remove from lookup
++ * structure. Furthermore, RCU implementations become extremely tricky.
++ * With a lookup followed by a kref_get_unless_zero *with return value check*
++ * locking in the kref_put path can be deferred to the actual removal from
++ * the lookup structure and RCU lookups become trivial.
++ */
++static inline int __must_check kref_get_unless_zero(struct kref *kref)
++{
++	return atomic_add_unless(&kref->refcount, 1, 0);
++}
+ #endif /* _KREF_H_ */
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRdUuPAAoJEIaOsuA1yqRE13cP/1DKk3N1zkj9jhCk+9E9b8cO
-fApnCQ0FIhhL5ugtmYBk981GudmY5SU0zx7gLWeskNCVSa2V2eBcbm/H+Fs8JaRq
-5+Ybzp08Wlsv6Bk+M9kHbhyJ8xGRkaFCqb5AXr9BRYW2PHn5LMDwx/YzNCrqRwsY
-yzCQWLmBjHKbypxYhP5XLSrJF//O3k5y8g74Pi+4m++d5zg76rxVNbrJgFfOLj24
-5PYmX6jkJ+Aa8wT0GULDTMiVvkw2SFLfKSUkeQLXLBDuiKrQMFtJjPFEk/mmZJCW
-oacT5K+9+VGStXgcTsfRAeo0vShe02lQUPcug4U4KDNmg/WprMNVzA+ahKFowUNB
-mq3vEF7CIQ4w2VR1FjnTa2R2W9wdsHbqsWPMml76WoWKk01qtWjPybk/OQ5u0oRe
-Fjb8ySrxMHqgg32DSmkMYIvJINPFQs/VlcqdxG/3mEB7m1w9PCI+HcViSbnuHTD/
-HkTS/g/AALHl2Ww7x1h7jM8cV4pl6h+mI18uzdIWf0S2sCI3ufWcK0E6mjprnVzW
-KlIPuspdcDUeLKsmXZZMy2p2jd3crbTAgMf4fDM5FQhPUdOH2JgyZkCRVjXLKtnf
-nG1/JQZP+Lqkn6LzsFlzPqAuBkfwbNg8Tgd0HErpFVd14M2C2PawFiSYXivbRLBL
-iKWwVDdoUjvJBaQsjorY
-=LgiL
------END PGP SIGNATURE-----
-
---NQTVMVnDVuULnIzU--
