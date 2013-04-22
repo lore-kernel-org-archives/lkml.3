@@ -1,132 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753973Ab3DVMkh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 08:40:37 -0400
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:53671 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753724Ab3DVMke (ORCPT
+	id S1753500Ab3DVMsj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 08:48:39 -0400
+Received: from smtp-out-212.synserver.de ([212.40.185.212]:1074 "EHLO
+	smtp-out-210.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753308Ab3DVMsi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 08:40:34 -0400
-From: Chun-Yi Lee <joeyli.kernel@gmail.com>
-To: mjg@redhat.com, rjw@sisk.pl
-Cc: platform-driver-x86@vger.kernel.org, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "Lee, Chun-Yi" <jlee@suse.com>,
-        Carlos Corbacho <carlos@strangeworlds.co.uk>,
-        Dmitry Torokhov <dtor@mail.ru>, Corentin Chary <corentincj@iksaif.net>,
-        Aaron Lu <aaron.lu@intel.com>, Thomas Renninger <trenn@suse.de>
-Subject: [PATCH 1/2] acpi: video: add function to support unregister backlight
-Date: Mon, 22 Apr 2013 20:39:15 +0800
-Message-Id: <1366634355-26482-2-git-send-email-jlee@suse.com>
-X-Mailer: git-send-email 1.6.0.2
-In-Reply-To: <1366634355-26482-1-git-send-email-jlee@suse.com>
-References: <1366634355-26482-1-git-send-email-jlee@suse.com>
+	Mon, 22 Apr 2013 08:48:38 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 30541
+Message-ID: <51753170.2050902@metafoo.de>
+Date: Mon, 22 Apr 2013 14:47:44 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Vinod Koul <vinod.koul@intel.com>, Jon Hunter <jon-hunter@ti.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] dma: of: Remove restriction that #dma-cells can't
+ be 0
+References: <1366619613-30639-1-git-send-email-lars@metafoo.de> <201304221438.15945.arnd@arndb.de>
+In-Reply-To: <201304221438.15945.arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Lee, Chun-Yi" <jlee@suse.com>
+On 04/22/2013 02:38 PM, Arnd Bergmann wrote:
+> On Monday 22 April 2013, Lars-Peter Clausen wrote:
+>>
+>> There is no sensible reason why #dma-cells shouldn't be allowed to be 0. It is
+>> completely up to the DMA controller how many additional parameters, besides the
+>> phandle, it needs to identify a channel. E.g. for DMA controller with only one
+>> channel or for DMA controllers which don't have a restriction on which channel
+>> can be used for which peripheral it completely legitimate to not require any
+>> additional parameters.
+>>
+>> Also fixes the following warning:
+>>         drivers/dma/of-dma.c: In function 'of_dma_controller_register':
+>>         drivers/dma/of-dma.c:67:7: warning: 'nbcells' may be used uninitialized in this function
+>>
+>> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+> 
+> Do you have an example for this? If a dma engine has only one request line,
+> why would you even use the dmaengine subsystem for it, rather than including
+> the code to program it in the slave driver?
 
-There have situation we unregister whole acpi/video driver by downstream driver
-just want to remove backlight control interface of acpi/video. It caues we lost
-other functions of acpi/video, e.g. transfer acpi event to input event.
+Why wouldn't I use the dmaengine subsystem for a DMA controller? In my
+particular case different instances of the same DMA core will be used with
+different DMA slaves. And the DMA slaves can also have different DMA master
+cores, depending on the system.
 
-So, this patch add a new function, find_video_unregister_backlight, it provide
-the interface let downstream driver can tell acpi/video to unregister backlight
-interface of all acpi video devices. Then we can keep functions of acpi/video
-but only remove backlight support.
-
-Reference: bko#35622
-        https://bugzilla.kernel.org/show_bug.cgi?id=35622
-
-Tested-by: Andrzej Krentosz <endrjux@gmail.com>
-Cc: Carlos Corbacho <carlos@strangeworlds.co.uk>
-Cc: Matthew Garrett <mjg@redhat.com>
-Cc: Dmitry Torokhov <dtor@mail.ru>
-Cc: Corentin Chary <corentincj@iksaif.net>
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
-Cc: Aaron Lu <aaron.lu@intel.com>
-Cc: Thomas Renninger <trenn@suse.de>
-Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
----
- drivers/acpi/video.c | 46 ++++++++++++++++++++++++++++++++++++++++++++++
- include/acpi/video.h |  2 ++
- 2 files changed, 48 insertions(+)
-
-diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
-index 313f959..acd2e7a 100644
---- a/drivers/acpi/video.c
-+++ b/drivers/acpi/video.c
-@@ -1793,6 +1793,52 @@ static int __init intel_opregion_present(void)
- 	return opregion;
- }
- 
-+static acpi_status
-+find_video_unregister_backlight(acpi_handle handle, u32 lvl, void *context,
-+				void **rv)
-+{
-+	struct acpi_device *acpi_dev;
-+	struct acpi_video_bus *video = NULL;
-+	struct acpi_video_device *dev, *next;
-+
-+	if (acpi_bus_get_device(handle, &acpi_dev))
-+		return AE_OK;
-+
-+	if (!acpi_match_device_ids(acpi_dev, video_device_ids)) {
-+		video = acpi_driver_data(acpi_dev);
-+		acpi_video_bus_stop_devices(video);
-+		mutex_lock(&video->device_list_lock);
-+		list_for_each_entry_safe(dev, next, &video->video_device_list,
-+					entry) {
-+			if (dev->backlight) {
-+				backlight_device_unregister(dev->backlight);
-+				dev->backlight = NULL;
-+				kfree(dev->brightness->levels);
-+				kfree(dev->brightness);
-+			}
-+		}
-+		mutex_unlock(&video->device_list_lock);
-+		acpi_video_bus_start_devices(video);
-+	}
-+	return AE_OK;
-+}
-+
-+void acpi_video_backlight_unregister(void)
-+{
-+	if (!register_count) {
-+		/*
-+		 * If the acpi video bus is already unloaded, don't
-+		 * unregister backlight of devices and return directly.
-+		 */
-+		return;
-+	}
-+	acpi_walk_namespace(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT,
-+			    ACPI_UINT32_MAX, find_video_unregister_backlight,
-+			    NULL, NULL, NULL);
-+	return;
-+}
-+EXPORT_SYMBOL(acpi_video_backlight_unregister);
-+
- int acpi_video_register(void)
- {
- 	int result = 0;
-diff --git a/include/acpi/video.h b/include/acpi/video.h
-index 61109f2..1e810a1 100644
---- a/include/acpi/video.h
-+++ b/include/acpi/video.h
-@@ -19,11 +19,13 @@ struct acpi_device;
- #if (defined CONFIG_ACPI_VIDEO || defined CONFIG_ACPI_VIDEO_MODULE)
- extern int acpi_video_register(void);
- extern void acpi_video_unregister(void);
-+extern void acpi_video_backlight_unregister(void);
- extern int acpi_video_get_edid(struct acpi_device *device, int type,
- 			       int device_id, void **edid);
- #else
- static inline int acpi_video_register(void) { return 0; }
- static inline void acpi_video_unregister(void) { return; }
-+static inline void acpi_video_backlight_unregister(void) { return; }
- static inline int acpi_video_get_edid(struct acpi_device *device, int type,
- 				      int device_id, void **edid)
- {
--- 
-1.8.1.4
-
+- Lars
