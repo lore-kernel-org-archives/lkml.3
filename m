@@ -1,85 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752630Ab3DVOVK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 10:21:10 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:36303 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751837Ab3DVOVH (ORCPT
+	id S1753030Ab3DVOVb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 10:21:31 -0400
+Received: from www.linutronix.de ([62.245.132.108]:58294 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751837Ab3DVOVa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 10:21:07 -0400
-Date: Mon, 22 Apr 2013 15:20:55 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "will.deacon@arm.com" <will.deacon@arm.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "marc.zyngier@arm.com" <marc.zyngier@arm.com>
-Subject: Re: [PATCH v6 1/4] arm: introduce psci_smp_ops
-Message-ID: <20130422142055.GK14496@n2100.arm.linux.org.uk>
-References: <alpine.DEB.2.02.1304031239550.5078@kaball.uk.xensource.com> <1365167495-18508-1-git-send-email-stefano.stabellini@eu.citrix.com> <20130418161341.GB14496@n2100.arm.linux.org.uk> <alpine.DEB.2.02.1304181714560.7254@kaball.uk.xensource.com> <alpine.LFD.2.03.1304181233580.17375@syhkavp.arg>
+	Mon, 22 Apr 2013 10:21:30 -0400
+Date: Mon, 22 Apr 2013 16:21:23 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: =?ISO-8859-15?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+cc: kernel@pengutronix.de, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Jonathan Austin <jonathan.austin@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Paul Mundt <lethal@linux-sh.org>, linux-sh@vger.kernel.org
+Subject: Re: [PATCH v3] irqchip: Add support for ARMv7-M's NVIC
+In-Reply-To: <20130422100219.GH15233@pengutronix.de>
+Message-ID: <alpine.LFD.2.02.1304221551240.21884@ionos>
+References: <1366214540-31166-1-git-send-email-u.kleine-koenig@pengutronix.de> <alpine.LFD.2.02.1304180947070.21884@ionos> <20130419150927.GE15233@pengutronix.de> <20130422100219.GH15233@pengutronix.de>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.03.1304181233580.17375@syhkavp.arg>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-576123373-1366640484=:21884"
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 18, 2013 at 12:35:57PM -0400, Nicolas Pitre wrote:
-> On Thu, 18 Apr 2013, Stefano Stabellini wrote:
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
+
+--8323328-576123373-1366640484=:21884
+Content-Type: TEXT/PLAIN; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
+
+On Mon, 22 Apr 2013, Uwe Kleine-König wrote:
+> The options I see are:
 > 
-> > On Thu, 18 Apr 2013, Russell King - ARM Linux wrote:
-> > > On Fri, Apr 05, 2013 at 02:11:32PM +0100, Stefano Stabellini wrote:
-> > > > +	psci_init();
-> > > >  #ifdef CONFIG_SMP
-> > > >  	if (is_smp()) {
-> > > > -		smp_set_ops(mdesc->smp);
-> > > > +		if (mdesc->smp)
-> > > > +			smp_set_ops(mdesc->smp);
-> > > > +		else if (psci_smp_available())
-> > > > +			smp_set_ops(&psci_smp_ops);
-> > > 
-> > > So, I have a vague recollection that the ordering of the above got discussed
-> > > but I can't find it amongst the 21k of messages so far this year.
-> > > 
-> > > The above looks weird to me.  Surely this should be:
-> > > 
-> > > 		if (psci_smp_available())
-> > > 			smp_set_ops(&psci_smp_ops);
-> > > 		else if (mdesc->smp)
-> > > 			smp_set_ops(mdesc->ops);
-> > > 
-> > > This means that if PSCI is available, and provides a set of operations,
-> > > we override whatever the platform has statically provided.
-> > > 
-> > > Remember, we're trying to move away from using "mdesc"s for platform
-> > > stuff, relying on things like DT and such like.  We really should not
-> > > be going for mdesc-overriding-newstuff but newstuff-overriding-mdesc.
-> > 
-> > That's correct, in fact if you look at the next patch you'll see that it
-> > changes the order.
-> > 
-> > I introduced the mechanism first and changed the priority later - it
-> > should help bisectability.
-> > I can fold the two patches into one if you prefer.
-> 
-> Please let's keep the order as we discussed.  Otherwise this is just too 
-> confusing (Russell's comment is a good example of that).
+>  - introduce a new set of functions
+>    Do you have a nice naming scheme?
+>    irq_gc_unmask_enable_reg_hwirqmod32? Or should I rename the existing
+>    ones to irq_gc_unmask_enable_reg_irqbaseoffset?
 
-My comment is based on the code which I had read and quoted.  Things
-had moved on from that point, but, because I had 2000 odd messages to
-get through, there was no way to know at that point that there had been
-further discussion.
+Shudder. We do not need new functions at all, we just need to think a
+bit.
 
-This is why catching up is such a problem - not only the amount of time
-it takes (I'm _still_ reading messages - I've only just read your reply
-above, so I'm still back in Thursday's email...)
+>  - use
+>  	u32 mask = 1 << (d->hwirq - gc->irq_base) % 32;
+>    This is ugly but might work assuming irq_base == 0 for chips with irq
+>    domain support and hwirq == irq for the others.
 
-I don't think there's any confusion though - the order I suggested seems
-to be the order which I recall later patches adopted.
+Which is not correct, as hwirq is always 0 for !irqdomain users. And
+no, we don't set it to irq.
+
+Calculating the mask over and over is stupid to begin with. We can
+precompute it and store it in irq_data->mask. For the existing generic
+chip users we simply precompute it with 1 << (d->hwirq - gc->irq_base)
+and let the irqdomain code calculate it for everything else.
+
+Hmm?
+
+Thanks,
+
+	tglx
+---
+
+diff --git a/include/linux/irq.h b/include/linux/irq.h
+index bc4e066..03fd64a 100644
+--- a/include/linux/irq.h
++++ b/include/linux/irq.h
+@@ -119,6 +119,7 @@ struct irq_domain;
+ 
+ /**
+  * struct irq_data - per irq and irq chip data passed down to chip functions
++ * @mask:		precomputed bitmask for accessing the chip registers
+  * @irq:		interrupt number
+  * @hwirq:		hardware interrupt number, local to the interrupt domain
+  * @node:		node index useful for balancing
+@@ -138,6 +139,7 @@ struct irq_domain;
+  * irq_data.
+  */
+ struct irq_data {
++	u32			mask;
+ 	unsigned int		irq;
+ 	unsigned long		hwirq;
+ 	unsigned int		node;
+@@ -700,10 +702,14 @@ struct irq_chip_generic {
+  * @IRQ_GC_INIT_NESTED_LOCK:	Set the lock class of the irqs to nested for
+  *				irq chips which need to call irq_set_wake() on
+  *				the parent irq. Usually GPIO implementations
++ * @IRQ_GC_NO_MASK:		Do not calculate irq_data->mask
++ * @IRQ_GC_MASK_FROM_HWIRQ:	Calculate irq_data->mask from the hwirq number
+  */
+ enum irq_gc_flags {
+ 	IRQ_GC_INIT_MASK_CACHE		= 1 << 0,
+ 	IRQ_GC_INIT_NESTED_LOCK		= 1 << 1,
++	IRQ_GC_NO_MASK			= 1 << 2,
++	IRQ_GC_MASK_FROM_HWIRQ		= 1 << 4,
+ };
+ 
+ /* Generic chip callback functions */
+diff --git a/kernel/irq/generic-chip.c b/kernel/irq/generic-chip.c
+index c89295a..a013a35 100644
+--- a/kernel/irq/generic-chip.c
++++ b/kernel/irq/generic-chip.c
+@@ -39,7 +39,7 @@ void irq_gc_noop(struct irq_data *d)
+ void irq_gc_mask_disable_reg(struct irq_data *d)
+ {
+ 	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
+-	u32 mask = 1 << (d->irq - gc->irq_base);
++	u32 mask = d->mask;
+ 
+ 	irq_gc_lock(gc);
+ 	irq_reg_writel(mask, gc->reg_base + cur_regs(d)->disable);
+@@ -57,7 +57,7 @@ void irq_gc_mask_disable_reg(struct irq_data *d)
+ void irq_gc_mask_set_bit(struct irq_data *d)
+ {
+ 	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
+-	u32 mask = 1 << (d->irq - gc->irq_base);
++	u32 mask = d->mask;
+ 
+ 	irq_gc_lock(gc);
+ 	gc->mask_cache |= mask;
+@@ -75,7 +75,7 @@ void irq_gc_mask_set_bit(struct irq_data *d)
+ void irq_gc_mask_clr_bit(struct irq_data *d)
+ {
+ 	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
+-	u32 mask = 1 << (d->irq - gc->irq_base);
++	u32 mask = d->mask;
+ 
+ 	irq_gc_lock(gc);
+ 	gc->mask_cache &= ~mask;
+@@ -93,7 +93,7 @@ void irq_gc_mask_clr_bit(struct irq_data *d)
+ void irq_gc_unmask_enable_reg(struct irq_data *d)
+ {
+ 	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
+-	u32 mask = 1 << (d->irq - gc->irq_base);
++	u32 mask = d->mask;
+ 
+ 	irq_gc_lock(gc);
+ 	irq_reg_writel(mask, gc->reg_base + cur_regs(d)->enable);
+@@ -108,7 +108,7 @@ void irq_gc_unmask_enable_reg(struct irq_data *d)
+ void irq_gc_ack_set_bit(struct irq_data *d)
+ {
+ 	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
+-	u32 mask = 1 << (d->irq - gc->irq_base);
++	u32 mask = d->mask;
+ 
+ 	irq_gc_lock(gc);
+ 	irq_reg_writel(mask, gc->reg_base + cur_regs(d)->ack);
+@@ -122,7 +122,7 @@ void irq_gc_ack_set_bit(struct irq_data *d)
+ void irq_gc_ack_clr_bit(struct irq_data *d)
+ {
+ 	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
+-	u32 mask = ~(1 << (d->irq - gc->irq_base));
++	u32 mask = ~d->mask;
+ 
+ 	irq_gc_lock(gc);
+ 	irq_reg_writel(mask, gc->reg_base + cur_regs(d)->ack);
+@@ -136,7 +136,7 @@ void irq_gc_ack_clr_bit(struct irq_data *d)
+ void irq_gc_mask_disable_reg_and_ack(struct irq_data *d)
+ {
+ 	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
+-	u32 mask = 1 << (d->irq - gc->irq_base);
++	u32 mask = d->mask;
+ 
+ 	irq_gc_lock(gc);
+ 	irq_reg_writel(mask, gc->reg_base + cur_regs(d)->mask);
+@@ -151,7 +151,7 @@ void irq_gc_mask_disable_reg_and_ack(struct irq_data *d)
+ void irq_gc_eoi(struct irq_data *d)
+ {
+ 	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
+-	u32 mask = 1 << (d->irq - gc->irq_base);
++	u32 mask = d->mask;
+ 
+ 	irq_gc_lock(gc);
+ 	irq_reg_writel(mask, gc->reg_base + cur_regs(d)->eoi);
+@@ -169,7 +169,7 @@ void irq_gc_eoi(struct irq_data *d)
+ int irq_gc_set_wake(struct irq_data *d, unsigned int on)
+ {
+ 	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
+-	u32 mask = 1 << (d->irq - gc->irq_base);
++	u32 mask = d->mask;
+ 
+ 	if (!(mask & gc->wake_enabled))
+ 		return -EINVAL;
+@@ -254,6 +254,15 @@ void irq_setup_generic_chip(struct irq_chip_generic *gc, u32 msk,
+ 		if (flags & IRQ_GC_INIT_NESTED_LOCK)
+ 			irq_set_lockdep_class(i, &irq_nested_lock_class);
+ 
++		if (!(flags & IRQ_GC_NO_MASK)) {
++			struct irq_data *d = irq_get_irq_data(i);
++			u32 mask;
++
++			if (flags & IRQ_GC_MASK_FROM_HWIRQ)
++				d->mask = 1 << (d->hwirq % 32);
++			else
++				d->mask = 1 << (i - gc->irq_base);
++		}
+ 		irq_set_chip_and_handler(i, &ct->chip, ct->handler);
+ 		irq_set_chip_data(i, gc);
+ 		irq_modify_status(i, clr, set);
+
+
+
+--8323328-576123373-1366640484=:21884--
