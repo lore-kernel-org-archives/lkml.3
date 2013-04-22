@@ -1,55 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754106Ab3DVNL2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 09:11:28 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:45200 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752401Ab3DVNL0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 09:11:26 -0400
-Message-ID: <517536F3.5050702@ti.com>
-Date: Mon, 22 Apr 2013 09:11:15 -0400
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	id S1753338Ab3DVNRK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 09:17:10 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:59572 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751435Ab3DVNRJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Apr 2013 09:17:09 -0400
+Date: Mon, 22 Apr 2013 06:16:44 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Ingo Molnar <mingo@kernel.org>, x86-ml <x86@kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>, tiwai@suse.de,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: irq 16: nobody cared
+Message-ID: <20130422131644.GH3509@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130421181035.GC4559@pd.tnic>
+ <20130421185609.GD3509@linux.vnet.ibm.com>
+ <20130421190655.GA5807@pd.tnic>
+ <20130421203447.GE3509@linux.vnet.ibm.com>
+ <20130421205139.GC5807@pd.tnic>
+ <20130421214241.GA4593@pd.tnic>
+ <20130421220015.GF3509@linux.vnet.ibm.com>
+ <20130421221242.GB4593@pd.tnic>
+ <20130422080136.GA7080@gmail.com>
+ <20130422091847.GB4637@pd.tnic>
 MIME-Version: 1.0
-To: Pavel Machek <pavel@ucw.cz>
-CC: Eduardo Valentin <eduardo.valentin@ti.com>, <rui.zhang@intel.com>,
-        <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <durgadoss.r@intel.com>
-Subject: Re: [PATCHv2 0/3] thermal: lookup temperature
-References: <1365027197-2793-1-git-send-email-eduardo.valentin@ti.com> <20130422110647.GB24710@amd.pavel.ucw.cz>
-In-Reply-To: <20130422110647.GB24710@amd.pavel.ucw.cz>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130422091847.GB4637@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13042213-7282-0000-0000-0000166C0452
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Pavel,
+On Mon, Apr 22, 2013 at 11:18:47AM +0200, Borislav Petkov wrote:
+> On Mon, Apr 22, 2013 at 10:01:36AM +0200, Ingo Molnar wrote:
+> > Hm, this really smells like a workaround: treating the symptom, not
+> > the cause.
+> 
+> Well, I just tested Takashi's add missing synchronize_irq() to the
+> suspend path of snd_hda_intel and it doesn't help.
+> 
+> So it could be an issue with this driver or only this hw/driver can
+> exacerbate RCU this much to trigger the spurious irq machinery.
+> 
+> > How can an increase in grace-periods break drivers and suspend? Do we
+> > understand exactly what happens there?
+> 
+> I'd rather look into Paul's direction here. :)
 
-On 22-04-2013 07:06, Pavel Machek wrote:
-> Hi!
->
->> Here is V2 of temperature lookup helper function. This has been
->> split into two API as suggested on V1.
->>
->> The usage of it is exemplified on patch 03.
->>
->>
->> Eduardo Valentin (3):
->>    thermal: introduce thermal_zone_get_zone_by_name helper function
->
-> Is the function name maybe a bit long? Perhaps using tz_ prefix
-> instead of "thermal_zone_" would help? or thermal_get_by_name? tz_get_by_name?
->
-> 									Pavel
->
-This patch follows the naming convention on this file. If we are  going 
-to use different prefixes, then I suggest sending a patch that changes 
-the functions that are exported by this file. Besides the names you 
-suggested do not reflect exactly the purpose of the introduced API.
+I believe that we need both -- a fix that prevents the stray irq for
+normal CONFIG_RCU_FAST_NO_HZ grace periods and also expediting grace
+periods during suspend/resume.  I am greedy that way.  ;-)
 
-Thanks for your suggestion.
+						Thanx, Paul
 
-All best,
+> > If we do, can we fix that instead of tweaking the RCU timeouts?
+> 
+> Well, I was under the impression yesterday that we actually want
+> to switch to expedited grace periods for suspend/resume *anyway*,
+> regardless of drivers.
+> 
+> Paul?
+> 
+> -- 
+> Regards/Gruss,
+>     Boris.
+> 
+> Sent from a fat crate under my desk. Formatting is fine.
+> --
+> 
 
-Thanks.
