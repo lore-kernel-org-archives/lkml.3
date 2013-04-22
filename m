@@ -1,88 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753839Ab3DVMyB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 08:54:01 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:59938 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753613Ab3DVMx7 (ORCPT
+	id S1753938Ab3DVM47 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 08:56:59 -0400
+Received: from www.linutronix.de ([62.245.132.108]:57947 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753870Ab3DVM46 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 08:53:59 -0400
-From: Will Deacon <will.deacon@arm.com>
-To: linux-parisc@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Will Deacon <will.deacon@arm.com>,
-        Helge Deller <deller@gmx.de>
-Subject: [PATCH v2] parisc: uaccess: fix compiler warnings caused by __put_user casting
-Date: Mon, 22 Apr 2013 13:53:43 +0100
-Message-Id: <1366635223-4207-1-git-send-email-will.deacon@arm.com>
-X-Mailer: git-send-email 1.8.0
+	Mon, 22 Apr 2013 08:56:58 -0400
+Date: Mon, 22 Apr 2013 14:56:08 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Takashi Iwai <tiwai@suse.de>
+cc: Borislav Petkov <bp@alien8.de>, paulmck@linux.vnet.ibm.com,
+        x86-ml <x86@kernel.org>, lkml <linux-kernel@vger.kernel.org>
+Subject: Re: irq 16: nobody cared
+In-Reply-To: <s5hzjwq53ec.wl%tiwai@suse.de>
+Message-ID: <alpine.LFD.2.02.1304221432570.21884@ionos>
+References: <20130420185330.GA4654@pd.tnic> <20130420235206.GA3509@linux.vnet.ibm.com> <20130421103403.GA4594@pd.tnic> <20130421163002.GB3509@linux.vnet.ibm.com> <s5hfvyj55ke.wl%tiwai@suse.de> <20130422091310.GA4637@pd.tnic> <s5hzjwq53ec.wl%tiwai@suse.de>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When targetting 32-bit processors, __put_user emits a pair of stw
-instructions for the 8-byte case. If the type of __val is a pointer, the
-marshalling code casts it to the wider integer type of u64, resulting
-in the following compiler warnings:
+On Mon, 22 Apr 2013, Takashi Iwai wrote:
+> At Mon, 22 Apr 2013 11:13:10 +0200,
+> Borislav Petkov wrote:
+> > 
+> > On Mon, Apr 22, 2013 at 10:32:17AM +0200, Takashi Iwai wrote:
+> > > Hm, if it's really due to a stray irq, just adding the missing
+> > > synchronize_irq() like below would help?
+> > > 
+> > > 
+> > > Takashi
+> > > 
+> > > ---
+> > > diff --git a/sound/pci/hda/hda_intel.c b/sound/pci/hda/hda_intel.c
+> > > index 7b213d5..262dbf1 100644
+> > > --- a/sound/pci/hda/hda_intel.c
+> > > +++ b/sound/pci/hda/hda_intel.c
+> > > @@ -2682,6 +2682,8 @@ static void azx_stop_chip(struct azx *chip)
+> > >  	/* disable interrupts */
+> > >  	azx_int_disable(chip);
+> > >  	azx_int_clear(chip);
+> > > +	if (chip->irq >= 0)
+> > > +		synchronize_irq(chip->irq);
+> > 
+> > Nope, it doesn't help - I see the same splat.
+> 
+> Thanks.  Then I have no idea what's missing in the current
+> azx_suspend() and azx_resume() codes.
 
-  kernel/signal.c: In function 'copy_siginfo_to_user':
-  kernel/signal.c:2752:11: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
-  kernel/signal.c:2752:11: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
-  [...]
+I asked Boris to add a disable_irq() on top of the azx_suspend()
+function and that does not help either, but it tells us that the
+interrupt storm arrives _BEFORE_ azx_suspend() is invoked.
 
-This patch fixes the warnings by removing the marshalling code and using
-the correct output modifiers in the __put_{user,kernel}_asm64 macros
-so that GCC will allocate the right registers without the need to
-extract the two words explicitly.
+So some other device shuts down and causes that. The obvious question
+is whether this interrupt line is shared with something else.
 
-Cc: Helge Deller <deller@gmx.de>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
----
+Boris, can you please provide the irq16 line of /proc/interrupts
+before you invoke suspend? 
 
-v1->v2: Put the output modifier on the correct word, so 64-bit put_user
-        doesn't end up word-swapped.
+If it's shared we know which driver is shutdown before hda_intel and
+perhaps leaves its device in a weird state.
 
- arch/parisc/include/asm/uaccess.h | 14 ++++----------
- 1 file changed, 4 insertions(+), 10 deletions(-)
+If it's not shared, it still might be shared behind the scene. The
+other device uses MSI(X) and when shutdown MSI is disabled so the
+default IRQ route which points to IRQ16 would be active again.
 
-diff --git a/arch/parisc/include/asm/uaccess.h b/arch/parisc/include/asm/uaccess.h
-index 4ba2c93..e0a8235 100644
---- a/arch/parisc/include/asm/uaccess.h
-+++ b/arch/parisc/include/asm/uaccess.h
-@@ -181,30 +181,24 @@ struct exception_data {
- #if !defined(CONFIG_64BIT)
- 
- #define __put_kernel_asm64(__val,ptr) do {		    \
--	u64 __val64 = (u64)(__val);			    \
--	u32 hi = (__val64) >> 32;			    \
--	u32 lo = (__val64) & 0xffffffff;		    \
- 	__asm__ __volatile__ (				    \
- 		"\n1:\tstw %2,0(%1)"			    \
--		"\n2:\tstw %3,4(%1)\n\t"		    \
-+		"\n2:\tstw %R2,4(%1)\n\t"		    \
- 		ASM_EXCEPTIONTABLE_ENTRY(1b,fixup_put_user_skip_2)\
- 		ASM_EXCEPTIONTABLE_ENTRY(2b,fixup_put_user_skip_1)\
- 		: "=r"(__pu_err)                            \
--		: "r"(ptr), "r"(hi), "r"(lo), "0"(__pu_err) \
-+		: "r"(ptr), "r"(__val), "0"(__pu_err) \
- 		: "r1");				    \
- } while (0)
- 
- #define __put_user_asm64(__val,ptr) do {	    	    \
--	u64 __val64 = (u64)(__val);			    \
--	u32 hi = (__val64) >> 32;			    \
--	u32 lo = (__val64) & 0xffffffff;		    \
- 	__asm__ __volatile__ (				    \
- 		"\n1:\tstw %2,0(%%sr3,%1)"		    \
--		"\n2:\tstw %3,4(%%sr3,%1)\n\t"		    \
-+		"\n2:\tstw %R2,4(%%sr3,%1)\n\t"		    \
- 		ASM_EXCEPTIONTABLE_ENTRY(1b,fixup_put_user_skip_2)\
- 		ASM_EXCEPTIONTABLE_ENTRY(2b,fixup_put_user_skip_1)\
- 		: "=r"(__pu_err)                            \
--		: "r"(ptr), "r"(hi), "r"(lo), "0"(__pu_err) \
-+		: "r"(ptr), "r"(__val), "0"(__pu_err) \
- 		: "r1");				    \
- } while (0)
- 
--- 
-1.8.0
+I assume, that the RCU stuff just causes enough timing difference to
+uncover the underlying issue.
 
+Thanks,
+
+	tglx
