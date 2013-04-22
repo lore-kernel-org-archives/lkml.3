@@ -1,102 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754071Ab3DVV54 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 17:57:56 -0400
-Received: from co9ehsobe004.messaging.microsoft.com ([207.46.163.27]:33008
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753556Ab3DVV5y (ORCPT
+	id S1754167Ab3DVWDF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 18:03:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53288 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753802Ab3DVWDE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 17:57:54 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -10
-X-BigFish: VPS-10(zz98dI1432I4015I111aI179dNzz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzzz2dh668h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1155h)
-X-WSS-ID: 0MLOFOA-01-288-02
-X-M-MSG: 
-Date: Mon, 22 Apr 2013 16:57:44 -0500
-From: Jacob Shin <jacob.shin@amd.com>
-To: Oleg Nesterov <oleg@redhat.com>
-CC: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "x86@kernel.org" <x86@kernel.org>,
-        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/5] perf: Add hardware breakpoint address mask
-Message-ID: <20130422215744.GA26823@jshin-Toonie>
-References: <1365528113-5458-1-git-send-email-jacob.shin@amd.com>
- <20130420165334.GA14814@redhat.com>
- <20130420224757.GB6155@jshin-Toonie>
- <20130421170202.GA5358@redhat.com>
- <20130422213715.GA24256@jshin-Toonie>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20130422213715.GA24256@jshin-Toonie>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+	Mon, 22 Apr 2013 18:03:04 -0400
+Date: Mon, 22 Apr 2013 15:03:02 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: hirofumi@mail.parknet.co.jp, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Subject: Re: [PATCH v5] fat: editions to support fat_fallocate
+Message-Id: <20130422150302.d01a3edb005a79bd68929d38@linux-foundation.org>
+In-Reply-To: <1366293255-4649-1-git-send-email-linkinjeon@gmail.com>
+References: <1366293255-4649-1-git-send-email-linkinjeon@gmail.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 22, 2013 at 04:37:15PM -0500, Jacob Shin wrote:
-> On Sun, Apr 21, 2013 at 07:02:02PM +0200, Oleg Nesterov wrote:
-> > On 04/20, Jacob Shin wrote:
-> > >
-> > > On Sat, Apr 20, 2013 at 06:53:34PM +0200, Oleg Nesterov wrote:
-> > > >
-> > > > And does attr.bp_len "contribute" to the mask?
-> > > >
-> > > > I mean, if bp_len == X86_BREAKPOINT_LEN_8, does this mean that
-> > > > bp_bp_addr_mask and (bp_bp_addr_mask | 7) have the same effect?
-> > >
-> > > Yes it has the same effect.
-> > 
-> > OK, thanks...
-> > 
-> > So this is the "natural" extension. Given that currently bp_addr
-> > should be aligned, bp_len could be already bp_mask but I guess it
-> > is too late to change this, so we need another field.
-> > 
-> > Hmm. Perhaps arch_has_hw_breakpoint_addr_mask(void) should be turned
-> > into arch_validate_hw_breakpoint_addr_mask(bp) which should also
-> > check that (bp_addr & bp_addr_mask) == 0. But I won't insist.
-> 
-> Yes I can do that .. in that case should the Kconfig
-> CONFIG_HAVE_HW_BREAKPOINT_ADDR_MASK go away, and in every non-x86
-> hw_breakpoint.c do:
-> 
-> bool arch_validate_hw_breakpoint_addr_mask(struct perf_event *bp)
-> {
-> 	return false;
+On Thu, 18 Apr 2013 22:54:15 +0900 Namjae Jeon <linkinjeon@gmail.com> wrote:
 
-Sorry, of course what I meant was,
+> Change Log:
+> v5: change to avoid compilation warning:
+>   fs/fat/inode.c: In function 'fat_zero_falloc_area':
+> >> fs/fat/inode.c:169:11: warning: comparison of distinct pointer
+> types lacks a cast [enabled by default]
 
-       return bp->attr.bp_addr_mask == 0;
-> }
-> 
-> ?
-> 
-> Or keep CONFIG_HAVE_HW_BREAKPOINT_ADDR_MASK and in
-> include/linux/hw_breakpoint.h do:
-> 
-> #ifndef CONFIG_HAVE_HW_BREAKPOINT_ADDR_MASK
-> static inline bool arch_validate_hw_breakpoint_addr_mask(struct perf_event *bp)
-> {
-> 	return falase;
+The patch does more than that - here's the v4->v5 delta:
 
-here too.
+--- a/fs/fat/file.c~fat-additions-to-support-fat_fallocate-v5
++++ a/fs/fat/file.c
+@@ -153,7 +153,6 @@ static int fat_file_release(struct inode
+ 	 */
+ 	mutex_lock(&inode->i_mutex);
+ 	mmu_private_ideal = round_up(inode->i_size, sb->s_blocksize);
+-
+ 	if (mmu_private_ideal < MSDOS_I(inode)->mmu_private &&
+ 	    filp->f_dentry->d_count == 1)
+ 		fat_truncate_blocks(inode, inode->i_size);
+@@ -231,7 +230,6 @@ static int fat_cont_expand(struct inode
+ out:
+ 	return err;
+ }
+-
+ /*
+  * Preallocate space for a file. This implements fat's fallocate file
+  * operation, which gets called from sys_fallocate system call. User
+@@ -281,10 +279,8 @@ static long fat_fallocate(struct file *f
+ 						      sbi->cluster_bits;
+ 		} else
+ 			nr_bytes = offset + len - inode->i_size;
+-
+ 		nr_cluster = (nr_bytes + (sbi->cluster_size - 1)) >>
+ 			     sbi->cluster_bits;
+-
+ 		/* Start the allocation.We are not zeroing out the clusters */
+ 		while (nr_cluster-- > 0) {
+ 			err = fat_alloc_clusters(inode, &cluster, 1);
+@@ -308,12 +304,10 @@ static long fat_fallocate(struct file *f
+ 				"fat_fallocate(): fat_cont_expand() error");
+ 		}
+ 	}
+-
+ error:
+ 	mutex_unlock(&inode->i_mutex);
+ 	return err;
+ }
+-
+ /* Free all clusters after the skip'th cluster. */
+ static int fat_free(struct inode *inode, int skip)
+ {
+--- a/fs/fat/inode.c~fat-additions-to-support-fat_fallocate-v5
++++ a/fs/fat/inode.c
+@@ -166,7 +166,7 @@ static int fat_zero_falloc_area(struct f
+ 
+ 		offset = (curpos & (PAGE_CACHE_SIZE - 1));
+ 		bytes = PAGE_CACHE_SIZE - offset;
+-		bytes = min(bytes, count);
++		bytes = min_t(size_t, bytes, count);
+ 
+ 		err = pagecache_write_begin(NULL, mapping, curpos, bytes,
+ 					AOP_FLAG_UNINTERRUPTIBLE,
 
-> }
-> #endif
-> 
-> ?
-> 
-> Thanks,
+The whitespace changes are mostly dubious and the ones which remove the
+newline after a function's final brace are simply wrong.  The min_t
+change is unneeded - it's better to make the type of `bytes' size_t. 
+So I shall skip v5.
 
-Just reading your other email, you said a __weak function would suffice.
-So I'll do that .. sorry for answering my own question.
-
-I'll send out a revised patchset sometime later tonight ..
-
-Thanks again!
-
+BTW, I don't intend to send this patch into Linus until I have
+heard from hirofumi.  Please let me know if he has already reviewed
+and acked it?
