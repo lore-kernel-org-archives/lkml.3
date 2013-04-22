@@ -1,52 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754218Ab3DVVCD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 17:02:03 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:45888 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754140Ab3DVVCB (ORCPT
+	id S1753123Ab3DVVEm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 17:04:42 -0400
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:36419 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751941Ab3DVVEl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 17:02:01 -0400
-Message-ID: <1366664518.8337.21.camel@laptop>
-Subject: Re: Preemptable Ticket Spinlock
-From: Peter Zijlstra <peterz@infradead.org>
-To: Rik van Riel <riel@redhat.com>
-Cc: Jiannan Ouyang <ouyang@cs.pitt.edu>, LKML <linux-kernel@vger.kernel.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Avi Kivity <avi.kivity@gmail.com>, Gleb Natapov <gleb@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Srikar <srikar@linux.vnet.ibm.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        KVM <kvm@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Chegu Vinod <chegu_vinod@hp.com>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Andrew Jones <drjones@redhat.com>, Karen Noel <knoel@redhat.com>
-Date: Mon, 22 Apr 2013 23:01:58 +0200
-In-Reply-To: <5175A277.5080208@redhat.com>
-References: <CAJocwccu5QQyuKRvgNyPSFz2K_rzCW419W9-XdSUYOL7+KqQKg@mail.gmail.com>
-	 <51745650.9050204@redhat.com> <1366631460.4443.3.camel@laptop>
-	 <51753289.70406@redhat.com> <1366660147.6454.6.camel@laptop>
-	 <517595FA.800@redhat.com> <1366661294.6454.18.camel@laptop>
-	 <CAJocwceW6BuEu0Yuyv472aarpcziZH1wd-Xbc+Om81ES8+w+SA@mail.gmail.com>
-	 <5175A277.5080208@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 22 Apr 2013 17:04:41 -0400
+MIME-Version: 1.0
+In-Reply-To: <1366616878-29481-3-git-send-email-b32955@freescale.com>
+References: <1366616878-29481-1-git-send-email-b32955@freescale.com>
+	<1366616878-29481-3-git-send-email-b32955@freescale.com>
+Date: Mon, 22 Apr 2013 14:04:40 -0700
+Message-ID: <CAN8TOE8EwK1iaDOjBPpUhQmzn=AK-2LufufwwMON6gf=-zZa+Q@mail.gmail.com>
+Subject: Re: [PATCH v2 2/8] mtd: add a helper to get the supported features
+ for ONFI nand
+From: Brian Norris <computersforpeace@gmail.com>
+To: Huang Shijie <b32955@freescale.com>
+Cc: dwmw2@infradead.org, dedekind1@gmail.com, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Huang Shijie <shijie8@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-04-22 at 16:49 -0400, Rik van Riel wrote:
-> Given the fairly high cost of rescheduling a VCPU (which is likely
-> to include an IPI), versus the short hold time of most spinlocks,
-> I have the strong suspicion that your approach would win.
+On Mon, Apr 22, 2013 at 12:47 AM, Huang Shijie <b32955@freescale.com> wrote:
+> From: Huang Shijie <shijie8@gmail.com>
+>
+> add a helper to get the supported features for ONFI nand.
+> Also add the neccessary macros.
+>
+> Signed-off-by: Huang Shijie <b32955@freescale.com>
+> ---
+>  include/linux/mtd/nand.h |   13 +++++++++++++
+>  1 files changed, 13 insertions(+), 0 deletions(-)
+>
+> diff --git a/include/linux/mtd/nand.h b/include/linux/mtd/nand.h
+> index 210bf36..122322c 100644
+> --- a/include/linux/mtd/nand.h
+> +++ b/include/linux/mtd/nand.h
+> @@ -202,6 +202,11 @@ typedef enum {
+>  /* Keep gcc happy */
+>  struct nand_chip;
+>
+> +/* ONFI features */
+> +#define ONFI_FEATURE_16_BIT_BUS                (1 << 0)
+> +#define ONFI_FEATURE_EXT_PARAM_PAGE    (1 << 7)
+> +#define ONFI_FEATURE_UNKNOWN           (1 << 15)
 
-  https://lkml.org/lkml/2012/5/2/101
+Where did you get the UNKNOWN field from? Bit 15 looks like a reserved
+field (in ONFI 3.1, at least) and certainly does *not* represent a
+null value. Instead, I think it does not need a macro at all, and we
+can just use 0 for non-ONFI chips.
 
-If you schedule too often your SPIN_THRESHOLD is far too low.
+>  /* ONFI timing mode, used in both asynchronous and synchronous mode */
+>  #define ONFI_TIMING_MODE_0             (1 << 0)
+>  #define ONFI_TIMING_MODE_1             (1 << 1)
+> @@ -750,6 +755,14 @@ struct platform_nand_chip *get_platform_nandchip(struct mtd_info *mtd)
+>         return chip->priv;
+>  }
+>
+> +/* return the supported features. */
+> +static inline int onfi_feature(struct nand_chip *chip)
+> +{
+> +       if (!chip->onfi_version)
+> +               return ONFI_FEATURE_UNKNOWN;
 
-Anyway.. performance can't be that bad, otherwise Jeremey would have
-spend as much time on it as he did.
+As noted above, just this macro is incorrect.
 
+> +       return le16_to_cpu(chip->onfi_params.features);
+
+Just make the whole function:
+
+return chip->onfi_version ? le16_to_cpu(chip->onfi_params.features) : 0;
+
+It is up to the caller to ensure that they don't rely on the returned
+value for non-ONFI chips.
+
+> +}
+> +
+>  /* return the supported asynchronous timing mode. */
+>  static inline int onfi_get_async_timing_mode(struct nand_chip *chip)
+>  {
+
+Brian
