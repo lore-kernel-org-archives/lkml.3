@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754417Ab3DVO3c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 10:29:32 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51400 "EHLO
+	id S1754647Ab3DVO3r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 10:29:47 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51424 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754367Ab3DVO32 (ORCPT
+	by vger.kernel.org with ESMTP id S1753214Ab3DVO3f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 10:29:28 -0400
+	Mon, 22 Apr 2013 10:29:35 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Johan Hovold" <jhovold@gmail.com>
+CC: akpm@linux-foundation.org, "Jeff Garzik" <jgarzik@redhat.com>,
+        "Shan Hai" <shan.hai@windriver.com>
 Date: Mon, 22 Apr 2013 15:25:59 +0100
-Message-ID: <lsq.1366640759.883941040@decadent.org.uk>
+Message-ID: <lsq.1366640759.533505146@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [14/75] USB: spcp8x5: fix use-after-free in TIOCMIWAIT
+Subject: [20/75] libata: Use integer return value for atapi_command_packet_set
 In-Reply-To: <lsq.1366640759.151900666@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:6834:ff73:7553:7f84
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,66 +31,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Shan Hai <shan.hai@windriver.com>
 
-commit dbcea7615d8d7d58f6ff49d2c5568113f70effe9 upstream.
+commit d8668fcb0b257d9fdcfbe5c172a99b8d85e1cd82 upstream.
 
-Use the port wait queue and make sure to check the serial disconnected
-flag before accessing private port data after waking up.
+The function returns type of ATAPI drives so it should return integer value.
+The commit 4dce8ba94c7 (libata: Use 'bool' return value for ata_id_XXX) since
+v2.6.39 changed the type of return value from int to bool, the change would
+cause all of the ATAPI class drives to be treated as TYPE_TAPE and the
+max_sectors of the drives to be set to 65535 because of the commit
+f8d8e5799b7(libata: increase 128 KB / cmd limit for ATAPI tape drives), for the
+function would return true for all ATAPI class drives and the TYPE_TAPE is
+defined as 0x01.
 
-This is is needed as the private port data (including the wait queue
-itself) can be gone when waking up after a disconnect.
-
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[bwh: Backported to 3.2: adjust context, indentation]
+Signed-off-by: Shan Hai <shan.hai@windriver.com>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/serial/spcp8x5.c |    9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+ include/linux/ata.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/serial/spcp8x5.c
-+++ b/drivers/usb/serial/spcp8x5.c
-@@ -163,7 +163,6 @@ static struct usb_driver spcp8x5_driver
- struct spcp8x5_private {
- 	spinlock_t 	lock;
- 	enum spcp8x5_type	type;
--	wait_queue_head_t	delta_msr_wait;
- 	u8 			line_control;
- 	u8 			line_status;
- };
-@@ -197,7 +196,6 @@ static int spcp8x5_startup(struct usb_se
- 			goto cleanup;
- 
- 		spin_lock_init(&priv->lock);
--		init_waitqueue_head(&priv->delta_msr_wait);
- 		priv->type = type;
- 		usb_set_serial_port_data(serial->port[i] , priv);
+--- a/include/linux/ata.h
++++ b/include/linux/ata.h
+@@ -937,7 +937,7 @@ static inline int atapi_cdb_len(const u1
  	}
-@@ -502,7 +500,7 @@ static void spcp8x5_process_read_urb(str
- 	priv->line_status &= ~UART_STATE_TRANSIENT_MASK;
- 	spin_unlock_irqrestore(&priv->lock, flags);
- 	/* wake up the wait for termios */
--	wake_up_interruptible(&priv->delta_msr_wait);
-+	wake_up_interruptible(&port->delta_msr_wait);
+ }
  
- 	if (!urb->actual_length)
- 		return;
-@@ -552,12 +550,15 @@ static int spcp8x5_wait_modem_info(struc
- 
- 	while (1) {
- 		/* wake up in bulk read */
--		interruptible_sleep_on(&priv->delta_msr_wait);
-+		interruptible_sleep_on(&port->delta_msr_wait);
- 
- 		/* see if a signal did it */
- 		if (signal_pending(current))
- 			return -ERESTARTSYS;
- 
-+		if (port->serial->disconnected)
-+			return -EIO;
-+
- 		spin_lock_irqsave(&priv->lock, flags);
- 		status = priv->line_status;
- 		spin_unlock_irqrestore(&priv->lock, flags);
+-static inline bool atapi_command_packet_set(const u16 *dev_id)
++static inline int atapi_command_packet_set(const u16 *dev_id)
+ {
+ 	return (dev_id[ATA_ID_CONFIG] >> 8) & 0x1f;
+ }
 
