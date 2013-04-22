@@ -1,93 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753651Ab3DVFvT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 01:51:19 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:41421 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752640Ab3DVFvS (ORCPT
+	id S1754025Ab3DVFzf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 01:55:35 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:35307 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752462Ab3DVFzd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 01:51:18 -0400
-Message-ID: <5174CFA3.6020402@ti.com>
-Date: Mon, 22 Apr 2013 11:20:27 +0530
-From: Sourav Poddar <sourav.poddar@ti.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+	Mon, 22 Apr 2013 01:55:33 -0400
+Message-ID: <5174D18E.4090506@linux.vnet.ibm.com>
+Date: Mon, 22 Apr 2013 11:28:38 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
 MIME-Version: 1.0
-To: Kevin Hilman <khilman@linaro.org>
-CC: <gregkh@linuxfoundation.org>, <tony@atomide.com>,
-        <rmk+kernel@arm.linux.org.uk>, <linux-serial@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/6] arm: mach-omap2: remove "OMAP_DEVICE_NO_IDLE_ON_SUSPEND"
- check
-References: <1366198467-6757-1-git-send-email-sourav.poddar@ti.com>	<1366198467-6757-5-git-send-email-sourav.poddar@ti.com>	<87li8f4sum.fsf@linaro.org> <5170434C.7040706@ti.com>	<874nf31opn.fsf@linaro.org> <51714CCC.9090800@ti.com> <871ua6zi6w.fsf@linaro.org>
-In-Reply-To: <871ua6zi6w.fsf@linaro.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Jiannan Ouyang <ouyang@cs.pitt.edu>
+CC: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Avi Kivity <avi.kivity@gmail.com>, Gleb Natapov <gleb@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Srikar <srikar@linux.vnet.ibm.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Chegu Vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Andrew Jones <drjones@redhat.com>
+Subject: Re: Preemptable Ticket Spinlock
+References: <CAJocwccu5QQyuKRvgNyPSFz2K_rzCW419W9-XdSUYOL7+KqQKg@mail.gmail.com>
+In-Reply-To: <CAJocwccu5QQyuKRvgNyPSFz2K_rzCW419W9-XdSUYOL7+KqQKg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13042205-4790-0000-0000-000007F436B2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kevin,
-On Friday 19 April 2013 08:22 PM, Kevin Hilman wrote:
-> Sourav Poddar<sourav.poddar@ti.com>  writes:
+On 04/21/2013 03:42 AM, Jiannan Ouyang wrote:
+> Hello Everyone,
 >
-> [...]
->
->> Yes, got your point. omap_device_idle should not be called only
->> for console uart.
->>
->> Just did a quick testing by including the following hunk on top of my
->> patch series..
->>
->> diff --git a/arch/arm/mach-omap2/omap_device.c
->> b/arch/arm/mach-omap2/omap_device.c
->> index c226946..7480e87 100644
->> --- a/arch/arm/mach-omap2/omap_device.c
->> +++ b/arch/arm/mach-omap2/omap_device.c
->> @@ -617,8 +617,10 @@ static int _od_suspend_noirq(struct device *dev)
->>          ret = pm_generic_suspend_noirq(dev);
->>
->>          if (!ret&&  !pm_runtime_status_suspended(dev)) {
->> -               if (pm_generic_runtime_suspend(dev) == 0)
->> +               if (pm_generic_runtime_suspend(dev) == 0) {
->> +                       omap_device_idle(pdev);
->>                          od->flags |= OMAP_DEVICE_SUSPENDED;
->> +               }
->>          }
->>
->>          return ret;
->> @@ -631,6 +633,7 @@ static int _od_resume_noirq(struct device *dev)
->>
->>          if ((od->flags&  OMAP_DEVICE_SUSPENDED)&&
->>              !pm_runtime_status_suspended(dev)) {
->> +               omap_device_enable(pdev);
->>                  od->flags&= ~OMAP_DEVICE_SUSPENDED;
->>                  pm_generic_runtime_resume(dev);
->>          }
->> And found the wakeup from UART is no more functional.
->> So, the omap_device_idle gets called for console UART also, thereby
->> preventing the "no_idle_on_suspend" theory.
->>
->> Hence, merely putting prepare/complete callback the way I did is not
->> helping.
->> We need to delete omap_device_idle also, which I agree is not correct.
->> So, we need a way to bypass this "omap_device_idle"
->> call for console UART. ?
-> OK, I see what's happening now.
->
-> How about this: rather than using prepare/complete callbacks, can you
-> use the runtime_suspend callback to return an error code during suspend?
-Yes, that can be done.
-> (only for the console, and only when no_console_suspend is enabled, and
-> only during suspend)
->
-> Since _od_suspend_noirq checks to be sure the drivers ->runtime_suspend
-> callback succeeds before it calls omap_device_idle(), if you report a
-> failure, omap_device_idle will not be called.
->
-True.
+> I recently came up with a spinlock algorithm that can adapt to
+> preemption, which you may be interested in.
 
-~Sourav
-> Kevin
+It is overall a great and clever idea as Rik mentioned already.
+
+  The intuition is to
+> downgrade a fair lock to an unfair lock automatically upon preemption,
+> and preserve the fairness otherwise.
+
+I also hope being little unfair, does not affect the original intention
+of introducing ticket spinlocks too.
+Some discussions were here long back in this thead,
+https://lkml.org/lkml/2010/6/3/331
+
+It is a guest side optimization,
+> and can be used as a complementary technique to host side optimizations
+> like co-scheduling and Pause-Loop Exiting.
 >
+> In my experiments, it improves VM performance by 5:32X on average, when
+> running on a non paravirtual VMM, and by 7:91X when running on a VMM
+> that supports a paravirtual locking interface (using a pv preemptable
+> ticket spinlock), when executing a set of microbenchmarks as well as a
+> realistic e-commerce benchmark.
+
+AFAIU, the experiments are on non PLE machines and it would be worth 
+experimenting on PLE machines too. and also bigger machines.
+(we may get some surprises there otherwise).
+'ll wait for your next iteration of the patches with "using lower bit"
+changes.
+
+
 >
+> A detailed algorithm description can be found in my VEE 2013 paper,
+> Preemptable Ticket Spinlocks: Improving Consolidated Performance in the
+> Cloud
+> Jiannan Ouyang, John R. Lange
+> ouyang,jacklange@cs.pitt.edu <mailto:jacklange@cs.pitt.edu>
+> University of Pittsburgh
+> http://people.cs.pitt.edu/~ouyang/files/publication/preemptable_lock-ouyang-vee13.pdf
+>
+> The patch is based on stock Linux kernel 3.5.0, and tested on kernel
+> 3.4.41 as well.
+> http://www.cs.pitt.edu/~ouyang/files/preemptable_lock.tar.gz
+>
+> Thanks
+> --Jiannan
+>
+> I'm not familiar with patch over email, so I just paste it below, sorry
+> for the inconvenience.
+> ======================
+> diff --git a/arch/x86/include/asm/spinlock.h
+> b/arch/x86/include/asm/spinlock.h
+> index b315a33..895d3b3 100644
+> --- a/arch/x86/include/asm/spinlock.h
+> +++ b/arch/x86/include/asm/spinlock.h
+> @@ -48,18 +48,35 @@
+>    * in the high part, because a wide xadd increment of the low part
+> would carry
+>    * up and contaminate the high part.
+>    */
+> +#define TIMEOUT_UNIT (1<<14)
+
+This value seem to be at the higher end. But I hope you have 
+experimented enough to come up with this. Better again to test all these 
+tunables?? on PLE machines too.
+
+>   static __always_inline void __ticket_spin_lock(arch_spinlock_t *lock)
+>   {
+>          register struct __raw_tickets inc = { .tail = 1 };
+> +       unsigned int timeout = 0;
+> +       __ticket_t current_head;
+>
+>          inc = xadd(&lock->tickets, inc);
+> -
+> +       if (likely(inc.head == inc.tail))
+> +               goto spin;
+> +
+> +       timeout =  TIMEOUT_UNIT * (inc.tail - inc.head);
+> +       do {
+> +               current_head = ACCESS_ONCE(lock->tickets.head);
+> +               if (inc.tail <= current_head) {
+> +                       goto spin;
+> +               } else if (inc.head != current_head) {
+> +                       inc.head = current_head;
+> +                       timeout =  TIMEOUT_UNIT * (inc.tail - inc.head);
+
+Good idea indeed to base the loop on head and tail difference.. But for 
+virtualization I believe this "directly proportional notion" is little 
+tricky too.
 
