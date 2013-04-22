@@ -1,120 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755727Ab3DVOjk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 10:39:40 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51589 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754912Ab3DVOaN (ORCPT
+	id S932065Ab3DVOjq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 10:39:46 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:38729 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754574Ab3DVOjn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 10:30:13 -0400
-Content-Type: text/plain; charset="UTF-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+	Mon, 22 Apr 2013 10:39:43 -0400
+Date: Mon, 22 Apr 2013 17:39:11 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Sourav Poddar <sourav.poddar@ti.com>
+CC: <gregkh@linuxfoundation.org>, <tony@atomide.com>,
+        <rmk+kernel@arm.linux.org.uk>, <khilman@linaro.org>,
+        <linux-serial@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Felipe Balbi <balbi@ti.com>, Rajendra nayak <rnayak@ti.com>,
+        Grygorii Strashko <grygorii.strashko@ti.com>
+Subject: Re: [RFC/PATCHv2 5/5] arm: omap2+: omap_device: remove
+ no_idle_on_suspend
+Message-ID: <20130422143911.GF7508@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1366638237-6880-1-git-send-email-sourav.poddar@ti.com>
+ <1366638237-6880-6-git-send-email-sourav.poddar@ti.com>
 MIME-Version: 1.0
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Al Viro" <viro@zeniv.linux.org.uk>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
-Date: Mon, 22 Apr 2013 15:25:59 +0100
-Message-ID: <lsq.1366640759.591824127@decadent.org.uk>
-X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [41/75] kobject: fix kset_find_obj() race with concurrent last
- kobject_put()
-In-Reply-To: <lsq.1366640759.151900666@decadent.org.uk>
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:6834:ff73:7553:7f84
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="NQTVMVnDVuULnIzU"
+Content-Disposition: inline
+In-Reply-To: <1366638237-6880-6-git-send-email-sourav.poddar@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2.44-rc1 review patch.  If anyone has any objections, please let me know.
+--NQTVMVnDVuULnIzU
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-------------------
+On Mon, Apr 22, 2013 at 07:13:57PM +0530, Sourav Poddar wrote:
+> Remove the "OMAP_DEVICE_NO_IDLE_ON_SUSPEND" check, since=20
+> driver should be able to prevent idling of an omap device
+> whenever required.
+>=20
+> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> Cc: Felipe Balbi <balbi@ti.com>
+> Cc: Rajendra nayak <rnayak@ti.com>
+> Cc: Grygorii Strashko <grygorii.strashko@ti.com>
+> Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+Looks alright to me:
 
-commit a49b7e82cab0f9b41f483359be83f44fbb6b4979 upstream.
+Reviewed-by: Felipe Balbi <balbi@ti.com>
 
-Anatol Pomozov identified a race condition that hits module unloading
-and re-loading.  To quote Anatol:
+but let's see what P=E9ter Ujfalusi says before applying this one.
 
- "This is a race codition that exists between kset_find_obj() and
-  kobject_put().  kset_find_obj() might return kobject that has refcount
-  equal to 0 if this kobject is freeing by kobject_put() in other
-  thread.
+--=20
+balbi
 
-  Here is timeline for the crash in case if kset_find_obj() searches for
-  an object tht nobody holds and other thread is doing kobject_put() on
-  the same kobject:
+--NQTVMVnDVuULnIzU
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-    THREAD A (calls kset_find_obj())     THREAD B (calls kobject_put())
-    splin_lock()
-                                         atomic_dec_return(kobj->kref), counter gets zero here
-                                         ... starts kobject cleanup ....
-                                         spin_lock() // WAIT thread A in kobj_kset_leave()
-    iterate over kset->list
-    atomic_inc(kobj->kref) (counter becomes 1)
-    spin_unlock()
-                                         spin_lock() // taken
-                                         // it does not know that thread A increased counter so it
-                                         remove obj from list
-                                         spin_unlock()
-                                         vfree(module) // frees module object with containing kobj
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-    // kobj points to freed memory area!!
-    kobject_put(kobj) // OOPS!!!!
+iQIcBAEBAgAGBQJRdUuPAAoJEIaOsuA1yqRE13cP/1DKk3N1zkj9jhCk+9E9b8cO
+fApnCQ0FIhhL5ugtmYBk981GudmY5SU0zx7gLWeskNCVSa2V2eBcbm/H+Fs8JaRq
+5+Ybzp08Wlsv6Bk+M9kHbhyJ8xGRkaFCqb5AXr9BRYW2PHn5LMDwx/YzNCrqRwsY
+yzCQWLmBjHKbypxYhP5XLSrJF//O3k5y8g74Pi+4m++d5zg76rxVNbrJgFfOLj24
+5PYmX6jkJ+Aa8wT0GULDTMiVvkw2SFLfKSUkeQLXLBDuiKrQMFtJjPFEk/mmZJCW
+oacT5K+9+VGStXgcTsfRAeo0vShe02lQUPcug4U4KDNmg/WprMNVzA+ahKFowUNB
+mq3vEF7CIQ4w2VR1FjnTa2R2W9wdsHbqsWPMml76WoWKk01qtWjPybk/OQ5u0oRe
+Fjb8ySrxMHqgg32DSmkMYIvJINPFQs/VlcqdxG/3mEB7m1w9PCI+HcViSbnuHTD/
+HkTS/g/AALHl2Ww7x1h7jM8cV4pl6h+mI18uzdIWf0S2sCI3ufWcK0E6mjprnVzW
+KlIPuspdcDUeLKsmXZZMy2p2jd3crbTAgMf4fDM5FQhPUdOH2JgyZkCRVjXLKtnf
+nG1/JQZP+Lqkn6LzsFlzPqAuBkfwbNg8Tgd0HErpFVd14M2C2PawFiSYXivbRLBL
+iKWwVDdoUjvJBaQsjorY
+=LgiL
+-----END PGP SIGNATURE-----
 
-  The race above happens because module.c tries to use kset_find_obj()
-  when somebody unloads module.  The module.c code was introduced in
-  commit 6494a93d55fa"
-
-Anatol supplied a patch specific for module.c that worked around the
-problem by simply not using kset_find_obj() at all, but rather than make
-a local band-aid, this just fixes kset_find_obj() to be thread-safe
-using the proper model of refusing the get a new reference if the
-refcount has already dropped to zero.
-
-See examples of this proper refcount handling not only in the kref
-documentation, but in various other equivalent uses of this pattern by
-grepping for atomic_inc_not_zero().
-
-[ Side note: the module race does indicate that module loading and
-  unloading is not properly serialized wrt sysfs information using the
-  module mutex.  That may require further thought, but this is the
-  correct fix at the kobject layer regardless. ]
-
-Reported-analyzed-and-tested-by: Anatol Pomozov <anatol.pomozov@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
---- a/lib/kobject.c
-+++ b/lib/kobject.c
-@@ -531,6 +531,13 @@ struct kobject *kobject_get(struct kobje
- 	return kobj;
- }
- 
-+static struct kobject *kobject_get_unless_zero(struct kobject *kobj)
-+{
-+	if (!kref_get_unless_zero(&kobj->kref))
-+		kobj = NULL;
-+	return kobj;
-+}
-+
- /*
-  * kobject_cleanup - free kobject resources.
-  * @kobj: object to cleanup
-@@ -785,7 +792,7 @@ struct kobject *kset_find_obj_hinted(str
- slow_search:
- 	list_for_each_entry(k, &kset->list, entry) {
- 		if (kobject_name(k) && !strcmp(kobject_name(k), name)) {
--			ret = kobject_get(k);
-+			ret = kobject_get_unless_zero(k);
- 			break;
- 		}
- 	}
-
+--NQTVMVnDVuULnIzU--
