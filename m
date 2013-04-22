@@ -1,65 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754564Ab3DVGME (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 02:12:04 -0400
-Received: from smtp-out-209.synserver.de ([212.40.185.209]:1029 "EHLO
-	smtp-out-209.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751957Ab3DVGMD (ORCPT
+	id S1754667Ab3DVGSm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 02:18:42 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:54247 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754631Ab3DVGSl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 02:12:03 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 20166
-Message-ID: <5174D47E.3090301@metafoo.de>
-Date: Mon, 22 Apr 2013 08:11:10 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+	Mon, 22 Apr 2013 02:18:41 -0400
 MIME-Version: 1.0
-To: Damian Hobson-Garcia <dhobsong@igel.co.jp>
-CC: linux-kernel@vger.kernel.org, catalin.marinas@arm.com, will.deacon@arm.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC/PATCH 1/4] arm64: Provide default implementation for dma_{alloc,
- free}_attrs
-References: <1366607349-2992-1-git-send-email-dhobsong@igel.co.jp>
-In-Reply-To: <1366607349-2992-1-git-send-email-dhobsong@igel.co.jp>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <1366609643-17628-1-git-send-email-lig.fnst@cn.fujitsu.com>
+References: <1366609643-17628-1-git-send-email-lig.fnst@cn.fujitsu.com>
+Date: Mon, 22 Apr 2013 08:18:39 +0200
+Message-ID: <CA+icZUVd3zp-pJDspBUsipH4725uUvaufXrK0QBzcrozF2m+aA@mail.gmail.com>
+Subject: Re: [PATCH 1/2] smp: use '|=' for csd_lock
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: liguang <lig.fnst@cn.fujitsu.com>
+Cc: tglx@linutronix.de, peterz@infradead.org, akpm@linux-foundation.org,
+        shli@fusionio.com, srivatsa.bhat@linux.vnet.ibm.com,
+        suresh.b.siddha@intel.com, fweisbec@gmail.com,
+        paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/22/2013 07:09 AM, Damian Hobson-Garcia wrote:
-> Most architectures that define CONFIG_HAVE_DMA, have implementations for
-> both dma_alloc_attrs() and dma_free_attrs().  All achitectures that do
-> not define CONFIG_HAVE_DMA also have both of these definitions provided by
-> dma-mapping-broken.h.
-> 
-> Add default implementations for these functions on arm64.
-> 
-> Signed-off-by: Damian Hobson-Garcia <dhobsong@igel.co.jp>
+On Mon, Apr 22, 2013 at 7:47 AM, liguang <lig.fnst@cn.fujitsu.com> wrote:
+> originally, 'data->flags = CSD_FLAG_LOCK',
+> and we use 'data->flags &= ~CSD_FLAG_LOCK'
+> for csd_unlock, they are not symmetrix operations
+> so use '|=' instead of '='.
+> though, now data->flags only hold CSD_FLAG_LOCK,
+> it's not so meaningful to use '|=' to set 1 bit,
+> and '&= ~' to clear 1 bit.
+>
+
+Hi,
+
+what's the reason I got CCed on this two patches? The ipc-sem-next
+issue I reported?
+
+Against what tree are those patches?
+They are not compatible with Linux-Next (next-20130419).
+
+Thanks.
+
+Regards,
+- Sedat -
+
+[1] http://marc.info/?t=136631457900005&r=1&w=2
+
+> Signed-off-by: liguang <lig.fnst@cn.fujitsu.com>
 > ---
->  arch/arm64/include/asm/dma-mapping.h |    3 +++
->  1 files changed, 3 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/arm64/include/asm/dma-mapping.h b/arch/arm64/include/asm/dma-mapping.h
-> index 9947768..65ab181 100644
-> --- a/arch/arm64/include/asm/dma-mapping.h
-> +++ b/arch/arm64/include/asm/dma-mapping.h
-> @@ -81,6 +81,9 @@ static inline void dma_mark_clean(void *addr, size_t size)
+>  kernel/smp.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/kernel/smp.c b/kernel/smp.c
+> index 1818dc0..2d5deb4 100644
+> --- a/kernel/smp.c
+> +++ b/kernel/smp.c
+> @@ -109,7 +109,7 @@ static void csd_lock_wait(struct call_single_data *data)
+>  static void csd_lock(struct call_single_data *data)
 >  {
->  }
->  
-> +#define dma_alloc_attrs(d, s, h, f, a) dma_alloc_coherent(d, s, h, f)
-> +#define dma_free_attrs(d, s, h, f, a) dma_free_coherent(d, s, h, f)
-> +
->  static inline void *dma_alloc_coherent(struct device *dev, size_t size,
->  				       dma_addr_t *dma_handle, gfp_t flags)
->  {
-
-The other way around would be better, properly implement
-dma_{alloc,free}_attrs and implement dma_{alloc,free}_coherent on top of
-the. E.g. you are supposed to pass the attrs parameter to ops->alloc and
-ops->free instead of NULL. And it will also allow us to move
-dma_{alloc,free}_coherent to asm-generic/dma-mapping-common.h eventually.
-
-- Lars
+>         csd_lock_wait(data);
+> -       data->flags = CSD_FLAG_LOCK;
+> +       data->flags |= CSD_FLAG_LOCK;
+>
+>         /*
+>          * prevent CPU from reordering the above assignment
+> --
+> 1.7.2.5
+>
