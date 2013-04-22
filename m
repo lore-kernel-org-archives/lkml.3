@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754829Ab3DVTAH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 15:00:07 -0400
-Received: from mail-we0-f182.google.com ([74.125.82.182]:60568 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754756Ab3DVTAE (ORCPT
+	id S1755027Ab3DVTBx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 15:01:53 -0400
+Received: from mail-we0-f177.google.com ([74.125.82.177]:45237 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754561Ab3DVTAF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 15:00:04 -0400
+	Mon, 22 Apr 2013 15:00:05 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -21,9 +21,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 04/10] sched: Kick full dynticks CPU that have more than one task enqueued.
-Date: Mon, 22 Apr 2013 20:59:40 +0200
-Message-Id: <1366657186-20556-5-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 05/10] sched: New helper to prevent from stopping the tick in full dynticks
+Date: Mon, 22 Apr 2013 20:59:41 +0200
+Message-Id: <1366657186-20556-6-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1366657186-20556-1-git-send-email-fweisbec@gmail.com>
 References: <1366657186-20556-1-git-send-email-fweisbec@gmail.com>
@@ -31,16 +31,12 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kick the tick on full dynticks CPUs when they get more
-than one task running on their queue. This makes sure that
-local fairness is maintained by the tick on the destination.
+Provide a new helper to be called from the full dynticks engine
+before stopping the tick in order to make sure we don't stop
+it when there is more than one task running on the CPU.
 
-This is done regardless of these tasks' class. We should
-be able to be more clever in the future depending on these. eg:
-a CPU that runs a SCHED_FIFO task doesn't need to maintain
-fairness against local pending tasks of the fair class.
-
-But keep things simple for now.
+This way we make sure that the tick stays alive to maintain
+fairness.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Chris Metcalf <cmetcalf@tilera.com>
@@ -58,38 +54,56 @@ Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 ---
- kernel/sched/sched.h |   11 +++++++++++
- 1 files changed, 11 insertions(+), 0 deletions(-)
+ include/linux/sched.h |    6 ++++++
+ kernel/sched/core.c   |   18 ++++++++++++++++++
+ 2 files changed, 24 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 889904d..eb363aa 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -5,6 +5,7 @@
- #include <linux/mutex.h>
- #include <linux/spinlock.h>
- #include <linux/stop_machine.h>
-+#include <linux/tick.h>
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 1ff9e0a..a74aded 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1856,6 +1856,12 @@ extern void wake_up_nohz_cpu(int cpu);
+ static inline void wake_up_nohz_cpu(int cpu) { }
+ #endif
  
- #include "cpupri.h"
- 
-@@ -1106,6 +1107,16 @@ static inline u64 steal_ticks(u64 steal)
- static inline void inc_nr_running(struct rq *rq)
- {
- 	rq->nr_running++;
-+
 +#ifdef CONFIG_NO_HZ_FULL
-+	if (rq->nr_running == 2) {
-+		if (tick_nohz_full_cpu(rq->cpu)) {
-+			/* Order rq->nr_running write against the IPI */
-+			smp_wmb();
-+			smp_send_reschedule(rq->cpu);
-+		}
-+       }
++extern bool sched_can_stop_tick(void);
++#else
++static inline bool sched_can_stop_tick(void) { return false; }
 +#endif
- }
++
+ #ifdef CONFIG_SCHED_AUTOGROUP
+ extern void sched_autogroup_create_attach(struct task_struct *p);
+ extern void sched_autogroup_detach(struct task_struct *p);
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 0f0a5b3..69f7133 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -650,6 +650,24 @@ static inline bool got_nohz_idle_kick(void)
  
- static inline void dec_nr_running(struct rq *rq)
+ #endif /* CONFIG_NO_HZ_COMMON */
+ 
++#ifdef CONFIG_NO_HZ_FULL
++bool sched_can_stop_tick(void)
++{
++       struct rq *rq;
++
++       rq = this_rq();
++
++       /* Make sure rq->nr_running update is visible after the IPI */
++       smp_rmb();
++
++       /* More than one running task need preemption */
++       if (rq->nr_running > 1)
++               return false;
++
++       return true;
++}
++#endif /* CONFIG_NO_HZ_FULL */
++
+ void sched_avg_update(struct rq *rq)
+ {
+ 	s64 period = sched_avg_period();
 -- 
 1.7.5.4
 
