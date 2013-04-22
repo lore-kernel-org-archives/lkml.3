@@ -1,115 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754137Ab3DVF4F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 01:56:05 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:37078 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754045Ab3DVF4E (ORCPT
+	id S1754191Ab3DVF4f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 01:56:35 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:48276 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752227Ab3DVF4e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 01:56:04 -0400
-Date: Mon, 22 Apr 2013 15:55:51 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: linux-next: manual merge of the ftrace tree with Linus' tree
-Message-Id: <20130422155551.0e9891130bb56f374d00e9fc@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__22_Apr_2013_15_55_51_+1000_wfXsUwkOXWcFNwO="
+	Mon, 22 Apr 2013 01:56:34 -0400
+Message-ID: <5174D1D4.1080704@linux.vnet.ibm.com>
+Date: Mon, 22 Apr 2013 11:29:48 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: Jiannan Ouyang <ouyang@cs.pitt.edu>
+CC: Rik van Riel <riel@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Avi Kivity <avi.kivity@gmail.com>, Gleb Natapov <gleb@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Srikar <srikar@linux.vnet.ibm.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Chegu Vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Andrew Jones <drjones@redhat.com>, Karen Noel <knoel@redhat.com>
+Subject: Re: Preemptable Ticket Spinlock
+References: <CAJocwccu5QQyuKRvgNyPSFz2K_rzCW419W9-XdSUYOL7+KqQKg@mail.gmail.com> <51745650.9050204@redhat.com> <CAJocwccDznaMGkBgWpZ9M5k3JUqf0pnvK2hDyRBR_JEseNrQ_g@mail.gmail.com>
+In-Reply-To: <CAJocwccDznaMGkBgWpZ9M5k3JUqf0pnvK2hDyRBR_JEseNrQ_g@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13042205-5564-0000-0000-000007997B6B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__22_Apr_2013_15_55_51_+1000_wfXsUwkOXWcFNwO=
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 04/22/2013 04:37 AM, Jiannan Ouyang wrote:
+> On Sun, Apr 21, 2013 at 5:12 PM, Rik van Riel <riel@redhat.com> wrote:
+>> Your algorithm is very clever, and very promising.
+>>
+>> However, it does increase the size of the struct spinlock, and adds
+>> an additional atomic operation to spin_unlock, neither of which I
+>> suspect are necessary.
+>>
+>> If we always incremented the ticket number by 2 (instead of 1), then
+>> we could use the lower bit of the ticket number as the spinlock.
+>>
+>> If we do NOT run virtualized, we simply increment the ticket by 2
+>> in spin_unlock, and the code can remain otherwise the same.
+>>
+>> If we do run virtualized, we take that spinlock after acquiring
+>> the ticket (or timing out), just like in your code. In the
+>> virtualized spin_unlock, we can then release the spinlock and
+>> increment the ticket in one operation: by simply increasing the
+>> ticket by 1.
+>>
+>> In other words, we should be able to keep the overhead of this
+>> to an absolute minimum, and keep spin_unlock to be always the
+>> same cost it is today.
+>>
+>> --
+>> All rights reversed
+>
+> Hi Rik,
+>
+> Thanks for your feedback.
+>
+> Yes I agree with you
+> - increase the size of struct spinlock is unnecessary
+> - your idea of utilize the lower bit and save one atomic operation
+> from unlock is cool!
+>
 
-Hi Steven,
+Yes, +1. it is indeed a cool idea. Thanks to Jeremy.. and as Rik already 
+mentioned it would also prevent the side effects of increasing
+lock size. (It reminds my thought of encoding vcpuid in lock for pv 
+spinlock)
 
-Today's linux-next merge of the ftrace tree got a conflict in
-kernel/trace/ftrace.c between commit b67bfe0d42ca ("hlist: drop the node
-parameter from iterators") from Linus' tree and commit f1943977e664
-("tracing: Get rid of unneeded key calculation in ftrace_hash_move()")
-and e1df4cb682ab ("ftrace: Fix function probe to only enable needed
-functions") from the ftrace tree.
+> I can come up with a updated patch soon.
+>
+> --Jiannan
+>
+>
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc kernel/trace/ftrace.c
-index b3fde6d,9b44abb..0000000
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@@ -761,9 -755,10 +754,9 @@@ ftrace_find_profiled_func(struct ftrace
-  {
-  	struct ftrace_profile *rec;
-  	struct hlist_head *hhd;
- -	struct hlist_node *n;
-  	unsigned long key;
- =20
-- 	key =3D hash_long(ip, ftrace_profile_bits);
-+ 	key =3D hash_long(ip, FTRACE_PROFILE_HASH_BITS);
-  	hhd =3D &stat->hash[key];
- =20
-  	if (hlist_empty(hhd))
-@@@ -1371,11 -1354,7 +1363,7 @@@ ftrace_hash_move(struct ftrace_ops *ops
-  	size =3D 1 << src->size_bits;
-  	for (i =3D 0; i < size; i++) {
-  		hhd =3D &src->buckets[i];
- -		hlist_for_each_entry_safe(entry, tp, tn, hhd, hlist) {
- +		hlist_for_each_entry_safe(entry, tn, hhd, hlist) {
-- 			if (bits > 0)
-- 				key =3D hash_long(entry->ip, bits);
-- 			else
-- 				key =3D 0;
-  			remove_hash_entry(src, entry);
-  			__add_hash_entry(new_hash, entry);
-  		}
-@@@ -3062,8 -3075,13 +3070,13 @@@ static voi
-  __unregister_ftrace_function_probe(char *glob, struct ftrace_probe_ops *o=
-ps,
-  				  void *data, int flags)
-  {
-+ 	struct ftrace_func_entry *rec_entry;
-  	struct ftrace_func_probe *entry;
-+ 	struct ftrace_func_probe *p;
-+ 	struct ftrace_hash **orig_hash =3D &trace_probe_ops.filter_hash;
-+ 	struct list_head free_list;
-+ 	struct ftrace_hash *hash;
- -	struct hlist_node *n, *tmp;
- +	struct hlist_node *tmp;
-  	char str[KSYM_SYMBOL_LEN];
-  	int type =3D MATCH_FULL;
-  	int i, len =3D 0;
-
---Signature=_Mon__22_Apr_2013_15_55_51_+1000_wfXsUwkOXWcFNwO=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRdNDnAAoJEECxmPOUX5FE3KMP/An8WLFnmIbvo2mKvsbnWtY8
-vjU48MsoVsYCC3c4PFLCaoKWiBEpRyWS3vJ8mfBgmCyNnqFZ034SXBhCZaKU3BNO
-9YKQD0ZU7sUiY8rI5l4yHpwRu/wAAVt1N5Km4YdMCeMBIEPxHkmnWWXqLm1cODsq
-ApJatp90wWUXIYnAnW3AAkYH7/Dj9nvcbI+ThvPSZFfmfnO6hg4uJ38WBQX7EFWo
-anMjMqa65X88T8Is9DtwQ/uCRtZ+yaJEfPHnfz6lOPCtKsjp6zNHYvi3FUMfaReE
-4GGviCBojoZyXGkCWi3wHI/dbPUTFhbM32dMBHr6EL6axbsXe4TAnq7fcu6CdrxQ
-2toGEvhg7sXsrGxH0sP0vox7RHslpyMbsUIQL40Pw9zU1CUnmMM7bIul7jVXy+UG
-GTHwMYR00RvYYJDK2LpD32ZysWBR6T1PyElf0eS1Z29Hw/qOITyOV+JJRjh60wCY
-/cF3voos3JfgFsQE0VUGuFPcLA0syDyCNDkSC8d/hSjjKKEaFlaWET3JvS/bO3cQ
-gqyINlahtpvaI0XT0YM18DZDmu86+OT6cRWoXr6HX3jVs2wiq9DUaZUpAPzvcabO
-WWejsCxo3SP4I4rjZxQTnz76taWdFeoxRqsNuJTtOVpd/Lshq7FdIkyFLeToBQFm
-cjNfcnUzO9yICOTpF8GT
-=Kx2k
------END PGP SIGNATURE-----
-
---Signature=_Mon__22_Apr_2013_15_55_51_+1000_wfXsUwkOXWcFNwO=--
