@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757479Ab3DWWSo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 18:18:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33988 "EHLO
+	id S1757500Ab3DWWTF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 18:19:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33976 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757384Ab3DWVwp (ORCPT
+	with ESMTP id S1757371Ab3DWVwo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 17:52:45 -0400
+	Tue, 23 Apr 2013 17:52:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Bohan <mbohan@codeaurora.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [ 05/42] hrtimer: Dont reinitialize a cpu_base lock on CPU_UP
-Date: Tue, 23 Apr 2013 14:52:03 -0700
-Message-Id: <20130423215206.103916918@linuxfoundation.org>
+        Scott Wood <scottwood@freescale.com>, Alexander Graf <agraf@suse.de>
+Subject: [ 02/42] kvm/powerpc/e500mc: fix tlb invalidation on cpu migration
+Date: Tue, 23 Apr 2013 14:52:00 -0700
+Message-Id: <20130423215205.812693825@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130423215205.523980967@linuxfoundation.org>
 References: <20130423215205.523980967@linuxfoundation.org>
@@ -27,89 +26,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Bohan <mbohan@codeaurora.org>
+From: Scott Wood <scottwood@freescale.com>
 
-commit 84cc8fd2fe65866e49d70b38b3fdf7219dd92fe0 upstream.
+commit c5e6cb051c5f7d56f05bd6a4af22cb300a4ced79 upstream.
 
-The current code makes the assumption that a cpu_base lock won't be
-held if the CPU corresponding to that cpu_base is offline, which isn't
-always true.
+The existing check handles the case where we've migrated to a different
+core than we last ran on, but it doesn't handle the case where we're
+still on the same cpu we last ran on, but some other vcpu has run on
+this cpu in the meantime.
 
-If a hrtimer is not queued, then it will not be migrated by
-migrate_hrtimers() when a CPU is offlined. Therefore, the hrtimer's
-cpu_base may still point to a CPU which has subsequently gone offline
-if the timer wasn't enqueued at the time the CPU went down.
+Without this, guest segfaults (and other misbehavior) have been seen in
+smp guests.
 
-Normally this wouldn't be a problem, but a cpu_base's lock is blindly
-reinitialized each time a CPU is brought up. If a CPU is brought
-online during the period that another thread is performing a hrtimer
-operation on a stale hrtimer, then the lock will be reinitialized
-under its feet, and a SPIN_BUG() like the following will be observed:
-
-<0>[   28.082085] BUG: spinlock already unlocked on CPU#0, swapper/0/0
-<0>[   28.087078]  lock: 0xc4780b40, value 0x0 .magic: dead4ead, .owner: <none>/-1, .owner_cpu: -1
-<4>[   42.451150] [<c0014398>] (unwind_backtrace+0x0/0x120) from [<c0269220>] (do_raw_spin_unlock+0x44/0xdc)
-<4>[   42.460430] [<c0269220>] (do_raw_spin_unlock+0x44/0xdc) from [<c071b5bc>] (_raw_spin_unlock+0x8/0x30)
-<4>[   42.469632] [<c071b5bc>] (_raw_spin_unlock+0x8/0x30) from [<c00a9ce0>] (__hrtimer_start_range_ns+0x1e4/0x4f8)
-<4>[   42.479521] [<c00a9ce0>] (__hrtimer_start_range_ns+0x1e4/0x4f8) from [<c00aa014>] (hrtimer_start+0x20/0x28)
-<4>[   42.489247] [<c00aa014>] (hrtimer_start+0x20/0x28) from [<c00e6190>] (rcu_idle_enter_common+0x1ac/0x320)
-<4>[   42.498709] [<c00e6190>] (rcu_idle_enter_common+0x1ac/0x320) from [<c00e6440>] (rcu_idle_enter+0xa0/0xb8)
-<4>[   42.508259] [<c00e6440>] (rcu_idle_enter+0xa0/0xb8) from [<c000f268>] (cpu_idle+0x24/0xf0)
-<4>[   42.516503] [<c000f268>] (cpu_idle+0x24/0xf0) from [<c06ed3c0>] (rest_init+0x88/0xa0)
-<4>[   42.524319] [<c06ed3c0>] (rest_init+0x88/0xa0) from [<c0c00978>] (start_kernel+0x3d0/0x434)
-
-As an example, this particular crash occurred when hrtimer_start() was
-executed on CPU #0. The code locked the hrtimer's current cpu_base
-corresponding to CPU #1. CPU #0 then tried to switch the hrtimer's
-cpu_base to an optimal CPU which was online. In this case, it selected
-the cpu_base corresponding to CPU #3.
-
-Before it could proceed, CPU #1 came online and reinitialized the
-spinlock corresponding to its cpu_base. Thus now CPU #0 held a lock
-which was reinitialized. When CPU #0 finally ended up unlocking the
-old cpu_base corresponding to CPU #1 so that it could switch to CPU
-#3, we hit this SPIN_BUG() above while in switch_hrtimer_base().
-
-CPU #0                            CPU #1
-----                              ----
-...                               <offline>
-hrtimer_start()
-lock_hrtimer_base(base #1)
-...                               init_hrtimers_cpu()
-switch_hrtimer_base()             ...
-...                               raw_spin_lock_init(&cpu_base->lock)
-raw_spin_unlock(&cpu_base->lock)  ...
-<spin_bug>
-
-Solve this by statically initializing the lock.
-
-Signed-off-by: Michael Bohan <mbohan@codeaurora.org>
-Link: http://lkml.kernel.org/r/1363745965-23475-1-git-send-email-mbohan@codeaurora.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Scott Wood <scottwood@freescale.com>
+Signed-off-by: Alexander Graf <agraf@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/hrtimer.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ arch/powerpc/kvm/e500mc.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -61,6 +61,7 @@
- DEFINE_PER_CPU(struct hrtimer_cpu_base, hrtimer_bases) =
+--- a/arch/powerpc/kvm/e500mc.c
++++ b/arch/powerpc/kvm/e500mc.c
+@@ -108,6 +108,8 @@ void kvmppc_mmu_msr_notify(struct kvm_vc
  {
+ }
  
-+	.lock = __RAW_SPIN_LOCK_UNLOCKED(hrtimer_bases.lock),
- 	.clock_base =
- 	{
- 		{
-@@ -1640,8 +1641,6 @@ static void __cpuinit init_hrtimers_cpu(
- 	struct hrtimer_cpu_base *cpu_base = &per_cpu(hrtimer_bases, cpu);
- 	int i;
++static DEFINE_PER_CPU(struct kvm_vcpu *, last_vcpu_on_cpu);
++
+ void kvmppc_core_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
+ {
+ 	struct kvmppc_vcpu_e500 *vcpu_e500 = to_e500(vcpu);
+@@ -136,8 +138,11 @@ void kvmppc_core_vcpu_load(struct kvm_vc
+ 	mtspr(SPRN_GDEAR, vcpu->arch.shared->dar);
+ 	mtspr(SPRN_GESR, vcpu->arch.shared->esr);
  
--	raw_spin_lock_init(&cpu_base->lock);
--
- 	for (i = 0; i < HRTIMER_MAX_CLOCK_BASES; i++) {
- 		cpu_base->clock_base[i].cpu_base = cpu_base;
- 		timerqueue_init_head(&cpu_base->clock_base[i].active);
+-	if (vcpu->arch.oldpir != mfspr(SPRN_PIR))
++	if (vcpu->arch.oldpir != mfspr(SPRN_PIR) ||
++	    __get_cpu_var(last_vcpu_on_cpu) != vcpu) {
+ 		kvmppc_e500_tlbil_all(vcpu_e500);
++		__get_cpu_var(last_vcpu_on_cpu) = vcpu;
++	}
+ 
+ 	kvmppc_load_guest_fp(vcpu);
+ }
 
 
