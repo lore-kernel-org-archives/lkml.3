@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756812Ab3DWWMj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 18:12:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34137 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932084Ab3DWVxF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932070Ab3DWVxF (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 23 Apr 2013 17:53:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34102 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757546Ab3DWVxA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Apr 2013 17:53:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: [ 33/42] userns: Check uid_maps openers fsuid, not the current fsuid
-Date: Tue, 23 Apr 2013 14:52:31 -0700
-Message-Id: <20130423215208.854280588@linuxfoundation.org>
+        Felix Fietkau <nbd@openwrt.org>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 26/42] ath9k_hw: change AR9580 initvals to fix a stability issue
+Date: Tue, 23 Apr 2013 14:52:24 -0700
+Message-Id: <20130423215208.173443111@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130423215205.523980967@linuxfoundation.org>
 References: <20130423215205.523980967@linuxfoundation.org>
@@ -26,33 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Lutomirski <luto@amacapital.net>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit e3211c120a85b792978bcb4be7b2886df18d27f0 upstream.
+commit f09a878511997c25a76bf111a32f6b8345a701a5 upstream.
 
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+The hardware parsing of Control Wrapper Frames needs to be disabled, as
+it has been causing spurious decryption error reports. The initvals for
+other chips have been updated to disable it, but AR9580 was left out for
+some reason.
+
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/user_namespace.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/wireless/ath/ath9k/ar9580_1p0_initvals.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/kernel/user_namespace.c
-+++ b/kernel/user_namespace.c
-@@ -763,12 +763,12 @@ static bool new_idmap_permitted(const st
- 		u32 id = new_map->extent[0].lower_first;
- 		if (cap_setid == CAP_SETUID) {
- 			kuid_t uid = make_kuid(ns->parent, id);
--			if (uid_eq(uid, current_fsuid()))
-+			if (uid_eq(uid, file->f_cred->fsuid))
- 				return true;
- 		}
- 		else if (cap_setid == CAP_SETGID) {
- 			kgid_t gid = make_kgid(ns->parent, id);
--			if (gid_eq(gid, current_fsgid()))
-+			if (gid_eq(gid, file->f_cred->fsgid))
- 				return true;
- 		}
- 	}
+--- a/drivers/net/wireless/ath/ath9k/ar9580_1p0_initvals.h
++++ b/drivers/net/wireless/ath/ath9k/ar9580_1p0_initvals.h
+@@ -519,7 +519,7 @@ static const u32 ar9580_1p0_mac_core[][2
+ 	{0x00008258, 0x00000000},
+ 	{0x0000825c, 0x40000000},
+ 	{0x00008260, 0x00080922},
+-	{0x00008264, 0x9bc00010},
++	{0x00008264, 0x9d400010},
+ 	{0x00008268, 0xffffffff},
+ 	{0x0000826c, 0x0000ffff},
+ 	{0x00008270, 0x00000000},
 
 
