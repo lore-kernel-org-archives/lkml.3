@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756294Ab3DWWGo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 18:06:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34254 "EHLO
+	id S1754936Ab3DWWHU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 18:07:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34219 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757747Ab3DWVyT (ORCPT
+	with ESMTP id S1757713Ab3DWVyO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 17:54:19 -0400
+	Tue, 23 Apr 2013 17:54:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Felix Fietkau <nbd@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 14/26] ath9k_htc: accept 1.x firmware newer than 1.3
-Date: Tue, 23 Apr 2013 14:53:54 -0700
-Message-Id: <20130423215334.838996882@linuxfoundation.org>
+        Vyacheslav Dubeyko <slava@dubeyko.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Hin-Tak Leung <htl10@users.sourceforge.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 06/26] hfsplus: fix potential overflow in hfsplus_file_truncate()
+Date: Tue, 23 Apr 2013 14:53:46 -0700
+Message-Id: <20130423215334.021394830@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130423215333.344045754@linuxfoundation.org>
 References: <20130423215333.344045754@linuxfoundation.org>
@@ -27,32 +31,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Vyacheslav Dubeyko <slava@dubeyko.com>
 
-commit 319e7bd96aca64a478f3aad40711c928405b8b77 upstream.
+commit 12f267a20aecf8b84a2a9069b9011f1661c779b4 upstream.
 
-Since the firmware has been open sourced, the minor version has been
-bumped to 1.4 and the API/ABI will stay compatible across further 1.x
-releases.
+Change a u32 to loff_t hfsplus_file_truncate().
 
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Vyacheslav Dubeyko <slava@dubeyko.com>
+Cc: Christoph Hellwig <hch@infradead.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Hin-Tak Leung <htl10@users.sourceforge.net>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/htc_drv_init.c |    2 +-
+ fs/hfsplus/extents.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/wireless/ath/ath9k/htc_drv_init.c
-+++ b/drivers/net/wireless/ath/ath9k/htc_drv_init.c
-@@ -771,7 +771,7 @@ static int ath9k_init_firmware_version(s
- 	 * required version.
- 	 */
- 	if (priv->fw_version_major != MAJOR_VERSION_REQ ||
--	    priv->fw_version_minor != MINOR_VERSION_REQ) {
-+	    priv->fw_version_minor < MINOR_VERSION_REQ) {
- 		dev_err(priv->dev, "ath9k_htc: Please upgrade to FW version %d.%d\n",
- 			MAJOR_VERSION_REQ, MINOR_VERSION_REQ);
- 		return -EINVAL;
+--- a/fs/hfsplus/extents.c
++++ b/fs/hfsplus/extents.c
+@@ -517,7 +517,7 @@ void hfsplus_file_truncate(struct inode
+ 		struct address_space *mapping = inode->i_mapping;
+ 		struct page *page;
+ 		void *fsdata;
+-		u32 size = inode->i_size;
++		loff_t size = inode->i_size;
+ 
+ 		res = pagecache_write_begin(NULL, mapping, size, 0,
+ 						AOP_FLAG_UNINTERRUPTIBLE,
 
 
