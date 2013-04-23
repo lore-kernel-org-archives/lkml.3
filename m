@@ -1,91 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752214Ab3DWEEV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 00:04:21 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:40496 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751148Ab3DWEEQ (ORCPT
+	id S1753593Ab3DWEFS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 00:05:18 -0400
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:36123 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751366Ab3DWEFR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 00:04:16 -0400
-Date: Mon, 22 Apr 2013 21:04:13 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Chun-Yi Lee <joeyli.kernel@gmail.com>
-Cc: mjg@redhat.com, rjw@sisk.pl, platform-driver-x86@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Lee, Chun-Yi" <jlee@suse.com>,
-        Carlos Corbacho <carlos@strangeworlds.co.uk>,
-        Corentin Chary <corentincj@iksaif.net>, Aaron Lu <aaron.lu@intel.com>,
-        Thomas Renninger <trenn@suse.de>
-Subject: Re: [PATCH 2/2] acer-wmi: add Acer Aspire 5750G to video vendor list
- but keep acpi video driver
-Message-ID: <20130423040413.GA2435@core.coreip.homeip.net>
-References: <1366634355-26482-1-git-send-email-jlee@suse.com>
+	Tue, 23 Apr 2013 00:05:17 -0400
+Message-ID: <51760871.1030607@linux.vnet.ibm.com>
+Date: Tue, 23 Apr 2013 12:05:05 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1366634355-26482-1-git-send-email-jlee@suse.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ingo Molnar <mingo@kernel.org>
+CC: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        Mike Galbraith <efault@gmx.de>, Alex Shi <alex.shi@intel.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Turner <pjt@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        Ram Pai <linuxram@us.ibm.com>
+Subject: Re: [PATCH] sched: wake-affine throttle
+References: <5164DCE7.8080906@linux.vnet.ibm.com> <1366626208.2721.12.camel@laptop> <20130422103521.GA14103@gmail.com>
+In-Reply-To: <20130422103521.GA14103@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13042303-5816-0000-0000-000007A94BA5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 22, 2013 at 08:39:14PM +0800, Chun-Yi Lee wrote:
-> From: Lee, Chun-Yi <jlee@suse.com>
+On 04/22/2013 06:35 PM, Ingo Molnar wrote:
 > 
-> After Andrzej's testing, we found the acpi backlight methods broken on Acer
-> Aspire 5750G but the i915 backlight control works when we set to vendor mode.
-> And, we still want to keep the acpi/video driver for transfer acpi event to key
-> event but not unregister whole acpi/video driver.
+> * Peter Zijlstra <peterz@infradead.org> wrote:
 > 
-> This patch introduced a new capability flag is ACER_CAP_KEEP_VIDEO_KEY, it
-> indicates the machine works fine with acpi/video driver for key event but want
-> to unregister the backlight interface of acpi/video.
+>> OK,.. Ingo said that pipe-test was the original motivation for 
+>> wake_affine() and since that's currently broken to pieces due to 
+>> select_idle_sibling() is there still a benefit to having it at all?
+>>
+>> Can anybody find any significant regression when simply killing 
+>> wake_affine()?
 > 
-> Reference: bko#35622
->         https://bugzilla.kernel.org/show_bug.cgi?id=35622
+> I'd suggest doing a patch that does:
 > 
-> Tested-by: Andrzej Krentosz <endrjux@gmail.com>
-> Cc: Carlos Corbacho <carlos@strangeworlds.co.uk>
-> Cc: Matthew Garrett <mjg@redhat.com>
-> Cc: Dmitry Torokhov <dtor@mail.ru>
-> Cc: Corentin Chary <corentincj@iksaif.net>
-> Cc: Rafael J. Wysocki <rjw@sisk.pl>
-> Cc: Aaron Lu <aaron.lu@intel.com>
-> Cc: Thomas Renninger <trenn@suse.de>
-> Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
-> ---
->  drivers/platform/x86/acer-wmi.c |   20 ++++++++++++++++++++
->  1 files changed, 20 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/platform/x86/acer-wmi.c b/drivers/platform/x86/acer-wmi.c
-> index c9076bd..2a02409 100644
-> --- a/drivers/platform/x86/acer-wmi.c
-> +++ b/drivers/platform/x86/acer-wmi.c
-> @@ -207,6 +207,7 @@ struct hotkey_function_type_aa {
->  #define ACER_CAP_BRIGHTNESS		(1<<3)
->  #define ACER_CAP_THREEG			(1<<4)
->  #define ACER_CAP_ACCEL			(1<<5)
-> +#define ACER_CAP_KEEP_VIDEO_KEY		(1<<6)
->  #define ACER_CAP_ANY			(0xFFFFFFFF)
->  
->  /*
-> @@ -539,6 +540,15 @@ static int video_set_backlight_video_vendor(const struct dmi_system_id *d)
->  	return 0;
->  }
->  
-> +static int video_set_backlight_video_vendor_keep_acpi_video(
-> +		const struct dmi_system_id *d)
-> +{
-> +	video_set_backlight_video_vendor(d);
-> +	interface->capability |= ACER_CAP_KEEP_VIDEO_KEY;
-> +	pr_info("Keep acpi video driver for emit keycode against backlight change\n");
+>    s/SD_WAKE_AFFINE/0*SD_WAKE_AFFINE
 
-Huh?
+But by doing this, we won't be able to find 'affine_sd' any more, that
+will also skip the select_idle_sibling() logical (in current code),
+isn't it?
 
-"Keeping acpi video driver active to emit backlight brightness change
-key events"?
+If we really want to kill the stuff (I prefer not...), I suggest we
+forbidden the wake-affine by throttle it with an incredible interval,
+that's also easily to be reverted :)
 
-Thanks.
+Regards,
+Michael Wang
 
--- 
-Dmitry
+> 
+> in all the relevant toplogy.h files, but otherwise keep the logic in 
+> place. That way it's easy to revert.
+> 
+> Thanks,
+> 
+> 	Ingo
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
