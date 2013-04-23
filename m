@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932564Ab3DWV4r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 17:56:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34376 "EHLO
+	id S932771Ab3DWV6l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 17:58:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34412 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932396Ab3DWV4k (ORCPT
+	with ESMTP id S932555Ab3DWV4q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 17:56:40 -0400
+	Tue, 23 Apr 2013 17:56:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Felix Fietkau <nbd@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 12/23] ath9k_htc: accept 1.x firmware newer than 1.3
-Date: Tue, 23 Apr 2013 14:56:19 -0700
-Message-Id: <20130423215457.545611668@linuxfoundation.org>
+        Illia Ragozin <illia.ragozin@grapecom.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 11/23] ARM: 7696/1: Fix kexec by setting outer_cache.inv_all for Feroceon
+Date: Tue, 23 Apr 2013 14:56:18 -0700
+Message-Id: <20130423215457.451499056@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130423215456.307216898@linuxfoundation.org>
 References: <20130423215456.307216898@linuxfoundation.org>
@@ -27,32 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Illia Ragozin <illia.ragozin@grapecom.com>
 
-commit 319e7bd96aca64a478f3aad40711c928405b8b77 upstream.
+commit cd272d1ea71583170e95dde02c76166c7f9017e6 upstream.
 
-Since the firmware has been open sourced, the minor version has been
-bumped to 1.4 and the API/ABI will stay compatible across further 1.x
-releases.
+On Feroceon the L2 cache becomes non-coherent with the CPU
+when the L1 caches are disabled. Thus the L2 needs to be invalidated
+after both L1 caches are disabled.
 
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+On kexec before the starting the code for relocation the kernel,
+the L1 caches are disabled in cpu_froc_fin (cpu_v7_proc_fin for Feroceon),
+but after L2 cache is never invalidated, because inv_all is not set
+in cache-feroceon-l2.c.
+So kernel relocation and decompression may has (and usually has) errors.
+Setting the function enables L2 invalidation and fixes the issue.
+
+Signed-off-by: Illia Ragozin <illia.ragozin@grapecom.com>
+Acked-by: Jason Cooper <jason@lakedaemon.net>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/htc_drv_init.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/mm/cache-feroceon-l2.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/net/wireless/ath/ath9k/htc_drv_init.c
-+++ b/drivers/net/wireless/ath/ath9k/htc_drv_init.c
-@@ -823,7 +823,7 @@ static int ath9k_init_firmware_version(s
- 	 * required version.
- 	 */
- 	if (priv->fw_version_major != MAJOR_VERSION_REQ ||
--	    priv->fw_version_minor != MINOR_VERSION_REQ) {
-+	    priv->fw_version_minor < MINOR_VERSION_REQ) {
- 		dev_err(priv->dev, "ath9k_htc: Please upgrade to FW version %d.%d\n",
- 			MAJOR_VERSION_REQ, MINOR_VERSION_REQ);
- 		return -EINVAL;
+--- a/arch/arm/mm/cache-feroceon-l2.c
++++ b/arch/arm/mm/cache-feroceon-l2.c
+@@ -342,6 +342,7 @@ void __init feroceon_l2_init(int __l2_wt
+ 	outer_cache.inv_range = feroceon_l2_inv_range;
+ 	outer_cache.clean_range = feroceon_l2_clean_range;
+ 	outer_cache.flush_range = feroceon_l2_flush_range;
++	outer_cache.inv_all = l2_inv_all;
+ 
+ 	enable_l2();
+ 
 
 
