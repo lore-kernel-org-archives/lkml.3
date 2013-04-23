@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757428Ab3DWWR6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 18:17:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34000 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757411Ab3DWVwr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757412Ab3DWVwr (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 23 Apr 2013 17:52:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33982 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757379Ab3DWVwp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Apr 2013 17:52:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Michal Hocko <mhocko@suse.cz>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 08/42] hugetlbfs: stop setting VM_DONTDUMP in initializing vma(VM_HUGETLB)
-Date: Tue, 23 Apr 2013 14:52:06 -0700
-Message-Id: <20130423215206.402011262@linuxfoundation.org>
+        Dave Jones <davej@redhat.com>, Peter Ziljstra <peterz@infradead.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        dhillf@gmail.com
+Subject: [ 04/42] kthread: Prevent unpark race which puts threads on the wrong cpu
+Date: Tue, 23 Apr 2013 14:52:02 -0700
+Message-Id: <20130423215206.010265655@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130423215205.523980967@linuxfoundation.org>
 References: <20130423215205.523980967@linuxfoundation.org>
@@ -32,41 +29,205 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit a2fce9143057f4eb7675a21cca1b6beabe585c8b upstream.
+commit f2530dc71cf0822f90bb63ea4600caaef33a66bb upstream.
 
-Currently we fail to include any data on hugepages into coredump,
-because VM_DONTDUMP is set on hugetlbfs's vma.  This behavior was
-recently introduced by commit 314e51b9851b ("mm: kill vma flag
-VM_RESERVED and mm->reserved_vm counter").
+The smpboot threads rely on the park/unpark mechanism which binds per
+cpu threads on a particular core. Though the functionality is racy:
 
-This looks to me a serious regression, so let's fix it.
+CPU0	       	 	CPU1  	     	    CPU2
+unpark(T)				    wake_up_process(T)
+  clear(SHOULD_PARK)	T runs
+			leave parkme() due to !SHOULD_PARK
+  bind_to(CPU2)		BUG_ON(wrong CPU)
 
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Acked-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Acked-by: Michal Hocko <mhocko@suse.cz>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Acked-by: David Rientjes <rientjes@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+We cannot let the tasks move themself to the target CPU as one of
+those tasks is actually the migration thread itself, which requires
+that it starts running on the target cpu right away.
+
+The solution to this problem is to prevent wakeups in park mode which
+are not from unpark(). That way we can guarantee that the association
+of the task to the target cpu is working correctly.
+
+Add a new task state (TASK_PARKED) which prevents other wakeups and
+use this state explicitly for the unpark wakeup.
+
+Peter noticed: Also, since the task state is visible to userspace and
+all the parked tasks are still in the PID space, its a good hint in ps
+and friends that these tasks aren't really there for the moment.
+
+The migration thread has another related issue.
+
+CPU0	      	     	 CPU1
+Bring up CPU2
+create_thread(T)
+park(T)
+ wait_for_completion()
+			 parkme()
+			 complete()
+sched_set_stop_task()
+			 schedule(TASK_PARKED)
+
+The sched_set_stop_task() call is issued while the task is on the
+runqueue of CPU1 and that confuses the hell out of the stop_task class
+on that cpu. So we need the same synchronizaion before
+sched_set_stop_task().
+
+Reported-by: Dave Jones <davej@redhat.com>
+Reported-and-tested-by: Dave Hansen <dave@sr71.net>
+Reported-and-tested-by: Borislav Petkov <bp@alien8.de>
+Acked-by: Peter Ziljstra <peterz@infradead.org>
+Cc: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: dhillf@gmail.com
+Cc: Ingo Molnar <mingo@kernel.org>
+Link: http://lkml.kernel.org/r/alpine.LFD.2.02.1304091635430.21884@ionos
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/hugetlbfs/inode.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/proc/array.c              |    1 
+ include/linux/sched.h        |    5 ++--
+ include/trace/events/sched.h |    2 -
+ kernel/kthread.c             |   52 +++++++++++++++++++++++--------------------
+ 4 files changed, 33 insertions(+), 27 deletions(-)
 
---- a/fs/hugetlbfs/inode.c
-+++ b/fs/hugetlbfs/inode.c
-@@ -110,7 +110,7 @@ static int hugetlbfs_file_mmap(struct fi
- 	 * way when do_mmap_pgoff unwinds (may be important on powerpc
- 	 * and ia64).
- 	 */
--	vma->vm_flags |= VM_HUGETLB | VM_DONTEXPAND | VM_DONTDUMP;
-+	vma->vm_flags |= VM_HUGETLB | VM_DONTEXPAND;
- 	vma->vm_ops = &hugetlb_vm_ops;
+--- a/fs/proc/array.c
++++ b/fs/proc/array.c
+@@ -143,6 +143,7 @@ static const char * const task_state_arr
+ 	"x (dead)",		/*  64 */
+ 	"K (wakekill)",		/* 128 */
+ 	"W (waking)",		/* 256 */
++	"P (parked)",		/* 512 */
+ };
  
- 	if (vma->vm_pgoff & (~huge_page_mask(h) >> PAGE_SHIFT))
+ static inline const char *get_task_state(struct task_struct *tsk)
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -163,9 +163,10 @@ print_cfs_rq(struct seq_file *m, int cpu
+ #define TASK_DEAD		64
+ #define TASK_WAKEKILL		128
+ #define TASK_WAKING		256
+-#define TASK_STATE_MAX		512
++#define TASK_PARKED		512
++#define TASK_STATE_MAX		1024
+ 
+-#define TASK_STATE_TO_CHAR_STR "RSDTtZXxKW"
++#define TASK_STATE_TO_CHAR_STR "RSDTtZXxKWP"
+ 
+ extern char ___assert_task_state[1 - 2*!!(
+ 		sizeof(TASK_STATE_TO_CHAR_STR)-1 != ilog2(TASK_STATE_MAX)+1)];
+--- a/include/trace/events/sched.h
++++ b/include/trace/events/sched.h
+@@ -147,7 +147,7 @@ TRACE_EVENT(sched_switch,
+ 		  __print_flags(__entry->prev_state & (TASK_STATE_MAX-1), "|",
+ 				{ 1, "S"} , { 2, "D" }, { 4, "T" }, { 8, "t" },
+ 				{ 16, "Z" }, { 32, "X" }, { 64, "x" },
+-				{ 128, "W" }) : "R",
++				{ 128, "K" }, { 256, "W" }, { 512, "P" }) : "R",
+ 		__entry->prev_state & TASK_STATE_MAX ? "+" : "",
+ 		__entry->next_comm, __entry->next_pid, __entry->next_prio)
+ );
+--- a/kernel/kthread.c
++++ b/kernel/kthread.c
+@@ -124,12 +124,12 @@ void *kthread_data(struct task_struct *t
+ 
+ static void __kthread_parkme(struct kthread *self)
+ {
+-	__set_current_state(TASK_INTERRUPTIBLE);
++	__set_current_state(TASK_PARKED);
+ 	while (test_bit(KTHREAD_SHOULD_PARK, &self->flags)) {
+ 		if (!test_and_set_bit(KTHREAD_IS_PARKED, &self->flags))
+ 			complete(&self->parked);
+ 		schedule();
+-		__set_current_state(TASK_INTERRUPTIBLE);
++		__set_current_state(TASK_PARKED);
+ 	}
+ 	clear_bit(KTHREAD_IS_PARKED, &self->flags);
+ 	__set_current_state(TASK_RUNNING);
+@@ -256,8 +256,13 @@ struct task_struct *kthread_create_on_no
+ }
+ EXPORT_SYMBOL(kthread_create_on_node);
+ 
+-static void __kthread_bind(struct task_struct *p, unsigned int cpu)
++static void __kthread_bind(struct task_struct *p, unsigned int cpu, long state)
+ {
++	/* Must have done schedule() in kthread() before we set_task_cpu */
++	if (!wait_task_inactive(p, state)) {
++		WARN_ON(1);
++		return;
++	}
+ 	/* It's safe because the task is inactive. */
+ 	do_set_cpus_allowed(p, cpumask_of(cpu));
+ 	p->flags |= PF_THREAD_BOUND;
+@@ -274,12 +279,7 @@ static void __kthread_bind(struct task_s
+  */
+ void kthread_bind(struct task_struct *p, unsigned int cpu)
+ {
+-	/* Must have done schedule() in kthread() before we set_task_cpu */
+-	if (!wait_task_inactive(p, TASK_UNINTERRUPTIBLE)) {
+-		WARN_ON(1);
+-		return;
+-	}
+-	__kthread_bind(p, cpu);
++	__kthread_bind(p, cpu, TASK_UNINTERRUPTIBLE);
+ }
+ EXPORT_SYMBOL(kthread_bind);
+ 
+@@ -324,6 +324,22 @@ static struct kthread *task_get_live_kth
+ 	return NULL;
+ }
+ 
++static void __kthread_unpark(struct task_struct *k, struct kthread *kthread)
++{
++	clear_bit(KTHREAD_SHOULD_PARK, &kthread->flags);
++	/*
++	 * We clear the IS_PARKED bit here as we don't wait
++	 * until the task has left the park code. So if we'd
++	 * park before that happens we'd see the IS_PARKED bit
++	 * which might be about to be cleared.
++	 */
++	if (test_and_clear_bit(KTHREAD_IS_PARKED, &kthread->flags)) {
++		if (test_bit(KTHREAD_IS_PER_CPU, &kthread->flags))
++			__kthread_bind(k, kthread->cpu, TASK_PARKED);
++		wake_up_state(k, TASK_PARKED);
++	}
++}
++
+ /**
+  * kthread_unpark - unpark a thread created by kthread_create().
+  * @k:		thread created by kthread_create().
+@@ -336,20 +352,8 @@ void kthread_unpark(struct task_struct *
+ {
+ 	struct kthread *kthread = task_get_live_kthread(k);
+ 
+-	if (kthread) {
+-		clear_bit(KTHREAD_SHOULD_PARK, &kthread->flags);
+-		/*
+-		 * We clear the IS_PARKED bit here as we don't wait
+-		 * until the task has left the park code. So if we'd
+-		 * park before that happens we'd see the IS_PARKED bit
+-		 * which might be about to be cleared.
+-		 */
+-		if (test_and_clear_bit(KTHREAD_IS_PARKED, &kthread->flags)) {
+-			if (test_bit(KTHREAD_IS_PER_CPU, &kthread->flags))
+-				__kthread_bind(k, kthread->cpu);
+-			wake_up_process(k);
+-		}
+-	}
++	if (kthread)
++		__kthread_unpark(k, kthread);
+ 	put_task_struct(k);
+ }
+ 
+@@ -407,7 +411,7 @@ int kthread_stop(struct task_struct *k)
+ 	trace_sched_kthread_stop(k);
+ 	if (kthread) {
+ 		set_bit(KTHREAD_SHOULD_STOP, &kthread->flags);
+-		clear_bit(KTHREAD_SHOULD_PARK, &kthread->flags);
++		__kthread_unpark(k, kthread);
+ 		wake_up_process(k);
+ 		wait_for_completion(&kthread->exited);
+ 	}
 
 
