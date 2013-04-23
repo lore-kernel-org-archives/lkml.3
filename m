@@ -1,80 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753549Ab3DWTzu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 15:55:50 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:52816 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752328Ab3DWTzt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 15:55:49 -0400
-Date: Tue, 23 Apr 2013 16:55:58 -0300
-From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Ezequiel Garcia <elezegarcia@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Olof Johansson <olof@lixom.net>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Lior Amsalem <alior@marvell.com>, Maen Suleiman <maen@marvell.com>,
-        Andrew Lunn <andrew@lunn.ch>
-Subject: Re: [PATCH] drivers: memory: Introduce Marvell EBU Device Bus driver
-Message-ID: <20130423195556.GA3335@localhost>
-References: <1366744886-3019-1-git-send-email-elezegarcia@gmail.com>
- <20130423194822.GA7214@kroah.com>
+	id S1753754Ab3DWTz7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 15:55:59 -0400
+Received: from mout.gmx.net ([212.227.17.21]:57855 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752554Ab3DWTz5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Apr 2013 15:55:57 -0400
+X-Authenticated: #9962044
+X-Provags-ID: V01U2FsdGVkX18Nchsum4ANguytkz4eOQrihd6+yLayq4WXt4XutE
+	ohkWSRm3tfhddM
+From: Marc Dietrich <marvin24@gmx.de>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH 14/21] staging: nvec: allow modular build
+Date: Tue, 23 Apr 2013 21:55:48 +0200
+Message-ID: <1373204.GiWOFfjzyB@ax5200p>
+User-Agent: KMail/4.8.5 (Linux/3.5.0-21-generic; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <201304232141.04123.arnd@arndb.de>
+References: <1366734653-488286-1-git-send-email-arnd@arndb.de> <4082180.JXNz6TsAKc@ax5200p> <201304232141.04123.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130423194822.GA7214@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 23, 2013 at 12:48:22PM -0700, Greg KH wrote:
-> On Tue, Apr 23, 2013 at 04:21:26PM -0300, Ezequiel Garcia wrote:
-> > From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+On Tuesday 23 April 2013 21:41:03 Arnd Bergmann wrote:
+> On Tuesday 23 April 2013, Marc Dietrich wrote:
+> > On Tuesday 23 April 2013 18:30:46 Arnd Bergmann wrote:
+> > > The serio code can be a loadable module, which in turn means that nvec
+> > > also has to be a module, so mark it as "tristate" in Kconfig.
 > > 
-> > Marvell EBU SoCs such as Armada 370/XP, Orion5x (88f5xxx) and
-> > Discovery (mv78xx0) supports a Device Bus controller to access several
-> > kinds of memories and I/O devices (NOR, NAND, SRAM, FPGA).
-> > 
-> > This commit adds a driver to handle this controller. So far only
-> > Armada 370, Armada XP and Discovery SoCs are supported.
-> > 
-> > The driver must be registered through a device tree node;
-> > as explained in the binding document.
-> > 
-> > For each child node in the device tree, this driver will:
-> >   * set timing parameters
-> >   * register a child device
-> >   * setup an address decoding window, using the mbus driver
-> > 
-> > Keep in mind the address decoding window setup is only a temporary hack.
-> > This code will be removed from this devbus driver as soon as a proper device
-> > tree binding for the mbus driver is added.
-> > 
-> > Signed-off-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-> > Acked-by: Arnd Bergmann <arnd@arndb.de>
-> > ---
-> > Hi Greg,
-> > 
-> > This patch Applies on today linux-next.
-> > I don't know if we are still in time for you to take this
-> > and merge it into v3.10.
-> > 
-> > All of the DT related changes are in linux-next through arm-soc,
-> > but this driver was left out and, unless you take it, will
-> > get queued for v3.11. So it's up to you.
+> > oh, I didn't saw this randconfig error posting. NVEC isn't prepared for
+> > modularized builds yet (it's on the TODO list though). So better say
+> > SERIO=y here. Looking a bit closer, there is other stuff which can also
+> > be a module (GPIOLIB, I2C, ...) so these also need a =y.
 > 
-> It's way too late for new drivers for 3.10, sorry.  I'll hold on to this
-> and merge it to my trees after 3.10-rc1 is out for inclusion in 3.11.
+> What is the problem with building it as a module? It looks all fine in that
+> regard.
+
+It builds, but I haven't tried out it yet. At least the mfd children need to 
+unregister the event notifier I guess. Anyway, I have no time to test this 
+now, so I prefer to force =y for the dependencies for now.
+
+> I also did not see any problems with the other symbols, but that may be
+> because they get turned on as built-in even in allmodconfig. Marking it
+> as tristate certainly avoids the problem altogether.
 > 
+> > Should a post a patch?
+> 
+> If you have follow-on patches, they need to go on top now, since Greg
+> already took this patch.
 
-That's fine, no problem.
+arrr, I wonder why Greg thought that a 4 minute review time is enough :-(
+I'll try to post a patch tomorrow then.
 
--- 
-Ezequiel García, Free Electrons
-Embedded Linux, Kernel and Android Engineering
-http://free-electrons.com
+Marc
+
