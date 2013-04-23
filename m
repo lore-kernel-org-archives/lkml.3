@@ -1,75 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756555Ab3DWJPv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 05:15:51 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:46368 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756003Ab3DWJPt (ORCPT
+	id S1756202Ab3DWJUO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 05:20:14 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:33185 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755087Ab3DWJUL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 05:15:49 -0400
-Date: Tue, 23 Apr 2013 10:15:36 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: =?iso-8859-1?Q?Andr=E9?= Hentschel <nerv@dawncrow.de>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Subject: Re: [PATCHv2] arm: Preserve TPIDRURW on context switch
-Message-ID: <20130423091536.GB17593@mudshark.cambridge.arm.com>
-References: <517168BB.3070903@dawncrow.de>
- <20130422143616.GP14496@n2100.arm.linux.org.uk>
- <20130422151836.GA15665@mudshark.cambridge.arm.com>
- <5175A697.3080308@dawncrow.de>
+	Tue, 23 Apr 2013 05:20:11 -0400
+Message-ID: <5176520B.2040004@ti.com>
+Date: Tue, 23 Apr 2013 12:19:07 +0300
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <5175A697.3080308@dawncrow.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Sourav Poddar <sourav.poddar@ti.com>
+CC: Kevin Hilman <khilman@linaro.org>, <gregkh@linuxfoundation.org>,
+        <tony@atomide.com>, <rmk+kernel@arm.linux.org.uk>,
+        <linux-serial@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Felipe Balbi <balbi@ti.com>, Rajendra nayak <rnayak@ti.com>
+Subject: Re: [RFC/PATCHv2 5/5] arm: omap2+: omap_device: remove no_idle_on_suspend
+References: <1366638237-6880-1-git-send-email-sourav.poddar@ti.com>	<1366638237-6880-6-git-send-email-sourav.poddar@ti.com>	<517545C2.3080006@ti.com> <87y5ca76hm.fsf@linaro.org> <517619DF.5010803@ti.com>
+In-Reply-To: <517619DF.5010803@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.145.172]
+X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 22, 2013 at 10:07:35PM +0100, André Hentschel wrote:
-> Am 22.04.2013 17:18, schrieb Will Deacon:
-> > On Mon, Apr 22, 2013 at 03:36:16PM +0100, Russell King - ARM Linux wrote:
-> >> On Fri, Apr 19, 2013 at 05:54:35PM +0200, André Hentschel wrote:
-> >>> From: =?UTF-8?q?Andr=C3=A9=20Hentschel?= <nerv@dawncrow.de>
-> >>>
-> >>> There are more and more applications coming to WinRT, Wine could support them,
-> >>> but mostly they expect to have the thread environment block (TEB) in TPIDRURW.
-> >>> This register must be preserved per thread instead of being cleared.
-> >>>
-> >>> Signed-off-by: André Hentschel <nerv@dawncrow.de>
-> >>
-> >> This actually makes things less efficient all round, because you
-> >> now use the value immediately after loading, which means it will cause
-> >> pipeline stalls, certainly on older CPUs.
-> >>
-> >> Could you please rework the patch to try avoiding soo many modifications
-> >> to the way things have been done here?
-> > 
-> > copy_thread also needs updating so that the *register* value for the parent
-> > is copied to the child, since the parent may have written the register
-> > after the last context-switch, meaning that tp_value is out-of-date.
-> 
-> Thank you both for reviewing.
-> 
-> I guess you mostly mean "ldr	r6, [r2, #TI_CPU_DOMAIN]".
-> I just thought about old CPUs and remembered again that we at Wine
-> need that patch only on v7 (and later). So is it ok to introduce a set_tls_v7
-> in tls.h and make use of CONFIG_CPU_V7 compile-time check in
-> the changed files and in the copy_thread function?
+On 04/23/2013 08:19 AM, Sourav Poddar wrote:
+> Hi Kevin,
+> On Tuesday 23 April 2013 12:11 AM, Kevin Hilman wrote:
+>> Grygorii Strashko<grygorii.strashko@ti.com>  writes:
+>>
+>>> On 04/22/2013 04:43 PM, Sourav Poddar wrote:
+>>>> Remove the "OMAP_DEVICE_NO_IDLE_ON_SUSPEND" check, since
+>>>> driver should be able to prevent idling of an omap device
+>>>> whenever required.
+>>>>
+>>>> Cc: Santosh Shilimkar<santosh.shilimkar@ti.com>
+>>>> Cc: Felipe Balbi<balbi@ti.com>
+>>>> Cc: Rajendra nayak<rnayak@ti.com>
+>>>> Cc: Grygorii Strashko<grygorii.strashko@ti.com>
+>>>> Signed-off-by: Sourav Poddar<sourav.poddar@ti.com>
+>>>> ---
+>>>> Hi Kevin,
+>>>>
+>>>> I have put this as an RFC, due to few comments on cover letter of
+>>>> the previous version by Grygorii Strashko.
+>>>> As, he has mentioned that there are Audio playback use cases which
+>>>> also requires "no_idle_on_suspend" and using them on mainline after
+>>>> this series can cause regression.
+>>>>
+>>>> What you think will be the right approach on this in relation to 
+>>>> this patch?
+>>>> I mean every driver(if possible) should  prevent
+>>>> runtime PM for no_idle_on_suspend usecase and we get
+>>>> rid of this OMAP_DEVICE_NO_IDLE_ON_SUSPEND check? OR we should
+>>>> drop this patch as of now?
+>> This is the correct approach, and AFAICT you've fixed the *mainline*
+>> users of this patch which is the important part.  If there are other
+>> mainline users of this feature, we need to know about them.
+>>
+>> Let me be clear: this OMAP_DEVICE_NO_IDLE_ON_SUSPEND feature is a hack
+>> (it was introduced by me, but still a hack.)  We've found a way to
+>> handle using the generic framework, and we should move to that. There
+>> are already a handful of complications when combining runtime PM and
+>> system suspend, and this is just another one.  It makes the most sense
+>> for this handling to be in the drivers themselves.  IOW: if the driver
+>> wants to refuse to runtime suspend (during system suspend), it has the
+>> choice.
+>>
+> Yes, I was also of the same view that the driver should take care of the
+> no_idle_on_suspend case and we should get rid of the hacks around this.
+> Modifying a respective driver will be a more generic solution which 
+> will work
+> irrespective of dt and non dt boot.
+Hi Sourav, Kevin,
 
-No, we should support this feature on any CPU with the TPIDRURW register,
-otherwise it's going to get really confusing for userspace.
+Let it be, but could you update patch description with detailed explanation
+of what drivers should do from now to be able to use such functionality
+(make IP active while System is suspended).
+So, people, who've used this hack before (even if these users are not in 
+*mainline*)
+will know what to do.
 
-> Do i need any further flag checks in copy_thread or can i use the
-> compile-time check to add unconditional code?
+Regards
+-grygorii
 
-You could introduce `get' tls functions, which don't do anything for CPUs
-without the relevant registers.
+>>>> Hi Grygorii,
+>>>>
+>>>> Is it possible to handle ABE no_idle_on_suspend uscase the way I am
+>>>> trying to handle it for UART in the 2nd patch of this series?
+>>> Unfortunately, I don't know ASOC details (my part is PM),  but from
+>>> the first look it
+>>> will be not easy, because map4-dmic have no Runtime PM handlers at
+>>> all, for example ((
+>> Are those drivers upstream?  If so, please point them out and show how
+>> this feature is being used in *mainline* by those drivers.
+>>
+>> For OMAP PM, we have been very clear for a long time all of our PM was
+>> based on runtime PM.  Any drivers that are not runtime PM are broken and
+>> need to be fixed.
+>>
+>> As long as Sourav is fixing up all the mainline users of this 
+>> feature, my
+>> plan to merge/ack the changes unless there are some good arguemnts based
+>> on *upstream* users of the feature.
+>>
+>> Kevin
+>>
+>
 
-Will
