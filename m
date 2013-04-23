@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756032Ab3DWM0A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 08:26:00 -0400
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:42924
-	"EHLO p3plsmtps2ded02.prod.phx3.secureserver.net"
+	id S1755973Ab3DWMZ7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 08:25:59 -0400
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:53649
+	"EHLO p3plsmtps2ded01.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755796Ab3DWMZ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755363Ab3DWMZ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 23 Apr 2013 08:25:57 -0400
 x-originating-ip: 72.167.245.219
 From: "K. Y. Srinivasan" <kys@microsoft.com>
@@ -14,9 +14,9 @@ To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
         jasowang@redhat.com
 Cc: Olaf Hering <"[mailto:olaf@aepfle.de]"@linuxonhyperv.com>,
         "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 5/5] [PATCH 2/2] tools: hv: skip iso9660 mounts in hv_vss_daemon
-Date: Tue, 23 Apr 2013 05:58:23 -0700
-Message-Id: <1366721903-31494-5-git-send-email-kys@microsoft.com>
+Subject: [PATCH 4/5] [PATCH 1/2] tools: hv: use FIFREEZE/FITHAW in hv_vss_daemon
+Date: Tue, 23 Apr 2013 05:58:22 -0700
+Message-Id: <1366721903-31494-4-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1366721903-31494-1-git-send-email-kys@microsoft.com>
 References: <1366721852-31453-1-git-send-email-kys@microsoft.com>
@@ -27,29 +27,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Olaf Hering <[mailto:olaf@aepfle.de]>
 
-freeze does not work for iso9660 filesystems. A ENOSUPP may be caught
-in the freeze case, but the subsequent thaw call would fail and leads to
-a false error.
+As suggested by Paolo Bonzini, use ioctl instead of calling fsfreeze.
 
 Signed-off-by: Olaf Hering <olaf@aepfle.de>
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 ---
- tools/hv/hv_vss_daemon.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ tools/hv/hv_vss_daemon.c |   31 ++++++++++++++++++++++---------
+ 1 files changed, 22 insertions(+), 9 deletions(-)
 
 diff --git a/tools/hv/hv_vss_daemon.c b/tools/hv/hv_vss_daemon.c
-index 830d606..f06cd8c 100644
+index e37d86c..830d606 100644
 --- a/tools/hv/hv_vss_daemon.c
 +++ b/tools/hv/hv_vss_daemon.c
-@@ -88,6 +88,8 @@ static int vss_operate(int operation)
- 	while((ent = getmntent(mounts))) {
- 		if (strncmp(ent->mnt_fsname, match, strlen(match)))
- 			continue;
-+		if (strcmp(ent->mnt_type, "iso9660") == 0)
-+			continue;
- 		if (strcmp(ent->mnt_dir, "/") == 0) {
+@@ -21,7 +21,9 @@
+ #include <sys/types.h>
+ #include <sys/socket.h>
+ #include <sys/poll.h>
++#include <sys/ioctl.h>
+ #include <linux/types.h>
++#include <fcntl.h>
+ #include <stdio.h>
+ #include <mntent.h>
+ #include <stdlib.h>
+@@ -30,6 +32,7 @@
+ #include <ctype.h>
+ #include <errno.h>
+ #include <arpa/inet.h>
++#include <linux/fs.h>
+ #include <linux/connector.h>
+ #include <linux/hyperv.h>
+ #include <linux/netlink.h>
+@@ -44,21 +47,35 @@ static struct sockaddr_nl addr;
+ #endif
+ 
+ 
++static int vss_do_freeze(char *dir, unsigned int cmd, char *fs_op)
++{
++	int ret, fd = open(dir, O_RDONLY);
++
++	if (fd < 0)
++		return 1;
++	ret = ioctl(fd, cmd, 0);
++	syslog(LOG_INFO, "VSS: %s of %s: %s\n", fs_op, dir, strerror(errno));
++	close(fd);
++	return !!ret;
++}
++
+ static int vss_operate(int operation)
+ {
+ 	char *fs_op;
+-	char cmd[512];
+ 	char match[] = "/dev/";
+ 	FILE *mounts;
+ 	struct mntent *ent;
++	unsigned int cmd;
+ 	int error = 0, root_seen = 0;
+ 
+ 	switch (operation) {
+ 	case VSS_OP_FREEZE:
+-		fs_op = "-f ";
++		cmd = FIFREEZE;
++		fs_op = "freeze";
+ 		break;
+ 	case VSS_OP_THAW:
+-		fs_op = "-u ";
++		cmd = FITHAW;
++		fs_op = "thaw";
+ 		break;
+ 	default:
+ 		return -1;
+@@ -75,16 +92,12 @@ static int vss_operate(int operation)
  			root_seen = 1;
  			continue;
+ 		}
+-		snprintf(cmd, sizeof(cmd), "fsfreeze %s '%s'", fs_op, ent->mnt_dir);
+-		syslog(LOG_INFO, "VSS cmd is %s\n", cmd);
+-		error |= system(cmd);
++		error |= vss_do_freeze(ent->mnt_dir, cmd, fs_op);
+ 	}
+ 	endmntent(mounts);
+ 
+ 	if (root_seen) {
+-		sprintf(cmd, "fsfreeze %s /", fs_op);
+-		syslog(LOG_INFO, "VSS cmd is %s\n", cmd);
+-		error |= system(cmd);
++		error |= vss_do_freeze("/", cmd, fs_op);
+ 	}
+ 
+ 	return error;
 -- 
 1.7.4.1
 
