@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757195Ab3DWWOs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 18:14:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34077 "EHLO
+	id S1757541Ab3DWWPP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 18:15:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34072 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757527Ab3DWVw5 (ORCPT
+	with ESMTP id S1757441Ab3DWVw4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 17:52:57 -0400
+	Tue, 23 Apr 2013 17:52:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nithin Nayak Sujir <nsujir@broadcom.com>,
-        Michael Chan <mchan@broadcom.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Joseph Salisbury <joseph.salisbury@canonical.com>
-Subject: [ 20/42] tg3: Add 57766 device support.
-Date: Tue, 23 Apr 2013 14:52:18 -0700
-Message-Id: <20130423215207.590142245@linuxfoundation.org>
+        Markus Pargmann <mpa@pengutronix.de>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Shawn Guo <shawn.guo@linaro.org>, Lingzhu Xiang <lxiang@redhat.com>
+Subject: [ 19/42] ARM: clk-imx35: Bugfix iomux clock
+Date: Tue, 23 Apr 2013 14:52:17 -0700
+Message-Id: <20130423215207.500480672@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130423215205.523980967@linuxfoundation.org>
 References: <20130423215205.523980967@linuxfoundation.org>
@@ -29,82 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matt Carlson <mcarlson@broadcom.com>
+From: Markus Pargmann <mpa@pengutronix.de>
 
-commit d3f677afb8076d09d090ff0a5d1229c9dd9f136e upstream.
+commit cab1e0a36c9dd0b0671fb84197ed294513f5adc1 upstream.
 
-The patch also adds a couple of fixes
+This patch enables iomuxc_gate clock. It is necessary to be able to
+reconfigure iomux pads. Without this clock enabled, the
+clk_disable_unused function will disable this clock and the iomux pads
+are not configurable anymore. This happens at every boot. After a reboot
+(watchdog system reset) the clock is not enabled again, so all iomux pad
+reconfigurations in boot code are without effect.
 
- - For the 57766 and non Ax versions of 57765, bootcode needs to setup
-   the PCIE Fast Training Sequence (FTS) value to prevent transmit hangs.
-   Unfortunately, it does not have enough room in the selfboot case (i.e.
-   devices with no NVRAM).  The driver needs to implement this.
+The iomux pads should be always configurable, so this patch always
+enables it.
 
- - For performance reasons, the 2k DMA engine mode on the 57766 should
-   be enabled and dma size limited to 2k for standard sized packets.
-
-Signed-off-by: Nithin Nayak Sujir <nsujir@broadcom.com>
-Signed-off-by: Michael Chan <mchan@broadcom.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Joseph Salisbury <joseph.salisbury@canonical.com>
+Signed-off-by: Markus Pargmann <mpa@pengutronix.de>
+Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
+Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+Cc: Lingzhu Xiang <lxiang@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/broadcom/tg3.c |   18 +++++++++++++++++-
- drivers/net/ethernet/broadcom/tg3.h |    2 ++
- 2 files changed, 19 insertions(+), 1 deletion(-)
+ arch/arm/mach-imx/clk-imx35.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/net/ethernet/broadcom/tg3.c
-+++ b/drivers/net/ethernet/broadcom/tg3.c
-@@ -330,6 +330,7 @@ static DEFINE_PCI_DEVICE_TABLE(tg3_pci_t
- 	{PCI_DEVICE(PCI_VENDOR_ID_BROADCOM, TG3PCI_DEVICE_TIGON3_5719)},
- 	{PCI_DEVICE(PCI_VENDOR_ID_BROADCOM, TG3PCI_DEVICE_TIGON3_5720)},
- 	{PCI_DEVICE(PCI_VENDOR_ID_BROADCOM, TG3PCI_DEVICE_TIGON3_57762)},
-+	{PCI_DEVICE(PCI_VENDOR_ID_BROADCOM, TG3PCI_DEVICE_TIGON3_57766)},
- 	{PCI_DEVICE(PCI_VENDOR_ID_SYSKONNECT, PCI_DEVICE_ID_SYSKONNECT_9DXX)},
- 	{PCI_DEVICE(PCI_VENDOR_ID_SYSKONNECT, PCI_DEVICE_ID_SYSKONNECT_9MXX)},
- 	{PCI_DEVICE(PCI_VENDOR_ID_ALTIMA, PCI_DEVICE_ID_ALTIMA_AC1000)},
-@@ -9103,7 +9104,14 @@ static int tg3_reset_hw(struct tg3 *tp,
- 		}
+--- a/arch/arm/mach-imx/clk-imx35.c
++++ b/arch/arm/mach-imx/clk-imx35.c
+@@ -266,6 +266,7 @@ int __init mx35_clocks_init()
+ 	clk_prepare_enable(clk[iim_gate]);
+ 	clk_prepare_enable(clk[emi_gate]);
+ 	clk_prepare_enable(clk[max_gate]);
++	clk_prepare_enable(clk[iomuxc_gate]);
  
- 		if (GET_CHIP_REV(tp->pci_chip_rev_id) != CHIPREV_57765_AX) {
--			u32 grc_mode = tr32(GRC_MODE);
-+			u32 grc_mode;
-+
-+			/* Fix transmit hangs */
-+			val = tr32(TG3_CPMU_PADRNG_CTL);
-+			val |= TG3_CPMU_PADRNG_CTL_RDIV2;
-+			tw32(TG3_CPMU_PADRNG_CTL, val);
-+
-+			grc_mode = tr32(GRC_MODE);
- 
- 			/* Access the lower 1K of DL PCIE block registers. */
- 			val = grc_mode & ~GRC_MODE_PCIE_PORT_MASK;
-@@ -9413,6 +9421,14 @@ static int tg3_reset_hw(struct tg3 *tp,
- 	if (tg3_flag(tp, PCI_EXPRESS))
- 		rdmac_mode |= RDMAC_MODE_FIFO_LONG_BURST;
- 
-+	if (GET_ASIC_REV(tp->pci_chip_rev_id) == ASIC_REV_57766) {
-+		tp->dma_limit = 0;
-+		if (tp->dev->mtu <= ETH_DATA_LEN) {
-+			rdmac_mode |= RDMAC_MODE_JMB_2K_MMRR;
-+			tp->dma_limit = TG3_TX_BD_DMA_MAX_2K;
-+		}
-+	}
-+
- 	if (tg3_flag(tp, HW_TSO_1) ||
- 	    tg3_flag(tp, HW_TSO_2) ||
- 	    tg3_flag(tp, HW_TSO_3))
---- a/drivers/net/ethernet/broadcom/tg3.h
-+++ b/drivers/net/ethernet/broadcom/tg3.h
-@@ -1159,6 +1159,8 @@
- #define  CPMU_MUTEX_GNT_DRIVER		 0x00001000
- #define TG3_CPMU_PHY_STRAP		0x00003664
- #define TG3_CPMU_PHY_STRAP_IS_SERDES	 0x00000020
-+#define TG3_CPMU_PADRNG_CTL		0x00003668
-+#define  TG3_CPMU_PADRNG_CTL_RDIV2	 0x00040000
- /* 0x3664 --> 0x36b0 unused */
- 
- #define TG3_CPMU_EEE_MODE		0x000036b0
+ 	/*
+ 	 * SCC is needed to boot via mmc after a watchdog reset. The clock code
 
 
