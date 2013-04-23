@@ -1,188 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757231Ab3DWQby (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 12:31:54 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:52564 "EHLO
+	id S1757341Ab3DWQcI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 12:32:08 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:58535 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757199Ab3DWQbw (ORCPT
+	with ESMTP id S1757234Ab3DWQby (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 12:31:52 -0400
+	Tue, 23 Apr 2013 12:31:54 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Matthew Gretton-Dann <matthew.gretton-dann@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [PATCH 02/21] ARM: compressed/head.S: work around new binutils warning
-Date: Tue, 23 Apr 2013 18:30:34 +0200
-Message-Id: <1366734653-488286-3-git-send-email-arnd@arndb.de>
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Ola Lilja <ola.o.lilja@stericsson.com>, alsa-devel@alsa-project.org
+Subject: [PATCH 08/21] ASoC: ux500: forward declare msp_i2s_platform_data
+Date: Tue, 23 Apr 2013 18:30:40 +0200
+Message-Id: <1366734653-488286-9-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1366734653-488286-1-git-send-email-arnd@arndb.de>
 References: <1366734653-488286-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:1nIvTkjH05gbNckPQ8eLAgdlXgkIiVHS6PWCSasaUFv
- 2NmTlQceLcqHojgeBvazx0CGR2oIYJKM6TBSDfTCwNkfzrUamD
- 7AlI6CPc58GNIP3XEhUILeuPNfWE2wF7FwNMwiqnwEvftlbj5C
- aZaEIcaEvd7LlxrkIfh22MnsIxkLGexPdM7NUGhDyW9JUlN5WJ
- FTtO9BUKCzTQ93cUN2VhXNH39ETohg+/r1i9acjlCtNXuu6Qjm
- nQxt2iOLCXFselZ48wr64EWAhvYoNflzRU8V2ygAUarSayzvKQ
- HtsWNgjhofFTsyDZGT3O4JFHsuzXOc8mj+bl9T5ihhrvK1WSJS
- zpFu2qq3C32cp+SRMQVsDrYueLXKpZmY2V8QthXHz
+X-Provags-ID: V02:K0:sAINulNVjpX6DNsZj2YOrYA0Hpjke2eHoIVZeuz6wAM
+ WigMg191bHo/qGRrYdiV2FRtqEQ/0vFUdqzZm8+1r7D+BBh7vW
+ vMMBPTbZxD4NM/ieYkyvSusb4tqV3/jtpNXgBUsREz/x0LFyVo
+ oxRZGyyeCSk/vn5pk5sgmBk6GFN9qvzHrc9GO24t2lRmd+pioC
+ bQGRdKG7+2ET1bRICmMJ1NpmosH0eQvggDWwum4IbVQVpOPWW3
+ qY3UjZZXNJ6jRmn6WhSCrAuQM1fDBzePXo7OUiQ3KLfSN9fqwd
+ qP42y1//Fxs+Yuq6JcxzSISNcuSv+3EHCol1BUseFgDOlTnRFP
+ 8NvMusi0HA3YdeD/N+bFBn9yon0YyumdlT3R2trmV
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In August 2012, Matthew Gretton-Dann checked a change into binutils
-labelled "Error on obsolete & warn on deprecated registers", apparently as
-part of ARMv8 support. Apparently, this was supposed to emit the message
-"Warning: This coprocessor register access is deprecated in ARMv8" when
-using certain mcr/mrc instructions and building for ARMv8. Unfortunately,
-the message that is actually emitted appears to be '(null)', which is
-less helpful in comparison.
+We get a lot of build warnings from the msp driver like:
 
-Even more unfortunately, this is biting us on every single kernel
-build with a new gas, because arch/arm/boot/compressed/head.S and some
-other files in that directory are built with -march=all since kernel
-commit 80cec14a8 "[ARM] Add -march=all to assembly file build in
-arch/arm/boot/compressed" back in v2.6.28.
+In file included from sound/soc/ux500/ux500_msp_dai.h:21:0,
+                 from sound/soc/ux500/mop500.c:25:
+sound/soc/ux500/ux500_msp_i2s.h:546:11: warning: 'struct msp_i2s_platform_data' declared inside parameter list [enabled by default]
+    struct msp_i2s_platform_data *platform_data);
+           ^
+sound/soc/ux500/ux500_msp_i2s.h:546:11: warning: its scope is only this definition or declaration, which is probably not what you want [enabled by default]
 
-This patch reverts Russell's nice solution and replaces it with a more
-complex one that sprinkles .arch statements inside of the head.S file
-in functions that are executed in different architecture levels, which
-seems to solve the original problem just as well, and gets rid of the
-new one, too.
-
-Without this patch, building anything results in:
-
-arch/arm/boot/compressed/head.S: Assembler messages:
-arch/arm/boot/compressed/head.S:565: Warning: (null)
-arch/arm/boot/compressed/head.S:676: Warning: (null)
-arch/arm/boot/compressed/head.S:698: Warning: (null)
-arch/arm/boot/compressed/head.S:722: Warning: (null)
-arch/arm/boot/compressed/head.S:726: Warning: (null)
-arch/arm/boot/compressed/head.S:957: Warning: (null)
-arch/arm/boot/compressed/head.S:996: Warning: (null)
-arch/arm/boot/compressed/head.S:997: Warning: (null)
-arch/arm/boot/compressed/head.S:1027: Warning: (null)
-arch/arm/boot/compressed/head.S:1035: Warning: (null)
-arch/arm/boot/compressed/head.S:1046: Warning: (null)
-arch/arm/boot/compressed/head.S:1060: Warning: (null)
-arch/arm/boot/compressed/head.S:1092: Warning: (null)
-arch/arm/boot/compressed/head.S:1094: Warning: (null)
-arch/arm/boot/compressed/head.S:1095: Warning: (null)
-arch/arm/boot/compressed/head.S:1102: Warning: (null)
-arch/arm/boot/compressed/head.S:1134: Warning: (null)
+The easiest solution is to add a declaration of the struct name.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Matthew Gretton-Dann <matthew.gretton-dann@arm.com>
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Lee Jones <lee.jones@linaro.org>
+Cc: Ola Lilja <ola.o.lilja@stericsson.com>
+Cc: alsa-devel@alsa-project.org
 ---
- arch/arm/boot/compressed/Makefile |  2 +-
- arch/arm/boot/compressed/head.S   | 12 ++++++++++++
- 2 files changed, 13 insertions(+), 1 deletion(-)
+ sound/soc/ux500/ux500_msp_i2s.h | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/arm/boot/compressed/Makefile b/arch/arm/boot/compressed/Makefile
-index afed28e..27f3604 100644
---- a/arch/arm/boot/compressed/Makefile
-+++ b/arch/arm/boot/compressed/Makefile
-@@ -121,7 +121,7 @@ KBUILD_CFLAGS = $(subst -pg, , $(ORIG_CFLAGS))
- endif
+diff --git a/sound/soc/ux500/ux500_msp_i2s.h b/sound/soc/ux500/ux500_msp_i2s.h
+index 1311c0d..6f3e3dc 100644
+--- a/sound/soc/ux500/ux500_msp_i2s.h
++++ b/sound/soc/ux500/ux500_msp_i2s.h
+@@ -543,6 +543,7 @@ struct ux500_msp_dma_params {
+ 	struct stedma40_chan_cfg *dma_cfg;
+ };
  
- ccflags-y := -fpic -mno-single-pic-base -fno-builtin -I$(obj)
--asflags-y := -Wa,-march=all -DZIMAGE
-+asflags-y := -DZIMAGE
- 
- # Supply kernel BSS size to the decompressor via a linker symbol.
- KBSS_SZ = $(shell $(CROSS_COMPILE)size $(obj)/../../../../vmlinux | \
-diff --git a/arch/arm/boot/compressed/head.S b/arch/arm/boot/compressed/head.S
-index fe4d9c3..3b0b21a 100644
---- a/arch/arm/boot/compressed/head.S
-+++ b/arch/arm/boot/compressed/head.S
-@@ -548,6 +548,7 @@ cache_on:	mov	r3, #8			@ cache_on function
-  * to cover all 32bit address and cacheable and bufferable.
-  */
- __armv4_mpu_cache_on:
-+		.arch armv4
- 		mov	r0, #0x3f		@ 4G, the whole
- 		mcr	p15, 0, r0, c6, c7, 0	@ PR7 Area Setting
- 		mcr 	p15, 0, r0, c6, c7, 1
-@@ -655,6 +656,7 @@ ENDPROC(__setup_mmu)
- @ Enable unaligned access on v6, to allow better code generation
- @ for the decompressor C code:
- __armv6_mmu_cache_on:
-+		.arch armv6
- 		mrc	p15, 0, r0, c1, c0, 0	@ read SCTLR
- 		bic	r0, r0, #2		@ A (no unaligned access fault)
- 		orr	r0, r0, #1 << 22	@ U (v6 unaligned access model)
-@@ -663,11 +665,13 @@ __armv6_mmu_cache_on:
- 
- __arm926ejs_mmu_cache_on:
- #ifdef CONFIG_CPU_DCACHE_WRITETHROUGH
-+		.arch armv5
- 		mov	r0, #4			@ put dcache in WT mode
- 		mcr	p15, 7, r0, c15, c0, 0
- #endif
- 
- __armv4_mmu_cache_on:
-+		.arch armv4
- 		mov	r12, lr
- #ifdef CONFIG_MMU
- 		mov	r6, #CB_BITS | 0x12	@ U
-@@ -688,6 +692,7 @@ __armv4_mmu_cache_on:
- 		mov	pc, r12
- 
- __armv7_mmu_cache_on:
-+		.arch armv7-a
- 		mov	r12, lr
- #ifdef CONFIG_MMU
- 		mrc	p15, 0, r11, c0, c1, 4	@ read ID_MMFR0
-@@ -1031,6 +1036,7 @@ cache_clean_flush:
- 		mov	r3, #16
- 		b	call_cache_fn
- 
-+		.arch armv4
- __armv4_mpu_cache_flush:
- 		mov	r2, #1
- 		mov	r3, #0
-@@ -1056,6 +1062,7 @@ __fa526_cache_flush:
- 		mov	pc, lr
- 
- __armv6_mmu_cache_flush:
-+		.arch armv6
- 		mov	r1, #0
- 		mcr	p15, 0, r1, c7, c14, 0	@ clean+invalidate D
- 		mcr	p15, 0, r1, c7, c5, 0	@ invalidate I+BTB
-@@ -1063,6 +1070,7 @@ __armv6_mmu_cache_flush:
- 		mcr	p15, 0, r1, c7, c10, 4	@ drain WB
- 		mov	pc, lr
- 
-+		.arch armv7-a
- __armv7_mmu_cache_flush:
- 		mrc	p15, 0, r10, c0, c1, 5	@ read ID_MMFR1
- 		tst	r10, #0xf << 16		@ hierarchical cache (ARMv7)
-@@ -1123,6 +1131,7 @@ iflush:
- 		mcr	p15, 0, r10, c7, c5, 4	@ ISB
- 		mov	pc, lr
- 
-+		.arch armv5
- __armv5tej_mmu_cache_flush:
- 1:		mrc	p15, 0, r15, c7, c14, 3	@ test,clean,invalidate D cache
- 		bne	1b
-@@ -1130,6 +1139,7 @@ __armv5tej_mmu_cache_flush:
- 		mcr	p15, 0, r0, c7, c10, 4	@ drain WB
- 		mov	pc, lr
- 
-+		.arch armv4
- __armv4_mmu_cache_flush:
- 		mov	r2, #64*1024		@ default: 32K dcache size (*2)
- 		mov	r11, #32		@ default: 32 byte line size
-@@ -1168,6 +1178,8 @@ __armv3_mpu_cache_flush:
- 		mcr	p15, 0, r1, c7, c0, 0	@ invalidate whole cache v3
- 		mov	pc, lr
- 
-+		.arch armv4
-+
- /*
-  * Various debugging routines for printing hex characters and
-  * memory, which again must be relocatable.
++struct msp_i2s_platform_data;
+ int ux500_msp_i2s_init_msp(struct platform_device *pdev,
+ 			struct ux500_msp **msp_p,
+ 			struct msp_i2s_platform_data *platform_data);
 -- 
 1.8.1.2
 
