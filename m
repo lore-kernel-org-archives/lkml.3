@@ -1,19 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755724Ab3DWGh1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 02:37:27 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:53662 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755078Ab3DWGhY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 02:37:24 -0400
+	id S1755923Ab3DWGiu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 02:38:50 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:50076 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755695Ab3DWGhX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Apr 2013 02:37:23 -0400
 From: Tomi Valkeinen <tomi.valkeinen@ti.com>
 To: <linux-fbdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Alan Hourihane <alanh@fairlite.demon.co.uk>
-Subject: [PATCH 08/11] fbdev/vermillion: use vm_iomap_memory()
-Date: Tue, 23 Apr 2013 09:36:55 +0300
-Message-ID: <1366699018-5439-8-git-send-email-tomi.valkeinen@ti.com>
+CC: Tomi Valkeinen <tomi.valkeinen@ti.com>, Guan Xuetao <gxt@mprc.pku.edu.cn>
+Subject: [PATCH 06/11] fbdev/fb-puv3: use vm_iomap_memory()
+Date: Tue, 23 Apr 2013 09:36:53 +0300
+Message-ID: <1366699018-5439-6-git-send-email-tomi.valkeinen@ti.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1366699018-5439-1-git-send-email-tomi.valkeinen@ti.com>
 References: <1366699018-5439-1-git-send-email-tomi.valkeinen@ti.com>
@@ -28,44 +26,38 @@ vm_iomap_memory() gives us much simpler API to map memory to userspace,
 and reduces possibilities for bugs.
 
 Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Cc: Alan Hourihane <alanh@fairlite.demon.co.uk>
+Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
 ---
- drivers/video/vermilion/vermilion.c |   14 ++++----------
- 1 file changed, 4 insertions(+), 10 deletions(-)
+ drivers/video/fb-puv3.c |   14 +-------------
+ 1 file changed, 1 insertion(+), 13 deletions(-)
 
-diff --git a/drivers/video/vermilion/vermilion.c b/drivers/video/vermilion/vermilion.c
-index 0aa516f..09a1366 100644
---- a/drivers/video/vermilion/vermilion.c
-+++ b/drivers/video/vermilion/vermilion.c
-@@ -1003,24 +1003,18 @@ static int vmlfb_setcolreg(u_int regno, u_int red, u_int green, u_int blue,
- static int vmlfb_mmap(struct fb_info *info, struct vm_area_struct *vma)
+diff --git a/drivers/video/fb-puv3.c b/drivers/video/fb-puv3.c
+index 7d106f1f..27fc956 100644
+--- a/drivers/video/fb-puv3.c
++++ b/drivers/video/fb-puv3.c
+@@ -640,21 +640,9 @@ static int unifb_pan_display(struct fb_var_screeninfo *var,
+ int unifb_mmap(struct fb_info *info,
+ 		    struct vm_area_struct *vma)
  {
- 	struct vml_info *vinfo = container_of(info, struct vml_info, info);
 -	unsigned long size = vma->vm_end - vma->vm_start;
- 	unsigned long offset = vma->vm_pgoff << PAGE_SHIFT;
- 	int ret;
+-	unsigned long offset = vma->vm_pgoff << PAGE_SHIFT;
+-	unsigned long pos = info->fix.smem_start + offset;
+-
+-	if (offset + size > info->fix.smem_len)
+-		return -EINVAL;
+-
+ 	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
  
--	if (vma->vm_pgoff > (~0UL >> PAGE_SHIFT))
--		return -EINVAL;
--	if (offset + size > vinfo->vram_contig_size)
--		return -EINVAL;
- 	ret = vmlfb_vram_offset(vinfo, offset);
- 	if (ret)
- 		return -EINVAL;
--	offset += vinfo->vram_start;
-+
- 	pgprot_val(vma->vm_page_prot) |= _PAGE_PCD;
- 	pgprot_val(vma->vm_page_prot) &= ~_PAGE_PWT;
--	if (remap_pfn_range(vma, vma->vm_start, offset >> PAGE_SHIFT,
--						size, vma->vm_page_prot))
+-	if (io_remap_pfn_range(vma, vma->vm_start, pos >> PAGE_SHIFT, size,
+-				vma->vm_page_prot))
 -		return -EAGAIN;
+-
+-	/* VM_IO | VM_DONTEXPAND | VM_DONTDUMP are set by remap_pfn_range() */
 -	return 0;
-+
-+	return vm_iomap_memory(vma, vinfo->vram_start,
-+			vinfo->vram_contig_size);
++	return vm_iomap_memory(vma, info->fix.smem_start, info->fix.smem_len);
  }
  
- static int vmlfb_sync(struct fb_info *info)
+ static struct fb_ops unifb_ops = {
 -- 
 1.7.10.4
 
