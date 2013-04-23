@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755699Ab3DWGhY (ORCPT <rfc822;w@1wt.eu>);
+	id S1755742Ab3DWGh3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 02:37:29 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:35609 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755409Ab3DWGhY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 23 Apr 2013 02:37:24 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:53660 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755409Ab3DWGhV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 02:37:21 -0400
 From: Tomi Valkeinen <tomi.valkeinen@ti.com>
 To: <linux-fbdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Subject: [PATCH 09/11] fbdev/sgivwfb: use vm_iomap_memory()
-Date: Tue, 23 Apr 2013 09:36:56 +0300
-Message-ID: <1366699018-5439-9-git-send-email-tomi.valkeinen@ti.com>
+CC: Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Geert Uytterhoeven <Geert.Uytterhoeven@sonycom.com>
+Subject: [PATCH 10/11] fbdev/ps3fb: use vm_iomap_memory()
+Date: Tue, 23 Apr 2013 09:36:57 +0300
+Message-ID: <1366699018-5439-10-git-send-email-tomi.valkeinen@ti.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1366699018-5439-1-git-send-email-tomi.valkeinen@ti.com>
 References: <1366699018-5439-1-git-send-email-tomi.valkeinen@ti.com>
@@ -27,45 +27,41 @@ vm_iomap_memory() gives us much simpler API to map memory to userspace,
 and reduces possibilities for bugs.
 
 Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: Geert Uytterhoeven <Geert.Uytterhoeven@sonycom.com>
 ---
- drivers/video/sgivwfb.c |   20 +++++++-------------
- 1 file changed, 7 insertions(+), 13 deletions(-)
+ drivers/video/ps3fb.c |   15 ++++-----------
+ 1 file changed, 4 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/video/sgivwfb.c b/drivers/video/sgivwfb.c
-index 2331fad..b2a8912 100644
---- a/drivers/video/sgivwfb.c
-+++ b/drivers/video/sgivwfb.c
-@@ -705,23 +705,17 @@ static int sgivwfb_setcolreg(u_int regno, u_int red, u_int green,
- static int sgivwfb_mmap(struct fb_info *info,
- 			struct vm_area_struct *vma)
+diff --git a/drivers/video/ps3fb.c b/drivers/video/ps3fb.c
+index 920c27b..1bdeb08 100644
+--- a/drivers/video/ps3fb.c
++++ b/drivers/video/ps3fb.c
+@@ -705,21 +705,14 @@ static int ps3fb_pan_display(struct fb_var_screeninfo *var,
+ 
+ static int ps3fb_mmap(struct fb_info *info, struct vm_area_struct *vma)
  {
--	unsigned long size = vma->vm_end - vma->vm_start;
--	unsigned long offset = vma->vm_pgoff << PAGE_SHIFT;
+-	unsigned long size, offset;
 +	int r;
  
--	if (vma->vm_pgoff > (~0UL >> PAGE_SHIFT))
+-	size = vma->vm_end - vma->vm_start;
+-	offset = vma->vm_pgoff << PAGE_SHIFT;
+-	if (offset + size > info->fix.smem_len)
 -		return -EINVAL;
--	if (offset + size > sgivwfb_mem_size)
--		return -EINVAL;
--	offset += sgivwfb_mem_phys;
- 	pgprot_val(vma->vm_page_prot) =
--	    pgprot_val(vma->vm_page_prot) | _PAGE_PCD;
--	vma->vm_flags |= VM_IO;
+-
+-	offset += info->fix.smem_start;
 -	if (remap_pfn_range(vma, vma->vm_start, offset >> PAGE_SHIFT,
--						size, vma->vm_page_prot))
+-			    size, vma->vm_page_prot))
 -		return -EAGAIN;
-+		pgprot_val(vma->vm_page_prot) | _PAGE_PCD;
-+
-+	r = vm_iomap_memory(vma, sgivwfb_mem_phys, sgivwfb_mem_size);
-+
- 	printk(KERN_DEBUG "sgivwfb: mmap framebuffer P(%lx)->V(%lx)\n",
- 	       offset, vma->vm_start);
++	r = vm_ioremap_memory(vma, info->fix.smem_start, info->fix.smem_len);
+ 
+ 	dev_dbg(info->device, "ps3fb: mmap framebuffer P(%lx)->V(%lx)\n",
+ 		offset, vma->vm_start);
 -	return 0;
 +
 +	return r;
  }
  
- int __init sgivwfb_setup(char *options)
+     /*
 -- 
 1.7.10.4
 
