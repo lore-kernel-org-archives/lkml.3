@@ -1,83 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756706Ab3DWPym (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 11:54:42 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:57978 "EHLO
+	id S1756985Ab3DWP4A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 11:56:00 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:51152 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755802Ab3DWPyj (ORCPT
+	with ESMTP id S1756244Ab3DWPyk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 11:54:39 -0400
+	Tue, 23 Apr 2013 11:54:40 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org
-Subject: [PATCH] usb: phy: phy core cannot yet be a module
-Date: Tue, 23 Apr 2013 17:54:32 +0200
-Message-Id: <1366732475-479886-2-git-send-email-arnd@arndb.de>
+        alsa-devel@alsa-project.org, Lars-Peter Clausen <lars@metafoo.de>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] ASoC: don't call of_dma_request_slave_channel directly
+Date: Tue, 23 Apr 2013 17:54:33 +0200
+Message-Id: <1366732475-479886-3-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1366732475-479886-1-git-send-email-arnd@arndb.de>
 References: <1366732475-479886-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:aP5X7ebuuIBfJ3H6GaOhiV9ZarccJA7A/9yW+o54CyB
- w8XdRGSJCRc8ZHYK0c285+zQfhulWkKH9wzUVwtZcWujr37FlE
- LIkd11gd9B5YlPWzyS4khOs87NjKNTBigsSiusaoEGnvxEcpXq
- HHsBhJAtMOqg+ZGZfsxozSfR4QN6yY10LJlUTeUl/TSBaf/cU/
- 1c4a74VL1YDK6ZlDFnrzc8zWy2lrF+gGhsNAucj6FyWkRnL9TQ
- jDaqfepfKP2FeLY2std+HFG2AzvbICo2IH8FP91Nw8YdqexXI0
- v8Fw2C+JncnHFbrLjNnDlvA1OikmsdogbkBK3tZ0CUpapXRjvs
- nLkrRSPRRr1KowNOgJ4qeJCHWso7SGdlhHzTFY9n3
+X-Provags-ID: V02:K0:qXvgaZqJ7+4H+hs7UJNsdz9ltFd22wa/iumv+5jQ+uN
+ 9ROxaHacgfKeUyNQ+1gXSoH65jhDtcFxiQWX8Lmnkws79KeJVV
+ jm1lmfg4pYxOrUuEGfC7rl/8jyO0CG8I9L22gpHkaphmrO+zOm
+ fcxUGI7JthB3JT2RFww3vtghYExMLR/RPT4TVRf9YLN5LtBnh6
+ hEJYKFb16Pj3jdyXuADc2IMducWRZyzbZUuj+gPlGPg0914t9U
+ uUYiJU+XHNa9CE2sfR7zx8u0KBltB+PHfI/Mcv5Wi+Dqf4RifZ
+ FSNCKf2B9mqtlFxK5AxBH+OJPAHs4nJIdgtFmumqrZOQ2y/qeY
+ lJHBnUeHUFbQh4zzr4oOdXajh4QhUceMzsDDODpcd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A lot of platform code calls into the usb phy core at the moment, which
-does not work if it is built as a loadable module. This will hopefully
-change when those platforms are all converted to DT based probing,
-but for now, the easiest solution is to change it from "tristate"
-to "bool".
+The exported interface for device drivers is dma_request_slave_channel,
+not of_dma_request_slave_channel. The former does not depend on device
+tree but also works with ACPI and other interfaces providing an
+abstraction for DMA channels.
 
-This solves at least these ARM allmodconfig build errors:
-
-arch/arm/mach-imx/built-in.o: In function `imx_otg_ulpi_create':
-arch/arm/mach-imx/ulpi.c:117: undefined reference to `otg_ulpi_create'
-arch/arm/mach-omap2/built-in.o: In function `usbhs_init_phys':
-arch/arm/mach-omap2/usb-host.c:652: undefined reference to `usb_bind_phy'
-arch/arm/mach-omap2/built-in.o: In function `omap_2430sdp_init':
-arch/arm/mach-omap2/board-2430sdp.c:236: undefined reference to `usb_bind_phy'
-arch/arm/mach-omap2/built-in.o: In function `omap3_beagle_init':
-arch/arm/mach-omap2/board-omap3beagle.c:554: undefined reference to `usb_bind_phy'
-arch/arm/mach-omap2/built-in.o: In function `devkit8000_init':
-arch/arm/mach-omap2/board-devkit8000.c:596: undefined reference to `usb_bind_phy'
-arch/arm/mach-omap2/built-in.o: In function `omap_ldp_init':
-arch/arm/mach-omap2/board-ldp.c:379: undefined reference to `usb_bind_phy'
-drivers/built-in.o: In function `ab8500_charger_probe':
-drivers/power/ab8500_charger.c:3629: undefined reference to `usb_get_phy'
-drivers/power/ab8500_charger.c:3706: undefined reference to `usb_put_phy'
-drivers/built-in.o: In function `ab8500_charger_remove':
-drivers/power/ab8500_charger.c:3411: undefined reference to `usb_put_phy'
+This fixes link errors when building ALSA as a loadable module.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Felipe Balbi <balbi@ti.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-usb@vger.kernel.org
+Cc: alsa-devel@alsa-project.org
+Cc: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Shawn Guo <shawn.guo@linaro.org>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
 ---
- drivers/usb/phy/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/soc/soc-generic-dmaengine-pcm.c | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/usb/phy/Kconfig b/drivers/usb/phy/Kconfig
-index 21153d1..371d0e7 100644
---- a/drivers/usb/phy/Kconfig
-+++ b/drivers/usb/phy/Kconfig
-@@ -2,7 +2,7 @@
- # Physical Layer USB driver configuration
- #
- menuconfig USB_PHY
--	tristate "USB Physical Layer drivers"
-+	bool "USB Physical Layer drivers"
- 	help
- 	  USB controllers (those which are host, device or DRD) need a
- 	  device to handle the physical layer signalling, commonly called
+diff --git a/sound/soc/soc-generic-dmaengine-pcm.c b/sound/soc/soc-generic-dmaengine-pcm.c
+index 5fd5ed4..8ee9859 100644
+--- a/sound/soc/soc-generic-dmaengine-pcm.c
++++ b/sound/soc/soc-generic-dmaengine-pcm.c
+@@ -219,19 +219,20 @@ static const char * const dmaengine_pcm_dma_channel_names[] = {
+ };
+ 
+ static void dmaengine_pcm_request_chan_of(struct dmaengine_pcm *pcm,
+-	struct device_node *of_node)
++	struct device *dev)
+ {
+ 	unsigned int i;
++	struct device_node *of_node = dev->of_node;
+ 
+ 	if ((pcm->flags & SND_DMAENGINE_PCM_FLAG_NO_DT) || !of_node)
+ 		return;
+ 
+ 	if (pcm->flags & SND_DMAENGINE_PCM_FLAG_HALF_DUPLEX) {
+-		pcm->chan[0] = of_dma_request_slave_channel(of_node, "tx_rx");
++		pcm->chan[0] = dma_request_slave_channel(dev, "tx_rx");
+ 		pcm->chan[1] = pcm->chan[0];
+ 	} else {
+ 		for (i = SNDRV_PCM_STREAM_PLAYBACK; i <= SNDRV_PCM_STREAM_CAPTURE; i++) {
+-			pcm->chan[i] = of_dma_request_slave_channel(of_node,
++			pcm->chan[i] = dma_request_slave_channel(dev,
+ 					dmaengine_pcm_dma_channel_names[i]);
+ 		}
+ 	}
+@@ -255,7 +256,7 @@ int snd_dmaengine_pcm_register(struct device *dev,
+ 	pcm->config = config;
+ 	pcm->flags = flags;
+ 
+-	dmaengine_pcm_request_chan_of(pcm, dev->of_node);
++	dmaengine_pcm_request_chan_of(pcm, dev);
+ 
+ 	if (flags & SND_DMAENGINE_PCM_FLAG_NO_RESIDUE)
+ 		return snd_soc_add_platform(dev, &pcm->platform,
 -- 
 1.8.1.2
 
