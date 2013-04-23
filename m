@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757804Ab3DWVyZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 17:54:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34226 "EHLO
+	id S1757745Ab3DWWDq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 18:03:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34288 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757690Ab3DWVyQ (ORCPT
+	with ESMTP id S1757801Ab3DWVyY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 17:54:16 -0400
+	Tue, 23 Apr 2013 17:54:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andrew Honig <ahonig@google.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [ 09/26] KVM: Fix bounds checking in ioapic indirect register reads (CVE-2013-1798)
-Date: Tue, 23 Apr 2013 14:53:49 -0700
-Message-Id: <20130423215334.317728118@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 22/26] vm: convert snd_pcm_lib_mmap_iomem() to vm_iomap_memory() helper
+Date: Tue, 23 Apr 2013 14:54:02 -0700
+Message-Id: <20130423215335.624295482@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130423215333.344045754@linuxfoundation.org>
 References: <20130423215333.344045754@linuxfoundation.org>
@@ -28,45 +27,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Honig <ahonig@google.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit a2c118bfab8bc6b8bb213abfc35201e441693d55 upstream.
+commit 0fe09a45c4848b5b5607b968d959fdc1821c161d upstream.
 
-If the guest specifies a IOAPIC_REG_SELECT with an invalid value and follows
-that with a read of the IOAPIC_REG_WINDOW KVM does not properly validate
-that request.  ioapic_read_indirect contains an
-ASSERT(redir_index < IOAPIC_NUM_PINS), but the ASSERT has no effect in
-non-debug builds.  In recent kernels this allows a guest to cause a kernel
-oops by reading invalid memory.  In older kernels (pre-3.3) this allows a
-guest to read from large ranges of host memory.
+This is my example conversion of a few existing mmap users.  The pcm
+mmap case is one of the more straightforward ones.
 
-Tested: tested against apic unit tests.
-
-Signed-off-by: Andrew Honig <ahonig@google.com>
-Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: Ben Hutchings <ben@decadent.org.uk>
+Acked-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- virt/kvm/ioapic.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ sound/core/pcm_native.c |   12 ++----------
+ 1 file changed, 2 insertions(+), 10 deletions(-)
 
---- a/virt/kvm/ioapic.c
-+++ b/virt/kvm/ioapic.c
-@@ -73,9 +73,12 @@ static unsigned long ioapic_read_indirec
- 			u32 redir_index = (ioapic->ioregsel - 0x10) >> 1;
- 			u64 redir_content;
+--- a/sound/core/pcm_native.c
++++ b/sound/core/pcm_native.c
+@@ -3209,18 +3209,10 @@ EXPORT_SYMBOL_GPL(snd_pcm_lib_default_mm
+ int snd_pcm_lib_mmap_iomem(struct snd_pcm_substream *substream,
+ 			   struct vm_area_struct *area)
+ {
+-	long size;
+-	unsigned long offset;
++	struct snd_pcm_runtime *runtime = substream->runtime;;
  
--			ASSERT(redir_index < IOAPIC_NUM_PINS);
-+			if (redir_index < IOAPIC_NUM_PINS)
-+				redir_content =
-+					ioapic->redirtbl[redir_index].bits;
-+			else
-+				redir_content = ~0ULL;
+ 	area->vm_page_prot = pgprot_noncached(area->vm_page_prot);
+-	area->vm_flags |= VM_IO;
+-	size = area->vm_end - area->vm_start;
+-	offset = area->vm_pgoff << PAGE_SHIFT;
+-	if (io_remap_pfn_range(area, area->vm_start,
+-				(substream->runtime->dma_addr + offset) >> PAGE_SHIFT,
+-				size, area->vm_page_prot))
+-		return -EAGAIN;
+-	return 0;
++	return vm_iomap_memory(area, runtime->dma_addr, runtime->dma_bytes);
+ }
  
--			redir_content = ioapic->redirtbl[redir_index].bits;
- 			result = (ioapic->ioregsel & 0x1) ?
- 			    (redir_content >> 32) & 0xffffffff :
- 			    redir_content & 0xffffffff;
+ EXPORT_SYMBOL(snd_pcm_lib_mmap_iomem);
 
 
