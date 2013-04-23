@@ -1,305 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755392Ab3DWFnh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 01:43:37 -0400
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:50635 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754777Ab3DWFnL (ORCPT
+	id S1755369Ab3DWFng (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 01:43:36 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:47561 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754857Ab3DWFnL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 23 Apr 2013 01:43:11 -0400
 From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
 To: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org
 Cc: michael@ellerman.id.au, mikey@neuling.org
-Subject: [PATCH V4 5/5] powerpc, perf: Enable branch stack sampling framework
-Date: Tue, 23 Apr 2013 11:12:44 +0530
-Message-Id: <1366695764-3073-6-git-send-email-khandual@linux.vnet.ibm.com>
+Subject: [PATCH V4 2/5] powerpc, perf: Add basic assembly code to read BHRB entries on POWER8
+Date: Tue, 23 Apr 2013 11:12:41 +0530
+Message-Id: <1366695764-3073-3-git-send-email-khandual@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1366695764-3073-1-git-send-email-khandual@linux.vnet.ibm.com>
 References: <1366695764-3073-1-git-send-email-khandual@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13042305-2674-0000-0000-000008B31AD1
+x-cbid: 13042305-9574-0000-0000-000007918F20
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provides basic enablement for perf branch stack sampling framework on
-POWER8 processor based platforms. Adds new BHRB related elements into
-cpu_hw_event structure to represent current BHRB config, BHRB filter
-configuration, manage context and to hold output BHRB buffer during
-PMU interrupt before passing to the user space. This also enables
-processing of BHRB data and converts them into generic perf branch
-stack data format.
+This patch adds the basic assembly code to read BHRB buffer. BHRB entries
+are valid only after a PMU interrupt has happened (when MMCR0[PMAO]=1)
+and BHRB has been freezed. BHRB read should not be attempted when it is
+still enabled (MMCR0[PMAE]=1) and getting updated, as this can produce
+non-deterministic results.
 
 Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
 ---
- arch/powerpc/include/asm/perf_event_server.h |   1 +
- arch/powerpc/perf/core-book3s.c              | 167 ++++++++++++++++++++++++++-
- 2 files changed, 165 insertions(+), 3 deletions(-)
+ arch/powerpc/perf/Makefile |  2 +-
+ arch/powerpc/perf/bhrb.S   | 44 ++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 45 insertions(+), 1 deletion(-)
+ create mode 100644 arch/powerpc/perf/bhrb.S
 
-diff --git a/arch/powerpc/include/asm/perf_event_server.h b/arch/powerpc/include/asm/perf_event_server.h
-index 3f0c15c..f265049 100644
---- a/arch/powerpc/include/asm/perf_event_server.h
-+++ b/arch/powerpc/include/asm/perf_event_server.h
-@@ -73,6 +73,7 @@ extern int register_power_pmu(struct power_pmu *);
- struct pt_regs;
- extern unsigned long perf_misc_flags(struct pt_regs *regs);
- extern unsigned long perf_instruction_pointer(struct pt_regs *regs);
-+extern unsigned long int read_bhrb(int n);
+diff --git a/arch/powerpc/perf/Makefile b/arch/powerpc/perf/Makefile
+index 472db18..510fae1 100644
+--- a/arch/powerpc/perf/Makefile
++++ b/arch/powerpc/perf/Makefile
+@@ -2,7 +2,7 @@ subdir-ccflags-$(CONFIG_PPC_WERROR) := -Werror
  
- /*
-  * Only override the default definitions in include/linux/perf_event.h
-diff --git a/arch/powerpc/perf/core-book3s.c b/arch/powerpc/perf/core-book3s.c
-index 4ac6e64..c627843 100644
---- a/arch/powerpc/perf/core-book3s.c
-+++ b/arch/powerpc/perf/core-book3s.c
-@@ -19,6 +19,11 @@
- #include <asm/firmware.h>
- #include <asm/ptrace.h>
+ obj-$(CONFIG_PERF_EVENTS)	+= callchain.o
  
-+#define BHRB_MAX_ENTRIES	32
-+#define BHRB_TARGET		0x0000000000000002
-+#define BHRB_PREDICTION		0x0000000000000001
-+#define BHRB_EA			0xFFFFFFFFFFFFFFFC
-+
- struct cpu_hw_events {
- 	int n_events;
- 	int n_percpu;
-@@ -38,7 +43,15 @@ struct cpu_hw_events {
- 
- 	unsigned int group_flag;
- 	int n_txn_start;
-+
-+	/* BHRB bits */
-+	u64				bhrb_filter;	/* BHRB HW branch filter */
-+	int				bhrb_users;
-+	void				*bhrb_context;
-+	struct	perf_branch_stack	bhrb_stack;
-+	struct	perf_branch_entry	bhrb_entries[BHRB_MAX_ENTRIES];
- };
-+
- DEFINE_PER_CPU(struct cpu_hw_events, cpu_hw_events);
- 
- struct power_pmu *ppmu;
-@@ -858,6 +871,9 @@ static void power_pmu_enable(struct pmu *pmu)
- 	}
- 
-  out:
-+	if (cpuhw->bhrb_users)
-+		ppmu->config_bhrb(cpuhw->bhrb_filter);
-+
- 	local_irq_restore(flags);
- }
- 
-@@ -888,6 +904,47 @@ static int collect_events(struct perf_event *group, int max_count,
- 	return n;
- }
- 
-+/* Reset all possible BHRB entries */
-+static void power_pmu_bhrb_reset(void)
-+{
-+	asm volatile(PPC_CLRBHRB);
-+}
-+
-+void power_pmu_bhrb_enable(struct perf_event *event)
-+{
-+	struct cpu_hw_events *cpuhw = &__get_cpu_var(cpu_hw_events);
-+
-+	if (!ppmu->bhrb_nr)
-+		return;
-+
-+	/* Clear BHRB if we changed task context to avoid data leaks */
-+	if (event->ctx->task && cpuhw->bhrb_context != event->ctx) {
-+		power_pmu_bhrb_reset();
-+		cpuhw->bhrb_context = event->ctx;
-+	}
-+	cpuhw->bhrb_users++;
-+}
-+
-+void power_pmu_bhrb_disable(struct perf_event *event)
-+{
-+	struct cpu_hw_events *cpuhw = &__get_cpu_var(cpu_hw_events);
-+
-+	if (!ppmu->bhrb_nr)
-+		return;
-+
-+	cpuhw->bhrb_users--;
-+	WARN_ON_ONCE(cpuhw->bhrb_users < 0);
-+
-+	if (!cpuhw->disabled && !cpuhw->bhrb_users) {
-+		/* BHRB cannot be turned off when other
-+		 * events are active on the PMU.
-+		 */
-+
-+		/* avoid stale pointer */
-+		cpuhw->bhrb_context = NULL;
-+	}
-+}
-+
- /*
-  * Add a event to the PMU.
-  * If all events are not already frozen, then we disable and
-@@ -947,6 +1004,9 @@ nocheck:
- 
- 	ret = 0;
-  out:
-+	if (has_branch_stack(event))
-+		power_pmu_bhrb_enable(event);
-+
- 	perf_pmu_enable(event->pmu);
- 	local_irq_restore(flags);
- 	return ret;
-@@ -999,6 +1059,9 @@ static void power_pmu_del(struct perf_event *event, int ef_flags)
- 		cpuhw->mmcr[0] &= ~(MMCR0_PMXE | MMCR0_FCECE);
- 	}
- 
-+	if (has_branch_stack(event))
-+		power_pmu_bhrb_disable(event);
-+
- 	perf_pmu_enable(event->pmu);
- 	local_irq_restore(flags);
- }
-@@ -1117,6 +1180,15 @@ int power_pmu_commit_txn(struct pmu *pmu)
- 	return 0;
- }
- 
-+/* Called from ctxsw to prevent one process's branch entries to
-+ * mingle with the other process's entries during context switch.
+-obj-$(CONFIG_PPC_PERF_CTRS)	+= core-book3s.o
++obj-$(CONFIG_PPC_PERF_CTRS)	+= core-book3s.o bhrb.o
+ obj64-$(CONFIG_PPC_PERF_CTRS)	+= power4-pmu.o ppc970-pmu.o power5-pmu.o \
+ 				   power5+-pmu.o power6-pmu.o power7-pmu.o \
+ 				   power8-pmu.o
+diff --git a/arch/powerpc/perf/bhrb.S b/arch/powerpc/perf/bhrb.S
+new file mode 100644
+index 0000000..d85f9a5
+--- /dev/null
++++ b/arch/powerpc/perf/bhrb.S
+@@ -0,0 +1,44 @@
++/*
++ * Basic assembly code to read BHRB entries
++ *
++ * Copyright 2013 Anshuman Khandual, IBM Corporation.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version
++ * 2 of the License, or (at your option) any later version.
 + */
-+void power_pmu_flush_branch_stack(void)
-+{
-+	if (ppmu->bhrb_nr)
-+		power_pmu_bhrb_reset();
-+}
++#include <asm/ppc_asm.h>
++#include <asm/ppc-opcode.h>
 +
- /*
-  * Return 1 if we might be able to put event on a limited PMC,
-  * or 0 if not.
-@@ -1231,9 +1303,11 @@ static int power_pmu_event_init(struct perf_event *event)
- 	if (!ppmu)
- 		return -ENOENT;
- 
--	/* does not support taken branch sampling */
--	if (has_branch_stack(event))
--		return -EOPNOTSUPP;
-+	if (has_branch_stack(event)) {
-+	        /* PMU has BHRB enabled */
-+		if (!(ppmu->flags & PPMU_BHRB))
-+			return -EOPNOTSUPP;
-+	}
- 
- 	switch (event->attr.type) {
- 	case PERF_TYPE_HARDWARE:
-@@ -1314,6 +1388,15 @@ static int power_pmu_event_init(struct perf_event *event)
- 
- 	cpuhw = &get_cpu_var(cpu_hw_events);
- 	err = power_check_constraints(cpuhw, events, cflags, n + 1);
++	.text
 +
-+	if (has_branch_stack(event)) {
-+		cpuhw->bhrb_filter = ppmu->bhrb_filter_map(
-+					event->attr.branch_sample_type);
++.balign 8
 +
-+		if(cpuhw->bhrb_filter == -1)
-+			return -EOPNOTSUPP;
-+	}
++/* r3 = n  (where n = [0-31])
++ * The maximum number of BHRB entries supported with PPC_MFBHRBE instruction
++ * is 1024. We have limited number of table entries here as POWER8 implements
++ * 32 BHRB entries.
++ */
 +
- 	put_cpu_var(cpu_hw_events);
- 	if (err)
- 		return -EINVAL;
-@@ -1372,8 +1455,79 @@ struct pmu power_pmu = {
- 	.cancel_txn	= power_pmu_cancel_txn,
- 	.commit_txn	= power_pmu_commit_txn,
- 	.event_idx	= power_pmu_event_idx,
-+	.flush_branch_stack = power_pmu_flush_branch_stack,
- };
- 
-+/* Processing BHRB entries */
-+void power_pmu_bhrb_read(struct cpu_hw_events *cpuhw)
-+{
-+	u64 val;
-+	u64 addr;
-+	int r_index, u_index, target, pred;
++/* .global read_bhrb */
++_GLOBAL(read_bhrb)
++	cmpldi	r3,31
++	bgt	1f
++	ld	r4,bhrb_table@got(r2)
++	sldi	r3,r3,3
++	add	r3,r4,r3
++	mtctr	r3
++	bctr
++1:	li	r3,0
++	blr
 +
-+	r_index = 0;
-+	u_index = 0;
-+	while (r_index < ppmu->bhrb_nr) {
-+		/* Assembly read function */
-+		val = read_bhrb(r_index);
++#define MFBHRB_TABLE1(n) PPC_MFBHRBE(R3,n); blr
++#define MFBHRB_TABLE2(n) MFBHRB_TABLE1(n); MFBHRB_TABLE1(n+1)
++#define MFBHRB_TABLE4(n) MFBHRB_TABLE2(n); MFBHRB_TABLE2(n+2)
++#define MFBHRB_TABLE8(n) MFBHRB_TABLE4(n); MFBHRB_TABLE4(n+4)
++#define MFBHRB_TABLE16(n) MFBHRB_TABLE8(n); MFBHRB_TABLE8(n+8)
++#define MFBHRB_TABLE32(n) MFBHRB_TABLE16(n); MFBHRB_TABLE16(n+16)
 +
-+		/* Terminal marker: End of valid BHRB entries */
-+		if (val == 0) {
-+			break;
-+		} else {
-+			/* BHRB field break up */
-+			addr = val & BHRB_EA;
-+			pred = val & BHRB_PREDICTION;
-+			target = val & BHRB_TARGET;
-+
-+			/* Probable Missed entry: Not applicable for POWER8 */
-+			if ((addr == 0) && (target == 0) && (pred == 1)) {
-+				r_index++;
-+				continue;
-+			}
-+
-+			/* Real Missed entry: Power8 based missed entry */
-+			if ((addr == 0) && (target == 1) && (pred == 1)) {
-+				r_index++;
-+				continue;
-+			}
-+
-+			/* Reserved condition: Not a valid entry  */
-+			if ((addr == 0) && (target == 1) && (pred == 0)) {
-+				r_index++;
-+				continue;
-+			}
-+
-+			/* Is a target address */
-+			if (val & BHRB_TARGET) {
-+				/* First address cannot be a target address */
-+				if (r_index == 0) {
-+					r_index++;
-+					continue;
-+				}
-+
-+				/* Update target address for the previous entry */
-+				cpuhw->bhrb_entries[u_index - 1].to = addr;
-+				cpuhw->bhrb_entries[u_index - 1].mispred = pred;
-+				cpuhw->bhrb_entries[u_index - 1].predicted = ~pred;
-+
-+				/* Dont increment u_index */
-+				r_index++;
-+			} else {
-+				/* Update address, flags for current entry */
-+				cpuhw->bhrb_entries[u_index].from = addr;
-+				cpuhw->bhrb_entries[u_index].mispred = pred;
-+				cpuhw->bhrb_entries[u_index].predicted = ~pred;
-+
-+				/* Successfully popullated one entry */
-+				u_index++;
-+				r_index++;
-+			}
-+		}
-+	}
-+	cpuhw->bhrb_stack.nr = u_index;
-+	return;
-+}
- 
- /*
-  * A counter has overflowed; update its count and record
-@@ -1433,6 +1587,13 @@ static void record_and_restart(struct perf_event *event, unsigned long val,
- 		if (event->attr.sample_type & PERF_SAMPLE_ADDR)
- 			perf_get_data_addr(regs, &data.addr);
- 
-+		if (event->attr.sample_type & PERF_SAMPLE_BRANCH_STACK) {
-+			struct cpu_hw_events *cpuhw;
-+			cpuhw = &__get_cpu_var(cpu_hw_events);
-+			power_pmu_bhrb_read(cpuhw);
-+			data.br_stack = &cpuhw->bhrb_stack;
-+		}
-+
- 		if (perf_event_overflow(event, &data, regs))
- 			power_pmu_stop(event, 0);
- 	}
++bhrb_table:
++	MFBHRB_TABLE32(0)
 -- 
 1.7.11.7
 
