@@ -1,37 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756904Ab3DWPvJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 11:51:09 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:43913 "EHLO
+	id S1756742Ab3DWPwa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 11:52:30 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:43920 "EHLO
 	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755589Ab3DWPvG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 11:51:06 -0400
-Date: Tue, 23 Apr 2013 11:50:19 -0400
+	id S1756558Ab3DWPw2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Apr 2013 11:52:28 -0400
+Date: Tue, 23 Apr 2013 11:52:12 -0400
 From: "Theodore Ts'o" <tytso@mit.edu>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Jan Kara <jack@suse.cz>, linux-ext4@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: Re: Excessive stall times on ext4 in 3.9-rc2
-Message-ID: <20130423155019.GH31170@thunk.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: David Laight <David.Laight@aculab.com>, Ingo Molnar <mingo@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        David Miller <davem@davemloft.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
+Subject: Re: Unsigned widening casts of binary "not" operations..
+Message-ID: <20130423155212.GI31170@thunk.org>
 Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Mel Gorman <mgorman@suse.de>, Jan Kara <jack@suse.cz>,
-	linux-ext4@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-	Linux-MM <linux-mm@kvack.org>, Jiri Slaby <jslaby@suse.cz>
-References: <20130402150651.GB31577@thunk.org>
- <20130410105608.GC1910@suse.de>
- <20130410131245.GC4862@thunk.org>
- <20130411170402.GB11656@suse.de>
- <20130411183512.GA12298@thunk.org>
- <20130411213335.GE9379@quack.suse.cz>
- <20130412025708.GB7445@thunk.org>
- <20130412094731.GI11656@suse.de>
- <20130421000522.GA5054@thunk.org>
- <20130423153305.GB2108@suse.de>
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	David Laight <David.Laight@aculab.com>,
+	Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	David Miller <davem@davemloft.net>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	the arch/x86 maintainers <x86@kernel.org>,
+	Network Development <netdev@vger.kernel.org>,
+	"linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
+References: <CA+55aFwpLu0qNms=hkQr43yqD0K9DgESNm91OEWKT1ZuT8MU6Q@mail.gmail.com>
+ <CA+55aFy0jPr5udwJx8cZ-QFs-OgZzQ_NJm_VSj_cS7tsKUn3Kw@mail.gmail.com>
+ <AE90C24D6B3A694183C094C60CF0A2F6026B71EF@saturn3.aculab.com>
+ <CA+55aFwogFL=nm=YHwARcz9OTRBdWEDPG0xcqM-H3k-VZTOZPQ@mail.gmail.com>
+ <AE90C24D6B3A694183C094C60CF0A2F6026B71F2@saturn3.aculab.com>
+ <CA+55aFxvpcF7+dyy5d3+JP4Wfv90zPsRVtEhNG9Pky5gWTm_Pg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130423153305.GB2108@suse.de>
+In-Reply-To: <CA+55aFxvpcF7+dyy5d3+JP4Wfv90zPsRVtEhNG9Pky5gWTm_Pg@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-SA-Exim-Connect-IP: <locally generated>
 X-SA-Exim-Mail-From: tytso@thunk.org
@@ -40,21 +46,19 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 23, 2013 at 04:33:05PM +0100, Mel Gorman wrote:
-> That's a pretty big drop but it gets bad again for the second worst stall --
-> wait_on_page_bit as a result of generic_file_buffered_write.
-> 
-> Vanilla kernel  1336064 ms stalled with 109 events
-> Patched kernel  2338781 ms stalled with 164 events
+On Tue, Apr 23, 2013 at 08:42:49AM -0700, Linus Torvalds wrote:
+> The best case is for code that does bitmasking ops like this to avoid
+> any casts (implicit or explicit) by just avoiding mixed types. That
+> was, to a large degree, my hope for the sparse patch, but it's
+> nontrivial. Many types are rather "natural" (ie constants have a
+> natural "int" type, sizeof() is size_t, etc) and in other cases you
+> want to do the same ops for two different types (with the case that
+> caused me to start to look at it being the "align to page boundary"
+> for a virtual address vs a PAE phys_addr_t) so you can't really avoid
+> mixing things in some circumstances.
 
-Do you have the stack trace for this stall?  I'm wondering if this is
-caused by the waiting for stable pages in write_begin() , or something
-else.
+Maybe it's worth creating a magic helper function, called something
+like mask_out() that handles the casting automatically, and it makes
+it clear to a reader what you're trying to do?
 
-If it is blocking caused by stable page writeback that's interesting,
-since it would imply that something in your workload is trying to
-write to a page that has already been modified (i.e., appending to a
-log file, or updating a database file).  Does that make sense given
-what your workload might be running?
-
-					- Ted
+   	      	     	  	 	   - Ted
