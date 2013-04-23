@@ -1,41 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756071Ab3DWKmP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 06:42:15 -0400
-Received: from mail-ia0-f171.google.com ([209.85.210.171]:60368 "EHLO
-	mail-ia0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755920Ab3DWKmN (ORCPT
+	id S1756090Ab3DWKmf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 06:42:35 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37217 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755848Ab3DWKl4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 06:42:13 -0400
+	Tue, 23 Apr 2013 06:41:56 -0400
+Date: Tue, 23 Apr 2013 11:41:54 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Mike Rapoport <mike@compulab.co.il>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] regulator: tps6586x: Convert to use
+ regulator_map_voltage_ascend
+Message-ID: <20130423104154.GI5019@opensource.wolfsonmicro.com>
+References: <1366428913.17937.1.camel@phoenix>
 MIME-Version: 1.0
-In-Reply-To: <20130404072907.GB3004@gmail.com>
-References: <1364908916-29803-1-git-send-email-lee.jones@linaro.org>
-	<1364908916-29803-3-git-send-email-lee.jones@linaro.org>
-	<CACRpkdafSvT5Xb=7sqnkRHcc4UKkVzr8jzThMgWn6459RDmKGw@mail.gmail.com>
-	<20130404072907.GB3004@gmail.com>
-Date: Tue, 23 Apr 2013 12:42:12 +0200
-Message-ID: <CACRpkdZL=j+gj8dFbWMfYiNFisjQj23HKiMeZXk+OAfcp=j4zg@mail.gmail.com>
-Subject: Re: [PATCH] ARM: ux500: Supply a DTS file for the u8540 platform
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="EdRE1UL8d3mMOE6m"
+Content-Disposition: inline
+In-Reply-To: <1366428913.17937.1.camel@phoenix>
+X-Cookie: Caution: Keep out of reach of children.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 4, 2013 at 9:29 AM, Lee Jones <lee.jones@linaro.org> wrote:
 
-> This is a skeleton DTS file which only enables serial. Just using
-> this simple file yields a terminal when booting u8540.
->
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+--EdRE1UL8d3mMOE6m
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I've queued this patch for v3.11.
+On Sat, Apr 20, 2013 at 11:35:13AM +0800, Axel Lin wrote:
+> All regulators have ascendant voltage list in this driver.
+> Thus use regulator_map_voltage_ascend is more efficient than the default
+> regulator_map_voltage_iterate.
 
-Yours,
-Linus Walleij
+Applied, thanks.
+
+--EdRE1UL8d3mMOE6m
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRdmVrAAoJELSic+t+oim9OHMP/itQCkDCvTlbEBrp9CKNyI2G
+EsoeZMPB4Jawb3wvEwmG1/VIP4OYkXFHaD9kYdTZ8ZdxaVNb4qbA9fyJMYxe06JN
+g1/OQow11vsYEmUPoO1RPjWey2RYMXwU3dFBisZp2/NY43/OR48TjdeH5lsPH/XI
+UbTc/vr9I2fiDyXf2CqWUXI0AWGNduSb8a/n/foxYyXnYb8eCnBM59scQxQVAtz6
+pOcNJXr0XiA68qyvpGpAZ5GFddQX3PtaGES0wC6aq+5AZSRKSklNlaHueTRqjdOY
+qI/ubT2en0jGTIjcB0PicseDKvcEh7EAFKts32gxRiYZXythANrYooVMPGXHhzUo
+M5uVJu98l1MCmYY2OqD93uynyPTQa9uKPxwGFEeuyw/7/XV53M7jZzpR1d3WsqR8
+PE6rdy5EGTSBr+LKAg1dKwZOf7I0s24wPVZ1PgPD+FO5laoBnESs6Kp9n/R3ZFHH
+iQRHkRmr+X0T0USCgk6eP4BTB8wcaTRByvkiR4PY85XeYmNf3T6JLgB+Qd7zXyNA
+4ZUWOmfAe1onMipvbXVL9mdNI3/sj/+yZyBb9/Ph0VTgOqfYlEaiOFuCPVonIoXQ
+uz35ypNypv0SfS6G2bzH3LFj4nHyMt0Vi26lBdkt2N9NhzJxwW+B+f8grPbrX/jf
+6FOUAVodSSPdz2dxrbCU
+=uzH8
+-----END PGP SIGNATURE-----
+
+--EdRE1UL8d3mMOE6m--
