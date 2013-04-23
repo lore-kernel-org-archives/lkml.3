@@ -1,84 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757304Ab3DWQcF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 12:32:05 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:57790 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757237Ab3DWQb4 (ORCPT
+	id S1757491Ab3DWQez (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 12:34:55 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:37931 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756920Ab3DWQew (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 12:31:56 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Christoffer Dall <cdall@cs.columbia.edu>,
-        Will Deacon <will.deacon@arm.com>
-Subject: [PATCH 04/21] ARM: kvm: define KVM_ARM_MAX_VCPUS unconditionally
-Date: Tue, 23 Apr 2013 18:30:36 +0200
-Message-Id: <1366734653-488286-5-git-send-email-arnd@arndb.de>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1366734653-488286-1-git-send-email-arnd@arndb.de>
-References: <1366734653-488286-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:e1UQDr9GydndNi0hAYeQbAwYbv7U8N3t0gq338WlM2D
- wj8Kpql3YnXzqJrRnfI/5auXCaSSqeUM+dqzu8T7rSw7nSuHxS
- hGx+XH2pu7MzuGnsPhcztjLaY1e6BtkhmIgCkSTRcP24aIe3EJ
- QV0JtuJg8Q6C2Ukw6YHyrjPKrLfoYEtwsDisj9fG3UGj7Z/DDc
- 9BhrR7YWvmqYvkQKcWvcpbgTdIjMo4LpPluV8iT62uonGsMHh+
- MPuvSRO43mqZSCESQwZP8GGCyT80lLJfiB8IPFZ2wKQBAwOla8
- +7J+aGLSoeVuGEBtYNGKNK+iY/EPyL4WHOKGXRAU08Nn5QSmbe
- 8Sopwf5ENCCdavx71WVvlpm1qTR6b7wL8FLZRM9Ot
+	Tue, 23 Apr 2013 12:34:52 -0400
+X-IronPort-AV: E=Sophos;i="4.87,534,1363158000"; 
+   d="scan'208";a="40841898"
+Message-ID: <5176B82A.9070003@codeaurora.org>
+Date: Tue, 23 Apr 2013 09:34:50 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Rob Herring <robherring2@gmail.com>
+CC: John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>, arm@kernel.org,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 0/4] ARM 64 bit sched_clock take #2
+References: <51709FD7.8050408@gmail.com> <1366417746-24990-1-git-send-email-sboyd@codeaurora.org> <51756CB6.5060607@linaro.org> <5175A1B8.1090202@gmail.com>
+In-Reply-To: <5175A1B8.1090202@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The CONFIG_KVM_ARM_MAX_VCPUS symbol is needed in order to build the
-kernel/context_tracking.c code, which includes the vgic data structures
-implictly through the kvm headers. Definining the symbol to zero
-on builds without KVM resolves this build error:
+On 04/22/13 13:46, Rob Herring wrote:
+> On 04/22/2013 12:00 PM, John Stultz wrote:
+>> On 04/19/2013 05:29 PM, Stephen Boyd wrote:
+>>> This is what I was thinking. I don't see why we can't move this to
+>>> generic code and have arm64 use it too. Those patches will follow once
+>>> I find an arm64
+>>> compiler.
+>> I think moving this to generic code sounds like a good idea. You could
+>> probably also prototype and test the 64bit code with x86_64, using the
+>> TSC counter.
+> I agree this should all be common, but I'd like to see the common
+> version first. That is not going to make it for 3.10. For 3.10, the
+> immediate need is to fix suspend and initial time for the arch timer. I
+> think this should be fixed locally in arch timer code for 3.10. The
+> alternative is to revert linux-next commit 023796b9be3a77481cd5 (ARM:
+> arch_timer: use full 64-bit counter for sched_clock) which will cause
+> the arch timer to not be used as sched_clock if another higher frequency
+> sched_clock is registered.
 
-In file included from include/linux/kvm_host.h:33:0,
-                 from kernel/context_tracking.c:18:
-arch/arm/include/asm/kvm_host.h:28:23: warning: "CONFIG_KVM_ARM_MAX_VCPUS" is not defined [-Wundef]
- #define KVM_MAX_VCPUS CONFIG_KVM_ARM_MAX_VCPUS
-                       ^
-arch/arm/include/asm/kvm_vgic.h:34:24: note: in expansion of macro 'KVM_MAX_VCPUS'
- #define VGIC_MAX_CPUS  KVM_MAX_VCPUS
-                        ^
-arch/arm/include/asm/kvm_vgic.h:38:6: note: in expansion of macro 'VGIC_MAX_CPUS'
- #if (VGIC_MAX_CPUS > 8)
-      ^
-In file included from arch/arm/include/asm/kvm_host.h:41:0,
-                 from include/linux/kvm_host.h:33,
-                 from kernel/context_tracking.c:18:
-arch/arm/include/asm/kvm_vgic.h:59:11: error: 'CONFIG_KVM_ARM_MAX_VCPUS' undeclared here (not in a function)
-  } percpu[VGIC_MAX_CPUS];
-           ^
+This would make sense to me if we were already in the 3.10-rc1 or rc2
+phase, but this code isn't even in Linus' tree yet. Why can't we just
+fix it properly before sending off to Linus? Obviously this is up to the
+maintainers to decide, so if we can't fix it properly with this patch
+series I propose we revert like you say.
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Marc Zyngier <marc.zyngier@arm.com>
-Cc: Christoffer Dall <cdall@cs.columbia.edu>
-Cc: Will Deacon <will.deacon@arm.com>
----
- arch/arm/kvm/Kconfig | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/arch/arm/kvm/Kconfig b/arch/arm/kvm/Kconfig
-index 49dd64e..370e1a8 100644
---- a/arch/arm/kvm/Kconfig
-+++ b/arch/arm/kvm/Kconfig
-@@ -41,9 +41,9 @@ config KVM_ARM_HOST
- 	  Provides host support for ARM processors.
- 
- config KVM_ARM_MAX_VCPUS
--	int "Number maximum supported virtual CPUs per VM"
--	depends on KVM_ARM_HOST
--	default 4
-+	int "Number maximum supported virtual CPUs per VM" if KVM_ARM_HOST
-+	default 4 if KVM_ARM_HOST
-+	default 0
- 	help
- 	  Static number of max supported virtual CPUs per VM.
- 
 -- 
-1.8.1.2
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
