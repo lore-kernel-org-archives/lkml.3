@@ -1,55 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932890Ab3DWWAf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 18:00:35 -0400
-Received: from mga02.intel.com ([134.134.136.20]:31566 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757333Ab3DWWAd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 18:00:33 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,537,1363158000"; 
-   d="scan'208";a="299972467"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Jean Delvare <jdelvare@suse.de>, DuanZhenzhong <zhenzhong.duan@oracle.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "Yu, Fenghua" <fenghua.yu@intel.com>
-Subject: RE: memcpy_fromio in dmi_scan.c
-Thread-Topic: memcpy_fromio in dmi_scan.c
-Thread-Index: AQHOP/RwacaplR9CdEKkq9gPksW/N5jkWgQA
-Date: Tue, 23 Apr 2013 22:00:05 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F1EA52ED3@ORSMSX104.amr.corp.intel.com>
-References: <1366636689.4503.35.camel@chaos.site>
-	 <5175FF0F.9050206@oracle.com> <1366702122.4667.11.camel@chaos.site>
-In-Reply-To: <1366702122.4667.11.camel@chaos.site>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.139]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S932904Ab3DWWBE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 18:01:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34379 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932494Ab3DWV4l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Apr 2013 17:56:41 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
+Subject: [ 13/23] sched: Convert BUG_ON()s in try_to_wake_up_local() to WARN_ON_ONCE()s
+Date: Tue, 23 Apr 2013 14:56:20 -0700
+Message-Id: <20130423215457.647954119@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130423215456.307216898@linuxfoundation.org>
+References: <20130423215456.307216898@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r3NM0hIV016390
 
-> I don't have much knowledge about IA64 either. All I see is that while
-> x86 implements memcpy_fromio() with memcpy [1], ia64 implements it with
-> readb [2]. There must be a reason for that, and I can only suppose that
-> memcpy on __iomem pointers doesn't work on IA64. If memcpy doesn't work
-> then I can't see memcmp working.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-On most platforms readb() just ends up doing a regular dereference of the
-address ... so I'd expect that memcmp would work just fine.  The exception
-is the old SGI sn2 which end up calling ___sn_readb() ... which does something
-weird with sn_dma_flush() after doing the dereference of *addr.  I don't
-really understand what is going on here - but I assume that it is for real
-PCI iomapped memory, as opposed to random bits of BIOS reserved memory
-that we used ioremap() to get a virtual handle on.
+------------------
 
-Not sure how to test ... what would I run to exercise this code?
+From: Tejun Heo <tj@kernel.org>
 
--Tony
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+commit 383efcd00053ec40023010ce5034bd702e7ab373 upstream.
+
+try_to_wake_up_local() should only be invoked to wake up another
+task in the same runqueue and BUG_ON()s are used to enforce the
+rule. Missing try_to_wake_up_local() can stall workqueue
+execution but such stalls are likely to be finite either by
+another work item being queued or the one blocked getting
+unblocked.  There's no reason to trigger BUG while holding rq
+lock crashing the whole system.
+
+Convert BUG_ON()s in try_to_wake_up_local() to WARN_ON_ONCE()s.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/20130318192234.GD3042@htj.dyndns.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ kernel/sched.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -2743,8 +2743,10 @@ static void try_to_wake_up_local(struct
+ {
+ 	struct rq *rq = task_rq(p);
+ 
+-	BUG_ON(rq != this_rq());
+-	BUG_ON(p == current);
++	if (WARN_ON_ONCE(rq != this_rq()) ||
++	    WARN_ON_ONCE(p == current))
++		return;
++
+ 	lockdep_assert_held(&rq->lock);
+ 
+ 	if (!raw_spin_trylock(&p->pi_lock)) {
+
+
