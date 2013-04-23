@@ -1,100 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756788Ab3DWSMe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 14:12:34 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:35481 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757151Ab3DWSMb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 14:12:31 -0400
-Date: Tue, 23 Apr 2013 14:12:29 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Vivek Gautam <gautamvivek1987@gmail.com>
-cc: Felipe Balbi <balbi@ti.com>, Kishon Vijay Abraham I <kishon@ti.com>,
-        Vivek Gautam <gautam.vivek@samsung.com>, <linux-usb@vger.kernel.org>,
-        <linux-samsung-soc@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <gregkh@linuxfoundation.org>,
-        <sarah.a.sharp@linux.intel.com>, <rob.herring@calxeda.com>,
-        <kgene.kim@samsung.com>, <dianders@chromium.org>, <t.figa@samsung.com>,
-        <p.paneri@samsung.com>
-Subject: Re: [PATCH v3 01/11] usb: phy: Add APIs for runtime power management
-In-Reply-To: <CAFp+6iECumogLo9Tf+4pMqRhtkGHf1CqA52YjL1tACTRyGO7jw@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1304231408370.1679-100000@iolanthe.rowland.org>
+	id S1757113Ab3DWSP0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 14:15:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8620 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756735Ab3DWSPZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Apr 2013 14:15:25 -0400
+Date: Tue, 23 Apr 2013 14:14:23 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: "Pan, Zhenjie" <zhenjie.pan@intel.com>,
+        Stephane Eranian <eranian@google.com>,
+        "paulus@samba.org" <paulus@samba.org>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "acme@ghostprotocols.net" <acme@ghostprotocols.net>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "Liu, Chuansheng" <chuansheng.liu@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] NMI: fix NMI period is not correct when cpu frequency
+ changes issue.
+Message-ID: <20130423181423.GC79013@redhat.com>
+References: <F98D4B5C3D86834DB612ABF854C98B7FB5D7FE@SHSMSX101.ccr.corp.intel.com>
+ <1366285369.19383.19.camel@laptop>
+ <CABPqkBTpzSBEezx4ScwYYX6L8ir4GLBG9MMYJuAb6YA0QbiurQ@mail.gmail.com>
+ <20130418133927.GJ79013@redhat.com>
+ <F98D4B5C3D86834DB612ABF854C98B7FB5FACF@SHSMSX101.ccr.corp.intel.com>
+ <1366663056.8337.7.camel@laptop>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1366663056.8337.7.camel@laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Apr 2013, Vivek Gautam wrote:
+On Mon, Apr 22, 2013 at 10:37:36PM +0200, Peter Zijlstra wrote:
+> On Mon, 2013-04-22 at 00:50 +0000, Pan, Zhenjie wrote:
+> > This make watchdog reset happen before hard lockup detect.
+> 
+> Doesn't your watchdog trigger an NMI you can use to print the panic?
+> 
+> ISTR some people (hi Don!) spending quite a lot of time to make this
+> work for some other platforms.
+> 
+> IIRC those things would fire an NMI at some point and then hard-reset
+> the machine not much later.. the difficulty was detecting this
+> 'unclaimed' nmi and allowing drivers to register for it.
+> 
+> NMI_UNKNOWN and unknown_nmi_panic are the result of that.
 
-> Hi,
-> 
-> 
-> On Tue, Apr 23, 2013 at 10:23 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
-> > On Tue, 23 Apr 2013, Vivek Gautam wrote:
-> >
-> >> >> Alright, so here's my understanding:
-> >> >>
-> >> >> I suggested letting e.g. DWC3 enable the PHY's runtime_pm; Alan said
-> >> >> that it could be done before that so that DWC3 sees an enabled PHY
-> >> >> during probe.
-> >> >
-> >> > Basically right.  Help me to understand the overall situation a little
-> >> > better:
-> >> >
-> >> >         What code registers the PHY initially?
-> >>            PHY is added to global list by PHY drivers (like
-> >> phy-samsung-usb2.c/phy-omap-usb2.c)
-> >>            by usb_add_phy() API
-> >
-> > Then this routine should initialize the PHY.  The initialized state
-> > could be either active or suspended, your choice.  Suspended would be
-> > best, in case the PHY never gets used.
-> 
-> Fair enough.
-> 
-> >
-> >> >         What routine does the DWC3 driver call to register itself
-> >> >         as a consumer of the PHY?
-> >>            I think DWC3 doesn't registers itself as consumer of PHY,
-> >> rather it gets that PHY from
-> >>            the list using devm_usb_get_phy()/devm_usb_get_phy_by_phandle() API.
-> >>            DWC3 can now call PHY's initialization sequence using usb_phy_init().
-> >>            So, before DWC3 initializes the PHY, PHYs should be in active state.
-> >
-> > Then usb_phy_init should make sure the PHY is in the active state.  If
-> > usb_add_phy() left the PHY suspended, then this routine should call
-> > pm_runtime_get_sync().
-> 
-> Right
-> 
-> >
-> > After DWC3 (or any other driver) has acquired the PHY, it can call
-> > pm_runtime_put/get() however it likes, so long as the calls balance
-> > properly.  If the driver isn't runtime-PM aware then it won't use any
-> > of these calls, and the PHY will remain active the entire time.
-> 
-> Alright, so DWC3 (or any other consumer of PHY) should do minimal to
-> handle runtime state of PHYs; get() when accessing PHY and put() when it's done
-> with it.
+I think you are confusing the hard lockup detector watchdog (which uses
+the perf counters) with a physical hardware watchdog (which just resets
+the cpu if not kicked frequently; ie
+drivers/watchdog/intel_scu_watchdog.c).
 
-Yes.  The first operation will generally be a put, because
-usb_phy_init() will leave the PHY in an active state.
+I believe what Zhenjie's problem is the hard lockup detector (ie
+nmi_watchdog) becomes useless because sometimes it can correctly fire
+before the hardware watchdog expires, other times it may not.
 
-> >> >         Likewise, what routine does it call to unregister itself?
-> >>            Once DWC3's remove() is called PHYs are put.
-> >
-> > Is there a routine analogous to usb_phy_init() that gets called when
-> > PHY is released?  That routine would do the opposite of usb_phy_init(),
-> > putting the PHY back into its initialized state.
-> 
-> Yes, ofcourse there's a routine usb_phy_shutdown(). So this will be
-> calling put_sync()
-> to put PHYs back to its initialized state. Right ?
+In order for the hard lockup detector to be useful, it should be reliable.
+Today it isn't because it period inversely varies with cpu frequency.
 
-Correct.
+I don't have a real issue with his patch.  I was just concerned about the
+frequency of the changes (10-15 times a second seems like a lot).
 
-Alan Stern
-
+Cheers,
+Don
