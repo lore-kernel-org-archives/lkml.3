@@ -1,125 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755093Ab3DWFGn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 01:06:43 -0400
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:33410 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751955Ab3DWFGm (ORCPT
+	id S1755138Ab3DWFIR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 01:08:17 -0400
+Received: from mailrelay1.diasemi.com ([82.210.246.133]:19729 "EHLO
+	mailrelay1.diasemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755101Ab3DWFIQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 01:06:42 -0400
-Message-ID: <517616DD.2010005@converseincode.com>
-Date: Tue, 23 Apr 2013 00:06:37 -0500
-From: Behan Webster <behanw@converseincode.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Tue, 23 Apr 2013 01:08:16 -0400
+From: "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
+To: Mark Brown <broonie@kernel.org>,
+        "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
+CC: Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        "Mauro Carvalho Chehab" <mchehab@redhat.com>,
+        Steven Toth <stoth@kernellabs.com>,
+        Michael Krufky <mkrufky@kernellabs.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Dajun Chen <david.chen@diasemi.com>
+Subject: RE: [NEW DRIVER V6 1/7] drivers/mfd: DA9058 MFD core driver
+Thread-Topic: [NEW DRIVER V6 1/7] drivers/mfd: DA9058 MFD core driver
+Thread-Index: AQHOPSKWnGUmuwKwFEW3L7L6FJ6q1JjiMSQAgADzT1A=
+Date: Tue, 23 Apr 2013 05:08:12 +0000
+Message-ID: <24DF37198A1E704D9811D8F72B87EB514191F6B6@NB-EX-MBX02.diasemi.com>
+References: <201304191722.r3JHMGqA019124@latitude>
+ <20130422133417.GN30351@opensource.wolfsonmicro.com>
+In-Reply-To: <20130422133417.GN30351@opensource.wolfsonmicro.com>
+Accept-Language: en-GB, de-DE, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.95.24.79]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-CC: Steven Rostedt <rostedt@goodmis.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>, linux-mm@kvack.org,
-        Christoph Lameter <cl@linux.com>
-Subject: Re: [PATCH] slab: Remove unnecessary __builtin_constant_p()
-References: <1366225776.8817.28.camel@pippen.local.home>  <alpine.DEB.2.02.1304171702380.24494@chino.kir.corp.google.com>  <20130422134415.32c7f2cac07c924bff3017a4@linux-foundation.org> <1366664301.9609.140.camel@gandalf.local.home>
-In-Reply-To: <1366664301.9609.140.camel@gandalf.local.home>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13-04-22 03:58 PM, Steven Rostedt wrote:
-> On Mon, 2013-04-22 at 13:44 -0700, Andrew Morton wrote:
->> On Wed, 17 Apr 2013 17:03:21 -0700 (PDT) David Rientjes <rientjes@google.com> wrote:
->>
->>> On Wed, 17 Apr 2013, Steven Rostedt wrote:
->>>
->>>> The slab.c code has a size check macro that checks the size of the
->>>> following structs:
->>>>
->>>> struct arraycache_init
->>>> struct kmem_list3
->>>>
->>>> The index_of() function that takes the sizeof() of the above two structs
->>>> and does an unnecessary __builtin_constant_p() on that. As sizeof() will
->>>> always end up being a constant making this always be true. The code is
->>>> not incorrect, but it just adds added complexity, and confuses users and
->>>> wastes the time of reviewers of the code, who spends time trying to
->>>> figure out why the builtin_constant_p() was used.
->>>>
->>>> This patch is just a clean up that makes the index_of() code a little
->>>> bit less complex.
->>>>
->>>> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
->>> Acked-by: David Rientjes <rientjes@google.com>
->>>
->>> Adding Pekka to the cc.
->> I ducked this patch because it seemed rather pointless - but a little
->> birdie told me that there is a secret motivation which seems pretty
->> reasonable to me.  So I shall await chirp-the-second, which hopefully
->> will have a fuller and franker changelog ;)
-> <little birdie voice>
-> The real motivation behind this patch was it prevents LLVM (Clang) from
-> compiling the kernel. There's currently a bug in Clang where it can't
-> determine if a variable is constant or not, so instead, when
-> __builtin_constant_p() is used, it just treats it like it isn't a
-> constant (always taking the slow *safe* path).
->
-> Unfortunately, the "confusing" code of slub.c that unnecessarily uses
-> the __builtin_constant_p() will fail to compile if the variable passed
-> in is not constant. As Clang will say constants are not constant at this
-> point, the compile fails.
->
-> When looking into this, we found the only two users of the index_of()
-> static function that has this issue, passes in size_of(), which will
-> always be a constant, making the check redundant.
->
-> Note, this is a bug in Clang that will hopefully be fixed soon. But for
-> now, this strange redundant compile time check is preventing Clang from
-> even testing the Linux kernel build.
-> </little birdie voice>
->
-> And I still think the original change log has rational for the change,
-> as it does make it rather confusing to what is happening there.
->
-> -- Steve
-Just to pipe up since Steve was helping me out with this patch.
+> -----Original Message-----
+> From: Mark Brown [mailto:broonie@kernel.org]
+> Sent: 22 April 2013 14:34
+> To: Opensource [Anthony Olech]
+> Cc: Samuel Ortiz; Arnd Bergmann; Mauro Carvalho Chehab; Steven Toth;
+> Michael Krufky; LKML; David Dajun Chen
+> Subject: Re: [NEW DRIVER V6 1/7] drivers/mfd: DA9058 MFD core driver
+> 
+> On Fri, Apr 19, 2013 at 05:56:24PM +0100, Anthony Olech wrote:
+> 
+> > +static struct da9058_regulator_pdata buck1_pdata = {
+> > +	.init.constraints.name = "DA9058_BUCK1",
+> > +	.regulator_id = DA9058_BUCK_1,
+> > +	.init.constraints.min_uV = DA9058_BUCK12_VOLT_LOWER * 1000,
+> > +	.init.constraints.max_uV = DA9058_BUCK12_VOLT_UPPER * 1000,
+> > +	.control_voltage_step = DA9058_BUCK_VOLT_STEP * 1000,
+> > +	.control_register = DA9058_BUCK1_REG,
+> > +	.control_step_mask = DA9058_MAX_VSEL,
+> > +	.control_enable_mask = DA9058_BUCK_LDO_EN,
+> > +	.ramp_register = DA9058_SUPPLY_REG,
+> > +	.ramp_enable_mask = DA9058_SUPPLY_VBUCK1GO,
+> > +	.init.constraints.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE |
+> > +			REGULATOR_CHANGE_MODE |
+> REGULATOR_CHANGE_STATUS,
+> > +	.init.constraints.valid_modes_mask = REGULATOR_MODE_NORMAL,
+> > +	.init.constraints.boot_on = 1,
+> 
+> No, you're totally missing the point here.  Your regulator driver needs
+> to be generic and work on any machine using the device.  This means you
+> can't specify any constraints, the constraints need to come from the
+> system integration.
+> 
+[...]
 
-I just want to make it clear that in no way am I trying to sneak any 
-code into the kernel in order to merely support Clang (certainly the 
-motivation for the patch wasn't meant to be a secret). That in this case 
-the code might be considered clearer at the same time as enabling Clang 
-to be used to compile this portion of code seemed to be a win-win 
-situation to me.
+thanks Mark for your helpful comments.
 
-I certainly thank Steve, Christoph and Andrew for their support in 
-principle in this particular matter (not that it is yet a done deal). I 
-merely complained about this particular issue at my talk at the recent 
-Collab Summit and Steve jumped in to follow up with this particular 
-solution as well as connecting up myself with the three of them (all of 
-us being in the same hotel in San Francisco at the same time). My god 
-Steve works fast! It made my head spin.
+As far as I can see there are two types of constraints:-
+1) the absolute max/min that the PMIC itself is designed for.
+2) the max/min that the board is designed for, ie system integration.
 
-My motivation (as a part of the LLVMLinux project) is purely to provide 
-another choice of toolchain to the kernel developer and system 
-integrator, some of whom would like the choice of using (or at least 
-trying) Clang. I certainly do not intentionally want to negatively 
-impact the performance nor code quality of the kernel code base to the 
-best of my ability (quite the opposite actually).
+Thus constraints type (1) must come from the driver and constraints type (2)
+must come from the machine driver, which for my testing is the mach-smdk6410.
 
-I think I can safely say that the competition between the 2 toolchains 
-has already made both even stronger than they were previously (certainly 
-gcc 4.8 and the upcoming LLVM/Clang 3.3 seem to be the best either have 
-ever been).
+Also, I believe that two further principles apply:
+A) the machine driver should only specify a constraint if it restricts a value from (1) above.
+B) sensible defaults should be specified in the driver so that a system should have some
+   chance of operating in the case that the machine driver provides no constraints/overrides.
 
-As far as __builtin_constant_p() in clang goes, it gets it right in many 
-places (i.e. agrees with how gcc evaluates it), but in this particular 
-situation it got it wrong. However, in this case I was having troubles 
-understanding why __builtin_constant_p() was being used the way it was 
-in slab.c at all...
+Thus, in the case of this PMIC, the big BUCK is designed to provide power to the processor,
+so the only possible sensible default can be "boot_on == 1". It then makes sense that if a
+PMIC is to be used in the situation it is designed for, then the number of system integration 
+constraints should be almost zero.
 
-Behan
+>From your comment it seems that I have missed a point, but what?
 
--- 
-Behan Webster
-behanw@converseincode.com
+Tony Olech
 
