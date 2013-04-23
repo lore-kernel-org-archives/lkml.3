@@ -1,82 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756079Ab3DWMlL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 08:41:11 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:63870 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755800Ab3DWMlJ (ORCPT
+	id S1756121Ab3DWMmM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 08:42:12 -0400
+Received: from mail-bk0-f45.google.com ([209.85.214.45]:38206 "EHLO
+	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755920Ab3DWMmJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 08:41:09 -0400
-X-Nat-Received: from [202.181.97.72]:56539 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1366720849.16068
-To: arjan@infradead.org, hpa@zytor.com, james.hogan@imgtec.com,
-        rusty@rustcorp.com.au
-Cc: linux-kernel@vger.kernel.org, andy.shevchenko@gmail.com
-Subject: [PATCH] x86_32: Fix module version table mismatch.
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <CAHp75VdDwh0wgCWrVDcPps1C2qfdDZra15y9BQvzfWHzSMqbWA@mail.gmail.com>
-	<CAHp75Vfh6Bpk4j3crVEAo3UtJEqpyucbQw+AzJvO85uRJ6gVgg@mail.gmail.com>
-	<201304222326.IJB21395.FOtVJFHFQMOOSL@I-love.SAKURA.ne.jp>
-In-Reply-To: <201304222326.IJB21395.FOtVJFHFQMOOSL@I-love.SAKURA.ne.jp>
-Message-Id: <201304232140.FGF73904.QJOFOVtHFFMSOL@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Tue, 23 Apr 2013 21:40:46 +0900
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 23042013 #9885973, status: clean
+	Tue, 23 Apr 2013 08:42:09 -0400
+MIME-Version: 1.0
+In-Reply-To: <Pine.LNX.4.44L0.1304041022260.1324-100000@iolanthe.rowland.org>
+References: <20130404092616.GD30991@arwen.pp.htv.fi>
+	<Pine.LNX.4.44L0.1304041022260.1324-100000@iolanthe.rowland.org>
+Date: Tue, 23 Apr 2013 18:12:06 +0530
+Message-ID: <CAFp+6iHWMqNQjKV_EQH-Zm6qKbuFwvPJZeswzNFVSSdH-VDB3Q@mail.gmail.com>
+Subject: Re: [PATCH v3 01/11] usb: phy: Add APIs for runtime power management
+From: Vivek Gautam <gautamvivek1987@gmail.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Felipe Balbi <balbi@ti.com>, Kishon Vijay Abraham I <kishon@ti.com>,
+        Vivek Gautam <gautam.vivek@samsung.com>, linux-usb@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        sarah.a.sharp@linux.intel.com, rob.herring@calxeda.com,
+        kgene.kim@samsung.com, dianders@chromium.org, t.figa@samsung.com,
+        p.paneri@samsung.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit a4b6a77b "module: fix symbol versioning with symbol prefixes" broke
-loading of net/ipv6/ipv6.ko built with CONFIG_MODVERSIONS=y for x86_32.
+Hi,
 
-  # modprobe ipv6
-  FATAL: Error inserting ipv6 (/lib/modules/3.9.0-rc8-next-20130422/kernel/net/ipv6/ipv6.ko): Invalid argument
-  # dmesg
-  ipv6: no symbol version for memcmp
-  ipv6: Unknown symbol memcmp (err -22)
 
-The reason for breakage is that check_version() in kernel/module.c tries to
-find symname == "memcmp" but versions[i].name == "__builtin_memcmp".
+On Thu, Apr 4, 2013 at 8:16 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
 
-The reason for versions[i].name == "__builtin_memcmp" is that
-memcmp() for x86_32 is defined as
+Apologies for delay in replying.
 
-  #define memcmp __builtin_memcmp
+> On Thu, 4 Apr 2013, Felipe Balbi wrote:
+>
+>> > >> Some subsystems handle this issue by calling pm_runtime_get_sync()
+>> > >> before probing a driver and pm_runtime_put_sync() after unbinding the
+>> > >> driver.  If the driver is runtime-PM-enabled, it then does its own
+>> > >> put_sync near the end of its probe routine and get_sync in its release
+>> > >> routine.
+>> > >
+>> > > sounds a bit 'fishy' to me... So a separate entity would call
+>> > > pm_runtime_get_sync(), even when we don't have registered dev_pm_ops,
+>
+> I don't know what you mean by "separate entity".  The PHY's subsystem
+> would handle this.  After all, the subsystem has to handle registering
+> the PHY in the first place.
+>
+> If the PHY doesn't have a dev_pm_ops, why are you talking about doing
+> runtime PM on it?  That doesn't make any sense.
+>
+>> > > then drivers need to check if runtime_pm is enabled and call
+>> > > pm_runtime_put*() conditionally before returning from probe(). One
+>
+> They don't have to check.  If CONFIG_PM_RUNTIME isn't set or the target
+> is runtime-PM-disabled then pm_runtime_put* is essentially a no-op (in
+> the disabled case it decrements the usage counter but doesn't do
+> anything else).
+>
+> One possible complication I did not mention: The scheme described above
+> assumes the device that uses the PHY will always be registered on the
+> same type of bus.  If the device can be used on multiple bus types (and
+> hence in multiple subsystems) then things aren't so simple, because
+> some of the subsystems might support runtime PM and others might not.
+> (You may very well run into this problem with USB controllers that are
+> sometimes on a PCI bus and sometimes on a platform bus.)  In this case,
+> the driver needs to adapt to the subsystem's capabilities.  Presumably
+> the bus-glue part of the driver takes care of this.
+>
+>> > > remove, we might have another issue: device is already runtime_suspended
+>> > > (due to e.g. autosuspend) when module is removed, a call to
+>> > > pm_runtime_put_sync() will be unbalanced. No ?
+>
+> No.  I left out some of the details.  For one thing, the subsystem is
+> careful to do a runtime resume before calling the driver's remove
+> method.  (Also, if you look over my original description carefully,
+> you'll see that there are no unbalanced calls -- even if the device is
+> already runtime suspended when the driver is unbound.)
+>
+> For another, the subsystem needs to check before calling the driver's
+> runtime-PM methods.  There are two brief windows during which the
+> driver isn't in charge of the device even though dev->driver is set.
+> Those windows occur in the subsystem's probe routine (before it calls
+> the driver's probe method) and in the subsystem's remove routine
+> (after it calls the driver's remove method).  At such times, the
+> subsystem's runtime-PM handlers must be careful _not_ to call the
+> driver's runtime-PM routines.
+>
+>> > May be i am misinterpreting !!
+>> > If PHYs are runtime-PM enabled (PHY probe calls *runtime_enable*),
+>> > then the consumers
+>> > need to call pm_runtime_get_sync whever they want to access PHY.
+>
+> No, because in addition to being runtime-PM enabled, the PHY should
+> automatically be runtime resumed when the consumer registers itself as
+> a user of the PHY.  Therefore the consumer doesn't need to do anything
+> at all -- which is good for consumers that aren't runtime-PM aware.
+>
+>> Alright, so here's my understanding:
+>>
+>> I suggested letting e.g. DWC3 enable the PHY's runtime_pm; Alan said
+>> that it could be done before that so that DWC3 sees an enabled PHY
+>> during probe.
+>
+> Basically right.  Help me to understand the overall situation a little
+> better:
+>
+>         What code registers the PHY initially?
+           PHY is added to global list by PHY drivers (like
+phy-samsung-usb2.c/phy-omap-usb2.c)
+           by usb_add_phy() API
 
-in arch/x86/include/asm/string_32.h while memcmp() for x86_64 is defined as
+>
+>         What routine does the DWC3 driver call to register itself
+>         as a consumer of the PHY?
+           I think DWC3 doesn't registers itself as consumer of PHY,
+rather it gets that PHY from
+           the list using devm_usb_get_phy()/devm_usb_get_phy_by_phandle() API.
+           DWC3 can now call PHY's initialization sequence using usb_phy_init().
+           So, before DWC3 initializes the PHY, PHYs should be in active state.
 
-  int memcmp(const void *cs, const void *ct, size_t count);
+>
+>         Likewise, what routine does it call to unregister itself?
+           Once DWC3's remove() is called PHYs are put.
 
-in arch/x86/include/asm/string_64.h.
 
-Since __builtin_memcmp is a gcc's built-in function which might emit a call to
-memcmp, __builtin_memcmp should not be used for versions[i].name field.
 
-In order to make sure that versions[i].name == "memcmp", make the definition of
-memcmp() for x86_32 identical with that of x86_64.
-
-Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Cc: James Hogan <james.hogan@imgtec.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
----
- arch/x86/include/asm/string_32.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/include/asm/string_32.h b/arch/x86/include/asm/string_32.h
-index 3d3e835..bb85b4e 100644
---- a/arch/x86/include/asm/string_32.h
-+++ b/arch/x86/include/asm/string_32.h
-@@ -199,7 +199,7 @@ static inline void *__memcpy3d(void *to, const void *from, size_t len)
- #define __HAVE_ARCH_MEMMOVE
- void *memmove(void *dest, const void *src, size_t n);
- 
--#define memcmp __builtin_memcmp
-+int memcmp(const void *cs, const void *ct, size_t count);
- 
- #define __HAVE_ARCH_MEMCHR
- extern void *memchr(const void *cs, int c, size_t count);
 -- 
-1.7.1
+Best Regards
+Vivek
