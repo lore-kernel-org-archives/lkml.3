@@ -1,123 +1,305 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755415Ab3DWFnj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 01:43:39 -0400
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:50634 "EHLO
+	id S1755392Ab3DWFnh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 01:43:37 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:50635 "EHLO
 	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754716Ab3DWFnL (ORCPT
+	with ESMTP id S1754777Ab3DWFnL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 23 Apr 2013 01:43:11 -0400
 From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
 To: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org
 Cc: michael@ellerman.id.au, mikey@neuling.org
-Subject: [PATCH V4 4/5] powerpc, perf: Define BHRB generic functions, data and flags for POWER8
-Date: Tue, 23 Apr 2013 11:12:43 +0530
-Message-Id: <1366695764-3073-5-git-send-email-khandual@linux.vnet.ibm.com>
+Subject: [PATCH V4 5/5] powerpc, perf: Enable branch stack sampling framework
+Date: Tue, 23 Apr 2013 11:12:44 +0530
+Message-Id: <1366695764-3073-6-git-send-email-khandual@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1366695764-3073-1-git-send-email-khandual@linux.vnet.ibm.com>
 References: <1366695764-3073-1-git-send-email-khandual@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13042305-2674-0000-0000-000008B31AD4
+x-cbid: 13042305-2674-0000-0000-000008B31AD1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch populates BHRB specific data for power_pmu structure. It
-also implements POWER8 specific BHRB filter and configuration functions.
+Provides basic enablement for perf branch stack sampling framework on
+POWER8 processor based platforms. Adds new BHRB related elements into
+cpu_hw_event structure to represent current BHRB config, BHRB filter
+configuration, manage context and to hold output BHRB buffer during
+PMU interrupt before passing to the user space. This also enables
+processing of BHRB data and converts them into generic perf branch
+stack data format.
 
 Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
 ---
- arch/powerpc/perf/power8-pmu.c | 57 +++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 56 insertions(+), 1 deletion(-)
+ arch/powerpc/include/asm/perf_event_server.h |   1 +
+ arch/powerpc/perf/core-book3s.c              | 167 ++++++++++++++++++++++++++-
+ 2 files changed, 165 insertions(+), 3 deletions(-)
 
-diff --git a/arch/powerpc/perf/power8-pmu.c b/arch/powerpc/perf/power8-pmu.c
-index 106ae0b..153408c 100644
---- a/arch/powerpc/perf/power8-pmu.c
-+++ b/arch/powerpc/perf/power8-pmu.c
-@@ -109,6 +109,16 @@
- #define EVENT_IS_MARKED		(EVENT_MARKED_MASK << EVENT_MARKED_SHIFT)
- #define EVENT_PSEL_MASK		0xff	/* PMCxSEL value */
+diff --git a/arch/powerpc/include/asm/perf_event_server.h b/arch/powerpc/include/asm/perf_event_server.h
+index 3f0c15c..f265049 100644
+--- a/arch/powerpc/include/asm/perf_event_server.h
++++ b/arch/powerpc/include/asm/perf_event_server.h
+@@ -73,6 +73,7 @@ extern int register_power_pmu(struct power_pmu *);
+ struct pt_regs;
+ extern unsigned long perf_misc_flags(struct pt_regs *regs);
+ extern unsigned long perf_instruction_pointer(struct pt_regs *regs);
++extern unsigned long int read_bhrb(int n);
  
-+/* MMCRA IFM bits - POWER8 */
-+#define	POWER8_MMCRA_IFM1		0x0000000040000000UL
-+#define	POWER8_MMCRA_IFM2		0x0000000080000000UL
-+#define	POWER8_MMCRA_IFM3		0x00000000C0000000UL
+ /*
+  * Only override the default definitions in include/linux/perf_event.h
+diff --git a/arch/powerpc/perf/core-book3s.c b/arch/powerpc/perf/core-book3s.c
+index 4ac6e64..c627843 100644
+--- a/arch/powerpc/perf/core-book3s.c
++++ b/arch/powerpc/perf/core-book3s.c
+@@ -19,6 +19,11 @@
+ #include <asm/firmware.h>
+ #include <asm/ptrace.h>
+ 
++#define BHRB_MAX_ENTRIES	32
++#define BHRB_TARGET		0x0000000000000002
++#define BHRB_PREDICTION		0x0000000000000001
++#define BHRB_EA			0xFFFFFFFFFFFFFFFC
 +
-+#define ONLY_PLM \
-+	(PERF_SAMPLE_BRANCH_USER        |\
-+	 PERF_SAMPLE_BRANCH_KERNEL      |\
-+	 PERF_SAMPLE_BRANCH_HV)
+ struct cpu_hw_events {
+ 	int n_events;
+ 	int n_percpu;
+@@ -38,7 +43,15 @@ struct cpu_hw_events {
+ 
+ 	unsigned int group_flag;
+ 	int n_txn_start;
++
++	/* BHRB bits */
++	u64				bhrb_filter;	/* BHRB HW branch filter */
++	int				bhrb_users;
++	void				*bhrb_context;
++	struct	perf_branch_stack	bhrb_stack;
++	struct	perf_branch_entry	bhrb_entries[BHRB_MAX_ENTRIES];
+ };
++
+ DEFINE_PER_CPU(struct cpu_hw_events, cpu_hw_events);
+ 
+ struct power_pmu *ppmu;
+@@ -858,6 +871,9 @@ static void power_pmu_enable(struct pmu *pmu)
+ 	}
+ 
+  out:
++	if (cpuhw->bhrb_users)
++		ppmu->config_bhrb(cpuhw->bhrb_filter);
++
+ 	local_irq_restore(flags);
+ }
+ 
+@@ -888,6 +904,47 @@ static int collect_events(struct perf_event *group, int max_count,
+ 	return n;
+ }
+ 
++/* Reset all possible BHRB entries */
++static void power_pmu_bhrb_reset(void)
++{
++	asm volatile(PPC_CLRBHRB);
++}
++
++void power_pmu_bhrb_enable(struct perf_event *event)
++{
++	struct cpu_hw_events *cpuhw = &__get_cpu_var(cpu_hw_events);
++
++	if (!ppmu->bhrb_nr)
++		return;
++
++	/* Clear BHRB if we changed task context to avoid data leaks */
++	if (event->ctx->task && cpuhw->bhrb_context != event->ctx) {
++		power_pmu_bhrb_reset();
++		cpuhw->bhrb_context = event->ctx;
++	}
++	cpuhw->bhrb_users++;
++}
++
++void power_pmu_bhrb_disable(struct perf_event *event)
++{
++	struct cpu_hw_events *cpuhw = &__get_cpu_var(cpu_hw_events);
++
++	if (!ppmu->bhrb_nr)
++		return;
++
++	cpuhw->bhrb_users--;
++	WARN_ON_ONCE(cpuhw->bhrb_users < 0);
++
++	if (!cpuhw->disabled && !cpuhw->bhrb_users) {
++		/* BHRB cannot be turned off when other
++		 * events are active on the PMU.
++		 */
++
++		/* avoid stale pointer */
++		cpuhw->bhrb_context = NULL;
++	}
++}
 +
  /*
-  * Layout of constraint bits:
-  *
-@@ -428,6 +438,48 @@ static int power8_generic_events[] = {
- 	[PERF_COUNT_HW_BRANCH_MISSES] =			PM_BR_MPRED_CMPL,
- };
+  * Add a event to the PMU.
+  * If all events are not already frozen, then we disable and
+@@ -947,6 +1004,9 @@ nocheck:
  
-+static u64 power8_bhrb_filter_map(u64 branch_sample_type)
+ 	ret = 0;
+  out:
++	if (has_branch_stack(event))
++		power_pmu_bhrb_enable(event);
++
+ 	perf_pmu_enable(event->pmu);
+ 	local_irq_restore(flags);
+ 	return ret;
+@@ -999,6 +1059,9 @@ static void power_pmu_del(struct perf_event *event, int ef_flags)
+ 		cpuhw->mmcr[0] &= ~(MMCR0_PMXE | MMCR0_FCECE);
+ 	}
+ 
++	if (has_branch_stack(event))
++		power_pmu_bhrb_disable(event);
++
+ 	perf_pmu_enable(event->pmu);
+ 	local_irq_restore(flags);
+ }
+@@ -1117,6 +1180,15 @@ int power_pmu_commit_txn(struct pmu *pmu)
+ 	return 0;
+ }
+ 
++/* Called from ctxsw to prevent one process's branch entries to
++ * mingle with the other process's entries during context switch.
++ */
++void power_pmu_flush_branch_stack(void)
 +{
-+	u64 pmu_bhrb_filter = 0;
-+	u64 br_privilege = branch_sample_type & ONLY_PLM;
++	if (ppmu->bhrb_nr)
++		power_pmu_bhrb_reset();
++}
 +
-+	/* BHRB and regular PMU events share the same prvillege state
-+	 * filter configuration. BHRB is always recorded along with a
-+	 * regular PMU event. So privilege state filter criteria for BHRB
-+	 * and the companion PMU events has to be the same. As a default
-+	 * "perf record" tool sets all privillege bits ON when no filter
-+	 * criteria is provided in the command line. So as along as all
-+	 * privillege bits are ON or they are OFF, we are good to go.
-+	 */
-+	if ((br_privilege != 7) && (br_privilege != 0))
-+		return -1;
+ /*
+  * Return 1 if we might be able to put event on a limited PMC,
+  * or 0 if not.
+@@ -1231,9 +1303,11 @@ static int power_pmu_event_init(struct perf_event *event)
+ 	if (!ppmu)
+ 		return -ENOENT;
+ 
+-	/* does not support taken branch sampling */
+-	if (has_branch_stack(event))
+-		return -EOPNOTSUPP;
++	if (has_branch_stack(event)) {
++	        /* PMU has BHRB enabled */
++		if (!(ppmu->flags & PPMU_BHRB))
++			return -EOPNOTSUPP;
++	}
+ 
+ 	switch (event->attr.type) {
+ 	case PERF_TYPE_HARDWARE:
+@@ -1314,6 +1388,15 @@ static int power_pmu_event_init(struct perf_event *event)
+ 
+ 	cpuhw = &get_cpu_var(cpu_hw_events);
+ 	err = power_check_constraints(cpuhw, events, cflags, n + 1);
 +
-+	/* No branch filter requested */
-+	if (branch_sample_type & PERF_SAMPLE_BRANCH_ANY)
-+		return pmu_bhrb_filter;
++	if (has_branch_stack(event)) {
++		cpuhw->bhrb_filter = ppmu->bhrb_filter_map(
++					event->attr.branch_sample_type);
 +
-+	/* Invalid branch filter options - HW does not support */
-+	if (branch_sample_type & PERF_SAMPLE_BRANCH_ANY_RETURN)
-+		return -1;
-+
-+	if (branch_sample_type & PERF_SAMPLE_BRANCH_IND_CALL)
-+		return -1;
-+
-+	if (branch_sample_type & PERF_SAMPLE_BRANCH_ANY_CALL) {
-+		pmu_bhrb_filter |= POWER8_MMCRA_IFM1;
-+		return pmu_bhrb_filter;
++		if(cpuhw->bhrb_filter == -1)
++			return -EOPNOTSUPP;
 +	}
 +
-+	/* Every thing else is unsupported */
-+	return -1;
-+}
-+
-+static void power8_config_bhrb(u64 pmu_bhrb_filter)
-+{
-+	/* Enable BHRB filter in PMU */
-+	mtspr(SPRN_MMCRA, (mfspr(SPRN_MMCRA) | pmu_bhrb_filter));
-+}
-+
- static struct power_pmu power8_pmu = {
- 	.name			= "POWER8",
- 	.n_counter		= 6,
-@@ -435,12 +487,15 @@ static struct power_pmu power8_pmu = {
- 	.add_fields		= POWER8_ADD_FIELDS,
- 	.test_adder		= POWER8_TEST_ADDER,
- 	.compute_mmcr		= power8_compute_mmcr,
-+	.config_bhrb		= power8_config_bhrb,
-+	.bhrb_filter_map	= power8_bhrb_filter_map,
- 	.get_constraint		= power8_get_constraint,
- 	.disable_pmc		= power8_disable_pmc,
--	.flags			= PPMU_HAS_SSLOT | PPMU_HAS_SIER,
-+	.flags			= PPMU_HAS_SSLOT | PPMU_HAS_SIER | PPMU_BHRB,
- 	.n_generic		= ARRAY_SIZE(power8_generic_events),
- 	.generic_events		= power8_generic_events,
- 	.attr_groups		= power8_pmu_attr_groups,
-+	.bhrb_nr		= 32,
+ 	put_cpu_var(cpu_hw_events);
+ 	if (err)
+ 		return -EINVAL;
+@@ -1372,8 +1455,79 @@ struct pmu power_pmu = {
+ 	.cancel_txn	= power_pmu_cancel_txn,
+ 	.commit_txn	= power_pmu_commit_txn,
+ 	.event_idx	= power_pmu_event_idx,
++	.flush_branch_stack = power_pmu_flush_branch_stack,
  };
  
- static int __init init_power8_pmu(void)
++/* Processing BHRB entries */
++void power_pmu_bhrb_read(struct cpu_hw_events *cpuhw)
++{
++	u64 val;
++	u64 addr;
++	int r_index, u_index, target, pred;
++
++	r_index = 0;
++	u_index = 0;
++	while (r_index < ppmu->bhrb_nr) {
++		/* Assembly read function */
++		val = read_bhrb(r_index);
++
++		/* Terminal marker: End of valid BHRB entries */
++		if (val == 0) {
++			break;
++		} else {
++			/* BHRB field break up */
++			addr = val & BHRB_EA;
++			pred = val & BHRB_PREDICTION;
++			target = val & BHRB_TARGET;
++
++			/* Probable Missed entry: Not applicable for POWER8 */
++			if ((addr == 0) && (target == 0) && (pred == 1)) {
++				r_index++;
++				continue;
++			}
++
++			/* Real Missed entry: Power8 based missed entry */
++			if ((addr == 0) && (target == 1) && (pred == 1)) {
++				r_index++;
++				continue;
++			}
++
++			/* Reserved condition: Not a valid entry  */
++			if ((addr == 0) && (target == 1) && (pred == 0)) {
++				r_index++;
++				continue;
++			}
++
++			/* Is a target address */
++			if (val & BHRB_TARGET) {
++				/* First address cannot be a target address */
++				if (r_index == 0) {
++					r_index++;
++					continue;
++				}
++
++				/* Update target address for the previous entry */
++				cpuhw->bhrb_entries[u_index - 1].to = addr;
++				cpuhw->bhrb_entries[u_index - 1].mispred = pred;
++				cpuhw->bhrb_entries[u_index - 1].predicted = ~pred;
++
++				/* Dont increment u_index */
++				r_index++;
++			} else {
++				/* Update address, flags for current entry */
++				cpuhw->bhrb_entries[u_index].from = addr;
++				cpuhw->bhrb_entries[u_index].mispred = pred;
++				cpuhw->bhrb_entries[u_index].predicted = ~pred;
++
++				/* Successfully popullated one entry */
++				u_index++;
++				r_index++;
++			}
++		}
++	}
++	cpuhw->bhrb_stack.nr = u_index;
++	return;
++}
+ 
+ /*
+  * A counter has overflowed; update its count and record
+@@ -1433,6 +1587,13 @@ static void record_and_restart(struct perf_event *event, unsigned long val,
+ 		if (event->attr.sample_type & PERF_SAMPLE_ADDR)
+ 			perf_get_data_addr(regs, &data.addr);
+ 
++		if (event->attr.sample_type & PERF_SAMPLE_BRANCH_STACK) {
++			struct cpu_hw_events *cpuhw;
++			cpuhw = &__get_cpu_var(cpu_hw_events);
++			power_pmu_bhrb_read(cpuhw);
++			data.br_stack = &cpuhw->bhrb_stack;
++		}
++
+ 		if (perf_event_overflow(event, &data, regs))
+ 			power_pmu_stop(event, 0);
+ 	}
 -- 
 1.7.11.7
 
