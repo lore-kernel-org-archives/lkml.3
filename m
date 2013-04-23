@@ -1,151 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932429Ab3DWV4e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 17:56:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34313 "EHLO
+	id S932481Ab3DWV4i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 17:56:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34351 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932174Ab3DWV4c (ORCPT
+	with ESMTP id S932455Ab3DWV4g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 17:56:32 -0400
+	Tue, 23 Apr 2013 17:56:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        stable@vger.kernel.org
-Subject: [ 00/23] 3.0.75-stable review
-Date: Tue, 23 Apr 2013 14:56:07 -0700
-Message-Id: <20130423215456.307216898@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Andrew Honig <ahonig@google.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [ 07/23] KVM: x86: fix for buffer overflow in handling of MSR_KVM_SYSTEM_TIME (CVE-2013-1796)
+Date: Tue, 23 Apr 2013 14:56:14 -0700
+Message-Id: <20130423215457.061810094@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130423215456.307216898@linuxfoundation.org>
+References: <20130423215456.307216898@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 3.0.75 release.
-There are 23 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let me know.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-Responses should be made by Thu Apr 25 21:54:13 UTC 2013.
-Anything received after that time might be too late.
+------------------
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.75-rc1.gz
-and the diffstat can be found below.
+From: Andy Honig <ahonig@google.com>
 
-thanks,
+commit c300aa64ddf57d9c5d9c898a64b36877345dd4a9 upstream.
 
-greg k-h
+If the guest sets the GPA of the time_page so that the request to update the
+time straddles a page then KVM will write onto an incorrect page.  The
+write is done byusing kmap atomic to get a pointer to the page for the time
+structure and then performing a memcpy to that page starting at an offset
+that the guest controls.  Well behaved guests always provide a 32-byte aligned
+address, however a malicious guest could use this to corrupt host kernel
+memory.
 
--------------
-Pseudo-Shortlog of commits:
+Tested: Tested against kvmclock unit test.
 
-Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-    Linux 3.0.75-rc1
+Signed-off-by: Andrew Honig <ahonig@google.com>
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Josef Bacik <jbacik@fusionio.com>
-    Btrfs: make sure nbytes are right after log replay
+---
+ arch/x86/kvm/x86.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-Linus Torvalds <torvalds@linux-foundation.org>
-    vm: convert mtdchar mmap to vm_iomap_memory() helper
-
-Linus Torvalds <torvalds@linux-foundation.org>
-    vm: convert HPET mmap to vm_iomap_memory() helper
-
-Linus Torvalds <torvalds@linux-foundation.org>
-    vm: convert fb_mmap to vm_iomap_memory() helper
-
-Linus Torvalds <torvalds@linux-foundation.org>
-    vm: convert snd_pcm_lib_mmap_iomem() to vm_iomap_memory() helper
-
-Linus Torvalds <torvalds@linux-foundation.org>
-    vm: add vm_iomap_memory() helper function
-
-Dave Airlie <airlied@gmail.com>
-    fbcon: fix locking harder
-
-Tommi Rantala <tt.rantala@gmail.com>
-    perf: Treat attr.config as u64 in perf_swevent_init()
-
-Jiri Kosina <jkosina@suse.cz>
-    Revert "sysfs: fix race between readdir and lseek"
-
-Mathias Krause <minipli@googlemail.com>
-    crypto: algif - suppress sending source address information in recvmsg
-
-Tejun Heo <tj@kernel.org>
-    sched: Convert BUG_ON()s in try_to_wake_up_local() to WARN_ON_ONCE()s
-
-Felix Fietkau <nbd@openwrt.org>
-    ath9k_htc: accept 1.x firmware newer than 1.3
-
-Illia Ragozin <illia.ragozin@grapecom.com>
-    ARM: 7696/1: Fix kexec by setting outer_cache.inv_all for Feroceon
-
-Andrew Honig <ahonig@google.com>
-    KVM: Allow cross page reads and writes from cached translations.
-
-Andy Honig <ahonig@google.com>
-    KVM: Fix bounds checking in ioapic indirect register reads (CVE-2013-1798)
-
-Andy Honig <ahonig@google.com>
-    KVM: x86: Convert MSR_KVM_SYSTEM_TIME to use gfn_to_hva_cache functions (CVE-2013-1797)
-
-Andy Honig <ahonig@google.com>
-    KVM: x86: fix for buffer overflow in handling of MSR_KVM_SYSTEM_TIME (CVE-2013-1796)
-
-Vyacheslav Dubeyko <slava@dubeyko.com>
-    hfsplus: fix potential overflow in hfsplus_file_truncate()
-
-Emese Revfy <re.emese@gmail.com>
-    kernel/signal.c: stop info leak via the tkill and the tgkill syscalls
-
-Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-    hugetlbfs: add swap entry check in follow_hugetlb_page()
-
-Christoph Fritz <chf.fritz@googlemail.com>
-    can: sja1000: fix handling on dt properties on little endian systems
-
-Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-    Revert "8021q: fix a potential use-after-free"
-
-Michael Bohan <mbohan@codeaurora.org>
-    hrtimer: Don't reinitialize a cpu_base lock on CPU_UP
-
-
--------------
-
-Diffstat:
-
- Makefile                                      |  4 +--
- arch/arm/mm/cache-feroceon-l2.c               |  1 +
- arch/x86/include/asm/kvm_host.h               |  4 +--
- arch/x86/kvm/x86.c                            | 40 +++++++++-------------
- crypto/algif_hash.c                           |  2 ++
- crypto/algif_skcipher.c                       |  1 +
- drivers/char/hpet.c                           | 14 +-------
- drivers/gpu/vga/vga_switcheroo.c              |  3 ++
- drivers/mtd/mtdchar.c                         | 32 ++----------------
- drivers/net/can/sja1000/sja1000_of_platform.c | 31 +++++++++--------
- drivers/net/wireless/ath/ath9k/htc_drv_init.c |  2 +-
- drivers/video/console/fbcon.c                 | 11 ++++--
- drivers/video/fbmem.c                         | 42 +++++++++--------------
- fs/btrfs/tree-log.c                           | 48 +++++++++++++++++++++++----
- fs/hfsplus/extents.c                          |  2 +-
- fs/sysfs/dir.c                                | 14 +-------
- include/linux/kvm_host.h                      |  2 +-
- include/linux/kvm_types.h                     |  1 +
- include/linux/mm.h                            |  2 ++
- kernel/events/core.c                          |  2 +-
- kernel/hrtimer.c                              |  3 +-
- kernel/sched.c                                |  6 ++--
- kernel/signal.c                               |  2 +-
- mm/hugetlb.c                                  | 12 ++++++-
- mm/memory.c                                   | 47 ++++++++++++++++++++++++++
- net/8021q/vlan.c                              | 14 ++++----
- sound/core/pcm_native.c                       | 12 ++-----
- virt/kvm/ioapic.c                             |  7 ++--
- virt/kvm/kvm_main.c                           | 39 +++++++++++++++++-----
- 29 files changed, 228 insertions(+), 172 deletions(-)
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -1539,6 +1539,11 @@ int kvm_set_msr_common(struct kvm_vcpu *
+ 		/* ...but clean it before doing the actual write */
+ 		vcpu->arch.time_offset = data & ~(PAGE_MASK | 1);
+ 
++		/* Check that the address is 32-byte aligned. */
++		if (vcpu->arch.time_offset &
++				(sizeof(struct pvclock_vcpu_time_info) - 1))
++			break;
++
+ 		vcpu->arch.time_page =
+ 				gfn_to_page(vcpu->kvm, data >> PAGE_SHIFT);
+ 
 
 
