@@ -1,74 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753369Ab3DWUA3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 16:00:29 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:7658 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752328Ab3DWUA1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 16:00:27 -0400
-X-Authority-Analysis: v=2.0 cv=cOZiQyiN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=W3keemsfVFYA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=JwN9V2MEACcA:10 a=-whhAZm7gCjGifiUwfcA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1366747223.9609.163.camel@gandalf.local.home>
-Subject: Re: [PATCH 2/2] nohz: Add basic tracing
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@linaro.org>,
-        Li Zhong <zhong@linux.vnet.ibm.com>, Oleg Nesterov <oleg@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Tue, 23 Apr 2013 16:00:23 -0400
-In-Reply-To: <0000013e38188092-7e0b72ea-9ae0-417c-902a-5e8a88282073-000000@email.amazonses.com>
-References: <1366664905-21884-1-git-send-email-fweisbec@gmail.com>
-	 <1366664905-21884-3-git-send-email-fweisbec@gmail.com>
-	 <0000013e38188092-7e0b72ea-9ae0-417c-902a-5e8a88282073-000000@email.amazonses.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753714Ab3DWUAy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 16:00:54 -0400
+Received: from fieldses.org ([174.143.236.118]:52082 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752328Ab3DWUAw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Apr 2013 16:00:52 -0400
+Date: Tue, 23 Apr 2013 16:00:48 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Jeff Layton <jlayton@redhat.com>
+Cc: Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        linux-nfs@vger.kernel.org, devel@openvz.org,
+        Trond.Myklebust@netapp.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] nfsd: enable UMH client tracker in container
+Message-ID: <20130423200048.GI3676@fieldses.org>
+References: <20130416111344.14621.56912.stgit@localhost.localdomain>
+ <20130419070150.6937f1e6@corrin.poochiereds.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130419070150.6937f1e6@corrin.poochiereds.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-04-23 at 18:12 +0000, Christoph Lameter wrote:
-> On Mon, 22 Apr 2013, Frederic Weisbecker wrote:
+On Fri, Apr 19, 2013 at 07:01:50AM -0700, Jeff Layton wrote:
+> On Tue, 16 Apr 2013 15:17:44 +0400
+> Stanislav Kinsbursky <skinsbursky@parallels.com> wrote:
 > 
-> > It's not obvious to find out why the full dynticks subsystem
-> > doesn't always stop the tick: whether this is due to kthreads,
-> > posix timers, perf events, etc...
-> >
-> > These new tracepoints are here to help the user diagnose
-> > the failures and test this feature.
+> > This patch adds support for UserModeHelper tracker in a container.
+> > The reason for this is that the only containerised tracker ("nfsdcld") is
+> > going to be removed in 3.10 kernel, thus at least one more tracker have to be
+> > containerised to replace the deprecated one.
+> > UMH tracker looks more preferable comparing to legacy since it's the latest
+> > one.
+> > To make UMH tracker work in a container, we have to make sure, that it
+> > executes right binary (i.e., this binary have to be taken from the container
+> > environment).
+> > But, UMH is a kernel thread, which works in global root environment by design
+> > (kernel thread's root is inherited from kthreadd, which in turn inherited it's
+> > root from global init). So, the root have to be swapped to the container's
+> > one before binary execution.
+> > 
+> > This patch passes "init" callback and private "data" to UMH interface, which
+> > are used to swap root for spawned kernel thread.
+> > 
+> > Note: container's root can be stored on stack, because UMH calls are
+> > synchronous.
+> > 
+> > Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+> > ---
+> >  fs/nfsd/nfs4recover.c |   29 ++++++++++++++++++++++-------
+> >  1 files changed, 22 insertions(+), 7 deletions(-)
+> > 
+> > diff --git a/fs/nfsd/nfs4recover.c b/fs/nfsd/nfs4recover.c
+> > index 899ca26..15f8de6 100644
+> > --- a/fs/nfsd/nfs4recover.c
+> > +++ b/fs/nfsd/nfs4recover.c
+> > @@ -38,6 +38,7 @@
+> >  #include <linux/crypto.h>
+> >  #include <linux/sched.h>
+> >  #include <linux/fs.h>
+> > +#include <linux/fs_struct.h>
+> >  #include <linux/module.h>
+> >  #include <net/net_namespace.h>
+> >  #include <linux/sunrpc/rpc_pipe_fs.h>
+> > @@ -1122,12 +1123,28 @@ nfsd4_cltrack_legacy_recdir(const struct xdr_netobj *name)
+> >  	return result;
+> >  }
+> >  
+> > +static int nfsd_swap_root(struct subprocess_info *info, struct cred *new)
+> > +{
+> > +	struct path *root = info->data;
+> > +	struct fs_struct *fs = current->fs;
+> > +	struct path current_root;
+> > +
+> > +	spin_lock(&fs->lock);
+> > +	current_root = fs->root;
+> > +	fs->root = *root;
+> > +	spin_unlock(&fs->lock);
+> > +	if (current_root.dentry)
+> > +		path_put(&current_root);
+> > +	return 0;
+> > +}
+> > +
+> >  static int
+> >  nfsd4_umh_cltrack_upcall(char *cmd, char *arg, char *legacy)
+> >  {
+> >  	char *envp[2];
+> >  	char *argv[4];
+> >  	int ret;
+> > +	struct path root;
+> >  
+> >  	if (unlikely(!cltrack_prog[0])) {
+> >  		dprintk("%s: cltrack_prog is disabled\n", __func__);
+> > @@ -1146,7 +1163,11 @@ nfsd4_umh_cltrack_upcall(char *cmd, char *arg, char *legacy)
+> >  	argv[2] = arg;
+> >  	argv[3] = NULL;
+> >  
+> > -	ret = call_usermodehelper(argv[0], argv, envp, UMH_WAIT_PROC);
+> > +	get_fs_root(current->fs, &root);
+> > +
+> > +	ret = call_usermodehelper_fns(argv[0], argv, envp, UMH_WAIT_PROC,
+> > +				       nfsd_swap_root, NULL, &root);
+> > +
+> >  	/*
+> >  	 * Disable the upcall mechanism if we're getting an ENOENT or EACCES
+> >  	 * error. The admin can re-enable it on the fly by using sysfs
+> > @@ -1185,12 +1206,6 @@ bin_to_hex_dup(const unsigned char *src, int srclen)
+> >  static int
+> >  nfsd4_umh_cltrack_init(struct net __attribute__((unused)) *net)
+> >  {
+> > -	/* XXX: The usermode helper s not working in container yet. */
+> > -	if (net != &init_net) {
+> > -		WARN(1, KERN_ERR "NFSD: attempt to initialize umh client "
+> > -			"tracking in a container!\n");
+> > -		return -EINVAL;
+> > -	}
+> >  	return nfsd4_umh_cltrack_upcall("init", NULL, NULL);
+> >  }
+> >  
+> > 
 > 
-> Very good. This will help a lot.
+> I think this looks correct and like it'll work, but I wonder whether
+> we'd be best served by making this part of the UMH code itself?
+> 
+> IOW, add some fields to the struct subprocess_info to hold the new
+> root, and then do what you're doing in nfsd_swap_root before calling
+> the "init" function?
+> 
+> I imagine we'll eventually need do something similar for at least some
+> of the callers of call_usermodehelper so it would make sense to me to
+> not replicate copies of nfsd_swap_root all over the place.
 
-You can also do:
+Agreed.
 
-cd /sys/kernel/debug/tracing
-echo 1 > max_graph_depth
-echo function_graph > current_tracer
-
-And then run your code, and look to see what happens on the cpu in
-question:
-
-cat per_cpu/cpuX/trace
-
-The "max_graph_depth" of one will make the function graph tracer just
-trace the first function that enters the kernel. You'll be able to see
-if the kernel did anything to your userspace application that wasn't
-planned.
-
-"max_graph_depth" was added in 3.9-rc1
-
--- Steve
-
-
+--b.
