@@ -1,59 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932225Ab3DWWE3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 18:04:29 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:54501 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755342Ab3DWWEY (ORCPT
+	id S1754134Ab3DWWEt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 18:04:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34281 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757784Ab3DWVyX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 18:04:24 -0400
-Message-ID: <5177055D.1060307@linaro.org>
-Date: Wed, 24 Apr 2013 00:04:13 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>, Joseph Lo <josephl@nvidia.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: Re: [PATCH 07/21] ARM: tegra: unify tegra_idle_device definitions
-References: <1366734653-488286-1-git-send-email-arnd@arndb.de> <1366734653-488286-8-git-send-email-arnd@arndb.de> <5176BD29.1000405@linaro.org> <201304232057.37055.arnd@arndb.de>
-In-Reply-To: <201304232057.37055.arnd@arndb.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Tue, 23 Apr 2013 17:54:23 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        Lu Hua <huax.lu@intel.com>, Dave Airlie <airlied@redhat.com>
+Subject: [ 20/26] fbcon: fix locking harder
+Date: Tue, 23 Apr 2013 14:54:00 -0700
+Message-Id: <20130423215335.433842143@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130423215333.344045754@linuxfoundation.org>
+References: <20130423215333.344045754@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/23/2013 08:57 PM, Arnd Bergmann wrote:
-> On Tuesday 23 April 2013, Daniel Lezcano wrote:
->> the patch sounds good but I think the side effect of the consolidation
->> patchset [1] fixed that.
->>
->> You can find these fixes in Rafael's tree:
->>
->> https://git.kernel.org/cgit/linux/kernel/git/rafael/linux-pm.git/commit/?h=linux-next&amp;id=4c637b2175a0dc65d533494225525c6c82d73293
->>
->> https://git.kernel.org/cgit/linux/kernel/git/rafael/linux-pm.git/commit/?h=linux-next&amp;id=e158f9da6974cc11bfab2246a9b10021af0e0d8a
->>
->> https://git.kernel.org/cgit/linux/kernel/git/rafael/linux-pm.git/commit/?h=linux-next&amp;id=c5106c9dea9a6022ab84c6cb1d4a0b19fc5af0e2
->>
->> https://git.kernel.org/cgit/linux/kernel/git/rafael/linux-pm.git/commit/?h=linux-next&amp;id=f040c26ffaa5e56f2bca427c719c9601a02e70e5
->>
->> [1] http://www.spinics.net/lists/arm-kernel/msg239811.html
->>
-> 
-> Ah. Is that not in linux-next? I created the patch today based on the latest
-> linux-next from today (Tuesday).
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Ah, ok. Actually the patches were taken by Rafael right today. So it is
-possible the changes were not reflected in linux-next yet.
+------------------
 
+From: Dave Airlie <airlied@gmail.com>
 
--- 
- <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+commit 054430e773c9a1e26f38e30156eff02dedfffc17 upstream.
 
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+Okay so Alan's patch handled the case where there was no registered fbcon,
+however the other path entered in set_con2fb_map pit.
+
+In there we called fbcon_takeover, but we also took the console lock in a couple
+of places. So push the console lock out to the callers of set_con2fb_map,
+
+this means fbmem and switcheroo needed to take the lock around the fb notifier
+entry points that lead to this.
+
+This should fix the efifb regression seen by Maarten.
+
+Tested-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+Tested-by: Lu Hua <huax.lu@intel.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/gpu/vga/vga_switcheroo.c |    3 +++
+ drivers/video/console/fbcon.c    |   11 ++++++++---
+ drivers/video/fbmem.c            |    2 ++
+ 3 files changed, 13 insertions(+), 3 deletions(-)
+
+--- a/drivers/gpu/vga/vga_switcheroo.c
++++ b/drivers/gpu/vga/vga_switcheroo.c
+@@ -26,6 +26,7 @@
+ #include <linux/fb.h>
+ 
+ #include <linux/pci.h>
++#include <linux/console.h>
+ #include <linux/vga_switcheroo.h>
+ 
+ struct vga_switcheroo_client {
+@@ -256,8 +257,10 @@ static int vga_switchto_stage2(struct vg
+ 
+ 	if (new_client->fb_info) {
+ 		struct fb_event event;
++		console_lock();
+ 		event.info = new_client->fb_info;
+ 		fb_notifier_call_chain(FB_EVENT_REMAP_ALL_CONSOLE, &event);
++		console_unlock();
+ 	}
+ 
+ 	ret = vgasr_priv.handler->switchto(new_client->id);
+--- a/drivers/video/console/fbcon.c
++++ b/drivers/video/console/fbcon.c
+@@ -842,6 +842,8 @@ static void con2fb_init_display(struct v
+  *
+  *	Maps a virtual console @unit to a frame buffer device
+  *	@newidx.
++ *
++ *	This should be called with the console lock held.
+  */
+ static int set_con2fb_map(int unit, int newidx, int user)
+ {
+@@ -859,7 +861,7 @@ static int set_con2fb_map(int unit, int
+ 
+ 	if (!search_for_mapped_con() || !con_is_bound(&fb_con)) {
+ 		info_idx = newidx;
+-		return fbcon_takeover(0);
++		return do_fbcon_takeover(0);
+ 	}
+ 
+ 	if (oldidx != -1)
+@@ -867,7 +869,6 @@ static int set_con2fb_map(int unit, int
+ 
+ 	found = search_fb_in_map(newidx);
+ 
+-	console_lock();
+ 	con2fb_map[unit] = newidx;
+ 	if (!err && !found)
+  		err = con2fb_acquire_newinfo(vc, info, unit, oldidx);
+@@ -894,7 +895,6 @@ static int set_con2fb_map(int unit, int
+ 	if (!search_fb_in_map(info_idx))
+ 		info_idx = newidx;
+ 
+-	console_unlock();
+  	return err;
+ }
+ 
+@@ -3025,6 +3025,7 @@ static inline int fbcon_unbind(void)
+ }
+ #endif /* CONFIG_VT_HW_CONSOLE_BINDING */
+ 
++/* called with console_lock held */
+ static int fbcon_fb_unbind(int idx)
+ {
+ 	int i, new_idx = -1, ret = 0;
+@@ -3051,6 +3052,7 @@ static int fbcon_fb_unbind(int idx)
+ 	return ret;
+ }
+ 
++/* called with console_lock held */
+ static int fbcon_fb_unregistered(struct fb_info *info)
+ {
+ 	int i, idx;
+@@ -3088,6 +3090,7 @@ static int fbcon_fb_unregistered(struct
+ 	return 0;
+ }
+ 
++/* called with console_lock held */
+ static void fbcon_remap_all(int idx)
+ {
+ 	int i;
+@@ -3132,6 +3135,7 @@ static inline void fbcon_select_primary(
+ }
+ #endif /* CONFIG_FRAMEBUFFER_DETECT_PRIMARY */
+ 
++/* called with console_lock held */
+ static int fbcon_fb_registered(struct fb_info *info)
+ {
+ 	int ret = 0, i, idx;
+@@ -3284,6 +3288,7 @@ static int fbcon_event_notify(struct not
+ 		ret = fbcon_fb_unregistered(info);
+ 		break;
+ 	case FB_EVENT_SET_CONSOLE_MAP:
++		/* called with console lock held */
+ 		con2fb = event->data;
+ 		ret = set_con2fb_map(con2fb->console - 1,
+ 				     con2fb->framebuffer, 1);
+--- a/drivers/video/fbmem.c
++++ b/drivers/video/fbmem.c
+@@ -1168,8 +1168,10 @@ static long do_fb_ioctl(struct fb_info *
+ 		event.data = &con2fb;
+ 		if (!lock_fb_info(info))
+ 			return -ENODEV;
++		console_lock();
+ 		event.info = info;
+ 		ret = fb_notifier_call_chain(FB_EVENT_SET_CONSOLE_MAP, &event);
++		console_unlock();
+ 		unlock_fb_info(info);
+ 		break;
+ 	case FBIOBLANK:
+
 
