@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757530Ab3DWWQz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 18:16:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34042 "EHLO
+	id S1757433Ab3DWVwt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 17:52:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33992 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757456Ab3DWVww (ORCPT
+	with ESMTP id S1757239Ab3DWVwq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 17:52:52 -0400
+	Tue, 23 Apr 2013 17:52:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andrew Honig <ahonig@google.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [ 14/42] KVM: x86: fix for buffer overflow in handling of MSR_KVM_SYSTEM_TIME (CVE-2013-1796)
-Date: Tue, 23 Apr 2013 14:52:12 -0700
-Message-Id: <20130423215206.994264870@linuxfoundation.org>
+        Mylene Josserand <Mylene.Josserand@navocap.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>
+Subject: [ 06/42] can: mcp251x: add missing IRQF_ONESHOT to request_threaded_irq
+Date: Tue, 23 Apr 2013 14:52:04 -0700
+Message-Id: <20130423215206.203367324@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130423215205.523980967@linuxfoundation.org>
 References: <20130423215205.523980967@linuxfoundation.org>
@@ -28,42 +27,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Honig <ahonig@google.com>
+From: Marc Kleine-Budde <mkl@pengutronix.de>
 
-commit c300aa64ddf57d9c5d9c898a64b36877345dd4a9 upstream.
+commit db388d6460ffa53b3b38429da6f70a913f89b048 upstream.
 
-If the guest sets the GPA of the time_page so that the request to update the
-time straddles a page then KVM will write onto an incorrect page.  The
-write is done byusing kmap atomic to get a pointer to the page for the time
-structure and then performing a memcpy to that page starting at an offset
-that the guest controls.  Well behaved guests always provide a 32-byte aligned
-address, however a malicious guest could use this to corrupt host kernel
-memory.
+Since commit:
 
-Tested: Tested against kvmclock unit test.
+    1c6c695 genirq: Reject bogus threaded irq requests
 
-Signed-off-by: Andrew Honig <ahonig@google.com>
-Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: Ben Hutchings <ben@decadent.org.uk>
+threaded irqs must provide a primary handler or set the IRQF_ONESHOT flag.
+Since the mcp251x driver doesn't make use of a primary handler set the
+IRQF_ONESHOT flag.
+
+Reported-by: Mylene Josserand <Mylene.Josserand@navocap.com>
+Tested-by: Mylene Josserand <Mylene.Josserand@navocap.com>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kvm/x86.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/net/can/mcp251x.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -1960,6 +1960,11 @@ int kvm_set_msr_common(struct kvm_vcpu *
- 		/* ...but clean it before doing the actual write */
- 		vcpu->arch.time_offset = data & ~(PAGE_MASK | 1);
+--- a/drivers/net/can/mcp251x.c
++++ b/drivers/net/can/mcp251x.c
+@@ -922,6 +922,7 @@ static int mcp251x_open(struct net_devic
+ 	struct mcp251x_priv *priv = netdev_priv(net);
+ 	struct spi_device *spi = priv->spi;
+ 	struct mcp251x_platform_data *pdata = spi->dev.platform_data;
++	unsigned long flags;
+ 	int ret;
  
-+		/* Check that the address is 32-byte aligned. */
-+		if (vcpu->arch.time_offset &
-+				(sizeof(struct pvclock_vcpu_time_info) - 1))
-+			break;
+ 	ret = open_candev(net);
+@@ -938,9 +939,14 @@ static int mcp251x_open(struct net_devic
+ 	priv->tx_skb = NULL;
+ 	priv->tx_len = 0;
+ 
++	flags = IRQF_ONESHOT;
++	if (pdata->irq_flags)
++		flags |= pdata->irq_flags;
++	else
++		flags |= IRQF_TRIGGER_FALLING;
 +
- 		vcpu->arch.time_page =
- 				gfn_to_page(vcpu->kvm, data >> PAGE_SHIFT);
- 
+ 	ret = request_threaded_irq(spi->irq, NULL, mcp251x_can_ist,
+-		  pdata->irq_flags ? pdata->irq_flags : IRQF_TRIGGER_FALLING,
+-		  DEVICE_NAME, priv);
++				   flags, DEVICE_NAME, priv);
+ 	if (ret) {
+ 		dev_err(&spi->dev, "failed to acquire irq %d\n", spi->irq);
+ 		if (pdata->transceiver_enable)
 
 
