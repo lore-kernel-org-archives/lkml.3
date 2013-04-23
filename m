@@ -1,121 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757140Ab3DWVu1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 17:50:27 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:39103 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756778Ab3DWVuY (ORCPT
+	id S1756859Ab3DWVuI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 17:50:08 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:64518 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755949Ab3DWVuF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 17:50:24 -0400
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-To: <rui.zhang@intel.com>
-CC: <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Eduardo Valentin <eduardo.valentin@ti.com>
-Subject: [PATCHv2 4/9] thermal: use EXPORT_SYMBOL_GPL
-Date: Tue, 23 Apr 2013 17:48:15 -0400
-Message-ID: <1366753700-1412-5-git-send-email-eduardo.valentin@ti.com>
-X-Mailer: git-send-email 1.8.2.1.342.gfa7285d
-In-Reply-To: <1366753700-1412-1-git-send-email-eduardo.valentin@ti.com>
-References: <1366753700-1412-1-git-send-email-eduardo.valentin@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Tue, 23 Apr 2013 17:50:05 -0400
+From: Julius Werner <jwerner@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, Vincent Palatin <vpalatin@chromium.org>,
+        Sameer Nanda <snanda@chromium.org>,
+        Julius Werner <jwerner@chromium.org>
+Subject: [PATCH] usb: ehci: Only sleep for post-resume handover if devices use persist
+Date: Tue, 23 Apr 2013 14:49:22 -0700
+Message-Id: <1366753762-6194-1-git-send-email-jwerner@chromium.org>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Restrict usage of GPL modules.
+The current EHCI code sleeps a flat 110ms in the resume path if there
+was a USB 1.1 device connected to its companion controller during
+suspend, waiting for the device to reappear and reset so that it can be
+handed back to the companion. This is necessary if the device uses
+persist, so that the companion controller can actually see it during its
+own resume path.
 
-Acked-by: Zhang Rui <rui.zhang@intel.com>
-Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
+However, if the device doesn't use persist, this is entirely
+unnecessary. We might just as well ignore it and have the normal device
+detection/reset/handoff code handle it asynchronously when it eventually
+shows up. As USB 1.1 devices are almost exclusively HIDs these days (for
+which persist has no value), this can allow distros to shave another
+tenth of a second off their resume time.
+
+Signed-off-by: Julius Werner <jwerner@chromium.org>
 ---
- drivers/thermal/thermal_core.c | 18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
+ drivers/usb/host/ehci-hub.c | 21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
 
-diff --git a/drivers/thermal/thermal_core.c b/drivers/thermal/thermal_core.c
-index b54f916..3f39672 100644
---- a/drivers/thermal/thermal_core.c
-+++ b/drivers/thermal/thermal_core.c
-@@ -432,7 +432,7 @@ void thermal_zone_device_update(struct thermal_zone_device *tz)
- 	for (count = 0; count < tz->trips; count++)
- 		handle_thermal_trip(tz, count);
- }
--EXPORT_SYMBOL(thermal_zone_device_update);
-+EXPORT_SYMBOL_GPL(thermal_zone_device_update);
+diff --git a/drivers/usb/host/ehci-hub.c b/drivers/usb/host/ehci-hub.c
+index 7d06e77..2507afb 100644
+--- a/drivers/usb/host/ehci-hub.c
++++ b/drivers/usb/host/ehci-hub.c
+@@ -29,6 +29,8 @@
+ /*-------------------------------------------------------------------------*/
+ #include <linux/usb/otg.h>
  
- static void thermal_zone_device_check(struct work_struct *work)
- {
-@@ -1195,7 +1195,7 @@ free_mem:
- 	kfree(dev);
- 	return result;
- }
--EXPORT_SYMBOL(thermal_zone_bind_cooling_device);
-+EXPORT_SYMBOL_GPL(thermal_zone_bind_cooling_device);
++#include "../core/usb.h"
++
+ #define	PORT_WAKE_BITS	(PORT_WKOC_E|PORT_WKDISC_E|PORT_WKCONN_E)
  
- /**
-  * thermal_zone_unbind_cooling_device - unbind a cooling device from a thermal zone
-@@ -1235,7 +1235,7 @@ unbind:
- 	kfree(pos);
- 	return 0;
- }
--EXPORT_SYMBOL(thermal_zone_unbind_cooling_device);
-+EXPORT_SYMBOL_GPL(thermal_zone_unbind_cooling_device);
+ #ifdef	CONFIG_PM
+@@ -42,6 +44,18 @@ static int ehci_hub_control(
+ 	u16		wLength
+ );
  
- static void thermal_release(struct device *dev)
- {
-@@ -1332,7 +1332,7 @@ unregister:
- 	device_unregister(&cdev->device);
- 	return ERR_PTR(result);
- }
--EXPORT_SYMBOL(thermal_cooling_device_register);
-+EXPORT_SYMBOL_GPL(thermal_cooling_device_register);
++
++static int companion_persist(struct device *dev, void *unused)
++{
++	struct usb_device *udev = container_of(dev, struct usb_device, dev);
++
++	if (!is_usb_device(dev))
++		return 0;  /* Filter out struct usb_interface on the same bus */
++
++	return !udev->maxchild && udev->persist_enabled &&
++		udev->bus->root_hub->speed < USB_SPEED_HIGH;
++}
++
+ /* After a power loss, ports that were owned by the companion must be
+  * reset so that the companion can still own them.
+  */
+@@ -56,6 +70,13 @@ static void ehci_handover_companion_ports(struct ehci_hcd *ehci)
+ 	if (!ehci->owned_ports)
+ 		return;
  
- /**
-  * thermal_cooling_device_unregister - removes the registered thermal cooling device
-@@ -1392,7 +1392,7 @@ void thermal_cooling_device_unregister(struct thermal_cooling_device *cdev)
- 	device_unregister(&cdev->device);
- 	return;
- }
--EXPORT_SYMBOL(thermal_cooling_device_unregister);
-+EXPORT_SYMBOL_GPL(thermal_cooling_device_unregister);
- 
- void thermal_cdev_update(struct thermal_cooling_device *cdev)
- {
-@@ -1433,7 +1433,7 @@ void thermal_notify_framework(struct thermal_zone_device *tz, int trip)
- {
- 	handle_thermal_trip(tz, trip);
- }
--EXPORT_SYMBOL(thermal_notify_framework);
-+EXPORT_SYMBOL_GPL(thermal_notify_framework);
- 
- /**
-  * create_trip_attrs - create attributes for trip points
-@@ -1685,7 +1685,7 @@ unregister:
- 	device_unregister(&tz->device);
- 	return ERR_PTR(result);
- }
--EXPORT_SYMBOL(thermal_zone_device_register);
-+EXPORT_SYMBOL_GPL(thermal_zone_device_register);
- 
- /**
-  * thermal_device_unregister - removes the registered thermal zone device
-@@ -1752,7 +1752,7 @@ void thermal_zone_device_unregister(struct thermal_zone_device *tz)
- 	device_unregister(&tz->device);
- 	return;
- }
--EXPORT_SYMBOL(thermal_zone_device_unregister);
-+EXPORT_SYMBOL_GPL(thermal_zone_device_unregister);
- 
- #ifdef CONFIG_NET
- static struct genl_family thermal_event_genl_family = {
-@@ -1830,7 +1830,7 @@ int thermal_generate_netlink_event(struct thermal_zone_device *tz,
- 
- 	return result;
- }
--EXPORT_SYMBOL(thermal_generate_netlink_event);
-+EXPORT_SYMBOL_GPL(thermal_generate_netlink_event);
- 
- static int genetlink_init(void)
- {
++	/* Check if any USB 1.1 controller in the system uses a non-hub device
++	 * with persist enabled. If they don't, the device will get reenumerated
++	 * anyway and there is no need to slow resume down to wait for it.
++	 */
++	if (!bus_for_each_dev(&usb_bus_type, NULL, NULL, companion_persist))
++		return;
++
+ 	/* Make sure the ports are powered */
+ 	port = HCS_N_PORTS(ehci->hcs_params);
+ 	while (port--) {
 -- 
-1.8.2.1.342.gfa7285d
+1.8.2.1
 
