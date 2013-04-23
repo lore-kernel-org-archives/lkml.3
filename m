@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932207Ab3DWVxM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 17:53:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34114 "EHLO
+	id S1757496Ab3DWVxr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 17:53:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34170 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757588Ab3DWVxC (ORCPT
+	with ESMTP id S932197Ab3DWVxM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 17:53:02 -0400
+	Tue, 23 Apr 2013 17:53:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mathias Krause <minipli@googlemail.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: [ 29/42] crypto: algif - suppress sending source address information in recvmsg
-Date: Tue, 23 Apr 2013 14:52:27 -0700
-Message-Id: <20130423215208.456931650@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org
+Subject: [ 42/42] Revert "MIPS: page.h: Provide more readable definition for PAGE_MASK."
+Date: Tue, 23 Apr 2013 14:52:40 -0700
+Message-Id: <20130423215209.749528209@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130423215205.523980967@linuxfoundation.org>
 References: <20130423215205.523980967@linuxfoundation.org>
@@ -27,43 +25,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Krause <minipli@googlemail.com>
+From: Ralf Baechle <ralf@linux-mips.org>
 
-commit 72a763d805a48ac8c0bf48fdb510e84c12de51fe upstream.
+commit 3b5e50edaf500f392f4a372296afc0b99ffa7e70 upstream.
 
-The current code does not set the msg_namelen member to 0 and therefore
-makes net/socket.c leak the local sockaddr_storage variable to userland
--- 128 bytes of kernel stack memory. Fix that.
+This reverts commit c17a6554782ad531f4713b33fd6339ba67ef6391.
 
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Manuel Lauss writes:
+
+lmo commit c17a6554 (MIPS: page.h: Provide more readable definition for
+PAGE_MASK) apparently breaks ioremap of 36-bit addresses on my Alchemy
+systems (PCI and PCMCIA) The reason is that in arch/mips/mm/ioremap.c
+line 157  (phys_addr &= PAGE_MASK) bits 32-35 are cut off.  Seems the
+new PAGE_MASK is explicitly 32bit, or one could make it signed instead
+of unsigned long.
+
+From: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- crypto/algif_hash.c     |    2 ++
- crypto/algif_skcipher.c |    1 +
- 2 files changed, 3 insertions(+)
+ arch/mips/include/asm/page.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/crypto/algif_hash.c
-+++ b/crypto/algif_hash.c
-@@ -161,6 +161,8 @@ static int hash_recvmsg(struct kiocb *un
- 	else if (len < ds)
- 		msg->msg_flags |= MSG_TRUNC;
+--- a/arch/mips/include/asm/page.h
++++ b/arch/mips/include/asm/page.h
+@@ -31,7 +31,7 @@
+ #define PAGE_SHIFT	16
+ #endif
+ #define PAGE_SIZE	(_AC(1,UL) << PAGE_SHIFT)
+-#define PAGE_MASK       (~(PAGE_SIZE - 1))
++#define PAGE_MASK	(~((1 << PAGE_SHIFT) - 1))
  
-+	msg->msg_namelen = 0;
-+
- 	lock_sock(sk);
- 	if (ctx->more) {
- 		ctx->more = 0;
---- a/crypto/algif_skcipher.c
-+++ b/crypto/algif_skcipher.c
-@@ -432,6 +432,7 @@ static int skcipher_recvmsg(struct kiocb
- 	long copied = 0;
- 
- 	lock_sock(sk);
-+	msg->msg_namelen = 0;
- 	for (iov = msg->msg_iov, iovlen = msg->msg_iovlen; iovlen > 0;
- 	     iovlen--, iov++) {
- 		unsigned long seglen = iov->iov_len;
+ #ifdef CONFIG_MIPS_HUGE_TLB_SUPPORT
+ #define HPAGE_SHIFT	(PAGE_SHIFT + PAGE_SHIFT - 3)
 
 
