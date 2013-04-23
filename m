@@ -1,76 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756733Ab3DWVCt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 17:02:49 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:53892 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753892Ab3DWVCr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 17:02:47 -0400
-Date: Tue, 23 Apr 2013 14:01:56 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Christoph Lameter <cl@linux.com>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@linaro.org>,
-        Li Zhong <zhong@linux.vnet.ibm.com>, Oleg Nesterov <oleg@redhat.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 2/2] nohz: Add basic tracing
-Message-ID: <20130423210156.GD3427@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1366664905-21884-1-git-send-email-fweisbec@gmail.com>
- <1366664905-21884-3-git-send-email-fweisbec@gmail.com>
- <0000013e38188092-7e0b72ea-9ae0-417c-902a-5e8a88282073-000000@email.amazonses.com>
- <1366747223.9609.163.camel@gandalf.local.home>
+	id S1757139Ab3DWVG5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 17:06:57 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:48635 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756483Ab3DWVGz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Apr 2013 17:06:55 -0400
+Date: Tue, 23 Apr 2013 16:06:50 -0500
+From: Ben Myers <bpm@sgi.com>
+To: Lukas Czerner <lczerner@redhat.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        xfs@oss.sgi.com
+Subject: Re: [PATCH v3 05/18] xfs: use ->invalidatepage() length argument
+Message-ID: <20130423210650.GA2408@sgi.com>
+References: <1365498867-27782-1-git-send-email-lczerner@redhat.com>
+ <1365498867-27782-6-git-send-email-lczerner@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1366747223.9609.163.camel@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13042321-2876-0000-0000-000007D6D94A
+In-Reply-To: <1365498867-27782-6-git-send-email-lczerner@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 23, 2013 at 04:00:23PM -0400, Steven Rostedt wrote:
-> On Tue, 2013-04-23 at 18:12 +0000, Christoph Lameter wrote:
-> > On Mon, 22 Apr 2013, Frederic Weisbecker wrote:
-> > 
-> > > It's not obvious to find out why the full dynticks subsystem
-> > > doesn't always stop the tick: whether this is due to kthreads,
-> > > posix timers, perf events, etc...
-> > >
-> > > These new tracepoints are here to help the user diagnose
-> > > the failures and test this feature.
-> > 
-> > Very good. This will help a lot.
-> 
-> You can also do:
-> 
-> cd /sys/kernel/debug/tracing
-> echo 1 > max_graph_depth
-> echo function_graph > current_tracer
-> 
-> And then run your code, and look to see what happens on the cpu in
-> question:
-> 
-> cat per_cpu/cpuX/trace
-> 
-> The "max_graph_depth" of one will make the function graph tracer just
-> trace the first function that enters the kernel. You'll be able to see
-> if the kernel did anything to your userspace application that wasn't
-> planned.
-> 
-> "max_graph_depth" was added in 3.9-rc1
+Hey Lukas,
 
-Very cool!  I have added this to the documentation.
+On Tue, Apr 09, 2013 at 11:14:14AM +0200, Lukas Czerner wrote:
+> ->invalidatepage() aop now accepts range to invalidate so we can make
+> use of it in xfs_vm_invalidatepage()
+> 
+> Signed-off-by: Lukas Czerner <lczerner@redhat.com>
+> Cc: xfs@oss.sgi.com
+> ---
+>  fs/xfs/xfs_aops.c  |    5 +++--
+>  fs/xfs/xfs_trace.h |   41 ++++++++++++++++++++++++++++++++++++++++-
+>  2 files changed, 43 insertions(+), 3 deletions(-)
+> 
+> diff --git a/fs/xfs/xfs_aops.c b/fs/xfs/xfs_aops.c
+> index e426796..e8018d3 100644
+> --- a/fs/xfs/xfs_aops.c
+> +++ b/fs/xfs/xfs_aops.c
+> @@ -826,8 +826,9 @@ xfs_vm_invalidatepage(
+>  	unsigned int		offset,
+>  	unsigned int		length)
+>  {
+> -	trace_xfs_invalidatepage(page->mapping->host, page, offset);
+> -	block_invalidatepage(page, offset, PAGE_CACHE_SIZE - offset);
+> +	trace_xfs_invalidatepage(page->mapping->host, page, offset,
+> +				 length);
+> +	block_invalidatepage(page, offset, length);
+>  }
+>  
+>  /*
+> diff --git a/fs/xfs/xfs_trace.h b/fs/xfs/xfs_trace.h
+> index 16a8129..91d6434 100644
+> --- a/fs/xfs/xfs_trace.h
+> +++ b/fs/xfs/xfs_trace.h
+> @@ -991,7 +991,46 @@ DEFINE_EVENT(xfs_page_class, name,	\
+>  	TP_ARGS(inode, page, off))
+>  DEFINE_PAGE_EVENT(xfs_writepage);
+>  DEFINE_PAGE_EVENT(xfs_releasepage);
+> -DEFINE_PAGE_EVENT(xfs_invalidatepage);
 
-							Thanx, Paul
+I think it might be better if we continue using the xfs_invalidatepage trace
+point as part of the xfs_page_class rather than as a separate trace point, like below.
 
+Else this looks great.
+
+Reviewed-by: Ben Myers <bpm@sgi.com>
+
+Regards,
+Ben
+
+
+
+Index: xfs/fs/xfs/xfs_aops.c
+===================================================================
+--- xfs.orig/fs/xfs/xfs_aops.c
++++ xfs/fs/xfs/xfs_aops.c
+@@ -825,7 +825,7 @@ xfs_vm_invalidatepage(
+ 	struct page		*page,
+ 	unsigned long		offset)
+ {
+-	trace_xfs_invalidatepage(page->mapping->host, page, offset);
++	trace_xfs_invalidatepage(page->mapping->host, page, offset, 0);
+ 	block_invalidatepage(page, offset);
+ }
+ 
+@@ -920,7 +920,7 @@ xfs_vm_writepage(
+ 	int			count = 0;
+ 	int			nonblocking = 0;
+ 
+-	trace_xfs_writepage(inode, page, 0);
++	trace_xfs_writepage(inode, page, 0, 0);
+ 
+ 	ASSERT(page_has_buffers(page));
+ 
+@@ -1151,7 +1151,7 @@ xfs_vm_releasepage(
+ {
+ 	int			delalloc, unwritten;
+ 
+-	trace_xfs_releasepage(page->mapping->host, page, 0);
++	trace_xfs_releasepage(page->mapping->host, page, 0, 0);
+ 
+ 	xfs_count_page_state(page, &delalloc, &unwritten);
+ 
+Index: xfs/fs/xfs/xfs_trace.h
+===================================================================
+--- xfs.orig/fs/xfs/xfs_trace.h
++++ xfs/fs/xfs/xfs_trace.h
+@@ -974,14 +974,16 @@ DEFINE_RW_EVENT(xfs_file_splice_read);
+ DEFINE_RW_EVENT(xfs_file_splice_write);
+ 
+ DECLARE_EVENT_CLASS(xfs_page_class,
+-	TP_PROTO(struct inode *inode, struct page *page, unsigned long off),
+-	TP_ARGS(inode, page, off),
++	TP_PROTO(struct inode *inode, struct page *page, unsigned long off,
++		 unsigned int len),
++	TP_ARGS(inode, page, off, len),
+ 	TP_STRUCT__entry(
+ 		__field(dev_t, dev)
+ 		__field(xfs_ino_t, ino)
+ 		__field(pgoff_t, pgoff)
+ 		__field(loff_t, size)
+ 		__field(unsigned long, offset)
++		__field(unsigned int, length)
+ 		__field(int, delalloc)
+ 		__field(int, unwritten)
+ 	),
+@@ -995,24 +997,27 @@ DECLARE_EVENT_CLASS(xfs_page_class,
+ 		__entry->pgoff = page_offset(page);
+ 		__entry->size = i_size_read(inode);
+ 		__entry->offset = off;
++		__entry->length = len;
+ 		__entry->delalloc = delalloc;
+ 		__entry->unwritten = unwritten;
+ 	),
+ 	TP_printk("dev %d:%d ino 0x%llx pgoff 0x%lx size 0x%llx offset %lx "
+-		  "delalloc %d unwritten %d",
++		  "length %x delalloc %d unwritten %d",
+ 		  MAJOR(__entry->dev), MINOR(__entry->dev),
+ 		  __entry->ino,
+ 		  __entry->pgoff,
+ 		  __entry->size,
+ 		  __entry->offset,
++		  __entry->length,
+ 		  __entry->delalloc,
+ 		  __entry->unwritten)
+ )
+ 
+ #define DEFINE_PAGE_EVENT(name)		\
+ DEFINE_EVENT(xfs_page_class, name,	\
+-	TP_PROTO(struct inode *inode, struct page *page, unsigned long off),	\
+-	TP_ARGS(inode, page, off))
++	TP_PROTO(struct inode *inode, struct page *page, unsigned long off, \
++		 unsigned int len),	\
++	TP_ARGS(inode, page, off, len))
+ DEFINE_PAGE_EVENT(xfs_writepage);
+ DEFINE_PAGE_EVENT(xfs_releasepage);
+ DEFINE_PAGE_EVENT(xfs_invalidatepage);
