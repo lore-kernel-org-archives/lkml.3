@@ -1,67 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757257Ab3DWQb7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 12:31:59 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:52272 "EHLO
+	id S932372Ab3DWQhe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 12:37:34 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:50547 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757238Ab3DWQb4 (ORCPT
+	with ESMTP id S932306Ab3DWQhb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 12:31:56 -0400
+	Tue, 23 Apr 2013 12:37:31 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Alan Stern <stern@rowland.harvard.edu>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org
-Subject: [PATCH 19/21] usb: phy: don't mark usb_bind_phy as __init
-Date: Tue, 23 Apr 2013 18:30:51 +0200
-Message-Id: <1366734653-488286-20-git-send-email-arnd@arndb.de>
+        Russell King <linux@arm.linux.org.uk>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Michael Buesch <mb@bu3sch.de>,
+        Larry Finger <Larry.Finger@lwfinger.net>
+Subject: [PATCH 10/21] ssb: fix alignment of struct bcma_device_id
+Date: Tue, 23 Apr 2013 18:30:42 +0200
+Message-Id: <1366734653-488286-11-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1366734653-488286-1-git-send-email-arnd@arndb.de>
 References: <1366734653-488286-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:qb0T5pBLrjnV57Baxtl+EcieOySM0ht9IVqLJkLEXn5
- aMd002sojXxLUgvDLOwH3Bv4Naa1yF7E5qFfoyt1g6rsorUe3D
- llzpq/QpiHdyEb/3B6pvNReL1ZSl8Gso9ardg9+pBSbnzOmk2q
- aNpeKdHJzTm/uMb/UC5aZsBq0F0QfeKcPtSIdfBULNYqFD0RSp
- sLgYPf7ITJgYWpKFQs6SzuNOKkS3JgVlmJpUiqYaxfvV5B4Tv4
- VJw4KvhDC2/whyHXCc9QgnRY0XWkcWEUONLdidbJ7/aA8oVIVZ
- UpMTzpSKzs8EEO7fgg8m7XcaqrkxxU4SoMMbFNTNZtWPInSzEm
- fJslkuy75JuCn/H//34Uz4El2Hehxbrq6Ikc6l6R2
+X-Provags-ID: V02:K0:saeHJCTJ21Jxs6230BRkDH4heLmNX7lgF3Yk659mD+3
+ 6ZYUBqxGH27Wu7t39FKJOhYvnzaoa5GtgiDdTt5vkpzZWGnAqF
+ WBmK34KjhxTNavvjKlT3qN17NXi+wZvL/GEy/F8k91DB2v4KP8
+ bk9M71FjXPasp7tnOlO4+oz2nHm/tTaqsSxICyPsOf8GtdczNu
+ vKiDbCPvN7IN5PUGRoWcOCd3nsBCseEVNR3a52BGyiBJJh3lBS
+ 0IzG9kV33g+WmqA/2GRdr48jWvKnG0ZWGGIsEZL3/Nvl6SWtac
+ ASO8fHEayziVStHTpgRIwBBZg91pIrTK80iXw5mw0v4SZwxopw
+ 0lG39qoXiEnkDJTd6gjir2UULmOZMT71HhMXPmXCG
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It makes no sense for a symbol to be both exported and marked __init,
-because any users in modules would be calling this function after
-it gets discarded. Further, this patch revolves a section mismatch
-warning from usbhs_init_phys(), which is intentionally not marked
-__init:
+The ARM OABI and EABI disagree on the alignment of structures
+with small members, so module init tools may interpret the
+ssb device table incorrectly, as shown  by this warning when
+building the b43 device driver in an OABI kernel:
 
-WARNING: vmlinux.o(.text+0x413f8): Section mismatch in reference from
-the function usbhs_init_phys() to the function .init.text:usb_bind_phy()
+FATAL: drivers/net/wireless/b43/b43: sizeof(struct ssb_device_id)=6 is
+not a modulo of the size of section __mod_ssb_device_table=88.
+
+Forcing the default (EABI) alignment on the structure makes this
+problem go away. Since the ssb_device_id may have the same problem,
+better fix both structures.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Alan Stern <stern@rowland.harvard.edu>
-Cc: Felipe Balbi <balbi@ti.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-usb@vger.kernel.org
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: John W. Linville <linville@tuxdriver.com>
+Cc: Michael Buesch <mb@bu3sch.de>
+Cc: Larry Finger <Larry.Finger@lwfinger.net>
 ---
- drivers/usb/otg/otg.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/linux/mod_devicetable.h | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/usb/otg/otg.c b/drivers/usb/otg/otg.c
-index 2bd03d2..77346cf 100644
---- a/drivers/usb/otg/otg.c
-+++ b/drivers/usb/otg/otg.c
-@@ -414,7 +414,7 @@ EXPORT_SYMBOL(usb_remove_phy);
-  *
-  * To be used by platform specific initialization code.
-  */
--int __init usb_bind_phy(const char *dev_name, u8 index,
-+int usb_bind_phy(const char *dev_name, u8 index,
- 				const char *phy_dev_name)
- {
- 	struct usb_phy_bind *phy_bind;
+diff --git a/include/linux/mod_devicetable.h b/include/linux/mod_devicetable.h
+index 779cf7c..ce363a5 100644
+--- a/include/linux/mod_devicetable.h
++++ b/include/linux/mod_devicetable.h
+@@ -360,7 +360,8 @@ struct ssb_device_id {
+ 	__u16	vendor;
+ 	__u16	coreid;
+ 	__u8	revision;
+-};
++	__u8	__pad;
++} __attribute__((packed, aligned(2)));
+ #define SSB_DEVICE(_vendor, _coreid, _revision)  \
+ 	{ .vendor = _vendor, .coreid = _coreid, .revision = _revision, }
+ #define SSB_DEVTABLE_END  \
+@@ -376,7 +377,7 @@ struct bcma_device_id {
+ 	__u16	id;
+ 	__u8	rev;
+ 	__u8	class;
+-};
++} __attribute__((packed,aligned(2)));
+ #define BCMA_CORE(_manuf, _id, _rev, _class)  \
+ 	{ .manuf = _manuf, .id = _id, .rev = _rev, .class = _class, }
+ #define BCMA_CORETABLE_END  \
 -- 
 1.8.1.2
 
