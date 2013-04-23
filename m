@@ -1,61 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756416Ab3DWNim (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 09:38:42 -0400
-Received: from 8bytes.org ([85.214.48.195]:54381 "EHLO mail.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755835Ab3DWNil (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 09:38:41 -0400
-Date: Tue, 23 Apr 2013 15:38:38 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Varun Sethi <Varun.Sethi@freescale.com>
-Cc: iommu@lists.linux-foundation.org, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, galak@kernel.crashing.org,
-        benh@kernel.crashing.org, stuart.yoder@freescale.com,
-        scottwood@freescale.com
-Subject: Re: [PATCH 2/3 v14] iommu/fsl: Add additional iommu attributes
- required by the PAMU driver.
-Message-ID: <20130423133837.GG17148@8bytes.org>
-References: <1366691726-9023-1-git-send-email-Varun.Sethi@freescale.com>
- <1366691726-9023-2-git-send-email-Varun.Sethi@freescale.com>
+	id S1755850Ab3DWNiy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 09:38:54 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:48783 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756448Ab3DWNix (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Apr 2013 09:38:53 -0400
+Message-ID: <51768EE3.6080005@pengutronix.de>
+Date: Tue, 23 Apr 2013 15:38:43 +0200
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1366691726-9023-2-git-send-email-Varun.Sethi@freescale.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Tue Apr 23 15:38:39 2013
-X-DSPAM-Confidence: 0.9994
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 51768edf23679025111766
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Steffen Trumtrar <s.trumtrar@pengutronix.de>, linux-kernel@vger.kernel.org,
+        Jiri Slaby <jslaby@suse.cz>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>
+Subject: Re: [BUG] increased us/sys-load due to tty-layer in 2.6.38+ ?!
+References: <20130408092558.GD25003@pengutronix.de> <20130408150611.GB13824@kroah.com> <517595B7.1030000@pengutronix.de>
+In-Reply-To: <517595B7.1030000@pengutronix.de>
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="----enig2APJUFGEGSLVVAERHVGBP"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 23, 2013 at 10:05:25AM +0530, Varun Sethi wrote:
-> Added the following domain attributes for the FSL PAMU driver:
-> 1. Added new iommu stash attribute, which allows setting of the
->    LIODN specific stash id parameter through IOMMU API.
-> 2. Added an attribute for enabling/disabling DMA to a particular
->    memory window.
-> 3. Added domain attribute to check for PAMUV1 specific constraints.
-> 
-> Signed-off-by: Varun Sethi <Varun.Sethi@freescale.com>
-> ---
-> v14 changes:
-> - Add FSL prefix to PAMU attributes.
-> v13 changes:
-> - created a new file include/linux/fsl_pamu_stash.h for stash
-> attributes.
-> v12 changes:
-> - Moved PAMU specifc stash ids and structures to PAMU header file.
-> - no change in v11.
-> - no change in v10.
->  include/linux/fsl_pamu_stash.h |   39 +++++++++++++++++++++++++++++++++++++++
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+------enig2APJUFGEGSLVVAERHVGBP
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: quoted-printable
 
-Isn't asm/ for your architecture a better place for that header?
+On 04/22/2013 09:55 PM, Marc Kleine-Budde wrote:
+[...]
+
+>>> This resulted in
+>>>         f23eb2b2b28547fc70df82dd5049eb39bec5ba12
+>>>         tty: stop using "delayed_work" in the tty layer
+>>>
+>>> as possible cause. Reverting this commit by hand in v3.8 showed a loa=
+d distribution
+>>> similar to 2.6.38.
+>>> What I haven't done, is measure if the load is really increasing or i=
+f top only
+>>> tells me so. Maybe the algorithm to calculate this somehow produces d=
+ifferent
+>>> results because of the switch from schedule_delayed_work to schedule_=
+work?
+>>> So, is this a bug, a feature, a symptom,...?
+>>
+>> It's a "fake" load (i.e. no extra cpu is being used, just a "busy" wai=
+t
+>> is happening.)
+
+The below test shows that with that offending patch, there is less time
+to calculate PI. My conclusion from this is that he patch increases the
+load generated by the processing of the serial line in the tty layer
+and/or increased overhead by more context switches/scheduling.
+
+> Another test was to measure how long it takes to calculate 10 k digits
+> of PI. Less time means less load on the system by the tty layer:
+>=20
+>                 idle         tty open     serial load
+>=20
+> v2.6.38-good    20.9s        22.3s        32.8s
+> v2.6.38-bad     20.9s        22.3s        51.5s
+
+Are there any options to decrease the load to the old value and keep the
+better latency introduce by that patch?
+
+Marc
+
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
 
 
-	Joerg
+------enig2APJUFGEGSLVVAERHVGBP
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
 
+iEYEARECAAYFAlF2juYACgkQjTAFq1RaXHMaZgCgg8pvFSpK7FtXJ67SfKC6QXTu
+0xkAniX86zIlYHxebMwPQ6Xcv7hrDaWt
+=KYcJ
+-----END PGP SIGNATURE-----
+
+------enig2APJUFGEGSLVVAERHVGBP--
