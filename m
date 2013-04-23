@@ -1,94 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754059Ab3DWCYN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 22:24:13 -0400
-Received: from mga03.intel.com ([143.182.124.21]:18595 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753346Ab3DWCYL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 22:24:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,531,1363158000"; 
-   d="scan'208";a="290115459"
-Message-ID: <5175F09E.1000304@intel.com>
-Date: Tue, 23 Apr 2013 10:23:26 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S1754130Ab3DWCmU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 22:42:20 -0400
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:5476 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753890Ab3DWCmT convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Apr 2013 22:42:19 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 2
+X-BigFish: VS2(z616jz98dI9371Ic89bh1432Izz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1082kz8dhz8275bhz2dh2a8h668h839h93fhd25he5bhf0ah1288h12a5h12a9h12bdh1354h137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19c3h1ad9h1b0ah1155h)
+Message-ID: <5175F56B.5040200@freescale.com>
+Date: Tue, 23 Apr 2013 10:43:55 +0800
+From: Huang Shijie <b32955@freescale.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
 MIME-Version: 1.0
-To: Vincent Guittot <vincent.guittot@linaro.org>
-CC: Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Paul Turner <pjt@google.com>, Santosh <santosh.shilimkar@ti.com>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Chander Kashyap <chander.kashyap@linaro.org>,
-        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Len Brown <len.brown@intel.com>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Jonathan Corbet <corbet@lwn.net>
-Subject: Re: [RFC PATCH v3 5/6] sched: pack the idle load balance
-References: <1363955155-18382-1-git-send-email-vincent.guittot@linaro.org> <1363955155-18382-6-git-send-email-vincent.guittot@linaro.org> <1364302359.5053.21.camel@laptop> <CAKfTPtD=_oS5gJeynUG=ft-Y1zEdxZEMhUPH9hSXx+H2pi4xgA@mail.gmail.com> <1364308932.5053.46.camel@laptop> <CAKfTPtArtgkH5MU_xFAKjLDS-i32g2qQMdvyW=LLkG84tH8Hhg@mail.gmail.com> <5174CE96.3060805@linux.vnet.ibm.com> <CAKfTPtCCCifC=c+xjjnAH_HSqkR80PiQoddQKXPHuZwZawbvcA@mail.gmail.com>
-In-Reply-To: <CAKfTPtCCCifC=c+xjjnAH_HSqkR80PiQoddQKXPHuZwZawbvcA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: Brian Norris <computersforpeace@gmail.com>
+CC: <dwmw2@infradead.org>, <dedekind1@gmail.com>,
+        <linux-mtd@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 3/8] mtd: get the ECC info from the Extended Parameter
+ Page
+References: <1366616878-29481-1-git-send-email-b32955@freescale.com>	<1366616878-29481-4-git-send-email-b32955@freescale.com> <CAN8TOE_xOBTv7weAqYinFMmTStXgY93KanV-jDAqFnY=CEfkdQ@mail.gmail.com>
+In-Reply-To: <CAN8TOE_xOBTv7weAqYinFMmTStXgY93KanV-jDAqFnY=CEfkdQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks you, Preeti and Vincent to talk the power aware scheduler for
-details! believe this open discussion is helpful to conduct a a more
-comprehensive solution. :)
+于 2013年04月23日 05:22, Brian Norris 写道:
+> On Mon, Apr 22, 2013 at 12:47 AM, Huang Shijie<b32955@freescale.com>  wrote:
+>> Since the ONFI 2.1, the onfi spec adds the Extended Parameter Page
+>> to store the ECC info.
+>>
+>> The onfi spec tells us that if the nand chip's recommended ECC codeword
+>> size is not 512 bytes, then the @ecc_bits is 0xff. The host _SHOULD_ then
+>> read the Extended ECC information that is part of the extended parameter
+>> page to retrieve the ECC requirements for this device.
+>>
+>> This patch implement the reading of the Extended Parameter Page, and parses
+>> the sections for ECC type, and get the ECC info from the ECC section.
+>>
+>> Tested this patch with Micron MT29F64G08CBABAWP.
+>>
+>> Signed-off-by: Huang Shijie<b32955@freescale.com>
+>> ---
+>>   drivers/mtd/nand/nand_base.c |   54 ++++++++++++++++++++++++++++++++++++++++++
+>>   1 files changed, 54 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
+>> index beff911..48ff097 100644
+>> --- a/drivers/mtd/nand/nand_base.c
+>> +++ b/drivers/mtd/nand/nand_base.c
+>> @@ -2846,6 +2846,56 @@ static u16 onfi_crc16(u16 crc, u8 const *p, size_t len)
+>>          return crc;
+>>   }
+>>
+>> +/* Parse the Extended Parameter Page. */
+>> +static void nand_flash_detect_ext_param_page(struct mtd_info *mtd,
+>> +               struct nand_chip *chip, struct nand_onfi_params *p, int last)
+>> +{
+> I think we want a return code (int) for this function. It obviously
+> can fail, and the caller needs to know this.
+I not sure who will uses ecc_strength/ecc_size, except the gpmi.
+So i ignore the return value.
 
-> Hi Preeti,
-> 
-> I have had a look at Alex patches but i have some concerns with his patches
-> -There no notion of power domain which is quite important when we speak
-> about power saving IMHO. Packing tasks has got an interest if the idle
-> CPUs can reach a useful low power state independently from busy CPUs.
-> Architectures have different low power state capabilities which must be
-> taken into account. In addition, you can have system which have CPUs
-> with better power efficiency and this kind of system are not taken into
-> account.
+If you think we should add it, i will add it.
+> The "last" parameter is not very obvious until you read the whole
+> function, where you see that this function assumes a lot about the
+> caller. Please address the comments below and/or fully document the
+> parameters and calling context for this function.
+>
+ok. I can add more comments.
 
-I agree with you on this point. and like what's you done to add new flag
-in sched domain. It also make scheduler easy pick up new idea in balancing.
-BTW, Currently, the my balance is trying pack task per SMT, maybe
-packing task per cpu horse power is more compatible for other archs?
+>> +       struct onfi_ext_param_page *ep;
+>> +       struct onfi_ext_section *s;
+>> +       struct onfi_ext_ecc_info *ecc;
+>> +       uint8_t *cursor;
+>> +       int len;
+>> +       int i;
+>> +
+>> +       len = le16_to_cpu(p->ext_param_page_length) * 16;
+>> +       ep = kcalloc(1, max_t(int, len, sizeof(*p)), GFP_KERNEL);
+>> +       if (!ep)
+>> +               goto ext_out;
+>> +
+>> +       /*
+>> +        * Skip the ONFI Parameter Pages.
+>> +        * The Change Read Columm command may does not works here.
+> Why not?
+>
+You can give me a fix patch which bases on my patch set.
+I can test it. :)
 
-> -There are some computation of statistics on a potentially large number
-> of cpus and groups at each task wake up. This overhead concerns me and
-> such amount of computation should only be done when we have more time
-> like the periodic load balance.
+I tried to use the Change-read-columm command, but failed.
 
-Usually, some computation is far slighter then the task migration. If
-the computation is helpful to reduce future possible migration, it will
-save much. On current code, I observed the fork balancing can distribute
-task well in powersaving policy. That means the computation is worth.
-
-> -There are some heuristics that will be hard to tune:
->  *powersaving balance period set as 8*max_interval
->  *power saving can do some performance load balance if there was no
-> performance load balance in the last 32 balances with no more than 4
-> perf balance in the last 64 balance
-
-Do you have other tunning opinions on the numbers? I am glad to hear any
-input.
->  *sched_burst_threshold
-
-I find it is useful on 3.8 kernel when aim7 cause a very imbalance
-wakeup. but now aim7 is calm down after lock-stealing RWSEM used in
-kernel, maybe need to re-evaluate this on future new version.
-> 
-> I'm going to send a proposal for a more aggressive and scalable mode of
-> my patches which will take care of my concerns. Let see how this new
-> patchset can fit with Alex's ones
+>> +        */
+>> +       for (i = last + 1; i<  p->num_of_param_pages; i++)
+>> +               chip->read_buf(mtd, (uint8_t *)ep, sizeof(*p));
+> You never sent a command to the chip. How can you expect to read from it?
+we have sent a command in the nand_flash_detect_onfi().
+> It seems that you are writing this function with the assumption of a
+> particular calling context (a context in which the last command was
+> CMD_PARAM). IMO, it would make a lot more sense that this function
+> actually send its own CMD_PARAM followed by either X bytes of skipped
+> read_buf() or a change read column command. Then it doesn't need the
+> "last" argument, and its usage makes much more sense.
+>
+I added the "last" argument just because the Change-read-column command 
+did not works.
 
 
--- 
-Thanks Alex
+thanks
+Huang Shijie
+
+
