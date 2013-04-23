@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756911Ab3DWWNn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 18:13:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34095 "EHLO
+	id S1756967Ab3DWWN7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 18:13:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34093 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757567Ab3DWVxA (ORCPT
+	with ESMTP id S1757558Ab3DWVw7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 17:53:00 -0400
+	Tue, 23 Apr 2013 17:52:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Felix Fietkau <nbd@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 25/42] ath9k_htc: accept 1.x firmware newer than 1.3
-Date: Tue, 23 Apr 2013 14:52:23 -0700
-Message-Id: <20130423215208.080608529@linuxfoundation.org>
+        Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Jiri Olsa <jolsa@redhat.com>, Will Deacon <will.deacon@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 24/42] ARM: 7698/1: perf: fix group validation when using enable_on_exec
+Date: Tue, 23 Apr 2013 14:52:22 -0700
+Message-Id: <20130423215207.972974124@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130423215205.523980967@linuxfoundation.org>
 References: <20130423215205.523980967@linuxfoundation.org>
@@ -27,32 +30,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Will Deacon <will.deacon@arm.com>
 
-commit 319e7bd96aca64a478f3aad40711c928405b8b77 upstream.
+commit cb2d8b342aa084d1f3ac29966245dec9163677fb upstream.
 
-Since the firmware has been open sourced, the minor version has been
-bumped to 1.4 and the API/ABI will stay compatible across further 1.x
-releases.
+Events may be created with attr->disabled == 1 and attr->enable_on_exec
+== 1, which confuses the group validation code because events with the
+PERF_EVENT_STATE_OFF are not considered candidates for scheduling, which
+may lead to failure at group scheduling time.
 
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+This patch fixes the validation check for ARM, so that events in the
+OFF state are still considered when enable_on_exec is true.
+
+Reported-by: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/htc_drv_init.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/kernel/perf_event.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/net/wireless/ath/ath9k/htc_drv_init.c
-+++ b/drivers/net/wireless/ath/ath9k/htc_drv_init.c
-@@ -796,7 +796,7 @@ static int ath9k_init_firmware_version(s
- 	 * required version.
- 	 */
- 	if (priv->fw_version_major != MAJOR_VERSION_REQ ||
--	    priv->fw_version_minor != MINOR_VERSION_REQ) {
-+	    priv->fw_version_minor < MINOR_VERSION_REQ) {
- 		dev_err(priv->dev, "ath9k_htc: Please upgrade to FW version %d.%d\n",
- 			MAJOR_VERSION_REQ, MINOR_VERSION_REQ);
- 		return -EINVAL;
+--- a/arch/arm/kernel/perf_event.c
++++ b/arch/arm/kernel/perf_event.c
+@@ -261,7 +261,10 @@ validate_event(struct pmu_hw_events *hw_
+ 	struct arm_pmu *armpmu = to_arm_pmu(event->pmu);
+ 	struct pmu *leader_pmu = event->group_leader->pmu;
+ 
+-	if (event->pmu != leader_pmu || event->state <= PERF_EVENT_STATE_OFF)
++	if (event->pmu != leader_pmu || event->state < PERF_EVENT_STATE_OFF)
++		return 1;
++
++	if (event->state == PERF_EVENT_STATE_OFF && !event->attr.enable_on_exec)
+ 		return 1;
+ 
+ 	return armpmu->get_event_idx(hw_events, event) >= 0;
 
 
