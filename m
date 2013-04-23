@@ -1,68 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753266Ab3DWADo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 20:03:44 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:43663 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752221Ab3DWADn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 20:03:43 -0400
-Date: Mon, 22 Apr 2013 20:02:47 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Jeff Moyer <jmoyer@redhat.com>
-Cc: Mel Gorman <mgorman@suse.de>, Dave Chinner <david@fromorbit.com>,
-        Jan Kara <jack@suse.cz>, linux-ext4@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: Re: Excessive stall times on ext4 in 3.9-rc2
-Message-ID: <20130423000247.GA17566@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Jeff Moyer <jmoyer@redhat.com>, Mel Gorman <mgorman@suse.de>,
-	Dave Chinner <david@fromorbit.com>, Jan Kara <jack@suse.cz>,
-	linux-ext4@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-	Linux-MM <linux-mm@kvack.org>, Jiri Slaby <jslaby@suse.cz>
-References: <20130410105608.GC1910@suse.de>
- <20130410131245.GC4862@thunk.org>
- <20130411170402.GB11656@suse.de>
- <20130411183512.GA12298@thunk.org>
- <20130411213335.GE9379@quack.suse.cz>
- <20130412025708.GB7445@thunk.org>
- <20130412045042.GA30622@dastard>
- <20130412151952.GA4944@thunk.org>
- <20130422143846.GA2675@suse.de>
- <x49a9oqmblc.fsf@segfault.boston.devel.redhat.com>
+	id S1753247Ab3DWAF2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 20:05:28 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:34614 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752511Ab3DWAFZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Apr 2013 20:05:25 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <5175D01E.5000302@jp.fujitsu.com>
+Date: Tue, 23 Apr 2013 09:04:46 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <x49a9oqmblc.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: <kosaki.motohiro@gmail.com>, <mingo@kernel.org>, <hpa@zytor.com>,
+        <srivatsa.bhat@linux.vnet.ibm.com>, <linux-kernel@vger.kernel.org>,
+        <x86@kernel.org>, <linux-mm@kvack.org>
+Subject: Re: [Bug fix PATCH v2] numa, cpu hotplug: Change links of CPU and
+ node when changing node number by onlining CPU
+References: <5170D4CB.20900@jp.fujitsu.com> <20130422153541.04ba682f13910cfede0d2ff7@linux-foundation.org>
+In-Reply-To: <20130422153541.04ba682f13910cfede0d2ff7@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 22, 2013 at 06:42:23PM -0400, Jeff Moyer wrote:
-> 
-> Jan, if I were to come up with a way of promoting a particular async
-> queue to the front of the line, where would I put such a call in the
-> ext4/jbd2 code to be effective?
+2013/04/23 7:35, Andrew Morton wrote:
+> On Fri, 19 Apr 2013 14:23:23 +0900 Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com> wrote:
+>
+>> When booting x86 system contains memoryless node, node numbers of CPUs
+>> on memoryless node were changed to nearest online node number by
+>> init_cpu_to_node() because the node is not online.
+>>
+>> ...
+>>
+>> If we hot add memory to memoryless node and offine/online all CPUs on
+>> the node, node numbers of these CPUs are changed to correct node numbers
+>> by srat_detect_node() because the node become online.
+>
+> OK, here's a dumb question.
+>
+> At boot time the CPUs are assigned to the "nearest online node" rather
+> than to their real memoryless node.  The patch arranges for those CPUs
+> to still be assigned to the "nearest online node" _after_ some memory
+> is hot-added to their real node.  Correct?
 
-Well, I thought we had discussed trying to bump a pending I/O
-automatically when there was an attempt to call lock_buffer() on the
-bh?  That would be ideal, because we could keep the async writeback
-low priority until someone is trying to wait upon it, at which point
-obviously it should no longer be considered an async write call.
+Yes. For changing node number of CPUs safely, we should offline CPUs.
 
-Failing that, this is something I've been toying with.... what do you
-think?
+>
+> Would it not be better to fix this by assigning those CPUs to their real,
+> memoryless node right at the initial boot?  Or is there something in
+> the kernel which makes cpus-on-a-memoryless-node not work correctly?
+>
 
-http://patchwork.ozlabs.org/patch/238192/
-http://patchwork.ozlabs.org/patch/238257/
+I think assigning CPUs to real node is better. But current Linux's node
+strongly depend on memory. Thus if we just create cpus-on-a-memoryless-node,
+the kernel cannot work correctly.
 
-(The first patch in the series just makes sure that allocation bitmap
-reads are marked with the META/PRIO flags.  It's not strictly speaking
-related to the problem discussed here, but for completeness:
-http://patchwork.ozlabs.org/patch/238193/)
+Thanks,
+Yasuaki Ishimatsu
 
-						- Ted
