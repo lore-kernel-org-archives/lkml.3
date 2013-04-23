@@ -1,73 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752978Ab3DWTs0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 15:48:26 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:50631 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752621Ab3DWTsZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 15:48:25 -0400
-Date: Tue, 23 Apr 2013 12:48:22 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Ezequiel Garcia <elezegarcia@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Olof Johansson <olof@lixom.net>, Jason Cooper <jason@lakedaemon.net>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Lior Amsalem <alior@marvell.com>, Maen Suleiman <maen@marvell.com>,
-        Andrew Lunn <andrew@lunn.ch>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Subject: Re: [PATCH] drivers: memory: Introduce Marvell EBU Device Bus driver
-Message-ID: <20130423194822.GA7214@kroah.com>
-References: <1366744886-3019-1-git-send-email-elezegarcia@gmail.com>
+	id S1753273Ab3DWTzL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 15:55:11 -0400
+Received: from mout.gmx.net ([212.227.17.20]:51917 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752554Ab3DWTzJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Apr 2013 15:55:09 -0400
+X-Authenticated: #815327
+X-Provags-ID: V01U2FsdGVkX1/89cY+9mH86fc5U7d7+2S+xcZ2HA7O22O497P16S
+	eBZfKPa72UxVhd
+Message-ID: <5176E715.2070201@gmx.de>
+Date: Tue, 23 Apr 2013 21:55:01 +0200
+From: =?ISO-8859-1?Q?Malte_Schr=F6der?= <maltesch@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130413 Icedove/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1366744886-3019-1-git-send-email-elezegarcia@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-nfs@vger.kernel.org
+CC: linux-kernel@vger.kernel.org
+Subject: NFS4 sec=krb5 broken in 3.9-rc8
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="----enig2KMLOTBWEQBFAFLRLUUAS"
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 23, 2013 at 04:21:26PM -0300, Ezequiel Garcia wrote:
-> From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-> 
-> Marvell EBU SoCs such as Armada 370/XP, Orion5x (88f5xxx) and
-> Discovery (mv78xx0) supports a Device Bus controller to access several
-> kinds of memories and I/O devices (NOR, NAND, SRAM, FPGA).
-> 
-> This commit adds a driver to handle this controller. So far only
-> Armada 370, Armada XP and Discovery SoCs are supported.
-> 
-> The driver must be registered through a device tree node;
-> as explained in the binding document.
-> 
-> For each child node in the device tree, this driver will:
->   * set timing parameters
->   * register a child device
->   * setup an address decoding window, using the mbus driver
-> 
-> Keep in mind the address decoding window setup is only a temporary hack.
-> This code will be removed from this devbus driver as soon as a proper device
-> tree binding for the mbus driver is added.
-> 
-> Signed-off-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-> Acked-by: Arnd Bergmann <arnd@arndb.de>
-> ---
-> Hi Greg,
-> 
-> This patch Applies on today linux-next.
-> I don't know if we are still in time for you to take this
-> and merge it into v3.10.
-> 
-> All of the DT related changes are in linux-next through arm-soc,
-> but this driver was left out and, unless you take it, will
-> get queued for v3.11. So it's up to you.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+------enig2KMLOTBWEQBFAFLRLUUAS
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-It's way too late for new drivers for 3.10, sorry.  I'll hold on to this
-and merge it to my trees after 3.10-rc1 is out for inclusion in 3.11.
+Hi,
+when I update my server from kernel 3.8.5 to 3.9-rc8 I cannot mount its
+NFS exports from clients using nfs4 and sec=3Dkrb5. Using sec=3Dsys works=
+,
+using 3.8.5 also works good with both modes.
 
-thanks,
+Kind regards
+Malte Schr=F6der
 
-greg k-h
+
+------enig2KMLOTBWEQBFAFLRLUUAS
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iEYEARECAAYFAlF25xgACgkQ4q3E2oMjYtV4/ACeJiKFsx9Hh7wqii3ORlYUjQyB
+xtkAoMq+wFxftNfV5ulPYAsCikCNPcCb
+=rcTr
+-----END PGP SIGNATURE-----
+
+------enig2KMLOTBWEQBFAFLRLUUAS--
