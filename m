@@ -1,46 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757193Ab3DWS2Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 14:28:16 -0400
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:40677 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756508Ab3DWS2O (ORCPT
+	id S1757213Ab3DWSa2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 14:30:28 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52647 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756920Ab3DWSa1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 14:28:14 -0400
-From: Linn Crosetto <linn@hp.com>
-To: joro@8bytes.org, mingo@kernel.org, ddutile@redhat.com,
-        suresh.b.siddha@intel.com
-Cc: linux-kernel@vger.kernel.org, Linn Crosetto <linn@hp.com>
-Subject: [PATCH] iommu: dmar -- remove warning for HPET scope type
-Date: Tue, 23 Apr 2013 12:26:45 -0600
-Message-Id: <1366741605-71293-1-git-send-email-linn@hp.com>
-X-Mailer: git-send-email 1.7.11.3
+	Tue, 23 Apr 2013 14:30:27 -0400
+Date: Tue, 23 Apr 2013 19:30:25 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Wenyou Yang <wenyou.yang@atmel.com>
+Cc: linux-arm-kernel@lists.infradead.org, grant.likely@secretlab.ca,
+        richard.genoud@gmail.com, plagnioj@jcrosoft.com,
+        nicolas.ferre@atmel.com, JM.Lin@atmel.com,
+        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v8 1/8] spi/spi-atmel: add physical base address
+Message-ID: <20130423183025.GV5019@opensource.wolfsonmicro.com>
+References: <1364968581-23700-1-git-send-email-wenyou.yang@atmel.com>
+ <1364968662-23763-1-git-send-email-wenyou.yang@atmel.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="+VeMz1SRxFChf6vr"
+Content-Disposition: inline
+In-Reply-To: <1364968662-23763-1-git-send-email-wenyou.yang@atmel.com>
+X-Cookie: Caution: Keep out of reach of children.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ACPI_DMAR_SCOPE_TYPE_HPET is parsed by ir_parse_ioapic_hpet_scope() and
-should not be flagged as an unsupported type.
 
-Signed-off-by: Linn Crosetto <linn@hp.com>
----
- drivers/iommu/dmar.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+--+VeMz1SRxFChf6vr
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/drivers/iommu/dmar.c b/drivers/iommu/dmar.c
-index e5cdaf8..b8008f6 100644
---- a/drivers/iommu/dmar.c
-+++ b/drivers/iommu/dmar.c
-@@ -129,7 +129,8 @@ int __init dmar_parse_dev_scope(void *start, void *end, int *cnt,
- 		if (scope->entry_type == ACPI_DMAR_SCOPE_TYPE_ENDPOINT ||
- 		    scope->entry_type == ACPI_DMAR_SCOPE_TYPE_BRIDGE)
- 			(*cnt)++;
--		else if (scope->entry_type != ACPI_DMAR_SCOPE_TYPE_IOAPIC) {
-+		else if (scope->entry_type != ACPI_DMAR_SCOPE_TYPE_IOAPIC &&
-+			scope->entry_type != ACPI_DMAR_SCOPE_TYPE_HPET) {
- 			pr_warn("Unsupported device scope\n");
- 		}
- 		start += scope->length;
--- 
-1.7.11.3
+On Wed, Apr 03, 2013 at 01:57:42PM +0800, Wenyou Yang wrote:
+> From: Nicolas Ferre <nicolas.ferre@atmel.com>
+>=20
+> Needed for future use with dmaengine enabled driver.
 
+Applied, thanks.
+
+--+VeMz1SRxFChf6vr
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRdtMqAAoJELSic+t+oim9NwIQAJn6agyyqvkiND0/Ra2YIrY+
+SRDF7VLU1ULCqERrM56YtjVdZCp/42tsxVStCmnjnAQEI1CffMotYqxj2Sk88oYK
+jkITWmF5ZexIAYxRXFUIsAobf0GtX153nGI+QJpWKkOYa/w8L+JLhdKI9aHgPa5Z
+RLQh5HQPy5CL5e+IxKVtqJ2G46sFaS/8eLy//EC4nMZ1D/PCt/N3h5H/ZlXtyOGQ
+oExx8mt0fhY26JVwvTZwC9Yd3KIb5+Vq52dAN5eUwDgscrOk6Gg1rj6bTR1a30KI
+BcSWfWKIFtWzbKsJvQidjkEiD9IBjXzFKlr7BJdfZPnBn1Q+VJ3NmO5bP6mk2OWo
+O+8eLyHZVas2VKWmfCV5nVSuCrSHLPkFdOMqfC6cvn6KZsnk02kVn44MKtGM3QkH
+o80k/68Ll/GBSKSrp4g7FsKiNTqTheVqJ1+A+Xw0vydrF8RT5ZYB6T1bMi4LKrLT
+5Xx2IS4D0wBACsXyxugrAiFaj7yqHq3PQFPKWB4v8IjHm0p/PE+6xs2SNHcS8kn9
+4sToMZC+YGPi+MJRHfWOR014tmGKpONnoTExxrNSpYzzJriKb0Jq5EntKo4mu62S
+KabIiP+kQoW/ZibK/EULMNQM/dDVlEVVTE1SLThGJysy2s5mQGiPstM14oU2v9rx
+1Oo98Uorb0OloDQJXrLg
+=ps/5
+-----END PGP SIGNATURE-----
+
+--+VeMz1SRxFChf6vr--
