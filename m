@@ -1,94 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755589Ab3DWG2V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 02:28:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48174 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755377Ab3DWG2T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 02:28:19 -0400
-Date: Tue, 23 Apr 2013 09:28:16 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: mtosatti@redhat.com, avi.kivity@gmail.com, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org
-Subject: Re: [PATCH v3 00/15] KVM: MMU: fast zap all shadow pages
-Message-ID: <20130423062816.GC12401@redhat.com>
-References: <1366093973-2617-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
- <20130421130346.GE8997@redhat.com>
- <5173F319.2040106@linux.vnet.ibm.com>
- <20130422092117.GM8997@redhat.com>
- <5175D376.6060908@linux.vnet.ibm.com>
+	id S1755699Ab3DWGhY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 02:37:24 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:53660 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755409Ab3DWGhV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Apr 2013 02:37:21 -0400
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+To: <linux-fbdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+CC: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Subject: [PATCH 09/11] fbdev/sgivwfb: use vm_iomap_memory()
+Date: Tue, 23 Apr 2013 09:36:56 +0300
+Message-ID: <1366699018-5439-9-git-send-email-tomi.valkeinen@ti.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1366699018-5439-1-git-send-email-tomi.valkeinen@ti.com>
+References: <1366699018-5439-1-git-send-email-tomi.valkeinen@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5175D376.6060908@linux.vnet.ibm.com>
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 23, 2013 at 08:19:02AM +0800, Xiao Guangrong wrote:
-> On 04/22/2013 05:21 PM, Gleb Natapov wrote:
-> > On Sun, Apr 21, 2013 at 10:09:29PM +0800, Xiao Guangrong wrote:
-> >> On 04/21/2013 09:03 PM, Gleb Natapov wrote:
-> >>> On Tue, Apr 16, 2013 at 02:32:38PM +0800, Xiao Guangrong wrote:
-> >>>> This patchset is based on my previous two patchset:
-> >>>> [PATCH 0/2] KVM: x86: avoid potential soft lockup and unneeded mmu reload
-> >>>> (https://lkml.org/lkml/2013/4/1/2)
-> >>>>
-> >>>> [PATCH v2 0/6] KVM: MMU: fast invalid all mmio sptes
-> >>>> (https://lkml.org/lkml/2013/4/1/134)
-> >>>>
-> >>>> Changlog:
-> >>>> V3:
-> >>>>   completely redesign the algorithm, please see below.
-> >>>>
-> >>> This looks pretty complicated. Is it still needed in order to avoid soft
-> >>> lockups after "avoid potential soft lockup and unneeded mmu reload" patch?
-> >>
-> >> Yes.
-> >>
-> >> I discussed this point with Marcelo:
-> >>
-> >> ======
-> >> BTW, to my honest, i do not think spin_needbreak is a good way - it does
-> >> not fix the hot-lock contention and it just occupies more cpu time to avoid
-> >> possible soft lock-ups.
-> >>
-> >> Especially, zap-all-shadow-pages can let other vcpus fault and vcpus contest
-> >> mmu-lock, then zap-all-shadow-pages release mmu-lock and wait, other vcpus
-> >> create page tables again. zap-all-shadow-page need long time to be finished,
-> >> the worst case is, it can not completed forever on intensive vcpu and memory
-> >> usage.
-> >>
-> > So what about mixed approach: use generation numbers and reload roots to
-> > quickly invalidate all shadow pages and then do kvm_mmu_zap_all_invalid().
-> > kvm_mmu_zap_all_invalid() is a new function that invalidates only shadow
-> > pages with stale generation number (and uses lock break technique). It
-> > may traverse active_mmu_pages from tail to head since new shadow pages
-> > will be added to the head of the list or it may use invalid slot rmap to
-> > find exactly what should be invalidated.
-> 
-> I prefer to unmapping the invalid rmap instead of zapping stale shadow pages
-> in kvm_mmu_zap_all_invalid(), the former is faster.
-> 
-Not sure what do you mean here. What is "unmapping the invalid rmap"?
+Use vm_iomap_memory() instead of [io_]remap_pfn_range().
+vm_iomap_memory() gives us much simpler API to map memory to userspace,
+and reduces possibilities for bugs.
 
-> This way may help but not good, after reload mmu with the new generation number,
-> all of the vcpu will fault in a long time, try to hold mmu-lock is not good even
-> if use lock break technique.
-If kvm_mmu_zap_all_invalid(slot) will only zap shadow pages that are
-reachable from the slot's rmap, as opposite to zapping all invalid
-shadow pages, it will have much less work to do. The slots that we
-add/remove during hot plug are usually small. To guaranty reasonable
-forward progress we can break the lock only after certain amount of
-shadow pages are invalidated. All other invalid shadow pages will be
-zapped in make_mmu_pages_available() and zapping will be spread between
-page faults.
+Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+---
+ drivers/video/sgivwfb.c |   20 +++++++-------------
+ 1 file changed, 7 insertions(+), 13 deletions(-)
 
-> 
-> I think we can do this step first, then unmapping invalid rmap out of mmu-lock
-> later.
-> 
+diff --git a/drivers/video/sgivwfb.c b/drivers/video/sgivwfb.c
+index 2331fad..b2a8912 100644
+--- a/drivers/video/sgivwfb.c
++++ b/drivers/video/sgivwfb.c
+@@ -705,23 +705,17 @@ static int sgivwfb_setcolreg(u_int regno, u_int red, u_int green,
+ static int sgivwfb_mmap(struct fb_info *info,
+ 			struct vm_area_struct *vma)
+ {
+-	unsigned long size = vma->vm_end - vma->vm_start;
+-	unsigned long offset = vma->vm_pgoff << PAGE_SHIFT;
++	int r;
+ 
+-	if (vma->vm_pgoff > (~0UL >> PAGE_SHIFT))
+-		return -EINVAL;
+-	if (offset + size > sgivwfb_mem_size)
+-		return -EINVAL;
+-	offset += sgivwfb_mem_phys;
+ 	pgprot_val(vma->vm_page_prot) =
+-	    pgprot_val(vma->vm_page_prot) | _PAGE_PCD;
+-	vma->vm_flags |= VM_IO;
+-	if (remap_pfn_range(vma, vma->vm_start, offset >> PAGE_SHIFT,
+-						size, vma->vm_page_prot))
+-		return -EAGAIN;
++		pgprot_val(vma->vm_page_prot) | _PAGE_PCD;
++
++	r = vm_iomap_memory(vma, sgivwfb_mem_phys, sgivwfb_mem_size);
++
+ 	printk(KERN_DEBUG "sgivwfb: mmap framebuffer P(%lx)->V(%lx)\n",
+ 	       offset, vma->vm_start);
+-	return 0;
++
++	return r;
+ }
+ 
+ int __init sgivwfb_setup(char *options)
+-- 
+1.7.10.4
 
---
-			Gleb.
