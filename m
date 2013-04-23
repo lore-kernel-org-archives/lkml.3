@@ -1,97 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757288Ab3DWQcD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 12:32:03 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:60797 "EHLO
+	id S1757485Ab3DWQfh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 12:35:37 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:62485 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757235Ab3DWQbz (ORCPT
+	with ESMTP id S1757291Ab3DWQcD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 12:31:55 -0400
+	Tue, 23 Apr 2013 12:32:03 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Marc Dietrich <marvin24@gmx.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH 14/21] staging: nvec: allow modular build
-Date: Tue, 23 Apr 2013 18:30:46 +0200
-Message-Id: <1366734653-488286-15-git-send-email-arnd@arndb.de>
+        Stephen Warren <swarren@nvidia.com>, Chris Ball <cjb@laptop.org>
+Subject: [PATCH 12/21] mmc: sdhci-tegra: fix MODULE_DEVICE_TABLE
+Date: Tue, 23 Apr 2013 18:30:44 +0200
+Message-Id: <1366734653-488286-13-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1366734653-488286-1-git-send-email-arnd@arndb.de>
 References: <1366734653-488286-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:hNQPunI4GtS80JnaF1hEU7vdzUvu44Uwx0Yge0msK3O
- 9RcfdOyx+CmWhb8s6Jtq5P1sNBimsJscFKwgvo0Lm9bZH7NUT/
- +IVWUMUAlyc90C4091STN8EQIyifcQ5of6mp0imUdYO2g5gBOu
- MLkCZ68HwVNtyVbUUasKBLh7gF77vKh+1T+IqV3sbNbcvisUSN
- w4EI6H/qUIIZ8txDXFtaPHBoxGdwWi8hQwvJTH8+VcTRLIBk/n
- xcgkODec+DIClHdlRhL5n54S8D4/iniuWhpzr3Upvf8rhS0gBb
- ucP3AFceizAMejuMZdBaVPONQ1GDYPtzPy9CviL+Skb6ToX3Ej
- ASEQlcJiZwiLqdTLHFGv38FoXUmTivp7gmTWkN6UY
+X-Provags-ID: V02:K0:3rC0wIE+OhfCJuEmUmps7z4GSoqYyiAfs6BtPlQvAQx
+ PvkExUXdkoTW5tajJtGg1T/jCEKaUvL4musol9m/4n17b5c8iJ
+ e3a4VEr9/JJmVxjRS1Erl/EUGLJbqTYyemURYpcmfMqHkiOecn
+ HZwGnW+D0/sNL1aLwSM3o7nFz0QvO73OkkeMa84XIYj4Xoxgop
+ ihSPwYJZ/1iWhvypj5AEaDrO+e0ocqERonD4oEPR4tdrFQ+beT
+ gY0C0/TtT5VUw1wUOxINMU0VRhyXZWzDtSTaxChu3NNSs2fLv7
+ VPZpontRZhML+uWfL86zRjAMcH+p/dzFcYg6MJnANOxCnVTYLt
+ m/uAc66s+nCkLDGZSLlqgt3wimZ8Ec6M1LzSHYQGC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The serio code can be a loadable module, which in turn means that nvec
-also has to be a module, so mark it as "tristate" in Kconfig.
+The symbol referenced in MODULE_DEVICE_TABLE must match the actual
+table, otherwise we get a build error like
 
-drivers/built-in.o: In function `nvec_mouse_remove':
-drivers/staging/nvec/nvec_ps2.c:136: undefined reference to `serio_unregister_port'
-drivers/built-in.o: In function `nvec_mouse_probe':
-drivers/staging/nvec/nvec_ps2.c:126: undefined reference to `__serio_register_port'
-drivers/built-in.o: In function `nvec_ps2_notifier':
-drivers/staging/nvec/nvec_ps2.c:84: undefined reference to `serio_interrupt'
-drivers/staging/nvec/nvec_ps2.c:91: undefined reference to `serio_interrupt'
+sdhci-tegra.c:206:34: error: '__mod_of_device_table' aliased to undefined symbol 'sdhci_dt_ids'
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Marc Dietrich <marvin24@gmx.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Stephen Warren <swarren@nvidia.com>
+Cc: Chris Ball <cjb@laptop.org>
 ---
- drivers/staging/nvec/Kconfig | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ drivers/mmc/host/sdhci-tegra.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/staging/nvec/Kconfig b/drivers/staging/nvec/Kconfig
-index f779fdc..7e61ada 100644
---- a/drivers/staging/nvec/Kconfig
-+++ b/drivers/staging/nvec/Kconfig
-@@ -1,5 +1,5 @@
- config MFD_NVEC
--	bool "NV Tegra Embedded Controller SMBus Interface"
-+	tristate "NV Tegra Embedded Controller SMBus Interface"
- 	depends on I2C && GPIOLIB && ARCH_TEGRA
- 	select MFD_CORE
- 	help
-@@ -7,28 +7,28 @@ config MFD_NVEC
- 	    controller.
+diff --git a/drivers/mmc/host/sdhci-tegra.c b/drivers/mmc/host/sdhci-tegra.c
+index 08b06e9..85052bf 100644
+--- a/drivers/mmc/host/sdhci-tegra.c
++++ b/drivers/mmc/host/sdhci-tegra.c
+@@ -214,7 +214,7 @@ static const struct of_device_id sdhci_tegra_dt_match[] = {
+ #endif
+ 	{}
+ };
+-MODULE_DEVICE_TABLE(of, sdhci_dt_ids);
++MODULE_DEVICE_TABLE(of, sdhci_tegra_dt_match);
  
- config KEYBOARD_NVEC
--	bool "Keyboard on nVidia compliant EC"
-+	tristate "Keyboard on nVidia compliant EC"
- 	depends on MFD_NVEC && INPUT
- 	help
- 	  Say Y here to enable support for a keyboard connected to 
- 	  a nVidia compliant embedded controller.
- 
- config SERIO_NVEC_PS2
--	bool "PS2 on nVidia EC"
-+	tristate "PS2 on nVidia EC"
- 	depends on MFD_NVEC && SERIO
- 	help
- 	  Say Y here to enable support for a Touchpad / Mouse connected
- 	  to a nVidia compliant embedded controller.
- 
- config NVEC_POWER
--	bool "NVEC charger and battery"
-+	tristate "NVEC charger and battery"
- 	depends on MFD_NVEC && POWER_SUPPLY
- 	help
- 	  Say Y to enable support for battery and charger interface for
- 	  nVidia compliant embedded controllers.
- 
- config NVEC_PAZ00
--	bool "Support for OEM specific functions on Compal PAZ00 based devices"
-+	tristate "Support for OEM specific functions on Compal PAZ00 based devices"
- 	depends on MFD_NVEC && LEDS_CLASS
- 	help
- 	  Say Y to enable control of the yellow side leds on Compal PAZ00 based
+ static void sdhci_tegra_parse_dt(struct device *dev,
+ 					struct sdhci_tegra *tegra_host)
 -- 
 1.8.1.2
 
