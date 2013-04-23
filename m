@@ -1,115 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756640Ab3DWWJ2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 18:09:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34184 "EHLO
+	id S1756690Ab3DWWJv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 18:09:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34160 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757668Ab3DWVyJ (ORCPT
+	with ESMTP id S932168Ab3DWVxK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 17:54:09 -0400
+	Tue, 23 Apr 2013 17:53:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Bohan <mbohan@codeaurora.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [ 02/26] hrtimer: Dont reinitialize a cpu_base lock on CPU_UP
-Date: Tue, 23 Apr 2013 14:53:42 -0700
-Message-Id: <20130423215333.607268218@linuxfoundation.org>
+        Josef Bacik <jbacik@fusionio.com>,
+        Chris Mason <chris.mason@fusionio.com>,
+        Lingzhu Xiang <lxiang@redhat.com>, CAI Qian <caiqian@redhat.com>
+Subject: [ 40/42] Btrfs: make sure nbytes are right after log replay
+Date: Tue, 23 Apr 2013 14:52:38 -0700
+Message-Id: <20130423215209.531866259@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130423215333.344045754@linuxfoundation.org>
-References: <20130423215333.344045754@linuxfoundation.org>
+In-Reply-To: <20130423215205.523980967@linuxfoundation.org>
+References: <20130423215205.523980967@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.8-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Michael Bohan <mbohan@codeaurora.org>
+From: Josef Bacik <jbacik@fusionio.com>
 
-commit 84cc8fd2fe65866e49d70b38b3fdf7219dd92fe0 upstream.
+commit 4bc4bee4595662d8bff92180d5c32e3313a704b0 upstream.
 
-The current code makes the assumption that a cpu_base lock won't be
-held if the CPU corresponding to that cpu_base is offline, which isn't
-always true.
+While trying to track down a tree log replay bug I noticed that fsck was always
+complaining about nbytes not being right for our fsynced file.  That is because
+the new fsync stuff doesn't wait for ordered extents to complete, so the inodes
+nbytes are not necessarily updated properly when we log it.  So to fix this we
+need to set nbytes to whatever it is on the inode that is on disk, so when we
+replay the extents we can just add the bytes that are being added as we replay
+the extent.  This makes it work for the case that we have the wrong nbytes or
+the case that we logged everything and nbytes is actually correct.  With this
+I'm no longer getting nbytes errors out of btrfsck.
 
-If a hrtimer is not queued, then it will not be migrated by
-migrate_hrtimers() when a CPU is offlined. Therefore, the hrtimer's
-cpu_base may still point to a CPU which has subsequently gone offline
-if the timer wasn't enqueued at the time the CPU went down.
-
-Normally this wouldn't be a problem, but a cpu_base's lock is blindly
-reinitialized each time a CPU is brought up. If a CPU is brought
-online during the period that another thread is performing a hrtimer
-operation on a stale hrtimer, then the lock will be reinitialized
-under its feet, and a SPIN_BUG() like the following will be observed:
-
-<0>[   28.082085] BUG: spinlock already unlocked on CPU#0, swapper/0/0
-<0>[   28.087078]  lock: 0xc4780b40, value 0x0 .magic: dead4ead, .owner: <none>/-1, .owner_cpu: -1
-<4>[   42.451150] [<c0014398>] (unwind_backtrace+0x0/0x120) from [<c0269220>] (do_raw_spin_unlock+0x44/0xdc)
-<4>[   42.460430] [<c0269220>] (do_raw_spin_unlock+0x44/0xdc) from [<c071b5bc>] (_raw_spin_unlock+0x8/0x30)
-<4>[   42.469632] [<c071b5bc>] (_raw_spin_unlock+0x8/0x30) from [<c00a9ce0>] (__hrtimer_start_range_ns+0x1e4/0x4f8)
-<4>[   42.479521] [<c00a9ce0>] (__hrtimer_start_range_ns+0x1e4/0x4f8) from [<c00aa014>] (hrtimer_start+0x20/0x28)
-<4>[   42.489247] [<c00aa014>] (hrtimer_start+0x20/0x28) from [<c00e6190>] (rcu_idle_enter_common+0x1ac/0x320)
-<4>[   42.498709] [<c00e6190>] (rcu_idle_enter_common+0x1ac/0x320) from [<c00e6440>] (rcu_idle_enter+0xa0/0xb8)
-<4>[   42.508259] [<c00e6440>] (rcu_idle_enter+0xa0/0xb8) from [<c000f268>] (cpu_idle+0x24/0xf0)
-<4>[   42.516503] [<c000f268>] (cpu_idle+0x24/0xf0) from [<c06ed3c0>] (rest_init+0x88/0xa0)
-<4>[   42.524319] [<c06ed3c0>] (rest_init+0x88/0xa0) from [<c0c00978>] (start_kernel+0x3d0/0x434)
-
-As an example, this particular crash occurred when hrtimer_start() was
-executed on CPU #0. The code locked the hrtimer's current cpu_base
-corresponding to CPU #1. CPU #0 then tried to switch the hrtimer's
-cpu_base to an optimal CPU which was online. In this case, it selected
-the cpu_base corresponding to CPU #3.
-
-Before it could proceed, CPU #1 came online and reinitialized the
-spinlock corresponding to its cpu_base. Thus now CPU #0 held a lock
-which was reinitialized. When CPU #0 finally ended up unlocking the
-old cpu_base corresponding to CPU #1 so that it could switch to CPU
-#3, we hit this SPIN_BUG() above while in switch_hrtimer_base().
-
-CPU #0                            CPU #1
-----                              ----
-...                               <offline>
-hrtimer_start()
-lock_hrtimer_base(base #1)
-...                               init_hrtimers_cpu()
-switch_hrtimer_base()             ...
-...                               raw_spin_lock_init(&cpu_base->lock)
-raw_spin_unlock(&cpu_base->lock)  ...
-<spin_bug>
-
-Solve this by statically initializing the lock.
-
-Signed-off-by: Michael Bohan <mbohan@codeaurora.org>
-Link: http://lkml.kernel.org/r/1363745965-23475-1-git-send-email-mbohan@codeaurora.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Josef Bacik <jbacik@fusionio.com>
+Signed-off-by: Chris Mason <chris.mason@fusionio.com>
+Signed-off-by: Lingzhu Xiang <lxiang@redhat.com>
+Reviewed-by: CAI Qian <caiqian@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/hrtimer.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ fs/btrfs/tree-log.c |   48 ++++++++++++++++++++++++++++++++++++++++++------
+ 1 file changed, 42 insertions(+), 6 deletions(-)
 
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -61,6 +61,7 @@
- DEFINE_PER_CPU(struct hrtimer_cpu_base, hrtimer_bases) =
- {
+--- a/fs/btrfs/tree-log.c
++++ b/fs/btrfs/tree-log.c
+@@ -318,6 +318,7 @@ static noinline int overwrite_item(struc
+ 	unsigned long src_ptr;
+ 	unsigned long dst_ptr;
+ 	int overwrite_root = 0;
++	bool inode_item = key->type == BTRFS_INODE_ITEM_KEY;
  
-+	.lock = __RAW_SPIN_LOCK_UNLOCKED(hrtimer_bases.lock),
- 	.clock_base =
- 	{
- 		{
-@@ -1640,8 +1641,6 @@ static void __cpuinit init_hrtimers_cpu(
- 	struct hrtimer_cpu_base *cpu_base = &per_cpu(hrtimer_bases, cpu);
- 	int i;
+ 	if (root->root_key.objectid != BTRFS_TREE_LOG_OBJECTID)
+ 		overwrite_root = 1;
+@@ -327,6 +328,9 @@ static noinline int overwrite_item(struc
  
--	raw_spin_lock_init(&cpu_base->lock);
--
- 	for (i = 0; i < HRTIMER_MAX_CLOCK_BASES; i++) {
- 		cpu_base->clock_base[i].cpu_base = cpu_base;
- 		timerqueue_init_head(&cpu_base->clock_base[i].active);
+ 	/* look for the key in the destination tree */
+ 	ret = btrfs_search_slot(NULL, root, key, path, 0, 0);
++	if (ret < 0)
++		return ret;
++
+ 	if (ret == 0) {
+ 		char *src_copy;
+ 		char *dst_copy;
+@@ -368,6 +372,30 @@ static noinline int overwrite_item(struc
+ 			return 0;
+ 		}
+ 
++		/*
++		 * We need to load the old nbytes into the inode so when we
++		 * replay the extents we've logged we get the right nbytes.
++		 */
++		if (inode_item) {
++			struct btrfs_inode_item *item;
++			u64 nbytes;
++
++			item = btrfs_item_ptr(path->nodes[0], path->slots[0],
++					      struct btrfs_inode_item);
++			nbytes = btrfs_inode_nbytes(path->nodes[0], item);
++			item = btrfs_item_ptr(eb, slot,
++					      struct btrfs_inode_item);
++			btrfs_set_inode_nbytes(eb, item, nbytes);
++		}
++	} else if (inode_item) {
++		struct btrfs_inode_item *item;
++
++		/*
++		 * New inode, set nbytes to 0 so that the nbytes comes out
++		 * properly when we replay the extents.
++		 */
++		item = btrfs_item_ptr(eb, slot, struct btrfs_inode_item);
++		btrfs_set_inode_nbytes(eb, item, 0);
+ 	}
+ insert:
+ 	btrfs_release_path(path);
+@@ -488,7 +516,7 @@ static noinline int replay_one_extent(st
+ 	u64 mask = root->sectorsize - 1;
+ 	u64 extent_end;
+ 	u64 start = key->offset;
+-	u64 saved_nbytes;
++	u64 nbytes = 0;
+ 	struct btrfs_file_extent_item *item;
+ 	struct inode *inode = NULL;
+ 	unsigned long size;
+@@ -498,10 +526,19 @@ static noinline int replay_one_extent(st
+ 	found_type = btrfs_file_extent_type(eb, item);
+ 
+ 	if (found_type == BTRFS_FILE_EXTENT_REG ||
+-	    found_type == BTRFS_FILE_EXTENT_PREALLOC)
+-		extent_end = start + btrfs_file_extent_num_bytes(eb, item);
+-	else if (found_type == BTRFS_FILE_EXTENT_INLINE) {
++	    found_type == BTRFS_FILE_EXTENT_PREALLOC) {
++		nbytes = btrfs_file_extent_num_bytes(eb, item);
++		extent_end = start + nbytes;
++
++		/*
++		 * We don't add to the inodes nbytes if we are prealloc or a
++		 * hole.
++		 */
++		if (btrfs_file_extent_disk_bytenr(eb, item) == 0)
++			nbytes = 0;
++	} else if (found_type == BTRFS_FILE_EXTENT_INLINE) {
+ 		size = btrfs_file_extent_inline_len(eb, item);
++		nbytes = btrfs_file_extent_ram_bytes(eb, item);
+ 		extent_end = (start + size + mask) & ~mask;
+ 	} else {
+ 		ret = 0;
+@@ -550,7 +587,6 @@ static noinline int replay_one_extent(st
+ 	}
+ 	btrfs_release_path(path);
+ 
+-	saved_nbytes = inode_get_bytes(inode);
+ 	/* drop any overlapping extents */
+ 	ret = btrfs_drop_extents(trans, root, inode, start, extent_end, 1);
+ 	BUG_ON(ret);
+@@ -637,7 +673,7 @@ static noinline int replay_one_extent(st
+ 		BUG_ON(ret);
+ 	}
+ 
+-	inode_set_bytes(inode, saved_nbytes);
++	inode_add_bytes(inode, nbytes);
+ 	ret = btrfs_update_inode(trans, root, inode);
+ out:
+ 	if (inode)
 
 
