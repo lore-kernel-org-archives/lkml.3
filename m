@@ -1,85 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755750Ab3DWOlz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 10:41:55 -0400
-Received: from co9ehsobe005.messaging.microsoft.com ([207.46.163.28]:36764
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755132Ab3DWOly (ORCPT
+	id S1755538Ab3DWOnA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 10:43:00 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36026 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754662Ab3DWOm7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 10:41:54 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -5
-X-BigFish: VPS-5(zz98dI103dK1432Izz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzzz2dh668h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1155h)
-X-WSS-ID: 0MLPQ4A-01-HX4-02
-X-M-MSG: 
-Date: Tue, 23 Apr 2013 09:40:57 -0500
-From: Jacob Shin <jacob.shin@amd.com>
-To: Will Deacon <will.deacon@arm.com>
-CC: Ingo Molnar <mingo@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "x86@kernel.org" <x86@kernel.org>,
-        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V2 1/4] perf: Add hardware breakpoint address mask
-Message-ID: <20130423144057.GA19644@jshin-Toonie>
-References: <1366703825-19373-1-git-send-email-jacob.shin@amd.com>
- <1366703825-19373-2-git-send-email-jacob.shin@amd.com>
- <20130423095437.GD17593@mudshark.cambridge.arm.com>
- <20130423143423.GB17021@jshin-Toonie>
+	Tue, 23 Apr 2013 10:42:59 -0400
+Date: Tue, 23 Apr 2013 15:42:56 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Girish K S <girishks2000@gmail.com>
+Cc: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, grant.likely@secretlab.ca,
+        t.figa@samsung.com
+Subject: Re: [PATCH 2/3] spi: s3c64xx: Added provision for dedicated cs pin
+Message-ID: <20130423144256.GP5019@opensource.wolfsonmicro.com>
+References: <1366614565-3743-1-git-send-email-ks.giri@samsung.com>
+ <1366614565-3743-3-git-send-email-ks.giri@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="o41d8xLWOaLD8vYh"
 Content-Disposition: inline
-In-Reply-To: <20130423143423.GB17021@jshin-Toonie>
+In-Reply-To: <1366614565-3743-3-git-send-email-ks.giri@samsung.com>
+X-Cookie: Caution: Keep out of reach of children.
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 23, 2013 at 09:34:23AM -0500, Jacob Shin wrote:
-> On Tue, Apr 23, 2013 at 10:54:37AM +0100, Will Deacon wrote:
-> > Hi Jacob,
-> > 
-> > On Tue, Apr 23, 2013 at 08:57:02AM +0100, Jacob Shin wrote:
-> > > Some architectures (for us, AMD Family 16h) allow for "don't care" bit
-> > > mask to further qualify a hardware breakpoint address, in order to
-> > > trap on range of addresses. Update perf uapi to add bp_addr_mask field.
-> > 
-> > arm and arm64 have a similar feature to this, whereby we currently have to
-> > translate the bp_len field into a mask, which is all the hardware
-> > understands. Unlike what you describe, our mask indicates the bytes we *are*
-> > interested in, but I think we could make use of the same functionality that
-> > you're introducing here.
-> > 
-> > There are some funky restrictions on the alignment of the base address, but
-> > we can detect those and tell userspace where to go if it tries any funny
-> > stuff.
-> > 
-> > Can you see a problem if I simply invert the mask?
-> 
-> Hi,
-> 
-> That's great! No, I don't see a problem at all.
-> 
-> I guess now it can be debated if the mask coming in from userland should
-> be include or exclude mask. But I think exclude makes syntax easier:
-> 
-> To count writes to [0x1000 ~ 0x1010)
-> 
-> Include mask (my current patchset):
-  ^^^^^^^
-  Exclude (I mean ..)
-> 
->   perf stat -e mem:0x1000/0xf:w a.out
-> 
-> Exclude mask:
-  ^^^^^^^
-  Include
-> 
->   perf stat -e mem:0x1000/0xfff0:w a.out
-> 
-> Thanks!
 
+--o41d8xLWOaLD8vYh
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Mon, Apr 22, 2013 at 12:39:24PM +0530, Girish K S wrote:
+> From: Girish K S <girishks2000@gmail.com>
+>=20
+> The existing driver supports gpio based /cs signal.
+> For controller's that have one device per controller,
+> the slave device's /cs signal might be internally controlled
+> by the chip select bit of slave select register. They are not
+> externally asserted/deasserted using gpio pin.
+
+This doesn't build:
+
+drivers/spi/spi-s3c64xx.c: In function 's3c64xx_get_slave_ctrldata':
+drivers/spi/spi-s3c64xx.c:1023: error: 'sdd' undeclared (first use in this =
+function)
+drivers/spi/spi-s3c64xx.c:1023: error: (Each undeclared identifier is repor=
+ted only once
+drivers/spi/spi-s3c64xx.c:1023: error: for each function it appears in.)
+
+--o41d8xLWOaLD8vYh
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRdp22AAoJELSic+t+oim9HZwP/Rfy/Hh2QPJA+xs2wZULjlZ0
+9t1q4NKWSm5t7Q06uiHr8Pw0CWWFg5JE/YLKOv/3l96BSq+m+qvcPxyQX8UoTfUv
+Fb28SIc4iixHo264z0y/of7EM3v2f+w6Yga0emVwYd06f4yhEo7kbSXyZCUekbKF
+3vy+ikkJCM6m/5fmP83Ho0MAF1YfwJyx7qncjCh8lUbKLXFyOOfdT8uCJui+SYup
+WV5SldLm7z5emzrp6PDHAMZaVB+jbNFmOoR6ZLYGEsOTdNwVjVtta2F5GICeOxGM
+4TQRd99vgHf1bzhrLOcGamgTUSKgVRmi2cU7dfBY6BVPB/oWjMJnlyftM95QMT+F
+TRsyVsC6kx0hzEHd+u+BUtMFkPkflK/496I60WTX0O2cjYdZTAOu65NRDtzocbW5
+Koaydd+OFiYC1zD8eQR2GnqsNJyZeXgSzZsmoijGhyUbKV/34xVaSwHfNyeGp6q6
+HpHBhzikEwpwO+iG4Kl3KMA4lNEv31CdXhpbyxYQl8ETGc2LsOl6rack7EPLITF6
+EqukUNxbj7gYBtdxDg9JN+hu/mck5VP5cQ0UQ9q4DxbN7ygKyYymtchp/Sl3D+DV
+EA5EZXjxjlvswFzx357JaLShpy9/LR1zn0FuFm8EMdkssUp3YasftC4aC4PQ98ZI
+lqAjTfHZ+cXsmF9+X94X
+=FC8B
+-----END PGP SIGNATURE-----
+
+--o41d8xLWOaLD8vYh--
