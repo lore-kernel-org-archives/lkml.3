@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756159Ab3DWIce (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 04:32:34 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:50275 "EHLO
+	id S1756143Ab3DWIcc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 04:32:32 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:61602 "EHLO
 	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756028Ab3DWIb0 (ORCPT
+	with ESMTP id S1756034Ab3DWIb0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 23 Apr 2013 04:31:26 -0400
-X-AuditID: 9c930197-b7bb3ae000000fa9-9b-517646d25f62
+X-AuditID: 9c930197-b7bb3ae000000fa9-9e-517646d3e049
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
-Subject: [PATCH 09/14] perf ftrace: Add 'record' sub-command
-Date: Tue, 23 Apr 2013 17:31:07 +0900
-Message-Id: <1366705872-12132-10-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 10/14] perf ftrace: Add 'show' sub-command
+Date: Tue, 23 Apr 2013 17:31:08 +0900
+Message-Id: <1366705872-12132-11-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1366705872-12132-1-git-send-email-namhyung@kernel.org>
 References: <1366705872-12132-1-git-send-email-namhyung@kernel.org>
@@ -29,690 +29,449 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-The ftrace record command is for saving raw ftrace buffer contents
-which can be get from per_cpu/cpuX/trace_pipe_raw.
+The ftrace show subcommand is for viewing recorded ftrace files.  It
+enters perf.data.dir directory and open perf.header file to find out
+necessary information.  And then read out per-cpu trace records using
+kbuffer helper and print them to stdout in time order.
 
-Since ftrace events are generated very frequently so single thread for
-recording mostly resulted in buffer overruns.  Thus it uses per-cpu
-recorder thread to prevent such cases and they save the contents to
-their own files.
+It only shows its basic form so function graph doesn't show duration/
+overhead and no leaf entry handling is provided yet.  Maybe it can be
+handled by a proper plugin in the libtraceevent.
 
-These per-cpu data files are saved in a directory so that they can be
-easily found when needed.  I chose the default directory name as
-"perf.data.dir" and the first two (i.e. "perf.data") can be changed
-with -o option.  The structure of the directory looks like:
-
-  $ tree perf.data.dir
-  perf.data.dir/
-  |-- perf.header
-  |-- trace-cpu0.buf
-  |-- trace-cpu1.buf
-  |-- trace-cpu2.buf
-  `-- trace-cpu3.buf
-
-In addition to trace-cpuX.buf files, it has perf.header file also.
-The perf.header file is compatible with existing perf.data format and
-contains usual event information, feature mask and sample data.  The
-sample data is synthesized to indicate given cpu has a record file.
-
-Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/builtin-ftrace.c | 632 ++++++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 614 insertions(+), 18 deletions(-)
+ tools/perf/builtin-ftrace.c | 427 +++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 425 insertions(+), 2 deletions(-)
 
 diff --git a/tools/perf/builtin-ftrace.c b/tools/perf/builtin-ftrace.c
-index 6d991c44948f..7e72cd65dd0a 100644
+index 7e72cd65dd0a..c0f62bd12bb2 100644
 --- a/tools/perf/builtin-ftrace.c
 +++ b/tools/perf/builtin-ftrace.c
-@@ -12,6 +12,7 @@
- #include <unistd.h>
+@@ -13,6 +13,7 @@
  #include <signal.h>
  #include <fcntl.h>
-+#include <dirent.h>
+ #include <dirent.h>
++#include <sys/mman.h>
  
  #include "util/debug.h"
  #include "util/parse-options.h"
-@@ -19,14 +20,17 @@
- #include "util/target.h"
+@@ -21,6 +22,8 @@
  #include "util/thread_map.h"
  #include "util/cpumap.h"
-+#include "util/trace-event.h"
+ #include "util/trace-event.h"
++#include "../lib/traceevent/kbuffer.h"
++#include "../lib/traceevent/event-parse.h"
  
  
  #define DEFAULT_TRACER  "function_graph"
-+#define DEFAULT_DIRNAME  "perf.data"
- 
- struct perf_ftrace {
- 	struct perf_evlist *evlist;
+@@ -31,6 +34,7 @@ struct perf_ftrace {
  	struct perf_target target;
  	const char *tracer;
-+	const char *dirname;
+ 	const char *dirname;
++	struct pevent *pevent;
  };
  
  static bool done;
-@@ -131,41 +135,57 @@ static int set_tracing_cpu(struct perf_ftrace *ftrace)
- 	return 0;
+@@ -750,6 +754,371 @@ out_reset:
  }
  
--static int do_ftrace_live(struct perf_ftrace *ftrace)
-+static int setup_tracing_files(struct perf_ftrace *ftrace)
- {
--	char *trace_file;
--	int trace_fd;
--	char buf[4096];
--	struct pollfd pollfd = {
--		.events = POLLIN,
--	};
--
--	signal(SIGINT, sig_handler);
--	signal(SIGUSR1, sig_handler);
--	signal(SIGCHLD, sig_handler);
-+	int ret = -1;
- 
--	if (reset_tracing_files(ftrace) < 0)
-+	if (reset_tracing_files(ftrace) < 0) {
-+		pr_err("failed to reset tracing files\n");
- 		goto out;
-+	}
- 
- 	/* reset ftrace buffer */
--	if (write_tracing_file("trace", "0") < 0)
-+	if (write_tracing_file("trace", "0") < 0) {
-+		pr_err("failed to reset ftrace buffer\n");
- 		goto out;
-+	}
- 
- 	if (set_tracing_pid(ftrace) < 0) {
- 		pr_err("failed to set ftrace pid\n");
--		goto out_reset;
-+		goto out;
- 	}
- 
- 	if (set_tracing_cpu(ftrace) < 0) {
- 		pr_err("failed to set tracing cpumask\n");
--		goto out_reset;
-+		goto out;
- 	}
- 
- 	if (write_tracing_file("current_tracer", ftrace->tracer) < 0) {
- 		pr_err("failed to set current_tracer to %s\n", ftrace->tracer);
--		goto out_reset;
-+		goto out;
- 	}
- 
-+	ret = 0;
-+out:
-+	return ret;
-+}
-+
-+static int do_ftrace_live(struct perf_ftrace *ftrace)
+ static int
++function_handler(struct trace_seq *s, struct pevent_record *record,
++		 struct event_format *event, void *context __maybe_unused)
 +{
-+	char *trace_file;
-+	int trace_fd;
-+	char buf[4096];
-+	struct pollfd pollfd = {
-+		.events = POLLIN,
-+	};
++	struct pevent *pevent = event->pevent;
++	unsigned long long function;
++	const char *func;
 +
-+	signal(SIGINT, sig_handler);
-+	signal(SIGUSR1, sig_handler);
-+	signal(SIGCHLD, sig_handler);
++	if (pevent_get_field_val(s, event, "ip", record, &function, 1))
++		return trace_seq_putc(s, '!');
 +
-+	if (setup_tracing_files(ftrace) < 0)
-+		goto out_reset;
++	func = pevent_find_function(pevent, function);
++	if (func)
++		trace_seq_printf(s, "%s <-- ", func);
++	else
++		trace_seq_printf(s, "0x%llx", function);
 +
- 	trace_file = get_tracing_file("trace_pipe");
- 	if (!trace_file) {
- 		pr_err("failed to open trace_pipe\n");
-@@ -219,7 +239,513 @@ out_close_fd:
- 	close(trace_fd);
- out_reset:
- 	reset_tracing_files(ftrace);
-+	return done ? 0 : -1;
-+}
++	if (pevent_get_field_val(s, event, "parent_ip", record, &function, 1))
++		return trace_seq_putc(s, '!');
 +
-+static int alloc_ftrace_evsel(struct perf_ftrace *ftrace)
-+{
-+	if (!strcmp(ftrace->tracer, "function")) {
-+		if (perf_evlist__add_newtp(ftrace->evlist, "ftrace",
-+					   "function", NULL) < 0) {
-+			pr_err("failed to allocate ftrace event\n");
-+			return -1;
-+		}
-+	} else if (!strcmp(ftrace->tracer, "function_graph")) {
-+		if (perf_evlist__add_newtp(ftrace->evlist, "ftrace",
-+					   "funcgraph_entry", NULL) ||
-+		    perf_evlist__add_newtp(ftrace->evlist, "ftrace",
-+					   "funcgraph_exit", NULL)) {
-+			pr_err("failed to allocate ftrace event\n");
-+			return -1;
-+		}
-+	} else {
-+		pr_err("Not supported tracer: %s\n", ftrace->tracer);
-+		return -1;
-+	}
++	func = pevent_find_function(pevent, function);
++	if (func)
++		trace_seq_printf(s, "%s", func);
++	else
++		trace_seq_printf(s, "0x%llx", function);
++
++	trace_seq_putc(s, '\n');
 +	return 0;
 +}
 +
-+static int remove_directory(const char *pathname)
++#define TRACE_GRAPH_INDENT  2
++
++static int
++fgraph_ent_handler(struct trace_seq *s, struct pevent_record *record,
++		   struct event_format *event, void *context __maybe_unused)
 +{
-+	DIR *dir;
-+	int ret = 0;
-+	struct dirent *dent;
-+	char namebuf[PATH_MAX];
++	unsigned long long depth;
++	unsigned long long val;
++	const char *func;
++	int i;
 +
-+	dir = opendir(pathname);
-+	if (dir == NULL)
-+		return 0;
++	if (pevent_get_field_val(s, event, "depth", record, &depth, 1))
++		return trace_seq_putc(s, '!');
 +
-+	while ((dent = readdir(dir)) != NULL && !ret) {
-+		struct stat statbuf;
++	/* Function */
++	for (i = 0; i < (int)(depth * TRACE_GRAPH_INDENT); i++)
++		trace_seq_putc(s, ' ');
 +
-+		if (dent->d_name[0] == '.')
-+			continue;
++	if (pevent_get_field_val(s, event, "func", record, &val, 1))
++		return trace_seq_putc(s, '!');
 +
-+		scnprintf(namebuf, sizeof(namebuf), "%s/%s",
-+			  pathname, dent->d_name);
++	func = pevent_find_function(event->pevent, val);
 +
-+		ret = stat(namebuf, &statbuf);
-+		if (ret < 0) {
-+			pr_debug("stat failed\n");
-+			break;
-+		}
++	if (func)
++		trace_seq_printf(s, "%s() {", func);
++	else
++		trace_seq_printf(s, "%llx() {", val);
 +
-+		if (S_ISREG(statbuf.st_mode))
-+			ret = unlink(namebuf);
-+		else if (S_ISDIR(statbuf.st_mode))
-+			ret = remove_directory(namebuf);
-+		else {
-+			pr_debug("unknown file.\n");
-+			ret = -1;
-+		}
-+	}
-+	closedir(dir);
-+
-+	if (ret < 0)
-+		return ret;
-+
-+	return rmdir(pathname);
++	trace_seq_putc(s, '\n');
++	return 0;
 +}
 +
-+static int create_perf_directory(struct perf_ftrace *ftrace)
++static int
++fgraph_ret_handler(struct trace_seq *s, struct pevent_record *record,
++		   struct event_format *event, void *context __maybe_unused)
 +{
-+	int err;
-+	char buf[PATH_MAX];
++	unsigned long long depth;
++	int i;
++
++	if (pevent_get_field_val(s, event, "depth", record, &depth, 1))
++		return trace_seq_putc(s, '!');
++
++	/* Function */
++	for (i = 0; i < (int)(depth * TRACE_GRAPH_INDENT); i++)
++		trace_seq_putc(s, ' ');
++
++	trace_seq_puts(s, "}\n");
++	return 0;
++}
++
++struct perf_ftrace_report {
++	struct perf_ftrace *ftrace;
++	struct perf_tool tool;
++};
++
++struct ftrace_report_arg {
++	struct list_head node;
++	struct pevent_record *record;
++	struct kbuffer *kbuf;
++	void *map;
++	int cpu;
++	int fd;
++	off_t offset;
++	off_t size;
++};
++
++static LIST_HEAD(ftrace_cpu_buffers);
++
++static int process_sample_show(struct perf_tool *tool,
++			       union perf_event * event __maybe_unused,
++			       struct perf_sample *sample,
++			       struct perf_evsel *evsel __maybe_unused,
++			       struct machine *machine __maybe_unused)
++{
++	struct perf_ftrace *ftrace;
++	struct perf_ftrace_report *show;
++	struct ftrace_report_arg *fra;
 +	struct stat statbuf;
++	enum kbuffer_long_size long_size;
++	enum kbuffer_endian endian;
++	char buf[PATH_MAX];
 +
-+	scnprintf(buf, sizeof(buf), "%s.dir", ftrace->dirname);
++	show = container_of(tool, struct perf_ftrace_report, tool);
++	ftrace = show->ftrace;
 +
-+	if (stat(buf, &statbuf) == 0) {
-+		/* same name already exists - rename to *.old.dir */
-+		char *old_name = malloc(strlen(buf) + 5);
-+		if (old_name == NULL)
-+			return -1;
++	fra = zalloc(sizeof(*fra));
++	if (fra == NULL)
++		return -1;
 +
-+		scnprintf(old_name, strlen(buf) + 5,
-+			  "%s.old.dir", ftrace->dirname);
++	fra->cpu = sample->cpu;
 +
-+		if (remove_directory(old_name) < 0) {
-+			perror("rmdir");
-+			return -1;
-+		}
++	scnprintf(buf, sizeof(buf), "%s.dir/trace-cpu%d.buf",
++		  ftrace->dirname, fra->cpu);
 +
-+		if (rename(buf, old_name) < 0) {
-+			perror("rename");
-+			free(old_name);
-+			return -1;
-+		}
++	fra->fd = open(buf, O_RDONLY);
++	if (fra->fd < 0)
++		goto out;
 +
-+		free(old_name);
++	if (fstat(fra->fd, &statbuf) < 0)
++		goto out_close;
++
++	fra->size = statbuf.st_size;
++	if (fra->size == 0) {
++		/* skip zero-size buffers */
++		free(fra);
++		return 0;
 +	}
 +
-+	err = mkdir(buf, 0755);
-+	if (err < 0) {
-+		perror("mkdir");
++	/*
++	 * FIXME: What if pevent->page_size is smaller than current page size?
++	 */
++	fra->map = mmap(NULL, pevent_get_page_size(ftrace->pevent),
++			PROT_READ, MAP_PRIVATE, fra->fd, fra->offset);
++	if (fra->map == MAP_FAILED)
++		goto out_close;
++
++	fra->offset = 0;
++
++	if (pevent_is_file_bigendian(ftrace->pevent))
++		endian = KBUFFER_ENDIAN_BIG;
++	else
++		endian = KBUFFER_ENDIAN_LITTLE;
++
++	if (pevent_get_long_size(ftrace->pevent) == 8)
++		long_size = KBUFFER_LSIZE_8;
++	else
++		long_size = KBUFFER_LSIZE_4;
++
++	fra->kbuf = kbuffer_alloc(long_size, endian);
++	if (fra->kbuf == NULL)
++		goto out_unmap;
++
++	if (ftrace->pevent->old_format)
++		kbuffer_set_old_format(fra->kbuf);
++
++	kbuffer_load_subbuffer(fra->kbuf, fra->map);
++
++	pr_debug2("setup kbuffer for cpu%d\n", fra->cpu);
++	list_add_tail(&fra->node, &ftrace_cpu_buffers);
++	return 0;
++
++out_unmap:
++	munmap(fra->map, pevent_get_page_size(ftrace->pevent));
++out_close:
++	close(fra->fd);
++out:
++	free(fra);
++	return -1;
++}
++
++static struct pevent_record *
++get_next_ftrace_event_record(struct perf_ftrace *ftrace,
++			     struct ftrace_report_arg *fra)
++{
++	struct pevent_record *record;
++	unsigned long long ts;
++	void *data;
++
++retry:
++	data = kbuffer_read_event(fra->kbuf, &ts);
++	if (data) {
++		record = zalloc(sizeof(*record));
++		if (record == NULL) {
++			pr_err("memory allocation failure\n");
++			return NULL;
++		}
++
++		record->ts = ts;
++		record->cpu = fra->cpu;
++		record->data = data;
++		record->size = kbuffer_event_size(fra->kbuf);
++		record->record_size = kbuffer_curr_size(fra->kbuf);
++		record->offset = kbuffer_curr_offset(fra->kbuf);
++		record->missed_events = kbuffer_missed_events(fra->kbuf);
++		record->ref_count = 1;
++
++		kbuffer_next_event(fra->kbuf, NULL);
++		return record;
++	}
++
++	munmap(fra->map, pevent_get_page_size(ftrace->pevent));
++	fra->map = NULL;
++
++	fra->offset += pevent_get_page_size(ftrace->pevent);
++	if (fra->offset >= fra->size) {
++		/* EOF */
++		return NULL;
++	}
++
++	fra->map = mmap(NULL, pevent_get_page_size(ftrace->pevent),
++			PROT_READ, MAP_PRIVATE, fra->fd, fra->offset);
++	if (fra->map == MAP_FAILED) {
++		pr_err("memory mapping failed\n");
++		return NULL;
++	}
++
++	kbuffer_load_subbuffer(fra->kbuf, fra->map);
++
++	goto retry;
++}
++
++static struct pevent_record *
++get_ftrace_event_record(struct perf_ftrace *ftrace,
++			struct ftrace_report_arg *fra)
++{
++	if (fra->record == NULL)
++		fra->record = get_next_ftrace_event_record(ftrace, fra);
++
++	return fra->record;
++}
++
++static struct pevent_record *get_ordered_record(struct perf_ftrace *ftrace)
++{
++	struct ftrace_report_arg *fra = NULL;
++	struct ftrace_report_arg *tmp;
++	struct pevent_record *record;
++	unsigned long long min_ts = LLONG_MAX;
++
++	list_for_each_entry(tmp, &ftrace_cpu_buffers, node) {
++		if (perf_target__has_cpu(&ftrace->target)) {
++			int i;
++			bool found = false;
++
++			for (i = 0; i < cpu_map__nr(ftrace->evlist->cpus); i++) {
++				if (tmp->cpu == ftrace->evlist->cpus->map[i]) {
++					found = true;
++					break;
++				}
++			}
++			if (!found)
++				continue;
++		}
++
++		record = get_ftrace_event_record(ftrace, tmp);
++		if (record && record->ts < min_ts) {
++			min_ts = record->ts;
++			fra = tmp;
++		}
++	}
++
++	if (fra) {
++		record = fra->record;
++		fra->record = NULL;
++		return record;
++	}
++	return NULL;
++}
++
++static void free_ftrace_report_args(struct perf_ftrace *ftrace)
++{
++	struct ftrace_report_arg *fra, *tmp;
++
++	list_for_each_entry_safe(fra, tmp, &ftrace_cpu_buffers, node) {
++		list_del(&fra->node);
++
++		/* don't care about the errors */
++		munmap(fra->map, pevent_get_page_size(ftrace->pevent));
++		kbuffer_free(fra->kbuf);
++		free(fra->record);
++		close(fra->fd);
++		free(fra);
++	}
++}
++
++static int do_ftrace_show(struct perf_ftrace *ftrace)
++{
++	int ret = 0;
++	char buf[PATH_MAX];
++	struct perf_session *session;
++	struct pevent_record *record;
++	struct trace_seq seq;
++	struct perf_ftrace_report show = {
++		.ftrace = ftrace,
++		.tool = {
++			.sample = process_sample_show,
++		},
++	};
++
++	scnprintf(buf, sizeof(buf), "%s.dir/perf.header", ftrace->dirname);
++
++	session = perf_session__new(buf, O_RDONLY, false, false, &show.tool);
++	if (session == NULL) {
++		pr_err("failed to create a session\n");
 +		return -1;
 +	}
 +
-+	strcat(buf, "/perf.header");
++	ftrace->pevent = session->pevent;
 +
-+	err = open(buf, O_RDWR | O_CREAT | O_TRUNC, 0644);
-+	return err;
-+}
++	pevent_register_event_handler(ftrace->pevent, -1,
++				      "ftrace", "function",
++				      function_handler, NULL);
++	pevent_register_event_handler(ftrace->pevent, -1,
++				      "ftrace", "funcgraph_entry",
++				      fgraph_ent_handler, NULL);
++	pevent_register_event_handler(ftrace->pevent, -1,
++				      "ftrace", "funcgraph_exit",
++				      fgraph_ret_handler, NULL);
 +
-+static void sig_dummy_handler(int sig __maybe_unused)
-+{
-+	while (!done)
-+		continue;
-+}
-+
-+enum {
-+	RECORD_STATE__ERROR = -1,
-+	RECORD_STATE__INIT,
-+	RECORD_STATE__READY,
-+	RECORD_STATE__DONE,
-+};
-+
-+struct ftrace_record_arg {
-+	struct perf_ftrace *ftrace;
-+	int cpu;
-+	int state;
-+	pthread_t id;
-+	struct list_head node;
-+};
-+
-+static int recorder_count;
-+pthread_cond_t recorder_ready_cond = PTHREAD_COND_INITIALIZER;
-+pthread_cond_t recorder_start_cond = PTHREAD_COND_INITIALIZER;
-+pthread_mutex_t recorder_mutex = PTHREAD_MUTEX_INITIALIZER;
-+
-+static void *record_ftrace_raw_buffer(void *arg)
-+{
-+	struct ftrace_record_arg *fra = arg;
-+	char buf[4096];
-+	char *trace_file;
-+	int trace_fd;
-+	int output_fd;
-+	int ret, n;
-+	off_t byte_written = 0;
-+	sigset_t sigmask;
-+	struct pollfd pollfd = {
-+		.events = POLLIN,
-+	};
-+
-+	fra->state = RECORD_STATE__ERROR;
-+
-+	snprintf(buf, sizeof(buf), "per_cpu/cpu%d/trace_pipe_raw", fra->cpu);
-+
-+	trace_file = get_tracing_file(buf);
-+	if (!trace_file) {
-+		pr_err("failed to get trace_pipe_raw\n");
++	if (perf_session__process_events(session, &show.tool) < 0) {
++		pr_err("failed to process events\n");
++		ret = -1;
 +		goto out;
 +	}
 +
-+	trace_fd = open(trace_file, O_RDONLY);
++	trace_seq_init(&seq);
 +
-+	put_tracing_file(trace_file);
++	record = get_ordered_record(ftrace);
++	while (record) {
++		int type;
++		struct event_format *event;
 +
-+	if (trace_fd < 0) {
-+		pr_err("failed to open trace_pipe_raw\n");
-+		goto out;
-+	}
-+
-+	snprintf(buf, sizeof(buf), "%s.dir/trace-cpu%d.buf",
-+		 fra->ftrace->dirname, fra->cpu);
-+
-+	output_fd = open(buf, O_WRONLY|O_CREAT|O_TRUNC, 0644);
-+	if (output_fd < 0) {
-+		pr_err("failed to open output file\n");
-+		goto out_close;
-+	}
-+
-+	fra->state = RECORD_STATE__READY;
-+
-+	/* Now I'm ready */
-+	pthread_mutex_lock(&recorder_mutex);
-+	recorder_count++;
-+	pthread_cond_signal(&recorder_ready_cond);
-+	pthread_mutex_unlock(&recorder_mutex);
-+
-+	/*
-+	 * block all signals but SIGUSR2.
-+	 * It'll be used to unblock a recorder to finish.
-+	 */
-+	sigfillset(&sigmask);
-+	sigdelset(&sigmask, SIGUSR2);
-+	pthread_sigmask(SIG_SETMASK, &sigmask,NULL);
-+
-+	signal(SIGUSR2, sig_dummy_handler);
-+
-+	fcntl(trace_fd, F_SETFL, O_NONBLOCK);
-+	pollfd.fd = trace_fd;
-+
-+	pthread_mutex_lock(&recorder_mutex);
-+	pthread_cond_wait(&recorder_start_cond, &recorder_mutex);
-+	pthread_mutex_unlock(&recorder_mutex);
-+
-+	pr_debug2("now recording for cpu%d\n", fra->cpu);
-+
-+	while (!done) {
-+		ret = poll(&pollfd, 1, -1);
-+		if (ret < 0 && errno != EINTR)
-+			goto out_close;
-+
-+		if (pollfd.revents & POLLIN) {
-+			n = read(trace_fd, buf, sizeof(buf));
-+			if (n < 0)
-+				goto out_close;
-+			if (write(output_fd, buf, n) != n)
-+				goto out_close;
-+			byte_written += n;
-+		}
-+	}
-+
-+	/* read remaining buffer contents */
-+	while (true) {
-+		n = read(trace_fd, buf, sizeof(buf));
-+		if (n < 0)
-+			goto out_close;
-+		if (n == 0)
-+			break;
-+		if (write(output_fd, buf, n) != n)
-+			goto out_close;
-+		byte_written += n;
-+	}
-+	fra->state = RECORD_STATE__DONE;
-+
-+out_close:
-+	close(trace_fd);
- out:
-+	if (fra->state == RECORD_STATE__ERROR) {
-+		/*
-+		 * We need to update recorder_count in this case also
-+		 * in order to prevent deadlocking in the main thread.
-+		 */
-+		pthread_mutex_lock(&recorder_mutex);
-+		recorder_count++;
-+		pthread_cond_signal(&recorder_ready_cond);
-+		pthread_mutex_unlock(&recorder_mutex);
-+	}
-+	return fra;
-+}
-+
-+static void *synthesize_raw_data(struct perf_evsel *evsel)
-+{
-+	void *data = NULL;
-+	u32 data_size;
-+
-+	if (!strcmp(evsel->tp_format->name, "function")) {
-+		struct {
-+			unsigned short common_type;
-+			unsigned char common_flags;
-+			unsigned char common_preempt_count;
-+			int common_pid;
-+			int common_padding;
-+
-+			unsigned long ip;
-+			unsigned long parent_ip;
-+		} function_format = {
-+			.common_type = evsel->attr.config,
-+		};
-+
-+		data_size = sizeof(function_format);
-+
-+		data = malloc(data_size + sizeof(u32));
-+		if (data == NULL)
-+			return NULL;
-+
-+		memcpy(data, &data_size, sizeof(data_size));
-+
-+		data += sizeof(data_size);
-+		memcpy(data, &function_format, sizeof(function_format));
-+	} else if (!strcmp(evsel->tp_format->name, "funcgraph_entry")) {
-+		struct {
-+			unsigned short common_type;
-+			unsigned char common_flags;
-+			unsigned char common_preempt_count;
-+			int common_pid;
-+			int common_padding;
-+
-+			unsigned long func;
-+			int depth;
-+		} funcgraph_entry_format = {
-+			.common_type = evsel->attr.config,
-+		};
-+
-+		data_size = sizeof(funcgraph_entry_format);
-+
-+		data = malloc(data_size + sizeof(u32));
-+		if (data == NULL)
-+			return NULL;
-+
-+		memcpy(data, &data_size, sizeof(data_size));
-+
-+		data += sizeof(data_size);
-+		memcpy(data, &funcgraph_entry_format,
-+		       sizeof(funcgraph_entry_format));
-+	}
-+	return data;
-+}
-+
-+static int do_ftrace_record(struct perf_ftrace *ftrace)
-+{
-+	int i, err, feat;
-+	int perf_fd;
-+	LIST_HEAD(recorders);
-+	struct perf_session *session;
-+	struct ftrace_record_arg *fra, *tmp;
-+
-+	signal(SIGINT, sig_handler);
-+	signal(SIGUSR1, sig_handler);
-+	signal(SIGCHLD, sig_handler);
-+
-+	if (setup_tracing_files(ftrace) < 0)
-+		goto out_reset;
-+
-+	alloc_ftrace_evsel(ftrace);
-+
-+	perf_fd = create_perf_directory(ftrace);
-+	if (perf_fd < 0) {
-+		pr_err("failed to create perf directory\n");
-+		goto out_reset;
-+	}
-+
-+	/* just use a dummy session for header recording */
-+	session = zalloc(sizeof(*session));
-+	if (session == NULL) {
-+		pr_err("failed to allocate perf session\n");
-+		goto out_close;
-+	}
-+	session->evlist = ftrace->evlist;
-+
-+	for (feat = HEADER_FIRST_FEATURE; feat < HEADER_LAST_FEATURE; feat++)
-+		perf_header__set_feat(&session->header, feat);
-+
-+	perf_header__clear_feat(&session->header, HEADER_BUILD_ID);
-+	perf_header__clear_feat(&session->header, HEADER_BRANCH_STACK);
-+	perf_header__clear_feat(&session->header, HEADER_PMU_MAPPINGS);
-+	perf_header__clear_feat(&session->header, HEADER_GROUP_DESC);
-+
-+	err = perf_session__write_header(session, ftrace->evlist,
-+					 perf_fd, false);
-+	if (err < 0) {
-+		pr_err("failed to write perf header\n");
-+		goto out_session;
-+	}
-+
-+	/*
-+	 * We record ftrace's per_cpu buffer so that it'd better having
-+	 * corresponding cpu maps anyway.
-+	 */
-+	if (!perf_target__has_cpu(&ftrace->target)) {
-+		struct cpu_map *new_map;
-+
-+		new_map = cpu_map__new(NULL);
-+		if (new_map == NULL) {
-+			pr_err("failed to create new cpu map\n");
-+			goto out_session;
-+		}
-+
-+		/* replace existing cpu map */
-+		cpu_map__delete(ftrace->evlist->cpus);
-+		ftrace->evlist->cpus = new_map;
-+	}
-+
-+	for (i = 0; i < cpu_map__nr(ftrace->evlist->cpus); i++) {
-+		fra = malloc(sizeof(*fra));
-+		if (fra == NULL) {
-+			pr_err("not enough memory!\n");
-+			goto out_fra;
-+		}
-+
-+		fra->ftrace = ftrace;
-+		fra->cpu = ftrace->evlist->cpus->map[i];
-+		fra->state = RECORD_STATE__INIT;
-+		list_add_tail(&fra->node, &recorders);
-+
-+		err = pthread_create(&fra->id, NULL,
-+				     record_ftrace_raw_buffer, fra);
-+		if (err < 0) {
-+			pr_err("failed to create recorder thread\n");
-+			goto out_fra;
-+		}
-+	}
-+
-+	/* wait for all recorders ready */
-+	pthread_mutex_lock(&recorder_mutex);
-+	while (recorder_count != cpu_map__nr(ftrace->evlist->cpus))
-+		pthread_cond_wait(&recorder_ready_cond, &recorder_mutex);
-+	pthread_mutex_unlock(&recorder_mutex);
-+
-+	list_for_each_entry(fra, &recorders, node) {
-+		if (fra->state != RECORD_STATE__READY) {
-+			pr_err("cpu%d: failed to start recorder", fra->cpu);
-+			goto out_fra;
-+		}
-+	}
-+
-+	if (write_tracing_file("tracing_on", "1") < 0) {
-+		pr_err("can't enable tracing\n");
-+		goto out_fra;
-+	}
-+
-+	perf_evlist__start_workload(ftrace->evlist);
-+
-+	pr_debug2("start recording per cpu buffers\n");
-+	pthread_mutex_lock(&recorder_mutex);
-+	pthread_cond_broadcast(&recorder_start_cond);
-+	pthread_mutex_unlock(&recorder_mutex);
-+
-+	/* wait for signal/finish */
-+	pause();
-+
-+	if (write_tracing_file("tracing_on", "0") < 0) {
-+		pr_err("can't disable tracing\n");
-+		goto out_fra;
-+	}
-+
-+	/* signal recorders to terminate */
-+	list_for_each_entry(fra, &recorders, node) {
-+		pr_debug2("killing recorder thread for cpu%d\n", fra->cpu);
-+		pthread_kill(fra->id, SIGUSR2);
-+	}
-+
-+	list_for_each_entry(fra, &recorders, node)
-+		pthread_join(fra->id, NULL);
-+
-+	/* synthesize sample data */
-+	list_for_each_entry(fra, &recorders, node) {
-+		struct perf_evsel *evsel = perf_evlist__first(ftrace->evlist);
-+		union perf_event event = {
-+			.sample = {
-+				.header = {
-+					.type = PERF_RECORD_SAMPLE,
-+					.misc = PERF_RECORD_MISC_KERNEL,
-+					.size = sizeof(event.sample.header) +
-+						evsel->sample_size,
-+				},
-+			},
-+		};
-+		struct perf_sample sample = {
-+			.cpu = fra->cpu,
-+			.period = 1,
-+		};
-+		void *raw_data;
-+		u32 raw_size;
-+		int orig_size;
-+
-+		if (fra->state != RECORD_STATE__DONE) {
-+			pr_warning("recorder failed for some reason on cpu%d\n",
-+				   fra->cpu);
++		type = pevent_data_type(ftrace->pevent, record);
++		event = pevent_find_event(ftrace->pevent, type);
++		if (!event) {
++			pr_warning("no event found for type %d", type);
 +			continue;
 +		}
 +
-+		perf_event__synthesize_sample(&event, evsel->attr.sample_type,
-+					      &sample, false);
++		pevent_print_event(ftrace->pevent, &seq, record);
++		trace_seq_do_printf(&seq);
 +
-+		raw_data = synthesize_raw_data(evsel);
-+		if (raw_data == NULL) {
-+			pr_err("synthesizing raw sample failed\n");
-+			goto out_fra;
-+		}
++		trace_seq_reset(&seq);
 +
-+		/*
-+		 * start of raw data is the size of raw data excluding itself.
-+		 */
-+		raw_size = sizeof(u32) + (*(u32 *) raw_data);
-+
-+		orig_size = event.sample.header.size;
-+		event.sample.header.size += raw_size;
-+
-+		err = write(perf_fd, &event.sample, orig_size);
-+		if (err != orig_size) {
-+			pr_err("write error occurred\n");
-+			goto out_fra;
-+		}
-+
-+		err = write(perf_fd, raw_data, raw_size);
-+		if (err != (int)raw_size) {
-+			pr_err("write error occurred\n");
-+			goto out_fra;
-+		}
-+
-+		session->header.data_size += event.sample.header.size;
++		free(record);
++		record = get_ordered_record(ftrace);
 +	}
 +
-+	perf_session__write_header(session, ftrace->evlist, perf_fd, true);
++	trace_seq_destroy(&seq);
 +
-+out_fra:
-+	list_for_each_entry_safe(fra, tmp, &recorders, node) {
-+		list_del(&fra->node);
-+		free(fra);
-+	}
-+out_session:
-+	free(session);
-+out_close:
-+	close(perf_fd);
-+out_reset:
-+	reset_tracing_files(ftrace);
- 	return done ? 0 : -1;
- }
- 
-@@ -286,6 +812,74 @@ out:
++out:
++	free_ftrace_report_args(ftrace);
++	perf_session__delete(session);
++	return ret;
++}
++
++static int
+ __cmd_ftrace_live(struct perf_ftrace *ftrace, int argc, const char **argv)
+ {
+ 	int ret = -1;
+@@ -880,6 +1249,58 @@ out:
  	return ret;
  }
  
 +static int
-+__cmd_ftrace_record(struct perf_ftrace *ftrace, int argc, const char **argv)
++__cmd_ftrace_show(struct perf_ftrace *ftrace, int argc, const char **argv)
 +{
 +	int ret = -1;
-+	const char * const record_usage[] = {
-+		"perf ftrace record [<options>] [<command>]",
-+		"perf ftrace record [<options>] -- <command> [<options>]",
++	const char * const show_usage[] = {
++		"perf ftrace show [<options>]",
 +		NULL
 +	};
-+	const struct option record_options[] = {
-+	OPT_STRING('t', "tracer", &ftrace->tracer, "tracer",
-+		   "tracer to use"),
-+	OPT_STRING('p', "pid", &ftrace->target.tid, "pid",
-+		   "trace on existing process id"),
++	const struct option show_options[] = {
++	OPT_STRING('i', "input", &ftrace->dirname, "dirname",
++		   "input directory name to use (default: perf.data)"),
 +	OPT_INCR('v', "verbose", &verbose,
 +		 "be more verbose"),
-+	OPT_BOOLEAN('a', "all-cpus", &ftrace->target.system_wide,
-+		    "system-wide collection from all CPUs"),
 +	OPT_STRING('C', "cpu", &ftrace->target.cpu_list, "cpu",
 +		    "list of cpus to monitor"),
-+	OPT_STRING('o', "output", &ftrace->dirname, "dirname",
-+		   "input directory name to use (default: perf.data)"),
 +	OPT_END()
 +	};
 +
-+	argc = parse_options(argc, argv, record_options, record_usage,
++	argc = parse_options(argc, argv, show_options, show_usage,
 +			     PARSE_OPT_STOP_AT_NON_OPTION);
-+	if (!argc && perf_target__none(&ftrace->target))
-+		usage_with_options(record_usage, record_options);
++	if (argc)
++		usage_with_options(show_usage, show_options);
 +
 +	ret = perf_target__validate(&ftrace->target);
 +	if (ret) {
@@ -731,20 +490,11 @@ index 6d991c44948f..7e72cd65dd0a 100644
 +	if (ret < 0)
 +		goto out;
 +
-+	if (ftrace->tracer == NULL)
-+		ftrace->tracer = DEFAULT_TRACER;
-+
 +	if (ftrace->dirname == NULL)
 +		ftrace->dirname = DEFAULT_DIRNAME;
 +
-+	if (argc && perf_evlist__prepare_workload(ftrace->evlist,
-+						  &ftrace->target,
-+						  argv, false, true) < 0)
-+		goto out_maps;
++	ret = do_ftrace_show(ftrace);
 +
-+	ret = do_ftrace_record(ftrace);
-+
-+out_maps:
 +	perf_evlist__delete_maps(ftrace->evlist);
 +out:
 +	perf_evlist__delete(ftrace->evlist);
@@ -755,23 +505,23 @@ index 6d991c44948f..7e72cd65dd0a 100644
  int cmd_ftrace(int argc, const char **argv, const char *prefix __maybe_unused)
  {
  	int ret;
-@@ -293,8 +887,8 @@ int cmd_ftrace(int argc, const char **argv, const char *prefix __maybe_unused)
+@@ -887,8 +1308,8 @@ int cmd_ftrace(int argc, const char **argv, const char *prefix __maybe_unused)
  		.target = { .uid = UINT_MAX, },
  	};
  	const char * const ftrace_usage[] = {
--		"perf ftrace {live} [<options>] [<command>]",
--		"perf ftrace {live} [<options>] -- <command> [<options>]",
-+		"perf ftrace {live|record} [<options>] [<command>]",
-+		"perf ftrace {live|record} [<options>] -- <command> [<options>]",
+-		"perf ftrace {live|record} [<options>] [<command>]",
+-		"perf ftrace {live|record} [<options>] -- <command> [<options>]",
++		"perf ftrace {live|record|show} [<options>] [<command>]",
++		"perf ftrace {live|record|show} [<options>] -- <command> [<options>]",
  		NULL
  	};
  	const struct option ftrace_options[] = {
-@@ -313,6 +907,8 @@ int cmd_ftrace(int argc, const char **argv, const char *prefix __maybe_unused)
- 
- 	if (strcmp(argv[0], "live") == 0) {
+@@ -909,6 +1330,8 @@ int cmd_ftrace(int argc, const char **argv, const char *prefix __maybe_unused)
  		ret = __cmd_ftrace_live(&ftrace, argc, argv);
-+	} else 	if (strncmp(argv[0], "rec", 3) == 0) {
-+		ret = __cmd_ftrace_record(&ftrace, argc, argv);
+ 	} else 	if (strncmp(argv[0], "rec", 3) == 0) {
+ 		ret = __cmd_ftrace_record(&ftrace, argc, argv);
++	} else 	if (strcmp(argv[0], "show") == 0) {
++		ret = __cmd_ftrace_show(&ftrace, argc, argv);
  	} else {
  		usage_with_options(ftrace_usage, ftrace_options);
  	}
