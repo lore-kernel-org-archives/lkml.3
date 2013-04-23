@@ -1,80 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932123Ab3DWQM7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 12:12:59 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:51290 "EHLO comal.ext.ti.com"
+	id S932252Ab3DWQNZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 12:13:25 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58092 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754662Ab3DWQM5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 12:12:57 -0400
-Date: Tue, 23 Apr 2013 19:12:25 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Arnd Bergmann <arnd@arndb.de>
-CC: <balbi@ti.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH] usb: phy: phy core cannot yet be a module
-Message-ID: <20130423161225.GH15177@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1366732475-479886-1-git-send-email-arnd@arndb.de>
- <1366732475-479886-2-git-send-email-arnd@arndb.de>
- <20130423160759.GF15177@arwen.pp.htv.fi>
- <201304231811.35692.arnd@arndb.de>
+	id S1756391Ab3DWQNY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Apr 2013 12:13:24 -0400
+Date: Tue, 23 Apr 2013 17:13:19 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: "Theodore Ts'o" <tytso@mit.edu>, Jan Kara <jack@suse.cz>,
+        linux-ext4@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>, Jiri Slaby <jslaby@suse.cz>
+Subject: Re: Excessive stall times on ext4 in 3.9-rc2
+Message-ID: <20130423161319.GC2108@suse.de>
+References: <20130410105608.GC1910@suse.de>
+ <20130410131245.GC4862@thunk.org>
+ <20130411170402.GB11656@suse.de>
+ <20130411183512.GA12298@thunk.org>
+ <20130411213335.GE9379@quack.suse.cz>
+ <20130412025708.GB7445@thunk.org>
+ <20130412094731.GI11656@suse.de>
+ <20130421000522.GA5054@thunk.org>
+ <20130423153305.GB2108@suse.de>
+ <20130423155019.GH31170@thunk.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="wv56KCa6/aA7yLgk"
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <201304231811.35692.arnd@arndb.de>
+In-Reply-To: <20130423155019.GH31170@thunk.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---wv56KCa6/aA7yLgk
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Apr 23, 2013 at 11:50:19AM -0400, Theodore Ts'o wrote:
+> On Tue, Apr 23, 2013 at 04:33:05PM +0100, Mel Gorman wrote:
+> > That's a pretty big drop but it gets bad again for the second worst stall --
+> > wait_on_page_bit as a result of generic_file_buffered_write.
+> > 
+> > Vanilla kernel  1336064 ms stalled with 109 events
+> > Patched kernel  2338781 ms stalled with 164 events
+> 
+> Do you have the stack trace for this stall?  I'm wondering if this is
+> caused by the waiting for stable pages in write_begin() , or something
+> else.
+> 
 
-Hi,
+[<ffffffff81110238>] wait_on_page_bit+0x78/0x80
+[<ffffffff815af294>] kretprobe_trampoline+0x0/0x4c
+[<ffffffff81110e84>] generic_file_buffered_write+0x114/0x2a0
+[<ffffffff81111ccd>] __generic_file_aio_write+0x1bd/0x3c0
+[<ffffffff81111f4a>] generic_file_aio_write+0x7a/0xf0
+[<ffffffff811ee639>] ext4_file_write+0x99/0x420
+[<ffffffff81174d87>] do_sync_write+0xa7/0xe0
+[<ffffffff81175447>] vfs_write+0xa7/0x180
+[<ffffffff811758cd>] sys_write+0x4d/0x90
+[<ffffffff815b3eed>] system_call_fastpath+0x1a/0x1f
+[<ffffffffffffffff>] 0xffffffffffffffff
 
-On Tue, Apr 23, 2013 at 06:11:35PM +0200, Arnd Bergmann wrote:
-> On Tuesday 23 April 2013, Felipe Balbi wrote:
-> > looks like this is the only way, indeed. Do you need on the merge window
-> > on can this wait until -rc1 ? I just sent a pull request to Greg with
-> > urgent fixes for the merge window.
-> >=20
-> > Greg, if you want to take this one as a patch, go for it:
-> >=20
-> > Acked-by: Felipe Balbi <balbi@ti.com>
->=20
-> It's not relevant for real-life scenarios, it's fine as long as this
-> makes it into 3.10.
+The processes that stalled in this particular trace are wget, latency-output,
+tar and tclsh. Most of these are sequential writers except for tar which
+is both a sequential reader and sequential writers.
 
-sure, I can take this on -rc1 then.
+> If it is blocking caused by stable page writeback that's interesting,
+> since it would imply that something in your workload is trying to
+> write to a page that has already been modified (i.e., appending to a
+> log file, or updating a database file).  Does that make sense given
+> what your workload might be running?
+> 
 
---=20
-balbi
+I doubt it is stable write consider the type of processes that are running. I
+would expect the bulk of the activity to be sequential readers or writers
+of multiple files. The summarised report from the raw data is now at
 
---wv56KCa6/aA7yLgk
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+http://www.csn.ul.ie/~mel/postings/ext4tag-20130423/dstate-summary-vanilla
+http://www.csn.ul.ie/~mel/postings/ext4tag-20130423/dstate-summary-ext4tag
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+It's an aside but the worst of the stalls are incurred by systemd-tmpfile
+which were not a deliberate part of the test and yet another thing that
+I would not have caught unless I was running tests on my laptop. Looking
+closer at that thing, the default configuration is to run the service 15
+minutes after boot and after that it runs once a day. It looks like the
+bulk of the scanning would be in /var/tmp/ looking at systemds own files
+(over 3000 of them) which I'm a little amused by.
 
-iQIcBAEBAgAGBQJRdrLpAAoJEIaOsuA1yqRE6XsQAIqrBSMuQnR+hUsKv7Nd4cp/
-o5DGebJn39uwy0IMkDiQdhjVau9CKQOG5vGSRPiA+yibNJ5tbSnvW/z0v4Mj7w4k
-gzlBNbpXI78do+6cJ3hoSM+hhNGKvED+AmC5FyDtOlIn4nCITbisYKO4NYbYGE32
-94hrvCSWlWJxpzisDI9QJ3GS1j6Wfrh0j9HmeWidRk44V9ihh9B5sD1CqxCIs0ee
-8oq7180kPBmoG77rNxvYuzKwHbQFfiBxVlF2SNSsk5fUAPXRDmpeo0mLw2hAjNMj
-wPzLoLF6ibRbFOQY5ZYODGHcX6M3nso/xkGkrZoQE/kTVSPwm5e5GwlXVUISdD7M
-+EJuK/pHrHBSVqzYGQu6j+UYGHnF3cuxoxJRKBReIFL/XkVjnzQYag+boVTCqFJt
-LrKtRYZHGXbCQAupeY6dD2ot5DlCJUm5SkEPEZRIwUMthGuhCaewloGeulLtCaZ/
-Joduh67dBCDfga6sXjnEml8RrHieDAujGsiRIrjmd/dLIN50LhamalHyxIrJIzkC
-TxBv+BGgdEtZl043PWVtuPEjPP7FFrBNOuU3VEC/IW1bHBAKZp5mppfVciMIQwwM
-iz4gtigrQSbTuBoCHvFYYdEDIjqUtoVxQNk1plQYpHsXjZeMDsYPUNzHSb6EOHyh
-mat09TgCcdn2izCyUJ3Y
-=Nvyk
------END PGP SIGNATURE-----
+My normal test machines would not hit this because they are not systemd
+based but the existance of thing thing is worth noting. Any IO-based tests
+run on systemd-based distributions may give different results depending
+on whether this service triggered during the test or not.
 
---wv56KCa6/aA7yLgk--
+-- 
+Mel Gorman
+SUSE Labs
