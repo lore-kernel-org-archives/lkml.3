@@ -1,88 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755086Ab3DWOHi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 10:07:38 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:51641 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754771Ab3DWOHh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 10:07:37 -0400
-Date: Tue, 23 Apr 2013 07:07:34 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: "Li, Zhen-Hua" <zhen-hual@hp.com>
-Cc: stern@rowland.harvard.edu, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, tom.vaden@hp.com
-Subject: Re: [PATCH 1/1] driver,usb: Fix a warning in uhci-hcd driver
-Message-ID: <20130423140734.GA30877@kroah.com>
-References: <1366701301-16603-1-git-send-email-zhen-hual@hp.com>
+	id S1755236Ab3DWOKa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 10:10:30 -0400
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:13894 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754957Ab3DWOK3 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Apr 2013 10:10:29 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VS-3(zz98dI9371I542I1432Izz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275bhz2dh2a8h668h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ahbe9i1155h)
+From: Sethi Varun-B16395 <B16395@freescale.com>
+To: Joerg Roedel <joro@8bytes.org>
+CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "galak@kernel.crashing.org" <galak@kernel.crashing.org>,
+        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
+        Yoder Stuart-B08248 <B08248@freescale.com>,
+        Wood Scott-B07421 <B07421@freescale.com>
+Subject: RE: [PATCH 2/3 v14] iommu/fsl: Add additional iommu attributes
+ required by the PAMU driver.
+Thread-Topic: [PATCH 2/3 v14] iommu/fsl: Add additional iommu attributes
+ required by the PAMU driver.
+Thread-Index: AQHOP90uclGpGfD1QUaX06kTxa8S0pjjz/0AgAAHY6A=
+Date: Tue, 23 Apr 2013 14:10:25 +0000
+Message-ID: <C5ECD7A89D1DC44195F34B25E172658D4B4D9A@039-SN2MPN1-011.039d.mgd.msft.net>
+References: <1366691726-9023-1-git-send-email-Varun.Sethi@freescale.com>
+ <1366691726-9023-2-git-send-email-Varun.Sethi@freescale.com>
+ <20130423133837.GG17148@8bytes.org>
+In-Reply-To: <20130423133837.GG17148@8bytes.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.214.249.154]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1366701301-16603-1-git-send-email-zhen-hual@hp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 23, 2013 at 03:15:01PM +0800, Li, Zhen-Hua wrote:
-> From: "Li, Zhen-Hua" <zhen-hual@hp.com>
+
+
+> -----Original Message-----
+> From: Joerg Roedel [mailto:joro@8bytes.org]
+> Sent: Tuesday, April 23, 2013 7:09 PM
+> To: Sethi Varun-B16395
+> Cc: iommu@lists.linux-foundation.org; linuxppc-dev@lists.ozlabs.org;
+> linux-kernel@vger.kernel.org; galak@kernel.crashing.org;
+> benh@kernel.crashing.org; Yoder Stuart-B08248; Wood Scott-B07421
+> Subject: Re: [PATCH 2/3 v14] iommu/fsl: Add additional iommu attributes
+> required by the PAMU driver.
 > 
-> This patch is trying to fix bug QXCR1001261767.
-
-What is that bug number?  Where can it be referenced?  If you are going
-to put it in a public place (like a kernel changelog), it needs to be
-publicly accessible.
-
-> On some HP platform, when usb driver inits the iLo Virtual USB Controller, there may be a warning "Controller not stopped yet!". It is because driver does not wait enough time.
-
-What happened to your line endings?
-
-> This patch adds more time waiting and retries.
-
-Why not only do this for your device?
-
+> On Tue, Apr 23, 2013 at 10:05:25AM +0530, Varun Sethi wrote:
+> > Added the following domain attributes for the FSL PAMU driver:
+> > 1. Added new iommu stash attribute, which allows setting of the
+> >    LIODN specific stash id parameter through IOMMU API.
+> > 2. Added an attribute for enabling/disabling DMA to a particular
+> >    memory window.
+> > 3. Added domain attribute to check for PAMUV1 specific constraints.
+> >
+> > Signed-off-by: Varun Sethi <Varun.Sethi@freescale.com>
+> > ---
+> > v14 changes:
+> > - Add FSL prefix to PAMU attributes.
+> > v13 changes:
+> > - created a new file include/linux/fsl_pamu_stash.h for stash
+> > attributes.
+> > v12 changes:
+> > - Moved PAMU specifc stash ids and structures to PAMU header file.
+> > - no change in v11.
+> > - no change in v10.
+> >  include/linux/fsl_pamu_stash.h |   39
+> +++++++++++++++++++++++++++++++++++++++
 > 
-> Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
-> ---
->  drivers/usb/host/uhci-hcd.c |   16 +++++++++++++++-
->  1 file changed, 15 insertions(+), 1 deletion(-)
+> Isn't asm/ for your architecture a better place for that header?
 > 
-> diff --git a/drivers/usb/host/uhci-hcd.c b/drivers/usb/host/uhci-hcd.c
-> index 4a86b63..514e9d7 100644
-> --- a/drivers/usb/host/uhci-hcd.c
-> +++ b/drivers/usb/host/uhci-hcd.c
-> @@ -277,6 +277,9 @@ static int global_suspend_mode_is_broken(struct uhci_hcd *uhci)
->  		uhci->global_suspend_mode_is_broken(uhci) : 0;
->  }
->  
-> +#define UHCI_SUSPENDRH_RETRY_MAX      10
-> +#define UHCI_SUSPENDRH_RETRY_DELAY    100
-> +
->  static void suspend_rh(struct uhci_hcd *uhci, enum uhci_rh_state new_state)
->  __releases(uhci->lock)
->  __acquires(uhci->lock)
-> @@ -284,6 +287,7 @@ __acquires(uhci->lock)
->  	int auto_stop;
->  	int int_enable, egsm_enable, wakeup_enable;
->  	struct usb_device *rhdev = uhci_to_hcd(uhci)->self.root_hub;
-> +	u16 try, stopped;
->  
->  	auto_stop = (new_state == UHCI_RH_AUTO_STOPPED);
->  	dev_dbg(&rhdev->dev, "%s%s\n", __func__,
-> @@ -355,7 +359,17 @@ __acquires(uhci->lock)
->  		if (uhci->dead)
->  			return;
->  	}
-> -	if (!(uhci_readw(uhci, USBSTS) & USBSTS_HCH))
-> +
-> +	for (try = 0; try < UHCI_SUSPENDRH_RETRY_MAX; try++) {
-> +		/*
-> +		 * Sometimes we may need to wait more time and try again.
-> +		 */
+I think it's fine to have the header under linux, actually I also the intel-iommu header under linux.
 
-"Sometimes"?  Please be more specific.  Also, a multi-line comment isn't
-needed, make it one line please.
+-Varun
 
-thanks,
 
-greg k-h
