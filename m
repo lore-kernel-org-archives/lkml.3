@@ -1,81 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932372Ab3DWQhe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 12:37:34 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:50547 "EHLO
+	id S932402Ab3DWQhw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 12:37:52 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:57728 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932306Ab3DWQhb (ORCPT
+	with ESMTP id S1757218Ab3DWQbx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 12:37:31 -0400
+	Tue, 23 Apr 2013 12:31:53 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Michael Buesch <mb@bu3sch.de>,
-        Larry Finger <Larry.Finger@lwfinger.net>
-Subject: [PATCH 10/21] ssb: fix alignment of struct bcma_device_id
-Date: Tue, 23 Apr 2013 18:30:42 +0200
-Message-Id: <1366734653-488286-11-git-send-email-arnd@arndb.de>
+        Stephen Warren <swarren@nvidia.com>, Joseph Lo <josephl@nvidia.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 07/21] ARM: tegra: unify tegra_idle_device definitions
+Date: Tue, 23 Apr 2013 18:30:39 +0200
+Message-Id: <1366734653-488286-8-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1366734653-488286-1-git-send-email-arnd@arndb.de>
 References: <1366734653-488286-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:saeHJCTJ21Jxs6230BRkDH4heLmNX7lgF3Yk659mD+3
- 6ZYUBqxGH27Wu7t39FKJOhYvnzaoa5GtgiDdTt5vkpzZWGnAqF
- WBmK34KjhxTNavvjKlT3qN17NXi+wZvL/GEy/F8k91DB2v4KP8
- bk9M71FjXPasp7tnOlO4+oz2nHm/tTaqsSxICyPsOf8GtdczNu
- vKiDbCPvN7IN5PUGRoWcOCd3nsBCseEVNR3a52BGyiBJJh3lBS
- 0IzG9kV33g+WmqA/2GRdr48jWvKnG0ZWGGIsEZL3/Nvl6SWtac
- ASO8fHEayziVStHTpgRIwBBZg91pIrTK80iXw5mw0v4SZwxopw
- 0lG39qoXiEnkDJTd6gjir2UULmOZMT71HhMXPmXCG
+X-Provags-ID: V02:K0:8nhlNs6ppyK1rtbrpLwAEDiIt9OYpb7VlLkxfxs0v2q
+ qlHzqs+5dxKuZ5ArxPSxJdau/G6cbjzRZR1330vCog175+4Mni
+ BM0YyYl3ejvZk5zfkhipWQOqZXGYnQHpcVl4CI0EK0/4OqwqFs
+ RGerbROEyYpc+cri3ASszVDuXgKlinOPmqSBp6YkW0VCv59U1V
+ 1zf0TjsUH1e5ABUapSK7t5j1nC1LcWKgWTqGP2Ru1ihJokc+4V
+ wJ0CYFXVyp/M1Au4yAzVkhGiX0E9Rhcr7q6uhxaFgZU7zOSiZB
+ lXnm9v+XKM8Rr3aD5Q1Bc/7NuTbEroy80eQAMoXBrdfWbTTmCW
+ LP6ve86yC4Ad1YUkMsNZKSc/BBpVif0whLZC2sE7q
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ARM OABI and EABI disagree on the alignment of structures
-with small members, so module init tools may interpret the
-ssb device table incorrectly, as shown  by this warning when
-building the b43 device driver in an OABI kernel:
+The three tegra variants (20, 30, 114) each define their own per-cpu
+variable for tegra_idle_device, which causes link errors when you
+build the kernel for more than one of them:
 
-FATAL: drivers/net/wireless/b43/b43: sizeof(struct ssb_device_id)=6 is
-not a modulo of the size of section __mod_ssb_device_table=88.
+cpuidle-tegra30.o:(.discard+0x0): multiple definition of `__pcpu_unique_tegra_idle_device'
+cpuidle-tegra20.o:(.discard+0x0): first defined here
+cpuidle-tegra114.o:(.discard+0x0): multiple definition of `__pcpu_unique_tegra_idle_device'
+cpuidle-tegra20.o:(.discard+0x0): first defined here
 
-Forcing the default (EABI) alignment on the structure makes this
-problem go away. Since the ssb_device_id may have the same problem,
-better fix both structures.
+By moving the variable into the common cpuidle.c file, we save a little
+bit of object code size and avoid that warning.
+As a bonus, this patch also removes the unused "drv" variables in each
+of the three files that caused a warning since 0697598db "ARM: tegra:
+cpuidle: remove useless initialization".
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: John W. Linville <linville@tuxdriver.com>
-Cc: Michael Buesch <mb@bu3sch.de>
-Cc: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: Stephen Warren <swarren@nvidia.com>
+Cc: Joseph Lo <josephl@nvidia.com>
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 ---
- include/linux/mod_devicetable.h | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ arch/arm/mach-tegra/cpuidle-tegra114.c | 5 ++---
+ arch/arm/mach-tegra/cpuidle-tegra20.c  | 4 +---
+ arch/arm/mach-tegra/cpuidle-tegra30.c  | 4 +---
+ arch/arm/mach-tegra/cpuidle.c          | 2 ++
+ arch/arm/mach-tegra/cpuidle.h          | 4 ++++
+ 5 files changed, 10 insertions(+), 9 deletions(-)
 
-diff --git a/include/linux/mod_devicetable.h b/include/linux/mod_devicetable.h
-index 779cf7c..ce363a5 100644
---- a/include/linux/mod_devicetable.h
-+++ b/include/linux/mod_devicetable.h
-@@ -360,7 +360,8 @@ struct ssb_device_id {
- 	__u16	vendor;
- 	__u16	coreid;
- 	__u8	revision;
--};
-+	__u8	__pad;
-+} __attribute__((packed, aligned(2)));
- #define SSB_DEVICE(_vendor, _coreid, _revision)  \
- 	{ .vendor = _vendor, .coreid = _coreid, .revision = _revision, }
- #define SSB_DEVTABLE_END  \
-@@ -376,7 +377,7 @@ struct bcma_device_id {
- 	__u16	id;
- 	__u8	rev;
- 	__u8	class;
--};
-+} __attribute__((packed,aligned(2)));
- #define BCMA_CORE(_manuf, _id, _rev, _class)  \
- 	{ .manuf = _manuf, .id = _id, .rev = _rev, .class = _class, }
- #define BCMA_CORETABLE_END  \
+diff --git a/arch/arm/mach-tegra/cpuidle-tegra114.c b/arch/arm/mach-tegra/cpuidle-tegra114.c
+index 0f4e8c4..09067a1 100644
+--- a/arch/arm/mach-tegra/cpuidle-tegra114.c
++++ b/arch/arm/mach-tegra/cpuidle-tegra114.c
+@@ -20,6 +20,8 @@
+ 
+ #include <asm/cpuidle.h>
+ 
++#include "cpuidle.h"
++
+ static struct cpuidle_driver tegra_idle_driver = {
+ 	.name = "tegra_idle",
+ 	.owner = THIS_MODULE,
+@@ -30,14 +32,11 @@ static struct cpuidle_driver tegra_idle_driver = {
+ 	},
+ };
+ 
+-static DEFINE_PER_CPU(struct cpuidle_device, tegra_idle_device);
+-
+ int __init tegra114_cpuidle_init(void)
+ {
+ 	int ret;
+ 	unsigned int cpu;
+ 	struct cpuidle_device *dev;
+-	struct cpuidle_driver *drv = &tegra_idle_driver;
+ 
+ 	ret = cpuidle_register_driver(&tegra_idle_driver);
+ 	if (ret) {
+diff --git a/arch/arm/mach-tegra/cpuidle-tegra20.c b/arch/arm/mach-tegra/cpuidle-tegra20.c
+index 825ced4..c811328 100644
+--- a/arch/arm/mach-tegra/cpuidle-tegra20.c
++++ b/arch/arm/mach-tegra/cpuidle-tegra20.c
+@@ -36,6 +36,7 @@
+ #include "iomap.h"
+ #include "irq.h"
+ #include "flowctrl.h"
++#include "cpuidle.h"
+ 
+ #ifdef CONFIG_PM_SLEEP
+ static bool abort_flag;
+@@ -67,8 +68,6 @@ static struct cpuidle_driver tegra_idle_driver = {
+ 	.en_core_tk_irqen = 1,
+ };
+ 
+-static DEFINE_PER_CPU(struct cpuidle_device, tegra_idle_device);
+-
+ #ifdef CONFIG_PM_SLEEP
+ #ifdef CONFIG_SMP
+ static void __iomem *pmc = IO_ADDRESS(TEGRA_PMC_BASE);
+@@ -220,7 +219,6 @@ int __init tegra20_cpuidle_init(void)
+ 	int ret;
+ 	unsigned int cpu;
+ 	struct cpuidle_device *dev;
+-	struct cpuidle_driver *drv = &tegra_idle_driver;
+ 
+ #ifdef CONFIG_PM_SLEEP
+ 	tegra_tear_down_cpu = tegra20_tear_down_cpu;
+diff --git a/arch/arm/mach-tegra/cpuidle-tegra30.c b/arch/arm/mach-tegra/cpuidle-tegra30.c
+index 8b50cf4..6187478 100644
+--- a/arch/arm/mach-tegra/cpuidle-tegra30.c
++++ b/arch/arm/mach-tegra/cpuidle-tegra30.c
+@@ -33,6 +33,7 @@
+ 
+ #include "pm.h"
+ #include "sleep.h"
++#include "cpuidle.h"
+ 
+ #ifdef CONFIG_PM_SLEEP
+ static int tegra30_idle_lp2(struct cpuidle_device *dev,
+@@ -65,8 +66,6 @@ static struct cpuidle_driver tegra_idle_driver = {
+ 	},
+ };
+ 
+-static DEFINE_PER_CPU(struct cpuidle_device, tegra_idle_device);
+-
+ #ifdef CONFIG_PM_SLEEP
+ static bool tegra30_cpu_cluster_power_down(struct cpuidle_device *dev,
+ 					   struct cpuidle_driver *drv,
+@@ -160,7 +159,6 @@ int __init tegra30_cpuidle_init(void)
+ 	int ret;
+ 	unsigned int cpu;
+ 	struct cpuidle_device *dev;
+-	struct cpuidle_driver *drv = &tegra_idle_driver;
+ 
+ #ifdef CONFIG_PM_SLEEP
+ 	tegra_tear_down_cpu = tegra30_tear_down_cpu;
+diff --git a/arch/arm/mach-tegra/cpuidle.c b/arch/arm/mach-tegra/cpuidle.c
+index 4b744c4..1bac560 100644
+--- a/arch/arm/mach-tegra/cpuidle.c
++++ b/arch/arm/mach-tegra/cpuidle.c
+@@ -27,6 +27,8 @@
+ #include "fuse.h"
+ #include "cpuidle.h"
+ 
++DEFINE_PER_CPU(struct cpuidle_device, tegra_idle_device);
++
+ static int __init tegra_cpuidle_init(void)
+ {
+ 	int ret;
+diff --git a/arch/arm/mach-tegra/cpuidle.h b/arch/arm/mach-tegra/cpuidle.h
+index d733f75..a4c5f17 100644
+--- a/arch/arm/mach-tegra/cpuidle.h
++++ b/arch/arm/mach-tegra/cpuidle.h
+@@ -17,6 +17,10 @@
+ #ifndef __MACH_TEGRA_CPUIDLE_H
+ #define __MACH_TEGRA_CPUIDLE_H
+ 
++#include <linux/cpuidle.h>
++
++DECLARE_PER_CPU(struct cpuidle_device, tegra_idle_device);
++
+ #ifdef CONFIG_ARCH_TEGRA_2x_SOC
+ int tegra20_cpuidle_init(void);
+ #else
 -- 
 1.8.1.2
 
