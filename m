@@ -1,76 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757242Ab3DWSdH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 14:33:07 -0400
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:63295 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756735Ab3DWSdF convert rfc822-to-8bit (ORCPT
+	id S1757196Ab3DWSdG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 14:33:06 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48003 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756508Ab3DWSdE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 14:33:05 -0400
+	Tue, 23 Apr 2013 14:33:04 -0400
+Date: Tue, 23 Apr 2013 19:33:01 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Richard GENOUD <richard.genoud@gmail.com>
+Cc: Wenyou Yang <wenyou.yang@atmel.com>, linux-arm-kernel@lists.infradead.org,
+        grant.likely@secretlab.ca, plagnioj@jcrosoft.com,
+        nicolas.ferre@atmel.com, JM.Lin@atmel.com,
+        spi-devel-general@lists.sourceforge.net,
+        spi-devel-general@lists.sourceforge.ne, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v8 3/8] spi/spi-atmel: add dmaengine support
+Message-ID: <20130423183301.GX5019@opensource.wolfsonmicro.com>
+References: <1364968581-23700-1-git-send-email-wenyou.yang@atmel.com>
+ <1364968759-24036-1-git-send-email-wenyou.yang@atmel.com>
+ <20130403102332.GA4633@lnx-rg>
 MIME-Version: 1.0
-In-Reply-To: <CAMix8LGzh1Sr-s=m4eQcRMYSDTuC=g2ddDwPbGcRvrnU3EYP5Q@mail.gmail.com>
-References: <CAMix8LGzh1Sr-s=m4eQcRMYSDTuC=g2ddDwPbGcRvrnU3EYP5Q@mail.gmail.com>
-Date: Tue, 23 Apr 2013 20:33:04 +0200
-Message-ID: <CAMix8LHNNFpz42BONnXu86Mvxx-h3FWb9_AOqGLS1NE8LSGt3g@mail.gmail.com>
-Subject: Fwd: ehci-pci failed handover
-From: =?UTF-8?Q?Jes=C3=BAs_J=2E_Guerrero_Botella?= 
-	<jesus.guerrero.botella@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="JMKEfAmnQy+WzDHS"
+Content-Disposition: inline
+In-Reply-To: <20130403102332.GA4633@lnx-rg>
+X-Cookie: Caution: Keep out of reach of children.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
 
-I am getting some strange messages when I try to connect a Logitech
-m185 wireless mouse to my Pavilion zd8000.
+--JMKEfAmnQy+WzDHS
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The mouse works in some other machines, and the usb ports of the
-pavillion have been tested only with regular pendrives, which work
-fine, but nothing else.
+On Wed, Apr 03, 2013 at 12:23:35PM +0200, Richard GENOUD wrote:
 
-When I attach the mouse I get messages like these:
+Richard, delete irrelevant context from your mails - it makes it much
+easier to find the content you added.
 
-===
- usb usb1: usb wakeup-resume
- usb usb1: usb auto-resume
- ehci-pci 0000:00:1d.7: resume root hub
- ehci-pci 0000:00:1d.7: GetStatus port:8 status 001000 0  ACK POWER sig=se0
- ehci-pci 0000:00:1d.7: failed handover port 8: 1000
- hub 1-0:1.0: hub_resume
- ehci-pci 0000:00:1d.7: GetStatus port:5 status 001803 0  ACK POWER
-sig=j CSC CONNECT
- hub 1-0:1.0: port 5: status 0501 change 0001
- hub 1-0:1.0: state 7 ports 8 chg 0020 evt 0000
- hub 1-0:1.0: port 5, status 0501, change 0000, 480 Mb/s
- ehci-pci 0000:00:1d.7: port 5 full speed --> companion
- ehci-pci 0000:00:1d.7: GetStatus port:5 status 003801 0  ACK POWER
-OWNER sig=j CONNECT
- hub 1-0:1.0: port 5 not reset yet, waiting 50ms
- ehci-pci 0000:00:1d.7: GetStatus port:5 status 003002 0  ACK POWER
-OWNER sig=se0 CSC
- hub 1-0:1.0: state 7 ports 8 chg 0000 evt 0020
- ehci-pci 0000:00:1d.7: GetStatus port:5 status 003002 0  ACK POWER
-OWNER sig=se0 CSC
- hub 1-0:1.0: port 5, status 0100, change 0001, 12 Mb/s
- hub 1-0:1.0: debounce: port 5: total 100ms stable 100ms status 0x100
- hub 1-0:1.0: hub_suspend
- usb usb1: bus auto-suspend, wakeup 1
- ehci-pci 0000:00:1d.7: suspend root hub
-===
+> On [mer., 03.04.2013 13:59:19], Wenyou Yang wrote:
 
-HID stuff is enabled in my kernel, but for what I read in that output
-I don't think it's even reaching that stage, is it?
+> As I did some work on that one:
+> Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
+>=20
+> BUT, there's one thing not working (at least for me !):
+> With DMA enabled, using spidev.
+> if we use the ioctl SPI_IOC_MESSAGE(x) (tested with x=3D3):
 
-This is gentoo, using linux 3.8.7, I can attach the .config if needed.
-Don't want to spam the list. I have used this same mouse in my desktop
-(gentoo as well) and it's working nicely.
+I'd been expecting an updated series with this rolled in?
 
-Can you give me some pointers on how to proceed?
+--JMKEfAmnQy+WzDHS
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Thanks beforehand for any help, or just for reading :)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
---
-Jesús Guerrero Botella
+iQIcBAEBAgAGBQJRdtPRAAoJELSic+t+oim9NVcP+gJOD4khMgy8thQ9im6XuOfj
+6rmFz7wzd8Hq6xiJ2N8n2c9//RIhs6P5f6eGOXfifP1gVozdyDq8ju993f+fFkY0
+b9UNSWshVAJskJr/nLgHZUpgJ/Nxw/S1/p/Fwxf0JMwfzxr1dvMLtQN+Gvy0/7IU
+o76qn11fILbT9g2o+vO9tfUQzMkFlJpTas4gsQsnr7XYWfy+lC8orGyhJgqM5VfR
+qYQ8ScGgUkvnLkE0N5zNhyyDw3EMpIkNlZrEA8nr2BTsn/xxBjcIqlPhksjAdoSd
+dW01OtpVZ4QjtArQ809dzJuRHPTcW5i5YkWcVifDsxDyopEmU/19zlba0R9/A2Av
+KZWZmv9AE2ILyWfAroKLyN1+yWc/UjRqH7OHLntBcjI8Hq6d/3OZBFRJWMLhVAoX
+dy3Z7doixHETooUFlAckrLWaaXwHSLHXsN0PCZDiEGB3h81cPZN+qEhoXisbkbxi
+gqJenhe7Sun0XrU1HfoZF/LQDXRk0gR7d0ByN+rrDPSMj4zV5iflHnUjt+4Jdvt0
+Wu6unHr4ZFKzMrd4AJXfUe5+5On2R208BpkTnW0awfNk+eF8BBMs9C3x8PyEWTsY
+MwkL6LYrOORbzjxJN+8x132e7Q8uEcDS0isatO9i3GTM2zUaC1hwVijl4TmwCt+I
+yXk2J3tCIyQuqfi0oT2x
+=0AkG
+-----END PGP SIGNATURE-----
+
+--JMKEfAmnQy+WzDHS--
