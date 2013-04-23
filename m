@@ -1,173 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757710Ab3DWVyN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 17:54:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34176 "EHLO
+	id S1756404Ab3DWWHt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 18:07:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34215 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757666Ab3DWVyI (ORCPT
+	with ESMTP id S1757700Ab3DWVyN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 17:54:08 -0400
+	Tue, 23 Apr 2013 17:54:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        stable@vger.kernel.org
-Subject: [ 00/26] 3.4.42-stable review
-Date: Tue, 23 Apr 2013 14:53:40 -0700
-Message-Id: <20130423215333.344045754@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Andrew Honig <ahonig@google.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [ 08/26] KVM: x86: Convert MSR_KVM_SYSTEM_TIME to use gfn_to_hva_cache functions (CVE-2013-1797)
+Date: Tue, 23 Apr 2013 14:53:48 -0700
+Message-Id: <20130423215334.225816814@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130423215333.344045754@linuxfoundation.org>
+References: <20130423215333.344045754@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 3.4.42 release.
-There are 26 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Responses should be made by Thu Apr 25 21:52:47 UTC 2013.
-Anything received after that time might be too late.
+------------------
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.42-rc1.gz
-and the diffstat can be found below.
+From: Andy Honig <ahonig@google.com>
 
-thanks,
+commit 0b79459b482e85cb7426aa7da683a9f2c97aeae1 upstream.
 
-greg k-h
+There is a potential use after free issue with the handling of
+MSR_KVM_SYSTEM_TIME.  If the guest specifies a GPA in a movable or removable
+memory such as frame buffers then KVM might continue to write to that
+address even after it's removed via KVM_SET_USER_MEMORY_REGION.  KVM pins
+the page in memory so it's unlikely to cause an issue, but if the user
+space component re-purposes the memory previously used for the guest, then
+the guest will be able to corrupt that memory.
 
--------------
-Pseudo-Shortlog of commits:
+Tested: Tested against kvmclock unit test
 
-Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-    Linux 3.4.42-rc1
-
-Josef Bacik <jbacik@fusionio.com>
-    Btrfs: make sure nbytes are right after log replay
-
-Linus Torvalds <torvalds@linux-foundation.org>
-    vm: convert mtdchar mmap to vm_iomap_memory() helper
-
-Linus Torvalds <torvalds@linux-foundation.org>
-    vm: convert HPET mmap to vm_iomap_memory() helper
-
-Linus Torvalds <torvalds@linux-foundation.org>
-    vm: convert fb_mmap to vm_iomap_memory() helper
-
-Linus Torvalds <torvalds@linux-foundation.org>
-    vm: convert snd_pcm_lib_mmap_iomem() to vm_iomap_memory() helper
-
-Linus Torvalds <torvalds@linux-foundation.org>
-    vm: add vm_iomap_memory() helper function
-
-Dave Airlie <airlied@gmail.com>
-    fbcon: fix locking harder
-
-Stephane Eranian <eranian@google.com>
-    perf/x86: Fix offcore_rsp valid mask for SNB/IVB
-
-Tommi Rantala <tt.rantala@gmail.com>
-    perf: Treat attr.config as u64 in perf_swevent_init()
-
-Mathias Krause <minipli@googlemail.com>
-    crypto: algif - suppress sending source address information in recvmsg
-
-Rafał Miłecki <zajec5@gmail.com>
-    ssb: implement spurious tone avoidance
-
-Felix Fietkau <nbd@openwrt.org>
-    ath9k_hw: change AR9580 initvals to fix a stability issue
-
-Felix Fietkau <nbd@openwrt.org>
-    ath9k_htc: accept 1.x firmware newer than 1.3
-
-Will Deacon <will.deacon@arm.com>
-    ARM: 7698/1: perf: fix group validation when using enable_on_exec
-
-Illia Ragozin <illia.ragozin@grapecom.com>
-    ARM: 7696/1: Fix kexec by setting outer_cache.inv_all for Feroceon
-
-Tejun Heo <tj@kernel.org>
-    sched: Convert BUG_ON()s in try_to_wake_up_local() to WARN_ON_ONCE()s
-
-Andrew Honig <ahonig@google.com>
-    KVM: Allow cross page reads and writes from cached translations.
-
-Andy Honig <ahonig@google.com>
-    KVM: Fix bounds checking in ioapic indirect register reads (CVE-2013-1798)
-
-Andy Honig <ahonig@google.com>
-    KVM: x86: Convert MSR_KVM_SYSTEM_TIME to use gfn_to_hva_cache functions (CVE-2013-1797)
-
-Andy Honig <ahonig@google.com>
-    KVM: x86: fix for buffer overflow in handling of MSR_KVM_SYSTEM_TIME (CVE-2013-1796)
-
-Vyacheslav Dubeyko <slava@dubeyko.com>
-    hfsplus: fix potential overflow in hfsplus_file_truncate()
-
-Emese Revfy <re.emese@gmail.com>
-    kernel/signal.c: stop info leak via the tkill and the tgkill syscalls
-
-Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-    hugetlbfs: add swap entry check in follow_hugetlb_page()
-
-Christoph Fritz <chf.fritz@googlemail.com>
-    can: sja1000: fix handling on dt properties on little endian systems
-
-Michael Bohan <mbohan@codeaurora.org>
-    hrtimer: Don't reinitialize a cpu_base lock on CPU_UP
-
-Russell King <rmk+kernel@arm.linux.org.uk>
-    ARM: Do 15e0d9e37c (ARM: pm: let platforms select cpu_suspend support) properly
+Signed-off-by: Andrew Honig <ahonig@google.com>
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 
--------------
+---
+ arch/x86/include/asm/kvm_host.h |    4 ++--
+ arch/x86/kvm/x86.c              |   39 ++++++++++++++-------------------------
+ 2 files changed, 16 insertions(+), 27 deletions(-)
 
-Diffstat:
-
- Makefile                                           |  4 +-
- arch/arm/kernel/perf_event.c                       |  5 ++-
- arch/arm/mm/cache-feroceon-l2.c                    |  1 +
- arch/arm/mm/proc-arm920.S                          |  2 +-
- arch/arm/mm/proc-arm926.S                          |  2 +-
- arch/arm/mm/proc-sa1100.S                          |  2 +-
- arch/arm/mm/proc-v6.S                              |  2 +-
- arch/arm/mm/proc-xsc3.S                            |  2 +-
- arch/arm/mm/proc-xscale.S                          |  2 +-
- arch/x86/include/asm/kvm_host.h                    |  4 +-
- arch/x86/kernel/cpu/perf_event_intel.c             | 15 +++++--
- arch/x86/kvm/x86.c                                 | 43 ++++++++-----------
- crypto/algif_hash.c                                |  2 +
- crypto/algif_skcipher.c                            |  1 +
- drivers/char/hpet.c                                | 14 +------
- drivers/gpu/vga/vga_switcheroo.c                   |  3 ++
- drivers/mtd/mtdchar.c                              | 32 +--------------
- drivers/net/can/sja1000/sja1000_of_platform.c      | 31 +++++++-------
- .../net/wireless/ath/ath9k/ar9580_1p0_initvals.h   |  2 +-
- drivers/net/wireless/ath/ath9k/htc_drv_init.c      |  2 +-
- drivers/net/wireless/b43/phy_n.c                   |  3 +-
- drivers/ssb/driver_chipcommon_pmu.c                | 29 +++++++++++++
- drivers/video/console/fbcon.c                      | 11 +++--
- drivers/video/fbmem.c                              | 42 ++++++++-----------
- fs/btrfs/tree-log.c                                | 48 +++++++++++++++++++---
- fs/hfsplus/extents.c                               |  2 +-
- include/linux/kvm_host.h                           |  2 +-
- include/linux/kvm_types.h                          |  1 +
- include/linux/mm.h                                 |  2 +
- include/linux/ssb/ssb_driver_chipcommon.h          |  2 +
- kernel/events/core.c                               |  2 +-
- kernel/hrtimer.c                                   |  3 +-
- kernel/sched/core.c                                |  6 ++-
- kernel/signal.c                                    |  2 +-
- mm/hugetlb.c                                       | 12 +++++-
- mm/memory.c                                        | 47 +++++++++++++++++++++
- sound/core/pcm_native.c                            | 12 +-----
- virt/kvm/ioapic.c                                  |  7 +++-
- virt/kvm/kvm_main.c                                | 47 ++++++++++++++++-----
- 39 files changed, 284 insertions(+), 167 deletions(-)
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -407,8 +407,8 @@ struct kvm_vcpu_arch {
+ 	gpa_t time;
+ 	struct pvclock_vcpu_time_info hv_clock;
+ 	unsigned int hw_tsc_khz;
+-	unsigned int time_offset;
+-	struct page *time_page;
++	struct gfn_to_hva_cache pv_time;
++	bool pv_time_enabled;
+ 
+ 	struct {
+ 		u64 msr_val;
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -1114,7 +1114,6 @@ static int kvm_guest_time_update(struct
+ {
+ 	unsigned long flags;
+ 	struct kvm_vcpu_arch *vcpu = &v->arch;
+-	void *shared_kaddr;
+ 	unsigned long this_tsc_khz;
+ 	s64 kernel_ns, max_kernel_ns;
+ 	u64 tsc_timestamp;
+@@ -1150,7 +1149,7 @@ static int kvm_guest_time_update(struct
+ 
+ 	local_irq_restore(flags);
+ 
+-	if (!vcpu->time_page)
++	if (!vcpu->pv_time_enabled)
+ 		return 0;
+ 
+ 	/*
+@@ -1208,14 +1207,9 @@ static int kvm_guest_time_update(struct
+ 	 */
+ 	vcpu->hv_clock.version += 2;
+ 
+-	shared_kaddr = kmap_atomic(vcpu->time_page);
+-
+-	memcpy(shared_kaddr + vcpu->time_offset, &vcpu->hv_clock,
+-	       sizeof(vcpu->hv_clock));
+-
+-	kunmap_atomic(shared_kaddr);
+-
+-	mark_page_dirty(v->kvm, vcpu->time >> PAGE_SHIFT);
++	kvm_write_guest_cached(v->kvm, &vcpu->pv_time,
++				&vcpu->hv_clock,
++				sizeof(vcpu->hv_clock));
+ 	return 0;
+ }
+ 
+@@ -1504,10 +1498,7 @@ static int kvm_pv_enable_async_pf(struct
+ 
+ static void kvmclock_reset(struct kvm_vcpu *vcpu)
+ {
+-	if (vcpu->arch.time_page) {
+-		kvm_release_page_dirty(vcpu->arch.time_page);
+-		vcpu->arch.time_page = NULL;
+-	}
++	vcpu->arch.pv_time_enabled = false;
+ }
+ 
+ static void accumulate_steal_time(struct kvm_vcpu *vcpu)
+@@ -1602,6 +1593,7 @@ int kvm_set_msr_common(struct kvm_vcpu *
+ 		break;
+ 	case MSR_KVM_SYSTEM_TIME_NEW:
+ 	case MSR_KVM_SYSTEM_TIME: {
++		u64 gpa_offset;
+ 		kvmclock_reset(vcpu);
+ 
+ 		vcpu->arch.time = data;
+@@ -1611,21 +1603,17 @@ int kvm_set_msr_common(struct kvm_vcpu *
+ 		if (!(data & 1))
+ 			break;
+ 
+-		/* ...but clean it before doing the actual write */
+-		vcpu->arch.time_offset = data & ~(PAGE_MASK | 1);
++		gpa_offset = data & ~(PAGE_MASK | 1);
+ 
+ 		/* Check that the address is 32-byte aligned. */
+-		if (vcpu->arch.time_offset &
+-				(sizeof(struct pvclock_vcpu_time_info) - 1))
++		if (gpa_offset & (sizeof(struct pvclock_vcpu_time_info) - 1))
+ 			break;
+ 
+-		vcpu->arch.time_page =
+-				gfn_to_page(vcpu->kvm, data >> PAGE_SHIFT);
+-
+-		if (is_error_page(vcpu->arch.time_page)) {
+-			kvm_release_page_clean(vcpu->arch.time_page);
+-			vcpu->arch.time_page = NULL;
+-		}
++		if (kvm_gfn_to_hva_cache_init(vcpu->kvm,
++		     &vcpu->arch.pv_time, data & ~1ULL))
++			vcpu->arch.pv_time_enabled = false;
++		else
++			vcpu->arch.pv_time_enabled = true;
+ 		break;
+ 	}
+ 	case MSR_KVM_ASYNC_PF_EN:
+@@ -6172,6 +6160,7 @@ int kvm_arch_vcpu_init(struct kvm_vcpu *
+ 	if (!zalloc_cpumask_var(&vcpu->arch.wbinvd_dirty_mask, GFP_KERNEL))
+ 		goto fail_free_mce_banks;
+ 
++	vcpu->arch.pv_time_enabled = false;
+ 	kvm_async_pf_hash_reset(vcpu);
+ 	kvm_pmu_init(vcpu);
+ 
 
 
