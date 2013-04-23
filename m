@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757271Ab3DWQcA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 12:32:00 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:49407 "EHLO
+	id S1757257Ab3DWQb7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 12:31:59 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:52272 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757239Ab3DWQb5 (ORCPT
+	with ESMTP id S1757238Ab3DWQb4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 12:31:57 -0400
+	Tue, 23 Apr 2013 12:31:56 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        "M'boumba Cedric Madianga" <cedric.madianga@stericsson.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Mattias WALLIN <mattias.wallin@stericsson.com>,
-        Michel JAOUEN <michel.jaouen@stericsson.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: [PATCH 20/21] MFD: ab8500: export ab8500_gpadc_sw_hw_convert properly
-Date: Tue, 23 Apr 2013 18:30:52 +0200
-Message-Id: <1366734653-488286-21-git-send-email-arnd@arndb.de>
+        Alan Stern <stern@rowland.harvard.edu>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org
+Subject: [PATCH 19/21] usb: phy: don't mark usb_bind_phy as __init
+Date: Tue, 23 Apr 2013 18:30:51 +0200
+Message-Id: <1366734653-488286-20-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1366734653-488286-1-git-send-email-arnd@arndb.de>
 References: <1366734653-488286-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:czil2QkpoShs2YAunsMr2Vw1lY0PJ2DSjbVTK/NcIeO
- tC+/vyx2cbwSplUQ9+J+51XmWsTyu3f2cpoxL7E5VjQlGOdj4V
- 35UuRUDNw0BI1kgwCg/wA93wM6ax58HQsCkJpXqNghKvfo16oH
- xy1T0lg2LURT3RYonayXd0ILa23NFfkXgn4YHDcsBXduVRaDs+
- RECAA/zgCBaHOOd3i72I5zK9NtghqHppoyG5T/ddZmZdN/Ysi4
- cAOUFIK9cKIU4t93kzscPx7i+MV1LyMyWK43bn7nzrPH6kp63y
- /k3tWl0yHNxWJ+c0/e7S5cfF8r3RyCGhQsEGvHkCRFNuWk+EDH
- NDjENDMfjmtX4iViGJQuOtddZWyYYj0wmtDbhexaD
+X-Provags-ID: V02:K0:qb0T5pBLrjnV57Baxtl+EcieOySM0ht9IVqLJkLEXn5
+ aMd002sojXxLUgvDLOwH3Bv4Naa1yF7E5qFfoyt1g6rsorUe3D
+ llzpq/QpiHdyEb/3B6pvNReL1ZSl8Gso9ardg9+pBSbnzOmk2q
+ aNpeKdHJzTm/uMb/UC5aZsBq0F0QfeKcPtSIdfBULNYqFD0RSp
+ sLgYPf7ITJgYWpKFQs6SzuNOKkS3JgVlmJpUiqYaxfvV5B4Tv4
+ VJw4KvhDC2/whyHXCc9QgnRY0XWkcWEUONLdidbJ7/aA8oVIVZ
+ UpMTzpSKzs8EEO7fgg8m7XcaqrkxxU4SoMMbFNTNZtWPInSzEm
+ fJslkuy75JuCn/H//34Uz4El2Hehxbrq6Ikc6l6R2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Apparently the ab8500_gpadc_sw_hw_convert function got renamed
-from ab8500_gpadc_convert to ab8500_gpadc_sw_hw_convert in
-commit 734823462 "mfd: ab8500-gpadc: Add gpadc hw conversion",
-but the export for this function did not get changed at the
-same time, causing this allyesconfig error:
+It makes no sense for a symbol to be both exported and marked __init,
+because any users in modules would be calling this function after
+it gets discarded. Further, this patch revolves a section mismatch
+warning from usbhs_init_phys(), which is intentionally not marked
+__init:
 
-ERROR: "ab8500_gpadc_sw_hw_convert" [drivers/hwmon/ab8500.ko] undefined!
-
-This patch fixes the export.
+WARNING: vmlinux.o(.text+0x413f8): Section mismatch in reference from
+the function usbhs_init_phys() to the function .init.text:usb_bind_phy()
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: M'boumba Cedric Madianga <cedric.madianga@stericsson.com>
-Cc: Lee Jones <lee.jones@linaro.org>
-Cc: Mattias WALLIN <mattias.wallin@stericsson.com>
-Cc: Michel JAOUEN <michel.jaouen@stericsson.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>
+Cc: Felipe Balbi <balbi@ti.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-usb@vger.kernel.org
 ---
- drivers/mfd/ab8500-gpadc.c | 2 +-
+ drivers/usb/otg/otg.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/mfd/ab8500-gpadc.c b/drivers/mfd/ab8500-gpadc.c
-index 5f341a5..184df96 100644
---- a/drivers/mfd/ab8500-gpadc.c
-+++ b/drivers/mfd/ab8500-gpadc.c
-@@ -269,7 +269,7 @@ int ab8500_gpadc_convert(struct ab8500_gpadc *gpadc, u8 channel)
- 
- 	return voltage;
- }
--EXPORT_SYMBOL(ab8500_gpadc_convert);
-+EXPORT_SYMBOL(ab8500_gpadc_sw_hw_convert);
- 
- /**
-  * ab8500_gpadc_read_raw() - gpadc read
+diff --git a/drivers/usb/otg/otg.c b/drivers/usb/otg/otg.c
+index 2bd03d2..77346cf 100644
+--- a/drivers/usb/otg/otg.c
++++ b/drivers/usb/otg/otg.c
+@@ -414,7 +414,7 @@ EXPORT_SYMBOL(usb_remove_phy);
+  *
+  * To be used by platform specific initialization code.
+  */
+-int __init usb_bind_phy(const char *dev_name, u8 index,
++int usb_bind_phy(const char *dev_name, u8 index,
+ 				const char *phy_dev_name)
+ {
+ 	struct usb_phy_bind *phy_bind;
 -- 
 1.8.1.2
 
