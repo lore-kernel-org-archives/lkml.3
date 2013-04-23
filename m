@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757518Ab3DWVw4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 17:52:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34039 "EHLO
+	id S1757441Ab3DWWPp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 18:15:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34068 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757441Ab3DWVwv (ORCPT
+	with ESMTP id S1757507Ab3DWVwz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 17:52:51 -0400
+	Tue, 23 Apr 2013 17:52:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 03/42] ARM: Do 15e0d9e37c (ARM: pm: let platforms select cpu_suspend support) properly
-Date: Tue, 23 Apr 2013 14:52:01 -0700
-Message-Id: <20130423215205.906024321@linuxfoundation.org>
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Lingzhu Xiang <lxiang@redhat.com>
+Subject: [ 18/42] ARM: i.MX35: enable MAX clock
+Date: Tue, 23 Apr 2013 14:52:16 -0700
+Message-Id: <20130423215207.403759053@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130423215205.523980967@linuxfoundation.org>
 References: <20130423215205.523980967@linuxfoundation.org>
@@ -26,102 +27,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Russell King <rmk+kernel@arm.linux.org.uk>
+From: Sascha Hauer <s.hauer@pengutronix.de>
 
-commit b6c7aabd923a17af993c5a5d5d7995f0b27c000a upstream.
+commit 5dc2eb7da1e387e31ce54f54af580c6a6f512ca6 upstream.
 
-Let's do the changes properly and fix the same problem everywhere, not
-just for one case.
+The i.MX35 has two bits per clock gate which are decoded as follows:
+      0b00 -> clock off
+      0b01 -> clock is on in run mode, off in wait/doze
+      0b10 -> clock is on in run/wait mode, off in doze
+      0b11 -> clock is always on
 
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+The reset value for the MAX clock is 0b10.
+
+The MAX clock is needed by the SoC, yet unused in the Kernel, so the
+common clock framework will disable it during late init time. It will
+only disable clocks though which it detects as being turned on. This
+detection is made depending on the lower bit of the gate. If the reset
+value has been altered by the bootloader to 0b11 the clock framework
+will detect the clock as turned on, yet unused, hence it will turn it
+off and the system locks up.
+
+This patch turns the MAX clock on unconditionally making the Kernel
+independent of the bootloader.
+
+Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: Lingzhu Xiang <lxiang@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mm/proc-arm920.S |    2 +-
- arch/arm/mm/proc-arm926.S |    2 +-
- arch/arm/mm/proc-mohawk.S |    2 +-
- arch/arm/mm/proc-sa1100.S |    2 +-
- arch/arm/mm/proc-v6.S     |    2 +-
- arch/arm/mm/proc-xsc3.S   |    2 +-
- arch/arm/mm/proc-xscale.S |    2 +-
- 7 files changed, 7 insertions(+), 7 deletions(-)
+ arch/arm/mach-imx/clk-imx35.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/arm/mm/proc-arm920.S
-+++ b/arch/arm/mm/proc-arm920.S
-@@ -387,7 +387,7 @@ ENTRY(cpu_arm920_set_pte_ext)
- /* Suspend/resume support: taken from arch/arm/plat-s3c24xx/sleep.S */
- .globl	cpu_arm920_suspend_size
- .equ	cpu_arm920_suspend_size, 4 * 3
--#ifdef CONFIG_PM_SLEEP
-+#ifdef CONFIG_ARM_CPU_SUSPEND
- ENTRY(cpu_arm920_do_suspend)
- 	stmfd	sp!, {r4 - r6, lr}
- 	mrc	p15, 0, r4, c13, c0, 0	@ PID
---- a/arch/arm/mm/proc-arm926.S
-+++ b/arch/arm/mm/proc-arm926.S
-@@ -402,7 +402,7 @@ ENTRY(cpu_arm926_set_pte_ext)
- /* Suspend/resume support: taken from arch/arm/plat-s3c24xx/sleep.S */
- .globl	cpu_arm926_suspend_size
- .equ	cpu_arm926_suspend_size, 4 * 3
--#ifdef CONFIG_PM_SLEEP
-+#ifdef CONFIG_ARM_CPU_SUSPEND
- ENTRY(cpu_arm926_do_suspend)
- 	stmfd	sp!, {r4 - r6, lr}
- 	mrc	p15, 0, r4, c13, c0, 0	@ PID
---- a/arch/arm/mm/proc-mohawk.S
-+++ b/arch/arm/mm/proc-mohawk.S
-@@ -350,7 +350,7 @@ ENTRY(cpu_mohawk_set_pte_ext)
+--- a/arch/arm/mach-imx/clk-imx35.c
++++ b/arch/arm/mach-imx/clk-imx35.c
+@@ -265,6 +265,7 @@ int __init mx35_clocks_init()
+ 	clk_prepare_enable(clk[gpio3_gate]);
+ 	clk_prepare_enable(clk[iim_gate]);
+ 	clk_prepare_enable(clk[emi_gate]);
++	clk_prepare_enable(clk[max_gate]);
  
- .globl	cpu_mohawk_suspend_size
- .equ	cpu_mohawk_suspend_size, 4 * 6
--#ifdef CONFIG_PM_SLEEP
-+#ifdef CONFIG_ARM_CPU_SUSPEND
- ENTRY(cpu_mohawk_do_suspend)
- 	stmfd	sp!, {r4 - r9, lr}
- 	mrc	p14, 0, r4, c6, c0, 0	@ clock configuration, for turbo mode
---- a/arch/arm/mm/proc-sa1100.S
-+++ b/arch/arm/mm/proc-sa1100.S
-@@ -172,7 +172,7 @@ ENTRY(cpu_sa1100_set_pte_ext)
- 
- .globl	cpu_sa1100_suspend_size
- .equ	cpu_sa1100_suspend_size, 4 * 3
--#ifdef CONFIG_PM_SLEEP
-+#ifdef CONFIG_ARM_CPU_SUSPEND
- ENTRY(cpu_sa1100_do_suspend)
- 	stmfd	sp!, {r4 - r6, lr}
- 	mrc	p15, 0, r4, c3, c0, 0		@ domain ID
---- a/arch/arm/mm/proc-v6.S
-+++ b/arch/arm/mm/proc-v6.S
-@@ -138,7 +138,7 @@ ENTRY(cpu_v6_set_pte_ext)
- /* Suspend/resume support: taken from arch/arm/mach-s3c64xx/sleep.S */
- .globl	cpu_v6_suspend_size
- .equ	cpu_v6_suspend_size, 4 * 6
--#ifdef CONFIG_PM_SLEEP
-+#ifdef CONFIG_ARM_CPU_SUSPEND
- ENTRY(cpu_v6_do_suspend)
- 	stmfd	sp!, {r4 - r9, lr}
- 	mrc	p15, 0, r4, c13, c0, 0	@ FCSE/PID
---- a/arch/arm/mm/proc-xsc3.S
-+++ b/arch/arm/mm/proc-xsc3.S
-@@ -413,7 +413,7 @@ ENTRY(cpu_xsc3_set_pte_ext)
- 
- .globl	cpu_xsc3_suspend_size
- .equ	cpu_xsc3_suspend_size, 4 * 6
--#ifdef CONFIG_PM_SLEEP
-+#ifdef CONFIG_ARM_CPU_SUSPEND
- ENTRY(cpu_xsc3_do_suspend)
- 	stmfd	sp!, {r4 - r9, lr}
- 	mrc	p14, 0, r4, c6, c0, 0	@ clock configuration, for turbo mode
---- a/arch/arm/mm/proc-xscale.S
-+++ b/arch/arm/mm/proc-xscale.S
-@@ -528,7 +528,7 @@ ENTRY(cpu_xscale_set_pte_ext)
- 
- .globl	cpu_xscale_suspend_size
- .equ	cpu_xscale_suspend_size, 4 * 6
--#ifdef CONFIG_PM_SLEEP
-+#ifdef CONFIG_ARM_CPU_SUSPEND
- ENTRY(cpu_xscale_do_suspend)
- 	stmfd	sp!, {r4 - r9, lr}
- 	mrc	p14, 0, r4, c6, c0, 0	@ clock configuration, for turbo mode
+ 	/*
+ 	 * SCC is needed to boot via mmc after a watchdog reset. The clock code
 
 
