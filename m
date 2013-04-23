@@ -1,105 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754662Ab3DWDy4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 23:54:56 -0400
-Received: from mail-da0-f51.google.com ([209.85.210.51]:47422 "EHLO
-	mail-da0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754478Ab3DWDyy (ORCPT
+	id S1751162Ab3DWECF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 00:02:05 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:50143 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750768Ab3DWECC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 23:54:54 -0400
-Message-ID: <1366689288.25625.3.camel@phoenix>
-Subject: [PATCH] regulator: tps65023: Use [set|get]_voltage_sel_regmap
- instead of open coded
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Anuj Aggarwal <anuj.aggarwal@ti.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        Marcus Folkesson <marcus.folkesson@gmail.com>,
-        Marek Vasut <marek.vasut@gmail.com>
-Date: Tue, 23 Apr 2013 11:54:48 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
+	Tue, 23 Apr 2013 00:02:02 -0400
+Message-ID: <517607AD.2010902@linux.vnet.ibm.com>
+Date: Tue, 23 Apr 2013 12:01:49 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Mike Galbraith <efault@gmx.de>, Alex Shi <alex.shi@intel.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Turner <pjt@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        Ram Pai <linuxram@us.ibm.com>
+Subject: Re: [PATCH] sched: wake-affine throttle
+References: <5164DCE7.8080906@linux.vnet.ibm.com> <1366626208.2721.12.camel@laptop>
+In-Reply-To: <1366626208.2721.12.camel@laptop>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13042303-8256-0000-0000-0000072DB190
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Simply the [get|set]_voltage_sel implementation by using
-regulator_[set|get]_voltage_sel_regmap instead of open coded.
+On 04/22/2013 06:23 PM, Peter Zijlstra wrote:
+> 
+> OK,.. Ingo said that pipe-test was the original motivation for
+> wake_affine() and since that's currently broken to pieces due to
+> select_idle_sibling() is there still a benefit to having it at all?
+> 
+> Can anybody find any significant regression when simply killing
+> wake_affine()?
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/regulator/tps65023-regulator.c |   31 +++++++++----------------------
- 1 file changed, 9 insertions(+), 22 deletions(-)
+IMHO, reserve this stuff may be a better choice, it do bring benefit,
+pgbench is just some workload it also bring damage.
 
-diff --git a/drivers/regulator/tps65023-regulator.c b/drivers/regulator/tps65023-regulator.c
-index 9b9af6d..d91e230 100644
---- a/drivers/regulator/tps65023-regulator.c
-+++ b/drivers/regulator/tps65023-regulator.c
-@@ -154,20 +154,15 @@ struct tps_driver_data {
- static int tps65023_dcdc_get_voltage_sel(struct regulator_dev *dev)
- {
- 	struct tps_pmic *tps = rdev_get_drvdata(dev);
--	int ret;
--	int data, dcdc = rdev_get_id(dev);
-+	int dcdc = rdev_get_id(dev);
- 
- 	if (dcdc < TPS65023_DCDC_1 || dcdc > TPS65023_DCDC_3)
- 		return -EINVAL;
- 
--	if (dcdc == tps->core_regulator) {
--		ret = regmap_read(tps->regmap, TPS65023_REG_DEF_CORE, &data);
--		if (ret != 0)
--			return ret;
--		data &= (tps->info[dcdc]->table_len - 1);
--		return data;
--	} else
-+	if (dcdc != tps->core_regulator)
- 		return 0;
-+
-+	return regulator_get_voltage_sel_regmap(dev);
- }
- 
- static int tps65023_dcdc_set_voltage_sel(struct regulator_dev *dev,
-@@ -175,23 +170,11 @@ static int tps65023_dcdc_set_voltage_sel(struct regulator_dev *dev,
- {
- 	struct tps_pmic *tps = rdev_get_drvdata(dev);
- 	int dcdc = rdev_get_id(dev);
--	int ret;
- 
- 	if (dcdc != tps->core_regulator)
- 		return -EINVAL;
- 
--	ret = regmap_write(tps->regmap, TPS65023_REG_DEF_CORE, selector);
--	if (ret)
--		goto out;
--
--	/* Tell the chip that we have changed the value in DEFCORE
--	 * and its time to update the core voltage
--	 */
--	ret = regmap_update_bits(tps->regmap, TPS65023_REG_CON_CTRL2,
--				 TPS65023_REG_CTRL2_GO, TPS65023_REG_CTRL2_GO);
--
--out:
--	return ret;
-+	return regulator_set_voltage_sel_regmap(dev, selector);
- }
- 
- /* Operations permitted on VDCDCx */
-@@ -285,6 +268,10 @@ static int tps_65023_probe(struct i2c_client *client,
- 		default: /* DCDCx */
- 			tps->desc[i].enable_mask =
- 					1 << (TPS65023_NUM_REGULATOR - i);
-+			tps->desc[i].vsel_reg = TPS65023_REG_DEF_CORE;
-+			tps->desc[i].vsel_mask = info->table_len - 1;
-+			tps->desc[i].apply_reg = TPS65023_REG_CON_CTRL2;
-+			tps->desc[i].apply_bit = TPS65023_REG_CTRL2_GO;
- 		}
- 
- 		config.dev = &client->dev;
--- 
-1.7.10.4
+By throttle, we could reduce the damage meanwhile reserve the benefit,
+when reach some rate, they will be balanced and show best performance, I
+suppose just killing the stuff won't show that peak...
 
+Besides, we still have many theory about the possible benefit of this
+stuff, along with some side-effect like speared behaviour, it has been
+there too long, the influence of killing it is unmeasurable (tend to be
+worse), I really prefer to reserve it...
 
+And if we really want to kill it, we could just throttle it with an
+incredible interval, and make it unable to breathe any more ;-)
+
+Regards,
+Michael Wang
+
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
