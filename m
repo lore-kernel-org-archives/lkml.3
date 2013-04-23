@@ -1,99 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755526Ab3DWHqf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 03:46:35 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:59511 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754482Ab3DWHqe (ORCPT
+	id S1755213Ab3DWHxC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 03:53:02 -0400
+Received: from mail-bk0-f44.google.com ([209.85.214.44]:46697 "EHLO
+	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754482Ab3DWHxA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 03:46:34 -0400
-Date: Tue, 23 Apr 2013 17:46:18 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Patrick McHardy <kaber@trash.net>
-Subject: linux-next: build failure after merge of the final tree (net-next
- tree related)
-Message-Id: <20130423174618.59095bd1cf999c61332d4805@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__23_Apr_2013_17_46_18_+1000_05e+C9Y1BSG8sqy7"
+	Tue, 23 Apr 2013 03:53:00 -0400
+MIME-Version: 1.0
+In-Reply-To: <1366661437.6454.20.camel@laptop>
+References: <1366645086-20345-1-git-send-email-vincent.guittot@linaro.org>
+	<1366661437.6454.20.camel@laptop>
+Date: Tue, 23 Apr 2013 09:52:58 +0200
+Message-ID: <CAKfTPtD5rxB29t1mCDBVTVv-RVFv9xMjhRaUeaxCU6znZGPJrw@mail.gmail.com>
+Subject: Re: [PATCH v7] sched: fix init NOHZ_IDLE flag
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>,
+        Paul Turner <pjt@google.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Mike Galbraith <efault@gmx.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__23_Apr_2013_17_46_18_+1000_05e+C9Y1BSG8sqy7
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 22 April 2013 22:10, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Mon, 2013-04-22 at 17:38 +0200, Vincent Guittot wrote:
+>
+>> ---
+>>  include/linux/sched.h |    1 +
+>>  kernel/sched/fair.c   |   34 ++++++++++++++++++++++++----------
+>>  2 files changed, 25 insertions(+), 10 deletions(-)
+>>
+>> diff --git a/include/linux/sched.h b/include/linux/sched.h
+>> index d35d2b6..cde4f7f 100644
+>> --- a/include/linux/sched.h
+>> +++ b/include/linux/sched.h
+>> @@ -899,6 +899,7 @@ struct sched_domain {
+>>       unsigned int wake_idx;
+>>       unsigned int forkexec_idx;
+>>       unsigned int smt_gain;
+>> +     unsigned long nohz_flags;       /* NOHZ_IDLE flag status */
+>>       int flags;                      /* See SD_* */
+>>       int level;
+>
+> There was a 4 byte hole here, I'm assuming you used unsigned long and
+> not utilized the hole because of the whole atomic bitop interface
+> taking unsigned long?
+>
+> Bit wasteful but ok..
+>
+> So we're only pulling NOHZ_IDLE out of nohz_flags()? Should we then not
+> also amend the rq_nohz_flag_bits enum? And it seems pointless to me to
+> set bit 2 our nohz_flags word if all other bits are unused.
 
-Hi all,
+Yes, i have been too quick to update the patchset. i'm going to remove
+NOHZ_IDLE from the rq_nohz_flag_bits
 
-After merging the final tree, today's linux-next build (powerpc
-allyesconfig) failed like this:
+>
+>>
+>> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+>> index 7a33e59..09e440f 100644
+>> --- a/kernel/sched/fair.c
+>> +++ b/kernel/sched/fair.c
+>> @@ -5394,14 +5394,21 @@ static inline void set_cpu_sd_state_busy(void)
+>>  {
+>>       struct sched_domain *sd;
+>>       int cpu = smp_processor_id();
+>> -
+>> -     if (!test_bit(NOHZ_IDLE, nohz_flags(cpu)))
+>> -             return;
+>> -     clear_bit(NOHZ_IDLE, nohz_flags(cpu));
+>> +     int first_nohz_idle = 1;
+>>
+>>       rcu_read_lock();
+>> -     for_each_domain(cpu, sd)
+>> +     for_each_domain(cpu, sd) {
+>> +             if (first_nohz_idle) {
+>> +                     if (!test_bit(NOHZ_IDLE, &sd->nohz_flags))
+>> +                             goto unlock;
+>> +
+>> +                     clear_bit(NOHZ_IDLE, &sd->nohz_flags);
+>> +                     first_nohz_idle = 0;
+>> +             }
+>> +
+>>               atomic_inc(&sd->groups->sgp->nr_busy_cpus);
+>> +     }
+>
+> the mind boggles... what's wrong with something like:
+>
+> static inline unsigned long *rq_nohz_flags(int cpu)
+> {
+>         return rcu_dereference(cpu_rq(cpu)->sd)->nohz_flags;
+> }
+>
+>         if (!test_bit(0, rq_nohz_flags(cpu)))
+>                 return;
+>         clear_bit(0, rq_nohz_flags(cpu));
+>
 
-net/netlink/af_netlink.c: In function 'netlink_frame_flush_dcache':
-net/netlink/af_netlink.c:384:40: error: 'NL_MMAP_MSG_HDRLEN' undeclared (fi=
-rst use in this function)
+AFAICT, if we use different rcu_dereferences for modifying nohz_flags
+and for updating the nr_busy_cpus, we open a time window for
+desynchronization, isn't it ?
+That why i'm doing the update of rq_nohz_flags with the same
+rcu_dereference than nr_busy_cpus
 
-Caused by commit 9652e931e73b ("netlink: add mmap'ed netlink helper
-functions").  This needed to be build tested on an architecture that has
-ARCH_IMPLEMENTS_FLUSH_DCACHE_PAGE set to 1 (like Sparc :-)).
+>> +unlock:
+>>       rcu_read_unlock();
+>>  }
+>>
+>> @@ -5409,14 +5416,21 @@ void set_cpu_sd_state_idle(void)
+>>  {
+>>       struct sched_domain *sd;
+>>       int cpu = smp_processor_id();
+>> -
+>> -     if (test_bit(NOHZ_IDLE, nohz_flags(cpu)))
+>> -             return;
+>> -     set_bit(NOHZ_IDLE, nohz_flags(cpu));
+>> +     int first_nohz_idle = 1;
+>>
+>>       rcu_read_lock();
+>> -     for_each_domain(cpu, sd)
+>> +     for_each_domain(cpu, sd) {
+>> +             if (first_nohz_idle) {
+>> +                     if (test_bit(NOHZ_IDLE, &sd->nohz_flags))
+>> +                             goto unlock;
+>> +
+>> +                     set_bit(NOHZ_IDLE, &sd->nohz_flags);
+>> +                     first_nohz_idle = 0;
+>> +             }
+>> +
+>>               atomic_dec(&sd->groups->sgp->nr_busy_cpus);
+>> +     }
+>> +unlock:
+>
+> Same here, .. why on earth do it for every sched_domain for that cpu?
 
-I added the following patch for today:
+The update of rq_nohz_flags is done only once on the top level
+sched_domain and the nr_busy_cpus is updated on each sched_domain
+level in order to have a quick access to the number of busy cpu when
+we check for the need to kick an idle load balance
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Tue, 23 Apr 2013 17:40:35 +1000
-Subject: [PATCH] netlink: fix typo in net/netlink/af_netlink.c
+>
+>>       rcu_read_unlock();
+>>  }
+>>
+>
+> And since its now only a single bit in a single word, we can easily
+> change it to something like:
+>
+>   if (*rq_nohz_idle(cpu))
+>         return;
+>   xchg(rq_nohz_idle(cpu), 1); /* set; use 0 for clear */
+>
+> which drops the unsigned long nonsense..
 
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- net/netlink/af_netlink.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+that's fair. i'm going to use xchg instead of atomic
 
-diff --git a/net/netlink/af_netlink.c b/net/netlink/af_netlink.c
-index 2a3e9ba..da5601d 100644
---- a/net/netlink/af_netlink.c
-+++ b/net/netlink/af_netlink.c
-@@ -381,7 +381,7 @@ static void netlink_frame_flush_dcache(const struct nl_=
-mmap_hdr *hdr)
-=20
- 	/* First page is flushed through netlink_{get,set}_status */
- 	p_start =3D pgvec_to_page(hdr + PAGE_SIZE);
--	p_end   =3D pgvec_to_page((void *)hdr + NL_MMAP_MSG_HDRLEN + hdr->nm_len =
-- 1);
-+	p_end   =3D pgvec_to_page((void *)hdr + NL_MMAP_HDRLEN + hdr->nm_len - 1);
- 	while (p_start <=3D p_end) {
- 		flush_dcache_page(p_start);
- 		p_start++;
---=20
-1.8.1
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Tue__23_Apr_2013_17_46_18_+1000_05e+C9Y1BSG8sqy7
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRdjxKAAoJEECxmPOUX5FElJYP/2R8Ywv6kZrjU46NYhpA35ES
-j67owH0er21qTh0EHaokq1Zn90NT0AsMetUzH0xNi1kR1inZNA2QM5/5ZYGbdYG/
-hWu5ZQAkO+7R6za9jRk08h/Wgt21nnryvcylRxikTeGVBLT5q06MzLwHt+j0T1aW
-ZxdstV1e7YD0o71MLZAuo/hKdiMjGSwG4dPwytmvd5oJCaycJWpT9SzoXPDBGaW2
-N8zcrsOgNx4sO9zmy8kgoZxexhhAzuFRM5VhCCUMOOdm6oFPLAWikptMX6TmotRJ
-07eC4CC81udtwYtOag665swCEp7icVGe/yDCQZxOXr3Eq/TeSPMiyv+CwGwhvqYq
-b9LSTYfXwnpaYonQ45JdPkVs/ZB+IpkAq6dt+4N9/chxggT+9x6Di4XWzjC7XOhU
-w/gD/OdktHYdyMPPoA93lPlz1e9HLBpNbGFZV/AXu3JeGUjDXzBnyr1cWMQJ/Js4
-MDsOf4V7LdTNcw9yzkuNSp1Os474bOEeBbra5PTCjmBNHwdGAAc8uR/655HAwuGT
-RwrIXPO2pqjB7HyOSW375q0yaxfgy/AVfk94PTre5OaXnm7XdTPlyAkSGqVLbmb2
-F/oSSJePYGl8JoiGOWpOAu+cUkgwMtNrYm4eTp+lgRm47AeV3UHe3L8+VVaQdcMW
-CCOQNi+rox3NgwoCARYj
-=HVca
------END PGP SIGNATURE-----
-
---Signature=_Tue__23_Apr_2013_17_46_18_+1000_05e+C9Y1BSG8sqy7--
+>
+> Or am I completely missing something obvious here?
+>
