@@ -1,80 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756212Ab3DWM4s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 08:56:48 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:41632 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756028Ab3DWM4r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 08:56:47 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] pnp: use %*phC to dump small buffers
-Date: Tue, 23 Apr 2013 15:04:50 +0200
-Message-ID: <2649130.8XKsilpdSa@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0-rc8+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1366635665-11365-1-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1366635665-11365-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	id S1756022Ab3DWNAz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 09:00:55 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:43844 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755187Ab3DWNAw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Apr 2013 09:00:52 -0400
+Date: Tue, 23 Apr 2013 09:00:42 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        David Miller <davem@davemloft.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
+Subject: Re: Unsigned widening casts of binary "not" operations..
+Message-ID: <20130423130041.GB31170@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	David Miller <davem@davemloft.net>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	the arch/x86 maintainers <x86@kernel.org>,
+	Network Development <netdev@vger.kernel.org>,
+	"linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
+References: <CA+55aFwpLu0qNms=hkQr43yqD0K9DgESNm91OEWKT1ZuT8MU6Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFwpLu0qNms=hkQr43yqD0K9DgESNm91OEWKT1ZuT8MU6Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, April 22, 2013 04:01:05 PM Andy Shevchenko wrote:
-
-Any changelog?
-
-> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> ---
->  drivers/pnp/isapnp/core.c  | 5 +----
->  drivers/pnp/pnpbios/proc.c | 5 ++---
->  2 files changed, 3 insertions(+), 7 deletions(-)
+On Mon, Apr 22, 2013 at 05:15:19PM -0700, Linus Torvalds wrote:
+> Here's a ext4 code snippet that looks like an actual bug (but seems to only
+> hit read-ahead):
 > 
-> diff --git a/drivers/pnp/isapnp/core.c b/drivers/pnp/isapnp/core.c
-> index 918d5f0..f380bcf 100644
-> --- a/drivers/pnp/isapnp/core.c
-> +++ b/drivers/pnp/isapnp/core.c
-> @@ -814,10 +814,7 @@ static int __init isapnp_build_device_list(void)
->  			continue;
->  
->  #if 0
-> -		dev_info(&card->dev,
-> -		       "vendor: %02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x\n",
-> -		       header[0], header[1], header[2], header[3], header[4],
-> -		       header[5], header[6], header[7], header[8]);
-> +		dev_info(&card->dev, "vendor: %9phC\n", header);
->  		dev_info(&card->dev, "checksum = %#x\n", checksum);
->  #endif
-
-I'd rather see that #if 0 block go away entirely.
-
->  		INIT_LIST_HEAD(&card->devices);
-> diff --git a/drivers/pnp/pnpbios/proc.c b/drivers/pnp/pnpbios/proc.c
-> index 8dafd65..c212db0 100644
-> --- a/drivers/pnp/pnpbios/proc.c
-> +++ b/drivers/pnp/pnpbios/proc.c
-> @@ -185,10 +185,9 @@ static int pnp_devices_proc_show(struct seq_file *m, void *v)
->  
->  		if (pnp_bios_get_dev_node(&nodenum, PNPMODE_DYNAMIC, node))
->  			break;
-> -		seq_printf(m, "%02x\t%08x\t%02x:%02x:%02x\t%04x\n",
-> +		seq_printf(m, "%02x\t%08x\t%3phC\t%04x\n",
->  			     node->handle, node->eisa_id,
-> -			     node->type_code[0], node->type_code[1],
-> -			     node->type_code[2], node->flags);
-> +			     node->type_code, node->flags);
->  		if (nodenum <= thisnodenum) {
->  			printk(KERN_ERR
->  			       "%s Node number 0x%x is out of sequence following node 0x%x. Aborting.\n",
+>     ext4_fsblk_t b, block;
 > 
+>     b = block & ~(EXT4_SB(sb)->s_inode_readahead_blks-1);
+> 
+> where "b" actually ends up having the upper bits cleared, because the
+> s_inode_readahead_blks thing is an unsigned int, so you're masking off not
+> just the low bits, but the high bits too. Ted? Of course, it's just
+> read-ahead, so it probably doesn't matter, but.
 
-Thanks,
-Rafael
+Yep, it's a bug alright.  Thanks for catching it!
+
+     	    		  	     	      - Ted
 
 
+>From 0d606e2c9fccdd4e67febf1e2da500e1bfe9e045 Mon Sep 17 00:00:00 2001
+From: Theodore Ts'o <tytso@mit.edu>
+Date: Tue, 23 Apr 2013 08:59:35 -0400
+Subject: [PATCH] ext4: fix type-widening bug in inode table readahead code
+
+Due to a missing cast, the high 32-bits of a 64-bit block number used
+when calculating the readahead block for inode tables can get lost.
+This means we can end up fetching the wrong blocks for readahead for
+file systems > 16TB.
+
+Linus found this when experimenting with an enhacement to the sparse
+static code checker which checks for missing widening casts before
+binary "not" operators.
+
+Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+---
+ fs/ext4/inode.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+index d7518e2..793d44b 100644
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -4011,13 +4011,14 @@ make_io:
+ 		if (EXT4_SB(sb)->s_inode_readahead_blks) {
+ 			ext4_fsblk_t b, end, table;
+ 			unsigned num;
++			__u32 ra_blks = EXT4_SB(sb)->s_inode_readahead_blks;
+ 
+ 			table = ext4_inode_table(sb, gdp);
+ 			/* s_inode_readahead_blks is always a power of 2 */
+-			b = block & ~(EXT4_SB(sb)->s_inode_readahead_blks-1);
++			b = block & ~((ext4_fsblk_t) ra_blks - 1);
+ 			if (table > b)
+ 				b = table;
+-			end = b + EXT4_SB(sb)->s_inode_readahead_blks;
++			end = b + ra_blks;
+ 			num = EXT4_INODES_PER_GROUP(sb);
+ 			if (ext4_has_group_desc_csum(sb))
+ 				num -= ext4_itable_unused_count(sb, gdp);
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.7.12.rc0.22.gcdd159b
+
