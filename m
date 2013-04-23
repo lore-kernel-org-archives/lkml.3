@@ -1,114 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755963Ab3DWIub (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 04:50:31 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:52805 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753528Ab3DWIu2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 04:50:28 -0400
-Message-ID: <1366707006.8337.33.camel@laptop>
-Subject: Re: [PATCH v7] sched: fix init NOHZ_IDLE flag
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Paul Turner <pjt@google.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Mike Galbraith <efault@gmx.de>
-Date: Tue, 23 Apr 2013 10:50:06 +0200
-In-Reply-To: <CAKfTPtD5rxB29t1mCDBVTVv-RVFv9xMjhRaUeaxCU6znZGPJrw@mail.gmail.com>
-References: <1366645086-20345-1-git-send-email-vincent.guittot@linaro.org>
-	 <1366661437.6454.20.camel@laptop>
-	 <CAKfTPtD5rxB29t1mCDBVTVv-RVFv9xMjhRaUeaxCU6znZGPJrw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
+	id S1756406Ab3DWIvT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 04:51:19 -0400
+Received: from antcom.de ([188.40.178.216]:39012 "EHLO chuck.antcom.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756031Ab3DWIvR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Apr 2013 04:51:17 -0400
+Message-ID: <51764B80.80200@antcom.de>
+Date: Tue, 23 Apr 2013 10:51:12 +0200
+From: Roland Stigge <stigge@antcom.de>
+Organization: ANTCOM IT Research & Development
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+MIME-Version: 1.0
+To: Axel Lin <axel.lin@ingics.com>
+CC: Thierry Reding <thierry.reding@avionic-design.de>,
+        Alexandre Pereira da Silva <aletes.xgr@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RESEND][PATCH RFT 1/2] pwm: lpc32xx: Properly set PWM_ENABLE
+ bit in lpc32xx_pwm_[enable|disable]
+References: <1366696891.28314.1.camel@phoenix>
+In-Reply-To: <1366696891.28314.1.camel@phoenix>
+X-Enigmail-Version: 1.4
+OpenPGP: url=subkeys.pgp.net
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-04-23 at 09:52 +0200, Vincent Guittot wrote:
-
-> > static inline unsigned long *rq_nohz_flags(int cpu)
-> > {
-> >         return rcu_dereference(cpu_rq(cpu)->sd)->nohz_flags;
-> > }
-> >
-> >         if (!test_bit(0, rq_nohz_flags(cpu)))
-> >                 return;
-> >         clear_bit(0, rq_nohz_flags(cpu));
-> >
+On 04/23/2013 08:01 AM, Axel Lin wrote:
+> According to the LPC32x0 User Manual [1]:
 > 
-> AFAICT, if we use different rcu_dereferences for modifying nohz_flags
-> and for updating the nr_busy_cpus, we open a time window for
-> desynchronization, isn't it ?
-
-Oh right, we need to call rq_nohz_flags() once and use the pointer
-twice.
-
-> >> +unlock:
-> >>       rcu_read_unlock();
-> >>  }
-> >>
-> >> @@ -5409,14 +5416,21 @@ void set_cpu_sd_state_idle(void)
-> >>  {
-> >>       struct sched_domain *sd;
-> >>       int cpu = smp_processor_id();
-> >> -
-> >> -     if (test_bit(NOHZ_IDLE, nohz_flags(cpu)))
-> >> -             return;
-> >> -     set_bit(NOHZ_IDLE, nohz_flags(cpu));
-> >> +     int first_nohz_idle = 1;
-> >>
-> >>       rcu_read_lock();
-> >> -     for_each_domain(cpu, sd)
-> >> +     for_each_domain(cpu, sd) {
-> >> +             if (first_nohz_idle) {
-> >> +                     if (test_bit(NOHZ_IDLE, &sd->nohz_flags))
-> >> +                             goto unlock;
-> >> +
-> >> +                     set_bit(NOHZ_IDLE, &sd->nohz_flags);
-> >> +                     first_nohz_idle = 0;
-> >> +             }
-> >> +
-> >>               atomic_dec(&sd->groups->sgp->nr_busy_cpus);
-> >> +     }
-> >> +unlock:
-> >
-> > Same here, .. why on earth do it for every sched_domain for that
-> cpu?
+> For both PWM1 and PWM2 Control Registers:
+> BIT 31:
+> This bit gates the PWM_CLK signal and enables the external output pin
+> to the PWM_PIN_STATE logical level.
 > 
-> The update of rq_nohz_flags is done only once on the top level
-> sched_domain and the nr_busy_cpus is updated on each sched_domain
-> level in order to have a quick access to the number of busy cpu when
-> we check for the need to kick an idle load balance
+> 0 = PWM disabled. (Default)
+> 1 = PWM enabled
+> 
+> So in lpc32xx_pwm_enable(), we should set PWM_ENABLE bit.
+> In lpc32xx_pwm_disable(), we should just clear PWM_ENABLE bit rather than
+> write 0 to the register which will also clear PWMx_RELOADV and PWMx_DUTY bits.
+> 
+> [1] http://www.nxp.com/documents/user_manual/UM10326.pdf
+> 
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
 
-Ah, I didn't see the whole first_nohz_idle thing.. but why did you
-place it inside the loop in the first place? Wouldn't GCC be able to
-avoid the double cpu_rq(cpu)->sd dereference using CSE? Argh no,.. its
-got an ACCESS_ONCE in it that defeats GCC.
+Tested-by: Roland Stigge <stigge@antcom.de>
 
-Bothersome..
-
-I'd almost write it like:
-
-	struct sched_domain *sd;
-
-	rcu_read_lock();
-	sd = rcu_dereference_check_sched_domain(cpu_rq(cpu)->sd);
-
-	if (sd->nohz_idle)
-		goto unlock;
-	xchg(&sd->nohz_idle, 1); /* do we actually need atomics here? */
-
-	for (; sd; sd = sd->parent)
-		atomic_dec(&sd->groups->sgp->nr_busy_cpus);
-  unlock:
-	rcu_read_unlock();
-
-
-
+> ---
+> Hi,
+> I don't have this hardware handy so I'd appreciate if someone can test this
+> patch serial.
+> 
+> This patch serial was sent on https://lkml.org/lkml/2013/3/30/104
+> Seems no feedback so far.
+> So I just try again, maybe someone can help testing it.
+> Thanks,
+> Axel
+> 
+>  drivers/pwm/pwm-lpc32xx.c |   18 ++++++++++++++++--
+>  1 file changed, 16 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/pwm/pwm-lpc32xx.c b/drivers/pwm/pwm-lpc32xx.c
+> index b3f0d0d..1a5075e 100644
+> --- a/drivers/pwm/pwm-lpc32xx.c
+> +++ b/drivers/pwm/pwm-lpc32xx.c
+> @@ -77,15 +77,29 @@ static int lpc32xx_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
+>  static int lpc32xx_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
+>  {
+>  	struct lpc32xx_pwm_chip *lpc32xx = to_lpc32xx_pwm_chip(chip);
+> +	u32 val;
+> +	int ret;
+> +
+> +	ret = clk_enable(lpc32xx->clk);
+> +	if (ret)
+> +		return ret;
+>  
+> -	return clk_enable(lpc32xx->clk);
+> +	val = readl(lpc32xx->base + (pwm->hwpwm << 2));
+> +	val |= PWM_ENABLE;
+> +	writel(val, lpc32xx->base + (pwm->hwpwm << 2));
+> +
+> +	return 0;
+>  }
+>  
+>  static void lpc32xx_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
+>  {
+>  	struct lpc32xx_pwm_chip *lpc32xx = to_lpc32xx_pwm_chip(chip);
+> +	u32 val;
+> +
+> +	val = readl(lpc32xx->base + (pwm->hwpwm << 2));
+> +	val &= ~PWM_ENABLE;
+> +	writel(val, lpc32xx->base + (pwm->hwpwm << 2));
+>  
+> -	writel(0, lpc32xx->base + (pwm->hwpwm << 2));
+>  	clk_disable(lpc32xx->clk);
+>  }
+>  
 
