@@ -1,97 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754007Ab3DWBjq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 21:39:46 -0400
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:34183 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753416Ab3DWBjp (ORCPT
+	id S1753987Ab3DWBrh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 21:47:37 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:19490 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753571Ab3DWBrg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 21:39:45 -0400
-Message-ID: <5175E71F.8070307@linux.vnet.ibm.com>
-Date: Tue, 23 Apr 2013 07:12:55 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
+	Mon, 22 Apr 2013 21:47:36 -0400
+X-Spam-Score: -100.8
+Message-ID: <5175E80A.7030908@asianux.com>
+Date: Tue, 23 Apr 2013 09:46:50 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Rik van Riel <riel@redhat.com>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
-        LKML <linux-kernel@vger.kernel.org>, Avi Kivity <avi.kivity@gmail.com>,
-        Gleb Natapov <gleb@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Srikar <srikar@linux.vnet.ibm.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        KVM <kvm@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Chegu Vinod <chegu_vinod@hp.com>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Andrew Jones <drjones@redhat.com>, Karen Noel <knoel@redhat.com>
-Subject: Re: Preemptable Ticket Spinlock
-References: <CAJocwccu5QQyuKRvgNyPSFz2K_rzCW419W9-XdSUYOL7+KqQKg@mail.gmail.com> <51745650.9050204@redhat.com> <1366631460.4443.3.camel@laptop> <51753289.70406@redhat.com> <1366660147.6454.6.camel@laptop>
-In-Reply-To: <1366660147.6454.6.camel@laptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13042301-8878-0000-0000-000006CF36EE
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Eric Paris <eparis@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kernel/audit_tree.c: tree will memory leak when failure
+ occurs for audit_trim_trees()
+References: <517110BA.5070806@asianux.com> <20130422160409.471f6208099a972d26c29fb9@linux-foundation.org>
+In-Reply-To: <20130422160409.471f6208099a972d26c29fb9@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/23/2013 01:19 AM, Peter Zijlstra wrote:
-> On Mon, 2013-04-22 at 08:52 -0400, Rik van Riel wrote:
->> On 04/22/2013 07:51 AM, Peter Zijlstra wrote:
->>> On Sun, 2013-04-21 at 17:12 -0400, Rik van Riel wrote:
->>>>
->>>> If we always incremented the ticket number by 2 (instead of 1), then
->>>> we could use the lower bit of the ticket number as the spinlock.
->>>
->>> ISTR that paravirt ticket locks already do that and use the lsb to
->>> indicate the unlock needs to perform wakeups.
->>>
->>> Also, since all of this is virt nonsense, shouldn't it live in the
->>> paravirt ticket lock code and leave the native code as is?
+On 2013年04月23日 07:04, Andrew Morton wrote:
+> On Fri, 19 Apr 2013 17:39:06 +0800 Chen Gang <gang.chen@asianux.com> wrote:
+> 
 >>
->> Sure, but that is still no reason not to have the virt
->> implementation be as fast as possible, and share the same
->> data type as the non-virt implementation.
->
-> It has to share the same data-type..
->
->> Also, is it guaranteed that the native spin_lock code has
->> not been called yet before we switch over to the paravirt
->> functions?
+>> in audit_trim_trees(), has called get_tree() before failure occurs,
+>> so need also call put_tree after go to skip_it:
 >>
->> If the native spin_lock code has been called already at
->> that time, the native code would still need to be modified
->> to increment the ticket number by 2, so we end up with a
->> compatible value in each spin lock's .tickets field, and
->> prevent a deadlock after we switch over to the paravirt
->> variant.
->
-> I thought the stuff already made it upstream, but apparently not; the
-> lastest posting I'm aware of is here:
->
->    https://lkml.org/lkml/2012/5/2/105
->
-> That stuff changes the normal ticket increment as well..
->
+>> ...
+>>
+>> --- a/kernel/audit_tree.c
+>> +++ b/kernel/audit_tree.c
+>> @@ -617,10 +617,10 @@ void audit_trim_trees(void)
+>>  		}
+>>  		spin_unlock(&hash_lock);
+>>  		trim_marked(tree);
+>> -		put_tree(tree);
+>>  		drop_collected_mounts(root_mnt);
+>>  skip_it:
+>>  		mutex_lock(&audit_filter_mutex);
+>> +		put_tree(tree);
+>>  	}
+>>  	list_del(&cursor);
+>>  	mutex_unlock(&audit_filter_mutex);
+> 
+> That looks right to me.
+> 
+> I think we can micro-optimise the code by performing the put_tree()
+> before taking the mutex, to slightly reduce mutex hold times?
+> 
 
-pv-ticket spinlock went on hold state, after Avi acked because of:
+  ok, thanks.
 
-though on non-PLE, we get a huge advantage, on PLE machine the benefit 
-was not as impressive (~10% as you stated in email chain) compared to 
-the complexity of the patches.
-So Avi suggested to try PLE improvements first, so they are going upstream.
+> --- a/kernel/audit_tree.c~kernel-audit_treec-tree-will-leak-memory-when-failure-occurs-in-audit_trim_trees-fix
+> +++ a/kernel/audit_tree.c
+> @@ -619,8 +619,8 @@ void audit_trim_trees(void)
+>  		trim_marked(tree);
+>  		drop_collected_mounts(root_mnt);
+>  skip_it:
+> -		mutex_lock(&audit_filter_mutex);
+>  		put_tree(tree);
+> +		mutex_lock(&audit_filter_mutex);
+>  	}
+>  	list_del(&cursor);
+>  	mutex_unlock(&audit_filter_mutex);
+> _
+> 
+> 
+> 
+> 
 
-https://lkml.org/lkml/2012/7/18/247
-https://lkml.org/lkml/2013/1/22/104
-https://lkml.org/lkml/2013/2/6/345 (on the way in kvm tree)
 
-Current status of PV spinlock:
-I have the rebased patches of pv spinlocks and experimenting with latest 
-kernel.I have
-Gleb's irq delivery incorporated into the patch series. But I am 
-thinknig whether I can
-improve some guest side logic in unlock.
-I will probably setup a githup and post the link soon.
+-- 
+Chen Gang
 
+Asianux Corporation
