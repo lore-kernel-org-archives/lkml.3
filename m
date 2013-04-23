@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757758Ab3DWVyU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 17:54:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34236 "EHLO
+	id S1756294Ab3DWWGo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 18:06:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34254 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757729Ab3DWVyR (ORCPT
+	with ESMTP id S1757747Ab3DWVyT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 17:54:17 -0400
+	Tue, 23 Apr 2013 17:54:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-Subject: [ 11/26] sched: Convert BUG_ON()s in try_to_wake_up_local() to WARN_ON_ONCE()s
-Date: Tue, 23 Apr 2013 14:53:51 -0700
-Message-Id: <20130423215334.539713574@linuxfoundation.org>
+        Felix Fietkau <nbd@openwrt.org>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 14/26] ath9k_htc: accept 1.x firmware newer than 1.3
+Date: Tue, 23 Apr 2013 14:53:54 -0700
+Message-Id: <20130423215334.838996882@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130423215333.344045754@linuxfoundation.org>
 References: <20130423215333.344045754@linuxfoundation.org>
@@ -27,45 +27,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit 383efcd00053ec40023010ce5034bd702e7ab373 upstream.
+commit 319e7bd96aca64a478f3aad40711c928405b8b77 upstream.
 
-try_to_wake_up_local() should only be invoked to wake up another
-task in the same runqueue and BUG_ON()s are used to enforce the
-rule. Missing try_to_wake_up_local() can stall workqueue
-execution but such stalls are likely to be finite either by
-another work item being queued or the one blocked getting
-unblocked.  There's no reason to trigger BUG while holding rq
-lock crashing the whole system.
+Since the firmware has been open sourced, the minor version has been
+bumped to 1.4 and the API/ABI will stay compatible across further 1.x
+releases.
 
-Convert BUG_ON()s in try_to_wake_up_local() to WARN_ON_ONCE()s.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20130318192234.GD3042@htj.dyndns.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/sched/core.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/net/wireless/ath/ath9k/htc_drv_init.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1653,8 +1653,10 @@ static void try_to_wake_up_local(struct
- {
- 	struct rq *rq = task_rq(p);
- 
--	BUG_ON(rq != this_rq());
--	BUG_ON(p == current);
-+	if (WARN_ON_ONCE(rq != this_rq()) ||
-+	    WARN_ON_ONCE(p == current))
-+		return;
-+
- 	lockdep_assert_held(&rq->lock);
- 
- 	if (!raw_spin_trylock(&p->pi_lock)) {
+--- a/drivers/net/wireless/ath/ath9k/htc_drv_init.c
++++ b/drivers/net/wireless/ath/ath9k/htc_drv_init.c
+@@ -771,7 +771,7 @@ static int ath9k_init_firmware_version(s
+ 	 * required version.
+ 	 */
+ 	if (priv->fw_version_major != MAJOR_VERSION_REQ ||
+-	    priv->fw_version_minor != MINOR_VERSION_REQ) {
++	    priv->fw_version_minor < MINOR_VERSION_REQ) {
+ 		dev_err(priv->dev, "ath9k_htc: Please upgrade to FW version %d.%d\n",
+ 			MAJOR_VERSION_REQ, MINOR_VERSION_REQ);
+ 		return -EINVAL;
 
 
