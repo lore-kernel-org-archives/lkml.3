@@ -1,59 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757485Ab3DWQfh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 12:35:37 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:62485 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757291Ab3DWQcD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 12:32:03 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Stephen Warren <swarren@nvidia.com>, Chris Ball <cjb@laptop.org>
-Subject: [PATCH 12/21] mmc: sdhci-tegra: fix MODULE_DEVICE_TABLE
-Date: Tue, 23 Apr 2013 18:30:44 +0200
-Message-Id: <1366734653-488286-13-git-send-email-arnd@arndb.de>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1366734653-488286-1-git-send-email-arnd@arndb.de>
-References: <1366734653-488286-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:3rC0wIE+OhfCJuEmUmps7z4GSoqYyiAfs6BtPlQvAQx
- PvkExUXdkoTW5tajJtGg1T/jCEKaUvL4musol9m/4n17b5c8iJ
- e3a4VEr9/JJmVxjRS1Erl/EUGLJbqTYyemURYpcmfMqHkiOecn
- HZwGnW+D0/sNL1aLwSM3o7nFz0QvO73OkkeMa84XIYj4Xoxgop
- ihSPwYJZ/1iWhvypj5AEaDrO+e0ocqERonD4oEPR4tdrFQ+beT
- gY0C0/TtT5VUw1wUOxINMU0VRhyXZWzDtSTaxChu3NNSs2fLv7
- VPZpontRZhML+uWfL86zRjAMcH+p/dzFcYg6MJnANOxCnVTYLt
- m/uAc66s+nCkLDGZSLlqgt3wimZ8Ec6M1LzSHYQGC
+	id S932153Ab3DWQgC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 12:36:02 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1631 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756607Ab3DWQfy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Apr 2013 12:35:54 -0400
+Date: Tue, 23 Apr 2013 12:35:51 -0400
+From: Mike Snitzer <snitzer@redhat.com>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, axboe@kernel.dk
+Subject: Re: NULL pointer due to malformed bcache bio
+Message-ID: <20130423163551.GA9958@redhat.com>
+References: <20130410205439.GA18092@redhat.com>
+ <20130422212218.GA4704@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130422212218.GA4704@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The symbol referenced in MODULE_DEVICE_TABLE must match the actual
-table, otherwise we get a build error like
+On Mon, Apr 22 2013 at  5:22pm -0400,
+Kent Overstreet <koverstreet@google.com> wrote:
 
-sdhci-tegra.c:206:34: error: '__mod_of_device_table' aliased to undefined symbol 'sdhci_dt_ids'
+> On Wed, Apr 10, 2013 at 04:54:40PM -0400, Mike Snitzer wrote:
+> > Hey,
+> > 
+> > So DM core clearly needs to be more defensive about the possibility for
+> > a NULL return from bio_alloc_bioset() given I'm hitting a NULL pointer
+> > in DM's alloc_tio() because nr_iovecs=512.  bio_alloc_bioset()'s call to
+> > bvec_alloc() only supports nr_iovecs up to BIO_MAX_PAGES (256).
+> 
+> I have a fix for this queued up in my bcache-for-upstream, if you want
+> to check and make sure it works.
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Stephen Warren <swarren@nvidia.com>
-Cc: Chris Ball <cjb@laptop.org>
----
- drivers/mmc/host/sdhci-tegra.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/mmc/host/sdhci-tegra.c b/drivers/mmc/host/sdhci-tegra.c
-index 08b06e9..85052bf 100644
---- a/drivers/mmc/host/sdhci-tegra.c
-+++ b/drivers/mmc/host/sdhci-tegra.c
-@@ -214,7 +214,7 @@ static const struct of_device_id sdhci_tegra_dt_match[] = {
- #endif
- 	{}
- };
--MODULE_DEVICE_TABLE(of, sdhci_dt_ids);
-+MODULE_DEVICE_TABLE(of, sdhci_tegra_dt_match);
- 
- static void sdhci_tegra_parse_dt(struct device *dev,
- 					struct sdhci_tegra *tegra_host)
--- 
-1.8.1.2
-
+Works for me, thanks.
