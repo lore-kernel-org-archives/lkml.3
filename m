@@ -1,64 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754936Ab3DWWHU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 18:07:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34219 "EHLO
+	id S1757710Ab3DWVyN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 17:54:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34176 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757713Ab3DWVyO (ORCPT
+	with ESMTP id S1757666Ab3DWVyI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 17:54:14 -0400
+	Tue, 23 Apr 2013 17:54:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vyacheslav Dubeyko <slava@dubeyko.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Hin-Tak Leung <htl10@users.sourceforge.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 06/26] hfsplus: fix potential overflow in hfsplus_file_truncate()
-Date: Tue, 23 Apr 2013 14:53:46 -0700
-Message-Id: <20130423215334.021394830@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        stable@vger.kernel.org
+Subject: [ 00/26] 3.4.42-stable review
+Date: Tue, 23 Apr 2013 14:53:40 -0700
+Message-Id: <20130423215333.344045754@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130423215333.344045754@linuxfoundation.org>
-References: <20130423215333.344045754@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+This is the start of the stable review cycle for the 3.4.42 release.
+There are 26 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let me know.
 
-------------------
+Responses should be made by Thu Apr 25 21:52:47 UTC 2013.
+Anything received after that time might be too late.
 
-From: Vyacheslav Dubeyko <slava@dubeyko.com>
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.42-rc1.gz
+and the diffstat can be found below.
 
-commit 12f267a20aecf8b84a2a9069b9011f1661c779b4 upstream.
+thanks,
 
-Change a u32 to loff_t hfsplus_file_truncate().
+greg k-h
 
-Signed-off-by: Vyacheslav Dubeyko <slava@dubeyko.com>
-Cc: Christoph Hellwig <hch@infradead.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Hin-Tak Leung <htl10@users.sourceforge.net>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+-------------
+Pseudo-Shortlog of commits:
 
----
- fs/hfsplus/extents.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    Linux 3.4.42-rc1
 
---- a/fs/hfsplus/extents.c
-+++ b/fs/hfsplus/extents.c
-@@ -517,7 +517,7 @@ void hfsplus_file_truncate(struct inode
- 		struct address_space *mapping = inode->i_mapping;
- 		struct page *page;
- 		void *fsdata;
--		u32 size = inode->i_size;
-+		loff_t size = inode->i_size;
- 
- 		res = pagecache_write_begin(NULL, mapping, size, 0,
- 						AOP_FLAG_UNINTERRUPTIBLE,
+Josef Bacik <jbacik@fusionio.com>
+    Btrfs: make sure nbytes are right after log replay
+
+Linus Torvalds <torvalds@linux-foundation.org>
+    vm: convert mtdchar mmap to vm_iomap_memory() helper
+
+Linus Torvalds <torvalds@linux-foundation.org>
+    vm: convert HPET mmap to vm_iomap_memory() helper
+
+Linus Torvalds <torvalds@linux-foundation.org>
+    vm: convert fb_mmap to vm_iomap_memory() helper
+
+Linus Torvalds <torvalds@linux-foundation.org>
+    vm: convert snd_pcm_lib_mmap_iomem() to vm_iomap_memory() helper
+
+Linus Torvalds <torvalds@linux-foundation.org>
+    vm: add vm_iomap_memory() helper function
+
+Dave Airlie <airlied@gmail.com>
+    fbcon: fix locking harder
+
+Stephane Eranian <eranian@google.com>
+    perf/x86: Fix offcore_rsp valid mask for SNB/IVB
+
+Tommi Rantala <tt.rantala@gmail.com>
+    perf: Treat attr.config as u64 in perf_swevent_init()
+
+Mathias Krause <minipli@googlemail.com>
+    crypto: algif - suppress sending source address information in recvmsg
+
+Rafał Miłecki <zajec5@gmail.com>
+    ssb: implement spurious tone avoidance
+
+Felix Fietkau <nbd@openwrt.org>
+    ath9k_hw: change AR9580 initvals to fix a stability issue
+
+Felix Fietkau <nbd@openwrt.org>
+    ath9k_htc: accept 1.x firmware newer than 1.3
+
+Will Deacon <will.deacon@arm.com>
+    ARM: 7698/1: perf: fix group validation when using enable_on_exec
+
+Illia Ragozin <illia.ragozin@grapecom.com>
+    ARM: 7696/1: Fix kexec by setting outer_cache.inv_all for Feroceon
+
+Tejun Heo <tj@kernel.org>
+    sched: Convert BUG_ON()s in try_to_wake_up_local() to WARN_ON_ONCE()s
+
+Andrew Honig <ahonig@google.com>
+    KVM: Allow cross page reads and writes from cached translations.
+
+Andy Honig <ahonig@google.com>
+    KVM: Fix bounds checking in ioapic indirect register reads (CVE-2013-1798)
+
+Andy Honig <ahonig@google.com>
+    KVM: x86: Convert MSR_KVM_SYSTEM_TIME to use gfn_to_hva_cache functions (CVE-2013-1797)
+
+Andy Honig <ahonig@google.com>
+    KVM: x86: fix for buffer overflow in handling of MSR_KVM_SYSTEM_TIME (CVE-2013-1796)
+
+Vyacheslav Dubeyko <slava@dubeyko.com>
+    hfsplus: fix potential overflow in hfsplus_file_truncate()
+
+Emese Revfy <re.emese@gmail.com>
+    kernel/signal.c: stop info leak via the tkill and the tgkill syscalls
+
+Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+    hugetlbfs: add swap entry check in follow_hugetlb_page()
+
+Christoph Fritz <chf.fritz@googlemail.com>
+    can: sja1000: fix handling on dt properties on little endian systems
+
+Michael Bohan <mbohan@codeaurora.org>
+    hrtimer: Don't reinitialize a cpu_base lock on CPU_UP
+
+Russell King <rmk+kernel@arm.linux.org.uk>
+    ARM: Do 15e0d9e37c (ARM: pm: let platforms select cpu_suspend support) properly
+
+
+-------------
+
+Diffstat:
+
+ Makefile                                           |  4 +-
+ arch/arm/kernel/perf_event.c                       |  5 ++-
+ arch/arm/mm/cache-feroceon-l2.c                    |  1 +
+ arch/arm/mm/proc-arm920.S                          |  2 +-
+ arch/arm/mm/proc-arm926.S                          |  2 +-
+ arch/arm/mm/proc-sa1100.S                          |  2 +-
+ arch/arm/mm/proc-v6.S                              |  2 +-
+ arch/arm/mm/proc-xsc3.S                            |  2 +-
+ arch/arm/mm/proc-xscale.S                          |  2 +-
+ arch/x86/include/asm/kvm_host.h                    |  4 +-
+ arch/x86/kernel/cpu/perf_event_intel.c             | 15 +++++--
+ arch/x86/kvm/x86.c                                 | 43 ++++++++-----------
+ crypto/algif_hash.c                                |  2 +
+ crypto/algif_skcipher.c                            |  1 +
+ drivers/char/hpet.c                                | 14 +------
+ drivers/gpu/vga/vga_switcheroo.c                   |  3 ++
+ drivers/mtd/mtdchar.c                              | 32 +--------------
+ drivers/net/can/sja1000/sja1000_of_platform.c      | 31 +++++++-------
+ .../net/wireless/ath/ath9k/ar9580_1p0_initvals.h   |  2 +-
+ drivers/net/wireless/ath/ath9k/htc_drv_init.c      |  2 +-
+ drivers/net/wireless/b43/phy_n.c                   |  3 +-
+ drivers/ssb/driver_chipcommon_pmu.c                | 29 +++++++++++++
+ drivers/video/console/fbcon.c                      | 11 +++--
+ drivers/video/fbmem.c                              | 42 ++++++++-----------
+ fs/btrfs/tree-log.c                                | 48 +++++++++++++++++++---
+ fs/hfsplus/extents.c                               |  2 +-
+ include/linux/kvm_host.h                           |  2 +-
+ include/linux/kvm_types.h                          |  1 +
+ include/linux/mm.h                                 |  2 +
+ include/linux/ssb/ssb_driver_chipcommon.h          |  2 +
+ kernel/events/core.c                               |  2 +-
+ kernel/hrtimer.c                                   |  3 +-
+ kernel/sched/core.c                                |  6 ++-
+ kernel/signal.c                                    |  2 +-
+ mm/hugetlb.c                                       | 12 +++++-
+ mm/memory.c                                        | 47 +++++++++++++++++++++
+ sound/core/pcm_native.c                            | 12 +-----
+ virt/kvm/ioapic.c                                  |  7 +++-
+ virt/kvm/kvm_main.c                                | 47 ++++++++++++++++-----
+ 39 files changed, 284 insertions(+), 167 deletions(-)
 
 
