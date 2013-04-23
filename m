@@ -1,64 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756053Ab3DWNOt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 09:14:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61672 "EHLO mx1.redhat.com"
+	id S1756110Ab3DWNQA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 09:16:00 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49093 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755825Ab3DWNOs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 09:14:48 -0400
-Date: Tue, 23 Apr 2013 15:11:51 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Vagin <avagin@parallels.com>
-Cc: Andrey Vagin <avagin@openvz.org>, linux-kernel@vger.kernel.org,
-        Roland McGrath <roland@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>
-Subject: Re: [PATCH] ptrace: add ability to get/set signal-blocked mask
-Message-ID: <20130423131151.GA23924@redhat.com>
-References: <1366624400-9773-1-git-send-email-avagin@openvz.org> <20130422145704.GA30029@redhat.com> <20130422150710.GA30858@redhat.com> <20130423105917.GA11121@paralelels.com>
+	id S1755795Ab3DWNP7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Apr 2013 09:15:59 -0400
+Date: Tue, 23 Apr 2013 15:15:58 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: linux-kernel@vger.kernel.org, rientjes@google.com
+Subject: Re: OOM-killer and strange RSS value in 3.9-rc7
+Message-ID: <20130423131558.GH8001@dhcp22.suse.cz>
+References: <alpine.DEB.2.02.1304161315290.30779@chino.kir.corp.google.com>
+ <20130417094750.GB2672@localhost.localdomain>
+ <20130417141909.GA24912@dhcp22.suse.cz>
+ <20130418101541.GC2672@localhost.localdomain>
+ <20130418175513.GA12581@dhcp22.suse.cz>
+ <20130419023345.GE2672@localhost.localdomain>
+ <20130419164310.GA29871@dhcp22.suse.cz>
+ <20130422031849.GG2672@localhost.localdomain>
+ <20130422114052.GB18286@dhcp22.suse.cz>
+ <20130423042234.GH2672@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130423105917.GA11121@paralelels.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20130423042234.GH2672@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/23, Andrew Vagin wrote:
->
-> On Mon, Apr 22, 2013 at 05:07:10PM +0200, Oleg Nesterov wrote:
->
-> > >
-> > > I don't understand "This method is not suitable for stopped tasks"
->
-> For example, a stopped process has a pending signal and this signal is
-> not blocked. crtools should dump its state,
+On Tue 23-04-13 12:22:34, Han Pingtian wrote:
+> On Mon, Apr 22, 2013 at 01:40:52PM +0200, Michal Hocko wrote:
+> > >  CONFIG_PPC_BOOK3S_64=y
+> > >  # CONFIG_PPC_BOOK3E_64 is not set
+> > > -CONFIG_GENERIC_CPU=y
+> > > +# CONFIG_GENERIC_CPU is not set
+> > >  # CONFIG_CELL_CPU is not set
+> > >  # CONFIG_POWER4_CPU is not set
+> > >  # CONFIG_POWER5_CPU is not set
+> > >  # CONFIG_POWER6_CPU is not set
+> > > -# CONFIG_POWER7_CPU is not set
+> > > +CONFIG_POWER7_CPU=y
+> > 
+> > Wow, so the two configs are for different architectures? Not very much
+> > helpful. Could you stick with a single machine and do just small updates
+> > to the config to the point where the problem is no longer present,
+> > please?
+> > 
+> No, both configs are for power system. I changed it to
+> 'CONFIG_POWER7_CPU' by myself in the good one. I think this difference
+> doesn't matter here. 
 
-Ah, thanks, I thought that you meant restoring doesn't work...
+Ohh, good, I thought it was a x86 thingy. Sorry about the confusion. No
+other arch does that...
 
-> > > from the changelog, but if you really need PTRACE_SETSIGMASK just
-> > > change ->blocked under siglock and do recalc_sigpending_tsk(child).
-> >                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-> >
-> > actually this is not necessary, the tracee will do recalc_sigpending()
-> > after resume. But perhaps a comment make sense.
->
-> __set_task_blocked executes retarget_shared_pending. I think it must be
-> called here too or am I wrong?
+> > [...]
+> > > -CONFIG_SLUB_DEBUG=y
+> > > -# CONFIG_COMPAT_BRK is not set
+> > > -# CONFIG_SLAB is not set
+> > > -CONFIG_SLUB=y
+> > > +CONFIG_COMPAT_BRK=y
+> > > +CONFIG_SLAB=y
+> > 
+> > I would start with the bad config and SLUB changed to SLAB in the first
+> > step, though.
+> > 
+> Yep, after I changed bad config to use SLAB, the problem disppears after
+> using the new kernel. Looks like something wrong in SLUB?
 
-Yes sure, this is the main reason why set_current_blocked() exists.
-We do not want to "delay" a group-wide signal.
+It seems so or maybe there is a different issue which is just made
+visible by SLUB or it is an arch specific problem.
+What is the workload that triggers this behavior? Can you reduce it to a
+minimum test case?
 
-But ptrace can delay it anyway? And, assuming that other threads are
-stopped too this all doesn't matter at all, every thread does
-recalc_sigpending() after resume. In short, if the debugger blocks a
-signal, it should know what it does.
+I guess that you are still testing with vanilla 3.9-rc? kernel without
+any additional patches or 3rd party modules, right?
 
-IOW, I hope this is not a problem, and I'd like to avoid the usage of
-__set_task_blocked outside of signal.c or with tsk != current.
-
-Oleg.
-
+-- 
+Michal Hocko
+SUSE Labs
