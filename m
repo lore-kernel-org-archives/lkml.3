@@ -1,57 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756562Ab3DWS5s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 14:57:48 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:51259 "EHLO
+	id S1756631Ab3DWTCz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 15:02:55 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:60410 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755997Ab3DWS5r (ORCPT
+	with ESMTP id S1756015Ab3DWTCy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 14:57:47 -0400
+	Tue, 23 Apr 2013 15:02:54 -0400
 From: Arnd Bergmann <arnd@arndb.de>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Subject: Re: [PATCH 07/21] ARM: tegra: unify tegra_idle_device definitions
-Date: Tue, 23 Apr 2013 20:57:36 +0200
+To: Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [PATCH 18/21] usb: phy: tegra: don't call into tegra-ehci directly
+Date: Tue, 23 Apr 2013 21:02:20 +0200
 User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>, Joseph Lo <josephl@nvidia.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-References: <1366734653-488286-1-git-send-email-arnd@arndb.de> <1366734653-488286-8-git-send-email-arnd@arndb.de> <5176BD29.1000405@linaro.org>
-In-Reply-To: <5176BD29.1000405@linaro.org>
+        Venu Byravarasu <vbyravarasu@nvidia.com>, Felipe Balbi <balbi@ti.com>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        Stephen Warren <swarren@nvidia.com>, linux-usb@vger.kernel.org
+References: <Pine.LNX.4.44L0.1304231239220.1679-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1304231239220.1679-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="utf-8"
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201304232057.37055.arnd@arndb.de>
-X-Provags-ID: V02:K0:+M9luFmksYDmS2jxfvgeDUQ0dBueKV10Ixwih9d//Q9
- HmaRtqqJgJTWgbVB/l8yu2NXawr0kzDlBKmEOxhQ7uHS93P2FQ
- unVloi6wvLeEkHLaDdmuxLzTOUt3NleLPRLrn9AhX6HiL/jWis
- 4OnR59NJ+HtRiWF2yL3+EAkjdpXJgR0GwdsHlAjvigPPn6Hjx7
- w8dkyKi2/07UGl6GkTgumclugnvnuk/IPKZOX82cHsd4iCAIwG
- n1FLFMagqy/3bx8uqCAr80LjEDvfb/hfmwJuDelUvBii41EsBn
- YDISadnIB/uzrkWBCh75ElbOk7z6YwTC2hcGAeRlf3/0ULmGEN
- aH8HF0UaTwuOsEH3sgM4=
+Message-Id: <201304232102.20573.arnd@arndb.de>
+X-Provags-ID: V02:K0:6fs050SmvZhYpI1RUlDGd9s1//yFP1yNv+3RbKrrWpY
+ IwMSsLg6uTzXke7hnOADpXwVKBza8rZPuID7LToSuU0uxlkY2/
+ BJvcnI4ZD3veYGoKdsoMog29KZtKoD4XqbVc4pyJvbC7wlhOdu
+ us7Ngmn6KoQzp4akfalaRaH0a9+sgduPQNDyWzY4IyWI0REtik
+ rkvKrPmo9/CPqW5AZ0q/20JOjqO+Pr6sA0h/CteuSWXz8k90bn
+ MSye1bpUe0F/5Xnhjvf6jBR7YtFXQWq5WW8DP/Dy80Lq317+s8
+ U/qvznuOnQ3fwTMGjiYaP09CM3TVqNX2dYU8MEqUFHKwwFVVCg
+ 3GR1ALKz4P/C3vr8Vd8Q=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 23 April 2013, Daniel Lezcano wrote:
-> the patch sounds good but I think the side effect of the consolidation
-> patchset [1] fixed that.
-> 
-> You can find these fixes in Rafael's tree:
-> 
-> https://git.kernel.org/cgit/linux/kernel/git/rafael/linux-pm.git/commit/?h=linux-next&amp;id=4c637b2175a0dc65d533494225525c6c82d73293
-> 
-> https://git.kernel.org/cgit/linux/kernel/git/rafael/linux-pm.git/commit/?h=linux-next&amp;id=e158f9da6974cc11bfab2246a9b10021af0e0d8a
-> 
-> https://git.kernel.org/cgit/linux/kernel/git/rafael/linux-pm.git/commit/?h=linux-next&amp;id=c5106c9dea9a6022ab84c6cb1d4a0b19fc5af0e2
-> 
-> https://git.kernel.org/cgit/linux/kernel/git/rafael/linux-pm.git/commit/?h=linux-next&amp;id=f040c26ffaa5e56f2bca427c719c9601a02e70e5
-> 
-> [1] http://www.spinics.net/lists/arm-kernel/msg239811.html
-> 
+On Tuesday 23 April 2013, Alan Stern wrote:
+> On Tue, 23 Apr 2013, Arnd Bergmann wrote:
 
-Ah. Is that not in linux-next? I created the patch today based on the latest
-linux-next from today (Tuesday).
+> > @@ -733,7 +731,9 @@ static int tegra_ehci_probe(struct platform_device *pdev)
+> >  
+> >  	tegra->phy = tegra_usb_phy_open(&pdev->dev, instance, hcd->regs,
+> >  					pdata->phy_config,
+> > -					TEGRA_USB_PHY_MODE_HOST);
+> > +					TEGRA_USB_PHY_MODE_HOST,
+> > +					&tegra_ehci_set_pts,
+> > +					tegra_ehci_set_phcd);
+> 
+> Does the compiler warn about the unnecessary '&'? 
+
+No, AFAIK, both variants are equally acceptable C.
+
+> In any case, it
+> looks strange to have one function pointer with an '&' and another
+> without.
+
+Yes, that was certainly not intentional. I've removed the '&' now.
+
+> Aside from that minor detail, the ehci-tegra.c changes are fine.
+
+Ok, thanks for the feedback.
 
 	Arnd
