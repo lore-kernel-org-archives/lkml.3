@@ -1,55 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755904Ab3DWO3D (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 10:29:03 -0400
-Received: from mail-vb0-f49.google.com ([209.85.212.49]:60621 "EHLO
-	mail-vb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754564Ab3DWO3B (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 10:29:01 -0400
+	id S1755993Ab3DWObF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 10:31:05 -0400
+Received: from smtp2.nethome.no ([92.62.33.12]:37257 "EHLO smtp2.nethome.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755369Ab3DWObD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Apr 2013 10:31:03 -0400
 MIME-Version: 1.0
-In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6026B71EF@saturn3.aculab.com>
-References: <CA+55aFwpLu0qNms=hkQr43yqD0K9DgESNm91OEWKT1ZuT8MU6Q@mail.gmail.com>
-	<CA+55aFy0jPr5udwJx8cZ-QFs-OgZzQ_NJm_VSj_cS7tsKUn3Kw@mail.gmail.com>
-	<AE90C24D6B3A694183C094C60CF0A2F6026B71EF@saturn3.aculab.com>
-Date: Tue, 23 Apr 2013 07:29:00 -0700
-X-Google-Sender-Auth: XAqMc4-juHW_BNnMmeqk5D59Mro
-Message-ID: <CA+55aFwogFL=nm=YHwARcz9OTRBdWEDPG0xcqM-H3k-VZTOZPQ@mail.gmail.com>
-Subject: Re: Unsigned widening casts of binary "not" operations..
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: David Laight <David.Laight@aculab.com>
-Cc: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        David Miller <davem@davemloft.net>, "Theodore Ts'o" <tytso@mit.edu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
+Date: Tue, 23 Apr 2013 16:30:53 +0200
+From: peterasplund@gentoo.se
+To: Kent Yoder <shpedoikal@gmail.com>
+Cc: <Peter.Huewe@infineon.com>, <mail@srajiv.net>, <aaron.lu@intel.com>,
+        <tpmdd-devel@lists.sourceforge.net>, <linux-kernel@vger.kernel.org>
+Subject: Re: [tpmdd-devel] =?UTF-8?Q?tpm=5Ftis=20driver=20failed=20to=20su?=
+ =?UTF-8?Q?spend=2C=20error=20-=36=32?=
+In-Reply-To: <20130411214141.GA12814@gmail.com>
+References: <20130319023440.GA12425@aaronlu.sh.intel.com>
+ <CAA25o9RJJ5Rkti9_fTJz2ieaHvrtSp5mE_2LTW_t16_cf_TNcg@mail.gmail.com>
+ <ed364e68730267510d49b2bdc38679a0@gentoo.se>
+ <CAEQAOwpmnLXBCJQTf_xU-oSKvAtmpQjHWwMYDm_QOsP+1Kd_aQ@mail.gmail.com>
+ <CAEQAOwqWL=WekQqg5WY8TGxzB3x9nB9MVj_UTAVK0ro7TqB2WQ@mail.gmail.com>
+ <51540408.3000702@intel.com>
+ <74A44E99E3274B4CB570415926B37D4414B14E@MUCSE501.eu.infineon.com>
+ <733a6b303b7e9a3c4fb396acad9d9c5c@gentoo.se>
+ <CAM0nabGXCfNipOHhzhoFT-yAN-RDOZG9EObQCY-QdRM5LfMCfQ@mail.gmail.com>
+ <d9741eb17fbc5731469a79b8bca3ed07@gentoo.se>
+ <20130411214141.GA12814@gmail.com>
+Message-ID: <ec94e98bae36890a39e6c332e0dd74c5@gentoo.se>
+User-Agent: Roundcube Webmail/0.8.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 23, 2013 at 1:59 AM, David Laight <David.Laight@aculab.com> wrote:
+2013-04-11 23:41 skrev Kent Yoder:
+> On Sat, Apr 06, 2013 at 06:00:59PM +0200, peterasplund@gentoo.se 
+> wrote:
+>> 2013-04-02 16:03 skrev Kent Yoder:
+>> >Hi Peter,
+>> >
+>> >On Mon, Apr 1, 2013 at 4:17 PM,  <peterasplund@gentoo.se> wrote:
+>> >>2013-03-28 14:12 skrev Peter.Huewe@infineon.com:
+>> >>>What also might be worth a look - in your bugzilla it states:
+>> >>>[ 0.225891] pnp 00:0a: Plug and Play ACPI device, IDs IFX0102
+>> >>>PNP0c31
+>> >>>(active)
+>> >>>[ 9.150673] tpm_tis 00:0a: 1.2 TPM (device-id 0xB, rev-id 16)
+>> >>>[ 9.292148] tpm_tis 00:0a: Adjusting TPM timeout parameters.
+>> >>>[ 10.084067] tpm_tis 00:0a: A TPM error (7) occurred attempting 
+>> to
+>> >>>read a pcr
+>> >>>value
+>> >>>[ 10.084077] tpm_tis 00:0a: TPM is disabled/deactivated (0x7)
+>> >>>
+>> >>>
+>> >>>Can you perhaps try to enable your TPM in the BIOS? It's quite
+>> >>>often
+>> >>>hidden under "embedded security device" or "system security".
+>> >>>Quite often you have to have a bios password set to access these
+>> >>>settings.
+>> >>>If your system does not have bios support for TPMs, please
+>> >>>tell me so
+>> >>>and I'll try to help you out.
+>> >>>
+>> >>
+>> >>I've enabled it in BIOS now, and the output seems to be a bit
+>> >>different. Not too uplifting though...
+>> >>
+>> >>root@zepto:/home/peter# dmesg | grep tpm
+>> >>[   14.631662] tpm_tis 00:08: 1.2 TPM (device-id 0xB, rev-id 16)
+>> >>[   14.748276] tpm_tis 00:08: Adjusting TPM timeout parameters.
+>> >>[   34.908128] tpm_tis 00:08: tpm_transmit: tpm_send: error -62
+>> >>[  125.992108] tpm_tis 00:08: tpm_transmit: tpm_send: error -62
+>> >>[  212.908502] tpm_tis 00:08: tpm_transmit: tpm_send: error -62
+>> >>root@zepto:/home/peter# tpm_version
+>> >>Tspi_Context_Connect failed: 0x00003011 - layer=tsp, code=0011 
+>> (17),
+>> >>Communication failure
+>> >>root@zepto:/home/peter# tcsd -f
+>> >>TCSD TDDL ioctl: (25) Inappropriate ioctl for device
+>> >>TCSD TDDL Falling back to Read/Write device support.
+>> >>TCSD TDDL ERROR: write to device /dev/tpm0 failed: Timer expired
+>> >>TCSD TCS ERROR: TCS GetCapability failed with result = 0x1087
+>> >
+>> >  Can you cat /sys/class/misc/tpm0/device/timeouts? Ivan Pryvalov
+>> >reported that his TPM showed values that were too small to keep 
+>> from
+>> >causing timeouts waiting on TPM commands, but too big to trigger 
+>> the
+>> >driver's code to scale them.  (He saw 12000 for the 3 timeout
+>> >values.)
+>> >
+>> Hi Kent
+>>
+>> The values I'm seeing are:
+>>
+>> root@zepto:~# cat /sys/class/misc/tpm0/device/timeouts
+>> 752000 2000000 752000 752000 [adjusted]
+>>
+>> So I guess these are within a normal range?
 >
-> If the narrower type is signed it is probably even more confusing!
-> The high bits will be preserved unless you are masking off bit 31.
+>   Yes, these look normal. So it seems you can send commands to the 
+> TPM
+> up until you try to suspend?  Can you try to cat other files like
+> /sys/class/misc/tpm0/device/pcrs? This is the simplest way to send 
+> some
+> command to the TPM...
+>
+> Kent
+>
 
-Yes. However, that case doesn't trigger with the normal case of small
-values. So "~4" works fine with widening, in a way that "~4u" does
-not.
+Hi Kent, I'm sorry I haven't replied to this message before. I must 
+have missed it!
 
-Which doesn't mean that you aren't right, it only means that it's
-harder to check for in sparse. The hacky little patch I sent out with
-already resulted in a lot of noise for things like "~0u" (UINT_MAX)
-and the "~4u" use in NLMSG_ALIGNTO, I'd dread to do the same for
-signed values.
+root@zepto:/sys/class/misc/tpm0# ll
+drwxr-xr-x 3 root root    0 Apr 23 16:20 ./
+drwxr-xr-x 3 root root    0 Apr 23 16:20 ../
+-r--r--r-- 1 root root 4096 Apr 23 16:26 dev
+lrwxrwxrwx 1 root root    0 Apr 23 16:26 device -> ../../../00:08/
+drwxr-xr-x 2 root root    0 Apr 23 16:26 power/
+lrwxrwxrwx 1 root root    0 Apr 23 16:20 subsystem -> 
+../../../../../class/misc/
+-rw-r--r-- 1 root root 4096 Apr 23 16:20 uevent
 
-That said, with the most minimal value analysis (ie only looking at
-constants), maybe it wouldn't be too bad. I started out just worrying
-about the PAGE_MASK case, though, where we're talking about (somewhat
-complicated) generated constants, and then the signed case is largely
-irrelevant (although a signed "1 << 31" would - as you say - trigger
-this same thing too).
+root@zepto:/sys/class/misc/tpm0# cat dev
+10:224
+root@zepto:/sys/class/misc/tpm0# cat device/pcrs   (prints nothing 
+after a delay of a second or so)
+root@zepto:/sys/class/misc/tpm0# cat uevent
+MAJOR=10
+MINOR=224
+DEVNAME=tpm0
+root@zepto:/sys/class/misc/tpm0# cat device/active
+root@zepto:/sys/class/misc/tpm0# cat device/cancel
+cat: device/cancel: Permission denied
+root@zepto:/sys/class/misc/tpm0# cat device/caps
+root@zepto:/sys/class/misc/tpm0# cat device/durations
+1000000 4000000 152000000 [adjusted]
+root@zepto:/sys/class/misc/tpm0# cat device/enabled
+root@zepto:/sys/class/misc/tpm0# cat device/id
+IFX0102
+PNP0c31
+root@zepto:/sys/class/misc/tpm0# cat device/options
+root@zepto:/sys/class/misc/tpm0# cat device/owned
+root@zepto:/sys/class/misc/tpm0# cat device/pubek
+root@zepto:/sys/class/misc/tpm0# cat device/resources
+state = active
+mem 0xfed40000-0xfed44fff
+io 0x4e-0x4f
+io 0x1670-0x167f
+irq 11
+root@zepto:/sys/class/misc/tpm0# cat device/temp_deactivated
+root@zepto:/sys/class/misc/tpm0# cat device/timeouts
+752000 2000000 752000 752000 [adjusted]
+root@zepto:/sys/class/misc/tpm0# cat device/uevent
+DRIVER=tpm_tis
 
-                         Linus
+To be able to do the 'cat' above, I usually need to restart my 
+computer, otherwise the files aren't there. That's probably after I've 
+put the computer in sleep mode (which works if I add tpm_tis to the 
+module blacklist). Perhaps the same problem is related to this one:
+I just did a grep of my dmesg and saw some new error messages (28) in 
+it. Perhaps they started occurring after I enabled it in BIOS.
+
+root@zepto:/home/peter# dmesg | grep tpm_
+[   11.369198] tpm_tis 00:08: 1.2 TPM (device-id 0xB, rev-id 16)
+[   11.508115] tpm_tis 00:08: Adjusting TPM timeout parameters.
+[   32.560040] tpm_tis 00:08: tpm_transmit: tpm_send: error -62
+[ 4320.577827] tpm_tis 00:08: 1.2 TPM (device-id 0xB, rev-id 16)
+[ 4320.636111] tpm_tis 00:08: A TPM error (28) occurred attempting to 
+determine the timeouts
+[ 4320.696081] tpm_tis 00:08: A TPM error (28) occurred attempting to 
+determine the durations
+[ 4320.696091] tpm_tis 00:08: Could not get TPM timeouts and durations
+[ 9279.692915] tpm_tis 00:08: 1.2 TPM (device-id 0xB, rev-id 16)
+[ 9279.756184] tpm_tis 00:08: A TPM error (28) occurred attempting to 
+determine the timeouts
+[ 9279.822186] tpm_tis 00:08: A TPM error (28) occurred attempting to 
+determine the durations
+[ 9279.822197] tpm_tis 00:08: Could not get TPM timeouts and durations
+[10968.845856] tpm_tis 00:08: 1.2 TPM (device-id 0xB, rev-id 16)
+[10968.904111] tpm_tis 00:08: A TPM error (28) occurred attempting to 
+determine the timeouts
+[10968.964100] tpm_tis 00:08: A TPM error (28) occurred attempting to 
+determine the durations
+[10968.964111] tpm_tis 00:08: Could not get TPM timeouts and durations
+[13304.341746] tpm_tis 00:08: 1.2 TPM (device-id 0xB, rev-id 16)
+[13304.400093] tpm_tis 00:08: A TPM error (28) occurred attempting to 
+determine the timeouts
+[13304.464134] tpm_tis 00:08: A TPM error (28) occurred attempting to 
+determine the durations
+[13304.464142] tpm_tis 00:08: Could not get TPM timeouts and durations
+
+Thank you,
+Peter A
+
+
+>> Thanks,
+>> Peter
+>>
+>> > If you're seeing similar values, can you try the attached patch?
+>> >
+>> >Thanks,
+>> >Kent
+>> >
+>> >>/Peter A
+>> >>
+>> >>
+>> 
+>> >>------------------------------------------------------------------------------
+>> >>Own the Future-Intel&reg; Level Up Game Demo Contest 2013
+>> >>Rise to greatness in Intel's independent game demo contest.
+>> >>Compete for recognition, cash, and the chance to get your game
+>> >>on Steam. $5K grand prize plus 10 genre and skill prizes.
+>> >>Submit your demo by 6/6/13. http://p.sf.net/sfu/intel_levelupd2d
+>> >>_______________________________________________
+>> >>tpmdd-devel mailing list
+>> >>tpmdd-devel@lists.sourceforge.net
+>> >>https://lists.sourceforge.net/lists/listinfo/tpmdd-devel
