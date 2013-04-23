@@ -1,79 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756535Ab3DWWD2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 18:03:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34318 "EHLO
+	id S1757804Ab3DWVyZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 17:54:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34226 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932356Ab3DWV4c (ORCPT
+	with ESMTP id S1757690Ab3DWVyQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 17:56:32 -0400
+	Tue, 23 Apr 2013 17:54:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Voegtle <tv@lio96.de>, Cong Wang <amwang@redhat.com>,
-        Patrick McHardy <kaber@trash.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <edumazet@google.com>
-Subject: [ 02/23] Revert "8021q: fix a potential use-after-free"
-Date: Tue, 23 Apr 2013 14:56:09 -0700
-Message-Id: <20130423215456.549116188@linuxfoundation.org>
+        Andrew Honig <ahonig@google.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [ 09/26] KVM: Fix bounds checking in ioapic indirect register reads (CVE-2013-1798)
+Date: Tue, 23 Apr 2013 14:53:49 -0700
+Message-Id: <20130423215334.317728118@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130423215456.307216898@linuxfoundation.org>
-References: <20130423215456.307216898@linuxfoundation.org>
+In-Reply-To: <20130423215333.344045754@linuxfoundation.org>
+References: <20130423215333.344045754@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-This reverts commit 9829fe9806e22d7a822f4c947cc432c8d1774b54 which is
-upstream commit 4a7df340ed1bac190c124c1601bfc10cde9fb4fb 
+From: Andy Honig <ahonig@google.com>
 
-It turns out this causes problems on the 3.0-stable release.
+commit a2c118bfab8bc6b8bb213abfc35201e441693d55 upstream.
 
-Reported-by: Thomas Voegtle <tv@lio96.de>
-Acked-by: Cong Wang <amwang@redhat.com>
-Cc: Patrick McHardy <kaber@trash.net>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Eric Dumazet <edumazet@google.com>
+If the guest specifies a IOAPIC_REG_SELECT with an invalid value and follows
+that with a read of the IOAPIC_REG_WINDOW KVM does not properly validate
+that request.  ioapic_read_indirect contains an
+ASSERT(redir_index < IOAPIC_NUM_PINS), but the ASSERT has no effect in
+non-debug builds.  In recent kernels this allows a guest to cause a kernel
+oops by reading invalid memory.  In older kernels (pre-3.3) this allows a
+guest to read from large ranges of host memory.
+
+Tested: tested against apic unit tests.
+
+Signed-off-by: Andrew Honig <ahonig@google.com>
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/8021q/vlan.c |   14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+ virt/kvm/ioapic.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/net/8021q/vlan.c
-+++ b/net/8021q/vlan.c
-@@ -108,6 +108,13 @@ void unregister_vlan_dev(struct net_devi
- 	grp = rtnl_dereference(real_dev->vlgrp);
- 	BUG_ON(!grp);
+--- a/virt/kvm/ioapic.c
++++ b/virt/kvm/ioapic.c
+@@ -73,9 +73,12 @@ static unsigned long ioapic_read_indirec
+ 			u32 redir_index = (ioapic->ioregsel - 0x10) >> 1;
+ 			u64 redir_content;
  
-+	/* Take it out of our own structures, but be sure to interlock with
-+	 * HW accelerating devices or SW vlan input packet processing if
-+	 * VLAN is not 0 (leave it there for 802.1p).
-+	 */
-+	if (vlan_id && (real_dev->features & NETIF_F_HW_VLAN_FILTER))
-+		ops->ndo_vlan_rx_kill_vid(real_dev, vlan_id);
-+
- 	grp->nr_vlans--;
+-			ASSERT(redir_index < IOAPIC_NUM_PINS);
++			if (redir_index < IOAPIC_NUM_PINS)
++				redir_content =
++					ioapic->redirtbl[redir_index].bits;
++			else
++				redir_content = ~0ULL;
  
- 	if (vlan->flags & VLAN_FLAG_GVRP)
-@@ -132,13 +139,6 @@ void unregister_vlan_dev(struct net_devi
- 		call_rcu(&grp->rcu, vlan_rcu_free);
- 	}
- 
--	/* Take it out of our own structures, but be sure to interlock with
--	 * HW accelerating devices or SW vlan input packet processing if
--	 * VLAN is not 0 (leave it there for 802.1p).
--	 */
--	if (vlan_id && (real_dev->features & NETIF_F_HW_VLAN_FILTER))
--		ops->ndo_vlan_rx_kill_vid(real_dev, vlan_id);
--
- 	/* Get rid of the vlan's reference to real_dev */
- 	dev_put(real_dev);
- }
+-			redir_content = ioapic->redirtbl[redir_index].bits;
+ 			result = (ioapic->ioregsel & 0x1) ?
+ 			    (redir_content >> 32) & 0xffffffff :
+ 			    redir_content & 0xffffffff;
 
 
