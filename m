@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932453Ab3DWV4g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 17:56:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34331 "EHLO
+	id S1757821Ab3DWWBq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 18:01:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34356 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932426Ab3DWV4e (ORCPT
+	with ESMTP id S932426Ab3DWV4h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 17:56:34 -0400
+	Tue, 23 Apr 2013 17:56:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Rik van Riel <riel@redhat.com>, Michal Hocko <mhocko@suse.cz>,
-        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 04/23] hugetlbfs: add swap entry check in follow_hugetlb_page()
-Date: Tue, 23 Apr 2013 14:56:11 -0700
-Message-Id: <20130423215456.757821679@linuxfoundation.org>
+        Andrew Honig <ahonig@google.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [ 08/23] KVM: x86: Convert MSR_KVM_SYSTEM_TIME to use gfn_to_hva_cache functions (CVE-2013-1797)
+Date: Tue, 23 Apr 2013 14:56:15 -0700
+Message-Id: <20130423215457.163433529@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130423215456.307216898@linuxfoundation.org>
 References: <20130423215456.307216898@linuxfoundation.org>
@@ -32,75 +28,137 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+From: Andy Honig <ahonig@google.com>
 
-commit 9cc3a5bd40067b9a0fbd49199d0780463fc2140f upstream.
+commit 0b79459b482e85cb7426aa7da683a9f2c97aeae1 upstream.
 
-With applying the previous patch "hugetlbfs: stop setting VM_DONTDUMP in
-initializing vma(VM_HUGETLB)" to reenable hugepage coredump, if a memory
-error happens on a hugepage and the affected processes try to access the
-error hugepage, we hit VM_BUG_ON(atomic_read(&page->_count) <= 0) in
-get_page().
+There is a potential use after free issue with the handling of
+MSR_KVM_SYSTEM_TIME.  If the guest specifies a GPA in a movable or removable
+memory such as frame buffers then KVM might continue to write to that
+address even after it's removed via KVM_SET_USER_MEMORY_REGION.  KVM pins
+the page in memory so it's unlikely to cause an issue, but if the user
+space component re-purposes the memory previously used for the guest, then
+the guest will be able to corrupt that memory.
 
-The reason for this bug is that coredump-related code doesn't recognise
-"hugepage hwpoison entry" with which a pmd entry is replaced when a memory
-error occurs on a hugepage.
+Tested: Tested against kvmclock unit test
 
-In other words, physical address information is stored in different bit
-layout between hugepage hwpoison entry and pmd entry, so
-follow_hugetlb_page() which is called in get_dump_page() returns a wrong
-page from a given address.
-
-The expected behavior is like this:
-
-  absent   is_swap_pte   FOLL_DUMP   Expected behavior
-  -------------------------------------------------------------------
-   true     false         false       hugetlb_fault
-   false    true          false       hugetlb_fault
-   false    false         false       return page
-   true     false         true        skip page (to avoid allocation)
-   false    true          true        hugetlb_fault
-   false    false         true        return page
-
-With this patch, we can call hugetlb_fault() and take proper actions (we
-wait for migration entries, fail with VM_FAULT_HWPOISON_LARGE for
-hwpoisoned entries,) and as the result we can dump all hugepages except
-for hwpoisoned ones.
-
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Rik van Riel <riel@redhat.com>
-Acked-by: Michal Hocko <mhocko@suse.cz>
-Cc: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Acked-by: David Rientjes <rientjes@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Andrew Honig <ahonig@google.com>
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- mm/hugetlb.c |   12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
 
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -2800,7 +2800,17 @@ int follow_hugetlb_page(struct mm_struct
+---
+ arch/x86/include/asm/kvm_host.h |    4 ++--
+ arch/x86/kvm/x86.c              |   39 ++++++++++++++-------------------------
+ 2 files changed, 16 insertions(+), 27 deletions(-)
+
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -391,8 +391,8 @@ struct kvm_vcpu_arch {
+ 	gpa_t time;
+ 	struct pvclock_vcpu_time_info hv_clock;
+ 	unsigned int hw_tsc_khz;
+-	unsigned int time_offset;
+-	struct page *time_page;
++	struct gfn_to_hva_cache pv_time;
++	bool pv_time_enabled;
+ 	u64 last_guest_tsc;
+ 	u64 last_kernel_ns;
+ 	u64 last_tsc_nsec;
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -1073,7 +1073,6 @@ static int kvm_guest_time_update(struct
+ {
+ 	unsigned long flags;
+ 	struct kvm_vcpu_arch *vcpu = &v->arch;
+-	void *shared_kaddr;
+ 	unsigned long this_tsc_khz;
+ 	s64 kernel_ns, max_kernel_ns;
+ 	u64 tsc_timestamp;
+@@ -1109,7 +1108,7 @@ static int kvm_guest_time_update(struct
+ 
+ 	local_irq_restore(flags);
+ 
+-	if (!vcpu->time_page)
++	if (!vcpu->pv_time_enabled)
+ 		return 0;
+ 
+ 	/*
+@@ -1167,14 +1166,9 @@ static int kvm_guest_time_update(struct
+ 	 */
+ 	vcpu->hv_clock.version += 2;
+ 
+-	shared_kaddr = kmap_atomic(vcpu->time_page, KM_USER0);
+-
+-	memcpy(shared_kaddr + vcpu->time_offset, &vcpu->hv_clock,
+-	       sizeof(vcpu->hv_clock));
+-
+-	kunmap_atomic(shared_kaddr, KM_USER0);
+-
+-	mark_page_dirty(v->kvm, vcpu->time >> PAGE_SHIFT);
++	kvm_write_guest_cached(v->kvm, &vcpu->pv_time,
++				&vcpu->hv_clock,
++				sizeof(vcpu->hv_clock));
+ 	return 0;
+ }
+ 
+@@ -1464,10 +1458,7 @@ static int kvm_pv_enable_async_pf(struct
+ 
+ static void kvmclock_reset(struct kvm_vcpu *vcpu)
+ {
+-	if (vcpu->arch.time_page) {
+-		kvm_release_page_dirty(vcpu->arch.time_page);
+-		vcpu->arch.time_page = NULL;
+-	}
++	vcpu->arch.pv_time_enabled = false;
+ }
+ 
+ int kvm_set_msr_common(struct kvm_vcpu *vcpu, u32 msr, u64 data)
+@@ -1527,6 +1518,7 @@ int kvm_set_msr_common(struct kvm_vcpu *
+ 		break;
+ 	case MSR_KVM_SYSTEM_TIME_NEW:
+ 	case MSR_KVM_SYSTEM_TIME: {
++		u64 gpa_offset;
+ 		kvmclock_reset(vcpu);
+ 
+ 		vcpu->arch.time = data;
+@@ -1536,21 +1528,17 @@ int kvm_set_msr_common(struct kvm_vcpu *
+ 		if (!(data & 1))
  			break;
- 		}
  
--		if (absent ||
-+		/*
-+		 * We need call hugetlb_fault for both hugepages under migration
-+		 * (in which case hugetlb_fault waits for the migration,) and
-+		 * hwpoisoned hugepages (in which case we need to prevent the
-+		 * caller from accessing to them.) In order to do this, we use
-+		 * here is_swap_pte instead of is_hugetlb_entry_migration and
-+		 * is_hugetlb_entry_hwpoisoned. This is because it simply covers
-+		 * both cases, and because we can't follow correct pages
-+		 * directly from any kind of swap entries.
-+		 */
-+		if (absent || is_swap_pte(huge_ptep_get(pte)) ||
- 		    ((flags & FOLL_WRITE) && !pte_write(huge_ptep_get(pte)))) {
- 			int ret;
+-		/* ...but clean it before doing the actual write */
+-		vcpu->arch.time_offset = data & ~(PAGE_MASK | 1);
++		gpa_offset = data & ~(PAGE_MASK | 1);
  
+ 		/* Check that the address is 32-byte aligned. */
+-		if (vcpu->arch.time_offset &
+-				(sizeof(struct pvclock_vcpu_time_info) - 1))
++		if (gpa_offset & (sizeof(struct pvclock_vcpu_time_info) - 1))
+ 			break;
+ 
+-		vcpu->arch.time_page =
+-				gfn_to_page(vcpu->kvm, data >> PAGE_SHIFT);
+-
+-		if (is_error_page(vcpu->arch.time_page)) {
+-			kvm_release_page_clean(vcpu->arch.time_page);
+-			vcpu->arch.time_page = NULL;
+-		}
++		if (kvm_gfn_to_hva_cache_init(vcpu->kvm,
++		     &vcpu->arch.pv_time, data & ~1ULL))
++			vcpu->arch.pv_time_enabled = false;
++		else
++			vcpu->arch.pv_time_enabled = true;
+ 		break;
+ 	}
+ 	case MSR_KVM_ASYNC_PF_EN:
+@@ -6257,6 +6245,7 @@ int kvm_arch_vcpu_init(struct kvm_vcpu *
+ 	if (!zalloc_cpumask_var(&vcpu->arch.wbinvd_dirty_mask, GFP_KERNEL))
+ 		goto fail_free_mce_banks;
+ 
++	vcpu->arch.pv_time_enabled = false;
+ 	kvm_async_pf_hash_reset(vcpu);
+ 
+ 	return 0;
 
 
