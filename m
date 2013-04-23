@@ -1,171 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754957Ab3DWEpo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 00:45:44 -0400
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:18202 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751250Ab3DWEpn convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 00:45:43 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -1
-X-BigFish: VS-1(zzbb2dI98dI9371I542I1432Ic8kzz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275bhz2dh2a8h668h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ahbe9i1155h)
-From: Sethi Varun-B16395 <B16395@freescale.com>
-To: Wood Scott-B07421 <B07421@freescale.com>
-CC: "joro@8bytes.org" <joro@8bytes.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "galak@kernel.crashing.org" <galak@kernel.crashing.org>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        Yoder Stuart-B08248 <B08248@freescale.com>
-Subject: RE: [PATCH 2/3 v13] iommu/fsl: Add additional iommu attributes
- required by the PAMU driver.
-Thread-Topic: [PATCH 2/3 v13] iommu/fsl: Add additional iommu attributes
- required by the PAMU driver.
-Thread-Index: AQHOP7Qf6zNZWt8qnkmuUOV2vvIOTZjjOyEg
-Date: Tue, 23 Apr 2013 04:45:39 +0000
-Message-ID: <C5ECD7A89D1DC44195F34B25E172658D4B3708@039-SN2MPN1-011.039d.mgd.msft.net>
-References: <1366608716-1704-2-git-send-email-Varun.Sethi@freescale.com>
-	(from Varun.Sethi@freescale.com on Mon Apr 22 00:31:55 2013)
- <1366674609.10399.12@snotra>
-In-Reply-To: <1366674609.10399.12@snotra>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.232.132.53]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755034Ab3DWEvI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 00:51:08 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:61267 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755000Ab3DWEvG convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Apr 2013 00:51:06 -0400
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+In-Reply-To: <37C860A02101E749A747FA2D3C1E3C504A5DF7@DLEE11.ent.ti.com>
+References: <1363145021-14339-1-git-send-email-s-anna@ti.com>
+	<CABb+yY0RYkVeo2Sb4WsDJY0jf17488FEz0d2CB994eQaSOEsVg@mail.gmail.com>
+	<37C860A02101E749A747FA2D3C1E3C504A5DF7@DLEE11.ent.ti.com>
+Date: Tue, 23 Apr 2013 10:21:06 +0530
+Message-ID: <CABb+yY1x4x_A+QtGG9ohsLPgs8c3nEVnd_ExJBGOOR8=6YLPFA@mail.gmail.com>
+Subject: Re: [PATCHv3 00/14] drivers: mailbox: framework creation
+From: Jassi Brar <jassisinghbrar@gmail.com>
+To: "Anna, Suman" <s-anna@ti.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Tony Lindgren <tony@atomide.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        "Andy Green (andy.green@linaro.org)" <andy.green@linaro.org>,
+        "Ohad Ben-Cohen (ohad@wizery.com)" <ohad@wizery.com>,
+        "Loic PALLARDY (loic.pallardy@st.com)" <loic.pallardy@st.com>,
+        "Omar Ramirez Luna (omar.ramirez@copitl.com)" 
+	<omar.ramirez@copitl.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Suman,
 
+On Mon, Apr 22, 2013 at 9:26 PM, Anna, Suman <s-anna@ti.com> wrote:
+>>
+>> a) No documentation. Usually the header would have proper documentation of
+>> data structures and info for users of both side of the api.
+>
+> I will fix the documentation portion for 3.10. I will also add a TODO as part of the documentation so that it highlights the gaps and work-items.
+>
+>>
+>> b) The api is not scalable. The assumption of just one IPC controller in the
+>> platform is hardcoded.
+>
+> Yes, this is a major concern and I will be handling this in the upcoming patches . The current code was primarily based on moving the OMAP mailbox code and expanding it to support the ST DBX500 mailbox. As it is today, it doesn't scale to support multiple IP instances/controllers.
+>
+>>
+>> c) There seems to be no consistent design - mailbox_ops has 12 callback hooks.
+>> Some, save_ctx, restore_ctx, enable_irq, disable_irq are exported for no
+>> apparent reason (legacy of a legacy - OMAP), while other hooks are kept private
+>> to the api.
+>> I believe OMAP had valid reasons to make IPC clients save/restore context of the
+>> IPC controller, but I don't think that is the case in general. I2C client drivers don't
+>> save/restore context of I2C controller's, why should IPC's?  Similarly
+>> enable/disable_irq of the controller seem too intrusive for a client driver.
+>
+> Yep, these are exported because of the OMAP legacy TIDSPBRIDGE stack, and should vanish with the addition of runtime_pm support.
+>
+>>
+>> mailbox_ops.mailbox_type_t makes no sense to me. At least not without
+>> documentation, though I doubt any amount of documentation could help it -
+>> mailbox.c doesn't even read the member. Btw, isn't every mailbox a
+>> MBOX_SHARED_MEM_TYPE? A part of data passed via FIFO/REG could point to
+>> location in shared memory that might have full command/payload for the
+>> message. Or did I get the meaning of MBOX_SHARED_MEM_TYPE wrong in the
+>> absence of documentation?
+>
+> Yes, this needs to be removed, it is a carry-over from the OMAP mailbox code.
+>
+>>
+>> The api seems to worry too much about the low-level details of the IPC controller
+>> (save/restore context, enable/disable_irq and ack_irq), while it fails to provide a
+>> tight well-defined interface to client drivers.
+>>
+>> There are also some code issues, which might come as replies to respective
+>> patches.
+>
+> Thanks for the review of the patches. I will await your comments, and will address them as incremental patches.
+>
+So we agree
+a) Documentation is missing.
+b) mailbox_type_t, save_ctx, restore_ctx, ack_irq, enable_irq,
+disable_irq need to be removed.
+c) Support for more than one IPC controllers is needed.
 
-> -----Original Message-----
-> From: Wood Scott-B07421
-> Sent: Tuesday, April 23, 2013 5:20 AM
-> To: Sethi Varun-B16395
-> Cc: joro@8bytes.org; iommu@lists.linux-foundation.org; linuxppc-
-> dev@lists.ozlabs.org; linux-kernel@vger.kernel.org;
-> galak@kernel.crashing.org; benh@kernel.crashing.org; Yoder Stuart-B08248;
-> Sethi Varun-B16395
-> Subject: Re: [PATCH 2/3 v13] iommu/fsl: Add additional iommu attributes
-> required by the PAMU driver.
-> 
-> On 04/22/2013 12:31:55 AM, Varun Sethi wrote:
-> > Added the following domain attributes for the FSL PAMU driver:
-> > 1. Added new iommu stash attribute, which allows setting of the
-> >    LIODN specific stash id parameter through IOMMU API.
-> > 2. Added an attribute for enabling/disabling DMA to a particular
-> >    memory window.
-> > 3. Added domain attribute to check for PAMUV1 specific constraints.
-> >
-> > Signed-off-by: Varun Sethi <Varun.Sethi@freescale.com>
-> > ---
-> > v13 changes:
-> > - created a new file include/linux/fsl_pamu_stash.h for stash
-> > attributes.
-> > v12 changes:
-> > - Moved PAMU specifc stash ids and structures to PAMU header file.
-> > - no change in v11.
-> > - no change in v10.
-> >  include/linux/fsl_pamu_stash.h |   39
-> > +++++++++++++++++++++++++++++++++++++++
-> >  include/linux/iommu.h          |   16 ++++++++++++++++
-> >  2 files changed, 55 insertions(+), 0 deletions(-)  create mode 100644
-> > include/linux/fsl_pamu_stash.h
-> >
-> > diff --git a/include/linux/fsl_pamu_stash.h
-> > b/include/linux/fsl_pamu_stash.h new file mode 100644 index
-> > 0000000..caa1b21
-> > --- /dev/null
-> > +++ b/include/linux/fsl_pamu_stash.h
-> > @@ -0,0 +1,39 @@
-> > +/*
-> > + * This program is free software; you can redistribute it and/or
-> > modify
-> > + * it under the terms of the GNU General Public License, version 2,
-> > as
-> > + * published by the Free Software Foundation.
-> > + *
-> > + * This program is distributed in the hope that it will be useful,
-> > + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> > + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> > + * GNU General Public License for more details.
-> > + *
-> > + * You should have received a copy of the GNU General Public License
-> > + * along with this program; if not, write to the Free Software
-> > + * Foundation, 51 Franklin Street, Fifth Floor, Boston, MA
-> > 02110-1301, USA.
-> > + *
-> > + * Copyright (C) 2013 Freescale Semiconductor, Inc.
-> > + *
-> > + */
-> > +
-> > +#ifndef __FSL_PAMU_STASH_H
-> > +#define __FSL_PAMU_STASH_H
-> > +
-> > +/* cache stash targets */
-> > +enum pamu_stash_target {
-> > +	PAMU_ATTR_CACHE_L1 = 1,
-> > +	PAMU_ATTR_CACHE_L2,
-> > +	PAMU_ATTR_CACHE_L3,
-> > +};
-> > +
-> > +/*
-> > + * This attribute allows configuring stashig specific parameters
-> > + * in the PAMU hardware.
-> > + */
-> > +
-> > +struct pamu_stash_attribute {
-> > +	u32 	cpu;	/* cpu number */
-> > +	u32 	cache;	/* cache to stash to: L1,L2,L3 */
-> > +};
-> > +
-> > +#endif  /* __FSL_PAMU_STASH_H */
-> > diff --git a/include/linux/iommu.h b/include/linux/iommu.h index
-> > 2727810..c5dc2b9 100644
-> > --- a/include/linux/iommu.h
-> > +++ b/include/linux/iommu.h
-> > @@ -57,10 +57,26 @@ struct iommu_domain {
-> >  #define IOMMU_CAP_CACHE_COHERENCY	0x1
-> >  #define IOMMU_CAP_INTR_REMAP		0x2	/* isolates device
-> > intrs */
-> >
-> > +/*
-> > + * Following constraints are specifc to PAMUV1:
-> 
-> FSL_PAMUV1
-> 
-> > + *  -aperture must be power of 2, and naturally aligned
-> > + *  -number of windows must be power of 2, and address space size
-> > + *   of each window is determined by aperture size / # of windows
-> > + *  -the actual size of the mapped region of a window must be power
-> > + *   of 2 starting with 4KB and physical address must be naturally
-> > + *   aligned.
-> > + * DOMAIN_ATTR_FSL_PAMUV1 corresponds to the above mentioned
-> > contraints.
-> > + * The caller can invoke iommu_domain_get_attr to check if the
-> > underlying
-> > + * iommu implementation supports these constraints.
-> > + */
-> > +
-> >  enum iommu_attr {
-> >  	DOMAIN_ATTR_GEOMETRY,
-> >  	DOMAIN_ATTR_PAGING,
-> >  	DOMAIN_ATTR_WINDOWS,
-> > +	DOMAIN_ATTR_PAMU_STASH,
-> > +	DOMAIN_ATTR_PAMU_ENABLE,
-> > +	DOMAIN_ATTR_FSL_PAMUV1,
-> >  	DOMAIN_ATTR_MAX,
-> 
-> Please be consistent on whether "PAMU" gets an "FSL_" namespace prefix
-> (I'd prefer that it does).
-Submitted new version(v14) of the patch with updated attribute names.
+Out of 11 exported functions, we'll be left with the 5 trivial ones
+mailbox_un/register, mailbox_get/put and mailbox_msg_send.
+mailbox_msg_send_no_irq and mailbox_msg_send_receive_no_irq are STE(?)
+specific quirky requirements, which should be possible to simulate
+over the mailbox API if designed well.
 
--Varun
+Documentation wise, we'd need documentation for what we finally wanna
+have, not the current implementation.
 
+There are also some desired features in a good API:-
+
+a) The API should be simple and efficient, i.e, submission of requests
+by clients and notifications of data received by the API should be
+possible from atomic context - most of the IPC is going to be about
+exchanging 'commands'. The API shouldn't add to the latencies.
+
+b) It would be very useful to allow submission of a new request from
+the completion callback of last one.
+
+c) The request/free/ack_irq on behalf of the IPC controller driver
+should be no business of the API. The API design should only assume a
+simple but generic enough h/w model beneath it and provide support to
+h/w that doesn't have an expected feature.
+ For example, API should assume the IPC controller can detect and
+report when the remote asserts Ready-To-Receive (RTR). This is when
+the API callbacks .tx_done(mssg) on the client. If some h/w doesn't
+have RTR assertion interrupt, the API should provide optional feature
+to poll the controller periodically.
+
+(d) The 'struct mailbox_msg' should be just an opaque void* - the
+client/protocol driver typecasts to void* the IPC controller specific
+message structure. API shouldn't aim the impossible of providing a
+generic message format.
+
+(a) and (b) are already proved to be useful and supported by a similar
+API - DMAEngine.
+
+As you see there would be not much of the present left eventually. So
+I wonder if should sculpt a new api out of TI's or start from scratch?
+One of my controllers is similar to 'pl320' (which you left out
+converting to the API). I am in process of implementing all this
+assuming it is OK to keep a controller out of this API :)  So maybe we
+can collaborate on a new implementation from scratch.
+
+Regards,
+Jassi
