@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756945Ab3DWWOc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 18:14:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34081 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757538Ab3DWVw5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757536Ab3DWVw5 (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 23 Apr 2013 17:52:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34053 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757439Ab3DWVwx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Apr 2013 17:52:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-Subject: [ 21/42] sched: Convert BUG_ON()s in try_to_wake_up_local() to WARN_ON_ONCE()s
-Date: Tue, 23 Apr 2013 14:52:19 -0700
-Message-Id: <20130423215207.685554756@linuxfoundation.org>
+        Andrew Honig <ahonig@google.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [ 16/42] KVM: Fix bounds checking in ioapic indirect register reads (CVE-2013-1798)
+Date: Tue, 23 Apr 2013 14:52:14 -0700
+Message-Id: <20130423215207.202839948@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130423215205.523980967@linuxfoundation.org>
 References: <20130423215205.523980967@linuxfoundation.org>
@@ -27,45 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Andy Honig <ahonig@google.com>
 
-commit 383efcd00053ec40023010ce5034bd702e7ab373 upstream.
+commit a2c118bfab8bc6b8bb213abfc35201e441693d55 upstream.
 
-try_to_wake_up_local() should only be invoked to wake up another
-task in the same runqueue and BUG_ON()s are used to enforce the
-rule. Missing try_to_wake_up_local() can stall workqueue
-execution but such stalls are likely to be finite either by
-another work item being queued or the one blocked getting
-unblocked.  There's no reason to trigger BUG while holding rq
-lock crashing the whole system.
+If the guest specifies a IOAPIC_REG_SELECT with an invalid value and follows
+that with a read of the IOAPIC_REG_WINDOW KVM does not properly validate
+that request.  ioapic_read_indirect contains an
+ASSERT(redir_index < IOAPIC_NUM_PINS), but the ASSERT has no effect in
+non-debug builds.  In recent kernels this allows a guest to cause a kernel
+oops by reading invalid memory.  In older kernels (pre-3.3) this allows a
+guest to read from large ranges of host memory.
 
-Convert BUG_ON()s in try_to_wake_up_local() to WARN_ON_ONCE()s.
+Tested: tested against apic unit tests.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20130318192234.GD3042@htj.dyndns.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Andrew Honig <ahonig@google.com>
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/sched/core.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ virt/kvm/ioapic.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1488,8 +1488,10 @@ static void try_to_wake_up_local(struct
- {
- 	struct rq *rq = task_rq(p);
+--- a/virt/kvm/ioapic.c
++++ b/virt/kvm/ioapic.c
+@@ -73,9 +73,12 @@ static unsigned long ioapic_read_indirec
+ 			u32 redir_index = (ioapic->ioregsel - 0x10) >> 1;
+ 			u64 redir_content;
  
--	BUG_ON(rq != this_rq());
--	BUG_ON(p == current);
-+	if (WARN_ON_ONCE(rq != this_rq()) ||
-+	    WARN_ON_ONCE(p == current))
-+		return;
-+
- 	lockdep_assert_held(&rq->lock);
+-			ASSERT(redir_index < IOAPIC_NUM_PINS);
++			if (redir_index < IOAPIC_NUM_PINS)
++				redir_content =
++					ioapic->redirtbl[redir_index].bits;
++			else
++				redir_content = ~0ULL;
  
- 	if (!raw_spin_trylock(&p->pi_lock)) {
+-			redir_content = ioapic->redirtbl[redir_index].bits;
+ 			result = (ioapic->ioregsel & 0x1) ?
+ 			    (redir_content >> 32) & 0xffffffff :
+ 			    redir_content & 0xffffffff;
 
 
