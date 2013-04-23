@@ -1,88 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755362Ab3DWGSs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 02:18:48 -0400
-Received: from mail-la0-f41.google.com ([209.85.215.41]:61544 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755069Ab3DWGSq (ORCPT
+	id S1755458Ab3DWGVR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 02:21:17 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:28470 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754655Ab3DWGVP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 02:18:46 -0400
+	Tue, 23 Apr 2013 02:21:15 -0400
+Date: Tue, 23 Apr 2013 09:16:00 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Christopher Li <sparse@chrisli.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        kbuild test robot <fengguang.wu@intel.com>,
+        Jingoo Han <jg1.han@samsung.com>, kbuild-all@01.org,
+        Linux-Sparse <linux-sparse@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [next:akpm 798/1000] drivers/rtc/rtc-ds1286.c:343:24: sparse:
+ incorrect type in argument 1 (different address spaces)
+Message-ID: <20130423061600.GN6638@mwanda>
+References: <5171d93a.0NZAGYYKNj8hjsAs%fengguang.wu@intel.com>
+ <20130422165629.bae79e6c5251bf148a3bae73@linux-foundation.org>
+ <CANeU7QmDXRj-rNWvb0qhXCmzyJBFv=1URzzjEZN6ARaAf15-hw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20130422131101.GA17463@sirena.org.uk>
-References: <1365862424-6530-1-git-send-email-mcgrof@do-not-panic.com>
- <1365862424-6530-6-git-send-email-mcgrof@do-not-panic.com>
- <1365886878.1089.5.camel@jlt4.sipsolutions.net> <20130415162652.GK15837@opensource.wolfsonmicro.com>
- <1366043632.8361.33.camel@jlt4.sipsolutions.net> <20130422131101.GA17463@sirena.org.uk>
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Date: Mon, 22 Apr 2013 23:18:24 -0700
-X-Google-Sender-Auth: 2F3-wFE98C69tH_SgopxaeLTl8U
-Message-ID: <CAB=NE6WEQ3LmscwRAv=d1T8FpW3_cr3wxpbb_RBRqZgxFdiPcg@mail.gmail.com>
-Subject: Re: [PATCH 5/7] backports: add support for voltage / current
- regulator drivers
-To: Johannes Berg <johannes@sipsolutions.net>,
-        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
-        "backports@vger.kernel.org" <backports@vger.kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CANeU7QmDXRj-rNWvb0qhXCmzyJBFv=1URzzjEZN6ARaAf15-hw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 22, 2013 at 6:11 AM, Mark Brown <broonie@kernel.org> wrote:
-> On Mon, Apr 15, 2013 at 06:33:52PM +0200, Johannes Berg wrote:
->> On Mon, 2013-04-15 at 17:26 +0100, Mark Brown wrote:
->
->> > Please let's at least discuss the issues here, I'm not sure what this is
->> > supposed to do but the analysis of the subsystem didn't seem complete.
->
->> I wouldn't worry about it too much. For some reason (media drivers
->> related?) Luis decided that it was worth including this in the backports
->> project (see http://backports.wiki.kernel.org) and I am currently
->> maintaining the git tree for that, at least while I was doing some
->> refactoring.
->
->> I do notice that it doesn't quite work, there are a lot of unresolved
->> symbols :)
->
->> If you think you'd be impacted by this because users demand support from
->> you for the backport or whatever I can revert this (or probably just
->> remove it from the copy list for now.) I don't really have an opinion on
->> it, I'm doing this because I'm interested in one specific wireless
->> driver.
->
-> Well, I'd much rather have a sane backport if we're going to have one -
-> whatever problem is being solved here it seems likely that someone else
-> will have the same need and if there's a general kernel project for this
-> (which preusmably has some overlap with LTSI?) it seems bad to have one
-> that people have to be warned away from using.
+On Mon, Apr 22, 2013 at 07:56:19PM -0700, Christopher Li wrote:
+> On Mon, Apr 22, 2013 at 4:56 PM, Andrew Morton
+> <akpm@linux-foundation.org> wrote:
+> > I think doing IS_ERR() and PTR_ERR() on __iomem pointers is a natural
+> > thing, and we should be able to do this without adding call-site
+> > trickery to make sparse happy.
+> >
+> > Is there some sort of annotation which we can add to the
+> > IS_ERR()/PTR_ERR() definitions so that sparse will stop warning about
+> > this usage?
+> 
+> Yes, the force attribute should silent the address check on conversion.
+> 
+> Can some one try this patch (totally untested).
+> 
 
-LTSI is for folks who stick to a kernel revision. backports project is
-for folks who do not have control over what kernel they are on -- yet
-or as a model. backports provides support for backporting new kernel
-drivers down to any range of kernels. We strive for 802.11 down to
-2.6.24, for BT 2.6.27, DRM to 3.2, regulator 3.2, Media 3.2. There are
-both daily snapshots based on linux-next, and stable release snapshots
-based on linux-stable. This enables Linux distributions, either
-rolling or non-rolling, to embraces released bast on latest and
-greatest drivers or based on stable releases.
+That didn't work.  It's the the void * in the parameter list that's
+the problem.  We'd need to do something like the patch below:
 
-The target here was not to make an assessment over quality of work on
-the subsystem but instead more on the backportability nature of it. In
-this case the regulator ends up using some data structures defined
-upon late_initcall() and core_initcall() which implicates what you can
-backport unless you can genuinely provide gaurantee a proper backport
-of regulator as a module and forcing drivers to use a separate
-namespace or somehow modifying the kernel's init calls with things
-like ksplice. Neither of these two are possible today and as such what
-is backported for regulator is things that do not depend on these
-calls having fired off as is today. 3.2 as a target seemed reasonable
-given that DRM was backported down to 3.2 and so was media.
+Otherwise we could add "__ok_to_cast" thing to Sparse maybe?
 
-> Given how big the misunderstandings in the cover letter for Luis' patch
-> were I'd be really concerned about seeing this going into anything
-> officialish without some discussion about what's going on.
+regards,
+dan carpenter
 
-Official? Huh?
-
-  Luis
+diff --git a/include/linux/err.h b/include/linux/err.h
+index f2edce2..2cbe8fb 100644
+--- a/include/linux/err.h
++++ b/include/linux/err.h
+@@ -24,20 +24,23 @@ static inline void * __must_check ERR_PTR(long error)
+ 	return (void *) error;
+ }
+ 
+-static inline long __must_check PTR_ERR(const void *ptr)
++static inline long __must_check _PTR_ERR(const void *ptr)
+ {
+ 	return (long) ptr;
+ }
++#define PTR_ERR(x) _PTR_ERR((const void __force *)(x))
+ 
+-static inline long __must_check IS_ERR(const void *ptr)
++static inline long __must_check _IS_ERR(const void *ptr)
+ {
+ 	return IS_ERR_VALUE((unsigned long)ptr);
+ }
++#define IS_ERR(x) _IS_ERR((const void __force *)(x))
+ 
+-static inline long __must_check IS_ERR_OR_NULL(const void *ptr)
++static inline long __must_check _IS_ERR_OR_NULL(const void *ptr)
+ {
+ 	return !ptr || IS_ERR_VALUE((unsigned long)ptr);
+ }
++#define IS_ERR_OR_NULL(x) _IS_ERR_OR_NULL((const void __force *)(x))
+ 
+ /**
+  * ERR_CAST - Explicitly cast an error-valued pointer to another pointer type
+@@ -46,19 +49,21 @@ static inline long __must_check IS_ERR_OR_NULL(const void *ptr)
+  * Explicitly cast an error-valued pointer to another pointer type in such a
+  * way as to make it clear that's what's going on.
+  */
+-static inline void * __must_check ERR_CAST(const void *ptr)
++static inline void * __must_check _ERR_CAST(const void *ptr)
+ {
+ 	/* cast away the const */
+ 	return (void *) ptr;
+ }
++#define ERR_CAST(x) _ERR_CAST((const void __force *)(x))
+ 
+-static inline int __must_check PTR_RET(const void *ptr)
++static inline int __must_check _PTR_RET(const void *ptr)
+ {
+ 	if (IS_ERR(ptr))
+ 		return PTR_ERR(ptr);
+ 	else
+ 		return 0;
+ }
++#define PTR_RET(x) _PTR_RET((const void __force *)(x))
+ 
+ #endif
+ 
