@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932771Ab3DWV6l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 17:58:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34412 "EHLO
+	id S932543Ab3DWV4p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 17:56:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34367 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932555Ab3DWV4q (ORCPT
+	with ESMTP id S932484Ab3DWV4i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 17:56:46 -0400
+	Tue, 23 Apr 2013 17:56:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Illia Ragozin <illia.ragozin@grapecom.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 11/23] ARM: 7696/1: Fix kexec by setting outer_cache.inv_all for Feroceon
-Date: Tue, 23 Apr 2013 14:56:18 -0700
-Message-Id: <20130423215457.451499056@linuxfoundation.org>
+        Michael Bohan <mbohan@codeaurora.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [ 01/23] hrtimer: Dont reinitialize a cpu_base lock on CPU_UP
+Date: Tue, 23 Apr 2013 14:56:08 -0700
+Message-Id: <20130423215456.456015128@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130423215456.307216898@linuxfoundation.org>
 References: <20130423215456.307216898@linuxfoundation.org>
@@ -28,39 +27,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Illia Ragozin <illia.ragozin@grapecom.com>
+From: Michael Bohan <mbohan@codeaurora.org>
 
-commit cd272d1ea71583170e95dde02c76166c7f9017e6 upstream.
+commit 84cc8fd2fe65866e49d70b38b3fdf7219dd92fe0 upstream.
 
-On Feroceon the L2 cache becomes non-coherent with the CPU
-when the L1 caches are disabled. Thus the L2 needs to be invalidated
-after both L1 caches are disabled.
+The current code makes the assumption that a cpu_base lock won't be
+held if the CPU corresponding to that cpu_base is offline, which isn't
+always true.
 
-On kexec before the starting the code for relocation the kernel,
-the L1 caches are disabled in cpu_froc_fin (cpu_v7_proc_fin for Feroceon),
-but after L2 cache is never invalidated, because inv_all is not set
-in cache-feroceon-l2.c.
-So kernel relocation and decompression may has (and usually has) errors.
-Setting the function enables L2 invalidation and fixes the issue.
+If a hrtimer is not queued, then it will not be migrated by
+migrate_hrtimers() when a CPU is offlined. Therefore, the hrtimer's
+cpu_base may still point to a CPU which has subsequently gone offline
+if the timer wasn't enqueued at the time the CPU went down.
 
-Signed-off-by: Illia Ragozin <illia.ragozin@grapecom.com>
-Acked-by: Jason Cooper <jason@lakedaemon.net>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Normally this wouldn't be a problem, but a cpu_base's lock is blindly
+reinitialized each time a CPU is brought up. If a CPU is brought
+online during the period that another thread is performing a hrtimer
+operation on a stale hrtimer, then the lock will be reinitialized
+under its feet, and a SPIN_BUG() like the following will be observed:
+
+<0>[   28.082085] BUG: spinlock already unlocked on CPU#0, swapper/0/0
+<0>[   28.087078]  lock: 0xc4780b40, value 0x0 .magic: dead4ead, .owner: <none>/-1, .owner_cpu: -1
+<4>[   42.451150] [<c0014398>] (unwind_backtrace+0x0/0x120) from [<c0269220>] (do_raw_spin_unlock+0x44/0xdc)
+<4>[   42.460430] [<c0269220>] (do_raw_spin_unlock+0x44/0xdc) from [<c071b5bc>] (_raw_spin_unlock+0x8/0x30)
+<4>[   42.469632] [<c071b5bc>] (_raw_spin_unlock+0x8/0x30) from [<c00a9ce0>] (__hrtimer_start_range_ns+0x1e4/0x4f8)
+<4>[   42.479521] [<c00a9ce0>] (__hrtimer_start_range_ns+0x1e4/0x4f8) from [<c00aa014>] (hrtimer_start+0x20/0x28)
+<4>[   42.489247] [<c00aa014>] (hrtimer_start+0x20/0x28) from [<c00e6190>] (rcu_idle_enter_common+0x1ac/0x320)
+<4>[   42.498709] [<c00e6190>] (rcu_idle_enter_common+0x1ac/0x320) from [<c00e6440>] (rcu_idle_enter+0xa0/0xb8)
+<4>[   42.508259] [<c00e6440>] (rcu_idle_enter+0xa0/0xb8) from [<c000f268>] (cpu_idle+0x24/0xf0)
+<4>[   42.516503] [<c000f268>] (cpu_idle+0x24/0xf0) from [<c06ed3c0>] (rest_init+0x88/0xa0)
+<4>[   42.524319] [<c06ed3c0>] (rest_init+0x88/0xa0) from [<c0c00978>] (start_kernel+0x3d0/0x434)
+
+As an example, this particular crash occurred when hrtimer_start() was
+executed on CPU #0. The code locked the hrtimer's current cpu_base
+corresponding to CPU #1. CPU #0 then tried to switch the hrtimer's
+cpu_base to an optimal CPU which was online. In this case, it selected
+the cpu_base corresponding to CPU #3.
+
+Before it could proceed, CPU #1 came online and reinitialized the
+spinlock corresponding to its cpu_base. Thus now CPU #0 held a lock
+which was reinitialized. When CPU #0 finally ended up unlocking the
+old cpu_base corresponding to CPU #1 so that it could switch to CPU
+#3, we hit this SPIN_BUG() above while in switch_hrtimer_base().
+
+CPU #0                            CPU #1
+----                              ----
+...                               <offline>
+hrtimer_start()
+lock_hrtimer_base(base #1)
+...                               init_hrtimers_cpu()
+switch_hrtimer_base()             ...
+...                               raw_spin_lock_init(&cpu_base->lock)
+raw_spin_unlock(&cpu_base->lock)  ...
+<spin_bug>
+
+Solve this by statically initializing the lock.
+
+Signed-off-by: Michael Bohan <mbohan@codeaurora.org>
+Link: http://lkml.kernel.org/r/1363745965-23475-1-git-send-email-mbohan@codeaurora.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mm/cache-feroceon-l2.c |    1 +
- 1 file changed, 1 insertion(+)
+ kernel/hrtimer.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/arch/arm/mm/cache-feroceon-l2.c
-+++ b/arch/arm/mm/cache-feroceon-l2.c
-@@ -342,6 +342,7 @@ void __init feroceon_l2_init(int __l2_wt
- 	outer_cache.inv_range = feroceon_l2_inv_range;
- 	outer_cache.clean_range = feroceon_l2_clean_range;
- 	outer_cache.flush_range = feroceon_l2_flush_range;
-+	outer_cache.inv_all = l2_inv_all;
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -61,6 +61,7 @@
+ DEFINE_PER_CPU(struct hrtimer_cpu_base, hrtimer_bases) =
+ {
  
- 	enable_l2();
++	.lock = __RAW_SPIN_LOCK_UNLOCKED(hrtimer_bases.lock),
+ 	.clock_base =
+ 	{
+ 		{
+@@ -1640,8 +1641,6 @@ static void __cpuinit init_hrtimers_cpu(
+ 	struct hrtimer_cpu_base *cpu_base = &per_cpu(hrtimer_bases, cpu);
+ 	int i;
  
+-	raw_spin_lock_init(&cpu_base->lock);
+-
+ 	for (i = 0; i < HRTIMER_MAX_CLOCK_BASES; i++) {
+ 		cpu_base->clock_base[i].cpu_base = cpu_base;
+ 		timerqueue_init_head(&cpu_base->clock_base[i].active);
 
 
