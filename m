@@ -1,25 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756627Ab3DWWIm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 18:08:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34194 "EHLO
+	id S1756682Ab3DWWJF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 18:09:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34186 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757684Ab3DWVyL (ORCPT
+	with ESMTP id S1757674Ab3DWVyK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 17:54:11 -0400
+	Tue, 23 Apr 2013 17:54:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Rik van Riel <riel@redhat.com>, Michal Hocko <mhocko@suse.cz>,
-        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 04/26] hugetlbfs: add swap entry check in follow_hugetlb_page()
-Date: Tue, 23 Apr 2013 14:53:44 -0700
-Message-Id: <20130423215333.802657218@linuxfoundation.org>
+        Christoph Fritz <chf.fritz@googlemail.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>
+Subject: [ 03/26] can: sja1000: fix handling on dt properties on little endian systems
+Date: Tue, 23 Apr 2013 14:53:43 -0700
+Message-Id: <20130423215333.706917964@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130423215333.344045754@linuxfoundation.org>
 References: <20130423215333.344045754@linuxfoundation.org>
@@ -32,75 +27,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+From: Christoph Fritz <chf.fritz@googlemail.com>
 
-commit 9cc3a5bd40067b9a0fbd49199d0780463fc2140f upstream.
+commit 0443de5fbf224abf41f688d8487b0c307dc5a4b4 upstream.
 
-With applying the previous patch "hugetlbfs: stop setting VM_DONTDUMP in
-initializing vma(VM_HUGETLB)" to reenable hugepage coredump, if a memory
-error happens on a hugepage and the affected processes try to access the
-error hugepage, we hit VM_BUG_ON(atomic_read(&page->_count) <= 0) in
-get_page().
+To get correct endianes on little endian cpus (like arm) while reading device
+tree properties, this patch replaces of_get_property() with
+of_property_read_u32(). While there use of_property_read_bool() for the
+handling of the boolean "nxp,no-comparator-bypass" property.
 
-The reason for this bug is that coredump-related code doesn't recognise
-"hugepage hwpoison entry" with which a pmd entry is replaced when a memory
-error occurs on a hugepage.
-
-In other words, physical address information is stored in different bit
-layout between hugepage hwpoison entry and pmd entry, so
-follow_hugetlb_page() which is called in get_dump_page() returns a wrong
-page from a given address.
-
-The expected behavior is like this:
-
-  absent   is_swap_pte   FOLL_DUMP   Expected behavior
-  -------------------------------------------------------------------
-   true     false         false       hugetlb_fault
-   false    true          false       hugetlb_fault
-   false    false         false       return page
-   true     false         true        skip page (to avoid allocation)
-   false    true          true        hugetlb_fault
-   false    false         true        return page
-
-With this patch, we can call hugetlb_fault() and take proper actions (we
-wait for migration entries, fail with VM_FAULT_HWPOISON_LARGE for
-hwpoisoned entries,) and as the result we can dump all hugepages except
-for hwpoisoned ones.
-
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Rik van Riel <riel@redhat.com>
-Acked-by: Michal Hocko <mhocko@suse.cz>
-Cc: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Acked-by: David Rientjes <rientjes@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Christoph Fritz <chf.fritz@googlemail.com>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/hugetlb.c |   12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
+ drivers/net/can/sja1000/sja1000_of_platform.c |   31 ++++++++++++--------------
+ 1 file changed, 15 insertions(+), 16 deletions(-)
 
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -2906,7 +2906,17 @@ int follow_hugetlb_page(struct mm_struct
- 			break;
- 		}
+--- a/drivers/net/can/sja1000/sja1000_of_platform.c
++++ b/drivers/net/can/sja1000/sja1000_of_platform.c
+@@ -94,8 +94,8 @@ static int __devinit sja1000_ofp_probe(s
+ 	struct net_device *dev;
+ 	struct sja1000_priv *priv;
+ 	struct resource res;
+-	const u32 *prop;
+-	int err, irq, res_size, prop_size;
++	u32 prop;
++	int err, irq, res_size;
+ 	void __iomem *base;
  
--		if (absent ||
-+		/*
-+		 * We need call hugetlb_fault for both hugepages under migration
-+		 * (in which case hugetlb_fault waits for the migration,) and
-+		 * hwpoisoned hugepages (in which case we need to prevent the
-+		 * caller from accessing to them.) In order to do this, we use
-+		 * here is_swap_pte instead of is_hugetlb_entry_migration and
-+		 * is_hugetlb_entry_hwpoisoned. This is because it simply covers
-+		 * both cases, and because we can't follow correct pages
-+		 * directly from any kind of swap entries.
-+		 */
-+		if (absent || is_swap_pte(huge_ptep_get(pte)) ||
- 		    ((flags & FOLL_WRITE) && !pte_write(huge_ptep_get(pte)))) {
- 			int ret;
+ 	err = of_address_to_resource(np, 0, &res);
+@@ -136,27 +136,27 @@ static int __devinit sja1000_ofp_probe(s
+ 	priv->read_reg = sja1000_ofp_read_reg;
+ 	priv->write_reg = sja1000_ofp_write_reg;
  
+-	prop = of_get_property(np, "nxp,external-clock-frequency", &prop_size);
+-	if (prop && (prop_size ==  sizeof(u32)))
+-		priv->can.clock.freq = *prop / 2;
++	err = of_property_read_u32(np, "nxp,external-clock-frequency", &prop);
++	if (!err)
++		priv->can.clock.freq = prop / 2;
+ 	else
+ 		priv->can.clock.freq = SJA1000_OFP_CAN_CLOCK; /* default */
+ 
+-	prop = of_get_property(np, "nxp,tx-output-mode", &prop_size);
+-	if (prop && (prop_size == sizeof(u32)))
+-		priv->ocr |= *prop & OCR_MODE_MASK;
++	err = of_property_read_u32(np, "nxp,tx-output-mode", &prop);
++	if (!err)
++		priv->ocr |= prop & OCR_MODE_MASK;
+ 	else
+ 		priv->ocr |= OCR_MODE_NORMAL; /* default */
+ 
+-	prop = of_get_property(np, "nxp,tx-output-config", &prop_size);
+-	if (prop && (prop_size == sizeof(u32)))
+-		priv->ocr |= (*prop << OCR_TX_SHIFT) & OCR_TX_MASK;
++	err = of_property_read_u32(np, "nxp,tx-output-config", &prop);
++	if (!err)
++		priv->ocr |= (prop << OCR_TX_SHIFT) & OCR_TX_MASK;
+ 	else
+ 		priv->ocr |= OCR_TX0_PULLDOWN; /* default */
+ 
+-	prop = of_get_property(np, "nxp,clock-out-frequency", &prop_size);
+-	if (prop && (prop_size == sizeof(u32)) && *prop) {
+-		u32 divider = priv->can.clock.freq * 2 / *prop;
++	err = of_property_read_u32(np, "nxp,clock-out-frequency", &prop);
++	if (!err && prop) {
++		u32 divider = priv->can.clock.freq * 2 / prop;
+ 
+ 		if (divider > 1)
+ 			priv->cdr |= divider / 2 - 1;
+@@ -166,8 +166,7 @@ static int __devinit sja1000_ofp_probe(s
+ 		priv->cdr |= CDR_CLK_OFF; /* default */
+ 	}
+ 
+-	prop = of_get_property(np, "nxp,no-comparator-bypass", NULL);
+-	if (!prop)
++	if (!of_property_read_bool(np, "nxp,no-comparator-bypass"))
+ 		priv->cdr |= CDR_CBP; /* default */
+ 
+ 	priv->irq_flags = IRQF_SHARED;
 
 
