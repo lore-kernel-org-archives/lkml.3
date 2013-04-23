@@ -1,105 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755916Ab3DWX1z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 19:27:55 -0400
-Received: from mail.ispras.ru ([83.149.199.45]:51259 "EHLO mail.ispras.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752911Ab3DWX1x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 19:27:53 -0400
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
-To: Henk de Groot <pe1dnn@amsat.org>
-Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        ldv-project@linuxtesting.org
-Subject: [PATCH] staging: wlags49_h2: fix error handling in pcmcia probe function
-Date: Tue, 23 Apr 2013 19:27:39 -0400
-Message-Id: <1366759659-16047-1-git-send-email-khoroshilov@ispras.ru>
-X-Mailer: git-send-email 1.7.9.5
+	id S1756205Ab3DWXnH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 19:43:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34889 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755872Ab3DWXnF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Apr 2013 19:43:05 -0400
+Date: Tue, 23 Apr 2013 16:43:03 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Nicolas Schichan <nschichan@freebox.fr>
+Cc: Serge Hallyn <serge.hallyn@canonical.com>, Will Drewry <wad@chromium.org>,
+        Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
+        Eric Paris <eparis@redhat.com>, Mircea Gherzan <mgherzan@gmail.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        James Morris <james.l.morris@oracle.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH V2 1/3] seccomp: add generic code for jitted seccomp
+ filters.
+Message-Id: <20130423164303.d2eb663c4a1becea4a185087@linux-foundation.org>
+In-Reply-To: <51752D98.8070709@freebox.fr>
+References: <1363618233-6375-1-git-send-email-nschichan@freebox.fr>
+	<1363618233-6375-2-git-send-email-nschichan@freebox.fr>
+	<20130417145628.88058f0f3104ab9ae551ddd3@linux-foundation.org>
+	<51752D98.8070709@freebox.fr>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-wl_adapter_attach() ignores some important issues
-such as register_netdev() failure. The patch fixes it.
+On Mon, 22 Apr 2013 14:31:20 +0200 Nicolas Schichan <nschichan@freebox.fr> wrote:
 
-Found by Linux Driver Verification project (linuxtesting.org).
+> On 04/17/2013 11:56 PM, Andrew Morton wrote:
+> > This patch is killing me.
+> >
+> >> --- a/include/linux/seccomp.h
+> >> +++ b/include/linux/seccomp.h
+> >> @@ -6,6 +6,7 @@
+> >>   #ifdef CONFIG_SECCOMP
+> >>
+> >>   #include <linux/thread_info.h>
+> >> +#include <linux/filter.h>
+> >>   #include <asm/seccomp.h>
+> >
+> > In file included from include/linux/compat.h:18,
+> >                   from include/linux/filter.h:9,
+> >                   from include/linux/seccomp.h:9,
+> >                   from include/linux/sched.h:39,
+> >                   from arch/x86/kernel/asm-offsets.c:9:
+> > /usr/src/25/arch/x86/include/asm/compat.h: In function 'arch_compat_alloc_user_space':
+> > /usr/src/25/arch/x86/include/asm/compat.h:301: error: dereferencing pointer to incomplete type
+> >
+> > Problem is, compat.h's arch_compat_alloc_user_space() needs sched.h for
+> > task_struct but as you can see from the above include tree, sched.h
+> > includes seccomp.h and everything falls over.  The preprocessed code
+> > contains the definition of arch_compat_alloc_user_space() *before* the
+> > definition of task_struct.
+> >
+> > This is a basic x86_64 "make clean; make allmodconfig; make".
+> 
+> Hi,
+> 
+> Would including <uapi/linux/filter.h> instead of <linux/filter.h> in seccomp.h 
+> be an acceptable solution ?
+> 
+> I have tried that and (with an additional forward declaration of struct 
+> sk_buff) an x86_64 "make clean; make allmodconfig" run finishes succesfully.
+> 
+> If that's ok with you, I can resend the serie with that fix.
 
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
----
- drivers/staging/wlags49_h2/wl_cs.c |   13 ++++++++-----
- drivers/staging/wlags49_h2/wl_cs.h |    4 ++--
- 2 files changed, 10 insertions(+), 7 deletions(-)
+It would be better to make the code and include tangle less complex,
+rather than more complex.
 
-diff --git a/drivers/staging/wlags49_h2/wl_cs.c b/drivers/staging/wlags49_h2/wl_cs.c
-index 7c7c77f..f9e5fd3 100644
---- a/drivers/staging/wlags49_h2/wl_cs.c
-+++ b/drivers/staging/wlags49_h2/wl_cs.c
-@@ -133,6 +133,7 @@ static int wl_adapter_attach(struct pcmcia_device *link)
- {
- 	struct net_device   *dev;
- 	struct wl_private   *lp;
-+	int ret;
- 	/*--------------------------------------------------------------------*/
- 
- 	DBG_FUNC("wl_adapter_attach");
-@@ -154,10 +155,12 @@ static int wl_adapter_attach(struct pcmcia_device *link)
- 	lp = wl_priv(dev);
- 	lp->link = link;
- 
--	wl_adapter_insert(link);
-+	ret = wl_adapter_insert(link);
-+	if (ret != 0)
-+		wl_device_dealloc(dev);
- 
- 	DBG_LEAVE(DbgInfo);
--	return 0;
-+	return ret;
- } /* wl_adapter_attach */
- /*============================================================================*/
- 
-@@ -224,7 +227,7 @@ static int wl_adapter_resume(struct pcmcia_device *link)
- 	return 0;
- } /* wl_adapter_resume */
- 
--void wl_adapter_insert(struct pcmcia_device *link)
-+int wl_adapter_insert(struct pcmcia_device *link)
- {
- 	struct net_device *dev;
- 	int ret;
-@@ -267,13 +270,13 @@ void wl_adapter_insert(struct pcmcia_device *link)
- 		" %pM\n", dev->name, dev->base_addr, dev->irq, dev->dev_addr);
- 
- 	DBG_LEAVE(DbgInfo);
--	return;
-+	return 0;
- 
- failed:
- 	wl_adapter_release(link);
- 
- 	DBG_LEAVE(DbgInfo);
--	return;
-+	return ret;
- } /* wl_adapter_insert */
- /*============================================================================*/
- 
-diff --git a/drivers/staging/wlags49_h2/wl_cs.h b/drivers/staging/wlags49_h2/wl_cs.h
-index a7ab579..081cc6f 100644
---- a/drivers/staging/wlags49_h2/wl_cs.h
-+++ b/drivers/staging/wlags49_h2/wl_cs.h
-@@ -65,10 +65,10 @@
- 
- 
- /*******************************************************************************
-- *  function protoypes
-+ *  function prototypes
-  ******************************************************************************/
- 
--void wl_adapter_insert(struct pcmcia_device *link);
-+int wl_adapter_insert(struct pcmcia_device *link);
- 
- void wl_adapter_release(struct pcmcia_device *link);
- 
--- 
-1.7.9.5
+Did we really need to move the `struct seccomp_filter' definition into
+the header file?  afaict that wasn't really necessary - we can add a
+few helper functions to kernel/seccomp.c and then have the remote code
+treat seccomp_filter in an opaque fashion rather than directly poking
+at its internals.
 
+
+btw, what on earth is going on with seccomp_jit_free()?  It does
+disturbing undocumented typecasting and it punts the module_free into a
+kernel thread for mysterious, undocumented and possibly buggy reasons.
+
+I realize it just copies bpf_jit_free().  The same observations apply there.
