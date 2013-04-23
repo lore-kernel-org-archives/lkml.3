@@ -1,132 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757664Ab3DWWET (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 18:04:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34284 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757792Ab3DWVyY (ORCPT
+	id S932225Ab3DWWE3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 18:04:29 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:54501 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755342Ab3DWWEY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 17:54:24 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 21/26] vm: add vm_iomap_memory() helper function
-Date: Tue, 23 Apr 2013 14:54:01 -0700
-Message-Id: <20130423215335.528709569@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130423215333.344045754@linuxfoundation.org>
-References: <20130423215333.344045754@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Tue, 23 Apr 2013 18:04:24 -0400
+Message-ID: <5177055D.1060307@linaro.org>
+Date: Wed, 24 Apr 2013 00:04:13 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Stephen Warren <swarren@nvidia.com>, Joseph Lo <josephl@nvidia.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: Re: [PATCH 07/21] ARM: tegra: unify tegra_idle_device definitions
+References: <1366734653-488286-1-git-send-email-arnd@arndb.de> <1366734653-488286-8-git-send-email-arnd@arndb.de> <5176BD29.1000405@linaro.org> <201304232057.37055.arnd@arndb.de>
+In-Reply-To: <201304232057.37055.arnd@arndb.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On 04/23/2013 08:57 PM, Arnd Bergmann wrote:
+> On Tuesday 23 April 2013, Daniel Lezcano wrote:
+>> the patch sounds good but I think the side effect of the consolidation
+>> patchset [1] fixed that.
+>>
+>> You can find these fixes in Rafael's tree:
+>>
+>> https://git.kernel.org/cgit/linux/kernel/git/rafael/linux-pm.git/commit/?h=linux-next&amp;id=4c637b2175a0dc65d533494225525c6c82d73293
+>>
+>> https://git.kernel.org/cgit/linux/kernel/git/rafael/linux-pm.git/commit/?h=linux-next&amp;id=e158f9da6974cc11bfab2246a9b10021af0e0d8a
+>>
+>> https://git.kernel.org/cgit/linux/kernel/git/rafael/linux-pm.git/commit/?h=linux-next&amp;id=c5106c9dea9a6022ab84c6cb1d4a0b19fc5af0e2
+>>
+>> https://git.kernel.org/cgit/linux/kernel/git/rafael/linux-pm.git/commit/?h=linux-next&amp;id=f040c26ffaa5e56f2bca427c719c9601a02e70e5
+>>
+>> [1] http://www.spinics.net/lists/arm-kernel/msg239811.html
+>>
+> 
+> Ah. Is that not in linux-next? I created the patch today based on the latest
+> linux-next from today (Tuesday).
 
-------------------
+Ah, ok. Actually the patches were taken by Rafael right today. So it is
+possible the changes were not reflected in linux-next yet.
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit b4cbb197c7e7a68dbad0d491242e3ca67420c13e upstream.
+-- 
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
 
-Various drivers end up replicating the code to mmap() their memory
-buffers into user space, and our core memory remapping function may be
-very flexible but it is unnecessarily complicated for the common cases
-to use.
-
-Our internal VM uses pfn's ("page frame numbers") which simplifies
-things for the VM, and allows us to pass physical addresses around in a
-denser and more efficient format than passing a "phys_addr_t" around,
-and having to shift it up and down by the page size.  But it just means
-that drivers end up doing that shifting instead at the interface level.
-
-It also means that drivers end up mucking around with internal VM things
-like the vma details (vm_pgoff, vm_start/end) way more than they really
-need to.
-
-So this just exports a function to map a certain physical memory range
-into user space (using a phys_addr_t based interface that is much more
-natural for a driver) and hides all the complexity from the driver.
-Some drivers will still end up tweaking the vm_page_prot details for
-things like prefetching or cacheability etc, but that's actually
-relevant to the driver, rather than caring about what the page offset of
-the mapping is into the particular IO memory region.
-
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-
----
- include/linux/mm.h |    2 ++
- mm/memory.c        |   47 +++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 49 insertions(+)
-
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1507,6 +1507,8 @@ int vm_insert_pfn(struct vm_area_struct
- 			unsigned long pfn);
- int vm_insert_mixed(struct vm_area_struct *vma, unsigned long addr,
- 			unsigned long pfn);
-+int vm_iomap_memory(struct vm_area_struct *vma, phys_addr_t start, unsigned long len);
-+
- 
- struct page *follow_page(struct vm_area_struct *, unsigned long address,
- 			unsigned int foll_flags);
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -2329,6 +2329,53 @@ int remap_pfn_range(struct vm_area_struc
- }
- EXPORT_SYMBOL(remap_pfn_range);
- 
-+/**
-+ * vm_iomap_memory - remap memory to userspace
-+ * @vma: user vma to map to
-+ * @start: start of area
-+ * @len: size of area
-+ *
-+ * This is a simplified io_remap_pfn_range() for common driver use. The
-+ * driver just needs to give us the physical memory range to be mapped,
-+ * we'll figure out the rest from the vma information.
-+ *
-+ * NOTE! Some drivers might want to tweak vma->vm_page_prot first to get
-+ * whatever write-combining details or similar.
-+ */
-+int vm_iomap_memory(struct vm_area_struct *vma, phys_addr_t start, unsigned long len)
-+{
-+	unsigned long vm_len, pfn, pages;
-+
-+	/* Check that the physical memory area passed in looks valid */
-+	if (start + len < start)
-+		return -EINVAL;
-+	/*
-+	 * You *really* shouldn't map things that aren't page-aligned,
-+	 * but we've historically allowed it because IO memory might
-+	 * just have smaller alignment.
-+	 */
-+	len += start & ~PAGE_MASK;
-+	pfn = start >> PAGE_SHIFT;
-+	pages = (len + ~PAGE_MASK) >> PAGE_SHIFT;
-+	if (pfn + pages < pfn)
-+		return -EINVAL;
-+
-+	/* We start the mapping 'vm_pgoff' pages into the area */
-+	if (vma->vm_pgoff > pages)
-+		return -EINVAL;
-+	pfn += vma->vm_pgoff;
-+	pages -= vma->vm_pgoff;
-+
-+	/* Can we fit all of the mapping? */
-+	vm_len = vma->vm_end - vma->vm_start;
-+	if (vm_len >> PAGE_SHIFT > pages)
-+		return -EINVAL;
-+
-+	/* Ok, let it rip */
-+	return io_remap_pfn_range(vma, vma->vm_start, pfn, vm_len, vma->vm_page_prot);
-+}
-+EXPORT_SYMBOL(vm_iomap_memory);
-+
- static int apply_to_pte_range(struct mm_struct *mm, pmd_t *pmd,
- 				     unsigned long addr, unsigned long end,
- 				     pte_fn_t fn, void *data)
-
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
