@@ -1,59 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756931Ab3DWSAA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 14:00:00 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:60116 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756714Ab3DWR77 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 13:59:59 -0400
-Message-ID: <1366739994.2036.1.camel@joe-AO722>
-Subject: Re: [PATCH] mtd: Convert logging messages
-From: Joe Perches <joe@perches.com>
-To: =?ISO-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>
-Cc: Joern Engel <joern@lazybastard.org>, David Woodhouse <dwmw2@infradead.org>,
-        linux-mtd@lists.infradead.org, LKML <linux-kernel@vger.kernel.org>
-Date: Tue, 23 Apr 2013 10:59:54 -0700
-In-Reply-To: <20130422143118.GA12908@logfs.org>
-References: <1366394375.3901.36.camel@joe-AO722>
-	 <20130419165516.GA19480@logfs.org> <1366396053.3901.40.camel@joe-AO722>
-	 <20130422143118.GA12908@logfs.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1756970Ab3DWSBx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 14:01:53 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:39356 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756895Ab3DWSBw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Apr 2013 14:01:52 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19+kOB0J9r6BEIQAM/TlSSN
+Date: Tue, 23 Apr 2013 11:01:46 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+Subject: Re: [PATCH 05/21] ARM: OMAP2+: add dependencies on ARCH_MULTI_V6/V7
+Message-ID: <20130423180146.GI10155@atomide.com>
+References: <1366734653-488286-1-git-send-email-arnd@arndb.de>
+ <1366734653-488286-6-git-send-email-arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1366734653-488286-6-git-send-email-arnd@arndb.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-04-22 at 10:31 -0400, Jörn Engel wrote:
-> On Fri, 19 April 2013 11:27:33 -0700, Joe Perches wrote:
-> > On Fri, 2013-04-19 at 12:55 -0400, Jörn Engel wrote:
-> > > On Fri, 19 April 2013 10:59:35 -0700, Joe Perches wrote:
-> > > >  	}
-> > > >  	list_add(&dev->list, &blkmtd_device_list);
-> > > > -	INFO("mtd%d: [%s] erase_size = %dKiB [%d]", dev->mtd.index,
-> > > > -			dev->mtd.name + strlen("block2mtd: "),
-> > > > -			dev->mtd.erasesize >> 10, dev->mtd.erasesize);
-> > > > +	pr_info("mtd%d: [%s] erase_size = %dKiB [%d]\n",
-> > > > +		dev->mtd.index,
-> > > > +		dev->mtd.name + strlen("block2mtd: "),
-> > > > +		dev->mtd.erasesize >> 10, dev->mtd.erasesize);
-> > > 
-> > > I personally dislike the indent-to-braces style because it causes
-> > > unnecessary churn in patches like this.
-> > 
-> > It comes from an automated emacs conversion.
+* Arnd Bergmann <arnd@arndb.de> [130423 09:36]:
+> CONFIG_ARCH_OMAP2PLUS depends on (ARCH_MULTI_V6 || ARCH_MULTI_V7) as of
+> a0694861 "ARM: OMAP2+: Enable ARCH_MULTIPLATFORM support", but the
+> individual OMAP2/3/4/5 and AM33XX platforms can all be selected independent
+> of what we are building for, which is a bug and prevents us from easily
+> building e.g. an ARMv7-only defconfig.
 > 
-> Then please teach your emacs to be a better tool.
+> This makes ARCH_OMAP2 depend on ARCH_MULTI_V6 and the others depend on
+> ARCH_MULTI_V7, to ensure we really only build the platforms for the
+> CPUs we have enabled in the global multiplatform configuration step.
+> 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
 
-Because you personally dislike something isn't
-enough of a reason for me to change my tools nor
-enough of a reason for me to add a special
-exception to my tools for your preferences.
-
-> I trust you are smart enough to do that.
-
-Snide much?
-
-cheers, Joe
+Acked-by: Tony Lindgren <tony@atomide.com>
 
