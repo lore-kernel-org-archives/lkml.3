@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756517Ab3DWIy5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 04:54:57 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37335 "EHLO mx2.suse.de"
+	id S1754611Ab3DWI7w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 04:59:52 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37581 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756492Ab3DWIyz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 04:54:55 -0400
-Date: Tue, 23 Apr 2013 10:54:52 +0200
+	id S1751130Ab3DWI7u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Apr 2013 04:59:50 -0400
+Date: Tue, 23 Apr 2013 10:59:48 +0200
 From: Jan Kara <jack@suse.cz>
 To: majianpeng <majianpeng@gmail.com>
 Cc: Al Viro <viro@zeniv.linux.org.uk>, akpm@linux-foundation.org,
@@ -16,7 +16,7 @@ Cc: Al Viro <viro@zeniv.linux.org.uk>, akpm@linux-foundation.org,
         linux-kernel <linux-kernel@vger.kernel.org>
 Subject: Re: [PATCH V1] fs/buffer.c: Remove unnecessary init operation
  after, allocating buffer_head.
-Message-ID: <20130423085452.GC4596@quack.suse.cz>
+Message-ID: <20130423085948.GD4596@quack.suse.cz>
 References: <51748E45.8060806@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -32,9 +32,11 @@ On Mon 22-04-13 09:11:33, majianpeng wrote:
 > need to call 'init_buffer(bh, NULL, NULL)' and other set-zero-operation.
 > 
 > Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
-  Looks good. If noone objects, I'll merge the patch through my tree.
+  I've just noticed the whitespace is still mangled. Gmail is known for
+destroying whitespace so please send the patch as an attachment. Thanks.
 
 								Honza
+
 > ---
 >  fs/buffer.c       | 2 --
 >  fs/jbd/journal.c  | 2 --
