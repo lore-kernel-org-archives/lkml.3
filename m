@@ -1,131 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756206Ab3DWMpx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 08:45:53 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:51094 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755920Ab3DWMpw (ORCPT
+	id S1756227Ab3DWMqE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 08:46:04 -0400
+Received: from mail-bl2lp0205.outbound.protection.outlook.com ([207.46.163.205]:37064
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755920Ab3DWMqB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 08:45:52 -0400
-X-Nat-Received: from [202.181.97.72]:50313 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1366721126.24137
-To: tglx@linutronix.de, fweisbec@gmail.com
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        fernando_b1@lab.ntt.co.jp
-Subject: [PATCH] proc: Add workaround for idle/iowait decreasing problem.
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <201301152014.AAD52192.FOOHQVtSFMFOJL@I-love.SAKURA.ne.jp>
-	<alpine.LFD.2.02.1301151313170.7475@ionos>
-	<201301180857.r0I8vK7c052791@www262.sakura.ne.jp>
-	<1363660703.4993.3.camel@nexus>
-	<201304012205.DFC60784.HVOMJSFFLFtOOQ@I-love.SAKURA.ne.jp>
-In-Reply-To: <201304012205.DFC60784.HVOMJSFFLFtOOQ@I-love.SAKURA.ne.jp>
-Message-Id: <201304232145.AHE52181.HJVOOQSFLMFOtF@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Tue, 23 Apr 2013 21:45:23 +0900
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 23042013 #9885973, status: clean
+	Tue, 23 Apr 2013 08:46:01 -0400
+X-Forefront-Antispam-Report-Untrusted: CIP:157.56.240.21;KIP:(null);UIP:(null);(null);H:BL2PRD0310HT004.namprd03.prod.outlook.com;R:internal;EFV:INT
+X-SpamScore: -2
+X-BigFish: PS-2(zz98dI9371I542I1432Izz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275dhz31h2a8h668h839h944hd24hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h19ceh1ad9h1b0ah9a9j1155h)
+X-Forefront-Antispam-Report-Untrusted: SFV:SKI;SFS:;DIR:OUT;SFP:;SCL:-1;SRVR:SN2PR03MB063;H:SN2PR03MB061.namprd03.prod.outlook.com;LANG:en;
+From: KY Srinivasan <kys@microsoft.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Olaf Hering <olaf@aepfle.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 1/3] Tools: hv: fix warnings in hv_vss_daemon
+Thread-Topic: [PATCH 1/3] Tools: hv: fix warnings in hv_vss_daemon
+Thread-Index: AQHOKja3d+L5xLojvEOFQMScGCXgxJjeVZqAgAMSewCAADCQgIACUzig
+Date: Tue, 23 Apr 2013 12:43:45 +0000
+Message-ID: <83a8f90c01164711b9dd1bfc96a60de3@SN2PR03MB061.namprd03.prod.outlook.com>
+References: <1364311709-18228-1-git-send-email-olaf@aepfle.de>
+ <20130419232419.GA8900@kroah.com>
+ <d4d63db63a53466bb568363bb4c30054@SN2PR03MB061.namprd03.prod.outlook.com>
+ <20130422011303.GA15095@kroah.com>
+In-Reply-To: <20130422011303.GA15095@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [98.110.61.163]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OrganizationHeadersPreserved: SN2PR03MB063.namprd03.prod.outlook.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-CrossPremisesHeadersPromoted: TK5EX14HUBC101.redmond.corp.microsoft.com
+X-CrossPremisesHeadersFiltered: TK5EX14HUBC101.redmond.corp.microsoft.com
+X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(13464002)(377454001)(189002)(199002)(24454001)(51704004)(16676001)(49866001)(47736001)(4396001)(6806003)(79102001)(59766001)(77982001)(50466001)(50986001)(51856001)(63696002)(47976001)(81342001)(81542001)(53806001)(74662001)(47446002)(74502001)(56816002)(31966008)(54316002)(56776001)(46406003)(33646001)(20776003)(54356001)(76482001)(47776003)(23726002)(65816001)(69226001)(80022001)(66066001)(46102001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BN1AFFO11HUB023;H:TK5EX14HUBC101.redmond.corp.microsoft.com;RD:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-OriginatorOrg: microsoft.onmicrosoft.com
+X-Forefront-PRVS: 08252193F3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CONFIG_NO_HZ=y can cause idle/iowait values to decrease.
 
-If /proc/stat is monitored with a short interval (e.g. 1 or 2 secs) using
-sysstat package, sar reports bogus %idle/iowait values because sar expects
-that idle/iowait values do not decrease unless wraparound happens.
 
-This patch makes idle/iowait values visible from /proc/stat increase
-monotonically, with an assumption that we don't need to worry about
-wraparound.
+> -----Original Message-----
+> From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> Sent: Sunday, April 21, 2013 9:13 PM
+> To: KY Srinivasan
+> Cc: Olaf Hering; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH 1/3] Tools: hv: fix warnings in hv_vss_daemon
+> 
+> On Sun, Apr 21, 2013 at 10:32:45PM +0000, KY Srinivasan wrote:
+> >
+> > > -----Original Message-----
+> > > From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> > > Sent: Friday, April 19, 2013 7:24 PM
+> > > To: Olaf Hering
+> > > Cc: KY Srinivasan; linux-kernel@vger.kernel.org
+> > > Subject: Re: [PATCH 1/3] Tools: hv: fix warnings in hv_vss_daemon
+> > >
+> > > On Tue, Mar 26, 2013 at 04:28:27PM +0100, Olaf Hering wrote:
+> > > > This change fixes a few compile errors:
+> > > >
+> > > > hv_vss_daemon.c:64:15: warning: unknown escape sequence '\/'
+> > > > hv_vss_daemon.c:64:15: warning: unknown escape sequence '\/'
+> > > > hv_vss_daemon.c: In function 'vss_operate':
+> > > > hv_vss_daemon.c:66: warning: 'return' with no value, in function returning
+> > > non-void
+> > > > hv_vss_daemon.c: In function 'main':
+> > > > hv_vss_daemon.c:130: warning: ignoring return value of 'daemon', declared
+> > > with attribute warn_unused_result
+> > > > hv_vss_daemon.c: In function 'vss_operate':
+> > > > hv_vss_daemon.c:47: warning: 'fs_op' may be used uninitialized in this
+> function
+> > > >
+> > > > Signed-off-by: Olaf Hering <olaf@aepfle.de>
+> > >
+> > > For some reason, all of your hv tools patches ended up in my spam
+> > > filter.  KY, can you resend me any that I didn't apply, and you have
+> > > tested?
+> >
+> > Greg,
+> >
+> > I forwarded some patches from Olaf (I think Olaf is on vacation) that
+> > have not been applied. I had acked all these patches when Olaf sent
+> > them out initially.
+> 
+> Can you please resend them in a format that I can apply them in (hint,
+> I should never have to edit the patch by hand from you.)
 
-Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
----
- fs/proc/stat.c |   42 ++++++++++++++++++++++++++++++++++++++----
- 1 files changed, 38 insertions(+), 4 deletions(-)
+Done.
 
-diff --git a/fs/proc/stat.c b/fs/proc/stat.c
-index e296572..9fff534 100644
---- a/fs/proc/stat.c
-+++ b/fs/proc/stat.c
-@@ -19,6 +19,40 @@
- #define arch_irq_stat() 0
- #endif
- 
-+/*
-+ * CONFIG_NO_HZ=y can cause idle/iowait values to decrease.
-+ * Make sure that idle/iowait values visible from /proc/stat do not decrease.
-+ */
-+static inline u64 validate_iowait(u64 iowait, const int cpu)
-+{
-+#ifdef CONFIG_NO_HZ
-+	static u64 max_iowait[NR_CPUS];
-+	static DEFINE_SPINLOCK(lock);
-+	spin_lock(&lock);
-+	if (likely(iowait >= max_iowait[cpu]))
-+		max_iowait[cpu] = iowait;
-+	else
-+		iowait = max_iowait[cpu];
-+	spin_unlock(&lock);
-+#endif
-+	return iowait;
-+}
-+
-+static inline u64 validate_idle(u64 idle, const int cpu)
-+{
-+#ifdef CONFIG_NO_HZ
-+	static u64 max_idle[NR_CPUS];
-+	static DEFINE_SPINLOCK(lock);
-+	spin_lock(&lock);
-+	if (likely(idle >= max_idle[cpu]))
-+		max_idle[cpu] = idle;
-+	else
-+		idle = max_idle[cpu];
-+	spin_unlock(&lock);
-+#endif
-+	return idle;
-+}
-+
- #ifdef arch_idle_time
- 
- static cputime64_t get_idle_time(int cpu)
-@@ -28,7 +62,7 @@ static cputime64_t get_idle_time(int cpu)
- 	idle = kcpustat_cpu(cpu).cpustat[CPUTIME_IDLE];
- 	if (cpu_online(cpu) && !nr_iowait_cpu(cpu))
- 		idle += arch_idle_time(cpu);
--	return idle;
-+	return validate_idle(idle, cpu);
- }
- 
- static cputime64_t get_iowait_time(int cpu)
-@@ -38,7 +72,7 @@ static cputime64_t get_iowait_time(int cpu)
- 	iowait = kcpustat_cpu(cpu).cpustat[CPUTIME_IOWAIT];
- 	if (cpu_online(cpu) && nr_iowait_cpu(cpu))
- 		iowait += arch_idle_time(cpu);
--	return iowait;
-+	return validate_iowait(iowait, cpu);
- }
- 
- #else
-@@ -56,7 +90,7 @@ static u64 get_idle_time(int cpu)
- 	else
- 		idle = usecs_to_cputime64(idle_time);
- 
--	return idle;
-+	return validate_idle(idle, cpu);
- }
- 
- static u64 get_iowait_time(int cpu)
-@@ -72,7 +106,7 @@ static u64 get_iowait_time(int cpu)
- 	else
- 		iowait = usecs_to_cputime64(iowait_time);
- 
--	return iowait;
-+	return validate_iowait(iowait, cpu);
- }
- 
- #endif
--- 
-1.7.1
+K. Y
+> 
+> thanks,
+> 
+> greg k-h
+> 
+
+
