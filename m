@@ -1,70 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756648Ab3DWPPR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 11:15:17 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46516 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755929Ab3DWPPP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 11:15:15 -0400
-Date: Tue, 23 Apr 2013 16:15:12 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Girish K S <girishks2000@gmail.com>
-Cc: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, grant.likely@secretlab.ca,
-        t.figa@samsung.com
-Subject: Re: [PATCH 1/3] spi: s3c64xx: added support for polling mode
-Message-ID: <20130423151511.GR5019@opensource.wolfsonmicro.com>
-References: <1366614565-3743-1-git-send-email-ks.giri@samsung.com>
- <1366614565-3743-2-git-send-email-ks.giri@samsung.com>
+	id S1756668Ab3DWPQN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 11:16:13 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:45030 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756094Ab3DWPQM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Apr 2013 11:16:12 -0400
+Date: Tue, 23 Apr 2013 18:15:33 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Lee Jones <lee.jones@linaro.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <linus.walleij@stericsson.com>,
+        <mian.yousaf.kaukab@stericsson.com>, Felipe Balbi <balbi@ti.com>,
+        <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH 06/10] usb: musb: ux500: add device tree probing support
+Message-ID: <20130423151533.GD15177@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1366729394-11406-1-git-send-email-lee.jones@linaro.org>
+ <1366729394-11406-7-git-send-email-lee.jones@linaro.org>
+ <201304231714.06326.arnd@arndb.de>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="CPn8Wy5ME997YUMW"
+	protocol="application/pgp-signature"; boundary="DEfZqDS1MPR2ysog"
 Content-Disposition: inline
-In-Reply-To: <1366614565-3743-2-git-send-email-ks.giri@samsung.com>
-X-Cookie: Caution: Keep out of reach of children.
+In-Reply-To: <201304231714.06326.arnd@arndb.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---CPn8Wy5ME997YUMW
+--DEfZqDS1MPR2ysog
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Mon, Apr 22, 2013 at 12:39:23PM +0530, Girish K S wrote:
-> From: Girish K S <girishks2000@gmail.com>
+On Tue, Apr 23, 2013 at 05:14:06PM +0200, Arnd Bergmann wrote:
+> On Tuesday 23 April 2013, Lee Jones wrote:
+> > +Required properties:
+> > + - compatible : Should be "stericsson,db8500-musb"
+> > + - reg        : Offset and length of registers
+> > + - interrupts : Interrupt; mode, number and trigger
+> > + - mode       : One of; "host", "otg", or "peripheral"
 >=20
-> The 64xx spi driver supports partial polling mode.
-> Only the last chunk of the transfer length is transferred
-> or recieved in polling mode.
+> I think we don't have any precedent for this combination of "mode" proper=
+ty
+> and contents. You could either try to match ehci-omap.txt and do
 
-This appears to have a very noticable negative impact on SPI performance
-on my S3C6410 based system.  Not delved into it to test why but are you
-sure it's not mistakenly selecting polling?
+there is dr_mode which other folks are using. Let's use the same thing.
 
---CPn8Wy5ME997YUMW
+--=20
+balbi
+
+--DEfZqDS1MPR2ysog
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJRdqU0AAoJELSic+t+oim9j0AP/2LSgiYibWqYsCJ2WrIZDmIT
-P41YOwSxixxvigSChfLHivoP8nUrhbXGjQDL+2ZWBV1dX+JA0YTOqsVCxRY/LCMR
-wa0PJJzL22AJ5cEd4LdEX5Ejwq2HJplTn1i6C0q2X0hy5zFxfR+wxXKwNCxy4t7w
-uqKAwBwC52wQSm1Q67ASzYmPufxsAaNj90ikeFvxVT8ggwXhRN5dECnNZl11hUcy
-w8E6DVEcNcVzj+gxJLxBpqzgki/iGemhp7FLGZ1/SdGV5QjGJyak3CxVbwb/dk/Y
-rNhASRAFaV7bWE4xj6CyNDhmjc6l/cCcsKwKs41hXBfsTtM1pVauBuknFfu1j1vE
-NinclKNCpiu3UrP/bU7HZWVzV+cIZVrqOFIgP+x/MP8WHJalLXi2U7hM3iZPnElH
-o8SMGp1t/PqAtd/sw7WnAsG7mQ1mH8WQZitReyluMKwxs2khBNORFDIHpgnvPJML
-Ek44rzsp6CEd1sqFRyhVW8VaOMPdofoYRG6sfP5yuDMj4/TgByaNnhmTLFr1rxnm
-EGtTaDOwAX2QIzgsl+Az0MHPqu/GEWzOm8xE1HMccD8wcSwyMaMHUttbCh1Qzj7k
-iHHgGyzocp45+DCGXkvERSovVrZ1q1Yr6hoqyr/bVB4+baNuSkTin+eYSXQyft0C
-i7ikPoMuPzUUy64qtrKT
-=EGxO
+iQIcBAEBAgAGBQJRdqWVAAoJEIaOsuA1yqREj1UP/RyvUPhsKD9ETSJbNCsdLC3K
+1dBwmz21zJfrvc/GX0jdpjoE1f3bTG44Nj4vW2PrpScY9DEKzJASda5kMzBOlqNu
+eQH8NvKL3cCUWQ2lfuMQhx+uCXwgcmrrwHLoPyldnNctnX8xUaGn5u2BAqlcSMBx
+Xv45CF2GG0dSYfnsUsEjFVnGFpUCI9hjm+HR/NWhwPv93UAEOzICcHnwkxofRB7T
+GouuRe29SabQPbvlrF/qSL6o5ZPC5aX8stt9a62y6ZtMAIMgYF05a95Z3pfCCxRB
+wTEYwXdDCZHWy7aUbDU0CdcdgdWj46iWRmMcHMbCcmpxFyNnHld6FaaKbGTtfHaF
+p4OdvMC9nGDZHyIE8fTmwpvPFaBXV50rrWJhOdl1xJIWH0klMaoKMeh/fVAS8lA5
+5zhlgte3Xbs5oOUXzyiR/oWXPPygTN0IY+A0h1LAGtbbjmnDTIt+lyBQ0jdpyCPR
+EVMeqchmueRBlFr9TyO26jgJxjb9EJI9zpJGMbJUyHTURbo0sK1Cdkcp+ae+UN0B
+519slPTEvDOHOpAfjJIoW+UGuohOCFn/HRrqyxkASt9UqrM1ngQqG+4joKqFowTj
+jTbd4LfbumdgkCJXLuLu7DDKt46M3pVk2YjAElKdTPxxVtUhNShJP1pUXjS02eFd
+REj3QHYZaqMjdrVm0YbA
+=Inr+
 -----END PGP SIGNATURE-----
 
---CPn8Wy5ME997YUMW--
+--DEfZqDS1MPR2ysog--
