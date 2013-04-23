@@ -1,70 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757113Ab3DWSP0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 14:15:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8620 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756735Ab3DWSPZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 14:15:25 -0400
-Date: Tue, 23 Apr 2013 14:14:23 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: "Pan, Zhenjie" <zhenjie.pan@intel.com>,
-        Stephane Eranian <eranian@google.com>,
-        "paulus@samba.org" <paulus@samba.org>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "acme@ghostprotocols.net" <acme@ghostprotocols.net>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "Liu, Chuansheng" <chuansheng.liu@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] NMI: fix NMI period is not correct when cpu frequency
- changes issue.
-Message-ID: <20130423181423.GC79013@redhat.com>
-References: <F98D4B5C3D86834DB612ABF854C98B7FB5D7FE@SHSMSX101.ccr.corp.intel.com>
- <1366285369.19383.19.camel@laptop>
- <CABPqkBTpzSBEezx4ScwYYX6L8ir4GLBG9MMYJuAb6YA0QbiurQ@mail.gmail.com>
- <20130418133927.GJ79013@redhat.com>
- <F98D4B5C3D86834DB612ABF854C98B7FB5FACF@SHSMSX101.ccr.corp.intel.com>
- <1366663056.8337.7.camel@laptop>
+	id S1757182Ab3DWSSl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 14:18:41 -0400
+Received: from longford.logfs.org ([213.229.74.203]:58899 "EHLO
+	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756769Ab3DWSSk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Apr 2013 14:18:40 -0400
+Date: Tue, 23 Apr 2013 12:51:32 -0400
+From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
+To: Joe Perches <joe@perches.com>
+Cc: Joern Engel <joern@lazybastard.org>, David Woodhouse <dwmw2@infradead.org>,
+        linux-mtd@lists.infradead.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mtd: Convert logging messages
+Message-ID: <20130423165132.GA21580@logfs.org>
+References: <1366394375.3901.36.camel@joe-AO722>
+ <20130419165516.GA19480@logfs.org>
+ <1366396053.3901.40.camel@joe-AO722>
+ <20130422143118.GA12908@logfs.org>
+ <1366739994.2036.1.camel@joe-AO722>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1366663056.8337.7.camel@laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1366739994.2036.1.camel@joe-AO722>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 22, 2013 at 10:37:36PM +0200, Peter Zijlstra wrote:
-> On Mon, 2013-04-22 at 00:50 +0000, Pan, Zhenjie wrote:
-> > This make watchdog reset happen before hard lockup detect.
+On Tue, 23 April 2013 10:59:54 -0700, Joe Perches wrote:
+> On Mon, 2013-04-22 at 10:31 -0400, Jörn Engel wrote:
+> > On Fri, 19 April 2013 11:27:33 -0700, Joe Perches wrote:
+> > > On Fri, 2013-04-19 at 12:55 -0400, Jörn Engel wrote:
+> > > > On Fri, 19 April 2013 10:59:35 -0700, Joe Perches wrote:
+> > > > >  	}
+> > > > >  	list_add(&dev->list, &blkmtd_device_list);
+> > > > > -	INFO("mtd%d: [%s] erase_size = %dKiB [%d]", dev->mtd.index,
+> > > > > -			dev->mtd.name + strlen("block2mtd: "),
+> > > > > -			dev->mtd.erasesize >> 10, dev->mtd.erasesize);
+> > > > > +	pr_info("mtd%d: [%s] erase_size = %dKiB [%d]\n",
+> > > > > +		dev->mtd.index,
+> > > > > +		dev->mtd.name + strlen("block2mtd: "),
+> > > > > +		dev->mtd.erasesize >> 10, dev->mtd.erasesize);
+> > > > 
+> > > > I personally dislike the indent-to-braces style because it causes
+> > > > unnecessary churn in patches like this.
+> > > 
+> > > It comes from an automated emacs conversion.
+> > 
+> > Then please teach your emacs to be a better tool.
 > 
-> Doesn't your watchdog trigger an NMI you can use to print the panic?
-> 
-> ISTR some people (hi Don!) spending quite a lot of time to make this
-> work for some other platforms.
-> 
-> IIRC those things would fire an NMI at some point and then hard-reset
-> the machine not much later.. the difficulty was detecting this
-> 'unclaimed' nmi and allowing drivers to register for it.
-> 
-> NMI_UNKNOWN and unknown_nmi_panic are the result of that.
+> Because you personally dislike something isn't
+> enough of a reason for me to change my tools nor
+> enough of a reason for me to add a special
+> exception to my tools for your preferences.
 
-I think you are confusing the hard lockup detector watchdog (which uses
-the perf counters) with a physical hardware watchdog (which just resets
-the cpu if not kicked frequently; ie
-drivers/watchdog/intel_scu_watchdog.c).
+In that case: NAK.
 
-I believe what Zhenjie's problem is the hard lockup detector (ie
-nmi_watchdog) becomes useless because sometimes it can correctly fire
-before the hardware watchdog expires, other times it may not.
+Because you personally dislike something isn't
+enough of a reason for me to take your patch nor
+enough of a reason for me to add a special
+exception to my standards for your preferences.
 
-In order for the hard lockup detector to be useful, it should be reliable.
-Today it isn't because it period inversely varies with cpu frequency.
+Cuts both way, it seems.
 
-I don't have a real issue with his patch.  I was just concerned about the
-frequency of the changes (10-15 times a second seems like a lot).
+Jörn
 
-Cheers,
-Don
+--
+"Translations are and will always be problematic. They inflict violence
+upon two languages." (translation from German)
