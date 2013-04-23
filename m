@@ -1,397 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754975Ab3DWOgh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 10:36:37 -0400
+	id S1756468Ab3DWOg4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 10:36:56 -0400
 Received: from multi.imgtec.com ([194.200.65.239]:40821 "EHLO multi.imgtec.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754957Ab3DWOec (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 10:34:32 -0400
+	id S1755794Ab3DWOeb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Apr 2013 10:34:31 -0400
 From: James Hogan <james.hogan@imgtec.com>
 To: <linux-kernel@vger.kernel.org>
 CC: Grant Likely <grant.likely@secretlab.ca>,
         Rob Herring <rob.herring@calxeda.com>,
         Linus Walleij <linus.walleij@linaro.org>,
         <devicetree-discuss@lists.ozlabs.org>,
-        James Hogan <james.hogan@imgtec.com>, Rob Landley <rob@landley.net>,
-        <linux-doc@vger.kernel.org>
-Subject: [PATCH 8/8] gpio-tz1090pdc: add TZ1090 PDC gpio driver
-Date: Tue, 23 Apr 2013 15:33:27 +0100
-Message-ID: <1366727607-27444-9-git-send-email-james.hogan@imgtec.com>
+        James Hogan <james.hogan@imgtec.com>, Arnd Bergmann <arnd@arndb.de>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 0/8] Add some TZ1090 SoC infrastructure
+Date: Tue, 23 Apr 2013 15:33:19 +0100
+Message-ID: <1366727607-27444-1-git-send-email-james.hogan@imgtec.com>
 X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1366727607-27444-1-git-send-email-james.hogan@imgtec.com>
-References: <1366727607-27444-1-git-send-email-james.hogan@imgtec.com>
 MIME-Version: 1.0
 Content-Type: text/plain
-X-SEF-Processed: 7_3_0_01181__2013_04_23_15_34_28
+X-SEF-Processed: 7_3_0_01181__2013_04_23_15_34_27
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a GPIO driver for the low-power Powerdown Controller GPIOs in the
-TZ1090 SoC.
+The Toumaz Xenif TZ1090 SoC (AKA Comet) contains a 2-threaded
+Linux-capable HTP (Meta 2), and is found in a number of development
+boards and digital radios, such as the Minimorph Development Platform.
 
-The driver is instantiated by device tree and supports interrupts for
-the SysWake GPIOs only.
+This patchset adds some core infrastructure for the TZ1090, including
+drivers for the powerdown controller (PDC) irqchip, general/PDC pin
+controllers, and general/PDC GPIO controllers. It's not yet enough to
+get the UARTs going (no common clock framework) so JTAG/QEMU with DA TTY
+is still needed to get a shell.
 
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Cc: Rob Herring <rob.herring@calxeda.com>
-Cc: Rob Landley <rob@landley.net>
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-doc@vger.kernel.org
----
- .../devicetree/bindings/gpio/gpio-tz1090-pdc.txt   |  40 ++++
- arch/metag/boot/dts/tz1090.dtsi                    |  14 ++
- drivers/gpio/Kconfig                               |   7 +
- drivers/gpio/Makefile                              |   1 +
- drivers/gpio/gpio-tz1090-pdc.c                     | 237 +++++++++++++++++++++
- 5 files changed, 299 insertions(+)
+A QEMU with a Meta frontend and some TZ1090 emulation, and the SoC
+Technical Reference Manual which documents the registers used by both
+GPIO drivers and both pin control drivers can be downloaded from the
+Minimorph SDK (registration of a Minimorph is currently required):
+http://imgtec.com/meta_insider/metaflow-sdk.asp
+
+I aim to get whatever I can of this patchset into v3.10 (at least the
+first two patches) so all review is very much appreciated.
+
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+
+James Hogan (8):
+  metag: of_platform_populate from arch generic code
+  metag: minimal TZ1090 (Comet) SoC infrastructure
+  irq-imgpdc: add ImgTec PDC irqchip driver
+  metag: tz1090: add <asm/soc-tz1090/gpio.h>
+  pinctrl-tz1090: add TZ1090 pinctrl driver
+  gpio-tz1090: add TZ1090 gpio driver
+  pinctrl-tz1090-pdc: add TZ1090 PDC pinctrl driver
+  gpio-tz1090pdc: add TZ1090 PDC gpio driver
+
+ .../devicetree/bindings/gpio/gpio-tz1090-pdc.txt   |   40 +
+ .../devicetree/bindings/gpio/gpio-tz1090.txt       |   77 +
+ .../devicetree/bindings/metag/pdc-intc.txt         |  112 ++
+ .../bindings/pinctrl/img,tz1090-pdc-pinctrl.txt    |  125 ++
+ .../bindings/pinctrl/img,tz1090-pinctrl.txt        |  214 +++
+ .../devicetree/bindings/vendor-prefixes.txt        |    1 +
+ arch/metag/Kconfig.soc                             |   14 +
+ arch/metag/Makefile                                |    8 +-
+ arch/metag/boot/dts/Makefile                       |    2 +
+ arch/metag/boot/dts/tz1090.dtsi                    |  106 +
+ arch/metag/boot/dts/tz1090_generic.dts             |   10 +
+ arch/metag/configs/tz1090_defconfig                |   41 +
+ arch/metag/include/asm/soc-tz1090/gpio.h           |  121 ++
+ arch/metag/kernel/setup.c                          |    4 +
+ arch/metag/soc/tz1090/Makefile                     |    5 +
+ arch/metag/soc/tz1090/setup.c                      |   21 +
+ drivers/gpio/Kconfig                               |   14 +
+ drivers/gpio/Makefile                              |    2 +
+ drivers/gpio/gpio-tz1090-pdc.c                     |  237 +++
+ drivers/gpio/gpio-tz1090.c                         |  628 ++++++
+ drivers/irqchip/Kconfig                            |    4 +
+ drivers/irqchip/Makefile                           |    1 +
+ drivers/irqchip/irq-imgpdc.c                       |  553 ++++++
+ drivers/pinctrl/Kconfig                            |   12 +
+ drivers/pinctrl/Makefile                           |    2 +
+ drivers/pinctrl/pinctrl-tz1090-pdc.c               | 1114 +++++++++++
+ drivers/pinctrl/pinctrl-tz1090-pdc.h               |   58 +
+ drivers/pinctrl/pinctrl-tz1090.c                   | 2018 ++++++++++++++++++++
+ drivers/pinctrl/pinctrl-tz1090.h                   |   58 +
+ 29 files changed, 5601 insertions(+), 1 deletion(-)
  create mode 100644 Documentation/devicetree/bindings/gpio/gpio-tz1090-pdc.txt
+ create mode 100644 Documentation/devicetree/bindings/gpio/gpio-tz1090.txt
+ create mode 100644 Documentation/devicetree/bindings/metag/pdc-intc.txt
+ create mode 100644 Documentation/devicetree/bindings/pinctrl/img,tz1090-pdc-pinctrl.txt
+ create mode 100644 Documentation/devicetree/bindings/pinctrl/img,tz1090-pinctrl.txt
+ create mode 100644 arch/metag/boot/dts/tz1090.dtsi
+ create mode 100644 arch/metag/boot/dts/tz1090_generic.dts
+ create mode 100644 arch/metag/configs/tz1090_defconfig
+ create mode 100644 arch/metag/include/asm/soc-tz1090/gpio.h
+ create mode 100644 arch/metag/soc/tz1090/Makefile
+ create mode 100644 arch/metag/soc/tz1090/setup.c
  create mode 100644 drivers/gpio/gpio-tz1090-pdc.c
+ create mode 100644 drivers/gpio/gpio-tz1090.c
+ create mode 100644 drivers/irqchip/irq-imgpdc.c
+ create mode 100644 drivers/pinctrl/pinctrl-tz1090-pdc.c
+ create mode 100644 drivers/pinctrl/pinctrl-tz1090-pdc.h
+ create mode 100644 drivers/pinctrl/pinctrl-tz1090.c
+ create mode 100644 drivers/pinctrl/pinctrl-tz1090.h
 
-diff --git a/Documentation/devicetree/bindings/gpio/gpio-tz1090-pdc.txt b/Documentation/devicetree/bindings/gpio/gpio-tz1090-pdc.txt
-new file mode 100644
-index 0000000..5b63847
---- /dev/null
-+++ b/Documentation/devicetree/bindings/gpio/gpio-tz1090-pdc.txt
-@@ -0,0 +1,40 @@
-+ImgTec TZ1090 PDC GPIO Controller
-+
-+Required properties:
-+- compatible: Compatible property value should be "img,tz1090-pdc-gpio>".
-+
-+- reg: Physical base address of the controller and length of memory mapped
-+  region. This starts at and cover the SOC_GPIO_CONTROL registers.
-+
-+- gpio-controller: Specifies that the node is a gpio controller.
-+
-+- #gpio-cells: Should be 2. The syntax of the gpio specifier used by client
-+  nodes should have the following values.
-+     <[phandle of the gpio controller node]
-+      [PDC gpio number]
-+      [standard Linux gpio flags]>
-+
-+  Values for gpio specifier:
-+  - GPIO number: a value in the range 0 to 6.
-+  - GPIO flags: standard Linux GPIO flags as found in of_gpio.h
-+
-+Optional properties:
-+- gpio-ranges: Mapping to pin controller pins
-+
-+- interrupts: Individual syswake interrupts (other GPIOs cannot interrupt)
-+
-+
-+Example:
-+
-+	pdc_gpios: gpio-controller@02006500 {
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+
-+		compatible = "img,tz1090-pdc-gpio";
-+		reg = <0x02006500 0x100>;
-+
-+		interrupt-parent = <&pdc>;
-+		interrupts =	<1 0 0>,	/* Syswake 0 */
-+				<1 1 0>,	/* Syswake 1 */
-+				<1 2 0>;	/* Syswake 2 */
-+	};
-diff --git a/arch/metag/boot/dts/tz1090.dtsi b/arch/metag/boot/dts/tz1090.dtsi
-index 1d8e2c2..82b43b1 100644
---- a/arch/metag/boot/dts/tz1090.dtsi
-+++ b/arch/metag/boot/dts/tz1090.dtsi
-@@ -88,5 +88,19 @@
- 				gpio-ranges = <&pinctrl 60 30>;
- 			};
- 		};
-+
-+		pdc_gpios: gpios@02006500 {
-+			gpio-controller;
-+			#gpio-cells = <2>;
-+
-+			compatible = "img,tz1090-pdc-gpio";
-+			reg = <0x02006500 0x100>;
-+
-+			interrupt-parent = <&pdc>;
-+			interrupts =	<1 0 0>,	/* Syswake 0 */
-+					<1 1 0>,	/* Syswake 1 */
-+					<1 2 0>;	/* Syswake 2 */
-+			gpio-ranges = <&pdc_pinctrl 0 7>;
-+		};
- 	};
- };
-diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-index 922fefa..56864d8 100644
---- a/drivers/gpio/Kconfig
-+++ b/drivers/gpio/Kconfig
-@@ -234,6 +234,13 @@ config GPIO_TZ1090
- 	help
- 	  Say yes here to support Toumaz Xenif TZ1090 GPIOs.
- 
-+config GPIO_TZ1090_PDC
-+	bool "Toumaz Xenif TZ1090 PDC GPIO support"
-+	depends on SOC_TZ1090
-+	default y
-+	help
-+	  Say yes here to support Toumaz Xenif TZ1090 PDC GPIOs.
-+
- config GPIO_VT8500
- 	bool "VIA/Wondermedia SoC GPIO Support"
- 	depends on ARCH_VT8500
-diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
-index fab78c4..d6312fc 100644
---- a/drivers/gpio/Makefile
-+++ b/drivers/gpio/Makefile
-@@ -78,6 +78,7 @@ obj-$(CONFIG_GPIO_TS5500)	+= gpio-ts5500.o
- obj-$(CONFIG_GPIO_TWL4030)	+= gpio-twl4030.o
- obj-$(CONFIG_GPIO_TWL6040)	+= gpio-twl6040.o
- obj-$(CONFIG_GPIO_TZ1090)	+= gpio-tz1090.o
-+obj-$(CONFIG_GPIO_TZ1090_PDC)	+= gpio-tz1090-pdc.o
- obj-$(CONFIG_GPIO_UCB1400)	+= gpio-ucb1400.o
- obj-$(CONFIG_GPIO_VIPERBOARD)	+= gpio-viperboard.o
- obj-$(CONFIG_GPIO_VR41XX)	+= gpio-vr41xx.o
-diff --git a/drivers/gpio/gpio-tz1090-pdc.c b/drivers/gpio/gpio-tz1090-pdc.c
-new file mode 100644
-index 0000000..bbf10fb
---- /dev/null
-+++ b/drivers/gpio/gpio-tz1090-pdc.c
-@@ -0,0 +1,237 @@
-+/*
-+ * Toumaz Xenif TZ1090 PDC GPIO handling.
-+ *
-+ * Copyright (C) 2012-2013 Imagination Technologies Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/gpio.h>
-+#include <linux/io.h>
-+#include <linux/module.h>
-+#include <linux/of_irq.h>
-+#include <linux/pinctrl/consumer.h>
-+#include <linux/platform_device.h>
-+#include <linux/slab.h>
-+#include <linux/syscore_ops.h>
-+#include <asm/global_lock.h>
-+#include <asm/soc-tz1090/gpio.h>
-+
-+/* Register offsets from SOC_GPIO_CONTROL0 */
-+#define REG_SOC_GPIO_CONTROL0	0x00
-+#define REG_SOC_GPIO_CONTROL1	0x04
-+#define REG_SOC_GPIO_CONTROL2	0x08
-+#define REG_SOC_GPIO_CONTROL3	0x0c
-+#define REG_SOC_GPIO_STATUS	0x80
-+
-+/* out of PDC gpios, only syswakes have irqs */
-+#define NR_PDC_GPIO_IRQS	3
-+
-+/**
-+ * struct tz1090_pdc_gpio - GPIO bank private data
-+ * @chip:	Generic GPIO chip for GPIO bank
-+ * @reg:	Base of registers, offset for this GPIO bank
-+ * @irq:	IRQ numbers for Syswake GPIOs
-+ *
-+ * This is the main private data for the PDC GPIO driver. It encapsulates a
-+ * gpio_chip, and the callbacks for the gpio_chip can access the private data
-+ * with the to_pdc() macro below.
-+ */
-+struct tz1090_pdc_gpio {
-+	struct gpio_chip chip;
-+	void __iomem *reg;
-+	int irq[NR_PDC_GPIO_IRQS];
-+};
-+#define to_pdc(c)	container_of(c, struct tz1090_pdc_gpio, chip)
-+
-+/* Register accesses into the PDC MMIO area */
-+
-+static void pdc_write(struct tz1090_pdc_gpio *priv, unsigned int reg_offs,
-+		      unsigned int data)
-+{
-+	writel(data, priv->reg + reg_offs);
-+}
-+
-+static unsigned int pdc_read(struct tz1090_pdc_gpio *priv,
-+			     unsigned int reg_offs)
-+{
-+	return readl(priv->reg + reg_offs);
-+}
-+
-+/* Generic GPIO interface */
-+
-+static int tz1090_pdc_gpio_direction_input(struct gpio_chip *chip,
-+					   unsigned offset)
-+{
-+	struct tz1090_pdc_gpio *priv = to_pdc(chip);
-+	u32 value;
-+	int lstat;
-+
-+	__global_lock2(lstat);
-+	value = pdc_read(priv, REG_SOC_GPIO_CONTROL1);
-+	value |= 1 << offset;
-+	pdc_write(priv, REG_SOC_GPIO_CONTROL1, value);
-+	__global_unlock2(lstat);
-+
-+	return 0;
-+}
-+
-+static int tz1090_pdc_gpio_direction_output(struct gpio_chip *chip,
-+					    unsigned offset, int output_value)
-+{
-+	struct tz1090_pdc_gpio *priv = to_pdc(chip);
-+	u32 value;
-+	int lstat;
-+
-+	__global_lock2(lstat);
-+	/* EXT_POWER doesn't seem to have an output value bit */
-+	if (offset < 6) {
-+		value = pdc_read(priv, REG_SOC_GPIO_CONTROL0);
-+		if (output_value)
-+			value |= 1 << offset;
-+		else
-+			value &= ~(1 << offset);
-+		pdc_write(priv, REG_SOC_GPIO_CONTROL0, value);
-+	}
-+
-+	value = pdc_read(priv, REG_SOC_GPIO_CONTROL1);
-+	value &= ~(1 << offset);
-+	pdc_write(priv, REG_SOC_GPIO_CONTROL1, value);
-+	__global_unlock2(lstat);
-+
-+	return 0;
-+}
-+
-+static int tz1090_pdc_gpio_get(struct gpio_chip *chip, unsigned offset)
-+{
-+	struct tz1090_pdc_gpio *priv = to_pdc(chip);
-+	return pdc_read(priv, REG_SOC_GPIO_STATUS) & (1 << offset);
-+}
-+
-+static void tz1090_pdc_gpio_set(struct gpio_chip *chip, unsigned offset,
-+				int output_value)
-+{
-+	struct tz1090_pdc_gpio *priv = to_pdc(chip);
-+	u32 value;
-+	int lstat;
-+
-+	/* EXT_POWER doesn't seem to have an output value bit */
-+	if (offset >= 6)
-+		return;
-+
-+	__global_lock2(lstat);
-+	value = pdc_read(priv, REG_SOC_GPIO_CONTROL0);
-+	if (output_value)
-+		value |= 1 << offset;
-+	else
-+		value &= ~(1 << offset);
-+	pdc_write(priv, REG_SOC_GPIO_CONTROL0, value);
-+	__global_unlock2(lstat);
-+}
-+
-+static int tz1090_pdc_gpio_request(struct gpio_chip *chip, unsigned offset)
-+{
-+	return pinctrl_request_gpio(chip->base + offset);
-+}
-+
-+static void tz1090_pdc_gpio_free(struct gpio_chip *chip, unsigned offset)
-+{
-+	pinctrl_free_gpio(chip->base + offset);
-+}
-+
-+static int tz1090_pdc_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
-+{
-+	struct tz1090_pdc_gpio *priv = to_pdc(chip);
-+	unsigned int syswake = GPIO_PDC_PIN(offset) - GPIO_SYS_WAKE0;
-+	int irq;
-+
-+	/* only syswakes have irqs */
-+	if (syswake >= NR_PDC_GPIO_IRQS)
-+		return -EINVAL;
-+
-+	irq = priv->irq[syswake];
-+	if (!irq)
-+		return -EINVAL;
-+
-+	return irq;
-+}
-+
-+static int tz1090_pdc_gpio_probe(struct platform_device *pdev)
-+{
-+	struct device_node *np = pdev->dev.of_node;
-+	struct resource *res_regs;
-+	struct tz1090_pdc_gpio *priv;
-+	unsigned int i;
-+
-+	if (!np) {
-+		dev_err(&pdev->dev, "must be instantiated via devicetree\n");
-+		return -ENOENT;
-+	}
-+
-+	res_regs = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!res_regs) {
-+		dev_err(&pdev->dev, "cannot find registers resource\n");
-+		return -ENOENT;
-+	}
-+
-+	priv = devm_kzalloc(&pdev->dev, sizeof(*priv), GFP_KERNEL);
-+	if (!priv) {
-+		dev_err(&pdev->dev, "unable to allocate driver data\n");
-+		return -ENOMEM;
-+	}
-+
-+	/* Ioremap the registers */
-+	priv->reg = devm_ioremap(&pdev->dev, res_regs->start,
-+				 res_regs->end - res_regs->start);
-+	if (!priv->reg) {
-+		dev_err(&pdev->dev, "unable to ioremap registers\n");
-+		return -ENOMEM;
-+	}
-+
-+	/* Set up GPIO chip */
-+	priv->chip.label		= "tz1090-pdc-gpio";
-+	priv->chip.dev			= &pdev->dev;
-+	priv->chip.direction_input	= tz1090_pdc_gpio_direction_input;
-+	priv->chip.direction_output	= tz1090_pdc_gpio_direction_output;
-+	priv->chip.get			= tz1090_pdc_gpio_get;
-+	priv->chip.set			= tz1090_pdc_gpio_set;
-+	priv->chip.free			= tz1090_pdc_gpio_free;
-+	priv->chip.request		= tz1090_pdc_gpio_request;
-+	priv->chip.to_irq		= tz1090_pdc_gpio_to_irq;
-+	priv->chip.of_node		= np;
-+
-+	/* GPIO numbering */
-+	priv->chip.base			= GPIO_PDC_PIN(0);
-+	priv->chip.ngpio		= NR_PDC_GPIO;
-+
-+	/* Map the syswake irqs */
-+	for (i = 0; i < NR_PDC_GPIO_IRQS; ++i)
-+		priv->irq[i] = irq_of_parse_and_map(np, i);
-+
-+	/* Add the GPIO bank */
-+	gpiochip_add(&priv->chip);
-+
-+	return 0;
-+}
-+
-+static struct of_device_id tz1090_pdc_gpio_of_match[] = {
-+	{ .compatible = "img,tz1090-pdc-gpio" },
-+	{ },
-+};
-+
-+static struct platform_driver tz1090_pdc_gpio_driver = {
-+	.driver = {
-+		.name		= "tz1090-pdc-gpio",
-+		.owner		= THIS_MODULE,
-+		.of_match_table	= tz1090_pdc_gpio_of_match,
-+	},
-+	.probe		= tz1090_pdc_gpio_probe,
-+};
-+
-+static int __init tz1090_pdc_gpio_init(void)
-+{
-+	return platform_driver_register(&tz1090_pdc_gpio_driver);
-+}
-+postcore_initcall(tz1090_pdc_gpio_init);
 -- 
 1.8.1.2
 
