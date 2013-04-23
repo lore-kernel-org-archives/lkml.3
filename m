@@ -1,111 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755977Ab3DWHU7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 03:20:59 -0400
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:47156 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755315Ab3DWHU6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 03:20:58 -0400
-Message-ID: <5176363C.10303@linux.vnet.ibm.com>
-Date: Tue, 23 Apr 2013 15:20:28 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1755997Ab3DWHVf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 03:21:35 -0400
+Received: from smtp1.it.da.ut.ee ([193.40.5.66]:54520 "EHLO smtp1.it.da.ut.ee"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755317Ab3DWHVd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Apr 2013 03:21:33 -0400
+Date: Tue, 23 Apr 2013 10:21:31 +0300 (EEST)
+From: Meelis Roos <mroos@linux.ee>
+To: David Miller <davem@davemloft.net>
+cc: linux-kernel@vger.kernel.org, sparclinux@vger.kernel.org
+Subject: Re: sparc64, mm BUG in 3.9-rc8
+In-Reply-To: <20130423.030721.841236427967286989.davem@davemloft.net>
+Message-ID: <alpine.SOC.1.00.1304231020550.28316@math.ut.ee>
+References: <alpine.SOC.1.00.1304230019030.12820@math.ut.ee> <20130422.185745.546880614466260395.davem@davemloft.net> <alpine.SOC.1.00.1304230947380.27055@math.ut.ee> <20130423.030721.841236427967286989.davem@davemloft.net>
+User-Agent: Alpine 1.00 (SOC 882 2007-12-20)
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: mtosatti@redhat.com, avi.kivity@gmail.com, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org
-Subject: Re: [PATCH v3 00/15] KVM: MMU: fast zap all shadow pages
-References: <1366093973-2617-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <20130421130346.GE8997@redhat.com> <5173F319.2040106@linux.vnet.ibm.com> <20130422092117.GM8997@redhat.com> <5175D376.6060908@linux.vnet.ibm.com> <20130423062816.GC12401@redhat.com>
-In-Reply-To: <20130423062816.GC12401@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13042307-8878-0000-0000-000006D00D25
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/23/2013 02:28 PM, Gleb Natapov wrote:
-> On Tue, Apr 23, 2013 at 08:19:02AM +0800, Xiao Guangrong wrote:
->> On 04/22/2013 05:21 PM, Gleb Natapov wrote:
->>> On Sun, Apr 21, 2013 at 10:09:29PM +0800, Xiao Guangrong wrote:
->>>> On 04/21/2013 09:03 PM, Gleb Natapov wrote:
->>>>> On Tue, Apr 16, 2013 at 02:32:38PM +0800, Xiao Guangrong wrote:
->>>>>> This patchset is based on my previous two patchset:
->>>>>> [PATCH 0/2] KVM: x86: avoid potential soft lockup and unneeded mmu reload
->>>>>> (https://lkml.org/lkml/2013/4/1/2)
->>>>>>
->>>>>> [PATCH v2 0/6] KVM: MMU: fast invalid all mmio sptes
->>>>>> (https://lkml.org/lkml/2013/4/1/134)
->>>>>>
->>>>>> Changlog:
->>>>>> V3:
->>>>>>   completely redesign the algorithm, please see below.
->>>>>>
->>>>> This looks pretty complicated. Is it still needed in order to avoid soft
->>>>> lockups after "avoid potential soft lockup and unneeded mmu reload" patch?
->>>>
->>>> Yes.
->>>>
->>>> I discussed this point with Marcelo:
->>>>
->>>> ======
->>>> BTW, to my honest, i do not think spin_needbreak is a good way - it does
->>>> not fix the hot-lock contention and it just occupies more cpu time to avoid
->>>> possible soft lock-ups.
->>>>
->>>> Especially, zap-all-shadow-pages can let other vcpus fault and vcpus contest
->>>> mmu-lock, then zap-all-shadow-pages release mmu-lock and wait, other vcpus
->>>> create page tables again. zap-all-shadow-page need long time to be finished,
->>>> the worst case is, it can not completed forever on intensive vcpu and memory
->>>> usage.
->>>>
->>> So what about mixed approach: use generation numbers and reload roots to
->>> quickly invalidate all shadow pages and then do kvm_mmu_zap_all_invalid().
->>> kvm_mmu_zap_all_invalid() is a new function that invalidates only shadow
->>> pages with stale generation number (and uses lock break technique). It
->>> may traverse active_mmu_pages from tail to head since new shadow pages
->>> will be added to the head of the list or it may use invalid slot rmap to
->>> find exactly what should be invalidated.
->>
->> I prefer to unmapping the invalid rmap instead of zapping stale shadow pages
->> in kvm_mmu_zap_all_invalid(), the former is faster.
->>
-> Not sure what do you mean here. What is "unmapping the invalid rmap"?
-
-it is like you said below:
-======
-kvm_mmu_zap_all_invalid(slot) will only zap shadow pages that are
-reachable from the slot's rmap
-======
-My suggestion is zapping the spte that are linked in the slot's rmap.
-
+> From: Meelis Roos <mroos@linux.ee>
+> Date: Tue, 23 Apr 2013 09:47:54 +0300 (EEST)
 > 
->> This way may help but not good, after reload mmu with the new generation number,
->> all of the vcpu will fault in a long time, try to hold mmu-lock is not good even
->> if use lock break technique.
-> If kvm_mmu_zap_all_invalid(slot) will only zap shadow pages that are
-> reachable from the slot's rmap, as opposite to zapping all invalid
-> shadow pages, it will have much less work to do. The slots that we
-> add/remove during hot plug are usually small. To guaranty reasonable
-> forward progress we can break the lock only after certain amount of
-> shadow pages are invalidated. All other invalid shadow pages will be
-> zapped in make_mmu_pages_available() and zapping will be spread between
-> page faults.
+> >> Thanks, could you post a prtconf dump from this machine?  I'll
+> >> add it to the prtconf GIT repo as well.
+> > 
+> > Attached.
+> 
+> Thanks a lot.
 
-No interested in hot-remove memory?
+Actually, it was Fire 480R, not Enterprise, so the e in e420r filename 
+is wrong...
 
-BTW, could you please review my previous patchsets and apply them if its
-looks ok? ;)
-
-[PATCH 0/2] KVM: x86: avoid potential soft lockup and unneeded mmu reload
-(https://lkml.org/lkml/2013/4/1/2)
-
-[PATCH v2 0/6] KVM: MMU: fast invalid all mmio sptes
-(https://lkml.org/lkml/2013/4/1/134)
-
-Thanks!
-
-
+-- 
+Meelis Roos (mroos@linux.ee)
