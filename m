@@ -1,51 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755535Ab3DWOtl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 10:49:41 -0400
-Received: from static-87-79-237-121.netcologne.de ([87.79.237.121]:47738 "EHLO
-	herc.mirbsd.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755213Ab3DWOtk convert rfc822-to-8bit (ORCPT
+	id S1755466Ab3DWOv1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 10:51:27 -0400
+Received: from mail-qc0-f175.google.com ([209.85.216.175]:63750 "EHLO
+	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755177Ab3DWOvZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 10:49:40 -0400
-Date: Tue, 23 Apr 2013 14:46:35 +0000 (UTC)
-From: Thorsten Glaser <t.glaser@tarent.de>
-X-X-Sender: tg@herc.mirbsd.org
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
-cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] update AMD powerflags comments
-In-Reply-To: <201304231422.r3NEMhHB003395@herc.mirbsd.org>
-Message-ID: <Pine.BSM.4.64L.1304231444140.7138@herc.mirbsd.org>
-References: <201304231422.r3NEMhHB003395@herc.mirbsd.org>
-X-Message-Flag: Your mailer is broken. Get an update at http://www.washington.edu/pine/getpine/pcpine.html for free.
+	Tue, 23 Apr 2013 10:51:25 -0400
+Date: Tue, 23 Apr 2013 09:43:12 -0500
+From: Kent Yoder <shpedoikal@gmail.com>
+To: peterasplund@gentoo.se
+Cc: Peter.Huewe@infineon.com, mail@srajiv.net, aaron.lu@intel.com,
+        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [tpmdd-devel] tpm_tis driver failed to suspend, error -62
+Message-ID: <20130423144309.GA11692@gmail.com>
+References: <ed364e68730267510d49b2bdc38679a0@gentoo.se>
+ <CAEQAOwpmnLXBCJQTf_xU-oSKvAtmpQjHWwMYDm_QOsP+1Kd_aQ@mail.gmail.com>
+ <CAEQAOwqWL=WekQqg5WY8TGxzB3x9nB9MVj_UTAVK0ro7TqB2WQ@mail.gmail.com>
+ <51540408.3000702@intel.com>
+ <74A44E99E3274B4CB570415926B37D4414B14E@MUCSE501.eu.infineon.com>
+ <733a6b303b7e9a3c4fb396acad9d9c5c@gentoo.se>
+ <CAM0nabGXCfNipOHhzhoFT-yAN-RDOZG9EObQCY-QdRM5LfMCfQ@mail.gmail.com>
+ <d9741eb17fbc5731469a79b8bca3ed07@gentoo.se>
+ <20130411214141.GA12814@gmail.com>
+ <ec94e98bae36890a39e6c332e0dd74c5@gentoo.se>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <ec94e98bae36890a39e6c332e0dd74c5@gentoo.se>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dixi quod…
+On Tue, Apr 23, 2013 at 04:30:53PM +0200, peterasplund@gentoo.se wrote:
+> 2013-04-11 23:41 skrev Kent Yoder:
+> >On Sat, Apr 06, 2013 at 06:00:59PM +0200, peterasplund@gentoo.se
+> >wrote:
+> >>2013-04-02 16:03 skrev Kent Yoder:
+> >>>Hi Peter,
+> >>>
+> >>>On Mon, Apr 1, 2013 at 4:17 PM,  <peterasplund@gentoo.se> wrote:
+> >>>>2013-03-28 14:12 skrev Peter.Huewe@infineon.com:
+> >>>>>What also might be worth a look - in your bugzilla it states:
+> >>>>>[ 0.225891] pnp 00:0a: Plug and Play ACPI device, IDs IFX0102
+> >>>>>PNP0c31
+> >>>>>(active)
+> >>>>>[ 9.150673] tpm_tis 00:0a: 1.2 TPM (device-id 0xB, rev-id 16)
+> >>>>>[ 9.292148] tpm_tis 00:0a: Adjusting TPM timeout parameters.
+> >>>>>[ 10.084067] tpm_tis 00:0a: A TPM error (7) occurred
+> >>attempting to
+> >>>>>read a pcr
+> >>>>>value
+> >>>>>[ 10.084077] tpm_tis 00:0a: TPM is disabled/deactivated (0x7)
+> >>>>>
+> >>>>>
+> >>>>>Can you perhaps try to enable your TPM in the BIOS? It's quite
+> >>>>>often
+> >>>>>hidden under "embedded security device" or "system security".
+> >>>>>Quite often you have to have a bios password set to access these
+> >>>>>settings.
+> >>>>>If your system does not have bios support for TPMs, please
+> >>>>>tell me so
+> >>>>>and I'll try to help you out.
+> >>>>>
+> >>>>
+> >>>>I've enabled it in BIOS now, and the output seems to be a bit
+> >>>>different. Not too uplifting though...
+> >>>>
+> >>>>root@zepto:/home/peter# dmesg | grep tpm
+> >>>>[   14.631662] tpm_tis 00:08: 1.2 TPM (device-id 0xB, rev-id 16)
+> >>>>[   14.748276] tpm_tis 00:08: Adjusting TPM timeout parameters.
+> >>>>[   34.908128] tpm_tis 00:08: tpm_transmit: tpm_send: error -62
+> >>>>[  125.992108] tpm_tis 00:08: tpm_transmit: tpm_send: error -62
+> >>>>[  212.908502] tpm_tis 00:08: tpm_transmit: tpm_send: error -62
+> >>>>root@zepto:/home/peter# tpm_version
+> >>>>Tspi_Context_Connect failed: 0x00003011 - layer=tsp, code=0011
+> >>(17),
+> >>>>Communication failure
+> >>>>root@zepto:/home/peter# tcsd -f
+> >>>>TCSD TDDL ioctl: (25) Inappropriate ioctl for device
+> >>>>TCSD TDDL Falling back to Read/Write device support.
+> >>>>TCSD TDDL ERROR: write to device /dev/tpm0 failed: Timer expired
+> >>>>TCSD TCS ERROR: TCS GetCapability failed with result = 0x1087
+> >>>
+> >>>  Can you cat /sys/class/misc/tpm0/device/timeouts? Ivan Pryvalov
+> >>>reported that his TPM showed values that were too small to keep
+> >>from
+> >>>causing timeouts waiting on TPM commands, but too big to
+> >>trigger the
+> >>>driver's code to scale them.  (He saw 12000 for the 3 timeout
+> >>>values.)
+> >>>
+> >>Hi Kent
+> >>
+> >>The values I'm seeing are:
+> >>
+> >>root@zepto:~# cat /sys/class/misc/tpm0/device/timeouts
+> >>752000 2000000 752000 752000 [adjusted]
+> >>
+> >>So I guess these are within a normal range?
+> >
+> >  Yes, these look normal. So it seems you can send commands to the
+> >TPM
+> >up until you try to suspend?  Can you try to cat other files like
+> >/sys/class/misc/tpm0/device/pcrs? This is the simplest way to send
+> >some
+> >command to the TPM...
+> >
+> >Kent
+> >
+> 
+> Hi Kent, I'm sorry I haven't replied to this message before. I must
+> have missed it!
+> 
+> root@zepto:/sys/class/misc/tpm0# ll
+> drwxr-xr-x 3 root root    0 Apr 23 16:20 ./
+> drwxr-xr-x 3 root root    0 Apr 23 16:20 ../
+> -r--r--r-- 1 root root 4096 Apr 23 16:26 dev
+> lrwxrwxrwx 1 root root    0 Apr 23 16:26 device -> ../../../00:08/
+> drwxr-xr-x 2 root root    0 Apr 23 16:26 power/
+> lrwxrwxrwx 1 root root    0 Apr 23 16:20 subsystem ->
+> ../../../../../class/misc/
+> -rw-r--r-- 1 root root 4096 Apr 23 16:20 uevent
+> 
+> root@zepto:/sys/class/misc/tpm0# cat dev
+> 10:224
+> root@zepto:/sys/class/misc/tpm0# cat device/pcrs   (prints nothing
+> after a delay of a second or so)
+> root@zepto:/sys/class/misc/tpm0# cat uevent
+> MAJOR=10
+> MINOR=224
+> DEVNAME=tpm0
+> root@zepto:/sys/class/misc/tpm0# cat device/active
+> root@zepto:/sys/class/misc/tpm0# cat device/cancel
+> cat: device/cancel: Permission denied
+> root@zepto:/sys/class/misc/tpm0# cat device/caps
+> root@zepto:/sys/class/misc/tpm0# cat device/durations
+> 1000000 4000000 152000000 [adjusted]
+> root@zepto:/sys/class/misc/tpm0# cat device/enabled
+> root@zepto:/sys/class/misc/tpm0# cat device/id
+> IFX0102
+> PNP0c31
+> root@zepto:/sys/class/misc/tpm0# cat device/options
+> root@zepto:/sys/class/misc/tpm0# cat device/owned
+> root@zepto:/sys/class/misc/tpm0# cat device/pubek
+> root@zepto:/sys/class/misc/tpm0# cat device/resources
+> state = active
+> mem 0xfed40000-0xfed44fff
+> io 0x4e-0x4f
+> io 0x1670-0x167f
+> irq 11
+> root@zepto:/sys/class/misc/tpm0# cat device/temp_deactivated
+> root@zepto:/sys/class/misc/tpm0# cat device/timeouts
+> 752000 2000000 752000 752000 [adjusted]
+> root@zepto:/sys/class/misc/tpm0# cat device/uevent
+> DRIVER=tpm_tis
+> 
+> To be able to do the 'cat' above, I usually need to restart my
+> computer, otherwise the files aren't there. That's probably after
+> I've put the computer in sleep mode (which works if I add tpm_tis to
+> the module blacklist). Perhaps the same problem is related to this
+> one:
+> I just did a grep of my dmesg and saw some new error messages (28)
+> in it. Perhaps they started occurring after I enabled it in BIOS.
+> 
+> root@zepto:/home/peter# dmesg | grep tpm_
+> [   11.369198] tpm_tis 00:08: 1.2 TPM (device-id 0xB, rev-id 16)
+> [   11.508115] tpm_tis 00:08: Adjusting TPM timeout parameters.
+> [   32.560040] tpm_tis 00:08: tpm_transmit: tpm_send: error -62
+> [ 4320.577827] tpm_tis 00:08: 1.2 TPM (device-id 0xB, rev-id 16)
+> [ 4320.636111] tpm_tis 00:08: A TPM error (28) occurred attempting
+> to determine the timeouts
 
->+	"100mhzsteps", /* 100 MHz multiplier control */
->+	"hwpstate", /* hardware P-state control */
-> 	"",	/* tsc invariant mapped to constant_tsc */
+  Your TPM failed its internal self test (rc=28).  At this point it will
+have gone shut down. Looks like your hardware is broken. :(
 
-Are patches to correct the indentation style desired?
-I’d just put in two tabs (one after the longer texts)
-myself…
+Kent
 
-(In case someone wonders, we were comparing server boxen
-at work today, and nobody seemed to know what stc was; a
-suggestion was “stable clock” since the box with*out* it
-had clock stability issues with full-virtualised guests,
-the other didn’t… turns out that was not it.)
-
-bye,
-//mirabilos
--- 
-tarent solutions GmbH
-Rochusstraße 2-4, D-53123 Bonn • http://www.tarent.de/
-Tel: +49 228 54881-393 • Fax: +49 228 54881-314
-HRB AG Bonn 5168 • USt-ID (VAT): DE122264941
-Geschäftsführer: Boris Esser, Sebastian Mancke
+> [ 4320.696081] tpm_tis 00:08: A TPM error (28) occurred attempting
+> to determine the durations
+> [ 4320.696091] tpm_tis 00:08: Could not get TPM timeouts and durations
+> [ 9279.692915] tpm_tis 00:08: 1.2 TPM (device-id 0xB, rev-id 16)
+> [ 9279.756184] tpm_tis 00:08: A TPM error (28) occurred attempting
+> to determine the timeouts
+> [ 9279.822186] tpm_tis 00:08: A TPM error (28) occurred attempting
+> to determine the durations
+> [ 9279.822197] tpm_tis 00:08: Could not get TPM timeouts and durations
+> [10968.845856] tpm_tis 00:08: 1.2 TPM (device-id 0xB, rev-id 16)
+> [10968.904111] tpm_tis 00:08: A TPM error (28) occurred attempting
+> to determine the timeouts
+> [10968.964100] tpm_tis 00:08: A TPM error (28) occurred attempting
+> to determine the durations
+> [10968.964111] tpm_tis 00:08: Could not get TPM timeouts and durations
+> [13304.341746] tpm_tis 00:08: 1.2 TPM (device-id 0xB, rev-id 16)
+> [13304.400093] tpm_tis 00:08: A TPM error (28) occurred attempting
+> to determine the timeouts
+> [13304.464134] tpm_tis 00:08: A TPM error (28) occurred attempting
+> to determine the durations
+> [13304.464142] tpm_tis 00:08: Could not get TPM timeouts and durations
+> 
+> Thank you,
+> Peter A
+> 
+> 
+> >>Thanks,
+> >>Peter
+> >>
+> >>> If you're seeing similar values, can you try the attached patch?
+> >>>
+> >>>Thanks,
+> >>>Kent
+> >>>
+> >>>>/Peter A
+> >>>>
+> >>>>
+> >>
+> >>>>------------------------------------------------------------------------------
+> >>>>Own the Future-Intel&reg; Level Up Game Demo Contest 2013
+> >>>>Rise to greatness in Intel's independent game demo contest.
+> >>>>Compete for recognition, cash, and the chance to get your game
+> >>>>on Steam. $5K grand prize plus 10 genre and skill prizes.
+> >>>>Submit your demo by 6/6/13. http://p.sf.net/sfu/intel_levelupd2d
+> >>>>_______________________________________________
+> >>>>tpmdd-devel mailing list
+> >>>>tpmdd-devel@lists.sourceforge.net
+> >>>>https://lists.sourceforge.net/lists/listinfo/tpmdd-devel
