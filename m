@@ -1,56 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757017Ab3DWXxZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 19:53:25 -0400
-Received: from co9ehsobe004.messaging.microsoft.com ([207.46.163.27]:28297
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756395Ab3DWXxY convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 19:53:24 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VS-3(zzbb2dI98dI9371Izz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzzz2dh2a8h668h839h944hd2bhf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h16a6h1758h1898h18e1h1946h19b5h1ad9h1b0ah1155h)
-Date: Tue, 23 Apr 2013 18:53:20 -0500
-From: Scott Wood <scottwood@freescale.com>
-Subject: Re: [PATCH v2 02/15] powerpc/85xx: add sleep and deep sleep support
-To: Zhao Chenhui <chenhui.zhao@freescale.com>
-CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
-In-Reply-To: <1366368468-29143-2-git-send-email-chenhui.zhao@freescale.com>
-	(from chenhui.zhao@freescale.com on Fri Apr 19 05:47:35 2013)
-X-Mailer: Balsa 2.4.12
-Message-ID: <1366761200.5825.18@snotra>
+	id S1757124Ab3DWX4O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 19:56:14 -0400
+Received: from g6t0186.atlanta.hp.com ([15.193.32.63]:23277 "EHLO
+	g6t0186.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756593Ab3DWX4M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Apr 2013 19:56:12 -0400
+Message-ID: <51771F66.3080801@hp.com>
+Date: Wed, 24 Apr 2013 07:55:18 +0800
+From: ZhenHua <zhen-hual@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130117 Thunderbird/19.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"; delsp=Yes; format=Flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: stern@rowland.harvard.edu, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, tom.vaden@hp.com
+Subject: Re: [PATCH 1/1] driver,usb: Fix a warning in uhci-hcd driver
+References: <1366701301-16603-1-git-send-email-zhen-hual@hp.com> <20130423140734.GA30877@kroah.com>
+In-Reply-To: <20130423140734.GA30877@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/19/2013 05:47:35 AM, Zhao Chenhui wrote:
->  static int pmc_suspend_enter(suspend_state_t state)
->  {
-> -	int ret;
-> +	int ret = 0;
-> +
-> +	switch (state) {
-> +#ifdef CONFIG_PPC_85xx
-> +	case PM_SUSPEND_MEM:
-> +#ifdef CONFIG_SPE
-> +		enable_kernel_spe();
-> +#endif
-> +		enable_kernel_fp();
+On 04/23/2013 10:07 PM, Greg KH wrote:
+> On Tue, Apr 23, 2013 at 03:15:01PM +0800, Li, Zhen-Hua wrote:
+>> From: "Li, Zhen-Hua" <zhen-hual@hp.com>
+>>
+>> This patch is trying to fix bug QXCR1001261767.
+Sorry for the bug number. Please ignore this line.
 
-Why does enable_kernel_spe() need an ifdef but enable_kernel_fp()  
-doesn't?
+> What is that bug number?  Where can it be referenced?  If you are going
+> to put it in a public place (like a kernel changelog), it needs to be
+> publicly accessible.
+>
+>> On some HP platform, when usb driver inits the iLo Virtual USB Controller, there may be a warning "Controller not stopped yet!". It is because driver does not wait enough time.
+> What happened to your line endings?
+>
+>> This patch adds more time waiting and retries.
+> Why not only do this for your device?
+>
+>> Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
+>> ---
+>>   drivers/usb/host/uhci-hcd.c |   16 +++++++++++++++-
+>>   1 file changed, 15 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/usb/host/uhci-hcd.c b/drivers/usb/host/uhci-hcd.c
+>> index 4a86b63..514e9d7 100644
+>> --- a/drivers/usb/host/uhci-hcd.c
+>> +++ b/drivers/usb/host/uhci-hcd.c
+>> @@ -277,6 +277,9 @@ static int global_suspend_mode_is_broken(struct uhci_hcd *uhci)
+>>   		uhci->global_suspend_mode_is_broken(uhci) : 0;
+>>   }
+>>   
+>> +#define UHCI_SUSPENDRH_RETRY_MAX      10
+>> +#define UHCI_SUSPENDRH_RETRY_DELAY    100
+>> +
+>>   static void suspend_rh(struct uhci_hcd *uhci, enum uhci_rh_state new_state)
+>>   __releases(uhci->lock)
+>>   __acquires(uhci->lock)
+>> @@ -284,6 +287,7 @@ __acquires(uhci->lock)
+>>   	int auto_stop;
+>>   	int int_enable, egsm_enable, wakeup_enable;
+>>   	struct usb_device *rhdev = uhci_to_hcd(uhci)->self.root_hub;
+>> +	u16 try, stopped;
+>>   
+>>   	auto_stop = (new_state == UHCI_RH_AUTO_STOPPED);
+>>   	dev_dbg(&rhdev->dev, "%s%s\n", __func__,
+>> @@ -355,7 +359,17 @@ __acquires(uhci->lock)
+>>   		if (uhci->dead)
+>>   			return;
+>>   	}
+>> -	if (!(uhci_readw(uhci, USBSTS) & USBSTS_HCH))
+>> +
+>> +	for (try = 0; try < UHCI_SUSPENDRH_RETRY_MAX; try++) {
+>> +		/*
+>> +		 * Sometimes we may need to wait more time and try again.
+>> +		 */
+> "Sometimes"?  Please be more specific.  Also, a multi-line comment isn't
+> needed, make it one line please.
+>
+> thanks,
+>
+> greg k-h
 
-> +	case PM_SUSPEND_STANDBY:
-> +#ifdef CONFIG_FSL_SOC_BOOKE
-> +		flush_dcache_L1();
-> +#endif
-> +		setbits32(&pmc_regs->powmgtcsr, POWMGTCSR_SLP);
-
-Only L1, even on e500mc?
-
--Scott
