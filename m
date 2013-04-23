@@ -1,73 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756899Ab3DWPkO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 11:40:14 -0400
-Received: from mail-da0-f54.google.com ([209.85.210.54]:49526 "EHLO
-	mail-da0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756488Ab3DWPkL (ORCPT
+	id S1756917Ab3DWPke (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 11:40:34 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:25824 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756710Ab3DWPkc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 11:40:11 -0400
-Date: Tue, 23 Apr 2013 08:40:07 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Cc: Hui Wang <jason77.wang@gmail.com>,
-        Zhang Jiejing <jiejing.zhang@freescale.com>,
-        linux-input@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Hofemeier, Ulf" <ulf.hofemeier@intel.com>
-Subject: Re: eGalax touchscreen regression
-Message-ID: <20130423154007.GB4104@core.coreip.homeip.net>
-References: <1366708088.9823.16.camel@sauron.fi.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1366708088.9823.16.camel@sauron.fi.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 23 Apr 2013 11:40:32 -0400
+X-Authority-Analysis: v=2.0 cv=GtrACzJC c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=NbYD9KISzMsA:10 a=VwQbUJbxAAAA:8 a=vjFxOW-fNNBZ-qwsNUIA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1366731630.9609.150.camel@gandalf.local.home>
+Subject: [ANNOUNCE] 3.4.41-rt55
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>
+Date: Tue, 23 Apr 2013 11:40:30 -0400
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Artem,
 
-On Tue, Apr 23, 2013 at 12:08:08PM +0300, Artem Bityutskiy wrote:
-> Hi Dmitry,
-> 
-> in the below commit
-> 
-> commit ae495e844a77344fdaedbb2ad97d925d096e9f0d
-> Author: Hui Wang <jason77.wang@gmail.com>
-> Date:   Thu Oct 25 00:38:01 2012 -0700
-> 
->     Input: egalax_ts - get gpio from devicetree
->     
->     The irq_to_gpio() is old, most platforms use GENERIC_GPIO framework
->     and don't support this API anymore.
->     
->     The i.MX6q sabrelite platform equips an egalax touchscreen controller,
->     and this platform already transfered to GENERIC_GPIO framework, to
->     support this driver, we use a more generic way to get gpio.
->     
->     Add a return value checking for waking up the controller in the probe
->     function, this guarantee only a workable device can pass init.
->     
->     [dmitry.torokhov@gmail.com: Make driver depend on CONFIG_OF as it is
->      now required.]
->     
->     Acked-by Zhang Jiejing <jiejing.zhang@freescale.com>
->     Reviewed-by: Shawn Guo <shawn.guo@linaro.org>
->     Signed-off-by: Hui Wang <jason77.wang@gmail.com>
->     Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> 
-> the eGalax driver now requires OF. For us this is a regression because
-> we do not have OF: https://bugs.tizen.org/jira/browse/TIVI-740
+Dear RT Folks,
 
-I see. In this case we need to come up with a platform data to pass
-wakeup gpio in case platform does not support OF. irq_to_gpio() is not
-supported on many platforms, causing compilation errors.
+I'm pleased to announce the 3.4.41-rt55 stable release.
 
-Is the platform that you are trying to use the touchscreen upstream?
 
-Thanks.
+This release is just an update to the new stable 3.4.41 version
+and no RT specific changes have been made.
 
--- 
-Dmitry
+
+You can get this release via the git tree at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
+
+  Head SHA1: 921d87db0d30d5e059847e11155c5ead6b48870d
+
+
+Or to build 3.4.41-rt55 directly, the following patches should be applied:
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.4.tar.xz
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.4.41.xz
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.4/patch-3.4.41-rt55.patch.xz
+
+
+
+Enjoy,
+
+-- Steve
+
+
+
