@@ -1,127 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757234Ab3DWSnh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 14:43:37 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:57027 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757062Ab3DWSng (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 14:43:36 -0400
-Date: Tue, 23 Apr 2013 20:43:32 +0200
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Bibek Basu <bbasu@nvidia.com>
-Cc: linus.walleij@linaro.org, swarren@wwwdotorg.org,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pritesh Raithatha <praithatha@nvidia.com>
-Subject: Re: [PATCH 1/2] pinctrl: tegra: add suspend-resume support
-Message-ID: <20130423184332.GA31374@avionic-0098.mockup.avionic-design.de>
-References: <1366740542-26127-1-git-send-email-bbasu@nvidia.com>
+	id S1757237Ab3DWSpW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 14:45:22 -0400
+Received: from mx2.compro.net ([12.186.155.4]:5204 "EHLO mx2.compro.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757156Ab3DWSpU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Apr 2013 14:45:20 -0400
+X-Greylist: delayed 392 seconds by postgrey-1.27 at vger.kernel.org; Tue, 23 Apr 2013 14:45:20 EDT
+X-IronPort-AV: E=Sophos;i="4.87,536,1363147200"; 
+   d="scan'208";a="9969783"
+Message-ID: <5176D532.5050202@compro.net>
+Date: Tue, 23 Apr 2013 14:38:42 -0400
+From: Mark Hounschell <markh@compro.net>
+Reply-To: markh@compro.net
+Organization: Compro Computer Svcs.
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="fdj2RfSjLxBAspz7"
-Content-Disposition: inline
-In-Reply-To: <1366740542-26127-1-git-send-email-bbasu@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:PMEo5rtc+QJrIbKAtLcJvtspmbT0pEq25WtHPJTro6c
- /evtT9SVvNXNliNvvjCZnVsfgcxfU8jOs9navSUMbUqEbHop+f
- aCufPGJ4WB+rLxZRBkGqEFW/NeznH8ZQzD99gXCnRt8du1F2ql
- +BkJwM66gdxkjEXCWqtHzC4IujAyaX79Z/88wMIOYWnrFow8/a
- UXWuw3+8v6bj7xHjWpiOBfOWUtklH8IbT+Y8H2GhoTIEPYboAJ
- uyAM2gyw7JYAm3+0ieTWhbZlIgD0Z+Vk1g+Q7xPLrld58TjuMN
- 37JB+dqReC7PpCuM+V1oepfO64VdVT7dND2tzks20h/xkCaO4+
- CoDr/8If2JGT3ofas2q9YuJeDoh8d1PqUn8BZVb3wTBABV/ITj
- KPF6H1HUFxGQ58ApPYujwe1naPnjHrac1U=
+To: linux-kernel@vger.kernel.org
+CC: Mark Hounschell <dmarkh@cfl.rr.com>
+Subject: Out of tree serial tty driver?
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+I've been maintaining a couple of Digi International serial port card 
+(XP and AP) drivers for years now because, well, they just won't do it 
+anymore. In any case, I'm moving from a 3.4.x kernel, that works just 
+fine, to a 3.8.8 kernel, that does not. I have code that does something 
+like this:
 
---fdj2RfSjLxBAspz7
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+	tty_set_operations(&SerialDriver, &SerialOps);
+	tty_register_driver(&SerialDriver);
+	maxminor = NumBoards * 64;
+	for (i = 0; i < maxminor; i++)
+		tty_register_device(&SerialDriver, i, NULL);
 
-> diff --git a/drivers/pinctrl/pinctrl-tegra.c b/drivers/pinctrl/pinctrl-te=
-gra.c
-[...]
-> @@ -41,6 +42,8 @@ struct tegra_pmx {
-> =20
->  	int nbanks;
->  	void __iomem **regs;
-> +	int *regs_size;
+The first call to tty_register_device barfs:
 
-Perhaps this should be unsigned int *. The values stored in this array
-will never be negative, right?
+[   76.528626] BUG: unable to handle kernel NULL pointer dereference at 
+   (null)
+[   76.528628] IP: [<c02fa460>] cdev_init+0x30/0x90
+[   76.528632] *pde = 00000000
+[   76.528634] Oops: 0002 [#1] PREEMPT SMP
+[   76.528636] Modules linked in: kvm snd_hda_codec_realtek 
+snd_hda_intel snd_hda_codec snd_hwdep snd_pcm nvidia(PO) osst snd_seq 
+dgdm(O+) snd_timer snd_seq_device eprm(O) st sr_mod sg synclink_gt snd 
+crc32c_intel aesni_intel ablk_helper cryptd lrw gpiohsd(O) k10temp 
+lcrsmem(O) hdlc aes_i586 3c59x firewire_ohci pcspkr xts gf128mul mxm_wmi 
+shpchp soundcore i2c_piix4 firewire_core snd_page_alloc crc_itu_t cdrom 
+wmi pci_hotplug r8169 fam15h_power microcode rtom(O) button edd autofs4 
+ext4 jbd2 crc16 xhci_hcd scsi_dh_hp_sw scsi_dh_emc scsi_dh_alua 
+scsi_dh_rdac scsi_dh ata_generic pata_atiixp aic7xxx aic79xx 
+scsi_transport_spi
+[   76.528661] Pid: 393, comm: systemd-udevd Tainted: P           O 
+3.8.8-lcrs #8 Gigabyte Technology Co., Ltd. GA-990FXA-UD5/GA-990FXA-UD5
+[   76.528662] EIP: 0060:[<c02fa460>] EFLAGS: 00010246 CPU: 4
+[   76.528664] EIP is at cdev_init+0x30/0x90
+[   76.528665] EAX: 00000000 EBX: 00000000 ECX: 0000000f EDX: 0000003c
+[   76.528667] ESI: c06d38c0 EDI: 00000000 EBP: ed449d0c ESP: ed449d00
+[   76.528668]  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
+[   76.528669] CR0: 8005003b CR2: f72f9920 CR3: 2ebc8000 CR4: 000407d0
+[   76.528670] DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
+[   76.528672] DR6: ffff0ff0 DR7: 00000400
+[   76.528673] Process systemd-udevd (pid: 393, ti=ed448000 
+task=ee753240 task.ti=ed448000)
+[   76.528674] Stack:
+[   76.528675]  fb396220 00000000 04600000 ed449d30 c04780a6 c0826710 
+0000003c 00000000
+[   76.528678]  00000000 fb396220 00000000 04600000 ed449dac c0478d52 
+00000001 ed449d60
+[   76.528681]  00000000 00000002 00000000 04600000 00000730 ed449d60 
+00000000 00000000
+[   76.528684] Call Trace:
+[   76.528688]  [<c04780a6>] tty_cdev_add+0x56/0x80
+[   76.528690]  [<c0478d52>] tty_register_device_attr+0x192/0x220
+[   76.528693]  [<c02fa96d>] ? register_chrdev_region+0x4d/0xa0
+[   76.528695]  [<c0478dfa>] tty_register_device+0x1a/0x20
+[   76.528702]  [<fb37e701>] dgdm_tty_init+0x601/0x660 [dgdm]
+[   76.528707]  [<fb375818>] init_module+0x2008/0x22f0 [dgdm]
+[   76.528711]  [<c069d843>] ? notifier_call_chain+0x43/0x60
+[   76.528716]  [<fb373810>] ? dgdm_boardread+0x430/0x430 [dgdm]
+[   76.528718]  [<c0201222>] do_one_initcall+0x112/0x160
+[   76.528721]  [<c0252707>] ? __blocking_notifier_call_chain+0x47/0x60
+[   76.528723]  [<c02849d8>] load_module+0x1c58/0x2280
+[   76.528729]  [<c028508d>] sys_init_module+0x8d/0xf0
+[   76.528734]  [<c069ad1d>] syscall_call+0x7/0xb
+[   76.528735] Code: 0c a8 01 89 5d f4 89 c3 89 75 f8 89 d6 ba 3c 00 00 
+00 89 7d fc 89 c7 75 52 f7 c7 02 00 00 00 75 5a 89 d1 31 c0 c1 e9 02 f6 
+c2 02 <f3> ab 74 08 66 c7 07 00 00 83 c7 02 83 e2 01 74 03 c6 07 00 8d
+[   76.528753] EIP: [<c02fa460>] cdev_init+0x30/0x90 SS:ESP 0068:ed449d00
+[   76.528756] CR2: 0000000000000000
+[   76.528758] ---[ end trace 99a84df60dc687d6 ]---
 
->  int tegra_pinctrl_probe(struct platform_device *pdev,
->  			const struct tegra_pinctrl_soc_data *soc_data)
->  {
-> -	struct tegra_pmx *pmx;
->  	struct resource *res;
-> -	int i;
-> +	struct tegra_pmx *pmx;
-> +	int i, pg_data_size =3D 0;
 
-There's a needless move of the pmx variable declaration here.
+I've put a printk in tty_io.c that shows the NULL pointer in 
+driver->cdevs, that I assume. is what is causing it to barf. The first 4 
+below are from Synclink-GT driver. The last is mine.
 
-> @@ -735,6 +769,21 @@ int tegra_pinctrl_probe(struct platform_device *pdev,
->  		return -ENODEV;
->  	}
-> =20
-> +if (IS_ENABLED(CONFIG_PM_SLEEP))
-> +	pmx->regs_size =3D devm_kzalloc(&pdev->dev,
-> +				pmx->nbanks * sizeof(*(pmx->regs_size)),
-> +				GFP_KERNEL);
-> +	if (!pmx->regs_size) {
-> +		dev_err(&pdev->dev, "Can't alloc regs pointer\n");
-> +		return -ENODEV;
-> +	}
-> +
-> +	pmx->pg_data =3D devm_kzalloc(&pdev->dev, pg_data_size, GFP_KERNEL);
-> +	if (!pmx->pg_data) {
-> +		dev_err(&pdev->dev, "Can't alloc pingroup data pointer\n");
-> +		return -ENODEV;
-> +	}
+tty_cdev_add: Entered. driver = 0xeebd9900 driver->cdevs = 0xe678b800 
+index = 0 name = ttySLG0
+tty_cdev_add: Entered. driver = 0xeebd9900 driver->cdevs = 0xe678b800 
+index = 1 name = ttySLG1
+tty_cdev_add: Entered. driver = 0xeebd9900 driver->cdevs = 0xe678b800 
+index = 2 name = ttySLG2
+tty_cdev_add: Entered. driver = 0xeebd9900 driver->cdevs = 0xe678b800 
+index = 3 name = ttySLG3
+tty_cdev_add: Entered. driver = 0xf6d723a0 driver->cdevs = 0x00000000 
+index = 0 name = tty_dgdm_G0
 
-I don't think this works the way you expect it to. The line
+Was it expected that the tty changes from 3.4 to 3.8 would cause out of 
+kernel drivers to fail? I've tried adding cdev_alloc and cdev_init but 
+things seem to get much worse when I do.
 
-	if (IS_ENABLED(CONFIG_PM_SLEEP))
+I do maintain all of our GPL kernel drivers but do NOT consider my self 
+very knowledgeable in the area of the kernel.  Any tips or pointers 
+would be appreciated.
 
-is a standard conditional and therefore needs to be properly indented
-and use { and } to delimit the block.
-
-> @@ -756,6 +805,9 @@ int tegra_pinctrl_probe(struct platform_device *pdev,
->  			dev_err(&pdev->dev, "Couldn't ioremap regs %d\n", i);
->  			return -ENODEV;
->  		}
-> +
-> +if (IS_ENABLED(CONFIG_PM_SLEEP))
-> +		pmx->regs_size[i] =3D resource_size(res);
-
-In this case it will actually work as expected, but the if () should be
-properly indented.
-
-Thierry
-
---fdj2RfSjLxBAspz7
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRdtZUAAoJEN0jrNd/PrOh3XUQAJAZ96+yRwyasLSm4dK6qnAm
-wP4hkmbs7BkzYfboasFIUKj5f71biLzHMR4JRv6b59rxLho0ADxoXA4koyK1OS5B
-GoIn+5a8o5qIiP0rSSNnr0c7dZqrZ5FIlV7vwr8F6jI7HZlxSS2uENQubb21Z9tb
-0OC40Q0DOFg70M/H0kCocY9VLFeM4xGhCBR1CqeBp4WHZ34221OhN/H8p5EV8v39
-xhZZ6IU7ihPTwFvx9U1JxWqwRDBH56EFdxqDUEiL/JPGp6Kxlr4u2eAmHYkii6eH
-g8gNdSMyBuHJ+FG3nEQFOiIcGM+sW6cO8r0DywN0Mm6boN/MU/R+O1ErTQQQYwNG
-qlKK21nYvLzR/H3R5pTBHsXqzexMCcZFmIkJ300bi1s0A18aCdlOpfKC8EM3gcUF
-BvMPQOF/0kiRqMvzjTWBpMPC6SozB79Fa/vu2vofO3wL9SUbX//0ag7b8OVsjhgq
-iaBdD+OzAWMaXOli71OG/sKwC2ukyj9crvIRTKjHZMFrBhCfDx0KJgvtBHLmnzWW
-sWGcNyx8O4GQq4Q3jWbjxyYnwHWd087uc2nzb38BJPhs+yXs7VmdsT3renkmG/eo
-iLtCGKn0L48xpcJN66jm5udkLj371KL+achAc3jWJBYmpwZSXNKBO09ykZqiH9tx
-B1I4OAAsxF254HM5HiiG
-=iUHp
------END PGP SIGNATURE-----
-
---fdj2RfSjLxBAspz7--
+Thanks in advance
+Mark
