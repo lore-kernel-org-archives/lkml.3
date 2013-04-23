@@ -1,83 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756522Ab3DWXqR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 19:46:17 -0400
-Received: from co9ehsobe001.messaging.microsoft.com ([207.46.163.24]:47243
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755970Ab3DWXqQ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 19:46:16 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -1
-X-BigFish: VS-1(zcb8kzbb2dI98dI9371I1432Izz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275bhz2dh2a8h668h839h944hd2bhf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h16a6h1758h1898h18e1h1946h19b5h1ad9h1b0ah1155h)
-Date: Tue, 23 Apr 2013 18:46:10 -0500
-From: Scott Wood <scottwood@freescale.com>
-Subject: Re: [PATCH v2 01/15] powerpc/85xx: cache operations for Freescale
- SoCs based on BOOK3E
-To: Zhao Chenhui <chenhui.zhao@freescale.com>
-CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
-In-Reply-To: <1366368468-29143-1-git-send-email-chenhui.zhao@freescale.com>
-	(from chenhui.zhao@freescale.com on Fri Apr 19 05:47:34 2013)
-X-Mailer: Balsa 2.4.12
-Message-ID: <1366760770.5825.17@snotra>
+	id S1756526Ab3DWXrm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 19:47:42 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:50613 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755970Ab3DWXrk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Apr 2013 19:47:40 -0400
+X-IronPort-AV: E=Sophos;i="4.87,537,1363158000"; 
+   d="scan'208";a="40809799"
+Message-ID: <51771D78.5080101@codeaurora.org>
+Date: Tue, 23 Apr 2013 16:47:04 -0700
+From: hanumant <hanumant@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"; delsp=Yes; format=Flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>
+Subject: [RFC] pinctrl: Pin controller with different types of pins
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/19/2013 05:47:34 AM, Zhao Chenhui wrote:
-> These cache operations support Freescale SoCs based on BOOK3E.
-> Move L1 cache operations to fsl_booke_cache.S in order to maintain
-> easily. And, add cache operations for backside L2 cache and platform  
-> cache.
-> 
-> The backside L2 cache appears on e500mc and e5500 core. The platform  
-> cache
-> supported by this patch is L2 Look-Aside Cache, which appears on SoCs
-> with e500v1/e500v2 core, such as MPC8572, P1020, etc.
-> 
-> Signed-off-by: Zhao Chenhui <chenhui.zhao@freescale.com>
-> Signed-off-by: Li Yang <leoli@freescale.com>
-> ---
->  arch/powerpc/include/asm/cacheflush.h |    8 ++
->  arch/powerpc/kernel/Makefile          |    1 +
->  arch/powerpc/kernel/fsl_booke_cache.S |  210  
-> +++++++++++++++++++++++++++++++++
->  arch/powerpc/kernel/head_fsl_booke.S  |   74 ------------
->  4 files changed, 219 insertions(+), 74 deletions(-)
->  create mode 100644 arch/powerpc/kernel/fsl_booke_cache.S
-> 
-> diff --git a/arch/powerpc/include/asm/cacheflush.h  
-> b/arch/powerpc/include/asm/cacheflush.h
-> index b843e35..bc3f937 100644
-> --- a/arch/powerpc/include/asm/cacheflush.h
-> +++ b/arch/powerpc/include/asm/cacheflush.h
-> @@ -32,6 +32,14 @@ extern void flush_dcache_page(struct page *page);
-> 
->  extern void __flush_disable_L1(void);
-> 
-> +#ifdef CONFIG_FSL_SOC_BOOKE
-> +void flush_dcache_L1(void);
-> +void flush_backside_L2_cache(void);
-> +void disable_backside_L2_cache(void);
-> +void flush_disable_L2(void);
-> +void invalidate_enable_L2(void);
-> +#endif
+Hi
 
-Don't ifdef prototypes unless there's a good reason, such as providing  
-an inline alternative.
+  I am implementing a pinctrol driver for a pin controller with the 
+following attributes, relevant to the problem.
 
-Why do you have "flush_backside_L2_cache" and  
-"disable_backside_L2_cache" as something different from  
-"flush_disable_L2"?  The latter should flush whatever L2 is present.   
-Don't treat pre-corenet as the default.
+It has 2 different types of pins.
+a) Pins that can be used for multiple functions, including being used as 
+a gpio to be toggled by SW.
+b) Pins that have a dedicated function.
 
-Why do we even need to distinguish L1 from L2 at all?  Shouldn't the  
-function that gets exposed just be "flush and disable data caches that  
-are specific to this cpu"?  What should happen on e6500?
+Both types support configuration of drive strength and pull up values.
+The register formats for these are different.
 
--Scott
+The register address map can be descibed as
+
+1) Config registers starting from the pinctrl base, for the general 
+purpose pins, one per pin at fixed offsets.
+Each config register has fields to setup drive strength, pull up and
+function for the corresponding pin.
+
+2) After the above, we have config registers for the dedicated pins.
+In this case the config register are per use case. For example
+if SDCC uses dedicated pins as follows 1 clock pin, 8 data pins and 2 
+command pins then there will be one config register as follows
+Bits 31-29 = clk pull value (1-7)
+Bits 28-26 = data line pull values (1-7)
+Bits 25-23 = command pull values (1-7)
+Bits 8-6 = clk drive strength values (1-7)
+Bits 5-3 = data drive strength values
+Bits 2-0 = command drive strength values
+
+3) After the config register for dedicated pins, we again have registers 
+for pin type a) that configure its direction and value
+(in case pin is being used as a gpio and toggled by SW).
+
+Solutions:
+I initially tried to model this as 2 separate pin controllers
+one for the general purpose pins and the other for dedicated pins but 
+this is complicated by the fact that
+1) In this case the address map for the pinctroller 1 would be dis 
+contiguous.
+2) Also the address range for the deidcated pins does not start at a 4K
+page boundary, in fact some registers from pin type 1 overflow into the 
+starting page of the dedicated pin registers.
+
+The only option I see is
+
+1) to implement this as one pin controller, with total number of pins = 
+multi function pins + dedicated pins.
+
+2) The pin descriptor registered with the framework would be part of a 
+bigger descriptor maintained by the driver that additionally defines the 
+pin type and the register manipulation methods for that type.
+
+3) The pin number would serve as an index into the driver descriptor.
+
+4) The register manipulation methods would be part of the of_device_id
+data for the pin controller
+
+I have not been able to find any precedence for this kind of pin 
+controller design. I do see some vendors with pin banks, and they too 
+maintain the "descriptor" as part of the vendor driver. But not this 
+kind of register address map. Would the above option be an acceptable
+design or is there a better approach?
+
+Is there any value add to having a private data field for the framework 
+pin descriptor that can be overloaded for every pin to take care of 
+these kinds of problems?
+
+Thanks
+Hanumant
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora 
+Forum, hosted by The Linux Foundation
+-- 
