@@ -1,46 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756544Ab3DWPRB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 11:17:01 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:56871 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755835Ab3DWPQ7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 11:16:59 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCH 00/10] usb: musb: ux500: pathe the way for Device Tree enablement
-Date: Tue, 23 Apr 2013 17:16:54 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@stericsson.com, mian.yousaf.kaukab@stericsson.com
-References: <1366729394-11406-1-git-send-email-lee.jones@linaro.org>
-In-Reply-To: <1366729394-11406-1-git-send-email-lee.jones@linaro.org>
+	id S1756692Ab3DWPRx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 11:17:53 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59845 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756678Ab3DWPRw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Apr 2013 11:17:52 -0400
+Message-ID: <5176A5F7.6000609@zytor.com>
+Date: Tue, 23 Apr 2013 08:17:11 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+CC: arjan@infradead.org, james.hogan@imgtec.com, rusty@rustcorp.com.au,
+        linux-kernel@vger.kernel.org, andy.shevchenko@gmail.com
+Subject: Re: [PATCH] x86_32: Fix module version table mismatch.
+References: <CAHp75VdDwh0wgCWrVDcPps1C2qfdDZra15y9BQvzfWHzSMqbWA@mail.gmail.com> <CAHp75Vfh6Bpk4j3crVEAo3UtJEqpyucbQw+AzJvO85uRJ6gVgg@mail.gmail.com> <201304222326.IJB21395.FOtVJFHFQMOOSL@I-love.SAKURA.ne.jp> <201304232140.FGF73904.QJOFOVtHFFMSOL@I-love.SAKURA.ne.jp>
+In-Reply-To: <201304232140.FGF73904.QJOFOVtHFFMSOL@I-love.SAKURA.ne.jp>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201304231716.54516.arnd@arndb.de>
-X-Provags-ID: V02:K0:8LkRICothbz9suttvgMs6cuvhICoErjHLBgpCmxapzp
- Kd5N3ZNR9N3qMgnBiJBn4SE5uR0kkM6Mb5sMfzfFxBb4tKusdM
- d+qU57MyNV+vK0b52RbtS234IMjBe7sC6znMLarKHaTJ4mLaz6
- BM9q0L6eAU3xd+ImtxP4dUnUOleyTCgi8HtMBwuApWKDzegJaV
- XZIOZsHP7iVJDqwlsg6zlbEDVNYbu+hd/MZueARd/j7BTxqnui
- xPMuKPtQH4GIKMtiQRY+yEfLkIdBjUFwI9xa+a10LMMO8fhRIp
- xEpM/TznYUdjomjXnmzrf7irVVbQOohrI6xCeKrGku+48zC/X8
- m1H7rS5F1kY8OnkXSazg=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 23 April 2013, Lee Jones wrote:
-> In this patch-set we firstly ease the burden on data being passed from
-> platform data, then start to build up support to finally enable Device
-> Tree.
+On 04/23/2013 05:40 AM, Tetsuo Handa wrote:
+>  
+> -#define memcmp __builtin_memcmp
+> +int memcmp(const void *cs, const void *ct, size_t count);
+>  
 
-Very nice series!
+Yuck.  I really don't like this option unless it truly can't be
+avoided... it might be a fix for 3.9/stable but a better way to do this
+would be much more appreciated.
 
-I only have two small comments on the binding document, everything else looks
-great.
+	-hpa
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+
