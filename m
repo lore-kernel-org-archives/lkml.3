@@ -1,112 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755970Ab3DWHRT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 03:17:19 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:58326 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755352Ab3DWHRR (ORCPT
+	id S1755977Ab3DWHU7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 03:20:59 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:47156 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755315Ab3DWHU6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 03:17:17 -0400
-Date: Tue, 23 Apr 2013 17:17:01 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: linux-next: manual merge of the akpm tree with the tip tree
-Message-Id: <20130423171701.00996503300c975a39ccea63@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__23_Apr_2013_17_17_01_+1000_GiRRvw639wSzD5JG"
+	Tue, 23 Apr 2013 03:20:58 -0400
+Message-ID: <5176363C.10303@linux.vnet.ibm.com>
+Date: Tue, 23 Apr 2013 15:20:28 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Gleb Natapov <gleb@redhat.com>
+CC: mtosatti@redhat.com, avi.kivity@gmail.com, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org
+Subject: Re: [PATCH v3 00/15] KVM: MMU: fast zap all shadow pages
+References: <1366093973-2617-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <20130421130346.GE8997@redhat.com> <5173F319.2040106@linux.vnet.ibm.com> <20130422092117.GM8997@redhat.com> <5175D376.6060908@linux.vnet.ibm.com> <20130423062816.GC12401@redhat.com>
+In-Reply-To: <20130423062816.GC12401@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13042307-8878-0000-0000-000006D00D25
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__23_Apr_2013_17_17_01_+1000_GiRRvw639wSzD5JG
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 04/23/2013 02:28 PM, Gleb Natapov wrote:
+> On Tue, Apr 23, 2013 at 08:19:02AM +0800, Xiao Guangrong wrote:
+>> On 04/22/2013 05:21 PM, Gleb Natapov wrote:
+>>> On Sun, Apr 21, 2013 at 10:09:29PM +0800, Xiao Guangrong wrote:
+>>>> On 04/21/2013 09:03 PM, Gleb Natapov wrote:
+>>>>> On Tue, Apr 16, 2013 at 02:32:38PM +0800, Xiao Guangrong wrote:
+>>>>>> This patchset is based on my previous two patchset:
+>>>>>> [PATCH 0/2] KVM: x86: avoid potential soft lockup and unneeded mmu reload
+>>>>>> (https://lkml.org/lkml/2013/4/1/2)
+>>>>>>
+>>>>>> [PATCH v2 0/6] KVM: MMU: fast invalid all mmio sptes
+>>>>>> (https://lkml.org/lkml/2013/4/1/134)
+>>>>>>
+>>>>>> Changlog:
+>>>>>> V3:
+>>>>>>   completely redesign the algorithm, please see below.
+>>>>>>
+>>>>> This looks pretty complicated. Is it still needed in order to avoid soft
+>>>>> lockups after "avoid potential soft lockup and unneeded mmu reload" patch?
+>>>>
+>>>> Yes.
+>>>>
+>>>> I discussed this point with Marcelo:
+>>>>
+>>>> ======
+>>>> BTW, to my honest, i do not think spin_needbreak is a good way - it does
+>>>> not fix the hot-lock contention and it just occupies more cpu time to avoid
+>>>> possible soft lock-ups.
+>>>>
+>>>> Especially, zap-all-shadow-pages can let other vcpus fault and vcpus contest
+>>>> mmu-lock, then zap-all-shadow-pages release mmu-lock and wait, other vcpus
+>>>> create page tables again. zap-all-shadow-page need long time to be finished,
+>>>> the worst case is, it can not completed forever on intensive vcpu and memory
+>>>> usage.
+>>>>
+>>> So what about mixed approach: use generation numbers and reload roots to
+>>> quickly invalidate all shadow pages and then do kvm_mmu_zap_all_invalid().
+>>> kvm_mmu_zap_all_invalid() is a new function that invalidates only shadow
+>>> pages with stale generation number (and uses lock break technique). It
+>>> may traverse active_mmu_pages from tail to head since new shadow pages
+>>> will be added to the head of the list or it may use invalid slot rmap to
+>>> find exactly what should be invalidated.
+>>
+>> I prefer to unmapping the invalid rmap instead of zapping stale shadow pages
+>> in kvm_mmu_zap_all_invalid(), the former is faster.
+>>
+> Not sure what do you mean here. What is "unmapping the invalid rmap"?
 
-Hi Andrew,
+it is like you said below:
+======
+kvm_mmu_zap_all_invalid(slot) will only zap shadow pages that are
+reachable from the slot's rmap
+======
+My suggestion is zapping the spte that are linked in the slot's rmap.
 
-Today's linux-next merge of the akpm tree got a conflict in
-kernel/posix-cpu-timers.c between commits a85721601ad2 ("posix_timers:
-Kick full dynticks CPUs when a posix cpu timer is armed") and
-555347f6c080 ("posix_timers: New API to prevent from stopping the tick
-when timers are running") from the tip tree and commit "posix_cpu_timer:
-consolidate expiry time type" from the akpm tree.
+> 
+>> This way may help but not good, after reload mmu with the new generation number,
+>> all of the vcpu will fault in a long time, try to hold mmu-lock is not good even
+>> if use lock break technique.
+> If kvm_mmu_zap_all_invalid(slot) will only zap shadow pages that are
+> reachable from the slot's rmap, as opposite to zapping all invalid
+> shadow pages, it will have much less work to do. The slots that we
+> add/remove during hot plug are usually small. To guaranty reasonable
+> forward progress we can break the lock only after certain amount of
+> shadow pages are invalidated. All other invalid shadow pages will be
+> zapped in make_mmu_pages_available() and zapping will be spread between
+> page faults.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+No interested in hot-remove memory?
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+BTW, could you please review my previous patchsets and apply them if its
+looks ok? ;)
 
-diff --cc kernel/posix-cpu-timers.c
-index 84d5cb3,e5286b5..0000000
---- a/kernel/posix-cpu-timers.c
-+++ b/kernel/posix-cpu-timers.c
-@@@ -155,22 -106,7 +108,22 @@@ static void bump_cpu_timer(struct k_iti
-  	}
-  }
- =20
- +/**
- + * task_cputime_zero - Check a task_cputime struct for all zero fields.
- + *
- + * @cputime:	The struct to compare.
- + *
- + * Checks @cputime to see if all fields are zero.  Returns true if all fi=
-elds
- + * are zero, false if any field is nonzero.
- + */
- +static inline int task_cputime_zero(const struct task_cputime *cputime)
- +{
- +	if (!cputime->utime && !cputime->stime && !cputime->sum_exec_runtime)
- +		return 1;
- +	return 0;
- +}
- +
-- static inline cputime_t prof_ticks(struct task_struct *p)
-+ static inline unsigned long long prof_ticks(struct task_struct *p)
-  {
-  	cputime_t utime, stime;
- =20
-@@@ -1408,8 -1312,8 +1354,8 @@@ void set_process_cpu_timer(struct task_
-  		}
- =20
-  		if (!*newval)
- -			return;
- +			goto out;
-- 		*newval +=3D now.cpu;
-+ 		*newval +=3D now;
-  	}
- =20
-  	/*
+[PATCH 0/2] KVM: x86: avoid potential soft lockup and unneeded mmu reload
+(https://lkml.org/lkml/2013/4/1/2)
 
---Signature=_Tue__23_Apr_2013_17_17_01_+1000_GiRRvw639wSzD5JG
-Content-Type: application/pgp-signature
+[PATCH v2 0/6] KVM: MMU: fast invalid all mmio sptes
+(https://lkml.org/lkml/2013/4/1/134)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Thanks!
 
-iQIcBAEBCAAGBQJRdjVtAAoJEECxmPOUX5FE5FEP/jS+Xr+XgteKoaB9o8Sz0lrC
-bm/y2jdjIUYPwMS4wt6aHZJAcFD7gBeHnCaGCOP7UGhWkW9zbkqUXrCbxXAiMTSI
-jBifn7AZ7wlpvHTia/R/w38Uk+IpLWewmqyavMt3qdMCd/YXnjE2rIeOuf9WE7YB
-F4dXtL9FmGtA4RtFP0kECVGcJ/tXIt7nGCVtgXG1IQkw1QLaNEV+8dzQTYhyY7er
-tEi7VUJKihoOXZUDmb5JgSm1FfHuLPXrfDXk0dvIWSeWUkTasy0CTmBHHiAtgUkY
-VS355o/l5YmfncRcl7bXOzjOPJ+neW8h0sSLDL2AtTcmGUhR0yTgvmrfFXVv/tfS
-L3YfnqWs/uxkrZX4ntsQfelYoznKxOzkpefmB1EWmPrLmpY4dIzXOug6/vDpn26m
-ARHb2hfq45hOebTcaib0qGg+ZDYavyWUMxvD+KAKqHZ1BqpYuBsPPwZoXPaoALro
-UrzY/O3bONepLE5HgRaCvbP385RSj8HP5A2zWgPn1KZdURR8ojlCg7VNkCNXuGWM
-CVGMzWfV+Cffjyk/5dW9Es4ImwHI7QK1QspYUI09bXidgbaXHJqXNO/BRtLQkOae
-Os5G4ncidtKAP64BxmEgu1qfXgiJB3iWjImCOzdHGXSsMvKBoVFBSYgzMeC9PHUN
-sYauyL2KY6yPM+vNeeBg
-=wv1+
------END PGP SIGNATURE-----
 
---Signature=_Tue__23_Apr_2013_17_17_01_+1000_GiRRvw639wSzD5JG--
