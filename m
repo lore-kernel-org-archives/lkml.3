@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932277Ab3DWVy2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 17:54:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34250 "EHLO
+	id S932332Ab3DWVys (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 17:54:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34306 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757732Ab3DWVyT (ORCPT
+	with ESMTP id S932271Ab3DWVy2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 17:54:19 -0400
+	Tue, 23 Apr 2013 17:54:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Jiri Olsa <jolsa@redhat.com>, Will Deacon <will.deacon@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 13/26] ARM: 7698/1: perf: fix group validation when using enable_on_exec
-Date: Tue, 23 Apr 2013 14:53:53 -0700
-Message-Id: <20130423215334.726196467@linuxfoundation.org>
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 25/26] vm: convert mtdchar mmap to vm_iomap_memory() helper
+Date: Tue, 23 Apr 2013 14:54:05 -0700
+Message-Id: <20130423215335.966239872@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130423215333.344045754@linuxfoundation.org>
 References: <20130423215333.344045754@linuxfoundation.org>
@@ -30,43 +26,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit cb2d8b342aa084d1f3ac29966245dec9163677fb upstream.
+commit 8558e4a26b00225efeb085725bc319f91201b239 upstream.
 
-Events may be created with attr->disabled == 1 and attr->enable_on_exec
-== 1, which confuses the group validation code because events with the
-PERF_EVENT_STATE_OFF are not considered candidates for scheduling, which
-may lead to failure at group scheduling time.
+This is my example conversion of a few existing mmap users.  The mtdchar
+case is actually disabled right now (and stays disabled), but I did it
+because it showed up on my "git grep", and I was familiar with the code
+due to fixing an overflow problem in the code in commit 9c603e53d380
+("mtdchar: fix offset overflow detection").
 
-This patch fixes the validation check for ARM, so that events in the
-OFF state are still considered when enable_on_exec is true.
-
-Reported-by: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/kernel/perf_event.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/mtd/mtdchar.c |   32 ++------------------------------
+ 1 file changed, 2 insertions(+), 30 deletions(-)
 
---- a/arch/arm/kernel/perf_event.c
-+++ b/arch/arm/kernel/perf_event.c
-@@ -319,7 +319,10 @@ validate_event(struct pmu_hw_events *hw_
- 	struct hw_perf_event fake_event = event->hw;
- 	struct pmu *leader_pmu = event->group_leader->pmu;
+--- a/drivers/mtd/mtdchar.c
++++ b/drivers/mtd/mtdchar.c
+@@ -1159,45 +1159,17 @@ static int mtdchar_mmap(struct file *fil
+ 	struct mtd_file_info *mfi = file->private_data;
+ 	struct mtd_info *mtd = mfi->mtd;
+ 	struct map_info *map = mtd->priv;
+-	resource_size_t start, off;
+-	unsigned long len, vma_len;
  
--	if (event->pmu != leader_pmu || event->state <= PERF_EVENT_STATE_OFF)
-+	if (event->pmu != leader_pmu || event->state < PERF_EVENT_STATE_OFF)
-+		return 1;
-+
-+	if (event->state == PERF_EVENT_STATE_OFF && !event->attr.enable_on_exec)
- 		return 1;
- 
- 	return armpmu->get_event_idx(hw_events, &fake_event) >= 0;
+         /* This is broken because it assumes the MTD device is map-based
+ 	   and that mtd->priv is a valid struct map_info.  It should be
+ 	   replaced with something that uses the mtd_get_unmapped_area()
+ 	   operation properly. */
+ 	if (0 /*mtd->type == MTD_RAM || mtd->type == MTD_ROM*/) {
+-		off = get_vm_offset(vma);
+-		start = map->phys;
+-		len = PAGE_ALIGN((start & ~PAGE_MASK) + map->size);
+-		start &= PAGE_MASK;
+-		vma_len = get_vm_size(vma);
+-
+-		/* Overflow in off+len? */
+-		if (vma_len + off < off)
+-			return -EINVAL;
+-		/* Does it fit in the mapping? */
+-		if (vma_len + off > len)
+-			return -EINVAL;
+-
+-		off += start;
+-		/* Did that overflow? */
+-		if (off < start)
+-			return -EINVAL;
+-		if (set_vm_offset(vma, off) < 0)
+-			return -EINVAL;
+-		vma->vm_flags |= VM_IO | VM_RESERVED;
+-
+ #ifdef pgprot_noncached
+-		if (file->f_flags & O_DSYNC || off >= __pa(high_memory))
++		if (file->f_flags & O_DSYNC || map->phys >= __pa(high_memory))
+ 			vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
+ #endif
+-		if (io_remap_pfn_range(vma, vma->vm_start, off >> PAGE_SHIFT,
+-				       vma->vm_end - vma->vm_start,
+-				       vma->vm_page_prot))
+-			return -EAGAIN;
+-
+-		return 0;
++		return vm_iomap_memory(vma, map->phys, map->size);
+ 	}
+ 	return -ENOSYS;
+ #else
 
 
