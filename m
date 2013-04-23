@@ -1,43 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754696Ab3DWEas (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 00:30:48 -0400
-Received: from smtp.syd.comcen.com.au ([203.23.236.77]:1777 "EHLO
-	smtp.syd.comcen.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750985Ab3DWEar (ORCPT
+	id S1754780Ab3DWEgA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 00:36:00 -0400
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:38515 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751426Ab3DWEf7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 00:30:47 -0400
-X-Greylist: delayed 515 seconds by postgrey-1.27 at vger.kernel.org; Tue, 23 Apr 2013 00:30:46 EDT
-Message-ID: <51760BF6.9090702@spin.net.au>
-Date: Tue, 23 Apr 2013 14:20:06 +1000
-From: Chris Jones <chrisjones@spin.net.au>
-Organization: Nest Linux
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Linux 3.9 release time frame
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 23 Apr 2013 00:35:59 -0400
+Message-ID: <1366691753.25625.6.camel@phoenix>
+Subject: [PATCH] regulator: tps62360: Fix off-by-one shift for ramp_ctrl
+From: Axel Lin <axel.lin@ingics.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
+        Laxman Dewangan <ldewangan@nvidia.com>
+Date: Tue, 23 Apr 2013 12:35:53 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-comcen-MailScanner-Information: Please contact the ISP for more information
-X-comcen-MailScanner: Found to be clean
-X-comcen-MailScanner-SpamCheck: not spam, SpamAssassin (not cached,
-	score=-1.826, required 4, AWL 0.67, BAYES_00 -2.60, RDNS_NONE 0.10)
-X-comcen-MailScanner-From: chrisjones@spin.net.au
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-What is the time frame we are currently looking at for a release of
-kernel 3.9?
+According to the datasheet[1]
 
+Register 0x06h Description: RmpCtrl (REGISTER ADDRESS: 0x06h Read/Write)
+BIT[5..7]:
+        RMP[2:0] Output voltage ramp timing
+        D7-D5   Slope
+        000     32mV/us
+        001     16mV/us
+        010     8mV/us
+        ...
+        110     0.5mV/us
+        111     0.25mV/us
 
-Regards
+Thus to get correct ramp_ctrl value, we need to right-shift 5 bits.
 
+[1] http://www.ti.com/lit/ds/symlink/tps62360.pdf
+
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+ drivers/regulator/tps62360-regulator.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/regulator/tps62360-regulator.c b/drivers/regulator/tps62360-regulator.c
+index acbd63f..612919c 100644
+--- a/drivers/regulator/tps62360-regulator.c
++++ b/drivers/regulator/tps62360-regulator.c
+@@ -278,7 +278,7 @@ static int tps62360_init_dcdc(struct tps62360_chip *tps,
+ 			__func__, REG_RAMPCTRL, ret);
+ 		return ret;
+ 	}
+-	ramp_ctrl = (ramp_ctrl >> 4) & 0x7;
++	ramp_ctrl = (ramp_ctrl >> 5) & 0x7;
+ 
+ 	/* ramp mV/us = 32/(2^ramp_ctrl) */
+ 	tps->desc.ramp_delay = DIV_ROUND_UP(32000, BIT(ramp_ctrl));
 -- 
+1.7.10.4
 
-Chris Jones
 
-Founder and Lead Developer
-Nest Linux
-nestlinux@outlook.com
 
