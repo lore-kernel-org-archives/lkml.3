@@ -1,58 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757522Ab3DWQgA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 12:36:00 -0400
-Received: from sauhun.de ([89.238.76.85]:34628 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757505Ab3DWQf6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 12:35:58 -0400
-Date: Tue, 23 Apr 2013 18:35:43 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Josef Ahmad <josef.ahmad@linux.intel.com>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Ben Dooks <ben-linux@fluff.org>, Jean Delvare <khali@linux-fr.org>,
-        Stefan Roese <sr@denx.de>, Axel Lin <axel.lin@gmail.com>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dirk Brandewie <dirk.brandewie@gmail.com>
-Subject: Re: [PATCH] i2c-designware: fix RX FIFO overrun
-Message-ID: <20130423163543.GB3228@the-dreams.de>
-References: <alpine.DEB.2.02.1304191859570.17829@localhost>
- <20130422071943.GK1283@intel.com>
- <53398.163.33.213.79.1366630241.squirrel@linux.intel.com>
- <20130422122808.GO1283@intel.com>
- <alpine.DEB.2.02.1304221508050.31571@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1304221508050.31571@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932297Ab3DWQgh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 12:36:37 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:56553 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757278Ab3DWQcB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Apr 2013 12:32:01 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Pratyush Anand <pratyush.anand@st.com>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Viresh Kumar <viresh.kumar@st.com>,
+        Shiraz Hashim <shiraz.hashim@st.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH 13/21] misc: mark spear13xx-pcie-gadget as broken
+Date: Tue, 23 Apr 2013 18:30:45 +0200
+Message-Id: <1366734653-488286-14-git-send-email-arnd@arndb.de>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1366734653-488286-1-git-send-email-arnd@arndb.de>
+References: <1366734653-488286-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V02:K0:h0T0Fj7tiB+cBs4/cDHbCYSbGQpIQyT60iirjspSb7K
+ c1N5O5l0W1tz9EVi8L/l3xT9jOC8HmmeXmbYLO4VF9gyasbOJx
+ cp9ECzpobmQyn6tLNUc1hEpm6P4demHSEwdUgw83A6T4Kzbtjf
+ cIiGO7EugxLS/ohyVwoqYgj4cCoYPTENMR78fRVYHWfR06oHWy
+ Xh+YvmU1RcDYVR+HtOC/5HrKjw1K7XuUMaGXw+Sv6YL36YawCM
+ +V4VOut4kItk0lck+e1RpB8MHajgbnQeBoOZkBqOIahZYijlxI
+ 1E67YjQsX1zBprkdfqW8w9gQij+27JDy259f+63Ofmu3CEqoZV
+ H+3Opb3EEPYhnb3trfcDkli/b4rL9vNta5cwSF24z
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 22, 2013 at 03:08:59PM +0100, Josef Ahmad wrote:
-> From a969728248c3b439dc97a69e7dac133b5efa34e7 Mon Sep 17 00:00:00 2001
-> From: Josef Ahmad <josef.ahmad@linux.intel.com>
-> Date: Fri, 19 Apr 2013 17:28:10 +0100
-> Subject: [PATCH] i2c-designware: fix RX FIFO overrun
-> 
-> i2c_dw_xfer_msg() pushes a number of bytes to transmit/receive
-> to/from the bus into the TX FIFO.
-> For master-rx transactions, the maximum amount of data that can be
-> received is calculated depending solely on TX and RX FIFO load.
-> 
-> This is racy - TX FIFO may contain master-rx data yet to be
-> processed, which will eventually land into the RX FIFO. This
-> data is not taken into account and the function may request more
-> data than the controller is actually capable of storing.
-> 
-> This patch ensures the driver takes into account the outstanding
-> master-rx data in TX FIFO to prevent RX FIFO overrun.
-> 
-> Signed-off-by: Josef Ahmad <josef.ahmad@linux.intel.com>
-> Acked-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+This driver was merged in 2.6.38 but never actually compiled because
+it depends on the <mach/pcie.h> header that has not made it into the
+kernel. Starting with Linux-3.10, this results in "allyesconfig"
+build errors, since spear13xx can now be enabled with the default
+"multiplatform" platform on ARM. Let's mark it as broken for now.
+If it doesn't get fixed, we can drop it completely.
 
-This driver had a major cleanup meanwhile. Could you rebase your patch
-on top of my for-next branch? I guess this version should make it into
-stable?
+Cc: Pratyush Anand <pratyush.anand@st.com>
+Cc: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: Viresh Kumar <viresh.kumar@st.com>
+Cc: Shiraz Hashim <shiraz.hashim@st.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+---
+ drivers/misc/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
+index e83fdfe..c74b13b 100644
+--- a/drivers/misc/Kconfig
++++ b/drivers/misc/Kconfig
+@@ -398,7 +398,7 @@ config DS1682
+ 
+ config SPEAR13XX_PCIE_GADGET
+ 	bool "PCIe gadget support for SPEAr13XX platform"
+-	depends on ARCH_SPEAR13XX
++	depends on ARCH_SPEAR13XX && BROKEN
+ 	default n
+ 	help
+ 	 This option enables gadget support for PCIe controller. If
+-- 
+1.8.1.2
 
