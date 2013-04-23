@@ -1,48 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753839Ab3DWAhk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 20:37:40 -0400
-Received: from mail-da0-f44.google.com ([209.85.210.44]:53245 "EHLO
-	mail-da0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752184Ab3DWAhi (ORCPT
+	id S1753837Ab3DWAix (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 20:38:53 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:40633 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752184Ab3DWAiv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 20:37:38 -0400
-Message-ID: <1366677456.16391.101.camel@edumazet-glaptop>
-Subject: Re: socket file descriptor a/m/c-timestamps broken in <= 3.8.8?
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Eric Wong <normalperson@yhbt.net>
-Cc: Felix Becker <mail@felixbecker.name>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Date: Mon, 22 Apr 2013 17:37:36 -0700
-In-Reply-To: <20130423003015.GA26858@dcvr.yhbt.net>
-References: <5175CA2F.2030206@felixbecker.name>
-	 <20130423003015.GA26858@dcvr.yhbt.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
+	Mon, 22 Apr 2013 20:38:51 -0400
+Date: Mon, 22 Apr 2013 20:38:46 -0400 (EDT)
+Message-Id: <20130422.203846.798313857495836249.davem@davemloft.net>
+To: sfr@canb.auug.org.au
+Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ordex@autistici.org,
+        lindner_marek@yahoo.de, martin@hundeboll.net
+Subject: Re: linux-next: manual merge of the net-next tree with the net tree
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20130419125304.9980f9b037abf00bef7b6f8c@canb.auug.org.au>
+References: <20130419125304.9980f9b037abf00bef7b6f8c@canb.auug.org.au>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Mon, 22 Apr 2013 17:38:51 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-04-23 at 00:30 +0000, Eric Wong wrote:
-> Cc:-ing netdev (no comments of my own)
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Fri, 19 Apr 2013 12:53:04 +1000
+
+> Today's linux-next merge of the net-next tree got a conflict in
+> net/batman-adv/routing.c between commit fe8a93b95145 ("batman-adv: make
+> is_my_mac() check for the current mesh only") from the net tree and
+> commits f86ce0ad107b ("batman-adv: Return reason for failure in
+> batadv_check_unicast_packet()") and 612d2b4fe0a1 ("batman-adv: network
+> coding - save overheard and tx packets for decoding") from the net-next
+> tree.
 > 
-> Felix Becker <mail@felixbecker.name> wrote:
-> > Hi,
-> > 
-> > I tried to figure out how old my TCP connections are and took a look
-> > at /proc/<pid>/fd/<socketfdnum> using 'ls -la' / 'stat'.
-> > 
+> I fixed it up (see below) and can carry the fix as necessary (no action
+> is required).
 
-Thanks, but its not a network issue, /proc/pid/fd are part of another
-subsystem.
+I've merged net into net-next and added all the necessary fixups
+in the merge commit.
 
-In particular, a/m/c timestamps are volatile (not meaningfull), as you
-can make them disappear by 
-"echo 3 >/proc/sys/vm/drop_caches"
-
-Next time you use "ls /proc/pid/fd/..." timestamps are created.
-
-
-
+Thanks!
