@@ -1,113 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932401Ab3DWV4W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 17:56:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34291 "EHLO
+	id S932429Ab3DWV4e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 17:56:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34313 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757690Ab3DWVyZ (ORCPT
+	with ESMTP id S932174Ab3DWV4c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 17:54:25 -0400
+	Tue, 23 Apr 2013 17:56:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 23/26] vm: convert fb_mmap to vm_iomap_memory() helper
-Date: Tue, 23 Apr 2013 14:54:03 -0700
-Message-Id: <20130423215335.748164475@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        stable@vger.kernel.org
+Subject: [ 00/23] 3.0.75-stable review
+Date: Tue, 23 Apr 2013 14:56:07 -0700
+Message-Id: <20130423215456.307216898@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130423215333.344045754@linuxfoundation.org>
-References: <20130423215333.344045754@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+This is the start of the stable review cycle for the 3.0.75 release.
+There are 23 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let me know.
 
-------------------
+Responses should be made by Thu Apr 25 21:54:13 UTC 2013.
+Anything received after that time might be too late.
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.75-rc1.gz
+and the diffstat can be found below.
 
-commit fc9bbca8f650e5f738af8806317c0a041a48ae4a upstream.
+thanks,
 
-This is my example conversion of a few existing mmap users.  The
-fb_mmap() case is a good example because it is a bit more complicated
-than some: fb_mmap() mmaps one of two different memory areas depending
-on the page offset of the mmap (but happily there is never any mixing of
-the two, so the helper function still works).
+greg k-h
 
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+-------------
+Pseudo-Shortlog of commits:
 
----
- drivers/video/fbmem.c |   40 ++++++++++++++--------------------------
- 1 file changed, 14 insertions(+), 26 deletions(-)
+Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    Linux 3.0.75-rc1
 
---- a/drivers/video/fbmem.c
-+++ b/drivers/video/fbmem.c
-@@ -1364,15 +1364,12 @@ fb_mmap(struct file *file, struct vm_are
- {
- 	struct fb_info *info = file_fb_info(file);
- 	struct fb_ops *fb;
--	unsigned long off;
-+	unsigned long mmio_pgoff;
- 	unsigned long start;
- 	u32 len;
- 
- 	if (!info)
- 		return -ENODEV;
--	if (vma->vm_pgoff > (~0UL >> PAGE_SHIFT))
--		return -EINVAL;
--	off = vma->vm_pgoff << PAGE_SHIFT;
- 	fb = info->fbops;
- 	if (!fb)
- 		return -ENODEV;
-@@ -1384,33 +1381,24 @@ fb_mmap(struct file *file, struct vm_are
- 		return res;
- 	}
- 
--	/* frame buffer memory */
-+	/*
-+	 * Ugh. This can be either the frame buffer mapping, or
-+	 * if pgoff points past it, the mmio mapping.
-+	 */
- 	start = info->fix.smem_start;
--	len = PAGE_ALIGN((start & ~PAGE_MASK) + info->fix.smem_len);
--	if (off >= len) {
--		/* memory mapped io */
--		off -= len;
--		if (info->var.accel_flags) {
--			mutex_unlock(&info->mm_lock);
--			return -EINVAL;
--		}
-+	len = info->fix.smem_len;
-+	mmio_pgoff = PAGE_ALIGN((start & ~PAGE_MASK) + len) >> PAGE_SHIFT;
-+	if (vma->vm_pgoff >= mmio_pgoff) {
-+		vma->vm_pgoff -= mmio_pgoff;
- 		start = info->fix.mmio_start;
--		len = PAGE_ALIGN((start & ~PAGE_MASK) + info->fix.mmio_len);
-+		len = info->fix.mmio_len;
- 	}
- 	mutex_unlock(&info->mm_lock);
--	start &= PAGE_MASK;
--	if ((vma->vm_end - vma->vm_start + off) > len)
--		return -EINVAL;
--	off += start;
--	vma->vm_pgoff = off >> PAGE_SHIFT;
--	/* This is an IO map - tell maydump to skip this VMA */
--	vma->vm_flags |= VM_IO | VM_RESERVED;
-+
- 	vma->vm_page_prot = vm_get_page_prot(vma->vm_flags);
--	fb_pgprotect(file, vma, off);
--	if (io_remap_pfn_range(vma, vma->vm_start, off >> PAGE_SHIFT,
--			     vma->vm_end - vma->vm_start, vma->vm_page_prot))
--		return -EAGAIN;
--	return 0;
-+	fb_pgprotect(file, vma, start);
-+
-+	return vm_iomap_memory(vma, start, len);
- }
- 
- static int
+Josef Bacik <jbacik@fusionio.com>
+    Btrfs: make sure nbytes are right after log replay
+
+Linus Torvalds <torvalds@linux-foundation.org>
+    vm: convert mtdchar mmap to vm_iomap_memory() helper
+
+Linus Torvalds <torvalds@linux-foundation.org>
+    vm: convert HPET mmap to vm_iomap_memory() helper
+
+Linus Torvalds <torvalds@linux-foundation.org>
+    vm: convert fb_mmap to vm_iomap_memory() helper
+
+Linus Torvalds <torvalds@linux-foundation.org>
+    vm: convert snd_pcm_lib_mmap_iomem() to vm_iomap_memory() helper
+
+Linus Torvalds <torvalds@linux-foundation.org>
+    vm: add vm_iomap_memory() helper function
+
+Dave Airlie <airlied@gmail.com>
+    fbcon: fix locking harder
+
+Tommi Rantala <tt.rantala@gmail.com>
+    perf: Treat attr.config as u64 in perf_swevent_init()
+
+Jiri Kosina <jkosina@suse.cz>
+    Revert "sysfs: fix race between readdir and lseek"
+
+Mathias Krause <minipli@googlemail.com>
+    crypto: algif - suppress sending source address information in recvmsg
+
+Tejun Heo <tj@kernel.org>
+    sched: Convert BUG_ON()s in try_to_wake_up_local() to WARN_ON_ONCE()s
+
+Felix Fietkau <nbd@openwrt.org>
+    ath9k_htc: accept 1.x firmware newer than 1.3
+
+Illia Ragozin <illia.ragozin@grapecom.com>
+    ARM: 7696/1: Fix kexec by setting outer_cache.inv_all for Feroceon
+
+Andrew Honig <ahonig@google.com>
+    KVM: Allow cross page reads and writes from cached translations.
+
+Andy Honig <ahonig@google.com>
+    KVM: Fix bounds checking in ioapic indirect register reads (CVE-2013-1798)
+
+Andy Honig <ahonig@google.com>
+    KVM: x86: Convert MSR_KVM_SYSTEM_TIME to use gfn_to_hva_cache functions (CVE-2013-1797)
+
+Andy Honig <ahonig@google.com>
+    KVM: x86: fix for buffer overflow in handling of MSR_KVM_SYSTEM_TIME (CVE-2013-1796)
+
+Vyacheslav Dubeyko <slava@dubeyko.com>
+    hfsplus: fix potential overflow in hfsplus_file_truncate()
+
+Emese Revfy <re.emese@gmail.com>
+    kernel/signal.c: stop info leak via the tkill and the tgkill syscalls
+
+Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+    hugetlbfs: add swap entry check in follow_hugetlb_page()
+
+Christoph Fritz <chf.fritz@googlemail.com>
+    can: sja1000: fix handling on dt properties on little endian systems
+
+Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    Revert "8021q: fix a potential use-after-free"
+
+Michael Bohan <mbohan@codeaurora.org>
+    hrtimer: Don't reinitialize a cpu_base lock on CPU_UP
+
+
+-------------
+
+Diffstat:
+
+ Makefile                                      |  4 +--
+ arch/arm/mm/cache-feroceon-l2.c               |  1 +
+ arch/x86/include/asm/kvm_host.h               |  4 +--
+ arch/x86/kvm/x86.c                            | 40 +++++++++-------------
+ crypto/algif_hash.c                           |  2 ++
+ crypto/algif_skcipher.c                       |  1 +
+ drivers/char/hpet.c                           | 14 +-------
+ drivers/gpu/vga/vga_switcheroo.c              |  3 ++
+ drivers/mtd/mtdchar.c                         | 32 ++----------------
+ drivers/net/can/sja1000/sja1000_of_platform.c | 31 +++++++++--------
+ drivers/net/wireless/ath/ath9k/htc_drv_init.c |  2 +-
+ drivers/video/console/fbcon.c                 | 11 ++++--
+ drivers/video/fbmem.c                         | 42 +++++++++--------------
+ fs/btrfs/tree-log.c                           | 48 +++++++++++++++++++++++----
+ fs/hfsplus/extents.c                          |  2 +-
+ fs/sysfs/dir.c                                | 14 +-------
+ include/linux/kvm_host.h                      |  2 +-
+ include/linux/kvm_types.h                     |  1 +
+ include/linux/mm.h                            |  2 ++
+ kernel/events/core.c                          |  2 +-
+ kernel/hrtimer.c                              |  3 +-
+ kernel/sched.c                                |  6 ++--
+ kernel/signal.c                               |  2 +-
+ mm/hugetlb.c                                  | 12 ++++++-
+ mm/memory.c                                   | 47 ++++++++++++++++++++++++++
+ net/8021q/vlan.c                              | 14 ++++----
+ sound/core/pcm_native.c                       | 12 ++-----
+ virt/kvm/ioapic.c                             |  7 ++--
+ virt/kvm/kvm_main.c                           | 39 +++++++++++++++++-----
+ 29 files changed, 228 insertions(+), 172 deletions(-)
 
 
