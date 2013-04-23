@@ -1,62 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754771Ab3DWIu2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 04:50:28 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:50499 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750934Ab3DWIu0 (ORCPT
+	id S1755963Ab3DWIub (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 04:50:31 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:52805 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753528Ab3DWIu2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 04:50:26 -0400
-X-AuditID: 9c930179-b7b5bae0000069d1-17-51764b516c79
-Date: Tue, 23 Apr 2013 17:50:25 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-Subject: Re: [PATCH v2 0/6] correct load_balance()
-Message-ID: <20130423085025.GA3917@lge.com>
-References: <1364277700-7509-1-git-send-email-iamjoonsoo.kim@lge.com>
- <20130422080135.GA19454@lge.com>
- <1366632078.4443.15.camel@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1366632078.4443.15.camel@laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+	Tue, 23 Apr 2013 04:50:28 -0400
+Message-ID: <1366707006.8337.33.camel@laptop>
+Subject: Re: [PATCH v7] sched: fix init NOHZ_IDLE flag
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Paul Turner <pjt@google.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Mike Galbraith <efault@gmx.de>
+Date: Tue, 23 Apr 2013 10:50:06 +0200
+In-Reply-To: <CAKfTPtD5rxB29t1mCDBVTVv-RVFv9xMjhRaUeaxCU6znZGPJrw@mail.gmail.com>
+References: <1366645086-20345-1-git-send-email-vincent.guittot@linaro.org>
+	 <1366661437.6454.20.camel@laptop>
+	 <CAKfTPtD5rxB29t1mCDBVTVv-RVFv9xMjhRaUeaxCU6znZGPJrw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 22, 2013 at 02:01:18PM +0200, Peter Zijlstra wrote:
-> On Mon, 2013-04-22 at 17:01 +0900, Joonsoo Kim wrote:
-> 
-> > Hello, Ingo and Peter.
-> > 
-> > Just ping for this patchset.
-> 
-> The patches look fine -- except a few cosmetic changes. I'm fine with
-> Ingo taking them now and merging a 7/6 patch that clears up the
-> cosmetic issues or you can repost with them taken care of.
-> 
-> I'll leave that up to you and Ingo.
+On Tue, 2013-04-23 at 09:52 +0200, Vincent Guittot wrote:
 
-I sent v3 which reflect all Peter's comments.
-Here is the link for v3.
-https://lkml.org/lkml/2013/4/23/88
+> > static inline unsigned long *rq_nohz_flags(int cpu)
+> > {
+> >         return rcu_dereference(cpu_rq(cpu)->sd)->nohz_flags;
+> > }
+> >
+> >         if (!test_bit(0, rq_nohz_flags(cpu)))
+> >                 return;
+> >         clear_bit(0, rq_nohz_flags(cpu));
+> >
+> 
+> AFAICT, if we use different rcu_dereferences for modifying nohz_flags
+> and for updating the nr_busy_cpus, we open a time window for
+> desynchronization, isn't it ?
 
-> 
-> Otherwise:
-> 
-> Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Oh right, we need to call rq_nohz_flags() once and use the pointer
+twice.
 
-Thanks!
+> >> +unlock:
+> >>       rcu_read_unlock();
+> >>  }
+> >>
+> >> @@ -5409,14 +5416,21 @@ void set_cpu_sd_state_idle(void)
+> >>  {
+> >>       struct sched_domain *sd;
+> >>       int cpu = smp_processor_id();
+> >> -
+> >> -     if (test_bit(NOHZ_IDLE, nohz_flags(cpu)))
+> >> -             return;
+> >> -     set_bit(NOHZ_IDLE, nohz_flags(cpu));
+> >> +     int first_nohz_idle = 1;
+> >>
+> >>       rcu_read_lock();
+> >> -     for_each_domain(cpu, sd)
+> >> +     for_each_domain(cpu, sd) {
+> >> +             if (first_nohz_idle) {
+> >> +                     if (test_bit(NOHZ_IDLE, &sd->nohz_flags))
+> >> +                             goto unlock;
+> >> +
+> >> +                     set_bit(NOHZ_IDLE, &sd->nohz_flags);
+> >> +                     first_nohz_idle = 0;
+> >> +             }
+> >> +
+> >>               atomic_dec(&sd->groups->sgp->nr_busy_cpus);
+> >> +     }
+> >> +unlock:
+> >
+> > Same here, .. why on earth do it for every sched_domain for that
+> cpu?
+> 
+> The update of rq_nohz_flags is done only once on the top level
+> sched_domain and the nr_busy_cpus is updated on each sched_domain
+> level in order to have a quick access to the number of busy cpu when
+> we check for the need to kick an idle load balance
 
-> 
-> Thanks!
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Ah, I didn't see the whole first_nohz_idle thing.. but why did you
+place it inside the loop in the first place? Wouldn't GCC be able to
+avoid the double cpu_rq(cpu)->sd dereference using CSE? Argh no,.. its
+got an ACCESS_ONCE in it that defeats GCC.
+
+Bothersome..
+
+I'd almost write it like:
+
+	struct sched_domain *sd;
+
+	rcu_read_lock();
+	sd = rcu_dereference_check_sched_domain(cpu_rq(cpu)->sd);
+
+	if (sd->nohz_idle)
+		goto unlock;
+	xchg(&sd->nohz_idle, 1); /* do we actually need atomics here? */
+
+	for (; sd; sd = sd->parent)
+		atomic_dec(&sd->groups->sgp->nr_busy_cpus);
+  unlock:
+	rcu_read_unlock();
+
+
+
+
