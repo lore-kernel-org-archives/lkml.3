@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756062Ab3DWWFN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 18:05:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34269 "EHLO
+	id S1757798Ab3DWWFs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 18:05:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34258 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757770Ab3DWVyW (ORCPT
+	with ESMTP id S1757760Ab3DWVyU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 17:54:22 -0400
+	Tue, 23 Apr 2013 17:54:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tommi Rantala <tt.rantala@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@kernel.org>, davej@redhat.com
-Subject: [ 18/26] perf: Treat attr.config as u64 in perf_swevent_init()
-Date: Tue, 23 Apr 2013 14:53:58 -0700
-Message-Id: <20130423215335.225691069@linuxfoundation.org>
+        Felix Fietkau <nbd@openwrt.org>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 15/26] ath9k_hw: change AR9580 initvals to fix a stability issue
+Date: Tue, 23 Apr 2013 14:53:55 -0700
+Message-Id: <20130423215334.935497152@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130423215333.344045754@linuxfoundation.org>
 References: <20130423215333.344045754@linuxfoundation.org>
@@ -30,41 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tommi Rantala <tt.rantala@gmail.com>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit 8176cced706b5e5d15887584150764894e94e02f upstream.
+commit f09a878511997c25a76bf111a32f6b8345a701a5 upstream.
 
-Trinity discovered that we fail to check all 64 bits of
-attr.config passed by user space, resulting to out-of-bounds
-access of the perf_swevent_enabled array in
-sw_perf_event_destroy().
+The hardware parsing of Control Wrapper Frames needs to be disabled, as
+it has been causing spurious decryption error reports. The initvals for
+other chips have been updated to disable it, but AR9580 was left out for
+some reason.
 
-Introduced in commit b0a873ebb ("perf: Register PMU
-implementations").
-
-Signed-off-by: Tommi Rantala <tt.rantala@gmail.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: davej@redhat.com
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Link: http://lkml.kernel.org/r/1365882554-30259-1-git-send-email-tt.rantala@gmail.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/events/core.c |    2 +-
+ drivers/net/wireless/ath/ath9k/ar9580_1p0_initvals.h |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -5126,7 +5126,7 @@ static void sw_perf_event_destroy(struct
- 
- static int perf_swevent_init(struct perf_event *event)
- {
--	int event_id = event->attr.config;
-+	u64 event_id = event->attr.config;
- 
- 	if (event->attr.type != PERF_TYPE_SOFTWARE)
- 		return -ENOENT;
+--- a/drivers/net/wireless/ath/ath9k/ar9580_1p0_initvals.h
++++ b/drivers/net/wireless/ath/ath9k/ar9580_1p0_initvals.h
+@@ -648,7 +648,7 @@ static const u32 ar9580_1p0_mac_core[][2
+ 	{0x00008258, 0x00000000},
+ 	{0x0000825c, 0x40000000},
+ 	{0x00008260, 0x00080922},
+-	{0x00008264, 0x9bc00010},
++	{0x00008264, 0x9d400010},
+ 	{0x00008268, 0xffffffff},
+ 	{0x0000826c, 0x0000ffff},
+ 	{0x00008270, 0x00000000},
 
 
