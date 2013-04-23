@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932613Ab3DWV4w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 17:56:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34418 "EHLO
+	id S932597Ab3DWV4u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 17:56:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34407 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932390Ab3DWV4s (ORCPT
+	with ESMTP id S932484Ab3DWV4q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 17:56:48 -0400
+	Tue, 23 Apr 2013 17:56:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Takashi Iwai <tiwai@suse.de>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 22/23] vm: convert mtdchar mmap to vm_iomap_memory() helper
-Date: Tue, 23 Apr 2013 14:56:29 -0700
-Message-Id: <20130423215458.575755259@linuxfoundation.org>
+Subject: [ 19/23] vm: convert snd_pcm_lib_mmap_iomem() to vm_iomap_memory() helper
+Date: Tue, 23 Apr 2013 14:56:26 -0700
+Message-Id: <20130423215458.262002274@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130423215456.307216898@linuxfoundation.org>
 References: <20130423215456.307216898@linuxfoundation.org>
@@ -28,70 +29,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit 8558e4a26b00225efeb085725bc319f91201b239 upstream.
+commit 0fe09a45c4848b5b5607b968d959fdc1821c161d upstream.
 
-This is my example conversion of a few existing mmap users.  The mtdchar
-case is actually disabled right now (and stays disabled), but I did it
-because it showed up on my "git grep", and I was familiar with the code
-due to fixing an overflow problem in the code in commit 9c603e53d380
-("mtdchar: fix offset overflow detection").
+This is my example conversion of a few existing mmap users.  The pcm
+mmap case is one of the more straightforward ones.
 
+Acked-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mtd/mtdchar.c |   32 ++------------------------------
- 1 file changed, 2 insertions(+), 30 deletions(-)
+ sound/core/pcm_native.c |   12 ++----------
+ 1 file changed, 2 insertions(+), 10 deletions(-)
 
---- a/drivers/mtd/mtdchar.c
-+++ b/drivers/mtd/mtdchar.c
-@@ -1100,45 +1100,17 @@ static int mtd_mmap(struct file *file, s
- 	struct mtd_file_info *mfi = file->private_data;
- 	struct mtd_info *mtd = mfi->mtd;
- 	struct map_info *map = mtd->priv;
--	resource_size_t start, off;
--	unsigned long len, vma_len;
+--- a/sound/core/pcm_native.c
++++ b/sound/core/pcm_native.c
+@@ -3208,18 +3208,10 @@ static int snd_pcm_default_mmap(struct s
+ int snd_pcm_lib_mmap_iomem(struct snd_pcm_substream *substream,
+ 			   struct vm_area_struct *area)
+ {
+-	long size;
+-	unsigned long offset;
++	struct snd_pcm_runtime *runtime = substream->runtime;;
  
-         /* This is broken because it assumes the MTD device is map-based
- 	   and that mtd->priv is a valid struct map_info.  It should be
- 	   replaced with something that uses the mtd_get_unmapped_area()
- 	   operation properly. */
- 	if (0 /*mtd->type == MTD_RAM || mtd->type == MTD_ROM*/) {
--		off = get_vm_offset(vma);
--		start = map->phys;
--		len = PAGE_ALIGN((start & ~PAGE_MASK) + map->size);
--		start &= PAGE_MASK;
--		vma_len = get_vm_size(vma);
--
--		/* Overflow in off+len? */
--		if (vma_len + off < off)
--			return -EINVAL;
--		/* Does it fit in the mapping? */
--		if (vma_len + off > len)
--			return -EINVAL;
--
--		off += start;
--		/* Did that overflow? */
--		if (off < start)
--			return -EINVAL;
--		if (set_vm_offset(vma, off) < 0)
--			return -EINVAL;
--		vma->vm_flags |= VM_IO | VM_RESERVED;
--
- #ifdef pgprot_noncached
--		if (file->f_flags & O_DSYNC || off >= __pa(high_memory))
-+		if (file->f_flags & O_DSYNC || map->phys >= __pa(high_memory))
- 			vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
- #endif
--		if (io_remap_pfn_range(vma, vma->vm_start, off >> PAGE_SHIFT,
--				       vma->vm_end - vma->vm_start,
--				       vma->vm_page_prot))
--			return -EAGAIN;
--
--		return 0;
-+		return vm_iomap_memory(vma, map->phys, map->size);
- 	}
- 	return -ENOSYS;
- #else
+ 	area->vm_page_prot = pgprot_noncached(area->vm_page_prot);
+-	area->vm_flags |= VM_IO;
+-	size = area->vm_end - area->vm_start;
+-	offset = area->vm_pgoff << PAGE_SHIFT;
+-	if (io_remap_pfn_range(area, area->vm_start,
+-				(substream->runtime->dma_addr + offset) >> PAGE_SHIFT,
+-				size, area->vm_page_prot))
+-		return -EAGAIN;
+-	return 0;
++	return vm_iomap_memory(area, runtime->dma_addr, runtime->dma_bytes);
+ }
+ 
+ EXPORT_SYMBOL(snd_pcm_lib_mmap_iomem);
 
 
