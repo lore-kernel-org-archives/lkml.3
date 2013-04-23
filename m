@@ -1,25 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757783Ab3DWWCq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 18:02:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34340 "EHLO
+	id S1757834Ab3DWWDJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 18:03:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34319 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932174Ab3DWV4e (ORCPT
+	with ESMTP id S932388Ab3DWV4d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 17:56:34 -0400
+	Tue, 23 Apr 2013 17:56:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Emese Revfy <re.emese@gmail.com>, PaX Team <pageexec@freemail.hu>,
-        Kees Cook <keescook@chromium.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 05/23] kernel/signal.c: stop info leak via the tkill and the tgkill syscalls
-Date: Tue, 23 Apr 2013 14:56:12 -0700
-Message-Id: <20130423215456.851626377@linuxfoundation.org>
+        Christoph Fritz <chf.fritz@googlemail.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>
+Subject: [ 03/23] can: sja1000: fix handling on dt properties on little endian systems
+Date: Tue, 23 Apr 2013 14:56:10 -0700
+Message-Id: <20130423215456.648272535@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130423215456.307216898@linuxfoundation.org>
 References: <20130423215456.307216898@linuxfoundation.org>
@@ -32,50 +27,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Emese Revfy <re.emese@gmail.com>
+From: Christoph Fritz <chf.fritz@googlemail.com>
 
-commit b9e146d8eb3b9ecae5086d373b50fa0c1f3e7f0f upstream.
+commit 0443de5fbf224abf41f688d8487b0c307dc5a4b4 upstream.
 
-This fixes a kernel memory contents leak via the tkill and tgkill syscalls
-for compat processes.
+To get correct endianes on little endian cpus (like arm) while reading device
+tree properties, this patch replaces of_get_property() with
+of_property_read_u32(). While there use of_property_read_bool() for the
+handling of the boolean "nxp,no-comparator-bypass" property.
 
-This is visible in the siginfo_t->_sifields._rt.si_sigval.sival_ptr field
-when handling signals delivered from tkill.
-
-The place of the infoleak:
-
-int copy_siginfo_to_user32(compat_siginfo_t __user *to, siginfo_t *from)
-{
-        ...
-        put_user_ex(ptr_to_compat(from->si_ptr), &to->si_ptr);
-        ...
-}
-
-Signed-off-by: Emese Revfy <re.emese@gmail.com>
-Reviewed-by: PaX Team <pageexec@freemail.hu>
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Serge Hallyn <serge.hallyn@canonical.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Christoph Fritz <chf.fritz@googlemail.com>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/signal.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/can/sja1000/sja1000_of_platform.c |   31 ++++++++++++--------------
+ 1 file changed, 15 insertions(+), 16 deletions(-)
 
---- a/kernel/signal.c
-+++ b/kernel/signal.c
-@@ -2664,7 +2664,7 @@ do_send_specific(pid_t tgid, pid_t pid,
+--- a/drivers/net/can/sja1000/sja1000_of_platform.c
++++ b/drivers/net/can/sja1000/sja1000_of_platform.c
+@@ -93,8 +93,8 @@ static int __devinit sja1000_ofp_probe(s
+ 	struct net_device *dev;
+ 	struct sja1000_priv *priv;
+ 	struct resource res;
+-	const u32 *prop;
+-	int err, irq, res_size, prop_size;
++	u32 prop;
++	int err, irq, res_size;
+ 	void __iomem *base;
  
- static int do_tkill(pid_t tgid, pid_t pid, int sig)
- {
--	struct siginfo info;
-+	struct siginfo info = {};
+ 	err = of_address_to_resource(np, 0, &res);
+@@ -135,27 +135,27 @@ static int __devinit sja1000_ofp_probe(s
+ 	priv->read_reg = sja1000_ofp_read_reg;
+ 	priv->write_reg = sja1000_ofp_write_reg;
  
- 	info.si_signo = sig;
- 	info.si_errno = 0;
+-	prop = of_get_property(np, "nxp,external-clock-frequency", &prop_size);
+-	if (prop && (prop_size ==  sizeof(u32)))
+-		priv->can.clock.freq = *prop / 2;
++	err = of_property_read_u32(np, "nxp,external-clock-frequency", &prop);
++	if (!err)
++		priv->can.clock.freq = prop / 2;
+ 	else
+ 		priv->can.clock.freq = SJA1000_OFP_CAN_CLOCK; /* default */
+ 
+-	prop = of_get_property(np, "nxp,tx-output-mode", &prop_size);
+-	if (prop && (prop_size == sizeof(u32)))
+-		priv->ocr |= *prop & OCR_MODE_MASK;
++	err = of_property_read_u32(np, "nxp,tx-output-mode", &prop);
++	if (!err)
++		priv->ocr |= prop & OCR_MODE_MASK;
+ 	else
+ 		priv->ocr |= OCR_MODE_NORMAL; /* default */
+ 
+-	prop = of_get_property(np, "nxp,tx-output-config", &prop_size);
+-	if (prop && (prop_size == sizeof(u32)))
+-		priv->ocr |= (*prop << OCR_TX_SHIFT) & OCR_TX_MASK;
++	err = of_property_read_u32(np, "nxp,tx-output-config", &prop);
++	if (!err)
++		priv->ocr |= (prop << OCR_TX_SHIFT) & OCR_TX_MASK;
+ 	else
+ 		priv->ocr |= OCR_TX0_PULLDOWN; /* default */
+ 
+-	prop = of_get_property(np, "nxp,clock-out-frequency", &prop_size);
+-	if (prop && (prop_size == sizeof(u32)) && *prop) {
+-		u32 divider = priv->can.clock.freq * 2 / *prop;
++	err = of_property_read_u32(np, "nxp,clock-out-frequency", &prop);
++	if (!err && prop) {
++		u32 divider = priv->can.clock.freq * 2 / prop;
+ 
+ 		if (divider > 1)
+ 			priv->cdr |= divider / 2 - 1;
+@@ -165,8 +165,7 @@ static int __devinit sja1000_ofp_probe(s
+ 		priv->cdr |= CDR_CLK_OFF; /* default */
+ 	}
+ 
+-	prop = of_get_property(np, "nxp,no-comparator-bypass", NULL);
+-	if (!prop)
++	if (!of_property_read_bool(np, "nxp,no-comparator-bypass"))
+ 		priv->cdr |= CDR_CBP; /* default */
+ 
+ 	priv->irq_flags = IRQF_SHARED;
 
 
