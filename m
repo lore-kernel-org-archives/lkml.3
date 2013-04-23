@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932251Ab3DWVxO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 17:53:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34125 "EHLO
+	id S1757618Ab3DWVxb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 17:53:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34172 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757590Ab3DWVxD (ORCPT
+	with ESMTP id S932223Ab3DWVxM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 17:53:03 -0400
+	Tue, 23 Apr 2013 17:53:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tommi Rantala <tt.rantala@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@kernel.org>, davej@redhat.com
-Subject: [ 30/42] perf: Treat attr.config as u64 in perf_swevent_init()
-Date: Tue, 23 Apr 2013 14:52:28 -0700
-Message-Id: <20130423215208.562044183@linuxfoundation.org>
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: [ 41/42] s390: move dummy io_remap_pfn_range() to asm/pgtable.h
+Date: Tue, 23 Apr 2013 14:52:39 -0700
+Message-Id: <20130423215209.655190636@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130423215205.523980967@linuxfoundation.org>
 References: <20130423215205.523980967@linuxfoundation.org>
@@ -30,41 +28,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tommi Rantala <tt.rantala@gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit 8176cced706b5e5d15887584150764894e94e02f upstream.
+commit 4f2e29031e6c67802e7370292dd050fd62f337ee upstream.
 
-Trinity discovered that we fail to check all 64 bits of
-attr.config passed by user space, resulting to out-of-bounds
-access of the perf_swevent_enabled array in
-sw_perf_event_destroy().
+Commit b4cbb197c7e7 ("vm: add vm_iomap_memory() helper function") added
+a helper function wrapper around io_remap_pfn_range(), and every other
+architecture defined it in <asm/pgtable.h>.
 
-Introduced in commit b0a873ebb ("perf: Register PMU
-implementations").
+The s390 choice of <asm/io.h> may make sense, but is not very convenient
+for this case, and gratuitous differences like that cause unexpected errors like this:
 
-Signed-off-by: Tommi Rantala <tt.rantala@gmail.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: davej@redhat.com
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Link: http://lkml.kernel.org/r/1365882554-30259-1-git-send-email-tt.rantala@gmail.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+   mm/memory.c: In function 'vm_iomap_memory':
+   mm/memory.c:2439:2: error: implicit declaration of function 'io_remap_pfn_range' [-Werror=implicit-function-declaration]
+
+Glory be the kbuild test robot who noticed this, bisected it, and
+reported it to the guilty parties (ie me).
+
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/events/core.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/s390/include/asm/io.h      |    4 ----
+ arch/s390/include/asm/pgtable.h |    4 ++++
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -5328,7 +5328,7 @@ static void sw_perf_event_destroy(struct
+--- a/arch/s390/include/asm/io.h
++++ b/arch/s390/include/asm/io.h
+@@ -50,10 +50,6 @@ void unxlate_dev_mem_ptr(unsigned long p
+ #define ioremap_nocache(addr, size)	ioremap(addr, size)
+ #define ioremap_wc			ioremap_nocache
  
- static int perf_swevent_init(struct perf_event *event)
+-/* TODO: s390 cannot support io_remap_pfn_range... */
+-#define io_remap_pfn_range(vma, vaddr, pfn, size, prot) 	       \
+-	remap_pfn_range(vma, vaddr, pfn, size, prot)
+-
+ static inline void __iomem *ioremap(unsigned long offset, unsigned long size)
  {
--	int event_id = event->attr.config;
-+	u64 event_id = event->attr.config;
+ 	return (void __iomem *) offset;
+--- a/arch/s390/include/asm/pgtable.h
++++ b/arch/s390/include/asm/pgtable.h
+@@ -56,6 +56,10 @@ extern unsigned long zero_page_mask;
+ 	 (((unsigned long)(vaddr)) &zero_page_mask))))
+ #define __HAVE_COLOR_ZERO_PAGE
  
- 	if (event->attr.type != PERF_TYPE_SOFTWARE)
- 		return -ENOENT;
++/* TODO: s390 cannot support io_remap_pfn_range... */
++#define io_remap_pfn_range(vma, vaddr, pfn, size, prot) 	       \
++	remap_pfn_range(vma, vaddr, pfn, size, prot)
++
+ #endif /* !__ASSEMBLY__ */
+ 
+ /*
 
 
