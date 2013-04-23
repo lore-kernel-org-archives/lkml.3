@@ -1,50 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755518Ab3DWGXP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 02:23:15 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:17111 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755308Ab3DWGXM (ORCPT
+	id S1755490Ab3DWGXO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 02:23:14 -0400
+Received: from mail-ea0-f176.google.com ([209.85.215.176]:34937 "EHLO
+	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755313Ab3DWGXM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 23 Apr 2013 02:23:12 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 22 Apr 2013 23:20:59 -0700
-Message-ID: <517627CB.1000504@nvidia.com>
-Date: Tue, 23 Apr 2013 11:48:51 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Axel Lin <axel.lin@ingics.com>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] regulator: tps62360: Fix off-by-one shift for ramp_ctrl
-References: <1366691753.25625.6.camel@phoenix>
-In-Reply-To: <1366691753.25625.6.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+From: Marek Belisko <marek.belisko@gmail.com>
+To: mturquette@linaro.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        zonque@gmail.com, sebastian.hesselbarth@gmail.com,
+        Marek Belisko <marek.belisko@streamunlimited.com>
+Subject: [PATCH 1/2] clk: si5351: Fix clkout rate computation.
+Date: Tue, 23 Apr 2013 08:22:49 +0200
+Message-Id: <1366698170-31346-1-git-send-email-marek.belisko@streamunlimited.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 23 April 2013 10:05 AM, Axel Lin wrote:
-> According to the datasheet[1]
->
-> Register 0x06h Description: RmpCtrl (REGISTER ADDRESS: 0x06h Read/Write)
-> BIT[5..7]:
->          RMP[2:0] Output voltage ramp timing
->          D7-D5   Slope
->          000     32mV/us
->          001     16mV/us
->          010     8mV/us
->          ...
->          110     0.5mV/us
->          111     0.25mV/us
->
-> Thus to get correct ramp_ctrl value, we need to right-shift 5 bits.
->
-> [1] http://www.ti.com/lit/ds/symlink/tps62360.pdf
->
+Rate was incorrectly computed because we read from wrong divider register.
 
-Checked with my latest and it is correct.
-Acked-by: Laxman Dewangan <ldewangan@nvidia.com>
+Signed-off-by: Marek Belisko <marek.belisko@streamunlimited.com>
+---
+ drivers/clk/clk-si5351.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/clk/clk-si5351.c b/drivers/clk/clk-si5351.c
+index 8927284..cf39e53 100644
+--- a/drivers/clk/clk-si5351.c
++++ b/drivers/clk/clk-si5351.c
+@@ -932,7 +932,7 @@ static unsigned long si5351_clkout_recalc_rate(struct clk_hw *hw,
+ 	unsigned char reg;
+ 	unsigned char rdiv;
+ 
+-	if (hwdata->num > 5)
++	if (hwdata->num <= 5)
+ 		reg = si5351_msynth_params_address(hwdata->num) + 2;
+ 	else
+ 		reg = SI5351_CLK6_7_OUTPUT_DIVIDER;
+-- 
+1.7.9.5
+
