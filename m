@@ -1,219 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756213Ab3DWIfb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 04:35:31 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:46785 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755515Ab3DWIbR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 04:31:17 -0400
-X-AuditID: 9c930197-b7bb3ae000000fa9-8d-517646d199d0
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
-Subject: [PATCH 03/14] perf util: Save pid-cmdline mapping into tracing header
-Date: Tue, 23 Apr 2013 17:31:01 +0900
-Message-Id: <1366705872-12132-4-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1366705872-12132-1-git-send-email-namhyung@kernel.org>
-References: <1366705872-12132-1-git-send-email-namhyung@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	id S1756364Ab3DWIiE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 04:38:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54956 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756342Ab3DWIh4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Apr 2013 04:37:56 -0400
+Date: Tue, 23 Apr 2013 11:36:55 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: "Zhanghaoyu (A)" <haoyu.zhang@huawei.com>
+Cc: Yan Vugenfirer <yvugenfi@redhat.com>, kvm list <kvm@vger.kernel.org>,
+        "mst@redhat.com" <mst@redhat.com>, qemu-devel <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Luonengjun <luonengjun@huawei.com>,
+        Zanghongyong <zanghongyong@huawei.com>,
+        "Huangweidong (C)" <weidong.huang@huawei.com>,
+        "Wangrui (K)" <moon.wangrui@huawei.com>,
+        Guantao <guantao.guan@huawei.com>,
+        Guoxiaodong <guoxiaodong@huawei.com>
+Subject: Re: KVM VM(windows xp) reseted when running geekbench for about 2
+ days
+Message-ID: <20130423083655.GE12401@redhat.com>
+References: <D3E216785288A145B7BC975F83A2ED103FE1E7A5@szxeml556-mbx.china.huawei.com>
+ <20130418125532.GW8997@redhat.com>
+ <9C764699-6F9C-4AD8-A6C9-34D818753452@redhat.com>
+ <D3E216785288A145B7BC975F83A2ED103FE1F16A@szxeml556-mbx.china.huawei.com>
+ <20130419114242.GK5807@redhat.com>
+ <D3E216785288A145B7BC975F83A2ED103FE21AD4@szxeml556-mbx.china.huawei.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <D3E216785288A145B7BC975F83A2ED103FE21AD4@szxeml556-mbx.china.huawei.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+On Tue, Apr 23, 2013 at 08:21:29AM +0000, Zhanghaoyu (A) wrote:
+> >> >> On Thu, Apr 18, 2013 at 12:00:49PM +0000, Zhanghaoyu (A) wrote:
+> >> >>> I start 10 VMs(windows xp), then running geekbench tool on them, 
+> >> >>> about 2 days, one of them was reset, I found the reset operation 
+> >> >>> is done by int kvm_cpu_exec(CPUArchState *env) {
+> >> >>>    ...
+> >> >>>       switch (run->exit_reason)
+> >> >>>       ...
+> >> >>>        case KVM_EXIT_SHUTDOWN:
+> >> >>>            DPRINTF("shutdown\n");
+> >> >>>            qemu_system_reset_request();
+> >> >>>            ret = EXCP_INTERRUPT;
+> >> >>>            break;
+> >> >>>    ...
+> >> >>> }
+> >> >>> 
+> >> >>> KVM_EXIT_SHUTDOWN exit reason was set previously in triple fault handle handle_triple_fault().
+> >> >>> 
+> >> >> How do you know that reset was done here? This is not the only 
+> >> >> place where qemu_system_reset_request() is called.
+> >> I used gdb to debug QEMU process, and add a breakpoint in 
+> >> qemu_system_reset_request(), when the case occurred, backtrace shown 
+> >> as below,
+> >> (gdb) bt
+> >> #0  qemu_system_reset_request () at vl.c:1964
+> >> #1  0x00007f9ef9dc5991 in kvm_cpu_exec (env=0x7f9efac47100)
+> >>     at /gt/qemu-kvm-1.4/qemu-kvm-1.4/kvm-all.c:1602
+> >> #2  0x00007f9ef9d5b229 in qemu_kvm_cpu_thread_fn (arg=0x7f9efac47100)
+> >>     at /gt/qemu-kvm-1.4/qemu-kvm-1.4/cpus.c:759
+> >> #3  0x00007f9ef898b5f0 in start_thread () from /lib64/libpthread.so.0
+> >> #4  0x00007f9ef86fa84d in clone () from /lib64/libc.so.6
+> >> #5  0x0000000000000000 in ?? ()
+> >> 
+> >> And, I add printk log in all places where KVM_EXIT_SHUTDOWN exit reason is set, only handle_triple_fault() was called.
+> >> >
+> >> >Make sure XP is not set to auto-reset in case of BSOD. 
+> >> No, winxp is not set to auto-reset in case of BSOD. No Winxp event log reported.
+> >> >
+> >> >Best regards,
+> >> >Yan.
+> >> >
+> >> >> 
+> >> >>> What causes the triple fault?
+> >> >>> 
+> >> >> Are you asking what is triple fault or why it happened in your case?
+> >> What I asked is why triple fault happened in my case.
+> >> >> For the former see here: http://en.wikipedia.org/wiki/Triple_fault
+> >> >> For the later it is to late to tell after VM reset. You can run 
+> >> >> QEMU with -no-reboot -no-shutdown. VM will pause instead of 
+> >> >> rebooting and then you can examine what is going on.
+> >> Great thanks, I'll run QEMU with -no-reboot -no-shutdown options, if VM paused in my case, what should I examined?
+> >> 
+> >Register state "info registers" in the monitor for each vcpu. Code around the instruction that faulted.
+> 
+> I ran the QEMU with -no-reboot -no-shutdown options, the VM paused When the case happened, then I info registers in QEMU monitor, shown as below,
+> CS =0008 00000000 ffffffff 00c09b00 DPL =0 CS32 [-RA]
+> SS =0010 00000000 ffffffff 00c09300 DPL =0 DS   [-WA]
+> DS =0023 00000000 ffffffff 00c0f300 DPL =3 DS   [-WA]
+> FS =0030 ffdff000 00001fff 00c09300 DPL =0 DS   [-WA]
+> GS =0000 00000000 ffffffff 00c00000
+> LDT=0000 00000000 ffffffff 00c00000
+> TR =0028 80042000 000020ab 00008b00 DPL=0 TSS32-busy
+> GDT=     8003f000 000003ff
+> IDT=     8003f400 000007ff
+> CR0=8001003b CR2=760d7fe4 CR3=002ec000 CR4=000006f8
+> DR0=0000000000000000 DR1=0000000000000000 DR2=0000000000000000 DR3=0000000000000000
+> DR6=00000000ffff0ff0 DR7=0000000000000400
+> EFER=0000000000000800
+> FCW=027f FSW=0000 [ST=0] FTW=00 MXCSR=00001f80
+> FPR0=0000000000000000 0000 FPR1=0000000000000000 0000
+> FPR2=0000000000000000 0000 FPR3=0000000000000000 0000
+> FPR4=0000000000000000 0000 FPR5=0000000000000000 0000
+> FPR6=0000000000000000 0000 FPR7=0000000000000000 0000
+> XMM00=00000000000000000000000000000000 XMM01=00000000000000000000000000000000
+> XMM02=00000000000000000000000000000000 XMM03=00000000000000000000000000000000
+> XMM04=00000000000000000000000000000000 XMM05=00000000000000000000000000000000
+> XMM06=00000000000000000000000000000000 XMM07=00000000000000000000000000000000
+> 
+> In normal case, info registers in QEMU monitor, shown as below
+> CS =001b 00000000 ffffffff 00c0fb00 DPL=3 CS32 [-RA]
+> SS =0023 00000000 ffffffff 00c0f300 DPL=3 DS   [-WA]
+> DS =0023 00000000 ffffffff 00c0f300 DPL=3 DS   [-WA]
+> FS =0038 7ffda000 00000fff 0040f300 DPL=3 DS   [-WA]
+> GS =0000 00000000 ffffffff 00000100
+> LDT=0000 00000000 ffffffff 00000000
+> TR =0028 80042000 000020ab 00008b00 DPL=0 TSS32-busy
+> GDT=     8003f000 000003ff
+> IDT=     8003f400 000007ff
+> CR0=80010031 CR2=0167fd20 CR3=0af00220 CR4=000006f8
+> DR0=0000000000000000 DR1=0000000000000000 DR2=0000000000000000 DR3=0000000000000000
+> DR6=00000000ffff0ff0 DR7=0000000000000400
+> EFER=0000000000000800
+> FCW=027f FSW=0000 [ST=0] FTW=00 MXCSR=00001f80
+> FPR0=00a4000000a40a18 d830 FPR1=0012f9c07c90e900 e900
+> FPR2=7c910202ffffffff 5d40 FPR3=000001e27c903400 f808
+> FPR4=000005230012f87a 0000 FPR5=000000007c905d40 0001
+> FPR6=0000000100000000 0000 FPR7=a9dfde0000000000 4018
+> XMM00=7c917d9a0012f8d4000000007c900000 XMM01=0012f8740012f8740012f87a7c900000
+> XMM02=7c917de97c97b1787c917e3f0012f87a XMM03=0012fa687c80901a0012f91800006cfd
+> XMM04=7c9102027c9034007c9102087c90e900 XMM05=0000000c7c9000000012f9907c91017b
+> XMM06=00009a40000000000012f8780012f878 XMM07=6365446c745200007c91340500241f18
+> 
+> N.B. in two cases, CS DPL, SS DPL, FS DPL, FPR, XMM, FSW, ST, FTW values are quite distinct.
+> 
+You do not expect registers to be the same each time, don't you? From
+the quick glance there is nothing unusual about those states. Is VM UP
+or SMP? If it is SMP you need to do "info register" for all cpus. Switch
+between them with "cpu index" command. Do "x/i $pc" on each cpu too and
+when you provide "info register" output do not cut GPR state.
 
-Current trace info data lacks the saved cmdline mapping which is
-needed for pevent to find out the comm of a task.  Add this and bump
-up the version number so that perf can determine its presence when
-reading.
-
-This is mostly corresponding to trace.dat file version 6, but still
-lacks 4 byte of number of cpus, and 10 bytes of type string - and I
-think we don't need those anyway.
-
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/util/trace-event-info.c  | 33 ++++++++++++++++++++++++++++++++-
- tools/perf/util/trace-event-parse.c | 17 +++++++++++++++++
- tools/perf/util/trace-event-read.c  | 36 ++++++++++++++++++++++++++++++++++--
- tools/perf/util/trace-event.h       |  1 +
- 4 files changed, 84 insertions(+), 3 deletions(-)
-
-diff --git a/tools/perf/util/trace-event-info.c b/tools/perf/util/trace-event-info.c
-index dcfc1869c9af..5f6cba50efaf 100644
---- a/tools/perf/util/trace-event-info.c
-+++ b/tools/perf/util/trace-event-info.c
-@@ -41,7 +41,7 @@
- #include <lk/debugfs.h>
- #include "evsel.h"
- 
--#define VERSION "0.5"
-+#define VERSION "0.6"
- 
- static int output_fd;
- 
-@@ -390,6 +390,34 @@ out:
- 	return err;
- }
- 
-+static int record_saved_cmdline(void)
-+{
-+	unsigned int size;
-+	char *path;
-+	struct stat st;
-+	int ret, err = 0;
-+
-+	path = get_tracing_file("saved_cmdlines");
-+	if (!path) {
-+		pr_debug("can't get tracing/saved_cmdline");
-+		return -ENOMEM;
-+	}
-+
-+	ret = stat(path, &st);
-+	if (ret < 0) {
-+		/* not found */
-+		size = 0;
-+		if (write(output_fd, &size, 8) != 8)
-+			err = -EIO;
-+		goto out;
-+	}
-+	err = record_file(path, 8);
-+
-+out:
-+	put_tracing_file(path);
-+	return err;
-+}
-+
- static void
- put_tracepoints_path(struct tracepoint_path *tps)
- {
-@@ -554,6 +582,9 @@ struct tracing_data *tracing_data_get(struct list_head *pattrs,
- 	if (err)
- 		goto out;
- 	err = record_ftrace_printk();
-+	if (err)
-+		goto out;
-+	err = record_saved_cmdline();
- 
- out:
- 	/*
-diff --git a/tools/perf/util/trace-event-parse.c b/tools/perf/util/trace-event-parse.c
-index fe7a27d67d2b..ef09e4720e04 100644
---- a/tools/perf/util/trace-event-parse.c
-+++ b/tools/perf/util/trace-event-parse.c
-@@ -232,6 +232,23 @@ void parse_ftrace_printk(struct pevent *pevent,
- 	}
- }
- 
-+void parse_saved_cmdline(struct pevent *pevent,
-+			 char *file, unsigned int size __maybe_unused)
-+{
-+	char *comm;
-+	char *line;
-+	char *next = NULL;
-+	int pid;
-+
-+	line = strtok_r(file, "\n", &next);
-+	while (line) {
-+		sscanf(line, "%d %ms", &pid, &comm);
-+		pevent_register_comm(pevent, comm, pid);
-+		free(comm);
-+		line = strtok_r(NULL, "\n", &next);
-+	}
-+}
-+
- int parse_ftrace_file(struct pevent *pevent, char *buf, unsigned long size)
- {
- 	return pevent_parse_event(pevent, buf, size, "ftrace");
-diff --git a/tools/perf/util/trace-event-read.c b/tools/perf/util/trace-event-read.c
-index f2112270c663..e084e5e654b6 100644
---- a/tools/perf/util/trace-event-read.c
-+++ b/tools/perf/util/trace-event-read.c
-@@ -343,6 +343,31 @@ static int read_event_files(struct pevent *pevent)
- 	return 0;
- }
- 
-+static int read_saved_cmdline(struct pevent *pevent)
-+{
-+	unsigned long long size;
-+	char *buf;
-+
-+	/* it can have 0 size */
-+	size = read8(pevent);
-+	if (!size)
-+		return 0;
-+
-+	buf = malloc(size + 1);
-+	if (buf == NULL)
-+		return -1;
-+
-+	if (do_read(buf, size) < 0) {
-+		free(buf);
-+		return -1;
-+	}
-+
-+	parse_saved_cmdline(pevent, buf, size);
-+
-+	free(buf);
-+	return 0;
-+}
-+
- ssize_t trace_report(int fd, struct pevent **ppevent, bool __repipe)
- {
- 	char buf[BUFSIZ];
-@@ -383,10 +408,11 @@ ssize_t trace_report(int fd, struct pevent **ppevent, bool __repipe)
- 		return -1;
- 	if (show_version)
- 		printf("version = %s\n", version);
--	free(version);
- 
--	if (do_read(buf, 1) < 0)
-+	if (do_read(buf, 1) < 0) {
-+		free(version);
- 		return -1;
-+	}
- 	file_bigendian = buf[0];
- 	host_bigendian = bigendian();
- 
-@@ -422,6 +448,11 @@ ssize_t trace_report(int fd, struct pevent **ppevent, bool __repipe)
- 	err = read_ftrace_printk(pevent);
- 	if (err)
- 		goto out;
-+	if (!strcmp(version, "0.6")) {
-+		err = read_saved_cmdline(pevent);
-+		if (err)
-+			goto out;
-+	}
- 
- 	size = trace_data_size;
- 	repipe = false;
-@@ -438,5 +469,6 @@ ssize_t trace_report(int fd, struct pevent **ppevent, bool __repipe)
- out:
- 	if (pevent)
- 		pevent_free(pevent);
-+	free(version);
- 	return size;
- }
-diff --git a/tools/perf/util/trace-event.h b/tools/perf/util/trace-event.h
-index 929baae82f71..fbc8a19552b7 100644
---- a/tools/perf/util/trace-event.h
-+++ b/tools/perf/util/trace-event.h
-@@ -30,6 +30,7 @@ void *raw_field_ptr(struct event_format *event, const char *name, void *data);
- 
- void parse_proc_kallsyms(struct pevent *pevent, char *file, unsigned int size);
- void parse_ftrace_printk(struct pevent *pevent, char *file, unsigned int size);
-+void parse_saved_cmdline(struct pevent *pevent, char *file, unsigned int size);
- 
- ssize_t trace_report(int fd, struct pevent **pevent, bool repipe);
- 
--- 
-1.7.11.7
-
+--
+			Gleb.
