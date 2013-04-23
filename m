@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756269Ab3DWPDs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 11:03:48 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:51503 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756126Ab3DWPDp (ORCPT
+	id S1756590Ab3DWPFx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 11:05:53 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:52527 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756210Ab3DWPDr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 11:03:45 -0400
+	Tue, 23 Apr 2013 11:03:47 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: arnd@arndb.de, linus.walleij@stericsson.com,
         mian.yousaf.kaukab@stericsson.com, Lee Jones <lee.jones@linaro.org>,
         Felipe Balbi <balbi@ti.com>, linux-usb@vger.kernel.org
-Subject: [PATCH 04/10] usb: musb: ux500: harden checks for platform data
-Date: Tue, 23 Apr 2013 16:03:08 +0100
-Message-Id: <1366729394-11406-5-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 05/10] usb: musb: ux500: attempt to find channels by name before using pdata
+Date: Tue, 23 Apr 2013 16:03:09 +0100
+Message-Id: <1366729394-11406-6-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1366729394-11406-1-git-send-email-lee.jones@linaro.org>
 References: <1366729394-11406-1-git-send-email-lee.jones@linaro.org>
@@ -22,58 +22,75 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In its current state, the ux500-musb driver uses platform data pointers
-blindly with no prior checking. If no platform data pointer is passed
-this will Oops the kernel. In this patch we ensure platform data and
-board data are present prior to using them.
+If we can ever get to a state where we can solely search for DMA channels
+by name, this will almost completely alleviate the requirement to pass
+copious amounts of information though platform data. Here we take the
+first step towards this. The next step will be to enable Device Tree
+complete with name<->event_line mapping.
 
 Cc: Felipe Balbi <balbi@ti.com>
 Cc: linux-usb@vger.kernel.org
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/usb/musb/ux500_dma.c |   11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+ drivers/usb/musb/ux500_dma.c |   20 +++++++++++++++++---
+ 1 file changed, 17 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/usb/musb/ux500_dma.c b/drivers/usb/musb/ux500_dma.c
-index c75e07a..02b4a6e 100644
+index 02b4a6e..6eef449 100644
 --- a/drivers/usb/musb/ux500_dma.c
 +++ b/drivers/usb/musb/ux500_dma.c
-@@ -287,7 +287,7 @@ static int ux500_dma_controller_start(struct dma_controller *c)
- 	struct musb *musb = controller->private_data;
- 	struct device *dev = musb->controller;
+@@ -33,6 +33,11 @@
+ #include <linux/platform_data/usb-musb-ux500.h>
+ #include "musb_core.h"
+ 
++static const char *iep_chan_names[] = { "iep_1_9", "iep_2_10", "iep_3_11", "iep_4_12",
++					"iep_5_13", "iep_6_14", "iep_7_15", "iep_8" };
++static const char *oep_chan_names[] = { "oep_1_9", "oep_2_10", "oep_3_11", "oep_4_12",
++					"oep_5_13", "oep_6_14", "oep_7_15", "oep_8" };
++
+ struct ux500_dma_channel {
+ 	struct dma_channel channel;
+ 	struct ux500_dma_controller *controller;
+@@ -289,6 +294,7 @@ static int ux500_dma_controller_start(struct dma_controller *c)
  	struct musb_hdrc_platform_data *plat = dev->platform_data;
--	struct ux500_musb_board_data *data = plat->board_data;
-+	struct ux500_musb_board_data *data;
+ 	struct ux500_musb_board_data *data;
  	struct dma_channel *dma_channel = NULL;
++	char **chan_names;
  	u32 ch_num;
  	u8 dir;
-@@ -297,14 +297,19 @@ static int ux500_dma_controller_start(struct dma_controller *c)
- 	struct ux500_dma_channel *channel_array;
- 	dma_cap_mask_t mask;
- 
-+	if (!plat) {
-+		dev_err(musb->controller, "No platform data\n");
-+		return -EINVAL;
-+	}
- 
-+	data = plat->board_data;
- 
- 	dma_cap_zero(mask);
- 	dma_cap_set(DMA_SLAVE, mask);
- 
+ 	u8 is_tx = 0;
+@@ -310,6 +316,7 @@ static int ux500_dma_controller_start(struct dma_controller *c)
  	/* Prepare the loop for RX channels */
  	channel_array = controller->rx_channel;
--	param_array = data->dma_rx_param_array;
-+	param_array = (data) ? data->dma_rx_param_array : NULL;
+ 	param_array = (data) ? data->dma_rx_param_array : NULL;
++	chan_names = (char **)iep_chan_names;
  
  	for (dir = 0; dir < 2; dir++) {
  		for (ch_num = 0;
-@@ -337,7 +342,7 @@ static int ux500_dma_controller_start(struct dma_controller *c)
+@@ -325,9 +332,15 @@ static int ux500_dma_controller_start(struct dma_controller *c)
+ 			dma_channel->status = MUSB_DMA_STATUS_FREE;
+ 			dma_channel->max_len = SZ_16M;
  
+-			ux500_channel->dma_chan = dma_request_channel(mask,
+-							data->dma_filter,
+-							param_array[ch_num]);
++			ux500_channel->dma_chan =
++				dma_request_slave_channel(dev, chan_names[ch_num]);
++
++			if (!ux500_channel->dma_chan)
++				ux500_channel->dma_chan =
++					dma_request_channel(mask,
++							    data->dma_filter,
++							    param_array[ch_num]);
++
+ 			if (!ux500_channel->dma_chan) {
+ 				ERR("Dma pipe allocation error dir=%d ch=%d\n",
+ 					dir, ch_num);
+@@ -343,6 +356,7 @@ static int ux500_dma_controller_start(struct dma_controller *c)
  		/* Prepare the loop for TX channels */
  		channel_array = controller->tx_channel;
--		param_array = data->dma_tx_param_array;
-+		param_array = (data) ? data->dma_tx_param_array : NULL;
+ 		param_array = (data) ? data->dma_tx_param_array : NULL;
++		chan_names = (char **)oep_chan_names;
  		is_tx = 1;
  	}
  
