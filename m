@@ -1,71 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756281Ab3DWSzn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 14:55:43 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:56962 "EHLO
+	id S1756562Ab3DWS5s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 14:57:48 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:51259 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755887Ab3DWSzm (ORCPT
+	with ESMTP id S1755997Ab3DWS5r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 14:55:42 -0400
+	Tue, 23 Apr 2013 14:57:47 -0400
 From: Arnd Bergmann <arnd@arndb.de>
-To: Chris Ball <cjb@laptop.org>
-Subject: Re: [PATCH 12/21] mmc: sdhci-tegra: fix MODULE_DEVICE_TABLE
-Date: Tue, 23 Apr 2013 20:55:32 +0200
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Subject: Re: [PATCH 07/21] ARM: tegra: unify tegra_idle_device definitions
+Date: Tue, 23 Apr 2013 20:57:36 +0200
 User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>
-References: <1366734653-488286-1-git-send-email-arnd@arndb.de> <1366734653-488286-13-git-send-email-arnd@arndb.de> <87bo95tctk.fsf@octavius.laptop.org>
-In-Reply-To: <87bo95tctk.fsf@octavius.laptop.org>
+        Stephen Warren <swarren@nvidia.com>, Joseph Lo <josephl@nvidia.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+References: <1366734653-488286-1-git-send-email-arnd@arndb.de> <1366734653-488286-8-git-send-email-arnd@arndb.de> <5176BD29.1000405@linaro.org>
+In-Reply-To: <5176BD29.1000405@linaro.org>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="iso-8859-15"
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201304232055.32715.arnd@arndb.de>
-X-Provags-ID: V02:K0:RsSHkUlttN70n3kqd6KDsyEOdGok+SYYSmO1NlfVTUr
- bNJjy9l6LWDvEcRAkiOBN8KEwvkIyMDCNfjgkD47uoq7FTIe/l
- 2E12IOh5YRu76Ow2viADVh6zmHFHBlNVqOPkN7Yyp44jJj0r/p
- 8SVRca5+wqNpydB/QsEa+yGJ1HrdXneYz4mw/DcshK0PxBlzmM
- 0w+fv89OEcV1jCqszfXHW2iw9K0bLNDPawOAGO5U0xiz0S+die
- g0uMwbISXyDcDupt0Vvi7qzUp4gTVdjNzkaB8H8DRDE/WaD52M
- ajOJRTSbhGUratKaL5faNubsHRSb1xf0UPMB33IkfaAJaZ3J2k
- bpE6QG9S0yMdGOar4Ng4=
+Message-Id: <201304232057.37055.arnd@arndb.de>
+X-Provags-ID: V02:K0:+M9luFmksYDmS2jxfvgeDUQ0dBueKV10Ixwih9d//Q9
+ HmaRtqqJgJTWgbVB/l8yu2NXawr0kzDlBKmEOxhQ7uHS93P2FQ
+ unVloi6wvLeEkHLaDdmuxLzTOUt3NleLPRLrn9AhX6HiL/jWis
+ 4OnR59NJ+HtRiWF2yL3+EAkjdpXJgR0GwdsHlAjvigPPn6Hjx7
+ w8dkyKi2/07UGl6GkTgumclugnvnuk/IPKZOX82cHsd4iCAIwG
+ n1FLFMagqy/3bx8uqCAr80LjEDvfb/hfmwJuDelUvBii41EsBn
+ YDISadnIB/uzrkWBCh75ElbOk7z6YwTC2hcGAeRlf3/0ULmGEN
+ aH8HF0UaTwuOsEH3sgM4=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The symbol referenced in MODULE_DEVICE_TABLE must match the actual
-table, otherwise we get a build error like
+On Tuesday 23 April 2013, Daniel Lezcano wrote:
+> the patch sounds good but I think the side effect of the consolidation
+> patchset [1] fixed that.
+> 
+> You can find these fixes in Rafael's tree:
+> 
+> https://git.kernel.org/cgit/linux/kernel/git/rafael/linux-pm.git/commit/?h=linux-next&amp;id=4c637b2175a0dc65d533494225525c6c82d73293
+> 
+> https://git.kernel.org/cgit/linux/kernel/git/rafael/linux-pm.git/commit/?h=linux-next&amp;id=e158f9da6974cc11bfab2246a9b10021af0e0d8a
+> 
+> https://git.kernel.org/cgit/linux/kernel/git/rafael/linux-pm.git/commit/?h=linux-next&amp;id=c5106c9dea9a6022ab84c6cb1d4a0b19fc5af0e2
+> 
+> https://git.kernel.org/cgit/linux/kernel/git/rafael/linux-pm.git/commit/?h=linux-next&amp;id=f040c26ffaa5e56f2bca427c719c9601a02e70e5
+> 
+> [1] http://www.spinics.net/lists/arm-kernel/msg239811.html
+> 
 
-sdhci-tegra.c:206:34: error: '__mod_of_device_table' aliased to undefined symbol 'sdhci_dt_ids'
+Ah. Is that not in linux-next? I created the patch today based on the latest
+linux-next from today (Tuesday).
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Stephen Warren <swarren@nvidia.com>
-Cc: Chris Ball <cjb@laptop.org>
----
-On Tuesday 23 April 2013, Chris Ball wrote:
-
-> I was going to take this, but it doesn't apply to mmc-next or
-> linux-next, because the #endif in your first line of context isn't
-> present in those trees -- which tree is this based on?
-
-I based it on 3.9-rc8.
-
-> Sounds like it might make more sense for you to take this; if so:
-> Acked-by: Chris Ball <cjb@laptop.org>
-
-This is the rebased version on linux-next. I think it's better if you
-take it, otherwise we just create a merge conflict for Linus.
-
-diff --git a/drivers/mmc/host/sdhci-tegra.c b/drivers/mmc/host/sdhci-tegra.c
-index 45048d1..e0dba74 100644
---- a/drivers/mmc/host/sdhci-tegra.c
-+++ b/drivers/mmc/host/sdhci-tegra.c
-@@ -203,7 +203,7 @@ static const struct of_device_id sdhci_tegra_dt_match[] = {
- 	{ .compatible = "nvidia,tegra20-sdhci", .data = &soc_data_tegra20 },
- 	{}
- };
--MODULE_DEVICE_TABLE(of, sdhci_dt_ids);
-+MODULE_DEVICE_TABLE(of, sdhci_tegra_dt_match);
- 
- static void sdhci_tegra_parse_dt(struct device *dev)
- {
+	Arnd
