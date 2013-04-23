@@ -1,49 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754333Ab3DWUO1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 16:14:27 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:59263 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753053Ab3DWUO0 (ORCPT
+	id S1754773Ab3DWUR4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 16:17:56 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:55499 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754060Ab3DWURz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 16:14:26 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Marc Dietrich <marvin24@gmx.de>
-Subject: Re: [PATCH 14/21] staging: nvec: allow modular build
-Date: Tue, 23 Apr 2013 22:14:18 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
-References: <1366734653-488286-1-git-send-email-arnd@arndb.de> <201304232141.04123.arnd@arndb.de> <1373204.GiWOFfjzyB@ax5200p>
-In-Reply-To: <1373204.GiWOFfjzyB@ax5200p>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	Tue, 23 Apr 2013 16:17:55 -0400
+Date: Tue, 23 Apr 2013 16:17:51 -0400 (EDT)
+Message-Id: <20130423.161751.2116707386990845036.davem@davemloft.net>
+To: mroos@linux.ee
+Cc: linux-kernel@vger.kernel.org, sparclinux@vger.kernel.org
+Subject: Re: sparc64, mm BUG in 3.9-rc8
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <alpine.SOC.1.00.1304230019030.12820@math.ut.ee>
+References: <alpine.SOC.1.00.1304221601370.4328@math.ut.ee>
+	<20130422.152741.652969183920758931.davem@davemloft.net>
+	<alpine.SOC.1.00.1304230019030.12820@math.ut.ee>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Message-Id: <201304232214.18254.arnd@arndb.de>
-X-Provags-ID: V02:K0:/3vp2kWmlpLN2thBWmQ3nPeSsvKAohDRIzVNaNdGW3S
- SqWJ7sLmlnmJ9nghVq4Ph/746JBOvg/wgb1KDYCXNIKYCxC/GU
- UKxpyHqPvGjSFWa5bW0XHeKAK30yFB4DibRaWhqhVdbLuJrRr8
- 4enHXkGw2Z1LfyUoREmzw1ER7QsGtwk8/YpQnLkN8COCzYQ6GE
- QjvLTadLWIPFb47NWQ2jYiSdLaVWqc+aA87MbbxKjnWaoLjfmr
- q1Qr7+ltVaRffzjPtZ36qvOCtpdspShunbjKSEfpZnXkCAw3id
- cKH0Ndl8PTPn+Tf8QTg2heznIiNWyBedO0/vaoJ9bzOXif/+si
- UwQvBMCx6mFxLq7tsJts=
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Tue, 23 Apr 2013 13:17:54 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 23 April 2013, Marc Dietrich wrote:
-> It builds, but I haven't tried out it yet. At least the mfd children need to 
-> unregister the event notifier I guess. Anyway, I have no time to test this 
-> now, so I prefer to force =y for the dependencies for now.
+From: Meelis Roos <mroos@linux.ee>
+Date: Tue, 23 Apr 2013 00:19:49 +0300 (EEST)
 
-Ah, so you can load it fine, but not safely unload it? In that case I think
-it's better to leave it as tristate but remove the module_exit() function to
-prevent unloading.
+>> > Hello, I got a non-booting Sun E420R (sparc64) with 3.9-rc8: BUG-s in 
+>> > mm/slub.c:925 and mm/memory.c:1267 (the latter keeps scrolling until 
+>> > other things break and panic comes from trying to kill init). This is 
+>> > reproducible. Same machine runs 3.9.0-rc7-00004-gbb33db7 successfully.
+>> > Configuration is below.
+>> 
+>> It's certainly a bug in the TLB shootdown fix, please verify that
+>> reverting the following fixes things:
+>> 
+>> >From f36391d2790d04993f48da6a45810033a2cdf847 Mon Sep 17 00:00:00 2001
+>> From: "David S. Miller" <davem@davemloft.net>
+>> Date: Fri, 19 Apr 2013 17:26:26 -0400
+>> Subject: [PATCH] sparc64: Fix race in TLB batch processing.
+> 
+> Yes, reverting that makes it work again.
 
-You'll have to change the module_platform_driver() back into a manual
-module_init() function to register the driver, but that sounds like
-the cleanest solution aside from fixing the notifier calls.
-
-	Arnd
+Just an update, using your config I was able to make one that boots on my
+machine and reproduces the problem.
