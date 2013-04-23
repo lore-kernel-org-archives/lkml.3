@@ -1,75 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754218Ab3DWCvs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 22:51:48 -0400
-Received: from mga01.intel.com ([192.55.52.88]:22797 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754040Ab3DWCvq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 22:51:46 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,531,1363158000"; 
-   d="scan'208";a="323299567"
-Date: Tue, 23 Apr 2013 10:51:43 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jingoo Han <jg1.han@samsung.com>, kbuild-all@01.org,
-        linux-sparse@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [next:akpm 798/1000] drivers/rtc/rtc-ds1286.c:343:24: sparse:
- incorrect type in argument 1 (different address spaces)
-Message-ID: <20130423025143.GC7154@localhost>
-References: <5171d93a.0NZAGYYKNj8hjsAs%fengguang.wu@intel.com>
- <20130422165629.bae79e6c5251bf148a3bae73@linux-foundation.org>
+	id S1754269Ab3DWCwX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 22:52:23 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:45725 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754117Ab3DWCwW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Apr 2013 22:52:22 -0400
+Message-ID: <5175F75E.105@linaro.org>
+Date: Tue, 23 Apr 2013 08:22:14 +0530
+From: Tushar Behera <tushar.behera@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130422165629.bae79e6c5251bf148a3bae73@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Olof Johansson <olof@lixom.net>
+CC: Doug Anderson <dianders@chromium.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Patch Tracking <patches@linaro.org>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Olof Johansson <olofj@chromium.org>
+Subject: Re: [PATCH] clk: exynos5250: Fix divider values for sclk_mmc{0,1,2,3}
+References: <1364890840-20052-1-git-send-email-tushar.behera@linaro.org> <20130404213331.8665.7028@quantum> <2c9001ce3429$e5989a50$b0c9cef0$%kim@samsung.com> <CAD=FV=UUg9Apb0o+zLdidDUmkLZt1phgo80bxug=o6JmANCPfw@mail.gmail.com> <CAOesGMj-wfWNwvP7iAyr0nB0HE_PBzj3DGeE-ixNc3MqtCH9Qg@mail.gmail.com>
+In-Reply-To: <CAOesGMj-wfWNwvP7iAyr0nB0HE_PBzj3DGeE-ixNc3MqtCH9Qg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 22, 2013 at 04:56:29PM -0700, Andrew Morton wrote:
-> On Sat, 20 Apr 2013 07:54:34 +0800 kbuild test robot <fengguang.wu@intel.com> wrote:
+On 04/22/2013 11:10 PM, Olof Johansson wrote:
+> Hi,
 > 
-> > tree:   git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git akpm
-> > head:   c9941b7ec7840ad33f5822c7f238157558d40132
-> > commit: d5e42b5769899607e1e4b0c9200340d24f370e8c [798/1000] rtc: rtc-ds1286: use devm_*() functions
-> > 
-> > 
-> > sparse warnings: (new ones prefixed by >>)
-> > 
-> > >> drivers/rtc/rtc-ds1286.c:343:24: sparse: incorrect type in argument 1 (different address spaces)
-> >    drivers/rtc/rtc-ds1286.c:343:24:    expected void const *ptr
-> >    drivers/rtc/rtc-ds1286.c:343:24:    got unsigned int [noderef] [usertype] <asn:2>*rtcregs
-> > >> drivers/rtc/rtc-ds1286.c:344:36: sparse: incorrect type in argument 1 (different address spaces)
-> >    drivers/rtc/rtc-ds1286.c:344:36:    expected void const *ptr
-> >    drivers/rtc/rtc-ds1286.c:344:36:    got unsigned int [noderef] [usertype] <asn:2>*rtcregs
-> > 
-> > vim +343 drivers/rtc/rtc-ds1286.c
-> > 
-> >    337			return -ENODEV;
-> >    338		priv = devm_kzalloc(&pdev->dev, sizeof(struct ds1286_priv), GFP_KERNEL);
-> >    339		if (!priv)
-> >    340			return -ENOMEM;
-> >    341	
-> >    342		priv->rtcregs = devm_ioremap_resource(&pdev->dev, res);
-> >  > 343		if (IS_ERR(priv->rtcregs))
-> >  > 344			return PTR_ERR(priv->rtcregs);
-> >    345	
-> >    346		spin_lock_init(&priv->lock);
-> >    347		platform_set_drvdata(pdev, priv);
+> On Tue, Apr 16, 2013 at 12:35 PM, Doug Anderson <dianders@chromium.org> wrote:
+>> Hi,
+>>
+>> On Mon, Apr 8, 2013 at 12:22 AM, Kukjin Kim <kgene.kim@samsung.com> wrote:
+>>> Mike Turquette wrote:
+>>>>
+>>>> Quoting Tushar Behera (2013-04-02 01:20:40)
+>>>>> In legacy setup, sclk_mmc{0,1,2,3} used PRE_RATIO bit-field (8-bit wide)
+>>>>> instead of RATIO bit-field (4-bit wide) for dividing clock rate.
+>>>>>
+>>>>> With current common clock setup, we are using RATIO bit-field which
+>>>>> is creating FIFO read errors while accessing eMMC. Changing over to
+>>>>> use PRE_RATIO bit-field fixes this issue.
+>>>>>
+>>>>> dwmmc_exynos 12200000.dwmmc0: data FIFO error (status=00008020)
+>>>>> mmcblk0: error -5 transferring data, sector 1, nr 7, cmd response 0x900,
+>>>> card status 0x0
+>>>>> end_request: I/O error, dev mmcblk0, sector 1
+>>>>>
+>>>>> Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
+>>>>> CC: Thomas Abraham <thomas.abraham@linaro.org>
+>>>>
+>>>> I guess this will be applied through the samsung tree, so:
+>>>>
+>>>> Acked-by: Mike Turquette <mturquette@linaro.org>
+>>>>
+>>> Thanks, applied.
+>>
+>> I haven't yet had time to dig / track down why, but this patch totally
+>> messes up access to the eMMC on the ARM Chromebook (exynos5250-snow).
+>> I suddenly start getting FIFO errors like you show above.  When I
+>> revert your change then I'm all happy.
+>>
+>> Perhaps I need a device tree setting change as well?  I always forget
+>> how the "samsung,dw-mshc-ciu-div" / "samsung,dw-mshc-sdr-timing"
+>> properties work...
+>>
+>> For the short term I'm going to revert locally since I've got a few
+>> other things to do over the next few days.  If nobody else gets around
+>> to it then I'll try to find time to dig further.
 > 
-> I think doing IS_ERR() and PTR_ERR() on __iomem pointers is a natural
-> thing, and we should be able to do this without adding call-site
-> trickery to make sparse happy.
+> Unless I hear differently within 24 hours, I am going to revert this
+> in arm-soc (since that is where it is merged right now).
 > 
-> Is there some sort of annotation which we can add to the
-> IS_ERR()/PTR_ERR() definitions so that sparse will stop warning about
-> this usage?
 
-If it's too hard to fix in sparse, I can add a check in my scripts,
-ignoring all "parse: incorrect type in argument 1 (different address
-spaces)" warnings in the IS_ERR/PTR_ERR lines.
+I will have a look at it today.
 
-Thanks,
-Fengguang
+> It is obviously causing regressions on existing platforms. I am _NOT_
+> happy to see dead silence about this for 6 days. Tushar??
+> 
+
+Apologies.
+
+> 
+> 
+> -Olof
+> 
+
+
+-- 
+Tushar Behera
