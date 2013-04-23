@@ -1,119 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756397Ab3DWU0s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 16:26:48 -0400
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:56246
-	"EHLO p3plsmtps2ded03.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755183Ab3DWU0N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 16:26:13 -0400
-x-originating-ip: 72.167.245.219
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        jasowang@redhat.com
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 4/5] [PATCH 1/2] tools: hv: use FIFREEZE/FITHAW in hv_vss_daemon
-Date: Tue, 23 Apr 2013 13:58:39 -0700
-Message-Id: <1366750720-32667-4-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1366750720-32667-1-git-send-email-kys@microsoft.com>
-References: <1366750685-32626-1-git-send-email-kys@microsoft.com>
- <1366750720-32667-1-git-send-email-kys@microsoft.com>
+	id S1756195Ab3DWU1o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 16:27:44 -0400
+Received: from casper.infradead.org ([85.118.1.10]:51980 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754864Ab3DWU1m (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Apr 2013 16:27:42 -0400
+Message-ID: <5176EEA8.1010507@infradead.org>
+Date: Tue, 23 Apr 2013 13:27:20 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: David Miller <davem@davemloft.net>
+CC: sfr@canb.auug.org.au, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: linux-next: Tree for Apr 23 (netlink)
+References: <20130423180028.e08f92e6cc72105f67b77491@canb.auug.org.au> <5176CD22.6070906@infradead.org> <20130423.151949.1174398672200053405.davem@davemloft.net>
+In-Reply-To: <20130423.151949.1174398672200053405.davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Olaf Hering <olaf@aepfle.de> 
+On 04/23/13 12:19, David Miller wrote:
+> From: Randy Dunlap <rdunlap@infradead.org>
+> Date: Tue, 23 Apr 2013 11:04:18 -0700
+> 
+>> On 04/23/13 01:00, Stephen Rothwell wrote:
+>>> Hi all,
+>>>
+>>> Changes since 20130422:
+>>>
+>>> The net-next tree lost its build failure but gained another for which I
+>>> applied a patch.
+>>>
+>>
+>>
+>> when CONFIG_NETLINK_MMAP is not enabled:
+>>
+>> net/netlink/diag.c: In function 'sk_diag_put_rings_cfg':
+>> net/netlink/diag.c:28:17: error: 'struct netlink_sock' has no member named 'pg_vec_lock'
+>> net/netlink/diag.c:29:29: error: 'struct netlink_sock' has no member named 'rx_ring'
+>> net/netlink/diag.c:31:30: error: 'struct netlink_sock' has no member named 'tx_ring'
+>> net/netlink/diag.c:33:19: error: 'struct netlink_sock' has no member named 'pg_vec_lock'
+> 
+> Thanks Randy, I'm testing out the following fix:
+> 
 
-As suggested by Paolo Bonzini, use ioctl instead of calling fsfreeze.
+Works for me.  Thanks.
 
-Signed-off-by: Olaf Hering <olaf@aepfle.de>
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
----
- tools/hv/hv_vss_daemon.c |   31 ++++++++++++++++++++++---------
- 1 files changed, 22 insertions(+), 9 deletions(-)
+Acked-by: Randy Dunlap <rdunlap@infradead.org>
 
-diff --git a/tools/hv/hv_vss_daemon.c b/tools/hv/hv_vss_daemon.c
-index e37d86c..830d606 100644
---- a/tools/hv/hv_vss_daemon.c
-+++ b/tools/hv/hv_vss_daemon.c
-@@ -21,7 +21,9 @@
- #include <sys/types.h>
- #include <sys/socket.h>
- #include <sys/poll.h>
-+#include <sys/ioctl.h>
- #include <linux/types.h>
-+#include <fcntl.h>
- #include <stdio.h>
- #include <mntent.h>
- #include <stdlib.h>
-@@ -30,6 +32,7 @@
- #include <ctype.h>
- #include <errno.h>
- #include <arpa/inet.h>
-+#include <linux/fs.h>
- #include <linux/connector.h>
- #include <linux/hyperv.h>
- #include <linux/netlink.h>
-@@ -44,21 +47,35 @@ static struct sockaddr_nl addr;
- #endif
- 
- 
-+static int vss_do_freeze(char *dir, unsigned int cmd, char *fs_op)
-+{
-+	int ret, fd = open(dir, O_RDONLY);
-+
-+	if (fd < 0)
-+		return 1;
-+	ret = ioctl(fd, cmd, 0);
-+	syslog(LOG_INFO, "VSS: %s of %s: %s\n", fs_op, dir, strerror(errno));
-+	close(fd);
-+	return !!ret;
-+}
-+
- static int vss_operate(int operation)
- {
- 	char *fs_op;
--	char cmd[512];
- 	char match[] = "/dev/";
- 	FILE *mounts;
- 	struct mntent *ent;
-+	unsigned int cmd;
- 	int error = 0, root_seen = 0;
- 
- 	switch (operation) {
- 	case VSS_OP_FREEZE:
--		fs_op = "-f ";
-+		cmd = FIFREEZE;
-+		fs_op = "freeze";
- 		break;
- 	case VSS_OP_THAW:
--		fs_op = "-u ";
-+		cmd = FITHAW;
-+		fs_op = "thaw";
- 		break;
- 	default:
- 		return -1;
-@@ -75,16 +92,12 @@ static int vss_operate(int operation)
- 			root_seen = 1;
- 			continue;
- 		}
--		snprintf(cmd, sizeof(cmd), "fsfreeze %s '%s'", fs_op, ent->mnt_dir);
--		syslog(LOG_INFO, "VSS cmd is %s\n", cmd);
--		error |= system(cmd);
-+		error |= vss_do_freeze(ent->mnt_dir, cmd, fs_op);
- 	}
- 	endmntent(mounts);
- 
- 	if (root_seen) {
--		sprintf(cmd, "fsfreeze %s /", fs_op);
--		syslog(LOG_INFO, "VSS cmd is %s\n", cmd);
--		error |= system(cmd);
-+		error |= vss_do_freeze("/", cmd, fs_op);
- 	}
- 
- 	return error;
+
+> diff --git a/net/netlink/diag.c b/net/netlink/diag.c
+> index 4e4aa47..1af2962 100644
+> --- a/net/netlink/diag.c
+> +++ b/net/netlink/diag.c
+> @@ -7,6 +7,7 @@
+>  
+>  #include "af_netlink.h"
+>  
+> +#ifdef CONFIG_NETLINK_MMAP
+>  static int sk_diag_put_ring(struct netlink_ring *ring, int nl_type,
+>  			    struct sk_buff *nlskb)
+>  {
+> @@ -34,6 +35,12 @@ static int sk_diag_put_rings_cfg(struct sock *sk, struct sk_buff *nlskb)
+>  
+>  	return ret;
+>  }
+> +#else
+> +static int sk_diag_put_rings_cfg(struct sock *sk, struct sk_buff *nlskb)
+> +{
+> +	return 0;
+> +}
+> +#endif
+>  
+>  static int sk_diag_dump_groups(struct sock *sk, struct sk_buff *nlskb)
+>  {
+> --
+
+
 -- 
-1.7.4.1
-
+~Randy
