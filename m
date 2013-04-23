@@ -1,131 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757453Ab3DWQca (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 12:32:30 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:60430 "EHLO
+	id S1757469Ab3DWQcx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 12:32:53 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:64943 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757113Ab3DWQc2 (ORCPT
+	with ESMTP id S1757425Ab3DWQcV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 12:32:28 -0400
+	Tue, 23 Apr 2013 12:32:21 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        Chris Ball <cjb@laptop.org>, Dave Airlie <airlied@linux.ie>,
-        David Woodhouse <dwmw2@infradead.org>, Felipe Balbi <balbi@ti.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
+        Venu Byravarasu <vbyravarasu@nvidia.com>,
+        Alan Stern <stern@rowland.harvard.edu>, Felipe Balbi <balbi@ti.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mark Brown <broonie@kernel.org>, Russell King <linux@arm.linux.org.uk>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Stephen Warren <swarren@nvidia.com>, Tony Lindgren <tony@atomide.com>,
-        Viresh Kumar <viresh.kumar@st.com>, alsa-devel@alsa-project.org,
-        dri-devel@lists.freedesktop.org, linux-mtd@lists.infradead.org,
-        linux-usb@vger.kernel.org, spi-devel-general@lists.sourceforge.net
-Subject: [PATCH 00/21] ARM build fixes for 3.10
-Date: Tue, 23 Apr 2013 18:30:32 +0200
-Message-Id: <1366734653-488286-1-git-send-email-arnd@arndb.de>
+        Stephen Warren <swarren@nvidia.com>, linux-usb@vger.kernel.org
+Subject: [PATCH 18/21] usb: phy: tegra: don't call into tegra-ehci directly
+Date: Tue, 23 Apr 2013 18:30:50 +0200
+Message-Id: <1366734653-488286-19-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.8.1.2
-X-Provags-ID: V02:K0:rs34SXipk5UobjRSdhWX0INEvceyY+It/lq+VNlg4eD
- ATGkd+v8mer1Ikxjxpxsqpd7u9400Mqf3huvkIFrXVhhL4fbh4
- 7Phyr4xhuVvxMKN1RBNIVJdYUb8AS8y6Sh1X8agMgwCFLCYOXX
- rkmqpBMKD3mLvvavIhawmgZZNmL1LIG7Mh+8AVZ5YLpTzmVwAo
- GZjQk0pyr6sJM4nEM9f62H4MSb9FU0nxYD0AyOhrTsumrhFiC6
- J2cfwBJN2kJ0xGKZaCMIvXoEeOQb4OZFLPp8AZ7I27KTgKN1af
- h9JjvXBZfrxxFz7JHKeMe2tHazM5McrfdfO4P+2QW8uTvugG80
- g5zkC4qDr2b+IAAfUrBAsB3Ndv6qqgNUmkpiki9fI
+In-Reply-To: <1366734653-488286-1-git-send-email-arnd@arndb.de>
+References: <1366734653-488286-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V02:K0:HsDOiLVfv9kN0cQqpDtGACkD747w0cQCZB9D9C7IQaM
+ IJ7fLr63yX+BAPQwC7ZZwEAHkEo0JlxdyzCK0dNCMvzFLADdI/
+ /alFdQazpY60Hfl02IHuEo56t/RP/X9lu9WJPxJENgyDWKSDBU
+ 7bR2IHeVJ152dfqqRmZzC8Ij6RqvauF9j9nJSYxYISfqCn926b
+ 0Kun7/odYNjO9sGU/ZKiBjAiqKk+frDci3xcTJlc8vDv1jAx17
+ yBXHfVHiCDSpkdpYXs1ynnOnPT+eQKIxjfmH2A/D907YB476XI
+ gCnGNGgDiPpjOUV6yZwpoRUA4V/st5a0lEv8zFXtwWmonIo+r3
+ Ug2zCYvVeoYLCyxWxUSvIcDZzx4gx87rcBGILBpxw
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everyone,
+Both phy-tegra-usb.c and ehci-tegra.c export symbols used by the other one,
+which does not work if one of them or both are loadable modules, resulting
+in an error like:
 
-This is a set of bug fixes for build errors and warnings I am
-seeing in the various defconfigs and/or allmodconfig builds
-on linux-next. The majority of these showed up because we now
-include a lot more platforms in allmodconfig than we used to.
+drivers/built-in.o: In function `utmi_phy_clk_disable':
+drivers/usb/phy/phy-tegra-usb.c:302: undefined reference to `tegra_ehci_set_phcd'
+drivers/built-in.o: In function `utmi_phy_clk_enable':
+drivers/usb/phy/phy-tegra-usb.c:324: undefined reference to `tegra_ehci_set_phcd'
+drivers/built-in.o: In function `utmi_phy_power_on':
+drivers/usb/phy/phy-tegra-usb.c:447: undefined reference to `tegra_ehci_set_pts'
 
-Please apply to appropriate maintainer trees or provide
-feedback, I can take care of the rest sending those through
-arm-soc that I get no feedback on.
+This turns the interface into a one-way dependency by letting the tegra ehci
+driver pass two function pointers for callbacks that need to be called by
+the phy driver.
 
-	Arnd
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Venu Byravarasu <vbyravarasu@nvidia.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>
+Cc: Felipe Balbi <balbi@ti.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Stephen Warren <swarren@nvidia.com>
+Cc: linux-usb@vger.kernel.org
+---
+ drivers/usb/host/ehci-tegra.c     | 10 +++++-----
+ drivers/usb/phy/tegra_usb_phy.c   | 13 +++++++++----
+ include/linux/usb/tegra_usb_phy.h | 10 +++++-----
+ 3 files changed, 19 insertions(+), 14 deletions(-)
 
-Arnd Bergmann (21):
-  Turn off -Wmaybe-uninitialized when building with -Os
-  ARM: compressed/head.S: work around new binutils warning
-  ARM: use optimized do_div only for EABI
-  ARM: kvm: define KVM_ARM_MAX_VCPUS unconditionally
-  ARM: OMAP2+: add dependencies on ARCH_MULTI_V6/V7
-  ARM: tegra: call cpu_do_idle from C code
-  ARM: tegra: unify tegra_idle_device definitions
-  ASoC: ux500: forward declare msp_i2s_platform_data
-  spi/sirf: fix MODULE_DEVICE_TABLE
-  ssb: fix alignment of struct bcma_device_id
-  drm/tilcdc: use only a single module device table
-  mmc: sdhci-tegra: fix MODULE_DEVICE_TABLE
-  misc: mark spear13xx-pcie-gadget as broken
-  staging: nvec: allow modular build
-  staging: comedi/dawboard2000: use mdelay for large delays
-  staging/zsmalloc: don't use pgtable-mapping from modules
-  tty/serial/sirf: fix MODULE_DEVICE_TABLE
-  usb: phy: tegra: don't call into tegra-ehci directly
-  usb: phy: don't mark usb_bind_phy as __init
-  MFD: ab8500: export ab8500_gpadc_sw_hw_convert properly
-  mtd: omap2: allow bulding as a module
-
- Makefile                                      |  2 +-
- arch/arm/boot/compressed/Makefile             |  2 +-
- arch/arm/boot/compressed/head.S               | 12 ++++++++++++
- arch/arm/include/asm/div64.h                  |  2 +-
- arch/arm/kvm/Kconfig                          |  6 +++---
- arch/arm/mach-omap2/Kconfig                   |  5 +++++
- arch/arm/mach-tegra/cpuidle-tegra114.c        |  5 ++---
- arch/arm/mach-tegra/cpuidle-tegra20.c         |  4 +---
- arch/arm/mach-tegra/cpuidle-tegra30.c         |  4 +---
- arch/arm/mach-tegra/cpuidle.c                 |  2 ++
- arch/arm/mach-tegra/cpuidle.h                 |  4 ++++
- arch/arm/mach-tegra/pm.c                      |  5 +++++
- arch/arm/mach-tegra/sleep-tegra20.S           |  2 +-
- drivers/gpu/drm/tilcdc/tilcdc_panel.c         |  1 -
- drivers/gpu/drm/tilcdc/tilcdc_slave.c         |  1 -
- drivers/gpu/drm/tilcdc/tilcdc_tfp410.c        |  1 -
- drivers/mfd/ab8500-gpadc.c                    |  2 +-
- drivers/misc/Kconfig                          |  2 +-
- drivers/mmc/host/sdhci-tegra.c                |  2 +-
- drivers/mtd/nand/Kconfig                      |  2 +-
- drivers/spi/spi-sirf.c                        |  2 +-
- drivers/staging/comedi/drivers/daqboard2000.c | 14 +++++++-------
- drivers/staging/nvec/Kconfig                  | 10 +++++-----
- drivers/staging/zsmalloc/zsmalloc-main.c      |  2 +-
- drivers/tty/serial/sirfsoc_uart.c             |  2 +-
- drivers/usb/host/ehci-tegra.c                 | 10 +++++-----
- drivers/usb/otg/otg.c                         |  2 +-
- drivers/usb/phy/tegra_usb_phy.c               | 13 +++++++++----
- include/linux/mod_devicetable.h               |  5 +++--
- include/linux/usb/tegra_usb_phy.h             | 10 +++++-----
- sound/soc/ux500/ux500_msp_i2s.h               |  1 +
- 31 files changed, 82 insertions(+), 55 deletions(-)
-
+diff --git a/drivers/usb/host/ehci-tegra.c b/drivers/usb/host/ehci-tegra.c
+index 568aecc..07419e4 100644
+--- a/drivers/usb/host/ehci-tegra.c
++++ b/drivers/usb/host/ehci-tegra.c
+@@ -610,7 +610,7 @@ static const struct dev_pm_ops tegra_ehci_pm_ops = {
+ /* Bits of PORTSC1, which will get cleared by writing 1 into them */
+ #define TEGRA_PORTSC1_RWC_BITS (PORT_CSC | PORT_PEC | PORT_OCC)
+ 
+-void tegra_ehci_set_pts(struct usb_phy *x, u8 pts_val)
++static void tegra_ehci_set_pts(struct usb_phy *x, u8 pts_val)
+ {
+ 	unsigned long val;
+ 	struct usb_hcd *hcd = bus_to_hcd(x->otg->host);
+@@ -621,9 +621,8 @@ void tegra_ehci_set_pts(struct usb_phy *x, u8 pts_val)
+ 	val |= TEGRA_USB_PORTSC1_PTS(pts_val & 3);
+ 	writel(val, base + TEGRA_USB_PORTSC1);
+ }
+-EXPORT_SYMBOL_GPL(tegra_ehci_set_pts);
+ 
+-void tegra_ehci_set_phcd(struct usb_phy *x, bool enable)
++static void tegra_ehci_set_phcd(struct usb_phy *x, bool enable)
+ {
+ 	unsigned long val;
+ 	struct usb_hcd *hcd = bus_to_hcd(x->otg->host);
+@@ -636,7 +635,6 @@ void tegra_ehci_set_phcd(struct usb_phy *x, bool enable)
+ 		val &= ~TEGRA_USB_PORTSC1_PHCD;
+ 	writel(val, base + TEGRA_USB_PORTSC1);
+ }
+-EXPORT_SYMBOL_GPL(tegra_ehci_set_phcd);
+ 
+ static u64 tegra_ehci_dma_mask = DMA_BIT_MASK(32);
+ 
+@@ -733,7 +731,9 @@ static int tegra_ehci_probe(struct platform_device *pdev)
+ 
+ 	tegra->phy = tegra_usb_phy_open(&pdev->dev, instance, hcd->regs,
+ 					pdata->phy_config,
+-					TEGRA_USB_PHY_MODE_HOST);
++					TEGRA_USB_PHY_MODE_HOST,
++					&tegra_ehci_set_pts,
++					tegra_ehci_set_phcd);
+ 	if (IS_ERR(tegra->phy)) {
+ 		dev_err(&pdev->dev, "Failed to open USB phy\n");
+ 		err = -ENXIO;
+diff --git a/drivers/usb/phy/tegra_usb_phy.c b/drivers/usb/phy/tegra_usb_phy.c
+index 5487d38..17d8112 100644
+--- a/drivers/usb/phy/tegra_usb_phy.c
++++ b/drivers/usb/phy/tegra_usb_phy.c
+@@ -299,7 +299,7 @@ static void utmi_phy_clk_disable(struct tegra_usb_phy *phy)
+ 		val &= ~USB_SUSP_SET;
+ 		writel(val, base + USB_SUSP_CTRL);
+ 	} else
+-		tegra_ehci_set_phcd(&phy->u_phy, true);
++		phy->set_phcd(&phy->u_phy, true);
+ 
+ 	if (utmi_wait_register(base + USB_SUSP_CTRL, USB_PHY_CLK_VALID, 0) < 0)
+ 		pr_err("%s: timeout waiting for phy to stabilize\n", __func__);
+@@ -321,7 +321,7 @@ static void utmi_phy_clk_enable(struct tegra_usb_phy *phy)
+ 		val &= ~USB_SUSP_CLR;
+ 		writel(val, base + USB_SUSP_CTRL);
+ 	} else
+-		tegra_ehci_set_phcd(&phy->u_phy, false);
++		phy->set_phcd(&phy->u_phy, false);
+ 
+ 	if (utmi_wait_register(base + USB_SUSP_CTRL, USB_PHY_CLK_VALID,
+ 						     USB_PHY_CLK_VALID))
+@@ -444,7 +444,7 @@ static int utmi_phy_power_on(struct tegra_usb_phy *phy)
+ 	utmi_phy_clk_enable(phy);
+ 
+ 	if (!phy->is_legacy_phy)
+-		tegra_ehci_set_pts(&phy->u_phy, 0);
++		phy->set_pts(&phy->u_phy, 0);
+ 
+ 	return 0;
+ }
+@@ -688,7 +688,10 @@ static int	tegra_usb_phy_suspend(struct usb_phy *x, int suspend)
+ }
+ 
+ struct tegra_usb_phy *tegra_usb_phy_open(struct device *dev, int instance,
+-	void __iomem *regs, void *config, enum tegra_usb_phy_mode phy_mode)
++	void __iomem *regs, void *config, enum tegra_usb_phy_mode phy_mode,
++	void (*set_pts)(struct usb_phy *x, u8 pts_val),
++	void (*set_phcd)(struct usb_phy *x, bool enable))
++
+ {
+ 	struct tegra_usb_phy *phy;
+ 	unsigned long parent_rate;
+@@ -707,6 +710,8 @@ struct tegra_usb_phy *tegra_usb_phy_open(struct device *dev, int instance,
+ 	phy->dev = dev;
+ 	phy->is_legacy_phy =
+ 		of_property_read_bool(np, "nvidia,has-legacy-mode");
++	phy->set_pts = set_pts;
++	phy->set_phcd = set_phcd;
+ 	err = of_property_match_string(np, "phy_type", "ulpi");
+ 	if (err < 0)
+ 		phy->is_ulpi_phy = false;
+diff --git a/include/linux/usb/tegra_usb_phy.h b/include/linux/usb/tegra_usb_phy.h
+index 9ebebe9..1b7519a 100644
+--- a/include/linux/usb/tegra_usb_phy.h
++++ b/include/linux/usb/tegra_usb_phy.h
+@@ -61,10 +61,14 @@ struct tegra_usb_phy {
+ 	struct device *dev;
+ 	bool is_legacy_phy;
+ 	bool is_ulpi_phy;
++	void (*set_pts)(struct usb_phy *x, u8 pts_val);
++	void (*set_phcd)(struct usb_phy *x, bool enable);
+ };
+ 
+ struct tegra_usb_phy *tegra_usb_phy_open(struct device *dev, int instance,
+-	void __iomem *regs, void *config, enum tegra_usb_phy_mode phy_mode);
++	void __iomem *regs, void *config, enum tegra_usb_phy_mode phy_mode,
++	void (*set_pts)(struct usb_phy *x, u8 pts_val),
++	void (*set_phcd)(struct usb_phy *x, bool enable));
+ 
+ void tegra_usb_phy_preresume(struct usb_phy *phy);
+ 
+@@ -75,8 +79,4 @@ void tegra_ehci_phy_restore_start(struct usb_phy *phy,
+ 
+ void tegra_ehci_phy_restore_end(struct usb_phy *phy);
+ 
+-void tegra_ehci_set_pts(struct usb_phy *x, u8 pts_val);
+-
+-void tegra_ehci_set_phcd(struct usb_phy *x, bool enable);
+-
+ #endif /* __TEGRA_USB_PHY_H */
 -- 
 1.8.1.2
 
-Cc: Alan Stern <stern@rowland.harvard.edu>
-Cc: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Cc: Chris Ball <cjb@laptop.org>
-Cc: Dave Airlie <airlied@linux.ie>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: Felipe Balbi <balbi@ti.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Mark Brown <broonie@kernel.org>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Stephen Warren <swarren@nvidia.com>
-Cc: Tony Lindgren <tony@atomide.com>
-Cc: Viresh Kumar <viresh.kumar@st.com>
-Cc: alsa-devel@alsa-project.org
-Cc: dri-devel@lists.freedesktop.org
-Cc: linux-mtd@lists.infradead.org
-Cc: linux-usb@vger.kernel.org
-Cc: spi-devel-general@lists.sourceforge.net
