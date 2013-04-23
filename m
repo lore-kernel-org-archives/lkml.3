@@ -1,67 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756072Ab3DWIba (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 04:31:30 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:58553 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755820Ab3DWIbS (ORCPT
+	id S1756086Ab3DWIbi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 04:31:38 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:61602 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755192Ab3DWIbc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 04:31:18 -0400
-X-AuditID: 9c930179-b7b5bae0000069d1-aa-517646d45a69
-Date: Tue, 23 Apr 2013 17:31:16 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Davidlohr Bueso <davidlohr.bueso@hp.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        "Low, Jason" <jason.low2@hp.com>
-Subject: Re: [PATCH v2 0/6] correct load_balance()
-Message-ID: <20130423083116.GA3390@lge.com>
-References: <1364277700-7509-1-git-send-email-iamjoonsoo.kim@lge.com>
- <20130422080135.GA19454@lge.com>
- <1366632078.4443.15.camel@laptop>
- <1366661227.3788.10.camel@buesod1.americas.hpqcorp.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1366661227.3788.10.camel@buesod1.americas.hpqcorp.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 23 Apr 2013 04:31:32 -0400
+X-AuditID: 9c930197-b7bb3ae000000fa9-aa-517646d4ab37
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
+Subject: [PATCH 14/14] perf tools: Add document for perf-ftrace command
+Date: Tue, 23 Apr 2013 17:31:12 +0900
+Message-Id: <1366705872-12132-15-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1366705872-12132-1-git-send-email-namhyung@kernel.org>
+References: <1366705872-12132-1-git-send-email-namhyung@kernel.org>
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 22, 2013 at 01:07:07PM -0700, Davidlohr Bueso wrote:
-> On Mon, 2013-04-22 at 14:01 +0200, Peter Zijlstra wrote:
-> > On Mon, 2013-04-22 at 17:01 +0900, Joonsoo Kim wrote:
-> > 
-> > > Hello, Ingo and Peter.
-> > > 
-> > > Just ping for this patchset.
-> > 
-> > The patches look fine -- except a few cosmetic changes. I'm fine with
-> > Ingo taking them now and merging a 7/6 patch that clears up the
-> > cosmetic issues or you can repost with them taken care of.
-> > 
-> > I'll leave that up to you and Ingo.
-> > 
-> > Otherwise:
-> > 
-> > Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> 
-> On behalf of Jason who has been testing this patchset:
-> 
-> Tested-by: Jason Low <jason.low2@hp.com>
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-Hello, Jason and Davidlohr.
-Thanks for testing!
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/Documentation/perf-ftrace.txt | 114 +++++++++++++++++++++++++++++++
+ 1 file changed, 114 insertions(+)
+ create mode 100644 tools/perf/Documentation/perf-ftrace.txt
 
-> 
-> Thanks,
-> Jason & Davidlohr
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+diff --git a/tools/perf/Documentation/perf-ftrace.txt b/tools/perf/Documentation/perf-ftrace.txt
+new file mode 100644
+index 000000000000..f530cfabd8a5
+--- /dev/null
++++ b/tools/perf/Documentation/perf-ftrace.txt
+@@ -0,0 +1,114 @@
++perf-ftrace(1)
++==============
++
++NAME
++----
++perf-ftrace - A front end for kernel's ftrace
++
++SYNOPSIS
++--------
++[verse]
++'perf ftrace' {live|record} [<options>] [<command>]
++'perf ftrace' {show|report} [<options>]
++
++DESCRIPTION
++-----------
++This command reads the ftrace buffer and displays the trace recorded.
++
++There are several variants of perf ftrace:
++
++  'perf ftrace live <command>' to see a live trace of kernel functions
++  via trace_pipe during executing the <command>.  If <command> is not
++  specified, one of target options (-p, -a or -C) should be given.  It
++  just print out the result to stdout and doesn't save any files.
++
++  'perf ftrace record <command>' to record trace entries of kernel
++  functions during the execution of the <command>.  Like 'perf ftrace
++  live', at least one of <command> and/or target options should be
++  given in order to start recording.  The recorded results are saved
++  under a directory ('perf.data.dir' by default) and will be used by
++  other perf-ftrace tools like 'show' and 'report'.
++
++  'perf ftrace show' to see the trace of recorded functions.  It shows
++  functions sorted by time so the end result might be interspersed if
++  there's a concurrent execution.
++
++  'perf ftrace report' to display the result in an usual perf-report
++  style - entries are sorted by given sort keys and output is resorted
++  by its overhead.
++
++OPTIONS
++-------
++<command>...::
++	Any command you can specify in a shell.
++
++-t::
++--tracer=::
++        The ftrace tracer to be used (default: function_graph).
++	Currently only 'function' and 'function_graph' are supported.
++        Used by 'live' and 'record' subcommands only.
++
++-p::
++--pid=::
++	Record events on existing process ID (comma separated list).
++        Used by 'live' and 'record' subcommands only.
++
++-a::
++        Force system-wide collection.  Scripts run without a <command>
++        normally use -a by default, while scripts run with a <command>
++        normally don't - this option allows the latter to be run in
++        system-wide mode.  Used by 'live' and 'record' subcommands only.
++
++-C::
++--cpu:: Only process samples for the list of CPUs provided.
++        Multiple CPUs can be provided as a comma-separated list with
++        no space: 0,1. Ranges of CPUs are specified with -: 0-2.
++	Default is to report samples on all online CPUs.
++
++-s::
++--sort=::
++	Sort histogram entries by given key(s) - multiple keys can be
++        specified in CSV format.  Following sort keys are available:
++	pid, comm, dso, symbol, cpu.
++
++	Each key has following meaning:
++
++	- comm: command (name) of the task
++	- pid: command and tid of the task
++	- dso: name of library or module executed at the time of sample
++	- symbol: name of function executed at the time of sample
++	- cpu: cpu number the task ran at the time of sample
++
++	By default, comm, dso and symbol keys are used.
++	(i.e. --sort comm,dso,symbol)
++	Used by 'report' subcommands only.
++
++-i::
++--input=::
++        Input directory name excluding '.dir' at the end.
++        (default: perf.data)
++
++-o::
++--output=::
++        Output directory name excluding '.dir' at the end.
++	(default: perf.data)
++
++-v::
++--verbose::
++	Be more verbose (show counter open errors, etc).
++
++-D::
++--dump-raw-trace::
++        Dump raw trace in ASCII.  Used by 'report' subcommands only.
++
++-I::
++--show-info::
++	Display extended information about the record.  This adds
++	information which may be very large and thus may clutter the
++        display.  It currently includes: cpu and numa topology of the
++        host system.  It can only be used with the 'report' subcommand.
++
++SEE ALSO
++--------
++linkperf:perf-record[1], linkperf:perf-report[1],
++linkperf:perf-script[1]
+-- 
+1.7.11.7
+
