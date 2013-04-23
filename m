@@ -1,94 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756600Ab3DWPKW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 11:10:22 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:35358 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756138Ab3DWPKS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 11:10:18 -0400
-Date: Tue, 23 Apr 2013 11:10:17 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Greg KH <gregkh@linuxfoundation.org>
-cc: "Li, Zhen-Hua" <zhen-hual@hp.com>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <tom.vaden@hp.com>
-Subject: Re: [PATCH 1/1] driver,usb: Fix a warning in uhci-hcd driver
-In-Reply-To: <20130423140734.GA30877@kroah.com>
-Message-ID: <Pine.LNX.4.44L0.1304231102490.1679-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1756618Ab3DWPNX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 11:13:23 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:32520 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755620Ab3DWPNW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Apr 2013 11:13:22 -0400
+From: Andrey Vagin <avagin@openvz.org>
+To: linux-kernel@vger.kernel.org
+Cc: Andrey Vagin <avagin@openvz.org>, Roland McGrath <roland@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>
+Subject: [PATCH] ptrace: add ability to get/set signal-blocked mask (v2)
+Date: Tue, 23 Apr 2013 19:10:43 +0400
+Message-Id: <1366729843-24148-1-git-send-email-avagin@openvz.org>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Apr 2013, Greg KH wrote:
+crtools uses a parasite code for dumping processes. The parasite code is
+injected into a process with help PTRACE_SEIZE.
 
-> On Tue, Apr 23, 2013 at 03:15:01PM +0800, Li, Zhen-Hua wrote:
-> > From: "Li, Zhen-Hua" <zhen-hual@hp.com>
-> > 
-> > This patch is trying to fix bug QXCR1001261767.
-> 
-> What is that bug number?  Where can it be referenced?  If you are going
-> to put it in a public place (like a kernel changelog), it needs to be
-> publicly accessible.
-> 
-> > On some HP platform, when usb driver inits the iLo Virtual USB Controller, there may be a warning "Controller not stopped yet!". It is because driver does not wait enough time.
-> 
-> What happened to your line endings?
-> 
-> > This patch adds more time waiting and retries.
-> 
-> Why not only do this for your device?
+Currently crtools blocks signals from a parasite code. If a process has
+pending signals, crtools wait while a process handles these signals.
 
-It won't hurt to do it for all devices, because the wait loop will 
-terminate as soon as the controller goes into suspend.  For normal 
-controllers this will be on the first iteration.
+This method is not suitable for stopped tasks. A stopped task can have a
+few pending signals, when we will try to execute a parasite code, we
+will need to drop SIGSTOP, but all other signals must remain pending,
+because a state of processes must not be changed during checkpointing.
 
-> > Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
-> > ---
-> >  drivers/usb/host/uhci-hcd.c |   16 +++++++++++++++-
-> >  1 file changed, 15 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/drivers/usb/host/uhci-hcd.c b/drivers/usb/host/uhci-hcd.c
-> > index 4a86b63..514e9d7 100644
-> > --- a/drivers/usb/host/uhci-hcd.c
-> > +++ b/drivers/usb/host/uhci-hcd.c
-> > @@ -277,6 +277,9 @@ static int global_suspend_mode_is_broken(struct uhci_hcd *uhci)
-> >  		uhci->global_suspend_mode_is_broken(uhci) : 0;
-> >  }
-> >  
-> > +#define UHCI_SUSPENDRH_RETRY_MAX      10
-> > +#define UHCI_SUSPENDRH_RETRY_DELAY    100
+This patch adds two ptrace commands to set/get signal-blocked mask.
 
-Why is the delay set to 100 us?  Isn't that excessively large?  How 
-long does it take for this controller to go into suspend?
+I think gdb can use this commands too.
 
-> >  static void suspend_rh(struct uhci_hcd *uhci, enum uhci_rh_state new_state)
-> >  __releases(uhci->lock)
-> >  __acquires(uhci->lock)
-> > @@ -284,6 +287,7 @@ __acquires(uhci->lock)
-> >  	int auto_stop;
-> >  	int int_enable, egsm_enable, wakeup_enable;
-> >  	struct usb_device *rhdev = uhci_to_hcd(uhci)->self.root_hub;
-> > +	u16 try, stopped;
+v2: Don't use __set_task_blocked with tsk != current.
+recalc_sigpending() is not called here, because it will be called after
+resume. retarget_shared_pending() are not called, because we suppose,
+that other threads are stopped too.
 
-Why are these variables u16?  Why not int?
+Cc: Roland McGrath <roland@redhat.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Michael Kerrisk <mtk.manpages@gmail.com>
+Cc: Pavel Emelyanov <xemul@parallels.com>
+Cc: Cyrill Gorcunov <gorcunov@openvz.org>
+Signed-off-by: Andrey Vagin <avagin@openvz.org>
+---
+ include/uapi/linux/ptrace.h |  3 +++
+ kernel/ptrace.c             | 42 ++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 45 insertions(+)
 
-Anyway, a better approach would be not to add a delay loop at all.  
-Instead, change this test:
-
-	if (!auto_stop && !(uhci_readw(uhci, USBSTS) & USBSTS_HCH)) {
-		uhci->rh_state = UHCI_RH_SUSPENDING;
-		spin_unlock_irq(&uhci->lock);
-		msleep(1);
-		spin_lock_irq(&uhci->lock);
-		if (uhci->dead)
-			return;
-	}
-
-When the iLo controller is present, make the "if" statement always 
-succeed.  Then you'll get a whole 1-ms delay.
-
-Alan Stern
+diff --git a/include/uapi/linux/ptrace.h b/include/uapi/linux/ptrace.h
+index 52ebcc8..cf1019e 100644
+--- a/include/uapi/linux/ptrace.h
++++ b/include/uapi/linux/ptrace.h
+@@ -61,6 +61,9 @@ struct ptrace_peeksiginfo_args {
+ 	__s32 nr;	/* how may siginfos to take */
+ };
+ 
++#define PTRACE_GETSIGMASK	0x420a
++#define PTRACE_SETSIGMASK	0x420b
++
+ /* Read signals from a shared (process wide) queue */
+ #define PTRACE_PEEKSIGINFO_SHARED	(1 << 0)
+ 
+diff --git a/kernel/ptrace.c b/kernel/ptrace.c
+index 17ae54d..bebe67e 100644
+--- a/kernel/ptrace.c
++++ b/kernel/ptrace.c
+@@ -841,6 +841,48 @@ int ptrace_request(struct task_struct *child, long request,
+ 			ret = ptrace_setsiginfo(child, &siginfo);
+ 		break;
+ 
++	case PTRACE_GETSIGMASK:
++		if (addr != sizeof(sigset_t)) {
++			ret = -EINVAL;
++			break;
++		}
++
++		if (copy_to_user(datavp, &child->blocked, sizeof(sigset_t)))
++			ret = -EFAULT;
++		else
++			ret = 0;
++
++		break;
++
++	case PTRACE_SETSIGMASK:
++	{
++		sigset_t new_set;
++
++		if (addr != sizeof(sigset_t)) {
++			ret = -EINVAL;
++			break;
++		}
++
++		if (copy_from_user(&new_set, datavp, sizeof(sigset_t))) {
++			ret = -EFAULT;
++			break;
++		}
++
++		sigdelsetmask(&new_set, sigmask(SIGKILL)|sigmask(SIGSTOP));
++
++		/*
++		 * Every thread does recalc_sigpending() after resume, so
++		 * retarget_shared_pending() and recalc_sigpending() are not
++		 * called here.
++		 */
++		spin_lock_irq(&child->sighand->siglock);
++		child->blocked = new_set;
++		spin_unlock_irq(&child->sighand->siglock);
++
++		ret = 0;
++		break;
++	}
++
+ 	case PTRACE_INTERRUPT:
+ 		/*
+ 		 * Stop tracee without any side-effect on signal or job
+-- 
+1.8.1.4
 
