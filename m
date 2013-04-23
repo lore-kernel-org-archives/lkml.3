@@ -1,94 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755352Ab3DWOOF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 10:14:05 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:64471 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754662Ab3DWOOD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 10:14:03 -0400
+	id S1755570Ab3DWOOc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 10:14:32 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:43864 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755434Ab3DWOO3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Apr 2013 10:14:29 -0400
+Date: Tue, 23 Apr 2013 10:14:24 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Lukas Czerner <lczerner@redhat.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        ceph-devel@vger.kernel.org
+Subject: Re: [PATCH v3 07/18] ceph: use ->invalidatepage() length argument
+Message-ID: <20130423141424.GC31170@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Lukas Czerner <lczerner@redhat.com>, linux-mm@kvack.org,
+	linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+	linux-ext4@vger.kernel.org, ceph-devel@vger.kernel.org
+References: <1365498867-27782-1-git-send-email-lczerner@redhat.com>
+ <1365498867-27782-8-git-send-email-lczerner@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <201304232140.FGF73904.QJOFOVtHFFMSOL@I-love.SAKURA.ne.jp>
-References: <CAHp75VdDwh0wgCWrVDcPps1C2qfdDZra15y9BQvzfWHzSMqbWA@mail.gmail.com>
-	<CAHp75Vfh6Bpk4j3crVEAo3UtJEqpyucbQw+AzJvO85uRJ6gVgg@mail.gmail.com>
-	<201304222326.IJB21395.FOtVJFHFQMOOSL@I-love.SAKURA.ne.jp>
-	<201304232140.FGF73904.QJOFOVtHFFMSOL@I-love.SAKURA.ne.jp>
-Date: Tue, 23 Apr 2013 17:14:01 +0300
-Message-ID: <CAHp75VerTMSR3=hHtxV2_3+CcQrtZfs7JJPNTD4bQPFmeGRukg@mail.gmail.com>
-Subject: Re: [PATCH] x86_32: Fix module version table mismatch.
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
-Cc: arjan@infradead.org, hpa@zytor.com, james.hogan@imgtec.com,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1365498867-27782-8-git-send-email-lczerner@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 23, 2013 at 3:40 PM, Tetsuo Handa
-<penguin-kernel@i-love.sakura.ne.jp> wrote:
-> Commit a4b6a77b "module: fix symbol versioning with symbol prefixes" broke
-> loading of net/ipv6/ipv6.ko
+On Tue, Apr 09, 2013 at 11:14:16AM +0200, Lukas Czerner wrote:
+> ->invalidatepage() aop now accepts range to invalidate so we can make
+> use of it in ceph_invalidatepage().
+> 
+> Signed-off-by: Lukas Czerner <lczerner@redhat.com>
+> Cc: ceph-devel@vger.kernel.org
 
-I would rephrase this to "any module uses memcmp, e.g. ipv6"
-Otherwise: Reviewed-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-...and
-Tested-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To ceph-devel,
 
-> built with CONFIG_MODVERSIONS=y for x86_32.
->
->   # modprobe ipv6
->   FATAL: Error inserting ipv6 (/lib/modules/3.9.0-rc8-next-20130422/kernel/net/ipv6/ipv6.ko): Invalid argument
->   # dmesg
->   ipv6: no symbol version for memcmp
->   ipv6: Unknown symbol memcmp (err -22)
->
-> The reason for breakage is that check_version() in kernel/module.c tries to
-> find symname == "memcmp" but versions[i].name == "__builtin_memcmp".
->
-> The reason for versions[i].name == "__builtin_memcmp" is that
-> memcmp() for x86_32 is defined as
->
->   #define memcmp __builtin_memcmp
->
-> in arch/x86/include/asm/string_32.h while memcmp() for x86_64 is defined as
->
->   int memcmp(const void *cs, const void *ct, size_t count);
->
-> in arch/x86/include/asm/string_64.h.
->
-> Since __builtin_memcmp is a gcc's built-in function which might emit a call to
-> memcmp, __builtin_memcmp should not be used for versions[i].name field.
->
-> In order to make sure that versions[i].name == "memcmp", make the definition of
-> memcmp() for x86_32 identical with that of x86_64.
->
-> Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-> Cc: James Hogan <james.hogan@imgtec.com>
-> Cc: Rusty Russell <rusty@rustcorp.com.au>
-> ---
->  arch/x86/include/asm/string_32.h |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/arch/x86/include/asm/string_32.h b/arch/x86/include/asm/string_32.h
-> index 3d3e835..bb85b4e 100644
-> --- a/arch/x86/include/asm/string_32.h
-> +++ b/arch/x86/include/asm/string_32.h
-> @@ -199,7 +199,7 @@ static inline void *__memcpy3d(void *to, const void *from, size_t len)
->  #define __HAVE_ARCH_MEMMOVE
->  void *memmove(void *dest, const void *src, size_t n);
->
-> -#define memcmp __builtin_memcmp
-> +int memcmp(const void *cs, const void *ct, size_t count);
->
->  #define __HAVE_ARCH_MEMCHR
->  extern void *memchr(const void *cs, int c, size_t count);
-> --
-> 1.7.1
+Since half of this patch series modifies ext4 extensively, and changes
+to the other file systems are relatively small, I plan to carry the
+invalidatepage patch set in the ext4 tree for the next development
+cycle (i.e., not the upcoming merge window, but the next one).  To
+that end, it would be great if you take a look at this patch set and
+send us an Acked-by signoff.
 
+Thanks!!
 
-
---
-With Best Regards,
-Andy Shevchenko
+						- Ted
