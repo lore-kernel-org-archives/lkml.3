@@ -1,70 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755538Ab3DWLJX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 07:09:23 -0400
-Received: from mga11.intel.com ([192.55.52.93]:11691 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755348Ab3DWLJV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 07:09:21 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,533,1363158000"; 
-   d="scan'208";a="326791353"
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
-        linux-input@vger.kernel.org, Ulf Hofemeier <ulf.hofemeier@intel.com>,
-        Hui Wang <jason77.wang@gmail.com>
-Subject: [PATCH] input: egalax_ts: remove bogus OF dependency
-Date: Tue, 23 Apr 2013 14:09:17 +0300
-Message-Id: <1366715357-9392-1-git-send-email-artem.bityutskiy@linux.intel.com>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1366708088.9823.16.camel@sauron.fi.intel.com>
-References: <1366708088.9823.16.camel@sauron.fi.intel.com>
+	id S1753460Ab3DWLJn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 07:09:43 -0400
+Received: from mail-ia0-f181.google.com ([209.85.210.181]:57620 "EHLO
+	mail-ia0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755556Ab3DWLJ3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Apr 2013 07:09:29 -0400
+MIME-Version: 1.0
+In-Reply-To: <516BF4D2.8060901@gaisler.com>
+References: <1363355140-28216-1-git-send-email-andreas@gaisler.com>
+	<1363355140-28216-3-git-send-email-andreas@gaisler.com>
+	<CACRpkdYf7U=YY92Pma8+mWGALJvQDPU=d3x7Z6rX+rWkhuBANg@mail.gmail.com>
+	<516BF4D2.8060901@gaisler.com>
+Date: Tue, 23 Apr 2013 13:09:28 +0200
+Message-ID: <CACRpkdYDBuXcPDzkpL2DeaWYBXJM78cUNQkw3Uga1MyGobMayw@mail.gmail.com>
+Subject: Re: [PATCH v5 2/3] gpio: grgpio: Add device driver for GRGPIO cores
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Andreas Larson <andreas@gaisler.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        software@gaisler.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are platforms using this driver which do not have OF. However, commit
-ae495e844a77344fdaedbb2ad97d925d096e9f0d added a Kconfig dependency on OF and
-broke OF-less setups.
+On Mon, Apr 15, 2013 at 2:38 PM, Andreas Larson <andreas@gaisler.com> wrote:
+> On 2013-04-10 20:50, Linus Walleij wrote:
 
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Cc: stable@vger.kernel.org [v3.7+]
----
- drivers/input/touchscreen/Kconfig     |    2 +-
- drivers/input/touchscreen/egalax_ts.c |    2 ++
- 2 files changed, 3 insertions(+), 1 deletions(-)
+>>> +Required properties:
+>>> +
+>>> +- name : Should be "GAISLER_GPIO" or "01_01a"
+>>
+>> What is this? Don't we usually use a .compatible string for this?
+>> Name? Que? Is that something legacy?
+>
+> Regarding using name, this is standard for SPARC. The names in the
+> device tree originates from the PROM.
+>
+> The name field is the actually the first field checked for a match in
+> of_match_node, followed by type then compatible. See
+> http://lxr.free-electrons.com/source/drivers/of/base.c#L572
+>
+(...)
+> As for the "01_01a", the LEON SPARC systems uses a plug&play to identify
+> different IP cores in the system. When the PROM is unaware of the name
+> of a certain core, the name field presented from the prom will be on
+> this form. This is standard handling for LEON SPARC drivers.
 
-diff --git a/drivers/input/touchscreen/Kconfig b/drivers/input/touchscreen/Kconfig
-index 515cfe7..d53b0d6 100644
---- a/drivers/input/touchscreen/Kconfig
-+++ b/drivers/input/touchscreen/Kconfig
-@@ -227,7 +227,7 @@ config TOUCHSCREEN_EETI
- 
- config TOUCHSCREEN_EGALAX
- 	tristate "EETI eGalax multi-touch panel support"
--	depends on I2C && OF
-+	depends on I2C
- 	help
- 	  Say Y here to enable support for I2C connected EETI
- 	  eGalax multi-touch panels.
-diff --git a/drivers/input/touchscreen/egalax_ts.c b/drivers/input/touchscreen/egalax_ts.c
-index 17c9097..b984cfc 100644
---- a/drivers/input/touchscreen/egalax_ts.c
-+++ b/drivers/input/touchscreen/egalax_ts.c
-@@ -287,10 +287,12 @@ static int egalax_ts_resume(struct device *dev)
- 
- static SIMPLE_DEV_PM_OPS(egalax_ts_pm_ops, egalax_ts_suspend, egalax_ts_resume);
- 
-+#ifdef CONFIG_OF
- static struct of_device_id egalax_ts_dt_ids[] = {
- 	{ .compatible = "eeti,egalax_ts" },
- 	{ /* sentinel */ }
- };
-+#endif
- 
- static struct i2c_driver egalax_ts_driver = {
- 	.driver = {
--- 
-1.7.7
+Thanks for detailing this! There is such a big world out there sometimes.
 
+I'm sort of wondering why we do things the way we do in the ARM DT
+world sometimes. Specifically I suspect that we should be using
+name or type rather than compatible for the ARM PrimeCells, which
+are a sort of plug-n-play type devices, but I guess it's too late
+to change that now...
+
+Yours,
+Linus Walleij
