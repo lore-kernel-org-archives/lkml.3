@@ -1,78 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754956Ab3DWF6G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 01:58:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30339 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753750Ab3DWF6E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 01:58:04 -0400
-Date: Tue, 23 Apr 2013 08:57:44 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Avi Kivity <avi.kivity@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Srikar <srikar@linux.vnet.ibm.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        KVM <kvm@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Chegu Vinod <chegu_vinod@hp.com>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Andrew Jones <drjones@redhat.com>, Karen Noel <knoel@redhat.com>
-Subject: Re: Preemptable Ticket Spinlock
-Message-ID: <20130423055743.GB12401@redhat.com>
-References: <CAJocwccu5QQyuKRvgNyPSFz2K_rzCW419W9-XdSUYOL7+KqQKg@mail.gmail.com>
- <51745650.9050204@redhat.com>
- <1366631460.4443.3.camel@laptop>
- <51753289.70406@redhat.com>
- <1366660147.6454.6.camel@laptop>
- <517595FA.800@redhat.com>
- <1366661294.6454.18.camel@laptop>
- <CAJocwceW6BuEu0Yuyv472aarpcziZH1wd-Xbc+Om81ES8+w+SA@mail.gmail.com>
- <1366664138.8337.18.camel@laptop>
- <5175C2D6.9020202@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5175C2D6.9020202@redhat.com>
+	id S1755177Ab3DWGBi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 02:01:38 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:45358 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754976Ab3DWGBg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Apr 2013 02:01:36 -0400
+Message-ID: <1366696891.28314.1.camel@phoenix>
+Subject: [RESEND][PATCH RFT 1/2] pwm: lpc32xx: Properly set PWM_ENABLE bit
+ in lpc32xx_pwm_[enable|disable]
+From: Axel Lin <axel.lin@ingics.com>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: Alexandre Pereira da Silva <aletes.xgr@gmail.com>,
+        Roland Stigge <stigge@antcom.de>, linux-kernel@vger.kernel.org
+Date: Tue, 23 Apr 2013 14:01:31 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 22, 2013 at 07:08:06PM -0400, Rik van Riel wrote:
-> On 04/22/2013 04:55 PM, Peter Zijlstra wrote:
-> >On Mon, 2013-04-22 at 16:46 -0400, Jiannan Ouyang wrote:
-> 
-> >>- pv-preemptable-lock has much less performance variance compare to
-> >>pv_lock, because it adapts to preemption within  VM,
-> >>   other than using rescheduling that increase VM interference
-> >
-> >I would say it has a _much_ worse worst case (and thus worse variance)
-> >than the paravirt ticket implementation from Jeremy. While full
-> >paravirt ticket lock results in vcpu scheduling it does maintain
-> >fairness.
-> >
-> >If you drop strict fairness you can end up in unbounded starvation
-> >cases and those are very ugly indeed.
-> 
-> If needed, Jiannan's scheme could easily be bounded to prevent
-> infinite starvation. For example, we could allow only the first
-> 8 CPUs in line to jump the queue.
-> 
-> However, given the way that virtual CPUs get scheduled in and
-> out all the time, I suspect starvation is not a worry, and we
-> will not need the additional complexity to deal with it.
-> 
-FWIW RHEL6 uses unfair spinlock when it runs as a guest. We never got
-reports about problems due to this on any scale.
+According to the LPC32x0 User Manual [1]:
 
-> You may want to play around with virtualization a bit, to get
-> a feel for how things work in virt land.
-> 
-> -- 
-> All rights reversed
+For both PWM1 and PWM2 Control Registers:
+BIT 31:
+This bit gates the PWM_CLK signal and enables the external output pin
+to the PWM_PIN_STATE logical level.
 
---
-			Gleb.
+0 = PWM disabled. (Default)
+1 = PWM enabled
+
+So in lpc32xx_pwm_enable(), we should set PWM_ENABLE bit.
+In lpc32xx_pwm_disable(), we should just clear PWM_ENABLE bit rather than
+write 0 to the register which will also clear PWMx_RELOADV and PWMx_DUTY bits.
+
+[1] http://www.nxp.com/documents/user_manual/UM10326.pdf
+
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+Hi,
+I don't have this hardware handy so I'd appreciate if someone can test this
+patch serial.
+
+This patch serial was sent on https://lkml.org/lkml/2013/3/30/104
+Seems no feedback so far.
+So I just try again, maybe someone can help testing it.
+Thanks,
+Axel
+
+ drivers/pwm/pwm-lpc32xx.c |   18 ++++++++++++++++--
+ 1 file changed, 16 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/pwm/pwm-lpc32xx.c b/drivers/pwm/pwm-lpc32xx.c
+index b3f0d0d..1a5075e 100644
+--- a/drivers/pwm/pwm-lpc32xx.c
++++ b/drivers/pwm/pwm-lpc32xx.c
+@@ -77,15 +77,29 @@ static int lpc32xx_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
+ static int lpc32xx_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
+ {
+ 	struct lpc32xx_pwm_chip *lpc32xx = to_lpc32xx_pwm_chip(chip);
++	u32 val;
++	int ret;
++
++	ret = clk_enable(lpc32xx->clk);
++	if (ret)
++		return ret;
+ 
+-	return clk_enable(lpc32xx->clk);
++	val = readl(lpc32xx->base + (pwm->hwpwm << 2));
++	val |= PWM_ENABLE;
++	writel(val, lpc32xx->base + (pwm->hwpwm << 2));
++
++	return 0;
+ }
+ 
+ static void lpc32xx_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
+ {
+ 	struct lpc32xx_pwm_chip *lpc32xx = to_lpc32xx_pwm_chip(chip);
++	u32 val;
++
++	val = readl(lpc32xx->base + (pwm->hwpwm << 2));
++	val &= ~PWM_ENABLE;
++	writel(val, lpc32xx->base + (pwm->hwpwm << 2));
+ 
+-	writel(0, lpc32xx->base + (pwm->hwpwm << 2));
+ 	clk_disable(lpc32xx->clk);
+ }
+ 
+-- 
+1.7.10.4
+
+
+
