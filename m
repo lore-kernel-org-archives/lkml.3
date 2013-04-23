@@ -1,37 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755654Ab3DWUfU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 16:35:20 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:33636 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754663Ab3DWUfT (ORCPT
+	id S1755794Ab3DWUr4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 16:47:56 -0400
+Received: from casper.infradead.org ([85.118.1.10]:52696 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755216Ab3DWUrz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 16:35:19 -0400
-Date: Tue, 23 Apr 2013 13:35:16 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org, olaf@aepfle.de,
-        apw@canonical.com, jasowang@redhat.com
-Subject: Re: [PATCH 1/5] [PATCH 1/3] Tools: hv: fix warnings in hv_vss_daemon
-Message-ID: <20130423203516.GA2894@kroah.com>
-References: <1366750685-32626-1-git-send-email-kys@microsoft.com>
- <1366750720-32667-1-git-send-email-kys@microsoft.com>
+	Tue, 23 Apr 2013 16:47:55 -0400
+Message-ID: <5176F364.1080101@infradead.org>
+Date: Tue, 23 Apr 2013 13:47:32 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1366750720-32667-1-git-send-email-kys@microsoft.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Linux Kernel Development <linux-kernel@vger.kernel.org>, x86@kernel.org,
+        linux-cris-kernel@axis.com, uclinux-dist-devel@blackfin.uclinux.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: Build regressions/improvements in v3.9-rc8
+References: <alpine.DEB.2.00.1304232131300.11127@ayla.of.borg> <alpine.DEB.2.00.1304232132050.11155@ayla.of.borg>
+In-Reply-To: <alpine.DEB.2.00.1304232132050.11155@ayla.of.borg>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 23, 2013 at 01:58:36PM -0700, K. Y. Srinivasan wrote:
-> From: Olaf Hering <olaf@aepfle.de> 
+On 04/23/13 12:35, Geert Uytterhoeven wrote:
+>   + error: "vm_iomap_memory" [drivers/video/fb.ko] undefined!:  => N/A
+>   
+> bfin/BF537-STAMP_defconfig
 
-Trailing space :(
 
-But what's really causing me to reject all 5 of these is the Subject:
+This is a result of the recent iomap changes (I think).
 
-The third time's a charm?
+Can Blackfin and others handle a change to FB that says:
 
-greg k-h
+	depends on MMU
+
+??
+then generic fb.o will not be built for no-MMU architectures.
+
+-- 
+~Randy
