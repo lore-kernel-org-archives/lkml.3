@@ -1,28 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932366Ab3DWVzi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 17:55:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34299 "EHLO
+	id S932232Ab3DWVy0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 17:54:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34242 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932242Ab3DWVy1 (ORCPT
+	with ESMTP id S1757734Ab3DWVyS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 17:54:27 -0400
+	Tue, 23 Apr 2013 17:54:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Stefan=20Br=C3=BCns?= <stefan.bruens@rwth-aachen.de>,
-        =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <zajec5@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 16/26] ssb: implement spurious tone avoidance
-Date: Tue, 23 Apr 2013 14:53:56 -0700
-Message-Id: <20130423215335.037114019@linuxfoundation.org>
+        Illia Ragozin <illia.ragozin@grapecom.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 12/26] ARM: 7696/1: Fix kexec by setting outer_cache.inv_all for Feroceon
+Date: Tue, 23 Apr 2013 14:53:52 -0700
+Message-Id: <20130423215334.633950133@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130423215333.344045754@linuxfoundation.org>
 References: <20130423215333.344045754@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,90 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rafał Miłecki <zajec5@gmail.com>
+From: Illia Ragozin <illia.ragozin@grapecom.com>
 
-commit 46fc4c909339f5a84d1679045297d9d2fb596987 upstream.
+commit cd272d1ea71583170e95dde02c76166c7f9017e6 upstream.
 
-And make use of it in b43. This fixes a regression introduced with
-49d55cef5b1925a5c1efb6aaddaa40fc7c693335
-b43: N-PHY: implement spurious tone avoidance
-This commit made BCM4322 use only MCS 0 on channel 13, which of course
-resulted in performance drop (down to 0.7Mb/s).
+On Feroceon the L2 cache becomes non-coherent with the CPU
+when the L1 caches are disabled. Thus the L2 needs to be invalidated
+after both L1 caches are disabled.
 
-Reported-by: Stefan Brüns <stefan.bruens@rwth-aachen.de>
-Signed-off-by: Rafał Miłecki <zajec5@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+On kexec before the starting the code for relocation the kernel,
+the L1 caches are disabled in cpu_froc_fin (cpu_v7_proc_fin for Feroceon),
+but after L2 cache is never invalidated, because inv_all is not set
+in cache-feroceon-l2.c.
+So kernel relocation and decompression may has (and usually has) errors.
+Setting the function enables L2 invalidation and fixes the issue.
+
+Signed-off-by: Illia Ragozin <illia.ragozin@grapecom.com>
+Acked-by: Jason Cooper <jason@lakedaemon.net>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/b43/phy_n.c          |    3 ++-
- drivers/ssb/driver_chipcommon_pmu.c       |   29 +++++++++++++++++++++++++++++
- include/linux/ssb/ssb_driver_chipcommon.h |    2 ++
- 3 files changed, 33 insertions(+), 1 deletion(-)
+ arch/arm/mm/cache-feroceon-l2.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/net/wireless/b43/phy_n.c
-+++ b/drivers/net/wireless/b43/phy_n.c
-@@ -4582,7 +4582,8 @@ static void b43_nphy_pmu_spur_avoid(stru
- #endif
- #ifdef CONFIG_B43_SSB
- 	case B43_BUS_SSB:
--		/* FIXME */
-+		ssb_pmu_spuravoid_pllupdate(&dev->dev->sdev->bus->chipco,
-+					    avoid);
- 		break;
- #endif
- 	}
---- a/drivers/ssb/driver_chipcommon_pmu.c
-+++ b/drivers/ssb/driver_chipcommon_pmu.c
-@@ -645,3 +645,32 @@ u32 ssb_pmu_get_controlclock(struct ssb_
- 		return 0;
- 	}
- }
-+
-+void ssb_pmu_spuravoid_pllupdate(struct ssb_chipcommon *cc, int spuravoid)
-+{
-+	u32 pmu_ctl = 0;
-+
-+	switch (cc->dev->bus->chip_id) {
-+	case 0x4322:
-+		ssb_chipco_pll_write(cc, SSB_PMU1_PLLCTL0, 0x11100070);
-+		ssb_chipco_pll_write(cc, SSB_PMU1_PLLCTL1, 0x1014140a);
-+		ssb_chipco_pll_write(cc, SSB_PMU1_PLLCTL5, 0x88888854);
-+		if (spuravoid == 1)
-+			ssb_chipco_pll_write(cc, SSB_PMU1_PLLCTL2, 0x05201828);
-+		else
-+			ssb_chipco_pll_write(cc, SSB_PMU1_PLLCTL2, 0x05001828);
-+		pmu_ctl = SSB_CHIPCO_PMU_CTL_PLL_UPD;
-+		break;
-+	case 43222:
-+		/* TODO: BCM43222 requires updating PLLs too */
-+		return;
-+	default:
-+		ssb_printk(KERN_ERR PFX
-+			   "Unknown spuravoidance settings for chip 0x%04X, not changing PLL\n",
-+			   cc->dev->bus->chip_id);
-+		return;
-+	}
-+
-+	chipco_set32(cc, SSB_CHIPCO_PMU_CTL, pmu_ctl);
-+}
-+EXPORT_SYMBOL_GPL(ssb_pmu_spuravoid_pllupdate);
---- a/include/linux/ssb/ssb_driver_chipcommon.h
-+++ b/include/linux/ssb/ssb_driver_chipcommon.h
-@@ -219,6 +219,7 @@
- #define SSB_CHIPCO_PMU_CTL			0x0600 /* PMU control */
- #define  SSB_CHIPCO_PMU_CTL_ILP_DIV		0xFFFF0000 /* ILP div mask */
- #define  SSB_CHIPCO_PMU_CTL_ILP_DIV_SHIFT	16
-+#define  SSB_CHIPCO_PMU_CTL_PLL_UPD		0x00000400
- #define  SSB_CHIPCO_PMU_CTL_NOILPONW		0x00000200 /* No ILP on wait */
- #define  SSB_CHIPCO_PMU_CTL_HTREQEN		0x00000100 /* HT req enable */
- #define  SSB_CHIPCO_PMU_CTL_ALPREQEN		0x00000080 /* ALP req enable */
-@@ -661,5 +662,6 @@ enum ssb_pmu_ldo_volt_id {
- void ssb_pmu_set_ldo_voltage(struct ssb_chipcommon *cc,
- 			     enum ssb_pmu_ldo_volt_id id, u32 voltage);
- void ssb_pmu_set_ldo_paref(struct ssb_chipcommon *cc, bool on);
-+void ssb_pmu_spuravoid_pllupdate(struct ssb_chipcommon *cc, int spuravoid);
+--- a/arch/arm/mm/cache-feroceon-l2.c
++++ b/arch/arm/mm/cache-feroceon-l2.c
+@@ -343,6 +343,7 @@ void __init feroceon_l2_init(int __l2_wt
+ 	outer_cache.inv_range = feroceon_l2_inv_range;
+ 	outer_cache.clean_range = feroceon_l2_clean_range;
+ 	outer_cache.flush_range = feroceon_l2_flush_range;
++	outer_cache.inv_all = l2_inv_all;
  
- #endif /* LINUX_SSB_CHIPCO_H_ */
+ 	enable_l2();
+ 
 
 
