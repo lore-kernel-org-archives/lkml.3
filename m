@@ -1,48 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757073Ab3DWSMO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 14:12:14 -0400
-Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:4865 "EHLO
-	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756735Ab3DWSMM (ORCPT
+	id S1756788Ab3DWSMe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 14:12:34 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:35481 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757151Ab3DWSMb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 14:12:12 -0400
-Date: Tue, 23 Apr 2013 18:12:10 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Frederic Weisbecker <fweisbec@gmail.com>
-cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@linaro.org>,
-        Li Zhong <zhong@linux.vnet.ibm.com>, Oleg Nesterov <oleg@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 2/2] nohz: Add basic tracing
-In-Reply-To: <1366664905-21884-3-git-send-email-fweisbec@gmail.com>
-Message-ID: <0000013e38188092-7e0b72ea-9ae0-417c-902a-5e8a88282073-000000@email.amazonses.com>
-References: <1366664905-21884-1-git-send-email-fweisbec@gmail.com> <1366664905-21884-3-git-send-email-fweisbec@gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 23 Apr 2013 14:12:31 -0400
+Date: Tue, 23 Apr 2013 14:12:29 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Vivek Gautam <gautamvivek1987@gmail.com>
+cc: Felipe Balbi <balbi@ti.com>, Kishon Vijay Abraham I <kishon@ti.com>,
+        Vivek Gautam <gautam.vivek@samsung.com>, <linux-usb@vger.kernel.org>,
+        <linux-samsung-soc@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <gregkh@linuxfoundation.org>,
+        <sarah.a.sharp@linux.intel.com>, <rob.herring@calxeda.com>,
+        <kgene.kim@samsung.com>, <dianders@chromium.org>, <t.figa@samsung.com>,
+        <p.paneri@samsung.com>
+Subject: Re: [PATCH v3 01/11] usb: phy: Add APIs for runtime power management
+In-Reply-To: <CAFp+6iECumogLo9Tf+4pMqRhtkGHf1CqA52YjL1tACTRyGO7jw@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1304231408370.1679-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.255.193.30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 23 Apr 2013, Vivek Gautam wrote:
 
-On Mon, 22 Apr 2013, Frederic Weisbecker wrote:
+> Hi,
+> 
+> 
+> On Tue, Apr 23, 2013 at 10:23 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
+> > On Tue, 23 Apr 2013, Vivek Gautam wrote:
+> >
+> >> >> Alright, so here's my understanding:
+> >> >>
+> >> >> I suggested letting e.g. DWC3 enable the PHY's runtime_pm; Alan said
+> >> >> that it could be done before that so that DWC3 sees an enabled PHY
+> >> >> during probe.
+> >> >
+> >> > Basically right.  Help me to understand the overall situation a little
+> >> > better:
+> >> >
+> >> >         What code registers the PHY initially?
+> >>            PHY is added to global list by PHY drivers (like
+> >> phy-samsung-usb2.c/phy-omap-usb2.c)
+> >>            by usb_add_phy() API
+> >
+> > Then this routine should initialize the PHY.  The initialized state
+> > could be either active or suspended, your choice.  Suspended would be
+> > best, in case the PHY never gets used.
+> 
+> Fair enough.
+> 
+> >
+> >> >         What routine does the DWC3 driver call to register itself
+> >> >         as a consumer of the PHY?
+> >>            I think DWC3 doesn't registers itself as consumer of PHY,
+> >> rather it gets that PHY from
+> >>            the list using devm_usb_get_phy()/devm_usb_get_phy_by_phandle() API.
+> >>            DWC3 can now call PHY's initialization sequence using usb_phy_init().
+> >>            So, before DWC3 initializes the PHY, PHYs should be in active state.
+> >
+> > Then usb_phy_init should make sure the PHY is in the active state.  If
+> > usb_add_phy() left the PHY suspended, then this routine should call
+> > pm_runtime_get_sync().
+> 
+> Right
+> 
+> >
+> > After DWC3 (or any other driver) has acquired the PHY, it can call
+> > pm_runtime_put/get() however it likes, so long as the calls balance
+> > properly.  If the driver isn't runtime-PM aware then it won't use any
+> > of these calls, and the PHY will remain active the entire time.
+> 
+> Alright, so DWC3 (or any other consumer of PHY) should do minimal to
+> handle runtime state of PHYs; get() when accessing PHY and put() when it's done
+> with it.
 
-> It's not obvious to find out why the full dynticks subsystem
-> doesn't always stop the tick: whether this is due to kthreads,
-> posix timers, perf events, etc...
->
-> These new tracepoints are here to help the user diagnose
-> the failures and test this feature.
+Yes.  The first operation will generally be a put, because
+usb_phy_init() will leave the PHY in an active state.
 
-Very good. This will help a lot.
+> >> >         Likewise, what routine does it call to unregister itself?
+> >>            Once DWC3's remove() is called PHYs are put.
+> >
+> > Is there a routine analogous to usb_phy_init() that gets called when
+> > PHY is released?  That routine would do the opposite of usb_phy_init(),
+> > putting the PHY back into its initialized state.
+> 
+> Yes, ofcourse there's a routine usb_phy_shutdown(). So this will be
+> calling put_sync()
+> to put PHYs back to its initialized state. Right ?
+
+Correct.
+
+Alan Stern
 
