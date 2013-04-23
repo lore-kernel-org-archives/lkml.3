@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757618Ab3DWVxb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 17:53:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34172 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932223Ab3DWVxM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932207Ab3DWVxM (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 23 Apr 2013 17:53:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34114 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757588Ab3DWVxC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Apr 2013 17:53:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: [ 41/42] s390: move dummy io_remap_pfn_range() to asm/pgtable.h
-Date: Tue, 23 Apr 2013 14:52:39 -0700
-Message-Id: <20130423215209.655190636@linuxfoundation.org>
+        Mathias Krause <minipli@googlemail.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>
+Subject: [ 29/42] crypto: algif - suppress sending source address information in recvmsg
+Date: Tue, 23 Apr 2013 14:52:27 -0700
+Message-Id: <20130423215208.456931650@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130423215205.523980967@linuxfoundation.org>
 References: <20130423215205.523980967@linuxfoundation.org>
@@ -28,58 +27,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Mathias Krause <minipli@googlemail.com>
 
-commit 4f2e29031e6c67802e7370292dd050fd62f337ee upstream.
+commit 72a763d805a48ac8c0bf48fdb510e84c12de51fe upstream.
 
-Commit b4cbb197c7e7 ("vm: add vm_iomap_memory() helper function") added
-a helper function wrapper around io_remap_pfn_range(), and every other
-architecture defined it in <asm/pgtable.h>.
+The current code does not set the msg_namelen member to 0 and therefore
+makes net/socket.c leak the local sockaddr_storage variable to userland
+-- 128 bytes of kernel stack memory. Fix that.
 
-The s390 choice of <asm/io.h> may make sense, but is not very convenient
-for this case, and gratuitous differences like that cause unexpected errors like this:
-
-   mm/memory.c: In function 'vm_iomap_memory':
-   mm/memory.c:2439:2: error: implicit declaration of function 'io_remap_pfn_range' [-Werror=implicit-function-declaration]
-
-Glory be the kbuild test robot who noticed this, bisected it, and
-reported it to the guilty parties (ie me).
-
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/s390/include/asm/io.h      |    4 ----
- arch/s390/include/asm/pgtable.h |    4 ++++
- 2 files changed, 4 insertions(+), 4 deletions(-)
+ crypto/algif_hash.c     |    2 ++
+ crypto/algif_skcipher.c |    1 +
+ 2 files changed, 3 insertions(+)
 
---- a/arch/s390/include/asm/io.h
-+++ b/arch/s390/include/asm/io.h
-@@ -50,10 +50,6 @@ void unxlate_dev_mem_ptr(unsigned long p
- #define ioremap_nocache(addr, size)	ioremap(addr, size)
- #define ioremap_wc			ioremap_nocache
+--- a/crypto/algif_hash.c
++++ b/crypto/algif_hash.c
+@@ -161,6 +161,8 @@ static int hash_recvmsg(struct kiocb *un
+ 	else if (len < ds)
+ 		msg->msg_flags |= MSG_TRUNC;
  
--/* TODO: s390 cannot support io_remap_pfn_range... */
--#define io_remap_pfn_range(vma, vaddr, pfn, size, prot) 	       \
--	remap_pfn_range(vma, vaddr, pfn, size, prot)
--
- static inline void __iomem *ioremap(unsigned long offset, unsigned long size)
- {
- 	return (void __iomem *) offset;
---- a/arch/s390/include/asm/pgtable.h
-+++ b/arch/s390/include/asm/pgtable.h
-@@ -56,6 +56,10 @@ extern unsigned long zero_page_mask;
- 	 (((unsigned long)(vaddr)) &zero_page_mask))))
- #define __HAVE_COLOR_ZERO_PAGE
- 
-+/* TODO: s390 cannot support io_remap_pfn_range... */
-+#define io_remap_pfn_range(vma, vaddr, pfn, size, prot) 	       \
-+	remap_pfn_range(vma, vaddr, pfn, size, prot)
++	msg->msg_namelen = 0;
 +
- #endif /* !__ASSEMBLY__ */
+ 	lock_sock(sk);
+ 	if (ctx->more) {
+ 		ctx->more = 0;
+--- a/crypto/algif_skcipher.c
++++ b/crypto/algif_skcipher.c
+@@ -432,6 +432,7 @@ static int skcipher_recvmsg(struct kiocb
+ 	long copied = 0;
  
- /*
+ 	lock_sock(sk);
++	msg->msg_namelen = 0;
+ 	for (iov = msg->msg_iov, iovlen = msg->msg_iovlen; iovlen > 0;
+ 	     iovlen--, iov++) {
+ 		unsigned long seglen = iov->iov_len;
 
 
