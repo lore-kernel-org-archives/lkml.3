@@ -1,74 +1,240 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757500Ab3DWWTF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 18:19:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33976 "EHLO
+	id S1757487Ab3DWWT1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 18:19:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33971 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757371Ab3DWVwo (ORCPT
+	with ESMTP id S1757284Ab3DWVwn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 17:52:44 -0400
+	Tue, 23 Apr 2013 17:52:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Scott Wood <scottwood@freescale.com>, Alexander Graf <agraf@suse.de>
-Subject: [ 02/42] kvm/powerpc/e500mc: fix tlb invalidation on cpu migration
-Date: Tue, 23 Apr 2013 14:52:00 -0700
-Message-Id: <20130423215205.812693825@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        stable@vger.kernel.org
+Subject: [ 00/42] 3.8.9-stable review
+Date: Tue, 23 Apr 2013 14:51:58 -0700
+Message-Id: <20130423215205.523980967@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130423215205.523980967@linuxfoundation.org>
-References: <20130423215205.523980967@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8-stable review patch.  If anyone has any objections, please let me know.
+This is the start of the stable review cycle for the 3.8.9 release.
+There are 42 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let me know.
 
-------------------
+Responses should be made by Thu Apr 25 21:50:11 UTC 2013.
+Anything received after that time might be too late.
 
-From: Scott Wood <scottwood@freescale.com>
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.8.9-rc1.gz
+and the diffstat can be found below.
 
-commit c5e6cb051c5f7d56f05bd6a4af22cb300a4ced79 upstream.
+thanks,
 
-The existing check handles the case where we've migrated to a different
-core than we last ran on, but it doesn't handle the case where we're
-still on the same cpu we last ran on, but some other vcpu has run on
-this cpu in the meantime.
+greg k-h
 
-Without this, guest segfaults (and other misbehavior) have been seen in
-smp guests.
+-------------
+Pseudo-Shortlog of commits:
 
-Signed-off-by: Scott Wood <scottwood@freescale.com>
-Signed-off-by: Alexander Graf <agraf@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    Linux 3.8.9-rc1
 
----
- arch/powerpc/kvm/e500mc.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+Ralf Baechle <ralf@linux-mips.org>
+    Revert "MIPS: page.h: Provide more readable definition for PAGE_MASK."
 
---- a/arch/powerpc/kvm/e500mc.c
-+++ b/arch/powerpc/kvm/e500mc.c
-@@ -108,6 +108,8 @@ void kvmppc_mmu_msr_notify(struct kvm_vc
- {
- }
- 
-+static DEFINE_PER_CPU(struct kvm_vcpu *, last_vcpu_on_cpu);
-+
- void kvmppc_core_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
- {
- 	struct kvmppc_vcpu_e500 *vcpu_e500 = to_e500(vcpu);
-@@ -136,8 +138,11 @@ void kvmppc_core_vcpu_load(struct kvm_vc
- 	mtspr(SPRN_GDEAR, vcpu->arch.shared->dar);
- 	mtspr(SPRN_GESR, vcpu->arch.shared->esr);
- 
--	if (vcpu->arch.oldpir != mfspr(SPRN_PIR))
-+	if (vcpu->arch.oldpir != mfspr(SPRN_PIR) ||
-+	    __get_cpu_var(last_vcpu_on_cpu) != vcpu) {
- 		kvmppc_e500_tlbil_all(vcpu_e500);
-+		__get_cpu_var(last_vcpu_on_cpu) = vcpu;
-+	}
- 
- 	kvmppc_load_guest_fp(vcpu);
- }
+Linus Torvalds <torvalds@linux-foundation.org>
+    s390: move dummy io_remap_pfn_range() to asm/pgtable.h
+
+Josef Bacik <jbacik@fusionio.com>
+    Btrfs: make sure nbytes are right after log replay
+
+Linus Torvalds <torvalds@linux-foundation.org>
+    vm: convert mtdchar mmap to vm_iomap_memory() helper
+
+Linus Torvalds <torvalds@linux-foundation.org>
+    vm: convert HPET mmap to vm_iomap_memory() helper
+
+Linus Torvalds <torvalds@linux-foundation.org>
+    vm: convert fb_mmap to vm_iomap_memory() helper
+
+Linus Torvalds <torvalds@linux-foundation.org>
+    vm: convert snd_pcm_lib_mmap_iomem() to vm_iomap_memory() helper
+
+Linus Torvalds <torvalds@linux-foundation.org>
+    vm: add vm_iomap_memory() helper function
+
+Andy Lutomirski <luto@amacapital.net>
+    userns: Changing any namespace id mappings should require privileges
+
+Andy Lutomirski <luto@amacapital.net>
+    userns: Check uid_map's opener's fsuid, not the current fsuid
+
+Eric W. Biederman <ebiederm@xmission.com>
+    userns: Don't let unprivileged users trick privileged users into setting the id_map
+
+Stephane Eranian <eranian@google.com>
+    perf/x86: Fix offcore_rsp valid mask for SNB/IVB
+
+Tommi Rantala <tt.rantala@gmail.com>
+    perf: Treat attr.config as u64 in perf_swevent_init()
+
+Mathias Krause <minipli@googlemail.com>
+    crypto: algif - suppress sending source address information in recvmsg
+
+Rafał Miłecki <zajec5@gmail.com>
+    ssb: implement spurious tone avoidance
+
+Johannes Berg <johannes.berg@intel.com>
+    mac80211: fix cfg80211 interaction on auth/assoc request
+
+Felix Fietkau <nbd@openwrt.org>
+    ath9k_hw: change AR9580 initvals to fix a stability issue
+
+Felix Fietkau <nbd@openwrt.org>
+    ath9k_htc: accept 1.x firmware newer than 1.3
+
+Will Deacon <will.deacon@arm.com>
+    ARM: 7698/1: perf: fix group validation when using enable_on_exec
+
+Illia Ragozin <illia.ragozin@grapecom.com>
+    ARM: 7696/1: Fix kexec by setting outer_cache.inv_all for Feroceon
+
+libin <huawei.libin@huawei.com>
+    sched/debug: Fix sd->*_idx limit range avoiding overflow
+
+Tejun Heo <tj@kernel.org>
+    sched: Convert BUG_ON()s in try_to_wake_up_local() to WARN_ON_ONCE()s
+
+Matt Carlson <mcarlson@broadcom.com>
+    tg3: Add 57766 device support.
+
+Markus Pargmann <mpa@pengutronix.de>
+    ARM: clk-imx35: Bugfix iomux clock
+
+Sascha Hauer <s.hauer@pengutronix.de>
+    ARM: i.MX35: enable MAX clock
+
+Andrew Honig <ahonig@google.com>
+    KVM: Allow cross page reads and writes from cached translations.
+
+Andy Honig <ahonig@google.com>
+    KVM: Fix bounds checking in ioapic indirect register reads (CVE-2013-1798)
+
+Andy Honig <ahonig@google.com>
+    KVM: x86: Convert MSR_KVM_SYSTEM_TIME to use gfn_to_hva_cache functions (CVE-2013-1797)
+
+Andy Honig <ahonig@google.com>
+    KVM: x86: fix for buffer overflow in handling of MSR_KVM_SYSTEM_TIME (CVE-2013-1796)
+
+Joe Lawrence <Joe.Lawrence@stratus.com>
+    md: raid1,10: Handle REQ_WRITE_SAME flag in write bios
+
+Vyacheslav Dubeyko <slava@dubeyko.com>
+    hfsplus: fix potential overflow in hfsplus_file_truncate()
+
+Emese Revfy <re.emese@gmail.com>
+    kernel/signal.c: stop info leak via the tkill and the tgkill syscalls
+
+Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+    fs/binfmt_elf.c: fix hugetlb memory check in vma_dump_size()
+
+Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+    hugetlbfs: add swap entry check in follow_hugetlb_page()
+
+Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+    hugetlbfs: stop setting VM_DONTDUMP in initializing vma(VM_HUGETLB)
+
+Christoph Fritz <chf.fritz@googlemail.com>
+    can: sja1000: fix handling on dt properties on little endian systems
+
+Marc Kleine-Budde <mkl@pengutronix.de>
+    can: mcp251x: add missing IRQF_ONESHOT to request_threaded_irq
+
+Michael Bohan <mbohan@codeaurora.org>
+    hrtimer: Don't reinitialize a cpu_base lock on CPU_UP
+
+Thomas Gleixner <tglx@linutronix.de>
+    kthread: Prevent unpark race which puts threads on the wrong cpu
+
+Russell King <rmk+kernel@arm.linux.org.uk>
+    ARM: Do 15e0d9e37c (ARM: pm: let platforms select cpu_suspend support) properly
+
+Scott Wood <scottwood@freescale.com>
+    kvm/powerpc/e500mc: fix tlb invalidation on cpu migration
+
+Kevin Hao <haokexin@gmail.com>
+    powerpc: add a missing label in resume_kernel
+
+
+-------------
+
+Diffstat:
+
+ Makefile                                           |  4 +-
+ arch/arm/kernel/perf_event.c                       |  5 ++-
+ arch/arm/mach-imx/clk-imx35.c                      |  2 +
+ arch/arm/mm/cache-feroceon-l2.c                    |  1 +
+ arch/arm/mm/proc-arm920.S                          |  2 +-
+ arch/arm/mm/proc-arm926.S                          |  2 +-
+ arch/arm/mm/proc-mohawk.S                          |  2 +-
+ arch/arm/mm/proc-sa1100.S                          |  2 +-
+ arch/arm/mm/proc-v6.S                              |  2 +-
+ arch/arm/mm/proc-xsc3.S                            |  2 +-
+ arch/arm/mm/proc-xscale.S                          |  2 +-
+ arch/mips/include/asm/page.h                       |  2 +-
+ arch/powerpc/kernel/entry_64.S                     |  2 +-
+ arch/powerpc/kvm/e500mc.c                          |  7 ++-
+ arch/s390/include/asm/io.h                         |  4 --
+ arch/s390/include/asm/pgtable.h                    |  4 ++
+ arch/x86/include/asm/kvm_host.h                    |  4 +-
+ arch/x86/kernel/cpu/perf_event_intel.c             | 20 +++++++--
+ arch/x86/kvm/lapic.c                               |  2 +-
+ arch/x86/kvm/x86.c                                 | 51 ++++++++++-----------
+ crypto/algif_hash.c                                |  2 +
+ crypto/algif_skcipher.c                            |  1 +
+ drivers/char/hpet.c                                | 14 +-----
+ drivers/md/raid1.c                                 |  7 ++-
+ drivers/md/raid10.c                                |  9 +++-
+ drivers/mtd/mtdchar.c                              | 32 +------------
+ drivers/net/can/mcp251x.c                          | 10 ++++-
+ drivers/net/can/sja1000/sja1000_of_platform.c      | 31 +++++++------
+ drivers/net/ethernet/broadcom/tg3.c                | 18 +++++++-
+ drivers/net/ethernet/broadcom/tg3.h                |  2 +
+ .../net/wireless/ath/ath9k/ar9580_1p0_initvals.h   |  2 +-
+ drivers/net/wireless/ath/ath9k/htc_drv_init.c      |  2 +-
+ drivers/net/wireless/b43/phy_n.c                   |  3 +-
+ drivers/ssb/driver_chipcommon_pmu.c                | 29 ++++++++++++
+ drivers/video/fbmem.c                              | 39 ++++++----------
+ fs/binfmt_elf.c                                    |  1 +
+ fs/btrfs/tree-log.c                                | 48 +++++++++++++++++---
+ fs/hfsplus/extents.c                               |  2 +-
+ fs/hugetlbfs/inode.c                               |  2 +-
+ fs/proc/array.c                                    |  1 +
+ include/linux/kvm_host.h                           |  2 +-
+ include/linux/kvm_types.h                          |  1 +
+ include/linux/mm.h                                 |  2 +
+ include/linux/sched.h                              |  5 ++-
+ include/linux/ssb/ssb_driver_chipcommon.h          |  2 +
+ include/trace/events/sched.h                       |  2 +-
+ kernel/events/core.c                               |  2 +-
+ kernel/hrtimer.c                                   |  3 +-
+ kernel/kthread.c                                   | 52 ++++++++++++----------
+ kernel/sched/core.c                                |  8 ++--
+ kernel/signal.c                                    |  2 +-
+ kernel/user_namespace.c                            | 22 +++++----
+ mm/hugetlb.c                                       | 12 ++++-
+ mm/memory.c                                        | 47 +++++++++++++++++++
+ net/mac80211/mlme.c                                | 24 ++++++++--
+ sound/core/pcm_native.c                            | 12 +----
+ virt/kvm/ioapic.c                                  |  7 ++-
+ virt/kvm/kvm_main.c                                | 47 ++++++++++++++-----
+ 58 files changed, 406 insertions(+), 223 deletions(-)
 
 
