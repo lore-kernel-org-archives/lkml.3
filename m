@@ -1,60 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754375Ab3DWC5z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 22:57:55 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:42253 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754117Ab3DWC5x (ORCPT
+	id S1754338Ab3DWC7R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 22:59:17 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:48585 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753480Ab3DWC7P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 22:57:53 -0400
-X-AuditID: cbfee68f-b7feb6d000003f6c-60-5175f8b0e921
+	Mon, 22 Apr 2013 22:59:15 -0400
+X-AuditID: cbfee68d-b7feb6d000007be8-55-5175f9025f77
 From: Jonghwan Choi <jhbird.choi@samsung.com>
 To: "'Jonghwan Choi'" <jhbird.choi@samsung.com>, linux-kernel@vger.kernel.org
-Cc: stable@vger.kernel.org, "'Wei Yongjun'" <yongjun_wei@trendmicro.com.cn>,
-        "'Peter Zijlstra'" <a.p.zijlstra@chello.nl>
+Cc: stable@vger.kernel.org, "'Sylwester Nawrocki'" <s.nawrocki@samsung.com>,
+        "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        "'Tomasz Figa'" <tomasz.figa@gmail.com>
 References: 
 In-reply-to: 
-Subject: [PATCH 3.8-stable] perf: Fix error return code
-Date: Tue, 23 Apr 2013 11:57:51 +0900
-Message-id: <007001ce3fce$58768be0$0963a3a0$%choi@samsung.com>
+Subject: [PATCH 3.8-stable] ARM: S3C24XX: Correct NR_IRQS definition for s3c2440
+Date: Tue, 23 Apr 2013 11:59:13 +0900
+Message-id: <007101ce3fce$894d9920$9be8cb60$%choi@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4vhL6OHdYi6A9aR4m9yzeDEXJPogAflJswAu8tBWABA5ig4A==
+Thread-index: Ac4vhL6OHdYi6A9aR4m9yzeDEXJPogAflJswAu8tBWABA6SbUA==
 Content-language: ko
-x-cr-hashedpuzzle: DxeC OECB Olmy PPpE TYHK ThrQ Tq85 Y8Am dwj7 gz86 hDnQ kcdw
- mXJ/ oLnR s4ME
- s/52;5;YQAuAHAALgB6AGkAagBsAHMAdAByAGEAQABjAGgAZQBsAGwAbwAuAG4AbAA7AGoAaABiAGkAcgBkAC4AYwBoAG8AaQBAAHMAYQBtAHMAdQBuAGcALgBjAG8AbQA7AGwAaQBuAHUAeAAtAGsAZQByAG4AZQBsAEAAdgBnAGUAcgAuAGsAZQByAG4AZQBsAC4AbwByAGcAOwBzAHQAYQBiAGwAZQBAAHYAZwBlAHIALgBrAGUAcgBuAGUAbAAuAG8AcgBnADsAeQBvAG4AZwBqAHUAbgBfAHcAZQBpAEAAdAByAGUAbgBkAG0AaQBjAHIAbwAuAGMAbwBtAC4AYwBuAA==;Sosha1_v1;7;{917AEF4B-56D4-4052-BE63-EFC09F31CF9E};agBoAGIAaQByAGQALgBjAGgAbwBpAEAAcwBhAG0AcwB1AG4AZwAuAGMAbwBtAA==;Tue,
- 23 Apr 2013 02:57:43
- GMT;WwBQAEEAVABDAEgAIAAzAC4AOAAtAHMAdABhAGIAbABlAF0AIABwAGUAcgBmADoAIABGAGkAeAAgAGUAcgByAG8AcgAgAHIAZQB0AHUAcgBuACAAYwBvAGQAZQA=
-x-cr-puzzleid: {917AEF4B-56D4-4052-BE63-EFC09F31CF9E}
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrBIsWRmVeSWpSXmKPExsVy+t8zY90NP0oDDW4fEbC42HaRzWJJM7fF
-	5V1z2CwWbHzEaLFzXSe7A6vHlaccHn1bVjF6LL13lNHj8ya5AJYoLpuU1JzMstQifbsEroy2
-	ld0sBcc4K9bsP83cwNjD0cXIySEhYCJxo/cHM4QtJnHh3nq2LkYuDiGBZYwSc44tZYIpmn3+
-	EgtEYjqjxIxdX1khnL+MEvPmzGADqWIT0JU4tn4LK4gtIuAtcWrKL6CxHBzMAmUSDfuzQEwh
-	AW6J1c1BIBWcAjwS6/50gi0WFjCXaN53hB3EZhFQldjW+RpsIq+AncSsqdOhbEGJH5PvsYDY
-	zAJaEut3HmeCsOUlNq95C7ZJQkBd4tFfXYgDnCTOrXzEClEiIrHvxTtGkIslBK6wSuz5coQN
-	4i9Tibub2lkgEh/ZJc4/a2aGOEJA4tvkQywQQ2UlNh2ABpCkxMEVN1gmMErNQnLSLCQnzUJy
-	0iwkuxcwsqxiFE0tSC4oTkovMtYrTswtLs1L10vOz93ECInl/h2Mdw9YH2JMBlo/kVlKNDkf
-	mArySuINjc2MLExNTI2NzC3NSBNWEudVa7EOFBJITyxJzU5NLUgtii8qzUktPsTIxMEp1cAo
-	unJT0QSfO8LczPbHF7v4BiV39D688ezvwj9OvmInNq7Ks43pF4q//3ORoeXN+8ImCu1vYm0u
-	GNuvUvyZxf/Hj2Ey9zfFCyyTAze73fv+5OaivIY2zf6fzNdiBL4zZ9gkBEdGdYneVPCXb7mc
-	eqNEqHnemlnz46bLnPm871bJpimXP+cnry1SYinOSDTUYi4qTgQAtFBEmvsCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKKsWRmVeSWpSXmKPExsVy+t9jQd0NP0oDDd6v57G42HaRzWJJM7fF
-	5V1z2CwWbHzEaLFzXSe7A6vHlaccHn1bVjF6LL13lNHj8ya5AJaoBkabjNTElNQihdS85PyU
-	zLx0WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKC1SgpliTmlQKGAxOJiJX07TBNC
-	Q9x0LWAaI3R9Q4LgeowM0EDCOsaMtpXdLAXHOCvW7D/N3MDYw9HFyMkhIWAiMfv8JRYIW0zi
-	wr31bF2MXBxCAtMZJWbs+soK4fxllJg3ZwYbSBWbgK7EsfVbWEFsEQFviVNTfjF3MXJwMAuU
-	STTszwIxhQS4JVY3B4FUcArwSKz708kMYgsLmEs07zvCDmKzCKhKbOt8DTaRV8BOYtbU6VC2
-	oMSPyffA7mEW0JJYv/M4E4QtL7F5zVuwTRIC6hKP/upCHOAkcW7lI1aIEhGJfS/eMYJcLCFw
-	hVViz5cjbBB/mUrc3dTOMoFRZBaSFbOQrJiFZMUsJLMWMLKsYhRNLUguKE5KzzXUK07MLS7N
-	S9dLzs/dxAhOFM+kdjCubLA4xCjAwajEwyvgXhooxJpYVlyZe4hRgoNZSYRXNB8oxJuSWFmV
-	WpQfX1Sak1p8iDEZGAITmaVEk/OBSSyvJN7Q2MTMyNLIzMLIxNycNGElcd4DrdaBQgLpiSWp
-	2ampBalFMFuYODilGhhXrbnPNeN0sDUDr2mF/PcYT+Oniam++3dLFvT8PKF6WqRvVw97VEL3
-	9cQO/7Vqfx4nbogQMzH4siX4hae3kODWO5E/Dk96erlW9ilzIrtIUHjJrC8qoQtSXgv2P5Ju
-	PhllJjzB/LOUcI+fuPAOR94nsRqWW2+em+8x32ujy6Z3B0UC5s6JWafEUpyRaKjFXFScCAC6
-	UP3kWAMAAA==
+x-cr-hashedpuzzle: J49w Lwtz NNGT TRp7 ai9C bAXc dtil e85x ovZU zTUt 0r+d 2cDN
+ 9TCR AAXS6g== AA1rPQ==
+ AA/Chg==;6;agBoAGIAaQByAGQALgBjAGgAbwBpAEAAcwBhAG0AcwB1AG4AZwAuAGMAbwBtADsAawBnAGUAbgBlAC4AawBpAG0AQABzAGEAbQBzAHUAbgBnAC4AYwBvAG0AOwBsAGkAbgB1AHgALQBrAGUAcgBuAGUAbABAAHYAZwBlAHIALgBrAGUAcgBuAGUAbAAuAG8AcgBnADsAcwAuAG4AYQB3AHIAbwBjAGsAaQBAAHMAYQBtAHMAdQBuAGcALgBjAG8AbQA7AHMAdABhAGIAbABlAEAAdgBnAGUAcgAuAGsAZQByAG4AZQBsAC4AbwByAGcAOwB0AG8AbQBhAHMAegAuAGYAaQBnAGEAQABnAG0AYQBpAGwALgBjAG8AbQA=;Sosha1_v1;7;{18B9E403-2F85-4D69-87CF-68894BBB963E};agBoAGIAaQByAGQALgBjAGgAbwBpAEAAcwBhAG0AcwB1AG4AZwAuAGMAbwBtAA==;Tue,
+ 23 Apr 2013 02:59:02
+ GMT;WwBQAEEAVABDAEgAIAAzAC4AOAAtAHMAdABhAGIAbABlAF0AIABBAFIATQA6ACAAUwAzAEMAMgA0AFgAWAA6ACAAQwBvAHIAcgBlAGMAdAAgAE4AUgBfAEkAUgBRAFMAIABkAGUAZgBpAG4AaQB0AGkAbwBuACAAZgBvAHIAIABzADMAYwAyADQANAAwAA==
+x-cr-puzzleid: {18B9E403-2F85-4D69-87CF-68894BBB963E}
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrFIsWRmVeSWpSXmKPExsVy+t8zfV2mn6WBBmsOClksaea26F1wlc3i
+	8q45bBaH37SzWizY+IjRYtWuP4wObB47Z91l9+jbsorR4/MmuQDmKC6blNSczLLUIn27BK6M
+	hsWLmQvm8VWsWXecpYGxj6eLkZNDQsBE4t6Zq6wQtpjEhXvr2boYuTiEBJYxSlya9YMNpmjD
+	uZVQiemMEo+nrgJLCAn8ZZRY3+QMYrMJ6EocW78FbJKIgLfEqSm/mEEamAVmMEoc6noClOAA
+	auCWWN0cBFLDKcAjse5PJzOILSwQIDGv+TETiM0ioCpxcOEURhCbV8BO4sOSf2wQtqDEj8n3
+	WEBsZgEtifU7jzNB2PISm9e8ZQYZLyGgLvHory7ECU4S61f3Q5WISOx78Y4R5BwJgRNsEscX
+	PYb62FRi1afv7BCJr+wSO96tZYE4QkDi2+RDLBBDZSU2HWCGqJeUOLjiBssERqlZSE6aheSk
+	WUhOmoVk9wJGllWMoqkFyQXFSelFhnrFibnFpXnpesn5uZsYIfHcu4Px9gHrQ4zJQOsnMkuJ
+	JucD00FeSbyhsZmRhamJqbGRuaUZacJK4rxqLdaBQgLpiSWp2ampBalF8UWlOanFhxiZODil
+	Ghh3XjeKWy2Uf3vJt1dv45eeS5yw+9ah7I/3s18Zx/w69m7DTyOZByGH5+fJ2RzeWzM568Gi
+	/MVHPOY07mW88VInYCfTD/+Te39sCJnZILae9aL683MaP3eYHjzVz2jR7HYwvqph74mPP+bL
+	Scd9X7fTbvK/W9X/jvb8mfFsx+OpG1Q+t/KeNF1+XFWJpTgj0VCLuag4EQDGQNg6/QIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrOKsWRmVeSWpSXmKPExsVy+t9jQV2mn6WBBt/n8Fksaea26F1wlc3i
+	8q45bBaH37SzWizY+IjRYtWuP4wObB47Z91l9+jbsorR4/MmuQDmqAZGm4zUxJTUIoXUvOT8
+	lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRbJRefAF23zBygvUoKZYk5pUChgMTiYiV9O0wT
+	QkPcdC1gGiN0fUOC4HqMDNBAwjrGjIbFi5kL5vFVrFl3nKWBsY+ni5GTQ0LARGLDuZVsELaY
+	xIV764FsLg4hgemMEo+nrgJLCAn8ZZRY3+QMYrMJ6EocW7+FFcQWEfCWODXlFzNIA7PADEaJ
+	Q11PgBIcQA3cEqubg0BqOAV4JNb96WQGsYUFAiTmNT9mArFZBFQlDi6cwghi8wrYSXxY8o8N
+	whaU+DH5HguIzSygJbF+53EmCFteYvOat8wg4yUE1CUe/dWFOMFJYv3qfqgSEYl9L94xgpwj
+	IXCCTeL4osesEI+ZSqz69J19AqPILCQrZiFZMQvJillIZi1gZFnFKJpakFxQnJSea6hXnJhb
+	XJqXrpecn7uJEZwsnkntYFzZYHGIUYCDUYmHV8C9NFCINbGsuDL3EKMEB7OSCK9oPlCINyWx
+	siq1KD++qDQntfgQYzIwBCYyS4km5wMTWV5JvKGxiZmRpZGZhZGJuTlpwkrivAdarQOFBNIT
+	S1KzU1MLUotgtjBxcEo1MGZxak7l+sd9Kmhmo+KM9w+kM7paHkacjtn6qVVuZ1rTlUd6dxpX
+	G3670WflIBmt/vujpMfuNxqCKydkKFb5/J+Wzf7Bemt9I9/trSsNT9x6u3TlxhWvyt/zs7kd
+	8MgTXsc038YrtmN/9v+n0zRvOhx++2Pz2x2HOaf3e7S/znR8zxdgHaU24ZMSS3FGoqEWc1Fx
+	IgAh6tMBWgMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -66,39 +67,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Wei Yongjun <yongjun_wei@trendmicro.com.cn>"
+From: "Sylwester Nawrocki <s.nawrocki@samsung.com>"
 
-commit c481420248c6730246d2a1b1773d5d7007ae0835 upstream.
+commit b530f742ac27460d41d35b638ad6aad92044a982 upstream.
 
-Fix to return -ENOMEM in the allocation error case instead of 0
-(if pmu_bus_running == 1), as done elsewhere in this function.
+Due to NR_IRQS being incorrectly defined not all IRQ domains can
+be registered for S3C2440. It causes following errors on a s3c2440
+SoC based board:
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-Cc: a.p.zijlstra@chello.nl
-Cc: paulus@samba.org
-Cc: acme@ghostprotocols.net
-Link:
-http://lkml.kernel.org/r/CAPgLHd8j_fWcgqe%3DKLWjpBj%2B%3Do0Pw6Z-SEq%3DNTPU08
-c2w1tngQ@mail.gmail.com
-[ Tweaked the error code setting placement and the changelog. ]
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+NR_IRQS:89
+S3C2440: IRQ Support
+irq: clearing pending status 00000002
+------------[ cut here ]------------
+WARNING: at kernel/irq/irqdomain.c:234 0xc0056ed0()
+...
+irq: could not create irq-domain
+...
+s3c2410-wdt s3c2410-wdt: failed to install irq (-22)
+s3c2410-wdt: probe of s3c2410-wdt failed with error -22
+...
+samsung-uart s3c2440-uart.0: cannot get irq 74
+
+Fix this by increasing NR_IRQS to at least (IRQ_S3C2443_AC97 + 1)
+if CPU_S3C2440 is selected, so the subintc IRQ domain gets properly
+registered.
+
+Signed-off-by: Tomasz Figa <tomasz.figa@gmail.com>
+Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Acked-by: Heiko Stuebner <heiko@sntech.de>
+Signed-off-by: Kukjin Kim <kgene.kim@samsung.com>
 Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
 ---
- kernel/events/core.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/arm/mach-s3c24xx/include/mach/irqs.h |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 7b6646a..f6eba58 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -5988,6 +5988,7 @@ skip_type:
- 	if (pmu->pmu_cpu_context)
- 		goto got_cpu_context;
+diff --git a/arch/arm/mach-s3c24xx/include/mach/irqs.h
+b/arch/arm/mach-s3c24xx/include/mach/irqs.h
+index b7a9f4d..1e73f5f 100644
+--- a/arch/arm/mach-s3c24xx/include/mach/irqs.h
++++ b/arch/arm/mach-s3c24xx/include/mach/irqs.h
+@@ -188,10 +188,8 @@
  
-+	ret = -ENOMEM;
- 	pmu->pmu_cpu_context = alloc_percpu(struct perf_cpu_context);
- 	if (!pmu->pmu_cpu_context)
- 		goto free_dev;
+ #if defined(CONFIG_CPU_S3C2416)
+ #define NR_IRQS (IRQ_S3C2416_I2S1 + 1)
+-#elif defined(CONFIG_CPU_S3C2443)
+-#define NR_IRQS (IRQ_S3C2443_AC97+1)
+ #else
+-#define NR_IRQS (IRQ_S3C2440_AC97+1)
++#define NR_IRQS (IRQ_S3C2443_AC97 + 1)
+ #endif
+ 
+ /* compatibility define. */
 -- 
 1.7.9.5
 
