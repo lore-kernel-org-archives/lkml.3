@@ -1,92 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756658Ab3DWPZk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 11:25:40 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:62286 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756031Ab3DWPZi (ORCPT
+	id S1756802Ab3DWP0L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 11:26:11 -0400
+Received: from mail-da0-f47.google.com ([209.85.210.47]:38494 "EHLO
+	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756762Ab3DWP0H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 11:25:38 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: James Hogan <james.hogan@imgtec.com>
-Subject: Re: [PATCH 2/8] metag: minimal TZ1090 (Comet) SoC infrastructure
-Date: Tue, 23 Apr 2013 17:25:34 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        devicetree-discuss@lists.ozlabs.org, Rob Landley <rob@landley.net>,
-        linux-doc@vger.kernel.org
-References: <1366727607-27444-1-git-send-email-james.hogan@imgtec.com> <1366727607-27444-3-git-send-email-james.hogan@imgtec.com>
-In-Reply-To: <1366727607-27444-3-git-send-email-james.hogan@imgtec.com>
+	Tue, 23 Apr 2013 11:26:07 -0400
+Message-ID: <5176A807.2090005@samsung.com>
+Date: Wed, 24 Apr 2013 00:25:59 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Viresh Kumar <viresh.kumar@linaro.org>, robin.randhawa@arm.com,
+        Ben Dooks <ben-linux@fluff.org>, linux-pm@vger.kernel.org,
+        patches@linaro.org, Liviu.Dudau@arm.com, linux-kernel@vger.kernel.org,
+        cpufreq@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        linux-arm-kernel@lists.infradead.org, Steve.Bannister@arm.com,
+        arvind.chauhan@arm.com, linaro-kernel@lists.linaro.org,
+        charles.garcia-tobin@arm.com
+Subject: Re: [PATCH 07/18] cpufreq: s3c24xx: move cpufreq driver to drivers/cpufreq
+References: <cover.1365079581.git.viresh.kumar@linaro.org> <2a5901ce31c9$95160980$bf421c80$%kim@samsung.com> <CAKohpokk1Q+0gRpeW=ts0a8D+rGAUpHu62X+7ejdpfom_B6FYA@mail.gmail.com> <1769336.FkfMpuXqqb@vostro.rjw.lan>
+In-Reply-To: <1769336.FkfMpuXqqb@vostro.rjw.lan>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201304231725.34826.arnd@arndb.de>
-X-Provags-ID: V02:K0:3Py10zzDulviJ+zQOEOh4bgTHKvckKJkM17SyXWfD8p
- Dt8DOWNYaQALR7Vlrvcf1shRnOp17LJuKdP7rrepP/R4Gjis9x
- D4ylwDT9ixCBkNNZ3X/TtyioUgzcuSHz4N8UmAWJPCLT+gtyJv
- sq5LwMzeOV606a1BOix1uZOtS9kn8HpgJ54d34UFityxbQHdbI
- senfUM+7mzE2gaDLnbL7FzH1NLP76z4NGx4zJ1KVlUsEcMOeZX
- q0my3cB93rQLdFuLz2QbBY7KFxgM5TJncsc2VphyqBjAXTSJeS
- 2GFZzLi82cJTL/b45oteyvfkULCsh8rcYc2gcZbdgIsVLlcQdT
- 7KbWI6fAh2KGAWNuO1fo=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 23 April 2013, James Hogan wrote:
+On 04/05/13 20:36, Rafael J. Wysocki wrote:
+> On Friday, April 05, 2013 12:36:34 PM Viresh Kumar wrote:
+>> On 5 April 2013 12:18, Kukjin Kim<kgene.kim@samsung.com>  wrote:
+>>> Basically, this moving looks good to me, but should be re-worked based on
+>>> for-next of samsung tree because this touches too many samsung stuff so this
+>>> should be sent to upstream via samsung tree.
+>>
+>> Hmm... Its already applied in Rafael's tree. But it doesn't mean that
+>> it can't be
+>> moved to your tree if there is a issue.
+>
+> Well, I'm dropping it.  Please merge via the Samsung tree.
+>
 
-> @@ -46,6 +46,12 @@ core-y					+= arch/metag/boot/dts/
->  core-y					+= arch/metag/kernel/
->  core-y					+= arch/metag/mm/
->  
-> +# SoCs
-> +socdir-$(CONFIG_SOC_TZ1090)		+= tz1090
-> +
-> +socdirs		:= $(filter-out ., $(patsubst %,%/,$(socdir-y)))
-> +core-y		+= $(addprefix arch/metag/soc/, $(socdirs))
-> +
+Oops, I missed, maybe I have no more chance to send this to upstream for 
+upcoming merge window :-(
 
-Does it actually make sense to have subdirectories per soc? I would 
-suggest you copy from arm64 rather from arm for the platform support and
-do it as minimal as possible. Any code you need can go into a shared directory
-as a start, and if you end up needing more of a hierarchical structure,
-you can add that later. Hopefully we've come to the point now where almost
-everything can live in drivers/* though.
+Rafael, please take this patch with my ack in your tree, sorry for noise.
 
-> diff --git a/arch/metag/configs/tz1090_defconfig b/arch/metag/configs/tz1090_defconfig
-> new file mode 100644
-> index 0000000..4794094
-> --- /dev/null
-> +++ b/arch/metag/configs/tz1090_defconfig
+Acked-by: Kukjin Kim <kgene.kim@samsung.com>
 
-Also, if this is compatible with your previous platform, I would recommend just
-having a single defconfig that runs on all supported hardware. It's easy enough
-for users to turn off the drivers and platforms they don't need.
+If any problems, please kindly let me know.
 
-> diff --git a/arch/metag/soc/tz1090/setup.c b/arch/metag/soc/tz1090/setup.c
-> new file mode 100644
-> index 0000000..fbd7074
-> --- /dev/null
-> +++ b/arch/metag/soc/tz1090/setup.c
-> +
-> +#include <linux/init.h>
-> +#include <asm/mach/arch.h>
-> +
-> +static const char *tz1090_boards_compat[] __initdata = {
-> +	"toumaz,tz1090",
-> +	NULL,
-> +};
-> +
-> +MACHINE_START(TZ1090, "Generic TZ1090")
-> +	.dt_compat	= tz1090_boards_compat,
-> +MACHINE_END
+Thanks.
 
-Have you looked at the patch I sent for default platform code on ARM?
-The idea is to default to an empty machine descriptor if nothing matches
-the root compatible entry of the DT. The same would work here to allow
-you to run without any board code at all.
-
-	Arnd
+- Kukjin
