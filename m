@@ -1,54 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752494Ab3DWTgE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 15:36:04 -0400
-Received: from juliette.telenet-ops.be ([195.130.137.74]:60735 "EHLO
-	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751856Ab3DWTgB (ORCPT
+	id S1752817Ab3DWTlJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 15:41:09 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:64788 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752554Ab3DWTlI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 15:36:01 -0400
-Date: Tue, 23 Apr 2013 21:35:56 +0200 (CEST)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Linux Kernel Development <linux-kernel@vger.kernel.org>
-cc: x86@kernel.org, linux-cris-kernel@axis.com,
-        uclinux-dist-devel@blackfin.uclinux.org
-Subject: Re: Build regressions/improvements in v3.9-rc8
-In-Reply-To: <alpine.DEB.2.00.1304232131300.11127@ayla.of.borg>
-Message-ID: <alpine.DEB.2.00.1304232132050.11155@ayla.of.borg>
-References: <alpine.DEB.2.00.1304232131300.11127@ayla.of.borg>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 23 Apr 2013 15:41:08 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Marc Dietrich <marvin24@gmx.de>
+Subject: Re: [PATCH 14/21] staging: nvec: allow modular build
+Date: Tue, 23 Apr 2013 21:41:03 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+References: <1366734653-488286-1-git-send-email-arnd@arndb.de> <1366734653-488286-15-git-send-email-arnd@arndb.de> <4082180.JXNz6TsAKc@ax5200p>
+In-Reply-To: <4082180.JXNz6TsAKc@ax5200p>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201304232141.04123.arnd@arndb.de>
+X-Provags-ID: V02:K0:bk54y0dFlT5MvS3Y2ldhOIz503H2bx9XyHvEfasHPSS
+ +4inzdqaA8ZkyGSi3RoCIIqlwuT96MwFanb5stDBipCZugSEnb
+ wWV9MW5UxGwl1l629mOrDUt4CptrtL4ITgiEKQbMJkxa8Fw6Hu
+ XTRjQmvLYXPj1JewP/jle4e+zHb4MhP4SDUG0lUoxPp7H2i9tA
+ dgHBAzqigpY6ljdX7TygUkkLxOSDqtwAuGZX32arOR3NJr768y
+ 89V8flekpPwHigvh9eBeJsiIkGYumEX3DvNkXp9CJzUfwIWjL8
+ TcmARacaWMkPWgozC/7CYPtJuAdam1ISN2fE6mgGx2gENrgonS
+ 6NXh2UMI7ADGCqd2SDA8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Apr 2013, Geert Uytterhoeven wrote:
-> JFYI, when comparing v3.9-rc8 to v3.9-rc7[3], the summaries are:
->   - build errors: +9/-8
+On Tuesday 23 April 2013, Marc Dietrich wrote:
+> On Tuesday 23 April 2013 18:30:46 Arnd Bergmann wrote:
+> > The serio code can be a loadable module, which in turn means that nvec
+> > also has to be a module, so mark it as "tristate" in Kconfig.
+> 
+> oh, I didn't saw this randconfig error posting. NVEC isn't prepared for 
+> modularized builds yet (it's on the TODO list though). So better say SERIO=y 
+> here. Looking a bit closer, there is other stuff which can also be a module 
+> (GPIOLIB, I2C, ...) so these also need a =y.
 
-  + arch/x86/include/asm/uaccess_32.h: error: call to 'copy_from_user_overflow' declared with attribute error: copy_from_user() buffer size is not provably correct:  => 211:26
+What is the problem with building it as a module? It looks all fine in that
+regard.
 
-i386_defconfig, i386-randconfig
+I also did not see any problems with the other symbols, but that may be
+because they get turned on as built-in even in allmodconfig. Marking it
+as tristate certainly avoids the problem altogether.
 
-  + drivers/usb/gadget/fusb300_udc.c: error: implicit declaration of function 'iowrite32' [-Werror=implicit-function-declaration]  CC      fs/9p/xattr.o:  => 45:2
+> Should a post a patch?
 
-cris-allmodconfig, cris-allyesconfig
+If you have follow-on patches, they need to go on top now, since Greg
+already took this patch.
 
-  + error: "vm_iomap_memory" [drivers/video/fb.ko] undefined!:  => N/A
-  
-bfin/BF537-STAMP_defconfig
-
-> [1] http://kisskb.ellerman.id.au/kisskb/head/6122/ (all 118 configs)
-> [3] http://kisskb.ellerman.id.au/kisskb/head/6094/ (all 118 configs)
-
-Gr{oetje,eeting}s,
-
-						Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
+	Arnd
