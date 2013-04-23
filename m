@@ -1,52 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754435Ab3DWDXq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 23:23:46 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:39272 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754185Ab3DWDXp (ORCPT
+	id S1754543Ab3DWDlt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 23:41:49 -0400
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:60909 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754401Ab3DWDls (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 23:23:45 -0400
-Message-ID: <5175FF0F.9050206@oracle.com>
-Date: Tue, 23 Apr 2013 11:25:03 +0800
-From: DuanZhenzhong <zhenzhong.duan@oracle.com>
-Organization: Oracle Corporation
-User-Agent: Thunderbird 2.0.0.24 (X11/20101209)
+	Mon, 22 Apr 2013 23:41:48 -0400
+Message-ID: <517602FC.2080305@igel.co.jp>
+Date: Tue, 23 Apr 2013 12:41:48 +0900
+From: Damian Hobson-Garcia <dhobsong@igel.co.jp>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Jean Delvare <jdelvare@suse.de>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: memcpy_fromio in dmi_scan.c
-References: <1366636689.4503.35.camel@chaos.site>
-In-Reply-To: <1366636689.4503.35.camel@chaos.site>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Lars-Peter Clausen <lars@metafoo.de>
+CC: linux-kernel@vger.kernel.org, catalin.marinas@arm.com, will.deacon@arm.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC/PATCH 1/4] arm64: Provide default implementation for dma_{alloc,
+ free}_attrs
+References: <1366607349-2992-1-git-send-email-dhobsong@igel.co.jp> <5174D47E.3090301@metafoo.de>
+In-Reply-To: <5174D47E.3090301@metafoo.de>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jean Delvare wrote:
-> Hi Duan, Andrew,
->
-> I am looking at the following commit:
->
-> commit 9f9c9cbb60576a1518d0bf93fb8e499cffccf377
-> Author: Zhenzhong Duan <zhenzhong.duan@oracle.com>
-> Date:   Thu Dec 20 15:05:14 2012 -0800
->
->     drivers/firmware/dmi_scan.c: fetch dmi version from SMBIOS if it exists
->
-> And I am worried about calls to memcpy_fromio(), or lack thereof. Before
-> this commit, the code would take great care to always call
-> memcpy_fromio() to get data from the 0xF0000-0xFFFFF memory range (BIOS
-> data) and operate on that copy. After this commit, the code is happily
-> calling memcmp() directly on an __iomem pointer. It seems to be harmless
-> on x86, but it will break on IA64, won't it?
->
->   
-Hi Jean,
-What's the impact of reading bios data directly on IA64?
-Sorry I have little knowledge about IA64.
+Hi Lars,
+On 2013/04/22 15:11, Lars-Peter Clausen wrote:
+> On 04/22/2013 07:09 AM, Damian Hobson-Garcia wrote:
+>> Most architectures that define CONFIG_HAVE_DMA, have implementations for
+>> both dma_alloc_attrs() and dma_free_attrs().  All achitectures that do
+>> not define CONFIG_HAVE_DMA also have both of these definitions provided by
+>> dma-mapping-broken.h.
+>>
+>> Add default implementations for these functions on arm64.
+>>
+>> Signed-off-by: Damian Hobson-Garcia <dhobsong@igel.co.jp>
+>> ---
+>>  arch/arm64/include/asm/dma-mapping.h |    3 +++
+>>  1 files changed, 3 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/arch/arm64/include/asm/dma-mapping.h b/arch/arm64/include/asm/dma-mapping.h
+>> index 9947768..65ab181 100644
+>> --- a/arch/arm64/include/asm/dma-mapping.h
+>> +++ b/arch/arm64/include/asm/dma-mapping.h
+>> @@ -81,6 +81,9 @@ static inline void dma_mark_clean(void *addr, size_t size)
+>>  {
+>>  }
+>>  
+>> +#define dma_alloc_attrs(d, s, h, f, a) dma_alloc_coherent(d, s, h, f)
+>> +#define dma_free_attrs(d, s, h, f, a) dma_free_coherent(d, s, h, f)
+>> +
+>>  static inline void *dma_alloc_coherent(struct device *dev, size_t size,
+>>  				       dma_addr_t *dma_handle, gfp_t flags)
+>>  {
+> 
+> The other way around would be better, properly implement
+> dma_{alloc,free}_attrs and implement dma_{alloc,free}_coherent on top of
+> the. E.g. you are supposed to pass the attrs parameter to ops->alloc and
+> ops->free instead of NULL. And it will also allow us to move
+> dma_{alloc,free}_coherent to asm-generic/dma-mapping-common.h eventually.
 
-zduan
+Ok, makes sense.  I'll update this for archs that are using dma_map_ops
+(arm64 and s390).
+
+Thanks,
+Damian
+
+> 
+> - Lars
+> 
+-- 
+Damian Hobson-Garcia
+IGEL Co.,Ltd
+http://www.igel.co.jp
