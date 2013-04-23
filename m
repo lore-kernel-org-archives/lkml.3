@@ -1,197 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756010Ab3DWIbT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 04:31:19 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:61901 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755089Ab3DWIbP (ORCPT
+	id S1756057Ab3DWIb1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 04:31:27 -0400
+Received: from mercuryimc.plus.com ([80.229.200.144]:48131 "EHLO
+	centos1.newflow.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756007Ab3DWIbT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 04:31:15 -0400
-X-AuditID: 9c930197-b7bb3ae000000fa9-8a-517646d1eda7
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
-Subject: [PATCH 01/14] perf util: Move debugfs/tracing helper functions to util.c
-Date: Tue, 23 Apr 2013 17:30:59 +0900
-Message-Id: <1366705872-12132-2-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1366705872-12132-1-git-send-email-namhyung@kernel.org>
-References: <1366705872-12132-1-git-send-email-namhyung@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	Tue, 23 Apr 2013 04:31:19 -0400
+Message-ID: <517646D5.9090700@newflow.co.uk>
+Date: Tue, 23 Apr 2013 09:31:17 +0100
+From: Mark Jackson <mpfj-list@newflow.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>
+CC: dedekind1@gmail.com,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: MTD : cannot reserve enough PEBs for bad PEB handling [SOLVED]
+References: <51750526.70508@newflow.co.uk>
+In-Reply-To: <51750526.70508@newflow.co.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+On 22/04/13 10:38, Mark Jackson wrote:
+> I'm trying to work out how to generate a "valid" UBI image, but I keep
+> getting a "cannot get enough PEBs" warning.
+> 
+> I generate my image (destined for a 64MB NAND partition) using:-
+> 
+> $ mkfs.ubifs -d output/target -e 0x1f000 -c 483 -m 0x800 -x none -F -o
+> output/images/rootfs.ubifs
+> $ ubinize -o output/images/rootfs.ubi -m 0x800 -p 0x20000 -s 512 -O 2048
+> ubinize.cfg
+> 
+> My .cfg file is:-
+> 
+> [ubifs]
+> mode=ubi
+> vol_id=0
+> vol_type=dynamic
+> vol_name=rootfs
+> vol_alignment=1
+> vol_flags=autoresize
+> vol_size=61MiB
 
-Since they're generic helpers move them to util.c so that they can be
-used by others.
+I just removed this vol_size entry and it all seems to be fine now.
 
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/util/trace-event-info.c | 59 --------------------------------------
- tools/perf/util/util.c             | 59 ++++++++++++++++++++++++++++++++++++++
- tools/perf/util/util.h             |  3 ++
- 3 files changed, 62 insertions(+), 59 deletions(-)
+I guess this was too big ??
 
-diff --git a/tools/perf/util/trace-event-info.c b/tools/perf/util/trace-event-info.c
-index e85cbcf298f3..ab18bf12d54a 100644
---- a/tools/perf/util/trace-event-info.c
-+++ b/tools/perf/util/trace-event-info.c
-@@ -46,65 +46,6 @@
- static int output_fd;
- 
- 
--static const char *find_debugfs(void)
--{
--	const char *path = perf_debugfs_mount(NULL);
--
--	if (!path)
--		pr_debug("Your kernel does not support the debugfs filesystem");
--
--	return path;
--}
--
--/*
-- * Finds the path to the debugfs/tracing
-- * Allocates the string and stores it.
-- */
--static const char *find_tracing_dir(void)
--{
--	static char *tracing;
--	static int tracing_found;
--	const char *debugfs;
--
--	if (tracing_found)
--		return tracing;
--
--	debugfs = find_debugfs();
--	if (!debugfs)
--		return NULL;
--
--	tracing = malloc(strlen(debugfs) + 9);
--	if (!tracing)
--		return NULL;
--
--	sprintf(tracing, "%s/tracing", debugfs);
--
--	tracing_found = 1;
--	return tracing;
--}
--
--static char *get_tracing_file(const char *name)
--{
--	const char *tracing;
--	char *file;
--
--	tracing = find_tracing_dir();
--	if (!tracing)
--		return NULL;
--
--	file = malloc(strlen(tracing) + strlen(name) + 2);
--	if (!file)
--		return NULL;
--
--	sprintf(file, "%s/%s", tracing, name);
--	return file;
--}
--
--static void put_tracing_file(char *file)
--{
--	free(file);
--}
--
- int bigendian(void)
- {
- 	unsigned char str[] = { 0x1, 0x2, 0x3, 0x4, 0x0, 0x0, 0x0, 0x0};
-diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
-index 59d868add275..9a0658405760 100644
---- a/tools/perf/util/util.c
-+++ b/tools/perf/util/util.c
-@@ -269,3 +269,62 @@ void perf_debugfs_set_path(const char *mntpt)
- 	snprintf(debugfs_mountpoint, strlen(debugfs_mountpoint), "%s", mntpt);
- 	set_tracing_events_path(mntpt);
- }
-+
-+static const char *find_debugfs(void)
-+{
-+	const char *path = perf_debugfs_mount(NULL);
-+
-+	if (!path)
-+		fprintf(stderr, "Your kernel does not support the debugfs filesystem");
-+
-+	return path;
-+}
-+
-+/*
-+ * Finds the path to the debugfs/tracing
-+ * Allocates the string and stores it.
-+ */
-+const char *find_tracing_dir(void)
-+{
-+	static char *tracing;
-+	static int tracing_found;
-+	const char *debugfs;
-+
-+	if (tracing_found)
-+		return tracing;
-+
-+	debugfs = find_debugfs();
-+	if (!debugfs)
-+		return NULL;
-+
-+	tracing = malloc(strlen(debugfs) + 9);
-+	if (!tracing)
-+		return NULL;
-+
-+	sprintf(tracing, "%s/tracing", debugfs);
-+
-+	tracing_found = 1;
-+	return tracing;
-+}
-+
-+char *get_tracing_file(const char *name)
-+{
-+	const char *tracing;
-+	char *file;
-+
-+	tracing = find_tracing_dir();
-+	if (!tracing)
-+		return NULL;
-+
-+	file = malloc(strlen(tracing) + strlen(name) + 2);
-+	if (!file)
-+		return NULL;
-+
-+	sprintf(file, "%s/%s", tracing, name);
-+	return file;
-+}
-+
-+void put_tracing_file(char *file)
-+{
-+	free(file);
-+}
-diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
-index 7a484c97e500..8f3e44ca1074 100644
---- a/tools/perf/util/util.h
-+++ b/tools/perf/util/util.h
-@@ -79,6 +79,9 @@ extern char buildid_dir[];
- extern char tracing_events_path[];
- extern void perf_debugfs_set_path(const char *mountpoint);
- const char *perf_debugfs_mount(const char *mountpoint);
-+const char *find_tracing_dir(void);
-+char *get_tracing_file(const char *name);
-+void put_tracing_file(char *file);
- 
- /* On most systems <limits.h> would have given us this, but
-  * not on some systems (e.g. GNU/Hurd).
--- 
-1.7.11.7
-
+Mark J.
