@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757834Ab3DWWDJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 18:03:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34319 "EHLO
+	id S1756535Ab3DWWD2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 18:03:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34318 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932388Ab3DWV4d (ORCPT
+	with ESMTP id S932356Ab3DWV4c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 17:56:33 -0400
+	Tue, 23 Apr 2013 17:56:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christoph Fritz <chf.fritz@googlemail.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>
-Subject: [ 03/23] can: sja1000: fix handling on dt properties on little endian systems
-Date: Tue, 23 Apr 2013 14:56:10 -0700
-Message-Id: <20130423215456.648272535@linuxfoundation.org>
+        Thomas Voegtle <tv@lio96.de>, Cong Wang <amwang@redhat.com>,
+        Patrick McHardy <kaber@trash.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <edumazet@google.com>
+Subject: [ 02/23] Revert "8021q: fix a potential use-after-free"
+Date: Tue, 23 Apr 2013 14:56:09 -0700
+Message-Id: <20130423215456.549116188@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130423215456.307216898@linuxfoundation.org>
 References: <20130423215456.307216898@linuxfoundation.org>
@@ -27,85 +29,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christoph Fritz <chf.fritz@googlemail.com>
+This reverts commit 9829fe9806e22d7a822f4c947cc432c8d1774b54 which is
+upstream commit 4a7df340ed1bac190c124c1601bfc10cde9fb4fb 
 
-commit 0443de5fbf224abf41f688d8487b0c307dc5a4b4 upstream.
+It turns out this causes problems on the 3.0-stable release.
 
-To get correct endianes on little endian cpus (like arm) while reading device
-tree properties, this patch replaces of_get_property() with
-of_property_read_u32(). While there use of_property_read_bool() for the
-handling of the boolean "nxp,no-comparator-bypass" property.
-
-Signed-off-by: Christoph Fritz <chf.fritz@googlemail.com>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Reported-by: Thomas Voegtle <tv@lio96.de>
+Acked-by: Cong Wang <amwang@redhat.com>
+Cc: Patrick McHardy <kaber@trash.net>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Eric Dumazet <edumazet@google.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/can/sja1000/sja1000_of_platform.c |   31 ++++++++++++--------------
- 1 file changed, 15 insertions(+), 16 deletions(-)
+ net/8021q/vlan.c |   14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
---- a/drivers/net/can/sja1000/sja1000_of_platform.c
-+++ b/drivers/net/can/sja1000/sja1000_of_platform.c
-@@ -93,8 +93,8 @@ static int __devinit sja1000_ofp_probe(s
- 	struct net_device *dev;
- 	struct sja1000_priv *priv;
- 	struct resource res;
--	const u32 *prop;
--	int err, irq, res_size, prop_size;
-+	u32 prop;
-+	int err, irq, res_size;
- 	void __iomem *base;
+--- a/net/8021q/vlan.c
++++ b/net/8021q/vlan.c
+@@ -108,6 +108,13 @@ void unregister_vlan_dev(struct net_devi
+ 	grp = rtnl_dereference(real_dev->vlgrp);
+ 	BUG_ON(!grp);
  
- 	err = of_address_to_resource(np, 0, &res);
-@@ -135,27 +135,27 @@ static int __devinit sja1000_ofp_probe(s
- 	priv->read_reg = sja1000_ofp_read_reg;
- 	priv->write_reg = sja1000_ofp_write_reg;
++	/* Take it out of our own structures, but be sure to interlock with
++	 * HW accelerating devices or SW vlan input packet processing if
++	 * VLAN is not 0 (leave it there for 802.1p).
++	 */
++	if (vlan_id && (real_dev->features & NETIF_F_HW_VLAN_FILTER))
++		ops->ndo_vlan_rx_kill_vid(real_dev, vlan_id);
++
+ 	grp->nr_vlans--;
  
--	prop = of_get_property(np, "nxp,external-clock-frequency", &prop_size);
--	if (prop && (prop_size ==  sizeof(u32)))
--		priv->can.clock.freq = *prop / 2;
-+	err = of_property_read_u32(np, "nxp,external-clock-frequency", &prop);
-+	if (!err)
-+		priv->can.clock.freq = prop / 2;
- 	else
- 		priv->can.clock.freq = SJA1000_OFP_CAN_CLOCK; /* default */
- 
--	prop = of_get_property(np, "nxp,tx-output-mode", &prop_size);
--	if (prop && (prop_size == sizeof(u32)))
--		priv->ocr |= *prop & OCR_MODE_MASK;
-+	err = of_property_read_u32(np, "nxp,tx-output-mode", &prop);
-+	if (!err)
-+		priv->ocr |= prop & OCR_MODE_MASK;
- 	else
- 		priv->ocr |= OCR_MODE_NORMAL; /* default */
- 
--	prop = of_get_property(np, "nxp,tx-output-config", &prop_size);
--	if (prop && (prop_size == sizeof(u32)))
--		priv->ocr |= (*prop << OCR_TX_SHIFT) & OCR_TX_MASK;
-+	err = of_property_read_u32(np, "nxp,tx-output-config", &prop);
-+	if (!err)
-+		priv->ocr |= (prop << OCR_TX_SHIFT) & OCR_TX_MASK;
- 	else
- 		priv->ocr |= OCR_TX0_PULLDOWN; /* default */
- 
--	prop = of_get_property(np, "nxp,clock-out-frequency", &prop_size);
--	if (prop && (prop_size == sizeof(u32)) && *prop) {
--		u32 divider = priv->can.clock.freq * 2 / *prop;
-+	err = of_property_read_u32(np, "nxp,clock-out-frequency", &prop);
-+	if (!err && prop) {
-+		u32 divider = priv->can.clock.freq * 2 / prop;
- 
- 		if (divider > 1)
- 			priv->cdr |= divider / 2 - 1;
-@@ -165,8 +165,7 @@ static int __devinit sja1000_ofp_probe(s
- 		priv->cdr |= CDR_CLK_OFF; /* default */
+ 	if (vlan->flags & VLAN_FLAG_GVRP)
+@@ -132,13 +139,6 @@ void unregister_vlan_dev(struct net_devi
+ 		call_rcu(&grp->rcu, vlan_rcu_free);
  	}
  
--	prop = of_get_property(np, "nxp,no-comparator-bypass", NULL);
--	if (!prop)
-+	if (!of_property_read_bool(np, "nxp,no-comparator-bypass"))
- 		priv->cdr |= CDR_CBP; /* default */
- 
- 	priv->irq_flags = IRQF_SHARED;
+-	/* Take it out of our own structures, but be sure to interlock with
+-	 * HW accelerating devices or SW vlan input packet processing if
+-	 * VLAN is not 0 (leave it there for 802.1p).
+-	 */
+-	if (vlan_id && (real_dev->features & NETIF_F_HW_VLAN_FILTER))
+-		ops->ndo_vlan_rx_kill_vid(real_dev, vlan_id);
+-
+ 	/* Get rid of the vlan's reference to real_dev */
+ 	dev_put(real_dev);
+ }
 
 
