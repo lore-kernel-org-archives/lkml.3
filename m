@@ -1,42 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755703Ab3DWXQs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 19:16:48 -0400
-Received: from mail-da0-f50.google.com ([209.85.210.50]:59981 "EHLO
-	mail-da0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752241Ab3DWXQq (ORCPT
+	id S1755954Ab3DWXSK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 19:18:10 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:39027 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755186Ab3DWXSJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 19:16:46 -0400
-Date: Tue, 23 Apr 2013 16:16:44 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Aaron Tomlin <atomlin@redhat.com>
-cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, cl@linux.com,
-        penberg@kernel.org, Rik <riel@redhat.com>,
-        Rafael Aquini <aquini@redhat.com>
-Subject: Re: [Patch v2] mm: slab: Verify the nodeid passed to
- ____cache_alloc_node
-In-Reply-To: <1014891011.990074.1366727496599.JavaMail.root@redhat.com>
-Message-ID: <alpine.DEB.2.02.1304231616270.3855@chino.kir.corp.google.com>
-References: <1014891011.990074.1366727496599.JavaMail.root@redhat.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 23 Apr 2013 19:18:09 -0400
+Message-ID: <1366759086.8964.39.camel@edumazet-glaptop>
+Subject: Re: socket file descriptor a/m/c-timestamps broken in <= 3.8.8?
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Felix Becker <mail@felixbecker.name>
+Cc: Eric Wong <normalperson@yhbt.net>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Date: Tue, 23 Apr 2013 16:18:06 -0700
+In-Reply-To: <517710CD.3020205@felixbecker.name>
+References: <5175CA2F.2030206@felixbecker.name>
+	  <20130423003015.GA26858@dcvr.yhbt.net>
+	 <1366677456.16391.101.camel@edumazet-glaptop>
+	 <517710CD.3020205@felixbecker.name>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Apr 2013, Aaron Tomlin wrote:
-
-> mm: slab: Verify the nodeid passed to ____cache_alloc_node
->     
-> If the nodeid is > num_online_nodes() this can cause an
-> Oops and a panic(). The purpose of this patch is to assert
-> if this condition is true to aid debugging efforts rather
-> than some random NULL pointer dereference or page fault.
->     
-> Signed-off-by: Aaron Tomlin <atomlin@redhat.com>
-> Reviewed-by: Rik van Riel <riel@redhat.com>
+On Wed, 2013-04-24 at 00:53 +0200, Felix Becker wrote:
+> Hi,
 > 
+> thank you for that info. Can you tell which mailing list the right one
+> for this issue is?
 
-Acked-by: David Rientjes <rientjes@google.com>
+lkml was fine.
+
+I guess you could try to CC Al Viro <viro@zeniv.linux.org.uk> 
+
+
