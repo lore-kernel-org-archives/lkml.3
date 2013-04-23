@@ -1,39 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754199Ab3DWCrm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 22:47:42 -0400
-Received: from co1ehsobe003.messaging.microsoft.com ([216.32.180.186]:32541
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754040Ab3DWCrk convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 22:47:40 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 5
-X-BigFish: VS5(z616jzc89bhda00hdc73hzz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1082kz8dhzz2dh2a8h668h839h93fhd25he5bhf0ah1288h12a5h12a9h12bdh1354h137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19c3h1ad9h1b0ah1155h)
-Message-ID: <5175F6B0.1080907@freescale.com>
-Date: Tue, 23 Apr 2013 10:49:20 +0800
-From: Huang Shijie <b32955@freescale.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
+	id S1754229Ab3DWCrs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 22:47:48 -0400
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:33799 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753491Ab3DWCrq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Apr 2013 22:47:46 -0400
 MIME-Version: 1.0
-To: Brian Norris <computersforpeace@gmail.com>
-CC: <dwmw2@infradead.org>, <dedekind1@gmail.com>,
-        <linux-mtd@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Huang Shijie <shijie8@gmail.com>
-Subject: Re: [PATCH v2 2/8] mtd: add a helper to get the supported features
- for ONFI nand
-References: <1366616878-29481-1-git-send-email-b32955@freescale.com>	<1366616878-29481-3-git-send-email-b32955@freescale.com> <CAN8TOE8EwK1iaDOjBPpUhQmzn=AK-2LufufwwMON6gf=-zZa+Q@mail.gmail.com>
-In-Reply-To: <CAN8TOE8EwK1iaDOjBPpUhQmzn=AK-2LufufwwMON6gf=-zZa+Q@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
+Date: Tue, 23 Apr 2013 10:47:44 +0800
+Message-ID: <CAPgLHd9shRmpq__avgWPupFvcY2LNuEtPs9bG=AVpBx7BpLZTw@mail.gmail.com>
+Subject: [PATCH -next] iommu/amd: fix error return code in early_amd_iommu_init()
+From: Wei Yongjun <weiyj.lk@gmail.com>
+To: joro@8bytes.org
+Cc: yongjun_wei@trendmicro.com.cn, iommu@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2013年04月23日 05:04, Brian Norris 写道:
-> return chip->onfi_version ? le16_to_cpu(chip->onfi_params.features) : 0;
-it's ok to me. I will use 0 as the unknow feature in the next version.
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-thanks
-Huang Shijie
+Fix to return -ENOMEM int the memory alloc error handling
+case instead of 0, as done elsewhere in this function.
+
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+---
+ drivers/iommu/amd_iommu_init.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/iommu/amd_iommu_init.c b/drivers/iommu/amd_iommu_init.c
+index 9110c1c..a55ec50 100644
+--- a/drivers/iommu/amd_iommu_init.c
++++ b/drivers/iommu/amd_iommu_init.c
+@@ -1860,6 +1860,7 @@ static int __init early_amd_iommu_init(void)
+ 		 * Interrupt remapping enabled, create kmem_cache for the
+ 		 * remapping tables.
+ 		 */
++		ret = -ENOMEM;
+ 		amd_iommu_irq_cache = kmem_cache_create("irq_remap_cache",
+ 				MAX_IRQS_PER_TABLE * sizeof(u32),
+ 				IRQ_TABLE_ALIGNMENT,
 
