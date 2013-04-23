@@ -1,104 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755369Ab3DWFng (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 01:43:36 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:47561 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754857Ab3DWFnL (ORCPT
+	id S1755349Ab3DWFne (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 01:43:34 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:52294 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754884Ab3DWFnL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 23 Apr 2013 01:43:11 -0400
 From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
 To: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org
 Cc: michael@ellerman.id.au, mikey@neuling.org
-Subject: [PATCH V4 2/5] powerpc, perf: Add basic assembly code to read BHRB entries on POWER8
-Date: Tue, 23 Apr 2013 11:12:41 +0530
-Message-Id: <1366695764-3073-3-git-send-email-khandual@linux.vnet.ibm.com>
+Subject: [PATCH V4 0/5] powerpc, perf: BHRB based branch stack enablement on POWER8
+Date: Tue, 23 Apr 2013 11:12:39 +0530
+Message-Id: <1366695764-3073-1-git-send-email-khandual@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1366695764-3073-1-git-send-email-khandual@linux.vnet.ibm.com>
-References: <1366695764-3073-1-git-send-email-khandual@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13042305-9574-0000-0000-000007918F20
+x-cbid: 13042305-4790-0000-0000-000007F92548
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the basic assembly code to read BHRB buffer. BHRB entries
-are valid only after a PMU interrupt has happened (when MMCR0[PMAO]=1)
-and BHRB has been freezed. BHRB read should not be attempted when it is
-still enabled (MMCR0[PMAE]=1) and getting updated, as this can produce
-non-deterministic results.
+                Branch History Rolling Buffer (BHRB) is a new PMU feaure in IBM
+POWER8 processor which records the branch instructions inside the execution
+pipeline. This patchset enables the basic functionality of the feature through
+generic perf branch stack sampling framework.
 
-Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
----
- arch/powerpc/perf/Makefile |  2 +-
- arch/powerpc/perf/bhrb.S   | 44 ++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 45 insertions(+), 1 deletion(-)
+Sample output
+-------------
+$./perf record -b top
+$./perf report
+
+Overhead  Command  Source Shared Object                           Source Symbol  Target Shared Object                        Target Symbol
+# ........  .......  ....................  ......................................  ....................  ...................................
+#
+
+     7.82%      top  libc-2.11.2.so        [k] _IO_vfscanf                         libc-2.11.2.so        [k] _IO_vfscanf
+     6.17%      top  libc-2.11.2.so        [k] _IO_vfscanf                         [unknown]             [k] 00000000
+     2.37%      top  [unknown]             [k] 0xf7aafb30                          [unknown]             [k] 00000000
+     1.80%      top  [unknown]             [k] 0x0fe07978                          libc-2.11.2.so        [k] _IO_vfscanf
+     1.60%      top  libc-2.11.2.so        [k] _IO_vfscanf                         [kernel.kallsyms]     [k] .do_task_stat
+     1.20%      top  [kernel.kallsyms]     [k] .do_task_stat                       [kernel.kallsyms]     [k] .do_task_stat
+     1.02%      top  libc-2.11.2.so        [k] vfprintf                            libc-2.11.2.so        [k] vfprintf
+     0.92%      top  top                   [k] _init                               [unknown]             [k] 0x0fe037f4
+
+Changes in V2
+--------------
+- Added copyright messages to the newly created files
+- Modified couple of commit messages
+
+Changes in V3
+-------------
+- Incorporated review comments from Segher https://lkml.org/lkml/2013/4/16/350
+- Worked on a solution for review comment from Michael Ellerman https://lkml.org/lkml/2013/4/17/548
+	- Could not move updated cpu_hw_events structure from core-book3s.c file into perf_event_server.h
+          Because perf_event_server.h is pulled in first inside linux/perf_event.h before the definition of
+          perf_branch_entry structure. Thats the reason why perf_branch_entry definition is not available
+          inside perf_event_server.h where we define the array inside cpu_hw_events structure.
+
+	- Finally have pulled in the code from perf_event_bhrb.c into core-book3s.c
+
+- Improved documentation for the patchset
+
+Changes in V4
+-------------
+- Incorporated review comments on V3 regarding new instruction encoding
+
+Anshuman Khandual (5):
+  powerpc, perf: Add new BHRB related instructions for POWER8
+  powerpc, perf: Add basic assembly code to read BHRB entries on POWER8
+  powerpc, perf: Add new BHRB related generic functions, data and flags
+  powerpc, perf: Define BHRB generic functions, data and flags for POWER8
+  powerpc, perf: Enable branch stack sampling framework
+
+ arch/powerpc/include/asm/perf_event_server.h |   7 ++
+ arch/powerpc/include/asm/ppc-opcode.h        |   8 ++
+ arch/powerpc/perf/Makefile                   |   2 +-
+ arch/powerpc/perf/bhrb.S                     |  44 +++++++
+ arch/powerpc/perf/core-book3s.c              | 167 ++++++++++++++++++++++++++-
+ arch/powerpc/perf/power8-pmu.c               |  57 ++++++++-
+ 6 files changed, 280 insertions(+), 5 deletions(-)
  create mode 100644 arch/powerpc/perf/bhrb.S
 
-diff --git a/arch/powerpc/perf/Makefile b/arch/powerpc/perf/Makefile
-index 472db18..510fae1 100644
---- a/arch/powerpc/perf/Makefile
-+++ b/arch/powerpc/perf/Makefile
-@@ -2,7 +2,7 @@ subdir-ccflags-$(CONFIG_PPC_WERROR) := -Werror
- 
- obj-$(CONFIG_PERF_EVENTS)	+= callchain.o
- 
--obj-$(CONFIG_PPC_PERF_CTRS)	+= core-book3s.o
-+obj-$(CONFIG_PPC_PERF_CTRS)	+= core-book3s.o bhrb.o
- obj64-$(CONFIG_PPC_PERF_CTRS)	+= power4-pmu.o ppc970-pmu.o power5-pmu.o \
- 				   power5+-pmu.o power6-pmu.o power7-pmu.o \
- 				   power8-pmu.o
-diff --git a/arch/powerpc/perf/bhrb.S b/arch/powerpc/perf/bhrb.S
-new file mode 100644
-index 0000000..d85f9a5
---- /dev/null
-+++ b/arch/powerpc/perf/bhrb.S
-@@ -0,0 +1,44 @@
-+/*
-+ * Basic assembly code to read BHRB entries
-+ *
-+ * Copyright 2013 Anshuman Khandual, IBM Corporation.
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the License, or (at your option) any later version.
-+ */
-+#include <asm/ppc_asm.h>
-+#include <asm/ppc-opcode.h>
-+
-+	.text
-+
-+.balign 8
-+
-+/* r3 = n  (where n = [0-31])
-+ * The maximum number of BHRB entries supported with PPC_MFBHRBE instruction
-+ * is 1024. We have limited number of table entries here as POWER8 implements
-+ * 32 BHRB entries.
-+ */
-+
-+/* .global read_bhrb */
-+_GLOBAL(read_bhrb)
-+	cmpldi	r3,31
-+	bgt	1f
-+	ld	r4,bhrb_table@got(r2)
-+	sldi	r3,r3,3
-+	add	r3,r4,r3
-+	mtctr	r3
-+	bctr
-+1:	li	r3,0
-+	blr
-+
-+#define MFBHRB_TABLE1(n) PPC_MFBHRBE(R3,n); blr
-+#define MFBHRB_TABLE2(n) MFBHRB_TABLE1(n); MFBHRB_TABLE1(n+1)
-+#define MFBHRB_TABLE4(n) MFBHRB_TABLE2(n); MFBHRB_TABLE2(n+2)
-+#define MFBHRB_TABLE8(n) MFBHRB_TABLE4(n); MFBHRB_TABLE4(n+4)
-+#define MFBHRB_TABLE16(n) MFBHRB_TABLE8(n); MFBHRB_TABLE8(n+8)
-+#define MFBHRB_TABLE32(n) MFBHRB_TABLE16(n); MFBHRB_TABLE16(n+16)
-+
-+bhrb_table:
-+	MFBHRB_TABLE32(0)
 -- 
 1.7.11.7
 
