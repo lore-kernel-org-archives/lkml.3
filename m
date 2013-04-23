@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757467Ab3DWVww (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 17:52:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34032 "EHLO
+	id S1757530Ab3DWWQz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 18:16:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34042 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757439Ab3DWVwu (ORCPT
+	with ESMTP id S1757456Ab3DWVww (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 17:52:50 -0400
+	Tue, 23 Apr 2013 17:52:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vyacheslav Dubeyko <slava@dubeyko.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Hin-Tak Leung <htl10@users.sourceforge.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 12/42] hfsplus: fix potential overflow in hfsplus_file_truncate()
-Date: Tue, 23 Apr 2013 14:52:10 -0700
-Message-Id: <20130423215206.797143325@linuxfoundation.org>
+        Andrew Honig <ahonig@google.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [ 14/42] KVM: x86: fix for buffer overflow in handling of MSR_KVM_SYSTEM_TIME (CVE-2013-1796)
+Date: Tue, 23 Apr 2013 14:52:12 -0700
+Message-Id: <20130423215206.994264870@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130423215205.523980967@linuxfoundation.org>
 References: <20130423215205.523980967@linuxfoundation.org>
@@ -31,34 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vyacheslav Dubeyko <slava@dubeyko.com>
+From: Andy Honig <ahonig@google.com>
 
-commit 12f267a20aecf8b84a2a9069b9011f1661c779b4 upstream.
+commit c300aa64ddf57d9c5d9c898a64b36877345dd4a9 upstream.
 
-Change a u32 to loff_t hfsplus_file_truncate().
+If the guest sets the GPA of the time_page so that the request to update the
+time straddles a page then KVM will write onto an incorrect page.  The
+write is done byusing kmap atomic to get a pointer to the page for the time
+structure and then performing a memcpy to that page starting at an offset
+that the guest controls.  Well behaved guests always provide a 32-byte aligned
+address, however a malicious guest could use this to corrupt host kernel
+memory.
 
-Signed-off-by: Vyacheslav Dubeyko <slava@dubeyko.com>
-Cc: Christoph Hellwig <hch@infradead.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Hin-Tak Leung <htl10@users.sourceforge.net>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Tested: Tested against kvmclock unit test.
+
+Signed-off-by: Andrew Honig <ahonig@google.com>
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/hfsplus/extents.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/kvm/x86.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/fs/hfsplus/extents.c
-+++ b/fs/hfsplus/extents.c
-@@ -533,7 +533,7 @@ void hfsplus_file_truncate(struct inode
- 		struct address_space *mapping = inode->i_mapping;
- 		struct page *page;
- 		void *fsdata;
--		u32 size = inode->i_size;
-+		loff_t size = inode->i_size;
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -1960,6 +1960,11 @@ int kvm_set_msr_common(struct kvm_vcpu *
+ 		/* ...but clean it before doing the actual write */
+ 		vcpu->arch.time_offset = data & ~(PAGE_MASK | 1);
  
- 		res = pagecache_write_begin(NULL, mapping, size, 0,
- 						AOP_FLAG_UNINTERRUPTIBLE,
++		/* Check that the address is 32-byte aligned. */
++		if (vcpu->arch.time_offset &
++				(sizeof(struct pvclock_vcpu_time_info) - 1))
++			break;
++
+ 		vcpu->arch.time_page =
+ 				gfn_to_page(vcpu->kvm, data >> PAGE_SHIFT);
+ 
 
 
