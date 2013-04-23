@@ -1,46 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755002Ab3DWK7w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 06:59:52 -0400
-Received: from mail-ia0-f170.google.com ([209.85.210.170]:41297 "EHLO
-	mail-ia0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753372Ab3DWK7v (ORCPT
+	id S1755364Ab3DWLBF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 07:01:05 -0400
+Received: from relay.parallels.com ([195.214.232.42]:44007 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754843Ab3DWLBE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 06:59:51 -0400
+	Tue, 23 Apr 2013 07:01:04 -0400
+Date: Tue, 23 Apr 2013 14:59:18 +0400
+From: Andrew Vagin <avagin@parallels.com>
+To: Oleg Nesterov <oleg@redhat.com>
+CC: Andrey Vagin <avagin@openvz.org>, <linux-kernel@vger.kernel.org>,
+        Roland McGrath <roland@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>
+Subject: Re: [PATCH] ptrace: add ability to get/set signal-blocked mask
+Message-ID: <20130423105917.GA11121@paralelels.com>
+References: <1366624400-9773-1-git-send-email-avagin@openvz.org>
+ <20130422145704.GA30029@redhat.com>
+ <20130422150710.GA30858@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20130404073340.GA6892@gmail.com>
-References: <1364908916-29803-1-git-send-email-lee.jones@linaro.org>
-	<1364908916-29803-5-git-send-email-lee.jones@linaro.org>
-	<CACRpkdbh-DJti2ny=uBe-b_vGkQBNL=emMuZ6+_cE5jvRsA4sA@mail.gmail.com>
-	<20130404073340.GA6892@gmail.com>
-Date: Tue, 23 Apr 2013 12:59:50 +0200
-Message-ID: <CACRpkdYLJyvCK33pAHeOkXfBOiPJGAZ9bV+s-cJanfOXz+VTOg@mail.gmail.com>
-Subject: Re: [PATCH] ARM: ux500: Over-ride TCDM size when booting the DB8540 platform
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="koi8-r"
+Content-Disposition: inline
+In-Reply-To: <20130422150710.GA30858@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [10.30.16.48]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 4, 2013 at 9:33 AM, Lee Jones <lee.jones@linaro.org> wrote:
+On Mon, Apr 22, 2013 at 05:07:10PM +0200, Oleg Nesterov wrote:
+> On 04/22, Oleg Nesterov wrote:
+> >
+> > On 04/22, Andrey Vagin wrote:
+> > >
+> > > +	case PTRACE_SETSIGMASK:
+> > > +	{
+> > > +		sigset_t new_set;
+> > > +
+> > > +		if (addr != sizeof(sigset_t)) {
+> > > +			ret = -EINVAL;
+> > > +			break;
+> > > +		}
+> > > +
+> > > +		if (copy_from_user(&new_set, datavp, sizeof(sigset_t))) {
+> > > +			ret = -EFAULT;
+> > > +			break;
+> > > +		}
+> > > +
+> > > +		sigdelsetmask(&new_set, sigmask(SIGKILL)|sigmask(SIGSTOP));
+> > > +
+> > > +		spin_lock_irq(&child->sighand->siglock);
+> > > +		__set_task_blocked(child, &new_set);
+> > > +		spin_unlock_irq(&child->sighand->siglock);
+> >
+> > No, please don't...
+> >
+> > set_current_blocked/__set_task_blocked assume that tsk == current.
+> > If nothing else, note recalc_sigpending() in __set_task_blocked().
 
-> The PRCMU's Tightly Coupled Data Memory on the DB8540 platform is
-> 8kB larger than it's predecessor's. We need to reflect that in its
-> Device Tree. By re-specifying the address and size of the device
-> we effectively over-ride the previous values with more accurate
-> ones.
->
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Thank you for the comment. It's my mistake.
 
-As mentioned this patch does not apply. Some whitespace trouble.
+> >
+> > I don't understand "This method is not suitable for stopped tasks"
 
-And please squash it into the patch adding the ccu8540, 3/9.
+For example, a stopped process has a pending signal and this signal is
+not blocked. crtools should dump its state, so that the process remains
+in a stopped state with the same pending signal.
 
-Yours,
-Linus Walleij
+For dumping state crtools inject a parasite code with help POKE_DATA,
+sets %rip on this code (PTRACE_SETREGS) and resumes the task
+(PTRACE_CONT).
+
+If signals are not blocked, the kernel starts to handle the signal after
+resuming a process. It's out of our plan.
+
+https://lkml.org/lkml/2011/7/20/138 - an example of code for injecting a
+parasite code.
+
+I hope the problem is become more clear.
+
+> > from the changelog, but if you really need PTRACE_SETSIGMASK just
+> > change ->blocked under siglock and do recalc_sigpending_tsk(child).
+>                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 
+> actually this is not necessary, the tracee will do recalc_sigpending()
+> after resume. But perhaps a comment make sense.
+
+__set_task_blocked executes retarget_shared_pending. I think it must be
+called here too or am I wrong?
+
+> 
+> Oleg.
+> 
