@@ -1,39 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756692Ab3DWPRx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 11:17:53 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59845 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756678Ab3DWPRw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 11:17:52 -0400
-Message-ID: <5176A5F7.6000609@zytor.com>
-Date: Tue, 23 Apr 2013 08:17:11 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S1756711Ab3DWPS5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 11:18:57 -0400
+Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:5278
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756315Ab3DWPS4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Apr 2013 11:18:56 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VPS-2(zz98dI1432Izz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzzz2dh668h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1155h)
+X-WSS-ID: 0MLPRVC-02-42I-02
+X-M-MSG: 
+Date: Tue, 23 Apr 2013 10:18:46 -0500
+From: Jacob Shin <jacob.shin@amd.com>
+To: Will Deacon <will.deacon@arm.com>
+CC: Ingo Molnar <mingo@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "x86@kernel.org" <x86@kernel.org>,
+        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V2 1/4] perf: Add hardware breakpoint address mask
+Message-ID: <20130423151846.GA22052@jshin-Toonie>
+References: <1366703825-19373-1-git-send-email-jacob.shin@amd.com>
+ <1366703825-19373-2-git-send-email-jacob.shin@amd.com>
+ <20130423095437.GD17593@mudshark.cambridge.arm.com>
+ <20130423143423.GB17021@jshin-Toonie>
+ <20130423144057.GA19644@jshin-Toonie>
+ <20130423150240.GD18616@mudshark.cambridge.arm.com>
 MIME-Version: 1.0
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-CC: arjan@infradead.org, james.hogan@imgtec.com, rusty@rustcorp.com.au,
-        linux-kernel@vger.kernel.org, andy.shevchenko@gmail.com
-Subject: Re: [PATCH] x86_32: Fix module version table mismatch.
-References: <CAHp75VdDwh0wgCWrVDcPps1C2qfdDZra15y9BQvzfWHzSMqbWA@mail.gmail.com> <CAHp75Vfh6Bpk4j3crVEAo3UtJEqpyucbQw+AzJvO85uRJ6gVgg@mail.gmail.com> <201304222326.IJB21395.FOtVJFHFQMOOSL@I-love.SAKURA.ne.jp> <201304232140.FGF73904.QJOFOVtHFFMSOL@I-love.SAKURA.ne.jp>
-In-Reply-To: <201304232140.FGF73904.QJOFOVtHFFMSOL@I-love.SAKURA.ne.jp>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20130423150240.GD18616@mudshark.cambridge.arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/23/2013 05:40 AM, Tetsuo Handa wrote:
->  
-> -#define memcmp __builtin_memcmp
-> +int memcmp(const void *cs, const void *ct, size_t count);
->  
+On Tue, Apr 23, 2013 at 04:02:40PM +0100, Will Deacon wrote:
+> On Tue, Apr 23, 2013 at 03:40:57PM +0100, Jacob Shin wrote:
+> > On Tue, Apr 23, 2013 at 09:34:23AM -0500, Jacob Shin wrote:
+> > > On Tue, Apr 23, 2013 at 10:54:37AM +0100, Will Deacon wrote:
+> > > > Can you see a problem if I simply invert the mask?
+> > > 
+> > > That's great! No, I don't see a problem at all.
+> 
+> Great! The GDB folks have been asking for this, so I can finally make them
+> go away now :)
+> 
+> > > I guess now it can be debated if the mask coming in from userland should
+> > > be include or exclude mask. But I think exclude makes syntax easier:
+> > > 
+> > > To count writes to [0x1000 ~ 0x1010)
+> > > 
+> > > Include mask (my current patchset):
+> >   ^^^^^^^
+> >   Exclude (I mean ..)
+> > > 
+> > >   perf stat -e mem:0x1000/0xf:w a.out
+> 
+> Are you saying that this command would count any write to:
+> 
+> 	0x1000
+> 	0x1001
+> 	...
+> 	0x100e
+> 	0x100f
+> 
+> ?
+> 
+> If so, that differs from the ARM debug architecture in that the mask is called
+> `byte-address-select', so a mask of 0b1001 would count accesses at +0 bytes
+> and +3 bytes from the base address. Is that possible to describe with your
+> masking scheme and a single watchpoint?
+> 
+> A mask of 0xf, would count +0, +1, +2 and +3 (essentially bp_len == 4).
+> 
+> Unfortunately, that means I can't just invert the mask like I originally
+> thought.
 
-Yuck.  I really don't like this option unless it truly can't be
-avoided... it might be a fix for 3.9/stable but a better way to do this
-would be much more appreciated.
+Ah, .. that is different .
 
-	-hpa
+Our hardware matches on the breakpoint if:
+
+  (physical_address & ~bp_addr_mask) == (bp_addr & ~bp_addr_mask)
+
+In other words, the mask says which of the bp_addr bits hardware should
+ignore when matching.
+
+.. it would be great if we can come up with userland interface that works
+for both archs. I'm coming up empty at the moment ..
 
 
