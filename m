@@ -1,105 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932313Ab3DWQX5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 12:23:57 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:61698 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755699Ab3DWQXz convert rfc822-to-8bit (ORCPT
+	id S932344Ab3DWQ0I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 12:26:08 -0400
+Received: from mail-da0-f42.google.com ([209.85.210.42]:35068 "EHLO
+	mail-da0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756775Ab3DWQ0G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 12:23:55 -0400
-Content-Type: text/plain; charset="utf-8"
+	Tue, 23 Apr 2013 12:26:06 -0400
+Date: Tue, 23 Apr 2013 09:26:04 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: [PATCH] usb: phy: phy core cannot yet be a module
+Message-ID: <20130423162604.GA6983@kroah.com>
+References: <1366732475-479886-1-git-send-email-arnd@arndb.de>
+ <1366732475-479886-2-git-send-email-arnd@arndb.de>
+ <20130423160759.GF15177@arwen.pp.htv.fi>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Tushar Behera <tushar.behera@linaro.org>,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <1366698711-15470-1-git-send-email-tushar.behera@linaro.org>
-Cc: dianders@chromium.org, kgene.kim@samsung.com, thomas.abraham@linaro.org,
-        olofj@chromium.org, patches@linaro.org
-References: <CAD=FV=UUg9Apb0o+zLdidDUmkLZt1phgo80bxug=o6JmANCPfw@mail.gmail.com>
- <1366698711-15470-1-git-send-email-tushar.behera@linaro.org>
-Message-ID: <20130423162349.17530.35976@quantum>
-User-Agent: alot/0.3.4
-Subject: Re: [PATCH] clk: exynos5250: Fix parent clock for sclk_mmc{0,1,2,3}
-Date: Tue, 23 Apr 2013 09:23:49 -0700
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130423160759.GF15177@arwen.pp.htv.fi>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Tushar Behera (2013-04-22 23:31:51)
-> commit 688f7d8c9fef ("clk: exynos5250: Fix divider values for
-> sclk_mmc{0,1,2,3}") incorrectly sets the divider for sclk_mmc{0,1,2,3}
-> to fix the wrong clock value. Though this fixed issue with Arndale,
-> it created regressions for other boards like Snow.
+On Tue, Apr 23, 2013 at 07:07:59PM +0300, Felipe Balbi wrote:
+> Hi,
 > 
-> On Exynos5250, sclk_mmc<n> is generated like below (as per the clock
-> names in drivers/clk/samsung/clk-exynos5250.c)
+> On Tue, Apr 23, 2013 at 05:54:32PM +0200, Arnd Bergmann wrote:
+> > A lot of platform code calls into the usb phy core at the moment, which
+> > does not work if it is built as a loadable module. This will hopefully
+> > change when those platforms are all converted to DT based probing,
+> > but for now, the easiest solution is to change it from "tristate"
+> > to "bool".
+> > 
+> > This solves at least these ARM allmodconfig build errors:
+> > 
+> > arch/arm/mach-imx/built-in.o: In function `imx_otg_ulpi_create':
+> > arch/arm/mach-imx/ulpi.c:117: undefined reference to `otg_ulpi_create'
+> > arch/arm/mach-omap2/built-in.o: In function `usbhs_init_phys':
+> > arch/arm/mach-omap2/usb-host.c:652: undefined reference to `usb_bind_phy'
+> > arch/arm/mach-omap2/built-in.o: In function `omap_2430sdp_init':
+> > arch/arm/mach-omap2/board-2430sdp.c:236: undefined reference to `usb_bind_phy'
+> > arch/arm/mach-omap2/built-in.o: In function `omap3_beagle_init':
+> > arch/arm/mach-omap2/board-omap3beagle.c:554: undefined reference to `usb_bind_phy'
+> > arch/arm/mach-omap2/built-in.o: In function `devkit8000_init':
+> > arch/arm/mach-omap2/board-devkit8000.c:596: undefined reference to `usb_bind_phy'
+> > arch/arm/mach-omap2/built-in.o: In function `omap_ldp_init':
+> > arch/arm/mach-omap2/board-ldp.c:379: undefined reference to `usb_bind_phy'
+> > drivers/built-in.o: In function `ab8500_charger_probe':
+> > drivers/power/ab8500_charger.c:3629: undefined reference to `usb_get_phy'
+> > drivers/power/ab8500_charger.c:3706: undefined reference to `usb_put_phy'
+> > drivers/built-in.o: In function `ab8500_charger_remove':
+> > drivers/power/ab8500_charger.c:3411: undefined reference to `usb_put_phy'
+> > 
+> > Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> > Cc: Felipe Balbi <balbi@ti.com>
+> > Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> > Cc: linux-usb@vger.kernel.org
+> > ---
+> >  drivers/usb/phy/Kconfig | 2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > diff --git a/drivers/usb/phy/Kconfig b/drivers/usb/phy/Kconfig
+> > index 21153d1..371d0e7 100644
+> > --- a/drivers/usb/phy/Kconfig
+> > +++ b/drivers/usb/phy/Kconfig
+> > @@ -2,7 +2,7 @@
+> >  # Physical Layer USB driver configuration
+> >  #
+> >  menuconfig USB_PHY
+> > -	tristate "USB Physical Layer drivers"
+> > +	bool "USB Physical Layer drivers"
 > 
-> mout_group1_p ==> mout_mmc<n> ==>
->                 div_mmc<n> ==> div_mmc_pre<n> => sclk_mmc<n>
+> looks like this is the only way, indeed. Do you need on the merge window
+> on can this wait until -rc1 ? I just sent a pull request to Greg with
+> urgent fixes for the merge window.
 > 
-> Earlier div_mmc<n> was set as the parent for sclk_mmc<n>, hence
-> div_mmc_pre<n> was not getting referred in kernel code and depending
-> on its value set during preboot, sclk_mmc<n> value was different for
-> various boards.
+> Greg, if you want to take this one as a patch, go for it:
 > 
-> Setting the correct clock generation path should fix the issues
-> reported in above referenced commit. The changes committed during the
-> earlier patch has also been reverted here.
-> 
-> Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
-> CC: Doug Anderson <dianders@chromium.org>
+> Acked-by: Felipe Balbi <balbi@ti.com>
 
-Change looks good to me.
+I'll take this now, thanks.
 
-Regards,
-Mike
-
-> ---
-> Doug,
-> 
-> Would you please test whether this patch works for Snow?
-> 
-> 
->  drivers/clk/samsung/clk-exynos5250.c |   16 ++++++++--------
->  1 file changed, 8 insertions(+), 8 deletions(-)
-> 
-> diff --git a/drivers/clk/samsung/clk-exynos5250.c b/drivers/clk/samsung/clk-exynos5250.c
-> index 7290faa..bb54606 100644
-> --- a/drivers/clk/samsung/clk-exynos5250.c
-> +++ b/drivers/clk/samsung/clk-exynos5250.c
-> @@ -276,10 +276,10 @@ struct samsung_div_clock exynos5250_div_clks[] __initdata = {
->         DIV(none, "div_pcm0", "sclk_audio0", DIV_MAU, 4, 8),
->         DIV(none, "div_sata", "mout_sata", DIV_FSYS0, 20, 4),
->         DIV(none, "div_usb3", "mout_usb3", DIV_FSYS0, 24, 4),
-> -       DIV(none, "div_mmc0", "mout_mmc0", DIV_FSYS1, 8, 8),
-> -       DIV(none, "div_mmc1", "mout_mmc1", DIV_FSYS1, 24, 8),
-> -       DIV(none, "div_mmc2", "mout_mmc2", DIV_FSYS2, 8, 8),
-> -       DIV(none, "div_mmc3", "mout_mmc3", DIV_FSYS2, 24, 8),
-> +       DIV(none, "div_mmc0", "mout_mmc0", DIV_FSYS1, 0, 4),
-> +       DIV(none, "div_mmc1", "mout_mmc1", DIV_FSYS1, 16, 4),
-> +       DIV(none, "div_mmc2", "mout_mmc2", DIV_FSYS2, 0, 4),
-> +       DIV(none, "div_mmc3", "mout_mmc3", DIV_FSYS2, 16, 4),
->         DIV(none, "div_uart0", "mout_uart0", DIV_PERIC0, 0, 4),
->         DIV(none, "div_uart1", "mout_uart1", DIV_PERIC0, 4, 4),
->         DIV(none, "div_uart2", "mout_uart2", DIV_PERIC0, 8, 4),
-> @@ -421,13 +421,13 @@ struct samsung_gate_clock exynos5250_gate_clks[] __initdata = {
->                         SRC_MASK_DISP1_0, 20, 0, 0),
->         GATE(sclk_audio0, "sclk_audio0", "div_audio0",
->                         SRC_MASK_MAU, 0, CLK_SET_RATE_PARENT, 0),
-> -       GATE(sclk_mmc0, "sclk_mmc0", "div_mmc0",
-> +       GATE(sclk_mmc0, "sclk_mmc0", "div_mmc_pre0",
->                         SRC_MASK_FSYS, 0, CLK_SET_RATE_PARENT, 0),
-> -       GATE(sclk_mmc1, "sclk_mmc1", "div_mmc1",
-> +       GATE(sclk_mmc1, "sclk_mmc1", "div_mmc_pre1",
->                         SRC_MASK_FSYS, 4, CLK_SET_RATE_PARENT, 0),
-> -       GATE(sclk_mmc2, "sclk_mmc2", "div_mmc2",
-> +       GATE(sclk_mmc2, "sclk_mmc2", "div_mmc_pre2",
->                         SRC_MASK_FSYS, 8, CLK_SET_RATE_PARENT, 0),
-> -       GATE(sclk_mmc3, "sclk_mmc3", "div_mmc3",
-> +       GATE(sclk_mmc3, "sclk_mmc3", "div_mmc_pre3",
->                         SRC_MASK_FSYS, 12, CLK_SET_RATE_PARENT, 0),
->         GATE(sclk_sata, "sclk_sata", "div_sata",
->                         SRC_MASK_FSYS, 24, CLK_SET_RATE_PARENT, 0),
-> -- 
-> 1.7.9.5
+greg k-h
