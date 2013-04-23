@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756552Ab3DWJIN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 05:08:13 -0400
-Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:20146
+	id S932174Ab3DWJIc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 05:08:32 -0400
+Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:11162
 	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756054Ab3DWJGQ (ORCPT
+	by vger.kernel.org with ESMTP id S1756003Ab3DWJGK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 05:06:16 -0400
+	Tue, 23 Apr 2013 05:06:10 -0400
 X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 5
-X-BigFish: VS5(z616jzzz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1082kzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1155h)
+X-SpamScore: 3
+X-BigFish: VS3(zzzz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1082kzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1155h)
 From: Huang Shijie <b32955@freescale.com>
 To: <dwmw2@infradead.org>
 CC: <dedekind1@gmail.com>, <computersforpeace@gmail.com>,
         <linux-mtd@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Huang Shijie <shijie8@gmail.com>, Huang Shijie <b32955@freescale.com>
-Subject: [PATCH V3 3/9] mtd: add a helper to get the supported features for ONFI nand
-Date: Tue, 23 Apr 2013 16:54:51 +0800
-Message-ID: <1366707297-31309-4-git-send-email-b32955@freescale.com>
+        Huang Shijie <b32955@freescale.com>
+Subject: [PATCH V3 1/9] mtd: add more comment for ecc_strength/ecc_size
+Date: Tue, 23 Apr 2013 16:54:49 +0800
+Message-ID: <1366707297-31309-2-git-send-email-b32955@freescale.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1366707297-31309-1-git-send-email-b32955@freescale.com>
 References: <1366707297-31309-1-git-send-email-b32955@freescale.com>
@@ -28,44 +28,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Huang Shijie <shijie8@gmail.com>
-
-add a helper to get the supported features for ONFI nand.
-Also add the neccessary macros.
+Add more commit for ecc_strength and ecc_size fields.
+We can treat the comment as the initial semantics for the two fields.
 
 Signed-off-by: Huang Shijie <b32955@freescale.com>
 ---
- include/linux/mtd/nand.h |   10 ++++++++++
- 1 files changed, 10 insertions(+), 0 deletions(-)
+ include/linux/mtd/nand.h |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
 diff --git a/include/linux/mtd/nand.h b/include/linux/mtd/nand.h
-index 3f47ad9..063e517 100644
+index 5458021..c1cc690 100644
 --- a/include/linux/mtd/nand.h
 +++ b/include/linux/mtd/nand.h
-@@ -202,6 +202,10 @@ typedef enum {
- /* Keep gcc happy */
- struct nand_chip;
- 
-+/* ONFI features */
-+#define ONFI_FEATURE_16_BIT_BUS		(1 << 0)
-+#define ONFI_FEATURE_EXT_PARAM_PAGE	(1 << 7)
-+
- /* ONFI timing mode, used in both asynchronous and synchronous mode */
- #define ONFI_TIMING_MODE_0		(1 << 0)
- #define ONFI_TIMING_MODE_1		(1 << 1)
-@@ -752,6 +756,12 @@ struct platform_nand_chip *get_platform_nandchip(struct mtd_info *mtd)
- 	return chip->priv;
- }
- 
-+/* return the supported features. */
-+static inline int onfi_feature(struct nand_chip *chip)
-+{
-+	return chip->onfi_version ? le16_to_cpu(chip->onfi_params.features) : 0;
-+}
-+
- /* return the supported asynchronous timing mode. */
- static inline int onfi_get_async_timing_mode(struct nand_chip *chip)
- {
+@@ -436,7 +436,9 @@ struct nand_buffers {
+  * @cellinfo:		[INTERN] MLC/multichip data from chip ident
+  * @ecc_strength:	[INTERN] ECC correctability from the datasheet.
+  * @ecc_size:		[INTERN] ECC size required by the @ecc_strength,
+- *                      also from the datasheet.
++ *                      also from the datasheet. If we do not know the
++ *			@ecc_size and @ecc_strength of the nand chips, we can
++ *			set zeros to them which are the default value.
+  * @numchips:		[INTERN] number of physical chips
+  * @chipsize:		[INTERN] the size of one chip for multichip arrays
+  * @pagemask:		[INTERN] page number mask = number of (pages / chip) - 1
 -- 
 1.7.1
 
