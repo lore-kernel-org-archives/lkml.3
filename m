@@ -1,63 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755570Ab3DWIje (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 04:39:34 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:23536 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754854Ab3DWIjb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 04:39:31 -0400
-X-IronPort-AV: E=Sophos;i="4.87,532,1363104000"; 
-   d="scan'208,223";a="7120811"
-Message-ID: <51764857.5010808@cn.fujitsu.com>
-Date: Tue, 23 Apr 2013 16:37:43 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S1756376Ab3DWIkM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 04:40:12 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:34634 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755632Ab3DWIkI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Apr 2013 04:40:08 -0400
+Date: Tue, 23 Apr 2013 10:40:06 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: =?iso-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>,
+        kernel list <linux-kernel@vger.kernel.org>, lenb@kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: 3.9-rc3+: reports battery as 0 mWh capacity on thinkpad x60
+Message-ID: <20130423084005.GA4269@amd.pavel.ucw.cz>
+References: <20130323114011.GA11092@amd.pavel.ucw.cz>
+ <87zjxu9spk.fsf@nemi.mork.no>
+ <20130323202155.GC18732@amd.pavel.ucw.cz>
+ <6726347.ehkcE9iAxU@vostro.rjw.lan>
 MIME-Version: 1.0
-To: akpm@linux-foundation.org
-CC: linux-mm@kvack.org, linux-kernel <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Jens <axboe@kernel.dk>
-Subject: [PATCH] mm/filemap.c: fix criteria of calling iov_shorten() in generic_file_direct_write()
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/04/23 16:37:54,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/04/23 16:37:54,
-	Serialize complete at 2013/04/23 16:37:54
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <6726347.ehkcE9iAxU@vostro.rjw.lan>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 35947e6535d92c54cf523470cc8811e8b5fee3e5 Mon Sep 17 00:00:00 2001
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-Date: Tue, 23 Apr 2013 16:09:04 +0800
-Subject: [PATCH] mm/filemap.c: fix criteria of calling iov_shorten() in generic_file_direct_write()
+Hi!
 
-generic_file_direct_write() compares 'count'(the max count we actually can write)
-with 'ocount'(the count we request to write) to see if there is need to call
-iov_shorten() to reduce number of segments and the iovec's length. If the
-'count' is equal or greater than 'ocount', there is no need to call iov_shorten()
-indeed. So the judgement should be changed:
-'if (count != ocount)' --> 'if (count < ocount)'
+> > But problem is not in /proc, /sys has zeros, too.
+> > 
+> > pavel@amd:~$ cat /sys/class/power_supply/BAT0/energy_full
+> > 0
+> > pavel@amd:~$ cat /sys/class/power_supply/BAT0/energy_full_design 
+> > 0
+> > pavel@amd:~$ cat /sys/class/power_supply/BAT0/model_name 
+> > 93P5030
+> > pavel@amd:~$
+> 
+> Can you narrow the time frame when it stopped working a bit?
 
-Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
----
- mm/filemap.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Ok, I'm not sure when it stopped working, but it works again in
+3.9.0-rc8+. Good :-).
 
-diff --git a/mm/filemap.c b/mm/filemap.c
-index e1979fd..c566b9c 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -2183,7 +2183,7 @@ generic_file_direct_write(struct kiocb *iocb, const struct iovec *iov,
- 	size_t		write_len;
- 	pgoff_t		end;
- 
--	if (count != ocount)
-+	if (count < ocount)
- 		*nr_segs = iov_shorten((struct iovec *)iov, *nr_segs, count);
- 
- 	write_len = iov_length(iov, *nr_segs);
+(And sorry for slow response).
+
+In the meantime, I got chromium-browser disappearing on me, all at
+once, before it started opening initial tabs. This is first time I
+seen that, with dmesg saying:
+
+chromium-browse[3728]: segfault at 95968e80 ip b666875e sp af5e9a20
+error 4 in chromium-browser[b5e0d000+1960000]
+
+. I hope it is just a coincidence, because otherwise 3.9 looks
+usable...
+
+Thanks,
+									Pavel
 -- 
-1.7.7
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
