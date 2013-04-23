@@ -1,225 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754616Ab3DWDvz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 23:51:55 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:53950 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754478Ab3DWDvy (ORCPT
+	id S1754662Ab3DWDy4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 23:54:56 -0400
+Received: from mail-da0-f51.google.com ([209.85.210.51]:47422 "EHLO
+	mail-da0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754478Ab3DWDyy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 23:51:54 -0400
-X-Spam-Score: -100.8
-Message-ID: <51760528.8000304@asianux.com>
-Date: Tue, 23 Apr 2013 11:51:04 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Chen Gang F T <chen.gang.flying.transformer@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: Eric Paris <eparis@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] kernel: audit_tree: resource management: need put_tree
- and goto Err when failure occures
-References: <516790ED.6060202@asianux.com> <516CFF2C.7010509@asianux.com> <516E1F32.6010009@asianux.com> <20130417130739.03fb8d9ccb908afc0a1db861@linux-foundation.org> <516F4A28.2050806@gmail.com> <5172446D.2070903@asianux.com>
-In-Reply-To: <5172446D.2070903@asianux.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Mon, 22 Apr 2013 23:54:54 -0400
+Message-ID: <1366689288.25625.3.camel@phoenix>
+Subject: [PATCH] regulator: tps65023: Use [set|get]_voltage_sel_regmap
+ instead of open coded
+From: Axel Lin <axel.lin@ingics.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Anuj Aggarwal <anuj.aggarwal@ti.com>, Liam Girdwood <lgirdwood@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        Marcus Folkesson <marcus.folkesson@gmail.com>,
+        Marek Vasut <marek.vasut@gmail.com>
+Date: Tue, 23 Apr 2013 11:54:48 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013年04月20日 15:31, Chen Gang wrote:
-> On 2013年04月18日 09:19, Chen Gang F T wrote:
->> > On 2013年04月18日 04:07, Andrew Morton wrote:
->>>> >> > On Wed, 17 Apr 2013 12:04:02 +0800 Chen Gang <gang.chen@asianux.com> wrote:
->>>> >> > 
->>>>>>>> >>>> >> >   since "normally audit_add_tree_rule() will free it on failure",
->>>>>>>> >>>> >> >   need free it completely, when failure occures.
->>>>>>>> >>>> >> > 
->>>>>>>> >>>> >> >     need additional put_tree before return, since get_tree was called.
->>>>>>>> >>>> >> >     always need goto error processing area for list_del_init.
->>>> >> > Isn't that get_tree() in audit_add_tree_rule() simply unneeded?  In
->>>> >> > other words, is this patch correct:
->>>> >> > 
-> 
+Simply the [get|set]_voltage_sel implementation by using
+regulator_[set|get]_voltage_sel_regmap instead of open coded.
 
-I hope the maintainers to provide your suggestions or completion. if we
-get non-reply from any maintainers, I should continue to analyse.
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+ drivers/regulator/tps65023-regulator.c |   31 +++++++++----------------------
+ 1 file changed, 9 insertions(+), 22 deletions(-)
 
-if we continue analyse independent with original maintainers,
-I think, before get a conclusion:
-
-  I should understand the API of audit: what it is, how to use it (test
-it), know about all of sub-systems which are related with it (such as fs
-sub-system);
-
-  also should know about the design of audit (read through the code),
-
-  and should analyse the lower-level design of audit tree (read the code
-completely).
-
-and excuse me, I am not quite familiar with audit, now, and also have to
-plan to do another things, so I think I should get a conclusion within
-next month (2013-05-31), is it ok ?
-
-
-BTW:
-  my plan for 1st half of 2013 is mainly for familiar environments: can
-provide contributes to many various sub systems (e.g. arm, powerpc,
-drivers, net, kernel ...)
-
-  my plan for 2nd half of 2013 is mainly for familiar kernel: should
-analyse the deeper issues and kernel API/design step by step (e.g. mm,
-fs, kernel API documents...)
-
-  the original related mail:
-http://linux-kernel.2935.n7.nabble.com/Consult-Plan-personal-contributes-plan-for-2013-td587319.html
-
-
-> after reading code again, I think:
-> 
->   we can remove the pair of get_tree() and put_tree(),
-> 
->     a. the author want to pretect tree not to be freed after unlock audit_filter_mutex
->          when tree is really freed by others, we have chance to check tree->goner
-> 
->     b. it just like another functions done (audit_tag_tree, audit_trim_trees)
->          for audit_add_tree_rule, also need let get_tree() protected by audit_filter_mutex.
->            (move 'get_tree' before unlock audit_filter_mutex)
-> 
->     c. but after read code (at least for audit_add_tree_rule)
->        during unlock audit_filter_mutex in audit_add_tree_rule:
->          I find only one posible related work flow which may happen (maybe it can not happen either).
->            fsnotify_destroy_mark_locked ->
->              audit_tree_freeing_mark ->
->                evict_chunk ->
->                  kill_rules ->
->                    call_rcu -> 
->                      audit_free_rule_rcu ->
->                        audit_free_rule
->          it will free rules and entry, but it does not call put_tree().
-> 
->     so I think, at least for audit_add_tree_rule, we can remove the pair of get_tree() and put_tree()
->       (maybe also need give a check for audit_tag_tree and audit_trim_trees, whether can remove 'get_tree' too)
-> 
-> 
->   and the process is incorrect after lock audit_filter_mutex again (line 701..705)
-> 
->     a. if rule->rlist was really empty
->         the 'rule' itself would already be freed.
->         the caller and the caller of caller, need notice this (not double free)
->         instead, we need check tree->gonar (and also need spin_lock protected).
-> 
->     b. we do not need set "rule->tree = tree" again.
->          i. if 'rule' is not touched by any other thread
->               it should be rule->tree == tree.
-> 
->         ii. else if rule->tree == NULL (freed by other thread)
->               'rule' itself might be freed too, we'd better return by failure.
-> 
->        iii. else (!rule->tree && rule->tree != tree) (reused by other thread)
->               firstly, it should not happen.
->               if could happen, 'rule->tree = tree' would cause original rule->tree memory leak.
-> 
-> 
->   my conclusion is only by reading code (and still I am not quite expert about it, either)
->   so welcome experts (especially maintainers) to providing suggestions or completions.
-> 
->   thanks.
-> 
-> 
->   if no reply within a week (2013-04-28), I should send related patch.
-> 
-> gchen.
-> 
-> 653 /* called with audit_filter_mutex */
-> 654 int audit_add_tree_rule(struct audit_krule *rule)
-> 655 {
-> 656         struct audit_tree *seed = rule->tree, *tree;
-> 657         struct path path;
-> 658         struct vfsmount *mnt;
-> 659         int err;
-> 660 
-> 661         list_for_each_entry(tree, &tree_list, list) {
-> 662                 if (!strcmp(seed->pathname, tree->pathname)) {
-> 663                         put_tree(seed);
-> 664                         rule->tree = tree;
-> 665                         list_add(&rule->rlist, &tree->rules);
-> 666                         return 0;
-> 667                 }
-> 668         }
-> 669         tree = seed;
-> 670         list_add(&tree->list, &tree_list);
-> 671         list_add(&rule->rlist, &tree->rules);
-> 672         /* do not set rule->tree yet */
-> 673         mutex_unlock(&audit_filter_mutex);
-> 674 
-> 675         err = kern_path(tree->pathname, 0, &path);
-> 676         if (err)
-> 677                 goto Err;
-> 678         mnt = collect_mounts(&path);
-> 679         path_put(&path);
-> 680         if (IS_ERR(mnt)) {
-> 681                 err = PTR_ERR(mnt);
-> 682                 goto Err;
-> 683         }
-> 684 
-> 685         get_tree(tree);
-> 686         err = iterate_mounts(tag_mount, tree, mnt);
-> 687         drop_collected_mounts(mnt);
-> 688 
-> 689         if (!err) {
-> 690                 struct node *node;
-> 691                 spin_lock(&hash_lock);
-> 692                 list_for_each_entry(node, &tree->chunks, list)
-> 693                         node->index &= ~(1U<<31);
-> 694                 spin_unlock(&hash_lock);
-> 695         } else {
-> 696                 trim_marked(tree);
-> 697                 goto Err;
-> 698         }
-> 699 
-> 700         mutex_lock(&audit_filter_mutex);
-> 701         if (list_empty(&rule->rlist)) {
-> 702                 put_tree(tree);
-> 703                 return -ENOENT;
-> 704         }
-> 705         rule->tree = tree;
-> 706         put_tree(tree);
-> 707 
-> 708         return 0;
-> 709 Err:
-> 710         mutex_lock(&audit_filter_mutex);
-> 711         list_del_init(&tree->list);
-> 712         list_del_init(&tree->rules);
-> 713         put_tree(tree);
-> 714         return err;
-> 715 }
-> 
-> 
-> 
-> 
->> >   excuse me:
->> >     I am not quite familiar with it, and also have to do another things.
->> >     so I have to spend additional time resource to make sure about it.
->> > 
->> >   is it ok ?
->> >     I should make sure about it within this week (2013-04-21)
->> >     I should finish related test (if need), within next week (2013-4-28)
->> > 
->> >   if have additional suggestions or completions, please reply.
->> >     (if no reply, I will follow the time point above)
->> > 
->> >   thanks.
->> > 
->> > gchen.
->> > 
->> > 
-> 
-> -- Chen Gang Asianux Corporation
-> 
-
-
+diff --git a/drivers/regulator/tps65023-regulator.c b/drivers/regulator/tps65023-regulator.c
+index 9b9af6d..d91e230 100644
+--- a/drivers/regulator/tps65023-regulator.c
++++ b/drivers/regulator/tps65023-regulator.c
+@@ -154,20 +154,15 @@ struct tps_driver_data {
+ static int tps65023_dcdc_get_voltage_sel(struct regulator_dev *dev)
+ {
+ 	struct tps_pmic *tps = rdev_get_drvdata(dev);
+-	int ret;
+-	int data, dcdc = rdev_get_id(dev);
++	int dcdc = rdev_get_id(dev);
+ 
+ 	if (dcdc < TPS65023_DCDC_1 || dcdc > TPS65023_DCDC_3)
+ 		return -EINVAL;
+ 
+-	if (dcdc == tps->core_regulator) {
+-		ret = regmap_read(tps->regmap, TPS65023_REG_DEF_CORE, &data);
+-		if (ret != 0)
+-			return ret;
+-		data &= (tps->info[dcdc]->table_len - 1);
+-		return data;
+-	} else
++	if (dcdc != tps->core_regulator)
+ 		return 0;
++
++	return regulator_get_voltage_sel_regmap(dev);
+ }
+ 
+ static int tps65023_dcdc_set_voltage_sel(struct regulator_dev *dev,
+@@ -175,23 +170,11 @@ static int tps65023_dcdc_set_voltage_sel(struct regulator_dev *dev,
+ {
+ 	struct tps_pmic *tps = rdev_get_drvdata(dev);
+ 	int dcdc = rdev_get_id(dev);
+-	int ret;
+ 
+ 	if (dcdc != tps->core_regulator)
+ 		return -EINVAL;
+ 
+-	ret = regmap_write(tps->regmap, TPS65023_REG_DEF_CORE, selector);
+-	if (ret)
+-		goto out;
+-
+-	/* Tell the chip that we have changed the value in DEFCORE
+-	 * and its time to update the core voltage
+-	 */
+-	ret = regmap_update_bits(tps->regmap, TPS65023_REG_CON_CTRL2,
+-				 TPS65023_REG_CTRL2_GO, TPS65023_REG_CTRL2_GO);
+-
+-out:
+-	return ret;
++	return regulator_set_voltage_sel_regmap(dev, selector);
+ }
+ 
+ /* Operations permitted on VDCDCx */
+@@ -285,6 +268,10 @@ static int tps_65023_probe(struct i2c_client *client,
+ 		default: /* DCDCx */
+ 			tps->desc[i].enable_mask =
+ 					1 << (TPS65023_NUM_REGULATOR - i);
++			tps->desc[i].vsel_reg = TPS65023_REG_DEF_CORE;
++			tps->desc[i].vsel_mask = info->table_len - 1;
++			tps->desc[i].apply_reg = TPS65023_REG_CON_CTRL2;
++			tps->desc[i].apply_bit = TPS65023_REG_CTRL2_GO;
+ 		}
+ 
+ 		config.dev = &client->dev;
 -- 
-Chen Gang
+1.7.10.4
 
-Asianux Corporation
+
+
