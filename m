@@ -1,111 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753628Ab3DWAxD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Apr 2013 20:53:03 -0400
-Received: from mga03.intel.com ([143.182.124.21]:45533 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752221Ab3DWAxB convert rfc822-to-8bit (ORCPT
+	id S1753761Ab3DWBZB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Apr 2013 21:25:01 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:52177 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753179Ab3DWBZA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Apr 2013 20:53:01 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,530,1363158000"; 
-   d="scan'208";a="290081670"
-From: "Pan, Zhenjie" <zhenjie.pan@intel.com>
-To: Don Zickus <dzickus@redhat.com>
-CC: Stephane Eranian <eranian@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "paulus@samba.org" <paulus@samba.org>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "acme@ghostprotocols.net" <acme@ghostprotocols.net>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "Liu, Chuansheng" <chuansheng.liu@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v2] NMI: fix NMI period is not correct when cpu
- frequency changes issue.
-Thread-Topic: [PATCH v2] NMI: fix NMI period is not correct when cpu
- frequency changes issue.
-Thread-Index: Ac46b5lX48efHbUtRT2d/NJzqZ6DWQBdzKSAAAC9ZQAAA1VkgAC+rv5AABWovoAAHFibUA==
-Date: Tue, 23 Apr 2013 00:52:37 +0000
-Message-ID: <F98D4B5C3D86834DB612ABF854C98B7FB612CB@SHSMSX101.ccr.corp.intel.com>
-References: <F98D4B5C3D86834DB612ABF854C98B7FB5D7FE@SHSMSX101.ccr.corp.intel.com>
- <1366285369.19383.19.camel@laptop>
- <CABPqkBTpzSBEezx4ScwYYX6L8ir4GLBG9MMYJuAb6YA0QbiurQ@mail.gmail.com>
- <20130418133927.GJ79013@redhat.com>
- <F98D4B5C3D86834DB612ABF854C98B7FB5FACF@SHSMSX101.ccr.corp.intel.com>
- <20130422185929.GZ79013@redhat.com>
-In-Reply-To: <20130422185929.GZ79013@redhat.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 22 Apr 2013 21:25:00 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <5175E2D4.5030004@jp.fujitsu.com>
+Date: Tue, 23 Apr 2013 10:24:36 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: <kosaki.motohiro@gmail.com>, <mingo@kernel.org>, <hpa@zytor.com>,
+        <srivatsa.bhat@linux.vnet.ibm.com>, <linux-kernel@vger.kernel.org>,
+        <x86@kernel.org>, <linux-mm@kvack.org>
+Subject: Re: [Bug fix PATCH v2] numa, cpu hotplug: Change links of CPU and
+ node when changing node number by onlining CPU
+References: <5170D4CB.20900@jp.fujitsu.com> <20130422153541.04ba682f13910cfede0d2ff7@linux-foundation.org> <5175D01E.5000302@jp.fujitsu.com> <20130422173459.487fa3e6.akpm@linux-foundation.org>
+In-Reply-To: <20130422173459.487fa3e6.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2013/04/23 9:34, Andrew Morton wrote:
+> On Tue, 23 Apr 2013 09:04:46 +0900 Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com> wrote:
+>
+>> 2013/04/23 7:35, Andrew Morton wrote:
+>>> On Fri, 19 Apr 2013 14:23:23 +0900 Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com> wrote:
+>>>
+>>>> When booting x86 system contains memoryless node, node numbers of CPUs
+>>>> on memoryless node were changed to nearest online node number by
+>>>> init_cpu_to_node() because the node is not online.
+>>>>
+>>>> ...
+>>>>
+>>>> If we hot add memory to memoryless node and offine/online all CPUs on
+>>>> the node, node numbers of these CPUs are changed to correct node numbers
+>>>> by srat_detect_node() because the node become online.
+>>>
+>>> OK, here's a dumb question.
+>>>
+>>> At boot time the CPUs are assigned to the "nearest online node" rather
+>>> than to their real memoryless node.  The patch arranges for those CPUs
+>>> to still be assigned to the "nearest online node" _after_ some memory
+>>> is hot-added to their real node.  Correct?
+>>
+>> Yes. For changing node number of CPUs safely, we should offline CPUs.
+>>
+>>>
+>>> Would it not be better to fix this by assigning those CPUs to their real,
+>>> memoryless node right at the initial boot?  Or is there something in
+>>> the kernel which makes cpus-on-a-memoryless-node not work correctly?
+>>>
+>>
+>> I think assigning CPUs to real node is better. But current Linux's node
+>> strongly depend on memory. Thus if we just create cpus-on-a-memoryless-node,
+>> the kernel cannot work correctly.
+>
+> hm, why.  I'd have thought that if we tell the kernel something like
+> "this node has one zone, the size of which is zero bytes" then a
+> surprising amount of the existing code will Just Work.
+>
+> What goes wrong?
+
+Sorry I forgot detailed issue.
+When I saw following issue, I tried to fix it and found that current
+Linux's node strongly depend on memory.
+https://lkml.org/lkml/2012/9/12/20
+
+I'll try to fix it again.
+
+Thanks,
+Yasuaki Ishimatsu
+
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
 
 
-> -----Original Message-----
-> From: Don Zickus [mailto:dzickus@redhat.com]
-> Sent: Tuesday, April 23, 2013 2:59 AM
-> To: Pan, Zhenjie
-> Cc: Stephane Eranian; Peter Zijlstra; paulus@samba.org; mingo@redhat.com;
-> acme@ghostprotocols.net; akpm@linux-foundation.org; tglx@linutronix.de;
-> Liu, Chuansheng; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH v2] NMI: fix NMI period is not correct when cpu
-> frequency changes issue.
-> 
-> On Mon, Apr 22, 2013 at 12:50:34AM +0000, Pan, Zhenjie wrote:
-> > > I believe it mattered to the Chrome folks. They want the watchdog to
-> > > be as tight as possible so the user experience isn't a hang but a
-> > > quick reboot instead.  They like setting the watchdog to something like 2
-> seconds.
-> > >
-> > > There was a patch a few months ago that tried to hack around this
-> > > issue and I suggested this approach as a better solution.  I forgot
-> > > what the original problem was.  Perhaps someone can jump in and
-> > > explain the problem being solved (other than the watchdog isn't always
-> 10 seconds)?
-> > >
-> > > Cheers,
-> > > Don
-> >
-> > Yes, I also think the period is important sometimes.
-> > As I mentioned before, the case I meet is:
-> > When the system hang with interrupt disabled, we use NMI to detect.
-> > Then it will find hard lockup and cause a panic.
-> > Panic is very important for debug these kind of issues.
-> >
-> > But if cpu frequency change, the period will be 2 times, 3 times even
-> > more.(if cpu can down from 2.0GHz to 200MHz, will be 10 times, it's a very
-> big deviation) This make watchdog reset happen before hard lockup detect.
-> 
-> So you are saying with the longer hard lockup delay, the iTCO_wdt is firing
-> before the hard lockup detector?
-> 
-> Cheers,
-> Don
-
-Give you a detail example:
-0s                                                                                               50s                        60s                      70s
-|_____________________________________|___________|__________|
-When 50s, a watchdog interrupt happen to inform watchdog daemon to update watchdog.
-If watchdog daemon does not update watchdog in 10s, another watchdog interrupt will happen at 60s to cause a panic.
-Then system will have 10s to do some dump.
-At 70s, watchdog hardware reset happen.
-
-But if interrupt is disabled at 60s, panic will be lost.
-So we need NMI interrupt by performance monitor to detect hard lockup.
-If the NMI period is 10s, it can guarantee that hard lockup will be detected before 70s.
-But if the period is changed with cpu frequency, this will be not ensure.
-
-Hope my explanation is clear.
-
-BTW, I use intel_scu_watchdog(but looks have big difference with that in upstream), not iTCO_wdt.
-
-Thanks
-Pan Zhenjie
