@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756383Ab3DWPDv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 11:03:51 -0400
-Received: from mail-we0-f176.google.com ([74.125.82.176]:62556 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756197Ab3DWPDp (ORCPT
+	id S1756498Ab3DWPEA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 11:04:00 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:33199 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756439Ab3DWPD5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 11:03:45 -0400
+	Tue, 23 Apr 2013 11:03:57 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        mian.yousaf.kaukab@stericsson.com, Lee Jones <lee.jones@linaro.org>,
-        Felipe Balbi <balbi@ti.com>, linux-usb@vger.kernel.org
-Subject: [PATCH 03/10] usb: musb: ux500: take the dma_mask from coherent_dma_mask
-Date: Tue, 23 Apr 2013 16:03:07 +0100
-Message-Id: <1366729394-11406-4-git-send-email-lee.jones@linaro.org>
+        mian.yousaf.kaukab@stericsson.com, Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 10/10] ARM: ux500: Remove empty function u8500_of_init_devices()
+Date: Tue, 23 Apr 2013 16:03:14 +0100
+Message-Id: <1366729394-11406-11-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1366729394-11406-1-git-send-email-lee.jones@linaro.org>
 References: <1366729394-11406-1-git-send-email-lee.jones@linaro.org>
@@ -22,53 +21,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The dma_mask will always be the same as the coherent_dma_mask, so let's
-cut down on the platform_data burden and set it as such in the driver.
-This also saves us from supporting it separately when we come to enable
-this driver for Device Tree.
+As promised, now all devices which resided in u8500_of_init_devices()
+have been enabled for Device Tree, we can completely remove it.
 
-Cc: Felipe Balbi <balbi@ti.com>
-Cc: linux-usb@vger.kernel.org
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- arch/arm/mach-ux500/usb.c |    3 ---
- drivers/usb/musb/ux500.c  |    2 +-
- 2 files changed, 1 insertion(+), 4 deletions(-)
+ arch/arm/mach-ux500/cpu-db8500.c |   14 +-------------
+ 1 file changed, 1 insertion(+), 13 deletions(-)
 
-diff --git a/arch/arm/mach-ux500/usb.c b/arch/arm/mach-ux500/usb.c
-index 4f68a9c..e6c4a05 100644
---- a/arch/arm/mach-ux500/usb.c
-+++ b/arch/arm/mach-ux500/usb.c
-@@ -74,8 +74,6 @@ static struct ux500_musb_board_data musb_board_data = {
- 	.dma_filter = stedma40_filter,
- };
+diff --git a/arch/arm/mach-ux500/cpu-db8500.c b/arch/arm/mach-ux500/cpu-db8500.c
+index 36ef6ed..a2c83c2 100644
+--- a/arch/arm/mach-ux500/cpu-db8500.c
++++ b/arch/arm/mach-ux500/cpu-db8500.c
+@@ -221,15 +221,6 @@ struct device * __init u8500_init_devices(struct ab8500_platform_data *ab8500)
+ }
  
--static u64 ux500_musb_dmamask = DMA_BIT_MASK(32);
+ #ifdef CONFIG_MACH_UX500_DT
 -
- static struct musb_hdrc_platform_data musb_platform_data = {
- 	.mode = MUSB_OTG,
- 	.board_data = &musb_board_data,
-@@ -98,7 +96,6 @@ struct platform_device ux500_musb_device = {
- 	.id = 0,
- 	.dev = {
- 		.platform_data = &musb_platform_data,
--		.dma_mask = &ux500_musb_dmamask,
- 		.coherent_dma_mask = DMA_BIT_MASK(32),
- 	},
- 	.num_resources = ARRAY_SIZE(usb_resources),
-diff --git a/drivers/usb/musb/ux500.c b/drivers/usb/musb/ux500.c
-index 4a8f5c9..7ddb132 100644
---- a/drivers/usb/musb/ux500.c
-+++ b/drivers/usb/musb/ux500.c
-@@ -122,7 +122,7 @@ static int ux500_probe(struct platform_device *pdev)
- 	}
+-/* TODO: Once all pieces are DT:ed, remove completely. */
+-static struct device * __init u8500_of_init_devices(void)
+-{
+-	struct device *parent = db8500_soc_device_init();
+-
+-	return parent;
+-}
+-
+ static struct of_dev_auxdata u8500_auxdata_lookup[] __initdata = {
+ 	/* Requires call-back bindings. */
+ 	OF_DEV_AUXDATA("arm,cortex-a9-pmu", 0, "arm-pmu", &db8500_pmu_platdata),
+@@ -288,7 +279,7 @@ static const struct of_device_id u8500_local_bus_nodes[] = {
  
- 	musb->dev.parent		= &pdev->dev;
--	musb->dev.dma_mask		= pdev->dev.dma_mask;
-+	musb->dev.dma_mask		= &pdev->dev.coherent_dma_mask;
- 	musb->dev.coherent_dma_mask	= pdev->dev.coherent_dma_mask;
+ static void __init u8500_init_machine(void)
+ {
+-	struct device *parent = NULL;
++	struct device *parent = db8500_soc_device_init();
  
- 	glue->dev			= &pdev->dev;
+ 	/* Pinmaps must be in place before devices register */
+ 	if (of_machine_is_compatible("st-ericsson,mop500"))
+@@ -301,9 +292,6 @@ static void __init u8500_init_machine(void)
+ 	else if (of_machine_is_compatible("st-ericsson,ccu9540")) {}
+ 		/* TODO: Add pinmaps for ccu9540 board. */
+ 
+-	/* TODO: Export SoC, USB, cpu-freq and DMA40 */
+-	parent = u8500_of_init_devices();
+-
+ 	/* automatically probe child nodes of db8500 device */
+ 	of_platform_populate(NULL, u8500_local_bus_nodes, u8500_auxdata_lookup, parent);
+ }
 -- 
 1.7.10.4
 
