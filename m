@@ -1,90 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754611Ab3DWI7w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 04:59:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37581 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751130Ab3DWI7u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 04:59:50 -0400
-Date: Tue, 23 Apr 2013 10:59:48 +0200
-From: Jan Kara <jack@suse.cz>
-To: majianpeng <majianpeng@gmail.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, akpm@linux-foundation.org,
-        tytso@mit.edu, Jan Kara <jack@suse.cz>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V1] fs/buffer.c: Remove unnecessary init operation
- after, allocating buffer_head.
-Message-ID: <20130423085948.GD4596@quack.suse.cz>
-References: <51748E45.8060806@gmail.com>
+	id S1755027Ab3DWJA0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 05:00:26 -0400
+Received: from mx0.aculab.com ([213.249.233.131]:57519 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1754760Ab3DWJAT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Apr 2013 05:00:19 -0400
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51748E45.8060806@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain;
+	charset="utf-8"
+Subject: RE: Unsigned widening casts of binary "not" operations..
+Date: Tue, 23 Apr 2013 09:59:05 +0100
+Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6026B71EF@saturn3.aculab.com>
+In-Reply-To: <CA+55aFy0jPr5udwJx8cZ-QFs-OgZzQ_NJm_VSj_cS7tsKUn3Kw@mail.gmail.com>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: Unsigned widening casts of binary "not" operations..
+Thread-Index: Ac4/uYncWaABZOdZQnqoZ43QRKGmVwARvk/A
+References: <CA+55aFwpLu0qNms=hkQr43yqD0K9DgESNm91OEWKT1ZuT8MU6Q@mail.gmail.com> <CA+55aFy0jPr5udwJx8cZ-QFs-OgZzQ_NJm_VSj_cS7tsKUn3Kw@mail.gmail.com>
+From: "David Laight" <David.Laight@ACULAB.COM>
+To: "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Ingo Molnar" <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        "Thomas Gleixner" <tglx@linutronix.de>,
+        "David Miller" <davem@davemloft.net>, "Theodore Ts'o" <tytso@mit.edu>
+Cc: "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        "Network Development" <netdev@vger.kernel.org>,
+        <linux-ext4@vger.kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r3N90ZxA011544
 
-On Mon 22-04-13 09:11:33, majianpeng wrote:
-> Because alloc 'struct buffer_head' using kmem_cache_zalloc,so it doesn't
-> need to call 'init_buffer(bh, NULL, NULL)' and other set-zero-operation.
-> 
-> Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
-  I've just noticed the whitespace is still mangled. Gmail is known for
-destroying whitespace so please send the patch as an attachment. Thanks.
+> What happens is that the "~bitmask" is done in the *narrower* type,
+> and then - because the narrower type is unsigned - the cast to the
+> wider type is done as an *unsigned* cast, so what you *think* happens
+> is that it clears the bits that are set in "bitmask", but what
+> *actually* happens is that yes, you clear the bits that are set in
+> :bitmask", but you *also* clear the upper bits of value.
 
-								Honza
+If the narrower type is signed it is probably even more confusing!
+The high bits will be preserved unless you are masking off bit 31.
 
-> ---
->  fs/buffer.c       | 2 --
->  fs/jbd/journal.c  | 2 --
->  fs/jbd2/journal.c | 2 --
->  3 files changed, 6 deletions(-)
-> 
-> diff --git a/fs/buffer.c b/fs/buffer.c
-> index b4dcb34..52b7739 100644
-> --- a/fs/buffer.c
-> +++ b/fs/buffer.c
-> @@ -865,8 +865,6 @@ try_again:
->  
->          /* Link the buffer to its page */
->          set_bh_page(bh, page, offset);
-> -
-> -        init_buffer(bh, NULL, NULL);
->      }
->      return head;
->  /*
-> diff --git a/fs/jbd/journal.c b/fs/jbd/journal.c
-> index 81cc7ea..865c430 100644
-> --- a/fs/jbd/journal.c
-> +++ b/fs/jbd/journal.c
-> @@ -310,8 +310,6 @@ int journal_write_metadata_buffer(transaction_t *transaction,
->  
->      new_bh = alloc_buffer_head(GFP_NOFS|__GFP_NOFAIL);
->      /* keep subsequent assertions sane */
-> -    new_bh->b_state = 0;
-> -    init_buffer(new_bh, NULL, NULL);
->      atomic_set(&new_bh->b_count, 1);
->      new_jh = journal_add_journal_head(new_bh);    /* This sleeps */
->  
-> diff --git a/fs/jbd2/journal.c b/fs/jbd2/journal.c
-> index ed10991..8b220f1 100644
-> --- a/fs/jbd2/journal.c
-> +++ b/fs/jbd2/journal.c
-> @@ -367,8 +367,6 @@ retry_alloc:
->      }
->  
->      /* keep subsequent assertions sane */
-> -    new_bh->b_state = 0;
-> -    init_buffer(new_bh, NULL, NULL);
->      atomic_set(&new_bh->b_count, 1);
->      new_jh = jbd2_journal_add_journal_head(new_bh);    /* This sleeps */
->  
-> -- 
-> 1.8.2.rc2.4.g7799588
-> 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+	David
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
