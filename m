@@ -1,25 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932350Ab3DWVzN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 17:55:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34304 "EHLO
+	id S932366Ab3DWVzi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 17:55:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34299 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932256Ab3DWVy1 (ORCPT
+	with ESMTP id S932242Ab3DWVy1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 23 Apr 2013 17:54:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Josef Bacik <jbacik@fusionio.com>,
-        Chris Mason <chris.mason@fusionio.com>,
-        Lingzhu Xiang <lxiang@redhat.com>, CAI Qian <caiqian@redhat.com>
-Subject: [ 26/26] Btrfs: make sure nbytes are right after log replay
-Date: Tue, 23 Apr 2013 14:54:06 -0700
-Message-Id: <20130423215336.065450688@linuxfoundation.org>
+        =?UTF-8?q?Stefan=20Br=C3=BCns?= <stefan.bruens@rwth-aachen.de>,
+        =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <zajec5@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 16/26] ssb: implement spurious tone avoidance
+Date: Tue, 23 Apr 2013 14:53:56 -0700
+Message-Id: <20130423215335.037114019@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130423215333.344045754@linuxfoundation.org>
 References: <20130423215333.344045754@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -28,129 +31,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josef Bacik <jbacik@fusionio.com>
+From: Rafał Miłecki <zajec5@gmail.com>
 
-commit 4bc4bee4595662d8bff92180d5c32e3313a704b0 upstream.
+commit 46fc4c909339f5a84d1679045297d9d2fb596987 upstream.
 
-While trying to track down a tree log replay bug I noticed that fsck was always
-complaining about nbytes not being right for our fsynced file.  That is because
-the new fsync stuff doesn't wait for ordered extents to complete, so the inodes
-nbytes are not necessarily updated properly when we log it.  So to fix this we
-need to set nbytes to whatever it is on the inode that is on disk, so when we
-replay the extents we can just add the bytes that are being added as we replay
-the extent.  This makes it work for the case that we have the wrong nbytes or
-the case that we logged everything and nbytes is actually correct.  With this
-I'm no longer getting nbytes errors out of btrfsck.
+And make use of it in b43. This fixes a regression introduced with
+49d55cef5b1925a5c1efb6aaddaa40fc7c693335
+b43: N-PHY: implement spurious tone avoidance
+This commit made BCM4322 use only MCS 0 on channel 13, which of course
+resulted in performance drop (down to 0.7Mb/s).
 
-Signed-off-by: Josef Bacik <jbacik@fusionio.com>
-Signed-off-by: Chris Mason <chris.mason@fusionio.com>
-Signed-off-by: Lingzhu Xiang <lxiang@redhat.com>
-Reviewed-by: CAI Qian <caiqian@redhat.com>
+Reported-by: Stefan Brüns <stefan.bruens@rwth-aachen.de>
+Signed-off-by: Rafał Miłecki <zajec5@gmail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/tree-log.c |   48 ++++++++++++++++++++++++++++++++++++++++++------
- 1 file changed, 42 insertions(+), 6 deletions(-)
+ drivers/net/wireless/b43/phy_n.c          |    3 ++-
+ drivers/ssb/driver_chipcommon_pmu.c       |   29 +++++++++++++++++++++++++++++
+ include/linux/ssb/ssb_driver_chipcommon.h |    2 ++
+ 3 files changed, 33 insertions(+), 1 deletion(-)
 
---- a/fs/btrfs/tree-log.c
-+++ b/fs/btrfs/tree-log.c
-@@ -315,6 +315,7 @@ static noinline int overwrite_item(struc
- 	unsigned long src_ptr;
- 	unsigned long dst_ptr;
- 	int overwrite_root = 0;
-+	bool inode_item = key->type == BTRFS_INODE_ITEM_KEY;
- 
- 	if (root->root_key.objectid != BTRFS_TREE_LOG_OBJECTID)
- 		overwrite_root = 1;
-@@ -324,6 +325,9 @@ static noinline int overwrite_item(struc
- 
- 	/* look for the key in the destination tree */
- 	ret = btrfs_search_slot(NULL, root, key, path, 0, 0);
-+	if (ret < 0)
-+		return ret;
-+
- 	if (ret == 0) {
- 		char *src_copy;
- 		char *dst_copy;
-@@ -365,6 +369,30 @@ static noinline int overwrite_item(struc
- 			return 0;
- 		}
- 
-+		/*
-+		 * We need to load the old nbytes into the inode so when we
-+		 * replay the extents we've logged we get the right nbytes.
-+		 */
-+		if (inode_item) {
-+			struct btrfs_inode_item *item;
-+			u64 nbytes;
-+
-+			item = btrfs_item_ptr(path->nodes[0], path->slots[0],
-+					      struct btrfs_inode_item);
-+			nbytes = btrfs_inode_nbytes(path->nodes[0], item);
-+			item = btrfs_item_ptr(eb, slot,
-+					      struct btrfs_inode_item);
-+			btrfs_set_inode_nbytes(eb, item, nbytes);
-+		}
-+	} else if (inode_item) {
-+		struct btrfs_inode_item *item;
-+
-+		/*
-+		 * New inode, set nbytes to 0 so that the nbytes comes out
-+		 * properly when we replay the extents.
-+		 */
-+		item = btrfs_item_ptr(eb, slot, struct btrfs_inode_item);
-+		btrfs_set_inode_nbytes(eb, item, 0);
+--- a/drivers/net/wireless/b43/phy_n.c
++++ b/drivers/net/wireless/b43/phy_n.c
+@@ -4582,7 +4582,8 @@ static void b43_nphy_pmu_spur_avoid(stru
+ #endif
+ #ifdef CONFIG_B43_SSB
+ 	case B43_BUS_SSB:
+-		/* FIXME */
++		ssb_pmu_spuravoid_pllupdate(&dev->dev->sdev->bus->chipco,
++					    avoid);
+ 		break;
+ #endif
  	}
- insert:
- 	btrfs_release_path(path);
-@@ -486,7 +514,7 @@ static noinline int replay_one_extent(st
- 	u64 extent_end;
- 	u64 alloc_hint;
- 	u64 start = key->offset;
--	u64 saved_nbytes;
-+	u64 nbytes = 0;
- 	struct btrfs_file_extent_item *item;
- 	struct inode *inode = NULL;
- 	unsigned long size;
-@@ -496,10 +524,19 @@ static noinline int replay_one_extent(st
- 	found_type = btrfs_file_extent_type(eb, item);
- 
- 	if (found_type == BTRFS_FILE_EXTENT_REG ||
--	    found_type == BTRFS_FILE_EXTENT_PREALLOC)
--		extent_end = start + btrfs_file_extent_num_bytes(eb, item);
--	else if (found_type == BTRFS_FILE_EXTENT_INLINE) {
-+	    found_type == BTRFS_FILE_EXTENT_PREALLOC) {
-+		nbytes = btrfs_file_extent_num_bytes(eb, item);
-+		extent_end = start + nbytes;
+--- a/drivers/ssb/driver_chipcommon_pmu.c
++++ b/drivers/ssb/driver_chipcommon_pmu.c
+@@ -645,3 +645,32 @@ u32 ssb_pmu_get_controlclock(struct ssb_
+ 		return 0;
+ 	}
+ }
 +
-+		/*
-+		 * We don't add to the inodes nbytes if we are prealloc or a
-+		 * hole.
-+		 */
-+		if (btrfs_file_extent_disk_bytenr(eb, item) == 0)
-+			nbytes = 0;
-+	} else if (found_type == BTRFS_FILE_EXTENT_INLINE) {
- 		size = btrfs_file_extent_inline_len(eb, item);
-+		nbytes = btrfs_file_extent_ram_bytes(eb, item);
- 		extent_end = (start + size + mask) & ~mask;
- 	} else {
- 		ret = 0;
-@@ -548,7 +585,6 @@ static noinline int replay_one_extent(st
- 	}
- 	btrfs_release_path(path);
++void ssb_pmu_spuravoid_pllupdate(struct ssb_chipcommon *cc, int spuravoid)
++{
++	u32 pmu_ctl = 0;
++
++	switch (cc->dev->bus->chip_id) {
++	case 0x4322:
++		ssb_chipco_pll_write(cc, SSB_PMU1_PLLCTL0, 0x11100070);
++		ssb_chipco_pll_write(cc, SSB_PMU1_PLLCTL1, 0x1014140a);
++		ssb_chipco_pll_write(cc, SSB_PMU1_PLLCTL5, 0x88888854);
++		if (spuravoid == 1)
++			ssb_chipco_pll_write(cc, SSB_PMU1_PLLCTL2, 0x05201828);
++		else
++			ssb_chipco_pll_write(cc, SSB_PMU1_PLLCTL2, 0x05001828);
++		pmu_ctl = SSB_CHIPCO_PMU_CTL_PLL_UPD;
++		break;
++	case 43222:
++		/* TODO: BCM43222 requires updating PLLs too */
++		return;
++	default:
++		ssb_printk(KERN_ERR PFX
++			   "Unknown spuravoidance settings for chip 0x%04X, not changing PLL\n",
++			   cc->dev->bus->chip_id);
++		return;
++	}
++
++	chipco_set32(cc, SSB_CHIPCO_PMU_CTL, pmu_ctl);
++}
++EXPORT_SYMBOL_GPL(ssb_pmu_spuravoid_pllupdate);
+--- a/include/linux/ssb/ssb_driver_chipcommon.h
++++ b/include/linux/ssb/ssb_driver_chipcommon.h
+@@ -219,6 +219,7 @@
+ #define SSB_CHIPCO_PMU_CTL			0x0600 /* PMU control */
+ #define  SSB_CHIPCO_PMU_CTL_ILP_DIV		0xFFFF0000 /* ILP div mask */
+ #define  SSB_CHIPCO_PMU_CTL_ILP_DIV_SHIFT	16
++#define  SSB_CHIPCO_PMU_CTL_PLL_UPD		0x00000400
+ #define  SSB_CHIPCO_PMU_CTL_NOILPONW		0x00000200 /* No ILP on wait */
+ #define  SSB_CHIPCO_PMU_CTL_HTREQEN		0x00000100 /* HT req enable */
+ #define  SSB_CHIPCO_PMU_CTL_ALPREQEN		0x00000080 /* ALP req enable */
+@@ -661,5 +662,6 @@ enum ssb_pmu_ldo_volt_id {
+ void ssb_pmu_set_ldo_voltage(struct ssb_chipcommon *cc,
+ 			     enum ssb_pmu_ldo_volt_id id, u32 voltage);
+ void ssb_pmu_set_ldo_paref(struct ssb_chipcommon *cc, bool on);
++void ssb_pmu_spuravoid_pllupdate(struct ssb_chipcommon *cc, int spuravoid);
  
--	saved_nbytes = inode_get_bytes(inode);
- 	/* drop any overlapping extents */
- 	ret = btrfs_drop_extents(trans, inode, start, extent_end,
- 				 &alloc_hint, 1);
-@@ -636,7 +672,7 @@ static noinline int replay_one_extent(st
- 		BUG_ON(ret);
- 	}
- 
--	inode_set_bytes(inode, saved_nbytes);
-+	inode_add_bytes(inode, nbytes);
- 	btrfs_update_inode(trans, root, inode);
- out:
- 	if (inode)
+ #endif /* LINUX_SSB_CHIPCO_H_ */
 
 
