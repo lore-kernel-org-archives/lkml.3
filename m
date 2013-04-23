@@ -1,80 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932303Ab3DWQUf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 12:20:35 -0400
-Received: from mail-ia0-f173.google.com ([209.85.210.173]:47619 "EHLO
-	mail-ia0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756629Ab3DWQUe (ORCPT
+	id S932313Ab3DWQX5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 12:23:57 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:61698 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755699Ab3DWQXz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 12:20:34 -0400
+	Tue, 23 Apr 2013 12:23:55 -0400
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <CAG6tG3xc3RHD7sZXaEbg1vLRhFj+6d1wY=us4BfxBfi5y0o4zg@mail.gmail.com>
-References: <CAJsYZ5kk=J_Sc7w5dbMbkWWv8dXEU0ojKjEKNqH=Q6Tf2f7mQg@mail.gmail.com>
-	<20130422142218.GA26760@mwanda>
-	<CAG6tG3xc3RHD7sZXaEbg1vLRhFj+6d1wY=us4BfxBfi5y0o4zg@mail.gmail.com>
-Date: Tue, 23 Apr 2013 21:50:34 +0530
-Message-ID: <CAJsYZ5nQg9g73r5yLicq6gAGbKEXVAFqtF2av=heeNtrNSPSWg@mail.gmail.com>
-Subject: Re: [BUG] staging: android: ashmem: Deadlock during ashmem_shrink
-From: Shankar Brahadeeswaran <shankoo77@gmail.com>
-To: Robert Love <rlove@google.com>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Bjorn Bringert <bringert@google.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, devel@driverdev.osuosl.org,
-        Hugh Dickins <hughd@google.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Anjana V Kumar <anjanavk12@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+To: Tushar Behera <tushar.behera@linaro.org>,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <1366698711-15470-1-git-send-email-tushar.behera@linaro.org>
+Cc: dianders@chromium.org, kgene.kim@samsung.com, thomas.abraham@linaro.org,
+        olofj@chromium.org, patches@linaro.org
+References: <CAD=FV=UUg9Apb0o+zLdidDUmkLZt1phgo80bxug=o6JmANCPfw@mail.gmail.com>
+ <1366698711-15470-1-git-send-email-tushar.behera@linaro.org>
+Message-ID: <20130423162349.17530.35976@quantum>
+User-Agent: alot/0.3.4
+Subject: Re: [PATCH] clk: exynos5250: Fix parent clock for sclk_mmc{0,1,2,3}
+Date: Tue, 23 Apr 2013 09:23:49 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->ashmem originally did not support read or write operations, just mmap,
->which is all 99% of users want. The original concurrency model with
->per-mapping ashmem_mutex's works fine there.
+Quoting Tushar Behera (2013-04-22 23:31:51)
+> commit 688f7d8c9fef ("clk: exynos5250: Fix divider values for
+> sclk_mmc{0,1,2,3}") incorrectly sets the divider for sclk_mmc{0,1,2,3}
+> to fix the wrong clock value. Though this fixed issue with Arndale,
+> it created regressions for other boards like Snow.
+> 
+> On Exynos5250, sclk_mmc<n> is generated like below (as per the clock
+> names in drivers/clk/samsung/clk-exynos5250.c)
+> 
+> mout_group1_p ==> mout_mmc<n> ==>
+>                 div_mmc<n> ==> div_mmc_pre<n> => sclk_mmc<n>
+> 
+> Earlier div_mmc<n> was set as the parent for sclk_mmc<n>, hence
+> div_mmc_pre<n> was not getting referred in kernel code and depending
+> on its value set during preboot, sclk_mmc<n> value was different for
+> various boards.
+> 
+> Setting the correct clock generation path should fix the issues
+> reported in above referenced commit. The changes committed during the
+> earlier patch has also been reverted here.
+> 
+> Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
+> CC: Doug Anderson <dianders@chromium.org>
 
-The situation I'm reporting here does not involve read/write. This is
-to do with ashmem_mmap and ashmem_shrink.
-The following is the control flow that could lead to dead lock
- ashmem_mmap
-      |
-      ----> ashmem_mutex acquired
-      |
-      -----> shmem_file_setup
-                |
-                ------> several calls that leads to __alloc_pages
-                |     Now assuming that low memory condition is hit,
-we could enter into reclaim path
-                ..... ---------> shrink_slab (calls all the shrinker functions)
-                   |
-                    -----> ashmem_shrink --- Tries to acquire the same
-ashmem_mutex that is taken
-                              in this same path while in ashmem_mmap
-leading to dead lock.
+Change looks good to me.
 
-I'm unable to think of a straight forward way to fix this. If you have
-any suggestions please provide the same.
-If we are unable to solve this too with minor mods, as suggested by
-Dan we have to re-look at the locking in this driver.
+Regards,
+Mike
 
-Warm Regards,
-Shankar
-
-
-On Mon, Apr 22, 2013 at 8:13 PM, Robert Love <rlove@google.com> wrote:
-> On Mon, Apr 22, 2013 at 10:22 AM, Dan Carpenter
-> <dan.carpenter@oracle.com> wrote:
->> Read Al's email again:  https://lkml.org/lkml/2013/3/20/458
->>
->> I don't know much about VFS locking, but the ashmem locking seems
->> pretty bogus to me.  Why can't multiple threads read() at the same
->> time?
->
-> ashmem originally did not support read or write operations, just mmap,
-> which is all 99% of users want. The original concurrency model with
-> per-mapping ashmem_mutex's works fine there. It is only with the later
-> addition of read and write that locking becomes a cluster. If there
-> isn't an obvious way to refactor the locking, I'd suggest removing
-> read and write.
->
->        Robert
+> ---
+> Doug,
+> 
+> Would you please test whether this patch works for Snow?
+> 
+> 
+>  drivers/clk/samsung/clk-exynos5250.c |   16 ++++++++--------
+>  1 file changed, 8 insertions(+), 8 deletions(-)
+> 
+> diff --git a/drivers/clk/samsung/clk-exynos5250.c b/drivers/clk/samsung/clk-exynos5250.c
+> index 7290faa..bb54606 100644
+> --- a/drivers/clk/samsung/clk-exynos5250.c
+> +++ b/drivers/clk/samsung/clk-exynos5250.c
+> @@ -276,10 +276,10 @@ struct samsung_div_clock exynos5250_div_clks[] __initdata = {
+>         DIV(none, "div_pcm0", "sclk_audio0", DIV_MAU, 4, 8),
+>         DIV(none, "div_sata", "mout_sata", DIV_FSYS0, 20, 4),
+>         DIV(none, "div_usb3", "mout_usb3", DIV_FSYS0, 24, 4),
+> -       DIV(none, "div_mmc0", "mout_mmc0", DIV_FSYS1, 8, 8),
+> -       DIV(none, "div_mmc1", "mout_mmc1", DIV_FSYS1, 24, 8),
+> -       DIV(none, "div_mmc2", "mout_mmc2", DIV_FSYS2, 8, 8),
+> -       DIV(none, "div_mmc3", "mout_mmc3", DIV_FSYS2, 24, 8),
+> +       DIV(none, "div_mmc0", "mout_mmc0", DIV_FSYS1, 0, 4),
+> +       DIV(none, "div_mmc1", "mout_mmc1", DIV_FSYS1, 16, 4),
+> +       DIV(none, "div_mmc2", "mout_mmc2", DIV_FSYS2, 0, 4),
+> +       DIV(none, "div_mmc3", "mout_mmc3", DIV_FSYS2, 16, 4),
+>         DIV(none, "div_uart0", "mout_uart0", DIV_PERIC0, 0, 4),
+>         DIV(none, "div_uart1", "mout_uart1", DIV_PERIC0, 4, 4),
+>         DIV(none, "div_uart2", "mout_uart2", DIV_PERIC0, 8, 4),
+> @@ -421,13 +421,13 @@ struct samsung_gate_clock exynos5250_gate_clks[] __initdata = {
+>                         SRC_MASK_DISP1_0, 20, 0, 0),
+>         GATE(sclk_audio0, "sclk_audio0", "div_audio0",
+>                         SRC_MASK_MAU, 0, CLK_SET_RATE_PARENT, 0),
+> -       GATE(sclk_mmc0, "sclk_mmc0", "div_mmc0",
+> +       GATE(sclk_mmc0, "sclk_mmc0", "div_mmc_pre0",
+>                         SRC_MASK_FSYS, 0, CLK_SET_RATE_PARENT, 0),
+> -       GATE(sclk_mmc1, "sclk_mmc1", "div_mmc1",
+> +       GATE(sclk_mmc1, "sclk_mmc1", "div_mmc_pre1",
+>                         SRC_MASK_FSYS, 4, CLK_SET_RATE_PARENT, 0),
+> -       GATE(sclk_mmc2, "sclk_mmc2", "div_mmc2",
+> +       GATE(sclk_mmc2, "sclk_mmc2", "div_mmc_pre2",
+>                         SRC_MASK_FSYS, 8, CLK_SET_RATE_PARENT, 0),
+> -       GATE(sclk_mmc3, "sclk_mmc3", "div_mmc3",
+> +       GATE(sclk_mmc3, "sclk_mmc3", "div_mmc_pre3",
+>                         SRC_MASK_FSYS, 12, CLK_SET_RATE_PARENT, 0),
+>         GATE(sclk_sata, "sclk_sata", "div_sata",
+>                         SRC_MASK_FSYS, 24, CLK_SET_RATE_PARENT, 0),
+> -- 
+> 1.7.9.5
