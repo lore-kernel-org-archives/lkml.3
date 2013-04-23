@@ -1,86 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755236Ab3DWOKa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 10:10:30 -0400
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:13894 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754957Ab3DWOK3 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 10:10:29 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VS-3(zz98dI9371I542I1432Izz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275bhz2dh2a8h668h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ahbe9i1155h)
-From: Sethi Varun-B16395 <B16395@freescale.com>
-To: Joerg Roedel <joro@8bytes.org>
-CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "galak@kernel.crashing.org" <galak@kernel.crashing.org>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        Yoder Stuart-B08248 <B08248@freescale.com>,
-        Wood Scott-B07421 <B07421@freescale.com>
-Subject: RE: [PATCH 2/3 v14] iommu/fsl: Add additional iommu attributes
- required by the PAMU driver.
-Thread-Topic: [PATCH 2/3 v14] iommu/fsl: Add additional iommu attributes
- required by the PAMU driver.
-Thread-Index: AQHOP90uclGpGfD1QUaX06kTxa8S0pjjz/0AgAAHY6A=
-Date: Tue, 23 Apr 2013 14:10:25 +0000
-Message-ID: <C5ECD7A89D1DC44195F34B25E172658D4B4D9A@039-SN2MPN1-011.039d.mgd.msft.net>
-References: <1366691726-9023-1-git-send-email-Varun.Sethi@freescale.com>
- <1366691726-9023-2-git-send-email-Varun.Sethi@freescale.com>
- <20130423133837.GG17148@8bytes.org>
-In-Reply-To: <20130423133837.GG17148@8bytes.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.214.249.154]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755380Ab3DWOLG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 10:11:06 -0400
+Received: from www.linutronix.de ([62.245.132.108]:35016 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751806Ab3DWOLF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Apr 2013 10:11:05 -0400
+Date: Tue, 23 Apr 2013 16:10:22 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Borislav Petkov <bp@alien8.de>
+cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Takashi Iwai <tiwai@suse.de>, x86-ml <x86@kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>, Len Brown <lenb@kernel.org>
+Subject: Re: irq 16: nobody cared
+In-Reply-To: <20130422213303.GB4415@pd.tnic>
+Message-ID: <alpine.LFD.2.02.1304231524320.21884@ionos>
+References: <20130420185330.GA4654@pd.tnic> <20130420235206.GA3509@linux.vnet.ibm.com> <20130421103403.GA4594@pd.tnic> <20130421163002.GB3509@linux.vnet.ibm.com> <s5hfvyj55ke.wl%tiwai@suse.de> <20130422091310.GA4637@pd.tnic> <s5hzjwq53ec.wl%tiwai@suse.de>
+ <alpine.LFD.2.02.1304221432570.21884@ionos> <20130422142356.GA4658@pd.tnic> <20130422144402.GK3509@linux.vnet.ibm.com> <20130422213303.GB4415@pd.tnic>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 22 Apr 2013, Borislav Petkov wrote:
+> [ 1449.134864] ACPI: Preparing to enter system sleep state S5
+> [ 1449.141054] [Firmware Bug]: ACPI: BIOS _OSI(Linux) query ignored
 
+and right after that the spurious interrupt happens. I asked Boris to
+boot with acpi_osi=Linux on the command line and the issue went
+away, though now it complains right before shutdown about:
 
-> -----Original Message-----
-> From: Joerg Roedel [mailto:joro@8bytes.org]
-> Sent: Tuesday, April 23, 2013 7:09 PM
-> To: Sethi Varun-B16395
-> Cc: iommu@lists.linux-foundation.org; linuxppc-dev@lists.ozlabs.org;
-> linux-kernel@vger.kernel.org; galak@kernel.crashing.org;
-> benh@kernel.crashing.org; Yoder Stuart-B08248; Wood Scott-B07421
-> Subject: Re: [PATCH 2/3 v14] iommu/fsl: Add additional iommu attributes
-> required by the PAMU driver.
-> 
-> On Tue, Apr 23, 2013 at 10:05:25AM +0530, Varun Sethi wrote:
-> > Added the following domain attributes for the FSL PAMU driver:
-> > 1. Added new iommu stash attribute, which allows setting of the
-> >    LIODN specific stash id parameter through IOMMU API.
-> > 2. Added an attribute for enabling/disabling DMA to a particular
-> >    memory window.
-> > 3. Added domain attribute to check for PAMUV1 specific constraints.
-> >
-> > Signed-off-by: Varun Sethi <Varun.Sethi@freescale.com>
-> > ---
-> > v14 changes:
-> > - Add FSL prefix to PAMU attributes.
-> > v13 changes:
-> > - created a new file include/linux/fsl_pamu_stash.h for stash
-> > attributes.
-> > v12 changes:
-> > - Moved PAMU specifc stash ids and structures to PAMU header file.
-> > - no change in v11.
-> > - no change in v10.
-> >  include/linux/fsl_pamu_stash.h |   39
-> +++++++++++++++++++++++++++++++++++++++
-> 
-> Isn't asm/ for your architecture a better place for that header?
-> 
-I think it's fine to have the header under linux, actually I also the intel-iommu header under linux.
+[  123.142377] do_IRQ: 2.179 No irq handler for vector (irq -1)
 
--Varun
+I wouldn't be surprised if that vector 179 was previously used for
+irq16.
 
+Without acpi_osi=Linux the BIOS manages to put the hardware into a
+state which causes an interrupt to be sent from thin air.
 
+We should have an annual "Brain Is Obviously Superfluous" award.
+This one would be high up on the nomination list.
+
+Yours grumpy
+
+      tglx
