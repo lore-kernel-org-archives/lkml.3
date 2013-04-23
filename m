@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757582Ab3DWVxA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 17:53:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34087 "EHLO
+	id S932251Ab3DWVxO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 17:53:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34125 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757546Ab3DWVw6 (ORCPT
+	with ESMTP id S1757590Ab3DWVxD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 17:52:58 -0400
+	Tue, 23 Apr 2013 17:53:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Illia Ragozin <illia.ragozin@grapecom.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 23/42] ARM: 7696/1: Fix kexec by setting outer_cache.inv_all for Feroceon
-Date: Tue, 23 Apr 2013 14:52:21 -0700
-Message-Id: <20130423215207.877279488@linuxfoundation.org>
+        Tommi Rantala <tt.rantala@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@kernel.org>, davej@redhat.com
+Subject: [ 30/42] perf: Treat attr.config as u64 in perf_swevent_init()
+Date: Tue, 23 Apr 2013 14:52:28 -0700
+Message-Id: <20130423215208.562044183@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130423215205.523980967@linuxfoundation.org>
 References: <20130423215205.523980967@linuxfoundation.org>
@@ -28,39 +30,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Illia Ragozin <illia.ragozin@grapecom.com>
+From: Tommi Rantala <tt.rantala@gmail.com>
 
-commit cd272d1ea71583170e95dde02c76166c7f9017e6 upstream.
+commit 8176cced706b5e5d15887584150764894e94e02f upstream.
 
-On Feroceon the L2 cache becomes non-coherent with the CPU
-when the L1 caches are disabled. Thus the L2 needs to be invalidated
-after both L1 caches are disabled.
+Trinity discovered that we fail to check all 64 bits of
+attr.config passed by user space, resulting to out-of-bounds
+access of the perf_swevent_enabled array in
+sw_perf_event_destroy().
 
-On kexec before the starting the code for relocation the kernel,
-the L1 caches are disabled in cpu_froc_fin (cpu_v7_proc_fin for Feroceon),
-but after L2 cache is never invalidated, because inv_all is not set
-in cache-feroceon-l2.c.
-So kernel relocation and decompression may has (and usually has) errors.
-Setting the function enables L2 invalidation and fixes the issue.
+Introduced in commit b0a873ebb ("perf: Register PMU
+implementations").
 
-Signed-off-by: Illia Ragozin <illia.ragozin@grapecom.com>
-Acked-by: Jason Cooper <jason@lakedaemon.net>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Tommi Rantala <tt.rantala@gmail.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: davej@redhat.com
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Link: http://lkml.kernel.org/r/1365882554-30259-1-git-send-email-tt.rantala@gmail.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mm/cache-feroceon-l2.c |    1 +
- 1 file changed, 1 insertion(+)
+ kernel/events/core.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/arm/mm/cache-feroceon-l2.c
-+++ b/arch/arm/mm/cache-feroceon-l2.c
-@@ -343,6 +343,7 @@ void __init feroceon_l2_init(int __l2_wt
- 	outer_cache.inv_range = feroceon_l2_inv_range;
- 	outer_cache.clean_range = feroceon_l2_clean_range;
- 	outer_cache.flush_range = feroceon_l2_flush_range;
-+	outer_cache.inv_all = l2_inv_all;
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -5328,7 +5328,7 @@ static void sw_perf_event_destroy(struct
  
- 	enable_l2();
+ static int perf_swevent_init(struct perf_event *event)
+ {
+-	int event_id = event->attr.config;
++	u64 event_id = event->attr.config;
  
+ 	if (event->attr.type != PERF_TYPE_SOFTWARE)
+ 		return -ENOENT;
 
 
