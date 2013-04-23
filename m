@@ -1,124 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757174Ab3DWSGI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 14:06:08 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:35666 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757082Ab3DWSGG (ORCPT
+	id S1757133Ab3DWSJ3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 14:09:29 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:5668 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756825Ab3DWSJ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 14:06:06 -0400
+	Tue, 23 Apr 2013 14:09:28 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 23 Apr 2013 11:07:14 -0700
+From: Bibek Basu <bbasu@nvidia.com>
+To: <linus.walleij@linaro.org>, <swarren@wwwdotorg.org>
+CC: <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Pritesh Raithatha <praithatha@nvidia.com>,
+        Bibek Basu <bbasu@nvidia.com>
+Subject: [PATCH 1/2] pinctrl: tegra: add suspend-resume support
+Date: Tue, 23 Apr 2013 23:39:01 +0530
+Message-ID: <1366740542-26127-1-git-send-email-bbasu@nvidia.com>
+X-Mailer: git-send-email 1.8.1.5
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <1366738610.1802.9.camel@buesod1.americas.hpqcorp.net>
-References: <20130423122905.33ac0d3c@annuminas.surriel.com>
-	<1366738610.1802.9.camel@buesod1.americas.hpqcorp.net>
-Date: Tue, 23 Apr 2013 20:06:04 +0200
-Message-ID: <CA+icZUVw4HR8WT-9AmBMW0A9+iH04_ByZeuQo=TUqd9ZYNKhgQ@mail.gmail.com>
-Subject: Re: [PATCH -mm] ipc,sem: fix locking in semctl_main
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Davidlohr Bueso <davidlohr.bueso@hp.com>
-Cc: Rik van Riel <riel@redhat.com>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Emmanuel Benisty <benisty.e@gmail.com>
-Content-Type: multipart/mixed; boundary=f46d044286caea636e04db0b091b
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---f46d044286caea636e04db0b091b
-Content-Type: text/plain; charset=UTF-8
+From: Pritesh Raithatha <praithatha@nvidia.com>
 
-On Tue, Apr 23, 2013 at 7:36 PM, Davidlohr Bueso <davidlohr.bueso@hp.com> wrote:
-> On Tue, 2013-04-23 at 12:29 -0400, Rik van Riel wrote:
->> Andrew, here is the patch I promised :)
->>
->> Everywhere else in the code, we check sma->sem_perm.deleted under
->> the semaphore array lock, so we should do teh same here.
->> The easy fix is to simply not drop and re-take the lock, but keep
->> it locked.
->>
->
-> CCing Linus, Sedat and Emmanuel.
->
-> This looks very much like a patch I asked Sedat to test during the
-> weekend, which according to him didn't solve his issue. The patch is
-> correct in any case.
->
+This patch adds suspend and resume callbacks to the pinctrl-tegra driver.
 
-Your patch looked a bit different (checked for ipc-lock already taken,
-both patches - original and refreshed againt -next attached).
+Signed-off-by: Pritesh Raithatha <praithatha@nvidia.com>
+Signed-off-by: Bibek Basu <bbasu@nvidia.com>
+---
+ drivers/pinctrl/pinctrl-tegra.c    | 56 ++++++++++++++++++++++++++++++++++++--
+ drivers/pinctrl/pinctrl-tegra.h    |  3 +-
+ drivers/pinctrl/pinctrl-tegra114.c |  3 ++
+ drivers/pinctrl/pinctrl-tegra20.c  |  3 ++
+ drivers/pinctrl/pinctrl-tegra30.c  |  2 ++
+ 5 files changed, 64 insertions(+), 3 deletions(-)
 
-- Sedat -
+diff --git a/drivers/pinctrl/pinctrl-tegra.c b/drivers/pinctrl/pinctrl-tegra.c
+index f195d77..16ffd79 100644
+--- a/drivers/pinctrl/pinctrl-tegra.c
++++ b/drivers/pinctrl/pinctrl-tegra.c
+@@ -29,6 +29,7 @@
+ #include <linux/pinctrl/pinmux.h>
+ #include <linux/pinctrl/pinconf.h>
+ #include <linux/slab.h>
++#include <linux/pm.h>
+ 
+ #include "core.h"
+ #include "pinctrl-tegra.h"
+@@ -41,6 +42,8 @@ struct tegra_pmx {
+ 
+ 	int nbanks;
+ 	void __iomem **regs;
++	int *regs_size;
++	u32 *pg_data;
+ };
+ 
+ static inline u32 pmx_readl(struct tegra_pmx *pmx, u32 bank, u32 reg)
+@@ -701,12 +704,42 @@ static struct pinctrl_desc tegra_pinctrl_desc = {
+ 	.owner = THIS_MODULE,
+ };
+ 
++int pinctrl_suspend(struct device *dev)
++{
++	int i, j;
++	struct tegra_pmx *pmx = dev_get_drvdata(dev);
++	u32 *pg_data = pmx->pg_data;
++	u32 *regs;
++
++	for (i = 0; i < pmx->nbanks; i++) {
++		regs = pmx->regs[i];
++		for (j = 0; j < pmx->regs_size[i] / 4; j++)
++			*pg_data++ = readl(regs++);
++	}
++	return 0;
++}
++
++int pinctrl_resume(struct device *dev)
++{
++	int i, j;
++	struct tegra_pmx *pmx = dev_get_drvdata(dev);
++	u32 *pg_data = pmx->pg_data;
++	u32 *regs;
++
++	for (i = 0; i < pmx->nbanks; i++) {
++		regs = pmx->regs[i];
++		for (j = 0; j < pmx->regs_size[i] / 4; j++)
++			writel(*pg_data++, regs++);
++	}
++	return 0;
++}
++
+ int tegra_pinctrl_probe(struct platform_device *pdev,
+ 			const struct tegra_pinctrl_soc_data *soc_data)
+ {
+-	struct tegra_pmx *pmx;
+ 	struct resource *res;
+-	int i;
++	struct tegra_pmx *pmx;
++	int i, pg_data_size = 0;
+ 
+ 	pmx = devm_kzalloc(&pdev->dev, sizeof(*pmx), GFP_KERNEL);
+ 	if (!pmx) {
+@@ -725,6 +758,7 @@ int tegra_pinctrl_probe(struct platform_device *pdev,
+ 		res = platform_get_resource(pdev, IORESOURCE_MEM, i);
+ 		if (!res)
+ 			break;
++		pg_data_size += resource_size(res);
+ 	}
+ 	pmx->nbanks = i;
+ 
+@@ -735,6 +769,21 @@ int tegra_pinctrl_probe(struct platform_device *pdev,
+ 		return -ENODEV;
+ 	}
+ 
++if (IS_ENABLED(CONFIG_PM_SLEEP))
++	pmx->regs_size = devm_kzalloc(&pdev->dev,
++				pmx->nbanks * sizeof(*(pmx->regs_size)),
++				GFP_KERNEL);
++	if (!pmx->regs_size) {
++		dev_err(&pdev->dev, "Can't alloc regs pointer\n");
++		return -ENODEV;
++	}
++
++	pmx->pg_data = devm_kzalloc(&pdev->dev, pg_data_size, GFP_KERNEL);
++	if (!pmx->pg_data) {
++		dev_err(&pdev->dev, "Can't alloc pingroup data pointer\n");
++		return -ENODEV;
++	}
++
+ 	for (i = 0; i < pmx->nbanks; i++) {
+ 		res = platform_get_resource(pdev, IORESOURCE_MEM, i);
+ 		if (!res) {
+@@ -756,6 +805,9 @@ int tegra_pinctrl_probe(struct platform_device *pdev,
+ 			dev_err(&pdev->dev, "Couldn't ioremap regs %d\n", i);
+ 			return -ENODEV;
+ 		}
++
++if (IS_ENABLED(CONFIG_PM_SLEEP))
++		pmx->regs_size[i] = resource_size(res);
+ 	}
+ 
+ 	pmx->pctl = pinctrl_register(&tegra_pinctrl_desc, &pdev->dev, pmx);
+diff --git a/drivers/pinctrl/pinctrl-tegra.h b/drivers/pinctrl/pinctrl-tegra.h
+index 817f706..71616c7 100644
+--- a/drivers/pinctrl/pinctrl-tegra.h
++++ b/drivers/pinctrl/pinctrl-tegra.h
+@@ -202,5 +202,6 @@ struct tegra_pinctrl_soc_data {
+ int tegra_pinctrl_probe(struct platform_device *pdev,
+ 			const struct tegra_pinctrl_soc_data *soc_data);
+ int tegra_pinctrl_remove(struct platform_device *pdev);
+-
++int pinctrl_suspend(struct device *dev);
++int pinctrl_resume(struct device *dev);
+ #endif
+diff --git a/drivers/pinctrl/pinctrl-tegra114.c b/drivers/pinctrl/pinctrl-tegra114.c
+index 622c485..9641588 100644
+--- a/drivers/pinctrl/pinctrl-tegra114.c
++++ b/drivers/pinctrl/pinctrl-tegra114.c
+@@ -2752,10 +2752,13 @@ static struct of_device_id tegra114_pinctrl_of_match[] = {
+ };
+ MODULE_DEVICE_TABLE(of, tegra114_pinctrl_of_match);
+ 
++static SIMPLE_DEV_PM_OPS(pinctrl_dev_pm_ops, pinctrl_suspend, pinctrl_resume);
++
+ static struct platform_driver tegra114_pinctrl_driver = {
+ 	.driver = {
+ 		.name = "tegra114-pinctrl",
+ 		.owner = THIS_MODULE,
++		.pm = &pinctrl_dev_pm_ops,
+ 		.of_match_table = tegra114_pinctrl_of_match,
+ 	},
+ 	.probe = tegra114_pinctrl_probe,
+diff --git a/drivers/pinctrl/pinctrl-tegra20.c b/drivers/pinctrl/pinctrl-tegra20.c
+index fcfb7d0..ea45ad5 100644
+--- a/drivers/pinctrl/pinctrl-tegra20.c
++++ b/drivers/pinctrl/pinctrl-tegra20.c
+@@ -2872,10 +2872,13 @@ static struct of_device_id tegra20_pinctrl_of_match[] = {
+ 	{ },
+ };
+ 
++static SIMPLE_DEV_PM_OPS(pinctrl_dev_pm_ops, pinctrl_suspend, pinctrl_resume);
++
+ static struct platform_driver tegra20_pinctrl_driver = {
+ 	.driver = {
+ 		.name = "tegra20-pinctrl",
+ 		.owner = THIS_MODULE,
++		.pm = &pinctrl_dev_pm_ops,
+ 		.of_match_table = tegra20_pinctrl_of_match,
+ 	},
+ 	.probe = tegra20_pinctrl_probe,
+diff --git a/drivers/pinctrl/pinctrl-tegra30.c b/drivers/pinctrl/pinctrl-tegra30.c
+index 2300deb..11899d4 100644
+--- a/drivers/pinctrl/pinctrl-tegra30.c
++++ b/drivers/pinctrl/pinctrl-tegra30.c
+@@ -3736,6 +3736,8 @@ static struct of_device_id tegra30_pinctrl_of_match[] = {
+ 	{ },
+ };
+ 
++static SIMPLE_DEV_PM_OPS(pinctrl_dev_pm_ops, pinctrl_suspend, pinctrl_resume);
++
+ static struct platform_driver tegra30_pinctrl_driver = {
+ 	.driver = {
+ 		.name = "tegra30-pinctrl",
+-- 
+1.8.1.5
 
->> This patch can be folded into ipcsem-fine-grained-locking-for-semtimedop.patch
->>
->> Signed-off-by: Rik van Riel <riel@redhat.com>
->
-> Acked-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
->
->> ---
->>  ipc/sem.c | 5 ++---
->>  1 file changed, 2 insertions(+), 3 deletions(-)
->>
->> diff --git a/ipc/sem.c b/ipc/sem.c
->> index 5711616..efdaee6 100644
->> --- a/ipc/sem.c
->> +++ b/ipc/sem.c
->> @@ -1243,10 +1243,9 @@ static int semctl_main(struct ipc_namespace *ns, int semid, int semnum,
->>                               err = -EIDRM;
->>                               goto out_free;
->>                       }
->> -                     sem_unlock(sma, -1);
->> -             }
->> +             } else
->> +                     sem_lock(sma, NULL, -1);
->>
->> -             sem_lock(sma, NULL, -1);
->>               for (i = 0; i < sma->sem_nsems; i++)
->>                       sem_io[i] = sma->sem_base[i].semval;
->>               sem_unlock(sma, -1);
->
->
-
---f46d044286caea636e04db0b091b
-Content-Type: application/octet-stream; name="ipc-fix.patch"
-Content-Disposition: attachment; filename="ipc-fix.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hfvdwz950
-
-RnJvbTogRGF2aWRsb2hyIEJ1ZXNvIDxkYXZpZGxvaHIuYnVlc29AaHAuY29tPiANCg0KU3ViamVj
-dDogaXBjOiBzZW06IENoZWNrIGlmIHRoZSBpcGMgbG9jayBoYXMgYmVlbiBhbHJlYWR5IHRha2Vu
-DQoNCk9yaWdpbmFsIHBhdGNoIGZyb20gWzFdLg0KDQpbMV0gaHR0cDovL21hcmMuaW5mby8/dD0x
-MzY2MzE0NTc5MDAwMDUmcj0xJnc9Mg0KDQpkaWZmIC0tZ2l0IGEvaXBjL3NlbS5jIGIvaXBjL3Nl
-bS5jDQppbmRleCA1NzExNjE2Li4xZGZjM2MxIDEwMDY0NA0KLS0tIGEvaXBjL3NlbS5jDQorKysg
-Yi9pcGMvc2VtLmMNCkBAIC0xMjQzLDEwICsxMjQzLDExIEBAIHN0YXRpYyBpbnQgc2VtY3RsX21h
-aW4oc3RydWN0IGlwY19uYW1lc3BhY2UgKm5zLCBpbnQgc2VtaWQsIGludCBzZW1udW0sDQogCQkJ
-CWVyciA9IC1FSURSTTsNCiAJCQkJZ290byBvdXRfZnJlZTsNCiAJCQl9DQotCQkJc2VtX3VubG9j
-ayhzbWEsIC0xKTsNCiAJCX0NCiANCi0JCXNlbV9sb2NrKHNtYSwgTlVMTCwgLTEpOw0KKwkJLyog
-aGFzIHRoZSBpcGMgbG9jayBhbHJlYWR5IGJlZW4gdGFrZW4/ICovDQorCQlpZihuc2VtcyA8PSBT
-RU1NU0xfRkFTVCkNCisJCQlzZW1fbG9jayhzbWEsIE5VTEwsIC0xKTsNCiAJCWZvciAoaSA9IDA7
-IGkgPCBzbWEtPnNlbV9uc2VtczsgaSsrKQ0KIAkJCXNlbV9pb1tpXSA9IHNtYS0+c2VtX2Jhc2Vb
-aV0uc2VtdmFsOw0KIAkJc2VtX3VubG9jayhzbWEsIC0xKTsNCg==
---f46d044286caea636e04db0b091b
-Content-Type: application/octet-stream; name="ipc-fix-v2.patch"
-Content-Disposition: attachment; filename="ipc-fix-v2.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hfvdx1hx1
-
-RnJvbTogRGF2aWRsb2hyIEJ1ZXNvIDxkYXZpZGxvaHIuYnVlc29AaHAuY29tPiAKClN1YmplY3Q6
-IGlwYywgc2VtOiBDaGVjayBpZiB0aGUgaXBjIGxvY2sgaGFzIGJlZW4gYWxyZWFkeSB0YWtlbgoK
-T3JpZ2luYWwgcGF0Y2ggZnJvbSBbMV0uCgpbIGRpbGVrczogdjI6IEFkYXB0ZWQgdG8gZml0IG5l
-eHQtMjAxMzA0MTkgcGx1cyAzIGlwYy1zZW0tbmV4dCBwYXRjaGVzIGZyb20gWzJdIF0KClsxXSBo
-dHRwOi8vbWFyYy5pbmZvLz90PTEzNjYzMTQ1NzkwMDAwNSZyPTEmdz0yClsyXSBodHRwOi8vbWFy
-Yy5pbmZvLz9sPWxpbnV4LW5leHQmbT0xMzY2NDAyMzM2MDE5MTMmdz0yCgpkaWZmIC0tZ2l0IGEv
-aXBjL3NlbS5jIGIvaXBjL3NlbS5jCmluZGV4IGFjYWRhOWYuLmQ5MGRhNDcgMTAwNjQ0Ci0tLSBh
-L2lwYy9zZW0uYworKysgYi9pcGMvc2VtLmMKQEAgLTEyNTksMTAgKzEyNTksMTEgQEAgc3RhdGlj
-IGludCBzZW1jdGxfbWFpbihzdHJ1Y3QgaXBjX25hbWVzcGFjZSAqbnMsIGludCBzZW1pZCwgaW50
-IHNlbW51bSwKIAkJCQllcnIgPSAtRUlEUk07CiAJCQkJZ290byBvdXRfZnJlZTsKIAkJCX0KLQkJ
-CXNlbV91bmxvY2soc21hLCAtMSk7CiAJCX0KIAotCQlzZW1fbG9jayhzbWEsIE5VTEwsIC0xKTsK
-KwkJLyogaGFzIHRoZSBpcGMgbG9jayBhbHJlYWR5IGJlZW4gdGFrZW4/ICovCisJCWlmIChuc2Vt
-cyA8PSBTRU1NU0xfRkFTVCkKKwkJCXNlbV9sb2NrKHNtYSwgTlVMTCwgLTEpOwogCQlmb3IgKGkg
-PSAwOyBpIDwgc21hLT5zZW1fbnNlbXM7IGkrKykKIAkJCXNlbV9pb1tpXSA9IHNtYS0+c2VtX2Jh
-c2VbaV0uc2VtdmFsOwogCQlzZW1fdW5sb2NrKHNtYSwgLTEpOwo=
---f46d044286caea636e04db0b091b--
