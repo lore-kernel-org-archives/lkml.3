@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756827Ab3DWWNX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 18:13:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34129 "EHLO
+	id S1756911Ab3DWWNn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 18:13:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34095 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754662Ab3DWVxE (ORCPT
+	with ESMTP id S1757567Ab3DWVxA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 17:53:04 -0400
+	Tue, 23 Apr 2013 17:53:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Libin <huawei.libin@huawei.com>, jiang.liu@huawei.com,
-        guohanjun@huawei.com, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Jonghwan Choi <jhbird.choi@samsung.com>
-Subject: [ 22/42] sched/debug: Fix sd->*_idx limit range avoiding overflow
-Date: Tue, 23 Apr 2013 14:52:20 -0700
-Message-Id: <20130423215207.778285571@linuxfoundation.org>
+        Felix Fietkau <nbd@openwrt.org>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 25/42] ath9k_htc: accept 1.x firmware newer than 1.3
+Date: Tue, 23 Apr 2013 14:52:23 -0700
+Message-Id: <20130423215208.080608529@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130423215205.523980967@linuxfoundation.org>
 References: <20130423215205.523980967@linuxfoundation.org>
@@ -29,40 +27,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: libin <huawei.libin@huawei.com>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit fd9b86d37a600488dbd80fe60cca46b822bff1cd upstream.
+commit 319e7bd96aca64a478f3aad40711c928405b8b77 upstream.
 
-Commit 201c373e8e ("sched/debug: Limit sd->*_idx range on
-sysctl") was an incomplete bug fix.
+Since the firmware has been open sourced, the minor version has been
+bumped to 1.4 and the API/ABI will stay compatible across further 1.x
+releases.
 
-This patch fixes sd->*_idx limit range to [0 ~ CPU_LOAD_IDX_MAX-1]
-avoiding array overflow caused by setting sd->*_idx to CPU_LOAD_IDX_MAX
-on sysctl.
-
-Signed-off-by: Libin <huawei.libin@huawei.com>
-Cc: <jiang.liu@huawei.com>
-Cc: <guohanjun@huawei.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/51626610.2040607@huawei.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/sched/core.c |    2 +-
+ drivers/net/wireless/ath/ath9k/htc_drv_init.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -4950,7 +4950,7 @@ static void sd_free_ctl_entry(struct ctl
- }
- 
- static int min_load_idx = 0;
--static int max_load_idx = CPU_LOAD_IDX_MAX;
-+static int max_load_idx = CPU_LOAD_IDX_MAX-1;
- 
- static void
- set_table_entry(struct ctl_table *entry,
+--- a/drivers/net/wireless/ath/ath9k/htc_drv_init.c
++++ b/drivers/net/wireless/ath/ath9k/htc_drv_init.c
+@@ -796,7 +796,7 @@ static int ath9k_init_firmware_version(s
+ 	 * required version.
+ 	 */
+ 	if (priv->fw_version_major != MAJOR_VERSION_REQ ||
+-	    priv->fw_version_minor != MINOR_VERSION_REQ) {
++	    priv->fw_version_minor < MINOR_VERSION_REQ) {
+ 		dev_err(priv->dev, "ath9k_htc: Please upgrade to FW version %d.%d\n",
+ 			MAJOR_VERSION_REQ, MINOR_VERSION_REQ);
+ 		return -EINVAL;
 
 
