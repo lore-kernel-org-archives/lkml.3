@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756590Ab3DWPFx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 11:05:53 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:52527 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756210Ab3DWPDr (ORCPT
+	id S932086Ab3DWPG3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 11:06:29 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:53029 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756127Ab3DWPDk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 11:03:47 -0400
+	Tue, 23 Apr 2013 11:03:40 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: arnd@arndb.de, linus.walleij@stericsson.com,
         mian.yousaf.kaukab@stericsson.com, Lee Jones <lee.jones@linaro.org>,
         Felipe Balbi <balbi@ti.com>, linux-usb@vger.kernel.org
-Subject: [PATCH 05/10] usb: musb: ux500: attempt to find channels by name before using pdata
-Date: Tue, 23 Apr 2013 16:03:09 +0100
-Message-Id: <1366729394-11406-6-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 02/10] usb: musb: ux500: move the MUSB HDRC configuration into the driver
+Date: Tue, 23 Apr 2013 16:03:06 +0100
+Message-Id: <1366729394-11406-3-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1366729394-11406-1-git-send-email-lee.jones@linaro.org>
 References: <1366729394-11406-1-git-send-email-lee.jones@linaro.org>
@@ -22,77 +22,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we can ever get to a state where we can solely search for DMA channels
-by name, this will almost completely alleviate the requirement to pass
-copious amounts of information though platform data. Here we take the
-first step towards this. The next step will be to enable Device Tree
-complete with name<->event_line mapping.
+The MUSB HDRC configuration never changes between each of the ux500
+supported platforms, so there's little point passing it though platform
+data. If we set it in the driver instead, we can make good use of it
+when booting with either ATAGs or Device Tree.
 
 Cc: Felipe Balbi <balbi@ti.com>
 Cc: linux-usb@vger.kernel.org
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/usb/musb/ux500_dma.c |   20 +++++++++++++++++---
- 1 file changed, 17 insertions(+), 3 deletions(-)
+ arch/arm/mach-ux500/usb.c |    8 --------
+ drivers/usb/musb/ux500.c  |    8 ++++++++
+ 2 files changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/usb/musb/ux500_dma.c b/drivers/usb/musb/ux500_dma.c
-index 02b4a6e..6eef449 100644
---- a/drivers/usb/musb/ux500_dma.c
-+++ b/drivers/usb/musb/ux500_dma.c
-@@ -33,6 +33,11 @@
- #include <linux/platform_data/usb-musb-ux500.h>
+diff --git a/arch/arm/mach-ux500/usb.c b/arch/arm/mach-ux500/usb.c
+index 8aff9a4..4f68a9c 100644
+--- a/arch/arm/mach-ux500/usb.c
++++ b/arch/arm/mach-ux500/usb.c
+@@ -76,16 +76,8 @@ static struct ux500_musb_board_data musb_board_data = {
+ 
+ static u64 ux500_musb_dmamask = DMA_BIT_MASK(32);
+ 
+-static struct musb_hdrc_config musb_hdrc_config = {
+-	.multipoint	= true,
+-	.dyn_fifo	= true,
+-	.num_eps	= 16,
+-	.ram_bits	= 16,
+-};
+-
+ static struct musb_hdrc_platform_data musb_platform_data = {
+ 	.mode = MUSB_OTG,
+-	.config = &musb_hdrc_config,
+ 	.board_data = &musb_board_data,
+ };
+ 
+diff --git a/drivers/usb/musb/ux500.c b/drivers/usb/musb/ux500.c
+index 13a3929..4a8f5c9 100644
+--- a/drivers/usb/musb/ux500.c
++++ b/drivers/usb/musb/ux500.c
+@@ -29,6 +29,13 @@
+ 
  #include "musb_core.h"
  
-+static const char *iep_chan_names[] = { "iep_1_9", "iep_2_10", "iep_3_11", "iep_4_12",
-+					"iep_5_13", "iep_6_14", "iep_7_15", "iep_8" };
-+static const char *oep_chan_names[] = { "oep_1_9", "oep_2_10", "oep_3_11", "oep_4_12",
-+					"oep_5_13", "oep_6_14", "oep_7_15", "oep_8" };
++static struct musb_hdrc_config ux500_musb_hdrc_config = {
++	.multipoint	= true,
++	.dyn_fifo	= true,
++	.num_eps	= 16,
++	.ram_bits	= 16,
++};
 +
- struct ux500_dma_channel {
- 	struct dma_channel channel;
- 	struct ux500_dma_controller *controller;
-@@ -289,6 +294,7 @@ static int ux500_dma_controller_start(struct dma_controller *c)
- 	struct musb_hdrc_platform_data *plat = dev->platform_data;
- 	struct ux500_musb_board_data *data;
- 	struct dma_channel *dma_channel = NULL;
-+	char **chan_names;
- 	u32 ch_num;
- 	u8 dir;
- 	u8 is_tx = 0;
-@@ -310,6 +316,7 @@ static int ux500_dma_controller_start(struct dma_controller *c)
- 	/* Prepare the loop for RX channels */
- 	channel_array = controller->rx_channel;
- 	param_array = (data) ? data->dma_rx_param_array : NULL;
-+	chan_names = (char **)iep_chan_names;
+ struct ux500_glue {
+ 	struct device		*dev;
+ 	struct platform_device	*musb;
+@@ -123,6 +130,7 @@ static int ux500_probe(struct platform_device *pdev)
+ 	glue->clk			= clk;
  
- 	for (dir = 0; dir < 2; dir++) {
- 		for (ch_num = 0;
-@@ -325,9 +332,15 @@ static int ux500_dma_controller_start(struct dma_controller *c)
- 			dma_channel->status = MUSB_DMA_STATUS_FREE;
- 			dma_channel->max_len = SZ_16M;
+ 	pdata->platform_ops		= &ux500_ops;
++	pdata->config 			= &ux500_musb_hdrc_config;
  
--			ux500_channel->dma_chan = dma_request_channel(mask,
--							data->dma_filter,
--							param_array[ch_num]);
-+			ux500_channel->dma_chan =
-+				dma_request_slave_channel(dev, chan_names[ch_num]);
-+
-+			if (!ux500_channel->dma_chan)
-+				ux500_channel->dma_chan =
-+					dma_request_channel(mask,
-+							    data->dma_filter,
-+							    param_array[ch_num]);
-+
- 			if (!ux500_channel->dma_chan) {
- 				ERR("Dma pipe allocation error dir=%d ch=%d\n",
- 					dir, ch_num);
-@@ -343,6 +356,7 @@ static int ux500_dma_controller_start(struct dma_controller *c)
- 		/* Prepare the loop for TX channels */
- 		channel_array = controller->tx_channel;
- 		param_array = (data) ? data->dma_tx_param_array : NULL;
-+		chan_names = (char **)oep_chan_names;
- 		is_tx = 1;
- 	}
+ 	platform_set_drvdata(pdev, glue);
  
 -- 
 1.7.10.4
