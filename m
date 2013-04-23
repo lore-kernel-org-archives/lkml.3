@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932481Ab3DWV4i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 17:56:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34351 "EHLO
+	id S932631Ab3DWV4x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 17:56:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34415 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932455Ab3DWV4g (ORCPT
+	with ESMTP id S932574Ab3DWV4r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 17:56:36 -0400
+	Tue, 23 Apr 2013 17:56:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andrew Honig <ahonig@google.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [ 07/23] KVM: x86: fix for buffer overflow in handling of MSR_KVM_SYSTEM_TIME (CVE-2013-1796)
-Date: Tue, 23 Apr 2013 14:56:14 -0700
-Message-Id: <20130423215457.061810094@linuxfoundation.org>
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 21/23] vm: convert HPET mmap to vm_iomap_memory() helper
+Date: Tue, 23 Apr 2013 14:56:28 -0700
+Message-Id: <20130423215458.464671180@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130423215456.307216898@linuxfoundation.org>
 References: <20130423215456.307216898@linuxfoundation.org>
@@ -28,42 +26,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Honig <ahonig@google.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit c300aa64ddf57d9c5d9c898a64b36877345dd4a9 upstream.
+commit 2323036dfec8ce3ce6e1c86a49a31b039f3300d1 upstream.
 
-If the guest sets the GPA of the time_page so that the request to update the
-time straddles a page then KVM will write onto an incorrect page.  The
-write is done byusing kmap atomic to get a pointer to the page for the time
-structure and then performing a memcpy to that page starting at an offset
-that the guest controls.  Well behaved guests always provide a 32-byte aligned
-address, however a malicious guest could use this to corrupt host kernel
-memory.
+This is my example conversion of a few existing mmap users.  The HPET
+case is simple, widely available, and easy to test (Clemens Ladisch sent
+a trivial test-program for it).
 
-Tested: Tested against kvmclock unit test.
-
-Signed-off-by: Andrew Honig <ahonig@google.com>
-Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: Ben Hutchings <ben@decadent.org.uk>
+Test-program-by: Clemens Ladisch <clemens@ladisch.de>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kvm/x86.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/char/hpet.c |   14 +-------------
+ 1 file changed, 1 insertion(+), 13 deletions(-)
 
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -1539,6 +1539,11 @@ int kvm_set_msr_common(struct kvm_vcpu *
- 		/* ...but clean it before doing the actual write */
- 		vcpu->arch.time_offset = data & ~(PAGE_MASK | 1);
+--- a/drivers/char/hpet.c
++++ b/drivers/char/hpet.c
+@@ -374,26 +374,14 @@ static int hpet_mmap(struct file *file,
+ 	struct hpet_dev *devp;
+ 	unsigned long addr;
  
-+		/* Check that the address is 32-byte aligned. */
-+		if (vcpu->arch.time_offset &
-+				(sizeof(struct pvclock_vcpu_time_info) - 1))
-+			break;
-+
- 		vcpu->arch.time_page =
- 				gfn_to_page(vcpu->kvm, data >> PAGE_SHIFT);
+-	if (((vma->vm_end - vma->vm_start) != PAGE_SIZE) || vma->vm_pgoff)
+-		return -EINVAL;
+-
+ 	devp = file->private_data;
+ 	addr = devp->hd_hpets->hp_hpet_phys;
  
+ 	if (addr & (PAGE_SIZE - 1))
+ 		return -ENOSYS;
+ 
+-	vma->vm_flags |= VM_IO;
+ 	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
+-
+-	if (io_remap_pfn_range(vma, vma->vm_start, addr >> PAGE_SHIFT,
+-					PAGE_SIZE, vma->vm_page_prot)) {
+-		printk(KERN_ERR "%s: io_remap_pfn_range failed\n",
+-			__func__);
+-		return -EAGAIN;
+-	}
+-
+-	return 0;
++	return vm_iomap_memory(vma, addr, PAGE_SIZE);
+ #else
+ 	return -ENOSYS;
+ #endif
 
 
