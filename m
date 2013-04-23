@@ -1,98 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756711Ab3DWPS5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 11:18:57 -0400
-Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:5278
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756315Ab3DWPS4 (ORCPT
+	id S1756495Ab3DWPVM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 11:21:12 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:52294 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755589Ab3DWPVL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 11:18:56 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VPS-2(zz98dI1432Izz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzzz2dh668h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1155h)
-X-WSS-ID: 0MLPRVC-02-42I-02
-X-M-MSG: 
-Date: Tue, 23 Apr 2013 10:18:46 -0500
-From: Jacob Shin <jacob.shin@amd.com>
-To: Will Deacon <will.deacon@arm.com>
-CC: Ingo Molnar <mingo@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "x86@kernel.org" <x86@kernel.org>,
-        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V2 1/4] perf: Add hardware breakpoint address mask
-Message-ID: <20130423151846.GA22052@jshin-Toonie>
-References: <1366703825-19373-1-git-send-email-jacob.shin@amd.com>
- <1366703825-19373-2-git-send-email-jacob.shin@amd.com>
- <20130423095437.GD17593@mudshark.cambridge.arm.com>
- <20130423143423.GB17021@jshin-Toonie>
- <20130423144057.GA19644@jshin-Toonie>
- <20130423150240.GD18616@mudshark.cambridge.arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20130423150240.GD18616@mudshark.cambridge.arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+	Tue, 23 Apr 2013 11:21:11 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: linux-scsi@vger.kernel.org
+Cc: Neil Horman <nhorman@tuxdriver.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] libcxgbi: supress warning when we request to much space from kmalloc
+Date: Tue, 23 Apr 2013 11:20:47 -0400
+Message-Id: <1366730447-32428-1-git-send-email-nhorman@tuxdriver.com>
+X-Mailer: git-send-email 1.8.1.4
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 23, 2013 at 04:02:40PM +0100, Will Deacon wrote:
-> On Tue, Apr 23, 2013 at 03:40:57PM +0100, Jacob Shin wrote:
-> > On Tue, Apr 23, 2013 at 09:34:23AM -0500, Jacob Shin wrote:
-> > > On Tue, Apr 23, 2013 at 10:54:37AM +0100, Will Deacon wrote:
-> > > > Can you see a problem if I simply invert the mask?
-> > > 
-> > > That's great! No, I don't see a problem at all.
-> 
-> Great! The GDB folks have been asking for this, so I can finally make them
-> go away now :)
-> 
-> > > I guess now it can be debated if the mask coming in from userland should
-> > > be include or exclude mask. But I think exclude makes syntax easier:
-> > > 
-> > > To count writes to [0x1000 ~ 0x1010)
-> > > 
-> > > Include mask (my current patchset):
-> >   ^^^^^^^
-> >   Exclude (I mean ..)
-> > > 
-> > >   perf stat -e mem:0x1000/0xf:w a.out
-> 
-> Are you saying that this command would count any write to:
-> 
-> 	0x1000
-> 	0x1001
-> 	...
-> 	0x100e
-> 	0x100f
-> 
-> ?
-> 
-> If so, that differs from the ARM debug architecture in that the mask is called
-> `byte-address-select', so a mask of 0b1001 would count accesses at +0 bytes
-> and +3 bytes from the base address. Is that possible to describe with your
-> masking scheme and a single watchpoint?
-> 
-> A mask of 0xf, would count +0, +1, +2 and +3 (essentially bp_len == 4).
-> 
-> Unfortunately, that means I can't just invert the mask like I originally
-> thought.
+cxgbi_alloc_big_mem allocates large chunks of memory, and can occasionally
+request amounts from kmalloc that exceed the allocators capacity.  This
+typically leads to a stack trace from the zoned buddy allocator in the message
+log.  But if kmalloc fails, cxgbi_alloc_big_mem backs off and uses vmalloc
+instead.  Given that, and the fact that the two calls sites have their own error
+messages if both kmalloc and vmalloc fail, I think the stack trace printing
+isn't really needed.
 
-Ah, .. that is different .
+Modify the call to kmalloc to pass __GFP_NOWARN in as well, so that internal
+kmalloc warnings are suppressed.
 
-Our hardware matches on the breakpoint if:
+Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+Reported-by: Honggang LI <honli@redhat.com>
+CC: "James E.J. Bottomley" <JBottomley@parallels.com>
+CC: linux-kernel@vger.kernel.org
+---
+ drivers/scsi/cxgbi/libcxgbi.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-  (physical_address & ~bp_addr_mask) == (bp_addr & ~bp_addr_mask)
-
-In other words, the mask says which of the bp_addr bits hardware should
-ignore when matching.
-
-.. it would be great if we can come up with userland interface that works
-for both archs. I'm coming up empty at the moment ..
-
+diff --git a/drivers/scsi/cxgbi/libcxgbi.h b/drivers/scsi/cxgbi/libcxgbi.h
+index 80fa99b..3daf996 100644
+--- a/drivers/scsi/cxgbi/libcxgbi.h
++++ b/drivers/scsi/cxgbi/libcxgbi.h
+@@ -658,7 +658,7 @@ static inline u32 cxgbi_tag_nonrsvd_bits(struct cxgbi_tag_format *tformat,
+ static inline void *cxgbi_alloc_big_mem(unsigned int size,
+ 					gfp_t gfp)
+ {
+-	void *p = kmalloc(size, gfp);
++	void *p = kmalloc(size, gfp | __GFP_NOWARN);
+ 	if (!p)
+ 		p = vmalloc(size);
+ 	if (p)
+-- 
+1.8.1.4
 
