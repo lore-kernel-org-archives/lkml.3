@@ -1,84 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932666Ab3DWV5e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 17:57:34 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:43362 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932579Ab3DWV4t (ORCPT
+	id S932642Ab3DWV5d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 17:57:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34425 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932584Ab3DWV4t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 23 Apr 2013 17:56:49 -0400
-X-AuditID: cbfee690-b7f3c6d000001ab5-42-51770398698c
-Date: Tue, 23 Apr 2013 21:56:40 +0000 (GMT)
-From: EUNBONG SONG <eunb.song@samsung.com>
-Subject: Re: Re: Re: Re: [PATCH]  I2C: Change the value of octeon i2c adapter
- timeout value
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Reply-to: eunb.song@samsung.com
-MIME-version: 1.0
-X-MTR: 20130423215111433@eunb.song
-Msgkey: 20130423215111433@eunb.song
-X-EPLocale: ko_KR.euc-kr
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 20130423215111433@eunb.song
-X-ParentMTR: 
-X-ArchiveUser: 
-X-CPGSPASS: N
-Content-type: text/plain; charset=euc-kr
-MIME-version: 1.0
-Message-id: <30335978.78541366754199782.JavaMail.weblogic@epml20>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplleLIzCtJLcpLzFFi42I5/e+Zlu4M5vJAg4k/rSwu75rD5sDo8XmT
-	XABjFJdNSmpOZllqkb5dAlfG5kNtLAVvWCr+zWpnamC8wdLFyMkhJKAi0fL/OyOILSFgInH0
-	8VFmCFtM4sK99WxdjFxANcsYJbbv7mSGKfr04gMLRGI+o8SGexfBEiwCqhIb525iBbHZBLQl
-	3n55AGYLC0RLHDraBLZNREBN4tDtXiYQm1mgRuLy9uuMEFfIS0w+fZkdxOYVEJQ4OfMJC8Qy
-	JYl7V0DmcwDFlSU2LvCGCEtIzJp+gRXC5pWY0f4UqlxOYtrXNVB3Skucn7WBEeaZxd8fQ8X5
-	JY7d3sEEMhKk98n9YJgxuzd/YYOwBSSmnjkI1aoucenCJ6g4n8SahW9ZYMbsOrWcGab3/pa5
-	UF8pSkzpfsgOYWtJfPmxjw3VVyCfOEo8X2c3gVF5FpLMLCTds5B0I6tZwMiyilE0tSC5oDgp
-	vchErzgxt7g0L10vOT93EyMkKUzYwXjvgPUhxmRghExklhJNzgcmlbySeENjMyMLUxNTYyNz
-	SzPShJXEedVbrAOFBNITS1KzU1MLUovii0pzUosPMTJxcEo1ME6SrFR6/XTdguI1sleP3b9R
-	+GJh9srGCBl3H4dFsj7x/Uu6jzGGKi3rviYW+zAzfeuG+K8GpXLS9+dOPa5k08Yvx2ahrFH8
-	7/T5d6cNZTd8s7Of+Scg4ojX7tNxUV5ivre79x0wWZfyrG11knGm23bRyYVidaydPKoeS+K6
-	VsTrSDG0OyzepsRSnJFoqMVcVJwIAF0QW30gAwAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgk+LIzCtJLcpLzFFi42I5/e/2TN0ZzOWBBudnWlhc3jWHzYHR4/Mm
-	uQDGqAybjNTElNQihdS85PyUzLx0WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKCh
-	SgpliTmlQKGAxOJiJX07m6L80pJUhYz84hJbpWgjA2M9I1MTPSNjAz0Tg1grQwMDI1OgqoSM
-	jM2H2lgK3rBU/JvVztTAeIOli5GTQ0hARaLl/3dGEFtCwETi04sPLBC2mMSFe+vZuhi5gGrm
-	M0psuHeRGSTBIqAqsXHuJlYQm01AW+LtlwdgtrBAtMSho01gzSICahKHbvcygdjMAjUSl7df
-	Z4RYJi8x+fRldhCbV0BQ4uTMJ1DLlCTuXQGZzwEUV5bYuMAbIiwhMWv6BVYIm1diRvtTqHI5
-	iWlf1zBD2NIS52dtYIS5efH3x1Bxfoljt3cwgYwE6X1yPxhmzO7NX9ggbAGJqWcOQrWqS1y6
-	8AkqziexZuFbFpgxu04tZ4bpvb9lLtRXihJTuh+yQ9haEl9+7GND9RXIJ44Sz9fZTWCUm4Uk
-	MwtJ9ywk3chqFjCyrGIUTS1ILihOSq8w0StOzC0uzUvXS87P3cQITk/PluxgbLhgfYhRgINR
-	iYfXYW5ZoBBrYllxZe4hRgkOZiUR3hiG8kAh3pTEyqrUovz4otKc1OJDjMnA6JvILCWanA9M
-	nXkl8YbGBsaGhpbmBqaGRhakCSuJ8z5rtQ4UEkhPLEnNTk0tSC2C2cLEwSnVwGinx2j/Myfs
-	17yK55tCDqrN1FRtu/VwC9ukw/f3sn+feKN4l9rhKUHnhQ5c+HfX+Giaz0f9t3cYQyT03Dxu
-	rro1VfJtQOjHvllXfs2bnzpzxTvOA7KV78OampapewjqPP3OV6Muv4RvzwTu3M1JIdfiTntZ
-	m9d065iuWhO0lOm9fG1vYe/+FbFKLMUZiYZazEXFiQAbWt3AkwMAAA==
-DLP-Filter: Pass
-X-CFilter-Loop: Reflected
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 20/23] vm: convert fb_mmap to vm_iomap_memory() helper
+Date: Tue, 23 Apr 2013 14:56:27 -0700
+Message-Id: <20130423215458.365182393@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130423215456.307216898@linuxfoundation.org>
+References: <20130423215456.307216898@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r3NLvfMJ016306
+
+3.0-stable review patch.  If anyone has any objections, please let me know.
+
+------------------
+
+From: Linus Torvalds <torvalds@linux-foundation.org>
+
+commit fc9bbca8f650e5f738af8806317c0a041a48ae4a upstream.
+
+This is my example conversion of a few existing mmap users.  The
+fb_mmap() case is a good example because it is a bit more complicated
+than some: fb_mmap() mmaps one of two different memory areas depending
+on the page offset of the mmap (but happily there is never any mixing of
+the two, so the helper function still works).
+
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/video/fbmem.c |   40 ++++++++++++++--------------------------
+ 1 file changed, 14 insertions(+), 26 deletions(-)
+
+--- a/drivers/video/fbmem.c
++++ b/drivers/video/fbmem.c
+@@ -1350,15 +1350,12 @@ fb_mmap(struct file *file, struct vm_are
+ {
+ 	struct fb_info *info = file_fb_info(file);
+ 	struct fb_ops *fb;
+-	unsigned long off;
++	unsigned long mmio_pgoff;
+ 	unsigned long start;
+ 	u32 len;
+ 
+ 	if (!info)
+ 		return -ENODEV;
+-	if (vma->vm_pgoff > (~0UL >> PAGE_SHIFT))
+-		return -EINVAL;
+-	off = vma->vm_pgoff << PAGE_SHIFT;
+ 	fb = info->fbops;
+ 	if (!fb)
+ 		return -ENODEV;
+@@ -1370,33 +1367,24 @@ fb_mmap(struct file *file, struct vm_are
+ 		return res;
+ 	}
+ 
+-	/* frame buffer memory */
++	/*
++	 * Ugh. This can be either the frame buffer mapping, or
++	 * if pgoff points past it, the mmio mapping.
++	 */
+ 	start = info->fix.smem_start;
+-	len = PAGE_ALIGN((start & ~PAGE_MASK) + info->fix.smem_len);
+-	if (off >= len) {
+-		/* memory mapped io */
+-		off -= len;
+-		if (info->var.accel_flags) {
+-			mutex_unlock(&info->mm_lock);
+-			return -EINVAL;
+-		}
++	len = info->fix.smem_len;
++	mmio_pgoff = PAGE_ALIGN((start & ~PAGE_MASK) + len) >> PAGE_SHIFT;
++	if (vma->vm_pgoff >= mmio_pgoff) {
++		vma->vm_pgoff -= mmio_pgoff;
+ 		start = info->fix.mmio_start;
+-		len = PAGE_ALIGN((start & ~PAGE_MASK) + info->fix.mmio_len);
++		len = info->fix.mmio_len;
+ 	}
+ 	mutex_unlock(&info->mm_lock);
+-	start &= PAGE_MASK;
+-	if ((vma->vm_end - vma->vm_start + off) > len)
+-		return -EINVAL;
+-	off += start;
+-	vma->vm_pgoff = off >> PAGE_SHIFT;
+-	/* This is an IO map - tell maydump to skip this VMA */
+-	vma->vm_flags |= VM_IO | VM_RESERVED;
++
+ 	vma->vm_page_prot = vm_get_page_prot(vma->vm_flags);
+-	fb_pgprotect(file, vma, off);
+-	if (io_remap_pfn_range(vma, vma->vm_start, off >> PAGE_SHIFT,
+-			     vma->vm_end - vma->vm_start, vma->vm_page_prot))
+-		return -EAGAIN;
+-	return 0;
++	fb_pgprotect(file, vma, start);
++
++	return vm_iomap_memory(vma, start, len);
+ }
+ 
+ static int
 
 
-
-Sender : Wolfram Sang<wsa@the-dreams.de>
-Date : 2013-04-24 01:27 (GMT+09:00)
-Title : Re: Re: Re: [PATCH] I2C: Change the value of octeon i2c adapter timeout value
-
-> Well, OK, I don't mind. We can increase it later if needed.
-
-> Applied to for-next, thanks! Please have a look later how I changed your
-> commit messages to see the preferred style.
-
-Yes, i will check your commit message and use for reference for the next-time.
-Thanks.ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
