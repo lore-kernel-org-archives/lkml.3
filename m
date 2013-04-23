@@ -1,91 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757223Ab3DWSVU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 14:21:20 -0400
-Received: from mail-vb0-f52.google.com ([209.85.212.52]:42744 "EHLO
-	mail-vb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757103Ab3DWSVR (ORCPT
+	id S1757219Ab3DWSZf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 14:25:35 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45627 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757103Ab3DWSZe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 14:21:17 -0400
+	Tue, 23 Apr 2013 14:25:34 -0400
+Date: Tue, 23 Apr 2013 19:25:29 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Lee Jones <lee.jones@linaro.org>,
+        Ola Lilja <ola.o.lilja@stericsson.com>, alsa-devel@alsa-project.org
+Subject: Re: [PATCH 08/21] ASoC: ux500: forward declare msp_i2s_platform_data
+Message-ID: <20130423182528.GT5019@opensource.wolfsonmicro.com>
+References: <1366734653-488286-1-git-send-email-arnd@arndb.de>
+ <1366734653-488286-9-git-send-email-arnd@arndb.de>
 MIME-Version: 1.0
-In-Reply-To: <20130423.135657.824070337983596004.davem@davemloft.net>
-References: <CA+55aFxvpcF7+dyy5d3+JP4Wfv90zPsRVtEhNG9Pky5gWTm_Pg@mail.gmail.com>
-	<20130423.133732.2222922370397287096.davem@davemloft.net>
-	<CA+55aFzVcptyMSDpFzE_-npbs-ycS+9z_nknoZm1+bQws1pWnA@mail.gmail.com>
-	<20130423.135657.824070337983596004.davem@davemloft.net>
-Date: Tue, 23 Apr 2013 11:21:14 -0700
-X-Google-Sender-Auth: FmtNNwElFEe3Ma72yBw-xP6ViXM
-Message-ID: <CA+55aFz1mGf+XXQmXr+8GA2cEBRABzG1PSvPgLCJ-18hzViqZg@mail.gmail.com>
-Subject: Re: Unsigned widening casts of binary "not" operations..
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: David Miller <davem@davemloft.net>
-Cc: David Laight <David.Laight@aculab.com>, Ingo Molnar <mingo@kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="iiZKCn1f/U0ES2iY"
+Content-Disposition: inline
+In-Reply-To: <1366734653-488286-9-git-send-email-arnd@arndb.de>
+X-Cookie: Caution: Keep out of reach of children.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 23, 2013 at 10:56 AM, David Miller <davem@davemloft.net> wrote:
->
-> If you're not bored, and could add a check for that kind of narrowing
-> situation, I'd really appreciate it.
 
-It's pretty non-trivial.
+--iiZKCn1f/U0ES2iY
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-For example, this is perfectly normal C:
+On Tue, Apr 23, 2013 at 06:30:40PM +0200, Arnd Bergmann wrote:
+> We get a lot of build warnings from the msp driver like:
 
-   char a,b;
-   ...
-   a &= ~b;
+Applied, thanks.
 
-and the arithmetic is technically done in "int" (because C really
-never does any arithmetic in a narrower type). So the value of 'b'
-will be widened to int before doing the binary not, and then the
-binary 'and' will be done in 'int', and then in the end it will be
-cast down to 'char' again and written back to 'a'.
+--iiZKCn1f/U0ES2iY
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-And none of that matters. All the normal integer operations (both
-arithmetic and logical) are "stable" in the smaller size. The upper
-bits can be basically random uninteresting crap (ie do zero or sign
-extension depending on the smaller type), but they don't matter
-because they go away in the end. In fact, the compiler will usually
-then end up doing the actual arithmetic/logical op in the narrower
-type, even though *conceptually* there were lots of casts going on
-back and forth.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-The point being that at the actual time of the widening, it's hard to
-say whether "~(u8)0" is problematic or not - it will depend on how it
-ends up being used. At a much later point, sparse will have optimized
-away the casts and will indeed linearize it to a simple 8-bit
-operation, but by then sparse will *also* have simplified away the
-obviously constant arithmetic, so by the time the casts back and forth
-are gone, so is the logical "not", and all you have left of the
-"~(u8)0" is either a 8-bit value (255) or an "int" (-1) depending on
-how it was used.
+iQIcBAEBAgAGBQJRdtIRAAoJELSic+t+oim90nUP/1pU0K1IvIiZp4lBqZ4vyANk
+a/k6Kc6LbhJV0BGrzHxkrW+BfecTej1oOoiH0msPZ4DVcAdk9L7buXhPkTRKC2bV
++y24b4VeP1SOpKOnB9ipIBAMp1CjBOoioJRz7SSpXKLsl6GcnMwgs+6Aa/Eqinhk
+NzU+0tmzMniiYFjZUmAS5fuVevgFEWp4xWXN8kXDUN96m/nnBDX9Og1L2/3CS+cZ
+FeT2QgLVItyX/1jPEETDHE0ZRgTIc+HnmuYdNasBT79/GRUUcrLkZ9UiXSl/Pxtb
+5tJaKbJG4LV5cWhH/qas4oSr74ESUjzcCFonYHmFSmnj2vJbqA1+HTjFB0NreSFh
+I0XmX06AeMLv0lllZRpZGd69ssINLFY5IU8S/UDDcngDpPA7PFQ9YqBzt7mif2se
+JqBsWq9Tei4L8hZ3fX0e77rrg+U6eJEStEpD1kdvcAVjOZdz+TuVFDcxDuFYsqoP
+zicX1FdSkt/YY6p2qXxGOfGnJU4j3ZWRVfgjXqpFKWrJGTIQxbzUMPdI6eUYJ1sg
+TU0RZC59G4M+XU+ac1uDtFtk3yR2IgQuq5RtggjIYCT/OhO7LNTkXNrs60h6opWT
+c5dZlyabEx/ylleMC2W02XNQ+jwHFN7IwFZz5keEwrXAxYjglvAAwuk4MZgj3Wpt
++EjULwvFf9CKGZOcQpoC
+=SZZI
+-----END PGP SIGNATURE-----
 
-Put another way: it's not possible to say that "~(u8)0" is wrong early
-on (because it may be part of something that ends up only doing byte
-arithmetic) and it is *also* not possible to say that it's invalid
-much later on, because by then we will have munged it into something
-totally different.
-
-I'm not saying it's impossible to do. You could certainly do it with
-sparse, but it would involve a fair amount of effort. You'd have to
-add a whole new separate phase of "type narrowing": sparse *does* do
-that as part of the simplification, but right now it's done while it
-does all the *other* simplification too, so ..
-
-Now, if you only wanted the warning when there is an *explicit* cast,
-that would be different. It would be easy enough to find the pattern
-where we do a "~" op on an explicit cast to something smaller than
-"int" (which means that there would be an implicit cast after the
-explicit one). But quite frankly, you could likely do that almost
-equally well with just a judicious use of "grep".
-
-                      Linus
+--iiZKCn1f/U0ES2iY--
