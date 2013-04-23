@@ -1,104 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756022Ab3DWNAz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 09:00:55 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:43844 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755187Ab3DWNAw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 09:00:52 -0400
-Date: Tue, 23 Apr 2013 09:00:42 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        David Miller <davem@davemloft.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
-Subject: Re: Unsigned widening casts of binary "not" operations..
-Message-ID: <20130423130041.GB31170@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	David Miller <davem@davemloft.net>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	the arch/x86 maintainers <x86@kernel.org>,
-	Network Development <netdev@vger.kernel.org>,
-	"linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
-References: <CA+55aFwpLu0qNms=hkQr43yqD0K9DgESNm91OEWKT1ZuT8MU6Q@mail.gmail.com>
+	id S1756066Ab3DWNB7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 09:01:59 -0400
+Received: from 8bytes.org ([85.214.48.195]:54297 "EHLO mail.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755187Ab3DWNB6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Apr 2013 09:01:58 -0400
+Date: Tue, 23 Apr 2013 15:01:54 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Varun Sethi <Varun.Sethi@freescale.com>
+Cc: iommu@lists.linux-foundation.org, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, galak@kernel.crashing.org,
+        benh@kernel.crashing.org, stuart.yoder@freescale.com,
+        scottwood@freescale.com
+Subject: Re: [PATCH 1/3 v2] iommu: Move swap_pci_ref function to pci.h.
+Message-ID: <20130423125827.GD2589@8bytes.org>
+References: <1366691726-9023-1-git-send-email-Varun.Sethi@freescale.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFwpLu0qNms=hkQr43yqD0K9DgESNm91OEWKT1ZuT8MU6Q@mail.gmail.com>
+In-Reply-To: <1366691726-9023-1-git-send-email-Varun.Sethi@freescale.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Tue Apr 23 15:01:57 2013
+X-DSPAM-Confidence: 0.9992
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 5176864523671692835695
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 22, 2013 at 05:15:19PM -0700, Linus Torvalds wrote:
-> Here's a ext4 code snippet that looks like an actual bug (but seems to only
-> hit read-ahead):
-> 
->     ext4_fsblk_t b, block;
-> 
->     b = block & ~(EXT4_SB(sb)->s_inode_readahead_blks-1);
-> 
-> where "b" actually ends up having the upper bits cleared, because the
-> s_inode_readahead_blks thing is an unsigned int, so you're masking off not
-> just the low bits, but the high bits too. Ted? Of course, it's just
-> read-ahead, so it probably doesn't matter, but.
+On Tue, Apr 23, 2013 at 10:05:24AM +0530, Varun Sethi wrote:
+> +#ifndef __PCI_H
+> +#define __PCI_H
 
-Yep, it's a bug alright.  Thanks for catching it!
-
-     	    		  	     	      - Ted
+Using __PCI_H is not a wise choice, it has certainly a high risk of a
+collision. Anyway, I changed it to __IOMMU_PCI_H and applied the patch.
 
 
->From 0d606e2c9fccdd4e67febf1e2da500e1bfe9e045 Mon Sep 17 00:00:00 2001
-From: Theodore Ts'o <tytso@mit.edu>
-Date: Tue, 23 Apr 2013 08:59:35 -0400
-Subject: [PATCH] ext4: fix type-widening bug in inode table readahead code
+	Joerg
 
-Due to a missing cast, the high 32-bits of a 64-bit block number used
-when calculating the readahead block for inode tables can get lost.
-This means we can end up fetching the wrong blocks for readahead for
-file systems > 16TB.
-
-Linus found this when experimenting with an enhacement to the sparse
-static code checker which checks for missing widening casts before
-binary "not" operators.
-
-Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
----
- fs/ext4/inode.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
-
-diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-index d7518e2..793d44b 100644
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -4011,13 +4011,14 @@ make_io:
- 		if (EXT4_SB(sb)->s_inode_readahead_blks) {
- 			ext4_fsblk_t b, end, table;
- 			unsigned num;
-+			__u32 ra_blks = EXT4_SB(sb)->s_inode_readahead_blks;
- 
- 			table = ext4_inode_table(sb, gdp);
- 			/* s_inode_readahead_blks is always a power of 2 */
--			b = block & ~(EXT4_SB(sb)->s_inode_readahead_blks-1);
-+			b = block & ~((ext4_fsblk_t) ra_blks - 1);
- 			if (table > b)
- 				b = table;
--			end = b + EXT4_SB(sb)->s_inode_readahead_blks;
-+			end = b + ra_blks;
- 			num = EXT4_INODES_PER_GROUP(sb);
- 			if (ext4_has_group_desc_csum(sb))
- 				num -= ext4_itable_unused_count(sb, gdp);
--- 
-1.7.12.rc0.22.gcdd159b
 
