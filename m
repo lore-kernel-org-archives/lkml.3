@@ -1,55 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756761Ab3DWP0I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 11:26:08 -0400
-Received: from mx0.aculab.com ([213.249.233.131]:37681 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1756758Ab3DWP0G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 11:26:06 -0400
-Content-class: urn:content-classes:message
-Subject: RE: Unsigned widening casts of binary "not" operations..
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="utf-8"
-Date: Tue, 23 Apr 2013 16:24:33 +0100
-Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6026B71F2@saturn3.aculab.com>
-In-Reply-To: <CA+55aFwogFL=nm=YHwARcz9OTRBdWEDPG0xcqM-H3k-VZTOZPQ@mail.gmail.com>
-X-MimeOLE: Produced By Microsoft Exchange V6.5
+	id S1756819Ab3DWP0j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 11:26:39 -0400
+Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:54099
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756259Ab3DWP0h convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Apr 2013 11:26:37 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VS-3(zz98dI9371I542I1432Izz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275bhz2dh2a8h668h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ahbe9i1155h)
+From: Yoder Stuart-B08248 <B08248@freescale.com>
+To: Joerg Roedel <joro@8bytes.org>, Sethi Varun-B16395 <B16395@freescale.com>
+CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "galak@kernel.crashing.org" <galak@kernel.crashing.org>,
+        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
+        Wood Scott-B07421 <B07421@freescale.com>
+Subject: RE: [PATCH 2/3 v14] iommu/fsl: Add additional iommu attributes
+ required by the PAMU driver.
+Thread-Topic: [PATCH 2/3 v14] iommu/fsl: Add additional iommu attributes
+ required by the PAMU driver.
+Thread-Index: AQHOP90ueMZs0xyX9kyMT5cttYuM/pjjz/0AgAAdNxA=
+Date: Tue, 23 Apr 2013 15:26:25 +0000
+Message-ID: <9F6FE96B71CF29479FF1CDC8046E15035BE00E@039-SN1MPN1-002.039d.mgd.msft.net>
+References: <1366691726-9023-1-git-send-email-Varun.Sethi@freescale.com>
+ <1366691726-9023-2-git-send-email-Varun.Sethi@freescale.com>
+ <20130423133837.GG17148@8bytes.org>
+In-Reply-To: <20130423133837.GG17148@8bytes.org>
+Accept-Language: en-US
+Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-Thread-Topic: Unsigned widening casts of binary "not" operations..
-Thread-Index: Ac5ALs8w5qoe3bp8SBuK5Vkhno/mjQABy1eQ
-References: <CA+55aFwpLu0qNms=hkQr43yqD0K9DgESNm91OEWKT1ZuT8MU6Q@mail.gmail.com><CA+55aFy0jPr5udwJx8cZ-QFs-OgZzQ_NJm_VSj_cS7tsKUn3Kw@mail.gmail.com><AE90C24D6B3A694183C094C60CF0A2F6026B71EF@saturn3.aculab.com> <CA+55aFwogFL=nm=YHwARcz9OTRBdWEDPG0xcqM-H3k-VZTOZPQ@mail.gmail.com>
-From: "David Laight" <David.Laight@ACULAB.COM>
-To: "Linus Torvalds" <torvalds@linux-foundation.org>
-Cc: "Ingo Molnar" <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Thomas Gleixner" <tglx@linutronix.de>,
-        "David Miller" <davem@davemloft.net>, "Theodore Ts'o" <tytso@mit.edu>,
-        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        "Network Development" <netdev@vger.kernel.org>,
-        <linux-ext4@vger.kernel.org>
+x-originating-ip: [10.192.185.244]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r3NFQX8W013713
 
-> > If the narrower type is signed it is probably even more confusing!
-> > The high bits will be preserved unless you are masking off bit 31.
+
+
+> -----Original Message-----
+> From: Joerg Roedel [mailto:joro@8bytes.org]
+> Sent: Tuesday, April 23, 2013 8:39 AM
+> To: Sethi Varun-B16395
+> Cc: iommu@lists.linux-foundation.org; linuxppc-dev@lists.ozlabs.org; linux-kernel@vger.kernel.org;
+> galak@kernel.crashing.org; benh@kernel.crashing.org; Yoder Stuart-B08248; Wood Scott-B07421
+> Subject: Re: [PATCH 2/3 v14] iommu/fsl: Add additional iommu attributes required by the PAMU driver.
 > 
-> Yes. However, that case doesn't trigger with the normal case of small
-> values. So "~4" works fine with widening, in a way that "~4u" does
-> not.
+> On Tue, Apr 23, 2013 at 10:05:25AM +0530, Varun Sethi wrote:
+> > Added the following domain attributes for the FSL PAMU driver:
+> > 1. Added new iommu stash attribute, which allows setting of the
+> >    LIODN specific stash id parameter through IOMMU API.
+> > 2. Added an attribute for enabling/disabling DMA to a particular
+> >    memory window.
+> > 3. Added domain attribute to check for PAMUV1 specific constraints.
+> >
+> > Signed-off-by: Varun Sethi <Varun.Sethi@freescale.com>
+> > ---
+> > v14 changes:
+> > - Add FSL prefix to PAMU attributes.
+> > v13 changes:
+> > - created a new file include/linux/fsl_pamu_stash.h for stash
+> > attributes.
+> > v12 changes:
+> > - Moved PAMU specifc stash ids and structures to PAMU header file.
+> > - no change in v11.
+> > - no change in v10.
+> >  include/linux/fsl_pamu_stash.h |   39 +++++++++++++++++++++++++++++++++++++++
+> 
+> Isn't asm/ for your architecture a better place for that header?
 
-Thinks ... converting:
-	foo &= ~bar;
-to:
-	foo = ~(~foo | bar);
-would generally DTRT.
-Whether the compiler has the relevant patterns to optimise
-it is another question.
+The PAMU isn't strictly tied to Power architecture, although
+that is where it is implemented now.  It could be implemented
+on ARM for example.
 
-	David
+Stuart
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+
