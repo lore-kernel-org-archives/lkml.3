@@ -1,77 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755556Ab3DWLlZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 07:41:25 -0400
-Received: from mail-la0-f43.google.com ([209.85.215.43]:65108 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755409Ab3DWLlX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 07:41:23 -0400
-From: Dmitry Monakhov <dmonakhov@openvz.org>
-To: LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org
-Subject: question about buffer_busy check
-User-Agent: Notmuch/0.6.1 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-redhat-linux-gnu)
-CC: Andrew Morton <akpm@linux-foundation.org>
-Date: Tue, 23 Apr 2013 15:41:18 +0400
-Message-ID: <8738uh5va9.fsf@openvz.org>
+	id S1755761Ab3DWLvG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 07:51:06 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:36414 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755299Ab3DWLvE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Apr 2013 07:51:04 -0400
+Message-ID: <5176743A.9070201@ti.com>
+Date: Tue, 23 Apr 2013 14:44:58 +0300
+From: Taras Kondratiuk <taras@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="=-=-="
+To: Mark Brown <broonie@kernel.org>
+CC: <lgirdwood@gmail.com>, <rjw@sisk.pl>, <viresh.kumar@linaro.org>,
+        <shawn.guo@linaro.org>, <cpufreq@vger.kernel.org>,
+        <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Philip Rakity <prakity@nvidia.com>, Eric Miao <eric.y.miao@gmail.com>,
+        "grygorii.strashko" <grygorii.strashko@ti.com>,
+        Andrii Tseglytskyi <andrii.tseglytskyi@ti.com>
+Subject: Re: [RFC PATCH 1/2] regulator: core: Add regulator_set_voltage_min()
+References: <1366372554-20866-1-git-send-email-taras@ti.com> <1366372554-20866-2-git-send-email-taras@ti.com> <20130422131904.GL30351@opensource.wolfsonmicro.com> <51756A21.3020405@ti.com> <20130423084838.GB5019@opensource.wolfsonmicro.com>
+In-Reply-To: <20130423084838.GB5019@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
+On 04/23/2013 11:48 AM, Mark Brown wrote:
+> On Mon, Apr 22, 2013 at 07:49:37PM +0300, Taras Kondratiuk wrote:
+>
+>> Yeah. Sure 4kV is not a real request, but
+>> max will be limited by system constrains.
+>> According to regulator_set_voltage() documentation
+>> system constraints should be set before calling this function,
+>> so I assume I can rely on them. No?
+>> Another possible implementation is below, but prefer initial one.
+> I just don't see any reason for this API.  The driver setting the
+> voltage ought to have some idea of what the chip limits are too for
+> safety.
+Let's take an example.
+One regulator supplies CPU and GPU inside of SoC.
+                       +-------------+
+                       | SoC         |
+               VDD_CPU |    +-----+  |
+             +------------->| CPU |  |
++-------+   |         |    +-----+  |
+| Reg X |---+         |             |
++------ +   | VDD_GPU |    +-----+  |
+             +------------->| GPU |  |
+                       |    +-----+  |
+                       +-------------+
 
+GPU voltage is regulated by some devfreq driver.
+CPU voltage is regulated by generic cpufreq-cpu0 driver.
+Both drivers know only about their operational points.
+They don't know anything about chip limits.
 
-Hi,
-Can anyone please justify me the logic of fs/bufferc.c:buffer_busy()
-How can we perform bit-wise operation for ->b_count and ->b_state?
- static inline int buffer_busy(struct buffer_head *bh)
- {
-       return atomic_read(&bh->b_count) |
-                (bh->b_state & ((1 << BH_Dirty) | (1 << BH_Lock)));
- }
+I see two options here:
+1. Pass somehow chip limits to drivers so they can limit their request.
+    Pros: No need for regulator_set_voltage_min()
+    Cons: a) Need to pass info about chip limits to driver. New API?
+          b) CPU and GPU may have different limits,
+             so after very first request voltage may violate
+             CPU or GPU range.
+2. Define chip limits in Reg X constraints.
+    Pros: Limits will be applied to driver's request transparently.
+          No need to pass info about limits to driver.
+          Limits are set before the first request, so no violation.
+    Cons: regulator_set_voltage_min() is needed.
 
-I try to digg inside git/cvs history and it is appeared that 2.4 was
-also implemented like this. At least it was so in 2000'th
-http://lkml.indiana.edu/hypermail/linux/kernel/0006.0/0412.html
-Also I've found similar complain
-http://www.mail-archive.com/linux-kernel@vger.kernel.org/msg24377.html
-But seems nobody care about it. What's the point?
-The only guess I have is that this is a miss typo  because buffer
-is busy if some one hold an reference (bh->b_count !=0 )  ||
-it is (dirty | locked). So following patch should fix 
+IMHO option #2 is better.
+Do you see other ways?
 
---=-=-=
-Content-Type: text/x-patch
-Content-Disposition: inline; filename=0001-buffer-fix-miss-typo.patch
-
->From dc45e525b647ed11f26781b80eed3894cc3ba325 Mon Sep 17 00:00:00 2001
-From: Dmitry Monakhov <dmonakhov@openvz.org>
-Date: Tue, 23 Apr 2013 15:24:24 +0400
-Subject: [PATCH] buffer: fix miss typo
-
-
-Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
----
- fs/buffer.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/fs/buffer.c b/fs/buffer.c
-index b4dcb34..4ffa6c9 100644
---- a/fs/buffer.c
-+++ b/fs/buffer.c
-@@ -3119,7 +3119,7 @@ EXPORT_SYMBOL(sync_dirty_buffer);
-  */
- static inline int buffer_busy(struct buffer_head *bh)
- {
--	return atomic_read(&bh->b_count) |
-+	return atomic_read(&bh->b_count) ||
- 		(bh->b_state & ((1 << BH_Dirty) | (1 << BH_Lock)));
- }
- 
 -- 
-1.7.1
+BR
+Taras Kondratiuk | GlobalLogic
 
-
---=-=-=--
