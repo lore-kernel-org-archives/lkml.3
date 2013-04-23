@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932232Ab3DWVy0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 17:54:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34242 "EHLO
+	id S932386Ab3DWVz5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 17:55:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34294 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757734Ab3DWVyS (ORCPT
+	with ESMTP id S932173Ab3DWVy0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 17:54:18 -0400
+	Tue, 23 Apr 2013 17:54:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Illia Ragozin <illia.ragozin@grapecom.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 12/26] ARM: 7696/1: Fix kexec by setting outer_cache.inv_all for Feroceon
-Date: Tue, 23 Apr 2013 14:53:52 -0700
-Message-Id: <20130423215334.633950133@linuxfoundation.org>
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 24/26] vm: convert HPET mmap to vm_iomap_memory() helper
+Date: Tue, 23 Apr 2013 14:54:04 -0700
+Message-Id: <20130423215335.863075940@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130423215333.344045754@linuxfoundation.org>
 References: <20130423215333.344045754@linuxfoundation.org>
@@ -28,39 +26,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Illia Ragozin <illia.ragozin@grapecom.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit cd272d1ea71583170e95dde02c76166c7f9017e6 upstream.
+commit 2323036dfec8ce3ce6e1c86a49a31b039f3300d1 upstream.
 
-On Feroceon the L2 cache becomes non-coherent with the CPU
-when the L1 caches are disabled. Thus the L2 needs to be invalidated
-after both L1 caches are disabled.
+This is my example conversion of a few existing mmap users.  The HPET
+case is simple, widely available, and easy to test (Clemens Ladisch sent
+a trivial test-program for it).
 
-On kexec before the starting the code for relocation the kernel,
-the L1 caches are disabled in cpu_froc_fin (cpu_v7_proc_fin for Feroceon),
-but after L2 cache is never invalidated, because inv_all is not set
-in cache-feroceon-l2.c.
-So kernel relocation and decompression may has (and usually has) errors.
-Setting the function enables L2 invalidation and fixes the issue.
-
-Signed-off-by: Illia Ragozin <illia.ragozin@grapecom.com>
-Acked-by: Jason Cooper <jason@lakedaemon.net>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Test-program-by: Clemens Ladisch <clemens@ladisch.de>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mm/cache-feroceon-l2.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/char/hpet.c |   14 +-------------
+ 1 file changed, 1 insertion(+), 13 deletions(-)
 
---- a/arch/arm/mm/cache-feroceon-l2.c
-+++ b/arch/arm/mm/cache-feroceon-l2.c
-@@ -343,6 +343,7 @@ void __init feroceon_l2_init(int __l2_wt
- 	outer_cache.inv_range = feroceon_l2_inv_range;
- 	outer_cache.clean_range = feroceon_l2_clean_range;
- 	outer_cache.flush_range = feroceon_l2_flush_range;
-+	outer_cache.inv_all = l2_inv_all;
+--- a/drivers/char/hpet.c
++++ b/drivers/char/hpet.c
+@@ -373,26 +373,14 @@ static int hpet_mmap(struct file *file,
+ 	struct hpet_dev *devp;
+ 	unsigned long addr;
  
- 	enable_l2();
+-	if (((vma->vm_end - vma->vm_start) != PAGE_SIZE) || vma->vm_pgoff)
+-		return -EINVAL;
+-
+ 	devp = file->private_data;
+ 	addr = devp->hd_hpets->hp_hpet_phys;
  
+ 	if (addr & (PAGE_SIZE - 1))
+ 		return -ENOSYS;
+ 
+-	vma->vm_flags |= VM_IO;
+ 	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
+-
+-	if (io_remap_pfn_range(vma, vma->vm_start, addr >> PAGE_SHIFT,
+-					PAGE_SIZE, vma->vm_page_prot)) {
+-		printk(KERN_ERR "%s: io_remap_pfn_range failed\n",
+-			__func__);
+-		return -EAGAIN;
+-	}
+-
+-	return 0;
++	return vm_iomap_memory(vma, addr, PAGE_SIZE);
+ #else
+ 	return -ENOSYS;
+ #endif
 
 
