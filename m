@@ -1,66 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756569Ab3DWVRm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 17:17:42 -0400
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:49960
-	"EHLO p3plsmtps2ded01.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754654Ab3DWVRl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 17:17:41 -0400
-x-originating-ip: 72.167.245.219
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        jasowang@redhat.com
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 2/5] tools: hv: fix checks for origin of netlink message in hv_vss_daemon
-Date: Tue, 23 Apr 2013 14:23:58 -0700
-Message-Id: <1366752241-357-2-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1366752241-357-1-git-send-email-kys@microsoft.com>
-References: <1366752210-318-1-git-send-email-kys@microsoft.com>
- <1366752241-357-1-git-send-email-kys@microsoft.com>
+	id S1753521Ab3DWVST (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 17:18:19 -0400
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:12204 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752410Ab3DWVSS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Apr 2013 17:18:18 -0400
+Message-ID: <1366751135.6660.3.camel@misato.fc.hp.com>
+Subject: Re: [Bug fix PATCH v5] Reusing a resource structure allocated by
+ bootmem
+From: Toshi Kani <toshi.kani@hp.com>
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: hannes@cmpxchg.org, akpm@linux-foundation.org, linuxram@us.ibm.com,
+        rientjes@google.com, linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Date: Tue, 23 Apr 2013 15:05:35 -0600
+In-Reply-To: <5175E5E8.3010003@jp.fujitsu.com>
+References: <5175E5E8.3010003@jp.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Olaf Hering <olaf@aepfle.de>
+On Tue, 2013-04-23 at 10:37 +0900, Yasuaki Ishimatsu wrote:
+ :
+> The reason why the messages are shown is to release a resource structure,
+> allocated by bootmem, by kfree(). So when we release a resource structure,
+> we should check whether it is allocated by bootmem or not.
+> 
+> But even if we know a resource structure is allocated by bootmem, we cannot
+> release it since SLxB cannot treat it. So for reusing a resource structure,
+> this patch remembers it by using bootmem_resource as follows:
+> 
+> When releasing a resource structure by free_resource(), free_resource() checks
+> whether the resource structure is allocated by bootmem or not. If it is
+> allocated by bootmem, free_resource() adds it to bootmem_resource. If it is
+> not allocated by bootmem, free_resource() release it by kfree().
+> 
+> And when getting a new resource structure by get_resource(), get_resource()
+> checks whether bootmem_resource has released resource structures or not. If
+> there is a released resource structure, get_resource() returns it. If there is
+> not a releaed resource structure, get_resource() returns new resource structure
+> allocated by kzalloc().
+> ---
+> v5:
+> Define bootmem_resource_free as static and poiner for saving memory
+> Fix slab check in free_resource()
+> Move memset outside of spin lock in get_resource()
 
-Similar to what commit 95a69adab9acfc3981c504737a2b6578e4d846ef ("tools:
-hv: Netlink source address validation allows DoS") does in
-hv_kvp_daemon, improve checks for origin of netlink connector message.
+Please add your "Signed-off-by".  Otherwise the changes look good.
 
-Signed-off-by: Olaf Hering <olaf@aepfle.de>
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
----
- tools/hv/hv_vss_daemon.c |    8 +++++++-
- 1 files changed, 7 insertions(+), 1 deletions(-)
+Reviewed-by: Toshi Kani <toshi.kani@hp.com>
 
-diff --git a/tools/hv/hv_vss_daemon.c b/tools/hv/hv_vss_daemon.c
-index 2a03d0b..dc3eb1e 100644
---- a/tools/hv/hv_vss_daemon.c
-+++ b/tools/hv/hv_vss_daemon.c
-@@ -186,13 +186,19 @@ int main(void)
- 		len = recvfrom(fd, vss_recv_buffer, sizeof(vss_recv_buffer), 0,
- 				addr_p, &addr_l);
- 
--		if (len < 0 || addr.nl_pid) {
-+		if (len < 0) {
- 			syslog(LOG_ERR, "recvfrom failed; pid:%u error:%d %s",
- 					addr.nl_pid, errno, strerror(errno));
- 			close(fd);
- 			return -1;
- 		}
- 
-+		if (addr.nl_pid) {
-+			syslog(LOG_WARNING, "Received packet from untrusted pid:%u",
-+					addr.nl_pid);
-+			continue;
-+		}
-+
- 		incoming_msg = (struct nlmsghdr *)vss_recv_buffer;
- 
- 		if (incoming_msg->nlmsg_type != NLMSG_DONE)
--- 
-1.7.4.1
+Thanks,
+-Toshi
+
+
 
