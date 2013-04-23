@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757490Ab3DWVwy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 17:52:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34023 "EHLO
+	id S1757330Ab3DWWQf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 18:16:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34047 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757239Ab3DWVwu (ORCPT
+	with ESMTP id S1757466Ab3DWVww (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 17:52:50 -0400
+	Tue, 23 Apr 2013 17:52:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Emese Revfy <re.emese@gmail.com>, PaX Team <pageexec@freemail.hu>,
-        Kees Cook <keescook@chromium.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 11/42] kernel/signal.c: stop info leak via the tkill and the tgkill syscalls
-Date: Tue, 23 Apr 2013 14:52:09 -0700
-Message-Id: <20130423215206.704202832@linuxfoundation.org>
+        Andrew Honig <ahonig@google.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [ 15/42] KVM: x86: Convert MSR_KVM_SYSTEM_TIME to use gfn_to_hva_cache functions (CVE-2013-1797)
+Date: Tue, 23 Apr 2013 14:52:13 -0700
+Message-Id: <20130423215207.091287422@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130423215205.523980967@linuxfoundation.org>
 References: <20130423215205.523980967@linuxfoundation.org>
@@ -32,50 +28,162 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Emese Revfy <re.emese@gmail.com>
+From: Andy Honig <ahonig@google.com>
 
-commit b9e146d8eb3b9ecae5086d373b50fa0c1f3e7f0f upstream.
+commit 0b79459b482e85cb7426aa7da683a9f2c97aeae1 upstream.
 
-This fixes a kernel memory contents leak via the tkill and tgkill syscalls
-for compat processes.
+There is a potential use after free issue with the handling of
+MSR_KVM_SYSTEM_TIME.  If the guest specifies a GPA in a movable or removable
+memory such as frame buffers then KVM might continue to write to that
+address even after it's removed via KVM_SET_USER_MEMORY_REGION.  KVM pins
+the page in memory so it's unlikely to cause an issue, but if the user
+space component re-purposes the memory previously used for the guest, then
+the guest will be able to corrupt that memory.
 
-This is visible in the siginfo_t->_sifields._rt.si_sigval.sival_ptr field
-when handling signals delivered from tkill.
+Tested: Tested against kvmclock unit test
 
-The place of the infoleak:
-
-int copy_siginfo_to_user32(compat_siginfo_t __user *to, siginfo_t *from)
-{
-        ...
-        put_user_ex(ptr_to_compat(from->si_ptr), &to->si_ptr);
-        ...
-}
-
-Signed-off-by: Emese Revfy <re.emese@gmail.com>
-Reviewed-by: PaX Team <pageexec@freemail.hu>
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Serge Hallyn <serge.hallyn@canonical.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Andrew Honig <ahonig@google.com>
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/signal.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/include/asm/kvm_host.h |    4 +--
+ arch/x86/kvm/x86.c              |   47 +++++++++++++++++-----------------------
+ 2 files changed, 22 insertions(+), 29 deletions(-)
 
---- a/kernel/signal.c
-+++ b/kernel/signal.c
-@@ -2880,7 +2880,7 @@ do_send_specific(pid_t tgid, pid_t pid,
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -419,8 +419,8 @@ struct kvm_vcpu_arch {
+ 	gpa_t time;
+ 	struct pvclock_vcpu_time_info hv_clock;
+ 	unsigned int hw_tsc_khz;
+-	unsigned int time_offset;
+-	struct page *time_page;
++	struct gfn_to_hva_cache pv_time;
++	bool pv_time_enabled;
+ 	/* set guest stopped flag in pvclock flags field */
+ 	bool pvclock_set_guest_stopped_request;
  
- static int do_tkill(pid_t tgid, pid_t pid, int sig)
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -1408,10 +1408,9 @@ static int kvm_guest_time_update(struct
+ 	unsigned long flags, this_tsc_khz;
+ 	struct kvm_vcpu_arch *vcpu = &v->arch;
+ 	struct kvm_arch *ka = &v->kvm->arch;
+-	void *shared_kaddr;
+ 	s64 kernel_ns, max_kernel_ns;
+ 	u64 tsc_timestamp, host_tsc;
+-	struct pvclock_vcpu_time_info *guest_hv_clock;
++	struct pvclock_vcpu_time_info guest_hv_clock;
+ 	u8 pvclock_flags;
+ 	bool use_master_clock;
+ 
+@@ -1465,7 +1464,7 @@ static int kvm_guest_time_update(struct
+ 
+ 	local_irq_restore(flags);
+ 
+-	if (!vcpu->time_page)
++	if (!vcpu->pv_time_enabled)
+ 		return 0;
+ 
+ 	/*
+@@ -1527,12 +1526,12 @@ static int kvm_guest_time_update(struct
+ 	 */
+ 	vcpu->hv_clock.version += 2;
+ 
+-	shared_kaddr = kmap_atomic(vcpu->time_page);
+-
+-	guest_hv_clock = shared_kaddr + vcpu->time_offset;
++	if (unlikely(kvm_read_guest_cached(v->kvm, &vcpu->pv_time,
++		&guest_hv_clock, sizeof(guest_hv_clock))))
++		return 0;
+ 
+ 	/* retain PVCLOCK_GUEST_STOPPED if set in guest copy */
+-	pvclock_flags = (guest_hv_clock->flags & PVCLOCK_GUEST_STOPPED);
++	pvclock_flags = (guest_hv_clock.flags & PVCLOCK_GUEST_STOPPED);
+ 
+ 	if (vcpu->pvclock_set_guest_stopped_request) {
+ 		pvclock_flags |= PVCLOCK_GUEST_STOPPED;
+@@ -1545,12 +1544,9 @@ static int kvm_guest_time_update(struct
+ 
+ 	vcpu->hv_clock.flags = pvclock_flags;
+ 
+-	memcpy(shared_kaddr + vcpu->time_offset, &vcpu->hv_clock,
+-	       sizeof(vcpu->hv_clock));
+-
+-	kunmap_atomic(shared_kaddr);
+-
+-	mark_page_dirty(v->kvm, vcpu->time >> PAGE_SHIFT);
++	kvm_write_guest_cached(v->kvm, &vcpu->pv_time,
++				&vcpu->hv_clock,
++				sizeof(vcpu->hv_clock));
+ 	return 0;
+ }
+ 
+@@ -1839,10 +1835,7 @@ static int kvm_pv_enable_async_pf(struct
+ 
+ static void kvmclock_reset(struct kvm_vcpu *vcpu)
  {
--	struct siginfo info;
-+	struct siginfo info = {};
+-	if (vcpu->arch.time_page) {
+-		kvm_release_page_dirty(vcpu->arch.time_page);
+-		vcpu->arch.time_page = NULL;
+-	}
++	vcpu->arch.pv_time_enabled = false;
+ }
  
- 	info.si_signo = sig;
- 	info.si_errno = 0;
+ static void accumulate_steal_time(struct kvm_vcpu *vcpu)
+@@ -1948,6 +1941,7 @@ int kvm_set_msr_common(struct kvm_vcpu *
+ 		break;
+ 	case MSR_KVM_SYSTEM_TIME_NEW:
+ 	case MSR_KVM_SYSTEM_TIME: {
++		u64 gpa_offset;
+ 		kvmclock_reset(vcpu);
+ 
+ 		vcpu->arch.time = data;
+@@ -1957,19 +1951,17 @@ int kvm_set_msr_common(struct kvm_vcpu *
+ 		if (!(data & 1))
+ 			break;
+ 
+-		/* ...but clean it before doing the actual write */
+-		vcpu->arch.time_offset = data & ~(PAGE_MASK | 1);
++		gpa_offset = data & ~(PAGE_MASK | 1);
+ 
+ 		/* Check that the address is 32-byte aligned. */
+-		if (vcpu->arch.time_offset &
+-				(sizeof(struct pvclock_vcpu_time_info) - 1))
++		if (gpa_offset & (sizeof(struct pvclock_vcpu_time_info) - 1))
+ 			break;
+ 
+-		vcpu->arch.time_page =
+-				gfn_to_page(vcpu->kvm, data >> PAGE_SHIFT);
+-
+-		if (is_error_page(vcpu->arch.time_page))
+-			vcpu->arch.time_page = NULL;
++		if (kvm_gfn_to_hva_cache_init(vcpu->kvm,
++		     &vcpu->arch.pv_time, data & ~1ULL))
++			vcpu->arch.pv_time_enabled = false;
++		else
++			vcpu->arch.pv_time_enabled = true;
+ 
+ 		break;
+ 	}
+@@ -2972,7 +2964,7 @@ static int kvm_vcpu_ioctl_x86_set_xcrs(s
+  */
+ static int kvm_set_guest_paused(struct kvm_vcpu *vcpu)
+ {
+-	if (!vcpu->arch.time_page)
++	if (!vcpu->arch.pv_time_enabled)
+ 		return -EINVAL;
+ 	vcpu->arch.pvclock_set_guest_stopped_request = true;
+ 	kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
+@@ -6666,6 +6658,7 @@ int kvm_arch_vcpu_init(struct kvm_vcpu *
+ 		goto fail_free_wbinvd_dirty_mask;
+ 
+ 	vcpu->arch.ia32_tsc_adjust_msr = 0x0;
++	vcpu->arch.pv_time_enabled = false;
+ 	kvm_async_pf_hash_reset(vcpu);
+ 	kvm_pmu_init(vcpu);
+ 
 
 
