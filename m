@@ -1,228 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755466Ab3DWOv1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 10:51:27 -0400
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:63750 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755177Ab3DWOvZ (ORCPT
+	id S1755923Ab3DWPAJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 11:00:09 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:59584 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755730Ab3DWPAH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 10:51:25 -0400
-Date: Tue, 23 Apr 2013 09:43:12 -0500
-From: Kent Yoder <shpedoikal@gmail.com>
-To: peterasplund@gentoo.se
-Cc: Peter.Huewe@infineon.com, mail@srajiv.net, aaron.lu@intel.com,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [tpmdd-devel] tpm_tis driver failed to suspend, error -62
-Message-ID: <20130423144309.GA11692@gmail.com>
-References: <ed364e68730267510d49b2bdc38679a0@gentoo.se>
- <CAEQAOwpmnLXBCJQTf_xU-oSKvAtmpQjHWwMYDm_QOsP+1Kd_aQ@mail.gmail.com>
- <CAEQAOwqWL=WekQqg5WY8TGxzB3x9nB9MVj_UTAVK0ro7TqB2WQ@mail.gmail.com>
- <51540408.3000702@intel.com>
- <74A44E99E3274B4CB570415926B37D4414B14E@MUCSE501.eu.infineon.com>
- <733a6b303b7e9a3c4fb396acad9d9c5c@gentoo.se>
- <CAM0nabGXCfNipOHhzhoFT-yAN-RDOZG9EObQCY-QdRM5LfMCfQ@mail.gmail.com>
- <d9741eb17fbc5731469a79b8bca3ed07@gentoo.se>
- <20130411214141.GA12814@gmail.com>
- <ec94e98bae36890a39e6c332e0dd74c5@gentoo.se>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <ec94e98bae36890a39e6c332e0dd74c5@gentoo.se>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 23 Apr 2013 11:00:07 -0400
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        peterz@infradead.org, mingo@kernel.org, fweisbec@gmail.com,
+        pjt@google.com, rostedt@goodmis.org, efault@gmx.de
+Cc: Vincent Guittot <vincent.guittot@linaro.org>
+Subject: [PATCH v8] sched: fix init NOHZ_IDLE flag
+Date: Tue, 23 Apr 2013 16:59:02 +0200
+Message-Id: <1366729142-14662-1-git-send-email-vincent.guittot@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 23, 2013 at 04:30:53PM +0200, peterasplund@gentoo.se wrote:
-> 2013-04-11 23:41 skrev Kent Yoder:
-> >On Sat, Apr 06, 2013 at 06:00:59PM +0200, peterasplund@gentoo.se
-> >wrote:
-> >>2013-04-02 16:03 skrev Kent Yoder:
-> >>>Hi Peter,
-> >>>
-> >>>On Mon, Apr 1, 2013 at 4:17 PM,  <peterasplund@gentoo.se> wrote:
-> >>>>2013-03-28 14:12 skrev Peter.Huewe@infineon.com:
-> >>>>>What also might be worth a look - in your bugzilla it states:
-> >>>>>[ 0.225891] pnp 00:0a: Plug and Play ACPI device, IDs IFX0102
-> >>>>>PNP0c31
-> >>>>>(active)
-> >>>>>[ 9.150673] tpm_tis 00:0a: 1.2 TPM (device-id 0xB, rev-id 16)
-> >>>>>[ 9.292148] tpm_tis 00:0a: Adjusting TPM timeout parameters.
-> >>>>>[ 10.084067] tpm_tis 00:0a: A TPM error (7) occurred
-> >>attempting to
-> >>>>>read a pcr
-> >>>>>value
-> >>>>>[ 10.084077] tpm_tis 00:0a: TPM is disabled/deactivated (0x7)
-> >>>>>
-> >>>>>
-> >>>>>Can you perhaps try to enable your TPM in the BIOS? It's quite
-> >>>>>often
-> >>>>>hidden under "embedded security device" or "system security".
-> >>>>>Quite often you have to have a bios password set to access these
-> >>>>>settings.
-> >>>>>If your system does not have bios support for TPMs, please
-> >>>>>tell me so
-> >>>>>and I'll try to help you out.
-> >>>>>
-> >>>>
-> >>>>I've enabled it in BIOS now, and the output seems to be a bit
-> >>>>different. Not too uplifting though...
-> >>>>
-> >>>>root@zepto:/home/peter# dmesg | grep tpm
-> >>>>[   14.631662] tpm_tis 00:08: 1.2 TPM (device-id 0xB, rev-id 16)
-> >>>>[   14.748276] tpm_tis 00:08: Adjusting TPM timeout parameters.
-> >>>>[   34.908128] tpm_tis 00:08: tpm_transmit: tpm_send: error -62
-> >>>>[  125.992108] tpm_tis 00:08: tpm_transmit: tpm_send: error -62
-> >>>>[  212.908502] tpm_tis 00:08: tpm_transmit: tpm_send: error -62
-> >>>>root@zepto:/home/peter# tpm_version
-> >>>>Tspi_Context_Connect failed: 0x00003011 - layer=tsp, code=0011
-> >>(17),
-> >>>>Communication failure
-> >>>>root@zepto:/home/peter# tcsd -f
-> >>>>TCSD TDDL ioctl: (25) Inappropriate ioctl for device
-> >>>>TCSD TDDL Falling back to Read/Write device support.
-> >>>>TCSD TDDL ERROR: write to device /dev/tpm0 failed: Timer expired
-> >>>>TCSD TCS ERROR: TCS GetCapability failed with result = 0x1087
-> >>>
-> >>>  Can you cat /sys/class/misc/tpm0/device/timeouts? Ivan Pryvalov
-> >>>reported that his TPM showed values that were too small to keep
-> >>from
-> >>>causing timeouts waiting on TPM commands, but too big to
-> >>trigger the
-> >>>driver's code to scale them.  (He saw 12000 for the 3 timeout
-> >>>values.)
-> >>>
-> >>Hi Kent
-> >>
-> >>The values I'm seeing are:
-> >>
-> >>root@zepto:~# cat /sys/class/misc/tpm0/device/timeouts
-> >>752000 2000000 752000 752000 [adjusted]
-> >>
-> >>So I guess these are within a normal range?
-> >
-> >  Yes, these look normal. So it seems you can send commands to the
-> >TPM
-> >up until you try to suspend?  Can you try to cat other files like
-> >/sys/class/misc/tpm0/device/pcrs? This is the simplest way to send
-> >some
-> >command to the TPM...
-> >
-> >Kent
-> >
-> 
-> Hi Kent, I'm sorry I haven't replied to this message before. I must
-> have missed it!
-> 
-> root@zepto:/sys/class/misc/tpm0# ll
-> drwxr-xr-x 3 root root    0 Apr 23 16:20 ./
-> drwxr-xr-x 3 root root    0 Apr 23 16:20 ../
-> -r--r--r-- 1 root root 4096 Apr 23 16:26 dev
-> lrwxrwxrwx 1 root root    0 Apr 23 16:26 device -> ../../../00:08/
-> drwxr-xr-x 2 root root    0 Apr 23 16:26 power/
-> lrwxrwxrwx 1 root root    0 Apr 23 16:20 subsystem ->
-> ../../../../../class/misc/
-> -rw-r--r-- 1 root root 4096 Apr 23 16:20 uevent
-> 
-> root@zepto:/sys/class/misc/tpm0# cat dev
-> 10:224
-> root@zepto:/sys/class/misc/tpm0# cat device/pcrs   (prints nothing
-> after a delay of a second or so)
-> root@zepto:/sys/class/misc/tpm0# cat uevent
-> MAJOR=10
-> MINOR=224
-> DEVNAME=tpm0
-> root@zepto:/sys/class/misc/tpm0# cat device/active
-> root@zepto:/sys/class/misc/tpm0# cat device/cancel
-> cat: device/cancel: Permission denied
-> root@zepto:/sys/class/misc/tpm0# cat device/caps
-> root@zepto:/sys/class/misc/tpm0# cat device/durations
-> 1000000 4000000 152000000 [adjusted]
-> root@zepto:/sys/class/misc/tpm0# cat device/enabled
-> root@zepto:/sys/class/misc/tpm0# cat device/id
-> IFX0102
-> PNP0c31
-> root@zepto:/sys/class/misc/tpm0# cat device/options
-> root@zepto:/sys/class/misc/tpm0# cat device/owned
-> root@zepto:/sys/class/misc/tpm0# cat device/pubek
-> root@zepto:/sys/class/misc/tpm0# cat device/resources
-> state = active
-> mem 0xfed40000-0xfed44fff
-> io 0x4e-0x4f
-> io 0x1670-0x167f
-> irq 11
-> root@zepto:/sys/class/misc/tpm0# cat device/temp_deactivated
-> root@zepto:/sys/class/misc/tpm0# cat device/timeouts
-> 752000 2000000 752000 752000 [adjusted]
-> root@zepto:/sys/class/misc/tpm0# cat device/uevent
-> DRIVER=tpm_tis
-> 
-> To be able to do the 'cat' above, I usually need to restart my
-> computer, otherwise the files aren't there. That's probably after
-> I've put the computer in sleep mode (which works if I add tpm_tis to
-> the module blacklist). Perhaps the same problem is related to this
-> one:
-> I just did a grep of my dmesg and saw some new error messages (28)
-> in it. Perhaps they started occurring after I enabled it in BIOS.
-> 
-> root@zepto:/home/peter# dmesg | grep tpm_
-> [   11.369198] tpm_tis 00:08: 1.2 TPM (device-id 0xB, rev-id 16)
-> [   11.508115] tpm_tis 00:08: Adjusting TPM timeout parameters.
-> [   32.560040] tpm_tis 00:08: tpm_transmit: tpm_send: error -62
-> [ 4320.577827] tpm_tis 00:08: 1.2 TPM (device-id 0xB, rev-id 16)
-> [ 4320.636111] tpm_tis 00:08: A TPM error (28) occurred attempting
-> to determine the timeouts
+On my smp platform which is made of 5 cores in 2 clusters, I have the
+nr_busy_cpu field of sched_group_power struct that is not null when the
+platform is fully idle. The root cause is:
+During the boot sequence, some CPUs reach the idle loop and set their
+NOHZ_IDLE flag while waiting for others CPUs to boot. But the nr_busy_cpus
+field is initialized later with the assumption that all CPUs are in the busy
+state whereas some CPUs have already set their NOHZ_IDLE flag.
 
-  Your TPM failed its internal self test (rc=28).  At this point it will
-have gone shut down. Looks like your hardware is broken. :(
+More generally, the NOHZ_IDLE flag must be initialized when new sched_domains
+are created in order to ensure that NOHZ_IDLE and nr_busy_cpus are aligned.
 
-Kent
+This condition can be ensured by adding a synchronize_rcu between the
+destruction of old sched_domains and the creation of new ones so the NOHZ_IDLE
+flag will not be updated with old sched_domain once it has been initialized.
+But this solution introduces a additionnal latency in the rebuild sequence
+that is called during cpu hotplug.
 
-> [ 4320.696081] tpm_tis 00:08: A TPM error (28) occurred attempting
-> to determine the durations
-> [ 4320.696091] tpm_tis 00:08: Could not get TPM timeouts and durations
-> [ 9279.692915] tpm_tis 00:08: 1.2 TPM (device-id 0xB, rev-id 16)
-> [ 9279.756184] tpm_tis 00:08: A TPM error (28) occurred attempting
-> to determine the timeouts
-> [ 9279.822186] tpm_tis 00:08: A TPM error (28) occurred attempting
-> to determine the durations
-> [ 9279.822197] tpm_tis 00:08: Could not get TPM timeouts and durations
-> [10968.845856] tpm_tis 00:08: 1.2 TPM (device-id 0xB, rev-id 16)
-> [10968.904111] tpm_tis 00:08: A TPM error (28) occurred attempting
-> to determine the timeouts
-> [10968.964100] tpm_tis 00:08: A TPM error (28) occurred attempting
-> to determine the durations
-> [10968.964111] tpm_tis 00:08: Could not get TPM timeouts and durations
-> [13304.341746] tpm_tis 00:08: 1.2 TPM (device-id 0xB, rev-id 16)
-> [13304.400093] tpm_tis 00:08: A TPM error (28) occurred attempting
-> to determine the timeouts
-> [13304.464134] tpm_tis 00:08: A TPM error (28) occurred attempting
-> to determine the durations
-> [13304.464142] tpm_tis 00:08: Could not get TPM timeouts and durations
-> 
-> Thank you,
-> Peter A
-> 
-> 
-> >>Thanks,
-> >>Peter
-> >>
-> >>> If you're seeing similar values, can you try the attached patch?
-> >>>
-> >>>Thanks,
-> >>>Kent
-> >>>
-> >>>>/Peter A
-> >>>>
-> >>>>
-> >>
-> >>>>------------------------------------------------------------------------------
-> >>>>Own the Future-Intel&reg; Level Up Game Demo Contest 2013
-> >>>>Rise to greatness in Intel's independent game demo contest.
-> >>>>Compete for recognition, cash, and the chance to get your game
-> >>>>on Steam. $5K grand prize plus 10 genre and skill prizes.
-> >>>>Submit your demo by 6/6/13. http://p.sf.net/sfu/intel_levelupd2d
-> >>>>_______________________________________________
-> >>>>tpmdd-devel mailing list
-> >>>>tpmdd-devel@lists.sourceforge.net
-> >>>>https://lists.sourceforge.net/lists/listinfo/tpmdd-devel
+As suggested by Frederic Weisbecker, another solution is to have the same
+rcu lifecycle for both NOHZ_IDLE and sched_domain struct.
+A new nohz_idle field is added to sched_domain so both status and sched_domain
+will share the same RCU lifecycle and will be always synchronized.
+In addition, there is no more need to protect nohz_idle against concurrent
+ access as it is only modified by 2 exclusive functions called by local cpu.
+
+This solution has been prefered to the creation of a new struct with an extra
+pointer indirection for sched_domain.
+
+The synchronization is done at the cost of :
+ - An additional indirection and a rcu_dereference for accessing nohz_idle.
+ - We use only the nohz_idle field of the top sched_domain.
+
+Change since v7:
+ - remove atomic access which is useless now.
+ - refactor the sequence that update nohz_idle status and nr_busy_cpus.
+
+Change since v6:
+ - Add the flags in struct sched_domain instead of creating a sched_domain_rq.
+
+Change since v5:
+ - minor variable and function name change.
+ - remove a useless null check before kfree
+ - fix a compilation error when NO_HZ is not set.
+
+Change since v4:
+ - link both sched_domain and NOHZ_IDLE flag in one RCU object so
+   their states are always synchronized.
+
+Change since V3;
+ - NOHZ flag is not cleared if a NULL domain is attached to the CPU
+ - Remove patch 2/2 which becomes useless with latest modifications
+
+Change since V2:
+ - change the initialization to idle state instead of busy state so a CPU that
+   enters idle during the build of the sched_domain will not corrupt the
+   initialization state
+
+Change since V1:
+ - remove the patch for SCHED softirq on an idle core use case as it was
+   a side effect of the other use cases.
+
+Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+---
+ include/linux/sched.h |    3 +++
+ kernel/sched/fair.c   |   26 ++++++++++++++++----------
+ kernel/sched/sched.h  |    1 -
+ 3 files changed, 19 insertions(+), 11 deletions(-)
+
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index d35d2b6..22bcbe8 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -899,6 +899,9 @@ struct sched_domain {
+ 	unsigned int wake_idx;
+ 	unsigned int forkexec_idx;
+ 	unsigned int smt_gain;
++#ifdef CONFIG_NO_HZ
++	int nohz_idle;			/* NOHZ IDLE status */
++#endif
+ 	int flags;			/* See SD_* */
+ 	int level;
+ 
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 7a33e59..5db1817 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -5395,13 +5395,16 @@ static inline void set_cpu_sd_state_busy(void)
+ 	struct sched_domain *sd;
+ 	int cpu = smp_processor_id();
+ 
+-	if (!test_bit(NOHZ_IDLE, nohz_flags(cpu)))
+-		return;
+-	clear_bit(NOHZ_IDLE, nohz_flags(cpu));
+-
+ 	rcu_read_lock();
+-	for_each_domain(cpu, sd)
++	sd = rcu_dereference_check_sched_domain(cpu_rq(cpu)->sd);
++
++	if (!sd || !sd->nohz_idle)
++		goto unlock;
++	sd->nohz_idle = 0;
++
++	for (; sd; sd = sd->parent)
+ 		atomic_inc(&sd->groups->sgp->nr_busy_cpus);
++unlock:
+ 	rcu_read_unlock();
+ }
+ 
+@@ -5410,13 +5413,16 @@ void set_cpu_sd_state_idle(void)
+ 	struct sched_domain *sd;
+ 	int cpu = smp_processor_id();
+ 
+-	if (test_bit(NOHZ_IDLE, nohz_flags(cpu)))
+-		return;
+-	set_bit(NOHZ_IDLE, nohz_flags(cpu));
+-
+ 	rcu_read_lock();
+-	for_each_domain(cpu, sd)
++	sd = rcu_dereference_check_sched_domain(cpu_rq(cpu)->sd);
++
++	if (!sd || sd->nohz_idle)
++		goto unlock;
++	sd->nohz_idle = 1;
++
++	for (; sd; sd = sd->parent)
+ 		atomic_dec(&sd->groups->sgp->nr_busy_cpus);
++unlock:
+ 	rcu_read_unlock();
+ }
+ 
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index cc03cfd..03b13c8 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -1187,7 +1187,6 @@ extern void account_cfs_bandwidth_used(int enabled, int was_enabled);
+ enum rq_nohz_flag_bits {
+ 	NOHZ_TICK_STOPPED,
+ 	NOHZ_BALANCE_KICK,
+-	NOHZ_IDLE,
+ };
+ 
+ #define nohz_flags(cpu)	(&cpu_rq(cpu)->nohz_flags)
+-- 
+1.7.9.5
+
