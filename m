@@ -1,65 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756762Ab3DWWKU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 18:10:20 -0400
-Received: from mga02.intel.com ([134.134.136.20]:22565 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756454Ab3DWWKP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 18:10:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,537,1363158000"; 
-   d="scan'208";a="299978245"
-Date: Tue, 23 Apr 2013 15:10:11 -0700
-From: Andi Kleen <ak@linux.intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andi Kleen <andi@firstfloor.org>, hein_tibosch@yahoo.es,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fix initconst in lib/decompress.c
-Message-ID: <20130423221011.GC19487@tassilo.jf.intel.com>
-References: <1366515885-18131-1-git-send-email-andi@firstfloor.org>
- <20130423150209.24d179d9cc508024829aa250@linux-foundation.org>
+	id S932161Ab3DWVxJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 17:53:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34112 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757587Ab3DWVxC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Apr 2013 17:53:02 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        =?UTF-8?q?Stefan=20Br=C3=BCns?= <stefan.bruens@rwth-aachen.de>,
+        =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <zajec5@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 28/42] ssb: implement spurious tone avoidance
+Date: Tue, 23 Apr 2013 14:52:26 -0700
+Message-Id: <20130423215208.360572748@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130423215205.523980967@linuxfoundation.org>
+References: <20130423215205.523980967@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130423150209.24d179d9cc508024829aa250@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 23, 2013 at 03:02:09PM -0700, Andrew Morton wrote:
-> On Sat, 20 Apr 2013 20:44:45 -0700 Andi Kleen <andi@firstfloor.org> wrote:
-> 
-> > From: Andi Kleen <ak@linux.intel.com>
-> > 
-> > 
-> > diff --git a/lib/decompress.c b/lib/decompress.c
-> > index 31a8042..f8fdeda 100644
-> > --- a/lib/decompress.c
-> > +++ b/lib/decompress.c
-> > @@ -38,7 +38,7 @@ struct compress_format {
-> >  	decompress_fn decompressor;
-> >  };
-> >  
-> > -static const struct compress_format compressed_formats[] __initdata = {
-> > +static const struct compress_format compressed_formats[] __initconst = {
-> >  	{ {037, 0213}, "gzip", gunzip },
-> >  	{ {037, 0236}, "gzip", gunzip },
-> >  	{ {0x42, 0x5a}, "bzip2", bunzip2 },
-> 
-> That's missing both a changelog and the signed-off-by.  Did your
-> scripts break?
+3.8-stable review patch.  If anyone has any objections, please let me know.
 
-I normally don't write a description for initconst patches, as
-they should be obvious.
+------------------
 
-Sorry for the missing Signed-off-by. Hereby added:
+From: Rafał Miłecki <zajec5@gmail.com>
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
+commit 46fc4c909339f5a84d1679045297d9d2fb596987 upstream.
 
-Please let me know if I should resend.
+And make use of it in b43. This fixes a regression introduced with
+49d55cef5b1925a5c1efb6aaddaa40fc7c693335
+b43: N-PHY: implement spurious tone avoidance
+This commit made BCM4322 use only MCS 0 on channel 13, which of course
+resulted in performance drop (down to 0.7Mb/s).
 
--Andi
+Reported-by: Stefan Brüns <stefan.bruens@rwth-aachen.de>
+Signed-off-by: Rafał Miłecki <zajec5@gmail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
--- 
-ak@linux.intel.com -- Speaking for myself only
+---
+ drivers/net/wireless/b43/phy_n.c          |    3 ++-
+ drivers/ssb/driver_chipcommon_pmu.c       |   29 +++++++++++++++++++++++++++++
+ include/linux/ssb/ssb_driver_chipcommon.h |    2 ++
+ 3 files changed, 33 insertions(+), 1 deletion(-)
+
+--- a/drivers/net/wireless/b43/phy_n.c
++++ b/drivers/net/wireless/b43/phy_n.c
+@@ -5165,7 +5165,8 @@ static void b43_nphy_pmu_spur_avoid(stru
+ #endif
+ #ifdef CONFIG_B43_SSB
+ 	case B43_BUS_SSB:
+-		/* FIXME */
++		ssb_pmu_spuravoid_pllupdate(&dev->dev->sdev->bus->chipco,
++					    avoid);
+ 		break;
+ #endif
+ 	}
+--- a/drivers/ssb/driver_chipcommon_pmu.c
++++ b/drivers/ssb/driver_chipcommon_pmu.c
+@@ -675,3 +675,32 @@ u32 ssb_pmu_get_controlclock(struct ssb_
+ 		return 0;
+ 	}
+ }
++
++void ssb_pmu_spuravoid_pllupdate(struct ssb_chipcommon *cc, int spuravoid)
++{
++	u32 pmu_ctl = 0;
++
++	switch (cc->dev->bus->chip_id) {
++	case 0x4322:
++		ssb_chipco_pll_write(cc, SSB_PMU1_PLLCTL0, 0x11100070);
++		ssb_chipco_pll_write(cc, SSB_PMU1_PLLCTL1, 0x1014140a);
++		ssb_chipco_pll_write(cc, SSB_PMU1_PLLCTL5, 0x88888854);
++		if (spuravoid == 1)
++			ssb_chipco_pll_write(cc, SSB_PMU1_PLLCTL2, 0x05201828);
++		else
++			ssb_chipco_pll_write(cc, SSB_PMU1_PLLCTL2, 0x05001828);
++		pmu_ctl = SSB_CHIPCO_PMU_CTL_PLL_UPD;
++		break;
++	case 43222:
++		/* TODO: BCM43222 requires updating PLLs too */
++		return;
++	default:
++		ssb_printk(KERN_ERR PFX
++			   "Unknown spuravoidance settings for chip 0x%04X, not changing PLL\n",
++			   cc->dev->bus->chip_id);
++		return;
++	}
++
++	chipco_set32(cc, SSB_CHIPCO_PMU_CTL, pmu_ctl);
++}
++EXPORT_SYMBOL_GPL(ssb_pmu_spuravoid_pllupdate);
+--- a/include/linux/ssb/ssb_driver_chipcommon.h
++++ b/include/linux/ssb/ssb_driver_chipcommon.h
+@@ -219,6 +219,7 @@
+ #define SSB_CHIPCO_PMU_CTL			0x0600 /* PMU control */
+ #define  SSB_CHIPCO_PMU_CTL_ILP_DIV		0xFFFF0000 /* ILP div mask */
+ #define  SSB_CHIPCO_PMU_CTL_ILP_DIV_SHIFT	16
++#define  SSB_CHIPCO_PMU_CTL_PLL_UPD		0x00000400
+ #define  SSB_CHIPCO_PMU_CTL_NOILPONW		0x00000200 /* No ILP on wait */
+ #define  SSB_CHIPCO_PMU_CTL_HTREQEN		0x00000100 /* HT req enable */
+ #define  SSB_CHIPCO_PMU_CTL_ALPREQEN		0x00000080 /* ALP req enable */
+@@ -667,5 +668,6 @@ enum ssb_pmu_ldo_volt_id {
+ void ssb_pmu_set_ldo_voltage(struct ssb_chipcommon *cc,
+ 			     enum ssb_pmu_ldo_volt_id id, u32 voltage);
+ void ssb_pmu_set_ldo_paref(struct ssb_chipcommon *cc, bool on);
++void ssb_pmu_spuravoid_pllupdate(struct ssb_chipcommon *cc, int spuravoid);
+ 
+ #endif /* LINUX_SSB_CHIPCO_H_ */
+
+
