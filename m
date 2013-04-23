@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754134Ab3DWWEt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 18:04:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34281 "EHLO
+	id S1757779Ab3DWVyW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 17:54:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34231 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757784Ab3DWVyX (ORCPT
+	with ESMTP id S1757697Ab3DWVyR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 17:54:23 -0400
+	Tue, 23 Apr 2013 17:54:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        Lu Hua <huax.lu@intel.com>, Dave Airlie <airlied@redhat.com>
-Subject: [ 20/26] fbcon: fix locking harder
-Date: Tue, 23 Apr 2013 14:54:00 -0700
-Message-Id: <20130423215335.433842143@linuxfoundation.org>
+        Andrew Honig <ahonig@google.com>, Gleb Natapov <gleb@redhat.com>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [ 10/26] KVM: Allow cross page reads and writes from cached translations.
+Date: Tue, 23 Apr 2013 14:53:50 -0700
+Message-Id: <20130423215334.434556886@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130423215333.344045754@linuxfoundation.org>
 References: <20130423215333.344045754@linuxfoundation.org>
@@ -27,141 +27,166 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Airlie <airlied@gmail.com>
+From: Andrew Honig <ahonig@google.com>
 
-commit 054430e773c9a1e26f38e30156eff02dedfffc17 upstream.
+commit 8f964525a121f2ff2df948dac908dcc65be21b5b upstream.
 
-Okay so Alan's patch handled the case where there was no registered fbcon,
-however the other path entered in set_con2fb_map pit.
+This patch adds support for kvm_gfn_to_hva_cache_init functions for
+reads and writes that will cross a page.  If the range falls within
+the same memslot, then this will be a fast operation.  If the range
+is split between two memslots, then the slower kvm_read_guest and
+kvm_write_guest are used.
 
-In there we called fbcon_takeover, but we also took the console lock in a couple
-of places. So push the console lock out to the callers of set_con2fb_map,
+Tested: Test against kvm_clock unit tests.
 
-this means fbmem and switcheroo needed to take the lock around the fb notifier
-entry points that lead to this.
-
-This should fix the efifb regression seen by Maarten.
-
-Tested-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-Tested-by: Lu Hua <huax.lu@intel.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Andrew Honig <ahonig@google.com>
+Signed-off-by: Gleb Natapov <gleb@redhat.com>
+Cc: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/vga/vga_switcheroo.c |    3 +++
- drivers/video/console/fbcon.c    |   11 ++++++++---
- drivers/video/fbmem.c            |    2 ++
- 3 files changed, 13 insertions(+), 3 deletions(-)
+ arch/x86/kvm/x86.c        |   13 +++++-------
+ include/linux/kvm_host.h  |    2 -
+ include/linux/kvm_types.h |    1 
+ virt/kvm/kvm_main.c       |   47 ++++++++++++++++++++++++++++++++++++----------
+ 4 files changed, 45 insertions(+), 18 deletions(-)
 
---- a/drivers/gpu/vga/vga_switcheroo.c
-+++ b/drivers/gpu/vga/vga_switcheroo.c
-@@ -26,6 +26,7 @@
- #include <linux/fb.h>
- 
- #include <linux/pci.h>
-+#include <linux/console.h>
- #include <linux/vga_switcheroo.h>
- 
- struct vga_switcheroo_client {
-@@ -256,8 +257,10 @@ static int vga_switchto_stage2(struct vg
- 
- 	if (new_client->fb_info) {
- 		struct fb_event event;
-+		console_lock();
- 		event.info = new_client->fb_info;
- 		fb_notifier_call_chain(FB_EVENT_REMAP_ALL_CONSOLE, &event);
-+		console_unlock();
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -1488,7 +1488,8 @@ static int kvm_pv_enable_async_pf(struct
+ 		return 0;
  	}
  
- 	ret = vgasr_priv.handler->switchto(new_client->id);
---- a/drivers/video/console/fbcon.c
-+++ b/drivers/video/console/fbcon.c
-@@ -842,6 +842,8 @@ static void con2fb_init_display(struct v
-  *
-  *	Maps a virtual console @unit to a frame buffer device
-  *	@newidx.
-+ *
-+ *	This should be called with the console lock held.
-  */
- static int set_con2fb_map(int unit, int newidx, int user)
- {
-@@ -859,7 +861,7 @@ static int set_con2fb_map(int unit, int
+-	if (kvm_gfn_to_hva_cache_init(vcpu->kvm, &vcpu->arch.apf.data, gpa))
++	if (kvm_gfn_to_hva_cache_init(vcpu->kvm, &vcpu->arch.apf.data, gpa,
++					sizeof(u32)))
+ 		return 1;
  
- 	if (!search_for_mapped_con() || !con_is_bound(&fb_con)) {
- 		info_idx = newidx;
--		return fbcon_takeover(0);
-+		return do_fbcon_takeover(0);
- 	}
+ 	vcpu->arch.apf.send_user_only = !(data & KVM_ASYNC_PF_SEND_ALWAYS);
+@@ -1605,12 +1606,9 @@ int kvm_set_msr_common(struct kvm_vcpu *
  
- 	if (oldidx != -1)
-@@ -867,7 +869,6 @@ static int set_con2fb_map(int unit, int
+ 		gpa_offset = data & ~(PAGE_MASK | 1);
  
- 	found = search_fb_in_map(newidx);
+-		/* Check that the address is 32-byte aligned. */
+-		if (gpa_offset & (sizeof(struct pvclock_vcpu_time_info) - 1))
+-			break;
+-
+ 		if (kvm_gfn_to_hva_cache_init(vcpu->kvm,
+-		     &vcpu->arch.pv_time, data & ~1ULL))
++		     &vcpu->arch.pv_time, data & ~1ULL,
++		     sizeof(struct pvclock_vcpu_time_info)))
+ 			vcpu->arch.pv_time_enabled = false;
+ 		else
+ 			vcpu->arch.pv_time_enabled = true;
+@@ -1629,7 +1627,8 @@ int kvm_set_msr_common(struct kvm_vcpu *
+ 			return 1;
  
--	console_lock();
- 	con2fb_map[unit] = newidx;
- 	if (!err && !found)
-  		err = con2fb_acquire_newinfo(vc, info, unit, oldidx);
-@@ -894,7 +895,6 @@ static int set_con2fb_map(int unit, int
- 	if (!search_fb_in_map(info_idx))
- 		info_idx = newidx;
+ 		if (kvm_gfn_to_hva_cache_init(vcpu->kvm, &vcpu->arch.st.stime,
+-							data & KVM_STEAL_VALID_BITS))
++						data & KVM_STEAL_VALID_BITS,
++						sizeof(struct kvm_steal_time)))
+ 			return 1;
  
--	console_unlock();
-  	return err;
+ 		vcpu->arch.st.msr_val = data;
+--- a/include/linux/kvm_host.h
++++ b/include/linux/kvm_host.h
+@@ -427,7 +427,7 @@ int kvm_write_guest(struct kvm *kvm, gpa
+ int kvm_write_guest_cached(struct kvm *kvm, struct gfn_to_hva_cache *ghc,
+ 			   void *data, unsigned long len);
+ int kvm_gfn_to_hva_cache_init(struct kvm *kvm, struct gfn_to_hva_cache *ghc,
+-			      gpa_t gpa);
++			      gpa_t gpa, unsigned long len);
+ int kvm_clear_guest_page(struct kvm *kvm, gfn_t gfn, int offset, int len);
+ int kvm_clear_guest(struct kvm *kvm, gpa_t gpa, unsigned long len);
+ struct kvm_memory_slot *gfn_to_memslot(struct kvm *kvm, gfn_t gfn);
+--- a/include/linux/kvm_types.h
++++ b/include/linux/kvm_types.h
+@@ -71,6 +71,7 @@ struct gfn_to_hva_cache {
+ 	u64 generation;
+ 	gpa_t gpa;
+ 	unsigned long hva;
++	unsigned long len;
+ 	struct kvm_memory_slot *memslot;
+ };
+ 
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -1382,21 +1382,38 @@ int kvm_write_guest(struct kvm *kvm, gpa
  }
  
-@@ -3025,6 +3025,7 @@ static inline int fbcon_unbind(void)
- }
- #endif /* CONFIG_VT_HW_CONSOLE_BINDING */
- 
-+/* called with console_lock held */
- static int fbcon_fb_unbind(int idx)
+ int kvm_gfn_to_hva_cache_init(struct kvm *kvm, struct gfn_to_hva_cache *ghc,
+-			      gpa_t gpa)
++			      gpa_t gpa, unsigned long len)
  {
- 	int i, new_idx = -1, ret = 0;
-@@ -3051,6 +3052,7 @@ static int fbcon_fb_unbind(int idx)
- 	return ret;
- }
+ 	struct kvm_memslots *slots = kvm_memslots(kvm);
+ 	int offset = offset_in_page(gpa);
+-	gfn_t gfn = gpa >> PAGE_SHIFT;
++	gfn_t start_gfn = gpa >> PAGE_SHIFT;
++	gfn_t end_gfn = (gpa + len - 1) >> PAGE_SHIFT;
++	gfn_t nr_pages_needed = end_gfn - start_gfn + 1;
++	gfn_t nr_pages_avail;
  
-+/* called with console_lock held */
- static int fbcon_fb_unregistered(struct fb_info *info)
- {
- 	int i, idx;
-@@ -3088,6 +3090,7 @@ static int fbcon_fb_unregistered(struct
+ 	ghc->gpa = gpa;
+ 	ghc->generation = slots->generation;
+-	ghc->memslot = gfn_to_memslot(kvm, gfn);
+-	ghc->hva = gfn_to_hva_many(ghc->memslot, gfn, NULL);
+-	if (!kvm_is_error_hva(ghc->hva))
++	ghc->len = len;
++	ghc->memslot = gfn_to_memslot(kvm, start_gfn);
++	ghc->hva = gfn_to_hva_many(ghc->memslot, start_gfn, &nr_pages_avail);
++	if (!kvm_is_error_hva(ghc->hva) && nr_pages_avail >= nr_pages_needed) {
+ 		ghc->hva += offset;
+-	else
+-		return -EFAULT;
+-
++	} else {
++		/*
++		 * If the requested region crosses two memslots, we still
++		 * verify that the entire region is valid here.
++		 */
++		while (start_gfn <= end_gfn) {
++			ghc->memslot = gfn_to_memslot(kvm, start_gfn);
++			ghc->hva = gfn_to_hva_many(ghc->memslot, start_gfn,
++						   &nr_pages_avail);
++			if (kvm_is_error_hva(ghc->hva))
++				return -EFAULT;
++			start_gfn += nr_pages_avail;
++		}
++		/* Use the slow path for cross page reads and writes. */
++		ghc->memslot = NULL;
++	}
  	return 0;
  }
+ EXPORT_SYMBOL_GPL(kvm_gfn_to_hva_cache_init);
+@@ -1407,8 +1424,13 @@ int kvm_write_guest_cached(struct kvm *k
+ 	struct kvm_memslots *slots = kvm_memslots(kvm);
+ 	int r;
  
-+/* called with console_lock held */
- static void fbcon_remap_all(int idx)
- {
- 	int i;
-@@ -3132,6 +3135,7 @@ static inline void fbcon_select_primary(
- }
- #endif /* CONFIG_FRAMEBUFFER_DETECT_PRIMARY */
++	BUG_ON(len > ghc->len);
++
+ 	if (slots->generation != ghc->generation)
+-		kvm_gfn_to_hva_cache_init(kvm, ghc, ghc->gpa);
++		kvm_gfn_to_hva_cache_init(kvm, ghc, ghc->gpa, ghc->len);
++
++	if (unlikely(!ghc->memslot))
++		return kvm_write_guest(kvm, ghc->gpa, data, len);
  
-+/* called with console_lock held */
- static int fbcon_fb_registered(struct fb_info *info)
- {
- 	int ret = 0, i, idx;
-@@ -3284,6 +3288,7 @@ static int fbcon_event_notify(struct not
- 		ret = fbcon_fb_unregistered(info);
- 		break;
- 	case FB_EVENT_SET_CONSOLE_MAP:
-+		/* called with console lock held */
- 		con2fb = event->data;
- 		ret = set_con2fb_map(con2fb->console - 1,
- 				     con2fb->framebuffer, 1);
---- a/drivers/video/fbmem.c
-+++ b/drivers/video/fbmem.c
-@@ -1168,8 +1168,10 @@ static long do_fb_ioctl(struct fb_info *
- 		event.data = &con2fb;
- 		if (!lock_fb_info(info))
- 			return -ENODEV;
-+		console_lock();
- 		event.info = info;
- 		ret = fb_notifier_call_chain(FB_EVENT_SET_CONSOLE_MAP, &event);
-+		console_unlock();
- 		unlock_fb_info(info);
- 		break;
- 	case FBIOBLANK:
+ 	if (kvm_is_error_hva(ghc->hva))
+ 		return -EFAULT;
+@@ -1428,8 +1450,13 @@ int kvm_read_guest_cached(struct kvm *kv
+ 	struct kvm_memslots *slots = kvm_memslots(kvm);
+ 	int r;
+ 
++	BUG_ON(len > ghc->len);
++
+ 	if (slots->generation != ghc->generation)
+-		kvm_gfn_to_hva_cache_init(kvm, ghc, ghc->gpa);
++		kvm_gfn_to_hva_cache_init(kvm, ghc, ghc->gpa, ghc->len);
++
++	if (unlikely(!ghc->memslot))
++		return kvm_read_guest(kvm, ghc->gpa, data, len);
+ 
+ 	if (kvm_is_error_hva(ghc->hva))
+ 		return -EFAULT;
 
 
