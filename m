@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755675Ab3DWGhT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 02:37:19 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:50070 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755651Ab3DWGhP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755645Ab3DWGhP (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 23 Apr 2013 02:37:15 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:50067 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755148Ab3DWGhL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Apr 2013 02:37:11 -0400
 From: Tomi Valkeinen <tomi.valkeinen@ti.com>
 To: <linux-fbdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
 CC: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Subject: [PATCH 05/11] fbdev/controlfb: use vm_iomap_memory()
-Date: Tue, 23 Apr 2013 09:36:52 +0300
-Message-ID: <1366699018-5439-5-git-send-email-tomi.valkeinen@ti.com>
+Subject: [PATCH 02/11] fbdev/omapfb: use vm_iomap_memory()
+Date: Tue, 23 Apr 2013 09:36:49 +0300
+Message-ID: <1366699018-5439-2-git-send-email-tomi.valkeinen@ti.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1366699018-5439-1-git-send-email-tomi.valkeinen@ti.com>
 References: <1366699018-5439-1-git-send-email-tomi.valkeinen@ti.com>
@@ -27,70 +27,70 @@ and reduces possibilities for bugs.
 
 Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
 ---
- drivers/video/controlfb.c |   50 ++++++++++++++++++---------------------------
- 1 file changed, 20 insertions(+), 30 deletions(-)
+ drivers/video/omap2/omapfb/omapfb-main.c |   30 +++++++-----------------------
+ 1 file changed, 7 insertions(+), 23 deletions(-)
 
-diff --git a/drivers/video/controlfb.c b/drivers/video/controlfb.c
-index 0c189b3..67b77b4 100644
---- a/drivers/video/controlfb.c
-+++ b/drivers/video/controlfb.c
-@@ -285,36 +285,26 @@ static int controlfb_pan_display(struct fb_var_screeninfo *var,
- static int controlfb_mmap(struct fb_info *info,
-                        struct vm_area_struct *vma)
- {
--       unsigned long off, start;
--       u32 len;
+diff --git a/drivers/video/omap2/omapfb/omapfb-main.c b/drivers/video/omap2/omapfb/omapfb-main.c
+index ca585ef..717f13a 100644
+--- a/drivers/video/omap2/omapfb/omapfb-main.c
++++ b/drivers/video/omap2/omapfb/omapfb-main.c
+@@ -1101,41 +1101,25 @@ static int omapfb_mmap(struct fb_info *fbi, struct vm_area_struct *vma)
+ 	struct omapfb_info *ofbi = FB2OFB(fbi);
+ 	struct fb_fix_screeninfo *fix = &fbi->fix;
+ 	struct omapfb2_mem_region *rg;
+-	unsigned long off;
+ 	unsigned long start;
+ 	u32 len;
+-	int r = -EINVAL;
 -
--       off = vma->vm_pgoff << PAGE_SHIFT;
--
--       /* frame buffer memory */
--       start = info->fix.smem_start;
--       len = PAGE_ALIGN((start & ~PAGE_MASK)+info->fix.smem_len);
--       if (off >= len) {
--               /* memory mapped io */
--               off -= len;
--               if (info->var.accel_flags)
--                       return -EINVAL;
--               start = info->fix.mmio_start;
--               len = PAGE_ALIGN((start & ~PAGE_MASK)+info->fix.mmio_len);
--	       vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
--       } else {
--               /* framebuffer */
--	       vma->vm_page_prot = pgprot_cached_wthru(vma->vm_page_prot);
--       }
--       start &= PAGE_MASK;
--       if ((vma->vm_end - vma->vm_start + off) > len)
--       		return -EINVAL;
--       off += start;
--       vma->vm_pgoff = off >> PAGE_SHIFT;
--       if (io_remap_pfn_range(vma, vma->vm_start, off >> PAGE_SHIFT,
--           vma->vm_end - vma->vm_start, vma->vm_page_prot))
--               return -EAGAIN;
--
--       return 0;
-+	unsigned long mmio_pgoff;
-+	unsigned long start;
-+	u32 len;
-+
-+	start = info->fix.smem_start;
-+	len = info->fix.smem_len;
-+	mmio_pgoff = PAGE_ALIGN((start & ~PAGE_MASK) + len) >> PAGE_SHIFT;
-+	if (vma->vm_pgoff >= mmio_pgoff) {
-+		if (info->var.accel_flags)
-+			return -EINVAL;
-+		vma->vm_pgoff -= mmio_pgoff;
-+		start = info->fix.mmio_start;
-+		len = info->fix.mmio_len;
-+		vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
-+	} else {
-+		/* framebuffer */
-+		vma->vm_page_prot = pgprot_cached_wthru(vma->vm_page_prot);
-+	}
-+
-+	return vm_iomap_memory(vma, start, len);
- }
+-	if (vma->vm_end - vma->vm_start == 0)
+-		return 0;
+-	if (vma->vm_pgoff > (~0UL >> PAGE_SHIFT))
+-		return -EINVAL;
+-	off = vma->vm_pgoff << PAGE_SHIFT;
++	int r;
  
- static int controlfb_blank(int blank_mode, struct fb_info *info)
+ 	rg = omapfb_get_mem_region(ofbi->region);
+ 
+ 	start = omapfb_get_region_paddr(ofbi);
+ 	len = fix->smem_len;
+-	if (off >= len)
+-		goto error;
+-	if ((vma->vm_end - vma->vm_start + off) > len)
+-		goto error;
+-
+-	off += start;
+ 
+-	DBG("user mmap region start %lx, len %d, off %lx\n", start, len, off);
++	DBG("user mmap region start %lx, len %d, off %lx\n", start, len,
++			vma->vm_pgoff << PAGE_SHIFT);
+ 
+-	vma->vm_pgoff = off >> PAGE_SHIFT;
+-	/* VM_IO | VM_DONTEXPAND | VM_DONTDUMP are set by remap_pfn_range() */
+ 	vma->vm_page_prot = pgprot_writecombine(vma->vm_page_prot);
+ 	vma->vm_ops = &mmap_user_ops;
+ 	vma->vm_private_data = rg;
+-	if (io_remap_pfn_range(vma, vma->vm_start, off >> PAGE_SHIFT,
+-			       vma->vm_end - vma->vm_start,
+-			       vma->vm_page_prot)) {
+-		r = -EAGAIN;
++
++	r = vm_iomap_memory(vma, start, len);
++	if (r)
+ 		goto error;
+-	}
+ 
+ 	/* vm_ops.open won't be called for mmap itself. */
+ 	atomic_inc(&rg->map_count);
+@@ -1144,7 +1128,7 @@ static int omapfb_mmap(struct fb_info *fbi, struct vm_area_struct *vma)
+ 
+ 	return 0;
+ 
+- error:
++error:
+ 	omapfb_put_mem_region(ofbi->region);
+ 
+ 	return r;
 -- 
 1.7.10.4
 
