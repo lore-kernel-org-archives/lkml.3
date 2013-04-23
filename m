@@ -1,19 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757687Ab3DWVyL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 17:54:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34179 "EHLO
+	id S1756627Ab3DWWIm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 18:08:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34194 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757646Ab3DWVyJ (ORCPT
+	with ESMTP id S1757684Ab3DWVyL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 17:54:09 -0400
+	Tue, 23 Apr 2013 17:54:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 01/26] ARM: Do 15e0d9e37c (ARM: pm: let platforms select cpu_suspend support) properly
-Date: Tue, 23 Apr 2013 14:53:41 -0700
-Message-Id: <20130423215333.498274587@linuxfoundation.org>
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Rik van Riel <riel@redhat.com>, Michal Hocko <mhocko@suse.cz>,
+        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 04/26] hugetlbfs: add swap entry check in follow_hugetlb_page()
+Date: Tue, 23 Apr 2013 14:53:44 -0700
+Message-Id: <20130423215333.802657218@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130423215333.344045754@linuxfoundation.org>
 References: <20130423215333.344045754@linuxfoundation.org>
@@ -26,90 +32,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Russell King <rmk+kernel@arm.linux.org.uk>
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 
-commit b6c7aabd923a17af993c5a5d5d7995f0b27c000a upstream.
+commit 9cc3a5bd40067b9a0fbd49199d0780463fc2140f upstream.
 
-Let's do the changes properly and fix the same problem everywhere, not
-just for one case.
+With applying the previous patch "hugetlbfs: stop setting VM_DONTDUMP in
+initializing vma(VM_HUGETLB)" to reenable hugepage coredump, if a memory
+error happens on a hugepage and the affected processes try to access the
+error hugepage, we hit VM_BUG_ON(atomic_read(&page->_count) <= 0) in
+get_page().
 
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+The reason for this bug is that coredump-related code doesn't recognise
+"hugepage hwpoison entry" with which a pmd entry is replaced when a memory
+error occurs on a hugepage.
+
+In other words, physical address information is stored in different bit
+layout between hugepage hwpoison entry and pmd entry, so
+follow_hugetlb_page() which is called in get_dump_page() returns a wrong
+page from a given address.
+
+The expected behavior is like this:
+
+  absent   is_swap_pte   FOLL_DUMP   Expected behavior
+  -------------------------------------------------------------------
+   true     false         false       hugetlb_fault
+   false    true          false       hugetlb_fault
+   false    false         false       return page
+   true     false         true        skip page (to avoid allocation)
+   false    true          true        hugetlb_fault
+   false    false         true        return page
+
+With this patch, we can call hugetlb_fault() and take proper actions (we
+wait for migration entries, fail with VM_FAULT_HWPOISON_LARGE for
+hwpoisoned entries,) and as the result we can dump all hugepages except
+for hwpoisoned ones.
+
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Rik van Riel <riel@redhat.com>
+Acked-by: Michal Hocko <mhocko@suse.cz>
+Cc: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Acked-by: David Rientjes <rientjes@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mm/proc-arm920.S |    2 +-
- arch/arm/mm/proc-arm926.S |    2 +-
- arch/arm/mm/proc-sa1100.S |    2 +-
- arch/arm/mm/proc-v6.S     |    2 +-
- arch/arm/mm/proc-xsc3.S   |    2 +-
- arch/arm/mm/proc-xscale.S |    2 +-
- 6 files changed, 6 insertions(+), 6 deletions(-)
+ mm/hugetlb.c |   12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
 
---- a/arch/arm/mm/proc-arm920.S
-+++ b/arch/arm/mm/proc-arm920.S
-@@ -383,7 +383,7 @@ ENTRY(cpu_arm920_set_pte_ext)
- /* Suspend/resume support: taken from arch/arm/plat-s3c24xx/sleep.S */
- .globl	cpu_arm920_suspend_size
- .equ	cpu_arm920_suspend_size, 4 * 3
--#ifdef CONFIG_PM_SLEEP
-+#ifdef CONFIG_ARM_CPU_SUSPEND
- ENTRY(cpu_arm920_do_suspend)
- 	stmfd	sp!, {r4 - r6, lr}
- 	mrc	p15, 0, r4, c13, c0, 0	@ PID
---- a/arch/arm/mm/proc-arm926.S
-+++ b/arch/arm/mm/proc-arm926.S
-@@ -398,7 +398,7 @@ ENTRY(cpu_arm926_set_pte_ext)
- /* Suspend/resume support: taken from arch/arm/plat-s3c24xx/sleep.S */
- .globl	cpu_arm926_suspend_size
- .equ	cpu_arm926_suspend_size, 4 * 3
--#ifdef CONFIG_PM_SLEEP
-+#ifdef CONFIG_ARM_CPU_SUSPEND
- ENTRY(cpu_arm926_do_suspend)
- 	stmfd	sp!, {r4 - r6, lr}
- 	mrc	p15, 0, r4, c13, c0, 0	@ PID
---- a/arch/arm/mm/proc-sa1100.S
-+++ b/arch/arm/mm/proc-sa1100.S
-@@ -172,7 +172,7 @@ ENTRY(cpu_sa1100_set_pte_ext)
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -2906,7 +2906,17 @@ int follow_hugetlb_page(struct mm_struct
+ 			break;
+ 		}
  
- .globl	cpu_sa1100_suspend_size
- .equ	cpu_sa1100_suspend_size, 4 * 3
--#ifdef CONFIG_PM_SLEEP
-+#ifdef CONFIG_ARM_CPU_SUSPEND
- ENTRY(cpu_sa1100_do_suspend)
- 	stmfd	sp!, {r4 - r6, lr}
- 	mrc	p15, 0, r4, c3, c0, 0		@ domain ID
---- a/arch/arm/mm/proc-v6.S
-+++ b/arch/arm/mm/proc-v6.S
-@@ -132,7 +132,7 @@ ENTRY(cpu_v6_set_pte_ext)
- /* Suspend/resume support: taken from arch/arm/mach-s3c64xx/sleep.S */
- .globl	cpu_v6_suspend_size
- .equ	cpu_v6_suspend_size, 4 * 6
--#ifdef CONFIG_PM_SLEEP
-+#ifdef CONFIG_ARM_CPU_SUSPEND
- ENTRY(cpu_v6_do_suspend)
- 	stmfd	sp!, {r4 - r9, lr}
- 	mrc	p15, 0, r4, c13, c0, 0	@ FCSE/PID
---- a/arch/arm/mm/proc-xsc3.S
-+++ b/arch/arm/mm/proc-xsc3.S
-@@ -410,7 +410,7 @@ ENTRY(cpu_xsc3_set_pte_ext)
+-		if (absent ||
++		/*
++		 * We need call hugetlb_fault for both hugepages under migration
++		 * (in which case hugetlb_fault waits for the migration,) and
++		 * hwpoisoned hugepages (in which case we need to prevent the
++		 * caller from accessing to them.) In order to do this, we use
++		 * here is_swap_pte instead of is_hugetlb_entry_migration and
++		 * is_hugetlb_entry_hwpoisoned. This is because it simply covers
++		 * both cases, and because we can't follow correct pages
++		 * directly from any kind of swap entries.
++		 */
++		if (absent || is_swap_pte(huge_ptep_get(pte)) ||
+ 		    ((flags & FOLL_WRITE) && !pte_write(huge_ptep_get(pte)))) {
+ 			int ret;
  
- .globl	cpu_xsc3_suspend_size
- .equ	cpu_xsc3_suspend_size, 4 * 6
--#ifdef CONFIG_PM_SLEEP
-+#ifdef CONFIG_ARM_CPU_SUSPEND
- ENTRY(cpu_xsc3_do_suspend)
- 	stmfd	sp!, {r4 - r9, lr}
- 	mrc	p14, 0, r4, c6, c0, 0	@ clock configuration, for turbo mode
---- a/arch/arm/mm/proc-xscale.S
-+++ b/arch/arm/mm/proc-xscale.S
-@@ -524,7 +524,7 @@ ENTRY(cpu_xscale_set_pte_ext)
- 
- .globl	cpu_xscale_suspend_size
- .equ	cpu_xscale_suspend_size, 4 * 6
--#ifdef CONFIG_PM_SLEEP
-+#ifdef CONFIG_ARM_CPU_SUSPEND
- ENTRY(cpu_xscale_do_suspend)
- 	stmfd	sp!, {r4 - r9, lr}
- 	mrc	p14, 0, r4, c6, c0, 0	@ clock configuration, for turbo mode
 
 
