@@ -1,59 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757798Ab3DWWFs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 18:05:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34258 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757760Ab3DWVyU (ORCPT
+	id S1757741Ab3DWWFr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 18:05:47 -0400
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:13901 "EHLO
+	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757750Ab3DWVyU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 23 Apr 2013 17:54:20 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Felix Fietkau <nbd@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 15/26] ath9k_hw: change AR9580 initvals to fix a stability issue
-Date: Tue, 23 Apr 2013 14:53:55 -0700
-Message-Id: <20130423215334.935497152@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130423215333.344045754@linuxfoundation.org>
-References: <20130423215333.344045754@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+From: Oskar Andero <oskar.andero@sonymobile.com>
+Date: Tue, 23 Apr 2013 23:54:13 +0200
+To: David Rientjes <rientjes@google.com>
+CC: Dan Carpenter <dan.carpenter@oracle.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Brian Swetland <swetland@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Dolkow, Snild" <Snild.Dolkow@sonymobile.com>,
+        "Lekanovic, Radovan" <Radovan.Lekanovic@sonymobile.com>
+Subject: Re: [PATCH] lowmemorykiller: prevent multiple instances of low
+ memory killer
+Message-ID: <20130423215413.GB12983@caracas.corpusers.net>
+References: <20130415131815.GG6638@mwanda>
+ <D949F1A1ED65354FA281790D817657A4A4BF33CC83@seldmbx01.corpusers.net>
+ <20130415141358.GO6692@mwanda>
+ <20130415150356.GA22161@caracas.corpusers.net>
+ <D949F1A1ED65354FA281790D817657A4A4BF33CC84@seldmbx01.corpusers.net>
+ <20130415194947.GA26557@kroah.com>
+ <alpine.DEB.2.02.1304151608040.13614@chino.kir.corp.google.com>
+ <20130416061904.GH6638@mwanda>
+ <20130416105950.GB22161@caracas.corpusers.net>
+ <alpine.DEB.2.02.1304161254270.30779@chino.kir.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1304161254270.30779@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On 22:00 Tue 16 Apr     , David Rientjes wrote:
+> On Tue, 16 Apr 2013, Oskar Andero wrote:
+> 
+> > > > The comment in shrinker.h is misleading, not the source code.
+> > > > do_shrinker_shrink() will fail for anything negative and 0.
+> > > 
+> > > The comment is correct.  The only acceptable negative return is -1.
+> > > Look at the second time do_shrinker_shrink() is called from
+> > > shrink_slab().
+> > > 
+> > >    283                  while (total_scan >= batch_size) {
+> > >    284                          int nr_before;
+> > >    285  
+> > >    286                          nr_before = do_shrinker_shrink(shrinker, shrink, 0);
+> > >    287                          shrink_ret = do_shrinker_shrink(shrinker, shrink,
+> > >    288                                                          batch_size);
+> > >    289                          if (shrink_ret == -1)
+> > >    290                                  break;
+> > >    291                          if (shrink_ret < nr_before)
+> > >    292                                  ret += nr_before - shrink_ret;
+> > >    293                          count_vm_events(SLABS_SCANNED, batch_size);
+> > 
+> > Yes, the comment is correct with what is implemented in the code, but
+> > that doesn't mean the code is right. IMHO, relaying on magical numbers is highly
+> > questionable coding style.
+> > 
+> 
+> No, it's not.  This is controlled higher in shrink_slab() by this:
+> 
+> 	max_pass = do_shrinker_shrink(shrinker, shrink, 0);
+> 	if (max_pass <= 0)
+> 		continue;
+> 
 
-------------------
+Sure, that looks ok, but that doesn't change the fact that line 289
+above has a magical number and I guess that explains the comment:
+> > >    289                          if (shrink_ret == -1)
+> > >    290                                  break;
 
-From: Felix Fietkau <nbd@openwrt.org>
+Just to be clear - this is not about lowmemkiller, but rather a generic
+clean-up of shrinkers that is needed IMO.
 
-commit f09a878511997c25a76bf111a32f6b8345a701a5 upstream.
+> and your patch is implemented incorrectly, i.e. it does not return 
+> LMK_BUSY if the spinlock is contended which needlessly recalls the 
+> shrinker later.
+> 
+> You have a couple of options:
+> 
+>  - return -1 when the spinlock is contended immediately when
+>    !sc->nr_to_scan (although it should really be a cmpxchg since a
+>    spinlock isn't needed), or
 
-The hardware parsing of Control Wrapper Frames needs to be disabled, as
-it has been causing spurious decryption error reports. The initvals for
-other chips have been updated to disable it, but AR9580 was left out for
-some reason.
+I leave it to Snild to comment on the patch, but could you elaborate on why
+you think cmpxchg is a better alternative than a spin_trylock? I just had a
+brief look at the implementation for ARM and it looks like cmpxchg means
+two unconditional memory barriers, whereas spin_trylock has one
+conditional memory barrier. See arch/arm/include/asm/spinlock.h:
+	if (tmp == 0) {
+		smp_mb();
+		return 1;
+	} else {
+		return 0;
+	}
 
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+...and arch/arm/include/asm/cmpxchg.h:
+	smp_mb();
+	ret = __cmpxchg(ptr, old, new, size);
+	smp_mb();
 
----
- drivers/net/wireless/ath/ath9k/ar9580_1p0_initvals.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+AFAIK a memory barrier is pretty costly.
 
---- a/drivers/net/wireless/ath/ath9k/ar9580_1p0_initvals.h
-+++ b/drivers/net/wireless/ath/ath9k/ar9580_1p0_initvals.h
-@@ -648,7 +648,7 @@ static const u32 ar9580_1p0_mac_core[][2
- 	{0x00008258, 0x00000000},
- 	{0x0000825c, 0x40000000},
- 	{0x00008260, 0x00080922},
--	{0x00008264, 0x9bc00010},
-+	{0x00008264, 0x9d400010},
- 	{0x00008268, 0xffffffff},
- 	{0x0000826c, 0x0000ffff},
- 	{0x00008270, 0x00000000},
-
-
+-Oskar
