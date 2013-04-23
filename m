@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757383Ab3DWVwp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 17:52:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33967 "EHLO
+	id S1757479Ab3DWWSo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 18:18:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33988 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757239Ab3DWVwm (ORCPT
+	with ESMTP id S1757384Ab3DWVwp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 17:52:42 -0400
+	Tue, 23 Apr 2013 17:52:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kevin Hao <haokexin@gmail.com>,
-        Tiejun Chen <tiejun.chen@windriver.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: [ 01/42] powerpc: add a missing label in resume_kernel
-Date: Tue, 23 Apr 2013 14:51:59 -0700
-Message-Id: <20130423215205.713391123@linuxfoundation.org>
+        Michael Bohan <mbohan@codeaurora.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [ 05/42] hrtimer: Dont reinitialize a cpu_base lock on CPU_UP
+Date: Tue, 23 Apr 2013 14:52:03 -0700
+Message-Id: <20130423215206.103916918@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130423215205.523980967@linuxfoundation.org>
 References: <20130423215205.523980967@linuxfoundation.org>
@@ -28,34 +27,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kevin Hao <haokexin@gmail.com>
+From: Michael Bohan <mbohan@codeaurora.org>
 
-commit d8b92292408831d86ff7b781e66bf79301934b99 upstream.
+commit 84cc8fd2fe65866e49d70b38b3fdf7219dd92fe0 upstream.
 
-A label 0 was missed in the patch a9c4e541 (powerpc/kprobe: Complete
-kprobe and migrate exception frame). This will cause the kernel
-branch to an undetermined address if there really has a conflict when
-updating the thread flags.
+The current code makes the assumption that a cpu_base lock won't be
+held if the CPU corresponding to that cpu_base is offline, which isn't
+always true.
 
-Signed-off-by: Kevin Hao <haokexin@gmail.com>
-Acked-By: Tiejun Chen <tiejun.chen@windriver.com>
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+If a hrtimer is not queued, then it will not be migrated by
+migrate_hrtimers() when a CPU is offlined. Therefore, the hrtimer's
+cpu_base may still point to a CPU which has subsequently gone offline
+if the timer wasn't enqueued at the time the CPU went down.
+
+Normally this wouldn't be a problem, but a cpu_base's lock is blindly
+reinitialized each time a CPU is brought up. If a CPU is brought
+online during the period that another thread is performing a hrtimer
+operation on a stale hrtimer, then the lock will be reinitialized
+under its feet, and a SPIN_BUG() like the following will be observed:
+
+<0>[   28.082085] BUG: spinlock already unlocked on CPU#0, swapper/0/0
+<0>[   28.087078]  lock: 0xc4780b40, value 0x0 .magic: dead4ead, .owner: <none>/-1, .owner_cpu: -1
+<4>[   42.451150] [<c0014398>] (unwind_backtrace+0x0/0x120) from [<c0269220>] (do_raw_spin_unlock+0x44/0xdc)
+<4>[   42.460430] [<c0269220>] (do_raw_spin_unlock+0x44/0xdc) from [<c071b5bc>] (_raw_spin_unlock+0x8/0x30)
+<4>[   42.469632] [<c071b5bc>] (_raw_spin_unlock+0x8/0x30) from [<c00a9ce0>] (__hrtimer_start_range_ns+0x1e4/0x4f8)
+<4>[   42.479521] [<c00a9ce0>] (__hrtimer_start_range_ns+0x1e4/0x4f8) from [<c00aa014>] (hrtimer_start+0x20/0x28)
+<4>[   42.489247] [<c00aa014>] (hrtimer_start+0x20/0x28) from [<c00e6190>] (rcu_idle_enter_common+0x1ac/0x320)
+<4>[   42.498709] [<c00e6190>] (rcu_idle_enter_common+0x1ac/0x320) from [<c00e6440>] (rcu_idle_enter+0xa0/0xb8)
+<4>[   42.508259] [<c00e6440>] (rcu_idle_enter+0xa0/0xb8) from [<c000f268>] (cpu_idle+0x24/0xf0)
+<4>[   42.516503] [<c000f268>] (cpu_idle+0x24/0xf0) from [<c06ed3c0>] (rest_init+0x88/0xa0)
+<4>[   42.524319] [<c06ed3c0>] (rest_init+0x88/0xa0) from [<c0c00978>] (start_kernel+0x3d0/0x434)
+
+As an example, this particular crash occurred when hrtimer_start() was
+executed on CPU #0. The code locked the hrtimer's current cpu_base
+corresponding to CPU #1. CPU #0 then tried to switch the hrtimer's
+cpu_base to an optimal CPU which was online. In this case, it selected
+the cpu_base corresponding to CPU #3.
+
+Before it could proceed, CPU #1 came online and reinitialized the
+spinlock corresponding to its cpu_base. Thus now CPU #0 held a lock
+which was reinitialized. When CPU #0 finally ended up unlocking the
+old cpu_base corresponding to CPU #1 so that it could switch to CPU
+#3, we hit this SPIN_BUG() above while in switch_hrtimer_base().
+
+CPU #0                            CPU #1
+----                              ----
+...                               <offline>
+hrtimer_start()
+lock_hrtimer_base(base #1)
+...                               init_hrtimers_cpu()
+switch_hrtimer_base()             ...
+...                               raw_spin_lock_init(&cpu_base->lock)
+raw_spin_unlock(&cpu_base->lock)  ...
+<spin_bug>
+
+Solve this by statically initializing the lock.
+
+Signed-off-by: Michael Bohan <mbohan@codeaurora.org>
+Link: http://lkml.kernel.org/r/1363745965-23475-1-git-send-email-mbohan@codeaurora.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/kernel/entry_64.S |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/hrtimer.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/arch/powerpc/kernel/entry_64.S
-+++ b/arch/powerpc/kernel/entry_64.S
-@@ -634,7 +634,7 @@ resume_kernel:
- 	/* Clear _TIF_EMULATE_STACK_STORE flag */
- 	lis	r11,_TIF_EMULATE_STACK_STORE@h
- 	addi	r5,r9,TI_FLAGS
--	ldarx	r4,0,r5
-+0:	ldarx	r4,0,r5
- 	andc	r4,r4,r11
- 	stdcx.	r4,0,r5
- 	bne-	0b
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -61,6 +61,7 @@
+ DEFINE_PER_CPU(struct hrtimer_cpu_base, hrtimer_bases) =
+ {
+ 
++	.lock = __RAW_SPIN_LOCK_UNLOCKED(hrtimer_bases.lock),
+ 	.clock_base =
+ 	{
+ 		{
+@@ -1640,8 +1641,6 @@ static void __cpuinit init_hrtimers_cpu(
+ 	struct hrtimer_cpu_base *cpu_base = &per_cpu(hrtimer_bases, cpu);
+ 	int i;
+ 
+-	raw_spin_lock_init(&cpu_base->lock);
+-
+ 	for (i = 0; i < HRTIMER_MAX_CLOCK_BASES; i++) {
+ 		cpu_base->clock_base[i].cpu_base = cpu_base;
+ 		timerqueue_init_head(&cpu_base->clock_base[i].active);
 
 
