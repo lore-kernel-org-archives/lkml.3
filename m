@@ -1,352 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756321Ab3DWIhR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 04:37:17 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36246 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755287Ab3DWIgs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 04:36:48 -0400
-Date: Sat, 20 Apr 2013 15:42:41 +0200
-From: Jan Kara <jack@suse.cz>
-To: Lukas Czerner <lczerner@redhat.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH v3 17/18] ext4: make punch hole code path work with
- bigalloc
-Message-ID: <20130420134241.GA2461@quack.suse.cz>
-References: <1365498867-27782-1-git-send-email-lczerner@redhat.com>
- <1365498867-27782-18-git-send-email-lczerner@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1365498867-27782-18-git-send-email-lczerner@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756213Ab3DWIfb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 04:35:31 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:46785 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755515Ab3DWIbR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Apr 2013 04:31:17 -0400
+X-AuditID: 9c930197-b7bb3ae000000fa9-8d-517646d199d0
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
+Subject: [PATCH 03/14] perf util: Save pid-cmdline mapping into tracing header
+Date: Tue, 23 Apr 2013 17:31:01 +0900
+Message-Id: <1366705872-12132-4-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1366705872-12132-1-git-send-email-namhyung@kernel.org>
+References: <1366705872-12132-1-git-send-email-namhyung@kernel.org>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 09-04-13 11:14:26, Lukas Czerner wrote:
-> Currently punch hole is disabled in file systems with bigalloc
-> feature enabled. However the recent changes in punch hole patch should
-> make it easier to support punching holes on bigalloc enabled file
-> systems.
-> 
-> This commit changes partial_cluster handling in ext4_remove_blocks(),
-> ext4_ext_rm_leaf() and ext4_ext_remove_space(). Currently
-> partial_cluster is unsigned long long type and it makes sure that we
-> will free the partial cluster if all extents has been released from that
-> cluster. However it has been specifically designed only for truncate.
-> 
-> With punch hole we can be freeing just some extents in the cluster
-> leaving the rest untouched. So we have to make sure that we will notice
-> cluster which still has some extents. To do this I've changed
-> partial_cluster to be signed long long type. The only scenario where
-> this could be a problem is when cluster_size == block size, however in
-> that case there would not be any partial clusters so we're safe. For
-> bigger clusters the signed type is enough. Now we use the negative value
-> in partial_cluster to mark such cluster used, hence we know that we must
-> not free it even if all other extents has been freed from such cluster.
-> 
-> This scenario can be described in simple diagram:
-> 
-> |FFF...FF..FF.UUU|
->  ^----------^
->   punch hole
-> 
-> . - free space
-> | - cluster boundary
-> F - freed extent
-> U - used extent
-> 
-> Also update respective tracepoints to use signed long long type for
-> partial_cluster.
-  The patch looks OK. You can add:
-Reviewed-by: Jan Kara <jack@suse.cz>
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-  Just a minor nit - sometimes you use 'signed long long', sometimes 'long
-long int', sometimes just 'long long'. In kernel we tend to always use just
-'long long' so it would be good to clean that up.
+Current trace info data lacks the saved cmdline mapping which is
+needed for pevent to find out the comm of a task.  Add this and bump
+up the version number so that perf can determine its presence when
+reading.
 
-								Honza
-> 
-> Signed-off-by: Lukas Czerner <lczerner@redhat.com>
-> ---
->  fs/ext4/extents.c           |   69 +++++++++++++++++++++++++++++++-----------
->  include/trace/events/ext4.h |   25 ++++++++-------
->  2 files changed, 64 insertions(+), 30 deletions(-)
-> 
-> diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
-> index 9023b76..577c4f5 100644
-> --- a/fs/ext4/extents.c
-> +++ b/fs/ext4/extents.c
-> @@ -2362,7 +2362,7 @@ int ext4_ext_index_trans_blocks(struct inode *inode, int nrblocks, int chunk)
->  
->  static int ext4_remove_blocks(handle_t *handle, struct inode *inode,
->  			      struct ext4_extent *ex,
-> -			      ext4_fsblk_t *partial_cluster,
-> +			      signed long long *partial_cluster,
->  			      ext4_lblk_t from, ext4_lblk_t to)
->  {
->  	struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
-> @@ -2391,7 +2391,8 @@ static int ext4_remove_blocks(handle_t *handle, struct inode *inode,
->  	 * partial cluster here.
->  	 */
->  	pblk = ext4_ext_pblock(ex) + ee_len - 1;
-> -	if (*partial_cluster && (EXT4_B2C(sbi, pblk) != *partial_cluster)) {
-> +	if ((*partial_cluster > 0) &&
-> +	    (EXT4_B2C(sbi, pblk) != *partial_cluster)) {
->  		ext4_free_blocks(handle, inode, NULL,
->  				 EXT4_C2B(sbi, *partial_cluster),
->  				 sbi->s_cluster_ratio, flags);
-> @@ -2417,23 +2418,41 @@ static int ext4_remove_blocks(handle_t *handle, struct inode *inode,
->  	    && to == le32_to_cpu(ex->ee_block) + ee_len - 1) {
->  		/* tail removal */
->  		ext4_lblk_t num;
-> +		unsigned int unaligned;
->  
->  		num = le32_to_cpu(ex->ee_block) + ee_len - from;
->  		pblk = ext4_ext_pblock(ex) + ee_len - num;
-> -		ext_debug("free last %u blocks starting %llu\n", num, pblk);
-> +		/*
-> +		 * Usually we want to free partial cluster at the end of the
-> +		 * extent, except for the situation when the cluster is still
-> +		 * used by any other extent (partial_cluster is negative).
-> +		 */
-> +		if (*partial_cluster < 0 &&
-> +		    -(*partial_cluster) == EXT4_B2C(sbi, pblk + num - 1))
-> +			flags |= EXT4_FREE_BLOCKS_NOFREE_LAST_CLUSTER;
-> +
-> +		ext_debug("free last %u blocks starting %llu partial %lld\n",
-> +			  num, pblk, *partial_cluster);
->  		ext4_free_blocks(handle, inode, NULL, pblk, num, flags);
->  		/*
->  		 * If the block range to be freed didn't start at the
->  		 * beginning of a cluster, and we removed the entire
-> -		 * extent, save the partial cluster here, since we
-> -		 * might need to delete if we determine that the
-> -		 * truncate operation has removed all of the blocks in
-> -		 * the cluster.
-> +		 * extent and the cluster is not used by any other extent,
-> +		 * save the partial cluster here, since we might need to
-> +		 * delete if we determine that the truncate operation has
-> +		 * removed all of the blocks in the cluster.
-> +		 *
-> +		 * On the other hand, if we did not manage to free the whole
-> +		 * extent, we have to mark the cluster as used (store negative
-> +		 * cluster number in partial_cluster).
->  		 */
-> -		if (pblk & (sbi->s_cluster_ratio - 1) &&
-> -		    (ee_len == num))
-> +		unaligned = pblk & (sbi->s_cluster_ratio - 1);
-> +		if (unaligned && (ee_len == num) &&
-> +		    (*partial_cluster != -((long long)EXT4_B2C(sbi, pblk))))
->  			*partial_cluster = EXT4_B2C(sbi, pblk);
-> -		else
-> +		else if (unaligned)
-> +			*partial_cluster = -((long long)EXT4_B2C(sbi, pblk));
-> +		else if (*partial_cluster > 0)
->  			*partial_cluster = 0;
->  	} else
->  		ext4_error(sbi->s_sb, "strange request: removal(2) "
-> @@ -2451,12 +2470,16 @@ static int ext4_remove_blocks(handle_t *handle, struct inode *inode,
->   * @handle: The journal handle
->   * @inode:  The files inode
->   * @path:   The path to the leaf
-> + * @partial_cluster: The cluster which we'll have to free if all extents
-> + *                   has been released from it. It gets negative in case
-> + *                   that the cluster is still used.
->   * @start:  The first block to remove
->   * @end:   The last block to remove
->   */
->  static int
->  ext4_ext_rm_leaf(handle_t *handle, struct inode *inode,
-> -		 struct ext4_ext_path *path, ext4_fsblk_t *partial_cluster,
-> +		 struct ext4_ext_path *path,
-> +		 signed long long *partial_cluster,
->  		 ext4_lblk_t start, ext4_lblk_t end)
->  {
->  	struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
-> @@ -2469,6 +2492,7 @@ ext4_ext_rm_leaf(handle_t *handle, struct inode *inode,
->  	unsigned short ex_ee_len;
->  	unsigned uninitialized = 0;
->  	struct ext4_extent *ex;
-> +	ext4_fsblk_t pblk;
->  
->  	/* the header must be checked already in ext4_ext_remove_space() */
->  	ext_debug("truncate since %u in leaf to %u\n", start, end);
-> @@ -2507,6 +2531,16 @@ ext4_ext_rm_leaf(handle_t *handle, struct inode *inode,
->  
->  		/* If this extent is beyond the end of the hole, skip it */
->  		if (end < ex_ee_block) {
-> +			/*
-> +			 * We're going to skip this extent and move to another,
-> +			 * so if this extent is not cluster aligned we have
-> +			 * to mark the current cluster as used to avoid
-> +			 * accidentally freeing it later on
-> +			 */
-> +			pblk = ext4_ext_pblock(ex);
-> +			if (pblk & (sbi->s_cluster_ratio - 1))
-> +				*partial_cluster =
-> +					-((long long)EXT4_B2C(sbi, pblk));
->  			ex--;
->  			ex_ee_block = le32_to_cpu(ex->ee_block);
->  			ex_ee_len = ext4_ext_get_actual_len(ex);
-> @@ -2582,7 +2616,7 @@ ext4_ext_rm_leaf(handle_t *handle, struct inode *inode,
->  					sizeof(struct ext4_extent));
->  			}
->  			le16_add_cpu(&eh->eh_entries, -1);
-> -		} else
-> +		} else if (*partial_cluster > 0)
->  			*partial_cluster = 0;
->  
->  		err = ext4_ext_dirty(handle, inode, path + depth);
-> @@ -2600,11 +2634,10 @@ ext4_ext_rm_leaf(handle_t *handle, struct inode *inode,
->  		err = ext4_ext_correct_indexes(handle, inode, path);
->  
->  	/*
-> -	 * If there is still a entry in the leaf node, check to see if
-> -	 * it references the partial cluster.  This is the only place
-> -	 * where it could; if it doesn't, we can free the cluster.
-> +	 * Free the partial cluster only if the current extent does not
-> +	 * reference it. Otherwise we might free used cluster.
->  	 */
-> -	if (*partial_cluster && ex >= EXT_FIRST_EXTENT(eh) &&
-> +	if (*partial_cluster > 0 &&
->  	    (EXT4_B2C(sbi, ext4_ext_pblock(ex) + ex_ee_len - 1) !=
->  	     *partial_cluster)) {
->  		int flags = EXT4_FREE_BLOCKS_FORGET;
-> @@ -2654,7 +2687,7 @@ int ext4_ext_remove_space(struct inode *inode, ext4_lblk_t start,
->  	struct super_block *sb = inode->i_sb;
->  	int depth = ext_depth(inode);
->  	struct ext4_ext_path *path = NULL;
-> -	ext4_fsblk_t partial_cluster = 0;
-> +	signed long long partial_cluster = 0;
->  	handle_t *handle;
->  	int i = 0, err = 0;
->  
-> @@ -2838,7 +2871,7 @@ again:
->  	/* If we still have something in the partial cluster and we have removed
->  	 * even the first extent, then we should free the blocks in the partial
->  	 * cluster as well. */
-> -	if (partial_cluster && path->p_hdr->eh_entries == 0) {
-> +	if (partial_cluster > 0 && path->p_hdr->eh_entries == 0) {
->  		int flags = EXT4_FREE_BLOCKS_FORGET;
->  
->  		if (S_ISDIR(inode->i_mode) || S_ISLNK(inode->i_mode))
-> diff --git a/include/trace/events/ext4.h b/include/trace/events/ext4.h
-> index c92500c..5028d05 100644
-> --- a/include/trace/events/ext4.h
-> +++ b/include/trace/events/ext4.h
-> @@ -1928,7 +1928,7 @@ TRACE_EVENT(ext4_ext_show_extent,
->  TRACE_EVENT(ext4_remove_blocks,
->  	    TP_PROTO(struct inode *inode, struct ext4_extent *ex,
->  		ext4_lblk_t from, ext4_fsblk_t to,
-> -		ext4_fsblk_t partial_cluster),
-> +		long long int partial_cluster),
->  
->  	TP_ARGS(inode, ex, from, to, partial_cluster),
->  
-> @@ -1937,7 +1937,7 @@ TRACE_EVENT(ext4_remove_blocks,
->  		__field(	ino_t,		ino	)
->  		__field(	ext4_lblk_t,	from	)
->  		__field(	ext4_lblk_t,	to	)
-> -		__field(	ext4_fsblk_t,	partial	)
-> +		__field(	long long int,	partial	)
->  		__field(	ext4_fsblk_t,	ee_pblk	)
->  		__field(	ext4_lblk_t,	ee_lblk	)
->  		__field(	unsigned short,	ee_len	)
-> @@ -1955,7 +1955,7 @@ TRACE_EVENT(ext4_remove_blocks,
->  	),
->  
->  	TP_printk("dev %d,%d ino %lu extent [%u(%llu), %u]"
-> -		  "from %u to %u partial_cluster %u",
-> +		  "from %u to %u partial_cluster %lld",
->  		  MAJOR(__entry->dev), MINOR(__entry->dev),
->  		  (unsigned long) __entry->ino,
->  		  (unsigned) __entry->ee_lblk,
-> @@ -1963,19 +1963,20 @@ TRACE_EVENT(ext4_remove_blocks,
->  		  (unsigned short) __entry->ee_len,
->  		  (unsigned) __entry->from,
->  		  (unsigned) __entry->to,
-> -		  (unsigned) __entry->partial)
-> +		  (long long int) __entry->partial)
->  );
->  
->  TRACE_EVENT(ext4_ext_rm_leaf,
->  	TP_PROTO(struct inode *inode, ext4_lblk_t start,
-> -		 struct ext4_extent *ex, ext4_fsblk_t partial_cluster),
-> +		 struct ext4_extent *ex,
-> +		 long long int partial_cluster),
->  
->  	TP_ARGS(inode, start, ex, partial_cluster),
->  
->  	TP_STRUCT__entry(
->  		__field(	dev_t,		dev	)
->  		__field(	ino_t,		ino	)
-> -		__field(	ext4_fsblk_t,	partial	)
-> +		__field(	long long int,	partial	)
->  		__field(	ext4_lblk_t,	start	)
->  		__field(	ext4_lblk_t,	ee_lblk	)
->  		__field(	ext4_fsblk_t,	ee_pblk	)
-> @@ -1993,14 +1994,14 @@ TRACE_EVENT(ext4_ext_rm_leaf,
->  	),
->  
->  	TP_printk("dev %d,%d ino %lu start_lblk %u last_extent [%u(%llu), %u]"
-> -		  "partial_cluster %u",
-> +		  "partial_cluster %lld",
->  		  MAJOR(__entry->dev), MINOR(__entry->dev),
->  		  (unsigned long) __entry->ino,
->  		  (unsigned) __entry->start,
->  		  (unsigned) __entry->ee_lblk,
->  		  (unsigned long long) __entry->ee_pblk,
->  		  (unsigned short) __entry->ee_len,
-> -		  (unsigned) __entry->partial)
-> +		  (long long int) __entry->partial)
->  );
->  
->  TRACE_EVENT(ext4_ext_rm_idx,
-> @@ -2058,7 +2059,7 @@ TRACE_EVENT(ext4_ext_remove_space,
->  
->  TRACE_EVENT(ext4_ext_remove_space_done,
->  	TP_PROTO(struct inode *inode, ext4_lblk_t start, ext4_lblk_t end,
-> -		 int depth, ext4_lblk_t partial, unsigned short eh_entries),
-> +		 int depth, long long int partial, unsigned short eh_entries),
->  
->  	TP_ARGS(inode, start, end, depth, partial, eh_entries),
->  
-> @@ -2068,7 +2069,7 @@ TRACE_EVENT(ext4_ext_remove_space_done,
->  		__field(	ext4_lblk_t,	start		)
->  		__field(	ext4_lblk_t,	end		)
->  		__field(	int,		depth		)
-> -		__field(	ext4_lblk_t,	partial		)
-> +		__field(	long long int,	partial		)
->  		__field(	unsigned short,	eh_entries	)
->  	),
->  
-> @@ -2082,14 +2083,14 @@ TRACE_EVENT(ext4_ext_remove_space_done,
->  		__entry->eh_entries	= eh_entries;
->  	),
->  
-> -	TP_printk("dev %d,%d ino %lu start %u end %u depth %d partial %u "
-> +	TP_printk("dev %d,%d ino %lu start %u end %u depth %d partial %lld "
->  		  "remaining_entries %u",
->  		  MAJOR(__entry->dev), MINOR(__entry->dev),
->  		  (unsigned long) __entry->ino,
->  		  (unsigned) __entry->start,
->  		  (unsigned) __entry->end,
->  		  __entry->depth,
-> -		  (unsigned) __entry->partial,
-> +		  (long long int) __entry->partial,
->  		  (unsigned short) __entry->eh_entries)
->  );
->  
-> -- 
-> 1.7.7.6
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+This is mostly corresponding to trace.dat file version 6, but still
+lacks 4 byte of number of cpus, and 10 bytes of type string - and I
+think we don't need those anyway.
+
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/util/trace-event-info.c  | 33 ++++++++++++++++++++++++++++++++-
+ tools/perf/util/trace-event-parse.c | 17 +++++++++++++++++
+ tools/perf/util/trace-event-read.c  | 36 ++++++++++++++++++++++++++++++++++--
+ tools/perf/util/trace-event.h       |  1 +
+ 4 files changed, 84 insertions(+), 3 deletions(-)
+
+diff --git a/tools/perf/util/trace-event-info.c b/tools/perf/util/trace-event-info.c
+index dcfc1869c9af..5f6cba50efaf 100644
+--- a/tools/perf/util/trace-event-info.c
++++ b/tools/perf/util/trace-event-info.c
+@@ -41,7 +41,7 @@
+ #include <lk/debugfs.h>
+ #include "evsel.h"
+ 
+-#define VERSION "0.5"
++#define VERSION "0.6"
+ 
+ static int output_fd;
+ 
+@@ -390,6 +390,34 @@ out:
+ 	return err;
+ }
+ 
++static int record_saved_cmdline(void)
++{
++	unsigned int size;
++	char *path;
++	struct stat st;
++	int ret, err = 0;
++
++	path = get_tracing_file("saved_cmdlines");
++	if (!path) {
++		pr_debug("can't get tracing/saved_cmdline");
++		return -ENOMEM;
++	}
++
++	ret = stat(path, &st);
++	if (ret < 0) {
++		/* not found */
++		size = 0;
++		if (write(output_fd, &size, 8) != 8)
++			err = -EIO;
++		goto out;
++	}
++	err = record_file(path, 8);
++
++out:
++	put_tracing_file(path);
++	return err;
++}
++
+ static void
+ put_tracepoints_path(struct tracepoint_path *tps)
+ {
+@@ -554,6 +582,9 @@ struct tracing_data *tracing_data_get(struct list_head *pattrs,
+ 	if (err)
+ 		goto out;
+ 	err = record_ftrace_printk();
++	if (err)
++		goto out;
++	err = record_saved_cmdline();
+ 
+ out:
+ 	/*
+diff --git a/tools/perf/util/trace-event-parse.c b/tools/perf/util/trace-event-parse.c
+index fe7a27d67d2b..ef09e4720e04 100644
+--- a/tools/perf/util/trace-event-parse.c
++++ b/tools/perf/util/trace-event-parse.c
+@@ -232,6 +232,23 @@ void parse_ftrace_printk(struct pevent *pevent,
+ 	}
+ }
+ 
++void parse_saved_cmdline(struct pevent *pevent,
++			 char *file, unsigned int size __maybe_unused)
++{
++	char *comm;
++	char *line;
++	char *next = NULL;
++	int pid;
++
++	line = strtok_r(file, "\n", &next);
++	while (line) {
++		sscanf(line, "%d %ms", &pid, &comm);
++		pevent_register_comm(pevent, comm, pid);
++		free(comm);
++		line = strtok_r(NULL, "\n", &next);
++	}
++}
++
+ int parse_ftrace_file(struct pevent *pevent, char *buf, unsigned long size)
+ {
+ 	return pevent_parse_event(pevent, buf, size, "ftrace");
+diff --git a/tools/perf/util/trace-event-read.c b/tools/perf/util/trace-event-read.c
+index f2112270c663..e084e5e654b6 100644
+--- a/tools/perf/util/trace-event-read.c
++++ b/tools/perf/util/trace-event-read.c
+@@ -343,6 +343,31 @@ static int read_event_files(struct pevent *pevent)
+ 	return 0;
+ }
+ 
++static int read_saved_cmdline(struct pevent *pevent)
++{
++	unsigned long long size;
++	char *buf;
++
++	/* it can have 0 size */
++	size = read8(pevent);
++	if (!size)
++		return 0;
++
++	buf = malloc(size + 1);
++	if (buf == NULL)
++		return -1;
++
++	if (do_read(buf, size) < 0) {
++		free(buf);
++		return -1;
++	}
++
++	parse_saved_cmdline(pevent, buf, size);
++
++	free(buf);
++	return 0;
++}
++
+ ssize_t trace_report(int fd, struct pevent **ppevent, bool __repipe)
+ {
+ 	char buf[BUFSIZ];
+@@ -383,10 +408,11 @@ ssize_t trace_report(int fd, struct pevent **ppevent, bool __repipe)
+ 		return -1;
+ 	if (show_version)
+ 		printf("version = %s\n", version);
+-	free(version);
+ 
+-	if (do_read(buf, 1) < 0)
++	if (do_read(buf, 1) < 0) {
++		free(version);
+ 		return -1;
++	}
+ 	file_bigendian = buf[0];
+ 	host_bigendian = bigendian();
+ 
+@@ -422,6 +448,11 @@ ssize_t trace_report(int fd, struct pevent **ppevent, bool __repipe)
+ 	err = read_ftrace_printk(pevent);
+ 	if (err)
+ 		goto out;
++	if (!strcmp(version, "0.6")) {
++		err = read_saved_cmdline(pevent);
++		if (err)
++			goto out;
++	}
+ 
+ 	size = trace_data_size;
+ 	repipe = false;
+@@ -438,5 +469,6 @@ ssize_t trace_report(int fd, struct pevent **ppevent, bool __repipe)
+ out:
+ 	if (pevent)
+ 		pevent_free(pevent);
++	free(version);
+ 	return size;
+ }
+diff --git a/tools/perf/util/trace-event.h b/tools/perf/util/trace-event.h
+index 929baae82f71..fbc8a19552b7 100644
+--- a/tools/perf/util/trace-event.h
++++ b/tools/perf/util/trace-event.h
+@@ -30,6 +30,7 @@ void *raw_field_ptr(struct event_format *event, const char *name, void *data);
+ 
+ void parse_proc_kallsyms(struct pevent *pevent, char *file, unsigned int size);
+ void parse_ftrace_printk(struct pevent *pevent, char *file, unsigned int size);
++void parse_saved_cmdline(struct pevent *pevent, char *file, unsigned int size);
+ 
+ ssize_t trace_report(int fd, struct pevent **pevent, bool repipe);
+ 
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.7.11.7
+
