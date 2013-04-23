@@ -1,53 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932181Ab3DWJy5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 05:54:57 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:47231 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755010Ab3DWJy4 (ORCPT
+	id S1755759Ab3DWKIh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 06:08:37 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:37429 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755020Ab3DWKIg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 05:54:56 -0400
-Date: Tue, 23 Apr 2013 10:54:37 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Jacob Shin <jacob.shin@amd.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "x86@kernel.org" <x86@kernel.org>,
-        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2 1/4] perf: Add hardware breakpoint address mask
-Message-ID: <20130423095437.GD17593@mudshark.cambridge.arm.com>
-References: <1366703825-19373-1-git-send-email-jacob.shin@amd.com>
- <1366703825-19373-2-git-send-email-jacob.shin@amd.com>
+	Tue, 23 Apr 2013 06:08:36 -0400
+Message-ID: <51765D8C.1010008@ahsoftware.de>
+Date: Tue, 23 Apr 2013 12:08:12 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1366703825-19373-2-git-send-email-jacob.shin@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Jonathan Cameron <jic23@cam.ac.uk>, Jiri Kosina <jkosina@suse.cz>
+Subject: Re: [PATCH 3/3] rtc: rtc-hid-sensor-time; add option hctosys to set
+ time at boot
+References: <1366384452-14367-1-git-send-email-holler@ahsoftware.de> <1366384452-14367-4-git-send-email-holler@ahsoftware.de> <20130422163830.4aaaef240b1572dc778dd620@linux-foundation.org> <51764B8E.9090402@ahsoftware.de>
+In-Reply-To: <51764B8E.9090402@ahsoftware.de>
+Content-Type: text/plain; charset=US-ASCII; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jacob,
+Am 23.04.2013 10:51, schrieb Alexander Holler:
+> Am 23.04.2013 01:38, schrieb Andrew Morton:
+>> On Fri, 19 Apr 2013 17:14:12 +0200 Alexander Holler
+>> <holler@ahsoftware.de> wrote:
+>>
+>>> drivers/rtc/hctosys (CONFIG_RTC_HCTOSYS) doesn't work for
+>>> rtc-hid-sensor-time because it will be called in late_init, and thus
+>>> before
+>>> rtc-hid-sensor-time gets loaded.
+>>
+>> Isn't that true of all RTC drivers which are built as modules?  There's
+>> nothing special about hid-sensor-time here?
+>>
+>> I assume the standard answer here is "your RTC driver should be built
+>> into vmlinux".  If we wish to make things work for modular RTC drivers
+>> then we should find a solution which addresses *all* RTC drivers?
+>
+> No. I having rtc-hid-sensor-time, hid-sensor-hub (and USB) statically
+> linked in doesn't help. Here is what happens here with such an
+> configuration:
+>
+> --
+> [    7.638970] drivers/rtc/hctosys.c: unable to open rtc device (rtc0)
+> [    7.645639] Waiting 180sec before mounting root device...
+> [   16.598759] HID-SENSOR-2000a0 HID-SENSOR-2000a0.0: rtc core:
+> registered hid-sensor-time as rtc0
+> [   16.608712] HID-SENSOR-2000a0 HID-SENSOR-2000a0.0: hctosys: setting
+> system clock to 2013-04-19 16:45:06 UTC (1366389906)
+> --
+>
+> I havent't looked in detail at why rtc-hid-sensor-time gets loaded that
+> late, but I assume it's because the USB stack (and/or the device or the
+> communication inbetween) needs some time (and I assume that's why
+> rootwait and rootdelay got invented too).
+>
+>>
+>>> To set the time through rtc-hid-sensor-time
+>>> at startup, the module now checks by default if the system time is
+>>> before
+>>> 1970-01-02 and sets the system time (once) if this is the case.
+>>>
+>>> To disable this behaviour, set the module option hctosys to zero,
+>>> e.g. by
+>>> using rtc-hid-sensor-time.hctosys=0 at the kernel command line if the
+>>> driver is statically linked into the kernel.
+>>
+>> Is a bit hacky, no?
+>
+> I didn't have any other idea to prevent an USB (or any other
+> hot-pluggable HID) device to change the time while still beeing able (by
+> default) to set the time by such an device at boot. But I'm open to
+> suggestions. (E.g. one of the scenarios I want to prevent is, that a
+> computer gets it's time by NTP and someone is able to change the time
+> later on by simply plugging in some HID device.)
+>
 
-On Tue, Apr 23, 2013 at 08:57:02AM +0100, Jacob Shin wrote:
-> Some architectures (for us, AMD Family 16h) allow for "don't care" bit
-> mask to further qualify a hardware breakpoint address, in order to
-> trap on range of addresses. Update perf uapi to add bp_addr_mask field.
+To add something more: I use the system time as a bool 
+"time_was_set_once" and have choosen one day just in case something 
+needs really long to boot (e.g. because of some lengthy fsck or whatever 
+else).
 
-arm and arm64 have a similar feature to this, whereby we currently have to
-translate the bp_len field into a mask, which is all the hardware
-understands. Unlike what you describe, our mask indicates the bytes we *are*
-interested in, but I think we could make use of the same functionality that
-you're introducing here.
+A solution to both problems might be to change the logic for hctosys 
+completly to read the time when the first RTC device appears (or when 
+the device mentioned in CONFIG_RTC_HCTOSYS_DEVICE appears). But that 
+would require a change to hctosys or the RTC subsystem, which would 
+involve more patches and discussion. As rtc-hid-sensor-time currently 
+seems to be the only RTC with the above problems, I've gone the easy 
+route and only modified this driver.
 
-There are some funky restrictions on the alignment of the base address, but
-we can detect those and tell userspace where to go if it tries any funny
-stuff.
+Regards,
 
-Can you see a problem if I simply invert the mask?
+Alexander
 
-Will
