@@ -1,257 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756334Ab3DWPDu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 11:03:50 -0400
-Received: from smtp3.nethome.no ([92.62.33.13]:52317 "EHLO smtp.nethome.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756034Ab3DWPDo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 11:03:44 -0400
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 7bit
-Date: Tue, 23 Apr 2013 17:03:31 +0200
-From: peterasplund@gentoo.se
-To: Kent Yoder <shpedoikal@gmail.com>
-Cc: <Peter.Huewe@infineon.com>, <mail@srajiv.net>, <aaron.lu@intel.com>,
-        <tpmdd-devel@lists.sourceforge.net>, <linux-kernel@vger.kernel.org>
-Subject: Re: [tpmdd-devel] =?UTF-8?Q?tpm=5Ftis=20driver=20failed=20to=20su?=
- =?UTF-8?Q?spend=2C=20error=20-=36=32?=
-In-Reply-To: <20130423144309.GA11692@gmail.com>
-References: <ed364e68730267510d49b2bdc38679a0@gentoo.se>
- <CAEQAOwpmnLXBCJQTf_xU-oSKvAtmpQjHWwMYDm_QOsP+1Kd_aQ@mail.gmail.com>
- <CAEQAOwqWL=WekQqg5WY8TGxzB3x9nB9MVj_UTAVK0ro7TqB2WQ@mail.gmail.com>
- <51540408.3000702@intel.com>
- <74A44E99E3274B4CB570415926B37D4414B14E@MUCSE501.eu.infineon.com>
- <733a6b303b7e9a3c4fb396acad9d9c5c@gentoo.se>
- <CAM0nabGXCfNipOHhzhoFT-yAN-RDOZG9EObQCY-QdRM5LfMCfQ@mail.gmail.com>
- <d9741eb17fbc5731469a79b8bca3ed07@gentoo.se>
- <20130411214141.GA12814@gmail.com>
- <ec94e98bae36890a39e6c332e0dd74c5@gentoo.se>
- <20130423144309.GA11692@gmail.com>
-Message-ID: <e5f4563e58ecbe575d4ac315d1310695@gentoo.se>
-User-Agent: Roundcube Webmail/0.8.0
+	id S1756169Ab3DWPFV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 11:05:21 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:52047 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756126Ab3DWPDt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Apr 2013 11:03:49 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: arnd@arndb.de, linus.walleij@stericsson.com,
+        mian.yousaf.kaukab@stericsson.com, Lee Jones <lee.jones@linaro.org>,
+        Felipe Balbi <balbi@ti.com>, linux-usb@vger.kernel.org
+Subject: [PATCH 06/10] usb: musb: ux500: add device tree probing support
+Date: Tue, 23 Apr 2013 16:03:10 +0100
+Message-Id: <1366729394-11406-7-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1366729394-11406-1-git-send-email-lee.jones@linaro.org>
+References: <1366729394-11406-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013-04-23 16:43 skrev Kent Yoder:
-> On Tue, Apr 23, 2013 at 04:30:53PM +0200, peterasplund@gentoo.se 
-> wrote:
->> 2013-04-11 23:41 skrev Kent Yoder:
->> >On Sat, Apr 06, 2013 at 06:00:59PM +0200, peterasplund@gentoo.se
->> >wrote:
->> >>2013-04-02 16:03 skrev Kent Yoder:
->> >>>Hi Peter,
->> >>>
->> >>>On Mon, Apr 1, 2013 at 4:17 PM,  <peterasplund@gentoo.se> wrote:
->> >>>>2013-03-28 14:12 skrev Peter.Huewe@infineon.com:
->> >>>>>What also might be worth a look - in your bugzilla it states:
->> >>>>>[ 0.225891] pnp 00:0a: Plug and Play ACPI device, IDs IFX0102
->> >>>>>PNP0c31
->> >>>>>(active)
->> >>>>>[ 9.150673] tpm_tis 00:0a: 1.2 TPM (device-id 0xB, rev-id 16)
->> >>>>>[ 9.292148] tpm_tis 00:0a: Adjusting TPM timeout parameters.
->> >>>>>[ 10.084067] tpm_tis 00:0a: A TPM error (7) occurred
->> >>attempting to
->> >>>>>read a pcr
->> >>>>>value
->> >>>>>[ 10.084077] tpm_tis 00:0a: TPM is disabled/deactivated (0x7)
->> >>>>>
->> >>>>>
->> >>>>>Can you perhaps try to enable your TPM in the BIOS? It's quite
->> >>>>>often
->> >>>>>hidden under "embedded security device" or "system security".
->> >>>>>Quite often you have to have a bios password set to access 
->> these
->> >>>>>settings.
->> >>>>>If your system does not have bios support for TPMs, please
->> >>>>>tell me so
->> >>>>>and I'll try to help you out.
->> >>>>>
->> >>>>
->> >>>>I've enabled it in BIOS now, and the output seems to be a bit
->> >>>>different. Not too uplifting though...
->> >>>>
->> >>>>root@zepto:/home/peter# dmesg | grep tpm
->> >>>>[   14.631662] tpm_tis 00:08: 1.2 TPM (device-id 0xB, rev-id 16)
->> >>>>[   14.748276] tpm_tis 00:08: Adjusting TPM timeout parameters.
->> >>>>[   34.908128] tpm_tis 00:08: tpm_transmit: tpm_send: error -62
->> >>>>[  125.992108] tpm_tis 00:08: tpm_transmit: tpm_send: error -62
->> >>>>[  212.908502] tpm_tis 00:08: tpm_transmit: tpm_send: error -62
->> >>>>root@zepto:/home/peter# tpm_version
->> >>>>Tspi_Context_Connect failed: 0x00003011 - layer=tsp, code=0011
->> >>(17),
->> >>>>Communication failure
->> >>>>root@zepto:/home/peter# tcsd -f
->> >>>>TCSD TDDL ioctl: (25) Inappropriate ioctl for device
->> >>>>TCSD TDDL Falling back to Read/Write device support.
->> >>>>TCSD TDDL ERROR: write to device /dev/tpm0 failed: Timer expired
->> >>>>TCSD TCS ERROR: TCS GetCapability failed with result = 0x1087
->> >>>
->> >>>  Can you cat /sys/class/misc/tpm0/device/timeouts? Ivan Pryvalov
->> >>>reported that his TPM showed values that were too small to keep
->> >>from
->> >>>causing timeouts waiting on TPM commands, but too big to
->> >>trigger the
->> >>>driver's code to scale them.  (He saw 12000 for the 3 timeout
->> >>>values.)
->> >>>
->> >>Hi Kent
->> >>
->> >>The values I'm seeing are:
->> >>
->> >>root@zepto:~# cat /sys/class/misc/tpm0/device/timeouts
->> >>752000 2000000 752000 752000 [adjusted]
->> >>
->> >>So I guess these are within a normal range?
->> >
->> >  Yes, these look normal. So it seems you can send commands to the
->> >TPM
->> >up until you try to suspend?  Can you try to cat other files like
->> >/sys/class/misc/tpm0/device/pcrs? This is the simplest way to send
->> >some
->> >command to the TPM...
->> >
->> >Kent
->> >
->>
->> Hi Kent, I'm sorry I haven't replied to this message before. I must
->> have missed it!
->>
->> root@zepto:/sys/class/misc/tpm0# ll
->> drwxr-xr-x 3 root root    0 Apr 23 16:20 ./
->> drwxr-xr-x 3 root root    0 Apr 23 16:20 ../
->> -r--r--r-- 1 root root 4096 Apr 23 16:26 dev
->> lrwxrwxrwx 1 root root    0 Apr 23 16:26 device -> ../../../00:08/
->> drwxr-xr-x 2 root root    0 Apr 23 16:26 power/
->> lrwxrwxrwx 1 root root    0 Apr 23 16:20 subsystem ->
->> ../../../../../class/misc/
->> -rw-r--r-- 1 root root 4096 Apr 23 16:20 uevent
->>
->> root@zepto:/sys/class/misc/tpm0# cat dev
->> 10:224
->> root@zepto:/sys/class/misc/tpm0# cat device/pcrs   (prints nothing
->> after a delay of a second or so)
->> root@zepto:/sys/class/misc/tpm0# cat uevent
->> MAJOR=10
->> MINOR=224
->> DEVNAME=tpm0
->> root@zepto:/sys/class/misc/tpm0# cat device/active
->> root@zepto:/sys/class/misc/tpm0# cat device/cancel
->> cat: device/cancel: Permission denied
->> root@zepto:/sys/class/misc/tpm0# cat device/caps
->> root@zepto:/sys/class/misc/tpm0# cat device/durations
->> 1000000 4000000 152000000 [adjusted]
->> root@zepto:/sys/class/misc/tpm0# cat device/enabled
->> root@zepto:/sys/class/misc/tpm0# cat device/id
->> IFX0102
->> PNP0c31
->> root@zepto:/sys/class/misc/tpm0# cat device/options
->> root@zepto:/sys/class/misc/tpm0# cat device/owned
->> root@zepto:/sys/class/misc/tpm0# cat device/pubek
->> root@zepto:/sys/class/misc/tpm0# cat device/resources
->> state = active
->> mem 0xfed40000-0xfed44fff
->> io 0x4e-0x4f
->> io 0x1670-0x167f
->> irq 11
->> root@zepto:/sys/class/misc/tpm0# cat device/temp_deactivated
->> root@zepto:/sys/class/misc/tpm0# cat device/timeouts
->> 752000 2000000 752000 752000 [adjusted]
->> root@zepto:/sys/class/misc/tpm0# cat device/uevent
->> DRIVER=tpm_tis
->>
->> To be able to do the 'cat' above, I usually need to restart my
->> computer, otherwise the files aren't there. That's probably after
->> I've put the computer in sleep mode (which works if I add tpm_tis to
->> the module blacklist). Perhaps the same problem is related to this
->> one:
->> I just did a grep of my dmesg and saw some new error messages (28)
->> in it. Perhaps they started occurring after I enabled it in BIOS.
->>
->> root@zepto:/home/peter# dmesg | grep tpm_
->> [   11.369198] tpm_tis 00:08: 1.2 TPM (device-id 0xB, rev-id 16)
->> [   11.508115] tpm_tis 00:08: Adjusting TPM timeout parameters.
->> [   32.560040] tpm_tis 00:08: tpm_transmit: tpm_send: error -62
->> [ 4320.577827] tpm_tis 00:08: 1.2 TPM (device-id 0xB, rev-id 16)
->> [ 4320.636111] tpm_tis 00:08: A TPM error (28) occurred attempting
->> to determine the timeouts
->
->   Your TPM failed its internal self test (rc=28).  At this point it 
-> will
-> have gone shut down. Looks like your hardware is broken. :(
->
-> Kent
+This patch will allow ux500-musb to be probed and configured solely from
+configuration found in Device Tree.
 
-But this only seems to happen after the tpm module has been unloaded 
-when going to sleep. I don't get these messages after a reboot:
-root@zepto:/sys/class/misc/tpm0# dmesg | grep tpm
-[   12.068202] tpm_tis 00:08: 1.2 TPM (device-id 0xB, rev-id 16)
-[   12.212122] tpm_tis 00:08: Adjusting TPM timeout parameters.
-[   33.068050] tpm_tis 00:08: tpm_transmit: tpm_send: error -62
-[  434.500088] tpm_tis 00:08: tpm_transmit: tpm_send: error -62
-[  485.180079] tpm_tis 00:08: tpm_transmit: tpm_send: error -62
-[  511.436081] tpm_tis 00:08: tpm_transmit: tpm_send: error -62
-[  523.412084] tpm_tis 00:08: tpm_transmit: tpm_send: error -62
-[  535.396083] tpm_tis 00:08: tpm_transmit: tpm_send: error -62
-[  550.316068] tpm_tis 00:08: tpm_transmit: tpm_send: error -62
-[  559.164074] tpm_tis 00:08: tpm_transmit: tpm_send: error -62
-[  570.028078] tpm_tis 00:08: tpm_transmit: tpm_send: error -62
+Cc: Felipe Balbi <balbi@ti.com>
+Cc: linux-usb@vger.kernel.org
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ .../devicetree/bindings/usb/ux500-usb.txt          |   49 +++++++++++++++++++
+ drivers/usb/musb/ux500.c                           |   51 ++++++++++++++++++++
+ 2 files changed, 100 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/usb/ux500-usb.txt
 
-/Peter
+diff --git a/Documentation/devicetree/bindings/usb/ux500-usb.txt b/Documentation/devicetree/bindings/usb/ux500-usb.txt
+new file mode 100644
+index 0000000..2844cbc
+--- /dev/null
++++ b/Documentation/devicetree/bindings/usb/ux500-usb.txt
+@@ -0,0 +1,49 @@
++Ux500 MUSB
++
++Required properties:
++ - compatible : Should be "stericsson,db8500-musb"
++ - reg        : Offset and length of registers
++ - interrupts : Interrupt; mode, number and trigger
++ - mode       : One of; "host", "otg", or "peripheral"
++
++Optional properties:
++ - dmas       : A list of dma channels;
++                dma-controller, event-line, fixed-channel, flags
++ - dma-names  : An ordered list of channel names affiliated to the above
++
++Example:
++
++usb_per5@a03e0000 {
++	compatible = "stericsson,db8500-musb", "mentor,musb";
++	reg = <0xa03e0000 0x10000>;
++	interrupts = <0 23 0x4>;
++	interrupt-names = "mc";
++
++	mode = "otg";
++
++	dmas = <&dma 38 0 0x2>, /* Logical - DevToMem */
++	       <&dma 38 0 0x0>, /* Logical - MemToDev */
++	       <&dma 37 0 0x2>, /* Logical - DevToMem */
++	       <&dma 37 0 0x0>, /* Logical - MemToDev */
++	       <&dma 36 0 0x2>, /* Logical - DevToMem */
++	       <&dma 36 0 0x0>, /* Logical - MemToDev */
++	       <&dma 19 0 0x2>, /* Logical - DevToMem */
++	       <&dma 19 0 0x0>, /* Logical - MemToDev */
++	       <&dma 18 0 0x2>, /* Logical - DevToMem */
++	       <&dma 18 0 0x0>, /* Logical - MemToDev */
++	       <&dma 17 0 0x2>, /* Logical - DevToMem */
++	       <&dma 17 0 0x0>, /* Logical - MemToDev */
++	       <&dma 16 0 0x2>, /* Logical - DevToMem */
++	       <&dma 16 0 0x0>, /* Logical - MemToDev */
++	       <&dma 39 0 0x2>, /* Logical - DevToMem */
++	       <&dma 39 0 0x0>; /* Logical - MemToDev */
++
++	dma-names = "iep_1_9",  "oep_1_9",
++		    "iep_2_10", "oep_2_10",
++		    "iep_3_11", "oep_3_11",
++		    "iep_4_12", "oep_4_12",
++		    "iep_5_13", "oep_5_13",
++		    "iep_6_14", "oep_6_14",
++		    "iep_7_15", "oep_7_15",
++		    "iep_8",    "oep_8";
++};
+diff --git a/drivers/usb/musb/ux500.c b/drivers/usb/musb/ux500.c
+index 7ddb132..6418624 100644
+--- a/drivers/usb/musb/ux500.c
++++ b/drivers/usb/musb/ux500.c
+@@ -25,6 +25,7 @@
+ #include <linux/clk.h>
+ #include <linux/err.h>
+ #include <linux/io.h>
++#include <linux/of.h>
+ #include <linux/platform_device.h>
+ 
+ #include "musb_core.h"
+@@ -88,14 +89,57 @@ static const struct musb_platform_ops ux500_ops = {
+ 	.exit		= ux500_musb_exit,
+ };
+ 
++static struct musb_hdrc_platform_data *
++ux500_of_probe(struct platform_device *pdev, struct device_node *np)
++{
++	struct musb_hdrc_platform_data *pdata;
++	const char *mode;
++	int strlen;
++
++	pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
++	if (!pdata)
++		return NULL;
++
++	mode = of_get_property(np, "mode", &strlen);
++	if (!mode) {
++		dev_err(&pdev->dev, "No 'mode' property found\n");
++		return NULL;
++	}
++
++	if (strlen > 0) {
++		if (!strcmp(mode, "host"))
++			pdata->mode = MUSB_HOST;
++		if (!strcmp(mode, "otg"))
++			pdata->mode = MUSB_OTG;
++		if (!strcmp(mode, "peripheral"))
++			pdata->mode = MUSB_PERIPHERAL;
++	}
++
++	return pdata;
++}
++
+ static int ux500_probe(struct platform_device *pdev)
+ {
+ 	struct musb_hdrc_platform_data	*pdata = pdev->dev.platform_data;
++	struct device_node		*np = pdev->dev.of_node;
+ 	struct platform_device		*musb;
+ 	struct ux500_glue		*glue;
+ 	struct clk			*clk;
+ 	int				ret = -ENOMEM;
+ 
++	if (!pdata) {
++		if (np) {
++			pdata = ux500_of_probe(pdev, np);
++			if (!pdata)
++				goto err0;
++
++			pdev->dev.platform_data = pdata;
++		} else {
++			dev_err(&pdev->dev, "no pdata or device tree found\n");
++			goto err0;
++		}
++	}
++
+ 	glue = kzalloc(sizeof(*glue), GFP_KERNEL);
+ 	if (!glue) {
+ 		dev_err(&pdev->dev, "failed to allocate glue context\n");
+@@ -124,6 +168,7 @@ static int ux500_probe(struct platform_device *pdev)
+ 	musb->dev.parent		= &pdev->dev;
+ 	musb->dev.dma_mask		= &pdev->dev.coherent_dma_mask;
+ 	musb->dev.coherent_dma_mask	= pdev->dev.coherent_dma_mask;
++	musb->dev.of_node		= pdev->dev.of_node;
+ 
+ 	glue->dev			= &pdev->dev;
+ 	glue->musb			= musb;
+@@ -222,12 +267,18 @@ static const struct dev_pm_ops ux500_pm_ops = {
+ #define DEV_PM_OPS	NULL
+ #endif
+ 
++static const struct of_device_id ux500_match[] = {
++        { .compatible = "stericsson,db8500-musb", },
++        {}
++};
++
+ static struct platform_driver ux500_driver = {
+ 	.probe		= ux500_probe,
+ 	.remove		= ux500_remove,
+ 	.driver		= {
+ 		.name	= "musb-ux500",
+ 		.pm	= DEV_PM_OPS,
++		.of_match_table = ux500_match,
+ 	},
+ };
+ 
+-- 
+1.7.10.4
 
->
->> [ 4320.696081] tpm_tis 00:08: A TPM error (28) occurred attempting
->> to determine the durations
->> [ 4320.696091] tpm_tis 00:08: Could not get TPM timeouts and 
->> durations
->> [ 9279.692915] tpm_tis 00:08: 1.2 TPM (device-id 0xB, rev-id 16)
->> [ 9279.756184] tpm_tis 00:08: A TPM error (28) occurred attempting
->> to determine the timeouts
->> [ 9279.822186] tpm_tis 00:08: A TPM error (28) occurred attempting
->> to determine the durations
->> [ 9279.822197] tpm_tis 00:08: Could not get TPM timeouts and 
->> durations
->> [10968.845856] tpm_tis 00:08: 1.2 TPM (device-id 0xB, rev-id 16)
->> [10968.904111] tpm_tis 00:08: A TPM error (28) occurred attempting
->> to determine the timeouts
->> [10968.964100] tpm_tis 00:08: A TPM error (28) occurred attempting
->> to determine the durations
->> [10968.964111] tpm_tis 00:08: Could not get TPM timeouts and 
->> durations
->> [13304.341746] tpm_tis 00:08: 1.2 TPM (device-id 0xB, rev-id 16)
->> [13304.400093] tpm_tis 00:08: A TPM error (28) occurred attempting
->> to determine the timeouts
->> [13304.464134] tpm_tis 00:08: A TPM error (28) occurred attempting
->> to determine the durations
->> [13304.464142] tpm_tis 00:08: Could not get TPM timeouts and 
->> durations
->>
->> Thank you,
->> Peter A
->>
->>
->> >>Thanks,
->> >>Peter
->> >>
->> >>> If you're seeing similar values, can you try the attached patch?
->> >>>
->> >>>Thanks,
->> >>>Kent
->> >>>
->> >>>>/Peter A
->> >>>>
->> >>>>
->> >>
->> 
->> >>>>------------------------------------------------------------------------------
->> >>>>Own the Future-Intel&reg; Level Up Game Demo Contest 2013
->> >>>>Rise to greatness in Intel's independent game demo contest.
->> >>>>Compete for recognition, cash, and the chance to get your game
->> >>>>on Steam. $5K grand prize plus 10 genre and skill prizes.
->> >>>>Submit your demo by 6/6/13. http://p.sf.net/sfu/intel_levelupd2d
->> >>>>_______________________________________________
->> >>>>tpmdd-devel mailing list
->> >>>>tpmdd-devel@lists.sourceforge.net
->> >>>>https://lists.sourceforge.net/lists/listinfo/tpmdd-devel
