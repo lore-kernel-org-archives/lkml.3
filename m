@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932306Ab3DWVya (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 17:54:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34274 "EHLO
+	id S932277Ab3DWVy2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 17:54:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34250 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757781Ab3DWVyW (ORCPT
+	with ESMTP id S1757732Ab3DWVyT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 17:54:22 -0400
+	Tue, 23 Apr 2013 17:54:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>,
-        peterz@infradead.org, jolsa@redhat.com, ak@linux.intel.com
-Subject: [ 19/26] perf/x86: Fix offcore_rsp valid mask for SNB/IVB
-Date: Tue, 23 Apr 2013 14:53:59 -0700
-Message-Id: <20130423215335.317126042@linuxfoundation.org>
+        Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Jiri Olsa <jolsa@redhat.com>, Will Deacon <will.deacon@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 13/26] ARM: 7698/1: perf: fix group validation when using enable_on_exec
+Date: Tue, 23 Apr 2013 14:53:53 -0700
+Message-Id: <20130423215334.726196467@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130423215333.344045754@linuxfoundation.org>
 References: <20130423215333.344045754@linuxfoundation.org>
@@ -27,67 +30,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stephane Eranian <eranian@google.com>
+From: Will Deacon <will.deacon@arm.com>
 
-commit f1923820c447e986a9da0fc6bf60c1dccdf0408e upstream.
+commit cb2d8b342aa084d1f3ac29966245dec9163677fb upstream.
 
-The valid mask for both offcore_response_0 and
-offcore_response_1 was wrong for SNB/SNB-EP,
-IVB/IVB-EP. It was possible to write to
-reserved bit and cause a GP fault crashing
-the kernel.
+Events may be created with attr->disabled == 1 and attr->enable_on_exec
+== 1, which confuses the group validation code because events with the
+PERF_EVENT_STATE_OFF are not considered candidates for scheduling, which
+may lead to failure at group scheduling time.
 
-This patch fixes the problem by correctly marking the
-reserved bits in the valid mask for all the processors
-mentioned above.
+This patch fixes the validation check for ARM, so that events in the
+OFF state are still considered when enable_on_exec is true.
 
-A distinction between desktop and server parts is introduced
-because bits 24-30 are only available on the server parts.
-
-This version of the  patch is just a rebase to perf/urgent tree
-and should apply to older kernels as well.
-
-Signed-off-by: Stephane Eranian <eranian@google.com>
-Cc: peterz@infradead.org
-Cc: jolsa@redhat.com
-Cc: ak@linux.intel.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Reported-by: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/cpu/perf_event_intel.c |   15 ++++++++++++---
- 1 file changed, 12 insertions(+), 3 deletions(-)
+ arch/arm/kernel/perf_event.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -126,8 +126,14 @@ static struct event_constraint intel_gen
- };
+--- a/arch/arm/kernel/perf_event.c
++++ b/arch/arm/kernel/perf_event.c
+@@ -319,7 +319,10 @@ validate_event(struct pmu_hw_events *hw_
+ 	struct hw_perf_event fake_event = event->hw;
+ 	struct pmu *leader_pmu = event->group_leader->pmu;
  
- static struct extra_reg intel_snb_extra_regs[] __read_mostly = {
--	INTEL_EVENT_EXTRA_REG(0xb7, MSR_OFFCORE_RSP_0, 0x3fffffffffull, RSP_0),
--	INTEL_EVENT_EXTRA_REG(0xbb, MSR_OFFCORE_RSP_1, 0x3fffffffffull, RSP_1),
-+	INTEL_EVENT_EXTRA_REG(0xb7, MSR_OFFCORE_RSP_0, 0x3f807f8fffull, RSP_0),
-+	INTEL_EVENT_EXTRA_REG(0xbb, MSR_OFFCORE_RSP_1, 0x3f807f8fffull, RSP_1),
-+	EVENT_EXTRA_END
-+};
+-	if (event->pmu != leader_pmu || event->state <= PERF_EVENT_STATE_OFF)
++	if (event->pmu != leader_pmu || event->state < PERF_EVENT_STATE_OFF)
++		return 1;
 +
-+static struct extra_reg intel_snbep_extra_regs[] __read_mostly = {
-+	INTEL_EVENT_EXTRA_REG(0xb7, MSR_OFFCORE_RSP_0, 0x3fffff8fffull, RSP_0),
-+	INTEL_EVENT_EXTRA_REG(0xbb, MSR_OFFCORE_RSP_1, 0x3fffff8fffull, RSP_1),
- 	EVENT_EXTRA_END
- };
++	if (event->state == PERF_EVENT_STATE_OFF && !event->attr.enable_on_exec)
+ 		return 1;
  
-@@ -1851,7 +1857,10 @@ __init int intel_pmu_init(void)
- 
- 		x86_pmu.event_constraints = intel_snb_event_constraints;
- 		x86_pmu.pebs_constraints = intel_snb_pebs_event_constraints;
--		x86_pmu.extra_regs = intel_snb_extra_regs;
-+		if (boot_cpu_data.x86_model == 45)
-+			x86_pmu.extra_regs = intel_snbep_extra_regs;
-+		else
-+			x86_pmu.extra_regs = intel_snb_extra_regs;
- 		/* all extra regs are per-cpu when HT is on */
- 		x86_pmu.er_flags |= ERF_HAS_RSP_1;
- 		x86_pmu.er_flags |= ERF_NO_HT_SHARING;
+ 	return armpmu->get_event_idx(hw_events, &fake_event) >= 0;
 
 
