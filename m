@@ -1,61 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757491Ab3DWQez (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 12:34:55 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:37931 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756920Ab3DWQew (ORCPT
+	id S1757288Ab3DWQcD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 12:32:03 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:60797 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757235Ab3DWQbz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 12:34:52 -0400
-X-IronPort-AV: E=Sophos;i="4.87,534,1363158000"; 
-   d="scan'208";a="40841898"
-Message-ID: <5176B82A.9070003@codeaurora.org>
-Date: Tue, 23 Apr 2013 09:34:50 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Rob Herring <robherring2@gmail.com>
-CC: John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>, arm@kernel.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 0/4] ARM 64 bit sched_clock take #2
-References: <51709FD7.8050408@gmail.com> <1366417746-24990-1-git-send-email-sboyd@codeaurora.org> <51756CB6.5060607@linaro.org> <5175A1B8.1090202@gmail.com>
-In-Reply-To: <5175A1B8.1090202@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 23 Apr 2013 12:31:55 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Marc Dietrich <marvin24@gmx.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH 14/21] staging: nvec: allow modular build
+Date: Tue, 23 Apr 2013 18:30:46 +0200
+Message-Id: <1366734653-488286-15-git-send-email-arnd@arndb.de>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1366734653-488286-1-git-send-email-arnd@arndb.de>
+References: <1366734653-488286-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V02:K0:hNQPunI4GtS80JnaF1hEU7vdzUvu44Uwx0Yge0msK3O
+ 9RcfdOyx+CmWhb8s6Jtq5P1sNBimsJscFKwgvo0Lm9bZH7NUT/
+ +IVWUMUAlyc90C4091STN8EQIyifcQ5of6mp0imUdYO2g5gBOu
+ MLkCZ68HwVNtyVbUUasKBLh7gF77vKh+1T+IqV3sbNbcvisUSN
+ w4EI6H/qUIIZ8txDXFtaPHBoxGdwWi8hQwvJTH8+VcTRLIBk/n
+ xcgkODec+DIClHdlRhL5n54S8D4/iniuWhpzr3Upvf8rhS0gBb
+ ucP3AFceizAMejuMZdBaVPONQ1GDYPtzPy9CviL+Skb6ToX3Ej
+ ASEQlcJiZwiLqdTLHFGv38FoXUmTivp7gmTWkN6UY
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/22/13 13:46, Rob Herring wrote:
-> On 04/22/2013 12:00 PM, John Stultz wrote:
->> On 04/19/2013 05:29 PM, Stephen Boyd wrote:
->>> This is what I was thinking. I don't see why we can't move this to
->>> generic code and have arm64 use it too. Those patches will follow once
->>> I find an arm64
->>> compiler.
->> I think moving this to generic code sounds like a good idea. You could
->> probably also prototype and test the 64bit code with x86_64, using the
->> TSC counter.
-> I agree this should all be common, but I'd like to see the common
-> version first. That is not going to make it for 3.10. For 3.10, the
-> immediate need is to fix suspend and initial time for the arch timer. I
-> think this should be fixed locally in arch timer code for 3.10. The
-> alternative is to revert linux-next commit 023796b9be3a77481cd5 (ARM:
-> arch_timer: use full 64-bit counter for sched_clock) which will cause
-> the arch timer to not be used as sched_clock if another higher frequency
-> sched_clock is registered.
+The serio code can be a loadable module, which in turn means that nvec
+also has to be a module, so mark it as "tristate" in Kconfig.
 
-This would make sense to me if we were already in the 3.10-rc1 or rc2
-phase, but this code isn't even in Linus' tree yet. Why can't we just
-fix it properly before sending off to Linus? Obviously this is up to the
-maintainers to decide, so if we can't fix it properly with this patch
-series I propose we revert like you say.
+drivers/built-in.o: In function `nvec_mouse_remove':
+drivers/staging/nvec/nvec_ps2.c:136: undefined reference to `serio_unregister_port'
+drivers/built-in.o: In function `nvec_mouse_probe':
+drivers/staging/nvec/nvec_ps2.c:126: undefined reference to `__serio_register_port'
+drivers/built-in.o: In function `nvec_ps2_notifier':
+drivers/staging/nvec/nvec_ps2.c:84: undefined reference to `serio_interrupt'
+drivers/staging/nvec/nvec_ps2.c:91: undefined reference to `serio_interrupt'
 
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Marc Dietrich <marvin24@gmx.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/staging/nvec/Kconfig | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/staging/nvec/Kconfig b/drivers/staging/nvec/Kconfig
+index f779fdc..7e61ada 100644
+--- a/drivers/staging/nvec/Kconfig
++++ b/drivers/staging/nvec/Kconfig
+@@ -1,5 +1,5 @@
+ config MFD_NVEC
+-	bool "NV Tegra Embedded Controller SMBus Interface"
++	tristate "NV Tegra Embedded Controller SMBus Interface"
+ 	depends on I2C && GPIOLIB && ARCH_TEGRA
+ 	select MFD_CORE
+ 	help
+@@ -7,28 +7,28 @@ config MFD_NVEC
+ 	    controller.
+ 
+ config KEYBOARD_NVEC
+-	bool "Keyboard on nVidia compliant EC"
++	tristate "Keyboard on nVidia compliant EC"
+ 	depends on MFD_NVEC && INPUT
+ 	help
+ 	  Say Y here to enable support for a keyboard connected to 
+ 	  a nVidia compliant embedded controller.
+ 
+ config SERIO_NVEC_PS2
+-	bool "PS2 on nVidia EC"
++	tristate "PS2 on nVidia EC"
+ 	depends on MFD_NVEC && SERIO
+ 	help
+ 	  Say Y here to enable support for a Touchpad / Mouse connected
+ 	  to a nVidia compliant embedded controller.
+ 
+ config NVEC_POWER
+-	bool "NVEC charger and battery"
++	tristate "NVEC charger and battery"
+ 	depends on MFD_NVEC && POWER_SUPPLY
+ 	help
+ 	  Say Y to enable support for battery and charger interface for
+ 	  nVidia compliant embedded controllers.
+ 
+ config NVEC_PAZ00
+-	bool "Support for OEM specific functions on Compal PAZ00 based devices"
++	tristate "Support for OEM specific functions on Compal PAZ00 based devices"
+ 	depends on MFD_NVEC && LEDS_CLASS
+ 	help
+ 	  Say Y to enable control of the yellow side leds on Compal PAZ00 based
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+1.8.1.2
 
