@@ -1,71 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757029Ab3DWRg7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 13:36:59 -0400
-Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:28072 "EHLO
-	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756861Ab3DWRg6 (ORCPT
+	id S1757085Ab3DWRhg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 13:37:36 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:53460 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756868Ab3DWRhf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 13:36:58 -0400
-Message-ID: <1366738610.1802.9.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH -mm] ipc,sem: fix locking in semctl_main
-From: Davidlohr Bueso <davidlohr.bueso@hp.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>, sedat.dilek@gmail.com,
-        Emmanuel Benisty <benisty.e@gmail.com>
-Date: Tue, 23 Apr 2013 10:36:50 -0700
-In-Reply-To: <20130423122905.33ac0d3c@annuminas.surriel.com>
-References: <20130423122905.33ac0d3c@annuminas.surriel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+	Tue, 23 Apr 2013 13:37:35 -0400
+Date: Tue, 23 Apr 2013 13:37:32 -0400 (EDT)
+Message-Id: <20130423.133732.2222922370397287096.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+Cc: David.Laight@aculab.com, mingo@kernel.org, hpa@zytor.com,
+        tglx@linutronix.de, tytso@mit.edu, linux-kernel@vger.kernel.org,
+        x86@kernel.org, netdev@vger.kernel.org, linux-ext4@vger.kernel.org
+Subject: Re: Unsigned widening casts of binary "not" operations..
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <CA+55aFxvpcF7+dyy5d3+JP4Wfv90zPsRVtEhNG9Pky5gWTm_Pg@mail.gmail.com>
+References: <CA+55aFwogFL=nm=YHwARcz9OTRBdWEDPG0xcqM-H3k-VZTOZPQ@mail.gmail.com>
+	<AE90C24D6B3A694183C094C60CF0A2F6026B71F2@saturn3.aculab.com>
+	<CA+55aFxvpcF7+dyy5d3+JP4Wfv90zPsRVtEhNG9Pky5gWTm_Pg@mail.gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Tue, 23 Apr 2013 10:37:34 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-04-23 at 12:29 -0400, Rik van Riel wrote:
-> Andrew, here is the patch I promised :)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 23 Apr 2013 08:42:49 -0700
+
+> An explicit cast fixes it, and shows that you were aware of the issue:
 > 
-> Everywhere else in the code, we check sma->sem_perm.deleted under
-> the semaphore array lock, so we should do teh same here.
-> The easy fix is to simply not drop and re-take the lock, but keep
-> it locked.
+>    foo &= ~(foo_t)bar;
 > 
+> and gcc will generate the right logic. Of course, casts then have
+> their own problems, which your thing avoids (as would just having a
+> "andn" operation in C)
 
-CCing Linus, Sedat and Emmanuel.
+I just want to mention that this is dangerous in different ways, we
+just recently got a patch in the networking that removed such a cast.
+The problem is when the cast narrows, f.e.:
 
-This looks very much like a patch I asked Sedat to test during the
-weekend, which according to him didn't solve his issue. The patch is
-correct in any case.
+	~(u8)0
 
-> This patch can be folded into ipcsem-fine-grained-locking-for-semtimedop.patch
-> 
-> Signed-off-by: Rik van Riel <riel@redhat.com>
+doesn't do what you think it does.  That doesn't evaluate to 0xff.
 
-Acked-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
+You all are very bright and probably know this already.
 
-> ---
->  ipc/sem.c | 5 ++---
->  1 file changed, 2 insertions(+), 3 deletions(-)
-> 
-> diff --git a/ipc/sem.c b/ipc/sem.c
-> index 5711616..efdaee6 100644
-> --- a/ipc/sem.c
-> +++ b/ipc/sem.c
-> @@ -1243,10 +1243,9 @@ static int semctl_main(struct ipc_namespace *ns, int semid, int semnum,
->  				err = -EIDRM;
->  				goto out_free;
->  			}
-> -			sem_unlock(sma, -1);
-> -		}
-> +		} else
-> +			sem_lock(sma, NULL, -1);
->  
-> -		sem_lock(sma, NULL, -1);
->  		for (i = 0; i < sma->sem_nsems; i++)
->  			sem_io[i] = sma->sem_base[i].semval;
->  		sem_unlock(sma, -1);
-
-
+So,if it widens, which is the situation we're talking about, you're
+good.  But until I saw the above u8 thing I never suspected that
+narrowing in this kind of expression was dangerous.
