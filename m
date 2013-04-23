@@ -1,66 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756276Ab3DWNVN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 09:21:13 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:38716 "EHLO arroyo.ext.ti.com"
+	id S1756238Ab3DWNVL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 09:21:11 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:52735 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756138Ab3DWNVC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 09:21:02 -0400
+	id S1755795Ab3DWNUy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Apr 2013 09:20:54 -0400
 From: Grygorii Strashko <grygorii.strashko@ti.com>
 To: Tony Lindgren <tony@atomide.com>, Samuel Ortiz <sameo@linux.intel.com>
 CC: Grygorii Strashko <grygorii.strashko@ti.com>,
+        Wolfram Sang <wsa@the-dreams.de>,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
         Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/2] mfd: twl-core: convert to module_i2c_driver()
-Date: Tue, 23 Apr 2013 16:19:10 +0300
-Message-ID: <1366723151-23209-3-git-send-email-grygorii.strashko@ti.com>
+        <linux-omap@vger.kernel.org>, <linux-i2c@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH 0/2] OMAP: fix boot sequence
+Date: Tue, 23 Apr 2013 16:19:08 +0300
+Message-ID: <1366723151-23209-1-git-send-email-grygorii.strashko@ti.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1366723151-23209-1-git-send-email-grygorii.strashko@ti.com>
-References: <1366723151-23209-1-git-send-email-grygorii.strashko@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Shift TWL initialization to module/device init layer, because I2C now is
-not initialized on subsys init layer and shifted to module/device init
-layer instead.
+Hi
 
-The I2C <--> TWL dependency should be resolved in drivers/Makefile now.
+There are two public discussions now related to OMAP boot and drivers
+initialization issues:
+"Multiple issues with omap4 panda es in linux next"
+  http://www.spinics.net/lists/linux-omap/msg90241.html
+"[BUG] omap: mfd/regulator: twl/core: init order"
+  http://www.spinics.net/lists/linux-omap/msg89980.html
 
+In both cases there are pinctrl-single/I2C/MFD/Regulators initailization issue:
+- regulators are not initialized because of twl,
+- twl is not initialized because of I2C,
+- I2C is not initialized because of pinctrl-single,
+- pinctrl-single is initialized at mudule/device init time.
+So, most everything will be shifted at late_initcall time. 
+
+This may cause boot delay (more over, it can broken initialization of drivers
+which are not ready to use deferred probe mechanism yet, for example DSS).
+
+Introduced pathes shift I2C and TWL iniialization to module/device init layer
+instead of subsys init layer where initialization dependencies resolved
+indirectly in drivers/Makefile now.
+
+Grygorii Strashko (2):
+  i2c: omap: convert to module_platform_driver()
+  mfd: twl-core: convert to module_i2c_driver()
+
+ drivers/i2c/busses/i2c-omap.c |   14 +-------------
+ drivers/mfd/twl-core.c        |   12 +-----------
+ 2 files changed, 2 insertions(+), 24 deletions(-)
+
+Regards,
+-grygorii
+
+Cc: Wolfram Sang <wsa@the-dreams.de>
+Cc: "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>
 Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
 Cc: linux-omap@vger.kernel.org
+Cc: linux-i2c@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
 
-Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
----
- drivers/mfd/twl-core.c |   12 +-----------
- 1 file changed, 1 insertion(+), 11 deletions(-)
-
-diff --git a/drivers/mfd/twl-core.c b/drivers/mfd/twl-core.c
-index 4f3baad..f01340d 100644
---- a/drivers/mfd/twl-core.c
-+++ b/drivers/mfd/twl-core.c
-@@ -1347,17 +1347,7 @@ static struct i2c_driver twl_driver = {
- 	.remove		= twl_remove,
- };
- 
--static int __init twl_init(void)
--{
--	return i2c_add_driver(&twl_driver);
--}
--subsys_initcall(twl_init);
--
--static void __exit twl_exit(void)
--{
--	i2c_del_driver(&twl_driver);
--}
--module_exit(twl_exit);
-+module_i2c_driver(twl_driver);
- 
- MODULE_AUTHOR("Texas Instruments, Inc.");
- MODULE_DESCRIPTION("I2C Core interface for TWL");
 -- 
 1.7.9.5
 
