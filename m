@@ -1,93 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932252Ab3DWQNZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 12:13:25 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58092 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756391Ab3DWQNY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 12:13:24 -0400
-Date: Tue, 23 Apr 2013 17:13:19 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: "Theodore Ts'o" <tytso@mit.edu>, Jan Kara <jack@suse.cz>,
-        linux-ext4@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: Excessive stall times on ext4 in 3.9-rc2
-Message-ID: <20130423161319.GC2108@suse.de>
-References: <20130410105608.GC1910@suse.de>
- <20130410131245.GC4862@thunk.org>
- <20130411170402.GB11656@suse.de>
- <20130411183512.GA12298@thunk.org>
- <20130411213335.GE9379@quack.suse.cz>
- <20130412025708.GB7445@thunk.org>
- <20130412094731.GI11656@suse.de>
- <20130421000522.GA5054@thunk.org>
- <20130423153305.GB2108@suse.de>
- <20130423155019.GH31170@thunk.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20130423155019.GH31170@thunk.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932289Ab3DWQPD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 12:15:03 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:53960 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756118Ab3DWQPB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Apr 2013 12:15:01 -0400
+Message-ID: <1366733695.7020.1.camel@phoenix>
+Subject: [PATCH] regulator: max8973: Don't override control1 variable when
+ set ramp delay bits
+From: Axel Lin <axel.lin@ingics.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
+        Laxman Dewangan <ldewangan@nvidia.com>
+Date: Wed, 24 Apr 2013 00:14:55 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 23, 2013 at 11:50:19AM -0400, Theodore Ts'o wrote:
-> On Tue, Apr 23, 2013 at 04:33:05PM +0100, Mel Gorman wrote:
-> > That's a pretty big drop but it gets bad again for the second worst stall --
-> > wait_on_page_bit as a result of generic_file_buffered_write.
-> > 
-> > Vanilla kernel  1336064 ms stalled with 109 events
-> > Patched kernel  2338781 ms stalled with 164 events
-> 
-> Do you have the stack trace for this stall?  I'm wondering if this is
-> caused by the waiting for stable pages in write_begin() , or something
-> else.
-> 
+Current code overrides control1 variable when setting ramp delay bits.
+Fix it by just setting ramp_delay bits.
 
-[<ffffffff81110238>] wait_on_page_bit+0x78/0x80
-[<ffffffff815af294>] kretprobe_trampoline+0x0/0x4c
-[<ffffffff81110e84>] generic_file_buffered_write+0x114/0x2a0
-[<ffffffff81111ccd>] __generic_file_aio_write+0x1bd/0x3c0
-[<ffffffff81111f4a>] generic_file_aio_write+0x7a/0xf0
-[<ffffffff811ee639>] ext4_file_write+0x99/0x420
-[<ffffffff81174d87>] do_sync_write+0xa7/0xe0
-[<ffffffff81175447>] vfs_write+0xa7/0x180
-[<ffffffff811758cd>] sys_write+0x4d/0x90
-[<ffffffff815b3eed>] system_call_fastpath+0x1a/0x1f
-[<ffffffffffffffff>] 0xffffffffffffffff
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+ drivers/regulator/max8973-regulator.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-The processes that stalled in this particular trace are wget, latency-output,
-tar and tclsh. Most of these are sequential writers except for tar which
-is both a sequential reader and sequential writers.
-
-> If it is blocking caused by stable page writeback that's interesting,
-> since it would imply that something in your workload is trying to
-> write to a page that has already been modified (i.e., appending to a
-> log file, or updating a database file).  Does that make sense given
-> what your workload might be running?
-> 
-
-I doubt it is stable write consider the type of processes that are running. I
-would expect the bulk of the activity to be sequential readers or writers
-of multiple files. The summarised report from the raw data is now at
-
-http://www.csn.ul.ie/~mel/postings/ext4tag-20130423/dstate-summary-vanilla
-http://www.csn.ul.ie/~mel/postings/ext4tag-20130423/dstate-summary-ext4tag
-
-It's an aside but the worst of the stalls are incurred by systemd-tmpfile
-which were not a deliberate part of the test and yet another thing that
-I would not have caught unless I was running tests on my laptop. Looking
-closer at that thing, the default configuration is to run the service 15
-minutes after boot and after that it runs once a day. It looks like the
-bulk of the scanning would be in /var/tmp/ looking at systemds own files
-(over 3000 of them) which I'm a little amused by.
-
-My normal test machines would not hit this because they are not systemd
-based but the existance of thing thing is worth noting. Any IO-based tests
-run on systemd-based distributions may give different results depending
-on whether this service triggered during the test or not.
-
+diff --git a/drivers/regulator/max8973-regulator.c b/drivers/regulator/max8973-regulator.c
+index 9a8ea91..adb1414 100644
+--- a/drivers/regulator/max8973-regulator.c
++++ b/drivers/regulator/max8973-regulator.c
+@@ -274,15 +274,15 @@ static int max8973_init_dcdc(struct max8973_chip *max,
+ 	if (pdata->reg_init_data &&
+ 			pdata->reg_init_data->constraints.ramp_delay) {
+ 		if (pdata->reg_init_data->constraints.ramp_delay < 25000)
+-			control1 = MAX8973_RAMP_12mV_PER_US;
++			control1 |= MAX8973_RAMP_12mV_PER_US;
+ 		else if (pdata->reg_init_data->constraints.ramp_delay < 50000)
+-			control1 = MAX8973_RAMP_25mV_PER_US;
++			control1 |= MAX8973_RAMP_25mV_PER_US;
+ 		else if (pdata->reg_init_data->constraints.ramp_delay < 200000)
+-			control1 = MAX8973_RAMP_50mV_PER_US;
++			control1 |= MAX8973_RAMP_50mV_PER_US;
+ 		else
+-			control1 = MAX8973_RAMP_200mV_PER_US;
++			control1 |= MAX8973_RAMP_200mV_PER_US;
+ 	} else {
+-		control1 = MAX8973_RAMP_12mV_PER_US;
++		control1 |= MAX8973_RAMP_12mV_PER_US;
+ 		max->desc.ramp_delay = 12500;
+ 	}
+ 
 -- 
-Mel Gorman
-SUSE Labs
+1.7.10.4
+
+
+
