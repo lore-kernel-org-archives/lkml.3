@@ -1,123 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754103Ab3DWUKE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 16:10:04 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:13550 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753145Ab3DWUKC (ORCPT
+	id S1754276Ab3DWUMG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 16:12:06 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:35175 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753222Ab3DWUMC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 16:10:02 -0400
-X-Authority-Analysis: v=2.0 cv=cOZiQyiN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=NsHJ4KSHTVMA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=F_i-Va4x4dEA:10 a=eCh5-K-8-Ouzj9uygIAA:9 a=QEXdDO2ut3YA:10 a=9J5VuaLb3qoA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1366747800.9609.170.camel@gandalf.local.home>
-Subject: [PATCH RT] swap: Use unique local lock name for swap_lock
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <bitbucket@online.de>
-Date: Tue, 23 Apr 2013 16:10:00 -0400
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 23 Apr 2013 16:12:02 -0400
+MIME-Version: 1.0
+In-Reply-To: <5176B11E.6010908@schaufler-ca.com>
+References: <5176ABB7.5080300@schaufler-ca.com>
+	<5176B11E.6010908@schaufler-ca.com>
+Date: Tue, 23 Apr 2013 13:12:01 -0700
+X-Google-Sender-Auth: S0ryFUDpNnXQUQ_SxPYip067Bho
+Message-ID: <CAGXu5jKrLTb0nf7_PXP4zar3KjGgCOfrVX8r4cgJdgAxoH1ZGw@mail.gmail.com>
+Subject: Re: [PATCH v13 7/9] LSM: remove Yama special case stacking
+From: Kees Cook <keescook@chromium.org>
+To: Casey Schaufler <casey@schaufler-ca.com>
+Cc: LSM <linux-security-module@vger.kernel.org>,
+        LKLM <linux-kernel@vger.kernel.org>, SE Linux <selinux@tycho.nsa.gov>,
+        James Morris <jmorris@namei.org>,
+        John Johansen <john.johansen@canonical.com>,
+        Eric Paris <eparis@redhat.com>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From lib/Kconfig.debug on CONFIG_FORCE_WEAK_PER_CPU:
+On Tue, Apr 23, 2013 at 9:04 AM, Casey Schaufler <casey@schaufler-ca.com> wrote:
+> Subject: [PATCH v13 7/9] LSM: remove Yama special case stacking
+>
+> Remove the special case stacking for Yama.
+>
+> Signed-off-by: Casey Schaufler <casey@schaufler-ca.com>
+>
+> ---
+>  security/security.c      |   21 ---------------------
+>  security/yama/Kconfig    |    8 --------
+>  security/yama/yama_lsm.c |   19 -------------------
+>  3 files changed, 48 deletions(-)
 
----
-s390 and alpha require percpu variables in modules to be
-defined weak to work around addressing range issue which
-puts the following two restrictions on percpu variable
-definitions.
+In the 8/9 patch, the Yama externs are removed from
+include/linux/security.h. That change should likely be moved to this
+one, since the calls to those are being removed from
+security/security.c in this patch:
 
-1. percpu symbols must be unique whether static or not
-2. percpu variables can't be defined inside a function
+> diff --git a/security/security.c b/security/security.c
+> index d0b768c..67e435b 100644
+> --- a/security/security.c
+> +++ b/security/security.c
+> @@ -138,23 +138,11 @@ int __init register_security(struct security_operations *ops)
+>
+>  int security_ptrace_access_check(struct task_struct *child, unsigned int mode)
+>  {
+> -#ifdef CONFIG_SECURITY_YAMA_STACKED
+> -       int rc;
+> -       rc = yama_ptrace_access_check(child, mode);
+> -       if (rc)
+> -               return rc;
+> -#endif
+>         return security_ops->ptrace_access_check(child, mode);
+>  }
+>
+>  int security_ptrace_traceme(struct task_struct *parent)
+>  {
+> -#ifdef CONFIG_SECURITY_YAMA_STACKED
+> -       int rc;
+> -       rc = yama_ptrace_traceme(parent);
+> -       if (rc)
+> -               return rc;
+> -#endif
+>         return security_ops->ptrace_traceme(parent);
+>  }
+>
+> @@ -783,9 +771,6 @@ int security_task_create(unsigned long clone_flags)
+>
+>  void security_task_free(struct task_struct *task)
+>  {
+> -#ifdef CONFIG_SECURITY_YAMA_STACKED
+> -       yama_task_free(task);
+> -#endif
+>         security_ops->task_free(task);
+>  }
+>
+> @@ -911,12 +896,6 @@ int security_task_wait(struct task_struct *p)
+>  int security_task_prctl(int option, unsigned long arg2, unsigned long arg3,
+>                          unsigned long arg4, unsigned long arg5)
+>  {
+> -#ifdef CONFIG_SECURITY_YAMA_STACKED
+> -       int rc;
+> -       rc = yama_task_prctl(option, arg2, arg3, arg4, arg5);
+> -       if (rc != -ENOSYS)
+> -               return rc;
+> -#endif
+>         return security_ops->task_prctl(option, arg2, arg3, arg4, arg5);
+>  }
+>
+> diff --git a/security/yama/Kconfig b/security/yama/Kconfig
+> index 20ef514..51d6709 100644
+> --- a/security/yama/Kconfig
+> +++ b/security/yama/Kconfig
+> @@ -11,11 +11,3 @@ config SECURITY_YAMA
+>           Further information can be found in Documentation/security/Yama.txt.
+>
+>           If you are unsure how to answer this question, answer N.
+> -
+> -config SECURITY_YAMA_STACKED
+> -       bool "Yama stacked with other LSMs"
+> -       depends on SECURITY_YAMA
+> -       default n
+> -       help
+> -         When Yama is built into the kernel, force it to stack with the
+> -         selected primary LSM.
 
-To ensure that generic code follows the above rules, this
-option forces all percpu variables to be defined as weak.
----
+Patch 8/9 removes a blank line from this Kconfig. It should probably
+be moved to here.
 
-The addition of the local IRQ swap_lock in mm/swap.c broke this config
-as the name "swap_lock" is used through out the kernel. Just do a "git
-grep swap_lock" to see, and the new swap_lock is a local lock which
-defines the swap_lock for per_cpu.
+> diff --git a/security/yama/yama_lsm.c b/security/yama/yama_lsm.c
+> index 13c88fbc..63ad9bb 100644
+> --- a/security/yama/yama_lsm.c
+> +++ b/security/yama/yama_lsm.c
+> @@ -364,16 +364,6 @@ int yama_ptrace_traceme(struct task_struct *parent)
+>         return rc;
+>  }
+>
+> -#ifndef CONFIG_SECURITY_YAMA_STACKED
+> -static struct security_operations yama_ops = {
+> -       .name =                 "yama",
+> -
+> -       .ptrace_access_check =  yama_ptrace_access_check,
+> -       .ptrace_traceme =       yama_ptrace_traceme,
+> -       .task_prctl =           yama_task_prctl,
+> -       .task_free =            yama_task_free,
+> -};
+> -#endif
 
-The fix was to rename swap_lock to swapvec_lock which keeps it unique.
+The yama_ops (and the calls to security_module_enable and
+register_security) shouldn't be removed (just the ifdefs). They're
+added back in 8/9, so I think they should just stay in place. (Or
+rather, they should stay in place in this patch, and 8/9 should only
+remove the register_security call, as done with the others.)
 
-Reported-by: Mike Galbraith <bitbucket@online.de>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+>
+>  #ifdef CONFIG_SYSCTL
+>  static int yama_dointvec_minmax(struct ctl_table *table, int write,
+> @@ -420,18 +410,9 @@ static struct ctl_table yama_sysctl_table[] = {
+>
+>  static __init int yama_init(void)
+>  {
+> -#ifndef CONFIG_SECURITY_YAMA_STACKED
+> -       if (!security_module_enable(&yama_ops))
+> -               return 0;
+> -#endif
+>
+>         printk(KERN_INFO "Yama: becoming mindful.\n");
+>
+> -#ifndef CONFIG_SECURITY_YAMA_STACKED
+> -       if (register_security(&yama_ops))
+> -               panic("Yama: kernel registration failed.\n");
+> -#endif
+> -
+>  #ifdef CONFIG_SYSCTL
+>         if (!register_sysctl_paths(yama_sysctl_path, yama_sysctl_table))
+>                 panic("Yama: sysctl registration failed.\n");
 
-diff --git a/mm/swap.c b/mm/swap.c
-index 63f42b8..fab8f97 100644
---- a/mm/swap.c
-+++ b/mm/swap.c
-@@ -42,7 +42,7 @@ static DEFINE_PER_CPU(struct pagevec, lru_rotate_pvecs);
- static DEFINE_PER_CPU(struct pagevec, lru_deactivate_pvecs);
- 
- static DEFINE_LOCAL_IRQ_LOCK(rotate_lock);
--static DEFINE_LOCAL_IRQ_LOCK(swap_lock);
-+static DEFINE_LOCAL_IRQ_LOCK(swapvec_lock);
- 
- /*
-  * This path almost never happens for VM activity - pages are normally
-@@ -407,13 +407,13 @@ static void activate_page_drain(int cpu)
- void activate_page(struct page *page)
- {
- 	if (PageLRU(page) && !PageActive(page) && !PageUnevictable(page)) {
--		struct pagevec *pvec = &get_locked_var(swap_lock,
-+		struct pagevec *pvec = &get_locked_var(swapvec_lock,
- 						       activate_page_pvecs);
- 
- 		page_cache_get(page);
- 		if (!pagevec_add(pvec, page))
- 			pagevec_lru_move_fn(pvec, __activate_page, NULL);
--		put_locked_var(swap_lock, activate_page_pvecs);
-+		put_locked_var(swapvec_lock, activate_page_pvecs);
- 	}
- }
- 
-@@ -461,13 +461,13 @@ EXPORT_SYMBOL(mark_page_accessed);
-  */
- void __lru_cache_add(struct page *page, enum lru_list lru)
- {
--	struct pagevec *pvec = &get_locked_var(swap_lock, lru_add_pvecs)[lru];
-+	struct pagevec *pvec = &get_locked_var(swapvec_lock, lru_add_pvecs)[lru];
- 
- 	page_cache_get(page);
- 	if (!pagevec_space(pvec))
- 		__pagevec_lru_add(pvec, lru);
- 	pagevec_add(pvec, page);
--	put_locked_var(swap_lock, lru_add_pvecs);
-+	put_locked_var(swapvec_lock, lru_add_pvecs);
- }
- EXPORT_SYMBOL(__lru_cache_add);
- 
-@@ -632,19 +632,19 @@ void deactivate_page(struct page *page)
- 		return;
- 
- 	if (likely(get_page_unless_zero(page))) {
--		struct pagevec *pvec = &get_locked_var(swap_lock,
-+		struct pagevec *pvec = &get_locked_var(swapvec_lock,
- 						       lru_deactivate_pvecs);
- 
- 		if (!pagevec_add(pvec, page))
- 			pagevec_lru_move_fn(pvec, lru_deactivate_fn, NULL);
--		put_locked_var(swap_lock, lru_deactivate_pvecs);
-+		put_locked_var(swapvec_lock, lru_deactivate_pvecs);
- 	}
- }
- 
- void lru_add_drain(void)
- {
--	lru_add_drain_cpu(local_lock_cpu(swap_lock));
--	local_unlock_cpu(swap_lock);
-+	lru_add_drain_cpu(local_lock_cpu(swapvec_lock));
-+	local_unlock_cpu(swapvec_lock);
- }
- 
- static void lru_add_drain_per_cpu(struct work_struct *dummy)
+Regardless: yay! I'm looking forward to this series landing. :)
 
+-Kees
 
+--
+Kees Cook
+Chrome OS Security
