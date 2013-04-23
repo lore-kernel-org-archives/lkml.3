@@ -1,84 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756523Ab3DWWD7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 18:03:59 -0400
-Received: from rm-rf.ca ([97.107.129.93]:46501 "EHLO hobbes.rm-rf.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754946Ab3DWWD5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 18:03:57 -0400
-X-Greylist: delayed 583 seconds by postgrey-1.27 at vger.kernel.org; Tue, 23 Apr 2013 18:03:57 EDT
-Date: Tue, 23 Apr 2013 17:54:13 -0400
-From: Kenny MacDermid <kenny.macdermid@gmail.com>
+	id S1757664Ab3DWWET (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 18:04:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34284 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757792Ab3DWVyY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Apr 2013 17:54:24 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Subject: WD My Passport SCSI commands, kernel driver?
-Message-ID: <20130423215413.GB14277@rm-rf.ca>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 21/26] vm: add vm_iomap_memory() helper function
+Date: Tue, 23 Apr 2013 14:54:01 -0700
+Message-Id: <20130423215335.528709569@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130423215333.344045754@linuxfoundation.org>
+References: <20130423215333.344045754@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-WD My Passport harddrives contain hardware encryption. An
-unlock utility is provided for other OSes, but not for Linux.
-I'd like to know if the kernel is the correct place for code
-to unlock this device, and any tips on how it should be
-implemented. I've reverse engineered the vendor specific
-commands needed to unlock the device.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-When connecting a locked drive the following is shown:
+------------------
 
-[] usb 1-1: new full-speed USB device number 2 using ohci_hcd
-[] usb 1-1: New USB device found, idVendor=1058, idProduct=0748
-[] usb 1-1: New USB device strings: Mfr=1, Product=2, SerialNumber=5
-[] usb 1-1: Product: My Passport 0748
-[] usb 1-1: Manufacturer: Western Digital
-[] usb 1-1: SerialNumber: ________________________
-[] Initializing USB Mass Storage driver...
-[] scsi3 : usb-storage 1-1:1.0
-[] usbcore: registered new interface driver usb-storage
-[] USB Mass Storage support registered.
-[] scsi 3:0:0:0: Direct-Access     WD       My Passport 0748 1019 PQ: 0 ANSI: 6
-[] scsi 3:0:0:1: CD-ROM            WD       Virtual CD 0748  1019 PQ: 0 ANSI: 6
-[] scsi 3:0:0:2: Enclosure         WD       SES Device       1019 PQ: 0 ANSI: 6
-[] sd 3:0:0:0: Attached scsi generic sg3 type 0
-[] sr2: scsi3-mmc drive: 51x/51x caddy
-[] sr 3:0:0:1: Attached scsi CD-ROM sr2
-[] sr 3:0:0:1: Attached scsi generic sg4 type 5
-[] scsi 3:0:0:2: Attached scsi generic sg5 type 13
-[] sd 3:0:0:0: [sdb] Unit Not Ready
-[] sd 3:0:0:0: [sdb]  Sense Key : Data Protect [current]
-[] sd 3:0:0:0: [sdb]  Add. Sense: Logical unit access not authorized
-[] sd 3:0:0:0: [sdb] 3906963456 512-byte logical blocks: (2.00 TB/1.81 TiB)
-[] sd 3:0:0:0: [sdb] Write Protect is off
-[] sd 3:0:0:0: [sdb] Mode Sense: 47 00 10 08
-[] sd 3:0:0:0: [sdb] No Caching mode page present
-[] sd 3:0:0:0: [sdb] Assuming drive cache: write through
-[] sd 3:0:0:0: [sdb] Unit Not Ready
-[] sd 3:0:0:0: [sdb]  Sense Key : Data Protect [current]
-[] sd 3:0:0:0: [sdb]  Add. Sense: Logical unit access not authorized
-[] sd 3:0:0:0: [sdb] No Caching mode page present
-[] sd 3:0:0:0: [sdb] Assuming drive cache: write through
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-Followed by 160 read errors:
+commit b4cbb197c7e7a68dbad0d491242e3ca67420c13e upstream.
 
-[] sd 3:0:0:0: [sdb] Unhandled sense code
-[] sd 3:0:0:0: [sdb]  Result: hostbyte=invalid driverbyte=DRIVER_SENSE
-[] sd 3:0:0:0: [sdb]  Sense Key : Data Protect [current]
-[] sd 3:0:0:0: [sdb]  Add. Sense: Logical unit access not authorized
-[] sd 3:0:0:0: [sdb] CDB: Read(10): 28 00 00 00 00 00 00 00 08 00
-[] end_request: critical target error, dev sdb, sector 0
-[] Buffer I/O error on device sdb, logical block 0
+Various drivers end up replicating the code to mmap() their memory
+buffers into user space, and our core memory remapping function may be
+very flexible but it is unnecessarily complicated for the common cases
+to use.
 
-After sending the correct command to the device using sg_raw,
-including a hash of the password, the device will unlock and
-sdb will be readable.
+Our internal VM uses pfn's ("page frame numbers") which simplifies
+things for the VM, and allows us to pass physical addresses around in a
+denser and more efficient format than passing a "phys_addr_t" around,
+and having to shift it up and down by the page size.  But it just means
+that drivers end up doing that shifting instead at the interface level.
 
-Is this something suited to the kernel, or better as a
-standalone utility? And if it's suited for the kernel are there
-any examples of other drives requiring unlock commands?
+It also means that drivers end up mucking around with internal VM things
+like the vma details (vm_pgoff, vm_start/end) way more than they really
+need to.
 
-Thank you,
+So this just exports a function to map a certain physical memory range
+into user space (using a phys_addr_t based interface that is much more
+natural for a driver) and hides all the complexity from the driver.
+Some drivers will still end up tweaking the vm_page_prot details for
+things like prefetching or cacheability etc, but that's actually
+relevant to the driver, rather than caring about what the page offset of
+the mapping is into the particular IO memory region.
 
-Kenny
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+
+---
+ include/linux/mm.h |    2 ++
+ mm/memory.c        |   47 +++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 49 insertions(+)
+
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1507,6 +1507,8 @@ int vm_insert_pfn(struct vm_area_struct
+ 			unsigned long pfn);
+ int vm_insert_mixed(struct vm_area_struct *vma, unsigned long addr,
+ 			unsigned long pfn);
++int vm_iomap_memory(struct vm_area_struct *vma, phys_addr_t start, unsigned long len);
++
+ 
+ struct page *follow_page(struct vm_area_struct *, unsigned long address,
+ 			unsigned int foll_flags);
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -2329,6 +2329,53 @@ int remap_pfn_range(struct vm_area_struc
+ }
+ EXPORT_SYMBOL(remap_pfn_range);
+ 
++/**
++ * vm_iomap_memory - remap memory to userspace
++ * @vma: user vma to map to
++ * @start: start of area
++ * @len: size of area
++ *
++ * This is a simplified io_remap_pfn_range() for common driver use. The
++ * driver just needs to give us the physical memory range to be mapped,
++ * we'll figure out the rest from the vma information.
++ *
++ * NOTE! Some drivers might want to tweak vma->vm_page_prot first to get
++ * whatever write-combining details or similar.
++ */
++int vm_iomap_memory(struct vm_area_struct *vma, phys_addr_t start, unsigned long len)
++{
++	unsigned long vm_len, pfn, pages;
++
++	/* Check that the physical memory area passed in looks valid */
++	if (start + len < start)
++		return -EINVAL;
++	/*
++	 * You *really* shouldn't map things that aren't page-aligned,
++	 * but we've historically allowed it because IO memory might
++	 * just have smaller alignment.
++	 */
++	len += start & ~PAGE_MASK;
++	pfn = start >> PAGE_SHIFT;
++	pages = (len + ~PAGE_MASK) >> PAGE_SHIFT;
++	if (pfn + pages < pfn)
++		return -EINVAL;
++
++	/* We start the mapping 'vm_pgoff' pages into the area */
++	if (vma->vm_pgoff > pages)
++		return -EINVAL;
++	pfn += vma->vm_pgoff;
++	pages -= vma->vm_pgoff;
++
++	/* Can we fit all of the mapping? */
++	vm_len = vma->vm_end - vma->vm_start;
++	if (vm_len >> PAGE_SHIFT > pages)
++		return -EINVAL;
++
++	/* Ok, let it rip */
++	return io_remap_pfn_range(vma, vma->vm_start, pfn, vm_len, vma->vm_page_prot);
++}
++EXPORT_SYMBOL(vm_iomap_memory);
++
+ static int apply_to_pte_range(struct mm_struct *mm, pmd_t *pmd,
+ 				     unsigned long addr, unsigned long end,
+ 				     pte_fn_t fn, void *data)
+
+
