@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757541Ab3DWWPP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 18:15:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34072 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757441Ab3DWVw4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757518Ab3DWVw4 (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 23 Apr 2013 17:52:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34039 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757441Ab3DWVwv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Apr 2013 17:52:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Markus Pargmann <mpa@pengutronix.de>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Shawn Guo <shawn.guo@linaro.org>, Lingzhu Xiang <lxiang@redhat.com>
-Subject: [ 19/42] ARM: clk-imx35: Bugfix iomux clock
-Date: Tue, 23 Apr 2013 14:52:17 -0700
-Message-Id: <20130423215207.500480672@linuxfoundation.org>
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 03/42] ARM: Do 15e0d9e37c (ARM: pm: let platforms select cpu_suspend support) properly
+Date: Tue, 23 Apr 2013 14:52:01 -0700
+Message-Id: <20130423215205.906024321@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130423215205.523980967@linuxfoundation.org>
 References: <20130423215205.523980967@linuxfoundation.org>
@@ -28,39 +26,102 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Markus Pargmann <mpa@pengutronix.de>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit cab1e0a36c9dd0b0671fb84197ed294513f5adc1 upstream.
+commit b6c7aabd923a17af993c5a5d5d7995f0b27c000a upstream.
 
-This patch enables iomuxc_gate clock. It is necessary to be able to
-reconfigure iomux pads. Without this clock enabled, the
-clk_disable_unused function will disable this clock and the iomux pads
-are not configurable anymore. This happens at every boot. After a reboot
-(watchdog system reset) the clock is not enabled again, so all iomux pad
-reconfigurations in boot code are without effect.
+Let's do the changes properly and fix the same problem everywhere, not
+just for one case.
 
-The iomux pads should be always configurable, so this patch always
-enables it.
-
-Signed-off-by: Markus Pargmann <mpa@pengutronix.de>
-Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
-Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
-Cc: Lingzhu Xiang <lxiang@redhat.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-imx/clk-imx35.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/arm/mm/proc-arm920.S |    2 +-
+ arch/arm/mm/proc-arm926.S |    2 +-
+ arch/arm/mm/proc-mohawk.S |    2 +-
+ arch/arm/mm/proc-sa1100.S |    2 +-
+ arch/arm/mm/proc-v6.S     |    2 +-
+ arch/arm/mm/proc-xsc3.S   |    2 +-
+ arch/arm/mm/proc-xscale.S |    2 +-
+ 7 files changed, 7 insertions(+), 7 deletions(-)
 
---- a/arch/arm/mach-imx/clk-imx35.c
-+++ b/arch/arm/mach-imx/clk-imx35.c
-@@ -266,6 +266,7 @@ int __init mx35_clocks_init()
- 	clk_prepare_enable(clk[iim_gate]);
- 	clk_prepare_enable(clk[emi_gate]);
- 	clk_prepare_enable(clk[max_gate]);
-+	clk_prepare_enable(clk[iomuxc_gate]);
+--- a/arch/arm/mm/proc-arm920.S
++++ b/arch/arm/mm/proc-arm920.S
+@@ -387,7 +387,7 @@ ENTRY(cpu_arm920_set_pte_ext)
+ /* Suspend/resume support: taken from arch/arm/plat-s3c24xx/sleep.S */
+ .globl	cpu_arm920_suspend_size
+ .equ	cpu_arm920_suspend_size, 4 * 3
+-#ifdef CONFIG_PM_SLEEP
++#ifdef CONFIG_ARM_CPU_SUSPEND
+ ENTRY(cpu_arm920_do_suspend)
+ 	stmfd	sp!, {r4 - r6, lr}
+ 	mrc	p15, 0, r4, c13, c0, 0	@ PID
+--- a/arch/arm/mm/proc-arm926.S
++++ b/arch/arm/mm/proc-arm926.S
+@@ -402,7 +402,7 @@ ENTRY(cpu_arm926_set_pte_ext)
+ /* Suspend/resume support: taken from arch/arm/plat-s3c24xx/sleep.S */
+ .globl	cpu_arm926_suspend_size
+ .equ	cpu_arm926_suspend_size, 4 * 3
+-#ifdef CONFIG_PM_SLEEP
++#ifdef CONFIG_ARM_CPU_SUSPEND
+ ENTRY(cpu_arm926_do_suspend)
+ 	stmfd	sp!, {r4 - r6, lr}
+ 	mrc	p15, 0, r4, c13, c0, 0	@ PID
+--- a/arch/arm/mm/proc-mohawk.S
++++ b/arch/arm/mm/proc-mohawk.S
+@@ -350,7 +350,7 @@ ENTRY(cpu_mohawk_set_pte_ext)
  
- 	/*
- 	 * SCC is needed to boot via mmc after a watchdog reset. The clock code
+ .globl	cpu_mohawk_suspend_size
+ .equ	cpu_mohawk_suspend_size, 4 * 6
+-#ifdef CONFIG_PM_SLEEP
++#ifdef CONFIG_ARM_CPU_SUSPEND
+ ENTRY(cpu_mohawk_do_suspend)
+ 	stmfd	sp!, {r4 - r9, lr}
+ 	mrc	p14, 0, r4, c6, c0, 0	@ clock configuration, for turbo mode
+--- a/arch/arm/mm/proc-sa1100.S
++++ b/arch/arm/mm/proc-sa1100.S
+@@ -172,7 +172,7 @@ ENTRY(cpu_sa1100_set_pte_ext)
+ 
+ .globl	cpu_sa1100_suspend_size
+ .equ	cpu_sa1100_suspend_size, 4 * 3
+-#ifdef CONFIG_PM_SLEEP
++#ifdef CONFIG_ARM_CPU_SUSPEND
+ ENTRY(cpu_sa1100_do_suspend)
+ 	stmfd	sp!, {r4 - r6, lr}
+ 	mrc	p15, 0, r4, c3, c0, 0		@ domain ID
+--- a/arch/arm/mm/proc-v6.S
++++ b/arch/arm/mm/proc-v6.S
+@@ -138,7 +138,7 @@ ENTRY(cpu_v6_set_pte_ext)
+ /* Suspend/resume support: taken from arch/arm/mach-s3c64xx/sleep.S */
+ .globl	cpu_v6_suspend_size
+ .equ	cpu_v6_suspend_size, 4 * 6
+-#ifdef CONFIG_PM_SLEEP
++#ifdef CONFIG_ARM_CPU_SUSPEND
+ ENTRY(cpu_v6_do_suspend)
+ 	stmfd	sp!, {r4 - r9, lr}
+ 	mrc	p15, 0, r4, c13, c0, 0	@ FCSE/PID
+--- a/arch/arm/mm/proc-xsc3.S
++++ b/arch/arm/mm/proc-xsc3.S
+@@ -413,7 +413,7 @@ ENTRY(cpu_xsc3_set_pte_ext)
+ 
+ .globl	cpu_xsc3_suspend_size
+ .equ	cpu_xsc3_suspend_size, 4 * 6
+-#ifdef CONFIG_PM_SLEEP
++#ifdef CONFIG_ARM_CPU_SUSPEND
+ ENTRY(cpu_xsc3_do_suspend)
+ 	stmfd	sp!, {r4 - r9, lr}
+ 	mrc	p14, 0, r4, c6, c0, 0	@ clock configuration, for turbo mode
+--- a/arch/arm/mm/proc-xscale.S
++++ b/arch/arm/mm/proc-xscale.S
+@@ -528,7 +528,7 @@ ENTRY(cpu_xscale_set_pte_ext)
+ 
+ .globl	cpu_xscale_suspend_size
+ .equ	cpu_xscale_suspend_size, 4 * 6
+-#ifdef CONFIG_PM_SLEEP
++#ifdef CONFIG_ARM_CPU_SUSPEND
+ ENTRY(cpu_xscale_do_suspend)
+ 	stmfd	sp!, {r4 - r9, lr}
+ 	mrc	p14, 0, r4, c6, c0, 0	@ clock configuration, for turbo mode
 
 
