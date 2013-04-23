@@ -1,64 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756376Ab3DWIkM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 04:40:12 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:34634 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755632Ab3DWIkI (ORCPT
+	id S1755891Ab3DWIsp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 04:48:45 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51936 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755255Ab3DWIsm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 04:40:08 -0400
-Date: Tue, 23 Apr 2013 10:40:06 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: =?iso-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>,
-        kernel list <linux-kernel@vger.kernel.org>, lenb@kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: 3.9-rc3+: reports battery as 0 mWh capacity on thinkpad x60
-Message-ID: <20130423084005.GA4269@amd.pavel.ucw.cz>
-References: <20130323114011.GA11092@amd.pavel.ucw.cz>
- <87zjxu9spk.fsf@nemi.mork.no>
- <20130323202155.GC18732@amd.pavel.ucw.cz>
- <6726347.ehkcE9iAxU@vostro.rjw.lan>
+	Tue, 23 Apr 2013 04:48:42 -0400
+Date: Tue, 23 Apr 2013 09:48:39 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Taras Kondratiuk <taras@ti.com>
+Cc: lgirdwood@gmail.com, rjw@sisk.pl, viresh.kumar@linaro.org,
+        shawn.guo@linaro.org, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Philip Rakity <prakity@nvidia.com>, Eric Miao <eric.y.miao@gmail.com>
+Subject: Re: [RFC PATCH 1/2] regulator: core: Add regulator_set_voltage_min()
+Message-ID: <20130423084838.GB5019@opensource.wolfsonmicro.com>
+References: <1366372554-20866-1-git-send-email-taras@ti.com>
+ <1366372554-20866-2-git-send-email-taras@ti.com>
+ <20130422131904.GL30351@opensource.wolfsonmicro.com>
+ <51756A21.3020405@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="uZ3hkaAS1mZxFaxD"
 Content-Disposition: inline
-In-Reply-To: <6726347.ehkcE9iAxU@vostro.rjw.lan>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <51756A21.3020405@ti.com>
+X-Cookie: Caution: Keep out of reach of children.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
 
-> > But problem is not in /proc, /sys has zeros, too.
-> > 
-> > pavel@amd:~$ cat /sys/class/power_supply/BAT0/energy_full
-> > 0
-> > pavel@amd:~$ cat /sys/class/power_supply/BAT0/energy_full_design 
-> > 0
-> > pavel@amd:~$ cat /sys/class/power_supply/BAT0/model_name 
-> > 93P5030
-> > pavel@amd:~$
-> 
-> Can you narrow the time frame when it stopped working a bit?
+--uZ3hkaAS1mZxFaxD
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Ok, I'm not sure when it stopped working, but it works again in
-3.9.0-rc8+. Good :-).
+On Mon, Apr 22, 2013 at 07:49:37PM +0300, Taras Kondratiuk wrote:
 
-(And sorry for slow response).
+> Yeah. Sure 4kV is not a real request, but
+> max will be limited by system constrains.
+> According to regulator_set_voltage() documentation
+> system constraints should be set before calling this function,
+> so I assume I can rely on them. No?
 
-In the meantime, I got chromium-browser disappearing on me, all at
-once, before it started opening initial tabs. This is first time I
-seen that, with dmesg saying:
+> Another possible implementation is below, but prefer initial one.
 
-chromium-browse[3728]: segfault at 95968e80 ip b666875e sp af5e9a20
-error 4 in chromium-browser[b5e0d000+1960000]
+I just don't see any reason for this API.  The driver setting the
+voltage ought to have some idea of what the chip limits are too for
+safety.
 
-. I hope it is just a coincidence, because otherwise 3.9 looks
-usable...
+--uZ3hkaAS1mZxFaxD
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Thanks,
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRdkrfAAoJELSic+t+oim9ZR0P/ixRIwIPKdBXVQnQUnjHoktU
+yxn3Xgv+jWxPxCWdkQtaiUZi8XKyfm+yVyWoWRHsGM+QbJ7WtxccRPXlm+wsqq9k
+nNlNyTJ8RJjH0IouwRfwbGlNS4xQA+CePVy52IXg50R29+8MtF40cdH95sozq/XX
+01857adCMwZ5pORv/SmBAEZj4FW+Z87bMlU2bGxIfof4f7iR4HGJ5aZkoQ+xVnbU
+m5lNOgRpdAJBjShYGnDSt5vx1Uu5nUYal8QbDcurZNvXF5rpBpussrQEsCDYrp74
+1w0vVIcB9eD6J6DuluvMEKIj82K25X55nyIyq+ToaYELG1wKpK3y1Yq15YGfnvIr
+e1OsQ/NdpW9g42POR7HhM153Uy4DQ2wDtoWAP3H7vi4sPZvuaT9ue4YxHTD3kS3W
+h0dnvaZ7ZrZ4qiGPL+60US4Wnvo7Pcz6dvWLK6+8K39syxNJtLar3S4deI27/T2j
+mWmrAXDAH9tL85pRHeIMFLYz8Lx+d2Hydhuzfv2WiFfx1WQiB5Mil0Lcuk8nIC8F
+93KIs59kAlFbwQGrYpoPfuzRPf+wdAOqfS+jps7bUgrzFwh95nccOAkTr81XiJ/1
+gl0iM1rWYrOs4WCuC32lcwrZcqN1nelCv4PxMfOUTbqLfFt9rQbqwNnk63cSSH9r
+J/MNQcLRpzNxa7AIBdop
+=iBRB
+-----END PGP SIGNATURE-----
+
+--uZ3hkaAS1mZxFaxD--
