@@ -1,71 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755325Ab3DWFnc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 01:43:32 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:52293 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754861Ab3DWFnL (ORCPT
+	id S1755172Ab3DWFxk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 01:53:40 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:58918 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755072Ab3DWFxj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 01:43:11 -0400
-From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-To: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org
-Cc: michael@ellerman.id.au, mikey@neuling.org
-Subject: [PATCH V4 1/5] powerpc, perf: Add new BHRB related instructions for POWER8
-Date: Tue, 23 Apr 2013 11:12:40 +0530
-Message-Id: <1366695764-3073-2-git-send-email-khandual@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1366695764-3073-1-git-send-email-khandual@linux.vnet.ibm.com>
-References: <1366695764-3073-1-git-send-email-khandual@linux.vnet.ibm.com>
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13042305-4790-0000-0000-000007F92544
+	Tue, 23 Apr 2013 01:53:39 -0400
+MIME-Version: 1.0
+In-Reply-To: <87mwsr9md7.fsf@rustcorp.com.au>
+References: <1366264344-28025-1-git-send-email-pranavkumar@linaro.org>
+	<87wqs02uws.fsf@rustcorp.com.au>
+	<CAAHg+HiHKV+8hBT1QWe4hSxocCX6wpRd3bCPWB7zU8jVFmPuAA@mail.gmail.com>
+	<87ehe3bbsm.fsf@rustcorp.com.au>
+	<CALrVBkub+TABrrBwh4+P6S5TGL1qSmnZrd1cbGgj6JiRpY=rOA@mail.gmail.com>
+	<87mwsr9md7.fsf@rustcorp.com.au>
+Date: Tue, 23 Apr 2013 11:23:38 +0530
+Message-ID: <CAAHg+Hg1u-md_5hSWxyVOOrg_f9=h0tO5iv2WQL-U-MyTMAV9g@mail.gmail.com>
+Subject: Re: [RFC] arm64: Early printk support for virtio-mmio console devices.
+From: Pranavkumar Sawargaonkar <pranavkumar@linaro.org>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Anup Patel <anup.patel@linaro.org>,
+        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Patch Tracking <patches@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds new POWER8 instruction encoding for reading
-and clearing Branch History Rolling Buffer entries. The new
-instruction 'mfbhrbe' (move from branch history rolling buffer
-entry) is used to read BHRB buffer entries and instruction
-'clrbhrb' (clear branch history rolling buffer) is used to
-clear the entire buffer. The instruction 'clrbhrb' has straight
-forward encoding. But the instruction encoding format for
-reading the BHRB entries is like 'mfbhrbe RT, BHRBE' where it
-takes two arguments, i.e the index for the BHRB buffer entry to
-read and a general purpose register to put the value which was
-read from the buffer entry.
+On 22 April 2013 10:45, Rusty Russell <rusty@rustcorp.com.au> wrote:
+> Anup Patel <anup.patel@linaro.org> writes:
+>> On 22 April 2013 06:51, Rusty Russell <rusty@rustcorp.com.au> wrote:
+>>>
+>>> Pranavkumar Sawargaonkar <pranavkumar@linaro.org> writes:
+>>> > On 18 April 2013 12:21, Rusty Russell <rusty@rustcorp.com.au> wrote:
+>>> >>
+>>> >> PranavkumarSawargaonkar <pranavkumar@linaro.org> writes:
+>>> >> > From: Pranavkumar Sawargaonkar <pranavkumar@linaro.org>
+>>> >> >
+>>> >> > This patch implements early printk support for virtio-mmio console
+>>> >> > devices without using any hypercalls.
+>>> >>
+>>> >> This makes some sense, though not sure that early console *read* makes
+>>> >> much sense.  I can see the PCI version of this being useful as well.
+>>> >
+>>> > Read can be useful for "mach-virt" which will have only virtio console
+>>> > as a console device. Then if someone wants to have UEFI or any other
+>>> > boot-loader emulation, which expects user to input few things, in that
+>>> > case read might become handy.
+>>>
+>>> But implementing virtio inside a bootloader has already been done for
+>>> coreboot, for example.  A bootloader probably wants a virtio block
+>>> device, so a console is trivial.
+>>>
+>>> A single writable field for debugging makes sense.  Anything more is far
+>>> less certain.
+>>
+>> The early read can be handy for bootloader who don't want to implement
+>> complete VirtIO programming.
+>
+> I've said this twice already.  This is the last time.
+>
+> 1) We do not add complexity unless we have to.
+> 2) Making it optional does not make it significantly less complex.
+> 3) Having two ways of doing the same thing is always ugly.
+> 4) Having an emergency output method makes sense for several use cases,
+>    an emergency input method does not.
+Okay,  i will restructure my patch by keeping just output write part
+and post it back.
 
-Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
----
- arch/powerpc/include/asm/ppc-opcode.h | 8 ++++++++
- 1 file changed, 8 insertions(+)
+Thanks,
+Pranav
 
-diff --git a/arch/powerpc/include/asm/ppc-opcode.h b/arch/powerpc/include/asm/ppc-opcode.h
-index 8752bc8..0c34e48 100644
---- a/arch/powerpc/include/asm/ppc-opcode.h
-+++ b/arch/powerpc/include/asm/ppc-opcode.h
-@@ -82,6 +82,8 @@
- #define	__REGA0_R31	31
- 
- /* sorted alphabetically */
-+#define PPC_INST_BHRBE			0x7c00025c
-+#define PPC_INST_CLRBHRB		0x7c00035c
- #define PPC_INST_DCBA			0x7c0005ec
- #define PPC_INST_DCBA_MASK		0xfc0007fe
- #define PPC_INST_DCBAL			0x7c2005ec
-@@ -297,6 +299,12 @@
- #define PPC_NAP			stringify_in_c(.long PPC_INST_NAP)
- #define PPC_SLEEP		stringify_in_c(.long PPC_INST_SLEEP)
- 
-+/* BHRB instructions */
-+#define PPC_CLRBHRB		stringify_in_c(.long PPC_INST_CLRBHRB)
-+#define PPC_MFBHRBE(r, n)	stringify_in_c(.long PPC_INST_BHRBE | \
-+						__PPC_RT(r) | \
-+							(((n) & 0x3ff) << 11))
-+
- /* Transactional memory instructions */
- #define TRECHKPT		stringify_in_c(.long PPC_INST_TRECHKPT)
- #define TRECLAIM(r)		stringify_in_c(.long PPC_INST_TRECLAIM \
--- 
-1.7.11.7
-
+> 5) A bootloader which uses virtio to get the images to boot can
+>    implement a console in less than 10 lines.
+> 6) A bootloader which does not use any virtio devices but nonetheless
+>    wants to obtain input can implement a simple console in well under 100
+>    lines.  See below.
+>
+> Finally, in case you still don't understand:
+>
+> My task is to make this decision, and I've made it.  Arguing with me is
+> only useful if you bring new facts which you can change my mind.
+>
+> Hope that clarifies,
+> Rusty.
+>
+> #define VIRTIO_MMIO_GUEST_PAGE_SIZE     0x028
+> #define VIRTIO_MMIO_QUEUE_SEL           0x030
+> #define VIRTIO_MMIO_QUEUE_NUM_MAX       0x034
+> #define VIRTIO_MMIO_QUEUE_NUM           0x038
+> #define VIRTIO_MMIO_QUEUE_ALIGN         0x03c
+> #define VIRTIO_MMIO_QUEUE_PFN           0x040
+> #define VIRTIO_MMIO_QUEUE_NOTIFY        0x050
+>
+> struct vring_desc {
+>         __u64 addr;
+>         __u32 len;
+>         __u16 flags;
+>         __u16 next;
+> };
+>
+> struct vring_used_elem {
+>         __u32 id;
+>         __u32 len;
+> };
+>
+> struct vconsole_ring {
+>         struct vring_desc desc[2];
+>         __u16 avail_flags;
+>         __u16 avail_idx;
+>         __u16 available[2];
+>         __u16 used_event_idx;
+>         __u16 pad; /* Hit 4-byte boundary */
+>
+>         // A ring of used descriptor heads with free-running index.
+>         __u16 used_flags;
+>         __u16 used_idx;
+>         struct vring_used_elem used[2];
+>         __u16 avail_event_idx;
+> };
+>
+> static char console_in;
+> static struct vconsole_ring vc_ring = {
+>         { { PHYSICAL_ADDR(console_in), 1, 2, 0 } },
+>         1, /* No interrupts */
+> }
+>
+> static void post_buffer(void *base)
+> {
+>         vc_ring->avail_idx++;
+>         wmb();
+>         writel(0, base + VIRTIO_MMIO_QUEUE_NOTIFY);
+> }
+>
+> bool vc_read(void *base, char *c)
+> {
+>         mb();
+>         if (vc_ring->used_idx != vc_ring->avail_idx)
+>                 return false;
+>         *c = console_in;
+>         post_buffer(base);
+>         return true;
+> }
+>
+> void vc_init(void *base)
+> {
+>         /* Alignment of 4 bytes, don't waste any. */
+>         writel(4, base + VIRTIO_MMIO_GUEST_PAGE_SIZE);
+>
+>         /* Setup incoming vq. */
+>         writel(0, base + VIRTIO_MMIO_QUEUE_SEL);
+>
+>         /* 2 elements */
+>         writel(2, base + VIRTIO_MMIO_QUEUE_NUM);
+>         /* Alignment of 4 bytes */
+>         writel(4, base + VIRTIO_MMIO_QUEUE_ALIGN);
+>         /* Location of queue. */
+>         writel(PHYSICAL_ADDR(&vc_ring) >> 4, base + VIRTIO_MMIO_QUEUE_PFN);
+>
+>         post_buffer(base);
+> }
