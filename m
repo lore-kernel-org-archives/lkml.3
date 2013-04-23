@@ -1,55 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755210Ab3DWFQa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 01:16:30 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:44301 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754504Ab3DWFQ2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 01:16:28 -0400
+	id S1755216Ab3DWFXP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 01:23:15 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:32818 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753889Ab3DWFXN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Apr 2013 01:23:13 -0400
+Message-ID: <5176184D.6020906@ti.com>
+Date: Tue, 23 Apr 2013 10:42:45 +0530
+From: Sourav Poddar <sourav.poddar@ti.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
 MIME-Version: 1.0
-In-Reply-To: <20130422212324.GB4704@localhost>
-References: <1366389602-19313-1-git-send-email-linkinjeon@gmail.com>
-	<20130422212324.GB4704@localhost>
-Date: Tue, 23 Apr 2013 14:16:28 +0900
-Message-ID: <CAKYAXd-PUJ2YXr7QMMw9HWzSXzOO=Yb_CCo7AyfrT-_MP5Sa6Q@mail.gmail.com>
-Subject: Re: [PATCH v2 0/9] fix max discard sectors limit
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: dwmw2@infradead.org, axboe@kernel.dk, shli@kernel.org,
-        Paul.Clements@steeleye.com, npiggin@kernel.dk, neilb@suse.de,
-        cjb@laptop.org, adrian.hunter@intel.com,
-        James.Bottomley@hansenpartnership.com, JBottomley@parallels.com,
-        linux-scsi@vger.kernel.org, linux-mtd@lists.infradead.org,
-        nbd-general@lists.sourceforge.net, linux-raid@vger.kernel.org,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jcmvbkbc@gmail.com, Namjae Jeon <namjae.jeon@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+To: Grygorii Strashko <grygorii.strashko@ti.com>
+CC: <gregkh@linuxfoundation.org>, <tony@atomide.com>,
+        <rmk+kernel@arm.linux.org.uk>, <khilman@linaro.org>,
+        <linux-serial@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv2 2/5] driver: serial: omap: prevent runtime PM for "no_console_suspend"
+References: <1366638237-6880-1-git-send-email-sourav.poddar@ti.com> <1366638237-6880-3-git-send-email-sourav.poddar@ti.com> <51754DD7.6040904@ti.com>
+In-Reply-To: <51754DD7.6040904@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/4/23, Kent Overstreet <koverstreet@google.com>:
-> On Sat, Apr 20, 2013 at 01:40:02AM +0900, Namjae Jeon wrote:
->> From: Namjae Jeon <namjae.jeon@samsung.com>
+Hi Grygorii,
+On Monday 22 April 2013 08:18 PM, Grygorii Strashko wrote:
+> On 04/22/2013 04:43 PM, Sourav Poddar wrote:
+>> The driver manages "no_console_suspend" by preventing runtime PM
+>> during the suspend path, which forces the console UART to stay awake.
 >>
->> linux-v3.8-rc1 and later support for plug for blkdev_issue_discard with
->> commit 0cfbcafcae8b7364b5fa96c2b26ccde7a3a296a9
->> (block: add plug for blkdev_issue_discard )
+>> Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
+>> ---
+>>   drivers/tty/serial/omap-serial.c |    5 ++++-
+>>   1 files changed, 4 insertions(+), 1 deletions(-)
 >>
->> For example,
->> 1) DISCARD rq-1 with size size 4GB
->> 2) DISCARD rq-2 with size size 1GB
->>
->> If these 2 discard requests get merged, final request size will be 5GB.
->>
->> In this case, request's __data_len field may overflow as it can store
->> max 4GB(unsigned int).
+>> diff --git a/drivers/tty/serial/omap-serial.c 
+>> b/drivers/tty/serial/omap-serial.c
+>> index 08332f3..640b14e 100644
+>> --- a/drivers/tty/serial/omap-serial.c
+>> +++ b/drivers/tty/serial/omap-serial.c
+>> @@ -1582,7 +1582,7 @@ static int serial_omap_runtime_suspend(struct 
+>> device *dev)
+>>       struct uart_omap_port *up = dev_get_drvdata(dev);
+>>       struct omap_uart_port_info *pdata = dev->platform_data;
+>>   -    if (!up)
+>> +    if (!up || (!console_suspend_enabled && uart_console(&up->port)))
+>>           return -EINVAL;
+> Hi Sourav,
+> No ) You will block Runtime PM for console UART forever, but instead
+> it need to be blocked only during suspend - autosuspend should 
+> continue working.
+> But this will be not easy, again, -
+> because System suspend isn't synchronized with Runtime PM (I mean,
+> serial_omap_suspend/resume() may be called from one thread and
+> serial_omap_runtime_suspend/resume() from another at same time).
+> And now, serial_omap_suspend() callback is the only one place where you
+> can detect that system is going to sleep.
 >
-> Complete NACK - like James said, this fix is nonsensical. This should be
-> fixed by just checking for overflow before merging requests, not with
-> weird hacks in the drivers.
-that agree to your opinion, and will change at only appropriate
-place(James'change) and will send the updated patch soon.
-Thanks.
+Yes, got this point.
+As Kevin has already suggested a way to get around this, I will fix this 
+portion
+in the next version.
+> Personally, i don't believe in such approach (my experiences from K3.4 
+> said me
+> that there will be more problems than benefits).
 >
+> And, I like combination of "no_console_suspend" in bootargs +
+> "ti,no_idle_on_suspend" for console UART in DT, because 1) it's debug 
+> option and 2) until
+> smth. will be decided about OMAP OCP Bus it can be used.
+>
+> It's just my opinion.
+>
+> Regards,
+> -grygorii
+>>         if (!pdata)
+>> @@ -1614,6 +1614,9 @@ static int serial_omap_runtime_resume(struct 
+>> device *dev)
+>>         int loss_cnt = serial_omap_get_context_loss_count(up);
+>>   +    if (!console_suspend_enabled && uart_console(&up->port))
+>> +        return -EINVAL;
+>> +
+>>       if (loss_cnt < 0) {
+>>           dev_err(dev, "serial_omap_get_context_loss_count failed : 
+>> %d\n",
+>>               loss_cnt);
+>
+
