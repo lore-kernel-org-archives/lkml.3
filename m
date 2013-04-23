@@ -1,71 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756141Ab3DWNCo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 09:02:44 -0400
-Received: from co9ehsobe003.messaging.microsoft.com ([207.46.163.26]:43469
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755961Ab3DWNCn convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 09:02:43 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VS-4(zz98dI9371I146fI542I1432Izz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275dhz2dh2a8h668h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ahbe9i1155h)
-From: Sethi Varun-B16395 <B16395@freescale.com>
-To: Joerg Roedel <joro@8bytes.org>
-CC: "galak@kernel.crashing.org" <galak@kernel.crashing.org>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        Yoder Stuart-B08248 <B08248@freescale.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        Wood Scott-B07421 <B07421@freescale.com>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
-Subject: RE: [PATCH 1/3 v2] iommu: Move swap_pci_ref function to pci.h.
-Thread-Topic: [PATCH 1/3 v2] iommu: Move swap_pci_ref function to pci.h.
-Thread-Index: AQHOP90rLdZSjpgiUkm9R0ssXLeop5jjxboAgAAAJ/A=
-Date: Tue, 23 Apr 2013 13:02:38 +0000
-Message-ID: <C5ECD7A89D1DC44195F34B25E172658D4B4A00@039-SN2MPN1-011.039d.mgd.msft.net>
-References: <1366691726-9023-1-git-send-email-Varun.Sethi@freescale.com>
- <20130423125827.GD2589@8bytes.org>
-In-Reply-To: <20130423125827.GD2589@8bytes.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.214.249.154]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+	id S1755966Ab3DWNHD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 09:07:03 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:42141 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755535Ab3DWNHB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Apr 2013 09:07:01 -0400
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: axboe@kernel.dk
+Cc: linux-kernel@vger.kernel.org, Namjae Jeon <linkinjeon@gmail.com>,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Vivek Trivedi <t.vivek@samsung.com>,
+        James Bottomley <JBottomley@Parallels.com>,
+        Shaohua Li <shli@kernel.org>, Kent Overstreet <koverstreet@google.com>,
+        Tejun Heo <tj@kernel.org>, <stable@vger.kernel.org>
+Subject: [PATCH] block: fix max discard sectors limit
+Date: Tue, 23 Apr 2013 22:06:46 +0900
+Message-Id: <1366722406-2899-1-git-send-email-linkinjeon@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks.
+From: Namjae Jeon <namjae.jeon@samsung.com>
 
-> -----Original Message-----
-> From: iommu-bounces@lists.linux-foundation.org [mailto:iommu-
-> bounces@lists.linux-foundation.org] On Behalf Of Joerg Roedel
-> Sent: Tuesday, April 23, 2013 6:32 PM
-> To: Sethi Varun-B16395
-> Cc: galak@kernel.crashing.org; benh@kernel.crashing.org; Yoder Stuart-
-> B08248; linux-kernel@vger.kernel.org; iommu@lists.linux-foundation.org;
-> Wood Scott-B07421; linuxppc-dev@lists.ozlabs.org
-> Subject: Re: [PATCH 1/3 v2] iommu: Move swap_pci_ref function to pci.h.
-> 
-> On Tue, Apr 23, 2013 at 10:05:24AM +0530, Varun Sethi wrote:
-> > +#ifndef __PCI_H
-> > +#define __PCI_H
-> 
-> Using __PCI_H is not a wise choice, it has certainly a high risk of a
-> collision. Anyway, I changed it to __IOMMU_PCI_H and applied the patch.
-> 
-> 
-> 	Joerg
-> 
-> 
-> _______________________________________________
-> iommu mailing list
-> iommu@lists.linux-foundation.org
-> https://lists.linuxfoundation.org/mailman/listinfo/iommu
+linux-v3.8-rc1 and later support for plug for blkdev_issue_discard with
+commit 0cfbcafcae8b7364b5fa96c2b26ccde7a3a296a9
+(block: add plug for blkdev_issue_discard )
 
+For example,
+1) DISCARD rq-1 with size size 4GB
+2) DISCARD rq-2 with size size 1GB
+
+If these 2 discard requests get merged, final request size will be 5GB.
+
+In this case, request's __data_len field may overflow as it can store
+max 4GB(unsigned int).
+
+This issue was observed while doing mkfs.f2fs on 5GB SD card:
+https://lkml.org/lkml/2013/4/1/292
+
+Info: sector size = 512
+Info: total sectors = 11370496 (in 512bytes)
+Info: zone aligned segment0 blkaddr: 512
+[  257.789764] blk_update_request: bio idx 0 >= vcnt 0
+
+mkfs process gets stuck in D state and I see the following in the dmesg:
+
+[  257.789733] __end_that: dev mmcblk0: type=1, flags=122c8081
+[  257.789764]   sector 4194304, nr/cnr 2981888/4294959104
+[  257.789764]   bio df3840c0, biotail df3848c0, buffer   (null), len
+1526726656
+[  257.789764] blk_update_request: bio idx 0 >= vcnt 0
+[  257.794921] request botched: dev mmcblk0: type=1, flags=122c8081
+[  257.794921]   sector 4194304, nr/cnr 2981888/4294959104
+[  257.794921]   bio df3840c0, biotail df3848c0, buffer   (null), len
+1526726656
+
+This patch fixes this issue.
+
+Reported-by: Max Filippov <jcmvbkbc@gmail.com>
+Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+Signed-off-by: Vivek Trivedi <t.vivek@samsung.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Cc: Shaohua Li <shli@kernel.org>
+Cc: Kent Overstreet <koverstreet@google.com>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: <stable@vger.kernel.org>
+---
+ include/linux/blkdev.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index 07aa5f6..ff636bd 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -844,7 +844,7 @@ static inline unsigned int blk_queue_get_max_sectors(struct request_queue *q,
+ 						     unsigned int cmd_flags)
+ {
+ 	if (unlikely(cmd_flags & REQ_DISCARD))
+-		return q->limits.max_discard_sectors;
++		return min(q->limits.max_discard_sectors, UINT_MAX >> 9);
+ 
+ 	if (unlikely(cmd_flags & REQ_WRITE_SAME))
+ 		return q->limits.max_write_same_sectors;
+-- 
+1.7.9.5
 
