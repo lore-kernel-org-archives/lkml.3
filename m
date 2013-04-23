@@ -1,96 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757278Ab3DWQiP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 12:38:15 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:56773 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756699Ab3DWQbx (ORCPT
+	id S1757264Ab3DWQmZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 12:42:25 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:35406 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756617Ab3DWQmY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 12:31:53 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Rob Clark <robdclark@gmail.com>, Dave Airlie <airlied@linux.ie>,
-        dri-devel@lists.freedesktop.org
-Subject: [PATCH 11/21] drm/tilcdc: use only a single module device table
-Date: Tue, 23 Apr 2013 18:30:43 +0200
-Message-Id: <1366734653-488286-12-git-send-email-arnd@arndb.de>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1366734653-488286-1-git-send-email-arnd@arndb.de>
-References: <1366734653-488286-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:1noHhA1rNQTuequcP1yYGGL2et3BgCFqr46ZEhLhx9u
- TEQMfOxv5XoThhUCwjK3sw6p9qjvdfUUx7M2mqiYxzbMiJe4t0
- oYC0VAnA2+IGGOGnCPK3CFTSNgSam+x3z/s3sVHE87eDIabRPX
- Ry6UhQUFI6FaAugZ/pm2NfNAD2Vb7aOgf7zjYom3evTXJC1qvi
- qOrGioAKaBm1tYoyU3aXFhS0PNm9viybxg/hygYOZ7letVFVJB
- OMB+r2EYaM5Bd7poFrr6EwJXSOW92zK3FH/8ZIITTuvjC7kjMr
- PwhZNDS0UsNWDiTyLifCp+Q+r85tZ5Yvw27CAlh7ElPraEL6dL
- NDd/iO62hMp1/XPyKJzQXSGjQ8z1c6kCdOnTIpwjw
+	Tue, 23 Apr 2013 12:42:24 -0400
+Date: Tue, 23 Apr 2013 12:42:23 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Arnd Bergmann <arnd@arndb.de>
+cc: linux-arm-kernel@lists.infradead.org, <linux-kernel@vger.kernel.org>,
+        Venu Byravarasu <vbyravarasu@nvidia.com>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Stephen Warren <swarren@nvidia.com>, <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH 18/21] usb: phy: tegra: don't call into tegra-ehci directly
+In-Reply-To: <1366734653-488286-19-git-send-email-arnd@arndb.de>
+Message-ID: <Pine.LNX.4.44L0.1304231239220.1679-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The tilcdc driver fails to be built as a module because of extraneous
-MODULE_DEVICE_TABLE entries:
+On Tue, 23 Apr 2013, Arnd Bergmann wrote:
 
-drivers/gpu/drm/tilcdc/tilcdc_slave.o:(.data+0x54): multiple definition of `__mod_of_device_table'
-drivers/gpu/drm/tilcdc/tilcdc_tfp410.o:(.data+0x54): first defined here
-drivers/gpu/drm/tilcdc/tilcdc_panel.o:(.data+0x54): multiple definition of `__mod_of_device_table'
-drivers/gpu/drm/tilcdc/tilcdc_tfp410.o:(.data+0x54): first defined here
-drivers/gpu/drm/tilcdc/tilcdc_drv.o:(.data+0x184): multiple definition of `__mod_of_device_table'
-drivers/gpu/drm/tilcdc/tilcdc_tfp410.o:(.data+0x54): first defined here
+> Both phy-tegra-usb.c and ehci-tegra.c export symbols used by the other one,
+> which does not work if one of them or both are loadable modules, resulting
+> in an error like:
+> 
+> drivers/built-in.o: In function `utmi_phy_clk_disable':
+> drivers/usb/phy/phy-tegra-usb.c:302: undefined reference to `tegra_ehci_set_phcd'
+> drivers/built-in.o: In function `utmi_phy_clk_enable':
+> drivers/usb/phy/phy-tegra-usb.c:324: undefined reference to `tegra_ehci_set_phcd'
+> drivers/built-in.o: In function `utmi_phy_power_on':
+> drivers/usb/phy/phy-tegra-usb.c:447: undefined reference to `tegra_ehci_set_pts'
+> 
+> This turns the interface into a one-way dependency by letting the tegra ehci
+> driver pass two function pointers for callbacks that need to be called by
+> the phy driver.
 
-Since the entire point of these entries is to make the module autoload
-when one of the devices is present, it's enough to keep the one entry
-for "ti,am33xx-tilcdc", which should always be there if any of the
-others are.
+> @@ -733,7 +731,9 @@ static int tegra_ehci_probe(struct platform_device *pdev)
+>  
+>  	tegra->phy = tegra_usb_phy_open(&pdev->dev, instance, hcd->regs,
+>  					pdata->phy_config,
+> -					TEGRA_USB_PHY_MODE_HOST);
+> +					TEGRA_USB_PHY_MODE_HOST,
+> +					&tegra_ehci_set_pts,
+> +					tegra_ehci_set_phcd);
 
-Cc: Rob Clark <robdclark@gmail.com>
-Cc: Dave Airlie <airlied@linux.ie>
-Cc: dri-devel@lists.freedesktop.org
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
----
- drivers/gpu/drm/tilcdc/tilcdc_panel.c  | 1 -
- drivers/gpu/drm/tilcdc/tilcdc_slave.c  | 1 -
- drivers/gpu/drm/tilcdc/tilcdc_tfp410.c | 1 -
- 3 files changed, 3 deletions(-)
+Does the compiler warn about the unnecessary '&'?  In any case, it
+looks strange to have one function pointer with an '&' and another
+without.
 
-diff --git a/drivers/gpu/drm/tilcdc/tilcdc_panel.c b/drivers/gpu/drm/tilcdc/tilcdc_panel.c
-index 580b74e..eb99f42 100644
---- a/drivers/gpu/drm/tilcdc/tilcdc_panel.c
-+++ b/drivers/gpu/drm/tilcdc/tilcdc_panel.c
-@@ -413,7 +413,6 @@ static struct of_device_id panel_of_match[] = {
- 		{ .compatible = "ti,tilcdc,panel", },
- 		{ },
- };
--MODULE_DEVICE_TABLE(of, panel_of_match);
- 
- struct platform_driver panel_driver = {
- 	.probe = panel_probe,
-diff --git a/drivers/gpu/drm/tilcdc/tilcdc_slave.c b/drivers/gpu/drm/tilcdc/tilcdc_slave.c
-index 568dc1c..db1d2fc 100644
---- a/drivers/gpu/drm/tilcdc/tilcdc_slave.c
-+++ b/drivers/gpu/drm/tilcdc/tilcdc_slave.c
-@@ -353,7 +353,6 @@ static struct of_device_id slave_of_match[] = {
- 		{ .compatible = "ti,tilcdc,slave", },
- 		{ },
- };
--MODULE_DEVICE_TABLE(of, slave_of_match);
- 
- struct platform_driver slave_driver = {
- 	.probe = slave_probe,
-diff --git a/drivers/gpu/drm/tilcdc/tilcdc_tfp410.c b/drivers/gpu/drm/tilcdc/tilcdc_tfp410.c
-index 58d487b..a36788f 100644
---- a/drivers/gpu/drm/tilcdc/tilcdc_tfp410.c
-+++ b/drivers/gpu/drm/tilcdc/tilcdc_tfp410.c
-@@ -396,7 +396,6 @@ static struct of_device_id tfp410_of_match[] = {
- 		{ .compatible = "ti,tilcdc,tfp410", },
- 		{ },
- };
--MODULE_DEVICE_TABLE(of, tfp410_of_match);
- 
- struct platform_driver tfp410_driver = {
- 	.probe = tfp410_probe,
--- 
-1.8.1.2
+Aside from that minor detail, the ehci-tegra.c changes are fine.
+
+Alan Stern
 
