@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932070Ab3DWVxF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 17:53:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34102 "EHLO
+	id S1756827Ab3DWWNX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 18:13:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34129 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757546Ab3DWVxA (ORCPT
+	with ESMTP id S1754662Ab3DWVxE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 17:53:00 -0400
+	Tue, 23 Apr 2013 17:53:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Felix Fietkau <nbd@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 26/42] ath9k_hw: change AR9580 initvals to fix a stability issue
-Date: Tue, 23 Apr 2013 14:52:24 -0700
-Message-Id: <20130423215208.173443111@linuxfoundation.org>
+        Libin <huawei.libin@huawei.com>, jiang.liu@huawei.com,
+        guohanjun@huawei.com, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Jonghwan Choi <jhbird.choi@samsung.com>
+Subject: [ 22/42] sched/debug: Fix sd->*_idx limit range avoiding overflow
+Date: Tue, 23 Apr 2013 14:52:20 -0700
+Message-Id: <20130423215207.778285571@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130423215205.523980967@linuxfoundation.org>
 References: <20130423215205.523980967@linuxfoundation.org>
@@ -27,33 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: libin <huawei.libin@huawei.com>
 
-commit f09a878511997c25a76bf111a32f6b8345a701a5 upstream.
+commit fd9b86d37a600488dbd80fe60cca46b822bff1cd upstream.
 
-The hardware parsing of Control Wrapper Frames needs to be disabled, as
-it has been causing spurious decryption error reports. The initvals for
-other chips have been updated to disable it, but AR9580 was left out for
-some reason.
+Commit 201c373e8e ("sched/debug: Limit sd->*_idx range on
+sysctl") was an incomplete bug fix.
 
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+This patch fixes sd->*_idx limit range to [0 ~ CPU_LOAD_IDX_MAX-1]
+avoiding array overflow caused by setting sd->*_idx to CPU_LOAD_IDX_MAX
+on sysctl.
+
+Signed-off-by: Libin <huawei.libin@huawei.com>
+Cc: <jiang.liu@huawei.com>
+Cc: <guohanjun@huawei.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/51626610.2040607@huawei.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/ar9580_1p0_initvals.h |    2 +-
+ kernel/sched/core.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/wireless/ath/ath9k/ar9580_1p0_initvals.h
-+++ b/drivers/net/wireless/ath/ath9k/ar9580_1p0_initvals.h
-@@ -519,7 +519,7 @@ static const u32 ar9580_1p0_mac_core[][2
- 	{0x00008258, 0x00000000},
- 	{0x0000825c, 0x40000000},
- 	{0x00008260, 0x00080922},
--	{0x00008264, 0x9bc00010},
-+	{0x00008264, 0x9d400010},
- 	{0x00008268, 0xffffffff},
- 	{0x0000826c, 0x0000ffff},
- 	{0x00008270, 0x00000000},
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -4950,7 +4950,7 @@ static void sd_free_ctl_entry(struct ctl
+ }
+ 
+ static int min_load_idx = 0;
+-static int max_load_idx = CPU_LOAD_IDX_MAX;
++static int max_load_idx = CPU_LOAD_IDX_MAX-1;
+ 
+ static void
+ set_table_entry(struct ctl_table *entry,
 
 
