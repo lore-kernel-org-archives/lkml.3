@@ -1,198 +1,458 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757589Ab3DWQ4Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 12:56:16 -0400
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:48086 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757585Ab3DWQ4O (ORCPT
+	id S1757627Ab3DWQ5p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 12:57:45 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:43527 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757608Ab3DWQ5o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 12:56:14 -0400
-Message-ID: <5176BD29.1000405@linaro.org>
-Date: Tue, 23 Apr 2013 18:56:09 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>, Joseph Lo <josephl@nvidia.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: Re: [PATCH 07/21] ARM: tegra: unify tegra_idle_device definitions
-References: <1366734653-488286-1-git-send-email-arnd@arndb.de> <1366734653-488286-8-git-send-email-arnd@arndb.de>
-In-Reply-To: <1366734653-488286-8-git-send-email-arnd@arndb.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Tue, 23 Apr 2013 12:57:44 -0400
+X-IronPort-AV: E=Sophos;i="4.87,536,1363158000"; 
+   d="scan'208";a="40848165"
+From: Sujit Reddy Thumma <sthumma@codeaurora.org>
+To: Vinayak Holikatti <vinholikatti@gmail.com>,
+        Santosh Y <santoshsy@gmail.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>
+Cc: Sujit Reddy Thumma <sthumma@codeaurora.org>, linux-arm-msm@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/1] scsi: ufs: Generalize UFS Interconnect Layer (UIC) command support
+Date: Tue, 23 Apr 2013 22:27:14 +0530
+Message-Id: <1366736234-8964-1-git-send-email-sthumma@codeaurora.org>
+X-Mailer: git-send-email 1.7.8.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/23/2013 06:30 PM, Arnd Bergmann wrote:
-> The three tegra variants (20, 30, 114) each define their own per-cpu
-> variable for tegra_idle_device, which causes link errors when you
-> build the kernel for more than one of them:
-> 
-> cpuidle-tegra30.o:(.discard+0x0): multiple definition of `__pcpu_unique_tegra_idle_device'
-> cpuidle-tegra20.o:(.discard+0x0): first defined here
-> cpuidle-tegra114.o:(.discard+0x0): multiple definition of `__pcpu_unique_tegra_idle_device'
-> cpuidle-tegra20.o:(.discard+0x0): first defined here
-> 
-> By moving the variable into the common cpuidle.c file, we save a little
-> bit of object code size and avoid that warning.
-> As a bonus, this patch also removes the unused "drv" variables in each
-> of the three files that caused a warning since 0697598db "ARM: tegra:
-> cpuidle: remove useless initialization".
-> 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: Stephen Warren <swarren@nvidia.com>
-> Cc: Joseph Lo <josephl@nvidia.com>
-> Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
-> Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> ---
+Currently, only DME_LINKSTARTUP UIC command is fully supported,
+generalize this to send any UIC command. A new uic_cmd_mutex
+is introduced and the callers are expected to hold this mutex
+lock before preparing and sending UIC command as the specification
+doesn't allow more than one UIC command at a time.
 
-Hi Arnd,
+Further, the command completion for DME_LINKSTARTUP is modified
+and the command completes in the context of the caller instead
+of a separate work.
 
-the patch sounds good but I think the side effect of the consolidation
-patchset [1] fixed that.
+Signed-off-by: Sujit Reddy Thumma <sthumma@codeaurora.org>
+---
+ drivers/scsi/ufs/ufshcd.c |  257 +++++++++++++++++++++++++++++++++------------
+ drivers/scsi/ufs/ufshcd.h |    7 +-
+ 2 files changed, 194 insertions(+), 70 deletions(-)
 
-You can find these fixes in Rafael's tree:
-
-https://git.kernel.org/cgit/linux/kernel/git/rafael/linux-pm.git/commit/?h=linux-next&id=4c637b2175a0dc65d533494225525c6c82d73293
-
-https://git.kernel.org/cgit/linux/kernel/git/rafael/linux-pm.git/commit/?h=linux-next&id=e158f9da6974cc11bfab2246a9b10021af0e0d8a
-
-https://git.kernel.org/cgit/linux/kernel/git/rafael/linux-pm.git/commit/?h=linux-next&id=c5106c9dea9a6022ab84c6cb1d4a0b19fc5af0e2
-
-https://git.kernel.org/cgit/linux/kernel/git/rafael/linux-pm.git/commit/?h=linux-next&id=f040c26ffaa5e56f2bca427c719c9601a02e70e5
-
-[1] http://www.spinics.net/lists/arm-kernel/msg239811.html
-
->  arch/arm/mach-tegra/cpuidle-tegra114.c | 5 ++---
->  arch/arm/mach-tegra/cpuidle-tegra20.c  | 4 +---
->  arch/arm/mach-tegra/cpuidle-tegra30.c  | 4 +---
->  arch/arm/mach-tegra/cpuidle.c          | 2 ++
->  arch/arm/mach-tegra/cpuidle.h          | 4 ++++
->  5 files changed, 10 insertions(+), 9 deletions(-)
-> 
-> diff --git a/arch/arm/mach-tegra/cpuidle-tegra114.c b/arch/arm/mach-tegra/cpuidle-tegra114.c
-> index 0f4e8c4..09067a1 100644
-> --- a/arch/arm/mach-tegra/cpuidle-tegra114.c
-> +++ b/arch/arm/mach-tegra/cpuidle-tegra114.c
-> @@ -20,6 +20,8 @@
->  
->  #include <asm/cpuidle.h>
->  
-> +#include "cpuidle.h"
-> +
->  static struct cpuidle_driver tegra_idle_driver = {
->  	.name = "tegra_idle",
->  	.owner = THIS_MODULE,
-> @@ -30,14 +32,11 @@ static struct cpuidle_driver tegra_idle_driver = {
->  	},
->  };
->  
-> -static DEFINE_PER_CPU(struct cpuidle_device, tegra_idle_device);
-> -
->  int __init tegra114_cpuidle_init(void)
->  {
->  	int ret;
->  	unsigned int cpu;
->  	struct cpuidle_device *dev;
-> -	struct cpuidle_driver *drv = &tegra_idle_driver;
->  
->  	ret = cpuidle_register_driver(&tegra_idle_driver);
->  	if (ret) {
-> diff --git a/arch/arm/mach-tegra/cpuidle-tegra20.c b/arch/arm/mach-tegra/cpuidle-tegra20.c
-> index 825ced4..c811328 100644
-> --- a/arch/arm/mach-tegra/cpuidle-tegra20.c
-> +++ b/arch/arm/mach-tegra/cpuidle-tegra20.c
-> @@ -36,6 +36,7 @@
->  #include "iomap.h"
->  #include "irq.h"
->  #include "flowctrl.h"
-> +#include "cpuidle.h"
->  
->  #ifdef CONFIG_PM_SLEEP
->  static bool abort_flag;
-> @@ -67,8 +68,6 @@ static struct cpuidle_driver tegra_idle_driver = {
->  	.en_core_tk_irqen = 1,
->  };
->  
-> -static DEFINE_PER_CPU(struct cpuidle_device, tegra_idle_device);
-> -
->  #ifdef CONFIG_PM_SLEEP
->  #ifdef CONFIG_SMP
->  static void __iomem *pmc = IO_ADDRESS(TEGRA_PMC_BASE);
-> @@ -220,7 +219,6 @@ int __init tegra20_cpuidle_init(void)
->  	int ret;
->  	unsigned int cpu;
->  	struct cpuidle_device *dev;
-> -	struct cpuidle_driver *drv = &tegra_idle_driver;
->  
->  #ifdef CONFIG_PM_SLEEP
->  	tegra_tear_down_cpu = tegra20_tear_down_cpu;
-> diff --git a/arch/arm/mach-tegra/cpuidle-tegra30.c b/arch/arm/mach-tegra/cpuidle-tegra30.c
-> index 8b50cf4..6187478 100644
-> --- a/arch/arm/mach-tegra/cpuidle-tegra30.c
-> +++ b/arch/arm/mach-tegra/cpuidle-tegra30.c
-> @@ -33,6 +33,7 @@
->  
->  #include "pm.h"
->  #include "sleep.h"
-> +#include "cpuidle.h"
->  
->  #ifdef CONFIG_PM_SLEEP
->  static int tegra30_idle_lp2(struct cpuidle_device *dev,
-> @@ -65,8 +66,6 @@ static struct cpuidle_driver tegra_idle_driver = {
->  	},
->  };
->  
-> -static DEFINE_PER_CPU(struct cpuidle_device, tegra_idle_device);
-> -
->  #ifdef CONFIG_PM_SLEEP
->  static bool tegra30_cpu_cluster_power_down(struct cpuidle_device *dev,
->  					   struct cpuidle_driver *drv,
-> @@ -160,7 +159,6 @@ int __init tegra30_cpuidle_init(void)
->  	int ret;
->  	unsigned int cpu;
->  	struct cpuidle_device *dev;
-> -	struct cpuidle_driver *drv = &tegra_idle_driver;
->  
->  #ifdef CONFIG_PM_SLEEP
->  	tegra_tear_down_cpu = tegra30_tear_down_cpu;
-> diff --git a/arch/arm/mach-tegra/cpuidle.c b/arch/arm/mach-tegra/cpuidle.c
-> index 4b744c4..1bac560 100644
-> --- a/arch/arm/mach-tegra/cpuidle.c
-> +++ b/arch/arm/mach-tegra/cpuidle.c
-> @@ -27,6 +27,8 @@
->  #include "fuse.h"
->  #include "cpuidle.h"
->  
-> +DEFINE_PER_CPU(struct cpuidle_device, tegra_idle_device);
-> +
->  static int __init tegra_cpuidle_init(void)
->  {
->  	int ret;
-> diff --git a/arch/arm/mach-tegra/cpuidle.h b/arch/arm/mach-tegra/cpuidle.h
-> index d733f75..a4c5f17 100644
-> --- a/arch/arm/mach-tegra/cpuidle.h
-> +++ b/arch/arm/mach-tegra/cpuidle.h
-> @@ -17,6 +17,10 @@
->  #ifndef __MACH_TEGRA_CPUIDLE_H
->  #define __MACH_TEGRA_CPUIDLE_H
->  
-> +#include <linux/cpuidle.h>
-> +
-> +DECLARE_PER_CPU(struct cpuidle_device, tegra_idle_device);
-> +
->  #ifdef CONFIG_ARCH_TEGRA_2x_SOC
->  int tegra20_cpuidle_init(void);
->  #else
-> 
-
-
+diff --git a/drivers/scsi/ufs/ufshcd.c b/drivers/scsi/ufs/ufshcd.c
+index 3f67225..ced421a 100644
+--- a/drivers/scsi/ufs/ufshcd.c
++++ b/drivers/scsi/ufs/ufshcd.c
+@@ -35,6 +35,11 @@
+ 
+ #include "ufshcd.h"
+ 
++/* Timeout after 10 secs if UIC command hangs */
++#define UIC_COMMAND_TIMEOUT	(10 * HZ)
++/* Retry for 3 times in case of UIC failures */
++#define UIC_COMMAND_RETRIES	3
++
+ enum {
+ 	UFSHCD_MAX_CHANNEL	= 0,
+ 	UFSHCD_MAX_ID		= 1,
+@@ -51,7 +56,7 @@ enum {
+ };
+ 
+ /* Interrupt configuration options */
+-enum {
++enum ufshcd_int_cfg {
+ 	UFSHCD_INT_DISABLE,
+ 	UFSHCD_INT_ENABLE,
+ 	UFSHCD_INT_CLEAR,
+@@ -63,6 +68,8 @@ enum {
+ 	INT_AGGR_CONFIG,
+ };
+ 
++static void ufshcd_int_config(struct ufs_hba *hba, enum ufshcd_int_cfg option);
++
+ /**
+  * ufshcd_get_ufs_version - Get the UFS version supported by the HBA
+  * @hba - Pointer to adapter instance
+@@ -157,19 +164,6 @@ static inline int ufshcd_get_lists_status(u32 reg)
+ }
+ 
+ /**
+- * ufshcd_get_uic_cmd_result - Get the UIC command result
+- * @hba: Pointer to adapter instance
+- *
+- * This function gets the result of UIC command completion
+- * Returns 0 on success, non zero value on error
+- */
+-static inline int ufshcd_get_uic_cmd_result(struct ufs_hba *hba)
+-{
+-	return readl(hba->mmio_base + REG_UIC_COMMAND_ARG_2) &
+-	       MASK_UIC_COMMAND_RESULT;
+-}
+-
+-/**
+  * ufshcd_free_hba_memory - Free allocated memory for LRB, request
+  *			    and task lists
+  * @hba: Pointer to adapter instance
+@@ -397,13 +391,95 @@ static inline void ufshcd_hba_capabilities(struct ufs_hba *hba)
+ }
+ 
+ /**
++ * ufshcd_prepare_uic_command_lck() - prepare UIC command
++ * @hba: per-adapter instance
++ * @uic_cmd: pointer to UIC command structure
++ * @cmd: UIC command
++ * @arg1: argument 1
++ * @arg2: argument 2
++ * @arg3: argument 3
++ *
++ * Hold UIC command mutex and prepare UIC command structure.
++ * Proper sequence for sending UIC command is:
++ *	1) ufshcd_prepare_uic_command_lck()
++ *	2) ufshcd_send_uic_command()
++ *	3) check argument 2 and argument 3 for results
++ *	4) ufshcd_unprepare_uic_command_unlck()
++ *
++ * Note: Step 3 is optional. But when it is required it should be
++ * with mutex lock held.
++ */
++static void ufshcd_prepare_uic_command_lck(struct ufs_hba *hba,
++		struct uic_command *uic_cmd, u32 cmd,
++		u32 arg1, u32 arg2, u32 arg3)
++{
++	mutex_lock(&hba->uic_cmd_mutex);
++	WARN_ON(hba->active_uic_cmd);
++
++	/* form UIC command */
++	uic_cmd->command = cmd;
++	uic_cmd->argument1 = arg1;
++	uic_cmd->argument2 = arg2;
++	uic_cmd->argument3 = arg3;
++
++	hba->active_uic_cmd = uic_cmd;
++}
++
++/**
++ * ufshcd_unprepare_uic_command_unlck() - unprepare UIC command
++ * @hba: per-adapter instance
++ *
++ * Release UIC mutex and point active uic command to NULL.
++ *
++ * See comments in ufshcd_prepare_uic_command_lck().
++ */
++static void ufshcd_unprepare_uic_command_unlck(struct ufs_hba *hba)
++{
++	hba->active_uic_cmd = NULL;
++	mutex_unlock(&hba->uic_cmd_mutex);
++}
++
++/**
+  * ufshcd_send_uic_command - Send UIC commands to unipro layers
+  * @hba: per adapter instance
+  * @uic_command: UIC command
++ * @retries: number of retries in case of failure.
++ *
++ * See comments in ufshcd_prepare_uic_command_lck().
++ * Returns 0 on success, negative value on failure.
+  */
+-static inline void
+-ufshcd_send_uic_command(struct ufs_hba *hba, struct uic_command *uic_cmnd)
++static int ufshcd_send_uic_command(struct ufs_hba *hba,
++		struct uic_command *uic_cmnd, int retries)
+ {
++	int err = 0;
++	unsigned long flags;
++
++	if (unlikely(mutex_trylock(&hba->uic_cmd_mutex))) {
++		mutex_unlock(&hba->uic_cmd_mutex);
++		dev_err(hba->dev, "%s: called without prepare command\n",
++				__func__);
++		BUG();
++	}
++
++retry:
++	/* check if controller is ready to accept UIC commands */
++	if (!(readl(hba->mmio_base + REG_CONTROLLER_STATUS) &
++				UIC_COMMAND_READY)) {
++		dev_err(hba->dev, "Controller not ready to accept UIC commands\n");
++		err = -EIO;
++		goto out;
++	}
++
++	init_completion(&uic_cmnd->completion);
++
++	spin_lock_irqsave(hba->host->host_lock, flags);
++
++	/* enable UIC related interrupts */
++	if (!(hba->int_enable_mask & UIC_COMMAND_COMPL)) {
++		hba->int_enable_mask |= UIC_COMMAND_COMPL;
++		ufshcd_int_config(hba, UFSHCD_INT_ENABLE);
++	}
++
+ 	/* Write Args */
+ 	writel(uic_cmnd->argument1,
+ 	      (hba->mmio_base + REG_UIC_COMMAND_ARG_1));
+@@ -415,6 +491,45 @@ ufshcd_send_uic_command(struct ufs_hba *hba, struct uic_command *uic_cmnd)
+ 	/* Write UIC Cmd */
+ 	writel((uic_cmnd->command & COMMAND_OPCODE_MASK),
+ 	       (hba->mmio_base + REG_UIC_COMMAND));
++
++	/* flush to make sure h/w sees the write */
++	readl(hba->mmio_base + REG_UIC_COMMAND);
++
++	spin_unlock_irqrestore(hba->host->host_lock, flags);
++
++	err = wait_for_completion_timeout(
++			&uic_cmnd->completion, UIC_COMMAND_TIMEOUT);
++	if (!err) {
++		err = -ETIMEDOUT;
++	} else if (uic_cmnd->argument2 & MASK_UIC_COMMAND_RESULT) {
++		/* something bad with h/w or arguments, try again */
++		if (--retries)
++			goto retry;
++
++		switch (uic_cmnd->argument2 & MASK_UIC_COMMAND_RESULT) {
++		case 0x09: /* BUSY */
++			err = -EBUSY;
++			break;
++		case 0x08: /* PEER_COMMUNICATION_FAILURE*/
++		case 0x0A: /* DME_FAILURE */
++			err = -EIO;
++			break;
++		default: /* Invalid arguments */
++			err = -EINVAL;
++			break;
++		}
++	} else {
++		err = 0;
++	}
++
++	if (err)
++		dev_err(hba->dev, "%s: UIC command failed %d\n CMD: 0x%.8x ARG1: 0x%.8x ARG2: 0x%.8x ARG3: 0x%.8x\n",
++				__func__, err, uic_cmnd->command,
++				uic_cmnd->argument1, uic_cmnd->argument2,
++				uic_cmnd->argument3);
++
++out:
++	return err;
+ }
+ 
+ /**
+@@ -462,7 +577,7 @@ static int ufshcd_map_sg(struct ufshcd_lrb *lrbp)
+  * @hba: per adapter instance
+  * @option: interrupt option
+  */
+-static void ufshcd_int_config(struct ufs_hba *hba, u32 option)
++static void ufshcd_int_config(struct ufs_hba *hba, enum ufshcd_int_cfg option)
+ {
+ 	switch (option) {
+ 	case UFSHCD_INT_ENABLE:
+@@ -477,6 +592,8 @@ static void ufshcd_int_config(struct ufs_hba *hba, u32 option)
+ 			writel(INTERRUPT_DISABLE_MASK_11,
+ 			       (hba->mmio_base + REG_INTERRUPT_ENABLE));
+ 		break;
++	default:
++		break;
+ 	}
+ }
+ 
+@@ -962,35 +1079,37 @@ static void ufshcd_host_memory_configure(struct ufs_hba *hba)
+  */
+ static int ufshcd_dme_link_startup(struct ufs_hba *hba)
+ {
+-	struct uic_command *uic_cmd;
+-	unsigned long flags;
++	int err;
++	struct uic_command uic_cmd;
++	int retries = 5;
++	u32 status;
++	u32 hcs;
+ 
+-	/* check if controller is ready to accept UIC commands */
+-	if (((readl(hba->mmio_base + REG_CONTROLLER_STATUS)) &
+-	    UIC_COMMAND_READY) == 0x0) {
+-		dev_err(hba->dev,
+-			"Controller not ready"
+-			" to accept UIC commands\n");
+-		return -EIO;
+-	}
++	do {
++		ufshcd_prepare_uic_command_lck(hba, &uic_cmd,
++				UIC_CMD_DME_LINK_STARTUP, 0, 0, 0);
+ 
+-	spin_lock_irqsave(hba->host->host_lock, flags);
++		err = ufshcd_send_uic_command(hba,
++				&uic_cmd, UIC_COMMAND_RETRIES);
+ 
+-	/* form UIC command */
+-	uic_cmd = &hba->active_uic_cmd;
+-	uic_cmd->command = UIC_CMD_DME_LINK_STARTUP;
+-	uic_cmd->argument1 = 0;
+-	uic_cmd->argument2 = 0;
+-	uic_cmd->argument3 = 0;
++		ufshcd_unprepare_uic_command_unlck(hba);
+ 
+-	/* enable UIC related interrupts */
+-	hba->int_enable_mask |= UIC_COMMAND_COMPL;
+-	ufshcd_int_config(hba, UFSHCD_INT_ENABLE);
++		if (!err) {
++			hcs = readl((hba->mmio_base + REG_CONTROLLER_STATUS));
++			if (ufshcd_is_device_present(hcs))
++				break;
++		}
+ 
+-	/* sending UIC commands to controller */
+-	ufshcd_send_uic_command(hba, uic_cmd);
+-	spin_unlock_irqrestore(hba->host->host_lock, flags);
+-	return 0;
++		/*
++		 * Give 1ms delay and retry in case device is not
++		 * ready for a link startup.
++		 */
++		status = readl(hba->mmio_base + REG_INTERRUPT_STATUS);
++		if (!(status & UIC_LINK_LOST))
++			usleep_range(1000, 2000);
++	} while (--retries);
++
++	return err;
+ }
+ 
+ /**
+@@ -1129,8 +1248,11 @@ static int ufshcd_hba_enable(struct ufs_hba *hba)
+  */
+ static int ufshcd_initialize_hba(struct ufs_hba *hba)
+ {
+-	if (ufshcd_hba_enable(hba))
+-		return -EIO;
++	int err;
++
++	err = ufshcd_hba_enable(hba);
++	if (err)
++		goto out;
+ 
+ 	/* Configure UTRL and UTMRL base address registers */
+ 	writel(lower_32_bits(hba->utrdl_dma_addr),
+@@ -1143,7 +1265,16 @@ static int ufshcd_initialize_hba(struct ufs_hba *hba)
+ 	       (hba->mmio_base + REG_UTP_TASK_REQ_LIST_BASE_H));
+ 
+ 	/* Initialize unipro link startup procedure */
+-	return ufshcd_dme_link_startup(hba);
++	err = ufshcd_dme_link_startup(hba);
++	if (err)
++		goto out;
++
++	err = ufshcd_make_hba_operational(hba);
++out:
++	if (err)
++		dev_err(hba->dev, "%s: hba initialization failed, err %d\n",
++				__func__, err);
++	return err;
+ }
+ 
+ /**
+@@ -1477,28 +1608,6 @@ static void ufshcd_transfer_req_compl(struct ufs_hba *hba)
+ }
+ 
+ /**
+- * ufshcd_uic_cc_handler - handle UIC command completion
+- * @work: pointer to a work queue structure
+- *
+- * Returns 0 on success, non-zero value on failure
+- */
+-static void ufshcd_uic_cc_handler (struct work_struct *work)
+-{
+-	struct ufs_hba *hba;
+-
+-	hba = container_of(work, struct ufs_hba, uic_workq);
+-
+-	if ((hba->active_uic_cmd.command == UIC_CMD_DME_LINK_STARTUP) &&
+-	    !(ufshcd_get_uic_cmd_result(hba))) {
+-
+-		if (ufshcd_make_hba_operational(hba))
+-			dev_err(hba->dev,
+-				"cc: hba not operational state\n");
+-		return;
+-	}
+-}
+-
+-/**
+  * ufshcd_fatal_err_handler - handle fatal errors
+  * @hba: per adapter instance
+  */
+@@ -1560,8 +1669,16 @@ static void ufshcd_sl_intr(struct ufs_hba *hba, u32 intr_status)
+ 	if (hba->errors)
+ 		ufshcd_err_handler(hba);
+ 
+-	if (intr_status & UIC_COMMAND_COMPL)
+-		schedule_work(&hba->uic_workq);
++	if (intr_status & UIC_COMMAND_COMPL) {
++		struct uic_command *uic_cmd = hba->active_uic_cmd;
++
++		/* update ARG2 and ARG3 registers */
++		uic_cmd->argument2 =
++			readl(hba->mmio_base + REG_UIC_COMMAND_ARG_2);
++		uic_cmd->argument3 =
++			readl(hba->mmio_base + REG_UIC_COMMAND_ARG_3);
++		complete(&uic_cmd->completion);
++	}
+ 
+ 	if (intr_status & UTP_TASK_REQ_COMPL)
+ 		ufshcd_tmc_handler(hba);
+@@ -1947,12 +2064,14 @@ int ufshcd_init(struct device *dev, struct ufs_hba **hba_handle,
+ 	init_waitqueue_head(&hba->ufshcd_tm_wait_queue);
+ 
+ 	/* Initialize work queues */
+-	INIT_WORK(&hba->uic_workq, ufshcd_uic_cc_handler);
+ 	INIT_WORK(&hba->feh_workq, ufshcd_fatal_err_handler);
+ 
+ 	/* Initialize mutex for query requests */
+ 	mutex_init(&hba->query.mutex);
+ 
++	/* Initialize UIC command mutex */
++	mutex_init(&hba->uic_cmd_mutex);
++
+ 	/* IRQ registration */
+ 	err = request_irq(irq, ufshcd_intr, IRQF_SHARED, UFSHCD, hba);
+ 	if (err) {
+diff --git a/drivers/scsi/ufs/ufshcd.h b/drivers/scsi/ufs/ufshcd.h
+index e6ca79f..13378f3 100644
+--- a/drivers/scsi/ufs/ufshcd.h
++++ b/drivers/scsi/ufs/ufshcd.h
+@@ -76,6 +76,7 @@
+  * @argument3: UIC command argument 3
+  * @cmd_active: Indicate if UIC command is outstanding
+  * @result: UIC command result
++ * @completion: holds the state of completion
+  */
+ struct uic_command {
+ 	u32 command;
+@@ -84,6 +85,7 @@ struct uic_command {
+ 	u32 argument3;
+ 	int cmd_active;
+ 	int result;
++	struct completion completion;
+ };
+ 
+ /**
+@@ -150,6 +152,7 @@ struct ufs_query {
+  * @ufs_version: UFS Version to which controller complies
+  * @irq: Irq number of the controller
+  * @active_uic_cmd: handle of active UIC command
++ * @uic_cmd_mutex: lock for uic command exclusion
+  * @ufshcd_tm_wait_queue: wait queue for task management
+  * @tm_condition: condition variable for task management
+  * @ufshcd_state: UFSHCD states
+@@ -186,7 +189,9 @@ struct ufs_hba {
+ 	u32 ufs_version;
+ 	unsigned int irq;
+ 
+-	struct uic_command active_uic_cmd;
++	struct uic_command *active_uic_cmd;
++	struct mutex uic_cmd_mutex;
++
+ 	wait_queue_head_t ufshcd_tm_wait_queue;
+ 	unsigned long tm_condition;
+ 
 -- 
- <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+QUALCOMM INDIA, on behalf of Qualcomm Innovation Center, Inc. is a member
+of Code Aurora Forum, hosted by The Linux Foundation.
 
