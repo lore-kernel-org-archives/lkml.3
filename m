@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932543Ab3DWV4p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 17:56:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34367 "EHLO
+	id S932799Ab3DWV7B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 17:59:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34403 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932484Ab3DWV4i (ORCPT
+	with ESMTP id S932541Ab3DWV4p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 17:56:38 -0400
+	Tue, 23 Apr 2013 17:56:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Bohan <mbohan@codeaurora.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [ 01/23] hrtimer: Dont reinitialize a cpu_base lock on CPU_UP
-Date: Tue, 23 Apr 2013 14:56:08 -0700
-Message-Id: <20130423215456.456015128@linuxfoundation.org>
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 18/23] vm: add vm_iomap_memory() helper function
+Date: Tue, 23 Apr 2013 14:56:25 -0700
+Message-Id: <20130423215458.146463020@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130423215456.307216898@linuxfoundation.org>
 References: <20130423215456.307216898@linuxfoundation.org>
@@ -27,89 +26,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Bohan <mbohan@codeaurora.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit 84cc8fd2fe65866e49d70b38b3fdf7219dd92fe0 upstream.
+commit b4cbb197c7e7a68dbad0d491242e3ca67420c13e upstream.
 
-The current code makes the assumption that a cpu_base lock won't be
-held if the CPU corresponding to that cpu_base is offline, which isn't
-always true.
+Various drivers end up replicating the code to mmap() their memory
+buffers into user space, and our core memory remapping function may be
+very flexible but it is unnecessarily complicated for the common cases
+to use.
 
-If a hrtimer is not queued, then it will not be migrated by
-migrate_hrtimers() when a CPU is offlined. Therefore, the hrtimer's
-cpu_base may still point to a CPU which has subsequently gone offline
-if the timer wasn't enqueued at the time the CPU went down.
+Our internal VM uses pfn's ("page frame numbers") which simplifies
+things for the VM, and allows us to pass physical addresses around in a
+denser and more efficient format than passing a "phys_addr_t" around,
+and having to shift it up and down by the page size.  But it just means
+that drivers end up doing that shifting instead at the interface level.
 
-Normally this wouldn't be a problem, but a cpu_base's lock is blindly
-reinitialized each time a CPU is brought up. If a CPU is brought
-online during the period that another thread is performing a hrtimer
-operation on a stale hrtimer, then the lock will be reinitialized
-under its feet, and a SPIN_BUG() like the following will be observed:
+It also means that drivers end up mucking around with internal VM things
+like the vma details (vm_pgoff, vm_start/end) way more than they really
+need to.
 
-<0>[   28.082085] BUG: spinlock already unlocked on CPU#0, swapper/0/0
-<0>[   28.087078]  lock: 0xc4780b40, value 0x0 .magic: dead4ead, .owner: <none>/-1, .owner_cpu: -1
-<4>[   42.451150] [<c0014398>] (unwind_backtrace+0x0/0x120) from [<c0269220>] (do_raw_spin_unlock+0x44/0xdc)
-<4>[   42.460430] [<c0269220>] (do_raw_spin_unlock+0x44/0xdc) from [<c071b5bc>] (_raw_spin_unlock+0x8/0x30)
-<4>[   42.469632] [<c071b5bc>] (_raw_spin_unlock+0x8/0x30) from [<c00a9ce0>] (__hrtimer_start_range_ns+0x1e4/0x4f8)
-<4>[   42.479521] [<c00a9ce0>] (__hrtimer_start_range_ns+0x1e4/0x4f8) from [<c00aa014>] (hrtimer_start+0x20/0x28)
-<4>[   42.489247] [<c00aa014>] (hrtimer_start+0x20/0x28) from [<c00e6190>] (rcu_idle_enter_common+0x1ac/0x320)
-<4>[   42.498709] [<c00e6190>] (rcu_idle_enter_common+0x1ac/0x320) from [<c00e6440>] (rcu_idle_enter+0xa0/0xb8)
-<4>[   42.508259] [<c00e6440>] (rcu_idle_enter+0xa0/0xb8) from [<c000f268>] (cpu_idle+0x24/0xf0)
-<4>[   42.516503] [<c000f268>] (cpu_idle+0x24/0xf0) from [<c06ed3c0>] (rest_init+0x88/0xa0)
-<4>[   42.524319] [<c06ed3c0>] (rest_init+0x88/0xa0) from [<c0c00978>] (start_kernel+0x3d0/0x434)
+So this just exports a function to map a certain physical memory range
+into user space (using a phys_addr_t based interface that is much more
+natural for a driver) and hides all the complexity from the driver.
+Some drivers will still end up tweaking the vm_page_prot details for
+things like prefetching or cacheability etc, but that's actually
+relevant to the driver, rather than caring about what the page offset of
+the mapping is into the particular IO memory region.
 
-As an example, this particular crash occurred when hrtimer_start() was
-executed on CPU #0. The code locked the hrtimer's current cpu_base
-corresponding to CPU #1. CPU #0 then tried to switch the hrtimer's
-cpu_base to an optimal CPU which was online. In this case, it selected
-the cpu_base corresponding to CPU #3.
-
-Before it could proceed, CPU #1 came online and reinitialized the
-spinlock corresponding to its cpu_base. Thus now CPU #0 held a lock
-which was reinitialized. When CPU #0 finally ended up unlocking the
-old cpu_base corresponding to CPU #1 so that it could switch to CPU
-#3, we hit this SPIN_BUG() above while in switch_hrtimer_base().
-
-CPU #0                            CPU #1
-----                              ----
-...                               <offline>
-hrtimer_start()
-lock_hrtimer_base(base #1)
-...                               init_hrtimers_cpu()
-switch_hrtimer_base()             ...
-...                               raw_spin_lock_init(&cpu_base->lock)
-raw_spin_unlock(&cpu_base->lock)  ...
-<spin_bug>
-
-Solve this by statically initializing the lock.
-
-Signed-off-by: Michael Bohan <mbohan@codeaurora.org>
-Link: http://lkml.kernel.org/r/1363745965-23475-1-git-send-email-mbohan@codeaurora.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 
 ---
- kernel/hrtimer.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ include/linux/mm.h |    2 ++
+ mm/memory.c        |   47 +++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 49 insertions(+)
 
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -61,6 +61,7 @@
- DEFINE_PER_CPU(struct hrtimer_cpu_base, hrtimer_bases) =
- {
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1542,6 +1542,8 @@ int vm_insert_pfn(struct vm_area_struct
+ 			unsigned long pfn);
+ int vm_insert_mixed(struct vm_area_struct *vma, unsigned long addr,
+ 			unsigned long pfn);
++int vm_iomap_memory(struct vm_area_struct *vma, phys_addr_t start, unsigned long len);
++
  
-+	.lock = __RAW_SPIN_LOCK_UNLOCKED(hrtimer_bases.lock),
- 	.clock_base =
- 	{
- 		{
-@@ -1640,8 +1641,6 @@ static void __cpuinit init_hrtimers_cpu(
- 	struct hrtimer_cpu_base *cpu_base = &per_cpu(hrtimer_bases, cpu);
- 	int i;
+ struct page *follow_page(struct vm_area_struct *, unsigned long address,
+ 			unsigned int foll_flags);
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -2317,6 +2317,53 @@ int remap_pfn_range(struct vm_area_struc
+ }
+ EXPORT_SYMBOL(remap_pfn_range);
  
--	raw_spin_lock_init(&cpu_base->lock);
--
- 	for (i = 0; i < HRTIMER_MAX_CLOCK_BASES; i++) {
- 		cpu_base->clock_base[i].cpu_base = cpu_base;
- 		timerqueue_init_head(&cpu_base->clock_base[i].active);
++/**
++ * vm_iomap_memory - remap memory to userspace
++ * @vma: user vma to map to
++ * @start: start of area
++ * @len: size of area
++ *
++ * This is a simplified io_remap_pfn_range() for common driver use. The
++ * driver just needs to give us the physical memory range to be mapped,
++ * we'll figure out the rest from the vma information.
++ *
++ * NOTE! Some drivers might want to tweak vma->vm_page_prot first to get
++ * whatever write-combining details or similar.
++ */
++int vm_iomap_memory(struct vm_area_struct *vma, phys_addr_t start, unsigned long len)
++{
++	unsigned long vm_len, pfn, pages;
++
++	/* Check that the physical memory area passed in looks valid */
++	if (start + len < start)
++		return -EINVAL;
++	/*
++	 * You *really* shouldn't map things that aren't page-aligned,
++	 * but we've historically allowed it because IO memory might
++	 * just have smaller alignment.
++	 */
++	len += start & ~PAGE_MASK;
++	pfn = start >> PAGE_SHIFT;
++	pages = (len + ~PAGE_MASK) >> PAGE_SHIFT;
++	if (pfn + pages < pfn)
++		return -EINVAL;
++
++	/* We start the mapping 'vm_pgoff' pages into the area */
++	if (vma->vm_pgoff > pages)
++		return -EINVAL;
++	pfn += vma->vm_pgoff;
++	pages -= vma->vm_pgoff;
++
++	/* Can we fit all of the mapping? */
++	vm_len = vma->vm_end - vma->vm_start;
++	if (vm_len >> PAGE_SHIFT > pages)
++		return -EINVAL;
++
++	/* Ok, let it rip */
++	return io_remap_pfn_range(vma, vma->vm_start, pfn, vm_len, vma->vm_page_prot);
++}
++EXPORT_SYMBOL(vm_iomap_memory);
++
+ static int apply_to_pte_range(struct mm_struct *mm, pmd_t *pmd,
+ 				     unsigned long addr, unsigned long end,
+ 				     pte_fn_t fn, void *data)
 
 
