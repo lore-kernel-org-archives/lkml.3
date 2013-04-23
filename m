@@ -1,63 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756644Ab3DWPOR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 11:14:17 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:63759 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756621Ab3DWPOP (ORCPT
+	id S1756648Ab3DWPPR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 11:15:17 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46516 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755929Ab3DWPPP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 11:14:15 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCH 06/10] usb: musb: ux500: add device tree probing support
-Date: Tue, 23 Apr 2013 17:14:06 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@stericsson.com, mian.yousaf.kaukab@stericsson.com,
-        Felipe Balbi <balbi@ti.com>, linux-usb@vger.kernel.org
-References: <1366729394-11406-1-git-send-email-lee.jones@linaro.org> <1366729394-11406-7-git-send-email-lee.jones@linaro.org>
-In-Reply-To: <1366729394-11406-7-git-send-email-lee.jones@linaro.org>
+	Tue, 23 Apr 2013 11:15:15 -0400
+Date: Tue, 23 Apr 2013 16:15:12 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Girish K S <girishks2000@gmail.com>
+Cc: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, grant.likely@secretlab.ca,
+        t.figa@samsung.com
+Subject: Re: [PATCH 1/3] spi: s3c64xx: added support for polling mode
+Message-ID: <20130423151511.GR5019@opensource.wolfsonmicro.com>
+References: <1366614565-3743-1-git-send-email-ks.giri@samsung.com>
+ <1366614565-3743-2-git-send-email-ks.giri@samsung.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201304231714.06326.arnd@arndb.de>
-X-Provags-ID: V02:K0:TOZiomV5JL2OoZV8uRuYH6VrgVZ3Rv4VXa7q7a+l4tm
- 2FrVrm6OliB2LUQQVsVcxV1luieeenYw/pXTG0LC6sGrqKKjee
- 9n332RRD+JSq2ayzQ1dSHVQit+RzTRNYZ3rEncWDf9r4II1hQl
- ANlbydZwiIqWwOEfeHwWkSFoyPY+mk6a2twjAphr2nCIK8iVab
- NkFX+cf11MuHwLgkAPv5tlnjrH5oxPPvXMrCR3zOrY3mV4c04g
- 60cTzBUCsTdGknk7yK37G8CXTGDopoAXJs/Oaj889KpUm/ZJ98
- rK74itBfVNBqyIfqk/3ObxYhb9B68bpmGXTo8tZdS/zHPItHFH
- zHHHVsmkxwC2QUFjZXLU=
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="CPn8Wy5ME997YUMW"
+Content-Disposition: inline
+In-Reply-To: <1366614565-3743-2-git-send-email-ks.giri@samsung.com>
+X-Cookie: Caution: Keep out of reach of children.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 23 April 2013, Lee Jones wrote:
-> +Required properties:
-> + - compatible : Should be "stericsson,db8500-musb"
-> + - reg        : Offset and length of registers
-> + - interrupts : Interrupt; mode, number and trigger
-> + - mode       : One of; "host", "otg", or "peripheral"
 
-I think we don't have any precedent for this combination of "mode" property
-and contents. You could either try to match ehci-omap.txt and do
+--CPn8Wy5ME997YUMW
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
- - mode : Should be "3" to represent OTG. "1" signifies HOST and "2"
-   represents PERIPHERAL.
+On Mon, Apr 22, 2013 at 12:39:23PM +0530, Girish K S wrote:
+> From: Girish K S <girishks2000@gmail.com>
+>=20
+> The 64xx spi driver supports partial polling mode.
+> Only the last chunk of the transfer length is transferred
+> or recieved in polling mode.
 
-Or you match fsl-usb.txt and nvidia,tegra20-ehci.txt, defining
+This appears to have a very noticable negative impact on SPI performance
+on my S3C6410 based system.  Not delved into it to test why but are you
+sure it's not mistakenly selecting polling?
 
- - dr_mode : dual role mode. Indicates the working mode to
-   controllers.  Can be "host", "peripheral", or "otg".  Default to
-   "host" if not defined for backward compatibility.
+--CPn8Wy5ME997YUMW
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> +Optional properties:
-> + - dmas       : A list of dma channels;
-> +                dma-controller, event-line, fixed-channel, flags
-> + - dma-names  : An ordered list of channel names affiliated to the above
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Please list the exact dma-names that are required.
+iQIcBAEBAgAGBQJRdqU0AAoJELSic+t+oim9j0AP/2LSgiYibWqYsCJ2WrIZDmIT
+P41YOwSxixxvigSChfLHivoP8nUrhbXGjQDL+2ZWBV1dX+JA0YTOqsVCxRY/LCMR
+wa0PJJzL22AJ5cEd4LdEX5Ejwq2HJplTn1i6C0q2X0hy5zFxfR+wxXKwNCxy4t7w
+uqKAwBwC52wQSm1Q67ASzYmPufxsAaNj90ikeFvxVT8ggwXhRN5dECnNZl11hUcy
+w8E6DVEcNcVzj+gxJLxBpqzgki/iGemhp7FLGZ1/SdGV5QjGJyak3CxVbwb/dk/Y
+rNhASRAFaV7bWE4xj6CyNDhmjc6l/cCcsKwKs41hXBfsTtM1pVauBuknFfu1j1vE
+NinclKNCpiu3UrP/bU7HZWVzV+cIZVrqOFIgP+x/MP8WHJalLXi2U7hM3iZPnElH
+o8SMGp1t/PqAtd/sw7WnAsG7mQ1mH8WQZitReyluMKwxs2khBNORFDIHpgnvPJML
+Ek44rzsp6CEd1sqFRyhVW8VaOMPdofoYRG6sfP5yuDMj4/TgByaNnhmTLFr1rxnm
+EGtTaDOwAX2QIzgsl+Az0MHPqu/GEWzOm8xE1HMccD8wcSwyMaMHUttbCh1Qzj7k
+iHHgGyzocp45+DCGXkvERSovVrZ1q1Yr6hoqyr/bVB4+baNuSkTin+eYSXQyft0C
+i7ikPoMuPzUUy64qtrKT
+=EGxO
+-----END PGP SIGNATURE-----
 
-	Arnd
+--CPn8Wy5ME997YUMW--
