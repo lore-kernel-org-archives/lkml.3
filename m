@@ -1,73 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754746Ab3DWVb6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 17:31:58 -0400
-Received: from mail-vc0-f170.google.com ([209.85.220.170]:40604 "EHLO
-	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752792Ab3DWVb5 (ORCPT
+	id S1755671Ab3DWVn2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 17:43:28 -0400
+Received: from mail-da0-f42.google.com ([209.85.210.42]:44498 "EHLO
+	mail-da0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752792Ab3DWVn1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 17:31:57 -0400
+	Tue, 23 Apr 2013 17:43:27 -0400
+Date: Tue, 23 Apr 2013 16:50:11 -0400
+From: Anton Vorontsov <anton@enomsg.org>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: jason.wessel@windriver.com, sasha.levin@oracle.com,
+        vincent.stehle@laposte.net, john.blackwood@ccur.com,
+        kgdb-bugreport@lists.sourceforge.net,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kernel: debug: kdb: strncpy issue, using strlcpy instead
+ of strncpy.
+Message-ID: <20130423205011.GA5915@teo>
+References: <5161526F.8070306@asianux.com>
+ <516E6EB1.70100@asianux.com>
 MIME-Version: 1.0
-In-Reply-To: <5176F364.1080101@infradead.org>
-References: <alpine.DEB.2.00.1304232131300.11127@ayla.of.borg>
-	<alpine.DEB.2.00.1304232132050.11155@ayla.of.borg>
-	<5176F364.1080101@infradead.org>
-Date: Tue, 23 Apr 2013 14:31:56 -0700
-X-Google-Sender-Auth: EQC2TAO0Syoi9vLUHA_DO6LqY48
-Message-ID: <CA+55aFzKqVWCQjwGUNzU-Xy_pdK9KAFR11s+8wPrNQ4zHiXwgg@mail.gmail.com>
-Subject: Re: Build regressions/improvements in v3.9-rc8
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        linux-cris-kernel@axis.com, uclinux-dist-devel@blackfin.uclinux.org
-Content-Type: multipart/mixed; boundary=089e0163406428629204db0deaa3
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <516E6EB1.70100@asianux.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---089e0163406428629204db0deaa3
-Content-Type: text/plain; charset=UTF-8
+On Wed, Apr 17, 2013 at 05:43:13PM +0800, Chen Gang wrote:
+> Hello maintainers:
+> 
+>   please help check this patch, when you have time, thanks.
+> 
 
-On Tue, Apr 23, 2013 at 1:47 PM, Randy Dunlap <rdunlap@infradead.org> wrote:
-> On 04/23/13 12:35, Geert Uytterhoeven wrote:
->>   + error: "vm_iomap_memory" [drivers/video/fb.ko] undefined!:  => N/A
->>
->> bfin/BF537-STAMP_defconfig
->
->
-> This is a result of the recent iomap changes (I think).
->
-> Can Blackfin and others handle a change to FB that says:
->
->         depends on MMU
+The patch looks good. I would add to the description: "..., otherwise the
+destination string might end up not being terminted with the NUL, causing
+all sorts of misbehaviour."
 
-Hmm. I guess we can do a no-MMU vm_iomap_memory(). Without any of the
-checks, since without a MMU none of them really matter. Something like
-the appended.
+	Acked-by: Anton Vorontsov <anton@enomsg.org>
 
-Does anybody have an actual test-case?
+Thanks!
 
-                 Linus
-
---089e0163406428629204db0deaa3
-Content-Type: application/octet-stream; name="patch.diff"
-Content-Disposition: attachment; filename="patch.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hfvl9x8u0
-
-IG1tL25vbW11LmMgfCAxMCArKysrKysrKysrCiAxIGZpbGUgY2hhbmdlZCwgMTAgaW5zZXJ0aW9u
-cygrKQoKZGlmZiAtLWdpdCBhL21tL25vbW11LmMgYi9tbS9ub21tdS5jCmluZGV4IDJmM2VhNzQ5
-YzMxOC4uZTAwMTc2OGIxNGU4IDEwMDY0NAotLS0gYS9tbS9ub21tdS5jCisrKyBiL21tL25vbW11
-LmMKQEAgLTE4MzgsNiArMTgzOCwxNiBAQCBpbnQgcmVtYXBfcGZuX3JhbmdlKHN0cnVjdCB2bV9h
-cmVhX3N0cnVjdCAqdm1hLCB1bnNpZ25lZCBsb25nIGFkZHIsCiB9CiBFWFBPUlRfU1lNQk9MKHJl
-bWFwX3Bmbl9yYW5nZSk7CiAKK2ludCB2bV9pb21hcF9tZW1vcnkoc3RydWN0IHZtX2FyZWFfc3Ry
-dWN0ICp2bWEsIHBoeXNfYWRkcl90IHN0YXJ0LCB1bnNpZ25lZCBsb25nIGxlbikKK3sKKwl1bnNp
-Z25lZCBsb25nIHBmbiA9IHN0YXJ0ID4+IFBBR0VfU0hJRlQ7CisJdW5zaWduZWQgbG9uZyB2bV9s
-ZW4gPSB2bWEtPnZtX2VuZCAtIHZtYS0+dm1fc3RhcnQ7CisKKwlwZm4gKz0gdm1hLT52bV9wZ29m
-ZjsKKwlyZXR1cm4gaW9fcmVtYXBfcGZuX3JhbmdlKHZtYSwgdm1hLT52bV9zdGFydCwgcGZuLCB2
-bV9sZW4sIHZtYS0+dm1fcGFnZV9wcm90KTsKK30KK0VYUE9SVF9TWU1CT0wodm1faW9tYXBfbWVt
-b3J5KTsKKwogaW50IHJlbWFwX3ZtYWxsb2NfcmFuZ2Uoc3RydWN0IHZtX2FyZWFfc3RydWN0ICp2
-bWEsIHZvaWQgKmFkZHIsCiAJCQl1bnNpZ25lZCBsb25nIHBnb2ZmKQogewo=
---089e0163406428629204db0deaa3--
+> On 2013年04月07日 19:03, Chen Gang wrote:
+> > 
+> >   cmd_cur and cmd_hist[] are all NUL terminated string.
+> >   need using strlcpy instead of strncpy.
+> > 
+> > Signed-off-by: Chen Gang <gang.chen@asianux.com>
+> > ---
+> >  kernel/debug/kdb/kdb_main.c |    8 ++++----
+> >  1 files changed, 4 insertions(+), 4 deletions(-)
+> > 
+> > diff --git a/kernel/debug/kdb/kdb_main.c b/kernel/debug/kdb/kdb_main.c
+> > index 00eb8f7..a2b04d7 100644
+> > --- a/kernel/debug/kdb/kdb_main.c
+> > +++ b/kernel/debug/kdb/kdb_main.c
+> > @@ -1063,12 +1063,12 @@ static int handle_ctrl_cmd(char *cmd)
+> >  	case CTRL_P:
+> >  		if (cmdptr != cmd_tail)
+> >  			cmdptr = (cmdptr-1) % KDB_CMD_HISTORY_COUNT;
+> > -		strncpy(cmd_cur, cmd_hist[cmdptr], CMD_BUFLEN);
+> > +		strlcpy(cmd_cur, cmd_hist[cmdptr], CMD_BUFLEN);
+> >  		return 1;
+> >  	case CTRL_N:
+> >  		if (cmdptr != cmd_head)
+> >  			cmdptr = (cmdptr+1) % KDB_CMD_HISTORY_COUNT;
+> > -		strncpy(cmd_cur, cmd_hist[cmdptr], CMD_BUFLEN);
+> > +		strlcpy(cmd_cur, cmd_hist[cmdptr], CMD_BUFLEN);
+> >  		return 1;
+> >  	}
+> >  	return 0;
+> > @@ -1260,7 +1260,7 @@ do_full_getstr:
+> >  		if (*cmdbuf != '\n') {
+> >  			if (*cmdbuf < 32) {
+> >  				if (cmdptr == cmd_head) {
+> > -					strncpy(cmd_hist[cmd_head], cmd_cur,
+> > +					strlcpy(cmd_hist[cmd_head], cmd_cur,
+> >  						CMD_BUFLEN);
+> >  					*(cmd_hist[cmd_head] +
+> >  					  strlen(cmd_hist[cmd_head])-1) = '\0';
+> > @@ -1270,7 +1270,7 @@ do_full_getstr:
+> >  				cmdbuf = cmd_cur;
+> >  				goto do_full_getstr;
+> >  			} else {
+> > -				strncpy(cmd_hist[cmd_head], cmd_cur,
+> > +				strlcpy(cmd_hist[cmd_head], cmd_cur,
+> >  					CMD_BUFLEN);
+> >  			}
+> >  
+> > 
+> 
+> 
+> -- 
+> Chen Gang
+> 
+> Asianux Corporation
