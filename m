@@ -1,98 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755253Ab3DWF2c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 01:28:32 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:47446 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753039Ab3DWF2b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 01:28:31 -0400
-Message-ID: <517619DF.5010803@ti.com>
-Date: Tue, 23 Apr 2013 10:49:27 +0530
-From: Sourav Poddar <sourav.poddar@ti.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+	id S1755271Ab3DWFeC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 01:34:02 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:49600 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753039Ab3DWFd7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Apr 2013 01:33:59 -0400
 MIME-Version: 1.0
-To: Kevin Hilman <khilman@linaro.org>
-CC: Grygorii Strashko <grygorii.strashko@ti.com>, <gregkh@linuxfoundation.org>,
-        <tony@atomide.com>, <rmk+kernel@arm.linux.org.uk>,
-        <linux-serial@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Felipe Balbi <balbi@ti.com>, Rajendra nayak <rnayak@ti.com>
-Subject: Re: [RFC/PATCHv2 5/5] arm: omap2+: omap_device: remove no_idle_on_suspend
-References: <1366638237-6880-1-git-send-email-sourav.poddar@ti.com>	<1366638237-6880-6-git-send-email-sourav.poddar@ti.com>	<517545C2.3080006@ti.com> <87y5ca76hm.fsf@linaro.org>
-In-Reply-To: <87y5ca76hm.fsf@linaro.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130422150302.d01a3edb005a79bd68929d38@linux-foundation.org>
+References: <1366293255-4649-1-git-send-email-linkinjeon@gmail.com>
+	<20130422150302.d01a3edb005a79bd68929d38@linux-foundation.org>
+Date: Tue, 23 Apr 2013 14:33:59 +0900
+Message-ID: <CAKYAXd8PwvExNJ9VruuuTp15PLijzWfZAjC85L6_9GsdMB+TfA@mail.gmail.com>
+Subject: Re: [PATCH v5] fat: editions to support fat_fallocate
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: hirofumi@mail.parknet.co.jp, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kevin,
-On Tuesday 23 April 2013 12:11 AM, Kevin Hilman wrote:
-> Grygorii Strashko<grygorii.strashko@ti.com>  writes:
+2013/4/23, Andrew Morton <akpm@linux-foundation.org>:
+> On Thu, 18 Apr 2013 22:54:15 +0900 Namjae Jeon <linkinjeon@gmail.com>
+> wrote:
 >
->> On 04/22/2013 04:43 PM, Sourav Poddar wrote:
->>> Remove the "OMAP_DEVICE_NO_IDLE_ON_SUSPEND" check, since
->>> driver should be able to prevent idling of an omap device
->>> whenever required.
->>>
->>> Cc: Santosh Shilimkar<santosh.shilimkar@ti.com>
->>> Cc: Felipe Balbi<balbi@ti.com>
->>> Cc: Rajendra nayak<rnayak@ti.com>
->>> Cc: Grygorii Strashko<grygorii.strashko@ti.com>
->>> Signed-off-by: Sourav Poddar<sourav.poddar@ti.com>
->>> ---
->>> Hi Kevin,
->>>
->>> I have put this as an RFC, due to few comments on cover letter of
->>> the previous version by Grygorii Strashko.
->>> As, he has mentioned that there are Audio playback use cases which
->>> also requires "no_idle_on_suspend" and using them on mainline after
->>> this series can cause regression.
->>>
->>> What you think will be the right approach on this in relation to this patch?
->>> I mean every driver(if possible) should  prevent
->>> runtime PM for no_idle_on_suspend usecase and we get
->>> rid of this OMAP_DEVICE_NO_IDLE_ON_SUSPEND check? OR we should
->>> drop this patch as of now?
-> This is the correct approach, and AFAICT you've fixed the *mainline*
-> users of this patch which is the important part.  If there are other
-> mainline users of this feature, we need to know about them.
+>> Change Log:
+>> v5: change to avoid compilation warning:
+>>   fs/fat/inode.c: In function 'fat_zero_falloc_area':
+>> >> fs/fat/inode.c:169:11: warning: comparison of distinct pointer
+>> types lacks a cast [enabled by default]
 >
-> Let me be clear: this OMAP_DEVICE_NO_IDLE_ON_SUSPEND feature is a hack
-> (it was introduced by me, but still a hack.)  We've found a way to
-> handle using the generic framework, and we should move to that.  There
-> are already a handful of complications when combining runtime PM and
-> system suspend, and this is just another one.  It makes the most sense
-> for this handling to be in the drivers themselves.  IOW: if the driver
-> wants to refuse to runtime suspend (during system suspend), it has the
-> choice.
+> The patch does more than that - here's the v4->v5 delta:
 >
-Yes, I was also of the same view that the driver should take care of the
-no_idle_on_suspend case and we should get rid of the hacks around this.
-Modifying a respective driver will be a more generic solution which will 
-work
-irrespective of dt and non dt boot.
-
->>> Hi Grygorii,
->>>
->>> Is it possible to handle ABE no_idle_on_suspend uscase the way I am
->>> trying to handle it for UART in the 2nd patch of this series?
->> Unfortunately, I don't know ASOC details (my part is PM),  but from
->> the first look it
->> will be not easy, because map4-dmic have no Runtime PM handlers at
->> all, for example ((
-> Are those drivers upstream?  If so, please point them out and show how
-> this feature is being used in *mainline* by those drivers.
+> --- a/fs/fat/file.c~fat-additions-to-support-fat_fallocate-v5
+> +++ a/fs/fat/file.c
+> @@ -153,7 +153,6 @@ static int fat_file_release(struct inode
+>  	 */
+>  	mutex_lock(&inode->i_mutex);
+>  	mmu_private_ideal = round_up(inode->i_size, sb->s_blocksize);
+> -
+>  	if (mmu_private_ideal < MSDOS_I(inode)->mmu_private &&
+>  	    filp->f_dentry->d_count == 1)
+>  		fat_truncate_blocks(inode, inode->i_size);
+> @@ -231,7 +230,6 @@ static int fat_cont_expand(struct inode
+>  out:
+>  	return err;
+>  }
+> -
+>  /*
+>   * Preallocate space for a file. This implements fat's fallocate file
+>   * operation, which gets called from sys_fallocate system call. User
+> @@ -281,10 +279,8 @@ static long fat_fallocate(struct file *f
+>  						      sbi->cluster_bits;
+>  		} else
+>  			nr_bytes = offset + len - inode->i_size;
+> -
+>  		nr_cluster = (nr_bytes + (sbi->cluster_size - 1)) >>
+>  			     sbi->cluster_bits;
+> -
+>  		/* Start the allocation.We are not zeroing out the clusters */
+>  		while (nr_cluster-- > 0) {
+>  			err = fat_alloc_clusters(inode, &cluster, 1);
+> @@ -308,12 +304,10 @@ static long fat_fallocate(struct file *f
+>  				"fat_fallocate(): fat_cont_expand() error");
+>  		}
+>  	}
+> -
+>  error:
+>  	mutex_unlock(&inode->i_mutex);
+>  	return err;
+>  }
+> -
+>  /* Free all clusters after the skip'th cluster. */
+>  static int fat_free(struct inode *inode, int skip)
+>  {
+> --- a/fs/fat/inode.c~fat-additions-to-support-fat_fallocate-v5
+> +++ a/fs/fat/inode.c
+> @@ -166,7 +166,7 @@ static int fat_zero_falloc_area(struct f
 >
-> For OMAP PM, we have been very clear for a long time all of our PM was
-> based on runtime PM.  Any drivers that are not runtime PM are broken and
-> need to be fixed.
+>  		offset = (curpos & (PAGE_CACHE_SIZE - 1));
+>  		bytes = PAGE_CACHE_SIZE - offset;
+> -		bytes = min(bytes, count);
+> +		bytes = min_t(size_t, bytes, count);
 >
-> As long as Sourav is fixing up all the mainline users of this feature, my
-> plan to merge/ack the changes unless there are some good arguemnts based
-> on *upstream* users of the feature.
+>  		err = pagecache_write_begin(NULL, mapping, curpos, bytes,
+>  					AOP_FLAG_UNINTERRUPTIBLE,
 >
-> Kevin
+> The whitespace changes are mostly dubious and the ones which remove the
+> newline after a function's final brace are simply wrong.  The min_t
+> change is unneeded - it's better to make the type of `bytes' size_t.
+> So I shall skip v5.
 >
-
+> BTW, I don't intend to send this patch into Linus until I have
+> heard from hirofumi.  Please let me know if he has already reviewed
+> and acked it?
+Thanks Andrew for updating.
+We do not have ACK mail from OGAWA yet, even though he reviewed but
+final ACK is pending.
+And we will send updated one v5 patch with your change soon.
+>
