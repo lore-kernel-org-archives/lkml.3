@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756729Ab3DWWLr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 18:11:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34143 "EHLO
+	id S1755969Ab3DWWMM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 18:12:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34140 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932107Ab3DWVxH (ORCPT
+	with ESMTP id S932090Ab3DWVxG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 17:53:07 -0400
+	Tue, 23 Apr 2013 17:53:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 35/42] vm: add vm_iomap_memory() helper function
-Date: Tue, 23 Apr 2013 14:52:33 -0700
-Message-Id: <20130423215209.042913834@linuxfoundation.org>
+        Andy Lutomirski <luto@amacapital.net>
+Subject: [ 34/42] userns: Changing any namespace id mappings should require privileges
+Date: Tue, 23 Apr 2013 14:52:32 -0700
+Message-Id: <20130423215208.947820089@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130423215205.523980967@linuxfoundation.org>
 References: <20130423215205.523980967@linuxfoundation.org>
@@ -26,107 +26,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Andy Lutomirski <luto@amacapital.net>
 
-commit b4cbb197c7e7a68dbad0d491242e3ca67420c13e upstream.
+commit 41c21e351e79004dbb4efa4bc14a53a7e0af38c5 upstream.
 
-Various drivers end up replicating the code to mmap() their memory
-buffers into user space, and our core memory remapping function may be
-very flexible but it is unnecessarily complicated for the common cases
-to use.
+Changing uid/gid/projid mappings doesn't change your id within the
+namespace; it reconfigures the namespace.  Unprivileged programs should
+*not* be able to write these files.  (We're also checking the privileges
+on the wrong task.)
 
-Our internal VM uses pfn's ("page frame numbers") which simplifies
-things for the VM, and allows us to pass physical addresses around in a
-denser and more efficient format than passing a "phys_addr_t" around,
-and having to shift it up and down by the page size.  But it just means
-that drivers end up doing that shifting instead at the interface level.
+Given the write-once nature of these files and the other security
+checks, this is likely impossible to usefully exploit.
 
-It also means that drivers end up mucking around with internal VM things
-like the vma details (vm_pgoff, vm_start/end) way more than they really
-need to.
-
-So this just exports a function to map a certain physical memory range
-into user space (using a phys_addr_t based interface that is much more
-natural for a driver) and hides all the complexity from the driver.
-Some drivers will still end up tweaking the vm_page_prot details for
-things like prefetching or cacheability etc, but that's actually
-relevant to the driver, rather than caring about what the page offset of
-the mapping is into the particular IO memory region.
-
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/mm.h |    2 ++
- mm/memory.c        |   47 +++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 49 insertions(+)
+ kernel/user_namespace.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1623,6 +1623,8 @@ int vm_insert_pfn(struct vm_area_struct
- 			unsigned long pfn);
- int vm_insert_mixed(struct vm_area_struct *vma, unsigned long addr,
- 			unsigned long pfn);
-+int vm_iomap_memory(struct vm_area_struct *vma, phys_addr_t start, unsigned long len);
-+
+--- a/kernel/user_namespace.c
++++ b/kernel/user_namespace.c
+@@ -576,10 +576,10 @@ static ssize_t map_write(struct file *fi
+ 	if (map->nr_extents != 0)
+ 		goto out;
  
- struct page *follow_page(struct vm_area_struct *, unsigned long address,
- 			unsigned int foll_flags);
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -2358,6 +2358,53 @@ int remap_pfn_range(struct vm_area_struc
- }
- EXPORT_SYMBOL(remap_pfn_range);
- 
-+/**
-+ * vm_iomap_memory - remap memory to userspace
-+ * @vma: user vma to map to
-+ * @start: start of area
-+ * @len: size of area
-+ *
-+ * This is a simplified io_remap_pfn_range() for common driver use. The
-+ * driver just needs to give us the physical memory range to be mapped,
-+ * we'll figure out the rest from the vma information.
-+ *
-+ * NOTE! Some drivers might want to tweak vma->vm_page_prot first to get
-+ * whatever write-combining details or similar.
-+ */
-+int vm_iomap_memory(struct vm_area_struct *vma, phys_addr_t start, unsigned long len)
-+{
-+	unsigned long vm_len, pfn, pages;
-+
-+	/* Check that the physical memory area passed in looks valid */
-+	if (start + len < start)
-+		return -EINVAL;
+-	/* Require the appropriate privilege CAP_SETUID or CAP_SETGID
+-	 * over the user namespace in order to set the id mapping.
 +	/*
-+	 * You *really* shouldn't map things that aren't page-aligned,
-+	 * but we've historically allowed it because IO memory might
-+	 * just have smaller alignment.
-+	 */
-+	len += start & ~PAGE_MASK;
-+	pfn = start >> PAGE_SHIFT;
-+	pages = (len + ~PAGE_MASK) >> PAGE_SHIFT;
-+	if (pfn + pages < pfn)
-+		return -EINVAL;
-+
-+	/* We start the mapping 'vm_pgoff' pages into the area */
-+	if (vma->vm_pgoff > pages)
-+		return -EINVAL;
-+	pfn += vma->vm_pgoff;
-+	pages -= vma->vm_pgoff;
-+
-+	/* Can we fit all of the mapping? */
-+	vm_len = vma->vm_end - vma->vm_start;
-+	if (vm_len >> PAGE_SHIFT > pages)
-+		return -EINVAL;
-+
-+	/* Ok, let it rip */
-+	return io_remap_pfn_range(vma, vma->vm_start, pfn, vm_len, vma->vm_page_prot);
-+}
-+EXPORT_SYMBOL(vm_iomap_memory);
-+
- static int apply_to_pte_range(struct mm_struct *mm, pmd_t *pmd,
- 				     unsigned long addr, unsigned long end,
- 				     pte_fn_t fn, void *data)
++	 * Adjusting namespace settings requires capabilities on the target.
+ 	 */
+-	if (cap_valid(cap_setid) && !ns_capable(ns, cap_setid))
++	if (cap_valid(cap_setid) && !file_ns_capable(file, ns, CAP_SYS_ADMIN))
+ 		goto out;
+ 
+ 	/* Get a buffer */
 
 
