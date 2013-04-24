@@ -1,52 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756284Ab3DXBBB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 21:01:01 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35802 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755281Ab3DXBBA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 21:01:00 -0400
-Message-ID: <51772EBC.1050600@zytor.com>
-Date: Tue, 23 Apr 2013 18:00:44 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S1755638Ab3DXBM5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 21:12:57 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:11079 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754902Ab3DXBM4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Apr 2013 21:12:56 -0400
+X-Spam-Score: -100.8
+Message-ID: <51773169.9020607@asianux.com>
+Date: Wed, 24 Apr 2013 09:12:09 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-CC: arjan@infradead.org, james.hogan@imgtec.com, rusty@rustcorp.com.au,
-        linux-kernel@vger.kernel.org, andy.shevchenko@gmail.com
-Subject: Re: [PATCH] x86_32: Fix module version table mismatch.
-References: <CAHp75VdDwh0wgCWrVDcPps1C2qfdDZra15y9BQvzfWHzSMqbWA@mail.gmail.com> <CAHp75Vfh6Bpk4j3crVEAo3UtJEqpyucbQw+AzJvO85uRJ6gVgg@mail.gmail.com> <201304222326.IJB21395.FOtVJFHFQMOOSL@I-love.SAKURA.ne.jp> <201304232140.FGF73904.QJOFOVtHFFMSOL@I-love.SAKURA.ne.jp> <51772CD3.3040405@zytor.com>
-In-Reply-To: <51772CD3.3040405@zytor.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: Anton Vorontsov <anton@enomsg.org>
+CC: jason.wessel@windriver.com, sasha.levin@oracle.com,
+        vincent.stehle@laposte.net, john.blackwood@ccur.com,
+        kgdb-bugreport@lists.sourceforge.net,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kernel: debug: kdb: strncpy issue, using strlcpy instead
+ of strncpy.
+References: <5161526F.8070306@asianux.com> <516E6EB1.70100@asianux.com> <20130423205011.GA5915@teo>
+In-Reply-To: <20130423205011.GA5915@teo>
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/23/2013 05:52 PM, H. Peter Anvin wrote:
-> On 04/23/2013 05:40 AM, Tetsuo Handa wrote:
->> Commit a4b6a77b "module: fix symbol versioning with symbol prefixes" broke
->> loading of net/ipv6/ipv6.ko built with CONFIG_MODVERSIONS=y for x86_32.
+On 2013Äê04ÔÂ24ÈÕ 04:50, Anton Vorontsov wrote:
+> On Wed, Apr 17, 2013 at 05:43:13PM +0800, Chen Gang wrote:
+>> > Hello maintainers:
+>> > 
+>> >   please help check this patch, when you have time, thanks.
+>> > 
+> The patch looks good. I would add to the description: "..., otherwise the
+> destination string might end up not being terminted with the NUL, causing
+> all sorts of misbehaviour."
 > 
-> This really does seem to be the offending commit, although I'm still
-> confused how the heck that is possible.
+> 	Acked-by: Anton Vorontsov <anton@enomsg.org>
+> 
+> Thanks!
 > 
 
-OK, now I grok.
+Thanks, also thank you for your additional description.
 
-The bug is the use of VMLINUX_SYMBOL_STR(%s) which expands at the time
-the output of modpost is compiled.  However, VMLINUX_SYMBOL_STR() unlike
-__VMLINUX_SYMBOL_STR() does macro expansion on its argument, which is
-actively wrong here.
+-- 
+Chen Gang
 
-I think the choice is either to change this to __VMLINUX_SYMBOL_STR() or
-re-introduce CONFIG_SYMBOL_PREFIX (or its equivalent) so that modprobe
-can emit it at compile time (assuming there even should *be* a prefix on
-the symbol here, i.e. that the compiler won't add it.)
-
-Either way -- James, Rusty, this is in your court.
-
-	-hpa
-
-
+Asianux Corporation
