@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758082Ab3DXLTP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 07:19:15 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:59202 "EHLO relay.sgi.com"
+	id S1758120Ab3DXLTa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 07:19:30 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:59209 "EHLO relay.sgi.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754697Ab3DXLTO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 07:19:14 -0400
+	id S1758093Ab3DXLT2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 07:19:28 -0400
 From: Robin Holt <holt@sgi.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
@@ -13,42 +13,109 @@ Cc: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
         Russ Anderson <rja@sgi.com>, Robin Holt <holt@sgi.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         the arch/x86 maintainers <x86@kernel.org>
-Subject: [PATCH -v6 0/5] Shutdown from reboot_cpuid without stopping other cpus.
-Date: Wed, 24 Apr 2013 06:18:48 -0500
-Message-Id: <1366802333-8890-1-git-send-email-holt@sgi.com>
+Subject: [PATCH -v6 1/5] CPU hotplug: Provide a generic helper to disable/enable CPU hotplug
+Date: Wed, 24 Apr 2013 06:18:49 -0500
+Message-Id: <1366802333-8890-2-git-send-email-holt@sgi.com>
 X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1366802333-8890-1-git-send-email-holt@sgi.com>
+References: <1366802333-8890-1-git-send-email-holt@sgi.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We recently noticed that reboot of a 1024 cpu machine takes approx 16
-minutes of just stopping the cpus.  The slowdown was tracked to commit
-f96972f.
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
 
-The current implementation does all the work of hot removing the cpus
-before halting the system.  We are switching to just migrating to the
-reboot_cpu and then continuing with shutdown/reboot.
+There are instances in the kernel where we would like to disable
+CPU hotplug (from sysfs) during some important operation. Today
+the freezer code depends on this and the code to do it was kinda
+tailor-made for that.
 
-The patch set is broken into five parts.  The first two are planned for
-the stable release.  The others move the halt/shutdown/reboot related
-functions to their own kernel/reboot.c file and then introduce the kernel
-boot parameter.
+Restructure the code and make it generic enough to be useful for
+other usecases too.
 
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Signed-off-by: Robin Holt <holt@sgi.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Robin Holt <holt@sgi.com>
+Cc: Russ Anderson <rja@sgi.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: the arch/x86 maintainers <x86@kernel.org>
+---
+ include/linux/cpu.h |  2 ++
+ kernel/cpu.c        | 27 +++++++++------------------
+ 2 files changed, 11 insertions(+), 18 deletions(-)
 
-Changes since -v5.
- - Moved the arch/x86 reboot= up to the generic kernel code.
+diff --git a/include/linux/cpu.h b/include/linux/cpu.h
+index ce7a074..73282d4 100644
+--- a/include/linux/cpu.h
++++ b/include/linux/cpu.h
+@@ -141,6 +141,8 @@ static inline void unregister_cpu_notifier(struct notifier_block *nb)
+ }
+ #endif
+ 
++extern void cpu_hotplug_disable(void);
++extern void cpu_hotplug_enable(void);
+ int cpu_up(unsigned int cpu);
+ void notify_cpu_starting(unsigned int cpu);
+ extern void cpu_maps_update_begin(void);
+diff --git a/kernel/cpu.c b/kernel/cpu.c
+index b5e4ab2..28769f5 100644
+--- a/kernel/cpu.c
++++ b/kernel/cpu.c
+@@ -541,29 +541,20 @@ static int __init alloc_frozen_cpus(void)
+ core_initcall(alloc_frozen_cpus);
+ 
+ /*
+- * Prevent regular CPU hotplug from racing with the freezer, by disabling CPU
+- * hotplug when tasks are about to be frozen. Also, don't allow the freezer
+- * to continue until any currently running CPU hotplug operation gets
+- * completed.
+- * To modify the 'cpu_hotplug_disabled' flag, we need to acquire the
+- * 'cpu_add_remove_lock'. And this same lock is also taken by the regular
+- * CPU hotplug path and released only after it is complete. Thus, we
+- * (and hence the freezer) will block here until any currently running CPU
+- * hotplug operation gets completed.
++ * Wait for currently running CPU hotplug operations to complete (if any) and
++ * disable future CPU hotplug (from sysfs). The 'cpu_add_remove_lock' protects
++ * the 'cpu_hotplug_disabled' flag. The same lock is also acquired by the
++ * hotplug path before performing hotplug operations. So acquiring that lock
++ * guarantees mutual exclusion from any currently running hotplug operations.
+  */
+-void cpu_hotplug_disable_before_freeze(void)
++void cpu_hotplug_disable(void)
+ {
+ 	cpu_maps_update_begin();
+ 	cpu_hotplug_disabled = 1;
+ 	cpu_maps_update_done();
+ }
+ 
+-
+-/*
+- * When tasks have been thawed, re-enable regular CPU hotplug (which had been
+- * disabled while beginning to freeze tasks).
+- */
+-void cpu_hotplug_enable_after_thaw(void)
++void cpu_hotplug_enable(void)
+ {
+ 	cpu_maps_update_begin();
+ 	cpu_hotplug_disabled = 0;
+@@ -589,12 +580,12 @@ cpu_hotplug_pm_callback(struct notifier_block *nb,
+ 
+ 	case PM_SUSPEND_PREPARE:
+ 	case PM_HIBERNATION_PREPARE:
+-		cpu_hotplug_disable_before_freeze();
++		cpu_hotplug_disable();
+ 		break;
+ 
+ 	case PM_POST_SUSPEND:
+ 	case PM_POST_HIBERNATION:
+-		cpu_hotplug_enable_after_thaw();
++		cpu_hotplug_enable();
+ 		break;
+ 
+ 	default:
+-- 
+1.8.1.2
 
-Changes since -v4.
- - Integrated Srivatsa S. Bhat creating cpu_hotplug_disable()
-   function
-
- - Integrated comments by Srivatsa S. Bhat.
-
- - Made one more comment consistent with others in function.
-
-Changes since -v3.
- - Added a tested-by for the original reporter.
-
- - Fix compile failure found by Joe Perches.
-
- - Integrated comments by Joe Perches.
