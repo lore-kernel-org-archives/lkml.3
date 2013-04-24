@@ -1,96 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757668Ab3DXDdp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 23:33:45 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:35461 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757473Ab3DXDdo (ORCPT
+	id S1757631Ab3DXDpS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 23:45:18 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:3012 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757556Ab3DXDpQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 23:33:44 -0400
+	Tue, 23 Apr 2013 23:45:16 -0400
+X-Spam-Score: -100.8
+Message-ID: <5177551D.8090007@asianux.com>
+Date: Wed, 24 Apr 2013 11:44:29 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <51774F44.2060704@linaro.org>
-References: <CAPXgP13kizK95JyLxKxgWrGnV9b11ZTyi3vuc5YFDmROzckg4w@mail.gmail.com>
- <517746E4.908@linaro.org> <CAPXgP128yAq1jju-gsZcaS-mZPt+7tq0tt-uVk3Yqr77abd26Q@mail.gmail.com>
- <51774F44.2060704@linaro.org>
-From: Kay Sievers <kay@vrfy.org>
-Date: Wed, 24 Apr 2013 05:33:22 +0200
-Message-ID: <CAPXgP12D-H_E3WbWYgrbtvA_6wq=DhpiaLU_hGRgD6ga=_1x-A@mail.gmail.com>
-Subject: Re: CONFIG_RTC_HCTOSYS lost on x86 with ALWAYS_USE_PERSISTENT_CLOCK changes?
-To: John Stultz <john.stultz@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linaro-kernel@lists.linaro.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] arm64: compiling issue, need add include/asm/vga.h file
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 24, 2013 at 5:19 AM, John Stultz <john.stultz@linaro.org> wrote:
-> On 04/23/2013 08:05 PM, Kay Sievers wrote:
->>
->> On Wed, Apr 24, 2013 at 4:43 AM, John Stultz <john.stultz@linaro.org>
->> wrote:
->>>
->>> On 04/23/2013 06:34 PM, Kay Sievers wrote:
->>>>
->>>> Hey,
->>>>
->>>> what's the intention of:
->>>>     e90c83f757fffdacec8b3c5eee5617dcc038338f ?
->>>>     x86: Select HAS_PERSISTENT_CLOCK on x86
->>>>
->>>> It unconditionally sets:
->>>>     HAS_PERSISTENT_CLOCK
->>>> but:
->>>>     RTC_SYSTOHC
->>>> got a depends on !HAS_PERSISTENT_CLOCK
->>>>
->>>> This makes it impossible to sync the system time from the RTC on x86.
->>>> What's going on here?
->>>
->>>
->>> So I suspect just some confusion, but let me know if thats wrong and
->>> you're
->>> actually seeing an issue.
->>>
->>> SYSTOHC is what *sets the RTC* to the system time when we're synced with
->>> NTP.
->>>
->>> HCTOSYS is what sets the system time from the RTC.
->>
->> Right, and RTC_HCTOSYS is not NTP related. It just reads the time from
->> the RTC_HCTOSYS_DEVICE at bootup so we do not boot in 1970 time mode.
->> We need that it in all cases, at every bootup on x86. But it's no
->> longer there with the above commits. :)
->
-> On x86 the persistent_clock() is backed by the CMOS/EFI/kvm-wall/xen/vrtc
-> clock (all via x86_platform.get_wallclock) should be present and we'll
-> initialize the time in timekeeping_init() there.
->
-> Its only systems where there isn't a persistent_clock is where the RTC layer
-> and the HCTOSYS is helpful.
->
-> Again, if you're having a problem where an x86 system isn't getting its time
-> initialized correctly, please let me know the details of the system.
 
-Until the above commits we always needed:
-  CONFIG_RTC_HCTOSYS=y
-  CONFIG_RTC_HCTOSYS_DEVICE="rtc0"
-to get the system time correctly initialized at bootup on x86.
+For compiling with allmodconfig, need vga.h file, so copy it from arm32.
 
-These options are gone now and cannot be selected anymore. You are
-saying that this is all fine, that they are gone, but all initial
-clock syncing should still work?
+The related information:
+  aarch64-linux-gnu-gcc -Wp,-MD,drivers/gpu/drm/.drm_irq.o.d  -nostdinc -isystem /usr/bin/../lib/gcc/aarch64-linux-gnu/4.7.3/include -I/root/linux-next/arch/arm64/include -Iarch/arm64/include/generated  -Iinclude -I/root/linux-next/arch/arm64/include/uapi -Iarch/arm64/include/generated/uapi -I/root/linux-next/include/uapi -Iinclude/generated/uapi -include /root/linux-next/include/linux/kconfig.h -D__KERNEL__ -mlittle-endian -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs -fno-strict-aliasing -fno-common -Werror-implicit-function-declaration -Wno-format-security -fno-delete-null-pointer-checks -Os -mgeneral-regs-only -fno-reorder-blocks -fno-ipa-cp-clone -fno-partial-inlining -Wframe-larger-than=2048 -fno-stack-protector -Wno-unused-but-set-variable -fno-omit-frame-pointer -fno-optimize-sibling-calls -g -femit-struct-debug-baseonly -fno-var-tracking -fno-inline-functions-called-once -Wdeclaration-after-statement -Wno-pointer-sign -fno-strict-overflow -fconserve-stack -DCC_HAV
+ E_ASM_GOT
+O -Iinclude/drm -W   -DMODULE  -D"KBUILD_STR(s)=#s" -D"KBUILD_BASENAME=KBUILD_STR(drm_irq)"  -D"KBUILD_MODNAME=KBUILD_STR(drm)" -c -o drivers/gpu/drm/.tmp_drm_irq.o drivers/gpu/drm/drm_irq.c
 
-Also:
-  $ cat /sys/class/rtc/rtc0/hctosys
-  0
-always carried "1", and this now breaks setups which expect an
-automatically created symlink /dev/rtc to the actual "system rtc".
+The related error:
+include/video/vga.h: At top level:
+include/video/vga.h:22:21: fatal error: asm/vga.h: No such file or directory
+compilation terminated.
+make[3]: *** [drivers/gpu/drm/drm_irq.o] Error 1
+make[2]: *** [drivers/gpu/drm] Error 2
+make[1]: *** [drivers/gpu] Error 2
+make: *** [drivers] Error 2
 
-There was also always a line in dmesg that told the rtc_cmos time it
-wrote to the system clock. This is also gone?
 
-I haven't looked what goes wrong, I expected the make(1) errors with
-"time in the future" after bootup before the network is up, which I
-see since a week or two, to be a fallout of that.
+Signed-off-by: root <root@dhcp122.asianux.net>
+---
+ arch/arm64/include/asm/vga.h | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
+ create mode 100644 arch/arm64/include/asm/vga.h
 
-Kay
+diff --git a/arch/arm64/include/asm/vga.h b/arch/arm64/include/asm/vga.h
+new file mode 100644
+index 0000000..91f4021
+--- /dev/null
++++ b/arch/arm64/include/asm/vga.h
+@@ -0,0 +1,13 @@
++#ifndef ASMARM_VGA_H
++#define ASMARM_VGA_H
++
++#include <linux/io.h>
++
++extern unsigned long vga_base;
++
++#define VGA_MAP_MEM(x,s)	(vga_base + (x))
++
++#define vga_readb(x)	(*((volatile unsigned char *)x))
++#define vga_writeb(x,y)	(*((volatile unsigned char *)y) = (x))
++
++#endif
+-- 
+1.7.11.7
