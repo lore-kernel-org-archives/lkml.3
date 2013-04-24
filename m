@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758142Ab3DXIfe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 04:35:34 -0400
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:38081 "EHLO
+	id S1758149Ab3DXIgP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 04:36:15 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:40345 "EHLO
 	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758088Ab3DXIf2 (ORCPT
+	with ESMTP id S1754745Ab3DXIgN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 04:35:28 -0400
-Message-ID: <51779941.8080403@linux.vnet.ibm.com>
-Date: Wed, 24 Apr 2013 16:35:13 +0800
+	Wed, 24 Apr 2013 04:36:13 -0400
+Message-ID: <51779972.8070101@linux.vnet.ibm.com>
+Date: Wed, 24 Apr 2013 16:36:02 +0800
 From: Mike Qiu <qiudayu@linux.vnet.ibm.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
@@ -22,7 +22,7 @@ In-Reply-To: <20130424083142.GB26834@concordia>
 Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 8bit
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13042408-1618-0000-0000-000003C1CB77
+x-cbid: 13042408-1618-0000-0000-000003C1CBAF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -36,9 +36,10 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 > Hi Mike,
 >
 > It depends on what your .config is. What defconfig are you building?
-I just copy the config file from /boot/config.* to .config and use make 
-menuconfig
-change nothing by manually, then save.
+>
 > cheers
 >
+And I do know how to build the source code in this machine . . .
+
+Thanks
 
