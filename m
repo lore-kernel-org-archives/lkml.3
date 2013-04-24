@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758376Ab3DXJiz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 05:38:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16767 "EHLO mx1.redhat.com"
+	id S1758451Ab3DXJjM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 05:39:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35670 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758361Ab3DXJiw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 05:38:52 -0400
+	id S1758427Ab3DXJjI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 05:39:08 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>,
@@ -17,16 +17,16 @@ Cc: Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@kernel.org>, Borislav Petkov <bp@alien8.de>,
         Stephane Eranian <eranian@google.com>, Sam Ravnborg <sam@ravnborg.org>,
         David Ahern <dsahern@gmail.com>
-Subject: [PATCH 10/26] perf tools: Move slang check config into config/Makefile
-Date: Wed, 24 Apr 2013 11:37:37 +0200
-Message-Id: <1366796273-4780-11-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 15/26] perf tools: Move stdlib check config into config/Makefile
+Date: Wed, 24 Apr 2013 11:37:42 +0200
+Message-Id: <1366796273-4780-16-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1366796273-4780-1-git-send-email-jolsa@redhat.com>
 References: <1366796273-4780-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Moving slang check config into config/Makefile.
+Moving stdlib check config into config/Makefile.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
@@ -41,91 +41,64 @@ Cc: Stephane Eranian <eranian@google.com>
 Cc: Sam Ravnborg <sam@ravnborg.org>
 Cc: David Ahern <dsahern@gmail.com>
 ---
- tools/perf/Makefile        | 39 +++++++++++++--------------------------
- tools/perf/config/Makefile | 17 +++++++++++++++++
- 2 files changed, 30 insertions(+), 26 deletions(-)
+ tools/perf/Makefile        | 18 ------------------
+ tools/perf/config/Makefile | 18 ++++++++++++++++++
+ 2 files changed, 18 insertions(+), 18 deletions(-)
 
 diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index b738e01..2187a2c 100644
+index c116417..c1fef3d 100644
 --- a/tools/perf/Makefile
 +++ b/tools/perf/Makefile
-@@ -101,10 +101,6 @@ ifeq ($(config),1)
- include config/Makefile
+@@ -546,24 +546,6 @@ ifeq ($(NO_PERF_REGS),0)
+ 	endif
  endif
  
--ifdef NO_NEWT
--	NO_SLANG=1
+-ifndef NO_STRLCPY
+-	ifeq ($(call try-cc,$(SOURCE_STRLCPY),,-DHAVE_STRLCPY),y)
+-		BASIC_CFLAGS += -DHAVE_STRLCPY
+-	endif
 -endif
 -
- # Among the variables below, these:
- #   perfexecdir
- #   template_dir
-@@ -511,28 +507,19 @@ ifndef NO_LIBAUDIT
- endif
- 
- ifndef NO_SLANG
--	FLAGS_SLANG=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -I/usr/include/slang -lslang
--	ifneq ($(call try-cc,$(SOURCE_SLANG),$(FLAGS_SLANG),libslang),y)
--		msg := $(warning slang not found, disables TUI support. Please install slang-devel or libslang-dev);
--	else
--		# Fedora has /usr/include/slang/slang.h, but ubuntu /usr/include/slang.h
--		BASIC_CFLAGS += -I/usr/include/slang
--		BASIC_CFLAGS += -DSLANG_SUPPORT
--		EXTLIBS += -lslang
--		LIB_OBJS += $(OUTPUT)ui/browser.o
--		LIB_OBJS += $(OUTPUT)ui/browsers/annotate.o
--		LIB_OBJS += $(OUTPUT)ui/browsers/hists.o
--		LIB_OBJS += $(OUTPUT)ui/browsers/map.o
--		LIB_OBJS += $(OUTPUT)ui/browsers/scripts.o
--		LIB_OBJS += $(OUTPUT)ui/tui/setup.o
--		LIB_OBJS += $(OUTPUT)ui/tui/util.o
--		LIB_OBJS += $(OUTPUT)ui/tui/helpline.o
--		LIB_OBJS += $(OUTPUT)ui/tui/progress.o
--		LIB_H += ui/browser.h
--		LIB_H += ui/browsers/map.h
--		LIB_H += ui/keysyms.h
--		LIB_H += ui/libslang.h
+-ifndef NO_ON_EXIT
+-	ifeq ($(call try-cc,$(SOURCE_ON_EXIT),,-DHAVE_ON_EXIT),y)
+-		BASIC_CFLAGS += -DHAVE_ON_EXIT
 -	endif
-+	LIB_OBJS += $(OUTPUT)ui/browser.o
-+	LIB_OBJS += $(OUTPUT)ui/browsers/annotate.o
-+	LIB_OBJS += $(OUTPUT)ui/browsers/hists.o
-+	LIB_OBJS += $(OUTPUT)ui/browsers/map.o
-+	LIB_OBJS += $(OUTPUT)ui/browsers/scripts.o
-+	LIB_OBJS += $(OUTPUT)ui/tui/setup.o
-+	LIB_OBJS += $(OUTPUT)ui/tui/util.o
-+	LIB_OBJS += $(OUTPUT)ui/tui/helpline.o
-+	LIB_OBJS += $(OUTPUT)ui/tui/progress.o
-+	LIB_H += ui/browser.h
-+	LIB_H += ui/browsers/map.h
-+	LIB_H += ui/keysyms.h
-+	LIB_H += ui/libslang.h
- endif
- 
- ifndef NO_GTK2
+-endif
+-
+-ifndef NO_BACKTRACE
+-       ifeq ($(call try-cc,$(SOURCE_BACKTRACE),,-DBACKTRACE_SUPPORT),y)
+-               BASIC_CFLAGS += -DBACKTRACE_SUPPORT
+-       endif
+-endif
+-
+ ifndef NO_LIBNUMA
+ 	FLAGS_LIBNUMA = $(ALL_CFLAGS) $(ALL_LDFLAGS) -lnuma
+ 	ifneq ($(call try-cc,$(SOURCE_LIBNUMA),$(FLAGS_LIBNUMA),libnuma),y)
 diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 52d6fe9..008b212 100644
+index 68c6a2b..8c832f7 100644
 --- a/tools/perf/config/Makefile
 +++ b/tools/perf/config/Makefile
-@@ -208,3 +208,20 @@ ifndef NO_LIBAUDIT
- 		EXTLIBS += -laudit
+@@ -361,3 +361,21 @@ else
+ 		endif
  	endif
  endif
 +
-+ifdef NO_NEWT
-+	NO_SLANG=1
++ifndef NO_STRLCPY
++	ifeq ($(call try-cc,$(SOURCE_STRLCPY),,-DHAVE_STRLCPY),y)
++		BASIC_CFLAGS += -DHAVE_STRLCPY
++	endif
 +endif
 +
-+ifndef NO_SLANG
-+	FLAGS_SLANG=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -I/usr/include/slang -lslang
-+	ifneq ($(call try-cc,$(SOURCE_SLANG),$(FLAGS_SLANG),libslang),y)
-+		msg := $(warning slang not found, disables TUI support. Please install slang-devel or libslang-dev);
-+		NO_SLANG := 1
-+	else
-+		# Fedora has /usr/include/slang/slang.h, but ubuntu /usr/include/slang.h
-+		BASIC_CFLAGS += -I/usr/include/slang
-+		BASIC_CFLAGS += -DSLANG_SUPPORT
-+		EXTLIBS += -lslang
++ifndef NO_ON_EXIT
++	ifeq ($(call try-cc,$(SOURCE_ON_EXIT),,-DHAVE_ON_EXIT),y)
++		BASIC_CFLAGS += -DHAVE_ON_EXIT
 +	endif
++endif
++
++ifndef NO_BACKTRACE
++       ifeq ($(call try-cc,$(SOURCE_BACKTRACE),,-DBACKTRACE_SUPPORT),y)
++		BASIC_CFLAGS += -DBACKTRACE_SUPPORT
++       endif
 +endif
 -- 
 1.7.11.7
