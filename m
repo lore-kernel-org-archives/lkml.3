@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758312Ab3DXJoW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 05:44:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25478 "EHLO mx1.redhat.com"
+	id S1758452Ab3DXJo3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 05:44:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47685 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758438Ab3DXJjL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 05:39:11 -0400
+	id S1758274Ab3DXJoV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 05:44:21 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>,
@@ -17,16 +17,16 @@ Cc: Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@kernel.org>, Borislav Petkov <bp@alien8.de>,
         Stephane Eranian <eranian@google.com>, Sam Ravnborg <sam@ravnborg.org>,
         David Ahern <dsahern@gmail.com>
-Subject: [PATCH 17/26] perf tools: Move paths config into config/Makefile
-Date: Wed, 24 Apr 2013 11:37:44 +0200
-Message-Id: <1366796273-4780-18-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 13/26] perf tools: Move libpython check config into config/Makefile
+Date: Wed, 24 Apr 2013 11:37:40 +0200
+Message-Id: <1366796273-4780-14-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1366796273-4780-1-git-send-email-jolsa@redhat.com>
 References: <1366796273-4780-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Moving paths config into config/Makefile.
+Moving libpython check config into config/Makefile.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
@@ -41,160 +41,167 @@ Cc: Stephane Eranian <eranian@google.com>
 Cc: Sam Ravnborg <sam@ravnborg.org>
 Cc: David Ahern <dsahern@gmail.com>
 ---
- tools/perf/Makefile        | 58 ----------------------------------------------
- tools/perf/config/Makefile | 52 +++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 52 insertions(+), 58 deletions(-)
+ tools/perf/Makefile        | 68 ++--------------------------------------------
+ tools/perf/config/Makefile | 63 ++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 66 insertions(+), 65 deletions(-)
 
 diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 07612be..74e3cf6 100644
+index d0ab4d4..899ef12 100644
 --- a/tools/perf/Makefile
 +++ b/tools/perf/Makefile
-@@ -101,39 +101,6 @@ ifeq ($(config),1)
- include config/Makefile
+@@ -198,8 +198,6 @@ SCRIPTS = $(patsubst %.sh,%,$(SCRIPT_SH))
+ #
+ PROGRAMS += $(OUTPUT)perf
+ 
+-LANG_BINDINGS =
+-
+ # what 'all' will build and 'install' will install, in perfexecdir
+ ALL_PROGRAMS = $(PROGRAMS) $(SCRIPTS)
+ 
+@@ -537,69 +535,9 @@ ifndef NO_LIBPERL
+ 	LIB_OBJS += $(OUTPUT)scripts/perl/Perf-Trace-Util/Context.o
  endif
  
--# Among the variables below, these:
--#   perfexecdir
--#   template_dir
--#   mandir
--#   infodir
--#   htmldir
--#   ETC_PERFCONFIG (but not sysconfdir)
--# can be specified as a relative path some/where/else;
--# this is interpreted as relative to $(prefix) and "perf" at
--# runtime figures out where they are based on the path to the executable.
--# This can help installing the suite in a relocatable way.
+-disable-python = $(eval $(disable-python_code))
+-define disable-python_code
+-  BASIC_CFLAGS += -DNO_LIBPYTHON
+-  $(if $(1),$(warning No $(1) was found))
+-  $(warning Python support will not be built)
+-endef
 -
--# Make the path relative to DESTDIR, not to prefix
--ifndef DESTDIR
--prefix = $(HOME)
--endif
--bindir_relative = bin
--bindir = $(prefix)/$(bindir_relative)
--mandir = share/man
--infodir = share/info
--perfexecdir = libexec/perf-core
--sharedir = $(prefix)/share
--template_dir = share/perf-core/templates
--htmldir = share/doc/perf-doc
--ifeq ($(prefix),/usr)
--sysconfdir = /etc
--ETC_PERFCONFIG = $(sysconfdir)/perfconfig
+-override PYTHON := \
+-  $(call get-executable-or-default,PYTHON,python)
+-
+-ifndef PYTHON
+-  $(call disable-python,python interpreter)
 -else
--sysconfdir = $(prefix)/etc
--ETC_PERFCONFIG = etc/perfconfig
--endif
--lib = lib
 -
- export prefix bindir sharedir sysconfdir
- 
- # sparse is architecture-neutral, which means that we need to tell it
-@@ -557,23 +524,6 @@ endif
- endif # MAKECMDGOALS != tags
- endif # MAKECMDGOALS != clean
- 
--# Shell quote (do not use $(call) to accommodate ancient setups);
+-  PYTHON_WORD := $(call shell-wordify,$(PYTHON))
 -
--ETC_PERFCONFIG_SQ = $(subst ','\'',$(ETC_PERFCONFIG))
+-  ifdef NO_LIBPYTHON
+-    $(call disable-python)
+-  else
 -
--DESTDIR_SQ = $(subst ','\'',$(DESTDIR))
--bindir_SQ = $(subst ','\'',$(bindir))
--bindir_relative_SQ = $(subst ','\'',$(bindir_relative))
--mandir_SQ = $(subst ','\'',$(mandir))
--infodir_SQ = $(subst ','\'',$(infodir))
--perfexecdir_SQ = $(subst ','\'',$(perfexecdir))
--template_dir_SQ = $(subst ','\'',$(template_dir))
--htmldir_SQ = $(subst ','\'',$(htmldir))
--prefix_SQ = $(subst ','\'',$(prefix))
--sysconfdir_SQ = $(subst ','\'',$(sysconfdir))
+-    override PYTHON_CONFIG := \
+-      $(call get-executable-or-default,PYTHON_CONFIG,$(PYTHON)-config)
 -
--SHELL_PATH_SQ = $(subst ','\'',$(SHELL_PATH))
+-    ifndef PYTHON_CONFIG
+-      $(call disable-python,python-config tool)
+-    else
 -
- LIBS = -Wl,--whole-archive $(PERFLIBS) -Wl,--no-whole-archive -Wl,--start-group $(EXTLIBS) -Wl,--end-group
- 
- ALL_CFLAGS += $(BASIC_CFLAGS)
-@@ -582,7 +532,6 @@ ALL_LDFLAGS += $(BASIC_LDFLAGS)
- 
- export INSTALL SHELL_PATH
- 
+-      PYTHON_CONFIG_SQ := $(call shell-sq,$(PYTHON_CONFIG))
 -
- ### Build rules
- 
- SHELL = $(SHELL_PATH)
-@@ -824,13 +773,6 @@ check: $(OUTPUT)common-cmds.h
- 
- ### Installation rules
- 
--ifneq ($(filter /%,$(firstword $(perfexecdir))),)
--perfexec_instdir = $(perfexecdir)
--else
--perfexec_instdir = $(prefix)/$(perfexecdir)
--endif
--perfexec_instdir_SQ = $(subst ','\'',$(perfexec_instdir))
+-      PYTHON_EMBED_LDOPTS := $(shell $(PYTHON_CONFIG_SQ) --ldflags 2>/dev/null)
+-      PYTHON_EMBED_LDFLAGS := $(call strip-libs,$(PYTHON_EMBED_LDOPTS))
+-      PYTHON_EMBED_LIBADD := $(call grep-libs,$(PYTHON_EMBED_LDOPTS))
+-      PYTHON_EMBED_CCOPTS := $(shell $(PYTHON_CONFIG_SQ) --cflags 2>/dev/null)
+-      FLAGS_PYTHON_EMBED := $(PYTHON_EMBED_CCOPTS) $(PYTHON_EMBED_LDOPTS)
 -
- install-bin: all
- 	$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(bindir_SQ)'
- 	$(INSTALL) $(OUTPUT)perf '$(DESTDIR_SQ)$(bindir_SQ)'
+-      ifneq ($(call try-cc,$(SOURCE_PYTHON_EMBED),$(FLAGS_PYTHON_EMBED),python),y)
+-        $(call disable-python,Python.h (for Python 2.x))
+-      else
+-
+-        ifneq ($(call try-cc,$(SOURCE_PYTHON_VERSION),$(FLAGS_PYTHON_EMBED),python version),y)
+-          $(warning Python 3 is not yet supported; please set)
+-          $(warning PYTHON and/or PYTHON_CONFIG appropriately.)
+-          $(warning If you also have Python 2 installed, then)
+-          $(warning try something like:)
+-          $(warning $(and ,))
+-          $(warning $(and ,)  make PYTHON=python2)
+-          $(warning $(and ,))
+-          $(warning Otherwise, disable Python support entirely:)
+-          $(warning $(and ,))
+-          $(warning $(and ,)  make NO_LIBPYTHON=1)
+-          $(warning $(and ,))
+-          $(error   $(and ,))
+-        else
+-          ALL_LDFLAGS += $(PYTHON_EMBED_LDFLAGS)
+-          EXTLIBS += $(PYTHON_EMBED_LIBADD)
+-          LIB_OBJS += $(OUTPUT)util/scripting-engines/trace-event-python.o
+-          LIB_OBJS += $(OUTPUT)scripts/python/Perf-Trace-Util/Context.o
+-          LANG_BINDINGS += $(OUTPUT)python/perf.so
+-        endif
+-
+-      endif
+-    endif
+-  endif
++ifndef NO_LIBPYTHON
++	LIB_OBJS += $(OUTPUT)util/scripting-engines/trace-event-python.o
++	LIB_OBJS += $(OUTPUT)scripts/python/Perf-Trace-Util/Context.o
+ endif
+ 
+ ifdef NO_DEMANGLE
 diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index b559693..a0dbc24 100644
+index 2c9e0a5..d5e0386 100644
 --- a/tools/perf/config/Makefile
 +++ b/tools/perf/config/Makefile
-@@ -390,3 +390,55 @@ ifndef NO_LIBNUMA
- 		EXTLIBS += -lnuma
+@@ -261,3 +261,66 @@ else
+ 		EXTLIBS += $(PERL_EMBED_LIBADD)
  	endif
  endif
 +
-+# Among the variables below, these:
-+#   perfexecdir
-+#   template_dir
-+#   mandir
-+#   infodir
-+#   htmldir
-+#   ETC_PERFCONFIG (but not sysconfdir)
-+# can be specified as a relative path some/where/else;
-+# this is interpreted as relative to $(prefix) and "perf" at
-+# runtime figures out where they are based on the path to the executable.
-+# This can help installing the suite in a relocatable way.
++disable-python = $(eval $(disable-python_code))
++define disable-python_code
++  BASIC_CFLAGS += -DNO_LIBPYTHON
++  $(if $(1),$(warning No $(1) was found))
++  $(warning Python support will not be built)
++  NO_LIBPYTHON := 1
++endef
 +
-+# Make the path relative to DESTDIR, not to prefix
-+ifndef DESTDIR
-+prefix = $(HOME)
-+endif
-+bindir_relative = bin
-+bindir = $(prefix)/$(bindir_relative)
-+mandir = share/man
-+infodir = share/info
-+perfexecdir = libexec/perf-core
-+sharedir = $(prefix)/share
-+template_dir = share/perf-core/templates
-+htmldir = share/doc/perf-doc
-+ifeq ($(prefix),/usr)
-+sysconfdir = /etc
-+ETC_PERFCONFIG = $(sysconfdir)/perfconfig
++override PYTHON := \
++  $(call get-executable-or-default,PYTHON,python)
++
++ifndef PYTHON
++  $(call disable-python,python interpreter)
 +else
-+sysconfdir = $(prefix)/etc
-+ETC_PERFCONFIG = etc/perfconfig
-+endif
-+lib = lib
 +
-+# Shell quote (do not use $(call) to accommodate ancient setups);
-+ETC_PERFCONFIG_SQ = $(subst ','\'',$(ETC_PERFCONFIG))
-+DESTDIR_SQ = $(subst ','\'',$(DESTDIR))
-+bindir_SQ = $(subst ','\'',$(bindir))
-+mandir_SQ = $(subst ','\'',$(mandir))
-+infodir_SQ = $(subst ','\'',$(infodir))
-+perfexecdir_SQ = $(subst ','\'',$(perfexecdir))
-+template_dir_SQ = $(subst ','\'',$(template_dir))
-+htmldir_SQ = $(subst ','\'',$(htmldir))
-+prefix_SQ = $(subst ','\'',$(prefix))
-+sysconfdir_SQ = $(subst ','\'',$(sysconfdir))
++  PYTHON_WORD := $(call shell-wordify,$(PYTHON))
 +
-+ifneq ($(filter /%,$(firstword $(perfexecdir))),)
-+perfexec_instdir = $(perfexecdir)
-+else
-+perfexec_instdir = $(prefix)/$(perfexecdir)
++  ifdef NO_LIBPYTHON
++    $(call disable-python)
++  else
++
++    override PYTHON_CONFIG := \
++      $(call get-executable-or-default,PYTHON_CONFIG,$(PYTHON)-config)
++
++    ifndef PYTHON_CONFIG
++      $(call disable-python,python-config tool)
++    else
++
++      PYTHON_CONFIG_SQ := $(call shell-sq,$(PYTHON_CONFIG))
++
++      PYTHON_EMBED_LDOPTS := $(shell $(PYTHON_CONFIG_SQ) --ldflags 2>/dev/null)
++      PYTHON_EMBED_LDFLAGS := $(call strip-libs,$(PYTHON_EMBED_LDOPTS))
++      PYTHON_EMBED_LIBADD := $(call grep-libs,$(PYTHON_EMBED_LDOPTS))
++      PYTHON_EMBED_CCOPTS := $(shell $(PYTHON_CONFIG_SQ) --cflags 2>/dev/null)
++      FLAGS_PYTHON_EMBED := $(PYTHON_EMBED_CCOPTS) $(PYTHON_EMBED_LDOPTS)
++
++      ifneq ($(call try-cc,$(SOURCE_PYTHON_EMBED),$(FLAGS_PYTHON_EMBED),python),y)
++        $(call disable-python,Python.h (for Python 2.x))
++      else
++
++        ifneq ($(call try-cc,$(SOURCE_PYTHON_VERSION),$(FLAGS_PYTHON_EMBED),python version),y)
++          $(warning Python 3 is not yet supported; please set)
++          $(warning PYTHON and/or PYTHON_CONFIG appropriately.)
++          $(warning If you also have Python 2 installed, then)
++          $(warning try something like:)
++          $(warning $(and ,))
++          $(warning $(and ,)  make PYTHON=python2)
++          $(warning $(and ,))
++          $(warning Otherwise, disable Python support entirely:)
++          $(warning $(and ,))
++          $(warning $(and ,)  make NO_LIBPYTHON=1)
++          $(warning $(and ,))
++          $(error   $(and ,))
++        else
++          ALL_LDFLAGS += $(PYTHON_EMBED_LDFLAGS)
++          EXTLIBS += $(PYTHON_EMBED_LIBADD)
++          LANG_BINDINGS += $(OUTPUT)python/perf.so
++        endif
++      endif
++    endif
++  endif
 +endif
-+perfexec_instdir_SQ = $(subst ','\'',$(perfexec_instdir))
 -- 
 1.7.11.7
 
