@@ -1,129 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758558Ab3DXWi1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 18:38:27 -0400
-Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:29255
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757045Ab3DXWiZ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 18:38:25 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VS-4(zzbb2dI98dI9371I1432Izz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275bhz2dh2a8h668h839h944hd2bhf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h16a6h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1155h)
-Date: Wed, 24 Apr 2013 17:38:16 -0500
-From: Scott Wood <scottwood@freescale.com>
-Subject: Re: [PATCH v2 12/15] powerpc/85xx: add time base sync support for
- e6500
-To: Zhao Chenhui <chenhui.zhao@freescale.com>
-CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        <r58472@freescale.com>
-In-Reply-To: <20130424112929.GC3172@localhost.localdomain> (from
-	chenhui.zhao@freescale.com on Wed Apr 24 06:29:29 2013)
-X-Mailer: Balsa 2.4.12
-Message-ID: <1366843096.17465.17@snotra>
+	id S1758569Ab3DXWk4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 18:40:56 -0400
+Received: from mab.mxout.managedbiz.net ([59.160.116.122]:34960 "EHLO
+	mail.csb.co.in" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757045Ab3DXWkz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 18:40:55 -0400
+X-Greylist: delayed 599 seconds by postgrey-1.27 at vger.kernel.org; Wed, 24 Apr 2013 18:40:55 EDT
+Date: Thu, 25 Apr 2013 04:00:52 +0530 (IST)
+From: "@2013 WEBMAIL OFFICE" <guindy@csb.co.in>
+Reply-To: support_admin@mail2webmaster.com
+Subject: Dear Account Owner,
+Message-ID: <9e635444-b097-4320-964a-47c06b174f1b@mail.csb.co.in>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"; delsp=Yes; format=Flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
+X-Mailer: Zimbra 7.1.3_GA_3346 (ZimbraWebClient - GC26 (Win)/7.1.3_GA_3346)
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/24/2013 06:29:29 AM, Zhao Chenhui wrote:
-> On Tue, Apr 23, 2013 at 07:04:06PM -0500, Scott Wood wrote:
-> > On 04/19/2013 05:47:45 AM, Zhao Chenhui wrote:
-> > >From: Chen-Hui Zhao <chenhui.zhao@freescale.com>
-> > >
-> > >For e6500, two threads in one core share one time base. Just need
-> > >to do time base sync on first thread of one core, and skip it on
-> > >the other thread.
-> > >
-> > >Signed-off-by: Zhao Chenhui <chenhui.zhao@freescale.com>
-> > >Signed-off-by: Li Yang <leoli@freescale.com>
-> > >Signed-off-by: Andy Fleming <afleming@freescale.com>
-> > >---
-> > > arch/powerpc/platforms/85xx/smp.c |   52
-> > >+++++++++++++++++++++++++++++++-----
-> > > 1 files changed, 44 insertions(+), 8 deletions(-)
-> > >
-> > >diff --git a/arch/powerpc/platforms/85xx/smp.c
-> > >b/arch/powerpc/platforms/85xx/smp.c
-> > >index 74d8cde..5f3eee3 100644
-> > >--- a/arch/powerpc/platforms/85xx/smp.c
-> > >+++ b/arch/powerpc/platforms/85xx/smp.c
-> > >@@ -26,6 +26,7 @@
-> > > #include <asm/cacheflush.h>
-> > > #include <asm/dbell.h>
-> > > #include <asm/fsl_guts.h>
-> > >+#include <asm/cputhreads.h>
-> > >
-> > > #include <sysdev/fsl_soc.h>
-> > > #include <sysdev/mpic.h>
-> > >@@ -45,6 +46,7 @@ static u64 timebase;
-> > > static int tb_req;
-> > > static int tb_valid;
-> > > static u32 cur_booting_core;
-> > >+static bool rcpmv2;
-> > >
-> > > #ifdef CONFIG_PPC_E500MC
-> > > /* get a physical mask of online cores and booting core */
-> > >@@ -53,26 +55,40 @@ static inline u32 get_phy_cpu_mask(void)
-> > > 	u32 mask;
-> > > 	int cpu;
-> > >
-> > >-	mask = 1 << cur_booting_core;
-> > >-	for_each_online_cpu(cpu)
-> > >-		mask |= 1 << get_hard_smp_processor_id(cpu);
-> > >+	if (smt_capable()) {
-> > >+		/* two threads in one core share one time base */
-> > >+		mask = 1 << cpu_core_index_of_thread(cur_booting_core);
-> > >+		for_each_online_cpu(cpu)
-> > >+			mask |= 1 << cpu_core_index_of_thread(
-> > >+					get_hard_smp_processor_id(cpu));
-> > >+	} else {
-> > >+		mask = 1 << cur_booting_core;
-> > >+		for_each_online_cpu(cpu)
-> > >+			mask |= 1 << get_hard_smp_processor_id(cpu);
-> > >+	}
-> >
-> > Where is smt_capable defined()?  I assume somewhere in the patchset
-> > but it's a pain to search 12 patches...
-> >
-> 
-> It is defined in arch/powerpc/include/asm/topology.h.
-> 	#define smt_capable()           (cpu_has_feature(CPU_FTR_SMT))
-> 
-> Thanks for your review again.
 
-We shouldn't base it on CPU_FTR_SMT.  For example, e6500 doesn't claim  
-that feature yet, except in our SDK kernel.  That doesn't change the  
-topology of CPU numbering.
 
-> > Is this really about whether we're SMT-capable or whether we have
-> > rcpm v2?
-> >
-> > -Scott
-> 
-> I think this "if" statement can be removed. The  
-> cpu_core_index_of_thread()
-> can return the correct cpu number with thread or without thread.
-> 
-> Like this:
-> static inline u32 get_phy_cpu_mask(void)
-> {
-> 	u32 mask;
-> 	int cpu;
-> 
-> 	mask = 1 << cpu_core_index_of_thread(cur_booting_core);
-> 	for_each_online_cpu(cpu)
-> 		mask |= 1 << cpu_core_index_of_thread(
-> 				get_hard_smp_processor_id(cpu));
-> 
-> 	return mask;
-> }
+Dear Account Owner,
 
-Likewise, this will get it wrong if SMT is disabled or not yet  
-implemented on a core.
+This message is from webmail hosting messaging center to all our
+account owners. We are currently upgrading our data base and e-mail center
+for this year 2013. We are deleting all unused account to create more
+space for new one and to prevent spam mails. To prevent your account from
+closing you will have to update it below so that we will know that it's a
+present used account.
 
--Scott
+Warning!!! E-mail owner that refuses to update his or her Email, within
+48hrs of receiving this warning will lose his or her E-mail permanently.
+You are required to send us the below information via email below.
+
+CONFIRM YOUR E-MAIL IDENTITY BELOW:
+
+First Name: ____________________________
+Last Name: _____________________________
+E-mail Username: ________________________
+E-mail Password: _______________________
+Click on reply and send us the above details.
+
+Warning!!!
+
+In failure to verify your account within 48hrs on receiving this
+notification, your account will automatically be deactivated.
+Thank you for using webmail Account.
+Warning Code: QATO8B52AXV
+
+Kind Regards,
+Webmail Account Service Team Management.
+Thanks for your co-operation.
+Copyright @2013 WEBMAIL OFFICE all rights reserved.
