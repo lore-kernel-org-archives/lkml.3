@@ -1,62 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756573Ab3DXRiC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 13:38:02 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:46644 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756091Ab3DXRiA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 13:38:00 -0400
+	id S1756915Ab3DXRiQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 13:38:16 -0400
+Received: from mx1a.lautre.net ([80.67.160.71]:57191 "EHLO mx1a.lautre.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756673Ab3DXRiO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 13:38:14 -0400
+X-Greylist: delayed 1501 seconds by postgrey-1.27 at vger.kernel.org; Wed, 24 Apr 2013 13:38:14 EDT
+Message-ID: <e32ff3f48a5ae721258ff80e1906f6b2.squirrel@admin.lautre.net>
+Date: Wed, 24 Apr 2013 19:10:09 +0200
+Subject: UN APPEL A LA CANDIDATURE POUR 500 BOURSES D'ETUDE SUISSE
+From: "COMMISSION FEDERALE DES BOURSES ETRANGERES SUISSE" 
+	<cfbes.avis1@yahoo.fr>
+To: cfbes.avis1@yahoo.fr
+Reply-To: geneve.universite@laposte.net
+User-Agent: SquirrelMail/1.4.21
 MIME-Version: 1.0
-In-Reply-To: <1366761969-16759-4-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
-References: <1366761969-16759-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
-	<1366761969-16759-4-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
-Date: Wed, 24 Apr 2013 18:37:57 +0100
-Message-ID: <CANqRtoQzuBg7Y=zPGPDfmWzKjuR8nGfgEgK43+7uSdivmyaBjg@mail.gmail.com>
-Subject: Re: [PATCH 3/9] pwm: Add Renesas Mobile TPU PWM driver
-From: Magnus Damm <magnus.damm@gmail.com>
-To: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
-Cc: SH-Linux <linux-sh@vger.kernel.org>, linux-leds@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Paul Mundt <lethal@linux-sh.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Laurent,
 
-On Wed, Apr 24, 2013 at 1:06 AM, Laurent Pinchart
-<laurent.pinchart+renesas@ideasonboard.com> wrote:
-> The Timer Pulse Unit (TPU is a 4-channels 16-bit timer used to generate
-> waveforms. This driver exposes PWM functions through the PWM API for
-> other drivers to use.
->
-> The code is loosely based on the leds-renesas-tpu driver by Magnus Damm
-> and the TPU PWM driver shipped in the Armadillo EVA 800 kernel sources.
->
-> Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
-> Tested-by: Simon Horman <horms@verge.net.au>
-> ---
->  drivers/pwm/Kconfig                    |   7 +
->  drivers/pwm/Makefile                   |   1 +
->  drivers/pwm/pwm-rmob.c                 | 462 +++++++++++++++++++++++++++++++++
->  include/linux/platform_data/pwm-rmob.h |  18 ++
->  4 files changed, 488 insertions(+)
->  create mode 100644 drivers/pwm/pwm-rmob.c
->  create mode 100644 include/linux/platform_data/pwm-rmob.h
 
-Thanks for your efforts with this driver. The new code becomes much
-nicer compared to my old driver.
+PAR L’INTERMÉDIAIRE DE LA COMMISSION FÉDÉRALE DES BOURSES ÉTRANGÈRES
+(CFBE-SUISSE) , LE SECRÉTARIAT D'ETAT A L’ÉTUDE ET A LA RECHERCHE DE LA
+CONFÉDÉRATION LANCE UN APPEL A LA CANDIDATURE POUR 500 BOURSES D’ÉTUDES
+SUISSES AU TITRE DE L’ANNÉE ACADÉMIQUE 2013-2014. CES BOURSES SONT
+DESTINÉES AUX RESSORTISSANTS DES PAYS
+- LES CANDIDATS RETENUS AU TERME DE LA SÉLECTION DE CANDIDATURES SERONT
+INSÉRÉS OUTRE LEUR ÉTUDE DANS LES SECTEURS SENSIBLES DE LA VIE ÉCONOMIQUE
+ET SOCIALE DE LA SUISSE
+DUREE DE LA BOURSE
+LES BOURSES COUVRENT LA PERIODE D'UN CYCLE DE FORMATION OU AU MAXIMUM SIX
+(06) SEMESTRES .
+FRAIS DE VOYAGE
+LES BILLETS D'AVION ALLER-RETOUR ( PAYS DE PROVENANCE -GENEVE) , SONT PRIS
+EN CHARGE PAR LA COMMISSION FEDERALE DES BOURSES ETRANGERES.
+CONDITIONS PREALABLES A LA CANDIDATURE
+EN REGLE GENERALE, LES CANDIDATS AUX BOURSES ETRANGERES SUISSES DOIVENT:
+- AVOIR AU MAXIMUM 18 ANS a 45 ANS
 
-The TPU hardware block is used across several different Renesas
-product lines, including R-Mobile and R-Car. So with that in mind, can
-you please consider renaming this driver?
+PROCEDURE DE SELECTION
+- RETIRER AUPRES DE LA COMMISSION FEDERALE DES BOURSES ETRANGERES
+SUISSEs(CFBES)LE FORMULAIRE DE DEMANDE DE BOURSE VIA
+A LEUR ADRESSE EMAIL:   geneve.universite@laposte.net
+- REMPLIR ET ENVOYER PAR PIECE JOINTE LE FORMULAIRE.
+- LA COMMISSION FEDERALE DES BOURSES ETRANGERES FERA ETUDIER VOTRE DOSSIER
+PAR LA REPRESENTATION SUISSE DELEGUEE
+DE VOTRE ZONE ET CATEGORIE DE PAYS.
+- LES CANDIDATS RETENUS RECEVRONT UNE ATTESTATION DU SECRETARIAT D'ETAT A
+L'ETUDE ET A LA RECHERCHE POUR NOTIFICATION DE LA BOURSE.
+LES CANDIDATS DESIREUX DE PARTICIPER AUX BOURSES D'ETUDES 2013 - 2014
+DOIVENT RETIRER LEUR FORMULAIRE A REMPLIR AUPRES DE LA CFBES:
+A LEUR ADRESSE EMAIL: geneve.universite@laposte.net
+DATE LIMITE DE DEPÖT DES DOSSIERS
+LA DATE LIMITE DE DEPÖT DES DOSSIERS EST PREVUE POUR LE
+30 AVRIL 2013.
+LE PRESIDENT DE LA COMMISSION FEDERALE
+DES BOURSES ETRANGERES SUISSES
 
-I propose pwm-renesas-tpu.c or pwm-tpu.c instead of pwm-rmob.c. This
-because this driver has nothing to do with the R mobile product line.
 
-Thanks,
 
-/ magnus
+
