@@ -1,67 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757533Ab3DXDNM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 23:13:12 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:50183 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757450Ab3DXDNL (ORCPT
+	id S1757549Ab3DXDTg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 23:19:36 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:43849 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756341Ab3DXDTf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 23:13:11 -0400
-Message-ID: <51774DC6.806@windriver.com>
-Date: Wed, 24 Apr 2013 11:13:10 +0800
-From: "tiejun.chen" <tiejun.chen@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Tue, 23 Apr 2013 23:19:35 -0400
+Message-ID: <51774F44.2060704@linaro.org>
+Date: Tue, 23 Apr 2013 20:19:32 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: <galak@kernel.crashing.org>
-CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/1] usb: ehci-fsl: set INCR8 mode only on MPC512x
-References: <1366772110-9620-1-git-send-email-tiejun.chen@windriver.com>
-In-Reply-To: <1366772110-9620-1-git-send-email-tiejun.chen@windriver.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
+To: Kay Sievers <kay@vrfy.org>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: CONFIG_RTC_HCTOSYS lost on x86 with ALWAYS_USE_PERSISTENT_CLOCK
+ changes?
+References: <CAPXgP13kizK95JyLxKxgWrGnV9b11ZTyi3vuc5YFDmROzckg4w@mail.gmail.com> <517746E4.908@linaro.org> <CAPXgP128yAq1jju-gsZcaS-mZPt+7tq0tt-uVk3Yqr77abd26Q@mail.gmail.com>
+In-Reply-To: <CAPXgP128yAq1jju-gsZcaS-mZPt+7tq0tt-uVk3Yqr77abd26Q@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [147.11.178.22]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry, please ignore this temporarily since looks this is already covered in tree.
+On 04/23/2013 08:05 PM, Kay Sievers wrote:
+> On Wed, Apr 24, 2013 at 4:43 AM, John Stultz <john.stultz@linaro.org> wrote:
+>> On 04/23/2013 06:34 PM, Kay Sievers wrote:
+>>> Hey,
+>>>
+>>> what's the intention of:
+>>>     e90c83f757fffdacec8b3c5eee5617dcc038338f ?
+>>>     x86: Select HAS_PERSISTENT_CLOCK on x86
+>>>
+>>> It unconditionally sets:
+>>>     HAS_PERSISTENT_CLOCK
+>>> but:
+>>>     RTC_SYSTOHC
+>>> got a depends on !HAS_PERSISTENT_CLOCK
+>>>
+>>> This makes it impossible to sync the system time from the RTC on x86.
+>>> What's going on here?
+>>
+>> So I suspect just some confusion, but let me know if thats wrong and you're
+>> actually seeing an issue.
+>>
+>> SYSTOHC is what *sets the RTC* to the system time when we're synced with
+>> NTP.
+>>
+>> HCTOSYS is what sets the system time from the RTC.
+> Right, and RTC_HCTOSYS is not NTP related. It just reads the time from
+> the RTC_HCTOSYS_DEVICE at bootup so we do not boot in 1970 time mode.
+> We need that it in all cases, at every bootup on x86. But it's no
+> longer there with the above commits. :)
+On x86 the persistent_clock() is backed by the 
+CMOS/EFI/kvm-wall/xen/vrtc clock (all via x86_platform.get_wallclock) 
+should be present and we'll initialize the time in timekeeping_init() there.
 
-I will look further into this to send another version.
+Its only systems where there isn't a persistent_clock is where the RTC 
+layer and the HCTOSYS is helpful.
 
-Tiejun
+Again, if you're having a problem where an x86 system isn't getting its 
+time initialized correctly, please let me know the details of the system.
 
-On 04/24/2013 10:55 AM, Tiejun Chen wrote:
-> commit 761bbcb7, "usb: ehci-fsl: set INCR8 mode for system bus interface
-> on MPC512x", introduced to fix one MPC5121e (M36P) Errata by setting
-> INCR8 mode for system bus interface on MPC512x, but we should make sure
-> this is only valid for MPC512x like other parts of this commit. Otherwise
-> this would issue other platforms as abnormal without this similar Errata.
->
-> Signed-off-by: Tiejun Chen <tiejun.chen@windriver.com>
-> ---
->   drivers/usb/host/ehci-fsl.c |   10 +++++++++-
->   1 file changed, 9 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/usb/host/ehci-fsl.c b/drivers/usb/host/ehci-fsl.c
-> index d81d2fc..f4f2a7b 100644
-> --- a/drivers/usb/host/ehci-fsl.c
-> +++ b/drivers/usb/host/ehci-fsl.c
-> @@ -509,7 +509,15 @@ static int ehci_fsl_mpc512x_drv_resume(struct device *dev)
->   	ehci_writel(ehci, ISIPHYCTRL_PXE | ISIPHYCTRL_PHYE,
->   		    hcd->regs + FSL_SOC_USB_ISIPHYCTRL);
->
-> -	ehci_writel(ehci, SBUSCFG_INCR8, hcd->regs + FSL_SOC_USB_SBUSCFG);
-> +	if (of_device_is_compatible(dev->parent->of_node,
-> +				    "fsl,mpc5121-usb2-dr")) {
-> +		/*
-> +		 * set SBUSCFG:AHBBRST so that control msgs don't
-> +		 * fail when doing heavy PATA writes.
-> +		 */
-> +		ehci_writel(ehci, SBUSCFG_INCR8,
-> +			    hcd->regs + FSL_SOC_USB_SBUSCFG);
-> +	}
->
->   	/* restore EHCI registers */
->   	ehci_writel(ehci, pdata->pm_command, &ehci->regs->command);
->
+thanks
+-john
+
+
 
