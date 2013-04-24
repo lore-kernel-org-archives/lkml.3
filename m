@@ -1,95 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757342Ab3DXSkp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 14:40:45 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:62299 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757142Ab3DXSkc (ORCPT
+	id S1757308Ab3DXSlc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 14:41:32 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:41398 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757110Ab3DXSlb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 14:40:32 -0400
-X-IronPort-AV: E=Sophos;i="4.87,545,1363132800"; 
-   d="scan'208";a="20353926"
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-To: <xen-devel@lists.xensource.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <will.deacon@arm.com>, <arnd@arndb.de>, <nicolas.pitre@linaro.org>,
-        <Stefano.Stabellini@eu.citrix.com>, <rob.herring@calxeda.com>,
-        <linux@arm.linux.org.uk>, <olof@lixom.net>,
-        Jon Medhurst <tixy@linaro.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH v8 2/2] ARM: Enable selection of SMP operations at boot time
-Date: Wed, 24 Apr 2013 19:40:19 +0100
-Message-ID: <1366828819-10745-2-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <alpine.DEB.2.02.1304241935010.4180@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1304241935010.4180@kaball.uk.xensource.com>
+	Wed, 24 Apr 2013 14:41:31 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <1366828376-18124-1-git-send-email-john.stultz@linaro.org>
+References: <1366828376-18124-1-git-send-email-john.stultz@linaro.org>
+From: Kay Sievers <kay@vrfy.org>
+Date: Wed, 24 Apr 2013 20:41:10 +0200
+Message-ID: <CAPXgP123q9K8-NibkpmbvwpRTM1cdODWycq3o-HdWEYBwoGCFQ@mail.gmail.com>
+Subject: Re: [PATCH] time: Revert ALWAYS_USE_PERSISTENT_CLOCK compile time optimizaitons
+To: John Stultz <john.stultz@linaro.org>
+Cc: lkml <linux-kernel@vger.kernel.org>, stable <stable@vger.kernel.org>,
+        Feng Tang <feng.tang@intel.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jon Medhurst <tixy@linaro.org>
+On Wed, Apr 24, 2013 at 8:32 PM, John Stultz <john.stultz@linaro.org> wrote:
+> Kay Sievers noted that the ALWAYS_USE_PERSISTENT_CLOCK config,
+> which enables some minor compile time optimization to avoid
+> uncessary code in mostly the suspend/resume path could cause
+> problems for userland.
+>
+> In particular, the dependency for RTC_HCTOSYS on
+> !ALWAYS_USE_PERSISTENT_CLOCK, which avoids setting the time
+> twice and simplifies suspend/resume, has the side effect
+> of causing the /sys/class/rtc/rtcN/hctosys flag to always be
+> zero, and this flag is commonly used by udev to setup the
+> /dev/rtc symlink to /dev/rtcN, which can cause pain for
+> older applications.
 
-Add a new 'smp_init' hook to machine_desc so platforms can specify a
-function to be used to setup smp ops instead of having a statically
-defined value.  The hook must return true when smp_ops are initialized.
-If false the static mdesc->smp_ops will be used by default.
+FWIW, in the light of the original change, I've just removed the
+/dev/rtc creation from the default udev rules now, so that thing will
+be phased out in the future.
 
-Signed-off-by: Jon Medhurst <tixy@linaro.org>
-Signed-off-by: Nicolas Pitre <nicolas.pitre@linaro.org>
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Reviewed-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
----
- arch/arm/include/asm/mach/arch.h |    4 ++++
- arch/arm/kernel/setup.c          |   10 ++++++----
- 2 files changed, 10 insertions(+), 4 deletions(-)
-
-diff --git a/arch/arm/include/asm/mach/arch.h b/arch/arm/include/asm/mach/arch.h
-index 308ad7d..4669e0b 100644
---- a/arch/arm/include/asm/mach/arch.h
-+++ b/arch/arm/include/asm/mach/arch.h
-@@ -16,8 +16,10 @@ struct pt_regs;
- struct smp_operations;
- #ifdef CONFIG_SMP
- #define smp_ops(ops) (&(ops))
-+#define smp_init_ops(ops) (&(ops))
- #else
- #define smp_ops(ops) (struct smp_operations *)NULL
-+#define smp_init_ops(ops) (bool (*)(void))NULL
- #endif
- 
- struct machine_desc {
-@@ -41,6 +43,8 @@ struct machine_desc {
- 	unsigned char		reserve_lp2 :1;	/* never has lp2	*/
- 	char			restart_mode;	/* default restart mode	*/
- 	struct smp_operations	*smp;		/* SMP operations	*/
-+	/* Detect smp_ops dynamically, based on DT */
-+	bool			(*smp_init)(void);
- 	void			(*fixup)(struct tag *, char **,
- 					 struct meminfo *);
- 	void			(*reserve)(void);/* reserve mem blocks	*/
-diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
-index dad3048..22cc863 100644
---- a/arch/arm/kernel/setup.c
-+++ b/arch/arm/kernel/setup.c
-@@ -770,10 +770,12 @@ void __init setup_arch(char **cmdline_p)
- 	psci_init();
- #ifdef CONFIG_SMP
- 	if (is_smp()) {
--		if (psci_smp_available())
--			smp_set_ops(&psci_smp_ops);
--		else if (mdesc->smp)
--			smp_set_ops(mdesc->smp);
-+		if (!mdesc->smp_init || !mdesc->smp_init()) {
-+			if (psci_smp_available())
-+				smp_set_ops(&psci_smp_ops);
-+			else if (mdesc->smp)
-+				smp_set_ops(mdesc->smp);
-+		}
- 		smp_init_cpus();
- 	}
- #endif
--- 
-1.7.2.5
-
+Thanks,
+Kay
