@@ -1,134 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932170Ab3DXLUd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 07:20:33 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:48976 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757682Ab3DXLTd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 07:19:33 -0400
-From: Robin Holt <holt@sgi.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Russ Anderson <rja@sgi.com>, Robin Holt <holt@sgi.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>
-Subject: [PATCH -v6 4/5] checkpatch.pl the new kernel/reboot.c file.
-Date: Wed, 24 Apr 2013 06:18:52 -0500
-Message-Id: <1366802333-8890-5-git-send-email-holt@sgi.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1366802333-8890-1-git-send-email-holt@sgi.com>
-References: <1366802333-8890-1-git-send-email-holt@sgi.com>
+	id S932205Ab3DXLVd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 07:21:33 -0400
+Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:55902
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752060Ab3DXLVc convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 07:21:32 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VS-3(zz98dI9371I542I1432Izz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzzz2dh2a8h668h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ahbe9i1155h)
+From: Sethi Varun-B16395 <B16395@freescale.com>
+To: Joerg Roedel <joro@8bytes.org>
+CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "galak@kernel.crashing.org" <galak@kernel.crashing.org>,
+        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
+        Yoder Stuart-B08248 <B08248@freescale.com>,
+        Wood Scott-B07421 <B07421@freescale.com>
+Subject: RE: [PATCH 2/3 v14] iommu/fsl: Add additional iommu attributes
+ required by the PAMU driver.
+Thread-Topic: [PATCH 2/3 v14] iommu/fsl: Add additional iommu attributes
+ required by the PAMU driver.
+Thread-Index: AQHOP90uclGpGfD1QUaX06kTxa8S0pjjz/0AgAAHY6CAAVwxAIAACBLg
+Date: Wed, 24 Apr 2013 11:21:14 +0000
+Message-ID: <C5ECD7A89D1DC44195F34B25E172658D4B820D@039-SN2MPN1-011.039d.mgd.msft.net>
+References: <1366691726-9023-1-git-send-email-Varun.Sethi@freescale.com>
+ <1366691726-9023-2-git-send-email-Varun.Sethi@freescale.com>
+ <20130423133837.GG17148@8bytes.org>
+ <C5ECD7A89D1DC44195F34B25E172658D4B4D9A@039-SN2MPN1-011.039d.mgd.msft.net>
+ <20130424105117.GI17148@8bytes.org>
+In-Reply-To: <20130424105117.GI17148@8bytes.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.232.132.53]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I did allow the remaining 81 character line behind.  It did not seem
-like it was worth changing.  Otherwise, it now passes checkpatch.pl.
 
-Signed-off-by: Robin Holt <holt@sgi.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Robin Holt <holt@sgi.com>
-Cc: Russ Anderson <rja@sgi.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: the arch/x86 maintainers <x86@kernel.org>
 
----
+> -----Original Message-----
+> From: Joerg Roedel [mailto:joro@8bytes.org]
+> Sent: Wednesday, April 24, 2013 4:21 PM
+> To: Sethi Varun-B16395
+> Cc: iommu@lists.linux-foundation.org; linuxppc-dev@lists.ozlabs.org;
+> linux-kernel@vger.kernel.org; galak@kernel.crashing.org;
+> benh@kernel.crashing.org; Yoder Stuart-B08248; Wood Scott-B07421
+> Subject: Re: [PATCH 2/3 v14] iommu/fsl: Add additional iommu attributes
+> required by the PAMU driver.
+> 
+> On Tue, Apr 23, 2013 at 02:10:25PM +0000, Sethi Varun-B16395 wrote:
+> > I think it's fine to have the header under linux, actually I also the
+> > intel-iommu header under linux.
+> 
+> Yes, the difference is that VT-d runs on x86 and on ia64. So there is no
+> single arch where the header could be placed. The amd-iommu.h file on the
+> other hand is x86 only and should also be moved to asm/, as I just found
+> out :)
+> 
+> And as long as PAMU is only needed on a single architecture the header
+> should also be arch-specific. If that changes someday the header can be
+> moved to a generic place.
+> 
+Ok, I will post the next version of the patch set.
 
-Changes since -v3:
-Integrated feedback from Joe Perches.
----
- kernel/reboot.c | 24 +++++++++++-------------
- 1 file changed, 11 insertions(+), 13 deletions(-)
+-Varun
 
-diff --git a/kernel/reboot.c b/kernel/reboot.c
-index ff92601..7f4658f 100644
---- a/kernel/reboot.c
-+++ b/kernel/reboot.c
-@@ -4,6 +4,8 @@
-  *  Copyright (C) 2013  Linus Torvalds
-  */
- 
-+#define pr_fmt(fmt)	"reboot: " fmt
-+
- #include <linux/export.h>
- #include <linux/kexec.h>
- #include <linux/kmod.h>
-@@ -99,9 +101,9 @@ void kernel_restart(char *cmd)
- 	migrate_to_reboot_cpu();
- 	syscore_shutdown();
- 	if (!cmd)
--		printk(KERN_EMERG "Restarting system.\n");
-+		pr_emerg("Restarting system\n");
- 	else
--		printk(KERN_EMERG "Restarting system with command '%s'.\n", cmd);
-+		pr_emerg("Restarting system with command '%s'\n", cmd);
- 	kmsg_dump(KMSG_DUMP_RESTART);
- 	machine_restart(cmd);
- }
-@@ -110,7 +112,7 @@ EXPORT_SYMBOL_GPL(kernel_restart);
- static void kernel_shutdown_prepare(enum system_states state)
- {
- 	blocking_notifier_call_chain(&reboot_notifier_list,
--		(state == SYSTEM_HALT)?SYS_HALT:SYS_POWER_OFF, NULL);
-+		(state == SYSTEM_HALT) ? SYS_HALT : SYS_POWER_OFF, NULL);
- 	system_state = state;
- 	usermodehelper_disable();
- 	device_shutdown();
-@@ -125,11 +127,10 @@ void kernel_halt(void)
- 	kernel_shutdown_prepare(SYSTEM_HALT);
- 	migrate_to_reboot_cpu();
- 	syscore_shutdown();
--	printk(KERN_EMERG "System halted.\n");
-+	pr_emerg("System halted\n");
- 	kmsg_dump(KMSG_DUMP_HALT);
- 	machine_halt();
- }
--
- EXPORT_SYMBOL_GPL(kernel_halt);
- 
- /**
-@@ -144,7 +145,7 @@ void kernel_power_off(void)
- 		pm_power_off_prepare();
- 	migrate_to_reboot_cpu();
- 	syscore_shutdown();
--	printk(KERN_EMERG "Power down.\n");
-+	pr_emerg("Power down\n");
- 	kmsg_dump(KMSG_DUMP_POWEROFF);
- 	machine_power_off();
- }
-@@ -173,10 +174,10 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
- 
- 	/* For safety, we require "magic" arguments. */
- 	if (magic1 != LINUX_REBOOT_MAGIC1 ||
--	    (magic2 != LINUX_REBOOT_MAGIC2 &&
--	                magic2 != LINUX_REBOOT_MAGIC2A &&
-+			(magic2 != LINUX_REBOOT_MAGIC2 &&
-+			magic2 != LINUX_REBOOT_MAGIC2A &&
- 			magic2 != LINUX_REBOOT_MAGIC2B &&
--	                magic2 != LINUX_REBOOT_MAGIC2C))
-+			magic2 != LINUX_REBOOT_MAGIC2C))
- 		return -EINVAL;
- 
- 	/*
-@@ -285,14 +286,11 @@ static int __orderly_poweroff(bool force)
- 		ret = call_usermodehelper(argv[0], argv, envp, UMH_WAIT_EXEC);
- 		argv_free(argv);
- 	} else {
--		printk(KERN_WARNING "%s failed to allocate memory for \"%s\"\n",
--					 __func__, poweroff_cmd);
- 		ret = -ENOMEM;
- 	}
- 
- 	if (ret && force) {
--		printk(KERN_WARNING "Failed to start orderly shutdown: "
--					"forcing the issue\n");
-+		pr_warn("Failed to start orderly shutdown: forcing the issue\n");
- 		/*
- 		 * I guess this should try to kick off some daemon to sync and
- 		 * poweroff asap.  Or not even bother syncing if we're doing an
--- 
-1.8.1.2
 
