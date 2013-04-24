@@ -1,64 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756703Ab3DXOyv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 10:54:51 -0400
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:48681 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752876Ab3DXOyt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 10:54:49 -0400
+	id S1756763Ab3DXOy4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 10:54:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13460 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752876Ab3DXOyy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 10:54:54 -0400
+Date: Wed, 24 Apr 2013 10:54:49 -0400
+From: Josh Boyer <jwboyer@redhat.com>
+To: Matt Fleming <matt.fleming@intel.com>
+Cc: Matthew Garrett <matthew.garrett@nebula.com>, linux-efi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] efi: Check EFI revision in setup_efi_vars
+Message-ID: <20130424145449.GC15272@hansolo.jdub.homelinux.org>
+References: <20130424143738.GB15272@hansolo.jdub.homelinux.org>
+ <5177EFCE.80104@intel.com>
 MIME-Version: 1.0
-In-Reply-To: <20130418121637.GG27903@gmail.com>
-References: <1366279934-30761-1-git-send-email-lee.jones@linaro.org>
-	<1366279934-30761-4-git-send-email-lee.jones@linaro.org>
-	<20130418121637.GG27903@gmail.com>
-Date: Wed, 24 Apr 2013 16:54:49 +0200
-Message-ID: <CACRpkdYCub2GN5okM4NW9E5snwVnGKvnGd02V2qLX=s6R04e9Q@mail.gmail.com>
-Subject: Re: [PATCH 03/32 v2] dmaengine: ste_dma40: Use the BIT macro to
- replace ugly '(1 << x)'s
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
-        Per Forlin <per.forlin@stericsson.com>, Rabin Vincent <rabin@rab.in>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5177EFCE.80104@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 18, 2013 at 2:16 PM, Lee Jones <lee.jones@linaro.org> wrote:
+On Wed, Apr 24, 2013 at 03:44:30PM +0100, Matt Fleming wrote:
+> On 24/04/13 15:37, Josh Boyer wrote:
+> > We need to check the runtime sys_table for the EFI version the firmware
+> > specifies instead of just checking for a NULL QueryVariableInfo.  Older
+> > implementations of EFI don't have QueryVariableInfo but the runtime is
+> > a smaller structure, so the pointer to it may be pointing off into garbage.
+> > 
+> > This is apparently the case with several Apple firmwares that support EFI
+> > 1.10, and the current check causes them to no longer boot.  Fix based on
+> > a suggestion from Matthew Garrett.
+> > 
+> > Signed-off-by: Josh Boyer <jwboyer@redhat.com>
+> > ---
+> >  arch/x86/boot/compressed/eboot.c | 4 +++-
+> >  1 file changed, 3 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
+> > index 8615f75..b46efbf 100644
+> > --- a/arch/x86/boot/compressed/eboot.c
+> > +++ b/arch/x86/boot/compressed/eboot.c
+> > @@ -258,7 +258,9 @@ static efi_status_t setup_efi_vars(struct boot_params *params)
+> >  	u64 store_size, remaining_size, var_size;
+> >  	efi_status_t status;
+> >  
+> > -	if (!sys_table->runtime->query_variable_info)
+> > +	if (sys_table->runtime->hdr.revision < EFI_2_00_SYSTEM_TABLE_REVISION)
+> > +		return EFI_UNSUPPORTED;
+> > +	else if(!sys_table->runtime->query_variable_info)
+> >  		return EFI_UNSUPPORTED;
+> >  
+> >  	data = (struct setup_data *)(unsigned long)params->hdr.setup_data;
+> > 
+> 
+> Thanks Josh, that looks correct.
+> 
+> It's a small point, but does the check against NULL actually make sense?
+> I don't think we ever check other system table pointers against NULL.
 
-> The aim is to make the code that little more readable.
->
-> Cc: Vinod Koul <vinod.koul@intel.com>
-> Cc: Dan Williams <djbw@fb.com>
-> Cc: Per Forlin <per.forlin@stericsson.com>
-> Cc: Rabin Vincent <rabin@rab.in>
-> Acked-by: Arnd Bergmann <arnd@arndb.de>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
->
-> diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
-> index 3b83dee..ddf5ff1 100644
-> --- a/drivers/dma/ste_dma40.c
-> +++ b/drivers/dma/ste_dma40.c
-> @@ -49,9 +49,9 @@
->  #define MAX_LCLA_ALLOC_ATTEMPTS 256
->
->  /* Bit markings for allocation map */
-> -#define D40_ALLOC_FREE         (1 << 31)
-> -#define D40_ALLOC_PHY          (1 << 30)
-> -#define D40_ALLOC_LOG_FREE     0
-> +#define D40_ALLOC_FREE         BIT(31)
-> +#define D40_ALLOC_PHY          BIT(30)
-> +#define D40_ALLOC_LOG_FREE     BIT(0)
+That I'm not sure of.  I was going off of the assumption that Matthew
+put it there because someone's EFI 2.0 implementation was crappy and
+didn't actually implement it.  So I left that check in place for now.
 
-No. 0 != BIT(0)
-
-Please fix this...
-
-Yours,
-Linus Walleij
+josh
