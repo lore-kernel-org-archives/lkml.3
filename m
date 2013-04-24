@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756310Ab3DXOpT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 10:45:19 -0400
-Received: from mail-we0-f170.google.com ([74.125.82.170]:48870 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756215Ab3DXOpJ (ORCPT
+	id S1756348Ab3DXOpt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 10:45:49 -0400
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:48096 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756100Ab3DXOpH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 10:45:09 -0400
+	Wed, 24 Apr 2013 10:45:07 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -21,9 +21,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 2/2] nohz: Remove full dynticks' superfluous dependency on RCU tree
-Date: Wed, 24 Apr 2013 16:44:58 +0200
-Message-Id: <1366814698-8260-3-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 1/2] nohz: Fix unavailable tick_stop tracepoint in dynticks idle
+Date: Wed, 24 Apr 2013 16:44:57 +0200
+Message-Id: <1366814698-8260-2-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1366814698-8260-1-git-send-email-fweisbec@gmail.com>
 References: <1366814698-8260-1-git-send-email-fweisbec@gmail.com>
@@ -31,10 +31,17 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the dependency on (TREE_RCU || TREE_PREEMPT_RCU). The full
-dynticks option already depends on SMP which implies
-(whatever flavour of) RCU tree config anyway.
+The trace_tick_stop() tracepoint is only available in full
+dynticks. But it's also used by dynticks-idle so let's build
+it for the latter config as well.
 
+This fixes:
+
+     kernel/time/tick-sched.c: In function tick_nohz_stop_sched_tick:
+     kernel/time/tick-sched.c:644: error: implicit declaration of function trace_tick_stop
+     make[2]: *** [kernel/time/tick-sched.o] Erreur 1
+
+Reported-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Chris Metcalf <cmetcalf@tilera.com>
 Cc: Christoph Lameter <cl@linux.com>
@@ -51,22 +58,22 @@ Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 ---
- kernel/time/Kconfig |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+ include/trace/events/timer.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/time/Kconfig b/kernel/time/Kconfig
-index e1ac129..1ea2bba 100644
---- a/kernel/time/Kconfig
-+++ b/kernel/time/Kconfig
-@@ -104,8 +104,6 @@ config NO_HZ_FULL
- 	depends on SMP
- 	# RCU_USER_QS dependency
- 	depends on HAVE_CONTEXT_TRACKING
--	# RCU_NOCB_CPU dependency
--	depends on TREE_RCU || TREE_PREEMPT_RCU
- 	depends on VIRT_CPU_ACCOUNTING_GEN
- 	select NO_HZ_COMMON
- 	select RCU_USER_QS
+diff --git a/include/trace/events/timer.h b/include/trace/events/timer.h
+index f5eb53e..e967dd8 100644
+--- a/include/trace/events/timer.h
++++ b/include/trace/events/timer.h
+@@ -323,7 +323,7 @@ TRACE_EVENT(itimer_expire,
+ 		  (int) __entry->pid, (unsigned long long)__entry->now)
+ );
+ 
+-#ifdef CONFIG_NO_HZ_FULL
++#ifdef CONFIG_NO_HZ_COMMON
+ TRACE_EVENT(tick_stop,
+ 
+ 	TP_PROTO(int success, char *error_msg),
 -- 
 1.7.5.4
 
