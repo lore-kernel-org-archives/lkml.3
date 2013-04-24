@@ -1,74 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758690Ab3DXKx1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 06:53:27 -0400
-Received: from www.piware.de ([213.9.93.70]:44880 "EHLO www.piware.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757319Ab3DXKxZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 06:53:25 -0400
-Date: Wed, 24 Apr 2013 12:53:21 +0200
-From: Martin Pitt <martin.pitt@ubuntu.com>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: johannes@sipsolutions.net, linville@tuxdriver.com,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dcbw@redhat.com
-Subject: Re: [PATCH] mac80211_hwsim: correctly register the platform driver
-Message-ID: <20130424105321.GA2898@piware.de>
-References: <1366778405-7584-1-git-send-email-sasha.levin@oracle.com>
+	id S932101Ab3DXK4P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 06:56:15 -0400
+Received: from mail-ea0-f170.google.com ([209.85.215.170]:60672 "EHLO
+	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758117Ab3DXK4O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 06:56:14 -0400
+Date: Wed, 24 Apr 2013 12:56:10 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: X86 ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Matt Fleming <matt.fleming@intel.com>
+Subject: Re: [PATCH] x86, efi: Fix a build warning
+Message-ID: <20130424105610.GA15815@gmail.com>
+References: <1366798154-1380-1-git-send-email-bp@alien8.de>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="zYM0uCDKw75PZbzx"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1366778405-7584-1-git-send-email-sasha.levin@oracle.com>
+In-Reply-To: <1366798154-1380-1-git-send-email-bp@alien8.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---zYM0uCDKw75PZbzx
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+* Borislav Petkov <bp@alien8.de> wrote:
 
-Hello Sasha,
+> From: Borislav Petkov <bp@suse.de>
+> 
+> Fix this:
+> 
+> arch/x86/boot/compressed/eboot.c: In function ???setup_efi_vars???:
+> arch/x86/boot/compressed/eboot.c:269:2: warning: passing argument 1 of ???efi_call_phys??? makes pointer from integer without a cast [enabled by default]
+> In file included from arch/x86/boot/compressed/eboot.c:12:0:
+> /w/kernel/linux/arch/x86/include/asm/efi.h:8:33: note: expected ???void *??? but argument is of type ???long unsigned int???
+> 
+> after cc5a080c5d40 ("efi: Pass boot services variable info to runtime
+> code").
+> 
+> Cc: Matthew Garrett <matthew.garrett@nebula.com>
+> Cc: Matt Fleming <matt.fleming@intel.com>
+> Signed-off-by: Borislav Petkov <bp@suse.de>
+> ---
+>  arch/x86/boot/compressed/eboot.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
+> index 8615f7581820..41de115a55b7 100644
+> --- a/arch/x86/boot/compressed/eboot.c
+> +++ b/arch/x86/boot/compressed/eboot.c
+> @@ -266,7 +266,7 @@ static efi_status_t setup_efi_vars(struct boot_params *params)
+>  	while (data && data->next)
+>  		data = (struct setup_data *)(unsigned long)data->next;
+>  
+> -	status = efi_call_phys4(sys_table->runtime->query_variable_info,
+> +	status = efi_call_phys4((void *)sys_table->runtime->query_variable_info,
+>  				EFI_VARIABLE_NON_VOLATILE |
+>  				EFI_VARIABLE_BOOTSERVICE_ACCESS |
+>  				EFI_VARIABLE_RUNTIME_ACCESS, &store_size,
 
-Sasha Levin [2013-04-24  0:40 -0400]:
-> Not registering a platform_driver would make us access garbage
-> when the platform callbacks under driver_register() kicks in.
->=20
-> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+Why isn't the query_variale_info field changed to void * instead? That way 
+no cast would be needed.
 
-Ah, thanks for catching this! I applied that patch and verified that
-it still works well.
+Thanks,
 
-Tested-By: Martin Pitt <martin.pitt@ubuntu.com>
-
-Martin
---=20
-Martin Pitt                        | http://www.piware.de
-Ubuntu Developer (www.ubuntu.com)  | Debian Developer  (www.debian.org)
-
---zYM0uCDKw75PZbzx
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRd7mhAAoJEPmIJawmtHufgSsP/jKmdrVPj69ClRn4sgySd0TH
-UmEvACPZQ+8Z9KCWnERDDL7f/RsHELFJ7LebyTsauaOhkTJqWJGRybX7PT7QDlul
-NHoCPXUcIKX2QNxgn2biWa2rcGx5YYXf/xeibdsqPi0BLsOVXn1nAykYlJbcbyJl
-M7uThqtLl8V4PVqliEhtSa2ch6idkMIavIqFME5HmmQ6d0/AL3OlL5ZM9vftg/g0
-2pk7kEJHonbUBtQCv0v4vhkypUidJzEZi5vaWqpfa0MmtKfeQIYx+LSBDQhHsOH5
-RSDh4KtJTgR78aGgC8myTqsYj5WLdxRXTcwDWfk61tdd05ND/g8oeEHVdqXGubxc
-CvalZCAsRBbYX0WIxUljE46fuxyzazBEBZIiGd13gTF22O9jUdEyDWtYfo7aPUyp
-7EU+YvpgynNl4kSY3XnIK0aOZeZa4zMYISPyMF6Bx4Bs/Oi5kpXlGJDoz6R9+5AJ
-a+9veRiWlpJDnGv6i+VntEih8B/yvaIjx9rzhq+4kbB+bOOC9DiSlrQuz7BUYNJ8
-taSeOI0A3dX4Xp5uL1uy02d9eWkrkHVCsJWLfQKjCNJIgkEzqa4mrXa79kGkSJm7
-y58jGExddG/60J9Mdt1SJZ2I3GmL4kjzmRbijFkoNuP6OK8Qs7LQVMrtjnATTMfU
-WM8Uu08CGGvWzqz+JtZR
-=y4W9
------END PGP SIGNATURE-----
-
---zYM0uCDKw75PZbzx--
+	Ingo
