@@ -1,68 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758262Ab3DXJaC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 05:30:02 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:52427 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757390Ab3DXJ34 (ORCPT
+	id S1758278Ab3DXJa0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 05:30:26 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:39096 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757390Ab3DXJaX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 05:29:56 -0400
-X-AuditID: 9c930179-b7b5bae0000069d1-1b-5177a6138de6
-From: Namhyung Kim <namhyung@kernel.org>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
-Subject: Re: [RFC 00/14] perf tools: Introduce new 'ftrace' command
-References: <1366705872-12132-1-git-send-email-namhyung@kernel.org>
-	<1366732681.9609.157.camel@gandalf.local.home>
-	<CAOJsxLF16Edznsdis4NK-O1Sf=3Eswb5L=cfBDhjpr6F7UjTbg@mail.gmail.com>
-Date: Wed, 24 Apr 2013 18:29:55 +0900
-In-Reply-To: <CAOJsxLF16Edznsdis4NK-O1Sf=3Eswb5L=cfBDhjpr6F7UjTbg@mail.gmail.com>
-	(Pekka Enberg's message of "Tue, 23 Apr 2013 20:19:37 +0300")
-Message-ID: <87ehe0b7jg.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Wed, 24 Apr 2013 05:30:23 -0400
+Date: Wed, 24 Apr 2013 02:30:07 -0700
+From: tip-bot for Wei Yongjun <tipbot@zytor.com>
+Message-ID: <tip-3482e664dc7f44e0ffb1fcf1de7af74977748f31@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        yongjun_wei@trendmicro.com.cn, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        yongjun_wei@trendmicro.com.cn, tglx@linutronix.de
+In-Reply-To: <CAPgLHd84cboeucog+YNdHvGqTfTROujDKZgSkh3o0B-Q93ee2A@mail.gmail.com>
+References: <CAPgLHd84cboeucog+YNdHvGqTfTROujDKZgSkh3o0B-Q93ee2A@mail.gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/platform] x86/olpc/xo1/sci: Don't call input_free_device
+ () after input_unregister_device()
+Git-Commit-ID: 3482e664dc7f44e0ffb1fcf1de7af74977748f31
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pekka,
+Commit-ID:  3482e664dc7f44e0ffb1fcf1de7af74977748f31
+Gitweb:     http://git.kernel.org/tip/3482e664dc7f44e0ffb1fcf1de7af74977748f31
+Author:     Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+AuthorDate: Wed, 24 Apr 2013 10:46:24 +0800
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Wed, 24 Apr 2013 08:44:47 +0200
 
-On Tue, 23 Apr 2013 20:19:37 +0300, Pekka Enberg wrote:
-> Hello,
->
-> On Tue, 2013-04-23 at 17:30 +0900, Namhyung Kim wrote:
->>> This patchset implements a front-end tool for kernel's ftrace.  It
->>> uses function_graph tracer by default and normal function tracer is
->>> also supported.  (Of course you need to enable those tracers in your
->>> kernel first.)
->
-> On Tue, Apr 23, 2013 at 6:58 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
->> Very nice Namhyung, thanks for doing this. I did a quick run through of
->> the patches and I have no complaints about them. I'm not sure how the
->> others will feel about it.
->
-> I also skimmed through the patches and they look like a reasonable
-> starting point. So FWIW,
->
-> Acked-by: Pekka Enberg <penberg@kernel.org>
+x86/olpc/xo1/sci: Don't call input_free_device() after input_unregister_device()
 
-Thank you!
+input_free_device() should only be used if
+input_register_device() was not called yet or if it failed. Once
+device was unregistered use input_unregister_device() and memory
+will be freed once last reference to the device is dropped.
 
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Cc: dsd@laptop.org
+Cc: pgf@laptop.org
+Cc: gregkh@linuxfoundation.org
+Link: http://lkml.kernel.org/r/CAPgLHd84cboeucog%2BYNdHvGqTfTROujDKZgSkh3o0B-Q93ee2A@mail.gmail.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/platform/olpc/olpc-xo1-sci.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-> Are there any plans in trying to consolidate 'perf trace' and this? As
-> a user I don't really care what the underlying mechanism and would
-> like things to just work out of the box.
-
-No plans currently.  I'll try to think about it more..
-
-Thanks,
-Namhyung
+diff --git a/arch/x86/platform/olpc/olpc-xo1-sci.c b/arch/x86/platform/olpc/olpc-xo1-sci.c
+index 74704be..9a2e590 100644
+--- a/arch/x86/platform/olpc/olpc-xo1-sci.c
++++ b/arch/x86/platform/olpc/olpc-xo1-sci.c
+@@ -460,7 +460,6 @@ static int setup_power_button(struct platform_device *pdev)
+ static void free_power_button(void)
+ {
+ 	input_unregister_device(power_button_idev);
+-	input_free_device(power_button_idev);
+ }
+ 
+ static int setup_ebook_switch(struct platform_device *pdev)
+@@ -491,7 +490,6 @@ static int setup_ebook_switch(struct platform_device *pdev)
+ static void free_ebook_switch(void)
+ {
+ 	input_unregister_device(ebook_switch_idev);
+-	input_free_device(ebook_switch_idev);
+ }
+ 
+ static int setup_lid_switch(struct platform_device *pdev)
+@@ -526,6 +524,7 @@ static int setup_lid_switch(struct platform_device *pdev)
+ 
+ err_create_attr:
+ 	input_unregister_device(lid_switch_idev);
++	lid_switch_idev = NULL;
+ err_register:
+ 	input_free_device(lid_switch_idev);
+ 	return r;
+@@ -535,7 +534,6 @@ static void free_lid_switch(void)
+ {
+ 	device_remove_file(&lid_switch_idev->dev, &dev_attr_lid_wake_mode);
+ 	input_unregister_device(lid_switch_idev);
+-	input_free_device(lid_switch_idev);
+ }
+ 
+ static int xo1_sci_probe(struct platform_device *pdev)
