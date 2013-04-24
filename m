@@ -1,41 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755718Ab3DXNwr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 09:52:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30769 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753044Ab3DXNwq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 09:52:46 -0400
-Message-ID: <5177E3A8.5020001@redhat.com>
-Date: Wed, 24 Apr 2013 09:52:40 -0400
-From: Don Dutile <ddutile@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.11) Gecko/20121116 Thunderbird/10.0.11
-MIME-Version: 1.0
-To: Joerg Roedel <joro@8bytes.org>
-CC: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
-        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2 V2] iommu/amd: Add workaround for ERBT1312
-References: <1366009666-44792-1-git-send-email-suravee.suthikulpanit@amd.com> <20130418160220.GA4153@8bytes.org> <51701B9F.10003@amd.com> <20130418162856.GA13891@8bytes.org> <51768B25.1060501@redhat.com> <20130424104616.GH17148@8bytes.org>
-In-Reply-To: <20130424104616.GH17148@8bytes.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1755842Ab3DXNzd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 09:55:33 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:45903 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755781Ab3DXNzc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 09:55:32 -0400
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: axboe@kernel.dk
+Cc: linux-kernel@vger.kernel.org, Namjae Jeon <linkinjeon@gmail.com>,
+        James Bottomley <JBottomley@Parallels.com>,
+        Namjae Jeon <namjae.jeon@samsung.com>, <stable@vger.kernel.org>
+Subject: [PATCH] block: fix max discard sectors limit
+Date: Wed, 24 Apr 2013 22:55:20 +0900
+Message-Id: <1366811721-2478-1-git-send-email-linkinjeon@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/24/2013 06:46 AM, Joerg Roedel wrote:
-> On Tue, Apr 23, 2013 at 09:22:45AM -0400, Don Dutile wrote:
->> Given other threads on this mail list (and I've seen crashes with same problem)
->> where this type of logging during a flood of IOMMU errors will lock up the machine,
->> is there something that can be done to break the do-while loop after n iterations
->> have been exec'd, so the kernel can progress during a crash ?
->
-> In the case of an IOMMU error flood this loop will only run until the
-> event-log/ppr-log overflows. So it should not turn into an endless loop.
->
->
-> 	Joerg
->
->
-Thanks for verification.
+From: James Bottomley <JBottomley@Parallels.com>
+
+linux-v3.8-rc1 and later support for plug for blkdev_issue_discard with
+commit 0cfbcafcae8b7364b5fa96c2b26ccde7a3a296a9
+(block: add plug for blkdev_issue_discard )
+
+For example,
+1) DISCARD rq-1 with size size 4GB
+2) DISCARD rq-2 with size size 1GB
+
+If these 2 discard requests get merged, final request size will be 5GB.
+
+In this case, request's __data_len field may overflow as it can store
+max 4GB(unsigned int).
+
+This issue was observed while doing mkfs.f2fs on 5GB SD card:
+https://lkml.org/lkml/2013/4/1/292
+
+Info: sector size = 512
+Info: total sectors = 11370496 (in 512bytes)
+Info: zone aligned segment0 blkaddr: 512
+[  257.789764] blk_update_request: bio idx 0 >= vcnt 0
+
+mkfs process gets stuck in D state and I see the following in the dmesg:
+
+[  257.789733] __end_that: dev mmcblk0: type=1, flags=122c8081
+[  257.789764]   sector 4194304, nr/cnr 2981888/4294959104
+[  257.789764]   bio df3840c0, biotail df3848c0, buffer   (null), len
+1526726656
+[  257.789764] blk_update_request: bio idx 0 >= vcnt 0
+[  257.794921] request botched: dev mmcblk0: type=1, flags=122c8081
+[  257.794921]   sector 4194304, nr/cnr 2981888/4294959104
+[  257.794921]   bio df3840c0, biotail df3848c0, buffer   (null), len
+1526726656
+
+This patch fixes this issue.
+
+Reported-by: Max Filippov <jcmvbkbc@gmail.com>
+Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Tested-by: Max Filippov <jcmvbkbc@gmail.com>
+Cc: <stable@vger.kernel.org>
+---
+ include/linux/blkdev.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index 07aa5f6..ff636bd 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -844,7 +844,7 @@ static inline unsigned int blk_queue_get_max_sectors(struct request_queue *q,
+ 						     unsigned int cmd_flags)
+ {
+ 	if (unlikely(cmd_flags & REQ_DISCARD))
+-		return q->limits.max_discard_sectors;
++		return min(q->limits.max_discard_sectors, UINT_MAX >> 9);
+ 
+ 	if (unlikely(cmd_flags & REQ_WRITE_SAME))
+ 		return q->limits.max_write_same_sectors;
+-- 
+1.7.9.5
 
