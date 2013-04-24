@@ -1,108 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757996Ab3DXIPj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 04:15:39 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:35751 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757704Ab3DXIPg (ORCPT
+	id S1758010Ab3DXIST (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 04:18:19 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:58431 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757683Ab3DXISR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 04:15:36 -0400
-Message-ID: <51779491.10307@linux.vnet.ibm.com>
-Date: Wed, 24 Apr 2013 13:45:13 +0530
-From: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Wed, 24 Apr 2013 04:18:17 -0400
+X-AuditID: 9c930179-b7b5bae0000069d1-5c-5177954693e7
+Date: Wed, 24 Apr 2013 17:18:14 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Rob Landley <rob@landley.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Michael Kerrisk <mtk.manpages@gmail.com>,
+        Rik van Riel <riel@redhat.com>, Dave Hansen <dave.hansen@intel.com>
+Subject: Re: [PATCH v2 6/6] add documentation on proc.txt
+Message-ID: <20130424081814.GC2978@blaptop>
+References: <1366767664-17541-1-git-send-email-minchan@kernel.org>
+ <1366767664-17541-7-git-send-email-minchan@kernel.org>
+ <1366786185.18069.160@driftwood>
 MIME-Version: 1.0
-To: Chen Gang <gang.chen@asianux.com>
-CC: "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>,
-        Michael Neuling <mikey@neuling.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        paulus@samba.org, linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH] arch/powerpc/kernel: using %12.12s instead of %12s for
- avoiding memory overflow.
-References: <5100B53C.3030109@asianux.com> <512055D0.7050100@asianux.com> <514FD2E0.5030805@asianux.com> <51778D97.4080409@asianux.com>
-In-Reply-To: <51778D97.4080409@asianux.com>
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 8bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13042408-5816-0000-0000-000007AF78F8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1366786185.18069.160@driftwood>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/24/2013 01:15 PM, Chen Gang wrote:
-> Hello Vasant Hegde:
-> 
-> How about this patch, is it OK ?
-> 
-> Thanks.
-> 
-> 
-> On 2013年03月25日 12:30, Chen Gang wrote:
->> Hello Maintainers:
->>
->>    could you help check this patch whether is ok ?
->>
->>    thanks.
->>
->>
->> On 2013年02月17日 12:00, Chen Gang wrote:
->>> Hello relative members:
->>>
->>>    please give a glance to this patch, when you have time.
->>>
->>>    thanks.
->>>
->>>    :-)
->>>
->>> gchen.
->>>
->>>
->>> 于 2013年01月24日 12:14, Chen Gang 写道:
->>>>
->>>>    for tmp_part->header.name:
->>>>      it is "Terminating null required only for names<  12 chars".
->>>>      so need to limit the %.12s for it in printk
->>>>
->>>>    additional info:
->>>>
->>>>      %12s  limit the width, not for the original string output length
->>>>            if name length is more than 12, it still can be fully displayed.
->>>>            if name length is less than 12, the ' ' will be filled before name.
->>>>
->>>>      %.12s truly limit the original string output length (precision)
->>>>
->>>>
->>>> Signed-off-by: Chen Gang<gang.chen@asianux.com>
->>>> ---
->>>>   arch/powerpc/kernel/nvram_64.c |    2 +-
->>>>   1 file changed, 1 insertion(+), 1 deletion(-)
->>>>
->>>> diff --git a/arch/powerpc/kernel/nvram_64.c b/arch/powerpc/kernel/nvram_64.c
->>>> index bec1e93..57bf6d2 100644
->>>> --- a/arch/powerpc/kernel/nvram_64.c
->>>> +++ b/arch/powerpc/kernel/nvram_64.c
->>>> @@ -202,7 +202,7 @@ static void __init nvram_print_partitions(char * label)
->>>>   	printk(KERN_WARNING "--------%s---------\n", label);
->>>>   	printk(KERN_WARNING "indx\t\tsig\tchks\tlen\tname\n");
->>>>   	list_for_each_entry(tmp_part,&nvram_partitions, partition) {
->>>> -		printk(KERN_WARNING "%4d    \t%02x\t%02x\t%d\t%12s\n",
->>>> +		printk(KERN_WARNING "%4d    \t%02x\t%02x\t%d\t%12.12s\n",
+Hello Rob,
 
-First, this code in inside NVRAM_DEBUG which is used only for debug purpose and
-AFAIK, all partition names are less than 20 character. So I don't think we need
-this patch.
-
--Vasant
-
->>>>   		       tmp_part->index, tmp_part->header.signature,
->>>>   		       tmp_part->header.checksum, tmp_part->header.length,
->>>>   		       tmp_part->header.name);
->>>>
->>>
->>>
->>
->>
+On Wed, Apr 24, 2013 at 01:49:45AM -0500, Rob Landley wrote:
+> On 04/23/2013 08:41:04 PM, Minchan Kim wrote:
+> >This patch adds stuff about new reclaim field in proc.txt
+> >
+> >Cc: Rob Landley <rob@landley.net>
+> >Signed-off-by: Minchan Kim <minchan@kernel.org>
+> >---
+> >
+> >Rob, I didn't add your Acked-by because interface was slight changed.
+> >I hope you give Acke-by after review again.
+> >Thanks.
+> >
+> > Documentation/filesystems/proc.txt | 22 ++++++++++++++++++++++
+> > mm/Kconfig                         |  7 +------
+> > 2 files changed, 23 insertions(+), 6 deletions(-)
+> >
+> >diff --git a/Documentation/filesystems/proc.txt
+> >b/Documentation/filesystems/proc.txt
+> >index 488c094..1411ad0 100644
+> >--- a/Documentation/filesystems/proc.txt
+> >+++ b/Documentation/filesystems/proc.txt
+> >@@ -136,6 +136,7 @@ Table 1-1: Process specific entries in /proc
+> >  maps		Memory maps to executables and library files	(2.4)
+> >  mem		Memory held by this process
+> >  root		Link to the root directory of this process
+> >+ reclaim	Reclaim pages in this process
+> >  stat		Process status
+> >  statm		Process memory status information
+> >  status		Process status in human readable form
+> >@@ -489,6 +490,27 @@ To clear the soft-dirty bit
+> >
+> > Any other value written to /proc/PID/clear_refs will have no effect.
+> >
+> >+The file /proc/PID/reclaim is used to reclaim pages in this process.
+> >+To reclaim file-backed pages,
+> >+    > echo file > /proc/PID/reclaim
+> >+
+> >+To reclaim anonymous pages,
+> >+    > echo anon > /proc/PID/reclaim
+> >+
+> >+To reclaim all pages,
+> >+    > echo all > /proc/PID/reclaim
+> >+
+> >+Also, you can specify address range of process so part of address
+> >space
+> >+will be reclaimed. The format is following as
+> >+    > echo addr size-byte > /proc/PID/reclaim
+> >+
+> >+NOTE: addr should be page-aligned.
 > 
-> 
+> And size in bytes should be a multiple of page size?
 
+Not necessary. It's same with madvise that VM handle the page
+which includes the byte.
+
+> 
+> >+
+> >+Below is example which try to reclaim 2 pages from 0x100000.
+> >+
+> >+To reclaim both pages in address range,
+> >+    > echo $((1<<20) 8192 > /proc/PID/reclaim
+> 
+> Would you like to balance your parentheses?
+
+Fixed. I will include your Acked-by in next spin.
+Thanks!
+
+> 
+> Acked-by: Rob Landley <rob@landley.net>
+> 
+> Rob
+
+-- 
+Kind regards,
+Minchan Kim
