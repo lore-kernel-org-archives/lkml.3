@@ -1,51 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758130Ab3DXK3H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 06:29:07 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:42809 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757917Ab3DXK3F (ORCPT
+	id S1758255Ab3DXKgE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 06:36:04 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:43265 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758136Ab3DXKgB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 06:29:05 -0400
-Message-ID: <5177B3EC.2040502@intel.com>
-Date: Wed, 24 Apr 2013 11:29:00 +0100
-From: Matt Fleming <matt.fleming@intel.com>
-Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
- Way, Swindon SN3 1RJ
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Wed, 24 Apr 2013 06:36:01 -0400
+X-Spam-Score: -100.8
+Message-ID: <5177B562.40400@asianux.com>
+Date: Wed, 24 Apr 2013 18:35:14 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: X86 ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@suse.de>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Paul Bolle <pebolle@tiscali.nl>
-Subject: Re: [PATCH] x86, efi: Fix a build warning
-References: <1366798154-1380-1-git-send-email-bp@alien8.de>
-In-Reply-To: <1366798154-1380-1-git-send-email-bp@alien8.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>, Will Deacon <will.deacon@arm.com>,
+        rjw@sisk.pl
+CC: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] ARM: S5pv210: compiling issue, ARM_S3C64XX_CPUFREQ need CONFIG_CPU_FREQ_TABLE=y
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24/04/13 11:09, Borislav Petkov wrote:
-> From: Borislav Petkov <bp@suse.de>
-> 
-> Fix this:
-> 
-> arch/x86/boot/compressed/eboot.c: In function ‘setup_efi_vars’:
-> arch/x86/boot/compressed/eboot.c:269:2: warning: passing argument 1 of ‘efi_call_phys’ makes pointer from integer without a cast [enabled by default]
-> In file included from arch/x86/boot/compressed/eboot.c:12:0:
-> /w/kernel/linux/arch/x86/include/asm/efi.h:8:33: note: expected ‘void *’ but argument is of type ‘long unsigned int’
-> 
-> after cc5a080c5d40 ("efi: Pass boot services variable info to runtime
-> code").
-> 
-> Cc: Matthew Garrett <matthew.garrett@nebula.com>
-> Cc: Matt Fleming <matt.fleming@intel.com>
-> Signed-off-by: Borislav Petkov <bp@suse.de>
-> ---
->  arch/x86/boot/compressed/eboot.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
 
-Thanks, applied!
+For arm S5pv210 with allmodconfig, ARM_S3C64XX_CPUFREQ need 
+CONFIG_CPU_FREQ_TABLE=y, or will cause compiling issue.
+
+The related operation:
++ arm-linux-gnu-ld -EL -p --no-undefined -X --build-id -X -o .tmp_vmlinux1 -T /root/linux-next/arch/arm/kernel/vmlinux.lds arch/arm/kernel/head.o init/built-in.o --start-group usr/built-in.o arch/arm/nwfpe/built-in.o arch/arm/vfp/built-in.o arch/arm/kernel/built-in.o arch/arm/mm/built-in.o arch/arm/common/built-in.o arch/arm/net/built-in.o arch/arm/crypto/built-in.o arch/arm/mach-s5pv210/built-in.o arch/arm/plat-samsung/built-in.o kernel/built-in.o mm/built-in.o fs/built-in.o ipc/built-in.o security/built-in.o crypto/built-in.o block/built-in.o arch/arm/lib/lib.a lib/lib.a arch/arm/lib/built-in.o lib/built-in.o drivers/built-in.o sound/built-in.o firmware/built-in.o net/built-in.o --end-group
+
+The related errors:
+drivers/built-in.o: In function `s5pv210_target':
+drivers/cpufreq/s5pv210-cpufreq.c:225: undefined reference to `cpufreq_frequency_table_target'
+drivers/cpufreq/s5pv210-cpufreq.c:237: undefined reference to `cpufreq_frequency_table_target'
+drivers/built-in.o: In function `s5pv210_verify_speed':
+drivers/cpufreq/s5pv210-cpufreq.c:182: undefined reference to `cpufreq_frequency_table_verify'
+drivers/built-in.o: In function `s5pv210_cpu_init':
+drivers/cpufreq/s5pv210-cpufreq.c:556: undefined reference to `cpufreq_frequency_table_get_attr'
+drivers/cpufreq/s5pv210-cpufreq.c:560: undefined reference to `cpufreq_frequency_table_cpuinfo'
+make: *** [vmlinux] Error 1
+
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
+---
+ drivers/cpufreq/Kconfig.arm |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/cpufreq/Kconfig.arm b/drivers/cpufreq/Kconfig.arm
+index bce2195..bbcd719 100644
+--- a/drivers/cpufreq/Kconfig.arm
++++ b/drivers/cpufreq/Kconfig.arm
+@@ -187,6 +187,7 @@ config ARM_S3C64XX_CPUFREQ
+ config ARM_S5PV210_CPUFREQ
+ 	bool "Samsung S5PV210 and S5PC110"
+ 	depends on CPU_S5PV210
++	select CPU_FREQ_TABLE
+ 	default y
+ 	help
+ 	  This adds the CPUFreq driver for Samsung S5PV210 and
+-- 
+1.7.7.6
