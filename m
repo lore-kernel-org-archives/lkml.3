@@ -1,187 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756431Ab3DXGVh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 02:21:37 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:59435 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754870Ab3DXGVe (ORCPT
+	id S1755276Ab3DXGUu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 02:20:50 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:50209 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754917Ab3DXGU0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 02:21:34 -0400
-Subject: [PATCH v2 7/8] powerpc/pseries: Read of-config partition via pstore
+	Wed, 24 Apr 2013 02:20:26 -0400
+Subject: [PATCH v2 3/8] powerpc/pseries: Introduce generic read function to
+ read nvram-partitions
 To: linuxppc-dev@ozlabs.org, paulus@samba.org, linux-kernel@vger.kernel.org,
         benh@kernel.crashing.org
 From: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
 Cc: jkenisto@linux.vnet.ibm.com, tony.luck@intel.com, ananth@in.ibm.com,
         mahesh@linux.vnet.ibm.com, ccross@android.com, anton@samba.org,
         cbouatmailru@gmail.com, keescook@chromium.org
-Date: Wed, 24 Apr 2013 11:50:52 +0530
-Message-ID: <20130424062052.7341.18551.stgit@aruna-ThinkPad-T420>
+Date: Wed, 24 Apr 2013 11:50:14 +0530
+Message-ID: <20130424062014.7341.66401.stgit@aruna-ThinkPad-T420>
 In-Reply-To: <20130424061807.7341.909.stgit@aruna-ThinkPad-T420>
 References: <20130424061807.7341.909.stgit@aruna-ThinkPad-T420>
 User-Agent: StGit/0.16-41-gd1dd
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13042406-5490-0000-0000-00000356B2EE
+x-cbid: 13042406-5564-0000-0000-000007A1D93A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch set exploits the pstore subsystem to read details of
-of-config partition in NVRAM to a separate file in /dev/pstore.
-For instance, of-config partition details will be stored in a
-file named [of-nvram-5].
+Introduce generic read function to read nvram partitions other than rtas.
+nvram_read_error_log will be retained which is used to read rtas partition
+from rtasd. nvram_read_partition is the generic read function to read from
+any nvram partition.
 
 Signed-off-by: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
 Reviewed-by: Jim Keniston <jkenisto@us.ibm.com>
 ---
- arch/powerpc/platforms/pseries/nvram.c |   55 +++++++++++++++++++++++++++-----
- fs/pstore/inode.c                      |    3 ++
- include/linux/pstore.h                 |    1 +
- 3 files changed, 50 insertions(+), 9 deletions(-)
+ arch/powerpc/platforms/pseries/nvram.c |   32 ++++++++++++++++++++++----------
+ 1 file changed, 22 insertions(+), 10 deletions(-)
 
 diff --git a/arch/powerpc/platforms/pseries/nvram.c b/arch/powerpc/platforms/pseries/nvram.c
-index b118382..de448af 100644
+index 742735a..088f023 100644
 --- a/arch/powerpc/platforms/pseries/nvram.c
 +++ b/arch/powerpc/platforms/pseries/nvram.c
-@@ -132,9 +132,16 @@ static size_t oops_data_sz;
- static struct z_stream_s stream;
+@@ -293,34 +293,35 @@ int nvram_write_error_log(char * buff, int length,
+ 	return rc;
+ }
  
- #ifdef CONFIG_PSTORE
-+static struct nvram_os_partition of_config_partition = {
-+	.name = "of-config",
-+	.index = -1,
-+	.os_partition = false
-+};
-+
- static enum pstore_type_id nvram_type_ids[] = {
- 	PSTORE_TYPE_DMESG,
- 	PSTORE_TYPE_RTAS,
-+	PSTORE_TYPE_OF,
- 	-1
- };
- static int read_type;
-@@ -332,10 +339,15 @@ int nvram_read_partition(struct nvram_os_partition *part, char *buff,
+-/* nvram_read_error_log
++/* nvram_read_partition
+  *
+- * Reads nvram for error log for at most 'length'
++ * Reads nvram partition for at most 'length'
+  */
+-int nvram_read_error_log(char * buff, int length,
+-                         unsigned int * err_type, unsigned int * error_log_cnt)
++int nvram_read_partition(struct nvram_os_partition *part, char *buff,
++			int length, unsigned int *err_type,
++			unsigned int *error_log_cnt)
+ {
+ 	int rc;
+ 	loff_t tmp_index;
+ 	struct err_log_info info;
+ 	
+-	if (rtas_log_partition.index == -1)
++	if (part->index == -1)
+ 		return -1;
  
- 	tmp_index = part->index;
+-	if (length > rtas_log_partition.size)
+-		length = rtas_log_partition.size;
++	if (length > part->size)
++		length = part->size;
  
--	rc = ppc_md.nvram_read((char *)&info, sizeof(struct err_log_info), &tmp_index);
--	if (rc <= 0) {
--		pr_err("%s: Failed nvram_read (%d)\n", __FUNCTION__, rc);
--		return rc;
-+	if (part->os_partition) {
-+		rc = ppc_md.nvram_read((char *)&info,
-+					sizeof(struct err_log_info),
-+					&tmp_index);
-+		if (rc <= 0) {
-+			pr_err("%s: Failed nvram_read (%d)\n", __FUNCTION__,
-+									rc);
-+			return rc;
-+		}
- 	}
+-	tmp_index = rtas_log_partition.index;
++	tmp_index = part->index;
  
- 	rc = ppc_md.nvram_read(buff, length, &tmp_index);
-@@ -344,8 +356,10 @@ int nvram_read_partition(struct nvram_os_partition *part, char *buff,
+ 	rc = ppc_md.nvram_read((char *)&info, sizeof(struct err_log_info), &tmp_index);
+ 	if (rc <= 0) {
+-		printk(KERN_ERR "nvram_read_error_log: Failed nvram_read (%d)\n", rc);
++		pr_err("%s: Failed nvram_read (%d)\n", __FUNCTION__, rc);
  		return rc;
  	}
  
--	*error_log_cnt = info.seq_num;
--	*err_type = info.error_type;
-+	if (part->os_partition) {
-+		*error_log_cnt = info.seq_num;
-+		*err_type = info.error_type;
-+	}
+ 	rc = ppc_md.nvram_read(buff, length, &tmp_index);
+ 	if (rc <= 0) {
+-		printk(KERN_ERR "nvram_read_error_log: Failed nvram_read (%d)\n", rc);
++		pr_err("%s: Failed nvram_read (%d)\n", __FUNCTION__, rc);
+ 		return rc;
+ 	}
  
+@@ -330,6 +331,17 @@ int nvram_read_error_log(char * buff, int length,
  	return 0;
  }
-@@ -516,7 +530,7 @@ static int nvram_pstore_write(enum pstore_type_id type,
- }
  
- /*
-- * Reads the oops/panic report and ibm,rtas-log partition.
-+ * Reads the oops/panic report, rtas and of-config partition.
-  * Returns the length of the data we read from each partition.
-  * Returns 0 if we've been called before.
++/* nvram_read_error_log
++ *
++ * Reads nvram for error log for at most 'length'
++ */
++int nvram_read_error_log(char *buff, int length,
++			unsigned int *err_type, unsigned int *error_log_cnt)
++{
++	return nvram_read_partition(&rtas_log_partition, buff, length,
++						err_type, error_log_cnt);
++}
++
+ /* This doesn't actually zero anything, but it sets the event_logged
+  * word to tell that this event is safely in syslog.
   */
-@@ -525,9 +539,11 @@ static ssize_t nvram_pstore_read(u64 *id, enum pstore_type_id *type,
- 				struct pstore_info *psi)
- {
- 	struct oops_log_info *oops_hdr;
--	unsigned int err_type, id_no;
-+	unsigned int err_type, id_no, size = 0;
- 	struct nvram_os_partition *part = NULL;
- 	char *buff = NULL;
-+	int sig = 0;
-+	loff_t p;
- 
- 	read_type++;
- 
-@@ -542,10 +558,29 @@ static ssize_t nvram_pstore_read(u64 *id, enum pstore_type_id *type,
- 		time->tv_sec = last_rtas_event;
- 		time->tv_nsec = 0;
- 		break;
-+	case PSTORE_TYPE_OF:
-+		sig = NVRAM_SIG_OF;
-+		part = &of_config_partition;
-+		*type = PSTORE_TYPE_OF;
-+		*id = PSTORE_TYPE_OF;
-+		time->tv_sec = 0;
-+		time->tv_nsec = 0;
-+		break;
- 	default:
- 		return 0;
- 	}
- 
-+	if (!part->os_partition) {
-+		p = nvram_find_partition(part->name, sig, &size);
-+		if (p <= 0) {
-+			pr_err("nvram: Failed to find partition %s, "
-+				"err %d\n", part->name, (int)p);
-+			return 0;
-+		}
-+		part->index = p;
-+		part->size = size;
-+	}
-+
- 	buff = kmalloc(part->size, GFP_KERNEL);
- 
- 	if (!buff)
-@@ -557,7 +592,9 @@ static ssize_t nvram_pstore_read(u64 *id, enum pstore_type_id *type,
- 	}
- 
- 	*count = 0;
--	*id = id_no;
-+
-+	if (part->os_partition)
-+		*id = id_no;
- 
- 	if (nvram_type_ids[read_type] == PSTORE_TYPE_DMESG) {
- 		oops_hdr = (struct oops_log_info *)buff;
-diff --git a/fs/pstore/inode.c b/fs/pstore/inode.c
-index ec24f9c..8d4fb65 100644
---- a/fs/pstore/inode.c
-+++ b/fs/pstore/inode.c
-@@ -327,6 +327,9 @@ int pstore_mkfile(enum pstore_type_id type, char *psname, u64 id, int count,
- 	case PSTORE_TYPE_PPC_RTAS:
- 		sprintf(name, "rtas-%s-%lld", psname, id);
- 		break;
-+	case PSTORE_TYPE_PPC_OF:
-+		sprintf(name, "of-%s-%lld", psname, id);
-+		break;
- 	case PSTORE_TYPE_UNKNOWN:
- 		sprintf(name, "unknown-%s-%lld", psname, id);
- 		break;
-diff --git a/include/linux/pstore.h b/include/linux/pstore.h
-index d7a8fe9..615dc18 100644
---- a/include/linux/pstore.h
-+++ b/include/linux/pstore.h
-@@ -37,6 +37,7 @@ enum pstore_type_id {
- 	PSTORE_TYPE_FTRACE	= 3,
- 	/* PPC64 partition types */
- 	PSTORE_TYPE_PPC_RTAS	= 4,
-+	PSTORE_TYPE_PPC_OF	= 5,
- 	PSTORE_TYPE_UNKNOWN	= 255
- };
- 
 
