@@ -1,80 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758129Ab3DXJ5i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 05:57:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16709 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757677Ab3DXJ5h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 05:57:37 -0400
-Message-ID: <5177AC75.7090101@redhat.com>
-Date: Wed, 24 Apr 2013 11:57:09 +0200
-From: Jerome Marchand <jmarchan@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1752339Ab3DXJ7L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 05:59:11 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:1734 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750929Ab3DXJ7J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 05:59:09 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 24 Apr 2013 02:59:03 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <vinod.koul@intel.com>
+CC: <djbw@fb.com>, <swarren@wwwdotorg.org>, <linux-tegra@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH] dma: tegra: implement suspend/resume callbacks
+Date: Wed, 24 Apr 2013 15:24:27 +0530
+Message-ID: <1366797267-29567-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH] swap: redirty page if page write fails on swap file
-References: <516E918B.3050309@redhat.com> <20130422133746.ffbbb70c0394fdbf1096c7ee@linux-foundation.org>
-In-Reply-To: <20130422133746.ffbbb70c0394fdbf1096c7ee@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/22/2013 10:37 PM, Andrew Morton wrote:
-> On Wed, 17 Apr 2013 14:11:55 +0200 Jerome Marchand <jmarchan@redhat.com> wrote:
-> 
->>
->> Since commit 62c230b, swap_writepage() calls direct_IO on swap files.
->> However, in that case page isn't redirtied if I/O fails, and is therefore
->> handled afterwards as if it has been successfully written to the swap
->> file, leading to memory corruption when the page is eventually swapped
->> back in.
->> This patch sets the page dirty when direct_IO() fails. It fixes a memory
->> corruption that happened while using swap-over-NFS.
->>
->> ...
->>
->> --- a/mm/page_io.c
->> +++ b/mm/page_io.c
->> @@ -222,6 +222,8 @@ int swap_writepage(struct page *page, struct writeback_control *wbc)
->>  		if (ret == PAGE_SIZE) {
->>  			count_vm_event(PSWPOUT);
->>  			ret = 0;
->> +		} else {
->> +			set_page_dirty(page);
->>  		}
->>  		return ret;
->>  	}
-> 
-> So what happens to the page now?  It remains dirty and the kernel later
-> tries to write it again?
+Implement suspend/resume callbacks to store APB DMA channel's
+register on suspend and restore APB DMA channel's register on
+resume.
 
-Yes. Also, AS_EIO or AS_ENOSPC is set to the address space flags (in this
-case, swapper_space).
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+---
+ drivers/dma/tegra20-apb-dma.c |   65 +++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 65 insertions(+), 0 deletions(-)
 
-> And if that write also fails, the page is
-> effectively leaked until process exit?
-
-AFAICT, there is no special handling for that page afterwards, so if all
-subsequent attempts fail, it's indeed going to stay in memory until freed.
-
-Jerome
-
-
-> 
-> 
-> Aside: Mel, __swap_writepage() is fairly hair-raising.  It unlocks the
-> page before doing the IO and doesn't set PageWriteback().  Why such an
-> exception from normal handling?
-> 
-> Also, what is protecting the page from concurrent reclaim or exit()
-> during the above swap_writepage()?
-> 
-> Seems that the code needs a bunch of fixes or a bunch of comments
-> explaining why it is safe and why it has to be this way.
-> 
+diff --git a/drivers/dma/tegra20-apb-dma.c b/drivers/dma/tegra20-apb-dma.c
+index 5a0b66c..ce19340 100644
+--- a/drivers/dma/tegra20-apb-dma.c
++++ b/drivers/dma/tegra20-apb-dma.c
+@@ -30,6 +30,7 @@
+ #include <linux/of.h>
+ #include <linux/of_device.h>
+ #include <linux/platform_device.h>
++#include <linux/pm.h>
+ #include <linux/pm_runtime.h>
+ #include <linux/slab.h>
+ #include <linux/clk/tegra.h>
+@@ -199,6 +200,7 @@ struct tegra_dma_channel {
+ 
+ 	/* Channel-slave specific configuration */
+ 	struct dma_slave_config dma_sconfig;
++	struct tegra_dma_channel_regs	channel_reg;
+ };
+ 
+ /* tegra_dma: Tegra DMA specific information */
+@@ -1440,11 +1442,74 @@ static int tegra_dma_runtime_resume(struct device *dev)
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_PM_SLEEP
++static int tegra_dma_pm_suspend(struct device *dev)
++{
++	struct tegra_dma *tdma = dev_get_drvdata(dev);
++	int i;
++	int ret;
++
++	/* Enable clock before accessing register */
++	ret = tegra_dma_runtime_resume(dev);
++	if (ret < 0)
++		return ret;
++
++	tdma->reg_gen = tdma_read(tdma, TEGRA_APBDMA_GENERAL);
++	for (i = 0; i < tdma->chip_data->nr_channels; i++) {
++		struct tegra_dma_channel *tdc = &tdma->channels[i];
++		struct tegra_dma_channel_regs *ch_reg = &tdc->channel_reg;
++
++		ch_reg->csr = tdc_read(tdc, TEGRA_APBDMA_CHAN_CSR);
++		ch_reg->ahb_ptr = tdc_read(tdc, TEGRA_APBDMA_CHAN_AHBPTR);
++		ch_reg->apb_ptr = tdc_read(tdc, TEGRA_APBDMA_CHAN_APBPTR);
++		ch_reg->ahb_seq = tdc_read(tdc, TEGRA_APBDMA_CHAN_AHBSEQ);
++		ch_reg->apb_seq = tdc_read(tdc, TEGRA_APBDMA_CHAN_APBSEQ);
++	}
++
++	/* Disable clock */
++	tegra_dma_runtime_suspend(dev);
++	return 0;
++}
++
++static int tegra_dma_pm_resume(struct device *dev)
++{
++	struct tegra_dma *tdma = dev_get_drvdata(dev);
++	int i;
++	int ret;
++
++	/* Enable clock before accessing register */
++	ret = tegra_dma_runtime_resume(dev);
++	if (ret < 0)
++		return ret;
++
++	tdma_write(tdma, TEGRA_APBDMA_GENERAL, tdma->reg_gen);
++	tdma_write(tdma, TEGRA_APBDMA_CONTROL, 0);
++	tdma_write(tdma, TEGRA_APBDMA_IRQ_MASK_SET, 0xFFFFFFFFul);
++
++	for (i = 0; i < tdma->chip_data->nr_channels; i++) {
++		struct tegra_dma_channel *tdc = &tdma->channels[i];
++		struct tegra_dma_channel_regs *ch_reg = &tdc->channel_reg;
++
++		tdc_write(tdc, TEGRA_APBDMA_CHAN_APBSEQ, ch_reg->apb_seq);
++		tdc_write(tdc, TEGRA_APBDMA_CHAN_APBPTR, ch_reg->apb_ptr);
++		tdc_write(tdc, TEGRA_APBDMA_CHAN_AHBSEQ, ch_reg->ahb_seq);
++		tdc_write(tdc, TEGRA_APBDMA_CHAN_AHBPTR, ch_reg->ahb_ptr);
++		tdc_write(tdc, TEGRA_APBDMA_CHAN_CSR,
++			(ch_reg->csr & ~TEGRA_APBDMA_CSR_ENB));
++	}
++
++	/* Disable clock */
++	tegra_dma_runtime_suspend(dev);
++	return 0;
++}
++#endif
++
+ static const struct dev_pm_ops tegra_dma_dev_pm_ops = {
+ #ifdef CONFIG_PM_RUNTIME
+ 	.runtime_suspend = tegra_dma_runtime_suspend,
+ 	.runtime_resume = tegra_dma_runtime_resume,
+ #endif
++	SET_SYSTEM_SLEEP_PM_OPS(tegra_dma_pm_suspend, tegra_dma_pm_resume)
+ };
+ 
+ static struct platform_driver tegra_dmac_driver = {
+-- 
+1.7.1.1
 
