@@ -1,52 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757248Ab3DXCGi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 22:06:38 -0400
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:34282 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755920Ab3DXCGh (ORCPT
+	id S1756875Ab3DXCTa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 22:19:30 -0400
+Received: from mail-bk0-f53.google.com ([209.85.214.53]:60785 "EHLO
+	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755426Ab3DXCT3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 22:06:37 -0400
-Message-ID: <51773DF8.70509@hp.com>
-Date: Wed, 24 Apr 2013 10:05:44 +0800
-From: ZhenHua <zhen-hual@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130117 Thunderbird/19.0
+	Tue, 23 Apr 2013 22:19:29 -0400
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: stern@rowland.harvard.edu, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, tom.vaden@hp.com
-Subject: Re: [PATCH 1/1] driver,usb: Fix a warning in uhci-hcd driver
-References: <1366701301-16603-1-git-send-email-zhen-hual@hp.com> <20130423140734.GA30877@kroah.com> <51771F66.3080801@hp.com> <20130424015722.GA1269@kroah.com>
-In-Reply-To: <20130424015722.GA1269@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Date: Wed, 24 Apr 2013 10:19:27 +0800
+Message-ID: <CAPgLHd8Nj-K4X8gX4_bMFcYjCBU=XzFnGidhvfF0ZtoCXCv0qg@mail.gmail.com>
+Subject: [PATCH -next] gpu: host1x: gr2d drivers/gpu/host1x/drm/gr2d.c: fix
+ error return code in gr2d_submit()
+From: Wei Yongjun <weiyj.lk@gmail.com>
+To: grant.likely@linaro.org, rob.herring@calxeda.com,
+        thierry.reding@avionic-design.de, tbergstrom@nvidia.com,
+        amerilainen@nvidia.com
+Cc: yongjun_wei@trendmicro.com.cn, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I did not found any url you can visit. And we will file a bug on SLES 
-bugzilla site if possible.
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-I   paste the bug discription here:
-When booting SLES 11 SP2 on our server , messages like the following are 
-logged during boot:
-[  254.087187] uhci_hcd 0000:07:00.4: Controller not stopped yet!
+Fix to return a negative error code from the error handling
+case instead of 0, as done elsewhere in this function.
 
-Thanks
-Zhen-Hua
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+---
+ drivers/gpu/host1x/drm/gr2d.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-On 04/24/2013 09:57 AM, Greg KH wrote:
-> On Wed, Apr 24, 2013 at 07:55:18AM +0800, ZhenHua wrote:
->> On 04/23/2013 10:07 PM, Greg KH wrote:
->>> On Tue, Apr 23, 2013 at 03:15:01PM +0800, Li, Zhen-Hua wrote:
->>>> From: "Li, Zhen-Hua" <zhen-hual@hp.com>
->>>>
->>>> This patch is trying to fix bug QXCR1001261767.
->> Sorry for the bug number. Please ignore this line.
-> I don't want to ignore it, I want it to point to something that I, and
-> others, can reference in the future.  Is there a url you can use for it?
->
-> thanks,
->
-> greg k-h
+diff --git a/drivers/gpu/host1x/drm/gr2d.c b/drivers/gpu/host1x/drm/gr2d.c
+index 6a45ae0..146cd64 100644
+--- a/drivers/gpu/host1x/drm/gr2d.c
++++ b/drivers/gpu/host1x/drm/gr2d.c
+@@ -135,8 +135,10 @@ static int gr2d_submit(struct host1x_drm_context *context,
+ 			goto fail;
+ 
+ 		bo = host1x_bo_lookup(drm, file, cmdbuf.handle);
+-		if (!bo)
++		if (!bo) {
++			err = -EINVAL;
+ 			goto fail;
++		}
+ 
+ 		host1x_job_add_gather(job, bo, cmdbuf.words, cmdbuf.offset);
+ 		num_cmdbufs--;
+@@ -158,8 +160,10 @@ static int gr2d_submit(struct host1x_drm_context *context,
+ 		reloc->cmdbuf = cmdbuf;
+ 		reloc->target = target;
+ 
+-		if (!reloc->target || !reloc->cmdbuf)
++		if (!reloc->target || !reloc->cmdbuf) {
++			err = -EINVAL;
+ 			goto fail;
++		}
+ 	}
+ 
+ 	err = copy_from_user(job->waitchk, waitchks,
 
