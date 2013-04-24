@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758644Ab3DXWan (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 18:30:43 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:55555 "EHLO
+	id S1758625Ab3DXWal (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 18:30:41 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:63375 "EHLO
 	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758537Ab3DXWa0 (ORCPT
+	with ESMTP id S1758519Ab3DXWaY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 18:30:26 -0400
+	Wed, 24 Apr 2013 18:30:24 -0400
 From: "Yann E. MORIN" <yann.morin.1998@free.fr>
 To: linux-kbuild@vger.kernel.org
 Cc: Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org,
         "Yann E. MORIN" <yann.morin.1998@free.fr>
-Subject: [PATCH 4/8] kconfig: fix randconfig tristate detection
-Date: Thu, 25 Apr 2013 00:29:51 +0200
-Message-Id: <61fa0e17f99b60b851d4480605b7d905d3172f0c.1366841993.git.yann.morin.1998@free.fr>
+Subject: [PATCH 3/8] kconfig/lxdialog: rationalise the include paths where to find {.n}curses{,w}.h
+Date: Thu, 25 Apr 2013 00:29:50 +0200
+Message-Id: <cdf0c2cfd75c6c2f2a6eee5e21ff0e8271bd0660.1366841993.git.yann.morin.1998@free.fr>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <cover.1366841993.git.yann.morin.1998@free.fr>
 References: <cover.1366841993.git.yann.morin.1998@free.fr>
@@ -25,35 +25,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Yann E. MORIN" <yann.morin.1998@free.fr>
 
-Because the modules' symbole (CONFIG_MODULES) may not yet be set when
-we check a symbol's tristate capabilty, we'll always find that tristate
-symbols are booleans, even if we randomly decided that to enable modules:
-sym_get_type(sym) always return boolean for tristates when modules_sym
-has not been previously set to 'y' *and* its value calculated *and* its
-visibility calculated, both of which only occur after we randomly assign
-values to symbols.
+The current code does this:
 
-Fix that by looking at the raw type of symbols. Tristate set to 'm' will
-be promoted to 'y' when their values will be later calculated.
+    if [ -f /usr/include/ncursesw/curses.h ]; then
+        echo '-I/usr/include/ncursesw -DCURSES_LOC="<ncursesw/curses.h>"'
+    elif [ -f /usr/include/ncurses/ncurses.h ]; then
+        echo '-I/usr/include/ncurses -DCURSES_LOC="<ncurses.h>"'
+    elif [ -f /usr/include/ncurses/curses.h ]; then
+        echo '-I/usr/include/ncurses -DCURSES_LOC="<ncurses/curses.h>"'
+    [...]
+
+This is merely inconsistent:
+  - adding the full path to the directory in the -I directive,
+  - especially since that path is already a sub-path of the system
+    include path,
+  - and then repeating the sub-path in the #include directive.
+
+Rationalise each include directive:
+  - only use the filename in the #include directive,
+  - keep the -I directives: they are always searched for before the
+    system include path; this ensures the correct header is used.
+
+Using the -I directives and the filename-only in #include is more in
+line with how pkg-config behaves, eg.:
+    $ pkg-config --cflags ncursesw
+    -I/usr/include/ncursesw
+
+This paves the way for using pkg-config for CFLAGS, too, now we use it
+to find the libraries.
 
 Signed-off-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
 ---
- scripts/kconfig/confdata.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ scripts/kconfig/lxdialog/check-lxdialog.sh |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/scripts/kconfig/confdata.c b/scripts/kconfig/confdata.c
-index 13ddf11..306cbc1 100644
---- a/scripts/kconfig/confdata.c
-+++ b/scripts/kconfig/confdata.c
-@@ -1125,7 +1125,7 @@ void conf_set_all_new_symbols(enum conf_def_mode mode)
- 				sym->def[S_DEF_USER].tri = no;
- 				break;
- 			case def_random:
--				cnt = sym_get_type(sym) == S_TRISTATE ? 3 : 2;
-+				cnt = sym->type == S_TRISTATE ? 3 : 2;
- 				sym->def[S_DEF_USER].tri = (tristate)(rand() % cnt);
- 				break;
- 			default:
+diff --git a/scripts/kconfig/lxdialog/check-lxdialog.sh b/scripts/kconfig/lxdialog/check-lxdialog.sh
+index 782d200..9d2a4c5 100644
+--- a/scripts/kconfig/lxdialog/check-lxdialog.sh
++++ b/scripts/kconfig/lxdialog/check-lxdialog.sh
+@@ -22,12 +22,12 @@ ldflags()
+ ccflags()
+ {
+ 	if [ -f /usr/include/ncursesw/curses.h ]; then
+-		echo '-I/usr/include/ncursesw -DCURSES_LOC="<ncursesw/curses.h>"'
++		echo '-I/usr/include/ncursesw -DCURSES_LOC="<curses.h>"'
+ 		echo ' -DNCURSES_WIDECHAR=1'
+ 	elif [ -f /usr/include/ncurses/ncurses.h ]; then
+ 		echo '-I/usr/include/ncurses -DCURSES_LOC="<ncurses.h>"'
+ 	elif [ -f /usr/include/ncurses/curses.h ]; then
+-		echo '-I/usr/include/ncurses -DCURSES_LOC="<ncurses/curses.h>"'
++		echo '-I/usr/include/ncurses -DCURSES_LOC="<curses.h>"'
+ 	elif [ -f /usr/include/ncurses.h ]; then
+ 		echo '-DCURSES_LOC="<ncurses.h>"'
+ 	else
 -- 
 1.7.10.4
 
