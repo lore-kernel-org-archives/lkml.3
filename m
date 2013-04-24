@@ -1,85 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756889Ab3DXGrI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 02:47:08 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:56125 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753242Ab3DXGrH (ORCPT
+	id S1757228Ab3DXGrf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 02:47:35 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:53965 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757063Ab3DXGre (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 02:47:07 -0400
-Date: Wed, 24 Apr 2013 08:46:59 +0200
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Wei Yongjun <weiyj.lk@gmail.com>
-Cc: markz@nvidia.com, tbergstrom@nvidia.com, amerilainen@nvidia.com,
-        swarren@nvidia.com, yongjun_wei@trendmicro.com.cn,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -next RESEND] gpu: host1x: drm: fix missing unlock on
- error
-Message-ID: <20130424064659.GC1429@avionic-0098.mockup.avionic-design.de>
-References: <CAPgLHd8X3pLTM5vsTnHWL3g9GNOrxVF-LkmGWp6_doFkX2_LcQ@mail.gmail.com>
- <5177490E.7040509@nvidia.com>
- <CAPgLHd981uTJHuQAE_komRn81nce8zdzr+a-v43VJSPCDBgRiQ@mail.gmail.com>
+	Wed, 24 Apr 2013 02:47:34 -0400
+From: Tiejun Chen <tiejun.chen@windriver.com>
+To: <galak@kernel.crashing.org>
+CC: <linux-usb@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [RFC][PATCH 1/1] USB/EHCI: work for different PHY_CLK_VALID detecting order
+Date: Wed, 24 Apr 2013 14:47:35 +0800
+Message-ID: <1366786055-14671-1-git-send-email-tiejun.chen@windriver.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="i7F3eY7HS/tUJxUd"
-Content-Disposition: inline
-In-Reply-To: <CAPgLHd981uTJHuQAE_komRn81nce8zdzr+a-v43VJSPCDBgRiQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:WKxU8NHcGvkcNK7ri4lwwUHy0q9oHeNY0nlFR/Z77sH
- fCAbrvI4C1ZYoTEORZUA6KPV0KeIleOr8i7VudmX0dHUr9Knrr
- IwYoNs38pl8hCbzAZjX3+u/fqQFgr1dUe+x5VoxenUg/f2TzVI
- ueF7nSPB/PWO43XdU/wPyHjiZ0r0l9tVSzxR58OVBS+naUKhUn
- EnF9H/8QsVeEoGh6vZoBBWmpVGfFxObvIV0YJ6pBDQkVV8qnYu
- eUTozxYPg7Qx0xSSyf6RCkFo/vT/vKG6P+eBPr68x6WnPiJBV1
- J4Cq+UjDkD/qzIkXCpQnkON4xqX1Ahf/kJINWZXKgPqPFseTsC
- ocq6dFm0XIDsHCjDM1N9B9HLdh4DmcLziPnus5CeReitxPg4OA
- 5xCfXxkOzIvnbJvCRzEH3vq+GZXGJlJJM8=
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Due to different controller issue of PHY_CLK_VALID in ULPI mode,
+in some cases, after set PHY_CLK_SEL, we should set
+USB_CTRL_USB_EN before checking PHY_CLK_VALID, otherwise
+PHY_CLK_VALID doesn't work.
 
---i7F3eY7HS/tUJxUd
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+But in other cases USB_CTRL_USB_EN is already set previously and
+PHY_CLK_VALID is not valid once USB_CTRL_USB_EN is set. But
+since PHY_CLK_VALID is w1c, we can force clear USB_CTRL_USB_EN
+firstly after set PHY_CLK_SEL, then PHY_CLK_VALID status can
+be kept even we re-set USB_CTRL_USB_EN.
 
-On Wed, Apr 24, 2013 at 11:07:30AM +0800, Wei Yongjun wrote:
-> On 04/24/2013 10:53 AM, Mark Zhang wrote:
-> > I think Thierry has acked this patch. So why?
->=20
-> Yes, Thierry has acked this patch five months ago, but this patch does not
-> applied util now. And the source file has been moved from
-> drivers/gpu/drm/tegra/host1x.c to drivers/gpu/host1x/drm/drm.c, so I am n=
-ot
-> sure whether this patch was lost.
+Signed-off-by: Tiejun Chen <tiejun.chen@windriver.com>
+---
+ drivers/usb/host/ehci-fsl.c |   15 ++++++++++++---
+ 1 file changed, 12 insertions(+), 3 deletions(-)
 
-This slipped under the radar apparently. I'll be preparing a fixes
-branch soon and will make sure that this makes it in as well.
+diff --git a/drivers/usb/host/ehci-fsl.c b/drivers/usb/host/ehci-fsl.c
+index d81d2fc..57f2aa0 100644
+--- a/drivers/usb/host/ehci-fsl.c
++++ b/drivers/usb/host/ehci-fsl.c
+@@ -234,11 +234,20 @@ static int ehci_fsl_setup_phy(struct usb_hcd *hcd,
+ 			/* controller version 1.6 or above */
+ 			setbits32(non_ehci + FSL_SOC_USB_CTRL,
+ 					ULPI_PHY_CLK_SEL);
++
+ 			/*
+-			 * Due to controller issue of PHY_CLK_VALID in ULPI
+-			 * mode, we set USB_CTRL_USB_EN before checking
+-			 * PHY_CLK_VALID, otherwise PHY_CLK_VALID doesn't work.
++			 * Due to different controller issue of PHY_CLK_VALID
++			 * in ULPI mode, in some cases we should set
++			 * USB_CTRL_USB_EN before checking PHY_CLK_VALID,
++			 * otherwise PHY_CLK_VALID doesn't work.
++			 *
++			 * But in other cases USB_CTRL_USB_EN is already set
++			 * and PHY_CLK_VALID is not valid once USB_CTRL_USB_EN
++			 * is set. But since PHY_CLK_VALID is w1c, we can force
++			 * clear USB_CTRL_USB_EN firstly then PHY_CLK_VALID
++			 * status can be kept even we re-set USB_CTRL_USB_EN.
+ 			 */
++			clrbits32(non_ehci + FSL_SOC_USB_CTRL, USB_CTRL_USB_EN);
+ 			clrsetbits_be32(non_ehci + FSL_SOC_USB_CTRL,
+ 					UTMI_PHY_EN, USB_CTRL_USB_EN);
+ 		}
+-- 
+1.7.9.5
 
-Thanks for reminding me.
-
-Thierry
-
---i7F3eY7HS/tUJxUd
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRd3/jAAoJEN0jrNd/PrOh7DoQALYdWq+eJXeSe3ubKbW0NNhN
-uqSHWzS/XfWvlp0Kj86K+7toCkqelBpfpgHMu1KvECFFv+qy6J3H/bm89Flk6LUY
-DfHFuO1thzs2JhzCytiCvUXL1gIsv5RYDUNmVqMn6BdGvIx5eTSa6BeqawV9J7t6
-LgOlSminq5XsIt48ppwdljqrCteZkJJ+ANTpQXRkd/DVaa7iiaXmCgCbO1XY8oid
-DL0xest9RYgqv+Wty72x9SGVBCn3CGC3l0aTzJk9R52zvCXFHOK5IGQPKGLO0a9D
-HtQJyeYF9ugMlrQGTdEGCE6VvpnInSokymkb//8wi/zadImUUnRpKpP4WcLyNocs
-lAd0J4PWRV8CMnnkzidRcTPNebw9K8kjuOXkBNwIevNL6Lclkg6Bj+VFJN24ObJa
-F41a45Gmk1Hu/NGwKDNIrS7QQVz1zya23xB0NXh5Xq8POfi8RB23i5xrS8F0rrtK
-Bi+CsNiXxD53w4tszqdiEX00fJAFExUvQwEys0m5vcchOCZ4EM6kvWOI3CiGPx9V
-Eu1EzoL4mES2HFHPe5Y6m4qaDNEKIedhqSbjGIbogZIr16OiA8mBiMWdtal9peIP
-UKthatBENON1+uXfNQn5EaLAcWy9tCrVIElpeJOlQNd2XAv/MOiTvDuaNFvmrjhm
-tFoZ4GIAm+auyeUdfc+N
-=tWYO
------END PGP SIGNATURE-----
-
---i7F3eY7HS/tUJxUd--
