@@ -1,34 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757603Ab3DXD2z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 23:28:55 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:43708 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757473Ab3DXD2y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 23:28:54 -0400
-Date: Tue, 23 Apr 2013 20:28:49 -0700
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Yinghai Lu <yinghai@kernel.org>,
-        Jiang Liu <liuj97@gmail.com>
-Subject: Re: [PATCH 2/2] mm, nobootmem: do memset() after memblock_reserve()
-Message-ID: <20130424032849.GO2018@cmpxchg.org>
-References: <1366619113-28017-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1366619113-28017-2-git-send-email-iamjoonsoo.kim@lge.com>
+	id S1757587Ab3DXD31 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 23:29:27 -0400
+Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:56301 "EHLO
+	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757488Ab3DXD3Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Apr 2013 23:29:25 -0400
+From: Chao Xie <chao.xie@marvell.com>
+To: <linux-kernel@vger.kernel.org>, <linux-input@vger.kernel.org>,
+        <dmitry.torokhov@gmail.com>, <haojian.zhuang@gmail.com>,
+        <xiechao.mail@gmail.com>
+CC: Chao Xie <chao.xie@marvell.com>
+Subject: [PATCH 0/6] input: pxa27x-keypad: enhancement and device tree support
+Date: Tue, 23 Apr 2013 23:20:27 -0400
+Message-ID: <1366773633-7727-1-git-send-email-chao.xie@marvell.com>
+X-Mailer: git-send-email 1.7.4.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1366619113-28017-2-git-send-email-iamjoonsoo.kim@lge.com>
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 22, 2013 at 05:25:13PM +0900, Joonsoo Kim wrote:
-> Currently, we do memset() before reserving the area.
-> This may not cause any problem, but it is somewhat weird.
-> So change execution order.
-> 
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+The patches include 3 parts
+1. copy members of platform data to device private data
+pdata pass when probing the device may be freed after device initialized.
+It is not safe to use pdata in other places except probe device. So copy
+some useful members from pdata to device private structure.
 
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+2. use matrix_keypad for matrix keyes support
+3. add device tree support for pxa27x-keypad
+
+Chao Xie (6):
+  input: pxa27x-keypad: copy members of platform data to device private
+    data
+  input: pxa27x-keypad: use matrix_keymap for matrix keyes
+  arm: mmp: use matrix_keymap for aspenite
+  arm: mmp: use matrix_keymap for teton_bga
+  input: pxa27x-keypad: remove the unused members at platform data
+  input: pxa27x-keypad: add device tree support
+
+ .../devicetree/bindings/input/pxa27x-keypad.txt    |   60 ++++
+ arch/arm/mach-mmp/aspenite.c                       |   10 +-
+ arch/arm/mach-mmp/teton_bga.c                      |    8 +-
+ drivers/input/keyboard/Kconfig                     |    1 +
+ drivers/input/keyboard/pxa27x_keypad.c             |  320 +++++++++++++++++---
+ include/linux/platform_data/keypad-pxa27x.h        |    3 +-
+ 6 files changed, 346 insertions(+), 56 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/input/pxa27x-keypad.txt
+
+-- 
+1.7.4.1
+
