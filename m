@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755906Ab3DXPJV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 11:09:21 -0400
-Received: from mail-ea0-f180.google.com ([209.85.215.180]:55234 "EHLO
-	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754230Ab3DXPJT (ORCPT
+	id S1756319Ab3DXPLw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 11:11:52 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:45833 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753591Ab3DXPLv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 11:09:19 -0400
-Date: Wed, 24 Apr 2013 16:09:14 +0100
+	Wed, 24 Apr 2013 11:11:51 -0400
+Date: Wed, 24 Apr 2013 16:11:45 +0100
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: arnd@arndb.de, linus.walleij@stericsson.com,
         Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
         Per Forlin <per.forlin@stericsson.com>, Rabin Vincent <rabin@rab.in>
-Subject: Re: [PATCH 03/32] dmaengine: ste_dma40: Use the BIT macro to replace
+Subject: [PATCH 03/32 v3] dmaengine: ste_dma40: Use the BIT macro to replace
  ugly '(1 << x)'s
-Message-ID: <20130424150914.GG9652@gmail.com>
+Message-ID: <20130424151145.GH9652@gmail.com>
 References: <1366279934-30761-1-git-send-email-lee.jones@linaro.org>
  <1366279934-30761-4-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
@@ -26,8 +26,6 @@ User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
-dmaengine: ste_dma40: Use the BIT macro to replace ugly '(1 << x)'s
 
 The aim is to make the code that little more readable.
 
