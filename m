@@ -1,45 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758588Ab3DXJjp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 05:39:45 -0400
-Received: from mail-lb0-f182.google.com ([209.85.217.182]:51795 "EHLO
-	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758548Ab3DXJjk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1758575Ab3DXJjn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 05:39:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58735 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758561Ab3DXJjk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 24 Apr 2013 05:39:40 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130423144256.GP5019@opensource.wolfsonmicro.com>
-References: <1366614565-3743-1-git-send-email-ks.giri@samsung.com>
-	<1366614565-3743-3-git-send-email-ks.giri@samsung.com>
-	<20130423144256.GP5019@opensource.wolfsonmicro.com>
-Date: Wed, 24 Apr 2013 15:09:38 +0530
-Message-ID: <CAKrE-KdJZHzVH-0sRkP2hyPBcn9CMiqgQBcrZTap6zwVuAhZLQ@mail.gmail.com>
-Subject: Re: [PATCH 2/3] spi: s3c64xx: Added provision for dedicated cs pin
-From: Girish KS <girishks2000@gmail.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, grant.likely@secretlab.ca,
-        t.figa@samsung.com
-Content-Type: text/plain; charset=ISO-8859-1
+From: Jiri Olsa <jolsa@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>, Borislav Petkov <bp@alien8.de>,
+        Stephane Eranian <eranian@google.com>, Sam Ravnborg <sam@ravnborg.org>,
+        David Ahern <dsahern@gmail.com>
+Subject: [PATCH 22/26] perf tools: Add NO_BIONIC variable to confiure bionic setup
+Date: Wed, 24 Apr 2013 11:37:49 +0200
+Message-Id: <1366796273-4780-23-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1366796273-4780-1-git-send-email-jolsa@redhat.com>
+References: <1366796273-4780-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 23, 2013 at 8:12 PM, Mark Brown <broonie@kernel.org> wrote:
-> On Mon, Apr 22, 2013 at 12:39:24PM +0530, Girish K S wrote:
->> From: Girish K S <girishks2000@gmail.com>
->>
->> The existing driver supports gpio based /cs signal.
->> For controller's that have one device per controller,
->> the slave device's /cs signal might be internally controlled
->> by the chip select bit of slave select register. They are not
->> externally asserted/deasserted using gpio pin.
->
-> This doesn't build:
->
-> drivers/spi/spi-s3c64xx.c: In function 's3c64xx_get_slave_ctrldata':
-> drivers/spi/spi-s3c64xx.c:1023: error: 'sdd' undeclared (first use in this function)
-> drivers/spi/spi-s3c64xx.c:1023: error: (Each undeclared identifier is reported only once
-> drivers/spi/spi-s3c64xx.c:1023: error: for each function it appears in.)
+Adding NO_BIONIC variable to confiure bionic setup
 
-Ohhhhhh. Sorry. forgot to commit the changes before patch generation
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Borislav Petkov <bp@alien8.de>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Sam Ravnborg <sam@ravnborg.org>
+Cc: David Ahern <dsahern@gmail.com>
+---
+ tools/perf/Makefile        | 4 ++++
+ tools/perf/config/Makefile | 2 ++
+ 2 files changed, 6 insertions(+)
+
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index a1fcafe..3dd25d9 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -51,6 +51,10 @@ include config/utilities.mak
+ # Define NO_BACKTRACE if you do not want stack backtrace debug feature
+ #
+ # Define NO_LIBNUMA if you do not want numa perf benchmark
++#
++# Define NO_LIBAUDIT if you do not want libaudit support
++#
++# Define NO_LIBBIONIC if you do not want bionic support
+ 
+ ifeq ($(srctree),)
+ srctree := $(patsubst %/,%,$(dir $(shell pwd)))
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index 8762209..cc464f1 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -131,11 +131,13 @@ CFLAGS += \
+ CFLAGS += \
+ 	-D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
+ 
++ifndef NO_BIONIC
+ ifeq ($(call try-cc,$(SOURCE_BIONIC),$(CFLAGS),bionic),y)
+ 	BIONIC := 1
+ 	EXTLIBS := $(filter-out -lrt,$(EXTLIBS))
+ 	EXTLIBS := $(filter-out -lpthread,$(EXTLIBS))
+ endif
++endif # NO_BIONIC
+ 
+ ifdef NO_LIBELF
+ 	NO_DWARF := 1
+-- 
+1.7.11.7
+
