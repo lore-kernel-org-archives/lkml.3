@@ -1,179 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755176Ab3DXGUq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 02:20:46 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:59728 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754876Ab3DXGUQ (ORCPT
+	id S1755487Ab3DXG0l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 02:26:41 -0400
+Received: from mail-da0-f42.google.com ([209.85.210.42]:54454 "EHLO
+	mail-da0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753359Ab3DXG0j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 02:20:16 -0400
-Subject: [PATCH v2 2/8] powerpc/pseries: Add version and timestamp to oops
- header
-To: linuxppc-dev@ozlabs.org, paulus@samba.org, linux-kernel@vger.kernel.org,
-        benh@kernel.crashing.org
-From: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
-Cc: jkenisto@linux.vnet.ibm.com, tony.luck@intel.com, ananth@in.ibm.com,
-        mahesh@linux.vnet.ibm.com, ccross@android.com, anton@samba.org,
-        cbouatmailru@gmail.com, keescook@chromium.org
-Date: Wed, 24 Apr 2013 11:50:09 +0530
-Message-ID: <20130424062008.7341.67627.stgit@aruna-ThinkPad-T420>
-In-Reply-To: <20130424061807.7341.909.stgit@aruna-ThinkPad-T420>
-References: <20130424061807.7341.909.stgit@aruna-ThinkPad-T420>
-User-Agent: StGit/0.16-41-gd1dd
+	Wed, 24 Apr 2013 02:26:39 -0400
+From: D M German <dmg@uvic.ca>
+To: Greg KH <greg@kroah.com>
+Cc: stable@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: helping with tracking commits across repos
+Organization: University of Victoria
+References: <87r4ifxzwu.fsf@mn.cs.uvic.ca> <20130412203146.GA31283@kroah.com>
+	<87r4ibpiq9.fsf@mn.cs.uvic.ca> <20130415230923.GA2417@kroah.com>
+	<87mwsznxhi.fsf@mn.cs.uvic.ca> <20130416044049.GA6162@kroah.com>
+Reply-To: dmg@uvic.ca
+Date: Tue, 23 Apr 2013 23:26:35 -0700
+In-Reply-To: <20130416044049.GA6162@kroah.com> (Greg KH's message of "Mon, 15
+	Apr 2013 21:40:49 -0700")
+Message-ID: <87k3nsv3z8.fsf@mn.cs.uvic.ca>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13042406-9574-0000-0000-0000079601F9
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce version and timestamp information in the oops header.
-oops_log_info (oops header) holds version (to distinguish between old
-and new format oops header), length of the oops text
-(compressed or uncompressed) and timestamp.
 
-The version field will sit in the same place as the length in old
-headers. version is assigned 5000 (greater than oops partition size)
-so that existing tools will refuse to dump new style partitions as
-the length is too large. The updated tools will work with both
-old and new format headers.
 
-Signed-off-by: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
-Reviewed-by: Jim Keniston <jkenisto@us.ibm.com>
----
- arch/powerpc/platforms/pseries/nvram.c |   57 +++++++++++++++++++++-----------
- 1 file changed, 38 insertions(+), 19 deletions(-)
+ Greg> On Mon, Apr 15, 2013 at 05:13:45PM -0700, D M German wrote:
+ >> 
+ >> 
+ >> Greg KH twisted the bytes to say:
+ >> 
+ >> >> http://o.cs.uvic.ca:20810/perl/next.pl
+ >> 
+ Greg> Yes, that's a great thing.  Maybe the ability to see the subject: line
+ Greg> of the commit somewhere easier than having to click through to the patch
+ Greg> would be nice, so we can just glance at the report and say, "Look at all
+ Greg> of the btrfs patches that showed up out of nowhere, what happened?"
+ >> 
+ Greg> Oh, and if you could do it for a specific kernel release, not a date
+ Greg> range, that would be nice (i.e. report for 3.9-rc1, 3.8-rc1, 3.7-rc1,
+ Greg> etc.)
+ >> 
+ >> What would be the simplest approach to getting the date? I suspect that
+ >> it can be done by doing some command line magic in Linus git repo.
 
-diff --git a/arch/powerpc/platforms/pseries/nvram.c b/arch/powerpc/platforms/pseries/nvram.c
-index e54a8b7..742735a 100644
---- a/arch/powerpc/platforms/pseries/nvram.c
-+++ b/arch/powerpc/platforms/pseries/nvram.c
-@@ -29,6 +29,13 @@
- /* Max bytes to read/write in one go */
- #define NVRW_CNT 0x20
- 
-+/*
-+ * Set oops header version to distingush between old and new format header.
-+ * lnx,oops-log partition max size is 4000, header version > 4000 will
-+ * help in identifying new header.
-+ */
-+#define OOPS_HDR_VERSION 5000
-+
- static unsigned int nvram_size;
- static int nvram_fetch, nvram_store;
- static char nvram_buf[NVRW_CNT];	/* assume this is in the first 4GB */
-@@ -67,6 +74,12 @@ static const char *pseries_nvram_os_partitions[] = {
- 	NULL
- };
- 
-+struct oops_log_info {
-+	u16 version;
-+	u16 report_length;
-+	u64 timestamp;
-+} __attribute__((packed));
-+
- static void oops_to_nvram(struct kmsg_dumper *dumper,
- 			  enum kmsg_dump_reason reason);
- 
-@@ -83,28 +96,28 @@ static unsigned long last_unread_rtas_event;	/* timestamp */
- 
-  * big_oops_buf[] holds the uncompressed text we're capturing.
-  *
-- * oops_buf[] holds the compressed text, preceded by a prefix.
-- * The prefix is just a u16 holding the length of the compressed* text.
-- * (*Or uncompressed, if compression fails.)  oops_buf[] gets written
-- * to NVRAM.
-+ * oops_buf[] holds the compressed text, preceded by a oops header.
-+ * oops header has u16 holding the version of oops header (to differentiate
-+ * between old and new format header) followed by u16 holding the length of
-+ * the compressed* text (*Or uncompressed, if compression fails.) and u64
-+ * holding the timestamp. oops_buf[] gets written to NVRAM.
-  *
-- * oops_len points to the prefix.  oops_data points to the compressed text.
-+ * oops_log_info points to the header. oops_data points to the compressed text.
-  *
-  * +- oops_buf
-- * |		+- oops_data
-- * v		v
-- * +------------+-----------------------------------------------+
-- * | length	| text                                          |
-- * | (2 bytes)	| (oops_data_sz bytes)                          |
-- * +------------+-----------------------------------------------+
-+ * |                                   +- oops_data
-+ * v                                   v
-+ * +-----------+-----------+-----------+------------------------+
-+ * | version   | length    | timestamp | text                   |
-+ * | (2 bytes) | (2 bytes) | (8 bytes) | (oops_data_sz bytes)   |
-+ * +-----------+-----------+-----------+------------------------+
-  * ^
-- * +- oops_len
-+ * +- oops_log_info
-  *
-  * We preallocate these buffers during init to avoid kmalloc during oops/panic.
-  */
- static size_t big_oops_buf_sz;
- static char *big_oops_buf, *oops_buf;
--static u16 *oops_len;
- static char *oops_data;
- static size_t oops_data_sz;
- 
-@@ -425,9 +438,8 @@ static void __init nvram_init_oops_partition(int rtas_partition_exists)
- 						oops_log_partition.name);
- 		return;
- 	}
--	oops_len = (u16*) oops_buf;
--	oops_data = oops_buf + sizeof(u16);
--	oops_data_sz = oops_log_partition.size - sizeof(u16);
-+	oops_data = oops_buf + sizeof(struct oops_log_info);
-+	oops_data_sz = oops_log_partition.size - sizeof(struct oops_log_info);
- 
- 	/*
- 	 * Figure compression (preceded by elimination of each line's <n>
-@@ -555,6 +567,7 @@ error:
- /* Compress the text from big_oops_buf into oops_buf. */
- static int zip_oops(size_t text_len)
- {
-+	struct oops_log_info *oops_hdr = (struct oops_log_info *)oops_buf;
- 	int zipped_len = nvram_compress(big_oops_buf, oops_data, text_len,
- 								oops_data_sz);
- 	if (zipped_len < 0) {
-@@ -562,7 +575,9 @@ static int zip_oops(size_t text_len)
- 		pr_err("nvram: logging uncompressed oops/panic report\n");
- 		return -1;
- 	}
--	*oops_len = (u16) zipped_len;
-+	oops_hdr->version = OOPS_HDR_VERSION;
-+	oops_hdr->report_length = (u16) zipped_len;
-+	oops_hdr->timestamp = get_seconds();
- 	return 0;
- }
- 
-@@ -576,6 +591,7 @@ static int zip_oops(size_t text_len)
- static void oops_to_nvram(struct kmsg_dumper *dumper,
- 			  enum kmsg_dump_reason reason)
- {
-+	struct oops_log_info *oops_hdr = (struct oops_log_info *)oops_buf;
- 	static unsigned int oops_count = 0;
- 	static bool panicking = false;
- 	static DEFINE_SPINLOCK(lock);
-@@ -622,11 +638,14 @@ static void oops_to_nvram(struct kmsg_dumper *dumper,
- 		kmsg_dump_get_buffer(dumper, false,
- 				     oops_data, oops_data_sz, &text_len);
- 		err_type = ERR_TYPE_KERNEL_PANIC;
--		*oops_len = (u16) text_len;
-+		oops_hdr->version = OOPS_HDR_VERSION;
-+		oops_hdr->report_length = (u16) text_len;
-+		oops_hdr->timestamp = get_seconds();
- 	}
- 
- 	(void) nvram_write_os_partition(&oops_log_partition, oops_buf,
--		(int) (sizeof(*oops_len) + *oops_len), err_type, ++oops_count);
-+		(int) (sizeof(*oops_hdr) + oops_hdr->report_length), err_type,
-+		++oops_count);
- 
- 	spin_unlock_irqrestore(&lock, flags);
- }
+ Greg> You want to look at the commits from the last major release (i.e. 3.8)
+ Greg> to the -rc1 release, (i.e. 3.9-rc1).  You can't look at the dates,
+ Greg> that's not going to reflect when the patch landed in Linus's branch.
 
+Hi Greg,
+
+It took me longer than expected, but I finally got it working.
+
+I have a heuristic to estimate when a commit is merged by Linus. It
+seems to work well in commits since 2008. 
+
+The commits that mark the releases are nicely labeled by Linus.  Since I
+know in which commit any commit is merged by Linus I can determine what
+release the commit is part of. 
+
+Take a look:
+
+http://o.cs.uvic.ca:20810/perl/next.pl
+
+It is only doing 2013, but if needed, I can expand the range of
+dates. Is suspect older are not that interesting any more.
+
+I still have to "cron" the update of some data to fully do this report
+automatically. I hope to do that very soon.
+
+It will help to have some extra eyes. If anybody finds a bug please let
+me know.
+
+I also improved some of the other reports to include the log of the
+commit whenever is makes sense.
+
+I haven't tried the suggestions on how to reduce space... that is my
+next goal.
+
+--daniel
+
+--
+Daniel M. German                  "Beauty is the first test; there is no
+                                   permanent place in the world for ugly
+   G. H. Hardy ->                  mathematics."
+http://turingmachine.org/
+http://silvernegative.com/
+dmg (at) uvic (dot) ca
+replace (at) with @ and (dot) with .
+
+ 
