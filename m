@@ -1,79 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758104Ab3DXIcb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 04:32:31 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:41132 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756672Ab3DXIc3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 04:32:29 -0400
-X-Spam-Score: -100.8
-Message-ID: <5177986E.9020105@asianux.com>
-Date: Wed, 24 Apr 2013 16:31:42 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1758111Ab3DXIdx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 04:33:53 -0400
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:2843 "EHLO
+	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755405Ab3DXIdu convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 04:33:50 -0400
+From: "Dolkow, Snild" <Snild.Dolkow@sonymobile.com>
+To: "'David Rientjes'" <rientjes@google.com>,
+        =?iso-8859-1?Q?=22Ander=F6=2C_Oskar=22?= 
+	<Oskar.Andero@sonymobile.com>
+CC: Dan Carpenter <dan.carpenter@oracle.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Brian Swetland <swetland@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Lekanovic, Radovan" <Radovan.Lekanovic@sonymobile.com>
+Date: Wed, 24 Apr 2013 10:33:44 +0200
+Subject: RE: [PATCH] lowmemorykiller: prevent multiple instances of low
+ memory killer
+Thread-Topic: [PATCH] lowmemorykiller: prevent multiple instances of low
+ memory killer
+Thread-Index: Ac463QrocOiBwXTaTrGyHke7wMw4egF4ouCg
+Message-ID: <D949F1A1ED65354FA281790D817657A4A4BF33CCC1@seldmbx01.corpusers.net>
+References: <1366031009-21958-1-git-send-email-oskar.andero@sonymobile.com>
+ <20130415131815.GG6638@mwanda>
+ <D949F1A1ED65354FA281790D817657A4A4BF33CC83@seldmbx01.corpusers.net>
+ <20130415141358.GO6692@mwanda>
+ <20130415150356.GA22161@caracas.corpusers.net>
+ <D949F1A1ED65354FA281790D817657A4A4BF33CC84@seldmbx01.corpusers.net>
+ <20130415194947.GA26557@kroah.com>
+ <alpine.DEB.2.02.1304151608040.13614@chino.kir.corp.google.com>
+ <20130416061904.GH6638@mwanda>
+ <20130416105950.GB22161@caracas.corpusers.net>
+ <alpine.DEB.2.02.1304161254270.30779@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.02.1304161254270.30779@chino.kir.corp.google.com>
+Accept-Language: en-US, sv-SE
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US, sv-SE
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-To: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
-CC: "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>,
-        Michael Neuling <mikey@neuling.org>, linuxppc-dev@lists.ozlabs.org,
-        paulus@samba.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arch/powerpc/kernel: using %12.12s instead of %12s for
- avoiding memory overflow.
-References: <5100B53C.3030109@asianux.com> <512055D0.7050100@asianux.com> <514FD2E0.5030805@asianux.com> <51778D97.4080409@asianux.com> <51779491.10307@linux.vnet.ibm.com> <51779588.1070203@linux.vnet.ibm.com>
-In-Reply-To: <51779588.1070203@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013年04月24日 16:19, Vasant Hegde wrote:
->>>>>>     for tmp_part->header.name:
->>>>>> >>>>>       it is "Terminating null required only for names<   12 chars".
->>>>>> >>>>>       so need to limit the %.12s for it in printk
->>>>>> >>>>>
->>>>>> >>>>>     additional info:
->>>>>> >>>>>
->>>>>> >>>>>       %12s  limit the width, not for the original string output length
->>>>>> >>>>>             if name length is more than 12, it still can be fully displayed.
->>>>>> >>>>>             if name length is less than 12, the ' ' will be filled before name.
->>>>>> >>>>>
->>>>>> >>>>>       %.12s truly limit the original string output length (precision)
->>>>>> >>>>>
->>>>>> >>>>>
->>>>>> >>>>> Signed-off-by: Chen Gang<gang.chen@asianux.com>
->>>>>> >>>>> ---
->>>>>> >>>>>    arch/powerpc/kernel/nvram_64.c |    2 +-
->>>>>> >>>>>    1 file changed, 1 insertion(+), 1 deletion(-)
->>>>>> >>>>>
->>>>>> >>>>> diff --git a/arch/powerpc/kernel/nvram_64.c b/arch/powerpc/kernel/nvram_64.c
->>>>>> >>>>> index bec1e93..57bf6d2 100644
->>>>>> >>>>> --- a/arch/powerpc/kernel/nvram_64.c
->>>>>> >>>>> +++ b/arch/powerpc/kernel/nvram_64.c
->>>>>> >>>>> @@ -202,7 +202,7 @@ static void __init nvram_print_partitions(char * label)
->>>>>> >>>>>    	printk(KERN_WARNING "--------%s---------\n", label);
->>>>>> >>>>>    	printk(KERN_WARNING "indx\t\tsig\tchks\tlen\tname\n");
->>>>>> >>>>>    	list_for_each_entry(tmp_part,&nvram_partitions, partition) {
->>>>>> >>>>> -		printk(KERN_WARNING "%4d    \t%02x\t%02x\t%d\t%12s\n",
->>>>>> >>>>> +		printk(KERN_WARNING "%4d    \t%02x\t%02x\t%d\t%12.12s\n",
->> > 
->> > First, this code in inside NVRAM_DEBUG which is used only for debug purpose and
->> > AFAIK, all partition names are less than 20 character. So I don't think we need
-> Sorry.. I meant 12 character.
+> No, it's not.  This is controlled higher in shrink_slab() by this:
+>
+>	max_pass = do_shrinker_shrink(shrinker, shrink, 0);
+>	if (max_pass <= 0)
+>		continue;
+>
 
-Please see line 283:
-  "strncpy(part->header.name, "wwwwwwwwwwww", 12);"
-  (it is not a NUL terminated string, and the length is 12)
+Yes, but the later calls will still not handle other negative values as failures, and there is a chance that more than one thread will get past that first check. 
 
-And also, can we be sure that all partition names should be less than 12
-characters ?
+286		nr_before = do_shrinker_shrink(shrinker, shrink, 0);
+287		shrink_ret = do_shrinker_shrink(shrinker, shrink,
+288						batch_size);
+289		if (shrink_ret == -1)
+290			break;
+291		if (shrink_ret < nr_before)
+292			ret += nr_before - shrink_ret;
 
-All together, I think we still need %12.12s to protect the memory.
+If, for example, nr_before happens to be -2 and shrink_ret happens to be -1000 here, we're going to erroneously increase ret by 998.
 
-Thanks.
+> and your patch is implemented incorrectly, i.e. it does not return 
+> LMK_BUSY if the spinlock is contended which needlessly recalls the 
+> shrinker later.
 
--- 
-Chen Gang
+It's worth noting that the LMK has a fastpath for the nr_to_scan=0 case, like the shrinker.h comment recommends. And nr_to_scan=0 is used to query the cache size, so it seems like a good idea to return successfully whenever we can.
 
-Asianux Corporation
+> You have a couple of options:
+>
+>  - return -1 when the spinlock is contended immediately when
+>    !sc->nr_to_scan (although it should really be a cmpxchg since a
+>    spinlock isn't needed), or
+
+This comes with the risk of nr_before being -1, and shrink_ret being positive. In that case, we will have sent a kill signal, but we're not increasing ret. Not a catastrophe, AFAICT, but not fantastic either.
+
+>  - protect the for_each_process() loop in lowmem_shrink() with an
+>    actual spinlock that will detect any previously killed process
+>    since it will have the TIF_MEMDIE bit set.
+
+We expect that killing one process will be enough, so spinning seems like a waste of time. If one process wasn't enough, the LMK will trigger again soon.
+
+//Snild
