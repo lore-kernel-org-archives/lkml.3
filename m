@@ -1,92 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755880Ab3DXO0z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 10:26:55 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:55262 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755199Ab3DXO0y (ORCPT
+	id S1756021Ab3DXO3d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 10:29:33 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:36104 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755456Ab3DXO3a convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 10:26:54 -0400
-Date: Wed, 24 Apr 2013 17:26:15 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-CC: Lee Jones <lee.jones@linaro.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <arnd@arndb.de>,
-        <linus.walleij@stericsson.com>, <mian.yousaf.kaukab@stericsson.com>,
-        Felipe Balbi <balbi@ti.com>, <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH 04/10] usb: musb: ux500: harden checks for platform data
-Message-ID: <20130424142615.GF23081@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1366729394-11406-1-git-send-email-lee.jones@linaro.org>
- <1366729394-11406-5-git-send-email-lee.jones@linaro.org>
- <5176E927.908@cogentembedded.com>
- <20130424065344.GB17416@gmail.com>
- <5177E57C.3010802@cogentembedded.com>
+	Wed, 24 Apr 2013 10:29:30 -0400
+From: James Bottomley <jbottomley@parallels.com>
+To: Jens Axboe <axboe@kernel.dk>
+CC: Namjae Jeon <linkinjeon@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Subject: Re: [PATCH] block: fix max discard sectors limit
+Thread-Topic: [PATCH] block: fix max discard sectors limit
+Thread-Index: AQHOQPNjOY9PP2kNxE+HkpJoT/qqgpjl4goAgAABqAA=
+Date: Wed, 24 Apr 2013 14:29:29 +0000
+Message-ID: <1366813768.1971.2.camel@dabdike>
+References: <1366811721-2478-1-git-send-email-linkinjeon@gmail.com>
+	 <20130424142332.GD2759@kernel.dk>
+In-Reply-To: <20130424142332.GD2759@kernel.dk>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [24.18.112.117]
+Content-Type: text/plain; charset=US-ASCII
+Content-ID: <FBE76C8955900848AE7552020E2C418E@sw.swsoft.com>
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ULyIDA2m8JTe+TiX"
-Content-Disposition: inline
-In-Reply-To: <5177E57C.3010802@cogentembedded.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---ULyIDA2m8JTe+TiX
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, 2013-04-24 at 08:23 -0600, Jens Axboe wrote:
+> On Wed, Apr 24 2013, Namjae Jeon wrote:
+> > From: James Bottomley <JBottomley@Parallels.com>
+> > 
+> > linux-v3.8-rc1 and later support for plug for blkdev_issue_discard with
+> > commit 0cfbcafcae8b7364b5fa96c2b26ccde7a3a296a9
+> > (block: add plug for blkdev_issue_discard )
+> > 
+> > For example,
+> > 1) DISCARD rq-1 with size size 4GB
+> > 2) DISCARD rq-2 with size size 1GB
+> > 
+> > If these 2 discard requests get merged, final request size will be 5GB.
+> > 
+> > In this case, request's __data_len field may overflow as it can store
+> > max 4GB(unsigned int).
+> > 
+> > This issue was observed while doing mkfs.f2fs on 5GB SD card:
+> > https://lkml.org/lkml/2013/4/1/292
+> > 
+> > Info: sector size = 512
+> > Info: total sectors = 11370496 (in 512bytes)
+> > Info: zone aligned segment0 blkaddr: 512
+> > [  257.789764] blk_update_request: bio idx 0 >= vcnt 0
+> > 
+> > mkfs process gets stuck in D state and I see the following in the dmesg:
+> > 
+> > [  257.789733] __end_that: dev mmcblk0: type=1, flags=122c8081
+> > [  257.789764]   sector 4194304, nr/cnr 2981888/4294959104
+> > [  257.789764]   bio df3840c0, biotail df3848c0, buffer   (null), len
+> > 1526726656
+> > [  257.789764] blk_update_request: bio idx 0 >= vcnt 0
+> > [  257.794921] request botched: dev mmcblk0: type=1, flags=122c8081
+> > [  257.794921]   sector 4194304, nr/cnr 2981888/4294959104
+> > [  257.794921]   bio df3840c0, biotail df3848c0, buffer   (null), len
+> > 1526726656
+> > 
+> > This patch fixes this issue.
+> > 
+> > Reported-by: Max Filippov <jcmvbkbc@gmail.com>
+> > Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+> > Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+> > Tested-by: Max Filippov <jcmvbkbc@gmail.com>
+> > Cc: <stable@vger.kernel.org>
+> 
+> Thanks! One minor nit - I don't think James signed off on the patch when
+> he sent it in. James?
 
-On Wed, Apr 24, 2013 at 06:00:28PM +0400, Sergei Shtylyov wrote:
-> Hello.
->=20
-> On 24-04-2013 10:53, Lee Jones wrote:
->=20
-> >>>  	struct musb_hdrc_platform_data *plat =3D dev->platform_data;
-> >>>-	struct ux500_musb_board_data *data =3D plat->board_data;
-> >>>+	struct ux500_musb_board_data *data;
->=20
-> >>>-	param_array =3D data->dma_rx_param_array;
-> >>>+	param_array =3D (data) ? data->dma_rx_param_array : NULL;
->=20
-> >>    Why enclose a simple variable in parens?
->=20
-> >Because 'data' is a pointer, so it contains a memory location,
+I didn't, but silence is really acquiescence in this game. However, now
+you have my positive confirmation that I'm good with the signoff.
 
-heh, I don't think you fully understood Sergei's comment. He's asking
-why you used:
+James
 
-	param_array =3D (data) ? data->dma_rx_param_array : NULL;
-
-instead of:
-
-	param_array =3D data ? data->dma_rx_param_array : NULL;
-
-He's saying, correctly so, that the parens around data is unnecessary.
-
---=20
-balbi
-
---ULyIDA2m8JTe+TiX
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRd+uHAAoJEIaOsuA1yqRE714P/1FAnbBlWsb/LahkYHVnSpLc
-6IYdOtQP7CIYthBvAwrNj26C0BP7CXMI439UbFGS2rGI5o6pd9jVrADqvTdTnv/A
-/OL8IAE1nQ7o+A3RyzE+pSSqPXiiZEAErVGYtxFGLr/RvAgC0P2lvQtpjlKj+U+S
-E+XIRiZSNNK5A2kwPML6TGBfEDA4GP7wkdvpojiBMhCqW4ZARd/ekaQLydOAdP/0
-lHaUi6OK4BspKjoFis5kUnLaum4N9n2wlyMJVnXeKu1me+yMvElbEF9gQ9eznWkY
-un3ucPfG7Bao8darkAju4etXbSMBtNNkvugG39k8bYtjoz71RBzdC57rKyetDuyl
-UTwGxm767RPuePsvrFxl7Go5l1bLzgG2hvQcZFD1yoWVtDRp8QiWQQ9I8PNeYwFs
-Ul0eoHy8fcOKUnn1jIJ1vy9QZ9kycXJbBMsY0zoYTBd9uDA31vpQ91OeRjY8rskU
-jX0KjlaTSoOPMvLneGQgSEgmeSriOzQVULzajcsiWf5XeuC76y4hcKNuJ3KruZkf
-VthW9Fy0orbptNsO2czJUofUOItKFkaw1drrcxnMut2QbfhOMWA2BqiZUKfcP5zD
-CywVTPRFTeNn1GWjK5UY+1zmipz8H6jhHp/29pk47xrLJn9xzQZaxFsZzCvquh5T
-+kT/mS/mVUf4+o1gVkRQ
-=dnz2
------END PGP SIGNATURE-----
-
---ULyIDA2m8JTe+TiX--
