@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932364Ab3DXXJk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 19:09:40 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:49064 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932156Ab3DXXJh (ORCPT
+	id S932399Ab3DXXJp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 19:09:45 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:38511 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932356Ab3DXXJk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 19:09:37 -0400
-X-AuditID: 85900ec0-d38c8b900000151e-4d-5178662f4577
-Subject: [PATCH V3 1/3] trace-cmd: Define general functions for
- outputting/inputting saved_cmdlines
+	Wed, 24 Apr 2013 19:09:40 -0400
+X-AuditID: 85900ec0-d42c9b900000151e-4e-517866324102
+Subject: [PATCH V3 2/3] trace-cmd: Add recording to trace_clock
 To: Steven Rostedt <rostedt@goodmis.org>
 From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
 Cc: Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         linux-kernel@vger.kernel.org, yrl.pp-manager.tt@hitachi.com
-Date: Thu, 25 Apr 2013 08:13:00 +0900
-Message-ID: <20130424231300.14877.78439.stgit@yunodevel>
+Date: Thu, 25 Apr 2013 08:13:02 +0900
+Message-ID: <20130424231302.14877.24340.stgit@yunodevel>
 In-Reply-To: <20130424231257.14877.77172.stgit@yunodevel>
 References: <20130424231257.14877.77172.stgit@yunodevel>
 User-Agent: StGit/0.16
@@ -28,187 +27,107 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, trace-cmd outputs data of saved_cmdlines to a trace.dat file
-in create_file_fd() and inputs the data from the file in tracecmd_init_data().
-On the other hand, trace-cmd will also output and input data of trace_clock in
-those functions in the patch "trace-cmd: Add recording to trace_clock" and
-"Add support for extracting trace_clock in report".
+In this patch, trace-cmd reads trace_clock on debugfs in the record mode and
+outputs the data to trace.dat file. This patch defines a flag
+TRACECMD_OPTION_TRACECLOCK for using the option feature. For supporting
+multiple buffers, this patch doesn't store data of trace_clock when trace-cmd
+adds the flag to trace.dat. This is because the flag is globally used, but
+trace_clock can be changed for each buffer. So, this patch stores data of
+trace_clock after adding data information of each CPU. The binary format
+of trace.data is changed as follows:
 
-The source code of the output/input of saved_cmdlines data can be reused when
-extract trace_clock, so we define general functions for outputting/inputting a
-file on debugfs.
+<Current binary format>
+...
+"flyrecord"                     -----+
+[total cpu numer]                    |
+[file offset and size of cpu0]       |
+...                                  +--- info. of normal buffer
+[file offset and size of cpuX]       |
+--skip--                             |
+[data of CPU0]                       |
+...                             -----+
+--skip--
+"flyrecord"                     -----+
+[total cpu numer]                    |
+[file offset and size of cpu0]       |
+...                                  +--- info. of sub-buffer
+[file offset and size of cpuX]       |
+--skip--                             |
+[data of CPU0]                       |
+...                             -----+
 
-Change in v3:
- - a file variable in save_tracing_file_data() is freed when operation is failed
- - check the return value of get_tracing_file() in save_tracing_file_data()
+<Changed binary format>
+...
+"flyrecord"                     -----+
+[total cpu numer]                    |
+[file offset and size of cpu0]       |
+...                                  +--- info. of normal buffer
+[file offset and size of cpuX]       |
+[size of trace_clock]  <== add       |
+[trace_clock contents] <== add       |
+--skip--                             |
+[data of CPU0]                       |
+...                             -----+
+--skip--
+"flyrecord"                     -----+
+[total cpu numer]                    |
+[file offset and size of cpu0]       |
+...                                  +--- info. of sub-buffer
+[file offset and size of cpuX]       |
+[size of trace_clock]  <== add       |
+[trace_clock contents] <== add       |
+--skip--                             |
+[data of CPU0]                       |
+...                             -----+
+
+Changes in v2:
+ - Define TRACECMD_OPTION_TRACECLOCK for extracting trace_clock
 
 Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
 ---
- trace-input.c  |   46 ++++++++++++++++++++++++++------------
- trace-output.c |   68 ++++++++++++++++++++++++++++++++++----------------------
- 2 files changed, 73 insertions(+), 41 deletions(-)
+ trace-cmd.h    |    1 +
+ trace-output.c |    3 +++
+ trace-record.c |    3 +++
+ 3 files changed, 7 insertions(+)
 
-diff --git a/trace-input.c b/trace-input.c
-index 56a8e8d..232015a 100644
---- a/trace-input.c
-+++ b/trace-input.c
-@@ -1870,6 +1870,37 @@ static int read_cpu_data(struct tracecmd_input *handle)
+diff --git a/trace-cmd.h b/trace-cmd.h
+index 116c2f6..0745dad 100644
+--- a/trace-cmd.h
++++ b/trace-cmd.h
+@@ -81,6 +81,7 @@ enum {
+ 	TRACECMD_OPTION_DATE,
+ 	TRACECMD_OPTION_CPUSTAT,
+ 	TRACECMD_OPTION_BUFFER,
++	TRACECMD_OPTION_TRACECLOCK,
+ };
  
- }
- 
-+static int read_data_and_size(struct tracecmd_input *handle,
-+				     char **data, unsigned long long *size)
-+{
-+	*size = read8(handle);
-+	if (*size < 0)
-+		return -1;
-+	*data = malloc(*size + 1);
-+	if (!*data)
-+		return -1;
-+	if (do_read_check(handle, *data, *size)) {
-+		free(*data);
-+		return -1;
-+	}
-+
-+	return 0;
-+}
-+
-+static int read_and_parse_cmdlines(struct tracecmd_input *handle,
-+							struct pevent *pevent)
-+{
-+	unsigned long long size;
-+	char *cmdlines;
-+
-+	if (read_data_and_size(handle, &cmdlines, &size) < 0)
-+		return -1;
-+	cmdlines[size] = 0;
-+	parse_cmdlines(pevent, cmdlines, size);
-+	free(cmdlines);
-+	return 0;
-+}
-+
- /**
-  * tracecmd_init_data - prepare reading the data from trace.dat
-  * @handle: input handle for the trace.dat file
-@@ -1880,23 +1911,10 @@ static int read_cpu_data(struct tracecmd_input *handle)
- int tracecmd_init_data(struct tracecmd_input *handle)
- {
- 	struct pevent *pevent = handle->pevent;
--	unsigned long long size;
--	char *cmdlines;
- 	int ret;
- 
--	size = read8(handle);
--	if (size < 0)
--		return -1;
--	cmdlines = malloc(size + 1);
--	if (!cmdlines)
-+	if (read_and_parse_cmdlines(handle, pevent) < 0)
- 		return -1;
--	if (do_read_check(handle, cmdlines, size)) {
--		free(cmdlines);
--		return -1;
--	}
--	cmdlines[size] = 0;
--	parse_cmdlines(pevent, cmdlines, size);
--	free(cmdlines);
- 
- 	handle->cpus = read4(handle);
- 	if (handle->cpus < 0)
+ enum {
 diff --git a/trace-output.c b/trace-output.c
-index 460b773..cc71adf 100644
+index cc71adf..bdb478d 100644
 --- a/trace-output.c
 +++ b/trace-output.c
-@@ -687,6 +687,45 @@ static int read_ftrace_printk(struct tracecmd_output *handle)
- 	return -1;
- }
+@@ -1067,6 +1067,9 @@ static int __tracecmd_append_cpu_data(struct tracecmd_output *handle,
+ 			goto out_free;
+ 	}
  
-+static int save_tracing_file_data(struct tracecmd_output *handle,
-+						const char *filename)
-+{
-+	unsigned long long endian8;
-+	char *file = NULL;
-+	struct stat st;
-+	off64_t check_size;
-+	off64_t size;
-+	int ret = -1;
-+
-+	file = get_tracing_file(handle, filename);
-+	if (!file)
-+		return -1;
-+
-+	ret = stat(file, &st);
-+	if (ret >= 0) {
-+		size = get_size(file);
-+		endian8 = convert_endian_8(handle, size);
-+		if (do_write_check(handle, &endian8, 8))
-+			goto out_free;
-+		check_size = copy_file(handle, file);
-+		if (size != check_size) {
-+			errno = EINVAL;
-+			warning("error in size of file '%s'", file);
-+			goto out_free;
-+		}
-+	} else {
-+		size = 0;
-+		endian8 = convert_endian_8(handle, size);
-+		if (do_write_check(handle, &endian8, 8))
-+			goto out_free;
-+	}
-+	ret = 0;
-+
-+out_free:
-+	put_tracing_file(file);
-+	return ret;
-+}
-+
- static struct tracecmd_output *
- create_file_fd(int fd, struct tracecmd_input *ihandle,
- 	       const char *tracing_dir,
-@@ -694,15 +733,9 @@ create_file_fd(int fd, struct tracecmd_input *ihandle,
- 	       struct tracecmd_event_list *list)
- {
- 	struct tracecmd_output *handle;
--	unsigned long long endian8;
- 	struct pevent *pevent;
- 	char buf[BUFSIZ];
--	char *file = NULL;
--	struct stat st;
--	off64_t check_size;
--	off64_t size;
- 	int endian4;
--	int ret;
- 
- 	handle = malloc(sizeof(*handle));
- 	if (!handle)
-@@ -775,27 +808,8 @@ create_file_fd(int fd, struct tracecmd_input *ihandle,
- 	/*
- 	 * Save the command lines;
- 	 */
--	file = get_tracing_file(handle, "saved_cmdlines");
--	ret = stat(file, &st);
--	if (ret >= 0) {
--		size = get_size(file);
--		endian8 = convert_endian_8(handle, size);
--		if (do_write_check(handle, &endian8, 8))
--			goto out_free;
--		check_size = copy_file(handle, file);
--		if (size != check_size) {
--			errno = EINVAL;
--			warning("error in size of file '%s'", file);
--			goto out_free;
--		}
--	} else {
--		size = 0;
--		endian8 = convert_endian_8(handle, size);
--		if (do_write_check(handle, &endian8, 8))
--			goto out_free;
--	}
--	put_tracing_file(file);
--	file = NULL;
-+	if (save_tracing_file_data(handle, "saved_cmdlines") < 0)
++	if (save_tracing_file_data(handle, "trace_clock") < 0)
 +		goto out_free;
++
+ 	for (i = 0; i < cpus; i++) {
+ 		fprintf(stderr, "CPU%d data recorded at offset=0x%llx\n",
+ 			i, (unsigned long long) offsets[i]);
+diff --git a/trace-record.c b/trace-record.c
+index 0025cf3..407576f 100644
+--- a/trace-record.c
++++ b/trace-record.c
+@@ -1804,6 +1804,9 @@ static void record_data(char *date2ts, struct trace_seq *s)
+ 			tracecmd_add_option(handle, TRACECMD_OPTION_CPUSTAT,
+ 					    s[i].len+1, s[i].buffer);
  
- 	return handle;
- 
++		tracecmd_add_option(handle, TRACECMD_OPTION_TRACECLOCK,
++				    0, NULL);
++
+ 		if (buffers) {
+ 			buffer_options = malloc_or_die(sizeof(*buffer_options) * buffers);
+ 			i = 0;
 
