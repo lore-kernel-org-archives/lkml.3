@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757464Ab3DXCoM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 22:44:12 -0400
-Received: from mail-bk0-f52.google.com ([209.85.214.52]:36825 "EHLO
-	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756598Ab3DXCoK (ORCPT
+	id S1757173Ab3DXCqa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 22:46:30 -0400
+Received: from mail-bk0-f51.google.com ([209.85.214.51]:47005 "EHLO
+	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756197Ab3DXCq3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 22:44:10 -0400
+	Tue, 23 Apr 2013 22:46:29 -0400
 MIME-Version: 1.0
-Date: Wed, 24 Apr 2013 10:44:08 +0800
-Message-ID: <CAPgLHd8zemyHf9j18qUrB4DUD8Qfn5PNj+KM7YVqL0RxHSVbzw@mail.gmail.com>
-Subject: [PATCH -next v2] gpu: host1x: gr2d: fix error return code in gr2d_submit()
+Date: Wed, 24 Apr 2013 10:46:24 +0800
+Message-ID: <CAPgLHd84cboeucog+YNdHvGqTfTROujDKZgSkh3o0B-Q93ee2A@mail.gmail.com>
+Subject: [PATCH -next] x86/olpc/xo1/sci: don't call input_free_device() after input_unregister_device()
 From: Wei Yongjun <weiyj.lk@gmail.com>
-To: grant.likely@linaro.org, rob.herring@calxeda.com,
-        thierry.reding@avionic-design.de, tbergstrom@nvidia.com,
-        amerilainen@nvidia.com
-Cc: yongjun_wei@trendmicro.com.cn, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org
+To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, dsd@laptop.org,
+        pgf@laptop.org, gregkh@linuxfoundation.org
+Cc: yongjun_wei@trendmicro.com.cn, x86@kernel.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,42 +23,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-Fix to return -EINVAL in the host1x_bo lookup error handling
-case instead of 0, as done elsewhere in this function.
+input_free_device() should only be used if input_register_device()
+was not called yet or if it failed. Once device was unregistered
+use input_unregister_device() and memory will be freed once last
+reference to the device is dropped.
 
 Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 ---
-v1 -> v2: fix the patch subject
----
- drivers/gpu/host1x/drm/gr2d.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ arch/x86/platform/olpc/olpc-xo1-sci.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/drivers/gpu/host1x/drm/gr2d.c b/drivers/gpu/host1x/drm/gr2d.c
-index 6a45ae0..146cd64 100644
---- a/drivers/gpu/host1x/drm/gr2d.c
-+++ b/drivers/gpu/host1x/drm/gr2d.c
-@@ -135,8 +135,10 @@ static int gr2d_submit(struct host1x_drm_context *context,
- 			goto fail;
+diff --git a/arch/x86/platform/olpc/olpc-xo1-sci.c b/arch/x86/platform/olpc/olpc-xo1-sci.c
+index 74704be..9a2e590 100644
+--- a/arch/x86/platform/olpc/olpc-xo1-sci.c
++++ b/arch/x86/platform/olpc/olpc-xo1-sci.c
+@@ -460,7 +460,6 @@ static int setup_power_button(struct platform_device *pdev)
+ static void free_power_button(void)
+ {
+ 	input_unregister_device(power_button_idev);
+-	input_free_device(power_button_idev);
+ }
  
- 		bo = host1x_bo_lookup(drm, file, cmdbuf.handle);
--		if (!bo)
-+		if (!bo) {
-+			err = -EINVAL;
- 			goto fail;
-+		}
+ static int setup_ebook_switch(struct platform_device *pdev)
+@@ -491,7 +490,6 @@ static int setup_ebook_switch(struct platform_device *pdev)
+ static void free_ebook_switch(void)
+ {
+ 	input_unregister_device(ebook_switch_idev);
+-	input_free_device(ebook_switch_idev);
+ }
  
- 		host1x_job_add_gather(job, bo, cmdbuf.words, cmdbuf.offset);
- 		num_cmdbufs--;
-@@ -158,8 +160,10 @@ static int gr2d_submit(struct host1x_drm_context *context,
- 		reloc->cmdbuf = cmdbuf;
- 		reloc->target = target;
+ static int setup_lid_switch(struct platform_device *pdev)
+@@ -526,6 +524,7 @@ static int setup_lid_switch(struct platform_device *pdev)
  
--		if (!reloc->target || !reloc->cmdbuf)
-+		if (!reloc->target || !reloc->cmdbuf) {
-+			err = -EINVAL;
- 			goto fail;
-+		}
- 	}
+ err_create_attr:
+ 	input_unregister_device(lid_switch_idev);
++	lid_switch_idev = NULL;
+ err_register:
+ 	input_free_device(lid_switch_idev);
+ 	return r;
+@@ -535,7 +534,6 @@ static void free_lid_switch(void)
+ {
+ 	device_remove_file(&lid_switch_idev->dev, &dev_attr_lid_wake_mode);
+ 	input_unregister_device(lid_switch_idev);
+-	input_free_device(lid_switch_idev);
+ }
  
- 	err = copy_from_user(job->waitchk, waitchks,
+ static int xo1_sci_probe(struct platform_device *pdev)
 
