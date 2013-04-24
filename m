@@ -1,70 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757709Ab3DXHbn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 03:31:43 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:59165 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757689Ab3DXHbl (ORCPT
+	id S1757754Ab3DXHdG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 03:33:06 -0400
+Received: from mail-ea0-f178.google.com ([209.85.215.178]:37494 "EHLO
+	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757734Ab3DXHdE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 03:31:41 -0400
+	Wed, 24 Apr 2013 03:33:04 -0400
+Date: Wed, 24 Apr 2013 09:32:59 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Chris Metcalf <cmetcalf@tilera.com>,
+        Christoph Lameter <cl@linux.com>, Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@linaro.org>,
+        Li Zhong <zhong@linux.vnet.ibm.com>, Oleg Nesterov <oleg@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [GIT PULL] nohz: Adaptively stop the tick, finally
+Message-ID: <20130424073259.GC1780@gmail.com>
+References: <1366657186-20556-1-git-send-email-fweisbec@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20130422141621.384eb93a6a8f3d441cd1a991@linux-foundation.org>
-References: <1366225776.8817.28.camel@pippen.local.home>
-	<alpine.DEB.2.02.1304171702380.24494@chino.kir.corp.google.com>
-	<20130422134415.32c7f2cac07c924bff3017a4@linux-foundation.org>
-	<1366664301.9609.140.camel@gandalf.local.home>
-	<20130422141621.384eb93a6a8f3d441cd1a991@linux-foundation.org>
-Date: Wed, 24 Apr 2013 10:31:40 +0300
-X-Google-Sender-Auth: ZI99XzuVRT4haF9bkgllrsYB6vE
-Message-ID: <CAOJsxLEFaAtKEvN4cRSDj7Pao5gbHv7K9fO0REhhhbsmUbgbmg@mail.gmail.com>
-Subject: Re: [PATCH] slab: Remove unnecessary __builtin_constant_p()
-From: Pekka Enberg <penberg@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, David Rientjes <rientjes@google.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Christoph Lameter <cl@linux.com>,
-        Behan Webster <behanw@converseincode.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1366657186-20556-1-git-send-email-fweisbec@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
 
-On Tue, Apr 23, 2013 at 12:16 AM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> The patch made index_of() weaker!
->
-> It's probably all a bit academic, given that linux-next does
->
-> -/*
-> - * This function must be completely optimized away if a constant is passed to
-> - * it.  Mostly the same as what is in linux/slab.h except it returns an index.
-> - */
-> -static __always_inline int index_of(const size_t size)
-> -{
-> -       extern void __bad_size(void);
-> -
-> -       if (__builtin_constant_p(size)) {
-> -               int i = 0;
-> -
-> -#define CACHE(x) \
-> -       if (size <=x) \
-> -               return i; \
-> -       else \
-> -               i++;
-> -#include <linux/kmalloc_sizes.h>
-> -#undef CACHE
-> -               __bad_size();
-> -       } else
-> -               __bad_size();
-> -       return 0;
-> -}
-> -
+* Frederic Weisbecker <fweisbec@gmail.com> wrote:
 
-Yup, Christoph nuked it in the following commit:
+> Ingo,
+> 
+> Please pull the latest full dynticks branch that can found at:
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
+> 	timers/nohz
+> 
+> HEAD: 67826eae8c16dbf00c262be6ec15021bb42f69c4
+> 
+> This handles perf and CPUs that get more than one task and fix posix cpu timers
+> handling.
+> 
+> This can finally stop the tick. It boots and doesn't crash, as far as I tested.
+> 
+> Now what's left:
+> 
+> * Kick CPUs' tick when the clock is marked unstable
+> 
+> * Kick CPUs when they extend the RCU grace periods too much by staying in
+> the kernel for too long (we are discussing this with Paul).
+> 
+> * sched_class:task_tick(). There are gazillions statistics maintained there.
+> It's probably mostly about local and global fairness. May be for other stuff
+> too (cgroups, etc...).
+> 
+> * update_cpu_load_active(): again, various stats maintained there
+> 
+> * load balancing (see trigger_load_balance() usually called from the tick).
+> 
+> I hope we can handle these things progressively in the long run.
+> 
+> Thanks.
+> 
+> ---
+> Frederic Weisbecker (10):
+>   posix_timers: Fix pre-condition to stop the tick on full dynticks
+>   perf: Kick full dynticks CPU if events rotation is needed
+>   perf: New helper to prevent full dynticks CPUs from stopping tick
+>   sched: Kick full dynticks CPU that have more than one task enqueued.
+>   sched: New helper to prevent from stopping the tick in full dynticks
+>   nohz: Re-evaluate the tick from the scheduler IPI
+>   nohz: Implement full dynticks kick
+>   nohz: Prepare to stop the tick on irq exit
+>   nohz: Re-evaluate the tick for the new task after a context switch
+>   nohz: Disable the tick when irq resume in full dynticks CPU
+> 
+>  include/linux/perf_event.h |    6 +++
+>  include/linux/sched.h      |    6 +++
+>  include/linux/tick.h       |    4 ++
+>  kernel/events/core.c       |   17 +++++++-
+>  kernel/posix-cpu-timers.c  |    6 +-
+>  kernel/sched/core.c        |   24 +++++++++++-
+>  kernel/sched/sched.h       |   11 +++++
+>  kernel/softirq.c           |   19 ++++++--
+>  kernel/time/tick-sched.c   |   95 ++++++++++++++++++++++++++++++++++++++-----
+>  9 files changed, 167 insertions(+), 21 deletions(-)
 
-https://git.kernel.org/cgit/linux/kernel/git/penberg/linux.git/commit/?h=slab/next&id=2c59dd6544212faa5ce761920d2251f4152f408d
+Pulled, thanks Frederic!
 
-                        Pekka
+One detail: 'make oldconfig' gave me:
+
+ Timer tick handling
+   1. Periodic timer ticks (constant rate, no dynticks) (HZ_PERIODIC) (NEW)
+ > 2. Idle dynticks system (tickless idle) (NO_HZ_IDLE) (NEW)
+
+I.e. CONFIG_NO_HZ_IDLE is picked by default. The default should really be 
+CONFIG_HZ_PERIODIC - so that people can easily enable full dynticks but 
+are not defaulted into it unknowingly.
+
+Thanks,
+
+	Ingo
