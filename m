@@ -1,67 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757353Ab3DXGuY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 02:50:24 -0400
-Received: from mail-ee0-f44.google.com ([74.125.83.44]:35716 "EHLO
-	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752604Ab3DXGuW (ORCPT
+	id S1757420Ab3DXGuy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 02:50:54 -0400
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:45625 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754107Ab3DXGuw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 02:50:22 -0400
-Date: Wed, 24 Apr 2013 08:50:18 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Namhyung Kim <namhyung@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
-Subject: Re: [RFC 00/14] perf tools: Introduce new 'ftrace' command
-Message-ID: <20130424065018.GC27551@gmail.com>
-References: <1366705872-12132-1-git-send-email-namhyung@kernel.org>
- <1366732681.9609.157.camel@gandalf.local.home>
- <CAOJsxLF16Edznsdis4NK-O1Sf=3Eswb5L=cfBDhjpr6F7UjTbg@mail.gmail.com>
+	Wed, 24 Apr 2013 02:50:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOJsxLF16Edznsdis4NK-O1Sf=3Eswb5L=cfBDhjpr6F7UjTbg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Wed, 24 Apr 2013 14:50:51 +0800
+Message-ID: <CAPgLHd8cEvvxnRYK3H6FbykXsiyHRWFxV2LtSyayzp2gNejhFw@mail.gmail.com>
+Subject: [PATCH -next v3] gpu: host1x: gr2d: fix error return code in gr2d_submit()
+From: Wei Yongjun <weiyj.lk@gmail.com>
+To: grant.likely@linaro.org, rob.herring@calxeda.com,
+        thierry.reding@avionic-design.de, tbergstrom@nvidia.com,
+        amerilainen@nvidia.com
+Cc: yongjun_wei@trendmicro.com.cn, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-* Pekka Enberg <penberg@kernel.org> wrote:
+Fix to return -ENOENT in the host1x_bo lookup error handling
+case instead of 0, as done elsewhere in this function.
 
-> Hello,
-> 
-> On Tue, 2013-04-23 at 17:30 +0900, Namhyung Kim wrote:
-> >> This patchset implements a front-end tool for kernel's ftrace.  It
-> >> uses function_graph tracer by default and normal function tracer is
-> >> also supported.  (Of course you need to enable those tracers in your
-> >> kernel first.)
-> 
-> On Tue, Apr 23, 2013 at 6:58 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> > Very nice Namhyung, thanks for doing this. I did a quick run through of
-> > the patches and I have no complaints about them. I'm not sure how the
-> > others will feel about it.
-> 
-> I also skimmed through the patches and they look like a reasonable
-> starting point. So FWIW,
-> 
-> Acked-by: Pekka Enberg <penberg@kernel.org>
-> 
-> Are there any plans in trying to consolidate 'perf trace' and this? As
-> a user I don't really care what the underlying mechanism and would
-> like things to just work out of the box.
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+---
+v1 -> v2: fix the patch subject
+---
+ drivers/gpu/host1x/drm/gr2d.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-Exactly. I'd love to see ftrace and perf trace unified.
+diff --git a/drivers/gpu/host1x/drm/gr2d.c b/drivers/gpu/host1x/drm/gr2d.c
+index 6a45ae0..146cd64 100644
+--- a/drivers/gpu/host1x/drm/gr2d.c
++++ b/drivers/gpu/host1x/drm/gr2d.c
+@@ -135,8 +135,10 @@ static int gr2d_submit(struct host1x_drm_context *context,
+ 			goto fail;
+ 
+ 		bo = host1x_bo_lookup(drm, file, cmdbuf.handle);
+-		if (!bo)
++		if (!bo) {
++			err = -ENOENT;
+ 			goto fail;
++		}
+ 
+ 		host1x_job_add_gather(job, bo, cmdbuf.words, cmdbuf.offset);
+ 		num_cmdbufs--;
+@@ -158,8 +160,10 @@ static int gr2d_submit(struct host1x_drm_context *context,
+ 		reloc->cmdbuf = cmdbuf;
+ 		reloc->target = target;
+ 
+-		if (!reloc->target || !reloc->cmdbuf)
++		if (!reloc->target || !reloc->cmdbuf) {
++			err = -ENOENT;
+ 			goto fail;
++		}
+ 	}
+ 
+ 	err = copy_from_user(job->waitchk, waitchks,
 
-I have no objections against having a 'perf ftrace' interim step - as long 
-as it's really a temporary migration construct, not something we intend to 
-keep forever.
-
-Thanks,
-
-	Ingo
