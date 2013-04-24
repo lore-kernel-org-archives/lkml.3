@@ -1,71 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757941Ab3DXITp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 04:19:45 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:59946 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755755Ab3DXITn (ORCPT
+	id S1758021Ab3DXITx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 04:19:53 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:33910 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755810Ab3DXITt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 04:19:43 -0400
-Message-ID: <51779593.3060703@linux.vnet.ibm.com>
-Date: Wed, 24 Apr 2013 16:19:31 +0800
-From: Runzhen Wang <runzhen@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Wed, 24 Apr 2013 04:19:49 -0400
+Message-ID: <51779588.1070203@linux.vnet.ibm.com>
+Date: Wed, 24 Apr 2013 13:49:20 +0530
+From: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: acme@redhat.com
-CC: mingo@kernel.org, linux-kernel@vger.kernel.org,
-        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Subject: Re: [PATCH] perf tool: fix the perf --version bug
-References: <516CDAF5.3020909@linux.vnet.ibm.com>
-In-Reply-To: <516CDAF5.3020909@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Chen Gang <gang.chen@asianux.com>
+CC: "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>,
+        Michael Neuling <mikey@neuling.org>, linuxppc-dev@lists.ozlabs.org,
+        paulus@samba.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] arch/powerpc/kernel: using %12.12s instead of %12s for
+ avoiding memory overflow.
+References: <5100B53C.3030109@asianux.com> <512055D0.7050100@asianux.com> <514FD2E0.5030805@asianux.com> <51778D97.4080409@asianux.com> <51779491.10307@linux.vnet.ibm.com>
+In-Reply-To: <51779491.10307@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 8bit
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13042408-9574-0000-0000-000007967702
+x-cbid: 13042408-2000-0000-0000-00000BD990C8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ping~  :)
-On 04/16/2013 01:00 PM, Runzhen Wang wrote:
->
-> The perf --version can't print the right version
-> information when reset it to an earlier commit.
->
-> For example, at present the version is:
-> # ./perf --version
-> perf version 3.9.rc6.gf8378f
->
-> then, I reset it to an earlier version tag, say v3.8-rc7
-> # git reset --hard v3.8-rc7
-> # make
->
-> However, the ./perf --version prints a wrong result:
-> # ./perf --version
-> perf version 3.9.rc6.g836dc9
->
-> Using 'git describe' instead of 'git tag' can fix this problem.
->
-> Signed-off-by: Runzhen Wang <runzhen@linux.vnet.ibm.com>
-> ---
->   tools/perf/util/PERF-VERSION-GEN |    3 +--
->   1 file changed, 1 insertion(+), 2 deletions(-)
->
-> diff --git a/tools/perf/util/PERF-VERSION-GEN
-> b/tools/perf/util/PERF-VERSION-GEN
-> index 055fef3..ec3dd86 100755
-> --- a/tools/perf/util/PERF-VERSION-GEN
-> +++ b/tools/perf/util/PERF-VERSION-GEN
-> @@ -14,9 +14,8 @@ LF='
->   # otherwise try to get the version from the kernel Makefile
->   #
->   if test -d ../../.git -o -f ../../.git &&
-> -    VN=$(git tag 2>/dev/null | tail -1 | grep -E "v[0-9].[0-9]*")
-> +    VN=$(git describe --match 'v[0-9].[0-9]*' --abbrev=4 HEAD 2>/dev/null)
->   then
-> -    VN=$(echo $VN"-g"$(git log -1 --abbrev=4 --pretty=format:"%h" HEAD))
->       VN=$(echo "$VN" | sed -e 's/-/./g');
->   else
->       VN=$(MAKEFLAGS= make -sC ../.. kernelversion)
+On 04/24/2013 01:45 PM, Vasant Hegde wrote:
+> On 04/24/2013 01:15 PM, Chen Gang wrote:
+>> Hello Vasant Hegde:
+>>
+>> How about this patch, is it OK ?
+>>
+>> Thanks.
+>>
+>>
+>> On 2013年03月25日 12:30, Chen Gang wrote:
+>>> Hello Maintainers:
+>>>
+>>>     could you help check this patch whether is ok ?
+>>>
+>>>     thanks.
+>>>
+>>>
+>>> On 2013年02月17日 12:00, Chen Gang wrote:
+>>>> Hello relative members:
+>>>>
+>>>>     please give a glance to this patch, when you have time.
+>>>>
+>>>>     thanks.
+>>>>
+>>>>     :-)
+>>>>
+>>>> gchen.
+>>>>
+>>>>
+>>>> 于 2013年01月24日 12:14, Chen Gang 写道:
+>>>>>
+>>>>>     for tmp_part->header.name:
+>>>>>       it is "Terminating null required only for names<   12 chars".
+>>>>>       so need to limit the %.12s for it in printk
+>>>>>
+>>>>>     additional info:
+>>>>>
+>>>>>       %12s  limit the width, not for the original string output length
+>>>>>             if name length is more than 12, it still can be fully displayed.
+>>>>>             if name length is less than 12, the ' ' will be filled before name.
+>>>>>
+>>>>>       %.12s truly limit the original string output length (precision)
+>>>>>
+>>>>>
+>>>>> Signed-off-by: Chen Gang<gang.chen@asianux.com>
+>>>>> ---
+>>>>>    arch/powerpc/kernel/nvram_64.c |    2 +-
+>>>>>    1 file changed, 1 insertion(+), 1 deletion(-)
+>>>>>
+>>>>> diff --git a/arch/powerpc/kernel/nvram_64.c b/arch/powerpc/kernel/nvram_64.c
+>>>>> index bec1e93..57bf6d2 100644
+>>>>> --- a/arch/powerpc/kernel/nvram_64.c
+>>>>> +++ b/arch/powerpc/kernel/nvram_64.c
+>>>>> @@ -202,7 +202,7 @@ static void __init nvram_print_partitions(char * label)
+>>>>>    	printk(KERN_WARNING "--------%s---------\n", label);
+>>>>>    	printk(KERN_WARNING "indx\t\tsig\tchks\tlen\tname\n");
+>>>>>    	list_for_each_entry(tmp_part,&nvram_partitions, partition) {
+>>>>> -		printk(KERN_WARNING "%4d    \t%02x\t%02x\t%d\t%12s\n",
+>>>>> +		printk(KERN_WARNING "%4d    \t%02x\t%02x\t%d\t%12.12s\n",
+> 
+> First, this code in inside NVRAM_DEBUG which is used only for debug purpose and
+> AFAIK, all partition names are less than 20 character. So I don't think we need
+
+Sorry.. I meant 12 character.
+
+-Vasant
+
+
+> this patch.
+> 
+> -Vasant
+> 
+>>>>>    		tmp_part->index, tmp_part->header.signature,
+>>>>>    		       tmp_part->header.checksum, tmp_part->header.length,
+>>>>>    		       tmp_part->header.name);
+>>>>>
+>>>>
+>>>>
+>>>
+>>>
+>>
+>>
+> 
+> _______________________________________________
+> Linuxppc-dev mailing list
+> Linuxppc-dev@lists.ozlabs.org
+> https://lists.ozlabs.org/listinfo/linuxppc-dev
 
