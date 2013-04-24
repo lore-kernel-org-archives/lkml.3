@@ -1,147 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757456Ab3DXTJx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 15:09:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6301 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757329Ab3DXTJt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 15:09:49 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Dave Chinner <david@fromorbit.com>,
-        Jan Kara <jack@suse.cz>, linux-ext4@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: Re: Excessive stall times on ext4 in 3.9-rc2
-References: <20130410105608.GC1910@suse.de> <20130410131245.GC4862@thunk.org>
-	<20130411170402.GB11656@suse.de> <20130411183512.GA12298@thunk.org>
-	<20130411213335.GE9379@quack.suse.cz>
-	<20130412025708.GB7445@thunk.org> <20130412045042.GA30622@dastard>
-	<20130412151952.GA4944@thunk.org> <20130422143846.GA2675@suse.de>
-	<x49a9oqmblc.fsf@segfault.boston.devel.redhat.com>
-	<20130423140134.GA2108@suse.de>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Wed, 24 Apr 2013 15:09:13 -0400
-In-Reply-To: <20130423140134.GA2108@suse.de> (Mel Gorman's message of "Tue, 23
-	Apr 2013 15:01:34 +0100")
-Message-ID: <x49ppxjeofa.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1757404Ab3DXTSz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 15:18:55 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:59112 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757092Ab3DXTSx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 15:18:53 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <51782A9D.20303@linaro.org>
+References: <1366828376-18124-1-git-send-email-john.stultz@linaro.org>
+ <CAPXgP123q9K8-NibkpmbvwpRTM1cdODWycq3o-HdWEYBwoGCFQ@mail.gmail.com> <51782A9D.20303@linaro.org>
+From: Kay Sievers <kay@vrfy.org>
+Date: Wed, 24 Apr 2013 21:18:29 +0200
+Message-ID: <CAPXgP12UmmcSDUg60mM08AD=P-Qsy_RabfkDifDFMAp0_1EbLQ@mail.gmail.com>
+Subject: Re: [PATCH] time: Revert ALWAYS_USE_PERSISTENT_CLOCK compile time optimizaitons
+To: John Stultz <john.stultz@linaro.org>
+Cc: lkml <linux-kernel@vger.kernel.org>, stable <stable@vger.kernel.org>,
+        Feng Tang <feng.tang@intel.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mel Gorman <mgorman@suse.de> writes:
-
->> I'll also note that even though your I/O is going all over the place
->> (D2C is pretty bad, 14ms), most of the time is spent waiting for a
->> struct request allocation or between Queue and Merge:
->> 
->> ==================== All Devices ====================
->> 
->>             ALL           MIN           AVG           MAX           N
->> --------------- ------------- ------------- ------------- -----------
->> 
->> Q2Q               0.000000001   0.000992259   8.898375882     2300861
->> Q2G               0.000000843  10.193261239 2064.079501935     1016463 <====
+On Wed, Apr 24, 2013 at 8:55 PM, John Stultz <john.stultz@linaro.org> wrote:
+> On 04/24/2013 11:41 AM, Kay Sievers wrote:
+>>
+>> On Wed, Apr 24, 2013 at 8:32 PM, John Stultz <john.stultz@linaro.org>
+>> wrote:
+>>>
+>>> Kay Sievers noted that the ALWAYS_USE_PERSISTENT_CLOCK config,
+>>> which enables some minor compile time optimization to avoid
+>>> uncessary code in mostly the suspend/resume path could cause
+>>> problems for userland.
+>>>
+>>> In particular, the dependency for RTC_HCTOSYS on
+>>> !ALWAYS_USE_PERSISTENT_CLOCK, which avoids setting the time
+>>> twice and simplifies suspend/resume, has the side effect
+>>> of causing the /sys/class/rtc/rtcN/hctosys flag to always be
+>>> zero, and this flag is commonly used by udev to setup the
+>>> /dev/rtc symlink to /dev/rtcN, which can cause pain for
+>>> older applications.
+>>
+>> FWIW, in the light of the original change, I've just removed the
+>> /dev/rtc creation from the default udev rules now, so that thing will
+>> be phased out in the future.
 >
-> This is not normally my sandbox so do you mind spelling this out?
+> Is that actually wanted? What happens to applications that use /dev/rtc?
 >
-> IIUC, the time to allocate the struct request from the slab cache is just a
-> small portion of this time. The bulk of the time is spent in get_request()
-> waiting for congestion to clear on the request list for either the sync or
-> async queue. Once a process goes to sleep on that waitqueue, it has to wait
-> until enough requests on that queue have been serviced before it gets woken
-> again at which point it gets priority access to prevent further starvation.
-> This is the Queue To Get Reqiest (Q2G) delay. What we may be seeing here
-> is that the async queue was congested and on average, we are waiting for
-> 10 seconds for it to clear. The maximum value may be bogus for reasons
-> explained later.
->
-> Is that accurate?
+> I think setting up the /dev/rtc link is important. Its just that setting it
+> up exclusively by the hctosys flag is maybe more fragile then we'd like.
+> Instead the hctosys flag maybe should only be used as a hint if there is
+> more then one RTC available.
 
-Yes, without getting into excruciating detail.
+So far we only created the symlink for an rtc with the hctosys flag
+set. It was added as a workaround for ARM, which sometimes has
+multiple RTCs. But there is now also logic in udev/systemd anyway to
+search for the system's rtc, which does not rely on the symlink. Other
+commonly used tools we checked just use /dev/rtc0 directly.
 
->> G2I               0.000000461   0.000044702   3.237065090     1015803
->> Q2M               0.000000101   8.203147238 2064.079367557     1311662
->> I2D               0.000002012   1.476824812 2064.089774419     1014890
->> M2D               0.000003283   6.994306138 283.573348664     1284872
->> D2C               0.000061889   0.014438316   0.857811758     2291996
->> Q2C               0.000072284  13.363007244 2064.092228625     2292191
->> 
->> ==================== Device Overhead ====================
->> 
->>        DEV |       Q2G       G2I       Q2M       I2D       D2C
->> ---------- | --------- --------- --------- --------- ---------
->>  (  8,  0) |  33.8259%   0.0001%  35.1275%   4.8932%   0.1080%
->> ---------- | --------- --------- --------- --------- ---------
->>    Overall |  33.8259%   0.0001%  35.1275%   4.8932%   0.1080%
->> 
->> I'm not sure I believe that max value.  2064 seconds seems a bit high.
->
-> It is so I looked closer at the timestamps and there is an one hour
-> correction about 4400 seconds into the test.  Daylight savings time kicked
-> in on March 31st and the machine is rarely rebooted until this test case
-> came along. It looks like there is a timezone or time misconfiguration
-> on the laptop that starts the machine with the wrong time. NTP must have
-> corrected the time which skewed the readings in that window severely :(
+As mentioned in the mail yesterday, I expected that
+CONFIG_RTC_HCTOSYS=y was also needed on x86. The current udev logic
+would need updating anyway, if we disable CONFIG_RTC_HCTOSYS=y now. So
+let's just find out what's really needed here and add it back properly
+if something really needs it.
 
-Not sure I'm buying that argument, as there are no gaps in the blkparse
-output.  The logging is not done using wallclock time.  I still haven't
-had sufficient time to dig into these numbers.
+While we are at it, the interface to read and set the persistent clock
+from userspace, the clock the kernel internally uses, is still to just
+use the /dev/rtc0 device with the ioctls? There is no other native
+kernel timer interface or something else for that, right?
 
->> Also, Q2M should not be anywhere near that big, so more investigation is
->> required there.  A quick look over the data doesn't show any such delays
->> (making me question the tools), but I'll write some code tomorrow to
->> verify the btt output.
->> 
->
-> It might be a single set of readings during a time correction that
-> screwed it.
-
-Again, I don't think so.
-
-> I can reproduce it at will. Due to the nature of the test, the test
-> results are variable and unfortunately it is one of the tricker mmtest
-> configurations to setup.
->
-> 1. Get access to a webserver
-> 2. Close mmtests to your test machine
->    git clone https://github.com/gormanm/mmtests.git
-> 3. Edit shellpacks/common-config.sh and set WEBROOT to a webserver path
-> 4. Create a tar.gz of a large git tree and place it at $WEBROOT/linux-2.6.tar.gz
->    Alternatively place a compressed git tree anywhere and edit
->    configs/config-global-dhp__io-multiple-source-latency
->    and update GITCHECKOUT_SOURCETAR
-> 5. Create a tar.gz of a large maildir directory and place it at
->    $WEBROOT/$WEBROOT/maildir.tar.gz
->    Alternatively, use an existing maildir folder and set
->    MONITOR_INBOX_OPEN_MAILDIR in
->    configs/config-global-dhp__io-multiple-source-latency
->
-> It's awkward but it's not like there are standard benchmarks lying around
-> and it seemed the best way to reproduce the problems I typically see early
-> in the lifetime of a system or when running a git checkout when the tree
-> has not been used in a few hours. Run the actual test with
->
-> ./run-mmtests.sh --config configs/config-global-dhp__io-multiple-source-latency --run-monitor test-name-of-your-choice
->
-> Results will be in work/log. You'll need to run this as root so it
-> can run blktrace and so it can drop_caches between git checkouts
-> (to force disk IO). If systemtap craps out on you, then edit
-> configs/config-global-dhp__io-multiple-source-latency and remove dstate
-> from MONITORS_GZIP
-
-And how do I determine whether I've hit the problem?
-
-> If you have trouble getting this running, ping me on IRC.
-
-Yes, I'm having issues getting things to go, but you didn't provide me a
-time zone, an irc server or a nick to help me find you.  Was that
-intentional?  ;-)
-
-Cheers,
-Jeff
+Thanks,
+Kay
