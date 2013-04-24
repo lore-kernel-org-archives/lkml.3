@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758278Ab3DXJa0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 05:30:26 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:39096 "EHLO
+	id S932174Ab3DXJbt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 05:31:49 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:39140 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757390Ab3DXJaX (ORCPT
+	with ESMTP id S1757390Ab3DXJbs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 05:30:23 -0400
-Date: Wed, 24 Apr 2013 02:30:07 -0700
-From: tip-bot for Wei Yongjun <tipbot@zytor.com>
-Message-ID: <tip-3482e664dc7f44e0ffb1fcf1de7af74977748f31@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        yongjun_wei@trendmicro.com.cn, tglx@linutronix.de
+	Wed, 24 Apr 2013 05:31:48 -0400
+Date: Wed, 24 Apr 2013 02:31:22 -0700
+From: tip-bot for Linn Crosetto <tipbot@zytor.com>
+Message-ID: <tip-13f72756da86f155898e2c2022f7b3a106c3742e@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org, linn@hp.com,
+        tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        yongjun_wei@trendmicro.com.cn, tglx@linutronix.de
-In-Reply-To: <CAPgLHd84cboeucog+YNdHvGqTfTROujDKZgSkh3o0B-Q93ee2A@mail.gmail.com>
-References: <CAPgLHd84cboeucog+YNdHvGqTfTROujDKZgSkh3o0B-Q93ee2A@mail.gmail.com>
+        linn@hp.com, tglx@linutronix.de
+In-Reply-To: <1366741605-71293-1-git-send-email-linn@hp.com>
+References: <1366741605-71293-1-git-send-email-linn@hp.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/platform] x86/olpc/xo1/sci: Don't call input_free_device
- () after input_unregister_device()
-Git-Commit-ID: 3482e664dc7f44e0ffb1fcf1de7af74977748f31
+Subject: [tip:x86/mm] x86/iommu/dmar: Remove warning for HPET scope type
+Git-Commit-ID: 13f72756da86f155898e2c2022f7b3a106c3742e
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,63 +31,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  3482e664dc7f44e0ffb1fcf1de7af74977748f31
-Gitweb:     http://git.kernel.org/tip/3482e664dc7f44e0ffb1fcf1de7af74977748f31
-Author:     Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-AuthorDate: Wed, 24 Apr 2013 10:46:24 +0800
+Commit-ID:  13f72756da86f155898e2c2022f7b3a106c3742e
+Gitweb:     http://git.kernel.org/tip/13f72756da86f155898e2c2022f7b3a106c3742e
+Author:     Linn Crosetto <linn@hp.com>
+AuthorDate: Tue, 23 Apr 2013 12:26:45 -0600
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 24 Apr 2013 08:44:47 +0200
+CommitDate: Wed, 24 Apr 2013 08:45:47 +0200
 
-x86/olpc/xo1/sci: Don't call input_free_device() after input_unregister_device()
+x86/iommu/dmar: Remove warning for HPET scope type
 
-input_free_device() should only be used if
-input_register_device() was not called yet or if it failed. Once
-device was unregistered use input_unregister_device() and memory
-will be freed once last reference to the device is dropped.
+ACPI_DMAR_SCOPE_TYPE_HPET is parsed by
+ir_parse_ioapic_hpet_scope() and should not be flagged as an
+unsupported type.
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-Cc: dsd@laptop.org
-Cc: pgf@laptop.org
-Cc: gregkh@linuxfoundation.org
-Link: http://lkml.kernel.org/r/CAPgLHd84cboeucog%2BYNdHvGqTfTROujDKZgSkh3o0B-Q93ee2A@mail.gmail.com
+Signed-off-by: Linn Crosetto <linn@hp.com>
+Cc: joro@8bytes.org
+Cc: ddutile@redhat.com
+Cc: suresh.b.siddha@intel.com
+Link: http://lkml.kernel.org/r/1366741605-71293-1-git-send-email-linn@hp.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/platform/olpc/olpc-xo1-sci.c | 4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ drivers/iommu/dmar.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/platform/olpc/olpc-xo1-sci.c b/arch/x86/platform/olpc/olpc-xo1-sci.c
-index 74704be..9a2e590 100644
---- a/arch/x86/platform/olpc/olpc-xo1-sci.c
-+++ b/arch/x86/platform/olpc/olpc-xo1-sci.c
-@@ -460,7 +460,6 @@ static int setup_power_button(struct platform_device *pdev)
- static void free_power_button(void)
- {
- 	input_unregister_device(power_button_idev);
--	input_free_device(power_button_idev);
- }
- 
- static int setup_ebook_switch(struct platform_device *pdev)
-@@ -491,7 +490,6 @@ static int setup_ebook_switch(struct platform_device *pdev)
- static void free_ebook_switch(void)
- {
- 	input_unregister_device(ebook_switch_idev);
--	input_free_device(ebook_switch_idev);
- }
- 
- static int setup_lid_switch(struct platform_device *pdev)
-@@ -526,6 +524,7 @@ static int setup_lid_switch(struct platform_device *pdev)
- 
- err_create_attr:
- 	input_unregister_device(lid_switch_idev);
-+	lid_switch_idev = NULL;
- err_register:
- 	input_free_device(lid_switch_idev);
- 	return r;
-@@ -535,7 +534,6 @@ static void free_lid_switch(void)
- {
- 	device_remove_file(&lid_switch_idev->dev, &dev_attr_lid_wake_mode);
- 	input_unregister_device(lid_switch_idev);
--	input_free_device(lid_switch_idev);
- }
- 
- static int xo1_sci_probe(struct platform_device *pdev)
+diff --git a/drivers/iommu/dmar.c b/drivers/iommu/dmar.c
+index e5cdaf8..b8008f6 100644
+--- a/drivers/iommu/dmar.c
++++ b/drivers/iommu/dmar.c
+@@ -129,7 +129,8 @@ int __init dmar_parse_dev_scope(void *start, void *end, int *cnt,
+ 		if (scope->entry_type == ACPI_DMAR_SCOPE_TYPE_ENDPOINT ||
+ 		    scope->entry_type == ACPI_DMAR_SCOPE_TYPE_BRIDGE)
+ 			(*cnt)++;
+-		else if (scope->entry_type != ACPI_DMAR_SCOPE_TYPE_IOAPIC) {
++		else if (scope->entry_type != ACPI_DMAR_SCOPE_TYPE_IOAPIC &&
++			scope->entry_type != ACPI_DMAR_SCOPE_TYPE_HPET) {
+ 			pr_warn("Unsupported device scope\n");
+ 		}
+ 		start += scope->length;
