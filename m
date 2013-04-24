@@ -1,51 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932348Ab3DXLZW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 07:25:22 -0400
-Received: from mx.mcc-med.de ([213.148.153.242]:37142 "EHLO mx.mcc-med.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932223Ab3DXLZV convert rfc822-to-8bit (ORCPT
+	id S1758190Ab3DXLaV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 07:30:21 -0400
+Received: from co1ehsobe002.messaging.microsoft.com ([216.32.180.185]:50247
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756626Ab3DXLaU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 07:25:21 -0400
-X-Greylist: delayed 1101 seconds by postgrey-1.27 at vger.kernel.org; Wed, 24 Apr 2013 07:25:21 EDT
-From: "Velykokhatko, Sergey" <Sergey.Velykokhatko@mcc-med.de>
-To: "'nicolas.ferre@atmel.com'" <nicolas.ferre@atmel.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 24 Apr 2013 13:06:48 +0200
-Subject: Atmel SPI master doesn't work in 3.9-rc8
-Thread-Topic: Atmel SPI master doesn't work in 3.9-rc8
-Thread-Index: Ac5A29DdpDgbk4xhScSJIGnoWspWOg==
-Message-ID: <BAF0C2081321BA469F9ADF648F97D9B04D245702A0@MCC023.weinmann.com>
-Accept-Language: de-DE
-Content-Language: de-DE
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: de-DE
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 24 Apr 2013 07:30:20 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VS-4(zzbb2dI98dI9371I1432Izz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275bhz2dh2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h16a6h1758h1806h18e1h1946h19b5h1ad9h1b0ah1155h)
+Date: Wed, 24 Apr 2013 19:29:29 +0800
+From: Zhao Chenhui <chenhui.zhao@freescale.com>
+To: Scott Wood <scottwood@freescale.com>
+CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <r58472@freescale.com>
+Subject: Re: [PATCH v2 12/15] powerpc/85xx: add time base sync support for
+ e6500
+Message-ID: <20130424112929.GC3172@localhost.localdomain>
+References: <1366368468-29143-1-git-send-email-chenhui.zhao@freescale.com>
+ <1366368468-29143-12-git-send-email-chenhui.zhao@freescale.com>
+ <1366761846.5825.21@snotra>
 MIME-Version: 1.0
-X-OriginalRecipient: RPFD:nicolas.ferre@atmel.com
-X-OriginalId: qfr3OB6npf020846
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1366761846.5825.21@snotra>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Nicolas,
+On Tue, Apr 23, 2013 at 07:04:06PM -0500, Scott Wood wrote:
+> On 04/19/2013 05:47:45 AM, Zhao Chenhui wrote:
+> >From: Chen-Hui Zhao <chenhui.zhao@freescale.com>
+> >
+> >For e6500, two threads in one core share one time base. Just need
+> >to do time base sync on first thread of one core, and skip it on
+> >the other thread.
+> >
+> >Signed-off-by: Zhao Chenhui <chenhui.zhao@freescale.com>
+> >Signed-off-by: Li Yang <leoli@freescale.com>
+> >Signed-off-by: Andy Fleming <afleming@freescale.com>
+> >---
+> > arch/powerpc/platforms/85xx/smp.c |   52
+> >+++++++++++++++++++++++++++++++-----
+> > 1 files changed, 44 insertions(+), 8 deletions(-)
+> >
+> >diff --git a/arch/powerpc/platforms/85xx/smp.c
+> >b/arch/powerpc/platforms/85xx/smp.c
+> >index 74d8cde..5f3eee3 100644
+> >--- a/arch/powerpc/platforms/85xx/smp.c
+> >+++ b/arch/powerpc/platforms/85xx/smp.c
+> >@@ -26,6 +26,7 @@
+> > #include <asm/cacheflush.h>
+> > #include <asm/dbell.h>
+> > #include <asm/fsl_guts.h>
+> >+#include <asm/cputhreads.h>
+> >
+> > #include <sysdev/fsl_soc.h>
+> > #include <sysdev/mpic.h>
+> >@@ -45,6 +46,7 @@ static u64 timebase;
+> > static int tb_req;
+> > static int tb_valid;
+> > static u32 cur_booting_core;
+> >+static bool rcpmv2;
+> >
+> > #ifdef CONFIG_PPC_E500MC
+> > /* get a physical mask of online cores and booting core */
+> >@@ -53,26 +55,40 @@ static inline u32 get_phy_cpu_mask(void)
+> > 	u32 mask;
+> > 	int cpu;
+> >
+> >-	mask = 1 << cur_booting_core;
+> >-	for_each_online_cpu(cpu)
+> >-		mask |= 1 << get_hard_smp_processor_id(cpu);
+> >+	if (smt_capable()) {
+> >+		/* two threads in one core share one time base */
+> >+		mask = 1 << cpu_core_index_of_thread(cur_booting_core);
+> >+		for_each_online_cpu(cpu)
+> >+			mask |= 1 << cpu_core_index_of_thread(
+> >+					get_hard_smp_processor_id(cpu));
+> >+	} else {
+> >+		mask = 1 << cur_booting_core;
+> >+		for_each_online_cpu(cpu)
+> >+			mask |= 1 << get_hard_smp_processor_id(cpu);
+> >+	}
+> 
+> Where is smt_capable defined()?  I assume somewhere in the patchset
+> but it's a pain to search 12 patches...
+> 
 
-I just tried 3.9-rc8 with my board. SPI doesn't work, since in spi.c in __spi_async() was inserted new checking that initiate now xfer->speed_hz:
-		if (!xfer->speed_hz)
-			xfer->speed_hz = spi->max_speed_hz;
+It is defined in arch/powerpc/include/asm/topology.h.
+	#define smt_capable()           (cpu_has_feature(CPU_FTR_SMT))
 
+Thanks for your review again.
 
-And in atmel-spi.c there are another checking that allows SPI work only for speed_hz == 0:
+> Is this really about whether we're SMT-capable or whether we have
+> rcpm v2?
+> 
+> -Scott
 
-		/* FIXME implement these protocol options!! */
-		if (xfer->speed_hz) {
-			dev_dbg(&spi->dev, "no protocol options yet\n");
-			return -ENOPROTOOPT;
-		}
+I think this "if" statement can be removed. The cpu_core_index_of_thread()
+can return the correct cpu number with thread or without thread.
 
+Like this:
+static inline u32 get_phy_cpu_mask(void)
+{
+	u32 mask;
+	int cpu;
 
-Best regards,
-Sergey
+	mask = 1 << cpu_core_index_of_thread(cur_booting_core);
+	for_each_online_cpu(cpu)
+		mask |= 1 << cpu_core_index_of_thread(
+				get_hard_smp_processor_id(cpu));
+
+	return mask;
+}
+
+-Chenhui
 
