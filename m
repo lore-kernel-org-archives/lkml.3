@@ -1,104 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758654Ab3DXXYV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 19:24:21 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:37433 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758635Ab3DXXYT (ORCPT
+	id S1758618Ab3DXXbI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 19:31:08 -0400
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:46133 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758090Ab3DXXbG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 19:24:19 -0400
-X-Sasl-enc: IfGzQKZFRDMzSEybw0Aw2JtSjWJxVQm80bJGPhQL9kBw 1366845858
-Date: Wed, 24 Apr 2013 16:24:17 -0700
-From: Greg KH <greg@kroah.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        peterz@infradead.org, eranian@google.com,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 1/2] Fix perf LBR filtering
-Message-ID: <20130424232417.GB9073@kroah.com>
-References: <1366844694-2770-1-git-send-email-andi@firstfloor.org>
+	Wed, 24 Apr 2013 19:31:06 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1366844694-2770-1-git-send-email-andi@firstfloor.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5178657E.9020905@zytor.com>
+References: <CA+55aFwpLu0qNms=hkQr43yqD0K9DgESNm91OEWKT1ZuT8MU6Q@mail.gmail.com>
+	<20130424072630.GB1780@gmail.com>
+	<20130424170702.GA1867@redhat.com>
+	<CAFTL4hzmW43o8dxW0_E7F00a+PT+T4=F4h=gdCxHvcZhMiH3-w@mail.gmail.com>
+	<5178657E.9020905@zytor.com>
+Date: Thu, 25 Apr 2013 01:31:03 +0200
+Message-ID: <CAFTL4hyCQ1DGg5JOmWgvZoC9kcrV6TmodCw=TCFcr+QXMwv9yQ@mail.gmail.com>
+Subject: Re: [PATCH] x86: make DR*_RESERVED unsigned long
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Cyrill Gorcunov <gorcunov@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        David Miller <davem@davemloft.net>, "Theodore Ts'o" <tytso@mit.edu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 24, 2013 at 04:04:53PM -0700, Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
-> 
-> The perf LBR code has special code to filter specific
-> instructions in software.
-> 
-> The LBR logs any instruction address, even if IP just faulted.
-> This means user space can control any address by just branching
-> to a bad address.
-> 
-> On a modern Intel system the only software filtering needed
-> is to include SYSCALL/RETs in PERF_SAMPLE_BRANCH_ANY_CALL/RETURN.
-> The hardware call filter only handles short calls, but syscall
-> is a far call. So it enables far call logging too, but removes
-> any other far calls (like interrupts) by looking at the instruction.
-> On older systems some additional software filtering is done too,
-> to work a problem that CALLs can be only logged together with
-> indirect jumps.
-> 
-> It currently assumes that any address that looks like a kernel
-> address can be safely referenced.
-> 
-> But that is dangerous if can be controlled by the user:
-> - It can be used to crash the kernel
-> - It allows to probe any physical address for a small set of values
-> (valid call op codes) which is an information leak.
-> - It may point to a side effect on read MMIO region
-> 
-> So we cannot reference kernel addresses safely.
-> 
-> Possible options:
-> 
-> I) Disable FAR calls for ANY_CALL/RETURNS.
-> This just means syscalls are not logged
-> as calls. This also lowers the overhead of call logging.
-> This changes semantics slightly.
-> This is reasonable on Sandy Bridge and later, but would
-> cause additional problems on Nehalem and Westmere with
-> their additional filters.
-> 
-> II) Simple disable any filtering for kernel space.
-> This means interrupts in kernel space are reported as calls
-> and on Nehalem/Westmere some indirect jumps are reported
-> as calls too
-> 
-> III) Enumerate all the kernel entry points and check.
-> Any bad call must have a kernel entry point as to.
-> This seemed to fragile to maintain.
-> 
-> IV) Enumerate all kernel code and check for these ranges.
-> Quite complicated, especially with the new kernel code JITs.
-> Would also allow to probe for kernel code (defeating randomized kernel)
-> 
-> This patch implements II: Simply disable software filtering for
-> any kernel address, which seemed the best.
-> (I) would be also an option and was earlier implemented in
-> https://patchwork.kernel.org/patch/2468351/
-> (however this patch still leaves Nehalem/Westmere/Atom open to the problem)
-> (III) and (IV) appear too complicated and risky.
-> 
-> Should be applied to applicable stable branches too. The problem
-> goes back a long time.
-> 
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> ---
->  arch/x86/kernel/cpu/perf_event_intel_lbr.c |   18 +++++++++++++++---
->  1 files changed, 15 insertions(+), 3 deletions(-)
+2013/4/25 H. Peter Anvin <hpa@zytor.com>:
+> On 04/24/2013 03:48 PM, Frederic Weisbecker wrote:
+>> You told in an earlier email that intel manual says upper 32 bits of
+>> dr6 are reserved.
+>> In this case don't we need to expand the mask in 64 bits like is done
+>> for DR_CONTROL_RESERVED?
+>>
+>
+> Arguably this would be a *good* use for ~ ...
+>
+> Instead of defining separate bitmasks for 32 and 64 bits have the
+> reciprocal (non-reserved bits):
+>
+> #define DR6_RESERVED (~0x0000F00FUL)
+>
+> That does have the right value on both 32 and 64 bits.  The leading
+> zeroes aren't even really needed.
 
+Ah, looks better indeed.
 
-<formletter>
+>
+> Now, DR6 is a bit special in that a bunch of the reserved bits are
+> hardwired to 1, not 0; I don't know offhand if that is true for bits
+> [63:32].
 
-This is not the correct way to submit patches for inclusion in the
-stable kernel tree.  Please read Documentation/stable_kernel_rules.txt
-for how to do this properly.
-
-</formletter>
+Hmm, good point, could it be a problem given that we clear the
+reserved dr6 bits on do_trap() and write that 'cleaned up" value back
+to "tsk->thread.debugreg6"? Probably not if those hardwired reserved
+bits are set to "1" on dr6 physical write whether those bits are
+cleared or not in their storage in thread struct before resuming the
+task?
