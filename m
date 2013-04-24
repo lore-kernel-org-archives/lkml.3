@@ -1,59 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757609Ab3DXMpm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 08:45:42 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:54628 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754343Ab3DXMpl (ORCPT
+	id S1758096Ab3DXMqs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 08:46:48 -0400
+Received: from juliette.telenet-ops.be ([195.130.137.74]:46656 "EHLO
+	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754677Ab3DXMqq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 08:45:41 -0400
-Message-ID: <1366807537.16547.4.camel@phoenix>
-Subject: [PATCH 2/2] regulator: lp8788-buck: Use regulator_map_voltage_ascend
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Milo Kim <milo.kim@ti.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        linux-kernel@vger.kernel.org
-Date: Wed, 24 Apr 2013 20:45:37 +0800
-In-Reply-To: <1366807487.16547.3.camel@phoenix>
-References: <1366807487.16547.3.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 24 Apr 2013 08:46:46 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Karsten Keil <isdn@linux-pingi.de>, Rusty Russell <rusty@rustcorp.com.au>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH] isdn/sc: Fix incorrect module_param_array types
+Date: Wed, 24 Apr 2013 14:46:37 +0200
+Message-Id: <1366807597-24314-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.0.4
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All regulators have ascendant voltage list in this driver.
-Use regulator_map_voltage_ascend for them.
+drivers/isdn/sc/init.c: In function ‘__check_irq’:
+drivers/isdn/sc/init.c:36: warning: return from incompatible pointer type
+drivers/isdn/sc/init.c: In function ‘__check_ram’:
+drivers/isdn/sc/init.c:37: warning: return from incompatible pointer type
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 ---
- drivers/regulator/lp8788-buck.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/isdn/sc/init.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/regulator/lp8788-buck.c b/drivers/regulator/lp8788-buck.c
-index 97891a7..eb1e1e8 100644
---- a/drivers/regulator/lp8788-buck.c
-+++ b/drivers/regulator/lp8788-buck.c
-@@ -346,6 +346,7 @@ static unsigned int lp8788_buck_get_mode(struct regulator_dev *rdev)
+diff --git a/drivers/isdn/sc/init.c b/drivers/isdn/sc/init.c
+index 6b580b2..ca997bd 100644
+--- a/drivers/isdn/sc/init.c
++++ b/drivers/isdn/sc/init.c
+@@ -33,8 +33,8 @@ static unsigned long ram[] = {0, 0, 0, 0};
+ static bool do_reset = 0;
  
- static struct regulator_ops lp8788_buck12_ops = {
- 	.list_voltage = regulator_list_voltage_table,
-+	.map_voltage = regulator_map_voltage_ascend,
- 	.set_voltage_sel = lp8788_buck12_set_voltage_sel,
- 	.get_voltage_sel = lp8788_buck12_get_voltage_sel,
- 	.enable = regulator_enable_regmap,
-@@ -358,6 +359,7 @@ static struct regulator_ops lp8788_buck12_ops = {
+ module_param_array(io, int, NULL, 0);
+-module_param_array(irq, int, NULL, 0);
+-module_param_array(ram, int, NULL, 0);
++module_param_array(irq, byte, NULL, 0);
++module_param_array(ram, long, NULL, 0);
+ module_param(do_reset, bool, 0);
  
- static struct regulator_ops lp8788_buck34_ops = {
- 	.list_voltage = regulator_list_voltage_table,
-+	.map_voltage = regulator_map_voltage_ascend,
- 	.set_voltage_sel = regulator_set_voltage_sel_regmap,
- 	.get_voltage_sel = regulator_get_voltage_sel_regmap,
- 	.enable = regulator_enable_regmap,
+ static int identify_board(unsigned long, unsigned int);
 -- 
-1.7.10.4
-
-
+1.7.0.4
 
