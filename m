@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757340Ab3DXAHF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 20:07:05 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:39569 "EHLO
+	id S1757321Ab3DXAHf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 20:07:35 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:39567 "EHLO
 	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757189Ab3DXAGV (ORCPT
+	with ESMTP id S1754847Ab3DXAGU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 20:06:21 -0400
+	Tue, 23 Apr 2013 20:06:20 -0400
 From: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
 To: linux-sh@vger.kernel.org
 Cc: linux-leds@vger.kernel.org, linux-kernel@vger.kernel.org,
         Thierry Reding <thierry.reding@avionic-design.de>,
         Magnus Damm <magnus.damm@gmail.com>, Paul Mundt <lethal@linux-sh.org>
-Subject: [PATCH 7/9] sh-pfc: sh73a0: Remove function GPIOs
-Date: Wed, 24 Apr 2013 02:06:07 +0200
-Message-Id: <1366761969-16759-8-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+Subject: [PATCH 6/9] ARM: mach-shmobile: kota2: Use leds-pwm + pwm-rmob
+Date: Wed, 24 Apr 2013 02:06:06 +0200
+Message-Id: <1366761969-16759-7-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1366761969-16759-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
 References: <1366761969-16759-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
@@ -22,433 +22,294 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No sh73a0 platform use the function GPIOs API. Remove it.
+Instead of using the LED-specific TPU PWM driver, switch to the generic
+TPU PWM driver with leds-pwm.
 
 Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
 ---
- drivers/pinctrl/sh-pfc/pfc-sh73a0.c | 395 ------------------------------------
- 1 file changed, 395 deletions(-)
+ arch/arm/mach-shmobile/board-kota2.c  | 178 ++++++++++++++++++++--------------
+ arch/arm/mach-shmobile/clock-sh73a0.c |   8 +-
+ 2 files changed, 109 insertions(+), 77 deletions(-)
 
-diff --git a/drivers/pinctrl/sh-pfc/pfc-sh73a0.c b/drivers/pinctrl/sh-pfc/pfc-sh73a0.c
-index e4e0c92..88e5b10 100644
---- a/drivers/pinctrl/sh-pfc/pfc-sh73a0.c
-+++ b/drivers/pinctrl/sh-pfc/pfc-sh73a0.c
-@@ -26,7 +26,6 @@
- #include <linux/regulator/machine.h>
- #include <linux/slab.h>
- 
--#include <mach/sh73a0.h>
- #include <mach/irqs.h>
- 
- #include "core.h"
-@@ -3153,397 +3152,6 @@ static const struct sh_pfc_function pinmux_functions[] = {
- 	SH_PFC_FUNCTION(usb),
+diff --git a/arch/arm/mach-shmobile/board-kota2.c b/arch/arm/mach-shmobile/board-kota2.c
+index ef5ca0e..8634789 100644
+--- a/arch/arm/mach-shmobile/board-kota2.c
++++ b/arch/arm/mach-shmobile/board-kota2.c
+@@ -26,6 +26,7 @@
+ #include <linux/irq.h>
+ #include <linux/pinctrl/machine.h>
+ #include <linux/pinctrl/pinconf-generic.h>
++#include <linux/platform_data/pwm-rmob.h>
+ #include <linux/platform_device.h>
+ #include <linux/delay.h>
+ #include <linux/io.h>
+@@ -37,8 +38,8 @@
+ #include <linux/input/sh_keysc.h>
+ #include <linux/gpio_keys.h>
+ #include <linux/leds.h>
++#include <linux/leds_pwm.h>
+ #include <linux/irqchip/arm-gic.h>
+-#include <linux/platform_data/leds-renesas-tpu.h>
+ #include <linux/mmc/host.h>
+ #include <linux/mmc/sh_mmcif.h>
+ #include <linux/mfd/tmio.h>
+@@ -186,116 +187,137 @@ static struct platform_device gpio_leds_device = {
  };
  
--#define PINMUX_FN_BASE	GPIO_FN_GPI0
--
--static const struct pinmux_func pinmux_func_gpios[] = {
--	/* Table 25-1 (Functions 0-7) */
--	GPIO_FN(GPI0),
--	GPIO_FN(GPI1),
--	GPIO_FN(GPI2),
--	GPIO_FN(GPI3),
--	GPIO_FN(GPI4),
--	GPIO_FN(GPI5),
--	GPIO_FN(GPI6),
--	GPIO_FN(GPI7),
--	GPIO_FN(GPO7), \
--	GPIO_FN(MFG0_OUT2),
--	GPIO_FN(GPO6), \
--	GPIO_FN(MFG1_OUT2),
--	GPIO_FN(GPO5), \
--	GPIO_FN(PORT16_VIO_CKOR),
--	GPIO_FN(PORT19_VIO_CKO2),
--	GPIO_FN(GPO0),
--	GPIO_FN(GPO1),
--	GPIO_FN(GPO2), \
--	GPIO_FN(STATUS0),
--	GPIO_FN(GPO3), \
--	GPIO_FN(STATUS1),
--	GPIO_FN(GPO4), \
--	GPIO_FN(STATUS2),
--	GPIO_FN(VINT),
--	GPIO_FN(TCKON),
--	GPIO_FN(XDVFS1), \
--	GPIO_FN(MFG0_OUT1), \
--	GPIO_FN(PORT27_IROUT),
--	GPIO_FN(XDVFS2), \
--	GPIO_FN(PORT28_TPU1TO1),
--	GPIO_FN(SIM_RST), \
--	GPIO_FN(PORT29_TPU1TO1),
--	GPIO_FN(SIM_CLK), \
--	GPIO_FN(PORT30_VIO_CKOR),
--	GPIO_FN(SIM_D), \
--	GPIO_FN(PORT31_IROUT),
--	GPIO_FN(XWUP),
--	GPIO_FN(VACK),
--	GPIO_FN(XTAL1L),
--	GPIO_FN(PORT49_IROUT), \
--	GPIO_FN(BBIF2_TSYNC2), \
--	GPIO_FN(TPU2TO2), \
--
--	GPIO_FN(BBIF2_TSCK2), \
--	GPIO_FN(TPU2TO3), \
--	GPIO_FN(BBIF2_TXD2),
--	GPIO_FN(TPU3TO3), \
--	GPIO_FN(TPU3TO2), \
--	GPIO_FN(TPU0TO0),
--	GPIO_FN(A0), \
--	GPIO_FN(BS_),
--	GPIO_FN(A12), \
--	GPIO_FN(TPU4TO2),
--	GPIO_FN(A13), \
--	GPIO_FN(TPU0TO1),
--	GPIO_FN(A14), \
--	GPIO_FN(A15), \
--	GPIO_FN(A16), \
--	GPIO_FN(MSIOF0_SS1),
--	GPIO_FN(A17), \
--	GPIO_FN(MSIOF0_TSYNC),
--	GPIO_FN(A18), \
--	GPIO_FN(MSIOF0_TSCK),
--	GPIO_FN(A19), \
--	GPIO_FN(MSIOF0_TXD),
--	GPIO_FN(A20), \
--	GPIO_FN(MSIOF0_RSCK),
--	GPIO_FN(A21), \
--	GPIO_FN(MSIOF0_RSYNC),
--	GPIO_FN(A22), \
--	GPIO_FN(MSIOF0_MCK0),
--	GPIO_FN(A23), \
--	GPIO_FN(MSIOF0_MCK1),
--	GPIO_FN(A24), \
--	GPIO_FN(MSIOF0_RXD),
--	GPIO_FN(A25), \
--	GPIO_FN(MSIOF0_SS2),
--	GPIO_FN(A26), \
--	GPIO_FN(FCE1_),
--	GPIO_FN(DACK0),
--	GPIO_FN(FCE0_), \
--	GPIO_FN(WAIT_), \
--	GPIO_FN(DREQ0),
--	GPIO_FN(FRB),
--	GPIO_FN(CKO),
--	GPIO_FN(NBRSTOUT_),
--	GPIO_FN(NBRST_),
--	GPIO_FN(BBIF2_TXD),
--	GPIO_FN(BBIF2_RXD),
--	GPIO_FN(BBIF2_SYNC),
--	GPIO_FN(BBIF2_SCK),
--	GPIO_FN(MFG3_IN2),
--	GPIO_FN(MFG3_IN1),
--	GPIO_FN(BBIF1_SS2), \
--	GPIO_FN(MFG3_OUT1),
--	GPIO_FN(HSI_RX_DATA), \
--	GPIO_FN(BBIF1_RXD),
--	GPIO_FN(HSI_TX_WAKE), \
--	GPIO_FN(BBIF1_TSCK),
--	GPIO_FN(HSI_TX_DATA), \
--	GPIO_FN(BBIF1_TSYNC),
--	GPIO_FN(HSI_TX_READY), \
--	GPIO_FN(BBIF1_TXD),
--	GPIO_FN(HSI_RX_READY), \
--	GPIO_FN(BBIF1_RSCK), \
--	GPIO_FN(HSI_RX_WAKE), \
--	GPIO_FN(BBIF1_RSYNC), \
--	GPIO_FN(HSI_RX_FLAG), \
--	GPIO_FN(BBIF1_SS1), \
--	GPIO_FN(BBIF1_FLOW),
--	GPIO_FN(HSI_TX_FLAG),
--	GPIO_FN(VIO_VD), \
--	GPIO_FN(VIO2_VD), \
--
--	GPIO_FN(VIO_HD), \
--	GPIO_FN(VIO2_HD), \
--	GPIO_FN(VIO_D0), \
--	GPIO_FN(PORT130_MSIOF2_RXD), \
--	GPIO_FN(VIO_D1), \
--	GPIO_FN(PORT131_MSIOF2_SS1), \
--	GPIO_FN(VIO_D2), \
--	GPIO_FN(PORT132_MSIOF2_SS2), \
--	GPIO_FN(VIO_D3), \
--	GPIO_FN(MSIOF2_TSYNC), \
--	GPIO_FN(VIO_D4), \
--	GPIO_FN(MSIOF2_TXD), \
--	GPIO_FN(VIO_D5), \
--	GPIO_FN(MSIOF2_TSCK), \
--	GPIO_FN(VIO_D6), \
--	GPIO_FN(VIO_D7), \
--	GPIO_FN(VIO_D8), \
--	GPIO_FN(VIO2_D0), \
--	GPIO_FN(VIO_D9), \
--	GPIO_FN(VIO2_D1), \
--	GPIO_FN(VIO_D10), \
--	GPIO_FN(TPU0TO2), \
--	GPIO_FN(VIO2_D2), \
--	GPIO_FN(VIO_D11), \
--	GPIO_FN(TPU0TO3), \
--	GPIO_FN(VIO2_D3), \
--	GPIO_FN(VIO_D12), \
--	GPIO_FN(VIO2_D4), \
--	GPIO_FN(VIO_D13), \
--	GPIO_FN(VIO2_D5), \
--	GPIO_FN(VIO_D14), \
--	GPIO_FN(VIO2_D6), \
--	GPIO_FN(VIO_D15), \
--	GPIO_FN(TPU1TO3), \
--	GPIO_FN(VIO2_D7), \
--	GPIO_FN(VIO_CLK), \
--	GPIO_FN(VIO2_CLK), \
--	GPIO_FN(VIO_FIELD), \
--	GPIO_FN(VIO2_FIELD), \
--	GPIO_FN(VIO_CKO),
--	GPIO_FN(A27), \
--	GPIO_FN(MFG0_IN1), \
--	GPIO_FN(MFG0_IN2),
--	GPIO_FN(TS_SPSYNC3), \
--	GPIO_FN(MSIOF2_RSCK),
--	GPIO_FN(TS_SDAT3), \
--	GPIO_FN(MSIOF2_RSYNC),
--	GPIO_FN(TPU1TO2), \
--	GPIO_FN(TS_SDEN3), \
--	GPIO_FN(PORT153_MSIOF2_SS1),
--	GPIO_FN(MSIOF2_MCK0),
--	GPIO_FN(MSIOF2_MCK1),
--	GPIO_FN(PORT156_MSIOF2_SS2),
--	GPIO_FN(PORT157_MSIOF2_RXD),
--	GPIO_FN(DINT_), \
--	GPIO_FN(TS_SCK3),
--	GPIO_FN(NMI),
--	GPIO_FN(TPU3TO0),
--	GPIO_FN(BBIF2_TSYNC1),
--	GPIO_FN(BBIF2_TSCK1),
--	GPIO_FN(BBIF2_TXD1),
--	GPIO_FN(MFG2_OUT2), \
--	GPIO_FN(TPU2TO1),
--	GPIO_FN(TPU4TO1), \
--	GPIO_FN(MFG4_OUT2),
--	GPIO_FN(D16),
--	GPIO_FN(D17),
--	GPIO_FN(D18),
--	GPIO_FN(D19),
--	GPIO_FN(D20),
--	GPIO_FN(D21),
--	GPIO_FN(D22),
--	GPIO_FN(PORT207_MSIOF0L_SS1), \
--	GPIO_FN(D23),
--	GPIO_FN(PORT208_MSIOF0L_SS2), \
--	GPIO_FN(D24),
--	GPIO_FN(D25),
--	GPIO_FN(DREQ2), \
--	GPIO_FN(PORT210_MSIOF0L_SS1), \
--	GPIO_FN(D26),
--	GPIO_FN(PORT211_MSIOF0L_SS2), \
--	GPIO_FN(D27),
--	GPIO_FN(TS_SPSYNC1), \
--	GPIO_FN(MSIOF0L_MCK0), \
--	GPIO_FN(D28),
--	GPIO_FN(TS_SDAT1), \
--	GPIO_FN(MSIOF0L_MCK1), \
--	GPIO_FN(D29),
--	GPIO_FN(TS_SDEN1), \
--	GPIO_FN(MSIOF0L_RSCK), \
--	GPIO_FN(D30),
--	GPIO_FN(TS_SCK1), \
--	GPIO_FN(MSIOF0L_RSYNC), \
--	GPIO_FN(D31),
--	GPIO_FN(DACK2), \
--	GPIO_FN(MSIOF0L_TSYNC), \
--	GPIO_FN(VIO2_FIELD3), \
--	GPIO_FN(DACK3), \
--	GPIO_FN(PORT218_VIO_CKOR),
--	GPIO_FN(DREQ3), \
--	GPIO_FN(MSIOF0L_TSCK), \
--	GPIO_FN(VIO2_CLK3), \
--	GPIO_FN(DREQ1), \
--	GPIO_FN(PWEN), \
--	GPIO_FN(MSIOF0L_RXD), \
--	GPIO_FN(VIO2_HD3), \
--	GPIO_FN(DACK1), \
--	GPIO_FN(OVCN), \
--	GPIO_FN(MSIOF0L_TXD), \
--	GPIO_FN(VIO2_VD3), \
--
--	GPIO_FN(OVCN2),
--	GPIO_FN(EXTLP), \
--	GPIO_FN(PORT226_VIO_CKO2),
--	GPIO_FN(IDIN),
--	GPIO_FN(MFG1_IN1),
--	GPIO_FN(MSIOF1_TXD), \
--	GPIO_FN(MSIOF1_TSYNC), \
--	GPIO_FN(MSIOF1_TSCK), \
--	GPIO_FN(MSIOF1_RXD), \
--	GPIO_FN(MSIOF1_RSCK), \
--	GPIO_FN(VIO2_CLK2), \
--	GPIO_FN(MSIOF1_RSYNC), \
--	GPIO_FN(MFG1_IN2), \
--	GPIO_FN(VIO2_VD2), \
--	GPIO_FN(MSIOF1_MCK0), \
--	GPIO_FN(MSIOF1_MCK1), \
--	GPIO_FN(MSIOF1_SS1), \
--	GPIO_FN(VIO2_FIELD2), \
--	GPIO_FN(MSIOF1_SS2), \
--	GPIO_FN(VIO2_HD2), \
--	GPIO_FN(PORT241_IROUT), \
--	GPIO_FN(MFG4_OUT1), \
--	GPIO_FN(TPU4TO0),
--	GPIO_FN(MFG4_IN2),
--	GPIO_FN(PORT243_VIO_CKO2),
--	GPIO_FN(MFG2_IN1), \
--	GPIO_FN(MSIOF2R_RXD),
--	GPIO_FN(MFG2_IN2), \
--	GPIO_FN(MSIOF2R_TXD),
--	GPIO_FN(MFG1_OUT1), \
--	GPIO_FN(TPU1TO0),
--	GPIO_FN(MFG3_OUT2), \
--	GPIO_FN(TPU3TO1),
--	GPIO_FN(MFG2_OUT1), \
--	GPIO_FN(TPU2TO0), \
--	GPIO_FN(MSIOF2R_TSCK),
--	GPIO_FN(PORT249_IROUT), \
--	GPIO_FN(MFG4_IN1), \
--	GPIO_FN(MSIOF2R_TSYNC),
--	GPIO_FN(SDHICLK0),
--	GPIO_FN(SDHICD0),
--	GPIO_FN(SDHID0_0),
--	GPIO_FN(SDHID0_1),
--	GPIO_FN(SDHID0_2),
--	GPIO_FN(SDHID0_3),
--	GPIO_FN(SDHICMD0),
--	GPIO_FN(SDHIWP0),
--	GPIO_FN(SDHICLK1),
--	GPIO_FN(SDHID1_0), \
--	GPIO_FN(TS_SPSYNC2),
--	GPIO_FN(SDHID1_1), \
--	GPIO_FN(TS_SDAT2),
--	GPIO_FN(SDHID1_2), \
--	GPIO_FN(TS_SDEN2),
--	GPIO_FN(SDHID1_3), \
--	GPIO_FN(TS_SCK2),
--	GPIO_FN(SDHICMD1),
--	GPIO_FN(SDHICLK2),
--	GPIO_FN(SDHID2_0), \
--	GPIO_FN(TS_SPSYNC4),
--	GPIO_FN(SDHID2_1), \
--	GPIO_FN(TS_SDAT4),
--	GPIO_FN(SDHID2_2), \
--	GPIO_FN(TS_SDEN4),
--	GPIO_FN(SDHID2_3), \
--	GPIO_FN(TS_SCK4),
--	GPIO_FN(SDHICMD2),
--	GPIO_FN(MMCCLK0),
--	GPIO_FN(MMCD0_0),
--	GPIO_FN(MMCD0_1),
--	GPIO_FN(MMCD0_2),
--	GPIO_FN(MMCD0_3),
--	GPIO_FN(MMCD0_4), \
--	GPIO_FN(TS_SPSYNC5),
--	GPIO_FN(MMCD0_5), \
--	GPIO_FN(TS_SDAT5),
--	GPIO_FN(MMCD0_6), \
--	GPIO_FN(TS_SDEN5),
--	GPIO_FN(MMCD0_7), \
--	GPIO_FN(TS_SCK5),
--	GPIO_FN(MMCCMD0),
--	GPIO_FN(RESETOUTS_), \
--	GPIO_FN(EXTAL2OUT),
--	GPIO_FN(MCP_WAIT__MCP_FRB),
--	GPIO_FN(MCP_CKO), \
--	GPIO_FN(MMCCLK1),
--	GPIO_FN(MCP_D15_MCP_NAF15),
--	GPIO_FN(MCP_D14_MCP_NAF14),
--	GPIO_FN(MCP_D13_MCP_NAF13),
--	GPIO_FN(MCP_D12_MCP_NAF12),
--	GPIO_FN(MCP_D11_MCP_NAF11),
--	GPIO_FN(MCP_D10_MCP_NAF10),
--	GPIO_FN(MCP_D9_MCP_NAF9),
--	GPIO_FN(MCP_D8_MCP_NAF8), \
--	GPIO_FN(MMCCMD1),
--	GPIO_FN(MCP_D7_MCP_NAF7), \
--	GPIO_FN(MMCD1_7),
--
--	GPIO_FN(MCP_D6_MCP_NAF6), \
--	GPIO_FN(MMCD1_6),
--	GPIO_FN(MCP_D5_MCP_NAF5), \
--	GPIO_FN(MMCD1_5),
--	GPIO_FN(MCP_D4_MCP_NAF4), \
--	GPIO_FN(MMCD1_4),
--	GPIO_FN(MCP_D3_MCP_NAF3), \
--	GPIO_FN(MMCD1_3),
--	GPIO_FN(MCP_D2_MCP_NAF2), \
--	GPIO_FN(MMCD1_2),
--	GPIO_FN(MCP_D1_MCP_NAF1), \
--	GPIO_FN(MMCD1_1),
--	GPIO_FN(MCP_D0_MCP_NAF0), \
--	GPIO_FN(MMCD1_0),
--	GPIO_FN(MCP_NBRSTOUT_),
--	GPIO_FN(MCP_WE0__MCP_FWE), \
--	GPIO_FN(MCP_RDWR_MCP_FWE),
--
--	/* MSEL2 special cases */
--	GPIO_FN(TSIF2_TS_XX1),
--	GPIO_FN(TSIF2_TS_XX2),
--	GPIO_FN(TSIF2_TS_XX3),
--	GPIO_FN(TSIF2_TS_XX4),
--	GPIO_FN(TSIF2_TS_XX5),
--	GPIO_FN(TSIF1_TS_XX1),
--	GPIO_FN(TSIF1_TS_XX2),
--	GPIO_FN(TSIF1_TS_XX3),
--	GPIO_FN(TSIF1_TS_XX4),
--	GPIO_FN(TSIF1_TS_XX5),
--	GPIO_FN(TSIF0_TS_XX1),
--	GPIO_FN(TSIF0_TS_XX2),
--	GPIO_FN(TSIF0_TS_XX3),
--	GPIO_FN(TSIF0_TS_XX4),
--	GPIO_FN(TSIF0_TS_XX5),
--	GPIO_FN(MST1_TS_XX1),
--	GPIO_FN(MST1_TS_XX2),
--	GPIO_FN(MST1_TS_XX3),
--	GPIO_FN(MST1_TS_XX4),
--	GPIO_FN(MST1_TS_XX5),
--	GPIO_FN(MST0_TS_XX1),
--	GPIO_FN(MST0_TS_XX2),
--	GPIO_FN(MST0_TS_XX3),
--	GPIO_FN(MST0_TS_XX4),
--	GPIO_FN(MST0_TS_XX5),
--
--	/* MSEL3 special cases */
--	GPIO_FN(SDHI0_VCCQ_MC0_ON),
--	GPIO_FN(SDHI0_VCCQ_MC0_OFF),
--	GPIO_FN(DEBUG_MON_VIO),
--	GPIO_FN(DEBUG_MON_LCDD),
--	GPIO_FN(LCDC_LCDC0),
--	GPIO_FN(LCDC_LCDC1),
--
--	/* MSEL4 special cases */
--	GPIO_FN(IRQ9_MEM_INT),
--	GPIO_FN(IRQ9_MCP_INT),
--	GPIO_FN(A11),
--	GPIO_FN(TPU4TO3),
--	GPIO_FN(RESETA_N_PU_ON),
--	GPIO_FN(RESETA_N_PU_OFF),
--	GPIO_FN(EDBGREQ_PD),
--	GPIO_FN(EDBGREQ_PU),
--};
--
- #undef PORTCR
- #define PORTCR(nr, reg)							\
- 	{								\
-@@ -4303,9 +3911,6 @@ const struct sh_pfc_soc_info sh73a0_pinmux_info = {
- 	.functions = pinmux_functions,
- 	.nr_functions = ARRAY_SIZE(pinmux_functions),
+ /* TPU LED */
+-static struct led_renesas_tpu_config led_renesas_tpu12_pdata = {
+-	.name		= "V2513",
+-	.pin_gpio_fn	= GPIO_FN_TPU1TO2,
+-	.pin_gpio	= 153,
+-	.channel_offset = 0x90,
+-	.timer_bit = 2,
+-	.max_brightness = 1000,
++static struct rmob_tpu_pwm_platform_data tpu1_pwm_pdata = {
++	.channels[2] = {
++		.enabled = true,
++		.active_low = false,
++	},
+ };
  
--	.func_gpios = pinmux_func_gpios,
--	.nr_func_gpios = ARRAY_SIZE(pinmux_func_gpios),
--
- 	.cfg_regs = pinmux_config_regs,
- 	.data_regs = pinmux_data_regs,
+-static struct resource tpu12_resources[] = {
++static struct resource tpu1_pwm_resources[] = {
+ 	[0] = {
+-		.name	= "TPU12",
+-		.start	= 0xe6610090,
+-		.end	= 0xe66100b5,
++		.start	= 0xe6610000,
++		.end	= 0xe66100ff,
+ 		.flags	= IORESOURCE_MEM,
+ 	},
+ };
  
+-static struct platform_device leds_tpu12_device = {
+-	.name = "leds-renesas-tpu",
+-	.id = 12,
++static struct platform_device tpu1_pwm_device = {
++	.name = "rmob_tpu_pwm",
++	.id = 1,
+ 	.dev = {
+-		.platform_data  = &led_renesas_tpu12_pdata,
++		.platform_data  = &tpu1_pwm_pdata,
+ 	},
+-	.num_resources	= ARRAY_SIZE(tpu12_resources),
+-	.resource	= tpu12_resources,
++	.num_resources	= ARRAY_SIZE(tpu1_pwm_resources),
++	.resource	= tpu1_pwm_resources,
+ };
+ 
+-static struct led_renesas_tpu_config led_renesas_tpu41_pdata = {
+-	.name		= "V2514",
+-	.pin_gpio_fn	= GPIO_FN_TPU4TO1,
+-	.pin_gpio	= 199,
+-	.channel_offset = 0x50,
+-	.timer_bit = 1,
+-	.max_brightness = 1000,
++static struct rmob_tpu_pwm_platform_data tpu2_pwm_pdata = {
++	.channels[1] = {
++		.enabled = true,
++		.active_low = false,
++	},
+ };
+ 
+-static struct resource tpu41_resources[] = {
++static struct resource tpu2_pwm_resources[] = {
+ 	[0] = {
+-		.name	= "TPU41",
+-		.start	= 0xe6640050,
+-		.end	= 0xe6640075,
++		.start	= 0xe6620000,
++		.end	= 0xe66200ff,
+ 		.flags	= IORESOURCE_MEM,
+ 	},
+ };
+ 
+-static struct platform_device leds_tpu41_device = {
+-	.name = "leds-renesas-tpu",
+-	.id = 41,
++static struct platform_device tpu2_pwm_device = {
++	.name = "rmob_tpu_pwm",
++	.id = 2,
+ 	.dev = {
+-		.platform_data  = &led_renesas_tpu41_pdata,
++		.platform_data  = &tpu2_pwm_pdata,
+ 	},
+-	.num_resources	= ARRAY_SIZE(tpu41_resources),
+-	.resource	= tpu41_resources,
++	.num_resources	= ARRAY_SIZE(tpu2_pwm_resources),
++	.resource	= tpu2_pwm_resources,
+ };
+ 
+-static struct led_renesas_tpu_config led_renesas_tpu21_pdata = {
+-	.name		= "V2515",
+-	.pin_gpio_fn	= GPIO_FN_TPU2TO1,
+-	.pin_gpio	= 197,
+-	.channel_offset = 0x50,
+-	.timer_bit = 1,
+-	.max_brightness = 1000,
++static struct rmob_tpu_pwm_platform_data tpu3_pwm_pdata = {
++	.channels[0] = {
++		.enabled = true,
++		.active_low = false,
++	},
+ };
+ 
+-static struct resource tpu21_resources[] = {
++static struct resource tpu3_pwm_resources[] = {
+ 	[0] = {
+-		.name	= "TPU21",
+-		.start	= 0xe6620050,
+-		.end	= 0xe6620075,
++		.start	= 0xe6630000,
++		.end	= 0xe66300ff,
+ 		.flags	= IORESOURCE_MEM,
+ 	},
+ };
+ 
+-static struct platform_device leds_tpu21_device = {
+-	.name = "leds-renesas-tpu",
+-	.id = 21,
++static struct platform_device tpu3_pwm_device = {
++	.name = "rmob_tpu_pwm",
++	.id = 3,
+ 	.dev = {
+-		.platform_data  = &led_renesas_tpu21_pdata,
++		.platform_data  = &tpu3_pwm_pdata,
+ 	},
+-	.num_resources	= ARRAY_SIZE(tpu21_resources),
+-	.resource	= tpu21_resources,
++	.num_resources	= ARRAY_SIZE(tpu3_pwm_resources),
++	.resource	= tpu3_pwm_resources,
+ };
+ 
+-static struct led_renesas_tpu_config led_renesas_tpu30_pdata = {
+-	.name		= "KEYLED",
+-	.pin_gpio_fn	= GPIO_FN_TPU3TO0,
+-	.pin_gpio	= 163,
+-	.channel_offset = 0x10,
+-	.timer_bit = 0,
+-	.max_brightness = 1000,
++static struct rmob_tpu_pwm_platform_data tpu4_pwm_pdata = {
++	.channels[1] = {
++		.enabled = true,
++		.active_low = false,
++	},
+ };
+ 
+-static struct resource tpu30_resources[] = {
++static struct resource tpu4_pwm_resources[] = {
+ 	[0] = {
+-		.name	= "TPU30",
+-		.start	= 0xe6630010,
+-		.end	= 0xe6630035,
++		.start	= 0xe6640000,
++		.end	= 0xe66400ff,
+ 		.flags	= IORESOURCE_MEM,
+ 	},
+ };
+ 
+-static struct platform_device leds_tpu30_device = {
+-	.name = "leds-renesas-tpu",
+-	.id = 30,
++static struct platform_device tpu4_pwm_device = {
++	.name = "rmob_tpu_pwm",
++	.id = 4,
++	.dev = {
++		.platform_data  = &tpu4_pwm_pdata,
++	},
++	.num_resources	= ARRAY_SIZE(tpu4_pwm_resources),
++	.resource	= tpu4_pwm_resources,
++};
++
++static struct led_pwm tpu_pwm_leds[] = {
++	{
++		.name		= "V2513",
++		.pwm_id		= RMOB_TPU_PWM_ID(1, 2),
++		.max_brightness	= 1000,
++	}, {
++		.name		= "V2515",
++		.pwm_id		= RMOB_TPU_PWM_ID(2, 1),
++		.max_brightness	= 1000,
++	}, {
++		.name		= "KEYLED",
++		.pwm_id		= RMOB_TPU_PWM_ID(3, 0),
++		.max_brightness	= 1000,
++	}, {
++		.name		= "V2514",
++		.pwm_id		= RMOB_TPU_PWM_ID(4, 1),
++		.max_brightness	= 1000,
++	},
++};
++
++static struct led_pwm_platform_data leds_pwm_pdata = {
++	.num_leds = ARRAY_SIZE(tpu_pwm_leds),
++	.leds = tpu_pwm_leds,
++};
++
++static struct platform_device leds_pwm_device = {
++	.name = "leds-pwm",
++	.id = 0,
+ 	.dev = {
+-		.platform_data  = &led_renesas_tpu30_pdata,
++		.platform_data = &leds_pwm_pdata,
+ 	},
+-	.num_resources	= ARRAY_SIZE(tpu30_resources),
+-	.resource	= tpu30_resources,
+ };
+ 
+ /* Fixed 1.8V regulator to be used by MMCIF */
+@@ -426,10 +448,11 @@ static struct platform_device *kota2_devices[] __initdata = {
+ 	&keysc_device,
+ 	&gpio_keys_device,
+ 	&gpio_leds_device,
+-	&leds_tpu12_device,
+-	&leds_tpu41_device,
+-	&leds_tpu21_device,
+-	&leds_tpu30_device,
++	&tpu1_pwm_device,
++	&tpu2_pwm_device,
++	&tpu3_pwm_device,
++	&tpu4_pwm_device,
++	&leds_pwm_device,
+ 	&mmcif_device,
+ 	&sdhi0_device,
+ 	&sdhi1_device,
+@@ -512,6 +535,15 @@ static const struct pinctrl_map kota2_pinctrl_map[] = {
+ 				  "bsc_cs5_a", "bsc"),
+ 	PIN_MAP_MUX_GROUP_DEFAULT("smsc911x.0", "pfc-sh73a0",
+ 				  "bsc_we0", "bsc"),
++	/* TPU */
++	PIN_MAP_MUX_GROUP_DEFAULT("rmob_tpu_pwm.1", "pfc-sh73a0",
++				  "tpu1_to2", "tpu1"),
++	PIN_MAP_MUX_GROUP_DEFAULT("rmob_tpu_pwm.2", "pfc-sh73a0",
++				  "tpu2_to1", "tpu2"),
++	PIN_MAP_MUX_GROUP_DEFAULT("rmob_tpu_pwm.3", "pfc-sh73a0",
++				  "tpu3_to0", "tpu3"),
++	PIN_MAP_MUX_GROUP_DEFAULT("rmob_tpu_pwm.4", "pfc-sh73a0",
++				  "tpu4_to1", "tpu4"),
+ };
+ 
+ static void __init kota2_init(void)
+diff --git a/arch/arm/mach-shmobile/clock-sh73a0.c b/arch/arm/mach-shmobile/clock-sh73a0.c
+index f222837..c454dc7 100644
+--- a/arch/arm/mach-shmobile/clock-sh73a0.c
++++ b/arch/arm/mach-shmobile/clock-sh73a0.c
+@@ -656,10 +656,10 @@ static struct clk_lookup lookups[] = {
+ 	CLKDEV_DEV_ID("e6bd0000.mmcif", &mstp_clks[MSTP312]), /* MMCIF0 */
+ 	CLKDEV_DEV_ID("sh_mobile_sdhi.2", &mstp_clks[MSTP311]), /* SDHI2 */
+ 	CLKDEV_DEV_ID("ee140000.sdhi", &mstp_clks[MSTP311]), /* SDHI2 */
+-	CLKDEV_DEV_ID("leds-renesas-tpu.12", &mstp_clks[MSTP303]), /* TPU1 */
+-	CLKDEV_DEV_ID("leds-renesas-tpu.21", &mstp_clks[MSTP302]), /* TPU2 */
+-	CLKDEV_DEV_ID("leds-renesas-tpu.30", &mstp_clks[MSTP301]), /* TPU3 */
+-	CLKDEV_DEV_ID("leds-renesas-tpu.41", &mstp_clks[MSTP300]), /* TPU4 */
++	CLKDEV_DEV_ID("rmob_tpu_pwm.1", &mstp_clks[MSTP303]), /* TPU1 */
++	CLKDEV_DEV_ID("rmob_tpu_pwm.2", &mstp_clks[MSTP302]), /* TPU2 */
++	CLKDEV_DEV_ID("rmob_tpu_pwm.3", &mstp_clks[MSTP301]), /* TPU3 */
++	CLKDEV_DEV_ID("rmob_tpu_pwm.4", &mstp_clks[MSTP300]), /* TPU4 */
+ 	CLKDEV_DEV_ID("i2c-sh_mobile.3", &mstp_clks[MSTP411]), /* I2C3 */
+ 	CLKDEV_DEV_ID("e6826000.i2c", &mstp_clks[MSTP411]), /* I2C3 */
+ 	CLKDEV_DEV_ID("i2c-sh_mobile.4", &mstp_clks[MSTP410]), /* I2C4 */
 -- 
 1.8.1.5
 
