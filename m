@@ -1,71 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758656Ab3DXKwL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 06:52:11 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:34507 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757911Ab3DXKwJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 06:52:09 -0400
-X-Spam-Score: -100.8
-Message-ID: <5177B92A.5030004@asianux.com>
-Date: Wed, 24 Apr 2013 18:51:22 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1758690Ab3DXKx1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 06:53:27 -0400
+Received: from www.piware.de ([213.9.93.70]:44880 "EHLO www.piware.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757319Ab3DXKxZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 06:53:25 -0400
+Date: Wed, 24 Apr 2013 12:53:21 +0200
+From: Martin Pitt <martin.pitt@ubuntu.com>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: johannes@sipsolutions.net, linville@tuxdriver.com,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dcbw@redhat.com
+Subject: Re: [PATCH] mac80211_hwsim: correctly register the platform driver
+Message-ID: <20130424105321.GA2898@piware.de>
+References: <1366778405-7584-1-git-send-email-sasha.levin@oracle.com>
 MIME-Version: 1.0
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: Will Deacon <Will.Deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] arm64: compiling issue, need add include/asm/vga.h
- file
-References: <5177551D.8090007@asianux.com> <20130424082237.GA23397@arm.com> <5177B1F0.10106@asianux.com> <20130424104231.GJ23397@arm.com>
-In-Reply-To: <20130424104231.GJ23397@arm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="zYM0uCDKw75PZbzx"
+Content-Disposition: inline
+In-Reply-To: <1366778405-7584-1-git-send-email-sasha.levin@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013年04月24日 18:42, Catalin Marinas wrote:
-> On Wed, Apr 24, 2013 at 11:20:32AM +0100, Chen Gang wrote:
->> For compiling with allmodconfig, need vga.h file, so generate it which
->> just only include the asm-generic one.
->>
->> It is firstly used by drivers/gpu/drm/drm_irq.c.
->>
->> The related error:
->> include/video/vga.h:22:21: fatal error: asm/vga.h: No such file or directory
->>
->> Signed-off-by: Chen Gang <gang.chen@asianux.com>
->> ---
->>  arch/arm64/include/asm/vga.h |   21 +++++++++++++++++++++
->>  1 files changed, 21 insertions(+), 0 deletions(-)
->>  create mode 100644 arch/arm64/include/asm/vga.h
-> 
-> As Will said, please use asm/Kbuild.
-> 
 
-OK, I will send.
+--zYM0uCDKw75PZbzx
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->> diff --git a/arch/arm64/include/asm/vga.h b/arch/arm64/include/asm/vga.h
->> new file mode 100644
->> index 0000000..1c49d51
->> --- /dev/null
->> +++ b/arch/arm64/include/asm/vga.h
->> @@ -0,0 +1,21 @@
->> +/*
->> + * Copyright (C) 2012 ARM Ltd.
-> 
-> ARM copyright? You either work for ARM or there is a copyright
-> assignment between you and ARM ;)
-> 
+Hello Sasha,
 
-:-)
+Sasha Levin [2013-04-24  0:40 -0400]:
+> Not registering a platform_driver would make us access garbage
+> when the platform callbacks under driver_register() kicks in.
+>=20
+> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
 
--- 
-Chen Gang
+Ah, thanks for catching this! I applied that patch and verified that
+it still works well.
 
-Asianux Corporation
+Tested-By: Martin Pitt <martin.pitt@ubuntu.com>
+
+Martin
+--=20
+Martin Pitt                        | http://www.piware.de
+Ubuntu Developer (www.ubuntu.com)  | Debian Developer  (www.debian.org)
+
+--zYM0uCDKw75PZbzx
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRd7mhAAoJEPmIJawmtHufgSsP/jKmdrVPj69ClRn4sgySd0TH
+UmEvACPZQ+8Z9KCWnERDDL7f/RsHELFJ7LebyTsauaOhkTJqWJGRybX7PT7QDlul
+NHoCPXUcIKX2QNxgn2biWa2rcGx5YYXf/xeibdsqPi0BLsOVXn1nAykYlJbcbyJl
+M7uThqtLl8V4PVqliEhtSa2ch6idkMIavIqFME5HmmQ6d0/AL3OlL5ZM9vftg/g0
+2pk7kEJHonbUBtQCv0v4vhkypUidJzEZi5vaWqpfa0MmtKfeQIYx+LSBDQhHsOH5
+RSDh4KtJTgR78aGgC8myTqsYj5WLdxRXTcwDWfk61tdd05ND/g8oeEHVdqXGubxc
+CvalZCAsRBbYX0WIxUljE46fuxyzazBEBZIiGd13gTF22O9jUdEyDWtYfo7aPUyp
+7EU+YvpgynNl4kSY3XnIK0aOZeZa4zMYISPyMF6Bx4Bs/Oi5kpXlGJDoz6R9+5AJ
+a+9veRiWlpJDnGv6i+VntEih8B/yvaIjx9rzhq+4kbB+bOOC9DiSlrQuz7BUYNJ8
+taSeOI0A3dX4Xp5uL1uy02d9eWkrkHVCsJWLfQKjCNJIgkEzqa4mrXa79kGkSJm7
+y58jGExddG/60J9Mdt1SJZ2I3GmL4kjzmRbijFkoNuP6OK8Qs7LQVMrtjnATTMfU
+WM8Uu08CGGvWzqz+JtZR
+=y4W9
+-----END PGP SIGNATURE-----
+
+--zYM0uCDKw75PZbzx--
