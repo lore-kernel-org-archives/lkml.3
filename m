@@ -1,97 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758578Ab3DXKst (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 06:48:49 -0400
-Received: from smtp.eu.citrix.com ([46.33.159.39]:3546 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757972Ab3DXKss (ORCPT
+	id S1758593Ab3DXKuu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 06:50:50 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:4249 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758557Ab3DXKus (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 06:48:48 -0400
-X-IronPort-AV: E=Sophos;i="4.87,542,1363132800"; 
-   d="scan'208";a="3876059"
-Message-ID: <1366800525.20256.266.camel@zakaz.uk.xensource.com>
-Subject: [RFC] device-tree.git automatic sync from linux.git
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: <linux-kernel@vger.kernel.org>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-c6x-dev@linux-c6x.org>,
-        <microblaze-uclinux@itee.uq.edu.au>, <linux-mips@linux-mips.org>,
-        <linux@openrisc.net>, <linuxppc-dev@lists.ozlabs.org>,
-        <x86@kernel.org>, <linux-xtensa@linux-xtensa.org>
-Date: Wed, 24 Apr 2013 11:48:45 +0100
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
+	Wed, 24 Apr 2013 06:50:48 -0400
+X-Spam-Score: -100.8
+Message-ID: <5177B8D9.3030607@asianux.com>
+Date: Wed, 24 Apr 2013 18:50:01 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
+To: Will Deacon <will.deacon@arm.com>
+CC: Catalin Marinas <Catalin.Marinas@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] arm64: compiling issue, need add include/asm/vga.h
+ file
+References: <5177551D.8090007@asianux.com> <20130424082237.GA23397@arm.com> <5177B1F0.10106@asianux.com> <20130424102327.GF21850@mudshark.cambridge.arm.com>
+In-Reply-To: <20130424102327.GF21850@mudshark.cambridge.arm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 2013年04月24日 18:23, Will Deacon wrote:
+> On Wed, Apr 24, 2013 at 11:20:32AM +0100, Chen Gang wrote:
+>> > 
+>> > For compiling with allmodconfig, need vga.h file, so generate it which
+>> > just only include the asm-generic one.
+>> > 
+>> > It is firstly used by drivers/gpu/drm/drm_irq.c.
+>> > 
+>> > The related error:
+>> > include/video/vga.h:22:21: fatal error: asm/vga.h: No such file or directory
+>> > 
+>> > Signed-off-by: Chen Gang <gang.chen@asianux.com>
+>> > ---
+>> >  arch/arm64/include/asm/vga.h |   21 +++++++++++++++++++++
+>> >  1 files changed, 21 insertions(+), 0 deletions(-)
+>> >  create mode 100644 arch/arm64/include/asm/vga.h
+>> > 
+>> > diff --git a/arch/arm64/include/asm/vga.h b/arch/arm64/include/asm/vga.h
+>> > new file mode 100644
+>> > index 0000000..1c49d51
+>> > --- /dev/null
+>> > +++ b/arch/arm64/include/asm/vga.h
+>> > @@ -0,0 +1,21 @@
+>> > +/*
+>> > + * Copyright (C) 2012 ARM Ltd.
+>> > + *
+>> > + * This program is free software; you can redistribute it and/or modify
+>> > + * it under the terms of the GNU General Public License version 2 as
+>> > + * published by the Free Software Foundation.
+>> > + *
+>> > + * This program is distributed in the hope that it will be useful,
+>> > + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+>> > + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+>> > + * GNU General Public License for more details.
+>> > + *
+>> > + * You should have received a copy of the GNU General Public License
+>> > + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+>> > + */
+>> > +#ifndef ASMARM_VGA_H
+>> > +#define ASMARM_VGA_H
+>> > +
+>> > +#include <asm-generic/vga.h>
+>> > +
+>> > +#endif /* ASMARM_VGA_H */
+> Can't you just add this as a generic-y entry in asm/Kbuild?
 
-First off apologies for the large CC list -- I think this catches the
-arch list for all the arches with device tree source in the tree.
+OK, thanks, I need send patch v3.
 
-Various folks have expressed an interest in eventually splitting the
-device tree bindings out of the Linux git repository into a separate
-tree. This should help reduce the cross talk between the code and the
-bindings and to make it difficult to accidentally "co-evolve" the
-bindings and the code (i.e. break compatibility) etc. There are also
-other projects (such as Xen) which would also like to use device-tree as
-an OS agnostic description of the hardware.
+-- 
+Chen Gang
 
-I was talking to Grant about this at this Spring's LinaroConnect in Hong
-Kong and as a first step he was interested in a device-tree.git
-repository which is automatically kept insync with the main Linux tree.
-Somehow I found myself volunteering to set up that tree.
-
-An RFC repository can be found at:
-        http://xenbits.xen.org/gitweb/?p=people/ianc/device-tree-rebasing.git
-
-This is created using git filter-branch and retains the full history for
-the device tree source files up to v3.9-rc8.
-
-The master branch contains everything including the required build
-infrastructure while upstream/master and upstream/dts contain the most
-recently converted upstream master branch and the pristine converted
-version respectively. Each upstream tag T is paired with a tag T-dts
-which is the converted version of that tag.
-
-Note that the tree will be potentially rebasing (hence the name) for the
-time being while I'm still smoothing out the conversion process.
-
-The paths to include in the conversion are described in
-scripts/rewrite-paths.sed. The generic cases are:
-        arch/ARCH/boot/dts/*.dts and *.dts? (for dtsi and dtsp etc)
-	arch/ARCH/boot/*.dts and *.dts?
-        arch/ARCH/include/dts/* (currently unused?)
-which become src/ARCH/*.dts and *.dts? plus src/ARCH/include/*
-
-There are also some special cases for some arches which don't follow
-this pattern and for older versions of the kernel which were less
-consistent. The paths were gleaned from git ls-tree + grep on every tag
-in the tree, so if a file was added and moved between two rcs then the
-original path may not be covered (so the move will look like it just
-adds the files).
-
-In principal this supports the new .dtsp files and includes the required
-include paths in the conversion but none of them seem to be in mainline
-yet, so we'll have to see!
-
-The initial conversion took in excess of 40 hours (running out of a
-ramdisk) so even if the result is stable in terms of commit ids etc a
-fresh conversion every time isn't an option for a ~daily sync so I had
-to create a slightly hacked around git-filter-branch (found in
-scripts/git-filter-branch) to support incremental filtering, which I
-intend to send to the git folks soon. 
-
-Please let me know what you think.
-
-Ian.
-
-[0] real    2533m32.142s
-    user    2393m35.039s
-    sys     343m44.385s
-
-
+Asianux Corporation
