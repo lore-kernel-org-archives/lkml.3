@@ -1,218 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758065Ab3DXJOQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 05:14:16 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:39078 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755810Ab3DXJOO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 05:14:14 -0400
-Message-ID: <5177A262.1000004@imgtec.com>
-Date: Wed, 24 Apr 2013 10:14:10 +0100
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1757990Ab3DXJR4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 05:17:56 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:42216 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751917Ab3DXJRy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 05:17:54 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: adam.lee@canonical.com
+Cc: linux-kernel@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        "open list:USB VIDEO CLASS" <linux-media@vger.kernel.org>
+Subject: Re: [PATCH] Revert "V4L/DVB: uvc: Enable USB autosuspend by default on uvcvideo"
+Date: Wed, 24 Apr 2013 11:17:52 +0200
+Message-ID: <6159110.qEtHHiJYtm@avalon>
+User-Agent: KMail/4.10.2 (Linux/3.7.10-gentoo; KDE/4.10.2; x86_64; ; )
+In-Reply-To: <1366790239-838-1-git-send-email-adam.lee@canonical.com>
+References: <1366790239-838-1-git-send-email-adam.lee@canonical.com>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: <linux-kernel@vger.kernel.org>, Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        <devicetree-discuss@lists.ozlabs.org>, "Rob Landley" <rob@landley.net>,
-        <linux-doc@vger.kernel.org>
-Subject: Re: [PATCH 3/8] irq-imgpdc: add ImgTec PDC irqchip driver
-References: <1366727607-27444-1-git-send-email-james.hogan@imgtec.com> <1366727607-27444-4-git-send-email-james.hogan@imgtec.com> <alpine.LFD.2.02.1304231647400.21884@ionos>
-In-Reply-To: <alpine.LFD.2.02.1304231647400.21884@ionos>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01181__2013_04_24_10_14_11
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for the review Thomas!
+Hi Adam,
 
-On 23/04/13 16:09, Thomas Gleixner wrote:
-> On Tue, 23 Apr 2013, James Hogan wrote:
->> +/**
->> + * struct pdc_intc_priv - private pdc interrupt data.
->> + * @nr_perips:		Number of peripheral interrupt signals.
->> + * @nr_syswakes:	Number of syswake signals.
->> + * @perip_irqs:		List of peripheral IRQ numbers handled.
->> + * @syswake_irq:	Shared PDC syswake IRQ number.
->> + * @domain:		IRQ domain for PDC peripheral and syswake IRQs.
->> + * @pdc_base:		Base of PDC registers.
->> + * @lock:		Lock to protect the PDC syswake registers.
->> + */
->> +struct pdc_intc_priv {
->> +	unsigned int		nr_perips;
->> +	unsigned int		nr_syswakes;
->> +	unsigned int		*perip_irqs;
->> +	unsigned int		syswake_irq;
->> +	struct irq_domain	*domain;
->> +	void __iomem		*pdc_base;
->> +
->> +	spinlock_t		lock;
-> 
->   raw_spinlock_t please
+Thanks for the patch.
 
-Okay.
+On Wednesday 24 April 2013 15:57:19 adam.lee@canonical.com wrote:
+> From: Adam Lee <adam.lee@canonical.com>
+> 
+> This reverts commit 3dae8b41dc5651f8eb22cf310e8b116480ba25b7.
+> 
+> 1, I do have a Chicony webcam, implements autosuspend in a broken way,
+> make `poweroff` performs rebooting when its autosuspend enabled.
+> 
+> 2, There are other webcams which don't support autosuspend too, like
+> https://patchwork.kernel.org/patch/2356141/
+> 
+> 3, kernel removed USB_QUIRK_NO_AUTOSUSPEND in
+> a691efa9888e71232dfb4088fb8a8304ffc7b0f9, because autosuspend is
+> disabled by default.
+> 
+> So, we need to disable autosuspend in uvcvideo, maintaining a quirk list
+> only for uvcvideo is not a good idea.
+> 
+> Signed-off-by: Adam Lee <adam.lee@canonical.com>
 
-If I understand right, this would be because on RT, spinlock_t becomes a
-mutex and won't work correctly with irqs actually disabled for the irq
-callbacks below, is that right?
+I've received very few bug reports about broken auto-suspend support in UVC 
+devices. Most of them could be solved by setting the RESET_RESUME quirk in USB 
+core, only the Creative Live! Cam Optia AF required a quirk in the uvcvideo 
+driver. I would thus rather use the available quirks (USB_QUIRK_RESET_RESUME 
+if possible, UVC_QUIRK_DISABLE_AUTOSUSPEND otherwise) than killing power 
+management for the vast majority of webcams that behave correctly.
 
->> +static void perip_irq_mask(struct irq_data *data)
->> +{
->> +	struct pdc_intc_priv *priv = irqd_to_priv(data);
->> +	unsigned int irq_route;
->> +	unsigned long flags;
->> +
->> +	spin_lock_irqsave(&priv->lock, flags);
+> ---
+>  drivers/media/usb/uvc/uvc_driver.c |    1 -
+>  1 file changed, 1 deletion(-)
 > 
-> This is always called with interrupts disabled.
+> diff --git a/drivers/media/usb/uvc/uvc_driver.c
+> b/drivers/media/usb/uvc/uvc_driver.c index 5dbefa6..8556f7c 100644
+> --- a/drivers/media/usb/uvc/uvc_driver.c
+> +++ b/drivers/media/usb/uvc/uvc_driver.c
+> @@ -1914,7 +1914,6 @@ static int uvc_probe(struct usb_interface *intf,
+>  	}
+> 
+>  	uvc_trace(UVC_TRACE_PROBE, "UVC device initialized.\n");
+> -	usb_enable_autosuspend(udev);
+>  	return 0;
+> 
+>  error:
 
-Okay, I'll switch to raw_spin_lock
+-- 
+Regards,
 
->> +	irq_route = pdc_read(priv, PDC_IRQ_ROUTE);
->> +	irq_route &= ~(1 << data->hwirq);
-> 
-> Why not cache the mask value ?
-
-Yes, caching PDC_IRQ_ROUTE should be possible since it should only be
-used by this driver (hence the driver local spinlock).
-
-> 
->> +	pdc_write(priv, PDC_IRQ_ROUTE, irq_route);
-> 
->> +	spin_unlock_irqrestore(&priv->lock, flags);
->> +}
->> +
->> +static void perip_irq_unmask(struct irq_data *data)
->> +{
->> +	struct pdc_intc_priv *priv = irqd_to_priv(data);
->> +	unsigned int irq_route;
->> +	unsigned long flags;
->> +
->> +	spin_lock_irqsave(&priv->lock, flags);
->> +	irq_route = pdc_read(priv, PDC_IRQ_ROUTE);
->> +	irq_route |= 1 << data->hwirq;
->> +	pdc_write(priv, PDC_IRQ_ROUTE, irq_route);
-> 
-> This code is another slightly different copy of stuff which is
-> available in kernel/irq/generic-chip.c
-> 
-> Can we please stop the code duplication and reuse existing
-> infrastructure? Don't tell me it does not work for you.  I sent out a
-> patch yesterday which makes the code suitable for irq domains.
-
-I'll look into this. kernel/irq/generic-chip.c was added after this
-driver was written.
-
->> +static void pdc_intc_perip_isr(unsigned int irq, struct irq_desc *desc)
->> +{
->> +	struct pdc_intc_priv *priv;
->> +	unsigned int i, irq_no;
->> +
->> +	priv = (struct pdc_intc_priv *)irq_desc_get_handler_data(desc);
->> +
->> +	/* find the peripheral number */
->> +	for (i = 0; i < priv->nr_perips; ++i)
->> +		if (irq == priv->perip_irqs[i])
->> +			goto found;
-> 
-> Whee. Aren't these numbers linear ?
-
-Not necessarily as they're virtual irq numbers obtained via
-platform_get_irq(), which come individually from device tree. Even their
-hardware irq numbers aren't linear as they're not wired to their irqchip
-in the same order:
-> pdc: pdc@0x02006000 {
-> 	interrupt-controller;
-> 	#interrupt-cells = <3>;
-> 
-> 	reg = <0x02006000 0x1000>;
-> 	compatible = "img,pdc-intc";
-> 
-> 	num-perips = <3>;
-> 	num-syswakes = <3>;
-> 
-> 	interrupts = <18 4 /* level */>, /* Syswakes */
-> 	             <30 4 /* level */>, /* Perip 0 (RTC) */
-> 	             <29 4 /* level */>, /* Perip 1 (IR) */
-> 	             <31 4 /* level */>; /* Perip 2 (WDT) */
-> };
-
->> +static int pdc_intc_probe(struct platform_device *pdev)
->> +{
->> +	struct pdc_intc_priv *priv;
->> +	struct device_node *node = pdev->dev.of_node;
->> +	struct resource *res_regs;
->> +	unsigned int i;
->> +	int irq, ret;
->> +	u32 val;
->> +
->> +	if (!node)
->> +		return -ENOENT;
->> +
->> +	/* Get registers */
->> +	res_regs = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->> +	if (res_regs == NULL) {
->> +		dev_err(&pdev->dev, "cannot find registers resource\n");
->> +		return -ENOENT;
->> +	}
->> +
->> +	/* Allocate driver data */
->> +	priv = devm_kzalloc(&pdev->dev, sizeof(*priv), GFP_KERNEL);
->> +	if (!priv) {
->> +		dev_err(&pdev->dev, "cannot allocate device data\n");
->> +		return -ENOMEM;
->> +	}
->> +	spin_lock_init(&priv->lock);
->> +	platform_set_drvdata(pdev, priv);
->> +
->> +	/* Ioremap the registers */
->> +	priv->pdc_base = devm_ioremap(&pdev->dev, res_regs->start,
->> +				      res_regs->end - res_regs->start);
->> +	if (!priv->pdc_base)
->> +		return -EIO;
-> 
-> Leaks priv.
-> 
->> +	/* Get number of peripherals */
->> +	ret = of_property_read_u32(node, "num-perips", &val);
->> +	if (ret) {
->> +		dev_err(&pdev->dev, "No num-perips node property found\n");
->> +		return -EINVAL;
-> 
-> Leaks priv and mapping
-> 
->> +	}
->> +	if (val > SYS0_HWIRQ) {
->> +		dev_err(&pdev->dev, "num-perips (%u) out of range\n", val);
->> +		return -EINVAL;
-> 
-> Error handling is optional, right?
-> 
->> +static int pdc_intc_remove(struct platform_device *pdev)
->> +{
->> +	struct pdc_intc_priv *priv = platform_get_drvdata(pdev);
->> +
->> +	irq_domain_remove(priv->domain);
-> 
-> And the rest of the resources is still there?
-
-I was under the impression devm_kzalloc and devm_ioremap took care of
-that in both the probe error case and the remove case:
-
->  * devm_kzalloc - Resource-managed kzalloc
->  * Managed kzalloc.  Memory allocated with this function is
->  * automatically freed on driver detach. 
-
->  * devm_ioremap - Managed ioremap()
->  * Managed ioremap().  Map is automatically unmapped on driver detach.
-
-I may have misunderstood the whole point of their existence though?
-
-Thanks
-James
+Laurent Pinchart
 
