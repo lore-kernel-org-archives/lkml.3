@@ -1,57 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757214Ab3DXSgS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 14:36:18 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:41725 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755963Ab3DXSgR (ORCPT
+	id S1757230Ab3DXSil (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 14:38:41 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:59680 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756942Ab3DXSik (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 14:36:17 -0400
-Date: Wed, 24 Apr 2013 14:36:15 -0400 (EDT)
-Message-Id: <20130424.143615.334401973542739420.davem@davemloft.net>
-To: mroos@linux.ee
-Cc: linux-kernel@vger.kernel.org, sparclinux@vger.kernel.org
-Subject: Re: sparc64, mm BUG in 3.9-rc8
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20130423.161751.2116707386990845036.davem@davemloft.net>
-References: <20130422.152741.652969183920758931.davem@davemloft.net>
-	<alpine.SOC.1.00.1304230019030.12820@math.ut.ee>
-	<20130423.161751.2116707386990845036.davem@davemloft.net>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Wed, 24 Apr 2013 11:36:17 -0700 (PDT)
+	Wed, 24 Apr 2013 14:38:40 -0400
+X-IronPort-AV: E=Sophos;i="4.87,545,1363132800"; 
+   d="scan'208";a="20353614"
+Date: Wed, 24 Apr 2013 19:38:35 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "will.deacon@arm.com" <will.deacon@arm.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Olof Johansson <olof@lixom.net>
+Subject: [PATCH 0/2 v8] arm: introduce psci_smp_ops
+Message-ID: <alpine.DEB.2.02.1304241935010.4180@kaball.uk.xensource.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Miller <davem@davemloft.net>
-Date: Tue, 23 Apr 2013 16:17:51 -0400 (EDT)
+Hi all,
+this is the eighth version of the patch series to move virt_smp_ops out
+of mach-virt and make it a generic set of reusable PSCI based smp_ops.
+psci_smp_ops are preferred over the platform smp_ops.
+The last patch introduces smp_init.
 
-> From: Meelis Roos <mroos@linux.ee>
-> Date: Tue, 23 Apr 2013 00:19:49 +0300 (EEST)
-> 
->>> > Hello, I got a non-booting Sun E420R (sparc64) with 3.9-rc8: BUG-s in 
->>> > mm/slub.c:925 and mm/memory.c:1267 (the latter keeps scrolling until 
->>> > other things break and panic comes from trying to kill init). This is 
->>> > reproducible. Same machine runs 3.9.0-rc7-00004-gbb33db7 successfully.
->>> > Configuration is below.
->>> 
->>> It's certainly a bug in the TLB shootdown fix, please verify that
->>> reverting the following fixes things:
->>> 
->>> >From f36391d2790d04993f48da6a45810033a2cdf847 Mon Sep 17 00:00:00 2001
->>> From: "David S. Miller" <davem@davemloft.net>
->>> Date: Fri, 19 Apr 2013 17:26:26 -0400
->>> Subject: [PATCH] sparc64: Fix race in TLB batch processing.
->> 
->> Yes, reverting that makes it work again.
-> 
-> Just an update, using your config I was able to make one that boots on my
-> machine and reproduces the problem.
 
-Ok, I've narrowed it down to CONFIG_DEBUG_ATOMIC_SLEEP, as the exact config
-option which starts the crashes happening when it is enabled.
+Jon Medhurst (1):
+      ARM: Enable selection of SMP operations at boot time
 
-I should have this fixed by the end of today.
+Stefano Stabellini (1):
+      arm: introduce psci_smp_ops
+
+ arch/arm/include/asm/mach/arch.h |    4 ++
+ arch/arm/include/asm/psci.h      |   29 ++++++++++++++++
+ arch/arm/kernel/Makefile         |    5 ++-
+ arch/arm/kernel/psci.c           |    7 ++--
+ arch/arm/kernel/psci_smp.c       |   67 ++++++++++++++++++++++++++++++++++++++
+ arch/arm/kernel/setup.c          |    9 ++++-
+ arch/arm/mach-virt/Makefile      |    1 -
+ arch/arm/mach-virt/platsmp.c     |   58 --------------------------------
+ arch/arm/mach-virt/virt.c        |    3 --
+ 9 files changed, 115 insertions(+), 68 deletions(-)
+
+git://git.kernel.org/pub/scm/linux/kernel/git/sstabellini/xen.git 3.9-rc3-psci-ops-8-tag
+
+Cheers,
+
+Stefano
