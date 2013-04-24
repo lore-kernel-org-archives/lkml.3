@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756825Ab3DXBmO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 21:42:14 -0400
+	id S1757337Ab3DXBmM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 21:42:12 -0400
 Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:54798 "EHLO
 	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755306Ab3DXBlh (ORCPT
+	with ESMTP id S1756500Ab3DXBlk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 21:41:37 -0400
-X-AuditID: 9c93016f-b7b70ae0000038d5-66-5177384ed600
+	Tue, 23 Apr 2013 21:41:40 -0400
+X-AuditID: 9c93016f-b7b70ae0000038d5-89-51773850d544
 From: Minchan Kim <minchan@kernel.org>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         Michael Kerrisk <mtk.manpages@gmail.com>,
         Rik van Riel <riel@redhat.com>, Dave Hansen <dave.hansen@intel.com>,
         Minchan Kim <minchan@kernel.org>
-Subject: [PATCH v2 2/6] mm: make shrink_page_list with pages work from multiple zones
-Date: Wed, 24 Apr 2013 10:41:00 +0900
-Message-Id: <1366767664-17541-3-git-send-email-minchan@kernel.org>
+Subject: [PATCH v2 5/6] mm: Support address range reclaim
+Date: Wed, 24 Apr 2013 10:41:03 +0900
+Message-Id: <1366767664-17541-6-git-send-email-minchan@kernel.org>
 X-Mailer: git-send-email 1.8.2
 In-Reply-To: <1366767664-17541-1-git-send-email-minchan@kernel.org>
 References: <1366767664-17541-1-git-send-email-minchan@kernel.org>
@@ -25,40 +25,193 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Shrink_page_list expects all pages come from a same zone
-but it's too limited to use.
+This patch adds address range reclaim of a process.
+The requirement is following as,
 
-This patch removes the dependency so next patch can use
-shrink_page_list with pages from multiple zones.
+Like webkit1, it uses a address space for handling multi tabs.
+IOW, it uses *one* process model so all tabs shares address space
+of the process. In such scenario, per-process reclaim is rather
+coarse-grained so this patch supports more fine-grained reclaim
+for being able to reclaim target address range of the process.
+For reclaim target range, you should use following format.
+
+	echo [addr] [size-byte] > /proc/pid/reclaim
+
+addr should be page-aligned.
+
+So now reclaim konb's interface is following as.
+
+echo file > /proc/pid/reclaim
+	reclaim file-backed pages only
+
+echo anon > /proc/pid/reclaim
+	reclaim anonymous pages only
+
+echo all > /proc/pid/reclaim
+	reclaim all pages
+
+echo $((1<<20)) 8192 > /proc/pid/reclaim
+	reclaim pages in (0x100000 - 0x102000)
 
 Signed-off-by: Minchan Kim <minchan@kernel.org>
 ---
- mm/vmscan.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ fs/proc/task_mmu.c | 88 ++++++++++++++++++++++++++++++++++++++++++++----------
+ mm/internal.h      |  3 ++
+ 2 files changed, 76 insertions(+), 15 deletions(-)
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 6934f5b..82f4d6c 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -706,7 +706,8 @@ static unsigned long shrink_page_list(struct list_head *page_list,
- 			goto keep;
+diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+index 79b674e..dff9756 100644
+--- a/fs/proc/task_mmu.c
++++ b/fs/proc/task_mmu.c
+@@ -12,6 +12,7 @@
+ #include <linux/swap.h>
+ #include <linux/swapops.h>
+ #include <linux/mm_inline.h>
++#include <linux/ctype.h>
  
- 		VM_BUG_ON(PageActive(page));
--		VM_BUG_ON(page_zone(page) != zone);
-+		if (zone)
-+			VM_BUG_ON(page_zone(page) != zone);
+ #include <asm/elf.h>
+ #include <asm/uaccess.h>
+@@ -1239,11 +1240,14 @@ static ssize_t reclaim_write(struct file *file, const char __user *buf,
+ 				size_t count, loff_t *ppos)
+ {
+ 	struct task_struct *task;
+-	char buffer[PROC_NUMBUF];
++	char buffer[200];
+ 	struct mm_struct *mm;
+ 	struct vm_area_struct *vma;
+ 	enum reclaim_type type;
+ 	char *type_buf;
++	struct mm_walk reclaim_walk = {};
++	unsigned long start = 0;
++	unsigned long end = 0;
  
- 		sc->nr_scanned++;
+ 	memset(buffer, 0, sizeof(buffer));
+ 	if (count > sizeof(buffer) - 1)
+@@ -1259,42 +1263,96 @@ static ssize_t reclaim_write(struct file *file, const char __user *buf,
+ 		type = RECLAIM_ANON;
+ 	else if (!strcmp(type_buf, "all"))
+ 		type = RECLAIM_ALL;
++	else if (isdigit(*type_buf))
++		type = RECLAIM_RANGE;
+ 	else
+-		return -EINVAL;
++		goto out_err;
++
++	if (type == RECLAIM_RANGE) {
++		int ret;
++		size_t len;
++		unsigned long len_in;
++		char *token;
++
++		token = strsep(&type_buf, " ");
++		if (!token)
++			goto out_err;
++		ret = kstrtoul(token, 10, &start);
++		if (ret < 0 || (start & ~PAGE_MASK))
++			goto out_err;
++
++		token = strsep(&type_buf, " ");
++		if (!token)
++			goto out_err;
++		ret = kstrtoul(token, 10, &len_in);
++		if (ret < 0)
++			goto out_err;
++
++		len = (len_in + ~PAGE_MASK) & PAGE_MASK;
++		/*
++		 * Check to see whether len was rounded up from small -ve
++		 * to zero.
++		 */
++		if (len_in && !len)
++			goto out_err;
++
++		end = start + len;
++		if (end < start)
++			goto out_err;
++	}
  
-@@ -952,7 +953,7 @@ keep:
- 	 * back off and wait for congestion to clear because further reclaim
- 	 * will encounter the same problem
- 	 */
--	if (nr_dirty && nr_dirty == nr_congested && global_reclaim(sc))
-+	if (nr_dirty && nr_dirty == nr_congested && global_reclaim(sc) && zone)
- 		zone_set_flag(zone, ZONE_CONGESTED);
+ 	task = get_proc_task(file->f_path.dentry->d_inode);
+ 	if (!task)
+ 		return -ESRCH;
  
- 	free_hot_cold_page_list(&free_pages, 1);
+ 	mm = get_task_mm(task);
+-	if (mm) {
+-		struct mm_walk reclaim_walk = {
+-			.pmd_entry = reclaim_pte_range,
+-			.mm = mm,
+-		};
++	if (!mm)
++		goto out;
+ 
+-		down_read(&mm->mmap_sem);
+-		for (vma = mm->mmap; vma; vma = vma->vm_next) {
+-			reclaim_walk.private = vma;
++	reclaim_walk.mm = mm;
++	reclaim_walk.pmd_entry = reclaim_pte_range;
+ 
++	down_read(&mm->mmap_sem);
++	if (type == RECLAIM_RANGE) {
++		vma = find_vma(mm, start);
++		while (vma) {
++			if (vma->vm_start > end)
++				break;
++			if (is_vm_hugetlb_page(vma))
++				continue;
++
++			reclaim_walk.private = vma;
++			walk_page_range(max(vma->vm_start, start),
++					min(vma->vm_end, end),
++					&reclaim_walk);
++			vma = vma->vm_next;
++		}
++	} else {
++		for (vma = mm->mmap; vma; vma = vma->vm_next) {
+ 			if (is_vm_hugetlb_page(vma))
+ 				continue;
+ 
+ 			if (type == RECLAIM_ANON && vma->vm_file)
+ 				continue;
++
+ 			if (type == RECLAIM_FILE && !vma->vm_file)
+ 				continue;
+ 
++			reclaim_walk.private = vma;
+ 			walk_page_range(vma->vm_start, vma->vm_end,
+-					&reclaim_walk);
++				&reclaim_walk);
+ 		}
+-		flush_tlb_mm(mm);
+-		up_read(&mm->mmap_sem);
+-		mmput(mm);
+ 	}
+-	put_task_struct(task);
+ 
++	flush_tlb_mm(mm);
++	up_read(&mm->mmap_sem);
++	mmput(mm);
++out:
++	put_task_struct(task);
+ 	return count;
++
++out_err:
++	return -EINVAL;
+ }
+ 
+ const struct file_operations proc_reclaim_operations = {
+diff --git a/mm/internal.h b/mm/internal.h
+index 589a29b..1f7ce8f 100644
+--- a/mm/internal.h
++++ b/mm/internal.h
+@@ -85,6 +85,9 @@ static inline void get_page_foll(struct page *page)
+ 
+ extern unsigned long highest_memmap_pfn;
+ 
++extern int isolate_lru_page(struct page *page);
++extern void putback_lru_page(struct page *page);
++
+ /*
+  * in mm/rmap.c:
+  */
 -- 
 1.8.2
 
