@@ -1,245 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757669Ab3DXTun (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 15:50:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58056 "EHLO mx1.redhat.com"
+	id S1757688Ab3DXT7R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 15:59:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26847 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757517Ab3DXTul (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 15:50:41 -0400
-Date: Wed, 24 Apr 2013 15:50:32 -0400
-From: Josh Boyer <jwboyer@redhat.com>
-To: Kay Sievers <kay@vrfy.org>, Kees Cook <keescook@chromium.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Eric Paris <eparis@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Christian Kujau <lists@nerdbynature.de>,
-        "# 3.4.x" <stable@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, kzak@redhat.com
-Subject: Re: [PATCH v2] kmsg: Honor dmesg_restrict sysctl on /dev/kmsg
-Message-ID: <20130424195032.GG15272@hansolo.jdub.homelinux.org>
-References: <20130322145448.f44f9d10a36620c1c11535b7@linux-foundation.org>
- <20130322221444.GJ15821@hansolo.jdub.homelinux.org>
- <CAGXu5jL=Lg6OeWyhKBWHowwMeOpFipMOXmBosYHY53MfVMo8fA@mail.gmail.com>
- <1256775981.281402.1364864751771.JavaMail.root@redhat.com>
- <CAGXu5jLU40Vzx+bNyPSArBt_yYNO9sPJ3yLj7z3Yq=pH22W1Gw@mail.gmail.com>
- <20130409005050.GE18176@hansolo.jdub.homelinux.org>
- <20130409154820.GE32476@hansolo.jdub.homelinux.org>
- <CAGXu5jLs1ghuCwcu7crOG1OHuiaP3hmzYY410br_puc9i82-2g@mail.gmail.com>
- <CAPXgP10Vd3Ucxn77WX7wzQoaUmy-JdOBWvYv4zpGSu9qcd=GoQ@mail.gmail.com>
- <20130424175835.GF15272@hansolo.jdub.homelinux.org>
+	id S1757604Ab3DXT7Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 15:59:16 -0400
+Message-ID: <51783987.2040604@redhat.com>
+Date: Wed, 24 Apr 2013 15:59:03 -0400
+From: Don Dutile <ddutile@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130108 Thunderbird/10.0.12
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130424175835.GF15272@hansolo.jdub.homelinux.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Takao Indoh <indou.takao@jp.fujitsu.com>
+CC: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        bhelgaas@google.com, iommu@lists.linux-foundation.org,
+        kexec@lists.infradead.org
+Subject: Re: [PATCH] Reset PCIe devices to stop ongoing DMA
+References: <1366779539-3584-1-git-send-email-indou.takao@jp.fujitsu.com>
+In-Reply-To: <1366779539-3584-1-git-send-email-indou.takao@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 24, 2013 at 01:58:35PM -0400, Josh Boyer wrote:
-> On Wed, Apr 24, 2013 at 07:44:33PM +0200, Kay Sievers wrote:
-> > On Tue, Apr 9, 2013 at 6:33 PM, Kees Cook <keescook@chromium.org> wrote:
-> > > On Tue, Apr 9, 2013 at 8:48 AM, Josh Boyer <jwboyer@redhat.com> wrote:
-> > >> The dmesg_restrict sysctl currently covers the syslog method for access
-> > >> dmesg, however /dev/kmsg isn't covered by the same protections.  Most
-> > >> people haven't noticed because util-linux dmesg(1) defaults to using the
-> > >> syslog method for access in older versions.  With util-linux dmesg(1)
-> > >> defaults to reading directly from /dev/kmsg.
-> > >>
-> > >> Fix this by reworking all of the access methods to use the
-> > >> check_syslog_permissions function and adding checks to devkmsg_open and
-> > >> devkmsg_read.
-> > >>
-> > >> This fixes https://bugzilla.redhat.com/show_bug.cgi?id=903192
-> > >>
-> > >> Reported-by: Christian Kujau <lists@nerdbynature.de>
-> > >> CC: stable@vger.kernel.org
-> > >> Signed-off-by: Eric Paris <eparis@redhat.com>
-> > >> Signed-off-by: Josh Boyer <jwboyer@redhat.com>
-> > >
-> > > Thanks!
-> > >
-> > > Acked-by: Kees Cook <keescook@chromium.org>
-> > 
-> > If that's the version currently in Fedora, we just cannot do this.
-> >    https://bugzilla.redhat.com/show_bug.cgi?id=952655
-> > 
-> > /dev/kmsg is supposed, and was added, to be a sane alternative to
-> > syslog(). It is already used in dmesg(1) which is now broken with this
-> > patch.
-> > 
-> > The access rules for /dev/kmsg should follow the access rules of
-> > syslog(), and not be any stricter.
-> 
-> I haven't tested it yet, but I think something like this should work
-> while still honoring dmesg_restrict.  I'll test it out while the rest
-> of you debate things.
+On 04/24/2013 12:58 AM, Takao Indoh wrote:
+> This patch resets PCIe devices on boot to stop ongoing DMA. When
+> "pci=pcie_reset_devices" is specified, a hot reset is triggered on each
+> PCIe root port and downstream port to reset its downstream endpoint.
+>
+> Problem:
+> This patch solves the problem that kdump can fail when intel_iommu=on is
+> specified. When intel_iommu=on is specified, many dma-remapping errors
+> occur in second kernel and it causes problems like driver error or PCI
+> SERR, at last kdump fails. This problem is caused as follows.
+> 1) Devices are working on first kernel.
+> 2) Switch to second kernel(kdump kernel). The devices are still working
+>     and its DMA continues during this switch.
+> 3) iommu is initialized during second kernel boot and ongoing DMA causes
+>     dma-remapping errors.
+>
+> Solution:
+> All DMA transactions have to be stopped before iommu is initialized. By
+> this patch devices are reset and in-flight DMA is stopped before
+> pci_iommu_init.
+>
+> To invoke hot reset on an endpoint, its upstream link need to be reset.
+> reset_pcie_devices() is called from fs_initcall_sync, and it finds root
+> port/downstream port whose child is PCIe endpoint, and then reset link
+> between them. If the endpoint is VGA device, it is skipped because the
+> monitor blacks out if VGA controller is reset.
+>
+Couple questions wrt VGA device:
+(1) Many graphics devices are multi-function, one function being VGA;
+     is the VGA always function 0, so this scan sees it first & doesn't
+     do a reset on that PCIe link?  if the VGA is not function 0, won't
+     this logic break (will reset b/c function 0 is non-VGA graphics) ?
+(2) I'm hearing VGA will soon not be the a required console; this logic
+     assumes it is, and why it isn't blanked.
+     Q: Should the filter be based on a device having a device-class of display ?
 
-Yeah, that seems to work.  So, comments or Reviewed-by/Acked-by on it
-would be welcome.
+> Actually this is v8 patch but quite different from v7 and it's been so
+> long since previous post, so I start over again.
+Thanks for this re-start.  I need to continue reviewing the rest.
 
-josh
+Q: Why not force IOMMU off when re-booting a kexec kernel to perform a crash
+    dump?  After the crash dump, the system is rebooting to previous (iommu=on) setting.
+    That logic, along w/your previous patch to disable the IOMMU if iommu=off
+    is set, would remove this (relatively slow) PCI init sequencing ?
 
-> From: Josh Boyer <jwboyer@redhat.com>
-> Date: Tue, 9 Apr 2013 11:08:13 -0400
-> Subject: [PATCH v3] kmsg: Honor dmesg_restrict sysctl on /dev/kmsg
-> 
-> The dmesg_restrict sysctl currently covers the syslog method for access
-> dmesg, however /dev/kmsg isn't covered by the same protections.  Most
-> people haven't noticed because util-linux dmesg(1) defaults to using the
-> syslog method for access in older versions.  With util-linux dmesg(1)
-> defaults to reading directly from /dev/kmsg.
-> 
-> Fix this by reworking all of the access methods to use the
-> check_syslog_permissions function and adding checks to devkmsg_open and
-> devkmsg_read.
-> 
-> This fixes https://bugzilla.redhat.com/show_bug.cgi?id=903192
-> 
-> Reported-by: Christian Kujau <lists@nerdbynature.de>
-> CC: stable@vger.kernel.org
-> Signed-off-by: Eric Paris <eparis@redhat.com>
-> Signed-off-by: Josh Boyer <jwboyer@redhat.com>
+> Previous post:
+> [PATCH v7 0/5] Reset PCIe devices to address DMA problem on kdump
+> https://lkml.org/lkml/2012/11/26/814
+>
+> Signed-off-by: Takao Indoh<indou.takao@jp.fujitsu.com>
 > ---
->  v3: Allow devkmsg_open to work without CAP_SYSLOG, but still make
->      devkmsg_read honor dmesg_restrict
-> 
->  kernel/printk.c | 91 +++++++++++++++++++++++++++++----------------------------
->  1 file changed, 47 insertions(+), 44 deletions(-)
-> 
-> diff --git a/kernel/printk.c b/kernel/printk.c
-> index abbdd9e..2d7be05 100644
-> --- a/kernel/printk.c
-> +++ b/kernel/printk.c
-> @@ -368,6 +368,46 @@ static void log_store(int facility, int level,
->  	log_next_seq++;
->  }
->  
-> +#ifdef CONFIG_SECURITY_DMESG_RESTRICT
-> +int dmesg_restrict = 1;
-> +#else
-> +int dmesg_restrict;
-> +#endif
-> +
-> +static int syslog_action_restricted(int type)
+>   Documentation/kernel-parameters.txt |    2 +
+>   drivers/pci/pci.c                   |  103 +++++++++++++++++++++++++++++++++++
+>   2 files changed, 105 insertions(+), 0 deletions(-)
+>
+> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+> index 4609e81..2a31ade 100644
+> --- a/Documentation/kernel-parameters.txt
+> +++ b/Documentation/kernel-parameters.txt
+> @@ -2250,6 +2250,8 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+>   				any pair of devices, possibly at the cost of
+>   				reduced performance.  This also guarantees
+>   				that hot-added devices will work.
+> +		pcie_reset_devices	Reset PCIe endpoint on boot by hot
+> +				reset
+>   		cbiosize=nn[KMG]	The fixed amount of bus space which is
+>   				reserved for the CardBus bridge's IO window.
+>   				The default value is 256 bytes.
+> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+> index b099e00..42385c9 100644
+> --- a/drivers/pci/pci.c
+> +++ b/drivers/pci/pci.c
+> @@ -3878,6 +3878,107 @@ void __weak pci_fixup_cardbus(struct pci_bus *bus)
+>   }
+>   EXPORT_SYMBOL(pci_fixup_cardbus);
+>
+> +/*
+> + * Return true if dev is PCIe root port or downstream port whose child is PCIe
+> + * endpoint except VGA device.
+> + */
+> +static int __init need_reset(struct pci_dev *dev)
 > +{
-> +	if (dmesg_restrict)
-> +		return 1;
-> +	/* Unless restricted, we allow "read all" and "get buffer size" for everybody */
-> +	return type != SYSLOG_ACTION_READ_ALL && type != SYSLOG_ACTION_SIZE_BUFFER;
-> +}
+> +	struct pci_bus *subordinate;
+> +	struct pci_dev *child;
 > +
-> +static int check_syslog_permissions(int type, bool from_file)
-> +{
-> +	/*
-> +	 * If this is from /proc/kmsg and we've already opened it, then we've
-> +	 * already done the capabilities checks at open time.
-> +	 */
-> +	if (from_file && type != SYSLOG_ACTION_OPEN)
-> +		goto ok;
+> +	if (!pci_is_pcie(dev) || !dev->subordinate ||
+> +	    list_empty(&dev->subordinate->devices) ||
+> +	    ((pci_pcie_type(dev) != PCI_EXP_TYPE_ROOT_PORT)&&
+> +	     (pci_pcie_type(dev) != PCI_EXP_TYPE_DOWNSTREAM)))
+> +		return 0;
 > +
-> +	if (syslog_action_restricted(type)) {
-> +		if (capable(CAP_SYSLOG))
-> +			goto ok;
-> +		/* For historical reasons, accept CAP_SYS_ADMIN too, with a warning */
-> +		if (capable(CAP_SYS_ADMIN)) {
-> +			printk_once(KERN_WARNING "%s (%d): "
-> +				 "Attempt to access syslog with CAP_SYS_ADMIN "
-> +				 "but no CAP_SYSLOG (deprecated).\n",
-> +				 current->comm, task_pid_nr(current));
-> +			goto ok;
-> +		}
-> +		return -EPERM;
+> +	subordinate = dev->subordinate;
+> +	list_for_each_entry(child,&subordinate->devices, bus_list) {
+> +		if ((pci_pcie_type(child) == PCI_EXP_TYPE_UPSTREAM) ||
+> +		    (pci_pcie_type(child) == PCI_EXP_TYPE_PCI_BRIDGE) ||
+> +		    ((child->class>>  16) == PCI_BASE_CLASS_DISPLAY))
+> +			/* Don't reset switch, bridge, VGA device */
+> +			return 0;
 > +	}
-> +ok:
-> +	return security_syslog(type);
+> +
+> +	return 1;
 > +}
 > +
->  /* /dev/kmsg - userspace message inject/listen interface */
->  struct devkmsg_user {
->  	u64 seq;
-> @@ -443,10 +483,16 @@ static ssize_t devkmsg_read(struct file *file, char __user *buf,
->  	char cont = '-';
->  	size_t len;
->  	ssize_t ret;
-> +	int err;
->  
->  	if (!user)
->  		return -EBADF;
->  
-> +	err = check_syslog_permissions(SYSLOG_ACTION_READ_ALL,
-> +		SYSLOG_FROM_CALL);
-> +	if (err)
-> +		return err;
+> +static void __init save_config(struct pci_dev *dev)
+> +{
+> +	struct pci_bus *subordinate;
+> +	struct pci_dev *child;
 > +
->  	ret = mutex_lock_interruptible(&user->lock);
->  	if (ret)
->  		return ret;
-> @@ -624,7 +670,7 @@ static int devkmsg_open(struct inode *inode, struct file *file)
->  	if ((file->f_flags & O_ACCMODE) == O_WRONLY)
->  		return 0;
->  
-> -	err = security_syslog(SYSLOG_ACTION_READ_ALL);
-> +	err = check_syslog_permissions(SYSLOG_ACTION_READ_ALL, SYSLOG_FROM_FILE);
->  	if (err)
->  		return err;
->  
-> @@ -817,45 +863,6 @@ static inline void boot_delay_msec(int level)
->  }
->  #endif
->  
-> -#ifdef CONFIG_SECURITY_DMESG_RESTRICT
-> -int dmesg_restrict = 1;
-> -#else
-> -int dmesg_restrict;
-> -#endif
-> -
-> -static int syslog_action_restricted(int type)
-> -{
-> -	if (dmesg_restrict)
-> -		return 1;
-> -	/* Unless restricted, we allow "read all" and "get buffer size" for everybody */
-> -	return type != SYSLOG_ACTION_READ_ALL && type != SYSLOG_ACTION_SIZE_BUFFER;
-> -}
-> -
-> -static int check_syslog_permissions(int type, bool from_file)
-> -{
-> -	/*
-> -	 * If this is from /proc/kmsg and we've already opened it, then we've
-> -	 * already done the capabilities checks at open time.
-> -	 */
-> -	if (from_file && type != SYSLOG_ACTION_OPEN)
-> -		return 0;
-> -
-> -	if (syslog_action_restricted(type)) {
-> -		if (capable(CAP_SYSLOG))
-> -			return 0;
-> -		/* For historical reasons, accept CAP_SYS_ADMIN too, with a warning */
-> -		if (capable(CAP_SYS_ADMIN)) {
-> -			printk_once(KERN_WARNING "%s (%d): "
-> -				 "Attempt to access syslog with CAP_SYS_ADMIN "
-> -				 "but no CAP_SYSLOG (deprecated).\n",
-> -				 current->comm, task_pid_nr(current));
-> -			return 0;
-> -		}
-> -		return -EPERM;
-> -	}
-> -	return 0;
-> -}
-> -
->  #if defined(CONFIG_PRINTK_TIME)
->  static bool printk_time = 1;
->  #else
-> @@ -1131,10 +1138,6 @@ int do_syslog(int type, char __user *buf, int len, bool from_file)
->  	if (error)
->  		goto out;
->  
-> -	error = security_syslog(type);
-> -	if (error)
-> -		return error;
-> -
->  	switch (type) {
->  	case SYSLOG_ACTION_CLOSE:	/* Close log */
->  		break;
-> -- 
-> 1.8.1.4
-> 
+> +	if (!need_reset(dev))
+> +		return;
+> +
+> +	subordinate = dev->subordinate;
+> +	list_for_each_entry(child,&subordinate->devices, bus_list) {
+> +		dev_info(&child->dev, "save state\n");
+> +		pci_save_state(child);
+> +	}
+> +}
+> +
+> +static void __init restore_config(struct pci_dev *dev)
+> +{
+> +	struct pci_bus *subordinate;
+> +	struct pci_dev *child;
+> +
+> +	if (!need_reset(dev))
+> +		return;
+> +
+> +	subordinate = dev->subordinate;
+> +	list_for_each_entry(child,&subordinate->devices, bus_list) {
+> +		dev_info(&child->dev, "restore state\n");
+> +		pci_restore_state(child);
+> +	}
+> +}
+> +
+> +static void __init do_device_reset(struct pci_dev *dev)
+> +{
+> +	u16 ctrl;
+> +
+> +	if (!need_reset(dev))
+> +		return;
+> +
+> +	dev_info(&dev->dev, "Reset Secondary bus\n");
+> +
+> +	/* Assert Secondary Bus Reset */
+> +	pci_read_config_word(dev, PCI_BRIDGE_CONTROL,&ctrl);
+> +	ctrl |= PCI_BRIDGE_CTL_BUS_RESET;
+> +	pci_write_config_word(dev, PCI_BRIDGE_CONTROL, ctrl);
+> +
+> +	msleep(2);
+> +
+> +	/* De-assert Secondary Bus Reset */
+> +	ctrl&= ~PCI_BRIDGE_CTL_BUS_RESET;
+> +	pci_write_config_word(dev, PCI_BRIDGE_CONTROL, ctrl);
+> +}
+> +
+> +static int __initdata pcie_reset_devices;
+> +static int __init reset_pcie_devices(void)
+> +{
+> +	struct pci_dev *dev = NULL;
+> +
+> +	if (!pcie_reset_devices)
+> +		return 0;
+> +
+> +	for_each_pci_dev(dev)
+> +		save_config(dev);
+> +
+> +	for_each_pci_dev(dev)
+> +		do_device_reset(dev);
+> +
+> +	msleep(1000);
+> +
+> +	for_each_pci_dev(dev)
+> +		restore_config(dev);
+> +
+> +	return 0;
+> +}
+> +fs_initcall_sync(reset_pcie_devices);
+> +
+>   static int __init pci_setup(char *str)
+>   {
+>   	while (str) {
+> @@ -3920,6 +4021,8 @@ static int __init pci_setup(char *str)
+>   				pcie_bus_config = PCIE_BUS_PEER2PEER;
+>   			} else if (!strncmp(str, "pcie_scan_all", 13)) {
+>   				pci_add_flags(PCI_SCAN_ALL_PCIE_DEVS);
+> +			} else if (!strncmp(str, "pcie_reset_devices", 18)) {
+> +				pcie_reset_devices = 1;
+>   			} else {
+>   				printk(KERN_ERR "PCI: Unknown option `%s'\n",
+>   						str);
+
