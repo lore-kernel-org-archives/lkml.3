@@ -1,102 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757908Ab3DXLJG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 07:09:06 -0400
-Received: from co9ehsobe001.messaging.microsoft.com ([207.46.163.24]:25188
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757504Ab3DXLJD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 07:09:03 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -1
-X-BigFish: VS-1(zcb8kzbb2dI98dI9371I1432Izz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275bhz2dh2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h16a6h1758h1806h18e1h1946h19b5h1ad9h1b0ah1155h)
-Date: Wed, 24 Apr 2013 19:08:17 +0800
-From: Zhao Chenhui <chenhui.zhao@freescale.com>
-To: Scott Wood <scottwood@freescale.com>
-CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        <r58472@freescale.com>
-Subject: Re: [PATCH v2 01/15] powerpc/85xx: cache operations for Freescale
- SoCs based on BOOK3E
-Message-ID: <20130424110817.GA3172@localhost.localdomain>
-References: <1366368468-29143-1-git-send-email-chenhui.zhao@freescale.com>
- <1366760770.5825.17@snotra>
+	id S1757929Ab3DXLJh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 07:09:37 -0400
+Received: from mga02.intel.com ([134.134.136.20]:22352 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751492Ab3DXLJf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 07:09:35 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,542,1363158000"; 
+   d="scan'208,223";a="323714039"
+Date: Wed, 24 Apr 2013 11:11:38 +0100 (IST)
+From: Josef Ahmad <josef.ahmad@linux.intel.com>
+X-X-Sender: joey@localhost
+To: Wolfram Sang <wsa@the-dreams.de>
+cc: Josef Ahmad <josef.ahmad@linux.intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Ben Dooks <ben-linux@fluff.org>, Jean Delvare <khali@linux-fr.org>,
+        Stefan Roese <sr@denx.de>, Axel Lin <axel.lin@gmail.com>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dirk Brandewie <dirk.brandewie@gmail.com>
+Subject: Re: [PATCH] i2c-designware: fix RX FIFO overrun
+In-Reply-To: <20130423182707.GA3649@the-dreams.de>
+Message-ID: <alpine.DEB.2.02.1304241110480.32505@localhost>
+References: <alpine.DEB.2.02.1304191859570.17829@localhost> <20130422071943.GK1283@intel.com> <53398.163.33.213.79.1366630241.squirrel@linux.intel.com> <20130422122808.GO1283@intel.com> <alpine.DEB.2.02.1304221508050.31571@localhost> <20130423163543.GB3228@the-dreams.de>
+ <51465.163.33.213.85.1366739082.squirrel@linux.intel.com> <20130423182707.GA3649@the-dreams.de>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1366760770.5825.17@snotra>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 23, 2013 at 06:46:10PM -0500, Scott Wood wrote:
-> On 04/19/2013 05:47:34 AM, Zhao Chenhui wrote:
-> >These cache operations support Freescale SoCs based on BOOK3E.
-> >Move L1 cache operations to fsl_booke_cache.S in order to maintain
-> >easily. And, add cache operations for backside L2 cache and
-> >platform cache.
-> >
-> >The backside L2 cache appears on e500mc and e5500 core. The
-> >platform cache
-> >supported by this patch is L2 Look-Aside Cache, which appears on SoCs
-> >with e500v1/e500v2 core, such as MPC8572, P1020, etc.
-> >
-> >Signed-off-by: Zhao Chenhui <chenhui.zhao@freescale.com>
-> >Signed-off-by: Li Yang <leoli@freescale.com>
-> >---
-> > arch/powerpc/include/asm/cacheflush.h |    8 ++
-> > arch/powerpc/kernel/Makefile          |    1 +
-> > arch/powerpc/kernel/fsl_booke_cache.S |  210
-> >+++++++++++++++++++++++++++++++++
-> > arch/powerpc/kernel/head_fsl_booke.S  |   74 ------------
-> > 4 files changed, 219 insertions(+), 74 deletions(-)
-> > create mode 100644 arch/powerpc/kernel/fsl_booke_cache.S
-> >
-> >diff --git a/arch/powerpc/include/asm/cacheflush.h
-> >b/arch/powerpc/include/asm/cacheflush.h
-> >index b843e35..bc3f937 100644
-> >--- a/arch/powerpc/include/asm/cacheflush.h
-> >+++ b/arch/powerpc/include/asm/cacheflush.h
-> >@@ -32,6 +32,14 @@ extern void flush_dcache_page(struct page *page);
-> >
-> > extern void __flush_disable_L1(void);
-> >
-> >+#ifdef CONFIG_FSL_SOC_BOOKE
-> >+void flush_dcache_L1(void);
-> >+void flush_backside_L2_cache(void);
-> >+void disable_backside_L2_cache(void);
-> >+void flush_disable_L2(void);
-> >+void invalidate_enable_L2(void);
-> >+#endif
-> 
-> Don't ifdef prototypes unless there's a good reason, such as
-> providing an inline alternative.
+>From 8a4773d0c0df6fe2e816ad37fde30a2d90a1ad31 Mon Sep 17 00:00:00 2001
+From: Josef Ahmad <josef.ahmad@linux.intel.com>
+Date: Fri, 19 Apr 2013 17:28:10 +0100
+Subject: [PATCH] i2c-designware: fix RX FIFO overrun
 
-I'll get rid of this "#ifdef".
+i2c_dw_xfer_msg() pushes a number of bytes to transmit/receive
+to/from the bus into the TX FIFO.
+For master-rx transactions, the maximum amount of data that can be
+received is calculated depending solely on TX and RX FIFO load.
 
-> 
-> Why do you have "flush_backside_L2_cache" and
-> "disable_backside_L2_cache" as something different from
-> "flush_disable_L2"?  The latter should flush whatever L2 is present.
-> Don't treat pre-corenet as the default.
-> 
+This is racy - TX FIFO may contain master-rx data yet to be
+processed, which will eventually land into the RX FIFO. This
+data is not taken into account and the function may request more
+data than the controller is actually capable of storing.
 
-These L2 caches are very different. The backside L2 is integrated in
-the e500mc/e5500 core and controlled by SPR registers. But, the latter
-L2 cache is on the SoC and controlled by registers mapped in CCSR.
+This patch ensures the driver takes into account the outstanding
+master-rx data in TX FIFO to prevent RX FIFO overrun.
 
-> Why do we even need to distinguish L1 from L2 at all?  Shouldn't the
-> function that gets exposed just be "flush and disable data caches
-> that are specific to this cpu"?  What should happen on e6500?
-> 
-> -Scott
+Signed-off-by: Josef Ahmad <josef.ahmad@linux.intel.com>
+Acked-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+---
+  drivers/i2c/busses/i2c-designware-core.c |   11 ++++++++++-
+  drivers/i2c/busses/i2c-designware-core.h |    2 ++
+  2 files changed, 12 insertions(+), 1 deletions(-)
 
-Yes. It is a good idea to use a set of uniform functions to operate the caches of
-e500/e500mc/e5500/e6500 and SoCs. I'll think over your comments.
+diff --git a/drivers/i2c/busses/i2c-designware-core.c b/drivers/i2c/busses/i2c-designware-core.c
+index 21fbb34..1f06c8e 100644
+--- a/drivers/i2c/busses/i2c-designware-core.c
++++ b/drivers/i2c/busses/i2c-designware-core.c
+@@ -448,8 +448,14 @@ i2c_dw_xfer_msg(struct dw_i2c_dev *dev)
+  				cmd |= BIT(9);
 
-Thanks for you comments.
+  			if (msgs[dev->msg_write_idx].flags & I2C_M_RD) {
++
++				/* avoid rx buffer overrun */
++				if (rx_limit - dev->rx_outstanding <= 0)
++					break;
++
+  				dw_writel(dev, cmd | 0x100, DW_IC_DATA_CMD);
+  				rx_limit--;
++				dev->rx_outstanding++;
+  			} else
+  				dw_writel(dev, cmd | *buf++, DW_IC_DATA_CMD);
+  			tx_limit--; buf_len--;
+@@ -502,8 +508,10 @@ i2c_dw_read(struct dw_i2c_dev *dev)
 
--Chenhui
+  		rx_valid = dw_readl(dev, DW_IC_RXFLR);
+
+-		for (; len > 0 && rx_valid > 0; len--, rx_valid--)
++		for (; len > 0 && rx_valid > 0; len--, rx_valid--) {
+  			*buf++ = dw_readl(dev, DW_IC_DATA_CMD);
++			dev->rx_outstanding--;
++		}
+
+  		if (len > 0) {
+  			dev->status |= STATUS_READ_IN_PROGRESS;
+@@ -561,6 +569,7 @@ i2c_dw_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[], int num)
+  	dev->msg_err = 0;
+  	dev->status = STATUS_IDLE;
+  	dev->abort_source = 0;
++	dev->rx_outstanding = 0;
+
+  	ret = i2c_dw_wait_bus_not_busy(dev);
+  	if (ret < 0)
+diff --git a/drivers/i2c/busses/i2c-designware-core.h b/drivers/i2c/busses/i2c-designware-core.h
+index 9c1840e..e761ad1 100644
+--- a/drivers/i2c/busses/i2c-designware-core.h
++++ b/drivers/i2c/busses/i2c-designware-core.h
+@@ -60,6 +60,7 @@
+   * @adapter: i2c subsystem adapter node
+   * @tx_fifo_depth: depth of the hardware tx fifo
+   * @rx_fifo_depth: depth of the hardware rx fifo
++ * @rx_outstanding: current master-rx elements in tx fifo
+   */
+  struct dw_i2c_dev {
+  	struct device		*dev;
+@@ -88,6 +89,7 @@ struct dw_i2c_dev {
+  	u32			master_cfg;
+  	unsigned int		tx_fifo_depth;
+  	unsigned int		rx_fifo_depth;
++	int			rx_outstanding;
+  };
+
+  #define ACCESS_SWAP		0x00000001
+-- 
+1.7.0.7
 
 
