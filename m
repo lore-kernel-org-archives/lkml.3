@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757621Ab3DXTon (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 15:44:43 -0400
+	id S1757729Ab3DXTpA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 15:45:00 -0400
 Received: from smtp.citrix.com ([66.165.176.89]:15007 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757546Ab3DXTob (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 15:44:31 -0400
+	id S1757528Ab3DXToa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 15:44:30 -0400
 X-IronPort-AV: E=Sophos;i="4.87,545,1363132800"; 
-   d="scan'208";a="21384701"
+   d="scan'208";a="21384697"
 From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 To: <xen-devel@lists.xensource.com>
 CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <Stefano.Stabellini@eu.citrix.com>, <konrad.wilk@oracle.com>,
         <Ian.Campbell@citrix.com>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH v4 2/7] xen/arm: SMP support
-Date: Wed, 24 Apr 2013 20:28:10 +0100
-Message-ID: <1366831695-13214-2-git-send-email-stefano.stabellini@eu.citrix.com>
+Subject: [PATCH v4 4/7] xen/arm: implement HYPERVISOR_vcpu_op
+Date: Wed, 24 Apr 2013 20:28:12 +0100
+Message-ID: <1366831695-13214-4-git-send-email-stefano.stabellini@eu.citrix.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <alpine.DEB.2.02.1304242012590.4180@kaball.uk.xensource.com>
 References: <alpine.DEB.2.02.1304242012590.4180@kaball.uk.xensource.com>
@@ -26,110 +26,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Map vcpu_info using VCPUOP_register_vcpu_info on secondary cpus.
-
-Call enable_percpu_irq on every cpu.
-
-Changed in v2:
-- move the percpu variable argument fix to a separate patch;
-- remove unused variable.
-
 Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 ---
- arch/arm/xen/enlighten.c |   38 +++++++++++++++++++++++++++++++++++++-
- 1 files changed, 37 insertions(+), 1 deletions(-)
+ arch/arm/include/asm/xen/hypercall.h |    1 +
+ arch/arm/xen/enlighten.c             |    1 +
+ arch/arm/xen/hypercall.S             |    1 +
+ 3 files changed, 3 insertions(+), 0 deletions(-)
 
+diff --git a/arch/arm/include/asm/xen/hypercall.h b/arch/arm/include/asm/xen/hypercall.h
+index 8a82325..799f42e 100644
+--- a/arch/arm/include/asm/xen/hypercall.h
++++ b/arch/arm/include/asm/xen/hypercall.h
+@@ -46,6 +46,7 @@ int HYPERVISOR_event_channel_op(int cmd, void *arg);
+ unsigned long HYPERVISOR_hvm_op(int op, void *arg);
+ int HYPERVISOR_memory_op(unsigned int cmd, void *arg);
+ int HYPERVISOR_physdev_op(int cmd, void *arg);
++int HYPERVISOR_vcpu_op(int cmd, int vcpuid, void *extra_args);
+ 
+ static inline void
+ MULTI_update_va_mapping(struct multicall_entry *mcl, unsigned long va,
 diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
-index 99ce189..94bbf3b 100644
+index 94bbf3b..b002822 100644
 --- a/arch/arm/xen/enlighten.c
 +++ b/arch/arm/xen/enlighten.c
-@@ -2,6 +2,7 @@
- #include <xen/events.h>
- #include <xen/grant_table.h>
- #include <xen/hvm.h>
-+#include <xen/interface/vcpu.h>
- #include <xen/interface/xen.h>
- #include <xen/interface/memory.h>
- #include <xen/interface/hvm/params.h>
-@@ -32,6 +33,7 @@ struct shared_info xen_dummy_shared_info;
- struct shared_info *HYPERVISOR_shared_info = (void *)&xen_dummy_shared_info;
+@@ -295,4 +295,5 @@ EXPORT_SYMBOL_GPL(HYPERVISOR_sched_op);
+ EXPORT_SYMBOL_GPL(HYPERVISOR_hvm_op);
+ EXPORT_SYMBOL_GPL(HYPERVISOR_memory_op);
+ EXPORT_SYMBOL_GPL(HYPERVISOR_physdev_op);
++EXPORT_SYMBOL_GPL(HYPERVISOR_vcpu_op);
+ EXPORT_SYMBOL_GPL(privcmd_call);
+diff --git a/arch/arm/xen/hypercall.S b/arch/arm/xen/hypercall.S
+index 71f7239..199cb2d 100644
+--- a/arch/arm/xen/hypercall.S
++++ b/arch/arm/xen/hypercall.S
+@@ -87,6 +87,7 @@ HYPERCALL2(event_channel_op);
+ HYPERCALL2(hvm_op);
+ HYPERCALL2(memory_op);
+ HYPERCALL2(physdev_op);
++HYPERCALL3(vcpu_op);
  
- DEFINE_PER_CPU(struct vcpu_info *, xen_vcpu);
-+DEFINE_PER_CPU(struct vcpu_info, xen_vcpu_info);
- 
- /* These are unused until we support booting "pre-ballooned" */
- unsigned long xen_released_pages;
-@@ -148,6 +150,32 @@ int xen_unmap_domain_mfn_range(struct vm_area_struct *vma,
- }
- EXPORT_SYMBOL_GPL(xen_unmap_domain_mfn_range);
- 
-+static int __init xen_secondary_init(unsigned int cpu)
-+{
-+	struct vcpu_register_vcpu_info info;
-+	struct vcpu_info *vcpup;
-+	int err;
-+
-+	if (cpu == 0)
-+		return 0;
-+
-+	pr_info("Xen: initializing cpu%d\n", cpu);
-+	vcpup = &per_cpu(xen_vcpu_info, cpu);
-+
-+	info.mfn = __pa(vcpup) >> PAGE_SHIFT;
-+	info.offset = offset_in_page(vcpup);
-+
-+	err = HYPERVISOR_vcpu_op(VCPUOP_register_vcpu_info, cpu, &info);
-+	if (err) {
-+		pr_debug("register_vcpu_info failed: err=%d\n", err);
-+	} else {
-+		/* This cpu is using the registered vcpu info, even if
-+		   later ones fail to. */
-+		per_cpu(xen_vcpu, cpu) = vcpup;
-+	}
-+	return 0;
-+}
-+
- /*
-  * see Documentation/devicetree/bindings/arm/xen.txt for the
-  * documentation of the Xen Device Tree format.
-@@ -163,6 +191,7 @@ static int __init xen_guest_init(void)
- 	const char *version = NULL;
- 	const char *xen_prefix = "xen,xen-";
- 	struct resource res;
-+	int i;
- 
- 	node = of_find_compatible_node(NULL, NULL, "xen,xen");
- 	if (!node) {
-@@ -216,6 +245,8 @@ static int __init xen_guest_init(void)
- 	 * is required to use VCPUOP_register_vcpu_info to place vcpu info
- 	 * for secondary CPUs as they are brought up. */
- 	per_cpu(xen_vcpu, 0) = &HYPERVISOR_shared_info->vcpu_info[0];
-+	for_each_online_cpu(i)
-+		xen_secondary_init(i);
- 
- 	gnttab_init();
- 	if (!xen_initial_domain())
-@@ -231,6 +262,11 @@ static irqreturn_t xen_arm_callback(int irq, void *arg)
- 	return IRQ_HANDLED;
- }
- 
-+static __init void xen_percpu_enable_events(void *unused)
-+{
-+	enable_percpu_irq(xen_events_irq, 0);
-+}
-+
- static int __init xen_init_events(void)
- {
- 	if (!xen_domain() || xen_events_irq < 0)
-@@ -244,7 +280,7 @@ static int __init xen_init_events(void)
- 		return -EINVAL;
- 	}
- 
--	enable_percpu_irq(xen_events_irq, 0);
-+	on_each_cpu(xen_percpu_enable_events, NULL, 0);
- 
- 	return 0;
- }
+ ENTRY(privcmd_call)
+ 	stmdb sp!, {r4}
 -- 
 1.7.2.5
 
