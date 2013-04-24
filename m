@@ -1,57 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757442Ab3DXCzP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 22:55:15 -0400
-Received: from mail.windriver.com ([147.11.1.11]:42641 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756688Ab3DXCzO (ORCPT
+	id S1757502Ab3DXCzc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 22:55:32 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:13575 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756688Ab3DXCzb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 22:55:14 -0400
-From: Tiejun Chen <tiejun.chen@windriver.com>
-To: <galak@kernel.crashing.org>
-CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/1] usb: ehci-fsl: set INCR8 mode only on MPC512x
-Date: Wed, 24 Apr 2013 10:55:10 +0800
-Message-ID: <1366772110-9620-1-git-send-email-tiejun.chen@windriver.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 23 Apr 2013 22:55:31 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 23 Apr 2013 19:55:20 -0700
+Subject: Re: [PATCH 06/21] ARM: tegra: call cpu_do_idle from C code
+From: Joseph Lo <josephl@nvidia.com>
+To: Arnd Bergmann <arnd@arndb.de>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stephen Warren <swarren@nvidia.com>
+In-Reply-To: <1366734653-488286-7-git-send-email-arnd@arndb.de>
+References: <1366734653-488286-1-git-send-email-arnd@arndb.de>
+	 <1366734653-488286-7-git-send-email-arnd@arndb.de>
+Date: Wed, 24 Apr 2013 10:55:18 +0800
+Message-ID: <1366772118.18275.2.camel@jlo-ubuntu-64.nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+X-Mailer: Evolution 2.28.3 
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 761bbcb7, "usb: ehci-fsl: set INCR8 mode for system bus interface
-on MPC512x", introduced to fix one MPC5121e (M36P) Errata by setting
-INCR8 mode for system bus interface on MPC512x, but we should make sure
-this is only valid for MPC512x like other parts of this commit. Otherwise
-this would issue other platforms as abnormal without this similar Errata.
+On Wed, 2013-04-24 at 00:30 +0800, Arnd Bergmann wrote:
+> When building a kernel for multiple CPU architecture levels,
+> cpu_do_idle() is a macro for an indirect function call, which
+> cannot be called from assembly code as Tegra does.
+> 
+> Adding a trivial C wrapper for this function lets us build
+> a tegra kernel with ARMv6 support enabled.
+> 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Joseph Lo <josephl@nvidia.com>
+> Cc: Stephen Warren <swarren@nvidia.com>
+> ---
 
-Signed-off-by: Tiejun Chen <tiejun.chen@windriver.com>
----
- drivers/usb/host/ehci-fsl.c |   10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+Hi Arnd,
 
-diff --git a/drivers/usb/host/ehci-fsl.c b/drivers/usb/host/ehci-fsl.c
-index d81d2fc..f4f2a7b 100644
---- a/drivers/usb/host/ehci-fsl.c
-+++ b/drivers/usb/host/ehci-fsl.c
-@@ -509,7 +509,15 @@ static int ehci_fsl_mpc512x_drv_resume(struct device *dev)
- 	ehci_writel(ehci, ISIPHYCTRL_PXE | ISIPHYCTRL_PHYE,
- 		    hcd->regs + FSL_SOC_USB_ISIPHYCTRL);
- 
--	ehci_writel(ehci, SBUSCFG_INCR8, hcd->regs + FSL_SOC_USB_SBUSCFG);
-+	if (of_device_is_compatible(dev->parent->of_node,
-+				    "fsl,mpc5121-usb2-dr")) {
-+		/*
-+		 * set SBUSCFG:AHBBRST so that control msgs don't
-+		 * fail when doing heavy PATA writes.
-+		 */
-+		ehci_writel(ehci, SBUSCFG_INCR8,
-+			    hcd->regs + FSL_SOC_USB_SBUSCFG);
-+	}
- 
- 	/* restore EHCI registers */
- 	ehci_writel(ehci, pdata->pm_command, &ehci->regs->command);
--- 
-1.7.9.5
+Thanks for fixing.
+
+Tested-by: Joseph Lo <josephl@nvidia.com>
+
+Joseph
 
