@@ -1,69 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932089Ab3DXGsS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 02:48:18 -0400
-Received: from mail-ea0-f181.google.com ([209.85.215.181]:35757 "EHLO
-	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754609Ab3DXGsR (ORCPT
+	id S1756480Ab3DXGtu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 02:49:50 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:46802 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752340Ab3DXGtt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 02:48:17 -0400
-Date: Wed, 24 Apr 2013 08:48:13 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Dave Jones <davej@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@elte.hu>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Print out additional debugging advice when we hit lockdep BUGs
-Message-ID: <20130424064813.GB27551@gmail.com>
-References: <20130423163403.GA12839@redhat.com>
+	Wed, 24 Apr 2013 02:49:49 -0400
+Date: Wed, 24 Apr 2013 01:49:45 -0500
+From: Rob Landley <rob@landley.net>
+Subject: Re: [PATCH v2 6/6] add documentation on proc.txt
+To: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Michael Kerrisk <mtk.manpages@gmail.com>,
+        Rik van Riel <riel@redhat.com>, Dave Hansen <dave.hansen@intel.com>,
+        Minchan Kim <minchan@kernel.org>
+References: <1366767664-17541-1-git-send-email-minchan@kernel.org>
+	<1366767664-17541-7-git-send-email-minchan@kernel.org>
+In-Reply-To: <1366767664-17541-7-git-send-email-minchan@kernel.org> (from
+	minchan@kernel.org on Tue Apr 23 20:41:04 2013)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1366786185.18069.160@driftwood>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
 Content-Disposition: inline
-In-Reply-To: <20130423163403.GA12839@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Dave Jones <davej@redhat.com> wrote:
-
-> We occasionally get reports of these BUGs being hit, and the stack trace
-> doesn't necessarily always tell us what we need to know about why we are
-> hitting those limits.
+On 04/23/2013 08:41:04 PM, Minchan Kim wrote:
+> This patch adds stuff about new reclaim field in proc.txt
 > 
-> If users start attaching /proc/lock_stats to reports we may have more of
-> a clue what's going on.
+> Cc: Rob Landley <rob@landley.net>
+> Signed-off-by: Minchan Kim <minchan@kernel.org>
+> ---
+> 
+> Rob, I didn't add your Acked-by because interface was slight changed.
+> I hope you give Acke-by after review again.
+> Thanks.
+> 
+>  Documentation/filesystems/proc.txt | 22 ++++++++++++++++++++++
+>  mm/Kconfig                         |  7 +------
+>  2 files changed, 23 insertions(+), 6 deletions(-)
+> 
+> diff --git a/Documentation/filesystems/proc.txt  
+> b/Documentation/filesystems/proc.txt
+> index 488c094..1411ad0 100644
+> --- a/Documentation/filesystems/proc.txt
+> +++ b/Documentation/filesystems/proc.txt
+> @@ -136,6 +136,7 @@ Table 1-1: Process specific entries in /proc
+>   maps		Memory maps to executables and library files	 
+> (2.4)
+>   mem		Memory held by this process
+>   root		Link to the root directory of this process
+> + reclaim	Reclaim pages in this process
+>   stat		Process status
+>   statm		Process memory status information
+>   status		Process status in human readable form
+> @@ -489,6 +490,27 @@ To clear the soft-dirty bit
+> 
+>  Any other value written to /proc/PID/clear_refs will have no effect.
+> 
+> +The file /proc/PID/reclaim is used to reclaim pages in this process.
+> +To reclaim file-backed pages,
+> +    > echo file > /proc/PID/reclaim
+> +
+> +To reclaim anonymous pages,
+> +    > echo anon > /proc/PID/reclaim
+> +
+> +To reclaim all pages,
+> +    > echo all > /proc/PID/reclaim
+> +
+> +Also, you can specify address range of process so part of address  
+> space
+> +will be reclaimed. The format is following as
+> +    > echo addr size-byte > /proc/PID/reclaim
+> +
+> +NOTE: addr should be page-aligned.
 
-Good idea.
+And size in bytes should be a multiple of page size?
 
-A detail:
+> +
+> +Below is example which try to reclaim 2 pages from 0x100000.
+> +
+> +To reclaim both pages in address range,
+> +    > echo $((1<<20) 8192 > /proc/PID/reclaim
 
->  		printk("BUG: MAX_STACK_TRACE_ENTRIES too low!\n");
->  		printk("turning off the locking correctness validator.\n");
-> +		printk("Attach output of /proc/lock_stat to bug report\n");
+Would you like to balance your parentheses?
 
->  		printk("BUG: MAX_LOCKDEP_KEYS too low!\n");
->  		printk("turning off the locking correctness validator.\n");
-> +		printk("Attach output of /proc/lock_stat to bug report\n");
+Acked-by: Rob Landley <rob@landley.net>
 
->  		printk("BUG: MAX_LOCKDEP_ENTRIES too low!\n");
->  		printk("turning off the locking correctness validator.\n");
-> +		printk("Attach output of /proc/lock_stat to bug report\n");
-
->  		printk("BUG: MAX_LOCKDEP_CHAINS too low!\n");
->  		printk("turning off the locking correctness validator.\n");
-> +		printk("Attach output of /proc/lock_stat to bug report\n");
-
->  		printk("BUG: MAX_LOCK_DEPTH too low, depth: %i  max: %lu!\n",
->  		       curr->lockdep_depth, MAX_LOCK_DEPTH);
->  		printk("turning off the locking correctness validator.\n");
-> +		printk("Attach output of /proc/lock_stat to bug report\n");
-
-These patterns repeated in 4 places really call for a common helper 
-defined as print_lockdep_off(fmt...) or so?
-
-(Can be a followup patch if that's easier for you.)
-
-Thanks,
-
-	Ingo
+Rob
