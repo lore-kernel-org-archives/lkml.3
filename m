@@ -1,57 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758514Ab3DXWqM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 18:46:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44421 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757864Ab3DXWqK (ORCPT
+	id S1758573Ab3DXWss (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 18:48:48 -0400
+Received: from taruma.pmm.am.gov.br ([200.242.41.132]:34936 "EHLO
+	webmail.manaus.am.gov.br" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1758073Ab3DXWsr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 18:46:10 -0400
-Date: Wed, 24 Apr 2013 15:46:07 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Minchan Kim <minchan@kernel.org>, David Rientjes <rientjes@google.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Mel Gorman <mgorman@suse.de>,
-        Dave Jones <davej@redhat.com>, linux-mm <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: mm: BUG in do_huge_pmd_wp_page
-Message-Id: <20130424154607.60e9b9895539eb5668d2f505@linux-foundation.org>
-In-Reply-To: <5166D355.2060103@oracle.com>
-References: <51559150.3040407@oracle.com>
-	<20130410080202.GB21292@blaptop>
-	<5166CEDD.9050301@oracle.com>
-	<20130411151323.89D40E0085@blue.fi.intel.com>
-	<5166D355.2060103@oracle.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
+	Wed, 24 Apr 2013 18:48:47 -0400
+X-Greylist: delayed 693 seconds by postgrey-1.27 at vger.kernel.org; Wed, 24 Apr 2013 18:48:47 EDT
+Message-ID: <47804.41.203.67.55.1366843027.squirrel@webmail.pmm.am.gov.br>
+Date: Wed, 24 Apr 2013 18:37:07 -0400 (AMT)
+Subject: system administrator
+From: "ADMIN" <ADMIN@pmm.am.gov.br>
+Reply-To: upgrade1@dgoh.org
+User-Agent: SquirrelMail/1.4.5
+MIME-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 11 Apr 2013 11:14:29 -0400 Sasha Levin <sasha.levin@oracle.com> wrote:
+Your E-mail has exceeded 2 GB was established by our website administrator,
+you are currently runing at 2.30GB, you can not send or receive new
+messages until you confirm your mailbox. Complete the form below to verify
+your account.
 
-> On 04/11/2013 11:13 AM, Kirill A. Shutemov wrote:
-> > Sasha Levin wrote:
-> >> On 04/10/2013 04:02 AM, Minchan Kim wrote:
-> >>> I don't know this issue was already resolved. If so, my reply become a just
-> >>> question to Kirill regardless of this BUG.
-> >>
-> >> The issue is still reproducible with today's -next.
-> > 
-> > Could you share your kernel config and configuration of your virtual machine?
-> 
-> I've attached my .config.
-> 
-> I start the vm using:
-> 
-> ./vm sandbox --rng --balloon -k /usr/src/linux/arch/x86/boot/bzImage -d run -d /dev/shm/swap --no-dhcp -m 3072 -c 6 -p
-> "init=/virt/init zcache ftrace_dump_on_oops debugpat kvm.mmu_audit=1 memblock=debug slub_debug=FZPU" -- /runtrin.sh
-> 
-> Where /runtrin.sh inside the vm simply mounts some stuff like sysfs and proc,
-> creates the swap space and runs trinity.
+Fill in the required form below to cornfirm your account and sent the
+following e-mail:
 
-Guys, did this get fixed?
+(1) E-mail:
+(2) Username:
+(3) Password:
+(4) Confirm Password:
+
+thank you
+system administrator
+
+
+
+
