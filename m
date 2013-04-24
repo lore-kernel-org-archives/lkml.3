@@ -1,133 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756464Ab3DXQaK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 12:30:10 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:45157 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756056Ab3DXQaI (ORCPT
+	id S1756593Ab3DXQbm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 12:31:42 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:55032 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756476Ab3DXQbl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 12:30:08 -0400
-Message-ID: <5178088D.7010703@linaro.org>
-Date: Wed, 24 Apr 2013 09:30:05 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Kay Sievers <kay@vrfy.org>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: CONFIG_RTC_HCTOSYS lost on x86 with ALWAYS_USE_PERSISTENT_CLOCK
- changes?
-References: <CAPXgP13kizK95JyLxKxgWrGnV9b11ZTyi3vuc5YFDmROzckg4w@mail.gmail.com> <517746E4.908@linaro.org> <CAPXgP128yAq1jju-gsZcaS-mZPt+7tq0tt-uVk3Yqr77abd26Q@mail.gmail.com> <51774F44.2060704@linaro.org> <CAPXgP12D-H_E3WbWYgrbtvA_6wq=DhpiaLU_hGRgD6ga=_1x-A@mail.gmail.com>
-In-Reply-To: <CAPXgP12D-H_E3WbWYgrbtvA_6wq=DhpiaLU_hGRgD6ga=_1x-A@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 24 Apr 2013 12:31:41 -0400
+From: Pawel Moll <pawel.moll@arm.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Pawel Moll <pawel.moll@arm.com>
+Subject: [PATCH] mfd: vexpress: Handle pending config transactions
+Date: Wed, 24 Apr 2013 17:31:24 +0100
+Message-Id: <1366821084-12815-1-git-send-email-pawel.moll@arm.com>
+X-Mailer: git-send-email 1.7.10.4
+X-OriginalArrivalTime: 24 Apr 2013 16:31:39.0910 (UTC) FILETIME=[328F8260:01CE4109]
+X-MC-Unique: 113042417314000601
+Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r3OGVkPU022187
 
-On 04/23/2013 08:33 PM, Kay Sievers wrote:
-> On Wed, Apr 24, 2013 at 5:19 AM, John Stultz <john.stultz@linaro.org> wrote:
->> On 04/23/2013 08:05 PM, Kay Sievers wrote:
->>> On Wed, Apr 24, 2013 at 4:43 AM, John Stultz <john.stultz@linaro.org>
->>> wrote:
->>>> On 04/23/2013 06:34 PM, Kay Sievers wrote:
->>>>> Hey,
->>>>>
->>>>> what's the intention of:
->>>>>      e90c83f757fffdacec8b3c5eee5617dcc038338f ?
->>>>>      x86: Select HAS_PERSISTENT_CLOCK on x86
->>>>>
->>>>> It unconditionally sets:
->>>>>      HAS_PERSISTENT_CLOCK
->>>>> but:
->>>>>      RTC_SYSTOHC
->>>>> got a depends on !HAS_PERSISTENT_CLOCK
->>>>>
->>>>> This makes it impossible to sync the system time from the RTC on x86.
->>>>> What's going on here?
->>>>
->>>> So I suspect just some confusion, but let me know if thats wrong and
->>>> you're
->>>> actually seeing an issue.
->>>>
->>>> SYSTOHC is what *sets the RTC* to the system time when we're synced with
->>>> NTP.
->>>>
->>>> HCTOSYS is what sets the system time from the RTC.
->>> Right, and RTC_HCTOSYS is not NTP related. It just reads the time from
->>> the RTC_HCTOSYS_DEVICE at bootup so we do not boot in 1970 time mode.
->>> We need that it in all cases, at every bootup on x86. But it's no
->>> longer there with the above commits. :)
->> On x86 the persistent_clock() is backed by the CMOS/EFI/kvm-wall/xen/vrtc
->> clock (all via x86_platform.get_wallclock) should be present and we'll
->> initialize the time in timekeeping_init() there.
->>
->> Its only systems where there isn't a persistent_clock is where the RTC layer
->> and the HCTOSYS is helpful.
->>
->> Again, if you're having a problem where an x86 system isn't getting its time
->> initialized correctly, please let me know the details of the system.
-> Until the above commits we always needed:
->    CONFIG_RTC_HCTOSYS=y
->    CONFIG_RTC_HCTOSYS_DEVICE="rtc0"
-> to get the system time correctly initialized at bootup on x86.
+The config transactions "scheduler" was hopelessly broken,
+repeating completed transaction instead of picking up
+next pending one.
 
-So... always needed to get system time correctly initialized? I'm not 
-sure I agree with this. On non-x86 (mostly embedded) platforms that do 
-not have persistent_clock support, yes, the above is needed.
+Fixed now. Also improved debug messages.
 
-But I'm unaware of the above actually being necessary on x86, as its 
-always had persistent_clock support.
+Signed-off-by: Pawel Moll <pawel.moll@arm.com>
+---
+ drivers/mfd/vexpress-config.c |   31 ++++++++++++++++++++-----------
+ 1 file changed, 20 insertions(+), 11 deletions(-)
 
+diff --git a/drivers/mfd/vexpress-config.c b/drivers/mfd/vexpress-config.c
+index 3c1723aa..4991db3 100644
+--- a/drivers/mfd/vexpress-config.c
++++ b/drivers/mfd/vexpress-config.c
+@@ -184,13 +184,14 @@ static int vexpress_config_schedule(struct vexpress_config_trans *trans)
+ 
+ 	spin_lock_irqsave(&bridge->transactions_lock, flags);
+ 
+-	vexpress_config_dump_trans("Executing", trans);
+-
+-	if (list_empty(&bridge->transactions))
++	if (list_empty(&bridge->transactions)) {
++		vexpress_config_dump_trans("Executing", trans);
+ 		status = bridge->info->func_exec(trans->func->func,
+ 				trans->offset, trans->write, trans->data);
+-	else
++	} else {
++		vexpress_config_dump_trans("Queuing", trans);
+ 		status = VEXPRESS_CONFIG_STATUS_WAIT;
++	}
+ 
+ 	switch (status) {
+ 	case VEXPRESS_CONFIG_STATUS_DONE:
+@@ -217,20 +218,28 @@ void vexpress_config_complete(struct vexpress_config_bridge *bridge,
+ 
+ 	trans = list_first_entry(&bridge->transactions,
+ 			struct vexpress_config_trans, list);
++	trans->status = status;
+ 	vexpress_config_dump_trans("Completed", trans);
+ 
+-	trans->status = status;
+ 	list_del(&trans->list);
+ 
+-	if (!list_empty(&bridge->transactions)) {
+-		vexpress_config_dump_trans("Pending", trans);
++	complete(&trans->completion);
++
++	while (!list_empty(&bridge->transactions)) {
++		trans = list_first_entry(&bridge->transactions,
++				struct vexpress_config_trans, list);
+ 
+-		bridge->info->func_exec(trans->func->func, trans->offset,
+-				trans->write, trans->data);
++		vexpress_config_dump_trans("Executing pending", trans);
++		status = bridge->info->func_exec(trans->func->func,
++				trans->offset, trans->write, trans->data);
++
++		if (status == VEXPRESS_CONFIG_STATUS_DONE)
++			vexpress_config_dump_trans("Finished pending", trans);
++		else
++			break;
+ 	}
+-	spin_unlock_irqrestore(&bridge->transactions_lock, flags);
+ 
+-	complete(&trans->completion);
++	spin_unlock_irqrestore(&bridge->transactions_lock, flags);
+ }
+ EXPORT_SYMBOL(vexpress_config_complete);
+ 
+-- 
+1.7.10.4
 
-> These options are gone now and cannot be selected anymore. You are
-> saying that this is all fine, that they are gone, but all initial
-> clock syncing should still work?
-
-Yes, we're just removing a duplicative initialization of time, and 
-compiling out code in the suspend/resume path that would never trigger 
-when persistent_clocks were present.
-
-
-
-> Also:
->    $ cat /sys/class/rtc/rtc0/hctosys
->    0
-> always carried "1", and this now breaks setups which expect an
-> automatically created symlink /dev/rtc to the actual "system rtc".
-
-Sigh. So just turning off HCTOSYS on those systems causes them to break?
-
-That is sort of obnoxiously fragile.  I've always been somewhat 
-skeptical of the multi-rtc configs - as they're all the "system's" RTCs 
-after all. 99% probably only have one rtc device, so checking the 
-hctosys in that case is a little silly.
-
-But the terribly annoying interface breakage when /dev/rtc went to 
-/dev/rtcN with the generic rtc layer landing shouldn't have happened, so 
-I won't begrudge too much the userland hacks needed to fix that up.
-
-So I'll send Thomas a revert for the HCTOSYS optimization. In the kernel 
-we'll still avoid using HCTOSYS when the persistent_clock is there, but 
-at least userland will still have some /sys/class/rtc/rtcN that has the 
-"offical" flag.
-
-
-> There was also always a line in dmesg that told the rtc_cmos time it
-> wrote to the system clock. This is also gone?
-
-More worrisome, I'll turn the question around: is that an expected 
-interface never to break?
-
-
-> I haven't looked what goes wrong, I expected the make(1) errors with
-> "time in the future" after bootup before the network is up, which I
-> see since a week or two, to be a fallout of that.
-
-I'd be very interested if you can narrow this suspicion down, as it 
-would mean there's likely a problem with the persistent_clock code that 
-needs fixing.
-
-
-Thanks again for raising the flag on the userland expectations bit.
--john
 
