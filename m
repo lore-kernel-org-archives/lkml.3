@@ -1,73 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757447Ab3DXSzs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 14:55:48 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:45183 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756367Ab3DXSzq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 14:55:46 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Magnus Damm <magnus.damm@gmail.com>
-Cc: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        SH-Linux <linux-sh@vger.kernel.org>, linux-leds@vger.kernel.org,
+	id S1757203Ab3DXS5u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 14:57:50 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56432 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756621Ab3DXS5t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 14:57:49 -0400
+Date: Wed, 24 Apr 2013 19:57:44 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jerome Marchand <jmarchan@redhat.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
         linux-kernel <linux-kernel@vger.kernel.org>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Paul Mundt <lethal@linux-sh.org>
-Subject: Re: [PATCH 3/9] pwm: Add Renesas Mobile TPU PWM driver
-Date: Wed, 24 Apr 2013 20:55:45 +0200
-Message-ID: <4234281.i4nY8H6pM1@avalon>
-User-Agent: KMail/4.10.2 (Linux/3.7.10-gentoo; KDE/4.10.2; x86_64; ; )
-In-Reply-To: <CANqRtoQzuBg7Y=zPGPDfmWzKjuR8nGfgEgK43+7uSdivmyaBjg@mail.gmail.com>
-References: <1366761969-16759-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com> <1366761969-16759-4-git-send-email-laurent.pinchart+renesas@ideasonboard.com> <CANqRtoQzuBg7Y=zPGPDfmWzKjuR8nGfgEgK43+7uSdivmyaBjg@mail.gmail.com>
+        Hugh Dickins <hughd@google.com>
+Subject: [PATCH] mm: swap: Mark swap pages writeback before queueing for
+ direct IO
+Message-ID: <20130424185744.GB2144@suse.de>
+References: <516E918B.3050309@redhat.com>
+ <20130422133746.ffbbb70c0394fdbf1096c7ee@linux-foundation.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20130422133746.ffbbb70c0394fdbf1096c7ee@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Magnus,
+As pointed out by Andrew Morton, the swap-over-NFS writeback is not setting
+PageWriteback before it is queued for direct IO. While swap pages do not
+participate in BDI or process dirty accounting and the IO is synchronous,
+the writeback bit is still required and not setting it in this case was
+an oversight.  swapoff depends on the page writeback to synchronoise all
+pending writes on a swap page before it is reused. Swapcache freeing and
+reuse depend on checking the PageWriteback under lock to ensure the page
+is safe to reuse.
 
-Thanks for the review.
+Direct IO handlers and the direct IO handler for NFS do not deal with
+PageWriteback as they are synchronous writes. In the case of NFS, it
+schedules pages (or a page in the case of swap) for IO and then waits
+synchronously for IO to complete in nfs_direct_write(). It is recognised
+that this is a slowdown from normal swap handling which is asynchronous
+and uses a completion handler. Shoving PageWriteback handling down into
+direct IO handlers looks like a bad fit to handle the swap case although
+it may have to be dealt with some day if swap is converted to use direct
+IO in general and bmap is finally done away with. At that point it will
+be necessary to refit asynchronous direct IO with completion handlers onto
+the swap subsystem.
 
-On Wednesday 24 April 2013 18:37:57 Magnus Damm wrote:
-> On Wed, Apr 24, 2013 at 1:06 AM, Laurent Pinchart wrote:
-> > The Timer Pulse Unit (TPU is a 4-channels 16-bit timer used to generate
-> > waveforms. This driver exposes PWM functions through the PWM API for
-> > other drivers to use.
-> > 
-> > The code is loosely based on the leds-renesas-tpu driver by Magnus Damm
-> > and the TPU PWM driver shipped in the Armadillo EVA 800 kernel sources.
-> > 
-> > Signed-off-by: Laurent Pinchart
-> > <laurent.pinchart+renesas@ideasonboard.com>
-> > Tested-by: Simon Horman <horms@verge.net.au>
-> > ---
-> > 
-> >  drivers/pwm/Kconfig                    |   7 +
-> >  drivers/pwm/Makefile                   |   1 +
-> >  drivers/pwm/pwm-rmob.c                 | 462 ++++++++++++++++++++++++++++
-> >  include/linux/platform_data/pwm-rmob.h |  18 ++
-> >  4 files changed, 488 insertions(+)
-> >  create mode 100644 drivers/pwm/pwm-rmob.c
-> >  create mode 100644 include/linux/platform_data/pwm-rmob.h
-> 
-> Thanks for your efforts with this driver. The new code becomes much nicer
-> compared to my old driver.
-> 
-> The TPU hardware block is used across several different Renesas product
-> lines, including R-Mobile and R-Car. So with that in mind, can you please
-> consider renaming this driver?
-> 
-> I propose pwm-renesas-tpu.c or pwm-tpu.c instead of pwm-rmob.c. This
-> because this driver has nothing to do with the R mobile product line.
+As swapcache currently depends on PageWriteback to protect against races,
+this patch sets PageWriteback under the page lock before queueing it for
+direct IO. It is cleared when the direct IO handler returns. IO errors
+are treated similarly to the direct-to-bio case except PageError is not
+set as in the case of swap-over-NFS, it is likely to be a transient error.
 
-pwm-renesas-tpu.c sounds good. I'll rename the driver accordingly and will 
-resubmit the patch set.
+It was asked what prevents such a page being reclaimed in parallel.
+With this patch applied, such a page will now be skipped (most of the time)
+or blocked until the writeback completes.  Reclaim checks PageWriteback
+under the page lock before calling try_to_free_swap and the page lock
+should prevent the page being requeued for IO before it is freed.
 
--- 
-Regards,
+This and Jerome's related patch should considered for -stable as far
+back as 3.6 when swap-over-NFS was introduced.
 
-Laurent Pinchart
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ mm/page_io.c | 17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
 
+diff --git a/mm/page_io.c b/mm/page_io.c
+index 04ca00d..ec04247 100644
+--- a/mm/page_io.c
++++ b/mm/page_io.c
+@@ -214,6 +214,7 @@ int swap_writepage(struct page *page, struct writeback_control *wbc)
+ 		kiocb.ki_left = PAGE_SIZE;
+ 		kiocb.ki_nbytes = PAGE_SIZE;
+ 
++		set_page_writeback(page);
+ 		unlock_page(page);
+ 		ret = mapping->a_ops->direct_IO(KERNEL_WRITE,
+ 						&kiocb, &iov,
+@@ -223,8 +224,24 @@ int swap_writepage(struct page *page, struct writeback_control *wbc)
+ 			count_vm_event(PSWPOUT);
+ 			ret = 0;
+ 		} else {
++			/*
++			 * In the case of swap-over-nfs, this can be a
++			 * temporary failure if the system has limited
++			 * memory for allocating transmit buffers.
++			 * Mark the page dirty and avoid
++			 * rotate_reclaimable_page but rate-limit the
++			 * messages but do not flag PageError like
++			 * the normal direct-to-bio case as it could
++			 * be temporary.
++			 */
+ 			set_page_dirty(page);
++			ClearPageReclaim(page);
++			if (printk_ratelimit()) {
++				pr_err("Write-error on dio swapfile (%Lu)\n",
++					(unsigned long long)page_file_offset(page));
++			}
+ 		}
++		end_page_writeback(page);
+ 		return ret;
+ 	}
