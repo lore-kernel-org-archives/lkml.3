@@ -1,112 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755276Ab3DXGUu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 02:20:50 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:50209 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754917Ab3DXGU0 (ORCPT
+	id S1756795Ab3DXGV7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 02:21:59 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:55585 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755070Ab3DXGV4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 02:20:26 -0400
-Subject: [PATCH v2 3/8] powerpc/pseries: Introduce generic read function to
- read nvram-partitions
+	Wed, 24 Apr 2013 02:21:56 -0400
+Subject: [PATCH v2 8/8] powerpc/pseries: Read common partition via pstore
 To: linuxppc-dev@ozlabs.org, paulus@samba.org, linux-kernel@vger.kernel.org,
         benh@kernel.crashing.org
 From: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
 Cc: jkenisto@linux.vnet.ibm.com, tony.luck@intel.com, ananth@in.ibm.com,
         mahesh@linux.vnet.ibm.com, ccross@android.com, anton@samba.org,
         cbouatmailru@gmail.com, keescook@chromium.org
-Date: Wed, 24 Apr 2013 11:50:14 +0530
-Message-ID: <20130424062014.7341.66401.stgit@aruna-ThinkPad-T420>
+Date: Wed, 24 Apr 2013 11:51:09 +0530
+Message-ID: <20130424062109.7341.3933.stgit@aruna-ThinkPad-T420>
 In-Reply-To: <20130424061807.7341.909.stgit@aruna-ThinkPad-T420>
 References: <20130424061807.7341.909.stgit@aruna-ThinkPad-T420>
 User-Agent: StGit/0.16-41-gd1dd
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13042406-5564-0000-0000-000007A1D93A
+x-cbid: 13042406-5140-0000-0000-00000315D33D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce generic read function to read nvram partitions other than rtas.
-nvram_read_error_log will be retained which is used to read rtas partition
-from rtasd. nvram_read_partition is the generic read function to read from
-any nvram partition.
+This patch exploits pstore subsystem to read details of common partition
+in NVRAM to a separate file in /dev/pstore. For instance, common partition
+details will be stored in a file named [common-nvram-6].
 
 Signed-off-by: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
 Reviewed-by: Jim Keniston <jkenisto@us.ibm.com>
 ---
- arch/powerpc/platforms/pseries/nvram.c |   32 ++++++++++++++++++++++----------
- 1 file changed, 22 insertions(+), 10 deletions(-)
+ arch/powerpc/platforms/pseries/nvram.c |   17 ++++++++++++++++-
+ fs/pstore/inode.c                      |    3 +++
+ include/linux/pstore.h                 |    1 +
+ 3 files changed, 20 insertions(+), 1 deletion(-)
 
 diff --git a/arch/powerpc/platforms/pseries/nvram.c b/arch/powerpc/platforms/pseries/nvram.c
-index 742735a..088f023 100644
+index de448af..8417816 100644
 --- a/arch/powerpc/platforms/pseries/nvram.c
 +++ b/arch/powerpc/platforms/pseries/nvram.c
-@@ -293,34 +293,35 @@ int nvram_write_error_log(char * buff, int length,
- 	return rc;
- }
+@@ -138,10 +138,17 @@ static struct nvram_os_partition of_config_partition = {
+ 	.os_partition = false
+ };
  
--/* nvram_read_error_log
-+/* nvram_read_partition
-  *
-- * Reads nvram for error log for at most 'length'
-+ * Reads nvram partition for at most 'length'
-  */
--int nvram_read_error_log(char * buff, int length,
--                         unsigned int * err_type, unsigned int * error_log_cnt)
-+int nvram_read_partition(struct nvram_os_partition *part, char *buff,
-+			int length, unsigned int *err_type,
-+			unsigned int *error_log_cnt)
- {
- 	int rc;
- 	loff_t tmp_index;
- 	struct err_log_info info;
- 	
--	if (rtas_log_partition.index == -1)
-+	if (part->index == -1)
- 		return -1;
- 
--	if (length > rtas_log_partition.size)
--		length = rtas_log_partition.size;
-+	if (length > part->size)
-+		length = part->size;
- 
--	tmp_index = rtas_log_partition.index;
-+	tmp_index = part->index;
- 
- 	rc = ppc_md.nvram_read((char *)&info, sizeof(struct err_log_info), &tmp_index);
- 	if (rc <= 0) {
--		printk(KERN_ERR "nvram_read_error_log: Failed nvram_read (%d)\n", rc);
-+		pr_err("%s: Failed nvram_read (%d)\n", __FUNCTION__, rc);
- 		return rc;
- 	}
- 
- 	rc = ppc_md.nvram_read(buff, length, &tmp_index);
- 	if (rc <= 0) {
--		printk(KERN_ERR "nvram_read_error_log: Failed nvram_read (%d)\n", rc);
-+		pr_err("%s: Failed nvram_read (%d)\n", __FUNCTION__, rc);
- 		return rc;
- 	}
- 
-@@ -330,6 +331,17 @@ int nvram_read_error_log(char * buff, int length,
- 	return 0;
- }
- 
-+/* nvram_read_error_log
-+ *
-+ * Reads nvram for error log for at most 'length'
-+ */
-+int nvram_read_error_log(char *buff, int length,
-+			unsigned int *err_type, unsigned int *error_log_cnt)
-+{
-+	return nvram_read_partition(&rtas_log_partition, buff, length,
-+						err_type, error_log_cnt);
-+}
++static struct nvram_os_partition common_partition = {
++	.name = "common",
++	.index = -1,
++	.os_partition = false
++};
 +
- /* This doesn't actually zero anything, but it sets the event_logged
-  * word to tell that this event is safely in syslog.
+ static enum pstore_type_id nvram_type_ids[] = {
+ 	PSTORE_TYPE_DMESG,
+ 	PSTORE_TYPE_RTAS,
+ 	PSTORE_TYPE_OF,
++	PSTORE_TYPE_COMMON,
+ 	-1
+ };
+ static int read_type;
+@@ -530,7 +537,7 @@ static int nvram_pstore_write(enum pstore_type_id type,
+ }
+ 
+ /*
+- * Reads the oops/panic report, rtas and of-config partition.
++ * Reads the oops/panic report, rtas, of-config and common partition.
+  * Returns the length of the data we read from each partition.
+  * Returns 0 if we've been called before.
   */
+@@ -566,6 +573,14 @@ static ssize_t nvram_pstore_read(u64 *id, enum pstore_type_id *type,
+ 		time->tv_sec = 0;
+ 		time->tv_nsec = 0;
+ 		break;
++	case PSTORE_TYPE_COMMON:
++		sig = NVRAM_SIG_SYS;
++		part = &common_partition;
++		*type = PSTORE_TYPE_COMMON;
++		*id = PSTORE_TYPE_COMMON;
++		time->tv_sec = 0;
++		time->tv_nsec = 0;
++		break;
+ 	default:
+ 		return 0;
+ 	}
+diff --git a/fs/pstore/inode.c b/fs/pstore/inode.c
+index 8d4fb65..88cc050 100644
+--- a/fs/pstore/inode.c
++++ b/fs/pstore/inode.c
+@@ -330,6 +330,9 @@ int pstore_mkfile(enum pstore_type_id type, char *psname, u64 id, int count,
+ 	case PSTORE_TYPE_PPC_OF:
+ 		sprintf(name, "of-%s-%lld", psname, id);
+ 		break;
++	case PSTORE_TYPE_PPC_COMMON:
++		sprintf(name, "common-%s-%lld", psname, id);
++		break;
+ 	case PSTORE_TYPE_UNKNOWN:
+ 		sprintf(name, "unknown-%s-%lld", psname, id);
+ 		break;
+diff --git a/include/linux/pstore.h b/include/linux/pstore.h
+index 615dc18..656699f 100644
+--- a/include/linux/pstore.h
++++ b/include/linux/pstore.h
+@@ -38,6 +38,7 @@ enum pstore_type_id {
+ 	/* PPC64 partition types */
+ 	PSTORE_TYPE_PPC_RTAS	= 4,
+ 	PSTORE_TYPE_PPC_OF	= 5,
++	PSTORE_TYPE_PPC_COMMON	= 6,
+ 	PSTORE_TYPE_UNKNOWN	= 255
+ };
+ 
 
