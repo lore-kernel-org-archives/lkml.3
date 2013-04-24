@@ -1,198 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751608Ab3DXE7a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 00:59:30 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:45033 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751127Ab3DXE72 (ORCPT
+	id S1752128Ab3DXFM2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 01:12:28 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:42510 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751848Ab3DXFM1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 00:59:28 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-From: Takao Indoh <indou.takao@jp.fujitsu.com>
-To: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        bhelgaas@google.com
-Cc: iommu@lists.linux-foundation.org, kexec@lists.infradead.org
-Subject: [PATCH] Reset PCIe devices to stop ongoing DMA
-Date: Wed, 24 Apr 2013 13:58:59 +0900
-Message-Id: <1366779539-3584-1-git-send-email-indou.takao@jp.fujitsu.com>
-X-Mailer: git-send-email 1.7.9
+	Wed, 24 Apr 2013 01:12:27 -0400
+Message-ID: <517769A9.5060308@ahsoftware.de>
+Date: Wed, 24 Apr 2013 07:12:09 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: John Stultz <john.stultz@linaro.org>
+CC: Kay Sievers <kay@vrfy.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: CONFIG_RTC_HCTOSYS lost on x86 with ALWAYS_USE_PERSISTENT_CLOCK
+ changes?
+References: <CAPXgP13kizK95JyLxKxgWrGnV9b11ZTyi3vuc5YFDmROzckg4w@mail.gmail.com> <517746E4.908@linaro.org> <CAPXgP128yAq1jju-gsZcaS-mZPt+7tq0tt-uVk3Yqr77abd26Q@mail.gmail.com> <51774F44.2060704@linaro.org>
+In-Reply-To: <51774F44.2060704@linaro.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch resets PCIe devices on boot to stop ongoing DMA. When
-"pci=pcie_reset_devices" is specified, a hot reset is triggered on each
-PCIe root port and downstream port to reset its downstream endpoint.
+Hello,
 
-Problem:
-This patch solves the problem that kdump can fail when intel_iommu=on is
-specified. When intel_iommu=on is specified, many dma-remapping errors
-occur in second kernel and it causes problems like driver error or PCI
-SERR, at last kdump fails. This problem is caused as follows.
-1) Devices are working on first kernel.
-2) Switch to second kernel(kdump kernel). The devices are still working
-   and its DMA continues during this switch.
-3) iommu is initialized during second kernel boot and ongoing DMA causes
-   dma-remapping errors.
+Am 24.04.2013 05:19, schrieb John Stultz:
 
-Solution:
-All DMA transactions have to be stopped before iommu is initialized. By
-this patch devices are reset and in-flight DMA is stopped before
-pci_iommu_init.
+> On x86 the persistent_clock() is backed by the
+> CMOS/EFI/kvm-wall/xen/vrtc clock (all via x86_platform.get_wallclock)
+> should be present and we'll initialize the time in timekeeping_init()
+> there.
+>
+> Its only systems where there isn't a persistent_clock is where the RTC
+> layer and the HCTOSYS is helpful.
 
-To invoke hot reset on an endpoint, its upstream link need to be reset.
-reset_pcie_devices() is called from fs_initcall_sync, and it finds root
-port/downstream port whose child is PCIe endpoint, and then reset link
-between them. If the endpoint is VGA device, it is skipped because the
-monitor blacks out if VGA controller is reset.
+I'm a bit confused too. ;)
 
-Actually this is v8 patch but quite different from v7 and it's been so
-long since previous post, so I start over again.
-Previous post:
-[PATCH v7 0/5] Reset PCIe devices to address DMA problem on kdump
-https://lkml.org/lkml/2012/11/26/814
+Doesn't this remove the users choice of RTC on x86 systems?
 
-Signed-off-by: Takao Indoh <indou.takao@jp.fujitsu.com>
----
- Documentation/kernel-parameters.txt |    2 +
- drivers/pci/pci.c                   |  103 +++++++++++++++++++++++++++++++++++
- 2 files changed, 105 insertions(+), 0 deletions(-)
+Why is there a difference made between the CMOS/EFI/... clocks and other 
+RTCs?
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 4609e81..2a31ade 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -2250,6 +2250,8 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 				any pair of devices, possibly at the cost of
- 				reduced performance.  This also guarantees
- 				that hot-added devices will work.
-+		pcie_reset_devices	Reset PCIe endpoint on boot by hot
-+				reset
- 		cbiosize=nn[KMG]	The fixed amount of bus space which is
- 				reserved for the CardBus bridge's IO window.
- 				The default value is 256 bytes.
-diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-index b099e00..42385c9 100644
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -3878,6 +3878,107 @@ void __weak pci_fixup_cardbus(struct pci_bus *bus)
- }
- EXPORT_SYMBOL(pci_fixup_cardbus);
- 
-+/*
-+ * Return true if dev is PCIe root port or downstream port whose child is PCIe
-+ * endpoint except VGA device.
-+ */
-+static int __init need_reset(struct pci_dev *dev)
-+{
-+	struct pci_bus *subordinate;
-+	struct pci_dev *child;
-+
-+	if (!pci_is_pcie(dev) || !dev->subordinate ||
-+	    list_empty(&dev->subordinate->devices) ||
-+	    ((pci_pcie_type(dev) != PCI_EXP_TYPE_ROOT_PORT) &&
-+	     (pci_pcie_type(dev) != PCI_EXP_TYPE_DOWNSTREAM)))
-+		return 0;
-+
-+	subordinate = dev->subordinate;
-+	list_for_each_entry(child, &subordinate->devices, bus_list) {
-+		if ((pci_pcie_type(child) == PCI_EXP_TYPE_UPSTREAM) ||
-+		    (pci_pcie_type(child) == PCI_EXP_TYPE_PCI_BRIDGE) ||
-+		    ((child->class >> 16) == PCI_BASE_CLASS_DISPLAY))
-+			/* Don't reset switch, bridge, VGA device */
-+			return 0;
-+	}
-+
-+	return 1;
-+}
-+
-+static void __init save_config(struct pci_dev *dev)
-+{
-+	struct pci_bus *subordinate;
-+	struct pci_dev *child;
-+
-+	if (!need_reset(dev))
-+		return;
-+
-+	subordinate = dev->subordinate;
-+	list_for_each_entry(child, &subordinate->devices, bus_list) {
-+		dev_info(&child->dev, "save state\n");
-+		pci_save_state(child);
-+	}
-+}
-+
-+static void __init restore_config(struct pci_dev *dev)
-+{
-+	struct pci_bus *subordinate;
-+	struct pci_dev *child;
-+
-+	if (!need_reset(dev))
-+		return;
-+
-+	subordinate = dev->subordinate;
-+	list_for_each_entry(child, &subordinate->devices, bus_list) {
-+		dev_info(&child->dev, "restore state\n");
-+		pci_restore_state(child);
-+	}
-+}
-+
-+static void __init do_device_reset(struct pci_dev *dev)
-+{
-+	u16 ctrl;
-+
-+	if (!need_reset(dev))
-+		return;
-+
-+	dev_info(&dev->dev, "Reset Secondary bus\n");
-+
-+	/* Assert Secondary Bus Reset */
-+	pci_read_config_word(dev, PCI_BRIDGE_CONTROL, &ctrl);
-+	ctrl |= PCI_BRIDGE_CTL_BUS_RESET;
-+	pci_write_config_word(dev, PCI_BRIDGE_CONTROL, ctrl);
-+
-+	msleep(2);
-+
-+	/* De-assert Secondary Bus Reset */
-+	ctrl &= ~PCI_BRIDGE_CTL_BUS_RESET;
-+	pci_write_config_word(dev, PCI_BRIDGE_CONTROL, ctrl);
-+}
-+
-+static int __initdata pcie_reset_devices;
-+static int __init reset_pcie_devices(void)
-+{
-+	struct pci_dev *dev = NULL;
-+
-+	if (!pcie_reset_devices)
-+		return 0;
-+
-+	for_each_pci_dev(dev)
-+		save_config(dev);
-+
-+	for_each_pci_dev(dev)
-+		do_device_reset(dev);
-+
-+	msleep(1000);
-+
-+	for_each_pci_dev(dev)
-+		restore_config(dev);
-+
-+	return 0;
-+}
-+fs_initcall_sync(reset_pcie_devices);
-+
- static int __init pci_setup(char *str)
- {
- 	while (str) {
-@@ -3920,6 +4021,8 @@ static int __init pci_setup(char *str)
- 				pcie_bus_config = PCIE_BUS_PEER2PEER;
- 			} else if (!strncmp(str, "pcie_scan_all", 13)) {
- 				pci_add_flags(PCI_SCAN_ALL_PCIE_DEVS);
-+			} else if (!strncmp(str, "pcie_reset_devices", 18)) {
-+				pcie_reset_devices = 1;
- 			} else {
- 				printk(KERN_ERR "PCI: Unknown option `%s'\n",
- 						str);
--- 
-1.7.1
+And why is RTC_SYSTOHC now gone on x86?
 
+Regards,
 
+Alexander
