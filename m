@@ -1,70 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932446Ab3DXLFh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 07:05:37 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:34909 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932353Ab3DXLFf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 07:05:35 -0400
-X-Spam-Score: -100.8
-Message-ID: <5177BC50.6050402@asianux.com>
-Date: Wed, 24 Apr 2013 19:04:48 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>, Will Deacon <will.deacon@arm.com>,
-        rjw@sisk.pl
-CC: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2] ARM: S5pv210: compiling issue, ARM_S5PV210_CPUFREQ need
- CONFIG_CPU_FREQ_TABLE=y
-References: <5177B562.40400@asianux.com> <5177BBB4.4040600@asianux.com>
-In-Reply-To: <5177BBB4.4040600@asianux.com>
-Content-Type: text/plain; charset=UTF-8
+	id S932474Ab3DXLFy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 07:05:54 -0400
+Received: from sipsolutions.net ([144.76.43.152]:50091 "EHLO sipsolutions.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932353Ab3DXLFv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 07:05:51 -0400
+X-Greylist: delayed 540 seconds by postgrey-1.27 at vger.kernel.org; Wed, 24 Apr 2013 07:05:51 EDT
+Message-ID: <1366801001.11111.8.camel@jlt4.sipsolutions.net>
+Subject: Re: [PATCH] mac80211_hwsim: correctly register the platform driver
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: martin.pitt@ubuntu.com, linville@tuxdriver.com,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dcbw@redhat.com
+Date: Wed, 24 Apr 2013 12:56:41 +0200
+In-Reply-To: <1366778405-7584-1-git-send-email-sasha.levin@oracle.com>
+References: <1366778405-7584-1-git-send-email-sasha.levin@oracle.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.3-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2013-04-24 at 00:40 -0400, Sasha Levin wrote:
+> Not registering a platform_driver would make us access garbage
+> when the platform callbacks under driver_register() kicks in.
 
-For arm S5pv210 with allmodconfig, ARM_S5PV210_CPUFREQ need 
-CONFIG_CPU_FREQ_TABLE=y, or will cause compiling issue.
+Applied, thanks.
 
-The related operation:
-+ arm-linux-gnu-ld -EL -p --no-undefined -X --build-id -X -o .tmp_vmlinux1 -T /root/linux-next/arch/arm/kernel/vmlinux.lds arch/arm/kernel/head.o init/built-in.o --start-group usr/built-in.o arch/arm/nwfpe/built-in.o arch/arm/vfp/built-in.o arch/arm/kernel/built-in.o arch/arm/mm/built-in.o arch/arm/common/built-in.o arch/arm/net/built-in.o arch/arm/crypto/built-in.o arch/arm/mach-s5pv210/built-in.o arch/arm/plat-samsung/built-in.o kernel/built-in.o mm/built-in.o fs/built-in.o ipc/built-in.o security/built-in.o crypto/built-in.o block/built-in.o arch/arm/lib/lib.a lib/lib.a arch/arm/lib/built-in.o lib/built-in.o drivers/built-in.o sound/built-in.o firmware/built-in.o net/built-in.o --end-group
+johannes
 
-The related errors:
-drivers/built-in.o: In function `s5pv210_target':
-drivers/cpufreq/s5pv210-cpufreq.c:225: undefined reference to `cpufreq_frequency_table_target'
-drivers/cpufreq/s5pv210-cpufreq.c:237: undefined reference to `cpufreq_frequency_table_target'
-drivers/built-in.o: In function `s5pv210_verify_speed':
-drivers/cpufreq/s5pv210-cpufreq.c:182: undefined reference to `cpufreq_frequency_table_verify'
-drivers/built-in.o: In function `s5pv210_cpu_init':
-drivers/cpufreq/s5pv210-cpufreq.c:556: undefined reference to `cpufreq_frequency_table_get_attr'
-drivers/cpufreq/s5pv210-cpufreq.c:560: undefined reference to `cpufreq_frequency_table_cpuinfo'
-make: *** [vmlinux] Error 1
-
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
----
- drivers/cpufreq/Kconfig.arm |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/cpufreq/Kconfig.arm b/drivers/cpufreq/Kconfig.arm
-index bce2195..bbcd719 100644
---- a/drivers/cpufreq/Kconfig.arm
-+++ b/drivers/cpufreq/Kconfig.arm
-@@ -187,6 +187,7 @@ config ARM_S3C64XX_CPUFREQ
- config ARM_S5PV210_CPUFREQ
- 	bool "Samsung S5PV210 and S5PC110"
- 	depends on CPU_S5PV210
-+	select CPU_FREQ_TABLE
- 	default y
- 	help
- 	  This adds the CPUFreq driver for Samsung S5PV210 and
--- 
-1.7.7.6
