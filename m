@@ -1,217 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757337Ab3DXBmM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 21:42:12 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:54798 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756500Ab3DXBlk (ORCPT
+	id S1756726Ab3DXBms (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 21:42:48 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:52386 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755131Ab3DXBmp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 21:41:40 -0400
-X-AuditID: 9c93016f-b7b70ae0000038d5-89-51773850d544
+	Tue, 23 Apr 2013 21:42:45 -0400
+X-AuditID: 9c930179-b7b5bae0000069d1-81-5177389033c0
+Date: Wed, 24 Apr 2013 10:42:40 +0900
 From: Minchan Kim <minchan@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Rik van Riel <riel@redhat.com>, Dave Hansen <dave.hansen@intel.com>,
-        Minchan Kim <minchan@kernel.org>
-Subject: [PATCH v2 5/6] mm: Support address range reclaim
-Date: Wed, 24 Apr 2013 10:41:03 +0900
-Message-Id: <1366767664-17541-6-git-send-email-minchan@kernel.org>
-X-Mailer: git-send-email 1.8.2
-In-Reply-To: <1366767664-17541-1-git-send-email-minchan@kernel.org>
-References: <1366767664-17541-1-git-send-email-minchan@kernel.org>
+To: Dave Hansen <dave.hansen@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Michael Kerrisk <mtk.manpages@gmail.com>,
+        Rik van Riel <riel@redhat.com>, Rob Landley <rob@landley.net>,
+        Namhyung Kim <namhyung@kernel.org>
+Subject: Re: [PATCH 6/6] add documentation on proc.txt
+Message-ID: <20130424014240.GA17222@blaptop>
+References: <1366620306-30940-1-git-send-email-minchan@kernel.org>
+ <1366620306-30940-6-git-send-email-minchan@kernel.org>
+ <51756286.4020704@intel.com>
+ <20130423015349.GC2603@blaptop>
+ <51769BD1.7070002@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51769BD1.7070002@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds address range reclaim of a process.
-The requirement is following as,
+Hello Dave,
 
-Like webkit1, it uses a address space for handling multi tabs.
-IOW, it uses *one* process model so all tabs shares address space
-of the process. In such scenario, per-process reclaim is rather
-coarse-grained so this patch supports more fine-grained reclaim
-for being able to reclaim target address range of the process.
-For reclaim target range, you should use following format.
+On Tue, Apr 23, 2013 at 07:33:53AM -0700, Dave Hansen wrote:
+> On 04/22/2013 06:53 PM, Minchan Kim wrote:
+> > echo 'file' > /proc/PID/reclaim
+> > echo 'anon' > /proc/PID/reclaim
+> > echo 'both' > /proc/PID/reclaim
+> > 
+> > For range reclaim,
+> > 
+> > echo $((1<<20)) 8192 > /proc/PID/reclaim.
+> > 
+> > IOW, we don't need any type for range reclaim because only thing
+> > user takes care is address range which has mapped page regardless
+> > of that it's anon or file.
+> > 
+> > Does it make sense to you?
+> 
+> That looks very nice!  Although, I'd probably use 'all' instead of
+> 'both'.  It leaves you more wiggle room to add more types in the future,
+> like volatile pages.
 
-	echo [addr] [size-byte] > /proc/pid/reclaim
+Fair enough.
+Thanks for the review.
+I just sent a new. 
 
-addr should be page-aligned.
-
-So now reclaim konb's interface is following as.
-
-echo file > /proc/pid/reclaim
-	reclaim file-backed pages only
-
-echo anon > /proc/pid/reclaim
-	reclaim anonymous pages only
-
-echo all > /proc/pid/reclaim
-	reclaim all pages
-
-echo $((1<<20)) 8192 > /proc/pid/reclaim
-	reclaim pages in (0x100000 - 0x102000)
-
-Signed-off-by: Minchan Kim <minchan@kernel.org>
----
- fs/proc/task_mmu.c | 88 ++++++++++++++++++++++++++++++++++++++++++++----------
- mm/internal.h      |  3 ++
- 2 files changed, 76 insertions(+), 15 deletions(-)
-
-diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-index 79b674e..dff9756 100644
---- a/fs/proc/task_mmu.c
-+++ b/fs/proc/task_mmu.c
-@@ -12,6 +12,7 @@
- #include <linux/swap.h>
- #include <linux/swapops.h>
- #include <linux/mm_inline.h>
-+#include <linux/ctype.h>
- 
- #include <asm/elf.h>
- #include <asm/uaccess.h>
-@@ -1239,11 +1240,14 @@ static ssize_t reclaim_write(struct file *file, const char __user *buf,
- 				size_t count, loff_t *ppos)
- {
- 	struct task_struct *task;
--	char buffer[PROC_NUMBUF];
-+	char buffer[200];
- 	struct mm_struct *mm;
- 	struct vm_area_struct *vma;
- 	enum reclaim_type type;
- 	char *type_buf;
-+	struct mm_walk reclaim_walk = {};
-+	unsigned long start = 0;
-+	unsigned long end = 0;
- 
- 	memset(buffer, 0, sizeof(buffer));
- 	if (count > sizeof(buffer) - 1)
-@@ -1259,42 +1263,96 @@ static ssize_t reclaim_write(struct file *file, const char __user *buf,
- 		type = RECLAIM_ANON;
- 	else if (!strcmp(type_buf, "all"))
- 		type = RECLAIM_ALL;
-+	else if (isdigit(*type_buf))
-+		type = RECLAIM_RANGE;
- 	else
--		return -EINVAL;
-+		goto out_err;
-+
-+	if (type == RECLAIM_RANGE) {
-+		int ret;
-+		size_t len;
-+		unsigned long len_in;
-+		char *token;
-+
-+		token = strsep(&type_buf, " ");
-+		if (!token)
-+			goto out_err;
-+		ret = kstrtoul(token, 10, &start);
-+		if (ret < 0 || (start & ~PAGE_MASK))
-+			goto out_err;
-+
-+		token = strsep(&type_buf, " ");
-+		if (!token)
-+			goto out_err;
-+		ret = kstrtoul(token, 10, &len_in);
-+		if (ret < 0)
-+			goto out_err;
-+
-+		len = (len_in + ~PAGE_MASK) & PAGE_MASK;
-+		/*
-+		 * Check to see whether len was rounded up from small -ve
-+		 * to zero.
-+		 */
-+		if (len_in && !len)
-+			goto out_err;
-+
-+		end = start + len;
-+		if (end < start)
-+			goto out_err;
-+	}
- 
- 	task = get_proc_task(file->f_path.dentry->d_inode);
- 	if (!task)
- 		return -ESRCH;
- 
- 	mm = get_task_mm(task);
--	if (mm) {
--		struct mm_walk reclaim_walk = {
--			.pmd_entry = reclaim_pte_range,
--			.mm = mm,
--		};
-+	if (!mm)
-+		goto out;
- 
--		down_read(&mm->mmap_sem);
--		for (vma = mm->mmap; vma; vma = vma->vm_next) {
--			reclaim_walk.private = vma;
-+	reclaim_walk.mm = mm;
-+	reclaim_walk.pmd_entry = reclaim_pte_range;
- 
-+	down_read(&mm->mmap_sem);
-+	if (type == RECLAIM_RANGE) {
-+		vma = find_vma(mm, start);
-+		while (vma) {
-+			if (vma->vm_start > end)
-+				break;
-+			if (is_vm_hugetlb_page(vma))
-+				continue;
-+
-+			reclaim_walk.private = vma;
-+			walk_page_range(max(vma->vm_start, start),
-+					min(vma->vm_end, end),
-+					&reclaim_walk);
-+			vma = vma->vm_next;
-+		}
-+	} else {
-+		for (vma = mm->mmap; vma; vma = vma->vm_next) {
- 			if (is_vm_hugetlb_page(vma))
- 				continue;
- 
- 			if (type == RECLAIM_ANON && vma->vm_file)
- 				continue;
-+
- 			if (type == RECLAIM_FILE && !vma->vm_file)
- 				continue;
- 
-+			reclaim_walk.private = vma;
- 			walk_page_range(vma->vm_start, vma->vm_end,
--					&reclaim_walk);
-+				&reclaim_walk);
- 		}
--		flush_tlb_mm(mm);
--		up_read(&mm->mmap_sem);
--		mmput(mm);
- 	}
--	put_task_struct(task);
- 
-+	flush_tlb_mm(mm);
-+	up_read(&mm->mmap_sem);
-+	mmput(mm);
-+out:
-+	put_task_struct(task);
- 	return count;
-+
-+out_err:
-+	return -EINVAL;
- }
- 
- const struct file_operations proc_reclaim_operations = {
-diff --git a/mm/internal.h b/mm/internal.h
-index 589a29b..1f7ce8f 100644
---- a/mm/internal.h
-+++ b/mm/internal.h
-@@ -85,6 +85,9 @@ static inline void get_page_foll(struct page *page)
- 
- extern unsigned long highest_memmap_pfn;
- 
-+extern int isolate_lru_page(struct page *page);
-+extern void putback_lru_page(struct page *page);
-+
- /*
-  * in mm/rmap.c:
-  */
 -- 
-1.8.2
-
+Kind regards,
+Minchan Kim
