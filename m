@@ -1,96 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754926Ab3DXGit (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 02:38:49 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:59419 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752495Ab3DXGir (ORCPT
+	id S1756042Ab3DXGjH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 02:39:07 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:42657 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754638Ab3DXGjE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 02:38:47 -0400
-Date: Wed, 24 Apr 2013 08:38:33 +0200
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Wei Yongjun <weiyj.lk@gmail.com>
-Cc: grant.likely@linaro.org, rob.herring@calxeda.com, tbergstrom@nvidia.com,
-        amerilainen@nvidia.com, yongjun_wei@trendmicro.com.cn,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH -next] gpu: host1x: gr2d drivers/gpu/host1x/drm/gr2d.c:
- fix error return code in gr2d_submit()
-Message-ID: <20130424063833.GA1429@avionic-0098.mockup.avionic-design.de>
-References: <CAPgLHd8Nj-K4X8gX4_bMFcYjCBU=XzFnGidhvfF0ZtoCXCv0qg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="VbJkn9YxBvnuCH5J"
-Content-Disposition: inline
-In-Reply-To: <CAPgLHd8Nj-K4X8gX4_bMFcYjCBU=XzFnGidhvfF0ZtoCXCv0qg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:we2IrD7IGhO/8osNvP52NhWhA7NbNNYWAvvSw09hFdd
- OxuFAjiWJjjqavbPsN5zq8S1FEINyKyrUCG3uUiizxvXEmC2wK
- qVTWeNGeglTn45PUhIm0GuMSCHJex24z2lL56Rgfmvbo/roK7A
- azeqRNJAkgfAeQY7iLTMGN2AD/gjVVfLguwgNsVoWbHCQ9gLZl
- Sf+Vjzd5VTVMCbOehzVuoe9kpvjz4Ci5+HTVwfrPqohq/ClRZ4
- 7r7QcL0PDf8LdBEtK1PMYm36lmtd5k4bUZqr3SPCKJma7TXOJL
- t1O4b6qzSsUe9//8tefx3hy0A5tRGQN5gaoRyrSM1bmxLW/lJS
- r6Un9XUntNaD42HLrCZeAzCpcb7lU1SGi6G5A8Q0ieG7zPeXPl
- 08zReAvpLUX9bzi5YWroKoZaCixkQxhSFSSxWPbpYM+lGGR3pO
- U91XB
+	Wed, 24 Apr 2013 02:39:04 -0400
+From: Fabio Baltieri <fabio.baltieri@linaro.org>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org,
+        Virupax Sadashivpetimath 
+	<virupax.sadashivpetimath@stericsson.com>,
+        stable <stable@vger.kernel.org>,
+        Fabio Baltieri <fabio.baltieri@linaro.org>
+Subject: [PATCH] usb: musb: make use_sg flag URB specific
+Date: Wed, 24 Apr 2013 08:38:48 +0200
+Message-Id: <1366785528-32158-1-git-send-email-fabio.baltieri@linaro.org>
+X-Mailer: git-send-email 1.8.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Virupax Sadashivpetimath <virupax.sadashivpetimath@stericsson.com>
 
---VbJkn9YxBvnuCH5J
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Since highmem PIO URB handling was introduced in:
 
-On Wed, Apr 24, 2013 at 10:19:27AM +0800, Wei Yongjun wrote:
-> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
->=20
-> Fix to return a negative error code from the error handling
-> case instead of 0, as done elsewhere in this function.
->=20
-> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> ---
->  drivers/gpu/host1x/drm/gr2d.c | 8 ++++++--
->  1 file changed, 6 insertions(+), 2 deletions(-)
->=20
-> diff --git a/drivers/gpu/host1x/drm/gr2d.c b/drivers/gpu/host1x/drm/gr2d.c
-> index 6a45ae0..146cd64 100644
-> --- a/drivers/gpu/host1x/drm/gr2d.c
-> +++ b/drivers/gpu/host1x/drm/gr2d.c
-> @@ -135,8 +135,10 @@ static int gr2d_submit(struct host1x_drm_context *co=
-ntext,
->  			goto fail;
-> =20
->  		bo =3D host1x_bo_lookup(drm, file, cmdbuf.handle);
-> -		if (!bo)
-> +		if (!bo) {
-> +			err =3D -EINVAL;
+8e8a551 usb: musb: host: Handle highmem in PIO mode
 
-I think in this case a better error code would be -ENOENT. Other than
-that this patch looks good.
+when a URB is being handled it may happen that the static use_sg flag
+was set by a previous URB with buffer in highmem.  This leads to error
+in handling the present URB.
 
-Thierry
+Fix this by making the use_sg flag URB specific.
 
---VbJkn9YxBvnuCH5J
-Content-Type: application/pgp-signature
+Cc: stable <stable@vger.kernel.org> # 3.7+
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Virupax Sadashivpetimath <virupax.sadashivpetimath@stericsson.com>
+Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
+---
+ drivers/usb/musb/musb_host.c | 18 ++++++++----------
+ drivers/usb/musb/musb_host.h |  1 +
+ 2 files changed, 9 insertions(+), 10 deletions(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+diff --git a/drivers/usb/musb/musb_host.c b/drivers/usb/musb/musb_host.c
+index 1a6b5a9..26d3f140 100644
+--- a/drivers/usb/musb/musb_host.c
++++ b/drivers/usb/musb/musb_host.c
+@@ -1232,7 +1232,6 @@ void musb_host_tx(struct musb *musb, u8 epnum)
+ 	void __iomem		*mbase = musb->mregs;
+ 	struct dma_channel	*dma;
+ 	bool			transfer_pending = false;
+-	static bool use_sg;
+ 
+ 	musb_ep_select(mbase, epnum);
+ 	tx_csr = musb_readw(epio, MUSB_TXCSR);
+@@ -1463,9 +1462,9 @@ done:
+ 	 * NULL.
+ 	 */
+ 	if (!urb->transfer_buffer)
+-		use_sg = true;
++		qh->use_sg = true;
+ 
+-	if (use_sg) {
++	if (qh->use_sg) {
+ 		/* sg_miter_start is already done in musb_ep_program */
+ 		if (!sg_miter_next(&qh->sg_miter)) {
+ 			dev_err(musb->controller, "error: sg list empty\n");
+@@ -1484,9 +1483,9 @@ done:
+ 
+ 	qh->segsize = length;
+ 
+-	if (use_sg) {
++	if (qh->use_sg) {
+ 		if (offset + length >= urb->transfer_buffer_length)
+-			use_sg = false;
++			qh->use_sg = false;
+ 	}
+ 
+ 	musb_ep_select(mbase, epnum);
+@@ -1552,7 +1551,6 @@ void musb_host_rx(struct musb *musb, u8 epnum)
+ 	bool			done = false;
+ 	u32			status;
+ 	struct dma_channel	*dma;
+-	static bool use_sg;
+ 	unsigned int sg_flags = SG_MITER_ATOMIC | SG_MITER_TO_SG;
+ 
+ 	musb_ep_select(mbase, epnum);
+@@ -1878,12 +1876,12 @@ void musb_host_rx(struct musb *musb, u8 epnum)
+ 			 * NULL.
+ 			 */
+ 			if (!urb->transfer_buffer) {
+-				use_sg = true;
++				qh->use_sg = true;
+ 				sg_miter_start(&qh->sg_miter, urb->sg, 1,
+ 						sg_flags);
+ 			}
+ 
+-			if (use_sg) {
++			if (qh->use_sg) {
+ 				if (!sg_miter_next(&qh->sg_miter)) {
+ 					dev_err(musb->controller, "error: sg list empty\n");
+ 					sg_miter_stop(&qh->sg_miter);
+@@ -1913,8 +1911,8 @@ finish:
+ 	urb->actual_length += xfer_len;
+ 	qh->offset += xfer_len;
+ 	if (done) {
+-		if (use_sg)
+-			use_sg = false;
++		if (qh->use_sg)
++			qh->use_sg = false;
+ 
+ 		if (urb->status == -EINPROGRESS)
+ 			urb->status = status;
+diff --git a/drivers/usb/musb/musb_host.h b/drivers/usb/musb/musb_host.h
+index 5a9c8fe..738f7eb 100644
+--- a/drivers/usb/musb/musb_host.h
++++ b/drivers/usb/musb/musb_host.h
+@@ -74,6 +74,7 @@ struct musb_qh {
+ 	u16			frame;		/* for periodic schedule */
+ 	unsigned		iso_idx;	/* in urb->iso_frame_desc[] */
+ 	struct sg_mapping_iter sg_miter;	/* for highmem in PIO mode */
++	bool			use_sg;		/* to track urb using sglist */
+ };
+ 
+ /* map from control or bulk queue head to the first qh on that ring */
+-- 
+1.8.1.3
 
-iQIcBAEBAgAGBQJRd33pAAoJEN0jrNd/PrOhFuQQAJO5t6gzYDocjQ/WNMBreLG3
-Z5y6sxJFjlZa98wACZzjZPVU06agtOiBuKFRWBK2uuDuQb1gIGfzdLXQh7OEdCu9
-RiRB23p5Mn8J8mxQN8H6T0yG7MeUAiA0zaP9zVagIhcKuFewcW4NhdwiTPXk27Dm
-QRFleQrTQF08ET7l3DDV6DEy53kcUxOmQyfeH2/FajmbFYq27HSInRhYRJyTw3h/
-8mfLnTvMmxJs4ANfcVKYpz6diIPVvEvcWrUMOYqxEau3VsQ65qzRhyLdMjYAafgh
-Qf2FwbxzGHl+lCI/NbT2Xqyei3g4Z8MQF1FzC3w/lKAGA94iNftiuCS4ZAyOh8h7
-2cRPOg4z5D/lq07YqnUB5p77O1bIslF6mPMb3IbmXp6hDUPVSieB2hDve/H0HhpL
-DTVuafrAeAZgDv41xiDeFKz55FjR85MZOSlnaXW1DagLeGOIsIwjjoQQeHRrOqmX
-Txsv49qm1lh5ZBdIVsLU04n6eGZaktqHiAKBkHq2tBug+V0EjXI0S4PdbJwcPNCz
-0Fuo7e65gXrUC4DqUDoNeLoVYx4DQ4oTOglUJdHSIQ2SCGulKeAo+3F1/nLwVt7v
-0sYhUa2fE3+E4bFl0XcvPfd8QNmusUEYTMxklFD1sWRcEHGiTRuda7trp/XUI+KJ
-4laWrJNS19C4Z8MHa4Ai
-=wTJx
------END PGP SIGNATURE-----
-
---VbJkn9YxBvnuCH5J--
