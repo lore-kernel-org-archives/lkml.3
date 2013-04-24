@@ -1,130 +1,274 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758567Ab3DXWP4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 18:15:56 -0400
-Received: from mail-da0-f47.google.com ([209.85.210.47]:65106 "EHLO
-	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758506Ab3DXWPy (ORCPT
+	id S1758586Ab3DXWQS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 18:16:18 -0400
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:19905 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758571Ab3DXWQP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 18:15:54 -0400
-From: Kevin Hilman <khilman@linaro.org>
-To: Sourav Poddar <sourav.poddar@ti.com>
-Cc: <gregkh@linuxfoundation.org>, <tony@atomide.com>,
-        <rmk+kernel@arm.linux.org.uk>, <linux-serial@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Felipe Balbi <balbi@ti.com>, Rajendra nayak <rnayak@ti.com>,
-        Grygorii Strashko <grygorii.strashko@ti.com>
-Subject: Re: [PATCHv3 5/5] arm: omap2+: omap_device: remove no_idle_on_suspend
-References: <1366809353-19435-1-git-send-email-sourav.poddar@ti.com>
-	<1366809353-19435-6-git-send-email-sourav.poddar@ti.com>
-Date: Wed, 24 Apr 2013 15:15:49 -0700
-In-Reply-To: <1366809353-19435-6-git-send-email-sourav.poddar@ti.com> (Sourav
-	Poddar's message of "Wed, 24 Apr 2013 18:45:53 +0530")
-Message-ID: <87d2tj378q.fsf@linaro.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	Wed, 24 Apr 2013 18:16:15 -0400
+Message-ID: <1366841773.1790.7.camel@buesod1.americas.hpqcorp.net>
+Subject: [PATCH -next] ipc: make refcounter atomic (was Re: linux-next: Tree
+ for Apr 23 [ Call-Traces: lib/debugobjects.c | kernel/rcupdate.c |
+ kernel/rcutree.c ])
+From: Davidlohr Bueso <davidlohr.bueso@hp.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Sedat Dilek <sedat.dilek@gmail.com>, Rik van Riel <riel@surriel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Paul McKenney <paul.mckenney@linaro.org>,
+        Emmanuel Benisty <benisty.e@gmail.com>,
+        linux-next <linux-next@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Wed, 24 Apr 2013 15:16:13 -0700
+In-Reply-To: <CA+55aFxh_-3BSBXrm8j1-3bN_oLLA66ApykRcfFFKRvrb6MDkQ@mail.gmail.com>
+References: <CA+icZUWXpaXi9GwB37hLaPbZaAi2aOMXez1f79DDtb_22ZY1jQ@mail.gmail.com>
+	 <CA+icZUXmsvbj2km=PxbAs5K+hoP+zjcXqG_wCdKR9akWF5Eucw@mail.gmail.com>
+	 <CA+55aFw5J+DFgQjAdhUnhitHw+wHEmspeZP9jbyZowqNE6Nafg@mail.gmail.com>
+	 <CA+icZUXHkcj_bAuPcfghZMHjRTud2jN91hjpOUiLaXd0yN9diw@mail.gmail.com>
+	 <1366741069.1802.12.camel@buesod1.americas.hpqcorp.net>
+	 <1366741394.1802.13.camel@buesod1.americas.hpqcorp.net>
+	 <CA+icZUV48SZeNt4GRKi8yDKbsO_c7ApUOgb4mRX67=d_ridE8w@mail.gmail.com>
+	 <CA+55aFxh_-3BSBXrm8j1-3bN_oLLA66ApykRcfFFKRvrb6MDkQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sourav Poddar <sourav.poddar@ti.com> writes:
+From: Davidlohr Bueso <davidlohr.bueso@hp.com>
 
-> Remove "no_idle_on_suspend" check, since respective
-> driver should be able to prevent idling of a
-> device whenever required.
->
-> Driver's can get same behavior by just returning -EBUSY
-> from their ->runtime_suspend only during suspend.
->
-> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> Cc: Felipe Balbi <balbi@ti.com>
-> Cc: Rajendra nayak <rnayak@ti.com>
-> Cc: Grygorii Strashko <grygorii.strashko@ti.com>
-> Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
-> Reviewed-by: Felipe Balbi <balbi@ti.com>
-> ---
->  arch/arm/mach-omap2/omap_device.c |   12 +++---------
->  arch/arm/mach-omap2/omap_device.h |   10 ----------
->  2 files changed, 3 insertions(+), 19 deletions(-)
->
-> diff --git a/arch/arm/mach-omap2/omap_device.c b/arch/arm/mach-omap2/omap_device.c
-> index 381be7a..2043d71 100644
-> --- a/arch/arm/mach-omap2/omap_device.c
-> +++ b/arch/arm/mach-omap2/omap_device.c
-> @@ -170,9 +170,6 @@ static int omap_device_build_from_dt(struct platform_device *pdev)
->  			r->name = dev_name(&pdev->dev);
->  	}
->  
-> -	if (of_get_property(node, "ti,no_idle_on_suspend", NULL))
-> -		omap_device_disable_idle_on_suspend(pdev);
-> -
->  	pdev->dev.pm_domain = &omap_device_pm_domain;
->  
->  odbfd_exit1:
-> @@ -620,11 +617,9 @@ static int _od_suspend_noirq(struct device *dev)
->  	ret = pm_generic_suspend_noirq(dev);
->  
->  	if (!ret && !pm_runtime_status_suspended(dev)) {
-> -		if (pm_generic_runtime_suspend(dev) == 0) {
-> -			if (!(od->flags & OMAP_DEVICE_NO_IDLE_ON_SUSPEND))
-> -				omap_device_idle(pdev);
-> +		if (pm_generic_runtime_suspend(dev) == 0)
-> +			omap_device_idle(pdev);
->  			od->flags |= OMAP_DEVICE_SUSPENDED;
-> -		}
+Sedat reported an issue leading to a NULL dereference in update_queue():
 
-Look closely at the if statement, followed by more than one line, and
-the braces removed.
+[  178.490583] BUG: spinlock bad magic on CPU#1, sh/8066
+[  178.490595]  lock: 0xffff88008b53ea18, .magic: 6b6b6b6b, .owner: make/8068, .owner_cpu: 3
+[  178.490599] BUG: unable to handle kernel NULL pointer dereference at           (null)
+[  178.490608] IP: [<ffffffff812bacd0>] update_queue+0x70/0x210
+[  178.490610] PGD 0
+[  178.490612] Oops: 0000 [#1] SMP
+...
+[  178.490704] Call Trace:
+[  178.490710]  [<ffffffff812baf51>] do_smart_update+0xe1/0x140
+[  178.490713]  [<ffffffff812bd6e1>] exit_sem+0x2b1/0x350
+[  178.490718]  [<ffffffff8105de80>] do_exit+0x290/0xa70
+[  178.490721]  [<ffffffff8105e6f4>] do_group_exit+0x44/0xa0
+[  178.490724]  [<ffffffff8105e767>] SyS_exit_group+0x17/0x20
+[  178.490728]  [<ffffffff816ce15d>] system_call_fastpath+0x1a/0x1f
 
-That means that od->flag will be set, even when omap_device_idle() was
-not called.  Which in turn means that upon resume, omap_device_enable()
-will be called on a device that has not had omap_device_idle() called,
-which means there would be WARNs coming from omap_device due to the
-mismatch.
+Linus pin-pointed the problem to a race in the reference counter. To quote:
 
-Hmm... this does not instill confidence that this code has been tested.
+"That dmesg spew very much implies that the same RCU head got added twice to the RCU
+freeing list, and the only way that happens is if the refcount goes to
+zero twice. Which implies that either we increment a zero, or we lack
+locking and the coherency of the non-atomic access goes away."
 
-Kevin
+This patch converts the IPC RCU header's reference counter to atomic_t. The return of
+ipc_rcu_getref() is modified to inform the callers if it actually succeeded.
+
+Now all callers return -EIDRM upon failure and abort the current operation. Two exceptions are
+in semaphore code where sem_getref_and_unlock() and sem_getref() trigger a warning but proceed
+to freeing up any held locks.
+
+Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
+Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Rik van Riel <riel@surriel.com>
+CC: Paul McKenney <paul.mckenney@linaro.org>
+CC: Sedat Dilek <sedat.dilek@gmail.com>
+CC: Emmanuel Benisty <benisty.e@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>
+---
+ ipc/msg.c  |  7 ++++++-
+ ipc/sem.c  | 18 ++++++++++++------
+ ipc/util.c | 46 ++++++++++++++++++++++++----------------------
+ ipc/util.h |  2 +-
+ 4 files changed, 43 insertions(+), 30 deletions(-)
+
+diff --git a/ipc/msg.c b/ipc/msg.c
+index 9d11955..2978721 100644
+--- a/ipc/msg.c
++++ b/ipc/msg.c
+@@ -668,7 +668,12 @@ long do_msgsnd(int msqid, long mtype, void __user *mtext,
+ 			goto out_unlock_free;
+ 		}
+ 		ss_add(msq, &s);
+-		ipc_rcu_getref(msq);
++
++		if (!ipc_rcu_getref(msq)) {
++			err = -EIDRM;
++			goto out_unlock_free;
++		}
++
+ 		msg_unlock(msq);
+ 		schedule();
+ 
+diff --git a/ipc/sem.c b/ipc/sem.c
+index 92f4d0e..9a71b5a 100644
+--- a/ipc/sem.c
++++ b/ipc/sem.c
+@@ -460,7 +460,7 @@ static inline void sem_lock_and_putref(struct sem_array *sma)
+ 
+ static inline void sem_getref_and_unlock(struct sem_array *sma)
+ {
+-	ipc_rcu_getref(sma);
++	WARN_ON_ONCE(!ipc_rcu_getref(sma));
+ 	sem_unlock(sma, -1);
+ }
+ 
+@@ -476,7 +476,7 @@ static inline void sem_putref(struct sem_array *sma)
+ static inline void sem_getref(struct sem_array *sma)
+ {
+ 	sem_lock(sma, NULL, -1);
+-	ipc_rcu_getref(sma);
++	WARN_ON_ONCE(!ipc_rcu_getref(sma));
+ 	sem_unlock(sma, -1);
+ }
+ 
+@@ -1275,7 +1275,10 @@ static int semctl_main(struct ipc_namespace *ns, int semid, int semnum,
+ 		int i;
+ 		struct sem_undo *un;
+ 
+-		ipc_rcu_getref(sma);
++		if (!ipc_rcu_getref(sma)) {
++			rcu_read_unlock();
++			return -EIDRM;
++		}
+ 		rcu_read_unlock();
+ 
+ 		if(nsems > SEMMSL_FAST) {
+@@ -1544,8 +1547,7 @@ static struct sem_undo *find_alloc_undo(struct ipc_namespace *ns, int semid)
+ 	struct sem_array *sma;
+ 	struct sem_undo_list *ulp;
+ 	struct sem_undo *un, *new;
+-	int nsems;
+-	int error;
++	int nsems, error;
+ 
+ 	error = get_undo_list(&ulp);
+ 	if (error)
+@@ -1567,7 +1569,11 @@ static struct sem_undo *find_alloc_undo(struct ipc_namespace *ns, int semid)
+ 	}
+ 
+ 	nsems = sma->sem_nsems;
+-	ipc_rcu_getref(sma);
++	if (!ipc_rcu_getref(sma)) {
++		rcu_read_unlock();
++		un = ERR_PTR(-EIDRM);
++		goto out;
++	}
+ 	rcu_read_unlock();
+ 
+ 	/* step 2: allocate new undo structure */
+diff --git a/ipc/util.c b/ipc/util.c
+index 18135bc..5e60ebd 100644
+--- a/ipc/util.c
++++ b/ipc/util.c
+@@ -439,9 +439,9 @@ void ipc_rmid(struct ipc_ids *ids, struct kern_ipc_perm *ipcp)
+  *	NULL is returned if the allocation fails
+  */
+  
+-void* ipc_alloc(int size)
++void *ipc_alloc(int size)
+ {
+-	void* out;
++	void *out;
+ 	if(size > PAGE_SIZE)
+ 		out = vmalloc(size);
+ 	else
+@@ -478,7 +478,7 @@ void ipc_free(void* ptr, int size)
+  */
+ struct ipc_rcu_hdr
+ {
+-	int refcount;
++	atomic_t refcount;
+ 	int is_vmalloc;
+ 	void *data[0];
+ };
+@@ -516,39 +516,41 @@ static inline int rcu_use_vmalloc(int size)
+  *	@size: size desired
+  *
+  *	Allocate memory for the rcu header structure +  the object.
+- *	Returns the pointer to the object.
+- *	NULL is returned if the allocation fails. 
++ *	Returns the pointer to the object or NULL upon failure.
+  */
+- 
+-void* ipc_rcu_alloc(int size)
++void *ipc_rcu_alloc(int size)
+ {
+ 	void* out;
+-	/* 
++
++	/*
+ 	 * We prepend the allocation with the rcu struct, and
+-	 * workqueue if necessary (for vmalloc). 
++	 * workqueue if necessary (for vmalloc).
+ 	 */
+ 	if (rcu_use_vmalloc(size)) {
+ 		out = vmalloc(HDRLEN_VMALLOC + size);
+-		if (out) {
+-			out += HDRLEN_VMALLOC;
+-			container_of(out, struct ipc_rcu_hdr, data)->is_vmalloc = 1;
+-			container_of(out, struct ipc_rcu_hdr, data)->refcount = 1;
+-		}
++		if (!out)
++			goto done;
++
++		out += HDRLEN_VMALLOC;
++		container_of(out, struct ipc_rcu_hdr, data)->is_vmalloc = 1;
+ 	} else {
+ 		out = kmalloc(HDRLEN_KMALLOC + size, GFP_KERNEL);
+-		if (out) {
+-			out += HDRLEN_KMALLOC;
+-			container_of(out, struct ipc_rcu_hdr, data)->is_vmalloc = 0;
+-			container_of(out, struct ipc_rcu_hdr, data)->refcount = 1;
+-		}
++		if (!out)
++			goto done;
++
++		out += HDRLEN_KMALLOC;
++		container_of(out, struct ipc_rcu_hdr, data)->is_vmalloc = 0;
+ 	}
+ 
++	/* set reference counter no matter what kind of allocation was done */
++	atomic_set(&container_of(out, struct ipc_rcu_hdr, data)->refcount, 1);
++done:
+ 	return out;
+ }
+ 
+-void ipc_rcu_getref(void *ptr)
++int ipc_rcu_getref(void *ptr)
+ {
+-	container_of(ptr, struct ipc_rcu_hdr, data)->refcount++;
++	return atomic_inc_not_zero(&container_of(ptr, struct ipc_rcu_hdr, data)->refcount);
+ }
+ 
+ static void ipc_do_vfree(struct work_struct *work)
+@@ -578,7 +580,7 @@ static void ipc_schedule_free(struct rcu_head *head)
+ 
+ void ipc_rcu_putref(void *ptr)
+ {
+-	if (--container_of(ptr, struct ipc_rcu_hdr, data)->refcount > 0)
++	if (!atomic_dec_and_test(&container_of(ptr, struct ipc_rcu_hdr, data)->refcount))
+ 		return;
+ 
+ 	if (container_of(ptr, struct ipc_rcu_hdr, data)->is_vmalloc) {
+diff --git a/ipc/util.h b/ipc/util.h
+index c36b997..2b0bdd5 100644
+--- a/ipc/util.h
++++ b/ipc/util.h
+@@ -119,7 +119,7 @@ void ipc_free(void* ptr, int size);
+  * to 0 schedules the rcu destruction. Caller must guarantee locking.
+  */
+ void* ipc_rcu_alloc(int size);
+-void ipc_rcu_getref(void *ptr);
++int ipc_rcu_getref(void *ptr);
+ void ipc_rcu_putref(void *ptr);
+ 
+ struct kern_ipc_perm *ipc_lock(struct ipc_ids *, int);
+-- 
+1.7.11.7
 
 
->  	}
->  
->  	return ret;
-> @@ -638,8 +633,7 @@ static int _od_resume_noirq(struct device *dev)
->  	if ((od->flags & OMAP_DEVICE_SUSPENDED) &&
->  	    !pm_runtime_status_suspended(dev)) {
->  		od->flags &= ~OMAP_DEVICE_SUSPENDED;
-> -		if (!(od->flags & OMAP_DEVICE_NO_IDLE_ON_SUSPEND))
-> -			omap_device_enable(pdev);
-> +		omap_device_enable(pdev);
->  		pm_generic_runtime_resume(dev);
->  	}
->  
-> diff --git a/arch/arm/mach-omap2/omap_device.h b/arch/arm/mach-omap2/omap_device.h
-> index 044c31d..17ca1ae 100644
-> --- a/arch/arm/mach-omap2/omap_device.h
-> +++ b/arch/arm/mach-omap2/omap_device.h
-> @@ -38,7 +38,6 @@ extern struct dev_pm_domain omap_device_pm_domain;
->  
->  /* omap_device.flags values */
->  #define OMAP_DEVICE_SUSPENDED		BIT(0)
-> -#define OMAP_DEVICE_NO_IDLE_ON_SUSPEND	BIT(1)
->  
->  /**
->   * struct omap_device - omap_device wrapper for platform_devices
-> @@ -101,13 +100,4 @@ static inline struct omap_device *to_omap_device(struct platform_device *pdev)
->  {
->  	return pdev ? pdev->archdata.od : NULL;
->  }
-> -
-> -static inline
-> -void omap_device_disable_idle_on_suspend(struct platform_device *pdev)
-> -{
-> -	struct omap_device *od = to_omap_device(pdev);
-> -
-> -	od->flags |= OMAP_DEVICE_NO_IDLE_ON_SUSPEND;
-> -}
-> -
->  #endif
+
