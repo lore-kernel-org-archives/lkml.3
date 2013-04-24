@@ -1,119 +1,299 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932258Ab3DXXFD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 19:05:03 -0400
-Received: from mga03.intel.com ([143.182.124.21]:45680 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932071Ab3DXXFA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 19:05:00 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,546,1363158000"; 
-   d="scan'208";a="291474879"
-From: Andi Kleen <andi@firstfloor.org>
-To: mingo@kernel.org
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org, peterz@infradead.org,
-        eranian@google.com, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 2/2] perf, x86: Don't allow unusual PEBS raw flags
-Date: Wed, 24 Apr 2013 16:04:54 -0700
-Message-Id: <1366844694-2770-2-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1366844694-2770-1-git-send-email-andi@firstfloor.org>
-References: <1366844694-2770-1-git-send-email-andi@firstfloor.org>
+	id S932284Ab3DXXF0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 19:05:26 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:40795 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932071Ab3DXXFW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 19:05:22 -0400
+MIME-Version: 1.0
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <1366841773.1790.7.camel@buesod1.americas.hpqcorp.net>
+References: <CA+icZUWXpaXi9GwB37hLaPbZaAi2aOMXez1f79DDtb_22ZY1jQ@mail.gmail.com>
+	<CA+icZUXmsvbj2km=PxbAs5K+hoP+zjcXqG_wCdKR9akWF5Eucw@mail.gmail.com>
+	<CA+55aFw5J+DFgQjAdhUnhitHw+wHEmspeZP9jbyZowqNE6Nafg@mail.gmail.com>
+	<CA+icZUXHkcj_bAuPcfghZMHjRTud2jN91hjpOUiLaXd0yN9diw@mail.gmail.com>
+	<1366741069.1802.12.camel@buesod1.americas.hpqcorp.net>
+	<1366741394.1802.13.camel@buesod1.americas.hpqcorp.net>
+	<CA+icZUV48SZeNt4GRKi8yDKbsO_c7ApUOgb4mRX67=d_ridE8w@mail.gmail.com>
+	<CA+55aFxh_-3BSBXrm8j1-3bN_oLLA66ApykRcfFFKRvrb6MDkQ@mail.gmail.com>
+	<1366841773.1790.7.camel@buesod1.americas.hpqcorp.net>
+Date: Thu, 25 Apr 2013 01:05:20 +0200
+Message-ID: <CA+icZUUY1U=gxxT8hbU-JyyuoRgaht=KUwttQT=yh4_Yh32VnQ@mail.gmail.com>
+Subject: Re: [PATCH -next] ipc: make refcounter atomic (was Re: linux-next:
+ Tree for Apr 23 [ Call-Traces: lib/debugobjects.c | kernel/rcupdate.c |
+ kernel/rcutree.c ])
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Davidlohr Bueso <davidlohr.bueso@hp.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Rik van Riel <riel@surriel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Paul McKenney <paul.mckenney@linaro.org>,
+        Emmanuel Benisty <benisty.e@gmail.com>,
+        linux-next <linux-next@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On Thu, Apr 25, 2013 at 12:16 AM, Davidlohr Bueso
+<davidlohr.bueso@hp.com> wrote:
+> From: Davidlohr Bueso <davidlohr.bueso@hp.com>
+>
+> Sedat reported an issue leading to a NULL dereference in update_queue():
+>
+> [  178.490583] BUG: spinlock bad magic on CPU#1, sh/8066
+> [  178.490595]  lock: 0xffff88008b53ea18, .magic: 6b6b6b6b, .owner: make/8068, .owner_cpu: 3
+> [  178.490599] BUG: unable to handle kernel NULL pointer dereference at           (null)
+> [  178.490608] IP: [<ffffffff812bacd0>] update_queue+0x70/0x210
+> [  178.490610] PGD 0
+> [  178.490612] Oops: 0000 [#1] SMP
+> ...
+> [  178.490704] Call Trace:
+> [  178.490710]  [<ffffffff812baf51>] do_smart_update+0xe1/0x140
+> [  178.490713]  [<ffffffff812bd6e1>] exit_sem+0x2b1/0x350
+> [  178.490718]  [<ffffffff8105de80>] do_exit+0x290/0xa70
+> [  178.490721]  [<ffffffff8105e6f4>] do_group_exit+0x44/0xa0
+> [  178.490724]  [<ffffffff8105e767>] SyS_exit_group+0x17/0x20
+> [  178.490728]  [<ffffffff816ce15d>] system_call_fastpath+0x1a/0x1f
+>
+> Linus pin-pointed the problem to a race in the reference counter. To quote:
+>
+> "That dmesg spew very much implies that the same RCU head got added twice to the RCU
+> freeing list, and the only way that happens is if the refcount goes to
+> zero twice. Which implies that either we increment a zero, or we lack
+> locking and the coherency of the non-atomic access goes away."
+>
+> This patch converts the IPC RCU header's reference counter to atomic_t. The return of
+> ipc_rcu_getref() is modified to inform the callers if it actually succeeded.
+>
+> Now all callers return -EIDRM upon failure and abort the current operation. Two exceptions are
+> in semaphore code where sem_getref_and_unlock() and sem_getref() trigger a warning but proceed
+> to freeing up any held locks.
+>
+> Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
+> Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
+> CC: Rik van Riel <riel@surriel.com>
+> CC: Paul McKenney <paul.mckenney@linaro.org>
+> CC: Sedat Dilek <sedat.dilek@gmail.com>
+> CC: Emmanuel Benisty <benisty.e@gmail.com>
+> CC: Andrew Morton <akpm@linux-foundation.org>
 
-The PEBS documentation in the Intel SDM 18.6.1.1 states:
+Missing my Reported-by ...!
 
-"""
-PEBS events are only valid when the following fields of IA32_PERFEVTSELx are all
-zero: AnyThread, Edge, Invert, CMask.
-"""
+I have tested this patch instead of Linus' suggested patch against
+Linux-Next (next-20130423) with known missing IPC-SEM patches in
+-next.
 
-Since we had problems with this earlier, don't allow cmask, any, edge, invert
-as raw events, except for the ones explicitly listed as pebs_aliases.
+Davidlohr Bueso (2):
+      ipc, sem: do not call sem_lock when bogus sma
+      ipc: make refcounter atomic
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- arch/x86/kernel/cpu/perf_event.h       |    2 +-
- arch/x86/kernel/cpu/perf_event_intel.c |   24 ++++++++++++++++++++----
- 2 files changed, 21 insertions(+), 5 deletions(-)
+Rik van Riel (3):
+      ipc,sem: untangle RCU locking with find_alloc_undo
+      ipc,sem: fix lockdep false positive
+      ipc,sem: fix locking in semctl_main
 
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index 7f5c75c..e46f932 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -386,7 +386,7 @@ struct x86_pmu {
- 	int		pebs_record_size;
- 	void		(*drain_pebs)(struct pt_regs *regs);
- 	struct event_constraint *pebs_constraints;
--	void		(*pebs_aliases)(struct perf_event *event);
-+	bool		(*pebs_aliases)(struct perf_event *event);
- 	int 		max_pebs_events;
- 
- 	/*
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index cc45deb..126c971 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1447,7 +1447,7 @@ static void intel_put_event_constraints(struct cpu_hw_events *cpuc,
- 	intel_put_shared_regs_event_constraints(cpuc, event);
- }
- 
--static void intel_pebs_aliases_core2(struct perf_event *event)
-+static bool intel_pebs_aliases_core2(struct perf_event *event)
- {
- 	if ((event->hw.config & X86_RAW_EVENT_MASK) == 0x003c) {
- 		/*
-@@ -1472,10 +1472,12 @@ static void intel_pebs_aliases_core2(struct perf_event *event)
- 
- 		alt_config |= (event->hw.config & ~X86_RAW_EVENT_MASK);
- 		event->hw.config = alt_config;
-+		return true;
- 	}
-+	return false;
- }
- 
--static void intel_pebs_aliases_snb(struct perf_event *event)
-+static bool intel_pebs_aliases_snb(struct perf_event *event)
- {
- 	if ((event->hw.config & X86_RAW_EVENT_MASK) == 0x003c) {
- 		/*
-@@ -1500,7 +1502,9 @@ static void intel_pebs_aliases_snb(struct perf_event *event)
- 
- 		alt_config |= (event->hw.config & ~X86_RAW_EVENT_MASK);
- 		event->hw.config = alt_config;
-+		return true;
- 	}
-+	return false;
- }
- 
- static int intel_pmu_hw_config(struct perf_event *event)
-@@ -1510,8 +1514,20 @@ static int intel_pmu_hw_config(struct perf_event *event)
- 	if (ret)
- 		return ret;
- 
--	if (event->attr.precise_ip && x86_pmu.pebs_aliases)
--		x86_pmu.pebs_aliases(event);
-+	if (event->attr.precise_ip) {
-+		/*
-+		 * Don't allow unusal flags with PEBS, as that
-+		 * may confuse the CPU.
-+		 *
-+		 * The only exception are explicitely listed pebs_aliases
-+		 */
-+	       	if ((!x86_pmu.pebs_aliases || !x86_pmu.pebs_aliases(event)) &&
-+		    (event->attr.config & (ARCH_PERFMON_EVENTSEL_CMASK|
-+					   ARCH_PERFMON_EVENTSEL_EDGE|
-+					   ARCH_PERFMON_EVENTSEL_INV|
-+					   ARCH_PERFMON_EVENTSEL_ANY)))
-+			return -EIO;
-+	}
- 
- 	if (intel_pmu_needs_lbr_smpl(event)) {
- 		ret = intel_pmu_setup_lbr_filter(event);
--- 
-1.7.7.6
+...so please add also my Tested-by!
 
+Thanks to all involved people!
+
+- Sedat -
+
+> ---
+>  ipc/msg.c  |  7 ++++++-
+>  ipc/sem.c  | 18 ++++++++++++------
+>  ipc/util.c | 46 ++++++++++++++++++++++++----------------------
+>  ipc/util.h |  2 +-
+>  4 files changed, 43 insertions(+), 30 deletions(-)
+>
+> diff --git a/ipc/msg.c b/ipc/msg.c
+> index 9d11955..2978721 100644
+> --- a/ipc/msg.c
+> +++ b/ipc/msg.c
+> @@ -668,7 +668,12 @@ long do_msgsnd(int msqid, long mtype, void __user *mtext,
+>                         goto out_unlock_free;
+>                 }
+>                 ss_add(msq, &s);
+> -               ipc_rcu_getref(msq);
+> +
+> +               if (!ipc_rcu_getref(msq)) {
+> +                       err = -EIDRM;
+> +                       goto out_unlock_free;
+> +               }
+> +
+>                 msg_unlock(msq);
+>                 schedule();
+>
+> diff --git a/ipc/sem.c b/ipc/sem.c
+> index 92f4d0e..9a71b5a 100644
+> --- a/ipc/sem.c
+> +++ b/ipc/sem.c
+> @@ -460,7 +460,7 @@ static inline void sem_lock_and_putref(struct sem_array *sma)
+>
+>  static inline void sem_getref_and_unlock(struct sem_array *sma)
+>  {
+> -       ipc_rcu_getref(sma);
+> +       WARN_ON_ONCE(!ipc_rcu_getref(sma));
+>         sem_unlock(sma, -1);
+>  }
+>
+> @@ -476,7 +476,7 @@ static inline void sem_putref(struct sem_array *sma)
+>  static inline void sem_getref(struct sem_array *sma)
+>  {
+>         sem_lock(sma, NULL, -1);
+> -       ipc_rcu_getref(sma);
+> +       WARN_ON_ONCE(!ipc_rcu_getref(sma));
+>         sem_unlock(sma, -1);
+>  }
+>
+> @@ -1275,7 +1275,10 @@ static int semctl_main(struct ipc_namespace *ns, int semid, int semnum,
+>                 int i;
+>                 struct sem_undo *un;
+>
+> -               ipc_rcu_getref(sma);
+> +               if (!ipc_rcu_getref(sma)) {
+> +                       rcu_read_unlock();
+> +                       return -EIDRM;
+> +               }
+>                 rcu_read_unlock();
+>
+>                 if(nsems > SEMMSL_FAST) {
+> @@ -1544,8 +1547,7 @@ static struct sem_undo *find_alloc_undo(struct ipc_namespace *ns, int semid)
+>         struct sem_array *sma;
+>         struct sem_undo_list *ulp;
+>         struct sem_undo *un, *new;
+> -       int nsems;
+> -       int error;
+> +       int nsems, error;
+>
+>         error = get_undo_list(&ulp);
+>         if (error)
+> @@ -1567,7 +1569,11 @@ static struct sem_undo *find_alloc_undo(struct ipc_namespace *ns, int semid)
+>         }
+>
+>         nsems = sma->sem_nsems;
+> -       ipc_rcu_getref(sma);
+> +       if (!ipc_rcu_getref(sma)) {
+> +               rcu_read_unlock();
+> +               un = ERR_PTR(-EIDRM);
+> +               goto out;
+> +       }
+>         rcu_read_unlock();
+>
+>         /* step 2: allocate new undo structure */
+> diff --git a/ipc/util.c b/ipc/util.c
+> index 18135bc..5e60ebd 100644
+> --- a/ipc/util.c
+> +++ b/ipc/util.c
+> @@ -439,9 +439,9 @@ void ipc_rmid(struct ipc_ids *ids, struct kern_ipc_perm *ipcp)
+>   *     NULL is returned if the allocation fails
+>   */
+>
+> -void* ipc_alloc(int size)
+> +void *ipc_alloc(int size)
+>  {
+> -       void* out;
+> +       void *out;
+>         if(size > PAGE_SIZE)
+>                 out = vmalloc(size);
+>         else
+> @@ -478,7 +478,7 @@ void ipc_free(void* ptr, int size)
+>   */
+>  struct ipc_rcu_hdr
+>  {
+> -       int refcount;
+> +       atomic_t refcount;
+>         int is_vmalloc;
+>         void *data[0];
+>  };
+> @@ -516,39 +516,41 @@ static inline int rcu_use_vmalloc(int size)
+>   *     @size: size desired
+>   *
+>   *     Allocate memory for the rcu header structure +  the object.
+> - *     Returns the pointer to the object.
+> - *     NULL is returned if the allocation fails.
+> + *     Returns the pointer to the object or NULL upon failure.
+>   */
+> -
+> -void* ipc_rcu_alloc(int size)
+> +void *ipc_rcu_alloc(int size)
+>  {
+>         void* out;
+> -       /*
+> +
+> +       /*
+>          * We prepend the allocation with the rcu struct, and
+> -        * workqueue if necessary (for vmalloc).
+> +        * workqueue if necessary (for vmalloc).
+>          */
+>         if (rcu_use_vmalloc(size)) {
+>                 out = vmalloc(HDRLEN_VMALLOC + size);
+> -               if (out) {
+> -                       out += HDRLEN_VMALLOC;
+> -                       container_of(out, struct ipc_rcu_hdr, data)->is_vmalloc = 1;
+> -                       container_of(out, struct ipc_rcu_hdr, data)->refcount = 1;
+> -               }
+> +               if (!out)
+> +                       goto done;
+> +
+> +               out += HDRLEN_VMALLOC;
+> +               container_of(out, struct ipc_rcu_hdr, data)->is_vmalloc = 1;
+>         } else {
+>                 out = kmalloc(HDRLEN_KMALLOC + size, GFP_KERNEL);
+> -               if (out) {
+> -                       out += HDRLEN_KMALLOC;
+> -                       container_of(out, struct ipc_rcu_hdr, data)->is_vmalloc = 0;
+> -                       container_of(out, struct ipc_rcu_hdr, data)->refcount = 1;
+> -               }
+> +               if (!out)
+> +                       goto done;
+> +
+> +               out += HDRLEN_KMALLOC;
+> +               container_of(out, struct ipc_rcu_hdr, data)->is_vmalloc = 0;
+>         }
+>
+> +       /* set reference counter no matter what kind of allocation was done */
+> +       atomic_set(&container_of(out, struct ipc_rcu_hdr, data)->refcount, 1);
+> +done:
+>         return out;
+>  }
+>
+> -void ipc_rcu_getref(void *ptr)
+> +int ipc_rcu_getref(void *ptr)
+>  {
+> -       container_of(ptr, struct ipc_rcu_hdr, data)->refcount++;
+> +       return atomic_inc_not_zero(&container_of(ptr, struct ipc_rcu_hdr, data)->refcount);
+>  }
+>
+>  static void ipc_do_vfree(struct work_struct *work)
+> @@ -578,7 +580,7 @@ static void ipc_schedule_free(struct rcu_head *head)
+>
+>  void ipc_rcu_putref(void *ptr)
+>  {
+> -       if (--container_of(ptr, struct ipc_rcu_hdr, data)->refcount > 0)
+> +       if (!atomic_dec_and_test(&container_of(ptr, struct ipc_rcu_hdr, data)->refcount))
+>                 return;
+>
+>         if (container_of(ptr, struct ipc_rcu_hdr, data)->is_vmalloc) {
+> diff --git a/ipc/util.h b/ipc/util.h
+> index c36b997..2b0bdd5 100644
+> --- a/ipc/util.h
+> +++ b/ipc/util.h
+> @@ -119,7 +119,7 @@ void ipc_free(void* ptr, int size);
+>   * to 0 schedules the rcu destruction. Caller must guarantee locking.
+>   */
+>  void* ipc_rcu_alloc(int size);
+> -void ipc_rcu_getref(void *ptr);
+> +int ipc_rcu_getref(void *ptr);
+>  void ipc_rcu_putref(void *ptr);
+>
+>  struct kern_ipc_perm *ipc_lock(struct ipc_ids *, int);
+> --
+> 1.7.11.7
+>
+>
+>
