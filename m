@@ -1,107 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757614Ab3DXD3b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 23:29:31 -0400
-Received: from na3sys009aog124.obsmtp.com ([74.125.149.151]:53206 "EHLO
-	na3sys009aog124.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757569Ab3DXD32 (ORCPT
+	id S1757668Ab3DXDdp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 23:33:45 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:35461 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757473Ab3DXDdo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 23:29:28 -0400
-From: Chao Xie <chao.xie@marvell.com>
-To: <linux-kernel@vger.kernel.org>, <linux-input@vger.kernel.org>,
-        <dmitry.torokhov@gmail.com>, <haojian.zhuang@gmail.com>,
-        <xiechao.mail@gmail.com>
-CC: Chao Xie <chao.xie@marvell.com>
-Subject: [PATCH 2/6] input: pxa27x-keypad: use matrix_keymap for matrix keyes
-Date: Tue, 23 Apr 2013 23:20:29 -0400
-Message-ID: <1366773633-7727-3-git-send-email-chao.xie@marvell.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1366773633-7727-1-git-send-email-chao.xie@marvell.com>
-References: <1366773633-7727-1-git-send-email-chao.xie@marvell.com>
+	Tue, 23 Apr 2013 23:33:44 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <51774F44.2060704@linaro.org>
+References: <CAPXgP13kizK95JyLxKxgWrGnV9b11ZTyi3vuc5YFDmROzckg4w@mail.gmail.com>
+ <517746E4.908@linaro.org> <CAPXgP128yAq1jju-gsZcaS-mZPt+7tq0tt-uVk3Yqr77abd26Q@mail.gmail.com>
+ <51774F44.2060704@linaro.org>
+From: Kay Sievers <kay@vrfy.org>
+Date: Wed, 24 Apr 2013 05:33:22 +0200
+Message-ID: <CAPXgP12D-H_E3WbWYgrbtvA_6wq=DhpiaLU_hGRgD6ga=_1x-A@mail.gmail.com>
+Subject: Re: CONFIG_RTC_HCTOSYS lost on x86 with ALWAYS_USE_PERSISTENT_CLOCK changes?
+To: John Stultz <john.stultz@linaro.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-pxa27x-keypad includes matrix keyes. Make use of matrix_keymap
-for the matrix keyes.
+On Wed, Apr 24, 2013 at 5:19 AM, John Stultz <john.stultz@linaro.org> wrote:
+> On 04/23/2013 08:05 PM, Kay Sievers wrote:
+>>
+>> On Wed, Apr 24, 2013 at 4:43 AM, John Stultz <john.stultz@linaro.org>
+>> wrote:
+>>>
+>>> On 04/23/2013 06:34 PM, Kay Sievers wrote:
+>>>>
+>>>> Hey,
+>>>>
+>>>> what's the intention of:
+>>>>     e90c83f757fffdacec8b3c5eee5617dcc038338f ?
+>>>>     x86: Select HAS_PERSISTENT_CLOCK on x86
+>>>>
+>>>> It unconditionally sets:
+>>>>     HAS_PERSISTENT_CLOCK
+>>>> but:
+>>>>     RTC_SYSTOHC
+>>>> got a depends on !HAS_PERSISTENT_CLOCK
+>>>>
+>>>> This makes it impossible to sync the system time from the RTC on x86.
+>>>> What's going on here?
+>>>
+>>>
+>>> So I suspect just some confusion, but let me know if thats wrong and
+>>> you're
+>>> actually seeing an issue.
+>>>
+>>> SYSTOHC is what *sets the RTC* to the system time when we're synced with
+>>> NTP.
+>>>
+>>> HCTOSYS is what sets the system time from the RTC.
+>>
+>> Right, and RTC_HCTOSYS is not NTP related. It just reads the time from
+>> the RTC_HCTOSYS_DEVICE at bootup so we do not boot in 1970 time mode.
+>> We need that it in all cases, at every bootup on x86. But it's no
+>> longer there with the above commits. :)
+>
+> On x86 the persistent_clock() is backed by the CMOS/EFI/kvm-wall/xen/vrtc
+> clock (all via x86_platform.get_wallclock) should be present and we'll
+> initialize the time in timekeeping_init() there.
+>
+> Its only systems where there isn't a persistent_clock is where the RTC layer
+> and the HCTOSYS is helpful.
+>
+> Again, if you're having a problem where an x86 system isn't getting its time
+> initialized correctly, please let me know the details of the system.
 
-Signed-off-by: Chao Xie <chao.xie@marvell.com>
----
- drivers/input/keyboard/Kconfig              |    1 +
- drivers/input/keyboard/pxa27x_keypad.c      |   29 +++++++++++++++-----------
- include/linux/platform_data/keypad-pxa27x.h |    1 +
- 3 files changed, 19 insertions(+), 12 deletions(-)
+Until the above commits we always needed:
+  CONFIG_RTC_HCTOSYS=y
+  CONFIG_RTC_HCTOSYS_DEVICE="rtc0"
+to get the system time correctly initialized at bootup on x86.
 
-diff --git a/drivers/input/keyboard/Kconfig b/drivers/input/keyboard/Kconfig
-index ac05006..fff3751 100644
---- a/drivers/input/keyboard/Kconfig
-+++ b/drivers/input/keyboard/Kconfig
-@@ -441,6 +441,7 @@ config KEYBOARD_OPENCORES
- config KEYBOARD_PXA27x
- 	tristate "PXA27x/PXA3xx keypad support"
- 	depends on PXA27x || PXA3xx || ARCH_MMP
-+	select INPUT_MATRIXKMAP
- 	help
- 	  Enable support for PXA27x/PXA3xx keypad controller.
- 
-diff --git a/drivers/input/keyboard/pxa27x_keypad.c b/drivers/input/keyboard/pxa27x_keypad.c
-index 023243a..975b448 100644
---- a/drivers/input/keyboard/pxa27x_keypad.c
-+++ b/drivers/input/keyboard/pxa27x_keypad.c
-@@ -137,22 +137,27 @@ static int pxa27x_keypad_build_keycode(struct device *dev,
- 			struct input_dev *input_dev)
- {
- 	unsigned short keycode;
--	int i;
-+	int ret, i;
-+	const struct matrix_keymap_data *keymap_data =
-+				pdata ? pdata->matrix_keymap_data : NULL;
- 
- 	keypad->matrix_key_rows = pdata->matrix_key_rows;
- 	keypad->matrix_key_cols = pdata->matrix_key_cols;
--	for (i = 0; i < pdata->matrix_key_map_size; i++) {
--		unsigned int key = pdata->matrix_key_map[i];
--		unsigned int row = KEY_ROW(key);
--		unsigned int col = KEY_COL(key);
--		unsigned int scancode = MATRIX_SCAN_CODE(row, col,
--							 MATRIX_ROW_SHIFT);
--
--		keycode = KEY_VAL(key);
--		keypad->keycodes[scancode] = keycode;
--		__set_bit(keycode, input_dev->keybit);
--	}
- 
-+	ret = matrix_keypad_build_keymap(keymap_data, NULL,
-+					 keypad->matrix_key_rows,
-+					 keypad->matrix_key_cols,
-+					 keypad->keycodes, input_dev);
-+	if (ret)
-+		return ret;
-+
-+	/*
-+	 * The keycodes may not only includes matrix key but also the direct
-+	 * key or rotary key.
-+	 */
-+	input_dev->keycodemax = ARRAY_SIZE(keypad->keycodes);
-+
-+	/* For direct key. */
- 	keypad->direct_key_low_active = pdata->direct_key_low_active;
- 	keypad->direct_key_num = pdata->direct_key_num;
- 	keypad->default_direct_key_mask = pdata->direct_key_mask;
-diff --git a/include/linux/platform_data/keypad-pxa27x.h b/include/linux/platform_data/keypad-pxa27x.h
-index 5ce8d5e6..0db423b 100644
---- a/include/linux/platform_data/keypad-pxa27x.h
-+++ b/include/linux/platform_data/keypad-pxa27x.h
-@@ -36,6 +36,7 @@
- struct pxa27x_keypad_platform_data {
- 
- 	/* code map for the matrix keys */
-+	const struct matrix_keymap_data *matrix_keymap_data;
- 	unsigned int	matrix_key_rows;
- 	unsigned int	matrix_key_cols;
- 	unsigned int	*matrix_key_map;
--- 
-1.7.4.1
+These options are gone now and cannot be selected anymore. You are
+saying that this is all fine, that they are gone, but all initial
+clock syncing should still work?
 
+Also:
+  $ cat /sys/class/rtc/rtc0/hctosys
+  0
+always carried "1", and this now breaks setups which expect an
+automatically created symlink /dev/rtc to the actual "system rtc".
+
+There was also always a line in dmesg that told the rtc_cmos time it
+wrote to the system clock. This is also gone?
+
+I haven't looked what goes wrong, I expected the make(1) errors with
+"time in the future" after bootup before the network is up, which I
+see since a week or two, to be a fallout of that.
+
+Kay
