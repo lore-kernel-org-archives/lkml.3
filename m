@@ -1,109 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758564Ab3DXWOe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 18:14:34 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:61882 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758532Ab3DXWOd (ORCPT
+	id S1758567Ab3DXWP4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 18:15:56 -0400
+Received: from mail-da0-f47.google.com ([209.85.210.47]:65106 "EHLO
+	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758506Ab3DXWPy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 18:14:33 -0400
-X-IronPort-AV: E=Sophos;i="4.87,546,1363132800"; 
-   d="scan'208";a="20404007"
-Date: Wed, 24 Apr 2013 23:14:28 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        "will.deacon@arm.com" <will.deacon@arm.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>
-Subject: Re: [PATCH v4 7/7] mach-virt: support Xen hypercalls for shutdown
- and reboot
-In-Reply-To: <1366831695-13214-7-git-send-email-stefano.stabellini@eu.citrix.com>
-Message-ID: <alpine.DEB.2.02.1304242301390.4180@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1304242012590.4180@kaball.uk.xensource.com> <1366831695-13214-7-git-send-email-stefano.stabellini@eu.citrix.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 24 Apr 2013 18:15:54 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: Sourav Poddar <sourav.poddar@ti.com>
+Cc: <gregkh@linuxfoundation.org>, <tony@atomide.com>,
+        <rmk+kernel@arm.linux.org.uk>, <linux-serial@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Felipe Balbi <balbi@ti.com>, Rajendra nayak <rnayak@ti.com>,
+        Grygorii Strashko <grygorii.strashko@ti.com>
+Subject: Re: [PATCHv3 5/5] arm: omap2+: omap_device: remove no_idle_on_suspend
+References: <1366809353-19435-1-git-send-email-sourav.poddar@ti.com>
+	<1366809353-19435-6-git-send-email-sourav.poddar@ti.com>
+Date: Wed, 24 Apr 2013 15:15:49 -0700
+In-Reply-To: <1366809353-19435-6-git-send-email-sourav.poddar@ti.com> (Sourav
+	Poddar's message of "Wed, 24 Apr 2013 18:45:53 +0530")
+Message-ID: <87d2tj378q.fsf@linaro.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 24 Apr 2013, Stefano Stabellini wrote:
-> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> CC: Marc Zyngier <marc.zyngier@arm.com>
-> CC: will.deacon@arm.com
-> CC: arnd@arndb.de
-> CC: rob.herring@calxeda.com
+Sourav Poddar <sourav.poddar@ti.com> writes:
 
-Thinking twice about this patch, a less intrusive alternative would be
-to set arm_pm_restart and pm_power_off to two xen specific functions
-later on from xen_guest_init.
+> Remove "no_idle_on_suspend" check, since respective
+> driver should be able to prevent idling of a
+> device whenever required.
+>
+> Driver's can get same behavior by just returning -EBUSY
+> from their ->runtime_suspend only during suspend.
+>
+> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> Cc: Felipe Balbi <balbi@ti.com>
+> Cc: Rajendra nayak <rnayak@ti.com>
+> Cc: Grygorii Strashko <grygorii.strashko@ti.com>
+> Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
+> Reviewed-by: Felipe Balbi <balbi@ti.com>
+> ---
+>  arch/arm/mach-omap2/omap_device.c |   12 +++---------
+>  arch/arm/mach-omap2/omap_device.h |   10 ----------
+>  2 files changed, 3 insertions(+), 19 deletions(-)
+>
+> diff --git a/arch/arm/mach-omap2/omap_device.c b/arch/arm/mach-omap2/omap_device.c
+> index 381be7a..2043d71 100644
+> --- a/arch/arm/mach-omap2/omap_device.c
+> +++ b/arch/arm/mach-omap2/omap_device.c
+> @@ -170,9 +170,6 @@ static int omap_device_build_from_dt(struct platform_device *pdev)
+>  			r->name = dev_name(&pdev->dev);
+>  	}
+>  
+> -	if (of_get_property(node, "ti,no_idle_on_suspend", NULL))
+> -		omap_device_disable_idle_on_suspend(pdev);
+> -
+>  	pdev->dev.pm_domain = &omap_device_pm_domain;
+>  
+>  odbfd_exit1:
+> @@ -620,11 +617,9 @@ static int _od_suspend_noirq(struct device *dev)
+>  	ret = pm_generic_suspend_noirq(dev);
+>  
+>  	if (!ret && !pm_runtime_status_suspended(dev)) {
+> -		if (pm_generic_runtime_suspend(dev) == 0) {
+> -			if (!(od->flags & OMAP_DEVICE_NO_IDLE_ON_SUSPEND))
+> -				omap_device_idle(pdev);
+> +		if (pm_generic_runtime_suspend(dev) == 0)
+> +			omap_device_idle(pdev);
+>  			od->flags |= OMAP_DEVICE_SUSPENDED;
+> -		}
 
->  arch/arm/mach-virt/virt.c |   32 ++++++++++++++++++++++++++++++++
->  1 files changed, 32 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/arm/mach-virt/virt.c b/arch/arm/mach-virt/virt.c
-> index 528c05e..ba14321 100644
-> --- a/arch/arm/mach-virt/virt.c
-> +++ b/arch/arm/mach-virt/virt.c
-> @@ -23,13 +23,44 @@
->  #include <linux/of_platform.h>
->  #include <linux/smp.h>
+Look closely at the if statement, followed by more than one line, and
+the braces removed.
+
+That means that od->flag will be set, even when omap_device_idle() was
+not called.  Which in turn means that upon resume, omap_device_enable()
+will be called on a device that has not had omap_device_idle() called,
+which means there would be WARNs coming from omap_device due to the
+mismatch.
+
+Hmm... this does not instill confidence that this code has been tested.
+
+Kevin
+
+
+>  	}
 >  
-> +#include <xen/xen.h>
-> +#include <xen/interface/sched.h>
-> +
->  #include <asm/arch_timer.h>
->  #include <asm/mach/arch.h>
->  #include <asm/mach/time.h>
-> +#include <asm/xen/hypercall.h>
-> +
-> +static void virt_restart(char str, const char *cmd)
-> +{
-> +#ifdef CONFIG_XEN
-> +	if (xen_domain()) {
-> +		struct sched_shutdown r = { .reason = SHUTDOWN_reboot };
-> +		int rc;
-> +		rc = HYPERVISOR_sched_op(SCHEDOP_shutdown, &r);
-> +		if (rc)
-> +			BUG();
-> +	}
-> +#endif
-> +}
-> +
-> +static void virt_power_off(void)
-> +{
-> +#ifdef CONFIG_XEN
-> +	if (xen_domain()) {
-> +		struct sched_shutdown r = { .reason = SHUTDOWN_poweroff };
-> +		int rc;
-> +		rc = HYPERVISOR_sched_op(SCHEDOP_shutdown, &r);
-> +		if (rc)
-> +			BUG();
-> +	}
-> +#endif
-> +}
+>  	return ret;
+> @@ -638,8 +633,7 @@ static int _od_resume_noirq(struct device *dev)
+>  	if ((od->flags & OMAP_DEVICE_SUSPENDED) &&
+>  	    !pm_runtime_status_suspended(dev)) {
+>  		od->flags &= ~OMAP_DEVICE_SUSPENDED;
+> -		if (!(od->flags & OMAP_DEVICE_NO_IDLE_ON_SUSPEND))
+> -			omap_device_enable(pdev);
+> +		omap_device_enable(pdev);
+>  		pm_generic_runtime_resume(dev);
+>  	}
 >  
->  static void __init virt_init(void)
+> diff --git a/arch/arm/mach-omap2/omap_device.h b/arch/arm/mach-omap2/omap_device.h
+> index 044c31d..17ca1ae 100644
+> --- a/arch/arm/mach-omap2/omap_device.h
+> +++ b/arch/arm/mach-omap2/omap_device.h
+> @@ -38,7 +38,6 @@ extern struct dev_pm_domain omap_device_pm_domain;
+>  
+>  /* omap_device.flags values */
+>  #define OMAP_DEVICE_SUSPENDED		BIT(0)
+> -#define OMAP_DEVICE_NO_IDLE_ON_SUSPEND	BIT(1)
+>  
+>  /**
+>   * struct omap_device - omap_device wrapper for platform_devices
+> @@ -101,13 +100,4 @@ static inline struct omap_device *to_omap_device(struct platform_device *pdev)
 >  {
->  	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
-> +	pm_power_off = virt_power_off;
+>  	return pdev ? pdev->archdata.od : NULL;
 >  }
->  
->  static void __init virt_timer_init(void)
-> @@ -52,4 +83,5 @@ DT_MACHINE_START(VIRT, "Dummy Virtual Machine")
->  	.init_machine	= virt_init,
->  	.smp		= smp_ops(virt_smp_ops),
->  	.dt_compat	= virt_dt_match,
-> +	.restart	= virt_restart,
->  MACHINE_END
-> -- 
-> 1.7.2.5
-> 
+> -
+> -static inline
+> -void omap_device_disable_idle_on_suspend(struct platform_device *pdev)
+> -{
+> -	struct omap_device *od = to_omap_device(pdev);
+> -
+> -	od->flags |= OMAP_DEVICE_NO_IDLE_ON_SUSPEND;
+> -}
+> -
+>  #endif
