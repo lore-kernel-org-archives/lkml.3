@@ -1,55 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757411Ab3DXSza (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 14:55:30 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:38799 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756221Ab3DXSz3 (ORCPT
+	id S1757447Ab3DXSzs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 14:55:48 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:45183 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756367Ab3DXSzq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 14:55:29 -0400
-Message-ID: <51782A9D.20303@linaro.org>
-Date: Wed, 24 Apr 2013 11:55:25 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Wed, 24 Apr 2013 14:55:46 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Magnus Damm <magnus.damm@gmail.com>
+Cc: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        SH-Linux <linux-sh@vger.kernel.org>, linux-leds@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Paul Mundt <lethal@linux-sh.org>
+Subject: Re: [PATCH 3/9] pwm: Add Renesas Mobile TPU PWM driver
+Date: Wed, 24 Apr 2013 20:55:45 +0200
+Message-ID: <4234281.i4nY8H6pM1@avalon>
+User-Agent: KMail/4.10.2 (Linux/3.7.10-gentoo; KDE/4.10.2; x86_64; ; )
+In-Reply-To: <CANqRtoQzuBg7Y=zPGPDfmWzKjuR8nGfgEgK43+7uSdivmyaBjg@mail.gmail.com>
+References: <1366761969-16759-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com> <1366761969-16759-4-git-send-email-laurent.pinchart+renesas@ideasonboard.com> <CANqRtoQzuBg7Y=zPGPDfmWzKjuR8nGfgEgK43+7uSdivmyaBjg@mail.gmail.com>
 MIME-Version: 1.0
-To: Kay Sievers <kay@vrfy.org>
-CC: lkml <linux-kernel@vger.kernel.org>, stable <stable@vger.kernel.org>,
-        Feng Tang <feng.tang@intel.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] time: Revert ALWAYS_USE_PERSISTENT_CLOCK compile time
- optimizaitons
-References: <1366828376-18124-1-git-send-email-john.stultz@linaro.org> <CAPXgP123q9K8-NibkpmbvwpRTM1cdODWycq3o-HdWEYBwoGCFQ@mail.gmail.com>
-In-Reply-To: <CAPXgP123q9K8-NibkpmbvwpRTM1cdODWycq3o-HdWEYBwoGCFQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/24/2013 11:41 AM, Kay Sievers wrote:
-> On Wed, Apr 24, 2013 at 8:32 PM, John Stultz <john.stultz@linaro.org> wrote:
->> Kay Sievers noted that the ALWAYS_USE_PERSISTENT_CLOCK config,
->> which enables some minor compile time optimization to avoid
->> uncessary code in mostly the suspend/resume path could cause
->> problems for userland.
->>
->> In particular, the dependency for RTC_HCTOSYS on
->> !ALWAYS_USE_PERSISTENT_CLOCK, which avoids setting the time
->> twice and simplifies suspend/resume, has the side effect
->> of causing the /sys/class/rtc/rtcN/hctosys flag to always be
->> zero, and this flag is commonly used by udev to setup the
->> /dev/rtc symlink to /dev/rtcN, which can cause pain for
->> older applications.
-> FWIW, in the light of the original change, I've just removed the
-> /dev/rtc creation from the default udev rules now, so that thing will
-> be phased out in the future.
-Is that actually wanted? What happens to applications that use /dev/rtc?
+Hi Magnus,
 
-I think setting up the /dev/rtc link is important. Its just that setting 
-it up exclusively by the hctosys flag is maybe more fragile then we'd 
-like. Instead the hctosys flag maybe should only be used as a hint if 
-there is more then one RTC available.
+Thanks for the review.
 
-thanks
--john
+On Wednesday 24 April 2013 18:37:57 Magnus Damm wrote:
+> On Wed, Apr 24, 2013 at 1:06 AM, Laurent Pinchart wrote:
+> > The Timer Pulse Unit (TPU is a 4-channels 16-bit timer used to generate
+> > waveforms. This driver exposes PWM functions through the PWM API for
+> > other drivers to use.
+> > 
+> > The code is loosely based on the leds-renesas-tpu driver by Magnus Damm
+> > and the TPU PWM driver shipped in the Armadillo EVA 800 kernel sources.
+> > 
+> > Signed-off-by: Laurent Pinchart
+> > <laurent.pinchart+renesas@ideasonboard.com>
+> > Tested-by: Simon Horman <horms@verge.net.au>
+> > ---
+> > 
+> >  drivers/pwm/Kconfig                    |   7 +
+> >  drivers/pwm/Makefile                   |   1 +
+> >  drivers/pwm/pwm-rmob.c                 | 462 ++++++++++++++++++++++++++++
+> >  include/linux/platform_data/pwm-rmob.h |  18 ++
+> >  4 files changed, 488 insertions(+)
+> >  create mode 100644 drivers/pwm/pwm-rmob.c
+> >  create mode 100644 include/linux/platform_data/pwm-rmob.h
+> 
+> Thanks for your efforts with this driver. The new code becomes much nicer
+> compared to my old driver.
+> 
+> The TPU hardware block is used across several different Renesas product
+> lines, including R-Mobile and R-Car. So with that in mind, can you please
+> consider renaming this driver?
+> 
+> I propose pwm-renesas-tpu.c or pwm-tpu.c instead of pwm-rmob.c. This
+> because this driver has nothing to do with the R mobile product line.
+
+pwm-renesas-tpu.c sounds good. I'll rename the driver accordingly and will 
+resubmit the patch set.
+
+-- 
+Regards,
+
+Laurent Pinchart
+
