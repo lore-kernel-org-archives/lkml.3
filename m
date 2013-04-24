@@ -1,75 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756808Ab3DXO5N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 10:57:13 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:59471 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755991Ab3DXO5L (ORCPT
+	id S1756828Ab3DXO5p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 10:57:45 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:58118 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755591Ab3DXO5o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 10:57:11 -0400
-Message-ID: <5177F2C3.5080907@intel.com>
-Date: Wed, 24 Apr 2013 15:57:07 +0100
-From: Matt Fleming <matt.fleming@intel.com>
-Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
- Way, Swindon SN3 1RJ
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Wed, 24 Apr 2013 10:57:44 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Lee Jones <lee.jones@linaro.org>
+Subject: Re: [PATCH 04/10] usb: musb: ux500: harden checks for platform data
+Date: Wed, 24 Apr 2013 16:56:53 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
+Cc: balbi@ti.com, Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        mian.yousaf.kaukab@stericsson.com, linux-usb@vger.kernel.org
+References: <1366729394-11406-1-git-send-email-lee.jones@linaro.org> <20130424142615.GF23081@arwen.pp.htv.fi> <CAF2Aj3ga7R3Vti4YB-83T_AsanB3iL34aysAN3MiMWZBvB=z2Q@mail.gmail.com>
+In-Reply-To: <CAF2Aj3ga7R3Vti4YB-83T_AsanB3iL34aysAN3MiMWZBvB=z2Q@mail.gmail.com>
 MIME-Version: 1.0
-To: Josh Boyer <jwboyer@redhat.com>
-CC: Matthew Garrett <matthew.garrett@nebula.com>, linux-efi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] efi: Check EFI revision in setup_efi_vars
-References: <20130424143738.GB15272@hansolo.jdub.homelinux.org> <5177EFCE.80104@intel.com> <20130424145449.GC15272@hansolo.jdub.homelinux.org>
-In-Reply-To: <20130424145449.GC15272@hansolo.jdub.homelinux.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201304241656.53432.arnd@arndb.de>
+X-Provags-ID: V02:K0:uZaJaUaomZ4ZgcHm/Drzvh54JIhHTV6q6Xjafnd3dGv
+ 8GpVtNxVeEpBL49Cl6Hlz7Zr00eR4VLm6+wdx6V6jTZvRDiZQA
+ IWN0Qrj0qYFqtUiFxpWfAhkQeFfWYiM4FEuya337DrYBWHzOYR
+ lGiFNJwIfW8jdaEvN1O9BV2bELEPtkZCKVS2FxCzq5hVT4Fcdp
+ Q9wmDLQVr7K9AvSHQ2rwCaYlB2vl07X59Vbk9VQzqOKJ53NCq4
+ TPapLrk/z9OVxpMoJj5mbVXxdgGCbiKd2nXhnprs/h+Na18VrN
+ 6m3zWV3386GKzieiVGVepGoxaPbCS2lvaS2Tg89QnSzZgZQvjz
+ 5nLGZN7bPbqaaaJs3nzo=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24/04/13 15:54, Josh Boyer wrote:
-> On Wed, Apr 24, 2013 at 03:44:30PM +0100, Matt Fleming wrote:
->> On 24/04/13 15:37, Josh Boyer wrote:
->>> We need to check the runtime sys_table for the EFI version the firmware
->>> specifies instead of just checking for a NULL QueryVariableInfo.  Older
->>> implementations of EFI don't have QueryVariableInfo but the runtime is
->>> a smaller structure, so the pointer to it may be pointing off into garbage.
->>>
->>> This is apparently the case with several Apple firmwares that support EFI
->>> 1.10, and the current check causes them to no longer boot.  Fix based on
->>> a suggestion from Matthew Garrett.
->>>
->>> Signed-off-by: Josh Boyer <jwboyer@redhat.com>
->>> ---
->>>  arch/x86/boot/compressed/eboot.c | 4 +++-
->>>  1 file changed, 3 insertions(+), 1 deletion(-)
->>>
->>> diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
->>> index 8615f75..b46efbf 100644
->>> --- a/arch/x86/boot/compressed/eboot.c
->>> +++ b/arch/x86/boot/compressed/eboot.c
->>> @@ -258,7 +258,9 @@ static efi_status_t setup_efi_vars(struct boot_params *params)
->>>  	u64 store_size, remaining_size, var_size;
->>>  	efi_status_t status;
->>>  
->>> -	if (!sys_table->runtime->query_variable_info)
->>> +	if (sys_table->runtime->hdr.revision < EFI_2_00_SYSTEM_TABLE_REVISION)
->>> +		return EFI_UNSUPPORTED;
->>> +	else if(!sys_table->runtime->query_variable_info)
->>>  		return EFI_UNSUPPORTED;
->>>  
->>>  	data = (struct setup_data *)(unsigned long)params->hdr.setup_data;
->>>
->>
->> Thanks Josh, that looks correct.
->>
->> It's a small point, but does the check against NULL actually make sense?
->> I don't think we ever check other system table pointers against NULL.
+On Wednesday 24 April 2013, Lee Jones wrote:
+> Yeah, I agree, although does it make a difference?
 > 
-> That I'm not sure of.  I was going off of the assumption that Matthew
-> put it there because someone's EFI 2.0 implementation was crappy and
-> didn't actually implement it.  So I left that check in place for now.
+> Is it evaluated a second time, or does it take up extra cycles by being
+> enclosed in parentheses?
+> 
+> Or is this just a coding style thing?
 
-I presume that if that were true, virt_efi_query_variable_info() (which
-is called indirectly from the efivars code) would have exploded before
-now. Matthew?
+Just coding style. I agree you should have no parentheses there, but it
+does not change the compiled code.
 
+	Arnd
