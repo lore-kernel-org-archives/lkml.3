@@ -1,75 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755543Ab3DXNqr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 09:46:47 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42968 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754377Ab3DXNqp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 09:46:45 -0400
-Date: Wed, 24 Apr 2013 15:46:41 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: "Florin9(doi)" <florin9doi@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: Re: Linux 3.9 input documentation patch
-In-Reply-To: <CALRtADMNGcJaArziv6be3tDZsi9uyWA=3OD+Vi4mpzY99TMJ-A@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1304241545091.29143@pobox.suse.cz>
-References: <CALRtADNMPv4MkJQAxF1y+iK9F2tGAiXsRrveazho5C6KSb4gcQ@mail.gmail.com> <CALRtADMNGcJaArziv6be3tDZsi9uyWA=3OD+Vi4mpzY99TMJ-A@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1755607Ab3DXNtg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 09:49:36 -0400
+Received: from mail-la0-f51.google.com ([209.85.215.51]:60273 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755196Ab3DXNtf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 09:49:35 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <5177B061.50107@imgtec.com>
+References: <CAHp75VdDwh0wgCWrVDcPps1C2qfdDZra15y9BQvzfWHzSMqbWA@mail.gmail.com>
+	<CAHp75Vfh6Bpk4j3crVEAo3UtJEqpyucbQw+AzJvO85uRJ6gVgg@mail.gmail.com>
+	<201304222326.IJB21395.FOtVJFHFQMOOSL@I-love.SAKURA.ne.jp>
+	<201304232140.FGF73904.QJOFOVtHFFMSOL@I-love.SAKURA.ne.jp>
+	<51772CD3.3040405@zytor.com>
+	<51772EBC.1050600@zytor.com>
+	<5177B061.50107@imgtec.com>
+Date: Wed, 24 Apr 2013 16:49:33 +0300
+Message-ID: <CAHp75VeqqF-qisssVng7+3OXroD9MFshyV7K946MicOabYqz-g@mail.gmail.com>
+Subject: Re: [PATCH] x86_32: Fix module version table mismatch.
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: James Hogan <james.hogan@imgtec.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Rusty Russell <rusty@rustcorp.com.au>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Arjan van de Ven <arjan@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 8 Apr 2013, Florin9(doi) wrote:
+It works
+Tested-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 
-> I have a patch for linux 3.9.
-> 
-> --- a/Documentation/input/alps.txt 2013-04-01 18:02:56.230177850 +0000
-> +++ b/Documentation/input/alps.txt 2013-04-01 18:03:15.010177850 +0000
-> @@ -225,18 +225,18 @@ packets.  This appears to only be used b
-> 
->  For single-touch, the 6-byte packet format is:
-> 
-> - byte 0:    1    1    0    0    1    0    0    0
-> + byte 0:    1    1    0    0    1    p   mt    0
->   byte 1:    0   x6   x5   x4   x3   x2   x1   x0
->   byte 2:    0   y6   y5   y4   y3   y2   y1   y0
->   byte 3:    0    M    R    L    1    m    r    l
-> - byte 4:   y10  y9   y8   y7  x10   x9   x8   x7
-> + byte 4:  y10   y9   y8   y7  x10   x9   x8   x7
->   byte 5:    0   z6   z5   z4   z3   z2   z1   z0
-> 
->  For mt, the format is:
-> 
-> - byte 0:    1    1    1    n3   1   n2   n1   x24
-> - byte 1:    1   y7   y6    y5  y4   y3   y2    y1
-> - byte 2:    ?   x2   x1   y12 y11  y10   y9    y8
-> - byte 3:    0  x23  x22   x21 x20  x19  x18   x17
-> - byte 4:    0   x9   x8    x7  x6   x5   x4    x3
-> - byte 5:    0  x16  x15   x14 x13  x12  x11   x10
-> \ No newline at end of file
-> + byte 0:    1    1    1   f2    1   f1   f0  x22
-> + byte 1:   ox   y6   y5   y4   y3   y2   y1   y0
-> + byte 2:   oy   x1   x0  y11  y10   y9   y8   y7
-> + byte 3:    0  x21  x20  x19    1  x18  x17  x16
-> + byte 4:    0   x8   x7   x6   x5   x4   x3   x2
-> + byte 5:    0  x15  x14  x13  x12  x11  x10   x9
-> \ No newline at end of file
+On Wed, Apr 24, 2013 at 1:13 PM, James Hogan <james.hogan@imgtec.com> wrote:
+> On 24/04/13 02:00, H. Peter Anvin wrote:
+>> On 04/23/2013 05:52 PM, H. Peter Anvin wrote:
+>>> On 04/23/2013 05:40 AM, Tetsuo Handa wrote:
+>>>> Commit a4b6a77b "module: fix symbol versioning with symbol prefixes" broke
+>>>> loading of net/ipv6/ipv6.ko built with CONFIG_MODVERSIONS=y for x86_32.
+>>>
+>>> This really does seem to be the offending commit, although I'm still
+>>> confused how the heck that is possible.
+>>>
+>>
+>> OK, now I grok.
+>>
+>> The bug is the use of VMLINUX_SYMBOL_STR(%s) which expands at the time
+>> the output of modpost is compiled.  However, VMLINUX_SYMBOL_STR() unlike
+>> __VMLINUX_SYMBOL_STR() does macro expansion on its argument, which is
+>> actively wrong here.
+>
+> Yes, nasty bug there (sorry!)
+>
+>> I think the choice is either to change this to __VMLINUX_SYMBOL_STR() or
+>> re-introduce CONFIG_SYMBOL_PREFIX (or its equivalent) so that modprobe
+>> can emit it at compile time
+>
+> Using __VMLINUX_SYMBOL_STR looks like the correct solution to me.
+>
+>> (assuming there even should *be* a prefix on
+>> the symbol here, i.e. that the compiler won't add it.)
+>
+> [__]VMLINUX_SYMBOL_STR expands to a string (e.g. "_" "memcmp" or just
+> "memcmp") so the compiler won't touch it.
+>
+>>
+>> Either way -- James, Rusty, this is in your court.
+>
+> How does the patch below look? I presume this is preferred over
+> making VMLINUX_SYMBOL_STR non-argument-expanding?
+>
+> Thanks
+> James
+>
+> Subject: [PATCH 1/1] modpost: fix unwanted VMLINUX_SYMBOL_STR expansion
+>
+> Commit a4b6a77b77ba4f526392612c2365797fab956014 ("module: fix symbol
+> versioning with symbol prefixes") broke the MODVERSIONS loading of any
+> module using memcmp (e.g. ipv6) on x86_32, as it's defined to
+> __builtin_memcmp which is expanded by VMLINUX_SYMBOL_STR. Use
+> __VMLINUX_SYMBOL_STR instead which doesn't expand the argument.
+>
+> Reported-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+> Signed-off-by: James Hogan <james.hogan@imgtec.com>
+> Cc: Rusty Russell <rusty@rustcorp.com.au>
+> Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> Cc: H. Peter Anvin <hpa@zytor.com>
+> ---
+>  scripts/mod/modpost.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/scripts/mod/modpost.c b/scripts/mod/modpost.c
+> index 1f90961..a4be8e1 100644
+> --- a/scripts/mod/modpost.c
+> +++ b/scripts/mod/modpost.c
+> @@ -1957,7 +1957,7 @@ static int add_versions(struct buffer *b, struct module *mod)
+>                                 s->name, mod->name);
+>                         continue;
+>                 }
+> -               buf_printf(b, "\t{ %#8x, VMLINUX_SYMBOL_STR(%s) },\n",
+> +               buf_printf(b, "\t{ %#8x, __VMLINUX_SYMBOL_STR(%s) },\n",
+>                            s->crc, s->name);
+>         }
+>
+> --
+> 1.8.1.2
+>
 
-Hi,
 
-thanks for the patch.
-
-Please resubmit it with proper changelog (describing why the old values 
-are wrong and the new ones are correct), your Signed-off-by: line (as 
-described in Documentation/SubmittingPatches) and to proper maintainers 
-ideally.
-linux-input@ and Dmitry added to CC.
-
-Thanks,
 
 -- 
-Jiri Kosina
-SUSE Labs
+With Best Regards,
+Andy Shevchenko
