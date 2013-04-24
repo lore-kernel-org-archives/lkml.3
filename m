@@ -1,56 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755984Ab3DXPol (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 11:44:41 -0400
-Received: from a9-78.smtp-out.amazonses.com ([54.240.9.78]:59820 "EHLO
-	a9-78.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755211Ab3DXPok (ORCPT
+	id S1757232Ab3DXPpg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 11:45:36 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:15839 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755476Ab3DXPpf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 11:44:40 -0400
-X-Greylist: delayed 496 seconds by postgrey-1.27 at vger.kernel.org; Wed, 24 Apr 2013 11:44:40 EDT
-Date: Wed, 24 Apr 2013 15:36:20 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Michal Hocko <mhocko@suse.cz>
-cc: Han Pingtian <hanpt@linux.vnet.ibm.com>, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Subject: Re: OOM-killer and strange RSS value in 3.9-rc7
-In-Reply-To: <20130424094732.GB31960@dhcp22.suse.cz>
-Message-ID: <0000013e3cb0340d-00f360e3-076b-478e-b94c-ddd4476196ce-000000@email.amazonses.com>
-References: <alpine.DEB.2.02.1304161315290.30779@chino.kir.corp.google.com> <20130417094750.GB2672@localhost.localdomain> <20130417141909.GA24912@dhcp22.suse.cz> <20130418101541.GC2672@localhost.localdomain> <20130418175513.GA12581@dhcp22.suse.cz>
- <20130423131558.GH8001@dhcp22.suse.cz> <20130424044848.GI2672@localhost.localdomain> <20130424094732.GB31960@dhcp22.suse.cz>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.04.24-54.240.9.78
+	Wed, 24 Apr 2013 11:45:35 -0400
+X-Authority-Analysis: v=2.0 cv=UY7TuduN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=btn4o-XVpwEA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=5m8K6IL_vW8A:10 a=EW-MkwFej7pXyTPL7pcA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1366818332.2626.5.camel@gandalf.local.home>
+Subject: Re: [PREEMPT RT] SLUB and split softirq lock for v3.2-rt
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org,
+        Carsten Emde <C.Emde@osadl.org>
+Date: Wed, 24 Apr 2013 11:45:32 -0400
+In-Reply-To: <517793BD.30101@linutronix.de>
+References: <1360771932-27150-1-git-send-email-bigeasy@linutronix.de>
+	 <1366770979.2626.3.camel@gandalf.local.home> <517793BD.30101@linutronix.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 24 Apr 2013, Michal Hocko wrote:
+On Wed, 2013-04-24 at 10:11 +0200, Sebastian Andrzej Siewior wrote:
+> On 04/24/2013 04:36 AM, Steven Rostedt wrote:
+> > Hi Sebastian,
+> 
+> Hi Steven,
+> 
+> > Which version of 3.2-rt was this applied to. It does not apply, where
+> > patch 7/16 totally does not apply. I looked at the history of 3.2-rt and
+> > I can't find where it would apply.
+> 
+> I applied them on top of 2438ee33 ("Linux 3.2.37-rt55 REBASE"). I just
+> grabbed the patches from the mailing list and re-applied them on top of
+> this tree and is still works.
+> 
 
-> [CCing SL.B people and linux-mm list]
->
-> Just for quick summary. The reporter sees OOM situations with almost
-> whole memory filled with slab memory. This is a powerpc machine with 4G
-> RAM.
+Nevermind, the problem was at my end :-(  I saved the patches as a mbox,
+but evolution decided to move patch 5 to after patch 7, which broke
+everything :-p
 
-Boot with "slub_debug" or enable slab debugging.
-
-> /proc/slabinfo shows that almost whole slab occupied memory is on
-
-Please enable debugging and look at where these objects were allocated.
-
-> It is not clear who consumes that memory and the reporter claims this is
-> vanilla 3.9-rc7 kernel without any third party modules loaded. The issue
-> seems to be present only with CONFIG_SLUB.
-
-cat /sys/kernel/slab/kmalloc-*/alloc_calls
-
-will show where these objects are allocated.
-
-A dump of the other fields in /sys/kernel/slab/kmalloc*/* would also be
-useful.
+-- Steve
 
 
