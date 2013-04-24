@@ -1,86 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758543Ab3DXXwq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 19:52:46 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:50713 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758268Ab3DXXwo (ORCPT
+	id S1758509Ab3DXXxy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 19:53:54 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:45109 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757971Ab3DXXxw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 19:52:44 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130424215103.GI15272@hansolo.jdub.homelinux.org>
-References: <1256775981.281402.1364864751771.JavaMail.root@redhat.com>
- <CAGXu5jLU40Vzx+bNyPSArBt_yYNO9sPJ3yLj7z3Yq=pH22W1Gw@mail.gmail.com>
- <20130409005050.GE18176@hansolo.jdub.homelinux.org> <20130409154820.GE32476@hansolo.jdub.homelinux.org>
- <CAGXu5jLs1ghuCwcu7crOG1OHuiaP3hmzYY410br_puc9i82-2g@mail.gmail.com>
- <CAPXgP10Vd3Ucxn77WX7wzQoaUmy-JdOBWvYv4zpGSu9qcd=GoQ@mail.gmail.com>
- <20130424175835.GF15272@hansolo.jdub.homelinux.org> <CAGXu5jLaQ=Amui3i5+MyG_3HOVnK-1ZoaLqw=jFDwaQCzE+4qw@mail.gmail.com>
- <20130424212112.GH15272@hansolo.jdub.homelinux.org> <CAGXu5jJweZVLhz0pP6=Woud=aqAKgNmG-7T5WKYdmWR4gxcw9w@mail.gmail.com>
- <20130424215103.GI15272@hansolo.jdub.homelinux.org>
-From: Kay Sievers <kay@vrfy.org>
-Date: Thu, 25 Apr 2013 01:52:22 +0200
-Message-ID: <CAPXgP11R3mp-QCMnmZrQ2p=CdAg8G6wvk+=Tf3GxT3iODzTP5g@mail.gmail.com>
-Subject: Re: [PATCH v2] kmsg: Honor dmesg_restrict sysctl on /dev/kmsg
-To: Josh Boyer <jwboyer@redhat.com>
-Cc: Kees Cook <keescook@chromium.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Eric Paris <eparis@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Christian Kujau <lists@nerdbynature.de>,
-        "# 3.4.x" <stable@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, kzak@redhat.com
-Content-Type: text/plain; charset=UTF-8
+	Wed, 24 Apr 2013 19:53:52 -0400
+Date: Wed, 24 Apr 2013 19:53:50 -0400 (EDT)
+Message-Id: <20130424.195350.1927101733139114761.davem@davemloft.net>
+To: mroos@linux.ee
+Cc: linux-kernel@vger.kernel.org, sparclinux@vger.kernel.org
+Subject: Re: sparc64, mm BUG in 3.9-rc8
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20130424.143615.334401973542739420.davem@davemloft.net>
+References: <alpine.SOC.1.00.1304230019030.12820@math.ut.ee>
+	<20130423.161751.2116707386990845036.davem@davemloft.net>
+	<20130424.143615.334401973542739420.davem@davemloft.net>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Wed, 24 Apr 2013 16:53:52 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 24, 2013 at 11:51 PM, Josh Boyer <jwboyer@redhat.com> wrote:
+From: David Miller <davem@davemloft.net>
+Date: Wed, 24 Apr 2013 14:36:15 -0400 (EDT)
 
->> In the daemon case, it's nice to be able to drop privileges after
->> setting up resources. The past was open /proc/kmsg with CAP_SYS_ADMIN,
->> then drop CAP_SYS_ADMIN and keep reading. Then later CAP_SYS_LOG was
->> introduced. So if a daemon switched from /proc/kmsg to /dev/kmsg they
->> wouldn't be able to drop the capability. But, it's much saner to carry
->> CAP_SYS_LOG than CAP_SYS_ADMIN on a long-running daemon.
->
-> I have no idea on this front.  I'll let Kay speak to that.
+> From: David Miller <davem@davemloft.net>
+> Date: Tue, 23 Apr 2013 16:17:51 -0400 (EDT)
+> 
+>> From: Meelis Roos <mroos@linux.ee>
+>> Date: Tue, 23 Apr 2013 00:19:49 +0300 (EEST)
+>> 
+>>>> > Hello, I got a non-booting Sun E420R (sparc64) with 3.9-rc8: BUG-s in 
+>>>> > mm/slub.c:925 and mm/memory.c:1267 (the latter keeps scrolling until 
+>>>> > other things break and panic comes from trying to kill init). This is 
+>>>> > reproducible. Same machine runs 3.9.0-rc7-00004-gbb33db7 successfully.
+>>>> > Configuration is below.
+>>>> 
+>>>> It's certainly a bug in the TLB shootdown fix, please verify that
+>>>> reverting the following fixes things:
+>>>> 
+>>>> >From f36391d2790d04993f48da6a45810033a2cdf847 Mon Sep 17 00:00:00 2001
+>>>> From: "David S. Miller" <davem@davemloft.net>
+>>>> Date: Fri, 19 Apr 2013 17:26:26 -0400
+>>>> Subject: [PATCH] sparc64: Fix race in TLB batch processing.
+>>> 
+>>> Yes, reverting that makes it work again.
+>> 
+>> Just an update, using your config I was able to make one that boots on my
+>> machine and reproduces the problem.
+> 
+> Ok, I've narrowed it down to CONFIG_DEBUG_ATOMIC_SLEEP, as the exact config
+> option which starts the crashes happening when it is enabled.
+> 
+> I should have this fixed by the end of today.
 
-The original code checks once at open() only, which would allow to do
-do all that privilege dropping. It is how I would expect it to work,
-instead of checking the permissions at every read().
+This fixes it, I'll push this to Linus immediately.
 
-> On my
-> currently running Fedora 18 system, I actually have systemd-journald
-> using /dev/kmsg
+Thanks for your report!
 
-That's the recent structured logging stuff.
+--------------------
+sparc64: Fix missing put_cpu_var() in tlb_batch_add_one() when not batching.
 
-> and rsyslog using /proc/kmsg.
+Reported-by: Meelis Roos <mroos@linux.ee>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ arch/sparc/mm/tlb.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-That's the old plain text syslog daemon stuff.
+diff --git a/arch/sparc/mm/tlb.c b/arch/sparc/mm/tlb.c
+index 272aa4f..83d89bc 100644
+--- a/arch/sparc/mm/tlb.c
++++ b/arch/sparc/mm/tlb.c
+@@ -87,7 +87,7 @@ static void tlb_batch_add_one(struct mm_struct *mm, unsigned long vaddr,
+ 	if (!tb->active) {
+ 		global_flush_tlb_page(mm, vaddr);
+ 		flush_tsb_user_page(mm, vaddr);
+-		return;
++		goto out;
+ 	}
+ 
+ 	if (nr == 0)
+@@ -98,6 +98,7 @@ static void tlb_batch_add_one(struct mm_struct *mm, unsigned long vaddr,
+ 	if (nr >= TLB_BATCH_NR)
+ 		flush_tlb_pending();
+ 
++out:
+ 	put_cpu_var(tlb_batch);
+ }
+ 
+-- 
+1.8.1.2
 
-> Why I have both, I have no friggin idea.
 
-Nobody removed the old syslog dameon by default from the distro. If
-you don't want or need the plain text files in /var/log/ anymore, just
-uninstall it and use journalctl(1) to see the system logs from then
-on.
-
->> Is there an intention to use /dev/kmsg for the syslog management daemon?
-
-Not that I know.
-
-> Maybe?  I mean, systemd-journald seems to be using it for something.
-> Kay?
-
-I doubt that old syslog implementations will be ported to a new kernel
-interface. They work just fine the way they are, and the structured
-data that is additionally put out on the new interface, they cannot
-really store away anyway in their plain text files, so they do not
-gain anything really.
-
-What we can probably expect though, is that in the future the default
-systems will not install any old syslog daemon, which uses that
-interface anymore.
-
-Kay
