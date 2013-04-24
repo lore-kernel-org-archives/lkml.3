@@ -1,67 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932265Ab3DXJco (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 05:32:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25334 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932188Ab3DXJch (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 05:32:37 -0400
-Date: Wed, 24 Apr 2013 11:16:56 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jerry Chu <hkchu@google.com>, Wei Yongjun <weiyj.lk@gmail.com>,
-        Eric Dumazet <edumazet@google.com>
-Subject: Re: [PATCH net] tuntap: correct the return value in tun_set_iff()
-Message-ID: <20130424081656.GA11150@redhat.com>
-References: <1366699239-6866-1-git-send-email-jasowang@redhat.com>
+	id S1758032Ab3DXJdK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 05:33:10 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:39188 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752166Ab3DXJdF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 05:33:05 -0400
+Date: Wed, 24 Apr 2013 02:32:35 -0700
+From: tip-bot for Joonsoo Kim <tipbot@zytor.com>
+Message-ID: <tip-f1cd0858100c67273f2c74344e0c464344c4a982@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, vatsa@linux.vnet.ibm.com, hpa@zytor.com,
+        mingo@kernel.org, davidlohr.bueso@hp.com, a.p.zijlstra@chello.nl,
+        peterz@infradead.org, jason.low2@hp.com, tglx@linutronix.de,
+        iamjoonsoo.kim@lge.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, vatsa@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, davidlohr.bueso@hp.com,
+        a.p.zijlstra@chello.nl, peterz@infradead.org, jason.low2@hp.com,
+        iamjoonsoo.kim@lge.com, tglx@linutronix.de
+In-Reply-To: <1366705662-3587-2-git-send-email-iamjoonsoo.kim@lge.com>
+References: <1366705662-3587-2-git-send-email-iamjoonsoo.kim@lge.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] sched: Change position of resched_cpu()
+  in load_balance()
+Git-Commit-ID: f1cd0858100c67273f2c74344e0c464344c4a982
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1366699239-6866-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 23, 2013 at 02:40:39PM +0800, Jason Wang wrote:
-> commit (3be8fbab tuntap: fix error return code in tun_set_iff()) breaks the
-> creation of multiqueue tuntap since it forbids to create more than one queues
-> for a multiqueue tuntap device. We need return 0 instead -EBUSY here since we
-> don't want to re-initialize the device when one or more queues has been already
-> attached. Add a comment and correct the return value to zero.
-> 
-> Reported-by: Jerry Chu <hkchu@google.com>
-> Cc: Jerry Chu <hkchu@google.com>
-> Cc: Wei Yongjun <weiyj.lk@gmail.com>
-> Cc: Eric Dumazet <edumazet@google.com>
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
+Commit-ID:  f1cd0858100c67273f2c74344e0c464344c4a982
+Gitweb:     http://git.kernel.org/tip/f1cd0858100c67273f2c74344e0c464344c4a982
+Author:     Joonsoo Kim <iamjoonsoo.kim@lge.com>
+AuthorDate: Tue, 23 Apr 2013 17:27:37 +0900
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Wed, 24 Apr 2013 08:52:43 +0200
 
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
+sched: Change position of resched_cpu() in load_balance()
 
-> ---
->  drivers/net/tun.c |    5 ++++-
->  1 files changed, 4 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-> index 729ed53..3a8977e 100644
-> --- a/drivers/net/tun.c
-> +++ b/drivers/net/tun.c
-> @@ -1594,7 +1594,10 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
->  
->  		if (tun->flags & TUN_TAP_MQ &&
->  		    (tun->numqueues + tun->numdisabled > 1))
-> -			return -EBUSY;
-> +			/* One or more queue has already been attached, no need
-> +			 * to initialize the device again.
-> +			 */
-> +			return 0;
->  	}
->  	else {
->  		char *name;
-> -- 
-> 1.7.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+cur_ld_moved is reset if env.flags hit LBF_NEED_BREAK.
+So, there is possibility that we miss doing resched_cpu().
+Correct it as changing position of resched_cpu()
+before checking LBF_NEED_BREAK.
+
+Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Tested-by: Jason Low <jason.low2@hp.com>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+Cc: Davidlohr Bueso <davidlohr.bueso@hp.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1366705662-3587-2-git-send-email-iamjoonsoo.kim@lge.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ kernel/sched/fair.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 1c97735..25aaf93 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -5080,17 +5080,17 @@ more_balance:
+ 		double_rq_unlock(env.dst_rq, busiest);
+ 		local_irq_restore(flags);
+ 
+-		if (env.flags & LBF_NEED_BREAK) {
+-			env.flags &= ~LBF_NEED_BREAK;
+-			goto more_balance;
+-		}
+-
+ 		/*
+ 		 * some other cpu did the load balance for us.
+ 		 */
+ 		if (cur_ld_moved && env.dst_cpu != smp_processor_id())
+ 			resched_cpu(env.dst_cpu);
+ 
++		if (env.flags & LBF_NEED_BREAK) {
++			env.flags &= ~LBF_NEED_BREAK;
++			goto more_balance;
++		}
++
+ 		/*
+ 		 * Revisit (affine) tasks on src_cpu that couldn't be moved to
+ 		 * us and move them to an alternate dst_cpu in our sched_group
