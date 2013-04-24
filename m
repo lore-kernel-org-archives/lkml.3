@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755820Ab3DXOQc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 10:16:32 -0400
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:45145
-	"EHLO p3plsmtps2ded01.prod.phx3.secureserver.net"
+	id S1755652Ab3DXOQ3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 10:16:29 -0400
+Received: from p3plsmtps2ded04.prod.phx3.secureserver.net ([208.109.80.198]:35355
+	"EHLO p3plsmtps2ded04.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755136Ab3DXOQY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755155Ab3DXOQY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 24 Apr 2013 10:16:24 -0400
 x-originating-ip: 72.167.245.219
 From: "K. Y. Srinivasan" <kys@microsoft.com>
@@ -13,9 +13,9 @@ To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
         devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
         jasowang@redhat.com
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 4/7] tools: hv: use getmntent in hv_vss_daemon
-Date: Wed, 24 Apr 2013 07:48:51 -0700
-Message-Id: <1366814934-4461-4-git-send-email-kys@microsoft.com>
+Subject: [PATCH 2/7] tools: hv: fix checks for origin of netlink message in hv_vss_daemon
+Date: Wed, 24 Apr 2013 07:48:49 -0700
+Message-Id: <1366814934-4461-2-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1366814934-4461-1-git-send-email-kys@microsoft.com>
 References: <1366814913-4422-1-git-send-email-kys@microsoft.com>
@@ -26,85 +26,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Olaf Hering <olaf@aepfle.de>
 
-As suggested by Paolo Bonzini, use getmntent instead of parsing output
-of mount(1).
+Similar to what commit 95a69adab9acfc3981c504737a2b6578e4d846ef ("tools:
+hv: Netlink source address validation allows DoS") does in
+hv_kvp_daemon, improve checks for origin of netlink connector message.
 
 Signed-off-by: Olaf Hering <olaf@aepfle.de>
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 ---
- tools/hv/hv_vss_daemon.c |   39 +++++++++++++++++++++------------------
- 1 files changed, 21 insertions(+), 18 deletions(-)
+ tools/hv/hv_vss_daemon.c |    8 +++++++-
+ 1 files changed, 7 insertions(+), 1 deletions(-)
 
 diff --git a/tools/hv/hv_vss_daemon.c b/tools/hv/hv_vss_daemon.c
-index 921c1be..a5da91d 100644
+index 2a03d0b..dc3eb1e 100644
 --- a/tools/hv/hv_vss_daemon.c
 +++ b/tools/hv/hv_vss_daemon.c
-@@ -23,6 +23,7 @@
- #include <sys/poll.h>
- #include <linux/types.h>
- #include <stdio.h>
-+#include <mntent.h>
- #include <stdlib.h>
- #include <unistd.h>
- #include <string.h>
-@@ -47,11 +48,10 @@ static int vss_operate(int operation)
- {
- 	char *fs_op;
- 	char cmd[512];
--	char buf[512];
--	FILE *file;
--	char *p;
--	char *x;
--	int error = 0;
-+	char match[] = "/dev/";
-+	FILE *mounts;
-+	struct mntent *ent;
-+	int error = 0, root_seen = 0;
+@@ -186,13 +186,19 @@ int main(void)
+ 		len = recvfrom(fd, vss_recv_buffer, sizeof(vss_recv_buffer), 0,
+ 				addr_p, &addr_l);
  
- 	switch (operation) {
- 	case VSS_OP_FREEZE:
-@@ -64,25 +64,28 @@ static int vss_operate(int operation)
- 		return -1;
- 	}
+-		if (len < 0 || addr.nl_pid) {
++		if (len < 0) {
+ 			syslog(LOG_ERR, "recvfrom failed; pid:%u error:%d %s",
+ 					addr.nl_pid, errno, strerror(errno));
+ 			close(fd);
+ 			return -1;
+ 		}
  
--	file = popen("mount | awk '/^\\/dev\\// { print $3}'", "r");
--	if (file == NULL)
-+	mounts = setmntent("/proc/mounts", "r");
-+	if (mounts == NULL)
- 		return -1;
- 
--	while ((p = fgets(buf, sizeof(buf), file)) != NULL) {
--		x = strchr(p, '\n');
--		*x = '\0';
--		if (!strncmp(p, "/", sizeof("/")))
-+	while((ent = getmntent(mounts))) {
-+		if (strncmp(ent->mnt_fsname, match, strlen(match)))
- 			continue;
--
--		sprintf(cmd, "%s %s %s", "fsfreeze ", fs_op, p);
-+		if (strcmp(ent->mnt_dir, "/") == 0) {
-+			root_seen = 1;
++		if (addr.nl_pid) {
++			syslog(LOG_WARNING, "Received packet from untrusted pid:%u",
++					addr.nl_pid);
 +			continue;
 +		}
-+		snprintf(cmd, sizeof(cmd), "fsfreeze %s '%s'", fs_op, ent->mnt_dir);
- 		syslog(LOG_INFO, "VSS cmd is %s\n", cmd);
--		error = system(cmd);
-+		error |= system(cmd);
- 	}
--	pclose(file);
-+	endmntent(mounts);
++
+ 		incoming_msg = (struct nlmsghdr *)vss_recv_buffer;
  
--	sprintf(cmd, "%s %s %s", "fsfreeze ", fs_op, "/");
--	syslog(LOG_INFO, "VSS cmd is %s\n", cmd);
--	error = system(cmd);
-+	if (root_seen) {
-+		sprintf(cmd, "fsfreeze %s /", fs_op);
-+		syslog(LOG_INFO, "VSS cmd is %s\n", cmd);
-+		error |= system(cmd);
-+	}
- 
- 	return error;
- }
+ 		if (incoming_msg->nlmsg_type != NLMSG_DONE)
 -- 
 1.7.4.1
 
