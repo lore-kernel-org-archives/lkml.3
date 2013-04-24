@@ -1,68 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755459Ab3DXNpj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 09:45:39 -0400
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:39884 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755196Ab3DXNpi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 09:45:38 -0400
+	id S1755543Ab3DXNqr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 09:46:47 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42968 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754377Ab3DXNqp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 09:46:45 -0400
+Date: Wed, 24 Apr 2013 15:46:41 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: "Florin9(doi)" <florin9doi@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: Re: Linux 3.9 input documentation patch
+In-Reply-To: <CALRtADMNGcJaArziv6be3tDZsi9uyWA=3OD+Vi4mpzY99TMJ-A@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1304241545091.29143@pobox.suse.cz>
+References: <CALRtADNMPv4MkJQAxF1y+iK9F2tGAiXsRrveazho5C6KSb4gcQ@mail.gmail.com> <CALRtADMNGcJaArziv6be3tDZsi9uyWA=3OD+Vi4mpzY99TMJ-A@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <1365532783-27425-1-git-send-email-lee.jones@linaro.org>
-References: <1365532783-27425-1-git-send-email-lee.jones@linaro.org>
-Date: Wed, 24 Apr 2013 15:45:37 +0200
-Message-ID: <CACRpkdYUT+5J-phV=ez-EkmA9EdfxwmDMApTssi+P3=mSE3cew@mail.gmail.com>
-Subject: Re: [PATCH 1/8] dmaengine: ste_dma40: Assign memcpy channels in the driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Arnd Bergmann <arnd@arndb.de>, Vinod Koul <vinod.koul@intel.com>,
-        Per Forlin <per.forlin@stericsson.com>, Dan Williams <djbw@fb.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 9, 2013 at 8:39 PM, Lee Jones <lee.jones@linaro.org> wrote:
+On Mon, 8 Apr 2013, Florin9(doi) wrote:
 
-> The channels reserved for memcpy are the same for all currently
-> supported platforms. With this in mind, we can ease the platform
-> data passing requirement by moving these assignments out from
-> platform code and place them directly into the driver.
->
-> Cc: Vinod Koul <vinod.koul@intel.com>
-> Cc: Dan Williams <djbw@fb.com>
-> Cc: Per Forlin <per.forlin@stericsson.com>
-> Acked-by: Arnd Bergmann <arnd@arndb.de>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> I have a patch for linux 3.9.
+> 
+> --- a/Documentation/input/alps.txt 2013-04-01 18:02:56.230177850 +0000
+> +++ b/Documentation/input/alps.txt 2013-04-01 18:03:15.010177850 +0000
+> @@ -225,18 +225,18 @@ packets.  This appears to only be used b
+> 
+>  For single-touch, the 6-byte packet format is:
+> 
+> - byte 0:    1    1    0    0    1    0    0    0
+> + byte 0:    1    1    0    0    1    p   mt    0
+>   byte 1:    0   x6   x5   x4   x3   x2   x1   x0
+>   byte 2:    0   y6   y5   y4   y3   y2   y1   y0
+>   byte 3:    0    M    R    L    1    m    r    l
+> - byte 4:   y10  y9   y8   y7  x10   x9   x8   x7
+> + byte 4:  y10   y9   y8   y7  x10   x9   x8   x7
+>   byte 5:    0   z6   z5   z4   z3   z2   z1   z0
+> 
+>  For mt, the format is:
+> 
+> - byte 0:    1    1    1    n3   1   n2   n1   x24
+> - byte 1:    1   y7   y6    y5  y4   y3   y2    y1
+> - byte 2:    ?   x2   x1   y12 y11  y10   y9    y8
+> - byte 3:    0  x23  x22   x21 x20  x19  x18   x17
+> - byte 4:    0   x9   x8    x7  x6   x5   x4    x3
+> - byte 5:    0  x16  x15   x14 x13  x12  x11   x10
+> \ No newline at end of file
+> + byte 0:    1    1    1   f2    1   f1   f0  x22
+> + byte 1:   ox   y6   y5   y4   y3   y2   y1   y0
+> + byte 2:   oy   x1   x0  y11  y10   y9   y8   y7
+> + byte 3:    0  x21  x20  x19    1  x18  x17  x16
+> + byte 4:    0   x8   x7   x6   x5   x4   x3   x2
+> + byte 5:    0  x15  x14  x13  x12  x11  x10   x9
+> \ No newline at end of file
 
-(...)
+Hi,
 
-> -/* Reserved event lines for memcpy only */
-> -static int dma40_memcpy_event[] = {
-> -       DB8500_DMA_MEMCPY_TX_0,
-> -       DB8500_DMA_MEMCPY_TX_1,
-> -       DB8500_DMA_MEMCPY_TX_2,
-> -       DB8500_DMA_MEMCPY_TX_3,
-> -       DB8500_DMA_MEMCPY_TX_4,
-> -       DB8500_DMA_MEMCPY_TX_5,
-> -};
+thanks for the patch.
 
-(...)
+Please resubmit it with proper changelog (describing why the old values 
+are wrong and the new ones are correct), your Signed-off-by: line (as 
+described in Documentation/SubmittingPatches) and to proper maintainers 
+ideally.
+linux-input@ and Dmitry added to CC.
 
-> +/* Reserved event lines for memcpy only. */
-> +static int dma40_memcpy_channels[] = { 56, 57, 58, 59, 60 };
+Thanks,
 
-So what's so bad with using the #defines?
-
-I would prefer if you took the entire content of
-arch/arm/mach-ux500/ste-dma40-db8500.h
-and copied into the DMA driver, so you atleast
-have a chance of understanding what these numbers
-are about.
-
-Yours,
-Linus Walleij
+-- 
+Jiri Kosina
+SUSE Labs
