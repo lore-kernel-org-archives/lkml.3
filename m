@@ -1,59 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757435Ab3DXTd4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 15:33:56 -0400
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:52176 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757165Ab3DXTdz (ORCPT
+	id S1757468Ab3DXTgY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 15:36:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43042 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757316Ab3DXTgX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 15:33:55 -0400
-MIME-Version: 1.0
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 24 Apr 2013 12:33:33 -0700
-Message-ID: <CALCETrVBor6fKwxP=+0mtJ4SjKn2YrFczSdXhazw3m8E5Sxx6A@mail.gmail.com>
-Subject: WT memory type on x86_64?
-To: linux-kernel@vger.kernel.org, x86@kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 24 Apr 2013 15:36:23 -0400
+Date: Wed, 24 Apr 2013 12:36:20 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Michael Neuling <mikey@neuling.org>, vda.linux@googlemail.com,
+        Nishanth Aravamudan <nacc@linux.vnet.ibm.com>,
+        Steve Munroe <sjmunroe@us.ibm.com>, linux-kernel@vger.kernel.org,
+        paulus@samba.org, viro@zeniv.linux.org.uk,
+        Ryan Arnold <ryanarn@us.ibm.com>, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH] powerpc: Add HWCAP2 aux entry
+Message-Id: <20130424123620.07e1c32890e53f758b92742b@linux-foundation.org>
+In-Reply-To: <1366677702.2886.9.camel@pasglop>
+References: <20130402212204.GA30438@linux.vnet.ibm.com>
+	<20130405070559.GE5082@concordia>
+	<27144.1366001074@ale.ozlabs.ibm.com>
+	<31546.1366255991@ale.ozlabs.ibm.com>
+	<32253.1366256478@ale.ozlabs.ibm.com>
+	<1366677702.2886.9.camel@pasglop>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For an upcoming (and, sadly, NDA'd [1]) project, I may need to use
-write-through memory.  I'd like to gauge how unpleasant this will be.
+On Tue, 23 Apr 2013 10:41:42 +1000 Benjamin Herrenschmidt <benh@kernel.crashing.org> wrote:
 
-AFAICT, modern CPUs allow the WT type to be set using MTRR or a PAT
-entry.  Sadly, MTRRs are in short supply, and the four fully-usable
-PAT slots are used for UC, UC-, WB, and WC.  I can keep my fingers
-crossed and hope that there are enough free MTRRs, or I could try to
-free up a PAT entry.
+> On Thu, 2013-04-18 at 13:41 +1000, Michael Neuling wrote:
+> > akpm,
+> > 
+> > If you're happy with this, is it something you can take in your tree?
+> 
+> Andrew ? Or give me an ack ? :-) I'm happy to carry this, we need that
+> rather urgently and we have the glibc folks on board.
 
-How nasty will the latter be?  I just looked at two rather different
-modern Sandy Bridge machines, and BIOS doesn't appear to set up any
-MTRRs in the WC or WP states.  As long as those MTRR types aren't
-used, I think the UC- PAT entry is useless -- it behaves identically
-to UC.  Lots of DRM drivers, though, seen to add a WC MTRR to cover
-video memory.  Is there any need for this on modern machines?  That
-is, are there any drivers that actually need the mtrr_add call to
-succeed on a machine that has a working PAT?
-
-If not, then here's a proposal:  At startup, if there are no WC or WP
-MTRRs and the CPU is new enough, then set a flag for an alternative
-PAT.  In alternative PAT mode, UC- is replaced with WT in the PAT and
-mtrr_add fails when attempting to add a WC or WP entry.  Add
-set_memory_wt, etc.  They fail in non-alternative-PAT mode.  This gets
-a bit unpleasant, since _PAGE_CACHE_UC_MINUS will have a different
-meaning depending on the mode.
-
-A less conservative proposal would be to stop using UC- in the PAT
-entirely.  The memtype code could learn to emulate UC- when there's an
-overlapping WC or WP MTRR.
-
-Any thoughts?  Are there known errata here?  Is there a good reason
-why the kernel needs UC-?  Will this be such a big can of worms that I
-should just hope there's an available MTRR?
-
---Andy
-
-[1]  I hope to be able to upstream all kernel code related to this
-project.  It will be neat -- I promise.  It will depend on convincing
-the people on the other end of the NDA that they should let me.
+Looks good to me - please proceed with the patch.
