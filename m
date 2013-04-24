@@ -1,65 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757420Ab3DXGuy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 02:50:54 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:45625 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754107Ab3DXGuw (ORCPT
+	id S1756387Ab3DXGxx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 02:53:53 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:34379 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752297Ab3DXGxv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 02:50:52 -0400
+	Wed, 24 Apr 2013 02:53:51 -0400
+Date: Wed, 24 Apr 2013 07:53:44 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arnd@arndb.de, linus.walleij@stericsson.com,
+        mian.yousaf.kaukab@stericsson.com, Felipe Balbi <balbi@ti.com>,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH 04/10] usb: musb: ux500: harden checks for platform data
+Message-ID: <20130424065344.GB17416@gmail.com>
+References: <1366729394-11406-1-git-send-email-lee.jones@linaro.org>
+ <1366729394-11406-5-git-send-email-lee.jones@linaro.org>
+ <5176E927.908@cogentembedded.com>
 MIME-Version: 1.0
-Date: Wed, 24 Apr 2013 14:50:51 +0800
-Message-ID: <CAPgLHd8cEvvxnRYK3H6FbykXsiyHRWFxV2LtSyayzp2gNejhFw@mail.gmail.com>
-Subject: [PATCH -next v3] gpu: host1x: gr2d: fix error return code in gr2d_submit()
-From: Wei Yongjun <weiyj.lk@gmail.com>
-To: grant.likely@linaro.org, rob.herring@calxeda.com,
-        thierry.reding@avionic-design.de, tbergstrom@nvidia.com,
-        amerilainen@nvidia.com
-Cc: yongjun_wei@trendmicro.com.cn, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5176E927.908@cogentembedded.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Hi Sergei,
 
-Fix to return -ENOENT in the host1x_bo lookup error handling
-case instead of 0, as done elsewhere in this function.
+> >  	struct musb_hdrc_platform_data *plat = dev->platform_data;
+> >-	struct ux500_musb_board_data *data = plat->board_data;
+> >+	struct ux500_musb_board_data *data;
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
----
-v1 -> v2: fix the patch subject
----
- drivers/gpu/host1x/drm/gr2d.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+> >-	param_array = data->dma_rx_param_array;
+> >+	param_array = (data) ? data->dma_rx_param_array : NULL;
+> 
+>    Why enclose a simple variable in parens?
 
-diff --git a/drivers/gpu/host1x/drm/gr2d.c b/drivers/gpu/host1x/drm/gr2d.c
-index 6a45ae0..146cd64 100644
---- a/drivers/gpu/host1x/drm/gr2d.c
-+++ b/drivers/gpu/host1x/drm/gr2d.c
-@@ -135,8 +135,10 @@ static int gr2d_submit(struct host1x_drm_context *context,
- 			goto fail;
- 
- 		bo = host1x_bo_lookup(drm, file, cmdbuf.handle);
--		if (!bo)
-+		if (!bo) {
-+			err = -ENOENT;
- 			goto fail;
-+		}
- 
- 		host1x_job_add_gather(job, bo, cmdbuf.words, cmdbuf.offset);
- 		num_cmdbufs--;
-@@ -158,8 +160,10 @@ static int gr2d_submit(struct host1x_drm_context *context,
- 		reloc->cmdbuf = cmdbuf;
- 		reloc->target = target;
- 
--		if (!reloc->target || !reloc->cmdbuf)
-+		if (!reloc->target || !reloc->cmdbuf) {
-+			err = -ENOENT;
- 			goto fail;
-+		}
- 	}
- 
- 	err = copy_from_user(job->waitchk, waitchks,
+Because 'data' is a pointer, so it contains a memory location, but if
+'plat->board_data' is NULL, then 'data' will be NULL (essentially
+memory location 0x00000000).
 
+So if we were to read-in to 'struct ux500_musb_board_data *data', by
+index 'dma_rx_param_array', which I believe is '0' in this case:
+
+struct ux500_musb_board_data {
+        void    **dma_rx_param_array;
+        void    **dma_tx_param_array;
+        bool (*dma_filter)(struct dma_chan *chan, void *filter_param);
+};
+
+... then we're saying take the data from this memory location:
+
+param_array = *((0x00000000)->(0x0));
+
+Which will cause a kernel Oops, due to the fact that address 0x0 isn't
+allocated to us, so you get something like:
+
+"Unable to handle kernel NULL pointer dereference at virtual address 00000000"
+
+Hope that helps.
+
+Kind regards,
+Lee
+
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
