@@ -1,84 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755842Ab3DXNzd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 09:55:33 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:45903 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755781Ab3DXNzc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 09:55:32 -0400
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: axboe@kernel.dk
-Cc: linux-kernel@vger.kernel.org, Namjae Jeon <linkinjeon@gmail.com>,
-        James Bottomley <JBottomley@Parallels.com>,
-        Namjae Jeon <namjae.jeon@samsung.com>, <stable@vger.kernel.org>
-Subject: [PATCH] block: fix max discard sectors limit
-Date: Wed, 24 Apr 2013 22:55:20 +0900
-Message-Id: <1366811721-2478-1-git-send-email-linkinjeon@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1755443Ab3DXOBy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 10:01:54 -0400
+Received: from fieldses.org ([174.143.236.118]:45039 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752893Ab3DXOBx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 10:01:53 -0400
+Date: Wed, 24 Apr 2013 10:01:52 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Malte =?utf-8?B?U2NocsO2ZGVy?= <maltesch@gmx.de>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: NFS4 sec=krb5 broken in 3.9-rc8
+Message-ID: <20130424140152.GA9794@fieldses.org>
+References: <5176E715.2070201@gmx.de>
+ <20130423215807.GL3676@fieldses.org>
+ <51777494.8010306@gmx.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <51777494.8010306@gmx.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: James Bottomley <JBottomley@Parallels.com>
+On Wed, Apr 24, 2013 at 07:58:44AM +0200, Malte Schröder wrote:
+> On 23.04.2013 23:58, J. Bruce Fields wrote:
+> > On Tue, Apr 23, 2013 at 09:55:01PM +0200, Malte Schröder wrote:
+> >> Hi,
+> >> when I update my server from kernel 3.8.5 to 3.9-rc8 I cannot mount its
+> >> NFS exports from clients using nfs4 and sec=krb5. Using sec=sys works,
+> >> using 3.8.5 also works good with both modes.
+> > 
+> > Could you get a network trace showing the failure
+> > 
+> > Run
+> > 
+> > 	tcpdump -s0 -wtmp.pcap
+> > 
+> > then send us tmp.pcap.
+> > 
+> > (You can also take a look at tmp.pcap yourself in wireshark--it may be
+> > obvious where the failure occurs.)
+> > 
+> > --b.
+> > 
+> 
+> The trace is attached. It contains two tries, the first using sec=sys,
+> the second sec=krb5. I used "mount -tnfs -overs=4,sec=krb5 gateway:/
+> /mnt". NFS-Utils have version 1.2.6.
 
-linux-v3.8-rc1 and later support for plug for blkdev_issue_discard with
-commit 0cfbcafcae8b7364b5fa96c2b26ccde7a3a296a9
-(block: add plug for blkdev_issue_discard )
+Looks like the context creation succeeds and then the first use of the
+new context (a PUTROOTFH+GETATTR) never gets a response.
 
-For example,
-1) DISCARD rq-1 with size size 4GB
-2) DISCARD rq-2 with size size 1GB
+Nothing interesting in the server's logs?
 
-If these 2 discard requests get merged, final request size will be 5GB.
-
-In this case, request's __data_len field may overflow as it can store
-max 4GB(unsigned int).
-
-This issue was observed while doing mkfs.f2fs on 5GB SD card:
-https://lkml.org/lkml/2013/4/1/292
-
-Info: sector size = 512
-Info: total sectors = 11370496 (in 512bytes)
-Info: zone aligned segment0 blkaddr: 512
-[  257.789764] blk_update_request: bio idx 0 >= vcnt 0
-
-mkfs process gets stuck in D state and I see the following in the dmesg:
-
-[  257.789733] __end_that: dev mmcblk0: type=1, flags=122c8081
-[  257.789764]   sector 4194304, nr/cnr 2981888/4294959104
-[  257.789764]   bio df3840c0, biotail df3848c0, buffer   (null), len
-1526726656
-[  257.789764] blk_update_request: bio idx 0 >= vcnt 0
-[  257.794921] request botched: dev mmcblk0: type=1, flags=122c8081
-[  257.794921]   sector 4194304, nr/cnr 2981888/4294959104
-[  257.794921]   bio df3840c0, biotail df3848c0, buffer   (null), len
-1526726656
-
-This patch fixes this issue.
-
-Reported-by: Max Filippov <jcmvbkbc@gmail.com>
-Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
-Tested-by: Max Filippov <jcmvbkbc@gmail.com>
-Cc: <stable@vger.kernel.org>
----
- include/linux/blkdev.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index 07aa5f6..ff636bd 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -844,7 +844,7 @@ static inline unsigned int blk_queue_get_max_sectors(struct request_queue *q,
- 						     unsigned int cmd_flags)
- {
- 	if (unlikely(cmd_flags & REQ_DISCARD))
--		return q->limits.max_discard_sectors;
-+		return min(q->limits.max_discard_sectors, UINT_MAX >> 9);
- 
- 	if (unlikely(cmd_flags & REQ_WRITE_SAME))
- 		return q->limits.max_write_same_sectors;
--- 
-1.7.9.5
-
+--b.
