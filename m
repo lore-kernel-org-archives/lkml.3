@@ -1,43 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758163Ab3DXJhv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 05:37:51 -0400
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:36153 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757887Ab3DXJhs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 05:37:48 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130423151511.GR5019@opensource.wolfsonmicro.com>
-References: <1366614565-3743-1-git-send-email-ks.giri@samsung.com>
-	<1366614565-3743-2-git-send-email-ks.giri@samsung.com>
-	<20130423151511.GR5019@opensource.wolfsonmicro.com>
-Date: Wed, 24 Apr 2013 15:07:47 +0530
-Message-ID: <CAKrE-KcGecFNnyKj9AdDYwBOw_OO4o_V2DMjHmYX092fh4EQgw@mail.gmail.com>
-Subject: Re: [PATCH 1/3] spi: s3c64xx: added support for polling mode
-From: Girish KS <girishks2000@gmail.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, grant.likely@secretlab.ca,
-        t.figa@samsung.com
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1758293Ab3DXJid (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 05:38:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13614 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756156Ab3DXJib (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 05:38:31 -0400
+From: Jiri Olsa <jolsa@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>, Borislav Petkov <bp@alien8.de>,
+        Stephane Eranian <eranian@google.com>, Sam Ravnborg <sam@ravnborg.org>,
+        David Ahern <dsahern@gmail.com>
+Subject: [PATCH 03/26] perf tools: Move arch check into config/Makefile
+Date: Wed, 24 Apr 2013 11:37:30 +0200
+Message-Id: <1366796273-4780-4-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1366796273-4780-1-git-send-email-jolsa@redhat.com>
+References: <1366796273-4780-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 23, 2013 at 8:45 PM, Mark Brown <broonie@kernel.org> wrote:
-> On Mon, Apr 22, 2013 at 12:39:23PM +0530, Girish K S wrote:
->> From: Girish K S <girishks2000@gmail.com>
->>
->> The 64xx spi driver supports partial polling mode.
->> Only the last chunk of the transfer length is transferred
->> or recieved in polling mode.
->
-> This appears to have a very noticable negative impact on SPI performance
-> on my S3C6410 based system.  Not delved into it to test why but are you
-> sure it's not mistakenly selecting polling?
+Moving arch check into config/Makefile.
 
-If forced to polling you should see this message "Unable to get SPI rx
-dma resource. Switching to poll mode". same if Tx dma resource is not
-available from platform data.
-Anyways let me cross check again on my tested systems.
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Borislav Petkov <bp@alien8.de>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Sam Ravnborg <sam@ravnborg.org>
+Cc: David Ahern <dsahern@gmail.com>
+---
+ tools/perf/Makefile        | 43 +++++++++++++++----------------------------
+ tools/perf/config/Makefile | 34 ++++++++++++++++++++++++++++++++++
+ 2 files changed, 49 insertions(+), 28 deletions(-)
+ create mode 100644 tools/perf/config/Makefile
+
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index c8fb0fd..518d540 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -55,37 +55,25 @@ include config/utilities.mak
+ $(OUTPUT)PERF-VERSION-FILE: .FORCE-PERF-VERSION-FILE
+ 	@$(SHELL_PATH) util/PERF-VERSION-GEN $(OUTPUT)
+ 
+-uname_M := $(shell uname -m 2>/dev/null || echo not)
+-
+-ARCH ?= $(shell echo $(uname_M) | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
+-				  -e s/arm.*/arm/ -e s/sa110/arm/ \
+-				  -e s/s390x/s390/ -e s/parisc64/parisc/ \
+-				  -e s/ppc.*/powerpc/ -e s/mips.*/mips/ \
+-				  -e s/sh[234].*/sh/ -e s/aarch64.*/arm64/ )
+-NO_PERF_REGS := 1
+-
+ CC = $(CROSS_COMPILE)gcc
+ AR = $(CROSS_COMPILE)ar
+ 
+-# Additional ARCH settings for x86
+-ifeq ($(ARCH),i386)
+-	override ARCH := x86
+-	NO_PERF_REGS := 0
+-	LIBUNWIND_LIBS = -lunwind -lunwind-x86
++# include config/Makefile by default and rule out
++# non-config cases
++config := 1
++
++# standalone clean
++ifeq ($(MAKECMDGOALS),clean)
++  config := 0
+ endif
+-ifeq ($(ARCH),x86_64)
+-	override ARCH := x86
+-	IS_X86_64 := 0
+-	ifeq (, $(findstring m32,$(EXTRA_CFLAGS)))
+-		IS_X86_64 := $(shell echo __x86_64__ | ${CC} -E -x c - | tail -n 1)
+-	endif
+-	ifeq (${IS_X86_64}, 1)
+-		RAW_ARCH := x86_64
+-		ARCH_CFLAGS := -DARCH_X86_64
+-		ARCH_INCLUDE = ../../arch/x86/lib/memcpy_64.S ../../arch/x86/lib/memset_64.S
+-	endif
+-	NO_PERF_REGS := 0
+-	LIBUNWIND_LIBS = -lunwind -lunwind-x86_64
++
++# tags cscope
++ifneq ($(filter tags cscope,$(MAKECMDGOALS)),)
++  config := 0
++endif
++
++ifeq ($(config),1)
++include config/Makefile
+ endif
+ 
+ # Treat warnings as errors unless directed not to
+@@ -857,7 +845,6 @@ ifeq ($(NO_PERF_REGS),0)
+ 	ifeq ($(ARCH),x86)
+ 		LIB_H += arch/x86/include/perf_regs.h
+ 	endif
+-	BASIC_CFLAGS += -DHAVE_PERF_REGS
+ endif
+ 
+ ifndef NO_STRLCPY
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+new file mode 100644
+index 0000000..fe317c2
+--- /dev/null
++++ b/tools/perf/config/Makefile
+@@ -0,0 +1,34 @@
++uname_M := $(shell uname -m 2>/dev/null || echo not)
++
++ARCH ?= $(shell echo $(uname_M) | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
++				  -e s/arm.*/arm/ -e s/sa110/arm/ \
++				  -e s/s390x/s390/ -e s/parisc64/parisc/ \
++				  -e s/ppc.*/powerpc/ -e s/mips.*/mips/ \
++				  -e s/sh[234].*/sh/ -e s/aarch64.*/arm64/ )
++NO_PERF_REGS := 1
++
++# Additional ARCH settings for x86
++ifeq ($(ARCH),i386)
++	override ARCH := x86
++	NO_PERF_REGS := 0
++	LIBUNWIND_LIBS = -lunwind -lunwind-x86
++endif
++
++ifeq ($(ARCH),x86_64)
++	override ARCH := x86
++	IS_X86_64 := 0
++	ifeq (, $(findstring m32,$(EXTRA_CFLAGS)))
++		IS_X86_64 := $(shell echo __x86_64__ | ${CC} -E -x c - | tail -n 1)
++	endif
++	ifeq (${IS_X86_64}, 1)
++		RAW_ARCH := x86_64
++		ARCH_CFLAGS := -DARCH_X86_64
++		ARCH_INCLUDE = ../../arch/x86/lib/memcpy_64.S ../../arch/x86/lib/memset_64.S
++	endif
++	NO_PERF_REGS := 0
++	LIBUNWIND_LIBS = -lunwind -lunwind-x86_64
++endif
++
++ifeq ($(NO_PERF_REGS),0)
++        BASIC_CFLAGS += -DHAVE_PERF_REGS
++endif
+-- 
+1.7.11.7
+
