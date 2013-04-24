@@ -1,122 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932279Ab3DXJgh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 05:36:37 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:39309 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757642Ab3DXJgf (ORCPT
+	id S1758156Ab3DXJh3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 05:37:29 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:59863 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757887Ab3DXJh1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 05:36:35 -0400
-Date: Wed, 24 Apr 2013 02:36:14 -0700
-From: tip-bot for Joonsoo Kim <tipbot@zytor.com>
-Message-ID: <tip-d31980846f9688db3ee3e5863525c6ff8ace4c7c@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, vatsa@linux.vnet.ibm.com, hpa@zytor.com,
-        mingo@kernel.org, davidlohr.bueso@hp.com, a.p.zijlstra@chello.nl,
-        peterz@infradead.org, jason.low2@hp.com, tglx@linutronix.de,
-        iamjoonsoo.kim@lge.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, vatsa@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, davidlohr.bueso@hp.com,
-        a.p.zijlstra@chello.nl, peterz@infradead.org, jason.low2@hp.com,
-        iamjoonsoo.kim@lge.com, tglx@linutronix.de
-In-Reply-To: <1366705662-3587-5-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1366705662-3587-5-git-send-email-iamjoonsoo.kim@lge.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched:
-  Move up affinity check to mitigate useless redoing overhead
-Git-Commit-ID: d31980846f9688db3ee3e5863525c6ff8ace4c7c
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+	Wed, 24 Apr 2013 05:37:27 -0400
+X-AuditID: cbfee68e-b7f0d6d0000053ce-5d-5177a7c131a5
+Message-id: <1366796168.31792.23.camel@kjgkr>
+Subject: Re: [PATCH 2/2] f2fs: add REQ_META about metadata requests for submit
+ bio
+From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Reply-to: jaegeuk.kim@samsung.com
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Date: Wed, 24 Apr 2013 18:36:08 +0900
+In-reply-to: <CAKYAXd-YL-OwW2bRc+YS6E8_OtmKk+rC-LXzc4p6X3Veitee5A@mail.gmail.com>
+References: <1366388860-18735-1-git-send-email-linkinjeon@gmail.com>
+ <1366598966.31792.1.camel@kjgkr>
+ <CAKYAXd_VCEdN-qfu4-yZk847hYbBi=5dtGFKYGPYJDRQ0PAkKQ@mail.gmail.com>
+ <CAKYAXd-YL-OwW2bRc+YS6E8_OtmKk+rC-LXzc4p6X3Veitee5A@mail.gmail.com>
+Organization: samsung
+Content-type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature"; boundary="=-baPUF0DdroKIgk6+aeXj"
+X-Mailer: Evolution 3.2.3-0ubuntu6
+MIME-version: 1.0
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmphleLIzCtJLcpLzFFi42I5/e+Zvu7B5eWBBhvWq1pc3J1qcf3uLWaL
+	S4vcLfbsPclicXnXHDaLH9PrHdg8ds66y+6xe8FnJo++LasYPT5vkgtgieKySUnNySxLLdK3
+	S+DKOHP2DFNBh0DFzCXcDYyfeLsYOTkkBEwk/vSdZYewxSQu3FvP1sXIxSEksIxRYseXaUww
+	RedXzWSCSCxilPj29QlU1WtGib6Hi8CqeAV0JaY9aGQFsYUFQiTu7JsDZHNwsAloS2zebwAS
+	FhJQlHi7/y5YWERATWLCs1SQMcwCuxglTv6dywZSwyKgKnHy+E1GEJtTIFhiy9eNjBC7vjJK
+	fD61CayIX0BU4mTrJ7AiZoEqidcT3kK9oCSxu72THeIeQYkfk++xgDRLCPRySHy4uocJYoOA
+	xLfJh1hArpAQkJXYdIAZoldS4uCKGywTGMVnIRk7C8koiLimROv23+wQtrbEsoWvmSFsW4l1
+	695D1dhIbLq6gBHClpfY/nYO8wJG9lWMoqkFyQXFSelFRnrFibnFpXnpesn5uZsYIVHdt4Px
+	5gHrQ4xVQCdOZJYSTc4HJoW8knhDYzMjC1MTU2Mjc0szqggrifOqtVgHCgmkJ5akZqemFqQW
+	xReV5qQWH2Jk4uCUamDMK3txv04jRDiuku9U2b5Plf+1iydyvTix30Tbc4fefSbNVK/D7m+1
+	vSfXPBIVXh766+23jTv/HFmpa933xitKxfMWzxfBO6/XqwQ+uG82j6eyRdS6OsLgAeuFh3/u
+	237qcH4lo1Psbr5UtjaktZxDtzIyzcYgYJN34J70Hd77hCJfX/mozKfEUpyRaKjFXFScCABD
+	/WW8FwMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmplk+LIzCtJLcpLzFFi42I5/e+xgO7B5eWBBjP7FCwu7k61uH73FrPF
+	pUXuFnv2nmSxuLxrDpvFj+n1DmweO2fdZffYveAzk0ffllWMHp83yQWwRDUw2mSkJqakFimk
+	5iXnp2TmpdsqeQfHO8ebmhkY6hpaWpgrKeQl5qbaKrn4BOi6ZeYArVZSKEvMKQUKBSQWFyvp
+	22GaEBripmsB0xih6xsSBNdjZIAGEtYxZpw5e4apoEOgYuYS7gbGT7xdjJwcEgImEudXzWSC
+	sMUkLtxbz9bFyMUhJLCIUeLb1ydQzmtGib6Hi8CqeAV0JaY9aGQFsYUFQiTu7JsDZHNwsAlo
+	S2zebwASFhJQlHi7/y5YWERATWLCs1SQMcwCuxglTv6dywZSwyKgKnHy+E1GEJtTIFhiy9eN
+	jBC7vjJKfD61CayIX0BU4mTrJ7AiZoEqidcT3rJDXKoksbu9kx3iHkGJH5PvsUxgFJyFpGwW
+	khREXFOidftvdghbW2LZwtfMELatxLp176FqbCQ2XV3ACGHLS2x/O4d5ASP7KkbR1ILkguKk
+	9FxDveLE3OLSvHS95PzcTYzglPFMagfjygaLQ4wCHIxKPLwvZpUFCrEmlhVX5h5iVAGa82jD
+	6guMUix5+XmpSiK8nvPLA4V4UxIrq1KL8uOLSnNSiw8xTmQEhsdEZinR5HxgossriTc0NjEz
+	sjQyszAyMTenpbCSOO+BVutAIYH0xJLU7NTUgtQimKOYODilGhhjmTov782dlfVgWVCCqdjX
+	SQ7mezMLHsautq3N5vCLXKvAFh7EeyLe8ZSriW//5C9/b01VW7Nh992jqcuy1WVLtDqdCoqf
+	nA+MLxH4vO3oVomLL5zFrjVYlSawKVvUyS+pXW24xuqSyan3D922PzjRETiNUVv8rNh8PpbW
+	ZIMJpk5O5cp+n5RYijMSDbWYi4oTARHoQE6YAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d31980846f9688db3ee3e5863525c6ff8ace4c7c
-Gitweb:     http://git.kernel.org/tip/d31980846f9688db3ee3e5863525c6ff8ace4c7c
-Author:     Joonsoo Kim <iamjoonsoo.kim@lge.com>
-AuthorDate: Tue, 23 Apr 2013 17:27:40 +0900
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 24 Apr 2013 08:52:44 +0200
 
-sched: Move up affinity check to mitigate useless redoing overhead
+--=-baPUF0DdroKIgk6+aeXj
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Currently, LBF_ALL_PINNED is cleared after affinity check is
-passed. So, if task migration is skipped by small load value or
-small imbalance value in move_tasks(), we don't clear
-LBF_ALL_PINNED. At last, we trigger 'redo' in load_balance().
+2013-04-24 (=EC=88=98), 15:08 +0900, Namjae Jeon:
+> >>>
+> >>> +	if (type =3D=3D META)
+> >>
+> >> Should be if (btype =3D=3D META).
+> >> Thanks,
+> > Yes, Right :)
+> > Thanks for fixing.
+> Hi. Jaegeuk.
+> Should I resend the fixed patch as above your comment ?
 
-Imbalance value is often so small that any tasks cannot be moved
-to other cpus and, of course, this situation may be continued
-after we change the target cpu. So this patch move up affinity
-check code and clear LBF_ALL_PINNED before evaluating load value
-in order to mitigate useless redoing overhead.
+I can handle it. :)
+Thanks,
 
-In addition, re-order some comments correctly.
+>=20
+> Thanks.
+> >>
+> >>> +		rw |=3D REQ_META;
+> >>> +
+> >>>  	if (sbi->bio[btype]) {
+> >>>  		struct bio_private *p =3D sbi->bio[btype]->bi_private;
+> >>>  		trace_f2fs_do_submit_bio(sbi->sb, btype, sync,
+> >>
+> >> --
+> >> Jaegeuk Kim
+> >> Samsung
+> >>
+> >
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" i=
+n
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Tested-by: Jason Low <jason.low2@hp.com>
-Cc: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-Cc: Davidlohr Bueso <davidlohr.bueso@hp.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1366705662-3587-5-git-send-email-iamjoonsoo.kim@lge.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- kernel/sched/fair.c | 16 +++++++---------
- 1 file changed, 7 insertions(+), 9 deletions(-)
+--=20
+Jaegeuk Kim
+Samsung
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index dfa92b7..b8ef321 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -3896,10 +3896,14 @@ int can_migrate_task(struct task_struct *p, struct lb_env *env)
- 	int tsk_cache_hot = 0;
- 	/*
- 	 * We do not migrate tasks that are:
--	 * 1) running (obviously), or
-+	 * 1) throttled_lb_pair, or
- 	 * 2) cannot be migrated to this CPU due to cpus_allowed, or
--	 * 3) are cache-hot on their current CPU.
-+	 * 3) running (obviously), or
-+	 * 4) are cache-hot on their current CPU.
- 	 */
-+	if (throttled_lb_pair(task_group(p), env->src_cpu, env->dst_cpu))
-+		return 0;
-+
- 	if (!cpumask_test_cpu(env->dst_cpu, tsk_cpus_allowed(p))) {
- 		int new_dst_cpu;
- 
-@@ -3967,9 +3971,6 @@ static int move_one_task(struct lb_env *env)
- 	struct task_struct *p, *n;
- 
- 	list_for_each_entry_safe(p, n, &env->src_rq->cfs_tasks, se.group_node) {
--		if (throttled_lb_pair(task_group(p), env->src_rq->cpu, env->dst_cpu))
--			continue;
--
- 		if (!can_migrate_task(p, env))
- 			continue;
- 
-@@ -4021,7 +4022,7 @@ static int move_tasks(struct lb_env *env)
- 			break;
- 		}
- 
--		if (throttled_lb_pair(task_group(p), env->src_cpu, env->dst_cpu))
-+		if (!can_migrate_task(p, env))
- 			goto next;
- 
- 		load = task_h_load(p);
-@@ -4032,9 +4033,6 @@ static int move_tasks(struct lb_env *env)
- 		if ((load / 2) > env->imbalance)
- 			goto next;
- 
--		if (!can_migrate_task(p, env))
--			goto next;
--
- 		move_task(p, env);
- 		pulled++;
- 		env->imbalance -= load;
+--=-baPUF0DdroKIgk6+aeXj
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAABAgAGBQJRd6eIAAoJEEAUqH6CSFDSvcsP/jY5ZZF57s8d0VAAmQ/mQCaz
+sCzj7o0uRwv4RsUhKU4uFy6MRig39y2FUFlQKHpzOHGStKqObqjSiV6fTk4CA6gj
+0S7bKuJ+ydwaswkohr3/cAJwLXWuTZ9tgIOhf8fCvY3qS5m9EoBBDGopI0NKkLcF
+28wxN5ZZuNEGTdHy+1EOHpfUQZL4YuLizhlfMTMHW2BQpUHFpfMh4QQBjnuoG0ux
+mmhndsV5G5MXD+YECeZolnnXVMWuVEzc2vjYDLwAuKgbqPcnB+y7ldu0qzbf5jVm
+YRu/HSZXWmr03r8ZVV7yQRZoM0LMUEx68qVgNu/qGxCE5DXbn929OnbHh6PqEf3A
+bly4EY83gj3oEn1Iihm9Wrt6QnHRZKkbrj/Fbub7+ZAczmwekroOPsKOuhEpn+7Z
+YXaNHPlapSWnP4hLdLdFTuq3eSPJtz3rKNrMtN/OEff7ALEZrxnuBfkW9KoAfyU4
+S1G6+CBOIUzfTiqU109J53sgwLAQ9H1p+vrIKDlsRgmF0297HHXJ2RHZv9UhovIm
+XXgrGkPhfYsvJUe+L+HtnLNctN1+27W4eqy0miGomuB0Nd7Dv8vSnWj1z5rSAzPB
+rGqMknkEx3iKD3/v+aPS7kYkuuBLhp8Z1m8m7Jic7HPpl6QRZn5hjS1XfKIgDlXE
+XeWi93J2LgAESCtP/R76
+=qsZZ
+-----END PGP SIGNATURE-----
+
+--=-baPUF0DdroKIgk6+aeXj--
+
