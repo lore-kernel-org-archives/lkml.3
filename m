@@ -1,134 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758273Ab3DXLpq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 07:45:46 -0400
-Received: from co9ehsobe005.messaging.microsoft.com ([207.46.163.28]:28904
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758253Ab3DXLpo (ORCPT
+	id S1758288Ab3DXLqX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 07:46:23 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:43133 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757884Ab3DXLqV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 07:45:44 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 3
-X-BigFish: VS3(zzc8kzz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275bhz2dh2a8h668h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1155h)
-From: Varun Sethi <Varun.Sethi@freescale.com>
-To: <joro@8bytes.org>, <iommu@lists.linux-foundation.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        <galak@kernel.crashing.org>, <benh@kernel.crashing.org>,
-        <stuart.yoder@freescale.com>, <scottwood@freescale.com>
-CC: Varun Sethi <Varun.Sethi@freescale.com>
-Subject: [PATCH 1/2 v15] iommu/fsl: Add additional iommu attributes required by the PAMU driver.
-Date: Wed, 24 Apr 2013 17:05:50 +0530
-Message-ID: <1366803351-17429-1-git-send-email-Varun.Sethi@freescale.com>
-X-Mailer: git-send-email 1.7.4.1
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+	Wed, 24 Apr 2013 07:46:21 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: tj@kernel.org
+Cc: davem@davemloft.net, airlied@redhat.com, axboe@kernel.dk,
+        tglx@linutronix.de, peterz@infradead.org, mingo@redhat.com,
+        rostedt@goodmis.org, linux-rt-users@vger.kernel.org,
+        linux-kernel@vger.kernel.org, robin.randhawa@arm.com,
+        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
+        charles.garcia-tobin@arm.com, arvind.chauhan@arm.com,
+        linaro-kernel@lists.linaro.org, patches@linaro.org,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH V5 0/5] Queue work on power efficient wq
+Date: Wed, 24 Apr 2013 17:12:52 +0530
+Message-Id: <cover.1366803121.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added the following domain attributes for the FSL PAMU driver:
-1. Added new iommu stash attribute, which allows setting of the
-   LIODN specific stash id parameter through IOMMU API.
-2. Added an attribute for enabling/disabling DMA to a particular
-   memory window.
-3. Added domain attribute to check for PAMUV1 specific constraints.
+This patchset was called: "Create sched_select_cpu() and use it for workqueues"
+for the first three versions.
 
-Signed-off-by: Varun Sethi <Varun.Sethi@freescale.com>
----
-v15 changes:
-- Moved fsl_pamu_stash.h under arch/powerpc/include/asm.
-v14 changes:
-- Add FSL prefix to PAMU attributes.
-v13 changes:
-- created a new file include/linux/fsl_pamu_stash.h for stash
-attributes.
-v12 changes:
-- Moved PAMU specifc stash ids and structures to PAMU header file.
-- no change in v11.
-- no change in v10.
- arch/powerpc/include/asm/fsl_pamu_stash.h |   39 +++++++++++++++++++++++++++++
- include/linux/iommu.h                     |   16 ++++++++++++
- 2 files changed, 55 insertions(+), 0 deletions(-)
- create mode 100644 arch/powerpc/include/asm/fsl_pamu_stash.h
+Earlier discussions over v3, v2 and v1 can be found here:
+https://lkml.org/lkml/2013/3/18/364
+http://lists.linaro.org/pipermail/linaro-dev/2012-November/014344.html
+http://www.mail-archive.com/linaro-dev@lists.linaro.org/msg13342.html
 
-diff --git a/arch/powerpc/include/asm/fsl_pamu_stash.h b/arch/powerpc/include/asm/fsl_pamu_stash.h
-new file mode 100644
-index 0000000..caa1b21
---- /dev/null
-+++ b/arch/powerpc/include/asm/fsl_pamu_stash.h
-@@ -0,0 +1,39 @@
-+/*
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License, version 2, as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-+ *
-+ * Copyright (C) 2013 Freescale Semiconductor, Inc.
-+ *
-+ */
-+
-+#ifndef __FSL_PAMU_STASH_H
-+#define __FSL_PAMU_STASH_H
-+
-+/* cache stash targets */
-+enum pamu_stash_target {
-+	PAMU_ATTR_CACHE_L1 = 1,
-+	PAMU_ATTR_CACHE_L2,
-+	PAMU_ATTR_CACHE_L3,
-+};
-+
-+/*
-+ * This attribute allows configuring stashig specific parameters
-+ * in the PAMU hardware.
-+ */
-+
-+struct pamu_stash_attribute {
-+	u32 	cpu;	/* cpu number */
-+	u32 	cache;	/* cache to stash to: L1,L2,L3 */
-+};
-+
-+#endif  /* __FSL_PAMU_STASH_H */
-diff --git a/include/linux/iommu.h b/include/linux/iommu.h
-index 2727810..313d17a 100644
---- a/include/linux/iommu.h
-+++ b/include/linux/iommu.h
-@@ -57,10 +57,26 @@ struct iommu_domain {
- #define IOMMU_CAP_CACHE_COHERENCY	0x1
- #define IOMMU_CAP_INTR_REMAP		0x2	/* isolates device intrs */
- 
-+/*
-+ * Following constraints are specifc to FSL_PAMUV1:
-+ *  -aperture must be power of 2, and naturally aligned
-+ *  -number of windows must be power of 2, and address space size
-+ *   of each window is determined by aperture size / # of windows
-+ *  -the actual size of the mapped region of a window must be power
-+ *   of 2 starting with 4KB and physical address must be naturally
-+ *   aligned.
-+ * DOMAIN_ATTR_FSL_PAMUV1 corresponds to the above mentioned contraints.
-+ * The caller can invoke iommu_domain_get_attr to check if the underlying
-+ * iommu implementation supports these constraints.
-+ */
-+
- enum iommu_attr {
- 	DOMAIN_ATTR_GEOMETRY,
- 	DOMAIN_ATTR_PAGING,
- 	DOMAIN_ATTR_WINDOWS,
-+	DOMAIN_ATTR_FSL_PAMU_STASH,
-+	DOMAIN_ATTR_FSL_PAMU_ENABLE,
-+	DOMAIN_ATTR_FSL_PAMUV1,
- 	DOMAIN_ATTR_MAX,
- };
- 
+V4 is here:
+https://lkml.org/lkml/2013/3/31/55
+
+Workqueues can be performance or power oriented. For performance we may want to
+keep them running on a single cpu, so that it remains cache hot. For power we
+can give scheduler the liberty to choose target cpu for running work handler.
+
+Later one (Power oriented WQ) can be achieved if the workqueue is allocated with
+WQ_UNBOUND flag. Enabling CONFIG_WQ_POWER_EFFICIENT will set
+'wq_power_efficient' to 'true'. Setting 'power_efficient' boot param will
+override value of 'wq_power_efficient' variable. When 'wq_power_efficient' is
+set to 'true', we will convert WQ_POWER_EFFICIENT flag to WQ_UNBOUND on wq
+allocation. And so scheduler will have the liberty to choose where to run this
+work.
+
+Here we are migrating few users of workqueues to WQ_POWER_EFFICIENT. These
+drivers are found to be very much active on idle or lightly busy system and
+using WQ_POWER_EFFICIENT for these gave impressive results.
+
+These would be used in power saving mode only if relevant configs are enabled
+at compile time or in bootargs. Otherwise behavior is unchanged.
+
+Setup:
+-----
+- ARM Vexpress TC2 - big.LITTLE CPU
+- Core 0-1: A15, 2-4: A7
+- rootfs: linaro-ubuntu-devel
+
+This patchset has been tested on a big LITTLE system (heterogeneous) but is
+useful for all other homogeneous systems as well. During these tests audio was
+played in background using aplay.
+
+Results:
+-------
+
+Cluster A15 Energy      Cluster A7 Energy       Total
+-------------------------      -----------------------       ------
+
+Without this patchset (Energy in Joules):
+---------------------------------------------------
+
+0.151162                2.183545                2.334707
+0.223730                2.687067                2.910797
+0.289687                2.732702                3.022389
+0.454198                2.745908                3.200106
+0.495552                2.746465                3.242017
+
+Average:
+0.322866                2.619137                2.942003
+
+
+With this patchset (Energy in Joules):
+-----------------------------------------------
+
+0.226421                2.283658                2.510079
+0.151361                2.236656                2.388017
+0.197726                2.249849                2.447575
+0.221915                2.229446                2.451361
+0.347098                2.257707                2.604805
+
+Average:
+0.2289042              2.2514632              2.4803674
+
+Above tests are repeated multiple times and events are tracked using trace-cmd
+and analysed using kernelshark. And it was easily noticeable that idle time for
+many cpus has increased considerably, which eventually saved some power.
+
+V4->V5:
+-------
+- Created new wq flag: WQ_POWER_EFFICIENT, config option:
+  CONFIG_WQ_POWER_EFFICIENT and kernel param workqueue.power_efficient.
+- Created few system wide workqueues aligned towards power saving.
+
+V3->V4:
+-------
+- Dropped changes to kernel/sched directory and hence
+  sched_select_non_idle_cpu().
+- Dropped queue_work_on_any_cpu()
+- Created system_freezable_unbound_wq
+- Changed all patches accordingly.
+
+V2->V3:
+-------
+- Dropped changes into core queue_work() API, rather create *_on_any_cpu()
+  APIs
+- Dropped running timers migration patch as that was broken
+- Migrated few users of workqueues to use *_on_any_cpu() APIs.
+
+Viresh Kumar (5):
+  workqueues: Introduce new flag WQ_POWER_EFFICIENT for power oriented
+    workqueues
+  workqueue: Add system wide power_efficient workqueues
+  PHYLIB: queue work on system_power_efficient_wq
+  block: queue work on power efficient wq
+  fbcon: queue work on power efficient wq
+
+ Documentation/kernel-parameters.txt | 17 +++++++++++++++++
+ block/blk-core.c                    |  3 ++-
+ block/blk-ioc.c                     |  3 ++-
+ block/genhd.c                       | 12 ++++++++----
+ drivers/net/phy/phy.c               |  9 +++++----
+ drivers/video/console/fbcon.c       |  2 +-
+ include/linux/workqueue.h           | 10 ++++++++++
+ kernel/power/Kconfig                | 19 +++++++++++++++++++
+ kernel/workqueue.c                  | 24 +++++++++++++++++++++++-
+ 9 files changed, 87 insertions(+), 12 deletions(-)
+
 -- 
-1.7.4.1
-
+1.7.12.rc2.18.g61b472e
 
