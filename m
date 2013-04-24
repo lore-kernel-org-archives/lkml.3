@@ -1,103 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758436Ab3DXVvO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 17:51:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26421 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758211Ab3DXVvN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 17:51:13 -0400
-Date: Wed, 24 Apr 2013 17:51:03 -0400
-From: Josh Boyer <jwboyer@redhat.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: Kay Sievers <kay@vrfy.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Eric Paris <eparis@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Christian Kujau <lists@nerdbynature.de>,
-        "# 3.4.x" <stable@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, kzak@redhat.com
-Subject: Re: [PATCH v2] kmsg: Honor dmesg_restrict sysctl on /dev/kmsg
-Message-ID: <20130424215103.GI15272@hansolo.jdub.homelinux.org>
-References: <1256775981.281402.1364864751771.JavaMail.root@redhat.com>
- <CAGXu5jLU40Vzx+bNyPSArBt_yYNO9sPJ3yLj7z3Yq=pH22W1Gw@mail.gmail.com>
- <20130409005050.GE18176@hansolo.jdub.homelinux.org>
- <20130409154820.GE32476@hansolo.jdub.homelinux.org>
- <CAGXu5jLs1ghuCwcu7crOG1OHuiaP3hmzYY410br_puc9i82-2g@mail.gmail.com>
- <CAPXgP10Vd3Ucxn77WX7wzQoaUmy-JdOBWvYv4zpGSu9qcd=GoQ@mail.gmail.com>
- <20130424175835.GF15272@hansolo.jdub.homelinux.org>
- <CAGXu5jLaQ=Amui3i5+MyG_3HOVnK-1ZoaLqw=jFDwaQCzE+4qw@mail.gmail.com>
- <20130424212112.GH15272@hansolo.jdub.homelinux.org>
- <CAGXu5jJweZVLhz0pP6=Woud=aqAKgNmG-7T5WKYdmWR4gxcw9w@mail.gmail.com>
+	id S1758427Ab3DXVyx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 17:54:53 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:34232 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758090Ab3DXVyw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 17:54:52 -0400
+Message-ID: <5178549A.7010402@canonical.com>
+Date: Wed, 24 Apr 2013 16:54:34 -0500
+From: Dave Chiluk <chiluk@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGXu5jJweZVLhz0pP6=Woud=aqAKgNmG-7T5WKYdmWR4gxcw9w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+CC: "bfields@fieldses.org" <bfields@fieldses.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] NFSv4: Use exponential backoff delay for NFS4_ERRDELAY
+References: <1366836949-18465-1-git-send-email-chiluk@canonical.com> <1366838926.22397.25.camel@leira.trondhjem.org>
+In-Reply-To: <1366838926.22397.25.camel@leira.trondhjem.org>
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/mixed;
+ boundary="------------080807040006020205000201"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 24, 2013 at 02:36:39PM -0700, Kees Cook wrote:
-> >>
-> >> So, the problem here is the expectation of privileges. The /proc/kmsg
-> >> usage pattern was:
-> >>
-> >> open /proc/kmsg with CAP_SYSLOG
-> >> drop CAP_SYSLOG
-> >> read /proc/kmsg forever
-> >
-> > This doesn't change the /proc interface at all.
+This is a multi-part message in MIME format.
+--------------080807040006020205000201
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+
+On 04/24/2013 04:28 PM, Myklebust, Trond wrote:
+> On Wed, 2013-04-24 at 15:55 -0500, Dave Chiluk wrote:
+>> Changing the retry to start at NFS4_POLL_RETRY_MIN and exponentially grow
+>> to NFS4_POLL_RETRY_MAX allow for faster handling of these error conditions.
+>>
+>> Additionally this alleviates an interoperability problem with the AIX NFSv4
+>> Server.  The AIX server frequently (2 out of 3) returns NFS4ERR_DELAY, on a
+>> close when it happens in close proximity to a RELEASE_LOCKOWNER.  This would
+>> cause a linux client to hang for 15 seconds.
 > 
-> Right, I meant that Kay's assertion that /proc/kmsg is "legacy" means
-> he expects syslog daemons to switch to using /dev/kmsg.
+> Hi Dave,
 > 
-> >> If we change the FILE vs CALL and OPEN vs READ stuff here, we're lying
-> >> to the API about what's happening. If we use this patch, then we can't
-> >> use /dev/kmsg in the same way (i.e. running without privileges).
-> >
-> > Uh... Yes we can.  I tested it as a normal user.  It works just fine
-> > running without privs and without CAP_SYSLOG, like it did before there
-> > was a patch at all.  It also honors dmesg_restrict in devkmsg_read.
-> > I'm confused why you think this doesn't work?
+> The AIX server is not being motivated by any requirements in the NFSv4
+> spec here, so I fail to see the reason why the behaviour that you
+> describe can justify changing the client. It is not at all obvious to me
+> that we should be retrying aggressively when NFSv4 servers return
+> NFS4ERR_DELAY. What makes 1/10sec more correct in these situations than
+> the exising 15 seconds?
+
+I agree with you that AIX is at fault, and that the preferable situation
+for the linux client would be for AIX to not return NFS4ERR_DELAY in
+this use case.  I have attached a simple program that causes exacerbates
+the problem on the AIX server.  I have already had a conference call
+with AIX NFS development about this issue, where I vehemently tried to
+convince them to fix their server.  Unfortunately as I don't have much
+reputation in the NFS community, I was unable to convince them to do the
+right thing.  I would be more than happy to set up another call, if
+someone higher up in the linux NFS hierarchy would be willing to
+participate.
+
+That being said, I think implementing an exponential backoff is an
+improvement in the client regardless of what AIX is doing.  If a server
+needs only 2 seconds to process a request for which NFS4ERR_DELAY was
+returned, this algorithm would get the client back and running after
+only 2.1 seconds of elapsed time.  Whereas the current dumb algorithm
+would simply wait 15 seconds.  This is the reason that I implemented
+this change.
+
+
+> The motivation for doing it in the case of OPEN, SETATTR, etc is
+> clearer: those operations may require the server to recall a delegation,
+> in which case aggressive retries are in order since delegation recalls
+> are usually fast.
+> The motivation in the case of LOCK is less clear, but it is basically
+> down to the fact that NFSv4 has a polling model for doing blocking
+> locks.
+
+> In all other cases, why should we be treating NFS4ERR_DELAY any
+> differently from how we treat NFS3ERR_JUKEBOX in NFSv3?
 > 
-> I don't think I was clear. There are two use-cases, as I see it:
-> 
-> - normal user running dmesg(1)
-> - system daemon pulling kernel syslog and putting into userspace (e.g.
-> /var/log/kern.log).
+> Note that if we do decide that changing the client is the right thing,
+> then I don't want the patch to add new fields to struct rpc_task. That's
+> the wrong layer for storing NFSv4 client specific data.
 
-Ah.
+This is something that I was concerned about as well, but I could not
+find another persistent way to do this.  I am open to suggestions of
+which structures would be more acceptable.
 
-> In the dmesg(1) case, we're fine. It was using syscalls, now it can
-> use /dev/kmsg since open isn't checked, just the read action. That's
-> all cool by me.
+Thanks,
+Dave.
 
-OK.
 
-> In the daemon case, it's nice to be able to drop privileges after
-> setting up resources. The past was open /proc/kmsg with CAP_SYS_ADMIN,
-> then drop CAP_SYS_ADMIN and keep reading. Then later CAP_SYS_LOG was
-> introduced. So if a daemon switched from /proc/kmsg to /dev/kmsg they
-> wouldn't be able to drop the capability. But, it's much saner to carry
-> CAP_SYS_LOG than CAP_SYS_ADMIN on a long-running daemon.
+--------------080807040006020205000201
+Content-Type: text/x-csrc;
+ name="open-close.c"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="open-close.c"
 
-I have no idea on this front.  I'll let Kay speak to that.  On my
-currently running Fedora 18 system, I actually have systemd-journald
-using /dev/kmsg, and rsyslog using /proc/kmsg.  Why I have both, I have
-no friggin idea.
- 
-> >> That said, I much prefer doing the privilege test at read time since
-> >> that means passing a file descriptor to another process doesn't mean
-> >> the new process can just continue reading. If we're going to be
-> >> defining the new behavior for /dev/kmsg, then I think we should
-> >> explicitly drop the fall-back to CAP_SYS_ADMIN. Perhaps introduce a
-> >
-> > I think Karel and Kay's entire point was /dev/kmsg shouldn't be getting
-> > new behavior.  Aside from honoring dmesg_restrict, they see any behavior
-> > change as a regression.
-> 
-> Is there an intention to use /dev/kmsg for the syslog management daemon?
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <sys/file.h>
+#include <unistd.h>
 
-Maybe?  I mean, systemd-journald seems to be using it for something.
-Kay?
+#define FILENAME "testfile"
 
-josh
+int main()
+{
+	int	fd = open( FILENAME, O_RDWR );
+
+	if( fd==0 )
+	{
+		fputs( "Failed to open `" FILENAME "'.", stderr );
+		return 1;
+	}
+
+	printf( "flock() returned %d. Now calling close() ...\n",
+		flock( fd, LOCK_EX|LOCK_NB ) );
+	close( fd );
+	return 0;
+}
+
+--------------080807040006020205000201--
