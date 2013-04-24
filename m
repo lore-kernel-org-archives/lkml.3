@@ -1,89 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758070Ab3DXIXN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 04:23:13 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:58715 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758056Ab3DXIXI (ORCPT
+	id S1758078Ab3DXI3m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 04:29:42 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:38493 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754668Ab3DXI3k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 04:23:08 -0400
-Message-ID: <5177965D.9090406@linux.vnet.ibm.com>
-Date: Wed, 24 Apr 2013 16:22:53 +0800
-From: Mike Qiu <qiudayu@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	Wed, 24 Apr 2013 04:29:40 -0400
+Date: Wed, 24 Apr 2013 10:29:38 +0200
+From: Pavel Machek <pavel@denx.de>
+To: richard -rw- weinberger <richard.weinberger@gmail.com>
+Cc: Ley Foon Tan <lftan@altera.com>, LKML <linux-kernel@vger.kernel.org>,
+        Kenneth Chong Yin Tan <cytan@altera.com>
+Subject: Re: Linux kernel support -O0 optimization flag?
+Message-ID: <20130424082934.GA9365@amd.pavel.ucw.cz>
+References: <1366012739.21182.4.camel@leyfoon-vm>
+ <CAFLxGvw7Cj_wz_A9B+fBR6jYxi+73Ofh-PjUT=FC+iF0AkDQsQ@mail.gmail.com>
 MIME-Version: 1.0
-To: linuxppc-dev@lists.ozlabs.org, gang.chen@asianux.com
-CC: linux-kernel@vger.kernel.org, benh <benh@kernel.crashing.org>,
-        paulus@samba.org, mikey@neuling.org, matt@ozlabs.org,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        sfr@canb.auug.org.au
-Subject: "attempt to move .org backwards" still show up
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13042408-5490-0000-0000-00000356E772
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFLxGvw7Cj_wz_A9B+fBR6jYxi+73Ofh-PjUT=FC+iF0AkDQsQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all
+On Mon 2013-04-15 13:16:36, richard -rw- weinberger wrote:
+> On Mon, Apr 15, 2013 at 9:58 AM, Ley Foon Tan <lftan@altera.com> wrote:
+> >
+> >
+> > Change KBUILD_CFLAGS to -O0 in Makefile and got the compilation error as
+> > below.
+> > Is the Linux kernel support -O0 optimization flag?
+> 
+> No. If I'm not mistaken we need this to make sure that the compiler
+> inlines some functions.
+> 
+> In your case the compiler failed to compute the BUILD_BUG() macro correctly.
+> It depends also on optimization.
 
-I get an error message when I compile the source code in Power7 platform
-use the newest upstream kernel.
+Actually... You probably could replace BUILD_BUG() with nop. Bugs are
+not expected to happen, right? you'll probably hit something else...
 
-[root@feng linux]# make -j60
-CHK include/generated/uapi/linux/version.h
-CHK include/generated/utsrelease.h
-CC scripts/mod/devicetable-offsets.s
-GEN scripts/mod/devicetable-offsets.h
-HOSTCC scripts/mod/file2alias.o
-CALL scripts/checksyscalls.sh
-HOSTLD scripts/mod/modpost
-CHK include/generated/compile.h
-CALL arch/powerpc/kernel/systbl_chk.sh
-CALL arch/powerpc/kernel/prom_init_check.sh
-AS arch/powerpc/kernel/head_64.o
-arch/powerpc/kernel/exceptions-64s.S: Assembler messages:
-arch/powerpc/kernel/exceptions-64s.S:258: Error: attempt to move .org
-backwards
-make[1]: *** [arch/powerpc/kernel/head_64.o] Error 1
-make: *** [arch/powerpc/kernel] Error 2
-make: *** Waiting for unfinished jobs....
-
-and I see this should be fixed by the commit:
-087aa036eb79f24b856893190359ba812b460f45
-
-But it still failed in my P7 machine.
-
-the kernel source code info:
-git tree : git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
-[root@feng linux]# git log
-commit 824282ca7d250bd7c301f221c3cd902ce906d731
-Merge: f83b293 3b5e50e
-Author: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon Apr 22 15:00:59 2013 -0700
-
-Merge branch 'upstream' of
-git://git.linux-mips.org/pub/scm/ralf/upstream-linus
-
-Pull MIPS fix from Ralf Baechle:
-"Revert the change of the definition of PAGE_MASK which was prettier
-but broke a few relativly rare platforms"
-
-* 'upstream' of git://git.linux-mips.org/pub/scm/ralf/upstream-linus:
-Revert "MIPS: page.h: Provide more readable definition for PAGE_MASK."
-
-commit 3b5e50edaf500f392f4a372296afc0b99ffa7e70
-Author: Ralf Baechle <ralf@linux-mips.org>
-Date: Mon Apr 22 17:57:54 2013 +0200
-
-[root@feng linux]# git branch
-* master
-[root@feng linux]# git diff
-[root@feng linux]#
-
-Thant means I have done nothing with the kernel
-
-Thanks
-Mike
-
+								Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
