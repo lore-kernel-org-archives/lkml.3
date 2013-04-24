@@ -1,59 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757913Ab3DXL52 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 07:57:28 -0400
-Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:56953
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756857Ab3DXL50 (ORCPT
+	id S1757515Ab3DXMAY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 08:00:24 -0400
+Received: from mail-da0-f49.google.com ([209.85.210.49]:39419 "EHLO
+	mail-da0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751492Ab3DXMAW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 07:57:26 -0400
-X-Forefront-Antispam-Report: CIP:157.56.236.101;KIP:(null);UIP:(null);IPV:NLI;H:BY2PRD0510HT005.namprd05.prod.outlook.com;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: PS-2(zz98dI936eIzz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275dhz2fh2a8h668h839h93fhd24he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1155h)
-From: Matthew Garrett <matthew.garrett@nebula.com>
-To: joeyli <jlee@suse.com>
-CC: "matt.fleming@intel.com" <matt.fleming@intel.com>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V6 3/3] efi: Distinguish between "remaining space" and
- actually used space
-Thread-Topic: [PATCH V6 3/3] efi: Distinguish between "remaining space" and
- actually used space
-Thread-Index: AQHOOhU89r+iw6MpjUmtexdARM4dfpjlMy2AgAABzICAAAx2gIAAECUA
-Date: Wed, 24 Apr 2013 11:57:21 +0000
-Message-ID: <1366804640.13667.27.camel@x230.lan>
-References: <1365561717-12343-1-git-send-email-matthew.garrett@nebula.com>
-	 <1366056587-24414-1-git-send-email-matthew.garrett@nebula.com>
-	 <1366056587-24414-4-git-send-email-matthew.garrett@nebula.com>
-	 <1366798111.23707.293.camel@linux-s257.site>
-	 <1366798497.13667.25.camel@x230.lan>
-	 <1366801173.23707.323.camel@linux-s257.site>
-In-Reply-To: <1366801173.23707.323.camel@linux-s257.site>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.255.84.4]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <67BF1847ADD1D04F88C2569267721AB5@namprd05.prod.outlook.com>
-MIME-Version: 1.0
-X-OriginatorOrg: nebula.com
+	Wed, 24 Apr 2013 08:00:22 -0400
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+To: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LMML <linux-media@vger.kernel.org>,
+        LFBDEV <linux-fbdev@vger.kernel.org>,
+        LAK <linux-arm-kernel@lists.infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Sekhar Nori <nsekhar@ti.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+Subject: [PATCH 0/6] Davinci fbdev driver and enable it for DMx platform
+Date: Wed, 24 Apr 2013 17:30:02 +0530
+Message-Id: <1366804808-22720-1-git-send-email-prabhakar.csengg@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r3OBvqVs020658
 
-On Wed, 2013-04-24 at 18:59 +0800, joeyli wrote:
+From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 
-> Then why we don't just remove the "remaining_size" condition but only
-> monitor the active_size should not larger then 1/2 storage_size?
+This patch series adds an fbdev driver for Texas
+Instruments Davinci SoC.The display subsystem consists
+of OSD and VENC, with OSD supporting 2 RGb planes and 
+2 video planes.
+http://focus.ti.com/general/docs/lit/
+getliterature.tsp?literatureNumber=sprue37d&fileType=pdf
 
-If we calculate active_size as using more than 50% of the storage space
-but remaining_size says we still have more than 50% available, we should
-trust remaining_size instead of active_size.
+A good amount of the OSD and VENC enabling code is
+present in the kernel, and this patch series adds the 
+fbdev interface.
+
+The fbdev driver exports 4 nodes representing each
+plane to the user - from fb0 to fb3.
+
+
+Lad, Prabhakar (6):
+  media: davinci: vpbe: fix checkpatch warning for CamelCase
+  media: davinci: vpbe: enable vpbe for fbdev addition
+  davinci: vpbe: add fbdev driver
+  ARM: davinci: dm355: enable fbdev driver
+  ARM: davinci: dm365: enable fbdev driver
+  ARM: davinci: dm644x: enable fbdev driver
+
+ arch/arm/mach-davinci/dm355.c                 |   24 +-
+ arch/arm/mach-davinci/dm365.c                 |   10 +
+ arch/arm/mach-davinci/dm644x.c                |   10 +
+ drivers/media/platform/davinci/vpbe_display.c |    8 +-
+ drivers/media/platform/davinci/vpbe_osd.c     |  820 ++++++++-
+ drivers/media/platform/davinci/vpbe_venc.c    |   43 +
+ drivers/video/Kconfig                         |   12 +
+ drivers/video/Makefile                        |    1 +
+ drivers/video/davincifb.c                     | 2523 +++++++++++++++++++++++++
+ drivers/video/davincifb.h                     |  194 ++
+ include/media/davinci/vpbe_osd.h              |   66 +-
+ include/media/davinci/vpbe_venc.h             |   21 +
+ 12 files changed, 3702 insertions(+), 30 deletions(-)
+ create mode 100644 drivers/video/davincifb.c
+ create mode 100644 drivers/video/davincifb.h
 
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+1.7.4.1
+
