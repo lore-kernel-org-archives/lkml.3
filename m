@@ -1,75 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755745Ab3DXOXj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 10:23:39 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:50540
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752348Ab3DXOXi (ORCPT
+	id S1755357Ab3DXOZt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 10:25:49 -0400
+Received: from eu1sys200aog108.obsmtp.com ([207.126.144.125]:43869 "EHLO
+	eu1sys200aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754230Ab3DXOZs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 10:23:38 -0400
-Date: Wed, 24 Apr 2013 08:23:32 -0600
-From: Jens Axboe <axboe@kernel.dk>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: linux-kernel@vger.kernel.org, James Bottomley <JBottomley@Parallels.com>,
-        Namjae Jeon <namjae.jeon@samsung.com>, stable@vger.kernel.org
-Subject: Re: [PATCH] block: fix max discard sectors limit
-Message-ID: <20130424142332.GD2759@kernel.dk>
-References: <1366811721-2478-1-git-send-email-linkinjeon@gmail.com>
+	Wed, 24 Apr 2013 10:25:48 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Cc: Stephen Warren <swarren@nvidia.com>, Anmar Oueja <anmar.oueja@linaro.org>,
+        Laurent Meunier <laurent.meunier@st.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH] pinctrl/pinconfig: fix misplaced goto
+Date: Wed, 24 Apr 2013 16:25:34 +0200
+Message-ID: <1366813534-2460-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.11.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1366811721-2478-1-git-send-email-linkinjeon@gmail.com>
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 24 2013, Namjae Jeon wrote:
-> From: James Bottomley <JBottomley@Parallels.com>
-> 
-> linux-v3.8-rc1 and later support for plug for blkdev_issue_discard with
-> commit 0cfbcafcae8b7364b5fa96c2b26ccde7a3a296a9
-> (block: add plug for blkdev_issue_discard )
-> 
-> For example,
-> 1) DISCARD rq-1 with size size 4GB
-> 2) DISCARD rq-2 with size size 1GB
-> 
-> If these 2 discard requests get merged, final request size will be 5GB.
-> 
-> In this case, request's __data_len field may overflow as it can store
-> max 4GB(unsigned int).
-> 
-> This issue was observed while doing mkfs.f2fs on 5GB SD card:
-> https://lkml.org/lkml/2013/4/1/292
-> 
-> Info: sector size = 512
-> Info: total sectors = 11370496 (in 512bytes)
-> Info: zone aligned segment0 blkaddr: 512
-> [  257.789764] blk_update_request: bio idx 0 >= vcnt 0
-> 
-> mkfs process gets stuck in D state and I see the following in the dmesg:
-> 
-> [  257.789733] __end_that: dev mmcblk0: type=1, flags=122c8081
-> [  257.789764]   sector 4194304, nr/cnr 2981888/4294959104
-> [  257.789764]   bio df3840c0, biotail df3848c0, buffer   (null), len
-> 1526726656
-> [  257.789764] blk_update_request: bio idx 0 >= vcnt 0
-> [  257.794921] request botched: dev mmcblk0: type=1, flags=122c8081
-> [  257.794921]   sector 4194304, nr/cnr 2981888/4294959104
-> [  257.794921]   bio df3840c0, biotail df3848c0, buffer   (null), len
-> 1526726656
-> 
-> This patch fixes this issue.
-> 
-> Reported-by: Max Filippov <jcmvbkbc@gmail.com>
-> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-> Signed-off-by: James Bottomley <JBottomley@Parallels.com>
-> Tested-by: Max Filippov <jcmvbkbc@gmail.com>
-> Cc: <stable@vger.kernel.org>
+From: Laurent Meunier <laurent.meunier@st.com>
 
-Thanks! One minor nit - I don't think James signed off on the patch when
-he sent it in. James?
+This update contains a basic fix that went unseen through
+test and review.
 
+Signed-off-by: Laurent Meunier <laurent.meunier@st.com>
+Reviewed-by: Patrice Chotard <patrice.chotard@stericsson.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ drivers/pinctrl/pinconf.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/pinctrl/pinconf.c b/drivers/pinctrl/pinconf.c
+index 3578667..c67c37e 100644
+--- a/drivers/pinctrl/pinconf.c
++++ b/drivers/pinctrl/pinconf.c
+@@ -771,8 +771,8 @@ static int pinconf_dbg_config_write(struct file *file,
+ 	}
+ 
+ 	if (!found) {
+-		goto exit;
+ 		count = -EINVAL;
++		goto exit;
+ 	}
+ 
+ 	if (pctldev)
 -- 
-Jens Axboe
+1.7.11.3
 
