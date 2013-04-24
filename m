@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758608Ab3DXJks (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 05:40:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27363 "EHLO mx1.redhat.com"
+	id S1758517Ab3DXJjW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 05:39:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48985 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758545Ab3DXJjh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 05:39:37 -0400
+	id S1758419Ab3DXJjG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 05:39:06 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>,
@@ -17,16 +17,16 @@ Cc: Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@kernel.org>, Borislav Petkov <bp@alien8.de>,
         Stephane Eranian <eranian@google.com>, Sam Ravnborg <sam@ravnborg.org>,
         David Ahern <dsahern@gmail.com>
-Subject: [PATCH 26/26] perf tools: Add missing liblk.a dependency for python/perf.so
-Date: Wed, 24 Apr 2013 11:37:53 +0200
-Message-Id: <1366796273-4780-27-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 12/26] perf tools: Move libperl check config into config/Makefile
+Date: Wed, 24 Apr 2013 11:37:39 +0200
+Message-Id: <1366796273-4780-13-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1366796273-4780-1-git-send-email-jolsa@redhat.com>
 References: <1366796273-4780-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding missing liblk.a dependency for python/perf.so.
+Moving libperl check config into config/Makefile.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
@@ -41,22 +41,70 @@ Cc: Stephane Eranian <eranian@google.com>
 Cc: Sam Ravnborg <sam@ravnborg.org>
 Cc: David Ahern <dsahern@gmail.com>
 ---
- tools/perf/Makefile | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ tools/perf/Makefile        | 20 +++-----------------
+ tools/perf/config/Makefile | 21 +++++++++++++++++++++
+ 2 files changed, 24 insertions(+), 17 deletions(-)
 
 diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 763da02..649e466 100644
+index 7bf5c10..d0ab4d4 100644
 --- a/tools/perf/Makefile
 +++ b/tools/perf/Makefile
-@@ -151,7 +151,7 @@ export PYTHON_EXTBUILD_LIB PYTHON_EXTBUILD_TMP
- python-clean := rm -rf $(PYTHON_EXTBUILD) $(OUTPUT)python/perf.so
+@@ -532,23 +532,9 @@ ifndef NO_GTK2
+ 	LIB_OBJS += $(OUTPUT)ui/gtk/annotate.o
+ endif
  
- PYTHON_EXT_SRCS := $(shell grep -v ^\# util/python-ext-sources)
--PYTHON_EXT_DEPS := util/python-ext-sources util/setup.py $(LIBTRACEEVENT)
-+PYTHON_EXT_DEPS := util/python-ext-sources util/setup.py $(LIBTRACEEVENT) $(LIBLK)
+-ifdef NO_LIBPERL
+-	BASIC_CFLAGS += -DNO_LIBPERL
+-else
+-       PERL_EMBED_LDOPTS = $(shell perl -MExtUtils::Embed -e ldopts 2>/dev/null)
+-       PERL_EMBED_LDFLAGS = $(call strip-libs,$(PERL_EMBED_LDOPTS))
+-       PERL_EMBED_LIBADD = $(call grep-libs,$(PERL_EMBED_LDOPTS))
+-	PERL_EMBED_CCOPTS = `perl -MExtUtils::Embed -e ccopts 2>/dev/null`
+-	FLAGS_PERL_EMBED=$(PERL_EMBED_CCOPTS) $(PERL_EMBED_LDOPTS)
+-
+-	ifneq ($(call try-cc,$(SOURCE_PERL_EMBED),$(FLAGS_PERL_EMBED),perl),y)
+-		BASIC_CFLAGS += -DNO_LIBPERL
+-	else
+-               ALL_LDFLAGS += $(PERL_EMBED_LDFLAGS)
+-               EXTLIBS += $(PERL_EMBED_LIBADD)
+-		LIB_OBJS += $(OUTPUT)util/scripting-engines/trace-event-perl.o
+-		LIB_OBJS += $(OUTPUT)scripts/perl/Perf-Trace-Util/Context.o
+-	endif
++ifndef NO_LIBPERL
++	LIB_OBJS += $(OUTPUT)util/scripting-engines/trace-event-perl.o
++	LIB_OBJS += $(OUTPUT)scripts/perl/Perf-Trace-Util/Context.o
+ endif
  
- $(OUTPUT)python/perf.so: $(PYTHON_EXT_SRCS) $(PYTHON_EXT_DEPS)
- 	$(QUIET_GEN)CFLAGS='$(CFLAGS)' $(PYTHON_WORD) util/setup.py \
+ disable-python = $(eval $(disable-python_code))
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index 6fc2089..2c9e0a5 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -240,3 +240,24 @@ ifndef NO_GTK2
+ 		EXTLIBS += $(shell pkg-config --libs gtk+-2.0 2>/dev/null)
+ 	endif
+ endif
++
++grep-libs  = $(filter -l%,$(1))
++strip-libs = $(filter-out -l%,$(1))
++
++ifdef NO_LIBPERL
++	BASIC_CFLAGS += -DNO_LIBPERL
++else
++	PERL_EMBED_LDOPTS = $(shell perl -MExtUtils::Embed -e ldopts 2>/dev/null)
++	PERL_EMBED_LDFLAGS = $(call strip-libs,$(PERL_EMBED_LDOPTS))
++	PERL_EMBED_LIBADD = $(call grep-libs,$(PERL_EMBED_LDOPTS))
++	PERL_EMBED_CCOPTS = `perl -MExtUtils::Embed -e ccopts 2>/dev/null`
++	FLAGS_PERL_EMBED=$(PERL_EMBED_CCOPTS) $(PERL_EMBED_LDOPTS)
++
++	ifneq ($(call try-cc,$(SOURCE_PERL_EMBED),$(FLAGS_PERL_EMBED),perl),y)
++		BASIC_CFLAGS += -DNO_LIBPERL
++		NO_LIBPERL := 1
++	else
++		ALL_LDFLAGS += $(PERL_EMBED_LDFLAGS)
++		EXTLIBS += $(PERL_EMBED_LIBADD)
++	endif
++endif
 -- 
 1.7.11.7
 
