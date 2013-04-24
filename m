@@ -1,89 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757978Ab3DXILr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 04:11:47 -0400
-Received: from www.linutronix.de ([62.245.132.108]:38560 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756156Ab3DXILo (ORCPT
+	id S1757996Ab3DXIPj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 04:15:39 -0400
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:35751 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757704Ab3DXIPg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 04:11:44 -0400
-Message-ID: <517793BD.30101@linutronix.de>
-Date: Wed, 24 Apr 2013 10:11:41 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+	Wed, 24 Apr 2013 04:15:36 -0400
+Message-ID: <51779491.10307@linux.vnet.ibm.com>
+Date: Wed, 24 Apr 2013 13:45:13 +0530
+From: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org,
-        Carsten Emde <C.Emde@osadl.org>
-Subject: Re: [PREEMPT RT] SLUB and split softirq lock for v3.2-rt
-References: <1360771932-27150-1-git-send-email-bigeasy@linutronix.de> <1366770979.2626.3.camel@gandalf.local.home>
-In-Reply-To: <1366770979.2626.3.camel@gandalf.local.home>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Chen Gang <gang.chen@asianux.com>
+CC: "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>,
+        Michael Neuling <mikey@neuling.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        paulus@samba.org, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH] arch/powerpc/kernel: using %12.12s instead of %12s for
+ avoiding memory overflow.
+References: <5100B53C.3030109@asianux.com> <512055D0.7050100@asianux.com> <514FD2E0.5030805@asianux.com> <51778D97.4080409@asianux.com>
+In-Reply-To: <51778D97.4080409@asianux.com>
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 8bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13042408-5816-0000-0000-000007AF78F8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/24/2013 04:36 AM, Steven Rostedt wrote:
-> Hi Sebastian,
-
-Hi Steven,
-
-> Which version of 3.2-rt was this applied to. It does not apply, where
-> patch 7/16 totally does not apply. I looked at the history of 3.2-rt and
-> I can't find where it would apply.
-
-I applied them on top of 2438ee33 ("Linux 3.2.37-rt55 REBASE"). I just
-grabbed the patches from the mailing list and re-applied them on top of
-this tree and is still works.
-
-After doing the same thing on v3.2.43-rt63-rebase I got:
-
-Applying: softirq: Make serving softirqs a task flag
-Applying: softirq: Split handling function
-Applying: softirq: Split softirq locks
-Using index info to reconstruct a base tree...
-Falling back to patching base and 3-way merge...
-Auto-merging include/linux/sched.h
-Applying: rcu: rcutiny: Prevent RCU stall
-Applying: softirq: Adapt NOHZ softirq pending check to new RT scheme
-Applying: softirq: Add more debugging
-Applying: softirq: Fix nohz pending issue for real
-Applying: net: Use local_bh_disable in netif_rx_ni()
-Applying: FIX [1/2] slub: Do not dereference NULL pointer in node_match
-Applying: FIX [2/2] slub: Tid must be retrieved from the percpu area of
-the current processor
-Applying: slub: Use correct cpu_slab on dead cpu
-Applying: smp: introduce a generic on_each_cpu_mask() function
-Applying: smp: add func to IPI cpus based on parameter func
-Applying: slub: only IPI CPUs that have per cpu obj to flush
-Applying: mm: Enable SLUB for RT
-Applying: slub: Enable irqs for __GFP_WAIT
-
-git did not complain about patch 7 ("softirq: Fix nohz pending issue for
-real") but about 3 ("softirq: Split softirq locks"). The diff between
-the two queues (except different sha1, index and so) is:
-
---- old/0003-softirq-Split-softirq-locks.patch
-+++ new/0003-softirq-Split-softirq-locks.patch
-@@ -60,8 +60,8 @@
-        int softirq_nestcnt;
- +      unsigned int softirqs_raised;
-  #endif
-- #if defined CONFIG_PREEMPT_RT_FULL && defined CONFIG_HIGHMEM
--       int kmap_idx;
-+ #ifdef CONFIG_PREEMPT_RT_FULL
-+ # if defined CONFIG_HIGHMEM || defined CONFIG_X86_32
-
-
-and this looks good.
-
-> Thanks,
+On 04/24/2013 01:15 PM, Chen Gang wrote:
+> Hello Vasant Hegde:
 > 
-> -- Steve
+> How about this patch, is it OK ?
+> 
+> Thanks.
+> 
+> 
+> On 2013年03月25日 12:30, Chen Gang wrote:
+>> Hello Maintainers:
+>>
+>>    could you help check this patch whether is ok ?
+>>
+>>    thanks.
+>>
+>>
+>> On 2013年02月17日 12:00, Chen Gang wrote:
+>>> Hello relative members:
+>>>
+>>>    please give a glance to this patch, when you have time.
+>>>
+>>>    thanks.
+>>>
+>>>    :-)
+>>>
+>>> gchen.
+>>>
+>>>
+>>> 于 2013年01月24日 12:14, Chen Gang 写道:
+>>>>
+>>>>    for tmp_part->header.name:
+>>>>      it is "Terminating null required only for names<  12 chars".
+>>>>      so need to limit the %.12s for it in printk
+>>>>
+>>>>    additional info:
+>>>>
+>>>>      %12s  limit the width, not for the original string output length
+>>>>            if name length is more than 12, it still can be fully displayed.
+>>>>            if name length is less than 12, the ' ' will be filled before name.
+>>>>
+>>>>      %.12s truly limit the original string output length (precision)
+>>>>
+>>>>
+>>>> Signed-off-by: Chen Gang<gang.chen@asianux.com>
+>>>> ---
+>>>>   arch/powerpc/kernel/nvram_64.c |    2 +-
+>>>>   1 file changed, 1 insertion(+), 1 deletion(-)
+>>>>
+>>>> diff --git a/arch/powerpc/kernel/nvram_64.c b/arch/powerpc/kernel/nvram_64.c
+>>>> index bec1e93..57bf6d2 100644
+>>>> --- a/arch/powerpc/kernel/nvram_64.c
+>>>> +++ b/arch/powerpc/kernel/nvram_64.c
+>>>> @@ -202,7 +202,7 @@ static void __init nvram_print_partitions(char * label)
+>>>>   	printk(KERN_WARNING "--------%s---------\n", label);
+>>>>   	printk(KERN_WARNING "indx\t\tsig\tchks\tlen\tname\n");
+>>>>   	list_for_each_entry(tmp_part,&nvram_partitions, partition) {
+>>>> -		printk(KERN_WARNING "%4d    \t%02x\t%02x\t%d\t%12s\n",
+>>>> +		printk(KERN_WARNING "%4d    \t%02x\t%02x\t%d\t%12.12s\n",
 
-Sebastian
+First, this code in inside NVRAM_DEBUG which is used only for debug purpose and
+AFAIK, all partition names are less than 20 character. So I don't think we need
+this patch.
+
+-Vasant
+
+>>>>   		       tmp_part->index, tmp_part->header.signature,
+>>>>   		       tmp_part->header.checksum, tmp_part->header.length,
+>>>>   		       tmp_part->header.name);
+>>>>
+>>>
+>>>
+>>
+>>
+> 
+> 
+
