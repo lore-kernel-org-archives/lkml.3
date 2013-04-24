@@ -1,55 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755809Ab3DXOhr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 10:37:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14869 "EHLO mx1.redhat.com"
+	id S1755669Ab3DXOij (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 10:38:39 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45952 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755467Ab3DXOhq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 10:37:46 -0400
-Date: Wed, 24 Apr 2013 10:37:38 -0400
-From: Josh Boyer <jwboyer@redhat.com>
-To: Matthew Garrett <matthew.garrett@nebula.com>,
-        Matt Fleming <matt.fleming@intel.com>
-Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] efi: Check EFI revision in setup_efi_vars
-Message-ID: <20130424143738.GB15272@hansolo.jdub.homelinux.org>
+	id S1751321Ab3DXOii (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 10:38:38 -0400
+Date: Wed, 24 Apr 2013 16:38:35 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] lib: fix trivial typo in the comment
+In-Reply-To: <1366626999-6270-1-git-send-email-andriy.shevchenko@linux.intel.com>
+Message-ID: <alpine.LNX.2.00.1304241637530.29143@pobox.suse.cz>
+References: <1366626999-6270-1-git-send-email-andriy.shevchenko@linux.intel.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We need to check the runtime sys_table for the EFI version the firmware
-specifies instead of just checking for a NULL QueryVariableInfo.  Older
-implementations of EFI don't have QueryVariableInfo but the runtime is
-a smaller structure, so the pointer to it may be pointing off into garbage.
+On Mon, 22 Apr 2013, Andy Shevchenko wrote:
 
-This is apparently the case with several Apple firmwares that support EFI
-1.10, and the current check causes them to no longer boot.  Fix based on
-a suggestion from Matthew Garrett.
+> This fixes "iff" as "if".
+> 
+> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> ---
+>  lib/string.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/lib/string.c b/lib/string.c
+> index e5878de..e551284 100644
+> --- a/lib/string.c
+> +++ b/lib/string.c
+> @@ -542,7 +542,7 @@ EXPORT_SYMBOL(sysfs_streq);
+>   * @s: input string
+>   * @res: result
+>   *
+> - * This routine returns 0 iff the first character is one of 'Yy1Nn0'.
+> + * This routine returns 0 if the first character is one of 'Yy1Nn0'.
+>   * Otherwise it will return -EINVAL.  Value pointed to by res is
+>   * updated upon finding a match.
+>   */
 
-Signed-off-by: Josh Boyer <jwboyer@redhat.com>
----
- arch/x86/boot/compressed/eboot.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+And this is correct because ... ?
 
-diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
-index 8615f75..b46efbf 100644
---- a/arch/x86/boot/compressed/eboot.c
-+++ b/arch/x86/boot/compressed/eboot.c
-@@ -258,7 +258,9 @@ static efi_status_t setup_efi_vars(struct boot_params *params)
- 	u64 store_size, remaining_size, var_size;
- 	efi_status_t status;
- 
--	if (!sys_table->runtime->query_variable_info)
-+	if (sys_table->runtime->hdr.revision < EFI_2_00_SYSTEM_TABLE_REVISION)
-+		return EFI_UNSUPPORTED;
-+	else if(!sys_table->runtime->query_variable_info)
- 		return EFI_UNSUPPORTED;
- 
- 	data = (struct setup_data *)(unsigned long)params->hdr.setup_data;
 -- 
-1.8.1.4
-
+Jiri Kosina
+SUSE Labs
