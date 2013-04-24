@@ -1,103 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755517Ab3DXPYq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 11:24:46 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:42775 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752324Ab3DXPYp (ORCPT
+	id S1757146Ab3DXPcl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 11:32:41 -0400
+Received: from mail-pd0-f196.google.com ([209.85.192.196]:64537 "EHLO
+	mail-pd0-f196.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756355Ab3DXPck (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 11:24:45 -0400
-Date: Wed, 24 Apr 2013 17:24:37 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Vince Weaver <vincent.weaver@maine.edu>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 1/6] signal x86: Propage RF EFLAGS bit throught the
- signal restore call
-Message-ID: <20130424152412.GB6993@somewhere>
-References: <1362940871-24486-1-git-send-email-jolsa@redhat.com>
- <1362940871-24486-2-git-send-email-jolsa@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1362940871-24486-2-git-send-email-jolsa@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 24 Apr 2013 11:32:40 -0400
+From: "Zhang Yi" <wetpzy@gmail.com>
+To: <linux-kernel@vger.kernel.org>
+Cc: "'Peter Zijlstra'" <peterz@infradead.org>,
+        "'Darren Hart'" <dvhart@linux.intel.com>,
+        "'Thomas Gleixner'" <tglx@linutronix.de>,
+        "'Ingo Molnar'" <mingo@kernel.org>,
+        "'Dave Hansen'" <dave.hansen@linux.intel.com>, <zhang.yi20@zte.com.cn>
+Subject: [PATCH] futex: bugfix for futex-key conflict when futex use hugepage
+Date: Wed, 24 Apr 2013 22:27:32 +0800
+Message-ID: <000a01ce40f7$e9f4d700$bdde8500$@com>
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-Index: Ac5A99vA6WtbTvkoRKihXEqksCc9tg==
+Content-Language: zh-cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 10, 2013 at 07:41:06PM +0100, Jiri Olsa wrote:
-> Adding RF EFLAGS bit to be restored on return from signal from
-> the original register context before the signal was entered.
-> 
-> This will prevent the RF flag to disappear when returning
-> from exception due to the signal handler being executed.
-> 
-> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: H. Peter Anvin <hpa@zytor.com>
-> Cc: Andi Kleen <andi@firstfloor.org>
-> Cc: Oleg Nesterov <oleg@redhat.com>
-> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Vince Weaver <vincent.weaver@maine.edu>
-> Cc: Stephane Eranian <eranian@google.com>
-> ---
->  arch/x86/ia32/ia32_signal.c        | 2 --
->  arch/x86/include/asm/sighandling.h | 4 ++--
->  arch/x86/kernel/signal.c           | 6 ------
->  3 files changed, 2 insertions(+), 10 deletions(-)
-> 
-> diff --git a/arch/x86/ia32/ia32_signal.c b/arch/x86/ia32/ia32_signal.c
-> index cf1a471..bccfca6 100644
-> --- a/arch/x86/ia32/ia32_signal.c
-> +++ b/arch/x86/ia32/ia32_signal.c
-> @@ -34,8 +34,6 @@
->  #include <asm/sys_ia32.h>
->  #include <asm/smap.h>
->  
-> -#define FIX_EFLAGS	__FIX_EFLAGS
-> -
->  int copy_siginfo_to_user32(compat_siginfo_t __user *to, siginfo_t *from)
->  {
->  	int err = 0;
-> diff --git a/arch/x86/include/asm/sighandling.h b/arch/x86/include/asm/sighandling.h
-> index beff97f..7a95816 100644
-> --- a/arch/x86/include/asm/sighandling.h
-> +++ b/arch/x86/include/asm/sighandling.h
-> @@ -7,10 +7,10 @@
->  
->  #include <asm/processor-flags.h>
->  
-> -#define __FIX_EFLAGS	(X86_EFLAGS_AC | X86_EFLAGS_OF | \
-> +#define FIX_EFLAGS	(X86_EFLAGS_AC | X86_EFLAGS_OF | \
->  			 X86_EFLAGS_DF | X86_EFLAGS_TF | X86_EFLAGS_SF | \
->  			 X86_EFLAGS_ZF | X86_EFLAGS_AF | X86_EFLAGS_PF | \
-> -			 X86_EFLAGS_CF)
-> +			 X86_EFLAGS_CF | X86_EFLAGS_RF)
->  
->  void signal_fault(struct pt_regs *regs, void __user *frame, char *where);
->  
-> diff --git a/arch/x86/kernel/signal.c b/arch/x86/kernel/signal.c
-> index 6956299..9df4c0b 100644
-> --- a/arch/x86/kernel/signal.c
-> +++ b/arch/x86/kernel/signal.c
-> @@ -43,12 +43,6 @@
->  
->  #include <asm/sigframe.h>
->  
-> -#ifdef CONFIG_X86_32
-> -# define FIX_EFLAGS	(__FIX_EFLAGS | X86_EFLAGS_RF)
+Hi all,
 
-Does anybody know why we had RF not restored in x86-32?
+I reworked the patch base on your advices.
+For the line-wrapped bug before, I use this mailbox to send the mail .
+
+
+
+Signed-off-by: Zhang Yi <zhang.yi20@zte.com.cn>
+Tested-by: Ma Chenggong <ma.chenggong@zte.com.cn>
+Reviewed-by: Liu Dong <liu.dong3@zte.com.cn>
+Reviewed-by: Cui Yunfeng <cui.yunfeng@zte.com.cn>
+Reviewed-by: Lu Zhongjun <lu.zhongjun@zte.com.cn>
+Reviewed-by: Jiang Biao <jiang.biao2@zte.com.cn>
+
+
+diff -uprN orig/linux3.9-rc7/include/linux/futex.h new/linux3.9-rc7/include/linux/futex.h
+--- orig/linux3.9-rc7/include/linux/futex.h	2013-04-15 00:45:16.000000000 +0000
++++ new/linux3.9-rc7/include/linux/futex.h	2013-04-19 16:33:58.725880000 +0000
+@@ -19,7 +19,7 @@ handle_futex_death(u32 __user *uaddr, st
+  * The key type depends on whether it's a shared or private mapping.
+  * Don't rearrange members without looking at hash_futex().
+  *
+- * offset is aligned to a multiple of sizeof(u32) (== 4) by definition.
++ * There are three cmponents in offset:
+  * We use the two low order bits of offset to tell what is the kind of key :
+  *  00 : Private process futex (PTHREAD_PROCESS_PRIVATE)
+  *       (no reference on an inode or mm)
+@@ -27,6 +27,9 @@ handle_futex_death(u32 __user *uaddr, st
+  *	mapped on a file (reference on the underlying inode)
+  *  10 : Shared futex (PTHREAD_PROCESS_SHARED)
+  *       (but private mapping on an mm, and reference taken on it)
++ * Bits 2 to (PAGE_SHIFT-1) indicates the offset of futex in its page.
++ * The rest hign order bits indicates the index if the page is a
++ * subpage of a compound page.
+ */
+
+ #define FUT_OFF_INODE    1 /* We set bit 0 if key has a reference on inode */
+@@ -36,17 +39,17 @@ union futex_key {
+ 	struct {
+ 		unsigned long pgoff;
+ 		struct inode *inode;
+-		int offset;
++		long offset;
+ 	} shared;
+ 	struct {
+ 		unsigned long address;
+ 		struct mm_struct *mm;
+-		int offset;
++		long offset;
+ 	} private;
+ 	struct {
+ 		unsigned long word;
+ 		void *ptr;
+-		int offset;
++		long offset;
+ 	} both;
+ };
+
+diff -uprN orig/linux3.9-rc7/kernel/futex.c new/linux3.9-rc7/kernel/futex.c
+--- orig/linux3.9-rc7/kernel/futex.c	2013-04-15 00:45:16.000000000 +0000
++++ new/linux3.9-rc7/kernel/futex.c	2013-04-19 16:24:05.629143000 +0000
+@@ -215,6 +215,22 @@ static void drop_futex_key_refs(union fu
+ 	}
+ }
+
++/*
++* Get subpage index in compound page, for futex_key.
++*/
++static inline int get_page_compound_index(struct page *page)
++{
++	struct page *head_page;
++	if (PageHead(page))
++		return 0;
++
++	head_page = compound_head(page);
++	if (compound_order(head_page) >= MAX_ORDER)
++		return page_to_pfn(page) - page_to_pfn(head_page);
++	else
++		return page - compound_head(page);
++}
++
+ /**
+  * get_futex_key() - Get parameters which are the keys for a futex
+  * @uaddr:	virtual address of the futex
+@@ -228,7 +244,8 @@ static void drop_futex_key_refs(union fu
+  * The key words are stored in *key on success.
+  *
+  * For shared mappings, it's (page->index, file_inode(vma->vm_file),
+- * offset_within_page).  For private mappings, it's (uaddr, current->mm).
++ * page_compound_index and offset_within_page).
++ * For private mappings, it's (uaddr, current->mm).
+  * We can usually work out the index without swapping in the page.
+  *
+  * lock_page() might sleep, the caller should not hold a spinlock.
+@@ -239,7 +256,7 @@ get_futex_key(u32 __user *uaddr, int fsh
+ 	unsigned long address = (unsigned long)uaddr;
+ 	struct mm_struct *mm = current->mm;
+ 	struct page *page, *page_head;
+-	int err, ro = 0;
++	int err, ro = 0, comp_idx = 0;
+
+ 	/*
+ 	 * The futex address must be "naturally" aligned.
+@@ -299,6 +316,7 @@ again:
+ 			 * freed from under us.
+ 			 */
+ 			if (page != page_head) {
++				comp_idx = get_page_compound_index(page);
+ 				get_page(page_head);
+ 				put_page(page);
+ 			}
+@@ -311,6 +329,7 @@ again:
+ #else
+ 	page_head = compound_head(page);
+ 	if (page != page_head) {
++		comp_idx = get_page_compound_index(page);
+ 		get_page(page_head);
+ 		put_page(page);
+ 	}
+@@ -363,7 +382,9 @@ again:
+ 		key->private.mm = mm;
+ 		key->private.address = address;
+ 	} else {
+-		key->both.offset |= FUT_OFF_INODE; /* inode-based key */
++		/* inode-based key */
++		key->both.offset |= ((long)comp_idx << PAGE_SHIFT)
++				   | FUT_OFF_INODE;
+ 		key->shared.inode = page_head->mapping->host;
+ 		key->shared.pgoff = page_head->index;
+ 	}
+
+
