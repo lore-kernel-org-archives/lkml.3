@@ -1,108 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758010Ab3DXIST (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 04:18:19 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:58431 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757683Ab3DXISR (ORCPT
+	id S1757941Ab3DXITp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 04:19:45 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:59946 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755755Ab3DXITn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 04:18:17 -0400
-X-AuditID: 9c930179-b7b5bae0000069d1-5c-5177954693e7
-Date: Wed, 24 Apr 2013 17:18:14 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Rob Landley <rob@landley.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Michael Kerrisk <mtk.manpages@gmail.com>,
-        Rik van Riel <riel@redhat.com>, Dave Hansen <dave.hansen@intel.com>
-Subject: Re: [PATCH v2 6/6] add documentation on proc.txt
-Message-ID: <20130424081814.GC2978@blaptop>
-References: <1366767664-17541-1-git-send-email-minchan@kernel.org>
- <1366767664-17541-7-git-send-email-minchan@kernel.org>
- <1366786185.18069.160@driftwood>
+	Wed, 24 Apr 2013 04:19:43 -0400
+Message-ID: <51779593.3060703@linux.vnet.ibm.com>
+Date: Wed, 24 Apr 2013 16:19:31 +0800
+From: Runzhen Wang <runzhen@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1366786185.18069.160@driftwood>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+To: acme@redhat.com
+CC: mingo@kernel.org, linux-kernel@vger.kernel.org,
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Subject: Re: [PATCH] perf tool: fix the perf --version bug
+References: <516CDAF5.3020909@linux.vnet.ibm.com>
+In-Reply-To: <516CDAF5.3020909@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13042408-9574-0000-0000-000007967702
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Rob,
+ping~  :)
+On 04/16/2013 01:00 PM, Runzhen Wang wrote:
+>
+> The perf --version can't print the right version
+> information when reset it to an earlier commit.
+>
+> For example, at present the version is:
+> # ./perf --version
+> perf version 3.9.rc6.gf8378f
+>
+> then, I reset it to an earlier version tag, say v3.8-rc7
+> # git reset --hard v3.8-rc7
+> # make
+>
+> However, the ./perf --version prints a wrong result:
+> # ./perf --version
+> perf version 3.9.rc6.g836dc9
+>
+> Using 'git describe' instead of 'git tag' can fix this problem.
+>
+> Signed-off-by: Runzhen Wang <runzhen@linux.vnet.ibm.com>
+> ---
+>   tools/perf/util/PERF-VERSION-GEN |    3 +--
+>   1 file changed, 1 insertion(+), 2 deletions(-)
+>
+> diff --git a/tools/perf/util/PERF-VERSION-GEN
+> b/tools/perf/util/PERF-VERSION-GEN
+> index 055fef3..ec3dd86 100755
+> --- a/tools/perf/util/PERF-VERSION-GEN
+> +++ b/tools/perf/util/PERF-VERSION-GEN
+> @@ -14,9 +14,8 @@ LF='
+>   # otherwise try to get the version from the kernel Makefile
+>   #
+>   if test -d ../../.git -o -f ../../.git &&
+> -    VN=$(git tag 2>/dev/null | tail -1 | grep -E "v[0-9].[0-9]*")
+> +    VN=$(git describe --match 'v[0-9].[0-9]*' --abbrev=4 HEAD 2>/dev/null)
+>   then
+> -    VN=$(echo $VN"-g"$(git log -1 --abbrev=4 --pretty=format:"%h" HEAD))
+>       VN=$(echo "$VN" | sed -e 's/-/./g');
+>   else
+>       VN=$(MAKEFLAGS= make -sC ../.. kernelversion)
 
-On Wed, Apr 24, 2013 at 01:49:45AM -0500, Rob Landley wrote:
-> On 04/23/2013 08:41:04 PM, Minchan Kim wrote:
-> >This patch adds stuff about new reclaim field in proc.txt
-> >
-> >Cc: Rob Landley <rob@landley.net>
-> >Signed-off-by: Minchan Kim <minchan@kernel.org>
-> >---
-> >
-> >Rob, I didn't add your Acked-by because interface was slight changed.
-> >I hope you give Acke-by after review again.
-> >Thanks.
-> >
-> > Documentation/filesystems/proc.txt | 22 ++++++++++++++++++++++
-> > mm/Kconfig                         |  7 +------
-> > 2 files changed, 23 insertions(+), 6 deletions(-)
-> >
-> >diff --git a/Documentation/filesystems/proc.txt
-> >b/Documentation/filesystems/proc.txt
-> >index 488c094..1411ad0 100644
-> >--- a/Documentation/filesystems/proc.txt
-> >+++ b/Documentation/filesystems/proc.txt
-> >@@ -136,6 +136,7 @@ Table 1-1: Process specific entries in /proc
-> >  maps		Memory maps to executables and library files	(2.4)
-> >  mem		Memory held by this process
-> >  root		Link to the root directory of this process
-> >+ reclaim	Reclaim pages in this process
-> >  stat		Process status
-> >  statm		Process memory status information
-> >  status		Process status in human readable form
-> >@@ -489,6 +490,27 @@ To clear the soft-dirty bit
-> >
-> > Any other value written to /proc/PID/clear_refs will have no effect.
-> >
-> >+The file /proc/PID/reclaim is used to reclaim pages in this process.
-> >+To reclaim file-backed pages,
-> >+    > echo file > /proc/PID/reclaim
-> >+
-> >+To reclaim anonymous pages,
-> >+    > echo anon > /proc/PID/reclaim
-> >+
-> >+To reclaim all pages,
-> >+    > echo all > /proc/PID/reclaim
-> >+
-> >+Also, you can specify address range of process so part of address
-> >space
-> >+will be reclaimed. The format is following as
-> >+    > echo addr size-byte > /proc/PID/reclaim
-> >+
-> >+NOTE: addr should be page-aligned.
-> 
-> And size in bytes should be a multiple of page size?
-
-Not necessary. It's same with madvise that VM handle the page
-which includes the byte.
-
-> 
-> >+
-> >+Below is example which try to reclaim 2 pages from 0x100000.
-> >+
-> >+To reclaim both pages in address range,
-> >+    > echo $((1<<20) 8192 > /proc/PID/reclaim
-> 
-> Would you like to balance your parentheses?
-
-Fixed. I will include your Acked-by in next spin.
-Thanks!
-
-> 
-> Acked-by: Rob Landley <rob@landley.net>
-> 
-> Rob
-
--- 
-Kind regards,
-Minchan Kim
