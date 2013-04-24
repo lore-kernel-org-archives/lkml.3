@@ -1,70 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757549Ab3DXDTg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 23:19:36 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:43849 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756341Ab3DXDTf (ORCPT
+	id S1757539Ab3DXDUa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 23:20:30 -0400
+Received: from mail-vb0-f47.google.com ([209.85.212.47]:40617 "EHLO
+	mail-vb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756341Ab3DXDU2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 23:19:35 -0400
-Message-ID: <51774F44.2060704@linaro.org>
-Date: Tue, 23 Apr 2013 20:19:32 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Tue, 23 Apr 2013 23:20:28 -0400
 MIME-Version: 1.0
-To: Kay Sievers <kay@vrfy.org>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: CONFIG_RTC_HCTOSYS lost on x86 with ALWAYS_USE_PERSISTENT_CLOCK
- changes?
-References: <CAPXgP13kizK95JyLxKxgWrGnV9b11ZTyi3vuc5YFDmROzckg4w@mail.gmail.com> <517746E4.908@linaro.org> <CAPXgP128yAq1jju-gsZcaS-mZPt+7tq0tt-uVk3Yqr77abd26Q@mail.gmail.com>
-In-Reply-To: <CAPXgP128yAq1jju-gsZcaS-mZPt+7tq0tt-uVk3Yqr77abd26Q@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1366734653-488286-14-git-send-email-arnd@arndb.de>
+References: <1366734653-488286-1-git-send-email-arnd@arndb.de>
+	<1366734653-488286-14-git-send-email-arnd@arndb.de>
+Date: Wed, 24 Apr 2013 08:50:27 +0530
+X-Google-Sender-Auth: i81GwE3s-T4UiUb7TtiRlAT-zl0
+Message-ID: <CAOh2x=nEqqnPjmSVOMTx1oKvCPmZaGDUAb6sOOmMhJb-XemBCw@mail.gmail.com>
+Subject: Re: [PATCH 13/21] misc: mark spear13xx-pcie-gadget as broken
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Pratyush Anand <pratyush.anand@st.com>, Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Viresh Kumar <viresh.kumar@st.com>,
+        Shiraz Hashim <shiraz.hashim@st.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/23/2013 08:05 PM, Kay Sievers wrote:
-> On Wed, Apr 24, 2013 at 4:43 AM, John Stultz <john.stultz@linaro.org> wrote:
->> On 04/23/2013 06:34 PM, Kay Sievers wrote:
->>> Hey,
->>>
->>> what's the intention of:
->>>     e90c83f757fffdacec8b3c5eee5617dcc038338f ?
->>>     x86: Select HAS_PERSISTENT_CLOCK on x86
->>>
->>> It unconditionally sets:
->>>     HAS_PERSISTENT_CLOCK
->>> but:
->>>     RTC_SYSTOHC
->>> got a depends on !HAS_PERSISTENT_CLOCK
->>>
->>> This makes it impossible to sync the system time from the RTC on x86.
->>> What's going on here?
->>
->> So I suspect just some confusion, but let me know if thats wrong and you're
->> actually seeing an issue.
->>
->> SYSTOHC is what *sets the RTC* to the system time when we're synced with
->> NTP.
->>
->> HCTOSYS is what sets the system time from the RTC.
-> Right, and RTC_HCTOSYS is not NTP related. It just reads the time from
-> the RTC_HCTOSYS_DEVICE at bootup so we do not boot in 1970 time mode.
-> We need that it in all cases, at every bootup on x86. But it's no
-> longer there with the above commits. :)
-On x86 the persistent_clock() is backed by the 
-CMOS/EFI/kvm-wall/xen/vrtc clock (all via x86_platform.get_wallclock) 
-should be present and we'll initialize the time in timekeeping_init() there.
+On Tue, Apr 23, 2013 at 10:00 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> This driver was merged in 2.6.38 but never actually compiled because
+> it depends on the <mach/pcie.h> header that has not made it into the
+> kernel. Starting with Linux-3.10, this results in "allyesconfig"
+> build errors, since spear13xx can now be enabled with the default
+> "multiplatform" platform on ARM. Let's mark it as broken for now.
+> If it doesn't get fixed, we can drop it completely.
+>
+> Cc: Pratyush Anand <pratyush.anand@st.com>
+> Cc: Randy Dunlap <randy.dunlap@oracle.com>
+> Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
+> Cc: Viresh Kumar <viresh.kumar@st.com>
+> Cc: Shiraz Hashim <shiraz.hashim@st.com>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> ---
+>  drivers/misc/Kconfig | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 
-Its only systems where there isn't a persistent_clock is where the RTC 
-layer and the HCTOSYS is helpful.
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
 
-Again, if you're having a problem where an x86 system isn't getting its 
-time initialized correctly, please let me know the details of the system.
-
-thanks
--john
-
-
-
+@Pratyush: Please see if we can get it fixed soon.
