@@ -1,99 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758509Ab3DXXxy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 19:53:54 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:45109 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757971Ab3DXXxw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 19:53:52 -0400
-Date: Wed, 24 Apr 2013 19:53:50 -0400 (EDT)
-Message-Id: <20130424.195350.1927101733139114761.davem@davemloft.net>
-To: mroos@linux.ee
-Cc: linux-kernel@vger.kernel.org, sparclinux@vger.kernel.org
-Subject: Re: sparc64, mm BUG in 3.9-rc8
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20130424.143615.334401973542739420.davem@davemloft.net>
-References: <alpine.SOC.1.00.1304230019030.12820@math.ut.ee>
-	<20130423.161751.2116707386990845036.davem@davemloft.net>
-	<20130424.143615.334401973542739420.davem@davemloft.net>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Wed, 24 Apr 2013 16:53:52 -0700 (PDT)
+	id S1758583Ab3DXX4a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 19:56:30 -0400
+Received: from mga09.intel.com ([134.134.136.24]:18422 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758090Ab3DXX43 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 19:56:29 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,546,1363158000"; 
+   d="scan'208";a="301030332"
+From: Andi Kleen <andi@firstfloor.org>
+To: mgorman@suse.de
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH] Add a sysctl for numa_balancing.
+Date: Wed, 24 Apr 2013 16:56:24 -0700
+Message-Id: <1366847784-29386-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Miller <davem@davemloft.net>
-Date: Wed, 24 Apr 2013 14:36:15 -0400 (EDT)
+From: Andi Kleen <ak@linux.intel.com>
 
-> From: David Miller <davem@davemloft.net>
-> Date: Tue, 23 Apr 2013 16:17:51 -0400 (EDT)
-> 
->> From: Meelis Roos <mroos@linux.ee>
->> Date: Tue, 23 Apr 2013 00:19:49 +0300 (EEST)
->> 
->>>> > Hello, I got a non-booting Sun E420R (sparc64) with 3.9-rc8: BUG-s in 
->>>> > mm/slub.c:925 and mm/memory.c:1267 (the latter keeps scrolling until 
->>>> > other things break and panic comes from trying to kill init). This is 
->>>> > reproducible. Same machine runs 3.9.0-rc7-00004-gbb33db7 successfully.
->>>> > Configuration is below.
->>>> 
->>>> It's certainly a bug in the TLB shootdown fix, please verify that
->>>> reverting the following fixes things:
->>>> 
->>>> >From f36391d2790d04993f48da6a45810033a2cdf847 Mon Sep 17 00:00:00 2001
->>>> From: "David S. Miller" <davem@davemloft.net>
->>>> Date: Fri, 19 Apr 2013 17:26:26 -0400
->>>> Subject: [PATCH] sparc64: Fix race in TLB batch processing.
->>> 
->>> Yes, reverting that makes it work again.
->> 
->> Just an update, using your config I was able to make one that boots on my
->> machine and reproduces the problem.
-> 
-> Ok, I've narrowed it down to CONFIG_DEBUG_ATOMIC_SLEEP, as the exact config
-> option which starts the crashes happening when it is enabled.
-> 
-> I should have this fixed by the end of today.
+As discussed earlier, this adds a working sysctl to enable/disable
+automatic numa memory balancing at runtime.
 
-This fixes it, I'll push this to Linus immediately.
+This was possible earlier through debugfs, but only with special
+debugging options set. Also fix the boot message.
 
-Thanks for your report!
-
---------------------
-sparc64: Fix missing put_cpu_var() in tlb_batch_add_one() when not batching.
-
-Reported-by: Meelis Roos <mroos@linux.ee>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/sparc/mm/tlb.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ Documentation/sysctl/kernel.txt |   10 ++++++++++
+ include/linux/sched/sysctl.h    |    4 ++++
+ kernel/sched/core.c             |   24 +++++++++++++++++++++++-
+ kernel/sysctl.c                 |   11 +++++++++++
+ mm/mempolicy.c                  |    2 +-
+ 5 files changed, 49 insertions(+), 2 deletions(-)
 
-diff --git a/arch/sparc/mm/tlb.c b/arch/sparc/mm/tlb.c
-index 272aa4f..83d89bc 100644
---- a/arch/sparc/mm/tlb.c
-+++ b/arch/sparc/mm/tlb.c
-@@ -87,7 +87,7 @@ static void tlb_batch_add_one(struct mm_struct *mm, unsigned long vaddr,
- 	if (!tb->active) {
- 		global_flush_tlb_page(mm, vaddr);
- 		flush_tsb_user_page(mm, vaddr);
--		return;
-+		goto out;
- 	}
+diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
+index ccd4258..17a7004 100644
+--- a/Documentation/sysctl/kernel.txt
++++ b/Documentation/sysctl/kernel.txt
+@@ -354,6 +354,16 @@ utilize.
  
- 	if (nr == 0)
-@@ -98,6 +98,7 @@ static void tlb_batch_add_one(struct mm_struct *mm, unsigned long vaddr,
- 	if (nr >= TLB_BATCH_NR)
- 		flush_tlb_pending();
+ ==============================================================
  
-+out:
- 	put_cpu_var(tlb_batch);
++numa_balancing
++
++Enables/disables automatic page fault based NUMA memory
++balancing. Memory is moved automatically to nodes
++that access it often.
++
++TBD someone document the other numa_balancing tunables
++
++==============================================================
++
+ osrelease, ostype & version:
+ 
+ # cat osrelease
+diff --git a/include/linux/sched/sysctl.h b/include/linux/sched/sysctl.h
+index bf8086b..e228a1b 100644
+--- a/include/linux/sched/sysctl.h
++++ b/include/linux/sched/sysctl.h
+@@ -101,4 +101,8 @@ extern int sched_rt_handler(struct ctl_table *table, int write,
+ 		void __user *buffer, size_t *lenp,
+ 		loff_t *ppos);
+ 
++extern int sched_numa_balancing(struct ctl_table *table, int write,
++				 void __user *buffer, size_t *lenp,
++				 loff_t *ppos);
++
+ #endif /* _SCHED_SYSCTL_H */
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 67d0465..679be74 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1614,7 +1614,29 @@ void set_numabalancing_state(bool enabled)
+ 	numabalancing_enabled = enabled;
  }
+ #endif /* CONFIG_SCHED_DEBUG */
+-#endif /* CONFIG_NUMA_BALANCING */
++
++#ifdef CONFIG_PROC_SYSCTL
++int sched_numa_balancing(struct ctl_table *table, int write,
++			 void __user *buffer, size_t *lenp, loff_t *ppos)
++{
++	struct ctl_table t;
++	int err;
++	int state = numabalancing_enabled;
++
++	if (write && !capable(CAP_SYS_ADMIN))
++		return -EPERM;
++
++	t = *table;
++	t.data = &state;
++	err = proc_dointvec_minmax(&t, write, buffer, lenp, ppos);
++	if (err < 0)
++		return err;
++	if (write)
++		set_numabalancing_state(state);
++	return err;
++}
++#endif
++#endif
  
+ /*
+  * fork()/clone()-time setup:
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index afc1dc6..94164ac 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -393,6 +393,17 @@ static struct ctl_table kern_table[] = {
+ 		.mode		= 0644,
+ 		.proc_handler	= proc_dointvec,
+ 	},
++	{
++		.procname	= "numa_balancing",
++		.data		= NULL, /* filled in by handler */
++		.maxlen		= sizeof(unsigned int),
++		.mode		= 0644,
++		.proc_handler	= sched_numa_balancing,
++		.extra1		= &zero,
++		.extra2		= &one,
++	},
++
++
+ #endif /* CONFIG_NUMA_BALANCING */
+ #endif /* CONFIG_SCHED_DEBUG */
+ 	{
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index 7431001..7eee646 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -2531,7 +2531,7 @@ static void __init check_numabalancing_enable(void)
+ 
+ 	if (nr_node_ids > 1 && !numabalancing_override) {
+ 		printk(KERN_INFO "Enabling automatic NUMA balancing. "
+-			"Configure with numa_balancing= or sysctl");
++			"Configure with numa_balancing= or the kernel.numa_balancing sysctl");
+ 		set_numabalancing_state(numabalancing_default);
+ 	}
+ }
 -- 
-1.8.1.2
-
+1.7.7.6
 
