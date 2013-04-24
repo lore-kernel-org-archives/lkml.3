@@ -1,71 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756905Ab3DXRo5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 13:44:57 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:40712 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756435Ab3DXRoz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 13:44:55 -0400
+	id S1757020Ab3DXRpJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 13:45:09 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:56270 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756938Ab3DXRpG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 13:45:06 -0400
+Message-ID: <51781A13.50705@ti.com>
+Date: Wed, 24 Apr 2013 13:44:51 -0400
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-In-Reply-To: <CAGXu5jLs1ghuCwcu7crOG1OHuiaP3hmzYY410br_puc9i82-2g@mail.gmail.com>
-References: <CAGXu5j+ntBM5ZwO9Xqa3sWaEW3nSpR8wsL7poTJ6wZOp5x0Lhw@mail.gmail.com>
- <1361998001.2110.22.camel@localhost> <20130227221954.GJ2071@hansolo.jdub.homelinux.org>
- <CAGXu5j+aADfSpBcz9=LVtREQQiW4d3Jd8t7nQKbih7oUhvQghg@mail.gmail.com>
- <20130322145448.f44f9d10a36620c1c11535b7@linux-foundation.org>
- <20130322221444.GJ15821@hansolo.jdub.homelinux.org> <CAGXu5jL=Lg6OeWyhKBWHowwMeOpFipMOXmBosYHY53MfVMo8fA@mail.gmail.com>
- <1256775981.281402.1364864751771.JavaMail.root@redhat.com>
- <CAGXu5jLU40Vzx+bNyPSArBt_yYNO9sPJ3yLj7z3Yq=pH22W1Gw@mail.gmail.com>
- <20130409005050.GE18176@hansolo.jdub.homelinux.org> <20130409154820.GE32476@hansolo.jdub.homelinux.org>
- <CAGXu5jLs1ghuCwcu7crOG1OHuiaP3hmzYY410br_puc9i82-2g@mail.gmail.com>
-From: Kay Sievers <kay@vrfy.org>
-Date: Wed, 24 Apr 2013 19:44:33 +0200
-Message-ID: <CAPXgP10Vd3Ucxn77WX7wzQoaUmy-JdOBWvYv4zpGSu9qcd=GoQ@mail.gmail.com>
-Subject: Re: [PATCH v2] kmsg: Honor dmesg_restrict sysctl on /dev/kmsg
-To: Kees Cook <keescook@chromium.org>
-Cc: Josh Boyer <jwboyer@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Eric Paris <eparis@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Christian Kujau <lists@nerdbynature.de>,
-        "# 3.4.x" <stable@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: "Zhang, Rui" <rui.zhang@intel.com>
+CC: Eduardo Valentin <eduardo.valentin@ti.com>,
+        "amit.kachhap@linaro.org" <amit.kachhap@linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 02/30] thermal: cpu_cooling: remove trailing white spaces
+References: <1366218743-20841-1-git-send-email-eduardo.valentin@ti.com> <1366218743-20841-3-git-send-email-eduardo.valentin@ti.com> <744357E9AAD1214791ACBA4B0B9092632C9F6D@SHSMSX101.ccr.corp.intel.com>
+In-Reply-To: <744357E9AAD1214791ACBA4B0B9092632C9F6D@SHSMSX101.ccr.corp.intel.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 9, 2013 at 6:33 PM, Kees Cook <keescook@chromium.org> wrote:
-> On Tue, Apr 9, 2013 at 8:48 AM, Josh Boyer <jwboyer@redhat.com> wrote:
->> The dmesg_restrict sysctl currently covers the syslog method for access
->> dmesg, however /dev/kmsg isn't covered by the same protections.  Most
->> people haven't noticed because util-linux dmesg(1) defaults to using the
->> syslog method for access in older versions.  With util-linux dmesg(1)
->> defaults to reading directly from /dev/kmsg.
->>
->> Fix this by reworking all of the access methods to use the
->> check_syslog_permissions function and adding checks to devkmsg_open and
->> devkmsg_read.
->>
->> This fixes https://bugzilla.redhat.com/show_bug.cgi?id=903192
->>
->> Reported-by: Christian Kujau <lists@nerdbynature.de>
->> CC: stable@vger.kernel.org
->> Signed-off-by: Eric Paris <eparis@redhat.com>
->> Signed-off-by: Josh Boyer <jwboyer@redhat.com>
+On 24-04-2013 10:48, Zhang, Rui wrote:
 >
-> Thanks!
 >
-> Acked-by: Kees Cook <keescook@chromium.org>
+>> -----Original Message-----
+>> From: Eduardo Valentin [mailto:eduardo.valentin@ti.com]
+>> Sent: Thursday, April 18, 2013 1:12 AM
+>> To: amit.kachhap@linaro.org
+>> Cc: Eduardo Valentin; Zhang, Rui; linux-pm@vger.kernel.org; linux-
+>> kernel@vger.kernel.org
+>> Subject: [PATCH 02/30] thermal: cpu_cooling: remove trailing white
+>> spaces
+>> Importance: High
+>>
+>> Remove unnecessary white spaces.
+>>
+> The same comments for patch 02, 06, 09, 10, 11, 13, 18, and 30.
+>
+> Can we run Lindent to fix all the coding style problem in one patch?
 
-If that's the version currently in Fedora, we just cannot do this.
-   https://bugzilla.redhat.com/show_bug.cgi?id=952655
 
-/dev/kmsg is supposed, and was added, to be a sane alternative to
-syslog(). It is already used in dmesg(1) which is now broken with this
-patch.
+Well, yes. The thing about Lindent is that it sometimes changes the code 
+in a way we do not want. It will change cpu-cooling in slightly 
+different way, but it will include most of the changes on the patches 
+above. It misses some of the changes and also does some other that are 
+not so nice.
 
-The access rules for /dev/kmsg should follow the access rules of
-syslog(), and not be any stricter.
+I obviously would prefer to keep these patches, as, the patches are 
+already there. Let me know what is your call.
 
-Thanks,
-Kay
+>
+> Thanks,
+> rui
+>> Cc: Zhang Rui <rui.zhang@intel.com>
+>> Cc: linux-pm@vger.kernel.org
+>> Cc: linux-kernel@vger.kernel.org
+>> Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
+>> ---
+>>   drivers/thermal/cpu_cooling.c | 3 +--
+>>   1 file changed, 1 insertion(+), 2 deletions(-)
+>>
+>> diff --git a/drivers/thermal/cpu_cooling.c
+>> b/drivers/thermal/cpu_cooling.c index 778c43d..d0d6a0c 100644
+>> --- a/drivers/thermal/cpu_cooling.c
+>> +++ b/drivers/thermal/cpu_cooling.c
+>> @@ -131,14 +131,13 @@ static int get_property(unsigned int cpu,
+>> unsigned long input,
+>>   	int descend = -1;
+>>   	struct cpufreq_frequency_table *table =
+>>   					cpufreq_frequency_get_table(cpu);
+>> -
+>> +
+>>   	if (!output)
+>>   		return -EINVAL;
+>>
+>>   	if (!table)
+>>   		return -EINVAL;
+>>
+>> -
+>>   	for (i = 0; table[i].frequency != CPUFREQ_TABLE_END; i++) {
+>>   		/* ignore invalid entries */
+>>   		if (table[i].frequency == CPUFREQ_ENTRY_INVALID)
+>> --
+>> 1.8.2.1.342.gfa7285d
+>
+>
+>
+
