@@ -1,107 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758131Ab3DXJnz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 05:43:55 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:39370 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758452Ab3DXJjM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 05:39:12 -0400
-Date: Wed, 24 Apr 2013 02:37:27 -0700
-From: tip-bot for Joonsoo Kim <tipbot@zytor.com>
-Message-ID: <tip-e6252c3ef4b9cd251b53f7b68035f395d20b044e@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, vatsa@linux.vnet.ibm.com, hpa@zytor.com,
-        mingo@kernel.org, davidlohr.bueso@hp.com, a.p.zijlstra@chello.nl,
-        peterz@infradead.org, jason.low2@hp.com, tglx@linutronix.de,
-        iamjoonsoo.kim@lge.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, vatsa@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, davidlohr.bueso@hp.com,
-        a.p.zijlstra@chello.nl, peterz@infradead.org, jason.low2@hp.com,
-        iamjoonsoo.kim@lge.com, tglx@linutronix.de
-In-Reply-To: <1366705662-3587-6-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1366705662-3587-6-git-send-email-iamjoonsoo.kim@lge.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched:
-  Rename load_balance_tmpmask to load_balance_mask
-Git-Commit-ID: e6252c3ef4b9cd251b53f7b68035f395d20b044e
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+	id S1758312Ab3DXJoW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 05:44:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25478 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758438Ab3DXJjL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 05:39:11 -0400
+From: Jiri Olsa <jolsa@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>, Borislav Petkov <bp@alien8.de>,
+        Stephane Eranian <eranian@google.com>, Sam Ravnborg <sam@ravnborg.org>,
+        David Ahern <dsahern@gmail.com>
+Subject: [PATCH 17/26] perf tools: Move paths config into config/Makefile
+Date: Wed, 24 Apr 2013 11:37:44 +0200
+Message-Id: <1366796273-4780-18-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1366796273-4780-1-git-send-email-jolsa@redhat.com>
+References: <1366796273-4780-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e6252c3ef4b9cd251b53f7b68035f395d20b044e
-Gitweb:     http://git.kernel.org/tip/e6252c3ef4b9cd251b53f7b68035f395d20b044e
-Author:     Joonsoo Kim <iamjoonsoo.kim@lge.com>
-AuthorDate: Tue, 23 Apr 2013 17:27:41 +0900
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 24 Apr 2013 08:52:45 +0200
+Moving paths config into config/Makefile.
 
-sched: Rename load_balance_tmpmask to load_balance_mask
-
-This name doesn't represent specific meaning.
-So rename it to imply it's purpose.
-
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Tested-by: Jason Low <jason.low2@hp.com>
-Cc: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-Cc: Davidlohr Bueso <davidlohr.bueso@hp.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1366705662-3587-6-git-send-email-iamjoonsoo.kim@lge.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Borislav Petkov <bp@alien8.de>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Sam Ravnborg <sam@ravnborg.org>
+Cc: David Ahern <dsahern@gmail.com>
 ---
- kernel/sched/core.c | 4 ++--
- kernel/sched/fair.c | 4 ++--
- 2 files changed, 4 insertions(+), 4 deletions(-)
+ tools/perf/Makefile        | 58 ----------------------------------------------
+ tools/perf/config/Makefile | 52 +++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 52 insertions(+), 58 deletions(-)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index ee8c1bd..cb49b2a 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -6873,7 +6873,7 @@ struct task_group root_task_group;
- LIST_HEAD(task_groups);
- #endif
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 07612be..74e3cf6 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -101,39 +101,6 @@ ifeq ($(config),1)
+ include config/Makefile
+ endif
  
--DECLARE_PER_CPU(cpumask_var_t, load_balance_tmpmask);
-+DECLARE_PER_CPU(cpumask_var_t, load_balance_mask);
+-# Among the variables below, these:
+-#   perfexecdir
+-#   template_dir
+-#   mandir
+-#   infodir
+-#   htmldir
+-#   ETC_PERFCONFIG (but not sysconfdir)
+-# can be specified as a relative path some/where/else;
+-# this is interpreted as relative to $(prefix) and "perf" at
+-# runtime figures out where they are based on the path to the executable.
+-# This can help installing the suite in a relocatable way.
+-
+-# Make the path relative to DESTDIR, not to prefix
+-ifndef DESTDIR
+-prefix = $(HOME)
+-endif
+-bindir_relative = bin
+-bindir = $(prefix)/$(bindir_relative)
+-mandir = share/man
+-infodir = share/info
+-perfexecdir = libexec/perf-core
+-sharedir = $(prefix)/share
+-template_dir = share/perf-core/templates
+-htmldir = share/doc/perf-doc
+-ifeq ($(prefix),/usr)
+-sysconfdir = /etc
+-ETC_PERFCONFIG = $(sysconfdir)/perfconfig
+-else
+-sysconfdir = $(prefix)/etc
+-ETC_PERFCONFIG = etc/perfconfig
+-endif
+-lib = lib
+-
+ export prefix bindir sharedir sysconfdir
  
- void __init sched_init(void)
- {
-@@ -6910,7 +6910,7 @@ void __init sched_init(void)
- #endif /* CONFIG_RT_GROUP_SCHED */
- #ifdef CONFIG_CPUMASK_OFFSTACK
- 		for_each_possible_cpu(i) {
--			per_cpu(load_balance_tmpmask, i) = (void *)ptr;
-+			per_cpu(load_balance_mask, i) = (void *)ptr;
- 			ptr += cpumask_size();
- 		}
- #endif /* CONFIG_CPUMASK_OFFSTACK */
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index b8ef321..5b1e966 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -4977,7 +4977,7 @@ static struct rq *find_busiest_queue(struct lb_env *env,
- #define MAX_PINNED_INTERVAL	512
+ # sparse is architecture-neutral, which means that we need to tell it
+@@ -557,23 +524,6 @@ endif
+ endif # MAKECMDGOALS != tags
+ endif # MAKECMDGOALS != clean
  
- /* Working cpumask for load_balance and load_balance_newidle. */
--DEFINE_PER_CPU(cpumask_var_t, load_balance_tmpmask);
-+DEFINE_PER_CPU(cpumask_var_t, load_balance_mask);
+-# Shell quote (do not use $(call) to accommodate ancient setups);
+-
+-ETC_PERFCONFIG_SQ = $(subst ','\'',$(ETC_PERFCONFIG))
+-
+-DESTDIR_SQ = $(subst ','\'',$(DESTDIR))
+-bindir_SQ = $(subst ','\'',$(bindir))
+-bindir_relative_SQ = $(subst ','\'',$(bindir_relative))
+-mandir_SQ = $(subst ','\'',$(mandir))
+-infodir_SQ = $(subst ','\'',$(infodir))
+-perfexecdir_SQ = $(subst ','\'',$(perfexecdir))
+-template_dir_SQ = $(subst ','\'',$(template_dir))
+-htmldir_SQ = $(subst ','\'',$(htmldir))
+-prefix_SQ = $(subst ','\'',$(prefix))
+-sysconfdir_SQ = $(subst ','\'',$(sysconfdir))
+-
+-SHELL_PATH_SQ = $(subst ','\'',$(SHELL_PATH))
+-
+ LIBS = -Wl,--whole-archive $(PERFLIBS) -Wl,--no-whole-archive -Wl,--start-group $(EXTLIBS) -Wl,--end-group
  
- static int need_active_balance(struct lb_env *env)
- {
-@@ -5012,7 +5012,7 @@ static int load_balance(int this_cpu, struct rq *this_rq,
- 	struct sched_group *group;
- 	struct rq *busiest;
- 	unsigned long flags;
--	struct cpumask *cpus = __get_cpu_var(load_balance_tmpmask);
-+	struct cpumask *cpus = __get_cpu_var(load_balance_mask);
+ ALL_CFLAGS += $(BASIC_CFLAGS)
+@@ -582,7 +532,6 @@ ALL_LDFLAGS += $(BASIC_LDFLAGS)
  
- 	struct lb_env env = {
- 		.sd		= sd,
+ export INSTALL SHELL_PATH
+ 
+-
+ ### Build rules
+ 
+ SHELL = $(SHELL_PATH)
+@@ -824,13 +773,6 @@ check: $(OUTPUT)common-cmds.h
+ 
+ ### Installation rules
+ 
+-ifneq ($(filter /%,$(firstword $(perfexecdir))),)
+-perfexec_instdir = $(perfexecdir)
+-else
+-perfexec_instdir = $(prefix)/$(perfexecdir)
+-endif
+-perfexec_instdir_SQ = $(subst ','\'',$(perfexec_instdir))
+-
+ install-bin: all
+ 	$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(bindir_SQ)'
+ 	$(INSTALL) $(OUTPUT)perf '$(DESTDIR_SQ)$(bindir_SQ)'
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index b559693..a0dbc24 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -390,3 +390,55 @@ ifndef NO_LIBNUMA
+ 		EXTLIBS += -lnuma
+ 	endif
+ endif
++
++# Among the variables below, these:
++#   perfexecdir
++#   template_dir
++#   mandir
++#   infodir
++#   htmldir
++#   ETC_PERFCONFIG (but not sysconfdir)
++# can be specified as a relative path some/where/else;
++# this is interpreted as relative to $(prefix) and "perf" at
++# runtime figures out where they are based on the path to the executable.
++# This can help installing the suite in a relocatable way.
++
++# Make the path relative to DESTDIR, not to prefix
++ifndef DESTDIR
++prefix = $(HOME)
++endif
++bindir_relative = bin
++bindir = $(prefix)/$(bindir_relative)
++mandir = share/man
++infodir = share/info
++perfexecdir = libexec/perf-core
++sharedir = $(prefix)/share
++template_dir = share/perf-core/templates
++htmldir = share/doc/perf-doc
++ifeq ($(prefix),/usr)
++sysconfdir = /etc
++ETC_PERFCONFIG = $(sysconfdir)/perfconfig
++else
++sysconfdir = $(prefix)/etc
++ETC_PERFCONFIG = etc/perfconfig
++endif
++lib = lib
++
++# Shell quote (do not use $(call) to accommodate ancient setups);
++ETC_PERFCONFIG_SQ = $(subst ','\'',$(ETC_PERFCONFIG))
++DESTDIR_SQ = $(subst ','\'',$(DESTDIR))
++bindir_SQ = $(subst ','\'',$(bindir))
++mandir_SQ = $(subst ','\'',$(mandir))
++infodir_SQ = $(subst ','\'',$(infodir))
++perfexecdir_SQ = $(subst ','\'',$(perfexecdir))
++template_dir_SQ = $(subst ','\'',$(template_dir))
++htmldir_SQ = $(subst ','\'',$(htmldir))
++prefix_SQ = $(subst ','\'',$(prefix))
++sysconfdir_SQ = $(subst ','\'',$(sysconfdir))
++
++ifneq ($(filter /%,$(firstword $(perfexecdir))),)
++perfexec_instdir = $(perfexecdir)
++else
++perfexec_instdir = $(prefix)/$(perfexecdir)
++endif
++perfexec_instdir_SQ = $(subst ','\'',$(perfexec_instdir))
+-- 
+1.7.11.7
+
