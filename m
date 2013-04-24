@@ -1,178 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756874Ab3DXRmY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 13:42:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7977 "EHLO mx1.redhat.com"
+	id S1756922Ab3DXRnm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 13:43:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11868 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756432Ab3DXRmW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 13:42:22 -0400
-Message-ID: <5178194E.5000403@redhat.com>
-Date: Wed, 24 Apr 2013 19:41:34 +0200
-From: Daniel Borkmann <dborkman@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1756435Ab3DXRnk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 13:43:40 -0400
+Date: Wed, 24 Apr 2013 13:43:31 -0400
+From: Josh Boyer <jwboyer@redhat.com>
+To: Kees Cook <keescook@chromium.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Eric Paris <eparis@redhat.com>,
+        "kzak@redhat.com Linus Torvalds" <torvalds@linux-foundation.org>,
+        Christian Kujau <lists@nerdbynature.de>,
+        "# 3.4.x" <stable@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] kmsg: Honor dmesg_restrict sysctl on /dev/kmsg
+Message-ID: <20130424174330.GE15272@hansolo.jdub.homelinux.org>
+References: <1361998001.2110.22.camel@localhost>
+ <20130227221954.GJ2071@hansolo.jdub.homelinux.org>
+ <CAGXu5j+aADfSpBcz9=LVtREQQiW4d3Jd8t7nQKbih7oUhvQghg@mail.gmail.com>
+ <20130322145448.f44f9d10a36620c1c11535b7@linux-foundation.org>
+ <20130322221444.GJ15821@hansolo.jdub.homelinux.org>
+ <CAGXu5jL=Lg6OeWyhKBWHowwMeOpFipMOXmBosYHY53MfVMo8fA@mail.gmail.com>
+ <1256775981.281402.1364864751771.JavaMail.root@redhat.com>
+ <CAGXu5jLU40Vzx+bNyPSArBt_yYNO9sPJ3yLj7z3Yq=pH22W1Gw@mail.gmail.com>
+ <20130409005050.GE18176@hansolo.jdub.homelinux.org>
+ <20130409154820.GE32476@hansolo.jdub.homelinux.org>
 MIME-Version: 1.0
-To: Nicolas Schichan <nschichan@freebox.fr>
-CC: Will Drewry <wad@chromium.org>, Mircea Gherzan <mgherzan@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>,
-        "David S. Miller" <davem@davemloft.net>,
-        Daniel Borkmann <daniel.borkmann@tik.ee.ethz.ch>,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH V3 2/3] ARM: net: bpf_jit: make code generation less dependent
- on struct sk_filter.
-References: <1366824429-26652-1-git-send-email-nschichan@freebox.fr> <1366824429-26652-3-git-send-email-nschichan@freebox.fr>
-In-Reply-To: <1366824429-26652-3-git-send-email-nschichan@freebox.fr>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130409154820.GE32476@hansolo.jdub.homelinux.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/24/2013 07:27 PM, Nicolas Schichan wrote:
-> This is in preparation of bpf_jit support for seccomp filters.
+On Tue, Apr 09, 2013 at 11:48:20AM -0400, Josh Boyer wrote:
+> The dmesg_restrict sysctl currently covers the syslog method for access
+> dmesg, however /dev/kmsg isn't covered by the same protections.  Most
+> people haven't noticed because util-linux dmesg(1) defaults to using the
+> syslog method for access in older versions.  With util-linux dmesg(1)
+> defaults to reading directly from /dev/kmsg.
+> 
+> Fix this by reworking all of the access methods to use the
+> check_syslog_permissions function and adding checks to devkmsg_open and
+> devkmsg_read.
+> 
+> This fixes https://bugzilla.redhat.com/show_bug.cgi?id=903192
 
-Please also CC the netdev list for BPF related patches.
+So this does fix that bug.  But then it introduced this one:
 
-Just to give you a heads-up, this might likely lead to a merge
-conflict with the net-next tree (commit 79617801ea0c0e66, "filter:
-bpf_jit_comp: refactor and unify BPF JIT image dump output").
+https://bugzilla.redhat.com/show_bug.cgi?id=952655
 
-> Signed-off-by: Nicolas Schichan <nschichan@freebox.fr>
+Basically, dmesg(1) now always falls back to using the syslog interface
+instead of /dev/kmsg because nothing is granting CAP_SYSLOG for normal
+users.  That was somewhat intentional based on the feedback from Kees
+and Eric, but it does present a problem.
+
+If we want to keep the existing open behavior for /dev/kmsg, and still
+honor dmesg_restrict, we basically need it to fail in devkmsg_read.
+With the current functions we have, that won't work so we'll either need
+to hack that up or just have devkmsg_read call syslog_action_restricted
+instead.
+
+josh
+
+> Reported-by: Christian Kujau <lists@nerdbynature.de>
+> CC: stable@vger.kernel.org
+> Signed-off-by: Eric Paris <eparis@redhat.com>
+> Signed-off-by: Josh Boyer <jwboyer@redhat.com>
 > ---
->   arch/arm/net/bpf_jit_32.c |   46 ++++++++++++++++++++++++++++-----------------
->   1 file changed, 29 insertions(+), 17 deletions(-)
->
-> diff --git a/arch/arm/net/bpf_jit_32.c b/arch/arm/net/bpf_jit_32.c
-> index a0bd8a7..bb66a2b 100644
-> --- a/arch/arm/net/bpf_jit_32.c
-> +++ b/arch/arm/net/bpf_jit_32.c
-> @@ -55,7 +55,8 @@
->   #define FLAG_NEED_X_RESET	(1 << 0)
->
->   struct jit_ctx {
-> -	const struct sk_filter *skf;
-> +	unsigned short prog_len;
-> +	struct sock_filter *prog_insns;
->   	unsigned idx;
->   	unsigned prologue_bytes;
->   	int ret0_fp_idx;
-> @@ -131,8 +132,8 @@ static u16 saved_regs(struct jit_ctx *ctx)
->   {
->   	u16 ret = 0;
->
-> -	if ((ctx->skf->len > 1) ||
-> -	    (ctx->skf->insns[0].code == BPF_S_RET_A))
-> +	if ((ctx->prog_len > 1) ||
-> +	    (ctx->prog_insns[0].code == BPF_S_RET_A))
->   		ret |= 1 << r_A;
->
->   #ifdef CONFIG_FRAME_POINTER
-> @@ -181,7 +182,7 @@ static inline bool is_load_to_a(u16 inst)
->   static void build_prologue(struct jit_ctx *ctx)
->   {
->   	u16 reg_set = saved_regs(ctx);
-> -	u16 first_inst = ctx->skf->insns[0].code;
-> +	u16 first_inst = ctx->prog_insns[0].code;
->   	u16 off;
->
->   #ifdef CONFIG_FRAME_POINTER
-> @@ -279,7 +280,7 @@ static u16 imm_offset(u32 k, struct jit_ctx *ctx)
->   		ctx->imms[i] = k;
->
->   	/* constants go just after the epilogue */
-> -	offset =  ctx->offsets[ctx->skf->len];
-> +	offset =  ctx->offsets[ctx->prog_len];
->   	offset += ctx->prologue_bytes;
->   	offset += ctx->epilogue_bytes;
->   	offset += i * 4;
-> @@ -419,7 +420,7 @@ static inline void emit_err_ret(u8 cond, struct jit_ctx *ctx)
->   		emit(ARM_MOV_R(ARM_R0, ARM_R0), ctx);
->   	} else {
->   		_emit(cond, ARM_MOV_I(ARM_R0, 0), ctx);
-> -		_emit(cond, ARM_B(b_imm(ctx->skf->len, ctx)), ctx);
-> +		_emit(cond, ARM_B(b_imm(ctx->prog_len, ctx)), ctx);
->   	}
->   }
->
-> @@ -469,14 +470,13 @@ static inline void update_on_xread(struct jit_ctx *ctx)
->   static int build_body(struct jit_ctx *ctx)
->   {
->   	void *load_func[] = {jit_get_skb_b, jit_get_skb_h, jit_get_skb_w};
-> -	const struct sk_filter *prog = ctx->skf;
->   	const struct sock_filter *inst;
->   	unsigned i, load_order, off, condt;
->   	int imm12;
->   	u32 k;
->
-> -	for (i = 0; i < prog->len; i++) {
-> -		inst = &(prog->insns[i]);
-> +	for (i = 0; i < ctx->prog_len; i++) {
-> +		inst = &(ctx->prog_insns[i]);
->   		/* K as an immediate value operand */
->   		k = inst->k;
->
-> @@ -769,8 +769,8 @@ cmp_x:
->   				ctx->ret0_fp_idx = i;
->   			emit_mov_i(ARM_R0, k, ctx);
->   b_epilogue:
-> -			if (i != ctx->skf->len - 1)
-> -				emit(ARM_B(b_imm(prog->len, ctx)), ctx);
-> +			if (i != ctx->prog_len - 1)
-> +				emit(ARM_B(b_imm(ctx->prog_len, ctx)), ctx);
->   			break;
->   		case BPF_S_MISC_TAX:
->   			/* X = A */
-> @@ -858,7 +858,7 @@ b_epilogue:
->   }
->
->
-> -void bpf_jit_compile(struct sk_filter *fp)
-> +static void __bpf_jit_compile(struct jit_ctx *out_ctx)
->   {
->   	struct jit_ctx ctx;
->   	unsigned tmp_idx;
-> @@ -867,11 +867,10 @@ void bpf_jit_compile(struct sk_filter *fp)
->   	if (!bpf_jit_enable)
->   		return;
->
-> -	memset(&ctx, 0, sizeof(ctx));
-> -	ctx.skf		= fp;
-> +	ctx = *out_ctx;
->   	ctx.ret0_fp_idx = -1;
->
-> -	ctx.offsets = kzalloc(4 * (ctx.skf->len + 1), GFP_KERNEL);
-> +	ctx.offsets = kzalloc(4 * (ctx.prog_len + 1), GFP_KERNEL);
->   	if (ctx.offsets == NULL)
->   		return;
->
-> @@ -921,13 +920,26 @@ void bpf_jit_compile(struct sk_filter *fp)
->   		print_hex_dump(KERN_INFO, "BPF JIT code: ",
->   			       DUMP_PREFIX_ADDRESS, 16, 4, ctx.target,
->   			       alloc_size, false);
-> -
-> -	fp->bpf_func = (void *)ctx.target;
->   out:
->   	kfree(ctx.offsets);
+> 
+>  v2: Rework patch based on code from Eric Paris, add check in devkmsg_read as
+>      suggested by Kees Cook.
+> 
+>  kernel/printk.c | 91 +++++++++++++++++++++++++++++----------------------------
+>  1 file changed, 47 insertions(+), 44 deletions(-)
+> 
+> diff --git a/kernel/printk.c b/kernel/printk.c
+> index abbdd9e..5541095 100644
+> --- a/kernel/printk.c
+> +++ b/kernel/printk.c
+> @@ -368,6 +368,46 @@ static void log_store(int facility, int level,
+>  	log_next_seq++;
+>  }
+>  
+> +#ifdef CONFIG_SECURITY_DMESG_RESTRICT
+> +int dmesg_restrict = 1;
+> +#else
+> +int dmesg_restrict;
+> +#endif
 > +
-> +	*out_ctx = ctx;
->   	return;
->   }
->
-> +void bpf_jit_compile(struct sk_filter *fp)
+> +static int syslog_action_restricted(int type)
 > +{
-> +	struct jit_ctx ctx;
-> +
-> +	memset(&ctx, 0, sizeof(ctx));
-> +	ctx.prog_len = fp->len;
-> +	ctx.prog_insns = fp->insns;
-> +
-> +	__bpf_jit_compile(&ctx);
-> +	if (ctx.target)
-> +		fp->bpf_func = (void *)ctx.target;
+> +	if (dmesg_restrict)
+> +		return 1;
+> +	/* Unless restricted, we allow "read all" and "get buffer size" for everybody */
+> +	return type != SYSLOG_ACTION_READ_ALL && type != SYSLOG_ACTION_SIZE_BUFFER;
 > +}
 > +
->   static void bpf_jit_free_worker(struct work_struct *work)
->   {
->   	module_free(NULL, work);
->
+> +static int check_syslog_permissions(int type, bool from_file)
+> +{
+> +	/*
+> +	 * If this is from /proc/kmsg and we've already opened it, then we've
+> +	 * already done the capabilities checks at open time.
+> +	 */
+> +	if (from_file && type != SYSLOG_ACTION_OPEN)
+> +		goto ok;
+> +
+> +	if (syslog_action_restricted(type)) {
+> +		if (capable(CAP_SYSLOG))
+> +			goto ok;
+> +		/* For historical reasons, accept CAP_SYS_ADMIN too, with a warning */
+> +		if (capable(CAP_SYS_ADMIN)) {
+> +			printk_once(KERN_WARNING "%s (%d): "
+> +				 "Attempt to access syslog with CAP_SYS_ADMIN "
+> +				 "but no CAP_SYSLOG (deprecated).\n",
+> +				 current->comm, task_pid_nr(current));
+> +			goto ok;
+> +		}
+> +		return -EPERM;
+> +	}
+> +ok:
+> +	return security_syslog(type);
+> +}
+> +
+>  /* /dev/kmsg - userspace message inject/listen interface */
+>  struct devkmsg_user {
+>  	u64 seq;
+> @@ -443,10 +483,16 @@ static ssize_t devkmsg_read(struct file *file, char __user *buf,
+>  	char cont = '-';
+>  	size_t len;
+>  	ssize_t ret;
+> +	int err;
+>  
+>  	if (!user)
+>  		return -EBADF;
+>  
+> +	err = check_syslog_permissions(SYSLOG_ACTION_READ_ALL,
+> +		SYSLOG_FROM_FILE);
+> +	if (err)
+> +		return err;
+> +
+>  	ret = mutex_lock_interruptible(&user->lock);
+>  	if (ret)
+>  		return ret;
+> @@ -624,7 +670,7 @@ static int devkmsg_open(struct inode *inode, struct file *file)
+>  	if ((file->f_flags & O_ACCMODE) == O_WRONLY)
+>  		return 0;
+>  
+> -	err = security_syslog(SYSLOG_ACTION_READ_ALL);
+> +	err = check_syslog_permissions(SYSLOG_ACTION_OPEN, SYSLOG_FROM_FILE);
+>  	if (err)
+>  		return err;
+>  
+> @@ -817,45 +863,6 @@ static inline void boot_delay_msec(int level)
+>  }
+>  #endif
+>  
+> -#ifdef CONFIG_SECURITY_DMESG_RESTRICT
+> -int dmesg_restrict = 1;
+> -#else
+> -int dmesg_restrict;
+> -#endif
+> -
+> -static int syslog_action_restricted(int type)
+> -{
+> -	if (dmesg_restrict)
+> -		return 1;
+> -	/* Unless restricted, we allow "read all" and "get buffer size" for everybody */
+> -	return type != SYSLOG_ACTION_READ_ALL && type != SYSLOG_ACTION_SIZE_BUFFER;
+> -}
+> -
+> -static int check_syslog_permissions(int type, bool from_file)
+> -{
+> -	/*
+> -	 * If this is from /proc/kmsg and we've already opened it, then we've
+> -	 * already done the capabilities checks at open time.
+> -	 */
+> -	if (from_file && type != SYSLOG_ACTION_OPEN)
+> -		return 0;
+> -
+> -	if (syslog_action_restricted(type)) {
+> -		if (capable(CAP_SYSLOG))
+> -			return 0;
+> -		/* For historical reasons, accept CAP_SYS_ADMIN too, with a warning */
+> -		if (capable(CAP_SYS_ADMIN)) {
+> -			printk_once(KERN_WARNING "%s (%d): "
+> -				 "Attempt to access syslog with CAP_SYS_ADMIN "
+> -				 "but no CAP_SYSLOG (deprecated).\n",
+> -				 current->comm, task_pid_nr(current));
+> -			return 0;
+> -		}
+> -		return -EPERM;
+> -	}
+> -	return 0;
+> -}
+> -
+>  #if defined(CONFIG_PRINTK_TIME)
+>  static bool printk_time = 1;
+>  #else
+> @@ -1131,10 +1138,6 @@ int do_syslog(int type, char __user *buf, int len, bool from_file)
+>  	if (error)
+>  		goto out;
+>  
+> -	error = security_syslog(type);
+> -	if (error)
+> -		return error;
+> -
+>  	switch (type) {
+>  	case SYSLOG_ACTION_CLOSE:	/* Close log */
+>  		break;
+> -- 
+> 1.8.1.4
+> 
