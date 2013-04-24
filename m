@@ -1,289 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758114Ab3DXVVY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 17:21:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32502 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757884Ab3DXVVW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 17:21:22 -0400
-Date: Wed, 24 Apr 2013 17:21:12 -0400
-From: Josh Boyer <jwboyer@redhat.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: Kay Sievers <kay@vrfy.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Eric Paris <eparis@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Christian Kujau <lists@nerdbynature.de>,
-        "# 3.4.x" <stable@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, kzak@redhat.com
-Subject: Re: [PATCH v2] kmsg: Honor dmesg_restrict sysctl on /dev/kmsg
-Message-ID: <20130424212112.GH15272@hansolo.jdub.homelinux.org>
-References: <20130322221444.GJ15821@hansolo.jdub.homelinux.org>
- <CAGXu5jL=Lg6OeWyhKBWHowwMeOpFipMOXmBosYHY53MfVMo8fA@mail.gmail.com>
- <1256775981.281402.1364864751771.JavaMail.root@redhat.com>
- <CAGXu5jLU40Vzx+bNyPSArBt_yYNO9sPJ3yLj7z3Yq=pH22W1Gw@mail.gmail.com>
- <20130409005050.GE18176@hansolo.jdub.homelinux.org>
- <20130409154820.GE32476@hansolo.jdub.homelinux.org>
- <CAGXu5jLs1ghuCwcu7crOG1OHuiaP3hmzYY410br_puc9i82-2g@mail.gmail.com>
- <CAPXgP10Vd3Ucxn77WX7wzQoaUmy-JdOBWvYv4zpGSu9qcd=GoQ@mail.gmail.com>
- <20130424175835.GF15272@hansolo.jdub.homelinux.org>
- <CAGXu5jLaQ=Amui3i5+MyG_3HOVnK-1ZoaLqw=jFDwaQCzE+4qw@mail.gmail.com>
+	id S1758210Ab3DXVY4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 17:24:56 -0400
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:59396 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758013Ab3DXVYz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 17:24:55 -0400
+Message-ID: <51784DA3.5030003@linaro.org>
+Date: Wed, 24 Apr 2013 14:24:51 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGXu5jLaQ=Amui3i5+MyG_3HOVnK-1ZoaLqw=jFDwaQCzE+4qw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Kay Sievers <kay@vrfy.org>
+CC: lkml <linux-kernel@vger.kernel.org>, stable <stable@vger.kernel.org>,
+        Feng Tang <feng.tang@intel.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] time: Revert ALWAYS_USE_PERSISTENT_CLOCK compile time
+ optimizaitons
+References: <1366828376-18124-1-git-send-email-john.stultz@linaro.org> <CAPXgP123q9K8-NibkpmbvwpRTM1cdODWycq3o-HdWEYBwoGCFQ@mail.gmail.com> <51782A9D.20303@linaro.org> <CAPXgP12UmmcSDUg60mM08AD=P-Qsy_RabfkDifDFMAp0_1EbLQ@mail.gmail.com>
+In-Reply-To: <CAPXgP12UmmcSDUg60mM08AD=P-Qsy_RabfkDifDFMAp0_1EbLQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 24, 2013 at 01:35:17PM -0700, Kees Cook wrote:
-> On Wed, Apr 24, 2013 at 10:58 AM, Josh Boyer <jwboyer@redhat.com> wrote:
-> > On Wed, Apr 24, 2013 at 07:44:33PM +0200, Kay Sievers wrote:
-> >> On Tue, Apr 9, 2013 at 6:33 PM, Kees Cook <keescook@chromium.org> wrote:
-> >> > On Tue, Apr 9, 2013 at 8:48 AM, Josh Boyer <jwboyer@redhat.com> wrote:
-> >> >> The dmesg_restrict sysctl currently covers the syslog method for access
-> >> >> dmesg, however /dev/kmsg isn't covered by the same protections.  Most
-> >> >> people haven't noticed because util-linux dmesg(1) defaults to using the
-> >> >> syslog method for access in older versions.  With util-linux dmesg(1)
-> >> >> defaults to reading directly from /dev/kmsg.
-> >> >>
-> >> >> Fix this by reworking all of the access methods to use the
-> >> >> check_syslog_permissions function and adding checks to devkmsg_open and
-> >> >> devkmsg_read.
-> >> >>
-> >> >> This fixes https://bugzilla.redhat.com/show_bug.cgi?id=903192
-> >> >>
-> >> >> Reported-by: Christian Kujau <lists@nerdbynature.de>
-> >> >> CC: stable@vger.kernel.org
-> >> >> Signed-off-by: Eric Paris <eparis@redhat.com>
-> >> >> Signed-off-by: Josh Boyer <jwboyer@redhat.com>
-> >> >
-> >> > Thanks!
-> >> >
-> >> > Acked-by: Kees Cook <keescook@chromium.org>
-> >>
-> >> If that's the version currently in Fedora, we just cannot do this.
-> >>    https://bugzilla.redhat.com/show_bug.cgi?id=952655
-> >>
-> >> /dev/kmsg is supposed, and was added, to be a sane alternative to
-> >> syslog(). It is already used in dmesg(1) which is now broken with this
-> >> patch.
-> >>
-> >> The access rules for /dev/kmsg should follow the access rules of
-> >> syslog(), and not be any stricter.
-> >
-> > I haven't tested it yet, but I think something like this should work
-> > while still honoring dmesg_restrict.  I'll test it out while the rest
-> > of you debate things.
-> >
-> > josh
-> >
-> > From: Josh Boyer <jwboyer@redhat.com>
-> > Date: Tue, 9 Apr 2013 11:08:13 -0400
-> > Subject: [PATCH v3] kmsg: Honor dmesg_restrict sysctl on /dev/kmsg
-> >
-> > The dmesg_restrict sysctl currently covers the syslog method for access
-> > dmesg, however /dev/kmsg isn't covered by the same protections.  Most
-> > people haven't noticed because util-linux dmesg(1) defaults to using the
-> > syslog method for access in older versions.  With util-linux dmesg(1)
-> > defaults to reading directly from /dev/kmsg.
-> >
-> > Fix this by reworking all of the access methods to use the
-> > check_syslog_permissions function and adding checks to devkmsg_open and
-> > devkmsg_read.
-> >
-> > This fixes https://bugzilla.redhat.com/show_bug.cgi?id=903192
-> >
-> > Reported-by: Christian Kujau <lists@nerdbynature.de>
-> > CC: stable@vger.kernel.org
-> > Signed-off-by: Eric Paris <eparis@redhat.com>
-> > Signed-off-by: Josh Boyer <jwboyer@redhat.com>
-> > ---
-> >  v3: Allow devkmsg_open to work without CAP_SYSLOG, but still make
-> >      devkmsg_read honor dmesg_restrict
-> >
-> >  kernel/printk.c | 91 +++++++++++++++++++++++++++++----------------------------
-> >  1 file changed, 47 insertions(+), 44 deletions(-)
-> >
-> > diff --git a/kernel/printk.c b/kernel/printk.c
-> > index abbdd9e..2d7be05 100644
-> > --- a/kernel/printk.c
-> > +++ b/kernel/printk.c
-> > @@ -368,6 +368,46 @@ static void log_store(int facility, int level,
-> >         log_next_seq++;
-> >  }
-> >
-> > +#ifdef CONFIG_SECURITY_DMESG_RESTRICT
-> > +int dmesg_restrict = 1;
-> > +#else
-> > +int dmesg_restrict;
-> > +#endif
-> > +
-> > +static int syslog_action_restricted(int type)
-> > +{
-> > +       if (dmesg_restrict)
-> > +               return 1;
-> > +       /* Unless restricted, we allow "read all" and "get buffer size" for everybody */
-> > +       return type != SYSLOG_ACTION_READ_ALL && type != SYSLOG_ACTION_SIZE_BUFFER;
-> > +}
-> > +
-> > +static int check_syslog_permissions(int type, bool from_file)
-> > +{
-> > +       /*
-> > +        * If this is from /proc/kmsg and we've already opened it, then we've
-> > +        * already done the capabilities checks at open time.
-> > +        */
-> > +       if (from_file && type != SYSLOG_ACTION_OPEN)
-> > +               goto ok;
-> > +
-> > +       if (syslog_action_restricted(type)) {
-> > +               if (capable(CAP_SYSLOG))
-> > +                       goto ok;
-> > +               /* For historical reasons, accept CAP_SYS_ADMIN too, with a warning */
-> > +               if (capable(CAP_SYS_ADMIN)) {
-> > +                       printk_once(KERN_WARNING "%s (%d): "
-> > +                                "Attempt to access syslog with CAP_SYS_ADMIN "
-> > +                                "but no CAP_SYSLOG (deprecated).\n",
-> > +                                current->comm, task_pid_nr(current));
-> > +                       goto ok;
-> > +               }
-> > +               return -EPERM;
-> > +       }
-> > +ok:
-> > +       return security_syslog(type);
-> > +}
-> > +
-> >  /* /dev/kmsg - userspace message inject/listen interface */
-> >  struct devkmsg_user {
-> >         u64 seq;
-> > @@ -443,10 +483,16 @@ static ssize_t devkmsg_read(struct file *file, char __user *buf,
-> >         char cont = '-';
-> >         size_t len;
-> >         ssize_t ret;
-> > +       int err;
-> >
-> >         if (!user)
-> >                 return -EBADF;
-> >
-> > +       err = check_syslog_permissions(SYSLOG_ACTION_READ_ALL,
-> > +               SYSLOG_FROM_CALL);
-> > +       if (err)
-> > +               return err;
-> > +
-> >         ret = mutex_lock_interruptible(&user->lock);
-> >         if (ret)
-> >                 return ret;
-> > @@ -624,7 +670,7 @@ static int devkmsg_open(struct inode *inode, struct file *file)
-> >         if ((file->f_flags & O_ACCMODE) == O_WRONLY)
-> >                 return 0;
-> >
-> > -       err = security_syslog(SYSLOG_ACTION_READ_ALL);
-> > +       err = check_syslog_permissions(SYSLOG_ACTION_READ_ALL, SYSLOG_FROM_FILE);
-> >         if (err)
-> >                 return err;
-> >
-> > @@ -817,45 +863,6 @@ static inline void boot_delay_msec(int level)
-> >  }
-> >  #endif
-> >
-> > -#ifdef CONFIG_SECURITY_DMESG_RESTRICT
-> > -int dmesg_restrict = 1;
-> > -#else
-> > -int dmesg_restrict;
-> > -#endif
-> > -
-> > -static int syslog_action_restricted(int type)
-> > -{
-> > -       if (dmesg_restrict)
-> > -               return 1;
-> > -       /* Unless restricted, we allow "read all" and "get buffer size" for everybody */
-> > -       return type != SYSLOG_ACTION_READ_ALL && type != SYSLOG_ACTION_SIZE_BUFFER;
-> > -}
-> > -
-> > -static int check_syslog_permissions(int type, bool from_file)
-> > -{
-> > -       /*
-> > -        * If this is from /proc/kmsg and we've already opened it, then we've
-> > -        * already done the capabilities checks at open time.
-> > -        */
-> > -       if (from_file && type != SYSLOG_ACTION_OPEN)
-> > -               return 0;
-> > -
-> > -       if (syslog_action_restricted(type)) {
-> > -               if (capable(CAP_SYSLOG))
-> > -                       return 0;
-> > -               /* For historical reasons, accept CAP_SYS_ADMIN too, with a warning */
-> > -               if (capable(CAP_SYS_ADMIN)) {
-> > -                       printk_once(KERN_WARNING "%s (%d): "
-> > -                                "Attempt to access syslog with CAP_SYS_ADMIN "
-> > -                                "but no CAP_SYSLOG (deprecated).\n",
-> > -                                current->comm, task_pid_nr(current));
-> > -                       return 0;
-> > -               }
-> > -               return -EPERM;
-> > -       }
-> > -       return 0;
-> > -}
-> > -
-> >  #if defined(CONFIG_PRINTK_TIME)
-> >  static bool printk_time = 1;
-> >  #else
-> > @@ -1131,10 +1138,6 @@ int do_syslog(int type, char __user *buf, int len, bool from_file)
-> >         if (error)
-> >                 goto out;
-> >
-> > -       error = security_syslog(type);
-> > -       if (error)
-> > -               return error;
-> > -
-> >         switch (type) {
-> >         case SYSLOG_ACTION_CLOSE:       /* Close log */
-> >                 break;
-> 
-> So, the problem here is the expectation of privileges. The /proc/kmsg
-> usage pattern was:
-> 
-> open /proc/kmsg with CAP_SYSLOG
-> drop CAP_SYSLOG
-> read /proc/kmsg forever
+On 04/24/2013 12:18 PM, Kay Sievers wrote:
+> On Wed, Apr 24, 2013 at 8:55 PM, John Stultz <john.stultz@linaro.org> wrote:
+>> On 04/24/2013 11:41 AM, Kay Sievers wrote:
+>>> On Wed, Apr 24, 2013 at 8:32 PM, John Stultz <john.stultz@linaro.org>
+>>> wrote:
+>>>> Kay Sievers noted that the ALWAYS_USE_PERSISTENT_CLOCK config,
+>>>> which enables some minor compile time optimization to avoid
+>>>> uncessary code in mostly the suspend/resume path could cause
+>>>> problems for userland.
+>>>>
+>>>> In particular, the dependency for RTC_HCTOSYS on
+>>>> !ALWAYS_USE_PERSISTENT_CLOCK, which avoids setting the time
+>>>> twice and simplifies suspend/resume, has the side effect
+>>>> of causing the /sys/class/rtc/rtcN/hctosys flag to always be
+>>>> zero, and this flag is commonly used by udev to setup the
+>>>> /dev/rtc symlink to /dev/rtcN, which can cause pain for
+>>>> older applications.
+>>> FWIW, in the light of the original change, I've just removed the
+>>> /dev/rtc creation from the default udev rules now, so that thing will
+>>> be phased out in the future.
+>> Is that actually wanted? What happens to applications that use /dev/rtc?
+>>
+>> I think setting up the /dev/rtc link is important. Its just that setting it
+>> up exclusively by the hctosys flag is maybe more fragile then we'd like.
+>> Instead the hctosys flag maybe should only be used as a hint if there is
+>> more then one RTC available.
+> So far we only created the symlink for an rtc with the hctosys flag
+> set. It was added as a workaround for ARM, which sometimes has
+> multiple RTCs. But there is now also logic in udev/systemd anyway to
+> search for the system's rtc, which does not rely on the symlink. Other
+> commonly used tools we checked just use /dev/rtc0 directly.
 
-This doesn't change the /proc interface at all.
+Yea, but there are likely a number of legacy applications that will 
+still need the /dev/rtc link. I remember lots of pain when the /dev/rtcN 
+devices showed up, and I suspect that's all been quiet due to the 
+/dev/rtc links.
 
-> If we change the FILE vs CALL and OPEN vs READ stuff here, we're lying
-> to the API about what's happening. If we use this patch, then we can't
-> use /dev/kmsg in the same way (i.e. running without privileges).
-
-Uh... Yes we can.  I tested it as a normal user.  It works just fine
-running without privs and without CAP_SYSLOG, like it did before there
-was a patch at all.  It also honors dmesg_restrict in devkmsg_read.
-I'm confused why you think this doesn't work?
+Dropping that link seems way too risky to me, thus why I'm submitting a 
+revert. As I didn't realize the link was dependent on the hctosys flag.
 
 
-> That said, I much prefer doing the privilege test at read time since
-> that means passing a file descriptor to another process doesn't mean
-> the new process can just continue reading. If we're going to be
-> defining the new behavior for /dev/kmsg, then I think we should
-> explicitly drop the fall-back to CAP_SYS_ADMIN. Perhaps introduce a
+> As mentioned in the mail yesterday, I expected that
+> CONFIG_RTC_HCTOSYS=y was also needed on x86. The current udev logic
+> would need updating anyway, if we disable CONFIG_RTC_HCTOSYS=y now. So
+> let's just find out what's really needed here and add it back properly
+> if something really needs it.
 
-I think Karel and Kay's entire point was /dev/kmsg shouldn't be getting
-new behavior.  Aside from honoring dmesg_restrict, they see any behavior
-change as a regression.
+I'm really fine with the revert, and would like to avoid any userland 
+changes. There's more changes to come in that area of the kernel, so if 
+there is any userland implications (which I'd actually prefer to avoid), 
+lets make sure they are well thought out and not rushed.
 
-> "legacy_privs" option to check_syslog_permissions() and leave it set
-> for do_syslog and cleared for devkmsg_*. This means we can run a
-> /dev/kmsg reader with _only_ CAP_SYSLOG. (A while back, the original
-> intent that reworked the permissions here was to avoid needing
-> CAP_SYS_ADMIN.)
+> While we are at it, the interface to read and set the persistent clock
+> from userspace, the clock the kernel internally uses, is still to just
+> use the /dev/rtc0 device with the ioctls? There is no other native
+> kernel timer interface or something else for that, right?
 
-Right, but /dev/kmsg didn't require CAP_SYSLOG before any version of
-this patch existed.  That's the bug Karel and Kay are reporting.  As
-far as I can see, that should be just fine for reading unless
-dmesg_restrict is set.
+Right, the persistent_clock is only useful to the kernel over the RTC in 
+the case where interrupts are disabled. Userland should stick to the 
+RTC, and we shouldn't expose the persistent_clock out to userland. I'm 
+hoping we'll be able to push the persistent_clock functionality into the 
+RTC code (though I suspect the micro embedded folks will complain about 
+having to compile the generic rtc core in as well - though we can always 
+leave time initialization to userland for those crazier cases).
 
-> And then maybe we need to rename the from_file to be from_proc (and
-> similarly SYSLOG_FROM_PROC) too?
-
-Well, that can be done regardless of what falls out from above and would
-probably make things clearer.
-
-josh
+thanks
+-john
