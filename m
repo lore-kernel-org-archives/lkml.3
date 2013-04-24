@@ -1,201 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758431Ab3DXVhS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 17:37:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43894 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758191Ab3DXVhQ (ORCPT
+	id S1758448Ab3DXVlu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 17:41:50 -0400
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:62298 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758416Ab3DXVls (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 17:37:16 -0400
-Date: Wed, 24 Apr 2013 14:37:14 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Alexandre Bounine <alexandre.bounine@idt.com>
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Li Yang <leoli@freescale.com>, Kumar Gala <galak@kernel.crashing.org>,
-        Andre van Herk <andre.van.herk@Prodrive.nl>,
-        Micha Nelissen <micha.nelissen@Prodrive.nl>
-Subject: Re: [PATCH 1/3] rapidio: make enumeration/discovery configurable
-Message-Id: <20130424143714.4911405aa979bff27887765a@linux-foundation.org>
-In-Reply-To: <1366813919-13766-2-git-send-email-alexandre.bounine@idt.com>
-References: <1366813919-13766-1-git-send-email-alexandre.bounine@idt.com>
-	<1366813919-13766-2-git-send-email-alexandre.bounine@idt.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 24 Apr 2013 17:41:48 -0400
+MIME-Version: 1.0
+In-Reply-To: <CA+55aFxVwcf82qUUferCcm-L1u1GgtJ5g21hj3Em1AETyBDTVg@mail.gmail.com>
+References: <CAGXu5j+aADfSpBcz9=LVtREQQiW4d3Jd8t7nQKbih7oUhvQghg@mail.gmail.com>
+	<20130322145448.f44f9d10a36620c1c11535b7@linux-foundation.org>
+	<20130322221444.GJ15821@hansolo.jdub.homelinux.org>
+	<CAGXu5jL=Lg6OeWyhKBWHowwMeOpFipMOXmBosYHY53MfVMo8fA@mail.gmail.com>
+	<1256775981.281402.1364864751771.JavaMail.root@redhat.com>
+	<CAGXu5jLU40Vzx+bNyPSArBt_yYNO9sPJ3yLj7z3Yq=pH22W1Gw@mail.gmail.com>
+	<20130409005050.GE18176@hansolo.jdub.homelinux.org>
+	<20130409154820.GE32476@hansolo.jdub.homelinux.org>
+	<CAGXu5jLs1ghuCwcu7crOG1OHuiaP3hmzYY410br_puc9i82-2g@mail.gmail.com>
+	<CAPXgP10Vd3Ucxn77WX7wzQoaUmy-JdOBWvYv4zpGSu9qcd=GoQ@mail.gmail.com>
+	<20130424175835.GF15272@hansolo.jdub.homelinux.org>
+	<CAGXu5jLaQ=Amui3i5+MyG_3HOVnK-1ZoaLqw=jFDwaQCzE+4qw@mail.gmail.com>
+	<CA+55aFxVwcf82qUUferCcm-L1u1GgtJ5g21hj3Em1AETyBDTVg@mail.gmail.com>
+Date: Wed, 24 Apr 2013 14:41:47 -0700
+X-Google-Sender-Auth: 0pJ3nds0pjhLxi2RUS8itNRxx48
+Message-ID: <CAGXu5jKsp6oDf=wAaPOySpDiUAeXShe4L5_LbjROHe9djp8C4Q@mail.gmail.com>
+Subject: Re: [PATCH v2] kmsg: Honor dmesg_restrict sysctl on /dev/kmsg
+From: Kees Cook <keescook@chromium.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Josh Boyer <jwboyer@redhat.com>, Kay Sievers <kay@vrfy.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Eric Paris <eparis@redhat.com>,
+        Christian Kujau <lists@nerdbynature.de>,
+        "# 3.4.x" <stable@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Karel Zak <kzak@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 24 Apr 2013 10:31:57 -0400 Alexandre Bounine <alexandre.bounine@idt.com> wrote:
-
-> Rework to implement RapidIO enumeration/discovery method selection
-> combined with ability to use enumeration/discovery as a kernel module.
-> 
-> This patch adds ability to introduce new RapidIO enumeration/discovery methods
-> using kernel configuration options or loadable modules. Configuration option
-> mechanism allows to select built-in or modular enumeration/discovery method from
-> the list of existing methods or use external modules.
-> If a modular enumeration/discovery is selected each RapidIO mport device can
-> have its own method attached to it.
-> 
-> The currently existing enumeration/discovery code was updated to be used
-> as built-in or modular method. This configuration option is named "Basic
-> enumeration/discovery" method.
-> 
-> Several common routines have been moved from rio-scan.c to make them available
-> to other enumeration methods and reduce number of exported symbols.
-> 
-> ...
+On Wed, Apr 24, 2013 at 2:30 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Wed, Apr 24, 2013 at 1:35 PM, Kees Cook <keescook@chromium.org> wrote:
+>>
+>> That said, I much prefer doing the privilege test at read time since
+>> that means passing a file descriptor to another process doesn't mean
+>> the new process can just continue reading.
 >
-> @@ -1421,3 +1295,46 @@ enum_done:
->  bail:
->  	return -EBUSY;
->  }
-> +
-> +struct rio_scan rio_scan_ops = {
-> +	.enumerate = rio_enum_mport,
-> +	.discover = rio_disc_mport,
-> +};
-> +
-> +
-> +#ifdef MODULE
-
-Why the `ifdef MODULE'?  The module parameters are still accessible if
-the driver is statically linked and we do want the driver to behave in
-the same way regardless of how it was linked and loaded.
-
-> +static bool scan;
-> +module_param(scan, bool, 0);
-> +MODULE_PARM_DESC(scan, "Start RapidIO network enumeration/discovery "
-> +			"(default = 1)");
-> +
-> +/**
-> + * rio_basic_attach:
-> + *
-> + * When this enumeration/discovery method is loaded as a module this function
-> + * registers its specific enumeration and discover routines for all available
-> + * RapidIO mport devices. The "scan" command line parameter controls ability of
-> + * the module to start RapidIO enumeration/discovery automatically.
-> + *
-> + * Returns 0 for success or -EIO if unable to register itself.
-> + *
-> + * This enumeration/discovery method cannot be unloaded and therefore does not
-> + * provide a matching cleanup_module routine.
-> + */
-> +
-> +int __init rio_basic_attach(void)
-
-static
-
-> +{
-> +	if (rio_register_scan(RIO_MPORT_ANY, &rio_scan_ops))
-> +		return -EIO;
-> +	if (scan)
-> +		rio_init_mports();
-> +	return 0;
-> +}
-> +
-> +module_init(rio_basic_attach);
-> +
-> +MODULE_DESCRIPTION("Basic RapidIO enumeration/discovery");
-> +MODULE_LICENSE("GPL");
-> +
-> +#endif /* MODULE */
-> diff --git a/drivers/rapidio/rio.c b/drivers/rapidio/rio.c
-> index d553b5d..e36628a 100644
-> --- a/drivers/rapidio/rio.c
-> +++ b/drivers/rapidio/rio.c
-> @@ -31,6 +31,9 @@
->  
->  #include "rio.h"
->  
-> +LIST_HEAD(rio_devices);
-
-static?
-
-> +DEFINE_SPINLOCK(rio_global_list_lock);
-
-static?
-
-> +
->  static LIST_HEAD(rio_mports);
->  static unsigned char next_portid;
->  static DEFINE_SPINLOCK(rio_mmap_lock);
-> 
-> ...
+> Bullshit.
 >
-> +/**
-> + * rio_switch_init - Sets switch operations for a particular vendor switch
-> + * @rdev: RIO device
-> + * @do_enum: Enumeration/Discovery mode flag
-> + *
-> + * Searches the RIO switch ops table for known switch types. If the vid
-> + * and did match a switch table entry, then call switch initialization
-> + * routine to setup switch-specific routines.
-> + */
-> +void rio_switch_init(struct rio_dev *rdev, int do_enum)
-> +{
-> +	struct rio_switch_ops *cur = __start_rio_switch_ops;
-> +	struct rio_switch_ops *end = __end_rio_switch_ops;
+> That's exactly the wrong kind of thinking. If you had privileges to
+> open something, and you pass it off, it's *your* choice.
 
-huh, I hadn't noticed that RIO has its very own vmlinux section.  How
-peculair.
+Yes, this is what I was pointing out originally. The semantics of
+/proc/kmsg do exactly that: check at open time, which is much cleaner.
 
-> +	while (cur < end) {
-> +		if ((cur->vid == rdev->vid) && (cur->did == rdev->did)) {
-> +			pr_debug("RIO: calling init routine for %s\n",
-> +				 rio_name(rdev));
-> +			cur->init_hook(rdev, do_enum);
-> +			break;
-> +		}
-> +		cur++;
-> +	}
-> +
-> +	if ((cur >= end) && (rdev->pef & RIO_PEF_STD_RT)) {
-> +		pr_debug("RIO: adding STD routing ops for %s\n",
-> +			rio_name(rdev));
-> +		rdev->rswitch->add_entry = rio_std_route_add_entry;
-> +		rdev->rswitch->get_entry = rio_std_route_get_entry;
-> +		rdev->rswitch->clr_table = rio_std_route_clr_table;
-> +	}
-> +
-> +	if (!rdev->rswitch->add_entry || !rdev->rswitch->get_entry)
-> +		printk(KERN_ERR "RIO: missing routing ops for %s\n",
-> +		       rio_name(rdev));
-> +}
-> +EXPORT_SYMBOL_GPL(rio_switch_init);
-> 
-> ...
->
-> +int rio_register_scan(int mport_id, struct rio_scan *scan_ops)
-> +{
-> +	struct rio_mport *port;
-> +	int rc = -EBUSY;
-> +
-> +	list_for_each_entry(port, &rio_mports, node) {
+Solving the permissions checking delta between the syslog via syscall
+and syslog via /proc/kmsg was the original intent of the code so that
+capabilities could be dropped after open. And when /dev/kmsg came
+along, it didn't follow either convention. I just want to see the
+behavior standardized.
 
-How come the driver has no locking for rio_mports?  If a bugfix isn't
-needed here then a code comment is!
+-Kees
 
-> +		if (port->id == mport_id || mport_id == RIO_MPORT_ANY) {
-> +			if (port->nscan && mport_id == RIO_MPORT_ANY)
-> +				continue;
-> +			else if (port->nscan)
-> +				break;
-> +
-> +			port->nscan = scan_ops;
-> +			rc = 0;
-> +
-> +			if (mport_id != RIO_MPORT_ANY)
-> +				break;
-> +		}
-> +	}
-> +
-> +	return rc;
-> +}
-> 
-> ...
->
-
+--
+Kees Cook
+Chrome OS Security
