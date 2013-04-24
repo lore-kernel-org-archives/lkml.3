@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758330Ab3DXJin (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 05:38:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3076 "EHLO mx1.redhat.com"
+	id S1758355Ab3DXJis (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 05:38:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9564 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758312Ab3DXJij (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 05:38:39 -0400
+	id S1758335Ab3DXJio (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 05:38:44 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>,
@@ -17,40 +17,16 @@ Cc: Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@kernel.org>, Borislav Petkov <bp@alien8.de>,
         Stephane Eranian <eranian@google.com>, Sam Ravnborg <sam@ravnborg.org>,
         David Ahern <dsahern@gmail.com>
-Subject: [PATCHv2 00/26] perf tools: Makefile changes
-Date: Wed, 24 Apr 2013 11:37:27 +0200
-Message-Id: <1366796273-4780-1-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 07/26] perf tools: Move libdw check config into config/Makefile
+Date: Wed, 24 Apr 2013 11:37:34 +0200
+Message-Id: <1366796273-4780-8-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1366796273-4780-1-git-send-email-jolsa@redhat.com>
+References: <1366796273-4780-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi,
-this patchset mostly consists of moving the config 'CHK'
-stuff into config/Makefile which will be also used for
-kbuild afterwards.
-
-I'm sending now just the Makefile changes separated from
-the kbuild stuff, which will come later.
-
-The original RFC is here:
-http://marc.info/?l=linux-kernel&m=136484403415600&w=2
-
-The patchset is tested via automated make test by running:
-  $ make -f tests/make 
-
-v2 changes:
-  - adding make clean all support (and test)
-  - de-CAPSizing the test/make test
-  - several line breaking changes, ommiting usage of '\'
-  - '?=' operator removal for STRIP
-  - tabs to spaces conversion for Makefile non-commands lines
-
-Changes could be reached in here:
-git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git
-perf/core_make
-
-thanks for comments,
-jirka
+Moving libdw check config into config/Makefile.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
@@ -65,38 +41,54 @@ Cc: Stephane Eranian <eranian@google.com>
 Cc: Sam Ravnborg <sam@ravnborg.org>
 Cc: David Ahern <dsahern@gmail.com>
 ---
-Jiri Olsa (26):
-      perf tools: Add automated make test suite
-      perf tools: Fix tab vs spaces issue in Makefile ifdef/endif
-      perf tools: Move arch check into config/Makefile
-      perf tools: Move programs check into config/Makefile
-      perf tools: Move compiler and linker flags check into config/Makefile
-      perf tools: Move libelf check config into config/Makefile
-      perf tools: Move libdw check config into config/Makefile
-      perf tools: Move libunwind check config into config/Makefile
-      perf tools: Move libaudit check config into config/Makefile
-      perf tools: Move slang check config into config/Makefile
-      perf tools: Move gtk2 check config into config/Makefile
-      perf tools: Move libperl check config into config/Makefile
-      perf tools: Move libpython check config into config/Makefile
-      perf tools: Move libbfd check config into config/Makefile
-      perf tools: Move stdlib check config into config/Makefile
-      perf tools: Move libnuma check config into config/Makefile
-      perf tools: Move paths config into config/Makefile
-      perf tools: Final touches for CHK config move
-      perf tools: Merge all *CFLAGS* make variable into CFLAGS
-      perf tools: Merge all *LDFLAGS* make variable into LDFLAGS
-      perf tools: Switch to full patch C include directories
-      perf tools: Add NO_BIONIC variable to confiure bionic setup
-      perf tools: Replace tabs with spaces for all non-commands statements
-      perf tools: Replace multiple line assignment with multiple statements
-      perf tools: Remove '?=' Makefile STRIP assignment
-      perf tools: Add missing liblk.a dependency for python/perf.so
+ tools/perf/Makefile        |  7 -------
+ tools/perf/config/Makefile | 15 +++++++++++++++
+ 2 files changed, 15 insertions(+), 7 deletions(-)
 
- tools/perf/Makefile        | 630 ++++++++++++++---------------------------------------------------------------
- tools/perf/config/Makefile | 477 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/tests/make      | 141 ++++++++++++++++++
- tools/perf/util/setup.py   |   5 +-
- 4 files changed, 732 insertions(+), 521 deletions(-)
- create mode 100644 tools/perf/config/Makefile
- create mode 100644 tools/perf/tests/make
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index c309a5b..fd45172 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -517,15 +517,8 @@ LIB_OBJS += $(OUTPUT)util/symbol-minimal.o
+ 
+ else # NO_LIBELF
+ ifndef NO_DWARF
+-ifeq ($(origin PERF_HAVE_DWARF_REGS), undefined)
+-	msg := $(warning DWARF register mappings have not been defined for architecture $(ARCH), DWARF support disabled);
+-else
+-	BASIC_CFLAGS := -DDWARF_SUPPORT $(LIBDW_CFLAGS) $(BASIC_CFLAGS)
+-	BASIC_LDFLAGS := $(LIBDW_LDFLAGS) $(BASIC_LDFLAGS)
+-	EXTLIBS += -lelf -ldw
+ 	LIB_OBJS += $(OUTPUT)util/probe-finder.o
+ 	LIB_OBJS += $(OUTPUT)util/dwarf-aux.o
+-endif # PERF_HAVE_DWARF_REGS
+ endif # NO_DWARF
+ endif # NO_LIBELF
+ 
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index ef09d6c..3620877 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -154,4 +154,19 @@ FLAGS_LIBELF=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS)
+ ifeq ($(call try-cc,$(SOURCE_ELF_MMAP),$(FLAGS_LIBELF),-DLIBELF_MMAP),y)
+ 	BASIC_CFLAGS += -DLIBELF_MMAP
+ endif
++
++# include ARCH specific config
++-include arch/$(ARCH)/Makefile
++
++ifndef NO_DWARF
++ifeq ($(origin PERF_HAVE_DWARF_REGS), undefined)
++	msg := $(warning DWARF register mappings have not been defined for architecture $(ARCH), DWARF support disabled);
++	NO_DWARF := 1
++else
++	BASIC_CFLAGS := -DDWARF_SUPPORT $(LIBDW_CFLAGS) $(BASIC_CFLAGS)
++	BASIC_LDFLAGS := $(LIBDW_LDFLAGS) $(BASIC_LDFLAGS)
++	EXTLIBS += -lelf -ldw
++endif # PERF_HAVE_DWARF_REGS
++endif # NO_DWARF
++
+ endif # NO_LIBELF
+-- 
+1.7.11.7
+
