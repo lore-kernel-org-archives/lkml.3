@@ -1,100 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756593Ab3DXQbm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 12:31:42 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:55032 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756476Ab3DXQbl (ORCPT
+	id S1756740Ab3DXQbr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 12:31:47 -0400
+Received: from co9ehsobe004.messaging.microsoft.com ([207.46.163.27]:27327
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756476Ab3DXQbp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 12:31:41 -0400
-From: Pawel Moll <pawel.moll@arm.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Pawel Moll <pawel.moll@arm.com>
-Subject: [PATCH] mfd: vexpress: Handle pending config transactions
-Date: Wed, 24 Apr 2013 17:31:24 +0100
-Message-Id: <1366821084-12815-1-git-send-email-pawel.moll@arm.com>
-X-Mailer: git-send-email 1.7.10.4
-X-OriginalArrivalTime: 24 Apr 2013 16:31:39.0910 (UTC) FILETIME=[328F8260:01CE4109]
-X-MC-Unique: 113042417314000601
-Content-Type: text/plain; charset=WINDOWS-1252
+	Wed, 24 Apr 2013 12:31:45 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -7
+X-BigFish: VPS-7(zz98dIbafdM1432Izz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzzz2dh668h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1155h)
+X-WSS-ID: 0MLRPVJ-01-1TT-02
+X-M-MSG: 
+Date: Wed, 24 Apr 2013 11:30:38 -0500
+From: Jacob Shin <jacob.shin@amd.com>
+To: Will Deacon <will.deacon@arm.com>
+CC: Ingo Molnar <mingo@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "x86@kernel.org" <x86@kernel.org>,
+        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V2 1/4] perf: Add hardware breakpoint address mask
+Message-ID: <20130424163038.GA29816@jshin-Toonie>
+References: <1366703825-19373-1-git-send-email-jacob.shin@amd.com>
+ <1366703825-19373-2-git-send-email-jacob.shin@amd.com>
+ <20130423095437.GD17593@mudshark.cambridge.arm.com>
+ <20130423143423.GB17021@jshin-Toonie>
+ <20130423144057.GA19644@jshin-Toonie>
+ <20130423150240.GD18616@mudshark.cambridge.arm.com>
+ <20130423151846.GA22052@jshin-Toonie>
+ <20130424094853.GB21850@mudshark.cambridge.arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20130424094853.GB21850@mudshark.cambridge.arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r3OGVkPU022187
 
-The config transactions "scheduler" was hopelessly broken,
-repeating completed transaction instead of picking up
-next pending one.
+On Wed, Apr 24, 2013 at 10:48:53AM +0100, Will Deacon wrote:
+> On Tue, Apr 23, 2013 at 04:18:46PM +0100, Jacob Shin wrote:
+> > On Tue, Apr 23, 2013 at 04:02:40PM +0100, Will Deacon wrote:
+> > > On Tue, Apr 23, 2013 at 03:40:57PM +0100, Jacob Shin wrote:
+> > > > >   perf stat -e mem:0x1000/0xf:w a.out
+> > > 
+> > > Are you saying that this command would count any write to:
+> > > 
+> > > 	0x1000
+> > > 	0x1001
+> > > 	...
+> > > 	0x100e
+> > > 	0x100f
+> > > 
+> > > ?
+> > > 
+> > > If so, that differs from the ARM debug architecture in that the mask is called
+> > > `byte-address-select', so a mask of 0b1001 would count accesses at +0 bytes
+> > > and +3 bytes from the base address. Is that possible to describe with your
+> > > masking scheme and a single watchpoint?
+> > > 
+> > > A mask of 0xf, would count +0, +1, +2 and +3 (essentially bp_len == 4).
+> > > 
+> > > Unfortunately, that means I can't just invert the mask like I originally
+> > > thought.
+> > 
+> > Ah, .. that is different .
+> > 
+> > Our hardware matches on the breakpoint if:
+> > 
+> >   (physical_address & ~bp_addr_mask) == (bp_addr & ~bp_addr_mask)
+> > 
+> > In other words, the mask says which of the bp_addr bits hardware should
+> > ignore when matching.
+> > 
+> > .. it would be great if we can come up with userland interface that works
+> > for both archs. I'm coming up empty at the moment ..
+> 
+> After a bit of thought, I *think* the ARM mechanism is more expressive, and
+> you could describe your masking in terms of byte-address-select. The
+> downside is that we'd end up with much larger masks, which could be argued
+> as counter-intuitive from a user's point of view.
 
-Fixed now. Also improved debug messages.
+Hm .. Oleg, any thoughts on this?
 
-Signed-off-by: Pawel Moll <pawel.moll@arm.com>
----
- drivers/mfd/vexpress-config.c |   31 ++++++++++++++++++++-----------
- 1 file changed, 20 insertions(+), 11 deletions(-)
+bp_addr is encoded into attr.config1 and bp_len in attr.config2. I'm not
+sure if attr.config is being used or not, but if not, we could say that
+architecture specific "stuff" goes into attr.config.
 
-diff --git a/drivers/mfd/vexpress-config.c b/drivers/mfd/vexpress-config.c
-index 3c1723aa..4991db3 100644
---- a/drivers/mfd/vexpress-config.c
-+++ b/drivers/mfd/vexpress-config.c
-@@ -184,13 +184,14 @@ static int vexpress_config_schedule(struct vexpress_config_trans *trans)
- 
- 	spin_lock_irqsave(&bridge->transactions_lock, flags);
- 
--	vexpress_config_dump_trans("Executing", trans);
--
--	if (list_empty(&bridge->transactions))
-+	if (list_empty(&bridge->transactions)) {
-+		vexpress_config_dump_trans("Executing", trans);
- 		status = bridge->info->func_exec(trans->func->func,
- 				trans->offset, trans->write, trans->data);
--	else
-+	} else {
-+		vexpress_config_dump_trans("Queuing", trans);
- 		status = VEXPRESS_CONFIG_STATUS_WAIT;
-+	}
- 
- 	switch (status) {
- 	case VEXPRESS_CONFIG_STATUS_DONE:
-@@ -217,20 +218,28 @@ void vexpress_config_complete(struct vexpress_config_bridge *bridge,
- 
- 	trans = list_first_entry(&bridge->transactions,
- 			struct vexpress_config_trans, list);
-+	trans->status = status;
- 	vexpress_config_dump_trans("Completed", trans);
- 
--	trans->status = status;
- 	list_del(&trans->list);
- 
--	if (!list_empty(&bridge->transactions)) {
--		vexpress_config_dump_trans("Pending", trans);
-+	complete(&trans->completion);
-+
-+	while (!list_empty(&bridge->transactions)) {
-+		trans = list_first_entry(&bridge->transactions,
-+				struct vexpress_config_trans, list);
- 
--		bridge->info->func_exec(trans->func->func, trans->offset,
--				trans->write, trans->data);
-+		vexpress_config_dump_trans("Executing pending", trans);
-+		status = bridge->info->func_exec(trans->func->func,
-+				trans->offset, trans->write, trans->data);
-+
-+		if (status == VEXPRESS_CONFIG_STATUS_DONE)
-+			vexpress_config_dump_trans("Finished pending", trans);
-+		else
-+			break;
- 	}
--	spin_unlock_irqrestore(&bridge->transactions_lock, flags);
- 
--	complete(&trans->completion);
-+	spin_unlock_irqrestore(&bridge->transactions_lock, flags);
- }
- EXPORT_SYMBOL(vexpress_config_complete);
- 
--- 
-1.7.10.4
+And in perf tools:
 
+  perf stat -e mem:0x1000/0xf:w a.out
+
+Will just translate into setting attr.config = 0xf. And only x86
+hw_breakpoint will know what .config = 0xf means for x86 and do the right
+thing. For ARM, 0xf will mean something different.
+
+The downside is that in userland perf tool we need differing documentation
+on what the mask syntax means for each architecture.
 
