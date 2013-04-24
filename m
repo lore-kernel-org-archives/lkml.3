@@ -1,44 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757856Ab3DXLhI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 07:37:08 -0400
-Received: from jacques.telenet-ops.be ([195.130.132.50]:56865 "EHLO
-	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756418Ab3DXLg6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 07:36:58 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Antti Palosaari <crope@iki.fi>, Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH 2/2] [media] anysee: Grammar s/report the/report to/
-Date: Wed, 24 Apr 2013 13:36:46 +0200
-Message-Id: <1366803406-17738-2-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1366803406-17738-1-git-send-email-geert@linux-m68k.org>
-References: <1366803406-17738-1-git-send-email-geert@linux-m68k.org>
+	id S1757987Ab3DXLhn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 07:37:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52543 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757659Ab3DXLhH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 07:37:07 -0400
+Date: Wed, 24 Apr 2013 13:36:52 +0200
+From: Frantisek Hrbata <fhrbata@redhat.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, tglx@linutronix.de,
+        mingo@redhat.com, x86@kernel.org, oleg@redhat.com,
+        kamaleshb@in.ibm.com, hechjie@cn.ibm.com
+Subject: Re: [PATCH] x86: add phys addr validity check for /dev/mem mmap
+Message-ID: <20130424113652.GC3358@dhcp-26-164.brq.redhat.com>
+Reply-To: Frantisek Hrbata <fhrbata@redhat.com>
+References: <1364905733-23937-1-git-send-email-fhrbata@redhat.com>
+ <515B2802.1050405@zytor.com>
+ <20130402191012.GC3314@dhcp-26-164.brq.redhat.com>
+ <515B3F98.5020101@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <515B3F98.5020101@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
- drivers/media/usb/dvb-usb-v2/anysee.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+On Tue, Apr 02, 2013 at 01:29:12PM -0700, H. Peter Anvin wrote:
+> On 04/02/2013 12:10 PM, Frantisek Hrbata wrote:
+> > 
+> > Hi, this is exactly what the patch is doing imho. Note that the
+> > valid_phys_addr_range(), which is using the high_memory, is the same as the
+> > default one in drivers/char/mem.c(#ifndef ARCH_HAS_VALID_PHYS_ADDR_RANGE). I
+> > just added x86 specific check for valid_mmap_phys_addr_range and moved both
+> > functions to arch/x86/mm/mmap.c, rather then modifying the default generic ones.
+> > This is how other archs(arm) are doing it.
+> > 
+> > Also valid_phys_addr_range is used just in read|write_mem and
+> > valid_mmap_phys_addr_range is checked in mmap_mem and it calls phys_addr_valid
+> > 
+> > static inline int phys_addr_valid(resource_size_t addr)
+> > {
+> > #ifdef CONFIG_PHYS_ADDR_T_64BIT
+> > 	return !(addr >> boot_cpu_data.x86_phys_bits);
+> > #else
+> >         return 1;
+> > #endif
+> > }                          
+> > 
+> > I for sure could overlooked something, but this seems right to me.
+> > 
+> 
+> OK, this is really confusing ... which isn't a *huge* surprise (the
+> entire /dev/mem code has some gigantic bugs in it.)
+> 
+> I think I need to do more of an in-depth review.  The other question is
+> why we don't call phys_addr_valid() everywhere.
+> 
+> 	-hpa
 
-diff --git a/drivers/media/usb/dvb-usb-v2/anysee.c b/drivers/media/usb/dvb-usb-v2/anysee.c
-index 3a1f976..1760fee 100644
---- a/drivers/media/usb/dvb-usb-v2/anysee.c
-+++ b/drivers/media/usb/dvb-usb-v2/anysee.c
-@@ -885,7 +885,7 @@ static int anysee_frontend_attach(struct dvb_usb_adapter *adap)
- 		/* we have no frontend :-( */
- 		ret = -ENODEV;
- 		dev_err(&d->udev->dev, "%s: Unsupported Anysee version. " \
--				"Please report the " \
-+				"Please report to " \
- 				"<linux-media@vger.kernel.org>.\n",
- 				KBUILD_MODNAME);
- 	}
+Hi Peter,
+
+please, have you had a chance to look at this?
+
+Many thanks
+
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
 -- 
-1.7.0.4
-
+Frantisek Hrbata
