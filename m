@@ -1,59 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755443Ab3DXOBy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 10:01:54 -0400
-Received: from fieldses.org ([174.143.236.118]:45039 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752893Ab3DXOBx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 10:01:53 -0400
-Date: Wed, 24 Apr 2013 10:01:52 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Malte =?utf-8?B?U2NocsO2ZGVy?= <maltesch@gmx.de>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: NFS4 sec=krb5 broken in 3.9-rc8
-Message-ID: <20130424140152.GA9794@fieldses.org>
-References: <5176E715.2070201@gmx.de>
- <20130423215807.GL3676@fieldses.org>
- <51777494.8010306@gmx.de>
+	id S1755139Ab3DXOIA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 10:08:00 -0400
+Received: from mail-la0-f53.google.com ([209.85.215.53]:54192 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753149Ab3DXOIA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 10:08:00 -0400
+Message-ID: <5177E57C.3010802@cogentembedded.com>
+Date: Wed, 24 Apr 2013 18:00:28 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <51777494.8010306@gmx.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Lee Jones <lee.jones@linaro.org>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arnd@arndb.de, linus.walleij@stericsson.com,
+        mian.yousaf.kaukab@stericsson.com, Felipe Balbi <balbi@ti.com>,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH 04/10] usb: musb: ux500: harden checks for platform data
+References: <1366729394-11406-1-git-send-email-lee.jones@linaro.org> <1366729394-11406-5-git-send-email-lee.jones@linaro.org> <5176E927.908@cogentembedded.com> <20130424065344.GB17416@gmail.com>
+In-Reply-To: <20130424065344.GB17416@gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 24, 2013 at 07:58:44AM +0200, Malte Schröder wrote:
-> On 23.04.2013 23:58, J. Bruce Fields wrote:
-> > On Tue, Apr 23, 2013 at 09:55:01PM +0200, Malte Schröder wrote:
-> >> Hi,
-> >> when I update my server from kernel 3.8.5 to 3.9-rc8 I cannot mount its
-> >> NFS exports from clients using nfs4 and sec=krb5. Using sec=sys works,
-> >> using 3.8.5 also works good with both modes.
-> > 
-> > Could you get a network trace showing the failure
-> > 
-> > Run
-> > 
-> > 	tcpdump -s0 -wtmp.pcap
-> > 
-> > then send us tmp.pcap.
-> > 
-> > (You can also take a look at tmp.pcap yourself in wireshark--it may be
-> > obvious where the failure occurs.)
-> > 
-> > --b.
-> > 
-> 
-> The trace is attached. It contains two tries, the first using sec=sys,
-> the second sec=krb5. I used "mount -tnfs -overs=4,sec=krb5 gateway:/
-> /mnt". NFS-Utils have version 1.2.6.
+Hello.
 
-Looks like the context creation succeeds and then the first use of the
-new context (a PUTROOTFH+GETATTR) never gets a response.
+On 24-04-2013 10:53, Lee Jones wrote:
 
-Nothing interesting in the server's logs?
+>>>   	struct musb_hdrc_platform_data *plat = dev->platform_data;
+>>> -	struct ux500_musb_board_data *data = plat->board_data;
+>>> +	struct ux500_musb_board_data *data;
 
---b.
+>>> -	param_array = data->dma_rx_param_array;
+>>> +	param_array = (data) ? data->dma_rx_param_array : NULL;
+
+>>     Why enclose a simple variable in parens?
+
+> Because 'data' is a pointer, so it contains a memory location,
+
+    Pointer points to memory location, not contains it.
+
+> but if
+> 'plat->board_data' is NULL, then 'data' will be NULL (essentially
+> memory location 0x00000000).
+
+    So what?
+
+> So if we were to read-in to 'struct ux500_musb_board_data *data', by
+> index 'dma_rx_param_array', which I believe is '0' in this case:
+
+> struct ux500_musb_board_data {
+>          void    **dma_rx_param_array;
+>          void    **dma_tx_param_array;
+>          bool (*dma_filter)(struct dma_chan *chan, void *filter_param);
+> };
+
+> ... then we're saying take the data from this memory location:
+
+> param_array = *((0x00000000)->(0x0));
+
+> Which will cause a kernel Oops, due to the fact that address 0x0 isn't
+> allocated to us, so you get something like:
+
+> "Unable to handle kernel NULL pointer dereference at virtual address 00000000"
+
+    We're not dereferencing 'data', so I completely fail to follow you.
+
+> Hope that helps.
+
+    Not at all.
+
+> Kind regards,
+> Lee
+
+WBR, Sergei
+
