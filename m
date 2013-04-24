@@ -1,61 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756417Ab3DXSNV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 14:13:21 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:33676 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755277Ab3DXSNT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 14:13:19 -0400
-X-IronPort-AV: E=Sophos;i="4.87,545,1363132800"; 
-   d="scan'208";a="21362095"
-Date: Wed, 24 Apr 2013 19:13:15 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-CC: Ian Campbell <Ian.Campbell@citrix.com>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "marc.zyngier@arm.com" <marc.zyngier@arm.com>,
-        "will.deacon@arm.com" <will.deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [Xen-devel] [PATCH v6 1/4] arm: introduce psci_smp_ops
-In-Reply-To: <alpine.LFD.2.03.1304221151200.17375@syhkavp.arg>
-Message-ID: <alpine.DEB.2.02.1304241911420.4180@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1304031239550.5078@kaball.uk.xensource.com> <1365167495-18508-1-git-send-email-stefano.stabellini@eu.citrix.com> <20130418161341.GB14496@n2100.arm.linux.org.uk> <alpine.DEB.2.02.1304181714560.7254@kaball.uk.xensource.com>
- <alpine.LFD.2.03.1304181237480.17375@syhkavp.arg> <alpine.DEB.2.02.1304181749260.7254@kaball.uk.xensource.com> <alpine.LFD.2.03.1304181336280.17375@syhkavp.arg> <alpine.DEB.2.02.1304191035360.7254@kaball.uk.xensource.com> <alpine.LFD.2.03.1304191146230.17375@syhkavp.arg>
- <1366388166.29403.2.camel@dagon.hellion.org.uk> <alpine.LFD.2.03.1304191223280.17375@syhkavp.arg> <alpine.DEB.2.02.1304191739120.7254@kaball.uk.xensource.com> <1366644069.20256.8.camel@zakaz.uk.xensource.com>
- <alpine.LFD.2.03.1304221151200.17375@syhkavp.arg>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1756671Ab3DXSQi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 14:16:38 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:39253 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756069Ab3DXSQh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 14:16:37 -0400
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+To: <gregkh@linuxfoundation.org>
+CC: <devel@driverdev.osuosl.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        Eduardo Valentin <eduardo.valentin@ti.com>
+Subject: [PATCH 0/2] staging: ti-soc-thermal: couple of fixes
+Date: Wed, 24 Apr 2013 14:16:06 -0400
+Message-ID: <1366827368-14316-1-git-send-email-eduardo.valentin@ti.com>
+X-Mailer: git-send-email 1.8.2.1.342.gfa7285d
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 22 Apr 2013, Nicolas Pitre wrote:
-> > I think the key thing that non-Xen folks aren't aware of is that
-> > although Xen passes the majority of the underlying hardware to the dom0
-> > kernel to manage one of the few things it does not expose to guests
-> > (where "guests" includes dom0) is the SMP topology of the underlying system.
-> 
-> I suspect it is unlikely to pass on the DT information about the CCI 
-> either.  Which means that, in the case that started this thread, the 
-> smp_init function needed by MCPM will simply return false and the next 
-> priority in the list i.e. plain PSCI will be initialized instead.
-> 
-> I don't forsee the need to poke at the hardware directly within 
-> ->smp_init, not since everything is moving to DT now.
-> 
-> Sure there are ways to screw up Xen support from within this hook, but 
-> that can be achieved in many other places.  Will Xen take over every 
-> possible hooks in the kernel to prevent that from happening?
-> 
-> So please let's not cry wolf needlessly.
+Hello Greg,
 
-OK, you convinced me :-)
-I'll drop the patch.
+Here are two patches on ti-soc-thermal driver.
+
+One is to update the documentation of the OMAP5430 DT entry reference.
+The other one adds the support to extrapolation rules with PCB sensor
+querying. The second one depends on the API change, that is going
+via the thermal tree [1].
+
+These two patches are also available here:
+git@gitorious.org:thermal-framework/thermal-framework.git thermal_work/ti-soc-thermal/fixes
+https://git.gitorious.org/thermal-framework/thermal-framework.git thermal_work/ti-soc-thermal/fixes
+
+All best,
+
+[1] - http://git.kernel.org/cgit/linux/kernel/git/rzhang/linux.git/commit/?h=next&id=63c4d919cf66b1b3ffa7861bddb50a697914af5b
+[2] - http://git.kernel.org/cgit/linux/kernel/git/rzhang/linux.git/commit/?h=next&id=837b26bb2e4a83d224e725f07a1d9ca824bf905c
+
+Eduardo Valentin (2):
+  staging: ti-soc-thermal: update DT reference for OMAP5430
+  staging: ti-soc-thermal: remove external heat while extrapolating
+    hotspot
+
+ drivers/staging/ti-soc-thermal/ti-thermal-common.c | 30 ++++++++++++++--------
+ drivers/staging/ti-soc-thermal/ti_soc_thermal.txt  |  1 +
+ 2 files changed, 21 insertions(+), 10 deletions(-)
+
+-- 
+1.8.2.1.342.gfa7285d
+
