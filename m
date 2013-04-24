@@ -1,96 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755392Ab3DXN1K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 09:27:10 -0400
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:52014 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753851Ab3DXN1I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 09:27:08 -0400
+	id S1754729Ab3DXNfY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 09:35:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58533 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754034Ab3DXNfX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 09:35:23 -0400
+Date: Wed, 24 Apr 2013 16:34:58 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: mtosatti@redhat.com, linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH v2 3/6] KVM: MMU: make return value of mmio page fault
+ handler more readable
+Message-ID: <20130424133458.GR12401@redhat.com>
+References: <1364810209-25954-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+ <1364810209-25954-4-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <5176B173.40107@imgtec.com>
-References: <1366727607-27444-1-git-send-email-james.hogan@imgtec.com>
- <1366727607-27444-3-git-send-email-james.hogan@imgtec.com>
- <201304231725.34826.arnd@arndb.de> <5176B173.40107@imgtec.com>
-From: Catalin Marinas <catalin.marinas@arm.com>
-Date: Wed, 24 Apr 2013 14:26:48 +0100
-X-Google-Sender-Auth: sgp1PAcYljOo7opsusE6uyCBdtk
-Message-ID: <CAHkRjk4A5bM=Xsf=DA+OMt0M_e4Y-3XkLPyJirxV4MQOWf25gQ@mail.gmail.com>
-Subject: Re: [PATCH 2/8] metag: minimal TZ1090 (Comet) SoC infrastructure
-To: James Hogan <james.hogan@imgtec.com>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        devicetree-discuss@lists.ozlabs.org, Rob Landley <rob@landley.net>,
-        linux-doc@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1364810209-25954-4-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23 April 2013 17:06, James Hogan <james.hogan@imgtec.com> wrote:
-> On 23/04/13 16:25, Arnd Bergmann wrote:
->> On Tuesday 23 April 2013, James Hogan wrote:
->>
->>> @@ -46,6 +46,12 @@ core-y                                    += arch/metag/boot/dts/
->>>  core-y                                      += arch/metag/kernel/
->>>  core-y                                      += arch/metag/mm/
->>>
->>> +# SoCs
->>> +socdir-$(CONFIG_SOC_TZ1090)         += tz1090
->>> +
->>> +socdirs             := $(filter-out ., $(patsubst %,%/,$(socdir-y)))
->>> +core-y              += $(addprefix arch/metag/soc/, $(socdirs))
->>> +
->>
->> Does it actually make sense to have subdirectories per soc? I would
->> suggest you copy from arm64 rather from arm for the platform support and
->> do it as minimal as possible. Any code you need can go into a shared directory
->> as a start, and if you end up needing more of a hierarchical structure,
->> you can add that later. Hopefully we've come to the point now where almost
->> everything can live in drivers/* though.
->
-> Where is the shared directory for arm64 platforms? (arch/arm64 is
-> looking pretty bare).
+On Mon, Apr 01, 2013 at 05:56:46PM +0800, Xiao Guangrong wrote:
+> Define some meaningful names instead of raw code
+> 
+> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+> ---
+>  arch/x86/kvm/mmu.c |   15 +++++----------
+>  arch/x86/kvm/mmu.h |   14 ++++++++++++++
+>  arch/x86/kvm/vmx.c |    4 ++--
+>  3 files changed, 21 insertions(+), 12 deletions(-)
+> 
+> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+> index be4f733..31c5586 100644
+> --- a/arch/x86/kvm/mmu.c
+> +++ b/arch/x86/kvm/mmu.c
+> @@ -3182,17 +3182,12 @@ static u64 walk_shadow_page_get_mmio_spte(struct kvm_vcpu *vcpu, u64 addr)
+>  	return spte;
+>  }
+>  
+> -/*
+> - * If it is a real mmio page fault, return 1 and emulat the instruction
+> - * directly, return 0 to let CPU fault again on the address, -1 is
+> - * returned if bug is detected.
+> - */
+>  int handle_mmio_page_fault_common(struct kvm_vcpu *vcpu, u64 addr, bool direct)
+>  {
+>  	u64 spte;
+>  
+>  	if (quickly_check_mmio_pf(vcpu, addr, direct))
+> -		return 1;
+> +		return RET_MMIO_PF_EMU;
+>  
+>  	spte = walk_shadow_page_get_mmio_spte(vcpu, addr);
+>  
+> @@ -3205,7 +3200,7 @@ int handle_mmio_page_fault_common(struct kvm_vcpu *vcpu, u64 addr, bool direct)
+>  
+>  		trace_handle_mmio_page_fault(addr, gfn, access);
+>  		vcpu_cache_mmio_info(vcpu, addr, gfn, access);
+> -		return 1;
+> +		return RET_MMIO_PF_EMU;
+>  	}
+>  
+>  	/*
+> @@ -3213,13 +3208,13 @@ int handle_mmio_page_fault_common(struct kvm_vcpu *vcpu, u64 addr, bool direct)
+>  	 * it's a BUG if the gfn is not a mmio page.
+>  	 */
+>  	if (direct && !check_direct_spte_mmio_pf(spte))
+> -		return -1;
+> +		return RET_MMIO_PF_BUG;
+>  
+>  	/*
+>  	 * If the page table is zapped by other cpus, let CPU fault again on
+>  	 * the address.
+>  	 */
+> -	return 0;
+> +	return RET_MMIO_PF_RETRY;
+>  }
+>  EXPORT_SYMBOL_GPL(handle_mmio_page_fault_common);
+>  
+> @@ -3229,7 +3224,7 @@ static int handle_mmio_page_fault(struct kvm_vcpu *vcpu, u64 addr,
+>  	int ret;
+>  
+>  	ret = handle_mmio_page_fault_common(vcpu, addr, direct);
+> -	WARN_ON(ret < 0);
+> +	WARN_ON(ret == RET_MMIO_PF_BUG);
+>  	return ret;
+>  }
+>  
+> diff --git a/arch/x86/kvm/mmu.h b/arch/x86/kvm/mmu.h
+> index 2adcbc2..6b4ba1e 100644
+> --- a/arch/x86/kvm/mmu.h
+> +++ b/arch/x86/kvm/mmu.h
+> @@ -52,6 +52,20 @@
+>  
+>  int kvm_mmu_get_spte_hierarchy(struct kvm_vcpu *vcpu, u64 addr, u64 sptes[4]);
+>  void kvm_mmu_set_mmio_spte_mask(u64 mmio_mask);
+> +
+> +/*
+> + * Return values of handle_mmio_page_fault_common:
+> + * RET_MMIO_PF_EMU: it is a real mmio page fault, emulate the instruction
+> + *		    directly.
+> + * RET_MMIO_PF_RETRY: let CPU fault again on the address.
+> + * RET_MMIO_PF_BUG: bug is detected.
+> + */
+> +enum {
+> +	RET_MMIO_PF_EMU = 1,
+Make it RET_MMIO_PF_EMULATE please.
 
-There is no platform-specific code under arch/arm64/. SoC code is
-split into various subsystems under drivers/ and it lives there
-(including timers and irqchip). We have the SMP booting protocol but
-there is no reason why SoCs can't use a common one (or two) specified
-via DT (as it is the case of other SoC specific definitions).
-
-> It's certainly heading in that direction a lot. For this patchset I
-> could get away with dropping arch/metag/soc/*, and deal with anything
-> that really requires something like it later.
->
-> The machine callbacks I was planning on using in future patches are:
-> * init_time() for calling into the appropriate common clock driver from
-> time_init(), prior to setting up the timer so that the right frequency
-> can be reported based on the clock hierarchy specified in DT. I guess
-> this could be made more general, allowing any enabled clock component to
-> be initialised at this time.
-
-This is driven by DT on arm64, no need for platform callback (see
-drivers/clocksource/arch_arm_timer.c).
-
-> * init_irq(), for dynamically detecting evaluation silicon and if so
-> telling the interrupt controller that there are no mask registers (easy
-> to drop tbh since nobody uses TZ1090 evaluation silicon any longer).
-
-Similarly, DT-driven (e.g. drivers/irqchip/irq-gic.c) with
-irqchip_init() called from the arm64 init_IRQ().
-
-> * probably something for setting up power management (suspend to ram /
-> standby and associated asm code), which would also be used by some
-> TZ1090 based boards requiring their own power management variations.
-
-If you can separate the CPU-specific power management (like cache
-flushing, MMU off) from the SoC part, you can place the SoC under
-drivers/power/reset/. We currently moved the vexpress there, though it
-is not a complete example for power management. We'll see when we get
-more platforms.
+> +	RET_MMIO_PF_RETRY = 0,
+> +	RET_MMIO_PF_BUG = -1
+> +};
+> +
+>  int handle_mmio_page_fault_common(struct kvm_vcpu *vcpu, u64 addr, bool direct);
+>  int kvm_init_shadow_mmu(struct kvm_vcpu *vcpu, struct kvm_mmu *context);
+>  
+> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+> index 915ef56..d0f2790 100644
+> --- a/arch/x86/kvm/vmx.c
+> +++ b/arch/x86/kvm/vmx.c
+> @@ -5135,10 +5135,10 @@ static int handle_ept_misconfig(struct kvm_vcpu *vcpu)
+>  	gpa = vmcs_read64(GUEST_PHYSICAL_ADDRESS);
+>  
+>  	ret = handle_mmio_page_fault_common(vcpu, gpa, true);
+> -	if (likely(ret == 1))
+> +	if (likely(ret == RET_MMIO_PF_EMU))
+>  		return x86_emulate_instruction(vcpu, gpa, 0, NULL, 0) ==
+>  					      EMULATE_DONE;
+> -	if (unlikely(!ret))
+> +	if (unlikely(ret == RET_MMIO_PF_RETRY))
+>  		return 1;
+>  
+>  	/* It is the real ept misconfig */
+> -- 
+> 1.7.7.6
 
 --
-Catalin
+			Gleb.
