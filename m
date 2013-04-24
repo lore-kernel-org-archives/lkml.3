@@ -1,39 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754105Ab3DXOXO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 10:23:14 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:57910 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751421Ab3DXOXN convert rfc822-to-8bit (ORCPT
+	id S1755745Ab3DXOXj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 10:23:39 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:50540
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752348Ab3DXOXi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 10:23:13 -0400
-From: James Bottomley <jbottomley@parallels.com>
+	Wed, 24 Apr 2013 10:23:38 -0400
+Date: Wed, 24 Apr 2013 08:23:32 -0600
+From: Jens Axboe <axboe@kernel.dk>
 To: Namjae Jeon <linkinjeon@gmail.com>
-CC: "axboe@kernel.dk" <axboe@kernel.dk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Cc: linux-kernel@vger.kernel.org, James Bottomley <JBottomley@Parallels.com>,
+        Namjae Jeon <namjae.jeon@samsung.com>, stable@vger.kernel.org
 Subject: Re: [PATCH] block: fix max discard sectors limit
-Thread-Topic: [PATCH] block: fix max discard sectors limit
-Thread-Index: AQHOQPNjOY9PP2kNxE+HkpJoT/qqgpjl4e6A
-Date: Wed, 24 Apr 2013 14:23:09 +0000
-Message-ID: <1366813389.1971.1.camel@dabdike>
+Message-ID: <20130424142332.GD2759@kernel.dk>
 References: <1366811721-2478-1-git-send-email-linkinjeon@gmail.com>
-In-Reply-To: <1366811721-2478-1-git-send-email-linkinjeon@gmail.com>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [24.18.112.117]
-Content-Type: text/plain; charset=US-ASCII
-Content-ID: <F103A0573AD49B4AB9E8464EE7BC6BBC@sw.swsoft.com>
-Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1366811721-2478-1-git-send-email-linkinjeon@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-04-24 at 22:55 +0900, Namjae Jeon wrote:
+On Wed, Apr 24 2013, Namjae Jeon wrote:
 > From: James Bottomley <JBottomley@Parallels.com>
 > 
 > linux-v3.8-rc1 and later support for plug for blkdev_issue_discard with
@@ -77,11 +67,9 @@ On Wed, 2013-04-24 at 22:55 +0900, Namjae Jeon wrote:
 > Tested-by: Max Filippov <jcmvbkbc@gmail.com>
 > Cc: <stable@vger.kernel.org>
 
-The two signoffs need to be reversed (they follow the chain of
-transmission from the author into the kernel), but other than that, this
-looks great.  I assume Jens can just hand edit this one issue.
+Thanks! One minor nit - I don't think James signed off on the patch when
+he sent it in. James?
 
-Thanks,
-
-James
+-- 
+Jens Axboe
 
