@@ -1,95 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757108Ab3DXRAk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 13:00:40 -0400
-Received: from nm19-vm0.access.bullet.mail.sp2.yahoo.com ([98.139.44.172]:34581
-	"EHLO nm19-vm0.access.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754258Ab3DXRAi (ORCPT
+	id S1755685Ab3DXRF5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 13:05:57 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:36209 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751958Ab3DXRFy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 13:00:38 -0400
-X-Yahoo-Newman-Id: 424420.51521.bm@smtp110.biz.mail.ne1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: rvvTV7sVM1lGV8tCUW2aiBSOdXxQWYb0g2SeVtgBsy3auXF
- uCKE3d0WZx9VMkqdLRoWKkKcPBt6_hZR397wcltEBU6mUv25P1sT_MHw843B
- pRLyE8MlfpkrC42FUitDi_07KndAOCRLCsN9K1ieUgZlLVSq53v_F5VFbTZR
- ntxzV_jIuoxWMe_2BEIwo36eMjpZGBLIazc4yLIucRNN.9PaMJI1p0R0nchk
- hyTPtNtzKVi5m0Gnmk5XvkHTVqnOjZfrLSM.W_OZck4vtrAeYgz8DdT0XaFV
- xyTDxNdhiv.bFBV2D8eAdEJ7QB9Gz1e1tKhML57B8D8MHhFrnFiK70P9vUrN
- HfTnfYAB.NjyoHqzUkloHhNEGk3uMUqPo87QyVV91KM8L1exGXFj4dva45ot
- Cqb34KdSAWIqUbpwHgHXVdmViQjg6GI.PGEu2gWa0UMWZ9GKl3qAOS9II7mF
- t
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-X-Rocket-Received: from [192.168.0.103] (casey@24.6.250.25 with plain)
-        by smtp110.biz.mail.ne1.yahoo.com with SMTP; 24 Apr 2013 10:00:38 -0700 PDT
-Message-ID: <51780FB7.2010202@schaufler-ca.com>
-Date: Wed, 24 Apr 2013 10:00:39 -0700
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	Wed, 24 Apr 2013 13:05:54 -0400
+From: Michal Nazarewicz <mina86@mina86.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: Re: [PATCH] usb: gadget: multi: Mark {cdc,rndis}_config_register() __init
+In-Reply-To: <1366802195-15479-1-git-send-email-geert@linux-m68k.org>
+Organization: http://mina86.com/
+References: <1366802195-15479-1-git-send-email-geert@linux-m68k.org>
+User-Agent: Notmuch/0.15.2+55~geb6e9d8 (http://notmuchmail.org) Emacs/24.3.50.2 (x86_64-unknown-linux-gnu)
+X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
+X-PGP: 50751FF4
+X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
+X-Hashcash: 1:20:130424:balbi@ti.com::qIPdEU2xaAl3fcUW:0000044bj
+X-Hashcash: 1:20:130424:gregkh@linuxfoundation.org::j+boelBxsHYANRX6:000000000000000000000000000000000002ZL7
+X-Hashcash: 1:20:130424:geert@linux-m68k.org::VkvrQRmDnG6Ek3f0:000000000000000000000000000000000000000005+tl
+X-Hashcash: 1:20:130424:geert@linux-m68k.org::aq1/8zr0dAABP2Xb:000000000000000000000000000000000000000005SVF
+X-Hashcash: 1:20:130424:linux-kernel@vger.kernel.org::SsotoxqHLeihs8kq:0000000000000000000000000000000005rSM
+X-Hashcash: 1:20:130424:linux-usb@vger.kernel.org::KR+/MNueGTZcpnRb:00000000000000000000000000000000000083rg
+Date: Wed, 24 Apr 2013 10:05:46 -0700
+Message-ID: <xa1t4nevc105.fsf@mina86.com>
 MIME-Version: 1.0
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-CC: linux-security-module@vger.kernel.org, Hugh Dickins <hughd@google.com>,
-        Eric Paris <eparis@redhat.com>, linux-kernel@vger.kernel.org,
-        Mimi Zohar <zohar@us.ibm.com>,
-        Casey Schaufler <casey@schaufler-ca.com>
-Subject: Re: [PATCH 1/3] evm: calculate HMAC after initializing posix acl
-References: <1366805441-12187-1-git-send-email-zohar@linux.vnet.ibm.com>
-In-Reply-To: <1366805441-12187-1-git-send-email-zohar@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/mixed; boundary="=-=-="
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/24/2013 5:10 AM, Mimi Zohar wrote:
-> (Reposting with expanded 'cc' list.)
+--=-=-=
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
+
+On Wed, Apr 24 2013, Geert Uytterhoeven wrote:
+> If gcc (e.g. 4.1.2) decides not to inline cdc_config_register() and
+> rndis_config_register(), this will cause section mismatch warnings:
 >
-> Included in the EVM hmac calculation is the i_mode.  Any changes to
-> the i_mode need to be reflected in the hmac.  shmem_mknod() currently
-> calls posix_acl_init(), which modifies the i_mode, after calling
-> security_inode_init_security().  This patch reverses the order in
-> which they are called.
+> WARNING: drivers/usb/gadget/g_multi.o(.text+0x32f6): Section mismatch in =
+reference from the function cdc_config_register() to the function .init.tex=
+t:cdc_do_config()
+> The function cdc_config_register() references
+> the function __init cdc_do_config().
+> This is often because cdc_config_register lacks a __init
+> annotation or the annotation of cdc_do_config is wrong.
+>
+> WARNING: drivers/usb/gadget/g_multi.o(.text+0x3326): Section mismatch in =
+reference from the function rndis_config_register() to the function .init.t=
+ext:rndis_do_config()
+> The function rndis_config_register() references
+> the function __init rndis_do_config().
+> This is often because rndis_config_register lacks a __init
+> annotation or the annotation of rndis_do_config is wrong.
+>
+> Fortunately they're harmless, as {cdc,rndis}_config_register() are only
+> called from multi_bind(), which is annotated with __ref.
+>
+> Mark {cdc,rndis}_config_register() with the __init annotation to kill the
+> warning.
+>
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 
-I haven't tried this with Smack, but I don't anticipate any issues.
+Acked-by: Michal Nazarewicz <mina86@mina86.com>
 
-> Reported-by: Sven Vermeulen <sven.vermeulen@siphos.be>
-> Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
+With transition to configfs all those __inits and __refs will probably
+go away in the long term though.
+
 > ---
->  mm/shmem.c | 16 ++++++++--------
->  1 file changed, 8 insertions(+), 8 deletions(-)
->
-> diff --git a/mm/shmem.c b/mm/shmem.c
-> index 1c44af7..398c195 100644
-> --- a/mm/shmem.c
-> +++ b/mm/shmem.c
-> @@ -1937,6 +1937,13 @@ shmem_mknod(struct inode *dir, struct dentry *dentry, umode_t mode, dev_t dev)
->  
->  	inode = shmem_get_inode(dir->i_sb, dir, mode, dev, VM_NORESERVE);
->  	if (inode) {
-> +#ifdef CONFIG_TMPFS_POSIX_ACL
-> +		error = generic_acl_init(inode, dir);
-> +		if (error) {
-> +			iput(inode);
-> +			return error;
-> +		}
-> +#endif
->  		error = security_inode_init_security(inode, dir,
->  						     &dentry->d_name,
->  						     shmem_initxattrs, NULL);
-> @@ -1946,15 +1953,8 @@ shmem_mknod(struct inode *dir, struct dentry *dentry, umode_t mode, dev_t dev)
->  				return error;
->  			}
->  		}
-> -#ifdef CONFIG_TMPFS_POSIX_ACL
-> -		error = generic_acl_init(inode, dir);
-> -		if (error) {
-> -			iput(inode);
-> -			return error;
-> -		}
-> -#else
-> +
->  		error = 0;
-> -#endif
->  		dir->i_size += BOGO_DIRENT_SIZE;
->  		dir->i_ctime = dir->i_mtime = CURRENT_TIME;
->  		d_instantiate(dentry, inode);
+> Note: I did not verify that multi_bind() is rightfully marked __ref.
 
+It should be.  It's only referenced in multi_driver object as a bind
+callback which is called by composite_bind() which is referenced in
+composite_driver_template as bind callback which is called by
+usb_gadget_probe_driver() which is called by usb_composite_probe() which
+is called by multi_init() which is __init and called as module_init.
+
+--=20
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=3D./ `o
+..o | Computer Science,  Micha=C5=82 =E2=80=9Cmina86=E2=80=9D Nazarewicz   =
+ (o o)
+ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
+--=-=-=
+Content-Type: multipart/signed; boundary="==-=-=";
+	micalg=pgp-sha1; protocol="application/pgp-signature"
+
+--==-=-=
+Content-Type: text/plain
+
+
+--==-=-=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJReBDqAAoJECBgQBJQdR/0JOcQAI8BTJKSSDbevg8lo6Y1IAT0
+URlhXGozH8MVshZWWRITrCGoRln62b7kRMjEaM/BZoQDmIJcNEer8O771o0Y5VvM
+nrxmVDtfPIqiB6DMZpLchP5YfgzYhPhvGnrUfZRp9jm+JIp5mdXzfs5Zb2XHVnUf
+ZmJXE+zFwKfSX3cr6QNKkgjIIsNf8JR/gJ5Ni9ceOZopGfLPCAAioL6O/1prpHgW
+zuAAxH2cRkc2my6DbXTbd4A73xaUvj1OH6imfn/pzPjbR6O0g9ThaULaNBN1XwbC
+qUCsO5Ntnk2087pa37lcI1AI6uMnOgHfOV1fHG3dGNnPu8uzWUYsj6QEeGexZKB1
+/1U4ICEdRHwCcTrhnH2G6UlSFTDw/wm8qG29P/1atJyIh5a/ijGlVURLUnGNKamS
+INQtfNpKxcxA9I20QS99GqMmjxzVQpcQRE1QEeTTIwbPUsaa739pWaGpRL69ZdmL
+pQXHKX9lGRhjdScfC1edbX7p568MYgrqI0k65eb3Kd4u9pIigNaVSPjfRpgF4ChV
+l+JiIpXI7erIDXHyd1SAXZDjw+P1uVZBn+H4XR5+yd31rwKQuzlWbNYvrFicTG7K
+rxK1bGrcKxfqA0zjEsBkeKaOLHrML2SLRsr4/XNbP+GLpfK234C95BCtOjpcvNt1
+MEQFn9qlTUEtzuJL3+o9
+=5WbW
+-----END PGP SIGNATURE-----
+--==-=-=--
+
+--=-=-=--
