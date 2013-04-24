@@ -1,106 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757209Ab3DXQva (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 12:51:30 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:61649 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754978Ab3DXQv2 (ORCPT
+	id S1757149Ab3DXQys (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 12:54:48 -0400
+Received: from mga02.intel.com ([134.134.136.20]:33287 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754978Ab3DXQyq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 12:51:28 -0400
+	Wed, 24 Apr 2013 12:54:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,542,1363158000"; 
+   d="scan'208";a="300685475"
+From: "Zhang, Rui" <rui.zhang@intel.com>
+To: Eduardo Valentin <eduardo.valentin@ti.com>
+CC: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCHv2 0/9] thermal: clean ups on thermal code base
+Thread-Topic: [PATCHv2 0/9] thermal: clean ups on thermal code base
+Thread-Index: AQHOQGxnxySSYJBPwEeuE2cfbkCkA5jll8/w
+Date: Wed, 24 Apr 2013 16:54:42 +0000
+Message-ID: <744357E9AAD1214791ACBA4B0B9092632CA11C@SHSMSX101.ccr.corp.intel.com>
+References: <1366753700-1412-1-git-send-email-eduardo.valentin@ti.com>
+In-Reply-To: <1366753700-1412-1-git-send-email-eduardo.valentin@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <5178088D.7010703@linaro.org>
-References: <CAPXgP13kizK95JyLxKxgWrGnV9b11ZTyi3vuc5YFDmROzckg4w@mail.gmail.com>
- <517746E4.908@linaro.org> <CAPXgP128yAq1jju-gsZcaS-mZPt+7tq0tt-uVk3Yqr77abd26Q@mail.gmail.com>
- <51774F44.2060704@linaro.org> <CAPXgP12D-H_E3WbWYgrbtvA_6wq=DhpiaLU_hGRgD6ga=_1x-A@mail.gmail.com>
- <5178088D.7010703@linaro.org>
-From: Kay Sievers <kay@vrfy.org>
-Date: Wed, 24 Apr 2013 18:51:07 +0200
-Message-ID: <CAPXgP10LS38M=4C+mt+pA6HXzRoyroE01n4-W9tWUEomYqijZQ@mail.gmail.com>
-Subject: Re: CONFIG_RTC_HCTOSYS lost on x86 with ALWAYS_USE_PERSISTENT_CLOCK changes?
-To: John Stultz <john.stultz@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 24, 2013 at 6:30 PM, John Stultz <john.stultz@linaro.org> wrote:
+Hi, Eduardo,
 
->> Until the above commits we always needed:
->>    CONFIG_RTC_HCTOSYS=y
->>    CONFIG_RTC_HCTOSYS_DEVICE="rtc0"
->> to get the system time correctly initialized at bootup on x86.
+> -----Original Message-----
+> From: linux-pm-owner@vger.kernel.org [mailto:linux-pm-
+> owner@vger.kernel.org] On Behalf Of Eduardo Valentin
+> Sent: Wednesday, April 24, 2013 5:48 AM
+> To: Zhang, Rui
+> Cc: linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org; Eduardo
+> Valentin
+> Subject: [PATCHv2 0/9] thermal: clean ups on thermal code base
+> Importance: High
+> 
+> Hello Rui,
+> 
+> This is v2 of this series. I have worked on the comments you sent on
+> these patches. For your reference, v1 has been reviewed at [1].
+> 
+All the patches in this series has been applied.
 
-> So... always needed to get system time correctly initialized? I'm not sure I
-> agree with this. On non-x86 (mostly embedded) platforms that do not have
-> persistent_clock support, yes, the above is needed.
+Thanks,
+rui
 
-Yeah, right, that's an "always" like the "forever" in "we support that
-for forever" :)
-
-> But I'm unaware of the above actually being necessary on x86, as its always
-> had persistent_clock support.
-
-Maybe it goes back longer, I remember that we needed to run hwclock in
-userspace otherwise we had the 1970 state.
-
-Here is the Fedora bug from 2009 to enable it:
-  https://bugzilla.redhat.com/show_bug.cgi?id=489494
-
->> These options are gone now and cannot be selected anymore. You are
->> saying that this is all fine, that they are gone, but all initial
->> clock syncing should still work?
->
-> Yes, we're just removing a duplicative initialization of time, and compiling
-> out code in the suspend/resume path that would never trigger when
-> persistent_clocks were present.
-
-I see, makes sense.
-
->> Also:
->>    $ cat /sys/class/rtc/rtc0/hctosys
->>    0
->> always carried "1", and this now breaks setups which expect an
->> automatically created symlink /dev/rtc to the actual "system rtc".
->
->
-> Sigh. So just turning off HCTOSYS on those systems causes them to break?
-
-Well, the symlink is no longer there, which is visible. People asked
-where it is gone now. That's the "breakage" which might not deserve
-that word, if nothing really breaks that way. Stuff we looked at so
-far, falls back to /dev/rtc0 which covers that.
-
-> That is sort of obnoxiously fragile.  I've always been somewhat skeptical of
-> the multi-rtc configs - as they're all the "system's" RTCs after all. 99%
-> probably only have one rtc device, so checking the hctosys in that case is a
-> little silly.
-
-Yeah, ARM is as a mess, they often have rtc1 as the "system rtc", that
-is why all this symlink game was "invented".
-
-> But the terribly annoying interface breakage when /dev/rtc went to /dev/rtcN
-> with the generic rtc layer landing shouldn't have happened, so I won't
-> begrudge too much the userland hacks needed to fix that up.
-
-Right.
-
-> So I'll send Thomas a revert for the HCTOSYS optimization. In the kernel
-> we'll still avoid using HCTOSYS when the persistent_clock is there, but at
-> least userland will still have some /sys/class/rtc/rtcN that has the
-> "offical" flag.
-
-So in case you really revert it, x86 should not enable any of that RTC
-stuff by default, right?
-
->> There was also always a line in dmesg that told the rtc_cmos time it
->> wrote to the system clock. This is also gone?
->
-> More worrisome, I'll turn the question around: is that an expected interface
-> never to break?
-
-No, sure not. I was just noticing that, when looking what was going
-on, and I couldn't make sense out of it before you explained the
-details.
-
-Kay
+> Summary of changelog:
+> - Added your acked-by on those patches you granted.
+> - Fixed the comments regarding functions that are not going to be
+> exported.
+> - Removed patches that are touching functions that are not going to be
+> exported.
+> 
+> Also available, as usual, here:
+> git@gitorious.org:thermal-framework/thermal-framework.git
+> thermal_work/thermal_core/coding_style
+> https://git.gitorious.org/thermal-framework/thermal-framework.git
+> thermal_work/thermal_core/coding_style
+> 
+> The above branches are based on linux-next/master.
+> 
+> All best,
+> 
+> [1] - https://lkml.org/lkml/2013/4/8/471
+> 
+> Eduardo Valentin (9):
+>   thermal: use strlcpy instead of strcpy
+>   thermal: update driver license
+>   thermal: rename notify_thermal_framework to thermal_notify_framework
+>   thermal: use EXPORT_SYMBOL_GPL
+>   thermal: update kernel-doc for thermal_zone_bind_cooling_device
+>   thermal: update kernel-doc for thermal_zone_unbind_cooling_device
+>   thermal: update kernel-doc for thermal_cooling_device_register
+>   thermal: update kernel-doc for create_trip_attrs
+>   thermal: update kernel-doc for thermal_zone_device_register
+> 
+>  Documentation/thermal/sysfs-api.txt |  2 +-
+>  drivers/thermal/thermal_core.c      | 80 ++++++++++++++++++++++++++---
+> --------
+>  include/linux/thermal.h             |  2 +-
+>  3 files changed, 59 insertions(+), 25 deletions(-)
+> 
+> --
+> 1.8.2.1.342.gfa7285d
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+> the body of a message to majordomo@vger.kernel.org More majordomo info
+> at  http://vger.kernel.org/majordomo-info.html
