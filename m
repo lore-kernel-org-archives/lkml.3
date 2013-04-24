@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932288Ab3DXJmr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 05:42:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40270 "EHLO mx1.redhat.com"
+	id S932317Ab3DXJnG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 05:43:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63134 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758480Ab3DXJjS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 05:39:18 -0400
+	id S1758475Ab3DXJjR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 05:39:17 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>,
@@ -17,16 +17,16 @@ Cc: Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@kernel.org>, Borislav Petkov <bp@alien8.de>,
         Stephane Eranian <eranian@google.com>, Sam Ravnborg <sam@ravnborg.org>,
         David Ahern <dsahern@gmail.com>
-Subject: [PATCH 16/26] perf tools: Move libnuma check config into config/Makefile
-Date: Wed, 24 Apr 2013 11:37:43 +0200
-Message-Id: <1366796273-4780-17-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 18/26] perf tools: Final touches for CHK config move
+Date: Wed, 24 Apr 2013 11:37:45 +0200
+Message-Id: <1366796273-4780-19-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1366796273-4780-1-git-send-email-jolsa@redhat.com>
 References: <1366796273-4780-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Moving libnuma check config into config/Makefile
+Removing no longer needed ifdefs.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
@@ -41,49 +41,38 @@ Cc: Stephane Eranian <eranian@google.com>
 Cc: Sam Ravnborg <sam@ravnborg.org>
 Cc: David Ahern <dsahern@gmail.com>
 ---
- tools/perf/Makefile        |  9 +--------
- tools/perf/config/Makefile | 11 +++++++++++
- 2 files changed, 12 insertions(+), 8 deletions(-)
+ tools/perf/Makefile | 11 -----------
+ 1 file changed, 11 deletions(-)
 
 diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index c1fef3d..07612be 100644
+index 74e3cf6..cd19007 100644
 --- a/tools/perf/Makefile
 +++ b/tools/perf/Makefile
-@@ -547,14 +547,7 @@ ifeq ($(NO_PERF_REGS),0)
+@@ -424,14 +424,6 @@ BUILTIN_OBJS += $(OUTPUT)builtin-mem.o
+ 
+ PERFLIBS = $(LIB_FILE) $(LIBLK) $(LIBTRACEEVENT)
+ 
+-#
+-# Platform specific tweaks
+-#
+-ifneq ($(MAKECMDGOALS),clean)
+-ifneq ($(MAKECMDGOALS),tags)
+-
+--include config/feature-tests.mak
+-
+ # We choose to avoid "if .. else if .. else .. endif endif"
+ # because maintaining the nesting to match is a pain.  If
+ # we had "elif" things would have been much nicer...
+@@ -521,9 +513,6 @@ ifdef ASCIIDOC8
+ 	export ASCIIDOC8
  endif
  
- ifndef NO_LIBNUMA
--	FLAGS_LIBNUMA = $(ALL_CFLAGS) $(ALL_LDFLAGS) -lnuma
--	ifneq ($(call try-cc,$(SOURCE_LIBNUMA),$(FLAGS_LIBNUMA),libnuma),y)
--		msg := $(warning No numa.h found, disables 'perf bench numa mem' benchmark, please install numa-libs-devel or libnuma-dev);
--	else
--		BASIC_CFLAGS += -DLIBNUMA_SUPPORT
--		BUILTIN_OBJS += $(OUTPUT)bench/numa.o
--		EXTLIBS += -lnuma
--	endif
-+	BUILTIN_OBJS += $(OUTPUT)bench/numa.o
- endif
+-endif # MAKECMDGOALS != tags
+-endif # MAKECMDGOALS != clean
+-
+ LIBS = -Wl,--whole-archive $(PERFLIBS) -Wl,--no-whole-archive -Wl,--start-group $(EXTLIBS) -Wl,--end-group
  
- ifdef ASCIIDOC8
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 8c832f7..b559693 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -379,3 +379,14 @@ ifndef NO_BACKTRACE
- 		BASIC_CFLAGS += -DBACKTRACE_SUPPORT
-        endif
- endif
-+
-+ifndef NO_LIBNUMA
-+	FLAGS_LIBNUMA = $(ALL_CFLAGS) $(ALL_LDFLAGS) -lnuma
-+	ifneq ($(call try-cc,$(SOURCE_LIBNUMA),$(FLAGS_LIBNUMA),libnuma),y)
-+		msg := $(warning No numa.h found, disables 'perf bench numa mem' benchmark, please install numa-libs-devel or libnuma-dev);
-+		NO_LIBNUMA := 1
-+	else
-+		BASIC_CFLAGS += -DLIBNUMA_SUPPORT
-+		EXTLIBS += -lnuma
-+	endif
-+endif
+ ALL_CFLAGS += $(BASIC_CFLAGS)
 -- 
 1.7.11.7
 
