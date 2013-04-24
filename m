@@ -1,138 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758165Ab3DXVEu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 17:04:50 -0400
-Received: from mail-qc0-f181.google.com ([209.85.216.181]:38509 "EHLO
-	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757858Ab3DXVEq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 17:04:46 -0400
-From: Paul Moore <paul@paul-moore.com>
-To: Casey Schaufler <casey@schaufler-ca.com>
-Cc: LSM <linux-security-module@vger.kernel.org>,
-        LKLM <linux-kernel@vger.kernel.org>, SE Linux <selinux@tycho.nsa.gov>,
-        James Morris <jmorris@namei.org>,
-        John Johansen <john.johansen@canonical.com>,
-        Eric Paris <eparis@redhat.com>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Kees Cook <keescook@chromium.org>
-Subject: Re: [PATCH v13 5/9] LSM: Networking component isolation
-Date: Wed, 24 Apr 2013 17:04:42 -0400
-Message-ID: <1548304.Ec78DztLng@sifl>
-User-Agent: KMail/4.10.2 (Linux/3.8.5-gentoo; KDE/4.10.2; x86_64; ; )
-In-Reply-To: <51782DFE.3060808@schaufler-ca.com>
-References: <5176ABB7.5080300@schaufler-ca.com> <18474523.4Ny9IacvUQ@sifl> <51782DFE.3060808@schaufler-ca.com>
+	id S1758116Ab3DXVL5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 17:11:57 -0400
+Received: from fieldses.org ([174.143.236.118]:52139 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757858Ab3DXVLz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 17:11:55 -0400
+Date: Wed, 24 Apr 2013 17:11:53 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Dave Chiluk <chiluk@canonical.com>
+Cc: Trond.Myklebust@netapp.com, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] NFSv4: Use exponential backoff delay for NFS4_ERRDELAY
+Message-ID: <20130424211153.GJ20275@fieldses.org>
+References: <1366836949-18465-1-git-send-email-chiluk@canonical.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1366836949-18465-1-git-send-email-chiluk@canonical.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, April 24, 2013 12:09:50 PM Casey Schaufler wrote:
-> On 4/24/2013 11:51 AM, Paul Moore wrote:
-> > On Tuesday, April 23, 2013 09:04:31 AM Casey Schaufler wrote:
-> >> Subject: [PATCH v13 5/9] LSM: Networking component isolation
-> >> 
-> >> The NetLabel, XFRM and secmark networking mechanisms are
-> >> limited to providing security information managed by one
-> >> LSM. These changes interface the single LSM networking
-> >> components with the multiple LSM system. Each of the
-> >> networking components will identify the security ops
-> >> vector of the LSM that will use it. There are various
-> >> wrapper functions provided to make this obvious and
-> >> painless.
-> >> 
-> >> Signed-off-by: Casey Schaufler <casey@schaufler-ca.com>
-> > 
-> > ...
-> >
-> >> diff --git a/net/netlabel/netlabel_user.h b/net/netlabel/netlabel_user.h
-> >> index a6f1705..9990b24 100644
-> >> --- a/net/netlabel/netlabel_user.h
-> >> +++ b/net/netlabel/netlabel_user.h
-> >> @@ -41,6 +41,65 @@
-> >> 
-> >>  /* NetLabel NETLINK helper functions */
-> >> 
-> >> +extern struct security_operations *netlbl_active_lsm;
-> >> +
-> >> +/**
-> >> + * netlbl_secid_to_secctx - call the registered secid_to_secctx LSM hook
-> >> + * @secid - The secid to convert
-> >> + * @secdata - Where to put the result
-> >> + * @seclen - Where to put the length of the result
-> >> + *
-> >> + * Returns: the result of calling the hook.
-> >> + */
-> >> +static inline int netlbl_secid_to_secctx(u32 secid, char **secdata, u32
-> >> *seclen) +{
-> >> +	if (netlbl_active_lsm == NULL)
-> >> +		return -EINVAL;
-> >> +	return netlbl_active_lsm->secid_to_secctx(secid, secdata, seclen);
-> >> +}
-> >> +
-> >> +/**
-> >> + * netlbl_release_secctx - call the registered release_secctx LSM hook
-> >> + * @secdata - The security context to release
-> >> + * @seclen - The size of the context to release
-> >> + *
-> >> + */
-> >> +static inline void netlbl_release_secctx(char *secdata, u32 seclen)
-> >> +{
-> >> +	if (netlbl_active_lsm != NULL)
-> >> +		netlbl_active_lsm->release_secctx(secdata, seclen);
-> >> +}
-> >> +
-> >> +/**
-> >> + * netlbl_secctx_to_secid - call the registered seccts_to_secid LSM hook
-> >> + * @secdata - The security context
-> >> + * @seclen - The size of the security context
-> >> + * @secid - Where to put the result
-> >> + *
-> >> + * Returns: the result of calling the hook
-> >> + */
-> >> +static inline int netlbl_secctx_to_secid(const char *secdata, u32
-> >> seclen,
-> >> +					 u32 *secid)
-> >> +{
-> >> +	if (netlbl_active_lsm == NULL) {
-> >> +		*secid = 0;
-> >> +		return -EINVAL;
-> >> +	}
-> >> +	return netlbl_active_lsm->secctx_to_secid(secdata, seclen, secid);
-> >> +}
-> >> +
-> >> +/**
-> >> + * netlbl_task_getsecid - call the registered task_getsecid LSM hook
-> >> + * @p - The task
-> >> + * @secid - Where to put the secid
-> >> + *
-> >> + */
-> >> +static inline void netlbl_task_getsecid(struct task_struct *p, u32
-> >> *secid)
-> >> +{
-> >> +	if (netlbl_active_lsm)
-> >> +		netlbl_active_lsm->task_getsecid(p, secid);
-> >> +}
-> > 
-> > Any particular reason you put all these functions in 'netlabel_user.h'?  I
-> > ask because this header is related to the NetLabel netlink interface,
-> > with some minor audit stuff tossed in for good measure; it really has
-> > nothing to do with the LSM secctx/secid stuff.  I'd probably prefer these
-> > functions end up in their own header file for the sake of better
-> > organization, maybe
-> > 'netlabel_secid.h'?
+On Wed, Apr 24, 2013 at 03:55:49PM -0500, Dave Chiluk wrote:
+> Changing the retry to start at NFS4_POLL_RETRY_MIN and exponentially grow
+> to NFS4_POLL_RETRY_MAX allow for faster handling of these error conditions.
 > 
-> I can put it anywhere you like. I'd prefer netlabel_lsm.h to
-> netlabel_secid.h, but if you have a strong preference I'll defer to your
-> conventions.
+> Additionally this alleviates an interoperability problem with the AIX NFSv4
+> Server.  The AIX server frequently (2 out of 3) returns NFS4ERR_DELAY, on a
+> close when it happens in close proximity to a RELEASE_LOCKOWNER.  This would
+> cause a linux client to hang for 15 seconds.
+> 
+> Signed-off-by: Dave Chiluk <chiluk@canonical.com>
+> ---
+>  fs/nfs/nfs4proc.c            |   12 ++++++++++++
+>  include/linux/sunrpc/sched.h |    1 +
+>  2 files changed, 13 insertions(+)
+> 
+> diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
+> index 0ad025e..37dad27 100644
+> --- a/fs/nfs/nfs4proc.c
+> +++ b/fs/nfs/nfs4proc.c
+> @@ -4006,6 +4006,18 @@ nfs4_async_handle_error(struct rpc_task *task, const struct nfs_server *server,
+>  #endif /* CONFIG_NFS_V4_1 */
+>  		case -NFS4ERR_DELAY:
+>  			nfs_inc_server_stats(server, NFSIOS_DELAY);
+> +			/* Do an exponential backoff of retries from
+> +			 * NFS4_POLL_RETRY_MIN to NFS4_POLL_RETRY_MAX. */
+> +			task->tk_timeout = NFS4_POLL_RETRY_MIN <<
+> +					(task->tk_delays*2);
+> +			if (task->tk_timeout > NFS4_POLL_RETRY_MAX)
+> +				rpc_delay(task, NFS4_POLL_RETRY_MAX);
+> +			else {
+> +				task->tk_delays++;
+> +				rpc_delay(task, task->tk_timeout);
+> +			}
+> +			task->tk_status = 0;
+> +			return -EAGAIN;
 
-That's fine too.
+Just as a matter of style, could you stick this in a helper something
+like the existing nfs4_delay?:
 
-Thanks.
+		case -NFS4ERR_DELAY:
+			nfs_inc_server_stats(server, NFSIOS_DELAY);
+			nfs4_async_delay(task);
+			task->tk_status = 0;
+			return -EAGAIN;
+		...
 
--- 
-paul moore
-www.paul-moore.com
+--b.
 
+>  		case -NFS4ERR_GRACE:
+>  			rpc_delay(task, NFS4_POLL_RETRY_MAX);
+>  			task->tk_status = 0;
+> diff --git a/include/linux/sunrpc/sched.h b/include/linux/sunrpc/sched.h
+> index 84ca436..60f82bf 100644
+> --- a/include/linux/sunrpc/sched.h
+> +++ b/include/linux/sunrpc/sched.h
+> @@ -62,6 +62,7 @@ struct rpc_task {
+>  	void *			tk_calldata;
+>  
+>  	unsigned long		tk_timeout;	/* timeout for rpc_sleep() */
+> +	unsigned short		tk_delays;	/* number of times task delayed */
+>  	unsigned long		tk_runstate;	/* Task run status */
+>  	struct workqueue_struct	*tk_workqueue;	/* Normally rpciod, but could
+>  						 * be any workqueue
+> -- 
+> 1.7.9.5
+> 
