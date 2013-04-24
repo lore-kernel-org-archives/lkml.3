@@ -1,33 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932511Ab3DXMHm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 08:07:42 -0400
-Received: from mail.utm.edu.ec ([186.46.160.198]:52674 "EHLO mail.utm.edu.ec"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932494Ab3DXMHl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 08:07:41 -0400
-X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Wed, 24 Apr 2013 08:07:41 EDT
-Date: Wed, 24 Apr 2013 06:47:10 -0500 (ECT)
-From: Mr Mark Harris <fcs@utm.edu.ec>
-Reply-To: Mr Mark Harris <harris_mark_006@hotmail.com>
-Subject: 
-Message-ID: <043ad3ed-a1d1-47e1-b3b3-92ebe21c5aee@mail.utm.edu.ec>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-MIME-Version: 1.0
-X-Originating-IP: [197.228.31.44]
-X-Mailer: Zimbra 7.0.0_GA_3077 (zclient/7.0.0_GA_3077)
-To: undisclosed-recipients:;
+	id S932530Ab3DXMIe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 08:08:34 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:55646 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756759Ab3DXMId (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 08:08:33 -0400
+X-Nat-Received: from [202.181.97.72]:61691 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1366805311.6037
+To: linux-kernel@vger.kernel.org
+Subject: [linux-next-20130422] Bug in bootup code or debug code?
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Message-Id: <201304242108.FDC35910.VJMHFFFSOLOOQt@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Wed, 24 Apr 2013 21:08:27 +0900
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 24042013 #9886847, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello.
 
+linux-next-20130422 does not boot when built with CONFIG_DEBUG_SLAB=y &&
+CONFIG_DEBUG_SPINLOCK=y && CONFIG_DEBUG_PAGEALLOC=y .
 
+It hangs (with CPU#0 spinning) immediately after printing
 
-Hello!,
+  Decompressing Linux... Parsing ELF... done.
+  Booting the kernel.
 
-Good day to you, I am Mark Harris, a citizen of the United Kingdom. I work with the National Lottery Commision. I have a urgent business proposal for our mutual benefit to the tune of ?5,497,985 Great Britain pounds sterling Please get back to me if interested for more details.
+lines.
 
-Best regards,
-Mark Harris
+Config is at http://I-love.SAKURA.ne.jp/tmp/config-3.9-rc8-next-20130422 .
+
+Any clue before starting bisection?
+
+Regards.
