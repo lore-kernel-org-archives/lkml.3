@@ -1,77 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932205Ab3DXLVd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 07:21:33 -0400
-Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:55902
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752060Ab3DXLVc convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 07:21:32 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VS-3(zz98dI9371I542I1432Izz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzzz2dh2a8h668h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ahbe9i1155h)
-From: Sethi Varun-B16395 <B16395@freescale.com>
-To: Joerg Roedel <joro@8bytes.org>
-CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "galak@kernel.crashing.org" <galak@kernel.crashing.org>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        Yoder Stuart-B08248 <B08248@freescale.com>,
-        Wood Scott-B07421 <B07421@freescale.com>
-Subject: RE: [PATCH 2/3 v14] iommu/fsl: Add additional iommu attributes
- required by the PAMU driver.
-Thread-Topic: [PATCH 2/3 v14] iommu/fsl: Add additional iommu attributes
- required by the PAMU driver.
-Thread-Index: AQHOP90uclGpGfD1QUaX06kTxa8S0pjjz/0AgAAHY6CAAVwxAIAACBLg
-Date: Wed, 24 Apr 2013 11:21:14 +0000
-Message-ID: <C5ECD7A89D1DC44195F34B25E172658D4B820D@039-SN2MPN1-011.039d.mgd.msft.net>
-References: <1366691726-9023-1-git-send-email-Varun.Sethi@freescale.com>
- <1366691726-9023-2-git-send-email-Varun.Sethi@freescale.com>
- <20130423133837.GG17148@8bytes.org>
- <C5ECD7A89D1DC44195F34B25E172658D4B4D9A@039-SN2MPN1-011.039d.mgd.msft.net>
- <20130424105117.GI17148@8bytes.org>
-In-Reply-To: <20130424105117.GI17148@8bytes.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.232.132.53]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1758002Ab3DXLW6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 07:22:58 -0400
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:41863 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757546Ab3DXLW5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 07:22:57 -0400
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+In-Reply-To: <CAKohpo=St0z0L9ei248s3KL_DqZtewQ50o7d=BTdwLFcpM+x3w@mail.gmail.com>
+References: <cover.1352196505.git.viresh.kumar@linaro.org>
+	<d12b25130db5a8b645929eb93d1cf4ddc2d68826.1352196505.git.viresh.kumar@linaro.org>
+	<1354024039.6276.72.camel@gandalf.local.home>
+	<CAKohponv-AKZzM98Ujeek4oXQx+8ba+sMgMbM9eV8PgQR38kZw@mail.gmail.com>
+	<CAKohpo=St0z0L9ei248s3KL_DqZtewQ50o7d=BTdwLFcpM+x3w@mail.gmail.com>
+Date: Wed, 24 Apr 2013 16:52:56 +0530
+Message-ID: <CAKohpo=0r=HY5w-XqnXv42eSJcH08C47J+TqWn7vY1aNBhGT_A@mail.gmail.com>
+Subject: Re: [PATCH V2 Resend 4/4] timer: Migrate running timer
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: tglx@linutronix.de, Steven Rostedt <rostedt@goodmis.org>
+Cc: pjt@google.com, paul.mckenney@linaro.org, tj@kernel.org, mingo@redhat.com,
+        peterz@infradead.org, Arvind.Chauhan@arm.com,
+        linaro-dev@lists.linaro.org, patches@linaro.org,
+        pdsw-power-team@arm.com, linux-kernel@vger.kernel.org,
+        linux-rt-users@vger.kernel.org, john stultz <johnstul@us.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 9 April 2013 20:22, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> [Steven replied to a personal Ping!!, including everybody again]
+>
+> On 9 April 2013 19:25, Steven Rostedt <rostedt@goodmis.org> wrote:
+>> On Tue, 2013-04-09 at 14:05 +0530, Viresh Kumar wrote:
+>>> Ping!!
+>>>
+>>
+>> Remind me again. What problem are you trying to solve?
+>
+> I was trying to migrate a running timer which arms itself, so that we don't
+> keep a cpu busy just for servicing this timer.
+>
+>>> On 20 March 2013 20:43, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+>>> >
+>>> > Hi Steven/Thomas,
+>>> >
+>>> > I came back to this patch after completing some other stuff and posting
+>>> > wq part of this patchset separately.
+>>> >
+>>> > I got your point and understand how this would fail.
+>>> >
+>>> > @Thomas: I need your opinion first. Do you like this concept of migrating
+>>> > running timer or not? Or you see some basic problem with this concept?
+>>
+>> I'll let Thomas answer this, but to me, this sounds really racy.
+>
+> Sure.
+>
+>>> > If no (i.e. i can go ahead with another version), then i have some solution to
+>>> > fix earlier problems reported by Steven:
+>>> >
+>>> > The problem lies with del_timer_sync() which just checks
+>>> > base->running_timer != timer to check if timer is currently running or not.
+>>> >
+>>> > What if we add another variable in struct timer_list, that will store if we are
+>>> > running timer callback or not. And so, before we call callback in timer core,
+>>> > we will set this variable and will reset it after finishing callback.
+>>> >
+>>> > del_timer_sync() will have something like:
+>>> >
+>>> > if (base->running_timer != timer)
+>>> >     remove timer and return;
+>>
+>> For example, this didn't fix the issue. You removed the timer when it
+>> was still running, because base->running_timer did not equal timer.
+>
+> You are correct and i was stupid. I wanted to write this instead:
+>
+> del_timer_sync() will have something like:
+>
+> if (base->running_timer != timer)
+>     if (timer->running_callback)
+>         go back to its loop...
+>     else
+>         remove timer and return;
+>
+> i.e. if we aren't running on our base cpu, just check if our callback is
+> executing somewhere else due to migration.
 
-
-> -----Original Message-----
-> From: Joerg Roedel [mailto:joro@8bytes.org]
-> Sent: Wednesday, April 24, 2013 4:21 PM
-> To: Sethi Varun-B16395
-> Cc: iommu@lists.linux-foundation.org; linuxppc-dev@lists.ozlabs.org;
-> linux-kernel@vger.kernel.org; galak@kernel.crashing.org;
-> benh@kernel.crashing.org; Yoder Stuart-B08248; Wood Scott-B07421
-> Subject: Re: [PATCH 2/3 v14] iommu/fsl: Add additional iommu attributes
-> required by the PAMU driver.
-> 
-> On Tue, Apr 23, 2013 at 02:10:25PM +0000, Sethi Varun-B16395 wrote:
-> > I think it's fine to have the header under linux, actually I also the
-> > intel-iommu header under linux.
-> 
-> Yes, the difference is that VT-d runs on x86 and on ia64. So there is no
-> single arch where the header could be placed. The amd-iommu.h file on the
-> other hand is x86 only and should also be moved to asm/, as I just found
-> out :)
-> 
-> And as long as PAMU is only needed on a single architecture the header
-> should also be arch-specific. If that changes someday the header can be
-> moved to a generic place.
-> 
-Ok, I will post the next version of the patch set.
-
--Varun
-
-
+Ping!!
