@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758247Ab3DXUup (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 16:50:45 -0400
+	id S1758204Ab3DXUuo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 16:50:44 -0400
 Received: from perceval.ideasonboard.com ([95.142.166.194]:45786 "EHLO
 	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758059Ab3DXUuj (ORCPT
+	with ESMTP id S1758028Ab3DXUui (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 16:50:39 -0400
+	Wed, 24 Apr 2013 16:50:38 -0400
 From: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
 To: linux-sh@vger.kernel.org
 Cc: linux-leds@vger.kernel.org, linux-kernel@vger.kernel.org,
         Thierry Reding <thierry.reding@avionic-design.de>,
         Magnus Damm <magnus.damm@gmail.com>, Paul Mundt <lethal@linux-sh.org>
-Subject: [PATCH v2 05/11] ARM: mach-shmobile: clock-r8a7740: add TPU PWM support
-Date: Wed, 24 Apr 2013 22:50:10 +0200
-Message-Id: <1366836616-21475-6-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+Subject: [PATCH v2 03/11] sh-pfc: r8a7790: Add TPU pin groups and functions
+Date: Wed, 24 Apr 2013 22:50:08 +0200
+Message-Id: <1366836616-21475-4-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1366836616-21475-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
 References: <1366836616-21475-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
@@ -23,40 +23,83 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
-Tested-by: Simon Horman <horms@verge.net.au>
 ---
- arch/arm/mach-shmobile/clock-r8a7740.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/pinctrl/sh-pfc/pfc-r8a7790.c | 41 ++++++++++++++++++++++++++++++++++++
+ 1 file changed, 41 insertions(+)
 
-diff --git a/arch/arm/mach-shmobile/clock-r8a7740.c b/arch/arm/mach-shmobile/clock-r8a7740.c
-index b12c476..6ad4640 100644
---- a/arch/arm/mach-shmobile/clock-r8a7740.c
-+++ b/arch/arm/mach-shmobile/clock-r8a7740.c
-@@ -461,7 +461,7 @@ enum {
+diff --git a/drivers/pinctrl/sh-pfc/pfc-r8a7790.c b/drivers/pinctrl/sh-pfc/pfc-r8a7790.c
+index 1656915..5be2999 100644
+--- a/drivers/pinctrl/sh-pfc/pfc-r8a7790.c
++++ b/drivers/pinctrl/sh-pfc/pfc-r8a7790.c
+@@ -2342,6 +2342,35 @@ static const unsigned int scifb2_data_c_pins[] = {
+ static const unsigned int scifb2_data_c_mux[] = {
+ 	SCIFB2_RXD_C_MARK, SCIFB2_TXD_C_MARK,
+ };
++/* - TPU0 ------------------------------------------------------------------- */
++static const unsigned int tpu0_to0_pins[] = {
++	/* TO */
++	RCAR_GP_PIN(0, 20),
++};
++static const unsigned int tpu0_to0_mux[] = {
++	TPU0TO0_MARK,
++};
++static const unsigned int tpu0_to1_pins[] = {
++	/* TO */
++	RCAR_GP_PIN(0, 21),
++};
++static const unsigned int tpu0_to1_mux[] = {
++	TPU0TO1_MARK,
++};
++static const unsigned int tpu0_to2_pins[] = {
++	/* TO */
++	RCAR_GP_PIN(0, 22),
++};
++static const unsigned int tpu0_to2_mux[] = {
++	TPU0TO2_MARK,
++};
++static const unsigned int tpu0_to3_pins[] = {
++	/* TO */
++	RCAR_GP_PIN(0, 23),
++};
++static const unsigned int tpu0_to3_mux[] = {
++	TPU0TO3_MARK,
++};
  
- 	MSTP329, MSTP328, MSTP323, MSTP320,
- 	MSTP314, MSTP313, MSTP312,
--	MSTP309,
-+	MSTP309, MSTP304,
+ static const struct sh_pfc_pin_group pinmux_groups[] = {
+ 	SH_PFC_PIN_GROUP(eth_link),
+@@ -2416,6 +2445,10 @@ static const struct sh_pfc_pin_group pinmux_groups[] = {
+ 	SH_PFC_PIN_GROUP(scifb2_clk_b),
+ 	SH_PFC_PIN_GROUP(scifb2_ctrl_b),
+ 	SH_PFC_PIN_GROUP(scifb2_data_c),
++	SH_PFC_PIN_GROUP(tpu0_to0),
++	SH_PFC_PIN_GROUP(tpu0_to1),
++	SH_PFC_PIN_GROUP(tpu0_to2),
++	SH_PFC_PIN_GROUP(tpu0_to3),
+ };
  
- 	MSTP416, MSTP415, MSTP407, MSTP406,
+ static const char * const eth_groups[] = {
+@@ -2520,6 +2553,13 @@ static const char * const scifb2_groups[] = {
+ 	"scifb2_data_c",
+ };
  
-@@ -499,6 +499,7 @@ static struct clk mstp_clks[MSTP_NR] = {
- 	[MSTP313] = SH_CLK_MSTP32(&div4_clks[DIV4_HP],	SMSTPCR3, 13, 0), /* SDHI1 */
- 	[MSTP312] = SH_CLK_MSTP32(&div4_clks[DIV4_HP],	SMSTPCR3, 12, 0), /* MMC */
- 	[MSTP309] = SH_CLK_MSTP32(&div4_clks[DIV4_HP],	SMSTPCR3,  9, 0), /* GEther */
-+	[MSTP304] = SH_CLK_MSTP32(&div4_clks[DIV4_CP],	SMSTPCR3,  4, 0), /* TPU0 */
++static const char * const tpu0_groups[] = {
++	"tpu0_to0",
++	"tpu0_to1",
++	"tpu0_to2",
++	"tpu0_to3",
++};
++
+ static const struct sh_pfc_function pinmux_functions[] = {
+ 	SH_PFC_FUNCTION(eth),
+ 	SH_PFC_FUNCTION(intc),
+@@ -2531,6 +2571,7 @@ static const struct sh_pfc_function pinmux_functions[] = {
+ 	SH_PFC_FUNCTION(scifb0),
+ 	SH_PFC_FUNCTION(scifb1),
+ 	SH_PFC_FUNCTION(scifb2),
++	SH_PFC_FUNCTION(tpu0),
+ };
  
- 	[MSTP416] = SH_CLK_MSTP32(&div4_clks[DIV4_HP],	SMSTPCR4, 16, 0), /* USBHOST */
- 	[MSTP415] = SH_CLK_MSTP32(&div4_clks[DIV4_HP],	SMSTPCR4, 15, 0), /* SDHI2 */
-@@ -596,6 +597,7 @@ static struct clk_lookup lookups[] = {
- 	CLKDEV_DEV_ID("e6bd0000.mmcif",         &mstp_clks[MSTP312]),
- 	CLKDEV_DEV_ID("sh-eth",			&mstp_clks[MSTP309]),
- 	CLKDEV_DEV_ID("e9a00000.sh-eth",	&mstp_clks[MSTP309]),
-+	CLKDEV_DEV_ID("renesas_tpu_pwm",	&mstp_clks[MSTP304]),
- 
- 	CLKDEV_DEV_ID("sh_mobile_sdhi.2",	&mstp_clks[MSTP415]),
- 	CLKDEV_DEV_ID("e6870000.sdhi",          &mstp_clks[MSTP415]),
+ static struct pinmux_cfg_reg pinmux_config_regs[] = {
 -- 
 1.8.1.5
 
