@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758316Ab3DXJij (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 05:38:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58641 "EHLO mx1.redhat.com"
+	id S1758330Ab3DXJin (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 05:38:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3076 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758301Ab3DXJih (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 05:38:37 -0400
+	id S1758312Ab3DXJij (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 05:38:39 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>,
@@ -17,16 +17,40 @@ Cc: Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@kernel.org>, Borislav Petkov <bp@alien8.de>,
         Stephane Eranian <eranian@google.com>, Sam Ravnborg <sam@ravnborg.org>,
         David Ahern <dsahern@gmail.com>
-Subject: [PATCH 05/26] perf tools: Move compiler and linker flags check into config/Makefile
-Date: Wed, 24 Apr 2013 11:37:32 +0200
-Message-Id: <1366796273-4780-6-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1366796273-4780-1-git-send-email-jolsa@redhat.com>
-References: <1366796273-4780-1-git-send-email-jolsa@redhat.com>
+Subject: [PATCHv2 00/26] perf tools: Makefile changes
+Date: Wed, 24 Apr 2013 11:37:27 +0200
+Message-Id: <1366796273-4780-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Moving compiler and linker flags check into config/Makefile.
+hi,
+this patchset mostly consists of moving the config 'CHK'
+stuff into config/Makefile which will be also used for
+kbuild afterwards.
+
+I'm sending now just the Makefile changes separated from
+the kbuild stuff, which will come later.
+
+The original RFC is here:
+http://marc.info/?l=linux-kernel&m=136484403415600&w=2
+
+The patchset is tested via automated make test by running:
+  $ make -f tests/make 
+
+v2 changes:
+  - adding make clean all support (and test)
+  - de-CAPSizing the test/make test
+  - several line breaking changes, ommiting usage of '\'
+  - '?=' operator removal for STRIP
+  - tabs to spaces conversion for Makefile non-commands lines
+
+Changes could be reached in here:
+git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git
+perf/core_make
+
+thanks for comments,
+jirka
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
@@ -41,244 +65,38 @@ Cc: Stephane Eranian <eranian@google.com>
 Cc: Sam Ravnborg <sam@ravnborg.org>
 Cc: David Ahern <dsahern@gmail.com>
 ---
- tools/perf/Makefile        | 110 ++++++++-------------------------------------
- tools/perf/config/Makefile |  66 +++++++++++++++++++++++++++
- 2 files changed, 85 insertions(+), 91 deletions(-)
+Jiri Olsa (26):
+      perf tools: Add automated make test suite
+      perf tools: Fix tab vs spaces issue in Makefile ifdef/endif
+      perf tools: Move arch check into config/Makefile
+      perf tools: Move programs check into config/Makefile
+      perf tools: Move compiler and linker flags check into config/Makefile
+      perf tools: Move libelf check config into config/Makefile
+      perf tools: Move libdw check config into config/Makefile
+      perf tools: Move libunwind check config into config/Makefile
+      perf tools: Move libaudit check config into config/Makefile
+      perf tools: Move slang check config into config/Makefile
+      perf tools: Move gtk2 check config into config/Makefile
+      perf tools: Move libperl check config into config/Makefile
+      perf tools: Move libpython check config into config/Makefile
+      perf tools: Move libbfd check config into config/Makefile
+      perf tools: Move stdlib check config into config/Makefile
+      perf tools: Move libnuma check config into config/Makefile
+      perf tools: Move paths config into config/Makefile
+      perf tools: Final touches for CHK config move
+      perf tools: Merge all *CFLAGS* make variable into CFLAGS
+      perf tools: Merge all *LDFLAGS* make variable into LDFLAGS
+      perf tools: Switch to full patch C include directories
+      perf tools: Add NO_BIONIC variable to confiure bionic setup
+      perf tools: Replace tabs with spaces for all non-commands statements
+      perf tools: Replace multiple line assignment with multiple statements
+      perf tools: Remove '?=' Makefile STRIP assignment
+      perf tools: Add missing liblk.a dependency for python/perf.so
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index e543234..55382f9 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -52,6 +52,20 @@ include config/utilities.mak
- #
- # Define NO_LIBNUMA if you do not want numa perf benchmark
- 
-+ifeq ($(srctree),)
-+srctree := $(patsubst %/,%,$(dir $(shell pwd)))
-+srctree := $(patsubst %/,%,$(dir $(srctree)))
-+#$(info Determined 'srctree' to be $(srctree))
-+endif
-+
-+ifneq ($(objtree),)
-+#$(info Determined 'objtree' to be $(objtree))
-+endif
-+
-+ifneq ($(OUTPUT),)
-+#$(info Determined 'OUTPUT' to be $(OUTPUT))
-+endif
-+
- $(OUTPUT)PERF-VERSION-FILE: .FORCE-PERF-VERSION-FILE
- 	@$(SHELL_PATH) util/PERF-VERSION-GEN $(OUTPUT)
- 
-@@ -66,6 +80,9 @@ FLEX    = flex
- BISON   = bison
- STRIP  ?= strip
- 
-+LK_DIR = ../lib/lk/
-+TRACE_EVENT_DIR = ../lib/traceevent/
-+
- # include config/Makefile by default and rule out
- # non-config cases
- config := 1
-@@ -84,33 +101,10 @@ ifeq ($(config),1)
- include config/Makefile
- endif
- 
--# Treat warnings as errors unless directed not to
--ifneq ($(WERROR),0)
--  CFLAGS_WERROR := -Werror
--endif
--
--ifeq ("$(origin DEBUG)", "command line")
--  PERF_DEBUG = $(DEBUG)
--endif
--ifndef PERF_DEBUG
--  CFLAGS_OPTIMIZE = -O6
--endif
--
--ifdef PARSER_DEBUG
--	PARSER_DEBUG_BISON  := -t
--	PARSER_DEBUG_FLEX   := -d
--	PARSER_DEBUG_CFLAGS := -DPARSER_DEBUG
--endif
--
- ifdef NO_NEWT
- 	NO_SLANG=1
- endif
- 
--CFLAGS = -fno-omit-frame-pointer -ggdb3 -funwind-tables -Wall -Wextra -std=gnu99 $(CFLAGS_WERROR) $(CFLAGS_OPTIMIZE) $(EXTRA_WARNINGS) $(EXTRA_CFLAGS) $(PARSER_DEBUG_CFLAGS)
--EXTLIBS = -lpthread -lrt -lelf -lm
--ALL_CFLAGS = $(CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
--ALL_LDFLAGS = $(LDFLAGS)
--
- # Among the variables below, these:
- #   perfexecdir
- #   template_dir
-@@ -150,71 +144,6 @@ export prefix bindir sharedir sysconfdir
- # explicitly what architecture to check for. Fix this up for yours..
- SPARSE_FLAGS = -D__BIG_ENDIAN__ -D__powerpc__
- 
--ifneq ($(MAKECMDGOALS),clean)
--ifneq ($(MAKECMDGOALS),tags)
---include config/feature-tests.mak
--
--ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -Werror -fstack-protector-all,-fstack-protector-all),y)
--	CFLAGS := $(CFLAGS) -fstack-protector-all
--endif
--
--ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -Werror -Wstack-protector,-Wstack-protector),y)
--       CFLAGS := $(CFLAGS) -Wstack-protector
--endif
--
--ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -Werror -Wvolatile-register-var,-Wvolatile-register-var),y)
--       CFLAGS := $(CFLAGS) -Wvolatile-register-var
--endif
--
--ifndef PERF_DEBUG
--	ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -D_FORTIFY_SOURCE=2,-D_FORTIFY_SOURCE=2),y)
--		CFLAGS := $(CFLAGS) -D_FORTIFY_SOURCE=2
--	endif
--endif
--
--### --- END CONFIGURATION SECTION ---
--
--ifeq ($(srctree),)
--srctree := $(patsubst %/,%,$(dir $(shell pwd)))
--srctree := $(patsubst %/,%,$(dir $(srctree)))
--#$(info Determined 'srctree' to be $(srctree))
--endif
--
--ifneq ($(objtree),)
--#$(info Determined 'objtree' to be $(objtree))
--endif
--
--ifneq ($(OUTPUT),)
--#$(info Determined 'OUTPUT' to be $(OUTPUT))
--endif
--
--BASIC_CFLAGS = \
--	-Iutil/include \
--	-Iarch/$(ARCH)/include \
--	$(if $(objtree),-I$(objtree)/arch/$(ARCH)/include/generated/uapi) \
--	-I$(srctree)/arch/$(ARCH)/include/uapi \
--	-I$(srctree)/arch/$(ARCH)/include \
--	$(if $(objtree),-I$(objtree)/include/generated/uapi) \
--	-I$(srctree)/include/uapi \
--	-I$(srctree)/include \
--	-I$(OUTPUT)util \
--	-Iutil \
--	-I. \
--	-I$(TRACE_EVENT_DIR) \
--	-I../lib/ \
--	-D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
--
--BASIC_LDFLAGS =
--
--ifeq ($(call try-cc,$(SOURCE_BIONIC),$(CFLAGS),bionic),y)
--	BIONIC := 1
--	EXTLIBS := $(filter-out -lrt,$(EXTLIBS))
--	EXTLIBS := $(filter-out -lpthread,$(EXTLIBS))
--	BASIC_CFLAGS += -I.
--endif
--endif # MAKECMDGOALS != tags
--endif # MAKECMDGOALS != clean
--
- # Guard against environment variables
- BUILTIN_OBJS =
- LIB_H =
-@@ -227,9 +156,6 @@ SCRIPT_SH += perf-archive.sh
- grep-libs = $(filter -l%,$(1))
- strip-libs = $(filter-out -l%,$(1))
- 
--LK_DIR = ../lib/lk/
--TRACE_EVENT_DIR = ../lib/traceevent/
--
- LK_PATH=$(LK_DIR)
- 
- ifneq ($(OUTPUT),)
-@@ -543,6 +469,8 @@ PERFLIBS = $(LIB_FILE) $(LIBLK) $(LIBTRACEEVENT)
- ifneq ($(MAKECMDGOALS),clean)
- ifneq ($(MAKECMDGOALS),tags)
- 
-+-include config/feature-tests.mak
-+
- # We choose to avoid "if .. else if .. else .. endif endif"
- # because maintaining the nesting to match is a pain.  If
- # we had "elif" things would have been much nicer...
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 04bf8ac..9ce522a 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -42,3 +42,69 @@ endif
- ifeq ($(call get-executable,$(BISON)),)
- 	dummy := $(error Error: $(BISON) is missing on this system, please install it)
- endif
-+
-+# Treat warnings as errors unless directed not to
-+ifneq ($(WERROR),0)
-+	CFLAGS_WERROR := -Werror
-+endif
-+
-+ifeq ("$(origin DEBUG)", "command line")
-+	PERF_DEBUG = $(DEBUG)
-+endif
-+ifndef PERF_DEBUG
-+	CFLAGS_OPTIMIZE = -O6
-+endif
-+
-+ifdef PARSER_DEBUG
-+	PARSER_DEBUG_BISON  := -t
-+	PARSER_DEBUG_FLEX   := -d
-+	PARSER_DEBUG_CFLAGS := -DPARSER_DEBUG
-+endif
-+
-+CFLAGS = -fno-omit-frame-pointer -ggdb3 -funwind-tables -Wall -Wextra -std=gnu99 $(CFLAGS_WERROR) $(CFLAGS_OPTIMIZE) $(EXTRA_WARNINGS) $(EXTRA_CFLAGS) $(PARSER_DEBUG_CFLAGS)
-+EXTLIBS = -lpthread -lrt -lelf -lm
-+ALL_CFLAGS = $(CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
-+ALL_LDFLAGS = $(LDFLAGS)
-+
-+ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -Werror -fstack-protector-all,-fstack-protector-all),y)
-+	CFLAGS := $(CFLAGS) -fstack-protector-all
-+endif
-+
-+ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -Werror -Wstack-protector,-Wstack-protector),y)
-+	CFLAGS := $(CFLAGS) -Wstack-protector
-+endif
-+
-+ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -Werror -Wvolatile-register-var,-Wvolatile-register-var),y)
-+	CFLAGS := $(CFLAGS) -Wvolatile-register-var
-+endif
-+
-+ifndef PERF_DEBUG
-+	ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -D_FORTIFY_SOURCE=2,-D_FORTIFY_SOURCE=2),y)
-+		CFLAGS := $(CFLAGS) -D_FORTIFY_SOURCE=2
-+	endif
-+endif
-+
-+BASIC_CFLAGS = \
-+	-Iutil/include \
-+	-Iarch/$(ARCH)/include \
-+	$(if $(objtree),-I$(objtree)/arch/$(ARCH)/include/generated/uapi) \
-+	-I$(srctree)/arch/$(ARCH)/include/uapi \
-+	-I$(srctree)/arch/$(ARCH)/include \
-+	$(if $(objtree),-I$(objtree)/include/generated/uapi) \
-+	-I$(srctree)/include/uapi \
-+	-I$(srctree)/include \
-+	-I$(OUTPUT)util \
-+	-Iutil \
-+	-I. \
-+	-I$(TRACE_EVENT_DIR) \
-+	-I../lib/ \
-+	-D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
-+
-+BASIC_LDFLAGS =
-+
-+ifeq ($(call try-cc,$(SOURCE_BIONIC),$(CFLAGS),bionic),y)
-+	BIONIC := 1
-+	EXTLIBS := $(filter-out -lrt,$(EXTLIBS))
-+	EXTLIBS := $(filter-out -lpthread,$(EXTLIBS))
-+	BASIC_CFLAGS += -I.
-+endif
--- 
-1.7.11.7
-
+ tools/perf/Makefile        | 630 ++++++++++++++---------------------------------------------------------------
+ tools/perf/config/Makefile | 477 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/tests/make      | 141 ++++++++++++++++++
+ tools/perf/util/setup.py   |   5 +-
+ 4 files changed, 732 insertions(+), 521 deletions(-)
+ create mode 100644 tools/perf/config/Makefile
+ create mode 100644 tools/perf/tests/make
