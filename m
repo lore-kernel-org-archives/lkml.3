@@ -1,50 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755285Ab3DXQMT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 12:12:19 -0400
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:37746 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751958Ab3DXQMQ (ORCPT
+	id S1755623Ab3DXQPu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 12:15:50 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:36246 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754284Ab3DXQPt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 12:12:16 -0400
-Date: Wed, 24 Apr 2013 09:12:08 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Amit Kucheria <amit.kucheria@linaro.org>, Jens Axboe <axboe@kernel.dk>,
-        Robin Randhawa <robin.randhawa@arm.com>,
-        linux-rt-users@vger.kernel.org, Patch Tracking <patches@linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Liviu Dudau <Liviu.Dudau@arm.com>, linux-kernel@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>, mingo@redhat.com,
-        Steve Bannister <Steve.Bannister@arm.com>, airlied@redhat.com,
-        Arvind Chauhan <arvind.chauhan@arm.com>, davem@davemloft.net,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Charles Garcia-Tobin <charles.garcia-tobin@arm.com>
-Subject: Re: [PATCH V5 1/5] workqueues: Introduce new flag WQ_POWER_EFFICIENT
- for power oriented workqueues
-Message-ID: <20130424161208.GA16991@mtj.dyndns.org>
-References: <cover.1366803121.git.viresh.kumar@linaro.org>
- <480f5d6da920e2f2b868f311228c81635727799e.1366803121.git.viresh.kumar@linaro.org>
- <CAP245DWtwguSp8ubid_KJnLSOqvCbmTXN+0Bg_MtDrUhBqve-Q@mail.gmail.com>
- <CAKohpokN_o-RUX6MDwqqfzu4NKRysG-hSzmB=MHV7Y0aDbztuA@mail.gmail.com>
+	Wed, 24 Apr 2013 12:15:49 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKohpokN_o-RUX6MDwqqfzu4NKRysG-hSzmB=MHV7Y0aDbztuA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.LNX.2.00.1304241637530.29143@pobox.suse.cz>
+References: <1366626999-6270-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	<alpine.LNX.2.00.1304241637530.29143@pobox.suse.cz>
+Date: Wed, 24 Apr 2013 19:15:47 +0300
+Message-ID: <CAHp75Veyy=YUvLbzNGKskbcPMf-USf9hrYA7W0ihOEK2jk3Gbw@mail.gmail.com>
+Subject: Re: [PATCH] lib: fix trivial typo in the comment
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 24, 2013 at 05:57:09PM +0530, Viresh Kumar wrote:
-> If this line is not present i believe it is 'default n' only. So, i skipped it.
+On Wed, Apr 24, 2013 at 5:38 PM, Jiri Kosina <jkosina@suse.cz> wrote:
 
-I think the difference is that when you configure the option for the
-first time - ie. building kernel with .config used for an older kernel
-- that it prompts for selection, thus annoying the big penguin.  You
-probably want the explicit 'N'.
+>> - * This routine returns 0 iff the first character is one of 'Yy1Nn0'.
+>> + * This routine returns 0 if the first character is one of 'Yy1Nn0'.
+>>   * Otherwise it will return -EINVAL.  Value pointed to by res is
+>>   * updated upon finding a match.
+>>   */
+>
+> And this is correct because ... ?
 
-Thanks.
+So, in this case it means "if and only if", true?
 
--- 
-tejun
+--
+With Best Regards,
+Andy Shevchenko
