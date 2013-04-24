@@ -1,240 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757494Ab3DXTJz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 15:09:55 -0400
-Received: from nm5-vm0.access.bullet.mail.mud.yahoo.com ([66.94.237.155]:43555
-	"EHLO nm5-vm0.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757057Ab3DXTJu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 15:09:50 -0400
-X-Yahoo-Newman-Id: 988431.98502.bm@smtp102.biz.mail.ne1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: iD9sesYVM1nU_bsQ06h7U8AsXsrpa6XUsTe0Zapbd.Zp3o3
- 1vLlvytcJ7h88MIJ3AkVXAsIPvtMzvsdSrjdKLtRYhDxdNFigPu_ulf442aX
- kyq0lRkqbbuPwZtDulUQPhvzVd3YOnWDTk1CQa3Ng4CS15LPqtIxQQdtQtJP
- H8km2JiXTZ_TnnZmTiE7xOtqgBzxXj1sqe0_Qc953XaS_7Gg6KFO1AC4PLIX
- .OnW04dBV4Fgox18FhEZa5Xe5_Kno2jdIq9jPpJLddDOxVEkuDbiol_2yOh0
- VbDwfcOg0E.OmQVpmqW_SD7G2OdhDBROpZRpHl_OgPKIDsLD6Sf3oOqrUY2Q
- EYaF6LPN70Wk7wFjxJsVfS0ase47SYBdHKPdl0jrkyAaKvueQekF_MCZfW4V
- uD6qmrR3wvvt_5PR23UAL7LgDYqrOx7lHXPB8hp9e_0Atwaxe_pQHJUGKWR.
- e
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-X-Rocket-Received: from [192.168.0.103] (casey@24.6.250.25 with plain)
-        by smtp102.biz.mail.ne1.yahoo.com with SMTP; 24 Apr 2013 12:09:48 -0700 PDT
-Message-ID: <51782DFE.3060808@schaufler-ca.com>
-Date: Wed, 24 Apr 2013 12:09:50 -0700
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	id S1757456Ab3DXTJx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 15:09:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6301 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757329Ab3DXTJt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 15:09:49 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, Dave Chinner <david@fromorbit.com>,
+        Jan Kara <jack@suse.cz>, linux-ext4@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: Re: Excessive stall times on ext4 in 3.9-rc2
+References: <20130410105608.GC1910@suse.de> <20130410131245.GC4862@thunk.org>
+	<20130411170402.GB11656@suse.de> <20130411183512.GA12298@thunk.org>
+	<20130411213335.GE9379@quack.suse.cz>
+	<20130412025708.GB7445@thunk.org> <20130412045042.GA30622@dastard>
+	<20130412151952.GA4944@thunk.org> <20130422143846.GA2675@suse.de>
+	<x49a9oqmblc.fsf@segfault.boston.devel.redhat.com>
+	<20130423140134.GA2108@suse.de>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Wed, 24 Apr 2013 15:09:13 -0400
+In-Reply-To: <20130423140134.GA2108@suse.de> (Mel Gorman's message of "Tue, 23
+	Apr 2013 15:01:34 +0100")
+Message-ID: <x49ppxjeofa.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-To: Paul Moore <paul@paul-moore.com>
-CC: LSM <linux-security-module@vger.kernel.org>,
-        LKLM <linux-kernel@vger.kernel.org>, SE Linux <selinux@tycho.nsa.gov>,
-        James Morris <jmorris@namei.org>,
-        John Johansen <john.johansen@canonical.com>,
-        Eric Paris <eparis@redhat.com>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Kees Cook <keescook@chromium.org>,
-        Casey Schaufler <casey@schaufler-ca.com>
-Subject: Re: [PATCH v13 5/9] LSM: Networking component isolation
-References: <5176ABB7.5080300@schaufler-ca.com> <5176B10F.9040607@schaufler-ca.com> <18474523.4Ny9IacvUQ@sifl>
-In-Reply-To: <18474523.4Ny9IacvUQ@sifl>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/24/2013 11:51 AM, Paul Moore wrote:
-> On Tuesday, April 23, 2013 09:04:31 AM Casey Schaufler wrote:
->> Subject: [PATCH v13 5/9] LSM: Networking component isolation
->>
->> The NetLabel, XFRM and secmark networking mechanisms are
->> limited to providing security information managed by one
->> LSM. These changes interface the single LSM networking
->> components with the multiple LSM system. Each of the
->> networking components will identify the security ops
->> vector of the LSM that will use it. There are various
->> wrapper functions provided to make this obvious and
->> painless.
->>
->> Signed-off-by: Casey Schaufler <casey@schaufler-ca.com>
-> ...
+Mel Gorman <mgorman@suse.de> writes:
+
+>> I'll also note that even though your I/O is going all over the place
+>> (D2C is pretty bad, 14ms), most of the time is spent waiting for a
+>> struct request allocation or between Queue and Merge:
+>> 
+>> ==================== All Devices ====================
+>> 
+>>             ALL           MIN           AVG           MAX           N
+>> --------------- ------------- ------------- ------------- -----------
+>> 
+>> Q2Q               0.000000001   0.000992259   8.898375882     2300861
+>> Q2G               0.000000843  10.193261239 2064.079501935     1016463 <====
 >
->> diff --git a/include/net/netlabel.h b/include/net/netlabel.h
->> index 2c95d55..c0cf965 100644
->> --- a/include/net/netlabel.h
->> +++ b/include/net/netlabel.h
->> @@ -406,7 +406,8 @@ int netlbl_secattr_catmap_setrng(struct
->> netlbl_lsm_secattr_catmap *catmap, /*
->>   * LSM protocol operations (NetLabel LSM/kernel API)
->>   */
->> -int netlbl_enabled(void);
->> +int netlbl_register_lsm(struct security_operations *lsmops);
-> Nit picky, but I'd prefer "netlbl_lsm_register()".
-
-Not a problem. I will conform to your conventions.
-
+> This is not normally my sandbox so do you mind spelling this out?
 >
->> +int netlbl_enabled(struct security_operations *lsmops);
->>  int netlbl_sock_setattr(struct sock *sk,
->>  			u16 family,
->>  			const struct netlbl_lsm_secattr *secattr);
-> ...
+> IIUC, the time to allocate the struct request from the slab cache is just a
+> small portion of this time. The bulk of the time is spent in get_request()
+> waiting for congestion to clear on the request list for either the sync or
+> async queue. Once a process goes to sleep on that waitqueue, it has to wait
+> until enough requests on that queue have been serviced before it gets woken
+> again at which point it gets priority access to prevent further starvation.
+> This is the Queue To Get Reqiest (Q2G) delay. What we may be seeing here
+> is that the async queue was congested and on average, we are waiting for
+> 10 seconds for it to clear. The maximum value may be bogus for reasons
+> explained later.
 >
->> diff --git a/net/netlabel/netlabel_kapi.c b/net/netlabel/netlabel_kapi.c
->> index 7c94aed..2881d48 100644
->> --- a/net/netlabel/netlabel_kapi.c
->> +++ b/net/netlabel/netlabel_kapi.c
->> @@ -607,23 +607,48 @@ int netlbl_secattr_catmap_setrng(struct
->> netlbl_lsm_secattr_catmap *catmap, * LSM Functions
->>   */
->>
->> +struct security_operations *netlbl_active_lsm;
->> +/**
->> + * netlbl_register_lsm - Reserve the NetLabel subsystem for an LSM
->> + *
->> + * Description:
->> + * To avoid potential conflicting views between LSMs over
->> + * what should go in the network label reserve the Netlabel
->> + * mechanism for use by one LSM. netlbl_enabled will return
->> + * false for all other LSMs.
->> + *
->> + */
-> You need a description for the 'lsm' parameter in the comment header above.
+> Is that accurate?
 
-Thank you. I missed that.
+Yes, without getting into excruciating detail.
 
-> Also, this is extremely nit picky but I'd like to see some vertical whitespace 
-> between the netlbl_active_lsm declaration and the function header.
-
-White space is easy.
-
->> +int netlbl_register_lsm(struct security_operations *lsm)
->> +{
->> +	if (lsm == NULL)
->> +		return -EINVAL;
->> +
->> +	if (netlbl_active_lsm == NULL)
->> +		netlbl_active_lsm = lsm;
->> +	else if (netlbl_active_lsm != lsm)
->> +		return -EBUSY;
->> +
->> +	printk(KERN_INFO "NetLabel: Registered LSM \"%s\".\n", lsm->name);
->> +	return 0;
->> +}
->> +
->>  /**
->>   * netlbl_enabled - Determine if the NetLabel subsystem is enabled
->>   *
->>   * Description:
->>   * The LSM can use this function to determine if it should use NetLabel
->> - * security attributes in it's enforcement mechanism.  Currently, NetLabel
->> - * considered to be enabled when it's configuration contains a valid
->> + * security attributes in it's enforcement mechanism.  NetLabel
->> + * considered to be enabled when the LSM making the call is registered
->> + * the netlabel configuration contains a valid setup for
->>   * at least one labeled protocol (i.e. NetLabel can understand incoming
->>   * labeled packets of at least one type); otherwise NetLabel is considered
->>   * be disabled.
->>   *
->>   */
-> Same thing, you need a description for the 'lsm' parameter in the comment 
-> header above.
-
-I'll add that.
-
->> -int netlbl_enabled(void)
->> +int netlbl_enabled(struct security_operations *lsm)
->>  {
->> -	/* At some point we probably want to expose this mechanism to the user
->> -	 * as well so that admins can toggle NetLabel regardless of the
->> -	 * configuration */
-> It really doesn't matter if you remove that comment or not, but I believe it 
-> still applies so long as we do the LSM check first.
-
-OK. I'll leave it alone.
-
->> +	if (netlbl_active_lsm != lsm)
->> +		return 0;
->>  	return (atomic_read(&netlabel_mgmt_protocount) > 0);
->>  }
-> ...
+>> G2I               0.000000461   0.000044702   3.237065090     1015803
+>> Q2M               0.000000101   8.203147238 2064.079367557     1311662
+>> I2D               0.000002012   1.476824812 2064.089774419     1014890
+>> M2D               0.000003283   6.994306138 283.573348664     1284872
+>> D2C               0.000061889   0.014438316   0.857811758     2291996
+>> Q2C               0.000072284  13.363007244 2064.092228625     2292191
+>> 
+>> ==================== Device Overhead ====================
+>> 
+>>        DEV |       Q2G       G2I       Q2M       I2D       D2C
+>> ---------- | --------- --------- --------- --------- ---------
+>>  (  8,  0) |  33.8259%   0.0001%  35.1275%   4.8932%   0.1080%
+>> ---------- | --------- --------- --------- --------- ---------
+>>    Overall |  33.8259%   0.0001%  35.1275%   4.8932%   0.1080%
+>> 
+>> I'm not sure I believe that max value.  2064 seconds seems a bit high.
 >
->> diff --git a/net/netlabel/netlabel_user.h b/net/netlabel/netlabel_user.h
->> index a6f1705..9990b24 100644
->> --- a/net/netlabel/netlabel_user.h
->> +++ b/net/netlabel/netlabel_user.h
->> @@ -41,6 +41,65 @@
->>
->>  /* NetLabel NETLINK helper functions */
->>
->> +extern struct security_operations *netlbl_active_lsm;
->> +
->> +/**
->> + * netlbl_secid_to_secctx - call the registered secid_to_secctx LSM hook
->> + * @secid - The secid to convert
->> + * @secdata - Where to put the result
->> + * @seclen - Where to put the length of the result
->> + *
->> + * Returns: the result of calling the hook.
->> + */
->> +static inline int netlbl_secid_to_secctx(u32 secid, char **secdata, u32
->> *seclen) +{
->> +	if (netlbl_active_lsm == NULL)
->> +		return -EINVAL;
->> +	return netlbl_active_lsm->secid_to_secctx(secid, secdata, seclen);
->> +}
->> +
->> +/**
->> + * netlbl_release_secctx - call the registered release_secctx LSM hook
->> + * @secdata - The security context to release
->> + * @seclen - The size of the context to release
->> + *
->> + */
->> +static inline void netlbl_release_secctx(char *secdata, u32 seclen)
->> +{
->> +	if (netlbl_active_lsm != NULL)
->> +		netlbl_active_lsm->release_secctx(secdata, seclen);
->> +}
->> +
->> +/**
->> + * netlbl_secctx_to_secid - call the registered seccts_to_secid LSM hook
->> + * @secdata - The security context
->> + * @seclen - The size of the security context
->> + * @secid - Where to put the result
->> + *
->> + * Returns: the result of calling the hook
->> + */
->> +static inline int netlbl_secctx_to_secid(const char *secdata, u32 seclen,
->> +					 u32 *secid)
->> +{
->> +	if (netlbl_active_lsm == NULL) {
->> +		*secid = 0;
->> +		return -EINVAL;
->> +	}
->> +	return netlbl_active_lsm->secctx_to_secid(secdata, seclen, secid);
->> +}
->> +
->> +/**
->> + * netlbl_task_getsecid - call the registered task_getsecid LSM hook
->> + * @p - The task
->> + * @secid - Where to put the secid
->> + *
->> + */
->> +static inline void netlbl_task_getsecid(struct task_struct *p, u32 *secid)
->> +{
->> +	if (netlbl_active_lsm)
->> +		netlbl_active_lsm->task_getsecid(p, secid);
->> +}
-> Any particular reason you put all these functions in 'netlabel_user.h'?  I ask 
-> because this header is related to the NetLabel netlink interface, with some 
-> minor audit stuff tossed in for good measure; it really has nothing to do with 
-> the LSM secctx/secid stuff.  I'd probably prefer these functions end up in 
-> their own header file for the sake of better organization, maybe 
-> 'netlabel_secid.h'?
+> It is so I looked closer at the timestamps and there is an one hour
+> correction about 4400 seconds into the test.  Daylight savings time kicked
+> in on March 31st and the machine is rarely rebooted until this test case
+> came along. It looks like there is a timezone or time misconfiguration
+> on the laptop that starts the machine with the wrong time. NTP must have
+> corrected the time which skewed the readings in that window severely :(
 
-I can put it anywhere you like. I'd prefer netlabel_lsm.h to netlabel_secid.h,
-but if you have a strong preference I'll defer to your conventions.
+Not sure I'm buying that argument, as there are no gaps in the blkparse
+output.  The logging is not done using wallclock time.  I still haven't
+had sufficient time to dig into these numbers.
 
-Thank you.
+>> Also, Q2M should not be anywhere near that big, so more investigation is
+>> required there.  A quick look over the data doesn't show any such delays
+>> (making me question the tools), but I'll write some code tomorrow to
+>> verify the btt output.
+>> 
+>
+> It might be a single set of readings during a time correction that
+> screwed it.
 
+Again, I don't think so.
+
+> I can reproduce it at will. Due to the nature of the test, the test
+> results are variable and unfortunately it is one of the tricker mmtest
+> configurations to setup.
+>
+> 1. Get access to a webserver
+> 2. Close mmtests to your test machine
+>    git clone https://github.com/gormanm/mmtests.git
+> 3. Edit shellpacks/common-config.sh and set WEBROOT to a webserver path
+> 4. Create a tar.gz of a large git tree and place it at $WEBROOT/linux-2.6.tar.gz
+>    Alternatively place a compressed git tree anywhere and edit
+>    configs/config-global-dhp__io-multiple-source-latency
+>    and update GITCHECKOUT_SOURCETAR
+> 5. Create a tar.gz of a large maildir directory and place it at
+>    $WEBROOT/$WEBROOT/maildir.tar.gz
+>    Alternatively, use an existing maildir folder and set
+>    MONITOR_INBOX_OPEN_MAILDIR in
+>    configs/config-global-dhp__io-multiple-source-latency
+>
+> It's awkward but it's not like there are standard benchmarks lying around
+> and it seemed the best way to reproduce the problems I typically see early
+> in the lifetime of a system or when running a git checkout when the tree
+> has not been used in a few hours. Run the actual test with
+>
+> ./run-mmtests.sh --config configs/config-global-dhp__io-multiple-source-latency --run-monitor test-name-of-your-choice
+>
+> Results will be in work/log. You'll need to run this as root so it
+> can run blktrace and so it can drop_caches between git checkouts
+> (to force disk IO). If systemtap craps out on you, then edit
+> configs/config-global-dhp__io-multiple-source-latency and remove dstate
+> from MONITORS_GZIP
+
+And how do I determine whether I've hit the problem?
+
+> If you have trouble getting this running, ping me on IRC.
+
+Yes, I'm having issues getting things to go, but you didn't provide me a
+time zone, an irc server or a nick to help me find you.  Was that
+intentional?  ;-)
+
+Cheers,
+Jeff
