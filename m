@@ -1,54 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755148Ab3DXOmk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 10:42:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43795 "EHLO mx1.redhat.com"
+	id S1755785Ab3DXOny (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 10:43:54 -0400
+Received: from mxout1.idt.com ([157.165.5.25]:49864 "EHLO mxout1.idt.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754284Ab3DXOmi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 10:42:38 -0400
-Date: Wed, 24 Apr 2013 10:42:26 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        linux-watchdog@vger.kernel.org, kexec@lists.infradead.org,
-        wim@iguana.be, LKML <linux-kernel@vger.kernel.org>, vgoyal@redhat.com,
-        dyoung@redhat.com
-Subject: Re: [PATCH v3] watchdog: Add hook for kicking in kdump path
-Message-ID: <20130424144226.GI79013@redhat.com>
-References: <1366233596-34681-1-git-send-email-dzickus@redhat.com>
- <87li8gaku0.fsf@xmission.com>
- <20130418130009.GH79013@redhat.com>
- <20130418134904.GC2767@roeck-us.net>
- <20130418135257.GL79013@redhat.com>
- <20130418145413.GA1980@roeck-us.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130418145413.GA1980@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753491Ab3DXOnx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 10:43:53 -0400
+X-Greylist: delayed 571 seconds by postgrey-1.27 at vger.kernel.org; Wed, 24 Apr 2013 10:43:53 EDT
+From: Alexandre Bounine <alexandre.bounine@idt.com>
+To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org
+Cc: Alexandre Bounine <alexandre.bounine@idt.com>,
+        Matt Porter <mporter@kernel.crashing.org>,
+        Li Yang <leoli@freescale.com>, Kumar Gala <galak@kernel.crashing.org>,
+        Andre van Herk <andre.van.herk@Prodrive.nl>,
+        Micha Nelissen <micha.nelissen@Prodrive.nl>
+Subject: [PATCH 0/3] rapidio: changes to enumeration/discovery
+Date: Wed, 24 Apr 2013 10:31:56 -0400
+Message-Id: <1366813919-13766-1-git-send-email-alexandre.bounine@idt.com>
+X-Mailer: git-send-email 1.7.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 18, 2013 at 07:54:13AM -0700, Guenter Roeck wrote:
-> > No, that will probably work.  It is my misunderstanding.  Is there a
-> > common way to check the timeout length and the ping frequency?
-> > 
-> Usually it is configured in /etc/watchdog.conf if the watchdog package
-> is installed. The standard ping interval is "interval", the timeout is
-> "watchdog-timeout". See "man watchdog.conf" for details.
-> 
-> Minimum and maximum values for a given watchdog driver are not exported
-> to user space, so you would have to look into the driver sources to find
-> out what they are.
+Systems that use RapidIO fabric may need to implement their own enumeration
+and discovery methods which are better suitable for needs of a target
+application.
 
-Hi Guenter,
+The following set of patches is intended to simplify process of introduction of
+new RapidIO fabric enumeration/discovery methods.
 
-Is there an easy way to determine which driver is loaded for each
-/dev/watchdogN device (from a script perspective).
+The first patch offers ability to add new RapidIO enumeration/discovery methods
+using kernel configuration options or loadable modules. The new configuration
+option mechanism allows to select built-in or modular enumeration/discovery
+method from the list of existing methods or use external module(s).
 
-Basically, I wanted to determine the module that needs to be included in
-the kdump initrd image.
+This patch also updates the currently existing enumeration/discovery code to be
+used as built-in or modular method. The corresponding configuration option is
+named "Basic enumeration/discovery" method. This is the only one built-in
+configuration option available today but new methods are expected to be
+introduced after adoption of provided patches.
 
-Thanks,
-Don
+The second patch address a long time complaint of RapidIO subsystem users
+regarding fabric enumeration/discovery start sequence. Existing implementation
+offers only a boot-time enumeration/discovery start which requires synchronized
+boot of all endpoints in RapidIO network. While it works for small closed
+configurations with limited number of endpoints, using this approach in systems
+with large number of endpoints is quite challenging.
+
+To eliminate requirement for synchronized start the second patch introduces
+RapidIO enumeration/discovery start from user space.
+
+For compatibility with the existing RapidIO subsystem implementation, automatic
+boot time enumeration/discovery start can be configured in by selecting
+CONFIG_RAPIDIO_ENUM_AUTO option.
+
+Cc: Matt Porter <mporter@kernel.crashing.org>
+Cc: Li Yang <leoli@freescale.com>
+Cc: Kumar Gala <galak@kernel.crashing.org>
+Cc: Andre van Herk <andre.van.herk@Prodrive.nl>
+Cc: Micha Nelissen <micha.nelissen@Prodrive.nl>
+
+Alexandre Bounine (3):
+  rapidio: make enumeration/discovery configurable
+  rapidio: add enumeration/discovery start from user space
+  rapidio: documentation update for enumeration changes
+
+ Documentation/rapidio/rapidio.txt |  137 ++++++++++++++++++++--
+ Documentation/rapidio/sysfs.txt   |   17 +++
+ drivers/rapidio/Kconfig           |   28 +++++
+ drivers/rapidio/Makefile          |    3 +-
+ drivers/rapidio/rio-driver.c      |    8 ++
+ drivers/rapidio/rio-scan.c        |  195 ++++++++++--------------------
+ drivers/rapidio/rio-sysfs.c       |   45 +++++++
+ drivers/rapidio/rio.c             |  234 ++++++++++++++++++++++++++++++++++++-
+ drivers/rapidio/rio.h             |   12 ++-
+ include/linux/rio.h               |   17 +++
+ include/linux/rio_drv.h           |    1 +
+ 11 files changed, 548 insertions(+), 149 deletions(-)
+
+-- 
+1.7.8.4
+
