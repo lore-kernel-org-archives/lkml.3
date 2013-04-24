@@ -1,123 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758571Ab3DXWfM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 18:35:12 -0400
-Received: from mx12.netapp.com ([216.240.18.77]:14240 "EHLO mx12.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758424Ab3DXWfK convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 18:35:10 -0400
-X-IronPort-AV: E=Sophos;i="4.87,546,1363158000"; 
-   d="scan'208";a="44520699"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Dave Chiluk <chiluk@canonical.com>
-CC: "bfields@fieldses.org" <bfields@fieldses.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] NFSv4: Use exponential backoff delay for NFS4_ERRDELAY
-Thread-Topic: [PATCH] NFSv4: Use exponential backoff delay for NFS4_ERRDELAY
-Thread-Index: AQHOQS4lo0tL+fbtF0O0TvVaTEJt85jmWGMAgAAHNgCAAAtSgA==
-Date: Wed, 24 Apr 2013 22:35:06 +0000
-Message-ID: <1366842905.22397.49.camel@leira.trondhjem.org>
-References: <1366836949-18465-1-git-send-email-chiluk@canonical.com>
-	 <1366838926.22397.25.camel@leira.trondhjem.org>
-	 <5178549A.7010402@canonical.com>
-In-Reply-To: <5178549A.7010402@canonical.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.104.60.118]
-Content-Type: text/plain; charset=US-ASCII
-Content-ID: <76CF1AF5A7C4654FBB97E2F3CB069998@tahoe.netapp.com>
-Content-Transfer-Encoding: 7BIT
+	id S1758558Ab3DXWi1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 18:38:27 -0400
+Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:29255
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757045Ab3DXWiZ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 18:38:25 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VS-4(zzbb2dI98dI9371I1432Izz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275bhz2dh2a8h668h839h944hd2bhf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h16a6h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1155h)
+Date: Wed, 24 Apr 2013 17:38:16 -0500
+From: Scott Wood <scottwood@freescale.com>
+Subject: Re: [PATCH v2 12/15] powerpc/85xx: add time base sync support for
+ e6500
+To: Zhao Chenhui <chenhui.zhao@freescale.com>
+CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <r58472@freescale.com>
+In-Reply-To: <20130424112929.GC3172@localhost.localdomain> (from
+	chenhui.zhao@freescale.com on Wed Apr 24 06:29:29 2013)
+X-Mailer: Balsa 2.4.12
+Message-ID: <1366843096.17465.17@snotra>
 MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"; delsp=Yes; format=Flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-04-24 at 16:54 -0500, Dave Chiluk wrote:
-> On 04/24/2013 04:28 PM, Myklebust, Trond wrote:
-> > On Wed, 2013-04-24 at 15:55 -0500, Dave Chiluk wrote:
-> >> Changing the retry to start at NFS4_POLL_RETRY_MIN and exponentially grow
-> >> to NFS4_POLL_RETRY_MAX allow for faster handling of these error conditions.
-> >>
-> >> Additionally this alleviates an interoperability problem with the AIX NFSv4
-> >> Server.  The AIX server frequently (2 out of 3) returns NFS4ERR_DELAY, on a
-> >> close when it happens in close proximity to a RELEASE_LOCKOWNER.  This would
-> >> cause a linux client to hang for 15 seconds.
-> > 
-> > Hi Dave,
-> > 
-> > The AIX server is not being motivated by any requirements in the NFSv4
-> > spec here, so I fail to see the reason why the behaviour that you
-> > describe can justify changing the client. It is not at all obvious to me
-> > that we should be retrying aggressively when NFSv4 servers return
-> > NFS4ERR_DELAY. What makes 1/10sec more correct in these situations than
-> > the exising 15 seconds?
+On 04/24/2013 06:29:29 AM, Zhao Chenhui wrote:
+> On Tue, Apr 23, 2013 at 07:04:06PM -0500, Scott Wood wrote:
+> > On 04/19/2013 05:47:45 AM, Zhao Chenhui wrote:
+> > >From: Chen-Hui Zhao <chenhui.zhao@freescale.com>
+> > >
+> > >For e6500, two threads in one core share one time base. Just need
+> > >to do time base sync on first thread of one core, and skip it on
+> > >the other thread.
+> > >
+> > >Signed-off-by: Zhao Chenhui <chenhui.zhao@freescale.com>
+> > >Signed-off-by: Li Yang <leoli@freescale.com>
+> > >Signed-off-by: Andy Fleming <afleming@freescale.com>
+> > >---
+> > > arch/powerpc/platforms/85xx/smp.c |   52
+> > >+++++++++++++++++++++++++++++++-----
+> > > 1 files changed, 44 insertions(+), 8 deletions(-)
+> > >
+> > >diff --git a/arch/powerpc/platforms/85xx/smp.c
+> > >b/arch/powerpc/platforms/85xx/smp.c
+> > >index 74d8cde..5f3eee3 100644
+> > >--- a/arch/powerpc/platforms/85xx/smp.c
+> > >+++ b/arch/powerpc/platforms/85xx/smp.c
+> > >@@ -26,6 +26,7 @@
+> > > #include <asm/cacheflush.h>
+> > > #include <asm/dbell.h>
+> > > #include <asm/fsl_guts.h>
+> > >+#include <asm/cputhreads.h>
+> > >
+> > > #include <sysdev/fsl_soc.h>
+> > > #include <sysdev/mpic.h>
+> > >@@ -45,6 +46,7 @@ static u64 timebase;
+> > > static int tb_req;
+> > > static int tb_valid;
+> > > static u32 cur_booting_core;
+> > >+static bool rcpmv2;
+> > >
+> > > #ifdef CONFIG_PPC_E500MC
+> > > /* get a physical mask of online cores and booting core */
+> > >@@ -53,26 +55,40 @@ static inline u32 get_phy_cpu_mask(void)
+> > > 	u32 mask;
+> > > 	int cpu;
+> > >
+> > >-	mask = 1 << cur_booting_core;
+> > >-	for_each_online_cpu(cpu)
+> > >-		mask |= 1 << get_hard_smp_processor_id(cpu);
+> > >+	if (smt_capable()) {
+> > >+		/* two threads in one core share one time base */
+> > >+		mask = 1 << cpu_core_index_of_thread(cur_booting_core);
+> > >+		for_each_online_cpu(cpu)
+> > >+			mask |= 1 << cpu_core_index_of_thread(
+> > >+					get_hard_smp_processor_id(cpu));
+> > >+	} else {
+> > >+		mask = 1 << cur_booting_core;
+> > >+		for_each_online_cpu(cpu)
+> > >+			mask |= 1 << get_hard_smp_processor_id(cpu);
+> > >+	}
+> >
+> > Where is smt_capable defined()?  I assume somewhere in the patchset
+> > but it's a pain to search 12 patches...
+> >
 > 
-> I agree with you that AIX is at fault, and that the preferable situation
-> for the linux client would be for AIX to not return NFS4ERR_DELAY in
-> this use case.  I have attached a simple program that causes exacerbates
-> the problem on the AIX server.  I have already had a conference call
-> with AIX NFS development about this issue, where I vehemently tried to
-> convince them to fix their server.  Unfortunately as I don't have much
-> reputation in the NFS community, I was unable to convince them to do the
-> right thing.  I would be more than happy to set up another call, if
-> someone higher up in the linux NFS hierarchy would be willing to
-> participate.
-
-I'd think that if they have customers that want to use Linux clients,
-then those customers are likely to have more influence. This is entirely
-a consequence of _their_ design decisions, quite frankly, since
-returning NFS4ERR_DELAY in the above situation is downright silly. The
-server designers _know_ that the RELEASE_LOCKOWNER will finish whatever
-it is doing fairly quickly; it's not as if the CLOSE wouldn't have to do
-the exact same state manipulations anyway...
-
-> That being said, I think implementing an exponential backoff is an
-> improvement in the client regardless of what AIX is doing.  If a server
-> needs only 2 seconds to process a request for which NFS4ERR_DELAY was
-> returned, this algorithm would get the client back and running after
-> only 2.1 seconds of elapsed time.  Whereas the current dumb algorithm
-> would simply wait 15 seconds.  This is the reason that I implemented
-> this change.
-
-Right, but my point above is that _in_general_ if we don't know why the
-server is returning NFS4ERR_DELAY, then how can we attach any retry
-numbers at all? HSM systems, for instance, have very different latencies
-than the above and were the reason for inventing NFS3ERR_JUKEBOX in the
-first place.
-
-> > The motivation for doing it in the case of OPEN, SETATTR, etc is
-> > clearer: those operations may require the server to recall a delegation,
-> > in which case aggressive retries are in order since delegation recalls
-> > are usually fast.
-> > The motivation in the case of LOCK is less clear, but it is basically
-> > down to the fact that NFSv4 has a polling model for doing blocking
-> > locks.
+> It is defined in arch/powerpc/include/asm/topology.h.
+> 	#define smt_capable()           (cpu_has_feature(CPU_FTR_SMT))
 > 
-> > In all other cases, why should we be treating NFS4ERR_DELAY any
-> > differently from how we treat NFS3ERR_JUKEBOX in NFSv3?
-> > 
-> > Note that if we do decide that changing the client is the right thing,
-> > then I don't want the patch to add new fields to struct rpc_task. That's
-> > the wrong layer for storing NFSv4 client specific data.
+> Thanks for your review again.
+
+We shouldn't base it on CPU_FTR_SMT.  For example, e6500 doesn't claim  
+that feature yet, except in our SDK kernel.  That doesn't change the  
+topology of CPU numbering.
+
+> > Is this really about whether we're SMT-capable or whether we have
+> > rcpm v2?
+> >
+> > -Scott
 > 
-> This is something that I was concerned about as well, but I could not
-> find another persistent way to do this.  I am open to suggestions of
-> which structures would be more acceptable.
+> I think this "if" statement can be removed. The  
+> cpu_core_index_of_thread()
+> can return the correct cpu number with thread or without thread.
+> 
+> Like this:
+> static inline u32 get_phy_cpu_mask(void)
+> {
+> 	u32 mask;
+> 	int cpu;
+> 
+> 	mask = 1 << cpu_core_index_of_thread(cur_booting_core);
+> 	for_each_online_cpu(cpu)
+> 		mask |= 1 << cpu_core_index_of_thread(
+> 				get_hard_smp_processor_id(cpu));
+> 
+> 	return mask;
+> }
 
-We could change nfs4_async_handle_error() to take a struct
-nfs4_exception, just like nfs4_handle_exception() does; at some point we
-can use that to unify the two.
-Just store the timeout somewhere in the nfs4_closedata.
+Likewise, this will get it wrong if SMT is disabled or not yet  
+implemented on a core.
 
-
--- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
+-Scott
