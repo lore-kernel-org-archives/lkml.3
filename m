@@ -1,56 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757444Ab3DXTYs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 15:24:48 -0400
-Received: from mail-qe0-f43.google.com ([209.85.128.43]:53414 "EHLO
-	mail-qe0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756797Ab3DXTYr (ORCPT
+	id S1757387Ab3DXTZr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 15:25:47 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:29327 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757092Ab3DXTZq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 15:24:47 -0400
+	Wed, 24 Apr 2013 15:25:46 -0400
+X-IronPort-AV: E=Sophos;i="4.87,545,1363132800"; 
+   d="scan'208";a="20364804"
+Date: Wed, 24 Apr 2013 20:25:38 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>
+Subject: [PATCH v4 0/7] xen/arm: move to mach-virt and support SMP
+Message-ID: <alpine.DEB.2.02.1304242012590.4180@kaball.uk.xensource.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <20130424151145.GH9652@gmail.com>
-References: <1366279934-30761-1-git-send-email-lee.jones@linaro.org>
- <1366279934-30761-4-git-send-email-lee.jones@linaro.org> <20130424151145.GH9652@gmail.com>
-From: Rabin Vincent <rabin@rab.in>
-Date: Wed, 24 Apr 2013 21:24:05 +0200
-X-Google-Sender-Auth: 03xLfP03CFcEVecmjP1_izhIz1E
-Message-ID: <CAH+eYFBKnEWkcJ+9DxVqnxbPS4QYtswi7Ux0JHnTWYfRFy_5Aw@mail.gmail.com>
-Subject: Re: [PATCH 03/32 v3] dmaengine: ste_dma40: Use the BIT macro to
- replace ugly '(1 << x)'s
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, linus.walleij@stericsson.com,
-        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
-        Per Forlin <per.forlin@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/4/24 Lee Jones <lee.jones@linaro.org>:
-> The aim is to make the code that little more readable.
->
-> Acked-by: Vinod Koul <vnod.koul@intel.com>
-> Acked-by: Arnd Bergmann <arnd@arndb.de>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Hi all,
+this patch series, based on 3.9-rc3, moves xenvm to mach-virt and
+implements SMP support in Xen on ARM.
 
-Please pay closer attention to the semantics of each usage instead of
-just replacing all x left shifts of 1 by BIT(x) for "readability".
+Each patch comes with a detailed changelog.
 
->         if (seg_max > STEDMA40_MAX_SEG_SIZE)
-> -               seg_max -= (1 << max_w);
-> +               seg_max -= BIT(max_w);
->
-> -       if (!IS_ALIGNED(size, 1 << max_w))
-> +       if (!IS_ALIGNED(size, BIT(max_w)))
->                 return -EINVAL;
 
-Here and in all other places where the values are from cfg->data_width,
-the semantic purpose of the shift is not for setting a particular bit
-but instead for converting the data_width field into the data width
-value in bytes.  You should not change these usages to BIT().
+Changes in v4:
+- XEN should select ARM_PSCI;
+- update arch/arm/boot/dts/Makefile to build the xenvm dts
+  if CONFIG_ARCH_VIRT;
+- add a patch to introduce Xen shutdown hypercall support to mach-virt.
 
-It would be instead better to just make the cfg->data_width as the
-number of bytes and convert them to the appropriate hardware field
-values when the descriptors are constructed.  That of course should be
-in another patch.
+
+Stefano Stabellini (7):
+      xen/arm: actually pass a non-NULL percpu pointer to request_percpu_irq
+      xen/arm: SMP support
+      xen: move the xenvm machine to mach-virt
+      xen/arm: implement HYPERVISOR_vcpu_op
+      xen/arm: XEN selects ARM_PSCI
+      xenvm: add a simple PSCI node and a second cpu
+      mach-virt: support Xen hypercalls for shutdown and reboot
+
+ arch/arm/Kconfig                     |    1 +
+ arch/arm/boot/dts/Makefile           |    4 +-
+ arch/arm/boot/dts/xenvm-4.2.dts      |   13 ++++++++++
+ arch/arm/include/asm/xen/hypercall.h |    1 +
+ arch/arm/mach-vexpress/v2m.c         |    1 -
+ arch/arm/mach-virt/virt.c            |   33 +++++++++++++++++++++++++++
+ arch/arm/xen/enlighten.c             |   41 ++++++++++++++++++++++++++++++++-
+ arch/arm/xen/hypercall.S             |    1 +
+ 8 files changed, 90 insertions(+), 5 deletions(-)
+
+git://git.kernel.org/pub/scm/linux/kernel/git/sstabellini/xen.git 3.9-rc3-smp-4-tag
+
+Cheers,
+
+Stefano
