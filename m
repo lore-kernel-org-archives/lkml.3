@@ -1,51 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755669Ab3DXOij (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 10:38:39 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45952 "EHLO mx2.suse.de"
+	id S1755148Ab3DXOmk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 10:42:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43795 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751321Ab3DXOii (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 10:38:38 -0400
-Date: Wed, 24 Apr 2013 16:38:35 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] lib: fix trivial typo in the comment
-In-Reply-To: <1366626999-6270-1-git-send-email-andriy.shevchenko@linux.intel.com>
-Message-ID: <alpine.LNX.2.00.1304241637530.29143@pobox.suse.cz>
-References: <1366626999-6270-1-git-send-email-andriy.shevchenko@linux.intel.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1754284Ab3DXOmi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 10:42:38 -0400
+Date: Wed, 24 Apr 2013 10:42:26 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux-watchdog@vger.kernel.org, kexec@lists.infradead.org,
+        wim@iguana.be, LKML <linux-kernel@vger.kernel.org>, vgoyal@redhat.com,
+        dyoung@redhat.com
+Subject: Re: [PATCH v3] watchdog: Add hook for kicking in kdump path
+Message-ID: <20130424144226.GI79013@redhat.com>
+References: <1366233596-34681-1-git-send-email-dzickus@redhat.com>
+ <87li8gaku0.fsf@xmission.com>
+ <20130418130009.GH79013@redhat.com>
+ <20130418134904.GC2767@roeck-us.net>
+ <20130418135257.GL79013@redhat.com>
+ <20130418145413.GA1980@roeck-us.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130418145413.GA1980@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 22 Apr 2013, Andy Shevchenko wrote:
-
-> This fixes "iff" as "if".
+On Thu, Apr 18, 2013 at 07:54:13AM -0700, Guenter Roeck wrote:
+> > No, that will probably work.  It is my misunderstanding.  Is there a
+> > common way to check the timeout length and the ping frequency?
+> > 
+> Usually it is configured in /etc/watchdog.conf if the watchdog package
+> is installed. The standard ping interval is "interval", the timeout is
+> "watchdog-timeout". See "man watchdog.conf" for details.
 > 
-> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> ---
->  lib/string.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/lib/string.c b/lib/string.c
-> index e5878de..e551284 100644
-> --- a/lib/string.c
-> +++ b/lib/string.c
-> @@ -542,7 +542,7 @@ EXPORT_SYMBOL(sysfs_streq);
->   * @s: input string
->   * @res: result
->   *
-> - * This routine returns 0 iff the first character is one of 'Yy1Nn0'.
-> + * This routine returns 0 if the first character is one of 'Yy1Nn0'.
->   * Otherwise it will return -EINVAL.  Value pointed to by res is
->   * updated upon finding a match.
->   */
+> Minimum and maximum values for a given watchdog driver are not exported
+> to user space, so you would have to look into the driver sources to find
+> out what they are.
 
-And this is correct because ... ?
+Hi Guenter,
 
--- 
-Jiri Kosina
-SUSE Labs
+Is there an easy way to determine which driver is loaded for each
+/dev/watchdogN device (from a script perspective).
+
+Basically, I wanted to determine the module that needs to be included in
+the kdump initrd image.
+
+Thanks,
+Don
