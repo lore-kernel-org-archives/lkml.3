@@ -1,95 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756951Ab3DXAES (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 20:04:18 -0400
-Received: from co9ehsobe003.messaging.microsoft.com ([207.46.163.26]:16459
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754597Ab3DXAER convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 20:04:17 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VS-4(zzbb2dI98dI9371I1432Izz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275bhz2dh2a8h668h839h944hd2bhf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h16a6h1758h1898h18e1h1946h19b5h1ad9h1b0ah1155h)
-Date: Tue, 23 Apr 2013 19:04:06 -0500
-From: Scott Wood <scottwood@freescale.com>
-Subject: Re: [PATCH v2 12/15] powerpc/85xx: add time base sync support for
- e6500
-To: Zhao Chenhui <chenhui.zhao@freescale.com>
-CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
-References: <1366368468-29143-1-git-send-email-chenhui.zhao@freescale.com>
-	<1366368468-29143-12-git-send-email-chenhui.zhao@freescale.com>
-In-Reply-To: <1366368468-29143-12-git-send-email-chenhui.zhao@freescale.com>
-	(from chenhui.zhao@freescale.com on Fri Apr 19 05:47:45 2013)
-X-Mailer: Balsa 2.4.12
-Message-ID: <1366761846.5825.21@snotra>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"; delsp=Yes; format=Flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
+	id S932098Ab3DXAGX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 20:06:23 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:39567 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756833Ab3DXAGT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Apr 2013 20:06:19 -0400
+From: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+To: linux-sh@vger.kernel.org
+Cc: linux-leds@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Magnus Damm <magnus.damm@gmail.com>, Paul Mundt <lethal@linux-sh.org>
+Subject: [PATCH 4/9] ARM: mach-shmobile: clock-r8a7740: add TPU PWM support
+Date: Wed, 24 Apr 2013 02:06:04 +0200
+Message-Id: <1366761969-16759-5-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <1366761969-16759-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+References: <1366761969-16759-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/19/2013 05:47:45 AM, Zhao Chenhui wrote:
-> From: Chen-Hui Zhao <chenhui.zhao@freescale.com>
-> 
-> For e6500, two threads in one core share one time base. Just need
-> to do time base sync on first thread of one core, and skip it on
-> the other thread.
-> 
-> Signed-off-by: Zhao Chenhui <chenhui.zhao@freescale.com>
-> Signed-off-by: Li Yang <leoli@freescale.com>
-> Signed-off-by: Andy Fleming <afleming@freescale.com>
-> ---
->  arch/powerpc/platforms/85xx/smp.c |   52  
-> +++++++++++++++++++++++++++++++-----
->  1 files changed, 44 insertions(+), 8 deletions(-)
-> 
-> diff --git a/arch/powerpc/platforms/85xx/smp.c  
-> b/arch/powerpc/platforms/85xx/smp.c
-> index 74d8cde..5f3eee3 100644
-> --- a/arch/powerpc/platforms/85xx/smp.c
-> +++ b/arch/powerpc/platforms/85xx/smp.c
-> @@ -26,6 +26,7 @@
->  #include <asm/cacheflush.h>
->  #include <asm/dbell.h>
->  #include <asm/fsl_guts.h>
-> +#include <asm/cputhreads.h>
-> 
->  #include <sysdev/fsl_soc.h>
->  #include <sysdev/mpic.h>
-> @@ -45,6 +46,7 @@ static u64 timebase;
->  static int tb_req;
->  static int tb_valid;
->  static u32 cur_booting_core;
-> +static bool rcpmv2;
-> 
->  #ifdef CONFIG_PPC_E500MC
->  /* get a physical mask of online cores and booting core */
-> @@ -53,26 +55,40 @@ static inline u32 get_phy_cpu_mask(void)
->  	u32 mask;
->  	int cpu;
-> 
-> -	mask = 1 << cur_booting_core;
-> -	for_each_online_cpu(cpu)
-> -		mask |= 1 << get_hard_smp_processor_id(cpu);
-> +	if (smt_capable()) {
-> +		/* two threads in one core share one time base */
-> +		mask = 1 << cpu_core_index_of_thread(cur_booting_core);
-> +		for_each_online_cpu(cpu)
-> +			mask |= 1 << cpu_core_index_of_thread(
-> +					get_hard_smp_processor_id(cpu));
-> +	} else {
-> +		mask = 1 << cur_booting_core;
-> +		for_each_online_cpu(cpu)
-> +			mask |= 1 << get_hard_smp_processor_id(cpu);
-> +	}
+Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+Tested-by: Simon Horman <horms@verge.net.au>
+---
+ arch/arm/mach-shmobile/clock-r8a7740.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-Where is smt_capable defined()?  I assume somewhere in the patchset but  
-it's a pain to search 12 patches...
+diff --git a/arch/arm/mach-shmobile/clock-r8a7740.c b/arch/arm/mach-shmobile/clock-r8a7740.c
+index b12c476..a5ca9c6 100644
+--- a/arch/arm/mach-shmobile/clock-r8a7740.c
++++ b/arch/arm/mach-shmobile/clock-r8a7740.c
+@@ -461,7 +461,7 @@ enum {
+ 
+ 	MSTP329, MSTP328, MSTP323, MSTP320,
+ 	MSTP314, MSTP313, MSTP312,
+-	MSTP309,
++	MSTP309, MSTP304,
+ 
+ 	MSTP416, MSTP415, MSTP407, MSTP406,
+ 
+@@ -499,6 +499,7 @@ static struct clk mstp_clks[MSTP_NR] = {
+ 	[MSTP313] = SH_CLK_MSTP32(&div4_clks[DIV4_HP],	SMSTPCR3, 13, 0), /* SDHI1 */
+ 	[MSTP312] = SH_CLK_MSTP32(&div4_clks[DIV4_HP],	SMSTPCR3, 12, 0), /* MMC */
+ 	[MSTP309] = SH_CLK_MSTP32(&div4_clks[DIV4_HP],	SMSTPCR3,  9, 0), /* GEther */
++	[MSTP304] = SH_CLK_MSTP32(&div4_clks[DIV4_CP],	SMSTPCR3,  4, 0), /* TPU0 */
+ 
+ 	[MSTP416] = SH_CLK_MSTP32(&div4_clks[DIV4_HP],	SMSTPCR4, 16, 0), /* USBHOST */
+ 	[MSTP415] = SH_CLK_MSTP32(&div4_clks[DIV4_HP],	SMSTPCR4, 15, 0), /* SDHI2 */
+@@ -596,6 +597,7 @@ static struct clk_lookup lookups[] = {
+ 	CLKDEV_DEV_ID("e6bd0000.mmcif",         &mstp_clks[MSTP312]),
+ 	CLKDEV_DEV_ID("sh-eth",			&mstp_clks[MSTP309]),
+ 	CLKDEV_DEV_ID("e9a00000.sh-eth",	&mstp_clks[MSTP309]),
++	CLKDEV_DEV_ID("rmob_tpu_pwm",		&mstp_clks[MSTP304]),
+ 
+ 	CLKDEV_DEV_ID("sh_mobile_sdhi.2",	&mstp_clks[MSTP415]),
+ 	CLKDEV_DEV_ID("e6870000.sdhi",          &mstp_clks[MSTP415]),
+-- 
+1.8.1.5
 
-Is this really about whether we're SMT-capable or whether we have rcpm  
-v2?
-
--Scott
