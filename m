@@ -1,60 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758332Ab3DXV0W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 17:26:22 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:55232 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758049Ab3DXV0V (ORCPT
+	id S1758364Ab3DXV2v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 17:28:51 -0400
+Received: from mx12.netapp.com ([216.240.18.77]:18269 "EHLO mx12.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758030Ab3DXV2t convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 17:26:21 -0400
-Message-ID: <51784DF9.7010302@linaro.org>
-Date: Wed, 24 Apr 2013 14:26:17 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Wed, 24 Apr 2013 17:28:49 -0400
+X-IronPort-AV: E=Sophos;i="4.87,546,1363158000"; 
+   d="scan'208";a="44502054"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: Dave Chiluk <chiluk@canonical.com>
+CC: "bfields@fieldses.org" <bfields@fieldses.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] NFSv4: Use exponential backoff delay for NFS4_ERRDELAY
+Thread-Topic: [PATCH] NFSv4: Use exponential backoff delay for NFS4_ERRDELAY
+Thread-Index: AQHOQS4lo0tL+fbtF0O0TvVaTEJt85jmWGMA
+Date: Wed, 24 Apr 2013 21:28:47 +0000
+Message-ID: <1366838926.22397.25.camel@leira.trondhjem.org>
+References: <1366836949-18465-1-git-send-email-chiluk@canonical.com>
+In-Reply-To: <1366836949-18465-1-git-send-email-chiluk@canonical.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.104.60.118]
+Content-Type: text/plain; charset=US-ASCII
+Content-ID: <2B7B052331F8934F94AA2876BA750FBC@tahoe.netapp.com>
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-To: Kay Sievers <kay@vrfy.org>
-CC: lkml <linux-kernel@vger.kernel.org>, stable <stable@vger.kernel.org>,
-        Feng Tang <feng.tang@intel.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] time: Revert ALWAYS_USE_PERSISTENT_CLOCK compile time
- optimizaitons
-References: <1366828376-18124-1-git-send-email-john.stultz@linaro.org> <CAPXgP12_auNLogaK0J8yj7_Nhf=B+Anh9NVNGTM3TqT15OKRFQ@mail.gmail.com>
-In-Reply-To: <CAPXgP12_auNLogaK0J8yj7_Nhf=B+Anh9NVNGTM3TqT15OKRFQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/24/2013 12:44 PM, Kay Sievers wrote:
-> On Wed, Apr 24, 2013 at 8:32 PM, John Stultz <john.stultz@linaro.org> wrote:
->> Kay Sievers noted that the ALWAYS_USE_PERSISTENT_CLOCK config,
->> which enables some minor compile time optimization to avoid
->> uncessary code in mostly the suspend/resume path could cause
->> problems for userland.
->>
->> In particular, the dependency for RTC_HCTOSYS on
->> !ALWAYS_USE_PERSISTENT_CLOCK, which avoids setting the time
->> twice and simplifies suspend/resume, has the side effect
->> of causing the /sys/class/rtc/rtcN/hctosys flag to always be
->> zero, and this flag is commonly used by udev to setup the
->> /dev/rtc symlink to /dev/rtcN, which can cause pain for
->> older applications.
-> An alternative to reverting this could be to set that flag
-> unconditionally on the rtc that matches the persistent clock the
-> kernel uses internally?
->
-> I mean regardless of the pretty weird config option
-> CONFIG_RTC_HCTOSYS_DEVICE, which internally just does a strcmp() with
-> the given device name when the flag is queried. :)
->
-> Can't we just have the same interface and your original optimization
-> on x86, even without CONFIG_RTC_HCTOSYS_DEVICE enabled at all?
+On Wed, 2013-04-24 at 15:55 -0500, Dave Chiluk wrote:
+> Changing the retry to start at NFS4_POLL_RETRY_MIN and exponentially grow
+> to NFS4_POLL_RETRY_MAX allow for faster handling of these error conditions.
+> 
+> Additionally this alleviates an interoperability problem with the AIX NFSv4
+> Server.  The AIX server frequently (2 out of 3) returns NFS4ERR_DELAY, on a
+> close when it happens in close proximity to a RELEASE_LOCKOWNER.  This would
+> cause a linux client to hang for 15 seconds.
 
-This might be possible, but I'd rather it be part of the unification 
-work w/ the persistent_clock and the RTC code, rather then a quick hack.
+Hi Dave,
 
-thanks
--john
+The AIX server is not being motivated by any requirements in the NFSv4
+spec here, so I fail to see the reason why the behaviour that you
+describe can justify changing the client. It is not at all obvious to me
+that we should be retrying aggressively when NFSv4 servers return
+NFS4ERR_DELAY. What makes 1/10sec more correct in these situations than
+the exising 15 seconds?
 
+The motivation for doing it in the case of OPEN, SETATTR, etc is
+clearer: those operations may require the server to recall a delegation,
+in which case aggressive retries are in order since delegation recalls
+are usually fast.
+The motivation in the case of LOCK is less clear, but it is basically
+down to the fact that NFSv4 has a polling model for doing blocking
+locks.
+In all other cases, why should we be treating NFS4ERR_DELAY any
+differently from how we treat NFS3ERR_JUKEBOX in NFSv3?
+
+Note that if we do decide that changing the client is the right thing,
+then I don't want the patch to add new fields to struct rpc_task. That's
+the wrong layer for storing NFSv4 client specific data.
+
+
+-- 
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
