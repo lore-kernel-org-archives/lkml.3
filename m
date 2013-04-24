@@ -1,49 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756828Ab3DXO5p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 10:57:45 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:58118 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755591Ab3DXO5o (ORCPT
+	id S1755911Ab3DXPBu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 11:01:50 -0400
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:39193 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755342Ab3DXPBt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 10:57:44 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCH 04/10] usb: musb: ux500: harden checks for platform data
-Date: Wed, 24 Apr 2013 16:56:53 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
-Cc: balbi@ti.com, Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        mian.yousaf.kaukab@stericsson.com, linux-usb@vger.kernel.org
-References: <1366729394-11406-1-git-send-email-lee.jones@linaro.org> <20130424142615.GF23081@arwen.pp.htv.fi> <CAF2Aj3ga7R3Vti4YB-83T_AsanB3iL34aysAN3MiMWZBvB=z2Q@mail.gmail.com>
-In-Reply-To: <CAF2Aj3ga7R3Vti4YB-83T_AsanB3iL34aysAN3MiMWZBvB=z2Q@mail.gmail.com>
+	Wed, 24 Apr 2013 11:01:49 -0400
+X-Forefront-Antispam-Report: CIP:157.56.236.101;KIP:(null);UIP:(null);IPV:NLI;H:BY2PRD0510HT001.namprd05.prod.outlook.com;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: PS-2(zz98dI936eIda00hdc73hzz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275dhz2fh2a8h668h839h93fhd24hd2bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1155h)
+From: Matthew Garrett <matthew.garrett@nebula.com>
+To: Matt Fleming <matt.fleming@intel.com>
+CC: Josh Boyer <jwboyer@redhat.com>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] efi: Check EFI revision in setup_efi_vars
+Thread-Topic: [PATCH] efi: Check EFI revision in setup_efi_vars
+Thread-Index: AQHOQPlQHRjt8E2oC0WuAZ0KRwVwspjlcoEAgAAC4oCAAACkgIAAATSA
+Date: Wed, 24 Apr 2013 15:01:26 +0000
+Message-ID: <1366815685.9976.0.camel@x230>
+References: <20130424143738.GB15272@hansolo.jdub.homelinux.org>
+	 <5177EFCE.80104@intel.com>
+	 <20130424145449.GC15272@hansolo.jdub.homelinux.org>
+	 <5177F2C3.5080907@intel.com>
+In-Reply-To: <5177F2C3.5080907@intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.255.84.4]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <CFC7B3F97326194194E857ED1ADE118C@namprd05.prod.outlook.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201304241656.53432.arnd@arndb.de>
-X-Provags-ID: V02:K0:uZaJaUaomZ4ZgcHm/Drzvh54JIhHTV6q6Xjafnd3dGv
- 8GpVtNxVeEpBL49Cl6Hlz7Zr00eR4VLm6+wdx6V6jTZvRDiZQA
- IWN0Qrj0qYFqtUiFxpWfAhkQeFfWYiM4FEuya337DrYBWHzOYR
- lGiFNJwIfW8jdaEvN1O9BV2bELEPtkZCKVS2FxCzq5hVT4Fcdp
- Q9wmDLQVr7K9AvSHQ2rwCaYlB2vl07X59Vbk9VQzqOKJ53NCq4
- TPapLrk/z9OVxpMoJj5mbVXxdgGCbiKd2nXhnprs/h+Na18VrN
- 6m3zWV3386GKzieiVGVepGoxaPbCS2lvaS2Tg89QnSzZgZQvjz
- 5nLGZN7bPbqaaaJs3nzo=
+X-OriginatorOrg: nebula.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r3OF1t9B021720
 
-On Wednesday 24 April 2013, Lee Jones wrote:
-> Yeah, I agree, although does it make a difference?
-> 
-> Is it evaluated a second time, or does it take up extra cycles by being
-> enclosed in parentheses?
-> 
-> Or is this just a coding style thing?
+On Wed, 2013-04-24 at 15:57 +0100, Matt Fleming wrote:
 
-Just coding style. I agree you should have no parentheses there, but it
-does not change the compiled code.
+> I presume that if that were true, virt_efi_query_variable_info() (which
+> is called indirectly from the efivars code) would have exploded before
+> now. Matthew?
 
-	Arnd
+Yeah, it's probably safe to lose it.
+
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
