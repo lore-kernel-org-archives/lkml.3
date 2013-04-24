@@ -1,106 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932308Ab3DXK6x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 06:58:53 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:57155 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932107Ab3DXK6v (ORCPT
+	id S932392Ab3DXK7M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 06:59:12 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:58037 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932244Ab3DXK7K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 06:58:51 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        Lee Jones <lee.jones@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>, Chris Ball <cjb@laptop.org>,
-        linux-mmc@vger.kernel.org
-Subject: [PATCH] mmc: mmci: Allow MMCI to request channels with information acquired from DT
-Date: Wed, 24 Apr 2013 11:58:42 +0100
-Message-Id: <1366801122-13302-1-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.7.10.4
+	Wed, 24 Apr 2013 06:59:10 -0400
+X-Spam-Score: -100.8
+Message-ID: <5177BAD0.9000500@asianux.com>
+Date: Wed, 24 Apr 2013 18:58:24 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Will Deacon <will.deacon@arm.com>
+CC: Catalin Marinas <Catalin.Marinas@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH v3] arm64: compiling issue, need add include/asm/vga.h file
+References: <5177551D.8090007@asianux.com> <20130424082237.GA23397@arm.com> <5177B1F0.10106@asianux.com> <20130424102327.GF21850@mudshark.cambridge.arm.com>
+In-Reply-To: <20130424102327.GF21850@mudshark.cambridge.arm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, if DMA information isn't passed from platform data, then DMA
-will not be used. This patch allows DMA information obtained though Device
-Tree to be used as well.
 
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Chris Ball <cjb@laptop.org>
-Cc: linux-mmc@vger.kernel.org
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
+For compiling with allmodconfig, need vga.h file, so generate it which
+just only include the asm-generic one.
+
+It is firstly used by drivers/gpu/drm/drm_irq.c.
+
+The related error:
+include/video/vga.h:22:21: fatal error: asm/vga.h: No such file or directory
+
+
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
 ---
- drivers/mmc/host/mmci.c |   43 ++++++++++++++++++++++---------------------
- 1 file changed, 22 insertions(+), 21 deletions(-)
+ arch/arm64/include/asm/Kbuild |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
-index 372e921..ecd256b 100644
---- a/drivers/mmc/host/mmci.c
-+++ b/drivers/mmc/host/mmci.c
-@@ -304,10 +304,8 @@ static void mmci_dma_setup(struct mmci_host *host)
- 	const char *rxname, *txname;
- 	dma_cap_mask_t mask;
- 
--	if (!plat || !plat->dma_filter) {
--		dev_info(mmc_dev(host->mmc), "no DMA platform data\n");
--		return;
--	}
-+	host->dma_rx_channel = dma_request_slave_channel(dev, "rx");
-+	host->dma_tx_channel = dma_request_slave_channel(dev, "tx");
- 
- 	/* initialize pre request cookie */
- 	host->next_data.cookie = 1;
-@@ -316,30 +314,33 @@ static void mmci_dma_setup(struct mmci_host *host)
- 	dma_cap_zero(mask);
- 	dma_cap_set(DMA_SLAVE, mask);
- 
--	/*
--	 * If only an RX channel is specified, the driver will
--	 * attempt to use it bidirectionally, however if it is
--	 * is specified but cannot be located, DMA will be disabled.
--	 */
--	if (plat->dma_rx_param) {
--		host->dma_rx_channel = dma_request_channel(mask,
-+	if (plat && plat->dma_filter) {
-+		if (!host->dma_rx_channel && plat->dma_rx_param) {
-+			host->dma_rx_channel = dma_request_channel(mask,
- 							   plat->dma_filter,
- 							   plat->dma_rx_param);
--		/* E.g if no DMA hardware is present */
--		if (!host->dma_rx_channel)
--			dev_err(mmc_dev(host->mmc), "no RX DMA channel\n");
--	}
-+			/* E.g if no DMA hardware is present */
-+			if (!host->dma_rx_channel)
-+				dev_err(mmc_dev(host->mmc), "no RX DMA channel\n");
-+		}
- 
--	if (plat->dma_tx_param) {
--		host->dma_tx_channel = dma_request_channel(mask,
-+		if (!host->dma_tx_channel && plat->dma_tx_param) {
-+			host->dma_tx_channel = dma_request_channel(mask,
- 							   plat->dma_filter,
- 							   plat->dma_tx_param);
--		if (!host->dma_tx_channel)
--			dev_warn(mmc_dev(host->mmc), "no TX DMA channel\n");
--	} else {
--		host->dma_tx_channel = host->dma_rx_channel;
-+			if (!host->dma_tx_channel)
-+				dev_warn(mmc_dev(host->mmc), "no TX DMA channel\n");
-+		}
- 	}
- 
-+	/*
-+	 * If only an RX channel is specified, the driver will
-+	 * attempt to use it bidirectionally, however if it is
-+	 * is specified but cannot be located, DMA will be disabled.
-+	 */
-+	if (host->dma_rx_channel && !host->dma_tx_channel)
-+		host->dma_tx_channel = host->dma_rx_channel;
-+
- 	if (host->dma_rx_channel)
- 		rxname = dma_chan_name(host->dma_rx_channel);
- 	else
+diff --git a/arch/arm64/include/asm/Kbuild b/arch/arm64/include/asm/Kbuild
+index a13a4a4..79a642d 100644
+--- a/arch/arm64/include/asm/Kbuild
++++ b/arch/arm64/include/asm/Kbuild
+@@ -48,4 +48,5 @@ generic-y += trace_clock.h
+ generic-y += types.h
+ generic-y += unaligned.h
+ generic-y += user.h
++generic-y += vga.h
+ generic-y += xor.h
 -- 
-1.7.10.4
-
+1.7.7.6
