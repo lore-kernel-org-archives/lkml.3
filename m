@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758486Ab3DXJjS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 05:39:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60961 "EHLO mx1.redhat.com"
+	id S932288Ab3DXJmr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 05:42:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40270 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758422Ab3DXJjH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 05:39:07 -0400
+	id S1758480Ab3DXJjS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 05:39:18 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>,
@@ -17,16 +17,16 @@ Cc: Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@kernel.org>, Borislav Petkov <bp@alien8.de>,
         Stephane Eranian <eranian@google.com>, Sam Ravnborg <sam@ravnborg.org>,
         David Ahern <dsahern@gmail.com>
-Subject: [PATCH 11/26] perf tools: Move gtk2 check config into config/Makefile
-Date: Wed, 24 Apr 2013 11:37:38 +0200
-Message-Id: <1366796273-4780-12-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 16/26] perf tools: Move libnuma check config into config/Makefile
+Date: Wed, 24 Apr 2013 11:37:43 +0200
+Message-Id: <1366796273-4780-17-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1366796273-4780-1-git-send-email-jolsa@redhat.com>
 References: <1366796273-4780-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Moving gtk2 check config into config/Makefile.
+Moving libnuma check config into config/Makefile
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
@@ -41,67 +41,47 @@ Cc: Stephane Eranian <eranian@google.com>
 Cc: Sam Ravnborg <sam@ravnborg.org>
 Cc: David Ahern <dsahern@gmail.com>
 ---
- tools/perf/Makefile        | 25 +++++++------------------
- tools/perf/config/Makefile | 15 +++++++++++++++
- 2 files changed, 22 insertions(+), 18 deletions(-)
+ tools/perf/Makefile        |  9 +--------
+ tools/perf/config/Makefile | 11 +++++++++++
+ 2 files changed, 12 insertions(+), 8 deletions(-)
 
 diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 2187a2c..7bf5c10 100644
+index c1fef3d..07612be 100644
 --- a/tools/perf/Makefile
 +++ b/tools/perf/Makefile
-@@ -523,24 +523,13 @@ ifndef NO_SLANG
+@@ -547,14 +547,7 @@ ifeq ($(NO_PERF_REGS),0)
  endif
  
- ifndef NO_GTK2
--	FLAGS_GTK2=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null)
--	ifneq ($(call try-cc,$(SOURCE_GTK2),$(FLAGS_GTK2),gtk2),y)
--		msg := $(warning GTK2 not found, disables GTK2 support. Please install gtk2-devel or libgtk2.0-dev);
+ ifndef NO_LIBNUMA
+-	FLAGS_LIBNUMA = $(ALL_CFLAGS) $(ALL_LDFLAGS) -lnuma
+-	ifneq ($(call try-cc,$(SOURCE_LIBNUMA),$(FLAGS_LIBNUMA),libnuma),y)
+-		msg := $(warning No numa.h found, disables 'perf bench numa mem' benchmark, please install numa-libs-devel or libnuma-dev);
 -	else
--		ifeq ($(call try-cc,$(SOURCE_GTK2_INFOBAR),$(FLAGS_GTK2),-DHAVE_GTK_INFO_BAR),y)
--			BASIC_CFLAGS += -DHAVE_GTK_INFO_BAR
--		endif
--		BASIC_CFLAGS += -DGTK2_SUPPORT
--		BASIC_CFLAGS += $(shell pkg-config --cflags gtk+-2.0 2>/dev/null)
--		EXTLIBS += $(shell pkg-config --libs gtk+-2.0 2>/dev/null)
--		LIB_OBJS += $(OUTPUT)ui/gtk/browser.o
--		LIB_OBJS += $(OUTPUT)ui/gtk/hists.o
--		LIB_OBJS += $(OUTPUT)ui/gtk/setup.o
--		LIB_OBJS += $(OUTPUT)ui/gtk/util.o
--		LIB_OBJS += $(OUTPUT)ui/gtk/helpline.o
--		LIB_OBJS += $(OUTPUT)ui/gtk/progress.o
--		LIB_OBJS += $(OUTPUT)ui/gtk/annotate.o
+-		BASIC_CFLAGS += -DLIBNUMA_SUPPORT
+-		BUILTIN_OBJS += $(OUTPUT)bench/numa.o
+-		EXTLIBS += -lnuma
 -	endif
-+	LIB_OBJS += $(OUTPUT)ui/gtk/browser.o
-+	LIB_OBJS += $(OUTPUT)ui/gtk/hists.o
-+	LIB_OBJS += $(OUTPUT)ui/gtk/setup.o
-+	LIB_OBJS += $(OUTPUT)ui/gtk/util.o
-+	LIB_OBJS += $(OUTPUT)ui/gtk/helpline.o
-+	LIB_OBJS += $(OUTPUT)ui/gtk/progress.o
-+	LIB_OBJS += $(OUTPUT)ui/gtk/annotate.o
++	BUILTIN_OBJS += $(OUTPUT)bench/numa.o
  endif
  
- ifdef NO_LIBPERL
+ ifdef ASCIIDOC8
 diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 008b212..6fc2089 100644
+index 8c832f7..b559693 100644
 --- a/tools/perf/config/Makefile
 +++ b/tools/perf/config/Makefile
-@@ -225,3 +225,18 @@ ifndef NO_SLANG
- 		EXTLIBS += -lslang
- 	endif
+@@ -379,3 +379,14 @@ ifndef NO_BACKTRACE
+ 		BASIC_CFLAGS += -DBACKTRACE_SUPPORT
+        endif
  endif
 +
-+ifndef NO_GTK2
-+	FLAGS_GTK2=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null)
-+	ifneq ($(call try-cc,$(SOURCE_GTK2),$(FLAGS_GTK2),gtk2),y)
-+		msg := $(warning GTK2 not found, disables GTK2 support. Please install gtk2-devel or libgtk2.0-dev);
-+		NO_GTK2 := 1
++ifndef NO_LIBNUMA
++	FLAGS_LIBNUMA = $(ALL_CFLAGS) $(ALL_LDFLAGS) -lnuma
++	ifneq ($(call try-cc,$(SOURCE_LIBNUMA),$(FLAGS_LIBNUMA),libnuma),y)
++		msg := $(warning No numa.h found, disables 'perf bench numa mem' benchmark, please install numa-libs-devel or libnuma-dev);
++		NO_LIBNUMA := 1
 +	else
-+		ifeq ($(call try-cc,$(SOURCE_GTK2_INFOBAR),$(FLAGS_GTK2),-DHAVE_GTK_INFO_BAR),y)
-+			BASIC_CFLAGS += -DHAVE_GTK_INFO_BAR
-+		endif
-+		BASIC_CFLAGS += -DGTK2_SUPPORT
-+		BASIC_CFLAGS += $(shell pkg-config --cflags gtk+-2.0 2>/dev/null)
-+		EXTLIBS += $(shell pkg-config --libs gtk+-2.0 2>/dev/null)
++		BASIC_CFLAGS += -DLIBNUMA_SUPPORT
++		EXTLIBS += -lnuma
 +	endif
 +endif
 -- 
