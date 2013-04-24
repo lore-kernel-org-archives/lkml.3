@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758452Ab3DXJo3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 05:44:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47685 "EHLO mx1.redhat.com"
+	id S1758686Ab3DXJpP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 05:45:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62276 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758274Ab3DXJoV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 05:44:21 -0400
+	id S1758373Ab3DXJiz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 05:38:55 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>,
@@ -17,16 +17,16 @@ Cc: Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@kernel.org>, Borislav Petkov <bp@alien8.de>,
         Stephane Eranian <eranian@google.com>, Sam Ravnborg <sam@ravnborg.org>,
         David Ahern <dsahern@gmail.com>
-Subject: [PATCH 13/26] perf tools: Move libpython check config into config/Makefile
-Date: Wed, 24 Apr 2013 11:37:40 +0200
-Message-Id: <1366796273-4780-14-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 06/26] perf tools: Move libelf check config into config/Makefile
+Date: Wed, 24 Apr 2013 11:37:33 +0200
+Message-Id: <1366796273-4780-7-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1366796273-4780-1-git-send-email-jolsa@redhat.com>
 References: <1366796273-4780-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Moving libpython check config into config/Makefile.
+Moving libelf check config into config/Makefile.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
@@ -41,167 +41,129 @@ Cc: Stephane Eranian <eranian@google.com>
 Cc: Sam Ravnborg <sam@ravnborg.org>
 Cc: David Ahern <dsahern@gmail.com>
 ---
- tools/perf/Makefile        | 68 ++--------------------------------------------
- tools/perf/config/Makefile | 63 ++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 66 insertions(+), 65 deletions(-)
+ tools/perf/Makefile        | 46 ---------------------------------------------
+ tools/perf/config/Makefile | 47 ++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 47 insertions(+), 46 deletions(-)
 
 diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index d0ab4d4..899ef12 100644
+index 55382f9..c309a5b 100644
 --- a/tools/perf/Makefile
 +++ b/tools/perf/Makefile
-@@ -198,8 +198,6 @@ SCRIPTS = $(patsubst %.sh,%,$(SCRIPT_SH))
- #
- PROGRAMS += $(OUTPUT)perf
+@@ -475,45 +475,6 @@ ifneq ($(MAKECMDGOALS),tags)
+ # because maintaining the nesting to match is a pain.  If
+ # we had "elif" things would have been much nicer...
  
--LANG_BINDINGS =
--
- # what 'all' will build and 'install' will install, in perfexecdir
- ALL_PROGRAMS = $(PROGRAMS) $(SCRIPTS)
- 
-@@ -537,69 +535,9 @@ ifndef NO_LIBPERL
- 	LIB_OBJS += $(OUTPUT)scripts/perl/Perf-Trace-Util/Context.o
- endif
- 
--disable-python = $(eval $(disable-python_code))
--define disable-python_code
--  BASIC_CFLAGS += -DNO_LIBPYTHON
--  $(if $(1),$(warning No $(1) was found))
--  $(warning Python support will not be built)
--endef
--
--override PYTHON := \
--  $(call get-executable-or-default,PYTHON,python)
--
--ifndef PYTHON
--  $(call disable-python,python interpreter)
+-ifdef NO_LIBELF
+-	NO_DWARF := 1
+-	NO_DEMANGLE := 1
+-	NO_LIBUNWIND := 1
 -else
+-FLAGS_LIBELF=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS)
+-ifneq ($(call try-cc,$(SOURCE_LIBELF),$(FLAGS_LIBELF),libelf),y)
+-	FLAGS_GLIBC=$(ALL_CFLAGS) $(ALL_LDFLAGS)
+-	ifeq ($(call try-cc,$(SOURCE_GLIBC),$(FLAGS_GLIBC),glibc),y)
+-		LIBC_SUPPORT := 1
+-	endif
+-	ifeq ($(BIONIC),1)
+-		LIBC_SUPPORT := 1
+-	endif
+-	ifeq ($(LIBC_SUPPORT),1)
+-		msg := $(warning No libelf found, disables 'probe' tool, please install elfutils-libelf-devel/libelf-dev);
 -
--  PYTHON_WORD := $(call shell-wordify,$(PYTHON))
+-		NO_LIBELF := 1
+-		NO_DWARF := 1
+-		NO_DEMANGLE := 1
+-	else
+-		msg := $(error No gnu/libc-version.h found, please install glibc-dev[el]/glibc-static);
+-	endif
+-else
+-	# for linking with debug library, run like:
+-	# make DEBUG=1 LIBDW_DIR=/opt/libdw/
+-	ifdef LIBDW_DIR
+-		LIBDW_CFLAGS  := -I$(LIBDW_DIR)/include
+-		LIBDW_LDFLAGS := -L$(LIBDW_DIR)/lib
+-	endif
 -
--  ifdef NO_LIBPYTHON
--    $(call disable-python)
--  else
+-	FLAGS_DWARF=$(ALL_CFLAGS) $(LIBDW_CFLAGS) -ldw -lelf $(LIBDW_LDFLAGS) $(ALL_LDFLAGS) $(EXTLIBS)
+-	ifneq ($(call try-cc,$(SOURCE_DWARF),$(FLAGS_DWARF),libdw),y)
+-		msg := $(warning No libdw.h found or old libdw.h found or elfutils is older than 0.138, disables dwarf support. Please install new elfutils-devel/libdw-dev);
+-		NO_DWARF := 1
+-	endif # Dwarf support
+-endif # SOURCE_LIBELF
+-endif # NO_LIBELF
 -
--    override PYTHON_CONFIG := \
--      $(call get-executable-or-default,PYTHON_CONFIG,$(PYTHON)-config)
--
--    ifndef PYTHON_CONFIG
--      $(call disable-python,python-config tool)
--    else
--
--      PYTHON_CONFIG_SQ := $(call shell-sq,$(PYTHON_CONFIG))
--
--      PYTHON_EMBED_LDOPTS := $(shell $(PYTHON_CONFIG_SQ) --ldflags 2>/dev/null)
--      PYTHON_EMBED_LDFLAGS := $(call strip-libs,$(PYTHON_EMBED_LDOPTS))
--      PYTHON_EMBED_LIBADD := $(call grep-libs,$(PYTHON_EMBED_LDOPTS))
--      PYTHON_EMBED_CCOPTS := $(shell $(PYTHON_CONFIG_SQ) --cflags 2>/dev/null)
--      FLAGS_PYTHON_EMBED := $(PYTHON_EMBED_CCOPTS) $(PYTHON_EMBED_LDOPTS)
--
--      ifneq ($(call try-cc,$(SOURCE_PYTHON_EMBED),$(FLAGS_PYTHON_EMBED),python),y)
--        $(call disable-python,Python.h (for Python 2.x))
--      else
--
--        ifneq ($(call try-cc,$(SOURCE_PYTHON_VERSION),$(FLAGS_PYTHON_EMBED),python version),y)
--          $(warning Python 3 is not yet supported; please set)
--          $(warning PYTHON and/or PYTHON_CONFIG appropriately.)
--          $(warning If you also have Python 2 installed, then)
--          $(warning try something like:)
--          $(warning $(and ,))
--          $(warning $(and ,)  make PYTHON=python2)
--          $(warning $(and ,))
--          $(warning Otherwise, disable Python support entirely:)
--          $(warning $(and ,))
--          $(warning $(and ,)  make NO_LIBPYTHON=1)
--          $(warning $(and ,))
--          $(error   $(and ,))
--        else
--          ALL_LDFLAGS += $(PYTHON_EMBED_LDFLAGS)
--          EXTLIBS += $(PYTHON_EMBED_LIBADD)
--          LIB_OBJS += $(OUTPUT)util/scripting-engines/trace-event-python.o
--          LIB_OBJS += $(OUTPUT)scripts/python/Perf-Trace-Util/Context.o
--          LANG_BINDINGS += $(OUTPUT)python/perf.so
--        endif
--
--      endif
--    endif
--  endif
-+ifndef NO_LIBPYTHON
-+	LIB_OBJS += $(OUTPUT)util/scripting-engines/trace-event-python.o
-+	LIB_OBJS += $(OUTPUT)scripts/python/Perf-Trace-Util/Context.o
- endif
+ # There's only x86 (both 32 and 64) support for CFI unwind so far
+ ifneq ($(ARCH),x86)
+ 	NO_LIBUNWIND := 1
+@@ -555,13 +516,6 @@ BUILTIN_OBJS := $(filter-out $(OUTPUT)builtin-probe.o,$(BUILTIN_OBJS))
+ LIB_OBJS += $(OUTPUT)util/symbol-minimal.o
  
- ifdef NO_DEMANGLE
+ else # NO_LIBELF
+-BASIC_CFLAGS += -DLIBELF_SUPPORT
+-
+-FLAGS_LIBELF=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS)
+-ifeq ($(call try-cc,$(SOURCE_ELF_MMAP),$(FLAGS_LIBELF),-DLIBELF_MMAP),y)
+-	BASIC_CFLAGS += -DLIBELF_MMAP
+-endif
+-
+ ifndef NO_DWARF
+ ifeq ($(origin PERF_HAVE_DWARF_REGS), undefined)
+ 	msg := $(warning DWARF register mappings have not been defined for architecture $(ARCH), DWARF support disabled);
 diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 2c9e0a5..d5e0386 100644
+index 9ce522a..ef09d6c 100644
 --- a/tools/perf/config/Makefile
 +++ b/tools/perf/config/Makefile
-@@ -261,3 +261,66 @@ else
- 		EXTLIBS += $(PERL_EMBED_LIBADD)
- 	endif
+@@ -108,3 +108,50 @@ ifeq ($(call try-cc,$(SOURCE_BIONIC),$(CFLAGS),bionic),y)
+ 	EXTLIBS := $(filter-out -lpthread,$(EXTLIBS))
+ 	BASIC_CFLAGS += -I.
  endif
 +
-+disable-python = $(eval $(disable-python_code))
-+define disable-python_code
-+  BASIC_CFLAGS += -DNO_LIBPYTHON
-+  $(if $(1),$(warning No $(1) was found))
-+  $(warning Python support will not be built)
-+  NO_LIBPYTHON := 1
-+endef
-+
-+override PYTHON := \
-+  $(call get-executable-or-default,PYTHON,python)
-+
-+ifndef PYTHON
-+  $(call disable-python,python interpreter)
++ifdef NO_LIBELF
++	NO_DWARF := 1
++	NO_DEMANGLE := 1
++	NO_LIBUNWIND := 1
 +else
++FLAGS_LIBELF=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS)
++ifneq ($(call try-cc,$(SOURCE_LIBELF),$(FLAGS_LIBELF),libelf),y)
++	FLAGS_GLIBC=$(ALL_CFLAGS) $(ALL_LDFLAGS)
++	ifeq ($(call try-cc,$(SOURCE_GLIBC),$(FLAGS_GLIBC),glibc),y)
++		LIBC_SUPPORT := 1
++	endif
++	ifeq ($(BIONIC),1)
++		LIBC_SUPPORT := 1
++	endif
++	ifeq ($(LIBC_SUPPORT),1)
++		msg := $(warning No libelf found, disables 'probe' tool, please install elfutils-libelf-devel/libelf-dev);
 +
-+  PYTHON_WORD := $(call shell-wordify,$(PYTHON))
++		NO_LIBELF := 1
++		NO_DWARF := 1
++		NO_DEMANGLE := 1
++	else
++		msg := $(error No gnu/libc-version.h found, please install glibc-dev[el]/glibc-static);
++	endif
++else
++	# for linking with debug library, run like:
++	# make DEBUG=1 LIBDW_DIR=/opt/libdw/
++	ifdef LIBDW_DIR
++		LIBDW_CFLAGS  := -I$(LIBDW_DIR)/include
++		LIBDW_LDFLAGS := -L$(LIBDW_DIR)/lib
++	endif
 +
-+  ifdef NO_LIBPYTHON
-+    $(call disable-python)
-+  else
++	FLAGS_DWARF=$(ALL_CFLAGS) $(LIBDW_CFLAGS) -ldw -lelf $(LIBDW_LDFLAGS) $(ALL_LDFLAGS) $(EXTLIBS)
++	ifneq ($(call try-cc,$(SOURCE_DWARF),$(FLAGS_DWARF),libdw),y)
++		msg := $(warning No libdw.h found or old libdw.h found or elfutils is older than 0.138, disables dwarf support. Please install new elfutils-devel/libdw-dev);
++		NO_DWARF := 1
++	endif # Dwarf support
++endif # SOURCE_LIBELF
++endif # NO_LIBELF
 +
-+    override PYTHON_CONFIG := \
-+      $(call get-executable-or-default,PYTHON_CONFIG,$(PYTHON)-config)
-+
-+    ifndef PYTHON_CONFIG
-+      $(call disable-python,python-config tool)
-+    else
-+
-+      PYTHON_CONFIG_SQ := $(call shell-sq,$(PYTHON_CONFIG))
-+
-+      PYTHON_EMBED_LDOPTS := $(shell $(PYTHON_CONFIG_SQ) --ldflags 2>/dev/null)
-+      PYTHON_EMBED_LDFLAGS := $(call strip-libs,$(PYTHON_EMBED_LDOPTS))
-+      PYTHON_EMBED_LIBADD := $(call grep-libs,$(PYTHON_EMBED_LDOPTS))
-+      PYTHON_EMBED_CCOPTS := $(shell $(PYTHON_CONFIG_SQ) --cflags 2>/dev/null)
-+      FLAGS_PYTHON_EMBED := $(PYTHON_EMBED_CCOPTS) $(PYTHON_EMBED_LDOPTS)
-+
-+      ifneq ($(call try-cc,$(SOURCE_PYTHON_EMBED),$(FLAGS_PYTHON_EMBED),python),y)
-+        $(call disable-python,Python.h (for Python 2.x))
-+      else
-+
-+        ifneq ($(call try-cc,$(SOURCE_PYTHON_VERSION),$(FLAGS_PYTHON_EMBED),python version),y)
-+          $(warning Python 3 is not yet supported; please set)
-+          $(warning PYTHON and/or PYTHON_CONFIG appropriately.)
-+          $(warning If you also have Python 2 installed, then)
-+          $(warning try something like:)
-+          $(warning $(and ,))
-+          $(warning $(and ,)  make PYTHON=python2)
-+          $(warning $(and ,))
-+          $(warning Otherwise, disable Python support entirely:)
-+          $(warning $(and ,))
-+          $(warning $(and ,)  make NO_LIBPYTHON=1)
-+          $(warning $(and ,))
-+          $(error   $(and ,))
-+        else
-+          ALL_LDFLAGS += $(PYTHON_EMBED_LDFLAGS)
-+          EXTLIBS += $(PYTHON_EMBED_LIBADD)
-+          LANG_BINDINGS += $(OUTPUT)python/perf.so
-+        endif
-+      endif
-+    endif
-+  endif
++ifndef NO_LIBELF
++BASIC_CFLAGS += -DLIBELF_SUPPORT
++FLAGS_LIBELF=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS)
++ifeq ($(call try-cc,$(SOURCE_ELF_MMAP),$(FLAGS_LIBELF),-DLIBELF_MMAP),y)
++	BASIC_CFLAGS += -DLIBELF_MMAP
 +endif
++endif # NO_LIBELF
 -- 
 1.7.11.7
 
