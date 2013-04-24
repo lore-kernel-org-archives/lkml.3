@@ -1,65 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755199Ab3DWGCz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 02:02:55 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:64447 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753749Ab3DWGCy (ORCPT
+	id S1755421Ab3DWGJB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 02:09:01 -0400
+Received: from mail.riopreto.sp.gov.br ([200.168.242.10]:57884 "EHLO
+	mail.riopreto.sp.gov.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755143Ab3DWGI7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 02:02:54 -0400
-Message-ID: <1366696969.28314.3.camel@phoenix>
-Subject: [RESEND][PATCH RFT 2/2] pwm: lpc32xx: Don't change PWM_ENABLE bit
- in lpc32xx_pwm_config
-From: Axel Lin <axel.lin@ingics.com>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: Alexandre Pereira da Silva <aletes.xgr@gmail.com>,
-        Roland Stigge <stigge@antcom.de>, linux-kernel@vger.kernel.org
-Date: Tue, 23 Apr 2013 14:02:49 +0800
-In-Reply-To: <1366696891.28314.1.camel@phoenix>
-References: <1366696891.28314.1.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 23 Apr 2013 02:08:59 -0400
+Content-Type: text/plain; charset=US-ASCII
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7BIT
+Content-Description: Mail message body
+Subject: system administrator
+To: Recipients <info@empro.com.br>
+From: "ADMIN" <info@empro.com.br>
+Date: Tue, 23 Apr 2013 22:52:29 -0700
+Reply-To: upgrade1@dgoh.org
+X-Antivirus: avast! (VPS 130422-2, 04/22/2013), Outbound message
+X-Antivirus-Status: Clean
+Message-Id: <20130423055055.69DFD80739@mail.riopreto.sp.gov.br>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-lpc32xx_pwm_config() is supposed to set duty_ns and period_ns,
-it should not change PWM_ENABLE bit.
+Your E-mail has exceeded 2 GB was established by our website administrator,
+you are currently runing at 2.30GB, you can not send or receive new
+messages until you confirm your mailbox. Complete the form below to verify
+your account.
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/pwm/pwm-lpc32xx.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+Fill in the required form below to cornfirm your account and sent the
+following e-mail:
 
-diff --git a/drivers/pwm/pwm-lpc32xx.c b/drivers/pwm/pwm-lpc32xx.c
-index 1a5075e..e936202 100644
---- a/drivers/pwm/pwm-lpc32xx.c
-+++ b/drivers/pwm/pwm-lpc32xx.c
-@@ -37,6 +37,7 @@ static int lpc32xx_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
- 	struct lpc32xx_pwm_chip *lpc32xx = to_lpc32xx_pwm_chip(chip);
- 	unsigned long long c;
- 	int period_cycles, duty_cycles;
-+	u32 val;
- 
- 	c = clk_get_rate(lpc32xx->clk) / 256;
- 	c = c * period_ns;
-@@ -68,8 +69,10 @@ static int lpc32xx_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
- 		c = 255;
- 	duty_cycles = 256 - c;
- 
--	writel(PWM_ENABLE | PWM_RELOADV(period_cycles) | PWM_DUTY(duty_cycles),
--		lpc32xx->base + (pwm->hwpwm << 2));
-+	val = readl(lpc32xx->base + (pwm->hwpwm << 2));
-+	val &= ~0xFFFF;
-+	val |= PWM_RELOADV(period_cycles) | PWM_DUTY(duty_cycles);
-+	writel(val, lpc32xx->base + (pwm->hwpwm << 2));
- 
- 	return 0;
- }
--- 
-1.7.10.4
+(1) E-mail:
+(2) Username:
+(3) Password:
+(4) Confirm Password:
 
-
-
+thank you
+system administrator
