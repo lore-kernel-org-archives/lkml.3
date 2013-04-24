@@ -1,148 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751956Ab3DXE0b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 00:26:31 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:36944 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751136Ab3DXE01 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 00:26:27 -0400
-From: "H. Peter Anvin" <hpa@zytor.com>
-To: "Ted Ts'o" <tytso@mit.edu>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        DJ Johnston <dj.johnston@intel.com>,
+	id S1751301Ab3DXEjT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 00:39:19 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:58968 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750784Ab3DXEjS convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 00:39:18 -0400
+MIME-Version: 1.0
+In-Reply-To: <37C860A02101E749A747FA2D3C1E3C504A63B4@DLEE11.ent.ti.com>
+References: <1363145021-14339-1-git-send-email-s-anna@ti.com>
+	<CABb+yY0RYkVeo2Sb4WsDJY0jf17488FEz0d2CB994eQaSOEsVg@mail.gmail.com>
+	<37C860A02101E749A747FA2D3C1E3C504A5DF7@DLEE11.ent.ti.com>
+	<CABb+yY1x4x_A+QtGG9ohsLPgs8c3nEVnd_ExJBGOOR8=6YLPFA@mail.gmail.com>
+	<37C860A02101E749A747FA2D3C1E3C504A63B4@DLEE11.ent.ti.com>
+Date: Wed, 24 Apr 2013 10:09:17 +0530
+Message-ID: <CAJe_ZhehnniZd730jjiOLrHozq8TOJZgFYLqUe4KqgBiQEu8PA@mail.gmail.com>
+Subject: Re: [PATCHv3 00/14] drivers: mailbox: framework creation
+From: Jassi Brar <jaswinder.singh@linaro.org>
+To: "Anna, Suman" <s-anna@ti.com>
+Cc: Jassi Brar <jassisinghbrar@gmail.com>,
+        "Ohad Ben-Cohen (ohad@wizery.com)" <ohad@wizery.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        "Andy Green (andy.green@linaro.org)" <andy.green@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "Loic PALLARDY (loic.pallardy@st.com)" <loic.pallardy@st.com>,
+        Arnd Bergmann <arnd@arndb.de>, Tony Lindgren <tony@atomide.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, <stable@vger.kernel.org>
-Subject: [PATCH 1/2] random: Statically compute poolbitshift, poolbytes, poolbits
-Date: Tue, 23 Apr 2013 21:26:08 -0700
-Message-Id: <1366777569-23192-2-git-send-email-hpa@zytor.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1366777569-23192-1-git-send-email-hpa@zytor.com>
-References: <1366777569-23192-1-git-send-email-hpa@zytor.com>
+        "Omar Ramirez Luna (omar.ramirez@copitl.com)" 
+	<omar.ramirez@copitl.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "H. Peter Anvin" <hpa@linux.intel.com>
+Hi Suman,
 
-Use a macro to statically compute poolbitshift (will be used in a
-subsequent patch), poolbytes, and poolbits.  On virtually all
-architectures the cost of a memory load with an offset is the same as
-the one of a memory load.
+[please limit replies to not more than 80 columns per line]
 
-It is still possible for this to generate worse code since the C
-compiler doesn't know the fixed relationship between these fields, but
-that is somewhat unlikely.
+On 24 April 2013 00:50, Anna, Suman <s-anna@ti.com> wrote:
 
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: <stable@vger.kernel.org>
----
- drivers/char/random.c | 39 +++++++++++++++++++--------------------
- 1 file changed, 19 insertions(+), 20 deletions(-)
+>>
+>> Documentation wise, we'd need documentation for what we finally wanna have,
+>> not the current implementation.
+>>
+>> There are also some desired features in a good API:-
+>>
+>> a) The API should be simple and efficient, i.e, submission of requests by clients
+>> and notifications of data received by the API should be possible from atomic
+>> context - most of the IPC is going to be about exchanging 'commands'. The API
+>> shouldn't add to the latencies.
+>
+> I think we will have need for both types. It really depends on the purpose of the IPC h/w - some would be simple messaging and may not need the atomic constraints. Sure enough, atomic context is the stricter one, so we can add that. I don't see any users of it currently though.
+>
+IMHO the API authors should take the other POV :  if _majority_ of
+clients _require_ non-atomic context, only then the API should support
+non-atomic version of the calls too. Otherwise let the minority of
+drivers schedule their sleepable tasks from the API's atomic
+callbacks.
+ The non-atomic API falls flat should just a single client comes with
+very low latency requirements.
 
-diff --git a/drivers/char/random.c b/drivers/char/random.c
-index 57d4b15..106b9b2 100644
---- a/drivers/char/random.c
-+++ b/drivers/char/random.c
-@@ -309,46 +309,45 @@ static DEFINE_PER_CPU(int, trickle_count);
-  * scaled squared error sum) except for the last tap, which is 1 to
-  * get the twisting happening as fast as possible.
-  */
-+
- static struct poolinfo {
--	int poolwords;
-+	int poolbitshift, poolwords, poolbytes, poolbits;
-+#define S(x) ilog2(x)+5, (x), (x)*4, (x)*32
- 	int tap1, tap2, tap3, tap4, tap5;
- } poolinfo_table[] = {
- 	/* x^128 + x^103 + x^76 + x^51 +x^25 + x + 1 -- 105 */
--	{ 128,	103,	76,	51,	25,	1 },
-+	{ S(128),	103,	76,	51,	25,	1 },
- 	/* x^32 + x^26 + x^20 + x^14 + x^7 + x + 1 -- 15 */
--	{ 32,	26,	20,	14,	7,	1 },
-+	{ S(32),	26,	20,	14,	7,	1 },
- #if 0
- 	/* x^2048 + x^1638 + x^1231 + x^819 + x^411 + x + 1  -- 115 */
--	{ 2048,	1638,	1231,	819,	411,	1 },
-+	{ S(2048),	1638,	1231,	819,	411,	1 },
- 
- 	/* x^1024 + x^817 + x^615 + x^412 + x^204 + x + 1 -- 290 */
--	{ 1024,	817,	615,	412,	204,	1 },
-+	{ S(1024),	817,	615,	412,	204,	1 },
- 
- 	/* x^1024 + x^819 + x^616 + x^410 + x^207 + x^2 + 1 -- 115 */
--	{ 1024,	819,	616,	410,	207,	2 },
-+	{ S(1024),	819,	616,	410,	207,	2 },
- 
- 	/* x^512 + x^411 + x^308 + x^208 + x^104 + x + 1 -- 225 */
--	{ 512,	411,	308,	208,	104,	1 },
-+	{ S(512),	411,	308,	208,	104,	1 },
- 
- 	/* x^512 + x^409 + x^307 + x^206 + x^102 + x^2 + 1 -- 95 */
--	{ 512,	409,	307,	206,	102,	2 },
-+	{ S(512),	409,	307,	206,	102,	2 },
- 	/* x^512 + x^409 + x^309 + x^205 + x^103 + x^2 + 1 -- 95 */
--	{ 512,	409,	309,	205,	103,	2 },
-+	{ S(512),	409,	309,	205,	103,	2 },
- 
- 	/* x^256 + x^205 + x^155 + x^101 + x^52 + x + 1 -- 125 */
--	{ 256,	205,	155,	101,	52,	1 },
-+	{ S(256),	205,	155,	101,	52,	1 },
- 
- 	/* x^128 + x^103 + x^78 + x^51 + x^27 + x^2 + 1 -- 70 */
--	{ 128,	103,	78,	51,	27,	2 },
-+	{ S(128),	103,	78,	51,	27,	2 },
- 
- 	/* x^64 + x^52 + x^39 + x^26 + x^14 + x + 1 -- 15 */
--	{ 64,	52,	39,	26,	14,	1 },
-+	{ S(64),	52,	39,	26,	14,	1 },
- #endif
- };
- 
--#define POOLBITS	poolwords*32
--#define POOLBYTES	poolwords*4
--
- /*
-  * For the purposes of better mixing, we use the CRC-32 polynomial as
-  * well to make a twisted Generalized Feedback Shift Reigster
-@@ -599,8 +598,8 @@ retry:
- 	if (entropy_count < 0) {
- 		DEBUG_ENT("negative entropy/overflow\n");
- 		entropy_count = 0;
--	} else if (entropy_count > r->poolinfo->POOLBITS)
--		entropy_count = r->poolinfo->POOLBITS;
-+	} else if (entropy_count > r->poolinfo->poolbits)
-+		entropy_count = r->poolinfo->poolbits;
- 	if (cmpxchg(&r->entropy_count, orig, entropy_count) != orig)
- 		goto retry;
- 
-@@ -815,7 +814,7 @@ static void xfer_secondary_pool(struct entropy_store *r, size_t nbytes)
- 	__u32	tmp[OUTPUT_POOL_WORDS];
- 
- 	if (r->pull && r->entropy_count < nbytes * 8 &&
--	    r->entropy_count < r->poolinfo->POOLBITS) {
-+	    r->entropy_count < r->poolinfo->poolbits) {
- 		/* If we're limited, always leave two wakeup worth's BITS */
- 		int rsvd = r->limit ? 0 : random_read_wakeup_thresh/4;
- 		int bytes = nbytes;
-@@ -857,7 +856,7 @@ static size_t account(struct entropy_store *r, size_t nbytes, int min,
- 	/* Hold lock while accounting */
- 	spin_lock_irqsave(&r->lock, flags);
- 
--	BUG_ON(r->entropy_count > r->poolinfo->POOLBITS);
-+	BUG_ON(r->entropy_count > r->poolinfo->poolbits);
- 	DEBUG_ENT("trying to extract %zu bits from %s\n",
- 		  nbytes * 8, r->name);
- 
-@@ -1104,7 +1103,7 @@ static void init_std_data(struct entropy_store *r)
- 	r->entropy_total = 0;
- 	r->last_data_init = false;
- 	mix_pool_bytes(r, &now, sizeof(now), NULL);
--	for (i = r->poolinfo->POOLBYTES; i > 0; i -= sizeof(rv)) {
-+	for (i = r->poolinfo->poolbytes; i > 0; i -= sizeof(rv)) {
- 		if (!arch_get_random_long(&rv))
- 			break;
- 		mix_pool_bytes(r, &rv, sizeof(rv), NULL);
--- 
-1.7.11.7
+>>  For example, API should assume the IPC controller can detect and report when
+>> the remote asserts Ready-To-Receive (RTR). This is when the API callbacks
+>> .tx_done(mssg) on the client. If some h/w doesn't have RTR assertion interrupt,
+>> the API should provide optional feature to poll the controller periodically.
+>
+> Some of these are already part of the mailbox ops. FWIW, I don’t see a need for a .tx_done callback, as this state can really be maintained by the driver implementation itself. The mailbox_msg_send can return an error appropriately based on whether the h/w is ready or not. The current code has the support for queuing up a certain number of messages in case the h/w is busy, but I am planning to change this to a device-based property so that they can choose if it needs that support or not.
+>
+Not really. The TI's api does buffer requests from a client but it
+does not tell the client when the message is actually sent to the
+remote over the h/w channel.
 
+ Consider this example for better understanding, I must send a
+particular packet to the remote before I could, say, shutdown
+properly. The client calls mailbox_msg_send which queues the packet
+because the h/w was busy. Since the api does not inform the client
+about packet transmission, the client does not know when to shutdown
+(the packet may have been sent instantly or it may lie on the queue
+for a long time).
+ How do you fix this without tx_done callback method?
+
+
+>>
+>> (d) The 'struct mailbox_msg' should be just an opaque void* - the client/protocol
+>> driver typecasts to void* the IPC controller specific message structure. API
+>> shouldn't aim the impossible of providing a generic message format.
+>
+> The size parameter would still be needed. Depending on the h/w, it can be just an u32 or a series of bytes, and even in the latter case, it is not guaranteed that all messages transmitted will occupy the entire h/w shared memory data packet. I can see the current header field getting absorbed into the opaque void * structure for the ST mailbox driver. The size and ptr together provide a very generic message format.
+>
+I am not sure about it. The API has no purpose for the .size (it's
+between the controller and the client driver).
+Controllers that could send variable length packets could define the
+packets format for clients as
+ struct foo_packet {
+         int size;
+         .......
+ }
+and exchange as typecasted to void* via the API. And this is just one
+way of doing it.
+The point being, the API should only pass pointer to packet info
+between controller and client drivers.
+
+>>
+>> As you see there would be not much of the present left eventually. So I wonder
+>> if should sculpt a new api out of TI's or start from scratch?
+>> One of my controllers is similar to 'pl320' (which you left out converting to the
+>> API). I am in process of implementing all this assuming it is OK to keep a controller
+>> out of this API :)  So maybe we can collaborate on a new implementation from
+>> scratch.
+>
+> This series missed the 3.9 merge window, and is currently slated for getting merged into 3.10. The PL320 made it into 3.9 itself (I wasn't aware of it until I saw it in mainline) and created the drivers/mailbox folder.  I would think it would be relatively straight-forward to adopt it to the mailbox API, as it has only 3 API. We should be doing incremental changes on top of this series, as most of the base API would still be the same. The current series is helping out with couple of efforts, the breaking up of the PRCMU code and on the multiplatform support for OMAP with mailbox enabled. We can definitely collaborate on the improvements. Andy Green would also be interested, as he is also looking into adopting the mailbox API.
+>
+I don't think it should into 3.10 just because it missed the 3.9
+window, when its quality is doubted.
+I am going to have to live with IPC controller code for sometime now,
+so I care that I build upon a sound API. And I am more than happy to
+help on a proper implementation.
+
+Regards,
+Jassi
