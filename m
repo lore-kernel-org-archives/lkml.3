@@ -1,104 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757368Ab3DXPwi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 11:52:38 -0400
-Received: from ns.iliad.fr ([212.27.33.1]:41375 "EHLO ns.iliad.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756641Ab3DXPwh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 11:52:37 -0400
-Message-ID: <5177FFC2.5020102@freebox.fr>
-Date: Wed, 24 Apr 2013 17:52:34 +0200
-From: Nicolas Schichan <nschichan@freebox.fr>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S932121Ab3DXPz4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 11:55:56 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:59027 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755970Ab3DXPzy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 11:55:54 -0400
+Date: Wed, 24 Apr 2013 16:55:47 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: arnd@arndb.de, linus.walleij@stericsson.com,
+        Russell King <linux@arm.linux.org.uk>, Chris Ball <cjb@laptop.org>,
+        linux-mmc@vger.kernel.org
+Subject: [PATCH v2] mmc: mmci: Allow MMCI to request channels with
+ information acquired from DT
+Message-ID: <20130424155547.GA4623@gmail.com>
+References: <1366801122-13302-1-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Serge Hallyn <serge.hallyn@canonical.com>, Will Drewry <wad@chromium.org>,
-        Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
-        Eric Paris <eparis@redhat.com>, Mircea Gherzan <mgherzan@gmail.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        James Morris <james.l.morris@oracle.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH V2 1/3] seccomp: add generic code for jitted seccomp filters.
-References: <1363618233-6375-1-git-send-email-nschichan@freebox.fr> <1363618233-6375-2-git-send-email-nschichan@freebox.fr> <20130417145628.88058f0f3104ab9ae551ddd3@linux-foundation.org> <51752D98.8070709@freebox.fr> <20130423164303.d2eb663c4a1becea4a185087@linux-foundation.org>
-In-Reply-To: <20130423164303.d2eb663c4a1becea4a185087@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1366801122-13302-1-git-send-email-lee.jones@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/24/2013 01:43 AM, Andrew Morton wrote:
-> On Mon, 22 Apr 2013 14:31:20 +0200 Nicolas Schichan <nschichan@freebox.fr> wrote:
->> Would including <uapi/linux/filter.h> instead of <linux/filter.h> in seccomp.h
->> be an acceptable solution ?
->>
->> I have tried that and (with an additional forward declaration of struct
->> sk_buff) an x86_64 "make clean; make allmodconfig" run finishes succesfully.
->>
->> If that's ok with you, I can resend the serie with that fix.
->
-> It would be better to make the code and include tangle less complex,
-> rather than more complex.
->
-> Did we really need to move the `struct seccomp_filter' definition into
-> the header file?  afaict that wasn't really necessary - we can add a
-> few helper functions to kernel/seccomp.c and then have the remote code
-> treat seccomp_filter in an opaque fashion rather than directly poking
-> at its internals.
+Currently, if DMA information isn't passed from platform data, then DMA
+will not be used. This patch allows DMA information obtained though Device
+Tree to be used as well.
 
-Hi,
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Chris Ball <cjb@laptop.org>
+Cc: linux-mmc@vger.kernel.org
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-I will resend a V3 of the patch serie with the accessors.
-
-> btw, what on earth is going on with seccomp_jit_free()?  It does
-> disturbing undocumented typecasting and it punts the module_free into a
-> kernel thread for mysterious, undocumented and possibly buggy reasons.
->
-> I realize it just copies bpf_jit_free().  The same observations apply there.
-
-The reason for this hack for both seccomp filters and socket filters is that 
-{seccomp,bpf}_jit_free are called from a softirq. module_free() cannot be 
-called directly from softirq, as it will in turn call vfree() which will 
-BUG_ON() if in_interrupt() is non zero. So to call module_free(), it is 
-therefore required to be in a process context, which is provided by the work 
-struct.
-
-Here is the call stack for the socket filter case:
-
-[<c0087bf8>] (vfree+0x28/0x2c) from [<c001fc5c>] (bpf_jit_free+0x10/0x18)
-[<c001fc5c>] (bpf_jit_free+0x10/0x18) from 
-[<c0231188>](sk_filter_release_rcu+0x10/0x1c)
-[<c0231188>] (sk_filter_release_rcu+0x10/0x1c) from [<c0060bb4>] 
-(__rcu_process_callbacks+0x98/0xac)
-[<c0060bb4>] (__rcu_process_callbacks+0x98/0xac) from [<c0060bd8>] 
-(rcu_process_callbacks+0x10/0x20)
-[<c0060bd8>] (rcu_process_callbacks+0x10/0x20) from [<c0029498>] 
-(__do_softirq+0xbc/0x194)
-[<c0029498>] (__do_softirq+0xbc/0x194) from [<c00295b0>] (run_ksoftirqd+0x40/0x64)
-[<c00295b0>] (run_ksoftirqd+0x40/0x64) from [<c0041954>] 
-(smpboot_thread_fn+0x150/0x15c)
-[<c0041954>] (smpboot_thread_fn+0x150/0x15c) from [<c003bb2c>] (kthread+0xa4/0xb0)
-[<c003bb2c>] (kthread+0xa4/0xb0) from [<c0013450>] (ret_from_fork+0x14/0x24)
-
-Here is the call stack for the seccomp filter case:
-
-[<c0087c28>] (vfree+0x28/0x2c) from [<c0060834>] (put_seccomp_filter+0x6c/0x84)
-[<c0060834>] (put_seccomp_filter+0x6c/0x84) from [<c0020db4>] 
-(free_task+0x30/0x50)
-[<c0020db4>] (free_task+0x30/0x50) from [<c0060be4>] 
-(__rcu_process_callbacks+0x98/0xac)
-[<c0060be4>] (__rcu_process_callbacks+0x98/0xac) from [<c0060c08>] 
-(rcu_process_callbacks+0x10/0x20)
-[<c0060c08>] (rcu_process_callbacks+0x10/0x20) from [<c00294c8>] 
-(__do_softirq+0xbc/0x194)
-[<c00294c8>] (__do_softirq+0xbc/0x194) from [<c00295e0>] (run_ksoftirqd+0x40/0x64)
-[<c00295e0>] (run_ksoftirqd+0x40/0x64) from [<c0041984>] 
-(smpboot_thread_fn+0x150/0x15c)
-[<c0041984>] (smpboot_thread_fn+0x150/0x15c) from [<c003bb5c>] (kthread+0xa4/0xb0)
-[<c003bb5c>] (kthread+0xa4/0xb0) from [<c0013450>] (ret_from_fork+0x14/0x24)
-
-Regards,
-
--- 
-Nicolas Schichan
-Freebox SAS
+diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
+index 372e921..45dda46 100644
+--- a/drivers/mmc/host/mmci.c
++++ b/drivers/mmc/host/mmci.c
+@@ -304,10 +304,8 @@ static void mmci_dma_setup(struct mmci_host *host)
+ 	const char *rxname, *txname;
+ 	dma_cap_mask_t mask;
+ 
+-	if (!plat || !plat->dma_filter) {
+-		dev_info(mmc_dev(host->mmc), "no DMA platform data\n");
+-		return;
+-	}
++	host->dma_rx_channel = dma_request_slave_channel(mmc_dev(host->mmc), "rx");
++	host->dma_tx_channel = dma_request_slave_channel(mmc_dev(host->mmc), "tx");
+ 
+ 	/* initialize pre request cookie */
+ 	host->next_data.cookie = 1;
+@@ -316,30 +314,33 @@ static void mmci_dma_setup(struct mmci_host *host)
+ 	dma_cap_zero(mask);
+ 	dma_cap_set(DMA_SLAVE, mask);
+ 
+-	/*
+-	 * If only an RX channel is specified, the driver will
+-	 * attempt to use it bidirectionally, however if it is
+-	 * is specified but cannot be located, DMA will be disabled.
+-	 */
+-	if (plat->dma_rx_param) {
+-		host->dma_rx_channel = dma_request_channel(mask,
++	if (plat && plat->dma_filter) {
++		if (!host->dma_rx_channel && plat->dma_rx_param) {
++			host->dma_rx_channel = dma_request_channel(mask,
+ 							   plat->dma_filter,
+ 							   plat->dma_rx_param);
+-		/* E.g if no DMA hardware is present */
+-		if (!host->dma_rx_channel)
+-			dev_err(mmc_dev(host->mmc), "no RX DMA channel\n");
+-	}
++			/* E.g if no DMA hardware is present */
++			if (!host->dma_rx_channel)
++				dev_err(mmc_dev(host->mmc), "no RX DMA channel\n");
++		}
+ 
+-	if (plat->dma_tx_param) {
+-		host->dma_tx_channel = dma_request_channel(mask,
++		if (!host->dma_tx_channel && plat->dma_tx_param) {
++			host->dma_tx_channel = dma_request_channel(mask,
+ 							   plat->dma_filter,
+ 							   plat->dma_tx_param);
+-		if (!host->dma_tx_channel)
+-			dev_warn(mmc_dev(host->mmc), "no TX DMA channel\n");
+-	} else {
+-		host->dma_tx_channel = host->dma_rx_channel;
++			if (!host->dma_tx_channel)
++				dev_warn(mmc_dev(host->mmc), "no TX DMA channel\n");
++		}
+ 	}
+ 
++	/*
++	 * If only an RX channel is specified, the driver will
++	 * attempt to use it bidirectionally, however if it is
++	 * is specified but cannot be located, DMA will be disabled.
++	 */
++	if (host->dma_rx_channel && !host->dma_tx_channel)
++		host->dma_tx_channel = host->dma_rx_channel;
++
+ 	if (host->dma_rx_channel)
+ 		rxname = dma_chan_name(host->dma_rx_channel);
+ 	else
