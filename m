@@ -1,223 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757891Ab3DXJnY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 05:43:24 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:37587 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756331Ab3DXJnV (ORCPT
+	id S1758467Ab3DXJjP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 05:39:15 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:39367 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758424Ab3DXJjI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 05:43:21 -0400
-Date: Wed, 24 Apr 2013 10:42:51 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: =?iso-8859-1?Q?Andr=E9?= Hentschel <nerv@dawncrow.de>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv2] arm: Preserve TPIDRURW on context switch
-Message-ID: <20130424094251.GA21850@mudshark.cambridge.arm.com>
-References: <517168BB.3070903@dawncrow.de>
- <20130422143616.GP14496@n2100.arm.linux.org.uk>
- <20130422151836.GA15665@mudshark.cambridge.arm.com>
- <5175A697.3080308@dawncrow.de>
- <20130423091536.GB17593@mudshark.cambridge.arm.com>
- <51770E4E.2040003@dawncrow.de>
+	Wed, 24 Apr 2013 05:39:08 -0400
+Date: Wed, 24 Apr 2013 02:38:40 -0700
+From: tip-bot for Joonsoo Kim <tipbot@zytor.com>
+Message-ID: <tip-e02e60c109ca70935bad1131976bdbf5160cf576@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, vatsa@linux.vnet.ibm.com, hpa@zytor.com,
+        mingo@kernel.org, davidlohr.bueso@hp.com, a.p.zijlstra@chello.nl,
+        peterz@infradead.org, jason.low2@hp.com, tglx@linutronix.de,
+        iamjoonsoo.kim@lge.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, vatsa@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, davidlohr.bueso@hp.com,
+        a.p.zijlstra@chello.nl, peterz@infradead.org, jason.low2@hp.com,
+        iamjoonsoo.kim@lge.com, tglx@linutronix.de
+In-Reply-To: <1366705662-3587-7-git-send-email-iamjoonsoo.kim@lge.com>
+References: <1366705662-3587-7-git-send-email-iamjoonsoo.kim@lge.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] sched:
+  Prevent to re-select dst-cpu in load_balance()
+Git-Commit-ID: e02e60c109ca70935bad1131976bdbf5160cf576
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <51770E4E.2040003@dawncrow.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
+Commit-ID:  e02e60c109ca70935bad1131976bdbf5160cf576
+Gitweb:     http://git.kernel.org/tip/e02e60c109ca70935bad1131976bdbf5160cf576
+Author:     Joonsoo Kim <iamjoonsoo.kim@lge.com>
+AuthorDate: Tue, 23 Apr 2013 17:27:42 +0900
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Wed, 24 Apr 2013 08:52:46 +0200
 
-On Tue, Apr 23, 2013 at 11:42:22PM +0100, André Hentschel wrote:
-> Am 23.04.2013 11:15, schrieb Will Deacon:
-> > You could introduce `get' tls functions, which don't do anything for CPUs
-> > without the relevant registers.
-> 
-> Before i have another round of testing and patch formatting/sending,
-> what about the untested patch below?
+sched: Prevent to re-select dst-cpu in load_balance()
 
-Ok. Comments inline.
+Commit 88b8dac0 makes load_balance() consider other cpus in its
+group. But, in that, there is no code for preventing to
+re-select dst-cpu. So, same dst-cpu can be selected over and
+over.
 
-> diff --git a/arch/arm/include/asm/thread_info.h b/arch/arm/include/asm/thread_info.h
-> index cddda1f..bb5b48d 100644
-> --- a/arch/arm/include/asm/thread_info.h
-> +++ b/arch/arm/include/asm/thread_info.h
-> @@ -58,7 +58,7 @@ struct thread_info {
->  	struct cpu_context_save	cpu_context;	/* cpu context */
->  	__u32			syscall;	/* syscall number */
->  	__u8			used_cp[16];	/* thread used copro */
-> -	unsigned long		tp_value;
-> +	unsigned long		tp_value[2];
->  #ifdef CONFIG_CRUNCH
->  	struct crunch_state	crunchstate;
->  #endif
-> diff --git a/arch/arm/include/asm/tls.h b/arch/arm/include/asm/tls.h
-> index 73409e6..1c10163 100644
-> --- a/arch/arm/include/asm/tls.h
-> +++ b/arch/arm/include/asm/tls.h
-> @@ -2,13 +2,30 @@
->  #define __ASMARM_TLS_H
->  
->  #ifdef __ASSEMBLY__
-> +	.macro get_tls2_none, tp, tmp1
-> +	.endm
+This patch add functionality to load_balance() in order to
+exclude cpu which is selected once. We prevent to re-select
+dst_cpu via env's cpus, so now, env's cpus is a candidate not
+only for src_cpus, but also dst_cpus.
 
-Cosmetic, but these are really horrible macro names.
+With this patch, we can remove lb_iterations and
+max_lb_iterations, because we decide whether we can go ahead or
+not via env's cpus.
 
-> +	.macro get_tls2_v6k, tp, tmp1
-> +	mrc	p15, 0, \tmp1, c13, c0, 2		@ get user r/w TLS register
-> +	str	\tmp1, [\tp, #4]
-> +	.endm
-> +
-> +	.macro get_tls2_v6, tp, tmp1
-> +	ldr	\tmp1, =elf_hwcap
-> +	ldr	\tmp1, [\tmp1, #0]
-> +	tst	\tmp1, #HWCAP_TLS		@ hardware TLS available?
-> +	mrcne	p15, 0, \tmp1, c13, c0, 2		@ get user r/w TLS register
-> +	strne	\tmp1, [\tp, #4]
+Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Tested-by: Jason Low <jason.low2@hp.com>
+Cc: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+Cc: Davidlohr Bueso <davidlohr.bueso@hp.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1366705662-3587-7-git-send-email-iamjoonsoo.kim@lge.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ kernel/sched/fair.c | 33 +++++++++++++++------------------
+ 1 file changed, 15 insertions(+), 18 deletions(-)
 
-You could factor out some of this hwcap checking now that it's used by both
-set and get.
-
-> +	.endm
-> +
-> +
->  	.macro set_tls_none, tp, tmp1, tmp2
->  	.endm
->  
->  	.macro set_tls_v6k, tp, tmp1, tmp2
-> -	mcr	p15, 0, \tp, c13, c0, 3		@ set TLS register
-> -	mov	\tmp1, #0
-> -	mcr	p15, 0, \tmp1, c13, c0, 2	@ clear user r/w TLS register
-> +	ldrd	\tmp1, \tmp2, [\tp]
-> +	mcr	p15, 0, \tmp1, c13, c0, 3	@ set user r/o TLS register
-> +	mcr	p15, 0, \tmp2, c13, c0, 2	@ set user r/w TLS register
->  	.endm
->  
->  	.macro set_tls_v6, tp, tmp1, tmp2
-> @@ -16,33 +33,39 @@
->  	ldr	\tmp1, [\tmp1, #0]
->  	mov	\tmp2, #0xffff0fff
->  	tst	\tmp1, #HWCAP_TLS		@ hardware TLS available?
-> -	mcrne	p15, 0, \tp, c13, c0, 3		@ yes, set TLS register
-> -	movne	\tmp1, #0
-> -	mcrne	p15, 0, \tmp1, c13, c0, 2	@ clear user r/w TLS register
-> -	streq	\tp, [\tmp2, #-15]		@ set TLS value at 0xffff0ff0
-> +	ldrdne	\tmp1, \tmp2, [\tp]
-
-Does this work for big-endian CPUs?
-
-> +	ldreq	\tmp1, [\tp]
-> +	mcrne	p15, 0, \tmp1, c13, c0, 3	@ yes, set user r/o TLS register
-> +	mcrne	p15, 0, \tmp2, c13, c0, 2	@ set user r/w TLS register
-> +	streq	\tmp1, [\tmp2, #-15]		@ set TLS value at 0xffff0ff0
->  	.endm
->  
->  	.macro set_tls_software, tp, tmp1, tmp2
-> -	mov	\tmp1, #0xffff0fff
-> -	str	\tp, [\tmp1, #-15]		@ set TLS value at 0xffff0ff0
-> +	ldr	\tmp1, [\tp]
-> +	mov	\tmp2, #0xffff0fff
-> +	str	\tmp1, [\tmp2, #-15]		@ set TLS value at 0xffff0ff0
->  	.endm
->  #endif
->  
->  #ifdef CONFIG_TLS_REG_EMUL
->  #define tls_emu		1
->  #define has_tls_reg		1
-> +#define get_tls2		get_tls2_none
->  #define set_tls		set_tls_none
->  #elif defined(CONFIG_CPU_V6)
->  #define tls_emu		0
->  #define has_tls_reg		(elf_hwcap & HWCAP_TLS)
-> +#define get_tls2		get_tls2_v6
->  #define set_tls		set_tls_v6
->  #elif defined(CONFIG_CPU_32v6K)
->  #define tls_emu		0
->  #define has_tls_reg		1
-> +#define get_tls2		get_tls2_v6k
->  #define set_tls		set_tls_v6k
->  #else
->  #define tls_emu		0
->  #define has_tls_reg		0
-> +#define get_tls2		get_tls2_none
->  #define set_tls		set_tls_software
->  #endif
->  
-> diff --git a/arch/arm/kernel/entry-armv.S b/arch/arm/kernel/entry-armv.S
-> index 0f82098..097686b 100644
-> --- a/arch/arm/kernel/entry-armv.S
-> +++ b/arch/arm/kernel/entry-armv.S
-> @@ -728,7 +728,7 @@ ENTRY(__switch_to)
->   UNWIND(.fnstart	)
->   UNWIND(.cantunwind	)
->  	add	ip, r1, #TI_CPU_SAVE
-> -	ldr	r3, [r2, #TI_TP_VALUE]
-> +	add	r3, r1, #TI_TP_VALUE
->   ARM(	stmia	ip!, {r4 - sl, fp, sp, lr} )	@ Store most regs on stack
->   THUMB(	stmia	ip!, {r4 - sl, fp}	   )	@ Store most regs on stack
->   THUMB(	str	sp, [ip], #4		   )
-> @@ -736,6 +736,8 @@ ENTRY(__switch_to)
->  #ifdef CONFIG_CPU_USE_DOMAINS
->  	ldr	r6, [r2, #TI_CPU_DOMAIN]
->  #endif
-> +	get_tls2	r3, r4
-> +	add	r3, r2, #TI_TP_VALUE
->  	set_tls	r3, r4, r5
->  #if defined(CONFIG_CC_STACKPROTECTOR) && !defined(CONFIG_SMP)
->  	ldr	r7, [r2, #TI_TASK]
-> diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
-> index 047d3e4..6138eb1 100644
-> --- a/arch/arm/kernel/process.c
-> +++ b/arch/arm/kernel/process.c
-> @@ -395,7 +395,8 @@ copy_thread(unsigned long clone_flags, unsigned long stack_start,
->  	clear_ptrace_hw_breakpoint(p);
->  
->  	if (clone_flags & CLONE_SETTLS)
-> -		thread->tp_value = childregs->ARM_r3;
-> +		thread->tp_value[0] = childregs->ARM_r3;
-> +	thread->tp_value[1] = current_thread_info()->tp_value[1];
->
-
-This still isn't correct. Imagine the following sequence of events:
-
-  - Task foo writes its TPIDRURW register from userspace and then issues a
-    fork() system call. No context switch occurs between these two events.
-
-  - We start creating the child task, bar, and end up in copy_thread with
-    the `thread' pointing at foo's struct thread_info, which contains the
-    *old* TPIDRURW value.
-
-  - We copy out the stale value into bar, which is then scheduled with an
-    old TPIDRURW value.
-
-The solution is to reload the value sitting in the register in copy_thread,
-rather than relying on the thread_info being up-to-date. That's why I
-previously suggested not using asm macros for the getters.
-
->  	thread_notify(THREAD_NOTIFY_COPY, thread);
->  
-> diff --git a/arch/arm/kernel/ptrace.c b/arch/arm/kernel/ptrace.c
-> index 03deeff..2bc1514 100644
-> --- a/arch/arm/kernel/ptrace.c
-> +++ b/arch/arm/kernel/ptrace.c
-> @@ -849,7 +849,7 @@ long arch_ptrace(struct task_struct *child, long request,
->  #endif
->  
->  		case PTRACE_GET_THREAD_AREA:
-> -			ret = put_user(task_thread_info(child)->tp_value,
-> +			ret = put_user(task_thread_info(child)->tp_value[0],
->  				       datap);
->  			break;
-
-I'm guessing debuggers don't care about the new TLS value, or do we need a
-new ptrace request?
-
-Will
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 5b1e966..acaf567 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -3905,7 +3905,7 @@ int can_migrate_task(struct task_struct *p, struct lb_env *env)
+ 		return 0;
+ 
+ 	if (!cpumask_test_cpu(env->dst_cpu, tsk_cpus_allowed(p))) {
+-		int new_dst_cpu;
++		int cpu;
+ 
+ 		schedstat_inc(p, se.statistics.nr_failed_migrations_affine);
+ 
+@@ -3920,12 +3920,15 @@ int can_migrate_task(struct task_struct *p, struct lb_env *env)
+ 		if (!env->dst_grpmask || (env->flags & LBF_SOME_PINNED))
+ 			return 0;
+ 
+-		new_dst_cpu = cpumask_first_and(env->dst_grpmask,
+-						tsk_cpus_allowed(p));
+-		if (new_dst_cpu < nr_cpu_ids) {
+-			env->flags |= LBF_SOME_PINNED;
+-			env->new_dst_cpu = new_dst_cpu;
++		/* Prevent to re-select dst_cpu via env's cpus */
++		for_each_cpu_and(cpu, env->dst_grpmask, env->cpus) {
++			if (cpumask_test_cpu(cpu, tsk_cpus_allowed(p))) {
++				env->flags |= LBF_SOME_PINNED;
++				env->new_dst_cpu = cpu;
++				break;
++			}
+ 		}
++
+ 		return 0;
+ 	}
+ 
+@@ -5008,7 +5011,6 @@ static int load_balance(int this_cpu, struct rq *this_rq,
+ 			int *balance)
+ {
+ 	int ld_moved, cur_ld_moved, active_balance = 0;
+-	int lb_iterations, max_lb_iterations;
+ 	struct sched_group *group;
+ 	struct rq *busiest;
+ 	unsigned long flags;
+@@ -5028,15 +5030,8 @@ static int load_balance(int this_cpu, struct rq *this_rq,
+ 	 * For NEWLY_IDLE load_balancing, we don't need to consider
+ 	 * other cpus in our group
+ 	 */
+-	if (idle == CPU_NEWLY_IDLE) {
++	if (idle == CPU_NEWLY_IDLE)
+ 		env.dst_grpmask = NULL;
+-		/*
+-		 * we don't care max_lb_iterations in this case,
+-		 * in following patch, this will be removed
+-		 */
+-		max_lb_iterations = 0;
+-	} else
+-		max_lb_iterations = cpumask_weight(env.dst_grpmask);
+ 
+ 	cpumask_copy(cpus, cpu_active_mask);
+ 
+@@ -5064,7 +5059,6 @@ redo:
+ 	schedstat_add(sd, lb_imbalance[idle], env.imbalance);
+ 
+ 	ld_moved = 0;
+-	lb_iterations = 1;
+ 	if (busiest->nr_running > 1) {
+ 		/*
+ 		 * Attempt to move tasks. If find_busiest_group has found
+@@ -5121,14 +5115,17 @@ more_balance:
+ 		 * moreover subsequent load balance cycles should correct the
+ 		 * excess load moved.
+ 		 */
+-		if ((env.flags & LBF_SOME_PINNED) && env.imbalance > 0 &&
+-				lb_iterations++ < max_lb_iterations) {
++		if ((env.flags & LBF_SOME_PINNED) && env.imbalance > 0) {
+ 
+ 			env.dst_rq	 = cpu_rq(env.new_dst_cpu);
+ 			env.dst_cpu	 = env.new_dst_cpu;
+ 			env.flags	&= ~LBF_SOME_PINNED;
+ 			env.loop	 = 0;
+ 			env.loop_break	 = sched_nr_migrate_break;
++
++			/* Prevent to re-select dst_cpu via env's cpus */
++			cpumask_clear_cpu(env.dst_cpu, env.cpus);
++
+ 			/*
+ 			 * Go back to "more_balance" rather than "redo" since we
+ 			 * need to continue with same src_cpu.
