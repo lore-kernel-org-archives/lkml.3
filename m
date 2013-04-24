@@ -1,64 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932370Ab3DXJx1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 05:53:27 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49732 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932347Ab3DXJx0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 05:53:26 -0400
-Date: Wed, 24 Apr 2013 10:53:18 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
-        Laxman Dewangan <ldewangan@nvidia.com>
-Subject: Re: [PATCH] regulator: max8973: Don't override control1 variable
- when set ramp delay bits
-Message-ID: <20130424095318.GZ5019@opensource.wolfsonmicro.com>
-References: <1366733695.7020.1.camel@phoenix>
+	id S1758129Ab3DXJ5i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 05:57:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16709 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757677Ab3DXJ5h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 05:57:37 -0400
+Message-ID: <5177AC75.7090101@redhat.com>
+Date: Wed, 24 Apr 2013 11:57:09 +0200
+From: Jerome Marchand <jmarchan@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="3rx43rDlPB5nB2+S"
-Content-Disposition: inline
-In-Reply-To: <1366733695.7020.1.camel@phoenix>
-X-Cookie: Caution: Keep out of reach of children.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH] swap: redirty page if page write fails on swap file
+References: <516E918B.3050309@redhat.com> <20130422133746.ffbbb70c0394fdbf1096c7ee@linux-foundation.org>
+In-Reply-To: <20130422133746.ffbbb70c0394fdbf1096c7ee@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 04/22/2013 10:37 PM, Andrew Morton wrote:
+> On Wed, 17 Apr 2013 14:11:55 +0200 Jerome Marchand <jmarchan@redhat.com> wrote:
+> 
+>>
+>> Since commit 62c230b, swap_writepage() calls direct_IO on swap files.
+>> However, in that case page isn't redirtied if I/O fails, and is therefore
+>> handled afterwards as if it has been successfully written to the swap
+>> file, leading to memory corruption when the page is eventually swapped
+>> back in.
+>> This patch sets the page dirty when direct_IO() fails. It fixes a memory
+>> corruption that happened while using swap-over-NFS.
+>>
+>> ...
+>>
+>> --- a/mm/page_io.c
+>> +++ b/mm/page_io.c
+>> @@ -222,6 +222,8 @@ int swap_writepage(struct page *page, struct writeback_control *wbc)
+>>  		if (ret == PAGE_SIZE) {
+>>  			count_vm_event(PSWPOUT);
+>>  			ret = 0;
+>> +		} else {
+>> +			set_page_dirty(page);
+>>  		}
+>>  		return ret;
+>>  	}
+> 
+> So what happens to the page now?  It remains dirty and the kernel later
+> tries to write it again?
 
---3rx43rDlPB5nB2+S
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Yes. Also, AS_EIO or AS_ENOSPC is set to the address space flags (in this
+case, swapper_space).
 
-On Wed, Apr 24, 2013 at 12:14:55AM +0800, Axel Lin wrote:
-> Current code overrides control1 variable when setting ramp delay bits.
-> Fix it by just setting ramp_delay bits.
+> And if that write also fails, the page is
+> effectively leaked until process exit?
 
-Applied, thanks.  Laxman, please check your acks can be cut'n'pasted -
-there's regularly things I need to fix up by hand.
+AFAICT, there is no special handling for that page afterwards, so if all
+subsequent attempts fail, it's indeed going to stay in memory until freed.
 
---3rx43rDlPB5nB2+S
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Jerome
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJRd6uFAAoJELSic+t+oim9dPYQAIygT+DvRdoLYUXJ/6GwXxV3
-Tu21ECcwC18V2Fm7cMWTWOkIIPvV9CF97onqx2PLGT4WghPVZ1zq8Pv46Xeb+dAZ
-2JF7O1jaO6n2FDDT2ojukd9UO9eQ3KYMcaSxq5LGE2qnt/+obnVUxNdaAxzCF+2K
-7TLNZoSLR+a3H5AcjXehxVVgRNzxTlBn/sUbHN/YYsV8kz82INe8YHRKWGr+7DQl
-ZSktDur7yZMm/lWF9kl293edoCqSo8VbZFfCNhwQggWP3gaX0Eu66B06ApM2nSDn
-K6YKJtaJBJGJUUeQ5DEaXrrn5FXrFjJWGFw3taJ001kZmzrNoiwH5P/2ZAw4vjqt
-X9kSEJOCaQ/0b3EtdCN8XXwUWHrKU0hzFYP0UorEL/OnPC2/k3D4gleXXOrs3i1n
-9kJEC+Qf9/jwKHTqNafh2rZTpSiQTPW6IePPwcwx5QKGGwvTplKL+3Lc/2arcwMd
-PeGQ3WRGPtLaBBWUuseTZz84RHLemGOWSBBV6nOfCw7NMGrEdF1DjWiomVhbZZHZ
-GQ/PMVQ+QBngzbgxIlKf+Jb+uF4GNyQk5A6MqlfNrHbWRWBWQvAhjibRSuE6L05r
-S/PhFAEWodPtcNkik3Z5cK8+Dkzh1WLD8G4fvE/JT2tuX5X0SlJm8ST3O8X5Qt4L
-hRWbnvV11hXpeNA5j0G9
-=Dyaa
------END PGP SIGNATURE-----
+> 
+> 
+> Aside: Mel, __swap_writepage() is fairly hair-raising.  It unlocks the
+> page before doing the IO and doesn't set PageWriteback().  Why such an
+> exception from normal handling?
+> 
+> Also, what is protecting the page from concurrent reclaim or exit()
+> during the above swap_writepage()?
+> 
+> Seems that the code needs a bunch of fixes or a bunch of comments
+> explaining why it is safe and why it has to be this way.
+> 
 
---3rx43rDlPB5nB2+S--
