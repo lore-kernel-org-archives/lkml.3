@@ -1,86 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932336Ab3DXJwZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 05:52:25 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:52374 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932278Ab3DXJwX (ORCPT
+	id S932370Ab3DXJx1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 05:53:27 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49732 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932347Ab3DXJx0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 05:52:23 -0400
-X-AuditID: 9c93016f-b7b70ae0000038d5-3f-5177ab55baaf
-From: Namhyung Kim <namhyung@kernel.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Pekka Enberg <penberg@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
-Subject: Re: [RFC 00/14] perf tools: Introduce new 'ftrace' command
-References: <1366705872-12132-1-git-send-email-namhyung@kernel.org>
-	<1366732681.9609.157.camel@gandalf.local.home>
-	<CAOJsxLF16Edznsdis4NK-O1Sf=3Eswb5L=cfBDhjpr6F7UjTbg@mail.gmail.com>
-	<20130424065018.GC27551@gmail.com>
-Date: Wed, 24 Apr 2013 18:52:21 +0900
-In-Reply-To: <20130424065018.GC27551@gmail.com> (Ingo Molnar's message of
-	"Wed, 24 Apr 2013 08:50:18 +0200")
-Message-ID: <87a9oob6i2.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Wed, 24 Apr 2013 05:53:26 -0400
+Date: Wed, 24 Apr 2013 10:53:18 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
+        Laxman Dewangan <ldewangan@nvidia.com>
+Subject: Re: [PATCH] regulator: max8973: Don't override control1 variable
+ when set ramp delay bits
+Message-ID: <20130424095318.GZ5019@opensource.wolfsonmicro.com>
+References: <1366733695.7020.1.camel@phoenix>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="3rx43rDlPB5nB2+S"
+Content-Disposition: inline
+In-Reply-To: <1366733695.7020.1.camel@phoenix>
+X-Cookie: Caution: Keep out of reach of children.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
 
-On Wed, 24 Apr 2013 08:50:18 +0200, Ingo Molnar wrote:
-> * Pekka Enberg <penberg@kernel.org> wrote:
->
->> Hello,
->> 
->> On Tue, 2013-04-23 at 17:30 +0900, Namhyung Kim wrote:
->> >> This patchset implements a front-end tool for kernel's ftrace.  It
->> >> uses function_graph tracer by default and normal function tracer is
->> >> also supported.  (Of course you need to enable those tracers in your
->> >> kernel first.)
->> 
->> On Tue, Apr 23, 2013 at 6:58 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
->> > Very nice Namhyung, thanks for doing this. I did a quick run through of
->> > the patches and I have no complaints about them. I'm not sure how the
->> > others will feel about it.
->> 
->> I also skimmed through the patches and they look like a reasonable
->> starting point. So FWIW,
->> 
->> Acked-by: Pekka Enberg <penberg@kernel.org>
->> 
->> Are there any plans in trying to consolidate 'perf trace' and this? As
->> a user I don't really care what the underlying mechanism and would
->> like things to just work out of the box.
->
-> Exactly. I'd love to see ftrace and perf trace unified.
->
-> I have no objections against having a 'perf ftrace' interim step - as long 
-> as it's really a temporary migration construct, not something we intend to 
-> keep forever.
+--3rx43rDlPB5nB2+S
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Hmm.. okay.
+On Wed, Apr 24, 2013 at 12:14:55AM +0800, Axel Lin wrote:
+> Current code overrides control1 variable when setting ramp delay bits.
+> Fix it by just setting ramp_delay bits.
 
-I think it'd be great if perf trace can cover both of kernel and user
-spaces.  But function tracing in userspace looks impossible IMHO.
+Applied, thanks.  Laxman, please check your acks can be cut'n'pasted -
+there's regularly things I need to fix up by hand.
 
-So how about changing perf trace to receive proposed sub-commands
-(live/record/show/report) and following options:
+--3rx43rDlPB5nB2+S
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-  --kernel::	do ftrace (for kernel functions)
-  --syscall::	do system call tracing (what perf trace does now)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAEBAgAGBQJRd6uFAAoJELSic+t+oim9dPYQAIygT+DvRdoLYUXJ/6GwXxV3
+Tu21ECcwC18V2Fm7cMWTWOkIIPvV9CF97onqx2PLGT4WghPVZ1zq8Pv46Xeb+dAZ
+2JF7O1jaO6n2FDDT2ojukd9UO9eQ3KYMcaSxq5LGE2qnt/+obnVUxNdaAxzCF+2K
+7TLNZoSLR+a3H5AcjXehxVVgRNzxTlBn/sUbHN/YYsV8kz82INe8YHRKWGr+7DQl
+ZSktDur7yZMm/lWF9kl293edoCqSo8VbZFfCNhwQggWP3gaX0Eu66B06ApM2nSDn
+K6YKJtaJBJGJUUeQ5DEaXrrn5FXrFjJWGFw3taJ001kZmzrNoiwH5P/2ZAw4vjqt
+X9kSEJOCaQ/0b3EtdCN8XXwUWHrKU0hzFYP0UorEL/OnPC2/k3D4gleXXOrs3i1n
+9kJEC+Qf9/jwKHTqNafh2rZTpSiQTPW6IePPwcwx5QKGGwvTplKL+3Lc/2arcwMd
+PeGQ3WRGPtLaBBWUuseTZz84RHLemGOWSBBV6nOfCw7NMGrEdF1DjWiomVhbZZHZ
+GQ/PMVQ+QBngzbgxIlKf+Jb+uF4GNyQk5A6MqlfNrHbWRWBWQvAhjibRSuE6L05r
+S/PhFAEWodPtcNkik3Z5cK8+Dkzh1WLD8G4fvE/JT2tuX5X0SlJm8ST3O8X5Qt4L
+hRWbnvV11hXpeNA5j0G9
+=Dyaa
+-----END PGP SIGNATURE-----
 
-But I think we need to have an agreement on the file/directory format to
-support multiple recorder threads first.  Any comments on this issue?
-
-Thanks,
-Namhyung
+--3rx43rDlPB5nB2+S--
