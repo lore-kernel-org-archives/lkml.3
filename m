@@ -1,103 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758051Ab3DXLRQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 07:17:16 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:26084 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753587Ab3DXLRP (ORCPT
+	id S932076Ab3DXLSG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 07:18:06 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:56504 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751922Ab3DXLSE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 07:17:15 -0400
-Message-ID: <5177BEC7.4020906@huawei.com>
-Date: Wed, 24 Apr 2013 19:15:19 +0800
-From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Wed, 24 Apr 2013 07:18:04 -0400
+Message-ID: <5177BF67.2040308@intel.com>
+Date: Wed, 24 Apr 2013 12:17:59 +0100
+From: Matt Fleming <matt.fleming@intel.com>
+Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
+ Way, Swindon SN3 1RJ
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Namhyung Kim <namhyung@kernel.org>
-CC: Ingo Molnar <mingo@kernel.org>, Pekka Enberg <penberg@kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
-Subject: Re: [RFC 00/14] perf tools: Introduce new 'ftrace' command
-References: <1366705872-12132-1-git-send-email-namhyung@kernel.org> <1366732681.9609.157.camel@gandalf.local.home> <CAOJsxLF16Edznsdis4NK-O1Sf=3Eswb5L=cfBDhjpr6F7UjTbg@mail.gmail.com> <20130424065018.GC27551@gmail.com> <87a9oob6i2.fsf@sejong.aot.lge.com>
-In-Reply-To: <87a9oob6i2.fsf@sejong.aot.lge.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Ingo Molnar <mingo@kernel.org>
+CC: Borislav Petkov <bp@alien8.de>, X86 ML <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
+        Matthew Garrett <matthew.garrett@nebula.com>
+Subject: Re: [PATCH] x86, efi: Fix a build warning
+References: <1366798154-1380-1-git-send-email-bp@alien8.de> <20130424105610.GA15815@gmail.com>
+In-Reply-To: <20130424105610.GA15815@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.66.58.241]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/4/24 17:52, Namhyung Kim wrote:
-> Hi Ingo,
+On 24/04/13 11:56, Ingo Molnar wrote:
 > 
-> On Wed, 24 Apr 2013 08:50:18 +0200, Ingo Molnar wrote:
->> * Pekka Enberg <penberg@kernel.org> wrote:
+> * Borislav Petkov <bp@alien8.de> wrote:
+> 
+>> From: Borislav Petkov <bp@suse.de>
 >>
->>> Hello,
->>>
->>> On Tue, 2013-04-23 at 17:30 +0900, Namhyung Kim wrote:
->>>>> This patchset implements a front-end tool for kernel's ftrace.  It
->>>>> uses function_graph tracer by default and normal function tracer is
->>>>> also supported.  (Of course you need to enable those tracers in your
->>>>> kernel first.)
->>>
->>> On Tue, Apr 23, 2013 at 6:58 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
->>>> Very nice Namhyung, thanks for doing this. I did a quick run through of
->>>> the patches and I have no complaints about them. I'm not sure how the
->>>> others will feel about it.
->>>
->>> I also skimmed through the patches and they look like a reasonable
->>> starting point. So FWIW,
->>>
->>> Acked-by: Pekka Enberg <penberg@kernel.org>
->>>
->>> Are there any plans in trying to consolidate 'perf trace' and this? As
->>> a user I don't really care what the underlying mechanism and would
->>> like things to just work out of the box.
+>> Fix this:
 >>
->> Exactly. I'd love to see ftrace and perf trace unified.
+>> arch/x86/boot/compressed/eboot.c: In function ???setup_efi_vars???:
+>> arch/x86/boot/compressed/eboot.c:269:2: warning: passing argument 1 of ???efi_call_phys??? makes pointer from integer without a cast [enabled by default]
+>> In file included from arch/x86/boot/compressed/eboot.c:12:0:
+>> /w/kernel/linux/arch/x86/include/asm/efi.h:8:33: note: expected ???void *??? but argument is of type ???long unsigned int???
 >>
->> I have no objections against having a 'perf ftrace' interim step - as long 
->> as it's really a temporary migration construct, not something we intend to 
->> keep forever.
+>> after cc5a080c5d40 ("efi: Pass boot services variable info to runtime
+>> code").
+>>
+>> Cc: Matthew Garrett <matthew.garrett@nebula.com>
+>> Cc: Matt Fleming <matt.fleming@intel.com>
+>> Signed-off-by: Borislav Petkov <bp@suse.de>
+>> ---
+>>  arch/x86/boot/compressed/eboot.c | 2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
+>> index 8615f7581820..41de115a55b7 100644
+>> --- a/arch/x86/boot/compressed/eboot.c
+>> +++ b/arch/x86/boot/compressed/eboot.c
+>> @@ -266,7 +266,7 @@ static efi_status_t setup_efi_vars(struct boot_params *params)
+>>  	while (data && data->next)
+>>  		data = (struct setup_data *)(unsigned long)data->next;
+>>  
+>> -	status = efi_call_phys4(sys_table->runtime->query_variable_info,
+>> +	status = efi_call_phys4((void *)sys_table->runtime->query_variable_info,
+>>  				EFI_VARIABLE_NON_VOLATILE |
+>>  				EFI_VARIABLE_BOOTSERVICE_ACCESS |
+>>  				EFI_VARIABLE_RUNTIME_ACCESS, &store_size,
 > 
-> Hmm.. okay.
-> 
-> I think it'd be great if perf trace can cover both of kernel and user
-> spaces.  But function tracing in userspace looks impossible IMHO.
-> 
-> So how about changing perf trace to receive proposed sub-commands
-> (live/record/show/report) and following options:
-> 
->   --kernel::	do ftrace (for kernel functions)
->   --syscall::	do system call tracing (what perf trace does now)
-> 
-"--kernel" make me think it's will trace all event tracepoints, not only ftrace.
+> Why isn't the query_variale_info field changed to void * instead? That way 
+> no cast would be needed.
 
-for "--syscall" option, I always think we should enhance syscall tracing more than now,
-like use annotate info when parse syscall event in perf, as other tracepoint does.
-we also need read filename user string in kernel space when open syscall tracepoint hit,
-record in perf.data, then perf parse it. After these functionality is implemented,
-we will don't need a separate syscall tracing tool in perf any more,
-just use: perf record -e "syscalls:" -a
-> 
-> But I think we need to have an agreement on the file/directory format to
-> support multiple recorder threads first.  Any comments on this issue?
-> 
-> Thanks,
-> Namhyung
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> .
-> 
-
+We could either change all fields in efi_system_table or the
+efi_call_phys* prototypes. x86-64 already casts to (void *) when calling
+efi_call0(), etc, though I'm not entirely sure why void * is needed.
 
