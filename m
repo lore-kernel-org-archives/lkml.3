@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758293Ab3DXJid (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 05:38:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13614 "EHLO mx1.redhat.com"
+	id S1758316Ab3DXJij (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 05:38:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58641 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756156Ab3DXJib (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 05:38:31 -0400
+	id S1758301Ab3DXJih (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 05:38:37 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>,
@@ -17,16 +17,16 @@ Cc: Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@kernel.org>, Borislav Petkov <bp@alien8.de>,
         Stephane Eranian <eranian@google.com>, Sam Ravnborg <sam@ravnborg.org>,
         David Ahern <dsahern@gmail.com>
-Subject: [PATCH 03/26] perf tools: Move arch check into config/Makefile
-Date: Wed, 24 Apr 2013 11:37:30 +0200
-Message-Id: <1366796273-4780-4-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 05/26] perf tools: Move compiler and linker flags check into config/Makefile
+Date: Wed, 24 Apr 2013 11:37:32 +0200
+Message-Id: <1366796273-4780-6-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1366796273-4780-1-git-send-email-jolsa@redhat.com>
 References: <1366796273-4780-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Moving arch check into config/Makefile.
+Moving compiler and linker flags check into config/Makefile.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
@@ -41,115 +41,243 @@ Cc: Stephane Eranian <eranian@google.com>
 Cc: Sam Ravnborg <sam@ravnborg.org>
 Cc: David Ahern <dsahern@gmail.com>
 ---
- tools/perf/Makefile        | 43 +++++++++++++++----------------------------
- tools/perf/config/Makefile | 34 ++++++++++++++++++++++++++++++++++
- 2 files changed, 49 insertions(+), 28 deletions(-)
- create mode 100644 tools/perf/config/Makefile
+ tools/perf/Makefile        | 110 ++++++++-------------------------------------
+ tools/perf/config/Makefile |  66 +++++++++++++++++++++++++++
+ 2 files changed, 85 insertions(+), 91 deletions(-)
 
 diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index c8fb0fd..518d540 100644
+index e543234..55382f9 100644
 --- a/tools/perf/Makefile
 +++ b/tools/perf/Makefile
-@@ -55,37 +55,25 @@ include config/utilities.mak
+@@ -52,6 +52,20 @@ include config/utilities.mak
+ #
+ # Define NO_LIBNUMA if you do not want numa perf benchmark
+ 
++ifeq ($(srctree),)
++srctree := $(patsubst %/,%,$(dir $(shell pwd)))
++srctree := $(patsubst %/,%,$(dir $(srctree)))
++#$(info Determined 'srctree' to be $(srctree))
++endif
++
++ifneq ($(objtree),)
++#$(info Determined 'objtree' to be $(objtree))
++endif
++
++ifneq ($(OUTPUT),)
++#$(info Determined 'OUTPUT' to be $(OUTPUT))
++endif
++
  $(OUTPUT)PERF-VERSION-FILE: .FORCE-PERF-VERSION-FILE
  	@$(SHELL_PATH) util/PERF-VERSION-GEN $(OUTPUT)
  
--uname_M := $(shell uname -m 2>/dev/null || echo not)
+@@ -66,6 +80,9 @@ FLEX    = flex
+ BISON   = bison
+ STRIP  ?= strip
+ 
++LK_DIR = ../lib/lk/
++TRACE_EVENT_DIR = ../lib/traceevent/
++
+ # include config/Makefile by default and rule out
+ # non-config cases
+ config := 1
+@@ -84,33 +101,10 @@ ifeq ($(config),1)
+ include config/Makefile
+ endif
+ 
+-# Treat warnings as errors unless directed not to
+-ifneq ($(WERROR),0)
+-  CFLAGS_WERROR := -Werror
+-endif
 -
--ARCH ?= $(shell echo $(uname_M) | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
--				  -e s/arm.*/arm/ -e s/sa110/arm/ \
--				  -e s/s390x/s390/ -e s/parisc64/parisc/ \
--				  -e s/ppc.*/powerpc/ -e s/mips.*/mips/ \
--				  -e s/sh[234].*/sh/ -e s/aarch64.*/arm64/ )
--NO_PERF_REGS := 1
+-ifeq ("$(origin DEBUG)", "command line")
+-  PERF_DEBUG = $(DEBUG)
+-endif
+-ifndef PERF_DEBUG
+-  CFLAGS_OPTIMIZE = -O6
+-endif
 -
- CC = $(CROSS_COMPILE)gcc
- AR = $(CROSS_COMPILE)ar
- 
--# Additional ARCH settings for x86
--ifeq ($(ARCH),i386)
--	override ARCH := x86
--	NO_PERF_REGS := 0
--	LIBUNWIND_LIBS = -lunwind -lunwind-x86
-+# include config/Makefile by default and rule out
-+# non-config cases
-+config := 1
-+
-+# standalone clean
-+ifeq ($(MAKECMDGOALS),clean)
-+  config := 0
+-ifdef PARSER_DEBUG
+-	PARSER_DEBUG_BISON  := -t
+-	PARSER_DEBUG_FLEX   := -d
+-	PARSER_DEBUG_CFLAGS := -DPARSER_DEBUG
+-endif
+-
+ ifdef NO_NEWT
+ 	NO_SLANG=1
  endif
--ifeq ($(ARCH),x86_64)
--	override ARCH := x86
--	IS_X86_64 := 0
--	ifeq (, $(findstring m32,$(EXTRA_CFLAGS)))
--		IS_X86_64 := $(shell echo __x86_64__ | ${CC} -E -x c - | tail -n 1)
+ 
+-CFLAGS = -fno-omit-frame-pointer -ggdb3 -funwind-tables -Wall -Wextra -std=gnu99 $(CFLAGS_WERROR) $(CFLAGS_OPTIMIZE) $(EXTRA_WARNINGS) $(EXTRA_CFLAGS) $(PARSER_DEBUG_CFLAGS)
+-EXTLIBS = -lpthread -lrt -lelf -lm
+-ALL_CFLAGS = $(CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
+-ALL_LDFLAGS = $(LDFLAGS)
+-
+ # Among the variables below, these:
+ #   perfexecdir
+ #   template_dir
+@@ -150,71 +144,6 @@ export prefix bindir sharedir sysconfdir
+ # explicitly what architecture to check for. Fix this up for yours..
+ SPARSE_FLAGS = -D__BIG_ENDIAN__ -D__powerpc__
+ 
+-ifneq ($(MAKECMDGOALS),clean)
+-ifneq ($(MAKECMDGOALS),tags)
+--include config/feature-tests.mak
+-
+-ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -Werror -fstack-protector-all,-fstack-protector-all),y)
+-	CFLAGS := $(CFLAGS) -fstack-protector-all
+-endif
+-
+-ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -Werror -Wstack-protector,-Wstack-protector),y)
+-       CFLAGS := $(CFLAGS) -Wstack-protector
+-endif
+-
+-ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -Werror -Wvolatile-register-var,-Wvolatile-register-var),y)
+-       CFLAGS := $(CFLAGS) -Wvolatile-register-var
+-endif
+-
+-ifndef PERF_DEBUG
+-	ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -D_FORTIFY_SOURCE=2,-D_FORTIFY_SOURCE=2),y)
+-		CFLAGS := $(CFLAGS) -D_FORTIFY_SOURCE=2
 -	endif
--	ifeq (${IS_X86_64}, 1)
--		RAW_ARCH := x86_64
--		ARCH_CFLAGS := -DARCH_X86_64
--		ARCH_INCLUDE = ../../arch/x86/lib/memcpy_64.S ../../arch/x86/lib/memset_64.S
--	endif
--	NO_PERF_REGS := 0
--	LIBUNWIND_LIBS = -lunwind -lunwind-x86_64
-+
-+# tags cscope
-+ifneq ($(filter tags cscope,$(MAKECMDGOALS)),)
-+  config := 0
-+endif
-+
-+ifeq ($(config),1)
-+include config/Makefile
- endif
+-endif
+-
+-### --- END CONFIGURATION SECTION ---
+-
+-ifeq ($(srctree),)
+-srctree := $(patsubst %/,%,$(dir $(shell pwd)))
+-srctree := $(patsubst %/,%,$(dir $(srctree)))
+-#$(info Determined 'srctree' to be $(srctree))
+-endif
+-
+-ifneq ($(objtree),)
+-#$(info Determined 'objtree' to be $(objtree))
+-endif
+-
+-ifneq ($(OUTPUT),)
+-#$(info Determined 'OUTPUT' to be $(OUTPUT))
+-endif
+-
+-BASIC_CFLAGS = \
+-	-Iutil/include \
+-	-Iarch/$(ARCH)/include \
+-	$(if $(objtree),-I$(objtree)/arch/$(ARCH)/include/generated/uapi) \
+-	-I$(srctree)/arch/$(ARCH)/include/uapi \
+-	-I$(srctree)/arch/$(ARCH)/include \
+-	$(if $(objtree),-I$(objtree)/include/generated/uapi) \
+-	-I$(srctree)/include/uapi \
+-	-I$(srctree)/include \
+-	-I$(OUTPUT)util \
+-	-Iutil \
+-	-I. \
+-	-I$(TRACE_EVENT_DIR) \
+-	-I../lib/ \
+-	-D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
+-
+-BASIC_LDFLAGS =
+-
+-ifeq ($(call try-cc,$(SOURCE_BIONIC),$(CFLAGS),bionic),y)
+-	BIONIC := 1
+-	EXTLIBS := $(filter-out -lrt,$(EXTLIBS))
+-	EXTLIBS := $(filter-out -lpthread,$(EXTLIBS))
+-	BASIC_CFLAGS += -I.
+-endif
+-endif # MAKECMDGOALS != tags
+-endif # MAKECMDGOALS != clean
+-
+ # Guard against environment variables
+ BUILTIN_OBJS =
+ LIB_H =
+@@ -227,9 +156,6 @@ SCRIPT_SH += perf-archive.sh
+ grep-libs = $(filter -l%,$(1))
+ strip-libs = $(filter-out -l%,$(1))
  
- # Treat warnings as errors unless directed not to
-@@ -857,7 +845,6 @@ ifeq ($(NO_PERF_REGS),0)
- 	ifeq ($(ARCH),x86)
- 		LIB_H += arch/x86/include/perf_regs.h
- 	endif
--	BASIC_CFLAGS += -DHAVE_PERF_REGS
- endif
+-LK_DIR = ../lib/lk/
+-TRACE_EVENT_DIR = ../lib/traceevent/
+-
+ LK_PATH=$(LK_DIR)
  
- ifndef NO_STRLCPY
+ ifneq ($(OUTPUT),)
+@@ -543,6 +469,8 @@ PERFLIBS = $(LIB_FILE) $(LIBLK) $(LIBTRACEEVENT)
+ ifneq ($(MAKECMDGOALS),clean)
+ ifneq ($(MAKECMDGOALS),tags)
+ 
++-include config/feature-tests.mak
++
+ # We choose to avoid "if .. else if .. else .. endif endif"
+ # because maintaining the nesting to match is a pain.  If
+ # we had "elif" things would have been much nicer...
 diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-new file mode 100644
-index 0000000..fe317c2
---- /dev/null
+index 04bf8ac..9ce522a 100644
+--- a/tools/perf/config/Makefile
 +++ b/tools/perf/config/Makefile
-@@ -0,0 +1,34 @@
-+uname_M := $(shell uname -m 2>/dev/null || echo not)
+@@ -42,3 +42,69 @@ endif
+ ifeq ($(call get-executable,$(BISON)),)
+ 	dummy := $(error Error: $(BISON) is missing on this system, please install it)
+ endif
 +
-+ARCH ?= $(shell echo $(uname_M) | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
-+				  -e s/arm.*/arm/ -e s/sa110/arm/ \
-+				  -e s/s390x/s390/ -e s/parisc64/parisc/ \
-+				  -e s/ppc.*/powerpc/ -e s/mips.*/mips/ \
-+				  -e s/sh[234].*/sh/ -e s/aarch64.*/arm64/ )
-+NO_PERF_REGS := 1
-+
-+# Additional ARCH settings for x86
-+ifeq ($(ARCH),i386)
-+	override ARCH := x86
-+	NO_PERF_REGS := 0
-+	LIBUNWIND_LIBS = -lunwind -lunwind-x86
++# Treat warnings as errors unless directed not to
++ifneq ($(WERROR),0)
++	CFLAGS_WERROR := -Werror
 +endif
 +
-+ifeq ($(ARCH),x86_64)
-+	override ARCH := x86
-+	IS_X86_64 := 0
-+	ifeq (, $(findstring m32,$(EXTRA_CFLAGS)))
-+		IS_X86_64 := $(shell echo __x86_64__ | ${CC} -E -x c - | tail -n 1)
-+	endif
-+	ifeq (${IS_X86_64}, 1)
-+		RAW_ARCH := x86_64
-+		ARCH_CFLAGS := -DARCH_X86_64
-+		ARCH_INCLUDE = ../../arch/x86/lib/memcpy_64.S ../../arch/x86/lib/memset_64.S
-+	endif
-+	NO_PERF_REGS := 0
-+	LIBUNWIND_LIBS = -lunwind -lunwind-x86_64
++ifeq ("$(origin DEBUG)", "command line")
++	PERF_DEBUG = $(DEBUG)
++endif
++ifndef PERF_DEBUG
++	CFLAGS_OPTIMIZE = -O6
 +endif
 +
-+ifeq ($(NO_PERF_REGS),0)
-+        BASIC_CFLAGS += -DHAVE_PERF_REGS
++ifdef PARSER_DEBUG
++	PARSER_DEBUG_BISON  := -t
++	PARSER_DEBUG_FLEX   := -d
++	PARSER_DEBUG_CFLAGS := -DPARSER_DEBUG
++endif
++
++CFLAGS = -fno-omit-frame-pointer -ggdb3 -funwind-tables -Wall -Wextra -std=gnu99 $(CFLAGS_WERROR) $(CFLAGS_OPTIMIZE) $(EXTRA_WARNINGS) $(EXTRA_CFLAGS) $(PARSER_DEBUG_CFLAGS)
++EXTLIBS = -lpthread -lrt -lelf -lm
++ALL_CFLAGS = $(CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
++ALL_LDFLAGS = $(LDFLAGS)
++
++ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -Werror -fstack-protector-all,-fstack-protector-all),y)
++	CFLAGS := $(CFLAGS) -fstack-protector-all
++endif
++
++ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -Werror -Wstack-protector,-Wstack-protector),y)
++	CFLAGS := $(CFLAGS) -Wstack-protector
++endif
++
++ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -Werror -Wvolatile-register-var,-Wvolatile-register-var),y)
++	CFLAGS := $(CFLAGS) -Wvolatile-register-var
++endif
++
++ifndef PERF_DEBUG
++	ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -D_FORTIFY_SOURCE=2,-D_FORTIFY_SOURCE=2),y)
++		CFLAGS := $(CFLAGS) -D_FORTIFY_SOURCE=2
++	endif
++endif
++
++BASIC_CFLAGS = \
++	-Iutil/include \
++	-Iarch/$(ARCH)/include \
++	$(if $(objtree),-I$(objtree)/arch/$(ARCH)/include/generated/uapi) \
++	-I$(srctree)/arch/$(ARCH)/include/uapi \
++	-I$(srctree)/arch/$(ARCH)/include \
++	$(if $(objtree),-I$(objtree)/include/generated/uapi) \
++	-I$(srctree)/include/uapi \
++	-I$(srctree)/include \
++	-I$(OUTPUT)util \
++	-Iutil \
++	-I. \
++	-I$(TRACE_EVENT_DIR) \
++	-I../lib/ \
++	-D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
++
++BASIC_LDFLAGS =
++
++ifeq ($(call try-cc,$(SOURCE_BIONIC),$(CFLAGS),bionic),y)
++	BIONIC := 1
++	EXTLIBS := $(filter-out -lrt,$(EXTLIBS))
++	EXTLIBS := $(filter-out -lpthread,$(EXTLIBS))
++	BASIC_CFLAGS += -I.
 +endif
 -- 
 1.7.11.7
