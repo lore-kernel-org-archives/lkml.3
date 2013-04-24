@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757373Ab3DXAeB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 20:34:01 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:47919 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756598Ab3DXAd5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 20:33:57 -0400
+	id S1757274Ab3DXAd7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 20:33:59 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:36991 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756875Ab3DXAd6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Apr 2013 20:33:58 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -21,25 +20,28 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         Davidlohr Bueso <davidlohr.bueso@hp.com>,
         Rik van Riel <riel@surriel.com>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH tip/core/rcu 4/4] rcu: Add duplicate-callback tests to rcutorture
-Date: Tue, 23 Apr 2013 17:33:46 -0700
-Message-Id: <1366763626-16712-4-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 2/4] debugobjects: Make debug_object_activate() return status
+Date: Tue, 23 Apr 2013 17:33:44 -0700
+Message-Id: <1366763626-16712-2-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1366763626-16712-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20130424003312.GA15819@linux.vnet.ibm.com>
  <1366763626-16712-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13042400-7408-0000-0000-00000F59D563
+x-cbid: 13042400-5806-0000-0000-000020D82815
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-This commit adds a object_debug option to rcutorture to allow the
-debug-object-based checks for duplicate call_rcu() invocations to
-be deterministically tested.
+In order to better respond to things like duplicate invocations
+of call_rcu(), RCU needs to see the status of a call to
+debug_object_activate().  This would allow RCU to leak the callback in
+order to avoid adding freelist-reuse mischief to the duplicate invoations.
+This commit therefore makes debug_object_activate() return status,
+zero for success and -EINVAL for failure.
 
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
@@ -49,78 +51,105 @@ Cc: Rik van Riel <riel@surriel.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
 ---
- kernel/rcutorture.c | 37 +++++++++++++++++++++++++++++++++++++
- 1 file changed, 37 insertions(+)
+ include/linux/debugobjects.h |  6 +++---
+ lib/debugobjects.c           | 20 ++++++++++++++------
+ 2 files changed, 17 insertions(+), 9 deletions(-)
 
-diff --git a/kernel/rcutorture.c b/kernel/rcutorture.c
-index b1fa551..2f34ebf 100644
---- a/kernel/rcutorture.c
-+++ b/kernel/rcutorture.c
-@@ -66,6 +66,7 @@ static int fqs_duration;	/* Duration of bursts (us), 0 to disable. */
- static int fqs_holdoff;		/* Hold time within burst (us). */
- static int fqs_stutter = 3;	/* Wait time between bursts (s). */
- static int n_barrier_cbs;	/* Number of callbacks to test RCU barriers. */
-+static int object_debug;	/* Test object-debug double call_rcu()?. */
- static int onoff_interval;	/* Wait time between CPU hotplugs, 0=disable. */
- static int onoff_holdoff;	/* Seconds after boot before CPU hotplugs. */
- static int shutdown_secs;	/* Shutdown time (s).  <=0 for no shutdown. */
-@@ -100,6 +101,8 @@ module_param(fqs_stutter, int, 0444);
- MODULE_PARM_DESC(fqs_stutter, "Wait time between fqs bursts (s)");
- module_param(n_barrier_cbs, int, 0444);
- MODULE_PARM_DESC(n_barrier_cbs, "# of callbacks/kthreads for barrier testing");
-+module_param(object_debug, int, 0444);
-+MODULE_PARM_DESC(object_debug, "Enable debug-object double call_rcu() testing");
- module_param(onoff_interval, int, 0444);
- MODULE_PARM_DESC(onoff_interval, "Time between CPU hotplugs (s), 0=disable");
- module_param(onoff_holdoff, int, 0444);
-@@ -1934,6 +1937,18 @@ rcu_torture_cleanup(void)
- 		rcu_torture_print_module_parms(cur_ops, "End of test: SUCCESS");
+diff --git a/include/linux/debugobjects.h b/include/linux/debugobjects.h
+index 0e5f578..98ffcbd 100644
+--- a/include/linux/debugobjects.h
++++ b/include/linux/debugobjects.h
+@@ -63,7 +63,7 @@ struct debug_obj_descr {
+ extern void debug_object_init      (void *addr, struct debug_obj_descr *descr);
+ extern void
+ debug_object_init_on_stack(void *addr, struct debug_obj_descr *descr);
+-extern void debug_object_activate  (void *addr, struct debug_obj_descr *descr);
++extern int debug_object_activate  (void *addr, struct debug_obj_descr *descr);
+ extern void debug_object_deactivate(void *addr, struct debug_obj_descr *descr);
+ extern void debug_object_destroy   (void *addr, struct debug_obj_descr *descr);
+ extern void debug_object_free      (void *addr, struct debug_obj_descr *descr);
+@@ -85,8 +85,8 @@ static inline void
+ debug_object_init      (void *addr, struct debug_obj_descr *descr) { }
+ static inline void
+ debug_object_init_on_stack(void *addr, struct debug_obj_descr *descr) { }
+-static inline void
+-debug_object_activate  (void *addr, struct debug_obj_descr *descr) { }
++static inline int
++debug_object_activate  (void *addr, struct debug_obj_descr *descr) { return 0; }
+ static inline void
+ debug_object_deactivate(void *addr, struct debug_obj_descr *descr) { }
+ static inline void
+diff --git a/lib/debugobjects.c b/lib/debugobjects.c
+index 37061ed..bf2c8b1 100644
+--- a/lib/debugobjects.c
++++ b/lib/debugobjects.c
+@@ -381,19 +381,21 @@ void debug_object_init_on_stack(void *addr, struct debug_obj_descr *descr)
+  * debug_object_activate - debug checks when an object is activated
+  * @addr:	address of the object
+  * @descr:	pointer to an object specific debug description structure
++ * Returns 0 for success, -EINVAL for check failed.
+  */
+-void debug_object_activate(void *addr, struct debug_obj_descr *descr)
++int debug_object_activate(void *addr, struct debug_obj_descr *descr)
+ {
+ 	enum debug_obj_state state;
+ 	struct debug_bucket *db;
+ 	struct debug_obj *obj;
+ 	unsigned long flags;
++	int ret;
+ 	struct debug_obj o = { .object = addr,
+ 			       .state = ODEBUG_STATE_NOTAVAILABLE,
+ 			       .descr = descr };
+ 
+ 	if (!debug_objects_enabled)
+-		return;
++		return 0;
+ 
+ 	db = get_bucket((unsigned long) addr);
+ 
+@@ -405,23 +407,26 @@ void debug_object_activate(void *addr, struct debug_obj_descr *descr)
+ 		case ODEBUG_STATE_INIT:
+ 		case ODEBUG_STATE_INACTIVE:
+ 			obj->state = ODEBUG_STATE_ACTIVE;
++			ret = 0;
+ 			break;
+ 
+ 		case ODEBUG_STATE_ACTIVE:
+ 			debug_print_object(obj, "activate");
+ 			state = obj->state;
+ 			raw_spin_unlock_irqrestore(&db->lock, flags);
+-			debug_object_fixup(descr->fixup_activate, addr, state);
+-			return;
++			ret = debug_object_fixup(descr->fixup_activate, addr, state);
++			return ret ? -EINVAL : 0;
+ 
+ 		case ODEBUG_STATE_DESTROYED:
+ 			debug_print_object(obj, "activate");
++			ret = -EINVAL;
+ 			break;
+ 		default:
++			ret = 0;
+ 			break;
+ 		}
+ 		raw_spin_unlock_irqrestore(&db->lock, flags);
+-		return;
++		return ret;
+ 	}
+ 
+ 	raw_spin_unlock_irqrestore(&db->lock, flags);
+@@ -431,8 +436,11 @@ void debug_object_activate(void *addr, struct debug_obj_descr *descr)
+ 	 * true or not.
+ 	 */
+ 	if (debug_object_fixup(descr->fixup_activate, addr,
+-			   ODEBUG_STATE_NOTAVAILABLE))
++			   ODEBUG_STATE_NOTAVAILABLE)) {
+ 		debug_print_object(&o, "activate");
++		return -EINVAL;
++	}
++	return 0;
  }
  
-+#ifdef CONFIG_DEBUG_OBJECTS_RCU_HEAD
-+static void rcu_torture_leak_cb(struct rcu_head *rhp)
-+{
-+}
-+
-+static void rcu_torture_err_cb(struct rcu_head *rhp)
-+{
-+	/* This -might- happen due to race conditions, but is unlikely. */
-+	pr_alert("rcutorture: duplicated callback was invoked.\n");
-+}
-+#endif /* #ifdef CONFIG_DEBUG_OBJECTS_RCU_HEAD */
-+
- static int __init
- rcu_torture_init(void)
- {
-@@ -2163,6 +2178,28 @@ rcu_torture_init(void)
- 		firsterr = retval;
- 		goto unwind;
- 	}
-+	if (object_debug) {
-+#ifdef CONFIG_DEBUG_OBJECTS_RCU_HEAD
-+		struct rcu_head rh1;
-+		struct rcu_head rh2;
-+
-+		init_rcu_head_on_stack(&rh1);
-+		init_rcu_head_on_stack(&rh2);
-+		pr_alert("rcutorture: Duplicate call_rcu() test starting.\n");
-+		local_irq_disable(); /* Make it hard to finish grace period. */
-+		call_rcu(&rh1, rcu_torture_leak_cb); /* start grace period. */
-+		call_rcu(&rh2, rcu_torture_err_cb);
-+		call_rcu(&rh2, rcu_torture_err_cb); /* duplicate callback. */
-+		local_irq_enable();
-+		rcu_barrier();
-+		pr_alert("rcutorture: Duplicate call_rcu() test complete.\n");
-+		destroy_rcu_head_on_stack(&rh1);
-+		destroy_rcu_head_on_stack(&rh2);
-+#else /* #ifdef CONFIG_DEBUG_OBJECTS_RCU_HEAD */
-+		pr_alert("rcutorture: !%s, not testing duplicate call_rcu()\n",
-+			 "CONFIG_DEBUG_OBJECTS_RCU_HEAD");
-+#endif /* #else #ifdef CONFIG_DEBUG_OBJECTS_RCU_HEAD */
-+	}
- 	rcutorture_record_test_transition();
- 	mutex_unlock(&fullstop_mutex);
- 	return 0;
+ /**
 -- 
 1.8.1.5
 
