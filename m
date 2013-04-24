@@ -1,70 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758621Ab3DXWtF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 18:49:05 -0400
-Received: from mail-la0-f43.google.com ([209.85.215.43]:64109 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758597Ab3DXWtB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 18:49:01 -0400
+	id S932138Ab3DXWvx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 18:51:53 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:48267 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758197Ab3DXWvw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 18:51:52 -0400
+Message-ID: <517861E0.7030801@zytor.com>
+Date: Wed, 24 Apr 2013 15:51:12 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-In-Reply-To: <20130424170702.GA1867@redhat.com>
-References: <CA+55aFwpLu0qNms=hkQr43yqD0K9DgESNm91OEWKT1ZuT8MU6Q@mail.gmail.com>
-	<20130424072630.GB1780@gmail.com>
-	<20130424170702.GA1867@redhat.com>
-Date: Thu, 25 Apr 2013 00:48:57 +0200
-Message-ID: <CAFTL4hzmW43o8dxW0_E7F00a+PT+T4=F4h=gdCxHvcZhMiH3-w@mail.gmail.com>
-Subject: Re: [PATCH] x86: make DR*_RESERVED unsigned long
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Cyrill Gorcunov <gorcunov@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        David Miller <davem@davemloft.net>, "Theodore Ts'o" <tytso@mit.edu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Minchan Kim <minchan@kernel.org>
+CC: Sasha Levin <sasha.levin@oracle.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Dave Jones <davej@redhat.com>, linux-mm <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: mm: BUG in do_huge_pmd_wp_page
+References: <51559150.3040407@oracle.com> <20130410080202.GB21292@blaptop>
+In-Reply-To: <20130410080202.GB21292@blaptop>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/4/24 Oleg Nesterov <oleg@redhat.com>:
-> DR6_RESERVED and DR_CONTROL_RESERVED are used to clear the set
-> bits in the "unsigned long" data, make them long to ensure that
-> "&~" doesn't clear the upper bits.
->
-> do_debug() and ptrace_write_dr7() which use DR*_RESERVED look
-> safe, but probably it makes sense to cleanup anyway.
+On 04/10/2013 01:02 AM, Minchan Kim wrote:
+> 
+> When I am looking at the code, I was wonder about the logic of GHZP(aka,
+> get_huge_zero_page) reference handling. The logic depends on that page
+> allocator never alocate PFN 0.
+> 
+> Who makes sure it? What happens if allocator allocates PFN 0?
+> I don't know all of architecture makes sure it.
+> You investigated it for all arches?
+> 
 
-Agreed. The code looks safe, but the pattern is error prone. I'm all
-for that cleanup.
-Just something below:
+This isn't manifest, right?  At least on x86 we should never, ever
+allocate PFN 0.
 
->
-> Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> ---
->  arch/x86/include/uapi/asm/debugreg.h |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/arch/x86/include/uapi/asm/debugreg.h b/arch/x86/include/uapi/asm/debugreg.h
-> index 3c0874d..75d07dd 100644
-> --- a/arch/x86/include/uapi/asm/debugreg.h
-> +++ b/arch/x86/include/uapi/asm/debugreg.h
-> @@ -15,7 +15,7 @@
->     are either reserved or not of interest to us. */
->
->  /* Define reserved bits in DR6 which are always set to 1 */
-> -#define DR6_RESERVED   (0xFFFF0FF0)
-> +#define DR6_RESERVED   (0xFFFF0FF0ul)
+	-hpa
 
-You told in an earlier email that intel manual says upper 32 bits of
-dr6 are reserved.
-In this case don't we need to expand the mask in 64 bits like is done
-for DR_CONTROL_RESERVED?
 
-Thanks.
