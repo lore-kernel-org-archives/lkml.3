@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757409Ab3DXBmP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 21:42:15 -0400
+	id S1756825Ab3DXBmO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 21:42:14 -0400
 Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:54798 "EHLO
 	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756541Ab3DXBll (ORCPT
+	with ESMTP id S1755306Ab3DXBlh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 21:41:41 -0400
-X-AuditID: 9c93016f-b7b70ae0000038d5-94-51773851dda3
+	Tue, 23 Apr 2013 21:41:37 -0400
+X-AuditID: 9c93016f-b7b70ae0000038d5-66-5177384ed600
 From: Minchan Kim <minchan@kernel.org>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         Michael Kerrisk <mtk.manpages@gmail.com>,
         Rik van Riel <riel@redhat.com>, Dave Hansen <dave.hansen@intel.com>,
-        Minchan Kim <minchan@kernel.org>, Rob Landley <rob@landley.net>
-Subject: [PATCH v2 6/6] add documentation on proc.txt
-Date: Wed, 24 Apr 2013 10:41:04 +0900
-Message-Id: <1366767664-17541-7-git-send-email-minchan@kernel.org>
+        Minchan Kim <minchan@kernel.org>
+Subject: [PATCH v2 2/6] mm: make shrink_page_list with pages work from multiple zones
+Date: Wed, 24 Apr 2013 10:41:00 +0900
+Message-Id: <1366767664-17541-3-git-send-email-minchan@kernel.org>
 X-Mailer: git-send-email 1.8.2
 In-Reply-To: <1366767664-17541-1-git-send-email-minchan@kernel.org>
 References: <1366767664-17541-1-git-send-email-minchan@kernel.org>
@@ -25,75 +25,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds stuff about new reclaim field in proc.txt
+Shrink_page_list expects all pages come from a same zone
+but it's too limited to use.
 
-Cc: Rob Landley <rob@landley.net>
+This patch removes the dependency so next patch can use
+shrink_page_list with pages from multiple zones.
+
 Signed-off-by: Minchan Kim <minchan@kernel.org>
 ---
+ mm/vmscan.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-Rob, I didn't add your Acked-by because interface was slight changed.
-I hope you give Acke-by after review again.
-Thanks.
-
- Documentation/filesystems/proc.txt | 22 ++++++++++++++++++++++
- mm/Kconfig                         |  7 +------
- 2 files changed, 23 insertions(+), 6 deletions(-)
-
-diff --git a/Documentation/filesystems/proc.txt b/Documentation/filesystems/proc.txt
-index 488c094..1411ad0 100644
---- a/Documentation/filesystems/proc.txt
-+++ b/Documentation/filesystems/proc.txt
-@@ -136,6 +136,7 @@ Table 1-1: Process specific entries in /proc
-  maps		Memory maps to executables and library files	(2.4)
-  mem		Memory held by this process
-  root		Link to the root directory of this process
-+ reclaim	Reclaim pages in this process
-  stat		Process status
-  statm		Process memory status information
-  status		Process status in human readable form
-@@ -489,6 +490,27 @@ To clear the soft-dirty bit
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 6934f5b..82f4d6c 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -706,7 +706,8 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+ 			goto keep;
  
- Any other value written to /proc/PID/clear_refs will have no effect.
+ 		VM_BUG_ON(PageActive(page));
+-		VM_BUG_ON(page_zone(page) != zone);
++		if (zone)
++			VM_BUG_ON(page_zone(page) != zone);
  
-+The file /proc/PID/reclaim is used to reclaim pages in this process.
-+To reclaim file-backed pages,
-+    > echo file > /proc/PID/reclaim
-+
-+To reclaim anonymous pages,
-+    > echo anon > /proc/PID/reclaim
-+
-+To reclaim all pages,
-+    > echo all > /proc/PID/reclaim
-+
-+Also, you can specify address range of process so part of address space
-+will be reclaimed. The format is following as
-+    > echo addr size-byte > /proc/PID/reclaim
-+
-+NOTE: addr should be page-aligned.
-+
-+Below is example which try to reclaim 2 pages from 0x100000.
-+
-+To reclaim both pages in address range,
-+    > echo $((1<<20) 8192 > /proc/PID/reclaim
-+
- The /proc/pid/pagemap gives the PFN, which can be used to find the pageflags
- using /proc/kpageflags and number of times a page is mapped using
- /proc/kpagecount. For detailed explanation, see Documentation/vm/pagemap.txt.
-diff --git a/mm/Kconfig b/mm/Kconfig
-index 314bf49..9d6b306 100644
---- a/mm/Kconfig
-+++ b/mm/Kconfig
-@@ -486,9 +486,4 @@ config PROCESS_RECLAIM
- 	default n
- 	help
- 	 It allows to reclaim pages of the process by /proc/pid/reclaim.
--
--	 (echo file > /proc/PID/reclaim) reclaims file-backed pages only.
--	 (echo anon > /proc/PID/reclaim) reclaims anonymous pages only.
--	 (echo all > /proc/PID/reclaim) reclaims all pages.
--
-- 	 Any other vaule is ignored.
-+	 See Documentation/filesystem/proc.txt for more details.
+ 		sc->nr_scanned++;
+ 
+@@ -952,7 +953,7 @@ keep:
+ 	 * back off and wait for congestion to clear because further reclaim
+ 	 * will encounter the same problem
+ 	 */
+-	if (nr_dirty && nr_dirty == nr_congested && global_reclaim(sc))
++	if (nr_dirty && nr_dirty == nr_congested && global_reclaim(sc) && zone)
+ 		zone_set_flag(zone, ZONE_CONGESTED);
+ 
+ 	free_hot_cold_page_list(&free_pages, 1);
 -- 
 1.8.2
 
