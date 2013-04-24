@@ -1,79 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758034Ab3DXKXj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 06:23:39 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:38490 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756331Ab3DXKXi (ORCPT
+	id S1758130Ab3DXK3H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 06:29:07 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:42809 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757917Ab3DXK3F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 06:23:38 -0400
-Date: Wed, 24 Apr 2013 11:23:27 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Chen Gang <gang.chen@asianux.com>
-Cc: Catalin Marinas <Catalin.Marinas@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] arm64: compiling issue, need add include/asm/vga.h
- file
-Message-ID: <20130424102327.GF21850@mudshark.cambridge.arm.com>
-References: <5177551D.8090007@asianux.com>
- <20130424082237.GA23397@arm.com>
- <5177B1F0.10106@asianux.com>
+	Wed, 24 Apr 2013 06:29:05 -0400
+Message-ID: <5177B3EC.2040502@intel.com>
+Date: Wed, 24 Apr 2013 11:29:00 +0100
+From: Matt Fleming <matt.fleming@intel.com>
+Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
+ Way, Swindon SN3 1RJ
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5177B1F0.10106@asianux.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Borislav Petkov <bp@alien8.de>
+CC: X86 ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Paul Bolle <pebolle@tiscali.nl>
+Subject: Re: [PATCH] x86, efi: Fix a build warning
+References: <1366798154-1380-1-git-send-email-bp@alien8.de>
+In-Reply-To: <1366798154-1380-1-git-send-email-bp@alien8.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 24, 2013 at 11:20:32AM +0100, Chen Gang wrote:
+On 24/04/13 11:09, Borislav Petkov wrote:
+> From: Borislav Petkov <bp@suse.de>
 > 
-> For compiling with allmodconfig, need vga.h file, so generate it which
-> just only include the asm-generic one.
+> Fix this:
 > 
-> It is firstly used by drivers/gpu/drm/drm_irq.c.
+> arch/x86/boot/compressed/eboot.c: In function ‘setup_efi_vars’:
+> arch/x86/boot/compressed/eboot.c:269:2: warning: passing argument 1 of ‘efi_call_phys’ makes pointer from integer without a cast [enabled by default]
+> In file included from arch/x86/boot/compressed/eboot.c:12:0:
+> /w/kernel/linux/arch/x86/include/asm/efi.h:8:33: note: expected ‘void *’ but argument is of type ‘long unsigned int’
 > 
-> The related error:
-> include/video/vga.h:22:21: fatal error: asm/vga.h: No such file or directory
+> after cc5a080c5d40 ("efi: Pass boot services variable info to runtime
+> code").
 > 
-> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+> Cc: Matthew Garrett <matthew.garrett@nebula.com>
+> Cc: Matt Fleming <matt.fleming@intel.com>
+> Signed-off-by: Borislav Petkov <bp@suse.de>
 > ---
->  arch/arm64/include/asm/vga.h |   21 +++++++++++++++++++++
->  1 files changed, 21 insertions(+), 0 deletions(-)
->  create mode 100644 arch/arm64/include/asm/vga.h
-> 
-> diff --git a/arch/arm64/include/asm/vga.h b/arch/arm64/include/asm/vga.h
-> new file mode 100644
-> index 0000000..1c49d51
-> --- /dev/null
-> +++ b/arch/arm64/include/asm/vga.h
-> @@ -0,0 +1,21 @@
-> +/*
-> + * Copyright (C) 2012 ARM Ltd.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-> + */
-> +#ifndef ASMARM_VGA_H
-> +#define ASMARM_VGA_H
-> +
-> +#include <asm-generic/vga.h>
-> +
-> +#endif /* ASMARM_VGA_H */
+>  arch/x86/boot/compressed/eboot.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 
-Can't you just add this as a generic-y entry in asm/Kbuild?
-
-Will
+Thanks, applied!
