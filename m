@@ -1,38 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756133Ab3DXBfD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 21:35:03 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:45310 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755426Ab3DXBfB (ORCPT
+	id S1756168Ab3DXBli (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 21:41:38 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:54798 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754902Ab3DXBlg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 21:35:01 -0400
-MIME-Version: 1.0
-From: Kay Sievers <kay@vrfy.org>
-Date: Wed, 24 Apr 2013 03:34:39 +0200
-Message-ID: <CAPXgP13kizK95JyLxKxgWrGnV9b11ZTyi3vuc5YFDmROzckg4w@mail.gmail.com>
-Subject: CONFIG_RTC_HCTOSYS lost on x86 with ALWAYS_USE_PERSISTENT_CLOCK changes?
-To: John Stultz <john.stultz@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 23 Apr 2013 21:41:36 -0400
+X-AuditID: 9c93016f-b7b70ae0000038d5-52-5177384cf50b
+From: Minchan Kim <minchan@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Rik van Riel <riel@redhat.com>, Dave Hansen <dave.hansen@intel.com>,
+        Minchan Kim <minchan@kernel.org>
+Subject: [PATCH v2 0/6] Per process reclaim
+Date: Wed, 24 Apr 2013 10:40:58 +0900
+Message-Id: <1366767664-17541-1-git-send-email-minchan@kernel.org>
+X-Mailer: git-send-email 1.8.2
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey,
+These day, there are many platforms avaiable in the embedded market
+and they are smarter than kernel which has very limited information
+about working set so they want to involve memory management more heavily
+like android's lowmemory killer and ashmem or recent many lowmemory
+notifier(there was several trial for various company NOKIA, SAMSUNG,
+Linaro, Google ChromeOS, Redhat).
 
-what's the intention of:
-  e90c83f757fffdacec8b3c5eee5617dcc038338f ?
-  x86: Select HAS_PERSISTENT_CLOCK on x86
+One of the simple imagine scenario about userspace's intelligence is that
+platform can manage tasks as forground and backgroud so it would be
+better to reclaim background's task pages for end-user's *responsibility*
+although it has frequent referenced pages.
 
-It unconditionally sets:
-  HAS_PERSISTENT_CLOCK
-but:
-  RTC_SYSTOHC
-got a depends on !HAS_PERSISTENT_CLOCK
+The patch[1] adds new knob "reclaim under proc/<pid>/" so task manager
+can reclaim any target process anytime, anywhere. It could give another
+method to platform for using memory efficiently.
 
-This makes it impossible to sync the system time from the RTC on x86.
-What's going on here?
+It can avoid process killing for getting free memory, which was really
+terrible experience because I lost my best score of game I had ever
+after I switch the phone call while I enjoyed the game.
 
-Thanks,
-Kay
+Reclaim file-backed pages only.
+	echo file > /proc/PID/reclaim
+Reclaim anonymous pages only.
+	echo anon > /proc/PID/reclaim
+Reclaim all pages
+	echo all > /proc/PID/reclaim
+
+Some pages could be shared by several processes. (ex, libc)
+In case of that, it's too bad to reclaim them from the beginnig.
+The patch[4] causes VM to keep them on memory until last task
+try to reclaim them so shared pages will be reclaimed only if
+all of task has gone swapping out.
+
+Another requirement is per address space reclaim.(By Michael Kerrisk)
+In case of Webkit1, it uses a address space for handling multi tabs.
+IOW, it uses *one* process model so all tabs shares address space
+of the process. In such scenario, per-process reclaim is rather
+coarse-grained so patch[5] supports more fine-grained reclaim
+for being able to reclaim target address range of the process.
+For reclaim target range, you should use following format.
+
+	echo [addr] [size-byte] > /proc/pid/reclaim
+
+* Changelog from v1
+  * Change reclaim knob interface - Dave Hansen
+  * proc.txt document change - Rob Landley
+
+Minchan Kim (6):
+  [1] mm: Per process reclaim
+  [2] mm: make shrink_page_list with pages work from multiple zones
+  [3] mm: Remove shrink_page
+  [4] mm: Enhance per process reclaim to consider shared pages
+  [5] mm: Support address range reclaim
+  [6] add documentation on proc.txt
+
+ Documentation/filesystems/proc.txt |  22 +++++
+ fs/proc/base.c                     |   3 +
+ fs/proc/internal.h                 |   1 +
+ fs/proc/task_mmu.c                 | 179 +++++++++++++++++++++++++++++++++++++
+ include/linux/ksm.h                |   6 +-
+ include/linux/rmap.h               |  10 ++-
+ mm/Kconfig                         |   8 ++
+ mm/internal.h                      |   4 +-
+ mm/ksm.c                           |   9 +-
+ mm/memory-failure.c                |   2 +-
+ mm/migrate.c                       |   6 +-
+ mm/rmap.c                          |  57 ++++++++----
+ mm/vmscan.c                        |  57 +++++++++++-
+ 13 files changed, 334 insertions(+), 30 deletions(-)
+
+-- 
+1.8.2
+
