@@ -1,52 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758139Ab3DXJ2H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 05:28:07 -0400
-Received: from mail-ia0-f180.google.com ([209.85.210.180]:64746 "EHLO
-	mail-ia0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757866Ab3DXJ2F (ORCPT
+	id S1758262Ab3DXJaC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 05:30:02 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:52427 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757390Ab3DXJ34 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 05:28:05 -0400
+	Wed, 24 Apr 2013 05:29:56 -0400
+X-AuditID: 9c930179-b7b5bae0000069d1-1b-5177a6138de6
+From: Namhyung Kim <namhyung@kernel.org>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
+Subject: Re: [RFC 00/14] perf tools: Introduce new 'ftrace' command
+References: <1366705872-12132-1-git-send-email-namhyung@kernel.org>
+	<1366732681.9609.157.camel@gandalf.local.home>
+	<CAOJsxLF16Edznsdis4NK-O1Sf=3Eswb5L=cfBDhjpr6F7UjTbg@mail.gmail.com>
+Date: Wed, 24 Apr 2013 18:29:55 +0900
+In-Reply-To: <CAOJsxLF16Edznsdis4NK-O1Sf=3Eswb5L=cfBDhjpr6F7UjTbg@mail.gmail.com>
+	(Pekka Enberg's message of "Tue, 23 Apr 2013 20:19:37 +0300")
+Message-ID: <87ehe0b7jg.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <20130423183301.GX5019@opensource.wolfsonmicro.com>
-References: <1364968581-23700-1-git-send-email-wenyou.yang@atmel.com>
- <1364968759-24036-1-git-send-email-wenyou.yang@atmel.com> <20130403102332.GA4633@lnx-rg>
- <20130423183301.GX5019@opensource.wolfsonmicro.com>
-From: Richard Genoud <richard.genoud@gmail.com>
-Date: Wed, 24 Apr 2013 11:27:44 +0200
-Message-ID: <CACQ1gAh8QyZReJF2nQLQYSrYLv0vCw_ZS5rLg+S39LbbMJQyxQ@mail.gmail.com>
-Subject: Re: [PATCH v8 3/8] spi/spi-atmel: add dmaengine support
-To: Mark Brown <broonie@kernel.org>
-Cc: Wenyou Yang <wenyou.yang@atmel.com>, linux-arm-kernel@lists.infradead.org,
-        grant.likely@secretlab.ca, plagnioj@jcrosoft.com,
-        nicolas.ferre@atmel.com, JM.Lin@atmel.com,
-        spi-devel-general@lists.sourceforge.net,
-        spi-devel-general@lists.sourceforge.ne, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/4/23 Mark Brown <broonie@kernel.org>:
-> On Wed, Apr 03, 2013 at 12:23:35PM +0200, Richard GENOUD wrote:
->
-> Richard, delete irrelevant context from your mails - it makes it much
-> easier to find the content you added.
->
->> On [mer., 03.04.2013 13:59:19], Wenyou Yang wrote:
->
->> As I did some work on that one:
->> Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
->>
->> BUT, there's one thing not working (at least for me !):
->> With DMA enabled, using spidev.
->> if we use the ioctl SPI_IOC_MESSAGE(x) (tested with x=3):
->
-> I'd been expecting an updated series with this rolled in?
+Hi Pekka,
 
-I did some more test with spidev and a MISO-MOSI loop as Wenyou suggested.
+On Tue, 23 Apr 2013 20:19:37 +0300, Pekka Enberg wrote:
+> Hello,
+>
+> On Tue, 2013-04-23 at 17:30 +0900, Namhyung Kim wrote:
+>>> This patchset implements a front-end tool for kernel's ftrace.  It
+>>> uses function_graph tracer by default and normal function tracer is
+>>> also supported.  (Of course you need to enable those tracers in your
+>>> kernel first.)
+>
+> On Tue, Apr 23, 2013 at 6:58 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+>> Very nice Namhyung, thanks for doing this. I did a quick run through of
+>> the patches and I have no complaints about them. I'm not sure how the
+>> others will feel about it.
+>
+> I also skimmed through the patches and they look like a reasonable
+> starting point. So FWIW,
+>
+> Acked-by: Pekka Enberg <penberg@kernel.org>
 
-It's ok for me, on kernel 3.9-rc8 sam9g35, I didn't see any error.
+Thank you!
 
-Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
-Tested-by: Richard Genoud <richard.genoud@gmail.com>
+
+> Are there any plans in trying to consolidate 'perf trace' and this? As
+> a user I don't really care what the underlying mechanism and would
+> like things to just work out of the box.
+
+No plans currently.  I'll try to think about it more..
+
+Thanks,
+Namhyung
