@@ -1,83 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758160Ab3DXVCR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 17:02:17 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:45870 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757880Ab3DXVCQ (ORCPT
+	id S1758265Ab3DXVCd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 17:02:33 -0400
+Received: from casper.infradead.org ([85.118.1.10]:32794 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757880Ab3DXVCb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 17:02:16 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Cc: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LMML <linux-media@vger.kernel.org>,
-        LFBDEV <linux-fbdev@vger.kernel.org>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, Sekhar Nori <nsekhar@ti.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Subject: Re: [PATCH 0/6] Davinci fbdev driver and enable it for DMx platform
-Date: Wed, 24 Apr 2013 23:02:15 +0200
-Message-ID: <1780031.B4OAypccep@avalon>
-User-Agent: KMail/4.10.2 (Linux/3.7.10-gentoo; KDE/4.10.2; x86_64; ; )
-In-Reply-To: <1366804808-22720-1-git-send-email-prabhakar.csengg@gmail.com>
-References: <1366804808-22720-1-git-send-email-prabhakar.csengg@gmail.com>
+	Wed, 24 Apr 2013 17:02:31 -0400
+Message-ID: <51784850.5090809@infradead.org>
+Date: Wed, 24 Apr 2013 14:02:08 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Mike Frysinger <vapier@gentoo.org>, linux-kernel@vger.kernel.org,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+Subject: Re: [PATCH] re-order CONFIG_EXPERT options to fix menuconfig display
+References: <1366652378-29558-1-git-send-email-vapier@gentoo.org> <20130424130443.7f78a5d78a59d7ed9968cc90@linux-foundation.org>
+In-Reply-To: <20130424130443.7f78a5d78a59d7ed9968cc90@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Prabhakar,
-
-Thank you for the patch.
-
-On Wednesday 24 April 2013 17:30:02 Prabhakar Lad wrote:
-> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+On 04/24/13 13:04, Andrew Morton wrote:
+> On Mon, 22 Apr 2013 13:39:38 -0400 Mike Frysinger <vapier@gentoo.org> wrote:
 > 
-> This patch series adds an fbdev driver for Texas
-> Instruments Davinci SoC.The display subsystem consists
-> of OSD and VENC, with OSD supporting 2 RGb planes and
-> 2 video planes.
-> http://focus.ti.com/general/docs/lit/
-> getliterature.tsp?literatureNumber=sprue37d&fileType=pdf
+>> The kconfig language requires that dependent options all follow the
+>> menuconfig symbol in order to be collapsed below it.  Recently some
+>> hidden options were added below the EXPERT menuconfig, but did not
+>> depend on EXPERT (because hidden options can't).  This broke the
+>> display.  So re-order all these options, and while we're here stick
+>> the PCI quirks under the EXPERT menu (since it isn't sitting with
+>> any related options).
+>>
+>> Before this commit, we get:
+>> 	[*] Configure standard kernel features (expert users)  --->
+>> 	[ ] Sysctl syscall support
+>> 	[*] Load all symbols for debugging/ksymoops
+>> 	...
+>> 	[ ] Embedded system
+>>
+>> Now we get the older (and correct) behavior:
+>> 	[*] Configure standard kernel features (expert users)  --->
+>> 	[ ] Embedded system
+>> And if you go into the expert menu you get the expert options:
+>> 	[ ] Sysctl syscall support
+>> 	[*] Load all symbols for debugging/ksymoops
+>> 	...
+>>
 > 
-> A good amount of the OSD and VENC enabling code is
-> present in the kernel, and this patch series adds the
-> fbdev interface.
+> This doesn't work as advertised when I graft it on top of
+> http://ozlabs.org/~akpm/mmots/broken-out/init-kconfig-make-expert-as-config-instead-of-menuconfig.patch
+> (generally, assuming that next==mainline when we're at -rc8 is a low
+> percentage move).
 > 
-> The fbdev driver exports 4 nodes representing each
-> plane to the user - from fb0 to fb3.
+> I think I'll drop
+> init-kconfig-make-expert-as-config-instead-of-menuconfig.patch and take
+> this one, but could everyone please review everything?
 
-The obvious question is: why not a KMS driver instead ? :-)
+I agree, that's the right thing to do.
 
-> Lad, Prabhakar (6):
->   media: davinci: vpbe: fix checkpatch warning for CamelCase
->   media: davinci: vpbe: enable vpbe for fbdev addition
->   davinci: vpbe: add fbdev driver
->   ARM: davinci: dm355: enable fbdev driver
->   ARM: davinci: dm365: enable fbdev driver
->   ARM: davinci: dm644x: enable fbdev driver
-> 
->  arch/arm/mach-davinci/dm355.c                 |   24 +-
->  arch/arm/mach-davinci/dm365.c                 |   10 +
->  arch/arm/mach-davinci/dm644x.c                |   10 +
->  drivers/media/platform/davinci/vpbe_display.c |    8 +-
->  drivers/media/platform/davinci/vpbe_osd.c     |  820 ++++++++-
->  drivers/media/platform/davinci/vpbe_venc.c    |   43 +
->  drivers/video/Kconfig                         |   12 +
->  drivers/video/Makefile                        |    1 +
->  drivers/video/davincifb.c                     | 2523 ++++++++++++++++++++++
->  drivers/video/davincifb.h                     |  194 ++
->  include/media/davinci/vpbe_osd.h              |   66 +-
->  include/media/davinci/vpbe_venc.h             |   21 +
->  12 files changed, 3702 insertions(+), 30 deletions(-)
->  create mode 100644 drivers/video/davincifb.c
->  create mode 100644 drivers/video/davincifb.h
+Zhangwei's patch description should have been a big hint to me:
 
+There don't have any EXPERT menu guard, and no config item is included in
+EXPERT menu, so change it as a config, not menu.
+
+but that should not have been the case.
+
+
+thanks,
 -- 
-Regards,
-
-Laurent Pinchart
-
+~Randy
