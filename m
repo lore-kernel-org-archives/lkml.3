@@ -1,72 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756144Ab3DXRKc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 13:10:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12452 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755073Ab3DXRKb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 13:10:31 -0400
-Date: Wed, 24 Apr 2013 19:07:02 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Cyrill Gorcunov <gorcunov@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        David Miller <davem@davemloft.net>, "Theodore Ts'o" <tytso@mit.edu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        Fr??d??ric Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH] x86: make DR*_RESERVED unsigned long
-Message-ID: <20130424170702.GA1867@redhat.com>
-References: <CA+55aFwpLu0qNms=hkQr43yqD0K9DgESNm91OEWKT1ZuT8MU6Q@mail.gmail.com> <20130424072630.GB1780@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130424072630.GB1780@gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1756274Ab3DXR2I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 13:28:08 -0400
+Received: from smtpfb1-g21.free.fr ([212.27.42.9]:35661 "EHLO
+	smtpfb1-g21.free.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754919Ab3DXR2F (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 13:28:05 -0400
+From: Nicolas Schichan <nschichan@freebox.fr>
+To: Will Drewry <wad@chromium.org>, Mircea Gherzan <mgherzan@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH V3] Support for JIT in Seccomp BPF filters.
+Date: Wed, 24 Apr 2013 19:27:06 +0200
+Message-Id: <1366824429-26652-1-git-send-email-nschichan@freebox.fr>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-DR6_RESERVED and DR_CONTROL_RESERVED are used to clear the set
-bits in the "unsigned long" data, make them long to ensure that
-"&~" doesn't clear the upper bits.
+Hi,
 
-do_debug() and ptrace_write_dr7() which use DR*_RESERVED look
-safe, but probably it makes sense to cleanup anyway.
+This patch serie adds support for jitted seccomp BPF filters, with the
+required modifications to make it work on the ARM architecture.
 
-Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- arch/x86/include/uapi/asm/debugreg.h |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+- The first patch in the serie adds the required boiler plate in the
+  core kernel seccomp code to invoke the JIT compilation/free code.
 
-diff --git a/arch/x86/include/uapi/asm/debugreg.h b/arch/x86/include/uapi/asm/debugreg.h
-index 3c0874d..75d07dd 100644
---- a/arch/x86/include/uapi/asm/debugreg.h
-+++ b/arch/x86/include/uapi/asm/debugreg.h
-@@ -15,7 +15,7 @@
-    are either reserved or not of interest to us. */
- 
- /* Define reserved bits in DR6 which are always set to 1 */
--#define DR6_RESERVED	(0xFFFF0FF0)
-+#define DR6_RESERVED	(0xFFFF0FF0ul)
- 
- #define DR_TRAP0	(0x1)		/* db0 */
- #define DR_TRAP1	(0x2)		/* db1 */
-@@ -65,7 +65,7 @@
-    gdt or the ldt if we want to.  I am not sure why this is an advantage */
- 
- #ifdef __i386__
--#define DR_CONTROL_RESERVED (0xFC00) /* Reserved by Intel */
-+#define DR_CONTROL_RESERVED (0xFC00ul) /* Reserved by Intel */
- #else
- #define DR_CONTROL_RESERVED (0xFFFFFFFF0000FC00UL) /* Reserved */
- #endif
--- 
-1.5.5.1
+- The second patch reworks the ARM BPF JIT code to make the generation
+  process less dependent on struct sk_filter.
 
+- The last patch actually implements the ARM part in the BPF jit code.
 
+Some benchmarks, on a 1.6Ghz 88f6282 CPU:
+
+Each system call is tested in two way (fast/slow):
+
+ - on the fast version, the tested system call is accepted immediately
+   after checking the architecture (5 BPF instructions).
+
+ - on the slow version, the tested system call is accepted after
+   previously checking for 85 syscall (90 instructions, including the
+   architecture check).
+
+The tested syscall is invoked in a loop 1000000 time, the reported
+time is the time spent in the loop in seconds.
+
+Without Seccomp JIT:
+
+Syscall		Time-Fast  Time-Slow
+--------------- ---------- ----------
+gettimeofday	0.389	   1.633
+getpid		0.406	   1.688
+getresuid	1.003	   2.266
+getcwd		1.342	   2.128
+
+With Seccomp JIT:
+
+Syscall		Time-Fast  Time-Slow
+--------------- ----------- ---------
+gettimeofday	0.348	    0.428
+getpid		0.365	    0.480
+getresuid	0.981	    1.060
+getcwd		1.237	    1.294
+
+For reference, the same code without any seccomp filter:
+
+Syscall		Time
+--------------- -----
+gettimeofday	0.119
+getpid		0.137
+getresuid	0.747
+getcwd		1.021
+
+The activation of the BPF JIT for seccomp is still controled with the
+/proc/sys/net/core/bpf_jit_enable sysctl knob.
+
+Those changes are based on the latest rmk-for-next branch.
+
+V2 Changes:
+- Document the @bpf_func field in struct seccomp_filter as recommended
+  by Kees Cook.
+- Invoke seccomp_bpf_load directly from generated code without going
+  via a wrapper.
+
+V3 Changes:
+- add accessors giving access to the fields in struct seccomp_filter
+  as recommended by Andrew Morton. This avoids having to include
+  <linux/filter.h> in <linux/seccomp.h>, and fixes broken include
+  dependencies on x86_64 allmodconfig build.
+- checkpatch fixes (void*) -> (void *)
+
+Regards,
