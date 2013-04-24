@@ -1,94 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756480Ab3DXGtu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 02:49:50 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:46802 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752340Ab3DXGtt convert rfc822-to-8bit (ORCPT
+	id S1757353Ab3DXGuY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 02:50:24 -0400
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:35716 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752604Ab3DXGuW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 02:49:49 -0400
-Date: Wed, 24 Apr 2013 01:49:45 -0500
-From: Rob Landley <rob@landley.net>
-Subject: Re: [PATCH v2 6/6] add documentation on proc.txt
-To: Minchan Kim <minchan@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Michael Kerrisk <mtk.manpages@gmail.com>,
-        Rik van Riel <riel@redhat.com>, Dave Hansen <dave.hansen@intel.com>,
-        Minchan Kim <minchan@kernel.org>
-References: <1366767664-17541-1-git-send-email-minchan@kernel.org>
-	<1366767664-17541-7-git-send-email-minchan@kernel.org>
-In-Reply-To: <1366767664-17541-7-git-send-email-minchan@kernel.org> (from
-	minchan@kernel.org on Tue Apr 23 20:41:04 2013)
-X-Mailer: Balsa 2.4.11
-Message-Id: <1366786185.18069.160@driftwood>
+	Wed, 24 Apr 2013 02:50:22 -0400
+Date: Wed, 24 Apr 2013 08:50:18 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Namhyung Kim <namhyung@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
+Subject: Re: [RFC 00/14] perf tools: Introduce new 'ftrace' command
+Message-ID: <20130424065018.GC27551@gmail.com>
+References: <1366705872-12132-1-git-send-email-namhyung@kernel.org>
+ <1366732681.9609.157.camel@gandalf.local.home>
+ <CAOJsxLF16Edznsdis4NK-O1Sf=3Eswb5L=cfBDhjpr6F7UjTbg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <CAOJsxLF16Edznsdis4NK-O1Sf=3Eswb5L=cfBDhjpr6F7UjTbg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/23/2013 08:41:04 PM, Minchan Kim wrote:
-> This patch adds stuff about new reclaim field in proc.txt
-> 
-> Cc: Rob Landley <rob@landley.net>
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
-> ---
-> 
-> Rob, I didn't add your Acked-by because interface was slight changed.
-> I hope you give Acke-by after review again.
-> Thanks.
-> 
->  Documentation/filesystems/proc.txt | 22 ++++++++++++++++++++++
->  mm/Kconfig                         |  7 +------
->  2 files changed, 23 insertions(+), 6 deletions(-)
-> 
-> diff --git a/Documentation/filesystems/proc.txt  
-> b/Documentation/filesystems/proc.txt
-> index 488c094..1411ad0 100644
-> --- a/Documentation/filesystems/proc.txt
-> +++ b/Documentation/filesystems/proc.txt
-> @@ -136,6 +136,7 @@ Table 1-1: Process specific entries in /proc
->   maps		Memory maps to executables and library files	 
-> (2.4)
->   mem		Memory held by this process
->   root		Link to the root directory of this process
-> + reclaim	Reclaim pages in this process
->   stat		Process status
->   statm		Process memory status information
->   status		Process status in human readable form
-> @@ -489,6 +490,27 @@ To clear the soft-dirty bit
-> 
->  Any other value written to /proc/PID/clear_refs will have no effect.
-> 
-> +The file /proc/PID/reclaim is used to reclaim pages in this process.
-> +To reclaim file-backed pages,
-> +    > echo file > /proc/PID/reclaim
-> +
-> +To reclaim anonymous pages,
-> +    > echo anon > /proc/PID/reclaim
-> +
-> +To reclaim all pages,
-> +    > echo all > /proc/PID/reclaim
-> +
-> +Also, you can specify address range of process so part of address  
-> space
-> +will be reclaimed. The format is following as
-> +    > echo addr size-byte > /proc/PID/reclaim
-> +
-> +NOTE: addr should be page-aligned.
 
-And size in bytes should be a multiple of page size?
+* Pekka Enberg <penberg@kernel.org> wrote:
 
-> +
-> +Below is example which try to reclaim 2 pages from 0x100000.
-> +
-> +To reclaim both pages in address range,
-> +    > echo $((1<<20) 8192 > /proc/PID/reclaim
+> Hello,
+> 
+> On Tue, 2013-04-23 at 17:30 +0900, Namhyung Kim wrote:
+> >> This patchset implements a front-end tool for kernel's ftrace.  It
+> >> uses function_graph tracer by default and normal function tracer is
+> >> also supported.  (Of course you need to enable those tracers in your
+> >> kernel first.)
+> 
+> On Tue, Apr 23, 2013 at 6:58 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> > Very nice Namhyung, thanks for doing this. I did a quick run through of
+> > the patches and I have no complaints about them. I'm not sure how the
+> > others will feel about it.
+> 
+> I also skimmed through the patches and they look like a reasonable
+> starting point. So FWIW,
+> 
+> Acked-by: Pekka Enberg <penberg@kernel.org>
+> 
+> Are there any plans in trying to consolidate 'perf trace' and this? As
+> a user I don't really care what the underlying mechanism and would
+> like things to just work out of the box.
 
-Would you like to balance your parentheses?
+Exactly. I'd love to see ftrace and perf trace unified.
 
-Acked-by: Rob Landley <rob@landley.net>
+I have no objections against having a 'perf ftrace' interim step - as long 
+as it's really a temporary migration construct, not something we intend to 
+keep forever.
 
-Rob
+Thanks,
+
+	Ingo
