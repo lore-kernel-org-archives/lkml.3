@@ -1,114 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756891Ab3DXALM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Apr 2013 20:11:12 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:1360 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755872Ab3DXALK convert rfc822-to-8bit (ORCPT
+	id S1756744Ab3DXAdW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Apr 2013 20:33:22 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:47409 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752241Ab3DXAdV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Apr 2013 20:11:10 -0400
-X-IronPort-AV: E=Sophos;i="4.87,538,1363104000"; 
-   d="scan'208";a="7125302"
-Subject: Re: [PATCH 1/2] smp: use '|=' for csd_lock
-From: li guang <lig.fnst@cn.fujitsu.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: tglx@linutronix.de, peterz@infradead.org, shli@fusionio.com,
-        srivatsa.bhat@linux.vnet.ibm.com, suresh.b.siddha@intel.com,
-        fweisbec@gmail.com, sedat.dilek@gmail.com, paulmck@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20130423154019.4563d819760f5c5dd07ff4f6@linux-foundation.org>
-References: <1366609643-17628-1-git-send-email-lig.fnst@cn.fujitsu.com>
-	 <20130423154019.4563d819760f5c5dd07ff4f6@linux-foundation.org>
-Date: Wed, 24 Apr 2013 08:08:05 +0800
-Message-ID: <1366762085.20507.8.camel@liguang.fnst.cn.fujitsu.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/04/24 08:08:33,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/04/24 08:08:34,
-	Serialize complete at 2013/04/24 08:08:34
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="UTF-8"
+	Tue, 23 Apr 2013 20:33:21 -0400
+Date: Tue, 23 Apr 2013 17:33:12 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu
+Subject: [PATCH tip/core/rcu 0/4] RCU debug-objects improvements
+Message-ID: <20130424003312.GA15819@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13042400-7408-0000-0000-00000F59D3A6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-在 2013-04-23二的 15:40 -0700，Andrew Morton写道：
-> On Mon, 22 Apr 2013 13:47:22 +0800 liguang <lig.fnst@cn.fujitsu.com> wrote:
-> 
-> > originally, 'data->flags = CSD_FLAG_LOCK',
-> > and we use 'data->flags &= ~CSD_FLAG_LOCK'
-> > for csd_unlock, they are not symmetrix operations
-> > so use '|=' instead of '='.
-> > though, now data->flags only hold CSD_FLAG_LOCK,
-> > it's not so meaningful to use '|=' to set 1 bit,
-> > and '&= ~' to clear 1 bit.
-> > 
-> > Signed-off-by: liguang <lig.fnst@cn.fujitsu.com>
-> > ---
-> >  kernel/smp.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/kernel/smp.c b/kernel/smp.c
-> > index 1818dc0..2d5deb4 100644
-> > --- a/kernel/smp.c
-> > +++ b/kernel/smp.c
-> > @@ -109,7 +109,7 @@ static void csd_lock_wait(struct call_single_data *data)
-> >  static void csd_lock(struct call_single_data *data)
-> >  {
-> >  	csd_lock_wait(data);
-> > -	data->flags = CSD_FLAG_LOCK;
-> > +	data->flags |= CSD_FLAG_LOCK;
-> >  
-> >  	/*
-> 
-> call_single_data.flags is in fact presently a boolean - we only use one
-> bit in that word.  We could remove all the &=, |=, & and | operations
-> on call_single_data.flags and treat it as a boolean.  That would
-> probably result in faster and smaller code.
-> 
-> But leaving the other 31 bits alone and reserved-for-future-use is not
-> a bad thing.  But if we're going to do that we should do it consistently.
-> 
-> I rewrote your changelog ;)
+Hello!
 
-That's fine, Thanks!
+RCU's current debug-objects fixups are complex and heavyweight, plus the
+fixups are not complete, because even with the fixups, RCU's callback
+lists can still be corrupted.  This series reworks RCU's use of the
+debug-objects facility and the facility itself to allow improved handling
+of things like duplicate invocations of call_rcu().  This series includes:
 
-> 
-> 
-> From: liguang <lig.fnst@cn.fujitsu.com>
-> Subject: kernel/smp.c: use '|=' for csd_lock
-> 
-> csd_lock() uses assignment to data->flags rather than |=.  That is not
-> buggy at present because only one bit (CSD_FLAG_LOCK) is defined in
-> call_single_data.flags.
-> 
-> But it will become buggy if we later add another flag, so fix it now.
-> 
-> Signed-off-by: liguang <lig.fnst@cn.fujitsu.com>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Oleg Nesterov <oleg@redhat.com>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> ---
-> 
->  kernel/smp.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff -puN kernel/smp.c~kernel-smpc-use-=-for-csd_lock kernel/smp.c
-> --- a/kernel/smp.c~kernel-smpc-use-=-for-csd_lock
-> +++ a/kernel/smp.c
-> @@ -110,7 +110,7 @@ static void csd_lock_wait(struct call_si
->  static void csd_lock(struct call_single_data *data)
->  {
->  	csd_lock_wait(data);
-> -	data->flags = CSD_FLAG_LOCK;
-> +	data->flags |= CSD_FLAG_LOCK;
->  
->  	/*
->  	 * prevent CPU from reordering the above assignment
-> _
-> 
+1.	Simplify RCU's debug-objects fixups.
 
+2.	Make debug_object_activate() return status.
+
+3.	Make __call_rcu() leak callbacks when debug_object_activate()
+	notes suspicious activity.  Leaking has its problems, but it
+	is far better than silent corruption of RCU's data structures.
+
+4.	Add a new object_debug option to rcutorture to allow
+	deterministic testing of #3 above.
+
+							Thanx, Paul
+
+
+ b/include/linux/debugobjects.h |    6 +-
+ b/kernel/rcu.h                 |   10 ++--
+ b/kernel/rcupdate.c            |  100 -----------------------------------------
+ b/kernel/rcutorture.c          |   37 +++++++++++++++
+ b/kernel/rcutree.c             |   14 +++++
+ b/lib/debugobjects.c           |   20 +++++---
+ 6 files changed, 74 insertions(+), 113 deletions(-)
 
