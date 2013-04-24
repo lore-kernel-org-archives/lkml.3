@@ -1,114 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758354Ab3DXUxf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 16:53:35 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:45784 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758005Ab3DXUui (ORCPT
+	id S1758062Ab3DXUyx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 16:54:53 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:38995 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757759Ab3DXUyw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 16:50:38 -0400
-From: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
-To: linux-sh@vger.kernel.org
-Cc: linux-leds@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Magnus Damm <magnus.damm@gmail.com>, Paul Mundt <lethal@linux-sh.org>
-Subject: [PATCH v2 02/11] sh-pfc: r8a7740: Add TPU pin groups and functions
-Date: Wed, 24 Apr 2013 22:50:07 +0200
-Message-Id: <1366836616-21475-3-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1366836616-21475-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
-References: <1366836616-21475-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+	Wed, 24 Apr 2013 16:54:52 -0400
+MIME-Version: 1.0
+Date: Wed, 24 Apr 2013 22:54:51 +0200
+Message-ID: <CACRpkdZHE9pNBtKUD80=FtiePWLJpMwUMF13e_Q6ZR0Bq0iGqw@mail.gmail.com>
+Subject: [GIT PULL] last minute GPIO fix for v3.9
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Haojian Zhuang <haojian.zhuang@linaro.org>,
+        Mike Dunn <mikedunn@newsguy.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
----
- drivers/pinctrl/sh-pfc/pfc-r8a7740.c | 50 ++++++++++++++++++++++++++++++++++++
- 1 file changed, 50 insertions(+)
+Hi Linus,
 
-diff --git a/drivers/pinctrl/sh-pfc/pfc-r8a7740.c b/drivers/pinctrl/sh-pfc/pfc-r8a7740.c
-index e5ef587..f6ea47c 100644
---- a/drivers/pinctrl/sh-pfc/pfc-r8a7740.c
-+++ b/drivers/pinctrl/sh-pfc/pfc-r8a7740.c
-@@ -2745,6 +2745,42 @@ static const unsigned int sdhi2_wp_1_pins[] = {
- static const unsigned int sdhi2_wp_1_mux[] = {
- 	SDHI2_WP_PORT25_MARK,
- };
-+/* - TPU0 ------------------------------------------------------------------- */
-+static const unsigned int tpu0_to0_pins[] = {
-+	/* TO */
-+	23,
-+};
-+static const unsigned int tpu0_to0_mux[] = {
-+	TPU0TO0_MARK,
-+};
-+static const unsigned int tpu0_to1_pins[] = {
-+	/* TO */
-+	21,
-+};
-+static const unsigned int tpu0_to1_mux[] = {
-+	TPU0TO1_MARK,
-+};
-+static const unsigned int tpu0_to2_0_pins[] = {
-+	/* TO */
-+	66,
-+};
-+static const unsigned int tpu0_to2_0_mux[] = {
-+	TPU0TO2_PORT66_MARK,
-+};
-+static const unsigned int tpu0_to2_1_pins[] = {
-+	/* TO */
-+	202,
-+};
-+static const unsigned int tpu0_to2_1_mux[] = {
-+	TPU0TO2_PORT202_MARK,
-+};
-+static const unsigned int tpu0_to3_pins[] = {
-+	/* TO */
-+	180,
-+};
-+static const unsigned int tpu0_to3_mux[] = {
-+	TPU0TO3_MARK,
-+};
- 
- static const struct sh_pfc_pin_group pinmux_groups[] = {
- 	SH_PFC_PIN_GROUP(bsc_data8),
-@@ -2926,6 +2962,11 @@ static const struct sh_pfc_pin_group pinmux_groups[] = {
- 	SH_PFC_PIN_GROUP(sdhi2_wp_0),
- 	SH_PFC_PIN_GROUP(sdhi2_cd_1),
- 	SH_PFC_PIN_GROUP(sdhi2_wp_1),
-+	SH_PFC_PIN_GROUP(tpu0_to0),
-+	SH_PFC_PIN_GROUP(tpu0_to1),
-+	SH_PFC_PIN_GROUP(tpu0_to2_0),
-+	SH_PFC_PIN_GROUP(tpu0_to2_1),
-+	SH_PFC_PIN_GROUP(tpu0_to3),
- };
- 
- static const char * const bsc_groups[] = {
-@@ -3176,6 +3217,14 @@ static const char * const sdhi2_groups[] = {
- 	"sdhi2_wp_1",
- };
- 
-+static const char * const tpu0_groups[] = {
-+	"tpu0_to0",
-+	"tpu0_to1",
-+	"tpu0_to2_0",
-+	"tpu0_to2_1",
-+	"tpu0_to3",
-+};
-+
- static const struct sh_pfc_function pinmux_functions[] = {
- 	SH_PFC_FUNCTION(bsc),
- 	SH_PFC_FUNCTION(ceu0),
-@@ -3200,6 +3249,7 @@ static const struct sh_pfc_function pinmux_functions[] = {
- 	SH_PFC_FUNCTION(sdhi0),
- 	SH_PFC_FUNCTION(sdhi1),
- 	SH_PFC_FUNCTION(sdhi2),
-+	SH_PFC_FUNCTION(tpu0),
- };
- 
- #undef PORTCR
--- 
-1.8.1.5
+here is a last minute revert from the GPIO tree. Description in the
+tag, avoids us having to push it through -stable.
 
+Please pull it in!
+
+Yours,
+Linus Walleij
+
+
+The following changes since commit 60d509fa6a9c4653a86ad830e4c4b30360b23f0e:
+
+  Linux 3.9-rc8 (2013-04-21 14:38:45 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-gpio.git
+tags/gpio-v3.9-lastminute
+
+for you to fetch changes up to cf3fa17c2003dd9d1534e7da2d462132e1b70811:
+
+  Revert "gpio: pxa: set initcall level to module init" (2013-04-24
+21:42:24 +0200)
+
+----------------------------------------------------------------
+This is a last minute revert for the GPIO tree, as Mike
+Dunn noticed breakage on some older PXA machines due to
+moving PXA GPIO initcalls to the module_init initlevel.
+
+----------------------------------------------------------------
+Linus Walleij (1):
+      Revert "gpio: pxa: set initcall level to module init"
+
+ drivers/gpio/gpio-pxa.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
