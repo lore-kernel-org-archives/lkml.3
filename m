@@ -1,53 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757232Ab3DXPpg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 11:45:36 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:15839 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755476Ab3DXPpf (ORCPT
+	id S1757290Ab3DXPqe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 11:46:34 -0400
+Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:46883 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756199Ab3DXPqd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 11:45:35 -0400
-X-Authority-Analysis: v=2.0 cv=UY7TuduN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=btn4o-XVpwEA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=5m8K6IL_vW8A:10 a=EW-MkwFej7pXyTPL7pcA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1366818332.2626.5.camel@gandalf.local.home>
-Subject: Re: [PREEMPT RT] SLUB and split softirq lock for v3.2-rt
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org,
-        Carsten Emde <C.Emde@osadl.org>
-Date: Wed, 24 Apr 2013 11:45:32 -0400
-In-Reply-To: <517793BD.30101@linutronix.de>
-References: <1360771932-27150-1-git-send-email-bigeasy@linutronix.de>
-	 <1366770979.2626.3.camel@gandalf.local.home> <517793BD.30101@linutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 24 Apr 2013 11:46:33 -0400
+X-Greylist: delayed 494 seconds by postgrey-1.27 at vger.kernel.org; Wed, 24 Apr 2013 11:46:33 EDT
+Date: Wed, 24 Apr 2013 08:38:18 -0700
+From: Dmitry Torokhov <dtor@vmware.com>
+To: Asias He <asias@redhat.com>
+Cc: netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Andy King <acking@vmware.com>, Reilly Grant <grantr@vmware.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] VSOCK: Fix misc device registration
+Message-ID: <20130424153818.GA6916@dtor-ws.eng.vmware.com>
+References: <1366785232-15653-1-git-send-email-asias@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1366785232-15653-1-git-send-email-asias@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-04-24 at 10:11 +0200, Sebastian Andrzej Siewior wrote:
-> On 04/24/2013 04:36 AM, Steven Rostedt wrote:
-> > Hi Sebastian,
+On Wed, Apr 24, 2013 at 02:33:52PM +0800, Asias He wrote:
+> When we call vsock_core_init to init VSOCK the second time,
+> vsock_device.minor still points to the old dynamically allocated minor
+> number. misc_register will allocate it for us successfully as if we were
+> asking for a static one. However, when other user call misc_register to
+> allocate a dynamic minor number, it will give the one used by
+> vsock_core_init(), causing this:
 > 
-> Hi Steven,
+>   [  405.470687] WARNING: at fs/sysfs/dir.c:536 sysfs_add_one+0xcc/0xf0()
+>   [  405.470689] Hardware name: OptiPlex 790
+>   [  405.470690] sysfs: cannot create duplicate filename '/dev/char/10:54'
 > 
-> > Which version of 3.2-rt was this applied to. It does not apply, where
-> > patch 7/16 totally does not apply. I looked at the history of 3.2-rt and
-> > I can't find where it would apply.
+> Always set vsock_device.minor to MISC_DYNAMIC_MINOR before we
+> register.
 > 
-> I applied them on top of 2438ee33 ("Linux 3.2.37-rt55 REBASE"). I just
-> grabbed the patches from the mailing list and re-applied them on top of
-> this tree and is still works.
+> Cc: "David S. Miller" <davem@davemloft.net>
+> Cc: Andy King <acking@vmware.com>
+> Cc: Dmitry Torokhov <dtor@vmware.com>
+> Cc: Reilly Grant <grantr@vmware.com>
+> Cc: netdev@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> Signed-off-by: Asias He <asias@redhat.com>
+
+Well spotted.
+
+Acked-by: Dmitry Torokhov <dtor@vmware.com>
+
+> ---
+>  net/vmw_vsock/af_vsock.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-
-Nevermind, the problem was at my end :-(  I saved the patches as a mbox,
-but evolution decided to move patch 5 to after patch 7, which broke
-everything :-p
-
--- Steve
-
-
+> diff --git a/net/vmw_vsock/af_vsock.c b/net/vmw_vsock/af_vsock.c
+> index 7f93e2a..4b4db18 100644
+> --- a/net/vmw_vsock/af_vsock.c
+> +++ b/net/vmw_vsock/af_vsock.c
+> @@ -1932,7 +1932,6 @@ static const struct file_operations vsock_device_ops = {
+>  
+>  static struct miscdevice vsock_device = {
+>  	.name		= "vsock",
+> -	.minor		= MISC_DYNAMIC_MINOR,
+>  	.fops		= &vsock_device_ops,
+>  };
+>  
+> @@ -1942,6 +1941,7 @@ static int __vsock_core_init(void)
+>  
+>  	vsock_init_tables();
+>  
+> +	vsock_device.minor = MISC_DYNAMIC_MINOR;
+>  	err = misc_register(&vsock_device);
+>  	if (err) {
+>  		pr_err("Failed to register misc device\n");
+> -- 
+> 1.8.1.4
