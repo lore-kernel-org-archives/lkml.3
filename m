@@ -1,52 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756954Ab3DXQeE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 12:34:04 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:43974 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756435Ab3DXQeB (ORCPT
+	id S932081Ab3DXQfU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 12:35:20 -0400
+Received: from mx2.sisa.samsung.com ([63.166.156.250]:43097 "EHLO
+	mx2.sisa.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755799Ab3DXQfS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 12:34:01 -0400
-Message-ID: <51780976.8020608@linaro.org>
-Date: Wed, 24 Apr 2013 09:33:58 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Wed, 24 Apr 2013 12:35:18 -0400
+X-ASG-Debug-ID: 1366820508-0511296c6c146a0001-xx1T2L
+X-Barracuda-Envelope-From: shuah.kh@samsung.com
+X-Barracuda-Apparent-Source-IP: 105.144.21.115
+X-ASG-Whitelist: Client
+From: Shuah Khan <shuah.kh@samsung.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        Shuah Khan <shuah.kh@samsung.com>
+Subject: Re: [ 00/23] 3.0.75-stable review
+Thread-Topic: [ 00/23] 3.0.75-stable review
+X-ASG-Orig-Subj: Re: [ 00/23] 3.0.75-stable review
+Thread-Index: AQHOQHXoxi0ubqNYVUKpOxiiboLPO5jmBA4A
+Date: Wed, 24 Apr 2013 16:21:46 +0000
+Message-ID: <1366820506.2842.10.camel@lorien>
+References: <20130423215456.307216898@linuxfoundation.org>
+In-Reply-To: <20130423215456.307216898@linuxfoundation.org>
+Reply-To: Shuah Khan <shuah.kh@samsung.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [105.144.34.7]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <1F59910BBBB3884B9AC47F05FA70F0F1@sisa.samsung.com>
 MIME-Version: 1.0
-To: Kay Sievers <kay@vrfy.org>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: CONFIG_RTC_HCTOSYS lost on x86 with ALWAYS_USE_PERSISTENT_CLOCK
- changes?
-References: <CAPXgP13kizK95JyLxKxgWrGnV9b11ZTyi3vuc5YFDmROzckg4w@mail.gmail.com> <517746E4.908@linaro.org> <CAPXgP128yAq1jju-gsZcaS-mZPt+7tq0tt-uVk3Yqr77abd26Q@mail.gmail.com> <51774F44.2060704@linaro.org> <CAPXgP12D-H_E3WbWYgrbtvA_6wq=DhpiaLU_hGRgD6ga=_1x-A@mail.gmail.com> <CAPXgP10R0HSqOmq6LEW-Wqki1c7TyiemGwtUBEOopgZjWBNoOA@mail.gmail.com>
-In-Reply-To: <CAPXgP10R0HSqOmq6LEW-Wqki1c7TyiemGwtUBEOopgZjWBNoOA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: UNKNOWN[105.144.21.115]
+X-Barracuda-Start-Time: 1366820508
+X-Barracuda-URL: http://192.168.0.102:8000/cgi-mod/mark.cgi
+X-Barracuda-BRTS-Status: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r3OGZSYI022222
 
-On 04/23/2013 08:51 PM, Kay Sievers wrote:
-> On Wed, Apr 24, 2013 at 5:33 AM, Kay Sievers <kay@vrfy.org> wrote:
->
->> Also:
->>    $ cat /sys/class/rtc/rtc0/hctosys
->>    0
->> always carried "1", and this now breaks setups which expect an
->> automatically created symlink /dev/rtc to the actual "system rtc".
-> We used to do this in upstream standard udev rules:
->    SUBSYSTEM=="rtc", ATTR{hctosys}=="1", MODE="0644"
->    http://cgit.freedesktop.org/systemd/systemd/tree/rules/50-udev-default.rules#n18
->
-> If that information is expected to be gone now, we need to update some
-> tools. Whats' the proper way now to find the "system rtc" to use?
+On Tue, 2013-04-23 at 14:56 -0700, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.0.75 release.
+> There are 23 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+> 
+> Responses should be made by Thu Apr 25 21:54:13 UTC 2013.
+> Anything received after that time might be too late.
+> 
+> The whole patch series can be found in one patch at:
+> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.75-rc1.gz
+> and the diffstat can be found below.
+> 
+> thanks,
+> 
+> greg k-h
+> 
+> -------------
 
-No we'll revert. Can't break userland.
+Patches applied cleanly to 3.0.74, 3.4.41, and 3.8.8 
 
-But as to your question, if there's only one rtc, I'd consider it the 
-"system rtc", only adjusting the link if a second RTC appears and has 
-the hctosys flag set.
+Reviewing patches - will let you know anything odd.
 
-thanks
--john
+Compiled and booted on the following systems:
 
+Samsung Series 9 Intel Corei5
+HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics
 
+dmesgs for all releases look good. No regressions compared to the
+previous dmesgs for each of these releases.
 
+Cross-compile tests results:
+
+alpha: defconfig passed on all
+arm: defconfig passed on all
+arm64: not applicable to 3.0.y, 3.4.y. defconfig passed on 3.8.y
+c6x: not applicable to 3.0.y, defconfig passed on 3.4.y, and 3.8.y.
+mips: defconfig passed on all
+mipsel: defconfig passed on all
+powerpc: wii_defconfig passed on all
+sh: defconfig passed on all 
+sparc: defconfig passed on all
+tile: tilegx_defconfig passed on all
+
+Samsung Series 9 Intel Corei5:
+Note: Screaming fast system with ssd!! There are some vga issues on
+3.0.74 and 3.0.75-rc1 on this system and I am going to investigate those
+and see what's going on. No problems with 3.4 and 3.8. My current guess
+is that 3.5 is the minimum for this system.
+
+thanks,
+-- Shuah
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
