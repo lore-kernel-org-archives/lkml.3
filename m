@@ -1,68 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932424Ab3DXMCO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 08:02:14 -0400
-Received: from mail-da0-f53.google.com ([209.85.210.53]:35898 "EHLO
-	mail-da0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757096Ab3DXMBf (ORCPT
+	id S932459Ab3DXMCp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 08:02:45 -0400
+Received: from jacques.telenet-ops.be ([195.130.132.50]:51738 "EHLO
+	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932259Ab3DXMCm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 08:01:35 -0400
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-To: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LMML <linux-media@vger.kernel.org>,
-        LFBDEV <linux-fbdev@vger.kernel.org>,
-        LAK <linux-arm-kernel@lists.infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Sekhar Nori <nsekhar@ti.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Subject: [PATCH 5/6] ARM: davinci: dm365: enable fbdev driver
-Date: Wed, 24 Apr 2013 17:30:07 +0530
-Message-Id: <1366804808-22720-6-git-send-email-prabhakar.csengg@gmail.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1366804808-22720-1-git-send-email-prabhakar.csengg@gmail.com>
-References: <1366804808-22720-1-git-send-email-prabhakar.csengg@gmail.com>
+	Wed, 24 Apr 2013 08:02:42 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Kalle Valo <kvalo@qca.qualcomm.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH] ath6kl: Unify sg_sz and buf_sz in ath6kl_sdio_alloc_prep_scat_req()
+Date: Wed, 24 Apr 2013 14:02:34 +0200
+Message-Id: <1366804954-20491-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.0.4
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+sg_sz and buf_sz are initialized and used in a mutual exclusive way.
+However, some versions of gcc are not smart enough to see this:
 
-This patch enables fbdev driver by creating fbdev device and register it.
+drivers/net/wireless/ath/ath6kl/sdio.c: In function ‘ath6kl_sdio_alloc_prep_scat_req’:
+drivers/net/wireless/ath/ath6kl/sdio.c:338: warning: ‘sg_sz’ may be used uninitialized in this function
 
-Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+Unify the sg_sz and buf_sz variables into a single size variable to kill
+the compiler warning.
+
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 ---
- arch/arm/mach-davinci/dm365.c |   10 ++++++++++
- 1 files changed, 10 insertions(+), 0 deletions(-)
+ drivers/net/wireless/ath/ath6kl/sdio.c |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/arch/arm/mach-davinci/dm365.c b/arch/arm/mach-davinci/dm365.c
-index ff771ce..b06623c 100644
---- a/arch/arm/mach-davinci/dm365.c
-+++ b/arch/arm/mach-davinci/dm365.c
-@@ -1349,6 +1349,15 @@ static struct platform_device dm365_vpbe_display = {
- 	},
- };
+diff --git a/drivers/net/wireless/ath/ath6kl/sdio.c b/drivers/net/wireless/ath/ath6kl/sdio.c
+index d111980..7638135 100644
+--- a/drivers/net/wireless/ath/ath6kl/sdio.c
++++ b/drivers/net/wireless/ath/ath6kl/sdio.c
+@@ -335,17 +335,17 @@ static int ath6kl_sdio_alloc_prep_scat_req(struct ath6kl_sdio *ar_sdio,
+ {
+ 	struct hif_scatter_req *s_req;
+ 	struct bus_request *bus_req;
+-	int i, scat_req_sz, scat_list_sz, sg_sz, buf_sz;
++	int i, scat_req_sz, scat_list_sz, size;
+ 	u8 *virt_buf;
  
-+static struct platform_device dm365_davincifb = {
-+	.name           = "davinci-vpbe-fb",
-+	.id             = -1,
-+	.dev            = {
-+		.dma_mask		= &dm365_video_dma_mask,
-+		.coherent_dma_mask	= DMA_BIT_MASK(32),
-+	},
-+};
-+
- struct venc_platform_data dm365_venc_pdata = {
- 	.setup_pinmux	= dm365_vpbe_setup_pinmux,
- 	.setup_clock	= dm365_venc_setup_clock,
-@@ -1392,6 +1401,7 @@ int __init dm365_init_video(struct vpfe_config *vpfe_cfg,
- 		platform_device_register(&dm365_venc_dev);
- 		platform_device_register(&dm365_vpbe_dev);
- 		platform_device_register(&dm365_vpbe_display);
-+		platform_device_register(&dm365_davincifb);
- 	}
+ 	scat_list_sz = (n_scat_entry - 1) * sizeof(struct hif_scatter_item);
+ 	scat_req_sz = sizeof(*s_req) + scat_list_sz;
  
- 	return 0;
+ 	if (!virt_scat)
+-		sg_sz = sizeof(struct scatterlist) * n_scat_entry;
++		size = sizeof(struct scatterlist) * n_scat_entry;
+ 	else
+-		buf_sz =  2 * L1_CACHE_BYTES +
+-			  ATH6KL_MAX_TRANSFER_SIZE_PER_SCATTER;
++		size =  2 * L1_CACHE_BYTES +
++			ATH6KL_MAX_TRANSFER_SIZE_PER_SCATTER;
+ 
+ 	for (i = 0; i < n_scat_req; i++) {
+ 		/* allocate the scatter request */
+@@ -354,7 +354,7 @@ static int ath6kl_sdio_alloc_prep_scat_req(struct ath6kl_sdio *ar_sdio,
+ 			return -ENOMEM;
+ 
+ 		if (virt_scat) {
+-			virt_buf = kzalloc(buf_sz, GFP_KERNEL);
++			virt_buf = kzalloc(size, GFP_KERNEL);
+ 			if (!virt_buf) {
+ 				kfree(s_req);
+ 				return -ENOMEM;
+@@ -364,7 +364,7 @@ static int ath6kl_sdio_alloc_prep_scat_req(struct ath6kl_sdio *ar_sdio,
+ 				(u8 *)L1_CACHE_ALIGN((unsigned long)virt_buf);
+ 		} else {
+ 			/* allocate sglist */
+-			s_req->sgentries = kzalloc(sg_sz, GFP_KERNEL);
++			s_req->sgentries = kzalloc(size, GFP_KERNEL);
+ 
+ 			if (!s_req->sgentries) {
+ 				kfree(s_req);
 -- 
-1.7.4.1
+1.7.0.4
 
