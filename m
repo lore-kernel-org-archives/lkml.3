@@ -1,101 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755586Ab3DXNRH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 09:17:07 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:60319 "EHLO bear.ext.ti.com"
+	id S1754661Ab3DXNS6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 09:18:58 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41698 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754816Ab3DXNQT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 09:16:19 -0400
-From: Sourav Poddar <sourav.poddar@ti.com>
-To: <gregkh@linuxfoundation.org>, <tony@atomide.com>,
-        <rmk+kernel@arm.linux.org.uk>, <khilman@linaro.org>
-CC: <linux-serial@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Sourav Poddar <sourav.poddar@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Felipe Balbi <balbi@ti.com>, Rajendra nayak <rnayak@ti.com>
-Subject: [PATCHv3 1/5] driver: tty: serial: Move "uart_console" def to core header file.
-Date: Wed, 24 Apr 2013 18:45:49 +0530
-Message-ID: <1366809353-19435-2-git-send-email-sourav.poddar@ti.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1366809353-19435-1-git-send-email-sourav.poddar@ti.com>
-References: <1366809353-19435-1-git-send-email-sourav.poddar@ti.com>
+	id S1753568Ab3DXNS4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 09:18:56 -0400
+Date: Wed, 24 Apr 2013 15:18:51 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Cc: Zhouping Liu <zliu@redhat.com>, Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Glauber Costa <glommer@parallels.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>, caiqian <caiqian@redhat.com>,
+        Caspar Zhang <czhang@redhat.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: Re: [v3.9-rc8]: kernel BUG at mm/memcontrol.c:3994! (was: Re:
+ [BUG][s390x] mm: system crashed)
+Message-ID: <20130424131851.GC31960@dhcp22.suse.cz>
+References: <156480624.266924.1365995933797.JavaMail.root@redhat.com>
+ <2068164110.268217.1365996520440.JavaMail.root@redhat.com>
+ <20130415055627.GB4207@osiris>
+ <516B9B57.6050308@redhat.com>
+ <20130416075047.GA4184@osiris>
+ <1638103518.2400447.1366266465689.JavaMail.root@redhat.com>
+ <20130418071303.GB4203@osiris>
+ <20130424104255.GC4350@osiris>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130424104255.GC4350@osiris>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move "uart_console" definition to serial core header file, so that it can be
-used by serial drivers.
-Get rid of the uart_console defintion from mpc52xx_uart driver.
+On Wed 24-04-13 12:42:55, Heiko Carstens wrote:
+> On Thu, Apr 18, 2013 at 09:13:03AM +0200, Heiko Carstens wrote:
+> > Ok, thanks for verifying! I'll look into it; hopefully I can reproduce it
+> > here as well.
+> 
+> That seems to be a common code bug. I can easily trigger the VM_BUG_ON()
+> below (when I force the system to swap):
+> 
+> [   48.347963] ------------[ cut here ]------------
+> [   48.347972] kernel BUG at mm/memcontrol.c:3994!
+> [   48.348012] illegal operation: 0001 [#1] SMP 
+> [   48.348015] Modules linked in:
+> [   48.348017] CPU: 1 Not tainted 3.9.0-rc8+ #38
+> [   48.348020] Process mmap2 (pid: 635, task: 0000000029476100, ksp: 000000002e91b938)
+> [   48.348022] Krnl PSW : 0704f00180000000 000000000026552c (__mem_cgroup_uncharge_common+0x2c4/0x33c)
+> [   48.348032]            R:0 T:1 IO:1 EX:1 Key:0 M:1 W:0 P:0 AS:3 CC:3 PM:0 EA:3
+>                Krnl GPRS: 0000000000000008 0000000000000009 000003d1002a9200 0000000000000000
+> [   48.348039]            0000000000000000 00000000006812d8 000003ffdf339000 00000000321a6f98
+> [   48.348043]            000003fffce11000 0000000000000000 0000000000000001 000003d1002a9200
+> [   48.348046]            0000000000000001 0000000000681b88 000000002e91bc18 000000002e91bbd0
+> [   48.348057] Krnl Code: 000000000026551e: c0e5fffaa2a1        brasl   %r14,1b9a60
+>                           0000000000265524: a7f4ff7d            brc     15,26541e
+>                          #0000000000265528: a7f40001            brc     15,26552a
+>                          >000000000026552c: e3c0b8200124        stg     %r12,6176(%r11)
+>                           0000000000265532: a7f4ff57            brc     15,2653e0
+>                           0000000000265536: e310b8280104        lg      %r1,6184(%r11)
+>                           000000000026553c: a71b0001            aghi    %r1,1
+>                           0000000000265540: e310b8280124        stg     %r1,6184(%r11)
+> [   48.348099] Call Trace:
+> [   48.348100] ([<000003d1002a91c0>] 0x3d1002a91c0)
+> [   48.348102]  [<00000000002404aa>] page_remove_rmap+0xf2/0x16c
+> [   48.348106]  [<0000000000232dc8>] unmap_single_vma+0x494/0x7d8
+> [   48.348107]  [<0000000000233ac0>] unmap_vmas+0x50/0x74
+> [   48.348109]  [<00000000002396ec>] unmap_region+0x9c/0x110
+> [   48.348110]  [<000000000023bd18>] do_munmap+0x284/0x470
+> [   48.348111]  [<000000000023bf56>] vm_munmap+0x52/0x70
+> [   48.348113]  [<000000000023cf32>] SyS_munmap+0x3a/0x4c
+> [   48.348114]  [<0000000000665e14>] sysc_noemu+0x22/0x28
+> [   48.348118]  [<000003fffcf187b2>] 0x3fffcf187b2
+> [   48.348119] Last Breaking-Event-Address:
+> [   48.348120]  [<0000000000265528>] __mem_cgroup_uncharge_common+0x2c0/0x33c
+> 
+> Looking at the code, the code flow is:
+> 
+> page_remove_rmap() -> mem_cgroup_uncharge_page() -> __mem_cgroup_uncharge_common()
+> 
+> Note that in mem_cgroup_uncharge_page() the page in question passed the check:
+> 
+> [...]
+>         if (PageSwapCache(page))
+>                 return;
+> [...]
+> 
+> and just a couple of instructions later the VM_BUG_ON() within
+> __mem_cgroup_uncharge_common() triggers:
+> 
+> [...]
+>         if (mem_cgroup_disabled())
+>                 return NULL;
+> 
+>         VM_BUG_ON(PageSwapCache(page));
+> [...]
+> 
+> Which means that another cpu changed the pageflags concurrently. In fact,
+> looking at the dump a different cpu is indeed busy with running kswapd.
 
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: Felipe Balbi <balbi@ti.com>
-Cc: Rajendra nayak <rnayak@ti.com>
-Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
-Reviewed-by: Felipe Balbi <balbi@ti.com>
----
- drivers/tty/serial/mpc52xx_uart.c |   10 ----------
- drivers/tty/serial/serial_core.c  |    6 ------
- include/linux/serial_core.h       |    7 +++++++
- 3 files changed, 7 insertions(+), 16 deletions(-)
+Hmm, maybe I am missing something but it really looks like we can race
+here. Reclaim path takes the page lock while zap_pte takes page table
+lock so nothing prevents them from racing here:
+shrink_page_list		zap_pte_range
+  trylock_page			  pte_offset_map_lock
+  add_to_swap			    page_remove_rmap
+    /* Page can be still mapped */
+    add_to_swap_cache		      atomic_add_negative(_mapcount)
+      __add_to_swap_cache	        mem_cgroup_uncharge_page
+      				          (PageSwapCache(page)) && return
+        SetPageSwapCache
+				          __mem_cgroup_uncharge_common
+					    VM_BUG_ON(PageSwapCache(page))
 
-diff --git a/drivers/tty/serial/mpc52xx_uart.c b/drivers/tty/serial/mpc52xx_uart.c
-index 018bad9..d74ac06 100644
---- a/drivers/tty/serial/mpc52xx_uart.c
-+++ b/drivers/tty/serial/mpc52xx_uart.c
-@@ -84,16 +84,6 @@ static void mpc52xx_uart_of_enumerate(void);
- static irqreturn_t mpc52xx_uart_int(int irq, void *dev_id);
- static irqreturn_t mpc5xxx_uart_process_int(struct uart_port *port);
+Maybe not many people run with CONFIG_DEBUG_VM enabled these days so we
+do not this more often (even me testing configs are not consistent in
+that regards and only few have it on). The only thing that changed in
+this area recently is 0c59b89c which made the test VM_BUG_ON rather then
+simple return in 3.6
+And maybe the BUG_ON is too harsh as CgroupUsed should guarantee that
+the uncharge will eventually go away. What do you think Johannes?
  
--
--/* Simple macro to test if a port is console or not. This one is taken
-- * for serial_core.c and maybe should be moved to serial_core.h ? */
--#ifdef CONFIG_SERIAL_CORE_CONSOLE
--#define uart_console(port) \
--	((port)->cons && (port)->cons->index == (port)->line)
--#else
--#define uart_console(port)	(0)
--#endif
--
- /* ======================================================================== */
- /* PSC fifo operations for isolating differences between 52xx and 512x      */
- /* ======================================================================== */
-diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
-index a400002..b5f74bf 100644
---- a/drivers/tty/serial/serial_core.c
-+++ b/drivers/tty/serial/serial_core.c
-@@ -50,12 +50,6 @@ static struct lock_class_key port_lock_key;
- 
- #define HIGH_BITS_OFFSET	((sizeof(long)-sizeof(int))*8)
- 
--#ifdef CONFIG_SERIAL_CORE_CONSOLE
--#define uart_console(port)	((port)->cons && (port)->cons->index == (port)->line)
--#else
--#define uart_console(port)	(0)
--#endif
--
- static void uart_change_speed(struct tty_struct *tty, struct uart_state *state,
- 					struct ktermios *old_termios);
- static void uart_wait_until_sent(struct tty_struct *tty, int timeout);
-diff --git a/include/linux/serial_core.h b/include/linux/serial_core.h
-index 87d4bbc..b98291a 100644
---- a/include/linux/serial_core.h
-+++ b/include/linux/serial_core.h
-@@ -31,6 +31,13 @@
- #include <linux/sysrq.h>
- #include <uapi/linux/serial_core.h>
- 
-+#ifdef CONFIG_SERIAL_CORE_CONSOLE
-+#define uart_console(port) \
-+	((port)->cons && (port)->cons->index == (port)->line)
-+#else
-+#define uart_console(port)      (0)
-+#endif
-+
- struct uart_port;
- struct serial_struct;
- struct device;
+> So.. this seems to be somewhat broken. Anyone familiar with memcontrol?
+
 -- 
-1.7.1
-
+Michal Hocko
+SUSE Labs
