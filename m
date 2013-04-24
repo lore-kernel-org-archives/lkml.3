@@ -1,71 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757915Ab3DXHll (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 03:41:41 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:15748 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752166Ab3DXHlk (ORCPT
+	id S1757925Ab3DXHlx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 03:41:53 -0400
+Received: from mail-we0-f171.google.com ([74.125.82.171]:36513 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755810Ab3DXHlv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 03:41:40 -0400
-X-Spam-Score: -100.8
-Message-ID: <51778C82.2080807@asianux.com>
-Date: Wed, 24 Apr 2013 15:40:50 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Wed, 24 Apr 2013 03:41:51 -0400
+Date: Wed, 24 Apr 2013 08:41:46 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: arnd@arndb.de, linus.walleij@stericsson.com,
+        mian.yousaf.kaukab@stericsson.com
+Subject: [PATCH 08/10 v2] ARM: ux500: Populate the ux500-musb Device Tree
+ entry
+Message-ID: <20130424074146.GC17416@gmail.com>
+References: <1366729394-11406-1-git-send-email-lee.jones@linaro.org>
+ <1366729394-11406-9-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
-To: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "paulus@samba.org" <paulus@samba.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: [PATCH] PowerPC: kernel: memory access violation when rtas_data_buf
- contents are more than 1026
-References: <516F7A7D.60206@asianux.com> <1366677081.2886.7.camel@pasglop> <5175E85F.1040509@asianux.com> <5175FC36.4060308@asianux.com> <51777B74.8040204@linux.vnet.ibm.com> <517783D8.6010701@asianux.com> <51778885.6090306@linux.vnet.ibm.com>
-In-Reply-To: <51778885.6090306@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1366729394-11406-9-git-send-email-lee.jones@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013年04月24日 15:23, Vasant Hegde wrote:
-> On 04/24/2013 12:33 PM, Chen Gang wrote:
->> On 2013年04月24日 14:28, Vasant Hegde wrote:
->>> On 04/23/2013 08:42 AM, Chen Gang wrote:
->>>>
->>>> need set '\0' for 'local_buffer'.
->>>>
->>>> SPLPAR_MAXLENGTH is 1026, RTAS_DATA_BUF_SIZE is 4096. so the
->>>> contents of
->>>> rtas_data_buf may truncated in memcpy.
->>>>
->>>> if contents are really truncated.
->>>>     the splpar_strlen is more than 1026. the next while loop
->>>> checking will
->>>>     not find the end of buffer. that will cause memory access
->>>> violation.
->>>>
->>>
->>> Per parameter length in ibm,get-system-parameter RTAS call is limited to
->>> 1026 bytes (1024 bytes of data + 2 bytes  length). And 'rtas_data_buf'
->>> was set to 0 (first 1026 bytes) before call RTAS call. At the worst if
->>> we get junk in RTAS output length field helps to exit from the while
->>> loop. So I don't think we need this patch.
->>
->> Is get-system-parameter return the NUL terminated string ? if so, it
->> will no issue (just like your discription).
->>
-> 
-> Length includes the length of the NULL. So (idx < splpar_strlen)
-> is safe. IMO existing code is proper.
+This patch provides all the information to successfully probe() and
+correctly configure the ux500-musb device driver for DMA.
+    
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-OK, since it is not an issue, I will try another patches for powerpc POWER7.
-
-  :-)
-
--- 
-Chen Gang
-
-Asianux Corporation
+diff --git a/arch/arm/boot/dts/dbx5x0.dtsi b/arch/arm/boot/dts/dbx5x0.dtsi
+index 86b35a1..838214c 100644
+--- a/arch/arm/boot/dts/dbx5x0.dtsi
++++ b/arch/arm/boot/dts/dbx5x0.dtsi
+@@ -175,11 +175,40 @@
+ 			prcm = <&prcmu>;
+ 		};
+ 
+-		usb@a03e0000 {
++		usb_per5@a03e0000 {
+ 			compatible = "stericsson,db8500-musb",
+ 				"mentor,musb";
+ 			reg = <0xa03e0000 0x10000>;
+ 			interrupts = <0 23 0x4>;
++			interrupt-names = "mc";
++
++			dr_mode = "otg";
++
++			dmas = <&dma 38 0 0x2>, /* Logical - DevToMem */
++			       <&dma 38 0 0x0>, /* Logical - MemToDev */
++			       <&dma 37 0 0x2>, /* Logical - DevToMem */
++			       <&dma 37 0 0x0>, /* Logical - MemToDev */
++			       <&dma 36 0 0x2>, /* Logical - DevToMem */
++			       <&dma 36 0 0x0>, /* Logical - MemToDev */
++			       <&dma 19 0 0x2>, /* Logical - DevToMem */
++			       <&dma 19 0 0x0>, /* Logical - MemToDev */
++			       <&dma 18 0 0x2>, /* Logical - DevToMem */
++			       <&dma 18 0 0x0>, /* Logical - MemToDev */
++			       <&dma 17 0 0x2>, /* Logical - DevToMem */
++			       <&dma 17 0 0x0>, /* Logical - MemToDev */
++			       <&dma 16 0 0x2>, /* Logical - DevToMem */
++			       <&dma 16 0 0x0>, /* Logical - MemToDev */
++			       <&dma 39 0 0x2>, /* Logical - DevToMem */
++			       <&dma 39 0 0x0>; /* Logical - MemToDev */
++
++			dma-names = "iep_1_9",  "oep_1_9",
++				    "iep_2_10", "oep_2_10",
++				    "iep_3_11", "oep_3_11",
++				    "iep_4_12", "oep_4_12",
++				    "iep_5_13", "oep_5_13",
++				    "iep_6_14", "oep_6_14",
++				    "iep_7_15", "oep_7_15",
++				    "iep_8",    "oep_8";
+ 		};
+ 
+ 		dma: dma-controller@801C0000 {
