@@ -1,106 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757203Ab3DXS5u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 14:57:50 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56432 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756621Ab3DXS5t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 14:57:49 -0400
-Date: Wed, 24 Apr 2013 19:57:44 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jerome Marchand <jmarchan@redhat.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Hugh Dickins <hughd@google.com>
-Subject: [PATCH] mm: swap: Mark swap pages writeback before queueing for
- direct IO
-Message-ID: <20130424185744.GB2144@suse.de>
-References: <516E918B.3050309@redhat.com>
- <20130422133746.ffbbb70c0394fdbf1096c7ee@linux-foundation.org>
+	id S1757429Ab3DXS6C (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 14:58:02 -0400
+Received: from mail-qe0-f44.google.com ([209.85.128.44]:36250 "EHLO
+	mail-qe0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757283Ab3DXS56 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 14:57:58 -0400
+From: Paul Moore <paul@paul-moore.com>
+To: Casey Schaufler <casey@schaufler-ca.com>
+Cc: LSM <linux-security-module@vger.kernel.org>,
+        LKLM <linux-kernel@vger.kernel.org>, SE Linux <selinux@tycho.nsa.gov>,
+        James Morris <jmorris@namei.org>,
+        John Johansen <john.johansen@canonical.com>,
+        Eric Paris <eparis@redhat.com>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Kees Cook <keescook@chromium.org>
+Subject: Re: [PATCH v13 0/9] LSM: Multiple concurrent LSMs
+Date: Wed, 24 Apr 2013 14:57:55 -0400
+Message-ID: <3554062.6nBMExN24s@sifl>
+User-Agent: KMail/4.10.2 (Linux/3.8.5-gentoo; KDE/4.10.2; x86_64; ; )
+In-Reply-To: <5176B0F6.7080506@schaufler-ca.com>
+References: <5176ABB7.5080300@schaufler-ca.com> <5176B0F6.7080506@schaufler-ca.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20130422133746.ffbbb70c0394fdbf1096c7ee@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As pointed out by Andrew Morton, the swap-over-NFS writeback is not setting
-PageWriteback before it is queued for direct IO. While swap pages do not
-participate in BDI or process dirty accounting and the IO is synchronous,
-the writeback bit is still required and not setting it in this case was
-an oversight.  swapoff depends on the page writeback to synchronoise all
-pending writes on a swap page before it is reused. Swapcache freeing and
-reuse depend on checking the PageWriteback under lock to ensure the page
-is safe to reuse.
+On Tuesday, April 23, 2013 09:04:06 AM Casey Schaufler wrote:
+> Subject: [PATCH v13 0/9] LSM: Multiple concurrent LSMs
+> 
+> Change the infrastructure for Linux Security Modules (LSM)s from a
+> single vector of hook handlers to a list based method for handling
+> multiple concurrent modules.
+> 
+> The "security=" boot option takes a comma separated list of LSMs,
+> registering them in the order presented. The LSM hooks will be
+> executed in the order registered. Hooks that return errors are
+> not short circuited. All hooks are called even if one of the LSM
+> hooks fails. The result returned will be that of the last LSM
+> hook that failed.
 
-Direct IO handlers and the direct IO handler for NFS do not deal with
-PageWriteback as they are synchronous writes. In the case of NFS, it
-schedules pages (or a page in the case of swap) for IO and then waits
-synchronously for IO to complete in nfs_direct_write(). It is recognised
-that this is a slowdown from normal swap handling which is asynchronous
-and uses a completion handler. Shoving PageWriteback handling down into
-direct IO handlers looks like a bad fit to handle the swap case although
-it may have to be dealt with some day if swap is converted to use direct
-IO in general and bmap is finally done away with. At that point it will
-be necessary to refit asynchronous direct IO with completion handlers onto
-the swap subsystem.
+...
 
-As swapcache currently depends on PageWriteback to protect against races,
-this patch sets PageWriteback under the page lock before queueing it for
-direct IO. It is cleared when the direct IO handler returns. IO errors
-are treated similarly to the direct-to-bio case except PageError is not
-set as in the case of swap-over-NFS, it is likely to be a transient error.
+> The NetLabel, XFRM and secmark facilities are restricted to use
+> by one LSM at a time. This is due to limitations of the underlying
+> networking mechanisms. The good news is that viable configurations
+> can be created. The bad news is that the complexity of configuring
+> a system is necessarily increased.
 
-It was asked what prevents such a page being reclaimed in parallel.
-With this patch applied, such a page will now be skipped (most of the time)
-or blocked until the writeback completes.  Reclaim checks PageWriteback
-under the page lock before calling try_to_free_swap and the page lock
-should prevent the page being requeued for IO before it is freed.
+I know we had a good discussion about this a while back and I just wanted to 
+hear from you about this current patchset; how does the labeled networking LSM 
+assignment work?  Is it first-come-first-served based on the 'security=' 
+setting?
 
-This and Jerome's related patch should considered for -stable as far
-back as 3.6 when swap-over-NFS was introduced.
+-- 
+paul moore
+www.paul-moore.com
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- mm/page_io.c | 17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
-
-diff --git a/mm/page_io.c b/mm/page_io.c
-index 04ca00d..ec04247 100644
---- a/mm/page_io.c
-+++ b/mm/page_io.c
-@@ -214,6 +214,7 @@ int swap_writepage(struct page *page, struct writeback_control *wbc)
- 		kiocb.ki_left = PAGE_SIZE;
- 		kiocb.ki_nbytes = PAGE_SIZE;
- 
-+		set_page_writeback(page);
- 		unlock_page(page);
- 		ret = mapping->a_ops->direct_IO(KERNEL_WRITE,
- 						&kiocb, &iov,
-@@ -223,8 +224,24 @@ int swap_writepage(struct page *page, struct writeback_control *wbc)
- 			count_vm_event(PSWPOUT);
- 			ret = 0;
- 		} else {
-+			/*
-+			 * In the case of swap-over-nfs, this can be a
-+			 * temporary failure if the system has limited
-+			 * memory for allocating transmit buffers.
-+			 * Mark the page dirty and avoid
-+			 * rotate_reclaimable_page but rate-limit the
-+			 * messages but do not flag PageError like
-+			 * the normal direct-to-bio case as it could
-+			 * be temporary.
-+			 */
- 			set_page_dirty(page);
-+			ClearPageReclaim(page);
-+			if (printk_ratelimit()) {
-+				pr_err("Write-error on dio swapfile (%Lu)\n",
-+					(unsigned long long)page_file_offset(page));
-+			}
- 		}
-+		end_page_writeback(page);
- 		return ret;
- 	}
