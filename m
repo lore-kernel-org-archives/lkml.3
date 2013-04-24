@@ -1,132 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752339Ab3DXJ7L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 05:59:11 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:1734 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750929Ab3DXJ7J (ORCPT
+	id S1755168Ab3DXKAf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 06:00:35 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35796 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753325Ab3DXKAe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 05:59:09 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 24 Apr 2013 02:59:03 -0700
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <vinod.koul@intel.com>
-CC: <djbw@fb.com>, <swarren@wwwdotorg.org>, <linux-tegra@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH] dma: tegra: implement suspend/resume callbacks
-Date: Wed, 24 Apr 2013 15:24:27 +0530
-Message-ID: <1366797267-29567-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
+	Wed, 24 Apr 2013 06:00:34 -0400
+Date: Wed, 24 Apr 2013 11:00:32 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Wenyou Yang <wenyou.yang@atmel.com>
+Cc: linux-arm-kernel@lists.infradead.org, grant.likely@secretlab.ca,
+        richard.genoud@gmail.com, plagnioj@jcrosoft.com,
+        nicolas.ferre@atmel.com, JM.Lin@atmel.com,
+        spi-devel-general@lists.sourceforge.net,
+        spi-devel-general@lists.sourceforge.ne, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v8 3/8] spi/spi-atmel: add dmaengine support
+Message-ID: <20130424100032.GC5019@opensource.wolfsonmicro.com>
+References: <1364968581-23700-1-git-send-email-wenyou.yang@atmel.com>
+ <1364968759-24036-1-git-send-email-wenyou.yang@atmel.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="MHoG8na4IvP3G3ze"
+Content-Disposition: inline
+In-Reply-To: <1364968759-24036-1-git-send-email-wenyou.yang@atmel.com>
+X-Cookie: Caution: Keep out of reach of children.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implement suspend/resume callbacks to store APB DMA channel's
-register on suspend and restore APB DMA channel's register on
-resume.
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
- drivers/dma/tegra20-apb-dma.c |   65 +++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 65 insertions(+), 0 deletions(-)
+--MHoG8na4IvP3G3ze
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/drivers/dma/tegra20-apb-dma.c b/drivers/dma/tegra20-apb-dma.c
-index 5a0b66c..ce19340 100644
---- a/drivers/dma/tegra20-apb-dma.c
-+++ b/drivers/dma/tegra20-apb-dma.c
-@@ -30,6 +30,7 @@
- #include <linux/of.h>
- #include <linux/of_device.h>
- #include <linux/platform_device.h>
-+#include <linux/pm.h>
- #include <linux/pm_runtime.h>
- #include <linux/slab.h>
- #include <linux/clk/tegra.h>
-@@ -199,6 +200,7 @@ struct tegra_dma_channel {
- 
- 	/* Channel-slave specific configuration */
- 	struct dma_slave_config dma_sconfig;
-+	struct tegra_dma_channel_regs	channel_reg;
- };
- 
- /* tegra_dma: Tegra DMA specific information */
-@@ -1440,11 +1442,74 @@ static int tegra_dma_runtime_resume(struct device *dev)
- 	return 0;
- }
- 
-+#ifdef CONFIG_PM_SLEEP
-+static int tegra_dma_pm_suspend(struct device *dev)
-+{
-+	struct tegra_dma *tdma = dev_get_drvdata(dev);
-+	int i;
-+	int ret;
-+
-+	/* Enable clock before accessing register */
-+	ret = tegra_dma_runtime_resume(dev);
-+	if (ret < 0)
-+		return ret;
-+
-+	tdma->reg_gen = tdma_read(tdma, TEGRA_APBDMA_GENERAL);
-+	for (i = 0; i < tdma->chip_data->nr_channels; i++) {
-+		struct tegra_dma_channel *tdc = &tdma->channels[i];
-+		struct tegra_dma_channel_regs *ch_reg = &tdc->channel_reg;
-+
-+		ch_reg->csr = tdc_read(tdc, TEGRA_APBDMA_CHAN_CSR);
-+		ch_reg->ahb_ptr = tdc_read(tdc, TEGRA_APBDMA_CHAN_AHBPTR);
-+		ch_reg->apb_ptr = tdc_read(tdc, TEGRA_APBDMA_CHAN_APBPTR);
-+		ch_reg->ahb_seq = tdc_read(tdc, TEGRA_APBDMA_CHAN_AHBSEQ);
-+		ch_reg->apb_seq = tdc_read(tdc, TEGRA_APBDMA_CHAN_APBSEQ);
-+	}
-+
-+	/* Disable clock */
-+	tegra_dma_runtime_suspend(dev);
-+	return 0;
-+}
-+
-+static int tegra_dma_pm_resume(struct device *dev)
-+{
-+	struct tegra_dma *tdma = dev_get_drvdata(dev);
-+	int i;
-+	int ret;
-+
-+	/* Enable clock before accessing register */
-+	ret = tegra_dma_runtime_resume(dev);
-+	if (ret < 0)
-+		return ret;
-+
-+	tdma_write(tdma, TEGRA_APBDMA_GENERAL, tdma->reg_gen);
-+	tdma_write(tdma, TEGRA_APBDMA_CONTROL, 0);
-+	tdma_write(tdma, TEGRA_APBDMA_IRQ_MASK_SET, 0xFFFFFFFFul);
-+
-+	for (i = 0; i < tdma->chip_data->nr_channels; i++) {
-+		struct tegra_dma_channel *tdc = &tdma->channels[i];
-+		struct tegra_dma_channel_regs *ch_reg = &tdc->channel_reg;
-+
-+		tdc_write(tdc, TEGRA_APBDMA_CHAN_APBSEQ, ch_reg->apb_seq);
-+		tdc_write(tdc, TEGRA_APBDMA_CHAN_APBPTR, ch_reg->apb_ptr);
-+		tdc_write(tdc, TEGRA_APBDMA_CHAN_AHBSEQ, ch_reg->ahb_seq);
-+		tdc_write(tdc, TEGRA_APBDMA_CHAN_AHBPTR, ch_reg->ahb_ptr);
-+		tdc_write(tdc, TEGRA_APBDMA_CHAN_CSR,
-+			(ch_reg->csr & ~TEGRA_APBDMA_CSR_ENB));
-+	}
-+
-+	/* Disable clock */
-+	tegra_dma_runtime_suspend(dev);
-+	return 0;
-+}
-+#endif
-+
- static const struct dev_pm_ops tegra_dma_dev_pm_ops = {
- #ifdef CONFIG_PM_RUNTIME
- 	.runtime_suspend = tegra_dma_runtime_suspend,
- 	.runtime_resume = tegra_dma_runtime_resume,
- #endif
-+	SET_SYSTEM_SLEEP_PM_OPS(tegra_dma_pm_suspend, tegra_dma_pm_resume)
- };
- 
- static struct platform_driver tegra_dmac_driver = {
--- 
-1.7.1.1
+On Wed, Apr 03, 2013 at 01:59:19PM +0800, Wenyou Yang wrote:
+> From: Nicolas Ferre <nicolas.ferre@atmel.com>
+>=20
+> Add dmaengine support.
+>=20
+> Using "has_dma_support" member of struct is used to select
+> the transfer mode: dmaengine or pdc.
 
+Applied, thanks.
+
+--MHoG8na4IvP3G3ze
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRd604AAoJELSic+t+oim953AP/j6CzZGxZkATpXh1XNBgQw6T
+YMjhju42yN9wcsb2TA5r/NMtu2TU5U5hepiKnlhO3H77upyLiuGn1++P5vEDZT5w
+u6RpAFo088uYDqnYfDBTjO0VYAcGuvegci0ub17eWVT/Xalt8a/s9zfdwvCIupUf
+ckBAfyOY1ExKtCvX/QxxNhHw8YPUIOzX6oXiBop8zLVOjfbbKPfhAxWhm9pCV1rV
+LYL+V02BbFj/Eet5P/xAOZ5tEOweXIfWom00uoEsk1wgOP+q0ShV8NWzoXqcNZPv
+UDKP4UpqPWZKHaAuitfXJ/wPtlJkVMBcL9sakyA/3QnUMSe0e3WXwgMLCZaYqhQh
+MNGwHknPLkRAaKFQCz7FUZnSFVp+yEXP+a4sbGF4KAaWfgbk1SdadxVL669P/HxV
+2bDVpZ0GcA4MR8DCGfTT8JgE0eqyfHsX7rG5SKWxpcbwcAaKq7Qg8GdYsWmzUCKI
+iEczkeFrnN6Wjw6UFGoIrb38UhaD8sWe7LEA6E43CwUEmt8sR4yZGklfnIA5Q6Dh
+2ypDzWc86AUb3KINZtqHTnCXjNtfrF+I3zKvznj+SjB0CAEUN2m4O7bHHXAJKGAH
+MD4MX+T9Gtts8a4pSH4g9SHWaQr0/iIP0FhXLEncLL8K18tYwlxPNGFPjq9AF5g1
+vvewOzzsvKIOQh6n6Qhf
+=ZiwJ
+-----END PGP SIGNATURE-----
+
+--MHoG8na4IvP3G3ze--
