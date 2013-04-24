@@ -1,134 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757924Ab3DXUhW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 16:37:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43393 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757600Ab3DXUhV (ORCPT
+	id S1757989Ab3DXUlA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 16:41:00 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:55442 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757625Ab3DXUk6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 16:37:21 -0400
-Date: Wed, 24 Apr 2013 13:37:19 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: <hannes@cmpxchg.org>, <toshi.kani@hp.com>, <linuxram@us.ibm.com>,
-        <rientjes@google.com>, <linux-kernel@vger.kernel.org>,
-        <linux-mm@kvack.org>
-Subject: Re: [Resend][Bug fix PATCH v5] Reusing a resource structure
- allocated by bootmem
-Message-Id: <20130424133719.94c7d301df844c4bcc987a53@linux-foundation.org>
-In-Reply-To: <51771E3D.6060203@jp.fujitsu.com>
-References: <5175E5E8.3010003@jp.fujitsu.com>
-	<51771E3D.6060203@jp.fujitsu.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 24 Apr 2013 16:40:58 -0400
+MIME-Version: 1.0
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <Pine.LNX.4.44L0.1304241625050.1548-100000@iolanthe.rowland.org>
+References: <CA+icZUWUof6BJQWefi-dYfFhO_hRLF5aKsOVO0CAbFCo_UVn2w@mail.gmail.com>
+	<Pine.LNX.4.44L0.1304241625050.1548-100000@iolanthe.rowland.org>
+Date: Wed, 24 Apr 2013 22:40:56 +0200
+Message-ID: <CA+icZUVkRCavG-gs6r2x_kyZe_Mm8WLewp-zpKn=f3GWU+jJZw@mail.gmail.com>
+Subject: Re: linux-next: Tree for Apr 24 [ PM: Device 1-1.2 failed to resume
+ async: error -32 ]
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Linux PM List <linux-pm@lists.linux-foundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-usb@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 24 Apr 2013 08:50:21 +0900 Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com> wrote:
-
-> When hot removing memory presented at boot time, following messages are shown:
-> 
-> [  296.867031] ------------[ cut here ]------------
-> [  296.922273] kernel BUG at mm/slub.c:3409!
+On Wed, Apr 24, 2013 at 10:32 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
+> On Wed, 24 Apr 2013, Sedat Dilek wrote:
 >
-> ...
+>> > [ CC linux-pm and linux-usb (ehci) folks ]
+>> >
+>> > This happens with my external USB mouse after suspend/resume.
+>> >
+>> > Excerpt (full dmesg and kernel-config attached):
+>> >
+>> > $ dmesg | egrep -i 'usb|async' | grep 1-1.2
+>> > [    1.258602] usb 1-1.2: new low-speed USB device number 3 using ehci-pci
+>> > [    1.368649] usb 1-1.2: New USB device found, idVendor=046d, idProduct=c00e
+>> > [    1.368661] usb 1-1.2: New USB device strings: Mfr=1, Product=2,
+>> > SerialNumber=0
+>> > [    1.368668] usb 1-1.2: Product: USB-PS/2 Optical Mouse
+>> > [    1.368672] usb 1-1.2: Manufacturer: Logitech
+>> > [    1.957999] input: Logitech USB-PS/2 Optical Mouse as
+>> > /devices/pci0000:00/0000:00:1a.0/usb1/1-1/1-1.2/1-1.2:1.0/input/input4
+>> > [   62.353997] usb 1-1.2: reset low-speed USB device number 3 using ehci-pci
+>> > [   62.636893] PM: Device 1-1.2 failed to resume async: error -32
+>> > [   64.243543] usb 1-1.2: USB disconnect, device number 3
+>> > [   64.380328] usb 1-1.2: new low-speed USB device number 5 using ehci-pci
+>> > [   64.477612] usb 1-1.2: New USB device found, idVendor=046d, idProduct=c00e
+>> > [   64.477618] usb 1-1.2: New USB device strings: Mfr=1, Product=2,
+>> > SerialNumber=0
+>> > [   64.477621] usb 1-1.2: Product: USB-PS/2 Optical Mouse
+>> > [   64.477623] usb 1-1.2: Manufacturer: Logitech
+>> > [   64.481934] input: Logitech USB-PS/2 Optical Mouse as
+>> > /devices/pci0000:00/0000:00:1a.0/usb1/1-1/1-1.2/1-1.2:1.0/input/input11
+>> >
 >
-> The reason why the messages are shown is to release a resource structure,
-> allocated by bootmem, by kfree(). So when we release a resource structure,
-> we should check whether it is allocated by bootmem or not.
-> 
-> But even if we know a resource structure is allocated by bootmem, we cannot
-> release it since SLxB cannot treat it. So for reusing a resource structure,
-> this patch remembers it by using bootmem_resource as follows:
-> 
-> When releasing a resource structure by free_resource(), free_resource() checks
-> whether the resource structure is allocated by bootmem or not. If it is
-> allocated by bootmem, free_resource() adds it to bootmem_resource. If it is
-> not allocated by bootmem, free_resource() release it by kfree().
-> 
-> And when getting a new resource structure by get_resource(), get_resource()
-> checks whether bootmem_resource has released resource structures or not. If
-> there is a released resource structure, get_resource() returns it. If there is
-> not a releaed resource structure, get_resource() returns new resource structure
-> allocated by kzalloc().
-> 
-> ...
+> Did this work differently under earlier kernels?
 >
 
-Looks good to me.
+Unfortunately, s/r did not work for several Linux-Next releases as
+there is missing tglx's patch pendinging in tip.git/timers/core.
 
-> --- a/kernel/resource.c
-> +++ b/kernel/resource.c
-> @@ -21,6 +21,7 @@
->  #include <linux/seq_file.h>
->  #include <linux/device.h>
->  #include <linux/pfn.h>
-> +#include <linux/mm.h>
->  #include <asm/io.h>
->  
->  
-> @@ -50,6 +51,14 @@ struct resource_constraint {
->  
->  static DEFINE_RWLOCK(resource_lock);
->  
-> +/*
-> + * For memory hotplug, there is no way to free resource entries allocated
-> + * by boot mem after the system is up. So for reusing the resource entry
-> + * we need to remember the resource.
-> + */
-> +static struct resource *bootmem_resource_free;
-> +static DEFINE_SPINLOCK(bootmem_resource_lock);
-> +
->  static void *r_next(struct seq_file *m, void *v, loff_t *pos)
->  {
->  	struct resource *p = v;
-> @@ -151,6 +160,40 @@ __initcall(ioresources_init);
->  
->  #endif /* CONFIG_PROC_FS */
->  
-> +static void free_resource(struct resource *res)
-> +{
-> +	if (!res)
-> +		return;
-> +
-> +	if (!PageSlab(virt_to_head_page(res))) {
+The last days I also use the touchpad, so the issue is new to me,
+which says not that much :-).
 
-Did you consider using a bit in resource.flags?  There appear to be
-four free ones left.  The VM trickery will work OK I guess, but isn't
-very "nice".
+[1] http://git.kernel.org/cgit/linux/kernel/git/tip/tip.git/commit/?h=timers/core&id=77c675ba18836802f6b73d2d773481d06ebc0f04
 
-> +		spin_lock(&bootmem_resource_lock);
-> +		res->sibling = bootmem_resource_free;
-> +		bootmem_resource_free = res;
-> +		spin_unlock(&bootmem_resource_lock);
-> +	} else {
-> +		kfree(res);
-> +	}
-> +}
-> +
-> +static struct resource *get_resource(gfp_t flags)
-> +{
-> +	struct resource *res = NULL;
-> +
-> +	spin_lock(&bootmem_resource_lock);
-> +	if (bootmem_resource_free) {
-> +		res = bootmem_resource_free;
-> +		bootmem_resource_free = res->sibling;
-> +	}
-> +	spin_unlock(&bootmem_resource_lock);
-> +
-> +	if (res)
-> +		memset(res, 0, sizeof(struct resource));
-> +	else
-> +		res = kzalloc(sizeof(struct resource), flags);
-> +
-> +	return res;
-> +}
+>> Thos 3 lines IIRC are important (one line missing above):
+>>
+>> [   62.353997] usb 1-1.2: reset low-speed USB device number 3 using ehci-pci
+>> [   62.636877] dpm_run_callback(): usb_dev_resume+0x0/0x20 returns -32
+>> [   62.636893] PM: Device 1-1.2 failed to resume async: error -32
+>>
+>> - Sedat -
+>>
+>> > Any help/hints/infos welcome :-)!
+>
+> This indicates that the optical mouse didn't survive the suspend/resume
+> sequence and had to be reenumerated.  Without more information, there's
+> no way to tell specifically what went wrong during the initial reset at
+> timestamp 62.353997.
+>
+> If you want to pursue this farther, you could enable CONFIG_USB_DEBUG.
+> You could also collect a usbmon trace for bus 1 showing what happens
+> during the suspend and resume.
+>
 
-I think I'll rename this to alloc_resource().  In Linux "get" often
-(but not always) means "take a reference on".  So "get" pairs with
-"put" and "alloc" pairs with "free".
+Hmm, I can try to enable CONFIG_USB_DEBUG and build a new kernel.
 
+Can you give me more hints how to do a usbmon-trace?
+
+> On the other hand, what difference does it really make if a mouse has
+> to be reenumerated?
+>
+
+As a non-USB-expert it's hard to interprete such "bogus" lines in your logs.
+I am curious enough to ask which is fair :-).
+AFAICS in your eyes this is "harmless"?
+
+Thanks for the fast as lightning reply!
+
+- Sedat -
+
+> Alan Stern
+>
