@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758396Ab3DXJjD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 05:39:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41500 "EHLO mx1.redhat.com"
+	id S1758376Ab3DXJiz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 05:38:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16767 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757901Ab3DXJi7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 05:38:59 -0400
+	id S1758361Ab3DXJiw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 05:38:52 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>,
@@ -17,16 +17,16 @@ Cc: Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@kernel.org>, Borislav Petkov <bp@alien8.de>,
         Stephane Eranian <eranian@google.com>, Sam Ravnborg <sam@ravnborg.org>,
         David Ahern <dsahern@gmail.com>
-Subject: [PATCH 08/26] perf tools: Move libunwind check config into config/Makefile
-Date: Wed, 24 Apr 2013 11:37:35 +0200
-Message-Id: <1366796273-4780-9-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 10/26] perf tools: Move slang check config into config/Makefile
+Date: Wed, 24 Apr 2013 11:37:37 +0200
+Message-Id: <1366796273-4780-11-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1366796273-4780-1-git-send-email-jolsa@redhat.com>
 References: <1366796273-4780-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Moving libunwind check config into config/Makefile.
+Moving slang check config into config/Makefile.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
@@ -41,87 +41,92 @@ Cc: Stephane Eranian <eranian@google.com>
 Cc: Sam Ravnborg <sam@ravnborg.org>
 Cc: David Ahern <dsahern@gmail.com>
 ---
- tools/perf/Makefile        | 24 ------------------------
- tools/perf/config/Makefile | 27 +++++++++++++++++++++++++++
- 2 files changed, 27 insertions(+), 24 deletions(-)
+ tools/perf/Makefile        | 39 +++++++++++++--------------------------
+ tools/perf/config/Makefile | 17 +++++++++++++++++
+ 2 files changed, 30 insertions(+), 26 deletions(-)
 
 diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index fd45172..332d421 100644
+index b738e01..2187a2c 100644
 --- a/tools/perf/Makefile
 +++ b/tools/perf/Makefile
-@@ -475,26 +475,6 @@ ifneq ($(MAKECMDGOALS),tags)
- # because maintaining the nesting to match is a pain.  If
- # we had "elif" things would have been much nicer...
- 
--# There's only x86 (both 32 and 64) support for CFI unwind so far
--ifneq ($(ARCH),x86)
--	NO_LIBUNWIND := 1
--endif
--
--ifndef NO_LIBUNWIND
--# for linking with debug library, run like:
--# make DEBUG=1 LIBUNWIND_DIR=/opt/libunwind/
--ifdef LIBUNWIND_DIR
--	LIBUNWIND_CFLAGS  := -I$(LIBUNWIND_DIR)/include
--	LIBUNWIND_LDFLAGS := -L$(LIBUNWIND_DIR)/lib
--endif
--
--FLAGS_UNWIND=$(LIBUNWIND_CFLAGS) $(ALL_CFLAGS) $(LIBUNWIND_LDFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) $(LIBUNWIND_LIBS)
--ifneq ($(call try-cc,$(SOURCE_LIBUNWIND),$(FLAGS_UNWIND),libunwind),y)
--	msg := $(warning No libunwind found, disabling post unwind support. Please install libunwind-dev[el] >= 0.99);
--	NO_LIBUNWIND := 1
--endif # Libunwind support
--endif # NO_LIBUNWIND
--
- -include arch/$(ARCH)/Makefile
- 
- ifneq ($(OUTPUT),)
-@@ -523,10 +503,6 @@ endif # NO_DWARF
- endif # NO_LIBELF
- 
- ifndef NO_LIBUNWIND
--	BASIC_CFLAGS += -DLIBUNWIND_SUPPORT
--	EXTLIBS += $(LIBUNWIND_LIBS)
--	BASIC_CFLAGS := $(LIBUNWIND_CFLAGS) $(BASIC_CFLAGS)
--	BASIC_LDFLAGS := $(LIBUNWIND_LDFLAGS) $(BASIC_LDFLAGS)
- 	LIB_OBJS += $(OUTPUT)util/unwind.o
+@@ -101,10 +101,6 @@ ifeq ($(config),1)
+ include config/Makefile
  endif
  
+-ifdef NO_NEWT
+-	NO_SLANG=1
+-endif
+-
+ # Among the variables below, these:
+ #   perfexecdir
+ #   template_dir
+@@ -511,28 +507,19 @@ ifndef NO_LIBAUDIT
+ endif
+ 
+ ifndef NO_SLANG
+-	FLAGS_SLANG=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -I/usr/include/slang -lslang
+-	ifneq ($(call try-cc,$(SOURCE_SLANG),$(FLAGS_SLANG),libslang),y)
+-		msg := $(warning slang not found, disables TUI support. Please install slang-devel or libslang-dev);
+-	else
+-		# Fedora has /usr/include/slang/slang.h, but ubuntu /usr/include/slang.h
+-		BASIC_CFLAGS += -I/usr/include/slang
+-		BASIC_CFLAGS += -DSLANG_SUPPORT
+-		EXTLIBS += -lslang
+-		LIB_OBJS += $(OUTPUT)ui/browser.o
+-		LIB_OBJS += $(OUTPUT)ui/browsers/annotate.o
+-		LIB_OBJS += $(OUTPUT)ui/browsers/hists.o
+-		LIB_OBJS += $(OUTPUT)ui/browsers/map.o
+-		LIB_OBJS += $(OUTPUT)ui/browsers/scripts.o
+-		LIB_OBJS += $(OUTPUT)ui/tui/setup.o
+-		LIB_OBJS += $(OUTPUT)ui/tui/util.o
+-		LIB_OBJS += $(OUTPUT)ui/tui/helpline.o
+-		LIB_OBJS += $(OUTPUT)ui/tui/progress.o
+-		LIB_H += ui/browser.h
+-		LIB_H += ui/browsers/map.h
+-		LIB_H += ui/keysyms.h
+-		LIB_H += ui/libslang.h
+-	endif
++	LIB_OBJS += $(OUTPUT)ui/browser.o
++	LIB_OBJS += $(OUTPUT)ui/browsers/annotate.o
++	LIB_OBJS += $(OUTPUT)ui/browsers/hists.o
++	LIB_OBJS += $(OUTPUT)ui/browsers/map.o
++	LIB_OBJS += $(OUTPUT)ui/browsers/scripts.o
++	LIB_OBJS += $(OUTPUT)ui/tui/setup.o
++	LIB_OBJS += $(OUTPUT)ui/tui/util.o
++	LIB_OBJS += $(OUTPUT)ui/tui/helpline.o
++	LIB_OBJS += $(OUTPUT)ui/tui/progress.o
++	LIB_H += ui/browser.h
++	LIB_H += ui/browsers/map.h
++	LIB_H += ui/keysyms.h
++	LIB_H += ui/libslang.h
+ endif
+ 
+ ifndef NO_GTK2
 diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 3620877..92c395f 100644
+index 52d6fe9..008b212 100644
 --- a/tools/perf/config/Makefile
 +++ b/tools/perf/config/Makefile
-@@ -170,3 +170,30 @@ endif # PERF_HAVE_DWARF_REGS
- endif # NO_DWARF
- 
- endif # NO_LIBELF
+@@ -208,3 +208,20 @@ ifndef NO_LIBAUDIT
+ 		EXTLIBS += -laudit
+ 	endif
+ endif
 +
-+# There's only x86 (both 32 and 64) support for CFI unwind so far
-+ifneq ($(ARCH),x86)
-+	NO_LIBUNWIND := 1
++ifdef NO_NEWT
++	NO_SLANG=1
 +endif
 +
-+ifndef NO_LIBUNWIND
-+# for linking with debug library, run like:
-+# make DEBUG=1 LIBUNWIND_DIR=/opt/libunwind/
-+ifdef LIBUNWIND_DIR
-+	LIBUNWIND_CFLAGS  := -I$(LIBUNWIND_DIR)/include
-+	LIBUNWIND_LDFLAGS := -L$(LIBUNWIND_DIR)/lib
++ifndef NO_SLANG
++	FLAGS_SLANG=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -I/usr/include/slang -lslang
++	ifneq ($(call try-cc,$(SOURCE_SLANG),$(FLAGS_SLANG),libslang),y)
++		msg := $(warning slang not found, disables TUI support. Please install slang-devel or libslang-dev);
++		NO_SLANG := 1
++	else
++		# Fedora has /usr/include/slang/slang.h, but ubuntu /usr/include/slang.h
++		BASIC_CFLAGS += -I/usr/include/slang
++		BASIC_CFLAGS += -DSLANG_SUPPORT
++		EXTLIBS += -lslang
++	endif
 +endif
-+
-+FLAGS_UNWIND=$(LIBUNWIND_CFLAGS) $(ALL_CFLAGS) $(LIBUNWIND_LDFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) $(LIBUNWIND_LIBS)
-+ifneq ($(call try-cc,$(SOURCE_LIBUNWIND),$(FLAGS_UNWIND),libunwind),y)
-+	msg := $(warning No libunwind found, disabling post unwind support. Please install libunwind-dev[el] >= 0.99);
-+	NO_LIBUNWIND := 1
-+endif # Libunwind support
-+endif # NO_LIBUNWIND
-+
-+ifndef NO_LIBUNWIND
-+	BASIC_CFLAGS += -DLIBUNWIND_SUPPORT
-+	EXTLIBS += $(LIBUNWIND_LIBS)
-+	BASIC_CFLAGS := $(LIBUNWIND_CFLAGS) $(BASIC_CFLAGS)
-+	BASIC_LDFLAGS := $(LIBUNWIND_LDFLAGS) $(BASIC_LDFLAGS)
-+endif # NO_LIBUNWIND
 -- 
 1.7.11.7
 
