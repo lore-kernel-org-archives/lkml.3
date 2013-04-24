@@ -1,67 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758255Ab3DXKgE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 06:36:04 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:43265 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758136Ab3DXKgB (ORCPT
+	id S1758285Ab3DXKgx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 06:36:53 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:42865 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757653Ab3DXKgw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 06:36:01 -0400
-X-Spam-Score: -100.8
-Message-ID: <5177B562.40400@asianux.com>
-Date: Wed, 24 Apr 2013 18:35:14 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Wed, 24 Apr 2013 06:36:52 -0400
+X-AuditID: 9c93016f-b7b70ae0000038d5-0d-5177b5c26cd2
+From: Namhyung Kim <namhyung@kernel.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 02/14] perf util: Use evsel->name to get tracepoint_paths
+References: <1366705872-12132-1-git-send-email-namhyung@kernel.org>
+	<1366705872-12132-3-git-send-email-namhyung@kernel.org>
+	<1366722440.9609.148.camel@gandalf.local.home>
+Date: Wed, 24 Apr 2013 19:36:50 +0900
+In-Reply-To: <1366722440.9609.148.camel@gandalf.local.home> (Steven Rostedt's
+	message of "Tue, 23 Apr 2013 09:07:20 -0400")
+Message-ID: <8761zcb4fx.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>, Will Deacon <will.deacon@arm.com>,
-        rjw@sisk.pl
-CC: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] ARM: S5pv210: compiling issue, ARM_S3C64XX_CPUFREQ need CONFIG_CPU_FREQ_TABLE=y
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 23 Apr 2013 09:07:20 -0400, Steven Rostedt wrote:
+>> +
+>> +		if (pos->name && strchr(pos->name, ':')) {
+>> +			char *str = strchr(pos->name, ':');
+>
+> Why not make the above into:
+>
+> 	if (pos->name && (str = strchr(pos->name, ':'))) {
+>
+> ?
 
-For arm S5pv210 with allmodconfig, ARM_S3C64XX_CPUFREQ need 
-CONFIG_CPU_FREQ_TABLE=y, or will cause compiling issue.
+I wanted not to have an assignment in an if condition, just for my
+preference.  I will change it.
 
-The related operation:
-+ arm-linux-gnu-ld -EL -p --no-undefined -X --build-id -X -o .tmp_vmlinux1 -T /root/linux-next/arch/arm/kernel/vmlinux.lds arch/arm/kernel/head.o init/built-in.o --start-group usr/built-in.o arch/arm/nwfpe/built-in.o arch/arm/vfp/built-in.o arch/arm/kernel/built-in.o arch/arm/mm/built-in.o arch/arm/common/built-in.o arch/arm/net/built-in.o arch/arm/crypto/built-in.o arch/arm/mach-s5pv210/built-in.o arch/arm/plat-samsung/built-in.o kernel/built-in.o mm/built-in.o fs/built-in.o ipc/built-in.o security/built-in.o crypto/built-in.o block/built-in.o arch/arm/lib/lib.a lib/lib.a arch/arm/lib/built-in.o lib/built-in.o drivers/built-in.o sound/built-in.o firmware/built-in.o net/built-in.o --end-group
-
-The related errors:
-drivers/built-in.o: In function `s5pv210_target':
-drivers/cpufreq/s5pv210-cpufreq.c:225: undefined reference to `cpufreq_frequency_table_target'
-drivers/cpufreq/s5pv210-cpufreq.c:237: undefined reference to `cpufreq_frequency_table_target'
-drivers/built-in.o: In function `s5pv210_verify_speed':
-drivers/cpufreq/s5pv210-cpufreq.c:182: undefined reference to `cpufreq_frequency_table_verify'
-drivers/built-in.o: In function `s5pv210_cpu_init':
-drivers/cpufreq/s5pv210-cpufreq.c:556: undefined reference to `cpufreq_frequency_table_get_attr'
-drivers/cpufreq/s5pv210-cpufreq.c:560: undefined reference to `cpufreq_frequency_table_cpuinfo'
-make: *** [vmlinux] Error 1
-
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
----
- drivers/cpufreq/Kconfig.arm |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/cpufreq/Kconfig.arm b/drivers/cpufreq/Kconfig.arm
-index bce2195..bbcd719 100644
---- a/drivers/cpufreq/Kconfig.arm
-+++ b/drivers/cpufreq/Kconfig.arm
-@@ -187,6 +187,7 @@ config ARM_S3C64XX_CPUFREQ
- config ARM_S5PV210_CPUFREQ
- 	bool "Samsung S5PV210 and S5PC110"
- 	depends on CPU_S5PV210
-+	select CPU_FREQ_TABLE
- 	default y
- 	help
- 	  This adds the CPUFreq driver for Samsung S5PV210 and
--- 
-1.7.7.6
+Thanks,
+Namhyung
