@@ -1,67 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757059Ab3DXPVP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 11:21:15 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:63777 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756811Ab3DXPVL (ORCPT
+	id S1755517Ab3DXPYq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 11:24:46 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:42775 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752324Ab3DXPYp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 11:21:11 -0400
-X-Originating-IP: 108.223.40.66
-Date: Wed, 24 Apr 2013 08:21:42 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Don Zickus <dzickus@redhat.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        linux-watchdog@vger.kernel.org, kexec@lists.infradead.org,
-        wim@iguana.be, LKML <linux-kernel@vger.kernel.org>, vgoyal@redhat.com,
-        dyoung@redhat.com
-Subject: Re: [PATCH v3] watchdog: Add hook for kicking in kdump path
-Message-ID: <20130424152142.GA26864@roeck-us.net>
-References: <1366233596-34681-1-git-send-email-dzickus@redhat.com>
- <87li8gaku0.fsf@xmission.com>
- <20130418130009.GH79013@redhat.com>
- <20130418134904.GC2767@roeck-us.net>
- <20130418135257.GL79013@redhat.com>
- <20130418145413.GA1980@roeck-us.net>
- <20130424144226.GI79013@redhat.com>
+	Wed, 24 Apr 2013 11:24:45 -0400
+Date: Wed, 24 Apr 2013 17:24:37 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Vince Weaver <vincent.weaver@maine.edu>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 1/6] signal x86: Propage RF EFLAGS bit throught the
+ signal restore call
+Message-ID: <20130424152412.GB6993@somewhere>
+References: <1362940871-24486-1-git-send-email-jolsa@redhat.com>
+ <1362940871-24486-2-git-send-email-jolsa@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130424144226.GI79013@redhat.com>
+In-Reply-To: <1362940871-24486-2-git-send-email-jolsa@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 24, 2013 at 10:42:26AM -0400, Don Zickus wrote:
-> On Thu, Apr 18, 2013 at 07:54:13AM -0700, Guenter Roeck wrote:
-> > > No, that will probably work.  It is my misunderstanding.  Is there a
-> > > common way to check the timeout length and the ping frequency?
-> > > 
-> > Usually it is configured in /etc/watchdog.conf if the watchdog package
-> > is installed. The standard ping interval is "interval", the timeout is
-> > "watchdog-timeout". See "man watchdog.conf" for details.
-> > 
-> > Minimum and maximum values for a given watchdog driver are not exported
-> > to user space, so you would have to look into the driver sources to find
-> > out what they are.
+On Sun, Mar 10, 2013 at 07:41:06PM +0100, Jiri Olsa wrote:
+> Adding RF EFLAGS bit to be restored on return from signal from
+> the original register context before the signal was entered.
 > 
-> Hi Guenter,
+> This will prevent the RF flag to disappear when returning
+> from exception due to the signal handler being executed.
 > 
-> Is there an easy way to determine which driver is loaded for each
-> /dev/watchdogN device (from a script perspective).
+> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: H. Peter Anvin <hpa@zytor.com>
+> Cc: Andi Kleen <andi@firstfloor.org>
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Vince Weaver <vincent.weaver@maine.edu>
+> Cc: Stephane Eranian <eranian@google.com>
+> ---
+>  arch/x86/ia32/ia32_signal.c        | 2 --
+>  arch/x86/include/asm/sighandling.h | 4 ++--
+>  arch/x86/kernel/signal.c           | 6 ------
+>  3 files changed, 2 insertions(+), 10 deletions(-)
 > 
-> Basically, I wanted to determine the module that needs to be included in
-> the kdump initrd image.
-> 
-Sometimes. For example, the iTCO_wdt driver has an entry in /sys/devices, and
-/sys/class/watchdog/watchdogX/device points to it. That is not always the case,
-howewver. In my system, for example, the MEI watchdog is active, but there is
-nothing I can find that would give me an indication that /dev/watchdog0 actually
-points to the MEI watchdog driver.
+> diff --git a/arch/x86/ia32/ia32_signal.c b/arch/x86/ia32/ia32_signal.c
+> index cf1a471..bccfca6 100644
+> --- a/arch/x86/ia32/ia32_signal.c
+> +++ b/arch/x86/ia32/ia32_signal.c
+> @@ -34,8 +34,6 @@
+>  #include <asm/sys_ia32.h>
+>  #include <asm/smap.h>
+>  
+> -#define FIX_EFLAGS	__FIX_EFLAGS
+> -
+>  int copy_siginfo_to_user32(compat_siginfo_t __user *to, siginfo_t *from)
+>  {
+>  	int err = 0;
+> diff --git a/arch/x86/include/asm/sighandling.h b/arch/x86/include/asm/sighandling.h
+> index beff97f..7a95816 100644
+> --- a/arch/x86/include/asm/sighandling.h
+> +++ b/arch/x86/include/asm/sighandling.h
+> @@ -7,10 +7,10 @@
+>  
+>  #include <asm/processor-flags.h>
+>  
+> -#define __FIX_EFLAGS	(X86_EFLAGS_AC | X86_EFLAGS_OF | \
+> +#define FIX_EFLAGS	(X86_EFLAGS_AC | X86_EFLAGS_OF | \
+>  			 X86_EFLAGS_DF | X86_EFLAGS_TF | X86_EFLAGS_SF | \
+>  			 X86_EFLAGS_ZF | X86_EFLAGS_AF | X86_EFLAGS_PF | \
+> -			 X86_EFLAGS_CF)
+> +			 X86_EFLAGS_CF | X86_EFLAGS_RF)
+>  
+>  void signal_fault(struct pt_regs *regs, void __user *frame, char *where);
+>  
+> diff --git a/arch/x86/kernel/signal.c b/arch/x86/kernel/signal.c
+> index 6956299..9df4c0b 100644
+> --- a/arch/x86/kernel/signal.c
+> +++ b/arch/x86/kernel/signal.c
+> @@ -43,12 +43,6 @@
+>  
+>  #include <asm/sigframe.h>
+>  
+> -#ifdef CONFIG_X86_32
+> -# define FIX_EFLAGS	(__FIX_EFLAGS | X86_EFLAGS_RF)
 
-Of course I might be missing something, and there might be some other means
-to identify the driver from userspace. Would be great, actually, as I am having
-the same problem.
-
-Guenter
+Does anybody know why we had RF not restored in x86-32?
