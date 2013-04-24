@@ -1,67 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758618Ab3DXXbI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 19:31:08 -0400
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:46133 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758090Ab3DXXbG (ORCPT
+	id S1758639Ab3DXXim (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 19:38:42 -0400
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:14119 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758537Ab3DXXik (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 19:31:06 -0400
-MIME-Version: 1.0
-In-Reply-To: <5178657E.9020905@zytor.com>
-References: <CA+55aFwpLu0qNms=hkQr43yqD0K9DgESNm91OEWKT1ZuT8MU6Q@mail.gmail.com>
-	<20130424072630.GB1780@gmail.com>
-	<20130424170702.GA1867@redhat.com>
-	<CAFTL4hzmW43o8dxW0_E7F00a+PT+T4=F4h=gdCxHvcZhMiH3-w@mail.gmail.com>
-	<5178657E.9020905@zytor.com>
-Date: Thu, 25 Apr 2013 01:31:03 +0200
-Message-ID: <CAFTL4hyCQ1DGg5JOmWgvZoC9kcrV6TmodCw=TCFcr+QXMwv9yQ@mail.gmail.com>
-Subject: Re: [PATCH] x86: make DR*_RESERVED unsigned long
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Cyrill Gorcunov <gorcunov@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        David Miller <davem@davemloft.net>, "Theodore Ts'o" <tytso@mit.edu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 24 Apr 2013 19:38:40 -0400
+Message-ID: <1366846719.1863.1.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH -next] ipc: make refcounter atomic (was Re: linux-next:
+ Tree for Apr 23 [ Call-Traces: lib/debugobjects.c | kernel/rcupdate.c |
+ kernel/rcutree.c ])
+From: Davidlohr Bueso <davidlohr.bueso@hp.com>
+To: sedat.dilek@gmail.com
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Rik van Riel <riel@surriel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Paul McKenney <paul.mckenney@linaro.org>,
+        Emmanuel Benisty <benisty.e@gmail.com>,
+        linux-next <linux-next@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Wed, 24 Apr 2013 16:38:39 -0700
+In-Reply-To: <CA+icZUUY1U=gxxT8hbU-JyyuoRgaht=KUwttQT=yh4_Yh32VnQ@mail.gmail.com>
+References: <CA+icZUWXpaXi9GwB37hLaPbZaAi2aOMXez1f79DDtb_22ZY1jQ@mail.gmail.com>
+	 <CA+icZUXmsvbj2km=PxbAs5K+hoP+zjcXqG_wCdKR9akWF5Eucw@mail.gmail.com>
+	 <CA+55aFw5J+DFgQjAdhUnhitHw+wHEmspeZP9jbyZowqNE6Nafg@mail.gmail.com>
+	 <CA+icZUXHkcj_bAuPcfghZMHjRTud2jN91hjpOUiLaXd0yN9diw@mail.gmail.com>
+	 <1366741069.1802.12.camel@buesod1.americas.hpqcorp.net>
+	 <1366741394.1802.13.camel@buesod1.americas.hpqcorp.net>
+	 <CA+icZUV48SZeNt4GRKi8yDKbsO_c7ApUOgb4mRX67=d_ridE8w@mail.gmail.com>
+	 <CA+55aFxh_-3BSBXrm8j1-3bN_oLLA66ApykRcfFFKRvrb6MDkQ@mail.gmail.com>
+	 <1366841773.1790.7.camel@buesod1.americas.hpqcorp.net>
+	 <CA+icZUUY1U=gxxT8hbU-JyyuoRgaht=KUwttQT=yh4_Yh32VnQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/4/25 H. Peter Anvin <hpa@zytor.com>:
-> On 04/24/2013 03:48 PM, Frederic Weisbecker wrote:
->> You told in an earlier email that intel manual says upper 32 bits of
->> dr6 are reserved.
->> In this case don't we need to expand the mask in 64 bits like is done
->> for DR_CONTROL_RESERVED?
->>
->
-> Arguably this would be a *good* use for ~ ...
->
-> Instead of defining separate bitmasks for 32 and 64 bits have the
-> reciprocal (non-reserved bits):
->
-> #define DR6_RESERVED (~0x0000F00FUL)
->
-> That does have the right value on both 32 and 64 bits.  The leading
-> zeroes aren't even really needed.
+On Thu, 2013-04-25 at 01:05 +0200, Sedat Dilek wrote:
+> On Thu, Apr 25, 2013 at 12:16 AM, Davidlohr Bueso
+> <davidlohr.bueso@hp.com> wrote:
+> > From: Davidlohr Bueso <davidlohr.bueso@hp.com>
+> >
+> > Sedat reported an issue leading to a NULL dereference in update_queue():
+> >
+> > [  178.490583] BUG: spinlock bad magic on CPU#1, sh/8066
+> > [  178.490595]  lock: 0xffff88008b53ea18, .magic: 6b6b6b6b, .owner: make/8068, .owner_cpu: 3
+> > [  178.490599] BUG: unable to handle kernel NULL pointer dereference at           (null)
+> > [  178.490608] IP: [<ffffffff812bacd0>] update_queue+0x70/0x210
+> > [  178.490610] PGD 0
+> > [  178.490612] Oops: 0000 [#1] SMP
+> > ...
+> > [  178.490704] Call Trace:
+> > [  178.490710]  [<ffffffff812baf51>] do_smart_update+0xe1/0x140
+> > [  178.490713]  [<ffffffff812bd6e1>] exit_sem+0x2b1/0x350
+> > [  178.490718]  [<ffffffff8105de80>] do_exit+0x290/0xa70
+> > [  178.490721]  [<ffffffff8105e6f4>] do_group_exit+0x44/0xa0
+> > [  178.490724]  [<ffffffff8105e767>] SyS_exit_group+0x17/0x20
+> > [  178.490728]  [<ffffffff816ce15d>] system_call_fastpath+0x1a/0x1f
+> >
+> > Linus pin-pointed the problem to a race in the reference counter. To quote:
+> >
+> > "That dmesg spew very much implies that the same RCU head got added twice to the RCU
+> > freeing list, and the only way that happens is if the refcount goes to
+> > zero twice. Which implies that either we increment a zero, or we lack
+> > locking and the coherency of the non-atomic access goes away."
+> >
+> > This patch converts the IPC RCU header's reference counter to atomic_t. The return of
+> > ipc_rcu_getref() is modified to inform the callers if it actually succeeded.
+> >
+> > Now all callers return -EIDRM upon failure and abort the current operation. Two exceptions are
+> > in semaphore code where sem_getref_and_unlock() and sem_getref() trigger a warning but proceed
+> > to freeing up any held locks.
+> >
+> > Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
+> > Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
+> > CC: Rik van Riel <riel@surriel.com>
+> > CC: Paul McKenney <paul.mckenney@linaro.org>
+> > CC: Sedat Dilek <sedat.dilek@gmail.com>
+> > CC: Emmanuel Benisty <benisty.e@gmail.com>
+> > CC: Andrew Morton <akpm@linux-foundation.org>
+> 
+> Missing my Reported-by ...!
 
-Ah, looks better indeed.
+Not trying to take away credit or efforts from you, just wanted you to
+reconfirm that *this* actual patch fixes things for you :)
 
->
-> Now, DR6 is a bit special in that a bunch of the reserved bits are
-> hardwired to 1, not 0; I don't know offhand if that is true for bits
-> [63:32].
+Thanks,
+Davidlohr
 
-Hmm, good point, could it be a problem given that we clear the
-reserved dr6 bits on do_trap() and write that 'cleaned up" value back
-to "tsk->thread.debugreg6"? Probably not if those hardwired reserved
-bits are set to "1" on dr6 physical write whether those bits are
-cleared or not in their storage in thread struct before resuming the
-task?
