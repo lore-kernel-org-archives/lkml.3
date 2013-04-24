@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758750Ab3DXJqm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 05:46:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58035 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758247Ab3DXJic (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758177Ab3DXJic (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 24 Apr 2013 05:38:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35661 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755346Ab3DXJib (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 05:38:31 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>,
@@ -17,16 +17,19 @@ Cc: Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@kernel.org>, Borislav Petkov <bp@alien8.de>,
         Stephane Eranian <eranian@google.com>, Sam Ravnborg <sam@ravnborg.org>,
         David Ahern <dsahern@gmail.com>
-Subject: [PATCH 04/26] perf tools: Move programs check into config/Makefile
-Date: Wed, 24 Apr 2013 11:37:31 +0200
-Message-Id: <1366796273-4780-5-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 02/26] perf tools: Fix tab vs spaces issue in Makefile ifdef/endif
+Date: Wed, 24 Apr 2013 11:37:29 +0200
+Message-Id: <1366796273-4780-3-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1366796273-4780-1-git-send-email-jolsa@redhat.com>
 References: <1366796273-4780-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Moving programs check into config/Makefile.
+Unmatched spaces/tabs Makefile indentation could make the
+Makefile fails. While the tabed line could be considered
+sometimes as follow up for rule command, the mixed space
+tab meses up with makefile if conditions.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
@@ -41,84 +44,35 @@ Cc: Stephane Eranian <eranian@google.com>
 Cc: Sam Ravnborg <sam@ravnborg.org>
 Cc: David Ahern <dsahern@gmail.com>
 ---
- tools/perf/Makefile        | 24 ++++++++----------------
- tools/perf/config/Makefile | 10 ++++++++++
- 2 files changed, 18 insertions(+), 16 deletions(-)
+ tools/perf/Makefile | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
 diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 518d540..e543234 100644
+index b0f164b..c8fb0fd 100644
 --- a/tools/perf/Makefile
 +++ b/tools/perf/Makefile
-@@ -58,6 +58,14 @@ $(OUTPUT)PERF-VERSION-FILE: .FORCE-PERF-VERSION-FILE
- CC = $(CROSS_COMPILE)gcc
- AR = $(CROSS_COMPILE)ar
+@@ -90,7 +90,7 @@ endif
  
-+RM      = rm -f
-+MKDIR   = mkdir
-+FIND    = find
-+INSTALL = install
-+FLEX    = flex
-+BISON   = bison
-+STRIP  ?= strip
-+
- # include config/Makefile by default and rule out
- # non-config cases
- config := 1
-@@ -102,7 +110,6 @@ CFLAGS = -fno-omit-frame-pointer -ggdb3 -funwind-tables -Wall -Wextra -std=gnu99
- EXTLIBS = -lpthread -lrt -lelf -lm
- ALL_CFLAGS = $(CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
- ALL_LDFLAGS = $(LDFLAGS)
--STRIP ?= strip
- 
- # Among the variables below, these:
- #   perfexecdir
-@@ -139,13 +146,6 @@ lib = lib
- 
- export prefix bindir sharedir sysconfdir
- 
--RM = rm -f
--MKDIR = mkdir
--FIND = find
--INSTALL = install
--FLEX = flex
--BISON= bison
--
- # sparse is architecture-neutral, which means that we need to tell it
- # explicitly what architecture to check for. Fix this up for yours..
- SPARSE_FLAGS = -D__BIG_ENDIAN__ -D__powerpc__
-@@ -154,14 +154,6 @@ ifneq ($(MAKECMDGOALS),clean)
- ifneq ($(MAKECMDGOALS),tags)
- -include config/feature-tests.mak
- 
--ifeq ($(call get-executable,$(FLEX)),)
--	dummy := $(error Error: $(FLEX) is missing on this system, please install it)
--endif
--
--ifeq ($(call get-executable,$(BISON)),)
--	dummy := $(error Error: $(BISON) is missing on this system, please install it)
--endif
--
- ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -Werror -fstack-protector-all,-fstack-protector-all),y)
- 	CFLAGS := $(CFLAGS) -fstack-protector-all
+ # Treat warnings as errors unless directed not to
+ ifneq ($(WERROR),0)
+-	CFLAGS_WERROR := -Werror
++  CFLAGS_WERROR := -Werror
  endif
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index fe317c2..04bf8ac 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -32,3 +32,13 @@ endif
- ifeq ($(NO_PERF_REGS),0)
-         BASIC_CFLAGS += -DHAVE_PERF_REGS
- endif
-+
-+-include config/feature-tests.mak
-+
-+ifeq ($(call get-executable,$(FLEX)),)
-+	dummy := $(error Error: $(FLEX) is missing on this system, please install it)
-+endif
-+
-+ifeq ($(call get-executable,$(BISON)),)
-+	dummy := $(error Error: $(BISON) is missing on this system, please install it)
-+endif
+ 
+ ifeq ("$(origin DEBUG)", "command line")
+@@ -819,10 +819,10 @@ endif
+ ifdef NO_DEMANGLE
+ 	BASIC_CFLAGS += -DNO_DEMANGLE
+ else
+-        ifdef HAVE_CPLUS_DEMANGLE
++	ifdef HAVE_CPLUS_DEMANGLE
+ 		EXTLIBS += -liberty
+ 		BASIC_CFLAGS += -DHAVE_CPLUS_DEMANGLE
+-        else
++	else
+ 		FLAGS_BFD=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -DPACKAGE='perf' -lbfd
+ 		has_bfd := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD),libbfd)
+ 		ifeq ($(has_bfd),y)
 -- 
 1.7.11.7
 
