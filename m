@@ -1,73 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752442Ab3DXFes (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 01:34:48 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:58921 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752292Ab3DXFer convert rfc822-to-8bit (ORCPT
+	id S1753396Ab3DXF4L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 01:56:11 -0400
+Received: from mail-out.m-online.net ([212.18.0.10]:60977 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752010Ab3DXF4K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 01:34:47 -0400
-From: "Gupta, Pekon" <pekon@ti.com>
-To: Tony Lindgren <tony@atomide.com>, Arnd Bergmann <arnd@arndb.de>
-CC: "Mohammed, Afzal" <afzal@ti.com>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: RE: [PATCH 21/21] mtd: omap2: allow bulding as a module
-Thread-Topic: [PATCH 21/21] mtd: omap2: allow bulding as a module
-Thread-Index: AQHOQEGn7X1AxTwUD0WwWt6/tNjm2Jjjkw0AgAE5s+A=
-Date: Wed, 24 Apr 2013 05:34:21 +0000
-Message-ID: <20980858CB6D3A4BAE95CA194937D5E73E9BCFAE@DBDE04.ent.ti.com>
-References: <1366734653-488286-1-git-send-email-arnd@arndb.de>
- <1366734653-488286-22-git-send-email-arnd@arndb.de>
- <20130423180320.GJ10155@atomide.com>
-In-Reply-To: <20130423180320.GJ10155@atomide.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Wed, 24 Apr 2013 01:56:10 -0400
+X-Auth-Info: xpeDRIVcWaprytlgZ/qyXPtH0DW7UfB/kf3in/b45/I=
+Date: Wed, 24 Apr 2013 07:55:54 +0200
+From: Anatolij Gustschin <agust@denx.de>
+To: Tiejun Chen <tiejun.chen@windriver.com>
+Cc: <galak@kernel.crashing.org>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] usb: ehci-fsl: set INCR8 mode only on MPC512x
+Message-ID: <20130424075554.1ae85c65@crub>
+In-Reply-To: <1366772110-9620-1-git-send-email-tiejun.chen@windriver.com>
+References: <1366772110-9620-1-git-send-email-tiejun.chen@windriver.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> * Arnd Bergmann <arnd@arndb.de> [130423 09:37]:
-> > The omap2 nand device driver calls into the the elm code, which can
-> > be a loadable module, and in that case it cannot be built-in itself.
-> > I can see no reason why the omap2 driver cannot also be a module,
-> > so let's make the option "tristate" in Kconfig to fix this allmodconfig
-> > build error:
-> >
-> > ERROR: "elm_config" [drivers/mtd/nand/omap2.ko] undefined!
-> > ERROR: "elm_decode_bch_error_page" [drivers/mtd/nand/omap2.ko]
-> undefined!
-> >
-[Pekon]: 
-ELM module is required in for Hardware based ECC correction for 
-NAND devices. And this driver has a very small foot-print.
+On Wed, 24 Apr 2013 10:55:10 +0800
+Tiejun Chen <tiejun.chen@windriver.com> wrote:
 
-The only cases this drives would _not_ be used are:
-(a) Using S/W based ECC scheme, which have vey high CPU utilization
-(b) Using single bit ECC scheme, which are becoming obsolete due to
- increasing NAND densities.
-For most of the cases ELM module will be used with nand-driver. So
-there should be no harm in having this module as built-in, if not used
-in 10% of the use-cases.
+> commit 761bbcb7, "usb: ehci-fsl: set INCR8 mode for system bus interface
+> on MPC512x", introduced to fix one MPC5121e (M36P) Errata by setting
+> INCR8 mode for system bus interface on MPC512x, but we should make sure
+> this is only valid for MPC512x like other parts of this commit. Otherwise
 
-Thus I think it's better to keep this module tied to GPMC module, 
-rather than independent control via KConfig.
-And user should just selects which ECC scheme he would like to
-use via DT, without worrying about KConfig options.
+NAK. It is already only valid for MPC512x.
 
-I'm working in cleaning up omap2-nand driver to remove some 
-redundancies. So would like to know your feedback on same..
+> this would issue other platforms as abnormal without this similar Errata.
 
+This setting is in the ehci_fsl_mpc512x_drv_resume() function which is
+not called on other platforms.
 
-with regards, pekon
+Thanks,
+
+Anatolij
