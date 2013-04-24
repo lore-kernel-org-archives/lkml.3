@@ -1,61 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758584Ab3DXWls (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 18:41:48 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:63251 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758272Ab3DXWlq (ORCPT
+	id S1758514Ab3DXWqM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 18:46:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44421 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757864Ab3DXWqK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 18:41:46 -0400
-X-Originating-IP: 108.223.40.66
-Date: Wed, 24 Apr 2013 15:42:18 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Prarit Bhargava <prarit@redhat.com>
-Cc: John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, stable <stable@vger.kernel.org>
-Subject: Re: [PATCH] hrtimer, add expiry time overflow check in
- hrtimer_interrupt
-Message-ID: <20130424224218.GA7767@roeck-us.net>
-References: <1365425235-26191-1-git-send-email-prarit@redhat.com>
- <5163264B.3050707@linaro.org>
- <516329D2.1050003@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <516329D2.1050003@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 24 Apr 2013 18:46:10 -0400
+Date: Wed, 24 Apr 2013 15:46:07 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Minchan Kim <minchan@kernel.org>, David Rientjes <rientjes@google.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Mel Gorman <mgorman@suse.de>,
+        Dave Jones <davej@redhat.com>, linux-mm <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: mm: BUG in do_huge_pmd_wp_page
+Message-Id: <20130424154607.60e9b9895539eb5668d2f505@linux-foundation.org>
+In-Reply-To: <5166D355.2060103@oracle.com>
+References: <51559150.3040407@oracle.com>
+	<20130410080202.GB21292@blaptop>
+	<5166CEDD.9050301@oracle.com>
+	<20130411151323.89D40E0085@blue.fi.intel.com>
+	<5166D355.2060103@oracle.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 08, 2013 at 04:34:26PM -0400, Prarit Bhargava wrote:
-> 
-> 
-> On 04/08/2013 04:19 PM, John Stultz wrote:
-> > On 04/08/2013 05:47 AM, Prarit Bhargava wrote:
-> 
+On Thu, 11 Apr 2013 11:14:29 -0400 Sasha Levin <sasha.levin@oracle.com> wrote:
+
+> On 04/11/2013 11:13 AM, Kirill A. Shutemov wrote:
+> > Sasha Levin wrote:
+> >> On 04/10/2013 04:02 AM, Minchan Kim wrote:
+> >>> I don't know this issue was already resolved. If so, my reply become a just
+> >>> question to Kirill regardless of this BUG.
 > >>
-> >> A simple check for an overflow can resolve this problem.  Using KTIME_MAX
-> >> instead of the overflow value will result in the hrtimer function being run,
-> >> and the reprogramming of the timer after that.
-> >>
-> >> Signed-off-by: Prarit Bhargava <prarit@redhat.com>
-> >> Cc: Thomas Gleixner <tglx@linutronix.de>
-> >> Cc: John Stultz <john.stultz@linaro.org>
+> >> The issue is still reproducible with today's -next.
 > > 
-> > Prarit: Should this be tagged for -stable?
+> > Could you share your kernel config and configuration of your virtual machine?
 > 
-> John,
+> I've attached my .config.
 > 
-> Yes, this should go to -stable.  cc'd.
+> I start the vm using:
 > 
-Hi,
+> ./vm sandbox --rng --balloon -k /usr/src/linux/arch/x86/boot/bzImage -d run -d /dev/shm/swap --no-dhcp -m 3072 -c 6 -p
+> "init=/virt/init zcache ftrace_dump_on_oops debugpat kvm.mmu_audit=1 memblock=debug slub_debug=FZPU" -- /runtrin.sh
+> 
+> Where /runtrin.sh inside the vm simply mounts some stuff like sysfs and proc,
+> creates the swap space and runs trinity.
 
-I am a bit surprised that this patch has not found its way into mainline yet,
-as everyone seems to agree that it is a candidate for -stable.
-
-I hit this problem very reliably (ie with each boot) with 3.8.x on systems
-which have no RTC and run systemd. Seen with Freescale P5040 as well as
-a Broadcom MIPS based system.
-
-Guenter
+Guys, did this get fixed?
