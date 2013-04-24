@@ -1,133 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756042Ab3DXGjH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 02:39:07 -0400
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:42657 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754638Ab3DXGjE (ORCPT
+	id S1756749Ab3DXGkX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 02:40:23 -0400
+Received: from mail.windriver.com ([147.11.1.11]:54665 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752754Ab3DXGkW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 02:39:04 -0400
-From: Fabio Baltieri <fabio.baltieri@linaro.org>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org,
-        Virupax Sadashivpetimath 
-	<virupax.sadashivpetimath@stericsson.com>,
-        stable <stable@vger.kernel.org>,
-        Fabio Baltieri <fabio.baltieri@linaro.org>
-Subject: [PATCH] usb: musb: make use_sg flag URB specific
-Date: Wed, 24 Apr 2013 08:38:48 +0200
-Message-Id: <1366785528-32158-1-git-send-email-fabio.baltieri@linaro.org>
-X-Mailer: git-send-email 1.8.1.3
+	Wed, 24 Apr 2013 02:40:22 -0400
+Message-ID: <51777E4F.9060405@windriver.com>
+Date: Wed, 24 Apr 2013 14:40:15 +0800
+From: "tiejun.chen" <tiejun.chen@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Anatolij Gustschin <agust@denx.de>
+CC: <galak@kernel.crashing.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1] usb: ehci-fsl: set INCR8 mode only on MPC512x
+References: <1366772110-9620-1-git-send-email-tiejun.chen@windriver.com> <20130424075554.1ae85c65@crub>
+In-Reply-To: <20130424075554.1ae85c65@crub>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [147.11.178.22]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Virupax Sadashivpetimath <virupax.sadashivpetimath@stericsson.com>
+On 04/24/2013 01:55 PM, Anatolij Gustschin wrote:
+> On Wed, 24 Apr 2013 10:55:10 +0800
+> Tiejun Chen <tiejun.chen@windriver.com> wrote:
+>
+>> commit 761bbcb7, "usb: ehci-fsl: set INCR8 mode for system bus interface
+>> on MPC512x", introduced to fix one MPC5121e (M36P) Errata by setting
+>> INCR8 mode for system bus interface on MPC512x, but we should make sure
+>> this is only valid for MPC512x like other parts of this commit. Otherwise
+>
+> NAK. It is already only valid for MPC512x.
+>
+>> this would issue other platforms as abnormal without this similar Errata.
+>
+> This setting is in the ehci_fsl_mpc512x_drv_resume() function which is
+> not called on other platforms.
 
-Since highmem PIO URB handling was introduced in:
+Yes, I already notice this and also send a notification to ignore this improper 
+patch immediately ;-)
 
-8e8a551 usb: musb: host: Handle highmem in PIO mode
+Thanks,
 
-when a URB is being handled it may happen that the static use_sg flag
-was set by a previous URB with buffer in highmem.  This leads to error
-in handling the present URB.
-
-Fix this by making the use_sg flag URB specific.
-
-Cc: stable <stable@vger.kernel.org> # 3.7+
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Virupax Sadashivpetimath <virupax.sadashivpetimath@stericsson.com>
-Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
----
- drivers/usb/musb/musb_host.c | 18 ++++++++----------
- drivers/usb/musb/musb_host.h |  1 +
- 2 files changed, 9 insertions(+), 10 deletions(-)
-
-diff --git a/drivers/usb/musb/musb_host.c b/drivers/usb/musb/musb_host.c
-index 1a6b5a9..26d3f140 100644
---- a/drivers/usb/musb/musb_host.c
-+++ b/drivers/usb/musb/musb_host.c
-@@ -1232,7 +1232,6 @@ void musb_host_tx(struct musb *musb, u8 epnum)
- 	void __iomem		*mbase = musb->mregs;
- 	struct dma_channel	*dma;
- 	bool			transfer_pending = false;
--	static bool use_sg;
- 
- 	musb_ep_select(mbase, epnum);
- 	tx_csr = musb_readw(epio, MUSB_TXCSR);
-@@ -1463,9 +1462,9 @@ done:
- 	 * NULL.
- 	 */
- 	if (!urb->transfer_buffer)
--		use_sg = true;
-+		qh->use_sg = true;
- 
--	if (use_sg) {
-+	if (qh->use_sg) {
- 		/* sg_miter_start is already done in musb_ep_program */
- 		if (!sg_miter_next(&qh->sg_miter)) {
- 			dev_err(musb->controller, "error: sg list empty\n");
-@@ -1484,9 +1483,9 @@ done:
- 
- 	qh->segsize = length;
- 
--	if (use_sg) {
-+	if (qh->use_sg) {
- 		if (offset + length >= urb->transfer_buffer_length)
--			use_sg = false;
-+			qh->use_sg = false;
- 	}
- 
- 	musb_ep_select(mbase, epnum);
-@@ -1552,7 +1551,6 @@ void musb_host_rx(struct musb *musb, u8 epnum)
- 	bool			done = false;
- 	u32			status;
- 	struct dma_channel	*dma;
--	static bool use_sg;
- 	unsigned int sg_flags = SG_MITER_ATOMIC | SG_MITER_TO_SG;
- 
- 	musb_ep_select(mbase, epnum);
-@@ -1878,12 +1876,12 @@ void musb_host_rx(struct musb *musb, u8 epnum)
- 			 * NULL.
- 			 */
- 			if (!urb->transfer_buffer) {
--				use_sg = true;
-+				qh->use_sg = true;
- 				sg_miter_start(&qh->sg_miter, urb->sg, 1,
- 						sg_flags);
- 			}
- 
--			if (use_sg) {
-+			if (qh->use_sg) {
- 				if (!sg_miter_next(&qh->sg_miter)) {
- 					dev_err(musb->controller, "error: sg list empty\n");
- 					sg_miter_stop(&qh->sg_miter);
-@@ -1913,8 +1911,8 @@ finish:
- 	urb->actual_length += xfer_len;
- 	qh->offset += xfer_len;
- 	if (done) {
--		if (use_sg)
--			use_sg = false;
-+		if (qh->use_sg)
-+			qh->use_sg = false;
- 
- 		if (urb->status == -EINPROGRESS)
- 			urb->status = status;
-diff --git a/drivers/usb/musb/musb_host.h b/drivers/usb/musb/musb_host.h
-index 5a9c8fe..738f7eb 100644
---- a/drivers/usb/musb/musb_host.h
-+++ b/drivers/usb/musb/musb_host.h
-@@ -74,6 +74,7 @@ struct musb_qh {
- 	u16			frame;		/* for periodic schedule */
- 	unsigned		iso_idx;	/* in urb->iso_frame_desc[] */
- 	struct sg_mapping_iter sg_miter;	/* for highmem in PIO mode */
-+	bool			use_sg;		/* to track urb using sglist */
- };
- 
- /* map from control or bulk queue head to the first qh on that ring */
--- 
-1.8.1.3
+Tiejun
 
