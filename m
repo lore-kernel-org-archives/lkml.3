@@ -1,100 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756752Ab3DXQcr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 12:32:47 -0400
-Received: from mga14.intel.com ([143.182.124.37]:35011 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755932Ab3DXQcq convert rfc822-to-8bit (ORCPT
+	id S1756810Ab3DXQdK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 12:33:10 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:60565 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753407Ab3DXQdI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 12:32:46 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,542,1363158000"; 
-   d="scan'208";a="291187573"
-From: "Zhang, Rui" <rui.zhang@intel.com>
-To: Eduardo Valentin <eduardo.valentin@ti.com>,
-        "amit.kachhap@linaro.org" <amit.kachhap@linaro.org>
-CC: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 01/30] thermal: cpu_cooling: remove unused headers
-Thread-Topic: [PATCH 01/30] thermal: cpu_cooling: remove unused headers
-Thread-Index: AQHOO47ki7b2eZnfKUOG79VeKY3BmZjlmquA
-Date: Wed, 24 Apr 2013 16:31:56 +0000
-Message-ID: <744357E9AAD1214791ACBA4B0B9092632CA053@SHSMSX101.ccr.corp.intel.com>
-References: <1366218743-20841-1-git-send-email-eduardo.valentin@ti.com>
- <1366218743-20841-2-git-send-email-eduardo.valentin@ti.com>
-In-Reply-To: <1366218743-20841-2-git-send-email-eduardo.valentin@ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 24 Apr 2013 12:33:08 -0400
 MIME-Version: 1.0
+In-Reply-To: <51780348.6090202@linaro.org>
+References: <CAPXgP13kizK95JyLxKxgWrGnV9b11ZTyi3vuc5YFDmROzckg4w@mail.gmail.com>
+ <517746E4.908@linaro.org> <CAPXgP128yAq1jju-gsZcaS-mZPt+7tq0tt-uVk3Yqr77abd26Q@mail.gmail.com>
+ <51774F44.2060704@linaro.org> <517769A9.5060308@ahsoftware.de> <51780348.6090202@linaro.org>
+From: Kay Sievers <kay@vrfy.org>
+Date: Wed, 24 Apr 2013 18:32:47 +0200
+Message-ID: <CAPXgP10OJGHwZZHCtUMZfnSzj2cKJmg6NGg2pPKiuHWPKuuo-Q@mail.gmail.com>
+Subject: Re: CONFIG_RTC_HCTOSYS lost on x86 with ALWAYS_USE_PERSISTENT_CLOCK changes?
+To: John Stultz <john.stultz@linaro.org>
+Cc: Alexander Holler <holler@ahsoftware.de>,
+        LKML <linux-kernel@vger.kernel.org>, Feng Tang <feng.tang@intel.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Apr 24, 2013 at 6:07 PM, John Stultz <john.stultz@linaro.org> wrote:
 
+> So summarizing the above, because as much as I'm aware, its always been
+> redundant and unnecessary on x86.  Thus being able at build time to mark it
+> as unnecessary was attractive, since it reduced the code paths running at
+> suspend/resume.
+>
+> That said, Kay's concerns about userland implications (basically the
+> userland side effects of SYSTOHC being enabled) give me pause, so I may
+> revert the HAS_PERSISTENT_CLOCK on x86 change.
 
-> -----Original Message-----
-> From: linux-pm-owner@vger.kernel.org [mailto:linux-pm-
-> owner@vger.kernel.org] On Behalf Of Eduardo Valentin
-> Sent: Thursday, April 18, 2013 1:12 AM
-> To: amit.kachhap@linaro.org
-> Cc: Eduardo Valentin; Zhang, Rui; linux-pm@vger.kernel.org; linux-
-> kernel@vger.kernel.org
-> Subject: [PATCH 01/30] thermal: cpu_cooling: remove unused headers
-> Importance: High
-> 
-> As this code is not a module nor a platform device driver, this patch
-> removes some unused header files.
-> 
-> Cc: Zhang Rui <rui.zhang@intel.com>
-> Cc: linux-pm@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org
-> Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
-> ---
->  drivers/thermal/cpu_cooling.c | 3 ---
->  1 file changed, 3 deletions(-)
-> 
-> diff --git a/drivers/thermal/cpu_cooling.c
-> b/drivers/thermal/cpu_cooling.c index 5f5c780..778c43d 100644
-> --- a/drivers/thermal/cpu_cooling.c
-> +++ b/drivers/thermal/cpu_cooling.c
-> @@ -20,10 +20,7 @@
->   *
->   *
-> ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-> ~~~
->   */
-> -#include <linux/kernel.h>
-> -#include <linux/module.h>
+Thanks a lot for all the missing details!
 
-This is still needed because of EXPORT_SYMBOL.
-Or else, I get:
-drivers/thermal/cpu_cooling.c:225:1: warning: data definition has no type or storage class [enabled by default]
-drivers/thermal/cpu_cooling.c:225:1: warning: type defaults to int in declaration of EXPORT_SYMBOL_GPL [-Wimplicit-int]
-drivers/thermal/cpu_cooling.c:225:1: warning: parameter names (without types) in function declaration [enabled by default]
-drivers/thermal/cpu_cooling.c:479:1: warning: data definition has no type or storage class [enabled by default]
-drivers/thermal/cpu_cooling.c:479:1: warning: type defaults to int in declaration of EXPORT_SYMBOL_GPL [-Wimplicit-int]
-drivers/thermal/cpu_cooling.c:479:1: warning: parameter names (without types) in function declaration [enabled by default]
-drivers/thermal/cpu_cooling.c:505:1: warning: data definition has no type or storage class [enabled by default]
-drivers/thermal/cpu_cooling.c:505:1: warning: type defaults to int in declaration of EXPORT_SYMBOL_GPL [-Wimplicit-int]
-drivers/thermal/cpu_cooling.c:505:1: warning: parameter names (without types) in function declaration [enabled by default]
+No, I think that all makes too much sense to revert it. Let's just
+find a way to solve it properly. I don't think it is of any pressing
+importance to keep the old behaviour, if we can still provide the
+functionality today.
 
-thanks,
-rui
+I'll continue replying in the later mail ...
 
->  #include <linux/thermal.h>
-> -#include <linux/platform_device.h>
->  #include <linux/cpufreq.h>
->  #include <linux/err.h>
->  #include <linux/slab.h>
-> --
-> 1.8.2.1.342.gfa7285d
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-> the body of a message to majordomo@vger.kernel.org More majordomo info
-> at  http://vger.kernel.org/majordomo-info.html
+Kay
