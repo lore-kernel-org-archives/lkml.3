@@ -1,55 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757816Ab3DXTpf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 15:45:35 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:46876 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757465Ab3DXTpb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 15:45:31 -0400
-Message-ID: <5178282D.9030902@zytor.com>
-Date: Wed, 24 Apr 2013 11:45:01 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S1757679Ab3DXTo7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 15:44:59 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:49782 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757438Ab3DXToa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 15:44:30 -0400
+X-IronPort-AV: E=Sophos;i="4.87,545,1363132800"; 
+   d="scan'208";a="20369899"
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+To: <xen-devel@lists.xensource.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <Stefano.Stabellini@eu.citrix.com>, <konrad.wilk@oracle.com>,
+        <Ian.Campbell@citrix.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        <stable@vger.kernel.org>
+Subject: [PATCH v4 1/7] xen/arm: actually pass a non-NULL percpu pointer to request_percpu_irq
+Date: Wed, 24 Apr 2013 20:28:09 +0100
+Message-ID: <1366831695-13214-1-git-send-email-stefano.stabellini@eu.citrix.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <alpine.DEB.2.02.1304242012590.4180@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1304242012590.4180@kaball.uk.xensource.com>
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Cyrill Gorcunov <gorcunov@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        David Miller <davem@davemloft.net>, "Theodore Ts'o" <tytso@mit.edu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        Fr??d??ric Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH] x86: make DR*_RESERVED unsigned long
-References: <CA+55aFwpLu0qNms=hkQr43yqD0K9DgESNm91OEWKT1ZuT8MU6Q@mail.gmail.com> <20130424072630.GB1780@gmail.com> <20130424170702.GA1867@redhat.com>
-In-Reply-To: <20130424170702.GA1867@redhat.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/24/2013 10:07 AM, Oleg Nesterov wrote:
-> DR6_RESERVED and DR_CONTROL_RESERVED are used to clear the set
-> bits in the "unsigned long" data, make them long to ensure that
-> "&~" doesn't clear the upper bits.
-> 
-> do_debug() and ptrace_write_dr7() which use DR*_RESERVED look
-> safe, but probably it makes sense to cleanup anyway.
-> 
-> Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: stable@vger.kernel.org
+---
+ arch/arm/xen/enlighten.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Can you please put in the description if this is a manifest or
-non-manifest bug and, if manifest, what the issues are?  It greatly
-affects what we otherwise have to do to address the bug.
-
-Also, the -UL suffix is usually capitalized in our codebase.
-
-	-hpa
-
+diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
+index 8dc0605..99ce189 100644
+--- a/arch/arm/xen/enlighten.c
++++ b/arch/arm/xen/enlighten.c
+@@ -239,7 +239,7 @@ static int __init xen_init_events(void)
+ 	xen_init_IRQ();
+ 
+ 	if (request_percpu_irq(xen_events_irq, xen_arm_callback,
+-			"events", xen_vcpu)) {
++			"events", &xen_vcpu)) {
+ 		pr_err("Error requesting IRQ %d\n", xen_events_irq);
+ 		return -EINVAL;
+ 	}
+-- 
+1.7.2.5
 
