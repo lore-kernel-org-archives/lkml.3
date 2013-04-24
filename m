@@ -1,52 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757630Ab3DXLGu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 07:06:50 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:14875 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754751Ab3DXLGt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 07:06:49 -0400
-X-Spam-Score: -100.8
-Message-ID: <5177BC9B.1060103@asianux.com>
-Date: Wed, 24 Apr 2013 19:06:03 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1757778Ab3DXLIs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 07:08:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22306 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757659Ab3DXLIq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 07:08:46 -0400
+Date: Wed, 24 Apr 2013 13:08:17 +0200 (CEST)
+From: =?ISO-8859-15?Q?Luk=E1=A8_Czerner?= <lczerner@redhat.com>
+X-X-Sender: lukas@localhost
+To: Zheng Liu <gnehzuil.liu@gmail.com>
+cc: Jan Kara <jack@suse.cz>, Lukas Czerner <lczerner@redhat.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH v3 17/18] ext4: make punch hole code path work with
+ bigalloc
+In-Reply-To: <20130423091928.GA5321@gmail.com>
+Message-ID: <alpine.LFD.2.00.1304241303560.24669@localhost>
+References: <1365498867-27782-1-git-send-email-lczerner@redhat.com> <1365498867-27782-18-git-send-email-lczerner@redhat.com> <20130420134241.GA2461@quack.suse.cz> <20130423091928.GA5321@gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: Will Deacon <Will.Deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3] arm64: compiling issue, need add include/asm/vga.h
- file
-References: <5177551D.8090007@asianux.com> <20130424082237.GA23397@arm.com> <5177B1F0.10106@asianux.com> <20130424102327.GF21850@mudshark.cambridge.arm.com> <5177BAD0.9000500@asianux.com> <20130424110511.GK23397@arm.com>
-In-Reply-To: <20130424110511.GK23397@arm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013年04月24日 19:05, Catalin Marinas wrote:
-> On Wed, Apr 24, 2013 at 11:58:24AM +0100, Chen Gang wrote:
->> > 
->> > For compiling with allmodconfig, need vga.h file, so generate it which
->> > just only include the asm-generic one.
->> > 
->> > It is firstly used by drivers/gpu/drm/drm_irq.c.
->> > 
->> > The related error:
->> > include/video/vga.h:22:21: fatal error: asm/vga.h: No such file or directory
->> > 
->> > 
->> > Signed-off-by: Chen Gang <gang.chen@asianux.com>
-> Looks fine. Thanks.
+On Tue, 23 Apr 2013, Zheng Liu wrote:
 
-Thanks, too.
+> Date: Tue, 23 Apr 2013 17:19:28 +0800
+> From: Zheng Liu <gnehzuil.liu@gmail.com>
+> To: Jan Kara <jack@suse.cz>
+> Cc: Lukas Czerner <lczerner@redhat.com>, linux-mm@kvack.org,
+>     linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+>     linux-ext4@vger.kernel.org
+> Subject: Re: [PATCH v3 17/18] ext4: make punch hole code path work with
+>     bigalloc
+> 
+> On Sat, Apr 20, 2013 at 03:42:41PM +0200, Jan Kara wrote:
+> > On Tue 09-04-13 11:14:26, Lukas Czerner wrote:
+> > > Currently punch hole is disabled in file systems with bigalloc
+> > > feature enabled. However the recent changes in punch hole patch should
+> > > make it easier to support punching holes on bigalloc enabled file
+> > > systems.
+> > > 
+> > > This commit changes partial_cluster handling in ext4_remove_blocks(),
+> > > ext4_ext_rm_leaf() and ext4_ext_remove_space(). Currently
+> > > partial_cluster is unsigned long long type and it makes sure that we
+> > > will free the partial cluster if all extents has been released from that
+> > > cluster. However it has been specifically designed only for truncate.
+> > > 
+> > > With punch hole we can be freeing just some extents in the cluster
+> > > leaving the rest untouched. So we have to make sure that we will notice
+> > > cluster which still has some extents. To do this I've changed
+> > > partial_cluster to be signed long long type. The only scenario where
+> > > this could be a problem is when cluster_size == block size, however in
+> > > that case there would not be any partial clusters so we're safe. For
+> > > bigger clusters the signed type is enough. Now we use the negative value
+> > > in partial_cluster to mark such cluster used, hence we know that we must
+> > > not free it even if all other extents has been freed from such cluster.
+> > > 
+> > > This scenario can be described in simple diagram:
+> > > 
+> > > |FFF...FF..FF.UUU|
+> > >  ^----------^
+> > >   punch hole
+> > > 
+> > > . - free space
+> > > | - cluster boundary
+> > > F - freed extent
+> > > U - used extent
+> > > 
+> > > Also update respective tracepoints to use signed long long type for
+> > > partial_cluster.
+> >   The patch looks OK. You can add:
+> > Reviewed-by: Jan Kara <jack@suse.cz>
+> > 
+> >   Just a minor nit - sometimes you use 'signed long long', sometimes 'long
+> > long int', sometimes just 'long long'. In kernel we tend to always use just
+> > 'long long' so it would be good to clean that up.
+> 
+> Another question is that in patch 01/18 invalidatepage signature is
+> changed from
+>   int (*invalidatepage) (struct page *, unsigned long);
+> to
+>   void (*invalidatepage) (struct page *, unsigned int, unsigned int);
+> 
+> The argument type is changed from 'unsigned long' to 'unsigned int'.  My
+> question is why we need to change it.
+> 
+> Thanks,
+>                                                 - Zheng
+> 
 
--- 
-Chen Gang
+Hi Zheng,
 
-Asianux Corporation
+this was changed on Hugh Dickins request because it makes it clearer
+that those args are indeed intended to be offsets within a page
+(0..PAGE_CACHE_SIZE).
+
+Even though PAGE_CACHE_SIZE can be defined as unsigned long, this is
+only for convenience. Here is quote from Hugh:
+
+  "
+  They would be defined as unsigned long so that they can be used in
+  masks like ~(PAGE_SIZE - 1), and behave as expected on addresses,
+  without needing casts to be added all over.
+
+  We do not (currently!) expect PAGE_SIZE or PAGE_CACHE_SIZE to grow
+  beyond an unsigned int - but indeed they can be larger than what's
+  held in an unsigned short (look no further than ia64 or ppc64).
+
+  For more reassurance, see include/linux/highmem.h, which declares
+  zero_user_segments() and others: unsigned int (well, unsigned with
+  the int implicit) for offsets within a page.
+
+  Hugh
+  "
+
+I should probably mention that in the description.
+
+Thanks!
+-Lukas
