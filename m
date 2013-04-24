@@ -1,323 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758345Ab3DXVgm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 17:36:42 -0400
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:43135 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758030Ab3DXVgk (ORCPT
+	id S1758431Ab3DXVhS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 17:37:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43894 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758191Ab3DXVhQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 17:36:40 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130424212112.GH15272@hansolo.jdub.homelinux.org>
-References: <20130322221444.GJ15821@hansolo.jdub.homelinux.org>
-	<CAGXu5jL=Lg6OeWyhKBWHowwMeOpFipMOXmBosYHY53MfVMo8fA@mail.gmail.com>
-	<1256775981.281402.1364864751771.JavaMail.root@redhat.com>
-	<CAGXu5jLU40Vzx+bNyPSArBt_yYNO9sPJ3yLj7z3Yq=pH22W1Gw@mail.gmail.com>
-	<20130409005050.GE18176@hansolo.jdub.homelinux.org>
-	<20130409154820.GE32476@hansolo.jdub.homelinux.org>
-	<CAGXu5jLs1ghuCwcu7crOG1OHuiaP3hmzYY410br_puc9i82-2g@mail.gmail.com>
-	<CAPXgP10Vd3Ucxn77WX7wzQoaUmy-JdOBWvYv4zpGSu9qcd=GoQ@mail.gmail.com>
-	<20130424175835.GF15272@hansolo.jdub.homelinux.org>
-	<CAGXu5jLaQ=Amui3i5+MyG_3HOVnK-1ZoaLqw=jFDwaQCzE+4qw@mail.gmail.com>
-	<20130424212112.GH15272@hansolo.jdub.homelinux.org>
-Date: Wed, 24 Apr 2013 14:36:39 -0700
-X-Google-Sender-Auth: WAdhZFpxs37M6xfFcsdsR-VVnhw
-Message-ID: <CAGXu5jJweZVLhz0pP6=Woud=aqAKgNmG-7T5WKYdmWR4gxcw9w@mail.gmail.com>
-Subject: Re: [PATCH v2] kmsg: Honor dmesg_restrict sysctl on /dev/kmsg
-From: Kees Cook <keescook@chromium.org>
-To: Josh Boyer <jwboyer@redhat.com>
-Cc: Kay Sievers <kay@vrfy.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Eric Paris <eparis@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Christian Kujau <lists@nerdbynature.de>,
-        "# 3.4.x" <stable@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, kzak@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 24 Apr 2013 17:37:16 -0400
+Date: Wed, 24 Apr 2013 14:37:14 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Alexandre Bounine <alexandre.bounine@idt.com>
+Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        Matt Porter <mporter@kernel.crashing.org>,
+        Li Yang <leoli@freescale.com>, Kumar Gala <galak@kernel.crashing.org>,
+        Andre van Herk <andre.van.herk@Prodrive.nl>,
+        Micha Nelissen <micha.nelissen@Prodrive.nl>
+Subject: Re: [PATCH 1/3] rapidio: make enumeration/discovery configurable
+Message-Id: <20130424143714.4911405aa979bff27887765a@linux-foundation.org>
+In-Reply-To: <1366813919-13766-2-git-send-email-alexandre.bounine@idt.com>
+References: <1366813919-13766-1-git-send-email-alexandre.bounine@idt.com>
+	<1366813919-13766-2-git-send-email-alexandre.bounine@idt.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 24, 2013 at 2:21 PM, Josh Boyer <jwboyer@redhat.com> wrote:
-> On Wed, Apr 24, 2013 at 01:35:17PM -0700, Kees Cook wrote:
->> On Wed, Apr 24, 2013 at 10:58 AM, Josh Boyer <jwboyer@redhat.com> wrote:
->> > On Wed, Apr 24, 2013 at 07:44:33PM +0200, Kay Sievers wrote:
->> >> On Tue, Apr 9, 2013 at 6:33 PM, Kees Cook <keescook@chromium.org> wrote:
->> >> > On Tue, Apr 9, 2013 at 8:48 AM, Josh Boyer <jwboyer@redhat.com> wrote:
->> >> >> The dmesg_restrict sysctl currently covers the syslog method for access
->> >> >> dmesg, however /dev/kmsg isn't covered by the same protections.  Most
->> >> >> people haven't noticed because util-linux dmesg(1) defaults to using the
->> >> >> syslog method for access in older versions.  With util-linux dmesg(1)
->> >> >> defaults to reading directly from /dev/kmsg.
->> >> >>
->> >> >> Fix this by reworking all of the access methods to use the
->> >> >> check_syslog_permissions function and adding checks to devkmsg_open and
->> >> >> devkmsg_read.
->> >> >>
->> >> >> This fixes https://bugzilla.redhat.com/show_bug.cgi?id=903192
->> >> >>
->> >> >> Reported-by: Christian Kujau <lists@nerdbynature.de>
->> >> >> CC: stable@vger.kernel.org
->> >> >> Signed-off-by: Eric Paris <eparis@redhat.com>
->> >> >> Signed-off-by: Josh Boyer <jwboyer@redhat.com>
->> >> >
->> >> > Thanks!
->> >> >
->> >> > Acked-by: Kees Cook <keescook@chromium.org>
->> >>
->> >> If that's the version currently in Fedora, we just cannot do this.
->> >>    https://bugzilla.redhat.com/show_bug.cgi?id=952655
->> >>
->> >> /dev/kmsg is supposed, and was added, to be a sane alternative to
->> >> syslog(). It is already used in dmesg(1) which is now broken with this
->> >> patch.
->> >>
->> >> The access rules for /dev/kmsg should follow the access rules of
->> >> syslog(), and not be any stricter.
->> >
->> > I haven't tested it yet, but I think something like this should work
->> > while still honoring dmesg_restrict.  I'll test it out while the rest
->> > of you debate things.
->> >
->> > josh
->> >
->> > From: Josh Boyer <jwboyer@redhat.com>
->> > Date: Tue, 9 Apr 2013 11:08:13 -0400
->> > Subject: [PATCH v3] kmsg: Honor dmesg_restrict sysctl on /dev/kmsg
->> >
->> > The dmesg_restrict sysctl currently covers the syslog method for access
->> > dmesg, however /dev/kmsg isn't covered by the same protections.  Most
->> > people haven't noticed because util-linux dmesg(1) defaults to using the
->> > syslog method for access in older versions.  With util-linux dmesg(1)
->> > defaults to reading directly from /dev/kmsg.
->> >
->> > Fix this by reworking all of the access methods to use the
->> > check_syslog_permissions function and adding checks to devkmsg_open and
->> > devkmsg_read.
->> >
->> > This fixes https://bugzilla.redhat.com/show_bug.cgi?id=903192
->> >
->> > Reported-by: Christian Kujau <lists@nerdbynature.de>
->> > CC: stable@vger.kernel.org
->> > Signed-off-by: Eric Paris <eparis@redhat.com>
->> > Signed-off-by: Josh Boyer <jwboyer@redhat.com>
->> > ---
->> >  v3: Allow devkmsg_open to work without CAP_SYSLOG, but still make
->> >      devkmsg_read honor dmesg_restrict
->> >
->> >  kernel/printk.c | 91 +++++++++++++++++++++++++++++----------------------------
->> >  1 file changed, 47 insertions(+), 44 deletions(-)
->> >
->> > diff --git a/kernel/printk.c b/kernel/printk.c
->> > index abbdd9e..2d7be05 100644
->> > --- a/kernel/printk.c
->> > +++ b/kernel/printk.c
->> > @@ -368,6 +368,46 @@ static void log_store(int facility, int level,
->> >         log_next_seq++;
->> >  }
->> >
->> > +#ifdef CONFIG_SECURITY_DMESG_RESTRICT
->> > +int dmesg_restrict = 1;
->> > +#else
->> > +int dmesg_restrict;
->> > +#endif
->> > +
->> > +static int syslog_action_restricted(int type)
->> > +{
->> > +       if (dmesg_restrict)
->> > +               return 1;
->> > +       /* Unless restricted, we allow "read all" and "get buffer size" for everybody */
->> > +       return type != SYSLOG_ACTION_READ_ALL && type != SYSLOG_ACTION_SIZE_BUFFER;
->> > +}
->> > +
->> > +static int check_syslog_permissions(int type, bool from_file)
->> > +{
->> > +       /*
->> > +        * If this is from /proc/kmsg and we've already opened it, then we've
->> > +        * already done the capabilities checks at open time.
->> > +        */
->> > +       if (from_file && type != SYSLOG_ACTION_OPEN)
->> > +               goto ok;
->> > +
->> > +       if (syslog_action_restricted(type)) {
->> > +               if (capable(CAP_SYSLOG))
->> > +                       goto ok;
->> > +               /* For historical reasons, accept CAP_SYS_ADMIN too, with a warning */
->> > +               if (capable(CAP_SYS_ADMIN)) {
->> > +                       printk_once(KERN_WARNING "%s (%d): "
->> > +                                "Attempt to access syslog with CAP_SYS_ADMIN "
->> > +                                "but no CAP_SYSLOG (deprecated).\n",
->> > +                                current->comm, task_pid_nr(current));
->> > +                       goto ok;
->> > +               }
->> > +               return -EPERM;
->> > +       }
->> > +ok:
->> > +       return security_syslog(type);
->> > +}
->> > +
->> >  /* /dev/kmsg - userspace message inject/listen interface */
->> >  struct devkmsg_user {
->> >         u64 seq;
->> > @@ -443,10 +483,16 @@ static ssize_t devkmsg_read(struct file *file, char __user *buf,
->> >         char cont = '-';
->> >         size_t len;
->> >         ssize_t ret;
->> > +       int err;
->> >
->> >         if (!user)
->> >                 return -EBADF;
->> >
->> > +       err = check_syslog_permissions(SYSLOG_ACTION_READ_ALL,
->> > +               SYSLOG_FROM_CALL);
->> > +       if (err)
->> > +               return err;
->> > +
->> >         ret = mutex_lock_interruptible(&user->lock);
->> >         if (ret)
->> >                 return ret;
->> > @@ -624,7 +670,7 @@ static int devkmsg_open(struct inode *inode, struct file *file)
->> >         if ((file->f_flags & O_ACCMODE) == O_WRONLY)
->> >                 return 0;
->> >
->> > -       err = security_syslog(SYSLOG_ACTION_READ_ALL);
->> > +       err = check_syslog_permissions(SYSLOG_ACTION_READ_ALL, SYSLOG_FROM_FILE);
->> >         if (err)
->> >                 return err;
->> >
->> > @@ -817,45 +863,6 @@ static inline void boot_delay_msec(int level)
->> >  }
->> >  #endif
->> >
->> > -#ifdef CONFIG_SECURITY_DMESG_RESTRICT
->> > -int dmesg_restrict = 1;
->> > -#else
->> > -int dmesg_restrict;
->> > -#endif
->> > -
->> > -static int syslog_action_restricted(int type)
->> > -{
->> > -       if (dmesg_restrict)
->> > -               return 1;
->> > -       /* Unless restricted, we allow "read all" and "get buffer size" for everybody */
->> > -       return type != SYSLOG_ACTION_READ_ALL && type != SYSLOG_ACTION_SIZE_BUFFER;
->> > -}
->> > -
->> > -static int check_syslog_permissions(int type, bool from_file)
->> > -{
->> > -       /*
->> > -        * If this is from /proc/kmsg and we've already opened it, then we've
->> > -        * already done the capabilities checks at open time.
->> > -        */
->> > -       if (from_file && type != SYSLOG_ACTION_OPEN)
->> > -               return 0;
->> > -
->> > -       if (syslog_action_restricted(type)) {
->> > -               if (capable(CAP_SYSLOG))
->> > -                       return 0;
->> > -               /* For historical reasons, accept CAP_SYS_ADMIN too, with a warning */
->> > -               if (capable(CAP_SYS_ADMIN)) {
->> > -                       printk_once(KERN_WARNING "%s (%d): "
->> > -                                "Attempt to access syslog with CAP_SYS_ADMIN "
->> > -                                "but no CAP_SYSLOG (deprecated).\n",
->> > -                                current->comm, task_pid_nr(current));
->> > -                       return 0;
->> > -               }
->> > -               return -EPERM;
->> > -       }
->> > -       return 0;
->> > -}
->> > -
->> >  #if defined(CONFIG_PRINTK_TIME)
->> >  static bool printk_time = 1;
->> >  #else
->> > @@ -1131,10 +1138,6 @@ int do_syslog(int type, char __user *buf, int len, bool from_file)
->> >         if (error)
->> >                 goto out;
->> >
->> > -       error = security_syslog(type);
->> > -       if (error)
->> > -               return error;
->> > -
->> >         switch (type) {
->> >         case SYSLOG_ACTION_CLOSE:       /* Close log */
->> >                 break;
->>
->> So, the problem here is the expectation of privileges. The /proc/kmsg
->> usage pattern was:
->>
->> open /proc/kmsg with CAP_SYSLOG
->> drop CAP_SYSLOG
->> read /proc/kmsg forever
+On Wed, 24 Apr 2013 10:31:57 -0400 Alexandre Bounine <alexandre.bounine@idt.com> wrote:
+
+> Rework to implement RapidIO enumeration/discovery method selection
+> combined with ability to use enumeration/discovery as a kernel module.
+> 
+> This patch adds ability to introduce new RapidIO enumeration/discovery methods
+> using kernel configuration options or loadable modules. Configuration option
+> mechanism allows to select built-in or modular enumeration/discovery method from
+> the list of existing methods or use external modules.
+> If a modular enumeration/discovery is selected each RapidIO mport device can
+> have its own method attached to it.
+> 
+> The currently existing enumeration/discovery code was updated to be used
+> as built-in or modular method. This configuration option is named "Basic
+> enumeration/discovery" method.
+> 
+> Several common routines have been moved from rio-scan.c to make them available
+> to other enumeration methods and reduce number of exported symbols.
+> 
+> ...
 >
-> This doesn't change the /proc interface at all.
+> @@ -1421,3 +1295,46 @@ enum_done:
+>  bail:
+>  	return -EBUSY;
+>  }
+> +
+> +struct rio_scan rio_scan_ops = {
+> +	.enumerate = rio_enum_mport,
+> +	.discover = rio_disc_mport,
+> +};
+> +
+> +
+> +#ifdef MODULE
 
-Right, I meant that Kay's assertion that /proc/kmsg is "legacy" means
-he expects syslog daemons to switch to using /dev/kmsg.
+Why the `ifdef MODULE'?  The module parameters are still accessible if
+the driver is statically linked and we do want the driver to behave in
+the same way regardless of how it was linked and loaded.
 
->> If we change the FILE vs CALL and OPEN vs READ stuff here, we're lying
->> to the API about what's happening. If we use this patch, then we can't
->> use /dev/kmsg in the same way (i.e. running without privileges).
+> +static bool scan;
+> +module_param(scan, bool, 0);
+> +MODULE_PARM_DESC(scan, "Start RapidIO network enumeration/discovery "
+> +			"(default = 1)");
+> +
+> +/**
+> + * rio_basic_attach:
+> + *
+> + * When this enumeration/discovery method is loaded as a module this function
+> + * registers its specific enumeration and discover routines for all available
+> + * RapidIO mport devices. The "scan" command line parameter controls ability of
+> + * the module to start RapidIO enumeration/discovery automatically.
+> + *
+> + * Returns 0 for success or -EIO if unable to register itself.
+> + *
+> + * This enumeration/discovery method cannot be unloaded and therefore does not
+> + * provide a matching cleanup_module routine.
+> + */
+> +
+> +int __init rio_basic_attach(void)
+
+static
+
+> +{
+> +	if (rio_register_scan(RIO_MPORT_ANY, &rio_scan_ops))
+> +		return -EIO;
+> +	if (scan)
+> +		rio_init_mports();
+> +	return 0;
+> +}
+> +
+> +module_init(rio_basic_attach);
+> +
+> +MODULE_DESCRIPTION("Basic RapidIO enumeration/discovery");
+> +MODULE_LICENSE("GPL");
+> +
+> +#endif /* MODULE */
+> diff --git a/drivers/rapidio/rio.c b/drivers/rapidio/rio.c
+> index d553b5d..e36628a 100644
+> --- a/drivers/rapidio/rio.c
+> +++ b/drivers/rapidio/rio.c
+> @@ -31,6 +31,9 @@
+>  
+>  #include "rio.h"
+>  
+> +LIST_HEAD(rio_devices);
+
+static?
+
+> +DEFINE_SPINLOCK(rio_global_list_lock);
+
+static?
+
+> +
+>  static LIST_HEAD(rio_mports);
+>  static unsigned char next_portid;
+>  static DEFINE_SPINLOCK(rio_mmap_lock);
+> 
+> ...
 >
-> Uh... Yes we can.  I tested it as a normal user.  It works just fine
-> running without privs and without CAP_SYSLOG, like it did before there
-> was a patch at all.  It also honors dmesg_restrict in devkmsg_read.
-> I'm confused why you think this doesn't work?
+> +/**
+> + * rio_switch_init - Sets switch operations for a particular vendor switch
+> + * @rdev: RIO device
+> + * @do_enum: Enumeration/Discovery mode flag
+> + *
+> + * Searches the RIO switch ops table for known switch types. If the vid
+> + * and did match a switch table entry, then call switch initialization
+> + * routine to setup switch-specific routines.
+> + */
+> +void rio_switch_init(struct rio_dev *rdev, int do_enum)
+> +{
+> +	struct rio_switch_ops *cur = __start_rio_switch_ops;
+> +	struct rio_switch_ops *end = __end_rio_switch_ops;
 
-I don't think I was clear. There are two use-cases, as I see it:
+huh, I hadn't noticed that RIO has its very own vmlinux section.  How
+peculair.
 
-- normal user running dmesg(1)
-- system daemon pulling kernel syslog and putting into userspace (e.g.
-/var/log/kern.log).
-
-In the dmesg(1) case, we're fine. It was using syscalls, now it can
-use /dev/kmsg since open isn't checked, just the read action. That's
-all cool by me.
-
-In the daemon case, it's nice to be able to drop privileges after
-setting up resources. The past was open /proc/kmsg with CAP_SYS_ADMIN,
-then drop CAP_SYS_ADMIN and keep reading. Then later CAP_SYS_LOG was
-introduced. So if a daemon switched from /proc/kmsg to /dev/kmsg they
-wouldn't be able to drop the capability. But, it's much saner to carry
-CAP_SYS_LOG than CAP_SYS_ADMIN on a long-running daemon.
-
->> That said, I much prefer doing the privilege test at read time since
->> that means passing a file descriptor to another process doesn't mean
->> the new process can just continue reading. If we're going to be
->> defining the new behavior for /dev/kmsg, then I think we should
->> explicitly drop the fall-back to CAP_SYS_ADMIN. Perhaps introduce a
+> +	while (cur < end) {
+> +		if ((cur->vid == rdev->vid) && (cur->did == rdev->did)) {
+> +			pr_debug("RIO: calling init routine for %s\n",
+> +				 rio_name(rdev));
+> +			cur->init_hook(rdev, do_enum);
+> +			break;
+> +		}
+> +		cur++;
+> +	}
+> +
+> +	if ((cur >= end) && (rdev->pef & RIO_PEF_STD_RT)) {
+> +		pr_debug("RIO: adding STD routing ops for %s\n",
+> +			rio_name(rdev));
+> +		rdev->rswitch->add_entry = rio_std_route_add_entry;
+> +		rdev->rswitch->get_entry = rio_std_route_get_entry;
+> +		rdev->rswitch->clr_table = rio_std_route_clr_table;
+> +	}
+> +
+> +	if (!rdev->rswitch->add_entry || !rdev->rswitch->get_entry)
+> +		printk(KERN_ERR "RIO: missing routing ops for %s\n",
+> +		       rio_name(rdev));
+> +}
+> +EXPORT_SYMBOL_GPL(rio_switch_init);
+> 
+> ...
 >
-> I think Karel and Kay's entire point was /dev/kmsg shouldn't be getting
-> new behavior.  Aside from honoring dmesg_restrict, they see any behavior
-> change as a regression.
+> +int rio_register_scan(int mport_id, struct rio_scan *scan_ops)
+> +{
+> +	struct rio_mport *port;
+> +	int rc = -EBUSY;
+> +
+> +	list_for_each_entry(port, &rio_mports, node) {
 
-Is there an intention to use /dev/kmsg for the syslog management daemon?
+How come the driver has no locking for rio_mports?  If a bugfix isn't
+needed here then a code comment is!
 
->> "legacy_privs" option to check_syslog_permissions() and leave it set
->> for do_syslog and cleared for devkmsg_*. This means we can run a
->> /dev/kmsg reader with _only_ CAP_SYSLOG. (A while back, the original
->> intent that reworked the permissions here was to avoid needing
->> CAP_SYS_ADMIN.)
+> +		if (port->id == mport_id || mport_id == RIO_MPORT_ANY) {
+> +			if (port->nscan && mport_id == RIO_MPORT_ANY)
+> +				continue;
+> +			else if (port->nscan)
+> +				break;
+> +
+> +			port->nscan = scan_ops;
+> +			rc = 0;
+> +
+> +			if (mport_id != RIO_MPORT_ANY)
+> +				break;
+> +		}
+> +	}
+> +
+> +	return rc;
+> +}
+> 
+> ...
 >
-> Right, but /dev/kmsg didn't require CAP_SYSLOG before any version of
-> this patch existed.  That's the bug Karel and Kay are reporting.  As
-> far as I can see, that should be just fine for reading unless
-> dmesg_restrict is set.
 
-Right, your patch fixes things fine. I was pointing out how the
-semantics for switching from /proc/kmsg to /dev/kmsg are different,
-and why we might want to consider changing the requirements here in an
-intentional and clear manner.
-
->> And then maybe we need to rename the from_file to be from_proc (and
->> similarly SYSLOG_FROM_PROC) too?
->
-> Well, that can be done regardless of what falls out from above and would
-> probably make things clearer.
-
-Yeah, cool.
-
--Kees
-
---
-Kees Cook
-Chrome OS Security
