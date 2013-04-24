@@ -1,96 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932083Ab3DXI6V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 04:58:21 -0400
-Received: from mail-ia0-f170.google.com ([209.85.210.170]:50535 "EHLO
-	mail-ia0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758048Ab3DXI6T (ORCPT
+	id S932126Ab3DXJBB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 05:01:01 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:56154 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757768Ab3DXJA5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 04:58:19 -0400
+	Wed, 24 Apr 2013 05:00:57 -0400
 MIME-Version: 1.0
-In-Reply-To: <5165636F.2000602@st.com>
-References: <1363189479-11240-1-git-send-email-linus.walleij@stericsson.com>
-	<5140C3F5.9030406@wwwdotorg.org>
-	<514201F1.6080508@st.com>
-	<CACRpkdZ_Np-NMwO+nVLYnyUWPcidHq-MN8Ls0YMr4WxTLCLKjw@mail.gmail.com>
-	<515381AC.4050206@wwwdotorg.org>
-	<5165636F.2000602@st.com>
-Date: Wed, 24 Apr 2013 10:58:18 +0200
-Message-ID: <CACRpkdYDqknA11E+9erixP+SLV4LDgVmmJ3CcJOnTRbfOZr9Bg@mail.gmail.com>
-Subject: Re: [PATCH] pinctrl: move subsystem mutex to pinctrl_dev struct
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Patrice CHOTARD <patrice.chotard@st.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
+In-Reply-To: <0C6A3B2997299B4EAD81D386F36CD8C20FD926AD@SHSMSX102.ccr.corp.intel.com>
+References: <0C6A3B2997299B4EAD81D386F36CD8C20FD91958@SHSMSX102.ccr.corp.intel.com>
+	<CADJHv_sdbn8hPYOTsWaJQiO276Y5Zto85pjqMR=xD+NOJJKY+A@mail.gmail.com>
+	<0C6A3B2997299B4EAD81D386F36CD8C20FD926AD@SHSMSX102.ccr.corp.intel.com>
+Date: Wed, 24 Apr 2013 17:00:56 +0800
+Message-ID: <CADJHv_vL16joo1QQ0nx2DzZraQ4W0pEvLbn8vMNzp6Mz-L6yLA@mail.gmail.com>
+Subject: Re: NumaTOP 1.0 launched
+From: zhou jencce <jencce.kernel@gmail.com>
+To: "Jin, Yao" <yao.jin@intel.com>
+Cc: "lwn@lwn.net" <lwn@lwn.net>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        Anmar Oueja <anmar.oueja@linaro.org>,
-        Seraphin BONNAFFE <seraphin.bonnaffe@stericsson.com>
+        "linux-perf-users@vger.kernel.org" <linux-perf-users@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 10, 2013 at 3:04 PM, Patrice CHOTARD <patrice.chotard@st.com> wrote:
-> On 03/28/2013 12:33 AM, Stephen Warren wrote:
-
->>>> I don't understand the link between maps and pinctrl_select(),
->>>> pinctrl_select_state_locked() doesn't touch the map.
->>
->> Yes, pinctrl_select() shouldn't touch the map since it's already been
->> parsed.
->>
->> But if there's a per-pinctrl-driver lock, then pinctrl_select() needs to
->> lock all those locks for each driver referenced by a struct
->> pinctrl_state entry.
->>
->> Perhaps it doesn't need to hold more than one of those at a time though;
->> that might help remove any possibility of deadlock.
+2013/4/24 Jin, Yao <yao.jin@intel.com>:
+> Hi Zhou,
 >
-> Ok, regarding pinctrl_select(), i will propose a new patch version which
-> hold the per-pincontrol-driver lock referenced by each struct
-> pinctrl_state entry.
+>
+>
+> I just worry a little bit if you can apply the raw patch on the tip or other
+> version of kernel code. You know, the perf code is changed frequently.
+>
+>
+>
+> Thanks
+>
+> Jin Yao
+>
+>
+>
 
-I've tested this (with a newer patch from Patrice) and it regresses
-on the U300 platform.
+That's OK,  I'd like to try.
 
-pinctrl_select_state() calls pinconf_apply_setting, which
-calls ops->pin_config_set(), which needs to figure out the
-GPIO range for this pin and calls back into core function
-pinctrl_find_gpio_range_from_pin(), which again takes
-the pctldev mutex -> deadlock.
 
-What I do not understand is this: both pinctrl_lookup_state()
-and pinctrl_select_state() are taking (today) the global
-pinctrl mutex. Patrice's patch moves this to take the dev list
-mutex.
+Thanks
+XIong
 
-Taking the dev list mutex is not correct since we're only
-dealing with the isolated struct pinctrl * at this point.
-I think. Unless the idea is to protect agains the device
-being removed underneath.
 
-I don't see the point in taking either mutex actually and
-what it's protecting against. If it's just protecting against the
-pinctrl device being removed during state selection, doing
-that will cause *way* bigger problems anyway (think of all
-the devices that have struct pinctrl * around!) so it's not
-the way forward anyway. The struct pinctrl * was designed
-to be floating around independently of the devices since
-forever.
-
-pinctrl_unregister() calls pinctrl_put_locked() on all pinctrl
-handles, at which point it should scream if any of these are
-in use and that is the big problem with removing the pinctrl
-devices - the system as a whole just need to make sure
-there are no users left, it cannot be guaranteed with
-mutexes.
-
-I just removed those two mutexes (in pinctrl_lookup_state
-and pinctrl_select_state), will send the modified
-version of Patrice's patch soon-ish.
-
-Yours,
-Linus Walleij
+> From: zhou jencce [mailto:jencce.kernel@gmail.com]
+> Sent: Wednesday, April 24, 2013 4:26 PM
+> To: Jin, Yao
+> Cc: lwn@lwn.net; linux-kernel@vger.kernel.org;
+> linux-perf-users@vger.kernel.org
+>
+>
+> Subject: Re: NumaTOP 1.0 launched
+>
+>
+>
+>
+>
+>
+>
+> 2013/4/18 Jin, Yao <yao.jin@intel.com>
+>
+> Hi,
+>
+> https://01.org/numatop/ is slightly faster to access.
+> Or please access https://github.com/01org/numatop to get the source
+> directly.
+>
+> Thanks
+> Jin Yao
+>
+>
+> -----Original Message-----
+> From: Jin, Yao
+> Sent: Wednesday, April 17, 2013 10:30 AM
+> To: 'lwn@lwn.net'; 'linux-kernel@vger.kernel.org';
+> 'linux-perf-users@vger.kernel.org'
+> Subject: NumaTOP 1.0 launched
+>
+> We are pleased to announce today that the NumaTOP project has been added to
+> 01.org.
+>
+> Performance analysis engineers know that NUMA can seriously impact
+> performance and that NUMA performance analysis can be challenging. We've
+> realized that currently there isn't an easy-to-use tool that lets us easily
+> observe whether NUMA-related issues exist and, if so, where the NUMA
+> bottleneck(s) reside. It can be quite challenging, especially in complex
+> server environments.
+>
+> We decided to create a tool that automatically performs the typical steps in
+> NUMA analysis and provides a good starting point to dive in and fix
+> NUMA-related bottlenecks. That's NumaTOP!
+>
+> NumaTOP is an observation tool for runtime memory locality characterization
+> and analysis of processes and threads running on a NUMA system. It helps the
+> user characterize the NUMA behavior of processes and threads and identify
+> where the NUMA-related performance bottlenecks reside. It uses Intel
+> performance counter sampling technologies and associates the performance
+> data with system runtime information to provide real-time analysis for
+> production systems.
+>
+> NumaTOP is a GUI tool. It can run on Linux kernel 3.8 with a perf load
+> latency patch today. That patch is planned to be integrated into kernel 3.9
+> or a later release.
+>
+> To learn more about NumaTOP, visit:
+> http://01.org/numatop/
+>
+> Best Regards
+> Jin Yao
+>
+>
+>
+> Hi,  I am wondering whether  the separated kernel patch is available. It
+> would be very helpful to my pool networking and my strong curiosity to try
+> NumaTop.:)
+>
+> Thanks.
+>
+>
+>
+>
+>
+> Xiong
+>
+>
+>
+>
+>
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
+>
