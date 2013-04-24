@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758504Ab3DXJjV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 05:39:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14248 "EHLO mx1.redhat.com"
+	id S1758486Ab3DXJjS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 05:39:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60961 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758421Ab3DXJjH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758422Ab3DXJjH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 24 Apr 2013 05:39:07 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
@@ -17,16 +17,16 @@ Cc: Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@kernel.org>, Borislav Petkov <bp@alien8.de>,
         Stephane Eranian <eranian@google.com>, Sam Ravnborg <sam@ravnborg.org>,
         David Ahern <dsahern@gmail.com>
-Subject: [PATCH 14/26] perf tools: Move libbfd check config into config/Makefile
-Date: Wed, 24 Apr 2013 11:37:41 +0200
-Message-Id: <1366796273-4780-15-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 11/26] perf tools: Move gtk2 check config into config/Makefile
+Date: Wed, 24 Apr 2013 11:37:38 +0200
+Message-Id: <1366796273-4780-12-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1366796273-4780-1-git-send-email-jolsa@redhat.com>
 References: <1366796273-4780-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Moving libbfd check config into config/Makefile.
+Moving gtk2 check config into config/Makefile.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
@@ -41,101 +41,67 @@ Cc: Stephane Eranian <eranian@google.com>
 Cc: Sam Ravnborg <sam@ravnborg.org>
 Cc: David Ahern <dsahern@gmail.com>
 ---
- tools/perf/Makefile        | 37 -------------------------------------
- tools/perf/config/Makefile | 37 +++++++++++++++++++++++++++++++++++++
- 2 files changed, 37 insertions(+), 37 deletions(-)
+ tools/perf/Makefile        | 25 +++++++------------------
+ tools/perf/config/Makefile | 15 +++++++++++++++
+ 2 files changed, 22 insertions(+), 18 deletions(-)
 
 diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 899ef12..c116417 100644
+index 2187a2c..7bf5c10 100644
 --- a/tools/perf/Makefile
 +++ b/tools/perf/Makefile
-@@ -540,43 +540,6 @@ ifndef NO_LIBPYTHON
- 	LIB_OBJS += $(OUTPUT)scripts/python/Perf-Trace-Util/Context.o
+@@ -523,24 +523,13 @@ ifndef NO_SLANG
  endif
  
--ifdef NO_DEMANGLE
--	BASIC_CFLAGS += -DNO_DEMANGLE
--else
--	ifdef HAVE_CPLUS_DEMANGLE
--		EXTLIBS += -liberty
--		BASIC_CFLAGS += -DHAVE_CPLUS_DEMANGLE
+ ifndef NO_GTK2
+-	FLAGS_GTK2=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null)
+-	ifneq ($(call try-cc,$(SOURCE_GTK2),$(FLAGS_GTK2),gtk2),y)
+-		msg := $(warning GTK2 not found, disables GTK2 support. Please install gtk2-devel or libgtk2.0-dev);
 -	else
--		FLAGS_BFD=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -DPACKAGE='perf' -lbfd
--		has_bfd := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD),libbfd)
--		ifeq ($(has_bfd),y)
--			EXTLIBS += -lbfd
--		else
--			FLAGS_BFD_IBERTY=$(FLAGS_BFD) -liberty
--			has_bfd_iberty := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD_IBERTY),liberty)
--			ifeq ($(has_bfd_iberty),y)
--				EXTLIBS += -lbfd -liberty
--			else
--				FLAGS_BFD_IBERTY_Z=$(FLAGS_BFD_IBERTY) -lz
--				has_bfd_iberty_z := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD_IBERTY_Z),libz)
--				ifeq ($(has_bfd_iberty_z),y)
--					EXTLIBS += -lbfd -liberty -lz
--				else
--					FLAGS_CPLUS_DEMANGLE=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -liberty
--					has_cplus_demangle := $(call try-cc,$(SOURCE_CPLUS_DEMANGLE),$(FLAGS_CPLUS_DEMANGLE),demangle)
--					ifeq ($(has_cplus_demangle),y)
--						EXTLIBS += -liberty
--						BASIC_CFLAGS += -DHAVE_CPLUS_DEMANGLE
--					else
--						msg := $(warning No bfd.h/libbfd found, install binutils-dev[el]/zlib-static to gain symbol demangling)
--						BASIC_CFLAGS += -DNO_DEMANGLE
--					endif
--				endif
--			endif
+-		ifeq ($(call try-cc,$(SOURCE_GTK2_INFOBAR),$(FLAGS_GTK2),-DHAVE_GTK_INFO_BAR),y)
+-			BASIC_CFLAGS += -DHAVE_GTK_INFO_BAR
 -		endif
+-		BASIC_CFLAGS += -DGTK2_SUPPORT
+-		BASIC_CFLAGS += $(shell pkg-config --cflags gtk+-2.0 2>/dev/null)
+-		EXTLIBS += $(shell pkg-config --libs gtk+-2.0 2>/dev/null)
+-		LIB_OBJS += $(OUTPUT)ui/gtk/browser.o
+-		LIB_OBJS += $(OUTPUT)ui/gtk/hists.o
+-		LIB_OBJS += $(OUTPUT)ui/gtk/setup.o
+-		LIB_OBJS += $(OUTPUT)ui/gtk/util.o
+-		LIB_OBJS += $(OUTPUT)ui/gtk/helpline.o
+-		LIB_OBJS += $(OUTPUT)ui/gtk/progress.o
+-		LIB_OBJS += $(OUTPUT)ui/gtk/annotate.o
 -	endif
--endif
--
- ifeq ($(NO_PERF_REGS),0)
- 	ifeq ($(ARCH),x86)
- 		LIB_H += arch/x86/include/perf_regs.h
++	LIB_OBJS += $(OUTPUT)ui/gtk/browser.o
++	LIB_OBJS += $(OUTPUT)ui/gtk/hists.o
++	LIB_OBJS += $(OUTPUT)ui/gtk/setup.o
++	LIB_OBJS += $(OUTPUT)ui/gtk/util.o
++	LIB_OBJS += $(OUTPUT)ui/gtk/helpline.o
++	LIB_OBJS += $(OUTPUT)ui/gtk/progress.o
++	LIB_OBJS += $(OUTPUT)ui/gtk/annotate.o
+ endif
+ 
+ ifdef NO_LIBPERL
 diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index d5e0386..68c6a2b 100644
+index 008b212..6fc2089 100644
 --- a/tools/perf/config/Makefile
 +++ b/tools/perf/config/Makefile
-@@ -324,3 +324,40 @@ else
-     endif
-   endif
+@@ -225,3 +225,18 @@ ifndef NO_SLANG
+ 		EXTLIBS += -lslang
+ 	endif
  endif
 +
-+ifdef NO_DEMANGLE
-+	BASIC_CFLAGS += -DNO_DEMANGLE
-+else
-+	ifdef HAVE_CPLUS_DEMANGLE
-+		EXTLIBS += -liberty
-+		BASIC_CFLAGS += -DHAVE_CPLUS_DEMANGLE
++ifndef NO_GTK2
++	FLAGS_GTK2=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null)
++	ifneq ($(call try-cc,$(SOURCE_GTK2),$(FLAGS_GTK2),gtk2),y)
++		msg := $(warning GTK2 not found, disables GTK2 support. Please install gtk2-devel or libgtk2.0-dev);
++		NO_GTK2 := 1
 +	else
-+		FLAGS_BFD=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -DPACKAGE='perf' -lbfd
-+		has_bfd := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD),libbfd)
-+		ifeq ($(has_bfd),y)
-+			EXTLIBS += -lbfd
-+		else
-+			FLAGS_BFD_IBERTY=$(FLAGS_BFD) -liberty
-+			has_bfd_iberty := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD_IBERTY),liberty)
-+			ifeq ($(has_bfd_iberty),y)
-+				EXTLIBS += -lbfd -liberty
-+			else
-+				FLAGS_BFD_IBERTY_Z=$(FLAGS_BFD_IBERTY) -lz
-+				has_bfd_iberty_z := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD_IBERTY_Z),libz)
-+				ifeq ($(has_bfd_iberty_z),y)
-+					EXTLIBS += -lbfd -liberty -lz
-+				else
-+					FLAGS_CPLUS_DEMANGLE=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -liberty
-+					has_cplus_demangle := $(call try-cc,$(SOURCE_CPLUS_DEMANGLE),$(FLAGS_CPLUS_DEMANGLE),demangle)
-+					ifeq ($(has_cplus_demangle),y)
-+						EXTLIBS += -liberty
-+						BASIC_CFLAGS += -DHAVE_CPLUS_DEMANGLE
-+					else
-+						msg := $(warning No bfd.h/libbfd found, install binutils-dev[el]/zlib-static to gain symbol demangling)
-+						BASIC_CFLAGS += -DNO_DEMANGLE
-+					endif
-+				endif
-+			endif
++		ifeq ($(call try-cc,$(SOURCE_GTK2_INFOBAR),$(FLAGS_GTK2),-DHAVE_GTK_INFO_BAR),y)
++			BASIC_CFLAGS += -DHAVE_GTK_INFO_BAR
 +		endif
++		BASIC_CFLAGS += -DGTK2_SUPPORT
++		BASIC_CFLAGS += $(shell pkg-config --cflags gtk+-2.0 2>/dev/null)
++		EXTLIBS += $(shell pkg-config --libs gtk+-2.0 2>/dev/null)
 +	endif
 +endif
 -- 
