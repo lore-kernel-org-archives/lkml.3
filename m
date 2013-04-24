@@ -1,74 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758223Ab3DXMVF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 08:21:05 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39548 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757731Ab3DXMVD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 08:21:03 -0400
-Date: Wed, 24 Apr 2013 14:21:00 +0200
-From: Jan Kara <jack@suse.cz>
-To: Gu Zheng <guz.fnst@cn.fujitsu.com>
-Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Jens <axboe@kernel.dk>
-Subject: Re: [PATCH] mm/filemap.c: fix criteria of calling iov_shorten() in
- generic_file_direct_write()
-Message-ID: <20130424122100.GA21962@quack.suse.cz>
-References: <51764857.5010808@cn.fujitsu.com>
+	id S1757930Ab3DXMXn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 08:23:43 -0400
+Received: from gerard.telenet-ops.be ([195.130.132.48]:45720 "EHLO
+	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751256Ab3DXMXm convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 08:23:42 -0400
+Date: Wed, 24 Apr 2013 14:23:37 +0200 (CEST)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Dmitry Kozlov <xeb@mail.ru>, "David S. Miller" <davem@davemloft.net>
+cc: netdev@vger.kernel.org,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>
+Subject: Re: gre: Support GRE over IPv6
+In-Reply-To: <20121002205219.7C3BD340556@ra.kernel.org>
+Message-ID: <alpine.DEB.2.00.1304241417570.21513@ayla.of.borg>
+References: <20121002205219.7C3BD340556@ra.kernel.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51764857.5010808@cn.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 23-04-13 16:37:43, Gu Zheng wrote:
-> From 35947e6535d92c54cf523470cc8811e8b5fee3e5 Mon Sep 17 00:00:00 2001
-> From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-> Date: Tue, 23 Apr 2013 16:09:04 +0800
-> Subject: [PATCH] mm/filemap.c: fix criteria of calling iov_shorten() in generic_file_direct_write()
+On Tue, 2 Oct 2012, Linux Kernel Mailing List wrote:
+> Gitweb:     http://git.kernel.org/linus/;a=commit;h=c12b395a46646bab69089ce7016ac78177f6001f
+> Commit:     c12b395a46646bab69089ce7016ac78177f6001f
+> Parent:     b7bc2a5b5bd99b216c3e5fe68c7f45c684ab5745
+> Author:     xeb@mail.ru <xeb@mail.ru>
+> AuthorDate: Fri Aug 10 00:51:50 2012 +0000
+> Committer:  David S. Miller <davem@davemloft.net>
+> CommitDate: Tue Aug 14 14:28:32 2012 -0700
 > 
-> generic_file_direct_write() compares 'count'(the max count we actually can write)
-> with 'ocount'(the count we request to write) to see if there is need to call
-> iov_shorten() to reduce number of segments and the iovec's length. If the
-> 'count' is equal or greater than 'ocount', there is no need to call iov_shorten()
-> indeed. So the judgement should be changed:
-> 'if (count != ocount)' --> 'if (count < ocount)'
-  Thanks for the patch but it shouldn't be really possible that count >
-ocount, should it? So your patch doesn't really fix anything. Or am I
-missing something?
+>     gre: Support GRE over IPv6
+>     
+>     GRE over IPv6 implementation.
+>     
+>     Signed-off-by: Dmitry Kozlov <xeb@mail.ru>
+>     Signed-off-by: David S. Miller <davem@davemloft.net>
 
-								Honza
-> 
-> Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
-> ---
->  mm/filemap.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/mm/filemap.c b/mm/filemap.c
-> index e1979fd..c566b9c 100644
-> --- a/mm/filemap.c
-> +++ b/mm/filemap.c
-> @@ -2183,7 +2183,7 @@ generic_file_direct_write(struct kiocb *iocb, const struct iovec *iov,
->  	size_t		write_len;
->  	pgoff_t		end;
->  
-> -	if (count != ocount)
-> +	if (count < ocount)
->  		*nr_segs = iov_shorten((struct iovec *)iov, *nr_segs, count);
->  
->  	write_len = iov_length(iov, *nr_segs);
-> -- 
-> 1.7.7
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+> --- /dev/null
+> +++ b/net/ipv6/ip6_gre.c
+
+> +static netdev_tx_t ip6gre_xmit2(struct sk_buff *skb,
+> +			 struct net_device *dev,
+> +			 __u8 dsfield,
+> +			 struct flowi6 *fl6,
+> +			 int encap_limit,
+> +			 __u32 *pmtu)
+> +{
+> +	struct net *net = dev_net(dev);
+> +	struct ip6_tnl *tunnel = netdev_priv(dev);
+> +	struct net_device *tdev;    /* Device to other host */
+> +	struct ipv6hdr  *ipv6h;     /* Our new IP header */
+> +	unsigned int max_headroom;  /* The extra header space needed */
+
+max_headroom is not initialized
+
+> +	mtu = dst_mtu(dst) - sizeof(*ipv6h);
+> +	if (encap_limit >= 0) {
+> +		max_headroom += 8;
+
+Hence gcc (4.1.2) rightfully complains:
+
+net/ipv6/ip6_gre.c: In function ‘ip6gre_xmit2’:
+net/ipv6/ip6_gre.c:713: warning: ‘max_headroom’ is used uninitialized in this function
+
+However, initializing max_headroom to zero at the top, or replacing the line
+above by "max_headroom = 8" doesn't seem to be the right fix...
+
+> +		mtu -= 8;
+> +	}
+> +	if (mtu < IPV6_MIN_MTU)
+> +		mtu = IPV6_MIN_MTU;
+> +	if (skb_dst(skb))
+> +		skb_dst(skb)->ops->update_pmtu(skb_dst(skb), NULL, skb, mtu);
+> +	if (skb->len > mtu) {
+> +		*pmtu = mtu;
+> +		err = -EMSGSIZE;
+> +		goto tx_err_dst_release;
+> +	}
+> +
+> +	if (tunnel->err_count > 0) {
+> +		if (time_before(jiffies,
+> +				tunnel->err_time + IP6TUNNEL_ERR_TIMEO)) {
+> +			tunnel->err_count--;
+> +
+> +			dst_link_failure(skb);
+> +		} else
+> +			tunnel->err_count = 0;
+> +	}
+> +
+> +	max_headroom = LL_RESERVED_SPACE(tdev) + gre_hlen + dst->header_len;
+
+... as max_headroom is overwritten here anyway?
+
+So something is really wrong here. What is the right fix?
+
+This issue is present in current mainline as of v3.7.
+
+Gr{oetje,eeting}s,
+
+						Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
