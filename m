@@ -1,156 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755978Ab3DXO4T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 10:56:19 -0400
-Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:10629 "EHLO
-	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754384Ab3DXO4R (ORCPT
+	id S1756808Ab3DXO5N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 10:57:13 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:59471 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755991Ab3DXO5L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 10:56:17 -0400
-Message-ID: <1366814613.10719.20.camel@misato.fc.hp.com>
-Subject: Re: [PATCH v3 2/3] resource: Add release_mem_region_adjustable()
-From: Toshi Kani <toshi.kani@hp.com>
-To: Ram Pai <linuxram@us.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, guz.fnst@cn.fujitsu.com, tmac@hp.com,
-        isimatu.yasuaki@jp.fujitsu.com, wency@cn.fujitsu.com,
-        tangchen@cn.fujitsu.com, jiang.liu@huawei.com
-Date: Wed, 24 Apr 2013 08:43:33 -0600
-In-Reply-To: <20130424084229.GB29191@ram.oc3035372033.ibm.com>
-References: <1365614221-685-1-git-send-email-toshi.kani@hp.com>
-	 <1365614221-685-3-git-send-email-toshi.kani@hp.com>
-	 <20130410144412.395bf9f2fb8192920175e30a@linux-foundation.org>
-	 <1365630585.32127.110.camel@misato.fc.hp.com>
-	 <alpine.DEB.2.02.1304101505250.1526@chino.kir.corp.google.com>
-	 <20130410152404.e0836af597ba3545b9846672@linux-foundation.org>
-	 <1365697802.32127.117.camel@misato.fc.hp.com>
-	 <20130424084229.GB29191@ram.oc3035372033.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
+	Wed, 24 Apr 2013 10:57:11 -0400
+Message-ID: <5177F2C3.5080907@intel.com>
+Date: Wed, 24 Apr 2013 15:57:07 +0100
+From: Matt Fleming <matt.fleming@intel.com>
+Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
+ Way, Swindon SN3 1RJ
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Josh Boyer <jwboyer@redhat.com>
+CC: Matthew Garrett <matthew.garrett@nebula.com>, linux-efi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] efi: Check EFI revision in setup_efi_vars
+References: <20130424143738.GB15272@hansolo.jdub.homelinux.org> <5177EFCE.80104@intel.com> <20130424145449.GC15272@hansolo.jdub.homelinux.org>
+In-Reply-To: <20130424145449.GC15272@hansolo.jdub.homelinux.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-04-24 at 16:42 +0800, Ram Pai wrote:
-> On Thu, Apr 11, 2013 at 10:30:02AM -0600, Toshi Kani wrote:
-> > On Wed, 2013-04-10 at 15:24 -0700, Andrew Morton wrote:
-> > > On Wed, 10 Apr 2013 15:08:29 -0700 (PDT) David Rientjes <rientjes@google.com> wrote:
-> > > 
-> > > > On Wed, 10 Apr 2013, Toshi Kani wrote:
-> > > > 
-> > > > > > I'll switch it to GFP_ATOMIC.  Which is horridly lame but the
-> > > > > > allocation is small and alternatives are unobvious.
-> > > > > 
-> > > > > Great!  Again, thanks for the update!
-> > > > 
-> > > > release_mem_region_adjustable() allocates at most one struct resource, so 
-> > > > why not do kmalloc(sizeof(struct resource), GFP_KERNEL) before taking 
-> > > > resource_lock and then testing whether it's NULL or not when splitting?  
-> > > > It unnecessarily allocates memory when there's no split, but 
-> > > > __remove_pages() shouldn't be a hotpath.
-> > > 
-> > > yup.
-> > > 
-> > > --- a/kernel/resource.c~resource-add-release_mem_region_adjustable-fix-fix
-> > > +++ a/kernel/resource.c
-> > > @@ -1046,7 +1046,8 @@ int release_mem_region_adjustable(struct
-> > >  			resource_size_t start, resource_size_t size)
-> > >  {
-> > >  	struct resource **p;
-> > > -	struct resource *res, *new;
-> > > +	struct resource *res;
-> > > +	struct resource *new_res;
-> > >  	resource_size_t end;
-> > >  	int ret = -EINVAL;
-> > >  
-> > > @@ -1054,6 +1055,9 @@ int release_mem_region_adjustable(struct
-> > >  	if ((start < parent->start) || (end > parent->end))
-> > >  		return ret;
-> > >  
-> > > +	/* The kzalloc() result gets checked later */
-> > > +	new_res = kzalloc(sizeof(struct resource), GFP_KERNEL);
-> > > +
-> > >  	p = &parent->child;
-> > >  	write_lock(&resource_lock);
-> > >  
-> > > @@ -1091,32 +1095,33 @@ int release_mem_region_adjustable(struct
-> > >  						start - res->start);
-> > >  		} else {
-> > >  			/* split into two entries */
-> > > -			new = kzalloc(sizeof(struct resource), GFP_ATOMIC);
-> > > -			if (!new) {
-> > > +			if (!new_res) {
-> > >  				ret = -ENOMEM;
-> > >  				break;
-> > >  			}
-> > > -			new->name = res->name;
-> > > -			new->start = end + 1;
-> > > -			new->end = res->end;
-> > > -			new->flags = res->flags;
-> > > -			new->parent = res->parent;
-> > > -			new->sibling = res->sibling;
-> > > -			new->child = NULL;
-> > > +			new_res->name = res->name;
-> > > +			new_res->start = end + 1;
-> > > +			new_res->end = res->end;
-> > > +			new_res->flags = res->flags;
-> > > +			new_res->parent = res->parent;
-> > > +			new_res->sibling = res->sibling;
-> > > +			new_res->child = NULL;
-> > >  
-> > >  			ret = __adjust_resource(res, res->start,
-> > >  						start - res->start);
-> > >  			if (ret) {
-> > > -				kfree(new);
-> > > +				kfree(new_res);
-> > >  				break;
-> > >  			}
-> > 
-> > The kfree() in the if-statement above is not necessary since kfree() is
-> > called before the return at the end.  That is, the if-statement needs to
-> > be:
-> > 	if (ret)
-> > 		break;
-> > 
-> > With this change, I confirmed that all my test cases passed (with all
-> > the config debug options this time :).  With the change:
-> > 
-> > Reviewed-by: Toshi Kani <toshi.kani@hp.com>
+On 24/04/13 15:54, Josh Boyer wrote:
+> On Wed, Apr 24, 2013 at 03:44:30PM +0100, Matt Fleming wrote:
+>> On 24/04/13 15:37, Josh Boyer wrote:
+>>> We need to check the runtime sys_table for the EFI version the firmware
+>>> specifies instead of just checking for a NULL QueryVariableInfo.  Older
+>>> implementations of EFI don't have QueryVariableInfo but the runtime is
+>>> a smaller structure, so the pointer to it may be pointing off into garbage.
+>>>
+>>> This is apparently the case with several Apple firmwares that support EFI
+>>> 1.10, and the current check causes them to no longer boot.  Fix based on
+>>> a suggestion from Matthew Garrett.
+>>>
+>>> Signed-off-by: Josh Boyer <jwboyer@redhat.com>
+>>> ---
+>>>  arch/x86/boot/compressed/eboot.c | 4 +++-
+>>>  1 file changed, 3 insertions(+), 1 deletion(-)
+>>>
+>>> diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
+>>> index 8615f75..b46efbf 100644
+>>> --- a/arch/x86/boot/compressed/eboot.c
+>>> +++ b/arch/x86/boot/compressed/eboot.c
+>>> @@ -258,7 +258,9 @@ static efi_status_t setup_efi_vars(struct boot_params *params)
+>>>  	u64 store_size, remaining_size, var_size;
+>>>  	efi_status_t status;
+>>>  
+>>> -	if (!sys_table->runtime->query_variable_info)
+>>> +	if (sys_table->runtime->hdr.revision < EFI_2_00_SYSTEM_TABLE_REVISION)
+>>> +		return EFI_UNSUPPORTED;
+>>> +	else if(!sys_table->runtime->query_variable_info)
+>>>  		return EFI_UNSUPPORTED;
+>>>  
+>>>  	data = (struct setup_data *)(unsigned long)params->hdr.setup_data;
+>>>
+>>
+>> Thanks Josh, that looks correct.
+>>
+>> It's a small point, but does the check against NULL actually make sense?
+>> I don't think we ever check other system table pointers against NULL.
 > 
-> I am not confortable witht the assumption, that when a split takes
-> place, the children are assumed to be in the lower entry. Probably a
-> warning to that effect,  would help quickly
-> nail down the problem, if such a case does encounter ?
+> That I'm not sure of.  I was going off of the assumption that Matthew
+> put it there because someone's EFI 2.0 implementation was crappy and
+> didn't actually implement it.  So I left that check in place for now.
 
-Yes, __adjust_resource() fails with -EBUSY when such condition happens.
-Hence, release_mem_region_adjustable() returns with -EBUSY, and
-__remove_pages() emits a warning message per patch 3/3.  So, it can be
-quickly nailed down as this restriction is documented in the comment as
-well.
-
-At this point, the children are only used for Kernel code/data/bss as
-follows.  Hot-removable memory ranges are located at higher ranges than
-them.  So, I decided to simplify the implementation for this initial
-version.  We can always enhance it when needed.
-
-# cat /proc/iomem
- :
-00100000-defa57ff : System RAM
-  01000000-0162f8d1 : Kernel code
-  0162f8d2-01ce52bf : Kernel data
-  01df1000-01fa5fff : Kernel bss
- :
-100000000-31fffffff : System RAM
-
-
-> Otherwise this looks fine. Sorry for the delayed reply. Was out.
-> 
-> Reviewed-by: Ram Pai <linuxram@us.ibm.com>
-
-No problem.  Thanks for reviewing!
--Toshi
-
+I presume that if that were true, virt_efi_query_variable_info() (which
+is called indirectly from the efivars code) would have exploded before
+now. Matthew?
 
