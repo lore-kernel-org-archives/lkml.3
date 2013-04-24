@@ -1,87 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932459Ab3DXMCp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 08:02:45 -0400
-Received: from jacques.telenet-ops.be ([195.130.132.50]:51738 "EHLO
-	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932259Ab3DXMCm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 08:02:42 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Kalle Valo <kvalo@qca.qualcomm.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH] ath6kl: Unify sg_sz and buf_sz in ath6kl_sdio_alloc_prep_scat_req()
-Date: Wed, 24 Apr 2013 14:02:34 +0200
-Message-Id: <1366804954-20491-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.0.4
+	id S932248Ab3DXMBZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 08:01:25 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:42710 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932141Ab3DXMBU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 08:01:20 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Chen Gang <gang.chen@asianux.com>,
+        "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>, Will Deacon <will.deacon@arm.com>,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] ARM: S5pv210: compiling issue, ARM_S5PV210_CPUFREQ need CONFIG_CPU_FREQ_TABLE=y
+Date: Wed, 24 Apr 2013 14:09:24 +0200
+Message-ID: <1486501.MMr8zrpiDO@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.9.0-rc8+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CAOh2x==g96h5UhvBjtyrBTjxdkno3WBv5JEsqyT3jqv7x69V6A@mail.gmail.com>
+References: <5177B562.40400@asianux.com> <5177BC50.6050402@asianux.com> <CAOh2x==g96h5UhvBjtyrBTjxdkno3WBv5JEsqyT3jqv7x69V6A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sg_sz and buf_sz are initialized and used in a mutual exclusive way.
-However, some versions of gcc are not smart enough to see this:
+On Wednesday, April 24, 2013 04:40:38 PM Viresh Kumar wrote:
+> On Wed, Apr 24, 2013 at 4:34 PM, Chen Gang <gang.chen@asianux.com> wrote:
+> >
+> > For arm S5pv210 with allmodconfig, ARM_S5PV210_CPUFREQ need
+> > CONFIG_CPU_FREQ_TABLE=y, or will cause compiling issue.
+> >
+> > The related operation:
+> > + arm-linux-gnu-ld -EL -p --no-undefined -X --build-id -X -o .tmp_vmlinux1 -T /root/linux-next/arch/arm/kernel/vmlinux.lds arch/arm/kernel/head.o init/built-in.o --start-group usr/built-in.o arch/arm/nwfpe/built-in.o arch/arm/vfp/built-in.o arch/arm/kernel/built-in.o arch/arm/mm/built-in.o arch/arm/common/built-in.o arch/arm/net/built-in.o arch/arm/crypto/built-in.o arch/arm/mach-s5pv210/built-in.o arch/arm/plat-samsung/built-in.o kernel/built-in.o mm/built-in.o fs/built-in.o ipc/built-in.o security/built-in.o crypto/built-in.o block/built-in.o arch/arm/lib/lib.a lib/lib.a arch/arm/lib/built-in.o lib/built-in.o drivers/built-in.o sound/built-in.o firmware/built-in.o net/built-in.o --end-group
+> >
+> > The related errors:
+> > drivers/built-in.o: In function `s5pv210_target':
+> > drivers/cpufreq/s5pv210-cpufreq.c:225: undefined reference to `cpufreq_frequency_table_target'
+> > drivers/cpufreq/s5pv210-cpufreq.c:237: undefined reference to `cpufreq_frequency_table_target'
+> > drivers/built-in.o: In function `s5pv210_verify_speed':
+> > drivers/cpufreq/s5pv210-cpufreq.c:182: undefined reference to `cpufreq_frequency_table_verify'
+> > drivers/built-in.o: In function `s5pv210_cpu_init':
+> > drivers/cpufreq/s5pv210-cpufreq.c:556: undefined reference to `cpufreq_frequency_table_get_attr'
+> > drivers/cpufreq/s5pv210-cpufreq.c:560: undefined reference to `cpufreq_frequency_table_cpuinfo'
+> > make: *** [vmlinux] Error 1
+> >
+> > Signed-off-by: Chen Gang <gang.chen@asianux.com>
+> > ---
+> >  drivers/cpufreq/Kconfig.arm |    1 +
+> >  1 files changed, 1 insertions(+), 0 deletions(-)
+> >
+> > diff --git a/drivers/cpufreq/Kconfig.arm b/drivers/cpufreq/Kconfig.arm
+> > index bce2195..bbcd719 100644
+> > --- a/drivers/cpufreq/Kconfig.arm
+> > +++ b/drivers/cpufreq/Kconfig.arm
+> > @@ -187,6 +187,7 @@ config ARM_S3C64XX_CPUFREQ
+> >  config ARM_S5PV210_CPUFREQ
+> >         bool "Samsung S5PV210 and S5PC110"
+> >         depends on CPU_S5PV210
+> > +       select CPU_FREQ_TABLE
+> 
+> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
 
-drivers/net/wireless/ath/ath6kl/sdio.c: In function ‘ath6kl_sdio_alloc_prep_scat_req’:
-drivers/net/wireless/ath/ath6kl/sdio.c:338: warning: ‘sg_sz’ may be used uninitialized in this function
+Applied.
 
-Unify the sg_sz and buf_sz variables into a single size variable to kill
-the compiler warning.
+Thanks,
+Rafael
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
- drivers/net/wireless/ath/ath6kl/sdio.c |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/net/wireless/ath/ath6kl/sdio.c b/drivers/net/wireless/ath/ath6kl/sdio.c
-index d111980..7638135 100644
---- a/drivers/net/wireless/ath/ath6kl/sdio.c
-+++ b/drivers/net/wireless/ath/ath6kl/sdio.c
-@@ -335,17 +335,17 @@ static int ath6kl_sdio_alloc_prep_scat_req(struct ath6kl_sdio *ar_sdio,
- {
- 	struct hif_scatter_req *s_req;
- 	struct bus_request *bus_req;
--	int i, scat_req_sz, scat_list_sz, sg_sz, buf_sz;
-+	int i, scat_req_sz, scat_list_sz, size;
- 	u8 *virt_buf;
- 
- 	scat_list_sz = (n_scat_entry - 1) * sizeof(struct hif_scatter_item);
- 	scat_req_sz = sizeof(*s_req) + scat_list_sz;
- 
- 	if (!virt_scat)
--		sg_sz = sizeof(struct scatterlist) * n_scat_entry;
-+		size = sizeof(struct scatterlist) * n_scat_entry;
- 	else
--		buf_sz =  2 * L1_CACHE_BYTES +
--			  ATH6KL_MAX_TRANSFER_SIZE_PER_SCATTER;
-+		size =  2 * L1_CACHE_BYTES +
-+			ATH6KL_MAX_TRANSFER_SIZE_PER_SCATTER;
- 
- 	for (i = 0; i < n_scat_req; i++) {
- 		/* allocate the scatter request */
-@@ -354,7 +354,7 @@ static int ath6kl_sdio_alloc_prep_scat_req(struct ath6kl_sdio *ar_sdio,
- 			return -ENOMEM;
- 
- 		if (virt_scat) {
--			virt_buf = kzalloc(buf_sz, GFP_KERNEL);
-+			virt_buf = kzalloc(size, GFP_KERNEL);
- 			if (!virt_buf) {
- 				kfree(s_req);
- 				return -ENOMEM;
-@@ -364,7 +364,7 @@ static int ath6kl_sdio_alloc_prep_scat_req(struct ath6kl_sdio *ar_sdio,
- 				(u8 *)L1_CACHE_ALIGN((unsigned long)virt_buf);
- 		} else {
- 			/* allocate sglist */
--			s_req->sgentries = kzalloc(sg_sz, GFP_KERNEL);
-+			s_req->sgentries = kzalloc(size, GFP_KERNEL);
- 
- 			if (!s_req->sgentries) {
- 				kfree(s_req);
 -- 
-1.7.0.4
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
