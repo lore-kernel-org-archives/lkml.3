@@ -1,113 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754178Ab3DXNND (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 09:13:03 -0400
-Received: from mail-bk0-f47.google.com ([209.85.214.47]:39198 "EHLO
-	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753877Ab3DXNNA (ORCPT
+	id S1754132Ab3DXNPT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 09:15:19 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:61869 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753498Ab3DXNPR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 09:13:00 -0400
+	Wed, 24 Apr 2013 09:15:17 -0400
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1304231408370.1679-100000@iolanthe.rowland.org>
-References: <CAFp+6iECumogLo9Tf+4pMqRhtkGHf1CqA52YjL1tACTRyGO7jw@mail.gmail.com>
-	<Pine.LNX.4.44L0.1304231408370.1679-100000@iolanthe.rowland.org>
-Date: Wed, 24 Apr 2013 18:42:57 +0530
-Message-ID: <CAFp+6iE72VRaBC3_AKGvD3XA5meYSsuUYuQivj3_719OZKGpVg@mail.gmail.com>
-Subject: Re: [PATCH v3 01/11] usb: phy: Add APIs for runtime power management
-From: Vivek Gautam <gautamvivek1987@gmail.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Felipe Balbi <balbi@ti.com>, Kishon Vijay Abraham I <kishon@ti.com>,
-        Vivek Gautam <gautam.vivek@samsung.com>, linux-usb@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        sarah.a.sharp@linux.intel.com, rob.herring@calxeda.com,
-        kgene.kim@samsung.com, dianders@chromium.org, t.figa@samsung.com,
-        p.paneri@samsung.com
+In-Reply-To: <201304191709.r3JH9w0R017814@latitude>
+References: <201304191709.r3JH9w0R017814@latitude>
+Date: Wed, 24 Apr 2013 15:15:16 +0200
+Message-ID: <CACRpkdaSLGmmvWYG6ez1h90e=OZXq4yqtUFXKnTpUWG916LmjA@mail.gmail.com>
+Subject: Re: [NEW DRIVER V6 5/7] drivers/gpio: DA9058 GPIO driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Anthony Olech <anthony.olech.opensource@diasemi.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Dajun Chen <david.chen@diasemi.com>,
+        Lee Jones <lee.jones@linaro.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 23, 2013 at 11:42 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
-> On Tue, 23 Apr 2013, Vivek Gautam wrote:
+On Fri, Apr 19, 2013 at 6:56 PM, Anthony Olech
+<anthony.olech.opensource@diasemi.com> wrote:
+
+> This patch is relative to next-20130419 of linux-next
 >
->> Hi,
->>
->>
->> On Tue, Apr 23, 2013 at 10:23 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
->> > On Tue, 23 Apr 2013, Vivek Gautam wrote:
->> >
->> >> >> Alright, so here's my understanding:
->> >> >>
->> >> >> I suggested letting e.g. DWC3 enable the PHY's runtime_pm; Alan said
->> >> >> that it could be done before that so that DWC3 sees an enabled PHY
->> >> >> during probe.
->> >> >
->> >> > Basically right.  Help me to understand the overall situation a little
->> >> > better:
->> >> >
->> >> >         What code registers the PHY initially?
->> >>            PHY is added to global list by PHY drivers (like
->> >> phy-samsung-usb2.c/phy-omap-usb2.c)
->> >>            by usb_add_phy() API
->> >
->> > Then this routine should initialize the PHY.  The initialized state
->> > could be either active or suspended, your choice.  Suspended would be
->> > best, in case the PHY never gets used.
->>
->> Fair enough.
->>
->> >
->> >> >         What routine does the DWC3 driver call to register itself
->> >> >         as a consumer of the PHY?
->> >>            I think DWC3 doesn't registers itself as consumer of PHY,
->> >> rather it gets that PHY from
->> >>            the list using devm_usb_get_phy()/devm_usb_get_phy_by_phandle() API.
->> >>            DWC3 can now call PHY's initialization sequence using usb_phy_init().
->> >>            So, before DWC3 initializes the PHY, PHYs should be in active state.
->> >
->> > Then usb_phy_init should make sure the PHY is in the active state.  If
->> > usb_add_phy() left the PHY suspended, then this routine should call
->> > pm_runtime_get_sync().
->>
->> Right
->>
->> >
->> > After DWC3 (or any other driver) has acquired the PHY, it can call
->> > pm_runtime_put/get() however it likes, so long as the calls balance
->> > properly.  If the driver isn't runtime-PM aware then it won't use any
->> > of these calls, and the PHY will remain active the entire time.
->>
->> Alright, so DWC3 (or any other consumer of PHY) should do minimal to
->> handle runtime state of PHYs; get() when accessing PHY and put() when it's done
->> with it.
+> This is the GPIO component driver of the Dialog DA9058 PMIC.
+> This driver is just one component of the whole DA9058 PMIC driver.
+> It depends on the CORE component driver of the DA9058 MFD.
+> The meaning of the PMIC register 21 bits 1 and 5 has been documented
+> in the driver source.
 >
-> Yes.  The first operation will generally be a put, because
-> usb_phy_init() will leave the PHY in an active state.
-
-Alright.
-
+> Changes relative to V5 of this patch:
+> - rebased to next-20130419 in git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+> - removed redundant #include <linux/mfd/da9058/version.h>
+> - corrected dates on copyright statements
 >
->> >> >         Likewise, what routine does it call to unregister itself?
->> >>            Once DWC3's remove() is called PHYs are put.
->> >
->> > Is there a routine analogous to usb_phy_init() that gets called when
->> > PHY is released?  That routine would do the opposite of usb_phy_init(),
->> > putting the PHY back into its initialized state.
->>
->> Yes, ofcourse there's a routine usb_phy_shutdown(). So this will be
->> calling put_sync()
->> to put PHYs back to its initialized state. Right ?
->
-> Correct.
+> Signed-off-by: Anthony Olech <anthony.olech.opensource@diasemi.com>
+> Signed-off-by: David Dajun Chen <david.chen@diasemi.com>
 
-Hmm.
+Sorry for slow review ...
 
-Thanks for explaining things here and keeping patience to my queries :-)
+> +struct da9058_gpio {
+> +       struct da9058 *da9058;
+> +       struct platform_device *pdev;
+> +       struct gpio_chip gp;
+> +       struct mutex lock;
+> +       int irq_0;
+> +       int irq_1;
 
-Felipe, thanks to you too for the discussion :-)
-I shall update the patchset asap.
+Why are you keeping thes two numbers here? Use the irqdomain
+to contain irq mappings, this is just confusion things. (See review
+commens further below.)
 
--- 
-Best Regards
-Vivek
+> +       u8 inp_config;
+> +       u8 out_config;
+
+> +static int da9058_gpio_get(struct gpio_chip *gc, unsigned offset)
+> +{
+> +       struct da9058_gpio *gpio = gpio_chip_to_da9058_gpio(gc);
+> +       struct da9058 *da9058 = gpio->da9058;
+> +       unsigned int gpio_level;
+> +       int ret;
+> +
+> +       if (offset > 1)
+> +               return -EINVAL;
+
+So we have only two pins, OK that's said in Kconfig too...
+
+(...)
+> +static void da9058_gpio_set(struct gpio_chip *gc, unsigned offset, int value)
+> +{
+> +       struct da9058_gpio *gpio = gpio_chip_to_da9058_gpio(gc);
+> +       struct da9058 *da9058 = gpio->da9058;
+> +       unsigned int gpio_cntrl;
+> +       int ret;
+> +
+> +       if (offset > 1) {
+> +               dev_err(da9058->dev,
+> +                       "Failed to set GPIO%d output=%d because illegal GPIO\n",
+> +                       offset, value);
+> +               return;
+> +       }
+
+Here you have an error print, pls insert that on the get function too
+then.
+
+(...)
+> +       if (offset) {
+> +
+
+I would put a comment here like
+/* pin 1 clause */
+
+Maybe it's more logical to have if (!offset) and handle pin
+0 first, then pin 1 in the else clause?
+
+> +               ret = da9058_reg_read(da9058, DA9058_GPIO0001_REG, &gpio_cntrl);
+> +               if (ret)
+> +                       goto exit;
+> +               gpio->out_config &= ~0x80;
+> +               gpio->out_config |= value ? 0x80 : 0x00;
+> +
+> +               if (!(gpio_cntrl & 0x20))       /* an INP pin */
+> +                       goto exit;
+
+Please use #define to define these magic bits.
+Something like this:
+
+#include <linux/bitops.h>
+
+#define DA9058_GPIO0_VAL  BIT(3)
+#define DA9058_GPIO0_INOUT  BIT(1)
+#define DA9058_GPIO1_VAL  BIT(7)
+#define DA9058_GPIO1_INOUT  BIT(5)
+
+(etc, so we see what all bits are for)
+
+then use these defines in the code...
+
+> +
+> +               gpio_cntrl &= ~0xF0;
+> +               gpio_cntrl |= 0xF0 & gpio->out_config;
+> +
+> +               ret = da9058_reg_write(da9058, DA9058_GPIO0001_REG, gpio_cntrl);
+> +       } else {
+> +
+
+I would put a comment here like
+/* pin 0 clause */
+
+
+> +               ret = da9058_reg_read(da9058, DA9058_GPIO0001_REG, &gpio_cntrl);
+> +               if (ret)
+> +                       goto exit;
+> +               gpio->out_config &= ~0x08;
+> +               gpio->out_config |= value ? 0x08 : 0x00;
+> +
+> +               if (!(gpio_cntrl & 0x02))       /* an INP pin */
+> +                       goto exit;
+
+Magic bits, see above.
+
+(...)
+> +/*
+> + *  da9058_gpio_to_irq is an implementation of the GPIO Hook
+> + *  @to_irq: supporting non-static gpio_to_irq() mappings
+> + *  whose implementation may not sleep. This hook is called
+> + *  when setting up the threaded GPIO irq handler.
+> + */
+> +static int da9058_gpio_to_irq(struct gpio_chip *gc, u32 offset)
+> +{
+> +       struct da9058_gpio *gpio = gpio_chip_to_da9058_gpio(gc);
+> +       struct da9058 *da9058 = gpio->da9058;
+> +
+> +       if (offset > 1)
+> +               return -EINVAL;
+> +
+> +       if (offset)
+> +               return da9058_to_virt_irq_num(da9058, gpio->irq_1);
+> +       else
+> +               return da9058_to_virt_irq_num(da9058, gpio->irq_0);
+> +}
+
+OK, if the DA9058 core is using irqdomain.
+
+> +       if (offset) {
+> +               u8 debounce_bits = debounce ? 0x80 : 0x00;
+
+Is this really correct??
+
+In earlier code you use bit 7 to set the value!
+
+This is partly why I ask you to use #defines for the bits:
+less risk to do things wrong by e.g. copy/paste bugs.
+
+> +               gpio->inp_config &= ~0x08;
+> +               gpio->inp_config |= debounce_bits;
+
+Dito.
+
+(...)
+> +static int da9058_gpio_probe(struct platform_device *pdev)
+(...)
+> +       /*
+> +        * INP configured pins:
+> +        *     9 == DebounceOn+ActiceLowPullUp
+> +        *
+> +        * OUT configured pins:
+> +        *     7 == PushPull+ExternalPullUpToVDDIO
+> +        *     3 == PushPull+InternalPullUpToVDDIO
+> +        *     2 == OpenDrain+InternalPullUpToVDDIO
+> +        */
+> +
+> +       gpio->inp_config = 0x99;
+> +       gpio->out_config = 0x77;
+
+Again here you should #define the bits and | or them together
+instead of using comments to clarify it.
+
+This is pinctrl basically but since you seem to hardcode it it can
+be in the GPIO subsystem anyway.
+
+Yours,
+Linus Walleij
