@@ -1,120 +1,380 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755685Ab3DXRF5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 13:05:57 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:36209 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751958Ab3DXRFy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 13:05:54 -0400
-From: Michal Nazarewicz <mina86@mina86.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: Re: [PATCH] usb: gadget: multi: Mark {cdc,rndis}_config_register() __init
-In-Reply-To: <1366802195-15479-1-git-send-email-geert@linux-m68k.org>
-Organization: http://mina86.com/
-References: <1366802195-15479-1-git-send-email-geert@linux-m68k.org>
-User-Agent: Notmuch/0.15.2+55~geb6e9d8 (http://notmuchmail.org) Emacs/24.3.50.2 (x86_64-unknown-linux-gnu)
-X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
-X-PGP: 50751FF4
-X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
-X-Hashcash: 1:20:130424:balbi@ti.com::qIPdEU2xaAl3fcUW:0000044bj
-X-Hashcash: 1:20:130424:gregkh@linuxfoundation.org::j+boelBxsHYANRX6:000000000000000000000000000000000002ZL7
-X-Hashcash: 1:20:130424:geert@linux-m68k.org::VkvrQRmDnG6Ek3f0:000000000000000000000000000000000000000005+tl
-X-Hashcash: 1:20:130424:geert@linux-m68k.org::aq1/8zr0dAABP2Xb:000000000000000000000000000000000000000005SVF
-X-Hashcash: 1:20:130424:linux-kernel@vger.kernel.org::SsotoxqHLeihs8kq:0000000000000000000000000000000005rSM
-X-Hashcash: 1:20:130424:linux-usb@vger.kernel.org::KR+/MNueGTZcpnRb:00000000000000000000000000000000000083rg
-Date: Wed, 24 Apr 2013 10:05:46 -0700
-Message-ID: <xa1t4nevc105.fsf@mina86.com>
+	id S1755939Ab3DXRIF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 13:08:05 -0400
+Received: from mout.gmx.net ([212.227.17.20]:49238 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755073Ab3DXRID (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 13:08:03 -0400
+X-Authenticated: #815327
+X-Provags-ID: V01U2FsdGVkX1/oWJsEWv/ocOdtI8iXFMDQCfXy1tTnT7qXy6gx5X
+	d+Gw7/Q48zUKFj
+Message-ID: <5178116F.1010608@gmx.de>
+Date: Wed, 24 Apr 2013 19:07:59 +0200
+From: =?UTF-8?B?TWFsdGUgU2NocsO2ZGVy?= <maltesch@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130413 Icedove/17.0.5
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="=-=-="
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: NFS4 sec=krb5 broken in 3.9-rc8
+References: <5176E715.2070201@gmx.de> <20130423215807.GL3676@fieldses.org> <51777494.8010306@gmx.de> <20130424140152.GA9794@fieldses.org>
+In-Reply-To: <20130424140152.GA9794@fieldses.org>
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="----enig2VSUONLFRQCURMQAGOFSV"
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Type: text/plain; charset=utf-8
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+------enig2VSUONLFRQCURMQAGOFSV
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: quoted-printable
 
-On Wed, Apr 24 2013, Geert Uytterhoeven wrote:
-> If gcc (e.g. 4.1.2) decides not to inline cdc_config_register() and
-> rndis_config_register(), this will cause section mismatch warnings:
->
-> WARNING: drivers/usb/gadget/g_multi.o(.text+0x32f6): Section mismatch in =
-reference from the function cdc_config_register() to the function .init.tex=
-t:cdc_do_config()
-> The function cdc_config_register() references
-> the function __init cdc_do_config().
-> This is often because cdc_config_register lacks a __init
-> annotation or the annotation of cdc_do_config is wrong.
->
-> WARNING: drivers/usb/gadget/g_multi.o(.text+0x3326): Section mismatch in =
-reference from the function rndis_config_register() to the function .init.t=
-ext:rndis_do_config()
-> The function rndis_config_register() references
-> the function __init rndis_do_config().
-> This is often because rndis_config_register lacks a __init
-> annotation or the annotation of rndis_do_config is wrong.
->
-> Fortunately they're harmless, as {cdc,rndis}_config_register() are only
-> called from multi_bind(), which is annotated with __ref.
->
-> Mark {cdc,rndis}_config_register() with the __init annotation to kill the
-> warning.
->
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+On 24.04.2013 16:01, J. Bruce Fields wrote:
+> On Wed, Apr 24, 2013 at 07:58:44AM +0200, Malte Schr=C3=B6der wrote:
+>> On 23.04.2013 23:58, J. Bruce Fields wrote:
+>>> On Tue, Apr 23, 2013 at 09:55:01PM +0200, Malte Schr=C3=B6der wrote:
+>>>> Hi,
+>>>> when I update my server from kernel 3.8.5 to 3.9-rc8 I cannot mount =
+its
+>>>> NFS exports from clients using nfs4 and sec=3Dkrb5. Using sec=3Dsys =
+works,
+>>>> using 3.8.5 also works good with both modes.
+>>>
+>>> Could you get a network trace showing the failure
+>>>
+>>> Run
+>>>
+>>> 	tcpdump -s0 -wtmp.pcap
+>>>
+>>> then send us tmp.pcap.
+>>>
+>>> (You can also take a look at tmp.pcap yourself in wireshark--it may b=
+e
+>>> obvious where the failure occurs.)
+>>>
+>>> --b.
+>>>
+>>
+>> The trace is attached. It contains two tries, the first using sec=3Dsy=
+s,
+>> the second sec=3Dkrb5. I used "mount -tnfs -overs=3D4,sec=3Dkrb5 gatew=
+ay:/
+>> /mnt". NFS-Utils have version 1.2.6.
+>=20
+> Looks like the context creation succeeds and then the first use of the
+> new context (a PUTROOTFH+GETATTR) never gets a response.
+>=20
+> Nothing interesting in the server's logs?
 
-Acked-by: Michal Nazarewicz <mina86@mina86.com>
+No, nothing. I used rpcdebug to increase logging, this is what shows up
+in dmesg:
 
-With transition to configfs all those __inits and __refs will probably
-go away in the long term though.
+> [78773.778081] svc: socket ffff880167423640 TCP (connected) state chang=
+e 8 (svsk ffff8801619f7000)
+> [78773.778093] svc: transport ffff8801619f7000 served by daemon ffff880=
+212bce000
+> [78773.778098] svc: socket ffff880167423640 TCP data ready (svsk ffff88=
+01619f7000)
+> [78773.778099] svc: transport ffff8801619f7000 busy, not enqueued
+> [78773.778127] svc_recv: found XPT_CLOSE
+> [78773.778132] svc: svc_delete_xprt(ffff8801619f7000)
+> [78773.778134] svc: svc_tcp_sock_detach(ffff8801619f7000)
+> [78773.778135] svc: svc_sock_detach(ffff8801619f7000)
+> [78773.778173] svc: server ffff880212bce000 waiting for data (to =3D 90=
+0000)
+> [78773.778735] svc: socket ffff8802152f8000 TCP (listen) state change 1=
+0
+> [78773.778746] svc: transport ffff880215bfd000 served by daemon ffff880=
+212bce000
+> [78773.778767] svc: socket ffff8802152fe4c0 TCP (listen) state change 1=
 
-> ---
-> Note: I did not verify that multi_bind() is rightfully marked __ref.
+> [78773.778780] svc: tcp_accept ffff880215bfd000 sock ffff8802118dd200
+> [78773.778791] nfsd: connect from fdc7:1cc3:ec03:0001:f599:ac9c:6ffb:0f=
+57, port=3D930
+> [78773.778793] svc: svc_setup_socket ffff880215dc4480
+> [78773.778796] setting up TCP socket for reading
+> [78773.778798] svc: svc_setup_socket created ffff8800c0a94000 (inet fff=
+f8802152fe4c0)
+> [78773.778802] svc: transport ffff8800c0a94000 served by daemon ffff880=
+2071f2000
+> [78773.778815] svc: transport ffff880215bfd000 served by daemon ffff880=
+21243c000
+> [78773.778825] svc: server ffff880212bce000 waiting for data (to =3D 90=
+0000)
+> [78773.778846] svc: server ffff8802071f2000, pool 0, transport ffff8800=
+c0a94000, inuse=3D2
+> [78773.778850] svc: tcp_recv ffff8800c0a94000 data 1 conn 0 close 0
+> [78773.778854] svc: socket ffff8800c0a94000 recvfrom(ffff8800c0a942b4, =
+0) =3D 4
+> [78773.778858] svc: tcp_accept ffff880215bfd000 sock ffff8802118dd200
+> [78773.778859] svc: TCP record, 260 bytes
+> [78773.778863] svc: socket ffff8800c0a94000 recvfrom(ffff8801b7758104, =
+3836) =3D 260
+> [78773.778865] svc: server ffff88021243c000 waiting for data (to =3D 90=
+0000)
+> [78773.778868] svc: TCP final record (260 bytes)
+> [78773.778870] svc: got len=3D260
+> [78773.778873] svc: svc_authenticate (6)
+> [78773.778883] RPC:       svcauth_gss: argv->iov_len =3D 232
+> [78773.778895] RPC:       gss_verify_mic_v2
+> [78773.778915] RPC:       gss_get_mic_v2
+> [78773.778925] RPC:       Want update, refage=3D120, age=3D94
+> [78778.777978] svc: svc_process dropit
+> [78778.777983] svc: xprt ffff8800c0a94000 dropped request
+> [78778.777987] svc: server ffff8802071f2000 waiting for data (to =3D 90=
+0000)
+> [78784.954269] svc: socket ffff8802152f8000 TCP (listen) state change 1=
+0
+> [78784.954282] svc: transport ffff880215bfd000 served by daemon ffff880=
+2071f2000
+> [78784.954318] svc: tcp_accept ffff880215bfd000 sock ffff8802118dd200
+> [78784.954327] \x014nfsd: connect from unprivileged port: fdc7:1cc3:ec0=
+3:0001:f599:ac9c:6ffb:0f57, port=3D48090
+> [78784.954330] nfsd: connect from fdc7:1cc3:ec03:0001:f599:ac9c:6ffb:0f=
+57, port=3D48090
+> [78784.954331] svc: svc_setup_socket ffff880154a63cc0
+> [78784.954334] setting up TCP socket for reading
+> [78784.954336] svc: svc_setup_socket created ffff8801619f1000 (inet fff=
+f880167423e00)
+> [78784.954341] svc: transport ffff8801619f1000 served by daemon ffff880=
+21243c000
+> [78784.954353] svc: transport ffff880215bfd000 served by daemon ffff880=
+212bce000
+> [78784.954359] svc: server ffff8802071f2000 waiting for data (to =3D 90=
+0000)
+> [78784.954373] svc: tcp_accept ffff880215bfd000 sock ffff8802118dd200
+> [78784.954381] svc: server ffff88021243c000, pool 0, transport ffff8801=
+619f1000, inuse=3D2
+> [78784.954383] svc: server ffff880212bce000 waiting for data (to =3D 90=
+0000)
+> [78784.954390] svc: tcp_recv ffff8801619f1000 data 1 conn 0 close 0
+> [78784.954394] svc: socket ffff8801619f1000 recvfrom(ffff8801619f12b0, =
+4) =3D -11
+> [78784.954397] RPC: TCP recv_record got -11
+> [78784.954398] RPC: TCP recvfrom got EAGAIN
+> [78784.954400] svc: got len=3D0
+> [78784.954403] svc: server ffff88021243c000 waiting for data (to =3D 90=
+0000)
+> [78784.955459] svc: socket ffff880167423e00 TCP data ready (svsk ffff88=
+01619f1000)
+> [78784.955463] svc: transport ffff8801619f1000 served by daemon ffff880=
+21243c000
+> [78784.955498] svc: server ffff88021243c000, pool 0, transport ffff8801=
+619f1000, inuse=3D2
+> [78784.955501] svc: tcp_recv ffff8801619f1000 data 1 conn 0 close 0
+> [78784.955504] svc: socket ffff8801619f1000 recvfrom(ffff8801619f12b4, =
+0) =3D 4
+> [78784.955506] svc: TCP record, 696 bytes
+> [78784.955510] svc: socket ffff8801619f1000 recvfrom(ffff88010f8612b8, =
+3400) =3D 696
+> [78784.955514] svc: TCP final record (696 bytes)
+> [78784.955516] svc: got len=3D696
+> [78784.955519] svc: svc_authenticate (6)
+> [78784.955522] RPC:       svcauth_gss: argv->iov_len =3D 668
+> [78784.955530] RPC:       Want update, refage=3D120, age=3D0
+> [78784.972344] RPC:       krb5_encrypt returns 0
+> [78784.972348] RPC:       krb5_encrypt returns 0
+> [78784.972357] RPC:       krb5_encrypt returns 0
+> [78784.972358] RPC:       krb5_encrypt returns 0
+> [78784.972366] RPC:       krb5_encrypt returns 0
+> [78784.972367] RPC:       krb5_encrypt returns 0
+> [78784.972373] RPC:       krb5_encrypt returns 0
+> [78784.972375] RPC:       krb5_encrypt returns 0
+> [78784.972381] RPC:       krb5_encrypt returns 0
+> [78784.972383] RPC:       krb5_encrypt returns 0
+> [78784.972388] RPC:       krb5_encrypt returns 0
+> [78784.972390] RPC:       krb5_encrypt returns 0
+> [78784.972394] RPC:       gss_import_sec_context_kerberos: returning 0
+> [78784.972478] RPC:       gss_get_mic_v2
+> [78784.972530] svc: socket ffff8801619f1000 sendto([ffff88010cfdf000 23=
+6... ], 236) =3D 236 (addr fdc7:1cc3:ec03:0001:f599:ac9c:6ffb:0f57, port=3D=
+48090)
+> [78784.972534] svc: server ffff88021243c000 waiting for data (to =3D 90=
+0000)
+> [78784.974655] svc: socket ffff880167423e00 TCP data ready (svsk ffff88=
+01619f1000)
+> [78784.974659] svc: transport ffff8801619f1000 served by daemon ffff880=
+21243c000
+> [78784.974674] svc: socket ffff880167423e00 TCP (connected) state chang=
+e 8 (svsk ffff8801619f1000)
+> [78784.974676] svc: transport ffff8801619f1000 busy, not enqueued
+> [78784.974677] svc: socket ffff880167423e00 TCP data ready (svsk ffff88=
+01619f1000)
+> [78784.974679] svc: transport ffff8801619f1000 busy, not enqueued
+> [78784.974699] svc: socket ffff8802152fe4c0 TCP data ready (svsk ffff88=
+00c0a94000)
+> [78784.974701] svc: transport ffff8800c0a94000 served by daemon ffff880=
+212bce000
+> [78784.974712] svc_recv: found XPT_CLOSE
+> [78784.974714] svc: svc_delete_xprt(ffff8801619f1000)
+> [78784.974715] svc: svc_tcp_sock_detach(ffff8801619f1000)
+> [78784.974717] svc: svc_sock_detach(ffff8801619f1000)
+> [78784.974756] svc: svc_sock_free(ffff8801619f1000)
+> [78784.974766] svc: server ffff880212bce000, pool 0, transport ffff8800=
+c0a94000, inuse=3D3
+> [78784.974768] svc: server ffff88021243c000 waiting for data (to =3D 90=
+0000)
+> [78784.974769] svc: tcp_recv ffff8800c0a94000 data 1 conn 0 close 0
+> [78784.974771] svc: socket ffff8800c0a94000 recvfrom(ffff8800c0a942b4, =
+0) =3D 4
+> [78784.974771] svc: TCP record, 128 bytes
+> [78784.974773] svc: socket ffff8800c0a94000 recvfrom(ffff88010f854080, =
+3968) =3D 128
+> [78784.974774] svc: TCP final record (128 bytes)
+> [78784.974775] svc: got len=3D128
+> [78784.974776] svc: svc_authenticate (6)
+> [78784.974776] RPC:       svcauth_gss: argv->iov_len =3D 100
+> [78784.974778] RPC:       gss_verify_mic_v2
+> [78784.974784] RPC:       gss_get_mic_v2
+> [78784.974807] RPC:       Want update, refage=3D120, age=3D105
+> [78789.975231] svc: svc_process dropit
+> [78789.975236] svc: xprt ffff8800c0a94000 dropped request
+> [78789.975239] svc: server ffff880212bce000 waiting for data (to =3D 90=
+0000)
+> [78828.585290] NFSD: laundromat service - starting
+> [78828.585296] NFSD: laundromat_main - sleeping for 90 seconds
+> [78829.873886] revisit canceled
+> [78829.873892] svc: svc_sock_free(ffff880133911000)
+> [78829.873901] revisit canceled
+> [78829.873903] svc: svc_sock_free(ffff8801619f7000)
+> [78829.873908] revisit queued
+> [78829.873910] svc: transport ffff8800c0a94000 served by daemon ffff880=
+212bce000
+> [78829.873914] revisit queued
+> [78829.873916] svc: transport ffff8800c0a94000 busy, not enqueued
+> [78829.873944] svc: server ffff880212bce000, pool 0, transport ffff8800=
+c0a94000, inuse=3D2
+> [78829.873948] svc: got len=3D128
+> [78829.873950] svc: transport ffff8800c0a94000 served by daemon ffff880=
+21243c000
+> [78829.873957] svc: svc_authenticate (6)
+> [78829.873959] RPC:       svcauth_gss: argv->iov_len =3D 100
+> [78829.873965] RPC:       gss_get_mic_v2
+> [78829.873984] svc: server ffff88021243c000, pool 0, transport ffff8800=
+c0a94000, inuse=3D3
+> [78829.873988] RPC:       Want update, refage=3D120, age=3D0
+> [78829.873991] svc: got len=3D260
+> [78829.873993] svc: transport ffff8800c0a94000 served by daemon ffff880=
+2071f2000
+> [78829.874000] svc: svc_authenticate (6)
+> [78829.874002] RPC:       svcauth_gss: argv->iov_len =3D 232
+> [78829.874007] RPC:       gss_get_mic_v2
+> [78829.874023] RPC:       Want update, refage=3D120, age=3D0
+> [78829.874027] svc: server ffff8802071f2000, pool 0, transport ffff8800=
+c0a94000, inuse=3D4
+> [78829.874029] svc: tcp_recv ffff8800c0a94000 data 0 conn 0 close 0
+> [78829.874032] svc: socket ffff8800c0a94000 recvfrom(ffff8800c0a942b0, =
+4) =3D -11
+> [78829.874036] RPC: TCP recv_record got -11
+> [78829.874037] RPC: TCP recvfrom got EAGAIN
+> [78829.874038] svc: got len=3D0
+> [78829.874041] svc: server ffff8802071f2000 waiting for data (to =3D 90=
+0000)
+> [78834.876234] svc: svc_process dropit
+> [78834.876236] svc: svc_process dropit
+> [78834.876241] svc: xprt ffff8800c0a94000 dropped request
+> [78834.876244] svc: server ffff88021243c000 waiting for data (to =3D 90=
+0000)
+> [78834.876245] svc: xprt ffff8800c0a94000 dropped request
+> [78834.876248] svc: server ffff880212bce000 waiting for data (to =3D 90=
+0000)
+> [78845.235651] svc: socket ffff8802152fe4c0 TCP (connected) state chang=
+e 8 (svsk ffff8800c0a94000)
+> [78845.235664] svc: transport ffff8800c0a94000 served by daemon ffff880=
+21243c000
+> [78845.235669] svc: socket ffff8802152fe4c0 TCP data ready (svsk ffff88=
+00c0a94000)
+> [78845.235670] svc: transport ffff8800c0a94000 busy, not enqueued
+> [78845.235696] svc_recv: found XPT_CLOSE
+> [78845.235700] svc: svc_delete_xprt(ffff8800c0a94000)
+> [78845.235702] svc: svc_tcp_sock_detach(ffff8800c0a94000)
+> [78845.235704] svc: svc_sock_detach(ffff8800c0a94000)
+> [78845.235738] svc: server ffff88021243c000 waiting for data (to =3D 90=
+0000)
+> [78845.236250] svc: socket ffff8802152f8000 TCP (listen) state change 1=
+0
+> [78845.236261] svc: transport ffff880215bfd000 served by daemon ffff880=
+21243c000
+> [78845.236278] svc: socket ffff880167423640 TCP (listen) state change 1=
 
-It should be.  It's only referenced in multi_driver object as a bind
-callback which is called by composite_bind() which is referenced in
-composite_driver_template as bind callback which is called by
-usb_gadget_probe_driver() which is called by usb_composite_probe() which
-is called by multi_init() which is __init and called as module_init.
+> [78845.236290] svc: tcp_accept ffff880215bfd000 sock ffff8802118dd200
+> [78845.236300] nfsd: connect from fdc7:1cc3:ec03:0001:f599:ac9c:6ffb:0f=
+57, port=3D930
+> [78845.236301] svc: svc_setup_socket ffff880154a62880
+> [78845.236306] setting up TCP socket for reading
+> [78845.236313] svc: svc_setup_socket created ffff88011b04d000 (inet fff=
+f880167423640)
+> [78845.236320] svc: transport ffff88011b04d000 served by daemon ffff880=
+212bce000
+> [78845.236326] svc: transport ffff880215bfd000 served by daemon ffff880=
+2071f2000
+> [78845.236330] svc: server ffff88021243c000 waiting for data (to =3D 90=
+0000)
+> [78845.236356] svc: socket ffff880167423640 TCP data ready (svsk ffff88=
+011b04d000)
+> [78845.236359] svc: server ffff880212bce000, pool 0, transport ffff8801=
+1b04d000, inuse=3D2
+> [78845.236362] svc: tcp_accept ffff880215bfd000 sock ffff8802118dd200
+> [78845.236363] svc: tcp_recv ffff88011b04d000 data 1 conn 0 close 0
+> [78845.236369] svc: server ffff8802071f2000 waiting for data (to =3D 90=
+0000)
+> [78845.236380] svc: transport ffff88011b04d000 busy, not enqueued
+> [78845.236389] svc: socket ffff88011b04d000 recvfrom(ffff88011b04d2b4, =
+0) =3D 4
+> [78845.236392] svc: TCP record, 128 bytes
+> [78845.236395] svc: socket ffff88011b04d000 recvfrom(ffff88010f854080, =
+3968) =3D 128
+> [78845.236398] svc: TCP final record (128 bytes)
+> [78845.236399] svc: got len=3D128
+> [78845.236401] svc: transport ffff88011b04d000 served by daemon ffff880=
+2071f2000
+> [78845.236407] svc: svc_authenticate (6)
+> [78845.236409] RPC:       svcauth_gss: argv->iov_len =3D 100
+> [78845.236416] RPC:       gss_verify_mic_v2
+> [78845.236434] svc: server ffff8802071f2000, pool 0, transport ffff8801=
+1b04d000, inuse=3D3
+> [78845.236440] svc: tcp_recv ffff88011b04d000 data 1 conn 0 close 0
+> [78845.236443] RPC:       gss_get_mic_v2
+> [78845.236445] svc: socket ffff88011b04d000 recvfrom(ffff88011b04d2b4, =
+0) =3D 4
+> [78845.236446] svc: TCP record, 260 bytes
+> [78845.236448] svc: socket ffff88011b04d000 recvfrom(ffff8801b7758104, =
+3836) =3D 260
+> [78845.236450] svc: TCP final record (260 bytes)
+> [78845.236452] svc: got len=3D260
+> [78845.236454] svc: svc_authenticate (6)
+> [78845.236455] RPC:       svcauth_gss: argv->iov_len =3D 232
+> [78845.236459] RPC:       gss_verify_mic_v2
+> [78845.236466] RPC:       Want update, refage=3D120, age=3D15
+> [78845.236474] RPC:       gss_get_mic_v2
+> [78845.236489] RPC:       Want update, refage=3D120, age=3D15
+> [78850.235425] svc: svc_process dropit
+> [78850.235430] svc: svc_process dropit
+> [78850.235433] svc: xprt ffff88011b04d000 dropped request
+> [78850.235436] svc: xprt ffff88011b04d000 dropped request
+> [78850.235437] svc: server ffff880212bce000 waiting for data (to =3D 90=
+0000)
+> [78850.235441] svc: server ffff8802071f2000 waiting for data (to =3D 90=
+0000)
 
---=20
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=3D./ `o
-..o | Computer Science,  Micha=C5=82 =E2=80=9Cmina86=E2=80=9D Nazarewicz   =
- (o o)
-ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
---=-=-=
-Content-Type: multipart/signed; boundary="==-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
-
---==-=-=
-Content-Type: text/plain
+/Malte
 
 
---==-=-=
-Content-Type: application/pgp-signature
+------enig2VSUONLFRQCURMQAGOFSV
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJReBDqAAoJECBgQBJQdR/0JOcQAI8BTJKSSDbevg8lo6Y1IAT0
-URlhXGozH8MVshZWWRITrCGoRln62b7kRMjEaM/BZoQDmIJcNEer8O771o0Y5VvM
-nrxmVDtfPIqiB6DMZpLchP5YfgzYhPhvGnrUfZRp9jm+JIp5mdXzfs5Zb2XHVnUf
-ZmJXE+zFwKfSX3cr6QNKkgjIIsNf8JR/gJ5Ni9ceOZopGfLPCAAioL6O/1prpHgW
-zuAAxH2cRkc2my6DbXTbd4A73xaUvj1OH6imfn/pzPjbR6O0g9ThaULaNBN1XwbC
-qUCsO5Ntnk2087pa37lcI1AI6uMnOgHfOV1fHG3dGNnPu8uzWUYsj6QEeGexZKB1
-/1U4ICEdRHwCcTrhnH2G6UlSFTDw/wm8qG29P/1atJyIh5a/ijGlVURLUnGNKamS
-INQtfNpKxcxA9I20QS99GqMmjxzVQpcQRE1QEeTTIwbPUsaa739pWaGpRL69ZdmL
-pQXHKX9lGRhjdScfC1edbX7p568MYgrqI0k65eb3Kd4u9pIigNaVSPjfRpgF4ChV
-l+JiIpXI7erIDXHyd1SAXZDjw+P1uVZBn+H4XR5+yd31rwKQuzlWbNYvrFicTG7K
-rxK1bGrcKxfqA0zjEsBkeKaOLHrML2SLRsr4/XNbP+GLpfK234C95BCtOjpcvNt1
-MEQFn9qlTUEtzuJL3+o9
-=5WbW
+iEYEARECAAYFAlF4EW8ACgkQ4q3E2oMjYtUHfACg8DBySl+fCsvHSNY0bpftuJHT
+Q4kAn2fbf2O1RWmGf8RMXcRe2DEJ57Eh
+=/Ms1
 -----END PGP SIGNATURE-----
---==-=-=--
 
---=-=-=--
+------enig2VSUONLFRQCURMQAGOFSV--
