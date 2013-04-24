@@ -1,78 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758631Ab3DXXYP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 19:24:15 -0400
-Received: from vorash.stgraber.org ([176.9.111.221]:46645 "EHLO
-	smtpout.stgraber.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757971Ab3DXXYO (ORCPT
+	id S1758654Ab3DXXYV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 19:24:21 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:37433 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758635Ab3DXXYT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 19:24:14 -0400
-X-Greylist: delayed 460 seconds by postgrey-1.27 at vger.kernel.org; Wed, 24 Apr 2013 19:24:13 EDT
-From: =?UTF-8?q?St=C3=A9phane=20Graber?= <stgraber@ubuntu.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-fsdevel@vger.kernel.org,
-        =?UTF-8?q?St=C3=A9phane=20Graber?= <stgraber@ubuntu.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>
-Subject: [PATCH] coredump: Add new %P variable in core_pattern
-Date: Thu, 25 Apr 2013 01:15:47 +0200
-Message-Id: <1366845347-4532-1-git-send-email-stgraber@ubuntu.com>
-X-Mailer: git-send-email 1.8.1.2
+	Wed, 24 Apr 2013 19:24:19 -0400
+X-Sasl-enc: IfGzQKZFRDMzSEybw0Aw2JtSjWJxVQm80bJGPhQL9kBw 1366845858
+Date: Wed, 24 Apr 2013 16:24:17 -0700
+From: Greg KH <greg@kroah.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        peterz@infradead.org, eranian@google.com,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 1/2] Fix perf LBR filtering
+Message-ID: <20130424232417.GB9073@kroah.com>
+References: <1366844694-2770-1-git-send-email-andi@firstfloor.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1366844694-2770-1-git-send-email-andi@firstfloor.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds a new %P variable to be used in core_pattern. This variable contains
-the global PID (PID in the init namespace) as %p contains the PID in the
-current namespace which isn't always what we want.
+On Wed, Apr 24, 2013 at 04:04:53PM -0700, Andi Kleen wrote:
+> From: Andi Kleen <ak@linux.intel.com>
+> 
+> The perf LBR code has special code to filter specific
+> instructions in software.
+> 
+> The LBR logs any instruction address, even if IP just faulted.
+> This means user space can control any address by just branching
+> to a bad address.
+> 
+> On a modern Intel system the only software filtering needed
+> is to include SYSCALL/RETs in PERF_SAMPLE_BRANCH_ANY_CALL/RETURN.
+> The hardware call filter only handles short calls, but syscall
+> is a far call. So it enables far call logging too, but removes
+> any other far calls (like interrupts) by looking at the instruction.
+> On older systems some additional software filtering is done too,
+> to work a problem that CALLs can be only logged together with
+> indirect jumps.
+> 
+> It currently assumes that any address that looks like a kernel
+> address can be safely referenced.
+> 
+> But that is dangerous if can be controlled by the user:
+> - It can be used to crash the kernel
+> - It allows to probe any physical address for a small set of values
+> (valid call op codes) which is an information leak.
+> - It may point to a side effect on read MMIO region
+> 
+> So we cannot reference kernel addresses safely.
+> 
+> Possible options:
+> 
+> I) Disable FAR calls for ANY_CALL/RETURNS.
+> This just means syscalls are not logged
+> as calls. This also lowers the overhead of call logging.
+> This changes semantics slightly.
+> This is reasonable on Sandy Bridge and later, but would
+> cause additional problems on Nehalem and Westmere with
+> their additional filters.
+> 
+> II) Simple disable any filtering for kernel space.
+> This means interrupts in kernel space are reported as calls
+> and on Nehalem/Westmere some indirect jumps are reported
+> as calls too
+> 
+> III) Enumerate all the kernel entry points and check.
+> Any bad call must have a kernel entry point as to.
+> This seemed to fragile to maintain.
+> 
+> IV) Enumerate all kernel code and check for these ranges.
+> Quite complicated, especially with the new kernel code JITs.
+> Would also allow to probe for kernel code (defeating randomized kernel)
+> 
+> This patch implements II: Simply disable software filtering for
+> any kernel address, which seemed the best.
+> (I) would be also an option and was earlier implemented in
+> https://patchwork.kernel.org/patch/2468351/
+> (however this patch still leaves Nehalem/Westmere/Atom open to the problem)
+> (III) and (IV) appear too complicated and risky.
+> 
+> Should be applied to applicable stable branches too. The problem
+> goes back a long time.
+> 
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> ---
+>  arch/x86/kernel/cpu/perf_event_intel_lbr.c |   18 +++++++++++++++---
+>  1 files changed, 15 insertions(+), 3 deletions(-)
 
-The main use for this is to make it easier to handle crashes that happened
-within a container. With that new variables it's possible to have the crashes
-dumped into the container or forwarded to the host with the right PID
-(from the host's point of view).
 
-Reported-by: Hans Feldt <hans.feldt@ericsson.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: Eric W. Biederman <ebiederm@xmission.com>
-Cc: Serge Hallyn <serge.hallyn@canonical.com>
-Signed-off-by: Stéphane Graber <stgraber@ubuntu.com>
----
- Documentation/sysctl/kernel.txt | 1 +
- fs/coredump.c                   | 5 +++++
- 2 files changed, 6 insertions(+)
+<formletter>
 
-diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
-index ccd4258..833026d 100644
---- a/Documentation/sysctl/kernel.txt
-+++ b/Documentation/sysctl/kernel.txt
-@@ -182,6 +182,7 @@ core_pattern is used to specify a core dumpfile pattern name.
- 	%<NUL>	'%' is dropped
- 	%%	output one '%'
- 	%p	pid
-+	%P	global pid (init PID namespace)
- 	%u	uid
- 	%g	gid
- 	%d	dump mode, matches PR_SET_DUMPABLE and
-diff --git a/fs/coredump.c b/fs/coredump.c
-index c647965..528c6fc 100644
---- a/fs/coredump.c
-+++ b/fs/coredump.c
-@@ -186,6 +186,11 @@ static int format_corename(struct core_name *cn, struct coredump_params *cprm)
- 				err = cn_printf(cn, "%d",
- 					      task_tgid_vnr(current));
- 				break;
-+			/* global pid */
-+			case 'P':
-+				err = cn_printf(cn, "%d",
-+					      task_tgid_nr(current));
-+				break;
- 			/* uid */
- 			case 'u':
- 				err = cn_printf(cn, "%d", cred->uid);
--- 
-1.8.1.2
+This is not the correct way to submit patches for inclusion in the
+stable kernel tree.  Please read Documentation/stable_kernel_rules.txt
+for how to do this properly.
 
+</formletter>
