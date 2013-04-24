@@ -1,116 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757293Ab3DXSsN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 14:48:13 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:23723 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756676Ab3DXSsL (ORCPT
+	id S1757142Ab3DXSvP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 14:51:15 -0400
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:35872 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754284Ab3DXSvN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 14:48:11 -0400
-Message-ID: <517828C0.6090802@oracle.com>
-Date: Wed, 24 Apr 2013 14:47:28 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130408 Thunderbird/17.0.5
+	Wed, 24 Apr 2013 14:51:13 -0400
+From: Paul Moore <paul@paul-moore.com>
+To: Casey Schaufler <casey@schaufler-ca.com>
+Cc: LSM <linux-security-module@vger.kernel.org>,
+        LKLM <linux-kernel@vger.kernel.org>, SE Linux <selinux@tycho.nsa.gov>,
+        James Morris <jmorris@namei.org>,
+        John Johansen <john.johansen@canonical.com>,
+        Eric Paris <eparis@redhat.com>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Kees Cook <keescook@chromium.org>
+Subject: Re: [PATCH v13 5/9] LSM: Networking component isolation
+Date: Wed, 24 Apr 2013 14:51:09 -0400
+Message-ID: <18474523.4Ny9IacvUQ@sifl>
+User-Agent: KMail/4.10.2 (Linux/3.8.5-gentoo; KDE/4.10.2; x86_64; ; )
+In-Reply-To: <5176B10F.9040607@schaufler-ca.com>
+References: <5176ABB7.5080300@schaufler-ca.com> <5176B10F.9040607@schaufler-ca.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: lockdep: oops while dumping locks
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Tuesday, April 23, 2013 09:04:31 AM Casey Schaufler wrote:
+> Subject: [PATCH v13 5/9] LSM: Networking component isolation
+> 
+> The NetLabel, XFRM and secmark networking mechanisms are
+> limited to providing security information managed by one
+> LSM. These changes interface the single LSM networking
+> components with the multiple LSM system. Each of the
+> networking components will identify the security ops
+> vector of the LSM that will use it. There are various
+> wrapper functions provided to make this obvious and
+> painless.
+> 
+> Signed-off-by: Casey Schaufler <casey@schaufler-ca.com>
 
-I've noticed that sometimes lockdep would spew a warning and an oops
-while dumping the list of held locks. I'm not quite sure why it happens
-and I didn't find anything that was recently changed in the code that
-could cause that:
+...
 
-[  855.807172] Showing all locks held in the system:
-[  855.809162] 2 locks held by khungtaskd/3552:
-[  855.809729]  #0:  (rcu_read_lock){.+.+..}, at: [<ffffffff811c3563>] watchdog+0x73/0x490
-[  855.810956]  #1:  (tasklist_lock){.+.+..}, at: [<ffffffff8118c58c>] debug_show_all_locks+0x5c/0x260
-[  855.815299] 1 lock held by ksmd/3578:
-[  855.815770]  #0:  (ksm_thread_mutex){+.+.+.}, at: [<ffffffff8126653e>] ksm_scan_thread+0x4e/0x310
-[  855.817055] 2 locks held by kpktgend_5/7480:
-[  855.817597]  #0:  (rcu_read_lock){.+.+..}, at: [<          (null)>]           (null)
-[  855.821794]  #1:
-[  855.822044] ------------[ cut here ]------------
-[  855.822677] WARNING: at kernel/lockdep.c:146 hlock_class+0x50/0x80()
-[  855.823477] DEBUG_LOCKS_WARN_ON(1)
-[  855.827953] Modules linked in:
-[  855.828423] CPU: 1 PID: 3552 Comm: khungtaskd Tainted: G        W    3.9.0-rc8-next-20130423-sasha-00014-gdf37a98 #352
-[  855.829749]  0000000000000009 ffff8800b8e05c28 ffffffff83fb6095 ffff8800b8e05c68
-[  855.830798]  ffffffff811142db 00000000b58a3000 ffff8800adee0950 0000000000000002
-[  855.835860]  0000000000000002 ffff8800b58a3000 ffff8800afa18000 ffff8800b8e05cc8
-[  855.836887] Call Trace:
-[  855.837222]  [<ffffffff83fb6095>] dump_stack+0x19/0x1b
-[  855.840950]  [<ffffffff811142db>] warn_slowpath_common+0x6b/0xa0
-[  855.841734]  [<ffffffff811143b1>] warn_slowpath_fmt+0x41/0x50
-[  855.842472]  [<ffffffff83faa137>] ? printk+0x48/0x4a
-[  855.843106]  [<ffffffff811881f0>] hlock_class+0x50/0x80
-[  855.843758]  [<ffffffff83fab453>] print_lock+0xe/0x3d
-[  855.847471]  [<ffffffff81189c92>] lockdep_print_held_locks+0xa2/0xe0
-[  855.848561]  [<ffffffff8118c64a>] debug_show_all_locks+0x11a/0x260
-[  855.849351]  [<ffffffff8115a427>] show_state_filter+0x207/0x220
-[  855.850141]  [<ffffffff8115a220>] ? sched_show_task+0x270/0x270
-[  855.853945]  [<ffffffff81189c92>] ? lockdep_print_held_locks+0xa2/0xe0
-[  855.854756]  [<ffffffff8115a052>] ? sched_show_task+0xa2/0x270
-[  855.855476]  [<ffffffff811c3803>] watchdog+0x313/0x490
-[  855.856107]  [<ffffffff811c3563>] ? watchdog+0x73/0x490
-[  855.856739]  [<ffffffff811c34f0>] ? hung_task_panic+0x20/0x20
-[  855.862510]  [<ffffffff81146673>] kthread+0xe3/0xf0
-[  855.863119]  [<ffffffff81146590>] ? kthread_create_on_node+0x160/0x160
-[  855.863917]  [<ffffffff83fff1fc>] ret_from_fork+0x7c/0xb0
-[  855.864575]  [<ffffffff81146590>] ? kthread_create_on_node+0x160/0x160
-[  855.868426] ---[ end trace 3adc9bd194fdba9a ]---
-[  855.869001] BUG: unable to handle kernel NULL pointer dereference at 0000000000000030
-[  855.869983] IP: [<ffffffff81189a70>] __print_lock_name+0xc0/0xc0
-[  855.870744] PGD 0
-[  855.872483] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[  855.872483] Dumping ftrace buffer:
-[  855.872483]    (ftrace buffer empty)
-[  855.872483] Modules linked in:
-[  855.872483] CPU: 1 PID: 3552 Comm: khungtaskd Tainted: G        W    3.9.0-rc8-next-20130423-sasha-00014-gdf37a98 #352
-[  855.872483] task: ffff8800b58a3000 ti: ffff8800b8e04000 task.ti: ffff8800b8e04000
-[  855.872483] RIP: 0010:[<ffffffff81189a70>]  [<ffffffff81189a70>] __print_lock_name+0xc0/0xc0
-[  855.872483] RSP: 0018:ffff8800b8e05cb0  EFLAGS: 00010296
-[  855.872483] RAX: 0000000000000000 RBX: 0000000000000000 RCX: 000000008a728a71
-[  855.872483] RDX: ffff8800b58a3000 RSI: ffff8800b8e05cc1 RDI: 0000000000000000
-[  855.872483] RBP: ffff8800b8e05cd8 R08: 0000000000000002 R09: 0000000000000000
-[  855.872483] R10: 0000000000000001 R11: 0000000000000000 R12: 0000000000000002
-[  855.890101] R13: 0000000000000002 R14: ffff8800b58a3000 R15: ffff8800afa18000
-[  855.891151] FS:  0000000000000000(0000) GS:ffff8800bb600000(0000) knlGS:0000000000000000
-[  855.891151] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[  855.891151] CR2: 0000000000000030 CR3: 0000000005826000 CR4: 00000000000406e0
-[  855.891151] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[  855.891151] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[  855.891151] Stack:
-[  855.891151]  ffffffff81189bb5 0000000000000002 0000000000000002 ffff8800b8e05cd8
-[  855.891151]  ffff8800adee0950 ffff8800b8e05cf8 ffffffff83fab45b 0000000000000038
-[  855.891151]  ffff8800adee0000 ffff8800b8e05d28 ffffffff81189c92 ffff8800b8e05d28
-[  855.891151] Call Trace:
-[  855.891151]  [<ffffffff81189bb5>] ? print_lock_name+0x15/0x50
-[  855.891151]  [<ffffffff83fab45b>] print_lock+0x16/0x3d
-[  855.891151]  [<ffffffff81189c92>] lockdep_print_held_locks+0xa2/0xe0
-[  855.891151]  [<ffffffff8118c64a>] debug_show_all_locks+0x11a/0x260
-[  855.891151]  [<ffffffff8115a427>] show_state_filter+0x207/0x220
-[  855.900353]  [<ffffffff8115a220>] ? sched_show_task+0x270/0x270
-[  855.900353]  [<ffffffff81189c92>] ? lockdep_print_held_locks+0xa2/0xe0
-[  855.900353]  [<ffffffff8115a052>] ? sched_show_task+0xa2/0x270
-[  855.900353]  [<ffffffff811c3803>] watchdog+0x313/0x490
-[  855.900353]  [<ffffffff811c3563>] ? watchdog+0x73/0x490
-[  855.900353]  [<ffffffff811c34f0>] ? hung_task_panic+0x20/0x20
-[  855.900353]  [<ffffffff81146673>] kthread+0xe3/0xf0
-[  855.900353]  [<ffffffff81146590>] ? kthread_create_on_node+0x160/0x160
-[  855.900353]  [<ffffffff83fff1fc>] ret_from_fork+0x7c/0xb0
-[  855.900353]  [<ffffffff81146590>] ? kthread_create_on_node+0x160/0x160
-[  855.900353] Code: 0f 1f 00 48 8b 45 e8 65 48 33 04 25 28 00 00 00 74 09 e8 d4 a6 f8 ff 0f 1f 40 00 48 81 c4 98 00 00 00 5b 5d
-c3 66 0f 1f 44 00 00 <48> 8b 47 30 55 48 89 e5 a8 04 0f 85 a3 00 00 00 83 e0 01 f7 d8
-[  855.900353] RIP  [<ffffffff81189a70>] __print_lock_name+0xc0/0xc0
-[  855.900353]  RSP <ffff8800b8e05cb0>
-[  855.900353] CR2: 0000000000000030
-[  856.494698] ---[ end trace 3adc9bd194fdba9b ]---
+> diff --git a/include/net/netlabel.h b/include/net/netlabel.h
+> index 2c95d55..c0cf965 100644
+> --- a/include/net/netlabel.h
+> +++ b/include/net/netlabel.h
+> @@ -406,7 +406,8 @@ int netlbl_secattr_catmap_setrng(struct
+> netlbl_lsm_secattr_catmap *catmap, /*
+>   * LSM protocol operations (NetLabel LSM/kernel API)
+>   */
+> -int netlbl_enabled(void);
+> +int netlbl_register_lsm(struct security_operations *lsmops);
+
+Nit picky, but I'd prefer "netlbl_lsm_register()".
+
+> +int netlbl_enabled(struct security_operations *lsmops);
+>  int netlbl_sock_setattr(struct sock *sk,
+>  			u16 family,
+>  			const struct netlbl_lsm_secattr *secattr);
+
+...
+
+> diff --git a/net/netlabel/netlabel_kapi.c b/net/netlabel/netlabel_kapi.c
+> index 7c94aed..2881d48 100644
+> --- a/net/netlabel/netlabel_kapi.c
+> +++ b/net/netlabel/netlabel_kapi.c
+> @@ -607,23 +607,48 @@ int netlbl_secattr_catmap_setrng(struct
+> netlbl_lsm_secattr_catmap *catmap, * LSM Functions
+>   */
+> 
+> +struct security_operations *netlbl_active_lsm;
+> +/**
+> + * netlbl_register_lsm - Reserve the NetLabel subsystem for an LSM
+> + *
+> + * Description:
+> + * To avoid potential conflicting views between LSMs over
+> + * what should go in the network label reserve the Netlabel
+> + * mechanism for use by one LSM. netlbl_enabled will return
+> + * false for all other LSMs.
+> + *
+> + */
+
+You need a description for the 'lsm' parameter in the comment header above.
+
+Also, this is extremely nit picky but I'd like to see some vertical whitespace 
+between the netlbl_active_lsm declaration and the function header.
+
+> +int netlbl_register_lsm(struct security_operations *lsm)
+> +{
+> +	if (lsm == NULL)
+> +		return -EINVAL;
+> +
+> +	if (netlbl_active_lsm == NULL)
+> +		netlbl_active_lsm = lsm;
+> +	else if (netlbl_active_lsm != lsm)
+> +		return -EBUSY;
+> +
+> +	printk(KERN_INFO "NetLabel: Registered LSM \"%s\".\n", lsm->name);
+> +	return 0;
+> +}
+> +
+>  /**
+>   * netlbl_enabled - Determine if the NetLabel subsystem is enabled
+>   *
+>   * Description:
+>   * The LSM can use this function to determine if it should use NetLabel
+> - * security attributes in it's enforcement mechanism.  Currently, NetLabel
+> - * considered to be enabled when it's configuration contains a valid
+> + * security attributes in it's enforcement mechanism.  NetLabel
+> + * considered to be enabled when the LSM making the call is registered
+> + * the netlabel configuration contains a valid setup for
+>   * at least one labeled protocol (i.e. NetLabel can understand incoming
+>   * labeled packets of at least one type); otherwise NetLabel is considered
+>   * be disabled.
+>   *
+>   */
+
+Same thing, you need a description for the 'lsm' parameter in the comment 
+header above.
+
+> -int netlbl_enabled(void)
+> +int netlbl_enabled(struct security_operations *lsm)
+>  {
+> -	/* At some point we probably want to expose this mechanism to the user
+> -	 * as well so that admins can toggle NetLabel regardless of the
+> -	 * configuration */
+
+It really doesn't matter if you remove that comment or not, but I believe it 
+still applies so long as we do the LSM check first.
+
+> +	if (netlbl_active_lsm != lsm)
+> +		return 0;
+>  	return (atomic_read(&netlabel_mgmt_protocount) > 0);
+>  }
+
+...
+
+> diff --git a/net/netlabel/netlabel_user.h b/net/netlabel/netlabel_user.h
+> index a6f1705..9990b24 100644
+> --- a/net/netlabel/netlabel_user.h
+> +++ b/net/netlabel/netlabel_user.h
+> @@ -41,6 +41,65 @@
+> 
+>  /* NetLabel NETLINK helper functions */
+> 
+> +extern struct security_operations *netlbl_active_lsm;
+> +
+> +/**
+> + * netlbl_secid_to_secctx - call the registered secid_to_secctx LSM hook
+> + * @secid - The secid to convert
+> + * @secdata - Where to put the result
+> + * @seclen - Where to put the length of the result
+> + *
+> + * Returns: the result of calling the hook.
+> + */
+> +static inline int netlbl_secid_to_secctx(u32 secid, char **secdata, u32
+> *seclen) +{
+> +	if (netlbl_active_lsm == NULL)
+> +		return -EINVAL;
+> +	return netlbl_active_lsm->secid_to_secctx(secid, secdata, seclen);
+> +}
+> +
+> +/**
+> + * netlbl_release_secctx - call the registered release_secctx LSM hook
+> + * @secdata - The security context to release
+> + * @seclen - The size of the context to release
+> + *
+> + */
+> +static inline void netlbl_release_secctx(char *secdata, u32 seclen)
+> +{
+> +	if (netlbl_active_lsm != NULL)
+> +		netlbl_active_lsm->release_secctx(secdata, seclen);
+> +}
+> +
+> +/**
+> + * netlbl_secctx_to_secid - call the registered seccts_to_secid LSM hook
+> + * @secdata - The security context
+> + * @seclen - The size of the security context
+> + * @secid - Where to put the result
+> + *
+> + * Returns: the result of calling the hook
+> + */
+> +static inline int netlbl_secctx_to_secid(const char *secdata, u32 seclen,
+> +					 u32 *secid)
+> +{
+> +	if (netlbl_active_lsm == NULL) {
+> +		*secid = 0;
+> +		return -EINVAL;
+> +	}
+> +	return netlbl_active_lsm->secctx_to_secid(secdata, seclen, secid);
+> +}
+> +
+> +/**
+> + * netlbl_task_getsecid - call the registered task_getsecid LSM hook
+> + * @p - The task
+> + * @secid - Where to put the secid
+> + *
+> + */
+> +static inline void netlbl_task_getsecid(struct task_struct *p, u32 *secid)
+> +{
+> +	if (netlbl_active_lsm)
+> +		netlbl_active_lsm->task_getsecid(p, secid);
+> +}
+
+Any particular reason you put all these functions in 'netlabel_user.h'?  I ask 
+because this header is related to the NetLabel netlink interface, with some 
+minor audit stuff tossed in for good measure; it really has nothing to do with 
+the LSM secctx/secid stuff.  I'd probably prefer these functions end up in 
+their own header file for the sake of better organization, maybe 
+'netlabel_secid.h'?
+
+-- 
+paul moore
+www.paul-moore.com
+
