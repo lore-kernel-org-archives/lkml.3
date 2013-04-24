@@ -1,120 +1,334 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758021Ab3DXITx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 04:19:53 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:33910 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755810Ab3DXITt (ORCPT
+	id S1758037Ab3DXIWV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 04:22:21 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:56890 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757918Ab3DXIWQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 04:19:49 -0400
-Message-ID: <51779588.1070203@linux.vnet.ibm.com>
-Date: Wed, 24 Apr 2013 13:49:20 +0530
-From: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Wed, 24 Apr 2013 04:22:16 -0400
+Date: Wed, 24 Apr 2013 01:22:10 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Chao Xie <chao.xie@marvell.com>
+Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+        haojian.zhuang@gmail.com, xiechao.mail@gmail.com
+Subject: Re: [PATCH 1/6] input: pxa27x-keypad: copy members of platform data
+ to device private data
+Message-ID: <20130424082209.GA25498@core.coreip.homeip.net>
+References: <1366773633-7727-1-git-send-email-chao.xie@marvell.com>
+ <1366773633-7727-2-git-send-email-chao.xie@marvell.com>
 MIME-Version: 1.0
-To: Chen Gang <gang.chen@asianux.com>
-CC: "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>,
-        Michael Neuling <mikey@neuling.org>, linuxppc-dev@lists.ozlabs.org,
-        paulus@samba.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arch/powerpc/kernel: using %12.12s instead of %12s for
- avoiding memory overflow.
-References: <5100B53C.3030109@asianux.com> <512055D0.7050100@asianux.com> <514FD2E0.5030805@asianux.com> <51778D97.4080409@asianux.com> <51779491.10307@linux.vnet.ibm.com>
-In-Reply-To: <51779491.10307@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 8bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13042408-2000-0000-0000-00000BD990C8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1366773633-7727-2-git-send-email-chao.xie@marvell.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/24/2013 01:45 PM, Vasant Hegde wrote:
-> On 04/24/2013 01:15 PM, Chen Gang wrote:
->> Hello Vasant Hegde:
->>
->> How about this patch, is it OK ?
->>
->> Thanks.
->>
->>
->> On 2013年03月25日 12:30, Chen Gang wrote:
->>> Hello Maintainers:
->>>
->>>     could you help check this patch whether is ok ?
->>>
->>>     thanks.
->>>
->>>
->>> On 2013年02月17日 12:00, Chen Gang wrote:
->>>> Hello relative members:
->>>>
->>>>     please give a glance to this patch, when you have time.
->>>>
->>>>     thanks.
->>>>
->>>>     :-)
->>>>
->>>> gchen.
->>>>
->>>>
->>>> 于 2013年01月24日 12:14, Chen Gang 写道:
->>>>>
->>>>>     for tmp_part->header.name:
->>>>>       it is "Terminating null required only for names<   12 chars".
->>>>>       so need to limit the %.12s for it in printk
->>>>>
->>>>>     additional info:
->>>>>
->>>>>       %12s  limit the width, not for the original string output length
->>>>>             if name length is more than 12, it still can be fully displayed.
->>>>>             if name length is less than 12, the ' ' will be filled before name.
->>>>>
->>>>>       %.12s truly limit the original string output length (precision)
->>>>>
->>>>>
->>>>> Signed-off-by: Chen Gang<gang.chen@asianux.com>
->>>>> ---
->>>>>    arch/powerpc/kernel/nvram_64.c |    2 +-
->>>>>    1 file changed, 1 insertion(+), 1 deletion(-)
->>>>>
->>>>> diff --git a/arch/powerpc/kernel/nvram_64.c b/arch/powerpc/kernel/nvram_64.c
->>>>> index bec1e93..57bf6d2 100644
->>>>> --- a/arch/powerpc/kernel/nvram_64.c
->>>>> +++ b/arch/powerpc/kernel/nvram_64.c
->>>>> @@ -202,7 +202,7 @@ static void __init nvram_print_partitions(char * label)
->>>>>    	printk(KERN_WARNING "--------%s---------\n", label);
->>>>>    	printk(KERN_WARNING "indx\t\tsig\tchks\tlen\tname\n");
->>>>>    	list_for_each_entry(tmp_part,&nvram_partitions, partition) {
->>>>> -		printk(KERN_WARNING "%4d    \t%02x\t%02x\t%d\t%12s\n",
->>>>> +		printk(KERN_WARNING "%4d    \t%02x\t%02x\t%d\t%12.12s\n",
+Hi Chao,
+
+On Tue, Apr 23, 2013 at 11:20:28PM -0400, Chao Xie wrote:
+> Original driver will directly use platform data when driver is
+> running.
+> In fact, the platform data may be freed after system is bootup,
+
+This statement is not correct, the platform data should be never be
+freed, otherwise one can not reload a driver.
+
+> or pointer for platform data is NULL if it has device tree support.
+> Define the useful members of platform data in device private data.
+
+Usually people just allocate platform data structure and fill it with DT
+data.
+
+Thanks.
+
 > 
-> First, this code in inside NVRAM_DEBUG which is used only for debug purpose and
-> AFAIK, all partition names are less than 20 character. So I don't think we need
-
-Sorry.. I meant 12 character.
-
--Vasant
-
-
-> this patch.
+> Signed-off-by: Chao Xie <chao.xie@marvell.com>
+> ---
+>  drivers/input/keyboard/pxa27x_keypad.c |   97 ++++++++++++++++++++-----------
+>  1 files changed, 62 insertions(+), 35 deletions(-)
 > 
-> -Vasant
+> diff --git a/drivers/input/keyboard/pxa27x_keypad.c b/drivers/input/keyboard/pxa27x_keypad.c
+> index 5330d8f..023243a 100644
+> --- a/drivers/input/keyboard/pxa27x_keypad.c
+> +++ b/drivers/input/keyboard/pxa27x_keypad.c
+> @@ -100,8 +100,6 @@
+>  #define MAX_KEYPAD_KEYS		(MAX_MATRIX_KEY_NUM + MAX_DIRECT_KEY_NUM)
+>  
+>  struct pxa27x_keypad {
+> -	struct pxa27x_keypad_platform_data *pdata;
+> -
+>  	struct clk *clk;
+>  	struct input_dev *input_dev;
+>  	void __iomem *mmio_base;
+> @@ -116,15 +114,33 @@ struct pxa27x_keypad {
+>  	uint32_t direct_key_state;
+>  
+>  	unsigned int direct_key_mask;
+> +
+> +	/* from platform data */
+> +	unsigned int matrix_key_rows;
+> +	unsigned int matrix_key_cols;
+> +
+> +	int direct_key_low_active;
+> +	unsigned int direct_key_num;
+> +	unsigned int default_direct_key_mask;
+> +
+> +	int enable_rotary0;
+> +	int enable_rotary1;
+> +
+> +	unsigned int debounce_interval;
+> +
+> +	void (*clear_wakeup_event)(void);
+>  };
+>  
+> -static void pxa27x_keypad_build_keycode(struct pxa27x_keypad *keypad)
+> +static int pxa27x_keypad_build_keycode(struct device *dev,
+> +			struct pxa27x_keypad *keypad,
+> +			struct pxa27x_keypad_platform_data *pdata,
+> +			struct input_dev *input_dev)
+>  {
+> -	struct pxa27x_keypad_platform_data *pdata = keypad->pdata;
+> -	struct input_dev *input_dev = keypad->input_dev;
+>  	unsigned short keycode;
+>  	int i;
+>  
+> +	keypad->matrix_key_rows = pdata->matrix_key_rows;
+> +	keypad->matrix_key_cols = pdata->matrix_key_cols;
+>  	for (i = 0; i < pdata->matrix_key_map_size; i++) {
+>  		unsigned int key = pdata->matrix_key_map[i];
+>  		unsigned int row = KEY_ROW(key);
+> @@ -137,12 +153,16 @@ static void pxa27x_keypad_build_keycode(struct pxa27x_keypad *keypad)
+>  		__set_bit(keycode, input_dev->keybit);
+>  	}
+>  
+> +	keypad->direct_key_low_active = pdata->direct_key_low_active;
+> +	keypad->direct_key_num = pdata->direct_key_num;
+> +	keypad->default_direct_key_mask = pdata->direct_key_mask;
+>  	for (i = 0; i < pdata->direct_key_num; i++) {
+>  		keycode = pdata->direct_key_map[i];
+>  		keypad->keycodes[MAX_MATRIX_KEY_NUM + i] = keycode;
+>  		__set_bit(keycode, input_dev->keybit);
+>  	}
+>  
+> +	keypad->enable_rotary0 = pdata->enable_rotary0;
+>  	if (pdata->enable_rotary0) {
+>  		if (pdata->rotary0_up_key && pdata->rotary0_down_key) {
+>  			keycode = pdata->rotary0_up_key;
+> @@ -160,6 +180,7 @@ static void pxa27x_keypad_build_keycode(struct pxa27x_keypad *keypad)
+>  		}
+>  	}
+>  
+> +	keypad->enable_rotary1 = pdata->enable_rotary1;
+>  	if (pdata->enable_rotary1) {
+>  		if (pdata->rotary1_up_key && pdata->rotary1_down_key) {
+>  			keycode = pdata->rotary1_up_key;
+> @@ -178,11 +199,14 @@ static void pxa27x_keypad_build_keycode(struct pxa27x_keypad *keypad)
+>  	}
+>  
+>  	__clear_bit(KEY_RESERVED, input_dev->keybit);
+> +
+> +	keypad->debounce_interval = pdata->debounce_interval;
+> +
+> +	return 0;
+>  }
+>  
+>  static void pxa27x_keypad_scan_matrix(struct pxa27x_keypad *keypad)
+>  {
+> -	struct pxa27x_keypad_platform_data *pdata = keypad->pdata;
+>  	struct input_dev *input_dev = keypad->input_dev;
+>  	int row, col, num_keys_pressed = 0;
+>  	uint32_t new_state[MAX_MATRIX_KEY_COLS];
+> @@ -200,8 +224,8 @@ static void pxa27x_keypad_scan_matrix(struct pxa27x_keypad *keypad)
+>  		row = KPAS_RP(kpas);
+>  
+>  		/* if invalid row/col, treat as no key pressed */
+> -		if (col >= pdata->matrix_key_cols ||
+> -		    row >= pdata->matrix_key_rows)
+> +		if (col >= keypad->matrix_key_cols ||
+> +		    row >= keypad->matrix_key_rows)
+>  			goto scan;
+>  
+>  		new_state[col] = (1 << row);
+> @@ -224,7 +248,7 @@ static void pxa27x_keypad_scan_matrix(struct pxa27x_keypad *keypad)
+>  		new_state[7] = (kpasmkp3 >> 16) & KPASMKP_MKC_MASK;
+>  	}
+>  scan:
+> -	for (col = 0; col < pdata->matrix_key_cols; col++) {
+> +	for (col = 0; col < keypad->matrix_key_cols; col++) {
+>  		uint32_t bits_changed;
+>  		int code;
+>  
+> @@ -232,7 +256,7 @@ scan:
+>  		if (bits_changed == 0)
+>  			continue;
+>  
+> -		for (row = 0; row < pdata->matrix_key_rows; row++) {
+> +		for (row = 0; row < keypad->matrix_key_rows; row++) {
+>  			if ((bits_changed & (1 << row)) == 0)
+>  				continue;
+>  
+> @@ -284,23 +308,21 @@ static void report_rotary_event(struct pxa27x_keypad *keypad, int r, int delta)
+>  
+>  static void pxa27x_keypad_scan_rotary(struct pxa27x_keypad *keypad)
+>  {
+> -	struct pxa27x_keypad_platform_data *pdata = keypad->pdata;
+>  	uint32_t kprec;
+>  
+>  	/* read and reset to default count value */
+>  	kprec = keypad_readl(KPREC);
+>  	keypad_writel(KPREC, DEFAULT_KPREC);
+>  
+> -	if (pdata->enable_rotary0)
+> +	if (keypad->enable_rotary0)
+>  		report_rotary_event(keypad, 0, rotary_delta(kprec));
+>  
+> -	if (pdata->enable_rotary1)
+> +	if (keypad->enable_rotary1)
+>  		report_rotary_event(keypad, 1, rotary_delta(kprec >> 16));
+>  }
+>  
+>  static void pxa27x_keypad_scan_direct(struct pxa27x_keypad *keypad)
+>  {
+> -	struct pxa27x_keypad_platform_data *pdata = keypad->pdata;
+>  	struct input_dev *input_dev = keypad->input_dev;
+>  	unsigned int new_state;
+>  	uint32_t kpdk, bits_changed;
+> @@ -308,14 +330,14 @@ static void pxa27x_keypad_scan_direct(struct pxa27x_keypad *keypad)
+>  
+>  	kpdk = keypad_readl(KPDK);
+>  
+> -	if (pdata->enable_rotary0 || pdata->enable_rotary1)
+> +	if (keypad->enable_rotary0 || keypad->enable_rotary1)
+>  		pxa27x_keypad_scan_rotary(keypad);
+>  
+>  	/*
+>  	 * The KPDR_DK only output the key pin level, so it relates to board,
+>  	 * and low level may be active.
+>  	 */
+> -	if (pdata->direct_key_low_active)
+> +	if (keypad->direct_key_low_active)
+>  		new_state = ~KPDK_DK(kpdk) & keypad->direct_key_mask;
+>  	else
+>  		new_state = KPDK_DK(kpdk) & keypad->direct_key_mask;
+> @@ -325,7 +347,7 @@ static void pxa27x_keypad_scan_direct(struct pxa27x_keypad *keypad)
+>  	if (bits_changed == 0)
+>  		return;
+>  
+> -	for (i = 0; i < pdata->direct_key_num; i++) {
+> +	for (i = 0; i < keypad->direct_key_num; i++) {
+>  		if (bits_changed & (1 << i)) {
+>  			int code = MAX_MATRIX_KEY_NUM + i;
+>  
+> @@ -340,10 +362,9 @@ static void pxa27x_keypad_scan_direct(struct pxa27x_keypad *keypad)
+>  
+>  static void clear_wakeup_event(struct pxa27x_keypad *keypad)
+>  {
+> -	struct pxa27x_keypad_platform_data *pdata = keypad->pdata;
+>  
+> -	if (pdata->clear_wakeup_event)
+> -		(pdata->clear_wakeup_event)();
+> +	if (keypad->clear_wakeup_event)
+> +		(keypad->clear_wakeup_event)();
+>  }
+>  
+>  static irqreturn_t pxa27x_keypad_irq_handler(int irq, void *dev_id)
+> @@ -364,7 +385,6 @@ static irqreturn_t pxa27x_keypad_irq_handler(int irq, void *dev_id)
+>  
+>  static void pxa27x_keypad_config(struct pxa27x_keypad *keypad)
+>  {
+> -	struct pxa27x_keypad_platform_data *pdata = keypad->pdata;
+>  	unsigned int mask = 0, direct_key_num = 0;
+>  	unsigned long kpc = 0;
+>  
+> @@ -372,34 +392,34 @@ static void pxa27x_keypad_config(struct pxa27x_keypad *keypad)
+>  	keypad_readl(KPC);
+>  
+>  	/* enable matrix keys with automatic scan */
+> -	if (pdata->matrix_key_rows && pdata->matrix_key_cols) {
+> +	if (keypad->matrix_key_rows && keypad->matrix_key_cols) {
+>  		kpc |= KPC_ASACT | KPC_MIE | KPC_ME | KPC_MS_ALL;
+> -		kpc |= KPC_MKRN(pdata->matrix_key_rows) |
+> -		       KPC_MKCN(pdata->matrix_key_cols);
+> +		kpc |= KPC_MKRN(keypad->matrix_key_rows) |
+> +		       KPC_MKCN(keypad->matrix_key_cols);
+>  	}
+>  
+>  	/* enable rotary key, debounce interval same as direct keys */
+> -	if (pdata->enable_rotary0) {
+> +	if (keypad->enable_rotary0) {
+>  		mask |= 0x03;
+>  		direct_key_num = 2;
+>  		kpc |= KPC_REE0;
+>  	}
+>  
+> -	if (pdata->enable_rotary1) {
+> +	if (keypad->enable_rotary1) {
+>  		mask |= 0x0c;
+>  		direct_key_num = 4;
+>  		kpc |= KPC_REE1;
+>  	}
+>  
+> -	if (pdata->direct_key_num > direct_key_num)
+> -		direct_key_num = pdata->direct_key_num;
+> +	if (keypad->direct_key_num > direct_key_num)
+> +		direct_key_num = keypad->direct_key_num;
+>  
+>  	/*
+>  	 * Direct keys usage may not start from KP_DKIN0, check the platfrom
+>  	 * mask data to config the specific.
+>  	 */
+> -	if (pdata->direct_key_mask)
+> -		keypad->direct_key_mask = pdata->direct_key_mask;
+> +	if (keypad->default_direct_key_mask)
+> +		keypad->direct_key_mask = keypad->default_direct_key_mask;
+>  	else
+>  		keypad->direct_key_mask = ((1 << direct_key_num) - 1) & ~mask;
+>  
+> @@ -409,7 +429,7 @@ static void pxa27x_keypad_config(struct pxa27x_keypad *keypad)
+>  
+>  	keypad_writel(KPC, kpc | KPC_RE_ZERO_DEB);
+>  	keypad_writel(KPREC, DEFAULT_KPREC);
+> -	keypad_writel(KPKDI, pdata->debounce_interval);
+> +	keypad_writel(KPKDI, keypad->debounce_interval);
+>  }
+>  
+>  static int pxa27x_keypad_open(struct input_dev *dev)
+> @@ -515,7 +535,6 @@ static int pxa27x_keypad_probe(struct platform_device *pdev)
+>  		goto failed_free;
+>  	}
+>  
+> -	keypad->pdata = pdata;
+>  	keypad->input_dev = input_dev;
+>  	keypad->irq = irq;
+>  
+> @@ -555,10 +574,18 @@ static int pxa27x_keypad_probe(struct platform_device *pdev)
+>  	input_dev->evbit[0] = BIT_MASK(EV_KEY) | BIT_MASK(EV_REP);
+>  	input_set_capability(input_dev, EV_MSC, MSC_SCAN);
+>  
+> -	pxa27x_keypad_build_keycode(keypad);
+> +	if (pdata->clear_wakeup_event)
+> +		keypad->clear_wakeup_event = pdata->clear_wakeup_event;
+> +
+> +	error = pxa27x_keypad_build_keycode(&pdev->dev, keypad, pdata,
+> +					    input_dev);
+> +	if (error) {
+> +		dev_err(&pdev->dev, "failed to build keycode\n");
+> +		goto failed_put_clk;
+> +	}
+>  
+> -	if ((pdata->enable_rotary0 && keypad->rotary_rel_code[0] != -1) ||
+> -	    (pdata->enable_rotary1 && keypad->rotary_rel_code[1] != -1)) {
+> +	if ((keypad->enable_rotary0 && keypad->rotary_rel_code[0] != -1) ||
+> +	    (keypad->enable_rotary1 && keypad->rotary_rel_code[1] != -1)) {
+>  		input_dev->evbit[0] |= BIT_MASK(EV_REL);
+>  	}
+>  
+> -- 
+> 1.7.4.1
 > 
->>>>>    		tmp_part->index, tmp_part->header.signature,
->>>>>    		       tmp_part->header.checksum, tmp_part->header.length,
->>>>>    		       tmp_part->header.name);
->>>>>
->>>>
->>>>
->>>
->>>
->>
->>
-> 
-> _______________________________________________
-> Linuxppc-dev mailing list
-> Linuxppc-dev@lists.ozlabs.org
-> https://lists.ozlabs.org/listinfo/linuxppc-dev
 
+-- 
+Dmitry
