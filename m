@@ -1,178 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757770Ab3DXIJM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 04:09:12 -0400
-Received: from eu1sys200aog118.obsmtp.com ([207.126.144.145]:53617 "EHLO
-	eu1sys200aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754220Ab3DXIJI convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 04:09:08 -0400
-From: Loic PALLARDY <loic.pallardy@st.com>
-To: Jassi Brar <jaswinder.singh@linaro.org>
-Cc: "Anna, Suman" <s-anna@ti.com>, Jassi Brar <jassisinghbrar@gmail.com>,
-        "Ohad Ben-Cohen (ohad@wizery.com)" <ohad@wizery.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        "Andy Green (andy.green@linaro.org)" <andy.green@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Tony Lindgren <tony@atomide.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Omar Ramirez Luna (omar.ramirez@copitl.com)" 
-	<omar.ramirez@copitl.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Wed, 24 Apr 2013 10:08:36 +0200
-Subject: Re: [PATCHv3 00/14] drivers: mailbox: framework creation
-Thread-Topic: [PATCHv3 00/14] drivers: mailbox: framework creation
-Thread-Index: Ac5Awuw0Yr9nLvPxQ0CNEGOk7qNfeg==
-Message-ID: <51779304.4040003@st.com>
-References: <1363145021-14339-1-git-send-email-s-anna@ti.com>
- <CABb+yY0RYkVeo2Sb4WsDJY0jf17488FEz0d2CB994eQaSOEsVg@mail.gmail.com>
- <37C860A02101E749A747FA2D3C1E3C504A5DF7@DLEE11.ent.ti.com>
- <CABb+yY1x4x_A+QtGG9ohsLPgs8c3nEVnd_ExJBGOOR8=6YLPFA@mail.gmail.com>
- <37C860A02101E749A747FA2D3C1E3C504A63B4@DLEE11.ent.ti.com>
- <CAJe_ZhehnniZd730jjiOLrHozq8TOJZgFYLqUe4KqgBiQEu8PA@mail.gmail.com>
-In-Reply-To: <CAJe_ZhehnniZd730jjiOLrHozq8TOJZgFYLqUe4KqgBiQEu8PA@mail.gmail.com>
-Accept-Language: fr-FR, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-user-agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120412
- Thunderbird/11.0.1
-acceptlanguage: fr-FR, en-US
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+	id S1757978Ab3DXILr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 04:11:47 -0400
+Received: from www.linutronix.de ([62.245.132.108]:38560 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756156Ab3DXILo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 04:11:44 -0400
+Message-ID: <517793BD.30101@linutronix.de>
+Date: Wed, 24 Apr 2013 10:11:41 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
 MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org,
+        Carsten Emde <C.Emde@osadl.org>
+Subject: Re: [PREEMPT RT] SLUB and split softirq lock for v3.2-rt
+References: <1360771932-27150-1-git-send-email-bigeasy@linutronix.de> <1366770979.2626.3.camel@gandalf.local.home>
+In-Reply-To: <1366770979.2626.3.camel@gandalf.local.home>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jassi,
+On 04/24/2013 04:36 AM, Steven Rostedt wrote:
+> Hi Sebastian,
 
-On 04/24/2013 06:39 AM, Jassi Brar wrote:
-> Hi Suman,
->
-> [please limit replies to not more than 80 columns per line]
->
-> On 24 April 2013 00:50, Anna, Suman<s-anna@ti.com>  wrote:
->
->>>
->>> Documentation wise, we'd need documentation for what we finally wanna have,
->>> not the current implementation.
->>>
->>> There are also some desired features in a good API:-
->>>
->>> a) The API should be simple and efficient, i.e, submission of requests by clients
->>> and notifications of data received by the API should be possible from atomic
->>> context - most of the IPC is going to be about exchanging 'commands'. The API
->>> shouldn't add to the latencies.
->>
->> I think we will have need for both types. It really depends on the purpose of the IPC h/w - some would be simple messaging and may not need the atomic constraints. Sure enough, atomic context is the stricter one, so we can add that. I don't see any users of it currently though.
->>
-> IMHO the API authors should take the other POV :  if _majority_ of
-> clients _require_ non-atomic context, only then the API should support
-> non-atomic version of the calls too. Otherwise let the minority of
-> drivers schedule their sleepable tasks from the API's atomic
-> callbacks.
->   The non-atomic API falls flat should just a single client comes with
-> very low latency requirements.
+Hi Steven,
 
-In fact there are different situations for the non/atomic requirements 
-(at least from ST POV)
-- one mailbox could be non-atomic only (blocking if we reuse notifier 
-wording)
-- one mailbox could be atomic only
-- one mailbox could be both depending on the context and usage (example: 
-in the case of ST, one mailbox is used to access the analogue baseband, 
-there is no particular atomic requirement for that except during 
-register dump called form panic context)
+> Which version of 3.2-rt was this applied to. It does not apply, where
+> patch 7/16 totally does not apply. I looked at the history of 3.2-rt and
+> I can't find where it would apply.
 
-For the 3rd point I agree with you, it should be considered as atomic 
-and up to driver to schedule a sleepable task...
+I applied them on top of 2438ee33 ("Linux 3.2.37-rt55 REBASE"). I just
+grabbed the patches from the mailing list and re-applied them on top of
+this tree and is still works.
 
-I have an internal implementation in which each mailbox is declared 
-either atomic or blocking.
-Depending on this parameter, the behavior of the mbox_send_mbox is 
-changed...
+After doing the same thing on v3.2.43-rt63-rebase I got:
 
->
->>>   For example, API should assume the IPC controller can detect and report when
->>> the remote asserts Ready-To-Receive (RTR). This is when the API callbacks
->>> .tx_done(mssg) on the client. If some h/w doesn't have RTR assertion interrupt,
->>> the API should provide optional feature to poll the controller periodically.
->>
->> Some of these are already part of the mailbox ops. FWIW, I don’t see a need for a .tx_done callback, as this state can really be maintained by the driver implementation itself. The mailbox_msg_send can return an error appropriately based on whether the h/w is ready or not. The current code has the support for queuing up a certain number of messages in case the h/w is busy, but I am planning to change this to a device-based property so that they can choose if it needs that support or not.
->>
-> Not really. The TI's api does buffer requests from a client but it
-> does not tell the client when the message is actually sent to the
-> remote over the h/w channel.
->
->   Consider this example for better understanding, I must send a
-> particular packet to the remote before I could, say, shutdown
-> properly. The client calls mailbox_msg_send which queues the packet
-> because the h/w was busy. Since the api does not inform the client
-> about packet transmission, the client does not know when to shutdown
-> (the packet may have been sent instantly or it may lie on the queue
-> for a long time).
->   How do you fix this without tx_done callback method?
->
-This mechanism was preserved to be compatibility with TI DSP bridge. But 
-my initial proposal was to remove it, simply because today all mailbox 
-customers consider that message is sent or not after calling 
-mbox_send_message function.
+Applying: softirq: Make serving softirqs a task flag
+Applying: softirq: Split handling function
+Applying: softirq: Split softirq locks
+Using index info to reconstruct a base tree...
+Falling back to patching base and 3-way merge...
+Auto-merging include/linux/sched.h
+Applying: rcu: rcutiny: Prevent RCU stall
+Applying: softirq: Adapt NOHZ softirq pending check to new RT scheme
+Applying: softirq: Add more debugging
+Applying: softirq: Fix nohz pending issue for real
+Applying: net: Use local_bh_disable in netif_rx_ni()
+Applying: FIX [1/2] slub: Do not dereference NULL pointer in node_match
+Applying: FIX [2/2] slub: Tid must be retrieved from the percpu area of
+the current processor
+Applying: slub: Use correct cpu_slab on dead cpu
+Applying: smp: introduce a generic on_each_cpu_mask() function
+Applying: smp: add func to IPI cpus based on parameter func
+Applying: slub: only IPI CPUs that have per cpu obj to flush
+Applying: mm: Enable SLUB for RT
+Applying: slub: Enable irqs for __GFP_WAIT
 
->
->>>
->>> (d) The 'struct mailbox_msg' should be just an opaque void* - the client/protocol
->>> driver typecasts to void* the IPC controller specific message structure. API
->>> shouldn't aim the impossible of providing a generic message format.
->>
->> The size parameter would still be needed. Depending on the h/w, it can be just an u32 or a series of bytes, and even in the latter case, it is not guaranteed that all messages transmitted will occupy the entire h/w shared memory data packet. I can see the current header field getting absorbed into the opaque void * structure for the ST mailbox driver. The size and ptr together provide a very generic message format.
->>
-> I am not sure about it. The API has no purpose for the .size (it's
-> between the controller and the client driver).
-> Controllers that could send variable length packets could define the
-> packets format for clients as
->   struct foo_packet {
->           int size;
->           .......
->   }
-> and exchange as typecasted to void* via the API. And this is just one
-> way of doing it.
-> The point being, the API should only pass pointer to packet info
-> between controller and client drivers.
-No today the size is used to store the message in the fifo and that's 
-done by the framework.
-If you decide to remove the fifo mechanism inherit for TI legacy, in 
-that case yes the mailbox framework doesn't matter about message format 
-and size.
->
->>>
->>> As you see there would be not much of the present left eventually. So I wonder
->>> if should sculpt a new api out of TI's or start from scratch?
->>> One of my controllers is similar to 'pl320' (which you left out converting to the
->>> API). I am in process of implementing all this assuming it is OK to keep a controller
->>> out of this API :)  So maybe we can collaborate on a new implementation from
->>> scratch.
->>
->> This series missed the 3.9 merge window, and is currently slated for getting merged into 3.10. The PL320 made it into 3.9 itself (I wasn't aware of it until I saw it in mainline) and created the drivers/mailbox folder.  I would think it would be relatively straight-forward to adopt it to the mailbox API, as it has only 3 API. We should be doing incremental changes on top of this series, as most of the base API would still be the same. The current series is helping out with couple of efforts, the breaking up of the PRCMU code and on the multiplatform support for OMAP with mailbox enabled. We can definitely collaborate on the improvements. Andy Green would also be interested, as he is also looking into adopting the mailbox API.
->>
-> I don't think it should into 3.10 just because it missed the 3.9
-> window, when its quality is doubted.
-> I am going to have to live with IPC controller code for sometime now,
-> so I care that I build upon a sound API. And I am more than happy to
-> help on a proper implementation.
->
-I'm really happy to see some new mailbox framework clients coming with 
-new requirements to improve the solution.
-Just for the story, mailbox framework topic was addressed during Linaro 
-Copenhagen Connect and at the time being it was decided to reuse TI 
-solution in a first time and then to improve it...
+git did not complain about patch 7 ("softirq: Fix nohz pending issue for
+real") but about 3 ("softirq: Split softirq locks"). The diff between
+the two queues (except different sha1, index and so) is:
 
-Regards,
-Loic
+--- old/0003-softirq-Split-softirq-locks.patch
++++ new/0003-softirq-Split-softirq-locks.patch
+@@ -60,8 +60,8 @@
+        int softirq_nestcnt;
+ +      unsigned int softirqs_raised;
+  #endif
+- #if defined CONFIG_PREEMPT_RT_FULL && defined CONFIG_HIGHMEM
+-       int kmap_idx;
++ #ifdef CONFIG_PREEMPT_RT_FULL
++ # if defined CONFIG_HIGHMEM || defined CONFIG_X86_32
 
-> Regards,
-> Jassi
+
+and this looks good.
+
+> Thanks,
+> 
+> -- Steve
+
+Sebastian
