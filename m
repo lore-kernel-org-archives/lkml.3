@@ -1,93 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757972Ab3DXLQl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 07:16:41 -0400
-Received: from jacques.telenet-ops.be ([195.130.132.50]:47579 "EHLO
-	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753587Ab3DXLQj (ORCPT
+	id S1758012Ab3DXLQq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 07:16:46 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:35505 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753587Ab3DXLQo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 07:16:39 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH] usb: gadget: multi: Mark {cdc,rndis}_config_register() __init
-Date: Wed, 24 Apr 2013 13:16:35 +0200
-Message-Id: <1366802195-15479-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.0.4
+	Wed, 24 Apr 2013 07:16:44 -0400
+Message-ID: <5177BEA9.2030207@huawei.com>
+Date: Wed, 24 Apr 2013 19:14:49 +0800
+From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Namhyung Kim <namhyung@kernel.org>
+CC: Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
+Subject: Re: [RFC 00/14] perf tools: Introduce new 'ftrace' command
+References: <1366705872-12132-1-git-send-email-namhyung@kernel.org> <1366732681.9609.157.camel@gandalf.local.home> <87ip3cb7nu.fsf@sejong.aot.lge.com>
+In-Reply-To: <87ip3cb7nu.fsf@sejong.aot.lge.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.66.58.241]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If gcc (e.g. 4.1.2) decides not to inline cdc_config_register() and
-rndis_config_register(), this will cause section mismatch warnings:
+On 2013/4/24 17:27, Namhyung Kim wrote:
+> Hi Steve,
+> 
+> On Tue, 23 Apr 2013 11:58:01 -0400, Steven Rostedt wrote:
+>> On Tue, 2013-04-23 at 17:30 +0900, Namhyung Kim wrote:
+>>> Hello,
+>>>
+>>> This patchset implements a front-end tool for kernel's ftrace.  It
+>>> uses function_graph tracer by default and normal function tracer is
+>>> also supported.  (Of course you need to enable those tracers in your
+>>> kernel first.)
+>>>
+>>> NOTE: It's in very early stage, so may contain many rough edges.
+>>>
+>>
+>> Very nice Namhyung, thanks for doing this. I did a quick run through of
+>> the patches and I have no complaints about them. I'm not sure how the
+>> others will feel about it.
+> 
+> Thanks!
+> 
+>>
+>> Also, have you given thought on how to execute both ftrace and the pmu
+>> counters? That is, to get a way to interleave the data?
+> 
+> I didn't think about it yet.  I just thought enabling event tracing in
+> ftrace and get the data along with the function tracing.  I'm not sure
+> how they interfere each other when enabled at the same time.
+> 
+> If that's not a valid concern, I think it's doable.
 
-WARNING: drivers/usb/gadget/g_multi.o(.text+0x32f6): Section mismatch in reference from the function cdc_config_register() to the function .init.text:cdc_do_config()
-The function cdc_config_register() references
-the function __init cdc_do_config().
-This is often because cdc_config_register lacks a __init
-annotation or the annotation of cdc_do_config is wrong.
+There have ftrace:function event in tracing infrastructure, that event works in perf,
+but I'm not sure if it could enhance to showing function graph as this patchset did.
+	perf record -e ftrace:function ls > /dev/null
+	perf report
 
-WARNING: drivers/usb/gadget/g_multi.o(.text+0x3326): Section mismatch in reference from the function rndis_config_register() to the function .init.text:rndis_do_config()
-The function rndis_config_register() references
-the function __init rndis_do_config().
-This is often because rndis_config_register lacks a __init
-annotation or the annotation of rndis_do_config is wrong.
+> 
+> 
+>> I added a 'perf' clock to ftrace. I didn't see that being checked,
+>> although I didn't look too hard. If possible, you can use that, as well
+>> as the multi-buffers that are coming in 3.10.
+> 
+> Will look at it later.
+> 
+>>
+>> I would also like to add a system call to allow you to get to the ftrace
+>> data without the need for debugfs. I'm not sure if we should piggy back
+>> on the perf system call, or add a new one. I'm thinking we should add a
+>> new one so that it doesn't get too confusing.
+> 
+> Could you elaborate on it more?  I cannot see how it'll look like..
+> 
+>>
+>> Hope others have comments,
+> 
+> Thanks for your kind review.
+> Namhyung
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> .
+> 
 
-Fortunately they're harmless, as {cdc,rndis}_config_register() are only
-called from multi_bind(), which is annotated with __ref.
-
-Mark {cdc,rndis}_config_register() with the __init annotation to kill the
-warning.
-
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
-Note: I did not verify that multi_bind() is rightfully marked __ref.
-
- drivers/usb/gadget/multi.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/usb/gadget/multi.c b/drivers/usb/gadget/multi.c
-index 20bbbf9..db63d9e 100644
---- a/drivers/usb/gadget/multi.c
-+++ b/drivers/usb/gadget/multi.c
-@@ -177,7 +177,7 @@ err_func_acm:
- 	return ret;
- }
- 
--static int rndis_config_register(struct usb_composite_dev *cdev)
-+static __init int rndis_config_register(struct usb_composite_dev *cdev)
- {
- 	static struct usb_configuration config = {
- 		.bConfigurationValue	= MULTI_RNDIS_CONFIG_NUM,
-@@ -192,7 +192,7 @@ static int rndis_config_register(struct usb_composite_dev *cdev)
- 
- #else
- 
--static int rndis_config_register(struct usb_composite_dev *cdev)
-+static __init int rndis_config_register(struct usb_composite_dev *cdev)
- {
- 	return 0;
- }
-@@ -240,7 +240,7 @@ err_func_acm:
- 	return ret;
- }
- 
--static int cdc_config_register(struct usb_composite_dev *cdev)
-+static __init int cdc_config_register(struct usb_composite_dev *cdev)
- {
- 	static struct usb_configuration config = {
- 		.bConfigurationValue	= MULTI_CDC_CONFIG_NUM,
-@@ -255,7 +255,7 @@ static int cdc_config_register(struct usb_composite_dev *cdev)
- 
- #else
- 
--static int cdc_config_register(struct usb_composite_dev *cdev)
-+static __init int cdc_config_register(struct usb_composite_dev *cdev)
- {
- 	return 0;
- }
--- 
-1.7.0.4
 
