@@ -1,127 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756645Ab3DXP6v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 11:58:51 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:47486 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753407Ab3DXP6t (ORCPT
+	id S1756277Ab3DXQHk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 12:07:40 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:39729 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755657Ab3DXQHj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 11:58:49 -0400
-Date: Wed, 24 Apr 2013 11:58:48 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Julius Werner <jwerner@chromium.org>
-cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, Vincent Palatin <vpalatin@chromium.org>,
-        Sameer Nanda <snanda@chromium.org>
-Subject: Re: [PATCH] usb: ehci: Only sleep for post-resume handover if devices
- use persist
-In-Reply-To: <1366753762-6194-1-git-send-email-jwerner@chromium.org>
-Message-ID: <Pine.LNX.4.44L0.1304241139380.1548-100000@iolanthe.rowland.org>
+	Wed, 24 Apr 2013 12:07:39 -0400
+Message-ID: <51780348.6090202@linaro.org>
+Date: Wed, 24 Apr 2013 09:07:36 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Alexander Holler <holler@ahsoftware.de>
+CC: Kay Sievers <kay@vrfy.org>, LKML <linux-kernel@vger.kernel.org>,
+        Feng Tang <feng.tang@intel.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Subject: Re: CONFIG_RTC_HCTOSYS lost on x86 with ALWAYS_USE_PERSISTENT_CLOCK
+ changes?
+References: <CAPXgP13kizK95JyLxKxgWrGnV9b11ZTyi3vuc5YFDmROzckg4w@mail.gmail.com> <517746E4.908@linaro.org> <CAPXgP128yAq1jju-gsZcaS-mZPt+7tq0tt-uVk3Yqr77abd26Q@mail.gmail.com> <51774F44.2060704@linaro.org> <517769A9.5060308@ahsoftware.de>
+In-Reply-To: <517769A9.5060308@ahsoftware.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Apr 2013, Julius Werner wrote:
+On 04/23/2013 10:12 PM, Alexander Holler wrote:
+> Hello,
+>
+> Am 24.04.2013 05:19, schrieb John Stultz:
+>
+>> On x86 the persistent_clock() is backed by the
+>> CMOS/EFI/kvm-wall/xen/vrtc clock (all via x86_platform.get_wallclock)
+>> should be present and we'll initialize the time in timekeeping_init()
+>> there.
+>>
+>> Its only systems where there isn't a persistent_clock is where the RTC
+>> layer and the HCTOSYS is helpful.
+>
+> I'm a bit confused too. ;)
+>
+> Doesn't this remove the users choice of RTC on x86 systems?
 
-> The current EHCI code sleeps a flat 110ms in the resume path if there
-> was a USB 1.1 device connected to its companion controller during
-> suspend, waiting for the device to reappear and reset so that it can be
-> handed back to the companion. This is necessary if the device uses
-> persist, so that the companion controller can actually see it during its
-> own resume path.
-> 
-> However, if the device doesn't use persist, this is entirely
-> unnecessary. We might just as well ignore it and have the normal device
-> detection/reset/handoff code handle it asynchronously when it eventually
-> shows up. As USB 1.1 devices are almost exclusively HIDs these days (for
-> which persist has no value), this can allow distros to shave another
-> tenth of a second off their resume time.
-
-This is a good idea.  The patch needs some fixes, though.
-
-> Signed-off-by: Julius Werner <jwerner@chromium.org>
-> ---
->  drivers/usb/host/ehci-hub.c | 21 +++++++++++++++++++++
->  1 file changed, 21 insertions(+)
-> 
-> diff --git a/drivers/usb/host/ehci-hub.c b/drivers/usb/host/ehci-hub.c
-> index 7d06e77..2507afb 100644
-> --- a/drivers/usb/host/ehci-hub.c
-> +++ b/drivers/usb/host/ehci-hub.c
-> @@ -29,6 +29,8 @@
->  /*-------------------------------------------------------------------------*/
->  #include <linux/usb/otg.h>
->  
-> +#include "../core/usb.h"
-
-Unfortunately, this won't work if ehci-hcd is built as a module.  
-usbcore does not export usb_device_type, which is used by 
-is_usb_device().
-
-Also, including a core header into a non-core driver is ugly.  Perhaps
-a better approach would be to have usbcore export an iterator that runs
-over devices only -- a for_each_usb_device() routine.
-
-> +
->  #define	PORT_WAKE_BITS	(PORT_WKOC_E|PORT_WKDISC_E|PORT_WKCONN_E)
->  
->  #ifdef	CONFIG_PM
-> @@ -42,6 +44,18 @@ static int ehci_hub_control(
->  	u16		wLength
->  );
->  
-> +
-> +static int companion_persist(struct device *dev, void *unused)
-
-This name isn't so great.  Something like
-"persistent_device_on_usb11_bus" would be more accurate, if not more
-readable.  Maybe you can think of something better.
-
-> +{
-> +	struct usb_device *udev = container_of(dev, struct usb_device, dev);
-> +
-> +	if (!is_usb_device(dev))
-> +		return 0;  /* Filter out struct usb_interface on the same bus */
-> +
-> +	return !udev->maxchild && udev->persist_enabled &&
-> +		udev->bus->root_hub->speed < USB_SPEED_HIGH;
-> +}
-> +
->  /* After a power loss, ports that were owned by the companion must be
->   * reset so that the companion can still own them.
->   */
-> @@ -56,6 +70,13 @@ static void ehci_handover_companion_ports(struct ehci_hcd *ehci)
->  	if (!ehci->owned_ports)
->  		return;
->  
-> +	/* Check if any USB 1.1 controller in the system uses a non-hub device
-> +	 * with persist enabled. If they don't, the device will get reenumerated
-> +	 * anyway and there is no need to slow resume down to wait for it.
-> +	 */
-
-/*
- * New comments should be formatted like this.
- */
-
-Also, the comment is grammatically unsound: It talks about non-existent
-devices getting reenumerated.  What you really mean is more like this:
-
-	If all devices (aside from hubs) on USB-1.1 buses have persist
-	disabled then we don't need to perform the handover, with its 
-	> 100 ms delay.  Any such devices will get reenumerated
-	normally; typically they are only HID anyway.
+So the userland interfaces for the RTCs are still present.
 
 
-> +	if (!bus_for_each_dev(&usb_bus_type, NULL, NULL, companion_persist))
-> +		return;
-> +
->  	/* Make sure the ports are powered */
->  	port = HCS_N_PORTS(ehci->hcs_params);
->  	while (port--) {
+>
+> Why is there a difference made between the CMOS/EFI/... clocks and 
+> other RTCs?
 
-Alan Stern
+Its a mostly history.  Way way back, timekeeping was mostly arch 
+specific, and we initialized time with arch specific RTC code. After the 
+generic timekeeping went in, the persistent_clock() interface was 
+created as a generic interface to CMOS and other RTCs. The catch being, 
+since we access the persistent_clock() in very early init as well as 
+very late suspend and very early resume, the persistent_clock has to be 
+able to function when interrupts are off.
+
+Now, somewhere near this time (my memory is foggy), the generic RTC 
+driver infrastructure was also created, pulling most of the RTC drivers 
+out of arch specific code and into the generic driver code. The problem 
+there was there were many RTCs that were accessed over buses that 
+required interrupts to be enabled. So there was no way for the generic 
+timekeeping code to use the generic RTC code.
+
+Additionally, since the generic RTC code didn't provide what was needed 
+for the persistent_clock interface, we ended up with duplicated code for 
+things like the CMOS clock in both drivers/rtc/rtc-cmos.c, and 
+arch/x86/kernel/rtc.c
+
+For those (not too common) systems that didn't have a persistent_clock, 
+the RTC framework gained the HCTOSYS option, that would set the clock at 
+driver init time, as well as on resume.
+
+
+Now this HCTOSYS approach had some problems that didn't really become 
+too apparent until ARM started to get much more popular. First of all, 
+since it just set the time on resume we didn't properly measure suspend 
+time. So we had to add some special timekeeping interfaces and changes 
+to measure the time from the RTC device suspend to RTC device resume.
+
+
+Unfortuantely this still has a problem, because we have to stop and 
+start timekeeping very late in the suspend and early in the resume path. 
+Thus any latency between rtc device suspend -> timekeeping suspend and 
+timekeeping resume -> rtc device resume, introduces time error. Some 
+tweaks have been added to try to bound this error, but its still not ideal.
+
+Now, the persistent_clock() code is nicer for this, since we access it 
+in timekeeping suspend and resume, which reduces the introduced error. 
+Also, because the persistent_clock it provides an nsec interface rather 
+then a sec granular interface, so we can utilize finer grained hardware 
+to avoid adding extra error when measuring suspend, where that's available.
+
+
+Now, on systems that had a persistent_clock, enabling HCTOSYS caused 
+some (minor trouble), since we would then repeatedly set the time twice 
+at boot up (once in timekeeping_init, and then again in RTC init paths). 
+Additionally, during suspend and resume, we would measure suspend in 
+timekeeping_resume and get things correct, and then the rtc resume would 
+set the time again, causing error. When rtc suspend/resume was tweaked 
+to measure suspend time, then we had to be extra careful, since there 
+were now two systems measuring suspend and trying to update the clock, 
+so we could end up with time moving forward 2x suspend time.
+
+Since that point, the code has basically ignored the HCTOSYS path on 
+resume if the persistent_clock was present, which is always true on x86.
+
+> And why is RTC_SYSTOHC now gone on x86?
+
+So summarizing the above, because as much as I'm aware, its always been 
+redundant and unnecessary on x86.  Thus being able at build time to mark 
+it as unnecessary was attractive, since it reduced the code paths 
+running at suspend/resume.
+
+That said, Kay's concerns about userland implications (basically the 
+userland side effects of SYSTOHC being enabled) give me pause, so I may 
+revert the HAS_PERSISTENT_CLOCK on x86 change.
+
+
+And again, after recent discussions with both Feng Tang and Jason 
+Gunthorpe, there's a visible path forward that will hopefully remove 
+some of the redundancy above:
+
+* Adding special no-irq safe accessors to the RTC driver infrastrucutre, 
+so the persistent_clock can use the RTC code directly (allowing the 
+removal of duplicated code)
+
+* Separating the persistent_clock functionality into separate time 
+initialization and suspend timing functions.
+
+
+Though I'm not sure when in the near term I'll have to start 
+implementing this, so I'd be happy to work with interested parties to 
+get this cleaned up.
+
+thanks
+-john
+
+
 
