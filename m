@@ -1,106 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757102Ab3DXSRX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 14:17:23 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:47825 "EHLO bear.ext.ti.com"
+	id S1757053Ab3DXSZe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 14:25:34 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:25737 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756553Ab3DXSRV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 14:17:21 -0400
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-To: <gregkh@linuxfoundation.org>
-CC: <devel@driverdev.osuosl.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-pm@vger.kernel.org>,
-        Eduardo Valentin <eduardo.valentin@ti.com>
-Subject: [PATCH 2/2] staging: ti-soc-thermal: remove external heat while extrapolating hotspot
-Date: Wed, 24 Apr 2013 14:16:08 -0400
-Message-ID: <1366827368-14316-3-git-send-email-eduardo.valentin@ti.com>
-X-Mailer: git-send-email 1.8.2.1.342.gfa7285d
-In-Reply-To: <1366827368-14316-1-git-send-email-eduardo.valentin@ti.com>
-References: <1366827368-14316-1-git-send-email-eduardo.valentin@ti.com>
+	id S1756298Ab3DXSZd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 14:25:33 -0400
+X-IronPort-AV: E=Sophos;i="4.87,545,1363132800"; 
+   d="scan'208";a="21366116"
+Date: Wed, 24 Apr 2013 19:25:29 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "will.deacon@arm.com" <will.deacon@arm.com>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "marc.zyngier@arm.com" <marc.zyngier@arm.com>,
+        "nico@linaro.org" <nico@linaro.org>
+Subject: Re: [PATCH v6 1/4] arm: introduce psci_smp_ops
+In-Reply-To: <20130422140601.GH14496@n2100.arm.linux.org.uk>
+Message-ID: <alpine.DEB.2.02.1304241913280.4180@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1304031239550.5078@kaball.uk.xensource.com> <1365167495-18508-1-git-send-email-stefano.stabellini@eu.citrix.com> <20130418161341.GB14496@n2100.arm.linux.org.uk> <alpine.DEB.2.02.1304181714560.7254@kaball.uk.xensource.com>
+ <20130422140601.GH14496@n2100.arm.linux.org.uk>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For boards that provide a PCB sensor close to SoC junction
-temperature, it is possible to remove the cumulative heat
-reported by the SoC temperature sensor.
+On Mon, 22 Apr 2013, Russell King - ARM Linux wrote:
+> > > Now, if the psci stuff can't be relied upon to provide the correct
+> > > functionality, then that's a separate problem which needs addressing
+> > > differently.
+> > > 
+> > > This should allow the Xen problem to be resolved, because Xen will
+> > > provide the PSCI operations, and it's correct in that case to override
+> > > the platform's SMP operations.
+> > 
+> > Yes, increasing the priority of PSCI helps Xen a lot.
+> > In order to completely solve the issue for Xen though, another patch is
+> > needed (http://marc.info/?l=linux-kernel&m=136630106201968&w=2) because
+> > of the introduction of smp_init.
+> 
+> Given the way the code in setup.c will work:
+> 
+> +static bool __init xen_smp_init(void)
+> +{
+> +#ifdef CONFIG_SMP
+> +	/* If we are running on Xen, use PSCI if available.
+> +	 * In any case do not try to use the native smp_ops. */
+> +	if (psci_smp_available())
+> +		smp_set_ops(&psci_smp_ops);
+> +#endif
+> +	return true;
+> +}
+> 
+> Doesn't this just need to return false, and then we'll drop down to
+> using PSCI if those operations are available?
 
-This patch changes the extrapolation computation to consider
-an external sensor in the extrapolation equations.
+If we are running on Xen, we are sure that the only available mechanism
+to boot secondary cpus is PSCI; there is no need to try anything else if
+that one is not available. This is way xen_smp_init is returning true
+unconditionally.
 
-Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
----
- drivers/staging/ti-soc-thermal/ti-thermal-common.c | 30 ++++++++++++++--------
- 1 file changed, 20 insertions(+), 10 deletions(-)
-
-diff --git a/drivers/staging/ti-soc-thermal/ti-thermal-common.c b/drivers/staging/ti-soc-thermal/ti-thermal-common.c
-index e3c5e67..8e67ebf 100644
---- a/drivers/staging/ti-soc-thermal/ti-thermal-common.c
-+++ b/drivers/staging/ti-soc-thermal/ti-thermal-common.c
-@@ -38,6 +38,7 @@
- /* common data structures */
- struct ti_thermal_data {
- 	struct thermal_zone_device *ti_thermal;
-+	struct thermal_zone_device *pcb_tz;
- 	struct thermal_cooling_device *cool_dev;
- 	struct ti_bandgap *bgp;
- 	enum thermal_device_mode mode;
-@@ -77,10 +78,12 @@ static inline int ti_thermal_hotspot_temperature(int t, int s, int c)
- static inline int ti_thermal_get_temp(struct thermal_zone_device *thermal,
- 				      unsigned long *temp)
- {
-+	struct thermal_zone_device *pcb_tz = NULL;
- 	struct ti_thermal_data *data = thermal->devdata;
- 	struct ti_bandgap *bgp;
- 	const struct ti_temp_sensor *s;
--	int ret, tmp, pcb_temp, slope, constant;
-+	int ret, tmp, slope, constant;
-+	unsigned long pcb_temp;
- 
- 	if (!data)
- 		return 0;
-@@ -92,16 +95,22 @@ static inline int ti_thermal_get_temp(struct thermal_zone_device *thermal,
- 	if (ret)
- 		return ret;
- 
--	pcb_temp = 0;
--	/* TODO: Introduce pcb temperature lookup */
-+	/* Default constants */
-+	slope = s->slope;
-+	constant = s->constant;
-+
-+	pcb_tz = data->pcb_tz;
- 	/* In case pcb zone is available, use the extrapolation rule with it */
--	if (pcb_temp) {
--		tmp -= pcb_temp;
--		slope = s->slope_pcb;
--		constant = s->constant_pcb;
--	} else {
--		slope = s->slope;
--		constant = s->constant;
-+	if (!IS_ERR_OR_NULL(pcb_tz)) {
-+		ret = thermal_zone_get_temp(pcb_tz, &pcb_temp);
-+		if (!ret) {
-+			tmp -= pcb_temp; /* got a valid PCB temp */
-+			slope = s->slope_pcb;
-+			constant = s->constant_pcb;
-+		} else {
-+			dev_err(bgp->dev,
-+				"Failed to read PCB state. Using defaults\n");
-+		}
- 	}
- 	*temp = ti_thermal_hotspot_temperature(tmp, slope, constant);
- 
-@@ -273,6 +282,7 @@ static struct ti_thermal_data
- 	data->sensor_id = id;
- 	data->bgp = bgp;
- 	data->mode = THERMAL_DEVICE_ENABLED;
-+	data->pcb_tz = thermal_zone_get_zone_by_name("pcb");
- 	INIT_WORK(&data->thermal_wq, ti_thermal_work);
- 
- 	return data;
--- 
-1.8.2.1.342.gfa7285d
-
+However I am going to drop the "xen/arm: introduce xen_early_init, use
+PSCI on xen" patch linked above entirely, because I'll just assume that
+if we are running on Xen smp_init is going to fail and return false. The
+next option on the list is PSCI so in theory we won't have to do
+anything special to make it work.
