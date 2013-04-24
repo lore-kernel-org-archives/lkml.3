@@ -1,127 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932434Ab3DXLBv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 07:01:51 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:63158 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932397Ab3DXLBt (ORCPT
+	id S1757873Ab3DXLDB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 07:03:01 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:34887 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752228Ab3DXLC7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 07:01:49 -0400
-X-AuditID: 9c930197-b7bb3ae000000fa9-21-5177bb9c6949
-From: Namhyung Kim <namhyung@kernel.org>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Michael Kerrisk <mtk.manpages@gmail.com>,
-        Rik van Riel <riel@redhat.com>, Dave Hansen <dave.hansen@intel.com>
-Subject: Re: [PATCH v2 5/6] mm: Support address range reclaim
-References: <1366767664-17541-1-git-send-email-minchan@kernel.org>
-	<1366767664-17541-6-git-send-email-minchan@kernel.org>
-Date: Wed, 24 Apr 2013 20:01:48 +0900
-In-Reply-To: <1366767664-17541-6-git-send-email-minchan@kernel.org> (Minchan
-	Kim's message of "Wed, 24 Apr 2013 10:41:03 +0900")
-Message-ID: <87wqrs9opv.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Wed, 24 Apr 2013 07:02:59 -0400
+X-Spam-Score: -100.8
+Message-ID: <5177BBB4.4040600@asianux.com>
+Date: Wed, 24 Apr 2013 19:02:12 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+To: "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>, Will Deacon <will.deacon@arm.com>,
+        rjw@sisk.pl
+CC: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: S5pv210: compiling issue, ARM_S3C64XX_CPUFREQ need
+ CONFIG_CPU_FREQ_TABLE=y
+References: <5177B562.40400@asianux.com>
+In-Reply-To: <5177B562.40400@asianux.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Minchan,
 
-On Wed, 24 Apr 2013 10:41:03 +0900, Minchan Kim wrote:
-> This patch adds address range reclaim of a process.
-> The requirement is following as,
->
-> Like webkit1, it uses a address space for handling multi tabs.
-> IOW, it uses *one* process model so all tabs shares address space
-> of the process. In such scenario, per-process reclaim is rather
-> coarse-grained so this patch supports more fine-grained reclaim
-> for being able to reclaim target address range of the process.
-> For reclaim target range, you should use following format.
->
-> 	echo [addr] [size-byte] > /proc/pid/reclaim
->
-> addr should be page-aligned.
->
-> So now reclaim konb's interface is following as.
->
-> echo file > /proc/pid/reclaim
-> 	reclaim file-backed pages only
->
-> echo anon > /proc/pid/reclaim
-> 	reclaim anonymous pages only
->
-> echo all > /proc/pid/reclaim
-> 	reclaim all pages
->
-> echo $((1<<20)) 8192 > /proc/pid/reclaim
-> 	reclaim pages in (0x100000 - 0x102000)
->
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
+Oh, sorry, the subject and the comment is incorrect: it need use
+ARM_S5PV210_CPUFREQ instead of ARM_S3C64XX_CPUFREQ.
+
+I need send patch v2.
+
+
+On 2013年04月24日 18:35, Chen Gang wrote:
+> 
+> For arm S5pv210 with allmodconfig, ARM_S3C64XX_CPUFREQ need 
+> CONFIG_CPU_FREQ_TABLE=y, or will cause compiling issue.
+> 
+> The related operation:
+> + arm-linux-gnu-ld -EL -p --no-undefined -X --build-id -X -o .tmp_vmlinux1 -T /root/linux-next/arch/arm/kernel/vmlinux.lds arch/arm/kernel/head.o init/built-in.o --start-group usr/built-in.o arch/arm/nwfpe/built-in.o arch/arm/vfp/built-in.o arch/arm/kernel/built-in.o arch/arm/mm/built-in.o arch/arm/common/built-in.o arch/arm/net/built-in.o arch/arm/crypto/built-in.o arch/arm/mach-s5pv210/built-in.o arch/arm/plat-samsung/built-in.o kernel/built-in.o mm/built-in.o fs/built-in.o ipc/built-in.o security/built-in.o crypto/built-in.o block/built-in.o arch/arm/lib/lib.a lib/lib.a arch/arm/lib/built-in.o lib/built-in.o drivers/built-in.o sound/built-in.o firmware/built-in.o net/built-in.o --end-group
+> 
+> The related errors:
+> drivers/built-in.o: In function `s5pv210_target':
+> drivers/cpufreq/s5pv210-cpufreq.c:225: undefined reference to `cpufreq_frequency_table_target'
+> drivers/cpufreq/s5pv210-cpufreq.c:237: undefined reference to `cpufreq_frequency_table_target'
+> drivers/built-in.o: In function `s5pv210_verify_speed':
+> drivers/cpufreq/s5pv210-cpufreq.c:182: undefined reference to `cpufreq_frequency_table_verify'
+> drivers/built-in.o: In function `s5pv210_cpu_init':
+> drivers/cpufreq/s5pv210-cpufreq.c:556: undefined reference to `cpufreq_frequency_table_get_attr'
+> drivers/cpufreq/s5pv210-cpufreq.c:560: undefined reference to `cpufreq_frequency_table_cpuinfo'
+> make: *** [vmlinux] Error 1
+> 
+> Signed-off-by: Chen Gang <gang.chen@asianux.com>
 > ---
->  fs/proc/task_mmu.c | 88 ++++++++++++++++++++++++++++++++++++++++++++----------
->  mm/internal.h      |  3 ++
->  2 files changed, 76 insertions(+), 15 deletions(-)
->
-> diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-> index 79b674e..dff9756 100644
-> --- a/fs/proc/task_mmu.c
-> +++ b/fs/proc/task_mmu.c
-> @@ -12,6 +12,7 @@
->  #include <linux/swap.h>
->  #include <linux/swapops.h>
->  #include <linux/mm_inline.h>
-> +#include <linux/ctype.h>
->  
->  #include <asm/elf.h>
->  #include <asm/uaccess.h>
-> @@ -1239,11 +1240,14 @@ static ssize_t reclaim_write(struct file *file, const char __user *buf,
->  				size_t count, loff_t *ppos)
->  {
->  	struct task_struct *task;
-> -	char buffer[PROC_NUMBUF];
-> +	char buffer[200];
->  	struct mm_struct *mm;
->  	struct vm_area_struct *vma;
->  	enum reclaim_type type;
->  	char *type_buf;
-> +	struct mm_walk reclaim_walk = {};
-> +	unsigned long start = 0;
-> +	unsigned long end = 0;
->  
->  	memset(buffer, 0, sizeof(buffer));
->  	if (count > sizeof(buffer) - 1)
-> @@ -1259,42 +1263,96 @@ static ssize_t reclaim_write(struct file *file, const char __user *buf,
->  		type = RECLAIM_ANON;
->  	else if (!strcmp(type_buf, "all"))
->  		type = RECLAIM_ALL;
-> +	else if (isdigit(*type_buf))
-> +		type = RECLAIM_RANGE;
->  	else
-> -		return -EINVAL;
-> +		goto out_err;
-> +
-> +	if (type == RECLAIM_RANGE) {
-> +		int ret;
-> +		size_t len;
-> +		unsigned long len_in;
-> +		char *token;
-> +
-> +		token = strsep(&type_buf, " ");
-> +		if (!token)
-> +			goto out_err;
-> +		ret = kstrtoul(token, 10, &start);
-
-Why not using
-
-		start = memparse(token, NULL);
-
-to support something like:
-
-  # echo 0x100000 8K > /proc/pid/reclaim
+>  drivers/cpufreq/Kconfig.arm |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/cpufreq/Kconfig.arm b/drivers/cpufreq/Kconfig.arm
+> index bce2195..bbcd719 100644
+> --- a/drivers/cpufreq/Kconfig.arm
+> +++ b/drivers/cpufreq/Kconfig.arm
+> @@ -187,6 +187,7 @@ config ARM_S3C64XX_CPUFREQ
+>  config ARM_S5PV210_CPUFREQ
+>  	bool "Samsung S5PV210 and S5PC110"
+>  	depends on CPU_S5PV210
+> +	select CPU_FREQ_TABLE
+>  	default y
+>  	help
+>  	  This adds the CPUFreq driver for Samsung S5PV210 and
+> 
 
 
-Thanks,
-Namhyung
+-- 
+Chen Gang
+
+Asianux Corporation
