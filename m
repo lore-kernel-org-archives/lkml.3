@@ -1,110 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750947Ab3DXEJb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 00:09:31 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:57324 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750750Ab3DXEJ3 (ORCPT
+	id S1751201Ab3DXEOx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 00:14:53 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:39489 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750778Ab3DXEOv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 00:09:29 -0400
+	Wed, 24 Apr 2013 00:14:51 -0400
+Message-ID: <51775C01.20807@oracle.com>
+Date: Wed, 24 Apr 2013 00:13:53 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130408 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <1366724561.1930.3.camel@dabdike>
-References: <1366722406-2899-1-git-send-email-linkinjeon@gmail.com>
-	<1366724561.1930.3.camel@dabdike>
-Date: Wed, 24 Apr 2013 13:09:28 +0900
-Message-ID: <CAKYAXd-V-etPqzvBpV3F0=e5cs9DcRCaMYpf-BEZ3HeXPoN6FA@mail.gmail.com>
-Subject: Re: [PATCH] block: fix max discard sectors limit
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: James Bottomley <jbottomley@parallels.com>
-Cc: "axboe@kernel.dk" <axboe@kernel.dk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Vivek Trivedi <t.vivek@samsung.com>, Shaohua Li <shli@kernel.org>,
-        Kent Overstreet <koverstreet@google.com>, Tejun Heo <tj@kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>
+To: Johannes Berg <johannes@sipsolutions.net>
+CC: Martin Pitt <martin.pitt@ubuntu.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Dan Williams <dcbw@redhat.com>
+Subject: Re: [PATCH v2] mac80211_hwsim: Register and bind to driver
+References: <20130408093001.GE2818@piware.de> <1365431569.25475.16.camel@jlt4.sipsolutions.net>
+In-Reply-To: <1365431569.25475.16.camel@jlt4.sipsolutions.net>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/4/23, James Bottomley <jbottomley@parallels.com>:
-> On Tue, 2013-04-23 at 22:06 +0900, Namjae Jeon wrote:
->> From: Namjae Jeon <namjae.jeon@samsung.com>
->
-> Hey, it's very impolite to send a patch I just gave you as a suggestion
-> to fix the issue under your own authorship.
->
-> What we need to know is has this been tested ... there's no tested-by
-> tags (and there also should really be a reported by).
-Sorry James, as I do not have the exact MMC on which the issue is reproduce.
-So I just checked for sanity on my MMC - there was no issue.
-But for exact issue fix it was mistake to not request for testing.
-I will take care of this in future, for pushing such patches.
-Thanks.
->
-> James
->
->> linux-v3.8-rc1 and later support for plug for blkdev_issue_discard with
->> commit 0cfbcafcae8b7364b5fa96c2b26ccde7a3a296a9
->> (block: add plug for blkdev_issue_discard )
+On 04/08/2013 10:32 AM, Johannes Berg wrote:
+> On Mon, 2013-04-08 at 11:30 +0200, Martin Pitt wrote:
+>> Properly register our mac80211_hwsim_driver, attach it to the platform bus.
+>> Bind newly created hwsim devices to that driver, so that our wlan devices get
+>> a proper "driver" sysfs attribute.
 >>
->> For example,
->> 1) DISCARD rq-1 with size size 4GB
->> 2) DISCARD rq-2 with size size 1GB
->>
->> If these 2 discard requests get merged, final request size will be 5GB.
->>
->> In this case, request's __data_len field may overflow as it can store
->> max 4GB(unsigned int).
->>
->> This issue was observed while doing mkfs.f2fs on 5GB SD card:
->> https://lkml.org/lkml/2013/4/1/292
->>
->> Info: sector size = 512
->> Info: total sectors = 11370496 (in 512bytes)
->> Info: zone aligned segment0 blkaddr: 512
->> [  257.789764] blk_update_request: bio idx 0 >= vcnt 0
->>
->> mkfs process gets stuck in D state and I see the following in the dmesg:
->>
->> [  257.789733] __end_that: dev mmcblk0: type=1, flags=122c8081
->> [  257.789764]   sector 4194304, nr/cnr 2981888/4294959104
->> [  257.789764]   bio df3840c0, biotail df3848c0, buffer   (null), len
->> 1526726656
->> [  257.789764] blk_update_request: bio idx 0 >= vcnt 0
->> [  257.794921] request botched: dev mmcblk0: type=1, flags=122c8081
->> [  257.794921]   sector 4194304, nr/cnr 2981888/4294959104
->> [  257.794921]   bio df3840c0, biotail df3848c0, buffer   (null), len
->> 1526726656
->>
->> This patch fixes this issue.
->>
->> Reported-by: Max Filippov <jcmvbkbc@gmail.com>
->> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
->> Signed-off-by: Vivek Trivedi <t.vivek@samsung.com>
->> Signed-off-by: James Bottomley <JBottomley@Parallels.com>
->> Cc: Shaohua Li <shli@kernel.org>
->> Cc: Kent Overstreet <koverstreet@google.com>
->> Cc: Tejun Heo <tj@kernel.org>
->> Cc: Jens Axboe <axboe@kernel.dk>
->> Cc: <stable@vger.kernel.org>
->> ---
->>  include/linux/blkdev.h |    2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
->> index 07aa5f6..ff636bd 100644
->> --- a/include/linux/blkdev.h
->> +++ b/include/linux/blkdev.h
->> @@ -844,7 +844,7 @@ static inline unsigned int
->> blk_queue_get_max_sectors(struct request_queue *q,
->>  						     unsigned int cmd_flags)
->>  {
->>  	if (unlikely(cmd_flags & REQ_DISCARD))
->> -		return q->limits.max_discard_sectors;
->> +		return min(q->limits.max_discard_sectors, UINT_MAX >> 9);
->>
->>  	if (unlikely(cmd_flags & REQ_WRITE_SAME))
->>  		return q->limits.max_write_same_sectors;
->
->
+>> This makes mac80211_hwsim interfaces work with NetworkManager.
+> 
+> Applied.
+
+Hi guys,
+
+The registration of the driver here is somewhat odd.
+
+You're trying to register a platform driver, but are not actually creating
+a struct platform_driver at any point. This makes registration do the wrong
+thing.
+
+Simply booting a kernel with that patch would cause it to blow up because
+running to_platform_driver() on the device_driver object would point to garbage:
+
+[   25.349569] BUG: unable to handle kernel NULL pointer dereference at 0000000000000001
+[   25.350254] IP: [<ffffffff81f39fa5>] platform_match+0x45/0xc0
+[   25.350886] PGD 0
+[   25.351141] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+[   25.351775] Dumping ftrace buffer:
+[   25.352174]    (ftrace buffer empty)
+[   25.352581] Modules linked in:
+[   25.352949] CPU: 3 PID: 1 Comm: swapper/0 Tainted: G        W    3.9.0-rc8-next-20130423-sasha-00013-gff425d3-dirty #350
+[   25.353905] task: ffff8800b9f08000 ti: ffff8800b9f10000 task.ti: ffff8800b9f10000
+[   25.354577] RIP: 0010:[<ffffffff81f39fa5>]  [<ffffffff81f39fa5>] platform_match+0x45/0xc0
+[   25.355485] RSP: 0000:ffff8800b9f11c98  EFLAGS: 00010202
+[   25.356307] RAX: 000000000000000e RBX: ffff8800b9ad9be8 RCX: 00000000f4b5f4b4
+[   25.357184] RDX: ffff8800b9f08000 RSI: 0000000000000001 RDI: 0000000000000282
+[   25.357939] RBP: ffff8800b9f11cb8 R08: 0000000000000002 R09: 0000000000000000
+[   25.358791] R10: 0000000000000000 R11: 0000000000000000 R12: ffffffff86083640
+[   25.359134] R13: 0000000000000001 R14: 0000000000000000 R15: ffffffff85f963c0
+[   25.359134] FS:  0000000000000000(0000) GS:ffff8800bba00000(0000) knlGS:0000000000000000
+[   25.359134] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[   25.359134] CR2: 0000000000000001 CR3: 0000000005826000 CR4: 00000000000406e0
+[   25.359134] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[   25.359134] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[   25.359134] Stack:
+[   25.359134]  ffff8800b9f11cd8 ffff8800b9ad9be8 ffffffff86083640 ffffffff81f37f90
+[   25.359134]  ffff8800b9f11ce8 ffffffff81f37fca 0000000000000000 0000000000000000
+[   25.359134]  ffffffff86083640 ffffffff81f37f90 ffff8800b9f11d28 ffffffff81f35ca1
+[   25.359134] Call Trace:
+[   25.359134]  [<ffffffff81f37f90>] ? driver_probe_device+0x340/0x340
+[   25.359134]  [<ffffffff81f37fca>] __driver_attach+0x3a/0xb0
+[   25.359134]  [<ffffffff81f37f90>] ? driver_probe_device+0x340/0x340
+[   25.359134]  [<ffffffff81f35ca1>] bus_for_each_dev+0x61/0xa0
+[   25.359134]  [<ffffffff81f37629>] driver_attach+0x19/0x20
+[   25.359134]  [<ffffffff81f37198>] bus_add_driver+0x118/0x2a0
+[   25.359134]  [<ffffffff8668694e>] ? wil6210_driver_init+0x1b/0x1b
+[   25.359134]  [<ffffffff81f38778>] driver_register+0xa8/0x170
+[   25.359134]  [<ffffffff8668694e>] ? wil6210_driver_init+0x1b/0x1b
+[   25.359134]  [<ffffffff8668694e>] ? wil6210_driver_init+0x1b/0x1b
+[   25.359134]  [<ffffffff86686a3e>] init_mac80211_hwsim+0xf0/0xaaa
+[   25.359134]  [<ffffffff86686933>] ? ar5523_driver_init+0x1b/0x1b
+[   25.359134]  [<ffffffff86686933>] ? ar5523_driver_init+0x1b/0x1b
+[   25.359134]  [<ffffffff8668694e>] ? wil6210_driver_init+0x1b/0x1b
+[   25.359134]  [<ffffffff810020f2>] do_one_initcall+0xb2/0x1b0
+[   25.359134]  [<ffffffff865f3021>] kernel_init_freeable+0x15d/0x1ef
+[   25.359134]  [<ffffffff865f2801>] ? loglevel+0x31/0x31
+[   25.359134]  [<ffffffff83f8ebd0>] ? rest_init+0x140/0x140
+[   25.359134]  [<ffffffff83f8ebd9>] kernel_init+0x9/0xf0
+[   25.359134]  [<ffffffff83fff1fc>] ret_from_fork+0x7c/0xb0
+[   25.359134]  [<ffffffff83f8ebd0>] ? rest_init+0x140/0x140
+[   25.359134] Code: 48 8b 7e 30 48 89 de e8 5d d7 c5 ff 48 85 c0 75 75 48 8b 73 f0 48 c7 c7 fa a0 20 85 e8 74 01 07 02 4d 8b 6c
+24 78 4d 85 ed 74 43 <41> 80 7d 00 00 74 2f 4c 8b 63 f0 4c 89 ee 4c 89 e7 e8 35 1e ae
+[   25.359134] RIP  [<ffffffff81f39fa5>] platform_match+0x45/0xc0
+[   25.359134]  RSP <ffff8800b9f11c98>
+[   25.359134] CR2: 0000000000000001
+[   25.386186] ---[ end trace 6293fa4fd2b61873 ]---
+
+I don't have the hardware to test out any changes I do, but I'll send out a patch
+tomorrow to try and fix that unless someone beats me to it.
+
+
+Thanks,
+Sasha
