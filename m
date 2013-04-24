@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758194Ab3DXJjb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 05:39:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3120 "EHLO mx1.redhat.com"
+	id S1758560Ab3DXJjk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 05:39:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61260 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758519Ab3DXJj2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 05:39:28 -0400
+	id S1758519Ab3DXJjc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 05:39:32 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>,
@@ -17,18 +17,19 @@ Cc: Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@kernel.org>, Borislav Petkov <bp@alien8.de>,
         Stephane Eranian <eranian@google.com>, Sam Ravnborg <sam@ravnborg.org>,
         David Ahern <dsahern@gmail.com>
-Subject: [PATCH 19/26] perf tools: Merge all *CFLAGS* make variable into CFLAGS
-Date: Wed, 24 Apr 2013 11:37:46 +0200
-Message-Id: <1366796273-4780-20-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 23/26] perf tools: Replace tabs with spaces for all non-commands statements
+Date: Wed, 24 Apr 2013 11:37:50 +0200
+Message-Id: <1366796273-4780-24-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1366796273-4780-1-git-send-email-jolsa@redhat.com>
 References: <1366796273-4780-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Merging all *CFLAGS* make variable into CFLAGS to eliminate
-all special *_CFLAGS_* variables and make the setup clear.
+Replacing tabs with spaces for all non-commands statements
+in 'Makefile' and 'config/Makefile' files.
 
+Suggested-by: Sam Ravnborg <sam@ravnborg.org>
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
@@ -42,513 +43,716 @@ Cc: Stephane Eranian <eranian@google.com>
 Cc: Sam Ravnborg <sam@ravnborg.org>
 Cc: David Ahern <dsahern@gmail.com>
 ---
- tools/perf/Makefile        |  62 +++++++++++++--------------
- tools/perf/config/Makefile | 104 ++++++++++++++++++++++++---------------------
- tools/perf/util/setup.py   |   5 ++-
- 3 files changed, 88 insertions(+), 83 deletions(-)
+ tools/perf/Makefile        |  80 ++++-----
+ tools/perf/config/Makefile | 396 ++++++++++++++++++++++-----------------------
+ 2 files changed, 238 insertions(+), 238 deletions(-)
 
 diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index cd19007..dea030d 100644
+index 3dd25d9..6ee3868 100644
 --- a/tools/perf/Makefile
 +++ b/tools/perf/Makefile
-@@ -150,7 +150,7 @@ PYTHON_EXT_SRCS := $(shell grep -v ^\# util/python-ext-sources)
- PYTHON_EXT_DEPS := util/python-ext-sources util/setup.py $(LIBTRACEEVENT)
+@@ -126,14 +126,14 @@ strip-libs = $(filter-out -l%,$(1))
+ LK_PATH=$(LK_DIR)
  
- $(OUTPUT)python/perf.so: $(PYTHON_EXT_SRCS) $(PYTHON_EXT_DEPS)
--	$(QUIET_GEN)CFLAGS='$(BASIC_CFLAGS)' $(PYTHON_WORD) util/setup.py \
-+	$(QUIET_GEN)CFLAGS='$(CFLAGS)' $(PYTHON_WORD) util/setup.py \
- 	  --quiet build_ext; \
- 	mkdir -p $(OUTPUT)python && \
- 	cp $(PYTHON_EXTBUILD_LIB)perf.so $(OUTPUT)python/
-@@ -515,8 +515,6 @@ endif
- 
- LIBS = -Wl,--whole-archive $(PERFLIBS) -Wl,--no-whole-archive -Wl,--start-group $(EXTLIBS) -Wl,--end-group
- 
--ALL_CFLAGS += $(BASIC_CFLAGS)
--ALL_CFLAGS += $(ARCH_CFLAGS)
- ALL_LDFLAGS += $(BASIC_LDFLAGS)
- 
- export INSTALL SHELL_PATH
-@@ -538,20 +536,20 @@ strip: $(PROGRAMS) $(OUTPUT)perf
- $(OUTPUT)perf.o: perf.c $(OUTPUT)common-cmds.h $(OUTPUT)PERF-CFLAGS
- 	$(QUIET_CC)$(CC) -include $(OUTPUT)PERF-VERSION-FILE \
- 		'-DPERF_HTML_PATH="$(htmldir_SQ)"' \
--		$(ALL_CFLAGS) -c $(filter %.c,$^) -o $@
-+		$(CFLAGS) -c $(filter %.c,$^) -o $@
- 
- $(OUTPUT)perf: $(OUTPUT)perf.o $(BUILTIN_OBJS) $(PERFLIBS)
--	$(QUIET_LINK)$(CC) $(ALL_CFLAGS) $(ALL_LDFLAGS) $(OUTPUT)perf.o \
-+	$(QUIET_LINK)$(CC) $(CFLAGS) $(ALL_LDFLAGS) $(OUTPUT)perf.o \
-                $(BUILTIN_OBJS) $(LIBS) -o $@
- 
- $(OUTPUT)builtin-help.o: builtin-help.c $(OUTPUT)common-cmds.h $(OUTPUT)PERF-CFLAGS
--	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) \
-+	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) \
- 		'-DPERF_HTML_PATH="$(htmldir_SQ)"' \
- 		'-DPERF_MAN_PATH="$(mandir_SQ)"' \
- 		'-DPERF_INFO_PATH="$(infodir_SQ)"' $<
- 
- $(OUTPUT)builtin-timechart.o: builtin-timechart.c $(OUTPUT)common-cmds.h $(OUTPUT)PERF-CFLAGS
--	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) \
-+	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) \
- 		'-DPERF_HTML_PATH="$(htmldir_SQ)"' \
- 		'-DPERF_MAN_PATH="$(mandir_SQ)"' \
- 		'-DPERF_INFO_PATH="$(infodir_SQ)"' $<
-@@ -576,77 +574,77 @@ $(OUTPUT)perf.o perf.spec \
- # over the general rule for .o
- 
- $(OUTPUT)util/%-flex.o: $(OUTPUT)util/%-flex.c $(OUTPUT)PERF-CFLAGS
--	$(QUIET_CC)$(CC) -o $@ -c -Iutil/ $(ALL_CFLAGS) -w $<
-+	$(QUIET_CC)$(CC) -o $@ -c -Iutil/ $(CFLAGS) -w $<
- 
- $(OUTPUT)util/%-bison.o: $(OUTPUT)util/%-bison.c $(OUTPUT)PERF-CFLAGS
--	$(QUIET_CC)$(CC) -o $@ -c -Iutil/ $(ALL_CFLAGS) -DYYENABLE_NLS=0 -DYYLTYPE_IS_TRIVIAL=0 -w $<
-+	$(QUIET_CC)$(CC) -o $@ -c -Iutil/ $(CFLAGS) -DYYENABLE_NLS=0 -DYYLTYPE_IS_TRIVIAL=0 -w $<
- 
- $(OUTPUT)%.o: %.c $(OUTPUT)PERF-CFLAGS
--	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) $<
-+	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) $<
- $(OUTPUT)%.i: %.c $(OUTPUT)PERF-CFLAGS
--	$(QUIET_CC)$(CC) -o $@ -E $(ALL_CFLAGS) $<
-+	$(QUIET_CC)$(CC) -o $@ -E $(CFLAGS) $<
- $(OUTPUT)%.s: %.c $(OUTPUT)PERF-CFLAGS
--	$(QUIET_CC)$(CC) -o $@ -S $(ALL_CFLAGS) $<
-+	$(QUIET_CC)$(CC) -o $@ -S $(CFLAGS) $<
- $(OUTPUT)%.o: %.S
--	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) $<
-+	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) $<
- $(OUTPUT)%.s: %.S
--	$(QUIET_CC)$(CC) -o $@ -E $(ALL_CFLAGS) $<
-+	$(QUIET_CC)$(CC) -o $@ -E $(CFLAGS) $<
- 
- $(OUTPUT)util/exec_cmd.o: util/exec_cmd.c $(OUTPUT)PERF-CFLAGS
--	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) \
-+	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) \
- 		'-DPERF_EXEC_PATH="$(perfexecdir_SQ)"' \
- 		'-DPREFIX="$(prefix_SQ)"' \
- 		$<
- 
- $(OUTPUT)tests/attr.o: tests/attr.c $(OUTPUT)PERF-CFLAGS
--	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) \
-+	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) \
- 		'-DBINDIR="$(bindir_SQ)"' -DPYTHON='"$(PYTHON_WORD)"' \
- 		$<
- 
- $(OUTPUT)tests/python-use.o: tests/python-use.c $(OUTPUT)PERF-CFLAGS
--	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) \
-+	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) \
- 		-DPYTHONPATH='"$(OUTPUT)python"' \
- 		-DPYTHON='"$(PYTHON_WORD)"' \
- 		$<
- 
- $(OUTPUT)util/config.o: util/config.c $(OUTPUT)PERF-CFLAGS
--	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DETC_PERFCONFIG='"$(ETC_PERFCONFIG_SQ)"' $<
-+	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) -DETC_PERFCONFIG='"$(ETC_PERFCONFIG_SQ)"' $<
- 
- $(OUTPUT)ui/browser.o: ui/browser.c $(OUTPUT)PERF-CFLAGS
--	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DENABLE_SLFUTURE_CONST $<
-+	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) -DENABLE_SLFUTURE_CONST $<
- 
- $(OUTPUT)ui/browsers/annotate.o: ui/browsers/annotate.c $(OUTPUT)PERF-CFLAGS
--	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DENABLE_SLFUTURE_CONST $<
-+	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) -DENABLE_SLFUTURE_CONST $<
- 
- $(OUTPUT)ui/browsers/hists.o: ui/browsers/hists.c $(OUTPUT)PERF-CFLAGS
--	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DENABLE_SLFUTURE_CONST $<
-+	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) -DENABLE_SLFUTURE_CONST $<
- 
- $(OUTPUT)ui/browsers/map.o: ui/browsers/map.c $(OUTPUT)PERF-CFLAGS
--	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DENABLE_SLFUTURE_CONST $<
-+	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) -DENABLE_SLFUTURE_CONST $<
- 
- $(OUTPUT)ui/browsers/scripts.o: ui/browsers/scripts.c $(OUTPUT)PERF-CFLAGS
--	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DENABLE_SLFUTURE_CONST $<
-+	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) -DENABLE_SLFUTURE_CONST $<
- 
- $(OUTPUT)util/rbtree.o: ../../lib/rbtree.c $(OUTPUT)PERF-CFLAGS
--	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -Wno-unused-parameter -DETC_PERFCONFIG='"$(ETC_PERFCONFIG_SQ)"' $<
-+	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) -Wno-unused-parameter -DETC_PERFCONFIG='"$(ETC_PERFCONFIG_SQ)"' $<
- 
- $(OUTPUT)util/parse-events.o: util/parse-events.c $(OUTPUT)PERF-CFLAGS
--	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -Wno-redundant-decls $<
-+	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) -Wno-redundant-decls $<
- 
- $(OUTPUT)util/scripting-engines/trace-event-perl.o: util/scripting-engines/trace-event-perl.c $(OUTPUT)PERF-CFLAGS
--	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) $(PERL_EMBED_CCOPTS) -Wno-redundant-decls -Wno-strict-prototypes -Wno-unused-parameter -Wno-shadow $<
-+	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) $(PERL_EMBED_CCOPTS) -Wno-redundant-decls -Wno-strict-prototypes -Wno-unused-parameter -Wno-shadow $<
- 
- $(OUTPUT)scripts/perl/Perf-Trace-Util/Context.o: scripts/perl/Perf-Trace-Util/Context.c $(OUTPUT)PERF-CFLAGS
--	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) $(PERL_EMBED_CCOPTS) -Wno-redundant-decls -Wno-strict-prototypes -Wno-unused-parameter -Wno-nested-externs $<
-+	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) $(PERL_EMBED_CCOPTS) -Wno-redundant-decls -Wno-strict-prototypes -Wno-unused-parameter -Wno-nested-externs $<
- 
- $(OUTPUT)util/scripting-engines/trace-event-python.o: util/scripting-engines/trace-event-python.c $(OUTPUT)PERF-CFLAGS
--	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) $(PYTHON_EMBED_CCOPTS) -Wno-redundant-decls -Wno-strict-prototypes -Wno-unused-parameter -Wno-shadow $<
-+	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) $(PYTHON_EMBED_CCOPTS) -Wno-redundant-decls -Wno-strict-prototypes -Wno-unused-parameter -Wno-shadow $<
- 
- $(OUTPUT)scripts/python/Perf-Trace-Util/Context.o: scripts/python/Perf-Trace-Util/Context.c $(OUTPUT)PERF-CFLAGS
--	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) $(PYTHON_EMBED_CCOPTS) -Wno-redundant-decls -Wno-strict-prototypes -Wno-unused-parameter -Wno-nested-externs $<
-+	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) $(PYTHON_EMBED_CCOPTS) -Wno-redundant-decls -Wno-strict-prototypes -Wno-unused-parameter -Wno-nested-externs $<
- 
- $(OUTPUT)perf-%: %.o $(PERFLIBS)
--	$(QUIET_LINK)$(CC) $(ALL_CFLAGS) -o $@ $(ALL_LDFLAGS) $(filter %.o,$^) $(LIBS)
-+	$(QUIET_LINK)$(CC) $(CFLAGS) -o $@ $(ALL_LDFLAGS) $(filter %.o,$^) $(LIBS)
- 
- $(LIB_OBJS) $(BUILTIN_OBJS): $(LIB_H)
- $(patsubst perf-%,%.o,$(PROGRAMS)): $(LIB_H) $(wildcard */*.h)
-@@ -733,7 +731,7 @@ cscope:
- 	$(FIND) . -name '*.[hcS]' -print | xargs cscope -b
- 
- ### Detect prefix changes
--TRACK_CFLAGS = $(subst ','\'',$(ALL_CFLAGS)):\
-+TRACK_CFLAGS = $(subst ','\'',$(CFLAGS)):\
-              $(bindir_SQ):$(perfexecdir_SQ):$(template_dir_SQ):$(prefix_SQ)
- 
- $(OUTPUT)PERF-CFLAGS: .FORCE-PERF-CFLAGS
-@@ -754,7 +752,7 @@ check: $(OUTPUT)common-cmds.h
- 	then \
- 		for i in *.c */*.c; \
- 		do \
--			sparse $(ALL_CFLAGS) $(SPARSE_FLAGS) $$i || exit; \
-+			sparse $(CFLAGS) $(SPARSE_FLAGS) $$i || exit; \
- 		done; \
- 	else \
- 		exit 1; \
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index a0dbc24..a53d2b3 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -6,6 +6,7 @@ ARCH ?= $(shell echo $(uname_M) | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
- 				  -e s/ppc.*/powerpc/ -e s/mips.*/mips/ \
- 				  -e s/sh[234].*/sh/ -e s/aarch64.*/arm64/ )
- NO_PERF_REGS := 1
-+CFLAGS := $(EXTRA_CFLAGS) $(EXTRA_WARNINGS)
- 
- # Additional ARCH settings for x86
- ifeq ($(ARCH),i386)
-@@ -17,12 +18,12 @@ endif
- ifeq ($(ARCH),x86_64)
- 	override ARCH := x86
- 	IS_X86_64 := 0
--	ifeq (, $(findstring m32,$(EXTRA_CFLAGS)))
-+	ifeq (, $(findstring m32,$(CFLAGS)))
- 		IS_X86_64 := $(shell echo __x86_64__ | ${CC} -E -x c - | tail -n 1)
- 	endif
- 	ifeq (${IS_X86_64}, 1)
- 		RAW_ARCH := x86_64
--		ARCH_CFLAGS := -DARCH_X86_64
-+		CFLAGS += -DARCH_X86_64
- 		ARCH_INCLUDE = ../../arch/x86/lib/memcpy_64.S ../../arch/x86/lib/memset_64.S
- 	endif
- 	NO_PERF_REGS := 0
-@@ -30,7 +31,7 @@ ifeq ($(ARCH),x86_64)
+ ifneq ($(OUTPUT),)
+-	TE_PATH=$(OUTPUT)
++  TE_PATH=$(OUTPUT)
+ ifneq ($(subdir),)
+-	LK_PATH=$(OUTPUT)$(LK_DIR)
++  LK_PATH=$(OUTPUT)$(LK_DIR)
+ else
+-	LK_PATH=$(OUTPUT)
++  LK_PATH=$(OUTPUT)
+ endif
+ else
+-	TE_PATH=$(TRACE_EVENT_DIR)
++  TE_PATH=$(TRACE_EVENT_DIR)
  endif
  
- ifeq ($(NO_PERF_REGS),0)
--        BASIC_CFLAGS += -DHAVE_PERF_REGS
-+        CFLAGS += -DHAVE_PERF_REGS
+ LIBTRACEEVENT = $(TE_PATH)libtraceevent.a
+@@ -177,10 +177,10 @@ OTHER_PROGRAMS = $(OUTPUT)perf
+ 
+ # Set paths to tools early so that they can be used for version tests.
+ ifndef SHELL_PATH
+-	SHELL_PATH = /bin/sh
++  SHELL_PATH = /bin/sh
+ endif
+ ifndef PERL_PATH
+-	PERL_PATH = /usr/bin/perl
++  PERL_PATH = /usr/bin/perl
  endif
  
- -include config/feature-tests.mak
-@@ -45,46 +46,52 @@ endif
+ export PERL_PATH
+@@ -435,7 +435,7 @@ PERFLIBS = $(LIB_FILE) $(LIBLK) $(LIBTRACEEVENT)
+ -include arch/$(ARCH)/Makefile
  
- # Treat warnings as errors unless directed not to
- ifneq ($(WERROR),0)
--	CFLAGS_WERROR := -Werror
-+	CFLAGS += -Werror
- endif
- 
- ifeq ("$(origin DEBUG)", "command line")
- 	PERF_DEBUG = $(DEBUG)
- endif
- ifndef PERF_DEBUG
--	CFLAGS_OPTIMIZE = -O6
-+	CFLAGS += -O6
- endif
- 
- ifdef PARSER_DEBUG
--	PARSER_DEBUG_BISON  := -t
--	PARSER_DEBUG_FLEX   := -d
--	PARSER_DEBUG_CFLAGS := -DPARSER_DEBUG
-+	PARSER_DEBUG_BISON := -t
-+	PARSER_DEBUG_FLEX  := -d
-+	CFLAGS             += -DPARSER_DEBUG
- endif
- 
--CFLAGS = -fno-omit-frame-pointer -ggdb3 -funwind-tables -Wall -Wextra -std=gnu99 $(CFLAGS_WERROR) $(CFLAGS_OPTIMIZE) $(EXTRA_WARNINGS) $(EXTRA_CFLAGS) $(PARSER_DEBUG_CFLAGS)
-+CFLAGS += \
-+	-fno-omit-frame-pointer \
-+	-ggdb3 \
-+	-funwind-tables \
-+	-Wall \
-+	-Wextra \
-+	-std=gnu99
-+
- EXTLIBS = -lpthread -lrt -lelf -lm
--ALL_CFLAGS = $(CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
- ALL_LDFLAGS = $(LDFLAGS)
- 
- ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -Werror -fstack-protector-all,-fstack-protector-all),y)
--	CFLAGS := $(CFLAGS) -fstack-protector-all
-+	CFLAGS += -fstack-protector-all
- endif
- 
- ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -Werror -Wstack-protector,-Wstack-protector),y)
--	CFLAGS := $(CFLAGS) -Wstack-protector
-+	CFLAGS += -Wstack-protector
- endif
- 
- ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -Werror -Wvolatile-register-var,-Wvolatile-register-var),y)
--	CFLAGS := $(CFLAGS) -Wvolatile-register-var
-+	CFLAGS += -Wvolatile-register-var
- endif
- 
- ifndef PERF_DEBUG
- 	ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -D_FORTIFY_SOURCE=2,-D_FORTIFY_SOURCE=2),y)
--		CFLAGS := $(CFLAGS) -D_FORTIFY_SOURCE=2
-+		CFLAGS += -D_FORTIFY_SOURCE=2
- 	endif
- endif
- 
--BASIC_CFLAGS = \
-+CFLAGS += \
- 	-Iutil/include \
- 	-Iarch/$(ARCH)/include \
- 	$(if $(objtree),-I$(objtree)/arch/$(ARCH)/include/generated/uapi) \
-@@ -106,7 +113,6 @@ ifeq ($(call try-cc,$(SOURCE_BIONIC),$(CFLAGS),bionic),y)
- 	BIONIC := 1
- 	EXTLIBS := $(filter-out -lrt,$(EXTLIBS))
- 	EXTLIBS := $(filter-out -lpthread,$(EXTLIBS))
--	BASIC_CFLAGS += -I.
+ ifneq ($(OUTPUT),)
+-	BASIC_CFLAGS += -I$(OUTPUT)
++  BASIC_CFLAGS += -I$(OUTPUT)
  endif
  
  ifdef NO_LIBELF
-@@ -114,9 +120,9 @@ ifdef NO_LIBELF
- 	NO_DEMANGLE := 1
- 	NO_LIBUNWIND := 1
- else
--FLAGS_LIBELF=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS)
-+FLAGS_LIBELF=$(CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS)
- ifneq ($(call try-cc,$(SOURCE_LIBELF),$(FLAGS_LIBELF),libelf),y)
--	FLAGS_GLIBC=$(ALL_CFLAGS) $(ALL_LDFLAGS)
-+	FLAGS_GLIBC=$(CFLAGS) $(ALL_LDFLAGS)
- 	ifeq ($(call try-cc,$(SOURCE_GLIBC),$(FLAGS_GLIBC),glibc),y)
- 		LIBC_SUPPORT := 1
- 	endif
-@@ -140,7 +146,7 @@ else
- 		LIBDW_LDFLAGS := -L$(LIBDW_DIR)/lib
- 	endif
+@@ -454,67 +454,67 @@ LIB_OBJS += $(OUTPUT)util/symbol-minimal.o
  
--	FLAGS_DWARF=$(ALL_CFLAGS) $(LIBDW_CFLAGS) -ldw -lelf $(LIBDW_LDFLAGS) $(ALL_LDFLAGS) $(EXTLIBS)
-+	FLAGS_DWARF=$(CFLAGS) $(LIBDW_CFLAGS) -ldw -lelf $(LIBDW_LDFLAGS) $(ALL_LDFLAGS) $(EXTLIBS)
- 	ifneq ($(call try-cc,$(SOURCE_DWARF),$(FLAGS_DWARF),libdw),y)
- 		msg := $(warning No libdw.h found or old libdw.h found or elfutils is older than 0.138, disables dwarf support. Please install new elfutils-devel/libdw-dev);
- 		NO_DWARF := 1
-@@ -149,10 +155,10 @@ endif # SOURCE_LIBELF
+ else # NO_LIBELF
+ ifndef NO_DWARF
+-	LIB_OBJS += $(OUTPUT)util/probe-finder.o
+-	LIB_OBJS += $(OUTPUT)util/dwarf-aux.o
++  LIB_OBJS += $(OUTPUT)util/probe-finder.o
++  LIB_OBJS += $(OUTPUT)util/dwarf-aux.o
+ endif # NO_DWARF
  endif # NO_LIBELF
  
- ifndef NO_LIBELF
--BASIC_CFLAGS += -DLIBELF_SUPPORT
--FLAGS_LIBELF=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS)
-+CFLAGS += -DLIBELF_SUPPORT
-+FLAGS_LIBELF=$(CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS)
- ifeq ($(call try-cc,$(SOURCE_ELF_MMAP),$(FLAGS_LIBELF),-DLIBELF_MMAP),y)
--	BASIC_CFLAGS += -DLIBELF_MMAP
-+	CFLAGS += -DLIBELF_MMAP
- endif
- 
- # include ARCH specific config
-@@ -163,7 +169,7 @@ ifeq ($(origin PERF_HAVE_DWARF_REGS), undefined)
- 	msg := $(warning DWARF register mappings have not been defined for architecture $(ARCH), DWARF support disabled);
- 	NO_DWARF := 1
- else
--	BASIC_CFLAGS := -DDWARF_SUPPORT $(LIBDW_CFLAGS) $(BASIC_CFLAGS)
-+	CFLAGS += -DDWARF_SUPPORT $(LIBDW_CFLAGS)
- 	BASIC_LDFLAGS := $(LIBDW_LDFLAGS) $(BASIC_LDFLAGS)
- 	EXTLIBS += -lelf -ldw
- endif # PERF_HAVE_DWARF_REGS
-@@ -184,7 +190,7 @@ ifdef LIBUNWIND_DIR
- 	LIBUNWIND_LDFLAGS := -L$(LIBUNWIND_DIR)/lib
- endif
- 
--FLAGS_UNWIND=$(LIBUNWIND_CFLAGS) $(ALL_CFLAGS) $(LIBUNWIND_LDFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) $(LIBUNWIND_LIBS)
-+FLAGS_UNWIND=$(LIBUNWIND_CFLAGS) $(CFLAGS) $(LIBUNWIND_LDFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) $(LIBUNWIND_LIBS)
- ifneq ($(call try-cc,$(SOURCE_LIBUNWIND),$(FLAGS_UNWIND),libunwind),y)
- 	msg := $(warning No libunwind found, disabling post unwind support. Please install libunwind-dev[el] >= 0.99);
- 	NO_LIBUNWIND := 1
-@@ -192,19 +198,19 @@ endif # Libunwind support
- endif # NO_LIBUNWIND
- 
  ifndef NO_LIBUNWIND
--	BASIC_CFLAGS += -DLIBUNWIND_SUPPORT
-+	CFLAGS += -DLIBUNWIND_SUPPORT
- 	EXTLIBS += $(LIBUNWIND_LIBS)
--	BASIC_CFLAGS := $(LIBUNWIND_CFLAGS) $(BASIC_CFLAGS)
-+	CFLAGS += $(LIBUNWIND_CFLAGS)
- 	BASIC_LDFLAGS := $(LIBUNWIND_LDFLAGS) $(BASIC_LDFLAGS)
- endif # NO_LIBUNWIND
+-	LIB_OBJS += $(OUTPUT)util/unwind.o
++  LIB_OBJS += $(OUTPUT)util/unwind.o
+ endif
  
  ifndef NO_LIBAUDIT
--	FLAGS_LIBAUDIT = $(ALL_CFLAGS) $(ALL_LDFLAGS) -laudit
-+	FLAGS_LIBAUDIT = $(CFLAGS) $(ALL_LDFLAGS) -laudit
- 	ifneq ($(call try-cc,$(SOURCE_LIBAUDIT),$(FLAGS_LIBAUDIT),libaudit),y)
- 		msg := $(warning No libaudit.h found, disables 'trace' tool, please install audit-libs-devel or libaudit-dev);
- 		NO_LIBAUDIT := 1
- 	else
--		BASIC_CFLAGS += -DLIBAUDIT_SUPPORT
-+		CFLAGS += -DLIBAUDIT_SUPPORT
- 		EXTLIBS += -laudit
- 	endif
- endif
-@@ -214,29 +220,29 @@ ifdef NO_NEWT
+-	BUILTIN_OBJS += $(OUTPUT)builtin-trace.o
++  BUILTIN_OBJS += $(OUTPUT)builtin-trace.o
  endif
  
  ifndef NO_SLANG
--	FLAGS_SLANG=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -I/usr/include/slang -lslang
-+	FLAGS_SLANG=$(CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -I/usr/include/slang -lslang
- 	ifneq ($(call try-cc,$(SOURCE_SLANG),$(FLAGS_SLANG),libslang),y)
- 		msg := $(warning slang not found, disables TUI support. Please install slang-devel or libslang-dev);
- 		NO_SLANG := 1
- 	else
- 		# Fedora has /usr/include/slang/slang.h, but ubuntu /usr/include/slang.h
--		BASIC_CFLAGS += -I/usr/include/slang
--		BASIC_CFLAGS += -DSLANG_SUPPORT
-+		CFLAGS += -I/usr/include/slang
-+		CFLAGS += -DSLANG_SUPPORT
- 		EXTLIBS += -lslang
- 	endif
+-	LIB_OBJS += $(OUTPUT)ui/browser.o
+-	LIB_OBJS += $(OUTPUT)ui/browsers/annotate.o
+-	LIB_OBJS += $(OUTPUT)ui/browsers/hists.o
+-	LIB_OBJS += $(OUTPUT)ui/browsers/map.o
+-	LIB_OBJS += $(OUTPUT)ui/browsers/scripts.o
+-	LIB_OBJS += $(OUTPUT)ui/tui/setup.o
+-	LIB_OBJS += $(OUTPUT)ui/tui/util.o
+-	LIB_OBJS += $(OUTPUT)ui/tui/helpline.o
+-	LIB_OBJS += $(OUTPUT)ui/tui/progress.o
+-	LIB_H += ui/browser.h
+-	LIB_H += ui/browsers/map.h
+-	LIB_H += ui/keysyms.h
+-	LIB_H += ui/libslang.h
++  LIB_OBJS += $(OUTPUT)ui/browser.o
++  LIB_OBJS += $(OUTPUT)ui/browsers/annotate.o
++  LIB_OBJS += $(OUTPUT)ui/browsers/hists.o
++  LIB_OBJS += $(OUTPUT)ui/browsers/map.o
++  LIB_OBJS += $(OUTPUT)ui/browsers/scripts.o
++  LIB_OBJS += $(OUTPUT)ui/tui/setup.o
++  LIB_OBJS += $(OUTPUT)ui/tui/util.o
++  LIB_OBJS += $(OUTPUT)ui/tui/helpline.o
++  LIB_OBJS += $(OUTPUT)ui/tui/progress.o
++  LIB_H += ui/browser.h
++  LIB_H += ui/browsers/map.h
++  LIB_H += ui/keysyms.h
++  LIB_H += ui/libslang.h
  endif
  
  ifndef NO_GTK2
--	FLAGS_GTK2=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null)
-+	FLAGS_GTK2=$(CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null)
- 	ifneq ($(call try-cc,$(SOURCE_GTK2),$(FLAGS_GTK2),gtk2),y)
- 		msg := $(warning GTK2 not found, disables GTK2 support. Please install gtk2-devel or libgtk2.0-dev);
- 		NO_GTK2 := 1
- 	else
- 		ifeq ($(call try-cc,$(SOURCE_GTK2_INFOBAR),$(FLAGS_GTK2),-DHAVE_GTK_INFO_BAR),y)
--			BASIC_CFLAGS += -DHAVE_GTK_INFO_BAR
-+			CFLAGS += -DHAVE_GTK_INFO_BAR
- 		endif
--		BASIC_CFLAGS += -DGTK2_SUPPORT
--		BASIC_CFLAGS += $(shell pkg-config --cflags gtk+-2.0 2>/dev/null)
-+		CFLAGS += -DGTK2_SUPPORT
-+		CFLAGS += $(shell pkg-config --cflags gtk+-2.0 2>/dev/null)
- 		EXTLIBS += $(shell pkg-config --libs gtk+-2.0 2>/dev/null)
- 	endif
- endif
-@@ -245,7 +251,7 @@ grep-libs  = $(filter -l%,$(1))
- strip-libs = $(filter-out -l%,$(1))
- 
- ifdef NO_LIBPERL
--	BASIC_CFLAGS += -DNO_LIBPERL
-+	CFLAGS += -DNO_LIBPERL
- else
- 	PERL_EMBED_LDOPTS = $(shell perl -MExtUtils::Embed -e ldopts 2>/dev/null)
- 	PERL_EMBED_LDFLAGS = $(call strip-libs,$(PERL_EMBED_LDOPTS))
-@@ -254,7 +260,7 @@ else
- 	FLAGS_PERL_EMBED=$(PERL_EMBED_CCOPTS) $(PERL_EMBED_LDOPTS)
- 
- 	ifneq ($(call try-cc,$(SOURCE_PERL_EMBED),$(FLAGS_PERL_EMBED),perl),y)
--		BASIC_CFLAGS += -DNO_LIBPERL
-+		CFLAGS += -DNO_LIBPERL
- 		NO_LIBPERL := 1
- 	else
- 		ALL_LDFLAGS += $(PERL_EMBED_LDFLAGS)
-@@ -264,7 +270,7 @@ endif
- 
- disable-python = $(eval $(disable-python_code))
- define disable-python_code
--  BASIC_CFLAGS += -DNO_LIBPYTHON
-+  CFLAGS += -DNO_LIBPYTHON
-   $(if $(1),$(warning No $(1) was found))
-   $(warning Python support will not be built)
-   NO_LIBPYTHON := 1
-@@ -326,13 +332,13 @@ else
+-	LIB_OBJS += $(OUTPUT)ui/gtk/browser.o
+-	LIB_OBJS += $(OUTPUT)ui/gtk/hists.o
+-	LIB_OBJS += $(OUTPUT)ui/gtk/setup.o
+-	LIB_OBJS += $(OUTPUT)ui/gtk/util.o
+-	LIB_OBJS += $(OUTPUT)ui/gtk/helpline.o
+-	LIB_OBJS += $(OUTPUT)ui/gtk/progress.o
+-	LIB_OBJS += $(OUTPUT)ui/gtk/annotate.o
++  LIB_OBJS += $(OUTPUT)ui/gtk/browser.o
++  LIB_OBJS += $(OUTPUT)ui/gtk/hists.o
++  LIB_OBJS += $(OUTPUT)ui/gtk/setup.o
++  LIB_OBJS += $(OUTPUT)ui/gtk/util.o
++  LIB_OBJS += $(OUTPUT)ui/gtk/helpline.o
++  LIB_OBJS += $(OUTPUT)ui/gtk/progress.o
++  LIB_OBJS += $(OUTPUT)ui/gtk/annotate.o
  endif
  
- ifdef NO_DEMANGLE
--	BASIC_CFLAGS += -DNO_DEMANGLE
-+	CFLAGS += -DNO_DEMANGLE
- else
- 	ifdef HAVE_CPLUS_DEMANGLE
- 		EXTLIBS += -liberty
--		BASIC_CFLAGS += -DHAVE_CPLUS_DEMANGLE
-+		CFLAGS += -DHAVE_CPLUS_DEMANGLE
- 	else
--		FLAGS_BFD=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -DPACKAGE='perf' -lbfd
-+		FLAGS_BFD=$(CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -DPACKAGE='perf' -lbfd
- 		has_bfd := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD),libbfd)
- 		ifeq ($(has_bfd),y)
- 			EXTLIBS += -lbfd
-@@ -347,14 +353,14 @@ else
- 				ifeq ($(has_bfd_iberty_z),y)
- 					EXTLIBS += -lbfd -liberty -lz
- 				else
--					FLAGS_CPLUS_DEMANGLE=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -liberty
-+					FLAGS_CPLUS_DEMANGLE=$(CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -liberty
- 					has_cplus_demangle := $(call try-cc,$(SOURCE_CPLUS_DEMANGLE),$(FLAGS_CPLUS_DEMANGLE),demangle)
- 					ifeq ($(has_cplus_demangle),y)
- 						EXTLIBS += -liberty
--						BASIC_CFLAGS += -DHAVE_CPLUS_DEMANGLE
-+						CFLAGS += -DHAVE_CPLUS_DEMANGLE
- 					else
- 						msg := $(warning No bfd.h/libbfd found, install binutils-dev[el]/zlib-static to gain symbol demangling)
--						BASIC_CFLAGS += -DNO_DEMANGLE
-+						CFLAGS += -DNO_DEMANGLE
- 					endif
- 				endif
- 			endif
-@@ -364,29 +370,29 @@ endif
- 
- ifndef NO_STRLCPY
- 	ifeq ($(call try-cc,$(SOURCE_STRLCPY),,-DHAVE_STRLCPY),y)
--		BASIC_CFLAGS += -DHAVE_STRLCPY
-+		CFLAGS += -DHAVE_STRLCPY
- 	endif
+ ifndef NO_LIBPERL
+-	LIB_OBJS += $(OUTPUT)util/scripting-engines/trace-event-perl.o
+-	LIB_OBJS += $(OUTPUT)scripts/perl/Perf-Trace-Util/Context.o
++  LIB_OBJS += $(OUTPUT)util/scripting-engines/trace-event-perl.o
++  LIB_OBJS += $(OUTPUT)scripts/perl/Perf-Trace-Util/Context.o
  endif
  
- ifndef NO_ON_EXIT
- 	ifeq ($(call try-cc,$(SOURCE_ON_EXIT),,-DHAVE_ON_EXIT),y)
--		BASIC_CFLAGS += -DHAVE_ON_EXIT
-+		CFLAGS += -DHAVE_ON_EXIT
- 	endif
+ ifndef NO_LIBPYTHON
+-	LIB_OBJS += $(OUTPUT)util/scripting-engines/trace-event-python.o
+-	LIB_OBJS += $(OUTPUT)scripts/python/Perf-Trace-Util/Context.o
++  LIB_OBJS += $(OUTPUT)util/scripting-engines/trace-event-python.o
++  LIB_OBJS += $(OUTPUT)scripts/python/Perf-Trace-Util/Context.o
  endif
  
- ifndef NO_BACKTRACE
-        ifeq ($(call try-cc,$(SOURCE_BACKTRACE),,-DBACKTRACE_SUPPORT),y)
--		BASIC_CFLAGS += -DBACKTRACE_SUPPORT
-+		CFLAGS += -DBACKTRACE_SUPPORT
-        endif
+ ifeq ($(NO_PERF_REGS),0)
+-	ifeq ($(ARCH),x86)
+-		LIB_H += arch/x86/include/perf_regs.h
+-	endif
++  ifeq ($(ARCH),x86)
++    LIB_H += arch/x86/include/perf_regs.h
++  endif
  endif
  
  ifndef NO_LIBNUMA
--	FLAGS_LIBNUMA = $(ALL_CFLAGS) $(ALL_LDFLAGS) -lnuma
-+	FLAGS_LIBNUMA = $(CFLAGS) $(ALL_LDFLAGS) -lnuma
- 	ifneq ($(call try-cc,$(SOURCE_LIBNUMA),$(FLAGS_LIBNUMA),libnuma),y)
- 		msg := $(warning No numa.h found, disables 'perf bench numa mem' benchmark, please install numa-libs-devel or libnuma-dev);
- 		NO_LIBNUMA := 1
- 	else
--		BASIC_CFLAGS += -DLIBNUMA_SUPPORT
-+		CFLAGS += -DLIBNUMA_SUPPORT
- 		EXTLIBS += -lnuma
- 	endif
+-	BUILTIN_OBJS += $(OUTPUT)bench/numa.o
++  BUILTIN_OBJS += $(OUTPUT)bench/numa.o
  endif
-diff --git a/tools/perf/util/setup.py b/tools/perf/util/setup.py
-index 6b0ed32..58ea5ca 100644
---- a/tools/perf/util/setup.py
-+++ b/tools/perf/util/setup.py
-@@ -18,8 +18,9 @@ class install_lib(_install_lib):
-         self.build_dir = build_lib
  
+ ifdef ASCIIDOC8
+-	export ASCIIDOC8
++  export ASCIIDOC8
+ endif
  
--cflags = ['-fno-strict-aliasing', '-Wno-write-strings']
--cflags += getenv('CFLAGS', '').split()
-+cflags = getenv('CFLAGS', '').split()
-+# switch off several checks (need to be at the end of cflags list)
-+cflags += ['-fno-strict-aliasing', '-Wno-write-strings', '-Wno-unused-parameter' ]
+ LIBS = -Wl,--whole-archive $(PERFLIBS) -Wl,--no-whole-archive -Wl,--start-group $(EXTLIBS) -Wl,--end-group
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index cc464f1..9765993 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -1,37 +1,37 @@
+ uname_M := $(shell uname -m 2>/dev/null || echo not)
  
- build_lib = getenv('PYTHON_EXTBUILD_LIB')
- build_tmp = getenv('PYTHON_EXTBUILD_TMP')
+ ARCH ?= $(shell echo $(uname_M) | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
+-				  -e s/arm.*/arm/ -e s/sa110/arm/ \
+-				  -e s/s390x/s390/ -e s/parisc64/parisc/ \
+-				  -e s/ppc.*/powerpc/ -e s/mips.*/mips/ \
+-				  -e s/sh[234].*/sh/ -e s/aarch64.*/arm64/ )
++                                  -e s/arm.*/arm/ -e s/sa110/arm/ \
++                                  -e s/s390x/s390/ -e s/parisc64/parisc/ \
++                                  -e s/ppc.*/powerpc/ -e s/mips.*/mips/ \
++                                  -e s/sh[234].*/sh/ -e s/aarch64.*/arm64/ )
+ NO_PERF_REGS := 1
+ CFLAGS := $(EXTRA_CFLAGS) $(EXTRA_WARNINGS)
+ 
+ # Additional ARCH settings for x86
+ ifeq ($(ARCH),i386)
+-	override ARCH := x86
+-	NO_PERF_REGS := 0
+-	LIBUNWIND_LIBS = -lunwind -lunwind-x86
++  override ARCH := x86
++  NO_PERF_REGS := 0
++  LIBUNWIND_LIBS = -lunwind -lunwind-x86
+ endif
+ 
+ ifeq ($(ARCH),x86_64)
+-	override ARCH := x86
+-	IS_X86_64 := 0
+-	ifeq (, $(findstring m32,$(CFLAGS)))
+-		IS_X86_64 := $(shell echo __x86_64__ | ${CC} -E -x c - | tail -n 1)
+-	endif
+-	ifeq (${IS_X86_64}, 1)
+-		RAW_ARCH := x86_64
+-		CFLAGS += -DARCH_X86_64
+-		ARCH_INCLUDE = ../../arch/x86/lib/memcpy_64.S ../../arch/x86/lib/memset_64.S
+-	endif
+-	NO_PERF_REGS := 0
+-	LIBUNWIND_LIBS = -lunwind -lunwind-x86_64
++  override ARCH := x86
++  IS_X86_64 := 0
++  ifeq (, $(findstring m32,$(CFLAGS)))
++    IS_X86_64 := $(shell echo __x86_64__ | ${CC} -E -x c - | tail -n 1)
++  endif
++  ifeq (${IS_X86_64}, 1)
++    RAW_ARCH := x86_64
++    CFLAGS += -DARCH_X86_64
++    ARCH_INCLUDE = ../../arch/x86/lib/memcpy_64.S ../../arch/x86/lib/memset_64.S
++  endif
++  NO_PERF_REGS := 0
++  LIBUNWIND_LIBS = -lunwind -lunwind-x86_64
+ endif
+ 
+ ifeq ($(NO_PERF_REGS),0)
+-        CFLAGS += -DHAVE_PERF_REGS
++  CFLAGS += -DHAVE_PERF_REGS
+ endif
+ 
+ ifeq ($(src-perf),)
+@@ -53,128 +53,128 @@ include $(src-perf)/config/feature-tests.mak
+ include $(src-perf)/config/utilities.mak
+ 
+ ifeq ($(call get-executable,$(FLEX)),)
+-	dummy := $(error Error: $(FLEX) is missing on this system, please install it)
++  dummy := $(error Error: $(FLEX) is missing on this system, please install it)
+ endif
+ 
+ ifeq ($(call get-executable,$(BISON)),)
+-	dummy := $(error Error: $(BISON) is missing on this system, please install it)
++  dummy := $(error Error: $(BISON) is missing on this system, please install it)
+ endif
+ 
+ # Treat warnings as errors unless directed not to
+ ifneq ($(WERROR),0)
+-	CFLAGS += -Werror
++  CFLAGS += -Werror
+ endif
+ 
+ ifeq ("$(origin DEBUG)", "command line")
+-	PERF_DEBUG = $(DEBUG)
++  PERF_DEBUG = $(DEBUG)
+ endif
+ ifndef PERF_DEBUG
+-	CFLAGS += -O6
++  CFLAGS += -O6
+ endif
+ 
+ ifdef PARSER_DEBUG
+-	PARSER_DEBUG_BISON := -t
+-	PARSER_DEBUG_FLEX  := -d
+-	CFLAGS             += -DPARSER_DEBUG
++  PARSER_DEBUG_BISON := -t
++  PARSER_DEBUG_FLEX  := -d
++  CFLAGS             += -DPARSER_DEBUG
+ endif
+ 
+ CFLAGS += \
+-	-fno-omit-frame-pointer \
+-	-ggdb3 \
+-	-funwind-tables \
+-	-Wall \
+-	-Wextra \
+-	-std=gnu99
++  -fno-omit-frame-pointer \
++  -ggdb3 \
++  -funwind-tables \
++  -Wall \
++  -Wextra \
++  -std=gnu99
+ 
+ EXTLIBS = -lpthread -lrt -lelf -lm
+ 
+ ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -Werror -fstack-protector-all,-fstack-protector-all),y)
+-	CFLAGS += -fstack-protector-all
++  CFLAGS += -fstack-protector-all
+ endif
+ 
+ ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -Werror -Wstack-protector,-Wstack-protector),y)
+-	CFLAGS += -Wstack-protector
++  CFLAGS += -Wstack-protector
+ endif
+ 
+ ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -Werror -Wvolatile-register-var,-Wvolatile-register-var),y)
+-	CFLAGS += -Wvolatile-register-var
++  CFLAGS += -Wvolatile-register-var
+ endif
+ 
+ ifndef PERF_DEBUG
+-	ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -D_FORTIFY_SOURCE=2,-D_FORTIFY_SOURCE=2),y)
+-		CFLAGS += -D_FORTIFY_SOURCE=2
+-	endif
++  ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -D_FORTIFY_SOURCE=2,-D_FORTIFY_SOURCE=2),y)
++    CFLAGS += -D_FORTIFY_SOURCE=2
++  endif
+ endif
+ 
+ CFLAGS += \
+-	-I$(src-perf)/util/include \
+-	-I$(src-perf)/arch/$(ARCH)/include \
+-	-I$(srctree)/arch/$(ARCH)/include/uapi \
+-	-I$(srctree)/arch/$(ARCH)/include \
+-	-I$(srctree)/include/uapi \
+-	-I$(srctree)/include
++  -I$(src-perf)/util/include \
++  -I$(src-perf)/arch/$(ARCH)/include \
++  -I$(srctree)/arch/$(ARCH)/include/uapi \
++  -I$(srctree)/arch/$(ARCH)/include \
++  -I$(srctree)/include/uapi \
++  -I$(srctree)/include
+ 
+ # $(obj-perf)      for generated common-cmds.h
+ # $(obj-perf)/util for generated bison/flex headers
+ ifneq ($(OUTPUT),)
+ CFLAGS += \
+-	-I$(obj-perf)/util \
+-	-I$(obj-perf)
++  -I$(obj-perf)/util \
++  -I$(obj-perf)
+ endif
+ 
+ CFLAGS += \
+-	-I$(src-perf)/util \
+-	-I$(src-perf) \
+-	-I$(TRACE_EVENT_DIR) \
+-	-I$(srctree)/tools/lib/
++  -I$(src-perf)/util \
++  -I$(src-perf) \
++  -I$(TRACE_EVENT_DIR) \
++  -I$(srctree)/tools/lib/
+ 
+ CFLAGS += \
+-	-D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
++  -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
+ 
+ ifndef NO_BIONIC
+ ifeq ($(call try-cc,$(SOURCE_BIONIC),$(CFLAGS),bionic),y)
+-	BIONIC := 1
+-	EXTLIBS := $(filter-out -lrt,$(EXTLIBS))
+-	EXTLIBS := $(filter-out -lpthread,$(EXTLIBS))
++  BIONIC := 1
++  EXTLIBS := $(filter-out -lrt,$(EXTLIBS))
++  EXTLIBS := $(filter-out -lpthread,$(EXTLIBS))
+ endif
+ endif # NO_BIONIC
+ 
+ ifdef NO_LIBELF
+-	NO_DWARF := 1
+-	NO_DEMANGLE := 1
+-	NO_LIBUNWIND := 1
++  NO_DWARF := 1
++  NO_DEMANGLE := 1
++  NO_LIBUNWIND := 1
+ else
+ FLAGS_LIBELF=$(CFLAGS) $(LDFLAGS) $(EXTLIBS)
+ ifneq ($(call try-cc,$(SOURCE_LIBELF),$(FLAGS_LIBELF),libelf),y)
+-	FLAGS_GLIBC=$(CFLAGS) $(LDFLAGS)
+-	ifeq ($(call try-cc,$(SOURCE_GLIBC),$(FLAGS_GLIBC),glibc),y)
+-		LIBC_SUPPORT := 1
+-	endif
+-	ifeq ($(BIONIC),1)
+-		LIBC_SUPPORT := 1
+-	endif
+-	ifeq ($(LIBC_SUPPORT),1)
+-		msg := $(warning No libelf found, disables 'probe' tool, please install elfutils-libelf-devel/libelf-dev);
+-
+-		NO_LIBELF := 1
+-		NO_DWARF := 1
+-		NO_DEMANGLE := 1
+-	else
+-		msg := $(error No gnu/libc-version.h found, please install glibc-dev[el]/glibc-static);
+-	endif
++  FLAGS_GLIBC=$(CFLAGS) $(LDFLAGS)
++  ifeq ($(call try-cc,$(SOURCE_GLIBC),$(FLAGS_GLIBC),glibc),y)
++    LIBC_SUPPORT := 1
++  endif
++  ifeq ($(BIONIC),1)
++    LIBC_SUPPORT := 1
++  endif
++  ifeq ($(LIBC_SUPPORT),1)
++    msg := $(warning No libelf found, disables 'probe' tool, please install elfutils-libelf-devel/libelf-dev);
++
++    NO_LIBELF := 1
++    NO_DWARF := 1
++    NO_DEMANGLE := 1
++  else
++    msg := $(error No gnu/libc-version.h found, please install glibc-dev[el]/glibc-static);
++  endif
+ else
+-	# for linking with debug library, run like:
+-	# make DEBUG=1 LIBDW_DIR=/opt/libdw/
+-	ifdef LIBDW_DIR
+-		LIBDW_CFLAGS  := -I$(LIBDW_DIR)/include
+-		LIBDW_LDFLAGS := -L$(LIBDW_DIR)/lib
+-	endif
+-
+-	FLAGS_DWARF=$(CFLAGS) $(LIBDW_CFLAGS) -ldw -lelf $(LIBDW_LDFLAGS) $(LDFLAGS) $(EXTLIBS)
+-	ifneq ($(call try-cc,$(SOURCE_DWARF),$(FLAGS_DWARF),libdw),y)
+-		msg := $(warning No libdw.h found or old libdw.h found or elfutils is older than 0.138, disables dwarf support. Please install new elfutils-devel/libdw-dev);
+-		NO_DWARF := 1
+-	endif # Dwarf support
++  # for linking with debug library, run like:
++  # make DEBUG=1 LIBDW_DIR=/opt/libdw/
++  ifdef LIBDW_DIR
++    LIBDW_CFLAGS  := -I$(LIBDW_DIR)/include
++    LIBDW_LDFLAGS := -L$(LIBDW_DIR)/lib
++  endif
++
++  FLAGS_DWARF=$(CFLAGS) $(LIBDW_CFLAGS) -ldw -lelf $(LIBDW_LDFLAGS) $(LDFLAGS) $(EXTLIBS)
++  ifneq ($(call try-cc,$(SOURCE_DWARF),$(FLAGS_DWARF),libdw),y)
++    msg := $(warning No libdw.h found or old libdw.h found or elfutils is older than 0.138, disables dwarf support. Please install new elfutils-devel/libdw-dev);
++    NO_DWARF := 1
++  endif # Dwarf support
+ endif # SOURCE_LIBELF
+ endif # NO_LIBELF
+ 
+@@ -182,7 +182,7 @@ ifndef NO_LIBELF
+ CFLAGS += -DLIBELF_SUPPORT
+ FLAGS_LIBELF=$(CFLAGS) $(LDFLAGS) $(EXTLIBS)
+ ifeq ($(call try-cc,$(SOURCE_ELF_MMAP),$(FLAGS_LIBELF),-DLIBELF_MMAP),y)
+-	CFLAGS += -DLIBELF_MMAP
++  CFLAGS += -DLIBELF_MMAP
+ endif
+ 
+ # include ARCH specific config
+@@ -190,12 +190,12 @@ endif
+ 
+ ifndef NO_DWARF
+ ifeq ($(origin PERF_HAVE_DWARF_REGS), undefined)
+-	msg := $(warning DWARF register mappings have not been defined for architecture $(ARCH), DWARF support disabled);
+-	NO_DWARF := 1
++  msg := $(warning DWARF register mappings have not been defined for architecture $(ARCH), DWARF support disabled);
++  NO_DWARF := 1
+ else
+-	CFLAGS += -DDWARF_SUPPORT $(LIBDW_CFLAGS)
+-	LDFLAGS += $(LIBDW_LDFLAGS)
+-	EXTLIBS += -lelf -ldw
++  CFLAGS += -DDWARF_SUPPORT $(LIBDW_CFLAGS)
++  LDFLAGS += $(LIBDW_LDFLAGS)
++  EXTLIBS += -lelf -ldw
+ endif # PERF_HAVE_DWARF_REGS
+ endif # NO_DWARF
+ 
+@@ -205,99 +205,99 @@ ifndef NO_LIBELF
+ CFLAGS += -DLIBELF_SUPPORT
+ FLAGS_LIBELF=$(CFLAGS) $(LDFLAGS) $(EXTLIBS)
+ ifeq ($(call try-cc,$(SOURCE_ELF_MMAP),$(FLAGS_LIBELF),-DLIBELF_MMAP),y)
+-	CFLAGS += -DLIBELF_MMAP
++  CFLAGS += -DLIBELF_MMAP
+ endif # try-cc
+ endif # NO_LIBELF
+ 
+ # There's only x86 (both 32 and 64) support for CFI unwind so far
+ ifneq ($(ARCH),x86)
+-	NO_LIBUNWIND := 1
++  NO_LIBUNWIND := 1
+ endif
+ 
+ ifndef NO_LIBUNWIND
+ # for linking with debug library, run like:
+ # make DEBUG=1 LIBUNWIND_DIR=/opt/libunwind/
+ ifdef LIBUNWIND_DIR
+-	LIBUNWIND_CFLAGS  := -I$(LIBUNWIND_DIR)/include
+-	LIBUNWIND_LDFLAGS := -L$(LIBUNWIND_DIR)/lib
++  LIBUNWIND_CFLAGS  := -I$(LIBUNWIND_DIR)/include
++  LIBUNWIND_LDFLAGS := -L$(LIBUNWIND_DIR)/lib
+ endif
+ 
+ FLAGS_UNWIND=$(LIBUNWIND_CFLAGS) $(CFLAGS) $(LIBUNWIND_LDFLAGS) $(LDFLAGS) $(EXTLIBS) $(LIBUNWIND_LIBS)
+ ifneq ($(call try-cc,$(SOURCE_LIBUNWIND),$(FLAGS_UNWIND),libunwind),y)
+-	msg := $(warning No libunwind found, disabling post unwind support. Please install libunwind-dev[el] >= 0.99);
+-	NO_LIBUNWIND := 1
++  msg := $(warning No libunwind found, disabling post unwind support. Please install libunwind-dev[el] >= 0.99);
++  NO_LIBUNWIND := 1
+ endif # Libunwind support
+ endif # NO_LIBUNWIND
+ 
+ ifndef NO_LIBUNWIND
+-	CFLAGS += -DLIBUNWIND_SUPPORT
+-	EXTLIBS += $(LIBUNWIND_LIBS)
+-	CFLAGS += $(LIBUNWIND_CFLAGS)
+-	LDFLAGS += $(LIBUNWIND_LDFLAGS)
++  CFLAGS += -DLIBUNWIND_SUPPORT
++  EXTLIBS += $(LIBUNWIND_LIBS)
++  CFLAGS += $(LIBUNWIND_CFLAGS)
++  LDFLAGS += $(LIBUNWIND_LDFLAGS)
+ endif # NO_LIBUNWIND
+ 
+ ifndef NO_LIBAUDIT
+-	FLAGS_LIBAUDIT = $(CFLAGS) $(LDFLAGS) -laudit
+-	ifneq ($(call try-cc,$(SOURCE_LIBAUDIT),$(FLAGS_LIBAUDIT),libaudit),y)
+-		msg := $(warning No libaudit.h found, disables 'trace' tool, please install audit-libs-devel or libaudit-dev);
+-		NO_LIBAUDIT := 1
+-	else
+-		CFLAGS += -DLIBAUDIT_SUPPORT
+-		EXTLIBS += -laudit
+-	endif
++  FLAGS_LIBAUDIT = $(CFLAGS) $(LDFLAGS) -laudit
++  ifneq ($(call try-cc,$(SOURCE_LIBAUDIT),$(FLAGS_LIBAUDIT),libaudit),y)
++    msg := $(warning No libaudit.h found, disables 'trace' tool, please install audit-libs-devel or libaudit-dev);
++    NO_LIBAUDIT := 1
++  else
++    CFLAGS += -DLIBAUDIT_SUPPORT
++    EXTLIBS += -laudit
++  endif
+ endif
+ 
+ ifdef NO_NEWT
+-	NO_SLANG=1
++  NO_SLANG=1
+ endif
+ 
+ ifndef NO_SLANG
+-	FLAGS_SLANG=$(CFLAGS) $(LDFLAGS) $(EXTLIBS) -I/usr/include/slang -lslang
+-	ifneq ($(call try-cc,$(SOURCE_SLANG),$(FLAGS_SLANG),libslang),y)
+-		msg := $(warning slang not found, disables TUI support. Please install slang-devel or libslang-dev);
+-		NO_SLANG := 1
+-	else
+-		# Fedora has /usr/include/slang/slang.h, but ubuntu /usr/include/slang.h
+-		CFLAGS += -I/usr/include/slang
+-		CFLAGS += -DSLANG_SUPPORT
+-		EXTLIBS += -lslang
+-	endif
++  FLAGS_SLANG=$(CFLAGS) $(LDFLAGS) $(EXTLIBS) -I/usr/include/slang -lslang
++  ifneq ($(call try-cc,$(SOURCE_SLANG),$(FLAGS_SLANG),libslang),y)
++    msg := $(warning slang not found, disables TUI support. Please install slang-devel or libslang-dev);
++    NO_SLANG := 1
++  else
++    # Fedora has /usr/include/slang/slang.h, but ubuntu /usr/include/slang.h
++    CFLAGS += -I/usr/include/slang
++    CFLAGS += -DSLANG_SUPPORT
++    EXTLIBS += -lslang
++  endif
+ endif
+ 
+ ifndef NO_GTK2
+-	FLAGS_GTK2=$(CFLAGS) $(LDFLAGS) $(EXTLIBS) $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null)
+-	ifneq ($(call try-cc,$(SOURCE_GTK2),$(FLAGS_GTK2),gtk2),y)
+-		msg := $(warning GTK2 not found, disables GTK2 support. Please install gtk2-devel or libgtk2.0-dev);
+-		NO_GTK2 := 1
+-	else
+-		ifeq ($(call try-cc,$(SOURCE_GTK2_INFOBAR),$(FLAGS_GTK2),-DHAVE_GTK_INFO_BAR),y)
+-			CFLAGS += -DHAVE_GTK_INFO_BAR
+-		endif
+-		CFLAGS += -DGTK2_SUPPORT
+-		CFLAGS += $(shell pkg-config --cflags gtk+-2.0 2>/dev/null)
+-		EXTLIBS += $(shell pkg-config --libs gtk+-2.0 2>/dev/null)
+-	endif
++  FLAGS_GTK2=$(CFLAGS) $(LDFLAGS) $(EXTLIBS) $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null)
++  ifneq ($(call try-cc,$(SOURCE_GTK2),$(FLAGS_GTK2),gtk2),y)
++    msg := $(warning GTK2 not found, disables GTK2 support. Please install gtk2-devel or libgtk2.0-dev);
++    NO_GTK2 := 1
++  else
++    ifeq ($(call try-cc,$(SOURCE_GTK2_INFOBAR),$(FLAGS_GTK2),-DHAVE_GTK_INFO_BAR),y)
++      CFLAGS += -DHAVE_GTK_INFO_BAR
++    endif
++    CFLAGS += -DGTK2_SUPPORT
++    CFLAGS += $(shell pkg-config --cflags gtk+-2.0 2>/dev/null)
++    EXTLIBS += $(shell pkg-config --libs gtk+-2.0 2>/dev/null)
++  endif
+ endif
+ 
+ grep-libs  = $(filter -l%,$(1))
+ strip-libs = $(filter-out -l%,$(1))
+ 
+ ifdef NO_LIBPERL
+-	CFLAGS += -DNO_LIBPERL
++  CFLAGS += -DNO_LIBPERL
+ else
+-	PERL_EMBED_LDOPTS = $(shell perl -MExtUtils::Embed -e ldopts 2>/dev/null)
+-	PERL_EMBED_LDFLAGS = $(call strip-libs,$(PERL_EMBED_LDOPTS))
+-	PERL_EMBED_LIBADD = $(call grep-libs,$(PERL_EMBED_LDOPTS))
+-	PERL_EMBED_CCOPTS = `perl -MExtUtils::Embed -e ccopts 2>/dev/null`
+-	FLAGS_PERL_EMBED=$(PERL_EMBED_CCOPTS) $(PERL_EMBED_LDOPTS)
+-
+-	ifneq ($(call try-cc,$(SOURCE_PERL_EMBED),$(FLAGS_PERL_EMBED),perl),y)
+-		CFLAGS += -DNO_LIBPERL
+-		NO_LIBPERL := 1
+-	else
+-		LDFLAGS += $(PERL_EMBED_LDFLAGS)
+-		EXTLIBS += $(PERL_EMBED_LIBADD)
+-	endif
++  PERL_EMBED_LDOPTS = $(shell perl -MExtUtils::Embed -e ldopts 2>/dev/null)
++  PERL_EMBED_LDFLAGS = $(call strip-libs,$(PERL_EMBED_LDOPTS))
++  PERL_EMBED_LIBADD = $(call grep-libs,$(PERL_EMBED_LDOPTS))
++  PERL_EMBED_CCOPTS = `perl -MExtUtils::Embed -e ccopts 2>/dev/null`
++  FLAGS_PERL_EMBED=$(PERL_EMBED_CCOPTS) $(PERL_EMBED_LDOPTS)
++
++  ifneq ($(call try-cc,$(SOURCE_PERL_EMBED),$(FLAGS_PERL_EMBED),perl),y)
++    CFLAGS += -DNO_LIBPERL
++    NO_LIBPERL := 1
++  else
++    LDFLAGS += $(PERL_EMBED_LDFLAGS)
++    EXTLIBS += $(PERL_EMBED_LIBADD)
++  endif
+ endif
+ 
+ disable-python = $(eval $(disable-python_code))
+@@ -364,69 +364,69 @@ else
+ endif
+ 
+ ifdef NO_DEMANGLE
+-	CFLAGS += -DNO_DEMANGLE
++  CFLAGS += -DNO_DEMANGLE
+ else
+-	ifdef HAVE_CPLUS_DEMANGLE
+-		EXTLIBS += -liberty
+-		CFLAGS += -DHAVE_CPLUS_DEMANGLE
+-	else
+-		FLAGS_BFD=$(CFLAGS) $(LDFLAGS) $(EXTLIBS) -DPACKAGE='perf' -lbfd
+-		has_bfd := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD),libbfd)
+-		ifeq ($(has_bfd),y)
+-			EXTLIBS += -lbfd
+-		else
+-			FLAGS_BFD_IBERTY=$(FLAGS_BFD) -liberty
+-			has_bfd_iberty := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD_IBERTY),liberty)
+-			ifeq ($(has_bfd_iberty),y)
+-				EXTLIBS += -lbfd -liberty
+-			else
+-				FLAGS_BFD_IBERTY_Z=$(FLAGS_BFD_IBERTY) -lz
+-				has_bfd_iberty_z := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD_IBERTY_Z),libz)
+-				ifeq ($(has_bfd_iberty_z),y)
+-					EXTLIBS += -lbfd -liberty -lz
+-				else
+-					FLAGS_CPLUS_DEMANGLE=$(CFLAGS) $(LDFLAGS) $(EXTLIBS) -liberty
+-					has_cplus_demangle := $(call try-cc,$(SOURCE_CPLUS_DEMANGLE),$(FLAGS_CPLUS_DEMANGLE),demangle)
+-					ifeq ($(has_cplus_demangle),y)
+-						EXTLIBS += -liberty
+-						CFLAGS += -DHAVE_CPLUS_DEMANGLE
+-					else
+-						msg := $(warning No bfd.h/libbfd found, install binutils-dev[el]/zlib-static to gain symbol demangling)
+-						CFLAGS += -DNO_DEMANGLE
+-					endif
+-				endif
+-			endif
+-		endif
+-	endif
++  ifdef HAVE_CPLUS_DEMANGLE
++    EXTLIBS += -liberty
++    CFLAGS += -DHAVE_CPLUS_DEMANGLE
++  else
++    FLAGS_BFD=$(CFLAGS) $(LDFLAGS) $(EXTLIBS) -DPACKAGE='perf' -lbfd
++    has_bfd := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD),libbfd)
++    ifeq ($(has_bfd),y)
++      EXTLIBS += -lbfd
++    else
++      FLAGS_BFD_IBERTY=$(FLAGS_BFD) -liberty
++      has_bfd_iberty := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD_IBERTY),liberty)
++      ifeq ($(has_bfd_iberty),y)
++        EXTLIBS += -lbfd -liberty
++      else
++        FLAGS_BFD_IBERTY_Z=$(FLAGS_BFD_IBERTY) -lz
++        has_bfd_iberty_z := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD_IBERTY_Z),libz)
++        ifeq ($(has_bfd_iberty_z),y)
++          EXTLIBS += -lbfd -liberty -lz
++        else
++          FLAGS_CPLUS_DEMANGLE=$(CFLAGS) $(LDFLAGS) $(EXTLIBS) -liberty
++          has_cplus_demangle := $(call try-cc,$(SOURCE_CPLUS_DEMANGLE),$(FLAGS_CPLUS_DEMANGLE),demangle)
++          ifeq ($(has_cplus_demangle),y)
++            EXTLIBS += -liberty
++            CFLAGS += -DHAVE_CPLUS_DEMANGLE
++          else
++            msg := $(warning No bfd.h/libbfd found, install binutils-dev[el]/zlib-static to gain symbol demangling)
++            CFLAGS += -DNO_DEMANGLE
++          endif
++        endif
++      endif
++    endif
++  endif
+ endif
+ 
+ ifndef NO_STRLCPY
+-	ifeq ($(call try-cc,$(SOURCE_STRLCPY),,-DHAVE_STRLCPY),y)
+-		CFLAGS += -DHAVE_STRLCPY
+-	endif
++  ifeq ($(call try-cc,$(SOURCE_STRLCPY),,-DHAVE_STRLCPY),y)
++    CFLAGS += -DHAVE_STRLCPY
++  endif
+ endif
+ 
+ ifndef NO_ON_EXIT
+-	ifeq ($(call try-cc,$(SOURCE_ON_EXIT),,-DHAVE_ON_EXIT),y)
+-		CFLAGS += -DHAVE_ON_EXIT
+-	endif
++  ifeq ($(call try-cc,$(SOURCE_ON_EXIT),,-DHAVE_ON_EXIT),y)
++    CFLAGS += -DHAVE_ON_EXIT
++  endif
+ endif
+ 
+ ifndef NO_BACKTRACE
+-       ifeq ($(call try-cc,$(SOURCE_BACKTRACE),,-DBACKTRACE_SUPPORT),y)
+-		CFLAGS += -DBACKTRACE_SUPPORT
+-       endif
++  ifeq ($(call try-cc,$(SOURCE_BACKTRACE),,-DBACKTRACE_SUPPORT),y)
++    CFLAGS += -DBACKTRACE_SUPPORT
++  endif
+ endif
+ 
+ ifndef NO_LIBNUMA
+-	FLAGS_LIBNUMA = $(CFLAGS) $(LDFLAGS) -lnuma
+-	ifneq ($(call try-cc,$(SOURCE_LIBNUMA),$(FLAGS_LIBNUMA),libnuma),y)
+-		msg := $(warning No numa.h found, disables 'perf bench numa mem' benchmark, please install numa-libs-devel or libnuma-dev);
+-		NO_LIBNUMA := 1
+-	else
+-		CFLAGS += -DLIBNUMA_SUPPORT
+-		EXTLIBS += -lnuma
+-	endif
++  FLAGS_LIBNUMA = $(CFLAGS) $(LDFLAGS) -lnuma
++  ifneq ($(call try-cc,$(SOURCE_LIBNUMA),$(FLAGS_LIBNUMA),libnuma),y)
++    msg := $(warning No numa.h found, disables 'perf bench numa mem' benchmark, please install numa-libs-devel or libnuma-dev);
++    NO_LIBNUMA := 1
++  else
++    CFLAGS += -DLIBNUMA_SUPPORT
++    EXTLIBS += -lnuma
++  endif
+ endif
+ 
+ # Among the variables below, these:
 -- 
 1.7.11.7
 
