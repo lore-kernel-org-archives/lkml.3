@@ -1,78 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754441Ab3DYGck (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 02:32:40 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36711 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751213Ab3DYGci (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 02:32:38 -0400
-Date: Thu, 25 Apr 2013 14:33:06 +0800
-From: Adam Lee <adam.lee@canonical.com>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: linux-kernel@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        "open list:USB VIDEO CLASS" <linux-media@vger.kernel.org>
-Subject: Re: [PATCH] Revert "V4L/DVB: uvc: Enable USB autosuspend by default
- on uvcvideo"
-Message-ID: <20130425063306.GA20928@adam-laptop>
-Mail-Followup-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-	linux-kernel@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
-	Mauro Carvalho Chehab <mchehab@redhat.com>,
-	"open list:USB VIDEO CLASS" <linux-media@vger.kernel.org>
-References: <1366790239-838-1-git-send-email-adam.lee@canonical.com>
- <6159110.qEtHHiJYtm@avalon>
+	id S1755038Ab3DYGdL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 02:33:11 -0400
+Received: from mga09.intel.com ([134.134.136.24]:11636 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754759Ab3DYGdK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Apr 2013 02:33:10 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,548,1363158000"; 
+   d="scan'208";a="301312225"
+Date: Thu, 25 Apr 2013 14:30:45 +0800
+From: Feng Tang <feng.tang@intel.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: lkml <linux-kernel@vger.kernel.org>, stable <stable@vger.kernel.org>,
+        Kay Sievers <kay@vrfy.org>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] time: Revert ALWAYS_USE_PERSISTENT_CLOCK compile time
+ optimizaitons
+Message-ID: <20130425063045.GA2597@feng-snb>
+References: <1366828376-18124-1-git-send-email-john.stultz@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <6159110.qEtHHiJYtm@avalon>
+In-Reply-To: <1366828376-18124-1-git-send-email-john.stultz@linaro.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 24, 2013 at 11:17:52AM +0200, Laurent Pinchart wrote:
-> Hi Adam,
+On Wed, Apr 24, 2013 at 11:32:56AM -0700, John Stultz wrote:
+> Kay Sievers noted that the ALWAYS_USE_PERSISTENT_CLOCK config,
+> which enables some minor compile time optimization to avoid
+> uncessary code in mostly the suspend/resume path could cause
+> problems for userland.
 > 
-> Thanks for the patch.
+> In particular, the dependency for RTC_HCTOSYS on
+> !ALWAYS_USE_PERSISTENT_CLOCK, which avoids setting the time
+> twice and simplifies suspend/resume, has the side effect
+> of causing the /sys/class/rtc/rtcN/hctosys flag to always be
+> zero, and this flag is commonly used by udev to setup the
+> /dev/rtc symlink to /dev/rtcN, which can cause pain for
+> older applications.
 > 
-> On Wednesday 24 April 2013 15:57:19 adam.lee@canonical.com wrote:
-> > From: Adam Lee <adam.lee@canonical.com>
-> > 
-> > This reverts commit 3dae8b41dc5651f8eb22cf310e8b116480ba25b7.
-> > 
-> > 1, I do have a Chicony webcam, implements autosuspend in a broken way,
-> > make `poweroff` performs rebooting when its autosuspend enabled.
-> > 
-> > 2, There are other webcams which don't support autosuspend too, like
-> > https://patchwork.kernel.org/patch/2356141/
-> > 
-> > 3, kernel removed USB_QUIRK_NO_AUTOSUSPEND in
-> > a691efa9888e71232dfb4088fb8a8304ffc7b0f9, because autosuspend is
-> > disabled by default.
-> > 
-> > So, we need to disable autosuspend in uvcvideo, maintaining a quirk list
-> > only for uvcvideo is not a good idea.
+> While the udev rules could use some work to be less fragile,
+> breaking userland should strongly be avoided. Additionally
+> the compile time optimizations are fairly minor, and the code
+> being optimized is likely to be reworked in the future, so
+> lets revert this change.
 > 
-> I've received very few bug reports about broken auto-suspend support in UVC 
-> devices. Most of them could be solved by setting the RESET_RESUME quirk in USB 
-> core, only the Creative Live! Cam Optia AF required a quirk in the uvcvideo 
-> driver. I would thus rather use the available quirks (USB_QUIRK_RESET_RESUME 
-> if possible, UVC_QUIRK_DISABLE_AUTOSUSPEND otherwise) than killing power 
-> management for the vast majority of webcams that behave correctly.
+> I suspect this will miss 3.9-final, so marking it for 3.9-stable.
 
-Here comes another one, integrated Chicony webcam 04f2:b39f, its
-autosuspend makes `poweroff` performs rebooting at the laptop I'm
-working on. I tried USB_QUIRK_RESET_RESUME, not helping.
+thanks
 
-The quirks list will go longer and longer absolutely, do uvcvideo wanna
-maintain that? And why only uvcvideo do this in kernel space which
-against general USB module?
+Acked-by: Feng Tang <feng.tang@intel.com>
 
-I still suggest we disable it by default, people can enable it in udev
-just like almost all distroes do for udisks. Please consider about it.
-
--- 
-Regards,
-Adam Lee
-Hardware Enablement
