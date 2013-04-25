@@ -1,65 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758000Ab3DYNJs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 09:09:48 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:38502 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755629Ab3DYNJq (ORCPT
+	id S1757335Ab3DYNLg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 09:11:36 -0400
+Received: from mail-we0-f171.google.com ([74.125.82.171]:50343 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754098Ab3DYNLe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 09:09:46 -0400
-Date: Thu, 25 Apr 2013 14:09:22 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+	Thu, 25 Apr 2013 09:11:34 -0400
+Date: Thu, 25 Apr 2013 14:11:29 +0100
+From: Lee Jones <lee.jones@linaro.org>
 To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Lee Jones <lee.jones@linaro.org>, Rabin Vincent <rabin@rab.in>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Arnd Bergmann <arnd@arndb.de>, Vinod Koul <vinod.koul@intel.com>,
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Per Forlin <per.forlin@stericsson.com>, Dan Williams <djbw@fb.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 04/32] dmaengine: ste_dma40: Amalgamate DMA source and
-	destination channel numbers
-Message-ID: <20130425130922.GE14496@n2100.arm.linux.org.uk>
-References: <1366279934-30761-1-git-send-email-lee.jones@linaro.org> <1366279934-30761-5-git-send-email-lee.jones@linaro.org> <CACRpkdaauDYTdoBHGG9FO4kKqvCYyCrjY8EGWs5gAQWErGW6_A@mail.gmail.com> <20130425090612.GC4623@gmail.com> <CACRpkdbV8yEK0470q_-DWv6Q0hAG2wGntXFi5kaLUMgm9b=e-Q@mail.gmail.com>
+        Arnd Bergmann <arnd@arndb.de>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>
+Subject: Re: [PATCH 30/32] ARM: ux500: Supply MMC DMA configuration via
+ Device Tree
+Message-ID: <20130425131129.GK4623@gmail.com>
+References: <1366279934-30761-1-git-send-email-lee.jones@linaro.org>
+ <1366279934-30761-31-git-send-email-lee.jones@linaro.org>
+ <CACRpkdbYXxkC2y9zCNcMAAmmQ7+3V0Y=hq7zgtp5L=Ts9QzpQQ@mail.gmail.com>
+ <20130425114931.GJ4623@gmail.com>
+ <CACRpkdbnGbVwqnY=aPU5Jic88v7VAsDWaB0yDU3iMo=YLCd9EQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CACRpkdbV8yEK0470q_-DWv6Q0hAG2wGntXFi5kaLUMgm9b=e-Q@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACRpkdbnGbVwqnY=aPU5Jic88v7VAsDWaB0yDU3iMo=YLCd9EQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 25, 2013 at 02:43:16PM +0200, Linus Walleij wrote:
-> So while there is no active usecase, Linux surely has the ambition to do
-> that as can be seen in:
+On Thu, 25 Apr 2013, Linus Walleij wrote:
+
+> On Thu, Apr 25, 2013 at 1:49 PM, Lee Jones <lee.jones@linaro.org> wrote:
+> > On Thu, 25 Apr 2013, Linus Walleij wrote:
+> >
+> >> On Thu, Apr 18, 2013 at 12:12 PM, Lee Jones <lee.jones@linaro.org> wrote:
+> >>
+> >> > When requesting a channel, a DMA client needs to pass some pieces of
+> >> > information such as; request channel, device type, channel type and
+> >> > direction etc. Normally we do this in the form of platform data, but
+> >> > when DT is enabled we need to pass it using the driver's bindings
+> >> > instead.
+> >> >
+> >> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> >>
+> >> This requires that the pending MMCI patch get merged *first* right?
+> >
+> > No, it doesn't. There is no harm in applying this *before*.
+> >
+> > It will just lay dormant until it is.
 > 
-> /**
->  * enum dma_transfer_direction - dma transfer mode and direction indicator
->  * @DMA_MEM_TO_MEM: Async/Memcpy mode
->  * @DMA_MEM_TO_DEV: Slave mode & From Memory to Device
->  * @DMA_DEV_TO_MEM: Slave mode & From Device to Memory
->  * @DMA_DEV_TO_DEV: Slave mode & From Device to Device
->  */
-> enum dma_transfer_direction {
->         DMA_MEM_TO_MEM,
->         DMA_MEM_TO_DEV,
->         DMA_DEV_TO_MEM,
->         DMA_DEV_TO_DEV,
->         DMA_TRANS_NONE,
-> };
-> 
-> I think we need a handshake with Vinod on this.
+> Ah yeah, right. But the patch stripping out the platform data (no 31) will
+> wreak havoc if applied before the MMCI patch right?
 
-DEV_TO_DEV was added when the change to dma_transfer_direction happened,
-to "fill in" the full pattern.
+Yes, that will cause problems. It will most likely go into PIO mode.
 
-There's a problem with device to device transfers though - you have to
-consider the rate at which the devices produce and consume data, and
-whether they both can cope with differing data rates.
-
-Take for instance your audio in to audio out idea - even if they are
-both operating at the same bits per sample and sample rate, if they are
-independently clocked, chances are that the clocks are not exactly the
-same, which means you will either underrun or overrun one of the FIFOs
-in the system.
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
