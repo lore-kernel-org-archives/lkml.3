@@ -1,57 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755178Ab3DYJUU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 05:20:20 -0400
-Received: from mail-ia0-f180.google.com ([209.85.210.180]:48543 "EHLO
-	mail-ia0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751436Ab3DYJUS (ORCPT
+	id S1755601Ab3DYJX1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 05:23:27 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:50587 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751448Ab3DYJXZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 05:20:18 -0400
+	Thu, 25 Apr 2013 05:23:25 -0400
+Message-ID: <5178F602.9040100@linux.vnet.ibm.com>
+Date: Thu, 25 Apr 2013 17:23:14 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <1366279934-30761-2-git-send-email-lee.jones@linaro.org>
-References: <1366279934-30761-1-git-send-email-lee.jones@linaro.org>
-	<1366279934-30761-2-git-send-email-lee.jones@linaro.org>
-Date: Thu, 25 Apr 2013 11:20:18 +0200
-Message-ID: <CACRpkdaMS8RBi7aWyBRRZbf7OpK82C3-79tEaq+A-QU5zbVyxQ@mail.gmail.com>
-Subject: Re: [PATCH 01/32] dmaengine: ste_dma40: Assign memcpy channels in the driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rabin Vincent <rabin@rab.in>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Arnd Bergmann <arnd@arndb.de>, Vinod Koul <vinod.koul@intel.com>,
-        Per Forlin <per.forlin@stericsson.com>, Dan Williams <djbw@fb.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Gleb Natapov <gleb@redhat.com>
+CC: mtosatti@redhat.com, linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH v2 6/6] KVM: MMU: init kvm generation close to mmio wrap-around
+ value
+References: <1364810209-25954-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <1364810209-25954-7-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <20130424125911.GQ12401@redhat.com>
+In-Reply-To: <20130424125911.GQ12401@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13042509-5490-0000-0000-00000358950B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 18, 2013 at 12:11 PM, Lee Jones <lee.jones@linaro.org> wrote:
+On 04/24/2013 08:59 PM, Gleb Natapov wrote:
+> On Mon, Apr 01, 2013 at 05:56:49PM +0800, Xiao Guangrong wrote:
+>> Then it has chance to trigger mmio generation number wrap-around
+>>
+>> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+>> ---
+>>  arch/x86/include/asm/kvm_host.h |    1 +
+>>  arch/x86/kvm/mmu.c              |    8 ++++++++
+>>  virt/kvm/kvm_main.c             |    6 ++++++
+>>  3 files changed, 15 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+>> index 6c1e642..4e1f7cb 100644
+>> --- a/arch/x86/include/asm/kvm_host.h
+>> +++ b/arch/x86/include/asm/kvm_host.h
+>> @@ -767,6 +767,7 @@ void kvm_mmu_write_protect_pt_masked(struct kvm *kvm,
+>>  				     struct kvm_memory_slot *slot,
+>>  				     gfn_t gfn_offset, unsigned long mask);
+>>  void kvm_mmu_zap_all(struct kvm *kvm);
+>> +void kvm_arch_init_generation(struct kvm *kvm);
+>>  void kvm_mmu_invalid_mmio_sptes(struct kvm *kvm);
+>>  unsigned int kvm_mmu_calculate_mmu_pages(struct kvm *kvm);
+>>  void kvm_mmu_change_mmu_pages(struct kvm *kvm, unsigned int kvm_nr_mmu_pages);
+>> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+>> index d314e21..dcc059c 100644
+>> --- a/arch/x86/kvm/mmu.c
+>> +++ b/arch/x86/kvm/mmu.c
+>> @@ -4279,6 +4279,14 @@ restart:
+>>  	spin_unlock(&kvm->mmu_lock);
+>>  }
+>>  
+>> +void kvm_arch_init_generation(struct kvm *kvm)
+>> +{
+>> +	mutex_lock(&kvm->slots_lock);
+>> +	/* It is easier to trigger mmio generation-number wrap-around. */
+>> +	kvm_memslots(kvm)->generation = MMIO_MAX_GEN - 13;
+> kvm_memslots(kvm)->generation should never overflow since
+> (read|write)_cached mechanism does not handle it. Initialising it to
+> anything but 0 makes overflow more likely.
+> 
+> You can hide mmio overflow trick in kvm_current_mmio_generation():
+> 
+> static unsigned int kvm_current_mmio_generation(struct kvm *kvm)
+> {
+> 	return (kvm_memslots(kvm)->generation + MMIO_MAX_GEN - 13) & MMIO_GEN_MASK;
+> }
 
-> The channels reserved for memcpy are the same for all currently
-> supported platforms. With this in mind, we can ease the platform
-> data passing requirement by moving these assignments out from
-> platform code and place them directly into the driver.
->
-> Cc: Vinod Koul <vinod.koul@intel.com>
-> Cc: Dan Williams <djbw@fb.com>
-> Cc: Per Forlin <per.forlin@stericsson.com>
-> Cc: Rabin Vincent <rabin@rab.in>
-> Acked-by: Arnd Bergmann <arnd@arndb.de>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Very smart idea. Thanks you, Gleb!
 
-(...)
-> -       if (num_log_chans + plat_data->memcpy_len) {
-> +       if (num_log_chans + ARRAY_SIZE(dma40_memcpy_channels)) {
->                 /*
->                  * The max number of logical channels are event lines for all
->                  * src devices and dst devices
 
-So as mentioned in review of another patch there is a kzalloc
-right below here where you forget to add + ARRAY_SIZE(dma40_memcpy_channels)
-please fix this...
 
-Yours,
-Linus Walleij
