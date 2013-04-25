@@ -1,78 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758708Ab3DYN6K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 09:58:10 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:41041 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756519Ab3DYN6I (ORCPT
+	id S1758730Ab3DYOF7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 10:05:59 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:62766 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758208Ab3DYOF5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 09:58:08 -0400
+	Thu, 25 Apr 2013 10:05:57 -0400
 MIME-Version: 1.0
-In-Reply-To: <51780EDA.3000003@sgi.com>
-References: <CAG82n_ni9ZAThGbMfqqObnz7QyQpH18G4hYBLt+BdeRHPE6EBg@mail.gmail.com>
- <CAErSpo5VaiuH+WT4RdM9yU9AHMkUKzATMiNzhixRU04_aZusBg@mail.gmail.com> <51780EDA.3000003@sgi.com>
-From: Bian LuLu <helianthus.lu@gmail.com>
-Date: Thu, 25 Apr 2013 21:57:44 +0800
-Message-ID: <CAG82n_kBYQpCRDmY7ghivXY60hBMF_5HHZUAT1d-xWD9OZvdrg@mail.gmail.com>
-Subject: Re: [RFC] The meaning of local_cpulist and local_cpus
-To: Mike Travis <travis@sgi.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
+In-Reply-To: <20130425134402.GN4623@gmail.com>
+References: <1366280825-31136-1-git-send-email-lee.jones@linaro.org>
+	<1366280825-31136-7-git-send-email-lee.jones@linaro.org>
+	<CACRpkdbFgW6bGYt59WtN4r2izuN09AJw4J1cqir82uzFsuMmWQ@mail.gmail.com>
+	<20130425134402.GN4623@gmail.com>
+Date: Thu, 25 Apr 2013 16:05:57 +0200
+Message-ID: <CACRpkdaugQO5aMBnfvD8fmYkKbiWsHwvqg3=eARovqFe9MDExw@mail.gmail.com>
+Subject: Re: [PATCH 6/9] crypto: ux500/cryp - Set DMA configuration though dma_slave_config()
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+        Arnd Bergmann <arnd@arndb.de>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andreas Westin <andreas.westin@stericsson.com>,
+        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
+        magnus.p.persson@stericsson.com
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thankyou .
-But I still can not understand what is the meaning of cuplist.
-my linux version is ubuntu 12.04, and
-my system:/$ cat /sys/devices/pci0000:00/0000:00:1a.0/local_cpulist
- the result is '0-7',
+On Thu, Apr 25, 2013 at 3:44 PM, Lee Jones <lee.jones@linaro.org> wrote:
+> On Thu, 25 Apr 2013, Linus Walleij wrote:
+>> On Thu, Apr 18, 2013 at 12:27 PM, Lee Jones <lee.jones@linaro.org> wrote:
+>>
+>> > The DMA controller currently takes configuration information from
+>> > information passed though dma_channel_request(), but it shouldn't.
+>> > Using the API, the DMA channel should only be configured during
+>> > a dma_slave_config() call.
+>> >
+>> > Cc: Herbert Xu <herbert@gondor.apana.org.au>
+>> > Cc: David S. Miller <davem@davemloft.net>
+>> > Cc: Andreas Westin <andreas.westin@stericsson.com>
+>> > Cc: linux-crypto@vger.kernel.org
+>> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+>>
+>> (...)
+>> >  /* Cryp DMA interface */
+>> > +#define HASH_DMA_TX_FIFO       0x08
+>> > +#define HASH_DMA_RX_FIFO       0x10
+>>
+>> Yes, this is nice address notation :-)
+>>
+>> >  /**
+>> >   * struct cryp_device_data - structure for a cryp device.
+>> > - * @base: Pointer to the hardware base address.
+>> > + * @base: Pointer to virtual base address of the cryp device.
+>> > + * @phybase: Pointer to physical memory location of the cryp device.
+>> >   * @dev: Pointer to the devices dev structure.
+>> >   * @clk: Pointer to the device's clock control.
+>> >   * @pwr_regulator: Pointer to the device's power control.
+>> > @@ -232,6 +236,7 @@ struct cryp_dma {
+>> >   */
+>> >  struct cryp_device_data {
+>> >         struct cryp_register __iomem *base;
+>> > +       phys_addr_t phybase;
+>>
+>> Use dma_addr_t. Maybe "phybase" is misleading,
+>> "dmabase" is probably better. (Also applies to the
+>> cryp patch).
+>
+> Accept it's not the dmabase.
+>
+> It's the phybase (U8500_CRYP1_BASE) i.e. the physical base address of
+> the device's regs.
 
-I just don't konw what are they represent .Could  you give me more
-detailed information about local_cpulist and local_cpus,and their
-relations.
-thanks in advance :)
+So when you assign the src_addr or dst_addr in struct
+dmaengine_slave_config in this code,
+you notice that this looks like so:
 
-On Thu, Apr 25, 2013 at 12:56 AM, Mike Travis <travis@sgi.com> wrote:
->
->
-> On 4/24/2013 9:48 AM, Bjorn Helgaas wrote:
->> [+cc linux-pci, Mike]
->>
->> On Wed, Apr 24, 2013 at 4:06 AM, Bian LuLu <helianthus.lu@gmail.com> wrote:
->>> Hi all,
->>>
->>> Recently, i read some codes of PCI portions. I think
->>> local_cpulist is a list about one kind of CPU and
->>> local_cpus is a mask of CPU. But i am not sure when
->>> and how i should use these two parameters.
->>>
->>> See http://lxr.linux.no/linux+v3.5.4/drivers/pci/pci-sysfs.c#L390 for
->>> details.
->>>
->>> Would anyone please give me some suggestions?
->>> Thanks in advance ;-)
->>
->> I don't know off-hand, but maybe Mike or somebody on linux-pci does.
->> It looks like Mike added local_cpulist with 39106dcf85.
->>
->
-> It primarily comes into play when you have a large # of cpus.
-I can not understand the symbol of '#' ,what is the meaning of it?
-> Here's the difference on a system that has 1024 cpu threads:
->
-> harp31-sys:/sys/devices/system/node/node20 # cat cpulist
-> 160-167,672-679
-> harp31-sys:/sys/devices/system/node/node20 # cat cpumap
-> 00000000,00000000,00000000,00000000,00000000,00000000,00000000,
-> 00000000,00000000,00000000,000000ff,00000000,00000000,00000000,
-> 00000000,00000000,00000000,00000000,00000000,00000000,00000000,
-> 00000000,00000000,00000000,00000000,00000000,000000ff,00000000,
-> 00000000,00000000,00000000,00000000
->
-> Which is easier to interpret?  :)
->
-> But there are some older user side utilities that still
-> use the mask format.
+struct dma_slave_config {
+        enum dma_transfer_direction direction;
+        dma_addr_t src_addr;
+        dma_addr_t dst_addr;
+        enum dma_slave_buswidth src_addr_width;
+        enum dma_slave_buswidth dst_addr_width;
+        u32 src_maxburst;
+        u32 dst_maxburst;
+        bool device_fc;
+};
+
+So when you do this:
+
++       struct dma_slave_config mem2cryp = {
++               .direction = DMA_MEM_TO_DEV,
++               .dst_addr = device_data->phybase + HASH_DMA_TX_FIFO,
++               .dst_addr_width = DMA_SLAVE_BUSWIDTH_2_BYTES,
++               .dst_maxburst = 4,
++        };
+
+on .dst_addr you are effectively casting a phys_addr_t
+into a dma_addr_t.
+
+But  we must do this at some point, and now I think
+that doing it here may be just as good (because we might
+just add a physical-to-dma memory translation if need
+be).
+
+So allright.
+
+Yours,
+Linus Walleij
