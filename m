@@ -1,142 +1,267 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759530Ab3DYS61 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 14:58:27 -0400
-Received: from mail-da0-f49.google.com ([209.85.210.49]:61944 "EHLO
-	mail-da0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759446Ab3DYS60 (ORCPT
+	id S932267Ab3DYTJL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 15:09:11 -0400
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:61997 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758063Ab3DYTJJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 14:58:26 -0400
-Message-ID: <1366916303.8964.174.camel@edumazet-glaptop>
-Subject: Re: [PATCH net 2/3] unix/dgram: fix peeking with an offset larger
- than data in queue
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Benjamin Poirier <bpoirier@suse.de>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <edumazet@google.com>,
-        Pavel Emelyanov <xemul@parallels.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 25 Apr 2013 11:58:23 -0700
-In-Reply-To: <1366897638-21882-2-git-send-email-bpoirier@suse.de>
-References: <1366897638-21882-1-git-send-email-bpoirier@suse.de>
-	 <1366897638-21882-2-git-send-email-bpoirier@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 25 Apr 2013 15:09:09 -0400
+MIME-Version: 1.0
+In-Reply-To: <1366883360-14061-2-git-send-email-Andrew.Murray@arm.com>
+References: <1366883360-14061-1-git-send-email-Andrew.Murray@arm.com> <1366883360-14061-2-git-send-email-Andrew.Murray@arm.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 25 Apr 2013 13:08:48 -0600
+Message-ID: <CAErSpo6+v_xAdEw+4Qg--QLXzG8B8UPK=eBLsoT8-dZi6xatGA@mail.gmail.com>
+Subject: Re: [RFC PATCH 1/3] powerpc: Move struct pci_controller to asm-generic
+To: Andrew Murray <Andrew.Murray@arm.com>
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        microblaze-uclinux@itee.uq.edu.au,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Michal Simek <monstr@monstr.eu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Grant Likely <grant.likely@secretlab.ca>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-04-25 at 09:47 -0400, Benjamin Poirier wrote:
-> Currently, peeking on a unix datagram socket with an offset larger than len of
-> the data in the sk receive queue returns immediately with bogus data. That's
-> because *off is not reset between each skb_queue_walk().
-> 
-> This patch fixes this so that the behavior is the same as peeking with no
-> offset on an empty queue: the caller blocks.
-> 
-> Signed-off-by: Benjamin Poirier <bpoirier@suse.de>
+On Thu, Apr 25, 2013 at 3:49 AM, Andrew Murray <Andrew.Murray@arm.com> wrote:
+> This patch moves struct pci_controller into asm-generic to allow
+> for use by other architectures thus reducing code duplication in
+> the kernel.
+>
+> Signed-off-by: Andrew Murray <Andrew.Murray@arm.com>
 > ---
->  net/core/datagram.c |   25 +++++++++++++++----------
->  1 file changed, 15 insertions(+), 10 deletions(-)
-> 
-> diff --git a/net/core/datagram.c b/net/core/datagram.c
-> index 02398ae..6c502b5 100644
-> --- a/net/core/datagram.c
-> +++ b/net/core/datagram.c
-> @@ -78,9 +78,10 @@ static int receiver_wake_function(wait_queue_t *wait, unsigned int mode, int syn
->  	return autoremove_wake_function(wait, mode, sync, key);
->  }
+>  arch/powerpc/include/asm/pci-bridge.h |   87 +++++---------------------------
+>  include/asm-generic/pci-bridge.h      |   68 +++++++++++++++++++++++++
+>  2 files changed, 82 insertions(+), 73 deletions(-)
+>
+> diff --git a/arch/powerpc/include/asm/pci-bridge.h b/arch/powerpc/include/asm/pci-bridge.h
+> index 205bfba..163bd40 100644
+> --- a/arch/powerpc/include/asm/pci-bridge.h
+> +++ b/arch/powerpc/include/asm/pci-bridge.h
+> @@ -8,7 +8,6 @@
+>   * 2 of the License, or (at your option) any later version.
+>   */
+>  #include <linux/pci.h>
+> -#include <linux/list.h>
+>  #include <linux/ioport.h>
+>  #include <linux/of_pci.h>
+>  #include <asm-generic/pci-bridge.h>
+> @@ -16,85 +15,27 @@
+>  struct device_node;
+>
 >  /*
-> - * Wait for a packet..
-> + * Wait for the last received packet to be different from skb
+> - * Structure of a PCI controller (host bridge)
+> + * Used for variants of PCI indirect handling and possible quirks:
+> + *  SET_CFG_TYPE - used on 4xx or any PHB that does explicit type0/1
+> + *  EXT_REG - provides access to PCI-e extended registers
+> + *  SURPRESS_PRIMARY_BUS - we suppress the setting of PCI_PRIMARY_BUS
+
+s/SURPRESS/SUPRESS/ throughout.
+
+I'm not sure how generic these flags will end up being.  If they wind
+up in a shared header file, it seems like we might want a PCI_ prefix
+to anchor them.
+
+> + *   on Freescale PCI-e controllers since they used the PCI_PRIMARY_BUS
+> + *   to determine which bus number to match on when generating type0
+> + *   config cycles
+> + *  NO_PCIE_LINK - the Freescale PCI-e controllers have issues with
+> + *   hanging if we don't have link and try to do config cycles to
+> + *   anything but the PHB.  Only allow talking to the PHB if this is
+> + *   set.
+> + *  BIG_ENDIAN - cfg_addr is a big endian register
+> + *  BROKEN_MRM - the 440EPx/GRx chips have an errata that causes hangs on
+> + *   the PLB4.  Effectively disable MRM commands by setting this.
 >   */
-> -static int wait_for_packet(struct sock *sk, int *err, long *timeo_p)
-> +static int wait_for_more_packets(struct sock *sk, int *err, long *timeo_p,
-> +				 struct sk_buff *skb)
+> -struct pci_controller {
+> -       struct pci_bus *bus;
+> -       char is_dynamic;
+> -#ifdef CONFIG_PPC64
+> -       int node;
+> -#endif
+> -       struct device_node *dn;
+> -       struct list_head list_node;
+> -       struct device *parent;
+> -
+> -       int first_busno;
+> -       int last_busno;
+> -       int self_busno;
+> -       struct resource busn;
+> -
+> -       void __iomem *io_base_virt;
+> -#ifdef CONFIG_PPC64
+> -       void *io_base_alloc;
+> -#endif
+> -       resource_size_t io_base_phys;
+> -       resource_size_t pci_io_size;
+> -
+> -       /* Some machines (PReP) have a non 1:1 mapping of
+> -        * the PCI memory space in the CPU bus space
+> -        */
+> -       resource_size_t pci_mem_offset;
+> -
+> -       /* Some machines have a special region to forward the ISA
+> -        * "memory" cycles such as VGA memory regions. Left to 0
+> -        * if unsupported
+> -        */
+> -       resource_size_t isa_mem_phys;
+> -       resource_size_t isa_mem_size;
+> -
+> -       struct pci_ops *ops;
+> -       unsigned int __iomem *cfg_addr;
+> -       void __iomem *cfg_data;
+> -
+> -       /*
+> -        * Used for variants of PCI indirect handling and possible quirks:
+> -        *  SET_CFG_TYPE - used on 4xx or any PHB that does explicit type0/1
+> -        *  EXT_REG - provides access to PCI-e extended registers
+> -        *  SURPRESS_PRIMARY_BUS - we suppress the setting of PCI_PRIMARY_BUS
+> -        *   on Freescale PCI-e controllers since they used the PCI_PRIMARY_BUS
+> -        *   to determine which bus number to match on when generating type0
+> -        *   config cycles
+> -        *  NO_PCIE_LINK - the Freescale PCI-e controllers have issues with
+> -        *   hanging if we don't have link and try to do config cycles to
+> -        *   anything but the PHB.  Only allow talking to the PHB if this is
+> -        *   set.
+> -        *  BIG_ENDIAN - cfg_addr is a big endian register
+> -        *  BROKEN_MRM - the 440EPx/GRx chips have an errata that causes hangs on
+> -        *   the PLB4.  Effectively disable MRM commands by setting this.
+> -        */
+>  #define PPC_INDIRECT_TYPE_SET_CFG_TYPE         0x00000001
+>  #define PPC_INDIRECT_TYPE_EXT_REG              0x00000002
+>  #define PPC_INDIRECT_TYPE_SURPRESS_PRIMARY_BUS 0x00000004
+>  #define PPC_INDIRECT_TYPE_NO_PCIE_LINK         0x00000008
+>  #define PPC_INDIRECT_TYPE_BIG_ENDIAN           0x00000010
+>  #define PPC_INDIRECT_TYPE_BROKEN_MRM           0x00000020
+> -       u32 indirect_type;
+> -       /* Currently, we limit ourselves to 1 IO range and 3 mem
+> -        * ranges since the common pci_bus structure can't handle more
+> -        */
+> -       struct resource io_resource;
+> -       struct resource mem_resources[3];
+> -       int global_number;              /* PCI domain number */
+> -
+> -       resource_size_t dma_window_base_cur;
+> -       resource_size_t dma_window_size;
+> -
+> -#ifdef CONFIG_PPC64
+> -       unsigned long buid;
+> -
+> -       void *private_data;
+> -#endif /* CONFIG_PPC64 */
+> -};
+>
+>  /* These are used for config access before all the PCI probing
+>     has been done. */
+> diff --git a/include/asm-generic/pci-bridge.h b/include/asm-generic/pci-bridge.h
+> index 20db2e5..e58830e 100644
+> --- a/include/asm-generic/pci-bridge.h
+> +++ b/include/asm-generic/pci-bridge.h
+> @@ -9,6 +9,9 @@
+>
+>  #ifdef __KERNEL__
+>
+> +#include <linux/pci.h>
+> +#include <linux/list.h>
+> +
+>  enum {
+>         /* Force re-assigning all resources (ignore firmware
+>          * setup completely)
+> @@ -38,6 +41,71 @@ enum {
+>         PCI_SCAN_ALL_PCIE_DEVS  = 0x00000040,
+>  };
+>
+> +struct device_node;
+> +
+> +/*
+> + * Structure of a PCI controller (host bridge)
+> + */
+> +#if defined(CONFIG_PPC32) || defined(CONFIG_PPC64)
+> +struct pci_controller {
+> +       struct pci_bus *bus;
 
-const struct sk_buff *skb
+A lot of the information here (struct pci_bus *bus, first_/last_busno,
+busn, window information) is already in the struct pci_host_bridge,
+and I'm not sure it makes sense to duplicate it here.  I'd like to use
+that structure when it makes sense, and use the sysdata pointer, i.e.,
+the pointer to "struct pci_controller" here, for things that are truly
+arch-specific.
 
->  {
->  	int error;
->  	DEFINE_WAIT_FUNC(wait, receiver_wake_function);
-> @@ -92,7 +93,7 @@ static int wait_for_packet(struct sock *sk, int *err, long *timeo_p)
->  	if (error)
->  		goto out_err;
->  
-> -	if (!skb_queue_empty(&sk->sk_receive_queue))
-> +	if ((struct sk_buff *)sk->sk_receive_queue.prev != skb)
+> +       char is_dynamic;
+> +#ifdef CONFIG_PPC64
+> +       int node;
+> +#endif
+> +       struct device_node *dn;
+> +       struct list_head list_node;
+> +       struct device *parent;
+> +
+> +       int first_busno;
+> +       int last_busno;
+> +       int self_busno;
+> +#if defined(CONFIG_PPC64) || defined(CONFIG_PPC32)
+> +       struct resource busn;
+> +#endif
+> +
+> +       void __iomem *io_base_virt;
+> +#ifdef CONFIG_PPC64
+> +       void *io_base_alloc;
+> +#endif
+> +       resource_size_t io_base_phys;
+> +       resource_size_t pci_io_size;
+> +
+> +       /* Some machines (PReP) have a non 1:1 mapping of
+> +        * the PCI memory space in the CPU bus space
+> +        */
+> +       resource_size_t pci_mem_offset;
+> +
+> +       /* Some machines have a special region to forward the ISA
+> +        * "memory" cycles such as VGA memory regions. Left to 0
+> +        * if unsupported
+> +        */
+> +       resource_size_t isa_mem_phys;
+> +       resource_size_t isa_mem_size;
+> +
+> +       struct pci_ops *ops;
+> +       unsigned int __iomem *cfg_addr;
+> +       void __iomem *cfg_data;
+> +
+> +       u32 indirect_type;
+> +       /* Currently, we limit ourselves to 1 IO range and 3 mem
+> +        * ranges since the common pci_bus structure can't handle more
+> +        */
+> +       struct resource io_resource;
+> +       struct resource mem_resources[3];
 
-Why is the cast needed ?
+pci_host_bridge has a list for apertures, which contains this
+information (and the offset between CPU and PCI bus addresses).
 
->  		goto out;
->  
->  	/* Socket shut down? */
-> @@ -131,9 +132,9 @@ out_noerr:
->   *	__skb_recv_datagram - Receive a datagram skbuff
->   *	@sk: socket
->   *	@flags: MSG_ flags
-> - *	@off: an offset in bytes to peek skb from. Returns an offset
-> - *	      within an skb where data actually starts
->   *	@peeked: returns non-zero if this packet has been seen before
-> + *	@_off: an offset in bytes to peek skb from. Returns an offset
-> + *	       within an skb where data actually starts
->   *	@err: error code returned
->   *
->   *	Get a datagram skbuff, understands the peeking, nonblocking wakeups
-> @@ -159,9 +160,9 @@ out_noerr:
->   *	the standard around please.
->   */
->  struct sk_buff *__skb_recv_datagram(struct sock *sk, unsigned int flags,
-> -				    int *peeked, int *off, int *err)
-> +				    int *peeked, int *_off, int *err)
->  {
-> -	struct sk_buff *skb;
-> +	struct sk_buff *skb, *last;
->  	long timeo;
->  	/*
->  	 * Caller is allowed not to check sk->sk_err before skb_recv_datagram()
-> @@ -182,13 +183,16 @@ struct sk_buff *__skb_recv_datagram(struct sock *sk, unsigned int flags,
->  		 */
->  		unsigned long cpu_flags;
->  		struct sk_buff_head *queue = &sk->sk_receive_queue;
-> +		int off = *_off;
->  
->  		spin_lock_irqsave(&queue->lock, cpu_flags);
-> +		last = (struct sk_buff *)queue;
+> +       int global_number;              /* PCI domain number */
 
-This could be done before spin_lock
+The domain is a good candidate for going in the pci_host_bridge
+structure.  I'm not sure how to plumb it in there, but it is something
+that's pretty generic and I'd like to get rid of all the arch-specific
+pci_domain_nr() implementations that are really the same.
 
->  		skb_queue_walk(queue, skb) {
-> +			last = skb;
->  			*peeked = skb->peeked;
->  			if (flags & MSG_PEEK) {
-> -				if (*off >= skb->len && (skb->len || *off)) {
-> -					*off -= skb->len;
-> +				if (off >= skb->len && (skb->len || off)) {
-> +					off -= skb->len;
->  					continue;
->  				}
->  				skb->peeked = 1;
-> @@ -197,6 +201,7 @@ struct sk_buff *__skb_recv_datagram(struct sock *sk, unsigned int flags,
->  				__skb_unlink(skb, queue);
->  
->  			spin_unlock_irqrestore(&queue->lock, cpu_flags);
-> +			*_off = off;
->  			return skb;
->  		}
->  		spin_unlock_irqrestore(&queue->lock, cpu_flags);
-> @@ -206,7 +211,7 @@ struct sk_buff *__skb_recv_datagram(struct sock *sk, unsigned int flags,
->  		if (!timeo)
->  			goto no_packet;
->  
-> -	} while (!wait_for_packet(sk, err, &timeo));
-> +	} while (!wait_for_more_packets(sk, err, &timeo, last));
->  
->  	return NULL;
->  
-
-Other than that, patch seems fine.
-
-
+> +
+> +       resource_size_t dma_window_base_cur;
+> +       resource_size_t dma_window_size;
+> +
+> +#ifdef CONFIG_PPC64
+> +       unsigned long buid;
+> +
+> +       void *private_data;
+> +#endif /* CONFIG_PPC64 */
+> +};
+> +#endif
+> +
+>  #ifdef CONFIG_PCI
+>  extern unsigned int pci_flags;
+>
+> --
+> 1.7.0.4
+>
