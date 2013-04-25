@@ -1,83 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758692Ab3DYO50 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 10:57:26 -0400
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:41616 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756916Ab3DYO5Y (ORCPT
+	id S1758763Ab3DYO6Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 10:58:24 -0400
+Received: from mail-qe0-f44.google.com ([209.85.128.44]:65339 "EHLO
+	mail-qe0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757895Ab3DYO6X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 10:57:24 -0400
+	Thu, 25 Apr 2013 10:58:23 -0400
+Date: Thu, 25 Apr 2013 10:58:19 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Will Deacon <will.deacon@arm.com>
+cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "olof@lixom.net" <olof@lixom.net>
+Subject: Re: [PATCH v8 1/2] arm: introduce psci_smp_ops
+In-Reply-To: <20130425104508.GG12848@mudshark.cambridge.arm.com>
+Message-ID: <alpine.LFD.2.03.1304251054420.1258@syhkavp.arg>
+References: <alpine.DEB.2.02.1304241935010.4180@kaball.uk.xensource.com> <1366828819-10745-1-git-send-email-stefano.stabellini@eu.citrix.com> <20130425084711.GA12848@mudshark.cambridge.arm.com> <alpine.DEB.2.02.1304251104090.4180@kaball.uk.xensource.com>
+ <20130425104508.GG12848@mudshark.cambridge.arm.com>
+User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1304251034070.1185-100000@iolanthe.rowland.org>
-References: <1366858352-25422-1-git-send-email-jwerner@chromium.org>
-	<Pine.LNX.4.44L0.1304251034070.1185-100000@iolanthe.rowland.org>
-Date: Thu, 25 Apr 2013 07:57:23 -0700
-X-Google-Sender-Auth: XiW4_AjcyxKEiu1DtZEW7VIodGM
-Message-ID: <CAODwPW-=g9fckOU7q468MoyXT=ib=hagNr2SSxY71hjBqRjCoQ@mail.gmail.com>
-Subject: Re: [PATCH v2] usb: ehci: Only sleep for post-resume handover if
- devices use persist
-From: Julius Werner <jwerner@chromium.org>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, Vincent Palatin <vpalatin@chromium.org>,
-        Sameer Nanda <snanda@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 25, 2013 at 7:38 AM, Alan Stern <stern@rowland.harvard.edu> wrote:
-> On Wed, 24 Apr 2013, Julius Werner wrote:
->
->> The current EHCI code sleeps a flat 110ms in the resume path if there
->> was a USB 1.1 device connected to its companion controller during
->> suspend, waiting for the device to reappear and reset so that it can be
->> handed back to the companion. This is necessary if the device uses
->> persist, so that the companion controller can actually see it during its
->> own resume path.
->>
->> However, if the device doesn't use persist, this is entirely
->> unnecessary. We might just as well ignore it and have the normal device
->> detection/reset/handoff code handle it asynchronously when it eventually
->> shows up. As USB 1.1 devices are almost exclusively HIDs these days (for
->> which persist has no value), this can allow distros to shave another
->> tenth of a second off their resume time.
->
-> The patch description needs to mention the new for_each_usb_device()
-> core routine.
->
->> --- a/drivers/usb/host/ehci-hub.c
->> +++ b/drivers/usb/host/ehci-hub.c
->> @@ -42,6 +42,13 @@ static int ehci_hub_control(
->>       u16             wLength
->>  );
->>
->> +
->
-> Unnecessary blank line added.
+On Thu, 25 Apr 2013, Will Deacon wrote:
 
-Sorry, will fix that.
+> On Thu, Apr 25, 2013 at 11:12:54AM +0100, Stefano Stabellini wrote:
+> > On Thu, 25 Apr 2013, Will Deacon wrote:
+> > > > +/*
+> > > > + * cpu_suspend   Suspend the execution on a CPU
+> > > > + * @state        we don't currently describe affinity levels, so just pass 0.
+> > > > + * @entry_point  the first instruction to be executed on return
+> > > > + * returns 0  success, < 0 on failure
+> > > > + *
+> > > > + * cpu_off       Power down a CPU
+> > > > + * @state        we don't currently describe affinity levels, so just pass 0.
+> > > > + * no return on successful call
+> > > > + *
+> > > > + * cpu_on        Power up a CPU
+> > > > + * @cpuid        cpuid of target CPU, as from MPIDR
+> > > > + * @entry_point  the first instruction to be executed on return
+> > > > + * returns 0  success, < 0 on failure
+> > > > + *
+> > > > + * migrate       Migrate the context to a different CPU
+> > > > + * @cpuid        cpuid of target CPU, as from MPIDR
+> > > > + * returns 0  success, < 0 on failure
+> > > > + *
+> > > > + */
+> > > 
+> > > Can you move these comments into psci-smp.c please? They're really specific
+> > > to the implementation there, and if we put them in a header we're lying to
+> > > ourselves about the parameters actually described by the PSCI specification.
+> > 
+> > You have a good point about the PSCI spec.
+> > 
+> > However from the Linux POV these comments should regard the functions
+> > exported by psci_operations, not the firmware interface, this is why I
+> > think it makes sense to keep them in psci.h.
+> > What we are saying is for example that psci_operations.cpu_on returns 0
+> > on success and < 0 on failure, and it takes a cpuid and an entry point
+> > as parameters. We are not saying anything about the firmware interface.
+> 
+> I disagree. You're explicitly stating that we pass the `cpuid of target CPU,
+> as from MPIDR'. That's simply not true -- the firmware could choose any
+> numbering scheme to identify the CPUs. For KVM and Xen, it *is* the mpidr,
+> which is why psci-smp.c works at all, but that's where the comment belongs,
+> not in this header file.
 
->> +static int persist_enabled_on_companion(struct usb_device *udev, void *unused)
->> +{
->
->
->> --- a/include/linux/usb.h
->> +++ b/include/linux/usb.h
->> @@ -719,6 +719,7 @@ const struct usb_device_id *usb_match_id(struct usb_interface *interface,
->>  extern int usb_match_one_id(struct usb_interface *interface,
->>                           const struct usb_device_id *id);
->>
->> +extern int usb_for_each_dev(void *data, int (*fn)(struct usb_device *, void *));
->
-> Line is too long.
+At some point, the _kernel_ API for interfacing with the firmware's PSCI 
+will have to ensure uniformity somehow.  The PSCI interface code could 
+translate the passed MPIDR into whatever the firmware decided to use for 
+identifying CPUs if needed, keeping this issue localized.
 
-The limit is 80 (inclusive), right? Without the diff's leading '+' I
-count exactly that...
 
-> Aside from these minor issues, the patch is fine.  Fix them and you can
-> add
->
-> Acked-by: Alan Stern <stern@rowland.harvard.edu>
->
+Nicolas
