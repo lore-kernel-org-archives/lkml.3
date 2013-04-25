@@ -1,60 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932509Ab3DYNso (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 09:48:44 -0400
-Received: from smtp.eu.citrix.com ([46.33.159.39]:51274 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932267Ab3DYNsl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 09:48:41 -0400
-X-IronPort-AV: E=Sophos;i="4.87,551,1363132800"; 
-   d="scan'208";a="3934454"
-Message-ID: <1366897718.20256.546.camel@zakaz.uk.xensource.com>
-Subject: Re: [PATCH v4 1/7] xen/arm: actually pass a non-NULL percpu pointer
- to request_percpu_irq
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>
-Date: Thu, 25 Apr 2013 14:48:38 +0100
-In-Reply-To: <1366831695-13214-1-git-send-email-stefano.stabellini@eu.citrix.com>
-References: <alpine.DEB.2.02.1304242012590.4180@kaball.uk.xensource.com>
-	 <1366831695-13214-1-git-send-email-stefano.stabellini@eu.citrix.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
+	id S932438Ab3DYNtZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 09:49:25 -0400
+Received: from fieldses.org ([174.143.236.118]:52548 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932257Ab3DYNtY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Apr 2013 09:49:24 -0400
+Date: Thu, 25 Apr 2013 09:49:18 -0400
+From: "bfields@fieldses.org" <bfields@fieldses.org>
+To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+Cc: David Wysochanski <dwysocha@redhat.com>,
+        Dave Chiluk <chiluk@canonical.com>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] NFSv4: Use exponential backoff delay for NFS4_ERRDELAY
+Message-ID: <20130425134918.GC31851@fieldses.org>
+References: <1366836949-18465-1-git-send-email-chiluk@canonical.com>
+ <1366838926.22397.25.camel@leira.trondhjem.org>
+ <5178549A.7010402@canonical.com>
+ <1366842905.22397.49.camel@leira.trondhjem.org>
+ <1366892374.26249.294.camel@localhost.localdomain>
+ <20130425132907.GB31851@fieldses.org>
+ <1366896654.4719.18.camel@leira.trondhjem.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1366896654.4719.18.camel@leira.trondhjem.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-04-24 at 20:28 +0100, Stefano Stabellini wrote:
-> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-
-Reviewed-by: Ian Campbell <ian.camjpbell@citrix.com>
-
-> CC: stable@vger.kernel.org
-> ---
->  arch/arm/xen/enlighten.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+On Thu, Apr 25, 2013 at 01:30:58PM +0000, Myklebust, Trond wrote:
+> On Thu, 2013-04-25 at 09:29 -0400, bfields@fieldses.org wrote:
 > 
-> diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
-> index 8dc0605..99ce189 100644
-> --- a/arch/arm/xen/enlighten.c
-> +++ b/arch/arm/xen/enlighten.c
-> @@ -239,7 +239,7 @@ static int __init xen_init_events(void)
->  	xen_init_IRQ();
->  
->  	if (request_percpu_irq(xen_events_irq, xen_arm_callback,
-> -			"events", xen_vcpu)) {
-> +			"events", &xen_vcpu)) {
->  		pr_err("Error requesting IRQ %d\n", xen_events_irq);
->  		return -EINVAL;
->  	}
+> > My position is that we simply have no idea what order of magnitude even
+> > delay should be.  And that in such a situation exponential backoff such
+> > as implemented in the synchronous case seems the reasonable default as
+> > it guarantees at worst doubling the delay while still bounding the
+> > long-term average frequency of retries.
+> 
+> So we start with a 15 second delay, and then go to 60 seconds?
 
+I agree that a server should normally be doing the wait on its own if
+the wait would be on the order of an rpc round trip.
 
+So I'd be inclined to start with a delay that was an order of magnitude
+or two more than a round trip.
+
+And I'd expect NFS isn't common on networks with 1-second latencies.
+
+So the 1/10 second we're using in the synchronous case sounds closer to
+the right ballpark to me.
+
+--b.
