@@ -1,97 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758704Ab3DYNyn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 09:54:43 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:38040 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756171Ab3DYNym (ORCPT
+	id S1758708Ab3DYN6K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 09:58:10 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:41041 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756519Ab3DYN6I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 09:54:42 -0400
+	Thu, 25 Apr 2013 09:58:08 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAG6tG3zcOdkA5QOBhaDzmMvcFSCwbfRAyKuRwXdn6ipOJhTVZQ@mail.gmail.com>
-References: <CAJsYZ5kk=J_Sc7w5dbMbkWWv8dXEU0ojKjEKNqH=Q6Tf2f7mQg@mail.gmail.com>
-	<20130422142218.GA26760@mwanda>
-	<CAG6tG3xc3RHD7sZXaEbg1vLRhFj+6d1wY=us4BfxBfi5y0o4zg@mail.gmail.com>
-	<CAJsYZ5nQg9g73r5yLicq6gAGbKEXVAFqtF2av=heeNtrNSPSWg@mail.gmail.com>
-	<CAG6tG3zcOdkA5QOBhaDzmMvcFSCwbfRAyKuRwXdn6ipOJhTVZQ@mail.gmail.com>
-Date: Thu, 25 Apr 2013 19:24:41 +0530
-Message-ID: <CAJsYZ5mpukCM6TpFb27tJt6G7ZufugEP4kx8wzGxhRwAO46cCw@mail.gmail.com>
-Subject: Re: [BUG] staging: android: ashmem: Deadlock during ashmem_shrink
-From: Shankar Brahadeeswaran <shankoo77@gmail.com>
-To: Robert Love <rlove@google.com>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Bjorn Bringert <bringert@google.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, devel@driverdev.osuosl.org,
-        Hugh Dickins <hughd@google.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Anjana V Kumar <anjanavk12@gmail.com>
+In-Reply-To: <51780EDA.3000003@sgi.com>
+References: <CAG82n_ni9ZAThGbMfqqObnz7QyQpH18G4hYBLt+BdeRHPE6EBg@mail.gmail.com>
+ <CAErSpo5VaiuH+WT4RdM9yU9AHMkUKzATMiNzhixRU04_aZusBg@mail.gmail.com> <51780EDA.3000003@sgi.com>
+From: Bian LuLu <helianthus.lu@gmail.com>
+Date: Thu, 25 Apr 2013 21:57:44 +0800
+Message-ID: <CAG82n_kBYQpCRDmY7ghivXY60hBMF_5HHZUAT1d-xWD9OZvdrg@mail.gmail.com>
+Subject: Re: [RFC] The meaning of local_cpulist and local_cpus
+To: Mike Travis <travis@sgi.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Robert,
-Thanks for the feedback.
+Thankyou .
+But I still can not understand what is the meaning of cuplist.
+my linux version is ubuntu 12.04, and
+my system:/$ cat /sys/devices/pci0000:00/0000:00:1a.0/local_cpulist
+ the result is '0-7',
 
-> This doesn't look insurmountable. It isn't necessary AFAICT to hold
-> ashmem_mutex across shmem_file_setup.
+I just don't konw what are they represent .Could  you give me more
+detailed information about local_cpulist and local_cpus,and their
+relations.
+thanks in advance :)
 
-I thought it may not be a good idea to do so and hence thought its
-difficult to fix.
-Dropping the lock in-between mmap may not be any issue if the user land code
-follows a given sequence. But assuming that the following sequence of event
-happens, it would lead to other races.
-
-Process P1                                          Process P2
---------------                                           --------------
-Creates ashmem region                       .....
-
-Shares the fd to P2 via binder             Gets the fd
-
-Does an mmap                                     Does an mmap
-
-Releases the mutex before                  Procees with ashmem_mmap
-since mutex is
-shmem_file_setup and sleeps             available, checks for a
-asma->file, still NUL
-within shmem_file_setup                      so this also calls
-shmem_file_setup.
-
-The expected behavior is, one of them does the shmem_file_setup, puts
-it in asma->file
-The other process would just do get_file. With the original code
-(without dropping the
-mutex in-between) this would have been the behavior.
-So IMHO dropping the lock in between could lead to other race conditions.
-
-Also, there are other places in the code where ashmem_mutex is held and memory
-allocation functions are called, ex:- range_alloc, calls kmem_cache_zalloc
-
-Since ashmem_shrink holds the ashmem_mutex, any where from ashmem driver
-if  a memory allocation function is called with the ashmem_mutex held
-&&
-if there is a low memory condition that leads to shrinkers being called
-we'll hit the deadlock.
-
-I'm trying to see if the ashmem_shrink should really hold the ashmem_mutex,
-but looks like its necessary.
-
-Warm Regards,
-Shankar
-
-On Tue, Apr 23, 2013 at 10:54 PM, Robert Love <rlove@google.com> wrote:
-> On Tue, Apr 23, 2013 at 12:20 PM, Shankar Brahadeeswaran
-> <shankoo77@gmail.com> wrote:
+On Thu, Apr 25, 2013 at 12:56 AM, Mike Travis <travis@sgi.com> wrote:
 >
->> I'm unable to think of a straight forward way to fix this. If you have
->> any suggestions please provide the same.
->> If we are unable to solve this too with minor mods, as suggested by
->> Dan we have to re-look at the locking in this driver.
 >
-> This doesn't look insurmountable. It isn't necessary AFAICT to hold
-> ashmem_mutex across shmem_file_setup.
+> On 4/24/2013 9:48 AM, Bjorn Helgaas wrote:
+>> [+cc linux-pci, Mike]
+>>
+>> On Wed, Apr 24, 2013 at 4:06 AM, Bian LuLu <helianthus.lu@gmail.com> wrote:
+>>> Hi all,
+>>>
+>>> Recently, i read some codes of PCI portions. I think
+>>> local_cpulist is a list about one kind of CPU and
+>>> local_cpus is a mask of CPU. But i am not sure when
+>>> and how i should use these two parameters.
+>>>
+>>> See http://lxr.linux.no/linux+v3.5.4/drivers/pci/pci-sysfs.c#L390 for
+>>> details.
+>>>
+>>> Would anyone please give me some suggestions?
+>>> Thanks in advance ;-)
+>>
+>> I don't know off-hand, but maybe Mike or somebody on linux-pci does.
+>> It looks like Mike added local_cpulist with 39106dcf85.
+>>
 >
-> Patch attached (untested).
+> It primarily comes into play when you have a large # of cpus.
+I can not understand the symbol of '#' ,what is the meaning of it?
+> Here's the difference on a system that has 1024 cpu threads:
 >
->            Robert
+> harp31-sys:/sys/devices/system/node/node20 # cat cpulist
+> 160-167,672-679
+> harp31-sys:/sys/devices/system/node/node20 # cat cpumap
+> 00000000,00000000,00000000,00000000,00000000,00000000,00000000,
+> 00000000,00000000,00000000,000000ff,00000000,00000000,00000000,
+> 00000000,00000000,00000000,00000000,00000000,00000000,00000000,
+> 00000000,00000000,00000000,00000000,00000000,000000ff,00000000,
+> 00000000,00000000,00000000,00000000
+>
+> Which is easier to interpret?  :)
+>
+> But there are some older user side utilities that still
+> use the mask format.
