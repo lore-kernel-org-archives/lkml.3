@@ -1,98 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758694Ab3DYAyI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 20:54:08 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:38068 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758211Ab3DYAyF (ORCPT
+	id S1758696Ab3DYA5e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 20:57:34 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:60151 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758211Ab3DYA5d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 20:54:05 -0400
-Date: Thu, 25 Apr 2013 09:54:02 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
-Cc: linux-sh@vger.kernel.org, linux-leds@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Magnus Damm <magnus.damm@gmail.com>, Paul Mundt <lethal@linux-sh.org>
-Subject: Re: [PATCH 0/9] TPU PWM support
-Message-ID: <20130425005402.GA21277@verge.net.au>
-References: <1366761969-16759-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
- <20130424074044.GD847@verge.net.au>
+	Wed, 24 Apr 2013 20:57:33 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <51787F55.80403@jp.fujitsu.com>
+Date: Thu, 25 Apr 2013 09:56:53 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130424074044.GD847@verge.net.au>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: <hannes@cmpxchg.org>, <toshi.kani@hp.com>, <linuxram@us.ibm.com>,
+        <rientjes@google.com>, <linux-kernel@vger.kernel.org>,
+        <linux-mm@kvack.org>
+Subject: Re: [Resend][Bug fix PATCH v5] Reusing a resource structure allocated
+ by bootmem
+References: <5175E5E8.3010003@jp.fujitsu.com> <51771E3D.6060203@jp.fujitsu.com> <20130424133719.94c7d301df844c4bcc987a53@linux-foundation.org>
+In-Reply-To: <20130424133719.94c7d301df844c4bcc987a53@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 24, 2013 at 04:40:44PM +0900, Simon Horman wrote:
-> On Wed, Apr 24, 2013 at 02:06:00AM +0200, Laurent Pinchart wrote:
-> > Hello,
-> > 
-> > This patch set adds support for the TPU PWM unit found in the sh73a0 and
-> > r8a7740 SoCs. It deprecates and removes the leds-renesas-tpu driver in favor
-> > of a combination of leds-pwm and pwm-rmob.
-> > 
-> > I've tested the code on Armadillo only as I don't have access to a kota2
-> > board. This is why I've added backlight support to Armadillo as part of this
-> > set.
-> > 
-> > As an added bonus patches 7/9 and 8/9 remove function GPIOs support from the
-> > sh73a0 platform. Along with the other PFC-related patches recently posted on
-> > the list, mach-shmobile is now free of function GPIOs. Any volunteer to
-> > migrate arch/sh ? :-)
-> > 
-> > The patches are based on a merge of "[PATCH 00/37] Fully migrate r8a7740 to
-> > pinctrl", "[PATCH 0/4] sh73a0: Expose the PFC-controller SDHI power gate as a
-> > regulator" and "[PATCH] sh-pfc: r8a7740: Add bias (pull-up/down) pinconf
-> > support".
-> > 
-> > Laurent Pinchart (9):
-> >   sh-pfc: sh73a0: Add TPU pin groups and functions
-> >   sh-pfc: r8a7740: Add TPU pin groups and functions
-> >   pwm: Add Renesas Mobile TPU PWM driver
-> >   ARM: mach-shmobile: clock-r8a7740: add TPU PWM support
-> >   ARM: mach-shmobile: armadillo800eva: Add backlight support
-> >   ARM: mach-shmobile: kota2: Use leds-pwm + pwm-rmob
-> >   sh-pfc: sh73a0: Remove function GPIOs
-> >   ARM: shmobile: sh73a0: Remove all GPIOs
-> >   leds: Remove leds-renesas-tpu driver
-> > 
-> >  arch/arm/mach-shmobile/board-armadillo800eva.c |  51 ++-
-> >  arch/arm/mach-shmobile/board-kota2.c           | 178 +++++---
-> >  arch/arm/mach-shmobile/clock-r8a7740.c         |   4 +-
-> >  arch/arm/mach-shmobile/clock-sh73a0.c          |   8 +-
-> >  arch/arm/mach-shmobile/include/mach/sh73a0.h   | 373 +--------------
-> >  drivers/leds/Kconfig                           |  12 -
-> >  drivers/leds/Makefile                          |   1 -
-> >  drivers/leds/leds-renesas-tpu.c                | 336 --------------
-> >  drivers/pinctrl/sh-pfc/pfc-r8a7740.c           |  50 ++
-> >  drivers/pinctrl/sh-pfc/pfc-sh73a0.c            | 608 +++++++++----------------
-> >  drivers/pwm/Kconfig                            |   7 +
-> >  drivers/pwm/Makefile                           |   1 +
-> >  drivers/pwm/pwm-rmob.c                         | 462 +++++++++++++++++++
-> >  include/linux/platform_data/leds-renesas-tpu.h |  14 -
-> >  include/linux/platform_data/pwm-rmob.h         |  18 +
-> >  15 files changed, 913 insertions(+), 1210 deletions(-)
-> >  delete mode 100644 drivers/leds/leds-renesas-tpu.c
-> >  create mode 100644 drivers/pwm/pwm-rmob.c
-> >  delete mode 100644 include/linux/platform_data/leds-renesas-tpu.h
-> >  create mode 100644 include/linux/platform_data/pwm-rmob.h
-> 
-> I have rebased the pinmux branch on renesas-boards3-for-v3.10 to
-> supply dependencies. That tag includes the renesas-pinmux2-for-v3.10
-> tag which the pinmux branch was previously based on.
-> 
-> I have applied this entire series on the resulting pinmux branch.
-> 
-> I plan to push this when I tag renesas-next-20130424 later today.
-> If not I will tag and push renesas-next-20130425 tomorrow.   
+2013/04/25 5:37, Andrew Morton wrote:
+> On Wed, 24 Apr 2013 08:50:21 +0900 Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com> wrote:
+>
+>> When hot removing memory presented at boot time, following messages are shown:
+>>
+>> [  296.867031] ------------[ cut here ]------------
+>> [  296.922273] kernel BUG at mm/slub.c:3409!
+>>
+>> ...
+>>
+>> The reason why the messages are shown is to release a resource structure,
+>> allocated by bootmem, by kfree(). So when we release a resource structure,
+>> we should check whether it is allocated by bootmem or not.
+>>
+>> But even if we know a resource structure is allocated by bootmem, we cannot
+>> release it since SLxB cannot treat it. So for reusing a resource structure,
+>> this patch remembers it by using bootmem_resource as follows:
+>>
+>> When releasing a resource structure by free_resource(), free_resource() checks
+>> whether the resource structure is allocated by bootmem or not. If it is
+>> allocated by bootmem, free_resource() adds it to bootmem_resource. If it is
+>> not allocated by bootmem, free_resource() release it by kfree().
+>>
+>> And when getting a new resource structure by get_resource(), get_resource()
+>> checks whether bootmem_resource has released resource structures or not. If
+>> there is a released resource structure, get_resource() returns it. If there is
+>> not a releaed resource structure, get_resource() returns new resource structure
+>> allocated by kzalloc().
+>>
+>> ...
+>>
+>
+> Looks good to me.
+>
+>> --- a/kernel/resource.c
+>> +++ b/kernel/resource.c
+>> @@ -21,6 +21,7 @@
+>>   #include <linux/seq_file.h>
+>>   #include <linux/device.h>
+>>   #include <linux/pfn.h>
+>> +#include <linux/mm.h>
+>>   #include <asm/io.h>
+>>
+>>
+>> @@ -50,6 +51,14 @@ struct resource_constraint {
+>>
+>>   static DEFINE_RWLOCK(resource_lock);
+>>
+>> +/*
+>> + * For memory hotplug, there is no way to free resource entries allocated
+>> + * by boot mem after the system is up. So for reusing the resource entry
+>> + * we need to remember the resource.
+>> + */
+>> +static struct resource *bootmem_resource_free;
+>> +static DEFINE_SPINLOCK(bootmem_resource_lock);
+>> +
+>>   static void *r_next(struct seq_file *m, void *v, loff_t *pos)
+>>   {
+>>   	struct resource *p = v;
+>> @@ -151,6 +160,40 @@ __initcall(ioresources_init);
+>>
+>>   #endif /* CONFIG_PROC_FS */
+>>
+>> +static void free_resource(struct resource *res)
+>> +{
+>> +	if (!res)
+>> +		return;
+>> +
+>> +	if (!PageSlab(virt_to_head_page(res))) {
+>
 
-As there has been subsequent discussion and a v2 of this series posted, and
-I have dropped the "[PATCH 0/4] sh73a0: Expose the PFC-controller SDHI
-power gate as a regulator" series for similar reasons; I have dropped these
-patches for now.
+> Did you consider using a bit in resource.flags?
+
+I considered to add a new flag such as IORESOURCE_BOOTMEM first.
+But even if we don't add the new flag, we can check whether
+struct resource is managed by SLxB or not. So I selected this way.
+
+Thanks,
+Yasuaki Ishimatsu
+
+> There appear to be
+> four free ones left.  The VM trickery will work OK I guess, but isn't
+> very "nice".
+>
+>> +		spin_lock(&bootmem_resource_lock);
+>> +		res->sibling = bootmem_resource_free;
+>> +		bootmem_resource_free = res;
+>> +		spin_unlock(&bootmem_resource_lock);
+>> +	} else {
+>> +		kfree(res);
+>> +	}
+>> +}
+>> +
+>> +static struct resource *get_resource(gfp_t flags)
+>> +{
+>> +	struct resource *res = NULL;
+>> +
+>> +	spin_lock(&bootmem_resource_lock);
+>> +	if (bootmem_resource_free) {
+>> +		res = bootmem_resource_free;
+>> +		bootmem_resource_free = res->sibling;
+>> +	}
+>> +	spin_unlock(&bootmem_resource_lock);
+>> +
+>> +	if (res)
+>> +		memset(res, 0, sizeof(struct resource));
+>> +	else
+>> +		res = kzalloc(sizeof(struct resource), flags);
+>> +
+>> +	return res;
+>> +}
+>
+
+> I think I'll rename this to alloc_resource().  In Linux "get" often
+> (but not always) means "take a reference on".  So "get" pairs with
+> "put" and "alloc" pairs with "free".
+
+
+
 
