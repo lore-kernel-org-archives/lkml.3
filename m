@@ -1,227 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758709Ab3DYDzT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 23:55:19 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:37741 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758440Ab3DYDzQ (ORCPT
+	id S1758666Ab3DYD5J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 23:57:09 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:49745 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758268Ab3DYD5G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 23:55:16 -0400
-Date: Thu, 25 Apr 2013 11:55:03 +0800
-From: Ram Pai <linuxram@us.ibm.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Yinghai Lu <yinghai@kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 03/27] PCI: pci resource iterator
-Message-ID: <20130425035503.GA15749@ram.oc3035372033.ibm.com>
-Reply-To: Ram Pai <linuxram@us.ibm.com>
-References: <1363217302-14383-1-git-send-email-yinghai@kernel.org>
- <1363217302-14383-4-git-send-email-yinghai@kernel.org>
- <CAErSpo4VzBZ=fAzPm1yWEs4+09_D1=rysMf6tGgnqpVEKytSzQ@mail.gmail.com>
- <20130409045113.GA7251@ram.oc3035372033.ibm.com>
- <CAErSpo7TReTzz289EMuh5gGKjskCLmACNT99o1s-QCzRHLGaXg@mail.gmail.com>
+	Wed, 24 Apr 2013 23:57:06 -0400
+Date: Wed, 24 Apr 2013 20:57:04 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Lingzhu Xiang <lxiang@redhat.com>
+cc: linux-mm <linux-mm@kvack.org>, Johannes Weiner <hannes@cmpxchg.org>,
+        cgroups@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: BUG in __mem_cgroup_uncharge_common
+In-Reply-To: <517885C0.70701@redhat.com>
+Message-ID: <alpine.LNX.2.00.1304242050590.16327@eggly.anvils>
+References: <517885C0.70701@redhat.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAErSpo7TReTzz289EMuh5gGKjskCLmACNT99o1s-QCzRHLGaXg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13042503-7606-0000-0000-00000AD1BC6A
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 10, 2013 at 09:22:48AM -0600, Bjorn Helgaas wrote:
-> On Mon, Apr 8, 2013 at 10:51 PM, Ram Pai <linuxram@us.ibm.com> wrote:
-> > On Thu, Apr 04, 2013 at 04:18:01PM -0600, Bjorn Helgaas wrote:
-> >> On Wed, Mar 13, 2013 at 5:27 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> >> > From: Ram Pai <linuxram@us.ibm.com>
-> >> >
-> >> > Currently pci_dev structure holds an array of 17 PCI resources; six base
-> >> > BARs, one ROM BAR, four BRIDGE BARs, six sriov BARs.  This is wasteful.
-> >> > A bridge device just needs the 4 bridge resources. A non-bridge device
-> >> > just needs the six base resources and one ROM resource. The sriov
-> >> > resources are needed only if the device has SRIOV capability.
-> >> >
-> >> > The pci_dev structure needs to be re-organized to avoid unnecessary
-> >> > bloating.  However too much code outside the pci-bus driver, assumes the
-> >> > internal details of the pci_dev structure, thus making it hard to
-> >> > re-organize the datastructure.
-> >> >
-> >> > As a first step this patch provides generic methods to access the
-> >> > resource structure of the pci_dev.
-> >> >
-> >> > Finally we can re-organize the resource structure in the pci_dev
-> >> > structure and correspondingly update the methods.
-> >> >
-> >> > -v2: Consolidated iterator interface as per Bjorn's suggestion.
-> >> > -v3: Add the idx back - Yinghai Lu
-> >> > -v7: Change to use bitmap for searching - Yinghai Lu
-> >> > -v8: Fix acpiphp module compiling error that is found by
-> >> >         Steven Newbury <steve@snewbury.org.uk> - Yinghai Lu
-> >> >
-> >> > Signed-off-by: Ram Pai <linuxram@us.ibm.com>
-> >> > Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> >> > ---
-> >> >  drivers/pci/probe.c |   48 ++++++++++++++++++++++++++++++++++++++++++++++++
-> >> >  include/linux/pci.h |   24 ++++++++++++++++++++++++
-> >> >  2 files changed, 72 insertions(+)
-> >> >
-> >> > diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-> >> > index 1df75f7..ac751a6 100644
-> >> > --- a/drivers/pci/probe.c
-> >> > +++ b/drivers/pci/probe.c
-> >> > @@ -123,6 +123,54 @@ int pci_dev_resource_idx(struct pci_dev *dev, struct resource *res)
-> >> >         return -1;
-> >> >  }
-> >> >
-> >> > +static void __init_res_idx_mask(unsigned long *mask, int flag)
-> >> > +{
-> >> > +       bitmap_zero(mask, PCI_NUM_RESOURCES);
-> >> > +       if (flag & PCI_STD_RES)
-> >> > +               bitmap_set(mask, PCI_STD_RESOURCES,
-> >> > +                       PCI_STD_RESOURCE_END - PCI_STD_RESOURCES + 1);
-> >> > +       if (flag & PCI_ROM_RES)
-> >> > +               bitmap_set(mask, PCI_ROM_RESOURCE, 1);
-> >> > +#ifdef CONFIG_PCI_IOV
-> >> > +       if (flag & PCI_IOV_RES)
-> >> > +               bitmap_set(mask, PCI_IOV_RESOURCES,
-> >> > +                       PCI_IOV_RESOURCE_END - PCI_IOV_RESOURCES + 1);
-> >> > +#endif
-> >> > +       if (flag & PCI_BRIDGE_RES)
-> >> > +               bitmap_set(mask, PCI_BRIDGE_RESOURCES,
-> >> > +                       PCI_BRIDGE_RESOURCE_END - PCI_BRIDGE_RESOURCES + 1);
-> >> > +}
-> >> > +
-> >> > +static DECLARE_BITMAP(res_idx_mask[1 << PCI_RES_BLOCK_NUM], PCI_NUM_RESOURCES);
-> >> > +static int __init pci_res_idx_mask_init(void)
-> >> > +{
-> >> > +       int i;
-> >> > +
-> >> > +       for (i = 0; i < (1 << PCI_RES_BLOCK_NUM); i++)
-> >> > +               __init_res_idx_mask(res_idx_mask[i], i);
-> >> > +
-> >> > +       return 0;
-> >> > +}
-> >> > +postcore_initcall(pci_res_idx_mask_init);
-> >> > +
-> >> > +static inline unsigned long *get_res_idx_mask(int flag)
-> >> > +{
-> >> > +       return res_idx_mask[flag & ((1 << PCI_RES_BLOCK_NUM) - 1)];
-> >> > +}
-> >> > +
-> >> > +int pci_next_resource_idx(int i, int flag)
-> >> > +{
-> >> > +       i++;
-> >> > +       if (i < PCI_NUM_RESOURCES)
-> >> > +               i = find_next_bit(get_res_idx_mask(flag), PCI_NUM_RESOURCES, i);
-> >> > +
-> >> > +       if (i < PCI_NUM_RESOURCES)
-> >> > +               return i;
-> >> > +
-> >> > +       return -1;
-> >> > +}
-> >> > +EXPORT_SYMBOL(pci_next_resource_idx);
-> >> > +
-> >> >  static u64 pci_size(u64 base, u64 maxbase, u64 mask)
-> >> >  {
-> >> >         u64 size = mask & maxbase;      /* Find the significant bits */
-> >> > diff --git a/include/linux/pci.h b/include/linux/pci.h
-> >> > index aefff8b..127a856 100644
-> >> > --- a/include/linux/pci.h
-> >> > +++ b/include/linux/pci.h
-> >> > @@ -341,6 +341,30 @@ struct pci_dev {
-> >> >  struct resource *pci_dev_resource_n(struct pci_dev *dev, int n);
-> >> >  int pci_dev_resource_idx(struct pci_dev *dev, struct resource *res);
-> >> >
-> >> > +#define PCI_STD_RES            (1<<0)
-> >> > +#define PCI_ROM_RES            (1<<1)
-> >> > +#define PCI_IOV_RES            (1<<2)
-> >> > +#define PCI_BRIDGE_RES         (1<<3)
-> >> > +#define PCI_RES_BLOCK_NUM      4
-> >> > +
-> >> > +#define PCI_ALL_RES            (PCI_STD_RES | PCI_ROM_RES | PCI_BRIDGE_RES | PCI_IOV_RES)
-> >> > +#define PCI_NOSTD_RES          (PCI_ALL_RES & ~PCI_STD_RES)
-> >> > +#define PCI_NOIOV_RES          (PCI_ALL_RES & ~PCI_IOV_RES)
-> >> > +#define PCI_NOROM_RES          (PCI_ALL_RES & ~PCI_ROM_RES)
-> >> > +#define PCI_NOBRIDGE_RES       (PCI_ALL_RES & ~PCI_BRIDGE_RES)
-> >> > +#define PCI_STD_ROM_RES                (PCI_STD_RES | PCI_ROM_RES)
-> >> > +#define PCI_STD_IOV_RES                (PCI_STD_RES | PCI_IOV_RES)
-> >> > +#define PCI_STD_ROM_IOV_RES    (PCI_STD_RES | PCI_ROM_RES | PCI_IOV_RES)
-> >> > +
-> >> > +int pci_next_resource_idx(int i, int flag);
-> >> > +
-> >> > +#define for_each_pci_resource(dev, res, i, flag)       \
-> >> > +       for (i = pci_next_resource_idx(-1, flag),       \
-> >> > +               res = pci_dev_resource_n(dev, i);       \
-> >> > +            res;                                       \
-> >> > +            i = pci_next_resource_idx(i, flag),        \
-> >> > +               res = pci_dev_resource_n(dev, i))
-> >> > +
-> >> >  static inline struct pci_dev *pci_physfn(struct pci_dev *dev)
-> >> >  {
-> >> >  #ifdef CONFIG_PCI_IOV
-> >>
-> >> I think this turned out to be a disaster, with all the bitmaps and
-> >> helper functions.  Filtering in the bodies of the
-> >> for_each_pci_resource() users has *got* to be better.  That probably
-> >> requires a wrapper struct around the struct resource.  Or possibly
-> >> having a wrapper struct with a "type" or "flags" field would make
-> >> filtering in for_each_pci_resources() itself cleaner to implement.
-> >
-> > I agree. There are two cleanups needed.
-> >
-> > a) pci drivers should not assume the internal organization of the
-> >         resources in the struct pci_dev.
-> 
-> Do you mean that drivers should not use "pci_dev->resource[i]"?  If
-> so, I agree that it would be great if we had an accessor for BARs, but
-> it seems impractical to change all the drivers that use the current
-> style.
+On Thu, 25 Apr 2013, Lingzhu Xiang wrote:
+> Hit VM_BUG_ON(PageSwapCache(page)) in mm/memcontrol.c twice with 3.9-rc8
+> and 3.7.6 during LTP run on ppc64 machines.
 
-Sorry for the delay. Was vacationing.  I mean, we cannot let drivers
-assume anything about the how the resources are organized.
+Thank you for reporting: yes, Zhouping Liu reported the same on s390x,
+it's under discussion in another thread, [v3.9-rc8]: kernel BUG at
+mm/memcontrol.c:3994! (was: Re: [BUG][s390x] mm: system crashed)
 
-The only thing the drivers should know is that there are 6 normal
-resources, 4 bridge resources, 1 ROM resource and 6 iov resources.
-
-Currently the drivers assume that ROM resource follows normal resources
-followed by IOV followed by bridge. These assumptions are making it hard
-to re-organize the layout of resources in struct pci_dev.
-
-I think we need to expose the following interfaces to drivers.
-
-a) return the nth normal resource
-b) return the nth iov resource
-c) return the rom resource
-d) return the nth bridge resource
-e) return the type and index of a given resource, where 'index' is
-	the index w.r.t to that resource type; not w.r.t to all
-	the resources of the device.
-f) ability to loop through all resources of the given type/types.
-
-Everything else needs to be hidden.
+Hugh
 
 > 
-> The number of places that actually look at *non-BAR* pci_dev
-> resources, e.g., the places that look at bridge windows and SR-IOV
-> BARs, should be pretty small, and it seems reasonable to change them.
-
-Unfortunately, the bridge windows and SRIOV windows are currently 
-inter-twined with normal windows. Just cleaning up that code still
-leaves some ugly hacks around.
-
 > 
-> > b) The type of a resource has to be determined based on some
-> >    information internal to the resource; possibly a flag,
-> >    instead of the relative position of the resource in some array.
+> [ 9699.793674] ------------[ cut here ]------------ 
+> [ 9699.793719] kernel BUG at mm/memcontrol.c:3994! 
+> [ 9699.793745] Oops: Exception in kernel mode, sig: 5 [#1] 
+> [ 9699.793756] SMP NR_CPUS=1024 NUMA pSeries 
+> [ 9699.793768] Modules linked in: tun(F) scsi_transport_iscsi(F) ipt_ULOG(F) nfc(F) af_key(F) rds(F) af_802154(F) pppoe(F) pppox(F) ppp_generic(F) slhc(F) atm(F) sctp(F) ip6table_filter(F) ip6_tables(F) iptable_filter(F) ip_tables(F) btrfs(F) raid6_pq(F) xor(F) vfat(F) fat(F) nfsv3(F) nfs_acl(F) nfsv2(F) nfs(F) lockd(F) sunrpc(F) fscache(F) nfnetlink_log(F) nfnetlink(F) bluetooth(F) rfkill(F) arc4(F) md4(F) nls_utf8(F) cifs(F) dns_resolver(F) nf_tproxy_core(F) nls_koi8_u(F) nls_cp932(F) ts_kmp(F) fuse(F) sg(F) ehea(F) xfs(F) libcrc32c(F) sd_mod(F) crc_t10dif(F) ibmvscsi(F) scsi_transport_srp(F) scsi_tgt(F) dm_mirror(F) dm_region_hash(F) dm_log(F) dm_mod(F) [last unloaded: ipt_REJECT] 
+> [ 9699.794061] NIP: c000000000201c40 LR: c0000000001cf770 CTR: 0000000000021f84 
+> [ 9699.794082] REGS: c0000000210674e0 TRAP: 0700   Tainted: GF             (3.9.0-rc8) 
+> [ 9699.794091] MSR: 8000000000029032 <SF,EE,ME,IR,DR,RI>  CR: 22824422  XER: 00000000 
+> [ 9699.794141] SOFTE: 1 
+> [ 9699.794151] CFAR: c0000000002076a8 
+> [ 9699.794159] TASK = c000000075c4bfa0[48350] 'msgctl10' THREAD: c000000021064000 CPU: 15 
+> GPR00: c0000000001cf770 c000000021067760 c0000000010f3dc8 c00000007f2236b0  
+> GPR04: 0000000000000001 0000000000000000 0000000000000000 0000000000000000  
+> GPR08: c00000007f2236c8 0000000000000001 0000000000000000 00000000187e8800  
+> GPR12: 0000000022824428 c00000000ede3c00 c00000007f2236b0 ffffffffffffff80  
+> GPR16: 4000000000000000 0000000000000001 00003fffd1f30000 c00000007f041bc8  
+> GPR20: 00003fffd1f20000 c00000010c4ba9a0 0000000000000000 c000000000ae0788  
+> GPR24: c000000000ae0788 0000187e88000393 c000000001163dc8 0000000000000001  
+> GPR28: c000000001160900 c00000007f2236b0 ffffffffffffffff c00000007f2236b0  
+> [ 9699.794381] NIP [c000000000201c40] .__mem_cgroup_uncharge_common+0x50/0x340 
+> [ 9699.794398] LR [c0000000001cf770] .page_remove_rmap+0x120/0x1d0 
+> [ 9699.794414] Call Trace: 
+> [ 9699.794427] [c000000021067760] [c000000000201d00] .__mem_cgroup_uncharge_common+0x110/0x340 (unreliable) 
+> [ 9699.794441] [c000000021067810] [c0000000001cf770] .page_remove_rmap+0x120/0x1d0 
+> [ 9699.794461] [c0000000210678a0] [c0000000001c10f0] .unmap_single_vma+0x5b0/0x8c0 
+> [ 9699.794494] [c0000000210679e0] [c0000000001c1ea4] .unmap_vmas+0x74/0xe0 
+> [ 9699.794515] [c000000021067a80] [c0000000001cbd48] .exit_mmap+0xd8/0x1a0 
+> [ 9699.794542] [c000000021067ba0] [c000000000082e90] .mmput+0xa0/0x170 
+> [ 9699.794575] [c000000021067c30] [c00000000008d4e8] .do_exit+0x308/0xb40 
+> [ 9699.794587] [c000000021067d30] [c00000000008ddc4] .do_group_exit+0x54/0xf0 
+> [ 9699.794612] [c000000021067dc0] [c00000000008de74] .SyS_exit_group+0x14/0x20 
+> [ 9699.794633] [c000000021067e30] [c000000000009e54] syscall_exit+0x0/0x98 
+> [ 9699.794645] Instruction dump: 
+> [ 9699.794663] fba1ffe8 fbc1fff0 fbe1fff8 2f890000 f8010010 91810008 f821ff51 409e019c  
+> [ 9699.794702] e9230000 7c7d1b78 7c9b2378 792987e2 <0b090000> f8a10070 48006959 60000000  
+> [ 9699.794761] ---[ end trace 18332a81b4a27c2d ]--- 
 > 
-> Yes, I agree.
-> 
-> Bjorn
-
--- 
-Ram Pai
-
+> [ 6230.168170] ------------[ cut here ]------------ 
+> [ 6230.168200] kernel BUG at mm/memcontrol.c:3027! 
+> [ 6230.168206] Oops: Exception in kernel mode, sig: 5 [#1] 
+> [ 6230.168210] SMP NR_CPUS=1024 NUMA pSeries 
+> [ 6230.168215] Modules linked in: tun binfmt_misc hidp cmtp kernelcapi rfcomm l2tp_ppp l2tp_netlink l2tp_core bnep nfc af_802154 pppoe pppox ppp_generic slhc rds af_key atm sctp ip6table_filter ip6_tables iptable_filter ip_tables btrfs libcrc32c vfat fat nfsv3 nfs_acl nfsv2 nfs lockd sunrpc fscache nfnetlink_log nfnetlink bluetooth rfkill des_generic md4 nls_utf8 cifs dns_resolver nf_tproxy_core deflate lzo nls_koi8_u nls_cp932 ts_kmp sg ehea xfs sd_mod crc_t10dif ibmvscsi scsi_transport_srp scsi_tgt dm_mirror dm_region_hash dm_log dm_mod [last unloaded: ipt_REJECT] 
+> [ 6230.168322] NIP: c0000000001f4d70 LR: c0000000001c5480 CTR: 0000000000000000 
+> [ 6230.168327] REGS: c000000107c9f2c0 TRAP: 0700   Tainted: G        W     (3.7.6+) 
+> [ 6230.168330] MSR: 8000000002029032 <SF,VEC,EE,ME,IR,DR,RI>  CR: 28004082  XER: 00000001 
+> [ 6230.168341] SOFTE: 1 
+> [ 6230.168343] CFAR: c0000000001f9448 
+> [ 6230.168346] TASK = c000000108ef9a40[27179] 'msgctl10' THREAD: c000000107c9c000 CPU: 49 
+> GPR00: c0000000001c5480 c000000107c9f540 c000000001133ab0 c00000013f2932f8  
+> GPR04: 0000000000000001 0000000000000000 0000000000000c00 0000000000000011  
+> GPR08: c00000013f293310 0000000000000001 0000000000000000 0000000000000060  
+> GPR12: 0000000028004088 c00000000ee0ab80 0000000000000000 0000000000000000  
+> GPR16: 0000000000000000 0000000000000000 0000000000000000 c00000013f1c0378  
+> GPR20: 00003fffb1990000 00003fffb1980000 c00000011b0f0000 c00000000147da80  
+> GPR24: 000045da80000393 c0000000ad960900 0000000000000001 c0000000011a09e0  
+> GPR28: c00000013f2932f8 c0000000adf2cad0 c0000000010b8d58 c00000013f2932f8  
+> [ 6230.168401] NIP [c0000000001f4d70] .__mem_cgroup_uncharge_common+0x50/0x320 
+> [ 6230.168405] LR [c0000000001c5480] .page_remove_rmap+0x140/0x1d0 
+> [ 6230.168408] Call Trace: 
+> [ 6230.168411] [c000000107c9f5f0] [c0000000001c5480] .page_remove_rmap+0x140/0x1d0 
+> [ 6230.168417] [c000000107c9f680] [c0000000001b6c30] .do_wp_page+0x3f0/0xd80 
+> [ 6230.168421] [c000000107c9f780] [c0000000001b92e0] .handle_pte_fault+0x350/0xca0 
+> [ 6230.168428] [c000000107c9f880] [c000000000708440] .do_page_fault+0x420/0x830 
+> [ 6230.168433] [c000000107c9fab0] [c000000000005d68] handle_page_fault+0x10/0x30 
+> [ 6230.168439] --- Exception: 301 at .schedule_tail+0x94/0x120 
+> [ 6230.168439]     LR = .schedule_tail+0x8c/0x120 
+> [ 6230.168444] [c000000107c9fda0] [c0000000000c5b4c] .schedule_tail+0x5c/0x120 (unreliable) 
+> [ 6230.168449] [c000000107c9fe30] [c000000000009a9c] .ret_from_fork+0x4/0x54 
+> [ 6230.168453] Instruction dump: 
+> [ 6230.168455] ebc2bc58 f8010010 91810008 f821ff51 eb7e8000 813b0068 2f890000 409e019c  
+> [ 6230.168463] e9230000 7c7c1b78 7c9a2378 792987e2 <0b090000> f8a10070 48005649 60000000  
+> [ 6230.168476] ---[ end trace 13237c53a86ce213 ]--- 
