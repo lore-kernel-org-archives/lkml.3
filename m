@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759400Ab3DYUbx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 16:31:53 -0400
-Received: from www.linutronix.de ([62.245.132.108]:46033 "EHLO
+	id S1759426Ab3DYUbz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 16:31:55 -0400
+Received: from www.linutronix.de ([62.245.132.108]:46039 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759313Ab3DYUbv (ORCPT
+	with ESMTP id S1758707Ab3DYUbv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 25 Apr 2013 16:31:51 -0400
-Message-Id: <20130425143436.371634778@linutronix.de>
+Message-Id: <20130425143436.431796247@linutronix.de>
 User-Agent: quilt/0.48-1
-Date: Thu, 25 Apr 2013 20:31:49 -0000
+Date: Thu, 25 Apr 2013 20:31:50 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@elte.hu>,
         Magnus Damm <magnus.damm@gmail.com>
-Subject: [patch 13/15] clockevents: Provide sysfs interface
+Subject: [patch 14/15] clockevents: Split out selection logic
 References: <20130425142452.908423538@linutronix.de>
-Content-Disposition: inline; filename=clockevents-provide-sysfs-interface.patch
+Content-Disposition: inline;
+ filename=clockevents-split-out-selection-logic.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -24,115 +25,146 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide a simple sysfs interface for the clockevent devices. Show the
-current active clockevent device.
+Split out the clockevent device selection logic. Preparatory patch to
+allow unbinding active clockevent devices.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- kernel/time/clockevents.c |   86 ++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 86 insertions(+)
+ kernel/time/tick-broadcast.c |   25 ++++++++++++---
+ kernel/time/tick-common.c    |   69 ++++++++++++++++++++++---------------------
+ 2 files changed, 56 insertions(+), 38 deletions(-)
 
-Index: tip/kernel/time/clockevents.c
+Index: tip/kernel/time/tick-broadcast.c
 ===================================================================
---- tip.orig/kernel/time/clockevents.c
-+++ tip/kernel/time/clockevents.c
-@@ -16,6 +16,7 @@
- #include <linux/init.h>
- #include <linux/module.h>
- #include <linux/smp.h>
-+#include <linux/device.h>
+--- tip.orig/kernel/time/tick-broadcast.c
++++ tip/kernel/time/tick-broadcast.c
+@@ -65,19 +65,34 @@ static void tick_broadcast_start_periodi
+ /*
+  * Check, if the device can be utilized as broadcast device:
+  */
++static bool tick_check_broadcast_device(struct clock_event_device *curdev,
++					struct clock_event_device *newdev)
++{
++	if ((newdev->features & CLOCK_EVT_FEAT_DUMMY) ||
++	    (newdev->features & CLOCK_EVT_FEAT_C3STOP))
++		return false;
++
++	if (tick_broadcast_device.mode == TICKDEV_MODE_ONESHOT &&
++	    !(newdev->features & CLOCK_EVT_FEAT_ONESHOT))
++		return false;
++
++	return !curdev || newdev->rating > curdev->rating;
++}
++
++/*
++ * Conditionally install/replace broadcast device
++ */
+ void tick_install_broadcast_device(struct clock_event_device *dev)
+ {
+ 	struct clock_event_device *cur = tick_broadcast_device.evtdev;
  
- #include "tick-internal.h"
+-	if ((dev->features & CLOCK_EVT_FEAT_DUMMY) ||
+-	    (tick_broadcast_device.evtdev &&
+-	     tick_broadcast_device.evtdev->rating >= dev->rating) ||
+-	     (dev->features & CLOCK_EVT_FEAT_C3STOP))
++	if (!tick_check_broadcast_device(cur, dev))
+ 		return;
++
+ 	if (!try_module_get(dev->owner))
+ 		return;
  
-@@ -460,4 +461,89 @@ void clockevents_notify(unsigned long re
- 	raw_spin_unlock_irqrestore(&clockevents_lock, flags);
+-	clockevents_exchange_device(tick_broadcast_device.evtdev, dev);
++	clockevents_exchange_device(cur, dev);
+ 	if (cur)
+ 		cur->event_handler = clockevents_handle_noop;
+ 	tick_broadcast_device.evtdev = dev;
+Index: tip/kernel/time/tick-common.c
+===================================================================
+--- tip.orig/kernel/time/tick-common.c
++++ tip/kernel/time/tick-common.c
+@@ -202,6 +202,37 @@ static void tick_setup_device(struct tic
+ 		tick_setup_oneshot(newdev, handler, next_event);
  }
- EXPORT_SYMBOL_GPL(clockevents_notify);
-+
-+#ifdef CONFIG_SYSFS
-+struct bus_type clockevents_subsys = {
-+	.name		= "clockevents",
-+	.dev_name       = "clockevent",
-+};
-+
-+static DEFINE_PER_CPU(struct device, tick_percpu_dev);
-+static struct tick_device *tick_get_tick_dev(struct device *dev);
-+
-+static ssize_t sysfs_show_current_tick_dev(struct device *dev,
-+					   struct device_attribute *attr,
-+					   char *buf)
+ 
++static bool tick_check_percpu(struct clock_event_device *curdev,
++			      struct clock_event_device *newdev, int cpu)
 +{
-+	struct tick_device *td;
-+	ssize_t count = 0;
-+
-+	raw_spin_lock_irq(&clockevents_lock);
-+	td = tick_get_tick_dev(dev);
-+	if (td && td->evtdev)
-+		count = snprintf(buf, PAGE_SIZE, "%s\n", td->evtdev->name);
-+	raw_spin_unlock_irq(&clockevents_lock);
-+	return count;
-+}
-+static DEVICE_ATTR(current_device, 0444, sysfs_show_current_tick_dev, NULL);
-+
-+#ifdef CONFIG_GENERIC_CLOCKEVENTS_BROADCAST
-+static struct device tick_bc_dev = {
-+	.init_name	= "broadcast",
-+	.id		= 0,
-+	.bus		= &clockevents_subsys,
-+};
-+
-+static struct tick_device *tick_get_tick_dev(struct device *dev)
-+{
-+	return dev == &tick_bc_dev ? tick_get_broadcast_device() :
-+		&per_cpu(tick_cpu_device, dev->id);
++	if (!cpumask_test_cpu(cpu, newdev->cpumask))
++		return false;
++	if (cpumask_equal(newdev->cpumask, cpumask_of(cpu)))
++		return true;
++	/* Check if irq affinity can be set */
++	if (newdev->irq >= 0 && !irq_can_set_affinity(newdev->irq))
++		return false;
++	/* Prefer an existing cpu local device */
++	if (curdev && cpumask_equal(curdev->cpumask, cpumask_of(cpu)))
++		return false;
++	return true;
 +}
 +
-+static int tick_broadcast_init_sysfs(void)
++static bool tick_check_preferred(struct clock_event_device *curdev,
++				 struct clock_event_device *newdev)
 +{
-+	int err = device_register(&tick_bc_dev);
-+
-+	if (!err)
-+		err = device_create_file(&tick_bc_dev, &dev_attr_current_device);
-+	return err;
-+}
-+#else
-+static struct tick_device *tick_get_tick_dev(struct device *dev)
-+{
-+	return &per_cpu(tick_cpu_device, dev->id);
-+}
-+static inline int tick_broadcast_init_sysfs(void) { return 0; }
- #endif
-+
-+int __init tick_init_sysfs(void)
-+{
-+	int cpu;
-+
-+	for_each_possible_cpu(cpu) {
-+		struct device *dev = &per_cpu(tick_percpu_dev, cpu);
-+		int err;
-+
-+		dev->id = cpu;
-+		dev->bus = &clockevents_subsys;
-+		err = device_register(dev);
-+		if (!err)
-+			err = device_create_file(dev, &dev_attr_current_device);
-+		if (err)
-+			return err;
++	/* Prefer oneshot capable device */
++	if (!(newdev->features & CLOCK_EVT_FEAT_ONESHOT)) {
++		if (curdev && (curdev->features & CLOCK_EVT_FEAT_ONESHOT))
++			return false;
++		if (tick_oneshot_mode_active())
++			return false;
 +	}
-+	return tick_broadcast_init_sysfs();
++
++	/* Use the higher rated one */
++	return !curdev || newdev->rating > curdev->rating;
 +}
 +
-+static int __init clockevents_init_sysfs(void)
-+{
-+	int err = subsys_system_register(&clockevents_subsys, NULL);
-+
-+	if (!err)
-+		err = tick_init_sysfs();
-+	return err;
-+}
-+device_initcall(clockevents_init_sysfs);
-+#endif /* SYSFS */
-+
-+#endif /* GENERIC_CLOCK_EVENTS */
+ /*
+  * Check, if the new registered device should be used. Called with
+  * clockevents_lock held and interrupts disabled.
+@@ -220,40 +251,12 @@ void tick_check_new_device(struct clock_
+ 	curdev = td->evtdev;
+ 
+ 	/* cpu local device ? */
+-	if (!cpumask_equal(newdev->cpumask, cpumask_of(cpu))) {
+-
+-		/*
+-		 * If the cpu affinity of the device interrupt can not
+-		 * be set, ignore it.
+-		 */
+-		if (!irq_can_set_affinity(newdev->irq))
+-			goto out_bc;
+-
+-		/*
+-		 * If we have a cpu local device already, do not replace it
+-		 * by a non cpu local device
+-		 */
+-		if (curdev && cpumask_equal(curdev->cpumask, cpumask_of(cpu)))
+-			goto out_bc;
+-	}
++	if (!tick_check_percpu(curdev, newdev, cpu))
++		goto out_bc;
+ 
+-	/*
+-	 * If we have an active device, then check the rating and the oneshot
+-	 * feature.
+-	 */
+-	if (curdev) {
+-		/*
+-		 * Prefer one shot capable devices !
+-		 */
+-		if ((curdev->features & CLOCK_EVT_FEAT_ONESHOT) &&
+-		    !(newdev->features & CLOCK_EVT_FEAT_ONESHOT))
+-			goto out_bc;
+-		/*
+-		 * Check the rating
+-		 */
+-		if (curdev->rating >= newdev->rating)
+-			goto out_bc;
+-	}
++	/* Preference decision */
++	if (!tick_check_preferred(curdev, newdev))
++		goto out_bc;
+ 
+ 	if (!try_module_get(newdev->owner))
+ 		return;
 
 
