@@ -1,66 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932644Ab3DYP5L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 11:57:11 -0400
-Received: from mail-qe0-f45.google.com ([209.85.128.45]:51831 "EHLO
-	mail-qe0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932087Ab3DYP5I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 11:57:08 -0400
+	id S932665Ab3DYP6S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 11:58:18 -0400
+Received: from mail.kapsi.fi ([217.30.184.167]:34614 "EHLO mail.kapsi.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932087Ab3DYP6R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Apr 2013 11:58:17 -0400
+Message-ID: <5179526B.9030307@iki.fi>
+Date: Thu, 25 Apr 2013 18:57:31 +0300
+From: Antti Palosaari <crope@iki.fi>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <Pine.LNX.4.44L0.1304251145110.948-100000@iolanthe.rowland.org>
-References: <CA+icZUX96ADfV5rxce+2t4J870BvZTPGOCCSgVcJ8_Hc2RMxeg@mail.gmail.com>
-	<Pine.LNX.4.44L0.1304251145110.948-100000@iolanthe.rowland.org>
-Date: Thu, 25 Apr 2013 17:57:07 +0200
-Message-ID: <CA+icZUVUd=0oFhPt8Gneze1UyZ5vyGxoEDnBNrya0+mn99nQkA@mail.gmail.com>
-Subject: Re: linux-next: Tree for Apr 24 [ PM: Device 1-1.2 failed to resume
- async: error -32 ]
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Linux PM List <linux-pm@lists.linux-foundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-usb@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Mauro Carvalho Chehab <mchehab@redhat.com>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] [media] anysee: Initialize ret = 0 in anysee_frontend_attach()
+References: <1366803406-17738-1-git-send-email-geert@linux-m68k.org>
+In-Reply-To: <1366803406-17738-1-git-send-email-geert@linux-m68k.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: 82.128.187.254
+X-SA-Exim-Mail-From: crope@iki.fi
+X-SA-Exim-Scanned: No (on mail.kapsi.fi); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 25, 2013 at 5:49 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
-> On Thu, 25 Apr 2013, Sedat Dilek wrote:
+On 04/24/2013 02:36 PM, Geert Uytterhoeven wrote:
+> drivers/media/usb/dvb-usb-v2/anysee.c: In function ‘anysee_frontend_attach’:
+> drivers/media/usb/dvb-usb-v2/anysee.c:641: warning: ‘ret’ may be used uninitialized in this function
 >
->> [ Run logging on USB-bus #1 ]
->>
->> # cat /sys/kernel/debug/usb/usbmon/1u > /tmp/usbmon-1u.txt <--- USB-bus #01
->>
->> [ Do suspend plus resume ]
->>
->> ...
->>
->> [ Check /tmp/usbmon-1u.txt file ]
->>
->> ...
->>
->> File attached!
+> And gcc is right (see the ANYSEE_HW_507T case), so initialize ret to zero
+> to fix this.
 >
-> That also looks normal.  Did you have CONFIG_USB_DEBUG enabled during
-> this test?  If you did, you could try turning it back off to see if the
-> original problem returns while still doing a usbmon trace.
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+
+Acked-by: Antti Palosaari <crope@iki.fi>
+Reviewed-by: Antti Palosaari <crope@iki.fi>
+
+
+> ---
+>   drivers/media/usb/dvb-usb-v2/anysee.c |    2 +-
+>   1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/media/usb/dvb-usb-v2/anysee.c b/drivers/media/usb/dvb-usb-v2/anysee.c
+> index a20d691..3a1f976 100644
+> --- a/drivers/media/usb/dvb-usb-v2/anysee.c
+> +++ b/drivers/media/usb/dvb-usb-v2/anysee.c
+> @@ -638,7 +638,7 @@ static int anysee_frontend_attach(struct dvb_usb_adapter *adap)
+>   {
+>   	struct anysee_state *state = adap_to_priv(adap);
+>   	struct dvb_usb_device *d = adap_to_d(adap);
+> -	int ret;
+> +	int ret = 0;
+>   	u8 tmp;
+>   	struct i2c_msg msg[2] = {
+>   		{
 >
 
-As my system works as "expected" after suspend-resume and as you
-pointed out "this is harmless" I am not really willing to do more
-"homework".
 
-The ipc-sem-next issue has stolen quite bit of my time.
-
-Thanks for the usbmon hint, now I know for next USB issues what to do.
-And I have never tried my USB-XHCI interface :-).
-
-/me is just an encouraged Linux-kernel hobbyist.
-
-- Sedat -
-
-> Alan Stern
->
+-- 
+http://palosaari.fi/
