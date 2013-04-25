@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757791Ab3DYKTG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 06:19:06 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:42661 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757761Ab3DYKTD (ORCPT
+	id S1757841Ab3DYKTM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 06:19:12 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:45277 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757796Ab3DYKTJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 06:19:03 -0400
-Subject: [PATCH v3 5/8] powerpc/pseries: Read rtas partition via pstore
+	Thu, 25 Apr 2013 06:19:09 -0400
+Subject: [PATCH v3 6/8] powerpc/pseries: Distinguish between a os-partition
+ and non-os partition
 To: linuxppc-dev@ozlabs.org, paulus@samba.org, linux-kernel@vger.kernel.org,
         benh@kernel.crashing.org
 From: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
 Cc: jkenisto@linux.vnet.ibm.com, tony.luck@intel.com, ananth@in.ibm.com,
         mahesh@linux.vnet.ibm.com, ccross@android.com, anton@samba.org,
         cbouatmailru@gmail.com, keescook@chromium.org
-Date: Thu, 25 Apr 2013 15:48:51 +0530
-Message-ID: <20130425101851.21017.90041.stgit@aruna-ThinkPad-T420>
+Date: Thu, 25 Apr 2013 15:48:58 +0530
+Message-ID: <20130425101857.21017.64027.stgit@aruna-ThinkPad-T420>
 In-Reply-To: <20130425100952.21017.51799.stgit@aruna-ThinkPad-T420>
 References: <20130425100952.21017.51799.stgit@aruna-ThinkPad-T420>
 User-Agent: StGit/0.16-41-gd1dd
@@ -24,124 +25,49 @@ Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13042510-5564-0000-0000-000007A6898B
+x-cbid: 13042510-2674-0000-0000-000008BB5846
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch set exploits the pstore subsystem to read details of rtas partition
-in NVRAM to a separate file in /dev/pstore. For instance, rtas details will be
-stored in a file named [rtas-nvram-4].
+Introduce os_partition member in nvram_os_partition structure to identify
+if the partition is an os partition or not. This will be useful to handle
+non-os partitions of-config and common.
 
 Signed-off-by: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
 Reviewed-by: Jim Keniston <jkenisto@us.ibm.com>
 ---
- arch/powerpc/platforms/pseries/nvram.c |   33 +++++++++++++++++++++++++-------
- fs/pstore/inode.c                      |    3 +++
- include/linux/pstore.h                 |    2 ++
- 3 files changed, 31 insertions(+), 7 deletions(-)
+ arch/powerpc/platforms/pseries/nvram.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
 diff --git a/arch/powerpc/platforms/pseries/nvram.c b/arch/powerpc/platforms/pseries/nvram.c
-index 9edec8e..78d72f0 100644
+index 78d72f0..714ed8a 100644
 --- a/arch/powerpc/platforms/pseries/nvram.c
 +++ b/arch/powerpc/platforms/pseries/nvram.c
-@@ -131,9 +131,11 @@ static struct z_stream_s stream;
- #ifdef CONFIG_PSTORE
- static enum pstore_type_id nvram_type_ids[] = {
- 	PSTORE_TYPE_DMESG,
-+	PSTORE_TYPE_PPC_RTAS,
- 	-1
- };
- static int read_type;
-+static unsigned long last_rtas_event;
- #endif
- 
- static ssize_t pSeries_nvram_read(char *buf, size_t count, loff_t *index)
-@@ -297,8 +299,13 @@ int nvram_write_error_log(char * buff, int length,
- {
- 	int rc = nvram_write_os_partition(&rtas_log_partition, buff, length,
- 						err_type, error_log_cnt);
--	if (!rc)
-+	if (!rc) {
- 		last_unread_rtas_event = get_seconds();
-+#ifdef CONFIG_PSTORE
-+		last_rtas_event = get_seconds();
-+#endif
-+	}
-+
- 	return rc;
- }
- 
-@@ -506,7 +513,7 @@ static int nvram_pstore_write(enum pstore_type_id type,
- }
- 
- /*
-- * Reads the oops/panic report.
-+ * Reads the oops/panic report and ibm,rtas-log partition.
-  * Returns the length of the data we read from each partition.
-  * Returns 0 if we've been called before.
-  */
-@@ -526,6 +533,12 @@ static ssize_t nvram_pstore_read(u64 *id, enum pstore_type_id *type,
- 		part = &oops_log_partition;
- 		*type = PSTORE_TYPE_DMESG;
- 		break;
-+	case PSTORE_TYPE_PPC_RTAS:
-+		part = &rtas_log_partition;
-+		*type = PSTORE_TYPE_PPC_RTAS;
-+		time->tv_sec = last_rtas_event;
-+		time->tv_nsec = 0;
-+		break;
- 	default:
- 		return 0;
- 	}
-@@ -542,11 +555,17 @@ static ssize_t nvram_pstore_read(u64 *id, enum pstore_type_id *type,
- 
- 	*count = 0;
- 	*id = id_no;
--	oops_hdr = (struct oops_log_info *)buff;
--	*buf = buff + sizeof(*oops_hdr);
--	time->tv_sec = oops_hdr->timestamp;
--	time->tv_nsec = 0;
--	return oops_hdr->report_length;
-+
-+	if (nvram_type_ids[read_type] == PSTORE_TYPE_DMESG) {
-+		oops_hdr = (struct oops_log_info *)buff;
-+		*buf = buff + sizeof(*oops_hdr);
-+		time->tv_sec = oops_hdr->timestamp;
-+		time->tv_nsec = 0;
-+		return oops_hdr->report_length;
-+	}
-+
-+	*buf = buff;
-+	return part->size;
- }
- 
- static struct pstore_info nvram_pstore_info = {
-diff --git a/fs/pstore/inode.c b/fs/pstore/inode.c
-index e4bcb2c..ec24f9c 100644
---- a/fs/pstore/inode.c
-+++ b/fs/pstore/inode.c
-@@ -324,6 +324,9 @@ int pstore_mkfile(enum pstore_type_id type, char *psname, u64 id, int count,
- 	case PSTORE_TYPE_MCE:
- 		sprintf(name, "mce-%s-%lld", psname, id);
- 		break;
-+	case PSTORE_TYPE_PPC_RTAS:
-+		sprintf(name, "rtas-%s-%lld", psname, id);
-+		break;
- 	case PSTORE_TYPE_UNKNOWN:
- 		sprintf(name, "unknown-%s-%lld", psname, id);
- 		break;
-diff --git a/include/linux/pstore.h b/include/linux/pstore.h
-index 75d0176..d7a8fe9 100644
---- a/include/linux/pstore.h
-+++ b/include/linux/pstore.h
-@@ -35,6 +35,8 @@ enum pstore_type_id {
- 	PSTORE_TYPE_MCE		= 1,
- 	PSTORE_TYPE_CONSOLE	= 2,
- 	PSTORE_TYPE_FTRACE	= 3,
-+	/* PPC64 partition types */
-+	PSTORE_TYPE_PPC_RTAS	= 4,
- 	PSTORE_TYPE_UNKNOWN	= 255
+@@ -53,20 +53,23 @@ struct nvram_os_partition {
+ 	int min_size;	/* minimum acceptable size (0 means req_size) */
+ 	long size;	/* size of data portion (excluding err_log_info) */
+ 	long index;	/* offset of data portion of partition */
++	bool os_partition; /* partition initialized by OS, not FW */
  };
  
+ static struct nvram_os_partition rtas_log_partition = {
+ 	.name = "ibm,rtas-log",
+ 	.req_size = 2079,
+ 	.min_size = 1055,
+-	.index = -1
++	.index = -1,
++	.os_partition = true
+ };
+ 
+ static struct nvram_os_partition oops_log_partition = {
+ 	.name = "lnx,oops-log",
+ 	.req_size = 4000,
+ 	.min_size = 2000,
+-	.index = -1
++	.index = -1,
++	.os_partition = true
+ };
+ 
+ static const char *pseries_nvram_os_partitions[] = {
 
