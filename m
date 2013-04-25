@@ -1,82 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932388Ab3DYNq7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 09:46:59 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:36071 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932309Ab3DYNq5 (ORCPT
+	id S932425Ab3DYNrR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 09:47:17 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:51774 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932319Ab3DYNq6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 09:46:57 -0400
-Date: Thu, 25 Apr 2013 14:46:36 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andreas Westin <andreas.westin@stericsson.com>,
-        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Subject: Re: [PATCH 1/9 v2] crypto: ux500/hash - Prepare clock before
- enabling it
-Message-ID: <20130425134636.GP4623@gmail.com>
-References: <1366280825-31136-1-git-send-email-lee.jones@linaro.org>
- <1366280825-31136-2-git-send-email-lee.jones@linaro.org>
- <20130419122428.GC3432@gmail.com>
- <CACRpkdYrCA6SduwMJF=7C9hyjP2Or7gxhjVFtLshdzkbYnxX1w@mail.gmail.com>
+	Thu, 25 Apr 2013 09:46:58 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACRpkdYrCA6SduwMJF=7C9hyjP2Or7gxhjVFtLshdzkbYnxX1w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130425134101.GA16609@gmail.com>
+References: <CAFTL4hxzpoy1wwmenhPaEg9tovfrXeMQ5QBC5gkW0L3z86VPAg@mail.gmail.com>
+	<20130425134101.GA16609@gmail.com>
+Date: Thu, 25 Apr 2013 15:46:55 +0200
+Message-ID: <CAFTL4hwBnU7ho=ihdruwkN+K-xra2QbQbRRGx-vEMtTcFGYwXA@mail.gmail.com>
+Subject: Re: Kconfig doesn't support select on choices (was Re: [GIT PULL]
+ nohz: Adaptively stop the tick, finally)
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Michal Marek <mmarek@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@linaro.org>,
+        Li Zhong <zhong@linux.vnet.ibm.com>, Oleg Nesterov <oleg@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 25 Apr 2013, Linus Walleij wrote:
+2013/4/25 Ingo Molnar <mingo@kernel.org>:
+>
+> * Frederic Weisbecker <fweisbec@gmail.com> wrote:
+>
+>> 2013/4/25 Ingo Molnar <mingo@kernel.org>:
+>> >
+>> > * Frederic Weisbecker <fweisbec@gmail.com> wrote:
+>> >
+>> >> >         depends on VIRT_CPU_ACCOUNTING_GEN
+>> >> >
+>> >> > It should _really_ select both the RCU and the CPU time accounting model
+>> >> > automatically!
+>> >>
+>> >> Yeah I know. I have yet to fix that in Kconfig (it's a Kconfig limitation).
+>> >
+>> > Why cannot we simply select it and its dependencies, explicitly, for the
+>> > time being? Something like:
+>> >
+>> >         depends on 64BIT
+>> >         select VIRT_CPU_ACCOUNTING
+>> >         select VIRT_CPU_ACCOUNTING_GEN
+>> >
+>> > 90% of the .config's have VIRT_CPU_ACCOUNTING_GEN turned off, because it's
+>> > a default-off feature - so dynticks-full is effectively hidden from the
+>> > large majority of testers...
+>>
+>> Whatever we do, it seems that select does not work with choices.
+>>
+>> Michal, we are running into an issue where a Kconfig option needs to
+>> select CONFIG_VIRT_CPU_ACCOUNTING_GEN but this latter option is part of
+>> a choice menu so it doesn't work. As a result we are forced to use a
+>> "depends on" and this hides the high level option we are interested in
+>> (here full dynticks) behind its low level dependency. How hard do you
+>> think it would be to fix this? I tried something that worked half-way
+>> but I quickly got lost in the Kconfig maze.
+>
+> While it's not an ideal solution, we could try to create three bools out
+> of the choice options, as a workaround?
 
-> On Fri, Apr 19, 2013 at 2:24 PM, Lee Jones <lee.jones@linaro.org> wrote:
-> > Slight change of plan for v2.
-> >
-> > Now we're doing a seperate clk_prepare(), as the clk_enable() in the
-> > previous patch turned out to be called inside a spin_lock().
-> >
-> > Arnd, can you confirm your Ack please?
-> 
-> Do you really want letters to Arnd to be part of the commit log?
-> 
-> >
-> > ---
-> 
-> Note: stuff following the three dashes (---) will be *omitted*
-> from the change log. This seems to be turned upside-down.
-
-Ah, I didn't know that, thanks.
-
-This patch wasn't due for 'plucking', just reviewing.
-
-> > crypto: ux500/hash - Prepare clock before enabling it
-> >
-> > If we fail to prepare the ux500-hash clock before enabling it the
-> > platform will fail to boot. Here we insure this happens.
-> >
-> > Cc: Herbert Xu <herbert@gondor.apana.org.au>
-> > Cc: David S. Miller <davem@davemloft.net>
-> > Cc: Andreas Westin <andreas.westin@stericsson.com>
-> > Cc: linux-crypto@vger.kernel.org
-> > Acked-by: Arnd Bergmann <arnd@arndb.de>
-> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> 
-> Pls include Ulf Hansson <ulf.hansson@linaro.org> on this patch.
-
-Sure.
-
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+I thought about that yeah, at least for a temporary solution. Let's
+try it, I'll see what I can get.
