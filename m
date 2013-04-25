@@ -1,77 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932425Ab3DYNrR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 09:47:17 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:51774 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932319Ab3DYNq6 (ORCPT
+	id S932448Ab3DYNrc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 09:47:32 -0400
+Received: from mail-qe0-f48.google.com ([209.85.128.48]:41339 "EHLO
+	mail-qe0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932307Ab3DYNra (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 09:46:58 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130425134101.GA16609@gmail.com>
-References: <CAFTL4hxzpoy1wwmenhPaEg9tovfrXeMQ5QBC5gkW0L3z86VPAg@mail.gmail.com>
-	<20130425134101.GA16609@gmail.com>
-Date: Thu, 25 Apr 2013 15:46:55 +0200
-Message-ID: <CAFTL4hwBnU7ho=ihdruwkN+K-xra2QbQbRRGx-vEMtTcFGYwXA@mail.gmail.com>
-Subject: Re: Kconfig doesn't support select on choices (was Re: [GIT PULL]
- nohz: Adaptively stop the tick, finally)
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Michal Marek <mmarek@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@linaro.org>,
-        Li Zhong <zhong@linux.vnet.ibm.com>, Oleg Nesterov <oleg@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 25 Apr 2013 09:47:30 -0400
+From: Benjamin Poirier <bpoirier@suse.de>
+To: "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <edumazet@google.com>,
+        Pavel Emelyanov <xemul@parallels.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH net 1/3] unix/dgram: peek beyond 0-sized skbs
+Date: Thu, 25 Apr 2013 09:47:16 -0400
+Message-Id: <1366897638-21882-1-git-send-email-bpoirier@suse.de>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/4/25 Ingo Molnar <mingo@kernel.org>:
->
-> * Frederic Weisbecker <fweisbec@gmail.com> wrote:
->
->> 2013/4/25 Ingo Molnar <mingo@kernel.org>:
->> >
->> > * Frederic Weisbecker <fweisbec@gmail.com> wrote:
->> >
->> >> >         depends on VIRT_CPU_ACCOUNTING_GEN
->> >> >
->> >> > It should _really_ select both the RCU and the CPU time accounting model
->> >> > automatically!
->> >>
->> >> Yeah I know. I have yet to fix that in Kconfig (it's a Kconfig limitation).
->> >
->> > Why cannot we simply select it and its dependencies, explicitly, for the
->> > time being? Something like:
->> >
->> >         depends on 64BIT
->> >         select VIRT_CPU_ACCOUNTING
->> >         select VIRT_CPU_ACCOUNTING_GEN
->> >
->> > 90% of the .config's have VIRT_CPU_ACCOUNTING_GEN turned off, because it's
->> > a default-off feature - so dynticks-full is effectively hidden from the
->> > large majority of testers...
->>
->> Whatever we do, it seems that select does not work with choices.
->>
->> Michal, we are running into an issue where a Kconfig option needs to
->> select CONFIG_VIRT_CPU_ACCOUNTING_GEN but this latter option is part of
->> a choice menu so it doesn't work. As a result we are forced to use a
->> "depends on" and this hides the high level option we are interested in
->> (here full dynticks) behind its low level dependency. How hard do you
->> think it would be to fix this? I tried something that worked half-way
->> but I quickly got lost in the Kconfig maze.
->
-> While it's not an ideal solution, we could try to create three bools out
-> of the choice options, as a workaround?
+"77c1090 net: fix infinite loop in __skb_recv_datagram()" (v3.8) introduced a
+regression:
+After that commit, recv can no longer peek beyond a 0-sized skb in the queue.
+__skb_recv_datagram() instead stops at the first skb with len == 0 and results
+in the system call failing with -EFAULT via skb_copy_datagram_iovec().
 
-I thought about that yeah, at least for a temporary solution. Let's
-try it, I'll see what I can get.
+Signed-off-by: Benjamin Poirier <bpoirier@suse.de>
+---
+ net/core/datagram.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/net/core/datagram.c b/net/core/datagram.c
+index 368f9c3..02398ae 100644
+--- a/net/core/datagram.c
++++ b/net/core/datagram.c
+@@ -187,7 +187,7 @@ struct sk_buff *__skb_recv_datagram(struct sock *sk, unsigned int flags,
+ 		skb_queue_walk(queue, skb) {
+ 			*peeked = skb->peeked;
+ 			if (flags & MSG_PEEK) {
+-				if (*off >= skb->len && skb->len) {
++				if (*off >= skb->len && (skb->len || *off)) {
+ 					*off -= skb->len;
+ 					continue;
+ 				}
+-- 
+1.7.10.4
+
