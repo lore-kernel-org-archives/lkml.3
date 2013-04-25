@@ -1,90 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756838Ab3DYJP7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 05:15:59 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:59251 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756543Ab3DYJP4 (ORCPT
+	id S1756326Ab3DYJRv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 05:17:51 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:37541 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754630Ab3DYJRu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 05:15:56 -0400
-X-AuditID: 9c93016f-b7c3dae000000592-25-5178f4489e4b
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Borislav Petkov <bp@alien8.de>, Stephane Eranian <eranian@google.com>,
-        Sam Ravnborg <sam@ravnborg.org>, David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH 03/26] perf tools: Move arch check into config/Makefile
-References: <1366796273-4780-1-git-send-email-jolsa@redhat.com>
-	<1366796273-4780-4-git-send-email-jolsa@redhat.com>
-Date: Thu, 25 Apr 2013 18:15:52 +0900
-In-Reply-To: <1366796273-4780-4-git-send-email-jolsa@redhat.com> (Jiri Olsa's
-	message of "Wed, 24 Apr 2013 11:37:30 +0200")
-Message-ID: <87vc7b7yyf.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Thu, 25 Apr 2013 05:17:50 -0400
+Date: Thu, 25 Apr 2013 10:17:44 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH 07/32] ARM: ux500: Supply address location names for the
+ DMA40 DMA controller
+Message-ID: <20130425091744.GF4623@gmail.com>
+References: <1366279934-30761-1-git-send-email-lee.jones@linaro.org>
+ <1366279934-30761-8-git-send-email-lee.jones@linaro.org>
+ <CACRpkdbCMjC22WbgE_-Co-hvT704n696Ox8t_6_d2aoxmZyybA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACRpkdbCMjC22WbgE_-Co-hvT704n696Ox8t_6_d2aoxmZyybA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 24 Apr 2013 11:37:30 +0200, Jiri Olsa wrote:
-> Moving arch check into config/Makefile.
->
-[SNIP]
-> +# include config/Makefile by default and rule out
-> +# non-config cases
-> +config := 1
-> +
-> +# standalone clean
-> +ifeq ($(MAKECMDGOALS),clean)
-> +  config := 0
->  endif
-> -ifeq ($(ARCH),x86_64)
-> -	override ARCH := x86
-> -	IS_X86_64 := 0
-> -	ifeq (, $(findstring m32,$(EXTRA_CFLAGS)))
-> -		IS_X86_64 := $(shell echo __x86_64__ | ${CC} -E -x c - | tail -n 1)
-> -	endif
-> -	ifeq (${IS_X86_64}, 1)
-> -		RAW_ARCH := x86_64
-> -		ARCH_CFLAGS := -DARCH_X86_64
-> -		ARCH_INCLUDE = ../../arch/x86/lib/memcpy_64.S ../../arch/x86/lib/memset_64.S
-> -	endif
-> -	NO_PERF_REGS := 0
-> -	LIBUNWIND_LIBS = -lunwind -lunwind-x86_64
-> +
-> +# tags cscope
-> +ifneq ($(filter tags cscope,$(MAKECMDGOALS)),)
-> +  config := 0
-> +endif
+On Thu, 25 Apr 2013, Linus Walleij wrote:
 
-Good idea!
+> On Thu, Apr 18, 2013 at 12:11 PM, Lee Jones <lee.jones@linaro.org> wrote:
+> 
+> > The DMA40 controller uses two sets of base addresses. In order to have
+> > them automatically setup as resources by the Open Format framework we
+> > have to set names for them. The names have to be the same as the ones
+> > used to fetch them back out of the resource structure.
+> >
+> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> 
+> This is OK with Arnds suggested changed, but I want the patch
+> split off from this series and put into a device-tree-specific patch
+> series so I can apply this to a branch where I try to keep
+> all patches to the device tree files. (ux500-devicetree).
 
-How about consolidating them like:
+Do you want to take this one separately?
 
-  NON_CONFIG_TARGETS := clean TAGS tags cscope help
-  
-  ifeq ($(filter-out $(NON_CONFIG_TARGETS),$(MAKECMDGOALS)),)
-    config := 0
-  endif
+Feel free and I'll remove it from this set.
 
-
-This way, we can handle multiple targets properly IMHO.
-
-  $ make clean all
-  $ make clean tags
-
-
-Thanks,
-Namhyung
-
-> +
-> +ifeq ($(config),1)
-> +include config/Makefile
->  endif
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
