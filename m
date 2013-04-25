@@ -1,95 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932831Ab3DYTgG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 15:36:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52739 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932250Ab3DYTgF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 15:36:05 -0400
-Date: Thu, 25 Apr 2013 14:35:53 -0500
-From: Clark Williams <williams@redhat.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: Suspend on 3.8.x-rtY (was: Re: [ANNOUNCE] 3.8.4-rt2)
-Message-ID: <20130425143553.1d11603b@riff.lan>
-In-Reply-To: <20130425131459.59fc5249@riff.lan>
-References: <20130326201722.GA14220@linutronix.de>
-	<CAP=VYLoXfECaSBuvYdZ3qbsnR9QMYpoRnKGZdY=P6zS_TYOcCA@mail.gmail.com>
-	<20130408183012.GA5778@linutronix.de>
-	<20130408152558.627dc8b1@riff.lan>
-	<51794718.5040703@linutronix.de>
-	<20130425131459.59fc5249@riff.lan>
-Organization: Red Hat, Inc
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/unwhBzJLR9veVgy6V0pL+5F"; protocol="application/pgp-signature"
+	id S932851Ab3DYTp3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 15:45:29 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:36581 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932250Ab3DYTp1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Apr 2013 15:45:27 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130425183301.GA31863@obsidianresearch.com>
+References: <CAPXgP13kizK95JyLxKxgWrGnV9b11ZTyi3vuc5YFDmROzckg4w@mail.gmail.com>
+ <517746E4.908@linaro.org> <CAPXgP128yAq1jju-gsZcaS-mZPt+7tq0tt-uVk3Yqr77abd26Q@mail.gmail.com>
+ <51774F44.2060704@linaro.org> <517769A9.5060308@ahsoftware.de>
+ <51780348.6090202@linaro.org> <5178D719.2060405@ahsoftware.de>
+ <5179562C.3000903@linaro.org> <20130425183301.GA31863@obsidianresearch.com>
+From: Kay Sievers <kay@vrfy.org>
+Date: Thu, 25 Apr 2013 21:45:04 +0200
+Message-ID: <CAPXgP13PaBqtU+MQnz6fT+B18WJP3_tqSCv+OYA5W_z6F=VWdg@mail.gmail.com>
+Subject: Re: CONFIG_RTC_HCTOSYS lost on x86 with ALWAYS_USE_PERSISTENT_CLOCK changes?
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Cc: John Stultz <john.stultz@linaro.org>,
+        Alexander Holler <holler@ahsoftware.de>,
+        LKML <linux-kernel@vger.kernel.org>, Feng Tang <feng.tang@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/unwhBzJLR9veVgy6V0pL+5F
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Thu, Apr 25, 2013 at 8:33 PM, Jason Gunthorpe
+<jgunthorpe@obsidianresearch.com> wrote:
+> So, my conclusion is nobody with a RTC looking for space savings, will
+> disable CONFIG_RTC, which means we can safely rely on
+> CONFIG_RTC_SYSTOHC to do this work. To that end, I would encourage
+> everyone who sets CONFIG_GENERIC_CMOS_UPDATE to also set
+> CONFIG_RTC_SYSTOHC - that will let update_persistent_clock to be
+> ripped out over time without impacting users.
 
-On Thu, 25 Apr 2013 13:14:59 -0500
-Clark Williams <williams@redhat.com> wrote:
-> I notice that nouveau is in there and yes, my laptop uses nouveau as
-> well. First thing I'll try is some of the pm-suspend quirks regarding gra=
-phics devices.
->=20
-> If that doesn't change anything I'll try swapping  out the graphics card =
-in that test box and see
-> if that makes a difference.=20
->=20
-> Clark
+John's original patch forcefully disabled CONFIG_RTC_SYSTOHC on x86,
+which is quite the opposite of what you recommend here. :)
 
-As a reminder to anyone reading, this is RT specific. Suspend to Ram
-works fine on vanilla 3.8.x.
+Could you guys both sort that out and give an idea what the
+recommended setup should look like today, ignoring all space saving
+and possible hctosys API changes caused by this. Should
+CONFIG_RTC_SYSTOHC be enabled or not?
 
-I tried 'pm-suspend --quirk-save-pci' and that locked up on resume (13
-minutes and no activity). I then remembered something Thomas said (see
-Thomas, my head is not *completely* full of hot air) and ran this:
-
-[root@rhelrt-7 ~]# for i in core processors platform devices freezer
-> do
-> echo $i
-> echo $i > /sys/power/pm_test
-> pm-suspend
-> done
-core
-processors
-platform
-devices
-freezer
-[root@rhelrt-7 ~]#=20
-
-
-So all the pm_test modes passed.=20
-
-I replaced the nVidia adapter with an ATI Rage card I had laying around
-and that did not change the behaviour noted previously (i.e. pause of
-nearly 10 minutes on resume). So, something is wedged in the resume
-code and times out after nearly 10 minutes and lets the resume
-continue.  I think I'm going to have to take a long stroll through the
-resume path code and look for likely candidates.=20
-
-Debugging suggestions welcome.
-
-Clark
-
---Sig_/unwhBzJLR9veVgy6V0pL+5F
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iEYEARECAAYFAlF5hZ4ACgkQHyuj/+TTEp3oWwCdEkNjAb03+lJPb/yYFvgkbiUC
-ynAAoKHUUEMZ9ZRUdUVmSUy0xtdyq0C2
-=U1O5
------END PGP SIGNATURE-----
-
---Sig_/unwhBzJLR9veVgy6V0pL+5F--
+Kay
