@@ -1,286 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759136Ab3DYSTZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 14:19:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38105 "EHLO mx1.redhat.com"
+	id S1759160Ab3DYSTi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 14:19:38 -0400
+Received: from fieldses.org ([174.143.236.118]:45467 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758289Ab3DYSTX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 14:19:23 -0400
-Message-ID: <5179739C.9080005@redhat.com>
-Date: Thu, 25 Apr 2013 20:19:08 +0200
-From: Daniel Borkmann <dborkman@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1759163Ab3DYSTf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Apr 2013 14:19:35 -0400
+Date: Thu, 25 Apr 2013 14:19:32 -0400
+From: "bfields@fieldses.org" <bfields@fieldses.org>
+To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+Cc: David Wysochanski <dwysocha@redhat.com>,
+        Dave Chiluk <chiluk@canonical.com>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] NFSv4: Use exponential backoff delay for NFS4_ERRDELAY
+Message-ID: <20130425181932.GA5049@fieldses.org>
+References: <1366836949-18465-1-git-send-email-chiluk@canonical.com>
+ <1366838926.22397.25.camel@leira.trondhjem.org>
+ <5178549A.7010402@canonical.com>
+ <1366842905.22397.49.camel@leira.trondhjem.org>
+ <1366892374.26249.294.camel@localhost.localdomain>
+ <20130425132907.GB31851@fieldses.org>
+ <1366896654.4719.18.camel@leira.trondhjem.org>
+ <20130425134918.GC31851@fieldses.org>
+ <1366899034.6812.4.camel@leira.trondhjem.org>
 MIME-Version: 1.0
-To: Alexandru Copot <alex.mihai.c@gmail.com>
-CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        akpm@linux-foundation.org, davem@davemloft.net, willemb@google.com,
-        ebiederm@xmission.com, gorcunov@openvz.org, palewis@adobe.com,
-        edumazet@google.com, Daniel Baluta <dbaluta@ixiacom.com>
-Subject: Re: [PATCH 1/3 RFC v2] selftests: introduce testing abstractions
-References: <1366887900-24769-1-git-send-email-alex.mihai.c@gmail.com> <1366887900-24769-2-git-send-email-alex.mihai.c@gmail.com>
-In-Reply-To: <1366887900-24769-2-git-send-email-alex.mihai.c@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1366899034.6812.4.camel@leira.trondhjem.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/25/2013 01:04 PM, Alexandru Copot wrote:
-> Signed-of-by Alexandru Copot <alex.mihai.c@gmail.com>
-> Cc: Daniel Baluta <dbaluta@ixiacom.com>
-> ---
->   tools/testing/selftests/Makefile        |  3 +-
->   tools/testing/selftests/lib/Makefile    | 14 +++++++
->   tools/testing/selftests/lib/selftests.c | 57 ++++++++++++++++++++++++++++
->   tools/testing/selftests/lib/selftests.h | 67 +++++++++++++++++++++++++++++++++
->   4 files changed, 140 insertions(+), 1 deletion(-)
->   create mode 100644 tools/testing/selftests/lib/Makefile
->   create mode 100644 tools/testing/selftests/lib/selftests.c
->   create mode 100644 tools/testing/selftests/lib/selftests.h
->
-> diff --git a/tools/testing/selftests/Makefile b/tools/testing/selftests/Makefile
-> index a480593..e0fccd9 100644
-> --- a/tools/testing/selftests/Makefile
-> +++ b/tools/testing/selftests/Makefile
-> @@ -1,4 +1,5 @@
-> -TARGETS = breakpoints
-> +TARGETS = lib
-> +TARGETS += breakpoints
->   TARGETS += kcmp
->   TARGETS += mqueue
->   TARGETS += vm
-> diff --git a/tools/testing/selftests/lib/Makefile b/tools/testing/selftests/lib/Makefile
-> new file mode 100644
-> index 0000000..9c81d0c
-> --- /dev/null
-> +++ b/tools/testing/selftests/lib/Makefile
-> @@ -0,0 +1,14 @@
-> +
-> +CFLAGS = -Wall -O2 -c -g
-> +
-> +selftests.a: selftests.o
-> +	ar qc $@ $^
-> +
-> +%.c: %.h
-> +
-> +%.o: %.c
-> +	$(CC) $(CFLAGS) -o $@ $^
-> +
-> +clean:
-> +	rm -rf *.o *.a
-> +
-> diff --git a/tools/testing/selftests/lib/selftests.c b/tools/testing/selftests/lib/selftests.c
-> new file mode 100644
-> index 0000000..1a65785
-> --- /dev/null
-> +++ b/tools/testing/selftests/lib/selftests.c
-> @@ -0,0 +1,57 @@
-> +#include <stdio.h>
-> +#include <stdarg.h>
-> +
-> +#include "selftests.h"
-> +
-> +test_result_t __assert(int expr, const char *filename, int line, const char *fmt, ...)
-> +{
+On Thu, Apr 25, 2013 at 02:10:36PM +0000, Myklebust, Trond wrote:
+> On Thu, 2013-04-25 at 09:49 -0400, bfields@fieldses.org wrote:
+> > On Thu, Apr 25, 2013 at 01:30:58PM +0000, Myklebust, Trond wrote:
+> > > On Thu, 2013-04-25 at 09:29 -0400, bfields@fieldses.org wrote:
+> > > 
+> > > > My position is that we simply have no idea what order of magnitude even
+> > > > delay should be.  And that in such a situation exponential backoff such
+> > > > as implemented in the synchronous case seems the reasonable default as
+> > > > it guarantees at worst doubling the delay while still bounding the
+> > > > long-term average frequency of retries.
+> > > 
+> > > So we start with a 15 second delay, and then go to 60 seconds?
+> > 
+> > I agree that a server should normally be doing the wait on its own if
+> > the wait would be on the order of an rpc round trip.
+> > 
+> > So I'd be inclined to start with a delay that was an order of magnitude
+> > or two more than a round trip.
+> > 
+> > And I'd expect NFS isn't common on networks with 1-second latencies.
+> > 
+> > So the 1/10 second we're using in the synchronous case sounds closer to
+> > the right ballpark to me.
+> 
+> OK, then. Now all I need is actual motivation for changing the existing
+> code other than handwaving arguments about "polling is better than flat
+> waits".
+> What actual use cases are impacting us now, other than the AIX design
+> decision to force CLOSE to retry at least once before succeeding?
 
-Usually I associate sth named assert() that it does an ungraceful exit. Maybe __test() or __check()?
+Nah, I've got nothing, and I agree that the AIX problem is there bug.
 
-> +	va_list vl;
-> +	const char *m;
-> +	char msg[BUFSIZ];
-> +
-> +	if (expr)
-> +		return TEST_PASS;
-> +
-> +	fprintf(stderr, "\n(%s:%d) ", filename, line);
-> +
-> +	va_start(vl, fmt);
-> +	m = va_arg(vl, char *);
-> +	if (!m)
-> +		m = fmt;
-> +	else
-> +		fprintf(stderr, "%s ", fmt);
-> +
-> +	vsnprintf(msg, sizeof msg, m, vl);
+Just for fun I looked at re-checked the Linux server cases.  As far as I
+can tell they are:
 
-Nitpick: sizeof(msg)
+	- delegations: returned immediately on detection of any
+	  conflict.  The current behavior in the sync case looks
+	  reasonable to me.
+	- allocation failures: not really sure it's the best error, but
+	  it seems to be all the protocol offers.  We probably don't
+	  care much what the client does in this case.
+	- some rare cases that would probably indicate bugs (e.g.,
+	  attempting to destroy a client while other rpc's from that
+	  client are running.)  Again we don't care what the client does
+	  here.
+	- the 4.1 slot-inuse case.
 
-> +	va_end(vl);
-> +
-> +	fprintf(stderr, "%s\n", msg);
+We also by default map four errors (ETIMEDOUT, EAGAIN, EWOULDBLOCK,
+ENOMEM) to delay.  I thought I remembered one of those being used by
+some HFS system, but can't actually find an example now.  A quick grep
+doesn't show anything interesting.
 
-Not sure what exactly you are trying to accomplish here in this function?
-Why don't you use vfprintf() and leave this hackery aside?
-
-va_list vl;
-
-va_start(vl, fmt);
-fprintf(stderr, "(%s:%d) ", filename, line);
-vfprintf(stderr, fmt, vl);
-va_end(vl);
-
-> +	return TEST_FAIL;
-> +}
-> +
-> +test_result_t run_all_tests(struct generic_test *test, void *param)
-> +{
-> +	int i;
-> +	char *ptr = test->testcases;
-> +	test_result_t rc = TEST_PASS;
-
-Here you don't need to inint rc, since you overwrite immediately.
-
-> +	rc = test->prepare ? test->prepare(param) : 0;
-
-Also replace 0 with whatever you have defined for TEST_PASS or TEST_FAIL,
-otherwise misleading.
-
-> +	if (rc == TEST_FAIL)
-> +		return rc;
-> +
-> +	fprintf(stderr, "Testing: %s ", test->name);
-> +	for (i = 0; i < test->testcase_count; i++) {
-> +
-
-No whitespace here.
-
-> +		rc |= test->run(ptr);
-> +		ptr += test->testcase_size;
-> +		
-> +		if (rc == TEST_FAIL && test->abort_on_fail) {
-> +			fprintf(stderr, "Test aborted\n");
-> +			break;
-> +		}
-> +	}
-> +
-> +	fprintf(stderr, "\t\t%s\n", rc ? "[FAIL]" : "[PASS]");
-> +	return rc;
-> +}
-> +
-> diff --git a/tools/testing/selftests/lib/selftests.h b/tools/testing/selftests/lib/selftests.h
-> new file mode 100644
-> index 0000000..6210199
-> --- /dev/null
-> +++ b/tools/testing/selftests/lib/selftests.h
-> @@ -0,0 +1,67 @@
-> +#ifndef SELFTESTS_H
-> +#define SELFTESTS_H
-> +
-> +#include <stdio.h>
-> +#include <stdlib.h>
-> +#include <errno.h>
-> +
-> +typedef enum test_result {
-> +	TEST_PASS = 0,
-> +	TEST_FAIL,
-> +} test_result_t;
-
-I have no strong opinion here, but do we need to make this as an enum and then do
-bit-operations on it?
-
-> +test_result_t __assert(int expr, const char *filename, int line, const char *fmt, ...);
-
-Nitpick:
-
-If would be nice if you move run_all_tests() either here below this one or the other way
-around, so that function decls are not distributed over the file, but together.
-
-> +#define abort(cond) do {							\
-> +	if (!(cond)) {								\
-> +		fprintf(stderr, "%s:%d %s\n", __FILE__, __LINE__, #cond);	\
-> +		perror("");							\
-
-perror() could be removed from here and put into fprintf() by using f.e. %s + strerror(errno).
-
-> +		exit(EXIT_FAILURE);						\
-> +	}									\
-> +} while (0)
-> +
-> +#define pass_if(expr, label, ret)				\
-> +	do {                                                    \
-> +		if (expr) {					\
-> +			ret = TEST_PASS;			\
-> +			goto label;				\
-> +		}						\
-> +	} while (0)
-
-In cases where you make use of this macro, it's always like ...
-
-<function>
-{
-	pass_if(<cond>, out, ret);
-[...]
-out:
-	return ret;
-}
-
-Not sure if this simplifies or rather obfuscates things. Maybe other people
-like it, not sure ...
-
-> +/* @expr:   a boolean expression
-> + * @label:  jump here to free resources if it fails
-> + * @ret:    a test_result_t variable that will hold the result of the test
-> + *          This can be later returned from the test function.
-> + */
-> +#define check(expr, label, ret, ...)					     \
-> +	do {                                                                 \
-> +		ret = __assert(expr, __FILE__, __LINE__,       		     \
-> +			       "Assertion '" #expr "' failed", __VA_ARGS__); \
-> +		if (!(expr)) {						     \
-> +			perror("");					     \
-> +			goto label;                                          \
-> +		}							     \
-> +	} while (0)
-
-Ditto.
-
-> +struct generic_test {
-> +	const char *name;
-> +	void *private;
-> +
-> +
-
-Why do you have two blank lines here?
-
-> +	void *testcases;
-
-It seems you like having void* pointers, right? This is very unintuitive here (and
-weird that you iterate with a char* pointer over it in function run_all_tests())
-and at least needs some comments. Otherwise people will have to look into your
-example to get to know what you mean.
-
-Also, what is the difference between testcases and private? I have not seen that
-you use private anywhere.
-
-> +	int testcase_size;
-
-Nitpick (but that depends if you keep void*): size_t len;
-
-> +	int testcase_count;
-
-Nitpick (ditto): unsigned int num_cases;
-
-> +	/* Ends all tests if one fails */
-> +	int abort_on_fail;
-
-bool abort_on_fail;
-
-> +	test_result_t (*prepare)(void *);
-> +	test_result_t (*run)(void *);
-> +	test_result_t (*cleanup)(void *);
-> +};
-> +
-> +test_result_t run_all_tests(struct generic_test *test, void *param);
-> +
-> +#endif
-> +
-> +
-
-Also no blank lines at the end of a file!
-
-Ok, for now I leave the other patches aside, maybe you have some comments to the
-review, a new version, or wait a while for others to give feedback as well.
-
-Thanks and cheers,
-
-Daniel
+--b.
