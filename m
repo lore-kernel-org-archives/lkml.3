@@ -1,100 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933067Ab3DYUfU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 16:35:20 -0400
-Received: from www.linutronix.de ([62.245.132.108]:45966 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759126Ab3DYUbo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 16:31:44 -0400
-Message-Id: <20130425143435.635040849@linutronix.de>
-User-Agent: quilt/0.48-1
-Date: Thu, 25 Apr 2013 20:31:43 -0000
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@elte.hu>,
-        Magnus Damm <magnus.damm@gmail.com>
-Subject: [patch 02/15] clocksource: Always verify highres capability
-References: <20130425142452.908423538@linutronix.de>
-Content-Disposition: inline;
- filename=clocksource-verify-highres-capability.patch
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	id S933095Ab3DYUfw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 16:35:52 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:50688 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933072Ab3DYUfu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Apr 2013 16:35:50 -0400
+Date: Thu, 25 Apr 2013 14:35:18 -0600
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: Kay Sievers <kay@vrfy.org>, Alexander Holler <holler@ahsoftware.de>,
+        LKML <linux-kernel@vger.kernel.org>, Feng Tang <feng.tang@intel.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Subject: Re: CONFIG_RTC_HCTOSYS lost on x86 with ALWAYS_USE_PERSISTENT_CLOCK
+ changes?
+Message-ID: <20130425203518.GC31863@obsidianresearch.com>
+References: <517746E4.908@linaro.org>
+ <CAPXgP128yAq1jju-gsZcaS-mZPt+7tq0tt-uVk3Yqr77abd26Q@mail.gmail.com>
+ <51774F44.2060704@linaro.org>
+ <517769A9.5060308@ahsoftware.de>
+ <51780348.6090202@linaro.org>
+ <5178D719.2060405@ahsoftware.de>
+ <5179562C.3000903@linaro.org>
+ <20130425183301.GA31863@obsidianresearch.com>
+ <CAPXgP13PaBqtU+MQnz6fT+B18WJP3_tqSCv+OYA5W_z6F=VWdg@mail.gmail.com>
+ <517989E7.3040101@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <517989E7.3040101@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.162
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a clocksource has a (wrong) high rating, but can't be used as a
-timebase for oneshot tick mode, it is unconditionally selected even
-when the system is already in oneshot tick mode. This causes full
-system failure.
+On Thu, Apr 25, 2013 at 12:54:15PM -0700, John Stultz wrote:
 
-Verify the clocksource selection against the oneshot mode.
+> That said, I suspect we need RTC equivalents to the xen/kvm/vrtc
+> logic in the x86 persistent_clock code before we'll be able to tear
+> out the persistent_clock code (I think just cmos and efi have RTC
+> drivers).
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- kernel/time/clocksource.c |   31 ++++++++++++++++++++++++++-----
- 1 file changed, 26 insertions(+), 5 deletions(-)
+Aha! Maybe this is why my Xen servers always seem to have the wrong
+time in the RTC :)
 
-Index: tip/kernel/time/clocksource.c
-===================================================================
---- tip.orig/kernel/time/clocksource.c
-+++ tip/kernel/time/clocksource.c
-@@ -553,6 +553,26 @@ static u64 clocksource_max_deferment(str
- 
- #ifndef CONFIG_ARCH_USES_GETTIMEOFFSET
- 
-+static struct clocksource *clocksource_find_best(bool oneshot)
-+{
-+	struct clocksource *cs;
-+
-+	if (!finished_booting || list_empty(&clocksource_list))
-+		return NULL;
-+
-+	/*
-+	 * We pick the clocksource with the highest rating. If oneshot
-+	 * mode is active, we pick the highres valid clocksource with
-+	 * the best rating.
-+	 */
-+	list_for_each_entry(cs, &clocksource_list, list) {
-+		if (oneshot && !(cs->flags & CLOCK_SOURCE_VALID_FOR_HRES))
-+			continue;
-+		return cs;
-+	}
-+	return NULL;
-+}
-+
- /**
-  * clocksource_select - Select the best clocksource available
-  *
-@@ -563,12 +583,14 @@ static u64 clocksource_max_deferment(str
-  */
- static void clocksource_select(void)
- {
-+	bool oneshot = tick_oneshot_mode_active();
- 	struct clocksource *best, *cs;
- 
--	if (!finished_booting || list_empty(&clocksource_list))
-+	/* Find the best suitable clocksource */
-+	best = clocksource_find_best(oneshot);
-+	if (!best)
- 		return;
--	/* First clocksource on the list has the best rating. */
--	best = list_first_entry(&clocksource_list, struct clocksource, list);
-+
- 	/* Check for the override clocksource. */
- 	list_for_each_entry(cs, &clocksource_list, list) {
- 		if (strcmp(cs->name, override_name) != 0)
-@@ -578,8 +600,7 @@ static void clocksource_select(void)
- 		 * capable clocksource if the tick code is in oneshot
- 		 * mode (highres or nohz)
- 		 */
--		if (!(cs->flags & CLOCK_SOURCE_VALID_FOR_HRES) &&
--		    tick_oneshot_mode_active()) {
-+		if (!(cs->flags & CLOCK_SOURCE_VALID_FOR_HRES) && oneshot) {
- 			/* Override clocksource cannot be used. */
- 			printk(KERN_WARNING "Override clocksource %s is not "
- 			       "HRT compatible. Cannot switch while in "
+I'm not sure what is going on with Xen, my Xenserver installs have a
+/sys/class/rtc/rtc0 in dom0 which is rtc_cmos (bound via a PNP device),
+but the Xen platform code seem to route dom0 set_wallclock to a
+hypervisor call.. So, like on normal x86, not sure why userspace and
+NTP auto-sync use different code.
 
+I have a feeling the set_wallclock method doesn't actually work,
+because I have had several hard crashes on Xensever boxes over the
+years and the RTC was always wrong on reboot, this suggests to me the
+NTP update of the RTC via set_wallclock perhaps is not working..
 
+Xen Folks: If xen_set_wallclock is bogus, or if using the set method
+via in rtc_cmos is OK, please return -ENODEV from dom0
+xen_set_wallclock and rely on the new CONFIG_RTC_SYSTOHC path for NTP
+synchronization.
+
+I wonder if arch/x86/platform/mrst/vrtc.c and rtc-mrst.c are the same
+thing?
+
+Jason
