@@ -1,66 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932482Ab3DYOOw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 10:14:52 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:40846 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932256Ab3DYOOu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 10:14:50 -0400
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-To: Zhang Rui <rui.zhang@intel.com>
-CC: <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Eduardo Valentin <eduardo.valentin@ti.com>,
-        Russell King <rmk@arm.linux.org.uk>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Hongbo Zhang <hongbo.zhang@stericsson.com>,
-        <devicetree-discuss@lists.ozlabs.org>
-Subject: [PATCH 2/2] thermal: db8500_cpufreq_cooling: remove usage of IS_ERR_OR_NULL()
-Date: Thu, 25 Apr 2013 10:13:34 -0400
-Message-ID: <1366899214-22639-3-git-send-email-eduardo.valentin@ti.com>
-X-Mailer: git-send-email 1.8.2.1.342.gfa7285d
-In-Reply-To: <1366899214-22639-1-git-send-email-eduardo.valentin@ti.com>
-References: <1366899214-22639-1-git-send-email-eduardo.valentin@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S932456Ab3DYOP3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 10:15:29 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:34507 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932256Ab3DYOP2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Apr 2013 10:15:28 -0400
+Message-ID: <1366899321.8012.1.camel@phoenix>
+Subject: [PATCH] regulator: max8952: Add missing config.of_node setting for
+ regulator register
+From: Axel Lin <axel.lin@ingics.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Tomasz Figa <t.figa@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Date: Thu, 25 Apr 2013 22:15:21 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch changes the driver to avoid the usage of IS_ERR_OR_NULL()
-macro. This macro can lead to dangerous results, like returning
-success (0) during a failure scenario (NULL pointer handling).
-
-The case present in this driver can be translated to a simple
-check for IS_ERR(), as the cpufreq_cooling_register() returns
-either a valid pointer or an ERR_PTR().
-
-Cc: Zhang Rui <rui.zhang@intel.com>
-Cc: Russell King <rmk@arm.linux.org.uk>
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Cc: Rob Herring <rob.herring@calxeda.com>
-Cc: Hongbo Zhang <hongbo.zhang@stericsson.com>
-Cc: linux-pm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Cc: devicetree-discuss@lists.ozlabs.org
-Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
 ---
- drivers/thermal/db8500_cpufreq_cooling.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/regulator/max8952.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/thermal/db8500_cpufreq_cooling.c b/drivers/thermal/db8500_cpufreq_cooling.c
-index 21419851..786d192 100644
---- a/drivers/thermal/db8500_cpufreq_cooling.c
-+++ b/drivers/thermal/db8500_cpufreq_cooling.c
-@@ -37,7 +37,7 @@ static int db8500_cpufreq_cooling_probe(struct platform_device *pdev)
- 	cpumask_set_cpu(0, &mask_val);
- 	cdev = cpufreq_cooling_register(&mask_val);
+diff --git a/drivers/regulator/max8952.c b/drivers/regulator/max8952.c
+index 4259c78..5259c2f 100644
+--- a/drivers/regulator/max8952.c
++++ b/drivers/regulator/max8952.c
+@@ -225,6 +225,7 @@ static int max8952_pmic_probe(struct i2c_client *client,
+ 	config.dev = max8952->dev;
+ 	config.init_data = pdata->reg_data;
+ 	config.driver_data = max8952;
++	config.of_node = client->dev.of_node;
  
--	if (IS_ERR_OR_NULL(cdev)) {
-+	if (IS_ERR(cdev)) {
- 		dev_err(&pdev->dev, "Failed to register cooling device\n");
- 		return PTR_ERR(cdev);
- 	}
+ 	config.ena_gpio = pdata->gpio_en;
+ 	if (pdata->reg_data->constraints.boot_on)
 -- 
-1.8.2.1.342.gfa7285d
+1.7.10.4
+
+
 
