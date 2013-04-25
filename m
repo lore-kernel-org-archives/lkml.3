@@ -1,51 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759083Ab3DYQt5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 12:49:57 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:56746
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758966Ab3DYQtz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 12:49:55 -0400
-Date: Thu, 25 Apr 2013 18:48:37 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        eranian@google.com, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 1/2] Fix perf LBR filtering
-Message-ID: <20130425164837.GD5828@dyad.programming.kicks-ass.net>
-References: <1366844694-2770-1-git-send-email-andi@firstfloor.org>
- <20130425162535.GA5828@dyad.programming.kicks-ass.net>
- <20130425164100.GC16732@two.firstfloor.org>
+	id S932598Ab3DYQ5R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 12:57:17 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:64392 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932087Ab3DYQ5Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Apr 2013 12:57:16 -0400
+X-IronPort-AV: E=Sophos;i="4.87,551,1363132800"; 
+   d="scan'208";a="21599399"
+Date: Thu, 25 Apr 2013 17:57:11 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>
+Subject: [PATCH v5 0/7] xen/arm: move to mach-virt and support SMP
+Message-ID: <alpine.DEB.2.02.1304251750160.4180@kaball.uk.xensource.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130425164100.GC16732@two.firstfloor.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 25, 2013 at 06:41:00PM +0200, Andi Kleen wrote:
-> > So why not do the same as we do for userspace? Copy MAX_INSN_SIZE bytes
-> > and trap -EFAULT.
-> 
-> Read the whole description, then you'll know why that is insecure.
+Hi all,
+this patch series, based on 3.9-rc3, moves xenvm to mach-virt,
+introduces SMP support in Xen on ARM and implements machine reboot and
+power off via Xen sched_op hypercalls.
 
-You didn't actually explicitly mention it; you just said unconditional reading
-of random addresses was bad.
+Each patch comes with a detailed changelog.
 
-You list:
 
-> But that is dangerous if can be controlled by the user:
-> - It can be used to crash the kernel
-> - It allows to probe any physical address for a small set of values
-> (valid call op codes) which is an information leak.
-> - It may point to a side effect on read MMIO region
+The merge window is approaching, this patch series only contains Xen
+specific changes for ARM, if anybody has any objections speak now
+please.
 
-Traping the read deals with the first. The second shouldn't be a problem since
-we generally only allow kernel info for CAP_ADMIN; if we don't already for LBR
-that needs to be fixed separately.
+I would like an ack from an ARM maintainer on patch #4 and #5 since they
+touch generic ARM Makefiles.
 
-That only leaves the third.. can we descern MMIO maps from the kernel page tables?
 
+Changes in v5:
+- allocate xen_vcpu_info dynamically, aligning it to the size of the
+struct;
+- use VCPUOP_register_vcpu_info on cpu0 too;
+- set pm_power_off and arm_pm_restart from the Xen specific
+intialization code.
+
+
+
+Stefano Stabellini (7):
+      xen/arm: actually pass a non-NULL percpu pointer to request_percpu_irq
+      xen/arm: implement HYPERVISOR_vcpu_op
+      xen/arm: SMP support
+      xen: move the xenvm machine to mach-virt
+      xen/arm: XEN selects ARM_PSCI
+      xenvm: add a simple PSCI node and a second cpu
+      xen/arm: use sched_op hypercalls for machine reboot and power off
+
+ arch/arm/Kconfig                     |    1 +
+ arch/arm/boot/dts/Makefile           |    4 +-
+ arch/arm/boot/dts/xenvm-4.2.dts      |   13 ++++++
+ arch/arm/include/asm/xen/hypercall.h |    1 +
+ arch/arm/mach-vexpress/v2m.c         |    1 -
+ arch/arm/mach-virt/virt.c            |    1 +
+ arch/arm/xen/enlighten.c             |   75 ++++++++++++++++++++++++++++++---
+ arch/arm/xen/hypercall.S             |    1 +
+ 8 files changed, 87 insertions(+), 10 deletions(-)
+
+
+git://git.kernel.org/pub/scm/linux/kernel/git/sstabellini/xen.git 3.9-rc3-smp-5-tag
+
+Cheers,
+
+Stefano
