@@ -1,141 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758597Ab3DYNi2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 09:38:28 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:41051 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756342Ab3DYNi0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 09:38:26 -0400
-Date: Thu, 25 Apr 2013 08:38:25 -0500
-From: Cliff Wickman <cpw@sgi.com>
-To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-Cc: ebiederm@xmission.com, vgoyal@redhat.com,
-        kumagai-atsushi@mxc.nes.nec.co.jp, lisa.mitchell@hp.com,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 0/8] kdump, vmcore: support mmap() on /proc/vmcore
-Message-ID: <20130425133825.GA25089@sgi.com>
-References: <20130413002000.18245.21513.stgit@localhost6.localdomain6>
+	id S1758620Ab3DYNkZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 09:40:25 -0400
+Received: from smtp.eu.citrix.com ([46.33.159.39]:32826 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757045Ab3DYNkX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Apr 2013 09:40:23 -0400
+X-IronPort-AV: E=Sophos;i="4.87,551,1363132800"; 
+   d="scan'208";a="3933837"
+Message-ID: <1366897221.20256.544.camel@zakaz.uk.xensource.com>
+Subject: Re: [PATCH v4 2/7] xen/arm: SMP support
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>
+Date: Thu, 25 Apr 2013 14:40:21 +0100
+In-Reply-To: <1366831695-13214-2-git-send-email-stefano.stabellini@eu.citrix.com>
+References: <alpine.DEB.2.02.1304242012590.4180@kaball.uk.xensource.com>
+	 <1366831695-13214-2-git-send-email-stefano.stabellini@eu.citrix.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130413002000.18245.21513.stgit@localhost6.localdomain6>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 05, 2013 at 12:04:02AM +0000, HATAYAMA Daisuke wrote:
-> Currently, read to /proc/vmcore is done by read_oldmem() that uses
-> ioremap/iounmap per a single page. For example, if memory is 1GB,
-> ioremap/iounmap is called (1GB / 4KB)-times, that is, 262144
-> times. This causes big performance degradation.
+On Wed, 2013-04-24 at 20:28 +0100, Stefano Stabellini wrote:
+> Map vcpu_info using VCPUOP_register_vcpu_info on secondary cpus.
 > 
-> In particular, the current main user of this mmap() is makedumpfile,
-> which not only reads memory from /proc/vmcore but also does other
-> processing like filtering, compression and IO work.
+> Call enable_percpu_irq on every cpu.
 > 
-> To address the issue, this patch implements mmap() on /proc/vmcore to
-> improve read performance.
+> Changed in v2:
+> - move the percpu variable argument fix to a separate patch;
+> - remove unused variable.
 > 
-> Benchmark
-> =========
-> 
-> You can see two benchmarks on terabyte memory system. Both show about
-> 40 seconds on 2TB system. This is almost equal to performance by
-> experimtanal kernel-side memory filtering.
-> 
-> - makedumpfile mmap() benchmark, by Jingbai Ma
->   https://lkml.org/lkml/2013/3/27/19
-> 
-> - makedumpfile: benchmark on mmap() with /proc/vmcore on 2TB memory system
->   https://lkml.org/lkml/2013/3/26/914
-> 
-> ChangeLog
-> =========
-> 
-> v3 => v4)
-> 
-> - Rebase 3.9-rc7.
-> - Drop clean-up patches orthogonal to the main topic of this patch set.
-> - Copy ELF note segments in the 1st kernel just as in v1. Allocate
->   vmcore objects per pages. => See [PATCH 5/8]
-> - Map memory referenced by PT_LOAD entry directly even if the start or
->   end of the region doesn't fit inside page boundary, no longer copy
->   them as the previous v3. Then, holes, outside OS memory, are visible
->   from /proc/vmcore. => See [PATCH 7/8]
-> 
-> v2 => v3)
-> 
-> - Rebase 3.9-rc3.
-> - Copy program headers seprately from e_phoff in ELF note segment
->   buffer. Now there's no risk to allocate huge memory if program
->   header table positions after memory segment.
-> - Add cleanup patch that removes unnecessary variable.
-> - Fix wrongly using the variable that is buffer size configurable at
->   runtime. Instead, use the varibale that has original buffer size.
-> 
-> v1 => v2)
-> 
-> - Clean up the existing codes: use e_phoff, and remove the assumption
->   on PT_NOTE entries.
-> - Fix potencial bug that ELF haeader size is not included in exported
->   vmcoreinfo size.
-> - Divide patch modifying read_vmcore() into two: clean-up and primary
->   code change.
-> - Put ELF note segments in page-size boundary on the 1st kernel
->   instead of copying them into the buffer on the 2nd kernel.
-> 
-> Test
-> ====
-> 
-> This patch set is composed based on v3.9-rc7.
-> 
-> Done on x86-64, x86-32 both with 1GB and over 4GB memory environments.
-> 
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 > ---
+>  arch/arm/xen/enlighten.c |   38 +++++++++++++++++++++++++++++++++++++-
+>  1 files changed, 37 insertions(+), 1 deletions(-)
 > 
-> HATAYAMA Daisuke (8):
->       vmcore: support mmap() on /proc/vmcore
->       vmcore: treat memory chunks referenced by PT_LOAD program header entries in \
->                 page-size boundary in vmcore_list
->       vmcore: count holes generated by round-up operation for page boudary for size \
->                 of /proc/vmcore
->       vmcore: copy ELF note segments in the 2nd kernel per page vmcore objects
->       vmcore: Add helper function vmcore_add()
->       vmcore, procfs: introduce MEM_TYPE_CURRENT_KERNEL flag to distinguish objects \
-> copied in 2nd kernel  vmcore: clean up read_vmcore()
->       vmcore: allocate buffer for ELF headers on page-size alignment
-> 
-> 
->  fs/proc/vmcore.c        |  349 ++++++++++++++++++++++++++++++++---------------
->  include/linux/proc_fs.h |    8 +
->  2 files changed, 245 insertions(+), 112 deletions(-)
-> 
-> -- 
-> 
-> Thanks.
-> HATAYAMA, Daisuke
+> diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
+> index 99ce189..94bbf3b 100644
+> --- a/arch/arm/xen/enlighten.c
+> +++ b/arch/arm/xen/enlighten.c
+> @@ -2,6 +2,7 @@
+>  #include <xen/events.h>
+>  #include <xen/grant_table.h>
+>  #include <xen/hvm.h>
+> +#include <xen/interface/vcpu.h>
+>  #include <xen/interface/xen.h>
+>  #include <xen/interface/memory.h>
+>  #include <xen/interface/hvm/params.h>
+> @@ -32,6 +33,7 @@ struct shared_info xen_dummy_shared_info;
+>  struct shared_info *HYPERVISOR_shared_info = (void *)&xen_dummy_shared_info;
+>  
+>  DEFINE_PER_CPU(struct vcpu_info *, xen_vcpu);
+> +DEFINE_PER_CPU(struct vcpu_info, xen_vcpu_info);
 
-This is a very important patch set for speeding the kdump process.
-(patches 1 - 8)
+>  /* These are unused until we support booting "pre-ballooned" */
+>  unsigned long xen_released_pages;
+> @@ -148,6 +150,32 @@ int xen_unmap_domain_mfn_range(struct vm_area_struct *vma,
+>  }
+>  EXPORT_SYMBOL_GPL(xen_unmap_domain_mfn_range);
+>  
+> +static int __init xen_secondary_init(unsigned int cpu)
+> +{
+> +	struct vcpu_register_vcpu_info info;
+> +	struct vcpu_info *vcpup;
+> +	int err;
+> +
+> +	if (cpu == 0)
+> +		return 0;
+> +
+> +	pr_info("Xen: initializing cpu%d\n", cpu);
+> +	vcpup = &per_cpu(xen_vcpu_info, cpu);
+> +
+> +	info.mfn = __pa(vcpup) >> PAGE_SHIFT;
+> +	info.offset = offset_in_page(vcpup);
 
-We have found the mmap interface to /proc/vmcore about 80x faster than the 
-read interface.
-That is, doing mmap's and copying data (in pieces the size of page
-structures) transfers all of /proc/vmcore about 80 times faster than
-reading it.
+Do you need to somehow guarantee it's not going to cross a page? Maybe
+standard C alignment rules make that the case?
 
-This greatly speeds up the capture of a kdump, as the scan of page
-structures takes the bulk of the time in dumping the OS on a machine
-with terabytes of memory.
+> @@ -216,6 +245,8 @@ static int __init xen_guest_init(void)
+>  	 * is required to use VCPUOP_register_vcpu_info to place vcpu info
+>  	 * for secondary CPUs as they are brought up. */
+>  	per_cpu(xen_vcpu, 0) = &HYPERVISOR_shared_info->vcpu_info[0];
+> +	for_each_online_cpu(i)
+> +		xen_secondary_init(i);
+>  
+>  	gnttab_init();
+>  	if (!xen_initial_domain())
+[...]
+> @@ -244,7 +280,7 @@ static int __init xen_init_events(void)
+>  		return -EINVAL;
+>  	}
+>  
+> -	enable_percpu_irq(xen_events_irq, 0);
+> +	on_each_cpu(xen_percpu_enable_events, NULL, 0);
 
-We would very much like to see this set make it into the 3.10 release.
+It feels like there ought to be some sort of per-cpu bringup callback
+which takes care of these dynamically. Maybe that doesn't matter until
+we get vcpu hotplug going?
 
-Acked-by: Cliff Wickman <cpw@sgi.com>
+>  
+>  	return 0;
+>  }
 
--Cliff
--- 
-Cliff Wickman
-SGI
-cpw@sgi.com
-(651) 683-3824
+
