@@ -1,28 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757344Ab3DYKuN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 06:50:13 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50824 "EHLO
+	id S1757846Ab3DYKvP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 06:51:15 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50830 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753596Ab3DYKuL (ORCPT
+	by vger.kernel.org with ESMTP id S1755926Ab3DYKvO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 06:50:11 -0400
-Date: Thu, 25 Apr 2013 11:50:10 +0100
+	Thu, 25 Apr 2013 06:51:14 -0400
+Date: Thu, 25 Apr 2013 11:51:13 +0100
 From: Mark Brown <broonie@kernel.org>
 To: Axel Lin <axel.lin@ingics.com>
-Cc: Matt Sealey <matt@genesi-usa.com>,
-        Steev Klimaszewski <steev@genesi-usa.com>,
-        Yong Shen <yong.shen@linaro.org>, Liam Girdwood <lgirdwood@gmail.com>,
+Cc: Milo Kim <milo.kim@ti.com>, Liam Girdwood <lgirdwood@gmail.com>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] regulator: mc13892: Use regulator_map_voltage_ascend for
- mc13892_sw_regulator_ops
-Message-ID: <20130425105010.GL5019@opensource.wolfsonmicro.com>
-References: <1366807349.16547.1.camel@phoenix>
+Subject: Re: [PATCH 1/2] regulator: lp872x: Use regulator_map_voltage_ascend
+Message-ID: <20130425105112.GM5019@opensource.wolfsonmicro.com>
+References: <1366807487.16547.3.camel@phoenix>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="PNftq4k6NuHCGvy8"
+	protocol="application/pgp-signature"; boundary="QeIEYJGnsH0eC7HY"
 Content-Disposition: inline
-In-Reply-To: <1366807349.16547.1.camel@phoenix>
+In-Reply-To: <1366807487.16547.3.camel@phoenix>
 X-Cookie: Caution: Keep out of reach of children.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -30,36 +27,36 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---PNftq4k6NuHCGvy8
+--QeIEYJGnsH0eC7HY
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Wed, Apr 24, 2013 at 08:42:29PM +0800, Axel Lin wrote:
-> Both mc13892_sw1 and mc13892_sw voltage table have ascendant voltage list.
+On Wed, Apr 24, 2013 at 08:44:47PM +0800, Axel Lin wrote:
+> All regulators have ascendant voltage list in this driver.
 > Use regulator_map_voltage_ascend for them.
 
-Applied, thanks.
+Applied both, thanks.
 
---PNftq4k6NuHCGvy8
+--QeIEYJGnsH0eC7HY
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJReQpYAAoJELSic+t+oim9nq4P/2qvwG6eR+2nW0NIVy3n5tP7
-a1mgbL0/FrSPEfaVBk/+caVECl0O5tfUVUErWnLN3fqe7xHaSXzcvzqJ8KbsGTRS
-0nLeImUYYuRnRGPIgCUd+pTnJbA4SuSHUxxM8/fZjjbuX6KgL1miSFtjUxURNG3p
-ufziCcoyEptZEHsn9O+4Oq+0cTcTuUNiAwYFvTXsNk3L8vkVaobL4rM4pggToj5c
-yFzaH20ZZ5eAJDoD9gpy7OewdAidcYjMUYyj6RisVNljAcxTv5W/rLzJ7a+ZCRJw
-pOzRPvpFIiLYyoyGKg6XPqFTIMvnviPXLqxotK3Mhav5Pu/2kxGhU7k/Zi4KSWh2
-ZNaOMwjldOcf9AhirucGSCZjRpekNYyvI16tBNVLPYud+/Obo08RIhjAOYT/0xfX
-tw8mtIfCAhbpk2RwkgP9ZEfUWggzTLAOBi4BnpgGe3sT+SmqS0I/ofBSButpCWB/
-OVBZV9a4mf+0GhwwM7bZDtyW+Sj5WiOUnRU7zPkWpgj1Z9Pwf65rNJiHyukXZxXa
-SSKf0pnf0EdLJ0UzLSMYVU5d5fvIZwbKj2O8nsHVsU4JlEJg0wWJ3tQEJhWv8S67
-0v4qzTM43ZAgJXVqJNYj6uRJZFWKIYJXgKyQcwvNTK5BYvjLfYGHSfUdiUvSuW9y
-V7AOGJdcZEkTsZr95KT7
-=oseJ
+iQIcBAEBAgAGBQJReQp5AAoJELSic+t+oim9OyAP/1zswdFueyEhA8Sdjz46e94x
+gj7JfNbIcaKwLfpwRiq24j9nyjtu44oyVlrhi6+A6w1R0e4bjCEHmP7ibOqQOK07
+S6n411Fy1P2MelajO+WSwvQlW+nk2AC/2c24INt6PkYoyCQCVf7PSng9gSMoK4/6
+gtyyKpngTW7eernOFu8UccyyFByjSD+jxUTRE4+5Qbse0nNsKNgLq0HP0kNRFBnN
+0dGA9qVE13wx22ACnaJJSzI+OVImMf/d3xFwM9513xQSSVS/ray3QH0ZXNO7+EBA
+lCXrg3BOgfhT7CwFEJb+oWIl5pF8k8Gfd4e59vUHdKuzQ/8G2coN09t6bgZMdkpB
+BY2S7gTK3JJWia5whfZEC3ni8kbDhnQ7IpBTUJDhYkybQP4iedxtPaHjo4P2s+Bz
+IGuFwUPlN6RsTTcnaEynZpCxO52ewQQ/G7v9mmdbM8wyk2yO9dxZ+uhaVPZofySp
+sAzdi9ULCRDVOPEq5ZJGKdyDMgVqtXpSTrtFjNzdqZ1+tcZ360kvO2SG8MnPHMRr
+Li0AAxc/2CVMDpS5ofxsTq4vbV09d3h/ZW5plDTyv6xdQCZIe4LzeMytrjusLoE5
+2GrCFeZlm3z1LqOIfakbFSIOPAGQu34/AmqJPssmSeJn8IEEL4Q4kEkTmBlXRv9c
+dSdkZWwaTsQTwZ10eI7X
+=PLYC
 -----END PGP SIGNATURE-----
 
---PNftq4k6NuHCGvy8--
+--QeIEYJGnsH0eC7HY--
