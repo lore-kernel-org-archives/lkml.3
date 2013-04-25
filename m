@@ -1,256 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759460Ab3DYXBE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 19:01:04 -0400
-Received: from mail-ia0-f176.google.com ([209.85.210.176]:59926 "EHLO
-	mail-ia0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757640Ab3DYXBC (ORCPT
+	id S1758515Ab3DYXG1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 19:06:27 -0400
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:37531 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758173Ab3DYXGZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 19:01:02 -0400
+	Thu, 25 Apr 2013 19:06:25 -0400
+Message-ID: <5179B6ED.9000301@gmail.com>
+Date: Thu, 25 Apr 2013 18:06:21 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <1366727607-27444-7-git-send-email-james.hogan@imgtec.com>
-References: <1366727607-27444-1-git-send-email-james.hogan@imgtec.com>
-	<1366727607-27444-7-git-send-email-james.hogan@imgtec.com>
-Date: Fri, 26 Apr 2013 01:01:01 +0200
-Message-ID: <CACRpkdbzYpQqe4yabAwFSAG2rPstT8jM_--LssHi=ttUYtu1ug@mail.gmail.com>
-Subject: Re: [PATCH 6/8] gpio-tz1090: add TZ1090 gpio driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: James Hogan <james.hogan@imgtec.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
+To: Stephen Boyd <sboyd@codeaurora.org>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
         "devicetree-discuss@lists.ozlabs.org" 
 	<devicetree-discuss@lists.ozlabs.org>,
-        Rob Landley <rob@landley.net>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mark Rutland <Mark.Rutland@arm.com>
+Subject: Re: [PATCHv2 1/4] Documentation: Add memory mapped ARM architected
+ timer binding
+References: <1365812863-5367-1-git-send-email-sboyd@codeaurora.org> <1365812863-5367-2-git-send-email-sboyd@codeaurora.org> <516C6F12.5020208@gmail.com> <516C7231.6060305@codeaurora.org> <5179A488.5050102@gmail.com> <5179B2B2.8000201@codeaurora.org>
+In-Reply-To: <5179B2B2.8000201@codeaurora.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 23, 2013 at 4:33 PM, James Hogan <james.hogan@imgtec.com> wrote:
+On 04/25/2013 05:48 PM, Stephen Boyd wrote:
+> On 04/25/13 14:47, Rob Herring wrote:
+>> On 04/15/2013 04:33 PM, Stephen Boyd wrote:
+>>> On 04/15/13 14:20, Rob Herring wrote:
+>>>> On Fri, Apr 12, 2013 at 7:27 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+>>>>> @@ -26,3 +30,52 @@ Example:
+>>>>>                              <1 10 0xf08>;
+>>>>>                 clock-frequency = <100000000>;
+>>>>>         };
+>>>>> +
+>>>>> +** Memory mapped timer node properties
+>>>>> +
+>>>>> +- compatible : Should at least contain "arm,armv7-timer-mem".
+>>>> Everything about this timer is architecturally defined? If not, let's
+>>>> use a more specific name.
+>>> I'm not sure I'm following you, but everything described here is part of
+>>> the ARM definition. What would be a more specific name?
+>> Something that corresponds to the particular implementation like
+>> cortex-a15 (obviously not an example that has this). I'm fine with
+>> leaving this for now, but would like to see that added when specific SOC
+>> dts are added. Better to be specific in case we need to use it for
+>> something like errata work-arounds. Of course we haven't done that so
+>> far with the arch timer bindings...
+> 
+> Agreed. I'm under the impression that most of our compatible fields
+> should be more specific than they currently are so we can workaround hw
+> bugs like you say. Perhaps the catch all generic one should just be
+> "arm,arm-timer-mem" since it isn't tied to any particular CPU type?
+> 
+>>
+>>>>> +
+>>>>> +- clock-frequency : The frequency of the main counter, in Hz. Optional.
+>>>>> +
+>>>>> +- reg : The control frame base address.
+>>>>> +
+>>>>> +Note that #address-cells, #size-cells, and ranges shall be present to ensure
+>>>>> +the CPU can address a frame's registers.
+>>>>> +
+>>>>> +Frame:
+>>>>> +
+>>>>> +- frame-number: 0 to 7.
+>>>> I'd really like to get rid of the frame numbers and sub-nodes. Is the
+>>>> frame number significant to software?
+>>> We need the frame number to read and write registers in the control
+>>> frame (the first base in the parent node). We currently use it to
+>>> determine if a frame has support for the virtual timer by reading the
+>>> CNTTIDR (a register with 4 bits per frame describing capabilities). If
+>>> we wanted to control access to the second view of a frame we would also
+>>> need to configure the CNTPL0ACRn register that pertains to the frame
+>>> we're controlling. Without a frame number we wouldn't know which
+>>> register to write.
+>> I've gone thru the memory mapped part of the spec now, so I think I
+>> understand things better. I see how the frame number is needed, but...
+>>
+>> The control base is only accessible in secure or hyp mode. How does a
+>> guest know that it is a guest and can't map the control base? Seems like
+>> we need to allow a subset of the binding that is just a reg and
+>> interrupts properties without the frame sub nodes.
+> 
+> I don't see that part. My understanding is that the control base is
+> accessible in non-secure mode and by the guests. There are certain
+> registers within that base that are only accessible in secure mode
+> though: CNTFRQ and CNTNSAR. Also some registers are configurable:
+> CNTACRn and CNTVOFFN. CNTVOFFN is only accessible in the hypervisor.
 
-> Add a GPIO driver for the main GPIOs found in the TZ1090 (Comet) SoC.
-> This doesn't include low-power GPIOs as they're controlled separately
-> via the Powerdown Controller (PDC) registers.
->
-> The driver is instantiated by device tree and supports interrupts for
-> all GPIOs.
->
-> Signed-off-by: James Hogan <james.hogan@imgtec.com>
-> Cc: Grant Likely <grant.likely@secretlab.ca>
-> Cc: Rob Herring <rob.herring@calxeda.com>
-> Cc: Rob Landley <rob@landley.net>
-> Cc: Linus Walleij <linus.walleij@linaro.org>
-> Cc: linux-doc@vger.kernel.org
+The example is section E.8 seems to say otherwise. Perhaps Mark R can
+comment further.
 
-(...)
-> +  - #gpio-cells: Should be 2. The syntax of the gpio specifier used by client
-> +    nodes should have the following values.
-> +       <[phandle of the gpio controller node]
-> +        [gpio number within the gpio bank]
-> +        [standard Linux gpio flags]>
+> We don't really care about CNTFRQ because it's duplicated into each
+> view. We do care about CNTNSAR. Luckily the spec "just works" there in
+> the sense that we can use CNTTIDR in conjunction with CNTACRn and
+> determine if we have access to a frame we're interested in if the
+> CNTTIDR bits say the frame is present and the CNTACRn register says we
+> can access it. If not then it must be locked down for secure users.
+> 
+> Unfortunately hardware doesn't have a way to say that a particular frame
+> is reserved for the hypervisor or the guest kernel/userspace. We need
+> some help from software, so we have the status property express that a
+> particular frame is available. We have to assume the DT is going to be
+> different depending on if you're the hypervisor or the guest. That's a
+> valid assumption right? Otherwise I hope we can do some trapping of the
+> guest's mapping to the control base and then rewrite what they read so
+> that they only see the frame that we want to be available to them.
 
-So when someone using this device tree for Symbian or Windows
-Mobile start to work, what does "standard Linux gpio flags" tell them?
+Yeah, I believe the only way to prevent access within non-secure world
+is with the MMU. So I guess the example is just policy that the
+hypervisor would/may not create a stage2 mapping. You still have the
+same issue that the guest should not be passed the control base. You
+could make the reg property optional, but then what do you do with the
+node name?
 
-> +    Values for gpio specifier:
-> +    - GPIO number: a value in the range 0 to 29.
-> +    - GPIO flags: standard Linux GPIO flags as found in of_gpio.h
+Certainly the guest dtb will be different.
 
-Dito. Linux-specifics are not generally allowed in device trees,
-and if they are anyway used they shall be prefixed with "linux,"
+Rob
 
-> +  Bank subnode optional properties:
-> +  - gpio-ranges: Mapping to pin controller pins
-
-Here you seem to use DT GPIO ranges, yet the pinctrl driver registers
-some GPIO range, care to explain how that fits together?
-
-> +  - #interrupt-cells: Should be 2. The syntax of the interrupt specifier used by
-> +    client nodes should have the following values.
-> +       <[phandle of the interurupt controller]
-> +        [gpio number within the gpio bank]
-> +        [standard Linux irq flags]>
-> +
-> +    Values for irq specifier:
-> +    - GPIO number: a value in the range 0 to 29
-> +    - IRQ flags: standard Linux IRQ flags for edge and level triggering
-
-Same comments.
-
-(...)
-
-+#include <asm/global_lock.h>
-
-What on earth is that. I can only fear it. I don't like the
-looks of that thing.
-
-(...)
-> +/* Convenience register accessors */
-> +static void tz1090_gpio_write(struct tz1090_gpio_bank *bank,
-> +                             unsigned int reg_offs, u32 data)
-> +{
-> +       iowrite32(data, bank->reg + reg_offs);
-> +}
-> +
-> +static u32 tz1090_gpio_read(struct tz1090_gpio_bank *bank,
-> +                           unsigned int reg_offs)
-> +{
-> +       return ioread32(bank->reg + reg_offs);
-> +}
-
-The pinctrl driver included the keyword "inline" for these so
-this should be consistent and do that too.
-
-(...)
-> +static void tz1090_gpio_clear_bit(struct tz1090_gpio_bank *bank,
-> +                                 unsigned int reg_offs,
-> +                                 unsigned int offset)
-> +{
-> +       int lstat;
-> +
-> +       __global_lock2(lstat);
-> +       _tz1090_gpio_clear_bit(bank, reg_offs, offset);
-> +       __global_unlock2(lstat);
-> +}
-
-This global lock scares me.
-
-+static inline void _tz1090_gpio_clear_bit(struct tz1090_gpio_bank *bank,
-+                                         unsigned int reg_offs,
-+                                         unsigned int offset)
-+{
-+       u32 value;
-+
-+       value = tz1090_gpio_read(bank, reg_offs);
-+       value &= ~(0x1 << offset);
-
-I usually do this:
-
-#include <linux/bitops.h>
-
-value &= ~BIT(offset);
-
-+       tz1090_gpio_write(bank, reg_offs, value);
-+}
-
-> +/* caller must hold LOCK2 */
-> +static inline void _tz1090_gpio_set_bit(struct tz1090_gpio_bank *bank,
-> +                                       unsigned int reg_offs,
-> +                                       unsigned int offset)
-> +{
-> +       u32 value;
-> +
-> +       value = tz1090_gpio_read(bank, reg_offs);
-> +       value |= 0x1 << offset;
-
-I usually do this:
-
-#include <linux/bitops.h>
-
-value |= BIT(offset);
-
-> +/* caller must hold LOCK2 */
-> +static inline void _tz1090_gpio_mod_bit(struct tz1090_gpio_bank *bank,
-> +                                       unsigned int reg_offs,
-> +                                       unsigned int offset,
-> +                                       int val)
-
-If val is used as it is, make it a bool.
-
-> +{
-> +       u32 value;
-> +
-> +       value = tz1090_gpio_read(bank, reg_offs);
-> +       value &= ~(0x1 << offset);
-> +       value |= !!val << offset;
-
-You're claming val to [0,1] obviously it's a bool.
-
-> +       tz1090_gpio_write(bank, reg_offs, value);
-> +}
-
-(...)
-> +static int tz1090_gpio_request(struct gpio_chip *chip, unsigned offset)
-> +{
-> +       struct tz1090_gpio_bank *bank = to_bank(chip);
-> +       int ret;
-> +
-> +       ret = pinctrl_request_gpio(chip->base + offset);
-> +       if (ret)
-> +               return ret;
-> +
-> +       tz1090_gpio_set_bit(bank, REG_GPIO_DIR, offset);
-> +       tz1090_gpio_set_bit(bank, REG_GPIO_BIT_EN, offset);
-> +
-> +       return 0;
-> +}
-
-This is nice, it just glues smoothly into pinctrl here.
-
-> +static void tz1090_gpio_free(struct gpio_chip *chip, unsigned offset)
-> +{
-> +       struct tz1090_gpio_bank *bank = to_bank(chip);
-> +
-> +       pinctrl_free_gpio(chip->base + offset);
-> +
-> +       tz1090_gpio_clear_bit(bank, REG_GPIO_BIT_EN, offset);
-> +}
-
-And here.
-
-(...)
-> +static int gpio_set_irq_type(struct irq_data *data, unsigned int flow_type)
-> +{
-> +       struct tz1090_gpio_bank *bank = irqd_to_gpio_bank(data);
-> +       unsigned int type;
-> +       unsigned int polarity;
-> +
-> +       switch (flow_type) {
-> +       case IRQ_TYPE_EDGE_BOTH:
-> +               type = GPIO_EDGE_TRIGGERED;
-> +               polarity = GPIO_POLARITY_LOW;
-> +               break;
-> +       case IRQ_TYPE_EDGE_RISING:
-> +               type = GPIO_EDGE_TRIGGERED;
-> +               polarity = GPIO_POLARITY_HIGH;
-> +               break;
-> +       case IRQ_TYPE_EDGE_FALLING:
-> +               type = GPIO_EDGE_TRIGGERED;
-> +               polarity = GPIO_POLARITY_LOW;
-> +               break;
-> +       case IRQ_TYPE_LEVEL_HIGH:
-> +               type = GPIO_LEVEL_TRIGGERED;
-> +               polarity = GPIO_POLARITY_HIGH;
-> +               break;
-> +       case IRQ_TYPE_LEVEL_LOW:
-> +               type = GPIO_LEVEL_TRIGGERED;
-> +               polarity = GPIO_POLARITY_LOW;
-> +               break;
-> +       default:
-> +               return -EINVAL;
-> +       }
-> +
-> +       tz1090_gpio_irq_type(bank, data->hwirq, type);
-> +       if (type == GPIO_LEVEL_TRIGGERED)
-> +               __irq_set_handler_locked(data->irq, handle_level_irq);
-> +       else
-> +               __irq_set_handler_locked(data->irq, handle_edge_irq);
-> +
-> +       if (flow_type == IRQ_TYPE_EDGE_BOTH)
-> +               tz1090_gpio_irq_next_edge(bank, data->hwirq);
-> +       else
-> +               tz1090_gpio_irq_polarity(bank, data->hwirq, polarity);
-> +
-> +       return 0;
-> +}
-
-This is also very nice and handling the toggling edge in
-a working way.
-
-Overall looking very nice, just needs som polishing, and I'm way
-scared about that global lock.
-
-Yours,
-Linus Walleij
