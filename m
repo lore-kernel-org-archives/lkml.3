@@ -1,84 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755865Ab3DYJ3h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 05:29:37 -0400
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:57161 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753544Ab3DYJ3g (ORCPT
+	id S1755789Ab3DYJbc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 05:31:32 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:1707 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752093Ab3DYJbb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 05:29:36 -0400
-Date: Thu, 25 Apr 2013 10:29:30 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
-        Per Forlin <per.forlin@stericsson.com>, Rabin Vincent <rabin@rab.in>
-Subject: Re: [PATCH 13/32] dmaengine: ste_dma40: Calculate number of logical
- channels from physical ones
-Message-ID: <20130425092930.GI4623@gmail.com>
-References: <1366279934-30761-1-git-send-email-lee.jones@linaro.org>
- <1366279934-30761-14-git-send-email-lee.jones@linaro.org>
- <CACRpkdYq9QLRaaysc=izGgi53ogf1oRHuCwWKW+rQBbE_UtfnA@mail.gmail.com>
+	Thu, 25 Apr 2013 05:31:31 -0400
+X-Spam-Score: -100.8
+Message-ID: <5178F7C3.6070700@asianux.com>
+Date: Thu, 25 Apr 2013 17:30:43 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+To: Michael Neuling <mikey@neuling.org>
+CC: Mike Qiu <qiudayu@linux.vnet.ibm.com>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        linuxppc-dev@lists.ozlabs.org, sfr@canb.auug.org.au, matt@ozlabs.org,
+        linux-kernel@vger.kernel.org, paulus@samba.org,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: Re: [PATCH] PowerPC: kernel: compiling issue, make additional room
+ in exception vector area
+References: <5177965D.9090406@linux.vnet.ibm.com> <20130424083142.GB26834@concordia> <51779941.8080403@linux.vnet.ibm.com> <30651.1366799858@ale.ozlabs.ibm.com> <1366807638.5911.2.camel@localhost> <5178816D.3000309@asianux.com> <5178ABA2.4030109@linux.vnet.ibm.com> <5178E6C3.4060603@asianux.com> <1659.1366880440@ale.ozlabs.ibm.com> <5178F1BC.6050905@asianux.com>
+In-Reply-To: <5178F1BC.6050905@asianux.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACRpkdYq9QLRaaysc=izGgi53ogf1oRHuCwWKW+rQBbE_UtfnA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 25 Apr 2013, Linus Walleij wrote:
+On 2013年04月25日 17:05, Chen Gang wrote:
+> On 2013年04月25日 17:00, Michael Neuling wrote:
+>>>>
+>>>> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+>>>> ---
+>>>>  arch/powerpc/include/asm/kvm_asm.h   |    2 +-
+>>>>  arch/powerpc/kernel/exceptions-64s.S |    6 +++---
+>>>>  2 files changed, 4 insertions(+), 4 deletions(-)
+>>>>
+>>>> diff --git a/arch/powerpc/include/asm/kvm_asm.h b/arch/powerpc/include/asm/kvm_asm.h
+>>>> index b9dd382..2c65bae 100644
+>>>> --- a/arch/powerpc/include/asm/kvm_asm.h
+>>>> +++ b/arch/powerpc/include/asm/kvm_asm.h
+>>>> @@ -86,7 +86,7 @@
+>>>>  #define BOOK3S_INTERRUPT_PROGRAM	0x700
+>>>>  #define BOOK3S_INTERRUPT_FP_UNAVAIL	0x800
+>>>>  #define BOOK3S_INTERRUPT_DECREMENTER	0x900
+>>>> -#define BOOK3S_INTERRUPT_HV_DECREMENTER	0x980
+>>>> +#define BOOK3S_INTERRUPT_HV_DECREMENTER	0x988
+>> This is hardwird in the architecture.. you can't just move it
+>>
+> 
 
-> On Thu, Apr 18, 2013 at 12:11 PM, Lee Jones <lee.jones@linaro.org> wrote:
-> 
-> > This change will cost ~25KB of memory, but it's worth the trade-off,
-> > as it removes a great deal of overhead. It means that instead of only
-> > allocating memory for the logical channels in use, it does so for all
-> > available ones, which is 32 per physical channel. However, this now
-> > means we can remove some platform data and we don't have to worry
-> > about adding vendor specific variables to Device Tree.
-> >
-> > Cc: Vinod Koul <vinod.koul@intel.com>
-> > Cc: Dan Williams <djbw@fb.com>
-> > Cc: Per Forlin <per.forlin@stericsson.com>
-> > Cc: Rabin Vincent <rabin@rab.in>
-> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> 
-> (...)
-> >  static struct stedma40_platform_data dma40_plat_data = {
-> > -       .dev_len = DB8500_DMA_NR_DEV,
-> 
-> So that was set to 64 in the platform...
-> 
-> > -       /* Count the number of logical channels in use */
-> > -       for (i = 0; i < plat_data->dev_len; i++)
-> > -               if (plat_data->dev_rx[i] != 0)
-> > -                       num_log_chans++;
-> > -
-> > -       for (i = 0; i < plat_data->dev_len; i++)
-> > -               if (plat_data->dev_tx[i] != 0)
-> > -                       num_log_chans++;
-> 
-> And I guess this code snippet made it go down to <= 32 all the time,
-> correct?
+I think of a way to solve it: we just move the related code to another
+area, after enter the original entry (e.g. 0x900), we let it jump to
+that area to excuse the related code.
 
-However many were described in dma40_[rx|tx]_map, yes.
+:-)
 
-> Just want to understand it before I ACK. (The idea is sound.)
+> OK, thank you, I need continue to fix it. It seems we have to read the
+> details to shrink one instruction (4 bytes), at least.
 > 
-> I notice there is no check whatsoever of the bounds of
-> plat_data->dev_[rx|tx]  but that is a different problem I guess...
+> Welcome additional suggestions or completions.
+> 
+> Thanks.
+> 
 
-The array is going away anyway, so we don't need to threat.
 
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Chen Gang
+
+Asianux Corporation
