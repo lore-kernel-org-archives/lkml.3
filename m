@@ -1,116 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758761Ab3DYBId (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 21:08:33 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:58769 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758658Ab3DYBHe (ORCPT
+	id S1758723Ab3DYBNm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 21:13:42 -0400
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:44533 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758658Ab3DYBNk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 21:07:34 -0400
-X-AuditID: 9c930179-b7b5bae0000069d1-ed-517881d2688f
-From: Minchan Kim <minchan@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Rik van Riel <riel@redhat.com>, Dave Hansen <dave.hansen@intel.com>,
-        Namhyung Kim <namhyung@kernel.org>, Minchan Kim <minchan@kernel.org>
-Subject: [PATCH v3 3/6] mm: Remove shrink_page
-Date: Thu, 25 Apr 2013 10:07:19 +0900
-Message-Id: <1366852043-12511-4-git-send-email-minchan@kernel.org>
-X-Mailer: git-send-email 1.8.2
-In-Reply-To: <1366852043-12511-1-git-send-email-minchan@kernel.org>
-References: <1366852043-12511-1-git-send-email-minchan@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 24 Apr 2013 21:13:40 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130424074735.GB1751@moon>
+References: <CA+55aFwpLu0qNms=hkQr43yqD0K9DgESNm91OEWKT1ZuT8MU6Q@mail.gmail.com>
+	<20130424072630.GB1780@gmail.com>
+	<20130424074735.GB1751@moon>
+Date: Thu, 25 Apr 2013 09:13:38 +0800
+X-Google-Sender-Auth: xcDtnM4wZbR4K5t0tWrndiAQ6IA
+Message-ID: <CAF1ivSbO7RBB_CoS7wXWHQVkz2sw4kYKaz00dU2YziRxe0arVg@mail.gmail.com>
+Subject: Re: Unsigned widening casts of binary "not" operations..
+From: Lin Ming <ming.m.lin@intel.com>
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        David Miller <davem@davemloft.net>, "Theodore Ts'o" <tytso@mit.edu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-By previous patch, shrink_page_list can handle pages from
-multiple zone so let's remove shrink_page.
+On Wed, Apr 24, 2013 at 3:47 PM, Cyrill Gorcunov <gorcunov@openvz.org> wrote:
+> On Wed, Apr 24, 2013 at 09:26:30AM +0200, Ingo Molnar wrote:
+>>
+>> * Linus Torvalds <torvalds@linux-foundation.org> wrote:
+>>
+>> > And there's quite a lot of them. Even in my (fairly small) config I use on
+>> > my desktop. And the first warnings I see are in x86 code:
+>> >
+>> >     arch/x86/kernel/traps.c:405:16: warning: implicit unsigned widening
+>> > cast of a '~' expression
+>> >     arch/x86/kernel/cpu/perf_event_p4.c:912:15: warning: implicit unsigned
+>> > widening cast of a '~' expression
+>>
+>> Hm, the perf_event_p4.c code is indeed confused.
+>>
+>> I think the bug is real but probably benign in effect: we allow narrower
+>> values into the MSR register than probably intended. Only a couple of low
+>> bits are reserved AFAICS.
+>>
+>> Here's an (untested!) patch that tries to untangle it all: it just moves
+>> to clean 64-bit types everywhere - these MSRs are 64-bit wide regardless
+>> of whether we run on 32-bit or not.
+>>
+>> Would be nice if someone with a working P4 could test it - Cyrill? [It
+>> should also be double checked whether the high words are really not
+>> reserved and can be written to ...]
+>
+> Hi Ingo! Ufortunately I don't have access to real p4 hardware,
+> thus I'm CC'ing Ming who has been helping a lot in testing
+> this code pieces.
 
-Signed-off-by: Minchan Kim <minchan@kernel.org>
----
- mm/vmscan.c | 47 ++++++++++++++---------------------------------
- 1 file changed, 14 insertions(+), 33 deletions(-)
+Hi,
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 82f4d6c..42af075 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -924,6 +924,13 @@ free_it:
- 		 * appear not as the counts should be low
- 		 */
- 		list_add(&page->lru, &free_pages);
-+		/*
-+		 * If pagelist are from multiple zones, we should decrease
-+		 * NR_ISOLATED_ANON + x on freed pages in here.
-+		 */
-+		if (!zone)
-+			dec_zone_page_state(page, NR_ISOLATED_ANON +
-+					page_is_file_cache(page));
- 		continue;
- 
- cull_mlocked:
-@@ -994,28 +1001,6 @@ unsigned long reclaim_clean_pages_from_list(struct zone *zone,
- }
- 
- #ifdef CONFIG_PROCESS_RECLAIM
--static unsigned long shrink_page(struct page *page,
--					struct zone *zone,
--					struct scan_control *sc,
--					enum ttu_flags ttu_flags,
--					unsigned long *ret_nr_dirty,
--					unsigned long *ret_nr_writeback,
--					bool force_reclaim,
--					struct list_head *ret_pages)
--{
--	int reclaimed;
--	LIST_HEAD(page_list);
--	list_add(&page->lru, &page_list);
--
--	reclaimed = shrink_page_list(&page_list, zone, sc, ttu_flags,
--				ret_nr_dirty, ret_nr_writeback,
--				force_reclaim);
--	if (!reclaimed)
--		list_splice(&page_list, ret_pages);
--
--	return reclaimed;
--}
--
- unsigned long reclaim_pages_from_list(struct list_head *page_list)
- {
- 	struct scan_control sc = {
-@@ -1025,23 +1010,19 @@ unsigned long reclaim_pages_from_list(struct list_head *page_list)
- 		.may_swap = 1,
- 	};
- 
--	LIST_HEAD(ret_pages);
-+	unsigned long nr_reclaimed;
- 	struct page *page;
- 	unsigned long dummy1, dummy2;
--	unsigned long nr_reclaimed = 0;
--
--	while (!list_empty(page_list)) {
--		page = lru_to_page(page_list);
--		list_del(&page->lru);
- 
-+	list_for_each_entry(page, page_list, lru)
- 		ClearPageActive(page);
--		nr_reclaimed += shrink_page(page, page_zone(page), &sc,
-+
-+	nr_reclaimed = shrink_page_list(page_list, NULL, &sc,
- 				TTU_UNMAP|TTU_IGNORE_ACCESS,
--				&dummy1, &dummy2, true, &ret_pages);
--	}
-+				&dummy1, &dummy2, true);
- 
--	while (!list_empty(&ret_pages)) {
--		page = lru_to_page(&ret_pages);
-+	while (!list_empty(page_list)) {
-+		page = lru_to_page(page_list);
- 		list_del(&page->lru);
- 		dec_zone_page_state(page, NR_ISOLATED_ANON +
- 				page_is_file_cache(page));
--- 
-1.8.2
+Sorry, but I don't have access to p4 hardware either.
 
+Lin Ming
+
+>
+> Still the patch itself is perfectly fine to me
+>
+> Reviewed-by: Cyrill Gorcunov <gorcunov@openvz.org>
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
