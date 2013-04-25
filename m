@@ -1,149 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758696Ab3DYA5e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 20:57:34 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:60151 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758211Ab3DYA5d (ORCPT
+	id S1758688Ab3DYBGm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 21:06:42 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:18959 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758638Ab3DYBGl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 20:57:33 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <51787F55.80403@jp.fujitsu.com>
-Date: Thu, 25 Apr 2013 09:56:53 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	Wed, 24 Apr 2013 21:06:41 -0400
+X-Spam-Score: -100.8
+Message-ID: <5178816D.3000309@asianux.com>
+Date: Thu, 25 Apr 2013 09:05:49 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: <hannes@cmpxchg.org>, <toshi.kani@hp.com>, <linuxram@us.ibm.com>,
-        <rientjes@google.com>, <linux-kernel@vger.kernel.org>,
-        <linux-mm@kvack.org>
-Subject: Re: [Resend][Bug fix PATCH v5] Reusing a resource structure allocated
- by bootmem
-References: <5175E5E8.3010003@jp.fujitsu.com> <51771E3D.6060203@jp.fujitsu.com> <20130424133719.94c7d301df844c4bcc987a53@linux-foundation.org>
-In-Reply-To: <20130424133719.94c7d301df844c4bcc987a53@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Mike <qiudayu@linux.vnet.ibm.com>
+CC: Michael Neuling <mikey@neuling.org>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        linuxppc-dev@lists.ozlabs.org, sfr@canb.auug.org.au, matt@ozlabs.org,
+        linux-kernel@vger.kernel.org, paulus@samba.org,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: Re: "attempt to move .org backwards" still show up
+References: <5177965D.9090406@linux.vnet.ibm.com>  <20130424083142.GB26834@concordia> <51779941.8080403@linux.vnet.ibm.com>  <30651.1366799858@ale.ozlabs.ibm.com> <1366807638.5911.2.camel@localhost>
+In-Reply-To: <1366807638.5911.2.camel@localhost>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/04/25 5:37, Andrew Morton wrote:
-> On Wed, 24 Apr 2013 08:50:21 +0900 Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com> wrote:
->
->> When hot removing memory presented at boot time, following messages are shown:
->>
->> [  296.867031] ------------[ cut here ]------------
->> [  296.922273] kernel BUG at mm/slub.c:3409!
->>
->> ...
->>
->> The reason why the messages are shown is to release a resource structure,
->> allocated by bootmem, by kfree(). So when we release a resource structure,
->> we should check whether it is allocated by bootmem or not.
->>
->> But even if we know a resource structure is allocated by bootmem, we cannot
->> release it since SLxB cannot treat it. So for reusing a resource structure,
->> this patch remembers it by using bootmem_resource as follows:
->>
->> When releasing a resource structure by free_resource(), free_resource() checks
->> whether the resource structure is allocated by bootmem or not. If it is
->> allocated by bootmem, free_resource() adds it to bootmem_resource. If it is
->> not allocated by bootmem, free_resource() release it by kfree().
->>
->> And when getting a new resource structure by get_resource(), get_resource()
->> checks whether bootmem_resource has released resource structures or not. If
->> there is a released resource structure, get_resource() returns it. If there is
->> not a releaed resource structure, get_resource() returns new resource structure
->> allocated by kzalloc().
->>
->> ...
->>
->
-> Looks good to me.
->
->> --- a/kernel/resource.c
->> +++ b/kernel/resource.c
->> @@ -21,6 +21,7 @@
->>   #include <linux/seq_file.h>
->>   #include <linux/device.h>
->>   #include <linux/pfn.h>
->> +#include <linux/mm.h>
->>   #include <asm/io.h>
->>
->>
->> @@ -50,6 +51,14 @@ struct resource_constraint {
->>
->>   static DEFINE_RWLOCK(resource_lock);
->>
->> +/*
->> + * For memory hotplug, there is no way to free resource entries allocated
->> + * by boot mem after the system is up. So for reusing the resource entry
->> + * we need to remember the resource.
->> + */
->> +static struct resource *bootmem_resource_free;
->> +static DEFINE_SPINLOCK(bootmem_resource_lock);
->> +
->>   static void *r_next(struct seq_file *m, void *v, loff_t *pos)
->>   {
->>   	struct resource *p = v;
->> @@ -151,6 +160,40 @@ __initcall(ioresources_init);
->>
->>   #endif /* CONFIG_PROC_FS */
->>
->> +static void free_resource(struct resource *res)
->> +{
->> +	if (!res)
->> +		return;
->> +
->> +	if (!PageSlab(virt_to_head_page(res))) {
->
+On 2013年04月24日 20:47, Mike wrote:
+> 在 2013-04-24三的 20:37 +1000，Michael Neuling写道：
+>> > Mike Qiu <qiudayu@linux.vnet.ibm.com> wrote:
+>> > 
+>>> > > 于 2013/4/24 16:31, Michael Ellerman 写道:
+>>>> > > > On Wed, Apr 24, 2013 at 04:22:53PM +0800, Mike Qiu wrote:
+>>>>> > > >> Hi all
+>>>>> > > >>
+>>>>> > > >> I get an error message when I compile the source code in Power7 platform
+>>>>> > > >> use the newest upstream kernel.
+>>>> > > > Hi Mike,
+>>>> > > >
+>>>> > > > It depends on what your .config is. What defconfig are you building?
+>>> > > I just copy the config file from /boot/config.* to .config and use make
+>>> > > menuconfig
+>>> > > change nothing by manually, then save.
+>> > 
+>> > Can you post the resulting config here?
+>> > 
+>> > Do you have commit in your tree?
+>> >   commit 087aa036eb79f24b856893190359ba812b460f45
+>> >   Author: Chen Gang <gang.chen@asianux.com>
+>> >   powerpc: make additional room in exception vector area
+>> > 
+> Sure, that commit certainly in my git tree. And I just try to remove the
+> code and re-git clone the source code from upstream, this problem still
+> happen.
+> I will post the config file as the attachment
+> :)
+> 
+> Thanks
 
-> Did you consider using a bit in resource.flags?
+I will try, and plan to get a result within this week (2013-04-28)
 
-I considered to add a new flag such as IORESOURCE_BOOTMEM first.
-But even if we don't add the new flag, we can check whether
-struct resource is managed by SLxB or not. So I selected this way.
+Thanks.
 
-Thanks,
-Yasuaki Ishimatsu
+-- 
+Chen Gang
 
-> There appear to be
-> four free ones left.  The VM trickery will work OK I guess, but isn't
-> very "nice".
->
->> +		spin_lock(&bootmem_resource_lock);
->> +		res->sibling = bootmem_resource_free;
->> +		bootmem_resource_free = res;
->> +		spin_unlock(&bootmem_resource_lock);
->> +	} else {
->> +		kfree(res);
->> +	}
->> +}
->> +
->> +static struct resource *get_resource(gfp_t flags)
->> +{
->> +	struct resource *res = NULL;
->> +
->> +	spin_lock(&bootmem_resource_lock);
->> +	if (bootmem_resource_free) {
->> +		res = bootmem_resource_free;
->> +		bootmem_resource_free = res->sibling;
->> +	}
->> +	spin_unlock(&bootmem_resource_lock);
->> +
->> +	if (res)
->> +		memset(res, 0, sizeof(struct resource));
->> +	else
->> +		res = kzalloc(sizeof(struct resource), flags);
->> +
->> +	return res;
->> +}
->
-
-> I think I'll rename this to alloc_resource().  In Linux "get" often
-> (but not always) means "take a reference on".  So "get" pairs with
-> "put" and "alloc" pairs with "free".
-
-
-
-
+Asianux Corporation
