@@ -1,61 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753221Ab3DYGcP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 02:32:15 -0400
-Received: from mail-vb0-f44.google.com ([209.85.212.44]:40001 "EHLO
-	mail-vb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751321Ab3DYGcN (ORCPT
+	id S1754441Ab3DYGck (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 02:32:40 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36711 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751213Ab3DYGci (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 02:32:13 -0400
+	Thu, 25 Apr 2013 02:32:38 -0400
+Date: Thu, 25 Apr 2013 14:33:06 +0800
+From: Adam Lee <adam.lee@canonical.com>
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: linux-kernel@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        "open list:USB VIDEO CLASS" <linux-media@vger.kernel.org>
+Subject: Re: [PATCH] Revert "V4L/DVB: uvc: Enable USB autosuspend by default
+ on uvcvideo"
+Message-ID: <20130425063306.GA20928@adam-laptop>
+Mail-Followup-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+	linux-kernel@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
+	Mauro Carvalho Chehab <mchehab@redhat.com>,
+	"open list:USB VIDEO CLASS" <linux-media@vger.kernel.org>
+References: <1366790239-838-1-git-send-email-adam.lee@canonical.com>
+ <6159110.qEtHHiJYtm@avalon>
 MIME-Version: 1.0
-In-Reply-To: <1366707297-31309-2-git-send-email-b32955@freescale.com>
-References: <1366707297-31309-1-git-send-email-b32955@freescale.com>
-	<1366707297-31309-2-git-send-email-b32955@freescale.com>
-Date: Wed, 24 Apr 2013 23:32:12 -0700
-Message-ID: <CAN8TOE-oy=74kSKrnxG+Ve4qZfrwEYbvh6hGGquTyLu6T+UbSA@mail.gmail.com>
-Subject: Re: [PATCH V3 1/9] mtd: add more comment for ecc_strength/ecc_size
-From: Brian Norris <computersforpeace@gmail.com>
-To: Huang Shijie <b32955@freescale.com>
-Cc: dwmw2@infradead.org, dedekind1@gmail.com, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <6159110.qEtHHiJYtm@avalon>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I would recommend different wording, describing what they represent
-rather than how we accomplish it. See below.
+On Wed, Apr 24, 2013 at 11:17:52AM +0200, Laurent Pinchart wrote:
+> Hi Adam,
+> 
+> Thanks for the patch.
+> 
+> On Wednesday 24 April 2013 15:57:19 adam.lee@canonical.com wrote:
+> > From: Adam Lee <adam.lee@canonical.com>
+> > 
+> > This reverts commit 3dae8b41dc5651f8eb22cf310e8b116480ba25b7.
+> > 
+> > 1, I do have a Chicony webcam, implements autosuspend in a broken way,
+> > make `poweroff` performs rebooting when its autosuspend enabled.
+> > 
+> > 2, There are other webcams which don't support autosuspend too, like
+> > https://patchwork.kernel.org/patch/2356141/
+> > 
+> > 3, kernel removed USB_QUIRK_NO_AUTOSUSPEND in
+> > a691efa9888e71232dfb4088fb8a8304ffc7b0f9, because autosuspend is
+> > disabled by default.
+> > 
+> > So, we need to disable autosuspend in uvcvideo, maintaining a quirk list
+> > only for uvcvideo is not a good idea.
+> 
+> I've received very few bug reports about broken auto-suspend support in UVC 
+> devices. Most of them could be solved by setting the RESET_RESUME quirk in USB 
+> core, only the Creative Live! Cam Optia AF required a quirk in the uvcvideo 
+> driver. I would thus rather use the available quirks (USB_QUIRK_RESET_RESUME 
+> if possible, UVC_QUIRK_DISABLE_AUTOSUSPEND otherwise) than killing power 
+> management for the vast majority of webcams that behave correctly.
 
-On Tue, Apr 23, 2013 at 1:54 AM, Huang Shijie <b32955@freescale.com> wrote:
-> Add more commit for ecc_strength and ecc_size fields.
-> We can treat the comment as the initial semantics for the two fields.
->
-> Signed-off-by: Huang Shijie <b32955@freescale.com>
-> ---
->  include/linux/mtd/nand.h |    4 +++-
->  1 files changed, 3 insertions(+), 1 deletions(-)
->
-> diff --git a/include/linux/mtd/nand.h b/include/linux/mtd/nand.h
-> index 5458021..c1cc690 100644
-> --- a/include/linux/mtd/nand.h
-> +++ b/include/linux/mtd/nand.h
-> @@ -436,7 +436,9 @@ struct nand_buffers {
->   * @cellinfo:          [INTERN] MLC/multichip data from chip ident
->   * @ecc_strength:      [INTERN] ECC correctability from the datasheet.
+Here comes another one, integrated Chicony webcam 04f2:b39f, its
+autosuspend makes `poweroff` performs rebooting at the laptop I'm
+working on. I tried USB_QUIRK_RESET_RESUME, not helping.
 
-How about just: "minimum number of bits correctability, if known; if
-unknown, set to 0
+The quirks list will go longer and longer absolutely, do uvcvideo wanna
+maintain that? And why only uvcvideo do this in kernel space which
+against general USB module?
 
->   * @ecc_size:          [INTERN] ECC size required by the @ecc_strength,
-> - *                      also from the datasheet.
-> + *                      also from the datasheet. If we do not know the
-> + *                     @ecc_size and @ecc_strength of the nand chips, we can
-> + *                     set zeros to them which are the default value.
+I still suggest we disable it by default, people can enable it in udev
+just like almost all distroes do for udisks. Please consider about it.
 
-"recommend ECC step size, if known; if unknown, set to 0"
-
->   * @numchips:          [INTERN] number of physical chips
->   * @chipsize:          [INTERN] the size of one chip for multichip arrays
->   * @pagemask:          [INTERN] page number mask = number of (pages / chip) - 1
-
-Brian
+-- 
+Regards,
+Adam Lee
+Hardware Enablement
