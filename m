@@ -1,82 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932406Ab3DYNOr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 09:14:47 -0400
-Received: from mail-qc0-f171.google.com ([209.85.216.171]:33921 "EHLO
-	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932219Ab3DYNOn (ORCPT
+	id S1758576Ab3DYNPY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 09:15:24 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:14656 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757121Ab3DYNPU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 09:14:43 -0400
-MIME-Version: 1.0
-In-Reply-To: <517927E2.1090907@surriel.com>
-References: <CA+icZUWXpaXi9GwB37hLaPbZaAi2aOMXez1f79DDtb_22ZY1jQ@mail.gmail.com>
-	<CA+icZUXmsvbj2km=PxbAs5K+hoP+zjcXqG_wCdKR9akWF5Eucw@mail.gmail.com>
-	<CA+55aFw5J+DFgQjAdhUnhitHw+wHEmspeZP9jbyZowqNE6Nafg@mail.gmail.com>
-	<CA+icZUXHkcj_bAuPcfghZMHjRTud2jN91hjpOUiLaXd0yN9diw@mail.gmail.com>
-	<1366741069.1802.12.camel@buesod1.americas.hpqcorp.net>
-	<1366741394.1802.13.camel@buesod1.americas.hpqcorp.net>
-	<CA+icZUV48SZeNt4GRKi8yDKbsO_c7ApUOgb4mRX67=d_ridE8w@mail.gmail.com>
-	<CA+55aFxh_-3BSBXrm8j1-3bN_oLLA66ApykRcfFFKRvrb6MDkQ@mail.gmail.com>
-	<1366841773.1790.7.camel@buesod1.americas.hpqcorp.net>
-	<CA+icZUUY1U=gxxT8hbU-JyyuoRgaht=KUwttQT=yh4_Yh32VnQ@mail.gmail.com>
-	<517927E2.1090907@surriel.com>
-Date: Thu, 25 Apr 2013 20:14:42 +0700
-Message-ID: <CA+i8gK+ouTuk=1oUT8ZLrLnbKDf75-f_NPeXn9763JK-csRdmQ@mail.gmail.com>
-Subject: Re: [PATCH -next] ipc: make refcounter atomic (was Re: linux-next:
- Tree for Apr 23 [ Call-Traces: lib/debugobjects.c | kernel/rcupdate.c |
- kernel/rcutree.c ])
-From: Emmanuel Benisty <benisty.e@gmail.com>
-To: Rik van Riel <riel@surriel.com>
-Cc: sedat.dilek@gmail.com, Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Paul McKenney <paul.mckenney@linaro.org>,
-        linux-next <linux-next@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 25 Apr 2013 09:15:20 -0400
+X-Authority-Analysis: v=2.0 cv=DKcNElxb c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=BTRBD928usAA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=YPD5nf4ZmOMA:10 a=I2R_8oPWS-scC41Is2oA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1366895719.10248.13.camel@gandalf.local.home>
+Subject: Re: [ANNOUNCE] 3.4.41-rt55-feat1
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Mike Galbraith <bitbucket@online.de>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Tim Sander <tim.sander@hbm.com>, LKML <linux-kernel@vger.kernel.org>,
+        RT <linux-rt-users@vger.kernel.org>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>
+Date: Thu, 25 Apr 2013 09:15:19 -0400
+In-Reply-To: <alpine.LFD.2.02.1304251507370.21884@ionos>
+References: <1366760662.9609.176.camel@gandalf.local.home>
+	   <2156546.QlsX0XyPQz@dabox> <51792277.8000205@linutronix.de>
+	   <1366893374.6139.5.camel@marge.simpson.net>
+	  <1366893787.10248.4.camel@gandalf.local.home>
+	  <alpine.LFD.2.02.1304251445520.21884@ionos>
+	 <1366894324.10248.6.camel@gandalf.local.home>
+	 <alpine.LFD.2.02.1304251507370.21884@ionos>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 25, 2013 at 7:56 PM, Rik van Riel <riel@surriel.com> wrote:
-> On 04/24/2013 07:05 PM, Sedat Dilek wrote:
->>
->> On Thu, Apr 25, 2013 at 12:16 AM, Davidlohr Bueso
->> <davidlohr.bueso@hp.com> wrote:
->
->
->>> This patch converts the IPC RCU header's reference counter to atomic_t.
->>> The return of
->>> ipc_rcu_getref() is modified to inform the callers if it actually
->>> succeeded.
->>>
->>> Now all callers return -EIDRM upon failure and abort the current
->>> operation. Two exceptions are
->>> in semaphore code where sem_getref_and_unlock() and sem_getref() trigger
->>> a warning but proceed
->>> to freeing up any held locks.
->>>
->>> Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
->>> Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
->>> CC: Rik van Riel <riel@surriel.com>
->>> CC: Paul McKenney <paul.mckenney@linaro.org>
->>> CC: Sedat Dilek <sedat.dilek@gmail.com>
->>> CC: Emmanuel Benisty <benisty.e@gmail.com>
->>> CC: Andrew Morton <akpm@linux-foundation.org>
->>
->>
->> Missing my Reported-by ...!
->
->
->> ...so please add also my Tested-by!
->
->
-> And my ax!
->
-> I mean ... Reviewed-by: Rik van Riel <riel@redhat.com>
+On Thu, 2013-04-25 at 15:09 +0200, Thomas Gleixner wrote:
 
-FWIW, my machine survived building chromium with this patch instead of Linus'.
+> Well, if your application is driven by an external interrupt, then you
+> do not need highres timers at all.
 
-Thanks.
--- Emmanuel
+Fair point.
+
+-- Steve
+
+
