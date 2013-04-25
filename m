@@ -1,82 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759451Ab3DYVpz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 17:45:55 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60578 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757914Ab3DYVpy (ORCPT
+	id S1759507Ab3DYVr5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 17:47:57 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:39032 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756710Ab3DYVrz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 17:45:54 -0400
-Date: Thu, 25 Apr 2013 14:44:43 -0700
-Message-Id: <201304252144.r3PLihDe025383@terminus.zytor.com>
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [GIT PULL] x86 fixes for 3.9
-Cc: Borislav Petkov <bp@suse.de>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Josh Boyer <jwboyer@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Paul Bolle <pebolle@tiscali.nl>, Thomas Gleixner <tglx@linutronix.de>
+	Thu, 25 Apr 2013 17:47:55 -0400
+Message-ID: <5179A488.5050102@gmail.com>
+Date: Thu, 25 Apr 2013 16:47:52 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Stephen Boyd <sboyd@codeaurora.org>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv2 1/4] Documentation: Add memory mapped ARM architected
+ timer binding
+References: <1365812863-5367-1-git-send-email-sboyd@codeaurora.org> <1365812863-5367-2-git-send-email-sboyd@codeaurora.org> <516C6F12.5020208@gmail.com> <516C7231.6060305@codeaurora.org>
+In-Reply-To: <516C7231.6060305@codeaurora.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 04/15/2013 04:33 PM, Stephen Boyd wrote:
+> On 04/15/13 14:20, Rob Herring wrote:
+>> On Fri, Apr 12, 2013 at 7:27 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+>>> @@ -26,3 +30,52 @@ Example:
+>>>                              <1 10 0xf08>;
+>>>                 clock-frequency = <100000000>;
+>>>         };
+>>> +
+>>> +** Memory mapped timer node properties
+>>> +
+>>> +- compatible : Should at least contain "arm,armv7-timer-mem".
+>> Everything about this timer is architecturally defined? If not, let's
+>> use a more specific name.
+> 
+> I'm not sure I'm following you, but everything described here is part of
+> the ARM definition. What would be a more specific name?
 
-The following changes since commit 0fbd06761f5c17cc9b20e02af60fd7ee9c895996:
+Something that corresponds to the particular implementation like
+cortex-a15 (obviously not an example that has this). I'm fine with
+leaving this for now, but would like to see that added when specific SOC
+dts are added. Better to be specific in case we need to use it for
+something like errata work-arounds. Of course we haven't done that so
+far with the arch timer bindings...
 
-  Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/sparc (2013-04-24 17:10:18 -0700)
+>>> +
+>>> +- clock-frequency : The frequency of the main counter, in Hz. Optional.
+>>> +
+>>> +- reg : The control frame base address.
+>>> +
+>>> +Note that #address-cells, #size-cells, and ranges shall be present to ensure
+>>> +the CPU can address a frame's registers.
+>>> +
+>>> +Frame:
+>>> +
+>>> +- frame-number: 0 to 7.
+>> I'd really like to get rid of the frame numbers and sub-nodes. Is the
+>> frame number significant to software?
+> 
+> We need the frame number to read and write registers in the control
+> frame (the first base in the parent node). We currently use it to
+> determine if a frame has support for the virtual timer by reading the
+> CNTTIDR (a register with 4 bits per frame describing capabilities). If
+> we wanted to control access to the second view of a frame we would also
+> need to configure the CNTPL0ACRn register that pertains to the frame
+> we're controlling. Without a frame number we wouldn't know which
+> register to write.
 
-are available in the git repository at:
+I've gone thru the memory mapped part of the spec now, so I think I
+understand things better. I see how the frame number is needed, but...
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-urgent-for-linus
+The control base is only accessible in secure or hyp mode. How does a
+guest know that it is a guest and can't map the control base? Seems like
+we need to allow a subset of the binding that is just a reg and
+interrupts properties without the frame sub nodes.
 
-This is exclusively two EFI fixes:
+Rob
 
- * The EFI variable anti-bricking algorithm merged in -rc8 broke
-   booting on some Apple machines because they implement EFI spec
-   1.10, which doesn't provide a QueryVariableInfo() runtime function
-   and the logic used to check for the existence of that function was
-   insufficient.  Fix from Josh Boyer.
+> 
+>>
+>>> +- interrupts : Interrupt list for physical and virtual timers in that order.
+>>> +  The virtual timer interrupt is optional.
+>> Is that optional per frame?
+> 
+> Yes the virtual and physical timer interrupt is per-frame and the
+> virtual interrupt is optional.
+> 
 
- * The anti-bricking algorithm also introduced a compiler warning on
-   32-bit. Fix from Borislav Petkov.
-
-----------------------------------------------------------------
-
-Borislav Petkov (1):
-      x86, efi: Fix a build warning
-
-H. Peter Anvin (1):
-      Merge tag 'efi-urgent' into x86/urgent
-
-Josh Boyer (1):
-      efi: Check EFI revision in setup_efi_vars
-
- arch/x86/boot/compressed/eboot.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
-index 8615f75..35ee62f 100644
---- a/arch/x86/boot/compressed/eboot.c
-+++ b/arch/x86/boot/compressed/eboot.c
-@@ -258,7 +258,7 @@ static efi_status_t setup_efi_vars(struct boot_params *params)
- 	u64 store_size, remaining_size, var_size;
- 	efi_status_t status;
- 
--	if (!sys_table->runtime->query_variable_info)
-+	if (sys_table->runtime->hdr.revision < EFI_2_00_SYSTEM_TABLE_REVISION)
- 		return EFI_UNSUPPORTED;
- 
- 	data = (struct setup_data *)(unsigned long)params->hdr.setup_data;
-@@ -266,7 +266,7 @@ static efi_status_t setup_efi_vars(struct boot_params *params)
- 	while (data && data->next)
- 		data = (struct setup_data *)(unsigned long)data->next;
- 
--	status = efi_call_phys4(sys_table->runtime->query_variable_info,
-+	status = efi_call_phys4((void *)sys_table->runtime->query_variable_info,
- 				EFI_VARIABLE_NON_VOLATILE |
- 				EFI_VARIABLE_BOOTSERVICE_ACCESS |
- 				EFI_VARIABLE_RUNTIME_ACCESS, &store_size,
