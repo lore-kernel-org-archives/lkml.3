@@ -1,65 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932099Ab3DYITH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 04:19:07 -0400
-Received: from sestofw01.enea.se ([192.36.1.252]:22180 "HELO mx-3.enea.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1756601Ab3DYITF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756700Ab3DYITF (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 25 Apr 2013 04:19:05 -0400
-From: <maxin.john@enea.com>
-To: <cjb@laptop.org>
-CC: <linux-mmc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <maxin.john@gmail.com>, "Maxin B. John" <maxin.john@enea.com>
-Subject: [PATCH] mmc: host: sdhci: Fix console flooding when there is no proper card detection
-Date: Thu, 25 Apr 2013 10:18:57 +0200
-Message-ID: <1366877937-36517-1-git-send-email-maxin.john@enea.com>
-X-Mailer: git-send-email 1.7.10.4
+Received: from intranet.asianux.com ([58.214.24.6]:9388 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756426Ab3DYITB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Apr 2013 04:19:01 -0400
+X-Spam-Score: -100.8
+Message-ID: <5178E6C3.4060603@asianux.com>
+Date: Thu, 25 Apr 2013 16:18:11 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Mike Qiu <qiudayu@linux.vnet.ibm.com>, Michael Neuling <mikey@neuling.org>
+CC: Michael Ellerman <michael@ellerman.id.au>, linuxppc-dev@lists.ozlabs.org,
+        sfr@canb.auug.org.au, matt@ozlabs.org, linux-kernel@vger.kernel.org,
+        paulus@samba.org, "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH] PowerPC: kernel: compiling issue, make additional room in
+ exception vector area
+References: <5177965D.9090406@linux.vnet.ibm.com> <20130424083142.GB26834@concordia> <51779941.8080403@linux.vnet.ibm.com> <30651.1366799858@ale.ozlabs.ibm.com> <1366807638.5911.2.camel@localhost> <5178816D.3000309@asianux.com> <5178ABA2.4030109@linux.vnet.ibm.com>
+In-Reply-To: <5178ABA2.4030109@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Maxin B. John" <maxin.john@enea.com>
 
-With 3.9.0-rc8 kernel in p2020rdb powerpc target, the console gets
-flooded with this message without any SD-Cards present:
-"mmc0: Timeout waiting for hardware interrupt"
+When CONFIG_KVM_BOOK3S_64_PR is enabled,
+MASKABLE_EXCEPTION_PSERIES(0x900 ...) will includes __KVMTEST, it will
+exceed 0x980 which STD_EXCEPTION_HV(0x980 ...) will use, it will cause
+compiling issue.
 
-Since the driver doesn't implement proper card detection, it assumes that
-card is always present. This quick-n-dirty patch removes this console
-flooding.
+The related errors:
+arch/powerpc/kernel/exceptions-64s.S: Assembler messages:
+arch/powerpc/kernel/exceptions-64s.S:258: Error: attempt to move .org backwards
+make[1]: *** [arch/powerpc/kernel/head_64.o] Error 1
 
-In an ideal world, the driver should have "cd-gpio" support.
 
-Signed-off-by: Maxin B. John <maxin.john@enea.com>
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
 ---
- drivers/mmc/host/sdhci.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ arch/powerpc/include/asm/kvm_asm.h   |    2 +-
+ arch/powerpc/kernel/exceptions-64s.S |    6 +++---
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
-index 51bbba4..3347864 100644
---- a/drivers/mmc/host/sdhci.c
-+++ b/drivers/mmc/host/sdhci.c
-@@ -2131,10 +2131,18 @@ static void sdhci_timeout_timer(unsigned long data)
- 	spin_lock_irqsave(&host->lock, flags);
+diff --git a/arch/powerpc/include/asm/kvm_asm.h b/arch/powerpc/include/asm/kvm_asm.h
+index b9dd382..2c65bae 100644
+--- a/arch/powerpc/include/asm/kvm_asm.h
++++ b/arch/powerpc/include/asm/kvm_asm.h
+@@ -86,7 +86,7 @@
+ #define BOOK3S_INTERRUPT_PROGRAM	0x700
+ #define BOOK3S_INTERRUPT_FP_UNAVAIL	0x800
+ #define BOOK3S_INTERRUPT_DECREMENTER	0x900
+-#define BOOK3S_INTERRUPT_HV_DECREMENTER	0x980
++#define BOOK3S_INTERRUPT_HV_DECREMENTER	0x988
+ #define BOOK3S_INTERRUPT_SYSCALL	0xc00
+ #define BOOK3S_INTERRUPT_TRACE		0xd00
+ #define BOOK3S_INTERRUPT_H_DATA_STORAGE	0xe00
+diff --git a/arch/powerpc/kernel/exceptions-64s.S b/arch/powerpc/kernel/exceptions-64s.S
+index e789ee7..bb0e677 100644
+--- a/arch/powerpc/kernel/exceptions-64s.S
++++ b/arch/powerpc/kernel/exceptions-64s.S
+@@ -255,7 +255,7 @@ hardware_interrupt_hv:
+ 	KVM_HANDLER_PR(PACA_EXGEN, EXC_STD, 0x800)
  
- 	if (host->mrq) {
-+		/*
-+		 * If the driver doesn't implement proper card detection,
-+		 * we shouldn't flood the console with Timeout error messages.
-+		 */
-+		if (host->quirks & SDHCI_QUIRK_BROKEN_CARD_DETECTION)
-+			goto data_check;
-+
- 		pr_err("%s: Timeout waiting for hardware "
- 			"interrupt.\n", mmc_hostname(host->mmc));
- 		sdhci_dumpregs(host);
+ 	MASKABLE_EXCEPTION_PSERIES(0x900, 0x900, decrementer)
+-	STD_EXCEPTION_HV(0x980, 0x982, hdecrementer)
++	STD_EXCEPTION_HV(0x988, 0x982, hdecrementer)
  
-+data_check:
- 		if (host->data) {
- 			host->data->error = -ETIMEDOUT;
- 			sdhci_finish_data(host);
+ 	MASKABLE_EXCEPTION_PSERIES(0xa00, 0xa00, doorbell_super)
+ 	KVM_HANDLER_PR(PACA_EXGEN, EXC_STD, 0xa00)
+@@ -698,7 +698,7 @@ machine_check_common:
+ 
+ 	STD_EXCEPTION_COMMON_ASYNC(0x500, hardware_interrupt, do_IRQ)
+ 	STD_EXCEPTION_COMMON_ASYNC(0x900, decrementer, .timer_interrupt)
+-	STD_EXCEPTION_COMMON(0x980, hdecrementer, .hdec_interrupt)
++	STD_EXCEPTION_COMMON(0x988, hdecrementer, .hdec_interrupt)
+ #ifdef CONFIG_PPC_DOORBELL
+ 	STD_EXCEPTION_COMMON_ASYNC(0xa00, doorbell_super, .doorbell_exception)
+ #else
+@@ -802,7 +802,7 @@ hardware_interrupt_relon_hv:
+ 	STD_RELON_EXCEPTION_PSERIES(0x4700, 0x700, program_check)
+ 	STD_RELON_EXCEPTION_PSERIES(0x4800, 0x800, fp_unavailable)
+ 	MASKABLE_RELON_EXCEPTION_PSERIES(0x4900, 0x900, decrementer)
+-	STD_RELON_EXCEPTION_HV(0x4980, 0x982, hdecrementer)
++	STD_RELON_EXCEPTION_HV(0x4988, 0x982, hdecrementer)
+ 	MASKABLE_RELON_EXCEPTION_PSERIES(0x4a00, 0xa00, doorbell_super)
+ 	STD_RELON_EXCEPTION_PSERIES(0x4b00, 0xb00, trap_0b)
+ 
 -- 
-1.7.10.4
-
+1.7.7.6
