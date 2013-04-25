@@ -1,112 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758887Ab3DYQXD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 12:23:03 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:54504 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757892Ab3DYQW7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 12:22:59 -0400
-From: Kevin Hilman <khilman@linaro.org>
-To: Sourav Poddar <sourav.poddar@ti.com>
-Cc: <gregkh@linuxfoundation.org>, <tony@atomide.com>,
-        <rmk+kernel@arm.linux.org.uk>, <linux-serial@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Felipe Balbi <balbi@ti.com>, Rajendra nayak <rnayak@ti.com>,
-        Grygorii Strashko <grygorii.strashko@ti.com>
-Subject: Re: [PATCHv3 5/5] arm: omap2+: omap_device: remove no_idle_on_suspend
-References: <1366809353-19435-1-git-send-email-sourav.poddar@ti.com>
-	<1366809353-19435-6-git-send-email-sourav.poddar@ti.com>
-	<87d2tj378q.fsf@linaro.org> <5178D1E0.6010400@ti.com>
-Date: Thu, 25 Apr 2013 09:22:55 -0700
-In-Reply-To: <5178D1E0.6010400@ti.com> (Sourav Poddar's message of "Thu, 25
-	Apr 2013 12:19:04 +0530")
-Message-ID: <87ehdy1sww.fsf@linaro.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1758910Ab3DYQYV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 12:24:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2776 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757968Ab3DYQYU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Apr 2013 12:24:20 -0400
+Date: Thu, 25 Apr 2013 17:57:20 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jacob Shin <jacob.shin@amd.com>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        x86@kernel.org, Stephane Eranian <eranian@google.com>,
+        Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2 1/4] perf: Add hardware breakpoint address mask
+Message-ID: <20130425155720.GA30844@redhat.com>
+References: <1366703825-19373-1-git-send-email-jacob.shin@amd.com> <1366703825-19373-2-git-send-email-jacob.shin@amd.com> <20130423131844.GA24467@redhat.com> <20130423142546.GA17021@jshin-Toonie> <CAFTL4hxpcuSVfk0dBm8RSL+iUZpQrbb51tU1-zPyFE=u2hhjXQ@mail.gmail.com> <20130425151035.GA26760@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130425151035.GA26760@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sourav,
+On 04/25, Oleg Nesterov wrote:
+>
+> On 04/25, Frederic Weisbecker wrote:
+> >
+> > 2013/4/23 Jacob Shin <jacob.shin@amd.com>:
+> > > @@ -286,7 +286,10 @@ struct perf_event_attr {
+> > >                 __u64           config1; /* extension of config */
+> > >         };
+> > >         union {
+> > > -               __u64           bp_len;
+> > > +               struct {
+> > > +                       __u32           bp_len;
+> > > +                       __u32           bp_addr_mask;
+> > > +               };
+> >
+> > Do we need len and mask to work at the same time? I can't think of a
+> > situation when len and mask mix up together in a useful way to define
+> > a range.
+>
+> And it would be nice (I think) if we could simply turn bp_len into
+> bp_mask. It is already the mask actually, bp_addr should be aligned.
+>
+> But I do not see how we can do this, so I guess we need another field.
+>
+> Well. Another option is to extend bp_len. Fortunately HW_BREAKPOINT_LEN_*
+> match the length, so we can simply allow any 2^n length and amd.c can
+> translate it into the mask.
+>
+> Of course, this doesn't allow to use, say, mask=0xF0. But perhaps this
+> is not really useful?
+>
+> I dunno. I leave this to you and Jacob ;)
 
-Sourav Poddar <sourav.poddar@ti.com> writes:
+IOW, I meant something like the incomplete patch below. But let me
+repeat I am not sure this is the good idea.
 
-> Hi Kevin,
-> On Thursday 25 April 2013 03:45 AM, Kevin Hilman wrote:
->> Sourav Poddar<sourav.poddar@ti.com>  writes:
->>
->>> Remove "no_idle_on_suspend" check, since respective
->>> driver should be able to prevent idling of a
->>> device whenever required.
->>>
->>> Driver's can get same behavior by just returning -EBUSY
->>> from their ->runtime_suspend only during suspend.
->>>
->>> Cc: Santosh Shilimkar<santosh.shilimkar@ti.com>
->>> Cc: Felipe Balbi<balbi@ti.com>
->>> Cc: Rajendra nayak<rnayak@ti.com>
->>> Cc: Grygorii Strashko<grygorii.strashko@ti.com>
->>> Signed-off-by: Sourav Poddar<sourav.poddar@ti.com>
->>> Reviewed-by: Felipe Balbi<balbi@ti.com>
->>> ---
->>>   arch/arm/mach-omap2/omap_device.c |   12 +++---------
->>>   arch/arm/mach-omap2/omap_device.h |   10 ----------
->>>   2 files changed, 3 insertions(+), 19 deletions(-)
->>>
->>> diff --git a/arch/arm/mach-omap2/omap_device.c b/arch/arm/mach-omap2/omap_device.c
->>> index 381be7a..2043d71 100644
->>> --- a/arch/arm/mach-omap2/omap_device.c
->>> +++ b/arch/arm/mach-omap2/omap_device.c
->>> @@ -170,9 +170,6 @@ static int omap_device_build_from_dt(struct platform_device *pdev)
->>>   			r->name = dev_name(&pdev->dev);
->>>   	}
->>>
->>> -	if (of_get_property(node, "ti,no_idle_on_suspend", NULL))
->>> -		omap_device_disable_idle_on_suspend(pdev);
->>> -
->>>   	pdev->dev.pm_domain =&omap_device_pm_domain;
->>>
->>>   odbfd_exit1:
->>> @@ -620,11 +617,9 @@ static int _od_suspend_noirq(struct device *dev)
->>>   	ret = pm_generic_suspend_noirq(dev);
->>>
->>>   	if (!ret&&  !pm_runtime_status_suspended(dev)) {
->>> -		if (pm_generic_runtime_suspend(dev) == 0) {
->>> -			if (!(od->flags&  OMAP_DEVICE_NO_IDLE_ON_SUSPEND))
->>> -				omap_device_idle(pdev);
->>> +		if (pm_generic_runtime_suspend(dev) == 0)
->>> +			omap_device_idle(pdev);
->>>   			od->flags |= OMAP_DEVICE_SUSPENDED;
->>> -		}
->> Look closely at the if statement, followed by more than one line, and
->> the braces removed.
->>
->> That means that od->flag will be set, even when omap_device_idle() was
->> not called.  Which in turn means that upon resume, omap_device_enable()
->> will be called on a device that has not had omap_device_idle() called,
->> which means there would be WARNs coming from omap_device due to the
->> mismatch.
->>
-> True, my bad. Will modify the code to bypass
-> "od->flags |= OMAP_DEVICE_SUSPENDED"
->> Hmm... this does not instill confidence that this code has been tested.
->>
-> Sorry for the above glitch, I tested this code. I checked that the
-> system is able to resume from suspend state, but completely missed the
-> following statement in the log..
-> "[   47.922424] omap_uart omap_uart.2: omap_device:
-> omap_device_enable() called from invalid state 1"
+Hmm. And note the change arch_check_bp_in_kernelspace(). Whatever we
+do it should be updated if we have a mask...
 
-No worries.
+And this reminds me that arch_check_bp_in_kernelspace() is buggy but
+my trivial fix was ignored ;) see http://marc.info/?t=135248593000001
 
-Thanks a lot for your responsiveness on this on this series.  We've gone
-through several ideas/approaches to fix this problem and you've been
-very quick to address concerns and adapt the solution.
+Oleg.
 
-Thanks for your persistence, we're almost there...
-
-Kevin
+--- x/arch/x86/include/asm/hw_breakpoint.h
++++ x/arch/x86/include/asm/hw_breakpoint.h
+@@ -12,6 +12,7 @@
+  */
+ struct arch_hw_breakpoint {
+ 	unsigned long	address;
++	unsigned long	mask;
+ 	u8		len;
+ 	u8		type;
+ };
+--- x/arch/x86/kernel/hw_breakpoint.c
++++ x/arch/x86/kernel/hw_breakpoint.c
+@@ -128,6 +128,8 @@ int arch_install_hw_breakpoint(struct pe
+ 	*dr7 |= encode_dr7(i, info->len, info->type);
+ 
+ 	set_debugreg(*dr7, 7);
++	if (info->mask)
++		set_dr_addr_mask(...);
+ 
+ 	return 0;
+ }
+@@ -165,29 +167,6 @@ void arch_uninstall_hw_breakpoint(struct
+ 	set_debugreg(*dr7, 7);
+ }
+ 
+-static int get_hbp_len(u8 hbp_len)
+-{
+-	unsigned int len_in_bytes = 0;
+-
+-	switch (hbp_len) {
+-	case X86_BREAKPOINT_LEN_1:
+-		len_in_bytes = 1;
+-		break;
+-	case X86_BREAKPOINT_LEN_2:
+-		len_in_bytes = 2;
+-		break;
+-	case X86_BREAKPOINT_LEN_4:
+-		len_in_bytes = 4;
+-		break;
+-#ifdef CONFIG_X86_64
+-	case X86_BREAKPOINT_LEN_8:
+-		len_in_bytes = 8;
+-		break;
+-#endif
+-	}
+-	return len_in_bytes;
+-}
+-
+ /*
+  * Check for virtual address in kernel space.
+  */
+@@ -198,7 +177,7 @@ int arch_check_bp_in_kernelspace(struct 
+ 	struct arch_hw_breakpoint *info = counter_arch_bp(bp);
+ 
+ 	va = info->address;
+-	len = get_hbp_len(info->len);
++	len = bp->attr.bp_len;
+ 
+ 	return (va >= TASK_SIZE) && ((va + len - 1) >= TASK_SIZE);
+ }
+@@ -278,7 +257,8 @@ static int arch_build_bp_info(struct per
+ 		return -EINVAL;
+ 	}
+ 
+-	/* Len */
++	/* info->len == info->mask == 0 */
++
+ 	switch (bp->attr.bp_len) {
+ 	case HW_BREAKPOINT_LEN_1:
+ 		info->len = X86_BREAKPOINT_LEN_1;
+@@ -295,7 +275,10 @@ static int arch_build_bp_info(struct per
+ 		break;
+ #endif
+ 	default:
+-		return -EINVAL;
++		if (!is_power_of_2(bp->attr.bp_len))
++			return -EINVAL;
++		info->mask = bp->attr.bp_len - 1;
++		info->len = X86_BREAKPOINT_LEN_1;
+ 	}
+ 
+ 	return 0;
+@@ -314,11 +297,15 @@ int arch_validate_hwbkpt_settings(struct
+ 	if (ret)
+ 		return ret;
+ 
+-	ret = -EINVAL;
+-
+ 	switch (info->len) {
+ 	case X86_BREAKPOINT_LEN_1:
+ 		align = 0;
++		if (info->mask) {
++			align = info->mask;
++			ret = arch_validate_hwbkpt_addr_mask(...);
++			if (ret)
++				return ret;
++		}
+ 		break;
+ 	case X86_BREAKPOINT_LEN_2:
+ 		align = 1;
+@@ -332,7 +319,7 @@ int arch_validate_hwbkpt_settings(struct
+ 		break;
+ #endif
+ 	default:
+-		return ret;
++		BUG();
+ 	}
+ 
+ 	/*
 
