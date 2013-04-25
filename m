@@ -1,53 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933021Ab3DYRew (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 13:34:52 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:26721 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932340Ab3DYRev (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 13:34:51 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 72.84.113.162
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/22AMsNLHNfDcofCqadeoZ5uQl9TxdXRw=
-Date: Thu, 25 Apr 2013 13:34:45 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Andrew Lunn <andrew@lunn.ch>
-Subject: Re: [PATCH 04/21] ARM: orion5x: include linux/cpu.h
-Message-ID: <20130425173445.GD32497@titan.lakedaemon.net>
-References: <1366910944-3033663-1-git-send-email-arnd@arndb.de>
- <1366910944-3033663-5-git-send-email-arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1366910944-3033663-5-git-send-email-arnd@arndb.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S933042Ab3DYRgU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 13:36:20 -0400
+Received: from gate.crashing.org ([63.228.1.57]:56557 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932340Ab3DYRgS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Apr 2013 13:36:18 -0400
+Message-ID: <1366911329.2869.31.camel@pasglop>
+Subject: Re: [PATCH 1/5] ibmebus: convert of_platform_driver to
+ platform_driver
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Rob Herring <robherring2@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        Grant Likely <grant.likely@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Paul Mackerras <paulus@samba.org>,
+        Hoang-Nam Nguyen <hnguyen@de.ibm.com>,
+        Christoph Raisch <raisch@de.ibm.com>,
+        Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>,
+        Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>,
+        linuxppc-dev@lists.ozlabs.org, linux-rdma@vger.kernel.org,
+        netdev@vger.kernel.org
+Date: Fri, 26 Apr 2013 03:35:30 +1000
+In-Reply-To: <CAL_JsqKDF=hPEM0Jz-zZSXBCXBZ=gBjLWL6QDvq+nFWkqY3DMw@mail.gmail.com>
+References: <1366596798-9457-1-git-send-email-robherring2@gmail.com>
+	 <1366596798-9457-2-git-send-email-robherring2@gmail.com>
+	 <CAL_JsqKDF=hPEM0Jz-zZSXBCXBZ=gBjLWL6QDvq+nFWkqY3DMw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 25, 2013 at 07:28:47PM +0200, Arnd Bergmann wrote:
-> The linux/cpu.h header is no longer implictly included in this
-> file, so we need to an #include statement to avoid this build
-> warning:
+On Thu, 2013-04-25 at 10:23 -0500, Rob Herring wrote:
+> Ben, Can I have your Ack for this? The change is straightforward and
+> neither of the 2 drivers used the id parameter that is removed.
+
+Didn't you get my mail about a compile failure caused by this patch ?
+
+Or did you send an update that I missed ?
+
+(Copy of the original email below)
+
+Cheers,
+Ben.
+
+----
+
+On Sun, 2013-04-21 at 21:13 -0500, Rob Herring wrote:
+> From: Rob Herring <rob.herring@calxeda.com>
 > 
-> arch/arm/mach-orion5x/common.c:339:3: error: implicit declaration of function 'cpu_idle_poll_ctrl' [-Werror=implicit-function-declaration]
-> 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: Jason Cooper <jason@lakedaemon.net>
-> Cc: Andrew Lunn <andrew@lunn.ch>
-> ---
->  arch/arm/mach-orion5x/common.c | 1 +
->  1 file changed, 1 insertion(+)
+> ibmebus is the last remaining user of of_platform_driver and the
+> conversion to a regular platform driver is trivial.
 
-Acked-by: Jason Cooper <jason@lakedaemon.net>
+A quick build test leads to:
 
-I imagine it's easiest for you to take this through a branch you already
-have set up, so have it.
+/home/benh/linux-powerpc-test/arch/powerpc/kernel/ibmebus.c: In function 'ibmebus_bus_device_probe':
+/home/benh/linux-powerpc-test/arch/powerpc/kernel/ibmebus.c:344:2: error: implicit declaration of function 'to_platform_driver' [-Werror=implicit-function-declaration]
+/home/benh/linux-powerpc-test/arch/powerpc/kernel/ibmebus.c:344:6: error: assignment makes pointer from integer without a cast [-Werror]
+/home/benh/linux-powerpc-test/arch/powerpc/kernel/ibmebus.c: In function 'ibmebus_bus_device_remove':
+/home/benh/linux-powerpc-test/arch/powerpc/kernel/ibmebus.c:363:32: error: initialization makes pointer from integer without a cast [-Werror]
+/home/benh/linux-powerpc-test/arch/powerpc/kernel/ibmebus.c: In function 'ibmebus_bus_device_shutdown':
+/home/benh/linux-powerpc-test/arch/powerpc/kernel/ibmebus.c:373:32: error: initialization makes pointer from integer without a cast [-Werror]
+/home/benh/linux-powerpc-test/arch/powerpc/kernel/ibmebus.c: In function 'ibmebus_bus_legacy_suspend':
+/home/benh/linux-powerpc-test/arch/powerpc/kernel/ibmebus.c:420:32: error: initialization makes pointer from integer without a cast [-Werror]
+/home/benh/linux-powerpc-test/arch/powerpc/kernel/ibmebus.c: In function 'ibmebus_bus_legacy_resume':
+/home/benh/linux-powerpc-test/arch/powerpc/kernel/ibmebus.c:431:32: error: initialization makes pointer from integer without a cast [-Werror]
+cc1: all warnings being treated as errors
+make[2]: *** [arch/powerpc/kernel/ibmebus.o] Error 1
+make[2]: *** Waiting for unfinished jobs....
 
-thx,
+Haven't had a chance to look too closely today -EJETLAG :-)
 
-Jason.
+
