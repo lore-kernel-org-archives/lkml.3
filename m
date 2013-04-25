@@ -1,70 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758688Ab3DYBGm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 21:06:42 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:18959 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758638Ab3DYBGl (ORCPT
+	id S1758703Ab3DYBHa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 21:07:30 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:58769 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758638Ab3DYBH3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 21:06:41 -0400
-X-Spam-Score: -100.8
-Message-ID: <5178816D.3000309@asianux.com>
-Date: Thu, 25 Apr 2013 09:05:49 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Mike <qiudayu@linux.vnet.ibm.com>
-CC: Michael Neuling <mikey@neuling.org>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        linuxppc-dev@lists.ozlabs.org, sfr@canb.auug.org.au, matt@ozlabs.org,
-        linux-kernel@vger.kernel.org, paulus@samba.org,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: Re: "attempt to move .org backwards" still show up
-References: <5177965D.9090406@linux.vnet.ibm.com>  <20130424083142.GB26834@concordia> <51779941.8080403@linux.vnet.ibm.com>  <30651.1366799858@ale.ozlabs.ibm.com> <1366807638.5911.2.camel@localhost>
-In-Reply-To: <1366807638.5911.2.camel@localhost>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Wed, 24 Apr 2013 21:07:29 -0400
+X-AuditID: 9c930179-b7b5bae0000069d1-9f-517881cdec9a
+From: Minchan Kim <minchan@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Rik van Riel <riel@redhat.com>, Dave Hansen <dave.hansen@intel.com>,
+        Namhyung Kim <namhyung@kernel.org>, Minchan Kim <minchan@kernel.org>
+Subject: [PATCH v3 0/6] Per process reclaim
+Date: Thu, 25 Apr 2013 10:07:16 +0900
+Message-Id: <1366852043-12511-1-git-send-email-minchan@kernel.org>
+X-Mailer: git-send-email 1.8.2
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013年04月24日 20:47, Mike wrote:
-> 在 2013-04-24三的 20:37 +1000，Michael Neuling写道：
->> > Mike Qiu <qiudayu@linux.vnet.ibm.com> wrote:
->> > 
->>> > > 于 2013/4/24 16:31, Michael Ellerman 写道:
->>>> > > > On Wed, Apr 24, 2013 at 04:22:53PM +0800, Mike Qiu wrote:
->>>>> > > >> Hi all
->>>>> > > >>
->>>>> > > >> I get an error message when I compile the source code in Power7 platform
->>>>> > > >> use the newest upstream kernel.
->>>> > > > Hi Mike,
->>>> > > >
->>>> > > > It depends on what your .config is. What defconfig are you building?
->>> > > I just copy the config file from /boot/config.* to .config and use make
->>> > > menuconfig
->>> > > change nothing by manually, then save.
->> > 
->> > Can you post the resulting config here?
->> > 
->> > Do you have commit in your tree?
->> >   commit 087aa036eb79f24b856893190359ba812b460f45
->> >   Author: Chen Gang <gang.chen@asianux.com>
->> >   powerpc: make additional room in exception vector area
->> > 
-> Sure, that commit certainly in my git tree. And I just try to remove the
-> code and re-git clone the source code from upstream, this problem still
-> happen.
-> I will post the config file as the attachment
-> :)
-> 
-> Thanks
+These day, there are many platforms avaiable in the embedded market
+and they are smarter than kernel which has very limited information
+about working set so they want to involve memory management more heavily
+like android's lowmemory killer and ashmem or recent many lowmemory
+notifier(there was several trial for various company NOKIA, SAMSUNG,
+Linaro, Google ChromeOS, Redhat).
 
-I will try, and plan to get a result within this week (2013-04-28)
+One of the simple imagine scenario about userspace's intelligence is that
+platform can manage tasks as forground and backgroud so it would be
+better to reclaim background's task pages for end-user's *responsibility*
+although it has frequent referenced pages.
 
-Thanks.
+The patch[1] adds new knob "reclaim under proc/<pid>/" so task manager
+can reclaim any target process anytime, anywhere. It could give another
+method to platform for using memory efficiently.
+
+It can avoid process killing for getting free memory, which was really
+terrible experience because I lost my best score of game I had ever
+after I switch the phone call while I enjoyed the game.
+
+Reclaim file-backed pages only.
+	echo file > /proc/PID/reclaim
+Reclaim anonymous pages only.
+	echo anon > /proc/PID/reclaim
+Reclaim all pages
+	echo all > /proc/PID/reclaim
+
+Some pages could be shared by several processes. (ex, libc)
+In case of that, it's too bad to reclaim them from the beginnig.
+The patch[4] causes VM to keep them on memory until last task
+try to reclaim them so shared pages will be reclaimed only if
+all of task has gone swapping out.
+
+Another requirement is per address space reclaim.(By Michael Kerrisk)
+In case of Webkit1, it uses a address space for handling multi tabs.
+IOW, it uses *one* process model so all tabs shares address space
+of the process. In such scenario, per-process reclaim is rather
+coarse-grained so patch[5] supports more fine-grained reclaim
+for being able to reclaim target address range of the process.
+For reclaim target range, you should use following format.
+
+	echo [addr] [size-byte] > /proc/pid/reclaim
+
+* Changelog from v2
+  * Use memparse - Namhung Kim
+  * Add Acked-by
+
+* Changelog from v1
+  * Change reclaim knob interface - Dave Hansen
+  * proc.txt document change - Rob Landley
+
+Minchan Kim (6):
+  [1] mm: Per process reclaim
+  [2] mm: make shrink_page_list with pages work from multiple zones
+  [3] mm: Remove shrink_page
+  [4] mm: Enhance per process reclaim to consider shared pages
+  [5] mm: Support address range reclaim
+  [6] add documentation about reclaim knob on proc.txt
+
+ Documentation/filesystems/proc.txt |  20 +++++
+ fs/proc/base.c                     |   3 +
+ fs/proc/internal.h                 |   1 +
+ fs/proc/task_mmu.c                 | 176 +++++++++++++++++++++++++++++++++++++
+ include/linux/ksm.h                |   6 +-
+ include/linux/rmap.h               |  10 ++-
+ mm/Kconfig                         |   8 ++
+ mm/ksm.c                           |   9 +-
+ mm/memory-failure.c                |   2 +-
+ mm/migrate.c                       |   6 +-
+ mm/rmap.c                          |  57 ++++++++----
+ mm/vmscan.c                        |  57 +++++++++++-
+ 12 files changed, 328 insertions(+), 27 deletions(-)
 
 -- 
-Chen Gang
+1.8.2
 
-Asianux Corporation
