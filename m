@@ -1,68 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759619Ab3DYXRK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 19:17:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57756 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758746Ab3DYXRH (ORCPT
+	id S1759661Ab3DYXT0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 19:19:26 -0400
+Received: from mail-db8lp0185.outbound.messaging.microsoft.com ([213.199.154.185]:45476
+	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758214Ab3DYXTY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 19:17:07 -0400
-Date: Thu, 25 Apr 2013 16:17:04 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org, tj@kernel.org,
-        axboe@kernel.dk, James.Bottomley@hansenpartnership.com,
-        snitzer@redhat.com
-Subject: Re: Bcache v. whatever
-Message-Id: <20130425161704.3f0fc3b6af55cf75acbc9d9e@linux-foundation.org>
-In-Reply-To: <20130114223202.GV26407@google.com>
-References: <20130114223202.GV26407@google.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 25 Apr 2013 19:19:24 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VPS-4(zzbb2dI98dI9371I1432Izz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzzz2dh668h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1155h)
+X-WSS-ID: 0MLU3FZ-02-DE7-02
+X-M-MSG: 
+Date: Thu, 25 Apr 2013 18:19:11 -0500
+From: Jacob Shin <jacob.shin@amd.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Oleg Nesterov <oleg@redhat.com>, Will Deacon <will.deacon@arm.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "x86@kernel.org" <x86@kernel.org>,
+        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V2 1/4] perf: Add hardware breakpoint address mask
+Message-ID: <20130425231911.GB31751@jshin-Toonie>
+References: <1366703825-19373-2-git-send-email-jacob.shin@amd.com>
+ <20130423095437.GD17593@mudshark.cambridge.arm.com>
+ <20130423143423.GB17021@jshin-Toonie>
+ <20130423144057.GA19644@jshin-Toonie>
+ <20130423150240.GD18616@mudshark.cambridge.arm.com>
+ <20130423151846.GA22052@jshin-Toonie>
+ <20130424094853.GB21850@mudshark.cambridge.arm.com>
+ <20130424163038.GA29816@jshin-Toonie>
+ <20130425170635.GA1324@redhat.com>
+ <5179652F.8080507@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <5179652F.8080507@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Jan 2013 14:32:02 -0800 Kent Overstreet <koverstreet@google.com> wrote:
+On Thu, Apr 25, 2013 at 10:17:35AM -0700, H. Peter Anvin wrote:
+> On 04/25/2013 10:06 AM, Oleg Nesterov wrote:
+> >>
+> >> The downside is that in userland perf tool we need differing documentation
+> >> on what the mask syntax means for each architecture.
+> > 
+> > Personally I think this is acceptable.
+> > 
+> > But I am new to this code, so...
+> > 
+> 
+> That would seem really, really awkward.  Yes, perf has a bunch of
+> low-level stuff, but it would seem highly undesirable to force the user
+> to deal with something like that.
+> 
+> It would be good to have a user-friendly syntax that covers most of what
+> users may want to do and perhaps a longer form that can express
+> everything including ARM's byte selects; if the system can't honor the
+> request it should return an error.
 
-> Bcache: a block layer SSD cache
+Okay,
 
-sparc64 gcc-3.4.5:
+If arch specific masks are a no go, then I think I'm convinced that
+Oleg's idea of using bp_len is the right thing to do. Right now perf
+userland tool hard codes bp_len to 4, so I need to modify it to allow
+user to override the length if desired.
 
-drivers/md/bcache/btree.c: In function `bch_btree_read':
-drivers/md/bcache/btree.c:266: error: invalid operands to binary +
-drivers/md/bcache/btree.c: In function `__btree_write':
-drivers/md/bcache/btree.c:379: error: invalid operands to binary +
-drivers/md/bcache/btree.c: In function `btree_node_free':
-drivers/md/bcache/btree.c:980: error: invalid operands to binary +
-drivers/md/bcache/btree.c: In function `btree_insert_key':
-drivers/md/bcache/btree.c:1857: error: invalid operands to binary +
-drivers/md/bcache/btree.c:1857: error: invalid operands to binary +
-drivers/md/bcache/btree.c:1859: error: invalid operands to binary +
-drivers/md/bcache/btree.c:1859: error: invalid operands to binary +
-drivers/md/bcache/btree.c:1864: error: invalid operands to binary +
-drivers/md/bcache/btree.c:1864: error: invalid operands to binary +
-drivers/md/bcache/btree.c: In function `btree_split':
-drivers/md/bcache/btree.c:1934: error: invalid operands to binary +
-drivers/md/bcache/btree.c: In function `bch_btree_set_root':
-drivers/md/bcache/btree.c:2159: error: invalid operands to binary +
-drivers/md/bcache/btree.c: In function `bch_btree_search_recurse':
-drivers/md/bcache/btree.c:2262: error: invalid operands to binary +
-drivers/md/bcache/btree.c: In function `bch_btree_refill_keybuf':
-drivers/md/bcache/btree.c:2330: error: invalid operands to binary +
+Oleg, Frederic, et al.
 
-due to
+Which syntax do you prefer?
 
-#define pbtree(b)       (&bch_pbtree(b).s[0])
+If we want to set bp_len to 16:
 
-I don't know why this is happening (presumably a gcc glitch), but
-returning an 80-byte struct by value from bch_pkey() and bch_pbtree()
-is just gruesome.  The compiler has to allocate the space on the caller
-stack, pass a hidden pointer into the callee and the callee copies its
-return value into that caller stack slot.  It's slow and consumes stack.
+  $ perf stat -e mem:0x1000:rw:16
 
-Something different, please.
+Or
 
+  $ perf stat -e mem:0x1000:16
+
+Or
+
+  $ perf stat -e mem:0x1000/16
+
+If no bp_len value is specified, it will still default to 4 as it did
+before.
 
