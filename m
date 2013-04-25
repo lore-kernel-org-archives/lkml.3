@@ -1,125 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757303Ab3DYNTO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 09:19:14 -0400
-Received: from mx12.netapp.com ([216.240.18.77]:32693 "EHLO mx12.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754781Ab3DYNTM convert rfc822-to-8bit (ORCPT
+	id S1758512Ab3DYNUd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 09:20:33 -0400
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:53195 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756436Ab3DYNUb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 09:19:12 -0400
-X-IronPort-AV: E=Sophos;i="4.87,551,1363158000"; 
-   d="scan'208";a="44766452"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: "dwysocha@redhat.com" <dwysocha@redhat.com>
-CC: Dave Chiluk <chiluk@canonical.com>,
-        "bfields@fieldses.org" <bfields@fieldses.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] NFSv4: Use exponential backoff delay for NFS4_ERRDELAY
-Thread-Topic: [PATCH] NFSv4: Use exponential backoff delay for NFS4_ERRDELAY
-Thread-Index: AQHOQS4lo0tL+fbtF0O0TvVaTEJt85jmWGMAgAAHNgCAAAtSgIAA5lsAgAAQoAA=
-Date: Thu, 25 Apr 2013 13:19:09 +0000
-Message-ID: <1366895944.4719.17.camel@leira.trondhjem.org>
-References: <1366836949-18465-1-git-send-email-chiluk@canonical.com>
-	 <1366838926.22397.25.camel@leira.trondhjem.org>
-	 <5178549A.7010402@canonical.com>
-	 <1366842905.22397.49.camel@leira.trondhjem.org>
-	 <1366892374.26249.294.camel@localhost.localdomain>
-In-Reply-To: <1366892374.26249.294.camel@localhost.localdomain>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.104.60.115]
-Content-Type: text/plain; charset=US-ASCII
-Content-ID: <8A24ADB66CAA5449B5260B21EEB25FFA@tahoe.netapp.com>
-Content-Transfer-Encoding: 7BIT
+	Thu, 25 Apr 2013 09:20:31 -0400
+Date: Thu, 25 Apr 2013 14:20:25 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
+        Per Forlin <per.forlin@stericsson.com>, Rabin Vincent <rabin@rab.in>
+Subject: Re: [PATCH 04/32] dmaengine: ste_dma40: Amalgamate DMA source and
+ destination channel numbers
+Message-ID: <20130425132025.GM4623@gmail.com>
+References: <1366279934-30761-1-git-send-email-lee.jones@linaro.org>
+ <1366279934-30761-5-git-send-email-lee.jones@linaro.org>
+ <CACRpkdaauDYTdoBHGG9FO4kKqvCYyCrjY8EGWs5gAQWErGW6_A@mail.gmail.com>
+ <20130425090612.GC4623@gmail.com>
+ <CACRpkdbV8yEK0470q_-DWv6Q0hAG2wGntXFi5kaLUMgm9b=e-Q@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACRpkdbV8yEK0470q_-DWv6Q0hAG2wGntXFi5kaLUMgm9b=e-Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-04-25 at 08:19 -0400, David Wysochanski wrote:
-> On Wed, 2013-04-24 at 22:35 +0000, Myklebust, Trond wrote:
-> > On Wed, 2013-04-24 at 16:54 -0500, Dave Chiluk wrote:
-> > > On 04/24/2013 04:28 PM, Myklebust, Trond wrote:
-> > > > On Wed, 2013-04-24 at 15:55 -0500, Dave Chiluk wrote:
-> > > >> Changing the retry to start at NFS4_POLL_RETRY_MIN and exponentially grow
-> > > >> to NFS4_POLL_RETRY_MAX allow for faster handling of these error conditions.
-> > > >>
-> > > >> Additionally this alleviates an interoperability problem with the AIX NFSv4
-> > > >> Server.  The AIX server frequently (2 out of 3) returns NFS4ERR_DELAY, on a
-> > > >> close when it happens in close proximity to a RELEASE_LOCKOWNER.  This would
-> > > >> cause a linux client to hang for 15 seconds.
-> > > > 
-> > > > Hi Dave,
-> > > > 
-> > > > The AIX server is not being motivated by any requirements in the NFSv4
-> > > > spec here, so I fail to see the reason why the behaviour that you
-> > > > describe can justify changing the client. It is not at all obvious to me
-> > > > that we should be retrying aggressively when NFSv4 servers return
-> > > > NFS4ERR_DELAY. What makes 1/10sec more correct in these situations than
-> > > > the exising 15 seconds?
-> > > 
-> > > I agree with you that AIX is at fault, and that the preferable situation
-> > > for the linux client would be for AIX to not return NFS4ERR_DELAY in
-> > > this use case.  I have attached a simple program that causes exacerbates
-> > > the problem on the AIX server.  I have already had a conference call
-> > > with AIX NFS development about this issue, where I vehemently tried to
-> > > convince them to fix their server.  Unfortunately as I don't have much
-> > > reputation in the NFS community, I was unable to convince them to do the
-> > > right thing.  I would be more than happy to set up another call, if
-> > > someone higher up in the linux NFS hierarchy would be willing to
-> > > participate.
-> > 
-> > I'd think that if they have customers that want to use Linux clients,
-> > then those customers are likely to have more influence. This is entirely
-> > a consequence of _their_ design decisions, quite frankly, since
-> > returning NFS4ERR_DELAY in the above situation is downright silly. The
-> > server designers _know_ that the RELEASE_LOCKOWNER will finish whatever
-> > it is doing fairly quickly; it's not as if the CLOSE wouldn't have to do
-> > the exact same state manipulations anyway...
-> > 
-> > > That being said, I think implementing an exponential backoff is an
-> > > improvement in the client regardless of what AIX is doing.  If a server
-> > > needs only 2 seconds to process a request for which NFS4ERR_DELAY was
-> > > returned, this algorithm would get the client back and running after
-> > > only 2.1 seconds of elapsed time.  Whereas the current dumb algorithm
-> > > would simply wait 15 seconds.  This is the reason that I implemented
-> > > this change.
-> > 
-> > Right, but my point above is that _in_general_ if we don't know why the
-> > server is returning NFS4ERR_DELAY, then how can we attach any retry
-> > numbers at all? HSM systems, for instance, have very different latencies
-> > than the above and were the reason for inventing NFS3ERR_JUKEBOX in the
-> > first place.
-> > 
+On Thu, 25 Apr 2013, Linus Walleij wrote:
+
+> On Thu, Apr 25, 2013 at 11:06 AM, Lee Jones <lee.jones@linaro.org> wrote:
 > 
-> Agreed we can't know why the server is returning NFS4ERR_DELAY so it's
-> hard to pick a retry number.  Can you explain the rationale for the
-> current 15 seconds delay?  Was it just for simplicity or something else?
+> >> Are we now sacrificing that ability on the altar of simplification?
+> >>
+> >> I actually think not, but that we should do periph-to-periph transfers
+> >> in some other way, and that the .dir attribute should go away from
+> >> the struct stedma40_chan_cfg as well but I'm not entirely sure.
+> >> Someone else?
+> >
+> > Although the DMA40 device supports device-to-device transfers, Linux
+> > does not, so this subject is moot AFAICT.
 > 
+> So while there is no active usecase, Linux surely has the ambition to do
+> that as can be seen in:
+> 
+> /**
+>  * enum dma_transfer_direction - dma transfer mode and direction indicator
+>  * @DMA_MEM_TO_MEM: Async/Memcpy mode
+>  * @DMA_MEM_TO_DEV: Slave mode & From Memory to Device
+>  * @DMA_DEV_TO_MEM: Slave mode & From Device to Memory
+>  * @DMA_DEV_TO_DEV: Slave mode & From Device to Device
+>  */
+> enum dma_transfer_direction {
+>         DMA_MEM_TO_MEM,
+>         DMA_MEM_TO_DEV,
+>         DMA_DEV_TO_MEM,
+>         DMA_DEV_TO_DEV,
+>         DMA_TRANS_NONE,
+> };
+> 
+> I think we need a handshake with Vinod on this.
 
-Our expectation for NFS4ERR_DELAY event that are not listed in
-RFC3530/RFC5661 is that it should be rare, but is expected on average to
-last significantly longer than an RPC round-trip between the server and
-client.
-The other constraint was that we needed a number which is shorter than
-the lease period so that we don't have to keep sending RENEWs. 
+Sure. He is CC'ed.
 
-The 2 main cases we thought we'd have to deal with were:
+> >> If you're doing this change, and after this RX and TX has no semantical
+> >> meaning for these lists, join these two config lists
+> >> into one.
+> >
+> > I agree. See patch: ARM: ux500: Strip out duplicate USB DMA configuration
+> 
+> Please squash the applicable portions into this patch then, I don't
+> particularly like fix-later patchstack patterns, it makes series hard to
+> review.
 
-- HSM systems fetching data from a tape backup or something similar
-- Idmappers needing to refill their cache from LDAP/NIS/...
+Okay.
 
-We did not expect servers to be using NFS4ERR_DELAY as a generic tool
-for avoiding mutexes. That sounds like great a business opportunity for
-the network switch vendors, but a poor one for everyone else...
+> >> (...)
+> >> > diff --git a/arch/arm/mach-ux500/usb.c b/arch/arm/mach-ux500/usb.c
+> >> >  static u32 d40_chan_has_events(struct d40_chan *d40c)
+> >> > @@ -1744,8 +1740,6 @@ static int d40_validate_conf(struct d40_chan *d40c,
+> >> >                              struct stedma40_chan_cfg *conf)
+> >> >  {
+> >> >         int res = 0;
+> >> > -       u32 dst_event_group = D40_TYPE_TO_GROUP(conf->dst_dev_type);
+> >> > -       u32 src_event_group = D40_TYPE_TO_GROUP(conf->src_dev_type);
+> >>
+> >> Please explain why this is not important to check anymore, I'm not
+> >> following.
+> >>
+> >> >         if (conf->dir == STEDMA40_MEM_TO_PERIPH &&
+> >> > -           dst_event_group == STEDMA40_DEV_DST_MEMORY) {
+> >> > -               chan_err(d40c, "Invalid dst\n");
+> >> > +           d40c->base->plat_data->dev_tx[conf->dev_type] == 0 &&
+> >> > +           d40c->runtime_addr == 0) {
+> >> > +               chan_err(d40c, "Invalid TX channel address (%d)\n",
+> >> > +                        conf->dev_type);
+> >>
+> >> Like here. We are checking for inconsistency between group
+> >> and channel direction, why is it no longer important to check this?
+> >
+> > I'm not entirely sure how this ever worked:
+> >
+> >   #define D40_TYPE_TO_GROUP(type) (type / 16)
+> >   #define STEDMA40_DEV_DST_MEMORY (-1)
+> >
+> >   (dev_type / 16) == -1
+> >
+> > What number would dev_type have to be for this to be true? -16?
+> 
+> No, since it's u32 it cannot really represent negative numbers.
+> 
+> This is equivalent:
+> #define D40_TYPE_TO_GROUP(type) (type >> 4)
+> 
+> As -1 is 0xffffffff in u32 it will compare at best
+> 0x0fffffff to 0xfffffff. And that is non-attainable.
+> 
+> So the line checking event group for == DTEDMA40_DEV_DST_MEMORY
+> should be  removed in a separate patch prior to this one, with
+> something like the above as commit message.
+> 
+> We cannot really mix that cleanup into this patch...
+
+I'm happy to do that.
+
+> >> >         if (conf->dir == STEDMA40_PERIPH_TO_MEM &&
+> >> > -           src_event_group == STEDMA40_DEV_SRC_MEMORY) {
+> >> > -               chan_err(d40c, "Invalid src\n");
+> >> > -               res = -EINVAL;
+> >> > -       }
+> >
+> > As above.
+> 
+> And same comment.
+> 
+> >> > -       if (conf->dir == STEDMA40_PERIPH_TO_PERIPH &&
+> >> > -           (src_event_group != dst_event_group)) {
+> >> > -               chan_err(d40c, "Invalid event group\n");
+> >> > +           d40c->base->plat_data->dev_rx[conf->dev_type] == 0 &&
+> >> > +           d40c->runtime_addr == 0) {
+> >> > +               chan_err(d40c, "Invalid RX channel address (%d)\n",
+> >> > +                        conf->dev_type);
+> >>
+> >> Same here.
+> >
+> > I stopped all 'dev_src/dev_dest' comparisons, as there is only 'dev' now.
+> 
+> It is checking for:
+> conf->dir == STEDMA40_PERIPH_TO_PERIPH
+> 
+> As we may want to support DEV_TO_DEV at some point.
+> 
+> Then no longer, and that is not related to $SUBJECT.
+
+That's not why I'm removing it. The statement can never be true due to
+the fact that the second evaluation (src_event_group != dst_event_group)
+can never be true, which is a direct effect of 'THIS_PATCH'.
+
+> >> (...)
+> >> > @@ -2062,7 +2035,7 @@ static int d40_free_dma(struct d40_chan *d40c)
+> >> >  {
+> >> >
+> >> >         int res = 0;
+> >> > -       u32 event;
+> >> > +       u32 event = D40_TYPE_TO_EVENT(d40c->dma_cfg.dev_type);
+> >> >         struct d40_phy_res *phy = d40c->phy_chan;
+> >> >         bool is_src;
+> >> >
+> >> > @@ -2081,13 +2054,11 @@ static int d40_free_dma(struct d40_chan *d40c)
+> >> >         }
+> >> >
+> >> >         if (d40c->dma_cfg.dir == STEDMA40_MEM_TO_PERIPH ||
+> >> > -           d40c->dma_cfg.dir == STEDMA40_MEM_TO_MEM) {
+> >> > -               event = D40_TYPE_TO_EVENT(d40c->dma_cfg.dst_dev_type);
+> >> > +           d40c->dma_cfg.dir == STEDMA40_MEM_TO_MEM)
+> >>
+> >> Why did you just stop checking dma_cfg.dir for == STEDMA40_MEM_TO_MEM
+> >> above?
+> >
+> > That's not what this is doing. STEDMA40_MEM_TO_MEM is still there.
+> >
+> >> And why is dma_cfg.dir suddenly hardcoded to MEM_TO_MEM??
+> >
+> > It's not. Look again. :)
+> 
+> Argh I misread == MEM_TO_MEM for = MEM_TO_MEM ...
+> comparison to assignment. Sorry.
+> 
+> >> This seems like a totally unrelated change and should it be done
+> >> it need to be a separate patch with a separate explanation
+> >> AFAICT.
+> >>
+> >> This seems to happen in some other places too,
+> >
+> > If you could point those out, I'll re-evaluate, or explain.
+> 
+> I'm after that the change to omit checks for some impossible
+> type/group configs need to be a separate patch.
+> 
+> >> and I find it
+> >> very hard to follow the changes here ... can you please consider
+> >> splitting the changes to groups and types semantics into a separate
+> >> patch?
+> >
+> > Can you read the patch again and reconsider please?
+> 
+> Yes and now I am even more convinced that the patch needs
+> to be split.
+> 
+> Yours,
+> Linus Walleij
 
 -- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
