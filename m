@@ -1,99 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755824Ab3DYJIh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 05:08:37 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:49653 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753605Ab3DYJIf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 05:08:35 -0400
-Date: Thu, 25 Apr 2013 12:07:54 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Michal Nazarewicz <mina86@mina86.com>
-CC: Geert Uytterhoeven <geert@linux-m68k.org>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] usb: gadget: multi: Mark {cdc,rndis}_config_register()
- __init
-Message-ID: <20130425090754.GM7889@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1366802195-15479-1-git-send-email-geert@linux-m68k.org>
- <xa1t4nevc105.fsf@mina86.com>
+	id S1756102Ab3DYJK0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 05:10:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22485 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755629Ab3DYJKZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Apr 2013 05:10:25 -0400
+Date: Thu, 25 Apr 2013 11:09:56 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 05/14] perf tools: Introduce new 'ftrace' tool
+Message-ID: <20130425090956.GA1033@krava.brq.redhat.com>
+References: <1366705872-12132-1-git-send-email-namhyung@kernel.org>
+ <1366705872-12132-6-git-send-email-namhyung@kernel.org>
+ <20130424140918.GF971@krava.brq.redhat.com>
+ <87fvyf9maa.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="x38akuY2VS0PywU3"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <xa1t4nevc105.fsf@mina86.com>
+In-Reply-To: <87fvyf9maa.fsf@sejong.aot.lge.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---x38akuY2VS0PywU3
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Wed, Apr 24, 2013 at 10:05:46AM -0700, Michal Nazarewicz wrote:
-> On Wed, Apr 24 2013, Geert Uytterhoeven wrote:
-> > If gcc (e.g. 4.1.2) decides not to inline cdc_config_register() and
-> > rndis_config_register(), this will cause section mismatch warnings:
+On Thu, Apr 25, 2013 at 03:06:37PM +0900, Namhyung Kim wrote:
+> On Wed, 24 Apr 2013 16:09:18 +0200, Jiri Olsa wrote:
+> > On Tue, Apr 23, 2013 at 05:31:03PM +0900, Namhyung Kim wrote:
+> >> From: Namhyung Kim <namhyung.kim@lge.com>
+> >> +out:
+> >> +	put_tracing_file(file);
+> >> +	return ret;
+> >> +}
+> >> +
+> >> +static int reset_tracing_files(struct perf_ftrace *ftrace __maybe_unused)
+> >> +{
+> >> +	if (write_tracing_file("tracing_on", "0") < 0)
+> >> +		return -1;
+> >> +
+> >> +	if (write_tracing_file("current_tracer", "nop") < 0)
+> >> +		return -1;
+> >> +
+> >> +	if (write_tracing_file("set_ftrace_pid", " ") < 0)
+> >> +		return -1;
 > >
-> > WARNING: drivers/usb/gadget/g_multi.o(.text+0x32f6): Section mismatch i=
-n reference from the function cdc_config_register() to the function .init.t=
-ext:cdc_do_config()
-> > The function cdc_config_register() references
-> > the function __init cdc_do_config().
-> > This is often because cdc_config_register lacks a __init
-> > annotation or the annotation of cdc_do_config is wrong.
+> > I think we want to reset set_ftrace_pid file as well
+> > probably to -1..
 > >
-> > WARNING: drivers/usb/gadget/g_multi.o(.text+0x3326): Section mismatch i=
-n reference from the function rndis_config_register() to the function .init=
-=2Etext:rndis_do_config()
-> > The function rndis_config_register() references
-> > the function __init rndis_do_config().
-> > This is often because rndis_config_register lacks a __init
-> > annotation or the annotation of rndis_do_config is wrong.
-> >
-> > Fortunately they're harmless, as {cdc,rndis}_config_register() are only
-> > called from multi_bind(), which is annotated with __ref.
-> >
-> > Mark {cdc,rndis}_config_register() with the __init annotation to kill t=
-he
-> > warning.
-> >
-> > Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
->=20
-> Acked-by: Michal Nazarewicz <mina86@mina86.com>
->=20
-> With transition to configfs all those __inits and __refs will probably
-> go away in the long term though.
+> > if I'm tracing command with this file having wrong CPU(s)
+> > I dont get any data..
+> 
+> Not sure I understood what you mean exactly.
 
-that's what I thought. Wouldn't it be better to remove them all already?
+ugh, sry.. I wrote set_ftrace_pid when I actually meant tracing_cpumask ;-)
 
---=20
-balbi
+> 
+> Do you mean it should be changed to
+> 
+> 	if (write_tracing_file("set_ftrace_pid", "-1") < 0)
+> 
+> ?  It seems it's the right thing to do for compatibility.
 
---x38akuY2VS0PywU3
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+looks like it's enough only to open it with O_TRUNC,
+so I guess whatever minimal goes write_tracing_file
 
-iQIcBAEBAgAGBQJRePJqAAoJEIaOsuA1yqREYK8P/0B0m8a/C0xPUP46duL4PUq4
-UZ0HrkpBW3ZMKrfZF/tGLP/hDmpWUHzfdbO/Ss5XQdw/LPaKS9VrEi2aM1LgYYnx
-OwlC4xzs8Cfn240WEDCFjIFHV1MzcpRR3U8COt6ZFZRFK1MCGEm0TS4Oo2CnuVF3
-xc4dFuop8e9oL9fqhub0Dt6HZTkSpZPpzMG7BKLS5qbQhR6TrAc0/jmNAfEZlkfo
-cXjKkjPNpeJW+PiAf7qrMgXjgHxS4QRcLVSSLZKLjpxLgn9sOKen/aigGRwb8F77
-yzpjGqXq16LU0v5a6ssq2z666/Rw7KVz7j6DFwFOGg/AyyYT0aqi6K63IQV6GQbf
-EPuCkEsmAxfcoH48p7mlJ+xXXbLi4C/bSpk8MRx1KNZSCoB6pk5IXMH7gmVU2pcY
-axEd3WLnwO0YcdaNPBrTedRT7gNt0NF4x7GUITbM0VNZAIZaXx2NkTr3wDhoV7nv
-cXL1HTf03E0IN/U2KNZVv5IpOQ1P1X350QZYykN8qLvUSATRpCtFrPCF1flBYwQh
-IpyrvwZrsX0Slgc9KhVkGqDbGNK0PTjgAZnZwaOH54OhyOy4W2EZT+9KAav23hm4
-LW7gZ6lPo3U31QPsMNqi7QjMpDGR/9Sbx3wOMa6vQyYhurgy0919ylxM3QF6qY++
-ZHkSQ/CHWnj9Fb51ovLh
-=AOfH
------END PGP SIGNATURE-----
+---
+kernel/trace/ftrace.c:
 
---x38akuY2VS0PywU3--
+ftrace_pid_open(struct inode *inode, struct file *file)
+{
+        int ret = 0;
+
+        if ((file->f_mode & FMODE_WRITE) &&
+            (file->f_flags & O_TRUNC))
+                ftrace_pid_reset();
+
+
+jirka
