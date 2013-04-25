@@ -1,49 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758157Ab3DYLYl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 07:24:41 -0400
-Received: from mail-ia0-f173.google.com ([209.85.210.173]:61927 "EHLO
-	mail-ia0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756462Ab3DYLYk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 07:24:40 -0400
+	id S1758179Ab3DYLZm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 07:25:42 -0400
+Received: from multi.imgtec.com ([194.200.65.239]:63549 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756462Ab3DYLZl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Apr 2013 07:25:41 -0400
+Message-ID: <517912B1.3030109@imgtec.com>
+Date: Thu, 25 Apr 2013 12:25:37 +0100
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <1366279934-30761-24-git-send-email-lee.jones@linaro.org>
-References: <1366279934-30761-1-git-send-email-lee.jones@linaro.org>
-	<1366279934-30761-24-git-send-email-lee.jones@linaro.org>
-Date: Thu, 25 Apr 2013 13:24:39 +0200
-Message-ID: <CACRpkdbq3sz-e_ySUYf6a4PiWL4C=Yk=eNFUicUu03pDhJbPig@mail.gmail.com>
-Subject: Re: [PATCH 23/32] dmaengine: ste_dma40: Allow driver to be
- probe()able when DT is enabled
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
-        Per Forlin <per.forlin@stericsson.com>, Rabin Vincent <rabin@rab.in>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: <linux-kernel@vger.kernel.org>, Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        <devicetree-discuss@lists.ozlabs.org>, "Rob Landley" <rob@landley.net>,
+        <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH 3/8] irq-imgpdc: add ImgTec PDC irqchip driver
+References: <1366727607-27444-1-git-send-email-james.hogan@imgtec.com> <1366727607-27444-4-git-send-email-james.hogan@imgtec.com> <alpine.LFD.2.02.1304231647400.21884@ionos>
+In-Reply-To: <alpine.LFD.2.02.1304231647400.21884@ionos>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01181__2013_04_25_12_25_38
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 18, 2013 at 12:12 PM, Lee Jones <lee.jones@linaro.org> wrote:
+Hi Thomas,
 
-> When booting using Device Tree, devices aren't registered in the normal
-> way. Instead, they need to be provided with a compatible string which is
-> held in an OF Match Table for comparison during start-up. Here we provide
-> the compatible string and prepare the driver to not receive a platform
-> data pointer.
->
-> Cc: Vinod Koul <vinod.koul@intel.com>
-> Cc: Dan Williams <djbw@fb.com>
-> Cc: Per Forlin <per.forlin@stericsson.com>
-> Cc: Rabin Vincent <rabin@rab.in>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+On 23/04/13 16:09, Thomas Gleixner wrote:
+> On Tue, 23 Apr 2013, James Hogan wrote:
+>> +	pdc_write(priv, PDC_IRQ_ROUTE, irq_route);
+> 
+>> +	spin_unlock_irqrestore(&priv->lock, flags);
+>> +}
+>> +
+>> +static void perip_irq_unmask(struct irq_data *data)
+>> +{
+>> +	struct pdc_intc_priv *priv = irqd_to_priv(data);
+>> +	unsigned int irq_route;
+>> +	unsigned long flags;
+>> +
+>> +	spin_lock_irqsave(&priv->lock, flags);
+>> +	irq_route = pdc_read(priv, PDC_IRQ_ROUTE);
+>> +	irq_route |= 1 << data->hwirq;
+>> +	pdc_write(priv, PDC_IRQ_ROUTE, irq_route);
+> 
+> This code is another slightly different copy of stuff which is
+> available in kernel/irq/generic-chip.c
+> 
+> Can we please stop the code duplication and reuse existing
+> infrastructure? Don't tell me it does not work for you.  I sent out a
+> patch yesterday which makes the code suitable for irq domains.
 
-Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
+If you're referring to the one that adds the IRQ_GC_MASK_FROM_HWIRQ
+flag, as far as I can tell this means I'd have to call
+irq_setup_generic_chip on each individual irq (since virqs may not be
+linear), or else resort to creating a legacy irqdomain (which I thought
+was... well for legacy use).
 
-Yours,
-Linus Walleij
+It feels a bit convoluted, and wrong given that it adds itself to
+gc_list. Did I misunderstand how you were expecting me to make use of
+the generic chip functions with a linear irqdomain?
+
+Given that your patch presumably isn't upstream yet anyway, is it
+acceptable to go with the current version (other fixes applied) and
+update it later if necessary?
+
+Thanks
+James
+
