@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756653Ab3DYHwh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 03:52:37 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:44535 "EHLO
+	id S1756809Ab3DYHxH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 03:53:07 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:44531 "EHLO
 	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756477Ab3DYHwd (ORCPT
+	with ESMTP id S1756449Ab3DYHwc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 03:52:33 -0400
+	Thu, 25 Apr 2013 03:52:32 -0400
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: target-devel <target-devel@vger.kernel.org>
 Cc: linux-rdma <linux-rdma@vger.kernel.org>,
@@ -14,9 +14,9 @@ Cc: linux-rdma <linux-rdma@vger.kernel.org>,
         linux-kernel <linux-kernel@vger.kernel.org>,
         Roland Dreier <roland@kernel.org>, Or Gerlitz <ogerlitz@mellanox.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH/for-next 3/3] iser-target: Add special case for early ISCSI_OP_SCSI_CMD exception handling
-Date: Thu, 25 Apr 2013 07:40:31 +0000
-Message-Id: <1366875631-18795-4-git-send-email-nab@linux-iscsi.org>
+Subject: [PATCH/for-next 2/3] iscsi-target: Fix iscsit_handle_scsi_cmd() exception se_cmd leak
+Date: Thu, 25 Apr 2013 07:40:30 +0000
+Message-Id: <1366875631-18795-3-git-send-email-nab@linux-iscsi.org>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1366875631-18795-1-git-send-email-nab@linux-iscsi.org>
 References: <1366875631-18795-1-git-send-email-nab@linux-iscsi.org>
@@ -26,34 +26,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-During early ISCSI_OP_SCSI_CMD exception handling with non GOOD status, the
-TX thread context in isert_response_queue() needs to post IB_WR_SEND via
-isert_put_response() when processing ISTATE_SEND_STATUS.
+This patch fixes a regression where failures before backend se_cmd
+execution in iscsit_handle_scsi_cmd() is leaking iscsi_cmd due to
+a missing target_put_sess_cmd() call to drop the extra kref.
+
+Introduced during the RX PDU refactoring in v3.10 for-next code.
 
 Cc: Or Gerlitz <ogerlitz@mellanox.com>
 Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 ---
- drivers/infiniband/ulp/isert/ib_isert.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+ drivers/target/iscsi/iscsi_target.c |   26 +++++++++++++++++++-------
+ 1 files changed, 19 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/infiniband/ulp/isert/ib_isert.c b/drivers/infiniband/ulp/isert/ib_isert.c
-index 1a150ef..41712f0 100644
---- a/drivers/infiniband/ulp/isert/ib_isert.c
-+++ b/drivers/infiniband/ulp/isert/ib_isert.c
-@@ -1947,6 +1947,13 @@ isert_response_queue(struct iscsi_conn *conn, struct iscsi_cmd *cmd, int state)
- 	case ISTATE_SEND_REJECT:
- 		ret = isert_put_reject(cmd, conn);
- 		break;
-+	case ISTATE_SEND_STATUS:
-+		/*
-+		 * Special case for sending non GOOD SCSI status from TX thread
-+		 * context during pre se_cmd excecution failure.
-+		 */
-+		ret = isert_put_response(conn, cmd);
-+		break;
- 	default:
- 		pr_err("Unknown response state: 0x%02x\n", state);
- 		ret = -EINVAL;
+diff --git a/drivers/target/iscsi/iscsi_target.c b/drivers/target/iscsi/iscsi_target.c
+index 5eee9b7..ffbc6a9 100644
+--- a/drivers/target/iscsi/iscsi_target.c
++++ b/drivers/target/iscsi/iscsi_target.c
+@@ -1069,12 +1069,17 @@ int iscsit_process_scsi_cmd(struct iscsi_conn *conn, struct iscsi_cmd *cmd,
+ 	 */
+ 	if (!cmd->immediate_data) {
+ 		cmdsn_ret = iscsit_sequence_cmd(conn, cmd, hdr->cmdsn);
+-		if (cmdsn_ret == CMDSN_LOWER_THAN_EXP)
++		if (cmdsn_ret == CMDSN_LOWER_THAN_EXP) {
++			if (!cmd->sense_reason)
++				return 0;
++
++			target_put_sess_cmd(conn->sess->se_sess, &cmd->se_cmd);
+ 			return 0;
+-		else if (cmdsn_ret == CMDSN_ERROR_CANNOT_RECOVER)
++		} else if (cmdsn_ret == CMDSN_ERROR_CANNOT_RECOVER) {
+ 			return iscsit_add_reject_from_cmd(
+ 				ISCSI_REASON_PROTOCOL_ERROR,
+ 				1, 0, (unsigned char *)hdr, cmd);
++		}
+ 	}
+ 
+ 	iscsit_ack_from_expstatsn(conn, be32_to_cpu(hdr->exp_statsn));
+@@ -1085,24 +1090,31 @@ int iscsit_process_scsi_cmd(struct iscsi_conn *conn, struct iscsi_cmd *cmd,
+ 	if (!cmd->immediate_data) {
+ 		if (!cmd->sense_reason && cmd->unsolicited_data)
+ 			iscsit_set_unsoliticed_dataout(cmd);
++		if (!cmd->sense_reason)
++			return 0;
+ 
++		target_put_sess_cmd(conn->sess->se_sess, &cmd->se_cmd);
+ 		return 0;
+ 	}
+ 
+ 	/*
+-	 * Early CHECK_CONDITIONs never make it to the transport processing
+-	 * thread.  They are processed in CmdSN order by
+-	 * iscsit_check_received_cmdsn() below.
++	 * Early CHECK_CONDITIONs with ImmediateData never make it to command
++	 * execution.  These exceptions are processed in CmdSN order using
++	 * iscsit_check_received_cmdsn() in iscsit_get_immediate_data() below.
+ 	 */
+-	if (cmd->sense_reason)
++	if (cmd->sense_reason) {
++		target_put_sess_cmd(conn->sess->se_sess, &cmd->se_cmd);
+ 		return 1;
++	}
+ 	/*
+ 	 * Call directly into transport_generic_new_cmd() to perform
+ 	 * the backend memory allocation.
+ 	 */
+ 	cmd->sense_reason = transport_generic_new_cmd(&cmd->se_cmd);
+-	if (cmd->sense_reason)
++	if (cmd->sense_reason) {
++		target_put_sess_cmd(conn->sess->se_sess, &cmd->se_cmd);
+ 		return 1;
++	}
+ 
+ 	return 0;
+ }
 -- 
 1.7.2.5
 
