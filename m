@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758242Ab3DYLgt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 07:36:49 -0400
-Received: from mail-ia0-f171.google.com ([209.85.210.171]:42256 "EHLO
-	mail-ia0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754383Ab3DYLgr (ORCPT
+	id S1758248Ab3DYLh2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 07:37:28 -0400
+Received: from mail-ia0-f169.google.com ([209.85.210.169]:60530 "EHLO
+	mail-ia0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756264Ab3DYLh0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 07:36:47 -0400
+	Thu, 25 Apr 2013 07:37:26 -0400
 MIME-Version: 1.0
-In-Reply-To: <1366279934-30761-27-git-send-email-lee.jones@linaro.org>
+In-Reply-To: <1366279934-30761-28-git-send-email-lee.jones@linaro.org>
 References: <1366279934-30761-1-git-send-email-lee.jones@linaro.org>
-	<1366279934-30761-27-git-send-email-lee.jones@linaro.org>
-Date: Thu, 25 Apr 2013 13:36:46 +0200
-Message-ID: <CACRpkdZDQuFDb396fYtjZNr=O-5vrTHs+UwS5bqp8wet1PA93A@mail.gmail.com>
-Subject: Re: [PATCH 26/32] ARM: ux500: Supply UART's DMA configuration via
- Device Tree
+	<1366279934-30761-28-git-send-email-lee.jones@linaro.org>
+Date: Thu, 25 Apr 2013 13:37:26 +0200
+Message-ID: <CACRpkdZiXb-sKW+WhWyFFvXwW1V+EEUhZFLHhZKYh5Utp1tWtw@mail.gmail.com>
+Subject: Re: [PATCH 27/32] ARM: ux500: Stop registering DMA40 from platform
+ data when DT is enabled
 From: Linus Walleij <linus.walleij@linaro.org>
 To: Lee Jones <lee.jones@linaro.org>
 Cc: "linux-arm-kernel@lists.infradead.org" 
@@ -29,11 +29,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Thu, Apr 18, 2013 at 12:12 PM, Lee Jones <lee.jones@linaro.org> wrote:
 
-> When requesting a channel, a DMA client needs to pass some pieces of
-> information such as; request channel, device type, channel type and
-> direction etc. Normally we do this in the form of platform data, but
-> when DT is enabled we need to pass it using the driver's bindings
-> instead.
+> Now the DMA40 has been DT:ed, there's no requirement to register it
+> using traditional methods. This is the penultimate device to be DT:ed.
 >
 > Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
