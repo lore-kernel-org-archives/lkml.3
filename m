@@ -1,111 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758518Ab3DYNhT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 09:37:19 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:59138 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756342Ab3DYNhR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 09:37:17 -0400
-Message-ID: <51793172.9030802@pengutronix.de>
-Date: Thu, 25 Apr 2013 15:36:50 +0200
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	id S1758597Ab3DYNi2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 09:38:28 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:41051 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756342Ab3DYNi0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Apr 2013 09:38:26 -0400
+Date: Thu, 25 Apr 2013 08:38:25 -0500
+From: Cliff Wickman <cpw@sgi.com>
+To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Cc: ebiederm@xmission.com, vgoyal@redhat.com,
+        kumagai-atsushi@mxc.nes.nec.co.jp, lisa.mitchell@hp.com,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 0/8] kdump, vmcore: support mmap() on /proc/vmcore
+Message-ID: <20130425133825.GA25089@sgi.com>
+References: <20130413002000.18245.21513.stgit@localhost6.localdomain6>
 MIME-Version: 1.0
-To: Marc Kleine-Budde <mkl@pengutronix.de>
-CC: Shawn Guo <shawn.guo@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Andres Salomon <dilinger@queued.net>, arm@kernel.org,
-        John Stultz <john.stultz@linaro.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        Thomas Gleixner <tglx@linutronix.de>, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: RFC: [PATCH] clocksource: tcb: fix min_delta calculation
-References: <517687AB.1040309@pengutronix.de> <1366722524-25991-1-git-send-email-mkl@pengutronix.de>
-In-Reply-To: <1366722524-25991-1-git-send-email-mkl@pengutronix.de>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="----enig2EJVVDBJDMFMHGKXVTWRL"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130413002000.18245.21513.stgit@localhost6.localdomain6>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
-------enig2EJVVDBJDMFMHGKXVTWRL
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: quoted-printable
-
-On 04/23/2013 03:08 PM, Marc Kleine-Budde wrote:
-> The commit
->=20
->     77cc982 clocksource: use clockevents_config_and_register() where po=
-ssible
->=20
-> switches from manually calculating min_delta_ns (and others) and
-> clockevents_register_device() to automatic calculation via
-> clockevents_config_and_register(). During this conversation the "+ 1" i=
-n
->=20
->     min_delta_ns =3D clockevent_delta2ns(1, &clkevt.clkevt) + 1;
->=20
-> was lost. This leads to problems with schedule_delayed_work() with a de=
-lay of
-> "1". Resulting in the work not scheduled in time.
->=20
-> This patch fixes the problem by increasing the min_delta to "2" ticks.
->=20
-> Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
-
-Who will take care of this patch?
-
-Marc
-
+On Fri, Apr 05, 2013 at 12:04:02AM +0000, HATAYAMA Daisuke wrote:
+> Currently, read to /proc/vmcore is done by read_oldmem() that uses
+> ioremap/iounmap per a single page. For example, if memory is 1GB,
+> ioremap/iounmap is called (1GB / 4KB)-times, that is, 262144
+> times. This causes big performance degradation.
+> 
+> In particular, the current main user of this mmap() is makedumpfile,
+> which not only reads memory from /proc/vmcore but also does other
+> processing like filtering, compression and IO work.
+> 
+> To address the issue, this patch implements mmap() on /proc/vmcore to
+> improve read performance.
+> 
+> Benchmark
+> =========
+> 
+> You can see two benchmarks on terabyte memory system. Both show about
+> 40 seconds on 2TB system. This is almost equal to performance by
+> experimtanal kernel-side memory filtering.
+> 
+> - makedumpfile mmap() benchmark, by Jingbai Ma
+>   https://lkml.org/lkml/2013/3/27/19
+> 
+> - makedumpfile: benchmark on mmap() with /proc/vmcore on 2TB memory system
+>   https://lkml.org/lkml/2013/3/26/914
+> 
+> ChangeLog
+> =========
+> 
+> v3 => v4)
+> 
+> - Rebase 3.9-rc7.
+> - Drop clean-up patches orthogonal to the main topic of this patch set.
+> - Copy ELF note segments in the 1st kernel just as in v1. Allocate
+>   vmcore objects per pages. => See [PATCH 5/8]
+> - Map memory referenced by PT_LOAD entry directly even if the start or
+>   end of the region doesn't fit inside page boundary, no longer copy
+>   them as the previous v3. Then, holes, outside OS memory, are visible
+>   from /proc/vmcore. => See [PATCH 7/8]
+> 
+> v2 => v3)
+> 
+> - Rebase 3.9-rc3.
+> - Copy program headers seprately from e_phoff in ELF note segment
+>   buffer. Now there's no risk to allocate huge memory if program
+>   header table positions after memory segment.
+> - Add cleanup patch that removes unnecessary variable.
+> - Fix wrongly using the variable that is buffer size configurable at
+>   runtime. Instead, use the varibale that has original buffer size.
+> 
+> v1 => v2)
+> 
+> - Clean up the existing codes: use e_phoff, and remove the assumption
+>   on PT_NOTE entries.
+> - Fix potencial bug that ELF haeader size is not included in exported
+>   vmcoreinfo size.
+> - Divide patch modifying read_vmcore() into two: clean-up and primary
+>   code change.
+> - Put ELF note segments in page-size boundary on the 1st kernel
+>   instead of copying them into the buffer on the 2nd kernel.
+> 
+> Test
+> ====
+> 
+> This patch set is composed based on v3.9-rc7.
+> 
+> Done on x86-64, x86-32 both with 1GB and over 4GB memory environments.
+> 
 > ---
->  drivers/clocksource/tcb_clksrc.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->=20
-> diff --git a/drivers/clocksource/tcb_clksrc.c b/drivers/clocksource/tcb=
-_clksrc.c
-> index 8a61872..7cf6dc7 100644
-> --- a/drivers/clocksource/tcb_clksrc.c
-> +++ b/drivers/clocksource/tcb_clksrc.c
-> @@ -197,7 +197,7 @@ static void __init setup_clkevents(struct atmel_tc =
-*tc, int clk32k_divisor_idx)
-> =20
->  	clkevt.clkevt.cpumask =3D cpumask_of(0);
-> =20
-> -	clockevents_config_and_register(&clkevt.clkevt, 32768, 1, 0xffff);
-> +	clockevents_config_and_register(&clkevt.clkevt, 32768, 2, 0xffff);
-> =20
->  	setup_irq(irq, &tc_irqaction);
->  }
->=20
+> 
+> HATAYAMA Daisuke (8):
+>       vmcore: support mmap() on /proc/vmcore
+>       vmcore: treat memory chunks referenced by PT_LOAD program header entries in \
+>                 page-size boundary in vmcore_list
+>       vmcore: count holes generated by round-up operation for page boudary for size \
+>                 of /proc/vmcore
+>       vmcore: copy ELF note segments in the 2nd kernel per page vmcore objects
+>       vmcore: Add helper function vmcore_add()
+>       vmcore, procfs: introduce MEM_TYPE_CURRENT_KERNEL flag to distinguish objects \
+> copied in 2nd kernel  vmcore: clean up read_vmcore()
+>       vmcore: allocate buffer for ELF headers on page-size alignment
+> 
+> 
+>  fs/proc/vmcore.c        |  349 ++++++++++++++++++++++++++++++++---------------
+>  include/linux/proc_fs.h |    8 +
+>  2 files changed, 245 insertions(+), 112 deletions(-)
+> 
+> -- 
+> 
+> Thanks.
+> HATAYAMA, Daisuke
 
+This is a very important patch set for speeding the kdump process.
+(patches 1 - 8)
 
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+We have found the mmap interface to /proc/vmcore about 80x faster than the 
+read interface.
+That is, doing mmap's and copying data (in pieces the size of page
+structures) transfers all of /proc/vmcore about 80 times faster than
+reading it.
 
+This greatly speeds up the capture of a kdump, as the scan of page
+structures takes the bulk of the time in dumping the OS on a machine
+with terabytes of memory.
 
-------enig2EJVVDBJDMFMHGKXVTWRL
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+We would very much like to see this set make it into the 3.10 release.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+Acked-by: Cliff Wickman <cpw@sgi.com>
 
-iEYEARECAAYFAlF5MXYACgkQjTAFq1RaXHNiFACaAjwTQA5eagZjhP+QQJYxUYsF
-1XcAn2FUu8tweA6guS6skxauU6fR+IXu
-=L/0D
------END PGP SIGNATURE-----
-
-------enig2EJVVDBJDMFMHGKXVTWRL--
+-Cliff
+-- 
+Cliff Wickman
+SGI
+cpw@sgi.com
+(651) 683-3824
