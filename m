@@ -1,80 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758650Ab3DYNlW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 09:41:22 -0400
-Received: from smtp.eu.citrix.com ([46.33.159.39]:39084 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757887Ab3DYNlU (ORCPT
+	id S1758628Ab3DYNoL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 09:44:11 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:64520 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758003Ab3DYNoI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 09:41:20 -0400
-X-IronPort-AV: E=Sophos;i="4.87,551,1363132800"; 
-   d="scan'208";a="3933886"
-Message-ID: <1366897278.20256.545.camel@zakaz.uk.xensource.com>
-Subject: Re: [PATCH v4 4/7] xen/arm: implement HYPERVISOR_vcpu_op
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
+	Thu, 25 Apr 2013 09:44:08 -0400
+Date: Thu, 25 Apr 2013 14:44:02 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>
-Date: Thu, 25 Apr 2013 14:41:18 +0100
-In-Reply-To: <1366831695-13214-4-git-send-email-stefano.stabellini@eu.citrix.com>
-References: <alpine.DEB.2.02.1304242012590.4180@kaball.uk.xensource.com>
-	 <1366831695-13214-4-git-send-email-stefano.stabellini@eu.citrix.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andreas Westin <andreas.westin@stericsson.com>,
+        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
+        magnus.p.persson@stericsson.com
+Subject: Re: [PATCH 6/9] crypto: ux500/cryp - Set DMA configuration though
+ dma_slave_config()
+Message-ID: <20130425134402.GN4623@gmail.com>
+References: <1366280825-31136-1-git-send-email-lee.jones@linaro.org>
+ <1366280825-31136-7-git-send-email-lee.jones@linaro.org>
+ <CACRpkdbFgW6bGYt59WtN4r2izuN09AJw4J1cqir82uzFsuMmWQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACRpkdbFgW6bGYt59WtN4r2izuN09AJw4J1cqir82uzFsuMmWQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-04-24 at 20:28 +0100, Stefano Stabellini wrote:
-> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+On Thu, 25 Apr 2013, Linus Walleij wrote:
 
-Reviewed-by: Ian Campbell <ian.campbell@citrix.com>
-
-> ---
->  arch/arm/include/asm/xen/hypercall.h |    1 +
->  arch/arm/xen/enlighten.c             |    1 +
->  arch/arm/xen/hypercall.S             |    1 +
->  3 files changed, 3 insertions(+), 0 deletions(-)
+> On Thu, Apr 18, 2013 at 12:27 PM, Lee Jones <lee.jones@linaro.org> wrote:
 > 
-> diff --git a/arch/arm/include/asm/xen/hypercall.h b/arch/arm/include/asm/xen/hypercall.h
-> index 8a82325..799f42e 100644
-> --- a/arch/arm/include/asm/xen/hypercall.h
-> +++ b/arch/arm/include/asm/xen/hypercall.h
-> @@ -46,6 +46,7 @@ int HYPERVISOR_event_channel_op(int cmd, void *arg);
->  unsigned long HYPERVISOR_hvm_op(int op, void *arg);
->  int HYPERVISOR_memory_op(unsigned int cmd, void *arg);
->  int HYPERVISOR_physdev_op(int cmd, void *arg);
-> +int HYPERVISOR_vcpu_op(int cmd, int vcpuid, void *extra_args);
->  
->  static inline void
->  MULTI_update_va_mapping(struct multicall_entry *mcl, unsigned long va,
-> diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
-> index 94bbf3b..b002822 100644
-> --- a/arch/arm/xen/enlighten.c
-> +++ b/arch/arm/xen/enlighten.c
-> @@ -295,4 +295,5 @@ EXPORT_SYMBOL_GPL(HYPERVISOR_sched_op);
->  EXPORT_SYMBOL_GPL(HYPERVISOR_hvm_op);
->  EXPORT_SYMBOL_GPL(HYPERVISOR_memory_op);
->  EXPORT_SYMBOL_GPL(HYPERVISOR_physdev_op);
-> +EXPORT_SYMBOL_GPL(HYPERVISOR_vcpu_op);
->  EXPORT_SYMBOL_GPL(privcmd_call);
-> diff --git a/arch/arm/xen/hypercall.S b/arch/arm/xen/hypercall.S
-> index 71f7239..199cb2d 100644
-> --- a/arch/arm/xen/hypercall.S
-> +++ b/arch/arm/xen/hypercall.S
-> @@ -87,6 +87,7 @@ HYPERCALL2(event_channel_op);
->  HYPERCALL2(hvm_op);
->  HYPERCALL2(memory_op);
->  HYPERCALL2(physdev_op);
-> +HYPERCALL3(vcpu_op);
->  
->  ENTRY(privcmd_call)
->  	stmdb sp!, {r4}
+> > The DMA controller currently takes configuration information from
+> > information passed though dma_channel_request(), but it shouldn't.
+> > Using the API, the DMA channel should only be configured during
+> > a dma_slave_config() call.
+> >
+> > Cc: Herbert Xu <herbert@gondor.apana.org.au>
+> > Cc: David S. Miller <davem@davemloft.net>
+> > Cc: Andreas Westin <andreas.westin@stericsson.com>
+> > Cc: linux-crypto@vger.kernel.org
+> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> 
+> (...)
+> >  /* Cryp DMA interface */
+> > +#define HASH_DMA_TX_FIFO       0x08
+> > +#define HASH_DMA_RX_FIFO       0x10
+> 
+> Yes, this is nice address notation :-)
+> 
+> >  /**
+> >   * struct cryp_device_data - structure for a cryp device.
+> > - * @base: Pointer to the hardware base address.
+> > + * @base: Pointer to virtual base address of the cryp device.
+> > + * @phybase: Pointer to physical memory location of the cryp device.
+> >   * @dev: Pointer to the devices dev structure.
+> >   * @clk: Pointer to the device's clock control.
+> >   * @pwr_regulator: Pointer to the device's power control.
+> > @@ -232,6 +236,7 @@ struct cryp_dma {
+> >   */
+> >  struct cryp_device_data {
+> >         struct cryp_register __iomem *base;
+> > +       phys_addr_t phybase;
+> 
+> Use dma_addr_t. Maybe "phybase" is misleading,
+> "dmabase" is probably better. (Also applies to the
+> cryp patch).
 
+Accept it's not the dmabase.
 
+It's the phybase (U8500_CRYP1_BASE) i.e. the physical base address of
+the device's regs.
+
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
