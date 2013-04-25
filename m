@@ -1,73 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932393Ab3DYVCh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 17:02:37 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:36836 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757376Ab3DYVCf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 17:02:35 -0400
-Date: Thu, 25 Apr 2013 15:02:31 -0600
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Alexander Holler <holler@ahsoftware.de>, Kay Sievers <kay@vrfy.org>,
-        LKML <linux-kernel@vger.kernel.org>, Feng Tang <feng.tang@intel.com>
-Subject: Re: CONFIG_RTC_HCTOSYS lost on x86 with ALWAYS_USE_PERSISTENT_CLOCK
- changes?
-Message-ID: <20130425210231.GE31863@obsidianresearch.com>
-References: <CAPXgP13kizK95JyLxKxgWrGnV9b11ZTyi3vuc5YFDmROzckg4w@mail.gmail.com>
- <517746E4.908@linaro.org>
- <CAPXgP128yAq1jju-gsZcaS-mZPt+7tq0tt-uVk3Yqr77abd26Q@mail.gmail.com>
- <51774F44.2060704@linaro.org>
- <517769A9.5060308@ahsoftware.de>
- <51780348.6090202@linaro.org>
- <5178D719.2060405@ahsoftware.de>
- <5179562C.3000903@linaro.org>
- <20130425183301.GA31863@obsidianresearch.com>
- <51798BF4.5020602@linaro.org>
+	id S1758559Ab3DYVFr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 17:05:47 -0400
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:63201 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757857Ab3DYVFp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Apr 2013 17:05:45 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51798BF4.5020602@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.162
+In-Reply-To: <5179905E.4090207@schaufler-ca.com>
+References: <5176ABB7.5080300@schaufler-ca.com>
+	<47138397.PP25Tg7m1s@sifl>
+	<51797153.7050308@schaufler-ca.com>
+	<5010864.rEs2oKk1kF@sifl>
+	<5179905E.4090207@schaufler-ca.com>
+Date: Thu, 25 Apr 2013 14:05:44 -0700
+X-Google-Sender-Auth: 7KVmuExdlHHknTeP-pe6KGXE5jM
+Message-ID: <CAGXu5jKWxk+b2D0nJ5_xe4FVYdbinD+O-FD11qhiRQrOJ=dq9Q@mail.gmail.com>
+Subject: Re: [PATCH v13 0/9] LSM: Multiple concurrent LSMs
+From: Kees Cook <keescook@chromium.org>
+To: Casey Schaufler <casey@schaufler-ca.com>
+Cc: Paul Moore <paul@paul-moore.com>,
+        John Johansen <john.johansen@canonical.com>,
+        LSM <linux-security-module@vger.kernel.org>,
+        LKLM <linux-kernel@vger.kernel.org>, SE Linux <selinux@tycho.nsa.gov>,
+        James Morris <jmorris@namei.org>, Eric Paris <eparis@redhat.com>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 25, 2013 at 01:03:00PM -0700, John Stultz wrote:
-> On 04/25/2013 11:33 AM, Jason Gunthorpe wrote:
-> >John mentioned they might be kept for embedded - eg size reduction.
-> >The issue with that idea is if you do not enable the class RTC
-> >subsystem then there is no way for a small embedded userspace to set
-> >the RTC. The /dev/rtc* device obviously goes away, but it also turns
-> >out that that CONFIG_GENERIC_CMOS_UPDATE only works when combined with
-> >a heavy weight userspace NTPD that runs the kernel PLL properly. The
-> >kernel NTP code is enormously conservative and it is actually quite
-> >hard to get it to write to the RTC. An RTC that cannot be set is
-> >useless, so these days I feel CONFIG_RTC is pragmatically mandatory -
-> >and my space constrained embedded systems do set it, for these
-> >reasons.
-> 
-> So I mentioned that the size-reduciton focused folks might not like
-> the generic rtc core over the persistent_clock code, but I'm not
-> convinced that's a reason to keep the persistent clock code (which
+On Thu, Apr 25, 2013 at 1:21 PM, Casey Schaufler <casey@schaufler-ca.com> wrote:
+> On 4/25/2013 12:14 PM, Paul Moore wrote:
+>> On Thursday, April 25, 2013 11:09:23 AM Casey Schaufler wrote:
+>>> On 4/25/2013 8:01 AM, Paul Moore wrote:
+>>>> On Wednesday, April 24, 2013 05:43:08 PM Casey Schaufler wrote:
+>>>>> On 4/24/2013 4:00 PM, John Johansen wrote:
+>>>>>> On 04/24/2013 02:15 PM, Paul Moore wrote:
+>>>>>>> On Wednesday, April 24, 2013 01:22:20 PM Casey Schaufler wrote:
+>>>> ...
+>>>>
+>>>>>>>> An interesting aside that may be relevant is that the error
+>>>>>>>> condition behavior makes it advisable to have the LSM you care
+>>>>>>>> about most go last. If the networking components were strictly
+>>>>>>>> FCFS you might have to chose an ordering you might not want for
+>>>>>>>> other reasons.
+>>>>>>> Well, maybe not ... I think.  If we take a FCFS approach to the network
+>>>>>>> controls then only one LSM is really ever going to throw an error on
+>>>>>>> the
+>>>>>>> network hooks, yes?
+>>>>> You set up the order you want to get the networking handled
+>>>>> correctly and you could get filesystem hooks in the wrong order.
+>>>>> Not that that really ought to be a problem, but there are wonky
+>>>>> admin tools out there.
+>>>> I don't quite follow; can you be a bit more explicit about getting the
+>>>> filesystem hooks in the wrong order?
+>>> Let's assume that there's a case for the stat() system call that
+>>> would get EPERM from SELinux and EACCES from Smack. A carefully
+>>> crafted admin tool might take different actions based on the return
+>>> code. If Smack ahead of SELinux in the list the tool will respond
+>>> one way, whereas if SELinux is ahead it will behave the other way.
+>>>
+>>> If this tool came with Fedora it will likely expect the SELinux
+>>> error code. Thus, it will be somewhat important that Smack precede
+>>> SELinux in the LSM ordering. That will grant Smack the NetLabel
+>>> component. If you want SELinux to use NetLabel you'll have to
+>>> explicitly configure that.
+>>>
+>>> It's probably not going to be an issue that often. Making the
+>>> ordering implications clear to those who may be affected by them
+>>> is probably the best choice and biggest challenge. It would be
+>>> nice to keep them to a minimum. I fear some future LSM author
+>>> getting clever with error codes and demanding the ultimate
+>>> position in all cases.
+>> I guess this begs the question, why does the stacking take the return value
+>> from the last LSM and not the first?  I'm sure there was a design decision
+>> made here, I'm just curious about the reasons why.
+>
+> The hook loop is trivially simpler if you return the last error than
+> if you return the first error:
+>
+>         if (thisrc)
+>                 rc = thisrc;
+>
+> vs
+>
+>         if (thisrc && !rc)
+>                 rc = thisrc;
+>
+> If I had decided to do shortcutting (return on first failure) it
+> would be a different story.
+>
+>> To me, and maybe I'm the odd one out here,
+>
+> I don't know that you're the only odd one here. :)
+>
+>> but I would think that the first
+>> LSM in the stacking order should get precedence;
+>
+> My desire and intent is that to the extent possible there should
+> be no "principle" LSM. The choice of last error is purely driven
+> by the fact that it's the easiest thing to do.
+>
+>> this is why I'm pushing for a
+>> FCFS for the network controls.  If it turns out that the stacking patches give
+>> preference for the last LSM in the stacking order (I think this will always
+>> seem backwards to me) then we should probably give the networking controls to
+>> the last LSM.
+>
+> I actually think that FCFS for networking services and last error code
+> hits closest to the sweet spot. "security=yama,smack,selinux" would give
+> NetLabel to Smack and xfrm and secmark to SELinux. It would also give
+> SELinux error returns in cases where there are multiple reasons for
+> denial. Since SELinux has a more sophisticated runtime environment than
+> Smack this is likely to make Fedora (for example) happier.
 
-What I mean is you can't actually choose to use persistent_clock over
-rtc core, that is not a choice. The only choice these days it to omit
-the user space interface to the RTC (eg rtc core). On some platforms
-the RTC will still get *read* during boot via persisent_clock, but no
-platform has a way for userspace to *set* via
-persisent_clock. update_persisent_clock is not connected to userspace
-anymore.
+Yeah, this seems good to me too.
 
-An unsettable RTC is useless, IMHO.
+-Kees
 
-> I only noted it, because it has come up prior as a complaint when
-> switching to the RTC core was proposed.
-
-Sure, but, AFAIK, that was a general concern of /dev/rtc vs /dev/rtc0
-- however since then we have lost /dev/rtc completely. That means
-there is no longer any way to access the persistent_clock functions
-from userspace.
-
-Jason
+--
+Kees Cook
+Chrome OS Security
