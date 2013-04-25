@@ -1,73 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759393Ab3DYVJB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 17:09:01 -0400
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:32185 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756707Ab3DYVJA (ORCPT
+	id S932561Ab3DYVJv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 17:09:51 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:51192 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932085Ab3DYVJu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 17:09:00 -0400
-Date: Thu, 25 Apr 2013 16:07:26 -0500
-From: scameron@beardog.cce.hp.com
-To: Tejun Heo <tj@kernel.org>
-Cc: axboe@kernel.dk, neilb@suse.de, hch@infradead.org, jmoyer@redhat.com,
-        hare@suse.de, shaohua.li@intel.com, vgoyal@redhat.com,
-        stephenmcameron@gmail.com, linux-kernel@vger.kernel.org,
-        lsorense@csclub.uwaterloo.ca, scameron@beardog.cce.hp.com
-Subject: Re: [RFC PATCH] block: Add new generic block device naming interface
-Message-ID: <20130425210726.GL7917@beardog.cce.hp.com>
-References: <20130425202215.20557.75283.stgit@beardog.cce.hp.com> <20130425204033.GB10990@mtj.dyndns.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130425204033.GB10990@mtj.dyndns.org>
-User-Agent: Mutt/1.4.2.2i
+	Thu, 25 Apr 2013 17:09:50 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "edubezval@gmail.com" <edubezval@gmail.com>
+Subject: Re: [PATCH 15/21] thermal: cooling: avoid uninitialied used gcc warning
+Date: Thu, 25 Apr 2013 23:09:03 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Zhang Rui <rui.zhang@intel.com>,
+        Amit Daniel kachhap <amit.daniel@samsung.com>,
+        "Valentin, Eduardo" <eduardo.valentin@ti.com>
+References: <1366910944-3033663-1-git-send-email-arnd@arndb.de> <1366910944-3033663-16-git-send-email-arnd@arndb.de> <CAC-25o_bmrZZ9n10cBE=ewO7Yr+FmgP2JTYJNr1y=V_9BgcyXQ@mail.gmail.com>
+In-Reply-To: <CAC-25o_bmrZZ9n10cBE=ewO7Yr+FmgP2JTYJNr1y=V_9BgcyXQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201304252309.03613.arnd@arndb.de>
+X-Provags-ID: V02:K0:lEnyyB35sxfv6sdCx0b0ylL8VPQrMPCsV9/bhG9QwDi
+ bgvS5yztEyT6uXLe+Q+xwAutLUkJjRlTnwjTB7IZ+emYgRZ9zK
+ zNY31CnHOqsC6ZkBbjeKYqL3xbuKa089+VjwDUqqQxjuUZmhHm
+ fUITeWFSC3MgbLG+qNlHkVDkZXYFlraJSwzYqfO+/4w87iXQlW
+ bltZmsO2tQjBVl93Bkky2Jzr7estyLTvDo5HeS54V4mW0EoTiD
+ 59LUml2rRKkw9FGLDOkDSdwmmVbYrW0zd2dfAPueV47xkljWBu
+ M1a0Km20QXd1rPeqFzm27BIP7HBhks58mPRpNFh+dImcWpxAZW
+ GHic2PdQOl4V/pN2Rgts=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 25, 2013 at 01:40:33PM -0700, Tejun Heo wrote:
-> Hello,
+On Thursday 25 April 2013, edubezval@gmail.com wrote:
+> Rui has merged a patch that removes this bogus compiler warning:
+> http://git.kernel.org/cgit/linux/kernel/git/rzhang/linux.git/commit/?h=next&amp;id=4469b99743d296e24aefc5f8ed7df1bc9cfbbac8
 > 
-> On Thu, Apr 25, 2013 at 03:22:15PM -0500, Stephen M. Cameron wrote:
-> > If block drivers could (optionally) share a common device namespace then
-> > grub could be taught about this common namespace once, and any new block
-> > device drivers could take advantage of this namespace and grub would
-> > automatically work with them.
-> 
-> Hmmm... maybe I'm missing something but the names assigned this way
-> wouldn't have any kind of stability across boots.  Is that good
-> enough?  
+> Though, as not as elegant as your patch, it does the trick. :-)
 
-Perhaps not.  I am open to suggestions on that front -- perhaps there's
-some way for udev to help sort things out?
+Ok, works for me.
 
-> But, if so, I'm kinda having hard time understanding what
-> it'd be able to do which any other name can't do.
-> 
-> Can you please elaborate the use case?
+Looking at the patch however tells me that it has the potential to hide real
+bugs if the code is ever changed to actually do an uninitialized access.
+It's not very likely in this case, but I generally recommend not to add
+any variables at declaration time unless the initialization is to a
+meaningful value that the code later uses.
 
-Sure.
-
-Right now, if you add a new block driver, if you want grub to be able
-to boot it, you also have to modify grub.  This is true for each new
-block driver that comes along.  This is not the case for SCSI HBA
-drivers, because they all get to share the sd driver and its device
-name space, and grub already knows about that.  You can add all kinds
-of SCSI HBA drivers and never have to worry about needing to modify
-grub to get boot support.
-
-It seems wrong to me that for every new block driver needing boot support
-grub has to be modified.  If there were a common block device name space
-which grub knew about, any new block driver which comes along that needs
-support from grub could get it by using this common block device name space.
-
-So that is the problem I'd like to solve.  I realize the patch I've put
-up for discussion may fall short.  And it's possible there's a good reason
-such a thing as I propose isn't already present, in which case I'd like
-to learn what that reason is.
-
-Thanks,
-
--- steve
-
+	Arnd
