@@ -1,98 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759507Ab3DYVr5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 17:47:57 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:39032 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756710Ab3DYVrz (ORCPT
+	id S1759578Ab3DYVwC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 17:52:02 -0400
+Received: from mail-ia0-f177.google.com ([209.85.210.177]:57597 "EHLO
+	mail-ia0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758867Ab3DYVwA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 17:47:55 -0400
-Message-ID: <5179A488.5050102@gmail.com>
-Date: Thu, 25 Apr 2013 16:47:52 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Thu, 25 Apr 2013 17:52:00 -0400
 MIME-Version: 1.0
-To: Stephen Boyd <sboyd@codeaurora.org>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+In-Reply-To: <1366727607-27444-5-git-send-email-james.hogan@imgtec.com>
+References: <1366727607-27444-1-git-send-email-james.hogan@imgtec.com>
+	<1366727607-27444-5-git-send-email-james.hogan@imgtec.com>
+Date: Thu, 25 Apr 2013 23:52:00 +0200
+Message-ID: <CACRpkda3_G3B-QYOKNSTk6jk3764RF_hAtOEiE_ep7xmRnek-Q@mail.gmail.com>
+Subject: Re: [PATCH 4/8] metag: tz1090: add <asm/soc-tz1090/gpio.h>
+From: Linus Walleij <linus.walleij@linaro.org>
+To: James Hogan <james.hogan@imgtec.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
         "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv2 1/4] Documentation: Add memory mapped ARM architected
- timer binding
-References: <1365812863-5367-1-git-send-email-sboyd@codeaurora.org> <1365812863-5367-2-git-send-email-sboyd@codeaurora.org> <516C6F12.5020208@gmail.com> <516C7231.6060305@codeaurora.org>
-In-Reply-To: <516C7231.6060305@codeaurora.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	<devicetree-discuss@lists.ozlabs.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/15/2013 04:33 PM, Stephen Boyd wrote:
-> On 04/15/13 14:20, Rob Herring wrote:
->> On Fri, Apr 12, 2013 at 7:27 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
->>> @@ -26,3 +30,52 @@ Example:
->>>                              <1 10 0xf08>;
->>>                 clock-frequency = <100000000>;
->>>         };
->>> +
->>> +** Memory mapped timer node properties
->>> +
->>> +- compatible : Should at least contain "arm,armv7-timer-mem".
->> Everything about this timer is architecturally defined? If not, let's
->> use a more specific name.
-> 
-> I'm not sure I'm following you, but everything described here is part of
-> the ARM definition. What would be a more specific name?
+On Tue, Apr 23, 2013 at 4:33 PM, James Hogan <james.hogan@imgtec.com> wrote:
 
-Something that corresponds to the particular implementation like
-cortex-a15 (obviously not an example that has this). I'm fine with
-leaving this for now, but would like to see that added when specific SOC
-dts are added. Better to be specific in case we need to use it for
-something like errata work-arounds. Of course we haven't done that so
-far with the arch timer bindings...
+> Add <asm/soc-tz1090/gpio.h> with definitions to number all the GPIOs
+> available on-chip. This is for use by the pinctrl and GPIO drivers.
+>
+> Signed-off-by: James Hogan <james.hogan@imgtec.com>
 
->>> +
->>> +- clock-frequency : The frequency of the main counter, in Hz. Optional.
->>> +
->>> +- reg : The control frame base address.
->>> +
->>> +Note that #address-cells, #size-cells, and ranges shall be present to ensure
->>> +the CPU can address a frame's registers.
->>> +
->>> +Frame:
->>> +
->>> +- frame-number: 0 to 7.
->> I'd really like to get rid of the frame numbers and sub-nodes. Is the
->> frame number significant to software?
-> 
-> We need the frame number to read and write registers in the control
-> frame (the first base in the parent node). We currently use it to
-> determine if a frame has support for the virtual timer by reading the
-> CNTTIDR (a register with 4 bits per frame describing capabilities). If
-> we wanted to control access to the second view of a frame we would also
-> need to configure the CNTPL0ACRn register that pertains to the frame
-> we're controlling. Without a frame number we wouldn't know which
-> register to write.
+Usually the specific pins and names is a pecularity best contained
+in the GPIO or pinctrl subsystem.
 
-I've gone thru the memory mapped part of the spec now, so I think I
-understand things better. I see how the frame number is needed, but...
+Please try to push this down into the driver, and only use a simple number
+to access the GPIOs.
 
-The control base is only accessible in secure or hyp mode. How does a
-guest know that it is a guest and can't map the control base? Seems like
-we need to allow a subset of the binding that is just a reg and
-interrupts properties without the frame sub nodes.
-
-Rob
-
-> 
->>
->>> +- interrupts : Interrupt list for physical and virtual timers in that order.
->>> +  The virtual timer interrupt is optional.
->> Is that optional per frame?
-> 
-> Yes the virtual and physical timer interrupt is per-frame and the
-> virtual interrupt is optional.
-> 
-
+Yours,
+Linus Walleij
