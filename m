@@ -1,100 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757900Ab3DYL71 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 07:59:27 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:1322 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756751Ab3DYL70 (ORCPT
+	id S1758339Ab3DYL7y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 07:59:54 -0400
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:44396 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757169Ab3DYL7x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 07:59:26 -0400
-X-Spam-Score: -100.8
-Message-ID: <51791A6E.80504@asianux.com>
-Date: Thu, 25 Apr 2013 19:58:38 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Thu, 25 Apr 2013 07:59:53 -0400
 MIME-Version: 1.0
-To: Mike Qiu <qiudayu@linux.vnet.ibm.com>, Paul Mackerras <paulus@samba.org>,
-        Michael Neuling <mikey@neuling.org>
-CC: Michael Ellerman <michael@ellerman.id.au>, linuxppc-dev@lists.ozlabs.org,
-        sfr@canb.auug.org.au, matt@ozlabs.org, linux-kernel@vger.kernel.org,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: Re: [PATCH v2] PowerPC: kernel: compiling issue, make additional
- room in exception vector area
-References: <5177965D.9090406@linux.vnet.ibm.com> <20130424083142.GB26834@concordia> <51779941.8080403@linux.vnet.ibm.com> <30651.1366799858@ale.ozlabs.ibm.com> <1366807638.5911.2.camel@localhost> <5178816D.3000309@asianux.com> <5178ABA2.4030109@linux.vnet.ibm.com> <20130425062539.GA421@iris.ozlabs.ibm.com> <517918AB.4020508@asianux.com>
-In-Reply-To: <517918AB.4020508@asianux.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130425110450.GF2244@x2.net.home>
+References: <20130425110450.GF2244@x2.net.home>
+Date: Thu, 25 Apr 2013 13:59:51 +0200
+Message-ID: <CAFLxGvyBc2c95BGQ78vuz0iofGB65RD6bFxF3kQpg48-ViZQsw@mail.gmail.com>
+Subject: Re: [ANNOUNCE] util-linux 2.23
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: Karel Zak <kzak@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        util-linux@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Mike:
+On Thu, Apr 25, 2013 at 1:04 PM, Karel Zak <kzak@redhat.com> wrote:
+> The util-linux release 2.23 is available at
+>
+>    ftp://ftp.kernel.org/pub/linux/utils/util-linux/v2.23
+>
+> Feedback and bug reports, as always, are welcomed.
+>
+>        Karel
+>
+>
+>
+> Util-linux 2.23 Release Notes
+> =============================
+>
+> The cryptoloop support in the commands mount(8) and losetup(8) has been
+> REMOVED. The encryption= mount option and -e,-E,--encryption losetup options
+> are no more supported.
+>
+> The command arch(1) has been REMOVED from util-linux in favour of coreutils
+> version.
+>
+> The command chkdupexe has been REMOVED from util-linux.
+>
+> The library libblkid supports LIBBLKID_DEBUG=<mask> environment variable to
+> print debug messages on stderr. The old BLKID_DEBUG= is no more supported.
+>
+> Release highlights
+> ------------------
+>
+> nsenter(1):
+>   - this NEW COMMAND provides command line interface to setns() Linux syscall
+>     and allows to run program with namespaces of other processes
 
-This patch can pass compiling with Mike's config file, under my
-cross-compiling environments, but does not run under the real machine,
-please try it.
+It would be nice if nsenter(1) would allow us to specify a uid/gid
+which is switched to
+if a user namespace is entered. Otherwise we become nobody:nogroup
+after entering the
+user namespace.
 
-Welcome other members to help check this patch whether valid.
+I.e. ./nsenter -t <pid> -U --setuid=0 --setgid=0
 
-Thanks.
+Would you accept such a patch? :)
 
-
-On 2013年04月25日 19:51, Chen Gang wrote:
-> 
-> When CONFIG_KVM_BOOK3S_64_PR is enabled,
-> MASKABLE_EXCEPTION_PSERIES(0x900 ...) will includes __KVMTEST, it will
-> exceed 0x980 which STD_EXCEPTION_HV(0x980 ...) will use, it will cause
-> compiling issue.
-> 
-> The related errors:
-> arch/powerpc/kernel/exceptions-64s.S: Assembler messages:
-> arch/powerpc/kernel/exceptions-64s.S:258: Error: attempt to move .org backwards
-> make[1]: *** [arch/powerpc/kernel/head_64.o] Error 1
-> 
-> The position 0x900 and 0x980 are solid, so can not move the position
-> to make room larger. The final solution is to jump to another area to
-> execute the related code.
-> 
-> 
-> Signed-off-by: Chen Gang <gang.chen@asianux.com>
-> ---
->  arch/powerpc/kernel/exceptions-64s.S |   12 +++++++++++-
->  1 files changed, 11 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/powerpc/kernel/exceptions-64s.S b/arch/powerpc/kernel/exceptions-64s.S
-> index e789ee7..8997de2 100644
-> --- a/arch/powerpc/kernel/exceptions-64s.S
-> +++ b/arch/powerpc/kernel/exceptions-64s.S
-> @@ -254,7 +254,11 @@ hardware_interrupt_hv:
->  	STD_EXCEPTION_PSERIES(0x800, 0x800, fp_unavailable)
->  	KVM_HANDLER_PR(PACA_EXGEN, EXC_STD, 0x800)
->  
-> -	MASKABLE_EXCEPTION_PSERIES(0x900, 0x900, decrementer)
-> +	. = 0x900
-> +	.globl decrementer_pSeries
-> +decrementer_pSeries:
-> +	b	decrementer_pSeries_0
-> +
->  	STD_EXCEPTION_HV(0x980, 0x982, hdecrementer)
->  
->  	MASKABLE_EXCEPTION_PSERIES(0xa00, 0xa00, doorbell_super)
-> @@ -536,6 +540,12 @@ ALT_FTR_SECTION_END_IFCLR(CPU_FTR_ARCH_206)
->  #endif
->  
->  	.align	7
-> +	/* moved from 0x900 */
-> +decrementer_pSeries_0:
-> +	_MASKABLE_EXCEPTION_PSERIES(0x900, decrementer,
-> +				    EXC_STD, SOFTEN_TEST_PR)
-> +
-> +	.align	7
->  	/* moved from 0xe00 */
->  	STD_EXCEPTION_HV_OOL(0xe02, h_data_storage)
->  	KVM_HANDLER_SKIP(PACA_EXGEN, EXC_HV, 0xe02)
-> 
-
-
--- 
-Chen Gang
-
-Asianux Corporation
+--
+Thanks,
+//richard
