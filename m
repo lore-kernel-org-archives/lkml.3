@@ -1,43 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758780Ab3DYQPy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 12:15:54 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:34550 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757164Ab3DYQPw (ORCPT
+	id S1758600Ab3DYQTK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 12:19:10 -0400
+Received: from relay.parallels.com ([195.214.232.42]:56591 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755921Ab3DYQTI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 12:15:52 -0400
-Message-ID: <517956B3.2000201@samsung.com>
-Date: Fri, 26 Apr 2013 01:15:47 +0900
-From: Kukjin Kim <kgene.kim@samsung.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
+	Thu, 25 Apr 2013 12:19:08 -0400
+Message-ID: <517956ED.7060102@parallels.com>
+Date: Thu, 25 Apr 2013 20:16:45 +0400
+From: "Maxim V. Patlasov" <mpatlasov@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>
-Subject: Re: linux-next: manual merge of the arm-soc tree with the pm tree
-References: <20130424165417.5e2b74a01728d307e454750f@canb.auug.org.au>
-In-Reply-To: <20130424165417.5e2b74a01728d307e454750f@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Miklos Szeredi <miklos@szeredi.hu>
+CC: Kirill Korotaev <dev@parallels.com>, Pavel Emelianov <xemul@parallels.com>,
+        "fuse-devel@lists.sourceforge.net" <fuse-devel@lists.sourceforge.net>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        James Bottomley <jbottomley@parallels.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>, <devel@openvz.org>,
+        Andrew Morton <akpm@linux-foundation.org>, <fengguang.wu@intel.com>,
+        <mgorman@suse.de>
+Subject: Re: [fuse-devel] [PATCH 14/14] mm: Account for WRITEBACK_TEMP in
+ balance_dirty_pages
+References: <20130401103749.19027.89833.stgit@maximpc.sw.ru> <20130401104250.19027.27795.stgit@maximpc.sw.ru> <51793DE6.3000503@parallels.com> <CAJfpegv1zc4oeE=YXrQd0jmzVXB8jjvXkz-_4Nv_ELcvfsa74Q@mail.gmail.com>
+In-Reply-To: <CAJfpegv1zc4oeE=YXrQd0jmzVXB8jjvXkz-_4Nv_ELcvfsa74Q@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.30.17.2]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/24/13 15:54, Stephen Rothwell wrote:
-> Hi all,
->
-> Today's linux-next merge of the arm-soc tree got a conflict in
-> arch/arm/mach-exynos/cpuidle.c between commit 554c06ba3ee2 ("cpuidle:
-> remove en_core_tk_irqen flag") from the pm tree and commit 2eb89f893e44
-> ("ARM: EXYNOS: factor out the idle states") from the arm-soc tree.
->
-> I fixed it up (see below) and can carry the fix as necessary (no action
-> is required).
+Hi,
 
-Looks OK to me, thanks.
+04/25/2013 07:49 PM, Miklos Szeredi пишет:
+> On Thu, Apr 25, 2013 at 4:29 PM, Maxim V. Patlasov
+> <mpatlasov@parallels.com> wrote:
+>>> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+>>> index 0713bfb..c47bcd4 100644
+>>> --- a/mm/page-writeback.c
+>>> +++ b/mm/page-writeback.c
+>>> @@ -1235,7 +1235,8 @@ static void balance_dirty_pages(struct address_space
+>>> *mapping,
+>>>                   */
+>>>                  nr_reclaimable = global_page_state(NR_FILE_DIRTY) +
+>>>
+>>> global_page_state(NR_UNSTABLE_NFS);
+>>> -               nr_dirty = nr_reclaimable +
+>>> global_page_state(NR_WRITEBACK);
+>>> +               nr_dirty = nr_reclaimable +
+>>> global_page_state(NR_WRITEBACK) +
+>>> +                       global_page_state(NR_WRITEBACK_TEMP);
+>>>                  global_dirty_limits(&background_thresh, &dirty_thresh);
+>>
+>> Please drop this patch. As we discussed in LSF/MM, the fix above is correct,
+>> but it's not enough: we also need to ensure disregard of NR_WRITEBACK_TEMP
+>> when balance_dirty_pages() is called from fuse daemon. I'll send a separate
+>> patch-set soon.
+> Please elaborate.  From a technical perspective "fuse daemon" is very
+> hard to define, so anything that relies on whether something came from
+> the fuse daemon or not is conceptually broken.
 
-- Kukjin
+As Mel Gorman pointed out, fuse daemon diving into balance_dirty_pages 
+should not kick flusher judging on NR_WRITEBACK_TEMP. Essentially, all 
+we need in balance_dirty_pages is:
+
+     if (I'm not fuse daemon)
+         nr_dirty += global_page_state(NR_WRITEBACK_TEMP);
+
+The way how to identify fuse daemon was not thoroughly scrutinized 
+during LSF/MM. Firstly, I thought it would be enough to set a 
+per-process flag handling fuse device open. But now I understand that 
+fuse daemon may be quite a complicated multi-threaded multi-process 
+construction. I'm going to add new FUSE_NOTIFY to allow fuse daemon 
+decide when it works on behalf of draining writeout-s. Having in mind 
+that fuse-lib is multi-threaded, I'm also going to inherit the flag on 
+copy_process(). Does it make sense for you?
+
+Also, another patch will put this ad-hoc FUSE_NOTIFY under fusermount 
+control. This will prevent malicious unprivileged fuse mounts from 
+setting the flag for malicious purposes.
+
+Thanks,
+Maxim
