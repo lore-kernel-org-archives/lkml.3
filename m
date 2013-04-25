@@ -1,88 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756102Ab3DYJK0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 05:10:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22485 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755629Ab3DYJKZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 05:10:25 -0400
-Date: Thu, 25 Apr 2013 11:09:56 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 05/14] perf tools: Introduce new 'ftrace' tool
-Message-ID: <20130425090956.GA1033@krava.brq.redhat.com>
-References: <1366705872-12132-1-git-send-email-namhyung@kernel.org>
- <1366705872-12132-6-git-send-email-namhyung@kernel.org>
- <20130424140918.GF971@krava.brq.redhat.com>
- <87fvyf9maa.fsf@sejong.aot.lge.com>
+	id S1756186Ab3DYJNS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 05:13:18 -0400
+Received: from mail-ia0-f170.google.com ([209.85.210.170]:55049 "EHLO
+	mail-ia0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753544Ab3DYJNR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Apr 2013 05:13:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87fvyf9maa.fsf@sejong.aot.lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1366279934-30761-14-git-send-email-lee.jones@linaro.org>
+References: <1366279934-30761-1-git-send-email-lee.jones@linaro.org>
+	<1366279934-30761-14-git-send-email-lee.jones@linaro.org>
+Date: Thu, 25 Apr 2013 11:13:16 +0200
+Message-ID: <CACRpkdYq9QLRaaysc=izGgi53ogf1oRHuCwWKW+rQBbE_UtfnA@mail.gmail.com>
+Subject: Re: [PATCH 13/32] dmaengine: ste_dma40: Calculate number of logical
+ channels from physical ones
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
+        Per Forlin <per.forlin@stericsson.com>, Rabin Vincent <rabin@rab.in>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 25, 2013 at 03:06:37PM +0900, Namhyung Kim wrote:
-> On Wed, 24 Apr 2013 16:09:18 +0200, Jiri Olsa wrote:
-> > On Tue, Apr 23, 2013 at 05:31:03PM +0900, Namhyung Kim wrote:
-> >> From: Namhyung Kim <namhyung.kim@lge.com>
-> >> +out:
-> >> +	put_tracing_file(file);
-> >> +	return ret;
-> >> +}
-> >> +
-> >> +static int reset_tracing_files(struct perf_ftrace *ftrace __maybe_unused)
-> >> +{
-> >> +	if (write_tracing_file("tracing_on", "0") < 0)
-> >> +		return -1;
-> >> +
-> >> +	if (write_tracing_file("current_tracer", "nop") < 0)
-> >> +		return -1;
-> >> +
-> >> +	if (write_tracing_file("set_ftrace_pid", " ") < 0)
-> >> +		return -1;
-> >
-> > I think we want to reset set_ftrace_pid file as well
-> > probably to -1..
-> >
-> > if I'm tracing command with this file having wrong CPU(s)
-> > I dont get any data..
-> 
-> Not sure I understood what you mean exactly.
+On Thu, Apr 18, 2013 at 12:11 PM, Lee Jones <lee.jones@linaro.org> wrote:
 
-ugh, sry.. I wrote set_ftrace_pid when I actually meant tracing_cpumask ;-)
+> This change will cost ~25KB of memory, but it's worth the trade-off,
+> as it removes a great deal of overhead. It means that instead of only
+> allocating memory for the logical channels in use, it does so for all
+> available ones, which is 32 per physical channel. However, this now
+> means we can remove some platform data and we don't have to worry
+> about adding vendor specific variables to Device Tree.
+>
+> Cc: Vinod Koul <vinod.koul@intel.com>
+> Cc: Dan Williams <djbw@fb.com>
+> Cc: Per Forlin <per.forlin@stericsson.com>
+> Cc: Rabin Vincent <rabin@rab.in>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-> 
-> Do you mean it should be changed to
-> 
-> 	if (write_tracing_file("set_ftrace_pid", "-1") < 0)
-> 
-> ?  It seems it's the right thing to do for compatibility.
+(...)
+>  static struct stedma40_platform_data dma40_plat_data = {
+> -       .dev_len = DB8500_DMA_NR_DEV,
 
+So that was set to 64 in the platform...
 
-looks like it's enough only to open it with O_TRUNC,
-so I guess whatever minimal goes write_tracing_file
+> -       /* Count the number of logical channels in use */
+> -       for (i = 0; i < plat_data->dev_len; i++)
+> -               if (plat_data->dev_rx[i] != 0)
+> -                       num_log_chans++;
+> -
+> -       for (i = 0; i < plat_data->dev_len; i++)
+> -               if (plat_data->dev_tx[i] != 0)
+> -                       num_log_chans++;
 
----
-kernel/trace/ftrace.c:
+And I guess this code snippet made it go down to <= 32 all the time,
+correct?
 
-ftrace_pid_open(struct inode *inode, struct file *file)
-{
-        int ret = 0;
+Just want to understand it before I ACK. (The idea is sound.)
 
-        if ((file->f_mode & FMODE_WRITE) &&
-            (file->f_flags & O_TRUNC))
-                ftrace_pid_reset();
+I notice there is no check whatsoever of the bounds of
+plat_data->dev_[rx|tx]  but that is a different problem I guess...
 
-
-jirka
+Yours,
+Linus Walleij
