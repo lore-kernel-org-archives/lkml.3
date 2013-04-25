@@ -1,109 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757637Ab3DYKWM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 06:22:12 -0400
-Received: from mail-la0-f44.google.com ([209.85.215.44]:34331 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756140Ab3DYKWK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 06:22:10 -0400
+	id S1757528Ab3DYKXT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 06:23:19 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:37922 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755971Ab3DYKXR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Apr 2013 06:23:17 -0400
+Date: Thu, 25 Apr 2013 12:23:12 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, sbw@mit.edu,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Kevin Hilman <khilman@linaro.org>, Christoph Lameter <cl@linux.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Olivier Baetz <olivier.baetz@novasparks.com>
+Subject: Re: [PATCH documentation 2/2] kthread: Document ways of reducing OS
+ jitter due to per-CPU kthreads
+Message-ID: <20130425102311.GA32607@pd.tnic>
+References: <20130416164036.GA27246@linux.vnet.ibm.com>
+ <1366130490-27584-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1366130490-27584-2-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20130421193705.GB5807@pd.tnic>
+ <20130423040329.GP3509@linux.vnet.ibm.com>
 MIME-Version: 1.0
-X-Originating-IP: [188.6.195.195]
-In-Reply-To: <20130401104111.19027.1794.stgit@maximpc.sw.ru>
-References: <20130401103749.19027.89833.stgit@maximpc.sw.ru>
-	<20130401104111.19027.1794.stgit@maximpc.sw.ru>
-Date: Thu, 25 Apr 2013 12:22:08 +0200
-Message-ID: <CAJfpegvgbQg9YTbpE6mtsXFQDZRMPgtmKV9O5L8h0cHP_QdWrQ@mail.gmail.com>
-Subject: Re: [PATCH 04/14] fuse: Prepare to handle multiple pages in writeback
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: "Maxim V. Patlasov" <MPatlasov@parallels.com>
-Cc: Kirill Korotaev <dev@parallels.com>, Pavel Emelianov <xemul@parallels.com>,
-        fuse-devel <fuse-devel@lists.sourceforge.net>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        James Bottomley <jbottomley@parallels.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>, devel@openvz.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130423040329.GP3509@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 1, 2013 at 12:41 PM, Maxim V. Patlasov
-<MPatlasov@parallels.com> wrote:
->
-> The .writepages callback will issue writeback requests with more than one
-> page aboard. Make existing end/check code be aware of this.
->
-> Original patch by: Pavel Emelyanov <xemul@openvz.org>
+On Mon, Apr 22, 2013 at 09:03:29PM -0700, Paul E. McKenney wrote:
+> > > +This document lists per-CPU kthreads in the Linux kernel and presents
+> > > +options to control OS jitter due to these kthreads.  Note that kthreads
+> > 
+> > s/due to/which can be caused by/
+> 
+> Same meaning, but "due to" is probably a bit more arcane.
 
-If this patch was written by Pavel and then modified by you then
-please add  a "From:" header at the top of the patch instead.  See
-Documentation/SubmittingPatches.
+Yeah, "due to" kinda didn't read right in the context, arcane could be
+one way to put it.
 
-> Signed-off-by: Maxim Patlasov <MPatlasov@parallels.com>
-> ---
->  fs/fuse/file.c |   22 +++++++++++++++-------
->  1 files changed, 15 insertions(+), 7 deletions(-)
->
-> diff --git a/fs/fuse/file.c b/fs/fuse/file.c
-> index 648de34..ee44b24 100644
-> --- a/fs/fuse/file.c
-> +++ b/fs/fuse/file.c
-> @@ -345,7 +345,8 @@ static bool fuse_page_is_writeback(struct inode *inode, pgoff_t index)
->
->                 BUG_ON(req->inode != inode);
->                 curr_index = req->misc.write.in.offset >> PAGE_CACHE_SHIFT;
-> -               if (curr_index == index) {
-> +               if (curr_index <= index &&
-> +                   index < curr_index + req->num_pages) {
->                         found = true;
->                         break;
->                 }
-> @@ -1295,7 +1296,10 @@ static ssize_t fuse_direct_write(struct file *file, const char __user *buf,
->
->  static void fuse_writepage_free(struct fuse_conn *fc, struct fuse_req *req)
->  {
-> -       __free_page(req->pages[0]);
-> +       int i;
-> +
-> +       for (i = 0; i < req->num_pages; i++)
-> +               __free_page(req->pages[i]);
->         fuse_file_put(req->ff, false);
->  }
->
-> @@ -1304,10 +1308,13 @@ static void fuse_writepage_finish(struct fuse_conn *fc, struct fuse_req *req)
->         struct inode *inode = req->inode;
->         struct fuse_inode *fi = get_fuse_inode(inode);
->         struct backing_dev_info *bdi = inode->i_mapping->backing_dev_info;
-> +       int i;
->
->         list_del(&req->writepages_entry);
-> -       dec_bdi_stat(bdi, BDI_WRITEBACK);
-> -       dec_zone_page_state(req->pages[0], NR_WRITEBACK_TEMP);
-> +       for (i = 0; i < req->num_pages; i++) {
-> +               dec_bdi_stat(bdi, BDI_WRITEBACK);
-> +               dec_zone_page_state(req->pages[i], NR_WRITEBACK_TEMP);
-> +       }
->         bdi_writeout_inc(bdi);
->         wake_up(&fi->page_waitq);
->  }
-> @@ -1320,14 +1327,15 @@ __acquires(fc->lock)
->         struct fuse_inode *fi = get_fuse_inode(req->inode);
->         loff_t size = i_size_read(req->inode);
->         struct fuse_write_in *inarg = &req->misc.write.in;
-> +       __u64 data_size = req->num_pages * PAGE_CACHE_SIZE;
->
->         if (!fc->connected)
->                 goto out_free;
->
-> -       if (inarg->offset + PAGE_CACHE_SIZE <= size) {
-> -               inarg->size = PAGE_CACHE_SIZE;
-> +       if (inarg->offset + data_size <= size) {
-> +               inarg->size = data_size;
->         } else if (inarg->offset < size) {
-> -               inarg->size = size & (PAGE_CACHE_SIZE - 1);
-> +               inarg->size = size - inarg->offset;
->         } else {
->                 /* Got truncated off completely */
->                 goto out_free;
->
+> But how about "and presents options to control these kthreads' OS
+> jitter"?
+
+Yep.
+
+> > > +that are not per-CPU are not listed here -- to reduce OS jitter from
+> > 
+> > one too many "that"s:
+> > 
+> > s/that/which/
+> 
+> Fair point, but I can shorten it as follows:
+> 
+> 	Note that non-per-CPU kthreads CPU are not listed here --
+
+that second "CPU" is kinda superfluous...?
+
+> 	to reduce OS jitter from non-per-CPU kthreads, bind them to a
+> 	"housekeeping" CPU that is dedicated to such work.
+
+Yep, reads ok, except "that is" but you've removed it in the final
+version below.
+
+> > > +non-per-CPU kthreads, bind them to a "housekeeping" CPU that is dedicated
+> > 
+> > s/that/which/
+> 
+> Good catch -- I chose s/that is//.
+
+Yep.
+
+> > > +Name: ehca_comp/%u
+> > > +Purpose: Periodically process Infiniband-related work.
+> > > +To reduce corresponding OS jitter, do any of the following:
+> > > +1.	Don't use EHCA Infiniband hardware.  This will prevent these
+> > 
+> > Sounds like this particular hardware is slow and its IRQ handler/softirq
+> > needs a lot of time. Yes, no?
+> > 
+> > Can we have a reason why people shouldn't use that hw.
+> 
+> Because it has per-CPU kthreads that can cause OS jitter.  ;-)
+
+Yeah, I stumbled over this specific brand of Infiniband hw. It looks
+like this particular Infiniband driver uses per-CPU kthreads and the
+others in drivers/infiniband/hw/ don't?
+
+I hope this explains my head-scratching moment here...
+
+> > This sentence keeps repeating; maybe explain the purpose of this doc in
+> > the beginning once and drop this sentence in the later sections.
+> 
+> There are "any of" and "all of" qualifiers.  Also, I cannot count on
+> someone reading the document beginning to end.  I would instead expect
+> many of them to search for the name of the kthread that is bothering
+> them and read only that part.
+
+Ha! Very good point. :-)
+
+> > > +2.	Build with CONFIG_HOTPLUG_CPU=y.  After boot completes, force
+> > > +	the CPU offline, then bring it back online.  This forces
+> > > +	recurring timers to migrate elsewhere.	If you are concerned
+> > 
+> > We don't migrate them back to that CPU when we online it again, do we?
+> 
+> Not unless the CPU it migrated to later is taken offline.  Good point,
+> added words to that effect.
+
+Yep, good.
+
+> > > +	to be de-jittered is marked as an adaptive-ticks CPU using the
+> > > +	"nohz_full=" boot parameter.  This reduces the number of
+> > > +	scheduler-clock interrupts that the de-jittered CPU receives,
+> > > +	minimizing its chances of being selected to do load balancing,
+> > 
+> > I don't think there's a "," if the "which... " part refers to the
+> > previous "load balancing" and not to the whole sentence.
+> 
+> Good point -- I can reword to:
+> 
+> 	This reduces the number of scheduler-clock interrupts that the
+> 	de-jittered CPU receives, minimizing its chances of being selected
+> 	to do the load balancing work that runs in SCHED_SOFTIRQ context.
+
+Yep.
+
+> > > +	This further reduces the number of scheduler-clock interrupts
+> > > +	that the de-jittered CPU receives.
+> > 
+> > s/that/which/ would suit better here IMHO.
+> 
+> Fair point, but how about this?
+> 
+> 	This further reduces the number of scheduler-clock interrupts
+> 	received by the de-jittered CPU.
+
+Even better.
+
+> > > +	b.	To the extent possible, keep the CPU out of the kernel
+> > > +		when it is non-idle, for example, by avoiding system
+> > > +		calls and by forcing both kernel threads and interrupts
+> > > +		to execute elsewhere.
+> > > +2.	Enable RCU to do its processing remotely via dyntick-idle by
+> > > +	doing all of the following:
+> > > +	a.	Build with CONFIG_NO_HZ=y and CONFIG_RCU_FAST_NO_HZ=y.
+> > > +	b.	Ensure that the CPU goes idle frequently, allowing other
+> > 
+> > I'm ensuring that by selecting the proper workload which has idle
+> > breathers?
+> 
+> Yep!  Or, equivalently, by adding enough CPUs so that the workload
+> has idle breathers.
+
+Yeah, this sentence could be in the text, since we're explaining
+everything! :-)
+
+> Thank you for the thorough review and comments!  Please see below for
+> an update.
+
+Sure, thank you for writing this up for others to read.
+
+Reviewed-by: Borislav Petkov <bp@suse.de>
+
+> ------------------------------------------------------------------------
+> 
+> REDUCING OS JITTER DUE TO PER-CPU KTHREADS
+> 
+> This document lists per-CPU kthreads in the Linux kernel and presents
+> options to control these kthreads' OS jitter.  Note that non-per-CPU
+
+s /these kthreads'/their/
+
+Sorry, I can't help it :) I promise I won't read too much in the rest so
+as not to beat it to death again :-)
+
+> kthreads CPU are not listed here.  To reduce OS jitter from non-per-CPU
+
+s/CPU //
+
+see above.
+
+> kthreads, bind them to a "housekeeping" CPU dedicated to such work.
+
+[ … ]
+
+Ok, it looks good, ship it.
+
+:-)
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
