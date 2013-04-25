@@ -1,63 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932773Ab3DYQ7s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 12:59:48 -0400
-Received: from smtp.eu.citrix.com ([46.33.159.39]:64525 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932692Ab3DYQ7r (ORCPT
+	id S932741Ab3DYRAl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 13:00:41 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:36915 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932217Ab3DYRAk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 12:59:47 -0400
-X-IronPort-AV: E=Sophos;i="4.87,551,1363132800"; 
-   d="scan'208";a="3945943"
-Message-ID: <1366909184.3142.0.camel@zakaz.uk.xensource.com>
-Subject: Re: [PATCH v4 2/7] xen/arm: SMP support
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>
-Date: Thu, 25 Apr 2013 17:59:44 +0100
-In-Reply-To: <alpine.DEB.2.02.1304251503100.4180@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1304242012590.4180@kaball.uk.xensource.com>
-	 <1366831695-13214-2-git-send-email-stefano.stabellini@eu.citrix.com>
-	 <1366897221.20256.544.camel@zakaz.uk.xensource.com>
-	 <alpine.DEB.2.02.1304251503100.4180@kaball.uk.xensource.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
+	Thu, 25 Apr 2013 13:00:40 -0400
+Date: Thu, 25 Apr 2013 19:00:37 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Andi Kleen <andi@firstfloor.org>, mingo@kernel.org,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        eranian@google.com, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 1/2] Fix perf LBR filtering
+Message-ID: <20130425170037.GD16732@two.firstfloor.org>
+References: <1366844694-2770-1-git-send-email-andi@firstfloor.org>
+ <20130425162535.GA5828@dyad.programming.kicks-ass.net>
+ <20130425164100.GC16732@two.firstfloor.org>
+ <20130425164837.GD5828@dyad.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130425164837.GD5828@dyad.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> Traping the read deals with the first. The second shouldn't be a problem since
+> we generally only allow kernel info for CAP_ADMIN; if we don't already for LBR
+> that needs to be fixed separately.
 
-> > > @@ -216,6 +245,8 @@ static int __init xen_guest_init(void)
-> > >  	 * is required to use VCPUOP_register_vcpu_info to place vcpu info
-> > >  	 * for secondary CPUs as they are brought up. */
-> > >  	per_cpu(xen_vcpu, 0) = &HYPERVISOR_shared_info->vcpu_info[0];
-> > > +	for_each_online_cpu(i)
-> > > +		xen_secondary_init(i);
-> > >  
-> > >  	gnttab_init();
-> > >  	if (!xen_initial_domain())
-> > [...]
-> > > @@ -244,7 +280,7 @@ static int __init xen_init_events(void)
-> > >  		return -EINVAL;
-> > >  	}
-> > >  
-> > > -	enable_percpu_irq(xen_events_irq, 0);
-> > > +	on_each_cpu(xen_percpu_enable_events, NULL, 0);
-> > 
-> > It feels like there ought to be some sort of per-cpu bringup callback
-> > which takes care of these dynamically. Maybe that doesn't matter until
-> > we get vcpu hotplug going?
-> 
-> I suspect there isn't one, considering that on_each_cpu is also used by 
-> kvm_vgic_hyp_init, kvm_timer_hyp_init and others.
+Where is that check?  I don't see it.
 
-Could we use cpu_notifiers for this?
+Also remember that precise == 2 can enable LBR implicitly.
+
+> That only leaves the third.. can we descern MMIO maps from the kernel page tables?
+
+In theory you could use some bits in the PTE for vmalloc, but it would need quite a
+few changes.
+
+Also there may be corner cases where MMIO is in the direct mapping or in
+the kernel mapping.
 
 
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only.
