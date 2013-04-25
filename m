@@ -1,89 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752430Ab3DYIx5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 04:53:57 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51806 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751388Ab3DYIxz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 04:53:55 -0400
-Date: Thu, 25 Apr 2013 09:53:51 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jerome Marchand <jmarchan@redhat.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH] mm: swap: Mark swap pages writeback before queueing for
- direct IO
-Message-ID: <20130425085350.GC2144@suse.de>
-References: <516E918B.3050309@redhat.com>
- <20130422133746.ffbbb70c0394fdbf1096c7ee@linux-foundation.org>
- <20130424185744.GB2144@suse.de>
- <20130424122313.381167c5ad702fc991844bc7@linux-foundation.org>
+	id S1753563Ab3DYIzF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 04:55:05 -0400
+Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:19196
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751786Ab3DYIzB convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Apr 2013 04:55:01 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 5
+X-BigFish: VS5(z3121kzc89bh1432Izz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1082kz8dhz8275bhz2dh2a8h668h839h93fhd25he5bhf0ah1288h12a5h12a9h12bdh1354h137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19c3h1ad9h1b0ah1d0ch1155h)
+Message-ID: <5178EFC9.9080207@freescale.com>
+Date: Thu, 25 Apr 2013 16:56:41 +0800
+From: Huang Shijie <b32955@freescale.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20130424122313.381167c5ad702fc991844bc7@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Brian Norris <computersforpeace@gmail.com>
+CC: <dwmw2@infradead.org>, <dedekind1@gmail.com>,
+        <linux-mtd@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V3 6/9] mtd: add a new field for ecc info in the nand_flash_dev{}
+References: <1366707297-31309-1-git-send-email-b32955@freescale.com>	<1366707297-31309-7-git-send-email-b32955@freescale.com> <CAN8TOE_5CeJfGpgJtKBXmb5ai3w9dZ8juk5GdQhRTZQ7MPKbZw@mail.gmail.com>
+In-Reply-To: <CAN8TOE_5CeJfGpgJtKBXmb5ai3w9dZ8juk5GdQhRTZQ7MPKbZw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 24, 2013 at 12:23:13PM -0700, Andrew Morton wrote:
-> >  		} else {
-> > +			/*
-> > +			 * In the case of swap-over-nfs, this can be a
-> > +			 * temporary failure if the system has limited
-> > +			 * memory for allocating transmit buffers.
-> > +			 * Mark the page dirty and avoid
-> > +			 * rotate_reclaimable_page but rate-limit the
-> > +			 * messages but do not flag PageError like
-> > +			 * the normal direct-to-bio case as it could
-> > +			 * be temporary.
-> > +			 */
-> >  			set_page_dirty(page);
-> > +			ClearPageReclaim(page);
-> > +			if (printk_ratelimit()) {
-> > +				pr_err("Write-error on dio swapfile (%Lu)\n",
-> > +					(unsigned long long)page_file_offset(page));
-> > +			}
-> >  		}
-> > +		end_page_writeback(page);
-> 
-> A pox upon printk_ratelimit()!  Both its code comment and the
-> checkpatch warning explain why.
-> 
+于 2013年04月25日 14:57, Brian Norris 写道:
+>
+> A bit late on this one, but is there a good reason this wasn't just 2
+> separate 16-bit fields? We already have a few, and I don't see why
+> this couldn't be the same.
+>
+I just want to make the ecc_strength/ecc_size more coupled for the 
+nand_flash_dev{}.
+If we spilit to two fields. It makes the nand_flash_ids[] less readable.
+>> Signed-off-by: Huang Shijie<b32955@freescale.com>
+>> ---
+>>   include/linux/mtd/nand.h |   10 ++++++++++
+>>   1 files changed, 10 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/include/linux/mtd/nand.h b/include/linux/mtd/nand.h
+>> index 063e517..f4c7777 100644
+>> --- a/include/linux/mtd/nand.h
+>> +++ b/include/linux/mtd/nand.h
+>> @@ -624,6 +624,10 @@ struct nand_chip {
+>>          { .name = (nm), {{ .dev_id = (devid) }}, .chipsize = (chipsz), \
+>>            .options = (opts) }
+>>
+>> +#define NAND_ECC_INFO(strength, size)  (((strength)<<  16) | (size))
+> We could redefine this:
+>
+> #define NAND_ECC_INFO(strength, size) .ecc_strength = (strength),
+> .ecc_size = (size)
+Do this type of macro could be accepted by the kernel?
 
-Ok. There were few sensible options around dealing with the write
-errors. swap_writepage() could go to sleep on a waitqueue but it's
-putting IO rate limiting where it doesn't belong. Retrying silently
-forever could be difficult to debug if the error really is permanent.
+I think your macro needs a pair of bracket, such as:
+#define NAND_ECC_INFO(strength, size) (.ecc_strength = (strength), 
+.ecc_size = (size))
 
-> --- a/mm/page_io.c~mm-swap-mark-swap-pages-writeback-before-queueing-for-direct-io-fix
-> +++ a/mm/page_io.c
-> @@ -244,10 +244,8 @@ int __swap_writepage(struct page *page,
->  			 */
->  			set_page_dirty(page);
->  			ClearPageReclaim(page);
-> -			if (printk_ratelimit()) {
-> -				pr_err("Write-error on dio swapfile (%Lu)\n",
-> -					(unsigned long long)page_file_offset(page));
-> -			}
-> +			pr_err_ratelimited("Write error on dio swapfile (%Lu)\n",
-> +				(unsigned long long)page_file_offset(page));
->  		}
->  		end_page_writeback(page);
->  		return ret;
-> 
-> Do we need to cast the loff_t?  afaict all architectures use long long.
-> I didn't get a warning from sparc64 with the cast removed, and sparc64
-> is the one which likes to use different underlying types.
-> 
-> I think I'll remove it and wait for Fengguang's nastygram.
-> 
+But if we add the brackets, we will meet a compiler error.
 
-Sounds reasonable. I'll get cc'd on the same mails.
 
--- 
-Mel Gorman
-SUSE Labs
+
+
+thanks
+Huang Shijie
+
+
