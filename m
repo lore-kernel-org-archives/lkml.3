@@ -1,50 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758563Ab3DYNEE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 09:04:04 -0400
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:61110 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757064Ab3DYNEC (ORCPT
+	id S1758602Ab3DYNE2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 09:04:28 -0400
+Received: from ringil.hengli.com.au ([178.18.16.133]:35013 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758539Ab3DYNEZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 09:04:02 -0400
+	Thu, 25 Apr 2013 09:04:25 -0400
+Date: Thu, 25 Apr 2013 21:04:04 +0800
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Tim Chen <tim.c.chen@linux.intel.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, "David S.Miller" <davem@davemloft.net>,
+        Jussi Kivilinna <jussi.kivilinna@iki.fi>,
+        Jim Kukunas <james.t.kukunas@linux.intel.com>,
+        Kirk Yap <kirk.s.yap@intel.com>, David Cote <david.m.cote@intel.com>,
+        James Guilford <james.guilford@intel.com>,
+        Wajdi Feghali <wajdi.k.feghali@intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-crypto@vger.kernel.org
+Subject: Re: [PATCH] Fix prototype definitions of sha256_transform_asm,
+ sha512_transform_asm
+Message-ID: <20130425130404.GA29292@gondor.apana.org.au>
+References: <cover.1364303479.git.tim.c.chen@linux.intel.com>
+ <1364331519.27102.10.camel@schen9-DESK>
+ <1366403112.27102.112.camel@schen9-DESK>
 MIME-Version: 1.0
-In-Reply-To: <1366729394-11406-4-git-send-email-lee.jones@linaro.org>
-References: <1366729394-11406-1-git-send-email-lee.jones@linaro.org>
-	<1366729394-11406-4-git-send-email-lee.jones@linaro.org>
-Date: Thu, 25 Apr 2013 15:04:01 +0200
-Message-ID: <CACRpkdZv8b7F6XotTUriP1hOgtabBpCUPyU6D9nYSZQU8x431w@mail.gmail.com>
-Subject: Re: [PATCH 03/10] usb: musb: ux500: take the dma_mask from coherent_dma_mask
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Mian Yousaf KAUKAB <mian.yousaf.kaukab@stericsson.com>,
-        Felipe Balbi <balbi@ti.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        Fabio Baltieri <fabio.baltieri@linaro.org>,
-        Praveena Nadahally <praveen.nadahally@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1366403112.27102.112.camel@schen9-DESK>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 23, 2013 at 5:03 PM, Lee Jones <lee.jones@linaro.org> wrote:
+On Fri, Apr 19, 2013 at 01:25:12PM -0700, Tim Chen wrote:
+> Herbert,
+> 
+> This is a follow on patch to the optimized sha256 and sha512 patch series that's just
+> merged into the crypto-dev.  Let me know if you prefer me to respin the
+> patch series.
+> 
+> This patch corrects the prototype of sha256_transform_asm and
+> sha512_transform_asm function pointer declaration to static.  It also
+> fixes a typo in sha512_ssse3_final function that affects the computation
+> of upper 64 bits of the buffer size.
 
-> The dma_mask will always be the same as the coherent_dma_mask, so let's
-> cut down on the platform_data burden and set it as such in the driver.
-> This also saves us from supporting it separately when we come to enable
-> this driver for Device Tree.
->
-> Cc: Felipe Balbi <balbi@ti.com>
-> Cc: linux-usb@vger.kernel.org
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-
-And makes it way more readable too!
-
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
-
-Yours,
-Linus Walleij
+Thanks, I've folded this into the original patches in order to
+maintain bisectability.
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
