@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759292Ab3DYR1s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 13:27:48 -0400
-Received: from mail-we0-f177.google.com ([74.125.82.177]:57497 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758981Ab3DYRY6 (ORCPT
+	id S1759244Ab3DYR2L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 13:28:11 -0400
+Received: from mail-we0-f178.google.com ([74.125.82.178]:40720 "EHLO
+	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758903Ab3DYRYx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 13:24:58 -0400
+	Thu, 25 Apr 2013 13:24:53 -0400
 From: Vincent Guittot <vincent.guittot@linaro.org>
 To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linaro-kernel@lists.linaro.org, peterz@infradead.org, mingo@kernel.org,
@@ -17,9 +17,9 @@ To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
 Cc: paulmck@linux.vnet.ibm.com, tglx@linutronix.de, len.brown@intel.com,
         arjan@linux.intel.com, amit.kucheria@linaro.org, corbet@lwn.net,
         l.majewski@samsung.com, Vincent Guittot <vincent.guittot@linaro.org>
-Subject: [PATCH 04/14] sched: pack the idle load balance
-Date: Thu, 25 Apr 2013 19:23:20 +0200
-Message-Id: <1366910611-20048-5-git-send-email-vincent.guittot@linaro.org>
+Subject: [PATCH 02/14] sched: add a new SD_SHARE_POWERDOMAIN flag for sched_domain
+Date: Thu, 25 Apr 2013 19:23:18 +0200
+Message-Id: <1366910611-20048-3-git-send-email-vincent.guittot@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1366910611-20048-1-git-send-email-vincent.guittot@linaro.org>
 References: <1366910611-20048-1-git-send-email-vincent.guittot@linaro.org>
@@ -27,47 +27,113 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Look for an idle CPU close to the pack buddy CPU whenever possible.
-The goal is to prevent the wake up of a CPU which doesn't share the power
-domain of the pack buddy CPU.
+This new flag SD_SHARE_POWERDOMAIN is used to reflect whether groups of CPUs
+in a sched_domain level can or not reach a different power state. If groups of
+cores can be power gated independently, as an example, the flag should be
+cleared at CPU level. This information is used to decide if it's worth packing
+some tasks in a group of CPUs in order to power gated the other groups instead
+of spreading the tasks. The default behavior of the scheduler is to spread
+tasks so the flag is set into all sched_domains.
 
 Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
 Reviewed-by: Morten Rasmussen <morten.rasmussen@arm.com>
 ---
- kernel/sched/fair.c |   19 +++++++++++++++++++
- 1 file changed, 19 insertions(+)
+ arch/ia64/include/asm/topology.h |    1 +
+ arch/tile/include/asm/topology.h |    1 +
+ include/linux/sched.h            |    1 +
+ include/linux/topology.h         |    4 ++++
+ kernel/sched/core.c              |    6 ++++++
+ 5 files changed, 13 insertions(+)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 6adc57c..a985c98 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -5469,7 +5469,26 @@ static struct {
+diff --git a/arch/ia64/include/asm/topology.h b/arch/ia64/include/asm/topology.h
+index a2496e4..6d0b617 100644
+--- a/arch/ia64/include/asm/topology.h
++++ b/arch/ia64/include/asm/topology.h
+@@ -65,6 +65,7 @@ void build_cpu_to_node_map(void);
+ 				| SD_BALANCE_EXEC	\
+ 				| SD_BALANCE_FORK	\
+ 				| SD_WAKE_AFFINE,	\
++				| arch_sd_local_flags(0)\
+ 	.last_balance		= jiffies,		\
+ 	.balance_interval	= 1,			\
+ 	.nr_balance_failed	= 0,			\
+diff --git a/arch/tile/include/asm/topology.h b/arch/tile/include/asm/topology.h
+index d5e86c9..adc87102 100644
+--- a/arch/tile/include/asm/topology.h
++++ b/arch/tile/include/asm/topology.h
+@@ -71,6 +71,7 @@ static inline const struct cpumask *cpumask_of_node(int node)
+ 				| 0*SD_WAKE_AFFINE			\
+ 				| 0*SD_SHARE_CPUPOWER			\
+ 				| 0*SD_SHARE_PKG_RESOURCES		\
++				| arch_sd_local_flags(0)		\
+ 				| 0*SD_SERIALIZE			\
+ 				,					\
+ 	.last_balance		= jiffies,				\
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 16b0d18..a82cdeb 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -809,6 +809,7 @@ enum cpu_idle_type {
+ #define SD_BALANCE_WAKE		0x0010  /* Balance on wakeup */
+ #define SD_WAKE_AFFINE		0x0020	/* Wake task to waking CPU */
+ #define SD_SHARE_CPUPOWER	0x0080	/* Domain members share cpu power */
++#define SD_SHARE_POWERDOMAIN	0x0100	/* Domain members share power domain */
+ #define SD_SHARE_PKG_RESOURCES	0x0200	/* Domain members share cpu pkg resources */
+ #define SD_SERIALIZE		0x0400	/* Only a single load balancing instance */
+ #define SD_ASYM_PACKING		0x0800  /* Place busy groups earlier in the domain */
+diff --git a/include/linux/topology.h b/include/linux/topology.h
+index d3cf0d6..3eab293 100644
+--- a/include/linux/topology.h
++++ b/include/linux/topology.h
+@@ -99,6 +99,8 @@ int arch_update_cpu_topology(void);
+ 				| 1*SD_WAKE_AFFINE			\
+ 				| 1*SD_SHARE_CPUPOWER			\
+ 				| 1*SD_SHARE_PKG_RESOURCES		\
++				| arch_sd_local_flags(SD_SHARE_CPUPOWER|\
++						SD_SHARE_PKG_RESOURCES) \
+ 				| 0*SD_SERIALIZE			\
+ 				| 0*SD_PREFER_SIBLING			\
+ 				| arch_sd_sibling_asym_packing()	\
+@@ -131,6 +133,7 @@ int arch_update_cpu_topology(void);
+ 				| 1*SD_WAKE_AFFINE			\
+ 				| 0*SD_SHARE_CPUPOWER			\
+ 				| 1*SD_SHARE_PKG_RESOURCES		\
++				| arch_sd_local_flags(SD_SHARE_PKG_RESOURCES)\
+ 				| 0*SD_SERIALIZE			\
+ 				,					\
+ 	.last_balance		= jiffies,				\
+@@ -161,6 +164,7 @@ int arch_update_cpu_topology(void);
+ 				| 1*SD_WAKE_AFFINE			\
+ 				| 0*SD_SHARE_CPUPOWER			\
+ 				| 0*SD_SHARE_PKG_RESOURCES		\
++				| arch_sd_local_flags(0)		\
+ 				| 0*SD_SERIALIZE			\
+ 				| 1*SD_PREFER_SIBLING			\
+ 				,					\
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index c8db984..3b9861f 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -5940,6 +5940,11 @@ int __weak arch_sd_sibling_asym_packing(void)
+        return 0*SD_ASYM_PACKING;
+ }
  
- static inline int find_new_ilb(int call_cpu)
- {
-+	struct sched_domain *sd;
- 	int ilb = cpumask_first(nohz.idle_cpus_mask);
-+	int buddy = per_cpu(sd_pack_buddy, call_cpu);
++int __weak arch_sd_local_flags(int level)
++{
++	return 1*SD_SHARE_POWERDOMAIN;
++}
 +
-+	/*
-+	 * If we have a pack buddy CPU, we try to run load balance on a CPU
-+	 * that is close to the buddy.
-+	 */
-+	if (buddy != -1) {
-+		for_each_domain(buddy, sd) {
-+			if (sd->flags & SD_SHARE_CPUPOWER)
-+				continue;
-+
-+			ilb = cpumask_first_and(sched_domain_span(sd),
-+					nohz.idle_cpus_mask);
-+
-+			if (ilb < nr_cpu_ids)
-+				break;
-+		}
-+	}
- 
- 	if (ilb < nr_cpu_ids && idle_cpu(ilb))
- 		return ilb;
+ /*
+  * Initializers for schedule domains
+  * Non-inlined to reduce accumulated stack pressure in build_sched_domains()
+@@ -6129,6 +6134,7 @@ sd_numa_init(struct sched_domain_topology_level *tl, int cpu)
+ 					| 0*SD_WAKE_AFFINE
+ 					| 0*SD_SHARE_CPUPOWER
+ 					| 0*SD_SHARE_PKG_RESOURCES
++					| 1*SD_SHARE_POWERDOMAIN
+ 					| 1*SD_SERIALIZE
+ 					| 0*SD_PREFER_SIBLING
+ 					| sd_local_flags(level)
 -- 
 1.7.9.5
 
