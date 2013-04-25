@@ -1,264 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751699Ab3DYFMZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 01:12:25 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:59294 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750884Ab3DYFMX (ORCPT
+	id S1751354Ab3DYFUV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 01:20:21 -0400
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:55010 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750763Ab3DYFUU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 01:12:23 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <5178BAFB.9060100@jp.fujitsu.com>
-Date: Thu, 25 Apr 2013 14:11:23 +0900
-From: Takao Indoh <indou.takao@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	Thu, 25 Apr 2013 01:20:20 -0400
 MIME-Version: 1.0
-To: ddutile@redhat.com
-CC: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        bhelgaas@google.com, iommu@lists.linux-foundation.org,
-        kexec@lists.infradead.org
-Subject: Re: [PATCH] Reset PCIe devices to stop ongoing DMA
-References: <1366779539-3584-1-git-send-email-indou.takao@jp.fujitsu.com> <51783987.2040604@redhat.com>
-In-Reply-To: <51783987.2040604@redhat.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <517867E1.7050301@ti.com>
+References: <1363145021-14339-1-git-send-email-s-anna@ti.com>
+	<CABb+yY0RYkVeo2Sb4WsDJY0jf17488FEz0d2CB994eQaSOEsVg@mail.gmail.com>
+	<37C860A02101E749A747FA2D3C1E3C504A5DF7@DLEE11.ent.ti.com>
+	<CABb+yY1x4x_A+QtGG9ohsLPgs8c3nEVnd_ExJBGOOR8=6YLPFA@mail.gmail.com>
+	<37C860A02101E749A747FA2D3C1E3C504A63B4@DLEE11.ent.ti.com>
+	<CAJe_ZhehnniZd730jjiOLrHozq8TOJZgFYLqUe4KqgBiQEu8PA@mail.gmail.com>
+	<51779304.4040003@st.com>
+	<CAJe_ZhdZv5LW6kdwyPtJe69mfW6t=WQ4OJnG2H4sUhibattN2A@mail.gmail.com>
+	<517867E1.7050301@ti.com>
+Date: Thu, 25 Apr 2013 10:50:18 +0530
+Message-ID: <CAJe_ZhfDZzq+DzA9XDF3PWFUmwcZnDy-mhE4hLNHmf+V4GhOxw@mail.gmail.com>
+Subject: Re: [PATCHv3 00/14] drivers: mailbox: framework creation
+From: Jassi Brar <jaswinder.singh@linaro.org>
+To: Suman Anna <s-anna@ti.com>
+Cc: Loic PALLARDY <loic.pallardy@st.com>,
+        Jassi Brar <jassisinghbrar@gmail.com>,
+        "Ohad Ben-Cohen (ohad@wizery.com)" <ohad@wizery.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        "Andy Green (andy.green@linaro.org)" <andy.green@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Tony Lindgren <tony@atomide.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Omar Ramirez Luna (omar.ramirez@copitl.com)" 
+	<omar.ramirez@copitl.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/04/25 4:59), Don Dutile wrote:
-> On 04/24/2013 12:58 AM, Takao Indoh wrote:
->> This patch resets PCIe devices on boot to stop ongoing DMA. When
->> "pci=pcie_reset_devices" is specified, a hot reset is triggered on each
->> PCIe root port and downstream port to reset its downstream endpoint.
->>
->> Problem:
->> This patch solves the problem that kdump can fail when intel_iommu=on is
->> specified. When intel_iommu=on is specified, many dma-remapping errors
->> occur in second kernel and it causes problems like driver error or PCI
->> SERR, at last kdump fails. This problem is caused as follows.
->> 1) Devices are working on first kernel.
->> 2) Switch to second kernel(kdump kernel). The devices are still working
->>     and its DMA continues during this switch.
->> 3) iommu is initialized during second kernel boot and ongoing DMA causes
->>     dma-remapping errors.
->>
->> Solution:
->> All DMA transactions have to be stopped before iommu is initialized. By
->> this patch devices are reset and in-flight DMA is stopped before
->> pci_iommu_init.
->>
->> To invoke hot reset on an endpoint, its upstream link need to be reset.
->> reset_pcie_devices() is called from fs_initcall_sync, and it finds root
->> port/downstream port whose child is PCIe endpoint, and then reset link
->> between them. If the endpoint is VGA device, it is skipped because the
->> monitor blacks out if VGA controller is reset.
->>
-> Couple questions wrt VGA device:
-> (1) Many graphics devices are multi-function, one function being VGA;
->      is the VGA always function 0, so this scan sees it first & doesn't
->      do a reset on that PCIe link?  if the VGA is not function 0, won't
->      this logic break (will reset b/c function 0 is non-VGA graphics) ?
+On 25 April 2013 04:46, Suman Anna <s-anna@ti.com> wrote:
+> On 04/24/2013 03:56 AM, Jassi Brar wrote:
+>
 
-VGA is not reset irrespective of its function number. The logic of this
-patch is:
+> I think there are two things here - one is what the client needs to do
+> upon sending/receiving a message, and the other is what the send API or
+> the mailbox controller should do when a client tried to send a message
+> and the controller's shared message/transport is not free (irrespective
+> of the atomic or non-atomic context). The kfifos in the common driver
+> code are currently solving the latter problem. The current send API
+> directly uses the controller to send if it is free, and uses buffering
+> only when it is busy. But, I see your point that this should should be
+> the responsibility of the specific controller, or even a property of the
+> specific mailbox belonging to that controller. This direction would put
+> most of the onus on the specific controller drivers, and probably the
+> main API would be very simple. Another factor / attribute to consider is
+> that a given mailbox may be sharable or exclusive, things are simple if
+> it is exclusive to a client driver.
+>
+I never suggested we don't use buffering. I too believe the API should
+buffer requests but also that it should still do atomic callbacks. The
+impact on implementation would be that the queue buffer can not grow
+at runtime. But that should be fine because a reasonable size (say 10
+or even 50) could be chosen and we allow submission of requests from
+tx_done callback.
 
-for_each_pci_dev(dev) {
-    if (dev is not PCIe)
-       continue;
-    if (dev is not root port/downstream port) ---(1)
-       continue;
-    list_for_each_entry(child,&dev->subordinate->devices, bus_list) {
-        if (child is upstream port or bridge or VGA) ---(2)
-            continue;
-    }
-    do_reset_its_child(dev);
-}
+>
+> We are talking two fundamentally different usecases/needs here,
+> depending on the type of the controller. You seem to be coming from a
+> usecase where the client driver needs to know when every message is
+> transmitted (from an atomic context, it is a moot point since either you
+> are successful or not when transmitting).
+>
+I am afraid you are confusing the meaning of 'atomic context' here.
+atomic context doesn't mean instant transmission of data, but that the
+API calls could be made from even atomic context and that the client &
+controller can't sleep in callbacks from the API. So it's not moot.
 
-Therefore VGA itself is skipped by (1), and upstream device(root port or
-downstream port) of VGA is also skipped by (2).
+> The remote
+> has to ack before it can be shutdown. I would imagine that getting a
+> .tx_done on a particular message is not good enough to know that the
+> remote is ready for shutdown. I can imagine it to be useful where there
+> is some inherent knowledge that the client needs to proceed with the
+> next steps when a message is sent.
+>
+Of course we are not specifying how the mailbox signals are
+interpreted by the remote. It should suffice just to realize that
+there exists genuine requirement for a client to know when its message
+was received by the remote.
 
+> That said, we need to go with the
+> stricter one.
+>
+Great, that we agree.
 
-> (2) I'm hearing VGA will soon not be the a required console; this logic
->      assumes it is, and why it isn't blanked.
->      Q: Should the filter be based on a device having a device-class of display ?
+> My only concern here is that if there can be multiple
+> clients for a particular mailbox/controller, then all the clients would
+> have to have an agreement on the controller packet type, and the clients
+> would mostly have to include the standard mailbox.h as well as a
+> controller-specific header.
+>
+It's the controller driver that actually puts the data on the bus. So
+only it should define the format in which it accepts data from the
+clients. Every client should simply populate the packet structure
+defined in  my_lovely_controller.h and pass on the struct pointer to
+the controller driver via API.
+No negotiations for the driver seat among passengers :)
 
-I want to avoid the situation that user's monitor blacks out and user
-cannot know what's going on. That's reason why I introduced the logic to
-skip VGA. As far as I tested the logic based on device-class works well,
-but I would appreciate it if there are better ways.
+> Overall, I see it coming down to following points:
+> 1. Calling contexts: Atomic & non-atomic contexts, with the latter
+> becoming an extension of the atomic case. I guess this mainly goes with
+> the controller functional integration - whether it is used for
+> non-urgent messaging or h/w controller command messages (like PM
+> usecases?) where .tx_done is relevant.
+>
+Urgency or not is a business of the client driver. The API and the
+controller driver should not delay things more than absolute
+necessary.
+.tx_done is not about urgency but about h/w provision of 'ack'.
 
-> 
->> Actually this is v8 patch but quite different from v7 and it's been so
->> long since previous post, so I start over again.
-> Thanks for this re-start.  I need to continue reviewing the rest.
+> 2. Behavior of the API or controller driver if the controller transport
+> is busy.
+I think we both want requests buffered in the API.
 
-Thank you for your review!
+> 3. Shareable/exclusive nature of a mailbox. If it is shareable, then
+> duplicating the behavior between clients is not worth it, and this
+> should be absorbed into the respective controller driver.
+>
+I think the mailbox should be exclusively held by a client. That makes
+many things simpler. Also remote firmwares won't be always robust
+enough to handle commands from different subsystems intermixed. The
+API only has to make sure the mailbox_get/put operations are very
+thin.
 
-> 
-> Q: Why not force IOMMU off when re-booting a kexec kernel to perform a crash
->     dump?  After the crash dump, the system is rebooting to previous (iommu=on) setting.
->     That logic, along w/your previous patch to disable the IOMMU if iommu=off
->     is set, would remove this (relatively slow) PCI init sequencing ?
-
-To force iommu off, all ongoing DMA have to be stopped before that since
-they are accessing the device address, not physical address. If we disable
-iommu without stopping in-flihgt DMA, devices access invalid memory area
-and it causes memory corruption or PCI-SERR due to DMA error.
-
-So, whether we use iommu or not in second kernel, we have to stop DMA in
-second kernel if iommu is used in first kernel.
-
-Thanks,
-Takao Indoh
-
-
-> 
->> Previous post:
->> [PATCH v7 0/5] Reset PCIe devices to address DMA problem on kdump
->> https://lkml.org/lkml/2012/11/26/814
->>
->> Signed-off-by: Takao Indoh<indou.takao@jp.fujitsu.com>
->> ---
->>   Documentation/kernel-parameters.txt |    2 +
->>   drivers/pci/pci.c                   |  103 +++++++++++++++++++++++++++++++++++
->>   2 files changed, 105 insertions(+), 0 deletions(-)
->>
->> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
->> index 4609e81..2a31ade 100644
->> --- a/Documentation/kernel-parameters.txt
->> +++ b/Documentation/kernel-parameters.txt
->> @@ -2250,6 +2250,8 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
->>                   any pair of devices, possibly at the cost of
->>                   reduced performance.  This also guarantees
->>                   that hot-added devices will work.
->> +        pcie_reset_devices    Reset PCIe endpoint on boot by hot
->> +                reset
->>           cbiosize=nn[KMG]    The fixed amount of bus space which is
->>                   reserved for the CardBus bridge's IO window.
->>                   The default value is 256 bytes.
->> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
->> index b099e00..42385c9 100644
->> --- a/drivers/pci/pci.c
->> +++ b/drivers/pci/pci.c
->> @@ -3878,6 +3878,107 @@ void __weak pci_fixup_cardbus(struct pci_bus *bus)
->>   }
->>   EXPORT_SYMBOL(pci_fixup_cardbus);
->>
->> +/*
->> + * Return true if dev is PCIe root port or downstream port whose child is PCIe
->> + * endpoint except VGA device.
->> + */
->> +static int __init need_reset(struct pci_dev *dev)
->> +{
->> +    struct pci_bus *subordinate;
->> +    struct pci_dev *child;
->> +
->> +    if (!pci_is_pcie(dev) || !dev->subordinate ||
->> +        list_empty(&dev->subordinate->devices) ||
->> +        ((pci_pcie_type(dev) != PCI_EXP_TYPE_ROOT_PORT)&&
->> +         (pci_pcie_type(dev) != PCI_EXP_TYPE_DOWNSTREAM)))
->> +        return 0;
->> +
->> +    subordinate = dev->subordinate;
->> +    list_for_each_entry(child,&subordinate->devices, bus_list) {
->> +        if ((pci_pcie_type(child) == PCI_EXP_TYPE_UPSTREAM) ||
->> +            (pci_pcie_type(child) == PCI_EXP_TYPE_PCI_BRIDGE) ||
->> +            ((child->class>>  16) == PCI_BASE_CLASS_DISPLAY))
->> +            /* Don't reset switch, bridge, VGA device */
->> +            return 0;
->> +    }
->> +
->> +    return 1;
->> +}
->> +
->> +static void __init save_config(struct pci_dev *dev)
->> +{
->> +    struct pci_bus *subordinate;
->> +    struct pci_dev *child;
->> +
->> +    if (!need_reset(dev))
->> +        return;
->> +
->> +    subordinate = dev->subordinate;
->> +    list_for_each_entry(child,&subordinate->devices, bus_list) {
->> +        dev_info(&child->dev, "save state\n");
->> +        pci_save_state(child);
->> +    }
->> +}
->> +
->> +static void __init restore_config(struct pci_dev *dev)
->> +{
->> +    struct pci_bus *subordinate;
->> +    struct pci_dev *child;
->> +
->> +    if (!need_reset(dev))
->> +        return;
->> +
->> +    subordinate = dev->subordinate;
->> +    list_for_each_entry(child,&subordinate->devices, bus_list) {
->> +        dev_info(&child->dev, "restore state\n");
->> +        pci_restore_state(child);
->> +    }
->> +}
->> +
->> +static void __init do_device_reset(struct pci_dev *dev)
->> +{
->> +    u16 ctrl;
->> +
->> +    if (!need_reset(dev))
->> +        return;
->> +
->> +    dev_info(&dev->dev, "Reset Secondary bus\n");
->> +
->> +    /* Assert Secondary Bus Reset */
->> +    pci_read_config_word(dev, PCI_BRIDGE_CONTROL,&ctrl);
->> +    ctrl |= PCI_BRIDGE_CTL_BUS_RESET;
->> +    pci_write_config_word(dev, PCI_BRIDGE_CONTROL, ctrl);
->> +
->> +    msleep(2);
->> +
->> +    /* De-assert Secondary Bus Reset */
->> +    ctrl&= ~PCI_BRIDGE_CTL_BUS_RESET;
->> +    pci_write_config_word(dev, PCI_BRIDGE_CONTROL, ctrl);
->> +}
->> +
->> +static int __initdata pcie_reset_devices;
->> +static int __init reset_pcie_devices(void)
->> +{
->> +    struct pci_dev *dev = NULL;
->> +
->> +    if (!pcie_reset_devices)
->> +        return 0;
->> +
->> +    for_each_pci_dev(dev)
->> +        save_config(dev);
->> +
->> +    for_each_pci_dev(dev)
->> +        do_device_reset(dev);
->> +
->> +    msleep(1000);
->> +
->> +    for_each_pci_dev(dev)
->> +        restore_config(dev);
->> +
->> +    return 0;
->> +}
->> +fs_initcall_sync(reset_pcie_devices);
->> +
->>   static int __init pci_setup(char *str)
->>   {
->>       while (str) {
->> @@ -3920,6 +4021,8 @@ static int __init pci_setup(char *str)
->>                   pcie_bus_config = PCIE_BUS_PEER2PEER;
->>               } else if (!strncmp(str, "pcie_scan_all", 13)) {
->>                   pci_add_flags(PCI_SCAN_ALL_PCIE_DEVS);
->> +            } else if (!strncmp(str, "pcie_reset_devices", 18)) {
->> +                pcie_reset_devices = 1;
->>               } else {
->>                   printk(KERN_ERR "PCI: Unknown option `%s'\n",
->>                           str);
-> 
-> 
-> 
-
+Regards,
+Jassi
