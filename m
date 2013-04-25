@@ -1,53 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932570Ab3DYOti (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 10:49:38 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:46670 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932536Ab3DYOth (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 10:49:37 -0400
-Date: Thu, 25 Apr 2013 07:49:34 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Satoru Takeuchi <satoru.takeuchi@gmail.com>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, stable@vger.kernel.org
-Subject: Re: [ 00/42] 3.8.9-stable review
-Message-ID: <20130425144934.GA10755@kroah.com>
-References: <20130423215205.523980967@linuxfoundation.org>
- <87d2ti99gy.wl%satoru.takeuchi@gmail.com>
+	id S932578Ab3DYOu2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 10:50:28 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56613 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932475Ab3DYOu1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Apr 2013 10:50:27 -0400
+Message-ID: <517942AB.1010201@zytor.com>
+Date: Thu, 25 Apr 2013 07:50:19 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87d2ti99gy.wl%satoru.takeuchi@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Ted Ts'o" <tytso@mit.edu>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        stable <stable@vger.kernel.org>
+Subject: Re: [PATCH 2/2] random: Account for entropy loss due to overwrites
+References: <1366777569-23192-1-git-send-email-hpa@zytor.com> <1366777569-23192-3-git-send-email-hpa@zytor.com> <CA+55aFwkEMAkvZFdeQm2PKQD1xgFBfVa+kTwJXGmWXoDqDp7xQ@mail.gmail.com> <51794141.3070205@zytor.com>
+In-Reply-To: <51794141.3070205@zytor.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 25, 2013 at 07:43:25PM +0900, Satoru Takeuchi wrote:
-> At Tue, 23 Apr 2013 14:51:58 -0700,
-> Greg Kroah-Hartman wrote:
-> > 
-> > This is the start of the stable review cycle for the 3.8.9 release.
-> > There are 42 patches in this series, all will be posted as a response
-> > to this one.  If anyone has any issues with these being applied, please
-> > let me know.
-> > 
-> > Responses should be made by Thu Apr 25 21:50:11 UTC 2013.
-> > Anything received after that time might be too late.
+On 04/25/2013 07:44 AM, H. Peter Anvin wrote:
 > 
-> This kernel can be built and boot without any problem.
-> Building a kernel with this kernel also works fine.
+> OK, so we need to track fractional bits.
 > 
->  - Build Machine: debian wheezy x86_64
->    CPU: Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz x 4
->    memory: 8GB
-> 
->  - Test machine: debian wheezy x86_64(KVM guest on the Build Machine)
->    vCPU: x2
->    memory: 2GB
 
-Thanks for testing these kernels and letting us know.
+Ted, Linus: there are two ways we can do this: we can either change the
+credit_entropy_bits() interface to take some kind of fractional bits as
+interface, or we can change the accounting internally.
 
-greg k-h
+The latter has the advantage of being a less invasive change, but the
+former has the advantage of making it possible to credit sub-bit entropy.
+
+Do you have a preference?  Otherwise I will probably write up the
+internal change for now.
+
+	-hpa
+
+
