@@ -1,70 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932527Ab3DYOmp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 10:42:45 -0400
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:59689 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756916Ab3DYOmo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 10:42:44 -0400
-Date: Thu, 25 Apr 2013 10:42:41 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Will Deacon <will.deacon@arm.com>
-cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "olof@lixom.net" <olof@lixom.net>, Jon Medhurst <tixy@linaro.org>
-Subject: Re: [PATCH v8 2/2] ARM: Enable selection of SMP operations at boot
- time
-In-Reply-To: <20130425084933.GB12848@mudshark.cambridge.arm.com>
-Message-ID: <alpine.LFD.2.03.1304251040430.1258@syhkavp.arg>
-References: <alpine.DEB.2.02.1304241935010.4180@kaball.uk.xensource.com> <1366828819-10745-2-git-send-email-stefano.stabellini@eu.citrix.com> <20130425084933.GB12848@mudshark.cambridge.arm.com>
-User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
+	id S932552Ab3DYOoa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 10:44:30 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56563 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932397Ab3DYOo3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Apr 2013 10:44:29 -0400
+Message-ID: <51794141.3070205@zytor.com>
+Date: Thu, 25 Apr 2013 07:44:17 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: "Ted Ts'o" <tytso@mit.edu>, DJ Johnston <dj.johnston@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        stable <stable@vger.kernel.org>
+Subject: Re: [PATCH 2/2] random: Account for entropy loss due to overwrites
+References: <1366777569-23192-1-git-send-email-hpa@zytor.com> <1366777569-23192-3-git-send-email-hpa@zytor.com> <CA+55aFwkEMAkvZFdeQm2PKQD1xgFBfVa+kTwJXGmWXoDqDp7xQ@mail.gmail.com>
+In-Reply-To: <CA+55aFwkEMAkvZFdeQm2PKQD1xgFBfVa+kTwJXGmWXoDqDp7xQ@mail.gmail.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 25 Apr 2013, Will Deacon wrote:
-
-> On Wed, Apr 24, 2013 at 07:40:19PM +0100, Stefano Stabellini wrote:
-> > From: Jon Medhurst <tixy@linaro.org>
-> > 
-> > Add a new 'smp_init' hook to machine_desc so platforms can specify a
-> > function to be used to setup smp ops instead of having a statically
-> > defined value.  The hook must return true when smp_ops are initialized.
-> > If false the static mdesc->smp_ops will be used by default.
-> > 
-> > Signed-off-by: Jon Medhurst <tixy@linaro.org>
-> > Signed-off-by: Nicolas Pitre <nicolas.pitre@linaro.org>
-> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > Reviewed-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> > ---
-> >  arch/arm/include/asm/mach/arch.h |    4 ++++
-> >  arch/arm/kernel/setup.c          |   10 ++++++----
-> >  2 files changed, 10 insertions(+), 4 deletions(-)
+On 04/25/2013 07:38 AM, Linus Torvalds wrote:
+> This doesn't work AT ALL. You even hint at the reason why in your message.
 > 
-> [...]
+> On Tue, Apr 23, 2013 at 9:26 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>>
+>> As such, this conservatism seems more than justified.  Note, however,
+>> that attempting to add one bit of entropy will never succeed; nor will
+>> two bits unless the pool is completely empty.  These roundoff
+>> artifacts could be improved by using fixed-point arithmetic and adding
+>> some number of fractional entropy bits.
 > 
-> >  	if (is_smp()) {
-> > -		if (psci_smp_available())
-> > -			smp_set_ops(&psci_smp_ops);
-> > -		else if (mdesc->smp)
-> > -			smp_set_ops(mdesc->smp);
-> > +		if (!mdesc->smp_init || !mdesc->smp_init()) {
+> Take a look at "add_interrupt_randomness()". Hmm..
 > 
-> Minor nit, but this feels backwards to me. We usually return 0 on success,
-> yet we're saying here that if mdesc->smp_init() returns 0, then we go and
-> override the smp ops.
 
-It doesn't return 0, but true or false.  So, semantically, if ->smp_init 
-returns false, that means it didn't initialize anything.
+<facepalm>
+
+Right.  Before July of last year add_interrupt_randomness() called
+add_timer_randomness() which credits up to 11 bits, but not anymore.
+
+-ESTALEBRAIN.
+
+OK, so we need to track fractional bits.
+
+	-hpa
 
 
-Nicolas
