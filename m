@@ -1,93 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932822Ab3DYUDp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 16:03:45 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:16886 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757895Ab3DYUDo (ORCPT
+	id S1759074Ab3DYUH6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 16:07:58 -0400
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:40650 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754080Ab3DYUH5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 16:03:44 -0400
-X-IronPort-AV: E=Sophos;i="4.87,553,1363158000"; 
-   d="scan'208";a="41454414"
-Message-ID: <51798C1D.9090405@codeaurora.org>
-Date: Thu, 25 Apr 2013 13:03:41 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	Thu, 25 Apr 2013 16:07:57 -0400
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Thomas Gleixner <tglx@linutronix.de>, Kevin Hilman <khilman@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Magnus Damm <magnus.damm@gmail.com>
-Subject: Re: [patch 08/34] arm: Use generic idle loop
-References: <20130321214930.752934102@linutronix.de> <20130321215233.826238797@linutronix.de> <87zjxv9lga.fsf@linaro.org> <alpine.LFD.2.02.1303251230440.22263@ionos> <20130325114808.GQ4977@n2100.arm.linux.org.uk> <alpine.LFD.2.02.1303251501520.22263@ionos> <20130408214719.GN17995@n2100.arm.linux.org.uk> <alpine.LFD.2.02.1304091106360.21884@ionos> <20130409093836.GA14496@n2100.arm.linux.org.uk>
-In-Reply-To: <20130409093836.GA14496@n2100.arm.linux.org.uk>
+In-Reply-To: <1366910944-3033663-16-git-send-email-arnd@arndb.de>
+References: <1366910944-3033663-1-git-send-email-arnd@arndb.de>
+	<1366910944-3033663-16-git-send-email-arnd@arndb.de>
+Date: Thu, 25 Apr 2013 16:07:56 -0400
+Message-ID: <CAC-25o_bmrZZ9n10cBE=ewO7Yr+FmgP2JTYJNr1y=V_9BgcyXQ@mail.gmail.com>
+Subject: Re: [PATCH 15/21] thermal: cooling: avoid uninitialied used gcc warning
+From: "edubezval@gmail.com" <edubezval@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Zhang Rui <rui.zhang@intel.com>,
+        Amit Daniel kachhap <amit.daniel@samsung.com>,
+        "Valentin, Eduardo" <eduardo.valentin@ti.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/09/13 02:38, Russell King - ARM Linux wrote:
-> On Tue, Apr 09, 2013 at 11:20:31AM +0200, Thomas Gleixner wrote:
->> On Mon, 8 Apr 2013, Russell King - ARM Linux wrote:
->>> On Mon, Mar 25, 2013 at 03:02:39PM +0100, Thomas Gleixner wrote:
->>> So, how can I review these changes when all there is is a git URL, and
->>> I *do* not want to pull them into my tree without first looking at the
->>> patches, possibly reviewing them and *replying* with the patch inline?
->> the patches were CC'ed to LKML and linux-arch and I expected that you
->> are at least having the latter. Find the relevant patch inlined below.
-> I've not been on linux-arch for a few years now, after it evolved into
-> yet another lkml-like list with high traffic rates, where mainly specific
-> x86 issues seemed to be discussed, rather than it being a way to contact
-> all arch maintainers.
+Arnd,
+
+On Thu, Apr 25, 2013 at 1:28 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> The newly rewritten get_property() function causes a bogus warning
+> from gcc-3.8, which cannot figure out that "level" is always
+> initialized at the point where it gets evaluated:
 >
->> It is a counter. I looked carefully at all the various slightly
->> differently fcked up implementations and picked the counter based one
->> as it fits all requirements.
-> Great, thanks.  The attached patch looks fine to me.
+> drivers/thermal/cpu_cooling.c: In function 'get_property':
+> drivers/thermal/cpu_cooling.c:189:37: warning: 'level' may be used uninitialized in this function [-Wmaybe-uninitialized]
+>    if (property == GET_FREQ && level == j) {
+>                                      ^
+>
+> Slightly rearranging the code makes this more obvious and
+> avoids the warning.
+>
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Zhang Rui <rui.zhang@intel.com>
+> Cc: Amit Daniel kachhap <amit.daniel@samsung.com>
 
-I'm pretty sure that we need to apply this patch now that
-rcu_idle_enter()/exit() is called lower down in the idle loop. Kevin,
-did you test hotplug?
+Rui has merged a patch that removes this bogus compiler warning:
+http://git.kernel.org/cgit/linux/kernel/git/rzhang/linux.git/commit/?h=next&id=4469b99743d296e24aefc5f8ed7df1bc9cfbbac8
 
-----8<-----
+Though, as not as elegant as your patch, it does the trick. :-)
 
-From: Stephen Boyd <sboyd@codeaurora.org>
-Subject: [PATCH] ARM: smp: Drop RCU_NONIDLE usage in cpu_die()
+> ---
+>  drivers/thermal/cpu_cooling.c | 17 +++++++++--------
+>  1 file changed, 9 insertions(+), 8 deletions(-)
+>
+> diff --git a/drivers/thermal/cpu_cooling.c b/drivers/thermal/cpu_cooling.c
+> index 768b508..34878e6 100644
+> --- a/drivers/thermal/cpu_cooling.c
+> +++ b/drivers/thermal/cpu_cooling.c
+> @@ -165,10 +165,6 @@ static int get_property(unsigned int cpu, unsigned long input,
+>                 return 0;
+>         }
+>
+> -       if (property == GET_FREQ)
+> -               level = descend ? input : (max_level - input -1);
+> -
+> -
+>         for (i = 0, j = 0; table[i].frequency != CPUFREQ_TABLE_END; i++) {
+>                 /* ignore invalid entry */
+>                 if (table[i].frequency == CPUFREQ_ENTRY_INVALID)
+> @@ -186,10 +182,15 @@ static int get_property(unsigned int cpu, unsigned long input,
+>                         *output = descend ? j : (max_level - j - 1);
+>                         return 0;
+>                 }
+> -               if (property == GET_FREQ && level == j) {
+> -                       /* get frequency by level */
+> -                       *output = freq;
+> -                       return 0;
+> +
+> +               if (property == GET_FREQ) {
+> +                       level = descend ? input : (max_level - input -1);
+> +
+> +                       if (level == j) {
+> +                               /* get frequency by level */
+> +                               *output = freq;
+> +                               return 0;
+> +                       }
+>                 }
+>                 j++;
+>         }
+> --
+> 1.8.1.2
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Before f7b861b (arm: Use generic idle loop, 2013-03-21) ARM would
-kill the CPU within the rcu idle section. Now that the
-rcu_idle_enter()/exit() pair have been pushed lower down in the
-idle loop this is no longer true and so using RCU_NONIDLE here is
-no longer necessary and also harmful because RCU is not actually
-idle at this point.
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- arch/arm/kernel/smp.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
-index 4619177..78f1eb5 100644
---- a/arch/arm/kernel/smp.c
-+++ b/arch/arm/kernel/smp.c
-@@ -233,7 +233,7 @@ void __ref cpu_die(void)
-        mb();
- 
-        /* Tell __cpu_die() that this CPU is now safe to dispose of */
--       RCU_NONIDLE(complete(&cpu_died));
-+       complete(&cpu_died);
- 
-        /*
-         * actual CPU shutdown procedure is at least platform (if not
 
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
-
+Eduardo Bezerra Valentin
