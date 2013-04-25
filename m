@@ -1,65 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755706Ab3DYHem (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 03:34:42 -0400
-Received: from mail-ea0-f182.google.com ([209.85.215.182]:61900 "EHLO
-	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754869Ab3DYHel (ORCPT
+	id S1755941Ab3DYHht (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 03:37:49 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:52838 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755207Ab3DYHhs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 03:34:41 -0400
-Date: Thu, 25 Apr 2013 09:34:37 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Robin Holt <holt@sgi.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Russ Anderson <rja@sgi.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>, Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH -v6 2/5] Migrate shutdown/reboot to boot cpu.
-Message-ID: <20130425073437.GA12868@gmail.com>
-References: <1366802333-8890-1-git-send-email-holt@sgi.com>
- <1366802333-8890-3-git-send-email-holt@sgi.com>
- <20130424151749.30b0680dc9392b110537bcd5@linux-foundation.org>
- <20130425065704.GE7806@gmail.com>
- <20130425002939.208fcb91.akpm@linux-foundation.org>
+	Thu, 25 Apr 2013 03:37:48 -0400
+From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: "Hans J. Koch" <hjk@hansjkoch.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] uio/aec: specify correct license in MODULE_LICENSE
+Date: Thu, 25 Apr 2013 09:37:42 +0200
+Message-Id: <1366875462-7864-1-git-send-email-u.kleine-koenig@pengutronix.de>
+X-Mailer: git-send-email 1.8.2.rc2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130425002939.208fcb91.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The file header declares the code to be covered by GPL v2 only, so use
+explicit v2 for MODULE_LICENSE, too.
 
-* Andrew Morton <akpm@linux-foundation.org> wrote:
+Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+---
+ drivers/uio/uio_aec.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> On Thu, 25 Apr 2013 08:57:04 +0200 Ingo Molnar <mingo@kernel.org> wrote:
-> 
-> > > PF_THREAD_BOUND was removed/replaced in linux-next's a9ab775bc
-> > > ("workqueue: directly restore CPU affinity of workers from CPU_ONLINE")
-> > 
-> > I don't see PF_THREAD_BOUND being removed by commit a9ab775bc. Did you 
-> > mean some other commit?
-> 
-> commit 14a40ffccd6163bbcd1d6f32b28a88ffe6149fc6
-> Author: Tejun Heo <tj@kernel.org>
-> Date:   Tue Mar 19 13:45:20 2013 -0700
-> 
->     sched: replace PF_THREAD_BOUND with PF_NO_SETAFFINITY
+diff --git a/drivers/uio/uio_aec.c b/drivers/uio/uio_aec.c
+index 1548982..9fed75c 100644
+--- a/drivers/uio/uio_aec.c
++++ b/drivers/uio/uio_aec.c
+@@ -170,7 +170,7 @@ static void __exit aectc_exit(void)
+ 	pci_unregister_driver(&pci_driver);
+ }
+ 
+-MODULE_LICENSE("GPL");
++MODULE_LICENSE("GPL v2");
+ 
+ module_init(aectc_init);
+ module_exit(aectc_exit);
+-- 
+1.8.2.rc2
 
-I don't think much action is needed: whenever someone integrates the 
-workqueue tree with these reboot changes, or the workqueue changes hit 
-upstream, a s/PF_THREAD_BOUND/PF_NO_SETAFFINITY should do the trick, 
-right?
-
-Btw., if that's true then the workqueue tree should probably grow this 
-helper:
-
-	#define PF_THREAD_BOUND PF_NO_SETAFFINITY
-
-migration/backport helper, which can be removed in v3.11 or so.
-
-Thanks,
-
-	Ingo
