@@ -1,27 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759199Ab3DYU7P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 16:59:15 -0400
-Received: from www.linutronix.de ([62.245.132.108]:46126 "EHLO
+	id S1759127Ab3DYVBL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 17:01:11 -0400
+Received: from www.linutronix.de ([62.245.132.108]:46145 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756207Ab3DYU7O (ORCPT
+	with ESMTP id S1755022Ab3DYVBJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 16:59:14 -0400
-Date: Thu, 25 Apr 2013 22:59:05 +0200 (CEST)
+	Thu, 25 Apr 2013 17:01:09 -0400
+Date: Thu, 25 Apr 2013 23:01:02 +0200 (CEST)
 From: Thomas Gleixner <tglx@linutronix.de>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-cc: Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, sbw@mit.edu, Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Kevin Hilman <khilman@linaro.org>, Christoph Lameter <cl@linux.com>,
-        Olivier Baetz <olivier.baetz@novasparks.com>
-Subject: Re: [PATCH documentation 2/2] kthread: Document ways of reducing OS
- jitter due to per-CPU kthreads
-In-Reply-To: <20130425155215.GK3427@linux.vnet.ibm.com>
-Message-ID: <alpine.LFD.2.02.1304252257140.21884@ionos>
-References: <20130416164036.GA27246@linux.vnet.ibm.com> <1366130490-27584-1-git-send-email-paulmck@linux.vnet.ibm.com> <1366130490-27584-2-git-send-email-paulmck@linux.vnet.ibm.com> <20130421193705.GB5807@pd.tnic> <20130423040329.GP3509@linux.vnet.ibm.com>
- <20130425102311.GA32607@pd.tnic> <20130425155215.GK3427@linux.vnet.ibm.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Kevin Hilman <khilman@linaro.org>, LKML <linux-kernel@vger.kernel.org>,
+        linux-arch@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Magnus Damm <magnus.damm@gmail.com>
+Subject: Re: [patch 08/34] arm: Use generic idle loop
+In-Reply-To: <51798C1D.9090405@codeaurora.org>
+Message-ID: <alpine.LFD.2.02.1304252300030.21884@ionos>
+References: <20130321214930.752934102@linutronix.de> <20130321215233.826238797@linutronix.de> <87zjxv9lga.fsf@linaro.org> <alpine.LFD.2.02.1303251230440.22263@ionos> <20130325114808.GQ4977@n2100.arm.linux.org.uk> <alpine.LFD.2.02.1303251501520.22263@ionos>
+ <20130408214719.GN17995@n2100.arm.linux.org.uk> <alpine.LFD.2.02.1304091106360.21884@ionos> <20130409093836.GA14496@n2100.arm.linux.org.uk> <51798C1D.9090405@codeaurora.org>
 User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -32,37 +35,67 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 25 Apr 2013, Paul E. McKenney wrote:
-> On Thu, Apr 25, 2013 at 12:23:12PM +0200, Borislav Petkov wrote:
-> > On Mon, Apr 22, 2013 at 09:03:29PM -0700, Paul E. McKenney wrote:
-> > > > > +Name: ehca_comp/%u
-> > > > > +Purpose: Periodically process Infiniband-related work.
-> > > > > +To reduce corresponding OS jitter, do any of the following:
-> > > > > +1.	Don't use EHCA Infiniband hardware.  This will prevent these
-> > > > 
-> > > > Sounds like this particular hardware is slow and its IRQ handler/softirq
-> > > > needs a lot of time. Yes, no?
-> > > > 
-> > > > Can we have a reason why people shouldn't use that hw.
-> > > 
-> > > Because it has per-CPU kthreads that can cause OS jitter.  ;-)
-> > 
-> > Yeah, I stumbled over this specific brand of Infiniband hw. It looks
-> > like this particular Infiniband driver uses per-CPU kthreads and the
-> > others in drivers/infiniband/hw/ don't?
-> > 
-> > I hope this explains my head-scratching moment here...
+On Thu, 25 Apr 2013, Stephen Boyd wrote:
+> On 04/09/13 02:38, Russell King - ARM Linux wrote:
+> > On Tue, Apr 09, 2013 at 11:20:31AM +0200, Thomas Gleixner wrote:
+> >> On Mon, 8 Apr 2013, Russell King - ARM Linux wrote:
+> >>> On Mon, Mar 25, 2013 at 03:02:39PM +0100, Thomas Gleixner wrote:
+> >>> So, how can I review these changes when all there is is a git URL, and
+> >>> I *do* not want to pull them into my tree without first looking at the
+> >>> patches, possibly reviewing them and *replying* with the patch inline?
+> >> the patches were CC'ed to LKML and linux-arch and I expected that you
+> >> are at least having the latter. Find the relevant patch inlined below.
+> > I've not been on linux-arch for a few years now, after it evolved into
+> > yet another lkml-like list with high traffic rates, where mainly specific
+> > x86 issues seemed to be discussed, rather than it being a way to contact
+> > all arch maintainers.
+> >
+> >> It is a counter. I looked carefully at all the various slightly
+> >> differently fcked up implementations and picked the counter based one
+> >> as it fits all requirements.
+> > Great, thanks.  The attached patch looks fine to me.
 > 
-> Ah!  I rewrote the first sentence to read:
+> I'm pretty sure that we need to apply this patch now that
+> rcu_idle_enter()/exit() is called lower down in the idle loop. Kevin,
+> did you test hotplug?
+
+If the patch is agreed on, I guess I should take it via my idle
+consolidation branch, right ?
+
+ 
+> ----8<-----
 > 
-> 	Don't use eHCA Infiniband hardware, instead choosing hardware
-> 	that does not require per-CPU kthreads.
-
-Another option would be to teach that eHCA driver to be configurable
-on which cpus kthreads are desired and on which not. I can't see a
-reason (aside of throughput) why that hardware can't cope with a
-single thread.
-
-Thanks,
-
-	tglx
+> From: Stephen Boyd <sboyd@codeaurora.org>
+> Subject: [PATCH] ARM: smp: Drop RCU_NONIDLE usage in cpu_die()
+> 
+> Before f7b861b (arm: Use generic idle loop, 2013-03-21) ARM would
+> kill the CPU within the rcu idle section. Now that the
+> rcu_idle_enter()/exit() pair have been pushed lower down in the
+> idle loop this is no longer true and so using RCU_NONIDLE here is
+> no longer necessary and also harmful because RCU is not actually
+> idle at this point.
+> 
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> ---
+>  arch/arm/kernel/smp.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
+> index 4619177..78f1eb5 100644
+> --- a/arch/arm/kernel/smp.c
+> +++ b/arch/arm/kernel/smp.c
+> @@ -233,7 +233,7 @@ void __ref cpu_die(void)
+>         mb();
+>  
+>         /* Tell __cpu_die() that this CPU is now safe to dispose of */
+> -       RCU_NONIDLE(complete(&cpu_died));
+> +       complete(&cpu_died);
+>  
+>         /*
+>          * actual CPU shutdown procedure is at least platform (if not
+> 
+> -- 
+> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+> hosted by The Linux Foundation
+> 
+> 
