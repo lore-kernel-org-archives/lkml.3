@@ -1,61 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752468Ab3DYItP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 04:49:15 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:40115 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751744Ab3DYItN (ORCPT
+	id S1752950Ab3DYItz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 04:49:55 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:60330 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751063Ab3DYItx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 04:49:13 -0400
-Message-ID: <5178EE06.8020107@console-pimps.org>
-Date: Thu, 25 Apr 2013 09:49:10 +0100
-From: Matt Fleming <matt@console-pimps.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Thu, 25 Apr 2013 04:49:53 -0400
+Date: Thu, 25 Apr 2013 09:49:33 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "olof@lixom.net" <olof@lixom.net>, Jon Medhurst <tixy@linaro.org>
+Subject: Re: [PATCH v8 2/2] ARM: Enable selection of SMP operations at boot
+ time
+Message-ID: <20130425084933.GB12848@mudshark.cambridge.arm.com>
+References: <alpine.DEB.2.02.1304241935010.4180@kaball.uk.xensource.com>
+ <1366828819-10745-2-git-send-email-stefano.stabellini@eu.citrix.com>
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] EFI urgent fixes
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1366828819-10745-2-git-send-email-stefano.stabellini@eu.citrix.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi folks,
+On Wed, Apr 24, 2013 at 07:40:19PM +0100, Stefano Stabellini wrote:
+> From: Jon Medhurst <tixy@linaro.org>
+> 
+> Add a new 'smp_init' hook to machine_desc so platforms can specify a
+> function to be used to setup smp ops instead of having a statically
+> defined value.  The hook must return true when smp_ops are initialized.
+> If false the static mdesc->smp_ops will be used by default.
+> 
+> Signed-off-by: Jon Medhurst <tixy@linaro.org>
+> Signed-off-by: Nicolas Pitre <nicolas.pitre@linaro.org>
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> Reviewed-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> ---
+>  arch/arm/include/asm/mach/arch.h |    4 ++++
+>  arch/arm/kernel/setup.c          |   10 ++++++----
+>  2 files changed, 10 insertions(+), 4 deletions(-)
 
-The following changes since commit 8c58bf3eec3b8fc8162fe557e9361891c20758f2:
+[...]
 
-  x86,efi: Implement efi_no_storage_paranoia parameter (2013-04-17 15:13:38 +0100)
+>  	if (is_smp()) {
+> -		if (psci_smp_available())
+> -			smp_set_ops(&psci_smp_ops);
+> -		else if (mdesc->smp)
+> -			smp_set_ops(mdesc->smp);
+> +		if (!mdesc->smp_init || !mdesc->smp_init()) {
 
-are available in the git repository at:
+Minor nit, but this feels backwards to me. We usually return 0 on success,
+yet we're saying here that if mdesc->smp_init() returns 0, then we go and
+override the smp ops.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git tags/efi-urgent
+Will
 
-for you to fetch changes up to f697036b93aa7345d4cbb3c854a76456c0ddac45:
-
-  efi: Check EFI revision in setup_efi_vars (2013-04-24 16:19:01 +0100)
-
-----------------------------------------------------------------
- * The EFI variable anti-bricking algorithm merged in -rc8 broke booting
-   on some Apple machines because they implement EFI spec 1.10, which
-   doesn't provide a QueryVariableInfo() runtime function and the logic
-   used to check for the existence of that function was insufficient.
-   Fix from Josh Boyer.
-
- * The anti-bricking algorithm also introduced a compiler warning on
-   32-bit. Fix from Borislav Petkov.
-
-----------------------------------------------------------------
-Borislav Petkov (1):
-      x86, efi: Fix a build warning
-
-Josh Boyer (1):
-      efi: Check EFI revision in setup_efi_vars
-
- arch/x86/boot/compressed/eboot.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
--- 
-Matt Fleming, Intel Open Source Technology Center
+> +			if (psci_smp_available())
+> +				smp_set_ops(&psci_smp_ops);
+> +			else if (mdesc->smp)
+> +				smp_set_ops(mdesc->smp);
+> +		}
+>  		smp_init_cpus();
+>  	}
+>  #endif
+> -- 
+> 1.7.2.5
+> 
+> 
