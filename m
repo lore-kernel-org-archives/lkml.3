@@ -1,52 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933196Ab3DYWXY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 18:23:24 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:12415 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933104Ab3DYWXX (ORCPT
+	id S933223Ab3DYWXk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 18:23:40 -0400
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:54875
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933200Ab3DYWXj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 18:23:23 -0400
-X-Authority-Analysis: v=2.0 cv=DKcNElxb c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=BTRBD928usAA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=YPD5nf4ZmOMA:10 a=Mn597_HhJwhjV_jeDdoA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1366928600.10248.20.camel@gandalf.local.home>
-Subject: Re: [ANNOUNCE] 3.4.41-rt55-feat1
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Tim Sander <tim.sander@hbm.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        RT <linux-rt-users@vger.kernel.org>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>
-Date: Thu, 25 Apr 2013 18:23:20 -0400
-In-Reply-To: <alpine.LFD.2.02.1304260018470.21884@ionos>
-References: <1366760662.9609.176.camel@gandalf.local.home>
-	 <2156546.QlsX0XyPQz@dabox> <51792277.8000205@linutronix.de>
-	 <3603730.i3rZKahVeu@dabox> <alpine.LFD.2.02.1304260018470.21884@ionos>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 25 Apr 2013 18:23:39 -0400
+X-Forefront-Antispam-Report: CIP:157.56.236.101;KIP:(null);UIP:(null);IPV:NLI;H:BY2PRD0510HT001.namprd05.prod.outlook.com;RD:none;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: PS-4(zz98dI9371I936eI1432Izz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275bh8275dhz2fh2a8h668h839h93fhd24hd2bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1155h)
+From: Matthew Garrett <matthew.garrett@nebula.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: "H. Peter Anvin" <hpa@linux.intel.com>, Borislav Petkov <bp@suse.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Josh Boyer <jwboyer@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Matt Fleming <matt.fleming@intel.com>, Paul Bolle <pebolle@tiscali.nl>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [GIT PULL] x86 fixes for 3.9
+Thread-Topic: [GIT PULL] x86 fixes for 3.9
+Thread-Index: AQHOQf43GXGT08TKE06E/vWIpcYzjJjngiKAgAAA4QA=
+Date: Thu, 25 Apr 2013 22:23:24 +0000
+Message-ID: <1366928604.9976.3.camel@x230>
+References: <201304252144.r3PLihDe025383@terminus.zytor.com>
+	 <CA+55aFxxWXrQU4oZUbHOBBkvtF=pSxMvyF6sYU9xpSDarWV-=Q@mail.gmail.com>
+In-Reply-To: <CA+55aFxxWXrQU4oZUbHOBBkvtF=pSxMvyF6sYU9xpSDarWV-=Q@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.255.84.4]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <9497FCBA12BB424B8F682958DA3D578B@namprd05.prod.outlook.com>
+MIME-Version: 1.0
+X-OriginatorOrg: nebula.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r3PMNkIQ031859
 
-On Fri, 2013-04-26 at 00:20 +0200, Thomas Gleixner wrote:
-> Tim,
+On Thu, 2013-04-25 at 15:20 -0700, Linus Torvalds wrote:
+> On Thu, Apr 25, 2013 at 2:44 PM, H. Peter Anvin <hpa@linux.intel.com> wrote:
+> >
+> > -       if (!sys_table->runtime->query_variable_info)
+> > +       if (sys_table->runtime->hdr.revision < EFI_2_00_SYSTEM_TABLE_REVISION)
+> >                 return EFI_UNSUPPORTED;
 > 
-> On Thu, 25 Apr 2013, Tim Sander wrote:
-> > handler. But normally the HR_TIMER is set. So we switched it off on this very 
-> > purpose. As we also have also PREEMPT_RT_FULL set the proposed solution to 
-> > allow only PREEMPT_RT_FULL with PREEMPT_RT_FULL set is not an option for us.
-> 
-> -ENOPARSE
+> Is a EFI 2.00 system table *guaranteed* to have that
+> "query_variable_info" function? The above adds the version check, but
+> removes the check for a NULL pointer.
 
-I think he made a typo and was referring to my post. I think he meant
-that they require not having high res timers set when PREEMPT_RT_FULL is
-set. As you stated to me before.
+As far as the spec's concerned, yes. As far as reality's concerned - if
+anything doesn't provide it, we're already crashing when
+efi_virt_query_variable_info() gets called. Nobody's complained so far.
 
--- Steve
+> And why the hell don't we have a real structure that has been filled
+> out properly, and instead apparently just do this "point to random
+> memory that doesn't necessarily have the full structure?
 
-
+This is early boot code, we're not in the kernel proper yet. All we have
+is the structure that's handed to us by the firmware, and the size of
+that structure varies depending on its version.
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
