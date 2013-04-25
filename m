@@ -1,44 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758589Ab3DYN0i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 09:26:38 -0400
-Received: from plane.gmane.org ([80.91.229.3]:36663 "EHLO plane.gmane.org"
+	id S932260Ab3DYN3M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 09:29:12 -0400
+Received: from fieldses.org ([174.143.236.118]:47834 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757313Ab3DYN0h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 09:26:37 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,551,1363158000"; 
-   d="scan'208";a="232295097"
-From: Andi Kleen <andi@firstfloor.org>
-To: Karel Zak <public-kzak-H+wXaHxf7aLQT0dZR+AlfA@plane.gmane.org>
-Cc: public-linux-kernel-u79uwXL29TY76Z2rM5mHXA@plane.gmane.org,
-        public-linux-fsdevel-u79uwXL29TY76Z2rM5mHXA@plane.gmane.org,
-        public-util-linux-u79uwXL29TY76Z2rM5mHXA@plane.gmane.org
-Subject: Re: [ANNOUNCE] util-linux 2.23
-References: <20130425110450.GF2244@x2.net.home>
-Date: Thu, 25 Apr 2013 06:25:03 -0700
-In-Reply-To: <20130425110450.GF2244@x2.net.home> (Karel Zak's message of "Thu,
-	25 Apr 2013 13:04:50 +0200")
-Message-ID: <m2haiuvj2o.fsf@firstfloor.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	id S1755657Ab3DYN3K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Apr 2013 09:29:10 -0400
+Date: Thu, 25 Apr 2013 09:29:07 -0400
+From: "bfields@fieldses.org" <bfields@fieldses.org>
+To: David Wysochanski <dwysocha@redhat.com>
+Cc: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        Dave Chiluk <chiluk@canonical.com>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] NFSv4: Use exponential backoff delay for NFS4_ERRDELAY
+Message-ID: <20130425132907.GB31851@fieldses.org>
+References: <1366836949-18465-1-git-send-email-chiluk@canonical.com>
+ <1366838926.22397.25.camel@leira.trondhjem.org>
+ <5178549A.7010402@canonical.com>
+ <1366842905.22397.49.camel@leira.trondhjem.org>
+ <1366892374.26249.294.camel@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1366892374.26249.294.camel@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Apr 25, 2013 at 08:19:34AM -0400, David Wysochanski wrote:
+> On Wed, 2013-04-24 at 22:35 +0000, Myklebust, Trond wrote:
+> > On Wed, 2013-04-24 at 16:54 -0500, Dave Chiluk wrote:
+> > > On 04/24/2013 04:28 PM, Myklebust, Trond wrote:
+> > > > On Wed, 2013-04-24 at 15:55 -0500, Dave Chiluk wrote:
+> > > >> Changing the retry to start at NFS4_POLL_RETRY_MIN and exponentially grow
+> > > >> to NFS4_POLL_RETRY_MAX allow for faster handling of these error conditions.
+> > > >>
+> > > >> Additionally this alleviates an interoperability problem with the AIX NFSv4
+> > > >> Server.  The AIX server frequently (2 out of 3) returns NFS4ERR_DELAY, on a
+> > > >> close when it happens in close proximity to a RELEASE_LOCKOWNER.  This would
+> > > >> cause a linux client to hang for 15 seconds.
+> > > > 
+> > > > Hi Dave,
+> > > > 
+> > > > The AIX server is not being motivated by any requirements in the NFSv4
+> > > > spec here, so I fail to see the reason why the behaviour that you
+> > > > describe can justify changing the client. It is not at all obvious to me
+> > > > that we should be retrying aggressively when NFSv4 servers return
+> > > > NFS4ERR_DELAY. What makes 1/10sec more correct in these situations than
+> > > > the exising 15 seconds?
+> > > 
+> > > I agree with you that AIX is at fault, and that the preferable situation
+> > > for the linux client would be for AIX to not return NFS4ERR_DELAY in
+> > > this use case.  I have attached a simple program that causes exacerbates
+> > > the problem on the AIX server.  I have already had a conference call
+> > > with AIX NFS development about this issue, where I vehemently tried to
+> > > convince them to fix their server.  Unfortunately as I don't have much
+> > > reputation in the NFS community, I was unable to convince them to do the
+> > > right thing.  I would be more than happy to set up another call, if
+> > > someone higher up in the linux NFS hierarchy would be willing to
+> > > participate.
+> > 
+> > I'd think that if they have customers that want to use Linux clients,
+> > then those customers are likely to have more influence. This is entirely
+> > a consequence of _their_ design decisions, quite frankly, since
+> > returning NFS4ERR_DELAY in the above situation is downright silly. The
+> > server designers _know_ that the RELEASE_LOCKOWNER will finish whatever
+> > it is doing fairly quickly; it's not as if the CLOSE wouldn't have to do
+> > the exact same state manipulations anyway...
+> > 
+> > > That being said, I think implementing an exponential backoff is an
+> > > improvement in the client regardless of what AIX is doing.  If a server
+> > > needs only 2 seconds to process a request for which NFS4ERR_DELAY was
+> > > returned, this algorithm would get the client back and running after
+> > > only 2.1 seconds of elapsed time.  Whereas the current dumb algorithm
+> > > would simply wait 15 seconds.  This is the reason that I implemented
+> > > this change.
+> > 
+> > Right, but my point above is that _in_general_ if we don't know why the
+> > server is returning NFS4ERR_DELAY, then how can we attach any retry
+> > numbers at all? HSM systems, for instance, have very different latencies
+> > than the above and were the reason for inventing NFS3ERR_JUKEBOX in the
+> > first place.
+> > 
+> 
+> Agreed we can't know why the server is returning NFS4ERR_DELAY so it's
+> hard to pick a retry number.  Can you explain the rationale for the
+> current 15 seconds delay?  Was it just for simplicity or something else?
 
+As I understand it the original idea was that cold data really could
+take multiple seconds or minutes to retrieve (because e.g. a tape
+library might need to go load the right tape and rewind to the right
+spot...).  Is that sort of system really used much these days?
 
-Karel Zak <kzak-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org> writes:
->
-> Util-linux 2.23 Release Notes
-> =============================
->
-> The cryptoloop support in the commands mount(8) and losetup(8) has been
-> REMOVED. The encryption= mount option and -e,-E,--encryption losetup options
-> are no more supported.
+My position is that we simply have no idea what order of magnitude even
+delay should be.  And that in such a situation exponential backoff such
+as implemented in the synchronous case seems the reasonable default as
+it guarantees at worst doubling the delay while still bounding the
+long-term average frequency of retries.
 
-That's crazy. You're taking away access to existing data.
-
--Andi
-
+--b.
