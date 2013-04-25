@@ -1,121 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758025Ab3DYNCw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 09:02:52 -0400
-Received: from smarthost04.mail.zen.net.uk ([212.23.1.4]:36442 "EHLO
-	smarthost04.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756935Ab3DYNCv (ORCPT
+	id S1758550Ab3DYNDA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 09:03:00 -0400
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:47158 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757388Ab3DYNC5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 09:02:51 -0400
-Message-ID: <1366894965.3528.19.camel@computer5.home>
-Subject: Re: [PATCH] mfd: vexpress: Handle pending config transactions
-From: "Jon Medhurst (Tixy)" <tixy@linaro.org>
-To: Pawel Moll <pawel.moll@arm.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Date: Thu, 25 Apr 2013 14:02:45 +0100
-In-Reply-To: <1366821084-12815-1-git-send-email-pawel.moll@arm.com>
-References: <1366821084-12815-1-git-send-email-pawel.moll@arm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-Smarthost04-IP: [212.183.128.146]
+	Thu, 25 Apr 2013 09:02:57 -0400
+MIME-Version: 1.0
+In-Reply-To: <1366729394-11406-3-git-send-email-lee.jones@linaro.org>
+References: <1366729394-11406-1-git-send-email-lee.jones@linaro.org>
+	<1366729394-11406-3-git-send-email-lee.jones@linaro.org>
+Date: Thu, 25 Apr 2013 15:02:56 +0200
+Message-ID: <CACRpkdZbHy9CX+b1zUAyuFWw4+9VffG2KVx4CgqdHtHpP4w40A@mail.gmail.com>
+Subject: Re: [PATCH 02/10] usb: musb: ux500: move the MUSB HDRC configuration
+ into the driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Mian Yousaf KAUKAB <mian.yousaf.kaukab@stericsson.com>,
+        Felipe Balbi <balbi@ti.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        Praveena Nadahally <praveen.nadahally@stericsson.com>,
+        Fabio Baltieri <fabio.baltieri@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-04-24 at 17:31 +0100, Pawel Moll wrote:
-> The config transactions "scheduler" was hopelessly broken,
-> repeating completed transaction instead of picking up
-> next pending one.
-> 
-> Fixed now. Also improved debug messages.
-> 
-> Signed-off-by: Pawel Moll <pawel.moll@arm.com>
-> ---
->  drivers/mfd/vexpress-config.c |   31 ++++++++++++++++++++-----------
->  1 file changed, 20 insertions(+), 11 deletions(-)
-> 
-> diff --git a/drivers/mfd/vexpress-config.c b/drivers/mfd/vexpress-config.c
-> index 3c1723aa..4991db3 100644
-> --- a/drivers/mfd/vexpress-config.c
-> +++ b/drivers/mfd/vexpress-config.c
-> @@ -184,13 +184,14 @@ static int vexpress_config_schedule(struct vexpress_config_trans *trans)
->  
->  	spin_lock_irqsave(&bridge->transactions_lock, flags);
->  
-> -	vexpress_config_dump_trans("Executing", trans);
-> -
-> -	if (list_empty(&bridge->transactions))
-> +	if (list_empty(&bridge->transactions)) {
-> +		vexpress_config_dump_trans("Executing", trans);
->  		status = bridge->info->func_exec(trans->func->func,
->  				trans->offset, trans->write, trans->data);
-> -	else
-> +	} else {
-> +		vexpress_config_dump_trans("Queuing", trans);
->  		status = VEXPRESS_CONFIG_STATUS_WAIT;
-> +	}
->  
->  	switch (status) {
->  	case VEXPRESS_CONFIG_STATUS_DONE:
-> @@ -217,20 +218,28 @@ void vexpress_config_complete(struct vexpress_config_bridge *bridge,
->  
->  	trans = list_first_entry(&bridge->transactions,
->  			struct vexpress_config_trans, list);
-> +	trans->status = status;
->  	vexpress_config_dump_trans("Completed", trans);
->  
-> -	trans->status = status;
->  	list_del(&trans->list);
->  
-> -	if (!list_empty(&bridge->transactions)) {
-> -		vexpress_config_dump_trans("Pending", trans);
-> +	complete(&trans->completion);
-> +
-> +	while (!list_empty(&bridge->transactions)) {
-> +		trans = list_first_entry(&bridge->transactions,
-> +				struct vexpress_config_trans, list);
->  
-> -		bridge->info->func_exec(trans->func->func, trans->offset,
-> -				trans->write, trans->data);
-> +		vexpress_config_dump_trans("Executing pending", trans);
-> +		status = bridge->info->func_exec(trans->func->func,
-> +				trans->offset, trans->write, trans->data);
-> +
-> +		if (status == VEXPRESS_CONFIG_STATUS_DONE)
-> +			vexpress_config_dump_trans("Finished pending", trans);
-> +		else
-> +			break;
+On Tue, Apr 23, 2013 at 5:03 PM, Lee Jones <lee.jones@linaro.org> wrote:
 
-For each transaction we execute in this loop, don't we also need to do
-the actions vexpress_config_complete does? E.g.
+> The MUSB HDRC configuration never changes between each of the ux500
+> supported platforms, so there's little point passing it though platform
+> data. If we set it in the driver instead, we can make good use of it
+> when booting with either ATAGs or Device Tree.
+>
+> Cc: Felipe Balbi <balbi@ti.com>
+> Cc: linux-usb@vger.kernel.org
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-	trans->status = status;
-	list_del(&trans->list);
-	complete(&trans->completion);
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
-except in the case status==VEXPRESS_CONFIG_STATUS_WAIT.
-
-Or, does the call to func_exec cause vexpress_config_complete() to be
-called later? (It hadn't better be called synchronously or we get a
-deadlock).
-
-Actually, if it is called later, there is still a problem because if the
-call to func_exec returns VEXPRESS_CONFIG_STATUS_DONE then the
-transaction is left on the list and the while loop will try and execute
-it again.
-
->  	}
-> -	spin_unlock_irqrestore(&bridge->transactions_lock, flags);
->  
-> -	complete(&trans->completion);
-> +	spin_unlock_irqrestore(&bridge->transactions_lock, flags);
->  }
->  EXPORT_SYMBOL(vexpress_config_complete);
->  
-
--- 
-Tixy
-
+Yours,
+Linus Walleij
