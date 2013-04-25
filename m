@@ -1,47 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758998Ab3DYQow (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 12:44:52 -0400
-Received: from www.linutronix.de ([62.245.132.108]:45075 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758900Ab3DYQou convert rfc822-to-8bit (ORCPT
+	id S1759032Ab3DYQs2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 12:48:28 -0400
+Received: from mail-da0-f51.google.com ([209.85.210.51]:33474 "EHLO
+	mail-da0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758864Ab3DYQsZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 12:44:50 -0400
-Date: Thu, 25 Apr 2013 18:44:41 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Clark Williams <clark@redhat.com>, John Kacur <jkacur@redhat.com>,
-        Tony Luck <tony.luck@intel.com>, Borislav Petkov <bp@alien8.de>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: Re: [PATCH RT v2] x86/mce: Defer mce wakeups to threads for
- PREEMPT_RT
-Message-ID: <20130425164441.GG5561@linutronix.de>
-References: <1365705214.9609.58.camel@gandalf.local.home>
+	Thu, 25 Apr 2013 12:48:25 -0400
+Message-ID: <51795E53.5030908@samsung.com>
+Date: Fri, 26 Apr 2013 01:48:19 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <1365705214.9609.58.camel@gandalf.local.home>
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Kukjin Kim <kgene.kim@samsung.com>, Viresh Kumar <viresh.kumar@linaro.org>,
+        robin.randhawa@arm.com, Ben Dooks <ben-linux@fluff.org>,
+        linux-pm@vger.kernel.org, patches@linaro.org, Liviu.Dudau@arm.com,
+        linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Steve.Bannister@arm.com,
+        arvind.chauhan@arm.com, linaro-kernel@lists.linaro.org,
+        charles.garcia-tobin@arm.com
+Subject: Re: [PATCH 07/18] cpufreq: s3c24xx: move cpufreq driver to drivers/cpufreq
+References: <cover.1365079581.git.viresh.kumar@linaro.org> <1769336.FkfMpuXqqb@vostro.rjw.lan> <5176A807.2090005@samsung.com> <2264237.NUtkmvZG3W@vostro.rjw.lan>
+In-Reply-To: <2264237.NUtkmvZG3W@vostro.rjw.lan>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Steven Rostedt | 2013-04-11 14:33:34 [-0400]:
+On 04/24/13 07:59, Rafael J. Wysocki wrote:
 
->Comments?
+[...]
 
-So you don't mind if I take this for v3.8?
-I fixed
+>> Rafael, please take this patch with my ack in your tree, sorry for noise.
+>>
+>> Acked-by: Kukjin Kim<kgene.kim@samsung.com>
+>>
+>> If any problems, please kindly let me know.
+>
+> Well, I suppose I can take the original patch, but then it will conflict with
+> your tree during merge.  Is that not a problem?
+>
+I think, some conflicts can be occurred but if so, we can fix it before 
+merge window.
 
-|arch/x86/kernel/cpu/mcheck/mce.c:1392:13: warning: function declaration isn’t a prototype [-Wstrict-prototypes]
-
->+static void mce_notify_work()
-                             ^^
-
-Sebastian
+- Kukjin
