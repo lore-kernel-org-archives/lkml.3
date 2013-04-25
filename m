@@ -1,77 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758874Ab3DYPmy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 11:42:54 -0400
-Received: from mx12.netapp.com ([216.240.18.77]:16023 "EHLO mx12.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755921Ab3DYPmx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 11:42:53 -0400
-X-IronPort-AV: E=Sophos;i="4.87,551,1363158000"; 
-   d="scan'208";a="44837644"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: "Matt W. Benjamin" <matt@linuxbox.com>
-CC: David Wysochanski <dwysocha@redhat.com>,
-        Dave Chiluk <chiluk@canonical.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "bfields@fieldses.org" <bfields@fieldses.org>
-Subject: RE: [PATCH] NFSv4: Use exponential backoff delay for Ni
-Thread-Topic: [PATCH] NFSv4: Use exponential backoff delay for Ni
-Thread-Index: AQHOQcmM6v2BE2HMzk2/QxEEFn1gq5jnE3gw
-Date: Thu, 25 Apr 2013 15:42:50 +0000
-Message-ID: <4FA345DA4F4AE44899BD2B03EEEC2FA9287414AA@SACEXCMBX04-PRD.hq.netapp.com>
-References: <1366899034.6812.4.camel@leira.trondhjem.org>
- <916743278.65.1366903701195.JavaMail.root@thunderbeast.private.linuxbox.com>
-In-Reply-To: <916743278.65.1366903701195.JavaMail.root@thunderbeast.private.linuxbox.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.106.53.51]
-Content-Type: text/plain; charset="utf-8"
+	id S1758892Ab3DYPnM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 11:43:12 -0400
+Received: from mail-vc0-f170.google.com ([209.85.220.170]:51529 "EHLO
+	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758878Ab3DYPnK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Apr 2013 11:43:10 -0400
 MIME-Version: 1.0
+In-Reply-To: <1366893601-26699-1-git-send-email-jslaby@suse.cz>
+References: <1366893601-26699-1-git-send-email-jslaby@suse.cz>
+Date: Thu, 25 Apr 2013 08:43:09 -0700
+X-Google-Sender-Auth: rk2ON0Mq6A_OyB2p2ie8hsBTFR4
+Message-ID: <CA+55aFxVDub+aXyOrojz_yRCHHG50MnviOjP_-uRxKLuQRYXUw@mail.gmail.com>
+Subject: Re: [PATCH] TTY: fix atime/mtime regression
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jirislaby@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r3PFh1Hu029507
 
-It's legal, but dumb...
+On Thu, Apr 25, 2013 at 5:40 AM, Jiri Slaby <jslaby@suse.cz> wrote:
+>
+> To revert to the old behaviour while still preventing attackers to
+> guess the password length, we update the timestamps in ten-second
+> intervals by this patch.
 
-> -----Original Message-----
-> From: Matt W. Benjamin [mailto:matt@linuxbox.com]
-> Sent: Thursday, April 25, 2013 11:28 AM
-> To: Myklebust, Trond
-> Cc: David Wysochanski; Dave Chiluk; linux-nfs@vger.kernel.org; linux-
-> kernel@vger.kernel.org; bfields@fieldses.org
-> Subject: Re: [PATCH] NFSv4: Use exponential backoff delay for Ni
-> 
-> Hi,
-> 
-> Just to clarify, the IBM delay behavior is not legal?
-> 
-> Matt
-> 
-> ----- "Trond Myklebust" <Trond.Myklebust@netapp.com> wrote:
-> 
-> >
-> > OK, then. Now all I need is actual motivation for changing the
-> > existing code other than handwaving arguments about "polling is better
-> > than flat waits".
-> > What actual use cases are impacting us now, other than the AIX design
-> > decision to force CLOSE to retry at least once before succeeding?
-> >
-> 
-> 
-> --
-> Matt Benjamin
-> The Linux Box
-> 206 South Fifth Ave. Suite 150
-> Ann Arbor, MI  48104
-> 
-> http://linuxbox.com
-> 
-> tel.  734-761-4689
-> fax.  734-769-8938
-> cel.  734-216-5309
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Hmm. Why ten seconds? Wouldn't it make more sense to use some natural
+boundary, like a full minute?
+
+Also, if I read the code correctly, this can actually make time go
+*backwards* for the inode when the tty is first created. So it would
+seem to be much better for tty_get_inode_time() to be passed in the
+pointer to the tty time to be updated, so that it can avoid doing a
+backwards jump.
+
+Finally, if you're just interested in the seconds (like you are),
+don't use "current_kernel_time()" that unnecessarily does the whole
+nsec calculation. Just do "get_seconds()".
+
+IOW, the end result would be something like
+
+  void tty_update_time(struct timespec *time)
+  {
+    unsigned long sec = get_seconds();
+    sec -= sec % 60;
+    if ((long)(sec - time->tv_sec) > 0)
+      time->tv_sec = sec;
+  }
+
+(That whole "(long)(sec - time->tv_sec)" is to handle wrapping time
+correctly, we don't want to stop updating the inode in 2038 on 32-bit
+machines).
+
+Hmm?
+
+             Linus
