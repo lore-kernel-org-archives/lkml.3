@@ -1,53 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755941Ab3DYHht (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 03:37:49 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:52838 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755207Ab3DYHhs (ORCPT
+	id S1755986Ab3DYHsF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 03:48:05 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:50917 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754872Ab3DYHsD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 03:37:48 -0400
-From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: "Hans J. Koch" <hjk@hansjkoch.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] uio/aec: specify correct license in MODULE_LICENSE
-Date: Thu, 25 Apr 2013 09:37:42 +0200
-Message-Id: <1366875462-7864-1-git-send-email-u.kleine-koenig@pengutronix.de>
-X-Mailer: git-send-email 1.8.2.rc2
+	Thu, 25 Apr 2013 03:48:03 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <CAKgNAkjgmTJ1BiHVbqVtz-g-=yfewMiYaroDJELJpa1aRrFAvQ@mail.gmail.com>
+References: <CAKgNAkjgmTJ1BiHVbqVtz-g-=yfewMiYaroDJELJpa1aRrFAvQ@mail.gmail.com>
+Date: Thu, 25 Apr 2013 09:48:00 +0200
+Message-ID: <CAFLxGvy33QyJEMu_z47oyEEMY_awpT5rkoP4DYVjBQjsZysaGA@mail.gmail.com>
+Subject: Re: For review (v2): user_namespaces(7) man page
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: Michael Kerrisk-manpages <mtk.manpages@gmail.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>, Rob Landley <rob@landley.net>,
+        linux-man <linux-man@vger.kernel.org>,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Vasily Kulikov <segoon@openwall.com>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>, luto@amacapital.net
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The file header declares the code to be covered by GPL v2 only, so use
-explicit v2 for MODULE_LICENSE, too.
+On Wed, Mar 27, 2013 at 10:26 PM, Michael Kerrisk (man-pages)
+<mtk.manpages@gmail.com> wrote:
+>        Inside the user namespace, the shell has user and group  ID  0,
+>        and a full set of permitted and effective capabilities:
+>
+>            bash$ cat /proc/$$/status | egrep '^[UG]id'
+>            Uid: 0    0    0    0
+>            Gid: 0    0    0    0
+>            bash$ cat /proc/$$/status | egrep '^Cap(Prm|Inh|Eff)'
+>            CapInh:   0000000000000000
+>            CapPrm:   0000001fffffffff
+>            CapEff:   0000001fffffffff
 
-Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
----
- drivers/uio/uio_aec.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+I've tried your demo program, but inside the new ns I'm automatically nobody.
+As Eric said, setuid(0)/setgid(0) are missing.
 
-diff --git a/drivers/uio/uio_aec.c b/drivers/uio/uio_aec.c
-index 1548982..9fed75c 100644
---- a/drivers/uio/uio_aec.c
-+++ b/drivers/uio/uio_aec.c
-@@ -170,7 +170,7 @@ static void __exit aectc_exit(void)
- 	pci_unregister_driver(&pci_driver);
- }
- 
--MODULE_LICENSE("GPL");
-+MODULE_LICENSE("GPL v2");
- 
- module_init(aectc_init);
- module_exit(aectc_exit);
--- 
-1.8.2.rc2
+Eric, maybe you can help me. How can I drop capabilities within a user
+namespace?
+In childFunc() I did add prctl(PR_CAPBSET_DROP, CAP_NET_ADMIN) but it always
+returns ENOPERM.
+What that? I thought I get a completely fresh set of cap which I can modify.
+I don't want that uid 0 inside the container has all caps.
 
+And why does /proc/*/loginuid always contain 4294967295 in a new user namespace?
+Writing to it also fails. (Noticed that because pam_loginuid.so does not work).
+
+Final question, is it by design that uid 0 within a namespace in not
+allowed to write to
+/proc/*/oom_score_adj?
+
+
+Thanks,
+//richard
+
+P.s: I've used 3.9-rc8 for my tests...
