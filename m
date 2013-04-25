@@ -1,89 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757735Ab3DYMnL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 08:43:11 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:21862 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756471Ab3DYMnJ (ORCPT
+	id S1757919Ab3DYMnU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 08:43:20 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:60880 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756405Ab3DYMnR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 08:43:09 -0400
-X-Authority-Analysis: v=2.0 cv=cOZiQyiN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=BTRBD928usAA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=YPD5nf4ZmOMA:10 a=pfhoThWEj4EtkNIyXV8A:9 a=QEXdDO2ut3YA:10 a=9J5VuaLb3qoA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1366893787.10248.4.camel@gandalf.local.home>
-Subject: Re: [ANNOUNCE] 3.4.41-rt55-feat1
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Mike Galbraith <bitbucket@online.de>
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Tim Sander <tim.sander@hbm.com>, LKML <linux-kernel@vger.kernel.org>,
-        RT <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>
-Date: Thu, 25 Apr 2013 08:43:07 -0400
-In-Reply-To: <1366893374.6139.5.camel@marge.simpson.net>
-References: <1366760662.9609.176.camel@gandalf.local.home>
-	 <2156546.QlsX0XyPQz@dabox> <51792277.8000205@linutronix.de>
-	 <1366893374.6139.5.camel@marge.simpson.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 25 Apr 2013 08:43:17 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130425090612.GC4623@gmail.com>
+References: <1366279934-30761-1-git-send-email-lee.jones@linaro.org>
+	<1366279934-30761-5-git-send-email-lee.jones@linaro.org>
+	<CACRpkdaauDYTdoBHGG9FO4kKqvCYyCrjY8EGWs5gAQWErGW6_A@mail.gmail.com>
+	<20130425090612.GC4623@gmail.com>
+Date: Thu, 25 Apr 2013 14:43:16 +0200
+Message-ID: <CACRpkdbV8yEK0470q_-DWv6Q0hAG2wGntXFi5kaLUMgm9b=e-Q@mail.gmail.com>
+Subject: Re: [PATCH 04/32] dmaengine: ste_dma40: Amalgamate DMA source and
+ destination channel numbers
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
+        Per Forlin <per.forlin@stericsson.com>, Rabin Vincent <rabin@rab.in>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-04-25 at 14:36 +0200, Mike Galbraith wrote:
-> On Thu, 2013-04-25 at 14:32 +0200, Sebastian Andrzej Siewior wrote: 
-> > On 04/25/2013 01:14 PM, Tim Sander wrote:
-> > > Hi 
-> > > 
-> > > I just wanted to test this release but it fails to compile with the the 
-> > > following error:
-> > > 
-> > > kernel/hrtimer.c: In function '__hrtimer_start_range_ns':
-> > > kernel/hrtimer.c:1045:7: error: implicit declaration of function 
-> > > 'hrtimer_rt_defer'
-> > > kernel/hrtimer.c: At top level:
-> > > kernel/hrtimer.c:1416:12: error: static declaration of 'hrtimer_rt_defer' 
-> > > follows non-static declaration
-> > > kernel/hrtimer.c:1045:10: note: previous implicit declaration of 
-> > > 'hrtimer_rt_defer' was here
-> > > 
-> > > The kernelconfig is attached.
-> > 
-> > You do not have CONFIG_HIGH_RES_TIMERS defined. Is this on purpose?
-> 
-> git@marge:~/linux-2.6> ls -1 arch/arm/configs|wc -l
-> 122
-> git@marge:~/linux-2.6> grep -IR CONFIG_HIGH_RES_TIMERS arch/arm/configs|wc -l
-> 31
-> 
-> Oh.  Sniff, poor little things.
-> 
-> hrtimer: fix hrtimer free zone build bug
+On Thu, Apr 25, 2013 at 11:06 AM, Lee Jones <lee.jones@linaro.org> wrote:
 
-Perhaps the better solution is to select HIGH_RES_TIMERS when
-PREEMPT_RT_FULL is selected?
+>> Are we now sacrificing that ability on the altar of simplification?
+>>
+>> I actually think not, but that we should do periph-to-periph transfers
+>> in some other way, and that the .dir attribute should go away from
+>> the struct stedma40_chan_cfg as well but I'm not entirely sure.
+>> Someone else?
+>
+> Although the DMA40 device supports device-to-device transfers, Linux
+> does not, so this subject is moot AFAICT.
 
--- Steve
+So while there is no active usecase, Linux surely has the ambition to do
+that as can be seen in:
 
-> 
-> Signed-off-by: Mike Galbraith <bitbucket@online.de>
-> 
-> diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-> index 2328c04..31d57a2 100644
-> --- a/kernel/hrtimer.c
-> +++ b/kernel/hrtimer.c
-> @@ -1036,7 +1036,7 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
->  		&& hrtimer_enqueue_reprogram(timer, new_base)) {
->  
->  		if (wakeup
-> -#ifdef CONFIG_PREEMPT_RT_BASE
-> +#if defined(CONFIG_PREEMPT_RT_BASE) && defined(CONFIG_HIGH_RES_TIMERS)
->  		    /*
->  		     * Move softirq based timers away from the rbtree in
->  		     * case it expired already. Otherwise we would have a
-> 
+/**
+ * enum dma_transfer_direction - dma transfer mode and direction indicator
+ * @DMA_MEM_TO_MEM: Async/Memcpy mode
+ * @DMA_MEM_TO_DEV: Slave mode & From Memory to Device
+ * @DMA_DEV_TO_MEM: Slave mode & From Device to Memory
+ * @DMA_DEV_TO_DEV: Slave mode & From Device to Device
+ */
+enum dma_transfer_direction {
+        DMA_MEM_TO_MEM,
+        DMA_MEM_TO_DEV,
+        DMA_DEV_TO_MEM,
+        DMA_DEV_TO_DEV,
+        DMA_TRANS_NONE,
+};
 
+I think we need a handshake with Vinod on this.
 
+>> If you're doing this change, and after this RX and TX has no semantical
+>> meaning for these lists, join these two config lists
+>> into one.
+>
+> I agree. See patch: ARM: ux500: Strip out duplicate USB DMA configuration
+
+Please squash the applicable portions into this patch then, I don't
+particularly like fix-later patchstack patterns, it makes series hard to
+review.
+
+>> (...)
+>> > diff --git a/arch/arm/mach-ux500/usb.c b/arch/arm/mach-ux500/usb.c
+>> >  static u32 d40_chan_has_events(struct d40_chan *d40c)
+>> > @@ -1744,8 +1740,6 @@ static int d40_validate_conf(struct d40_chan *d40c,
+>> >                              struct stedma40_chan_cfg *conf)
+>> >  {
+>> >         int res = 0;
+>> > -       u32 dst_event_group = D40_TYPE_TO_GROUP(conf->dst_dev_type);
+>> > -       u32 src_event_group = D40_TYPE_TO_GROUP(conf->src_dev_type);
+>>
+>> Please explain why this is not important to check anymore, I'm not
+>> following.
+>>
+>> >         if (conf->dir == STEDMA40_MEM_TO_PERIPH &&
+>> > -           dst_event_group == STEDMA40_DEV_DST_MEMORY) {
+>> > -               chan_err(d40c, "Invalid dst\n");
+>> > +           d40c->base->plat_data->dev_tx[conf->dev_type] == 0 &&
+>> > +           d40c->runtime_addr == 0) {
+>> > +               chan_err(d40c, "Invalid TX channel address (%d)\n",
+>> > +                        conf->dev_type);
+>>
+>> Like here. We are checking for inconsistency between group
+>> and channel direction, why is it no longer important to check this?
+>
+> I'm not entirely sure how this ever worked:
+>
+>   #define D40_TYPE_TO_GROUP(type) (type / 16)
+>   #define STEDMA40_DEV_DST_MEMORY (-1)
+>
+>   (dev_type / 16) == -1
+>
+> What number would dev_type have to be for this to be true? -16?
+
+No, since it's u32 it cannot really represent negative numbers.
+
+This is equivalent:
+#define D40_TYPE_TO_GROUP(type) (type >> 4)
+
+As -1 is 0xffffffff in u32 it will compare at best
+0x0fffffff to 0xfffffff. And that is non-attainable.
+
+So the line checking event group for == DTEDMA40_DEV_DST_MEMORY
+should be  removed in a separate patch prior to this one, with
+something like the above as commit message.
+
+We cannot really mix that cleanup into this patch...
+
+>> >         if (conf->dir == STEDMA40_PERIPH_TO_MEM &&
+>> > -           src_event_group == STEDMA40_DEV_SRC_MEMORY) {
+>> > -               chan_err(d40c, "Invalid src\n");
+>> > -               res = -EINVAL;
+>> > -       }
+>
+> As above.
+
+And same comment.
+
+>> > -       if (conf->dir == STEDMA40_PERIPH_TO_PERIPH &&
+>> > -           (src_event_group != dst_event_group)) {
+>> > -               chan_err(d40c, "Invalid event group\n");
+>> > +           d40c->base->plat_data->dev_rx[conf->dev_type] == 0 &&
+>> > +           d40c->runtime_addr == 0) {
+>> > +               chan_err(d40c, "Invalid RX channel address (%d)\n",
+>> > +                        conf->dev_type);
+>>
+>> Same here.
+>
+> I stopped all 'dev_src/dev_dest' comparisons, as there is only 'dev' now.
+
+It is checking for:
+conf->dir == STEDMA40_PERIPH_TO_PERIPH
+
+As we may want to support DEV_TO_DEV at some point.
+
+Then no longer, and that is not related to $SUBJECT.
+
+>> (...)
+>> > @@ -2062,7 +2035,7 @@ static int d40_free_dma(struct d40_chan *d40c)
+>> >  {
+>> >
+>> >         int res = 0;
+>> > -       u32 event;
+>> > +       u32 event = D40_TYPE_TO_EVENT(d40c->dma_cfg.dev_type);
+>> >         struct d40_phy_res *phy = d40c->phy_chan;
+>> >         bool is_src;
+>> >
+>> > @@ -2081,13 +2054,11 @@ static int d40_free_dma(struct d40_chan *d40c)
+>> >         }
+>> >
+>> >         if (d40c->dma_cfg.dir == STEDMA40_MEM_TO_PERIPH ||
+>> > -           d40c->dma_cfg.dir == STEDMA40_MEM_TO_MEM) {
+>> > -               event = D40_TYPE_TO_EVENT(d40c->dma_cfg.dst_dev_type);
+>> > +           d40c->dma_cfg.dir == STEDMA40_MEM_TO_MEM)
+>>
+>> Why did you just stop checking dma_cfg.dir for == STEDMA40_MEM_TO_MEM
+>> above?
+>
+> That's not what this is doing. STEDMA40_MEM_TO_MEM is still there.
+>
+>> And why is dma_cfg.dir suddenly hardcoded to MEM_TO_MEM??
+>
+> It's not. Look again. :)
+
+Argh I misread == MEM_TO_MEM for = MEM_TO_MEM ...
+comparison to assignment. Sorry.
+
+>> This seems like a totally unrelated change and should it be done
+>> it need to be a separate patch with a separate explanation
+>> AFAICT.
+>>
+>> This seems to happen in some other places too,
+>
+> If you could point those out, I'll re-evaluate, or explain.
+
+I'm after that the change to omit checks for some impossible
+type/group configs need to be a separate patch.
+
+>> and I find it
+>> very hard to follow the changes here ... can you please consider
+>> splitting the changes to groups and types semantics into a separate
+>> patch?
+>
+> Can you read the patch again and reconsider please?
+
+Yes and now I am even more convinced that the patch needs
+to be split.
+
+Yours,
+Linus Walleij
