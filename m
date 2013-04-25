@@ -1,153 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755711Ab3DYHSV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 03:18:21 -0400
-Received: from relay.parallels.com ([195.214.232.42]:57838 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755559Ab3DYHSR (ORCPT
+	id S1755653Ab3DYHTL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 03:19:11 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:32845 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754872Ab3DYHTJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 03:18:17 -0400
-Message-ID: <5178D89C.40103@parallels.com>
-Date: Thu, 25 Apr 2013 11:17:48 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+	Thu, 25 Apr 2013 03:19:09 -0400
+Message-ID: <5178D8E9.7020102@intel.com>
+Date: Thu, 25 Apr 2013 08:19:05 +0100
+From: Matt Fleming <matt.fleming@intel.com>
+Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
+ Way, Swindon SN3 1RJ
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: Jeff Layton <jlayton@redhat.com>, <linux-nfs@vger.kernel.org>,
-        <devel@openvz.org>, <Trond.Myklebust@netapp.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] nfsd: enable UMH client tracker in container
-References: <20130416111344.14621.56912.stgit@localhost.localdomain> <20130419070150.6937f1e6@corrin.poochiereds.net> <20130423200048.GI3676@fieldses.org>
-In-Reply-To: <20130423200048.GI3676@fieldses.org>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.30.18.163]
+To: Ingo Molnar <mingo@kernel.org>
+CC: Borislav Petkov <bp@alien8.de>, X86 ML <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
+        Matthew Garrett <matthew.garrett@nebula.com>
+Subject: Re: [PATCH] x86, efi: Fix a build warning
+References: <1366798154-1380-1-git-send-email-bp@alien8.de> <20130424105610.GA15815@gmail.com> <5177BF67.2040308@intel.com> <20130425065529.GD7806@gmail.com>
+In-Reply-To: <20130425065529.GD7806@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-24.04.2013 00:00, J. Bruce Fields пишет:
-> On Fri, Apr 19, 2013 at 07:01:50AM -0700, Jeff Layton wrote:
->> On Tue, 16 Apr 2013 15:17:44 +0400
->> Stanislav Kinsbursky <skinsbursky@parallels.com> wrote:
->>
->>> This patch adds support for UserModeHelper tracker in a container.
->>> The reason for this is that the only containerised tracker ("nfsdcld") is
->>> going to be removed in 3.10 kernel, thus at least one more tracker have to be
->>> containerised to replace the deprecated one.
->>> UMH tracker looks more preferable comparing to legacy since it's the latest
->>> one.
->>> To make UMH tracker work in a container, we have to make sure, that it
->>> executes right binary (i.e., this binary have to be taken from the container
->>> environment).
->>> But, UMH is a kernel thread, which works in global root environment by design
->>> (kernel thread's root is inherited from kthreadd, which in turn inherited it's
->>> root from global init). So, the root have to be swapped to the container's
->>> one before binary execution.
->>>
->>> This patch passes "init" callback and private "data" to UMH interface, which
->>> are used to swap root for spawned kernel thread.
->>>
->>> Note: container's root can be stored on stack, because UMH calls are
->>> synchronous.
->>>
->>> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
->>> ---
->>>   fs/nfsd/nfs4recover.c |   29 ++++++++++++++++++++++-------
->>>   1 files changed, 22 insertions(+), 7 deletions(-)
->>>
->>> diff --git a/fs/nfsd/nfs4recover.c b/fs/nfsd/nfs4recover.c
->>> index 899ca26..15f8de6 100644
->>> --- a/fs/nfsd/nfs4recover.c
->>> +++ b/fs/nfsd/nfs4recover.c
->>> @@ -38,6 +38,7 @@
->>>   #include <linux/crypto.h>
->>>   #include <linux/sched.h>
->>>   #include <linux/fs.h>
->>> +#include <linux/fs_struct.h>
->>>   #include <linux/module.h>
->>>   #include <net/net_namespace.h>
->>>   #include <linux/sunrpc/rpc_pipe_fs.h>
->>> @@ -1122,12 +1123,28 @@ nfsd4_cltrack_legacy_recdir(const struct xdr_netobj *name)
->>>   	return result;
->>>   }
->>>
->>> +static int nfsd_swap_root(struct subprocess_info *info, struct cred *new)
->>> +{
->>> +	struct path *root = info->data;
->>> +	struct fs_struct *fs = current->fs;
->>> +	struct path current_root;
->>> +
->>> +	spin_lock(&fs->lock);
->>> +	current_root = fs->root;
->>> +	fs->root = *root;
->>> +	spin_unlock(&fs->lock);
->>> +	if (current_root.dentry)
->>> +		path_put(&current_root);
->>> +	return 0;
->>> +}
->>> +
->>>   static int
->>>   nfsd4_umh_cltrack_upcall(char *cmd, char *arg, char *legacy)
->>>   {
->>>   	char *envp[2];
->>>   	char *argv[4];
->>>   	int ret;
->>> +	struct path root;
->>>
->>>   	if (unlikely(!cltrack_prog[0])) {
->>>   		dprintk("%s: cltrack_prog is disabled\n", __func__);
->>> @@ -1146,7 +1163,11 @@ nfsd4_umh_cltrack_upcall(char *cmd, char *arg, char *legacy)
->>>   	argv[2] = arg;
->>>   	argv[3] = NULL;
->>>
->>> -	ret = call_usermodehelper(argv[0], argv, envp, UMH_WAIT_PROC);
->>> +	get_fs_root(current->fs, &root);
->>> +
->>> +	ret = call_usermodehelper_fns(argv[0], argv, envp, UMH_WAIT_PROC,
->>> +				       nfsd_swap_root, NULL, &root);
->>> +
->>>   	/*
->>>   	 * Disable the upcall mechanism if we're getting an ENOENT or EACCES
->>>   	 * error. The admin can re-enable it on the fly by using sysfs
->>> @@ -1185,12 +1206,6 @@ bin_to_hex_dup(const unsigned char *src, int srclen)
->>>   static int
->>>   nfsd4_umh_cltrack_init(struct net __attribute__((unused)) *net)
->>>   {
->>> -	/* XXX: The usermode helper s not working in container yet. */
->>> -	if (net != &init_net) {
->>> -		WARN(1, KERN_ERR "NFSD: attempt to initialize umh client "
->>> -			"tracking in a container!\n");
->>> -		return -EINVAL;
->>> -	}
->>>   	return nfsd4_umh_cltrack_upcall("init", NULL, NULL);
->>>   }
->>>
->>>
->>
->> I think this looks correct and like it'll work, but I wonder whether
->> we'd be best served by making this part of the UMH code itself?
->>
->> IOW, add some fields to the struct subprocess_info to hold the new
->> root, and then do what you're doing in nfsd_swap_root before calling
->> the "init" function?
->>
->> I imagine we'll eventually need do something similar for at least some
->> of the callers of call_usermodehelper so it would make sense to me to
->> not replicate copies of nfsd_swap_root all over the place.
->
-> Agreed.
->
+On 25/04/13 07:55, Ingo Molnar wrote:
+> It's a basic cleanliness and robustness issue: we generally avoid type 
+> casts in the kernel, because type casts override compile-time type checks 
+> and are easy to get wrong. They are also ugly.
+> 
+> So in generaly we try to use the right type for the data structure, which 
+> matches its usage (and standardize functions/methods around that type) - 
+> then no cast is needed.
 
-Hmm. Yes, me too.
-Ok, I'll prepare patch for the UMH itself.
-And resend.
-Thanks, guys.
+Yeah, I'm not advocating using casts, I was just saying "Oh, x86-64
+avoids requiring the caller of efi_call_phys* to perform the cast by
+doing it in the definition of efi_call*. That's why this is only
+affecting 32-bit."
 
-> --b.
->
-
-
--- 
-Best regards,
-Stanislav Kinsbursky
+Cleaning this up would be nice. I think at this point, I'll apply
+Borislav's patch, and fix all this casting after v3.9 is released, since
+instead of just changing query_variable_info, we might as well change
+everything in efi_runtime_service_t so that it's consistent.
