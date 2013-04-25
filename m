@@ -1,68 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932605Ab3DYOv5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 10:51:57 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:41930 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756264Ab3DYOvz convert rfc822-to-8bit (ORCPT
+	id S932580Ab3DYOw6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 10:52:58 -0400
+Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:21975
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756916Ab3DYOw5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 10:51:55 -0400
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 6.3 \(1503\))
-Subject: Re: [PATCH] NFSv4: Use exponential backoff delay for NFS4_ERRDELAY
-From: Chuck Lever <chuck.lever@oracle.com>
-In-Reply-To: <20130425134918.GC31851@fieldses.org>
-Date: Thu, 25 Apr 2013 10:51:42 -0400
-Cc: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        David Wysochanski <dwysocha@redhat.com>,
-        Dave Chiluk <chiluk@canonical.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <C56C9BFD-0B20-4F2B-B282-84566ACBF41B@oracle.com>
-References: <1366836949-18465-1-git-send-email-chiluk@canonical.com> <1366838926.22397.25.camel@leira.trondhjem.org> <5178549A.7010402@canonical.com> <1366842905.22397.49.camel@leira.trondhjem.org> <1366892374.26249.294.camel@localhost.localdomain> <20130425132907.GB31851@fieldses.org> <1366896654.4719.18.camel@leira.trondhjem.org> <20130425134918.GC31851@fieldses.org>
-To: bfields@fieldses.org
-X-Mailer: Apple Mail (2.1503)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Thu, 25 Apr 2013 10:52:57 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VPS-3(zzbb2dI98dI9371I1432Izz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275bhz2dh668h839h947he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1ad9h1b0ah1d0ch1889i1155h)
+X-WSS-ID: 0MLTFYV-01-7KB-02
+X-M-MSG: 
+Message-ID: <51794317.5090309@amd.com>
+Date: Thu, 25 Apr 2013 09:52:07 -0500
+From: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: <suravee.suthikulpanit@amd.com>, <joro@8bytes.org>
+CC: <iommu@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/2] iommu/amd: iommu/amd: Show detail event log when
+ using amd-iommu=verbose
+References: <1365609424-3315-1-git-send-email-suravee.suthikulpanit@amd.com>
+In-Reply-To: <1365609424-3315-1-git-send-email-suravee.suthikulpanit@amd.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Joerg,
 
-On Apr 25, 2013, at 9:49 AM, bfields@fieldses.org wrote:
+Do you have any other concerns about this patch set?
 
-> On Thu, Apr 25, 2013 at 01:30:58PM +0000, Myklebust, Trond wrote:
->> On Thu, 2013-04-25 at 09:29 -0400, bfields@fieldses.org wrote:
->> 
->>> My position is that we simply have no idea what order of magnitude even
->>> delay should be.  And that in such a situation exponential backoff such
->>> as implemented in the synchronous case seems the reasonable default as
->>> it guarantees at worst doubling the delay while still bounding the
->>> long-term average frequency of retries.
->> 
->> So we start with a 15 second delay, and then go to 60 seconds?
-> 
-> I agree that a server should normally be doing the wait on its own if
-> the wait would be on the order of an rpc round trip.
-> 
-> So I'd be inclined to start with a delay that was an order of magnitude
-> or two more than a round trip.
-> 
-> And I'd expect NFS isn't common on networks with 1-second latencies.
-> 
-> So the 1/10 second we're using in the synchronous case sounds closer to
-> the right ballpark to me.
+Thank you,
 
-The RPC layer already keeps RPC round trip statistics, so the client doesn't have to guess with a "one size fits all" number.
+Suravee
 
-I'm all for keeping client recovery time short.  But after following this argument, I think 10xRTT is crazy short.  Aggressive retransmits can lead to data corruption, and RTT on a fast server is going to be on the order of a millisecond.  And what about RDMA, where RTT is about 20usecs? 
-
-A better answer might be to start at one second then exponentially back off to the minimum of 0.25x the lease time and 0.25x the RPC retransmit time out.
-
--- 
-Chuck Lever
-chuck[dot]lever[at]oracle[dot]com
-
-
+On 4/10/2013 10:57 AM, suravee.suthikulpanit@amd.com wrote:
+> From: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+>
+> This patch set add detail event log information for AMD IOMMU in dmesg when booting with
+> "amd-iommu=verbose".
+>
+> Suravee Suthikulpanit (2):
+>    iommu/amd: Adding new command line option "amd-iommu=verbose"
+>    iommu/amd: Add logic to decode AMD IOMMU event flag
+>
+>   drivers/iommu/amd_iommu.c       |  215 ++++++++++++++++++++++++++++++---------
+>   drivers/iommu/amd_iommu_init.c  |    4 +
+>   drivers/iommu/amd_iommu_types.h |    2 +
+>   3 files changed, 174 insertions(+), 47 deletions(-)
+>
 
 
