@@ -1,98 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757152Ab3DYJvu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 05:51:50 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:42338 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755292Ab3DYJvt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 05:51:49 -0400
-X-AuditID: 9c930197-b7c1fae000001854-92-5178fcb24cb8
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 05/14] perf tools: Introduce new 'ftrace' tool
-References: <1366705872-12132-1-git-send-email-namhyung@kernel.org>
-	<1366705872-12132-6-git-send-email-namhyung@kernel.org>
-	<20130424140918.GF971@krava.brq.redhat.com>
-	<87fvyf9maa.fsf@sejong.aot.lge.com>
-	<20130425090956.GA1033@krava.brq.redhat.com>
-Date: Thu, 25 Apr 2013 18:51:46 +0900
-In-Reply-To: <20130425090956.GA1033@krava.brq.redhat.com> (Jiri Olsa's message
-	of "Thu, 25 Apr 2013 11:09:56 +0200")
-Message-ID: <87r4hz7xal.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1757112Ab3DYJwp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 05:52:45 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:55347 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754310Ab3DYJwo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Apr 2013 05:52:44 -0400
+Date: Thu, 25 Apr 2013 04:52:42 -0500
+From: Robin Holt <holt@sgi.com>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: Jean Delvare <jdelvare@suse.de>, DuanZhenzhong <zhenzhong.duan@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "Yu, Fenghua" <fenghua.yu@intel.com>, "holt@sgi.com" <holt@sgi.com>
+Subject: Re: memcpy_fromio in dmi_scan.c
+Message-ID: <20130425095242.GT3658@sgi.com>
+References: <1366636689.4503.35.camel@chaos.site>
+ <5175FF0F.9050206@oracle.com>
+ <1366702122.4667.11.camel@chaos.site>
+ <3908561D78D1C84285E8C5FCA982C28F1EA52ED3@ORSMSX104.amr.corp.intel.com>
+ <1366831328.4618.476.camel@chaos.site>
+ <3908561D78D1C84285E8C5FCA982C28F1EA53DAA@ORSMSX104.amr.corp.intel.com>
+ <20130425020724.GR3658@sgi.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130425020724.GR3658@sgi.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 25 Apr 2013 11:09:56 +0200, Jiri Olsa wrote:
-> On Thu, Apr 25, 2013 at 03:06:37PM +0900, Namhyung Kim wrote:
->> On Wed, 24 Apr 2013 16:09:18 +0200, Jiri Olsa wrote:
->> > On Tue, Apr 23, 2013 at 05:31:03PM +0900, Namhyung Kim wrote:
->> >> From: Namhyung Kim <namhyung.kim@lge.com>
->> >> +out:
->> >> +	put_tracing_file(file);
->> >> +	return ret;
->> >> +}
->> >> +
->> >> +static int reset_tracing_files(struct perf_ftrace *ftrace __maybe_unused)
->> >> +{
->> >> +	if (write_tracing_file("tracing_on", "0") < 0)
->> >> +		return -1;
->> >> +
->> >> +	if (write_tracing_file("current_tracer", "nop") < 0)
->> >> +		return -1;
->> >> +
->> >> +	if (write_tracing_file("set_ftrace_pid", " ") < 0)
->> >> +		return -1;
->> >
->> > I think we want to reset set_ftrace_pid file as well
->> > probably to -1..
->> >
->> > if I'm tracing command with this file having wrong CPU(s)
->> > I dont get any data..
->> 
->> Not sure I understood what you mean exactly.
->
-> ugh, sry.. I wrote set_ftrace_pid when I actually meant tracing_cpumask ;-)
+On Wed, Apr 24, 2013 at 09:07:24PM -0500, Robin Holt wrote:
+> On Wed, Apr 24, 2013 at 08:16:50PM +0000, Luck, Tony wrote:
+> > > That being said, "my" SN2 machine was previously running kernel 3.0.34
+> > > which has the old dmi_scan code and it also said "DMI not present or
+> > > invalid." Plus dmidecode fails on this machine with:
+> > >
+> > > /sys/firmware/efi/systab: SMBIOS entry point missing
+> > >
+> > > So it might as well be that DMI support on SN2 was already broken.
+> > > Please let me know your findings on other SN2 machines.
+> > 
+> > I don't have an sn2 to test. Added Robin Holt to Cc list
+> 
+> I will try and boot an sn2 machine first thing tomorrow morning.
+> I don't recall dmidecode being broken, but that was quite a while ago.
+> I thought the license validation code we used on sn2 used data from the
+> dmidecode output.
 
-Okay. :)
-
->
->> 
->> Do you mean it should be changed to
->> 
->> 	if (write_tracing_file("set_ftrace_pid", "-1") < 0)
->> 
->> ?  It seems it's the right thing to do for compatibility.
->
->
-> looks like it's enough only to open it with O_TRUNC,
-> so I guess whatever minimal goes write_tracing_file
-
-Yeah, but I can see below from trace-cmd code.
-
-trace-cmd/trace-record.c:
-
-	/*
-	 * Older kernels required "-1" to disable pid
-	 */
-	if (ret < 0 && !strlen(pid))
-		ret = write(fd, "-1", 2);
+ # uname -r
+3.0.13-0.27-default
+ # dmidecode
+# dmidecode 2.9
+/sys/firmware/efi/systab: SMBIOS entry point missing
 
 
-Could you clarify this, Steve?
+It looks like it is broken there as well.  This is running a SLES11SP2
+kernel with no local changes.
+
+dmesg show:
+DMI not present or invalid.
 
 Thanks,
-Namhyung
+Robin
