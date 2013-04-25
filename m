@@ -1,56 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932438Ab3DYNtZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 09:49:25 -0400
-Received: from fieldses.org ([174.143.236.118]:52548 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932257Ab3DYNtY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 09:49:24 -0400
-Date: Thu, 25 Apr 2013 09:49:18 -0400
-From: "bfields@fieldses.org" <bfields@fieldses.org>
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-Cc: David Wysochanski <dwysocha@redhat.com>,
-        Dave Chiluk <chiluk@canonical.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] NFSv4: Use exponential backoff delay for NFS4_ERRDELAY
-Message-ID: <20130425134918.GC31851@fieldses.org>
-References: <1366836949-18465-1-git-send-email-chiluk@canonical.com>
- <1366838926.22397.25.camel@leira.trondhjem.org>
- <5178549A.7010402@canonical.com>
- <1366842905.22397.49.camel@leira.trondhjem.org>
- <1366892374.26249.294.camel@localhost.localdomain>
- <20130425132907.GB31851@fieldses.org>
- <1366896654.4719.18.camel@leira.trondhjem.org>
+	id S932466Ab3DYNtf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 09:49:35 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:12506 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932250Ab3DYNtd convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Apr 2013 09:49:33 -0400
+From: Anurup m <anurup.m@huawei.com>
+To: "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
+CC: "'David Howells'" <dhowells@redhat.com>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        Lizefan <lizefan@huawei.com>, shyju pv <shyju.pv@huawei.com>,
+        Sanil kumar <sanil.kumar@huawei.com>, Nataraj m <nataraj.m@huawei.com>
+Subject: RE: [ PATCH ] Memory leak fix for bug 57101.
+Thread-Topic: [ PATCH ] Memory leak fix for bug 57101.
+Thread-Index: AQHOQahxzqL9KVVou0O8Lql76ItKRZjm8y9Q
+Date: Thu, 25 Apr 2013 13:49:12 +0000
+Message-ID: <D2393EB95A9993478029A6FE6A290A9F15F50787@szxeml510-mbx.china.huawei.com>
+References: <D2393EB95A9993478029A6FE6A290A9F15F504C9@szxeml510-mbx.china.huawei.com>
+ <5179140B.3060002@huawei.com>
+In-Reply-To: <5179140B.3060002@huawei.com>
+Accept-Language: en-US, zh-CN
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.18.96.95]
+Content-Type: text/plain; charset="iso-2022-jp"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1366896654.4719.18.camel@leira.trondhjem.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 25, 2013 at 01:30:58PM +0000, Myklebust, Trond wrote:
-> On Thu, 2013-04-25 at 09:29 -0400, bfields@fieldses.org wrote:
+Hi All,
+
+Resending the patch as Plain text, with no mangled tabs.
+
+The patch is as below
+
+diff -uprN -X linux-3.9-rc8-vanilla/Documentation/dontdiff linux-3.9-rc8-vanilla/fs/fscache/stats.c linux-3.9-rc8.mod/fs/fscache/stats.c
+--- linux-3.9-rc8-vanilla/fs/fscache/stats.c	2013-04-22 03:08:45.000000000 +0530
++++ linux-3.9-rc8.mod/fs/fscache/stats.c	2013-04-24 23:03:31.531296160 +0530
+@@ -287,5 +287,5 @@ const struct file_operations fscache_sta
+ 	.open		= fscache_stats_open,
+ 	.read		= seq_read,
+ 	.llseek		= seq_lseek,
+-	.release		= seq_release,
++	.release		= single_release,
+ };
+
+Regards,
+Anurup M
+
+-----Original Message-----
+From: Lizefan 
+Sent: 2013年4月25日 17:01
+To: Anurup m
+Cc: 'linux-kernel@vger.kernel.org'; shyju pv; Sanil kumar; Nataraj m
+Subject: Re: [ PATCH ] Memory leak fix for bug 57101.
+
+On 2013/4/25 18:05, Anurup m wrote:
+> Hi All,
 > 
-> > My position is that we simply have no idea what order of magnitude even
-> > delay should be.  And that in such a situation exponential backoff such
-> > as implemented in the synchronous case seems the reasonable default as
-> > it guarantees at worst doubling the delay while still bounding the
-> > long-term average frequency of retries.
+> There is a kernel memory leak observed when the proc file /proc/fs/fscache/stats is read.
+> The reason is that in fscache_stats_open, single_open is called and respective release function is not called during release.
+> Hence fix with correct release function - single_release. The patch is as below
 > 
-> So we start with a 15 second delay, and then go to 60 seconds?
 
-I agree that a server should normally be doing the wait on its own if
-the wait would be on the order of an rpc round trip.
+The fix is obviously corect, but the patch is mangled so you should configure your
+email client properly. Read Documention/email-clients.txt.
 
-So I'd be inclined to start with a delay that was an order of magnitude
-or two more than a round trip.
+And when you've done that, remember Cc maintainers when you resend this patch, i.e.
+David Howells <dhowells@redhat.com> and Andrew Morton <akpm@linux-foundation.org>
+in this case.
 
-And I'd expect NFS isn't common on networks with 1-second latencies.
+> diff -uprN -X linux-3.9-rc8-vanilla/Documentation/dontdiff linux-3.9-rc8-vanilla/fs/fscache/stats.c linux-3.9-rc8.mod/fs/fscache/stats.c 
+> --- linux-3.9-rc8-vanilla/fs/fscache/stats.c        2013-04-22 03:08:45.000000000 +0530 
+> +++ linux-3.9-rc8.mod/fs/fscache/stats.c        2013-04-24 23:03:31.531296160 +0530 
+> @@ -287,5 +287,5 @@ const struct file_operations fscache_sta 
+>          .open                = fscache_stats_open, 
+>          .read                = seq_read, 
+>          .llseek                = seq_lseek, 
+> -        .release        = seq_release, 
+> +        .release        = single_release, 
 
-So the 1/10 second we're using in the synchronous case sounds closer to
-the right ballpark to me.
+Look the tab was replaced with spaces.
 
---b.
