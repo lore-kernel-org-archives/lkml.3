@@ -1,52 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932882Ab3DYWCR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 18:02:17 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60724 "EHLO mail.zytor.com"
+	id S932940Ab3DYWFZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 18:05:25 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:33318 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932228Ab3DYWCQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 18:02:16 -0400
-Message-ID: <5179A7CE.2050605@zytor.com>
-Date: Thu, 25 Apr 2013 15:01:50 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S932903Ab3DYWFX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Apr 2013 18:05:23 -0400
+Date: Fri, 26 Apr 2013 00:05:19 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, X86 ML <x86@kernel.org>,
+        Borislav Petkov <bp@suse.de>, David Daney <david.daney@cavium.com>
+Subject: Re: [PATCH] extable: Flip the sorting message
+Message-ID: <20130425220518.GC312@pd.tnic>
+References: <1366023109-12098-1-git-send-email-bp@alien8.de>
+ <5179A625.1080502@zytor.com>
 MIME-Version: 1.0
-To: Kees Cook <keescook@chromium.org>
-CC: linux-kernel@vger.kernel.org, kernel-hardening@lists.openwall.com,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
-        Matthew Garrett <mjg@redhat.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Eric Northup <digitaleric@google.com>,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>
-Subject: Re: [PATCH v3 0/6] kernel ASLR
-References: <1366926860-26776-1-git-send-email-keescook@chromium.org>
-In-Reply-To: <1366926860-26776-1-git-send-email-keescook@chromium.org>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <5179A625.1080502@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/25/2013 02:54 PM, Kees Cook wrote:
-> This continues to build on the tip/kaslr patches for KASLR. This series
-> converts the logic to C, and moves both relocation and address selection
-> into the decompress_kernel path. Several areas were refactored to allow
-> for some code reuse (e.g. CPU flags, kernel command line).
-> 
-> This does not yet attempt to rework the page tables to handle an arbitrary
-> physical memory location on x86_64. I would love some suggestions on
-> how to do this. :)
-> 
+On Thu, Apr 25, 2013 at 02:54:45PM -0700, H. Peter Anvin wrote:
+> On some architectures we sort at runtime, on others we sort at build
+> time.
+>
+> Is there any reason for a message at all here?
 
-We *should* already support arbitrary physical memory locations at least
-in the kernel proper (the decompressor might need some work.)
+The original pr_notice was arguably a debugging aid to verify that the
+build-time sorting has actually happened. I flipped it because it wasn't
+telling us anything interesting and we know that the sorting works -
+we've been staring at that message for a couple of kernel releases
+already :-)
 
-We may want to do in the decompressor what we already do in the kernel,
-and set up a #PF handler which creates page tables on demand.  That way
-you can simply treat the entire memory space as a single linear space.
+One possible reason for having it flipped is to encourage runtime
+sorting arches to convert to build time sorting.
 
-	-hpa
+But silencing this completely is also ok with me - I don't care all that
+much.
 
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
