@@ -1,65 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759243Ab3DYTyV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 15:54:21 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:48497 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759139Ab3DYTyS (ORCPT
+	id S1759204Ab3DYTyT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 15:54:19 -0400
+Received: from mail-vb0-f41.google.com ([209.85.212.41]:38740 "EHLO
+	mail-vb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759100Ab3DYTyR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 15:54:18 -0400
-Message-ID: <517989E7.3040101@linaro.org>
-Date: Thu, 25 Apr 2013 12:54:15 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Thu, 25 Apr 2013 15:54:17 -0400
 MIME-Version: 1.0
-To: Kay Sievers <kay@vrfy.org>
-CC: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Alexander Holler <holler@ahsoftware.de>,
-        LKML <linux-kernel@vger.kernel.org>, Feng Tang <feng.tang@intel.com>
-Subject: Re: CONFIG_RTC_HCTOSYS lost on x86 with ALWAYS_USE_PERSISTENT_CLOCK
- changes?
-References: <CAPXgP13kizK95JyLxKxgWrGnV9b11ZTyi3vuc5YFDmROzckg4w@mail.gmail.com> <517746E4.908@linaro.org> <CAPXgP128yAq1jju-gsZcaS-mZPt+7tq0tt-uVk3Yqr77abd26Q@mail.gmail.com> <51774F44.2060704@linaro.org> <517769A9.5060308@ahsoftware.de> <51780348.6090202@linaro.org> <5178D719.2060405@ahsoftware.de> <5179562C.3000903@linaro.org> <20130425183301.GA31863@obsidianresearch.com> <CAPXgP13PaBqtU+MQnz6fT+B18WJP3_tqSCv+OYA5W_z6F=VWdg@mail.gmail.com>
-In-Reply-To: <CAPXgP13PaBqtU+MQnz6fT+B18WJP3_tqSCv+OYA5W_z6F=VWdg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1365806683-26717-1-git-send-email-yinghai@kernel.org>
+References: <1365806683-26717-1-git-send-email-yinghai@kernel.org>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 25 Apr 2013 13:53:56 -0600
+Message-ID: <CAErSpo7_Qt8G=cG56koefsoHO=uN3amCgA7FYJv8amZtxWKc=w@mail.gmail.com>
+Subject: Re: [PATCH v4 00/29] PCI: Add for_each_pci_resource and addon_res support
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Ram Pai <linuxram@us.ibm.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/25/2013 12:45 PM, Kay Sievers wrote:
-> On Thu, Apr 25, 2013 at 8:33 PM, Jason Gunthorpe
-> <jgunthorpe@obsidianresearch.com> wrote:
->> So, my conclusion is nobody with a RTC looking for space savings, will
->> disable CONFIG_RTC, which means we can safely rely on
->> CONFIG_RTC_SYSTOHC to do this work. To that end, I would encourage
->> everyone who sets CONFIG_GENERIC_CMOS_UPDATE to also set
->> CONFIG_RTC_SYSTOHC - that will let update_persistent_clock to be
->> ripped out over time without impacting users.
-> John's original patch forcefully disabled CONFIG_RTC_SYSTOHC on x86,
-> which is quite the opposite of what you recommend here. :)
+On Fri, Apr 12, 2013 at 4:44 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> First part is for_each_pci_resource support:
+> Now pci device resource iteration is done via "for (i=0...)" open code.
+> That make code hard to read esp when only bridge or sriov resources
+> are involved.
+
+The "for (i = 0; ...)" code *is* a bit ugly with the various constants
+for different types of resources, but it does have the advantage that
+it is very simple and easy to understand.  The new code improves the
+callers, but the implementation of for_each_pci_resource() is not very
+straightforward.
+
+The diffstat (541 insertions(+), 226 deletions(-)) doesn't really
+indicate that this is an overall simplification.  I know this also
+adds some functionality, but even without the addon stuff, this adds
+110 more lines than it removes.
+
+> We want to replace those open code with for_each_pci_resource() to make
+> the code more readable.
+> Also will add addon_resource handling, and need to make addon resource
+> to be treated as normal PCI resources during iteration, add
+> for_each_pci_resource will make that support transition more simple.
 >
-> Could you guys both sort that out and give an idea what the
-> recommended setup should look like today, ignoring all space saving
-> and possible hctosys API changes caused by this. Should
-> CONFIG_RTC_SYSTOHC be enabled or not?
-
-Its fine if its enabled. We have logic in the kernel to do the right 
-thing when we're on a system that has the persistent clock and also has 
-SYSTOHC enabled.
-
-My patch disabled SYSTOHC just to simplify some of the logic at build 
-time, and in my mind, simplify the config choices.
-But as much as I dislike needless config choices, I realize config churn 
-isn't great either.
-
-So I do think as we eventually consolidate the RTC and persistent_clock 
-code, using SYSTOHC in the end is probably a good way to go (although we 
-may drop the config and just always enable that logic).
-
-That said, I suspect we need RTC equivalents to the xen/kvm/vrtc logic 
-in the x86 persistent_clock code before we'll be able to tear out the 
-persistent_clock code (I think just cmos and efi have RTC drivers).
-
-thanks
--john
-
+> To make for_each_pci_resource more efficient. We will use preset bitmap
+> of different type for searching next idx.
+>
+> Second part is addon_res support:
+> Now there is some non normal pci resources other than standard,rom,
+> sriov, bridges.
+> Some could be same as standard reg, but using different position.
+> Some could have own way to read/write to them.
+> Kernel are using different way to hack those resources like abusing
+> pci bridge resource spot on non bridge pci device.
+>
+> Add addon_resources list in pci_dev for those non-standard resources.
+> With this patch, will treat addon-resource like standard resources with
+> special ops.
+>
+> At last replace some quirk_io with addon_res.
+>
+> could get from
+>         git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-pci-for-each-res-addon
+>
+> -v4: split one patch out, and remove PCI_NO_....
+>
+> Notes: We still need to keep _idx as we use it all the time, and drivers still
+> use them to get resource.
+>
+> Thanks
+>
+> Yinghai Lu
+>
+>
+> Ram Pai (1):
+>   PCI: pci resource iterator
+>
+> Yinghai Lu (28):
+>   PCI: Clean up quirk_io_region
+>   PCI: Add pci_dev_resource_n()
+>   PCI: Update pci_resource_start etc to use pci_dev_resource_n()
+>   PCI: Add pci_dev_resource_idx() helper
+>   PCI: Add is_pci_*_resource_idx() helpers
+>   PCI, x86: Use for_each_pci_resource() with
+>     pci_allocate_bridge_resources
+>   PCI, x86: Use for_each_pci_resource() with pci_allocate_dev_resources
+>   PCI: Use for_each_pci_resource() with IOV releated functions
+>   PCI, acpiphp: Use for_each_pci_resource() helper
+>   PCI, pciehp: Use for_each_pci_resource() helper
+>   PCI: Use for_each_pci_resource() in pci_enable_dev
+>   PCI: Use for_each_pci_resource() in pci_reassigndev
+>   PCI: Use for_each_pci_resource() with pci bar reassign funcs
+>   PCI: Use for_each_pci_resource() in pci_assign_resource
+>   PCI, x86: Use for_each_pci_resource() with noassign_bars
+>   PCI: Use for_each_pci_resource() in pci_dev_driver()
+>   PCI: Use for_each_pci_resource() in pci resource release
+>   PCI: Use for_each_pci_resource() in pci bases reading
+>   PCI, x86: Use for_each_pci_resource() with mrst
+>   PCI, xen: Use for_each_pci_resource() with xen pci
+>   PCI: Add addon_resource support for pci devices
+>   PCI: Treat addon res as std resources
+>   PCI: Add helpers to add addon_resource
+>   PCI: Update pci_resource_bar() to support addon_resource
+>   PCI: Assign/update resource to addon_res
+>   PCI: Make piix4 quirk to use addon_res
+>   PCI: Make quirk_io_region to use addon_res
+>   PCI: Use addon_fixed_resource with ati fixed resource
+>
+>  arch/x86/pci/common.c              |   3 +-
+>  arch/x86/pci/i386.c                |  58 +++------
+>  arch/x86/pci/mrst.c                |   7 +-
+>  drivers/pci/hotplug/acpiphp_glue.c |   4 +-
+>  drivers/pci/hotplug/pciehp_hpc.c   |   5 +-
+>  drivers/pci/iov.c                  |  31 +++--
+>  drivers/pci/pci-driver.c           |   7 +-
+>  drivers/pci/pci.c                  |  27 ++--
+>  drivers/pci/probe.c                | 176 ++++++++++++++++++++++++-
+>  drivers/pci/quirks.c               | 258 ++++++++++++++++++++++---------------
+>  drivers/pci/remove.c               |   5 +-
+>  drivers/pci/setup-bus.c            |  28 ++--
+>  drivers/pci/setup-res.c            |  38 ++++--
+>  drivers/pci/xen-pcifront.c         |   4 +-
+>  include/linux/pci.h                | 116 +++++++++++++++--
+>  15 files changed, 541 insertions(+), 226 deletions(-)
+>
+> --
+> 1.8.1.4
+>
