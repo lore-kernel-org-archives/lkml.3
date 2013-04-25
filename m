@@ -1,51 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932067Ab3DYKOt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 06:14:49 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:43036 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752584Ab3DYKOs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 06:14:48 -0400
-X-IronPort-AV: E=Sophos;i="4.87,548,1363132800"; 
-   d="scan'208";a="21497930"
-Date: Thu, 25 Apr 2013 11:14:43 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Will Deacon <will.deacon@arm.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        Marc Zyngier <Marc.Zyngier@arm.com>, "arnd@arndb.de" <arnd@arndb.de>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>
-Subject: Re: [PATCH v4 7/7] mach-virt: support Xen hypercalls for shutdown
- and reboot
-In-Reply-To: <20130425085452.GC12848@mudshark.cambridge.arm.com>
-Message-ID: <alpine.DEB.2.02.1304251114280.4180@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1304242012590.4180@kaball.uk.xensource.com> <1366831695-13214-7-git-send-email-stefano.stabellini@eu.citrix.com> <alpine.DEB.2.02.1304242301390.4180@kaball.uk.xensource.com> <20130425085452.GC12848@mudshark.cambridge.arm.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1757260Ab3DYKSI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 06:18:08 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:34420 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754630Ab3DYKSF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Apr 2013 06:18:05 -0400
+Subject: [PATCH v3 0/8] Nvram-to-pstore
+To: linuxppc-dev@ozlabs.org, paulus@samba.org, linux-kernel@vger.kernel.org,
+        benh@kernel.crashing.org
+From: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+Cc: jkenisto@linux.vnet.ibm.com, tony.luck@intel.com, ananth@in.ibm.com,
+        mahesh@linux.vnet.ibm.com, ccross@android.com, anton@samba.org,
+        cbouatmailru@gmail.com, keescook@chromium.org
+Date: Thu, 25 Apr 2013 15:47:55 +0530
+Message-ID: <20130425100952.21017.51799.stgit@aruna-ThinkPad-T420>
+User-Agent: StGit/0.16-41-gd1dd
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13042510-8256-0000-0000-00000737122E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 25 Apr 2013, Will Deacon wrote:
-> On Wed, Apr 24, 2013 at 11:14:28PM +0100, Stefano Stabellini wrote:
-> > On Wed, 24 Apr 2013, Stefano Stabellini wrote:
-> > > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > > CC: Marc Zyngier <marc.zyngier@arm.com>
-> > > CC: will.deacon@arm.com
-> > > CC: arnd@arndb.de
-> > > CC: rob.herring@calxeda.com
-> > 
-> > Thinking twice about this patch, a less intrusive alternative would be
-> > to set arm_pm_restart and pm_power_off to two xen specific functions
-> > later on from xen_guest_init.
-> 
-> Yes please. We'd like to remove mach-virt/* some day.
+Currently the kernel provides the contents of p-series NVRAM only as a
+simple stream of bytes via /dev/nvram, which must be interpreted in user
+space by the nvram command in the powerpc-utils package. This patch set
+exploits the pstore subsystem to expose each partition in NVRAM as a
+separate file in /dev/pstore. For instance Oops messages will stored in a
+file named [dmesg-nvram-2].
 
-I'll do
+Changes from v2:
+	- Fix renaming of pstore type ids in nvram.c
+
+Changes from v1:
+	- Reduce #ifdefs by and remove forward declarations of pstore callbacks
+	- Handle return value of nvram_write_os_partition
+	- Remove empty pstore callbacks and register pstore only when pstore
+	  is configured
+---
+
+Aruna Balakrishnaiah (8):
+      powerpc/pseries: Remove syslog prefix in uncompressed oops text
+      powerpc/pseries: Add version and timestamp to oops header
+      powerpc/pseries: Introduce generic read function to read nvram-partitions
+      powerpc/pseries: Read/Write oops nvram partition via pstore
+      powerpc/pseries: Read rtas partition via pstore
+      powerpc/pseries: Distinguish between a os-partition and non-os partition
+      powerpc/pseries: Read of-config partition via pstore
+      powerpc/pseries: Read common partition via pstore
+
+
+ arch/powerpc/platforms/pseries/nvram.c |  353 +++++++++++++++++++++++++++-----
+ fs/pstore/inode.c                      |    9 +
+ include/linux/pstore.h                 |    4 
+ 3 files changed, 313 insertions(+), 53 deletions(-)
+
+-- 
+
