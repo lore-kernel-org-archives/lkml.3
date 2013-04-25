@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759435Ab3DYUcU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 16:32:20 -0400
-Received: from www.linutronix.de ([62.245.132.108]:46045 "EHLO
+	id S1759372Ab3DYUbu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 16:31:50 -0400
+Received: from www.linutronix.de ([62.245.132.108]:45985 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759379Ab3DYUbw (ORCPT
+	with ESMTP id S1759313Ab3DYUbq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 16:31:52 -0400
-Message-Id: <20130425143436.499216659@linutronix.de>
+	Thu, 25 Apr 2013 16:31:46 -0400
+Message-Id: <20130425143435.834965397@linutronix.de>
 User-Agent: quilt/0.48-1
-Date: Thu, 25 Apr 2013 20:31:50 -0000
+Date: Thu, 25 Apr 2013 20:31:45 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@elte.hu>,
         Magnus Damm <magnus.damm@gmail.com>
-Subject: [patch 15/15] clockevents: Implement unbind functionality
+Subject: [patch 05/15] clocksource: Allow clocksource select to skip current
+ clocksource
 References: <20130425142452.908423538@linutronix.de>
-Content-Disposition: inline; filename=clockevents-implement-unbind.patch
+Content-Disposition: inline;
+ filename=clocksource-allow-clocksource-select-to-skip-current.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -24,309 +26,124 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide a sysfs interface to allow unbinding of clockevent
-devices. The device is unbound if it is unused or if there is a
-replacement device available. Unbinding of broadcast devices is not
-supported as we don't want to foster that nonsense. If no replacement
-device is available the unbind returns -EBUSY. Unbind is available
-from the kernel and through sysfs, which is necessary to drop the
-module refcount.
+Preparatory patch for clocksource unbind support.
+
+Modify clocksource_select, so it skips the current clocksource on
+request and tries to find a fallback clocksource. Convert all existing
+users. No functional change.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- include/linux/clockchips.h  |    1 +
- kernel/time/clockevents.c   |  125 ++++++++++++++++++++++++++++++++++++++++++++
- kernel/time/clocksource.c   |    9 +--
- kernel/time/tick-common.c   |   24 ++++++++
- kernel/time/tick-internal.h |    7 ++
- 5 files changed, 162 insertions(+), 4 deletions(-)
+ kernel/time/clocksource.c |   24 ++++++++++++++----------
+ 1 file changed, 14 insertions(+), 10 deletions(-)
 
-Index: tip/include/linux/clockchips.h
-===================================================================
---- tip.orig/include/linux/clockchips.h
-+++ tip/include/linux/clockchips.h
-@@ -141,6 +141,7 @@ static inline unsigned long div_sc(unsig
- extern u64 clockevent_delta2ns(unsigned long latch,
- 			       struct clock_event_device *evt);
- extern void clockevents_register_device(struct clock_event_device *dev);
-+extern int clockevents_unbind_device(struct clock_event_device *ced, int cpu);
- 
- extern void clockevents_config(struct clock_event_device *dev, u32 freq);
- extern void clockevents_config_and_register(struct clock_event_device *dev,
-Index: tip/kernel/time/clockevents.c
-===================================================================
---- tip.orig/kernel/time/clockevents.c
-+++ tip/kernel/time/clockevents.c
-@@ -25,6 +25,13 @@ static LIST_HEAD(clockevent_devices);
- static LIST_HEAD(clockevents_released);
- /* Protection for the above */
- static DEFINE_RAW_SPINLOCK(clockevents_lock);
-+/* Protection for unbind operations */
-+static DEFINE_MUTEX(clockevents_mutex);
-+
-+struct ce_unbind {
-+	struct clock_event_device *ce;
-+	int res;
-+};
- 
- /**
-  * clockevents_delta2ns - Convert a latch value (device ticks) to nanoseconds
-@@ -245,6 +252,90 @@ static void clockevents_notify_released(
- 	}
- }
- 
-+/*
-+ * Try to install a replacement clock event device
-+ */
-+static int clockevents_replace(struct clock_event_device *ced)
-+{
-+	struct clock_event_device *dev, *newdev = NULL;
-+
-+	list_for_each_entry(dev, &clockevent_devices, list) {
-+		if (dev == ced || dev->mode != CLOCK_EVT_MODE_UNUSED)
-+			continue;
-+
-+		if (!tick_check_replacement(newdev, dev))
-+			continue;
-+
-+		if (!try_module_get(dev->owner))
-+			continue;
-+
-+		if (newdev)
-+			module_put(newdev->owner);
-+		newdev = dev;
-+	}
-+	if (newdev) {
-+		tick_install_replacement(newdev);
-+		list_del_init(&ced->list);
-+	}
-+	return newdev ? 0 : -EBUSY;
-+}
-+
-+/*
-+ * Called with clockevents_mutex and clockevents_lock held
-+ */
-+static int __clockevents_try_unbind(struct clock_event_device *ced, int cpu)
-+{
-+	/* Fast track. Device is unused */
-+	if (ced->mode == CLOCK_EVT_MODE_UNUSED) {
-+		list_del_init(&ced->list);
-+		return 0;
-+	}
-+
-+	return ced == per_cpu(tick_cpu_device, cpu).evtdev ? -EAGAIN : -EBUSY;
-+}
-+
-+/*
-+ * SMP function call to unbind a device
-+ */
-+static void __clockevents_unbind(void *arg)
-+{
-+	struct ce_unbind *cu = arg;
-+	int res;
-+
-+	raw_spin_lock(&clockevents_lock);
-+	res = __clockevents_try_unbind(cu->ce, smp_processor_id());
-+	if (res == -EAGAIN)
-+		res = clockevents_replace(cu->ce);
-+	cu->res = res;
-+	raw_spin_unlock(&clockevents_lock);
-+}
-+
-+/*
-+ * Issues smp function call to unbind a per cpu device. Called with
-+ * clockevents_mutex held.
-+ */
-+static int clockevents_unbind(struct clock_event_device *ced, int cpu)
-+{
-+	struct ce_unbind cu = { .ce = ced, .res = -ENODEV };
-+
-+	smp_call_function_single(cpu, __clockevents_unbind, &cu, 1);
-+	return cu.res;
-+}
-+
-+/*
-+ * Unbind a clockevents device.
-+ */
-+int clockevents_unbind_device(struct clock_event_device *ced, int cpu)
-+{
-+	int ret;
-+
-+	mutex_lock(&clockevents_mutex);
-+	ret = clockevents_unbind(ced, cpu);
-+	mutex_unlock(&clockevents_mutex);
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(clockevents_unbind);
-+
- /**
-  * clockevents_register_device - register a clock event device
-  * @dev:	device to register
-@@ -487,6 +578,38 @@ static ssize_t sysfs_show_current_tick_d
- }
- static DEVICE_ATTR(current_device, 0444, sysfs_show_current_tick_dev, NULL);
- 
-+/* We don't support the abomination of removable broadcast devices */
-+static ssize_t sysfs_unbind_tick_dev(struct device *dev,
-+				     struct device_attribute *attr,
-+				     const char *buf, size_t count)
-+{
-+	char name[CS_NAME_LEN];
-+	size_t ret = sysfs_get_uname(buf, name, count);
-+	struct clock_event_device *ce;
-+
-+	if (ret < 0)
-+		return ret;
-+
-+	ret = -ENODEV;
-+	mutex_lock(&clockevents_mutex);
-+	raw_spin_lock_irq(&clockevents_lock);
-+	list_for_each_entry(ce, &clockevent_devices, list) {
-+		if (!strcmp(ce->name, name)) {
-+			ret = __clockevents_try_unbind(ce, dev->id);
-+			break;
-+		}
-+	}
-+	raw_spin_unlock_irq(&clockevents_lock);
-+	/*
-+	 * We hold clockevents_mutex, so ce can't go away
-+	 */
-+	if (ret == -EAGAIN)
-+		ret = clockevents_unbind(ce, dev->id);
-+	mutex_unlock(&clockevents_mutex);
-+	return ret ? ret : count;
-+}
-+static DEVICE_ATTR(unbind_device, 0200, NULL, sysfs_unbind_tick_dev);
-+
- #ifdef CONFIG_GENERIC_CLOCKEVENTS_BROADCAST
- static struct device tick_bc_dev = {
- 	.init_name	= "broadcast",
-@@ -529,6 +652,8 @@ int __init tick_init_sysfs(void)
- 		err = device_register(dev);
- 		if (!err)
- 			err = device_create_file(dev, &dev_attr_current_device);
-+		if (!err)
-+			err = device_create_file(dev, &dev_attr_unbind_device);
- 		if (err)
- 			return err;
- 	}
 Index: tip/kernel/time/clocksource.c
 ===================================================================
 --- tip.orig/kernel/time/clocksource.c
 +++ tip/kernel/time/clocksource.c
-@@ -31,6 +31,8 @@
- #include <linux/tick.h>
- #include <linux/kthread.h>
+@@ -553,7 +553,7 @@ static u64 clocksource_max_deferment(str
  
-+#include "tick-internal.h"
-+
- void timecounter_init(struct timecounter *tc,
- 		      const struct cyclecounter *cc,
- 		      u64 start_tstamp)
-@@ -174,7 +176,6 @@ clocks_calc_mult_shift(u32 *mult, u32 *s
- static struct clocksource *curr_clocksource;
- static LIST_HEAD(clocksource_list);
- static DEFINE_MUTEX(clocksource_mutex);
--#define CS_NAME_LEN		32
- static char override_name[CS_NAME_LEN];
- static int finished_booting;
+ #ifndef CONFIG_ARCH_USES_GETTIMEOFFSET
  
-@@ -854,7 +855,7 @@ sysfs_show_current_clocksources(struct d
- 	return count;
- }
- 
--static size_t clocksource_get_uname(const char *buf, char *dst, size_t cnt)
-+size_t sysfs_get_uname(const char *buf, char *dst, size_t cnt)
+-static struct clocksource *clocksource_find_best(bool oneshot)
++static struct clocksource *clocksource_find_best(bool oneshot, bool skipcur)
  {
- 	/* strings from sysfs write are not 0 terminated! */
- 	if (!cnt || cnt >= CS_NAME_LEN)
-@@ -887,7 +888,7 @@ static ssize_t sysfs_override_clocksourc
+ 	struct clocksource *cs;
+ 
+@@ -566,6 +566,8 @@ static struct clocksource *clocksource_f
+ 	 * the best rating.
+ 	 */
+ 	list_for_each_entry(cs, &clocksource_list, list) {
++		if (skipcur && cs == curr_clocksource)
++			continue;
+ 		if (oneshot && !(cs->flags & CLOCK_SOURCE_VALID_FOR_HRES))
+ 			continue;
+ 		return cs;
+@@ -581,18 +583,20 @@ static struct clocksource *clocksource_f
+  * Select the clocksource with the best rating, or the clocksource,
+  * which is selected by userspace override.
+  */
+-static void clocksource_select(void)
++static void clocksource_select(bool skipcur)
+ {
+ 	bool oneshot = tick_oneshot_mode_active();
+ 	struct clocksource *best, *cs;
+ 
+ 	/* Find the best suitable clocksource */
+-	best = clocksource_find_best(oneshot);
++	best = clocksource_find_best(oneshot, skipcur);
+ 	if (!best)
+ 		return;
+ 
+ 	/* Check for the override clocksource. */
+ 	list_for_each_entry(cs, &clocksource_list, list) {
++		if (skipcur && cs == curr_clocksource)
++			continue;
+ 		if (strcmp(cs->name, override_name) != 0)
+ 			continue;
+ 		/*
+@@ -620,7 +624,7 @@ static void clocksource_select(void)
+ 
+ #else /* !CONFIG_ARCH_USES_GETTIMEOFFSET */
+ 
+-static inline void clocksource_select(void) { }
++static inline void clocksource_select(bool skipcur) { }
+ 
+ #endif
+ 
+@@ -645,7 +649,7 @@ static int __init clocksource_done_booti
+ 	clocksource_watchdog_kthread(NULL);
  
  	mutex_lock(&clocksource_mutex);
- 
--	ret = clocksource_get_uname(buf, override_name, count);
-+	ret = sysfs_get_uname(buf, override_name, count);
- 	if (ret >= 0)
- 		clocksource_select(false);
- 
-@@ -913,7 +914,7 @@ static ssize_t sysfs_unbind_clocksource(
- 	char name[CS_NAME_LEN];
- 	size_t ret;
- 
--	ret = clocksource_get_uname(buf, name, count);
-+	ret = sysfs_get_uname(buf, name, count);
- 	if (ret < 0)
- 		return ret;
- 
-Index: tip/kernel/time/tick-common.c
-===================================================================
---- tip.orig/kernel/time/tick-common.c
-+++ tip/kernel/time/tick-common.c
-@@ -202,6 +202,17 @@ static void tick_setup_device(struct tic
- 		tick_setup_oneshot(newdev, handler, next_event);
+-	clocksource_select();
++	clocksource_select(false);
+ 	mutex_unlock(&clocksource_mutex);
+ 	return 0;
+ }
+@@ -739,7 +743,7 @@ int __clocksource_register_scale(struct 
+ 	mutex_lock(&clocksource_mutex);
+ 	clocksource_enqueue(cs);
+ 	clocksource_enqueue_watchdog(cs);
+-	clocksource_select();
++	clocksource_select(false);
+ 	mutex_unlock(&clocksource_mutex);
+ 	return 0;
+ }
+@@ -766,7 +770,7 @@ int clocksource_register(struct clocksou
+ 	mutex_lock(&clocksource_mutex);
+ 	clocksource_enqueue(cs);
+ 	clocksource_enqueue_watchdog(cs);
+-	clocksource_select();
++	clocksource_select(false);
+ 	mutex_unlock(&clocksource_mutex);
+ 	return 0;
+ }
+@@ -777,7 +781,7 @@ static void __clocksource_change_rating(
+ 	list_del(&cs->list);
+ 	cs->rating = rating;
+ 	clocksource_enqueue(cs);
+-	clocksource_select();
++	clocksource_select(false);
  }
  
-+void tick_install_replacement(struct clock_event_device *newdev)
-+{
-+	struct tick_device *td = &__get_cpu_var(tick_cpu_device);
-+	int cpu = smp_processor_id();
-+
-+	clockevents_exchange_device(td->evtdev, newdev);
-+	tick_setup_device(td, newdev, cpu, cpumask_of(cpu));
-+	if (newdev->features & CLOCK_EVT_FEAT_ONESHOT)
-+		tick_oneshot_notify();
-+}
-+
- static bool tick_check_percpu(struct clock_event_device *curdev,
- 			      struct clock_event_device *newdev, int cpu)
- {
-@@ -234,6 +245,19 @@ static bool tick_check_preferred(struct 
+ /**
+@@ -802,7 +806,7 @@ void clocksource_unregister(struct clock
+ 	mutex_lock(&clocksource_mutex);
+ 	clocksource_dequeue_watchdog(cs);
+ 	list_del(&cs->list);
+-	clocksource_select();
++	clocksource_select(false);
+ 	mutex_unlock(&clocksource_mutex);
  }
+ EXPORT_SYMBOL(clocksource_unregister);
+@@ -858,7 +862,7 @@ static ssize_t sysfs_override_clocksourc
+ 	if (count > 0)
+ 		memcpy(override_name, buf, count);
+ 	override_name[count] = 0;
+-	clocksource_select();
++	clocksource_select(false);
  
- /*
-+ * Check whether the new device is a better fit than curdev. curdev
-+ * can be NULL !
-+ */
-+bool tick_check_replacement(struct clock_event_device *curdev,
-+			    struct clock_event_device *newdev)
-+{
-+	if (tick_check_percpu(curdev, newdev, smp_processor_id()))
-+		return false;
-+
-+	return tick_check_preferred(curdev, newdev);
-+}
-+
-+/*
-  * Check, if the new registered device should be used. Called with
-  * clockevents_lock held and interrupts disabled.
-  */
-Index: tip/kernel/time/tick-internal.h
-===================================================================
---- tip.orig/kernel/time/tick-internal.h
-+++ tip/kernel/time/tick-internal.h
-@@ -11,6 +11,8 @@ extern seqlock_t jiffies_lock;
- #define TICK_DO_TIMER_NONE	-1
- #define TICK_DO_TIMER_BOOT	-2
+ 	mutex_unlock(&clocksource_mutex);
  
-+#define CS_NAME_LEN	32
-+
- DECLARE_PER_CPU(struct tick_device, tick_cpu_device);
- extern ktime_t tick_next_period;
- extern ktime_t tick_period;
-@@ -23,9 +25,14 @@ extern void tick_handover_do_timer(int *
- extern void tick_shutdown(unsigned int *cpup);
- extern void tick_suspend(void);
- extern void tick_resume(void);
-+extern bool tick_check_replacement(struct clock_event_device *curdev,
-+				   struct clock_event_device *newdev);
-+extern void tick_install_replacement(struct clock_event_device *dev);
- 
- extern void clockevents_shutdown(struct clock_event_device *dev);
- 
-+extern size_t sysfs_get_uname(const char *buf, char *dst, size_t cnt);
-+
- /*
-  * NO_HZ / high resolution timer shared code
-  */
 
 
