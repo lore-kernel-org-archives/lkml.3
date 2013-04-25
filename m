@@ -1,57 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758634Ab3DYAFI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 20:05:08 -0400
-Received: from mail-da0-f53.google.com ([209.85.210.53]:40139 "EHLO
-	mail-da0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758491Ab3DYAFG (ORCPT
+	id S932204Ab3DYAIw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 20:08:52 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:45266 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758270Ab3DYAIu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 20:05:06 -0400
-Message-ID: <5178732F.6060304@linaro.org>
-Date: Wed, 24 Apr 2013 17:05:03 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>
-CC: Prarit Bhargava <prarit@redhat.com>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, stable <stable@vger.kernel.org>
-Subject: Re: [PATCH] hrtimer, add expiry time overflow check in hrtimer_interrupt
-References: <1365425235-26191-1-git-send-email-prarit@redhat.com> <5163264B.3050707@linaro.org> <516329D2.1050003@redhat.com> <20130424224218.GA7767@roeck-us.net>
-In-Reply-To: <20130424224218.GA7767@roeck-us.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Wed, 24 Apr 2013 20:08:50 -0400
+Date: Wed, 24 Apr 2013 20:08:47 -0400 (EDT)
+Message-Id: <20130424.200847.935084813305667292.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, sparclinux@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Sparc
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Wed, 24 Apr 2013 17:08:49 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/24/2013 03:42 PM, Guenter Roeck wrote:
-> On Mon, Apr 08, 2013 at 04:34:26PM -0400, Prarit Bhargava wrote:
->>
->> On 04/08/2013 04:19 PM, John Stultz wrote:
->>> On 04/08/2013 05:47 AM, Prarit Bhargava wrote:
->>>> A simple check for an overflow can resolve this problem.  Using KTIME_MAX
->>>> instead of the overflow value will result in the hrtimer function being run,
->>>> and the reprogramming of the timer after that.
->>>>
->>>> Signed-off-by: Prarit Bhargava <prarit@redhat.com>
->>>> Cc: Thomas Gleixner <tglx@linutronix.de>
->>>> Cc: John Stultz <john.stultz@linaro.org>
->>> Prarit: Should this be tagged for -stable?
->> John,
->>
->> Yes, this should go to -stable.  cc'd.
->>
-> Hi,
->
-> I am a bit surprised that this patch has not found its way into mainline yet,
-> as everyone seems to agree that it is a candidate for -stable.
 
-It just has to land upstream first, which is likely in the next week or 
-so when the 3.10 merge window opens. I'd have thought it would be sooner 
-but 3.9 is taking longer to close then I expected (and I didn't think it 
-was urgent enough to drop in at the last minute before the 3.9 release 
-was made).
+Please pull to get this brown paper bag fix for sparc64.
 
-thanks
--john
+Thanks!
 
+The following changes since commit 60d509fa6a9c4653a86ad830e4c4b30360b23f0e:
+
+  Linux 3.9-rc8 (2013-04-21 14:38:45 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/davem/sparc.git master
+
+for you to fetch changes up to f0af97070acbad5d6a361f485828223a4faaa0ee:
+
+  sparc64: Fix missing put_cpu_var() in tlb_batch_add_one() when not batching. (2013-04-24 16:52:18 -0700)
+
+----------------------------------------------------------------
+David S. Miller (1):
+      sparc64: Fix missing put_cpu_var() in tlb_batch_add_one() when not batching.
+
+ arch/sparc/mm/tlb.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
