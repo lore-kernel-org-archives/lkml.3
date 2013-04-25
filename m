@@ -1,81 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933151Ab3DYR7y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 13:59:54 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:38448 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932096Ab3DYR7x (ORCPT
+	id S933172Ab3DYSAW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 14:00:22 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:34081 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933154Ab3DYSAU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 13:59:53 -0400
-Date: Thu, 25 Apr 2013 10:59:50 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
-        Pavankumar Kondeti <pkondeti@codeaurora.org>
-Subject: Re: [PATCH 18/21] USB: ehci-msm: USB_MSM_OTG needs USB_PHY
-Message-ID: <20130425175950.GA14654@kroah.com>
-References: <1366910944-3033663-1-git-send-email-arnd@arndb.de>
- <1366910944-3033663-19-git-send-email-arnd@arndb.de>
+	Thu, 25 Apr 2013 14:00:20 -0400
+Message-ID: <51796E78.20203@linux.vnet.ibm.com>
+Date: Thu, 25 Apr 2013 23:27:12 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1366910944-3033663-19-git-send-email-arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Dave Hansen <dave@sr71.net>
+CC: akpm@linux-foundation.org, mgorman@suse.de, matthew.garrett@nebula.com,
+        rientjes@google.com, riel@redhat.com, arjan@linux.intel.com,
+        srinivas.pandruvada@linux.intel.com, maxime.coquelin@stericsson.com,
+        loic.pallardy@stericsson.com, kamezawa.hiroyu@jp.fujitsu.com,
+        lenb@kernel.org, rjw@sisk.pl, gargankita@gmail.com,
+        paulmck@linux.vnet.ibm.com, amit.kachhap@linaro.org,
+        svaidy@linux.vnet.ibm.com, andi@firstfloor.org, wujianguo@huawei.com,
+        kmpark@infradead.org, thomas.abraham@linaro.org,
+        santosh.shilimkar@ti.com, linux-pm@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH v2 00/15][Sorted-buddy] mm: Memory Power Management
+References: <20130409214443.4500.44168.stgit@srivatsabhat.in.ibm.com> <517028F1.6000002@sr71.net>
+In-Reply-To: <517028F1.6000002@sr71.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13042517-5564-0000-0000-000007A82DBA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 25, 2013 at 07:29:01PM +0200, Arnd Bergmann wrote:
-> The Kconfig entry for USB_EHCI_MSM unconditionally selects USB_MSM_OTG,
-> which is now only visible when USB_PHY is also enabled.
+On 04/18/2013 10:40 PM, Dave Hansen wrote:
+> On 04/09/2013 02:45 PM, Srivatsa S. Bhat wrote:
+>> 2. Performance overhead is expected to be low: Since we retain the simplicity
+>>    of the algorithm in the page allocation path, page allocation can
+>>    potentially remain as fast as it would be without memory regions. The
+>>    overhead is pushed to the page-freeing paths which are not that critical.
 > 
-> This adds an appropriate dependency and enables USB_PHY in the msm
-> defconfig, avoiding the Kbuild warning:
-> 
-> warning: (USB_EHCI_MSM) selects USB_MSM_OTG which has unmet direct dependencies (USB_SUPPORT && USB_PHY && (USB || USB_GADGET) && ARCH_MSM)
-> 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: linux-usb@vger.kernel.org
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: Felipe Balbi <balbi@ti.com>
-> Cc: Pavankumar Kondeti <pkondeti@codeaurora.org>
-> ---
->  arch/arm/configs/msm_defconfig | 1 +
->  drivers/usb/host/Kconfig       | 1 +
->  2 files changed, 2 insertions(+)
-> 
-> diff --git a/arch/arm/configs/msm_defconfig b/arch/arm/configs/msm_defconfig
-> index 44f9291..690b5f9 100644
-> --- a/arch/arm/configs/msm_defconfig
-> +++ b/arch/arm/configs/msm_defconfig
-> @@ -101,6 +101,7 @@ CONFIG_SND_DYNAMIC_MINORS=y
->  CONFIG_SND_SOC=y
->  CONFIG_HID_BATTERY_STRENGTH=y
->  CONFIG_USB=y
-> +CONFIG_USB_PHY=y
->  CONFIG_USB_ANNOUNCE_NEW_DEVICES=y
->  CONFIG_USB_MON=y
->  CONFIG_USB_EHCI_HCD=y
 
-This part of the patch doesn't apply to my tree, so I can't take it.
+[...]
+ 
+> I still also want to see some hard numbers on:
+>> However, memory consumes a significant amount of power, potentially upto
+>> more than a third of total system power on server systems.
 
-> diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
-> index c558472..de94f26 100644
-> --- a/drivers/usb/host/Kconfig
-> +++ b/drivers/usb/host/Kconfig
-> @@ -188,6 +188,7 @@ config USB_EHCI_HCD_AT91
->  config USB_EHCI_MSM
->  	tristate "Support for Qualcomm QSD/MSM on-chip EHCI USB controller"
->  	depends on ARCH_MSM
-> +	depends on USB_PHY
->  	select USB_EHCI_ROOT_HUB_TT
->  	select USB_MSM_OTG
->  	---help---
+Please find below, the reference to the publicly available paper I had in
+mind, when I made that statement:
 
-But this does, and I'm guessing that it's the more important part, so
-I'll just edit it and only take this hunk, ok?
+C. Lefurgy, K. Rajamani, F. Rawson, W. Felter, M. Kistler, and Tom Keller.
+Energy management for commercial servers. In IEEE Computer, pages 39–48,
+Dec 2003.
 
-thanks,
+Here is a quick link to the paper:
+researcher.ibm.com/files/us-lefurgy/computer2003.pdf
 
-greg k-h
+On page 40, the paper shows the power-consumption breakdown for an IBM p670
+machine, which shows that as much as 40% of the system energy is consumed by
+the memory sub-system in a mid-range server.
+
+I admit that the paper is a little old (I'll see if I can find anything more
+recent that is publicly available, or perhaps you can verify the same if you
+have data-sheets for other platforms handy), but given the trend of increasing
+memory speeds and increasing memory density/capacity in computer systems, the
+power-consumption of memory is certainly not going to become insignificant all
+of a sudden.
+
+IOW, the above data supports the point I was trying to make - Memory hardware
+contributes to a significant portion of the power consumption of a system. And
+since the hardware is now exposing ways to reduce the power consumption, it
+would be worthwhile to try and exploit it by doing memory power management.
+
+Regards,
+Srivatsa S. Bhat
+
