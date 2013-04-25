@@ -1,58 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932188Ab3DYNVJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 09:21:09 -0400
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:54234 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755926Ab3DYNVH (ORCPT
+	id S1758633Ab3DYNW0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 09:22:26 -0400
+Received: from ringil.hengli.com.au ([178.18.16.133]:39833 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757121Ab3DYNWY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 09:21:07 -0400
+	Thu, 25 Apr 2013 09:22:24 -0400
+Date: Thu, 25 Apr 2013 21:22:03 +0800
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Tim Chen <tim.c.chen@linux.intel.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, "David S. Miller" <davem@davemloft.net>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        Jim Kukunas <james.t.kukunas@linux.intel.com>,
+        Keith Busch <keith.busch@intel.com>,
+        Erdinc Ozturk <erdinc.ozturk@intel.com>,
+        Vinodh Gopal <vinodh.gopal@intel.com>,
+        James Guilford <james.guilford@intel.com>,
+        Wajdi Feghali <wajdi.k.feghali@intel.com>,
+        Jussi Kivilinna <jussi.kivilinna@iki.fi>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-crypto@vger.kernel.org, linux-scsi@vger.kernel.org
+Subject: Re: [PATCH v2 1/4] Wrap crc_t10dif function all to use crypto
+ transform framework
+Message-ID: <20130425132203.GA29501@gondor.apana.org.au>
+References: <cover.1366214842.git.tim.c.chen@linux.intel.com>
+ <ea4271721b5ca130849b03da4f172f12f66e5628.1366214842.git.tim.c.chen@linux.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <20130425130922.GE14496@n2100.arm.linux.org.uk>
-References: <1366279934-30761-1-git-send-email-lee.jones@linaro.org>
-	<1366279934-30761-5-git-send-email-lee.jones@linaro.org>
-	<CACRpkdaauDYTdoBHGG9FO4kKqvCYyCrjY8EGWs5gAQWErGW6_A@mail.gmail.com>
-	<20130425090612.GC4623@gmail.com>
-	<CACRpkdbV8yEK0470q_-DWv6Q0hAG2wGntXFi5kaLUMgm9b=e-Q@mail.gmail.com>
-	<20130425130922.GE14496@n2100.arm.linux.org.uk>
-Date: Thu, 25 Apr 2013 15:21:06 +0200
-Message-ID: <CACRpkdZj-3DbcX1LREGKf2RZs4FqbDn6sWkaZ-t67KUKJhZaow@mail.gmail.com>
-Subject: Re: [PATCH 04/32] dmaengine: ste_dma40: Amalgamate DMA source and
- destination channel numbers
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Lee Jones <lee.jones@linaro.org>, Rabin Vincent <rabin@rab.in>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Arnd Bergmann <arnd@arndb.de>, Vinod Koul <vinod.koul@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Per Forlin <per.forlin@stericsson.com>, Dan Williams <djbw@fb.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <ea4271721b5ca130849b03da4f172f12f66e5628.1366214842.git.tim.c.chen@linux.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 25, 2013 at 3:09 PM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
+On Wed, Apr 17, 2013 at 09:12:52AM -0700, Tim Chen wrote:
+> When CRC T10 DIF is calculated using the crypto transform framework, we
+> wrap the crc_t10dif function call to utilize it.  This allows us to
+> take advantage of any accelerated CRC T10 DIF transform that is
+> plugged into the crypto framework.
+> 
+> Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
 
-> There's a problem with device to device transfers though - you have to
-> consider the rate at which the devices produce and consume data, and
-> whether they both can cope with differing data rates.
->
-> Take for instance your audio in to audio out idea - even if they are
-> both operating at the same bits per sample and sample rate, if they are
-> independently clocked, chances are that the clocks are not exactly the
-> same, which means you will either underrun or overrun one of the FIFOs
-> in the system.
+Please wrap the generic implementation as we do for crc32c.
 
-This magically works for us, but yes, I think they had to use the same
-clock (simplest solution, anyway).
-
-It is/was a very real usecase, IIRC coming from roundtrip constraints
-in the GSM 3GPP spec, wanting to keep the latency as low as possible.
-With this scheme there is no more than a FIFO on each end of delay,
-which is nice.
-
-Yours,
-Linus Walleij
+Thanks,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
