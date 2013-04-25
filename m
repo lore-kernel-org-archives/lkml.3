@@ -1,155 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758480Ab3DYMVS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 08:21:18 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60327 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756584Ab3DYMVQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 08:21:16 -0400
-Date: Thu, 25 Apr 2013 13:21:11 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Jeff Moyer <jmoyer@redhat.com>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Dave Chinner <david@fromorbit.com>,
-        Jan Kara <jack@suse.cz>, linux-ext4@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: Re: Excessive stall times on ext4 in 3.9-rc2
-Message-ID: <20130425122111.GE2144@suse.de>
-References: <20130411170402.GB11656@suse.de>
- <20130411183512.GA12298@thunk.org>
- <20130411213335.GE9379@quack.suse.cz>
- <20130412025708.GB7445@thunk.org>
- <20130412045042.GA30622@dastard>
- <20130412151952.GA4944@thunk.org>
- <20130422143846.GA2675@suse.de>
- <x49a9oqmblc.fsf@segfault.boston.devel.redhat.com>
- <20130423140134.GA2108@suse.de>
- <x49ppxjeofa.fsf@segfault.boston.devel.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <x49ppxjeofa.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758489Ab3DYMXj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 08:23:39 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:61433 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756759Ab3DYMXi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Apr 2013 08:23:38 -0400
+X-Nat-Received: from [202.181.97.72]:59496 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1366892451.19842
+To: glommer@parallels.com, cl@linux.com, penberg@kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [linux-next-20130422] Bug in SLAB?
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <201304242108.FDC35910.VJMHFFFSOLOOQt@I-love.SAKURA.ne.jp>
+In-Reply-To: <201304242108.FDC35910.VJMHFFFSOLOOQt@I-love.SAKURA.ne.jp>
+Message-Id: <201304252120.GII21814.FMJFtHLOOVQFOS@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Thu, 25 Apr 2013 21:20:47 +0900
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 25042013 #9885514, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 24, 2013 at 03:09:13PM -0400, Jeff Moyer wrote:
-> Mel Gorman <mgorman@suse.de> writes:
+Tetsuo Handa wrote:
+> Hello.
 > 
-> >> I'll also note that even though your I/O is going all over the place
-> >> (D2C is pretty bad, 14ms), most of the time is spent waiting for a
-> >> struct request allocation or between Queue and Merge:
-> >> 
-> >> ==================== All Devices ====================
-> >> 
-> >>             ALL           MIN           AVG           MAX           N
-> >> --------------- ------------- ------------- ------------- -----------
-> >> 
-> >> Q2Q               0.000000001   0.000992259   8.898375882     2300861
-> >> Q2G               0.000000843  10.193261239 2064.079501935     1016463 <====
-> >
-> > This is not normally my sandbox so do you mind spelling this out?
-> >
-> > IIUC, the time to allocate the struct request from the slab cache is just a
-> > small portion of this time. The bulk of the time is spent in get_request()
-> > waiting for congestion to clear on the request list for either the sync or
-> > async queue. Once a process goes to sleep on that waitqueue, it has to wait
-> > until enough requests on that queue have been serviced before it gets woken
-> > again at which point it gets priority access to prevent further starvation.
-> > This is the Queue To Get Reqiest (Q2G) delay. What we may be seeing here
-> > is that the async queue was congested and on average, we are waiting for
-> > 10 seconds for it to clear. The maximum value may be bogus for reasons
-> > explained later.
-> >
-> > Is that accurate?
+> linux-next-20130422 does not boot when built with CONFIG_DEBUG_SLAB=y &&
+> CONFIG_DEBUG_SPINLOCK=y && CONFIG_DEBUG_PAGEALLOC=y .
 > 
-> Yes, without getting into excruciating detail.
-
-
-Good enough, thanks.
-
-> >> I'm not sure I believe that max value.  2064 seconds seems a bit high.
-> >
-> > It is so I looked closer at the timestamps and there is an one hour
-> > correction about 4400 seconds into the test.  Daylight savings time kicked
-> > in on March 31st and the machine is rarely rebooted until this test case
-> > came along. It looks like there is a timezone or time misconfiguration
-> > on the laptop that starts the machine with the wrong time. NTP must have
-> > corrected the time which skewed the readings in that window severely :(
+> It hangs (with CPU#0 spinning) immediately after printing
 > 
-> Not sure I'm buying that argument, as there are no gaps in the blkparse
-> output.  The logging is not done using wallclock time.  I still haven't
-> had sufficient time to dig into these numbers.
+>   Decompressing Linux... Parsing ELF... done.
+>   Booting the kernel.
+> 
+> lines.
+> 
+> Config is at http://I-love.SAKURA.ne.jp/tmp/config-3.9-rc8-next-20130422 .
+> 
+> Any clue before starting bisection?
+> 
+> Regards.
 > 
 
-Ok.
-
-> > It's awkward but it's not like there are standard benchmarks lying around
-> > and it seemed the best way to reproduce the problems I typically see early
-> > in the lifetime of a system or when running a git checkout when the tree
-> > has not been used in a few hours. Run the actual test with
-> >
-> > ./run-mmtests.sh --config configs/config-global-dhp__io-multiple-source-latency --run-monitor test-name-of-your-choice
-> >
-> > Results will be in work/log. You'll need to run this as root so it
-> > can run blktrace and so it can drop_caches between git checkouts
-> > (to force disk IO). If systemtap craps out on you, then edit
-> > configs/config-global-dhp__io-multiple-source-latency and remove dstate
-> > from MONITORS_GZIP
-> 
-> And how do I determine whether I've hit the problem?
-> 
-
-If systemtap is available then
-
-cat work/log/dstate-TESTNAME-gitcheckout | subreport/stap-dstate-frequency
-
-will give you a report on the worst stalls and the stack traces when those
-stalls occurred. If the stalls are 10+ seconds then you've certainly hit
-the problem.
-
-Alternatively
-
-cd work/log
-../../compare-kernels.sh
-
-Look at the average time it takes to run the git checkout. Is it
-abnormally high in comparison to if there was no parallel IO? If you do
-not know what the normal time is, run with
-
-./run-mmtests.sh --config configs/config-global-dhp__io-multiple-source-latency --no-monitor test-name-no-monitor
-
-The monitors are what's opening the maildir and generating the parallel
-IO. If there is an excessive difference between the git checkout times,
-then you've hit the problem.
-
-Furthermore, look at the await times. If they do not appear in the
-compare-kernels.sh output then
-
-../../bin/compare-mmtests.pl -d . -b gitcheckout -n test-name-of-your-choice --print-monitor iostat
-
-And look at the await times. Are they very high? If so, you hit the
-problem. If you want a better look at the await figures over time,
-either look at the iostat file or you can graph it with
-
-../../bin/graph-mmtests.sh -d . -b gitcheckout -n test-name-of-your-choice --print-monitor iostat --sub-heading sda-await
-
-where sda-await should be  substituted for whatever the disk is that
-you're running the test one.
+Bisection (with a build fix from commit db845067 "slab: Fixup
+CONFIG_PAGE_ALLOC/DEBUG_SLAB_LEAK sections") reached commit e3366016
+"slab: Use common kmalloc_index/kmalloc_size functions".
+Would you have a look at commit e3366016?
 
 
-> > If you have trouble getting this running, ping me on IRC.
-> 
-> Yes, I'm having issues getting things to go, but you didn't provide me a
-> time zone, an irc server or a nick to help me find you.  Was that
-> intentional?  ;-)
-> 
 
-Not consciously :) . I'm in the IST timezone (GMT+1), OFTC IRC network
-and #mm channel. If it's my evening I'm not always responsive so send me
-the error output on email and I'll try fixing any problems that way.
+By the way, I have a fear regarding commit e3366016.
 
--- 
-Mel Gorman
-SUSE Labs
+include/linux/slab_def.h says
+
+  extern struct kmem_cache *kmalloc_caches[PAGE_SHIFT + MAX_ORDER];
+  extern struct kmem_cache *kmalloc_dma_caches[PAGE_SHIFT + MAX_ORDER];
+
+while mm/slab.c says
+
+  struct kmem_cache *kmalloc_caches[KMALLOC_SHIFT_HIGH + 1];
+  struct kmem_cache *kmalloc_dma_caches[KMALLOC_SHIFT_HIGH + 1];
+
+and include/linux/slab.h says
+
+  #define KMALLOC_SHIFT_HIGH      ((MAX_ORDER + PAGE_SHIFT - 1) <= 25 ? \
+                                  (MAX_ORDER + PAGE_SHIFT - 1) : 25)
+
+.
+
+If (MAX_ORDER + PAGE_SHIFT - 1) <= 25 is true, mm/slab.c will allocate
+
+  struct kmem_cache *kmalloc_caches[MAX_ORDER + PAGE_SHIFT - 1 + 1];
+  struct kmem_cache *kmalloc_dma_caches[MAX_ORDER + PAGE_SHIFT - 1 + 1];
+
+which matches the size declared in include/linux/slab_def.h .
+
+If (MAX_ORDER + PAGE_SHIFT - 1) > 25 is true (I don't know whether such case
+happens), mm/slab.c will allocate
+
+  struct kmem_cache *kmalloc_caches[25 + 1];
+  struct kmem_cache *kmalloc_dma_caches[25 + 1];
+
+which is smaller than the size declared in include/linux/slab_def.h .
+
+Well, this mismatch seems to be fixed by commit 9425c58e "slab: Common
+definition for the array of kmalloc caches". But usage like
+
+  for (i = 1; i < PAGE_SHIFT + MAX_ORDER; i++) {
+          struct kmem_cache_node *n;
+          struct kmem_cache *cache = kmalloc_caches[i];
+
+is remaining.
+
+Also, kmalloc_index() in include/linux/slab.h can return 0 to 26.
+
+If (MAX_ORDER + PAGE_SHIFT - 1) > 25 is true and
+kmalloc_index(64 * 1024 * 1024) is requested (I don't know whether such case
+happens), kmalloc_caches[26] is beyond the array, for kmalloc_caches[26]
+allows 0 to 25.
+
+If (MAX_ORDER + PAGE_SHIFT - 1) <= 25 is true and
+kmalloc_index(64 * 1024 * 1024) is requested (I don't know whether such case
+happens), kmalloc_caches[26] is beyond the array, for
+kmalloc_caches[MAX_ORDER + PAGE_SHIFT] allows 0 to MAX_ORDER + PAGE_SHIFT - 1.
+
+Would you recheck that the array size is correct?
+
+
+
+Regards.
