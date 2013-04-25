@@ -1,295 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932900Ab3DYUN6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 16:13:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26977 "EHLO mx1.redhat.com"
+	id S932927Ab3DYURE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 16:17:04 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:37932 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932872Ab3DYUN4 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 16:13:56 -0400
-Date: Thu, 25 Apr 2013 17:13:28 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-To: Jon Arne =?UTF-8?B?SsO4cmdlbnNlbg==?= <jonarne@jonarne.no>
-Cc: linux-media@vger.kernel.org, jonjon.arnearne@gmail.com,
-        linux-kernel@vger.kernel.org, hverkuil@xs4all.nl,
-        elezegarcia@gmail.com, mkrufky@linuxtv.org, bjorn@mork.no
-Subject: Re: [RFC V2 1/3] [smi2021] Add gm7113c chip to the saa7115 driver
-Message-ID: <20130425171328.08c79893@redhat.com>
-In-Reply-To: <1366917020-18217-2-git-send-email-jonarne@jonarne.no>
-References: <1366917020-18217-1-git-send-email-jonarne@jonarne.no>
-	<1366917020-18217-2-git-send-email-jonarne@jonarne.no>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S932087Ab3DYURD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Apr 2013 16:17:03 -0400
+Message-ID: <51798F2B.4000602@ti.com>
+Date: Thu, 25 Apr 2013 16:16:43 -0400
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Russell King <rmk@arm.linux.org.uk>
+CC: Eduardo Valentin <eduardo.valentin@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        J Keerthy <j-keerthy@ti.com>, <devel@driverdev.osuosl.org>,
+        <linux-kernel@vger.kernel.org>, <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH 1/1] staging: ti-soc-thermal: remove usage of IS_ERR_OR_NULL
+References: <1366897576-20423-1-git-send-email-eduardo.valentin@ti.com> <20130425174445.GA25783@flint.arm.linux.org.uk>
+In-Reply-To: <20130425174445.GA25783@flint.arm.linux.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, 25 Apr 2013 21:10:18 +0200
-Jon Arne Jørgensen <jonarne@jonarne.no> escreveu:
+Russell,
 
-> The somagic device uses the gm7113c chip to digitize analog video,
-> this is a clone of the saa7113 chip.
-> 
-> The gm7113c can't be identified over i2c, so I can't rely on
-> saa7115 autodetection.
-> 
-> Signed-off-by: Jon Arne Jørgensen <jonarne@jonarne.no>
-> ---
->  drivers/media/i2c/saa7115.c     | 61 ++++++++++++++++++++++++++++++++++-------
->  include/media/v4l2-chip-ident.h |  3 ++
->  2 files changed, 54 insertions(+), 10 deletions(-)
-> 
-> diff --git a/drivers/media/i2c/saa7115.c b/drivers/media/i2c/saa7115.c
-> index 6b6788c..e93b50a 100644
-> --- a/drivers/media/i2c/saa7115.c
-> +++ b/drivers/media/i2c/saa7115.c
-> @@ -54,7 +54,7 @@
->  
->  MODULE_DESCRIPTION("Philips SAA7111/SAA7113/SAA7114/SAA7115/SAA7118 video decoder driver");
->  MODULE_AUTHOR(  "Maxim Yevtyushkin, Kevin Thayer, Chris Kennedy, "
-> -		"Hans Verkuil, Mauro Carvalho Chehab");
-> +		"Hans Verkuil, Mauro Carvalho Chehab, Jon Arne Jørgensen");
+Thanks for your time reviewing this patch.
 
-Hi Jon,
+On 25-04-2013 13:44, Russell King wrote:
+> On Thu, Apr 25, 2013 at 09:46:16AM -0400, Eduardo Valentin wrote:
+>> diff --git a/drivers/staging/ti-soc-thermal/ti-bandgap.c b/drivers/staging/ti-soc-thermal/ti-bandgap.c
+>> index f20c1cf..5027833 100644
+>> --- a/drivers/staging/ti-soc-thermal/ti-bandgap.c
+>> +++ b/drivers/staging/ti-soc-thermal/ti-bandgap.c
+>> @@ -469,7 +469,7 @@ static inline int ti_bandgap_validate(struct ti_bandgap *bgp, int id)
+>>   {
+>>   	int ret = 0;
+>>
+>> -	if (IS_ERR_OR_NULL(bgp)) {
+>> +	if (!bgp || IS_ERR(bgp)) {
+>>   		pr_err("%s: invalid bandgap pointer\n", __func__);
+>>   		ret = -EINVAL;
+>
+> We really don't need these kinds of "bad pointer passed to a function"
+> checks in the kernel.  Just ensure that all callers have correctly
+> error checked the return value.
 
-I was told once by Greg KH that the minimal number of changes to be one
-of the driver's authors is to change a significant amount of the code
-(like 20% or more).
+Right.. I will check if it is safe to simply remove the above check.
 
-So, I prefer if you don't change it there.
+>
+>>   		goto exit;
+>> @@ -1191,7 +1191,7 @@ int ti_bandgap_probe(struct platform_device *pdev)
+>>   	int clk_rate, ret = 0, i;
+>>
+>>   	bgp = ti_bandgap_build(pdev);
+>> -	if (IS_ERR_OR_NULL(bgp)) {
+>> +	if (IS_ERR(bgp)) {
+>>   		dev_err(&pdev->dev, "failed to fetch platform data\n");
+>>   		return PTR_ERR(bgp);
+>
+> That was definitely a bug, good fix.
+>
+>>   	}
+>> @@ -1207,14 +1207,14 @@ int ti_bandgap_probe(struct platform_device *pdev)
+>>   	}
+>>
+>>   	bgp->fclock = clk_get(NULL, bgp->conf->fclock_name);
+>> -	ret = IS_ERR_OR_NULL(bgp->fclock);
+>> +	ret = IS_ERR(bgp->fclock);
+>>   	if (ret) {
+>>   		dev_err(&pdev->dev, "failed to request fclock reference\n");
+>>   		goto free_irqs;
+>>   	}
+>
+> I'm not sure that's correct.  If free_irqs ends up returning 'ret' then
+> it will return 0 or 1, not the error code.
 
->  MODULE_LICENSE("GPL");
->  
->  static bool debug;
-> @@ -126,6 +126,7 @@ static int saa711x_has_reg(const int id, const u8 reg)
->  		return 0;
->  
->  	switch (id) {
-> +	case V4L2_IDENT_GM7113C:
->  	case V4L2_IDENT_SAA7113:
->  		return reg != 0x14 && (reg < 0x18 || reg > 0x1e) && (reg < 0x20 || reg > 0x3f) &&
->  		       reg != 0x5d && reg < 0x63;
-> @@ -292,7 +293,7 @@ static const unsigned char saa7115_cfg_reset_scaler[] = {
->  	0x00, 0x00
->  };
->  
-> -/* ============== SAA7715 VIDEO templates =============  */
-> +/* ============== SAA7115 VIDEO templates =============  */
->  
->  static const unsigned char saa7115_cfg_60hz_video[] = {
->  	R_80_GLOBAL_CNTL_1, 0x00,			/* reset tasks */
-> @@ -445,7 +446,27 @@ static const unsigned char saa7115_cfg_50hz_video[] = {
->  	0x00, 0x00
->  };
->  
-> -/* ============== SAA7715 VIDEO templates (end) =======  */
-> +/* ============== SAA7115 VIDEO templates (end) =======  */
-> +
-> +/* ============== GM7113C VIDEO templates =============  */
-> +
-> +static const unsigned char gm7113c_cfg_60hz_video[] = {
-> +	R_08_SYNC_CNTL, 0x68,			/* 0xBO: auto detection, 0x68 = NTSC */
-> +	R_0E_CHROMA_CNTL_1, 0x07,		/* video autodetection is on */
-> +
-> +	R_5A_V_OFF_FOR_SLICER, 0x06,		/* standard 60hz value for ITU656 line counting */
-> +	0x00, 0x00
-> +};
-> +
-> +static const unsigned char gm7113c_cfg_50hz_video[] = {
-> +	R_08_SYNC_CNTL, 0x28,			/* 0x28 = PAL */
-> +	R_0E_CHROMA_CNTL_1, 0x07,
-> +
-> +	R_5A_V_OFF_FOR_SLICER, 0x03,		/* standard 50hz value */
-> +	0x00, 0x00
-> +};
-> +
-> +/* ============== GM7113C VIDEO templates (end) =======  */
->  
->  static const unsigned char saa7115_cfg_vbi_on[] = {
->  	R_80_GLOBAL_CNTL_1, 0x00,			/* reset tasks */
-> @@ -927,11 +948,17 @@ static void saa711x_set_v4lstd(struct v4l2_subdev *sd, v4l2_std_id std)
->  	// This works for NTSC-M, SECAM-L and the 50Hz PAL variants.
->  	if (std & V4L2_STD_525_60) {
->  		v4l2_dbg(1, debug, sd, "decoder set standard 60 Hz\n");
-> -		saa711x_writeregs(sd, saa7115_cfg_60hz_video);
-> +		if (state->ident == V4L2_IDENT_GM7113C)
-> +			saa711x_writeregs(sd, gm7113c_cfg_60hz_video);
-> +		else
-> +			saa711x_writeregs(sd, saa7115_cfg_60hz_video);
->  		saa711x_set_size(sd, 720, 480);
->  	} else {
->  		v4l2_dbg(1, debug, sd, "decoder set standard 50 Hz\n");
-> -		saa711x_writeregs(sd, saa7115_cfg_50hz_video);
-> +		if (state->ident == V4L2_IDENT_GM7113C)
-> +			saa711x_writeregs(sd, gm7113c_cfg_50hz_video);
-> +		else
-> +			saa711x_writeregs(sd, saa7115_cfg_50hz_video);
->  		saa711x_set_size(sd, 720, 576);
->  	}
->  
-> @@ -944,7 +971,8 @@ static void saa711x_set_v4lstd(struct v4l2_subdev *sd, v4l2_std_id std)
->  	011 NTSC N (3.58MHz)            PAL M (3.58MHz)
->  	100 reserved                    NTSC-Japan (3.58MHz)
->  	*/
-> -	if (state->ident <= V4L2_IDENT_SAA7113) {
-> +	if (state->ident <= V4L2_IDENT_SAA7113 ||
-> +	    state->ident == V4L2_IDENT_GM7113C) {
->  		u8 reg = saa711x_read(sd, R_0E_CHROMA_CNTL_1) & 0x8f;
->  
->  		if (std == V4L2_STD_PAL_M) {
-> @@ -1215,7 +1243,8 @@ static int saa711x_s_routing(struct v4l2_subdev *sd,
->  		input, output);
->  
->  	/* saa7111/3 does not have these inputs */
-> -	if (state->ident <= V4L2_IDENT_SAA7113 &&
-> +	if ((state->ident <= V4L2_IDENT_SAA7113 ||
-> +	     state->ident == V4L2_IDENT_GM7113C) &&
->  	    (input == SAA7115_COMPOSITE4 ||
->  	     input == SAA7115_COMPOSITE5)) {
->  		return -EINVAL;
-> @@ -1586,8 +1615,11 @@ static int  i2c_client *client,
->  
->  	chip_id = name[5];
->  
-> +
->  	/* Check whether this chip is part of the saa711x series */
-> -	if (memcmp(name + 1, "f711", 4)) {
-> +	if (memcmp(id->name + 1, "gm7113c", 7)) {
-> +		chip_id = 'c';
+Indeed. Good point.
 
-There are several issues on the above:
-1) "id" may be NULL on autodetect mode;
+>
+> 	if (IS_ERR(bgp->fclock)) {
+> 		dev_err...
+> 		ret = PTR_ERR(bgp->fclock);
+> 		goto free_irqs;
+> 	}
+>
+> would be much better in that case.
 
-2) Why are you adding 1 here?
-   It should be, instead id->name
+Yes, I will incorporate the above on next version.
 
-3) memcmp returns 0 if matches. So, the test is wrong.
-   So, It should be instead:
-	if (!memcmp(id->name, "gm7113c", 7)) {
+>
+> Also another fix - clk_get(&pdev->dev, "fclk") and arrange for the
+> clkdev settings for this device.  Same for the one below but call
+> it "div_clk" or something.
 
-4) Also, while that works, it seems a little hackish...
+Yeh, that may come in a separated patch. I believe the driver just 
+follows the TI OMAP autogeneration design. It just fetches the clk name 
+fro hw database and auto gen the clkdev settings, I believe.
 
-> +	} else if (memcmp(name + 1, "f711", 4)) {
->  		v4l_dbg(1, debug, client, "chip found @ 0x%x (ID %s) does not match a known saa711x chip.\n",
->  			client->addr << 1, name);
->  		return -ENODEV;
-> @@ -1598,8 +1630,12 @@ static int saa711x_probe(struct i2c_client *client,
->  		v4l_warn(client, "found saa711%c while %s was expected\n",
->  			 chip_id, id->name);
->  	}
-> -	snprintf(client->name, sizeof(client->name), "saa711%c", chip_id);
-> -	v4l_info(client, "saa711%c found (%s) @ 0x%x (%s)\n", chip_id, name,
-> +	if (chip_id == 'c')
+>
+>>
+>>   	bgp->div_clk = clk_get(NULL,  bgp->conf->div_ck_name);
+>> -	ret = IS_ERR_OR_NULL(bgp->div_clk);
+>> +	ret = IS_ERR(bgp->div_clk);
+>>   	if (ret) {
+>
+> Possibly the same problem here if 'ret' ends up being returned as-is.
 
-especially by needing to add a weird if here.
-See more below:
+agreed.
 
-> +		snprintf(client->name, sizeof(client->name), "%s", id->name);
-> +	else
-> +		snprintf(client->name, sizeof(client->name), "saa711%c", chip_id);
-> +
-> +	v4l_info(client, "%s found (%s) @ 0x%x (%s)\n", client->name, name,
->  		 client->addr << 1, client->adapter->name);
->  
->  	state = kzalloc(sizeof(struct saa711x_state), GFP_KERNEL);
-> @@ -1645,6 +1681,9 @@ static int saa711x_probe(struct i2c_client *client,
->  			state->ident = V4L2_IDENT_SAA7111A;
->  		}
->  		break;
-> +	case 'c':
-> +		state->ident = V4L2_IDENT_GM7113C;
-> +		break;
-
-The better would be to initialize state->ident earlier, together with memcmp.
-
-Even better: please move the detection code into a separate
-routine that would internally fill state->ident and client->name
-and do what's needed to detect the chip.
-
-That would be cleaner and will reduce a little bit the complexity
-inside saa711x_probe.
-
-Something like:
-
-static int saa711x_detect_chip(struct i2c_client *client,
-			       struct saa711x_state *state,
-			       const struct i2c_device_id *id)
-{
-	int i;
-	char chip_id, name[16];
-
-	/*
-	 * Check for gm7113c (a saa7113 clone). Currently, there's no
-	 * known way to autodetect it, so boards that use will need to
-	 * explicitly fill the id->name field.
-	 */
-	if (id && !memcmp(id->name, "gm7113c", 7)) {
-		state->ident = V4L2_IDENT_GM7113C;
-		snprintf(client->name, sizeof(client->name), "%s", id->name);
-		return 0;
-	}
-
-	/* Check for Philips/NXP original chips */
-	for (i = 0; i < sizeof(name); i++) {
-		i2c_smbus_write_byte_data(client, 0, i);
-		name[i] = (i2c_smbus_read_byte_data(client, 0) & 0x0f) + '0';
-		if (name[i] > '9')
-			name[i] += 'a' - '9' - 1;
-	}
-	name[i] = '\0';
-
-	if (memcmp(name + 1, "f711", 4))
-		return -ENODEV;
-
-	chip_id = name[5];
-
-	snprintf(client->name, sizeof(client->name), "saa711%c", chip_id);
-
-	/*
-	 * Put here the code that fills state->ident for Philips/NXP chips
-	 */
-...
-
-	return 0;
-}
-
->  	case '3':
->  		state->ident = V4L2_IDENT_SAA7113;
->  		break;
-> @@ -1675,6 +1714,7 @@ static int saa711x_probe(struct i2c_client *client,
->  		saa711x_writeregs(sd, saa7111_init);
->  		break;
->  	case V4L2_IDENT_SAA7113:
-> +	case V4L2_IDENT_GM7113C:
->  		saa711x_writeregs(sd, saa7113_init);
->  		break;
->  	default:
-> @@ -1711,6 +1751,7 @@ static const struct i2c_device_id saa711x_id[] = {
->  	{ "saa7114", 0 },
->  	{ "saa7115", 0 },
->  	{ "saa7118", 0 },
-> +	{ "gm7113c", 0 },
->  	{ }
->  };
->  MODULE_DEVICE_TABLE(i2c, saa711x_id);
-> diff --git a/include/media/v4l2-chip-ident.h b/include/media/v4l2-chip-ident.h
-> index 4ee125b..fc13d53 100644
-> --- a/include/media/v4l2-chip-ident.h
-> +++ b/include/media/v4l2-chip-ident.h
-> @@ -51,6 +51,9 @@ enum {
->  	V4L2_IDENT_SAA7114 = 104,
->  	V4L2_IDENT_SAA7115 = 105,
->  	V4L2_IDENT_SAA7118 = 108,
-> +	/* This chip is a chinese clone of the saa7113 chip,
-> +	 * with some minor changes/bugs */
-> +	V4L2_IDENT_GM7113C = 149,
->  
->  	/* module saa7127: reserved range 150-199 */
->  	V4L2_IDENT_SAA7127 = 157,
+>
+>> diff --git a/drivers/staging/ti-soc-thermal/ti-thermal-common.c b/drivers/staging/ti-soc-thermal/ti-thermal-common.c
+>> index 8e67ebf..4c5f55c37 100644
+>> --- a/drivers/staging/ti-soc-thermal/ti-thermal-common.c
+>> +++ b/drivers/staging/ti-soc-thermal/ti-thermal-common.c
+>> @@ -101,7 +101,7 @@ static inline int ti_thermal_get_temp(struct thermal_zone_device *thermal,
+>>
+>>   	pcb_tz = data->pcb_tz;
+>>   	/* In case pcb zone is available, use the extrapolation rule with it */
+>> -	if (!IS_ERR_OR_NULL(pcb_tz)) {
+>> +	if (!IS_ERR(pcb_tz)) {
+>>   		ret = thermal_zone_get_temp(pcb_tz, &pcb_temp);
+>>   		if (!ret) {
+>>   			tmp -= pcb_temp; /* got a valid PCB temp */
+>> @@ -124,7 +124,7 @@ static int ti_thermal_bind(struct thermal_zone_device *thermal,
+>>   	struct ti_thermal_data *data = thermal->devdata;
+>>   	int id;
+>>
+>> -	if (IS_ERR_OR_NULL(data))
+>> +	if (!data || IS_ERR(data))
+>>   		return -ENODEV;
+>>
+>>   	/* check if this is the cooling device we registered */
+>> @@ -146,7 +146,7 @@ static int ti_thermal_unbind(struct thermal_zone_device *thermal,
+>>   {
+>>   	struct ti_thermal_data *data = thermal->devdata;
+>>
+>> -	if (IS_ERR_OR_NULL(data))
+>> +	if (!data || IS_ERR(data))
+>>   		return -ENODEV;
+>>
+>>   	/* check if this is the cooling device we registered */
+>> @@ -282,6 +282,7 @@ static struct ti_thermal_data
+>>   	data->sensor_id = id;
+>>   	data->bgp = bgp;
+>>   	data->mode = THERMAL_DEVICE_ENABLED;
+>> +	/* pcb_tz will be either valid or PTR_ERR() */
+>>   	data->pcb_tz = thermal_zone_get_zone_by_name("pcb");
+>>   	INIT_WORK(&data->thermal_wq, ti_thermal_work);
+>>
+>> @@ -295,7 +296,7 @@ int ti_thermal_expose_sensor(struct ti_bandgap *bgp, int id,
+>>
+>>   	data = ti_bandgap_get_sensor_data(bgp, id);
+>>
+>> -	if (IS_ERR_OR_NULL(data))
+>> +	if (!data || IS_ERR(data))
+>>   		data = ti_thermal_build_data(bgp, id);
+>>
+>>   	if (!data)
+>> @@ -306,7 +307,7 @@ int ti_thermal_expose_sensor(struct ti_bandgap *bgp, int id,
+>>   				OMAP_TRIP_NUMBER, 0, data, &ti_thermal_ops,
+>>   				NULL, FAST_TEMP_MONITORING_RATE,
+>>   				FAST_TEMP_MONITORING_RATE);
+>> -	if (IS_ERR_OR_NULL(data->ti_thermal)) {
+>> +	if (IS_ERR(data->ti_thermal)) {
+>>   		dev_err(bgp->dev, "thermal zone device is NULL\n");
+>>   		return PTR_ERR(data->ti_thermal);
+>>   	}
+>> @@ -343,7 +344,7 @@ int ti_thermal_register_cpu_cooling(struct ti_bandgap *bgp, int id)
+>>   	struct ti_thermal_data *data;
+>>
+>>   	data = ti_bandgap_get_sensor_data(bgp, id);
+>> -	if (IS_ERR_OR_NULL(data))
+>> +	if (!data || IS_ERR(data))
+>>   		data = ti_thermal_build_data(bgp, id);
+>
+> I can't tell whether the above are correct or not as I can't see the
+> original code.
 
 
--- 
+That is in staging/next.
 
-Cheers,
-Mauro
+>
+>>
+>>   	if (!data)
+>> @@ -356,7 +357,7 @@ int ti_thermal_register_cpu_cooling(struct ti_bandgap *bgp, int id)
+>>
+>>   	/* Register cooling device */
+>>   	data->cool_dev = cpufreq_cooling_register(cpu_present_mask);
+>> -	if (IS_ERR_OR_NULL(data->cool_dev)) {
+>> +	if (IS_ERR(data->cool_dev)) {
+>>   		dev_err(bgp->dev,
+>>   			"Failed to register cpufreq cooling device\n");
+>>   		return PTR_ERR(data->cool_dev);
+>
+> Definitely a bug - and another good fix.
+
+Thanks.
+>
+
