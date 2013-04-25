@@ -1,30 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759498Ab3DYSw4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 14:52:56 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:50290 "EHLO mx2.netapp.com"
+	id S1759502Ab3DYS5M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 14:57:12 -0400
+Received: from fieldses.org ([174.143.236.118]:56991 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759482Ab3DYSwy convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 14:52:54 -0400
-X-IronPort-AV: E=Sophos;i="4.87,552,1363158000"; 
-   d="scan'208";a="21644644"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: "bfields@fieldses.org" <bfields@fieldses.org>
-CC: Chuck Lever <chuck.lever@oracle.com>,
-        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+	id S1755185Ab3DYS5L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Apr 2013 14:57:11 -0400
+Date: Thu, 25 Apr 2013 14:57:01 -0400
+From: "bfields@fieldses.org" <bfields@fieldses.org>
+To: Chuck Lever <chuck.lever@oracle.com>
+Cc: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
         David Wysochanski <dwysocha@redhat.com>,
-        "Dave Chiluk" <chiluk@canonical.com>,
+        Dave Chiluk <chiluk@canonical.com>,
         "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Subject: Re: [PATCH] NFSv4: Use exponential backoff delay for NFS4_ERRDELAY
-Thread-Topic: [PATCH] NFSv4: Use exponential backoff delay for NFS4_ERRDELAY
-Thread-Index: AQHOQS4lo0tL+fbtF0O0TvVaTEJt85jmWGMAgAAHNgCAAAtSgIAA5lsAgAATb4CAAACAAIAABSQAgAAF8QCAAEWPAIAABcWAgAABvwCAAAHOgA==
-Date: Thu, 25 Apr 2013 18:52:53 +0000
-Message-ID: <F6EFC293-3201-4BC2-A31F-91771E9E99EC@netapp.com>
-References: <1366838926.22397.25.camel@leira.trondhjem.org>
- <5178549A.7010402@canonical.com>
- <1366842905.22397.49.camel@leira.trondhjem.org>
+Message-ID: <20130425185701.GD5049@fieldses.org>
+References: <1366842905.22397.49.camel@leira.trondhjem.org>
  <1366892374.26249.294.camel@localhost.localdomain>
  <20130425132907.GB31851@fieldses.org>
  <1366896654.4719.18.camel@leira.trondhjem.org>
@@ -33,91 +25,92 @@ References: <1366838926.22397.25.camel@leira.trondhjem.org>
  <20130425181932.GA5049@fieldses.org>
  <81BBEA25-CDE5-42B1-996D-90C26A43DEF6@oracle.com>
  <20130425184626.GC5049@fieldses.org>
-In-Reply-To: <20130425184626.GC5049@fieldses.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.104.60.114]
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <AB559926D022B84288F303927E6DA6E4@tahoe.netapp.com>
-Content-Transfer-Encoding: 8BIT
+ <04318EF4-375D-49FD-8DB0-2BC6429543A9@oracle.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <04318EF4-375D-49FD-8DB0-2BC6429543A9@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Apr 25, 2013, at 2:46 PM, "bfields@fieldses.org" <bfields@fieldses.org>
- wrote:
-
-> On Thu, Apr 25, 2013 at 02:40:11PM -0400, Chuck Lever wrote:
->> 
->> On Apr 25, 2013, at 2:19 PM, "bfields@fieldses.org" <bfields@fieldses.org> wrote:
->> 
->>> On Thu, Apr 25, 2013 at 02:10:36PM +0000, Myklebust, Trond wrote:
->>>> On Thu, 2013-04-25 at 09:49 -0400, bfields@fieldses.org wrote:
->>>>> On Thu, Apr 25, 2013 at 01:30:58PM +0000, Myklebust, Trond wrote:
->>>>>> On Thu, 2013-04-25 at 09:29 -0400, bfields@fieldses.org wrote:
->>>>>> 
->>>>>>> My position is that we simply have no idea what order of magnitude even
->>>>>>> delay should be.  And that in such a situation exponential backoff such
->>>>>>> as implemented in the synchronous case seems the reasonable default as
->>>>>>> it guarantees at worst doubling the delay while still bounding the
->>>>>>> long-term average frequency of retries.
->>>>>> 
->>>>>> So we start with a 15 second delay, and then go to 60 seconds?
->>>>> 
->>>>> I agree that a server should normally be doing the wait on its own if
->>>>> the wait would be on the order of an rpc round trip.
->>>>> 
->>>>> So I'd be inclined to start with a delay that was an order of magnitude
->>>>> or two more than a round trip.
->>>>> 
->>>>> And I'd expect NFS isn't common on networks with 1-second latencies.
->>>>> 
->>>>> So the 1/10 second we're using in the synchronous case sounds closer to
->>>>> the right ballpark to me.
->>>> 
->>>> OK, then. Now all I need is actual motivation for changing the existing
->>>> code other than handwaving arguments about "polling is better than flat
->>>> waits".
->>>> What actual use cases are impacting us now, other than the AIX design
->>>> decision to force CLOSE to retry at least once before succeeding?
->>> 
->>> Nah, I've got nothing, and I agree that the AIX problem is there bug.
->>> 
->>> Just for fun I looked at re-checked the Linux server cases.  As far as I
->>> can tell they are:
->>> 
->>> 	- delegations: returned immediately on detection of any
->>> 	  conflict.  The current behavior in the sync case looks
->>> 	  reasonable to me.
->>> 	- allocation failures: not really sure it's the best error, but
->>> 	  it seems to be all the protocol offers.  We probably don't
->>> 	  care much what the client does in this case.
->>> 	- some rare cases that would probably indicate bugs (e.g.,
->>> 	  attempting to destroy a client while other rpc's from that
->>> 	  client are running.)  Again we don't care what the client does
->>> 	  here.
->>> 	- the 4.1 slot-inuse case.
->>> 
->>> We also by default map four errors (ETIMEDOUT, EAGAIN, EWOULDBLOCK,
->>> ENOMEM) to delay.  I thought I remembered one of those being used by
->>> some HFS system, but can't actually find an example now.  A quick grep
->>> doesn't show anything interesting.
->> 
->> It's worth mentioning that servers that have frozen state (say, in preparation for Transparent State Migration) may use NFS4ERR_DELAY to prevent clients from modifying open or lock state until that state has transitioned to a destination server.
+On Thu, Apr 25, 2013 at 02:51:20PM -0400, Chuck Lever wrote:
 > 
-> I thought they'd decided they'll be forced to find a different way to do
-> that?
+> On Apr 25, 2013, at 2:46 PM, "bfields@fieldses.org" <bfields@fieldses.org> wrote:
 > 
-> (The issue being that it only works if you're using 4.1, and if the
-> session state itself isn't part of the state to be transferred.
-> Otherwise you're forced to modify the state anyway since NFS4ERR_DELAY
-> is seqid-modifying.)
+> > On Thu, Apr 25, 2013 at 02:40:11PM -0400, Chuck Lever wrote:
+> >> 
+> >> On Apr 25, 2013, at 2:19 PM, "bfields@fieldses.org" <bfields@fieldses.org> wrote:
+> >> 
+> >>> On Thu, Apr 25, 2013 at 02:10:36PM +0000, Myklebust, Trond wrote:
+> >>>> On Thu, 2013-04-25 at 09:49 -0400, bfields@fieldses.org wrote:
+> >>>>> On Thu, Apr 25, 2013 at 01:30:58PM +0000, Myklebust, Trond wrote:
+> >>>>>> On Thu, 2013-04-25 at 09:29 -0400, bfields@fieldses.org wrote:
+> >>>>>> 
+> >>>>>>> My position is that we simply have no idea what order of magnitude even
+> >>>>>>> delay should be.  And that in such a situation exponential backoff such
+> >>>>>>> as implemented in the synchronous case seems the reasonable default as
+> >>>>>>> it guarantees at worst doubling the delay while still bounding the
+> >>>>>>> long-term average frequency of retries.
+> >>>>>> 
+> >>>>>> So we start with a 15 second delay, and then go to 60 seconds?
+> >>>>> 
+> >>>>> I agree that a server should normally be doing the wait on its own if
+> >>>>> the wait would be on the order of an rpc round trip.
+> >>>>> 
+> >>>>> So I'd be inclined to start with a delay that was an order of magnitude
+> >>>>> or two more than a round trip.
+> >>>>> 
+> >>>>> And I'd expect NFS isn't common on networks with 1-second latencies.
+> >>>>> 
+> >>>>> So the 1/10 second we're using in the synchronous case sounds closer to
+> >>>>> the right ballpark to me.
+> >>>> 
+> >>>> OK, then. Now all I need is actual motivation for changing the existing
+> >>>> code other than handwaving arguments about "polling is better than flat
+> >>>> waits".
+> >>>> What actual use cases are impacting us now, other than the AIX design
+> >>>> decision to force CLOSE to retry at least once before succeeding?
+> >>> 
+> >>> Nah, I've got nothing, and I agree that the AIX problem is there bug.
+> >>> 
+> >>> Just for fun I looked at re-checked the Linux server cases.  As far as I
+> >>> can tell they are:
+> >>> 
+> >>> 	- delegations: returned immediately on detection of any
+> >>> 	  conflict.  The current behavior in the sync case looks
+> >>> 	  reasonable to me.
+> >>> 	- allocation failures: not really sure it's the best error, but
+> >>> 	  it seems to be all the protocol offers.  We probably don't
+> >>> 	  care much what the client does in this case.
+> >>> 	- some rare cases that would probably indicate bugs (e.g.,
+> >>> 	  attempting to destroy a client while other rpc's from that
+> >>> 	  client are running.)  Again we don't care what the client does
+> >>> 	  here.
+> >>> 	- the 4.1 slot-inuse case.
+> >>> 
+> >>> We also by default map four errors (ETIMEDOUT, EAGAIN, EWOULDBLOCK,
+> >>> ENOMEM) to delay.  I thought I remembered one of those being used by
+> >>> some HFS system, but can't actually find an example now.  A quick grep
+> >>> doesn't show anything interesting.
+> >> 
+> >> It's worth mentioning that servers that have frozen state (say, in preparation for Transparent State Migration) may use NFS4ERR_DELAY to prevent clients from modifying open or lock state until that state has transitioned to a destination server.
+> > 
+> > I thought they'd decided they'll be forced to find a different way to do
+> > that?
+> > 
+> > (The issue being that it only works if you're using 4.1, and if the
+> > session state itself isn't part of the state to be transferred.
+> > Otherwise you're forced to modify the state anyway since NFS4ERR_DELAY
+> > is seqid-modifying.)
+> 
+> The answer is not to return NFS4ERR_DELAY on seqid-modifying operations.
+> 
+> The source server can return NFS4ERR_DELAY to the client's migration recovery operations (the GETATTR(fs_locations) request) for example.
+> 
+> Or, the server could return it on the initial PUTFH operation in a compound containing seqid-modifying operations.
 
-Either way, migration is not a performance-critical path that needs 1second or less response times on those NFS4ERR_DELAY replies.
+Oh, right, I'd forgotten that approach....
 
-Trond
-
+--b.
