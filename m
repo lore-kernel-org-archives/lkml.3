@@ -1,124 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759255Ab3DYSYT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 14:24:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34397 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757717Ab3DYSYS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 14:24:18 -0400
-Date: Thu, 25 Apr 2013 13:40:02 -0400
-From: Dave Jones <davej@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Print out additional debugging advice when we hit lockdep BUGs
-Message-ID: <20130425174002.GA26769@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Ingo Molnar <mingo@kernel.org>,
-	Peter Zijlstra <a.p.zijlstra@chello.nl>,
-	Ingo Molnar <mingo@elte.hu>,
-	Linux Kernel <linux-kernel@vger.kernel.org>
-References: <20130423163403.GA12839@redhat.com>
- <20130424064813.GB27551@gmail.com>
+	id S1759301Ab3DYS1j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 14:27:39 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:34505 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758738Ab3DYS1i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Apr 2013 14:27:38 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+k/Y/ytF20VbLCRfeB947JeKBmQpAUt8o=
+Date: Thu, 25 Apr 2013 14:27:32 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Andrew Lunn <andrew@lunn.ch>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 04/21] ARM: orion5x: include linux/cpu.h
+Message-ID: <20130425182732.GE32497@titan.lakedaemon.net>
+References: <1366910944-3033663-1-git-send-email-arnd@arndb.de>
+ <1366910944-3033663-5-git-send-email-arnd@arndb.de>
+ <20130425173445.GD32497@titan.lakedaemon.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130424064813.GB27551@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130425173445.GD32497@titan.lakedaemon.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 24, 2013 at 08:48:13AM +0200, Ingo Molnar wrote:
+On Thu, Apr 25, 2013 at 01:34:45PM -0400, Jason Cooper wrote:
+> On Thu, Apr 25, 2013 at 07:28:47PM +0200, Arnd Bergmann wrote:
+> > The linux/cpu.h header is no longer implictly included in this
+> > file, so we need to an #include statement to avoid this build
+> > warning:
+> > 
+> > arch/arm/mach-orion5x/common.c:339:3: error: implicit declaration of function 'cpu_idle_poll_ctrl' [-Werror=implicit-function-declaration]
+> > 
+> > Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> > Cc: Jason Cooper <jason@lakedaemon.net>
+> > Cc: Andrew Lunn <andrew@lunn.ch>
+> > ---
+> >  arch/arm/mach-orion5x/common.c | 1 +
+> >  1 file changed, 1 insertion(+)
+> 
+> Acked-by: Jason Cooper <jason@lakedaemon.net>
+> 
+> I imagine it's easiest for you to take this through a branch you already
+> have set up, so have it.
 
- > These patterns repeated in 4 places really call for a common helper 
- > defined as print_lockdep_off(fmt...) or so?
- > 
- > (Can be a followup patch if that's easier for you.)
+s/have it/have at it/  :)
 
-Given there was only one case which was really different, I opted not
-to bother with varargs, and just pass the one string that changes
-and add an extra printk for that special case (MAX_LOCK_DEPTH)
+thx,
 
--- 
-
-Consolidate the lockdep "too low" messages into one function.
-Also add some missing printk levels.
-
-Signed-off-by: Dave Jones <davej@redhat.com>
-
-diff --git a/kernel/lockdep.c b/kernel/lockdep.c
-index e4c001f..be52e6d 100644
---- a/kernel/lockdep.c
-+++ b/kernel/lockdep.c
-@@ -380,6 +380,13 @@ static int verbose(struct lock_class *class)
- unsigned long nr_stack_trace_entries;
- static unsigned long stack_trace[MAX_STACK_TRACE_ENTRIES];
- 
-+static void print_lockdep_off(const char *which)
-+{
-+	printk(KERN_DEBUG "BUG: %s too low!\n", which);
-+	printk(KERN_DEBUG "turning off the locking correctness validator.\n");
-+	printk(KERN_DEBUG "Attach output of /proc/lock_stat to bug report\n");
-+}
-+
- static int save_trace(struct stack_trace *trace)
- {
- 	trace->nr_entries = 0;
-@@ -409,9 +416,7 @@ static int save_trace(struct stack_trace *trace)
- 		if (!debug_locks_off_graph_unlock())
- 			return 0;
- 
--		printk("BUG: MAX_STACK_TRACE_ENTRIES too low!\n");
--		printk("turning off the locking correctness validator.\n");
--		printk("Attach output of /proc/lock_stat to bug report\n");
-+		print_lockdep_off("MAX_STACK_TRACE_ENTRIES");
- 		dump_stack();
- 
- 		return 0;
-@@ -777,9 +782,7 @@ register_lock_class(struct lockdep_map *lock, unsigned int subclass, int force)
- 		}
- 		raw_local_irq_restore(flags);
- 
--		printk("BUG: MAX_LOCKDEP_KEYS too low!\n");
--		printk("turning off the locking correctness validator.\n");
--		printk("Attach output of /proc/lock_stat to bug report\n");
-+		print_lockdep_off("MAX_LOCKDEP_KEYS");
- 		dump_stack();
- 		return NULL;
- 	}
-@@ -849,9 +852,7 @@ static struct lock_list *alloc_list_entry(void)
- 		if (!debug_locks_off_graph_unlock())
- 			return NULL;
- 
--		printk("BUG: MAX_LOCKDEP_ENTRIES too low!\n");
--		printk("turning off the locking correctness validator.\n");
--		printk("Attach output of /proc/lock_stat to bug report\n");
-+		print_lockdep_off("MAX_LOCKDEP_ENTRIES");
- 		dump_stack();
- 		return NULL;
- 	}
-@@ -2064,9 +2065,7 @@ cache_hit:
- 		if (!debug_locks_off_graph_unlock())
- 			return 0;
- 
--		printk("BUG: MAX_LOCKDEP_CHAINS too low!\n");
--		printk("turning off the locking correctness validator.\n");
--		printk("Attach output of /proc/lock_stat to bug report\n");
-+		print_lockdep_off("MAX_LOCKDEP_CHAINS");
- 		dump_stack();
- 		return 0;
- 	}
-@@ -3208,10 +3207,9 @@ static int __lock_acquire(struct lockdep_map *lock, unsigned int subclass,
- #endif
- 	if (unlikely(curr->lockdep_depth >= MAX_LOCK_DEPTH)) {
- 		debug_locks_off();
--		printk("BUG: MAX_LOCK_DEPTH too low, depth: %i  max: %lu!\n",
-+		print_lockdep_off("MAX_LOCK_DEPTH");
-+		printk(KERN_DEBUG "depth: %i  max: %lu!\n",
- 		       curr->lockdep_depth, MAX_LOCK_DEPTH);
--		printk("turning off the locking correctness validator.\n");
--		printk("Attach output of /proc/lock_stat to bug report\n");
- 
- 		lockdep_print_held_locks(current);
- 		debug_show_all_locks();
+Jason.
