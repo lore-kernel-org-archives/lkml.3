@@ -1,50 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755530Ab3DYHSG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 03:18:06 -0400
-Received: from mail-bk0-f50.google.com ([209.85.214.50]:43987 "EHLO
-	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754200Ab3DYHSE (ORCPT
+	id S1755711Ab3DYHSV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 03:18:21 -0400
+Received: from relay.parallels.com ([195.214.232.42]:57838 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755559Ab3DYHSR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 03:18:04 -0400
+	Thu, 25 Apr 2013 03:18:17 -0400
+Message-ID: <5178D89C.40103@parallels.com>
+Date: Thu, 25 Apr 2013 11:17:48 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Date: Thu, 25 Apr 2013 15:18:02 +0800
-Message-ID: <CAPgLHd-QZXdb39icvhUKWm+hCT4O2dnF5kPAmPeaxXPsU8MMNA@mail.gmail.com>
-Subject: [PATCH] spi-topcliff-pch: missing platform_driver_unregister() on
- error in pch_spi_init()
-From: Wei Yongjun <weiyj.lk@gmail.com>
-To: broonie@kernel.org, grant.likely@linaro.org
-Cc: yongjun_wei@trendmicro.com.cn, spi-devel-general@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: Jeff Layton <jlayton@redhat.com>, <linux-nfs@vger.kernel.org>,
+        <devel@openvz.org>, <Trond.Myklebust@netapp.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] nfsd: enable UMH client tracker in container
+References: <20130416111344.14621.56912.stgit@localhost.localdomain> <20130419070150.6937f1e6@corrin.poochiereds.net> <20130423200048.GI3676@fieldses.org>
+In-Reply-To: <20130423200048.GI3676@fieldses.org>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.30.18.163]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+24.04.2013 00:00, J. Bruce Fields пишет:
+> On Fri, Apr 19, 2013 at 07:01:50AM -0700, Jeff Layton wrote:
+>> On Tue, 16 Apr 2013 15:17:44 +0400
+>> Stanislav Kinsbursky <skinsbursky@parallels.com> wrote:
+>>
+>>> This patch adds support for UserModeHelper tracker in a container.
+>>> The reason for this is that the only containerised tracker ("nfsdcld") is
+>>> going to be removed in 3.10 kernel, thus at least one more tracker have to be
+>>> containerised to replace the deprecated one.
+>>> UMH tracker looks more preferable comparing to legacy since it's the latest
+>>> one.
+>>> To make UMH tracker work in a container, we have to make sure, that it
+>>> executes right binary (i.e., this binary have to be taken from the container
+>>> environment).
+>>> But, UMH is a kernel thread, which works in global root environment by design
+>>> (kernel thread's root is inherited from kthreadd, which in turn inherited it's
+>>> root from global init). So, the root have to be swapped to the container's
+>>> one before binary execution.
+>>>
+>>> This patch passes "init" callback and private "data" to UMH interface, which
+>>> are used to swap root for spawned kernel thread.
+>>>
+>>> Note: container's root can be stored on stack, because UMH calls are
+>>> synchronous.
+>>>
+>>> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+>>> ---
+>>>   fs/nfsd/nfs4recover.c |   29 ++++++++++++++++++++++-------
+>>>   1 files changed, 22 insertions(+), 7 deletions(-)
+>>>
+>>> diff --git a/fs/nfsd/nfs4recover.c b/fs/nfsd/nfs4recover.c
+>>> index 899ca26..15f8de6 100644
+>>> --- a/fs/nfsd/nfs4recover.c
+>>> +++ b/fs/nfsd/nfs4recover.c
+>>> @@ -38,6 +38,7 @@
+>>>   #include <linux/crypto.h>
+>>>   #include <linux/sched.h>
+>>>   #include <linux/fs.h>
+>>> +#include <linux/fs_struct.h>
+>>>   #include <linux/module.h>
+>>>   #include <net/net_namespace.h>
+>>>   #include <linux/sunrpc/rpc_pipe_fs.h>
+>>> @@ -1122,12 +1123,28 @@ nfsd4_cltrack_legacy_recdir(const struct xdr_netobj *name)
+>>>   	return result;
+>>>   }
+>>>
+>>> +static int nfsd_swap_root(struct subprocess_info *info, struct cred *new)
+>>> +{
+>>> +	struct path *root = info->data;
+>>> +	struct fs_struct *fs = current->fs;
+>>> +	struct path current_root;
+>>> +
+>>> +	spin_lock(&fs->lock);
+>>> +	current_root = fs->root;
+>>> +	fs->root = *root;
+>>> +	spin_unlock(&fs->lock);
+>>> +	if (current_root.dentry)
+>>> +		path_put(&current_root);
+>>> +	return 0;
+>>> +}
+>>> +
+>>>   static int
+>>>   nfsd4_umh_cltrack_upcall(char *cmd, char *arg, char *legacy)
+>>>   {
+>>>   	char *envp[2];
+>>>   	char *argv[4];
+>>>   	int ret;
+>>> +	struct path root;
+>>>
+>>>   	if (unlikely(!cltrack_prog[0])) {
+>>>   		dprintk("%s: cltrack_prog is disabled\n", __func__);
+>>> @@ -1146,7 +1163,11 @@ nfsd4_umh_cltrack_upcall(char *cmd, char *arg, char *legacy)
+>>>   	argv[2] = arg;
+>>>   	argv[3] = NULL;
+>>>
+>>> -	ret = call_usermodehelper(argv[0], argv, envp, UMH_WAIT_PROC);
+>>> +	get_fs_root(current->fs, &root);
+>>> +
+>>> +	ret = call_usermodehelper_fns(argv[0], argv, envp, UMH_WAIT_PROC,
+>>> +				       nfsd_swap_root, NULL, &root);
+>>> +
+>>>   	/*
+>>>   	 * Disable the upcall mechanism if we're getting an ENOENT or EACCES
+>>>   	 * error. The admin can re-enable it on the fly by using sysfs
+>>> @@ -1185,12 +1206,6 @@ bin_to_hex_dup(const unsigned char *src, int srclen)
+>>>   static int
+>>>   nfsd4_umh_cltrack_init(struct net __attribute__((unused)) *net)
+>>>   {
+>>> -	/* XXX: The usermode helper s not working in container yet. */
+>>> -	if (net != &init_net) {
+>>> -		WARN(1, KERN_ERR "NFSD: attempt to initialize umh client "
+>>> -			"tracking in a container!\n");
+>>> -		return -EINVAL;
+>>> -	}
+>>>   	return nfsd4_umh_cltrack_upcall("init", NULL, NULL);
+>>>   }
+>>>
+>>>
+>>
+>> I think this looks correct and like it'll work, but I wonder whether
+>> we'd be best served by making this part of the UMH code itself?
+>>
+>> IOW, add some fields to the struct subprocess_info to hold the new
+>> root, and then do what you're doing in nfsd_swap_root before calling
+>> the "init" function?
+>>
+>> I imagine we'll eventually need do something similar for at least some
+>> of the callers of call_usermodehelper so it would make sense to me to
+>> not replicate copies of nfsd_swap_root all over the place.
+>
+> Agreed.
+>
 
-Add the missing platform_driver_unregister() before return
-from pch_spi_init() in the error handling case.
+Hmm. Yes, me too.
+Ok, I'll prepare patch for the UMH itself.
+And resend.
+Thanks, guys.
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
----
- drivers/spi/spi-topcliff-pch.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+> --b.
+>
 
-diff --git a/drivers/spi/spi-topcliff-pch.c b/drivers/spi/spi-topcliff-pch.c
-index f756481..c8b672e 100644
---- a/drivers/spi/spi-topcliff-pch.c
-+++ b/drivers/spi/spi-topcliff-pch.c
-@@ -1789,8 +1789,10 @@ static int __init pch_spi_init(void)
- 		return ret;
- 
- 	ret = pci_register_driver(&pch_spi_pcidev_driver);
--	if (ret)
-+	if (ret) {
-+		platform_driver_unregister(&pch_spi_pd_driver);
- 		return ret;
-+	}
- 
- 	return 0;
- }
 
+-- 
+Best regards,
+Stanislav Kinsbursky
