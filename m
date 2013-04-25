@@ -1,89 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932933Ab3DYRcU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 13:32:20 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:54544 "EHLO
+	id S932956Ab3DYRcz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 13:32:55 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:57868 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932737Ab3DYR32 (ORCPT
+	with ESMTP id S932696Ab3DYR3W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 13:29:28 -0400
+	Thu, 25 Apr 2013 13:29:22 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Zhang Rui <rui.zhang@intel.com>,
-        Amit Daniel kachhap <amit.daniel@samsung.com>
-Subject: [PATCH 15/21] thermal: cooling: avoid uninitialied used gcc warning
-Date: Thu, 25 Apr 2013 19:28:58 +0200
-Message-Id: <1366910944-3033663-16-git-send-email-arnd@arndb.de>
+        Heiko Stuebner <heiko@sntech.de>, Kukjin Kim <kgene.kim@samsung.com>
+Subject: [PATCH 12/21] irqchip: s3c24xx: add missing __init annotations
+Date: Thu, 25 Apr 2013 19:28:55 +0200
+Message-Id: <1366910944-3033663-13-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1366910944-3033663-1-git-send-email-arnd@arndb.de>
 References: <1366910944-3033663-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:rKDFEauA4/R4HXGmWx8UQ7UyZHXUICuFD5AY4H5dNI9
- 2SRGqtLvYYhsB0be3wNVZj6CgHy/75REDoYmD7SoL5Fy6P30P5
- vukWw86p4SMj2EsczaJ4w/6gm2mrTReaavLTgsSHmfRsIG75JA
- 9KjTodb69nqnq2qg3M1AwxCjRlJboM7hw3HOu3z1ruPNuGoKpB
- tr95EFiTfjldjNnHewV+qn2d0mMCRayrlG9hEezBObAMoR92vA
- NXht7OU8jBkbkNZOTmf0/7KBOEV7mi2iiQb6k5ixPpdFFWGWgN
- FhLrs9zSxj8r6U6MG6lhw21z0g+w/77OEIIaloU+Oqx4TWDIcS
- ysTWPBicZ0SNyLQ6b5bm1yY6iye/6UhkTmqiiAdpZ
+X-Provags-ID: V02:K0:KjPpaWU5+cxUAuENPT5N9Y4pLOkJemeTRxoudtqhfd7
+ dmZ9TEgsaylbni+rW4HN7M2wxzbZfU9OSMnPNLKn9LhfGKjFkd
+ QfMHpAy5MjSH7UiJLTdR9Z9Z3ROg39AgNdnsTdQE+A87QGkv56
+ fLEpmcbUdKhSCMUf9ljNjHdoTuE9RMv0XaghVm1gq2aBpAbZH5
+ CtLIUv/cI3I5Kui3Zf5Ni1j2tQEAZAyaXFvz1UffA5tWpQcgnT
+ e4N1ht/eoiVzMq5iEDhzQbx7ybP2JNYUiE0qepf+4yPW8zdnA7
+ nUbDaSBETdcrFOWiXPF4zGNuTWQpa+uu7Ali04fd3FKeqNbynH
+ Ne/mB6CjOXlxsOKPrcfi9n1RuZs3FN+/zGyukFVqA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The newly rewritten get_property() function causes a bogus warning
-from gcc-3.8, which cannot figure out that "level" is always
-initialized at the point where it gets evaluated:
+The s3c24xx_init_intc and s3c2412_init_irq functions are only called
+at init time, and they call functions already marked __init, so they
+should be marked in the same way. This was reported as
 
-drivers/thermal/cpu_cooling.c: In function 'get_property':
-drivers/thermal/cpu_cooling.c:189:37: warning: 'level' may be used uninitialized in this function [-Wmaybe-uninitialized]
-   if (property == GET_FREQ && level == j) {
-                                     ^
-
-Slightly rearranging the code makes this more obvious and
-avoids the warning.
+WARNING: vmlinux.o(.text+0x19e0b4): Section mismatch in reference from the function s3c2412_init_irq() to the function .init.text:s3c24xx_init_intc.constprop.8()
+The function s3c2412_init_irq() references
+the function __init s3c24xx_init_intc.constprop.8().
+This is often because s3c2412_init_irq lacks a __init
+annotation or the annotation of s3c24xx_init_intc.constprop.8 is wrong.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Zhang Rui <rui.zhang@intel.com>
-Cc: Amit Daniel kachhap <amit.daniel@samsung.com>
+Cc: Heiko Stuebner <heiko@sntech.de>
+Cc: Kukjin Kim <kgene.kim@samsung.com>
 ---
- drivers/thermal/cpu_cooling.c | 17 +++++++++--------
- 1 file changed, 9 insertions(+), 8 deletions(-)
+ drivers/irqchip/irq-s3c24xx.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/thermal/cpu_cooling.c b/drivers/thermal/cpu_cooling.c
-index 768b508..34878e6 100644
---- a/drivers/thermal/cpu_cooling.c
-+++ b/drivers/thermal/cpu_cooling.c
-@@ -165,10 +165,6 @@ static int get_property(unsigned int cpu, unsigned long input,
- 		return 0;
+diff --git a/drivers/irqchip/irq-s3c24xx.c b/drivers/irqchip/irq-s3c24xx.c
+index c8afd7b..bbcc944 100644
+--- a/drivers/irqchip/irq-s3c24xx.c
++++ b/drivers/irqchip/irq-s3c24xx.c
+@@ -535,7 +535,7 @@ static void s3c24xx_clear_intc(struct s3c_irq_intc *intc)
  	}
+ }
  
--	if (property == GET_FREQ)
--		level = descend ? input : (max_level - input -1);
--
--
- 	for (i = 0, j = 0; table[i].frequency != CPUFREQ_TABLE_END; i++) {
- 		/* ignore invalid entry */
- 		if (table[i].frequency == CPUFREQ_ENTRY_INVALID)
-@@ -186,10 +182,15 @@ static int get_property(unsigned int cpu, unsigned long input,
- 			*output = descend ? j : (max_level - j - 1);
- 			return 0;
- 		}
--		if (property == GET_FREQ && level == j) {
--			/* get frequency by level */
--			*output = freq;
--			return 0;
-+
-+		if (property == GET_FREQ) {
-+			level = descend ? input : (max_level - input -1);
-+
-+			if (level == j) {
-+				/* get frequency by level */
-+				*output = freq;
-+				return 0;
-+			}
- 		}
- 		j++;
- 	}
+-static struct s3c_irq_intc *s3c24xx_init_intc(struct device_node *np,
++static struct s3c_irq_intc * __init s3c24xx_init_intc(struct device_node *np,
+ 				       struct s3c_irq_data *irq_data,
+ 				       struct s3c_irq_intc *parent,
+ 				       unsigned long address)
+@@ -795,7 +795,7 @@ static struct s3c_irq_data init_s3c2412subint[32] = {
+ 	{ .type = S3C_IRQTYPE_LEVEL, .parent_irq = 21 }, /* CF */
+ };
+ 
+-void s3c2412_init_irq(void)
++void __init s3c2412_init_irq(void)
+ {
+ 	pr_info("S3C2412: IRQ Support\n");
+ 
 -- 
 1.8.1.2
 
