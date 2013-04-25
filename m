@@ -1,74 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758754Ab3DYOXe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 10:23:34 -0400
-Received: from relay.medianet-world.de ([213.157.0.172]:27931 "HELO
-	relay.medianet-world.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1758137Ab3DYOXc convert rfc822-to-8bit (ORCPT
+	id S1758757Ab3DYOZF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 10:25:05 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:37667 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757698Ab3DYOZE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 10:23:32 -0400
-thread-index: Ac5BwE/oNggxLG2tSiu4cOyNxJ2dLQ==
-Thread-Topic: [ANNOUNCE] 3.4.41-rt55-feat1
-Content-Class: urn:content-classes:message
-Importance: normal
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4913
-From: "Tim Sander" <tim.sander@hbm.com>
-To: "Sebastian Andrzej Siewior" <bigeasy@linutronix.de>
-Cc: "Steven Rostedt" <rostedt@goodmis.org>,
-        "LKML" <linux-kernel@vger.kernel.org>,
-        "RT" <linux-rt-users@vger.kernel.org>,
-        "Thomas Gleixner" <tglx@linutronix.de>,
-        "Carsten Emde" <C.Emde@osadl.org>, "John Kacur" <jkacur@redhat.com>
-Subject: Re: [ANNOUNCE] 3.4.41-rt55-feat1
-Date: Thu, 25 Apr 2013 16:22:26 +0200
-Message-ID: <3603730.i3rZKahVeu@dabox>
-Organization: Hottinger Baldwin Messtechnik
-User-Agent: KMail/4.10.2 (Linux/3.8.0+; KDE/4.10.2; x86_64; ; )
-In-Reply-To: <51792277.8000205@linutronix.de>
-References: <1366760662.9609.176.camel@gandalf.local.home> <2156546.QlsX0XyPQz@dabox> <51792277.8000205@linutronix.de>
+	Thu, 25 Apr 2013 10:25:04 -0400
+Date: Thu, 25 Apr 2013 10:24:58 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: David Howells <dhowells@redhat.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: [PATCH] Fix: remove stale include/linux/version.h in toplevel
+	Makefile
+Message-ID: <20130425142458.GA5869@Krystal>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain;
-	charset="us-ascii"
-X-OriginalArrivalTime: 25 Apr 2013 14:22:26.0968 (UTC) FILETIME=[4FDC3180:01CE41C0]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Editor: vi
+X-Info: http://www.efficios.com
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sebastian
-> > I just wanted to test this release but it fails to compile with the the
-> > following error:
-> > 
-> > kernel/hrtimer.c: In function '__hrtimer_start_range_ns':
-> > kernel/hrtimer.c:1045:7: error: implicit declaration of function
-> > 'hrtimer_rt_defer'
-> > kernel/hrtimer.c: At top level:
-> > kernel/hrtimer.c:1416:12: error: static declaration of 'hrtimer_rt_defer'
-> > follows non-static declaration
-> > kernel/hrtimer.c:1045:10: note: previous implicit declaration of
-> > 'hrtimer_rt_defer' was here
-> > 
-> > The kernelconfig is attached.
-> 
-> You do not have CONFIG_HIGH_RES_TIMERS defined. Is this on purpose?
-Yes, it's an tradeoff to get lower latencies for our VII (Very Important 
-Interrupt :-). The idea is from Thomas Gleixner: We have an regular interrupt 
-and define our own timer where which we call after we have finished our VII 
-handler. But normally the HR_TIMER is set. So we switched it off on this very 
-purpose. As we also have also PREEMPT_RT_FULL set the proposed solution to 
-allow only PREEMPT_RT_FULL with PREEMPT_RT_FULL set is not an option for us.
+With a kernel tree that contains a generated include/linux/version.h, if
+someone just does a git pull to update to a newer kernel version that
+includes
 
-Best regards
-Tim
+commit 10b63956fce7f369cc37fd4d994f09bd5203efe4
 
-Hottinger Baldwin Messtechnik GmbH, Im Tiefen See 45, 64293 Darmstadt, Germany | www.hbm.com 
+"UAPI: Plumb the UAPI Kbuilds into the user header installation and
+checking"
 
-Registered as GmbH (German limited liability corporation) in the commercial register at the local court of Darmstadt, HRB 1147  
-Company domiciled in Darmstadt | CEO: Andreas Huellhorst | Chairman of the board: James Charles Webster
+and
+commit d183e6f570f3c0c23d253fd262c90244e72d7ffd
 
-Als Gesellschaft mit beschraenkter Haftung eingetragen im Handelsregister des Amtsgerichts Darmstadt unter HRB 1147 
-Sitz der Gesellschaft: Darmstadt | Geschaeftsfuehrung: Andreas Huellhorst | Aufsichtsratsvorsitzender: James Charles Webster
+"UAPI: Move linux/version.h"
 
-The information in this email is confidential. It is intended solely for the addressee. If you are not the intended recipient, please let me know and delete this email.
+Any newer build will fail to overwrite or remove the stale version.h
+file. The new include/generated/uapi/linux/version.h is indeed
+generated, but the stale file in include/linux has precedence.
 
-Die in dieser E-Mail enthaltene Information ist vertraulich und lediglich fur den Empfaenger bestimmt. Sollten Sie nicht der eigentliche Empfaenger sein, informieren Sie mich bitte kurz und loeschen diese E-Mail.
+This leads to very unfortunate consequences for any user relying on
+version.h to expose the kernel version accurately, since the old "stale"
+kernel version will be seen by the build.
+
+Ensure that stale include/linux/version.h is removed whenever the new
+version.h is generated.
+
+This patch should be backported to 3.7 and 3.8 stable branches after it
+gets into mainline.
+
+Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+CC: David Howells <dhowells@redhat.com>
+CC: Arnd Bergmann <arnd@arndb.de>
+CC: Thomas Gleixner <tglx@linutronix.de>
+CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+CC: Dave Jones <davej@redhat.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>
+---
+ Makefile |    2 ++
+ 1 file changed, 2 insertions(+)
+
+Index: linux/Makefile
+===================================================================
+--- linux.orig/Makefile
++++ linux/Makefile
+@@ -823,8 +823,10 @@ endif
+ # prepare2 creates a makefile if using a separate output directory
+ prepare2: prepare3 outputmakefile asm-generic
+ 
++# Includes removal of stale version.h from earlier kernel versions.
+ prepare1: prepare2 $(version_h) include/generated/utsrelease.h \
+                    include/config/auto.conf
++	$(Q)rm -f include/linux/version.h
+ 	$(cmd_crmodverdir)
+ 
+ archprepare: archheaders archscripts prepare1 scripts_basic
+
+-- 
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
