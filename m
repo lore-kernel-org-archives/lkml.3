@@ -1,83 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753415Ab3DYFxb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 01:53:31 -0400
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:34258 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751213Ab3DYFxa (ORCPT
+	id S1751667Ab3DYFx4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 01:53:56 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:51685 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750758Ab3DYFxz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 01:53:30 -0400
-Message-ID: <5178C4CE.70201@linux.vnet.ibm.com>
-Date: Thu, 25 Apr 2013 11:23:18 +0530
-From: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Thu, 25 Apr 2013 01:53:55 -0400
+X-AuditID: 9c930197-b7bb3ae000000fa9-80-5178c4effb46
+From: Namhyung Kim <namhyung@kernel.org>
+To: "zhangwei\(Jovi\)" <jovi.zhangwei@huawei.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Pekka Enberg <penberg@kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
+Subject: Re: [RFC 00/14] perf tools: Introduce new 'ftrace' command
+References: <1366705872-12132-1-git-send-email-namhyung@kernel.org>
+	<1366732681.9609.157.camel@gandalf.local.home>
+	<CAOJsxLF16Edznsdis4NK-O1Sf=3Eswb5L=cfBDhjpr6F7UjTbg@mail.gmail.com>
+	<20130424065018.GC27551@gmail.com> <87a9oob6i2.fsf@sejong.aot.lge.com>
+	<5177BEC7.4020906@huawei.com>
+Date: Thu, 25 Apr 2013 14:53:51 +0900
+In-Reply-To: <5177BEC7.4020906@huawei.com> (zhangwei's message of "Wed, 24 Apr
+	2013 19:15:19 +0800")
+Message-ID: <87obd39mvk.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Kees Cook <keescook@chromium.org>
-CC: linuxppc-dev@ozlabs.org, paulus@samba.org,
-        LKML <linux-kernel@vger.kernel.org>, benh@kernel.crashing.org,
-        jkenisto@linux.vnet.ibm.com, Tony Luck <tony.luck@intel.com>,
-        ananth@in.ibm.com, mahesh@linux.vnet.ibm.com,
-        Colin Cross <ccross@android.com>, anton@samba.org,
-        Anton Vorontsov <cbouatmailru@gmail.com>
-Subject: Re: [PATCH v2 0/8] powerpc/pseries: Nvram-to-pstore
-References: <20130424061807.7341.909.stgit@aruna-ThinkPad-T420> <CAGXu5jLrtMFXh28b2uV6+U8vdXRfLxmjKRo8i5YF8bmkeK_sKg@mail.gmail.com>
-In-Reply-To: <CAGXu5jLrtMFXh28b2uV6+U8vdXRfLxmjKRo8i5YF8bmkeK_sKg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13042505-2674-0000-0000-000008BA738B
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kees,
+On Wed, 24 Apr 2013 19:15:19 +0800, zhangwei wrote:
+> On 2013/4/24 17:52, Namhyung Kim wrote:
+>> I think it'd be great if perf trace can cover both of kernel and user
+>> spaces.  But function tracing in userspace looks impossible IMHO.
+>> 
+>> So how about changing perf trace to receive proposed sub-commands
+>> (live/record/show/report) and following options:
+>> 
+>>   --kernel::	do ftrace (for kernel functions)
+>>   --syscall::	do system call tracing (what perf trace does now)
+>> 
+> "--kernel" make me think it's will trace all event tracepoints, not only ftrace.
 
-On Thursday 25 April 2013 02:15 AM, Kees Cook wrote:
-> On Tue, Apr 23, 2013 at 11:19 PM, Aruna Balakrishnaiah
-> <aruna@linux.vnet.ibm.com> wrote:
->> Currently the kernel provides the contents of p-series NVRAM only as a
->> simple stream of bytes via /dev/nvram, which must be interpreted in user
->> space by the nvram command in the powerpc-utils package. This patch set
->> exploits the pstore subsystem to expose each partition in NVRAM as a
->> separate file in /dev/pstore. For instance Oops messages will stored in a
->> file named [dmesg-nvram-2].
->>
->> Changes from v1:
->>          - Reduce #ifdefs by and remove forward declarations of pstore callbacks
->>          - Handle return value of nvram_write_os_partition
->>          - Remove empty pstore callbacks and register pstore only when pstore
->>            is configured
->>
->> ---
->>
->> Aruna Balakrishnaiah (8):
->>        powerpc/pseries: Remove syslog prefix in uncompressed oops text
->>        powerpc/pseries: Add version and timestamp to oops header
->>        powerpc/pseries: Introduce generic read function to read nvram-partitions
->>        powerpc/pseries: Read/Write oops nvram partition via pstore
->>        powerpc/pseries: Read rtas partition via pstore
->>        powerpc/pseries: Distinguish between a os-partition and non-os partition
->>        powerpc/pseries: Read of-config partition via pstore
->>        powerpc/pseries: Read common partition via pstore
->>
->>
->>   arch/powerpc/platforms/pseries/nvram.c |  353 +++++++++++++++++++++++++++-----
->>   fs/pstore/inode.c                      |    9 +
->>   include/linux/pstore.h                 |    4
->>   3 files changed, 313 insertions(+), 53 deletions(-)
-> This series looks good! Other than the naming conventions (are these
-> new pstore types really PPC-only?) I think it's a fine addition.
+Well, I'm not sure what's the right name.  --kernel-function?
+
 >
-> Thanks!
+> for "--syscall" option, I always think we should enhance syscall tracing more than now,
+> like use annotate info when parse syscall event in perf, as other tracepoint does.
+> we also need read filename user string in kernel space when open syscall tracepoint hit,
+> record in perf.data, then perf parse it. After these functionality is implemented,
+> we will don't need a separate syscall tracing tool in perf any more,
+> just use: perf record -e "syscalls:" -a
 
-The new pstore types are PPC specific. Hence it would be better to have the
-(_PPC) in the type ids so that other does not end up using these ids.
+It's a different story.  But I do think it'd better if there's a way to
+see some of userspace strings like this.
 
-> -Kees
->
-> --
-> Kees Cook
-> Chrome OS Security
->
-
+Thanks,
+Namhyung
