@@ -1,339 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932622Ab3DYPXH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 11:23:07 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:56300 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932598Ab3DYPXC (ORCPT
+	id S932653Ab3DYPXn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 11:23:43 -0400
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:55616 "EHLO
+	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932583Ab3DYPXj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 11:23:02 -0400
-Message-ID: <51794A3C.3040406@linux.vnet.ibm.com>
-Date: Thu, 25 Apr 2013 20:52:36 +0530
-From: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Thu, 25 Apr 2013 11:23:39 -0400
 MIME-Version: 1.0
-To: David Howells <dhowells@redhat.com>
-CC: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
-        linux-pci@vger.kernel.org, linux-wireless@vger.kernel.org,
-        netfilter-devel@vger.kernel.org, viro@zeniv.linux.org.uk,
-        netdev@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-media@vger.kernel.org
-Subject: Re: [PATCH 04/28] proc: Supply PDE attribute setting accessor functions
- [RFC]
-References: <20130416182550.27773.89310.stgit@warthog.procyon.org.uk> <20130416182606.27773.55054.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20130416182606.27773.55054.stgit@warthog.procyon.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13042515-2000-0000-0000-00000BDEB5CD
+In-Reply-To: <1366596798-9457-2-git-send-email-robherring2@gmail.com>
+References: <1366596798-9457-1-git-send-email-robherring2@gmail.com>
+	<1366596798-9457-2-git-send-email-robherring2@gmail.com>
+Date: Thu, 25 Apr 2013 10:23:38 -0500
+Message-ID: <CAL_JsqKDF=hPEM0Jz-zZSXBCXBZ=gBjLWL6QDvq+nFWkqY3DMw@mail.gmail.com>
+Subject: Re: [PATCH 1/5] ibmebus: convert of_platform_driver to platform_driver
+From: Rob Herring <robherring2@gmail.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Grant Likely <grant.likely@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Hoang-Nam Nguyen <hnguyen@de.ibm.com>,
+        Christoph Raisch <raisch@de.ibm.com>,
+        Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>,
+        Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>,
+        linuxppc-dev@lists.ozlabs.org, linux-rdma@vger.kernel.org,
+        netdev@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/16/2013 11:56 PM, David Howells wrote:
-> Supply accessor functions to set attributes in proc_dir_entry structs.
+On Sun, Apr 21, 2013 at 9:13 PM, Rob Herring <robherring2@gmail.com> wrote:
+> From: Rob Herring <rob.herring@calxeda.com>
 >
-> The following are supplied: proc_set_size() and proc_set_user().
+> ibmebus is the last remaining user of of_platform_driver and the
+> conversion to a regular platform driver is trivial.
 >
-> Signed-off-by: David Howells<dhowells@redhat.com>
-> cc: linuxppc-dev@lists.ozlabs.org
-> cc: linux-media@vger.kernel.org
-> cc: netdev@vger.kernel.org
-> cc: linux-wireless@vger.kernel.org
-> cc: linux-pci@vger.kernel.org
-> cc: netfilter-devel@vger.kernel.org
-> cc: alsa-devel@alsa-project.org
+> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Hoang-Nam Nguyen <hnguyen@de.ibm.com>
+> Cc: Christoph Raisch <raisch@de.ibm.com>
+> Cc: Roland Dreier <roland@kernel.org>
+> Cc: Sean Hefty <sean.hefty@intel.com>
+> Cc: Hal Rosenstock <hal.rosenstock@gmail.com>
+> Cc: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+> Cc: Grant Likely <grant.likely@linaro.org>
+> Cc: linuxppc-dev@lists.ozlabs.org
+> Cc: linux-rdma@vger.kernel.org
+> Cc: netdev@vger.kernel.org
+
+Ben, Can I have your Ack for this? The change is straightforward and
+neither of the 2 drivers used the id parameter that is removed.
+
+Rob
+
 > ---
+>  arch/powerpc/include/asm/ibmebus.h        |    4 ++--
+>  arch/powerpc/kernel/ibmebus.c             |   22 ++++++++++------------
+>  drivers/infiniband/hw/ehca/ehca_main.c    |    5 ++---
+>  drivers/net/ethernet/ibm/ehea/ehea_main.c |    8 +++-----
+>  4 files changed, 17 insertions(+), 22 deletions(-)
 >
->   arch/powerpc/kernel/proc_powerpc.c        |    2 +-
->   arch/powerpc/platforms/pseries/reconfig.c |    2 +-
-
-arch/powerpc side changes looks good.
-
--Vasant
-
->   drivers/media/pci/ttpci/av7110_ir.c       |    2 +-
->   drivers/net/irda/vlsi_ir.c                |    2 +-
->   drivers/net/wireless/airo.c               |   34 +++++++++--------------------
->   drivers/pci/proc.c                        |    2 +-
->   fs/proc/generic.c                         |   13 +++++++++++
->   include/linux/proc_fs.h                   |    5 ++++
->   kernel/configs.c                          |    2 +-
->   kernel/profile.c                          |    2 +-
->   net/netfilter/xt_recent.c                 |    3 +--
->   sound/core/info.c                         |    2 +-
->   12 files changed, 38 insertions(+), 33 deletions(-)
+> diff --git a/arch/powerpc/include/asm/ibmebus.h b/arch/powerpc/include/asm/ibmebus.h
+> index 1a9d9ae..088f95b 100644
+> --- a/arch/powerpc/include/asm/ibmebus.h
+> +++ b/arch/powerpc/include/asm/ibmebus.h
+> @@ -48,8 +48,8 @@
 >
-> diff --git a/arch/powerpc/kernel/proc_powerpc.c b/arch/powerpc/kernel/proc_powerpc.c
-> index 41d8ee9..feb8580 100644
-> --- a/arch/powerpc/kernel/proc_powerpc.c
-> +++ b/arch/powerpc/kernel/proc_powerpc.c
-> @@ -83,7 +83,7 @@ static int __init proc_ppc64_init(void)
->   			&page_map_fops, vdso_data);
->   	if (!pde)
->   		return 1;
-> -	pde->size = PAGE_SIZE;
-> +	proc_set_size(pde, PAGE_SIZE);
+>  extern struct bus_type ibmebus_bus_type;
 >
->   	return 0;
->   }
-> diff --git a/arch/powerpc/platforms/pseries/reconfig.c b/arch/powerpc/platforms/pseries/reconfig.c
-> index d6491bd..f93cdf5 100644
-> --- a/arch/powerpc/platforms/pseries/reconfig.c
-> +++ b/arch/powerpc/platforms/pseries/reconfig.c
-> @@ -452,7 +452,7 @@ static int proc_ppc64_create_ofdt(void)
+> -int ibmebus_register_driver(struct of_platform_driver *drv);
+> -void ibmebus_unregister_driver(struct of_platform_driver *drv);
+> +int ibmebus_register_driver(struct platform_driver *drv);
+> +void ibmebus_unregister_driver(struct platform_driver *drv);
 >
->   	ent = proc_create("powerpc/ofdt", S_IWUSR, NULL,&ofdt_fops);
->   	if (ent)
-> -		ent->size = 0;
-> +		proc_set_size(ent, 0);
+>  int ibmebus_request_irq(u32 ist, irq_handler_t handler,
+>                         unsigned long irq_flags, const char *devname,
+> diff --git a/arch/powerpc/kernel/ibmebus.c b/arch/powerpc/kernel/ibmebus.c
+> index 8220baa..16a7c23 100644
+> --- a/arch/powerpc/kernel/ibmebus.c
+> +++ b/arch/powerpc/kernel/ibmebus.c
+> @@ -205,7 +205,7 @@ static int ibmebus_create_devices(const struct of_device_id *matches)
+>         return ret;
+>  }
 >
->   	return 0;
->   }
-> diff --git a/drivers/media/pci/ttpci/av7110_ir.c b/drivers/media/pci/ttpci/av7110_ir.c
-> index eb82286..0e763a7 100644
-> --- a/drivers/media/pci/ttpci/av7110_ir.c
-> +++ b/drivers/media/pci/ttpci/av7110_ir.c
-> @@ -375,7 +375,7 @@ int av7110_ir_init(struct av7110 *av7110)
->   	if (av_cnt == 1) {
->   		e = proc_create("av7110_ir", S_IWUSR, NULL,&av7110_ir_proc_fops);
->   		if (e)
-> -			e->size = 4 + 256 * sizeof(u16);
-> +			proc_set_size(e, 4 + 256 * sizeof(u16));
->   	}
+> -int ibmebus_register_driver(struct of_platform_driver *drv)
+> +int ibmebus_register_driver(struct platform_driver *drv)
+>  {
+>         /* If the driver uses devices that ibmebus doesn't know, add them */
+>         ibmebus_create_devices(drv->driver.of_match_table);
+> @@ -215,7 +215,7 @@ int ibmebus_register_driver(struct of_platform_driver *drv)
+>  }
+>  EXPORT_SYMBOL(ibmebus_register_driver);
 >
->   	tasklet_init(&av7110->ir.ir_tasklet, av7110_emit_key, (unsigned long)&av7110->ir);
-> diff --git a/drivers/net/irda/vlsi_ir.c b/drivers/net/irda/vlsi_ir.c
-> index e22cd4e..5f47584 100644
-> --- a/drivers/net/irda/vlsi_ir.c
-> +++ b/drivers/net/irda/vlsi_ir.c
-> @@ -1678,7 +1678,7 @@ vlsi_irda_probe(struct pci_dev *pdev, const struct pci_device_id *id)
->   			IRDA_WARNING("%s: failed to create proc entry\n",
->   				     __func__);
->   		} else {
-> -			ent->size = 0;
-> +			proc_set_size(ent, 0);
->   		}
->   		idev->proc_entry = ent;
->   	}
-> diff --git a/drivers/net/wireless/airo.c b/drivers/net/wireless/airo.c
-> index 66e398d..21d0233 100644
-> --- a/drivers/net/wireless/airo.c
-> +++ b/drivers/net/wireless/airo.c
-> @@ -4507,73 +4507,63 @@ static int setup_proc_entry( struct net_device *dev,
->   					    airo_entry);
->   	if (!apriv->proc_entry)
->   		goto fail;
-> -	apriv->proc_entry->uid = proc_kuid;
-> -	apriv->proc_entry->gid = proc_kgid;
-> +	proc_set_user(apriv->proc_entry, proc_kuid, proc_kgid);
+> -void ibmebus_unregister_driver(struct of_platform_driver *drv)
+> +void ibmebus_unregister_driver(struct platform_driver *drv)
+>  {
+>         driver_unregister(&drv->driver);
+>  }
+> @@ -338,11 +338,10 @@ static int ibmebus_bus_bus_match(struct device *dev, struct device_driver *drv)
+>  static int ibmebus_bus_device_probe(struct device *dev)
+>  {
+>         int error = -ENODEV;
+> -       struct of_platform_driver *drv;
+> +       struct platform_driver *drv;
+>         struct platform_device *of_dev;
+> -       const struct of_device_id *match;
 >
->   	/* Setup the StatsDelta */
->   	entry = proc_create_data("StatsDelta", S_IRUGO&  proc_perm,
->   				 apriv->proc_entry,&proc_statsdelta_ops, dev);
->   	if (!entry)
->   		goto fail_stats_delta;
-> -	entry->uid = proc_kuid;
-> -	entry->gid = proc_kgid;
-> +	proc_set_user(entry, proc_kuid, proc_kgid);
+> -       drv = to_of_platform_driver(dev->driver);
+> +       drv = to_platform_driver(dev->driver);
+>         of_dev = to_platform_device(dev);
 >
->   	/* Setup the Stats */
->   	entry = proc_create_data("Stats", S_IRUGO&  proc_perm,
->   				 apriv->proc_entry,&proc_stats_ops, dev);
->   	if (!entry)
->   		goto fail_stats;
-> -	entry->uid = proc_kuid;
-> -	entry->gid = proc_kgid;
-> +	proc_set_user(entry, proc_kuid, proc_kgid);
+>         if (!drv->probe)
+> @@ -350,9 +349,8 @@ static int ibmebus_bus_device_probe(struct device *dev)
 >
->   	/* Setup the Status */
->   	entry = proc_create_data("Status", S_IRUGO&  proc_perm,
->   				 apriv->proc_entry,&proc_status_ops, dev);
->   	if (!entry)
->   		goto fail_status;
-> -	entry->uid = proc_kuid;
-> -	entry->gid = proc_kgid;
-> +	proc_set_user(entry, proc_kuid, proc_kgid);
+>         of_dev_get(of_dev);
 >
->   	/* Setup the Config */
->   	entry = proc_create_data("Config", proc_perm,
->   				 apriv->proc_entry,&proc_config_ops, dev);
->   	if (!entry)
->   		goto fail_config;
-> -	entry->uid = proc_kuid;
-> -	entry->gid = proc_kgid;
-> +	proc_set_user(entry, proc_kuid, proc_kgid);
+> -       match = of_match_device(drv->driver.of_match_table, dev);
+> -       if (match)
+> -               error = drv->probe(of_dev, match);
+> +       if (of_driver_match_device(dev, dev->driver))
+> +               error = drv->probe(of_dev);
+>         if (error)
+>                 of_dev_put(of_dev);
 >
->   	/* Setup the SSID */
->   	entry = proc_create_data("SSID", proc_perm,
->   				 apriv->proc_entry,&proc_SSID_ops, dev);
->   	if (!entry)
->   		goto fail_ssid;
-> -	entry->uid = proc_kuid;
-> -	entry->gid = proc_kgid;
-> +	proc_set_user(entry, proc_kuid, proc_kgid);
+> @@ -362,7 +360,7 @@ static int ibmebus_bus_device_probe(struct device *dev)
+>  static int ibmebus_bus_device_remove(struct device *dev)
+>  {
+>         struct platform_device *of_dev = to_platform_device(dev);
+> -       struct of_platform_driver *drv = to_of_platform_driver(dev->driver);
+> +       struct platform_driver *drv = to_platform_driver(dev->driver);
 >
->   	/* Setup the APList */
->   	entry = proc_create_data("APList", proc_perm,
->   				 apriv->proc_entry,&proc_APList_ops, dev);
->   	if (!entry)
->   		goto fail_aplist;
-> -	entry->uid = proc_kuid;
-> -	entry->gid = proc_kgid;
-> +	proc_set_user(entry, proc_kuid, proc_kgid);
+>         if (dev->driver && drv->remove)
+>                 drv->remove(of_dev);
+> @@ -372,7 +370,7 @@ static int ibmebus_bus_device_remove(struct device *dev)
+>  static void ibmebus_bus_device_shutdown(struct device *dev)
+>  {
+>         struct platform_device *of_dev = to_platform_device(dev);
+> -       struct of_platform_driver *drv = to_of_platform_driver(dev->driver);
+> +       struct platform_driver *drv = to_platform_driver(dev->driver);
 >
->   	/* Setup the BSSList */
->   	entry = proc_create_data("BSSList", proc_perm,
->   				 apriv->proc_entry,&proc_BSSList_ops, dev);
->   	if (!entry)
->   		goto fail_bsslist;
-> -	entry->uid = proc_kuid;
-> -	entry->gid = proc_kgid;
-> +	proc_set_user(entry, proc_kuid, proc_kgid);
+>         if (dev->driver && drv->shutdown)
+>                 drv->shutdown(of_dev);
+> @@ -419,7 +417,7 @@ struct device_attribute ibmebus_bus_device_attrs[] = {
+>  static int ibmebus_bus_legacy_suspend(struct device *dev, pm_message_t mesg)
+>  {
+>         struct platform_device *of_dev = to_platform_device(dev);
+> -       struct of_platform_driver *drv = to_of_platform_driver(dev->driver);
+> +       struct platform_driver *drv = to_platform_driver(dev->driver);
+>         int ret = 0;
 >
->   	/* Setup the WepKey */
->   	entry = proc_create_data("WepKey", proc_perm,
->   				 apriv->proc_entry,&proc_wepkey_ops, dev);
->   	if (!entry)
->   		goto fail_wepkey;
-> -	entry->uid = proc_kuid;
-> -	entry->gid = proc_kgid;
-> -
-> +	proc_set_user(entry, proc_kuid, proc_kgid);
->   	return 0;
+>         if (dev->driver && drv->suspend)
+> @@ -430,7 +428,7 @@ static int ibmebus_bus_legacy_suspend(struct device *dev, pm_message_t mesg)
+>  static int ibmebus_bus_legacy_resume(struct device *dev)
+>  {
+>         struct platform_device *of_dev = to_platform_device(dev);
+> -       struct of_platform_driver *drv = to_of_platform_driver(dev->driver);
+> +       struct platform_driver *drv = to_platform_driver(dev->driver);
+>         int ret = 0;
 >
->   fail_wepkey:
-> @@ -5695,10 +5685,8 @@ static int __init airo_init_module( void )
+>         if (dev->driver && drv->resume)
+> diff --git a/drivers/infiniband/hw/ehca/ehca_main.c b/drivers/infiniband/hw/ehca/ehca_main.c
+> index f8a6291..982e3ef 100644
+> --- a/drivers/infiniband/hw/ehca/ehca_main.c
+> +++ b/drivers/infiniband/hw/ehca/ehca_main.c
+> @@ -713,8 +713,7 @@ static struct attribute_group ehca_dev_attr_grp = {
+>         .attrs = ehca_dev_attrs
+>  };
 >
->   	airo_entry = proc_mkdir_mode("driver/aironet", airo_perm, NULL);
+> -static int ehca_probe(struct platform_device *dev,
+> -                     const struct of_device_id *id)
+> +static int ehca_probe(struct platform_device *dev)
+>  {
+>         struct ehca_shca *shca;
+>         const u64 *handle;
+> @@ -937,7 +936,7 @@ static struct of_device_id ehca_device_table[] =
+>  };
+>  MODULE_DEVICE_TABLE(of, ehca_device_table);
 >
-> -	if (airo_entry) {
-> -		airo_entry->uid = proc_kuid;
-> -		airo_entry->gid = proc_kgid;
-> -	}
-> +	if (airo_entry)
-> +		proc_set_user(airo_entry, proc_kuid, proc_kgid);
+> -static struct of_platform_driver ehca_driver = {
+> +static struct platform_driver ehca_driver = {
+>         .probe       = ehca_probe,
+>         .remove      = ehca_remove,
+>         .driver = {
+> diff --git a/drivers/net/ethernet/ibm/ehea/ehea_main.c b/drivers/net/ethernet/ibm/ehea/ehea_main.c
+> index 328f47c..c6ecf70 100644
+> --- a/drivers/net/ethernet/ibm/ehea/ehea_main.c
+> +++ b/drivers/net/ethernet/ibm/ehea/ehea_main.c
+> @@ -98,8 +98,7 @@ static struct ehea_fw_handle_array ehea_fw_handles;
+>  static struct ehea_bcmc_reg_array ehea_bcmc_regs;
 >
->   	for (i = 0; i<  4&&  io[i]&&  irq[i]; i++) {
->   		airo_print_info("", "Trying to configure ISA adapter at irq=%d "
-> diff --git a/drivers/pci/proc.c b/drivers/pci/proc.c
-> index 12e4fb5..7cde7c1 100644
-> --- a/drivers/pci/proc.c
-> +++ b/drivers/pci/proc.c
-> @@ -419,7 +419,7 @@ int pci_proc_attach_device(struct pci_dev *dev)
->   			&proc_bus_pci_operations, dev);
->   	if (!e)
->   		return -ENOMEM;
-> -	e->size = dev->cfg_size;
-> +	proc_set_size(e, dev->cfg_size);
->   	dev->procent = e;
 >
->   	return 0;
-> diff --git a/fs/proc/generic.c b/fs/proc/generic.c
-> index 1c07cad..5f6f6c3 100644
-> --- a/fs/proc/generic.c
-> +++ b/fs/proc/generic.c
-> @@ -498,6 +498,19 @@ out:
->   	return NULL;
->   }
->   EXPORT_SYMBOL(proc_create_data);
-> +
-> +void proc_set_size(struct proc_dir_entry *de, loff_t size)
-> +{
-> +	de->size = size;
-> +}
-> +EXPORT_SYMBOL(proc_set_size);
-> +
-> +void proc_set_user(struct proc_dir_entry *de, kuid_t uid, kgid_t gid)
-> +{
-> +	de->uid = uid;
-> +	de->gid = gid;
-> +}
-> +EXPORT_SYMBOL(proc_set_user);
+> -static int ehea_probe_adapter(struct platform_device *dev,
+> -                             const struct of_device_id *id);
+> +static int ehea_probe_adapter(struct platform_device *dev);
 >
->   static void free_proc_entry(struct proc_dir_entry *de)
->   {
-> diff --git a/include/linux/proc_fs.h b/include/linux/proc_fs.h
-> index 805edac..28a4d7e 100644
-> --- a/include/linux/proc_fs.h
-> +++ b/include/linux/proc_fs.h
-> @@ -130,6 +130,9 @@ static inline struct proc_dir_entry *proc_create(const char *name, umode_t mode,
->   extern struct proc_dir_entry *proc_net_mkdir(struct net *net, const char *name,
->   	struct proc_dir_entry *parent);
+>  static int ehea_remove(struct platform_device *dev);
 >
-> +extern void proc_set_size(struct proc_dir_entry *, loff_t);
-> +extern void proc_set_user(struct proc_dir_entry *, kuid_t, kgid_t);
-> +
->   extern struct file *proc_ns_fget(int fd);
->   extern bool proc_ns_inode(struct inode *inode);
+> @@ -112,7 +111,7 @@ static struct of_device_id ehea_device_table[] = {
+>  };
+>  MODULE_DEVICE_TABLE(of, ehea_device_table);
 >
-> @@ -158,6 +161,8 @@ static inline struct proc_dir_entry *proc_mkdir(const char *name,
->   	struct proc_dir_entry *parent) {return NULL;}
->   static inline struct proc_dir_entry *proc_mkdir_mode(const char *name,
->   	umode_t mode, struct proc_dir_entry *parent) { return NULL; }
-> +static inline void proc_set_size(struct proc_dir_entry *de, loff_t size) {}
-> +static inline void proc_set_user(struct proc_dir_entry *de, kuid_t uid, kgid_t gid) {}
+> -static struct of_platform_driver ehea_driver = {
+> +static struct platform_driver ehea_driver = {
+>         .driver = {
+>                 .name = "ehea",
+>                 .owner = THIS_MODULE,
+> @@ -3255,8 +3254,7 @@ static void ehea_remove_device_sysfs(struct platform_device *dev)
+>         device_remove_file(&dev->dev, &dev_attr_remove_port);
+>  }
 >
->   struct tty_driver;
->   static inline void proc_tty_register_driver(struct tty_driver *driver) {};
-> diff --git a/kernel/configs.c b/kernel/configs.c
-> index 42e8fa0..c18b1f1 100644
-> --- a/kernel/configs.c
-> +++ b/kernel/configs.c
-> @@ -79,7 +79,7 @@ static int __init ikconfig_init(void)
->   	if (!entry)
->   		return -ENOMEM;
+> -static int ehea_probe_adapter(struct platform_device *dev,
+> -                             const struct of_device_id *id)
+> +static int ehea_probe_adapter(struct platform_device *dev)
+>  {
+>         struct ehea_adapter *adapter;
+>         const u64 *adapter_handle;
+> --
+> 1.7.10.4
 >
-> -	entry->size = kernel_config_data_size;
-> +	proc_set_size(entry, kernel_config_data_size);
->
->   	return 0;
->   }
-> diff --git a/kernel/profile.c b/kernel/profile.c
-> index 524ce5e..0bf4007 100644
-> --- a/kernel/profile.c
-> +++ b/kernel/profile.c
-> @@ -600,7 +600,7 @@ int __ref create_proc_profile(void) /* false positive from hotcpu_notifier */
->   			    NULL,&proc_profile_operations);
->   	if (!entry)
->   		return 0;
-> -	entry->size = (1+prof_len) * sizeof(atomic_t);
-> +	proc_set_size(entry, (1 + prof_len) * sizeof(atomic_t));
->   	hotcpu_notifier(profile_cpu_callback, 0);
->   	return 0;
->   }
-> diff --git a/net/netfilter/xt_recent.c b/net/netfilter/xt_recent.c
-> index 3db2d38..1e657cf 100644
-> --- a/net/netfilter/xt_recent.c
-> +++ b/net/netfilter/xt_recent.c
-> @@ -401,8 +401,7 @@ static int recent_mt_check(const struct xt_mtchk_param *par,
->   		ret = -ENOMEM;
->   		goto out;
->   	}
-> -	pde->uid = uid;
-> -	pde->gid = gid;
-> +	proc_set_user(pde, uid, gid);
->   #endif
->   	spin_lock_bh(&recent_lock);
->   	list_add_tail(&t->list,&recent_net->tables);
-> diff --git a/sound/core/info.c b/sound/core/info.c
-> index 3aa8864..c7f41c3 100644
-> --- a/sound/core/info.c
-> +++ b/sound/core/info.c
-> @@ -970,7 +970,7 @@ int snd_info_register(struct snd_info_entry * entry)
->   			mutex_unlock(&info_mutex);
->   			return -ENOMEM;
->   		}
-> -		p->size = entry->size;
-> +		proc_set_size(p, entry->size);
->   	}
->   	entry->p = p;
->   	if (entry->parent)
->
-> _______________________________________________
-> Linuxppc-dev mailing list
-> Linuxppc-dev@lists.ozlabs.org
-> https://lists.ozlabs.org/listinfo/linuxppc-dev
->
-
