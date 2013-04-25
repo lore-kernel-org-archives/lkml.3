@@ -1,58 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757903Ab3DYKTV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 06:19:21 -0400
-Received: from mail-bk0-f54.google.com ([209.85.214.54]:34345 "EHLO
-	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757850Ab3DYKTP (ORCPT
+	id S1757934Ab3DYKT1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 06:19:27 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:43033 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755629Ab3DYKTY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 06:19:15 -0400
-Date: Thu, 25 Apr 2013 12:19:32 +0200
-From: Cong Ding <dinggnu@gmail.com>
-To: "Hans J. Koch" <hjk@hansjkoch.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 1/1] uio.c: solve memory leak
-Message-ID: <20130425101932.GA5909@gmail.com>
-References: <1354210800-27230-1-git-send-email-dinggnu@gmail.com>
- <20121211012112.GA11273@local>
- <CAM3j68oNeb5HVYVHTSnQoiBHa7T4krkiDLy0dQkBZUd5BQgo2w@mail.gmail.com>
- <20130118220050.GA31286@kroah.com>
- <20130120210140.GA13035@local>
- <20130214114315.GB18774@gmail.com>
+	Thu, 25 Apr 2013 06:19:24 -0400
+Subject: [PATCH v3 8/8] powerpc/pseries: Read common partition via pstore
+To: linuxppc-dev@ozlabs.org, paulus@samba.org, linux-kernel@vger.kernel.org,
+        benh@kernel.crashing.org
+From: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+Cc: jkenisto@linux.vnet.ibm.com, tony.luck@intel.com, ananth@in.ibm.com,
+        mahesh@linux.vnet.ibm.com, ccross@android.com, anton@samba.org,
+        cbouatmailru@gmail.com, keescook@chromium.org
+Date: Thu, 25 Apr 2013 15:49:08 +0530
+Message-ID: <20130425101908.21017.32553.stgit@aruna-ThinkPad-T420>
+In-Reply-To: <20130425100952.21017.51799.stgit@aruna-ThinkPad-T420>
+References: <20130425100952.21017.51799.stgit@aruna-ThinkPad-T420>
+User-Agent: StGit/0.16-41-gd1dd
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130214114315.GB18774@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13042510-3568-0000-0000-0000037D8383
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 14, 2013 at 12:43:15PM +0100, Cong Ding wrote:
-> On Sun, Jan 20, 2013 at 10:01:41PM +0100, Hans J. Koch wrote:
-> > On Fri, Jan 18, 2013 at 02:00:50PM -0800, Greg Kroah-Hartman wrote:
-> > > On Fri, Jan 18, 2013 at 10:05:45PM +0100, Cong Ding wrote:
-> > > > On Tue, Dec 11, 2012 at 2:21 AM, Hans J. Koch <hjk@hansjkoch.de> wrote:
-> > > > > On Thu, Nov 29, 2012 at 05:40:00PM +0000, Cong Ding wrote:
-> > > > >> In version 1, I forgot to modify the same bug in the first loop.
-> > > > >>
-> > > > >> we have to call kobject_put() to clean up the kobject after function
-> > > > >> kobject_init(), kobject_add(), or kobject_uevent() is called.
-> > > > >>
-> > > > >> Signed-off-by: Cong Ding <dinggnu@gmail.com>
-> > > > >
-> > > > > Signed-off-by: "Hans J. Koch" <hjk@hansjkoch.de>
-> > > > 
-> > > > Hi Greg, is this patch stil in the queue?
-> > > 
-> > > Hans is queueing up UIO patches to send to me, I'm waiting for him to
-> > > send them as I don't have any in my trees.
-> > 
-> > I'll set that up tonight or tomorrow. Sorry, I was delayed by illness
-> > and a lot of other work.
-> Hi Hans, what's this going on?
-> 
-> Thanks, - cong
-ping
+This patch exploits pstore subsystem to read details of common partition
+in NVRAM to a separate file in /dev/pstore. For instance, common partition
+details will be stored in a file named [common-nvram-6].
+
+Signed-off-by: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+Reviewed-by: Jim Keniston <jkenisto@us.ibm.com>
+---
+ arch/powerpc/platforms/pseries/nvram.c |   17 ++++++++++++++++-
+ fs/pstore/inode.c                      |    3 +++
+ include/linux/pstore.h                 |    1 +
+ 3 files changed, 20 insertions(+), 1 deletion(-)
+
+diff --git a/arch/powerpc/platforms/pseries/nvram.c b/arch/powerpc/platforms/pseries/nvram.c
+index f7392f6..14cc486 100644
+--- a/arch/powerpc/platforms/pseries/nvram.c
++++ b/arch/powerpc/platforms/pseries/nvram.c
+@@ -138,10 +138,17 @@ static struct nvram_os_partition of_config_partition = {
+ 	.os_partition = false
+ };
+ 
++static struct nvram_os_partition common_partition = {
++	.name = "common",
++	.index = -1,
++	.os_partition = false
++};
++
+ static enum pstore_type_id nvram_type_ids[] = {
+ 	PSTORE_TYPE_DMESG,
+ 	PSTORE_TYPE_PPC_RTAS,
+ 	PSTORE_TYPE_PPC_OF,
++	PSTORE_TYPE_PPC_COMMON,
+ 	-1
+ };
+ static int read_type;
+@@ -530,7 +537,7 @@ static int nvram_pstore_write(enum pstore_type_id type,
+ }
+ 
+ /*
+- * Reads the oops/panic report, rtas and of-config partition.
++ * Reads the oops/panic report, rtas, of-config and common partition.
+  * Returns the length of the data we read from each partition.
+  * Returns 0 if we've been called before.
+  */
+@@ -566,6 +573,14 @@ static ssize_t nvram_pstore_read(u64 *id, enum pstore_type_id *type,
+ 		time->tv_sec = 0;
+ 		time->tv_nsec = 0;
+ 		break;
++	case PSTORE_TYPE_PPC_COMMON:
++		sig = NVRAM_SIG_SYS;
++		part = &common_partition;
++		*type = PSTORE_TYPE_PPC_COMMON;
++		*id = PSTORE_TYPE_PPC_COMMON;
++		time->tv_sec = 0;
++		time->tv_nsec = 0;
++		break;
+ 	default:
+ 		return 0;
+ 	}
+diff --git a/fs/pstore/inode.c b/fs/pstore/inode.c
+index 8d4fb65..88cc050 100644
+--- a/fs/pstore/inode.c
++++ b/fs/pstore/inode.c
+@@ -330,6 +330,9 @@ int pstore_mkfile(enum pstore_type_id type, char *psname, u64 id, int count,
+ 	case PSTORE_TYPE_PPC_OF:
+ 		sprintf(name, "of-%s-%lld", psname, id);
+ 		break;
++	case PSTORE_TYPE_PPC_COMMON:
++		sprintf(name, "common-%s-%lld", psname, id);
++		break;
+ 	case PSTORE_TYPE_UNKNOWN:
+ 		sprintf(name, "unknown-%s-%lld", psname, id);
+ 		break;
+diff --git a/include/linux/pstore.h b/include/linux/pstore.h
+index 615dc18..656699f 100644
+--- a/include/linux/pstore.h
++++ b/include/linux/pstore.h
+@@ -38,6 +38,7 @@ enum pstore_type_id {
+ 	/* PPC64 partition types */
+ 	PSTORE_TYPE_PPC_RTAS	= 4,
+ 	PSTORE_TYPE_PPC_OF	= 5,
++	PSTORE_TYPE_PPC_COMMON	= 6,
+ 	PSTORE_TYPE_UNKNOWN	= 255
+ };
+ 
 
