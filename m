@@ -1,164 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758698Ab3DYDuG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 23:50:06 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:54716 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758460Ab3DYDuD (ORCPT
+	id S1758709Ab3DYDzT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 23:55:19 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:37741 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758440Ab3DYDzQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 23:50:03 -0400
-Date: Wed, 24 Apr 2013 20:50:01 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Johannes Weiner <hannes@cmpxchg.org>
-cc: Michal Hocko <mhocko@suse.cz>, Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Zhouping Liu <zliu@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Glauber Costa <glommer@parallels.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>, caiqian <caiqian@redhat.com>,
-        Caspar Zhang <czhang@redhat.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Lingzhu Xiang <lxiang@redhat.com>
-Subject: Re: [v3.9-rc8]: kernel BUG at mm/memcontrol.c:3994! (was: Re:
- [BUG][s390x] mm: system crashed)
-In-Reply-To: <20130424152043.GP2018@cmpxchg.org>
-Message-ID: <alpine.LNX.2.00.1304242022200.16233@eggly.anvils>
-References: <156480624.266924.1365995933797.JavaMail.root@redhat.com> <2068164110.268217.1365996520440.JavaMail.root@redhat.com> <20130415055627.GB4207@osiris> <516B9B57.6050308@redhat.com> <20130416075047.GA4184@osiris> <1638103518.2400447.1366266465689.JavaMail.root@redhat.com>
- <20130418071303.GB4203@osiris> <20130424104255.GC4350@osiris> <20130424131851.GC31960@dhcp22.suse.cz> <20130424152043.GP2018@cmpxchg.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Wed, 24 Apr 2013 23:55:16 -0400
+Date: Thu, 25 Apr 2013 11:55:03 +0800
+From: Ram Pai <linuxram@us.ibm.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Yinghai Lu <yinghai@kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 03/27] PCI: pci resource iterator
+Message-ID: <20130425035503.GA15749@ram.oc3035372033.ibm.com>
+Reply-To: Ram Pai <linuxram@us.ibm.com>
+References: <1363217302-14383-1-git-send-email-yinghai@kernel.org>
+ <1363217302-14383-4-git-send-email-yinghai@kernel.org>
+ <CAErSpo4VzBZ=fAzPm1yWEs4+09_D1=rysMf6tGgnqpVEKytSzQ@mail.gmail.com>
+ <20130409045113.GA7251@ram.oc3035372033.ibm.com>
+ <CAErSpo7TReTzz289EMuh5gGKjskCLmACNT99o1s-QCzRHLGaXg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAErSpo7TReTzz289EMuh5gGKjskCLmACNT99o1s-QCzRHLGaXg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13042503-7606-0000-0000-00000AD1BC6A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 24 Apr 2013, Johannes Weiner wrote:
-> On Wed, Apr 24, 2013 at 03:18:51PM +0200, Michal Hocko wrote:
-> > On Wed 24-04-13 12:42:55, Heiko Carstens wrote:
-> > > On Thu, Apr 18, 2013 at 09:13:03AM +0200, Heiko Carstens wrote:
-> > > > Ok, thanks for verifying! I'll look into it; hopefully I can reproduce it
-> > > > here as well.
-> > > 
-> > > That seems to be a common code bug. I can easily trigger the VM_BUG_ON()
-> > > below (when I force the system to swap):
-> > > 
-> > > [   48.347963] ------------[ cut here ]------------
-> > > [   48.347972] kernel BUG at mm/memcontrol.c:3994!
-> > > [   48.348012] illegal operation: 0001 [#1] SMP 
-> > > [   48.348015] Modules linked in:
-> > > [   48.348017] CPU: 1 Not tainted 3.9.0-rc8+ #38
-> > > [   48.348020] Process mmap2 (pid: 635, task: 0000000029476100, ksp: 000000002e91b938)
-> > > [   48.348022] Krnl PSW : 0704f00180000000 000000000026552c (__mem_cgroup_uncharge_common+0x2c4/0x33c)
-> > > [   48.348032]            R:0 T:1 IO:1 EX:1 Key:0 M:1 W:0 P:0 AS:3 CC:3 PM:0 EA:3
-> > >                Krnl GPRS: 0000000000000008 0000000000000009 000003d1002a9200 0000000000000000
-> > > [   48.348039]            0000000000000000 00000000006812d8 000003ffdf339000 00000000321a6f98
-> > > [   48.348043]            000003fffce11000 0000000000000000 0000000000000001 000003d1002a9200
-> > > [   48.348046]            0000000000000001 0000000000681b88 000000002e91bc18 000000002e91bbd0
-> > > [   48.348057] Krnl Code: 000000000026551e: c0e5fffaa2a1        brasl   %r14,1b9a60
-> > >                           0000000000265524: a7f4ff7d            brc     15,26541e
-> > >                          #0000000000265528: a7f40001            brc     15,26552a
-> > >                          >000000000026552c: e3c0b8200124        stg     %r12,6176(%r11)
-> > >                           0000000000265532: a7f4ff57            brc     15,2653e0
-> > >                           0000000000265536: e310b8280104        lg      %r1,6184(%r11)
-> > >                           000000000026553c: a71b0001            aghi    %r1,1
-> > >                           0000000000265540: e310b8280124        stg     %r1,6184(%r11)
-> > > [   48.348099] Call Trace:
-> > > [   48.348100] ([<000003d1002a91c0>] 0x3d1002a91c0)
-> > > [   48.348102]  [<00000000002404aa>] page_remove_rmap+0xf2/0x16c
-> > > [   48.348106]  [<0000000000232dc8>] unmap_single_vma+0x494/0x7d8
-> > > [   48.348107]  [<0000000000233ac0>] unmap_vmas+0x50/0x74
-> > > [   48.348109]  [<00000000002396ec>] unmap_region+0x9c/0x110
-> > > [   48.348110]  [<000000000023bd18>] do_munmap+0x284/0x470
-> > > [   48.348111]  [<000000000023bf56>] vm_munmap+0x52/0x70
-> > > [   48.348113]  [<000000000023cf32>] SyS_munmap+0x3a/0x4c
-> > > [   48.348114]  [<0000000000665e14>] sysc_noemu+0x22/0x28
-> > > [   48.348118]  [<000003fffcf187b2>] 0x3fffcf187b2
-> > > [   48.348119] Last Breaking-Event-Address:
-> > > [   48.348120]  [<0000000000265528>] __mem_cgroup_uncharge_common+0x2c0/0x33c
-> > > 
-> > > Looking at the code, the code flow is:
-> > > 
-> > > page_remove_rmap() -> mem_cgroup_uncharge_page() -> __mem_cgroup_uncharge_common()
-> > > 
-> > > Note that in mem_cgroup_uncharge_page() the page in question passed the check:
-> > > 
-> > > [...]
-> > >         if (PageSwapCache(page))
-> > >                 return;
-> > > [...]
-> > > 
-> > > and just a couple of instructions later the VM_BUG_ON() within
-> > > __mem_cgroup_uncharge_common() triggers:
-> > > 
-> > > [...]
-> > >         if (mem_cgroup_disabled())
-> > >                 return NULL;
-> > > 
-> > >         VM_BUG_ON(PageSwapCache(page));
-> > > [...]
-> > > 
-> > > Which means that another cpu changed the pageflags concurrently. In fact,
-> > > looking at the dump a different cpu is indeed busy with running kswapd.
-> > 
-> > Hmm, maybe I am missing something but it really looks like we can race
-> > here. Reclaim path takes the page lock while zap_pte takes page table
-> > lock so nothing prevents them from racing here:
-> > shrink_page_list		zap_pte_range
-> >   trylock_page			  pte_offset_map_lock
-> >   add_to_swap			    page_remove_rmap
-> >     /* Page can be still mapped */
-> >     add_to_swap_cache		      atomic_add_negative(_mapcount)
-> >       __add_to_swap_cache	        mem_cgroup_uncharge_page
-> >       				          (PageSwapCache(page)) && return
-> >         SetPageSwapCache
-> > 				          __mem_cgroup_uncharge_common
-> > 					    VM_BUG_ON(PageSwapCache(page))
-> > 
-> > Maybe not many people run with CONFIG_DEBUG_VM enabled these days so we
-> > do not this more often (even me testing configs are not consistent in
-> > that regards and only few have it on). The only thing that changed in
-> > this area recently is 0c59b89c which made the test VM_BUG_ON rather then
-> > simple return in 3.6
-> > And maybe the BUG_ON is too harsh as CgroupUsed should guarantee that
-> > the uncharge will eventually go away. What do you think Johannes?
+On Wed, Apr 10, 2013 at 09:22:48AM -0600, Bjorn Helgaas wrote:
+> On Mon, Apr 8, 2013 at 10:51 PM, Ram Pai <linuxram@us.ibm.com> wrote:
+> > On Thu, Apr 04, 2013 at 04:18:01PM -0600, Bjorn Helgaas wrote:
+> >> On Wed, Mar 13, 2013 at 5:27 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> >> > From: Ram Pai <linuxram@us.ibm.com>
+> >> >
+> >> > Currently pci_dev structure holds an array of 17 PCI resources; six base
+> >> > BARs, one ROM BAR, four BRIDGE BARs, six sriov BARs.  This is wasteful.
+> >> > A bridge device just needs the 4 bridge resources. A non-bridge device
+> >> > just needs the six base resources and one ROM resource. The sriov
+> >> > resources are needed only if the device has SRIOV capability.
+> >> >
+> >> > The pci_dev structure needs to be re-organized to avoid unnecessary
+> >> > bloating.  However too much code outside the pci-bus driver, assumes the
+> >> > internal details of the pci_dev structure, thus making it hard to
+> >> > re-organize the datastructure.
+> >> >
+> >> > As a first step this patch provides generic methods to access the
+> >> > resource structure of the pci_dev.
+> >> >
+> >> > Finally we can re-organize the resource structure in the pci_dev
+> >> > structure and correspondingly update the methods.
+> >> >
+> >> > -v2: Consolidated iterator interface as per Bjorn's suggestion.
+> >> > -v3: Add the idx back - Yinghai Lu
+> >> > -v7: Change to use bitmap for searching - Yinghai Lu
+> >> > -v8: Fix acpiphp module compiling error that is found by
+> >> >         Steven Newbury <steve@snewbury.org.uk> - Yinghai Lu
+> >> >
+> >> > Signed-off-by: Ram Pai <linuxram@us.ibm.com>
+> >> > Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> >> > ---
+> >> >  drivers/pci/probe.c |   48 ++++++++++++++++++++++++++++++++++++++++++++++++
+> >> >  include/linux/pci.h |   24 ++++++++++++++++++++++++
+> >> >  2 files changed, 72 insertions(+)
+> >> >
+> >> > diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+> >> > index 1df75f7..ac751a6 100644
+> >> > --- a/drivers/pci/probe.c
+> >> > +++ b/drivers/pci/probe.c
+> >> > @@ -123,6 +123,54 @@ int pci_dev_resource_idx(struct pci_dev *dev, struct resource *res)
+> >> >         return -1;
+> >> >  }
+> >> >
+> >> > +static void __init_res_idx_mask(unsigned long *mask, int flag)
+> >> > +{
+> >> > +       bitmap_zero(mask, PCI_NUM_RESOURCES);
+> >> > +       if (flag & PCI_STD_RES)
+> >> > +               bitmap_set(mask, PCI_STD_RESOURCES,
+> >> > +                       PCI_STD_RESOURCE_END - PCI_STD_RESOURCES + 1);
+> >> > +       if (flag & PCI_ROM_RES)
+> >> > +               bitmap_set(mask, PCI_ROM_RESOURCE, 1);
+> >> > +#ifdef CONFIG_PCI_IOV
+> >> > +       if (flag & PCI_IOV_RES)
+> >> > +               bitmap_set(mask, PCI_IOV_RESOURCES,
+> >> > +                       PCI_IOV_RESOURCE_END - PCI_IOV_RESOURCES + 1);
+> >> > +#endif
+> >> > +       if (flag & PCI_BRIDGE_RES)
+> >> > +               bitmap_set(mask, PCI_BRIDGE_RESOURCES,
+> >> > +                       PCI_BRIDGE_RESOURCE_END - PCI_BRIDGE_RESOURCES + 1);
+> >> > +}
+> >> > +
+> >> > +static DECLARE_BITMAP(res_idx_mask[1 << PCI_RES_BLOCK_NUM], PCI_NUM_RESOURCES);
+> >> > +static int __init pci_res_idx_mask_init(void)
+> >> > +{
+> >> > +       int i;
+> >> > +
+> >> > +       for (i = 0; i < (1 << PCI_RES_BLOCK_NUM); i++)
+> >> > +               __init_res_idx_mask(res_idx_mask[i], i);
+> >> > +
+> >> > +       return 0;
+> >> > +}
+> >> > +postcore_initcall(pci_res_idx_mask_init);
+> >> > +
+> >> > +static inline unsigned long *get_res_idx_mask(int flag)
+> >> > +{
+> >> > +       return res_idx_mask[flag & ((1 << PCI_RES_BLOCK_NUM) - 1)];
+> >> > +}
+> >> > +
+> >> > +int pci_next_resource_idx(int i, int flag)
+> >> > +{
+> >> > +       i++;
+> >> > +       if (i < PCI_NUM_RESOURCES)
+> >> > +               i = find_next_bit(get_res_idx_mask(flag), PCI_NUM_RESOURCES, i);
+> >> > +
+> >> > +       if (i < PCI_NUM_RESOURCES)
+> >> > +               return i;
+> >> > +
+> >> > +       return -1;
+> >> > +}
+> >> > +EXPORT_SYMBOL(pci_next_resource_idx);
+> >> > +
+> >> >  static u64 pci_size(u64 base, u64 maxbase, u64 mask)
+> >> >  {
+> >> >         u64 size = mask & maxbase;      /* Find the significant bits */
+> >> > diff --git a/include/linux/pci.h b/include/linux/pci.h
+> >> > index aefff8b..127a856 100644
+> >> > --- a/include/linux/pci.h
+> >> > +++ b/include/linux/pci.h
+> >> > @@ -341,6 +341,30 @@ struct pci_dev {
+> >> >  struct resource *pci_dev_resource_n(struct pci_dev *dev, int n);
+> >> >  int pci_dev_resource_idx(struct pci_dev *dev, struct resource *res);
+> >> >
+> >> > +#define PCI_STD_RES            (1<<0)
+> >> > +#define PCI_ROM_RES            (1<<1)
+> >> > +#define PCI_IOV_RES            (1<<2)
+> >> > +#define PCI_BRIDGE_RES         (1<<3)
+> >> > +#define PCI_RES_BLOCK_NUM      4
+> >> > +
+> >> > +#define PCI_ALL_RES            (PCI_STD_RES | PCI_ROM_RES | PCI_BRIDGE_RES | PCI_IOV_RES)
+> >> > +#define PCI_NOSTD_RES          (PCI_ALL_RES & ~PCI_STD_RES)
+> >> > +#define PCI_NOIOV_RES          (PCI_ALL_RES & ~PCI_IOV_RES)
+> >> > +#define PCI_NOROM_RES          (PCI_ALL_RES & ~PCI_ROM_RES)
+> >> > +#define PCI_NOBRIDGE_RES       (PCI_ALL_RES & ~PCI_BRIDGE_RES)
+> >> > +#define PCI_STD_ROM_RES                (PCI_STD_RES | PCI_ROM_RES)
+> >> > +#define PCI_STD_IOV_RES                (PCI_STD_RES | PCI_IOV_RES)
+> >> > +#define PCI_STD_ROM_IOV_RES    (PCI_STD_RES | PCI_ROM_RES | PCI_IOV_RES)
+> >> > +
+> >> > +int pci_next_resource_idx(int i, int flag);
+> >> > +
+> >> > +#define for_each_pci_resource(dev, res, i, flag)       \
+> >> > +       for (i = pci_next_resource_idx(-1, flag),       \
+> >> > +               res = pci_dev_resource_n(dev, i);       \
+> >> > +            res;                                       \
+> >> > +            i = pci_next_resource_idx(i, flag),        \
+> >> > +               res = pci_dev_resource_n(dev, i))
+> >> > +
+> >> >  static inline struct pci_dev *pci_physfn(struct pci_dev *dev)
+> >> >  {
+> >> >  #ifdef CONFIG_PCI_IOV
+> >>
+> >> I think this turned out to be a disaster, with all the bitmaps and
+> >> helper functions.  Filtering in the bodies of the
+> >> for_each_pci_resource() users has *got* to be better.  That probably
+> >> requires a wrapper struct around the struct resource.  Or possibly
+> >> having a wrapper struct with a "type" or "flags" field would make
+> >> filtering in for_each_pci_resources() itself cleaner to implement.
+> >
+> > I agree. There are two cleanups needed.
+> >
+> > a) pci drivers should not assume the internal organization of the
+> >         resources in the struct pci_dev.
 > 
-> Interesting.  We need to ensure there is ordering between setting
-> PG_swapcache and installing swap entries because I think we are the
-> only ones looking at PG_swapcache without the page lock held.  So we
-> don't have a safe way to check for PG_swapcache but if we get it
-> wrong, we may steal an uncharge that uncharge_swapcache() should be
-> doing instead and that means we mess up the swap statistics
-> accounting.
+> Do you mean that drivers should not use "pci_dev->resource[i]"?  If
+> so, I agree that it would be great if we had an accessor for BARs, but
+> it seems impractical to change all the drivers that use the current
+> style.
+
+Sorry for the delay. Was vacationing.  I mean, we cannot let drivers
+assume anything about the how the resources are organized.
+
+The only thing the drivers should know is that there are 6 normal
+resources, 4 bridge resources, 1 ROM resource and 6 iov resources.
+
+Currently the drivers assume that ROM resource follows normal resources
+followed by IOV followed by bridge. These assumptions are making it hard
+to re-organize the layout of resources in struct pci_dev.
+
+I think we need to expose the following interfaces to drivers.
+
+a) return the nth normal resource
+b) return the nth iov resource
+c) return the rom resource
+d) return the nth bridge resource
+e) return the type and index of a given resource, where 'index' is
+	the index w.r.t to that resource type; not w.r.t to all
+	the resources of the device.
+f) ability to loop through all resources of the given type/types.
+
+Everything else needs to be hidden.
+
 > 
-> So how can we, without holding the page lock, either safely back off
-> from a page in swapcache or make sure we do the swap statistics
-> accounting when uncharging a swapcache page from the final unmap?
+> The number of places that actually look at *non-BAR* pci_dev
+> resources, e.g., the places that look at bridge windows and SR-IOV
+> BARs, should be pretty small, and it seems reasonable to change them.
 
-Awkward.
+Unfortunately, the bridge windows and SRIOV windows are currently 
+inter-twined with normal windows. Just cleaning up that code still
+leaves some ugly hacks around.
 
-I agree that the actual memcg uncharging should be okay, but the memsw
-swap stats will go wrong (doesn't matter toooo much), and mem_cgroup_put
-get missed (leaking a struct mem_cgroup).
+> 
+> > b) The type of a resource has to be determined based on some
+> >    information internal to the resource; possibly a flag,
+> >    instead of the relative position of the resource in some array.
+> 
+> Yes, I agree.
+> 
+> Bjorn
 
-I confess to having seen this myself, just once, on x86_64 3.8-rc6-mm1
-plus some patches I was testing; but I never got back to look into it.
+-- 
+Ram Pai
 
-I wonder if something gone into 3.9 has changed the timing to make it
-more easily reproduced now; but the underlying problem has been there
-a long time - long before your VM_BUG_ON was there to expose it.
-
-For now I guess the best is just to remove the VM_BUG_ON, or restore
-it to a (usually redundant) return NULL, and live with the old leak.
-
-But the real fix... I fear it may involve adding another PageCgroup
-flag, just for memsw, to ensure that its counts are kept in balance
-even when SwapCache races cause what's been charged in one way to
-get uncharged in an unexpected way.
-
-All those PageSwapCache and page_mapped tests are suspect: I expect
-most will turn out to be okay, one way or another, but they are
-suspicious and deserve audit.
-
-(But I won't be working on this myself, sorry.)
-
-Hugh
