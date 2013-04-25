@@ -1,34 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757451Ab3DYLe6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 07:34:58 -0400
-Received: from ironport8-6T.isc.cl ([200.91.27.138]:38459 "EHLO
-	ironport8-6T.isc.cl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755185Ab3DYLe5 (ORCPT
+	id S1757749Ab3DYLfy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 07:35:54 -0400
+Received: from mail-ia0-f172.google.com ([209.85.210.172]:49128 "EHLO
+	mail-ia0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756288Ab3DYLfx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 07:34:57 -0400
-X-Greylist: delayed 554 seconds by postgrey-1.27 at vger.kernel.org; Thu, 25 Apr 2013 07:34:57 EDT
-Date: Thu, 25 Apr 2013 04:25:38 -0700
-Message-ID: <5176CC0C00000608@ms1.isc.cl>
-From: "Webmail Help Desk" <oscarpacheco@tie.cl>
-Subject: Upgrade Account
+	Thu, 25 Apr 2013 07:35:53 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-To: unlisted-recipients:; (no To-header on input)
+In-Reply-To: <1366279934-30761-26-git-send-email-lee.jones@linaro.org>
+References: <1366279934-30761-1-git-send-email-lee.jones@linaro.org>
+	<1366279934-30761-26-git-send-email-lee.jones@linaro.org>
+Date: Thu, 25 Apr 2013 13:35:52 +0200
+Message-ID: <CACRpkdYR5CeVLprpjMAp2Vo0hQAP1witQd8pa22ek9OzRFe3yQ@mail.gmail.com>
+Subject: Re: [PATCH 25/32] ARM: ux500: Setup the DMA40 driver's DT node using
+ the new DMA API
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Su cuota Webmail ha excedido el Set cuota / l?mite que es de 20 GB. Usted
-se est?n ejecutando en 23MB debido a los archivos y carpetas ocultos en su
-buz?n. Por favor haga clic en el enlace para validar su buz?n y aumentar
-su cuota hasta 200GB.
- 
-https://docs.google.com/forms/d/1HqEMe3DCRH11hoPv96Wyz-lzmMLtlWKiZhToS99Y8aI/viewform?sid=73740d3a0b590dd8&token=7abPQD4BAAA.9HDBHFwy-HwslnI8Kq8QYQ.hP6Js_W10n5M4ZgBZX-zNg
+On Thu, Apr 18, 2013 at 12:12 PM, Lee Jones <lee.jones@linaro.org> wrote:
 
+> The new DMA is now available, so let's use it to setup ST-Ericsson's
+> DMA40 driver when Device Tree is enabled.
+>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-El no hacer clic en este enlace y validar su cuota puede causar la p?rdida
-de informaci?n importante en su buz?n / o causar Limited acceso a ella. Gracias
-por tu colaboraci?n.
+This is one of those patches I want to put on a special devicetree
+branch, but looks allright, Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
+Yours,
+Linus Walleij
