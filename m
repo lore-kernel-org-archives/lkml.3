@@ -1,39 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759337Ab3DYVmS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 17:42:18 -0400
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:63912 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757707Ab3DYVmQ (ORCPT
+	id S1759451Ab3DYVpz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 17:45:55 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60578 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757914Ab3DYVpy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 17:42:16 -0400
-MIME-Version: 1.0
-In-Reply-To: <51713B7B.3060402@neotion.com>
-References: <51713B7B.3060402@neotion.com>
-Date: Thu, 25 Apr 2013 23:42:15 +0200
-Message-ID: <CACRpkdYsZgrGtog9-DDgW4PB7SaMgNjRKr=Uh3PKo+_AcoGeRg@mail.gmail.com>
-Subject: Re: [PATCH 1/3] Add BOOT_PARTITION_ENABLE definition to MMC EXT_CSD PART_CONFIG
-From: Linus Walleij <linus.walleij@linaro.org>
-To: narmstrong@neotion.com
-Cc: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        Chris Ball <cjb@laptop.org>, Namjae Jeon <linkinjeon@gmail.com>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        Subhash Jadavani <subhashj@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Loic PALLARDY <loic.pallardy@st.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 25 Apr 2013 17:45:54 -0400
+Date: Thu, 25 Apr 2013 14:44:43 -0700
+Message-Id: <201304252144.r3PLihDe025383@terminus.zytor.com>
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [GIT PULL] x86 fixes for 3.9
+Cc: Borislav Petkov <bp@suse.de>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Josh Boyer <jwboyer@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Paul Bolle <pebolle@tiscali.nl>, Thomas Gleixner <tglx@linutronix.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 19, 2013 at 2:41 PM, Neil Armstrong <narmstrong@neotion.com> wrote:
+Hi Linus,
 
-> Add bit mask for the BOOT_PARTITION_ENABLE values.
->
-> Signed-off-by: Neil Armstrong <narmstrong@neotion.com>
+The following changes since commit 0fbd06761f5c17cc9b20e02af60fd7ee9c895996:
 
-Loic (CC) pushed these boot partition changes so make sure he gets
-to review them...
+  Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/sparc (2013-04-24 17:10:18 -0700)
 
-Yours,
-Linus Walleij
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-urgent-for-linus
+
+This is exclusively two EFI fixes:
+
+ * The EFI variable anti-bricking algorithm merged in -rc8 broke
+   booting on some Apple machines because they implement EFI spec
+   1.10, which doesn't provide a QueryVariableInfo() runtime function
+   and the logic used to check for the existence of that function was
+   insufficient.  Fix from Josh Boyer.
+
+ * The anti-bricking algorithm also introduced a compiler warning on
+   32-bit. Fix from Borislav Petkov.
+
+----------------------------------------------------------------
+
+Borislav Petkov (1):
+      x86, efi: Fix a build warning
+
+H. Peter Anvin (1):
+      Merge tag 'efi-urgent' into x86/urgent
+
+Josh Boyer (1):
+      efi: Check EFI revision in setup_efi_vars
+
+ arch/x86/boot/compressed/eboot.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
+index 8615f75..35ee62f 100644
+--- a/arch/x86/boot/compressed/eboot.c
++++ b/arch/x86/boot/compressed/eboot.c
+@@ -258,7 +258,7 @@ static efi_status_t setup_efi_vars(struct boot_params *params)
+ 	u64 store_size, remaining_size, var_size;
+ 	efi_status_t status;
+ 
+-	if (!sys_table->runtime->query_variable_info)
++	if (sys_table->runtime->hdr.revision < EFI_2_00_SYSTEM_TABLE_REVISION)
+ 		return EFI_UNSUPPORTED;
+ 
+ 	data = (struct setup_data *)(unsigned long)params->hdr.setup_data;
+@@ -266,7 +266,7 @@ static efi_status_t setup_efi_vars(struct boot_params *params)
+ 	while (data && data->next)
+ 		data = (struct setup_data *)(unsigned long)data->next;
+ 
+-	status = efi_call_phys4(sys_table->runtime->query_variable_info,
++	status = efi_call_phys4((void *)sys_table->runtime->query_variable_info,
+ 				EFI_VARIABLE_NON_VOLATILE |
+ 				EFI_VARIABLE_BOOTSERVICE_ACCESS |
+ 				EFI_VARIABLE_RUNTIME_ACCESS, &store_size,
