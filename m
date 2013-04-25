@@ -1,124 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932968Ab3DYUVK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 16:21:10 -0400
-Received: from filtteri5.pp.htv.fi ([213.243.153.188]:47906 "EHLO
-	filtteri5.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932507Ab3DYUVI (ORCPT
+	id S933004Ab3DYUVr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 16:21:47 -0400
+Received: from nm12-vm0.access.bullet.mail.mud.yahoo.com ([66.94.236.11]:24624
+	"EHLO nm12-vm0.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932507Ab3DYUVq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 16:21:08 -0400
-Date: Thu, 25 Apr 2013 23:21:00 +0300
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-To: Jonghwan Choi <jhbird.choi@samsung.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        "'Mikael Pettersson'" <mikpe@it.uu.se>,
-        "'Russell King'" <linux@arm.linux.org.uk>
-Subject: Re: [PATCH 3.8-stable] ARM: 7692/1: iop3xx: move
- IOP3XX_PERIPHERAL_VIRT_BASE
-Message-ID: <20130425202100.GD5634@blackmetal.musicnaut.iki.fi>
-References: <001401ce4147$87010ec0$95032c40$%choi@samsung.com>
+	Thu, 25 Apr 2013 16:21:46 -0400
+X-Yahoo-Newman-Id: 36760.26135.bm@smtp105.biz.mail.bf1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: IhvlWx4VM1mfXuxEGYWCn9hzYzB9embxIfjc9wBIkTT9AV1
+ RBJSrixG4b8rd6hPCrQDvhwMYAotXdJmlMSNkCgdAQYQ1ULDRm8upUVyxMlu
+ 3.h8bJDxfM2vAkpeSQocOrP_FSdLXBVRzLbYyQQNoQOCHneEP2SCLfsDi6cN
+ GT5qEq1zSWt2R9M2kUG3CL62AhT.5LxlKzdS4zqnInRZT4Su9UZmnaZKcdUF
+ 6DRfWUJnchE1PPmxAkrK_EUWRLHXvBhtiJK.vf3MRoUh7jF_PgaiR5VvG4e3
+ YPdpUUgP7WBSWvEu_ZVBf.kjuSqTPJhqOeJHrNF1iWqFBGcoP_pcWkKcIL8j
+ PAnsfkO8gOgEbjXcOj_okRqbvdIjndr0EzY7hz0OOzZSZCslhlLc2Mi6IBaI
+ W1fmHMkMr8MwoGkSxvDHIqvd3xo.5VPdYk.hgaqfV.6q7sJf0a4aPG4ydcw7
+ ueQ--
+X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
+X-Rocket-Received: from [192.168.0.103] (casey@24.6.250.25 with plain)
+        by smtp105.biz.mail.bf1.yahoo.com with SMTP; 25 Apr 2013 13:21:44 -0700 PDT
+Message-ID: <5179905E.4090207@schaufler-ca.com>
+Date: Thu, 25 Apr 2013 13:21:50 -0700
+From: Casey Schaufler <casey@schaufler-ca.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <001401ce4147$87010ec0$95032c40$%choi@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Paul Moore <paul@paul-moore.com>
+CC: John Johansen <john.johansen@canonical.com>,
+        LSM <linux-security-module@vger.kernel.org>,
+        LKLM <linux-kernel@vger.kernel.org>, SE Linux <selinux@tycho.nsa.gov>,
+        James Morris <jmorris@namei.org>, Eric Paris <eparis@redhat.com>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Kees Cook <keescook@chromium.org>,
+        Casey Schaufler <casey@schaufler-ca.com>
+Subject: Re: [PATCH v13 0/9] LSM: Multiple concurrent LSMs
+References: <5176ABB7.5080300@schaufler-ca.com> <47138397.PP25Tg7m1s@sifl> <51797153.7050308@schaufler-ca.com> <5010864.rEs2oKk1kF@sifl>
+In-Reply-To: <5010864.rEs2oKk1kF@sifl>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 4/25/2013 12:14 PM, Paul Moore wrote:
+> On Thursday, April 25, 2013 11:09:23 AM Casey Schaufler wrote:
+>> On 4/25/2013 8:01 AM, Paul Moore wrote:
+>>> On Wednesday, April 24, 2013 05:43:08 PM Casey Schaufler wrote:
+>>>> On 4/24/2013 4:00 PM, John Johansen wrote:
+>>>>> On 04/24/2013 02:15 PM, Paul Moore wrote:
+>>>>>> On Wednesday, April 24, 2013 01:22:20 PM Casey Schaufler wrote:
+>>> ...
+>>>
+>>>>>>> An interesting aside that may be relevant is that the error
+>>>>>>> condition behavior makes it advisable to have the LSM you care
+>>>>>>> about most go last. If the networking components were strictly
+>>>>>>> FCFS you might have to chose an ordering you might not want for
+>>>>>>> other reasons.
+>>>>>> Well, maybe not ... I think.  If we take a FCFS approach to the network
+>>>>>> controls then only one LSM is really ever going to throw an error on
+>>>>>> the
+>>>>>> network hooks, yes?
+>>>> You set up the order you want to get the networking handled
+>>>> correctly and you could get filesystem hooks in the wrong order.
+>>>> Not that that really ought to be a problem, but there are wonky
+>>>> admin tools out there.
+>>> I don't quite follow; can you be a bit more explicit about getting the
+>>> filesystem hooks in the wrong order?
+>> Let's assume that there's a case for the stat() system call that
+>> would get EPERM from SELinux and EACCES from Smack. A carefully
+>> crafted admin tool might take different actions based on the return
+>> code. If Smack ahead of SELinux in the list the tool will respond
+>> one way, whereas if SELinux is ahead it will behave the other way.
+>>
+>> If this tool came with Fedora it will likely expect the SELinux
+>> error code. Thus, it will be somewhat important that Smack precede
+>> SELinux in the LSM ordering. That will grant Smack the NetLabel
+>> component. If you want SELinux to use NetLabel you'll have to
+>> explicitly configure that.
+>>
+>> It's probably not going to be an issue that often. Making the
+>> ordering implications clear to those who may be affected by them
+>> is probably the best choice and biggest challenge. It would be
+>> nice to keep them to a minimum. I fear some future LSM author
+>> getting clever with error codes and demanding the ultimate
+>> position in all cases.
+> I guess this begs the question, why does the stacking take the return value 
+> from the last LSM and not the first?  I'm sure there was a design decision 
+> made here, I'm just curious about the reasons why.
 
-On Thu, Apr 25, 2013 at 08:57:50AM +0900, Jonghwan Choi wrote:
-> This patch looks like it should be in the 3.8-stable tree, should we apply
-> it?
-> 
-> ------------------
-> 
-> From: "Aaro Koskinen <aaro.koskinen@iki.fi>"
-> 
-> commit f5d6a1441a5045824f36ff7c6b6bbae0373472a6 upstream
-> 
-> Currently IOP3XX_PERIPHERAL_VIRT_BASE conflicts with PCI_IO_VIRT_BASE:
-> 
-> 					address         size
-> 	PCI_IO_VIRT_BASE                0xfee00000      0x200000
-> 	IOP3XX_PERIPHERAL_VIRT_BASE     0xfeffe000      0x2000
-> 
-> Fix by moving IOP3XX_PERIPHERAL_VIRT_BASE below PCI_IO_VIRT_BASE.
-> 
-> The patch fixes the following kernel panic with 3.9-rc1 on iop3xx boards:
+The hook loop is trivially simpler if you return the last error than
+if you return the first error:
 
-This conflict has been there since 3.7, and while 3.8 won't BUG instantly
-I think it should be still applied.
+	if (thisrc)
+		rc = thisrc;
 
-A.
+vs
 
-> [    0.000000] Booting Linux on physical CPU 0x0
-> [    0.000000] Initializing cgroup subsys cpu
-> [    0.000000] Linux version 3.9.0-rc1-iop32x (aaro@blackmetal) (gcc version
-> 4.7.2 (GCC) ) #20 PREEMPT Tue Mar 5 16:44:36 EET 2013
-> [    0.000000] bootconsole [earlycon0] enabled
-> [    0.000000] ------------[ cut here ]------------
-> [    0.000000] kernel BUG at mm/vmalloc.c:1145!
-> [    0.000000] Internal error: Oops - BUG: 0 [#1] PREEMPT ARM
-> [    0.000000] Modules linked in:
-> [    0.000000] CPU: 0    Not tainted  (3.9.0-rc1-iop32x #20)
-> [    0.000000] PC is at vm_area_add_early+0x4c/0x88
-> [    0.000000] LR is at add_static_vm_early+0x14/0x68
-> [    0.000000] pc : [<c03e74a8>]    lr : [<c03e1c40>]    psr: 800000d3
-> [    0.000000] sp : c03ffee4  ip : dfffdf88  fp : c03ffef4
-> [    0.000000] r10: 00000002  r9 : 000000cf  r8 : 00000653
-> [    0.000000] r7 : c040eca8  r6 : c03e2408  r5 : dfffdf60  r4 : 00200000
-> [    0.000000] r3 : dfffdfd8  r2 : feffe000  r1 : ff000000  r0 : dfffdf60
-> [    0.000000] Flags: Nzcv  IRQs off  FIQs off  Mode SVC_32  ISA ARM
-> Segment kernel
-> [    0.000000] Control: 0000397f  Table: a0004000  DAC: 00000017
-> [    0.000000] Process swapper (pid: 0, stack limit = 0xc03fe1b8)
-> [    0.000000] Stack: (0xc03ffee4 to 0xc0400000)
-> [    0.000000] fee0:          00200000 c03fff0c c03ffef8 c03e1c40 c03e7468
-> 00200000 fee00000
-> [    0.000000] ff00: c03fff2c c03fff10 c03e23e4 c03e1c38 feffe000 c0408ee4
-> ff000000 c0408f04
-> [    0.000000] ff20: c03fff3c c03fff30 c03e2434 c03e23b4 c03fff84 c03fff40
-> c03e2c94 c03e2414
-> [    0.000000] ff40: c03f8878 c03f6410 ffff0000 000bffff 00001000 00000008
-> c03fff84 c03f6410
-> [    0.000000] ff60: c04227e8 c03fffd4 a0008000 c03f8878 69052e30 c02f96eb
-> c03fffbc c03fff88
-> [    0.000000] ff80: c03e044c c03e268c 00000000 0000397f c0385130 00000001
-> ffffffff c03f8874
-> [    0.000000] ffa0: dfffffff a0004000 69052e30 a03f61a0 c03ffff4 c03fffc0
-> c03dd5cc c03e0184
-> [    0.000000] ffc0: 00000000 00000000 00000000 00000000 00000000 c03f8878
-> 0000397d c040601c
-> [    0.000000] ffe0: c03f8874 c0408674 00000000 c03ffff8 a0008040 c03dd558
-> 00000000 00000000
-> [    0.000000] Backtrace:
-> [    0.000000] [<c03e745c>] (vm_area_add_early+0x0/0x88) from [<c03e1c40>]
-> (add_static_vm_early+0x14/0x68)
-> 
-> Tested-by: Mikael Pettersson <mikpe@it.uu.se>
-> Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
-> Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-> Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
-> ---
->  arch/arm/include/asm/hardware/iop3xx.h |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/arch/arm/include/asm/hardware/iop3xx.h
-> b/arch/arm/include/asm/hardware/iop3xx.h
-> index 02fe2fb..ed94b1a 100644
-> --- a/arch/arm/include/asm/hardware/iop3xx.h
-> +++ b/arch/arm/include/asm/hardware/iop3xx.h
-> @@ -37,7 +37,7 @@ extern int iop3xx_get_init_atu(void);
->   * IOP3XX processor registers
->   */
->  #define IOP3XX_PERIPHERAL_PHYS_BASE	0xffffe000
-> -#define IOP3XX_PERIPHERAL_VIRT_BASE	0xfeffe000
-> +#define IOP3XX_PERIPHERAL_VIRT_BASE	0xfedfe000
->  #define IOP3XX_PERIPHERAL_SIZE		0x00002000
->  #define IOP3XX_PERIPHERAL_UPPER_PA (IOP3XX_PERIPHERAL_PHYS_BASE +\
->  					IOP3XX_PERIPHERAL_SIZE - 1)
-> -- 
-> 1.7.9.5
-> 
+	if (thisrc && !rc)
+		rc = thisrc;
+
+If I had decided to do shortcutting (return on first failure) it
+would be a different story.
+
+> To me, and maybe I'm the odd one out here,
+
+I don't know that you're the only odd one here. :)
+
+> but I would think that the first 
+> LSM in the stacking order should get precedence;
+
+My desire and intent is that to the extent possible there should
+be no "principle" LSM. The choice of last error is purely driven
+by the fact that it's the easiest thing to do.
+
+> this is why I'm pushing for a 
+> FCFS for the network controls.  If it turns out that the stacking patches give 
+> preference for the last LSM in the stacking order (I think this will always 
+> seem backwards to me) then we should probably give the networking controls to 
+> the last LSM.
+
+I actually think that FCFS for networking services and last error code
+hits closest to the sweet spot. "security=yama,smack,selinux" would give
+NetLabel to Smack and xfrm and secmark to SELinux. It would also give
+SELinux error returns in cases where there are multiple reasons for
+denial. Since SELinux has a more sophisticated runtime environment than
+Smack this is likely to make Fedora (for example) happier.
+
+
