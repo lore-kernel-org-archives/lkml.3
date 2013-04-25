@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759182Ab3DYTQQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 15:16:16 -0400
-Received: from cm-84.215.157.11.getinternet.no ([84.215.157.11]:48458 "EHLO
+	id S932714Ab3DYTQO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 15:16:14 -0400
+Received: from cm-84.215.157.11.getinternet.no ([84.215.157.11]:48460 "EHLO
 	server.arpanet.local" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754326Ab3DYTP0 (ORCPT
+	with ESMTP id S1755735Ab3DYTP0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 25 Apr 2013 15:15:26 -0400
 From: =?UTF-8?q?Jon=20Arne=20J=C3=B8rgensen?= <jonarne@jonarne.no>
@@ -12,12 +12,10 @@ To: linux-media@vger.kernel.org
 Cc: jonjon.arnearne@gmail.com, linux-kernel@vger.kernel.org,
         hverkuil@xs4all.nl, elezegarcia@gmail.com, mkrufky@linuxtv.org,
         mchehab@redhat.com, bjorn@mork.no
-Subject: [RFC V2 1/3] [smi2021] Add gm7113c chip to the saa7115 driver
-Date: Thu, 25 Apr 2013 21:10:18 +0200
-Message-Id: <1366917020-18217-2-git-send-email-jonarne@jonarne.no>
+Subject: [RFC V2 0/3] Add a driver for Somagic smi2021 
+Date: Thu, 25 Apr 2013 21:10:17 +0200
+Message-Id: <1366917020-18217-1-git-send-email-jonarne@jonarne.no>
 X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1366917020-18217-1-git-send-email-jonarne@jonarne.no>
-References: <1366917020-18217-1-git-send-email-jonarne@jonarne.no>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -25,185 +23,136 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The somagic device uses the gm7113c chip to digitize analog video,
-this is a clone of the saa7113 chip.
+This is the 2nd version of a RFC for a driver for the Somagic SMI2021.
+The first version was sendt on 14th of Mars 2013, and can be found here:
+http://www.spinics.net/lists/kernel/msg1499018.html
 
-The gm7113c can't be identified over i2c, so I can't rely on
-saa7115 autodetection.
+The smi2021 is the usb controller for a range of video capture devices
+branded as EasyCap.
 
-Signed-off-by: Jon Arne Jørgensen <jonarne@jonarne.no>
----
- drivers/media/i2c/saa7115.c     | 61 ++++++++++++++++++++++++++++++++++-------
- include/media/v4l2-chip-ident.h |  3 ++
- 2 files changed, 54 insertions(+), 10 deletions(-)
+The device consists of three major components.
+* smi2021 is the usb controller.
+* gm7113c is a saa7113 clone for video A/D conversion.
+* cs5340 is an audio A/D converter.
 
-diff --git a/drivers/media/i2c/saa7115.c b/drivers/media/i2c/saa7115.c
-index 6b6788c..e93b50a 100644
---- a/drivers/media/i2c/saa7115.c
-+++ b/drivers/media/i2c/saa7115.c
-@@ -54,7 +54,7 @@
- 
- MODULE_DESCRIPTION("Philips SAA7111/SAA7113/SAA7114/SAA7115/SAA7118 video decoder driver");
- MODULE_AUTHOR(  "Maxim Yevtyushkin, Kevin Thayer, Chris Kennedy, "
--		"Hans Verkuil, Mauro Carvalho Chehab");
-+		"Hans Verkuil, Mauro Carvalho Chehab, Jon Arne Jørgensen");
- MODULE_LICENSE("GPL");
- 
- static bool debug;
-@@ -126,6 +126,7 @@ static int saa711x_has_reg(const int id, const u8 reg)
- 		return 0;
- 
- 	switch (id) {
-+	case V4L2_IDENT_GM7113C:
- 	case V4L2_IDENT_SAA7113:
- 		return reg != 0x14 && (reg < 0x18 || reg > 0x1e) && (reg < 0x20 || reg > 0x3f) &&
- 		       reg != 0x5d && reg < 0x63;
-@@ -292,7 +293,7 @@ static const unsigned char saa7115_cfg_reset_scaler[] = {
- 	0x00, 0x00
- };
- 
--/* ============== SAA7715 VIDEO templates =============  */
-+/* ============== SAA7115 VIDEO templates =============  */
- 
- static const unsigned char saa7115_cfg_60hz_video[] = {
- 	R_80_GLOBAL_CNTL_1, 0x00,			/* reset tasks */
-@@ -445,7 +446,27 @@ static const unsigned char saa7115_cfg_50hz_video[] = {
- 	0x00, 0x00
- };
- 
--/* ============== SAA7715 VIDEO templates (end) =======  */
-+/* ============== SAA7115 VIDEO templates (end) =======  */
-+
-+/* ============== GM7113C VIDEO templates =============  */
-+
-+static const unsigned char gm7113c_cfg_60hz_video[] = {
-+	R_08_SYNC_CNTL, 0x68,			/* 0xBO: auto detection, 0x68 = NTSC */
-+	R_0E_CHROMA_CNTL_1, 0x07,		/* video autodetection is on */
-+
-+	R_5A_V_OFF_FOR_SLICER, 0x06,		/* standard 60hz value for ITU656 line counting */
-+	0x00, 0x00
-+};
-+
-+static const unsigned char gm7113c_cfg_50hz_video[] = {
-+	R_08_SYNC_CNTL, 0x28,			/* 0x28 = PAL */
-+	R_0E_CHROMA_CNTL_1, 0x07,
-+
-+	R_5A_V_OFF_FOR_SLICER, 0x03,		/* standard 50hz value */
-+	0x00, 0x00
-+};
-+
-+/* ============== GM7113C VIDEO templates (end) =======  */
- 
- static const unsigned char saa7115_cfg_vbi_on[] = {
- 	R_80_GLOBAL_CNTL_1, 0x00,			/* reset tasks */
-@@ -927,11 +948,17 @@ static void saa711x_set_v4lstd(struct v4l2_subdev *sd, v4l2_std_id std)
- 	// This works for NTSC-M, SECAM-L and the 50Hz PAL variants.
- 	if (std & V4L2_STD_525_60) {
- 		v4l2_dbg(1, debug, sd, "decoder set standard 60 Hz\n");
--		saa711x_writeregs(sd, saa7115_cfg_60hz_video);
-+		if (state->ident == V4L2_IDENT_GM7113C)
-+			saa711x_writeregs(sd, gm7113c_cfg_60hz_video);
-+		else
-+			saa711x_writeregs(sd, saa7115_cfg_60hz_video);
- 		saa711x_set_size(sd, 720, 480);
- 	} else {
- 		v4l2_dbg(1, debug, sd, "decoder set standard 50 Hz\n");
--		saa711x_writeregs(sd, saa7115_cfg_50hz_video);
-+		if (state->ident == V4L2_IDENT_GM7113C)
-+			saa711x_writeregs(sd, gm7113c_cfg_50hz_video);
-+		else
-+			saa711x_writeregs(sd, saa7115_cfg_50hz_video);
- 		saa711x_set_size(sd, 720, 576);
- 	}
- 
-@@ -944,7 +971,8 @@ static void saa711x_set_v4lstd(struct v4l2_subdev *sd, v4l2_std_id std)
- 	011 NTSC N (3.58MHz)            PAL M (3.58MHz)
- 	100 reserved                    NTSC-Japan (3.58MHz)
- 	*/
--	if (state->ident <= V4L2_IDENT_SAA7113) {
-+	if (state->ident <= V4L2_IDENT_SAA7113 ||
-+	    state->ident == V4L2_IDENT_GM7113C) {
- 		u8 reg = saa711x_read(sd, R_0E_CHROMA_CNTL_1) & 0x8f;
- 
- 		if (std == V4L2_STD_PAL_M) {
-@@ -1215,7 +1243,8 @@ static int saa711x_s_routing(struct v4l2_subdev *sd,
- 		input, output);
- 
- 	/* saa7111/3 does not have these inputs */
--	if (state->ident <= V4L2_IDENT_SAA7113 &&
-+	if ((state->ident <= V4L2_IDENT_SAA7113 ||
-+	     state->ident == V4L2_IDENT_GM7113C) &&
- 	    (input == SAA7115_COMPOSITE4 ||
- 	     input == SAA7115_COMPOSITE5)) {
- 		return -EINVAL;
-@@ -1586,8 +1615,11 @@ static int saa711x_probe(struct i2c_client *client,
- 
- 	chip_id = name[5];
- 
-+
- 	/* Check whether this chip is part of the saa711x series */
--	if (memcmp(name + 1, "f711", 4)) {
-+	if (memcmp(id->name + 1, "gm7113c", 7)) {
-+		chip_id = 'c';
-+	} else if (memcmp(name + 1, "f711", 4)) {
- 		v4l_dbg(1, debug, client, "chip found @ 0x%x (ID %s) does not match a known saa711x chip.\n",
- 			client->addr << 1, name);
- 		return -ENODEV;
-@@ -1598,8 +1630,12 @@ static int saa711x_probe(struct i2c_client *client,
- 		v4l_warn(client, "found saa711%c while %s was expected\n",
- 			 chip_id, id->name);
- 	}
--	snprintf(client->name, sizeof(client->name), "saa711%c", chip_id);
--	v4l_info(client, "saa711%c found (%s) @ 0x%x (%s)\n", chip_id, name,
-+	if (chip_id == 'c')
-+		snprintf(client->name, sizeof(client->name), "%s", id->name);
-+	else
-+		snprintf(client->name, sizeof(client->name), "saa711%c", chip_id);
-+
-+	v4l_info(client, "%s found (%s) @ 0x%x (%s)\n", client->name, name,
- 		 client->addr << 1, client->adapter->name);
- 
- 	state = kzalloc(sizeof(struct saa711x_state), GFP_KERNEL);
-@@ -1645,6 +1681,9 @@ static int saa711x_probe(struct i2c_client *client,
- 			state->ident = V4L2_IDENT_SAA7111A;
- 		}
- 		break;
-+	case 'c':
-+		state->ident = V4L2_IDENT_GM7113C;
-+		break;
- 	case '3':
- 		state->ident = V4L2_IDENT_SAA7113;
- 		break;
-@@ -1675,6 +1714,7 @@ static int saa711x_probe(struct i2c_client *client,
- 		saa711x_writeregs(sd, saa7111_init);
- 		break;
- 	case V4L2_IDENT_SAA7113:
-+	case V4L2_IDENT_GM7113C:
- 		saa711x_writeregs(sd, saa7113_init);
- 		break;
- 	default:
-@@ -1711,6 +1751,7 @@ static const struct i2c_device_id saa711x_id[] = {
- 	{ "saa7114", 0 },
- 	{ "saa7115", 0 },
- 	{ "saa7118", 0 },
-+	{ "gm7113c", 0 },
- 	{ }
- };
- MODULE_DEVICE_TABLE(i2c, saa711x_id);
-diff --git a/include/media/v4l2-chip-ident.h b/include/media/v4l2-chip-ident.h
-index 4ee125b..fc13d53 100644
---- a/include/media/v4l2-chip-ident.h
-+++ b/include/media/v4l2-chip-ident.h
-@@ -51,6 +51,9 @@ enum {
- 	V4L2_IDENT_SAA7114 = 104,
- 	V4L2_IDENT_SAA7115 = 105,
- 	V4L2_IDENT_SAA7118 = 108,
-+	/* This chip is a chinese clone of the saa7113 chip,
-+	 * with some minor changes/bugs */
-+	V4L2_IDENT_GM7113C = 149,
- 
- 	/* module saa7127: reserved range 150-199 */
- 	V4L2_IDENT_SAA7127 = 157,
--- 
-1.8.2.1
+The smi2021 chip is in most configurations dependent of some firmware to work.
+The biggest change from the last version of this RFC is that I've included
+the bootloader module that was responsible for the firmware upload into
+the main driver module.
+
+I've also made some changes to the saa7115 module to handle the gm7113c chip.
+
+V4L2-Compliance:
+
+Driver Info:
+	Driver name   : smi2021
+	Card type     : smi2021
+	Bus info      : usb-0000:00:1d.0-1.1
+	Driver version: 3.9.0
+	Capabilities  : 0x85000001
+		Video Capture
+		Read/Write
+		Streaming
+		Device Capabilities
+	Device Caps   : 0x05000001
+		Video Capture
+		Read/Write
+		Streaming
+
+Compliance test for device /dev/video1 (not using libv4l2):
+
+Required ioctls:
+	test VIDIOC_QUERYCAP: OK
+
+Allow for multiple opens:
+	test second video open: OK
+	test VIDIOC_QUERYCAP: OK
+	test VIDIOC_G/S_PRIORITY: OK
+
+Debug ioctls:
+	test VIDIOC_DBG_G/S_REGISTER: OK (Not Supported)
+	test VIDIOC_LOG_STATUS: OK
+
+Input ioctls:
+	test VIDIOC_G/S_TUNER: OK (Not Supported)
+	test VIDIOC_G/S_FREQUENCY: OK (Not Supported)
+	test VIDIOC_S_HW_FREQ_SEEK: OK (Not Supported)
+	test VIDIOC_ENUMAUDIO: OK (Not Supported)
+	test VIDIOC_G/S/ENUMINPUT: OK
+	test VIDIOC_G/S_AUDIO: OK (Not Supported)
+	Inputs: 2 Audio Inputs: 0 Tuners: 0
+
+Output ioctls:
+	test VIDIOC_G/S_MODULATOR: OK (Not Supported)
+	test VIDIOC_G/S_FREQUENCY: OK (Not Supported)
+	test VIDIOC_ENUMAUDOUT: OK (Not Supported)
+	test VIDIOC_G/S/ENUMOUTPUT: OK (Not Supported)
+	test VIDIOC_G/S_AUDOUT: OK (Not Supported)
+	Outputs: 0 Audio Outputs: 0 Modulators: 0
+
+Control ioctls:
+	test VIDIOC_QUERYCTRL/MENU: OK
+	test VIDIOC_G/S_CTRL: OK
+	test VIDIOC_G/S/TRY_EXT_CTRLS: OK
+	test VIDIOC_(UN)SUBSCRIBE_EVENT/DQEVENT: OK
+	test VIDIOC_G/S_JPEGCOMP: OK (Not Supported)
+	Standard Controls: 7 Private Controls: 0
+
+Input/Output configuration ioctls:
+	test VIDIOC_ENUM/G/S/QUERY_STD: OK
+	test VIDIOC_ENUM/G/S/QUERY_DV_TIMINGS: OK (Not Supported)
+	test VIDIOC_DV_TIMINGS_CAP: OK (Not Supported)
+
+Format ioctls:
+	test VIDIOC_ENUM_FMT/FRAMESIZES/FRAMEINTERVALS: OK
+	test VIDIOC_G/S_PARM: OK
+	test VIDIOC_G_FBUF: OK (Not Supported)
+	test VIDIOC_G_FMT: OK
+	test VIDIOC_TRY_FMT: OK
+	test VIDIOC_S_FMT: OK
+	test VIDIOC_G_SLICED_VBI_CAP: OK (Not Supported)
+
+Codec ioctls:
+	test VIDIOC_(TRY_)ENCODER_CMD: OK (Not Supported)
+	test VIDIOC_G_ENC_INDEX: OK (Not Supported)
+	test VIDIOC_(TRY_)DECODER_CMD: OK (Not Supported)
+
+Buffer ioctls:
+	test VIDIOC_REQBUFS/CREATE_BUFS/QUERYBUF: OK
+
+Total: 36, Succeeded: 36, Failed: 0, Warnings: 0
+
+ [smi2021] Add gm7113c chip to the saa7115 driver
+ [smi2021] This is the smi2021 driver
+ [smi2021] Add smi2021 driver to buildsystem
+
+ drivers/media/i2c/saa7115.c                    |  61 ++-
+ drivers/media/usb/Kconfig                      |   1 +
+ drivers/media/usb/Makefile                     |   1 +
+ drivers/media/usb/smi2021/Kconfig              |  11 +
+ drivers/media/usb/smi2021/Makefile             |  10 +
+ drivers/media/usb/smi2021/smi2021.h            | 278 +++++++++++++
+ drivers/media/usb/smi2021/smi2021_audio.c      | 380 +++++++++++++++++
+ drivers/media/usb/smi2021/smi2021_bootloader.c | 261 ++++++++++++
+ drivers/media/usb/smi2021/smi2021_i2c.c        | 137 +++++++
+ drivers/media/usb/smi2021/smi2021_main.c       | 431 ++++++++++++++++++++
+ drivers/media/usb/smi2021/smi2021_v4l2.c       | 542 ++++++++++++++++++++++++
+ drivers/media/usb/smi2021/smi2021_video.c      | 544 +++++++++++++++++++++++++
+ include/media/v4l2-chip-ident.h                |   3 +
+ 13 files changed, 2650 insertions(+), 10 deletions(-)
+ create mode 100644 drivers/media/usb/smi2021/Kconfig
+ create mode 100644 drivers/media/usb/smi2021/Makefile
+ create mode 100644 drivers/media/usb/smi2021/smi2021.h
+ create mode 100644 drivers/media/usb/smi2021/smi2021_audio.c
+ create mode 100644 drivers/media/usb/smi2021/smi2021_bootloader.c
+ create mode 100644 drivers/media/usb/smi2021/smi2021_i2c.c
+ create mode 100644 drivers/media/usb/smi2021/smi2021_main.c
+ create mode 100644 drivers/media/usb/smi2021/smi2021_v4l2.c
+ create mode 100644 drivers/media/usb/smi2021/smi2021_video.c
+
+Comments are welcome.
+
+Best regards,
+Jon Arne Jørgensen
+
 
