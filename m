@@ -1,35 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759478Ab3DYSvi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 14:51:38 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:34653 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759126Ab3DYSvg convert rfc822-to-8bit (ORCPT
+	id S1759498Ab3DYSw4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 14:52:56 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:50290 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759482Ab3DYSwy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 14:51:36 -0400
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 6.3 \(1503\))
-Subject: Re: [PATCH] NFSv4: Use exponential backoff delay for NFS4_ERRDELAY
-From: Chuck Lever <chuck.lever@oracle.com>
-In-Reply-To: <20130425184626.GC5049@fieldses.org>
-Date: Thu, 25 Apr 2013 14:51:20 -0400
-Cc: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+	Thu, 25 Apr 2013 14:52:54 -0400
+X-IronPort-AV: E=Sophos;i="4.87,552,1363158000"; 
+   d="scan'208";a="21644644"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: "bfields@fieldses.org" <bfields@fieldses.org>
+CC: Chuck Lever <chuck.lever@oracle.com>,
+        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
         David Wysochanski <dwysocha@redhat.com>,
-        Dave Chiluk <chiluk@canonical.com>,
+        "Dave Chiluk" <chiluk@canonical.com>,
         "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] NFSv4: Use exponential backoff delay for NFS4_ERRDELAY
+Thread-Topic: [PATCH] NFSv4: Use exponential backoff delay for NFS4_ERRDELAY
+Thread-Index: AQHOQS4lo0tL+fbtF0O0TvVaTEJt85jmWGMAgAAHNgCAAAtSgIAA5lsAgAATb4CAAACAAIAABSQAgAAF8QCAAEWPAIAABcWAgAABvwCAAAHOgA==
+Date: Thu, 25 Apr 2013 18:52:53 +0000
+Message-ID: <F6EFC293-3201-4BC2-A31F-91771E9E99EC@netapp.com>
+References: <1366838926.22397.25.camel@leira.trondhjem.org>
+ <5178549A.7010402@canonical.com>
+ <1366842905.22397.49.camel@leira.trondhjem.org>
+ <1366892374.26249.294.camel@localhost.localdomain>
+ <20130425132907.GB31851@fieldses.org>
+ <1366896654.4719.18.camel@leira.trondhjem.org>
+ <20130425134918.GC31851@fieldses.org>
+ <1366899034.6812.4.camel@leira.trondhjem.org>
+ <20130425181932.GA5049@fieldses.org>
+ <81BBEA25-CDE5-42B1-996D-90C26A43DEF6@oracle.com>
+ <20130425184626.GC5049@fieldses.org>
+In-Reply-To: <20130425184626.GC5049@fieldses.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.104.60.114]
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <AB559926D022B84288F303927E6DA6E4@tahoe.netapp.com>
 Content-Transfer-Encoding: 8BIT
-Message-Id: <04318EF4-375D-49FD-8DB0-2BC6429543A9@oracle.com>
-References: <1366838926.22397.25.camel@leira.trondhjem.org> <5178549A.7010402@canonical.com> <1366842905.22397.49.camel@leira.trondhjem.org> <1366892374.26249.294.camel@localhost.localdomain> <20130425132907.GB31851@fieldses.org> <1366896654.4719.18.camel@leira.trondhjem.org> <20130425134918.GC31851@fieldses.org> <1366899034.6812.4.camel@leira.trondhjem.org> <20130425181932.GA5049@fieldses.org> <81BBEA25-CDE5-42B1-996D-90C26A43DEF6@oracle.com> <20130425184626.GC5049@fieldses.org>
-To: "bfields@fieldses.org" <bfields@fieldses.org>
-X-Mailer: Apple Mail (2.1503)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-On Apr 25, 2013, at 2:46 PM, "bfields@fieldses.org" <bfields@fieldses.org> wrote:
+On Apr 25, 2013, at 2:46 PM, "bfields@fieldses.org" <bfields@fieldses.org>
+ wrote:
 
 > On Thu, Apr 25, 2013 at 02:40:11PM -0400, Chuck Lever wrote:
 >> 
@@ -97,16 +117,7 @@ On Apr 25, 2013, at 2:46 PM, "bfields@fieldses.org" <bfields@fieldses.org> wrote
 > Otherwise you're forced to modify the state anyway since NFS4ERR_DELAY
 > is seqid-modifying.)
 
-The answer is not to return NFS4ERR_DELAY on seqid-modifying operations.
+Either way, migration is not a performance-critical path that needs 1second or less response times on those NFS4ERR_DELAY replies.
 
-The source server can return NFS4ERR_DELAY to the client's migration recovery operations (the GETATTR(fs_locations) request) for example.
-
-Or, the server could return it on the initial PUTFH operation in a compound containing seqid-modifying operations.
-
--- 
-Chuck Lever
-chuck[dot]lever[at]oracle[dot]com
-
-
-
+Trond
 
