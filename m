@@ -1,76 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932792Ab3DYR3e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 13:29:34 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:61625 "EHLO
+	id S932810Ab3DYR3m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 13:29:42 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:54981 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932726Ab3DYR30 (ORCPT
+	with ESMTP id S932523Ab3DYR3i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 13:29:26 -0400
+	Thu, 25 Apr 2013 13:29:38 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        alsa-devel@alsa-project.org
-Subject: [PATCH 07/21] oss/dmabuf: use dma_map_single
-Date: Thu, 25 Apr 2013 19:28:50 +0200
-Message-Id: <1366910944-3033663-8-git-send-email-arnd@arndb.de>
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>
+Subject: [PATCH 04/21] ARM: orion5x: include linux/cpu.h
+Date: Thu, 25 Apr 2013 19:28:47 +0200
+Message-Id: <1366910944-3033663-5-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1366910944-3033663-1-git-send-email-arnd@arndb.de>
 References: <1366910944-3033663-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:+B8FrqSp/bn+S7UH2y09L6MPnzM8BcUZXT+Zh3XMV92
- P58zcH9pnEP7rDlcCDxT1pDHXo9/OQs58RcGRyGdh2foTx1tKt
- lMvpW7XyVac5I1Vy+ua11aIcpk4+SWlMNHxxrqfXbPtp9yXtCZ
- dWm2yC4/vyYtbvuq2/2BSrcn7VE+2k6/OOngXmIhubr6KJcDUb
- zws9FcpC53imZzqZhaC/oHPmeQsH3FIb5vsD8D/Iow1ENrm9KH
- TAB6aoqHBoZI+KTMFTzlxc7RYLPleZnLAfrIJlmnk4QT6x75hQ
- a0ffYriX/KLjLfvDs+r+QAy4yEh8OxgxsiKl+RZRZ5LnH+q9vv
- RSMj04kfq6iASNHwGoop1rAq0ikd6czevDcaf5y8x
+X-Provags-ID: V02:K0:lpnv92qTG/YrEk+qX8echo7CFLpWATmQBhFJIZRw44v
+ LulxWNHa+1XWg952Oh6hV46ywsITdI6+9abPN2bOpilAMDCf7P
+ wuqomvtd87tDzQc899v3IhcC2n0mxuC6p9Vkb6BwU7Y1+3KmzT
+ SfgAFY+m2PRkxj+GwzAsFs6Cqiv6yIhbWcckvkEuaNuhLQJ59m
+ ox4oV6kZI1xnYu/4Og8kFrnkBSlBYmJ1kTx8SU0KLkDneVofDj
+ upiqLrcSY8gg3YnieOtoRvVBZRrDfPpJKPTgAupBOVliFxO664
+ OHKZabA2c9YL+rhsnAb2awC2UCJhfk5zemKCamtI8a+cRafP4d
+ yK2gE6Gc99MmdZ6kvQvZEHlys9JNS7dx+RzHGiNMd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The virt_to_bus/bus_to_virt functions have been deprecated
-for as long as I can remember, and they are used in very
-few remaining instances, usually in obscure ISA device
-drivers. The OSS sound drivers are the only ones that are
-still used on the ARM architecture, and only on some of
-the earliest StrongARM machines.
+The linux/cpu.h header is no longer implictly included in this
+file, so we need to an #include statement to avoid this build
+warning:
 
-The problem for converting the OSS subsystem to use
-dma_map_single instead is that the caller of virt_to_bus
-does not have a device pointer, since the subsystem has
-never been ported to use the common device infrastructure.
+arch/arm/mach-orion5x/common.c:339:3: error: implicit declaration of function 'cpu_idle_poll_ctrl' [-Werror=implicit-function-declaration]
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Jaroslav Kysela <perex@perex.cz>
-Cc: Takashi Iwai <tiwai@suse.de>
-Cc: alsa-devel@alsa-project.org
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: Andrew Lunn <andrew@lunn.ch>
 ---
- sound/oss/dmabuf.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ arch/arm/mach-orion5x/common.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/sound/oss/dmabuf.c b/sound/oss/dmabuf.c
-index bcc3e8e..a59c888 100644
---- a/sound/oss/dmabuf.c
-+++ b/sound/oss/dmabuf.c
-@@ -114,7 +114,7 @@ static int sound_alloc_dmap(struct dma_buffparms *dmap)
- 		}
- 	}
- 	dmap->raw_buf = start_addr;
--	dmap->raw_buf_phys = virt_to_bus(start_addr);
-+	dmap->raw_buf_phys = dma_map_single(NULL, start_addr, dmap->buffsize, DMA_BIDIRECTIONAL);
- 
- 	for (page = virt_to_page(start_addr); page <= virt_to_page(end_addr); page++)
- 		SetPageReserved(page);
-@@ -139,6 +139,7 @@ static void sound_free_dmap(struct dma_buffparms *dmap)
- 	for (page = virt_to_page(start_addr); page <= virt_to_page(end_addr); page++)
- 		ClearPageReserved(page);
- 
-+	dma_unmap_single(NULL, dmap->raw_buf_phys, dmap->buffsize, DMA_BIDIRECTIONAL);
- 	free_pages((unsigned long) dmap->raw_buf, sz);
- 	dmap->raw_buf = NULL;
- }
+diff --git a/arch/arm/mach-orion5x/common.c b/arch/arm/mach-orion5x/common.c
+index 664c97d..b97fd67 100644
+--- a/arch/arm/mach-orion5x/common.c
++++ b/arch/arm/mach-orion5x/common.c
+@@ -19,6 +19,7 @@
+ #include <linux/ata_platform.h>
+ #include <linux/delay.h>
+ #include <linux/clk-provider.h>
++#include <linux/cpu.h>
+ #include <net/dsa.h>
+ #include <asm/page.h>
+ #include <asm/setup.h>
 -- 
 1.8.1.2
 
