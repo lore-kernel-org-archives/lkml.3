@@ -1,43 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759578Ab3DYVwC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 17:52:02 -0400
-Received: from mail-ia0-f177.google.com ([209.85.210.177]:57597 "EHLO
-	mail-ia0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758867Ab3DYVwA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 17:52:00 -0400
-MIME-Version: 1.0
-In-Reply-To: <1366727607-27444-5-git-send-email-james.hogan@imgtec.com>
-References: <1366727607-27444-1-git-send-email-james.hogan@imgtec.com>
-	<1366727607-27444-5-git-send-email-james.hogan@imgtec.com>
-Date: Thu, 25 Apr 2013 23:52:00 +0200
-Message-ID: <CACRpkda3_G3B-QYOKNSTk6jk3764RF_hAtOEiE_ep7xmRnek-Q@mail.gmail.com>
-Subject: Re: [PATCH 4/8] metag: tz1090: add <asm/soc-tz1090/gpio.h>
-From: Linus Walleij <linus.walleij@linaro.org>
-To: James Hogan <james.hogan@imgtec.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1759693Ab3DYVzV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 17:55:21 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:56525 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759611Ab3DYVzS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Apr 2013 17:55:18 -0400
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: kernel-hardening@lists.openwall.com, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
+        Matthew Garrett <mjg@redhat.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Eric Northup <digitaleric@google.com>,
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>,
+        Kees Cook <keescook@chromium.org>
+Subject: [PATCH 6/6] x86: kaslr: report kernel offset on panic
+Date: Thu, 25 Apr 2013 14:54:20 -0700
+Message-Id: <1366926860-26776-7-git-send-email-keescook@chromium.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1366926860-26776-1-git-send-email-keescook@chromium.org>
+References: <1366926860-26776-1-git-send-email-keescook@chromium.org>
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 23, 2013 at 4:33 PM, James Hogan <james.hogan@imgtec.com> wrote:
+When the system panics, include the kernel offset in the report to assist
+in debugging.
 
-> Add <asm/soc-tz1090/gpio.h> with definitions to number all the GPIOs
-> available on-chip. This is for use by the pinctrl and GPIO drivers.
->
-> Signed-off-by: James Hogan <james.hogan@imgtec.com>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+ arch/x86/kernel/setup.c |   24 ++++++++++++++++++++++++
+ 1 file changed, 24 insertions(+)
 
-Usually the specific pins and names is a pecularity best contained
-in the GPIO or pinctrl subsystem.
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index fae9134..95a33b1 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -830,6 +830,18 @@ static void __init trim_low_memory_range(void)
+ }
+ 	
+ /*
++ * Dump out kernel offset information on panic.
++ */
++static int
++dump_kernel_offset(struct notifier_block *self, unsigned long v, void *p)
++{
++	pr_emerg("Kernel Offset: 0x%lx\n",
++		 (unsigned long)&_text - __START_KERNEL);
++
++	return 0;
++}
++
++/*
+  * Determine if we were loaded by an EFI loader.  If so, then we have also been
+  * passed the efi memmap, systab, etc., so we should use these data structures
+  * for initialization.  Note, the efi init code path is determined by the
+@@ -1249,3 +1261,15 @@ void __init i386_reserve_resources(void)
+ }
+ 
+ #endif /* CONFIG_X86_32 */
++
++static struct notifier_block kernel_offset_notifier = {
++	.notifier_call = dump_kernel_offset
++};
++
++static int __init register_kernel_offset_dumper(void)
++{
++	atomic_notifier_chain_register(&panic_notifier_list,
++					&kernel_offset_notifier);
++	return 0;
++}
++__initcall(register_kernel_offset_dumper);
+-- 
+1.7.9.5
 
-Please try to push this down into the driver, and only use a simple number
-to access the GPIOs.
-
-Yours,
-Linus Walleij
