@@ -1,45 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932547Ab3DYOgT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 10:36:19 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:34306 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932384Ab3DYOgR (ORCPT
+	id S932525Ab3DYOiZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 10:38:25 -0400
+Received: from mail-vb0-f47.google.com ([209.85.212.47]:50090 "EHLO
+	mail-vb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932084Ab3DYOiY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 10:36:17 -0400
-Message-ID: <51793F59.10609@intel.com>
-Date: Thu, 25 Apr 2013 15:36:09 +0100
-From: Matt Fleming <matt.fleming@intel.com>
-Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
- Way, Swindon SN3 1RJ
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
+	Thu, 25 Apr 2013 10:38:24 -0400
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Henrik Rydberg <rydberg@bitmath.se>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 3.9-rc8
-References: <CA+55aFyiByzrqGQ-KQcPuOQS_k=PgRRsUcQ6mRS-tCiANB+N3A@mail.gmail.com> <20130425094211.GA426@polaris.bitmath.org> <20130425101451.GA418@polaris.bitmath.org> <CA+55aFxkn5+S2g2J0fuWNs6oXF86eVU==Kpd_wpJHobW2Gr46Q@mail.gmail.com> <CA+55aFxv1b3MhWWdKThujadkA+MXN2=3eEvskBDdURs2PMgpYw@mail.gmail.com>
-In-Reply-To: <CA+55aFxv1b3MhWWdKThujadkA+MXN2=3eEvskBDdURs2PMgpYw@mail.gmail.com>
+In-Reply-To: <1366777569-23192-3-git-send-email-hpa@zytor.com>
+References: <1366777569-23192-1-git-send-email-hpa@zytor.com>
+	<1366777569-23192-3-git-send-email-hpa@zytor.com>
+Date: Thu, 25 Apr 2013 07:38:23 -0700
+X-Google-Sender-Auth: obGpENhVg-gv366N4ydkdm6WJv8
+Message-ID: <CA+55aFwkEMAkvZFdeQm2PKQD1xgFBfVa+kTwJXGmWXoDqDp7xQ@mail.gmail.com>
+Subject: Re: [PATCH 2/2] random: Account for entropy loss due to overwrites
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "Ted Ts'o" <tytso@mit.edu>, DJ Johnston <dj.johnston@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        stable <stable@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/25/2013 03:32 PM, Linus Torvalds wrote:
-> Oops, that got sent off too quickly..
-> 
-> On Thu, Apr 25, 2013 at 7:30 AM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
->> On Thu, Apr 25, 2013 at 3:14 AM, Henrik Rydberg <rydberg@bitmath.se> wrote:
->>>
->>> Seems Matt already sent a pull request with Josh's working fix, thanks.
-> 
-> Well, it wasn't sent to me (apparently just to Peter and lkml), so if
-> this needs to be in final 3.9 (and it does look like it needs to), I
-> hope it gets forwarded to me asap..
+This doesn't work AT ALL. You even hint at the reason why in your message.
 
-Ingo, did you want to forward this to Linus? If not I'm happy to do it.
+On Tue, Apr 23, 2013 at 9:26 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>
+> As such, this conservatism seems more than justified.  Note, however,
+> that attempting to add one bit of entropy will never succeed; nor will
+> two bits unless the pool is completely empty.  These roundoff
+> artifacts could be improved by using fixed-point arithmetic and adding
+> some number of fractional entropy bits.
+
+Take a look at "add_interrupt_randomness()". Hmm..
+
+                Linus
