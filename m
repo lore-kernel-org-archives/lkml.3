@@ -1,101 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758845Ab3DYRXW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 13:23:22 -0400
-Received: from mail-vb0-f42.google.com ([209.85.212.42]:63197 "EHLO
-	mail-vb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755292Ab3DYRXV (ORCPT
+	id S1758890Ab3DYRYu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 13:24:50 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:44268 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755292Ab3DYRYt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 13:23:21 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130425035503.GA15749@ram.oc3035372033.ibm.com>
-References: <1363217302-14383-1-git-send-email-yinghai@kernel.org>
- <1363217302-14383-4-git-send-email-yinghai@kernel.org> <CAErSpo4VzBZ=fAzPm1yWEs4+09_D1=rysMf6tGgnqpVEKytSzQ@mail.gmail.com>
- <20130409045113.GA7251@ram.oc3035372033.ibm.com> <CAErSpo7TReTzz289EMuh5gGKjskCLmACNT99o1s-QCzRHLGaXg@mail.gmail.com>
- <20130425035503.GA15749@ram.oc3035372033.ibm.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 25 Apr 2013 11:22:59 -0600
-Message-ID: <CAErSpo704b0OhSdeRWK+cZ++6RCDvoL7vzqZVEM1WOPp9f7MRQ@mail.gmail.com>
-Subject: Re: [PATCH v3 03/27] PCI: pci resource iterator
-To: Ram Pai <linuxram@us.ibm.com>
-Cc: Yinghai Lu <yinghai@kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 25 Apr 2013 13:24:49 -0400
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linaro-kernel@lists.linaro.org, peterz@infradead.org, mingo@kernel.org,
+        linux@arm.linux.org.uk, pjt@google.com, santosh.shilimkar@ti.com,
+        Morten.Rasmussen@arm.com, chander.kashyap@linaro.org,
+        cmetcalf@tilera.com, tony.luck@intel.com, alex.shi@intel.com,
+        preeti@linux.vnet.ibm.com
+Cc: paulmck@linux.vnet.ibm.com, tglx@linutronix.de, len.brown@intel.com,
+        arjan@linux.intel.com, amit.kucheria@linaro.org, corbet@lwn.net,
+        l.majewski@samsung.com, Vincent Guittot <vincent.guittot@linaro.org>
+Subject: [RFC PATCH v4 00/14] sched: packing small tasks
+Date: Thu, 25 Apr 2013 19:23:16 +0200
+Message-Id: <1366910611-20048-1-git-send-email-vincent.guittot@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 24, 2013 at 9:55 PM, Ram Pai <linuxram@us.ibm.com> wrote:
-> On Wed, Apr 10, 2013 at 09:22:48AM -0600, Bjorn Helgaas wrote:
->> On Mon, Apr 8, 2013 at 10:51 PM, Ram Pai <linuxram@us.ibm.com> wrote:
->> > On Thu, Apr 04, 2013 at 04:18:01PM -0600, Bjorn Helgaas wrote:
->> >> On Wed, Mar 13, 2013 at 5:27 PM, Yinghai Lu <yinghai@kernel.org> wrote:
->> >> > From: Ram Pai <linuxram@us.ibm.com>
->> >> >
->> >> > Currently pci_dev structure holds an array of 17 PCI resources; six base
->> >> > BARs, one ROM BAR, four BRIDGE BARs, six sriov BARs.  This is wasteful.
->> >> > A bridge device just needs the 4 bridge resources. A non-bridge device
->> >> > just needs the six base resources and one ROM resource. The sriov
->> >> > resources are needed only if the device has SRIOV capability.
->> >> >
-...
->> > I agree. There are two cleanups needed.
->> >
->> > a) pci drivers should not assume the internal organization of the
->> >         resources in the struct pci_dev.
->>
->> Do you mean that drivers should not use "pci_dev->resource[i]"?  If
->> so, I agree that it would be great if we had an accessor for BARs, but
->> it seems impractical to change all the drivers that use the current
->> style.
->
-> Sorry for the delay. Was vacationing.  I mean, we cannot let drivers
-> assume anything about the how the resources are organized.
->
-> The only thing the drivers should know is that there are 6 normal
-> resources, 4 bridge resources, 1 ROM resource and 6 iov resources.
->
-> Currently the drivers assume that ROM resource follows normal resources
-> followed by IOV followed by bridge. These assumptions are making it hard
-> to re-organize the layout of resources in struct pci_dev.
->
-> I think we need to expose the following interfaces to drivers.
->
-> a) return the nth normal resource
+Hi,
 
-I think this needs to remain "pci_dev->resource[n]", because so many
-drivers do this that it would be impractical to change them all.
+This patchset takes advantage of the new per-task load tracking that is
+available in the kernel for packing the tasks in as few as possible
+CPU/Cluster/Core. It has got 2 packing modes:
+-The 1st mode packs the small tasks when the system is not too busy. The main
+goal is to reduce the power consumption in the low system load use cases by
+minimizing the number of power domain that are enabled but it also keeps the
+default behavior which is performance oriented.
+-The 2nd mode packs all tasks in as few as possible power domains in order to
+improve the power consumption of the system but at the cost of possible
+performance decrease because of the increase of the rate of ressources sharing
+compared to the default mode.
 
-> b) return the nth iov resource
+The packing is done in 3 steps (the last step is only applicable for the
+agressive packing mode):
 
-I could imagine a new interface for this, given that I only see a
-dozen SR-IOV drivers in the tree.  There might be a few out-of-tree,
-but there probably aren't many.
+The 1st step looks for the best place to pack tasks in a system according to
+its topology and it defines a 1st pack buddy CPU for each CPU if there is one
+available. The policy for defining a buddy CPU is that we want to pack at
+levels where a group of CPU can be power gated independently from others. To
+describe this capability, a new flag SD_SHARE_POWERDOMAIN has been introduced,
+that is used to indicate whether the groups of CPUs of a scheduling domain
+share their power state. By default, this flag is set in all sched_domain in
+order to keep unchanged the current behavior of the scheduler and only ARM
+platform clears the SD_SHARE_POWERDOMAIN flag for MC and CPU level.
 
-> c) return the rom resource
+In a 2nd step, the scheduler checks the load average of a task which wakes up
+as well as the load average of the buddy CPU and it can decide to migrate the
+light tasks on a not busy buddy. This check is done during the wake up because
+small tasks tend to wake up between periodic load balance and asynchronously
+to each other which prevents the default mechanism to catch and migrate them
+efficiently. A light task is defined by a runnable_avg_sum that is less than
+20% of the runnable_avg_period. In fact, the former condition encloses 2 ones:
+The average CPU load of the task must be less than 20% and the task must have
+been runnable less than 10ms when it woke up last time in order to be
+electable for the packing migration. So, a task than runs 1 ms each 5ms will
+be considered as a small task but a task that runs 50 ms with a period of
+500ms, will not.
+Then, the business of the buddy CPU depends of the load average for the rq and
+the number of running tasks. A CPU with a load average greater than 50% will
+be considered as busy CPU whatever the number of running tasks is and this
+threshold will be reduced by the number of running tasks in order to not
+increase too much the wake up latency of a task. When the buddy CPU is busy,
+the scheduler falls back to default CFS policy.
 
-There are only about 30 drivers in the tree that reference
-PCI_ROM_RESOURCE.  Fewer than I expected, but I'd still be hesitant
-about make "pci_dev->resource[PCI_ROM_RESOURCE]" stop working.
+The 3rd step is only used when the agressive packing mode is enable. In this
+case, the CPUs pack their tasks in their buddy until they becomes full. Unlike
+the previous step, we can't keep the same buddy so we update it during load
+balance. During the periodic load balance, the scheduler computes the activity
+of the system thanks the runnable_avg_sum and the cpu_power of all CPUs and
+then it defines the CPUs that will be used to handle the current activity. The
+selected CPUs will be their own buddy and will participate to the default
+load balancing mecanism in order to share the tasks in a fair way, whereas the
+not selected CPUs will not, and their buddy will be the last selected CPU.
+The behavior can be summarized as: The scheduler defines how many CPUs are
+required to handle the current activity, keeps the tasks on these CPUS and
+perform normal load balancing (or any evolution of the current load balancer
+like the use of runnable load avg from Alex https://lkml.org/lkml/2013/4/1/580)
+on this limited number of CPUs . Like the other steps, the CPUs are selected to
+minimize the number of power domain that must stay on.
 
-> d) return the nth bridge resource
+Change since V3:
 
-I think it's reasonable to have a new interface for this because
-bridges are handled almost entirely in the PCI core and architecture
-code, and I doubt there are many, if any, drivers that care.
+ - Take into account comments on previous version.
+ - Add an agressive packing mode and a knob to select between the various mode
 
-> e) return the type and index of a given resource, where 'index' is
->         the index w.r.t to that resource type; not w.r.t to all
->         the resources of the device.
-> f) ability to loop through all resources of the given type/types.
+Change since V2:
 
-We do loop through resources in the core when we're assigning, fixing
-up, etc., and that makes some sense to me.  But I actually don't see
-the use case for *drivers* to loop through resources.  All a driver
-knows is "BAR X means Y", and it generally doesn't need to iterate and
-do something generic to all of them.
+ - Migrate only a task that wakes up
+ - Change the light tasks threshold to 20%
+ - Change the loaded CPU threshold to not pull tasks if the current number of
+   running tasks is null but the load average is already greater than 50%
+ - Fix the algorithm for selecting the buddy CPU.
 
-> Everything else needs to be hidden.
+Change since V1:
 
-Bjorn
+Patch 2/6
+ - Change the flag name which was not clear. The new name is
+   SD_SHARE_POWERDOMAIN.
+ - Create an architecture dependent function to tune the sched_domain flags
+Patch 3/6
+ - Fix issues in the algorithm that looks for the best buddy CPU
+ - Use pr_debug instead of pr_info
+ - Fix for uniprocessor
+Patch 4/6
+ - Remove the use of usage_avg_sum which has not been merged
+Patch 5/6
+ - Change the way the coherency of runnable_avg_sum and runnable_avg_period is
+   ensured
+Patch 6/6
+ - Use the arch dependent function to set/clear SD_SHARE_POWERDOMAIN for ARM
+   platform
+
+Previous results for v3:
+
+This series has been tested with hackbench on ARM platform and the results
+don't show any performance regression
+
+Hackbench             3.9-rc2  +patches
+Mean Time (10 tests): 2.048    2.015
+stdev               : 0.047    0.068
+
+Previous results for V2:
+
+This series has been tested with MP3 play back on ARM platform:
+TC2 HMP (dual CA-15 and 3xCA-7 cluster).
+
+The measurements have been done on an Ubuntu image during 60 seconds of
+playback and the result has been normalized to 100.
+
+              | CA15 | CA7  | total |
+-------------------------------------
+default       |  81  |   97 | 178   |
+pack          |  13  |  100 | 113   |
+-------------------------------------
+
+Previous results for V1:
+
+The patch-set has been tested on ARM platforms: quad CA-9 SMP and TC2 HMP
+(dual CA-15 and 3xCA-7 cluster). For ARM platform, the results have
+demonstrated that it's worth packing small tasks at all topology levels.
+
+The performance tests have been done on both platforms with sysbench. The
+results don't show any performance regressions. These results are aligned with
+the policy which uses the normal behavior with heavy use cases.
+
+test: sysbench --test=cpu --num-threads=N --max-requests=R run
+
+Results below is the average duration of 3 tests on the quad CA-9.
+default is the current scheduler behavior (pack buddy CPU is -1)
+pack is the scheduler with the pack mechanism
+
+              | default |  pack   |
+-----------------------------------
+N=8;  R=200   |  3.1999 |  3.1921 |
+N=8;  R=2000  | 31.4939 | 31.4844 |
+N=12; R=200   |  3.2043 |  3.2084 |
+N=12; R=2000  | 31.4897 | 31.4831 |
+N=16; R=200   |  3.1774 |  3.1824 |
+N=16; R=2000  | 31.4899 | 31.4897 |
+-----------------------------------
+
+The power consumption tests have been done only on TC2 platform which has got
+accessible power lines and I have used cyclictest to simulate small tasks. The
+tests show some power consumption improvements.
+
+test: cyclictest -t 8 -q -e 1000000 -D 20 & cyclictest -t 8 -q -e 1000000 -D 20
+
+The measurements have been done during 16 seconds and the result has been
+normalized to 100
+
+              | CA15 | CA7  | total |
+-------------------------------------
+default       | 100  |  40  | 140   |
+pack          |  <1  |  45  | <46   |
+-------------------------------------
+
+The A15 cluster is less power efficient than the A7 cluster but if we assume
+that the tasks is well spread on both clusters, we can guest estimate that the
+power consumption on a dual cluster of CA7 would have been for a default
+kernel:
+
+              | CA7  | CA7  | total |
+-------------------------------------
+default       |  40  |  40  |  80   |
+-------------------------------------
+
+Vincent Guittot (14):
+  Revert "sched: Introduce temporary FAIR_GROUP_SCHED dependency for
+    load-tracking"
+  sched: add a new SD_SHARE_POWERDOMAIN flag for sched_domain
+  sched: pack small tasks
+  sched: pack the idle load balance
+  ARM: sched: clear SD_SHARE_POWERDOMAIN
+  sched: add a knob to choose the packing level
+  sched: agressively pack at wake/fork/exec
+  sched: trig ILB on an idle buddy
+  sched: evaluate the activity level of the system
+  sched: update the buddy CPU
+  sched: filter task pull request
+  sched: create a new field with available capacity
+  sched: update the cpu_power
+  sched: force migration on buddy CPU
+
+ arch/arm/kernel/topology.c       |    9 +
+ arch/ia64/include/asm/topology.h |    1 +
+ arch/tile/include/asm/topology.h |    1 +
+ include/linux/sched.h            |   11 +-
+ include/linux/sched/sysctl.h     |    8 +
+ include/linux/topology.h         |    4 +
+ kernel/sched/core.c              |   14 +-
+ kernel/sched/fair.c              |  393 +++++++++++++++++++++++++++++++++++---
+ kernel/sched/sched.h             |   15 +-
+ kernel/sysctl.c                  |   13 ++
+ 10 files changed, 423 insertions(+), 46 deletions(-)
+
+-- 
+1.7.9.5
+
