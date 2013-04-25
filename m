@@ -1,55 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758739Ab3DYBVZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 21:21:25 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:49528 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758669Ab3DYBVX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 21:21:23 -0400
-Message-ID: <517884E1.5060404@zytor.com>
-Date: Wed, 24 Apr 2013 18:20:33 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S1758749Ab3DYBWX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 21:22:23 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:60467 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758665Ab3DYBWV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Apr 2013 21:22:21 -0400
+X-Spam-Score: -100.8
+Message-ID: <5178851E.3090204@asianux.com>
+Date: Thu, 25 Apr 2013 09:21:34 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>
-CC: Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Cyrill Gorcunov <gorcunov@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        David Miller <davem@davemloft.net>, "Theodore Ts'o" <tytso@mit.edu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
-Subject: Re: [PATCH] x86: make DR*_RESERVED unsigned long
-References: <CA+55aFwpLu0qNms=hkQr43yqD0K9DgESNm91OEWKT1ZuT8MU6Q@mail.gmail.com> <20130424072630.GB1780@gmail.com> <20130424170702.GA1867@redhat.com> <CAFTL4hzmW43o8dxW0_E7F00a+PT+T4=F4h=gdCxHvcZhMiH3-w@mail.gmail.com> <5178657E.9020905@zytor.com> <CAFTL4hyCQ1DGg5JOmWgvZoC9kcrV6TmodCw=TCFcr+QXMwv9yQ@mail.gmail.com>
-In-Reply-To: <CAFTL4hyCQ1DGg5JOmWgvZoC9kcrV6TmodCw=TCFcr+QXMwv9yQ@mail.gmail.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Viresh Kumar <viresh.kumar@linaro.org>,
+        "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>, Will Deacon <will.deacon@arm.com>,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] ARM: S5pv210: compiling issue, ARM_S5PV210_CPUFREQ
+ need CONFIG_CPU_FREQ_TABLE=y
+References: <5177B562.40400@asianux.com> <5177BC50.6050402@asianux.com> <CAOh2x==g96h5UhvBjtyrBTjxdkno3WBv5JEsqyT3jqv7x69V6A@mail.gmail.com> <1486501.MMr8zrpiDO@vostro.rjw.lan>
+In-Reply-To: <1486501.MMr8zrpiDO@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/24/2013 04:31 PM, Frederic Weisbecker wrote:
->>
->> Now, DR6 is a bit special in that a bunch of the reserved bits are
->> hardwired to 1, not 0; I don't know offhand if that is true for bits
->> [63:32].
+On 2013年04月24日 20:09, Rafael J. Wysocki wrote:
+> On Wednesday, April 24, 2013 04:40:38 PM Viresh Kumar wrote:
+>> > On Wed, Apr 24, 2013 at 4:34 PM, Chen Gang <gang.chen@asianux.com> wrote:
+>>> > >
+>>> > > For arm S5pv210 with allmodconfig, ARM_S5PV210_CPUFREQ need
+>>> > > CONFIG_CPU_FREQ_TABLE=y, or will cause compiling issue.
+>>> > >
+>>> > > The related operation:
+>>> > > + arm-linux-gnu-ld -EL -p --no-undefined -X --build-id -X -o .tmp_vmlinux1 -T /root/linux-next/arch/arm/kernel/vmlinux.lds arch/arm/kernel/head.o init/built-in.o --start-group usr/built-in.o arch/arm/nwfpe/built-in.o arch/arm/vfp/built-in.o arch/arm/kernel/built-in.o arch/arm/mm/built-in.o arch/arm/common/built-in.o arch/arm/net/built-in.o arch/arm/crypto/built-in.o arch/arm/mach-s5pv210/built-in.o arch/arm/plat-samsung/built-in.o kernel/built-in.o mm/built-in.o fs/built-in.o ipc/built-in.o security/built-in.o crypto/built-in.o block/built-in.o arch/arm/lib/lib.a lib/lib.a arch/arm/lib/built-in.o lib/built-in.o drivers/built-in.o sound/built-in.o firmware/built-in.o net/built-in.o --end-group
+>>> > >
+>>> > > The related errors:
+>>> > > drivers/built-in.o: In function `s5pv210_target':
+>>> > > drivers/cpufreq/s5pv210-cpufreq.c:225: undefined reference to `cpufreq_frequency_table_target'
+>>> > > drivers/cpufreq/s5pv210-cpufreq.c:237: undefined reference to `cpufreq_frequency_table_target'
+>>> > > drivers/built-in.o: In function `s5pv210_verify_speed':
+>>> > > drivers/cpufreq/s5pv210-cpufreq.c:182: undefined reference to `cpufreq_frequency_table_verify'
+>>> > > drivers/built-in.o: In function `s5pv210_cpu_init':
+>>> > > drivers/cpufreq/s5pv210-cpufreq.c:556: undefined reference to `cpufreq_frequency_table_get_attr'
+>>> > > drivers/cpufreq/s5pv210-cpufreq.c:560: undefined reference to `cpufreq_frequency_table_cpuinfo'
+>>> > > make: *** [vmlinux] Error 1
+>>> > >
+>>> > > Signed-off-by: Chen Gang <gang.chen@asianux.com>
+>>> > > ---
+>>> > >  drivers/cpufreq/Kconfig.arm |    1 +
+>>> > >  1 files changed, 1 insertions(+), 0 deletions(-)
+>>> > >
+>>> > > diff --git a/drivers/cpufreq/Kconfig.arm b/drivers/cpufreq/Kconfig.arm
+>>> > > index bce2195..bbcd719 100644
+>>> > > --- a/drivers/cpufreq/Kconfig.arm
+>>> > > +++ b/drivers/cpufreq/Kconfig.arm
+>>> > > @@ -187,6 +187,7 @@ config ARM_S3C64XX_CPUFREQ
+>>> > >  config ARM_S5PV210_CPUFREQ
+>>> > >         bool "Samsung S5PV210 and S5PC110"
+>>> > >         depends on CPU_S5PV210
+>>> > > +       select CPU_FREQ_TABLE
+>> > 
+>> > Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+> Applied.
 > 
-> Hmm, good point, could it be a problem given that we clear the
-> reserved dr6 bits on do_trap() and write that 'cleaned up" value back
-> to "tsk->thread.debugreg6"? Probably not if those hardwired reserved
-> bits are set to "1" on dr6 physical write whether those bits are
-> cleared or not in their storage in thread struct before resuming the
-> task?
-> 
+> Thanks,
+> Rafael
 
-OK, the SDM states that DR6[63:32] are reserved and must be written as
-zero (not one).
+Thanks, too.
 
-So the quiescent 64-bit value of DR6 is 0x0000_0000_FFFF_0FF0.
 
-	-hpa
+-- 
+Chen Gang
 
+Asianux Corporation
