@@ -1,86 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758600Ab3DYQTK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 12:19:10 -0400
-Received: from relay.parallels.com ([195.214.232.42]:56591 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755921Ab3DYQTI (ORCPT
+	id S1758887Ab3DYQXD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 12:23:03 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:54504 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757892Ab3DYQW7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 12:19:08 -0400
-Message-ID: <517956ED.7060102@parallels.com>
-Date: Thu, 25 Apr 2013 20:16:45 +0400
-From: "Maxim V. Patlasov" <mpatlasov@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	Thu, 25 Apr 2013 12:22:59 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: Sourav Poddar <sourav.poddar@ti.com>
+Cc: <gregkh@linuxfoundation.org>, <tony@atomide.com>,
+        <rmk+kernel@arm.linux.org.uk>, <linux-serial@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Felipe Balbi <balbi@ti.com>, Rajendra nayak <rnayak@ti.com>,
+        Grygorii Strashko <grygorii.strashko@ti.com>
+Subject: Re: [PATCHv3 5/5] arm: omap2+: omap_device: remove no_idle_on_suspend
+References: <1366809353-19435-1-git-send-email-sourav.poddar@ti.com>
+	<1366809353-19435-6-git-send-email-sourav.poddar@ti.com>
+	<87d2tj378q.fsf@linaro.org> <5178D1E0.6010400@ti.com>
+Date: Thu, 25 Apr 2013 09:22:55 -0700
+In-Reply-To: <5178D1E0.6010400@ti.com> (Sourav Poddar's message of "Thu, 25
+	Apr 2013 12:19:04 +0530")
+Message-ID: <87ehdy1sww.fsf@linaro.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Miklos Szeredi <miklos@szeredi.hu>
-CC: Kirill Korotaev <dev@parallels.com>, Pavel Emelianov <xemul@parallels.com>,
-        "fuse-devel@lists.sourceforge.net" <fuse-devel@lists.sourceforge.net>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        James Bottomley <jbottomley@parallels.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>, <devel@openvz.org>,
-        Andrew Morton <akpm@linux-foundation.org>, <fengguang.wu@intel.com>,
-        <mgorman@suse.de>
-Subject: Re: [fuse-devel] [PATCH 14/14] mm: Account for WRITEBACK_TEMP in
- balance_dirty_pages
-References: <20130401103749.19027.89833.stgit@maximpc.sw.ru> <20130401104250.19027.27795.stgit@maximpc.sw.ru> <51793DE6.3000503@parallels.com> <CAJfpegv1zc4oeE=YXrQd0jmzVXB8jjvXkz-_4Nv_ELcvfsa74Q@mail.gmail.com>
-In-Reply-To: <CAJfpegv1zc4oeE=YXrQd0jmzVXB8jjvXkz-_4Nv_ELcvfsa74Q@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.30.17.2]
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Sourav,
 
-04/25/2013 07:49 PM, Miklos Szeredi пишет:
-> On Thu, Apr 25, 2013 at 4:29 PM, Maxim V. Patlasov
-> <mpatlasov@parallels.com> wrote:
->>> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
->>> index 0713bfb..c47bcd4 100644
->>> --- a/mm/page-writeback.c
->>> +++ b/mm/page-writeback.c
->>> @@ -1235,7 +1235,8 @@ static void balance_dirty_pages(struct address_space
->>> *mapping,
->>>                   */
->>>                  nr_reclaimable = global_page_state(NR_FILE_DIRTY) +
->>>
->>> global_page_state(NR_UNSTABLE_NFS);
->>> -               nr_dirty = nr_reclaimable +
->>> global_page_state(NR_WRITEBACK);
->>> +               nr_dirty = nr_reclaimable +
->>> global_page_state(NR_WRITEBACK) +
->>> +                       global_page_state(NR_WRITEBACK_TEMP);
->>>                  global_dirty_limits(&background_thresh, &dirty_thresh);
+Sourav Poddar <sourav.poddar@ti.com> writes:
+
+> Hi Kevin,
+> On Thursday 25 April 2013 03:45 AM, Kevin Hilman wrote:
+>> Sourav Poddar<sourav.poddar@ti.com>  writes:
 >>
->> Please drop this patch. As we discussed in LSF/MM, the fix above is correct,
->> but it's not enough: we also need to ensure disregard of NR_WRITEBACK_TEMP
->> when balance_dirty_pages() is called from fuse daemon. I'll send a separate
->> patch-set soon.
-> Please elaborate.  From a technical perspective "fuse daemon" is very
-> hard to define, so anything that relies on whether something came from
-> the fuse daemon or not is conceptually broken.
+>>> Remove "no_idle_on_suspend" check, since respective
+>>> driver should be able to prevent idling of a
+>>> device whenever required.
+>>>
+>>> Driver's can get same behavior by just returning -EBUSY
+>>> from their ->runtime_suspend only during suspend.
+>>>
+>>> Cc: Santosh Shilimkar<santosh.shilimkar@ti.com>
+>>> Cc: Felipe Balbi<balbi@ti.com>
+>>> Cc: Rajendra nayak<rnayak@ti.com>
+>>> Cc: Grygorii Strashko<grygorii.strashko@ti.com>
+>>> Signed-off-by: Sourav Poddar<sourav.poddar@ti.com>
+>>> Reviewed-by: Felipe Balbi<balbi@ti.com>
+>>> ---
+>>>   arch/arm/mach-omap2/omap_device.c |   12 +++---------
+>>>   arch/arm/mach-omap2/omap_device.h |   10 ----------
+>>>   2 files changed, 3 insertions(+), 19 deletions(-)
+>>>
+>>> diff --git a/arch/arm/mach-omap2/omap_device.c b/arch/arm/mach-omap2/omap_device.c
+>>> index 381be7a..2043d71 100644
+>>> --- a/arch/arm/mach-omap2/omap_device.c
+>>> +++ b/arch/arm/mach-omap2/omap_device.c
+>>> @@ -170,9 +170,6 @@ static int omap_device_build_from_dt(struct platform_device *pdev)
+>>>   			r->name = dev_name(&pdev->dev);
+>>>   	}
+>>>
+>>> -	if (of_get_property(node, "ti,no_idle_on_suspend", NULL))
+>>> -		omap_device_disable_idle_on_suspend(pdev);
+>>> -
+>>>   	pdev->dev.pm_domain =&omap_device_pm_domain;
+>>>
+>>>   odbfd_exit1:
+>>> @@ -620,11 +617,9 @@ static int _od_suspend_noirq(struct device *dev)
+>>>   	ret = pm_generic_suspend_noirq(dev);
+>>>
+>>>   	if (!ret&&  !pm_runtime_status_suspended(dev)) {
+>>> -		if (pm_generic_runtime_suspend(dev) == 0) {
+>>> -			if (!(od->flags&  OMAP_DEVICE_NO_IDLE_ON_SUSPEND))
+>>> -				omap_device_idle(pdev);
+>>> +		if (pm_generic_runtime_suspend(dev) == 0)
+>>> +			omap_device_idle(pdev);
+>>>   			od->flags |= OMAP_DEVICE_SUSPENDED;
+>>> -		}
+>> Look closely at the if statement, followed by more than one line, and
+>> the braces removed.
+>>
+>> That means that od->flag will be set, even when omap_device_idle() was
+>> not called.  Which in turn means that upon resume, omap_device_enable()
+>> will be called on a device that has not had omap_device_idle() called,
+>> which means there would be WARNs coming from omap_device due to the
+>> mismatch.
+>>
+> True, my bad. Will modify the code to bypass
+> "od->flags |= OMAP_DEVICE_SUSPENDED"
+>> Hmm... this does not instill confidence that this code has been tested.
+>>
+> Sorry for the above glitch, I tested this code. I checked that the
+> system is able to resume from suspend state, but completely missed the
+> following statement in the log..
+> "[   47.922424] omap_uart omap_uart.2: omap_device:
+> omap_device_enable() called from invalid state 1"
 
-As Mel Gorman pointed out, fuse daemon diving into balance_dirty_pages 
-should not kick flusher judging on NR_WRITEBACK_TEMP. Essentially, all 
-we need in balance_dirty_pages is:
+No worries.
 
-     if (I'm not fuse daemon)
-         nr_dirty += global_page_state(NR_WRITEBACK_TEMP);
+Thanks a lot for your responsiveness on this on this series.  We've gone
+through several ideas/approaches to fix this problem and you've been
+very quick to address concerns and adapt the solution.
 
-The way how to identify fuse daemon was not thoroughly scrutinized 
-during LSF/MM. Firstly, I thought it would be enough to set a 
-per-process flag handling fuse device open. But now I understand that 
-fuse daemon may be quite a complicated multi-threaded multi-process 
-construction. I'm going to add new FUSE_NOTIFY to allow fuse daemon 
-decide when it works on behalf of draining writeout-s. Having in mind 
-that fuse-lib is multi-threaded, I'm also going to inherit the flag on 
-copy_process(). Does it make sense for you?
+Thanks for your persistence, we're almost there...
 
-Also, another patch will put this ad-hoc FUSE_NOTIFY under fusermount 
-control. This will prevent malicious unprivileged fuse mounts from 
-setting the flag for malicious purposes.
+Kevin
 
-Thanks,
-Maxim
