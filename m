@@ -1,44 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758152Ab3DYLjJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 07:39:09 -0400
-Received: from mail-ia0-f176.google.com ([209.85.210.176]:41435 "EHLO
-	mail-ia0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755185Ab3DYLjH (ORCPT
+	id S1758068Ab3DYLkj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 07:40:39 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:60006 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755185Ab3DYLki (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 07:39:07 -0400
+	Thu, 25 Apr 2013 07:40:38 -0400
+Message-ID: <51791633.7070604@intel.com>
+Date: Thu, 25 Apr 2013 12:40:35 +0100
+From: Matt Fleming <matt.fleming@intel.com>
+Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
+ Way, Swindon SN3 1RJ
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <1366279934-30761-29-git-send-email-lee.jones@linaro.org>
-References: <1366279934-30761-1-git-send-email-lee.jones@linaro.org>
-	<1366279934-30761-29-git-send-email-lee.jones@linaro.org>
-Date: Thu, 25 Apr 2013 13:39:06 +0200
-Message-ID: <CACRpkdYrpxt0DZutX=XhYUoj112+m26h60WO-Yf8BOo+ONfNHw@mail.gmail.com>
-Subject: Re: [PATCH 28/32] ARM: ux500: Pass remnant platform data though to
- DMA40 driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Borislav Petkov <bp@alien8.de>
+CC: Ingo Molnar <mingo@kernel.org>, X86 ML <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
+        Matthew Garrett <matthew.garrett@nebula.com>
+Subject: Re: [PATCH] x86, efi: Fix a build warning
+References: <1366798154-1380-1-git-send-email-bp@alien8.de> <20130424105610.GA15815@gmail.com> <5177BF67.2040308@intel.com> <20130425065529.GD7806@gmail.com> <5178D8E9.7020102@intel.com> <20130425104729.GB32607@pd.tnic>
+In-Reply-To: <20130425104729.GB32607@pd.tnic>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 18, 2013 at 12:12 PM, Lee Jones <lee.jones@linaro.org> wrote:
+On 25/04/13 11:47, Borislav Petkov wrote:
+> I wonder - if efi_runtime_service_t contained only void * like
+> efi_boot_services_t then we could drop all the casts too, right? Even in
+> the efi_call* macro calls too...
 
-> Ironically, in order to remove lots of the auxdata assignments, we have
-> to add just one more. A lot of them require DMA information to be passed
-> into clients for DMA channel allocation, but we now have this capability
-> in Device Tree. However, the DMA40 driver still relies on a reverse table
-> look-up to obtain DMA addresses. Until all of the clients are converted,
-> over to the new API, we're stuck with this.
->
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Yeah, that's what I figured.
 
-As mentioned merge into patch 27, then ACK.
+> If you want me, I can take care of it after the merge window :)
 
-Yours,
-Linus Walleij
+That would be very helpful, thank you!
