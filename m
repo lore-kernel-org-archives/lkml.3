@@ -1,154 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758647Ab3DYAOO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 20:14:14 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:41438 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758495Ab3DYAOM (ORCPT
+	id S1758643Ab3DYAPy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 20:15:54 -0400
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:37206 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758085Ab3DYAPx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 20:14:12 -0400
-Message-ID: <5178754E.2020709@gmail.com>
-Date: Thu, 25 Apr 2013 08:14:06 +0800
-From: Will Huck <will.huckk@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Wed, 24 Apr 2013 20:15:53 -0400
 MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: mgorman@suse.de, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH] Add a sysctl for numa_balancing.
-References: <1366847784-29386-1-git-send-email-andi@firstfloor.org>
-In-Reply-To: <1366847784-29386-1-git-send-email-andi@firstfloor.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130416135956.GA18383@hansolo.jdub.homelinux.org>
+References: <20130416135956.GA18383@hansolo.jdub.homelinux.org>
+From: Bryan Wu <cooloney@gmail.com>
+Date: Wed, 24 Apr 2013 17:15:30 -0700
+Message-ID: <CAK5ve-JvOzDOsEJPo7G4b160F9rBBb7cZXx1NOd59OwU4FhKng@mail.gmail.com>
+Subject: Re: leds-ss4200 oops in 3.7/3.8
+To: Josh Boyer <jwboyer@redhat.com>
+Cc: Richard Purdie <rpurdie@rpsys.net>, Greg KH <gregkh@linuxfoundation.org>,
+        Linux LED Subsystem <linux-leds@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/25/2013 07:56 AM, Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
+On Tue, Apr 16, 2013 at 6:59 AM, Josh Boyer <jwboyer@redhat.com> wrote:
+> Hi All,
 >
-> As discussed earlier, this adds a working sysctl to enable/disable
-> automatic numa memory balancing at runtime.
+> We've had a report[1] of the leds-ss4200 driver oopsing during device
+> initialization on both the 3.7 and 3.8 kernels.  The backtrace is below.
+> In the same report a gentoo user posted a similar backtrace on 3.7.10,
+> and has output from a working 3.5 kernel.
 >
-> This was possible earlier through debugfs, but only with special
-> debugging options set. Also fix the boot message.
-
-One offline question.
-
-If I configure uma to fake numa, is there benefit or downside?
-
+> Interestingly enough, there are no changes to this driver between 3.5 and
+> 3.7, and only very simple changes to it in 3.8.  Looking at the backtrace
+> it seems to be failing when calling led_classdev_register from
+> register_nasgpio_led.  I'm slightly confused as to how this could be
+> causing the oops, but it appears consistently.  The only theory I have is
+> that there is some kind of race here and the kref associated with the
+> device isn't correctly initialized, which is why kobject_get is oopsing.
 >
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> ---
->   Documentation/sysctl/kernel.txt |   10 ++++++++++
->   include/linux/sched/sysctl.h    |    4 ++++
->   kernel/sched/core.c             |   24 +++++++++++++++++++++++-
->   kernel/sysctl.c                 |   11 +++++++++++
->   mm/mempolicy.c                  |    2 +-
->   5 files changed, 49 insertions(+), 2 deletions(-)
+> Thoughts?
 >
-> diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
-> index ccd4258..17a7004 100644
-> --- a/Documentation/sysctl/kernel.txt
-> +++ b/Documentation/sysctl/kernel.txt
-> @@ -354,6 +354,16 @@ utilize.
->   
->   ==============================================================
->   
-> +numa_balancing
-> +
-> +Enables/disables automatic page fault based NUMA memory
-> +balancing. Memory is moved automatically to nodes
-> +that access it often.
-> +
-> +TBD someone document the other numa_balancing tunables
-> +
-> +==============================================================
-> +
->   osrelease, ostype & version:
->   
->   # cat osrelease
-> diff --git a/include/linux/sched/sysctl.h b/include/linux/sched/sysctl.h
-> index bf8086b..e228a1b 100644
-> --- a/include/linux/sched/sysctl.h
-> +++ b/include/linux/sched/sysctl.h
-> @@ -101,4 +101,8 @@ extern int sched_rt_handler(struct ctl_table *table, int write,
->   		void __user *buffer, size_t *lenp,
->   		loff_t *ppos);
->   
-> +extern int sched_numa_balancing(struct ctl_table *table, int write,
-> +				 void __user *buffer, size_t *lenp,
-> +				 loff_t *ppos);
-> +
->   #endif /* _SCHED_SYSCTL_H */
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index 67d0465..679be74 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -1614,7 +1614,29 @@ void set_numabalancing_state(bool enabled)
->   	numabalancing_enabled = enabled;
->   }
->   #endif /* CONFIG_SCHED_DEBUG */
-> -#endif /* CONFIG_NUMA_BALANCING */
-> +
-> +#ifdef CONFIG_PROC_SYSCTL
-> +int sched_numa_balancing(struct ctl_table *table, int write,
-> +			 void __user *buffer, size_t *lenp, loff_t *ppos)
-> +{
-> +	struct ctl_table t;
-> +	int err;
-> +	int state = numabalancing_enabled;
-> +
-> +	if (write && !capable(CAP_SYS_ADMIN))
-> +		return -EPERM;
-> +
-> +	t = *table;
-> +	t.data = &state;
-> +	err = proc_dointvec_minmax(&t, write, buffer, lenp, ppos);
-> +	if (err < 0)
-> +		return err;
-> +	if (write)
-> +		set_numabalancing_state(state);
-> +	return err;
-> +}
-> +#endif
-> +#endif
->   
->   /*
->    * fork()/clone()-time setup:
-> diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-> index afc1dc6..94164ac 100644
-> --- a/kernel/sysctl.c
-> +++ b/kernel/sysctl.c
-> @@ -393,6 +393,17 @@ static struct ctl_table kern_table[] = {
->   		.mode		= 0644,
->   		.proc_handler	= proc_dointvec,
->   	},
-> +	{
-> +		.procname	= "numa_balancing",
-> +		.data		= NULL, /* filled in by handler */
-> +		.maxlen		= sizeof(unsigned int),
-> +		.mode		= 0644,
-> +		.proc_handler	= sched_numa_balancing,
-> +		.extra1		= &zero,
-> +		.extra2		= &one,
-> +	},
-> +
-> +
->   #endif /* CONFIG_NUMA_BALANCING */
->   #endif /* CONFIG_SCHED_DEBUG */
->   	{
-> diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-> index 7431001..7eee646 100644
-> --- a/mm/mempolicy.c
-> +++ b/mm/mempolicy.c
-> @@ -2531,7 +2531,7 @@ static void __init check_numabalancing_enable(void)
->   
->   	if (nr_node_ids > 1 && !numabalancing_override) {
->   		printk(KERN_INFO "Enabling automatic NUMA balancing. "
-> -			"Configure with numa_balancing= or sysctl");
-> +			"Configure with numa_balancing= or the kernel.numa_balancing sysctl");
->   		set_numabalancing_state(numabalancing_default);
->   	}
->   }
 
+Can we do some bisect between 3.5 and 3.7 or 3.6? It should be not
+very hard find it, since leds subsystem changes almost goes into
+kernel during merge windows.
+
+So please try 3.5-rc1 and 3.6-rc1 firstly.
+
+Thanks,
+-Bryan
+
+> josh
+>
+> [1] https://bugzilla.redhat.com/show_bug.cgi?id=950160
+>
+> nas kernel: [   11.327331] leds_ss4200: detected 'Intel SS4200-E'
+> nas kernel: [   11.332120] leds_ss4200: registering PCI driver
+> nas kernel: [   11.336678] BUG: unable to handle kernel NULL pointer dereference at 00000000000000e0
+> nas kernel: [   11.337636] IP: [<ffffffff812f7d10>] kobject_get+0x10/0x40
+> nas kernel: [   11.337636] PGD 0
+> nas kernel: [   11.337636] Oops: 0000 [#1] SMP
+> nas kernel: [   11.337636] Modules linked in: leds_ss4200(+) lpc_ich mfd_core i2c_i801 coretemp i2c_core serio_raw ftdi_sio microcode e1000e nfsd auth_rpcgss nfs_acl lockd sunrpc raid456 async_raid6_recov async_memcpy async_pq raid6_pq async_xor xor async_tx sata_sil24 usb_storage
+> nas kernel: [   11.369200] CPU 1
+> nas kernel: [   11.369200] Pid: 383, comm: systemd-udevd Not tainted 3.8.5-201.fc18.x86_64 #1 Intel SS4200-E/SS4200-E
+> nas kernel: [   11.369200] RIP: 0010:[<ffffffff812f7d10>]  [<ffffffff812f7d10>] kobject_get+0x10/0x40
+> nas kernel: [   11.369200] RSP: 0018:ffff88007bff5bf8  EFLAGS: 00010282
+> nas kernel: [   11.369200] RAX: 00000000000000a8 RBX: ffff880079210c00 RCX: 0000000000000000
+> nas kernel: [   11.369200] RDX: ffff8800797e2400 RSI: ffffffff81a212b4 RDI: 00000000000000a8
+> nas kernel: [   11.369200] RBP: ffff88007bff5c08 R08: 0000000000000000 R09: 000000000000ffff
+> nas kernel: [   11.369200] R10: ffff88007d001308 R11: 0000000000000000 R12: ffff880079210c00
+> nas kernel: [   11.369200] R13: ffffffff81a28a8b R14: ffff880079210e60 R15: ffff880079210c00
+> nas kernel: [   11.369200] FS:  00007f147e4ab840(0000) GS:ffff88007fc80000(0000) knlGS:0000000000000000
+> nas kernel: [   11.369200] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> nas kernel: [   11.369200] CR2: 00000000000000e0 CR3: 000000007892b000 CR4: 00000000000007e0
+> nas kernel: [   11.369200] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> nas kernel: [   11.369200] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> nas kernel: [   11.369200] Process systemd-udevd (pid: 383, threadinfo ffff88007bff4000, task ffff880036f90000)
+> nas kernel: [   11.369200] Stack:
+> nas kernel: [   11.369200]  000000000000000f ffff880079210cb8 ffff88007bff5c18 ffffffff813e65a7
+> nas kernel: [   11.369200]  ffff88007bff5c98 ffffffff813e7ef3 ffff88007bff5c58 ffffffff8108ec02
+> nas kernel: [   11.369200]  ffffffff81a28a8b ffff880079210c00 ffff880079210c00 ffffffff81a28a8b
+> nas kernel: [   11.369200] Call Trace:
+> nas kernel: [   11.369200]  [<ffffffff813e65a7>] get_device+0x17/0x30
+> nas kernel: [   11.369200]  [<ffffffff813e7ef3>] device_add+0xd3/0x6e0
+> nas kernel: [   11.369200]  [<ffffffff8108ec02>] ? complete_all+0x52/0x60
+> nas kernel: [   11.369200]  [<ffffffff813e851e>] device_register+0x1e/0x30
+> nas kernel: [   11.369200]  [<ffffffff813e862b>] device_create_vargs+0xfb/0x130
+> nas kernel: [   11.369200]  [<ffffffff813e8691>] device_create+0x31/0x40
+> nas kernel: [   11.369200]  [<ffffffffa01af000>] ? 0xffffffffa01aefff
+> nas kernel: [   11.369200]  [<ffffffffa01af01d>] ? ss4200_led_dmi_callback+0x1d/0x1d [leds_ss4200]
+> nas kernel: [   11.369200]  [<ffffffff814fdc52>] led_classdev_register+0x32/0x140
+> nas kernel: [   11.369200]  [<ffffffffa01af120>] nas_gpio_init+0x103/0xfe3 [leds_ss4200]
+> nas kernel: [   11.369200]  [<ffffffffa01af01d>] ? ss4200_led_dmi_callback+0x1d/0x1d [leds_ss4200]
+> nas kernel: [   11.369200]  [<ffffffff8100215a>] do_one_initcall+0x12a/0x180
+> nas kernel: [   11.369200]  [<ffffffff810c4db1>] load_module+0x1b01/0x2230
+> nas kernel: [   11.369200]  [<ffffffff81314dd0>] ? ddebug_proc_open+0xc0/0xc0
+> nas kernel: [   11.369200]  [<ffffffff810c55b7>] sys_init_module+0xd7/0x120
+> nas kernel: [   11.369200]  [<ffffffff81658c19>] system_call_fastpath+0x16/0x1b
+> nas kernel: [   11.369200] Code: 48 c7 c7 68 3c cd 81 31 c0 e8 fd be 01 00 eb d0 66 66 2e 0f 1f 84 00 00 00 00 00 48 85 ff 48 89 f8 74 14 55 48 89 e5 48 83 ec 10 <8b> 57 38 85 d2 74 07 f0 ff 40 38 c9 f3 c3 be 2a 00 00 00 48 c7
+> nas kernel: [   11.369200] RIP  [<ffffffff812f7d10>] kobject_get+0x10/0x40
+> nas kernel: [   11.369200]  RSP <ffff88007bff5bf8>
+> nas kernel: [   11.369200] CR2: 00000000000000e0
+>
