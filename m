@@ -1,203 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756151Ab3DYIGL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 04:06:11 -0400
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:45040 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755416Ab3DYIGG (ORCPT
+	id S1756314Ab3DYIJf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 04:09:35 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:56462 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755851Ab3DYIJb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 04:06:06 -0400
+	Thu, 25 Apr 2013 04:09:31 -0400
+Message-ID: <5178E4B4.4060308@gmail.com>
+Date: Thu, 25 Apr 2013 16:09:24 +0800
+From: majianpeng <majianpeng@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <1366279934-30761-5-git-send-email-lee.jones@linaro.org>
-References: <1366279934-30761-1-git-send-email-lee.jones@linaro.org>
-	<1366279934-30761-5-git-send-email-lee.jones@linaro.org>
-Date: Thu, 25 Apr 2013 10:06:05 +0200
-Message-ID: <CACRpkdaauDYTdoBHGG9FO4kKqvCYyCrjY8EGWs5gAQWErGW6_A@mail.gmail.com>
-Subject: Re: [PATCH 04/32] dmaengine: ste_dma40: Amalgamate DMA source and
- destination channel numbers
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
-        Per Forlin <per.forlin@stericsson.com>, Rabin Vincent <rabin@rab.in>
+To: Al Viro <viro@zeniv.linux.org.uk>
+CC: Andi Kleen <ak@linux.intel.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [BUG] On x86_32 system, handle block-device which size is larger
+ than 16TB.
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 18, 2013 at 12:11 PM, Lee Jones <lee.jones@linaro.org> wrote:
+Hi all,
+    Some time ago, I mentioned there are some problems on x86-32 system about handling md-block-device which size is larger than 16TB.
+And i send a patch.But there are no concern with it.
+The website of  is:  http://www.spinics.net/lists/linux-fsdevel/msg55672.html.
 
-> Devices which utilise DMA tend to use the same channel numbers for
-> transmitting and receiving. For this reason and the fact that it'll
-> decrease the burden of platform data passed to each device, we're
-> amalgamating source and destination device types.
+Except the wrapping problem, recently i found another problem.It will cause infinite loop.At lease i watched one hour, the programs don't end.
 
-I don't think this explains what the patch is actually doing.
+On x86-32 system, the version of kernel is 3.9-rc8. Disk is raid0  which size is about 17TB.
+The test program is:
+ int main()
+{
+        long long max_size = (4096LL << 32);
+        int fd = open("/dev/md0", O_RDWR);
+        off64_t off;
+        int ret;
+        char *buff = memalign(512, 4096);
 
-Instead describe this:
+        if (buff == NULL) {
+                printf("memalign error %s\n", strerror(errno));
+                exit(-1);
+        }
+        if (fd < 0) {
+                printf("open error %s\n", strerror(errno));
+                return -errno;
+        }
 
-> @@ -56,8 +54,7 @@ static struct stedma40_chan_cfg msp1_dma_rx = {
->         .high_priority = true,
->         .dir = STEDMA40_PERIPH_TO_MEM,
->
-> -       .src_dev_type = DB8500_DMA_DEV30_MSP3_RX,
-> -       .dst_dev_type = STEDMA40_DEV_DST_MEMORY,
-> +       .dev_type = DB8500_DMA_DEV30_MSP3,
-(...)
+        if ((off = lseek64(fd, max_size - 2000, SEEK_SET)) < 0)
+                printf("lseek64 error %s\n", strerror(errno));
+        else
+                printf("off 0x%llx\n", off);
+        if ((ret = write(fd, buff, 4096)) < 0)
+                printf("write error %s\n",  strerror(errno));
+        else
+                printf("write return %d\n", ret);
+        close(fd);
+        return 0;
+}
 
-What the message should say is that we're encoding pairs of
-information for sources and destinations. Since every such
-entry contains a .dir entry stating the direction of the transfer
-it is implicit whether the channel is for RX or TX and this is what
-you're exploiting in this patch.
+If run this problem, it will not be end up.Because the close(fd) operation.
+The reason is:
+close(fd)---->blkdev_close-->sync_blockdev--->filemap_write_and_wait--->__filemap_fdatawrite_range--->do_writepages-->write_cache_pages.
+In function write_cache_pages:
+ >               nr_pages = pagevec_lookup_tag(&pvec, mapping, &index, tag,
+ >                             min(end - index, (pgoff_t)PAGEVEC_SIZE-1) + 1);
+ >               if (nr_pages == 0)
+ >                       break;
+Because there is only on dirty page which index is 0xFFFFFFFF.
+>                for (i = 0; i < nr_pages; i++) {
+                            ..........
+>                            ret = (*writepage)(page, wbc, data);
+So the function blkdev_writepage will be called.
+blkdev_writepage---->block_write_full_page---->block_write_full_page_endio.
+In function block_write_full_page_endio:
+>       struct inode * const inode = page->mapping->host;
+>        loff_t i_size = i_size_read(inode);
+>        const pgoff_t end_index = i_size >> PAGE_CACHE_SHIFT;
+>        unsigned offset;
 
-So channel numbers (as mentioned in the commit) is not
-the key issue here.
+>        /* Is the page fully inside i_size? */
+>        if (page->index < end_index)
+                return __block_write_full_page(inode, page, get_block, wbc,
+                                               handler);
+Because page->index is 0xfffffff,but the end_index is very litter because the wrapping.
+On x86-32os, pgoff_t is unsigned long .So 17TB >> PAGE_CACHE_SHIFT will be overflow.
+>        /* Is the page fully outside i_size? (truncate in progress) */
+>        offset = i_size & (PAGE_CACHE_SIZE-1);
+>        if (page->index >= end_index+1 || !offset) {
+Because end_index is less than page->index.So it will be return there.So the PAGECACHE_TAG_TOWRITE will not be clear.
+So it will continue to do.
+>                /*
+>                 * The page may have dirty, unmapped buffers.  For example,
+>                 * they may have been added in ext3_writepage().  Make them
+>                 * freeable here, so the page does not leak.
+>                 */
+>                do_invalidatepage(page, 0);
+>                unlock_page(page);
+>                return 0; /* don't care */
+>        }
 
-Now we should ask ourselves why it was done like this from
-the beginning. The reason is that DMA40 supports device-to-device
-DMA, so if you encoded one device in .src_dev_type and another
-device in .dst_dev_type and set .dir to
-STEDMA40_PERIPH_TO_PERIPH (which as you can see is
-defined in <linux/platform_data/dma-ste-dma40.h>) you get a
-device to device transfer.
+The infinite loop will cause hung-task because the mutex_lock don't release.
 
-Are we now sacrificing that ability on the altar of simplification?
+My previous patch is try to resolve this problem by add some judgement on lseek/read/write operation on block-device.
+I think there are some place to deal with.
+So i think we can using LFS rule on this.
+The following is my new patch which adding LFS rule on block device.Because at present MAX_LFS_FILESIZE is equal 8GB -1.
+But at present the pgoff_t is the type of unsigned long.So i update the definition of MAX_LFS_FILESIZE.
 
-I actually think not, but that we should do periph-to-periph transfers
-in some other way, and that the .dir attribute should go away from
-the struct stedma40_chan_cfg as well but I'm not entirely sure.
-Someone else?
+diff --git a/fs/block_dev.c b/fs/block_dev.c
+index aae187a..f5ecd64 100644
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -960,6 +960,8 @@ void check_disk_size_change(struct gendisk *disk, struct block_device *bdev)
+ 
+     disk_size = (loff_t)get_capacity(disk) << 9;
+     bdev_size = i_size_read(bdev->bd_inode);
++    if (bdev_size > bdev->bd_inode->i_sb->s_maxbytes)
++        bdev_size = bdev->bd_inode->i_sb->s_maxbytes;
+     if (disk_size != bdev_size) {
+         char name[BDEVNAME_SIZE];
+ 
+@@ -1034,6 +1036,8 @@ void bd_set_size(struct block_device *bdev, loff_t size)
+ {
+     unsigned bsize = bdev_logical_block_size(bdev);
+ 
++    if (size > bdev->bd_inode->i_sb->s_maxbytes)
++        size = bdev->bd_inode->i_sb->s_maxbytes;
+     mutex_lock(&bdev->bd_inode->i_mutex);
+     i_size_write(bdev->bd_inode, size);
+     mutex_unlock(&bdev->bd_inode->i_mutex);
+diff --git a/fs/libfs.c b/fs/libfs.c
+index 916da8c..62aab9f 100644
+--- a/fs/libfs.c
++++ b/fs/libfs.c
+@@ -13,6 +13,7 @@
+ #include <linux/exportfs.h>
+ #include <linux/writeback.h>
+ #include <linux/buffer_head.h> /* sync_mapping_buffers */
++#include <linux/magic.h>
+ 
+ #include <asm/uaccess.h>
+ 
+@@ -230,8 +231,10 @@ struct dentry *mount_pseudo(struct file_system_type *fs_type, char *name,
+     s = sget(fs_type, NULL, set_anon_super, MS_NOUSER, NULL);
+     if (IS_ERR(s))
+         return ERR_CAST(s);
+-
+-    s->s_maxbytes = MAX_LFS_FILESIZE;
++    if (magic == BDEVFS_MAGIC)
++        s->s_maxbytes = ((MAX_LFS_FILESIZE >> 9) << 9);
++    else
++        s->s_maxbytes = MAX_LFS_FILESIZE;
+     s->s_blocksize = PAGE_SIZE;
+     s->s_blocksize_bits = PAGE_SHIFT;
+     s->s_magic = magic;
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 2c28271..2888c4e 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -869,7 +869,7 @@ static inline int file_check_writeable(struct file *filp)
+ /* Page cache limit. The filesystems should put that into their s_maxbytes
+    limits, otherwise bad things can happen in VM. */
+ #if BITS_PER_LONG==32
+-#define MAX_LFS_FILESIZE    (((loff_t)PAGE_CACHE_SIZE << (BITS_PER_LONG-1))-1)
++#define MAX_LFS_FILESIZE    (((loff_t)PAGE_CACHE_SIZE << (BITS_PER_LONG))-1)
+ #elif BITS_PER_LONG==64
+ #define MAX_LFS_FILESIZE     ((loff_t)0x7fffffffffffffffLL)
+ #endif
 
-(...)
-> +++ b/arch/arm/mach-ux500/cpu-db8500.c
-> @@ -167,25 +167,25 @@ static void __init db8500_add_gpios(struct device *parent)
->  }
->
->  static int usb_db8500_rx_dma_cfg[] = {
-> -       DB8500_DMA_DEV38_USB_OTG_IEP_1_9,
-> -       DB8500_DMA_DEV37_USB_OTG_IEP_2_10,
-> -       DB8500_DMA_DEV36_USB_OTG_IEP_3_11,
-> -       DB8500_DMA_DEV19_USB_OTG_IEP_4_12,
-> -       DB8500_DMA_DEV18_USB_OTG_IEP_5_13,
-> -       DB8500_DMA_DEV17_USB_OTG_IEP_6_14,
-> -       DB8500_DMA_DEV16_USB_OTG_IEP_7_15,
-> -       DB8500_DMA_DEV39_USB_OTG_IEP_8
-> +       DB8500_DMA_DEV38_USB_OTG_IEP_AND_OEP_1_9,
-> +       DB8500_DMA_DEV37_USB_OTG_IEP_AND_OEP_2_10,
-> +       DB8500_DMA_DEV36_USB_OTG_IEP_AND_OEP_3_11,
-> +       DB8500_DMA_DEV19_USB_OTG_IEP_AND_OEP_4_12,
-> +       DB8500_DMA_DEV18_USB_OTG_IEP_AND_OEP_5_13,
-> +       DB8500_DMA_DEV17_USB_OTG_IEP_AND_OEP_6_14,
-> +       DB8500_DMA_DEV16_USB_OTG_IEP_AND_OEP_7_15,
-> +       DB8500_DMA_DEV39_USB_OTG_IEP_AND_OEP_8
->  };
->
->  static int usb_db8500_tx_dma_cfg[] = {
-> -       DB8500_DMA_DEV38_USB_OTG_OEP_1_9,
-> -       DB8500_DMA_DEV37_USB_OTG_OEP_2_10,
-> -       DB8500_DMA_DEV36_USB_OTG_OEP_3_11,
-> -       DB8500_DMA_DEV19_USB_OTG_OEP_4_12,
-> -       DB8500_DMA_DEV18_USB_OTG_OEP_5_13,
-> -       DB8500_DMA_DEV17_USB_OTG_OEP_6_14,
-> -       DB8500_DMA_DEV16_USB_OTG_OEP_7_15,
-> -       DB8500_DMA_DEV39_USB_OTG_OEP_8
-> +       DB8500_DMA_DEV38_USB_OTG_IEP_AND_OEP_1_9,
-> +       DB8500_DMA_DEV37_USB_OTG_IEP_AND_OEP_2_10,
-> +       DB8500_DMA_DEV36_USB_OTG_IEP_AND_OEP_3_11,
-> +       DB8500_DMA_DEV19_USB_OTG_IEP_AND_OEP_4_12,
-> +       DB8500_DMA_DEV18_USB_OTG_IEP_AND_OEP_5_13,
-> +       DB8500_DMA_DEV17_USB_OTG_IEP_AND_OEP_6_14,
-> +       DB8500_DMA_DEV16_USB_OTG_IEP_AND_OEP_7_15,
-> +       DB8500_DMA_DEV39_USB_OTG_IEP_AND_OEP_8
->  };
+
+Thanks
+Jianpeng Ma
 
 
-If you're doing this change, and after this RX and TX has no semantical
-meaning for these lists, join these two config lists
-into one.
 
-(...)
-> diff --git a/arch/arm/mach-ux500/usb.c b/arch/arm/mach-ux500/usb.c
->  static u32 d40_chan_has_events(struct d40_chan *d40c)
-> @@ -1744,8 +1740,6 @@ static int d40_validate_conf(struct d40_chan *d40c,
->                              struct stedma40_chan_cfg *conf)
->  {
->         int res = 0;
-> -       u32 dst_event_group = D40_TYPE_TO_GROUP(conf->dst_dev_type);
-> -       u32 src_event_group = D40_TYPE_TO_GROUP(conf->src_dev_type);
 
-Please explain why this is not important to check anymore, I'm not
-following.
-
->         if (conf->dir == STEDMA40_MEM_TO_PERIPH &&
-> -           dst_event_group == STEDMA40_DEV_DST_MEMORY) {
-> -               chan_err(d40c, "Invalid dst\n");
-> +           d40c->base->plat_data->dev_tx[conf->dev_type] == 0 &&
-> +           d40c->runtime_addr == 0) {
-> +               chan_err(d40c, "Invalid TX channel address (%d)\n",
-> +                        conf->dev_type);
-
-Like here. We are checking for inconsistency between group
-and channel direction, why is it no longer important to check this?
-
->         if (conf->dir == STEDMA40_PERIPH_TO_MEM &&
-> -           src_event_group == STEDMA40_DEV_SRC_MEMORY) {
-> -               chan_err(d40c, "Invalid src\n");
-> -               res = -EINVAL;
-> -       }
-> -
-> -       if (src_event_group == STEDMA40_DEV_SRC_MEMORY &&
-> -           dst_event_group == STEDMA40_DEV_DST_MEMORY && is_log) {
-> -               chan_err(d40c, "No event line\n");
-> -               res = -EINVAL;
-> -       }
-> -
-> -       if (conf->dir == STEDMA40_PERIPH_TO_PERIPH &&
-> -           (src_event_group != dst_event_group)) {
-> -               chan_err(d40c, "Invalid event group\n");
-> +           d40c->base->plat_data->dev_rx[conf->dev_type] == 0 &&
-> +           d40c->runtime_addr == 0) {
-> +               chan_err(d40c, "Invalid RX channel address (%d)\n",
-> +                        conf->dev_type);
-
-Same here.
-
-(...)
-> @@ -2062,7 +2035,7 @@ static int d40_free_dma(struct d40_chan *d40c)
->  {
->
->         int res = 0;
-> -       u32 event;
-> +       u32 event = D40_TYPE_TO_EVENT(d40c->dma_cfg.dev_type);
->         struct d40_phy_res *phy = d40c->phy_chan;
->         bool is_src;
->
-> @@ -2081,13 +2054,11 @@ static int d40_free_dma(struct d40_chan *d40c)
->         }
->
->         if (d40c->dma_cfg.dir == STEDMA40_MEM_TO_PERIPH ||
-> -           d40c->dma_cfg.dir == STEDMA40_MEM_TO_MEM) {
-> -               event = D40_TYPE_TO_EVENT(d40c->dma_cfg.dst_dev_type);
-> +           d40c->dma_cfg.dir == STEDMA40_MEM_TO_MEM)
-
-Why did you just stop checking dma_cfg.dir for == STEDMA40_MEM_TO_MEM
-above?
-
-And why is dma_cfg.dir suddenly hardcoded to MEM_TO_MEM??
-
-This seems like a totally unrelated change and should it be done
-it need to be a separate patch with a separate explanation
-AFAICT.
-
-This seems to happen in some other places too, and I find it
-very hard to follow the changes here ... can you please consider
-splitting the changes to groups and types semantics into a separate
-patch?
-
-Yours,
-Linus Walleij
