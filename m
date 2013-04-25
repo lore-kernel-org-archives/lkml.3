@@ -1,53 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758602Ab3DYNE2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 09:04:28 -0400
-Received: from ringil.hengli.com.au ([178.18.16.133]:35013 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758539Ab3DYNEZ (ORCPT
+	id S1758527Ab3DYNFZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 09:05:25 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:13451 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755873Ab3DYNFY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 09:04:25 -0400
-Date: Thu, 25 Apr 2013 21:04:04 +0800
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, "David S.Miller" <davem@davemloft.net>,
-        Jussi Kivilinna <jussi.kivilinna@iki.fi>,
-        Jim Kukunas <james.t.kukunas@linux.intel.com>,
-        Kirk Yap <kirk.s.yap@intel.com>, David Cote <david.m.cote@intel.com>,
-        James Guilford <james.guilford@intel.com>,
-        Wajdi Feghali <wajdi.k.feghali@intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-crypto@vger.kernel.org
-Subject: Re: [PATCH] Fix prototype definitions of sha256_transform_asm,
- sha512_transform_asm
-Message-ID: <20130425130404.GA29292@gondor.apana.org.au>
-References: <cover.1364303479.git.tim.c.chen@linux.intel.com>
- <1364331519.27102.10.camel@schen9-DESK>
- <1366403112.27102.112.camel@schen9-DESK>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1366403112.27102.112.camel@schen9-DESK>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 25 Apr 2013 09:05:24 -0400
+X-Authority-Analysis: v=2.0 cv=DKcNElxb c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=LKwk6uaGbn4A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=mbomyTfwWgEA:10 a=8yCgPGfcuxz2_EMbzW4A:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1366895121.10248.12.camel@gandalf.local.home>
+Subject: Re: [PATCH 05/14] perf tools: Introduce new 'ftrace' tool
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
+Date: Thu, 25 Apr 2013 09:05:21 -0400
+In-Reply-To: <87r4hz7xal.fsf@sejong.aot.lge.com>
+References: <1366705872-12132-1-git-send-email-namhyung@kernel.org>
+	 <1366705872-12132-6-git-send-email-namhyung@kernel.org>
+	 <20130424140918.GF971@krava.brq.redhat.com>
+	 <87fvyf9maa.fsf@sejong.aot.lge.com>
+	 <20130425090956.GA1033@krava.brq.redhat.com>
+	 <87r4hz7xal.fsf@sejong.aot.lge.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 19, 2013 at 01:25:12PM -0700, Tim Chen wrote:
-> Herbert,
-> 
-> This is a follow on patch to the optimized sha256 and sha512 patch series that's just
-> merged into the crypto-dev.  Let me know if you prefer me to respin the
-> patch series.
-> 
-> This patch corrects the prototype of sha256_transform_asm and
-> sha512_transform_asm function pointer declaration to static.  It also
-> fixes a typo in sha512_ssse3_final function that affects the computation
-> of upper 64 bits of the buffer size.
+On Thu, 2013-04-25 at 18:51 +0900, Namhyung Kim wrote:
+> >
+> >> 
+> >> Do you mean it should be changed to
+> >> 
+> >> 	if (write_tracing_file("set_ftrace_pid", "-1") < 0)
+> >> 
+> >> ?  It seems it's the right thing to do for compatibility.
+> >
+> >
+> > looks like it's enough only to open it with O_TRUNC,
+> > so I guess whatever minimal goes write_tracing_file
 
-Thanks, I've folded this into the original patches in order to
-maintain bisectability.
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+Correct.
+
+> 
+> Yeah, but I can see below from trace-cmd code.
+> 
+> trace-cmd/trace-record.c:
+> 
+> 	/*
+> 	 * Older kernels required "-1" to disable pid
+> 	 */
+> 	if (ret < 0 && !strlen(pid))
+> 		ret = write(fd, "-1", 2);
+> 
+> 
+> Could you clarify this, Steve?
+
+As the comment states, older kernels (before 2.6.33) required a -1. As
+trace-cmd is set up to work with at least 2.6.32, it requires the "-1"
+write. It doesn't hurt to have it.
+
+But for perf ftrace (or whatever), I don't think we need the requirement
+to work with 2.6.32 kernels. Perf was added in 2.6.31, but do all
+functionalities still work that far back?
+
+-- Steve
+
+
