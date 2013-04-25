@@ -1,79 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752950Ab3DYItz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 04:49:55 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:60330 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751063Ab3DYItx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 04:49:53 -0400
-Date: Thu, 25 Apr 2013 09:49:33 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "olof@lixom.net" <olof@lixom.net>, Jon Medhurst <tixy@linaro.org>
-Subject: Re: [PATCH v8 2/2] ARM: Enable selection of SMP operations at boot
- time
-Message-ID: <20130425084933.GB12848@mudshark.cambridge.arm.com>
-References: <alpine.DEB.2.02.1304241935010.4180@kaball.uk.xensource.com>
- <1366828819-10745-2-git-send-email-stefano.stabellini@eu.citrix.com>
+	id S1752430Ab3DYIx5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 04:53:57 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51806 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751388Ab3DYIxz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Apr 2013 04:53:55 -0400
+Date: Thu, 25 Apr 2013 09:53:51 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jerome Marchand <jmarchan@redhat.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH] mm: swap: Mark swap pages writeback before queueing for
+ direct IO
+Message-ID: <20130425085350.GC2144@suse.de>
+References: <516E918B.3050309@redhat.com>
+ <20130422133746.ffbbb70c0394fdbf1096c7ee@linux-foundation.org>
+ <20130424185744.GB2144@suse.de>
+ <20130424122313.381167c5ad702fc991844bc7@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <1366828819-10745-2-git-send-email-stefano.stabellini@eu.citrix.com>
+In-Reply-To: <20130424122313.381167c5ad702fc991844bc7@linux-foundation.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 24, 2013 at 07:40:19PM +0100, Stefano Stabellini wrote:
-> From: Jon Medhurst <tixy@linaro.org>
+On Wed, Apr 24, 2013 at 12:23:13PM -0700, Andrew Morton wrote:
+> >  		} else {
+> > +			/*
+> > +			 * In the case of swap-over-nfs, this can be a
+> > +			 * temporary failure if the system has limited
+> > +			 * memory for allocating transmit buffers.
+> > +			 * Mark the page dirty and avoid
+> > +			 * rotate_reclaimable_page but rate-limit the
+> > +			 * messages but do not flag PageError like
+> > +			 * the normal direct-to-bio case as it could
+> > +			 * be temporary.
+> > +			 */
+> >  			set_page_dirty(page);
+> > +			ClearPageReclaim(page);
+> > +			if (printk_ratelimit()) {
+> > +				pr_err("Write-error on dio swapfile (%Lu)\n",
+> > +					(unsigned long long)page_file_offset(page));
+> > +			}
+> >  		}
+> > +		end_page_writeback(page);
 > 
-> Add a new 'smp_init' hook to machine_desc so platforms can specify a
-> function to be used to setup smp ops instead of having a statically
-> defined value.  The hook must return true when smp_ops are initialized.
-> If false the static mdesc->smp_ops will be used by default.
+> A pox upon printk_ratelimit()!  Both its code comment and the
+> checkpatch warning explain why.
 > 
-> Signed-off-by: Jon Medhurst <tixy@linaro.org>
-> Signed-off-by: Nicolas Pitre <nicolas.pitre@linaro.org>
-> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> Reviewed-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> ---
->  arch/arm/include/asm/mach/arch.h |    4 ++++
->  arch/arm/kernel/setup.c          |   10 ++++++----
->  2 files changed, 10 insertions(+), 4 deletions(-)
 
-[...]
+Ok. There were few sensible options around dealing with the write
+errors. swap_writepage() could go to sleep on a waitqueue but it's
+putting IO rate limiting where it doesn't belong. Retrying silently
+forever could be difficult to debug if the error really is permanent.
 
->  	if (is_smp()) {
-> -		if (psci_smp_available())
-> -			smp_set_ops(&psci_smp_ops);
-> -		else if (mdesc->smp)
-> -			smp_set_ops(mdesc->smp);
-> +		if (!mdesc->smp_init || !mdesc->smp_init()) {
-
-Minor nit, but this feels backwards to me. We usually return 0 on success,
-yet we're saying here that if mdesc->smp_init() returns 0, then we go and
-override the smp ops.
-
-Will
-
-> +			if (psci_smp_available())
-> +				smp_set_ops(&psci_smp_ops);
-> +			else if (mdesc->smp)
-> +				smp_set_ops(mdesc->smp);
-> +		}
->  		smp_init_cpus();
->  	}
->  #endif
-> -- 
-> 1.7.2.5
+> --- a/mm/page_io.c~mm-swap-mark-swap-pages-writeback-before-queueing-for-direct-io-fix
+> +++ a/mm/page_io.c
+> @@ -244,10 +244,8 @@ int __swap_writepage(struct page *page,
+>  			 */
+>  			set_page_dirty(page);
+>  			ClearPageReclaim(page);
+> -			if (printk_ratelimit()) {
+> -				pr_err("Write-error on dio swapfile (%Lu)\n",
+> -					(unsigned long long)page_file_offset(page));
+> -			}
+> +			pr_err_ratelimited("Write error on dio swapfile (%Lu)\n",
+> +				(unsigned long long)page_file_offset(page));
+>  		}
+>  		end_page_writeback(page);
+>  		return ret;
 > 
+> Do we need to cast the loff_t?  afaict all architectures use long long.
+> I didn't get a warning from sparc64 with the cast removed, and sparc64
+> is the one which likes to use different underlying types.
 > 
+> I think I'll remove it and wait for Fengguang's nastygram.
+> 
+
+Sounds reasonable. I'll get cc'd on the same mails.
+
+-- 
+Mel Gorman
+SUSE Labs
