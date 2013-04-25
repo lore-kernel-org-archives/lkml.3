@@ -1,83 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758749Ab3DYBWX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 21:22:23 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:60467 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758665Ab3DYBWV (ORCPT
+	id S1758743Ab3DYBXu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 21:23:50 -0400
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:17848 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758665Ab3DYBXs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 21:22:21 -0400
-X-Spam-Score: -100.8
-Message-ID: <5178851E.3090204@asianux.com>
-Date: Thu, 25 Apr 2013 09:21:34 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Wed, 24 Apr 2013 21:23:48 -0400
+Message-ID: <5178856F.6000908@hp.com>
+Date: Thu, 25 Apr 2013 09:22:55 +0800
+From: ZhenHua <zhen-hual@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130117 Thunderbird/19.0
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Viresh Kumar <viresh.kumar@linaro.org>,
-        "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>, Will Deacon <will.deacon@arm.com>,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] ARM: S5pv210: compiling issue, ARM_S5PV210_CPUFREQ
- need CONFIG_CPU_FREQ_TABLE=y
-References: <5177B562.40400@asianux.com> <5177BC50.6050402@asianux.com> <CAOh2x==g96h5UhvBjtyrBTjxdkno3WBv5JEsqyT3jqv7x69V6A@mail.gmail.com> <1486501.MMr8zrpiDO@vostro.rjw.lan>
-In-Reply-To: <1486501.MMr8zrpiDO@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Alan Stern <stern@rowland.harvard.edu>,
+        Greg KH <gregkh@linuxfoundation.org>
+CC: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org, tom.vaden@hp.com
+Subject: Re: [PATCH 1/1] driver,usb: Fix a warning in uhci-hcd driver
+References: <Pine.LNX.4.44L0.1304231102490.1679-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1304231102490.1679-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013年04月24日 20:09, Rafael J. Wysocki wrote:
-> On Wednesday, April 24, 2013 04:40:38 PM Viresh Kumar wrote:
->> > On Wed, Apr 24, 2013 at 4:34 PM, Chen Gang <gang.chen@asianux.com> wrote:
->>> > >
->>> > > For arm S5pv210 with allmodconfig, ARM_S5PV210_CPUFREQ need
->>> > > CONFIG_CPU_FREQ_TABLE=y, or will cause compiling issue.
->>> > >
->>> > > The related operation:
->>> > > + arm-linux-gnu-ld -EL -p --no-undefined -X --build-id -X -o .tmp_vmlinux1 -T /root/linux-next/arch/arm/kernel/vmlinux.lds arch/arm/kernel/head.o init/built-in.o --start-group usr/built-in.o arch/arm/nwfpe/built-in.o arch/arm/vfp/built-in.o arch/arm/kernel/built-in.o arch/arm/mm/built-in.o arch/arm/common/built-in.o arch/arm/net/built-in.o arch/arm/crypto/built-in.o arch/arm/mach-s5pv210/built-in.o arch/arm/plat-samsung/built-in.o kernel/built-in.o mm/built-in.o fs/built-in.o ipc/built-in.o security/built-in.o crypto/built-in.o block/built-in.o arch/arm/lib/lib.a lib/lib.a arch/arm/lib/built-in.o lib/built-in.o drivers/built-in.o sound/built-in.o firmware/built-in.o net/built-in.o --end-group
->>> > >
->>> > > The related errors:
->>> > > drivers/built-in.o: In function `s5pv210_target':
->>> > > drivers/cpufreq/s5pv210-cpufreq.c:225: undefined reference to `cpufreq_frequency_table_target'
->>> > > drivers/cpufreq/s5pv210-cpufreq.c:237: undefined reference to `cpufreq_frequency_table_target'
->>> > > drivers/built-in.o: In function `s5pv210_verify_speed':
->>> > > drivers/cpufreq/s5pv210-cpufreq.c:182: undefined reference to `cpufreq_frequency_table_verify'
->>> > > drivers/built-in.o: In function `s5pv210_cpu_init':
->>> > > drivers/cpufreq/s5pv210-cpufreq.c:556: undefined reference to `cpufreq_frequency_table_get_attr'
->>> > > drivers/cpufreq/s5pv210-cpufreq.c:560: undefined reference to `cpufreq_frequency_table_cpuinfo'
->>> > > make: *** [vmlinux] Error 1
->>> > >
->>> > > Signed-off-by: Chen Gang <gang.chen@asianux.com>
->>> > > ---
->>> > >  drivers/cpufreq/Kconfig.arm |    1 +
->>> > >  1 files changed, 1 insertions(+), 0 deletions(-)
->>> > >
->>> > > diff --git a/drivers/cpufreq/Kconfig.arm b/drivers/cpufreq/Kconfig.arm
->>> > > index bce2195..bbcd719 100644
->>> > > --- a/drivers/cpufreq/Kconfig.arm
->>> > > +++ b/drivers/cpufreq/Kconfig.arm
->>> > > @@ -187,6 +187,7 @@ config ARM_S3C64XX_CPUFREQ
->>> > >  config ARM_S5PV210_CPUFREQ
->>> > >         bool "Samsung S5PV210 and S5PC110"
->>> > >         depends on CPU_S5PV210
->>> > > +       select CPU_FREQ_TABLE
->> > 
->> > Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
-> Applied.
-> 
-> Thanks,
-> Rafael
+On 04/23/2013 11:10 PM, Alan Stern wrote:
+> On Tue, 23 Apr 2013, Greg KH wrote:
+>
+>> On Tue, Apr 23, 2013 at 03:15:01PM +0800, Li, Zhen-Hua wrote:
+>>> From: "Li, Zhen-Hua" <zhen-hual@hp.com>
+>>>
+>>> This patch is trying to fix bug QXCR1001261767.
+>> What is that bug number?  Where can it be referenced?  If you are going
+>> to put it in a public place (like a kernel changelog), it needs to be
+>> publicly accessible.
+>>
+>>> On some HP platform, when usb driver inits the iLo Virtual USB Controller, there may be a warning "Controller not stopped yet!". It is because driver does not wait enough time.
+>> What happened to your line endings?
+>>
+>>> This patch adds more time waiting and retries.
+>> Why not only do this for your device?
+> It won't hurt to do it for all devices, because the wait loop will
+> terminate as soon as the controller goes into suspend.  For normal
+> controllers this will be on the first iteration.
+Yes, most devices only need one time check.
+>>> Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
+>>> ---
+>>>   drivers/usb/host/uhci-hcd.c |   16 +++++++++++++++-
+>>>   1 file changed, 15 insertions(+), 1 deletion(-)
+>>>
+>>> diff --git a/drivers/usb/host/uhci-hcd.c b/drivers/usb/host/uhci-hcd.c
+>>> index 4a86b63..514e9d7 100644
+>>> --- a/drivers/usb/host/uhci-hcd.c
+>>> +++ b/drivers/usb/host/uhci-hcd.c
+>>> @@ -277,6 +277,9 @@ static int global_suspend_mode_is_broken(struct uhci_hcd *uhci)
+>>>   		uhci->global_suspend_mode_is_broken(uhci) : 0;
+>>>   }
+>>>   
+>>> +#define UHCI_SUSPENDRH_RETRY_MAX      10
+>>> +#define UHCI_SUSPENDRH_RETRY_DELAY    100
+> Why is the delay set to 100 us?  Isn't that excessively large?  How
+> long does it take for this controller to go into suspend?
+This controller will take about 200~400 us, but I am not sure how long 
+other devices will take.
+I set interval to 100 us,  so it will save more time.
 
-Thanks, too.
+>
+>>>   static void suspend_rh(struct uhci_hcd *uhci, enum uhci_rh_state new_state)
+>>>   __releases(uhci->lock)
+>>>   __acquires(uhci->lock)
+>>> @@ -284,6 +287,7 @@ __acquires(uhci->lock)
+>>>   	int auto_stop;
+>>>   	int int_enable, egsm_enable, wakeup_enable;
+>>>   	struct usb_device *rhdev = uhci_to_hcd(uhci)->self.root_hub;
+>>> +	u16 try, stopped;
+> Why are these variables u16?  Why not int?
+uhci_readw will return u16.
+> Anyway, a better approach would be not to add a delay loop at all.
+> Instead, change this test:
+>
+> 	if (!auto_stop && !(uhci_readw(uhci, USBSTS) & USBSTS_HCH)) {
+> 		uhci->rh_state = UHCI_RH_SUSPENDING;
+> 		spin_unlock_irq(&uhci->lock);
+> 		msleep(1);
+> 		spin_lock_irq(&uhci->lock);
+> 		if (uhci->dead)
+> 			return;
+> 	}
+>
+> When the iLo controller is present, make the "if" statement always
+> succeed.  Then you'll get a whole 1-ms delay.
+This will cause more operation and more time for other devices.
+> Alan Stern
+>
 
-
--- 
-Chen Gang
-
-Asianux Corporation
