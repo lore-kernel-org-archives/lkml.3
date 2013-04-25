@@ -1,98 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757963Ab3DYKU1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 06:20:27 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:38847 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757887Ab3DYKUW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 06:20:22 -0400
-Date: Thu, 25 Apr 2013 18:20:16 +0800
-From: Han Pingtian <hanpt@linux.vnet.ibm.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Subject: [BTRFS] kernel BUG at fs/btrfs/tree-log.c:1973! in 3.9-rc7
-Message-ID: <20130425102016.GA4441@localhost.localdomain>
-Mail-Followup-To: LKML <linux-kernel@vger.kernel.org>
+	id S1757637Ab3DYKWM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 06:22:12 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:34331 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756140Ab3DYKWK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Apr 2013 06:22:10 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13042510-7182-0000-0000-00000664FBE1
+X-Originating-IP: [188.6.195.195]
+In-Reply-To: <20130401104111.19027.1794.stgit@maximpc.sw.ru>
+References: <20130401103749.19027.89833.stgit@maximpc.sw.ru>
+	<20130401104111.19027.1794.stgit@maximpc.sw.ru>
+Date: Thu, 25 Apr 2013 12:22:08 +0200
+Message-ID: <CAJfpegvgbQg9YTbpE6mtsXFQDZRMPgtmKV9O5L8h0cHP_QdWrQ@mail.gmail.com>
+Subject: Re: [PATCH 04/14] fuse: Prepare to handle multiple pages in writeback
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: "Maxim V. Patlasov" <MPatlasov@parallels.com>
+Cc: Kirill Korotaev <dev@parallels.com>, Pavel Emelianov <xemul@parallels.com>,
+        fuse-devel <fuse-devel@lists.sourceforge.net>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        James Bottomley <jbottomley@parallels.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>, devel@openvz.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, Apr 1, 2013 at 12:41 PM, Maxim V. Patlasov
+<MPatlasov@parallels.com> wrote:
+>
+> The .writepages callback will issue writeback requests with more than one
+> page aboard. Make existing end/check code be aware of this.
+>
+> Original patch by: Pavel Emelyanov <xemul@openvz.org>
 
-We encountered this problem on 3.9-rc7, powerpc 7 system. When they trying to mount a
-btrfs partition, kernel paniced with these messages:
+If this patch was written by Pavel and then modified by you then
+please add  a "From:" header at the top of the patch instead.  See
+Documentation/SubmittingPatches.
 
-============================================================
-
-aimlp6 login: ------------[ cut here ]------------
-cpu 0x3: Vector: 700 (Program Check) at [c00000018461afd0]
-    pc: d000000006c6ffb4: .replay_one_buffer+0x47c/0x5f8 [btrfs]
-    lr: d000000006c6ffb4: .replay_one_buffer+0x47c/0x5f8 [btrfs]
-    sp: c00000018461b250
-   msr: 8000000000029032
-  current = 0xc0000001853a3ae0
-  paca    = 0xc000000007f40900   softe: 0        irq_happened: 0x01
-    pid   = 8534, comm = mount
-kernel BUG at fs/btrfs/tree-log.c:1973!
-enter ? for help
-[c00000018461b370] d000000006c6a29c .walk_down_log_tree+0x424/0x660 [btrfs]
-[c00000018461b460] d000000006c6aac8 .walk_log_tree+0x120/0x3e0 [btrfs]
-[c00000018461b530] d000000006c6d528 .btrfs_recover_log_trees+0x558/0x7c0 [btrfs]
-[c00000018461b6c0] d000000006c1b8d8 .open_ctree+0x2098/0x22e0 [btrfs]
-[c00000018461b900] d000000006bd8830 .btrfs_fill_super+0x90/0x1b0 [btrfs]
-[c00000018461b9c0] d000000006bd92a0 .btrfs_mount+0x440/0x450 [btrfs]
-[c00000018461bab0] c0000000001fc788 .mount_fs+0x80/0x218
-[c00000018461bb60] c0000000002235ec .vfs_kern_mount+0x7c/0x140
-[c00000018461bc00] c000000000223800 .do_new_mount+0x110/0x210
-[c00000018461bcc0] c000000000223b74 .do_mount+0x274/0x2b0
-[c00000018461bd70] c000000000223c98 .SyS_mount+0xe8/0x118
-[c00000018461be30] c000000000009edc syscall_exit+0x0/0xa0
---- Exception: c01 (System Call) at 00003fffa8cf0e6c
-SP (3fffed202520) is in userspace
-3:mon> X
-Oops: Exception in kernel mode, sig: 5 [#1]
-SMP NR_CPUS=1024 NUMA pSeries
-Modules linked in: nfsv3 nfs_acl nfs fscache lockd sunrpc af_packet fuse loop ipv6 sg ibmveth ext3 jbd mbcache dm_service_time dm_queue_length dm_round_robin dm_multipath btrfs raid6_pq lzo_compress crc32c libcrc32c xor sd_mod crc_t10dif scsi_dh_alua scsi_dh_rdac scsi_dh_emc scsi_dh_hp_sw scsi_dh dm_snapshot dm_mod ibmvscsi scsi_transport_srp scsi_tgt scsi_mod
-NIP: d000000006c6ffb4 LR: d000000006c6ffb4 CTR: c0000000001494c8
-REGS: c00000018461afd0 TRAP: 0700   Not tainted  (3.9.0-rc7-0.9-ppc64)
-MSR: 8000000000029032 <SF,EE,ME,IR,DR,RI>  CR: 24022424  XER: 20000001
-SOFTE: 1
-CFAR: d000000006c6be6c
-TASK = c0000001853a3ae0[8534] 'mount' THREAD: c000000184618000 CPU: 3
-GPR00: d000000006c6ffb4 c00000018461b250 d000000006ce7480 ffffffffffffffe4
-GPR04: c0000000014c2768 c000000180861fd8 0000000000000001 0000000000000000
-GPR08: c00000000070d488 c000000000eb0ea8 0000000000000000 0000000000000043
-GPR12: c000000180861fd8 c000000007f40900 ffffffffffffffff fffffffffffffffa
-GPR16: fffffffffffffffa 0000000000008000 c00000018461b2c0 c00000018461b2d1
-GPR20: c00000018461b2c9 0000000000000280 c0000001807c0670 c000000180842188
-GPR24: c00000017f931380 0000000000000000 00000000000013d4 c00000017f93a380
-GPR28: c00000018461b5e8 0000000000728c2e 00000000000000c7 c0000001807683d0
-NIP [d000000006c6ffb4] .replay_one_buffer+0x47c/0x5f8 [btrfs]
-LR [d000000006c6ffb4] .replay_one_buffer+0x47c/0x5f8 [btrfs]
-Call Trace:
-[c00000018461b250] [d000000006c6ffb4] .replay_one_buffer+0x47c/0x5f8 [btrfs] (unreliable)
-[c00000018461b370] [d000000006c6a29c] .walk_down_log_tree+0x424/0x660 [btrfs]
-[c00000018461b460] [d000000006c6aac8] .walk_log_tree+0x120/0x3e0 [btrfs]
-[c00000018461b530] [d000000006c6d528] .btrfs_recover_log_trees+0x558/0x7c0 [btrfs]
-[c00000018461b6c0] [d000000006c1b8d8] .open_ctree+0x2098/0x22e0 [btrfs]
-[c00000018461b900] [d000000006bd8830] .btrfs_fill_super+0x90/0x1b0 [btrfs]
-[c00000018461b9c0] [d000000006bd92a0] .btrfs_mount+0x440/0x450 [btrfs]
-[c00000018461bab0] [c0000000001fc788] .mount_fs+0x80/0x218
-[c00000018461bb60] [c0000000002235ec] .vfs_kern_mount+0x7c/0x140
-[c00000018461bc00] [c000000000223800] .do_new_mount+0x110/0x210
-[c00000018461bcc0] [c000000000223b74] .do_mount+0x274/0x2b0
-[c00000018461bd70] [c000000000223c98] .SyS_mount+0xe8/0x118
-[c00000018461be30] [c000000000009edc] syscall_exit+0x0/0xa0
-Instruction dump:
-7fe6fb78 7fc7f378 7e489378 4bffd8f9 0b030000 7f9d8800 419e0128 e87c0020
-7f64db78 7ee5bb78 e8c10070 4bffbdb1 <0b030000> 4bffff10 60420000 e87c0020
----[ end trace f62eb2547334b678 ]---
-
-============================================================
-
+> Signed-off-by: Maxim Patlasov <MPatlasov@parallels.com>
+> ---
+>  fs/fuse/file.c |   22 +++++++++++++++-------
+>  1 files changed, 15 insertions(+), 7 deletions(-)
+>
+> diff --git a/fs/fuse/file.c b/fs/fuse/file.c
+> index 648de34..ee44b24 100644
+> --- a/fs/fuse/file.c
+> +++ b/fs/fuse/file.c
+> @@ -345,7 +345,8 @@ static bool fuse_page_is_writeback(struct inode *inode, pgoff_t index)
+>
+>                 BUG_ON(req->inode != inode);
+>                 curr_index = req->misc.write.in.offset >> PAGE_CACHE_SHIFT;
+> -               if (curr_index == index) {
+> +               if (curr_index <= index &&
+> +                   index < curr_index + req->num_pages) {
+>                         found = true;
+>                         break;
+>                 }
+> @@ -1295,7 +1296,10 @@ static ssize_t fuse_direct_write(struct file *file, const char __user *buf,
+>
+>  static void fuse_writepage_free(struct fuse_conn *fc, struct fuse_req *req)
+>  {
+> -       __free_page(req->pages[0]);
+> +       int i;
+> +
+> +       for (i = 0; i < req->num_pages; i++)
+> +               __free_page(req->pages[i]);
+>         fuse_file_put(req->ff, false);
+>  }
+>
+> @@ -1304,10 +1308,13 @@ static void fuse_writepage_finish(struct fuse_conn *fc, struct fuse_req *req)
+>         struct inode *inode = req->inode;
+>         struct fuse_inode *fi = get_fuse_inode(inode);
+>         struct backing_dev_info *bdi = inode->i_mapping->backing_dev_info;
+> +       int i;
+>
+>         list_del(&req->writepages_entry);
+> -       dec_bdi_stat(bdi, BDI_WRITEBACK);
+> -       dec_zone_page_state(req->pages[0], NR_WRITEBACK_TEMP);
+> +       for (i = 0; i < req->num_pages; i++) {
+> +               dec_bdi_stat(bdi, BDI_WRITEBACK);
+> +               dec_zone_page_state(req->pages[i], NR_WRITEBACK_TEMP);
+> +       }
+>         bdi_writeout_inc(bdi);
+>         wake_up(&fi->page_waitq);
+>  }
+> @@ -1320,14 +1327,15 @@ __acquires(fc->lock)
+>         struct fuse_inode *fi = get_fuse_inode(req->inode);
+>         loff_t size = i_size_read(req->inode);
+>         struct fuse_write_in *inarg = &req->misc.write.in;
+> +       __u64 data_size = req->num_pages * PAGE_CACHE_SIZE;
+>
+>         if (!fc->connected)
+>                 goto out_free;
+>
+> -       if (inarg->offset + PAGE_CACHE_SIZE <= size) {
+> -               inarg->size = PAGE_CACHE_SIZE;
+> +       if (inarg->offset + data_size <= size) {
+> +               inarg->size = data_size;
+>         } else if (inarg->offset < size) {
+> -               inarg->size = size & (PAGE_CACHE_SIZE - 1);
+> +               inarg->size = size - inarg->offset;
+>         } else {
+>                 /* Got truncated off completely */
+>                 goto out_free;
+>
