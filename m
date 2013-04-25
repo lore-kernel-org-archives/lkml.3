@@ -1,86 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932692Ab3DYR3P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 13:29:15 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:61263 "EHLO
+	id S932792Ab3DYR3e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 13:29:34 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:61625 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932565Ab3DYR3K (ORCPT
+	with ESMTP id S932726Ab3DYR30 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 13:29:10 -0400
+	Thu, 25 Apr 2013 13:29:26 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Bastian Hecht <hechtb+renesas@gmail.com>,
-        Simon Horman <horms+renesas@verge.net.au>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
-Subject: [PATCH 03/21] ARM: shmobile: don't call irqchip_init unconditionally
-Date: Thu, 25 Apr 2013 19:28:46 +0200
-Message-Id: <1366910944-3033663-4-git-send-email-arnd@arndb.de>
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        alsa-devel@alsa-project.org
+Subject: [PATCH 07/21] oss/dmabuf: use dma_map_single
+Date: Thu, 25 Apr 2013 19:28:50 +0200
+Message-Id: <1366910944-3033663-8-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1366910944-3033663-1-git-send-email-arnd@arndb.de>
 References: <1366910944-3033663-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:s2O3eT//xPUrEjzC6/5AaONoHpUWDAFbOy3yFPU7brN
- xs38LIYzmMo3x/Tn20ksnbkw8f+8j737PpFnNDNYUSMOOk6IvV
- 7Wpl2AGXZs/bUwYdx2Q8ZyHGpgRDQmvM7gMDGCcsazU9BGM0zK
- +DPYmTUJ0DWSim3SmARKCSEDhIsa/KFL5GD5jWfCHsBHWgy6Ni
- tr51NlG7F1jpi0THNkrXm9hsDiGp3jdqBcMG/oNwkEzOf8z36p
- nyVWVxhcR12Hj7eUePkImg3cd4QPjUJXtq6jl+XmMiIbxN/geD
- yJtdV+6pZEZmIoH2Zp8UXaGqbIKwXo+bL5Dl35c8J6/JFqegGH
- GfnotF+DceD18X17j8moMAjRYCkVPbJF9L9rEPk1F
+X-Provags-ID: V02:K0:+B8FrqSp/bn+S7UH2y09L6MPnzM8BcUZXT+Zh3XMV92
+ P58zcH9pnEP7rDlcCDxT1pDHXo9/OQs58RcGRyGdh2foTx1tKt
+ lMvpW7XyVac5I1Vy+ua11aIcpk4+SWlMNHxxrqfXbPtp9yXtCZ
+ dWm2yC4/vyYtbvuq2/2BSrcn7VE+2k6/OOngXmIhubr6KJcDUb
+ zws9FcpC53imZzqZhaC/oHPmeQsH3FIb5vsD8D/Iow1ENrm9KH
+ TAB6aoqHBoZI+KTMFTzlxc7RYLPleZnLAfrIJlmnk4QT6x75hQ
+ a0ffYriX/KLjLfvDs+r+QAy4yEh8OxgxsiKl+RZRZ5LnH+q9vv
+ RSMj04kfq6iASNHwGoop1rAq0ikd6czevDcaf5y8x
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The irqchip_init function is only available when building
-with CONFIG_OF enabled, which causes this build failure for
-bonito_defconfig:
+The virt_to_bus/bus_to_virt functions have been deprecated
+for as long as I can remember, and they are used in very
+few remaining instances, usually in obscure ISA device
+drivers. The OSS sound drivers are the only ones that are
+still used on the ARM architecture, and only on some of
+the earliest StrongARM machines.
 
-arch/arm/mach-shmobile/built-in.o: In function `r8a7740_init_irq_of':
-:(.init.text+0x580): undefined reference to `irqchip_init'
-
-This makes both the OF and the ATAGS portion of the driver
-conditional, which avoids the build error and also results
-in smaller object code if not both are enabled, without the
-need for an #ifdef.
+The problem for converting the OSS subsystem to use
+dma_map_single instead is that the caller of virt_to_bus
+does not have a device pointer, since the subsystem has
+never been ported to use the common device infrastructure.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Bastian Hecht <hechtb+renesas@gmail.com>
-Cc: Simon Horman <horms+renesas@verge.net.au>
-Cc: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
+Cc: Jaroslav Kysela <perex@perex.cz>
+Cc: Takashi Iwai <tiwai@suse.de>
+Cc: alsa-devel@alsa-project.org
 ---
- arch/arm/mach-shmobile/intc-r8a7740.c | 13 +++++++++++--
- 1 file changed, 11 insertions(+), 2 deletions(-)
+ sound/oss/dmabuf.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/mach-shmobile/intc-r8a7740.c b/arch/arm/mach-shmobile/intc-r8a7740.c
-index 8871f77..5dc57f1 100644
---- a/arch/arm/mach-shmobile/intc-r8a7740.c
-+++ b/arch/arm/mach-shmobile/intc-r8a7740.c
-@@ -53,14 +53,23 @@ static void __init r8a7740_init_irq_common(void)
+diff --git a/sound/oss/dmabuf.c b/sound/oss/dmabuf.c
+index bcc3e8e..a59c888 100644
+--- a/sound/oss/dmabuf.c
++++ b/sound/oss/dmabuf.c
+@@ -114,7 +114,7 @@ static int sound_alloc_dmap(struct dma_buffparms *dmap)
+ 		}
+ 	}
+ 	dmap->raw_buf = start_addr;
+-	dmap->raw_buf_phys = virt_to_bus(start_addr);
++	dmap->raw_buf_phys = dma_map_single(NULL, start_addr, dmap->buffsize, DMA_BIDIRECTIONAL);
  
- void __init r8a7740_init_irq_of(void)
- {
-+	if (!IS_ENABLED(CONFIG_OF))
-+		return;
-+
- 	irqchip_init();
- 	r8a7740_init_irq_common();
+ 	for (page = virt_to_page(start_addr); page <= virt_to_page(end_addr); page++)
+ 		SetPageReserved(page);
+@@ -139,6 +139,7 @@ static void sound_free_dmap(struct dma_buffparms *dmap)
+ 	for (page = virt_to_page(start_addr); page <= virt_to_page(end_addr); page++)
+ 		ClearPageReserved(page);
+ 
++	dma_unmap_single(NULL, dmap->raw_buf_phys, dmap->buffsize, DMA_BIDIRECTIONAL);
+ 	free_pages((unsigned long) dmap->raw_buf, sz);
+ 	dmap->raw_buf = NULL;
  }
- 
- void __init r8a7740_init_irq(void)
- {
--	void __iomem *gic_dist_base = ioremap_nocache(0xc2800000, 0x1000);
--	void __iomem *gic_cpu_base = ioremap_nocache(0xc2000000, 0x1000);
-+	void __iomem *gic_dist_base;
-+	void __iomem *gic_cpu_base;
-+
-+	if (!IS_ENABLED(CONFIG_ATAGS))
-+		return;
-+
-+	gic_dist_base = ioremap_nocache(0xc2800000, 0x1000);
-+	gic_cpu_base = ioremap_nocache(0xc2000000, 0x1000);
- 
- 	/* initialize the Generic Interrupt Controller PL390 r0p0 */
- 	gic_init(0, 29, gic_dist_base, gic_cpu_base);
 -- 
 1.8.1.2
 
