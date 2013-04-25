@@ -1,45 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759466Ab3DYStB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 14:49:01 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:65332 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759449Ab3DYSs7 (ORCPT
+	id S1759478Ab3DYSvi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 14:51:38 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:34653 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759126Ab3DYSvg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 14:48:59 -0400
-Message-ID: <1366915736.8964.171.camel@edumazet-glaptop>
-Subject: Re: [PATCH net 1/3] unix/dgram: peek beyond 0-sized skbs
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Benjamin Poirier <bpoirier@suse.de>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <edumazet@google.com>,
-        Pavel Emelyanov <xemul@parallels.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 25 Apr 2013 11:48:56 -0700
-In-Reply-To: <1366897638-21882-1-git-send-email-bpoirier@suse.de>
-References: <1366897638-21882-1-git-send-email-bpoirier@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 25 Apr 2013 14:51:36 -0400
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 6.3 \(1503\))
+Subject: Re: [PATCH] NFSv4: Use exponential backoff delay for NFS4_ERRDELAY
+From: Chuck Lever <chuck.lever@oracle.com>
+In-Reply-To: <20130425184626.GC5049@fieldses.org>
+Date: Thu, 25 Apr 2013 14:51:20 -0400
+Cc: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        David Wysochanski <dwysocha@redhat.com>,
+        Dave Chiluk <chiluk@canonical.com>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <04318EF4-375D-49FD-8DB0-2BC6429543A9@oracle.com>
+References: <1366838926.22397.25.camel@leira.trondhjem.org> <5178549A.7010402@canonical.com> <1366842905.22397.49.camel@leira.trondhjem.org> <1366892374.26249.294.camel@localhost.localdomain> <20130425132907.GB31851@fieldses.org> <1366896654.4719.18.camel@leira.trondhjem.org> <20130425134918.GC31851@fieldses.org> <1366899034.6812.4.camel@leira.trondhjem.org> <20130425181932.GA5049@fieldses.org> <81BBEA25-CDE5-42B1-996D-90C26A43DEF6@oracle.com> <20130425184626.GC5049@fieldses.org>
+To: "bfields@fieldses.org" <bfields@fieldses.org>
+X-Mailer: Apple Mail (2.1503)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-04-25 at 09:47 -0400, Benjamin Poirier wrote:
-> "77c1090 net: fix infinite loop in __skb_recv_datagram()" (v3.8) introduced a
-> regression:
-> After that commit, recv can no longer peek beyond a 0-sized skb in the queue.
-> __skb_recv_datagram() instead stops at the first skb with len == 0 and results
-> in the system call failing with -EFAULT via skb_copy_datagram_iovec().
 
+On Apr 25, 2013, at 2:46 PM, "bfields@fieldses.org" <bfields@fieldses.org> wrote:
 
-if MSG_PEEK is not used, what happens here ?
+> On Thu, Apr 25, 2013 at 02:40:11PM -0400, Chuck Lever wrote:
+>> 
+>> On Apr 25, 2013, at 2:19 PM, "bfields@fieldses.org" <bfields@fieldses.org> wrote:
+>> 
+>>> On Thu, Apr 25, 2013 at 02:10:36PM +0000, Myklebust, Trond wrote:
+>>>> On Thu, 2013-04-25 at 09:49 -0400, bfields@fieldses.org wrote:
+>>>>> On Thu, Apr 25, 2013 at 01:30:58PM +0000, Myklebust, Trond wrote:
+>>>>>> On Thu, 2013-04-25 at 09:29 -0400, bfields@fieldses.org wrote:
+>>>>>> 
+>>>>>>> My position is that we simply have no idea what order of magnitude even
+>>>>>>> delay should be.  And that in such a situation exponential backoff such
+>>>>>>> as implemented in the synchronous case seems the reasonable default as
+>>>>>>> it guarantees at worst doubling the delay while still bounding the
+>>>>>>> long-term average frequency of retries.
+>>>>>> 
+>>>>>> So we start with a 15 second delay, and then go to 60 seconds?
+>>>>> 
+>>>>> I agree that a server should normally be doing the wait on its own if
+>>>>> the wait would be on the order of an rpc round trip.
+>>>>> 
+>>>>> So I'd be inclined to start with a delay that was an order of magnitude
+>>>>> or two more than a round trip.
+>>>>> 
+>>>>> And I'd expect NFS isn't common on networks with 1-second latencies.
+>>>>> 
+>>>>> So the 1/10 second we're using in the synchronous case sounds closer to
+>>>>> the right ballpark to me.
+>>>> 
+>>>> OK, then. Now all I need is actual motivation for changing the existing
+>>>> code other than handwaving arguments about "polling is better than flat
+>>>> waits".
+>>>> What actual use cases are impacting us now, other than the AIX design
+>>>> decision to force CLOSE to retry at least once before succeeding?
+>>> 
+>>> Nah, I've got nothing, and I agree that the AIX problem is there bug.
+>>> 
+>>> Just for fun I looked at re-checked the Linux server cases.  As far as I
+>>> can tell they are:
+>>> 
+>>> 	- delegations: returned immediately on detection of any
+>>> 	  conflict.  The current behavior in the sync case looks
+>>> 	  reasonable to me.
+>>> 	- allocation failures: not really sure it's the best error, but
+>>> 	  it seems to be all the protocol offers.  We probably don't
+>>> 	  care much what the client does in this case.
+>>> 	- some rare cases that would probably indicate bugs (e.g.,
+>>> 	  attempting to destroy a client while other rpc's from that
+>>> 	  client are running.)  Again we don't care what the client does
+>>> 	  here.
+>>> 	- the 4.1 slot-inuse case.
+>>> 
+>>> We also by default map four errors (ETIMEDOUT, EAGAIN, EWOULDBLOCK,
+>>> ENOMEM) to delay.  I thought I remembered one of those being used by
+>>> some HFS system, but can't actually find an example now.  A quick grep
+>>> doesn't show anything interesting.
+>> 
+>> It's worth mentioning that servers that have frozen state (say, in preparation for Transparent State Migration) may use NFS4ERR_DELAY to prevent clients from modifying open or lock state until that state has transitioned to a destination server.
+> 
+> I thought they'd decided they'll be forced to find a different way to do
+> that?
+> 
+> (The issue being that it only works if you're using 4.1, and if the
+> session state itself isn't part of the state to be transferred.
+> Otherwise you're forced to modify the state anyway since NFS4ERR_DELAY
+> is seqid-modifying.)
 
-It doesn't look right to me that we return -EFAULT if skb->len is 0,
-EFAULT is reserved to faulting (ie reading/writing at least one byte)
+The answer is not to return NFS4ERR_DELAY on seqid-modifying operations.
 
-How are we telling the user message had 0 byte, but its not EOF ?
+The source server can return NFS4ERR_DELAY to the client's migration recovery operations (the GETATTR(fs_locations) request) for example.
+
+Or, the server could return it on the initial PUTFH operation in a compound containing seqid-modifying operations.
+
+-- 
+Chuck Lever
+chuck[dot]lever[at]oracle[dot]com
+
 
 
 
