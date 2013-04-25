@@ -1,73 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758680Ab3DYAnL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 20:43:11 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:58590 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758069Ab3DYAnI (ORCPT
+	id S1758683Ab3DYAuy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 20:50:54 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:42782 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758211Ab3DYAux (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 20:43:08 -0400
-Message-ID: <51787C18.1000408@linaro.org>
-Date: Wed, 24 Apr 2013 17:43:04 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Wed, 24 Apr 2013 20:50:53 -0400
+X-AuditID: 9c93016f-b7b70ae0000038d5-16-51787dea2fb5
+Date: Thu, 25 Apr 2013 09:50:50 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Michael Kerrisk <mtk.manpages@gmail.com>,
+        Rik van Riel <riel@redhat.com>, Dave Hansen <dave.hansen@intel.com>
+Subject: Re: [PATCH v2 5/6] mm: Support address range reclaim
+Message-ID: <20130425005050.GD2978@blaptop>
+References: <1366767664-17541-1-git-send-email-minchan@kernel.org>
+ <1366767664-17541-6-git-send-email-minchan@kernel.org>
+ <87wqrs9opv.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>
-CC: Prarit Bhargava <prarit@redhat.com>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, stable <stable@vger.kernel.org>
-Subject: Re: [PATCH] hrtimer, add expiry time overflow check in hrtimer_interrupt
-References: <1365425235-26191-1-git-send-email-prarit@redhat.com> <5163264B.3050707@linaro.org> <516329D2.1050003@redhat.com> <20130424224218.GA7767@roeck-us.net> <5178732F.6060304@linaro.org> <20130425003548.GA16159@roeck-us.net>
-In-Reply-To: <20130425003548.GA16159@roeck-us.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87wqrs9opv.fsf@sejong.aot.lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/24/2013 05:35 PM, Guenter Roeck wrote:
-> On Wed, Apr 24, 2013 at 05:05:03PM -0700, John Stultz wrote:
->> On 04/24/2013 03:42 PM, Guenter Roeck wrote:
->>> On Mon, Apr 08, 2013 at 04:34:26PM -0400, Prarit Bhargava wrote:
->>>> On 04/08/2013 04:19 PM, John Stultz wrote:
->>>>> On 04/08/2013 05:47 AM, Prarit Bhargava wrote:
->>>>>> A simple check for an overflow can resolve this problem.  Using KTIME_MAX
->>>>>> instead of the overflow value will result in the hrtimer function being run,
->>>>>> and the reprogramming of the timer after that.
->>>>>>
->>>>>> Signed-off-by: Prarit Bhargava <prarit@redhat.com>
->>>>>> Cc: Thomas Gleixner <tglx@linutronix.de>
->>>>>> Cc: John Stultz <john.stultz@linaro.org>
->>>>> Prarit: Should this be tagged for -stable?
->>>> John,
->>>>
->>>> Yes, this should go to -stable.  cc'd.
->>>>
->>> Hi,
->>>
->>> I am a bit surprised that this patch has not found its way into mainline yet,
->>> as everyone seems to agree that it is a candidate for -stable.
->> It just has to land upstream first, which is likely in the next week
->> or so when the 3.10 merge window opens. I'd have thought it would be
->> sooner but 3.9 is taking longer to close then I expected (and I
->> didn't think it was urgent enough to drop in at the last minute
->> before the 3.9 release was made).
->>
-> Guess I am a bit lost in process.
->
-> If this is going to be in -stable, it will presumably end up in 3.9.x as well as
-> in earlier releases. So why wasn't it pushed into 3.9-rcX to start with ?
+Hey Namhyung,
 
-I usually only want to push changes to -rc6+ if they are really 
-critical, affecting lots of folks and fixing issues introduced in the 
-same cycle. By getting less critical fixes merged during a normal merge 
-window, then backporting them to affected -stable trees, we get better 
-test coverage and less chance for further bugs to be introduced at the 
-last minute before the release is made.
+On Wed, Apr 24, 2013 at 08:01:48PM +0900, Namhyung Kim wrote:
+> Hi Minchan,
+> 
+> On Wed, 24 Apr 2013 10:41:03 +0900, Minchan Kim wrote:
+> > This patch adds address range reclaim of a process.
+> > The requirement is following as,
+> >
+> > Like webkit1, it uses a address space for handling multi tabs.
+> > IOW, it uses *one* process model so all tabs shares address space
+> > of the process. In such scenario, per-process reclaim is rather
+> > coarse-grained so this patch supports more fine-grained reclaim
+> > for being able to reclaim target address range of the process.
+> > For reclaim target range, you should use following format.
+> >
+> > 	echo [addr] [size-byte] > /proc/pid/reclaim
+> >
+> > addr should be page-aligned.
+> >
+> > So now reclaim konb's interface is following as.
+> >
+> > echo file > /proc/pid/reclaim
+> > 	reclaim file-backed pages only
+> >
+> > echo anon > /proc/pid/reclaim
+> > 	reclaim anonymous pages only
+> >
+> > echo all > /proc/pid/reclaim
+> > 	reclaim all pages
+> >
+> > echo $((1<<20)) 8192 > /proc/pid/reclaim
+> > 	reclaim pages in (0x100000 - 0x102000)
+> >
+> > Signed-off-by: Minchan Kim <minchan@kernel.org>
+> > ---
+> >  fs/proc/task_mmu.c | 88 ++++++++++++++++++++++++++++++++++++++++++++----------
+> >  mm/internal.h      |  3 ++
+> >  2 files changed, 76 insertions(+), 15 deletions(-)
+> >
+> > diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+> > index 79b674e..dff9756 100644
+> > --- a/fs/proc/task_mmu.c
+> > +++ b/fs/proc/task_mmu.c
+> > @@ -12,6 +12,7 @@
+> >  #include <linux/swap.h>
+> >  #include <linux/swapops.h>
+> >  #include <linux/mm_inline.h>
+> > +#include <linux/ctype.h>
+> >  
+> >  #include <asm/elf.h>
+> >  #include <asm/uaccess.h>
+> > @@ -1239,11 +1240,14 @@ static ssize_t reclaim_write(struct file *file, const char __user *buf,
+> >  				size_t count, loff_t *ppos)
+> >  {
+> >  	struct task_struct *task;
+> > -	char buffer[PROC_NUMBUF];
+> > +	char buffer[200];
+> >  	struct mm_struct *mm;
+> >  	struct vm_area_struct *vma;
+> >  	enum reclaim_type type;
+> >  	char *type_buf;
+> > +	struct mm_walk reclaim_walk = {};
+> > +	unsigned long start = 0;
+> > +	unsigned long end = 0;
+> >  
+> >  	memset(buffer, 0, sizeof(buffer));
+> >  	if (count > sizeof(buffer) - 1)
+> > @@ -1259,42 +1263,96 @@ static ssize_t reclaim_write(struct file *file, const char __user *buf,
+> >  		type = RECLAIM_ANON;
+> >  	else if (!strcmp(type_buf, "all"))
+> >  		type = RECLAIM_ALL;
+> > +	else if (isdigit(*type_buf))
+> > +		type = RECLAIM_RANGE;
+> >  	else
+> > -		return -EINVAL;
+> > +		goto out_err;
+> > +
+> > +	if (type == RECLAIM_RANGE) {
+> > +		int ret;
+> > +		size_t len;
+> > +		unsigned long len_in;
+> > +		char *token;
+> > +
+> > +		token = strsep(&type_buf, " ");
+> > +		if (!token)
+> > +			goto out_err;
+> > +		ret = kstrtoul(token, 10, &start);
+> 
+> Why not using
+> 
+> 		start = memparse(token, NULL);
+> 
+> to support something like:
+> 
+>   # echo 0x100000 8K > /proc/pid/reclaim
+> 
 
-Its maybe a bit overly conservative, but I'm less and less into 
-late-night heroics these days. ;)
+Because I'm brain-damage. :(
+Thanks for noticing useful function.
 
-thanks
--john
+> 
+> Thanks,
+> Namhyung
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-
+-- 
+Kind regards,
+Minchan Kim
