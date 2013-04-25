@@ -1,129 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751476Ab3DYFZf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 01:25:35 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:42517 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750928Ab3DYFZe (ORCPT
+	id S1751847Ab3DYF1t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 01:27:49 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:48087 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750983Ab3DYF1s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 01:25:34 -0400
-X-AuditID: 9c93016f-b7b70ae0000038d5-24-5178be4b7df2
-From: Minchan Kim <minchan@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Minchan Kim <minchan@kernel.org>, Hugh Dickins <hughd@google.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Shaohua Li <shli@kernel.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>
-Subject: [PATCH v2] mm: remove compressed copy from zram in-memory
-Date: Thu, 25 Apr 2013 14:25:29 +0900
-Message-Id: <1366867529-14659-1-git-send-email-minchan@kernel.org>
-X-Mailer: git-send-email 1.8.2.1
-X-Brightmail-Tracker: AAAAAA==
+	Thu, 25 Apr 2013 01:27:48 -0400
+Date: Thu, 25 Apr 2013 01:27:46 -0400 (EDT)
+Message-Id: <20130425.012746.827018439951615849.davem@davemloft.net>
+To: petkan@nucleusys.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net: usb: active URB submitted multiple times
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <alpine.DEB.2.02.1304191115230.4161@fry.nucleusys.com>
+References: <20130412.151824.2029469075886743722.davem@davemloft.net>
+	<alpine.DEB.2.02.1304151017230.3010@bender.nucleusys.com>
+	<alpine.DEB.2.02.1304191115230.4161@fry.nucleusys.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Wed, 24 Apr 2013 22:27:48 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Swap subsystem does lazy swap slot free with expecting the page
-would be swapped out again so we can avoid unnecessary write.
+From: Petko Manolov <petkan@nucleusys.com>
+Date: Fri, 19 Apr 2013 11:21:49 +0300 (EEST)
 
-But the problem in in-memory swap(ex, zram) is that it consumes
-memory space until vm_swap_full(ie, used half of all of swap device)
-condition meet. It could be bad if we use multiple swap device,
-small in-memory swap and big storage swap or in-memory swap alone.
+> From: Petko Manolov <petkan@nucleusys.com>
+> 
+> (For inclusion in 3.10, diff against latest net-next.)
+> 
+> Pegasus driver used single callback for sync and async control URBs. 
+> Special flags were employed to distinguish between both, but due to flawed 
+> logic (as Sarah Sharp spotted) it didn't always work.  As a result of this 
+> change [get|set]_registers() are now much simpler.  Async write is also 
+> leaner and does not use single, statically allocated memory for 
+> usb_ctrlrequest, which is another potential race when asynchronously 
+> submitting URBs.
+> 
+> The socket buffer pool for the receive path is now gone.  It's existence 
+> didn't make much difference (performance-wise) and the code is better off 
+> without the spinlocks protecting it.
+> 
+> Largely duplicated code in routines reading and writing MII registers is 
+> now packed in __mii_op().
+> 
+> Adding URL for the public pegasus git repository.
+> 
+> Signed-off-by: Petko Manolov <petkan@nucleusys.com>
 
-This patch makes swap subsystem free swap slot as soon as swap-read
-is completed and make the swapcache page dirty so the page should
-be written out the swap device to reclaim it.
-It means we never lose it.
-
-I tested this patch with kernel compile workload.
-
-1. before
-
-compile time : 9882.42
-zram max wasted space by fragmentation: 13471881 byte
-memory space consumed by zram: 174227456 byte
-the number of slot free notify: 206684
-
-2. after
-
-compile time : 9653.90
-zram max wasted space by fragmentation: 11805932 byte
-memory space consumed by zram: 154001408 byte
-the number of slot free notify: 426972
-
-* changelog from v1
-  * Add more comment
-
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Nitin Gupta <ngupta@vflare.org>
-Cc: Konrad Rzeszutek Wilk <konrad@darnok.org>
-Cc: Shaohua Li <shli@kernel.org>
-Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
-Signed-off-by: Minchan Kim <minchan@kernel.org>
----
- mm/page_io.c | 35 +++++++++++++++++++++++++++++++++++
- 1 file changed, 35 insertions(+)
-
-diff --git a/mm/page_io.c b/mm/page_io.c
-index 50bb6ef..b09d40a 100644
---- a/mm/page_io.c
-+++ b/mm/page_io.c
-@@ -21,6 +21,7 @@
- #include <linux/writeback.h>
- #include <linux/frontswap.h>
- #include <linux/aio.h>
-+#include <linux/blkdev.h>
- #include <asm/pgtable.h>
- 
- static struct bio *get_swap_bio(gfp_t gfp_flags,
-@@ -82,8 +83,42 @@ void end_swap_bio_read(struct bio *bio, int err, struct batch_complete *batch)
- 				iminor(bio->bi_bdev->bd_inode),
- 				(unsigned long long)bio->bi_sector);
- 	} else {
-+		struct swap_info_struct *sis;
-+
- 		SetPageUptodate(page);
-+		sis = page_swap_info(page);
-+		if (sis->flags & SWP_BLKDEV) {
-+			/*
-+			 * Swap subsystem does lazy swap slot free with
-+			 * expecting the page would be swapped out again
-+			 * so we can avoid unnecessary write if the page
-+			 * isn't redirty.
-+			 * It's good for real swap storage  because we can
-+			 * reduce unnecessary I/O and enhance wear-leveling
-+			 * if you use SSD as swap device.
-+			 * But if you use in-memory swap device(ex, zram),
-+			 * it causes duplicated copy between uncompressed
-+			 * data in VM-owned memory and compressed data in
-+			 * zram-owned memory. So let's free zram-owned memory
-+			 * and make the VM-owned decompressed page *dirty*
-+			 * so the page should be swap out somewhere again if
-+			 * we want to reclaim it, again.
-+			 */
-+			struct gendisk *disk = sis->bdev->bd_disk;
-+			if (disk->fops->swap_slot_free_notify) {
-+				swp_entry_t entry;
-+				unsigned long offset;
-+
-+				entry.val = page_private(page);
-+				offset = swp_offset(entry);
-+
-+				SetPageDirty(page);
-+				disk->fops->swap_slot_free_notify(sis->bdev,
-+						offset);
-+			}
-+		}
- 	}
-+
- 	unlock_page(page);
- 	bio_put(bio);
- }
--- 
-1.8.2.1
-
+Three completely unrelated changes combined into one patch, split this
+up properly into three distinct changes, and resubmit them as a series
+with a "[PATCH 0/N]" initial posting.
