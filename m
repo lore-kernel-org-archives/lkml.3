@@ -1,63 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758282Ab3DYL5y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 07:57:54 -0400
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:58224 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757389Ab3DYL5v (ORCPT
+	id S1757900Ab3DYL71 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 07:59:27 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:1322 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756751Ab3DYL70 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 07:57:51 -0400
+	Thu, 25 Apr 2013 07:59:26 -0400
+X-Spam-Score: -100.8
+Message-ID: <51791A6E.80504@asianux.com>
+Date: Thu, 25 Apr 2013 19:58:38 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <20130419122226.GB3432@gmail.com>
-References: <1366280825-31136-1-git-send-email-lee.jones@linaro.org>
-	<1366280825-31136-5-git-send-email-lee.jones@linaro.org>
-	<20130419122226.GB3432@gmail.com>
-Date: Thu, 25 Apr 2013 13:57:50 +0200
-Message-ID: <CACRpkdZT-XFyDExKVppWi4NEN7XptSex10LCtAHOpZD71nom3g@mail.gmail.com>
-Subject: Re: [PATCH 4/9 v2] crypto: ux500/cryp - Prepare clock before enabling it
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andreas Westin <andreas.westin@stericsson.com>,
-        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Mike Qiu <qiudayu@linux.vnet.ibm.com>, Paul Mackerras <paulus@samba.org>,
+        Michael Neuling <mikey@neuling.org>
+CC: Michael Ellerman <michael@ellerman.id.au>, linuxppc-dev@lists.ozlabs.org,
+        sfr@canb.auug.org.au, matt@ozlabs.org, linux-kernel@vger.kernel.org,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: Re: [PATCH v2] PowerPC: kernel: compiling issue, make additional
+ room in exception vector area
+References: <5177965D.9090406@linux.vnet.ibm.com> <20130424083142.GB26834@concordia> <51779941.8080403@linux.vnet.ibm.com> <30651.1366799858@ale.ozlabs.ibm.com> <1366807638.5911.2.camel@localhost> <5178816D.3000309@asianux.com> <5178ABA2.4030109@linux.vnet.ibm.com> <20130425062539.GA421@iris.ozlabs.ibm.com> <517918AB.4020508@asianux.com>
+In-Reply-To: <517918AB.4020508@asianux.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 19, 2013 at 2:22 PM, Lee Jones <lee.jones@linaro.org> wrote:
+Hello Mike:
 
-> Slight change of plan for v2.
->
-> Now we're doing a seperate clk_prepare(), as the clk_enable() in the
-> previous patch turned out to be called inside a spin_lock().
->
-> Arnd, can you confirm your Ack please?
->
-> ----
->
-> crypto: ux500/cryp - Prepare clock before enabling it
->
-> If we fail to prepare the ux500-cryp clock before enabling it the
-> platform will fail to boot. Here we insure this happens.
->
-> Cc: Herbert Xu <herbert@gondor.apana.org.au>
-> Cc: David S. Miller <davem@davemloft.net>
-> Cc: Andreas Westin <andreas.westin@stericsson.com>
-> Cc: linux-crypto@vger.kernel.org
-> Acked-by: Arnd Bergmann <arnd@arndb.de>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+This patch can pass compiling with Mike's config file, under my
+cross-compiling environments, but does not run under the real machine,
+please try it.
 
-Same formatting problems as the other prepare/enable
-patch. Include Ulf Hansson.
+Welcome other members to help check this patch whether valid.
 
-(Apart from this it looks OK.)
+Thanks.
 
-Yours,
-Linus Walleij
+
+On 2013年04月25日 19:51, Chen Gang wrote:
+> 
+> When CONFIG_KVM_BOOK3S_64_PR is enabled,
+> MASKABLE_EXCEPTION_PSERIES(0x900 ...) will includes __KVMTEST, it will
+> exceed 0x980 which STD_EXCEPTION_HV(0x980 ...) will use, it will cause
+> compiling issue.
+> 
+> The related errors:
+> arch/powerpc/kernel/exceptions-64s.S: Assembler messages:
+> arch/powerpc/kernel/exceptions-64s.S:258: Error: attempt to move .org backwards
+> make[1]: *** [arch/powerpc/kernel/head_64.o] Error 1
+> 
+> The position 0x900 and 0x980 are solid, so can not move the position
+> to make room larger. The final solution is to jump to another area to
+> execute the related code.
+> 
+> 
+> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+> ---
+>  arch/powerpc/kernel/exceptions-64s.S |   12 +++++++++++-
+>  1 files changed, 11 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/powerpc/kernel/exceptions-64s.S b/arch/powerpc/kernel/exceptions-64s.S
+> index e789ee7..8997de2 100644
+> --- a/arch/powerpc/kernel/exceptions-64s.S
+> +++ b/arch/powerpc/kernel/exceptions-64s.S
+> @@ -254,7 +254,11 @@ hardware_interrupt_hv:
+>  	STD_EXCEPTION_PSERIES(0x800, 0x800, fp_unavailable)
+>  	KVM_HANDLER_PR(PACA_EXGEN, EXC_STD, 0x800)
+>  
+> -	MASKABLE_EXCEPTION_PSERIES(0x900, 0x900, decrementer)
+> +	. = 0x900
+> +	.globl decrementer_pSeries
+> +decrementer_pSeries:
+> +	b	decrementer_pSeries_0
+> +
+>  	STD_EXCEPTION_HV(0x980, 0x982, hdecrementer)
+>  
+>  	MASKABLE_EXCEPTION_PSERIES(0xa00, 0xa00, doorbell_super)
+> @@ -536,6 +540,12 @@ ALT_FTR_SECTION_END_IFCLR(CPU_FTR_ARCH_206)
+>  #endif
+>  
+>  	.align	7
+> +	/* moved from 0x900 */
+> +decrementer_pSeries_0:
+> +	_MASKABLE_EXCEPTION_PSERIES(0x900, decrementer,
+> +				    EXC_STD, SOFTEN_TEST_PR)
+> +
+> +	.align	7
+>  	/* moved from 0xe00 */
+>  	STD_EXCEPTION_HV_OOL(0xe02, h_data_storage)
+>  	KVM_HANDLER_SKIP(PACA_EXGEN, EXC_HV, 0xe02)
+> 
+
+
+-- 
+Chen Gang
+
+Asianux Corporation
