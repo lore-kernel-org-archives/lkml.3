@@ -1,44 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753168Ab3DYGoM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 02:44:12 -0400
-Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:45232
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750929Ab3DYGoL convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 02:44:11 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 5
-X-BigFish: VS5(z3121kzc89bh146fIzz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1082kz8dhzz2dh2a8h668h839h93fhd25he5bhf0ah1288h12a5h12a9h12bdh1354h137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h190ch1946h19c3h1ad9h1b0ah1d0ch1155h)
-Message-ID: <5178D11B.40000@freescale.com>
-Date: Thu, 25 Apr 2013 14:45:47 +0800
-From: Huang Shijie <b32955@freescale.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
+	id S1754233Ab3DYGpU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 02:45:20 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:57547 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751120Ab3DYGpS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Apr 2013 02:45:18 -0400
+Message-ID: <5178D049.9090303@linux.vnet.ibm.com>
+Date: Thu, 25 Apr 2013 12:12:17 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-To: Brian Norris <computersforpeace@gmail.com>
-CC: <dwmw2@infradead.org>, <dedekind1@gmail.com>,
-        <linux-mtd@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V3 0/9] mtd: add datasheet's ECC information to nand_chip{}
-References: <1366707297-31309-1-git-send-email-b32955@freescale.com> <CAN8TOE_5OZ7=hyLn-9hUy9b5ne4HGqra2uAurofB+8kOEuamsw@mail.gmail.com>
-In-Reply-To: <CAN8TOE_5OZ7=hyLn-9hUy9b5ne4HGqra2uAurofB+8kOEuamsw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
+To: Kevin Hilman <khilman@linaro.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Magnus Damm <magnus.damm@gmail.com>
+Subject: Re: [PATCH] idle: fix hlt/nohlt command-line handling in new generic
+ idle
+References: <1366849153-25564-1-git-send-email-khilman@linaro.org>
+In-Reply-To: <1366849153-25564-1-git-send-email-khilman@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13042506-2000-0000-0000-00000BDCF4D1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2013年04月25日 14:40, Brian Norris 写道:
-> should be good. Anyway, I'll try to reserve any more nitpick-y
-not at all :) .
+On 04/25/2013 05:49 AM, Kevin Hilman wrote:
+> commit d1669912 (idle: Implement generic idle function) added a new
+> generic idle along with support for hlt/nohlt command line options to
+> override default idle loop behavior.  However, the command-line
+> processing is never compiled.
+> 
+> The command-line handling is wrapped by CONFIG_GENERIC_IDLE_POLL_SETUP
+> and arches that use this feature select it in their Kconfigs.
+> However, no Kconfig definition was created for this option, so it is
+> never enabled, and therefore command-line override of the idle-loop
+> behavior is broken after migrating to the generic idle loop.
+> 
+> To fix, add a Kconfig definition for GENERIC_IDLE_POLL_SETUP.
+> 
+> Tested on ARM (OMAP4/Panda) which enables the command-line overrides
+> by default.
+> 
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Linus Torvalds <torvalds@linux-foundation.org>
+> Cc: Rusty Russell <rusty@rustcorp.com.au>
+> Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> Cc: Magnus Damm <magnus.damm@gmail.com>
+> Signed-off-by: Kevin Hilman <khilman@linaro.org>
+> ---
 
-Without your review, my patch set will wait for more long time...
-> comments for minor things to my own follow-up patch(es). Thanks for
-> the work.
-I really appreciate for your reviews.
+Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 
-thanks
-Huang Shijie
+Regards,
+Srivatsa S. Bhat
 
-
+> Applies on tip/smp/hotplug where generic idle feature is added
+>
+>  arch/Kconfig | 3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> diff --git a/arch/Kconfig b/arch/Kconfig
+> index 1455579..e0ef57b 100644
+> --- a/arch/Kconfig
+> +++ b/arch/Kconfig
+> @@ -216,6 +216,9 @@ config USE_GENERIC_SMP_HELPERS
+>  config GENERIC_SMP_IDLE_THREAD
+>         bool
+> 
+> +config GENERIC_IDLE_POLL_SETUP
+> +       bool
+> +
+>  # Select if arch init_task initializer is different to init/init_task.c
+>  config ARCH_INIT_TASK
+>         bool
+> 
 
