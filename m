@@ -1,55 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758917Ab3DYRS2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 13:18:28 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:58411 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757807Ab3DYRS1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 13:18:27 -0400
-Message-ID: <5179652F.8080507@zytor.com>
-Date: Thu, 25 Apr 2013 10:17:35 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S1758930Ab3DYRUD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 13:20:03 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:56877
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755373Ab3DYRUA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Apr 2013 13:20:00 -0400
+Date: Thu, 25 Apr 2013 19:18:42 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        eranian@google.com, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 1/2] Fix perf LBR filtering
+Message-ID: <20130425171842.GA8669@dyad.programming.kicks-ass.net>
+References: <1366844694-2770-1-git-send-email-andi@firstfloor.org>
+ <20130425162535.GA5828@dyad.programming.kicks-ass.net>
+ <20130425164100.GC16732@two.firstfloor.org>
+ <20130425164837.GD5828@dyad.programming.kicks-ass.net>
+ <20130425170037.GD16732@two.firstfloor.org>
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: Jacob Shin <jacob.shin@amd.com>, Will Deacon <will.deacon@arm.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "x86@kernel.org" <x86@kernel.org>,
-        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V2 1/4] perf: Add hardware breakpoint address mask
-References: <1366703825-19373-1-git-send-email-jacob.shin@amd.com> <1366703825-19373-2-git-send-email-jacob.shin@amd.com> <20130423095437.GD17593@mudshark.cambridge.arm.com> <20130423143423.GB17021@jshin-Toonie> <20130423144057.GA19644@jshin-Toonie> <20130423150240.GD18616@mudshark.cambridge.arm.com> <20130423151846.GA22052@jshin-Toonie> <20130424094853.GB21850@mudshark.cambridge.arm.com> <20130424163038.GA29816@jshin-Toonie> <20130425170635.GA1324@redhat.com>
-In-Reply-To: <20130425170635.GA1324@redhat.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130425170037.GD16732@two.firstfloor.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/25/2013 10:06 AM, Oleg Nesterov wrote:
->>
->> The downside is that in userland perf tool we need differing documentation
->> on what the mask syntax means for each architecture.
+On Thu, Apr 25, 2013 at 07:00:37PM +0200, Andi Kleen wrote:
+> > Traping the read deals with the first. The second shouldn't be a problem since
+> > we generally only allow kernel info for CAP_ADMIN; if we don't already for LBR
+> > that needs to be fixed separately.
 > 
-> Personally I think this is acceptable.
+> Where is that check?  I don't see it.
+
+Then that might need fixing.
+
+> Also remember that precise == 2 can enable LBR implicitly.
+
+Sure.. but it doesn't need the filter stuff. Now I completely forgot if it will
+actually still use the filter muck.. /me goes check
+
+I think intel_pmu_lbr_filter() will typically bail on the X86_BR_ALL test for
+PEBS fixup, it might only end up in the filter code if precise_br_compat()
+finds another LBR user compatible with the fixup.
+
+> > That only leaves the third.. can we descern MMIO maps from the kernel page tables?
 > 
-> But I am new to this code, so...
+> In theory you could use some bits in the PTE for vmalloc, but it would need quite a
+> few changes.
 > 
+> Also there may be corner cases where MMIO is in the direct mapping or in
+> the kernel mapping.
 
-That would seem really, really awkward.  Yes, perf has a bunch of
-low-level stuff, but it would seem highly undesirable to force the user
-to deal with something like that.
-
-It would be good to have a user-friendly syntax that covers most of what
-users may want to do and perhaps a longer form that can express
-everything including ARM's byte selects; if the system can't honor the
-request it should return an error.
-
-	-hpa
-
-
+Hrmm... do we keep track of the MMIO regions somewhere at all?
