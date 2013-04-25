@@ -1,141 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751354Ab3DYFUV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 01:20:21 -0400
-Received: from mail-ee0-f44.google.com ([74.125.83.44]:55010 "EHLO
-	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750763Ab3DYFUU (ORCPT
+	id S1751476Ab3DYFZf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 01:25:35 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:42517 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750928Ab3DYFZe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 01:20:20 -0400
-MIME-Version: 1.0
-In-Reply-To: <517867E1.7050301@ti.com>
-References: <1363145021-14339-1-git-send-email-s-anna@ti.com>
-	<CABb+yY0RYkVeo2Sb4WsDJY0jf17488FEz0d2CB994eQaSOEsVg@mail.gmail.com>
-	<37C860A02101E749A747FA2D3C1E3C504A5DF7@DLEE11.ent.ti.com>
-	<CABb+yY1x4x_A+QtGG9ohsLPgs8c3nEVnd_ExJBGOOR8=6YLPFA@mail.gmail.com>
-	<37C860A02101E749A747FA2D3C1E3C504A63B4@DLEE11.ent.ti.com>
-	<CAJe_ZhehnniZd730jjiOLrHozq8TOJZgFYLqUe4KqgBiQEu8PA@mail.gmail.com>
-	<51779304.4040003@st.com>
-	<CAJe_ZhdZv5LW6kdwyPtJe69mfW6t=WQ4OJnG2H4sUhibattN2A@mail.gmail.com>
-	<517867E1.7050301@ti.com>
-Date: Thu, 25 Apr 2013 10:50:18 +0530
-Message-ID: <CAJe_ZhfDZzq+DzA9XDF3PWFUmwcZnDy-mhE4hLNHmf+V4GhOxw@mail.gmail.com>
-Subject: Re: [PATCHv3 00/14] drivers: mailbox: framework creation
-From: Jassi Brar <jaswinder.singh@linaro.org>
-To: Suman Anna <s-anna@ti.com>
-Cc: Loic PALLARDY <loic.pallardy@st.com>,
-        Jassi Brar <jassisinghbrar@gmail.com>,
-        "Ohad Ben-Cohen (ohad@wizery.com)" <ohad@wizery.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        "Andy Green (andy.green@linaro.org)" <andy.green@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Tony Lindgren <tony@atomide.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Omar Ramirez Luna (omar.ramirez@copitl.com)" 
-	<omar.ramirez@copitl.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 25 Apr 2013 01:25:34 -0400
+X-AuditID: 9c93016f-b7b70ae0000038d5-24-5178be4b7df2
+From: Minchan Kim <minchan@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Minchan Kim <minchan@kernel.org>, Hugh Dickins <hughd@google.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Shaohua Li <shli@kernel.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>
+Subject: [PATCH v2] mm: remove compressed copy from zram in-memory
+Date: Thu, 25 Apr 2013 14:25:29 +0900
+Message-Id: <1366867529-14659-1-git-send-email-minchan@kernel.org>
+X-Mailer: git-send-email 1.8.2.1
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25 April 2013 04:46, Suman Anna <s-anna@ti.com> wrote:
-> On 04/24/2013 03:56 AM, Jassi Brar wrote:
->
+Swap subsystem does lazy swap slot free with expecting the page
+would be swapped out again so we can avoid unnecessary write.
 
-> I think there are two things here - one is what the client needs to do
-> upon sending/receiving a message, and the other is what the send API or
-> the mailbox controller should do when a client tried to send a message
-> and the controller's shared message/transport is not free (irrespective
-> of the atomic or non-atomic context). The kfifos in the common driver
-> code are currently solving the latter problem. The current send API
-> directly uses the controller to send if it is free, and uses buffering
-> only when it is busy. But, I see your point that this should should be
-> the responsibility of the specific controller, or even a property of the
-> specific mailbox belonging to that controller. This direction would put
-> most of the onus on the specific controller drivers, and probably the
-> main API would be very simple. Another factor / attribute to consider is
-> that a given mailbox may be sharable or exclusive, things are simple if
-> it is exclusive to a client driver.
->
-I never suggested we don't use buffering. I too believe the API should
-buffer requests but also that it should still do atomic callbacks. The
-impact on implementation would be that the queue buffer can not grow
-at runtime. But that should be fine because a reasonable size (say 10
-or even 50) could be chosen and we allow submission of requests from
-tx_done callback.
+But the problem in in-memory swap(ex, zram) is that it consumes
+memory space until vm_swap_full(ie, used half of all of swap device)
+condition meet. It could be bad if we use multiple swap device,
+small in-memory swap and big storage swap or in-memory swap alone.
 
->
-> We are talking two fundamentally different usecases/needs here,
-> depending on the type of the controller. You seem to be coming from a
-> usecase where the client driver needs to know when every message is
-> transmitted (from an atomic context, it is a moot point since either you
-> are successful or not when transmitting).
->
-I am afraid you are confusing the meaning of 'atomic context' here.
-atomic context doesn't mean instant transmission of data, but that the
-API calls could be made from even atomic context and that the client &
-controller can't sleep in callbacks from the API. So it's not moot.
+This patch makes swap subsystem free swap slot as soon as swap-read
+is completed and make the swapcache page dirty so the page should
+be written out the swap device to reclaim it.
+It means we never lose it.
 
-> The remote
-> has to ack before it can be shutdown. I would imagine that getting a
-> .tx_done on a particular message is not good enough to know that the
-> remote is ready for shutdown. I can imagine it to be useful where there
-> is some inherent knowledge that the client needs to proceed with the
-> next steps when a message is sent.
->
-Of course we are not specifying how the mailbox signals are
-interpreted by the remote. It should suffice just to realize that
-there exists genuine requirement for a client to know when its message
-was received by the remote.
+I tested this patch with kernel compile workload.
 
-> That said, we need to go with the
-> stricter one.
->
-Great, that we agree.
+1. before
 
-> My only concern here is that if there can be multiple
-> clients for a particular mailbox/controller, then all the clients would
-> have to have an agreement on the controller packet type, and the clients
-> would mostly have to include the standard mailbox.h as well as a
-> controller-specific header.
->
-It's the controller driver that actually puts the data on the bus. So
-only it should define the format in which it accepts data from the
-clients. Every client should simply populate the packet structure
-defined in  my_lovely_controller.h and pass on the struct pointer to
-the controller driver via API.
-No negotiations for the driver seat among passengers :)
+compile time : 9882.42
+zram max wasted space by fragmentation: 13471881 byte
+memory space consumed by zram: 174227456 byte
+the number of slot free notify: 206684
 
-> Overall, I see it coming down to following points:
-> 1. Calling contexts: Atomic & non-atomic contexts, with the latter
-> becoming an extension of the atomic case. I guess this mainly goes with
-> the controller functional integration - whether it is used for
-> non-urgent messaging or h/w controller command messages (like PM
-> usecases?) where .tx_done is relevant.
->
-Urgency or not is a business of the client driver. The API and the
-controller driver should not delay things more than absolute
-necessary.
-.tx_done is not about urgency but about h/w provision of 'ack'.
+2. after
 
-> 2. Behavior of the API or controller driver if the controller transport
-> is busy.
-I think we both want requests buffered in the API.
+compile time : 9653.90
+zram max wasted space by fragmentation: 11805932 byte
+memory space consumed by zram: 154001408 byte
+the number of slot free notify: 426972
 
-> 3. Shareable/exclusive nature of a mailbox. If it is shareable, then
-> duplicating the behavior between clients is not worth it, and this
-> should be absorbed into the respective controller driver.
->
-I think the mailbox should be exclusively held by a client. That makes
-many things simpler. Also remote firmwares won't be always robust
-enough to handle commands from different subsystems intermixed. The
-API only has to make sure the mailbox_get/put operations are very
-thin.
+* changelog from v1
+  * Add more comment
 
-Regards,
-Jassi
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Cc: Nitin Gupta <ngupta@vflare.org>
+Cc: Konrad Rzeszutek Wilk <konrad@darnok.org>
+Cc: Shaohua Li <shli@kernel.org>
+Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
+Signed-off-by: Minchan Kim <minchan@kernel.org>
+---
+ mm/page_io.c | 35 +++++++++++++++++++++++++++++++++++
+ 1 file changed, 35 insertions(+)
+
+diff --git a/mm/page_io.c b/mm/page_io.c
+index 50bb6ef..b09d40a 100644
+--- a/mm/page_io.c
++++ b/mm/page_io.c
+@@ -21,6 +21,7 @@
+ #include <linux/writeback.h>
+ #include <linux/frontswap.h>
+ #include <linux/aio.h>
++#include <linux/blkdev.h>
+ #include <asm/pgtable.h>
+ 
+ static struct bio *get_swap_bio(gfp_t gfp_flags,
+@@ -82,8 +83,42 @@ void end_swap_bio_read(struct bio *bio, int err, struct batch_complete *batch)
+ 				iminor(bio->bi_bdev->bd_inode),
+ 				(unsigned long long)bio->bi_sector);
+ 	} else {
++		struct swap_info_struct *sis;
++
+ 		SetPageUptodate(page);
++		sis = page_swap_info(page);
++		if (sis->flags & SWP_BLKDEV) {
++			/*
++			 * Swap subsystem does lazy swap slot free with
++			 * expecting the page would be swapped out again
++			 * so we can avoid unnecessary write if the page
++			 * isn't redirty.
++			 * It's good for real swap storage  because we can
++			 * reduce unnecessary I/O and enhance wear-leveling
++			 * if you use SSD as swap device.
++			 * But if you use in-memory swap device(ex, zram),
++			 * it causes duplicated copy between uncompressed
++			 * data in VM-owned memory and compressed data in
++			 * zram-owned memory. So let's free zram-owned memory
++			 * and make the VM-owned decompressed page *dirty*
++			 * so the page should be swap out somewhere again if
++			 * we want to reclaim it, again.
++			 */
++			struct gendisk *disk = sis->bdev->bd_disk;
++			if (disk->fops->swap_slot_free_notify) {
++				swp_entry_t entry;
++				unsigned long offset;
++
++				entry.val = page_private(page);
++				offset = swp_offset(entry);
++
++				SetPageDirty(page);
++				disk->fops->swap_slot_free_notify(sis->bdev,
++						offset);
++			}
++		}
+ 	}
++
+ 	unlock_page(page);
+ 	bio_put(bio);
+ }
+-- 
+1.8.2.1
+
