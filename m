@@ -1,43 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758906Ab3DYPpA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 11:45:00 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:39196 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1758442Ab3DYPo7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 11:44:59 -0400
-Date: Thu, 25 Apr 2013 11:44:58 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Sedat Dilek <sedat.dilek@gmail.com>
-cc: Stephen Rothwell <sfr@canb.auug.org.au>, <linux-next@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Linux PM List <linux-pm@lists.linux-foundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, <linux-usb@vger.kernel.org>
-Subject: Re: linux-next: Tree for Apr 24 [ PM: Device 1-1.2 failed to resume
- async: error -32 ]
-In-Reply-To: <CA+icZUVBbFPYXQRG6C7RN00NPXqwsq7Jy=Gj8udA97utiCd=ZA@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1304251135540.948-100000@iolanthe.rowland.org>
+	id S1758914Ab3DYPqz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 11:46:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60659 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758557Ab3DYPqy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Apr 2013 11:46:54 -0400
+Date: Thu, 25 Apr 2013 16:49:55 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Namhyung Kim <namhyung@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 05/14] perf tools: Introduce new 'ftrace' tool
+Message-ID: <20130425144955.GC1033@krava.brq.redhat.com>
+References: <1366705872-12132-1-git-send-email-namhyung@kernel.org>
+ <1366705872-12132-6-git-send-email-namhyung@kernel.org>
+ <20130424140918.GF971@krava.brq.redhat.com>
+ <87fvyf9maa.fsf@sejong.aot.lge.com>
+ <20130425090956.GA1033@krava.brq.redhat.com>
+ <87r4hz7xal.fsf@sejong.aot.lge.com>
+ <1366895121.10248.12.camel@gandalf.local.home>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1366895121.10248.12.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 24 Apr 2013, Sedat Dilek wrote:
-
-> With CONFIG_USB_DEBUG=y I do not see a PM/async line.
+On Thu, Apr 25, 2013 at 09:05:21AM -0400, Steven Rostedt wrote:
+> On Thu, 2013-04-25 at 18:51 +0900, Namhyung Kim wrote:
+> > >
+> > >> 
+> > >> Do you mean it should be changed to
+> > >> 
+> > >> 	if (write_tracing_file("set_ftrace_pid", "-1") < 0)
+> > >> 
+> > >> ?  It seems it's the right thing to do for compatibility.
+> > >
+> > >
+> > > looks like it's enough only to open it with O_TRUNC,
+> > > so I guess whatever minimal goes write_tracing_file
 > 
-> Might you have a look at the logs?
+> Correct.
+> 
+> > 
+> > Yeah, but I can see below from trace-cmd code.
+> > 
+> > trace-cmd/trace-record.c:
+> > 
+> > 	/*
+> > 	 * Older kernels required "-1" to disable pid
+> > 	 */
+> > 	if (ret < 0 && !strlen(pid))
+> > 		ret = write(fd, "-1", 2);
+> > 
+> > 
+> > Could you clarify this, Steve?
+> 
+> As the comment states, older kernels (before 2.6.33) required a -1. As
+> trace-cmd is set up to work with at least 2.6.32, it requires the "-1"
+> write. It doesn't hurt to have it.
+> 
+> But for perf ftrace (or whatever), I don't think we need the requirement
+> to work with 2.6.32 kernels. Perf was added in 2.6.31, but do all
+> functionalities still work that far back?
 
-They look quite normal.  Except for one thing: The built-in hubs appear 
-to have gotten reset during the suspend/resume, for no apparent reason.  
-That's probably the reason why the Logitech mouse needed a reset.
+perf maintains backward compatibility, but not sure how far
+back it goes.. but as long as it's just writing -1 in here
+let's do that
 
-I don't know why the mouse reset worked this time but not before,
-unless it's a subtle timing issue (the extra debugging output causes
-the resume to go a little more slowly).
-
-Alan Stern
-
+jirka
