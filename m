@@ -1,56 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758195Ab3DYLcB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 07:32:01 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:34253 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754383Ab3DYLcA (ORCPT
+	id S1757292Ab3DYLdn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 07:33:43 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:40285 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754383Ab3DYLdm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 07:32:00 -0400
-Message-ID: <5179140B.3060002@huawei.com>
-Date: Thu, 25 Apr 2013 19:31:23 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	Thu, 25 Apr 2013 07:33:42 -0400
 MIME-Version: 1.0
-To: Anurup m <anurup.m@huawei.com>
-CC: "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        shyju pv <shyju.pv@huawei.com>, Sanil kumar <sanil.kumar@huawei.com>,
-        Nataraj m <nataraj.m@huawei.com>
-Subject: Re: [ PATCH ] Memory leak fix for bug 57101.
-References: <D2393EB95A9993478029A6FE6A290A9F15F504C9@szxeml510-mbx.china.huawei.com>
-In-Reply-To: <D2393EB95A9993478029A6FE6A290A9F15F504C9@szxeml510-mbx.china.huawei.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+In-Reply-To: <20130418141752.GC3959@gmail.com>
+References: <1366279934-30761-1-git-send-email-lee.jones@linaro.org>
+	<1366279934-30761-25-git-send-email-lee.jones@linaro.org>
+	<20130418121253.GF27903@gmail.com>
+	<20130418141752.GC3959@gmail.com>
+Date: Thu, 25 Apr 2013 13:33:41 +0200
+Message-ID: <CACRpkdZiTCpkhLWiOU3yKJkHgg=od5qc-UemWRB07f7OE+RZ0A@mail.gmail.com>
+Subject: Re: [PATCH 24/32 v3] dmaengine: ste_dma40: Supply full Device Tree
+ parsing support
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
+        Per Forlin <per.forlin@stericsson.com>, Rabin Vincent <rabin@rab.in>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/4/25 18:05, Anurup m wrote:
-> Hi All,
-> 
-> There is a kernel memory leak observed when the proc file /proc/fs/fscache/stats is read.
-> The reason is that in fscache_stats_open, single_open is called and respective release function is not called during release.
-> Hence fix with correct release function - single_release. The patch is as below
-> 
+On Thu, Apr 18, 2013 at 4:17 PM, Lee Jones <lee.jones@linaro.org> wrote:
 
-The fix is obviously corect, but the patch is mangled so you should configure your
-email client properly. Read Documention/email-clients.txt.
+> Using the new DMA DT bindings and API, we can register the DMA40 driver
+> as Device Tree capable. Now, when a client attempts to allocate a
+> channel using the DMA DT bindings via its own node, we are able to parse
+> the request and allocate a channel in the correct manner.
+>
+> Cc: Vinod Koul <vinod.koul@intel.com>
+> Cc: Dan Williams <djbw@fb.com>
+> Cc: Per Forlin <per.forlin@stericsson.com>
+> Cc: Rabin Vincent <rabin@rab.in>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-And when you've done that, remember Cc maintainers when you resend this patch, i.e.
-David Howells <dhowells@redhat.com> and Andrew Morton <akpm@linux-foundation.org>
-in this case.
 
-> diff -uprN -X linux-3.9-rc8-vanilla/Documentation/dontdiff linux-3.9-rc8-vanilla/fs/fscache/stats.c linux-3.9-rc8.mod/fs/fscache/stats.c 
-> --- linux-3.9-rc8-vanilla/fs/fscache/stats.c        2013-04-22 03:08:45.000000000 +0530 
-> +++ linux-3.9-rc8.mod/fs/fscache/stats.c        2013-04-24 23:03:31.531296160 +0530 
-> @@ -287,5 +287,5 @@ const struct file_operations fscache_sta 
->          .open                = fscache_stats_open, 
->          .read                = seq_read, 
->          .llseek                = seq_lseek, 
-> -        .release        = seq_release, 
-> +        .release        = single_release, 
+This needs to be CC: to devicetree-discussed so it can be checked for OS
+independence and such... Also consider including Rob Herring on posts.
 
-Look the tab was replaced with spaces.
+> diff --git a/Documentation/devicetree/bindings/dma/ste-dma40.txt b/Documentation/devicetree/bindings/dma/ste-dma40.txt
+> new file mode 100644
+> index 0000000..2679a87
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/dma/ste-dma40.txt
+> @@ -0,0 +1,62 @@
+> +* DMA40 DMA Controller
+> +
+> +Required properties:
+> +- compatible: "stericsson,dma40"
+> +- reg: Address range of the DMAC registers
+> +- reg-names: Names of the above areas to use during resource look-up
+> +- interrupt: Should contain the DMAC interrupt number
+> +- #dma-cells: must be <3>
+> +
+> +Optional properties:
+> +- dma-channels: Number of channels supported by hardware - if not present
+> +               the driver will attempt to obtain the information from H/W
 
+I want you to define the memcpy channels in device tree as well.
+Right now these are hardcoded into the driver and there is no way
+to check whether they happen to overlap with other channels from the
+device tree, i.e. a source of confusion.
+
+Please add configuration for the static memcpy channels here.
+
+> +#define D40_DT_FLAGS_MODE(flags)       ((flags >> 0) & 0x1)
+> +#define D40_DT_FLAGS_DIR(flags)        ((flags >> 1) & 0x1)
+> +#define D40_DT_FLAGS_BIG_ENDIAN(flags) ((flags >> 2) & 0x1)
+> +#define D40_DT_FLAGS_FIXED_CHAN(flags) ((flags >> 3) & 0x1)
+> +
+> +static struct dma_chan *d40_xlate(struct of_phandle_args *dma_spec,
+> +                                 struct of_dma *ofdma)
+> +{
+> +       struct stedma40_chan_cfg cfg;
+> +       dma_cap_mask_t cap;
+> +       u32 flags;
+> +
+> +       memset(&cfg, 0, sizeof(struct stedma40_chan_cfg));
+> +
+> +       dma_cap_zero(cap);
+> +       dma_cap_set(DMA_SLAVE, cap);
+> +
+> +       cfg.dev_type = dma_spec->args[0];
+> +       flags = dma_spec->args[2];
+> +
+> +       switch (D40_DT_FLAGS_MODE(flags)) {
+> +       case 0: cfg.mode = STEDMA40_MODE_LOGICAL; break;
+> +       case 1: cfg.mode = STEDMA40_MODE_PHYSICAL; break;
+> +       }
+> +
+> +       switch (D40_DT_FLAGS_DIR(flags)) {
+> +       case 0:
+> +               cfg.dir = STEDMA40_MEM_TO_PERIPH;
+> +               cfg.dst_info.big_endian = D40_DT_FLAGS_BIG_ENDIAN(flags);
+> +               break;
+> +       case 1:
+> +               cfg.dir = STEDMA40_PERIPH_TO_MEM;
+> +               cfg.src_info.big_endian = D40_DT_FLAGS_BIG_ENDIAN(flags);
+> +               break;
+> +       }
+> +
+> +       if (D40_DT_FLAGS_FIXED_CHAN(flags)) {
+> +               cfg.phy_channel = dma_spec->args[1];
+> +               cfg.use_fixed_channel = true;
+> +       }
+> +
+> +       return dma_request_channel(cap, stedma40_filter, &cfg);
+> +}
+
+Nice! But please include handling of the memcpy channels.
+(Unclear to me how to do that, but now i becomes your problem ;-)
+
+> +       if (np) {
+> +               err = of_dma_controller_register(np, d40_xlate, NULL);
+> +               if (err && err != -ENODEV)
+> +                       dev_err(&pdev->dev,
+> +                               "could not register of_dma_controller\n");
+> +       }
+> +
+>         dev_info(base->dev, "initialized\n");
+>         return 0;
+
+Is it really OK to just fall through after failing to register the controller
+from the device tree?
+
+Yours,
+Linus Walleij
