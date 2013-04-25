@@ -1,289 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758638Ab3DYDnq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 23:43:46 -0400
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:54865 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758353Ab3DYDno (ORCPT
+	id S1758698Ab3DYDuG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 23:50:06 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:54716 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758460Ab3DYDuD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 23:43:44 -0400
+	Wed, 24 Apr 2013 23:50:03 -0400
+Date: Wed, 24 Apr 2013 20:50:01 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Johannes Weiner <hannes@cmpxchg.org>
+cc: Michal Hocko <mhocko@suse.cz>, Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Zhouping Liu <zliu@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Glauber Costa <glommer@parallels.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>, caiqian <caiqian@redhat.com>,
+        Caspar Zhang <czhang@redhat.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Lingzhu Xiang <lxiang@redhat.com>
+Subject: Re: [v3.9-rc8]: kernel BUG at mm/memcontrol.c:3994! (was: Re:
+ [BUG][s390x] mm: system crashed)
+In-Reply-To: <20130424152043.GP2018@cmpxchg.org>
+Message-ID: <alpine.LNX.2.00.1304242022200.16233@eggly.anvils>
+References: <156480624.266924.1365995933797.JavaMail.root@redhat.com> <2068164110.268217.1365996520440.JavaMail.root@redhat.com> <20130415055627.GB4207@osiris> <516B9B57.6050308@redhat.com> <20130416075047.GA4184@osiris> <1638103518.2400447.1366266465689.JavaMail.root@redhat.com>
+ <20130418071303.GB4203@osiris> <20130424104255.GC4350@osiris> <20130424131851.GC31960@dhcp22.suse.cz> <20130424152043.GP2018@cmpxchg.org>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <CAP245DUGuaSQbP4026N8kgn6-NqXFJWR3zKoYud=HQ_b+v5+Xw@mail.gmail.com>
-References: <cover.1366803121.git.viresh.kumar@linaro.org>
-	<480f5d6da920e2f2b868f311228c81635727799e.1366803121.git.viresh.kumar@linaro.org>
-	<CAP245DWtwguSp8ubid_KJnLSOqvCbmTXN+0Bg_MtDrUhBqve-Q@mail.gmail.com>
-	<CAKohpokN_o-RUX6MDwqqfzu4NKRysG-hSzmB=MHV7Y0aDbztuA@mail.gmail.com>
-	<20130424161208.GA16991@mtj.dyndns.org>
-	<CAP245DUGuaSQbP4026N8kgn6-NqXFJWR3zKoYud=HQ_b+v5+Xw@mail.gmail.com>
-Date: Thu, 25 Apr 2013 09:13:44 +0530
-Message-ID: <CAKohpo=U5OqN7SM7XyOWv-WoUHOoJvGc6wcGH61+uikPK3novg@mail.gmail.com>
-Subject: Re: [PATCH V5 1/5] workqueues: Introduce new flag WQ_POWER_EFFICIENT
- for power oriented workqueues
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Tejun Heo <tj@kernel.org>, Amit Kucheria <amit.kucheria@linaro.org>
-Cc: davem@davemloft.net, linux-rt-users@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Robin Randhawa <robin.randhawa@arm.com>,
-        Charles Garcia-Tobin <charles.garcia-tobin@arm.com>,
-        Steve Bannister <Steve.Bannister@arm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arvind Chauhan <arvind.chauhan@arm.com>,
-        Patch Tracking <patches@linaro.org>, airlied@redhat.com,
-        mingo@redhat.com, Jens Axboe <axboe@kernel.dk>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
-Content-Type: multipart/mixed; boundary=089e013d0758a7a91904db2739dd
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---089e013d0758a7a91904db2739dd
-Content-Type: text/plain; charset=ISO-8859-1
+On Wed, 24 Apr 2013, Johannes Weiner wrote:
+> On Wed, Apr 24, 2013 at 03:18:51PM +0200, Michal Hocko wrote:
+> > On Wed 24-04-13 12:42:55, Heiko Carstens wrote:
+> > > On Thu, Apr 18, 2013 at 09:13:03AM +0200, Heiko Carstens wrote:
+> > > > Ok, thanks for verifying! I'll look into it; hopefully I can reproduce it
+> > > > here as well.
+> > > 
+> > > That seems to be a common code bug. I can easily trigger the VM_BUG_ON()
+> > > below (when I force the system to swap):
+> > > 
+> > > [   48.347963] ------------[ cut here ]------------
+> > > [   48.347972] kernel BUG at mm/memcontrol.c:3994!
+> > > [   48.348012] illegal operation: 0001 [#1] SMP 
+> > > [   48.348015] Modules linked in:
+> > > [   48.348017] CPU: 1 Not tainted 3.9.0-rc8+ #38
+> > > [   48.348020] Process mmap2 (pid: 635, task: 0000000029476100, ksp: 000000002e91b938)
+> > > [   48.348022] Krnl PSW : 0704f00180000000 000000000026552c (__mem_cgroup_uncharge_common+0x2c4/0x33c)
+> > > [   48.348032]            R:0 T:1 IO:1 EX:1 Key:0 M:1 W:0 P:0 AS:3 CC:3 PM:0 EA:3
+> > >                Krnl GPRS: 0000000000000008 0000000000000009 000003d1002a9200 0000000000000000
+> > > [   48.348039]            0000000000000000 00000000006812d8 000003ffdf339000 00000000321a6f98
+> > > [   48.348043]            000003fffce11000 0000000000000000 0000000000000001 000003d1002a9200
+> > > [   48.348046]            0000000000000001 0000000000681b88 000000002e91bc18 000000002e91bbd0
+> > > [   48.348057] Krnl Code: 000000000026551e: c0e5fffaa2a1        brasl   %r14,1b9a60
+> > >                           0000000000265524: a7f4ff7d            brc     15,26541e
+> > >                          #0000000000265528: a7f40001            brc     15,26552a
+> > >                          >000000000026552c: e3c0b8200124        stg     %r12,6176(%r11)
+> > >                           0000000000265532: a7f4ff57            brc     15,2653e0
+> > >                           0000000000265536: e310b8280104        lg      %r1,6184(%r11)
+> > >                           000000000026553c: a71b0001            aghi    %r1,1
+> > >                           0000000000265540: e310b8280124        stg     %r1,6184(%r11)
+> > > [   48.348099] Call Trace:
+> > > [   48.348100] ([<000003d1002a91c0>] 0x3d1002a91c0)
+> > > [   48.348102]  [<00000000002404aa>] page_remove_rmap+0xf2/0x16c
+> > > [   48.348106]  [<0000000000232dc8>] unmap_single_vma+0x494/0x7d8
+> > > [   48.348107]  [<0000000000233ac0>] unmap_vmas+0x50/0x74
+> > > [   48.348109]  [<00000000002396ec>] unmap_region+0x9c/0x110
+> > > [   48.348110]  [<000000000023bd18>] do_munmap+0x284/0x470
+> > > [   48.348111]  [<000000000023bf56>] vm_munmap+0x52/0x70
+> > > [   48.348113]  [<000000000023cf32>] SyS_munmap+0x3a/0x4c
+> > > [   48.348114]  [<0000000000665e14>] sysc_noemu+0x22/0x28
+> > > [   48.348118]  [<000003fffcf187b2>] 0x3fffcf187b2
+> > > [   48.348119] Last Breaking-Event-Address:
+> > > [   48.348120]  [<0000000000265528>] __mem_cgroup_uncharge_common+0x2c0/0x33c
+> > > 
+> > > Looking at the code, the code flow is:
+> > > 
+> > > page_remove_rmap() -> mem_cgroup_uncharge_page() -> __mem_cgroup_uncharge_common()
+> > > 
+> > > Note that in mem_cgroup_uncharge_page() the page in question passed the check:
+> > > 
+> > > [...]
+> > >         if (PageSwapCache(page))
+> > >                 return;
+> > > [...]
+> > > 
+> > > and just a couple of instructions later the VM_BUG_ON() within
+> > > __mem_cgroup_uncharge_common() triggers:
+> > > 
+> > > [...]
+> > >         if (mem_cgroup_disabled())
+> > >                 return NULL;
+> > > 
+> > >         VM_BUG_ON(PageSwapCache(page));
+> > > [...]
+> > > 
+> > > Which means that another cpu changed the pageflags concurrently. In fact,
+> > > looking at the dump a different cpu is indeed busy with running kswapd.
+> > 
+> > Hmm, maybe I am missing something but it really looks like we can race
+> > here. Reclaim path takes the page lock while zap_pte takes page table
+> > lock so nothing prevents them from racing here:
+> > shrink_page_list		zap_pte_range
+> >   trylock_page			  pte_offset_map_lock
+> >   add_to_swap			    page_remove_rmap
+> >     /* Page can be still mapped */
+> >     add_to_swap_cache		      atomic_add_negative(_mapcount)
+> >       __add_to_swap_cache	        mem_cgroup_uncharge_page
+> >       				          (PageSwapCache(page)) && return
+> >         SetPageSwapCache
+> > 				          __mem_cgroup_uncharge_common
+> > 					    VM_BUG_ON(PageSwapCache(page))
+> > 
+> > Maybe not many people run with CONFIG_DEBUG_VM enabled these days so we
+> > do not this more often (even me testing configs are not consistent in
+> > that regards and only few have it on). The only thing that changed in
+> > this area recently is 0c59b89c which made the test VM_BUG_ON rather then
+> > simple return in 3.6
+> > And maybe the BUG_ON is too harsh as CgroupUsed should guarantee that
+> > the uncharge will eventually go away. What do you think Johannes?
+> 
+> Interesting.  We need to ensure there is ordering between setting
+> PG_swapcache and installing swap entries because I think we are the
+> only ones looking at PG_swapcache without the page lock held.  So we
+> don't have a safe way to check for PG_swapcache but if we get it
+> wrong, we may steal an uncharge that uncharge_swapcache() should be
+> doing instead and that means we mess up the swap statistics
+> accounting.
+> 
+> So how can we, without holding the page lock, either safely back off
+> from a page in swapcache or make sure we do the swap statistics
+> accounting when uncharging a swapcache page from the final unmap?
 
-On 25 April 2013 09:00, Amit Kucheria <amit.kucheria@linaro.org> wrote:
-> Yes. That was my intention - preventing a prompt on existing defconfigs and
-> there by maintaining current behavior.
+Awkward.
 
-Hmm... Following is the version after fixing all problems you reported.
-@Tejun: I have attached it too as gmail's copy-paste may break it. Please
-consider applying this series if it looks fine to you.
+I agree that the actual memcg uncharging should be okay, but the memsw
+swap stats will go wrong (doesn't matter toooo much), and mem_cgroup_put
+get missed (leaking a struct mem_cgroup).
 
+I confess to having seen this myself, just once, on x86_64 3.8-rc6-mm1
+plus some patches I was testing; but I never got back to look into it.
 
----------------x----------------x---------------------
+I wonder if something gone into 3.9 has changed the timing to make it
+more easily reproduced now; but the underlying problem has been there
+a long time - long before your VM_BUG_ON was there to expose it.
 
-From: Viresh Kumar <viresh.kumar@linaro.org>
-Date: Mon, 8 Apr 2013 16:45:40 +0530
-Subject: [PATCH V5 1/5] workqueues: Introduce new flag WQ_POWER_EFFICIENT for
- power oriented workqueues
+For now I guess the best is just to remove the VM_BUG_ON, or restore
+it to a (usually redundant) return NULL, and live with the old leak.
 
-Workqueues can be performance or power-oriented. Currently, most workqueues are
-bound to the CPU they were created on. This gives good performance (due to cache
-effects) at the cost of potentially waking up otherwise idle cores just to
-process some work. To save power, we can allow the work to be rescheduled on a
-core that is already awake.
+But the real fix... I fear it may involve adding another PageCgroup
+flag, just for memsw, to ensure that its counts are kept in balance
+even when SwapCache races cause what's been charged in one way to
+get uncharged in an unexpected way.
 
-Workqueues created with the WQ_UNBOUND flag will allow some power savings.
-However, we don't change the default behaviour of the system.  To enable
-power-saving behaviour, a new config option CONFIG_WQ_POWER_EFFICIENT needs to
-be turned on. This option can also be overridden by the
-workqueue.power_efficient boot parameter.
+All those PageSwapCache and page_mapped tests are suspect: I expect
+most will turn out to be okay, one way or another, but they are
+suspicious and deserve audit.
 
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- Documentation/kernel-parameters.txt | 17 +++++++++++++++++
- include/linux/workqueue.h           |  3 +++
- kernel/power/Kconfig                | 19 +++++++++++++++++++
- kernel/workqueue.c                  | 11 +++++++++++
- 4 files changed, 50 insertions(+)
+(But I won't be working on this myself, sorry.)
 
-diff --git a/Documentation/kernel-parameters.txt
-b/Documentation/kernel-parameters.txt
-index c4fa000..22edc83 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -3312,6 +3312,23 @@ bytes respectively. Such letter suffixes can
-also be entirely omitted.
- 			that this also can be controlled per-workqueue for
- 			workqueues visible under /sys/bus/workqueue/.
-
-+	workqueue.power_efficient
-+			Workqueues can be performance or power-oriented.
-+			Currently, most workqueues are bound to the CPU they
-+			were created on. This gives good performance (due to
-+			cache effects) at the cost of potentially waking up
-+			otherwise idle cores just to process some work. To save
-+			power, we can allow the work to be rescheduled on a core
-+			that is already awake.
-+
-+			Workqueues created with the WQ_UNBOUND flag will allow
-+			some power savings.  However, we don't change the
-+			default behaviour of the system.  To enable power-saving
-+			behaviour, a new config option CONFIG_WQ_POWER_EFFICIENT
-+			needs to be turned on. This option can also be
-+			overridden by the workqueue.power_efficient boot
-+			parameter.
-+
- 	x2apic_phys	[X86-64,APIC] Use x2apic physical mode instead of
- 			default x2apic cluster mode on platforms
- 			supporting x2apic.
-diff --git a/include/linux/workqueue.h b/include/linux/workqueue.h
-index 623488f..83fa570 100644
---- a/include/linux/workqueue.h
-+++ b/include/linux/workqueue.h
-@@ -302,6 +302,9 @@ enum {
- 	WQ_HIGHPRI		= 1 << 4, /* high priority */
- 	WQ_CPU_INTENSIVE	= 1 << 5, /* cpu instensive workqueue */
- 	WQ_SYSFS		= 1 << 6, /* visible in sysfs, see wq_sysfs_register() */
-+	WQ_POWER_EFFICIENT	= 1 << 7, /* WQ_UNBOUND, for power
-+					   * saving, if wq_power_efficient is
-+					   * enabled. Unused otherwise. */
-
- 	__WQ_DRAINING		= 1 << 16, /* internal: workqueue is draining */
- 	__WQ_ORDERED		= 1 << 17, /* internal: workqueue is ordered */
-diff --git a/kernel/power/Kconfig b/kernel/power/Kconfig
-index 5dfdc9e..018f039 100644
---- a/kernel/power/Kconfig
-+++ b/kernel/power/Kconfig
-@@ -263,6 +263,25 @@ config PM_GENERIC_DOMAINS
- 	bool
- 	depends on PM
-
-+config WQ_POWER_EFFICIENT
-+	bool "Workqueue allocated as UNBOUND (by default) for power efficiency"
-+	depends on PM
-+	default n
-+	help
-+	  Workqueues can be performance or power-oriented. Currently, most
-+	  workqueues are bound to the CPU they were created on. This gives good
-+	  performance (due to cache effects) at the cost of potentially waking
-+	  up otherwise idle cores just to process some work. To save power, we
-+	  can allow the work to be rescheduled on a core that is already awake.
-+
-+	  Workqueues created with the WQ_UNBOUND flag will allow some power
-+	  savings.  However, we don't change the default behaviour of the
-+	  system.  To enable power-saving behaviour, a new config option
-+	  CONFIG_WQ_POWER_EFFICIENT needs to be turned on. This option can also
-+	  be overridden by the workqueue.power_efficient boot parameter.
-+
-+	  If in doubt, say N.
-+
- config PM_GENERIC_DOMAINS_SLEEP
- 	def_bool y
- 	depends on PM_SLEEP && PM_GENERIC_DOMAINS
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 4aa9f5b..a327027 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -272,6 +272,14 @@ static cpumask_var_t *wq_numa_possible_cpumask;
- static bool wq_disable_numa;
- module_param_named(disable_numa, wq_disable_numa, bool, 0444);
-
-+#ifdef CONFIG_WQ_POWER_EFFICIENT
-+static bool wq_power_efficient = true;
-+#else
-+static bool wq_power_efficient;
-+#endif
-+
-+module_param_named(power_efficient, wq_power_efficient, bool, 0444);
-+
- static bool wq_numa_enabled;		/* unbound NUMA affinity enabled */
-
- /* buf for wq_update_unbound_numa_attrs(), protected by CPU hotplug
-exclusion */
-@@ -4085,6 +4093,9 @@ struct workqueue_struct
-*__alloc_workqueue_key(const char *fmt,
- 	struct workqueue_struct *wq;
- 	struct pool_workqueue *pwq;
-
-+	if ((flags & WQ_POWER_EFFICIENT) && wq_power_efficient)
-+		flags |= WQ_UNBOUND;
-+
- 	/* allocate wq and format name */
- 	if (flags & WQ_UNBOUND)
- 		tbl_size = wq_numa_tbl_len * sizeof(wq->numa_pwq_tbl[0]);
-
---089e013d0758a7a91904db2739dd
-Content-Type: application/octet-stream; 
-	name="0001-workqueues-Introduce-new-flag-WQ_POWER_EFFICIENT-for.patch"
-Content-Disposition: attachment; 
-	filename="0001-workqueues-Introduce-new-flag-WQ_POWER_EFFICIENT-for.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hfxdzqoo0
-
-RnJvbSA2Mjc2MzRmYjg2MDQwM2NiZTFmY2QxOGQ2ZjMyMWVlMmNkOTEwYjkwIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpNZXNzYWdlLUlkOiA8NjI3NjM0ZmI4NjA0MDNjYmUxZmNkMThkNmYzMjFl
-ZTJjZDkxMGI5MC4xMzY2ODYxMjM4LmdpdC52aXJlc2gua3VtYXJAbGluYXJvLm9yZz4KRnJvbTog
-VmlyZXNoIEt1bWFyIDx2aXJlc2gua3VtYXJAbGluYXJvLm9yZz4KRGF0ZTogTW9uLCA4IEFwciAy
-MDEzIDE2OjQ1OjQwICswNTMwClN1YmplY3Q6IFtQQVRDSCBWNSAxLzVdIHdvcmtxdWV1ZXM6IElu
-dHJvZHVjZSBuZXcgZmxhZyBXUV9QT1dFUl9FRkZJQ0lFTlQgZm9yCiBwb3dlciBvcmllbnRlZCB3
-b3JrcXVldWVzCgpXb3JrcXVldWVzIGNhbiBiZSBwZXJmb3JtYW5jZSBvciBwb3dlci1vcmllbnRl
-ZC4gQ3VycmVudGx5LCBtb3N0IHdvcmtxdWV1ZXMgYXJlCmJvdW5kIHRvIHRoZSBDUFUgdGhleSB3
-ZXJlIGNyZWF0ZWQgb24uIFRoaXMgZ2l2ZXMgZ29vZCBwZXJmb3JtYW5jZSAoZHVlIHRvIGNhY2hl
-CmVmZmVjdHMpIGF0IHRoZSBjb3N0IG9mIHBvdGVudGlhbGx5IHdha2luZyB1cCBvdGhlcndpc2Ug
-aWRsZSBjb3JlcyBqdXN0IHRvCnByb2Nlc3Mgc29tZSB3b3JrLiBUbyBzYXZlIHBvd2VyLCB3ZSBj
-YW4gYWxsb3cgdGhlIHdvcmsgdG8gYmUgcmVzY2hlZHVsZWQgb24gYQpjb3JlIHRoYXQgaXMgYWxy
-ZWFkeSBhd2FrZS4KCldvcmtxdWV1ZXMgY3JlYXRlZCB3aXRoIHRoZSBXUV9VTkJPVU5EIGZsYWcg
-d2lsbCBhbGxvdyBzb21lIHBvd2VyIHNhdmluZ3MuCkhvd2V2ZXIsIHdlIGRvbid0IGNoYW5nZSB0
-aGUgZGVmYXVsdCBiZWhhdmlvdXIgb2YgdGhlIHN5c3RlbS4gIFRvIGVuYWJsZQpwb3dlci1zYXZp
-bmcgYmVoYXZpb3VyLCBhIG5ldyBjb25maWcgb3B0aW9uIENPTkZJR19XUV9QT1dFUl9FRkZJQ0lF
-TlQgbmVlZHMgdG8KYmUgdHVybmVkIG9uLiBUaGlzIG9wdGlvbiBjYW4gYWxzbyBiZSBvdmVycmlk
-ZGVuIGJ5IHRoZQp3b3JrcXVldWUucG93ZXJfZWZmaWNpZW50IGJvb3QgcGFyYW1ldGVyLgoKU2ln
-bmVkLW9mZi1ieTogVmlyZXNoIEt1bWFyIDx2aXJlc2gua3VtYXJAbGluYXJvLm9yZz4KLS0tCiBE
-b2N1bWVudGF0aW9uL2tlcm5lbC1wYXJhbWV0ZXJzLnR4dCB8IDE3ICsrKysrKysrKysrKysrKysr
-CiBpbmNsdWRlL2xpbnV4L3dvcmtxdWV1ZS5oICAgICAgICAgICB8ICAzICsrKwoga2VybmVsL3Bv
-d2VyL0tjb25maWcgICAgICAgICAgICAgICAgfCAxOSArKysrKysrKysrKysrKysrKysrCiBrZXJu
-ZWwvd29ya3F1ZXVlLmMgICAgICAgICAgICAgICAgICB8IDExICsrKysrKysrKysrCiA0IGZpbGVz
-IGNoYW5nZWQsIDUwIGluc2VydGlvbnMoKykKCmRpZmYgLS1naXQgYS9Eb2N1bWVudGF0aW9uL2tl
-cm5lbC1wYXJhbWV0ZXJzLnR4dCBiL0RvY3VtZW50YXRpb24va2VybmVsLXBhcmFtZXRlcnMudHh0
-CmluZGV4IGM0ZmEwMDAuLjIyZWRjODMgMTAwNjQ0Ci0tLSBhL0RvY3VtZW50YXRpb24va2VybmVs
-LXBhcmFtZXRlcnMudHh0CisrKyBiL0RvY3VtZW50YXRpb24va2VybmVsLXBhcmFtZXRlcnMudHh0
-CkBAIC0zMzEyLDYgKzMzMTIsMjMgQEAgYnl0ZXMgcmVzcGVjdGl2ZWx5LiBTdWNoIGxldHRlciBz
-dWZmaXhlcyBjYW4gYWxzbyBiZSBlbnRpcmVseSBvbWl0dGVkLgogCQkJdGhhdCB0aGlzIGFsc28g
-Y2FuIGJlIGNvbnRyb2xsZWQgcGVyLXdvcmtxdWV1ZSBmb3IKIAkJCXdvcmtxdWV1ZXMgdmlzaWJs
-ZSB1bmRlciAvc3lzL2J1cy93b3JrcXVldWUvLgogCisJd29ya3F1ZXVlLnBvd2VyX2VmZmljaWVu
-dAorCQkJV29ya3F1ZXVlcyBjYW4gYmUgcGVyZm9ybWFuY2Ugb3IgcG93ZXItb3JpZW50ZWQuCisJ
-CQlDdXJyZW50bHksIG1vc3Qgd29ya3F1ZXVlcyBhcmUgYm91bmQgdG8gdGhlIENQVSB0aGV5CisJ
-CQl3ZXJlIGNyZWF0ZWQgb24uIFRoaXMgZ2l2ZXMgZ29vZCBwZXJmb3JtYW5jZSAoZHVlIHRvCisJ
-CQljYWNoZSBlZmZlY3RzKSBhdCB0aGUgY29zdCBvZiBwb3RlbnRpYWxseSB3YWtpbmcgdXAKKwkJ
-CW90aGVyd2lzZSBpZGxlIGNvcmVzIGp1c3QgdG8gcHJvY2VzcyBzb21lIHdvcmsuIFRvIHNhdmUK
-KwkJCXBvd2VyLCB3ZSBjYW4gYWxsb3cgdGhlIHdvcmsgdG8gYmUgcmVzY2hlZHVsZWQgb24gYSBj
-b3JlCisJCQl0aGF0IGlzIGFscmVhZHkgYXdha2UuCisKKwkJCVdvcmtxdWV1ZXMgY3JlYXRlZCB3
-aXRoIHRoZSBXUV9VTkJPVU5EIGZsYWcgd2lsbCBhbGxvdworCQkJc29tZSBwb3dlciBzYXZpbmdz
-LiAgSG93ZXZlciwgd2UgZG9uJ3QgY2hhbmdlIHRoZQorCQkJZGVmYXVsdCBiZWhhdmlvdXIgb2Yg
-dGhlIHN5c3RlbS4gIFRvIGVuYWJsZSBwb3dlci1zYXZpbmcKKwkJCWJlaGF2aW91ciwgYSBuZXcg
-Y29uZmlnIG9wdGlvbiBDT05GSUdfV1FfUE9XRVJfRUZGSUNJRU5UCisJCQluZWVkcyB0byBiZSB0
-dXJuZWQgb24uIFRoaXMgb3B0aW9uIGNhbiBhbHNvIGJlCisJCQlvdmVycmlkZGVuIGJ5IHRoZSB3
-b3JrcXVldWUucG93ZXJfZWZmaWNpZW50IGJvb3QKKwkJCXBhcmFtZXRlci4KKwogCXgyYXBpY19w
-aHlzCVtYODYtNjQsQVBJQ10gVXNlIHgyYXBpYyBwaHlzaWNhbCBtb2RlIGluc3RlYWQgb2YKIAkJ
-CWRlZmF1bHQgeDJhcGljIGNsdXN0ZXIgbW9kZSBvbiBwbGF0Zm9ybXMKIAkJCXN1cHBvcnRpbmcg
-eDJhcGljLgpkaWZmIC0tZ2l0IGEvaW5jbHVkZS9saW51eC93b3JrcXVldWUuaCBiL2luY2x1ZGUv
-bGludXgvd29ya3F1ZXVlLmgKaW5kZXggNjIzNDg4Zi4uODNmYTU3MCAxMDA2NDQKLS0tIGEvaW5j
-bHVkZS9saW51eC93b3JrcXVldWUuaAorKysgYi9pbmNsdWRlL2xpbnV4L3dvcmtxdWV1ZS5oCkBA
-IC0zMDIsNiArMzAyLDkgQEAgZW51bSB7CiAJV1FfSElHSFBSSQkJPSAxIDw8IDQsIC8qIGhpZ2gg
-cHJpb3JpdHkgKi8KIAlXUV9DUFVfSU5URU5TSVZFCT0gMSA8PCA1LCAvKiBjcHUgaW5zdGVuc2l2
-ZSB3b3JrcXVldWUgKi8KIAlXUV9TWVNGUwkJPSAxIDw8IDYsIC8qIHZpc2libGUgaW4gc3lzZnMs
-IHNlZSB3cV9zeXNmc19yZWdpc3RlcigpICovCisJV1FfUE9XRVJfRUZGSUNJRU5UCT0gMSA8PCA3
-LCAvKiBXUV9VTkJPVU5ELCBmb3IgcG93ZXIKKwkJCQkJICAgKiBzYXZpbmcsIGlmIHdxX3Bvd2Vy
-X2VmZmljaWVudCBpcworCQkJCQkgICAqIGVuYWJsZWQuIFVudXNlZCBvdGhlcndpc2UuICovCiAK
-IAlfX1dRX0RSQUlOSU5HCQk9IDEgPDwgMTYsIC8qIGludGVybmFsOiB3b3JrcXVldWUgaXMgZHJh
-aW5pbmcgKi8KIAlfX1dRX09SREVSRUQJCT0gMSA8PCAxNywgLyogaW50ZXJuYWw6IHdvcmtxdWV1
-ZSBpcyBvcmRlcmVkICovCmRpZmYgLS1naXQgYS9rZXJuZWwvcG93ZXIvS2NvbmZpZyBiL2tlcm5l
-bC9wb3dlci9LY29uZmlnCmluZGV4IDVkZmRjOWUuLjAxOGYwMzkgMTAwNjQ0Ci0tLSBhL2tlcm5l
-bC9wb3dlci9LY29uZmlnCisrKyBiL2tlcm5lbC9wb3dlci9LY29uZmlnCkBAIC0yNjMsNiArMjYz
-LDI1IEBAIGNvbmZpZyBQTV9HRU5FUklDX0RPTUFJTlMKIAlib29sCiAJZGVwZW5kcyBvbiBQTQog
-Citjb25maWcgV1FfUE9XRVJfRUZGSUNJRU5UCisJYm9vbCAiV29ya3F1ZXVlIGFsbG9jYXRlZCBh
-cyBVTkJPVU5EIChieSBkZWZhdWx0KSBmb3IgcG93ZXIgZWZmaWNpZW5jeSIKKwlkZXBlbmRzIG9u
-IFBNCisJZGVmYXVsdCBuCisJaGVscAorCSAgV29ya3F1ZXVlcyBjYW4gYmUgcGVyZm9ybWFuY2Ug
-b3IgcG93ZXItb3JpZW50ZWQuIEN1cnJlbnRseSwgbW9zdAorCSAgd29ya3F1ZXVlcyBhcmUgYm91
-bmQgdG8gdGhlIENQVSB0aGV5IHdlcmUgY3JlYXRlZCBvbi4gVGhpcyBnaXZlcyBnb29kCisJICBw
-ZXJmb3JtYW5jZSAoZHVlIHRvIGNhY2hlIGVmZmVjdHMpIGF0IHRoZSBjb3N0IG9mIHBvdGVudGlh
-bGx5IHdha2luZworCSAgdXAgb3RoZXJ3aXNlIGlkbGUgY29yZXMganVzdCB0byBwcm9jZXNzIHNv
-bWUgd29yay4gVG8gc2F2ZSBwb3dlciwgd2UKKwkgIGNhbiBhbGxvdyB0aGUgd29yayB0byBiZSBy
-ZXNjaGVkdWxlZCBvbiBhIGNvcmUgdGhhdCBpcyBhbHJlYWR5IGF3YWtlLgorCisJICBXb3JrcXVl
-dWVzIGNyZWF0ZWQgd2l0aCB0aGUgV1FfVU5CT1VORCBmbGFnIHdpbGwgYWxsb3cgc29tZSBwb3dl
-cgorCSAgc2F2aW5ncy4gIEhvd2V2ZXIsIHdlIGRvbid0IGNoYW5nZSB0aGUgZGVmYXVsdCBiZWhh
-dmlvdXIgb2YgdGhlCisJICBzeXN0ZW0uICBUbyBlbmFibGUgcG93ZXItc2F2aW5nIGJlaGF2aW91
-ciwgYSBuZXcgY29uZmlnIG9wdGlvbgorCSAgQ09ORklHX1dRX1BPV0VSX0VGRklDSUVOVCBuZWVk
-cyB0byBiZSB0dXJuZWQgb24uIFRoaXMgb3B0aW9uIGNhbiBhbHNvCisJICBiZSBvdmVycmlkZGVu
-IGJ5IHRoZSB3b3JrcXVldWUucG93ZXJfZWZmaWNpZW50IGJvb3QgcGFyYW1ldGVyLgorCisJICBJ
-ZiBpbiBkb3VidCwgc2F5IE4uCisKIGNvbmZpZyBQTV9HRU5FUklDX0RPTUFJTlNfU0xFRVAKIAlk
-ZWZfYm9vbCB5CiAJZGVwZW5kcyBvbiBQTV9TTEVFUCAmJiBQTV9HRU5FUklDX0RPTUFJTlMKZGlm
-ZiAtLWdpdCBhL2tlcm5lbC93b3JrcXVldWUuYyBiL2tlcm5lbC93b3JrcXVldWUuYwppbmRleCA0
-YWE5ZjViLi5hMzI3MDI3IDEwMDY0NAotLS0gYS9rZXJuZWwvd29ya3F1ZXVlLmMKKysrIGIva2Vy
-bmVsL3dvcmtxdWV1ZS5jCkBAIC0yNzIsNiArMjcyLDE0IEBAIHN0YXRpYyBjcHVtYXNrX3Zhcl90
-ICp3cV9udW1hX3Bvc3NpYmxlX2NwdW1hc2s7CiBzdGF0aWMgYm9vbCB3cV9kaXNhYmxlX251bWE7
-CiBtb2R1bGVfcGFyYW1fbmFtZWQoZGlzYWJsZV9udW1hLCB3cV9kaXNhYmxlX251bWEsIGJvb2ws
-IDA0NDQpOwogCisjaWZkZWYgQ09ORklHX1dRX1BPV0VSX0VGRklDSUVOVAorc3RhdGljIGJvb2wg
-d3FfcG93ZXJfZWZmaWNpZW50ID0gdHJ1ZTsKKyNlbHNlCitzdGF0aWMgYm9vbCB3cV9wb3dlcl9l
-ZmZpY2llbnQ7CisjZW5kaWYKKworbW9kdWxlX3BhcmFtX25hbWVkKHBvd2VyX2VmZmljaWVudCwg
-d3FfcG93ZXJfZWZmaWNpZW50LCBib29sLCAwNDQ0KTsKKwogc3RhdGljIGJvb2wgd3FfbnVtYV9l
-bmFibGVkOwkJLyogdW5ib3VuZCBOVU1BIGFmZmluaXR5IGVuYWJsZWQgKi8KIAogLyogYnVmIGZv
-ciB3cV91cGRhdGVfdW5ib3VuZF9udW1hX2F0dHJzKCksIHByb3RlY3RlZCBieSBDUFUgaG90cGx1
-ZyBleGNsdXNpb24gKi8KQEAgLTQwODUsNiArNDA5Myw5IEBAIHN0cnVjdCB3b3JrcXVldWVfc3Ry
-dWN0ICpfX2FsbG9jX3dvcmtxdWV1ZV9rZXkoY29uc3QgY2hhciAqZm10LAogCXN0cnVjdCB3b3Jr
-cXVldWVfc3RydWN0ICp3cTsKIAlzdHJ1Y3QgcG9vbF93b3JrcXVldWUgKnB3cTsKIAorCWlmICgo
-ZmxhZ3MgJiBXUV9QT1dFUl9FRkZJQ0lFTlQpICYmIHdxX3Bvd2VyX2VmZmljaWVudCkKKwkJZmxh
-Z3MgfD0gV1FfVU5CT1VORDsKKwogCS8qIGFsbG9jYXRlIHdxIGFuZCBmb3JtYXQgbmFtZSAqLwog
-CWlmIChmbGFncyAmIFdRX1VOQk9VTkQpCiAJCXRibF9zaXplID0gd3FfbnVtYV90YmxfbGVuICog
-c2l6ZW9mKHdxLT5udW1hX3B3cV90YmxbMF0pOwotLSAKMS43LjEyLnJjMi4xOC5nNjFiNDcyZQoK
---089e013d0758a7a91904db2739dd--
+Hugh
