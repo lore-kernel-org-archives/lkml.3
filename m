@@ -1,53 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758286Ab3DYRJm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 13:09:42 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:11706 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757319Ab3DYRJl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 13:09:41 -0400
-X-Authority-Analysis: v=2.0 cv=UY7TuduN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=P6hlpVgoKeYA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=ayLHJbDuenQA:10 a=3ts_00xt4goXv3Z-YG4A:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1366909777.10248.17.camel@gandalf.local.home>
-Subject: Re: [PATCH RT v2] x86/mce: Defer mce wakeups to threads for
- PREEMPT_RT
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Clark Williams <clark@redhat.com>, John Kacur <jkacur@redhat.com>,
-        Tony Luck <tony.luck@intel.com>, Borislav Petkov <bp@alien8.de>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@linux.intel.com>
-Date: Thu, 25 Apr 2013 13:09:37 -0400
-In-Reply-To: <20130425164441.GG5561@linutronix.de>
-References: <1365705214.9609.58.camel@gandalf.local.home>
-	 <20130425164441.GG5561@linutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1758899Ab3DYRJv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 13:09:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18905 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758845Ab3DYRJt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Apr 2013 13:09:49 -0400
+Date: Thu, 25 Apr 2013 19:06:35 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Jacob Shin <jacob.shin@amd.com>
+Cc: Will Deacon <will.deacon@arm.com>, Ingo Molnar <mingo@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "x86@kernel.org" <x86@kernel.org>,
+        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V2 1/4] perf: Add hardware breakpoint address mask
+Message-ID: <20130425170635.GA1324@redhat.com>
+References: <1366703825-19373-1-git-send-email-jacob.shin@amd.com> <1366703825-19373-2-git-send-email-jacob.shin@amd.com> <20130423095437.GD17593@mudshark.cambridge.arm.com> <20130423143423.GB17021@jshin-Toonie> <20130423144057.GA19644@jshin-Toonie> <20130423150240.GD18616@mudshark.cambridge.arm.com> <20130423151846.GA22052@jshin-Toonie> <20130424094853.GB21850@mudshark.cambridge.arm.com> <20130424163038.GA29816@jshin-Toonie>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130424163038.GA29816@jshin-Toonie>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-04-25 at 18:44 +0200, Sebastian Andrzej Siewior wrote:
-> * Steven Rostedt | 2013-04-11 14:33:34 [-0400]:
-> 
-> >Comments?
-> 
-> So you don't mind if I take this for v3.8?
-> I fixed
-> 
-> |arch/x86/kernel/cpu/mcheck/mce.c:1392:13: warning: function declaration isn’t a prototype [-Wstrict-prototypes]
-> 
-> >+static void mce_notify_work()
+On 04/24, Jacob Shin wrote:
+>
+> And only x86
+> hw_breakpoint will know what .config = 0xf means for x86 and do the right
+> thing. For ARM, 0xf will mean something different.
+>
+> The downside is that in userland perf tool we need differing documentation
+> on what the mask syntax means for each architecture.
 
-Thanks, I didn't look hard at the warnings.
+Personally I think this is acceptable.
 
--- Steve
+But I am new to this code, so...
 
+Oleg.
 
