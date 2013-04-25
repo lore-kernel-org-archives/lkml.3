@@ -1,57 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758930Ab3DYRUD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 13:20:03 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:56877
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755373Ab3DYRUA (ORCPT
+	id S1758845Ab3DYRXW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 13:23:22 -0400
+Received: from mail-vb0-f42.google.com ([209.85.212.42]:63197 "EHLO
+	mail-vb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755292Ab3DYRXV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 13:20:00 -0400
-Date: Thu, 25 Apr 2013 19:18:42 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        eranian@google.com, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 1/2] Fix perf LBR filtering
-Message-ID: <20130425171842.GA8669@dyad.programming.kicks-ass.net>
-References: <1366844694-2770-1-git-send-email-andi@firstfloor.org>
- <20130425162535.GA5828@dyad.programming.kicks-ass.net>
- <20130425164100.GC16732@two.firstfloor.org>
- <20130425164837.GD5828@dyad.programming.kicks-ass.net>
- <20130425170037.GD16732@two.firstfloor.org>
+	Thu, 25 Apr 2013 13:23:21 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130425170037.GD16732@two.firstfloor.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130425035503.GA15749@ram.oc3035372033.ibm.com>
+References: <1363217302-14383-1-git-send-email-yinghai@kernel.org>
+ <1363217302-14383-4-git-send-email-yinghai@kernel.org> <CAErSpo4VzBZ=fAzPm1yWEs4+09_D1=rysMf6tGgnqpVEKytSzQ@mail.gmail.com>
+ <20130409045113.GA7251@ram.oc3035372033.ibm.com> <CAErSpo7TReTzz289EMuh5gGKjskCLmACNT99o1s-QCzRHLGaXg@mail.gmail.com>
+ <20130425035503.GA15749@ram.oc3035372033.ibm.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 25 Apr 2013 11:22:59 -0600
+Message-ID: <CAErSpo704b0OhSdeRWK+cZ++6RCDvoL7vzqZVEM1WOPp9f7MRQ@mail.gmail.com>
+Subject: Re: [PATCH v3 03/27] PCI: pci resource iterator
+To: Ram Pai <linuxram@us.ibm.com>
+Cc: Yinghai Lu <yinghai@kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 25, 2013 at 07:00:37PM +0200, Andi Kleen wrote:
-> > Traping the read deals with the first. The second shouldn't be a problem since
-> > we generally only allow kernel info for CAP_ADMIN; if we don't already for LBR
-> > that needs to be fixed separately.
-> 
-> Where is that check?  I don't see it.
+On Wed, Apr 24, 2013 at 9:55 PM, Ram Pai <linuxram@us.ibm.com> wrote:
+> On Wed, Apr 10, 2013 at 09:22:48AM -0600, Bjorn Helgaas wrote:
+>> On Mon, Apr 8, 2013 at 10:51 PM, Ram Pai <linuxram@us.ibm.com> wrote:
+>> > On Thu, Apr 04, 2013 at 04:18:01PM -0600, Bjorn Helgaas wrote:
+>> >> On Wed, Mar 13, 2013 at 5:27 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+>> >> > From: Ram Pai <linuxram@us.ibm.com>
+>> >> >
+>> >> > Currently pci_dev structure holds an array of 17 PCI resources; six base
+>> >> > BARs, one ROM BAR, four BRIDGE BARs, six sriov BARs.  This is wasteful.
+>> >> > A bridge device just needs the 4 bridge resources. A non-bridge device
+>> >> > just needs the six base resources and one ROM resource. The sriov
+>> >> > resources are needed only if the device has SRIOV capability.
+>> >> >
+...
+>> > I agree. There are two cleanups needed.
+>> >
+>> > a) pci drivers should not assume the internal organization of the
+>> >         resources in the struct pci_dev.
+>>
+>> Do you mean that drivers should not use "pci_dev->resource[i]"?  If
+>> so, I agree that it would be great if we had an accessor for BARs, but
+>> it seems impractical to change all the drivers that use the current
+>> style.
+>
+> Sorry for the delay. Was vacationing.  I mean, we cannot let drivers
+> assume anything about the how the resources are organized.
+>
+> The only thing the drivers should know is that there are 6 normal
+> resources, 4 bridge resources, 1 ROM resource and 6 iov resources.
+>
+> Currently the drivers assume that ROM resource follows normal resources
+> followed by IOV followed by bridge. These assumptions are making it hard
+> to re-organize the layout of resources in struct pci_dev.
+>
+> I think we need to expose the following interfaces to drivers.
+>
+> a) return the nth normal resource
 
-Then that might need fixing.
+I think this needs to remain "pci_dev->resource[n]", because so many
+drivers do this that it would be impractical to change them all.
 
-> Also remember that precise == 2 can enable LBR implicitly.
+> b) return the nth iov resource
 
-Sure.. but it doesn't need the filter stuff. Now I completely forgot if it will
-actually still use the filter muck.. /me goes check
+I could imagine a new interface for this, given that I only see a
+dozen SR-IOV drivers in the tree.  There might be a few out-of-tree,
+but there probably aren't many.
 
-I think intel_pmu_lbr_filter() will typically bail on the X86_BR_ALL test for
-PEBS fixup, it might only end up in the filter code if precise_br_compat()
-finds another LBR user compatible with the fixup.
+> c) return the rom resource
 
-> > That only leaves the third.. can we descern MMIO maps from the kernel page tables?
-> 
-> In theory you could use some bits in the PTE for vmalloc, but it would need quite a
-> few changes.
-> 
-> Also there may be corner cases where MMIO is in the direct mapping or in
-> the kernel mapping.
+There are only about 30 drivers in the tree that reference
+PCI_ROM_RESOURCE.  Fewer than I expected, but I'd still be hesitant
+about make "pci_dev->resource[PCI_ROM_RESOURCE]" stop working.
 
-Hrmm... do we keep track of the MMIO regions somewhere at all?
+> d) return the nth bridge resource
+
+I think it's reasonable to have a new interface for this because
+bridges are handled almost entirely in the PCI core and architecture
+code, and I doubt there are many, if any, drivers that care.
+
+> e) return the type and index of a given resource, where 'index' is
+>         the index w.r.t to that resource type; not w.r.t to all
+>         the resources of the device.
+> f) ability to loop through all resources of the given type/types.
+
+We do loop through resources in the core when we're assigning, fixing
+up, etc., and that makes some sense to me.  But I actually don't see
+the use case for *drivers* to loop through resources.  All a driver
+knows is "BAR X means Y", and it generally doesn't need to iterate and
+do something generic to all of them.
+
+> Everything else needs to be hidden.
+
+Bjorn
