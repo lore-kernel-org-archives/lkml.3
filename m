@@ -1,75 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758641Ab3DYCpJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Apr 2013 22:45:09 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:44472 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932182Ab3DYCpG (ORCPT
+	id S932276Ab3DYCwt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Apr 2013 22:52:49 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:63626 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758473Ab3DYCwr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Apr 2013 22:45:06 -0400
-X-AuditID: cbfee68d-b7f016d000007930-4a-517898b07ca3
-From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
-Subject: [PATCH] f2fs: avoid frequent background GC
-Date: Thu, 25 Apr 2013 11:44:02 +0900
-Message-id: <1366857842-17240-1-git-send-email-jaegeuk.kim@samsung.com>
-X-Mailer: git-send-email 1.8.1.3.566.gaa39828
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrMLMWRmVeSWpSXmKPExsVy+t8zI90NMyoCDZpm8Vlc3/WXyeLSIneL
-	PXtPslhc3jWHzYHFY/eCz0wefVtWMXp83iQXwBzFZZOSmpNZllqkb5fAlbF66RPGgtXsFf0v
-	JrM0MH5n7WLk5JAQMJF4PGURM4QtJnHh3nq2LkYuDiGBZYwSXf97WWCKrrSvZgSxhQSmM0os
-	vi8LUdTGJDG19QhQNwcHm4C2xOb9BiA1IgLMEgumnmcEqWEWmMAo8X/Re7BBwgLGEm33NrKB
-	2CwCqhKT1zxkBenlFXCXmPEbapeuxOr/z9lBeiUE7rNJLHr8iB2iXkDi2+RDLCD1EgKyEpsO
-	QB0tKXFwxQ2WCYyCCxgZVjGKphYkFxQnpRcZ6hUn5haX5qXrJefnbmKEBGDvDsbbB6wPMSYD
-	jZvILCWanA8M4LySeENjMyMLUxNTYyNzSzPShJXEedVarAOFBNITS1KzU1MLUovii0pzUosP
-	MTJxcEo1MMrNXn67bBnr/8eTQjrT2qU1UpuiL8x4kyA4T3rbt6afa66vWJjF2VStqlG2JfXG
-	2+STW6sKH6doH/3Gd0c3uuUFm84shSTtYP2dKy165Cv8+9jXiCq0Vm/g0/6xqkBoYoShyhHN
-	6SyK1lfarZubZQMWbJC91P5rifP1k35ndHxFvObrvFrOqMRSnJFoqMVcVJwIADLw1xdWAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrAIsWRmVeSWpSXmKPExsVy+t9jQd0NMyoCDVovcVlc3/WXyeLSIneL
-	PXtPslhc3jWHzYHFY/eCz0wefVtWMXp83iQXwBzVwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8c
-	b2pmYKhraGlhrqSQl5ibaqvk4hOg65aZA7RNSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5v
-	SBBcj5EBGkhYx5ixeukTxoLV7BX9LyazNDB+Z+1i5OSQEDCRuNK+mhHCFpO4cG89G4gtJDCd
-	UWLxfdkuRi4gu41JYmrrEeYuRg4ONgFtic37DUBqRASYJRZMPc8IUsMsMIFR4v+i9ywgCWEB
-	Y4m2exvBBrEIqEpMXvOQFaSXV8BdYsZvFohduhKr/z9nn8DIvYCRYRWjaGpBckFxUnquoV5x
-	Ym5xaV66XnJ+7iZGcHg/k9rBuLLB4hCjAAejEg+vwKvyQCHWxLLiytxDjBIczEoivMscKgKF
-	eFMSK6tSi/Lji0pzUosPMSYDLZ/ILCWanA+MvbySeENjEzMjSyMzCyMTc3PShJXEeQ+0WgcK
-	CaQnlqRmp6YWpBbBbGHi4JRqYFwv/Dmm0eGKWsDDt6FhnIEK0hsmu4bE/XwaUXxnS4Rn9nPZ
-	PcVh94y2/H4sF/CHWSIjXsl+9clApha35Oi9RicazDmsJQ6GG+wq1T/wIH9LsKfmLGV3k7cN
-	hdsaDlwL+hAsnTQroE7bPJTpr89buz/RTRUs1z5EBPmfe+ppd/3iTq7LnhMDlViKMxINtZiL
-	ihMB6/qRcrMCAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
-To: unlisted-recipients:; (no To-header on input)
+	Wed, 24 Apr 2013 22:52:47 -0400
+From: Julius Werner <jwerner@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, Vincent Palatin <vpalatin@chromium.org>,
+        Sameer Nanda <snanda@chromium.org>,
+        Julius Werner <jwerner@chromium.org>
+Subject: [PATCH v2] usb: ehci: Only sleep for post-resume handover if devices use persist
+Date: Wed, 24 Apr 2013 19:52:32 -0700
+Message-Id: <1366858352-25422-1-git-send-email-jwerner@chromium.org>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If there is no victim segments selected by background GC, let's wait
-a little bit longer time to collect dirty segments.
-By default, let's give 10 minutes.
+The current EHCI code sleeps a flat 110ms in the resume path if there
+was a USB 1.1 device connected to its companion controller during
+suspend, waiting for the device to reappear and reset so that it can be
+handed back to the companion. This is necessary if the device uses
+persist, so that the companion controller can actually see it during its
+own resume path.
 
-Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+However, if the device doesn't use persist, this is entirely
+unnecessary. We might just as well ignore it and have the normal device
+detection/reset/handoff code handle it asynchronously when it eventually
+shows up. As USB 1.1 devices are almost exclusively HIDs these days (for
+which persist has no value), this can allow distros to shave another
+tenth of a second off their resume time.
+
+Signed-off-by: Julius Werner <jwerner@chromium.org>
 ---
- fs/f2fs/gc.h | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/usb/core/usb.c      | 33 +++++++++++++++++++++++++++++++++
+ drivers/usb/host/ehci-hub.c | 17 +++++++++++++++++
+ include/linux/usb.h         |  1 +
+ 3 files changed, 51 insertions(+)
 
-diff --git a/fs/f2fs/gc.h b/fs/f2fs/gc.h
-index 30b2db0..1190d57 100644
---- a/fs/f2fs/gc.h
-+++ b/fs/f2fs/gc.h
-@@ -13,9 +13,9 @@
- 						 * whether IO subsystem is idle
- 						 * or not
- 						 */
--#define GC_THREAD_MIN_SLEEP_TIME	10000 /* milliseconds */
-+#define GC_THREAD_MIN_SLEEP_TIME	10000	/* milliseconds */
- #define GC_THREAD_MAX_SLEEP_TIME	30000
--#define GC_THREAD_NOGC_SLEEP_TIME	10000
-+#define GC_THREAD_NOGC_SLEEP_TIME	600000	/* wait 10 min */
- #define LIMIT_INVALID_BLOCK	40 /* percentage over total user space */
- #define LIMIT_FREE_BLOCK	40 /* percentage over invalid + free space */
+diff --git a/drivers/usb/core/usb.c b/drivers/usb/core/usb.c
+index f81b925..eaf09e6 100644
+--- a/drivers/usb/core/usb.c
++++ b/drivers/usb/core/usb.c
+@@ -209,6 +209,39 @@ struct usb_interface *usb_find_interface(struct usb_driver *drv, int minor)
+ }
+ EXPORT_SYMBOL_GPL(usb_find_interface);
  
++struct each_dev_arg {
++	void *data;
++	int (*fn)(struct usb_device *, void *);
++};
++
++static int __each_dev(struct device *dev, void *data)
++{
++	struct each_dev_arg *arg = (struct each_dev_arg *)data;
++
++	/* There are struct usb_interface on the same bus, filter them out */
++	if (!is_usb_device(dev))
++		return 0;
++
++	return arg->fn(container_of(dev, struct usb_device, dev), arg->data);
++}
++
++/**
++ * usb_for_each_dev - iterate over all USB devices in the system
++ * @data: data pointer that will be handed to the callback function
++ * @fn: callback function to be called for each USB device
++ *
++ * Iterate over all USB devices and call @fn for each, passing it @data. If it
++ * returns anything other than 0, we break the iteration prematurely and return
++ * that value.
++ */
++int usb_for_each_dev(void *data, int (*fn)(struct usb_device *, void *))
++{
++	struct each_dev_arg arg = {data, fn};
++
++	return bus_for_each_dev(&usb_bus_type, NULL, &arg, __each_dev);
++}
++EXPORT_SYMBOL_GPL(usb_for_each_dev);
++
+ /**
+  * usb_release_dev - free a usb device structure when all users of it are finished.
+  * @dev: device that's been disconnected
+diff --git a/drivers/usb/host/ehci-hub.c b/drivers/usb/host/ehci-hub.c
+index 7d06e77..a46452d 100644
+--- a/drivers/usb/host/ehci-hub.c
++++ b/drivers/usb/host/ehci-hub.c
+@@ -42,6 +42,13 @@ static int ehci_hub_control(
+ 	u16		wLength
+ );
+ 
++
++static int persist_enabled_on_companion(struct usb_device *udev, void *unused)
++{
++	return !udev->maxchild && udev->persist_enabled &&
++		udev->bus->root_hub->speed < USB_SPEED_HIGH;
++}
++
+ /* After a power loss, ports that were owned by the companion must be
+  * reset so that the companion can still own them.
+  */
+@@ -56,6 +63,16 @@ static void ehci_handover_companion_ports(struct ehci_hcd *ehci)
+ 	if (!ehci->owned_ports)
+ 		return;
+ 
++	/*
++	 * USB 1.1 devices are mostly HIDs, which don't need to persist across
++	 * suspends. If we ensure that none of our companion's devices have
++	 * persist_enabled (by looking through all USB 1.1 buses in the system),
++	 * we can skip this and avoid slowing resume down. Devices without
++	 * persist will just get reenumerated shortly after resume anyway.
++	 */
++	if (!usb_for_each_dev(NULL, persist_enabled_on_companion))
++		return;
++
+ 	/* Make sure the ports are powered */
+ 	port = HCS_N_PORTS(ehci->hcs_params);
+ 	while (port--) {
+diff --git a/include/linux/usb.h b/include/linux/usb.h
+index 4d22d0f..559cb39 100644
+--- a/include/linux/usb.h
++++ b/include/linux/usb.h
+@@ -719,6 +719,7 @@ const struct usb_device_id *usb_match_id(struct usb_interface *interface,
+ extern int usb_match_one_id(struct usb_interface *interface,
+ 			    const struct usb_device_id *id);
+ 
++extern int usb_for_each_dev(void *data, int (*fn)(struct usb_device *, void *));
+ extern struct usb_interface *usb_find_interface(struct usb_driver *drv,
+ 		int minor);
+ extern struct usb_interface *usb_ifnum_to_if(const struct usb_device *dev,
 -- 
-1.8.1.3.566.gaa39828
+1.7.12.4
 
