@@ -1,202 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757528Ab3DYKXT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 06:23:19 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:37922 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755971Ab3DYKXR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 06:23:17 -0400
-Date: Thu, 25 Apr 2013 12:23:12 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, sbw@mit.edu,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Kevin Hilman <khilman@linaro.org>, Christoph Lameter <cl@linux.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Olivier Baetz <olivier.baetz@novasparks.com>
-Subject: Re: [PATCH documentation 2/2] kthread: Document ways of reducing OS
- jitter due to per-CPU kthreads
-Message-ID: <20130425102311.GA32607@pd.tnic>
-References: <20130416164036.GA27246@linux.vnet.ibm.com>
- <1366130490-27584-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1366130490-27584-2-git-send-email-paulmck@linux.vnet.ibm.com>
- <20130421193705.GB5807@pd.tnic>
- <20130423040329.GP3509@linux.vnet.ibm.com>
+	id S1757674Ab3DYKZJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 06:25:09 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:13895 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754852Ab3DYKZG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Apr 2013 06:25:06 -0400
+X-IronPort-AV: E=Sophos;i="4.87,548,1363132800"; 
+   d="scan'208";a="20476882"
+Date: Thu, 25 Apr 2013 11:25:01 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Will Deacon <will.deacon@arm.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "olof@lixom.net" <olof@lixom.net>, Jon Medhurst <tixy@linaro.org>
+Subject: Re: [PATCH v8 2/2] ARM: Enable selection of SMP operations at boot
+ time
+In-Reply-To: <20130425084933.GB12848@mudshark.cambridge.arm.com>
+Message-ID: <alpine.DEB.2.02.1304251123410.4180@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1304241935010.4180@kaball.uk.xensource.com> <1366828819-10745-2-git-send-email-stefano.stabellini@eu.citrix.com> <20130425084933.GB12848@mudshark.cambridge.arm.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130423040329.GP3509@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 22, 2013 at 09:03:29PM -0700, Paul E. McKenney wrote:
-> > > +This document lists per-CPU kthreads in the Linux kernel and presents
-> > > +options to control OS jitter due to these kthreads.  Note that kthreads
+On Thu, 25 Apr 2013, Will Deacon wrote:
+> On Wed, Apr 24, 2013 at 07:40:19PM +0100, Stefano Stabellini wrote:
+> > From: Jon Medhurst <tixy@linaro.org>
 > > 
-> > s/due to/which can be caused by/
-> 
-> Same meaning, but "due to" is probably a bit more arcane.
-
-Yeah, "due to" kinda didn't read right in the context, arcane could be
-one way to put it.
-
-> But how about "and presents options to control these kthreads' OS
-> jitter"?
-
-Yep.
-
-> > > +that are not per-CPU are not listed here -- to reduce OS jitter from
+> > Add a new 'smp_init' hook to machine_desc so platforms can specify a
+> > function to be used to setup smp ops instead of having a statically
+> > defined value.  The hook must return true when smp_ops are initialized.
+> > If false the static mdesc->smp_ops will be used by default.
 > > 
-> > one too many "that"s:
-> > 
-> > s/that/which/
+> > Signed-off-by: Jon Medhurst <tixy@linaro.org>
+> > Signed-off-by: Nicolas Pitre <nicolas.pitre@linaro.org>
+> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> > Reviewed-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> > ---
+> >  arch/arm/include/asm/mach/arch.h |    4 ++++
+> >  arch/arm/kernel/setup.c          |   10 ++++++----
+> >  2 files changed, 10 insertions(+), 4 deletions(-)
 > 
-> Fair point, but I can shorten it as follows:
+> [...]
 > 
-> 	Note that non-per-CPU kthreads CPU are not listed here --
-
-that second "CPU" is kinda superfluous...?
-
-> 	to reduce OS jitter from non-per-CPU kthreads, bind them to a
-> 	"housekeeping" CPU that is dedicated to such work.
-
-Yep, reads ok, except "that is" but you've removed it in the final
-version below.
-
-> > > +non-per-CPU kthreads, bind them to a "housekeeping" CPU that is dedicated
-> > 
-> > s/that/which/
+> >  	if (is_smp()) {
+> > -		if (psci_smp_available())
+> > -			smp_set_ops(&psci_smp_ops);
+> > -		else if (mdesc->smp)
+> > -			smp_set_ops(mdesc->smp);
+> > +		if (!mdesc->smp_init || !mdesc->smp_init()) {
 > 
-> Good catch -- I chose s/that is//.
+> Minor nit, but this feels backwards to me. We usually return 0 on success,
+> yet we're saying here that if mdesc->smp_init() returns 0, then we go and
+> override the smp ops.
 
-Yep.
-
-> > > +Name: ehca_comp/%u
-> > > +Purpose: Periodically process Infiniband-related work.
-> > > +To reduce corresponding OS jitter, do any of the following:
-> > > +1.	Don't use EHCA Infiniband hardware.  This will prevent these
-> > 
-> > Sounds like this particular hardware is slow and its IRQ handler/softirq
-> > needs a lot of time. Yes, no?
-> > 
-> > Can we have a reason why people shouldn't use that hw.
-> 
-> Because it has per-CPU kthreads that can cause OS jitter.  ;-)
-
-Yeah, I stumbled over this specific brand of Infiniband hw. It looks
-like this particular Infiniband driver uses per-CPU kthreads and the
-others in drivers/infiniband/hw/ don't?
-
-I hope this explains my head-scratching moment here...
-
-> > This sentence keeps repeating; maybe explain the purpose of this doc in
-> > the beginning once and drop this sentence in the later sections.
-> 
-> There are "any of" and "all of" qualifiers.  Also, I cannot count on
-> someone reading the document beginning to end.  I would instead expect
-> many of them to search for the name of the kthread that is bothering
-> them and read only that part.
-
-Ha! Very good point. :-)
-
-> > > +2.	Build with CONFIG_HOTPLUG_CPU=y.  After boot completes, force
-> > > +	the CPU offline, then bring it back online.  This forces
-> > > +	recurring timers to migrate elsewhere.	If you are concerned
-> > 
-> > We don't migrate them back to that CPU when we online it again, do we?
-> 
-> Not unless the CPU it migrated to later is taken offline.  Good point,
-> added words to that effect.
-
-Yep, good.
-
-> > > +	to be de-jittered is marked as an adaptive-ticks CPU using the
-> > > +	"nohz_full=" boot parameter.  This reduces the number of
-> > > +	scheduler-clock interrupts that the de-jittered CPU receives,
-> > > +	minimizing its chances of being selected to do load balancing,
-> > 
-> > I don't think there's a "," if the "which... " part refers to the
-> > previous "load balancing" and not to the whole sentence.
-> 
-> Good point -- I can reword to:
-> 
-> 	This reduces the number of scheduler-clock interrupts that the
-> 	de-jittered CPU receives, minimizing its chances of being selected
-> 	to do the load balancing work that runs in SCHED_SOFTIRQ context.
-
-Yep.
-
-> > > +	This further reduces the number of scheduler-clock interrupts
-> > > +	that the de-jittered CPU receives.
-> > 
-> > s/that/which/ would suit better here IMHO.
-> 
-> Fair point, but how about this?
-> 
-> 	This further reduces the number of scheduler-clock interrupts
-> 	received by the de-jittered CPU.
-
-Even better.
-
-> > > +	b.	To the extent possible, keep the CPU out of the kernel
-> > > +		when it is non-idle, for example, by avoiding system
-> > > +		calls and by forcing both kernel threads and interrupts
-> > > +		to execute elsewhere.
-> > > +2.	Enable RCU to do its processing remotely via dyntick-idle by
-> > > +	doing all of the following:
-> > > +	a.	Build with CONFIG_NO_HZ=y and CONFIG_RCU_FAST_NO_HZ=y.
-> > > +	b.	Ensure that the CPU goes idle frequently, allowing other
-> > 
-> > I'm ensuring that by selecting the proper workload which has idle
-> > breathers?
-> 
-> Yep!  Or, equivalently, by adding enough CPUs so that the workload
-> has idle breathers.
-
-Yeah, this sentence could be in the text, since we're explaining
-everything! :-)
-
-> Thank you for the thorough review and comments!  Please see below for
-> an update.
-
-Sure, thank you for writing this up for others to read.
-
-Reviewed-by: Borislav Petkov <bp@suse.de>
-
-> ------------------------------------------------------------------------
-> 
-> REDUCING OS JITTER DUE TO PER-CPU KTHREADS
-> 
-> This document lists per-CPU kthreads in the Linux kernel and presents
-> options to control these kthreads' OS jitter.  Note that non-per-CPU
-
-s /these kthreads'/their/
-
-Sorry, I can't help it :) I promise I won't read too much in the rest so
-as not to beat it to death again :-)
-
-> kthreads CPU are not listed here.  To reduce OS jitter from non-per-CPU
-
-s/CPU //
-
-see above.
-
-> kthreads, bind them to a "housekeeping" CPU dedicated to such work.
-
-[ … ]
-
-Ok, it looks good, ship it.
-
-:-)
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+I am OK with changing the interface to return an int instead of a bool,
+but given that Nicolas is the main user of smp_init at the moment, I'll
+wait for his opinion.
