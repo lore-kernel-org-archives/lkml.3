@@ -1,91 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759374Ab3DYSfP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 14:35:15 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:5078 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755921Ab3DYSfN (ORCPT
+	id S1759411Ab3DYSk1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 14:40:27 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:28893 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758003Ab3DYSkZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 14:35:13 -0400
-X-IronPort-AV: E=Sophos;i="4.87,552,1363158000"; 
-   d="scan'208";a="41583431"
-Message-ID: <51797760.4040906@codeaurora.org>
-Date: Thu, 25 Apr 2013 11:35:12 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Rob Herring <robherring2@gmail.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
+	Thu, 25 Apr 2013 14:40:25 -0400
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 6.3 \(1503\))
+Subject: Re: [PATCH] NFSv4: Use exponential backoff delay for NFS4_ERRDELAY
+From: Chuck Lever <chuck.lever@oracle.com>
+In-Reply-To: <20130425181932.GA5049@fieldses.org>
+Date: Thu, 25 Apr 2013 14:40:11 -0400
+Cc: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        David Wysochanski <dwysocha@redhat.com>,
+        Dave Chiluk <chiluk@canonical.com>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv2 1/4] Documentation: Add memory mapped ARM architected
- timer binding
-References: <1365812863-5367-1-git-send-email-sboyd@codeaurora.org> <1365812863-5367-2-git-send-email-sboyd@codeaurora.org> <516C6F12.5020208@gmail.com> <516C7231.6060305@codeaurora.org>
-In-Reply-To: <516C7231.6060305@codeaurora.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+Message-Id: <81BBEA25-CDE5-42B1-996D-90C26A43DEF6@oracle.com>
+References: <1366836949-18465-1-git-send-email-chiluk@canonical.com> <1366838926.22397.25.camel@leira.trondhjem.org> <5178549A.7010402@canonical.com> <1366842905.22397.49.camel@leira.trondhjem.org> <1366892374.26249.294.camel@localhost.localdomain> <20130425132907.GB31851@fieldses.org> <1366896654.4719.18.camel@leira.trondhjem.org> <20130425134918.GC31851@fieldses.org> <1366899034.6812.4.camel@leira.trondhjem.org> <20130425181932.GA5049@fieldses.org>
+To: "bfields@fieldses.org" <bfields@fieldses.org>
+X-Mailer: Apple Mail (2.1503)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rob,
 
-Can I get your ack on this binding or do you think we need to change
-something?
+On Apr 25, 2013, at 2:19 PM, "bfields@fieldses.org" <bfields@fieldses.org> wrote:
 
-Thanks,
-Stephen
+> On Thu, Apr 25, 2013 at 02:10:36PM +0000, Myklebust, Trond wrote:
+>> On Thu, 2013-04-25 at 09:49 -0400, bfields@fieldses.org wrote:
+>>> On Thu, Apr 25, 2013 at 01:30:58PM +0000, Myklebust, Trond wrote:
+>>>> On Thu, 2013-04-25 at 09:29 -0400, bfields@fieldses.org wrote:
+>>>> 
+>>>>> My position is that we simply have no idea what order of magnitude even
+>>>>> delay should be.  And that in such a situation exponential backoff such
+>>>>> as implemented in the synchronous case seems the reasonable default as
+>>>>> it guarantees at worst doubling the delay while still bounding the
+>>>>> long-term average frequency of retries.
+>>>> 
+>>>> So we start with a 15 second delay, and then go to 60 seconds?
+>>> 
+>>> I agree that a server should normally be doing the wait on its own if
+>>> the wait would be on the order of an rpc round trip.
+>>> 
+>>> So I'd be inclined to start with a delay that was an order of magnitude
+>>> or two more than a round trip.
+>>> 
+>>> And I'd expect NFS isn't common on networks with 1-second latencies.
+>>> 
+>>> So the 1/10 second we're using in the synchronous case sounds closer to
+>>> the right ballpark to me.
+>> 
+>> OK, then. Now all I need is actual motivation for changing the existing
+>> code other than handwaving arguments about "polling is better than flat
+>> waits".
+>> What actual use cases are impacting us now, other than the AIX design
+>> decision to force CLOSE to retry at least once before succeeding?
+> 
+> Nah, I've got nothing, and I agree that the AIX problem is there bug.
+> 
+> Just for fun I looked at re-checked the Linux server cases.  As far as I
+> can tell they are:
+> 
+> 	- delegations: returned immediately on detection of any
+> 	  conflict.  The current behavior in the sync case looks
+> 	  reasonable to me.
+> 	- allocation failures: not really sure it's the best error, but
+> 	  it seems to be all the protocol offers.  We probably don't
+> 	  care much what the client does in this case.
+> 	- some rare cases that would probably indicate bugs (e.g.,
+> 	  attempting to destroy a client while other rpc's from that
+> 	  client are running.)  Again we don't care what the client does
+> 	  here.
+> 	- the 4.1 slot-inuse case.
+> 
+> We also by default map four errors (ETIMEDOUT, EAGAIN, EWOULDBLOCK,
+> ENOMEM) to delay.  I thought I remembered one of those being used by
+> some HFS system, but can't actually find an example now.  A quick grep
+> doesn't show anything interesting.
 
-On 04/15/13 14:33, Stephen Boyd wrote:
-> On 04/15/13 14:20, Rob Herring wrote:
->> On Fri, Apr 12, 2013 at 7:27 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
->>> @@ -26,3 +30,52 @@ Example:
->>>                              <1 10 0xf08>;
->>>                 clock-frequency = <100000000>;
->>>         };
->>> +
->>> +** Memory mapped timer node properties
->>> +
->>> +- compatible : Should at least contain "arm,armv7-timer-mem".
->> Everything about this timer is architecturally defined? If not, let's
->> use a more specific name.
-> I'm not sure I'm following you, but everything described here is part of
-> the ARM definition. What would be a more specific name?
->
->>> +
->>> +- clock-frequency : The frequency of the main counter, in Hz. Optional.
->>> +
->>> +- reg : The control frame base address.
->>> +
->>> +Note that #address-cells, #size-cells, and ranges shall be present to ensure
->>> +the CPU can address a frame's registers.
->>> +
->>> +Frame:
->>> +
->>> +- frame-number: 0 to 7.
->> I'd really like to get rid of the frame numbers and sub-nodes. Is the
->> frame number significant to software?
-> We need the frame number to read and write registers in the control
-> frame (the first base in the parent node). We currently use it to
-> determine if a frame has support for the virtual timer by reading the
-> CNTTIDR (a register with 4 bits per frame describing capabilities). If
-> we wanted to control access to the second view of a frame we would also
-> need to configure the CNTPL0ACRn register that pertains to the frame
-> we're controlling. Without a frame number we wouldn't know which
-> register to write.
->
->>> +- interrupts : Interrupt list for physical and virtual timers in that order.
->>> +  The virtual timer interrupt is optional.
->> Is that optional per frame?
-> Yes the virtual and physical timer interrupt is per-frame and the
-> virtual interrupt is optional.
->
-
+It's worth mentioning that servers that have frozen state (say, in preparation for Transparent State Migration) may use NFS4ERR_DELAY to prevent clients from modifying open or lock state until that state has transitioned to a destination server.
 
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+Chuck Lever
+chuck[dot]lever[at]oracle[dot]com
+
+
+
 
