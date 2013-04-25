@@ -1,74 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932616Ab3DYTPC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 15:15:02 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:51671 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758135Ab3DYTPA (ORCPT
+	id S1758943Ab3DYTP2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 15:15:28 -0400
+Received: from cm-84.215.157.11.getinternet.no ([84.215.157.11]:48457 "EHLO
+	server.arpanet.local" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751872Ab3DYTP0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 15:15:00 -0400
-Message-ID: <517980B0.3000401@gmail.com>
-Date: Thu, 25 Apr 2013 14:14:56 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Thu, 25 Apr 2013 15:15:26 -0400
+X-Greylist: delayed 492 seconds by postgrey-1.27 at vger.kernel.org; Thu, 25 Apr 2013 15:15:25 EDT
+From: =?UTF-8?q?Jon=20Arne=20J=C3=B8rgensen?= <jonarne@jonarne.no>
+To: linux-media@vger.kernel.org
+Cc: jonjon.arnearne@gmail.com, linux-kernel@vger.kernel.org,
+        hverkuil@xs4all.nl, elezegarcia@gmail.com, mkrufky@linuxtv.org,
+        mchehab@redhat.com, bjorn@mork.no
+Subject: [RFC V2 3/3] [smi2021] Add smi2021 driver to buildsystem
+Date: Thu, 25 Apr 2013 21:10:20 +0200
+Message-Id: <1366917020-18217-4-git-send-email-jonarne@jonarne.no>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <1366917020-18217-1-git-send-email-jonarne@jonarne.no>
+References: <1366917020-18217-1-git-send-email-jonarne@jonarne.no>
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Grant Likely <grant.likely@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Paul Mackerras <paulus@samba.org>,
-        Hoang-Nam Nguyen <hnguyen@de.ibm.com>,
-        Christoph Raisch <raisch@de.ibm.com>,
-        Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>,
-        Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>,
-        linuxppc-dev@lists.ozlabs.org, linux-rdma@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH 1/5] ibmebus: convert of_platform_driver to platform_driver
-References: <1366596798-9457-1-git-send-email-robherring2@gmail.com>  <1366596798-9457-2-git-send-email-robherring2@gmail.com>  <CAL_JsqKDF=hPEM0Jz-zZSXBCXBZ=gBjLWL6QDvq+nFWkqY3DMw@mail.gmail.com> <1366911329.2869.31.camel@pasglop>
-In-Reply-To: <1366911329.2869.31.camel@pasglop>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/25/2013 12:35 PM, Benjamin Herrenschmidt wrote:
-> On Thu, 2013-04-25 at 10:23 -0500, Rob Herring wrote:
->> Ben, Can I have your Ack for this? The change is straightforward and
->> neither of the 2 drivers used the id parameter that is removed.
-> 
-> Didn't you get my mail about a compile failure caused by this patch ?
 
-No, and I can't find any evidence of a mail in my inbox or in the list
-archives.
+Signed-off-by: Jon Arne Jørgensen <jonarne@jonarne.no>
+---
+ drivers/media/usb/Kconfig          |  1 +
+ drivers/media/usb/Makefile         |  1 +
+ drivers/media/usb/smi2021/Kconfig  | 11 +++++++++++
+ drivers/media/usb/smi2021/Makefile | 10 ++++++++++
+ 4 files changed, 23 insertions(+)
+ create mode 100644 drivers/media/usb/smi2021/Kconfig
+ create mode 100644 drivers/media/usb/smi2021/Makefile
 
-> 
-> A quick build test leads to:
-> 
-> /home/benh/linux-powerpc-test/arch/powerpc/kernel/ibmebus.c: In function 'ibmebus_bus_device_probe':
-> /home/benh/linux-powerpc-test/arch/powerpc/kernel/ibmebus.c:344:2: error: implicit declaration of function 'to_platform_driver' [-Werror=implicit-function-declaration]
-> /home/benh/linux-powerpc-test/arch/powerpc/kernel/ibmebus.c:344:6: error: assignment makes pointer from integer without a cast [-Werror]
-> /home/benh/linux-powerpc-test/arch/powerpc/kernel/ibmebus.c: In function 'ibmebus_bus_device_remove':
-> /home/benh/linux-powerpc-test/arch/powerpc/kernel/ibmebus.c:363:32: error: initialization makes pointer from integer without a cast [-Werror]
-> /home/benh/linux-powerpc-test/arch/powerpc/kernel/ibmebus.c: In function 'ibmebus_bus_device_shutdown':
-> /home/benh/linux-powerpc-test/arch/powerpc/kernel/ibmebus.c:373:32: error: initialization makes pointer from integer without a cast [-Werror]
-> /home/benh/linux-powerpc-test/arch/powerpc/kernel/ibmebus.c: In function 'ibmebus_bus_legacy_suspend':
-> /home/benh/linux-powerpc-test/arch/powerpc/kernel/ibmebus.c:420:32: error: initialization makes pointer from integer without a cast [-Werror]
-> /home/benh/linux-powerpc-test/arch/powerpc/kernel/ibmebus.c: In function 'ibmebus_bus_legacy_resume':
-> /home/benh/linux-powerpc-test/arch/powerpc/kernel/ibmebus.c:431:32: error: initialization makes pointer from integer without a cast [-Werror]
-> cc1: all warnings being treated as errors
-> make[2]: *** [arch/powerpc/kernel/ibmebus.o] Error 1
-> make[2]: *** Waiting for unfinished jobs....
-> 
-> Haven't had a chance to look too closely today -EJETLAG :-)
+diff --git a/drivers/media/usb/Kconfig b/drivers/media/usb/Kconfig
+index 0a7d520..dec0383 100644
+--- a/drivers/media/usb/Kconfig
++++ b/drivers/media/usb/Kconfig
+@@ -26,6 +26,7 @@ source "drivers/media/usb/hdpvr/Kconfig"
+ source "drivers/media/usb/tlg2300/Kconfig"
+ source "drivers/media/usb/usbvision/Kconfig"
+ source "drivers/media/usb/stk1160/Kconfig"
++source "drivers/media/usb/smi2021/Kconfig"
+ endif
+ 
+ if (MEDIA_ANALOG_TV_SUPPORT || MEDIA_DIGITAL_TV_SUPPORT)
+diff --git a/drivers/media/usb/Makefile b/drivers/media/usb/Makefile
+index 7f51d7e..932a6ba 100644
+--- a/drivers/media/usb/Makefile
++++ b/drivers/media/usb/Makefile
+@@ -20,3 +20,4 @@ obj-$(CONFIG_VIDEO_STK1160) += stk1160/
+ obj-$(CONFIG_VIDEO_CX231XX) += cx231xx/
+ obj-$(CONFIG_VIDEO_TM6000) += tm6000/
+ obj-$(CONFIG_VIDEO_EM28XX) += em28xx/
++obj-$(CONFIG_VIDEO_SMI2021) += smi2021/
+diff --git a/drivers/media/usb/smi2021/Kconfig b/drivers/media/usb/smi2021/Kconfig
+new file mode 100644
+index 0000000..6a6fb8a
+--- /dev/null
++++ b/drivers/media/usb/smi2021/Kconfig
+@@ -0,0 +1,11 @@
++config VIDEO_SMI2021
++	tristate "Somagic SMI2021 USB video/audio capture support"
++	depends on VIDEO_DEV && I2C && SND && USB
++	select VIDEOBUF2_VMALLOC
++	select VIDEO_SAA711X
++	select SND_PCM
++	help
++	  This is a video4linux driver for SMI2021 based video capture devices.
++
++	  To compile this driver as a module, choose M here: the
++	  module will be called smi2021
+diff --git a/drivers/media/usb/smi2021/Makefile b/drivers/media/usb/smi2021/Makefile
+new file mode 100644
+index 0000000..8a62f02
+--- /dev/null
++++ b/drivers/media/usb/smi2021/Makefile
+@@ -0,0 +1,10 @@
++smi2021-y := smi2021_main.o		\
++	     smi2021_bootloader.o	\
++	     smi2021_v4l2.o		\
++	     smi2021_video.o		\
++	     smi2021_i2c.o		\
++	     smi2021_audio.o		\
++
++obj-$(CONFIG_VIDEO_SMI2021) += smi2021.o
++
++ccflags-y += -Idrivers/media/i2c
+-- 
+1.8.2.1
 
-You need patch 2 of this series to fix this:
-
-driver core: move to_platform_driver to platform_device.h
-
-which as Arnd pointed out needs to come first. I've fixed that in my
-tree, but I don't think it warrants another post.
-
-Rob
