@@ -1,43 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932421Ab3DYNuR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 09:50:17 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:26609 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932209Ab3DYNuP (ORCPT
+	id S1758704Ab3DYNyn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 09:54:43 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:38040 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756171Ab3DYNym (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 09:50:15 -0400
-X-Authority-Analysis: v=2.0 cv=DKcNElxb c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=oXbKA9ljmlQA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=DY9HwZRBA4wA:10 a=20KFwNOVAAAA:8 a=T3S3pLq5Yr6Hla_MoSMA:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1366897812.10248.15.camel@gandalf.local.home>
-Subject: [STABLE] tracing: Fix selftest function recursion accounting
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, stable <stable@vger.kernel.org>
-Date: Thu, 25 Apr 2013 09:50:12 -0400
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 25 Apr 2013 09:54:42 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAG6tG3zcOdkA5QOBhaDzmMvcFSCwbfRAyKuRwXdn6ipOJhTVZQ@mail.gmail.com>
+References: <CAJsYZ5kk=J_Sc7w5dbMbkWWv8dXEU0ojKjEKNqH=Q6Tf2f7mQg@mail.gmail.com>
+	<20130422142218.GA26760@mwanda>
+	<CAG6tG3xc3RHD7sZXaEbg1vLRhFj+6d1wY=us4BfxBfi5y0o4zg@mail.gmail.com>
+	<CAJsYZ5nQg9g73r5yLicq6gAGbKEXVAFqtF2av=heeNtrNSPSWg@mail.gmail.com>
+	<CAG6tG3zcOdkA5QOBhaDzmMvcFSCwbfRAyKuRwXdn6ipOJhTVZQ@mail.gmail.com>
+Date: Thu, 25 Apr 2013 19:24:41 +0530
+Message-ID: <CAJsYZ5mpukCM6TpFb27tJt6G7ZufugEP4kx8wzGxhRwAO46cCw@mail.gmail.com>
+Subject: Re: [BUG] staging: android: ashmem: Deadlock during ashmem_shrink
+From: Shankar Brahadeeswaran <shankoo77@gmail.com>
+To: Robert Love <rlove@google.com>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Bjorn Bringert <bringert@google.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, devel@driverdev.osuosl.org,
+        Hugh Dickins <hughd@google.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Anjana V Kumar <anjanavk12@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg,
+Hi Robert,
+Thanks for the feedback.
 
-Can you add this to the 3.8 stable tree. It's not applicable for earlier
-kernels.
+> This doesn't look insurmountable. It isn't necessary AFAICT to hold
+> ashmem_mutex across shmem_file_setup.
 
-Thanks!
+I thought it may not be a good idea to do so and hence thought its
+difficult to fix.
+Dropping the lock in-between mmap may not be any issue if the user land code
+follows a given sequence. But assuming that the following sequence of event
+happens, it would lead to other races.
 
--- Steve
+Process P1                                          Process P2
+--------------                                           --------------
+Creates ashmem region                       .....
 
-commit 05cbbf643b8eea1be21082c53cdb856d1dc6d765
-Author: Steven Rostedt <srostedt@redhat.com>
-Date:   Tue Jan 22 23:35:11 2013 -0500
+Shares the fd to P2 via binder             Gets the fd
 
-    tracing: Fix selftest function recursion accounting
+Does an mmap                                     Does an mmap
 
+Releases the mutex before                  Procees with ashmem_mmap
+since mutex is
+shmem_file_setup and sleeps             available, checks for a
+asma->file, still NUL
+within shmem_file_setup                      so this also calls
+shmem_file_setup.
 
+The expected behavior is, one of them does the shmem_file_setup, puts
+it in asma->file
+The other process would just do get_file. With the original code
+(without dropping the
+mutex in-between) this would have been the behavior.
+So IMHO dropping the lock in between could lead to other race conditions.
+
+Also, there are other places in the code where ashmem_mutex is held and memory
+allocation functions are called, ex:- range_alloc, calls kmem_cache_zalloc
+
+Since ashmem_shrink holds the ashmem_mutex, any where from ashmem driver
+if  a memory allocation function is called with the ashmem_mutex held
+&&
+if there is a low memory condition that leads to shrinkers being called
+we'll hit the deadlock.
+
+I'm trying to see if the ashmem_shrink should really hold the ashmem_mutex,
+but looks like its necessary.
+
+Warm Regards,
+Shankar
+
+On Tue, Apr 23, 2013 at 10:54 PM, Robert Love <rlove@google.com> wrote:
+> On Tue, Apr 23, 2013 at 12:20 PM, Shankar Brahadeeswaran
+> <shankoo77@gmail.com> wrote:
+>
+>> I'm unable to think of a straight forward way to fix this. If you have
+>> any suggestions please provide the same.
+>> If we are unable to solve this too with minor mods, as suggested by
+>> Dan we have to re-look at the locking in this driver.
+>
+> This doesn't look insurmountable. It isn't necessary AFAICT to hold
+> ashmem_mutex across shmem_file_setup.
+>
+> Patch attached (untested).
+>
+>            Robert
