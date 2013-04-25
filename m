@@ -1,65 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756353Ab3DYIgY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 04:36:24 -0400
-Received: from mail-ia0-f182.google.com ([209.85.210.182]:34262 "EHLO
-	mail-ia0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754098Ab3DYIgU (ORCPT
+	id S1756831Ab3DYIhS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 04:37:18 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:51972 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756122Ab3DYIhO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 04:36:20 -0400
-MIME-Version: 1.0
-In-Reply-To: <1366279934-30761-9-git-send-email-lee.jones@linaro.org>
-References: <1366279934-30761-1-git-send-email-lee.jones@linaro.org>
-	<1366279934-30761-9-git-send-email-lee.jones@linaro.org>
-Date: Thu, 25 Apr 2013 10:36:19 +0200
-Message-ID: <CACRpkdZ9j8Xr2-m6KG_Uet6Hft8xx_WJkKUQpi9QwuoE=9H1NA@mail.gmail.com>
-Subject: Re: [PATCH 08/32] dmaengine: ste_dma40: Optimise local MAX() macro
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
+	Thu, 25 Apr 2013 04:37:14 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH 04/32] dmaengine: ste_dma40: Amalgamate DMA source and destination channel numbers
+Date: Thu, 25 Apr 2013 10:36:52 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
+Cc: Lee Jones <lee.jones@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
         Linus WALLEIJ <linus.walleij@stericsson.com>,
         Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
         Per Forlin <per.forlin@stericsson.com>, Rabin Vincent <rabin@rab.in>
-Content-Type: text/plain; charset=ISO-8859-1
+References: <1366279934-30761-1-git-send-email-lee.jones@linaro.org> <1366279934-30761-5-git-send-email-lee.jones@linaro.org> <CACRpkdaauDYTdoBHGG9FO4kKqvCYyCrjY8EGWs5gAQWErGW6_A@mail.gmail.com>
+In-Reply-To: <CACRpkdaauDYTdoBHGG9FO4kKqvCYyCrjY8EGWs5gAQWErGW6_A@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201304251036.52284.arnd@arndb.de>
+X-Provags-ID: V02:K0:3UVr5GwlRR4WzWCalg9q9ZxvoeaC4vD0vx9iIuN+i7E
+ weNccrgmeaPd5OZVHjtgGbVv5KPhbJDJ14cRq8PMoZYiGLv6ed
+ FXjyO9r+xag0ytm091VKfKe8cfDZ7K8HpBbiwkhBlgLhOs+o9n
+ eHr/X3Z9JyN+tNoWGdK44zx7FDPnCNgK7kbZBNCCuGf2EsJPdz
+ SeMVtGs/Aj7Avi6RNSGrNLZdHcYz8ZrE6iNsqtJ4Bp82RrHzpC
+ 84E+4DvwzG+jVZQC8BxOhD+A8qB7qzOC3v427ZhdHLdufCU8yI
+ /8MFy5PrK2RXl3aFmj23slFlP3fYjSbbSd8MkADA2d4Rlpz9Fz
+ rVHSB9o4VcWwzGypUfIQ=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 18, 2013 at 12:11 PM, Lee Jones <lee.jones@linaro.org> wrote:
+On Thursday 25 April 2013, Linus Walleij wrote:
+> Are we now sacrificing that ability on the altar of simplification?
+> 
+> I actually think not, but that we should do periph-to-periph transfers
+> in some other way, and that the .dir attribute should go away from
+> the struct stedma40_chan_cfg as well but I'm not entirely sure.
+> Someone else?
 
-> The current implementation of the DMA40's local MAX() macro evaluates
-> its arguments more times than is necessary. This patch strips it
-> optimises it to only evaluate what's appropriate.
->
-> Cc: Vinod Koul <vinod.koul@intel.com>
-> Cc: Dan Williams <djbw@fb.com>
-> Cc: Per Forlin <per.forlin@stericsson.com>
-> Cc: Rabin Vincent <rabin@rab.in>
-> Reported-by: Harvey Harrison <harvey.harrison@gmail.com>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-(...)
-> -#define MAX(a, b) (((a) < (b)) ? (b) : (a))
-> +#define MAX(a, b) ((a > b) ? a : b)
+The dma-engine core has no support for device-to-device transfers,
+and as far as I understand that is neither considered a useful
+feature in real life, nor easy to add, so I don't think it matters
+much here.
 
-Much has been said about this patch already, but notice what it is
-used for instead, one single thing at compile-time:
-
-struct d40_base {
-(...)
-        u32
-reg_val_backup_v4[MAX(BACKUP_REGS_SZ_V4A, BACKUP_REGS_SZ_V4B)];
-(...)
-};
-
-i.e. defining the size of that array at compile-time.
-
-The actual size is figured out in d40_hw_detect_init().
-
-So what about you just devm_kmalloc() that array instead and
-delete this macro. That is the real fix.
-
-Yours,
-Linus Walleij
+	Arnd
