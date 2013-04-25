@@ -1,55 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758794Ab3DYPJT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 11:09:19 -0400
-Received: from www.linutronix.de ([62.245.132.108]:44513 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757035Ab3DYPJS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 11:09:18 -0400
-Message-ID: <51794718.5040703@linutronix.de>
-Date: Thu, 25 Apr 2013 17:09:12 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+	id S1758807Ab3DYPNq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 11:13:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13059 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758458Ab3DYPNp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Apr 2013 11:13:45 -0400
+Date: Thu, 25 Apr 2013 17:10:35 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jacob Shin <jacob.shin@amd.com>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        x86@kernel.org, Stephane Eranian <eranian@google.com>,
+        Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2 1/4] perf: Add hardware breakpoint address mask
+Message-ID: <20130425151035.GA26760@redhat.com>
+References: <1366703825-19373-1-git-send-email-jacob.shin@amd.com> <1366703825-19373-2-git-send-email-jacob.shin@amd.com> <20130423131844.GA24467@redhat.com> <20130423142546.GA17021@jshin-Toonie> <CAFTL4hxpcuSVfk0dBm8RSL+iUZpQrbb51tU1-zPyFE=u2hhjXQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Clark Williams <williams@redhat.com>
-CC: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [ANNOUNCE] 3.8.4-rt2
-References: <20130326201722.GA14220@linutronix.de> <CAP=VYLoXfECaSBuvYdZ3qbsnR9QMYpoRnKGZdY=P6zS_TYOcCA@mail.gmail.com> <20130408183012.GA5778@linutronix.de> <20130408152558.627dc8b1@riff.lan>
-In-Reply-To: <20130408152558.627dc8b1@riff.lan>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFTL4hxpcuSVfk0dBm8RSL+iUZpQrbb51tU1-zPyFE=u2hhjXQ@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/08/2013 10:25 PM, Clark Williams wrote:
-> BTW I imported -rt onto v3.8.6 with no hiccups from 'git
-> quiltimport' other than what you just fixed. Not much runtime on it
-> but it booted without complaint and ran just fine until I tried a
-> suspend/resume.
-> 
-> Resume seems to be borken on all the 3.8-rt kernels so far.
+On 04/25, Frederic Weisbecker wrote:
+>
+> 2013/4/23 Jacob Shin <jacob.shin@amd.com>:
+> > @@ -286,7 +286,10 @@ struct perf_event_attr {
+> >                 __u64           config1; /* extension of config */
+> >         };
+> >         union {
+> > -               __u64           bp_len;
+> > +               struct {
+> > +                       __u32           bp_len;
+> > +                       __u32           bp_addr_mask;
+> > +               };
+>
+> Do we need len and mask to work at the same time? I can't think of a
+> situation when len and mask mix up together in a useful way to define
+> a range.
 
-I just tested in qemu:
-- suspend to mem
-  the kvm support gives a few warn ons due to sleeping spinlocks in
-  apf_task_wake_all(). Without it, it works just fine.
+And it would be nice (I think) if we could simply turn bp_len into
+bp_mask. It is already the mask actually, bp_addr should be aligned.
 
-- suspend to disk
-  I see very often "NOHZ: local_softirq_pending" warnings. It looks
-  like the softirq thread is going down and the timer softirq isn't
-  handled for instance. Apart from this warning I see the going into
-  suspend and waking up.
+But I do not see how we can do this, so I guess we need another field.
 
-> 
-> Clark
+Well. Another option is to extend bp_len. Fortunately HW_BREAKPOINT_LEN_*
+match the length, so we can simply allow any 2^n length and amd.c can
+translate it into the mask.
 
-Sebastian
+Of course, this doesn't allow to use, say, mask=0xF0. But perhaps this
+is not really useful?
+
+I dunno. I leave this to you and Jacob ;)
+
+Oleg.
+
