@@ -1,144 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758747Ab3DYPBw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 11:01:52 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:41505 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758043Ab3DYPBu (ORCPT
+	id S1758778Ab3DYPF4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 11:05:56 -0400
+Received: from mail-qe0-f51.google.com ([209.85.128.51]:43074 "EHLO
+	mail-qe0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758286Ab3DYPFy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 11:01:50 -0400
-Message-ID: <51794543.8060005@linux.vnet.ibm.com>
-Date: Thu, 25 Apr 2013 20:31:23 +0530
-From: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Thu, 25 Apr 2013 11:05:54 -0400
 MIME-Version: 1.0
-To: David Howells <dhowells@redhat.com>
-CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, viro@zeniv.linux.org.uk,
-        Paul Mackerras <paulus@samba.org>
-Subject: Re: [PATCH 23/28] ppc: Clean up scanlog [RFC]
-References: <20130416182550.27773.89310.stgit@warthog.procyon.org.uk> <20130416182722.27773.32105.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20130416182722.27773.32105.stgit@warthog.procyon.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13042514-6102-0000-0000-000003626BA5
+In-Reply-To: <CAJsYZ5mpukCM6TpFb27tJt6G7ZufugEP4kx8wzGxhRwAO46cCw@mail.gmail.com>
+References: <CAJsYZ5kk=J_Sc7w5dbMbkWWv8dXEU0ojKjEKNqH=Q6Tf2f7mQg@mail.gmail.com>
+	<20130422142218.GA26760@mwanda>
+	<CAG6tG3xc3RHD7sZXaEbg1vLRhFj+6d1wY=us4BfxBfi5y0o4zg@mail.gmail.com>
+	<CAJsYZ5nQg9g73r5yLicq6gAGbKEXVAFqtF2av=heeNtrNSPSWg@mail.gmail.com>
+	<CAG6tG3zcOdkA5QOBhaDzmMvcFSCwbfRAyKuRwXdn6ipOJhTVZQ@mail.gmail.com>
+	<CAJsYZ5mpukCM6TpFb27tJt6G7ZufugEP4kx8wzGxhRwAO46cCw@mail.gmail.com>
+Date: Thu, 25 Apr 2013 11:05:53 -0400
+Message-ID: <CAG6tG3wrHKTJBOu69XiV6BAPfvmK-QqJkBVpzkmkrLdLV5jRwQ@mail.gmail.com>
+Subject: Re: [BUG] staging: android: ashmem: Deadlock during ashmem_shrink
+From: Robert Love <rlove@google.com>
+To: Shankar Brahadeeswaran <shankoo77@gmail.com>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Bjorn Bringert <bringert@google.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, devel@driverdev.osuosl.org,
+        Hugh Dickins <hughd@google.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Anjana V Kumar <anjanavk12@gmail.com>
+Content-Type: multipart/mixed; boundary=001a11c27e323ffcba04db30c18e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/16/2013 11:57 PM, David Howells wrote:
-> Clean up the pseries scanlog driver's use of procfs:
->
->   (1) Don't need to save the proc_dir_entry pointer as we have the filename to
->       remove with.
->
->   (2) Save the scan log buffer pointer in a static variable (there is only one
->       of it) and don't save it in the PDE (which doesn't have a destructor).
+--001a11c27e323ffcba04db30c18e
+Content-Type: text/plain; charset=UTF-8
 
-Changes looks good.
+On Thu, Apr 25, 2013 at 9:54 AM, Shankar Brahadeeswaran
+<shankoo77@gmail.com> wrote:
 
--Vasant
+> Also, there are other places in the code where ashmem_mutex is held and memory
+> allocation functions are called, ex:- range_alloc, calls kmem_cache_zalloc
+>
+> Since ashmem_shrink holds the ashmem_mutex, any where from ashmem driver
+> if a memory allocation function is called with the ashmem_mutex held
+> && if there is a low memory condition that leads to shrinkers being called
+> we'll hit the deadlock.
 
->
-> Signed-off-by: David Howells<dhowells@redhat.com>
-> cc: Benjamin Herrenschmidt<benh@kernel.crashing.org>
-> cc: Paul Mackerras<paulus@samba.org>
-> cc: linuxppc-dev@lists.ozlabs.org
-> ---
->
->   arch/powerpc/platforms/pseries/scanlog.c |   29 +++++++++++------------------
->   1 file changed, 11 insertions(+), 18 deletions(-)
->
-> diff --git a/arch/powerpc/platforms/pseries/scanlog.c b/arch/powerpc/platforms/pseries/scanlog.c
-> index cc220d2..b502ab6 100644
-> --- a/arch/powerpc/platforms/pseries/scanlog.c
-> +++ b/arch/powerpc/platforms/pseries/scanlog.c
-> @@ -41,12 +41,12 @@
->
->
->   static unsigned int ibm_scan_log_dump;			/* RTAS token */
-> -static struct proc_dir_entry *proc_ppc64_scan_log_dump;	/* The proc file */
-> +static unsigned int *scanlog_buffer;			/* The data buffer */
->
->   static ssize_t scanlog_read(struct file *file, char __user *buf,
->   			    size_t count, loff_t *ppos)
->   {
-> -	unsigned int *data = PDE_DATA(file_inode(file));
-> +	unsigned int *data = scanlog_buffer;
->   	int status;
->   	unsigned long len, off;
->   	unsigned int wait_time;
-> @@ -134,7 +134,7 @@ static ssize_t scanlog_write(struct file * file, const char __user * buf,
->
->   static int scanlog_open(struct inode * inode, struct file * file)
->   {
-> -	unsigned int *data = PDE_DATA(file_inode(file));
-> +	unsigned int *data = scanlog_buffer;
->
->   	if (data[0] != 0) {
->   		/* This imperfect test stops a second copy of the
-> @@ -150,10 +150,9 @@ static int scanlog_open(struct inode * inode, struct file * file)
->
->   static int scanlog_release(struct inode * inode, struct file * file)
->   {
-> -	unsigned int *data = PDE_DATA(file_inode(file));
-> +	unsigned int *data = scanlog_buffer;
->
->   	data[0] = 0;
-> -
->   	return 0;
->   }
->
-> @@ -169,7 +168,6 @@ const struct file_operations scanlog_fops = {
->   static int __init scanlog_init(void)
->   {
->   	struct proc_dir_entry *ent;
-> -	void *data;
->   	int err = -ENOMEM;
->
->   	ibm_scan_log_dump = rtas_token("ibm,scan-log-dump");
-> @@ -177,29 +175,24 @@ static int __init scanlog_init(void)
->   		return -ENODEV;
->
->   	/* Ideally we could allocate a buffer<  4G */
-> -	data = kzalloc(RTAS_DATA_BUF_SIZE, GFP_KERNEL);
-> -	if (!data)
-> +	scanlog_buffer = kzalloc(RTAS_DATA_BUF_SIZE, GFP_KERNEL);
-> +	if (!scanlog_buffer)
->   		goto err;
->
-> -	ent = proc_create_data("powerpc/rtas/scan-log-dump", S_IRUSR, NULL,
-> -			&scanlog_fops, data);
-> +	ent = proc_create("powerpc/rtas/scan-log-dump", S_IRUSR, NULL,
-> +			&scanlog_fops);
->   	if (!ent)
->   		goto err;
-> -
-> -	proc_ppc64_scan_log_dump = ent;
-> -
->   	return 0;
->   err:
-> -	kfree(data);
-> +	kfree(scanlog_buffer);
->   	return err;
->   }
->
->   static void __exit scanlog_cleanup(void)
->   {
-> -	if (proc_ppc64_scan_log_dump) {
-> -		kfree(proc_ppc64_scan_log_dump->data);
-> -		remove_proc_entry("scan-log-dump", proc_ppc64_scan_log_dump->parent);
-> -	}
-> +	remove_proc_entry("powerpc/rtas/scan-log-dump", NULL);
-> +	kfree(scanlog_buffer);
->   }
->
->   module_init(scanlog_init);
->
-> _______________________________________________
-> Linuxppc-dev mailing list
-> Linuxppc-dev@lists.ozlabs.org
-> https://lists.ozlabs.org/listinfo/linuxppc-dev
->
+The usual way this is solved is by checking the gfp_mask in the
+shrinker code and bailing out (like we do now) for certain masks. So
+e.g. the kmem_cache_zalloc in range_alloc is fixed by changing the
+mask to GFP_FS.
 
+> I'm trying to see if the ashmem_shrink should really hold the ashmem_mutex,
+> but looks like its necessary.
+
+Yes, it needs to hold ashmem_mutex.
+
+There's no reason we have to run ashmem_shrink, though. See attached (untested).
+
+      Robert
+
+--001a11c27e323ffcba04db30c18e
+Content-Type: application/octet-stream; name="ashmem-lock-fix-rlove-2.patch"
+Content-Disposition: attachment; filename="ashmem-lock-fix-rlove-2.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hfy2cnd20
+
+QXZvaWQgcmVjdXJzaW5nIGludG8gYXNobWVtX3NocmluayBmcm9tIHdpdGhpbiBhc2htZW0gaXRz
+ZWxmLgoKU2lnbmVkLW9mZi1ieTogUm9iZXJ0IExvdmUgPHJsb3ZlQHJsb3ZlLm9yZz4KCiBhc2ht
+ZW0uYyB8ICAgIDYgKysrKystCiAxIGZpbGUgY2hhbmdlZCwgNSBpbnNlcnRpb25zKCspLCAxIGRl
+bGV0aW9uKC0pCgotLS0gbGludXgtYmFzZS9kcml2ZXJzL3N0YWdpbmcvYW5kcm9pZC9hc2htZW0u
+YwkyMDEzLTA0LTI1IDEwOjU4OjMzLjI1MTQ2OTQ3MiAtMDQwMAorKysgbGludXgvZHJpdmVycy9z
+dGFnaW5nL2FuZHJvaWQvYXNobWVtLmMJMjAxMy0wNC0yNSAxMTowMjoyOS40MjA2NDQyNzggLTA0
+MDAKQEAgLTM2MSw3ICszNjEsMTEgQEAKIAlpZiAoIXNjLT5ucl90b19zY2FuKQogCQlyZXR1cm4g
+bHJ1X2NvdW50OwogCi0JbXV0ZXhfbG9jaygmYXNobWVtX211dGV4KTsKKwkvKiBhdm9pZCByZWN1
+cnNpbmcgaW50byB0aGlzIGNvZGUgZnJvbSB3aXRoaW4gYXNobWVtIGl0c2VsZiAqLworCWlmICgh
+bXV0ZXhfdHJ5bG9jaygmYXNobWVtX211dGV4KSkgeworCQlyZXR1cm4gLTE7CisJfQorCiAJbGlz
+dF9mb3JfZWFjaF9lbnRyeV9zYWZlKHJhbmdlLCBuZXh0LCAmYXNobWVtX2xydV9saXN0LCBscnUp
+IHsKIAkJc3RydWN0IGlub2RlICppbm9kZSA9IHJhbmdlLT5hc21hLT5maWxlLT5mX2RlbnRyeS0+
+ZF9pbm9kZTsKIAkJbG9mZl90IHN0YXJ0ID0gcmFuZ2UtPnBnc3RhcnQgKiBQQUdFX1NJWkU7Cg==
+--001a11c27e323ffcba04db30c18e--
