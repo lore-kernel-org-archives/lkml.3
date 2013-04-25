@@ -1,52 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758834Ab3DYQNg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 12:13:36 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:37467 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757220Ab3DYQNf (ORCPT
+	id S1758780Ab3DYQPy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 12:15:54 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:34550 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757164Ab3DYQPw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 12:13:35 -0400
-Message-ID: <5179562C.3000903@linaro.org>
-Date: Thu, 25 Apr 2013 09:13:32 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Thu, 25 Apr 2013 12:15:52 -0400
+Message-ID: <517956B3.2000201@samsung.com>
+Date: Fri, 26 Apr 2013 01:15:47 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
 MIME-Version: 1.0
-To: Alexander Holler <holler@ahsoftware.de>
-CC: Kay Sievers <kay@vrfy.org>, LKML <linux-kernel@vger.kernel.org>,
-        Feng Tang <feng.tang@intel.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Subject: Re: CONFIG_RTC_HCTOSYS lost on x86 with ALWAYS_USE_PERSISTENT_CLOCK
- changes?
-References: <CAPXgP13kizK95JyLxKxgWrGnV9b11ZTyi3vuc5YFDmROzckg4w@mail.gmail.com> <517746E4.908@linaro.org> <CAPXgP128yAq1jju-gsZcaS-mZPt+7tq0tt-uVk3Yqr77abd26Q@mail.gmail.com> <51774F44.2060704@linaro.org> <517769A9.5060308@ahsoftware.de> <51780348.6090202@linaro.org> <5178D719.2060405@ahsoftware.de>
-In-Reply-To: <5178D719.2060405@ahsoftware.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>
+Subject: Re: linux-next: manual merge of the arm-soc tree with the pm tree
+References: <20130424165417.5e2b74a01728d307e454750f@canb.auug.org.au>
+In-Reply-To: <20130424165417.5e2b74a01728d307e454750f@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/25/2013 12:11 AM, Alexander Holler wrote:
-> Am 24.04.2013 18:07, schrieb John Stultz:
+On 04/24/13 15:54, Stephen Rothwell wrote:
+> Hi all,
 >
->>> And why is RTC_SYSTOHC now gone on x86?
->>
->> So summarizing the above, because as much as I'm aware, its always been
->> redundant and unnecessary on x86.  Thus being able at build time to mark
->> it as unnecessary was attractive, since it reduced the code paths
->> running at suspend/resume.
+> Today's linux-next merge of the arm-soc tree got a conflict in
+> arch/arm/mach-exynos/cpuidle.c between commit 554c06ba3ee2 ("cpuidle:
+> remove en_core_tk_irqen flag") from the pm tree and commit 2eb89f893e44
+> ("ARM: EXYNOS: factor out the idle states") from the arm-soc tree.
 >
-> Hmm, I thought RTC_SYSTOHC was there to update the used RTC clock with 
-> the time from NTP (and liked that). Therefor I don't understand why it 
-> is redundant and unnecessary on x86. Of course, most systems do have 
-> something in userspace to set the RTC on shutdown, so it isn't really 
-> needed.
+> I fixed it up (see below) and can carry the fix as necessary (no action
+> is required).
 
-Prior to SYSTOHC being introduced, we only synced system time to the RTC 
-via update_persistent_clock() on systems that had that interface. 
-SYSTOHC is relatively new and lets the system sync to RTCs that don't 
-have the persistent clock.
+Looks OK to me, thanks.
 
-thanks
--john
-
+- Kukjin
