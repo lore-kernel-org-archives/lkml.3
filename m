@@ -1,59 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932810Ab3DYR3m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 13:29:42 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:54981 "EHLO
+	id S932834Ab3DYR3y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 13:29:54 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:63684 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932523Ab3DYR3i (ORCPT
+	with ESMTP id S932523Ab3DYR3u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 13:29:38 -0400
+	Thu, 25 Apr 2013 13:29:50 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>
-Subject: [PATCH 04/21] ARM: orion5x: include linux/cpu.h
-Date: Thu, 25 Apr 2013 19:28:47 +0200
-Message-Id: <1366910944-3033663-5-git-send-email-arnd@arndb.de>
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Airlie <airlied@linux.ie>, Felipe Balbi <balbi@ti.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Inki Dae <inki.dae@samsung.com>, Jason Cooper <jason@lakedaemon.net>,
+        Joerg Roedel <joro@8bytes.org>, Nicolas Pitre <nico@linaro.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Rob Herring <robherring2@gmail.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Simon Horman <horms+renesas@verge.net.au>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Will Deacon <will.deacon@arm.com>, alsa-devel@alsa-project.org,
+        dri-devel@lists.freedesktop.org,
+        linux-atm-general@lists.sourceforge.net, linux-scsi@vger.kernel.org,
+        linux-usb@vger.kernel.org, netdev@vger.kernel.org
+Subject: [PATCH 00/21] more arm build fixes
+Date: Thu, 25 Apr 2013 19:28:43 +0200
+Message-Id: <1366910944-3033663-1-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1366910944-3033663-1-git-send-email-arnd@arndb.de>
-References: <1366910944-3033663-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:lpnv92qTG/YrEk+qX8echo7CFLpWATmQBhFJIZRw44v
- LulxWNHa+1XWg952Oh6hV46ywsITdI6+9abPN2bOpilAMDCf7P
- wuqomvtd87tDzQc899v3IhcC2n0mxuC6p9Vkb6BwU7Y1+3KmzT
- SfgAFY+m2PRkxj+GwzAsFs6Cqiv6yIhbWcckvkEuaNuhLQJ59m
- ox4oV6kZI1xnYu/4Og8kFrnkBSlBYmJ1kTx8SU0KLkDneVofDj
- upiqLrcSY8gg3YnieOtoRvVBZRrDfPpJKPTgAupBOVliFxO664
- OHKZabA2c9YL+rhsnAb2awC2UCJhfk5zemKCamtI8a+cRafP4d
- yK2gE6Gc99MmdZ6kvQvZEHlys9JNS7dx+RzHGiNMd
+X-Provags-ID: V02:K0:xokDtw4V1HOQOBG5/csw4KaNDT5POefvVntzOemykL8
+ Ntj1qvJQNREBtQOtjwZsrMpFmNjvxPUSvYavuyqrnOU6sFnz+t
+ AODi/f1d5VwqYaykOX8qit051wQHDPbkRgIFYdTeMP4sMaSyDu
+ XBqqgCYdMj9gMJI/LH+9HIlvnZsnin+it7udFkChPz3FHu/zx+
+ WKNvF6enDpud2mt04cfNV9gv5Cq73xPRSNYjmLTZfB+NuWZm2h
+ y7riZRIRVm4Dg2TWhxo1xbHRJ9UTOlaYzMaxhrs70SXqwdJOUg
+ Ugi52xV2Yk1HwHe7AV6iD2mWtf1LHZ98Uw5ba+9ij/nWftr0Gc
+ WhV6putGvpES9SVPIp42t3brYMwthfz340Pwee+VE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The linux/cpu.h header is no longer implictly included in this
-file, so we need to an #include statement to avoid this build
-warning:
+Hi subsystem maintainers,
 
-arch/arm/mach-orion5x/common.c:339:3: error: implicit declaration of function 'cpu_idle_poll_ctrl' [-Werror=implicit-function-declaration]
+Here is another set of patches that resulted from build testing on
+linux-next. Please apply directly into your trees if you agree,
+or let me know if I made a mistake.
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Andrew Lunn <andrew@lunn.ch>
----
- arch/arm/mach-orion5x/common.c | 1 +
- 1 file changed, 1 insertion(+)
+I can take whatever remains through the arm-soc tree if you prefer
+that or I don't hear back.
 
-diff --git a/arch/arm/mach-orion5x/common.c b/arch/arm/mach-orion5x/common.c
-index 664c97d..b97fd67 100644
---- a/arch/arm/mach-orion5x/common.c
-+++ b/arch/arm/mach-orion5x/common.c
-@@ -19,6 +19,7 @@
- #include <linux/ata_platform.h>
- #include <linux/delay.h>
- #include <linux/clk-provider.h>
-+#include <linux/cpu.h>
- #include <net/dsa.h>
- #include <asm/page.h>
- #include <asm/setup.h>
+	Arnd
+
+
+Arnd Bergmann (21):
+  ARM: topology: export cpu_topology
+  ARM: default machine descriptor for multiplatform
+  ARM: shmobile: don't call irqchip_init unconditionally
+  ARM: orion5x: include linux/cpu.h
+  atm: he: use mdelay instead of large udelay constants
+  ALSA: ali5451: use mdelay instead of large udelay constants
+  oss/dmabuf: use dma_map_single
+  drm/nouveau: use mdelay instead of large udelay constants
+  drm: export drm_vm_open_locked
+  [SCSI] nsp32: use mdelay instead of large udelay constants
+  irqdomain: export irq_domain_add_simple
+  irqchip: s3c24xx: add missing __init annotations
+  iommu: tegra: print dma_addr_t using %lld
+  cpufreq: pxa2xx: initialize variables
+  thermal: cooling: avoid uninitialied used gcc warning
+  OF: remove #ifdef from linux/of_platform.h
+  X.509: do not emit any informational output
+  USB: ehci-msm: USB_MSM_OTG needs USB_PHY
+  USB: lpc32xx: ISP1301 needs USB_PHY
+  USB: OMAP: ISP1301 needs USB_PHY
+  USB: OHCI: avoid conflicting platform drivers
+
+ arch/arm/Kconfig                                   |   1 -
+ arch/arm/configs/lpc32xx_defconfig                 |   1 +
+ arch/arm/configs/msm_defconfig                     |   1 +
+ arch/arm/configs/omap1_defconfig                   |   1 +
+ arch/arm/kernel/devtree.c                          |   7 ++
+ arch/arm/kernel/setup.c                            |  11 +-
+ arch/arm/kernel/topology.c                         |   1 +
+ arch/arm/mach-orion5x/common.c                     |   1 +
+ arch/arm/mach-shmobile/intc-r8a7740.c              |  13 +-
+ drivers/atm/he.c                                   |   2 +-
+ drivers/cpufreq/pxa2xx-cpufreq.c                   |   5 +-
+ drivers/gpu/drm/drm_vm.c                           |   1 +
+ drivers/gpu/drm/nouveau/core/engine/disp/dacnv50.c |   3 +-
+ drivers/iommu/tegra-gart.c                         |   3 +-
+ drivers/iommu/tegra-smmu.c                         |   2 +-
+ drivers/irqchip/irq-s3c24xx.c                      |   4 +-
+ drivers/scsi/nsp32.c                               |   2 +-
+ drivers/thermal/cpu_cooling.c                      |  17 +--
+ drivers/usb/gadget/Kconfig                         |   2 +
+ drivers/usb/host/Kconfig                           |   1 +
+ drivers/usb/host/ohci-hcd.c                        | 136 ++++++++++++++++++---
+ drivers/usb/phy/Makefile                           |   2 +-
+ include/linux/of_platform.h                        |  13 +-
+ kernel/irq/irqdomain.c                             |   1 +
+ lib/build_OID_registry                             |   2 -
+ sound/oss/dmabuf.c                                 |   3 +-
+ sound/pci/ali5451/ali5451.c                        |   8 +-
+ 27 files changed, 187 insertions(+), 57 deletions(-)
+
 -- 
 1.8.1.2
 
+Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: David Airlie <airlied@linux.ie>
+Cc: Felipe Balbi <balbi@ti.com>
+Cc: Grant Likely <grant.likely@linaro.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Inki Dae <inki.dae@samsung.com>
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: Joerg Roedel <joro@8bytes.org>
+Cc: Nicolas Pitre <nico@linaro.org>
+Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Cc: Rob Herring <robherring2@gmail.com>
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>
+Cc: Simon Horman <horms+renesas@verge.net.au>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Will Deacon <will.deacon@arm.com>
+Cc: alsa-devel@alsa-project.org
+Cc: dri-devel@lists.freedesktop.org
+Cc: linux-atm-general@lists.sourceforge.net
+Cc: linux-scsi@vger.kernel.org
+Cc: linux-usb@vger.kernel.org
+Cc: netdev@vger.kernel.org
