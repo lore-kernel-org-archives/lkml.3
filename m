@@ -1,132 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759204Ab3DYTyT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 15:54:19 -0400
-Received: from mail-vb0-f41.google.com ([209.85.212.41]:38740 "EHLO
-	mail-vb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759100Ab3DYTyR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 15:54:17 -0400
+	id S1759284Ab3DYTyf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 15:54:35 -0400
+Received: from antcom.de ([188.40.178.216]:47643 "EHLO chuck.antcom.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758261Ab3DYTyc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Apr 2013 15:54:32 -0400
+Message-ID: <51798912.4090108@antcom.de>
+Date: Thu, 25 Apr 2013 21:50:42 +0200
+From: Roland Stigge <stigge@antcom.de>
+Organization: ANTCOM Open Source Research and Development
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
 MIME-Version: 1.0
-In-Reply-To: <1365806683-26717-1-git-send-email-yinghai@kernel.org>
-References: <1365806683-26717-1-git-send-email-yinghai@kernel.org>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 25 Apr 2013 13:53:56 -0600
-Message-ID: <CAErSpo7_Qt8G=cG56koefsoHO=uN3amCgA7FYJv8amZtxWKc=w@mail.gmail.com>
-Subject: Re: [PATCH v4 00/29] PCI: Add for_each_pci_resource and addon_res support
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Ram Pai <linuxram@us.ibm.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Arnd Bergmann <arnd@arndb.de>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Felipe Balbi <balbi@ti.com>
+Subject: Re: [PATCH 19/21] USB: lpc32xx: ISP1301 needs USB_PHY
+References: <1366910944-3033663-1-git-send-email-arnd@arndb.de> <1366910944-3033663-20-git-send-email-arnd@arndb.de>
+In-Reply-To: <1366910944-3033663-20-git-send-email-arnd@arndb.de>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 12, 2013 at 4:44 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> First part is for_each_pci_resource support:
-> Now pci device resource iteration is done via "for (i=0...)" open code.
-> That make code hard to read esp when only bridge or sriov resources
-> are involved.
+On 25/04/13 19:29, Arnd Bergmann wrote:
+> The Kconfig entry for USB_LPC32XX unconditionally selects USB_ISP1301,
+> which is now only visible when USB_PHY is also enabled.
+> 
+> This adds an appropriate dependency and enables USB_PHY in the msm
+> defconfig, avoiding these build errors:
+> 
+> warning: (USB_LPC32XX) selects USB_ISP1301 which has unmet direct dependencies (USB_SUPPORT && USB_PHY && (USB || USB_GADGET) && I2C)
+> drivers/built-in.o: In function `usb_hcd_nxp_probe':
+> drivers/usb/host/ohci-nxp.c:224: undefined reference to `isp1301_get_client'
+> drivers/built-in.o: In function `lpc32xx_udc_probe':
+> drivers/usb/gadget/lpc32xx_udc.c:3071: undefined reference to `isp1301_get_client'
+> 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: linux-usb@vger.kernel.org
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: Felipe Balbi <balbi@ti.com>
+> Cc: Roland Stigge <stigge@antcom.de>
 
-The "for (i = 0; ...)" code *is* a bit ugly with the various constants
-for different types of resources, but it does have the advantage that
-it is very simple and easy to understand.  The new code improves the
-callers, but the implementation of for_each_pci_resource() is not very
-straightforward.
+Tested-by: Roland Stigge <stigge@antcom.de>
+Acked-by: Roland Stigge <stigge@antcom.de>
 
-The diffstat (541 insertions(+), 226 deletions(-)) doesn't really
-indicate that this is an overall simplification.  I know this also
-adds some functionality, but even without the addon stuff, this adds
-110 more lines than it removes.
+> ---
+>  arch/arm/configs/lpc32xx_defconfig | 1 +
+>  drivers/usb/gadget/Kconfig         | 1 +
+>  2 files changed, 2 insertions(+)
+> 
+> diff --git a/arch/arm/configs/lpc32xx_defconfig b/arch/arm/configs/lpc32xx_defconfig
+> index 8fee514..398a367 100644
+> --- a/arch/arm/configs/lpc32xx_defconfig
+> +++ b/arch/arm/configs/lpc32xx_defconfig
+> @@ -146,6 +146,7 @@ CONFIG_SND_DEBUG_VERBOSE=y
+>  # CONFIG_SND_SPI is not set
+>  CONFIG_SND_SOC=y
+>  CONFIG_USB=y
+> +CONFIG_USB_PHY=y
+>  CONFIG_USB_OHCI_HCD=y
+>  CONFIG_USB_STORAGE=y
+>  CONFIG_USB_GADGET=y
+> diff --git a/drivers/usb/gadget/Kconfig b/drivers/usb/gadget/Kconfig
+> index a61d981..f85b427 100644
+> --- a/drivers/usb/gadget/Kconfig
+> +++ b/drivers/usb/gadget/Kconfig
+> @@ -144,6 +144,7 @@ config USB_AT91
+>  config USB_LPC32XX
+>  	tristate "LPC32XX USB Peripheral Controller"
+>  	depends on ARCH_LPC32XX
+> +	depends on USB_PHY
+>  	select USB_ISP1301
+>  	select USB_OTG_UTILS
+>  	help
 
-> We want to replace those open code with for_each_pci_resource() to make
-> the code more readable.
-> Also will add addon_resource handling, and need to make addon resource
-> to be treated as normal PCI resources during iteration, add
-> for_each_pci_resource will make that support transition more simple.
->
-> To make for_each_pci_resource more efficient. We will use preset bitmap
-> of different type for searching next idx.
->
-> Second part is addon_res support:
-> Now there is some non normal pci resources other than standard,rom,
-> sriov, bridges.
-> Some could be same as standard reg, but using different position.
-> Some could have own way to read/write to them.
-> Kernel are using different way to hack those resources like abusing
-> pci bridge resource spot on non bridge pci device.
->
-> Add addon_resources list in pci_dev for those non-standard resources.
-> With this patch, will treat addon-resource like standard resources with
-> special ops.
->
-> At last replace some quirk_io with addon_res.
->
-> could get from
->         git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-pci-for-each-res-addon
->
-> -v4: split one patch out, and remove PCI_NO_....
->
-> Notes: We still need to keep _idx as we use it all the time, and drivers still
-> use them to get resource.
->
-> Thanks
->
-> Yinghai Lu
->
->
-> Ram Pai (1):
->   PCI: pci resource iterator
->
-> Yinghai Lu (28):
->   PCI: Clean up quirk_io_region
->   PCI: Add pci_dev_resource_n()
->   PCI: Update pci_resource_start etc to use pci_dev_resource_n()
->   PCI: Add pci_dev_resource_idx() helper
->   PCI: Add is_pci_*_resource_idx() helpers
->   PCI, x86: Use for_each_pci_resource() with
->     pci_allocate_bridge_resources
->   PCI, x86: Use for_each_pci_resource() with pci_allocate_dev_resources
->   PCI: Use for_each_pci_resource() with IOV releated functions
->   PCI, acpiphp: Use for_each_pci_resource() helper
->   PCI, pciehp: Use for_each_pci_resource() helper
->   PCI: Use for_each_pci_resource() in pci_enable_dev
->   PCI: Use for_each_pci_resource() in pci_reassigndev
->   PCI: Use for_each_pci_resource() with pci bar reassign funcs
->   PCI: Use for_each_pci_resource() in pci_assign_resource
->   PCI, x86: Use for_each_pci_resource() with noassign_bars
->   PCI: Use for_each_pci_resource() in pci_dev_driver()
->   PCI: Use for_each_pci_resource() in pci resource release
->   PCI: Use for_each_pci_resource() in pci bases reading
->   PCI, x86: Use for_each_pci_resource() with mrst
->   PCI, xen: Use for_each_pci_resource() with xen pci
->   PCI: Add addon_resource support for pci devices
->   PCI: Treat addon res as std resources
->   PCI: Add helpers to add addon_resource
->   PCI: Update pci_resource_bar() to support addon_resource
->   PCI: Assign/update resource to addon_res
->   PCI: Make piix4 quirk to use addon_res
->   PCI: Make quirk_io_region to use addon_res
->   PCI: Use addon_fixed_resource with ati fixed resource
->
->  arch/x86/pci/common.c              |   3 +-
->  arch/x86/pci/i386.c                |  58 +++------
->  arch/x86/pci/mrst.c                |   7 +-
->  drivers/pci/hotplug/acpiphp_glue.c |   4 +-
->  drivers/pci/hotplug/pciehp_hpc.c   |   5 +-
->  drivers/pci/iov.c                  |  31 +++--
->  drivers/pci/pci-driver.c           |   7 +-
->  drivers/pci/pci.c                  |  27 ++--
->  drivers/pci/probe.c                | 176 ++++++++++++++++++++++++-
->  drivers/pci/quirks.c               | 258 ++++++++++++++++++++++---------------
->  drivers/pci/remove.c               |   5 +-
->  drivers/pci/setup-bus.c            |  28 ++--
->  drivers/pci/setup-res.c            |  38 ++++--
->  drivers/pci/xen-pcifront.c         |   4 +-
->  include/linux/pci.h                | 116 +++++++++++++++--
->  15 files changed, 541 insertions(+), 226 deletions(-)
->
-> --
-> 1.8.1.4
->
