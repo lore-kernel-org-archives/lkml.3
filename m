@@ -1,41 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758132Ab3DYLQA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 07:16:00 -0400
-Received: from mail-ia0-f170.google.com ([209.85.210.170]:52209 "EHLO
-	mail-ia0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757975Ab3DYLP6 (ORCPT
+	id S1758125Ab3DYLQ6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 07:16:58 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:34419 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756038Ab3DYLQ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 07:15:58 -0400
+	Thu, 25 Apr 2013 07:16:57 -0400
+X-Spam-Score: -100.8
+Message-ID: <51791076.9040405@asianux.com>
+Date: Thu, 25 Apr 2013 19:16:06 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <1366279934-30761-19-git-send-email-lee.jones@linaro.org>
-References: <1366279934-30761-1-git-send-email-lee.jones@linaro.org>
-	<1366279934-30761-19-git-send-email-lee.jones@linaro.org>
-Date: Thu, 25 Apr 2013 13:15:58 +0200
-Message-ID: <CACRpkdbt0NxDoBa9=Y4eq3FH75pnMT_BkE6Tk-15=H0qnQWaHQ@mail.gmail.com>
-Subject: Re: [PATCH 18/32] dmaengine: ste_dma40: Don't configure runtime
- configurable setup during allocate
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
-        Per Forlin <per.forlin@stericsson.com>, Rabin Vincent <rabin@rab.in>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Paul Mackerras <paulus@samba.org>
+CC: Mike Qiu <qiudayu@linux.vnet.ibm.com>, Michael Neuling <mikey@neuling.org>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        linuxppc-dev@lists.ozlabs.org, sfr@canb.auug.org.au, matt@ozlabs.org,
+        linux-kernel@vger.kernel.org,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: Re: "attempt to move .org backwards" still show up
+References: <5177965D.9090406@linux.vnet.ibm.com> <20130424083142.GB26834@concordia> <51779941.8080403@linux.vnet.ibm.com> <30651.1366799858@ale.ozlabs.ibm.com> <1366807638.5911.2.camel@localhost> <5178816D.3000309@asianux.com> <5178ABA2.4030109@linux.vnet.ibm.com> <20130425062539.GA421@iris.ozlabs.ibm.com>
+In-Reply-To: <20130425062539.GA421@iris.ozlabs.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 18, 2013 at 12:12 PM, Lee Jones <lee.jones@linaro.org> wrote:
+On 2013年04月25日 14:25, Paul Mackerras wrote:
+> On Thu, Apr 25, 2013 at 12:05:54PM +0800, Mike Qiu wrote:
+>> > This has block my work now
+>> > So I hope you can take a look ASAP
+>> > Thanks
+>> > :)
+>> > 
+>> > Mike
+> As a quick fix, turn on CONFIG_KVM_BOOK3S_64_HV.  That will eliminate
+> the immediate problem.
 
-> Using the dmaengine API, allocating and configuring a channel are two
-> separate actions. Here we're removing logical channel configuration from
-> the channel allocating routines.
+Yes, just as my original reply to Mike to bypass it, but get no reply, I
+guess he has to face the CONFIG_KVM_BOOK3S_64_PR.
 
-NAK: this is not true for memcpy.
+Now, I am just fixing it, when I finish one patch, please help check.
 
-Yours,
-Linus Walleij
+Thanks.
+
+-- 
+Chen Gang
+
+Asianux Corporation
