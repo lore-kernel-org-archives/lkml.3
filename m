@@ -1,66 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757112Ab3DYJwp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 05:52:45 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:55347 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754310Ab3DYJwo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 05:52:44 -0400
-Date: Thu, 25 Apr 2013 04:52:42 -0500
-From: Robin Holt <holt@sgi.com>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: Jean Delvare <jdelvare@suse.de>, DuanZhenzhong <zhenzhong.duan@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "Yu, Fenghua" <fenghua.yu@intel.com>, "holt@sgi.com" <holt@sgi.com>
-Subject: Re: memcpy_fromio in dmi_scan.c
-Message-ID: <20130425095242.GT3658@sgi.com>
-References: <1366636689.4503.35.camel@chaos.site>
- <5175FF0F.9050206@oracle.com>
- <1366702122.4667.11.camel@chaos.site>
- <3908561D78D1C84285E8C5FCA982C28F1EA52ED3@ORSMSX104.amr.corp.intel.com>
- <1366831328.4618.476.camel@chaos.site>
- <3908561D78D1C84285E8C5FCA982C28F1EA53DAA@ORSMSX104.amr.corp.intel.com>
- <20130425020724.GR3658@sgi.com>
+	id S1757246Ab3DYKCm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 06:02:42 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:42212 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756140Ab3DYKCk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Apr 2013 06:02:40 -0400
+Message-ID: <5178FF2D.2000203@huawei.com>
+Date: Thu, 25 Apr 2013 18:02:21 +0800
+From: Zhao Hongjiang <zhaohongjiang@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130425020724.GR3658@sgi.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: <viro@zeniv.linux.org.uk>
+CC: <bcrl@kvack.org>, <linux-fsdevel@vger.kernel.org>, <linux-aio@kvack.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH] aio: dprintks in aio_read_evt were referencing aio_ring after
+ kunmap_atomic
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.72.200]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 24, 2013 at 09:07:24PM -0500, Robin Holt wrote:
-> On Wed, Apr 24, 2013 at 08:16:50PM +0000, Luck, Tony wrote:
-> > > That being said, "my" SN2 machine was previously running kernel 3.0.34
-> > > which has the old dmi_scan code and it also said "DMI not present or
-> > > invalid." Plus dmidecode fails on this machine with:
-> > >
-> > > /sys/firmware/efi/systab: SMBIOS entry point missing
-> > >
-> > > So it might as well be that DMI support on SN2 was already broken.
-> > > Please let me know your findings on other SN2 machines.
-> > 
-> > I don't have an sn2 to test. Added Robin Holt to Cc list
-> 
-> I will try and boot an sn2 machine first thing tomorrow morning.
-> I don't recall dmidecode being broken, but that was quite a while ago.
-> I thought the license validation code we used on sn2 used data from the
-> dmidecode output.
 
- # uname -r
-3.0.13-0.27-default
- # dmidecode
-# dmidecode 2.9
-/sys/firmware/efi/systab: SMBIOS entry point missing
+Signed-off-by: Zhao Hongjiang <zhaohongjiang@huawei.com>
+Cc: stable@vger.kernel.org
+---
 
+linux-next use pr_debug instead of dprintk, and fix the issue.
 
-It looks like it is broken there as well.  This is running a SLES11SP2
-kernel with no local changes.
+---
+ fs/aio.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-dmesg show:
-DMI not present or invalid.
+diff --git a/fs/aio.c b/fs/aio.c
+index 3f941f2..1dc8786 100644
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -1029,9 +1029,9 @@ static int aio_read_evt(struct kioctx *ioctx, struct io_event *ent)
+ 	spin_unlock(&info->ring_lock);
+ 
+ out:
+-	kunmap_atomic(ring);
+ 	dprintk("leaving aio_read_evt: %d  h%lu t%lu\n", ret,
+ 		 (unsigned long)ring->head, (unsigned long)ring->tail);
++	kunmap_atomic(ring);
+ 	return ret;
+ }
+ 
+-- 
+1.7.1
 
-Thanks,
-Robin
