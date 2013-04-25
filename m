@@ -1,92 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758424Ab3DYMTk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 08:19:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9215 "EHLO mx1.redhat.com"
+	id S1758480Ab3DYMVS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 08:21:18 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60327 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756584Ab3DYMTi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 08:19:38 -0400
-Subject: Re: [PATCH] NFSv4: Use exponential backoff delay for NFS4_ERRDELAY
-From: David Wysochanski <dwysocha@redhat.com>
-Reply-To: dwysocha@redhat.com
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-Cc: Dave Chiluk <chiluk@canonical.com>,
-        "bfields@fieldses.org" <bfields@fieldses.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <1366842905.22397.49.camel@leira.trondhjem.org>
-References: <1366836949-18465-1-git-send-email-chiluk@canonical.com>
-	 <1366838926.22397.25.camel@leira.trondhjem.org>
-	 <5178549A.7010402@canonical.com>
-	 <1366842905.22397.49.camel@leira.trondhjem.org>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat
-Date: Thu, 25 Apr 2013 08:19:34 -0400
-Message-ID: <1366892374.26249.294.camel@localhost.localdomain>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756584Ab3DYMVQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Apr 2013 08:21:16 -0400
+Date: Thu, 25 Apr 2013 13:21:11 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Jeff Moyer <jmoyer@redhat.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, Dave Chinner <david@fromorbit.com>,
+        Jan Kara <jack@suse.cz>, linux-ext4@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: Re: Excessive stall times on ext4 in 3.9-rc2
+Message-ID: <20130425122111.GE2144@suse.de>
+References: <20130411170402.GB11656@suse.de>
+ <20130411183512.GA12298@thunk.org>
+ <20130411213335.GE9379@quack.suse.cz>
+ <20130412025708.GB7445@thunk.org>
+ <20130412045042.GA30622@dastard>
+ <20130412151952.GA4944@thunk.org>
+ <20130422143846.GA2675@suse.de>
+ <x49a9oqmblc.fsf@segfault.boston.devel.redhat.com>
+ <20130423140134.GA2108@suse.de>
+ <x49ppxjeofa.fsf@segfault.boston.devel.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <x49ppxjeofa.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-04-24 at 22:35 +0000, Myklebust, Trond wrote:
-> On Wed, 2013-04-24 at 16:54 -0500, Dave Chiluk wrote:
-> > On 04/24/2013 04:28 PM, Myklebust, Trond wrote:
-> > > On Wed, 2013-04-24 at 15:55 -0500, Dave Chiluk wrote:
-> > >> Changing the retry to start at NFS4_POLL_RETRY_MIN and exponentially grow
-> > >> to NFS4_POLL_RETRY_MAX allow for faster handling of these error conditions.
-> > >>
-> > >> Additionally this alleviates an interoperability problem with the AIX NFSv4
-> > >> Server.  The AIX server frequently (2 out of 3) returns NFS4ERR_DELAY, on a
-> > >> close when it happens in close proximity to a RELEASE_LOCKOWNER.  This would
-> > >> cause a linux client to hang for 15 seconds.
-> > > 
-> > > Hi Dave,
-> > > 
-> > > The AIX server is not being motivated by any requirements in the NFSv4
-> > > spec here, so I fail to see the reason why the behaviour that you
-> > > describe can justify changing the client. It is not at all obvious to me
-> > > that we should be retrying aggressively when NFSv4 servers return
-> > > NFS4ERR_DELAY. What makes 1/10sec more correct in these situations than
-> > > the exising 15 seconds?
-> > 
-> > I agree with you that AIX is at fault, and that the preferable situation
-> > for the linux client would be for AIX to not return NFS4ERR_DELAY in
-> > this use case.  I have attached a simple program that causes exacerbates
-> > the problem on the AIX server.  I have already had a conference call
-> > with AIX NFS development about this issue, where I vehemently tried to
-> > convince them to fix their server.  Unfortunately as I don't have much
-> > reputation in the NFS community, I was unable to convince them to do the
-> > right thing.  I would be more than happy to set up another call, if
-> > someone higher up in the linux NFS hierarchy would be willing to
-> > participate.
+On Wed, Apr 24, 2013 at 03:09:13PM -0400, Jeff Moyer wrote:
+> Mel Gorman <mgorman@suse.de> writes:
 > 
-> I'd think that if they have customers that want to use Linux clients,
-> then those customers are likely to have more influence. This is entirely
-> a consequence of _their_ design decisions, quite frankly, since
-> returning NFS4ERR_DELAY in the above situation is downright silly. The
-> server designers _know_ that the RELEASE_LOCKOWNER will finish whatever
-> it is doing fairly quickly; it's not as if the CLOSE wouldn't have to do
-> the exact same state manipulations anyway...
+> >> I'll also note that even though your I/O is going all over the place
+> >> (D2C is pretty bad, 14ms), most of the time is spent waiting for a
+> >> struct request allocation or between Queue and Merge:
+> >> 
+> >> ==================== All Devices ====================
+> >> 
+> >>             ALL           MIN           AVG           MAX           N
+> >> --------------- ------------- ------------- ------------- -----------
+> >> 
+> >> Q2Q               0.000000001   0.000992259   8.898375882     2300861
+> >> Q2G               0.000000843  10.193261239 2064.079501935     1016463 <====
+> >
+> > This is not normally my sandbox so do you mind spelling this out?
+> >
+> > IIUC, the time to allocate the struct request from the slab cache is just a
+> > small portion of this time. The bulk of the time is spent in get_request()
+> > waiting for congestion to clear on the request list for either the sync or
+> > async queue. Once a process goes to sleep on that waitqueue, it has to wait
+> > until enough requests on that queue have been serviced before it gets woken
+> > again at which point it gets priority access to prevent further starvation.
+> > This is the Queue To Get Reqiest (Q2G) delay. What we may be seeing here
+> > is that the async queue was congested and on average, we are waiting for
+> > 10 seconds for it to clear. The maximum value may be bogus for reasons
+> > explained later.
+> >
+> > Is that accurate?
 > 
-> > That being said, I think implementing an exponential backoff is an
-> > improvement in the client regardless of what AIX is doing.  If a server
-> > needs only 2 seconds to process a request for which NFS4ERR_DELAY was
-> > returned, this algorithm would get the client back and running after
-> > only 2.1 seconds of elapsed time.  Whereas the current dumb algorithm
-> > would simply wait 15 seconds.  This is the reason that I implemented
-> > this change.
-> 
-> Right, but my point above is that _in_general_ if we don't know why the
-> server is returning NFS4ERR_DELAY, then how can we attach any retry
-> numbers at all? HSM systems, for instance, have very different latencies
-> than the above and were the reason for inventing NFS3ERR_JUKEBOX in the
-> first place.
-> 
-
-Agreed we can't know why the server is returning NFS4ERR_DELAY so it's
-hard to pick a retry number.  Can you explain the rationale for the
-current 15 seconds delay?  Was it just for simplicity or something else?
+> Yes, without getting into excruciating detail.
 
 
+Good enough, thanks.
 
+> >> I'm not sure I believe that max value.  2064 seconds seems a bit high.
+> >
+> > It is so I looked closer at the timestamps and there is an one hour
+> > correction about 4400 seconds into the test.  Daylight savings time kicked
+> > in on March 31st and the machine is rarely rebooted until this test case
+> > came along. It looks like there is a timezone or time misconfiguration
+> > on the laptop that starts the machine with the wrong time. NTP must have
+> > corrected the time which skewed the readings in that window severely :(
+> 
+> Not sure I'm buying that argument, as there are no gaps in the blkparse
+> output.  The logging is not done using wallclock time.  I still haven't
+> had sufficient time to dig into these numbers.
+> 
+
+Ok.
+
+> > It's awkward but it's not like there are standard benchmarks lying around
+> > and it seemed the best way to reproduce the problems I typically see early
+> > in the lifetime of a system or when running a git checkout when the tree
+> > has not been used in a few hours. Run the actual test with
+> >
+> > ./run-mmtests.sh --config configs/config-global-dhp__io-multiple-source-latency --run-monitor test-name-of-your-choice
+> >
+> > Results will be in work/log. You'll need to run this as root so it
+> > can run blktrace and so it can drop_caches between git checkouts
+> > (to force disk IO). If systemtap craps out on you, then edit
+> > configs/config-global-dhp__io-multiple-source-latency and remove dstate
+> > from MONITORS_GZIP
+> 
+> And how do I determine whether I've hit the problem?
+> 
+
+If systemtap is available then
+
+cat work/log/dstate-TESTNAME-gitcheckout | subreport/stap-dstate-frequency
+
+will give you a report on the worst stalls and the stack traces when those
+stalls occurred. If the stalls are 10+ seconds then you've certainly hit
+the problem.
+
+Alternatively
+
+cd work/log
+../../compare-kernels.sh
+
+Look at the average time it takes to run the git checkout. Is it
+abnormally high in comparison to if there was no parallel IO? If you do
+not know what the normal time is, run with
+
+./run-mmtests.sh --config configs/config-global-dhp__io-multiple-source-latency --no-monitor test-name-no-monitor
+
+The monitors are what's opening the maildir and generating the parallel
+IO. If there is an excessive difference between the git checkout times,
+then you've hit the problem.
+
+Furthermore, look at the await times. If they do not appear in the
+compare-kernels.sh output then
+
+../../bin/compare-mmtests.pl -d . -b gitcheckout -n test-name-of-your-choice --print-monitor iostat
+
+And look at the await times. Are they very high? If so, you hit the
+problem. If you want a better look at the await figures over time,
+either look at the iostat file or you can graph it with
+
+../../bin/graph-mmtests.sh -d . -b gitcheckout -n test-name-of-your-choice --print-monitor iostat --sub-heading sda-await
+
+where sda-await should be  substituted for whatever the disk is that
+you're running the test one.
+
+
+> > If you have trouble getting this running, ping me on IRC.
+> 
+> Yes, I'm having issues getting things to go, but you didn't provide me a
+> time zone, an irc server or a nick to help me find you.  Was that
+> intentional?  ;-)
+> 
+
+Not consciously :) . I'm in the IST timezone (GMT+1), OFTC IRC network
+and #mm channel. If it's my evening I'm not always responsive so send me
+the error output on email and I'll try fixing any problems that way.
+
+-- 
+Mel Gorman
+SUSE Labs
