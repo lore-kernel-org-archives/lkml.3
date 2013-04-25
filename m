@@ -1,73 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750933Ab3DYEGK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 00:06:10 -0400
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:42010 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1749667Ab3DYEGI (ORCPT
+	id S1751125Ab3DYEtU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 00:49:20 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:49752 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750758Ab3DYEtS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 00:06:08 -0400
-Message-ID: <5178ABA2.4030109@linux.vnet.ibm.com>
-Date: Thu, 25 Apr 2013 12:05:54 +0800
-From: Mike Qiu <qiudayu@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	Thu, 25 Apr 2013 00:49:18 -0400
+X-Originating-IP: 108.223.40.66
+Date: Wed, 24 Apr 2013 21:49:52 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Li Zefan <lizefan@huawei.com>
+Cc: Prarit Bhargava <prarit@redhat.com>, John Stultz <john.stultz@linaro.org>,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        stable <stable@vger.kernel.org>
+Subject: Re: [PATCH] hrtimer, add expiry time overflow check in
+ hrtimer_interrupt
+Message-ID: <20130425044952.GA17412@roeck-us.net>
+References: <1365425235-26191-1-git-send-email-prarit@redhat.com>
+ <5163264B.3050707@linaro.org>
+ <516329D2.1050003@redhat.com>
+ <20130424224218.GA7767@roeck-us.net>
+ <5178890E.9090201@huawei.com>
 MIME-Version: 1.0
-To: Chen Gang <gang.chen@asianux.com>
-CC: Michael Neuling <mikey@neuling.org>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        linuxppc-dev@lists.ozlabs.org, sfr@canb.auug.org.au, matt@ozlabs.org,
-        linux-kernel@vger.kernel.org, paulus@samba.org,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: Re: "attempt to move .org backwards" still show up
-References: <5177965D.9090406@linux.vnet.ibm.com> <20130424083142.GB26834@concordia> <51779941.8080403@linux.vnet.ibm.com> <30651.1366799858@ale.ozlabs.ibm.com> <1366807638.5911.2.camel@localhost> <5178816D.3000309@asianux.com>
-In-Reply-To: <5178816D.3000309@asianux.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13042503-1618-0000-0000-000003C33242
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5178890E.9090201@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2013/4/25 9:05, Chen Gang 写道:
-> On 2013年04月24日 20:47, Mike wrote:
->> 在 2013-04-24三的 20:37 +1000，Michael Neuling写道：
->>>> Mike Qiu <qiudayu@linux.vnet.ibm.com> wrote:
->>>>
->>>>>> 于 2013/4/24 16:31, Michael Ellerman 写道:
->>>>>>>> On Wed, Apr 24, 2013 at 04:22:53PM +0800, Mike Qiu wrote:
->>>>>>>>>> Hi all
->>>>>>>>>>
->>>>>>>>>> I get an error message when I compile the source code in Power7 platform
->>>>>>>>>> use the newest upstream kernel.
->>>>>>>> Hi Mike,
->>>>>>>>
->>>>>>>> It depends on what your .config is. What defconfig are you building?
->>>>>> I just copy the config file from /boot/config.* to .config and use make
->>>>>> menuconfig
->>>>>> change nothing by manually, then save.
->>>> Can you post the resulting config here?
->>>>
->>>> Do you have commit in your tree?
->>>>    commit 087aa036eb79f24b856893190359ba812b460f45
->>>>    Author: Chen Gang <gang.chen@asianux.com>
->>>>    powerpc: make additional room in exception vector area
->>>>
->> Sure, that commit certainly in my git tree. And I just try to remove the
->> code and re-git clone the source code from upstream, this problem still
->> happen.
->> I will post the config file as the attachment
->> :)
->>
->> Thanks
-> I will try, and plan to get a result within this week (2013-04-28)
->
-> Thanks.
-Hi
-This has block my work now
-So I hope you can take a look ASAP
-Thanks
-:)
+On Thu, Apr 25, 2013 at 09:38:22AM +0800, Li Zefan wrote:
+> On 2013/4/25 6:42, Guenter Roeck wrote:
+> > On Mon, Apr 08, 2013 at 04:34:26PM -0400, Prarit Bhargava wrote:
+> >>
+> >>
+> >> On 04/08/2013 04:19 PM, John Stultz wrote:
+> >>> On 04/08/2013 05:47 AM, Prarit Bhargava wrote:
+> >>
+> >>>>
+> >>>> A simple check for an overflow can resolve this problem.  Using KTIME_MAX
+> >>>> instead of the overflow value will result in the hrtimer function being run,
+> >>>> and the reprogramming of the timer after that.
+> >>>>
+> >>>> Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+> >>>> Cc: Thomas Gleixner <tglx@linutronix.de>
+> >>>> Cc: John Stultz <john.stultz@linaro.org>
+> >>>
+> >>> Prarit: Should this be tagged for -stable?
+> >>
+> >> John,
+> >>
+> >> Yes, this should go to -stable.  cc'd.
+> >>
+> > Hi,
+> > 
+> > I am a bit surprised that this patch has not found its way into mainline yet,
+> > as everyone seems to agree that it is a candidate for -stable.
+> > 
+> > I hit this problem very reliably (ie with each boot) with 3.8.x on systems
+> > which have no RTC and run systemd. Seen with Freescale P5040 as well as
+> > a Broadcom MIPS based system.
+> > 
+> 
+> FYI, we also hit this warning with 3.4-rt.
+> 
+You are lucky if it is just a warning for you. In my case the system is
+reliably dead. Guess there are not (yet) many users out there using
+systemd (or something similar) on a system with no RTC.
 
-Mike
+While I am not too happy about the delay to get the patch integrated,
+I am glad that Prarit found and fixed the problem. Saved me a lot of time.
 
+Guenter
