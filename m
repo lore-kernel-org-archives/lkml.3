@@ -1,41 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758369Ab3DYMGh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 08:06:37 -0400
-Received: from mail-ia0-f180.google.com ([209.85.210.180]:51203 "EHLO
-	mail-ia0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755185Ab3DYMGf (ORCPT
+	id S1758450Ab3DYMGv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 08:06:51 -0400
+Received: from mail-la0-f43.google.com ([209.85.215.43]:37509 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758419Ab3DYMGu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 08:06:35 -0400
+	Thu, 25 Apr 2013 08:06:50 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130418223344.GB8798@zurbaran>
-References: <1366012021-9039-1-git-send-email-linus.walleij@stericsson.com>
-	<20130418223344.GB8798@zurbaran>
-Date: Thu, 25 Apr 2013 14:06:35 +0200
-Message-ID: <CACRpkdZd2wGUR=kMeFBJxhDZrWcX-8mEk+_jvjj5PFQdAK-zmg@mail.gmail.com>
-Subject: Re: [PATCH v3] MFD: ab8500: pass AB8500 IRQ to debugfs code by resource
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Linus Walleij <linus.walleij@stericsson.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Anmar Oueja <anmar.oueja@linaro.org>, Arnd Bergmann <arnd@arndb.de>
+Date: Thu, 25 Apr 2013 14:06:48 +0200
+Message-ID: <CAFTL4hxzpoy1wwmenhPaEg9tovfrXeMQ5QBC5gkW0L3z86VPAg@mail.gmail.com>
+Subject: Kconfig doesn't support select on choices (was Re: [GIT PULL] nohz:
+ Adaptively stop the tick, finally)
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>, Michal Marek <mmarek@suse.cz>
+Cc: LKML <linux-kernel@vger.kernel.org>, Chris Metcalf <cmetcalf@tilera.com>,
+        Christoph Lameter <cl@linux.com>, Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@linaro.org>,
+        Li Zhong <zhong@linux.vnet.ibm.com>, Oleg Nesterov <oleg@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 19, 2013 at 12:33 AM, Samuel Ortiz <sameo@linux.intel.com> wrote:
-
->> Sam this would have to go into the v3.10-targetted stuff...
->> Either immediately before you send it upstream or as a fixup.
+2013/4/25 Ingo Molnar <mingo@kernel.org>:
 >
-> I usually try to send one single pull request during the merge window, so I'll
-> add this one to my 3.10 MFD fixup pull request.
+> * Frederic Weisbecker <fweisbec@gmail.com> wrote:
+>
+>> >         depends on VIRT_CPU_ACCOUNTING_GEN
+>> >
+>> > It should _really_ select both the RCU and the CPU time accounting model
+>> > automatically!
+>>
+>> Yeah I know. I have yet to fix that in Kconfig (it's a Kconfig limitation).
+>
+> Why cannot we simply select it and its dependencies, explicitly, for the
+> time being? Something like:
+>
+>         depends on 64BIT
+>         select VIRT_CPU_ACCOUNTING
+>         select VIRT_CPU_ACCOUNTING_GEN
+>
+> 90% of the .config's have VIRT_CPU_ACCOUNTING_GEN turned off, because it's
+> a default-off feature - so dynticks-full is effectively hidden from the
+> large majority of testers...
 
-But the merge winow isn't even open yet ... now you will break it in the
-merge window and the un-break it later. Well whatever as long as it
-gets fixed. But it causes some annoyance when trying to bisect in the
-merge window.
+Whatever we do, it seems that select does not work with choices.
 
-Yours,
-Linus Walleij
+Michal, we are running into an issue where a Kconfig option needs to
+select CONFIG_VIRT_CPU_ACCOUNTING_GEN but this latter option is part
+of a choice menu so it doesn't work. As a result we are forced to use
+a "depends on" and this hides the high level option we are interested
+in (here full dynticks) behind its low level dependency. How hard do
+you think it would be to fix this? I tried something that worked
+half-way but I quickly got lost in the Kconfig maze.
+
+Thanks.
