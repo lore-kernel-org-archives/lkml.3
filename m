@@ -1,112 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933291Ab3DYWcN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 18:32:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57534 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932396Ab3DYWcL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 18:32:11 -0400
-Date: Thu, 25 Apr 2013 15:32:09 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Joe Perches <joe@perches.com>,
+	id S933310Ab3DYWeV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 18:34:21 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:37688 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757592Ab3DYWeU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Apr 2013 18:34:20 -0400
+Message-ID: <5179AE2F.3040403@ti.com>
+Date: Thu, 25 Apr 2013 17:29:03 -0500
+From: Suman Anna <s-anna@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Jassi Brar <jaswinder.singh@linaro.org>
+CC: Loic PALLARDY <loic.pallardy@st.com>,
+        Jassi Brar <jassisinghbrar@gmail.com>,
+        "Ohad Ben-Cohen (ohad@wizery.com)" <ohad@wizery.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        "Andy Green (andy.green@linaro.org)" <andy.green@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Tony Lindgren <tony@atomide.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
-        linux-usb <linux-usb@vger.kernel.org>,
-        usb-storage <usb-storage@lists.one-eyed-alien.net>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V2] usb: storage: Convert US_DEBUGP to usb_stor_dbg
-Message-Id: <20130425153209.5b590422dbd249a5e19ac570@linux-foundation.org>
-In-Reply-To: <alpine.DEB.2.02.1304221234270.16385@chino.kir.corp.google.com>
-References: <Pine.LNX.4.44L0.1304171426460.1623-100000@iolanthe.rowland.org>
-	<1366254055.28609.61.camel@joe-AO722>
-	<20130419173503.GA27495@kroah.com>
-	<1366397040.3901.45.camel@joe-AO722>
-	<alpine.DEB.2.02.1304221234270.16385@chino.kir.corp.google.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+        Linus Walleij <linus.walleij@linaro.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Omar Ramirez Luna (omar.ramirez@copitl.com)" 
+	<omar.ramirez@copitl.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCHv3 00/14] drivers: mailbox: framework creation
+References: <1363145021-14339-1-git-send-email-s-anna@ti.com> <CABb+yY0RYkVeo2Sb4WsDJY0jf17488FEz0d2CB994eQaSOEsVg@mail.gmail.com> <37C860A02101E749A747FA2D3C1E3C504A5DF7@DLEE11.ent.ti.com> <CABb+yY1x4x_A+QtGG9ohsLPgs8c3nEVnd_ExJBGOOR8=6YLPFA@mail.gmail.com> <37C860A02101E749A747FA2D3C1E3C504A63B4@DLEE11.ent.ti.com> <CAJe_ZhehnniZd730jjiOLrHozq8TOJZgFYLqUe4KqgBiQEu8PA@mail.gmail.com> <51779304.4040003@st.com> <CAJe_ZhdZv5LW6kdwyPtJe69mfW6t=WQ4OJnG2H4sUhibattN2A@mail.gmail.com> <517867E1.7050301@ti.com> <CAJe_ZhfDZzq+DzA9XDF3PWFUmwcZnDy-mhE4hLNHmf+V4GhOxw@mail.gmail.com>
+In-Reply-To: <CAJe_ZhfDZzq+DzA9XDF3PWFUmwcZnDy-mhE4hLNHmf+V4GhOxw@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 22 Apr 2013 12:35:26 -0700 (PDT) David Rientjes <rientjes@google.com> wrote:
+Jassi,
 
-> On Fri, 19 Apr 2013, Joe Perches wrote:
+On 04/25/2013 12:20 AM, Jassi Brar wrote:
+> On 25 April 2013 04:46, Suman Anna <s-anna@ti.com> wrote:
+>> On 04/24/2013 03:56 AM, Jassi Brar wrote:
+>>
 > 
-> > @@ -966,11 +934,13 @@ static int realtek_cr_autosuspend_setup(struct us_data *us)
-> >  static void realtek_cr_destructor(void *extra)
-> >  {
-> >  	struct rts51x_chip *chip = (struct rts51x_chip *)extra;
-> > -
-> > -	US_DEBUGP("%s: <---\n", __func__);
-> > +	struct us_data *us;
-> >  
-> >  	if (!chip)
-> >  		return;
-> > +
-> > +	us = chip->us;
-> > +
-> >  #ifdef CONFIG_REALTEK_AUTOPM
-> >  	if (ss_en) {
-> >  		del_timer(&chip->rts51x_suspend_timer);
+>> I think there are two things here - one is what the client needs to do
+>> upon sending/receiving a message, and the other is what the send API or
+>> the mailbox controller should do when a client tried to send a message
+>> and the controller's shared message/transport is not free (irrespective
+>> of the atomic or non-atomic context). The kfifos in the common driver
+>> code are currently solving the latter problem. The current send API
+>> directly uses the controller to send if it is free, and uses buffering
+>> only when it is busy. But, I see your point that this should should be
+>> the responsibility of the specific controller, or even a property of the
+>> specific mailbox belonging to that controller. This direction would put
+>> most of the onus on the specific controller drivers, and probably the
+>> main API would be very simple. Another factor / attribute to consider is
+>> that a given mailbox may be sharable or exclusive, things are simple if
+>> it is exclusive to a client driver.
+>>
+> I never suggested we don't use buffering. I too believe the API should
+> buffer requests but also that it should still do atomic callbacks. The
+> impact on implementation would be that the queue buffer can not grow
+> at runtime. But that should be fine because a reasonable size (say 10
+> or even 50) could be chosen and we allow submission of requests from
+> tx_done callback.
+
+Yeah, even the current kfifo approach doesn't grow the queue buffer at
+runtime, and the size of the kfifo is determined at driver init time
+based on the controller. If the queue is also full, then you fail
+tranmitting right away. OK, I thought you didn't want buffering, if that
+is not the case, then the buffering should be within the main driver
+code, like it is now, but configurable based on the controller or
+mailbox properties. If it is present in individual controller drivers,
+then we would be duplicating stuff. Are you envisioning that this be
+left to the individual controllers?
+
 > 
-> >From linux-next:
+>>
+>> We are talking two fundamentally different usecases/needs here,
+>> depending on the type of the controller. You seem to be coming from a
+>> usecase where the client driver needs to know when every message is
+>> transmitted (from an atomic context, it is a moot point since either you
+>> are successful or not when transmitting).
+>>
+> I am afraid you are confusing the meaning of 'atomic context' here.
+> atomic context doesn't mean instant transmission of data, but that the
+> API calls could be made from even atomic context and that the client &
+> controller can't sleep in callbacks from the API. So it's not moot.
+
+I understood the atomic context, and the question is about the behavior
+of the '.tx_done' callback when sending from atomic context. Is there
+such a usecase/need for you in that you want to send a response back
+from an atomic context, yet get a callback?
+
 > 
-> drivers/usb/storage/realtek_cr.c: In function 'realtek_cr_destructor':
-> drivers/usb/storage/realtek_cr.c:942:11: error: 'struct rts51x_chip' has no member named 'us'
+>> The remote
+>> has to ack before it can be shutdown. I would imagine that getting a
+>> .tx_done on a particular message is not good enough to know that the
+>> remote is ready for shutdown. I can imagine it to be useful where there
+>> is some inherent knowledge that the client needs to proceed with the
+>> next steps when a message is sent.
+>>
+> Of course we are not specifying how the mailbox signals are
+> interpreted by the remote. It should suffice just to realize that
+> there exists genuine requirement for a client to know when its message
+> was received by the remote.
 > 
-> chip->us here is only defined when CONFIG_REALTEK_AUTOPM is enabled.
+>> That said, we need to go with the
+>> stricter one.
+>>
+> Great, that we agree.
+> 
+>> My only concern here is that if there can be multiple
+>> clients for a particular mailbox/controller, then all the clients would
+>> have to have an agreement on the controller packet type, and the clients
+>> would mostly have to include the standard mailbox.h as well as a
+>> controller-specific header.
+>>
+> It's the controller driver that actually puts the data on the bus. So
+> only it should define the format in which it accepts data from the
+> clients. Every client should simply populate the packet structure
+> defined in  my_lovely_controller.h and pass on the struct pointer to
+> the controller driver via API.
+> No negotiations for the driver seat among passengers :)
 
-local var `us' doesn't get used by anything and it's unclear why that
-patch added it?  
+OK, I was trying to avoid including my_lovely_controller.h and only
+include the standard .h file as a client user, the client would anyway
+need to have the intrinsic knowledge of the packet structure. And if you
+were to do buffering in the common driver code, you would need the size
+field outside. The void *msg packet structure would still be an
+understanding between the client and the controller. So, it is a
+tradeoff between just using void * and leave the buffering to controller
+driver (potential duplication) & using a size and void *, along with
+buffering in common driver code.
 
+> 
+>> Overall, I see it coming down to following points:
+>> 1. Calling contexts: Atomic & non-atomic contexts, with the latter
+>> becoming an extension of the atomic case. I guess this mainly goes with
+>> the controller functional integration - whether it is used for
+>> non-urgent messaging or h/w controller command messages (like PM
+>> usecases?) where .tx_done is relevant.
+>>
+> Urgency or not is a business of the client driver. The API and the
+> controller driver should not delay things more than absolute
+> necessary.
+> .tx_done is not about urgency but about h/w provision of 'ack'.
+> 
+>> 2. Behavior of the API or controller driver if the controller transport
+>> is busy.
+> I think we both want requests buffered in the API.
+> 
+>> 3. Shareable/exclusive nature of a mailbox. If it is shareable, then
+>> duplicating the behavior between clients is not worth it, and this
+>> should be absorbed into the respective controller driver.
+>>
+> I think the mailbox should be exclusively held by a client. That makes
+> many things simpler. Also remote firmwares won't be always robust
+> enough to handle commands from different subsystems intermixed. The
+> API only has to make sure the mailbox_get/put operations are very
+> thin.
 
+This might be the case for specific remotes where we expect only one
+client driver to be responsible for talking to it, but for generic
+offloading, you do not want to have this restriction. You do not want
+peer clients to go through a single main client, as the latencies or the
+infrastructure imposed by the main client may not be suitable for the
+other clients. The stricter usecase here would be the shareable mailbox,
+and if it is exclusive, as dictated by a controller or device property,
+then so be it and things would get simplified for that controller/device.
 
-From: Andrew Morton <akpm@linux-foundation.org>
-Subject: drivers/usb/storage/realtek_cr.c: fix build
-
-Remove unused local `us', which broke the build.  Also nuke an unneeded
-cast.
-
-Repairs 191648d03d20 ("usb: storage: Convert US_DEBUGP to usb_stor_dbg").
-
-Cc: Joe Perches <joe@perches.com>
-Cc: David Rientjes <rientjes@google.com>
-Cc: Greg KH <greg@kroah.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
-
- drivers/usb/storage/realtek_cr.c |    5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
-
-diff -puN drivers/usb/storage/realtek_cr.c~drivers-usb-storage-realtek_crc-fix-build drivers/usb/storage/realtek_cr.c
---- a/drivers/usb/storage/realtek_cr.c~drivers-usb-storage-realtek_crc-fix-build
-+++ a/drivers/usb/storage/realtek_cr.c
-@@ -933,14 +933,11 @@ static int realtek_cr_autosuspend_setup(
- 
- static void realtek_cr_destructor(void *extra)
- {
--	struct rts51x_chip *chip = (struct rts51x_chip *)extra;
--	struct us_data *us;
-+	struct rts51x_chip *chip = extra;
- 
- 	if (!chip)
- 		return;
- 
--	us = chip->us;
--
- #ifdef CONFIG_REALTEK_AUTOPM
- 	if (ss_en) {
- 		del_timer(&chip->rts51x_suspend_timer);
-_
-
-
-Left unfixed:
-
-drivers/usb/storage/realtek_cr.c:628: warning: 'config_autodelink_before_power_down' defined but not used
-drivers/usb/storage/realtek_cr.c:698: warning: 'fw5895_init' defined but not used
-
+regards
+Suman
