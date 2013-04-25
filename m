@@ -1,81 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759674Ab3DYVXq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 17:23:46 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:35026 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758891Ab3DYVXo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 17:23:44 -0400
-Date: Thu, 25 Apr 2013 14:23:36 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, sbw@mit.edu, Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Kevin Hilman <khilman@linaro.org>, Christoph Lameter <cl@linux.com>,
-        Olivier Baetz <olivier.baetz@novasparks.com>
-Subject: Re: [PATCH documentation 2/2] kthread: Document ways of reducing OS
- jitter due to per-CPU kthreads
-Message-ID: <20130425212336.GN3427@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130416164036.GA27246@linux.vnet.ibm.com>
- <1366130490-27584-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1366130490-27584-2-git-send-email-paulmck@linux.vnet.ibm.com>
- <20130421193705.GB5807@pd.tnic>
- <20130423040329.GP3509@linux.vnet.ibm.com>
- <20130425102311.GA32607@pd.tnic>
- <20130425155215.GK3427@linux.vnet.ibm.com>
- <alpine.LFD.2.02.1304252257140.21884@ionos>
+	id S1759704Ab3DYVX6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 17:23:58 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:36667 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1759660Ab3DYVXp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Apr 2013 17:23:45 -0400
+Date: Thu, 25 Apr 2013 16:23:43 -0500
+From: Robin Holt <holt@sgi.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Russ Anderson <rja@sgi.com>, Robin Holt <holt@sgi.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>
+Subject: Re: [PATCH -v6 0/5] Shutdown from reboot_cpuid without stopping
+ other cpus.
+Message-ID: <20130425212343.GZ3658@sgi.com>
+References: <1366802333-8890-1-git-send-email-holt@sgi.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1304252257140.21884@ionos>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13042521-3620-0000-0000-0000023173AB
+In-Reply-To: <1366802333-8890-1-git-send-email-holt@sgi.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 25, 2013 at 10:59:05PM +0200, Thomas Gleixner wrote:
-> On Thu, 25 Apr 2013, Paul E. McKenney wrote:
-> > On Thu, Apr 25, 2013 at 12:23:12PM +0200, Borislav Petkov wrote:
-> > > On Mon, Apr 22, 2013 at 09:03:29PM -0700, Paul E. McKenney wrote:
-> > > > > > +Name: ehca_comp/%u
-> > > > > > +Purpose: Periodically process Infiniband-related work.
-> > > > > > +To reduce corresponding OS jitter, do any of the following:
-> > > > > > +1.	Don't use EHCA Infiniband hardware.  This will prevent these
-> > > > > 
-> > > > > Sounds like this particular hardware is slow and its IRQ handler/softirq
-> > > > > needs a lot of time. Yes, no?
-> > > > > 
-> > > > > Can we have a reason why people shouldn't use that hw.
-> > > > 
-> > > > Because it has per-CPU kthreads that can cause OS jitter.  ;-)
-> > > 
-> > > Yeah, I stumbled over this specific brand of Infiniband hw. It looks
-> > > like this particular Infiniband driver uses per-CPU kthreads and the
-> > > others in drivers/infiniband/hw/ don't?
-> > > 
-> > > I hope this explains my head-scratching moment here...
-> > 
-> > Ah!  I rewrote the first sentence to read:
-> > 
-> > 	Don't use eHCA Infiniband hardware, instead choosing hardware
-> > 	that does not require per-CPU kthreads.
+Andrew,
+
+Please go ahead and kill this patch set.  It breaks with !CONFIG_SMP
+and breaks on arm.  I spent time today getting an arm cross compiler
+working and fixing up the build.  It indicates there is more work to
+be done beyond your comments for the reboot_mode parameter.  I should
+have a newer patch set tomorrow, but it will need to go through arm and
+unicore32 reviews as it will affect both of them as well.
+
+Robin
+
+On Wed, Apr 24, 2013 at 06:18:48AM -0500, Robin Holt wrote:
+> We recently noticed that reboot of a 1024 cpu machine takes approx 16
+> minutes of just stopping the cpus.  The slowdown was tracked to commit
+> f96972f.
 > 
-> Another option would be to teach that eHCA driver to be configurable
-> on which cpus kthreads are desired and on which not. I can't see a
-> reason (aside of throughput) why that hardware can't cope with a
-> single thread.
-
-Good point!  I have added a third item to the eHCA list:
-
-	Rework the eHCA driver so that its per-CPU kthreads are
-	provisioned only on selected CPUs.
-
-							Thanx, Paul
-
+> The current implementation does all the work of hot removing the cpus
+> before halting the system.  We are switching to just migrating to the
+> reboot_cpu and then continuing with shutdown/reboot.
+> 
+> The patch set is broken into five parts.  The first two are planned for
+> the stable release.  The others move the halt/shutdown/reboot related
+> functions to their own kernel/reboot.c file and then introduce the kernel
+> boot parameter.
+> 
+> 
+> Changes since -v5.
+>  - Moved the arch/x86 reboot= up to the generic kernel code.
+> 
+> Changes since -v4.
+>  - Integrated Srivatsa S. Bhat creating cpu_hotplug_disable()
+>    function
+> 
+>  - Integrated comments by Srivatsa S. Bhat.
+> 
+>  - Made one more comment consistent with others in function.
+> 
+> Changes since -v3.
+>  - Added a tested-by for the original reporter.
+> 
+>  - Fix compile failure found by Joe Perches.
+> 
+>  - Integrated comments by Joe Perches.
