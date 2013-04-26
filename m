@@ -1,53 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757955Ab3DZJHE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 05:07:04 -0400
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:63783 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756264Ab3DZJG7 (ORCPT
+	id S1758613Ab3DZJHf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 05:07:35 -0400
+Received: from mail-ia0-f170.google.com ([209.85.210.170]:37316 "EHLO
+	mail-ia0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753605Ab3DZJHd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 05:06:59 -0400
+	Fri, 26 Apr 2013 05:07:33 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130426081646.GD24632@intel.com>
+References: <1366280825-31136-1-git-send-email-lee.jones@linaro.org>
+	<CACRpkdbFgW6bGYt59WtN4r2izuN09AJw4J1cqir82uzFsuMmWQ@mail.gmail.com>
+	<20130425134402.GN4623@gmail.com>
+	<201304251611.39667.arnd@arndb.de>
+	<CACRpkdaBf++gy3sghC-t33uio2+eHp1MrQ2FM0XXBazZTtm3kA@mail.gmail.com>
+	<20130426081646.GD24632@intel.com>
+Date: Fri, 26 Apr 2013 11:07:33 +0200
+Message-ID: <CACRpkdYR=eb_oU6+iq0vbkbd_H0O+cccdXDSCR2oev2NEdwMZg@mail.gmail.com>
+Subject: Re: [PATCH 6/9] crypto: ux500/cryp - Set DMA configuration though dma_slave_config()
 From: Linus Walleij <linus.walleij@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: Arnd Bergmann <arnd@arndb.de>, Lee Jones <lee.jones@linaro.org>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH] dmaengine: use phys_addr_t for slave configuration
-Date: Fri, 26 Apr 2013 11:06:54 +0200
-Message-Id: <1366967214-20776-1-git-send-email-linus.walleij@linaro.org>
-X-Mailer: git-send-email 1.8.1.4
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Lee Jones <lee.jones@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andreas Westin <andreas.westin@stericsson.com>,
+        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
+        magnus.p.persson@stericsson.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The documentation already says these are physical addresses, and
-we have concluded that any translation into the DMA address space
-needs to reside in the dmaengine driver, so change the type of
-the passed arguments.
+On Fri, Apr 26, 2013 at 10:16 AM, Vinod Koul <vinod.koul@intel.com> wrote:
 
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Lee Jones <lee.jones@linaro.org>
-Cc: Vinod Koul <vinod.koul@intel.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- include/linux/dmaengine.h | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+>> OK I could cook a patch for that, but I think I need some input from
+>> Vinod and/or Russell on this.
 
-diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
-index 91ac8da..681df5f9 100644
---- a/include/linux/dmaengine.h
-+++ b/include/linux/dmaengine.h
-@@ -361,8 +361,8 @@ enum dma_slave_buswidth {
-  */
- struct dma_slave_config {
- 	enum dma_transfer_direction direction;
--	dma_addr_t src_addr;
--	dma_addr_t dst_addr;
-+	phys_addr_t src_addr;
-+	phys_addr_t dst_addr;
- 	enum dma_slave_buswidth src_addr_width;
- 	enum dma_slave_buswidth dst_addr_width;
- 	u32 src_maxburst;
--- 
-1.8.1.4
+> the dma_slave_config is physical address that should be passed directly to the
+> controller. Obviosuly it should phys_addr_t :)
 
+OK! Sent a patch for this, check it out.
+
+Yours,
+Linus Walleij
