@@ -1,112 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760060Ab3DZKwh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 06:52:37 -0400
-Received: from queue01c.mail.zen.net.uk ([212.23.3.237]:55001 "EHLO
-	queue01c.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750939Ab3DZKwg (ORCPT
+	id S1760155Ab3DZK4P (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 06:56:15 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:32810
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757031Ab3DZK4N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 06:52:36 -0400
-Message-ID: <1366973488.3385.18.camel@linaro1.home>
-Subject: Re: [PATCH v2] mfd: vexpress: Handle pending config transactions
-From: "Jon Medhurst (Tixy)" <tixy@linaro.org>
-To: Pawel Moll <pawel.moll@arm.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Date: Fri, 26 Apr 2013 11:51:28 +0100
-In-Reply-To: <1366910091-17971-1-git-send-email-pawel.moll@arm.com>
-References: <1366821084-12815-1-git-send-email-pawel.moll@arm.com>
-	 <1366910091-17971-1-git-send-email-pawel.moll@arm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-Smarthost01-IP: [82.69.122.217]
+	Fri, 26 Apr 2013 06:56:13 -0400
+Date: Fri, 26 Apr 2013 12:54:31 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Alex Shi <alex.shi@intel.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Paul Turner <pjt@google.com>, Santosh <santosh.shilimkar@ti.com>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Chander Kashyap <chander.kashyap@linaro.org>,
+        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Len Brown <len.brown@intel.com>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Jonathan Corbet <corbet@lwn.net>
+Subject: Re: [RFC PATCH v3 5/6] sched: pack the idle load balance
+Message-ID: <20130426105431.GF8669@dyad.programming.kicks-ass.net>
+References: <1363955155-18382-1-git-send-email-vincent.guittot@linaro.org>
+ <1363955155-18382-6-git-send-email-vincent.guittot@linaro.org>
+ <1364302359.5053.21.camel@laptop>
+ <CAKfTPtD=_oS5gJeynUG=ft-Y1zEdxZEMhUPH9hSXx+H2pi4xgA@mail.gmail.com>
+ <1364308932.5053.46.camel@laptop>
+ <CAKfTPtArtgkH5MU_xFAKjLDS-i32g2qQMdvyW=LLkG84tH8Hhg@mail.gmail.com>
+ <5174CE96.3060805@linux.vnet.ibm.com>
+ <CAKfTPtCCCifC=c+xjjnAH_HSqkR80PiQoddQKXPHuZwZawbvcA@mail.gmail.com>
+ <5175F09E.1000304@intel.com>
+ <5176A932.5050506@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5176A932.5050506@linux.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-04-25 at 18:14 +0100, Pawel Moll wrote:
-> The config transactions "scheduler" was hopelessly broken,
-> repeating completed transaction instead of picking up
-> next pending one.
-> 
-> Fixed now. Also improved debug messages.
-> 
-> Signed-off-by: Pawel Moll <pawel.moll@arm.com>
+On Tue, Apr 23, 2013 at 08:30:58AM -0700, Arjan van de Ven wrote:
+> For x86 we should not be setting such flag then; we don't have a way for some cpu packages to
+> go to an extra deep power state if they're completely idle.
+> (this afaik is true for both Intel and AMD)
 
-Yes, looks really fixed now. :-)
+You say 'some'; this implies we do for others, right?
 
-Reviewed-by: Jon Medhurst <tixy@linaro.org>
-
-> ---
->  drivers/mfd/vexpress-config.c |   35 +++++++++++++++++++++--------------
->  1 file changed, 21 insertions(+), 14 deletions(-)
-> 
-> diff --git a/drivers/mfd/vexpress-config.c b/drivers/mfd/vexpress-config.c
-> index 3c1723aa..84ce6b9 100644
-> --- a/drivers/mfd/vexpress-config.c
-> +++ b/drivers/mfd/vexpress-config.c
-> @@ -184,13 +184,14 @@ static int vexpress_config_schedule(struct vexpress_config_trans *trans)
->  
->  	spin_lock_irqsave(&bridge->transactions_lock, flags);
->  
-> -	vexpress_config_dump_trans("Executing", trans);
-> -
-> -	if (list_empty(&bridge->transactions))
-> +	if (list_empty(&bridge->transactions)) {
-> +		vexpress_config_dump_trans("Executing", trans);
->  		status = bridge->info->func_exec(trans->func->func,
->  				trans->offset, trans->write, trans->data);
-> -	else
-> +	} else {
-> +		vexpress_config_dump_trans("Queuing", trans);
->  		status = VEXPRESS_CONFIG_STATUS_WAIT;
-> +	}
->  
->  	switch (status) {
->  	case VEXPRESS_CONFIG_STATUS_DONE:
-> @@ -212,25 +213,31 @@ void vexpress_config_complete(struct vexpress_config_bridge *bridge,
->  {
->  	struct vexpress_config_trans *trans;
->  	unsigned long flags;
-> +	const char *message = "Completed";
->  
->  	spin_lock_irqsave(&bridge->transactions_lock, flags);
->  
->  	trans = list_first_entry(&bridge->transactions,
->  			struct vexpress_config_trans, list);
-> -	vexpress_config_dump_trans("Completed", trans);
-> -
->  	trans->status = status;
-> -	list_del(&trans->list);
->  
-> -	if (!list_empty(&bridge->transactions)) {
-> -		vexpress_config_dump_trans("Pending", trans);
-> +	do {
-> +		vexpress_config_dump_trans(message, trans);
-> +		list_del(&trans->list);
-> +		complete(&trans->completion);
->  
-> -		bridge->info->func_exec(trans->func->func, trans->offset,
-> -				trans->write, trans->data);
-> -	}
-> -	spin_unlock_irqrestore(&bridge->transactions_lock, flags);
-> +		if (list_empty(&bridge->transactions))
-> +			break;
-> +
-> +		trans = list_first_entry(&bridge->transactions,
-> +				struct vexpress_config_trans, list);
-> +		vexpress_config_dump_trans("Executing pending", trans);
-> +		trans->status = bridge->info->func_exec(trans->func->func,
-> +				trans->offset, trans->write, trans->data);
-> +		message = "Finished pending";
-> +	} while (trans->status == VEXPRESS_CONFIG_STATUS_DONE);
->  
-> -	complete(&trans->completion);
-> +	spin_unlock_irqrestore(&bridge->transactions_lock, flags);
->  }
->  EXPORT_SYMBOL(vexpress_config_complete);
->  
-
-
+We can dynamically set the required flags in the arch setup when it makes sense.
