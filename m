@@ -1,145 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932392Ab3DZUVK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 16:21:10 -0400
-Received: from mail-ia0-f179.google.com ([209.85.210.179]:62233 "EHLO
-	mail-ia0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757755Ab3DZUUv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 16:20:51 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAErSpo5zfHR-agNBdgqfVjCU+-KcTZV+1bvML5Uw-+icDqzzEA@mail.gmail.com>
-References: <1366940841-15370-1-git-send-email-yinghai@kernel.org>
-	<CAErSpo5zfHR-agNBdgqfVjCU+-KcTZV+1bvML5Uw-+icDqzzEA@mail.gmail.com>
-Date: Fri, 26 Apr 2013 13:20:51 -0700
-X-Google-Sender-Auth: gVCxECKoSftnLgv_3tBbbfeddqg
-Message-ID: <CAE9FiQVEQO-dLJRjn9Z7JgwGWAn1M8S1Tn2_V0Fq+6kB0rG=Bg@mail.gmail.com>
-Subject: Re: [PATCH] PCI: Fix racing for pci device removing via sysfs
-From: Yinghai Lu <yinghai@kernel.org>
+	id S932411Ab3DZUVZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 16:21:25 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:45493 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756855Ab3DZUVV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Apr 2013 16:21:21 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Gu Zheng <guz.fnst@cn.fujitsu.com>,
+Cc: Yinghai Lu <yinghai@kernel.org>, Ram Pai <linuxram@us.ibm.com>,
         "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=e89a8f642e40784da104db494563
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+Subject: Re: [PATCH v4 27/29] PCI: Make piix4 quirk to use addon_res
+Date: Fri, 26 Apr 2013 22:29:29 +0200
+Message-ID: <1614149.2EDsY9ltHk@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.9.0-rc8+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CAErSpo42D-jyY+7f66fYUprDgh-3E0qV1O1cpXjWK2+iBZ_bBQ@mail.gmail.com>
+References: <1365806683-26717-1-git-send-email-yinghai@kernel.org> <CAErSpo6W-GtTHe+84XQMfie1K39ChGKmHNYSuru0veXxqxqhAA@mail.gmail.com> <CAErSpo42D-jyY+7f66fYUprDgh-3E0qV1O1cpXjWK2+iBZ_bBQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---e89a8f642e40784da104db494563
-Content-Type: text/plain; charset=ISO-8859-1
+On Friday, April 26, 2013 09:22:47 AM Bjorn Helgaas wrote:
+> [+cc Rafael, linux-acpi]
+> 
+> On Thu, Apr 25, 2013 at 2:39 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> > On Fri, Apr 12, 2013 at 4:44 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> >> After they are put in add-on resources, they will be safely claimed later.
+> >
+> > It took me a while to understand what's going on here, but this is
+> > actually a pretty cool idea.  It would be nice to explain a little
+> > about what the patch is doing and how these "pseudo-BARs" work, though
+> > :)
+> 
+> After thinking about this overnight, I'm not so sure about this.  I
+> think the point of this is to manage resources that are consumed by
+> the device but don't conform to the PCI spec.  Most resources don't
+> need quirks because they're either described by standard BAR registers
+> or by the exceptions for "legacy I/O devices," e.g., IDE or VGA.
+> 
+> I would expect that the "architected" way to deal with non-standard
+> resources like this is to describe them via a PNP0C02 or similar ACPI
+> device.  That way, the OS would not need device-specific quirks like
+> this.
+> 
+> If we do add something like this patch, we're also adding a way for
+> Linux to *write* these non-standard BARs, which means they can become
+> out-of-sync with the ACPI description of them.  I think the BIOS is
+> entitled to assume that if it describes a resource via _CRS and it
+> doesn't provide a corresponding _SRS, the resource will remain
+> unchanged by the OS.
 
-On Fri, Apr 26, 2013 at 9:28 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> This is a gross hack.  Iterating through all known pci_devs to see if
-> this one still exists?
->
-> I reproduced the original problem, applied this patch, and verified
-> that it avoids the original crash.
->
-> However, it's still incorrect because now you're looking at pdev after
-> it's been freed. With CONFIG_SLUB_DEBUG_ON=y, the removal still causes
-> a crash in remove_callback().
->
+Agreed.
 
-Yes, there is small window, that could have bus and dev get freed...
+Thanks,
+Rafael
 
-Please check attached that should address your concerns.
 
-Thanks
-
-Yinghai
-
---e89a8f642e40784da104db494563
-Content-Type: application/octet-stream; name="remove_callback_clean.patch"
-Content-Disposition: attachment; filename="remove_callback_clean.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hfzt0u3n0
-
-U3ViamVjdDogW1BBVENIXSBQQ0ksIHN5c2ZzOiBDbGVhbiB1cCByZXNjYW4gd2l0aCBzY2hlZHVs
-ZV9jYWxsYmFjawoKQ2hhbmdlIHRvIHVzZSB0aHJlZSByZXR1cm4gYWNjb3JkaW5nIHRvIEJqb3Ju
-LgoKU3VnZ2VzdGVkLWJ5OiBCam9ybiBIZWxnYWFzIDxiaGVsZ2Fhc0Bnb29nbGUuY29tPgpTaWdu
-ZWQtb2ZmLWJ5OiBZaW5naGFpIEx1IDx5aW5naGFpQGtlcm5lbC5vcmc+CgotLS0KIGRyaXZlcnMv
-cGNpL3BjaS1zeXNmcy5jIHwgICAxMyArKysrKysrKy0tLS0tCiAxIGZpbGUgY2hhbmdlZCwgOCBp
-bnNlcnRpb25zKCspLCA1IGRlbGV0aW9ucygtKQoKSW5kZXg6IGxpbnV4LTIuNi9kcml2ZXJzL3Bj
-aS9wY2ktc3lzZnMuYwo9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09Ci0tLSBsaW51eC0yLjYub3JpZy9kcml2ZXJzL3BjaS9w
-Y2ktc3lzZnMuYworKysgbGludXgtMi42L2RyaXZlcnMvcGNpL3BjaS1zeXNmcy5jCkBAIC0zMzks
-MTkgKzMzOSwyMiBAQCBzdGF0aWMgc3NpemVfdAogcmVtb3ZlX3N0b3JlKHN0cnVjdCBkZXZpY2Ug
-KmRldiwgc3RydWN0IGRldmljZV9hdHRyaWJ1dGUgKmR1bW15LAogCSAgICAgY29uc3QgY2hhciAq
-YnVmLCBzaXplX3QgY291bnQpCiB7Ci0JaW50IHJldCA9IDA7CisJaW50IGVycjsKIAl1bnNpZ25l
-ZCBsb25nIHZhbDsKIAogCWlmIChzdHJpY3Rfc3RydG91bChidWYsIDAsICZ2YWwpIDwgMCkKIAkJ
-cmV0dXJuIC1FSU5WQUw7CiAKKwlpZiAoIXZhbCkKKwkJcmV0dXJuIGNvdW50OworCiAJLyogQW4g
-YXR0cmlidXRlIGNhbm5vdCBiZSB1bnJlZ2lzdGVyZWQgYnkgb25lIG9mIGl0cyBvd24gbWV0aG9k
-cywKIAkgKiBzbyB3ZSBoYXZlIHRvIHVzZSB0aGlzIHJvdW5kYWJvdXQgYXBwcm9hY2guCiAJICov
-Ci0JaWYgKHZhbCkKLQkJcmV0ID0gZGV2aWNlX3NjaGVkdWxlX2NhbGxiYWNrKGRldiwgcmVtb3Zl
-X2NhbGxiYWNrKTsKLQlpZiAocmV0KQotCQljb3VudCA9IHJldDsKKwllcnIgPSBkZXZpY2Vfc2No
-ZWR1bGVfY2FsbGJhY2soZGV2LCByZW1vdmVfY2FsbGJhY2spOworCWlmIChlcnIpCisJCXJldHVy
-biBlcnI7CisKIAlyZXR1cm4gY291bnQ7CiB9CiAK
---e89a8f642e40784da104db494563
-Content-Type: application/octet-stream; name="fix_racing_removing_2.patch"
-Content-Disposition: attachment; filename="fix_racing_removing_2.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hfzt1si61
-
-U3ViamVjdDogW1BBVENIIC12Ml0gUENJOiBGaXggcmFjaW5nIGZvciBwY2kgZGV2aWNlIHJlbW92
-aW5nIHZpYSBzeXNmcwpGcm9tOiBZaW5naGFpIEx1IDx5aW5naGFpQGtlcm5lbC5vcmc+CgpHdSBm
-b3VuZCBuZXN0ZWQgcmVtb3ZpbmcgdGhyb3VnaAoJZWNobyAtbiAxID4gL3N5cy9idXMvcGNpL2Rl
-dmljZXMvMDAwMFw6MTBcOjAwLjAvcmVtb3ZlIDsgZWNobyAtbiAxID4KL3N5cy9idXMvcGNpL2Rl
-dmljZXMvMDAwMFw6MWFcOjAxLjAvcmVtb3ZlCgp3aWxsIGNhdXNlIGtlcm5lbCBjcmFzaCBhcyBi
-dXMgZ2V0IGZyZWVkLgoKWyAgNDE4Ljk0NjQ2Ml0gQ1BVIDQKWyAgNDE4Ljk2ODM3N10gUGlkOiA1
-MTIsIGNvbW06IGt3b3JrZXIvdToyIFRhaW50ZWQ6IEcgICAgICAgIFcgICAgMy44LjAgIzIKRlVK
-SVRTVS1TViBQUklNRVFVRVNUIDE4MDBFL1NCClsgIDQxOS4wODE3NjNdIFJJUDogMDAxMDpbPGZm
-ZmZmZmZmODEzNzk3MmU+XSAgWzxmZmZmZmZmZjgxMzc5NzJlPl0KcGNpX2J1c19yZWFkX2NvbmZp
-Z193b3JkKzB4NWUvMHg5MApbICA0MjAuNDk0MTM3XSBDYWxsIFRyYWNlOgpbICA0MjAuNTIzMzI2
-XSAgWzxmZmZmZmZmZjgxMzg1MWVmPl0gPyByZW1vdmVfY2FsbGJhY2srMHgxZi8weDQwClsgIDQy
-MC41OTE5ODRdICBbPGZmZmZmZmZmODEzODA0NGI+XSBwY2lfcG1lX2FjdGl2ZSsweDRiLzB4MWMw
-ClsgIDQyMC42NTg1NDVdICBbPGZmZmZmZmZmODEzN2Q4ZTc+XSBwY2lfc3RvcF9idXNfZGV2aWNl
-KzB4NTcvMHhiMApbICA0MjAuNzI5MjU5XSAgWzxmZmZmZmZmZjgxMzdkYWI2Pl0gcGNpX3N0b3Bf
-YW5kX3JlbW92ZV9idXNfZGV2aWNlKzB4MTYvMHgzMApbICA0MjAuODExMzkyXSAgWzxmZmZmZmZm
-ZjgxMzg1MWZiPl0gcmVtb3ZlX2NhbGxiYWNrKzB4MmIvMHg0MApbICA0MjAuODc3OTU1XSAgWzxm
-ZmZmZmZmZjgxMjU3YTU2Pl0gc3lzZnNfc2NoZWR1bGVfY2FsbGJhY2tfd29yaysweDI2LzB4NzAK
-Cmh0dHBzOi8vYnVnemlsbGEua2VybmVsLm9yZy9zaG93X2J1Zy5jZ2k/aWQ9NTQ0MTEKCldlIGhh
-dmUgb25lIHBhdGNoIHRoYXQgd2lsbCBsZXQgZGV2aWNlIGhvbGQgYnVzIHJlZiB0byBwcmV2ZW50
-IGl0IGZyb20KYmVpbmcgZnJlZWQsIGJ1dCB0aGF0IHdpbGwgc3RpbGwgZ2VuZXJhdGUgd2Fybmlu
-Zy4KCi0tLS0tLS0tLS0tLVsgY3V0IGhlcmUgXS0tLS0tLS0tLS0tLQpXQVJOSU5HOiBhdCBsaWIv
-bGlzdF9kZWJ1Zy5jOjUzIF9fbGlzdF9kZWxfZW50cnkrMHg2My8weGQwKCkKSGFyZHdhcmUgbmFt
-ZTogUFJJTUVRVUVTVCAxODAwRQpsaXN0X2RlbCBjb3JydXB0aW9uLCBmZmZmODgwN2QxYjZjMDAw
-LT5uZXh0IGlzIExJU1RfUE9JU09OMSAoZGVhZDAwMDAwMDEwMDEwMCkKQ2FsbCBUcmFjZToKIFs8
-ZmZmZmZmZmY4MTA1NmQ0Zj5dIHdhcm5fc2xvd3BhdGhfY29tbW9uKzB4N2YvMHhjMAogWzxmZmZm
-ZmZmZjgxMDU2ZTQ2Pl0gd2Fybl9zbG93cGF0aF9mbXQrMHg0Ni8weDUwCiBbPGZmZmZmZmZmODEy
-ODBiMTM+XSBfX2xpc3RfZGVsX2VudHJ5KzB4NjMvMHhkMAogWzxmZmZmZmZmZjgxMjgwYjkxPl0g
-bGlzdF9kZWwrMHgxMS8weDQwCiBbPGZmZmZmZmZmODEyOTgzMzE+XSBwY2lfZGVzdHJveV9kZXYr
-MHgzMS8weGMwCiBbPGZmZmZmZmZmODEyOTg1YmI+XSBwY2lfcmVtb3ZlX2J1c19kZXZpY2UrMHg1
-Yi8weDcwCiBbPGZmZmZmZmZmODEyOTg1ZWU+XSBwY2lfc3RvcF9hbmRfcmVtb3ZlX2J1c19kZXZp
-Y2UrMHgxZS8weDMwCiBbPGZmZmZmZmZmODEyOWZjODk+XSByZW1vdmVfY2FsbGJhY2srMHgyOS8w
-eDQwCiBbPGZmZmZmZmZmODExZjNiODQ+XSBzeXNmc19zY2hlZHVsZV9jYWxsYmFja193b3JrKzB4
-MjQvMHg3MAoKV2UgY2FuIGp1c3QgY2hlY2sgaWYgdGhlIGRldmljZSBnZXQgcmVtb3ZlZCBmcm9t
-IHBjaSB0cmVlCmFscmVhZHkgaW4gdGhlIHByb3RlY3Rpb24gdW5kZXIgcGNpX3JlbW92ZV9yZXNj
-YW5fbXV0ZXguCgotdjI6IGNoZWNrIGlmIHRoZSBkZXYtPmJ1c19saXN0IGlzIHBvaXNvbmVkIGlu
-c3RlYWQgdG8KICAgICBmaW5kIG91dCBpZiBpdCBpcyByZW1vdmVkIGFscmVhZHkuCiAgICAgQWxz
-byBhZGQgb25lIGV4dHJhIHJlZiB0byBkZXYgdG8gbWFrZSBzdXJlIGRldiBpcyBub3QKICAgICBn
-ZXQgZnJlZWQgdG9vIGVhcmx5LgoKUmVwb3J0ZWQtYnk6IEd1IFpoZW5nIDxndXouZm5zdEBjbi5m
-dWppdHN1LmNvbT4KVGVzdGVkLWJ5OiBHdSBaaGVuZyA8Z3V6LmZuc3RAY24uZnVqaXRzdS5jb20+
-ClNpZ25lZC1vZmYtYnk6IFlpbmdoYWkgTHUgPHlpbmdoYWlAa2VybmVsLm9yZz4KCi0tLQogZHJp
-dmVycy9wY2kvcGNpLXN5c2ZzLmMgfCAgIDEyICsrKysrKysrKystLQogMSBmaWxlIGNoYW5nZWQs
-IDEwIGluc2VydGlvbnMoKyksIDIgZGVsZXRpb25zKC0pCgpJbmRleDogbGludXgtMi42L2RyaXZl
-cnMvcGNpL3BjaS1zeXNmcy5jCj09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KLS0tIGxpbnV4LTIuNi5vcmlnL2RyaXZlcnMv
-cGNpL3BjaS1zeXNmcy5jCisrKyBsaW51eC0yLjYvZHJpdmVycy9wY2kvcGNpLXN5c2ZzLmMKQEAg
-LTMyOSw5ICszMjksMTMgQEAgZGV2X3Jlc2Nhbl9zdG9yZShzdHJ1Y3QgZGV2aWNlICpkZXYsIHN0
-cgogc3RhdGljIHZvaWQgcmVtb3ZlX2NhbGxiYWNrKHN0cnVjdCBkZXZpY2UgKmRldikKIHsKIAlz
-dHJ1Y3QgcGNpX2RldiAqcGRldiA9IHRvX3BjaV9kZXYoZGV2KTsKKwlib29sIGZvdW5kOwogCiAJ
-bXV0ZXhfbG9jaygmcGNpX3JlbW92ZV9yZXNjYW5fbXV0ZXgpOwotCXBjaV9zdG9wX2FuZF9yZW1v
-dmVfYnVzX2RldmljZShwZGV2KTsKKwlmb3VuZCA9IHBkZXYtPmJ1c19saXN0Lm5leHQgIT0gTElT
-VF9QT0lTT04xOworCXBjaV9kZXZfcHV0KHBkZXYpOworCWlmIChmb3VuZCkKKwkJcGNpX3N0b3Bf
-YW5kX3JlbW92ZV9idXNfZGV2aWNlKHBkZXYpOwogCW11dGV4X3VubG9jaygmcGNpX3JlbW92ZV9y
-ZXNjYW5fbXV0ZXgpOwogfQogCkBAIC0zNDEsNiArMzQ1LDcgQEAgcmVtb3ZlX3N0b3JlKHN0cnVj
-dCBkZXZpY2UgKmRldiwgc3RydWN0CiB7CiAJaW50IGVycjsKIAl1bnNpZ25lZCBsb25nIHZhbDsK
-KwlzdHJ1Y3QgcGNpX2RldiAqcGRldjsKIAogCWlmIChzdHJpY3Rfc3RydG91bChidWYsIDAsICZ2
-YWwpIDwgMCkKIAkJcmV0dXJuIC1FSU5WQUw7CkBAIC0zNTEsOSArMzU2LDEyIEBAIHJlbW92ZV9z
-dG9yZShzdHJ1Y3QgZGV2aWNlICpkZXYsIHN0cnVjdAogCS8qIEFuIGF0dHJpYnV0ZSBjYW5ub3Qg
-YmUgdW5yZWdpc3RlcmVkIGJ5IG9uZSBvZiBpdHMgb3duIG1ldGhvZHMsCiAJICogc28gd2UgaGF2
-ZSB0byB1c2UgdGhpcyByb3VuZGFib3V0IGFwcHJvYWNoLgogCSAqLworCXBkZXYgPSBwY2lfZGV2
-X2dldCh0b19wY2lfZGV2KGRldikpOwogCWVyciA9IGRldmljZV9zY2hlZHVsZV9jYWxsYmFjayhk
-ZXYsIHJlbW92ZV9jYWxsYmFjayk7Ci0JaWYgKGVycikKKwlpZiAoZXJyKSB7CisJCXBjaV9kZXZf
-cHV0KHBkZXYpOwogCQlyZXR1cm4gZXJyOworCX0KIAogCXJldHVybiBjb3VudDsKIH0K
---e89a8f642e40784da104db494563--
+> >> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> >> ---
+> >>  drivers/pci/quirks.c | 95 +++++++++++++++++++++++++++++++++++++++++++---------
+> >>  1 file changed, 79 insertions(+), 16 deletions(-)
+> >>
+> >> diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+> >> index 2dac170..6706182 100644
+> >> --- a/drivers/pci/quirks.c
+> >> +++ b/drivers/pci/quirks.c
+> >> @@ -382,14 +382,14 @@ static void quirk_ali7101_acpi(struct pci_dev *dev)
+> >>  }
+> >>  DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_AL,     PCI_DEVICE_ID_AL_M7101,         quirk_ali7101_acpi);
+> >>
+> >> -static void piix4_io_quirk(struct pci_dev *dev, const char *name, unsigned int port, unsigned int enable)
+> >> +static int piix4_read_io(struct pci_dev *dev, struct resource *res, int port)
+> >
+> > We're reading from "port," which is really the address of a dword in
+> > config space, not a port, so I would have called it "pos" like
+> > __pci_read_base() did.  If I understand correctly, we're reading a
+> > BAR-like register that contains the base address of an I/O port
+> > region.
+> >
+> > "piix4_read_io_base(struct pci_dev *dev, struct resource *res, int
+> > pos)" would make more sense to me.
+> >
+> >>  {
+> >>         u32 devres;
+> >>         u32 mask, size, base;
+> >> +       struct pci_bus_region bus_region;
+> >>
+> >>         pci_read_config_dword(dev, port, &devres);
+> >> -       if ((devres & enable) != enable)
+> >> -               return;
+> >> +
+> >>         mask = (devres >> 16) & 15;
+> >>         base = devres & 0xffff;
+> >>         size = 16;
+> >> @@ -399,23 +399,54 @@ static void piix4_io_quirk(struct pci_dev *dev, const char *name, unsigned int p
+> >>                         break;
+> >>                 size = bit;
+> >>         }
+> >> -       /*
+> >> -        * For now we only print it out. Eventually we'll want to
+> >> -        * reserve it (at least if it's in the 0x1000+ range), but
+> >> -        * let's get enough confirmation reports first.
+> >> -        */
+> >>         base &= -size;
+> >> -       dev_info(&dev->dev, "%s PIO at %04x-%04x\n", name, base, base + size - 1);
+> >> +
+> >> +       bus_region.start = base;
+> >> +       bus_region.end = base + size - 1;
+> >> +       res->flags |= IORESOURCE_IO;
+> >> +       pcibios_bus_to_resource(dev, res, &bus_region);
+> >> +       dev_info(&dev->dev, "PIO at %pR\n", res);
+> >> +
+> >> +       return 0;
+> >>  }
+> >> +static int piix4_write_io(struct pci_dev *dev, struct resource *res, int port)
+> >> +{
+> >> +       u32 devres;
+> >> +       struct pci_bus_region bus_region;
+> >> +       unsigned size = to_pci_dev_addon_resource(res)->size;
+> >>
+> >> -static void piix4_mem_quirk(struct pci_dev *dev, const char *name, unsigned int port, unsigned int enable)
+> >> +       pcibios_resource_to_bus(dev, &bus_region, res);
+> >> +
+> >> +       pci_read_config_dword(dev, port, &devres);
+> >> +       devres &= 0xffff0000 | (size - 1);
+> >> +       devres |= bus_region.start & 0xffff & (~(size - 1));
+> >> +       pci_write_config_dword(dev, port, devres);
+> >> +
+> >> +       return 0;
+> >> +}
+> >> +static struct resource_ops piix4_io_ops = {
+> >> +       .read = piix4_read_io,
+> >> +       .write = piix4_write_io,
+> >> +};
+> >> +static void piix4_io_quirk(struct pci_dev *dev, char *name, unsigned int port,
+> >> +                               unsigned int enable)
+> >
+> > I think these (piix4_io_quirk() and piix4_mem_quirk()) would read
+> > better if they were something like:
+> >
+> >     piix4_add_io_bar(struct pci_dev *dev, unsigned int pos, u32
+> > enable, char *name);
+> >
+> >>  {
+> >>         u32 devres;
+> >> -       u32 mask, size, base;
+> >>
+> >>         pci_read_config_dword(dev, port, &devres);
+> >>         if ((devres & enable) != enable)
+> >>                 return;
+> >> +
+> >> +       pci_add_dev_addon_resource(dev, port, 0, &piix4_io_ops, name);
+> >> +}
+> >> +
+> >> +static int piix4_read_mem(struct pci_dev *dev, struct resource *res, int port)
+> >> +{
+> >> +       u32 devres;
+> >> +       u32 mask, size, base;
+> >> +       struct pci_bus_region bus_region;
+> >> +
+> >> +       pci_read_config_dword(dev, port, &devres);
+> >>         base = devres & 0xffff0000;
+> >>         mask = (devres & 0x3f) << 16;
+> >>         size = 128 << 16;
+> >> @@ -425,12 +456,44 @@ static void piix4_mem_quirk(struct pci_dev *dev, const char *name, unsigned int
+> >>                         break;
+> >>                 size = bit;
+> >>         }
+> >> -       /*
+> >> -        * For now we only print it out. Eventually we'll want to
+> >> -        * reserve it, but let's get enough confirmation reports first.
+> >> -        */
+> >>         base &= -size;
+> >> -       dev_info(&dev->dev, "%s MMIO at %04x-%04x\n", name, base, base + size - 1);
+> >> +       bus_region.start = base;
+> >> +       bus_region.end = base + size - 1;
+> >> +       res->flags |= IORESOURCE_MEM;
+> >> +       pcibios_bus_to_resource(dev, res, &bus_region);
+> >> +       dev_info(&dev->dev, "MMIO at %pR\n", res);
+> >> +
+> >> +       return 0;
+> >> +}
+> >> +static int piix4_write_mem(struct pci_dev *dev, struct resource *res, int port)
+> >> +{
+> >> +       u32 devres;
+> >> +       struct pci_bus_region bus_region;
+> >> +       unsigned size = to_pci_dev_addon_resource(res)->size;
+> >> +
+> >> +       pcibios_resource_to_bus(dev, &bus_region, res);
+> >> +
+> >> +       pci_read_config_dword(dev, port, &devres);
+> >> +       devres &= 0x0000ffff | ((size - 1) & 0xffff0000);
+> >> +       devres |= bus_region.start & 0xffff0000 & (~(size - 1));
+> >> +       pci_write_config_dword(dev, port, devres);
+> >> +
+> >> +       return 0;
+> >> +}
+> >> +static struct resource_ops piix4_mem_ops = {
+> >> +       .read = piix4_read_mem,
+> >> +       .write = piix4_write_mem,
+> >> +};
+> >> +static void piix4_mem_quirk(struct pci_dev *dev, char *name, unsigned int port,
+> >> +                               unsigned int enable)
+> >> +{
+> >> +       u32 devres;
+> >> +
+> >> +       pci_read_config_dword(dev, port, &devres);
+> >> +       if ((devres & enable) != enable)
+> >> +               return;
+> >> +
+> >> +       pci_add_dev_addon_resource(dev, port, 0, &piix4_mem_ops, name);
+> >>  }
+> >>
+> >>  /*
+> >> --
+> >> 1.8.1.4
+> >>
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
