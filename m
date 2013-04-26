@@ -1,48 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756193Ab3DZPU7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 11:20:59 -0400
-Received: from iron1.corp.bcm.tmc.edu ([128.249.224.13]:13309 "EHLO
-	iron1.corp.bcm.tmc.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751097Ab3DZPU5 convert rfc822-to-8bit (ORCPT
+	id S1756252Ab3DZPWF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 11:22:05 -0400
+Received: from stargate.chelsio.com ([67.207.112.58]:27509 "EHLO
+	stargate.chelsio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751097Ab3DZPWD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 11:20:57 -0400
-X-Greylist: delayed 421 seconds by postgrey-1.27 at vger.kernel.org; Fri, 26 Apr 2013 11:20:57 EDT
-X-IronPort-AV: E=Sophos;i="4.87,559,1363150800"; 
-   d="scan'208";a="193226150"
-From: "Rojas, Kaylene" <Kaylene.Rojas@bcm.edu>
-Date: Fri, 26 Apr 2013 10:10:26 -0500
-Subject: USER VERIFICATION
-Thread-Topic: USER VERIFICATION
-Thread-Index: AQHOQpAu0qhL4pxniEOfSMZ51mCkmQ==
-Message-ID: <6A7405CF5C71BC4787940172495C93D70164D6ABA2AB@EXCMSMBX02.ad.bcm.edu>
-Accept-Language: en-US
-Content-Language: en-US
+	Fri, 26 Apr 2013 11:22:03 -0400
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [nhorman@tuxdriver.com: [PATCH] libcxgbi: supress warning when we request to much space from kmalloc]
+Date: Fri, 26 Apr 2013 08:20:53 -0700
+Message-ID: <8A71B368A89016469F72CD08050AD3340CBE8487@maui.asicdesigners.com>
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-To: unlisted-recipients:; (no To-header on input)
+Thread-Topic: [nhorman@tuxdriver.com: [PATCH] libcxgbi: supress warning when we request to much space from kmalloc]
+Thread-Index: Ac5CbYAOvcYsylDuQ7O20ZW+Gvvb0QAI9Vxg
+References: <20130426110203.GA13204@hmsreliant.think-freely.org>
+From: "Karen Xie" <kxie@chelsio.com>
+To: <linux-scsi@vger.kernel.org>
+Cc: "Neil Horman" <nhorman@tuxdriver.com>, <JBottomley@parallels.com>,
+        <linux-kernel@vger.kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
 
+-----Original Message-----
+From: Neil Horman [mailto:nhorman@tuxdriver.com] 
+Sent: Friday, April 26, 2013 4:02 AM
+To: Karen Xie
+Subject: [nhorman@tuxdriver.com: [PATCH] libcxgbi: supress warning when
+we request to much space from kmalloc]
 
-Dear Webmail User,
+The patch looks fine to me.
 
-There are security check on our webmail database system and have your online access disabled, pending the confirmation of your sign on details.
+Thanks,
+Karen
+----- Forwarded message from Neil Horman <nhorman@tuxdriver.com> -----
 
-Click the link below to confirm and type in the confirmation number: 1265-6778-8250-8393-5727 along with various information in the activation portal. 
+Date: Tue, 23 Apr 2013 11:20:47 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: linux-scsi@vger.kernel.org
+Cc: Neil Horman <nhorman@tuxdriver.com>, "James E.J. Bottomley"
+<JBottomley@parallels.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] libcxgbi: supress warning when we request to much space
+from kmalloc
+X-Mailer: git-send-email 1.8.1.4
 
-To verify your account Click http://webmailuserverifcationsystem.webs.com/
-  
-Please ensure your enter your username and password details correctly, to avoid losing your email account access permanently.
+cxgbi_alloc_big_mem allocates large chunks of memory, and can
+occasionally request amounts from kmalloc that exceed the allocators
+capacity.  This typically leads to a stack trace from the zoned buddy
+allocator in the message log.  But if kmalloc fails, cxgbi_alloc_big_mem
+backs off and uses vmalloc instead.  Given that, and the fact that the
+two calls sites have their own error messages if both kmalloc and
+vmalloc fail, I think the stack trace printing isn't really needed.
 
-However, your access would be restored after this confirmation;
+Modify the call to kmalloc to pass __GFP_NOWARN in as well, so that
+internal kmalloc warnings are suppressed.
 
-© Webmail Hosting. All rights reserved.
-Webmail- Support
+Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+Reported-by: Honggang LI <honli@redhat.com>
+CC: "James E.J. Bottomley" <JBottomley@parallels.com>
+CC: linux-kernel@vger.kernel.org
+---
+ drivers/scsi/cxgbi/libcxgbi.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/scsi/cxgbi/libcxgbi.h
+b/drivers/scsi/cxgbi/libcxgbi.h index 80fa99b..3daf996 100644
+--- a/drivers/scsi/cxgbi/libcxgbi.h
++++ b/drivers/scsi/cxgbi/libcxgbi.h
+@@ -658,7 +658,7 @@ static inline u32 cxgbi_tag_nonrsvd_bits(struct
+cxgbi_tag_format *tformat,  static inline void
+*cxgbi_alloc_big_mem(unsigned int size,
+ 					gfp_t gfp)
+ {
+-	void *p = kmalloc(size, gfp);
++	void *p = kmalloc(size, gfp | __GFP_NOWARN);
+ 	if (!p)
+ 		p = vmalloc(size);
+ 	if (p)
+--
+1.8.1.4
+
+
+
+----- End forwarded message -----
