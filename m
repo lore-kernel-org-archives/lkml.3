@@ -1,96 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758921Ab3DZDL4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 23:11:56 -0400
-Received: from ozlabs.org ([203.10.76.45]:42569 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756492Ab3DZDLz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 23:11:55 -0400
-From: Michael Neuling <mikey@neuling.org>
-To: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-cc: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org,
-        michael@ellerman.id.au
-Subject: Re: [PATCH V4 0/5] powerpc, perf: BHRB based branch stack enablement on POWER8
-In-reply-to: <1366695764-3073-1-git-send-email-khandual@linux.vnet.ibm.com>
-References: <1366695764-3073-1-git-send-email-khandual@linux.vnet.ibm.com>
-Comments: In-reply-to Anshuman Khandual <khandual@linux.vnet.ibm.com>
-   message dated "Tue, 23 Apr 2013 11:12:39 +0530."
-X-Mailer: MH-E 8.2; nmh 1.5; GNU Emacs 23.4.1
-Date: Fri, 26 Apr 2013 13:11:53 +1000
-Message-ID: <14275.1366945913@ale.ozlabs.ibm.com>
+	id S1758804Ab3DZDN4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 23:13:56 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:19589 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757578Ab3DZDNz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Apr 2013 23:13:55 -0400
+Message-ID: <5179F0AC.5020501@oracle.com>
+Date: Thu, 25 Apr 2013 23:12:44 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130408 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Dave Jones <davej@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Minchan Kim <minchan@kernel.org>, David Rientjes <rientjes@google.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Mel Gorman <mgorman@suse.de>,
+        linux-mm <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: mm: BUG in do_huge_pmd_wp_page
+References: <51559150.3040407@oracle.com> <20130410080202.GB21292@blaptop> <5166CEDD.9050301@oracle.com> <20130411151323.89D40E0085@blue.fi.intel.com> <5166D355.2060103@oracle.com> <20130424154607.60e9b9895539eb5668d2f505@linux-foundation.org> <5179CF8F.7000702@oracle.com> <20130426020101.GA21162@redhat.com>
+In-Reply-To: <20130426020101.GA21162@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Anshuman,
+On 04/25/2013 10:01 PM, Dave Jones wrote:
+> On Thu, Apr 25, 2013 at 08:51:27PM -0400, Sasha Levin wrote:
+>  > On 04/24/2013 06:46 PM, Andrew Morton wrote:
+>  > > Guys, did this get fixed?
+>  > 
+>  > I've stopped seeing that during fuzzing, so I guess that it got fixed somehow...
+> 
+> We've had reports of users hitting this in 3.8
+> 
+> eg:
+> https://bugzilla.redhat.com/show_bug.cgi?id=947985
+> https://bugzilla.redhat.com/show_bug.cgi?id=956730 
+> 
+> I'm sure there are other reports of it too.
+> 
+> Would be good if we can figure out what fixed it (if it is actually fixed)
+> for backporting to stable
 
-IIRC there are new bits in the FSCR and HFSCR you need to enable for the
-PMU and BRHB.  Can you please check these are enabled?
+If it's interesting to know I'll bisect it over the weekend...
 
-Mikey
+Think it's enough to look at mm/ commits?
 
-Anshuman Khandual <khandual@linux.vnet.ibm.com> wrote:
->                 Branch History Rolling Buffer (BHRB) is a new PMU feaure in IBM
-> POWER8 processor which records the branch instructions inside the execution
-> pipeline. This patchset enables the basic functionality of the feature through
-> generic perf branch stack sampling framework.
-> 
-> Sample output
-> -------------
-> $./perf record -b top
-> $./perf report
-> 
-> Overhead  Command  Source Shared Object                           Source Symbol  Target Shared Object                        Target Symbol
-> # ........  .......  ....................  ......................................  ....................  ...................................
-> #
-> 
->      7.82%      top  libc-2.11.2.so        [k] _IO_vfscanf                         libc-2.11.2.so        [k] _IO_vfscanf
->      6.17%      top  libc-2.11.2.so        [k] _IO_vfscanf                         [unknown]             [k] 00000000
->      2.37%      top  [unknown]             [k] 0xf7aafb30                          [unknown]             [k] 00000000
->      1.80%      top  [unknown]             [k] 0x0fe07978                          libc-2.11.2.so        [k] _IO_vfscanf
->      1.60%      top  libc-2.11.2.so        [k] _IO_vfscanf                         [kernel.kallsyms]     [k] .do_task_stat
->      1.20%      top  [kernel.kallsyms]     [k] .do_task_stat                       [kernel.kallsyms]     [k] .do_task_stat
->      1.02%      top  libc-2.11.2.so        [k] vfprintf                            libc-2.11.2.so        [k] vfprintf
->      0.92%      top  top                   [k] _init                               [unknown]             [k] 0x0fe037f4
-> 
-> Changes in V2
-> --------------
-> - Added copyright messages to the newly created files
-> - Modified couple of commit messages
-> 
-> Changes in V3
-> -------------
-> - Incorporated review comments from Segher https://lkml.org/lkml/2013/4/16/350
-> - Worked on a solution for review comment from Michael Ellerman https://lkml.org/lkml/2013/4/17/548
-> 	- Could not move updated cpu_hw_events structure from core-book3s.c file into perf_event_server.h
->           Because perf_event_server.h is pulled in first inside linux/perf_event.h before the definition of
->           perf_branch_entry structure. Thats the reason why perf_branch_entry definition is not available
->           inside perf_event_server.h where we define the array inside cpu_hw_events structure.
-> 
-> 	- Finally have pulled in the code from perf_event_bhrb.c into core-book3s.c
-> 
-> - Improved documentation for the patchset
-> 
-> Changes in V4
-> -------------
-> - Incorporated review comments on V3 regarding new instruction encoding
-> 
-> Anshuman Khandual (5):
->   powerpc, perf: Add new BHRB related instructions for POWER8
->   powerpc, perf: Add basic assembly code to read BHRB entries on POWER8
->   powerpc, perf: Add new BHRB related generic functions, data and flags
->   powerpc, perf: Define BHRB generic functions, data and flags for POWER8
->   powerpc, perf: Enable branch stack sampling framework
-> 
->  arch/powerpc/include/asm/perf_event_server.h |   7 ++
->  arch/powerpc/include/asm/ppc-opcode.h        |   8 ++
->  arch/powerpc/perf/Makefile                   |   2 +-
->  arch/powerpc/perf/bhrb.S                     |  44 +++++++
->  arch/powerpc/perf/core-book3s.c              | 167 ++++++++++++++++++++++++++-
->  arch/powerpc/perf/power8-pmu.c               |  57 ++++++++-
->  6 files changed, 280 insertions(+), 5 deletions(-)
->  create mode 100644 arch/powerpc/perf/bhrb.S
-> 
-> -- 
-> 1.7.11.7
-> 
+
+Thanks,
+Sasha
+
