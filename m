@@ -1,65 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759161Ab3DZCBh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 22:01:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19893 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756860Ab3DZCBg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 22:01:36 -0400
-Date: Thu, 25 Apr 2013 22:01:01 -0400
-From: Dave Jones <davej@redhat.com>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Minchan Kim <minchan@kernel.org>, David Rientjes <rientjes@google.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Mel Gorman <mgorman@suse.de>,
-        linux-mm <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: mm: BUG in do_huge_pmd_wp_page
-Message-ID: <20130426020101.GA21162@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Sasha Levin <sasha.levin@oracle.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	"Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-	Minchan Kim <minchan@kernel.org>,
-	David Rientjes <rientjes@google.com>,
-	Andrea Arcangeli <aarcange@redhat.com>,
-	"H. Peter Anvin" <hpa@zytor.com>, Mel Gorman <mgorman@suse.de>,
-	linux-mm <linux-mm@kvack.org>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <51559150.3040407@oracle.com>
- <20130410080202.GB21292@blaptop>
- <5166CEDD.9050301@oracle.com>
- <20130411151323.89D40E0085@blue.fi.intel.com>
- <5166D355.2060103@oracle.com>
- <20130424154607.60e9b9895539eb5668d2f505@linux-foundation.org>
- <5179CF8F.7000702@oracle.com>
+	id S1759343Ab3DZCDP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 22:03:15 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:52249 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757971Ab3DZCDO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Apr 2013 22:03:14 -0400
+Message-ID: <5179E056.2000709@linux.vnet.ibm.com>
+Date: Fri, 26 Apr 2013 10:03:02 +0800
+From: Mike Qiu <qiudayu@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5179CF8F.7000702@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Chen Gang <gang.chen@asianux.com>
+CC: Michael Neuling <mikey@neuling.org>, Paul Mackerras <paulus@samba.org>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        linuxppc-dev@lists.ozlabs.org, sfr@canb.auug.org.au, matt@ozlabs.org,
+        linux-kernel@vger.kernel.org,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: Re: [PATCH v2] PowerPC: kernel: compiling issue, make additional
+ room in exception vector area
+References: <5177965D.9090406@linux.vnet.ibm.com> <20130424083142.GB26834@concordia> <51779941.8080403@linux.vnet.ibm.com> <30651.1366799858@ale.ozlabs.ibm.com> <1366807638.5911.2.camel@localhost> <5178816D.3000309@asianux.com> <5178ABA2.4030109@linux.vnet.ibm.com> <20130425062539.GA421@iris.ozlabs.ibm.com> <517918AB.4020508@asianux.com> <30269.1366931768@ale.ozlabs.ibm.com> <5179D302.9060203@asianux.com> <5179D5D8.8080102@asianux.com> <5179DA23.8000407@asianux.com>
+In-Reply-To: <5179DA23.8000407@asianux.com>
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 8bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13042601-7014-0000-0000-000002E98D3C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 25, 2013 at 08:51:27PM -0400, Sasha Levin wrote:
- > On 04/24/2013 06:46 PM, Andrew Morton wrote:
- > > Guys, did this get fixed?
- > 
- > I've stopped seeing that during fuzzing, so I guess that it got fixed somehow...
+于 2013/4/26 9:36, Chen Gang 写道:
+> On 2013年04月26日 09:18, Chen Gang wrote:
+>> On 2013年04月26日 09:06, Chen Gang wrote:
+>>>> CFAR is the Come From Register.  It saves the location of the last
+>>>>> branch and is hence overwritten by any branch.
+>>>>>
+>>> Do we process it just like others done (e.g. 0x300, 0xe00, 0xe20 ...) ?
+>>> 	. = 0x900
+>>> 	.globl decrementer_pSeries
+>>> decrementer_pSeries:
+>>>  	HMT_MEDIUM_PPR_DISCARD
+>>> 	SET_SCRATCH0(r13)
+>>> 	b decrementer_pSeries_0
+>>>
+>>> 	...
+>>>
+>>>
+> Oh, it seems EXCEPTION_PROLOG_1 will save the regesters which related
+> with CFAR, so I think need move EXCEPTION_PROLOG_1 to near 0x900.
 
-We've had reports of users hitting this in 3.8
+I will try your diff V2, to see if the machine can boot up
+> ---------------------------------diff v2 begin-----------------------------
+>
+> diff --git a/arch/powerpc/kernel/exceptions-64s.S b/arch/powerpc/kernel/exceptions-64s.S
+> index e789ee7..f0489c4 100644
+> --- a/arch/powerpc/kernel/exceptions-64s.S
+> +++ b/arch/powerpc/kernel/exceptions-64s.S
+> @@ -254,7 +254,15 @@ hardware_interrupt_hv:
+>  	STD_EXCEPTION_PSERIES(0x800, 0x800, fp_unavailable)
+>  	KVM_HANDLER_PR(PACA_EXGEN, EXC_STD, 0x800)
+>
+> -	MASKABLE_EXCEPTION_PSERIES(0x900, 0x900, decrementer)
+> +	. = 0x900
+> +	.globl decrementer_pSeries
+> +decrementer_pSeries:
+> +	HMT_MEDIUM_PPR_DISCARD
+> +	SET_SCRATCH0(r13)		/* save r13 */
+> +	EXCEPTION_PROLOG_0(PACA_EXGEN)
+> +	EXCEPTION_PROLOG_1(PACA_EXGEN, SOFTEN_TEST_PR, 0x900)
+> +	b	decrementer_pSeries_0
+> +
+>  	STD_EXCEPTION_HV(0x980, 0x982, hdecrementer)
+>
+>  	MASKABLE_EXCEPTION_PSERIES(0xa00, 0xa00, doorbell_super)
+> @@ -536,6 +544,11 @@ ALT_FTR_SECTION_END_IFCLR(CPU_FTR_ARCH_206)
+>  #endif
+>
+>  	.align	7
+> +	/* moved from 0x900 */
+> +decrementer_pSeries_0:
+> +	EXCEPTION_PROLOG_PSERIES_1(decrementer_common, EXC_STD)
+> +
+> +	.align	7
+>  	/* moved from 0xe00 */
+>  	STD_EXCEPTION_HV_OOL(0xe02, h_data_storage)
+>  	KVM_HANDLER_SKIP(PACA_EXGEN, EXC_HV, 0xe02)
+>
+>
+> ---------------------------------diff v2 end-------------------------------
+>
+>
+>> Such as the fix below, is it OK (just like 0x300 or 0x200 has done) ?
+>>
+>> Please check, thanks.
+>>
+>> ---------------------------diff begin-------------------------------------
+>>
+>> diff --git a/arch/powerpc/kernel/exceptions-64s.S b/arch/powerpc/kernel/exceptions-64s.S
+>> index e789ee7..a0a5ff2 100644
+>> --- a/arch/powerpc/kernel/exceptions-64s.S
+>> +++ b/arch/powerpc/kernel/exceptions-64s.S
+>> @@ -254,7 +254,14 @@ hardware_interrupt_hv:
+>>  	STD_EXCEPTION_PSERIES(0x800, 0x800, fp_unavailable)
+>>  	KVM_HANDLER_PR(PACA_EXGEN, EXC_STD, 0x800)
+>>  
+>> -	MASKABLE_EXCEPTION_PSERIES(0x900, 0x900, decrementer)
+>> +	. = 0x900
+>> +	.globl decrementer_pSeries
+>> +decrementer_pSeries:
+>> +	HMT_MEDIUM_PPR_DISCARD
+>> +	SET_SCRATCH0(r13)		/* save r13 */
+>> +	EXCEPTION_PROLOG_0(PACA_EXGEN)
+>> +	b	decrementer_pSeries_0
+>> +
+>>  	STD_EXCEPTION_HV(0x980, 0x982, hdecrementer)
+>>  
+>>  	MASKABLE_EXCEPTION_PSERIES(0xa00, 0xa00, doorbell_super)
+>> @@ -536,6 +543,12 @@ ALT_FTR_SECTION_END_IFCLR(CPU_FTR_ARCH_206)
+>>  #endif
+>>  
+>>  	.align	7
+>> +	/* moved from 0x900 */
+>> +decrementer_pSeries_0:
+>> +	EXCEPTION_PROLOG_1(PACA_EXGEN, SOFTEN_TEST_PR, 0x900)
+>> +	EXCEPTION_PROLOG_PSERIES_1(decrementer_common, EXC_STD)
+>> +
+>> +	.align	7
+>>  	/* moved from 0xe00 */
+>>  	STD_EXCEPTION_HV_OOL(0xe02, h_data_storage)
+>>  	KVM_HANDLER_SKIP(PACA_EXGEN, EXC_HV, 0xe02)
+>>
+>> ---------------------------diff end---------------------------------------
+>>
+>
 
-eg:
-https://bugzilla.redhat.com/show_bug.cgi?id=947985
-https://bugzilla.redhat.com/show_bug.cgi?id=956730 
-
-I'm sure there are other reports of it too.
-
-Would be good if we can figure out what fixed it (if it is actually fixed)
-for backporting to stable
-
-	Dave
- 
