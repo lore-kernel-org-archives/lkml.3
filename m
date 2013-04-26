@@ -1,97 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756909Ab3DZNrh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 09:47:37 -0400
-Received: from mail-bk0-f47.google.com ([209.85.214.47]:40188 "EHLO
-	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754529Ab3DZNrf (ORCPT
+	id S1756933Ab3DZNt3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 09:49:29 -0400
+Received: from mail-bk0-f50.google.com ([209.85.214.50]:41873 "EHLO
+	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755521Ab3DZNt1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 09:47:35 -0400
+	Fri, 26 Apr 2013 09:49:27 -0400
+Date: Fri, 26 Apr 2013 15:49:15 +0200
+From: Fabio Baltieri <fabio.baltieri@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        mian.yousaf.kaukab@stericsson.com, linus.walleij@stericsson.com,
+        arnd@arndb.de
+Subject: Re: [PATCH 00/10] usb: musb: ux500: pathe the way for Device Tree
+ enablement
+Message-ID: <20130426134915.GA19558@balto.lan>
+References: <1366729394-11406-1-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <20130426124931.GC13464@dyad.programming.kicks-ass.net>
-References: <1366910611-20048-1-git-send-email-vincent.guittot@linaro.org>
-	<1366910611-20048-5-git-send-email-vincent.guittot@linaro.org>
-	<20130426124931.GC13464@dyad.programming.kicks-ass.net>
-Date: Fri, 26 Apr 2013 15:47:33 +0200
-Message-ID: <CAKfTPtB0B8gM7C75D6EwWxQV_PRYpo+q48ywY26k8KVHx+oiqA@mail.gmail.com>
-Subject: Re: [PATCH 04/14] sched: pack the idle load balance
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Paul Turner <pjt@google.com>, Santosh <santosh.shilimkar@ti.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        Chander Kashyap <chander.kashyap@linaro.org>,
-        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        Alex Shi <alex.shi@intel.com>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Len Brown <len.brown@intel.com>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Lukasz Majewski <l.majewski@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1366729394-11406-1-git-send-email-lee.jones@linaro.org>
+X-Operating-System: Linux balto 3.9.0-rc8 x86_64 GNU/Linux
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26 April 2013 14:49, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Thu, Apr 25, 2013 at 07:23:20PM +0200, Vincent Guittot wrote:
->> Look for an idle CPU close to the pack buddy CPU whenever possible.
->> The goal is to prevent the wake up of a CPU which doesn't share the power
->> domain of the pack buddy CPU.
->>
->> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
->> Reviewed-by: Morten Rasmussen <morten.rasmussen@arm.com>
->> ---
->>  kernel/sched/fair.c |   19 +++++++++++++++++++
->>  1 file changed, 19 insertions(+)
->>
->> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
->> index 6adc57c..a985c98 100644
->> --- a/kernel/sched/fair.c
->> +++ b/kernel/sched/fair.c
->> @@ -5469,7 +5469,26 @@ static struct {
->>
->>  static inline int find_new_ilb(int call_cpu)
->>  {
->> +     struct sched_domain *sd;
->>       int ilb = cpumask_first(nohz.idle_cpus_mask);
->> +     int buddy = per_cpu(sd_pack_buddy, call_cpu);
->> +
->> +     /*
->> +      * If we have a pack buddy CPU, we try to run load balance on a CPU
->> +      * that is close to the buddy.
->> +      */
->> +     if (buddy != -1) {
->> +             for_each_domain(buddy, sd) {
->> +                     if (sd->flags & SD_SHARE_CPUPOWER)
->> +                             continue;
->> +
->> +                     ilb = cpumask_first_and(sched_domain_span(sd),
->> +                                     nohz.idle_cpus_mask);
->> +
->> +                     if (ilb < nr_cpu_ids)
->> +                             break;
->> +             }
->> +     }
->>
->>       if (ilb < nr_cpu_ids && idle_cpu(ilb))
->>               return ilb;
->
-> Ha! and here you hope people won't put multiple big-little clusters in a single
-> machine? :-)
+Hi Lee,
 
-yes, we will probably face this situation sooner or later but the
-other little clusters will probably be not less close than the local
-big cluster from a power domain point of view.
-That's why i look for the small sched_domain level to the largest one
+On Tue, Apr 23, 2013 at 04:03:04PM +0100, Lee Jones wrote:
+> In this patch-set we firstly ease the burden on data being passed from
+> platform data, then start to build up support to finally enable Device
+> Tree.
 
->
->
->
+The whole series looks good to me, nice job!!
+
+Acked-by: Fabio Baltieri <fabio.baltieri@linaro.org>
+
+I was not able to apply the patches though, as I can imagine that there
+are some dependencies with your other dma40 series.  If you can provide a
+tree I would be happy to run some test for both host and device mode.
+I still have a bunch of USB cables and adapters tangled together on my
+desk ready for that.
+
+Fabio
+
+-- 
+Fabio Baltieri
