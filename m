@@ -1,67 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756418Ab3DZP1v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 11:27:51 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:45221 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754253Ab3DZP1t (ORCPT
+	id S1756499Ab3DZP2x (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 11:28:53 -0400
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:41198 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756468Ab3DZP2w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 11:27:49 -0400
-Message-ID: <1366990066.8964.216.camel@edumazet-glaptop>
-Subject: RE: [RFC PATCH net-next 2/6] x86: bpf_jit_comp: support
- BPF_S_ANC_SECCOMP_LD_W instruction
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: David Laight <David.Laight@ACULAB.COM>
-Cc: Xi Wang <xi.wang@gmail.com>, Daniel Borkmann <dborkman@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Eric Dumazet <edumazet@google.com>, Will Drewry <wad@chromium.org>,
-        Andrew Morton <akpm@linux-foundation.org>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 26 Apr 2013 08:27:46 -0700
-In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6026B7208@saturn3.aculab.com>
-References: <1366962706-24204-1-git-send-email-xi.wang@gmail.com>
-	 <1366962706-24204-3-git-send-email-xi.wang@gmail.com>
-	 <1366985926.8964.190.camel@edumazet-glaptop>
-	 <CAKU6vyZfYR-2408G0_Fkp-PS5x5rMH+s4_OOWqqi7Nt+UfiUPg@mail.gmail.com>
-	 <AE90C24D6B3A694183C094C60CF0A2F6026B7208@saturn3.aculab.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 26 Apr 2013 11:28:52 -0400
+MIME-Version: 1.0
+In-Reply-To: <5179A797.9040200@zytor.com>
+References: <1366926860-26776-1-git-send-email-keescook@chromium.org>
+	<1366926860-26776-3-git-send-email-keescook@chromium.org>
+	<5179A797.9040200@zytor.com>
+Date: Fri, 26 Apr 2013 08:28:51 -0700
+X-Google-Sender-Auth: YRMXpljAR-l3NMjBCKW14lOPhLo
+Message-ID: <CAGXu5jLT494F_jM3Q6GFaestU0cg-=bx_+g-1v2myTsCmnVH5A@mail.gmail.com>
+Subject: Re: [PATCH 2/6] x86: kaslr: move CPU flags out of cpucheck
+From: Kees Cook <keescook@chromium.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "kernel-hardening@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
+        Matthew Garrett <mjg@redhat.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Eric Northup <digitaleric@google.com>,
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-04-26 at 16:15 +0100, David Laight wrote:
-> > >> +#ifdef CONFIG_SECCOMP_FILTER
-> > >> +                     case BPF_S_ANC_SECCOMP_LD_W:
-> > >> +                             if (K == offsetof(struct seccomp_data, arch)) {
-> > >> +                                     int arch = syscall_get_arch(current, NULL);
-> > >> +
-> > >> +                                     EMIT1_off32(0xb8, arch); /* mov arch,%eax */
-> > >> +                                     break;
-> > >> +                             }
-> > >> +                             func = (u8 *)seccomp_bpf_load;
-> > >> +                             t_offset = func - (image + addrs[i]);
-> > >> +                             EMIT1_off32(0xbf, K); /* mov imm32,%edi */
-> > >> +                             EMIT1_off32(0xe8, t_offset); /* call seccomp_bpf_load */
-> > >> +                             break;
-> > >> +#endif
-> > >
-> > > This seems seriously wrong to me.
-> > 
-> > Can you elaborate?
-> 
-> The 'call seccomp_bpf_load' needs a pc-relative offset,
-> I assume that is what EMIT1_off32() generates.
-> 
-> The other two instructions want an absolute 32 bit value...
+On Thu, Apr 25, 2013 at 3:00 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 04/25/2013 02:54 PM, Kees Cook wrote:
+>> Since has_eflag() and has_fpu() are 32-bit only, short-circuit the
+>> routines on 64-bit when they are built without -m32. This also refactors
+>> the calls to cpuid to make them PIC-safe on 32-bit.
+>
+> These functions can trivially be made 32- and 64-bit agnostic by
+> changing "u32" to "unsigned long" and drop the -l suffixes in the
+> assembly code.
 
-Hmm, this part is fine, we perform the relative adjustments in 
-t_offset = func - (image + addrs[i]);
+Ah, good call. I found what was stopping me earlier. The u32 argument
+needed to be switched to unsigned long too. Duh. :)
 
+Thanks!
 
+-Kees
 
-
+--
+Kees Cook
+Chrome OS Security
