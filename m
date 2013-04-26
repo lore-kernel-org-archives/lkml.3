@@ -1,58 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760155Ab3DZK4P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 06:56:15 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:32810
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757031Ab3DZK4N (ORCPT
+	id S1760121Ab3DZLD4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 07:03:56 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39264 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751265Ab3DZLDz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 06:56:13 -0400
-Date: Fri, 26 Apr 2013 12:54:31 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Alex Shi <alex.shi@intel.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Paul Turner <pjt@google.com>, Santosh <santosh.shilimkar@ti.com>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Chander Kashyap <chander.kashyap@linaro.org>,
-        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Len Brown <len.brown@intel.com>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Jonathan Corbet <corbet@lwn.net>
-Subject: Re: [RFC PATCH v3 5/6] sched: pack the idle load balance
-Message-ID: <20130426105431.GF8669@dyad.programming.kicks-ass.net>
-References: <1363955155-18382-1-git-send-email-vincent.guittot@linaro.org>
- <1363955155-18382-6-git-send-email-vincent.guittot@linaro.org>
- <1364302359.5053.21.camel@laptop>
- <CAKfTPtD=_oS5gJeynUG=ft-Y1zEdxZEMhUPH9hSXx+H2pi4xgA@mail.gmail.com>
- <1364308932.5053.46.camel@laptop>
- <CAKfTPtArtgkH5MU_xFAKjLDS-i32g2qQMdvyW=LLkG84tH8Hhg@mail.gmail.com>
- <5174CE96.3060805@linux.vnet.ibm.com>
- <CAKfTPtCCCifC=c+xjjnAH_HSqkR80PiQoddQKXPHuZwZawbvcA@mail.gmail.com>
- <5175F09E.1000304@intel.com>
- <5176A932.5050506@linux.intel.com>
+	Fri, 26 Apr 2013 07:03:55 -0400
+Date: Fri, 26 Apr 2013 12:03:34 +0100
+From: Russell King <rmk@arm.linux.org.uk>
+To: Fabio Baltieri <fabio.baltieri@linaro.org>
+Cc: Eduardo Valentin <eduardo.valentin@ti.com>,
+        Zhang Rui <rui.zhang@intel.com>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Hongbo Zhang <hongbo.zhang@stericsson.com>,
+        devicetree-discuss@lists.ozlabs.org,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH 2/2] thermal: db8500_cpufreq_cooling: remove usage of
+	IS_ERR_OR_NULL()
+Message-ID: <20130426110334.GB4862@flint.arm.linux.org.uk>
+References: <1366899214-22639-1-git-send-email-eduardo.valentin@ti.com> <1366899214-22639-3-git-send-email-eduardo.valentin@ti.com> <20130425174635.GB25783@flint.arm.linux.org.uk> <20130426101908.GA23032@balto.lan>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5176A932.5050506@linux.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130426101908.GA23032@balto.lan>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 23, 2013 at 08:30:58AM -0700, Arjan van de Ven wrote:
-> For x86 we should not be setting such flag then; we don't have a way for some cpu packages to
-> go to an extra deep power state if they're completely idle.
-> (this afaik is true for both Intel and AMD)
+On Fri, Apr 26, 2013 at 12:19:08PM +0200, Fabio Baltieri wrote:
+> On Thu, Apr 25, 2013 at 06:46:35PM +0100, Russell King wrote:
+> > On Thu, Apr 25, 2013 at 10:13:34AM -0400, Eduardo Valentin wrote:
+> > > diff --git a/drivers/thermal/db8500_cpufreq_cooling.c b/drivers/thermal/db8500_cpufreq_cooling.c
+> > > index 21419851..786d192 100644
+> > > --- a/drivers/thermal/db8500_cpufreq_cooling.c
+> > > +++ b/drivers/thermal/db8500_cpufreq_cooling.c
+> > > @@ -37,7 +37,7 @@ static int db8500_cpufreq_cooling_probe(struct platform_device *pdev)
+> > >  	cpumask_set_cpu(0, &mask_val);
+> > >  	cdev = cpufreq_cooling_register(&mask_val);
+> > >  
+> > > -	if (IS_ERR_OR_NULL(cdev)) {
+> > > +	if (IS_ERR(cdev)) {
+> > >  		dev_err(&pdev->dev, "Failed to register cooling device\n");
+> > >  		return PTR_ERR(cdev);
+> > 
+> > Correct.  cpufreq_cooling_register() returns either an error-pointer or
+> > a valid pointer.
+> 
+> Acked-by: Fabio Baltieri <fabio.baltieri@linaro.org>
+> 
+> ...but more of these are going to appear forever, was the proposed
+> removal of IS_ERR_OR_NULL rejected?  Can't find any new message about
+> that on the list.
 
-You say 'some'; this implies we do for others, right?
+We first need to get rid of the existing users of it - I've got rid of
+most of those in arch/arm - but it seems that I never pushed that in the
+last merge window.
 
-We can dynamically set the required flags in the arch setup when it makes sense.
+Really it needs the cooperation of everyone to make it happen across the
+tree with everyone removing IS_ERR_OR_NULL() in their subsystem.  There
+are currently 366 instances of this macro being used in the entire tree
+which is far too many to even mark it as deprecated.
+
+-- 
+Russell King
+ Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
+ maintainer of:
