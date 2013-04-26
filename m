@@ -1,82 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756483Ab3DZRSl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 13:18:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46338 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754092Ab3DZRSi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 13:18:38 -0400
-Date: Fri, 26 Apr 2013 19:15:26 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Cyrill Gorcunov <gorcunov@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        David Miller <davem@davemloft.net>, "Theodore Ts'o" <tytso@mit.edu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        Fr??d??ric Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH v2] x86: make DR*_RESERVED unsigned long
-Message-ID: <20130426171526.GA30875@redhat.com>
-References: <CA+55aFwpLu0qNms=hkQr43yqD0K9DgESNm91OEWKT1ZuT8MU6Q@mail.gmail.com> <20130424072630.GB1780@gmail.com> <20130424170702.GA1867@redhat.com> <5178282D.9030902@zytor.com> <20130425144818.GA25921@redhat.com> <20130426163802.GA30351@redhat.com> <517AAED5.7040400@zytor.com>
+	id S1756696Ab3DZRUC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 13:20:02 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54652 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756590Ab3DZRUA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Apr 2013 13:20:00 -0400
+Date: Fri, 26 Apr 2013 18:19:57 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Tomasz Figa <t.figa@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] regulator: max8952: Add missing config.of_node setting
+ for regulator register
+Message-ID: <20130426171957.GC5019@opensource.wolfsonmicro.com>
+References: <1366899321.8012.1.camel@phoenix>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="aNVYTE9V2LY2iLDz"
 Content-Disposition: inline
-In-Reply-To: <517AAED5.7040400@zytor.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1366899321.8012.1.camel@phoenix>
+X-Cookie: Caution: Keep out of reach of children.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/26, H. Peter Anvin wrote:
->
-> On 04/26/2013 09:38 AM, Oleg Nesterov wrote:
-> >
-> > 	- do_debug:
-> >
-> > 		dr6 &= ~DR6_RESERVED;
-> >
-> > 	  this also wrongly clears 32-63 bits. Fortunately these
-> > 	  bits are reserved and must be zero.
->
-> I don't think this is wrongly at all.
 
-OK, I meant that it also clears the bits that are not specified in
-DR6_RESERVED mask.
+--aNVYTE9V2LY2iLDz
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> The whole point is to mask out
-> the bits that the handler doesn't want to deal with, so masking out the
-> reserved bits [63:32] seems reasonable to me.
+On Thu, Apr 25, 2013 at 10:15:21PM +0800, Axel Lin wrote:
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
 
-Then we should do
+Appiled, thanks.
 
-	- #define DR6_RESERVED    0xFFFF0FF0
-	+ #define DR6_RESERVED    0xFFFFFFFFFFFF0FF0
+--aNVYTE9V2LY2iLDz
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-or what? (just in case, I will happily agree with "do nothing" ;)
+iQIcBAEBAgAGBQJRerc2AAoJELSic+t+oim9yPAP/1rLQVD30pmZDNZN+0WBkWsE
+ZLIFF97YJ+Q3kLSOkSeWwXgolzica0S/R3G7Zy+IzoLwQeSDzb6CGt4hLNxTTiLn
+bPNGqUN4G3zvSz1sg4IQyaQdV7y6co+d+f8Vxu5PC8WZNUny2N1/ydspcFIfoI7s
+v+t7xGTTv4Uxw4M8tfy07T1/L9sRXgO7YOXpsDYqY88LGsxpPPP0elVlJzXfqL0b
+dEpkMI9uixg86TqG2QFgYtbizD/p1W5G/8UxD/9K6iQPch0fwEb9h9GXbyt9kSVd
+l6GDwQwpaDwuYb0LUJA7pHZ1ilwpfjZLK1ytSCbX9APh78tOaqk6ysBAsyLJmcpe
+e5/oXTfU9J8D2t4X70/VjtJiswu+QtTsH89HEKiRF6Bj316i46RyZTI8F4y7g26v
+aBWruoVmvvj3uolh57SviTFKq7CA+bbcirBTH1bZNFtpbUM2K+QAcKnaITmw9Crt
+YSAG9HrY9/tBVH4jlpPI/Iz5YYHPpXmmcVam/NuiX2mejPSNPHoaWCD9C3ax5DCP
+2HgzGP42WD+wDPdsnwGaal+3/SG2BI1iArS3a7waJkar654UhuoYEI3PFvcK84Bs
+i95nnOyMTS/Ma5w6K2dj+zslAep46WtxPFHF6lpHekssEnDr9raULOxpajdAGcVZ
+qNzlywAalKZUOumLwbN6
+=w3yT
+-----END PGP SIGNATURE-----
 
-> The comment should probably be corrected, though.
-
-Which one?
-
-	/* Define reserved bits in DR6 which are always set to 1 */
-	#define DR6_RESERVED    (0xFFFF0FF0UL)
-
-	/* Filter out all the reserved bits which are preset to 1 */
-	dr6 &= ~DR6_RESERVED;
-
-I guess both should be updated then. But if I read the doc correctly
-the lower reserved bits are set to 1.
-
-However do_debug() does set_debugreg(0, 6) and this looks correct, the
-doc says "debug handlers should clear the register before returning to
-the interrupted task".
-
-Oleg.
-
+--aNVYTE9V2LY2iLDz--
