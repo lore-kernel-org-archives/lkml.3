@@ -1,58 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759051Ab3DZJCT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 05:02:19 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:35910 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756869Ab3DZJCQ (ORCPT
+	id S1757955Ab3DZJHE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 05:07:04 -0400
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:63783 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756264Ab3DZJG7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 05:02:16 -0400
-MIME-Version: 1.0
-In-Reply-To: <517A3FA0.8030702@intel.com>
-References: <201304252144.r3PLihDe025383@terminus.zytor.com>
-	<CA+55aFxxWXrQU4oZUbHOBBkvtF=pSxMvyF6sYU9xpSDarWV-=Q@mail.gmail.com>
-	<1366928604.9976.3.camel@x230>
-	<CANN689EH-VyDefawtKdY=cVQNdZP1xN7cV4bDgXvYeniSCkvqA@mail.gmail.com>
-	<5179B435.1000404@zytor.com>
-	<CANN689EaFu32GKNj-U41ykGpNJekBL2=w92P1pSkETuKAffJDQ@mail.gmail.com>
-	<517A28D7.3010707@intel.com>
-	<CANN689F7c8UbxGEHyAOH+uwZxFf7VoQDmCM3Nv862s2b=21bQg@mail.gmail.com>
-	<517A3FA0.8030702@intel.com>
-Date: Fri, 26 Apr 2013 02:02:15 -0700
-Message-ID: <CANN689FWig4wVomOzQpSLYAdwuWVjrUZa5KNEDH2pieKCa0ceA@mail.gmail.com>
-Subject: Re: [GIT PULL] x86 fixes for 3.9
-From: Michel Lespinasse <walken@google.com>
-To: Matt Fleming <matt.fleming@intel.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, Borislav Petkov <bp@suse.de>,
-        Ingo Molnar <mingo@elte.hu>, Josh Boyer <jwboyer@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Paul Bolle <pebolle@tiscali.nl>, Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 26 Apr 2013 05:06:59 -0400
+From: Linus Walleij <linus.walleij@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: Arnd Bergmann <arnd@arndb.de>, Lee Jones <lee.jones@linaro.org>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH] dmaengine: use phys_addr_t for slave configuration
+Date: Fri, 26 Apr 2013 11:06:54 +0200
+Message-Id: <1366967214-20776-1-git-send-email-linus.walleij@linaro.org>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 26, 2013 at 1:49 AM, Matt Fleming <matt.fleming@intel.com> wrote:
-> On 26/04/13 08:43, Michel Lespinasse wrote:
->> Still seeing the crash.
->>
->> I went and compared the crash dump with the vmlinux disassembly; the
->> issue is a NULL pointer dereference in list_for_each_entry_safe().
->> list_empty() checks that the head node points to itself, but here the
->> head node has NULL. I think this may be due to gsmi_init() being
->> called before efivars_init(). Not sure what's the proper fix though.
->
-> Ohh... I see what you mean. The bug is in variable_is_present() because
-> it accesses __efivars directly, which a) isn't the struct efivars gsmi.c
-> uses and b) hasn't been initialised. Something like this might work.
+The documentation already says these are physical addresses, and
+we have concluded that any translation into the DMA address space
+needs to reside in the dmaengine driver, so change the type of
+the passed arguments.
 
-[... skipping patch ...]
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Lee Jones <lee.jones@linaro.org>
+Cc: Vinod Koul <vinod.koul@intel.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ include/linux/dmaengine.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Yes, this one fixes it. Thanks !
-
+diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
+index 91ac8da..681df5f9 100644
+--- a/include/linux/dmaengine.h
++++ b/include/linux/dmaengine.h
+@@ -361,8 +361,8 @@ enum dma_slave_buswidth {
+  */
+ struct dma_slave_config {
+ 	enum dma_transfer_direction direction;
+-	dma_addr_t src_addr;
+-	dma_addr_t dst_addr;
++	phys_addr_t src_addr;
++	phys_addr_t dst_addr;
+ 	enum dma_slave_buswidth src_addr_width;
+ 	enum dma_slave_buswidth dst_addr_width;
+ 	u32 src_maxburst;
 -- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+1.8.1.4
+
