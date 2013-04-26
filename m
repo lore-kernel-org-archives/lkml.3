@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932256Ab3DZJU5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 05:20:57 -0400
-Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:6168 "EHLO
-	va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754404Ab3DZJUz (ORCPT
+	id S932647Ab3DZJWs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 05:22:48 -0400
+Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:50664
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758214Ab3DZJU4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 05:20:55 -0400
+	Fri, 26 Apr 2013 05:20:56 -0400
 X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 3
-X-BigFish: VS3(zzzz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1082kzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1155h)
+X-SpamScore: 5
+X-BigFish: VS5(z616jzzz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1082kzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1155h)
 From: Huang Shijie <b32955@freescale.com>
 To: <dwmw2@infradead.org>
 CC: <dedekind1@gmail.com>, <computersforpeace@gmail.com>,
         <linux-mtd@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Huang Shijie <b32955@freescale.com>
-Subject: [PATCH V4 2/9] mtd: add data structures for Extended Parameter Page
-Date: Fri, 26 Apr 2013 17:08:50 +0800
-Message-ID: <1366967337-5534-3-git-send-email-b32955@freescale.com>
+        Huang Shijie <shijie8@gmail.com>, Huang Shijie <b32955@freescale.com>
+Subject: [PATCH V4 3/9] mtd: add a helper to get the supported features for ONFI nand
+Date: Fri, 26 Apr 2013 17:08:51 +0800
+Message-ID: <1366967337-5534-4-git-send-email-b32955@freescale.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1366967337-5534-1-git-send-email-b32955@freescale.com>
 References: <1366967337-5534-1-git-send-email-b32955@freescale.com>
@@ -28,82 +28,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the ONFI 2.1, the onfi spec adds the Extended Parameter Page
-to store the ECC info.
+From: Huang Shijie <shijie8@gmail.com>
 
-The onfi spec tells us that if the nand chip's recommended ECC codeword
-size is not 512 bytes, then the @ecc_bits is 0xff. The host _SHOULD_ then
-read the Extended ECC information that is part of the extended parameter
-page to retrieve the ECC requirements for this device.
-
-This patch adds
-    [1] the neccessary fields for nand_onfi_params{},
-    [2] and adds the onfi_ext_ecc_info{} for Extended ECC information,
-    [3] adds onfi_ext_section{} for extended sections,
-    [4] and adds onfi_ext_param_page{} for the Extended Parameter Page.
+add a helper to get the supported features for ONFI nand.
+Also add the neccessary macros.
 
 Signed-off-by: Huang Shijie <b32955@freescale.com>
 ---
- include/linux/mtd/nand.h |   39 ++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 38 insertions(+), 1 deletions(-)
+ include/linux/mtd/nand.h |   10 ++++++++++
+ 1 files changed, 10 insertions(+), 0 deletions(-)
 
 diff --git a/include/linux/mtd/nand.h b/include/linux/mtd/nand.h
-index a0c486b..9bad296 100644
+index 9bad296..9b28739 100644
 --- a/include/linux/mtd/nand.h
 +++ b/include/linux/mtd/nand.h
-@@ -224,7 +224,10 @@ struct nand_onfi_params {
- 	__le16 revision;
- 	__le16 features;
- 	__le16 opt_cmd;
--	u8 reserved[22];
-+	u8 reserved0[2];
-+	__le16 ext_param_page_length; /* since ONFI 2.1 */
-+	u8 num_of_param_pages;        /* since ONFI 2.1 */
-+	u8 reserved1[17];
+@@ -202,6 +202,10 @@ typedef enum {
+ /* Keep gcc happy */
+ struct nand_chip;
  
- 	/* manufacturer information block */
- 	char manufacturer[12];
-@@ -281,6 +284,40 @@ struct nand_onfi_params {
++/* ONFI features */
++#define ONFI_FEATURE_16_BIT_BUS		(1 << 0)
++#define ONFI_FEATURE_EXT_PARAM_PAGE	(1 << 7)
++
+ /* ONFI timing mode, used in both asynchronous and synchronous mode */
+ #define ONFI_TIMING_MODE_0		(1 << 0)
+ #define ONFI_TIMING_MODE_1		(1 << 1)
+@@ -753,6 +757,12 @@ struct platform_nand_chip *get_platform_nandchip(struct mtd_info *mtd)
+ 	return chip->priv;
+ }
  
- #define ONFI_CRC_BASE	0x4F4E
- 
-+/* Extended ECC information Block Definition (since ONFI 2.1) */
-+struct onfi_ext_ecc_info {
-+	u8 ecc_bits;
-+	u8 codeword_size;
-+	__le16 bb_per_lun;
-+	__le16 block_endurance;
-+	u8 reserved[2];
-+} __attribute__((packed));
++/* return the supported features. */
++static inline int onfi_feature(struct nand_chip *chip)
++{
++	return chip->onfi_version ? le16_to_cpu(chip->onfi_params.features) : 0;
++}
 +
-+#define ONFI_SECTION_TYPE_0	0	/* Unused section. */
-+#define ONFI_SECTION_TYPE_1	1	/* for additional sections. */
-+#define ONFI_SECTION_TYPE_2	2	/* for ECC information. */
-+struct onfi_ext_section {
-+	u8 type;
-+	u8 length;
-+} __attribute__((packed));
-+
-+#define ONFI_EXT_SECTION_MAX 8
-+
-+/* Extended Parameter Page Definition (since ONFI 2.1) */
-+struct onfi_ext_param_page {
-+	__le16 crc;
-+	u8 sig[4];             /* 'E' 'P' 'P' 'S' */
-+	u8 reserved0[10];
-+	struct onfi_ext_section sections[ONFI_EXT_SECTION_MAX];
-+
-+	/*
-+	 * The actual size of the Extended Parameter Page is in
-+	 * @ext_param_page_length of nand_onfi_params{}.
-+	 * The following are the variable length sections.
-+	 * So we do not add any fields below. Please see the ONFI spec.
-+	 */
-+} __attribute__((packed));
-+
- /**
-  * struct nand_hw_control - Control structure for hardware controller (e.g ECC generator) shared among independent devices
-  * @lock:               protection lock
+ /* return the supported asynchronous timing mode. */
+ static inline int onfi_get_async_timing_mode(struct nand_chip *chip)
+ {
 -- 
 1.7.1
 
