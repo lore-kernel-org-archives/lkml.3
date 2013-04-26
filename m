@@ -1,113 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756786Ab3DZQbQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 12:31:16 -0400
-Received: from co9ehsobe002.messaging.microsoft.com ([207.46.163.25]:13376
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751420Ab3DZQbP (ORCPT
+	id S1756816Ab3DZQfM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 12:35:12 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:49629 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756601Ab3DZQfK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 12:31:15 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VPS-4(zzbb2dI98dI9371I1432Izz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzzz2dh668h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1155h)
-X-WSS-ID: 0MLVF7V-02-AXU-02
-X-M-MSG: 
-Date: Fri, 26 Apr 2013 11:31:06 -0500
-From: Jacob Shin <jacob.shin@amd.com>
-To: Will Deacon <will.deacon@arm.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Oleg Nesterov <oleg@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "x86@kernel.org" <x86@kernel.org>,
-        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V2 1/4] perf: Add hardware breakpoint address mask
-Message-ID: <20130426163106.GA25844@jshin-Toonie>
-References: <20130423143423.GB17021@jshin-Toonie>
- <20130423144057.GA19644@jshin-Toonie>
- <20130423150240.GD18616@mudshark.cambridge.arm.com>
- <20130423151846.GA22052@jshin-Toonie>
- <20130424094853.GB21850@mudshark.cambridge.arm.com>
- <20130424163038.GA29816@jshin-Toonie>
- <20130425170635.GA1324@redhat.com>
- <5179652F.8080507@zytor.com>
- <20130425231911.GB31751@jshin-Toonie>
- <20130426162043.GK30858@mudshark.cambridge.arm.com>
+	Fri, 26 Apr 2013 12:35:10 -0400
+Date: Fri, 26 Apr 2013 09:30:46 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Simon Horman <horms@verge.net.au>,
+        Julian Anastasov <ja@ssi.bg>, Ingo Molnar <mingo@redhat.com>,
+        lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
+        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Dipankar Sarma <dipankar@in.ibm.com>, dhaval.giani@gmail.com
+Subject: Re: [PATCH 2/2] ipvs: Use cond_resched_rcu_lock() helper when
+ dumping connections
+Message-ID: <20130426163046.GG3860@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1366940708-10180-1-git-send-email-horms@verge.net.au>
+ <1366940708-10180-3-git-send-email-horms@verge.net.au>
+ <20130426080313.GC8669@dyad.programming.kicks-ass.net>
+ <20130426154547.GC3860@linux.vnet.ibm.com>
+ <1366991947.8964.233.camel@edumazet-glaptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130426162043.GK30858@mudshark.cambridge.arm.com>
+In-Reply-To: <1366991947.8964.233.camel@edumazet-glaptop>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13042616-4834-0000-0000-000006377C7D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 26, 2013 at 05:20:44PM +0100, Will Deacon wrote:
-> Hi Jacob,
+On Fri, Apr 26, 2013 at 08:59:07AM -0700, Eric Dumazet wrote:
+> On Fri, 2013-04-26 at 08:45 -0700, Paul E. McKenney wrote:
 > 
-> On Fri, Apr 26, 2013 at 12:19:11AM +0100, Jacob Shin wrote:
-> > On Thu, Apr 25, 2013 at 10:17:35AM -0700, H. Peter Anvin wrote:
-> > > On 04/25/2013 10:06 AM, Oleg Nesterov wrote:
-> > > >>
-> > > >> The downside is that in userland perf tool we need differing documentation
-> > > >> on what the mask syntax means for each architecture.
-> > > > 
-> > > > Personally I think this is acceptable.
-> > > > 
-> > > > But I am new to this code, so...
-> > > > 
-> > > 
-> > > That would seem really, really awkward.  Yes, perf has a bunch of
-> > > low-level stuff, but it would seem highly undesirable to force the user
-> > > to deal with something like that.
-> > > 
-> > > It would be good to have a user-friendly syntax that covers most of what
-> > > users may want to do and perhaps a longer form that can express
-> > > everything including ARM's byte selects; if the system can't honor the
-> > > request it should return an error.
+> > I have done some crude coccinelle patterns in the past, but they are
+> > subject to false positives (from when you transfer the pointer from
+> > RCU protection to reference-count protection) and also false negatives
+> > (when you atomically increment some statistic unrelated to protection).
 > > 
-> > Okay,
+> > I could imagine maintaining a per-thread count of the number of outermost
+> > RCU read-side critical sections at runtime, and then associating that
+> > counter with a given pointer at rcu_dereference() time, but this would
+> > require either compiler magic or an API for using a pointer returned
+> > by rcu_dereference().  This API could in theory be enforced by sparse.
 > > 
-> > If arch specific masks are a no go, then I think I'm convinced that
-> > Oleg's idea of using bp_len is the right thing to do. Right now perf
-> > userland tool hard codes bp_len to 4, so I need to modify it to allow
-> > user to override the length if desired.
+> > Dhaval Giani might have some ideas as well, adding him to CC.
 > 
-> So what value ends up in the bp_len field: a length or a mask? I just want
-> to make sure it's flexible enough that, if we add another user interface for
-> the byte-select stuff, we don't need to butcher the attr in another way.
-
-It is length. Just as it is today, userland API does not change at all.
-
 > 
-> > Oleg, Frederic, et al.
-> > 
-> > Which syntax do you prefer?
-> > 
-> > If we want to set bp_len to 16:
-> > 
-> >   $ perf stat -e mem:0x1000:rw:16
-> > 
-> > Or
-> > 
-> >   $ perf stat -e mem:0x1000:16
-> > 
-> > Or
-> > 
-> >   $ perf stat -e mem:0x1000/16
-> > 
-> > If no bp_len value is specified, it will still default to 4 as it did
-> > before.
+> We had this fix the otherday, because tcp prequeue code hit this check :
 > 
-> I certainly like the ability to change the length of an execute breakpoint,
-> as that helps for halfword instructions on ARM (not sure if your first
-> syntax precludes that, but just checking...).
+> static inline struct dst_entry *skb_dst(const struct sk_buff *skb)
+> {
+>         /* If refdst was not refcounted, check we still are in a 
+>          * rcu_read_lock section
+>          */
+>         WARN_ON((skb->_skb_refdst & SKB_DST_NOREF) &&
+>                 !rcu_read_lock_held() &&
+>                 !rcu_read_lock_bh_held());
+>         return (struct dst_entry *)(skb->_skb_refdst & SKB_DST_PTRMASK);
+> }
+> 
+> ( http://git.kernel.org/cgit/linux/kernel/git/davem/net.git/commit/?id=093162553c33e9479283e107b4431378271c735d )
+> 
+> Problem is the rcu protected pointer was escaping the rcu lock and was
+> then used in another thread.
 
-All three are equivalent, I just need to pick one and implement/document.
+All the way to some other thread?  That is a serious escape!  ;-)
 
--Jacob
+> What would be cool (but expensive maybe) , would be to get a cookie from
+> rcu_read_lock(), and check the cookie at rcu_dereference(). These
+> cookies would have system wide scope to catch any kind of errors.
+
+I suspect that your cookie and my counter are quite similar.
+
+> Because a per thread counter would not catch following problem :
+> 
+> rcu_read_lock();
+> 
+> ptr = rcu_dereference(x);
+> if (!ptr)
+> 	return NULL;
+> ...
+> 
+> 
+> rcu_read_unlock();
+> 
+> ...
+> rcu_read_lock();
+> /* no reload of x, ptr might be now stale/freed */
+> if (ptr->field) { ... }
+
+Well, that is why I needed to appeal to compiler magic or an API
+extension.  Either way, the pointer returned from rcu_dereference()
+must be tagged with the ID of the outermost rcu_read_lock() that
+covers it.  Then that tag must be checked against that of the outermost
+rcu_read_lock() when it is dereferenced.  If we introduced yet another
+set of RCU API members (shudder!) with which to wrapper your
+ptr->field use, we could associate additional storage with the
+pointer to hold the cookie/counter.  And then use sparse to enforce
+use of the new API.
+
+Of course, if we were using C++, we could define a template for pointers
+returned by rcu_dereference() in order to make this work.  Now, where
+did I put that asbestos suit, you know, the one with the titanium
+pinstripes?  ;-)
+
+But even that has some "interesting" issues.  To see this, let's
+modify your example a bit:
+
+	rcu_read_lock();
+
+	...
+
+	rcu_read_lock_bh();
+
+	ptr = rcu_dereference(x);
+	if (!ptr)
+		return NULL;
+	...
+
+
+	rcu_read_unlock_bh();
+
+	...
+	/* no reload of x, ptr might be now stale/freed */
+	if (ptr->field) { ... }
+
+	...
+
+	rcu_read_unlock();
+
+
+Now, is it the rcu_read_lock() or the rcu_read_lock_bh() that protects
+the rcu_dereference()?
+
+							Thanx, Paul
 
