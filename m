@@ -1,190 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759717Ab3DZG5c (ORCPT <rfc822;w@1wt.eu>);
+	id S1759785Ab3DZG5j (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 02:57:39 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:59138 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759684Ab3DZG5c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 26 Apr 2013 02:57:32 -0400
-Received: from lan.nucleusys.com ([92.247.61.126]:37930 "EHLO
-	zztop.nucleusys.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756577Ab3DZG53 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 02:57:29 -0400
-Date: Fri, 26 Apr 2013 09:57:22 +0300 (EEST)
-From: Petko Manolov <petkan@nucleusys.com>
-To: David Miller <davem@davemloft.net>
-cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/3] drivers: net: usb: pegasus: read/write_mii_word
- optimised
-Message-ID: <alpine.DEB.2.02.1304260944240.3746@fry.nucleusys.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+Message-ID: <517A2552.30808@ti.com>
+Date: Fri, 26 Apr 2013 09:57:22 +0300
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Tony Breeds <tony@bakeyournoodle.com>
+Subject: Re: linux-next: build failure after merge of the omap_dss2 tree
+References: <20130426151027.db71ddf367c85fe0682cbff6@canb.auug.org.au> <517A1117.7000501@ti.com> <20130426155659.f203481f914edeaba9f1e493@canb.auug.org.au>
+In-Reply-To: <20130426155659.f203481f914edeaba9f1e493@canb.auug.org.au>
+X-Enigmail-Version: 1.4.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="------------enig9568ACAC880CA2EFD9CE51D3"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Petko Manolov <petkan@nucleusys.com>
+--------------enig9568ACAC880CA2EFD9CE51D3
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Duplicated code in routines reading and writing MII registers is now 
-packed in __mii_op().
+On 2013-04-26 08:56, Stephen Rothwell wrote:
+> Hi Tomi,
+>=20
+> On Fri, 26 Apr 2013 08:31:03 +0300 Tomi Valkeinen <tomi.valkeinen@ti.co=
+m> wrote:
+>>
+>> On 2013-04-26 08:10, Stephen Rothwell wrote:
+>>>
+>>> After merging the omap_dss2 tree, today's linux-next build (powerpc
+>>> ppc64_defconfig) failed like this:
+>>>
+>>> drivers/video/ps3fb.c: In function 'ps3fb_mmap':
+>>> drivers/video/ps3fb.c:710:2: error: implicit declaration of function =
+'vm_ioremap_memory' [-Werror=3Dimplicit-function-declaration]
+>>> drivers/video/ps3fb.c:712:2: error: 'offset' undeclared (first use in=
+ this function)
+>>>
+>>> Caused by commit 6ea19860d6c5 ("fbdev/ps3fb: use vm_iomap_memory()").=
 
-Signed-off-by: Petko Manolov <petkan@nucleusys.com>
----
- pegasus.c |   85 +++++++++++++++++++++------------------------------
- 1 file changed, 35 insertions(+), 50 deletions(-)
+>>>
+>>> I have used the omap_dss2 tree from next-20130424 for today.
+>>>
+>>
+>> Thanks. Updated patch below. I couldn't right away find where to downl=
+oad a
+>> ppc64 toolchain, so not compile tested...
+>=20
+> https://www.kernel.org/pub/tools/crosstool/
 
-diff --git a/pegasus.c b/pegasus.c
-index 9e5e11f..5eefb27 100644
---- a/pegasus.c
-+++ b/pegasus.c
-@@ -325,36 +325,50 @@ static int update_eth_regs_async(pegasus_t *pegasus)
- 	return ret;
- }
- 
--/* Returns 0 on success, error on failure */
--static int read_mii_word(pegasus_t *pegasus, __u8 phy, __u8 indx, __u16 *regd)
-+static int __mii_op(pegasus_t *p, __u8 phy, __u8 indx, __u16 *regd, __u8 cmd)
- {
- 	int i;
- 	__u8 data[4] = { phy, 0, 0, indx };
- 	__le16 regdi;
--	int ret;
-+	int ret = -ETIMEDOUT;
- 
--	set_register(pegasus, PhyCtrl, 0);
--	set_registers(pegasus, PhyAddr, sizeof(data), data);
--	set_register(pegasus, PhyCtrl, (indx | PHY_READ));
-+	if (cmd & PHY_WRITE) {
-+		__le16 *t = (__le16 *) & data[1];
-+		*t = cpu_to_le16(*regd);
-+	}
-+	set_register(p, PhyCtrl, 0);
-+	set_registers(p, PhyAddr, sizeof(data), data);
-+	set_register(p, PhyCtrl, (indx | cmd));
- 	for (i = 0; i < REG_TIMEOUT; i++) {
--		ret = get_registers(pegasus, PhyCtrl, 1, data);
--		if (ret == -ESHUTDOWN)
-+		ret = get_registers(p, PhyCtrl, 1, data);
-+		if (ret < 0)
- 			goto fail;
- 		if (data[0] & PHY_DONE)
- 			break;
- 	}
--
- 	if (i >= REG_TIMEOUT)
- 		goto fail;
--
--	ret = get_registers(pegasus, PhyData, 2, &regdi);
--	*regd = le16_to_cpu(regdi);
-+	if (cmd & PHY_READ) {
-+		ret = get_registers(p, PhyData, 2, &regdi);
-+		*regd = le16_to_cpu(regdi);
-+		return ret;
-+	}
-+	return 0;
-+fail:
-+	netif_dbg(p, drv, p->net, "%s failed\n", __func__);
- 	return ret;
-+}
- 
--fail:
--	netif_warn(pegasus, drv, pegasus->net, "%s failed\n", __func__);
-+/* Returns non-negative int on success, error on failure */
-+static int read_mii_word(pegasus_t *pegasus, __u8 phy, __u8 indx, __u16 *regd)
-+{
-+	return __mii_op(pegasus, phy, indx, regd, PHY_READ);
-+}
- 
--	return ret;
-+/* Returns zero on success, error on failure */
-+static int write_mii_word(pegasus_t *pegasus, __u8 phy, __u8 indx, __u16 *regd)
-+{
-+	return __mii_op(pegasus, phy, indx, regd, PHY_WRITE);
- }
- 
- static int mdio_read(struct net_device *dev, int phy_id, int loc)
-@@ -366,40 +380,11 @@ static int mdio_read(struct net_device *dev, int phy_id, int loc)
- 	return (int)res;
- }
- 
--static int write_mii_word(pegasus_t *pegasus, __u8 phy, __u8 indx, __u16 regd)
--{
--	int i;
--	__u8 data[4] = { phy, 0, 0, indx };
--	int ret;
--
--	data[1] = (u8) regd;
--	data[2] = (u8) (regd >> 8);
--	set_register(pegasus, PhyCtrl, 0);
--	set_registers(pegasus, PhyAddr, sizeof(data), data);
--	set_register(pegasus, PhyCtrl, (indx | PHY_WRITE));
--	for (i = 0; i < REG_TIMEOUT; i++) {
--		ret = get_registers(pegasus, PhyCtrl, 1, data);
--		if (ret == -ESHUTDOWN)
--			goto fail;
--		if (data[0] & PHY_DONE)
--			break;
--	}
--
--	if (i >= REG_TIMEOUT)
--		goto fail;
--
--	return ret;
--
--fail:
--	netif_warn(pegasus, drv, pegasus->net, "%s failed\n", __func__);
--	return -ETIMEDOUT;
--}
--
- static void mdio_write(struct net_device *dev, int phy_id, int loc, int val)
- {
- 	pegasus_t *pegasus = netdev_priv(dev);
- 
--	write_mii_word(pegasus, phy_id, loc, val);
-+	write_mii_word(pegasus, phy_id, loc, (__u16 *)&val);
- }
- 
- static int read_eprom_word(pegasus_t *pegasus, __u8 index, __u16 *retdata)
-@@ -436,7 +421,6 @@ fail:
- static inline void enable_eprom_write(pegasus_t *pegasus)
- {
- 	__u8 tmp;
--	int ret;
- 
- 	get_registers(pegasus, EthCtrl2, 1, &tmp);
- 	set_register(pegasus, EthCtrl2, tmp | EPROM_WR_ENABLE);
-@@ -445,7 +429,6 @@ static inline void enable_eprom_write(pegasus_t *pegasus)
- static inline void disable_eprom_write(pegasus_t *pegasus)
- {
- 	__u8 tmp;
--	int ret;
- 
- 	get_registers(pegasus, EthCtrl2, 1, &tmp);
- 	set_register(pegasus, EpromCtrl, 0);
-@@ -539,7 +522,8 @@ static inline int reset_mac(pegasus_t *pegasus)
- 	if (usb_dev_id[pegasus->dev_index].vendor == VENDOR_ELCON) {
- 		__u16 auxmode;
- 		read_mii_word(pegasus, 3, 0x1b, &auxmode);
--		write_mii_word(pegasus, 3, 0x1b, auxmode | 4);
-+		auxmode |= 4;
-+		write_mii_word(pegasus, 3, 0x1b, &auxmode);
- 	}
- 
- 	return 0;
-@@ -571,7 +555,8 @@ static int enable_net_traffic(struct net_device *dev, struct usb_device *usb)
- 	    usb_dev_id[pegasus->dev_index].vendor == VENDOR_DLINK) {
- 		u16 auxmode;
- 		read_mii_word(pegasus, 0, 0x1b, &auxmode);
--		write_mii_word(pegasus, 0, 0x1b, auxmode | 4);
-+		auxmode |= 4;
-+		write_mii_word(pegasus, 0, 0x1b, &auxmode);
- 	}
- 
- 	return ret;
-@@ -1139,7 +1124,7 @@ static int pegasus_ioctl(struct net_device *net, struct ifreq *rq, int cmd)
- 	case SIOCDEVPRIVATE + 2:
- 		if (!capable(CAP_NET_ADMIN))
- 			return -EPERM;
--		write_mii_word(pegasus, pegasus->phy, data[1] & 0x1f, data[2]);
-+		write_mii_word(pegasus, pegasus->phy, data[1] & 0x1f, &data[2]);
- 		res = 0;
- 		break;
- 	default:
+Thanks. It compiles now. I've pushed new version to my for-next branch.
+
+ Tomi
+
+
+
+
+--------------enig9568ACAC880CA2EFD9CE51D3
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Using GnuPG with undefined - http://www.enigmail.net/
+
+iQIcBAEBAgAGBQJReiVSAAoJEPo9qoy8lh71l+UP/3uxcPMPOewbeFagVkHBhgoK
+MphfS1ehCipIMoiDmSIZMDke9YATwsI/0nc/WEqDq5VjnZPIwadVEX+mL4gogj1H
+uMG4d9BKe86oSv+XZWDEmsVEuT2q/3h7bFIu5EYIXfhswd91XhgrbEIBPOLU+Cmd
+L8+9YIGRJBtV3/uRDkiiBxpI9cyEYGrLvybuWFFNyE0/I/3aCfoXM1VeH9gP1eEx
+t6fzo+NJhSwdcSzWgQbIUrPiDOfbmpaawBUFXrmz25Kt0eoCkhOtqLMEsuvKlGTe
+gMKut1T3BNB3iGYyRLb6R14o/uWZtgoFZibmLJF8LW1HzCQJsQOH1aWYs+/qFGU3
+9MSW7vCEbQrGrUUz4O+1RtcBjm3zsG8YI1hCBWo5COzUhee5g2trpsRexGRdjjuy
+OADlTg4s55C3i8wXvQvtkL+y0iUbFELUnJ81IbkWMLX+dpYCwDxo7RrcqsmhIBxX
+tVA4ik6zZaRkwDQcOY8z3wlt3hr0uMN8yeVy0tK8LWSryzo8bEF7pLTo97oWYG5z
+R6JsqNX/nQyyJdsrzyG8IVQKWRu+TZccYqT0+Ya/yA/u7PzGwMmT/cZ+u31GZjDC
+a9n9difHK8BPrV1EZbOYsuTINvOMBfDuNk6TQnmh4Rb1hsqzW1cnGaOjTa8tenYk
+tXwAhmboyf3jonp4J4Uv
+=mKHL
+-----END PGP SIGNATURE-----
+
+--------------enig9568ACAC880CA2EFD9CE51D3--
