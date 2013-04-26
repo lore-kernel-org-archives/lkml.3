@@ -1,92 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756981Ab3DZUYl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 16:24:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37347 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753477Ab3DZUYk (ORCPT
+	id S1757822Ab3DZUZF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 16:25:05 -0400
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:51515 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757442Ab3DZUZD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 16:24:40 -0400
-Date: Fri, 26 Apr 2013 13:24:38 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org, tj@kernel.org,
-        axboe@kernel.dk, James.Bottomley@hansenpartnership.com,
-        snitzer@redhat.com
-Subject: Re: Bcache v. whatever
-Message-Id: <20130426132438.4e48e0688fc3c3c298e71d7e@linux-foundation.org>
-In-Reply-To: <20130426194642.GC9931@google.com>
-References: <20130114223202.GV26407@google.com>
-	<20130425161704.3f0fc3b6af55cf75acbc9d9e@linux-foundation.org>
-	<20130426194642.GC9931@google.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 26 Apr 2013 16:25:03 -0400
+Date: Fri, 26 Apr 2013 13:25:01 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Alan Stern <stern@rowland.harvard.edu>,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [patch for-3.8-rc8] usb, chipidea: fix link error when USB_EHCI_HCD
+ is a module
+Message-ID: <alpine.DEB.2.02.1304261323060.17754@chino.kir.corp.google.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 26 Apr 2013 12:46:42 -0700 Kent Overstreet <koverstreet@google.com> wrote:
+Fixes link error when USB_EHCI_HCD=m and USB_CHIPIDEA_HOST=y:
 
-> On Thu, Apr 25, 2013 at 04:17:04PM -0700, Andrew Morton wrote:
-> > On Mon, 14 Jan 2013 14:32:02 -0800 Kent Overstreet <koverstreet@google.com> wrote:
-> > 
-> ...
-> > drivers/md/bcache/btree.c: In function `bch_btree_refill_keybuf':
-> > drivers/md/bcache/btree.c:2330: error: invalid operands to binary +
-> > 
-> > due to
-> > 
-> > #define pbtree(b)       (&bch_pbtree(b).s[0])
-> > 
-> > I don't know why this is happening (presumably a gcc glitch), but
-> > returning an 80-byte struct by value from bch_pkey() and bch_pbtree()
-> > is just gruesome.  The compiler has to allocate the space on the caller
-> > stack, pass a hidden pointer into the callee and the callee copies its
-> > return value into that caller stack slot.  It's slow and consumes stack.
-> > 
-> > Something different, please.
-> 
-> Well, it is kind of... perverse but really the compiler's doing exactly
-> what I would've had to do otherwise - stick a char buf[80] on the
-> caller's stack and pass it to bch_pbtree(). With the caveat that I
-> haven't looked at the generated code.
+	drivers/built-in.o: In function `ci_hdrc_host_init':
+	drivers/usb/chipidea/host.c:104: undefined reference to `ehci_init_driver'
 
-That's the more idiomatic way of doing things and yes, the code
-generation will be similarly awful.
+as a result of commit 09f6ffde2ece ("USB: EHCI: fix build error by making
+ChipIdea host a normal EHCI driver").
 
-> As far as I can tell the only real improvement would be to add a %p
-> format string to vsnprintf, but adding a global extension would obviously be
-> inappropriate for this. It'd be really nice to have a mechanism for
-> adding file/module private format strings to vsnprintf, but I haven't
-> cared enough yet to implement it myself.
-> 
-> Of course if you know a better solution I'm all ears.
-> 
-> Uhm, as for the actual bug - that is a fairly ancient gcc, I wasn't
-> aware we were supporting compilers that old but I'm sure you wouldn't be
-> bugging me about it if we weren't...
+Cc: stable@vger.kernel.org [v3.7+]
+Signed-off-by: David Rientjes <rientjes@google.com>
+---
+ drivers/usb/chipidea/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Documentation/Changes is the official status.  It says gcc-3.2+.  We're
-very slow in updating those version numbers because it's hard. 
-gcc-3.4.5 for mips fails in the same way.
-
-Why are those things macros anyway?  urgh, it's because we want to jam
-a string into the caller's stack frame without declaring any of it.
-
-
-Really I do think it would be better to do away with the C party tricks
-and have callers do
-
-	char btree_buf[BTREE_BUF_SIZE];
-
-	btree_to_text(btree_buf, b);
-	pr_debug("%s\n", btree_buf);
-
-Nice, simple, explicit, direct and stupid.  It might generate
-unused-var warnings if DEBUG is undefined but from my reading of
-pr_debug() things will be OK.
-
-Then we can poke around at btree_to_text() until gcc-3.4.5 is happy
-with it.
+diff --git a/drivers/usb/chipidea/Kconfig b/drivers/usb/chipidea/Kconfig
+--- a/drivers/usb/chipidea/Kconfig
++++ b/drivers/usb/chipidea/Kconfig
+@@ -20,7 +20,7 @@ config USB_CHIPIDEA_UDC
+ config USB_CHIPIDEA_HOST
+ 	bool "ChipIdea host controller"
+ 	depends on USB=y || USB=USB_CHIPIDEA
+-	depends on USB_EHCI_HCD
++	depends on USB_EHCI_HCD=y
+ 	select USB_EHCI_ROOT_HUB_TT
+ 	help
+ 	  Say Y here to enable host controller functionality of the
