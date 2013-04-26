@@ -1,69 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759549Ab3DZJde (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 05:33:34 -0400
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:57345 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756854Ab3DZJdb (ORCPT
+	id S1759575Ab3DZJfL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 05:35:11 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:55579 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754221Ab3DZJfJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 05:33:31 -0400
-Date: Fri, 26 Apr 2013 11:33:27 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: "Li, Fei" <fei.li@intel.com>
-Cc: "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "Liu, Chuansheng" <chuansheng.liu@intel.com>,
-        "tomoki.sekiyama.qu@hitachi.com" <tomoki.sekiyama.qu@hitachi.com>,
-        "suresh.b.siddha@intel.com" <suresh.b.siddha@intel.com>,
-        "joe@perches.com" <joe@perches.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86: eliminate irq_mis_count counted in arch_irq_stat
-Message-ID: <20130426093327.GA1933@gmail.com>
-References: <1366962971.32469.4.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
- <20130426081915.GA1450@gmail.com>
- <BEC9F67575FA1E429CA7CF5AE9BE3634433D23@SHSMSX102.ccr.corp.intel.com>
+	Fri, 26 Apr 2013 05:35:09 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        magnus.p.persson@stericsson.com,
+        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
+        Andreas Westin <andreas.westin@stericsson.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>
+Subject: Re: [PATCH 6/9] crypto: ux500/cryp - Set DMA configuration though dma_slave_config()
+Date: Fri, 26 Apr 2013 11:34:54 +0200
+Message-ID: <1412321.eb7x7S18CK@wuerfel>
+User-Agent: KMail/4.10.2 (Linux/3.8.0-17-generic; KDE/4.10.2; x86_64; ; )
+In-Reply-To: <CACRpkdaBf++gy3sghC-t33uio2+eHp1MrQ2FM0XXBazZTtm3kA@mail.gmail.com>
+References: <1366280825-31136-1-git-send-email-lee.jones@linaro.org> <201304251611.39667.arnd@arndb.de> <CACRpkdaBf++gy3sghC-t33uio2+eHp1MrQ2FM0XXBazZTtm3kA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BEC9F67575FA1E429CA7CF5AE9BE3634433D23@SHSMSX102.ccr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:Iyo71a3JgkLGmtMZnbCzZq6gAwz2BHR+WkofYMKqL/b
+ EIKJWZlY2fg2CdLmygw9tWaonPQTvE3y9BNmz2FM7D7YyhF5cM
+ kBUK6dh8O3glvMwAUfTJlscqzqNlTeIk/BEy9Dh6wtqepBHuij
+ 6ff9u+jR/7p+qkw7DpFhy6B6HTfm2kSPUfbvfEjXuwWZzr5iJk
+ rvPWIOkiTzeVcy57Yt8hygMCI5zSVzGMA7TG8NGpwmVd1CFIB+
+ ozgeihlnOMgHKAJj8WJPgctCdL8TNw133/bkjMvrMf2ERFnqiA
+ WbGTJYKFx0TK5QbYBvhLA2Zu2jfdToD1c686uXIFTneVouBc/d
+ OG7iPqiUKezKy1a3656E=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Li, Fei <fei.li@intel.com> wrote:
-
-> > > Signed-off-by: Liu Chuansheng <chuansheng.liu@intel.com>
-> > > Signed-off-by: Li Fei <fei.li@intel.com>
-> > 
-> > The patch looks good, but this is not a valid signoff sequence. If Liu
-> > Chuansheng wrote this patch then his From: line should be included. If he
-> > acked it, then it should be added as Acked-by.
-> > 
-> Hello Ingo,
->    Thanks for your quick feedback. 
+On Friday 26 April 2013 10:28:39 Linus Walleij wrote:
 > 
->    I add Chuansheng's signature basing on:
->    1> Chuansheng found such hole in code;
->    2> After discussion with Chuansheng, I wrote the patch;
->    3> Chuansheng also acked it.
->    
->    Do you think it's OK to add Chuansheng's signature in such case?
->    Or better suggestion?
+> However this rings a bell that there may be a possible relation to
+> DMA-API, since that API syncs memory buffers to the DMA
+> address space if there is some MMU inbetween the DMA and the
+> (ordinary, non-device) memory.
+> 
+> So if we think one step ahead, assuming the DMAC is actually behind
+> an MMU making it see the device in some other address than the
+> physical (bus) space, where would the address be resolved?
 
-Signed-off-by has a specific meaning, it typically means someone authored 
-or as a maintainer forwarded the code (which did not happen here) - see 
-the details in Documentation/SubmittingPatches, under this section:
+We don't currently have the infrastructure for that I think.
+The dma-mapping API has some of the required parts but not all,
+in particular it's only designed for mapping pages from the linear
+kernel memory into the bus address space, not for devices.
 
-  12) Sign your work
+The iommu API could do it for devices that have an IOMMU, but
+it's not the best fit, because it does not abstract away the
+presence of an IOMMU.
 
-If Chuansheng found the bug, there's a Reported-by tag. If Chuansheng 
-approves of the fix patch then there's Acked-by for that. If he tested it, 
-then for that there's the Tested-by tag. You can also add several of those 
-tags.
+Another missing part is parsing the "dma-ranges" properties in
+device tree, which you need to do if the address space translation
+is not 1:1, and to find out which side of the IOMMU the DMA master
+is connected to: if it's on the bus side, you need 1:1 mapping
+and if it's on the host side, you need an IO page table entry.
 
-Thanks,
-
-	Ingo
+	Arnd
