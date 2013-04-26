@@ -1,72 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758915Ab3DZJz7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 05:55:59 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:56692 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757705Ab3DZJz5 (ORCPT
+	id S1759331Ab3DZJ4I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 05:56:08 -0400
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:48782 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757705Ab3DZJ4D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 05:55:57 -0400
-Message-ID: <517A4F2A.4080906@intel.com>
-Date: Fri, 26 Apr 2013 10:55:54 +0100
-From: Matt Fleming <matt.fleming@intel.com>
-Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
- Way, Swindon SN3 1RJ
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Fri, 26 Apr 2013 05:56:03 -0400
+Subject: [RFC PATCH 0/3] Nvram-to-pstore: compression support for oops data
+To: linuxppc-dev@ozlabs.org, paulus@samba.org, linux-kernel@vger.kernel.org,
+        benh@kernel.crashing.org
+From: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+Cc: jkenisto@linux.vnet.ibm.com, tony.luck@intel.com, ananth@in.ibm.com,
+        mahesh@linux.vnet.ibm.com, ccross@android.com, anton@samba.org,
+        cbouatmailru@gmail.com, keescook@chromium.org
+Date: Fri, 26 Apr 2013 15:25:54 +0530
+Message-ID: <20130426094923.14323.80567.stgit@aruna-ThinkPad-T420>
+User-Agent: StGit/0.16-41-gd1dd
 MIME-Version: 1.0
-To: Seiji Aguchi <seiji.aguchi@hds.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@kernel.org" <mingo@kernel.org>, "hpa@zytor.com" <hpa@zytor.com>,
-        "mjg59@srcf.ucam.org" <mjg59@srcf.ucam.org>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        "jk@ozlabs.org" <jk@ozlabs.org>, "teg@jklm.no" <teg@jklm.no>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mikew@google.com" <mikew@google.com>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>
-Subject: Re: [tip:x86/efi2] efivars: efivar_entry API
-References: <tip-e14ab23dde12b80db4c94b684a2e485b72b16af3@git.kernel.org> <A5ED84D3BB3A384992CBB9C77DEDA4D41AFCC9D0@USINDEM103.corp.hds.com>
-In-Reply-To: <A5ED84D3BB3A384992CBB9C77DEDA4D41AFCC9D0@USINDEM103.corp.hds.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13042609-5816-0000-0000-000007B7EB46
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24/04/13 00:55, Seiji Aguchi wrote:
-> Hi,
-> 
-> I tested a current tip tree to check if the new API works.
-> But pstore_erase() doesn't work...
-> I'm checking the source code right now.
-> 
-> Seiji
+The patchset takes care of compressing oops messages while writing to NVRAM,
+so that more oops data can be captured in the given space.
 
-[...]
+big_oops_buf (2.22 * oops_data_sz) is allocated for compression.
+oops_data_sz is oops header size less of oops partition size.
 
-> Call Trace:
->  [<ffffffff8143001f>] efi_pstore_erase+0xdf/0x130
->  [<ffffffff81200038>] ? cap_socket_create+0x8/0x10
->  [<ffffffff811ea491>] pstore_unlink+0x41/0x60
->  [<ffffffff811741ff>] vfs_unlink+0x9f/0x110
->  [<ffffffff8117813b>] do_unlinkat+0x18b/0x280
->  [<ffffffff81178472>] sys_unlinkat+0x22/0x40
->  [<ffffffff81542402>] system_call_fastpath+0x16/0x1b
+Pstore will internally call kmsg_dump to capture messages from printk
+buffer. While returning the data to nvram it adds is own header.
 
-Does this patch fix things?
+For compression:
+	Register pstore with big_oops_buf. 
+
+In case compression fails, copy header added by pstore and
+last oops_data_sz bytes (recent messages) of big_oops_buf to
+nvram for which we need to know header size. 
+	
+patch 01/03 will add a function in pstore to return the header size.
+
+pstore read callback of nvram will read the compressed data and return the
+decompressed data so that dmesg file (under /dev/pstore) is readable.
+
+In case decompression fails, instead of having the compressed data (junk) in the
+dmesg file it will skip and continue reading other partitions. This results in
+absence of dmesg file but will still have files relating to other parititons.
+
 
 ---
 
-diff --git a/drivers/firmware/efi/efi-pstore.c b/drivers/firmware/efi/efi-pstore.c
-index 47ae712..b820593 100644
---- a/drivers/firmware/efi/efi-pstore.c
-+++ b/drivers/firmware/efi/efi-pstore.c
-@@ -173,7 +173,7 @@ static int efi_pstore_erase(enum pstore_type_id type, u64 id, int count,
- 			    struct timespec time, struct pstore_info *psi)
- {
- 	struct pstore_erase_data edata;
--	struct efivar_entry *entry;
-+	struct efivar_entry *entry = NULL;
- 	char name[DUMP_NAME_LEN];
- 	efi_char16_t efi_name[DUMP_NAME_LEN];
- 	int found, i;
+Aruna Balakrishnaiah (3):
+      Retreive header size from pstore.
+      powerpc/pseries: Re-organise the oops compression code
+      powerpc/pseries: Support compression of oops text via pstore
+
+
+ arch/powerpc/platforms/pseries/nvram.c |  236 +++++++++++++++++++++++---------
+ fs/pstore/platform.c                   |    7 +
+ include/linux/pstore.h                 |    6 +
+ 3 files changed, 182 insertions(+), 67 deletions(-)
+
+-- 
+
