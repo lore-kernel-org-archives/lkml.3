@@ -1,44 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759580Ab3DZBoG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 21:44:06 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:34002 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759541Ab3DZBoF (ORCPT
+	id S1759729Ab3DZBpd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 21:45:33 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:47728 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756478Ab3DZBp2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 21:44:05 -0400
-MIME-Version: 1.0
-In-Reply-To: <1366887697-24627-3-git-send-email-jaegeuk.kim@samsung.com>
-References: <1366887697-24627-1-git-send-email-jaegeuk.kim@samsung.com>
-	<1366887697-24627-3-git-send-email-jaegeuk.kim@samsung.com>
-Date: Fri, 26 Apr 2013 10:44:03 +0900
-Message-ID: <CAKYAXd_f8Vqd=zrUf0PpccuJFtUF5rW-74wt4oac2M0etT5YVA@mail.gmail.com>
-Subject: Re: [PATCH 3/3] f2fs: enhnace alloc_nid and build_free_nids flows
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net
-Content-Type: text/plain; charset=UTF-8
+	Thu, 25 Apr 2013 21:45:28 -0400
+From: Simon Horman <horms@verge.net.au>
+To: Eric Dumazet <eric.dumazet@gmail.com>, Julian Anastasov <ja@ssi.bg>,
+        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
+Cc: lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
+        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Dipankar Sarma <dipankar@in.ibm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Simon Horman <horms@verge.net.au>
+Subject: [PATCH 0/2] sched: Add cond_resched_rcu_lock() helper
+Date: Fri, 26 Apr 2013 10:45:06 +0900
+Message-Id: <1366940708-10180-1-git-send-email-horms@verge.net.au>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/4/25, Jaegeuk Kim <jaegeuk.kim@samsung.com>:
-> In order to avoid build_free_nid lock contention, let's change the order of
-> function calls as follows.
->
-> At first, check whether there is enough free nids.
->  - If available, just get a free nid with spin_lock without any overhead.
->  - Otherwise, conduct build_free_nids.
->   : scan nat pages, journal nat entries, and nat cache entries.
->
-> We should consider carefullly not to serve free nids intermediately made by
-> build_free_nids.
-> We can get stable free nids only after build_free_nids is done.
->
-> Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-I can't find any issues in this patch.
-Reviewed-by: Namjae Jeon <namjae.jeon@samsung.com>
+Add a helper that for use in loops which read data protected by RCU and
+may have a large number of iterations.  Such an example is dumping the list
+of connections known to IPVS: ip_vs_conn_array() and ip_vs_conn_seq_next().
 
-Thanks.
-> ---
+This series also updates the two ip_vs functions mentioned above
+to use the helper.
+
+As suggested by Eric Dumazet.
+
+Simon Horman (2):
+  sched: Add cond_resched_rcu_lock() helper
+  ipvs: Use cond_resched_rcu_lock() helper when dumping connections
+
+ include/linux/sched.h           | 9 +++++++++
+ net/netfilter/ipvs/ip_vs_conn.c | 6 ++----
+ 2 files changed, 11 insertions(+), 4 deletions(-)
+
+-- 
+1.8.2.1
+
