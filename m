@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755923Ab3DZMXQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 08:23:16 -0400
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:45480 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754265Ab3DZMXN (ORCPT
+	id S1756170Ab3DZMX1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 08:23:27 -0400
+Received: from mail-we0-f181.google.com ([74.125.82.181]:51829 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754658Ab3DZMXW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 08:23:13 -0400
+	Fri, 26 Apr 2013 08:23:22 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 1/6] ARM: ux500: Replace ST-E's home-brew DMA direction definition with the generic one
-Date: Fri, 26 Apr 2013 12:38:10 +0100
-Message-Id: <1366976295-11728-2-git-send-email-lee.jones@linaro.org>
+        Lee Jones <lee.jones@linaro.org>, Vinod Koul <vinod.koul@intel.com>,
+        Dan Williams <djbw@fb.com>, Per Forlin <per.forlin@stericsson.com>,
+        Rabin Vincent <rabin@rab.in>
+Subject: [PATCH 4/6] dmaengine: ste_dma40_ll: Use the BIT macro to replace ugly '(1 << x)'s
+Date: Fri, 26 Apr 2013 12:38:13 +0100
+Message-Id: <1366976295-11728-5-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1366976295-11728-1-git-send-email-lee.jones@linaro.org>
 References: <1366976295-11728-1-git-send-email-lee.jones@linaro.org>
@@ -21,244 +23,154 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-STEDMA40_*_TO_* direction definitions are identical in all but name to
-the pre-defined generic DMA_*_TO_* ones. Let's make things easy by not
-duplicating such things.
+The aim is to make the code that little more readable.
 
+Cc: Vinod Koul <vinod.koul@intel.com>
+Cc: Dan Williams <djbw@fb.com>
+Cc: Per Forlin <per.forlin@stericsson.com>
+Cc: Rabin Vincent <rabin@rab.in>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- arch/arm/mach-ux500/board-mop500-audio.c |   12 ++++++------
- arch/arm/mach-ux500/board-mop500-sdi.c   |   16 ++++++++--------
- arch/arm/mach-ux500/board-mop500.c       |   22 +++++++++++-----------
- arch/arm/mach-ux500/usb.c                |    4 ++--
- 4 files changed, 27 insertions(+), 27 deletions(-)
+ drivers/dma/ste_dma40_ll.c |   48 ++++++++++++++++++++++----------------------
+ 1 file changed, 24 insertions(+), 24 deletions(-)
 
-diff --git a/arch/arm/mach-ux500/board-mop500-audio.c b/arch/arm/mach-ux500/board-mop500-audio.c
-index 972bec0..4bd4d0f 100644
---- a/arch/arm/mach-ux500/board-mop500-audio.c
-+++ b/arch/arm/mach-ux500/board-mop500-audio.c
-@@ -22,13 +22,13 @@
+diff --git a/drivers/dma/ste_dma40_ll.c b/drivers/dma/ste_dma40_ll.c
+index 1e4b571..dd7eb66 100644
+--- a/drivers/dma/ste_dma40_ll.c
++++ b/drivers/dma/ste_dma40_ll.c
+@@ -20,28 +20,28 @@ void d40_log_cfg(struct stedma40_chan_cfg *cfg,
+ 	/* src is mem? -> increase address pos */
+ 	if (cfg->dir ==  DMA_MEM_TO_DEV ||
+ 	    cfg->dir ==  DMA_MEM_TO_MEM)
+-		l1 |= 1 << D40_MEM_LCSP1_SCFG_INCR_POS;
++		l1 |= BIT(D40_MEM_LCSP1_SCFG_INCR_POS);
  
- static struct stedma40_chan_cfg msp0_dma_rx = {
- 	.high_priority = true,
--	.dir = STEDMA40_PERIPH_TO_MEM,
-+	.dir = DMA_DEV_TO_MEM,
- 	.dev_type = DB8500_DMA_DEV31_MSP0_SLIM0_CH0,
- };
+ 	/* dst is mem? -> increase address pos */
+ 	if (cfg->dir ==  DMA_DEV_TO_MEM ||
+ 	    cfg->dir ==  DMA_MEM_TO_MEM)
+-		l3 |= 1 << D40_MEM_LCSP3_DCFG_INCR_POS;
++		l3 |= BIT(D40_MEM_LCSP3_DCFG_INCR_POS);
  
- static struct stedma40_chan_cfg msp0_dma_tx = {
- 	.high_priority = true,
--	.dir = STEDMA40_MEM_TO_PERIPH,
-+	.dir = DMA_MEM_TO_DEV,
- 	.dev_type = DB8500_DMA_DEV31_MSP0_SLIM0_CH0,
- };
+ 	/* src is hw? -> master port 1 */
+ 	if (cfg->dir ==  DMA_DEV_TO_MEM ||
+ 	    cfg->dir ==  DMA_DEV_TO_DEV)
+-		l1 |= 1 << D40_MEM_LCSP1_SCFG_MST_POS;
++		l1 |= BIT(D40_MEM_LCSP1_SCFG_MST_POS);
  
-@@ -40,13 +40,13 @@ struct msp_i2s_platform_data msp0_platform_data = {
+ 	/* dst is hw? -> master port 1 */
+ 	if (cfg->dir ==  DMA_MEM_TO_DEV ||
+ 	    cfg->dir ==  DMA_DEV_TO_DEV)
+-		l3 |= 1 << D40_MEM_LCSP3_DCFG_MST_POS;
++		l3 |= BIT(D40_MEM_LCSP3_DCFG_MST_POS);
  
- static struct stedma40_chan_cfg msp1_dma_rx = {
- 	.high_priority = true,
--	.dir = STEDMA40_PERIPH_TO_MEM,
-+	.dir = DMA_DEV_TO_MEM,
- 	.dev_type = DB8500_DMA_DEV30_MSP3,
- };
+-	l3 |= 1 << D40_MEM_LCSP3_DCFG_EIM_POS;
++	l3 |= BIT(D40_MEM_LCSP3_DCFG_EIM_POS);
+ 	l3 |= cfg->dst_info.psize << D40_MEM_LCSP3_DCFG_PSIZE_POS;
+ 	l3 |= cfg->dst_info.data_width << D40_MEM_LCSP3_DCFG_ESIZE_POS;
  
- static struct stedma40_chan_cfg msp1_dma_tx = {
- 	.high_priority = true,
--	.dir = STEDMA40_MEM_TO_PERIPH,
-+	.dir = DMA_MEM_TO_DEV,
- 	.dev_type = DB8500_DMA_DEV30_MSP1,
- };
+-	l1 |= 1 << D40_MEM_LCSP1_SCFG_EIM_POS;
++	l1 |= BIT(D40_MEM_LCSP1_SCFG_EIM_POS);
+ 	l1 |= cfg->src_info.psize << D40_MEM_LCSP1_SCFG_PSIZE_POS;
+ 	l1 |= cfg->src_info.data_width << D40_MEM_LCSP1_SCFG_ESIZE_POS;
  
-@@ -58,13 +58,13 @@ struct msp_i2s_platform_data msp1_platform_data = {
+@@ -52,8 +52,8 @@ void d40_log_cfg(struct stedma40_chan_cfg *cfg,
  
- static struct stedma40_chan_cfg msp2_dma_rx = {
- 	.high_priority = true,
--	.dir = STEDMA40_PERIPH_TO_MEM,
-+	.dir = DMA_DEV_TO_MEM,
- 	.dev_type = DB8500_DMA_DEV14_MSP2,
- };
+ void d40_log_gim_unmask(u32 *src_cfg, u32 *dst_cfg) {
  
- static struct stedma40_chan_cfg msp2_dma_tx = {
- 	.high_priority = true,
--	.dir = STEDMA40_MEM_TO_PERIPH,
-+	.dir = DMA_MEM_TO_DEV,
- 	.dev_type = DB8500_DMA_DEV14_MSP2,
- 	.use_fixed_channel = true,
- 	.phy_channel = 1,
-diff --git a/arch/arm/mach-ux500/board-mop500-sdi.c b/arch/arm/mach-ux500/board-mop500-sdi.c
-index 553ace6..381acd0 100644
---- a/arch/arm/mach-ux500/board-mop500-sdi.c
-+++ b/arch/arm/mach-ux500/board-mop500-sdi.c
-@@ -63,13 +63,13 @@ static int mop500_sdi0_ios_handler(struct device *dev, struct mmc_ios *ios)
- #ifdef CONFIG_STE_DMA40
- struct stedma40_chan_cfg mop500_sdi0_dma_cfg_rx = {
- 	.mode = STEDMA40_MODE_LOGICAL,
--	.dir = STEDMA40_PERIPH_TO_MEM,
-+	.dir = DMA_DEV_TO_MEM,
- 	.dev_type = DB8500_DMA_DEV29_SD_MM0,
- };
+-	*src_cfg |= 1 << D40_SREG_CFG_LOG_GIM_POS;
+-	*dst_cfg |= 1 << D40_SREG_CFG_LOG_GIM_POS;
++	*src_cfg |= BIT(D40_SREG_CFG_LOG_GIM_POS);
++	*dst_cfg |= BIT(D40_SREG_CFG_LOG_GIM_POS);
+ }
  
- static struct stedma40_chan_cfg mop500_sdi0_dma_cfg_tx = {
- 	.mode = STEDMA40_MODE_LOGICAL,
--	.dir = STEDMA40_MEM_TO_PERIPH,
-+	.dir = DMA_MEM_TO_DEV,
- 	.dev_type = DB8500_DMA_DEV29_SD_MM0,
- };
- #endif
-@@ -128,13 +128,13 @@ void mop500_sdi_tc35892_init(struct device *parent)
- #ifdef CONFIG_STE_DMA40
- static struct stedma40_chan_cfg sdi1_dma_cfg_rx = {
- 	.mode = STEDMA40_MODE_LOGICAL,
--	.dir = STEDMA40_PERIPH_TO_MEM,
-+	.dir = DMA_DEV_TO_MEM,
- 	.dev_type = DB8500_DMA_DEV32_SD_MM1,
- };
+ void d40_phy_cfg(struct stedma40_chan_cfg *cfg, u32 *src_cfg, u32 *dst_cfg)
+@@ -64,39 +64,39 @@ void d40_phy_cfg(struct stedma40_chan_cfg *cfg, u32 *src_cfg, u32 *dst_cfg)
+ 	if ((cfg->dir == DMA_DEV_TO_MEM) ||
+ 	    (cfg->dir == DMA_DEV_TO_DEV)) {
+ 		/* Set master port to 1 */
+-		src |= 1 << D40_SREG_CFG_MST_POS;
++		src |= BIT(D40_SREG_CFG_MST_POS);
+ 		src |= D40_TYPE_TO_EVENT(cfg->dev_type);
  
- static struct stedma40_chan_cfg sdi1_dma_cfg_tx = {
- 	.mode = STEDMA40_MODE_LOGICAL,
--	.dir = STEDMA40_MEM_TO_PERIPH,
-+	.dir = DMA_MEM_TO_DEV,
- 	.dev_type = DB8500_DMA_DEV32_SD_MM1,
- };
- #endif
-@@ -159,13 +159,13 @@ struct mmci_platform_data mop500_sdi1_data = {
- #ifdef CONFIG_STE_DMA40
- struct stedma40_chan_cfg mop500_sdi2_dma_cfg_rx = {
- 	.mode = STEDMA40_MODE_LOGICAL,
--	.dir = STEDMA40_PERIPH_TO_MEM,
-+	.dir = DMA_DEV_TO_MEM,
- 	.dev_type =  DB8500_DMA_DEV28_SD_MM2,
- };
+ 		if (cfg->src_info.flow_ctrl == STEDMA40_NO_FLOW_CTRL)
+-			src |= 1 << D40_SREG_CFG_PHY_TM_POS;
++			src |= BIT(D40_SREG_CFG_PHY_TM_POS);
+ 		else
+ 			src |= 3 << D40_SREG_CFG_PHY_TM_POS;
+ 	}
+ 	if ((cfg->dir == DMA_MEM_TO_DEV) ||
+ 	    (cfg->dir == DMA_DEV_TO_DEV)) {
+ 		/* Set master port to 1 */
+-		dst |= 1 << D40_SREG_CFG_MST_POS;
++		dst |= BIT(D40_SREG_CFG_MST_POS);
+ 		dst |= D40_TYPE_TO_EVENT(cfg->dev_type);
  
- static struct stedma40_chan_cfg mop500_sdi2_dma_cfg_tx = {
- 	.mode = STEDMA40_MODE_LOGICAL,
--	.dir = STEDMA40_MEM_TO_PERIPH,
-+	.dir = DMA_MEM_TO_DEV,
- 	.dev_type = DB8500_DMA_DEV28_SD_MM2,
- };
- #endif
-@@ -191,13 +191,13 @@ struct mmci_platform_data mop500_sdi2_data = {
- #ifdef CONFIG_STE_DMA40
- struct stedma40_chan_cfg mop500_sdi4_dma_cfg_rx = {
- 	.mode = STEDMA40_MODE_LOGICAL,
--	.dir = STEDMA40_PERIPH_TO_MEM,
-+	.dir = DMA_DEV_TO_MEM,
- 	.dev_type =  DB8500_DMA_DEV42_SD_MM4,
- };
+ 		if (cfg->dst_info.flow_ctrl == STEDMA40_NO_FLOW_CTRL)
+-			dst |= 1 << D40_SREG_CFG_PHY_TM_POS;
++			dst |= BIT(D40_SREG_CFG_PHY_TM_POS);
+ 		else
+ 			dst |= 3 << D40_SREG_CFG_PHY_TM_POS;
+ 	}
+ 	/* Interrupt on end of transfer for destination */
+-	dst |= 1 << D40_SREG_CFG_TIM_POS;
++	dst |= BIT(D40_SREG_CFG_TIM_POS);
  
- static struct stedma40_chan_cfg mop500_sdi4_dma_cfg_tx = {
- 	.mode = STEDMA40_MODE_LOGICAL,
--	.dir = STEDMA40_MEM_TO_PERIPH,
-+	.dir = DMA_MEM_TO_DEV,
- 	.dev_type = DB8500_DMA_DEV42_SD_MM4,
- };
- #endif
-diff --git a/arch/arm/mach-ux500/board-mop500.c b/arch/arm/mach-ux500/board-mop500.c
-index 3866fa8..65abf8d 100644
---- a/arch/arm/mach-ux500/board-mop500.c
-+++ b/arch/arm/mach-ux500/board-mop500.c
-@@ -451,19 +451,19 @@ void mop500_snowball_ethernet_clock_enable(void)
+ 	/* Generate interrupt on error */
+-	src |= 1 << D40_SREG_CFG_EIM_POS;
+-	dst |= 1 << D40_SREG_CFG_EIM_POS;
++	src |= BIT(D40_SREG_CFG_EIM_POS);
++	dst |= BIT(D40_SREG_CFG_EIM_POS);
  
- static struct cryp_platform_data u8500_cryp1_platform_data = {
- 		.mem_to_engine = {
--				.dir = STEDMA40_MEM_TO_PERIPH,
-+				.dir = DMA_MEM_TO_DEV,
- 				.dev_type = DB8500_DMA_DEV48_CAC1,
- 				.mode = STEDMA40_MODE_LOGICAL,
- 		},
- 		.engine_to_mem = {
--				.dir = STEDMA40_PERIPH_TO_MEM,
-+				.dir = DMA_DEV_TO_MEM,
- 				.dev_type = DB8500_DMA_DEV48_CAC1,
- 				.mode = STEDMA40_MODE_LOGICAL,
- 		}
- };
- 
- static struct stedma40_chan_cfg u8500_hash_dma_cfg_tx = {
--		.dir = STEDMA40_MEM_TO_PERIPH,
-+		.dir = DMA_MEM_TO_DEV,
- 		.dev_type = DB8500_DMA_DEV50_HAC1_TX,
- 		.mode = STEDMA40_MODE_LOGICAL,
- };
-@@ -481,13 +481,13 @@ static struct platform_device *mop500_platform_devs[] __initdata = {
- #ifdef CONFIG_STE_DMA40
- static struct stedma40_chan_cfg ssp0_dma_cfg_rx = {
- 	.mode = STEDMA40_MODE_LOGICAL,
--	.dir = STEDMA40_PERIPH_TO_MEM,
-+	.dir = DMA_DEV_TO_MEM,
- 	.dev_type = DB8500_DMA_DEV8_SSP0,
- };
- 
- static struct stedma40_chan_cfg ssp0_dma_cfg_tx = {
- 	.mode = STEDMA40_MODE_LOGICAL,
--	.dir = STEDMA40_MEM_TO_PERIPH,
-+	.dir = DMA_MEM_TO_DEV,
- 	.dev_type = DB8500_DMA_DEV8_SSP0,
- };
- #endif
-@@ -516,37 +516,37 @@ static void __init mop500_spi_init(struct device *parent)
- #ifdef CONFIG_STE_DMA40
- static struct stedma40_chan_cfg uart0_dma_cfg_rx = {
- 	.mode = STEDMA40_MODE_LOGICAL,
--	.dir = STEDMA40_PERIPH_TO_MEM,
-+	.dir = DMA_DEV_TO_MEM,
- 	.dev_type = DB8500_DMA_DEV13_UART0,
- };
- 
- static struct stedma40_chan_cfg uart0_dma_cfg_tx = {
- 	.mode = STEDMA40_MODE_LOGICAL,
--	.dir = STEDMA40_MEM_TO_PERIPH,
-+	.dir = DMA_MEM_TO_DEV,
- 	.dev_type = DB8500_DMA_DEV13_UART0,
- };
- 
- static struct stedma40_chan_cfg uart1_dma_cfg_rx = {
- 	.mode = STEDMA40_MODE_LOGICAL,
--	.dir = STEDMA40_PERIPH_TO_MEM,
-+	.dir = DMA_DEV_TO_MEM,
- 	.dev_type = DB8500_DMA_DEV12_UART1,
- };
- 
- static struct stedma40_chan_cfg uart1_dma_cfg_tx = {
- 	.mode = STEDMA40_MODE_LOGICAL,
--	.dir = STEDMA40_MEM_TO_PERIPH,
-+	.dir = DMA_MEM_TO_DEV,
- 	.dev_type = DB8500_DMA_DEV12_UART1,
- };
- 
- static struct stedma40_chan_cfg uart2_dma_cfg_rx = {
- 	.mode = STEDMA40_MODE_LOGICAL,
--	.dir = STEDMA40_PERIPH_TO_MEM,
-+	.dir = DMA_DEV_TO_MEM,
- 	.dev_type = DB8500_DMA_DEV11_UART2,
- };
- 
- static struct stedma40_chan_cfg uart2_dma_cfg_tx = {
- 	.mode = STEDMA40_MODE_LOGICAL,
--	.dir = STEDMA40_MEM_TO_PERIPH,
-+	.dir = DMA_MEM_TO_DEV,
- 	.dev_type = DB8500_DMA_DEV11_UART2,
- };
- #endif
-diff --git a/arch/arm/mach-ux500/usb.c b/arch/arm/mach-ux500/usb.c
-index e6c4a05..88e0a77 100644
---- a/arch/arm/mach-ux500/usb.c
-+++ b/arch/arm/mach-ux500/usb.c
-@@ -14,12 +14,12 @@
- 
- #define MUSB_DMA40_RX_CH { \
- 		.mode = STEDMA40_MODE_LOGICAL, \
--		.dir = STEDMA40_PERIPH_TO_MEM, \
-+		.dir = DMA_DEV_TO_MEM, \
+ 	/* PSIZE */
+ 	if (cfg->src_info.psize != STEDMA40_PSIZE_PHY_1) {
+-		src |= 1 << D40_SREG_CFG_PHY_PEN_POS;
++		src |= BIT(D40_SREG_CFG_PHY_PEN_POS);
+ 		src |= cfg->src_info.psize << D40_SREG_CFG_PSIZE_POS;
+ 	}
+ 	if (cfg->dst_info.psize != STEDMA40_PSIZE_PHY_1) {
+-		dst |= 1 << D40_SREG_CFG_PHY_PEN_POS;
++		dst |= BIT(D40_SREG_CFG_PHY_PEN_POS);
+ 		dst |= cfg->dst_info.psize << D40_SREG_CFG_PSIZE_POS;
  	}
  
- #define MUSB_DMA40_TX_CH { \
- 		.mode = STEDMA40_MODE_LOGICAL, \
--		.dir = STEDMA40_MEM_TO_PERIPH, \
-+		.dir = DMA_MEM_TO_DEV, \
+@@ -106,14 +106,14 @@ void d40_phy_cfg(struct stedma40_chan_cfg *cfg, u32 *src_cfg, u32 *dst_cfg)
+ 
+ 	/* Set the priority bit to high for the physical channel */
+ 	if (cfg->high_priority) {
+-		src |= 1 << D40_SREG_CFG_PRI_POS;
+-		dst |= 1 << D40_SREG_CFG_PRI_POS;
++		src |= BIT(D40_SREG_CFG_PRI_POS);
++		dst |= BIT(D40_SREG_CFG_PRI_POS);
  	}
  
- static struct stedma40_chan_cfg musb_dma_rx_ch[UX500_MUSB_DMA_NUM_RX_TX_CHANNELS]
+ 	if (cfg->src_info.big_endian)
+-		src |= 1 << D40_SREG_CFG_LBE_POS;
++		src |= BIT(D40_SREG_CFG_LBE_POS);
+ 	if (cfg->dst_info.big_endian)
+-		dst |= 1 << D40_SREG_CFG_LBE_POS;
++		dst |= BIT(D40_SREG_CFG_LBE_POS);
+ 
+ 	*src_cfg = src;
+ 	*dst_cfg = dst;
+@@ -163,15 +163,15 @@ static int d40_phy_fill_lli(struct d40_phy_lli *lli,
+ 
+ 	/* If this scatter list entry is the last one, no next link */
+ 	if (next_lli == 0)
+-		lli->reg_lnk = 0x1 << D40_SREG_LNK_PHY_TCP_POS;
++		lli->reg_lnk = BIT(D40_SREG_LNK_PHY_TCP_POS);
+ 	else
+ 		lli->reg_lnk = next_lli;
+ 
+ 	/* Set/clear interrupt generation on this link item.*/
+ 	if (term_int)
+-		lli->reg_cfg |= 0x1 << D40_SREG_CFG_TIM_POS;
++		lli->reg_cfg |= BIT(D40_SREG_CFG_TIM_POS);
+ 	else
+-		lli->reg_cfg &= ~(0x1 << D40_SREG_CFG_TIM_POS);
++		lli->reg_cfg &= ~BIT(D40_SREG_CFG_TIM_POS);
+ 
+ 	/* Post link */
+ 	lli->reg_lnk |= 0 << D40_SREG_LNK_PHY_PRE_POS;
 -- 
 1.7.10.4
 
