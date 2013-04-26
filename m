@@ -1,61 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759656Ab3DZCHM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 22:07:12 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:7326 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758702Ab3DZCHK (ORCPT
+	id S932844Ab3DZCJu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 22:09:50 -0400
+Received: from mail-da0-f41.google.com ([209.85.210.41]:50527 "EHLO
+	mail-da0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758781Ab3DZCJs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 22:07:10 -0400
-X-Spam-Score: -100.8
-Message-ID: <5179E11F.8010007@asianux.com>
-Date: Fri, 26 Apr 2013 10:06:23 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Thu, 25 Apr 2013 22:09:48 -0400
+Message-ID: <5179E1E1.4050304@chrisli.org>
+Date: Thu, 25 Apr 2013 19:09:37 -0700
+From: Christopher Li <sparse@chrisli.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Mike Qiu <qiudayu@linux.vnet.ibm.com>
-CC: Michael Neuling <mikey@neuling.org>, Paul Mackerras <paulus@samba.org>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        linuxppc-dev@lists.ozlabs.org, sfr@canb.auug.org.au, matt@ozlabs.org,
-        linux-kernel@vger.kernel.org,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: Re: [PATCH v2] PowerPC: kernel: compiling issue, make additional
- room in exception vector area
-References: <5177965D.9090406@linux.vnet.ibm.com> <20130424083142.GB26834@concordia> <51779941.8080403@linux.vnet.ibm.com> <30651.1366799858@ale.ozlabs.ibm.com> <1366807638.5911.2.camel@localhost> <5178816D.3000309@asianux.com> <5178ABA2.4030109@linux.vnet.ibm.com> <20130425062539.GA421@iris.ozlabs.ibm.com> <517918AB.4020508@asianux.com> <30269.1366931768@ale.ozlabs.ibm.com> <5179D302.9060203@asianux.com> <5179D5D8.8080102@asianux.com> <5179DA23.8000407@asianux.com> <5179E056.2000709@linux.vnet.ibm.com>
-In-Reply-To: <5179E056.2000709@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Dan Carpenter <dan.carpenter@oracle.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        kbuild test robot <fengguang.wu@intel.com>,
+        Jingoo Han <jg1.han@samsung.com>, kbuild-all@01.org,
+        Linux-Sparse <linux-sparse@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] forced argument Was Re: sparse: incorrect type in argument
+ 1 (different address spaces)
+References: <5171d93a.0NZAGYYKNj8hjsAs%fengguang.wu@intel.com> <20130422165629.bae79e6c5251bf148a3bae73@linux-foundation.org> <CANeU7QmDXRj-rNWvb0qhXCmzyJBFv=1URzzjEZN6ARaAf15-hw@mail.gmail.com> <20130423061600.GN6638@mwanda>
+In-Reply-To: <20130423061600.GN6638@mwanda>
+Content-Type: multipart/mixed;
+ boundary="------------050208040901030504040708"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013年04月26日 10:03, Mike Qiu wrote:
-> �� 2013/4/26 9:36, Chen Gang д��:
->> > On 2013��04��26�� 09:18, Chen Gang wrote:
->>> >> On 2013��04��26�� 09:06, Chen Gang wrote:
->>>>> >>>> CFAR is the Come From Register.  It saves the location of the last
->>>>>> >>>>> branch and is hence overwritten by any branch.
->>>>>> >>>>>
->>>> >>> Do we process it just like others done (e.g. 0x300, 0xe00, 0xe20 ...) ?
->>>> >>> 	. = 0x900
->>>> >>> 	.globl decrementer_pSeries
->>>> >>> decrementer_pSeries:
->>>> >>>  	HMT_MEDIUM_PPR_DISCARD
->>>> >>> 	SET_SCRATCH0(r13)
->>>> >>> 	b decrementer_pSeries_0
->>>> >>>
->>>> >>> 	...
->>>> >>>
->>>> >>>
->> > Oh, it seems EXCEPTION_PROLOG_1 will save the regesters which related
->> > with CFAR, so I think need move EXCEPTION_PROLOG_1 to near 0x900.
-> I will try your diff V2, to see if the machine can boot up
+This is a multi-part message in MIME format.
+--------------050208040901030504040708
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 
-OK, thanks. (hope it can work)
+On 04/22/2013 11:16 PM, Dan Carpenter wrote:
+> That didn't work.  It's the the void * in the parameter list that's
+> the problem.  We'd need to do something like the patch below:
+> 
+> Otherwise we could add "__ok_to_cast" thing to Sparse maybe?
 
-:-)
+Thanks for the insight. I make a small patch to test the __ok_to_cast
+feature. The syntax is adding the force attribute to the argument
+declaration.
 
+it will look like this:
+static inline long __must_check PTR_ERR( __force const void *ptr)
+
+That means the "ptr" argument will perform a forced cast when receiving
+the argument. It is OK to pass __iomem pointer to "ptr".
+
+The example are in the patch. It need to patch both sparse and the
+Linux tree.
+
+What do you say?
+
+Chris
+
+
+--------------050208040901030504040708
+Content-Type: text/x-patch;
+ name="0001-Allow-forced-attribute-in-function-argument.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename*0="0001-Allow-forced-attribute-in-function-argument.patch"
+
+>From a0974ed0fc1e67c41608c780b748c205622956b8 Mon Sep 17 00:00:00 2001
+From: Christopher Li <sparse@chrisli.org>
+Date: Thu, 25 Apr 2013 18:09:43 -0700
+Subject: [PATCH] Allow forced attribute in function argument
+
+It will indicate this argument will skip the compatible check.
+---
+ evaluate.c             |  2 +-
+ parse.c                |  1 +
+ symbol.h               |  3 ++-
+ validation/fored_arg.c | 18 ++++++++++++++++++
+ 4 files changed, 22 insertions(+), 2 deletions(-)
+ create mode 100644 validation/fored_arg.c
+
+diff --git a/evaluate.c b/evaluate.c
+index 9f2c4ac..0dfa519 100644
+--- a/evaluate.c
++++ b/evaluate.c
+@@ -2137,7 +2137,7 @@ static int evaluate_arguments(struct symbol *f, struct symbol *fn, struct expres
+ 				else
+ 					degenerate(expr);
+ 			}
+-		} else {
++		} else if (!target->forced_arg){
+ 			static char where[30];
+ 			examine_symbol_type(target);
+ 			sprintf(where, "argument %d", i);
+diff --git a/parse.c b/parse.c
+index 45ffc10..890e56b 100644
+--- a/parse.c
++++ b/parse.c
+@@ -1841,6 +1841,7 @@ static struct token *parameter_declaration(struct token *token, struct symbol *s
+ 	sym->ctype = ctx.ctype;
+ 	sym->ctype.modifiers |= storage_modifiers(&ctx);
+ 	sym->endpos = token->pos;
++	sym->forced_arg = ctx.storage_class == SForced;
+ 	return token;
+ }
+ 
+diff --git a/symbol.h b/symbol.h
+index 1e74579..1c6ad66 100644
+--- a/symbol.h
++++ b/symbol.h
+@@ -157,7 +157,8 @@ struct symbol {
+ 					expanding:1,
+ 					evaluated:1,
+ 					string:1,
+-					designated_init:1;
++					designated_init:1,
++					forced_arg:1;
+ 			struct expression *array_size;
+ 			struct ctype ctype;
+ 			struct symbol_list *arguments;
+diff --git a/validation/fored_arg.c b/validation/fored_arg.c
+new file mode 100644
+index 0000000..4ab7141
+--- /dev/null
++++ b/validation/fored_arg.c
+@@ -0,0 +1,18 @@
++/*
++ * check-name: Forced function argument type.
++ */
++
++#define __iomem	__attribute__((noderef, address_space(2)))
++#define __force __attribute__((force))
++
++static void foo(__force void * addr)
++{
++}
++
++
++static void bar(void)
++{
++	void __iomem  *a;
++	foo(a);
++}
++
 -- 
-Chen Gang
+1.8.1.4
 
-Asianux Corporation
+
+--------------050208040901030504040708--
