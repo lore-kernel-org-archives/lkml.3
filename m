@@ -1,57 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756159Ab3DZXRy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 19:17:54 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:31567 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752170Ab3DZXRx (ORCPT
+	id S1756247Ab3DZXYv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 19:24:51 -0400
+Received: from mail-we0-f169.google.com ([74.125.82.169]:42522 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754111Ab3DZXYt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 19:17:53 -0400
-X-IronPort-AV: E=Sophos;i="4.87,561,1363158000"; 
-   d="scan'208";a="41896204"
-Message-ID: <517B0B20.3000305@codeaurora.org>
-Date: Fri, 26 Apr 2013 16:17:52 -0700
-From: Stepan Moskovchenko <stepanm@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
+	Fri, 26 Apr 2013 19:24:49 -0400
 MIME-Version: 1.0
-To: devicetree-discuss@lists.ozlabs.org
-CC: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Reusing DTSI files across trees with differing numbers of address-cells
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <20130426220427.GE1433@mtj.dyndns.org>
+References: <CA+icZUVCmFeh3Xna37VJDDzvZ34sYJ_Dser7i5rRzGLhMTi5-Q@mail.gmail.com>
+	<CA+icZUXeDT8x60iUtjJV2GO5KkDnm8CJsz8mntz5hREoOD+YJw@mail.gmail.com>
+	<CA+icZUWkyP9TE0eeqstyvVNP++MtN8rYfGcPBT6NuMOHEHm7dw@mail.gmail.com>
+	<20130426182239.GA25767@mtj.dyndns.org>
+	<CA+icZUVWRkP_fxTH22ywx9Ntnnp1xW_2dVRjwTvBfs0eJBcEVg@mail.gmail.com>
+	<20130426220427.GE1433@mtj.dyndns.org>
+Date: Sat, 27 Apr 2013 01:24:48 +0200
+Message-ID: <CA+icZUWJ=LoMTMMGfU9pJc7fVOFEdoZjxfMba2TaLgPWruiH4g@mail.gmail.com>
+Subject: Re: linux-next: Tree for Apr 26 [ bluetooth on suspend/resume ]
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Gustavo Padovan <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        Linux PM List <linux-pm@lists.linux-foundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Apr 27, 2013 at 12:04 AM, Tejun Heo <tj@kernel.org> wrote:
+> On Fri, Apr 26, 2013 at 11:07:44PM +0200, Sedat Dilek wrote:
+>> > The second argument %rsi is zero, which got transferred to %r13 and
+>> > then offset deref on it trapped.
+>> >
+>> > The second argument is @wq and the oopsing code is the wq->flags deref
+>> > in the following if condition.
+>> >
+>> >         /* if dying, only works from the same workqueue are allowed */
+>> >         if (unlikely(wq->flags & __WQ_DRAINING) &&
+>> >                 WARN_ON_ONCE(!is_chained_work(wq)))
+>> >                 return;
+>> >
+>> > So, umm, don't pass in NULL as @wq. :)
+>> >
+>>
+>> Do you have a patch for this?
+>
+> Heh, I haven't even looked at the caller.  It's a bug on the workqueue
+> user side.
+>
 
-Hello. I am creating a DTS file for an ARM (Qualcomm MSM) target which 
-supports LPAE, meaning that the target is capable of addressing memory 
-beyond the standard 4GB boundary. To account for the fact that the 
-memory node can contain reg addresses that exceed 32 bits, I am setting 
-#address-cells and #size-cells to 2 at the top level of my tree, since 
-this is what the kernel will use when parsing the memory node.
+[ CC Frederic ]
 
-However, my internal tree contains multiple DTSI files with definitions 
-for some hardware blocks that are used across multiple MSM targets, 
-including ones that have #address-cells and #size-cells set to 1 at the 
-top level, I would like to re-use some of these files in the tree for my 
-LPAE-based target. Additionally, most MSM I/O devices are declared at 
-the top level of the tree, rather than on a dedicated simple-bus.
+You should explain that a bit.
 
-To allow reuse of common hardware block definitions, I am considering 
-moving all the MSM memory-mapped I/O devices to a dedicated /soc node 
-(per the Power spec), declaring this node as a simple-bus with 
-#address-cells and #size-cells of 1, and using the ranges property to 
-map this bus into the top-level address space. Since MSM I/O devices are 
-located at addresses below 4GB, I believe it is okay to keep them on a 
-simple-bus with #address-cells=1.
+I have tested with my "problematic -3" kernel and did not see the warning again.
+So, I assume it's independent of linux-dynticks kconfig-settings.
 
-Does this seem like a reasonable approach?
+- Sedat -
 
-Thanks
-Steve
-
-
--- 
-  The Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-  hosted by The Linux Foundation
+> Thanks.
+>
+> --
+> tejun
