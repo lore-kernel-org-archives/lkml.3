@@ -1,48 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759307Ab3DZH5Y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 03:57:24 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:60141
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754135Ab3DZH5X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 03:57:23 -0400
-Date: Fri, 26 Apr 2013 09:56:02 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        eranian@google.com, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 1/2] Fix perf LBR filtering
-Message-ID: <20130426075601.GB8669@dyad.programming.kicks-ass.net>
-References: <1366844694-2770-1-git-send-email-andi@firstfloor.org>
- <20130425162535.GA5828@dyad.programming.kicks-ass.net>
- <20130425164100.GC16732@two.firstfloor.org>
- <20130425164837.GD5828@dyad.programming.kicks-ass.net>
- <20130425170037.GD16732@two.firstfloor.org>
- <20130425171842.GA8669@dyad.programming.kicks-ass.net>
- <20130425174211.GE16732@two.firstfloor.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130425174211.GE16732@two.firstfloor.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1759680Ab3DZH5j (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 03:57:39 -0400
+Received: from mga09.intel.com ([134.134.136.24]:35517 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758423Ab3DZH5i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Apr 2013 03:57:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,556,1363158000"; 
+   d="scan'208";a="326297172"
+Subject: [PATCH] x86: eliminate irq_mis_count counted in arch_irq_stat
+From: Li Fei <fei.li@intel.com>
+To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org
+Cc: chuansheng.liu@intel.com, tomoki.sekiyama.qu@hitachi.com,
+        suresh.b.siddha@intel.com, joe@perches.com,
+        linux-kernel@vger.kernel.org, fei.li@intel.com
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 26 Apr 2013 15:56:11 +0800
+Message-ID: <1366962971.32469.4.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 25, 2013 at 07:42:11PM +0200, Andi Kleen wrote:
-> There's the non cachable region tracking. But there's no guarantee a
-> MMIO has to be in there, driver may still rely just on MTRRs. Also
-> there may be MMIOs the kernel doesn't know about which just happen
-> to be somewhere in the direct mapping.
-> 
-> I don't see any reliable way to detect all mmios.
 
-Hmm.. that's unfortunate.
+With current implementation, kstat_cpu(cpu).irqs_sum is also
+increased in case of irq_mis_count increment.
+So there is no need to count irq_mis_count in arch_irq_stat,
+otherwise irq_mis_count will be counted twice in the sum of
+/proc/stat.
 
-OK, so how about we use something like:
+Signed-off-by: Liu Chuansheng <chuansheng.liu@intel.com>
+Signed-off-by: Li Fei <fei.li@intel.com>
+---
+ arch/x86/kernel/irq.c |    4 ----
+ 1 files changed, 0 insertions(+), 4 deletions(-)
 
-	 is_kernel_text() || is_module_text_address()
+diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
+index e4595f1..84b7789 100644
+--- a/arch/x86/kernel/irq.c
++++ b/arch/x86/kernel/irq.c
+@@ -165,10 +165,6 @@ u64 arch_irq_stat_cpu(unsigned int cpu)
+ u64 arch_irq_stat(void)
+ {
+ 	u64 sum = atomic_read(&irq_err_count);
+-
+-#ifdef CONFIG_X86_IO_APIC
+-	sum += atomic_read(&irq_mis_count);
+-#endif
+ 	return sum;
+ }
+ 
+-- 
+1.7.4.1
 
-And bail if not; that should at least make it work for the simple case or
-normal text and not be worse than what you propose for JIT stuff.
+
+
