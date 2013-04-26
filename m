@@ -1,59 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932505Ab3DZJWn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 05:22:43 -0400
-Received: from [65.55.88.15] ([65.55.88.15]:28074 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1757406Ab3DZJU4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 05:20:56 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 3
-X-BigFish: VS3(zzzz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1082kzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1155h)
-From: Huang Shijie <b32955@freescale.com>
-To: <dwmw2@infradead.org>
-CC: <dedekind1@gmail.com>, <computersforpeace@gmail.com>,
-        <linux-mtd@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Huang Shijie <b32955@freescale.com>
-Subject: [PATCH V4 1/9] mtd: add more comment for ecc_strength/ecc_size
-Date: Fri, 26 Apr 2013 17:08:49 +0800
-Message-ID: <1366967337-5534-2-git-send-email-b32955@freescale.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1366967337-5534-1-git-send-email-b32955@freescale.com>
-References: <1366967337-5534-1-git-send-email-b32955@freescale.com>
+	id S1759018Ab3DZJYi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 05:24:38 -0400
+Received: from mga03.intel.com ([143.182.124.21]:56281 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756916Ab3DZJYh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Apr 2013 05:24:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,557,1363158000"; 
+   d="scan'208";a="293411478"
+Date: Fri, 26 Apr 2013 11:23:11 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        "M'boumba Cedric Madianga" <cedric.madianga@stericsson.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Mattias WALLIN <mattias.wallin@stericsson.com>,
+        Michel JAOUEN <michel.jaouen@stericsson.com>
+Subject: Re: [PATCH 20/21] MFD: ab8500: export ab8500_gpadc_sw_hw_convert
+ properly
+Message-ID: <20130426092311.GA5022@zurbaran>
+References: <1366734653-488286-1-git-send-email-arnd@arndb.de>
+ <1366734653-488286-21-git-send-email-arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1366734653-488286-21-git-send-email-arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add more commit for ecc_strength and ecc_size fields.
-We can treat the comment as the initial semantics for the two fields.
+Hi Arnd,
 
-Signed-off-by: Huang Shijie <b32955@freescale.com>
----
- include/linux/mtd/nand.h |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
+On Tue, Apr 23, 2013 at 06:30:52PM +0200, Arnd Bergmann wrote:
+> Apparently the ab8500_gpadc_sw_hw_convert function got renamed
+> from ab8500_gpadc_convert to ab8500_gpadc_sw_hw_convert in
+> commit 734823462 "mfd: ab8500-gpadc: Add gpadc hw conversion",
+> but the export for this function did not get changed at the
+> same time, causing this allyesconfig error:
+> 
+> ERROR: "ab8500_gpadc_sw_hw_convert" [drivers/hwmon/ab8500.ko] undefined!
+> 
+> This patch fixes the export.
+> 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: M'boumba Cedric Madianga <cedric.madianga@stericsson.com>
+> Cc: Lee Jones <lee.jones@linaro.org>
+> Cc: Mattias WALLIN <mattias.wallin@stericsson.com>
+> Cc: Michel JAOUEN <michel.jaouen@stericsson.com>
+> Cc: Samuel Ortiz <sameo@linux.intel.com>
+> ---
+>  drivers/mfd/ab8500-gpadc.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+Applied to mfd-next, thanks.
 
-diff --git a/include/linux/mtd/nand.h b/include/linux/mtd/nand.h
-index 5458021..a0c486b 100644
---- a/include/linux/mtd/nand.h
-+++ b/include/linux/mtd/nand.h
-@@ -435,8 +435,11 @@ struct nand_buffers {
-  *			not bad when badblockbits == 7
-  * @cellinfo:		[INTERN] MLC/multichip data from chip ident
-  * @ecc_strength:	[INTERN] ECC correctability from the datasheet.
-+ *			The minimum number of bits correctability, if known;
-+ *			if unknown, set to 0.
-  * @ecc_size:		[INTERN] ECC size required by the @ecc_strength,
-- *                      also from the datasheet.
-+ *                      also from the datasheet. It is the recommended ECC step
-+ *			size, if known; if unknown, set to 0.
-  * @numchips:		[INTERN] number of physical chips
-  * @chipsize:		[INTERN] the size of one chip for multichip arrays
-  * @pagemask:		[INTERN] page number mask = number of (pages / chip) - 1
+Cheers,
+Samuel.
+
 -- 
-1.7.1
-
-
+Intel Open Source Technology Centre
+http://oss.intel.com/
