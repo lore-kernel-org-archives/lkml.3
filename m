@@ -1,70 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755559Ab3DZM7s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 08:59:48 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:63789 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755233Ab3DZM7q (ORCPT
+	id S1755847Ab3DZNJa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 09:09:30 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:39557 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753246Ab3DZNJ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 08:59:46 -0400
+	Fri, 26 Apr 2013 09:09:29 -0400
+Date: Fri, 26 Apr 2013 14:09:19 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Borislav Petkov <bp@suse.de>
+Subject: Re: [RFC PATCH 2/2] x86, efi: Add 1:1 mapping of runtime services
+Message-ID: <20130426130919.GA23038@console-pimps.org>
+References: <1366712152-8097-1-git-send-email-bp@alien8.de>
+ <1366712152-8097-3-git-send-email-bp@alien8.de>
 MIME-Version: 1.0
-In-Reply-To: <1577576.O1Cm2pf5KD@wuerfel>
-References: <1366974299-17877-1-git-send-email-pranavkumar@linaro.org>
-	<CAFEAcA_xmrHTvR7FxUr3PCKBJY-hZnkeBcqyHksTB4-hqOZS0w@mail.gmail.com>
-	<CALrVBkuOmu4u9egdzzfn1tU9B-CFe3w85HZQ9s2gpKvYnaSqvA@mail.gmail.com>
-	<1577576.O1Cm2pf5KD@wuerfel>
-Date: Fri, 26 Apr 2013 18:29:45 +0530
-Message-ID: <CALrVBkuyby_KY_M+yp0e=PLk=7_W_kSxxm62YYSwwp8rwLsCAQ@mail.gmail.com>
-Subject: Re: [PATCH 0/2] Early printk support for virtio console devices.
-From: Anup Patel <anup.patel@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linaro-kernel@lists.linaro.org, Peter Maydell <peter.maydell@linaro.org>,
-        patches@linaro.org,
-        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
-        Alexander Graf <agraf@suse.de>, kvmarm@lists.cs.columbia.edu,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1366712152-8097-3-git-send-email-bp@alien8.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26 April 2013 18:03, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Friday 26 April 2013 17:36:16 Anup Patel wrote:
->> On 26 April 2013 17:03, Peter Maydell <peter.maydell@linaro.org> wrote:
->> > On 26 April 2013 12:19, Alexander Graf <agraf@suse.de> wrote:
->> >> MMIO registers are handled by a different layer than the virtio
->> >> console itself. After the virtio refactoring in QEMU, they will
->> >> be completely separate drivers.
->> >
->> > Good point -- we don't really want to be mixing up the
->> > transport and the backend. You can see it in the kvmtool
->> > patch, in fact -- it introduces an "if this is virtio-console"
->> > special case into the mmio.c file which previously was
->> > entirely backend agnostic.
->>
->> Well, we can always have virtio device specific config registers
->> handle by virtio device backends and generic virtio config register
->> handled by transport.
->>
->> kvmtool patch is hacky because it does not provide virtio device
->> specific config read/write callbacks.
->
-> Couldn't kvmtool implement the interface used by smh_printch()
-> for early output instead?
->
-> Or if that's not a fitting inteface, maybe a psci call for writing
-> a character to the console?
->
->         Arnd
+On Tue, 23 Apr, at 12:15:52PM, Borislav Petkov wrote:
+> From: Borislav Petkov <bp@suse.de>
+> 
+> Map EFI runtime services 1:1 into the trampoline pgd so that all those
+> functions can be used in a kexec kernel. As we all know, the braindead
+> design of SetVirtualAddressMap() doesn't allow a subsequent call to this
+> function to reestablish virtual mappings, leading us to do all kinds of
+> crazy dances in the kernel.
+> 
+> 64-bit only for now.
+> 
+> Signed-off-by: Borislav Petkov <bp@suse.de>
+> ---
+>  arch/x86/include/asm/efi.h          |  2 +
+>  arch/x86/platform/efi/efi.c         | 84 +++++++++++++++++++++++++++----------
+>  arch/x86/platform/efi/efi_stub_64.S | 39 +++++++++++++++++
+>  3 files changed, 102 insertions(+), 23 deletions(-)
 
-I am curious about how smh-based or hypercall-based early prints would
-be handled in following scenario:
+[...]
 
-"A board is running KVM ARM enabled kernel and linux console on serial
-port. Now a user remotely connects to the board via telnet/ssh and
-launches a VM with smh-based or hypercall-based earlyprintk."
+> diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+> index 4b70be21fe0a..9e45eac3c33a 100644
+> --- a/arch/x86/platform/efi/efi.c
+> +++ b/arch/x86/platform/efi/efi.c
+> @@ -649,15 +649,24 @@ static int __init efi_runtime_init(void)
+>  		pr_err("Could not map the runtime service table!\n");
+>  		return -ENOMEM;
+>  	}
+> -	/*
+> -	 * We will only need *early* access to the following
+> -	 * two EFI runtime services before set_virtual_address_map
+> -	 * is invoked.
+> -	 */
+> -	efi_phys.get_time = (efi_get_time_t *)runtime->get_time;
+> -	efi_phys.set_virtual_address_map =
+> -		(efi_set_virtual_address_map_t *)
+> -		runtime->set_virtual_address_map;
+> +
+> +#define efi_phys_assign(f) \
+> +	efi_phys.f = (efi_ ##f## _t *)runtime->f
+> +
+> +	efi_phys_assign(get_time);
+> +	efi_phys_assign(set_time);
+> +	efi_phys_assign(get_wakeup_time);
+> +	efi_phys_assign(set_wakeup_time);
+> +	efi_phys_assign(get_variable);
+> +	efi_phys_assign(get_next_variable);
+> +	efi_phys_assign(set_variable);
+> +	efi_phys_assign(get_next_high_mono_count);
+> +	efi_phys_assign(reset_system);
+> +	efi_phys_assign(set_virtual_address_map);
+> +	efi_phys_assign(query_variable_info);
+> +	efi_phys_assign(update_capsule);
+> +	efi_phys_assign(query_capsule_caps);
+> +
 
-In the above scenario, will smh-based or hypercall-based earlyprints
-appear to user on remote shell or not ?
+Why is this change needed? We still don't access these other functions
+via their early addresses.
 
---Anup
+>  	/*
+>  	 * Make efi_get_time can be called before entering
+>  	 * virtual mode.
+> @@ -845,9 +854,10 @@ void efi_memory_uc(u64 addr, unsigned long size)
+>   */
+>  void __init efi_enter_virtual_mode(void)
+>  {
+> +	pgd_t *pgd = (pgd_t *)__va(real_mode_header->trampoline_pgd);
+>  	efi_memory_desc_t *md, *prev_md = NULL;
+>  	efi_status_t status;
+> -	unsigned long size;
+> +	unsigned long size, page_flags;
+>  	u64 end, systab, start_pfn, end_pfn;
+>  	void *p, *va, *new_memmap = NULL;
+>  	int count = 0;
+> @@ -895,7 +905,8 @@ void __init efi_enter_virtual_mode(void)
+>  		md = p;
+>  		if (!(md->attribute & EFI_MEMORY_RUNTIME) &&
+>  		    md->type != EFI_BOOT_SERVICES_CODE &&
+> -		    md->type != EFI_BOOT_SERVICES_DATA)
+> +		    md->type != EFI_BOOT_SERVICES_DATA &&
+> +		    md->type != EFI_CONVENTIONAL_MEMORY)
+>  			continue;
+>  
+>  		size = md->num_pages << EFI_PAGE_SHIFT;
+> @@ -920,11 +931,26 @@ void __init efi_enter_virtual_mode(void)
+>  			continue;
+>  		}
+>  
+> +		page_flags = 0;
+> +
+> +		if (md->type == EFI_RUNTIME_SERVICES_DATA ||
+> +		    md->type == EFI_BOOT_SERVICES_DATA)
+> +			page_flags = _PAGE_NX;
+> +
+> +		if (!(md->attribute & EFI_MEMORY_WB))
+> +			page_flags |= _PAGE_PCD;
+> +
+> +		kernel_map_pages_in_pgd(pgd, md->phys_addr,
+> +					md->num_pages, page_flags);
+> +
+>  		systab = (u64) (unsigned long) efi_phys.systab;
+>  		if (md->phys_addr <= systab && systab < end) {
+>  			systab += md->virt_addr - md->phys_addr;
+>  			efi.systab = (efi_system_table_t *) (unsigned long) systab;
+>  		}
+> +
+> +		md->virt_addr = md->phys_addr;
+> +
+
+Now we have the EFI regions mapped in two places synchronisation is
+probably required, e.g. mappings are accessible via the direct kernel
+mapping/ioremap space, and via the 1:1 mapping. Also, you'll want to
+look at fixing efi_lookup_mapped_addr() which assumes it can access
+md->virt_addr in the current pgd.
+
+Actually, I _think_ we can get away with only double mapping those
+regions that we use as ram, see do_add_efi_memmap() and exit_boot() in
+arch/x86/boot/compressed/eboot.c. We can probably skip the ioremap()
+calls now, since they're only for the benefit of firmware.  Which in
+turn should mean we can delete efi_ioremap().
+
+-- 
+Matt Fleming, Intel Open Source Technology Center
