@@ -1,128 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755038Ab3DZWhb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 18:37:31 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:3378 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751654Ab3DZWha (ORCPT
+	id S1756108Ab3DZWwi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 18:52:38 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:44367 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752002Ab3DZWwh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 18:37:30 -0400
-X-IronPort-AV: E=Sophos;i="4.87,561,1363158000"; 
-   d="scan'208";a="42042527"
-Date: Fri, 26 Apr 2013 15:37:29 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, John Stultz <john.stultz@linaro.org>,
-        Ingo Molnar <mingo@elte.hu>, Magnus Damm <magnus.damm@gmail.com>
-Subject: Re: [patch 13/15] clockevents: Provide sysfs interface
-Message-ID: <20130426223729.GA782@sboyd-linux.qualcomm.com>
-References: <20130425142452.908423538@linutronix.de>
- <20130425143436.371634778@linutronix.de>
+	Fri, 26 Apr 2013 18:52:37 -0400
+Date: Sat, 27 Apr 2013 00:52:35 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Andi Kleen <andi@firstfloor.org>, mingo@elte.hu,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: Basic perf PMU support for Haswell v11
+Message-ID: <20130426225235.GI16732@two.firstfloor.org>
+References: <1366484783-15613-1-git-send-email-andi@firstfloor.org>
+ <20130426065503.GA31197@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130425143436.371634778@linutronix.de>
+In-Reply-To: <20130426065503.GA31197@gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/25, Thomas Gleixner wrote:
-> Provide a simple sysfs interface for the clockevent devices. Show the
-> current active clockevent device.
+> How well was this 
+> patch-set tested on non-Haswell hardware, which makes up 99.99% of our 
+> installed base?
+
+I tested on a couple systems now and then: usually Haswell, IvyBridge,
+sometimes also Westmere and Atom. I don't retest every iteration,
+as you know most of the changes you're requesting don't affect
+the binary.
+
+My test bed is likely to be smaller than yours though and as usual
+as you well know some part of the kernel QA is after release.
+
 > 
+> In particular, after applying your patches, 'perf top' stopped working on 
+> an Intel testbox of mine:
+> 
+>   processor       : 15
+>   vendor_id       : GenuineIntel
+>   cpu family      : 6
+>   model           : 26
+>   model name      : Intel(R) Xeon(R) CPU           X55600 @ 2.80GHz
 
-Neat. Does this do anything about clockevents that aren't in use
-for the tick devices or broadcast device?
+I assume the second 0 is a typo?
 
-> Index: tip/kernel/time/clockevents.c
-> ===================================================================
-> --- tip.orig/kernel/time/clockevents.c
-> +++ tip/kernel/time/clockevents.c
-> @@ -460,4 +461,89 @@ void clockevents_notify(unsigned long re
->  	raw_spin_unlock_irqrestore(&clockevents_lock, flags);
->  }
->  EXPORT_SYMBOL_GPL(clockevents_notify);
-> +
-> +#ifdef CONFIG_SYSFS
-> +struct bus_type clockevents_subsys = {
-> +	.name		= "clockevents",
-> +	.dev_name       = "clockevent",
-> +};
-> +
-> +static DEFINE_PER_CPU(struct device, tick_percpu_dev);
-> +static struct tick_device *tick_get_tick_dev(struct device *dev);
-> +
-> +static ssize_t sysfs_show_current_tick_dev(struct device *dev,
-> +					   struct device_attribute *attr,
-> +					   char *buf)
-> +{
-> +	struct tick_device *td;
-> +	ssize_t count = 0;
-> +
-> +	raw_spin_lock_irq(&clockevents_lock);
-> +	td = tick_get_tick_dev(dev);
-> +	if (td && td->evtdev)
-> +		count = snprintf(buf, PAGE_SIZE, "%s\n", td->evtdev->name);
-> +	raw_spin_unlock_irq(&clockevents_lock);
-> +	return count;
-> +}
-> +static DEVICE_ATTR(current_device, 0444, sysfs_show_current_tick_dev, NULL);
-> +
-> +#ifdef CONFIG_GENERIC_CLOCKEVENTS_BROADCAST
-> +static struct device tick_bc_dev = {
-> +	.init_name	= "broadcast",
-> +	.id		= 0,
-> +	.bus		= &clockevents_subsys,
-> +};
-> +
-> +static struct tick_device *tick_get_tick_dev(struct device *dev)
-> +{
-> +	return dev == &tick_bc_dev ? tick_get_broadcast_device() :
-> +		&per_cpu(tick_cpu_device, dev->id);
-> +}
-> +
-> +static int tick_broadcast_init_sysfs(void)
+>   stepping        : 5
 
-__init?
+> 'perf top' just does not produce any profiling output - it says 0 events.
 
-> +{
-> +	int err = device_register(&tick_bc_dev);
-> +
-> +	if (!err)
-> +		err = device_create_file(&tick_bc_dev, &dev_attr_current_device);
-> +	return err;
-> +}
-> +#else
-> +static struct tick_device *tick_get_tick_dev(struct device *dev)
-> +{
-> +	return &per_cpu(tick_cpu_device, dev->id);
-> +}
-> +static inline int tick_broadcast_init_sysfs(void) { return 0; }
->  #endif
-> +
-> +int __init tick_init_sysfs(void)
+Thanks for testing.
 
-static?
+I found a similar system (not same stepping, but same model) and tested
+perf top works fine here. Also on a couple of other systems.
 
-> +{
-> +	int cpu;
-> +
-> +	for_each_possible_cpu(cpu) {
-> +		struct device *dev = &per_cpu(tick_percpu_dev, cpu);
-> +		int err;
-> +
-> +		dev->id = cpu;
-> +		dev->bus = &clockevents_subsys;
-> +		err = device_register(dev);
-> +		if (!err)
-> +			err = device_create_file(dev, &dev_attr_current_device);
-> +		if (err)
-> +			return err;
-> +	}
-> +	return tick_broadcast_init_sysfs();
-> +}
+Since I cannot reproduce I would need your help debugging it.
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+I assume it worked before my patches.  If you don't know
+please double check. Also I assume there's no general
+problem between the user land perf you used and the kernel.
+
+The only patch I could think of which may affect other systems
+is the moving of the APIC ack.
+
+So does it work if you revert 
+
+ perf, x86: Move NMI clearing to end of PMI handler after ...
+
+If that is it we could white list it for Haswell.
+
+If that's not it I may need a bisect, assuming the problem is stable.
+
+-Andi
