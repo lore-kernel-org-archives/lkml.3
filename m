@@ -1,205 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757546Ab3DZTtR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 15:49:17 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:64394 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755677Ab3DZTtP (ORCPT
+	id S1757565Ab3DZTt5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 15:49:57 -0400
+Received: from mail-vc0-f173.google.com ([209.85.220.173]:53957 "EHLO
+	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755466Ab3DZTtz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 15:49:15 -0400
-Date: Fri, 26 Apr 2013 21:49:08 +0200
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Bibek Basu <bbasu@nvidia.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linus.walleij@linaro.org,
-        swarren@wwwdotorg.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: Re: [PATCH 2/2] ARM: DT: tegra: pinctrl suspend resume hook
-Message-ID: <20130426194908.GA3302@avionic-0098.mockup.avionic-design.de>
-References: <1366740542-26127-1-git-send-email-bbasu@nvidia.com>
- <1366740542-26127-2-git-send-email-bbasu@nvidia.com>
+	Fri, 26 Apr 2013 15:49:55 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="zhXaljGHf11kAtnf"
-Content-Disposition: inline
-In-Reply-To: <1366740542-26127-2-git-send-email-bbasu@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:5OSf6eekV4oUBXPMK+6PAhRXWDCK8LwRKtLxH8mcYqp
- REUlHZOv62nNNsydkV4p8DCnPRUHaTuaQialLtqJfTjzqoIRo5
- qmgxoE+Oh7zkhmuU3oaRT6jQ/WU3eGG9NK9ix2UX3Q8zGnI9Es
- f75C4hsxBiVZbVjOi/b+5bf6QZ+EGUALVO0mBbame175kmZYRn
- 0PlASKsYTEKbw8S1cpBu7rQ4l9GNyS33Iq/An4bN+HzB3iDn4v
- NMVPPxuOQpz/HhJMv6MisHDiOXLLhTwX5faHSTSDV+Yw0Yp+pW
- 5rJcikQZjEs/WZinlLkRqnd3YsFQyZvAfyGLCN/5OvCvV1uqfQ
- Q7JWl0XOYnZIX+idXTs8VqLrB3SPWgXUkzGCRAwuekDOpCvZbf
- ljniisf2spRGLzBhwFkkQ3HvGdHIbdnuyr03XYy4+t74WvUjUK
- Q5cPh
+In-Reply-To: <1366839204.2918.726.camel@bling.home>
+References: <20130214183640.16220.33060.stgit@bling.home> <CAErSpo4uopqKwXY-6HrSZ9mk08tgY9L-iUG2ykmKcMK077tDrQ@mail.gmail.com>
+ <1360900439.3248.310.camel@bling.home> <1366839204.2918.726.camel@bling.home>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 26 Apr 2013 13:49:34 -0600
+Message-ID: <CAErSpo4yrmtvBx1_vW4QVFFgz2r_41bUP3CFEBGuRwLjUF-miA@mail.gmail.com>
+Subject: Re: [PATCH] pci: Disable slot presence detection around bus reset
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Sheng Yang <sheng@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Apr 24, 2013 at 3:33 PM, Alex Williamson
+<alex.williamson@redhat.com> wrote:
+> On Thu, 2013-02-14 at 20:53 -0700, Alex Williamson wrote:
+>> On Thu, 2013-02-14 at 16:47 -0700, Bjorn Helgaas wrote:
+>> > On Thu, Feb 14, 2013 at 11:37 AM, Alex Williamson
+>> > <alex.williamson@redhat.com> wrote:
+>> > > A bus reset can trigger a presence detection change and result in a
+>> > > suprise hotplug.  This is generally not what we want to happen when
+>> > > trying to reset a device.  Disable the presence detection control on
+>> > > on bridges around bus reset.
+>> >
+>> > This is a really interesting situation, and I'm not quite ready to
+>> > sign up to the idea that this is really a problem and that if it is,
+>> > this is the way we want to fix it.
+>> >
+>> > What would happen if we *did* handle this as a hotplug event, with a
+>> > removal followed by an add?
+>> >
+>> > The scheme where pci_reset_function() does "pci_save_state(dev);
+>> > pci_dev_reset(dev); pci_restore_state(dev);" makes me nervous.
+>> >
+>> > We're saving and restoring some of PCI config space around the reset,
+>> > but there's no guarantee that we're preserving *all* the important
+>> > state in config space because I think devices can have non-architected
+>> > device-specific things in config space that we don't know how to
+>> > save/restore.
+>> >
+>> > Devices also have internal state not exposed via config space.  That
+>> > state is lost during the reset but can't be restored by
+>> > pci_restore_state().  So it seems like pci_reset_function() is
+>> > pretending to do something it can't really do reliably.
+>> >
+>> > If we make it so a reset is always handled as a remove+add, then we'll
+>> > use a more generic path, and we'll get all the stuff you expect when
+>> > initializing a new device -- resource assignment, IRQ setup, quirks,
+>> > etc.  Quirks in particular seem like something we want, but don't
+>> > currently get with pci_reset_function().
+>> >
+>> > Oh, and the "disable presence detect" approach below only works for
+>> > things below a PCIe bridge with native hotplug, right?  I wonder what
+>> > happens if we reset devices below a bridge using SHPC or acpiphp.
+>>
+>> Triggering a remove+add is not useful for the way we use it today.  The
+>> users I'm aware of are KVM device assignment and VFIO, where we trigger
+>> it in an attempt to get the device to a known state so that we have some
+>> hope of repeatability.  In those scenarios the reset is initiated by the
+>> driver.  The interface isn't meant to guarantee the device is returned
+>> to an identical state as it was before reset.  If it did, why would we
+>> call it?  We want to get to a state as near to power on, but still with
+>> config programming, as we can.
 
---zhXaljGHf11kAtnf
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I know you don't want the identical state before the reset.  But it
+would be good if it were the same state as when the PCI core first
+called the .probe() method.
 
-On Tue, Apr 23, 2013 at 11:39:02PM +0530, Bibek Basu wrote:
-> Make pinmux as the first node of tegra DT
-> so as to achieve pinctrl as last device to suspend and
-> first device to resume.
+What we have right now is the reset path doing *part* of the device
+initialization but not all of it.  The exception I can think of is
+that we don't apply any quirks in the reset path.  Maybe running those
+would be enough to get to the same state as when the PCI core first
+gave it to the driver.  But it's going to be hard to really confirm
+that and to keep these paths in sync in the future.  And quirks are
+currently entitled to assume that they run *before* a driver gets its
+mitts on the device, so there could be issues there.
 
-I don't think this is a good idea. For one it encodes Linux specific
-implementation details within the device tree. Furthermore I seem to
-remember that the device tree makes no guarantees that the order of
-nodes in the blob is the same as the order in the DTS.
+There probably aren't any quirks for the devices you're interested in,
+so my concerns seem sort of academic.  But it would still be nice if
+the scheme didn't depend on the absence of quirks.
 
-That said I don't have a good alternative. Perhaps one solution would be
-to use suspend_late() and resume_early() for the pinmux driver since
-they will be called after and before the suspend() and resume()
-callbacks of all other devices, respectively. Other than that I wasn't
-able to find anything about forcing a particular order during suspend
-and resume.
+>> Being driver directed, having the reset initiate a remove is pretty near
+>> the last thing we want.  That limits the scope of calling it to only
+>> when the driver can readily release the device.  If we have the device
+>> attached to a guest or userspace driver, that's potentially a lot of
+>> setup and teardown and effectively extending a surprise removal all the
+>> way up the stack.
+>>
+>> Obviously a bus reset is a big hammer and we do exhaust all the little
+>> hammers of flr and pm reset before we try it, but in this case, we know
+>> the device that's going away and with all likelihood, it's coming right
+>> back at the same location.  If we take the path of forcing a remove+add,
+>> let's just remove it from the reset_function call path and we'll do
+>> without reset for those devices.  Thanks,
+>
+> Time to revisit this bug.  Clearly when a driver or userspace calls
+> pci_reset_function the intention is not to have the device be
+> hot-unplugged and re-plugged.  So I think we either need to prevent that
+> from happening or politely decline the reset.
+>
+> I don't really know how to do this on acpiphp or shpc or whatever other
+> hotplug controllers we support.  So, what if we add a reset_slot
+> callback to hotplug_slot_ops?  We could then make pci_parent_bus_reset
+> do something like:
+>
+> if (dev->slot && dev->slot->hotplug_slot) {
+>     if (!dev->slot->hotplug_slot->reset_slot)
+>         return -ENOTTY;
+>
+>     return dev->slot->hotplug_slot->reset_slot(dev->slot->hotplug_slot);
+> } else {
+>     ... standard secondary bus reset...
+> }
 
-Cc'ing Rafael and the linux-pm mailing list, maybe somebody among them
-knows a proper solution.
+If we end up masking the hotplug notification, I do like the idea of
+putting the controller-specific knowledge in hotplug_slot_ops rather
+than directly in pci_parent_bus_reset().
 
-Thierry
+> I'd actually also like to add a pci_reset_bus interface because we do
+> have cases where the pci_reset_function is not sufficient (device
+> doesn't do any useful reset of it's own and pci_parent_bus_reset won't
+> because there are other devices on the bus).  Graphics cards in
+> particular are biting us here.  When all of the devices on the bus are
+> owned by a driver, this would provide a less device dependent reset.  It
+> would use same logic and code as enabled with reset_slot.  Thoughts?
 
->=20
-> Signed-off-by: Bibek Basu <bbasu@nvidia.com>
-> ---
->  arch/arm/boot/dts/tegra114.dtsi | 12 ++++++------
->  arch/arm/boot/dts/tegra20.dtsi  | 16 ++++++++--------
->  arch/arm/boot/dts/tegra30.dtsi  | 13 +++++++------
->  3 files changed, 21 insertions(+), 20 deletions(-)
->=20
-> diff --git a/arch/arm/boot/dts/tegra114.dtsi b/arch/arm/boot/dts/tegra114=
-=2Edtsi
-> index a58a761..36596ae 100644
-> --- a/arch/arm/boot/dts/tegra114.dtsi
-> +++ b/arch/arm/boot/dts/tegra114.dtsi
-> @@ -11,6 +11,12 @@
->  		serial3 =3D &uartd;
->  	};
-> =20
-> +	pinmux: pinmux {
-> +		compatible =3D "nvidia,tegra114-pinmux";
-> +		reg =3D <0x70000868 0x148		/* Pad control registers */
-> +		       0x70003000 0x40c>;	/* Mux registers */
-> +	};
-> +
->  	host1x {
->  		compatible =3D "nvidia,tegra114-host1x", "simple-bus";
->  		reg =3D <0x50000000 0x00028000>;
-> @@ -165,12 +171,6 @@
->  		interrupt-controller;
->  	};
-> =20
-> -	pinmux: pinmux {
-> -		compatible =3D "nvidia,tegra114-pinmux";
-> -		reg =3D <0x70000868 0x148		/* Pad control registers */
-> -		       0x70003000 0x40c>;	/* Mux registers */
-> -	};
-> -
->  	/*
->  	 * There are two serial driver i.e. 8250 based simple serial
->  	 * driver and APB DMA based serial driver for higher baudrate
-> diff --git a/arch/arm/boot/dts/tegra20.dtsi b/arch/arm/boot/dts/tegra20.d=
-tsi
-> index a5a9615..6d8a663 100644
-> --- a/arch/arm/boot/dts/tegra20.dtsi
-> +++ b/arch/arm/boot/dts/tegra20.dtsi
-> @@ -12,6 +12,14 @@
->  		serial4 =3D &uarte;
->  	};
-> =20
-> +	pinmux: pinmux {
-> +		compatible =3D "nvidia,tegra20-pinmux";
-> +		reg =3D <0x70000014 0x10   /* Tri-state registers */
-> +		       0x70000080 0x20   /* Mux registers */
-> +		       0x700000a0 0x14   /* Pull-up/down registers */
-> +		       0x70000868 0xa8>; /* Pad control registers */
-> +	};
-> +
->  	host1x {
->  		compatible =3D "nvidia,tegra20-host1x", "simple-bus";
->  		reg =3D <0x50000000 0x00024000>;
-> @@ -196,14 +204,6 @@
->  		interrupt-controller;
->  	};
-> =20
-> -	pinmux: pinmux {
-> -		compatible =3D "nvidia,tegra20-pinmux";
-> -		reg =3D <0x70000014 0x10   /* Tri-state registers */
-> -		       0x70000080 0x20   /* Mux registers */
-> -		       0x700000a0 0x14   /* Pull-up/down registers */
-> -		       0x70000868 0xa8>; /* Pad control registers */
-> -	};
-> -
->  	das {
->  		compatible =3D "nvidia,tegra20-das";
->  		reg =3D <0x70000c00 0x80>;
-> diff --git a/arch/arm/boot/dts/tegra30.dtsi b/arch/arm/boot/dts/tegra30.d=
-tsi
-> index 9f33086..b4b79f0 100644
-> --- a/arch/arm/boot/dts/tegra30.dtsi
-> +++ b/arch/arm/boot/dts/tegra30.dtsi
-> @@ -12,6 +12,13 @@
->  		serial4 =3D &uarte;
->  	};
-> =20
-> +	pinmux: pinmux {
-> +		compatible =3D "nvidia,tegra30-pinmux";
-> +		reg =3D <0x70000868 0xd4    /* Pad control registers */
-> +		       0x70003000 0x3e4>; /* Mux registers */
-> +	};
-> +
-> +
->  	host1x {
->  		compatible =3D "nvidia,tegra30-host1x", "simple-bus";
->  		reg =3D <0x50000000 0x00024000>;
-> @@ -216,12 +223,6 @@
->  		interrupt-controller;
->  	};
-> =20
-> -	pinmux: pinmux {
-> -		compatible =3D "nvidia,tegra30-pinmux";
-> -		reg =3D <0x70000868 0xd4    /* Pad control registers */
-> -		       0x70003000 0x3e4>; /* Mux registers */
-> -	};
-> -
->  	/*
->  	 * There are two serial driver i.e. 8250 based simple serial
->  	 * driver and APB DMA based serial driver for higher baudrate
-> --=20
-> 1.8.1.5
->=20
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-tegra" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->=20
->=20
+You're thinking that pci_reset_bus() would do a secondary bus reset,
+but only if every device on the bus is owned by the same driver?
 
---zhXaljGHf11kAtnf
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJReto0AAoJEN0jrNd/PrOhHOIP/AoVaKHlXOEJSfUnzM7CLuE7
-O/rqy9TVbyE8O5XE/D3UlYC7XXkY6sfbG/qbZBsBJeVDzhpVuL0NZ3ShMGBmcUqi
-t6M9zZ+IIMgS+NMA3ycX0VS5secqdzrfTeJEsU+vWgDsAqbXBpUiS3JA9Knwnszw
-S94GeeSBu+tdftTaVn9HioYyA5cK7b8JTcvRbmEYRw2p3yqMLClLQTeDxTxGFDVL
-tCWKFPq9Rk38yC/Q6EoVw0nUJQPFzbKg2oXoXjb94D9LaLbY+TZVGrvBnJyQhVjz
-gVNn603h14hy0PA0ITImgMqaY0qpOXwaSljjHDkfsoUazWXYiE6h50Ar/vySfW+X
-GS+xwJvs0/Oh7/CaRpXKUK5oL9GZaxr1EDgOivncfQ4yySrhovZ2R+cbWgnKgSZH
-8cSECEvLhl+I5tNlvCbgB1zosV+BqONv+4dxkfxjR8x8CaKauVbD5uqZ7SPirfca
-IYy41x3nwbyYBmwYcO70DNFxfiNlhXCW9Iz9So87dBW0D+889OjKPGQuanBdsGlR
-EM31tS9anj9oodtStjkJ3Upi8M0f8mFWBkmT5n64EATEh2jB5UA2w1+twJeLHQSj
-2BJdfP3WN61R6nlwkyirNb43D9JJlJ1OocdTfd/vAOn9Tmyheifip4Y/X3qegx5H
-20AZts0FszTUXU3sWy/9
-=Jaed
------END PGP SIGNATURE-----
-
---zhXaljGHf11kAtnf--
+Bjorn
