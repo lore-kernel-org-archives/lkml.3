@@ -1,83 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757220Ab3DZUzA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 16:55:00 -0400
-Received: from mail-da0-f45.google.com ([209.85.210.45]:51254 "EHLO
-	mail-da0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753591Ab3DZUy6 (ORCPT
+	id S1757378Ab3DZVBn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 17:01:43 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:47102 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752262Ab3DZVBm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 16:54:58 -0400
-Date: Fri, 26 Apr 2013 13:54:54 -0700
-From: Kent Overstreet <koverstreet@google.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org, tj@kernel.org,
-        axboe@kernel.dk, James.Bottomley@hansenpartnership.com,
-        snitzer@redhat.com
-Subject: Re: Bcache v. whatever
-Message-ID: <20130426205454.GG9931@google.com>
-References: <20130114223202.GV26407@google.com>
- <20130425161704.3f0fc3b6af55cf75acbc9d9e@linux-foundation.org>
- <20130426194642.GC9931@google.com>
- <20130426132438.4e48e0688fc3c3c298e71d7e@linux-foundation.org>
+	Fri, 26 Apr 2013 17:01:42 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130426132438.4e48e0688fc3c3c298e71d7e@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAErSpo7DUDQ_XgVKAfWxqYJA=q85ps46bffV-4a7b0vOzAP5DA@mail.gmail.com>
+References: <1366940841-15370-1-git-send-email-yinghai@kernel.org>
+	<CAErSpo5zfHR-agNBdgqfVjCU+-KcTZV+1bvML5Uw-+icDqzzEA@mail.gmail.com>
+	<CAE9FiQVEQO-dLJRjn9Z7JgwGWAn1M8S1Tn2_V0Fq+6kB0rG=Bg@mail.gmail.com>
+	<CAErSpo7DUDQ_XgVKAfWxqYJA=q85ps46bffV-4a7b0vOzAP5DA@mail.gmail.com>
+Date: Fri, 26 Apr 2013 14:01:41 -0700
+X-Google-Sender-Auth: i7NuhUuROg1QWDQCmSJDqwEo5Ds
+Message-ID: <CAE9FiQWv-bN2XzHiQ0WU+Y678zcqs_Owua6vXXijdMO6=0OWpg@mail.gmail.com>
+Subject: Re: [PATCH] PCI: Fix racing for pci device removing via sysfs
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Gu Zheng <guz.fnst@cn.fujitsu.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: multipart/mixed; boundary=047d7b10cd2984ae0904db49d742
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 26, 2013 at 01:24:38PM -0700, Andrew Morton wrote:
-> > As far as I can tell the only real improvement would be to add a %p
-> > format string to vsnprintf, but adding a global extension would obviously be
-> > inappropriate for this. It'd be really nice to have a mechanism for
-> > adding file/module private format strings to vsnprintf, but I haven't
-> > cared enough yet to implement it myself.
-> > 
-> > Of course if you know a better solution I'm all ears.
-> > 
-> > Uhm, as for the actual bug - that is a fairly ancient gcc, I wasn't
-> > aware we were supporting compilers that old but I'm sure you wouldn't be
-> > bugging me about it if we weren't...
-> 
-> Why are those things macros anyway?  urgh, it's because we want to jam
-> a string into the caller's stack frame without declaring any of it.
+--047d7b10cd2984ae0904db49d742
+Content-Type: text/plain; charset=ISO-8859-1
 
-Well, it also _used_ to be the case that if DEBUG and
-CONFIG_DYNAMIC_DEBUG weren't defined then pr_debug() was defined as an
-empty macro, so btree_to_text() wouldn't be called.
+On Fri, Apr 26, 2013 at 1:53 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
 
-But, I just checked and it's been converted to an empty inline
-function, and some of this debug code is called from fast paths where
-the overhead really does matter :/ argh
+>
+> You can't be serious.  This is a disgusting mess.  Checking a list
+> pointer for LIST_POISON1?  As far as I'm concerned, this is a waste of
+> my time.
 
-> Really I do think it would be better to do away with the C party tricks
-> and have callers do
-> 
-> 	char btree_buf[BTREE_BUF_SIZE];
-> 
-> 	btree_to_text(btree_buf, b);
-> 	pr_debug("%s\n", btree_buf);
-> 
-> Nice, simple, explicit, direct and stupid.  It might generate
-> unused-var warnings if DEBUG is undefined but from my reading of
-> pr_debug() things will be OK.
-> 
-> Then we can poke around at btree_to_text() until gcc-3.4.5 is happy
-> with it.
+Well, then need to hold the bus ref, and check bus->devices list instead.
 
-Well, since pr_debug() isn't an empty macro anymore there goes my main
-reason for keeping these macros around.
+--047d7b10cd2984ae0904db49d742
+Content-Type: application/octet-stream; name="fix_racing_removing_3.patch"
+Content-Disposition: attachment; filename="fix_racing_removing_3.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hfzuig8l0
 
-seems like pr_debug() could still have the no_printk() call inside an
-if (0) though...
-
-argh. If there was some way to tell gcc "this function only modifies
-this argument so you don't have to call it if the output is never used"
-then I'd just convert it to the explicit bufs now. But I really can't
-have btree_to_text()/bkey_to_text() getting called in non debug
-kernels...
-
-I'm going to mull it over a bit for now, and try and decide what's least
-ugly.
+U3ViamVjdDogW1BBVENIIC12M10gUENJOiBGaXggcmFjaW5nIGZvciBwY2kgZGV2aWNlIHJlbW92
+aW5nIHZpYSBzeXNmcwpGcm9tOiBZaW5naGFpIEx1IDx5aW5naGFpQGtlcm5lbC5vcmc+CgpHdSBm
+b3VuZCBuZXN0ZWQgcmVtb3ZpbmcgdGhyb3VnaAoJZWNobyAtbiAxID4gL3N5cy9idXMvcGNpL2Rl
+dmljZXMvMDAwMFw6MTBcOjAwLjAvcmVtb3ZlIDsgZWNobyAtbiAxID4KL3N5cy9idXMvcGNpL2Rl
+dmljZXMvMDAwMFw6MWFcOjAxLjAvcmVtb3ZlCgp3aWxsIGNhdXNlIGtlcm5lbCBjcmFzaCBhcyBi
+dXMgZ2V0IGZyZWVkLgoKWyAgNDE4Ljk0NjQ2Ml0gQ1BVIDQKWyAgNDE4Ljk2ODM3N10gUGlkOiA1
+MTIsIGNvbW06IGt3b3JrZXIvdToyIFRhaW50ZWQ6IEcgICAgICAgIFcgICAgMy44LjAgIzIKRlVK
+SVRTVS1TViBQUklNRVFVRVNUIDE4MDBFL1NCClsgIDQxOS4wODE3NjNdIFJJUDogMDAxMDpbPGZm
+ZmZmZmZmODEzNzk3MmU+XSAgWzxmZmZmZmZmZjgxMzc5NzJlPl0KcGNpX2J1c19yZWFkX2NvbmZp
+Z193b3JkKzB4NWUvMHg5MApbICA0MjAuNDk0MTM3XSBDYWxsIFRyYWNlOgpbICA0MjAuNTIzMzI2
+XSAgWzxmZmZmZmZmZjgxMzg1MWVmPl0gPyByZW1vdmVfY2FsbGJhY2srMHgxZi8weDQwClsgIDQy
+MC41OTE5ODRdICBbPGZmZmZmZmZmODEzODA0NGI+XSBwY2lfcG1lX2FjdGl2ZSsweDRiLzB4MWMw
+ClsgIDQyMC42NTg1NDVdICBbPGZmZmZmZmZmODEzN2Q4ZTc+XSBwY2lfc3RvcF9idXNfZGV2aWNl
+KzB4NTcvMHhiMApbICA0MjAuNzI5MjU5XSAgWzxmZmZmZmZmZjgxMzdkYWI2Pl0gcGNpX3N0b3Bf
+YW5kX3JlbW92ZV9idXNfZGV2aWNlKzB4MTYvMHgzMApbICA0MjAuODExMzkyXSAgWzxmZmZmZmZm
+ZjgxMzg1MWZiPl0gcmVtb3ZlX2NhbGxiYWNrKzB4MmIvMHg0MApbICA0MjAuODc3OTU1XSAgWzxm
+ZmZmZmZmZjgxMjU3YTU2Pl0gc3lzZnNfc2NoZWR1bGVfY2FsbGJhY2tfd29yaysweDI2LzB4NzAK
+Cmh0dHBzOi8vYnVnemlsbGEua2VybmVsLm9yZy9zaG93X2J1Zy5jZ2k/aWQ9NTQ0MTEKCldlIGhh
+dmUgb25lIHBhdGNoIHRoYXQgd2lsbCBsZXQgZGV2aWNlIGhvbGQgYnVzIHJlZiB0byBwcmV2ZW50
+IGl0IGZyb20KYmVpbmcgZnJlZWQsIGJ1dCB0aGF0IHdpbGwgc3RpbGwgZ2VuZXJhdGUgd2Fybmlu
+Zy4KCi0tLS0tLS0tLS0tLVsgY3V0IGhlcmUgXS0tLS0tLS0tLS0tLQpXQVJOSU5HOiBhdCBsaWIv
+bGlzdF9kZWJ1Zy5jOjUzIF9fbGlzdF9kZWxfZW50cnkrMHg2My8weGQwKCkKSGFyZHdhcmUgbmFt
+ZTogUFJJTUVRVUVTVCAxODAwRQpsaXN0X2RlbCBjb3JydXB0aW9uLCBmZmZmODgwN2QxYjZjMDAw
+LT5uZXh0IGlzIExJU1RfUE9JU09OMSAoZGVhZDAwMDAwMDEwMDEwMCkKQ2FsbCBUcmFjZToKIFs8
+ZmZmZmZmZmY4MTA1NmQ0Zj5dIHdhcm5fc2xvd3BhdGhfY29tbW9uKzB4N2YvMHhjMAogWzxmZmZm
+ZmZmZjgxMDU2ZTQ2Pl0gd2Fybl9zbG93cGF0aF9mbXQrMHg0Ni8weDUwCiBbPGZmZmZmZmZmODEy
+ODBiMTM+XSBfX2xpc3RfZGVsX2VudHJ5KzB4NjMvMHhkMAogWzxmZmZmZmZmZjgxMjgwYjkxPl0g
+bGlzdF9kZWwrMHgxMS8weDQwCiBbPGZmZmZmZmZmODEyOTgzMzE+XSBwY2lfZGVzdHJveV9kZXYr
+MHgzMS8weGMwCiBbPGZmZmZmZmZmODEyOTg1YmI+XSBwY2lfcmVtb3ZlX2J1c19kZXZpY2UrMHg1
+Yi8weDcwCiBbPGZmZmZmZmZmODEyOTg1ZWU+XSBwY2lfc3RvcF9hbmRfcmVtb3ZlX2J1c19kZXZp
+Y2UrMHgxZS8weDMwCiBbPGZmZmZmZmZmODEyOWZjODk+XSByZW1vdmVfY2FsbGJhY2srMHgyOS8w
+eDQwCiBbPGZmZmZmZmZmODExZjNiODQ+XSBzeXNmc19zY2hlZHVsZV9jYWxsYmFja193b3JrKzB4
+MjQvMHg3MAoKV2UgY2FuIGp1c3QgY2hlY2sgaWYgdGhlIGRldmljZSBnZXQgcmVtb3ZlZCBmcm9t
+IHBjaSB0cmVlCmFscmVhZHkgaW4gdGhlIHByb3RlY3Rpb24gdW5kZXIgcGNpX3JlbW92ZV9yZXNj
+YW5fbXV0ZXguCgotdjI6IGNoZWNrIGlmIHRoZSBkZXYtPmJ1c19saXN0IGlzIHBvaXNvbmVkIGlu
+c3RlYWQgdG8KICAgICBmaW5kIG91dCBpZiBpdCBpcyByZW1vdmVkIGFscmVhZHkuCiAgICAgQWxz
+byBhZGQgb25lIGV4dHJhIHJlZiB0byBkZXYgdG8gbWFrZSBzdXJlIGRldiBpcyBub3QKICAgICBn
+ZXQgZnJlZWQgdG9vIGVhcmx5LgoKLXYzOiBob2xkIGJ1cyByZWYgYW5kIGRldiByZWYgaW5zdGVh
+ZC4KClJlcG9ydGVkLWJ5OiBHdSBaaGVuZyA8Z3V6LmZuc3RAY24uZnVqaXRzdS5jb20+ClRlc3Rl
+ZC1ieTogR3UgWmhlbmcgPGd1ei5mbnN0QGNuLmZ1aml0c3UuY29tPgpTaWduZWQtb2ZmLWJ5OiBZ
+aW5naGFpIEx1IDx5aW5naGFpQGtlcm5lbC5vcmc+CgotLS0KIGRyaXZlcnMvcGNpL3BjaS1zeXNm
+cy5jIHwgICAyMyArKysrKysrKysrKysrKysrKysrKy0tLQogMSBmaWxlIGNoYW5nZWQsIDIwIGlu
+c2VydGlvbnMoKyksIDMgZGVsZXRpb25zKC0pCgpJbmRleDogbGludXgtMi42L2RyaXZlcnMvcGNp
+L3BjaS1zeXNmcy5jCj09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT0KLS0tIGxpbnV4LTIuNi5vcmlnL2RyaXZlcnMvcGNpL3Bj
+aS1zeXNmcy5jCisrKyBsaW51eC0yLjYvZHJpdmVycy9wY2kvcGNpLXN5c2ZzLmMKQEAgLTMyOCwx
+MCArMzI4LDIxIEBAIGRldl9yZXNjYW5fc3RvcmUoc3RydWN0IGRldmljZSAqZGV2LCBzdHIKIAog
+c3RhdGljIHZvaWQgcmVtb3ZlX2NhbGxiYWNrKHN0cnVjdCBkZXZpY2UgKmRldikKIHsKLQlzdHJ1
+Y3QgcGNpX2RldiAqcGRldiA9IHRvX3BjaV9kZXYoZGV2KTsKKwlzdHJ1Y3QgcGNpX2RldiAqcGRl
+diA9IHRvX3BjaV9kZXYoZGV2KSwgKnRtcDsKKwlzdHJ1Y3QgcGNpX2J1cyAqYnVzID0gcGRldi0+
+YnVzOworCWJvb2wgZm91bmQgPSBmYWxzZTsKIAogCW11dGV4X2xvY2soJnBjaV9yZW1vdmVfcmVz
+Y2FuX211dGV4KTsKLQlwY2lfc3RvcF9hbmRfcmVtb3ZlX2J1c19kZXZpY2UocGRldik7CisJbGlz
+dF9mb3JfZWFjaF9lbnRyeSh0bXAsICZidXMtPmRldmljZXMsIGJ1c19saXN0KQorCQlpZiAodG1w
+ID09IHBkZXYpIHsKKwkJCWZvdW5kID0gdHJ1ZTsKKwkJCWJyZWFrOworCQl9CisKKwlwdXRfZGV2
+aWNlKCZwZGV2LT5idXMtPmRldik7CisJcGNpX2Rldl9wdXQocGRldik7CisJaWYgKGZvdW5kKQor
+CQlwY2lfc3RvcF9hbmRfcmVtb3ZlX2J1c19kZXZpY2UocGRldik7CiAJbXV0ZXhfdW5sb2NrKCZw
+Y2lfcmVtb3ZlX3Jlc2Nhbl9tdXRleCk7CiB9CiAKQEAgLTM0MSw2ICszNTIsNyBAQCByZW1vdmVf
+c3RvcmUoc3RydWN0IGRldmljZSAqZGV2LCBzdHJ1Y3QKIHsKIAlpbnQgZXJyOwogCXVuc2lnbmVk
+IGxvbmcgdmFsOworCXN0cnVjdCBwY2lfZGV2ICpwZGV2OwogCiAJaWYgKHN0cmljdF9zdHJ0b3Vs
+KGJ1ZiwgMCwgJnZhbCkgPCAwKQogCQlyZXR1cm4gLUVJTlZBTDsKQEAgLTM1MSw5ICszNjMsMTQg
+QEAgcmVtb3ZlX3N0b3JlKHN0cnVjdCBkZXZpY2UgKmRldiwgc3RydWN0CiAJLyogQW4gYXR0cmli
+dXRlIGNhbm5vdCBiZSB1bnJlZ2lzdGVyZWQgYnkgb25lIG9mIGl0cyBvd24gbWV0aG9kcywKIAkg
+KiBzbyB3ZSBoYXZlIHRvIHVzZSB0aGlzIHJvdW5kYWJvdXQgYXBwcm9hY2guCiAJICovCisJcGRl
+diA9IHBjaV9kZXZfZ2V0KHRvX3BjaV9kZXYoZGV2KSk7CisJZ2V0X2RldmljZSgmcGRldi0+YnVz
+LT5kZXYpOwogCWVyciA9IGRldmljZV9zY2hlZHVsZV9jYWxsYmFjayhkZXYsIHJlbW92ZV9jYWxs
+YmFjayk7Ci0JaWYgKGVycikKKwlpZiAoZXJyKSB7CisJCXB1dF9kZXZpY2UoJnBkZXYtPmJ1cy0+
+ZGV2KTsKKwkJcGNpX2Rldl9wdXQocGRldik7CiAJCXJldHVybiBlcnI7CisJfQogCiAJcmV0dXJu
+IGNvdW50OwogfQo=
+--047d7b10cd2984ae0904db49d742--
