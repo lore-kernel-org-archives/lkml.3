@@ -1,59 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932896Ab3DZJp6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 05:45:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43330 "EHLO mx1.redhat.com"
+	id S932296Ab3DZJq3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 05:46:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52576 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932875Ab3DZJp4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 05:45:56 -0400
+	id S1759624Ab3DZJpy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Apr 2013 05:45:54 -0400
 From: Steven Whitehouse <swhiteho@redhat.com>
 To: linux-kernel@vger.kernel.org, cluster-devel@redhat.com
-Cc: Bob Peterson <rpeterso@redhat.com>,
-        Steven Whitehouse <swhiteho@redhat.com>
-Subject: [PATCH 8/8] GFS2: Flush work queue before clearing glock hash tables
-Date: Fri, 26 Apr 2013 10:19:01 +0100
-Message-Id: <1366967941-7184-9-git-send-email-swhiteho@redhat.com>
+Cc: Steven Whitehouse <swhiteho@redhat.com>
+Subject: [PATCH 7/8] GFS2: Add origin indicator to glock demote tracing
+Date: Fri, 26 Apr 2013 10:19:00 +0100
+Message-Id: <1366967941-7184-8-git-send-email-swhiteho@redhat.com>
 In-Reply-To: <1366967941-7184-1-git-send-email-swhiteho@redhat.com>
 References: <1366967941-7184-1-git-send-email-swhiteho@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bob Peterson <rpeterso@redhat.com>
+This adds the origin indicator to the trace point for glock
+demotion, so that it is possible to see where demote requests
+have come from.
 
-There was a timing window when a GFS2 file system was unmounted
-that caused GFS2 to call BUG() and panic the kernel. The call
-to BUG() is meant to ensure that the glock reference count,
-gl_ref, never gets down to zero and bounce back up again. What was
-happening during umount is that function gfs2_put_super was dequeing
-its glocks for well-known files. In particular, we saw it on the
-journal glock, sd_jinode_gh. The dequeue caused delayed work to be
-queued for the glock state machine, to transition the lock to an
-"unlocked" state. While the work was still queued, gfs2_put_super
-called gfs2_gl_hash_clear to clear out the glock hash tables.
-If the timing was just so, the glock work function would drop the
-reference count at the time when it was being checked for zero,
-and that caused BUG() to be called. This patch calls
-flush_workqueue before clearing the glock hash tables, thereby
-ensuring that the delayed work is executed before the hash tables
-are cleared, and therefore the reference count never goes to zero
-until the glock is cleared.
+Note that requests generated from the demote_rq sysfs interface
+will show as remote, since they are intended to replicate
+exactly the effect of a demote reuqest from a remote node. It
+is still possible to tell these apart by looking at the process
+which initiated the demote request.
 
-Signed-off-by: Bob Peterson <rpeterso@redhat.com>
 Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
 
 diff --git a/fs/gfs2/glock.c b/fs/gfs2/glock.c
-index 3b9e178..b777691 100644
+index 77d7927..3b9e178 100644
 --- a/fs/gfs2/glock.c
 +++ b/fs/gfs2/glock.c
-@@ -1577,6 +1577,7 @@ static void dump_glock_func(struct gfs2_glock *gl)
- void gfs2_gl_hash_clear(struct gfs2_sbd *sdp)
- {
- 	set_bit(SDF_SKIP_DLM_UNLOCK, &sdp->sd_flags);
-+	flush_workqueue(glock_workqueue);
- 	glock_hash_walk(clear_glock, sdp);
- 	flush_workqueue(glock_workqueue);
- 	wait_event(sdp->sd_glock_wait, atomic_read(&sdp->sd_glock_disposal) == 0);
+@@ -926,7 +926,7 @@ static void handle_callback(struct gfs2_glock *gl, unsigned int state,
+ 	}
+ 	if (gl->gl_ops->go_callback)
+ 		gl->gl_ops->go_callback(gl, remote);
+-	trace_gfs2_demote_rq(gl);
++	trace_gfs2_demote_rq(gl, remote);
+ }
+ 
+ void gfs2_print_dbg(struct seq_file *seq, const char *fmt, ...)
+diff --git a/fs/gfs2/trace_gfs2.h b/fs/gfs2/trace_gfs2.h
+index 2ee13e8..20c007d 100644
+--- a/fs/gfs2/trace_gfs2.h
++++ b/fs/gfs2/trace_gfs2.h
+@@ -159,9 +159,9 @@ TRACE_EVENT(gfs2_glock_put,
+ /* Callback (local or remote) requesting lock demotion */
+ TRACE_EVENT(gfs2_demote_rq,
+ 
+-	TP_PROTO(const struct gfs2_glock *gl),
++	TP_PROTO(const struct gfs2_glock *gl, bool remote),
+ 
+-	TP_ARGS(gl),
++	TP_ARGS(gl, remote),
+ 
+ 	TP_STRUCT__entry(
+ 		__field(        dev_t,  dev                     )
+@@ -170,6 +170,7 @@ TRACE_EVENT(gfs2_demote_rq,
+ 		__field(	u8,	cur_state		)
+ 		__field(	u8,	dmt_state		)
+ 		__field(	unsigned long,	flags		)
++		__field(	bool,	remote			)
+ 	),
+ 
+ 	TP_fast_assign(
+@@ -179,14 +180,16 @@ TRACE_EVENT(gfs2_demote_rq,
+ 		__entry->cur_state	= glock_trace_state(gl->gl_state);
+ 		__entry->dmt_state	= glock_trace_state(gl->gl_demote_state);
+ 		__entry->flags		= gl->gl_flags  | (gl->gl_object ? (1UL<<GLF_OBJECT) : 0);
++		__entry->remote		= remote;
+ 	),
+ 
+-	TP_printk("%u,%u glock %d:%lld demote %s to %s flags:%s",
++	TP_printk("%u,%u glock %d:%lld demote %s to %s flags:%s %s",
+ 		  MAJOR(__entry->dev), MINOR(__entry->dev), __entry->gltype,
+ 		  (unsigned long long)__entry->glnum,
+                   glock_trace_name(__entry->cur_state),
+                   glock_trace_name(__entry->dmt_state),
+-		  show_glock_flags(__entry->flags))
++		  show_glock_flags(__entry->flags),
++		  __entry->remote ? "remote" : "local")
+ 
+ );
+ 
 -- 
 1.7.4
 
