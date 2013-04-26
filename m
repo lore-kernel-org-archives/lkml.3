@@ -1,198 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759285Ab3DZHtL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 03:49:11 -0400
-Received: from nasmtp01.atmel.com ([192.199.1.246]:56821 "EHLO
-	DVREDG02.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758837Ab3DZHtK (ORCPT
+	id S1758837Ab3DZHu5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 03:50:57 -0400
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:17846 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755516Ab3DZHuz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 03:49:10 -0400
-From: "Yang, Wenyou" <Wenyou.Yang@atmel.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Richard Genoud <richard.genoud@gmail.com>,
-        Mark Brown <broonie@kernel.org>,
-        "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>
-Subject: RE: linux-next: manual merge of the arm-soc tree with the spi-mb
- tree
-Thread-Topic: linux-next: manual merge of the arm-soc tree with the spi-mb
- tree
-Thread-Index: AQHOQkyzY6YjkCkP2EirMRgj8TJ/XJjoIE+A
-Date: Fri, 26 Apr 2013 07:48:51 +0000
-Message-ID: <B256D81BAE5131468A838E5D7A24364154234E9D@penmbx02>
-References: <20130426170649.d21c2d7a74e56d836ff6f04f@canb.auug.org.au>
-In-Reply-To: <20130426170649.d21c2d7a74e56d836ff6f04f@canb.auug.org.au>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.168.5.13]
-Content-Type: text/plain; charset="gb2312"
+	Fri, 26 Apr 2013 03:50:55 -0400
+Message-ID: <517A31A9.5070504@hp.com>
+Date: Fri, 26 Apr 2013 15:50:01 +0800
+From: ZhenHua <zhen-hual@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130117 Thunderbird/19.0
 MIME-Version: 1.0
+To: "Li, Zhen-Hua" <zhen-hual@hp.com>, stern@rowland.harvard.edu,
+        gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] driver,usb: Fix a warning in uhci-hcd driver
+References: <1366961884-14238-1-git-send-email-zhen-hual@hp.com>
+In-Reply-To: <1366961884-14238-1-git-send-email-zhen-hual@hp.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r3Q7nHLv001439
 
-Hi,
+There is a function  wait_for_HP() in uhci-hub.c. In this
+patch, it is used in suspend_rh(),  I think this can be a
+solution. And I have tested this patch, it can fix the bug.
 
-It is OK for spi
+I think there is another patch needed. As Alan said in another
+mail, in the UHCI_RH_RUNNING_NODEVS case, it should not be stopped
+if the uhci device is HP iLo virtual usb.
+
 
 Thanks
+Zhen-Hua
 
-Best Regards,
-Wenyou Yang
+On 04/26/2013 03:38 PM, Li, Zhen-Hua wrote:
+> This patch is trying to fix this bug on SLES11 SP2:
+>      https://bugzilla.novell.com/show_bug.cgi?id=817035
+>
+> On a large HP system with 64T memory and 60 logical cpus, when usb
+> driver inits the iLo Virtual USB Controller, there comes a warning
+> "Controller not stopped yet!". It is because the HP iLo virtual usb
+> device requires a longer delay.
+>
+> Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
+> ---
+>   drivers/usb/host/uhci-hcd.c |    5 +++++
+>   drivers/usb/host/uhci-hub.c |   12 +++++++-----
+>   2 files changed, 12 insertions(+), 5 deletions(-)
+>
+> diff --git a/drivers/usb/host/uhci-hcd.c b/drivers/usb/host/uhci-hcd.c
+> index 4a86b63..af30517 100644
+> --- a/drivers/usb/host/uhci-hcd.c
+> +++ b/drivers/usb/host/uhci-hcd.c
+> @@ -355,6 +355,11 @@ __acquires(uhci->lock)
+>   		if (uhci->dead)
+>   			return;
+>   	}
+> +
+> +	/* HP's iLo Virtual USB Controller requires a longer delay. */
+> +	if (uhci->wait_for_hp)
+> +		wait_for_HP(uhci, USBSTS, USBSTS_HCH, 1000);
+> +
+>   	if (!(uhci_readw(uhci, USBSTS) & USBSTS_HCH))
+>   		dev_warn(uhci_dev(uhci), "Controller not stopped yet!\n");
+>   
+> diff --git a/drivers/usb/host/uhci-hub.c b/drivers/usb/host/uhci-hub.c
+> index f87bee6..c3f772c 100644
+> --- a/drivers/usb/host/uhci-hub.c
+> +++ b/drivers/usb/host/uhci-hub.c
+> @@ -120,14 +120,15 @@ static void uhci_finish_suspend(struct uhci_hcd *uhci, int port,
+>   }
+>   
+>   /* Wait for the UHCI controller in HP's iLO2 server management chip.
+> - * It can take up to 250 us to finish a reset and set the CSC bit.
+> + * It can take up to max_wait us to finish the operation.
+>    */
+> -static void wait_for_HP(struct uhci_hcd *uhci, unsigned long port_addr)
+> +static void wait_for_HP(struct uhci_hcd *uhci, unsigned long port_addr,
+> +		u16 status, int max_wait)
+>   {
+>   	int i;
+>   
+> -	for (i = 10; i < 250; i += 10) {
+> -		if (uhci_readw(uhci, port_addr) & USBPORTSC_CSC)
+> +	for (i = 10; i < max_wait; i += 10) {
+> +		if (uhci_readw(uhci, port_addr) & status)
+>   			return;
+>   		udelay(10);
+>   	}
+> @@ -151,7 +152,8 @@ static void uhci_check_ports(struct uhci_hcd *uhci)
+>   				/* HP's server management chip requires
+>   				 * a longer delay. */
+>   				if (uhci->wait_for_hp)
+> -					wait_for_HP(uhci, port_addr);
+> +					wait_for_HP(uhci, port_addr,
+> +						USBPORTSC_CSC, 250);
+>   
+>   				/* If the port was enabled before, turning
+>   				 * reset on caused a port enable change.
 
-> -----Original Message-----
-> From: Stephen Rothwell [mailto:sfr@canb.auug.org.au]
-> Sent: 2013Äê4ÔÂ26ÈÕ 15:07
-> To: Olof Johansson; Arnd Bergmann; linux-arm-kernel@lists.infradead.org
-> Cc: linux-next@vger.kernel.org; linux-kernel@vger.kernel.org; Yang, Wenyou;
-> Richard Genoud; Mark Brown; Ferre, Nicolas
-> Subject: linux-next: manual merge of the arm-soc tree with the spi-mb tree
-> 
-> Hi all,
-> 
-> Today's linux-next merge of the arm-soc tree got a conflict in
-> arch/arm/boot/dts/at91sam9x5.dtsi between commits d50f88a0c304 ("ARM:
-> dts: add spi nodes for atmel SoC") and a68b728f7a21 ("ARM: dts: add pinctrl
-> property for spi node for atmel SoC") from the spi-mb tree and commits
-> e9a72ee81d58 ("ARM: at91: dt: at91sam9x5: add i2c pinctrl"),
-> 463c9c7bf1f3 ("ARM: at91: dt: at91sam9x5: add i2c-gpio pinctrl") and
-> b909c6c94462 ("ARM: at91/at91sam9x5: add RTC node") from the arm-soc
-> tree.
-> 
-> I fixed it up (hopefully - see below) and can carry the fix as necessary (no action
-> is required).
-> 
-> --
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
-> 
-> diff --cc arch/arm/boot/dts/at91sam9x5.dtsi index 347b438,284bf24..0000000
-> --- a/arch/arm/boot/dts/at91sam9x5.dtsi
-> +++ b/arch/arm/boot/dts/at91sam9x5.dtsi
-> @@@ -343,23 -343,53 +343,70 @@@
->   					};
->   				};
-> 
->  +				spi0 {
->  +					pinctrl_spi0: spi0-0 {
->  +						atmel,pins =
->  +							<0 11 0x1 0x0	/* PA11 periph A SPI0_MISO
-> pin */
->  +							 0 12 0x1 0x0	/* PA12 periph A SPI0_MOSI
-> pin */
->  +							 0 13 0x1 0x0>;	/* PA13 periph A
-> SPI0_SPCK pin */
->  +					};
->  +				};
->  +
->  +				spi1 {
->  +					pinctrl_spi1: spi1-0 {
->  +						atmel,pins =
->  +							<0 21 0x2 0x0	/* PA21 periph B SPI1_MISO
-> pin */
->  +							 0 22 0x2 0x0	/* PA22 periph B SPI1_MOSI
-> pin */
->  +							 0 23 0x2 0x0>;	/* PA23 periph B
-> SPI1_SPCK pin */
->  +					};
->  +				};
-> + 				i2c0 {
-> + 					pinctrl_i2c0: i2c0-0 {
-> + 						atmel,pins =
-> + 							<0 30 0x1 0x0	/* PA30 periph A I2C0 data */
-> + 							 0 31 0x1 0x0>;	/* PA31 periph A I2C0
-> clock */
-> + 					};
-> + 				};
-> +
-> + 				i2c1 {
-> + 					pinctrl_i2c1: i2c1-0 {
-> + 						atmel,pins =
-> + 							<2 0 0x3 0x0	/* PC0 periph C I2C1 data */
-> + 							 2 1 0x3 0x0>;	/* PC1 periph C I2C1 clock */
-> + 					};
-> + 				};
-> +
-> + 				i2c2 {
-> + 					pinctrl_i2c2: i2c2-0 {
-> + 						atmel,pins =
-> + 							<1 4 0x2 0x0	/* PB4 periph B I2C2 data */
-> + 							 1 5 0x2 0x0>;	/* PB5 periph B I2C2 clock */
-> + 					};
-> + 				};
-> +
-> + 				i2c_gpio0 {
-> + 					pinctrl_i2c_gpio0: i2c_gpio0-0 {
-> + 						atmel,pins =
-> + 							<0 30 0x0 0x2	/* PA30 gpio multidrive I2C0
-> data */
-> + 							 0 31 0x0 0x2>;	/* PA31 gpio multidrive
-> I2C0 clock */
-> + 					};
-> + 				};
-> +
-> + 				i2c_gpio1 {
-> + 					pinctrl_i2c_gpio1: i2c_gpio1-0 {
-> + 						atmel,pins =
-> + 							<2 0 0x0 0x2	/* PC0 gpio multidrive I2C1
-> data */
-> + 							 2 1 0x0 0x2>;	/* PC1 gpio multidrive I2C1
-> clock */
-> + 					};
-> + 				};
-> +
-> + 				i2c_gpio2 {
-> + 					pinctrl_i2c_gpio2: i2c_gpio2-0 {
-> + 						atmel,pins =
-> + 							<1 4 0x0 0x2	/* PB4 gpio multidrive I2C2
-> data */
-> + 							 1 5 0x0 0x2>;	/* PB5 gpio multidrive I2C2
-> clock */
-> + 					};
-> + 				};
-> 
->   				pioA: gpio@fffff400 {
->   					compatible = "atmel,at91sam9x5-gpio",
-> "atmel,at91rm9200-gpio"; @@@ -548,27 -587,12 +604,33 @@@
->   				};
->   			};
-> 
->  +			spi0: spi@f0000000 {
->  +				#address-cells = <1>;
->  +				#size-cells = <0>;
->  +				compatible = "atmel,at91rm9200-spi";
->  +				reg = <0xf0000000 0x100>;
->  +				interrupts = <13 4 3>;
->  +				pinctrl-names = "default";
->  +				pinctrl-0 = <&pinctrl_spi0>;
->  +				status = "disabled";
->  +			};
->  +
->  +			spi1: spi@f0004000 {
->  +				#address-cells = <1>;
->  +				#size-cells = <0>;
->  +				compatible = "atmel,at91rm9200-spi";
->  +				reg = <0xf0004000 0x100>;
->  +				interrupts = <14 4 3>;
->  +				pinctrl-names = "default";
->  +				pinctrl-0 = <&pinctrl_spi1>;
->  +				status = "disabled";
->  +			};
-> + 			rtc@fffffeb0 {
-> + 				compatible = "atmel,at91rm9200-rtc";
-> + 				reg = <0xfffffeb0 0x40>;
-> + 				interrupts = <1 4 7>;
-> + 				status = "disabled";
-> + 			};
->   		};
-> 
->   		nand0: nand@40000000 {
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
