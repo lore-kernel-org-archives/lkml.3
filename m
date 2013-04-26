@@ -1,92 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758073Ab3DZTqv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 15:46:51 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:61381 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757500Ab3DZTqq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 15:46:46 -0400
-Date: Fri, 26 Apr 2013 12:46:42 -0700
-From: Kent Overstreet <koverstreet@google.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org, tj@kernel.org,
-        axboe@kernel.dk, James.Bottomley@hansenpartnership.com,
-        snitzer@redhat.com
-Subject: Re: Bcache v. whatever
-Message-ID: <20130426194642.GC9931@google.com>
-References: <20130114223202.GV26407@google.com>
- <20130425161704.3f0fc3b6af55cf75acbc9d9e@linux-foundation.org>
+	id S1757169Ab3DZTsU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 15:48:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10476 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752972Ab3DZTsS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Apr 2013 15:48:18 -0400
+Message-ID: <517AD9E2.2090704@redhat.com>
+Date: Fri, 26 Apr 2013 21:47:46 +0200
+From: Daniel Borkmann <dborkman@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130425161704.3f0fc3b6af55cf75acbc9d9e@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Arnd Bergmann <arnd@arndb.de>, Nicolas Schichan <nschichan@freebox.fr>,
+        Will Drewry <wad@chromium.org>, Mircea Gherzan <mgherzan@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>,
+        "David S. Miller" <davem@davemloft.net>,
+        Daniel Borkmann <daniel.borkmann@tik.ee.ethz.ch>,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH V3 2/3] ARM: net: bpf_jit: make code generation less dependent
+ on struct sk_filter.
+References: <1366824429-26652-1-git-send-email-nschichan@freebox.fr> <1366824429-26652-3-git-send-email-nschichan@freebox.fr> <3592414.M8kQZLCXlW@wuerfel> <20130426122601.10ec05fcb4860df1b0a5b409@linux-foundation.org>
+In-Reply-To: <20130426122601.10ec05fcb4860df1b0a5b409@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 25, 2013 at 04:17:04PM -0700, Andrew Morton wrote:
-> On Mon, 14 Jan 2013 14:32:02 -0800 Kent Overstreet <koverstreet@google.com> wrote:
-> 
-> > Bcache: a block layer SSD cache
-> 
-> sparc64 gcc-3.4.5:
-> 
-> drivers/md/bcache/btree.c: In function `bch_btree_read':
-> drivers/md/bcache/btree.c:266: error: invalid operands to binary +
-> drivers/md/bcache/btree.c: In function `__btree_write':
-> drivers/md/bcache/btree.c:379: error: invalid operands to binary +
-> drivers/md/bcache/btree.c: In function `btree_node_free':
-> drivers/md/bcache/btree.c:980: error: invalid operands to binary +
-> drivers/md/bcache/btree.c: In function `btree_insert_key':
-> drivers/md/bcache/btree.c:1857: error: invalid operands to binary +
-> drivers/md/bcache/btree.c:1857: error: invalid operands to binary +
-> drivers/md/bcache/btree.c:1859: error: invalid operands to binary +
-> drivers/md/bcache/btree.c:1859: error: invalid operands to binary +
-> drivers/md/bcache/btree.c:1864: error: invalid operands to binary +
-> drivers/md/bcache/btree.c:1864: error: invalid operands to binary +
-> drivers/md/bcache/btree.c: In function `btree_split':
-> drivers/md/bcache/btree.c:1934: error: invalid operands to binary +
-> drivers/md/bcache/btree.c: In function `bch_btree_set_root':
-> drivers/md/bcache/btree.c:2159: error: invalid operands to binary +
-> drivers/md/bcache/btree.c: In function `bch_btree_search_recurse':
-> drivers/md/bcache/btree.c:2262: error: invalid operands to binary +
-> drivers/md/bcache/btree.c: In function `bch_btree_refill_keybuf':
-> drivers/md/bcache/btree.c:2330: error: invalid operands to binary +
-> 
-> due to
-> 
-> #define pbtree(b)       (&bch_pbtree(b).s[0])
-> 
-> I don't know why this is happening (presumably a gcc glitch), but
-> returning an 80-byte struct by value from bch_pkey() and bch_pbtree()
-> is just gruesome.  The compiler has to allocate the space on the caller
-> stack, pass a hidden pointer into the callee and the callee copies its
-> return value into that caller stack slot.  It's slow and consumes stack.
-> 
-> Something different, please.
+On 04/26/2013 09:26 PM, Andrew Morton wrote:
+> On Fri, 26 Apr 2013 16:04:44 +0200 Arnd Bergmann <arnd@arndb.de> wrote:
+>> On Wednesday 24 April 2013 19:27:08 Nicolas Schichan wrote:
+>>> @@ -858,7 +858,7 @@ b_epilogue:
+>>>   }
+>>>
+>>>
+>>> -void bpf_jit_compile(struct sk_filter *fp)
+>>> +static void __bpf_jit_compile(struct jit_ctx *out_ctx)
+>>>   {
+>>>          struct jit_ctx ctx;
+>>>          unsigned tmp_idx;
+>>> @@ -867,11 +867,10 @@ void bpf_jit_compile(struct sk_filter *fp)
+>>>          if (!bpf_jit_enable)
+>>>                  return;
+>>>
+>>> -       memset(&ctx, 0, sizeof(ctx));
+>>> -       ctx.skf         = fp;
+>>> +       ctx = *out_ctx;
+>>>          ctx.ret0_fp_idx = -1;
+>>>
+>>> -       ctx.offsets = kzalloc(4 * (ctx.skf->len + 1), GFP_KERNEL);
+>>> +       ctx.offsets = kzalloc(4 * (ctx.prog_len + 1), GFP_KERNEL);
+>>>          if (ctx.offsets == NULL)
+>>>                  return;
+>>>
+>>> @@ -921,13 +920,26 @@ void bpf_jit_compile(struct sk_filter *fp)
+>>>                  print_hex_dump(KERN_INFO, "BPF JIT code: ",
+>>>                                 DUMP_PREFIX_ADDRESS, 16, 4, ctx.target,
+>>>                                 alloc_size, false);
+>>> -
+>>> -       fp->bpf_func = (void *)ctx.target;
+>>>   out:
+>>>          kfree(ctx.offsets);
+>>> +
+>>> +       *out_ctx = ctx;
+>>>          return;
+>>
+>> This part of the patch, in combination with 79617801e "filter: bpf_jit_comp:
+>> refactor and unify BPF JIT image dump output" is now causing build errors
+>> in linux-next:
+>>
+>> arch/arm/net/bpf_jit_32.c: In function '__bpf_jit_compile':
+>> arch/arm/net/bpf_jit_32.c:930:16: error: 'fp' undeclared (first use in this function)
+>>     bpf_jit_dump(fp->len, alloc_size, 2, ctx.target);
+>
+> Thanks, I did this.  There may be a smarter way...
 
-Well, it is kind of... perverse but really the compiler's doing exactly
-what I would've had to do otherwise - stick a char buf[80] on the
-caller's stack and pass it to bch_pbtree(). With the caveat that I
-haven't looked at the generated code.
+I think also seccomp_jit_compile() would need this change then, otherwise the build
+with CONFIG_SECCOMP_FILTER_JIT might break.
 
-As far as I can tell the only real improvement would be to add a %p
-format string to vsnprintf, but adding a global extension would obviously be
-inappropriate for this. It'd be really nice to have a mechanism for
-adding file/module private format strings to vsnprintf, but I haven't
-cared enough yet to implement it myself.
+I can fix this up for you if not already applied. I presume it's against
+linux-next tree?
 
-Of course if you know a better solution I'm all ears.
-
-Uhm, as for the actual bug - that is a fairly ancient gcc, I wasn't
-aware we were supporting compilers that old but I'm sure you wouldn't be
-bugging me about it if we weren't...
-
-If you _really_ want me to rip out the macro/struct return hack I
-will... but this is just debug code and I hate making it more verbose if
-I don't have to.
-
-Otherwise, I'll set up gcc-3.4.5 (hopefully it doesn't have to be a
-sparc compiler :P) and see if I can get gcc to stop complaining.
+> --- a/arch/arm/net/bpf_jit_32.c~arm-net-bpf_jit-make-code-generation-less-dependent-on-struct-sk_filter-fix
+> +++ a/arch/arm/net/bpf_jit_32.c
+> @@ -858,7 +858,7 @@ b_epilogue:
+>   }
+>
+>
+> -static void __bpf_jit_compile(struct jit_ctx *out_ctx)
+> +static void __bpf_jit_compile(struct sk_filter *fp, struct jit_ctx *out_ctx)
+>   {
+>   	struct jit_ctx ctx;
+>   	unsigned tmp_idx;
+> @@ -934,7 +934,7 @@ void bpf_jit_compile(struct sk_filter *f
+>   	ctx.prog_len = fp->len;
+>   	ctx.prog_insns = fp->insns;
+>
+> -	__bpf_jit_compile(&ctx);
+> +	__bpf_jit_compile(fp, &ctx);
+>   	if (ctx.target)
+>   		fp->bpf_func = (void *)ctx.target;
+>   }
+> _
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
