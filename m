@@ -1,73 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759836Ab3DZJ62 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 05:58:28 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44566 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759782Ab3DZJ60 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 05:58:26 -0400
-Message-ID: <517A4FC1.3070605@suse.cz>
-Date: Fri, 26 Apr 2013 11:58:25 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S932369Ab3DZKBB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 06:01:01 -0400
+Received: from mail-bk0-f48.google.com ([209.85.214.48]:59885 "EHLO
+	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754354Ab3DZKBA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Apr 2013 06:01:00 -0400
 MIME-Version: 1.0
-To: sedat.dilek@gmail.com
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
-        "Yann E. MORIN" <yann.morin.1998@free.fr>
-Subject: Re: linux-next: Tree for Apr 26
-References: <20130426180357.7599d1b6b7965470905dcdf3@canb.auug.org.au> <CA+icZUWt_W5FUQgQ2TFoQU0df+sAbxZZE8AcD16T3f_fiTD9DQ@mail.gmail.com>
-In-Reply-To: <CA+icZUWt_W5FUQgQ2TFoQU0df+sAbxZZE8AcD16T3f_fiTD9DQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1366910611-20048-12-git-send-email-vincent.guittot@linaro.org>
+References: <1366910611-20048-1-git-send-email-vincent.guittot@linaro.org>
+	<1366910611-20048-12-git-send-email-vincent.guittot@linaro.org>
+Date: Fri, 26 Apr 2013 12:00:58 +0200
+Message-ID: <CAKfTPtCUvKmTHzyVRCkGyM-nWOSWP8OUzMgyCyzPEXf1NoxsQQ@mail.gmail.com>
+Subject: Re: [PATCH 11/14] sched: filter task pull request
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: linux-kernel <linux-kernel@vger.kernel.org>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Paul Turner <pjt@google.com>, Santosh <santosh.shilimkar@ti.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Chander Kashyap <chander.kashyap@linaro.org>,
+        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        Alex Shi <alex.shi@intel.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Len Brown <len.brown@intel.com>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Lukasz Majewski <l.majewski@samsung.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added Yann, from whom I merged couple of kconfig changes yesterday.
+Part of this patch is missing, the fix below is needed
 
-On 26.4.2013 11:42, Sedat Dilek wrote:
-> [ CC linux-kbuild folks ]
-> 
-> I am always doing a ...
-> 
->    $ cd linux-next/
-> 
->    $ yes "" | make oldconfig
-> 
-> ... before starting a kernel-build.
-> 
-> Today, I see this ...
-> 
-> $ ./scripts/build_linux-next.sh
-> make options ...... CC=gcc-4.6 -j4
-> KBUILD_BUILD_USER=sedat.dilek@gmail.com
-> LOCALVERSION=-next20130426-1-iniza-small
-> dep-pkg options ... KDEB_PKGVERSION=3.9.0~rc8~next20130426-1~iniza+dileks1
-> scripts/kconfig/conf --silentoldconfig Kconfig
-> *
-> * Restart config...
-> *
-[...]
->   Enumeration method [M/y/?] (NEW) aborted!
-> 
-> Console input/output is redirected. Run 'make oldconfig' to update
-> configuration.
-> 
-> make[2]: *** [silentoldconfig] Error 1
-> make[1]: *** [silentoldconfig] Error 2
-> make: *** No rule to make target `include/config/auto.conf', needed by
-> `include/config/kernel.release'.  Stop.
-> 
-> Had only a quick view!
-> 
-> Temp. workaround: cd build-dir, run manually 'make oldconfig'.
-> 
-> Explanations welcome :-)!
+@@ -3497,7 +3497,9 @@ static bool is_buddy_full(int cpu)
+ static bool is_my_buddy(int cpu, int buddy)
+ {
+  int my_buddy = per_cpu(sd_pack_buddy, cpu);
+- return (my_buddy == -1) || (buddy == my_buddy);
++
++ return ((sysctl_sched_packing_mode == SCHED_PACKING_FULL) &&
++               ((my_buddy == -1) || (buddy == my_buddy)));
+ }
 
-Can you send a copy of your .config?
-
-Thanks,
-Michal
+ static bool is_light_task(struct task_struct *p)
 
 
+On 25 April 2013 19:23, Vincent Guittot <vincent.guittot@linaro.org> wrote:
+> Only CPUs that participates to the packing effort can pull tasks on a busiest
+> group.
+>
+> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+> ---
+>  kernel/sched/fair.c |   14 ++++++++++++--
+>  1 file changed, 12 insertions(+), 2 deletions(-)
+>
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 28f8ea7..6f63fb9 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -3494,6 +3494,12 @@ static bool is_buddy_full(int cpu)
+>         return (sum * 1024 >= period * 1000);
+>  }
+>
+> +static bool is_my_buddy(int cpu, int buddy)
+> +{
+> +       int my_buddy = per_cpu(sd_pack_buddy, cpu);
+> +       return (my_buddy == -1) || (buddy == my_buddy);
+> +}
+> +
+>  static bool is_light_task(struct task_struct *p)
+>  {
+>         /* A light task runs less than 20% in average */
+> @@ -4688,8 +4694,8 @@ static inline void update_sg_lb_stats(struct lb_env *env,
+>
+>                 /* Bias balancing toward cpus of our domain */
+>                 if (local_group) {
+> -                       if (idle_cpu(i) && !first_idle_cpu &&
+> -                                       cpumask_test_cpu(i, sched_group_mask(group))) {
+> +                       if (is_my_buddy(i, i) && idle_cpu(i) && !first_idle_cpu
+> +                        && cpumask_test_cpu(i, sched_group_mask(group))) {
+>                                 first_idle_cpu = 1;
+>                                 balance_cpu = i;
+>                         }
+> @@ -4817,6 +4823,10 @@ static void update_plb_buddy(int cpu, int *balance, struct sd_lb_stats *sds,
+>
+>         /* Get my new buddy */
+>         buddy = per_cpu(sd_pack_buddy, cpu);
+> +
+> +       /* This CPU doesn't act for agressive packing */
+> +       if (buddy != cpu)
+> +               sds->busiest = 0;
+>  }
+>
+>  /**
+> --
+> 1.7.9.5
+>
