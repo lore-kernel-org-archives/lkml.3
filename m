@@ -1,121 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756874Ab3DZVHt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 17:07:49 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:60637 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755572Ab3DZVHr (ORCPT
+	id S1757491Ab3DZVg7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 17:36:59 -0400
+Received: from mail-vc0-f170.google.com ([209.85.220.170]:58983 "EHLO
+	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754122Ab3DZVg6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 17:07:47 -0400
+	Fri, 26 Apr 2013 17:36:58 -0400
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <20130426182239.GA25767@mtj.dyndns.org>
-References: <CA+icZUVCmFeh3Xna37VJDDzvZ34sYJ_Dser7i5rRzGLhMTi5-Q@mail.gmail.com>
-	<CA+icZUXeDT8x60iUtjJV2GO5KkDnm8CJsz8mntz5hREoOD+YJw@mail.gmail.com>
-	<CA+icZUWkyP9TE0eeqstyvVNP++MtN8rYfGcPBT6NuMOHEHm7dw@mail.gmail.com>
-	<20130426182239.GA25767@mtj.dyndns.org>
-Date: Fri, 26 Apr 2013 23:07:44 +0200
-Message-ID: <CA+icZUVWRkP_fxTH22ywx9Ntnnp1xW_2dVRjwTvBfs0eJBcEVg@mail.gmail.com>
-Subject: Re: linux-next: Tree for Apr 26 [ bluetooth on suspend/resume ]
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Gustavo Padovan <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        Linux PM List <linux-pm@lists.linux-foundation.org>,
+In-Reply-To: <CAErSpo6UkVhSf+nFW4zwJLBQw_0RQ5H9Bv-UuQRb6zdwsFPw4g@mail.gmail.com>
+References: <CAErSpo7qj2SNR7BfuBsfF-saZXvgcqqLtgoP5Hyb5u99qR4Ncg@mail.gmail.com>
+ <Pine.LNX.4.44L0.1302191119270.2215-100000@iolanthe.rowland.org>
+ <CAErSpo7NZoOQZyW76HEoOTVgdqL2CgbVScAeF6HGLAVaNCq0=w@mail.gmail.com>
+ <337833384.57445.1361860509194.JavaMail.mail@webmail08> <CAErSpo6CbO5KYXiErv6J_Dnm1u694C5fQPP2_cZL8VKDEnZa9A@mail.gmail.com>
+ <569718148.80620.1361906088301.JavaMail.mail@webmail13> <CAErSpo6UkVhSf+nFW4zwJLBQw_0RQ5H9Bv-UuQRb6zdwsFPw4g@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 26 Apr 2013 15:36:37 -0600
+Message-ID: <CAErSpo4X+XXKvWDfqh2CKZAtJ9WMQk91OcsWwdxwYv2MfEM_zQ@mail.gmail.com>
+Subject: Re: Abysmal HDD/USB write speed after sleep on a UEFI system
+To: "Artem S. Tashkinov" <t.artem@lycos.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
         "Rafael J. Wysocki" <rjw@sisk.pl>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 26, 2013 at 8:22 PM, Tejun Heo <tj@kernel.org> wrote:
-> On Fri, Apr 26, 2013 at 07:40:20PM +0200, Sedat Dilek wrote:
->> Oops, NULL-pointer-deref [ __queue_work() ]
+On Wed, Mar 6, 2013 at 5:17 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> On Tue, Feb 26, 2013 at 12:14 PM, Artem S. Tashkinov <t.artem@lycos.com> wrote:
+>> Feb 27, 2013 12:47:01 AM, Bjorn Helgaas wrote:
+>> On Mon, Feb 25, 2013 at 11:35 PM, Artem S. Tashkinov wrote:
+>>>> Feb 26, 2013 03:57:52 AM, Bjorn Helgaas wrote:
+>>>>>
+>>>>>Where are we at with this, Artem?  I assume it's still a problem.
+>>>>>
+>>>>
+>>>> Yes, it is, Bjorn.
+>>>>
+>>>> In order to eliminate this problem I switched back to MBR yesterday, because
+>>>> so far I haven't received any instructions or guidance as to how I can debug
+>>>> it further. I'm absolutely sure USB write speed is just another manifestation of
+>>>> it so I decided not to debug USB specifically (it just doesn't make too much
+>>>> sense).
+>>>>
+>>>> What I see is that something terribly wrong is going on but if Linus has no ideas
+>>>> I, as an average Joe, don't have a slightest clue as to what I can do.
+>>>>
+>>>> The bug report with necessary, but seemingly useless information, can be
+>>>> found here: https://bugzilla.kernel.org/show_bug.cgi?id=53551
+>>>>
+>>>> If anyone comes up with new ideas I can quickly try UEFI again now that I
+>>>> have two HDDs at my disposal (the old one is formatted as GPT, the new one is
+>>>> MBR).
+>>>
+>>>The ideas I saw are:
+>>>
+>>>1) Figure out whether it ever worked.  If an older kernel worked
+>>>correctly and a newer one is broken, bisection is at least a
+>>>possibility.  You mentioned that it did work before (Feb 12), but in
+>>>the past you never suspended twice in one boot session, whereas maybe
+>>>you did when seeing the problem?
 >>
->> [   25.974932] BUG: unable to handle kernel NULL pointer dereference
->> at 0000000000000100
->> [   25.974944] IP: [<ffffffff81077502>] __queue_work+0x32/0x3d0
+>> This is difficult to say since the first kernel I tried to run in EUFI mode was
+>> 3.7.x, so I've no idea if any previous ones ever worked.
+>>
+>>>
+>>>2) Try the "setpci" to set the MSI address back to the original value
+>>>to see if it makes a difference (see my Feb 12 message).
+>>
+>> I will try it soon and report back to you.
+>>
+>>>
+>>>3) Collect "lspci -vvv -xxxx" output to investigate the XHCI
+>>>Unsupported Request errors.
+>>>
+>>>4) Use usbmon to collect traces before and after the suspend.
+>>
+>> Likewise. Still I don't quite understand why you are persistent in your
+>> desire to investigate USB controllers specifically - my problem affects
+>> all storage devices that I have.
 >
-> So, 0x100 deref near the top of the function.
+> Well, in the absence of good ideas about what's going on, I guess we
+> have to pursue even the bad ideas that don't seem like they'd be
+> related :)  Speaking of bad ideas, any news on 2) and 3) above?
 >
-> ...
->> [   25.975037] RIP: 0010:[<ffffffff81077502>]  [<ffffffff81077502>]
->> __queue_work+0x32/0x3d0
->> [   25.975047] RSP: 0018:ffff88008fed5c48  EFLAGS: 00010046
->> [   25.975052] RAX: 0000000000000096 RBX: 0000000000000292 RCX: 0000000000000000
->> [   25.975058] RDX: ffff880095281850 RSI: 0000000000000000 RDI: 0000000000000100
->> [   25.975063] RBP: ffff88008fed5c88 R08: 0000000000000000 R09: 0000000000000300
->> [   25.975069] R10: ffff880094981a00 R11: 0000000000000000 R12: ffff880095281850
->> [   25.975074] R13: 0000000000000000 R14: 0000000000000100 R15: 00000000000009c4
->> [   25.975081] FS:  00007f2f61707740(0000) GS:ffff88011fac0000(0000)
->> knlGS:0000000000000000
->> [   25.975088] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
->> [   25.975093] CR2: 0000000000000100 CR3: 000000009101f000 CR4: 00000000000407e0
->> [   25.975099] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
->> [   25.975104] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> ...
->> [   25.975143] Call Trace:
->> [   25.975151]  [<ffffffff81077be5>] queue_work_on+0x45/0x50
->> [   25.975165]  [<ffffffffa016e8ff>] hci_req_run+0xbf/0xf0 [bluetooth]
->> [   25.975188]  [<ffffffffa016ea06>] __hci_req_sync+0xd6/0x1c0 [bluetooth]
->> [   25.975217]  [<ffffffffa016fad5>] hci_dev_open+0x275/0x2e0 [bluetooth]
->> [   25.975230]  [<ffffffffa0182752>] hci_sock_ioctl+0x1f2/0x3f0 [bluetooth]
->> [   25.975238]  [<ffffffff815c6050>] sock_do_ioctl+0x30/0x70
->> [   25.975245]  [<ffffffff815c75f9>] sock_ioctl+0x79/0x2f0
->> [   25.975254]  [<ffffffff811a8046>] do_vfs_ioctl+0x96/0x560
->> [   25.975262]  [<ffffffff811a85a1>] SyS_ioctl+0x91/0xb0
->> [   25.975271]  [<ffffffff816d989d>] system_call_fastpath+0x1a/0x1f
->> [   25.975276] Code: 89 e5 41 57 41 56 41 89 fe 41 55 49 89 f5 41 54
->> 49 89 d4 53 48 83 ec 18 89 7d c8 9c 58 66 66 90 66 90 f6 c4 02 0f 85
->> 56 02 00 00 <41> 8b 85 00 01 00 00 a9 00 00 01 00 0f 85 b0 02 00 00 48
->> c7 c2
->
-> All code
-> ========
->    0:   89 e5                   mov    %esp,%ebp
->    2:   41 57                   push   %r15
->    4:   41 56                   push   %r14
->    6:   41 89 fe                mov    %edi,%r14d
->    9:   41 55                   push   %r13
->    b:   49 89 f5                mov    %rsi,%r13
->    e:   41 54                   push   %r12
->   10:   49 89 d4                mov    %rdx,%r12
->   13:   53                      push   %rbx
->   14:   48 83 ec 18             sub    $0x18,%rsp
->   18:   89 7d c8                mov    %edi,-0x38(%rbp)
->   1b:   9c                      pushfq
->   1c:   58                      pop    %rax
->   1d:   66 66 90                data32 xchg %ax,%ax
->   20:   66 90                   xchg   %ax,%ax
->   22:   f6 c4 02                test   $0x2,%ah
->   25:   0f 85 56 02 00 00       jne    0x281
->   2b:*  41 8b 85 00 01 00 00    mov    0x100(%r13),%eax     <-- trapping instruction
->   32:   a9 00 00 01 00          test   $0x10000,%eax
->   37:   0f 85 b0 02 00 00       jne    0x2ed
->   3d:   48                      rex.W
->   3e:   c7                      .byte 0xc7
->   3f:   c2                      .byte 0xc2
->
-> The second argument %rsi is zero, which got transferred to %r13 and
-> then offset deref on it trapped.
->
-> The second argument is @wq and the oopsing code is the wq->flags deref
-> in the following if condition.
->
->         /* if dying, only works from the same workqueue are allowed */
->         if (unlikely(wq->flags & __WQ_DRAINING) &&
->                 WARN_ON_ONCE(!is_chained_work(wq)))
->                 return;
->
-> So, umm, don't pass in NULL as @wq. :)
->
+> You mentioned in the bugzilla that Windows complains about MTRRs being
+> changed across the S4 sleep state transition.  I don't think Linux
+> looks for such a change.  You could try looking at /proc/mtrr before
+> and after the suspend/resume to see if anything changed there.  It
+> looks like there's even support for *writing* the MTRRs via
+> /proc/mtrr, so if anything did change, you could also try changing it
+> back.
 
-Do you have a patch for this?
+Did this problem ever get resolved?
 
-- Sedat -
-
-> --
-> tejun
+Bjorn
