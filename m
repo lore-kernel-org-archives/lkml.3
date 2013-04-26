@@ -1,53 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757822Ab3DZUZF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 16:25:05 -0400
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:51515 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757442Ab3DZUZD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 16:25:03 -0400
-Date: Fri, 26 Apr 2013 13:25:01 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Alan Stern <stern@rowland.harvard.edu>,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [patch for-3.8-rc8] usb, chipidea: fix link error when USB_EHCI_HCD
- is a module
-Message-ID: <alpine.DEB.2.02.1304261323060.17754@chino.kir.corp.google.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1757889Ab3DZUZt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 16:25:49 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:40534 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757120Ab3DZUZs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Apr 2013 16:25:48 -0400
+From: Sourav Poddar <sourav.poddar@ti.com>
+To: <gregkh@linuxfoundation.org>, <tony@atomide.com>,
+        <rmk+kernel@arm.linux.org.uk>, <khilman@linaro.org>
+CC: <linux-serial@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Sourav Poddar <sourav.poddar@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Felipe Balbi <balbi@ti.com>, Rajendra nayak <rnayak@ti.com>
+Subject: [PATCHv5 0/3] Omap serial cleanup
+Date: Sat, 27 Apr 2013 01:55:31 +0530
+Message-ID: <1367007934-3906-1-git-send-email-sourav.poddar@ti.com>
+X-Mailer: git-send-email 1.7.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixes link error when USB_EHCI_HCD=m and USB_CHIPIDEA_HOST=y:
+This is a cleanup series done in response to the
+serial driver fixes done for "no_console_suspend" case.
 
-	drivers/built-in.o: In function `ci_hdrc_host_init':
-	drivers/usb/chipidea/host.c:104: undefined reference to `ehci_init_driver'
+This cleanups mainly include getting
+rid of using "omap_device_disable_idle_on_suspend" api for both dt and non dt case
+as the serial driver will be self sufficient to handle the "no_idle_on_suspend" issue.
+Serial was the only one making use of "omap_device_disable_idle_on_suspend"
 
-as a result of commit 09f6ffde2ece ("USB: EHCI: fix build error by making
-ChipIdea host a normal EHCI driver").
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: Felipe Balbi <balbi@ti.com>
+Cc: Rajendra nayak <rnayak@ti.com>
 
-Cc: stable@vger.kernel.org [v3.7+]
-Signed-off-by: David Rientjes <rientjes@google.com>
----
- drivers/usb/chipidea/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Test info
+Omap4430sdp:
+- Tested wakeup from UART after suspend for dt and non dt case.
+Omap5430evm:
+- Tested wakeup from UART after suspend for dt case.
 
-diff --git a/drivers/usb/chipidea/Kconfig b/drivers/usb/chipidea/Kconfig
---- a/drivers/usb/chipidea/Kconfig
-+++ b/drivers/usb/chipidea/Kconfig
-@@ -20,7 +20,7 @@ config USB_CHIPIDEA_UDC
- config USB_CHIPIDEA_HOST
- 	bool "ChipIdea host controller"
- 	depends on USB=y || USB=USB_CHIPIDEA
--	depends on USB_EHCI_HCD
-+	depends on USB_EHCI_HCD=y
- 	select USB_EHCI_ROOT_HUB_TT
- 	help
- 	  Say Y here to enable host controller functionality of the
+These patches were the part of the bigger series[2]. Breaking them into
+two relevant series as they go through the different tree.
+
+[2]: http://lkml.org/lkml/2013/4/26/274
+
+The following changes since commit 824282ca7d250bd7c301f221c3cd902ce906d731:
+
+  Merge branch 'upstream' of git://git.linux-mips.org/pub/scm/ralf/upstream-linus (2013-04-22 15:00:59 -0700)
+
+are available in the git repository at:
+
+  git://gitorious.org/linux-connectivity/linux-connectivity.git omap_serial_cleanup
+
+Sourav Poddar (3):
+      arm: omap2+: serial: remove no_console_suspend support
+      arm: dts: am33xx: Remove "ti,no_idle_on_suspend" property.
+      arm: omap2+: omap_device: remove no_idle_on_suspend
+
+ arch/arm/boot/dts/am33xx.dtsi     |    1 -
+ arch/arm/mach-omap2/omap_device.c |    9 ++-------
+ arch/arm/mach-omap2/omap_device.h |   10 ----------
+ arch/arm/mach-omap2/serial.c      |    7 -------
+ 4 files changed, 2 insertions(+), 25 deletions(-)
