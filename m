@@ -1,70 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755318Ab3DZQKi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 12:10:38 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:64174 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751276Ab3DZQKh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 12:10:37 -0400
-Date: Fri, 26 Apr 2013 17:10:12 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+	id S1755584Ab3DZQLn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 12:11:43 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:7208 "EHLO SMTP02.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751608Ab3DZQLl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Apr 2013 12:11:41 -0400
+X-IronPort-AV: E=Sophos;i="4.87,559,1363132800"; 
+   d="scan'208";a="20804108"
+Date: Fri, 26 Apr 2013 17:11:35 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "olof@lixom.net" <olof@lixom.net>
-Subject: Re: [PATCH v8 1/2] arm: introduce psci_smp_ops
-Message-ID: <20130426161012.GH30858@mudshark.cambridge.arm.com>
-References: <alpine.DEB.2.02.1304241935010.4180@kaball.uk.xensource.com>
- <1366828819-10745-1-git-send-email-stefano.stabellini@eu.citrix.com>
- <20130425084711.GA12848@mudshark.cambridge.arm.com>
- <alpine.DEB.2.02.1304251104090.4180@kaball.uk.xensource.com>
- <20130425104508.GG12848@mudshark.cambridge.arm.com>
- <alpine.LFD.2.03.1304251054420.1258@syhkavp.arg>
- <alpine.DEB.2.02.1304261630110.4180@kaball.uk.xensource.com>
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Subject: Re: [PATCH 3/9] xen/time: Fix kasprintf splat when allocating timer%d
+ IRQ line.
+In-Reply-To: <1366142947-18655-4-git-send-email-konrad.wilk@oracle.com>
+Message-ID: <alpine.DEB.2.02.1304261707000.4180@kaball.uk.xensource.com>
+References: <1366142947-18655-1-git-send-email-konrad.wilk@oracle.com> <1366142947-18655-4-git-send-email-konrad.wilk@oracle.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1304261630110.4180@kaball.uk.xensource.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 26, 2013 at 04:36:26PM +0100, Stefano Stabellini wrote:
-> On Thu, 25 Apr 2013, Nicolas Pitre wrote:
-> > On Thu, 25 Apr 2013, Will Deacon wrote:
-> > > I disagree. You're explicitly stating that we pass the `cpuid of target CPU,
-> > > as from MPIDR'. That's simply not true -- the firmware could choose any
-> > > numbering scheme to identify the CPUs. For KVM and Xen, it *is* the mpidr,
-> > > which is why psci-smp.c works at all, but that's where the comment belongs,
-> > > not in this header file.
-> > 
-> > At some point, the _kernel_ API for interfacing with the firmware's PSCI 
-> > will have to ensure uniformity somehow.  The PSCI interface code could 
-> > translate the passed MPIDR into whatever the firmware decided to use for 
-> > identifying CPUs if needed, keeping this issue localized.
+On Tue, 16 Apr 2013, Konrad Rzeszutek Wilk wrote:
+> When we online the CPU, we get this splat:
 > 
-> That is what I had in mind when I said to keep the comment in psci.h
-> before.
-> We have to draw the line somewhere to expose a uniform internal kernel
-> API. However it is a bit difficult to do now given that we have only one
-> user of the API.
+> smpboot: Booting Node 0 Processor 1 APIC 0x2
+> installing Xen timer for CPU 1
+> BUG: sleeping function called from invalid context at /home/konrad/ssd/konrad/linux/mm/slab.c:3179
+> in_atomic(): 1, irqs_disabled(): 0, pid: 0, name: swapper/1
+> Pid: 0, comm: swapper/1 Not tainted 3.9.0-rc6upstream-00001-g3884fad #1
+> Call Trace:
+>  [<ffffffff810c1fea>] __might_sleep+0xda/0x100
+>  [<ffffffff81194617>] __kmalloc_track_caller+0x1e7/0x2c0
+>  [<ffffffff81303758>] ? kasprintf+0x38/0x40
+>  [<ffffffff813036eb>] kvasprintf+0x5b/0x90
+>  [<ffffffff81303758>] kasprintf+0x38/0x40
+>  [<ffffffff81044510>] xen_setup_timer+0x30/0xb0
+>  [<ffffffff810445af>] xen_hvm_setup_cpu_clockevents+0x1f/0x30
+>  [<ffffffff81666d0a>] start_secondary+0x19c/0x1a8
+> 
+> The solution to that is use kasprintf in the CPU hotplug path
+> that 'online's the CPU. That is, do it in in xen_hvm_cpu_notify,
+> and remove the call to in xen_hvm_setup_cpu_clockevents.
+> 
+> Unfortunatly the later is not a good idea as the bootup path
+> does not use xen_hvm_cpu_notify so we would end up never allocating
+> timer%d interrupt lines when booting. As such add the check for
+> atomic() to continue.
 
-I see psci.h as representing the firmware interface, and psci-smp.c or
-whatever sits on top as exposing the kernel `API'.
+This last is not reflected in the code.
 
-> I don't feel to strongly about this, please let me know what is the
-> final decision and I'll update the code accordingly. I remind you that
-> the merge window is approaching :-)
+Also, is it actually OK to move xen_setup_timer out of
+xen_hvm_setup_cpu_clockevents?
 
-I'd still like the comment to be in psci-smp.c, or a header separate from
-the firmware bits.
+xen_setup_cpu_clockevents registers xen_clock_events as clocksource and
+xen_clock_events is setup by xen_setup_timer so we need to make sure
+that the call order remains the same.
 
-Will
+
+> CC: stable@vger.kernel.org
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> ---
+>  arch/x86/xen/enlighten.c | 5 ++++-
+>  arch/x86/xen/time.c      | 6 +++++-
+>  2 files changed, 9 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+> index 47d3243..ddbd54a 100644
+> --- a/arch/x86/xen/enlighten.c
+> +++ b/arch/x86/xen/enlighten.c
+> @@ -1641,8 +1641,11 @@ static int __cpuinit xen_hvm_cpu_notify(struct notifier_block *self,
+>  	switch (action) {
+>  	case CPU_UP_PREPARE:
+>  		xen_vcpu_setup(cpu);
+> -		if (xen_have_vector_callback)
+> +		if (xen_have_vector_callback) {
+>  			xen_init_lock_cpu(cpu);
+> +			if (xen_feature(XENFEAT_hvm_safe_pvclock))
+> +				xen_setup_timer(cpu);
+> +		}
+>  		break;
+>  	default:
+>  		break;
+> diff --git a/arch/x86/xen/time.c b/arch/x86/xen/time.c
+> index 0296a95..054cc01 100644
+> --- a/arch/x86/xen/time.c
+> +++ b/arch/x86/xen/time.c
+> @@ -497,7 +497,11 @@ static void xen_hvm_setup_cpu_clockevents(void)
+>  {
+>  	int cpu = smp_processor_id();
+>  	xen_setup_runstate_info(cpu);
+> -	xen_setup_timer(cpu);
+> +	/*
+> +	 * xen_setup_timer(cpu) - snprintf is bad in atomic context. Hence
+> +	 * doing it xen_hvm_cpu_notify (which gets called by smp_init during
+> +	 * early bootup and also during CPU hotplug events).
+> +	 */
+>  	xen_setup_cpu_clockevents();
+>  }
+>  
+> -- 
+> 1.8.1.4
+> 
