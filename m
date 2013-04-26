@@ -1,267 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759842Ab3DZKt3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 06:49:29 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:63946 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751097Ab3DZKt0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 06:49:26 -0400
+	id S1760008Ab3DZKuH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 06:50:07 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:44893 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759932Ab3DZKuF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Apr 2013 06:50:05 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Gavin Guo <tuffkidtt@gmail.com>, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -v3] PCI, ACPI, hotplug: Fix BUS_CHECK event handle on root bridge
+Date: Fri, 26 Apr 2013 12:58:12 +0200
+Message-ID: <4942906.jTIhNoktzo@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.9.0-rc8+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1366940798-15268-1-git-send-email-yinghai@kernel.org>
+References: <1366940798-15268-1-git-send-email-yinghai@kernel.org>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CA+icZUWNVEsiTs6u_2R9krb45ub4t-pZj_VEPRmrX2c4DzwfmA@mail.gmail.com>
-References: <20130426180357.7599d1b6b7965470905dcdf3@canb.auug.org.au>
-	<CA+icZUWt_W5FUQgQ2TFoQU0df+sAbxZZE8AcD16T3f_fiTD9DQ@mail.gmail.com>
-	<517A4FC1.3070605@suse.cz>
-	<20130426100435.GA28733@sepie.suse.cz>
-	<CA+icZUVOfB2JuL1xh1EO1hTP_eOkntYFKsUJ0Zp6VZqn09NABA@mail.gmail.com>
-	<CA+icZUWNVEsiTs6u_2R9krb45ub4t-pZj_VEPRmrX2c4DzwfmA@mail.gmail.com>
-Date: Fri, 26 Apr 2013 12:49:24 +0200
-Message-ID: <CA+icZUXSsqN1iE3ttQakvpZqG-oOL9NR6RMUezB7LGeUw3d00Q@mail.gmail.com>
-Subject: Re: linux-next: Tree for Apr 26
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Michal Marek <mmarek@suse.cz>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
-        "Yann E. MORIN" <yann.morin.1998@free.fr>
-Content-Type: multipart/mixed; boundary=047d7bae43a2d3a3fa04db41492b
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---047d7bae43a2d3a3fa04db41492b
-Content-Type: text/plain; charset=UTF-8
+On Thursday, April 25, 2013 06:46:38 PM Yinghai Lu wrote:
+> Gavin found that acpiphp does not handle hotplug anymore even after
+> now we have acpiphp built-in preparing for v3.10.
+> 
+> Bjorn analyzed bootlog, he found that 
+>     acpiphp: ACPI Hot Plug PCI Controller Driver version: 0.5
+>     ACPI: PCI Root Bridge [PCI0] (domain 0000 [bus 00-3e])
+>     \_SB_.PCI0:_OSC invalid UUID
+>     acpiphp: Slot [1] registered
+>     acpiphp: Slot [1-1] registered
+>    acpi root: \_SB_.PCI0 notify handler is installed
+>     _handle_hotplug_event_root: Bus check notify on \_SB_.PCI0
+>     _handle_hotplug_event_root: Bus check notify on \_SB_.PCI0
+> And that means:
+>    So we should be using acpiphp, which you do have built in statically,
+>    and it found a couple slots.  And we did get two bus check notifies on
+>    \_SB_.PCI0, so we *should* be re-enumerating PCI bus 0000:00.  But it
+>    looks like we're handling this as a host bridge hotplug event instead
+>    of a PCI device hotplug.  My guess is that
+>    handle_root_bridge_insertion() does nothing because the PCI0 ACPI
+>    device already exists, though I would expect to see the "acpi device
+>    exists..." in your dmesg log if this were the case.
+> 
+> Also according to Rafael and Bjorn, it is perfect fine that we
+> should enumerate bus by sending event to root bridge after hotadd
+> device to slots under that root bridge or children bridges.
+> 
+> It turns out that it is regression caused by
+> | commit 668192b678201d2fff27c6cc76bb003c1ec4a52a
+> | Author: Yinghai Lu <yinghai@kernel.org>
+> | Date:   Mon Jan 21 13:20:48 2013 -0800
+> |
+> |    PCI: acpiphp: Move host bridge hotplug to pci_root.c
+> 
+> We should check slots when BUS_CHECK is sent to root bridge acpi handle.
+> 
+> Restore the old behavoir by calling acpi_check_bridge and check_sub_bridge
+> in acpiphp.
+> 
+> Jiang Liu acctually have simimar patch but it forgets calling
+> acpi_check_bridge() for system that have slots on root bus directly.
+> That is still valid, as in QEMU we still have that slots on bus 0 at
+> least. But my first version patch wrongly check if root bridge exists
+> before check_sub_bridge for children bridges. 
+> 
+> -v2: Don't check bridge for acpi_walk_namespace with check_sub_bridges.
+>      also put back bridge reference.
+> -v3: More changelog and etc.
+> 
+> Reported-by: Gavin Guo <tuffkidtt@gmail.com>
+> Tested-by: Gavin Guo <tuffkidtt@gmail.com>
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 
-On Fri, Apr 26, 2013 at 12:37 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> On Fri, Apr 26, 2013 at 12:35 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->> On Fri, Apr 26, 2013 at 12:04 PM, Michal Marek <mmarek@suse.cz> wrote:
->>> On Fri, Apr 26, 2013 at 11:58:25AM +0200, Michal Marek wrote:
->>>> Can you send a copy of your .config?
->>>
->>> I can reproduce it as well:
->>>
->>> $ yes "" | make oldconfig
->>> ...
->>>   Enumeration method [M/y/?] (NEW)
->>>     Basic (RAPIDIO_ENUM_BASIC) [N/m/?] n
->>> ...
->>> #
->>> # configuration written to .config
->>> #
->>> $ make oldconfig
->>> ...
->>>   Enumeration method [M/y/?] (NEW)
->>>
->>>
->>> .config is attached.
->>>
->>
->> Mine, too.
->>
->> I hoped that -next release will be one w/o troubles
->> (cpufreq/intel_pstate / pm/timekeeping / ipc-sem-from-mmotm).
->> Unfortunately, I am not lucky :-(.
->>
->> Anyway, waiting for a fix.
->>
->
-> Just FYI: Mail delivery troubles!
->
-> Delivery to the following recipient failed permanently:
->
->      yann.morin.1998@free.fr
->
-> Technical details of permanent failure:
-> Google tried to deliver your message, but it was rejected by the
-> server for the recipient domain free.fr by mx1.free.fr. [212.27.48.6].
->
-> The error that the other server returned was:
-> 550 spam detected
-> ...
->
+Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-With reverting all kbuild-next commits I was able to build again.
-
-      Revert "kconfig: implement KCONFIG_PROBABILITY for randconfig"
-      Revert "kconfig: allow specifying the seed for randconfig"
-      Revert "kconfig: fix randomising choice entries in presence of
-KCONFIG_ALLCONFIG"
-      Revert "kconfig: do not override symbols already set"
-      Revert "kconfig: fix randconfig tristate detection"
-
-Patch attached!
-
-- Sedat -
-
-
-> - Sedat -
->
->> - Sedat -
->>
->>> Michal
-
---047d7bae43a2d3a3fa04db41492b
-Content-Type: application/octet-stream; 
-	name="3.9.0-rc8-next20130426-1-iniza-small.patch"
-Content-Disposition: attachment; 
-	filename="3.9.0-rc8-next20130426-1-iniza-small.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hfz8mt4o0
-
-U2VkYXQgRGlsZWsgKDExKToKICAgICAga2J1aWxkOiBkZWItcGtnOiBUcnkgdG8gZGV0ZXJtaW5l
-IGRpc3RyaWJ1dGlvbgogICAgICBrYnVpbGQ6IGRlYi1wa2c6IEJ1bXAgeWVhciBpbiBkZWJpYW4v
-Y29weXJpZ2h0IGZpbGUKICAgICAga2J1aWxkOiBkZWItcGtnOiBVcGRhdGUgZ2l0IHJlcG9zaXRv
-cnkgVVJMIGluIGRlYmlhbi9jb3B5cmlnaHQgZmlsZQogICAgICBNZXJnZSB0YWcgJ25leHQtMjAx
-MzA0MjYnIG9mIGdpdDovL2dpdC5rZXJuZWwub3JnLy4uLi9uZXh0L2xpbnV4LW5leHQgaW50byBM
-aW51eC1OZXh0LXYyMDEzMDQyNgogICAgICBNZXJnZSBicmFuY2ggJ2RlYi1wa2ctZml4ZXMnIGlu
-dG8gMy45LjAtcmM4LW5leHQyMDEzMDQyNi0xLWluaXphLXNtYWxsCiAgICAgIFJldmVydCAia2Nv
-bmZpZzogaW1wbGVtZW50IEtDT05GSUdfUFJPQkFCSUxJVFkgZm9yIHJhbmRjb25maWciCiAgICAg
-IFJldmVydCAia2NvbmZpZzogYWxsb3cgc3BlY2lmeWluZyB0aGUgc2VlZCBmb3IgcmFuZGNvbmZp
-ZyIKICAgICAgUmV2ZXJ0ICJrY29uZmlnOiBmaXggcmFuZG9taXNpbmcgY2hvaWNlIGVudHJpZXMg
-aW4gcHJlc2VuY2Ugb2YgS0NPTkZJR19BTExDT05GSUciCiAgICAgIFJldmVydCAia2NvbmZpZzog
-ZG8gbm90IG92ZXJyaWRlIHN5bWJvbHMgYWxyZWFkeSBzZXQiCiAgICAgIFJldmVydCAia2NvbmZp
-ZzogZml4IHJhbmRjb25maWcgdHJpc3RhdGUgZGV0ZWN0aW9uIgogICAgICBNZXJnZSBicmFuY2gg
-J3JldmVydC1rYnVpbGQtbmV4dCcgaW50byAzLjkuMC1yYzgtbmV4dDIwMTMwNDI2LTEtaW5pemEt
-c21hbGwKCiBEb2N1bWVudGF0aW9uL2tidWlsZC9rY29uZmlnLnR4dCB8IDM2IC0tLS0tLS0tLS0t
-LS0tLS0tLS0tLS0KIHNjcmlwdHMva2NvbmZpZy9jb25mLmMgICAgICAgICAgIHwgMTIgKy0tLS0t
-LS0KIHNjcmlwdHMva2NvbmZpZy9jb25mZGF0YS5jICAgICAgIHwgNjYgKysrKystLS0tLS0tLS0t
-LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQogc2NyaXB0cy9wYWNrYWdlL2J1aWxkZGViICAgICAg
-ICAgfCAxOSArKysrKysrKysrLS0KIDQgZmlsZXMgY2hhbmdlZCwgMjQgaW5zZXJ0aW9ucygrKSwg
-MTA5IGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL0RvY3VtZW50YXRpb24va2J1aWxkL2tjb25m
-aWcudHh0IGIvRG9jdW1lbnRhdGlvbi9rYnVpbGQva2NvbmZpZy50eHQKaW5kZXggM2Y0MjllZC4u
-YjhiNzdiYiAxMDA2NDQKLS0tIGEvRG9jdW1lbnRhdGlvbi9rYnVpbGQva2NvbmZpZy50eHQKKysr
-IGIvRG9jdW1lbnRhdGlvbi9rYnVpbGQva2NvbmZpZy50eHQKQEAgLTkwLDQyICs5MCw2IEBAIGRp
-c2FibGUgdGhlIG9wdGlvbnMgdGhhdCBhcmUgZXhwbGljaXRseSBsaXN0ZWQgaW4gdGhlIHNwZWNp
-ZmllZAogbWluaS1jb25maWcgZmlsZXMuCiAKIF9fX19fX19fX19fX19fX19fX19fX19fX19fX19f
-X19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX18KLUVudmlyb25tZW50IHZh
-cmlhYmxlcyBmb3IgJ3JhbmRjb25maWcnCi0KLUtDT05GSUdfU0VFRAotLS0tLS0tLS0tLS0tLS0t
-LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KLVlvdSBjYW4gc2V0IHRoaXMgdG8g
-dGhlIGludGVnZXIgdmFsdWUgdXNlZCB0byBzZWVkIHRoZSBSTkcsIGlmIHlvdSB3YW50Ci10byBz
-b21laG93IGRlYnVnIHRoZSBiZWhhdmlvdXIgb2YgdGhlIGtjb25maWcgcGFyc2VyL2Zyb250ZW5k
-cy4KLUlmIG5vdCBzZXQsIHRoZSBjdXJyZW50IHRpbWUgd2lsbCBiZSB1c2VkLgotCi1LQ09ORklH
-X1BST0JBQklMSVRZCi0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t
-LS0tLS0tLQotVGhpcyB2YXJpYWJsZSBjYW4gYmUgdXNlZCB0byBza2V3IHRoZSBwcm9iYWJpbGl0
-aWVzLiBUaGlzIHZhcmlhYmxlIGNhbgotYmUgdW5zZXQgb3IgZW1wdHksIG9yIHNldCB0byB0aHJl
-ZSBkaWZmZXJlbnQgZm9ybWF0czoKLQlLQ09ORklHX1BST0JBQklMSVRZICAgICB5Om4gc3BsaXQg
-ICAgICAgICAgIHk6bTpuIHNwbGl0Ci0JLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t
-LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KLQl1bnNldCBvciBlbXB0eSAgICAgICAg
-ICA1MCAgOiA1MCAgICAgICAgICAgIDMzICA6IDMzICA6IDM0Ci0JTiAgICAgICAgICAgICAgICAg
-ICAgICAgIE4gIDogMTAwLU4gICAgICAgICBOLzIgOiBOLzIgOiAxMDAtTgotICAgIFsxXSBOOk0g
-ICAgICAgICAgICAgICAgICAgICBOK00gOiAxMDAtKE4rTSkgICAgICBOICA6ICBNICA6IDEwMC0o
-TitNKQotICAgIFsyXSBOOk06TCAgICAgICAgICAgICAgICAgICAgTiAgOiAxMDAtTiAgICAgICAg
-ICBNICA6ICBMICA6IDEwMC0oTStMKQotCi13aGVyZSBOLCBNIGFuZCBMIGFyZSBpbnRlZ2VycyAo
-aW4gYmFzZSAxMCkgaW4gdGhlIHJhbmdlIFswLDEwMF0sIGFuZCBzbwotdGhhdDoKLSAgICBbMV0g
-TitNIGlzIGluIHRoZSByYW5nZSBbMCwxMDBdCi0gICAgWzJdIE0rTCBpcyBpbiB0aGUgcmFuZ2Ug
-WzAsMTAwXQotCi1FeGFtcGxlczoKLQlLQ09ORklHX1BST0JBQklMSVRZPTEwCi0JCTEwJSBvZiBi
-b29sZWFucyB3aWxsIGJlIHNldCB0byAneScsIDkwJSB0byAnbicKLQkJNSUgb2YgdHJpc3RhdGVz
-IHdpbGwgYmUgc2V0IHRvICd5JywgNSUgdG8gJ20nLCA5MCUgdG8gJ24nCi0JS0NPTkZJR19QUk9C
-QUJJTElUWT0xNToyNQotCQk0MCUgb2YgYm9vbGVhbnMgd2lsbCBiZSBzZXQgdG8gJ3knLCA2MCUg
-dG8gJ24nCi0JCTE1JSBvZiB0cmlzdGF0ZXMgd2lsbCBiZSBzZXQgdG8gJ3knLCAyNSUgdG8gJ20n
-LCA2MCUgdG8gJ24nCi0JS0NPTkZJR19QUk9CQUJJTElUWT0xMDoxNToxNQotCQkxMCUgb2YgYm9v
-bGVhbnMgd2lsbCBiZSBzZXQgdG8gJ3knLCA5MCUgdG8gJ24nCi0JCTE1JSBvZiB0cmlzdGF0ZXMg
-d2lsbCBiZSBzZXQgdG8gJ3knLCAxNSUgdG8gJ20nLCA3MCUgdG8gJ24nCi0KLV9fX19fX19fX19f
-X19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19f
-X18KIEVudmlyb25tZW50IHZhcmlhYmxlcyBmb3IgJ3NpbGVudG9sZGNvbmZpZycKIAogS0NPTkZJ
-R19OT1NJTEVOVFVQREFURQpkaWZmIC0tZ2l0IGEvc2NyaXB0cy9rY29uZmlnL2NvbmYuYyBiL3Nj
-cmlwdHMva2NvbmZpZy9jb25mLmMKaW5kZXggYmRlNWI5NS4uZTM5ZmNkOCAxMDA2NDQKLS0tIGEv
-c2NyaXB0cy9rY29uZmlnL2NvbmYuYworKysgYi9zY3JpcHRzL2tjb25maWcvY29uZi5jCkBAIC0x
-Myw3ICsxMyw2IEBACiAjaW5jbHVkZSA8Z2V0b3B0Lmg+CiAjaW5jbHVkZSA8c3lzL3N0YXQuaD4K
-ICNpbmNsdWRlIDxzeXMvdGltZS5oPgotI2luY2x1ZGUgPGVycm5vLmg+CiAKICNpbmNsdWRlICJs
-a2MuaCIKIApAQCAtNTE1LDIzICs1MTQsMTQgQEAgaW50IG1haW4oaW50IGFjLCBjaGFyICoqYXYp
-CiAJCXsKIAkJCXN0cnVjdCB0aW1ldmFsIG5vdzsKIAkJCXVuc2lnbmVkIGludCBzZWVkOwotCQkJ
-Y2hhciAqc2VlZF9lbnY7CiAKIAkJCS8qCiAJCQkgKiBVc2UgbWljcm9zZWNvbmRzIGRlcml2ZWQg
-c2VlZCwKIAkJCSAqIGNvbXBlbnNhdGUgZm9yIHN5c3RlbXMgd2hlcmUgaXQgbWF5IGJlIHplcm8K
-IAkJCSAqLwogCQkJZ2V0dGltZW9mZGF5KCZub3csIE5VTEwpOwotCQkJc2VlZCA9ICh1bnNpZ25l
-ZCBpbnQpKChub3cudHZfc2VjICsgMSkgKiAobm93LnR2X3VzZWMgKyAxKSk7CiAKLQkJCXNlZWRf
-ZW52ID0gZ2V0ZW52KCJLQ09ORklHX1NFRUQiKTsKLQkJCWlmKCBzZWVkX2VudiAmJiAqc2VlZF9l
-bnYgKSB7Ci0JCQkJY2hhciAqZW5kcDsKLQkJCQlpbnQgdG1wID0gKGludClzdHJ0b2woc2VlZF9l
-bnYsICZlbmRwLCAxMCk7Ci0JCQkJaWYgKCplbmRwID09ICdcMCcpIHsKLQkJCQkJc2VlZCA9IHRt
-cDsKLQkJCQl9Ci0JCQl9CisJCQlzZWVkID0gKHVuc2lnbmVkIGludCkoKG5vdy50dl9zZWMgKyAx
-KSAqIChub3cudHZfdXNlYyArIDEpKTsKIAkJCXNyYW5kKHNlZWQpOwogCQkJYnJlYWs7CiAJCX0K
-ZGlmZiAtLWdpdCBhL3NjcmlwdHMva2NvbmZpZy9jb25mZGF0YS5jIGIvc2NyaXB0cy9rY29uZmln
-L2NvbmZkYXRhLmMKaW5kZXggZmM0NWZjMS4uMTNkZGYxMSAxMDA2NDQKLS0tIGEvc2NyaXB0cy9r
-Y29uZmlnL2NvbmZkYXRhLmMKKysrIGIvc2NyaXB0cy9rY29uZmlnL2NvbmZkYXRhLmMKQEAgLTI4
-OCw2ICsyODgsOCBAQCBsb2FkOgogCWZvcl9hbGxfc3ltYm9scyhpLCBzeW0pIHsKIAkJc3ltLT5m
-bGFncyB8PSBTWU1CT0xfQ0hBTkdFRDsKIAkJc3ltLT5mbGFncyAmPSB+KGRlZl9mbGFnc3xTWU1C
-T0xfVkFMSUQpOworCQlpZiAoc3ltX2lzX2Nob2ljZShzeW0pKQorCQkJc3ltLT5mbGFncyB8PSBk
-ZWZfZmxhZ3M7CiAJCXN3aXRjaCAoc3ltLT50eXBlKSB7CiAJCWNhc2UgU19JTlQ6CiAJCWNhc2Ug
-U19IRVg6CkBAIC0zNzcsMTMgKzM3OSwxMyBAQCBzZXRzeW06CiAJCQljYXNlIG1vZDoKIAkJCQlp
-ZiAoY3MtPmRlZltkZWZdLnRyaSA9PSB5ZXMpIHsKIAkJCQkJY29uZl93YXJuaW5nKCIlcyBjcmVh
-dGVzIGluY29uc2lzdGVudCBjaG9pY2Ugc3RhdGUiLCBzeW0tPm5hbWUpOworCQkJCQljcy0+Zmxh
-Z3MgJj0gfmRlZl9mbGFnczsKIAkJCQl9CiAJCQkJYnJlYWs7CiAJCQljYXNlIHllczoKIAkJCQlp
-ZiAoY3MtPmRlZltkZWZdLnRyaSAhPSBubykKIAkJCQkJY29uZl93YXJuaW5nKCJvdmVycmlkZTog
-JXMgY2hhbmdlcyBjaG9pY2Ugc3RhdGUiLCBzeW0tPm5hbWUpOwogCQkJCWNzLT5kZWZbZGVmXS52
-YWwgPSBzeW07Ci0JCQkJY3MtPmZsYWdzIHw9IGRlZl9mbGFnczsKIAkJCQlicmVhazsKIAkJCX0K
-IAkJCWNzLT5kZWZbZGVmXS50cmkgPSBFWFBSX09SKGNzLT5kZWZbZGVmXS50cmksIHN5bS0+ZGVm
-W2RlZl0udHJpKTsKQEAgLTc4OSw4ICs3OTEsNiBAQCBpbnQgY29uZl93cml0ZShjb25zdCBjaGFy
-ICpuYW1lKQogCQkJc3ltX2NhbGNfdmFsdWUoc3ltKTsKIAkJCWlmICghKHN5bS0+ZmxhZ3MgJiBT
-WU1CT0xfV1JJVEUpKQogCQkJCWdvdG8gbmV4dDsKLQkJCWlmIChzeW1faXNfY2hvaWNlX3ZhbHVl
-KHN5bSkgJiYgIW1lbnVfaXNfdmlzaWJsZShtZW51LT5wYXJlbnQpKQotCQkJCWdvdG8gbmV4dDsK
-IAkJCXN5bS0+ZmxhZ3MgJj0gflNZTUJPTF9XUklURTsKIAogCQkJY29uZl93cml0ZV9zeW1ib2wo
-b3V0LCBzeW0sICZrY29uZmlnX3ByaW50ZXJfY2IsIE5VTEwpOwpAQCAtMTA3Nyw3ICsxMDc3LDYg
-QEAgc3RhdGljIHZvaWQgcmFuZG9taXplX2Nob2ljZV92YWx1ZXMoc3RydWN0IHN5bWJvbCAqY3N5
-bSkKIAkJZWxzZSB7CiAJCQlzeW0tPmRlZltTX0RFRl9VU0VSXS50cmkgPSBubzsKIAkJfQotCQlz
-eW0tPmZsYWdzICY9IH4oU1lNQk9MX1ZBTElEKTsKIAl9CiAJY3N5bS0+ZmxhZ3MgfD0gU1lNQk9M
-X0RFRl9VU0VSOwogCS8qIGNsZWFyIFZBTElEIHRvIGdldCB2YWx1ZSBjYWxjdWxhdGVkICovCkBA
-IC0xMTA3LDU0ICsxMTA2LDEwIEBAIHN0YXRpYyB2b2lkIHNldF9hbGxfY2hvaWNlX3ZhbHVlcyhz
-dHJ1Y3Qgc3ltYm9sICpjc3ltKQogdm9pZCBjb25mX3NldF9hbGxfbmV3X3N5bWJvbHMoZW51bSBj
-b25mX2RlZl9tb2RlIG1vZGUpCiB7CiAJc3RydWN0IHN5bWJvbCAqc3ltLCAqY3N5bTsKLQlpbnQg
-aSwgY250LCBwYnksIHB0eSwgcHRtOwkvKiBwYnk6IHByb2JhYmlsaXR5IG9mIGJvb2xlYW4gID0g
-eQotCQkJCQkgKiBwdHk6IHByb2JhYmlsaXR5IG9mIHRyaXN0YXRlID0geQotCQkJCQkgKiBwdG06
-IHByb2JhYmlsaXR5IG9mIHRyaXN0YXRlID0gbQotCQkJCQkgKi8KLQotCXBieSA9IDUwOyBwdHkg
-PSBwdG0gPSAzMzsgLyogY2FuJ3QgZ28gYXMgdGhlIGRlZmF1bHQgaW4gc3dpdGNoLWNhc2UKLQkJ
-CQkgICAqIGJlbG93LCBvdGhlcndpc2UgZ2NjIHdoaW5lcyBhYm91dAotCQkJCSAgICogLVdtYXli
-ZS11bmluaXRpYWxpemVkICovCi0JaWYgKG1vZGUgPT0gZGVmX3JhbmRvbSkgewotCQlpbnQgbiwg
-cFszXTsKLQkJY2hhciAqZW52ID0gZ2V0ZW52KCJLQ09ORklHX1BST0JBQklMSVRZIik7Ci0JCW4g
-PSAwOwotCQl3aGlsZSggZW52ICYmICplbnYgKSB7Ci0JCQljaGFyICplbmRwOwotCQkJaW50IHRt
-cCA9IHN0cnRvbCggZW52LCAmZW5kcCwgMTAgKTsKLQkJCWlmKCB0bXAgPj0gMCAmJiB0bXAgPD0g
-MTAwICkgewotCQkJCXBbbisrXSA9IHRtcDsKLQkJCX0gZWxzZSB7Ci0JCQkJZXJybm8gPSBFUkFO
-R0U7Ci0JCQkJcGVycm9yKCAiS0NPTkZJR19QUk9CQUJJTElUWSIgKTsKLQkJCQlleGl0KCAxICk7
-Ci0JCQl9Ci0JCQllbnYgPSAoKmVuZHAgPT0gJzonKSA/IGVuZHArMSA6IGVuZHA7Ci0JCQlpZigg
-biA+PTMgKSB7Ci0JCQkJYnJlYWs7Ci0JCQl9Ci0JCX0KLQkJc3dpdGNoKCBuICkgewotCQljYXNl
-IDE6Ci0JCQlwYnkgPSBwWzBdOyBwdG0gPSBwYnkvMjsgcHR5ID0gcGJ5LXB0bTsKLQkJCWJyZWFr
-OwotCQljYXNlIDI6Ci0JCQlwdHkgPSBwWzBdOyBwdG0gPSBwWzFdOyBwYnkgPSBwdHkgKyBwdG07
-Ci0JCQlicmVhazsKLQkJY2FzZSAzOgotCQkJcGJ5ID0gcFswXTsgcHR5ID0gcFsxXTsgcHRtID0g
-cFsyXTsKLQkJCWJyZWFrOwotCQl9Ci0KLQkJaWYoIHB0eStwdG0gPiAxMDAgKSB7Ci0JCQllcnJu
-byA9IEVSQU5HRTsKLQkJCXBlcnJvciggIktDT05GSUdfUFJPQkFCSUxJVFkiICk7Ci0JCQlleGl0
-KCAxICk7Ci0JCX0KLQl9CisJaW50IGksIGNudDsKIAogCWZvcl9hbGxfc3ltYm9scyhpLCBzeW0p
-IHsKLQkJaWYgKHN5bV9oYXNfdmFsdWUoc3ltKSB8fCAoc3ltLT5mbGFncyAmIFNZTUJPTF9WQUxJ
-RCkpCisJCWlmIChzeW1faGFzX3ZhbHVlKHN5bSkpCiAJCQljb250aW51ZTsKIAkJc3dpdGNoIChz
-eW1fZ2V0X3R5cGUoc3ltKSkgewogCQljYXNlIFNfQk9PTEVBTjoKQEAgLTExNzAsMTUgKzExMjUs
-OCBAQCB2b2lkIGNvbmZfc2V0X2FsbF9uZXdfc3ltYm9scyhlbnVtIGNvbmZfZGVmX21vZGUgbW9k
-ZSkKIAkJCQlzeW0tPmRlZltTX0RFRl9VU0VSXS50cmkgPSBubzsKIAkJCQlicmVhazsKIAkJCWNh
-c2UgZGVmX3JhbmRvbToKLQkJCQlzeW0tPmRlZltTX0RFRl9VU0VSXS50cmkgPSBubzsKLQkJCQlj
-bnQgPSByYW5kKCkgJSAxMDA7Ci0JCQkJaWYgKHN5bS0+dHlwZSA9PSBTX1RSSVNUQVRFKSB7Ci0J
-CQkJCWlmIChjbnQgPCBwdHkpCi0JCQkJCQlzeW0tPmRlZltTX0RFRl9VU0VSXS50cmkgPSB5ZXM7
-Ci0JCQkJCWVsc2UgaWYgKGNudCA8IChwdHkrcHRtKSkKLQkJCQkJCXN5bS0+ZGVmW1NfREVGX1VT
-RVJdLnRyaSA9IG1vZDsKLQkJCQl9IGVsc2UgaWYgKGNudCA8IHBieSkKLQkJCQkJc3ltLT5kZWZb
-U19ERUZfVVNFUl0udHJpID0geWVzOworCQkJCWNudCA9IHN5bV9nZXRfdHlwZShzeW0pID09IFNf
-VFJJU1RBVEUgPyAzIDogMjsKKwkJCQlzeW0tPmRlZltTX0RFRl9VU0VSXS50cmkgPSAodHJpc3Rh
-dGUpKHJhbmQoKSAlIGNudCk7CiAJCQkJYnJlYWs7CiAJCQlkZWZhdWx0OgogCQkJCWNvbnRpbnVl
-OwpkaWZmIC0tZ2l0IGEvc2NyaXB0cy9wYWNrYWdlL2J1aWxkZGViIGIvc2NyaXB0cy9wYWNrYWdl
-L2J1aWxkZGViCmluZGV4IGFjYjg2NTAuLjdkN2M5ZDggMTAwNjQ0Ci0tLSBhL3NjcmlwdHMvcGFj
-a2FnZS9idWlsZGRlYgorKysgYi9zY3JpcHRzL3BhY2thZ2UvYnVpbGRkZWIKQEAgLTE3Miw5ICsx
-NzIsMjIgQEAgZWxzZQogZmkKIG1haW50YWluZXI9IiRuYW1lIDwkZW1haWw+IgogCisjIFRyeSB0
-byBkZXRlcm1pbmUgZGlzdHJpYnV0aW9uCitpZiBbIC1lICQod2hpY2ggbHNiX3JlbGVhc2UpIF07
-IHRoZW4KKyAgICAgICBjb2RlbmFtZT0kKGxzYl9yZWxlYXNlIC0tY29kZW5hbWUgLS1zaG9ydCkK
-KyAgICAgICBpZiBbICIkY29kZW5hbWUiICE9ICIiIF07IHRoZW4KKwkJZGlzdHJpYnV0aW9uPSRj
-b2RlbmFtZQorICAgICAgIGVsc2UKKwkJZGlzdHJpYnV0aW9uPSJVTlJFTEVBU0VEIgorCQllY2hv
-ICJXQVJOSU5HOiBUaGUgZGlzdHJpYnV0aW9uIGNvdWxkIE5PVCBiZSBkZXRlcm1pbmVkISIKKyAg
-ICAgICBmaQorZWxzZQorICAgICAgIGVjaG8gIkhJTlQ6IEluc3RhbGwgbHNiX3JlbGVhc2UgYmlu
-YXJ5LCB0aGlzIGhlbHBzIHRvIGlkZW50aWZ5IHlvdXIgZGlzdHJpYnV0aW9uISIKK2ZpCisKICMg
-R2VuZXJhdGUgYSBzaW1wbGUgY2hhbmdlbG9nIHRlbXBsYXRlCiBjYXQgPDxFT0YgPiBkZWJpYW4v
-Y2hhbmdlbG9nCi1saW51eC11cHN0cmVhbSAoJHBhY2thZ2V2ZXJzaW9uKSB1bnN0YWJsZTsgdXJn
-ZW5jeT1sb3cKK2xpbnV4LXVwc3RyZWFtICgkcGFja2FnZXZlcnNpb24pICRkaXN0cmlidXRpb247
-IHVyZ2VuY3k9bG93CiAKICAgKiBDdXN0b20gYnVpbHQgTGludXgga2VybmVsLgogCkBAIC0xODgs
-MTAgKzIwMSwxMCBAQCBUaGlzIGlzIGEgcGFja2Fja2VkIHVwc3RyZWFtIHZlcnNpb24gb2YgdGhl
-IExpbnV4IGtlcm5lbC4KIFRoZSBzb3VyY2VzIG1heSBiZSBmb3VuZCBhdCBtb3N0IExpbnV4IGZ0
-cCBzaXRlcywgaW5jbHVkaW5nOgogZnRwOi8vZnRwLmtlcm5lbC5vcmcvcHViL2xpbnV4L2tlcm5l
-bAogCi1Db3B5cmlnaHQ6IDE5OTEgLSAyMDA5IExpbnVzIFRvcnZhbGRzIGFuZCBvdGhlcnMuCitD
-b3B5cmlnaHQ6IDE5OTEgLSAyMDEzIExpbnVzIFRvcnZhbGRzIGFuZCBvdGhlcnMuCiAKIFRoZSBn
-aXQgcmVwb3NpdG9yeSBmb3IgbWFpbmxpbmUga2VybmVsIGRldmVsb3BtZW50IGlzIGF0OgotZ2l0
-Oi8vZ2l0Lmtlcm5lbC5vcmcvcHViL3NjbS9saW51eC9rZXJuZWwvZ2l0L3RvcnZhbGRzL2xpbnV4
-LTIuNi5naXQKK2dpdDovL2dpdC5rZXJuZWwub3JnL3B1Yi9zY20vbGludXgva2VybmVsL2dpdC90
-b3J2YWxkcy9saW51eC5naXQKIAogICAgIFRoaXMgcHJvZ3JhbSBpcyBmcmVlIHNvZnR3YXJlOyB5
-b3UgY2FuIHJlZGlzdHJpYnV0ZSBpdCBhbmQvb3IgbW9kaWZ5CiAgICAgaXQgdW5kZXIgdGhlIHRl
-cm1zIG9mIHRoZSBHTlUgR2VuZXJhbCBQdWJsaWMgTGljZW5zZSBhcyBwdWJsaXNoZWQgYnkK
---047d7bae43a2d3a3fa04db41492b--
+> ---
+>  drivers/acpi/pci_root.c            |    2 ++
+>  drivers/pci/hotplug/acpiphp_glue.c |   14 ++++++++++++++
+>  include/linux/pci-acpi.h           |    2 ++
+>  3 files changed, 18 insertions(+)
+> 
+> Index: linux-2.6/drivers/acpi/pci_root.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/acpi/pci_root.c
+> +++ linux-2.6/drivers/acpi/pci_root.c
+> @@ -643,6 +643,8 @@ static void _handle_hotplug_event_root(s
+>  				 (char *)buffer.pointer);
+>  		if (!root)
+>  			handle_root_bridge_insertion(handle);
+> +		else
+> +			acpiphp_check_host_bridge(handle);
+>  
+>  		break;
+>  
+> Index: linux-2.6/drivers/pci/hotplug/acpiphp_glue.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/pci/hotplug/acpiphp_glue.c
+> +++ linux-2.6/drivers/pci/hotplug/acpiphp_glue.c
+> @@ -950,6 +950,20 @@ check_sub_bridges(acpi_handle handle, u3
+>  	return AE_OK ;
+>  }
+>  
+> +void acpiphp_check_host_bridge(acpi_handle handle)
+> +{
+> +	struct acpiphp_bridge *bridge;
+> +
+> +	bridge = acpiphp_handle_to_bridge(handle);
+> +	if (bridge) {
+> +		acpiphp_check_bridge(bridge);
+> +		put_bridge(bridge);
+> +	}
+> +
+> +	acpi_walk_namespace(ACPI_TYPE_DEVICE, handle,
+> +		ACPI_UINT32_MAX, check_sub_bridges, NULL, NULL, NULL);
+> +}
+> +
+>  static void _handle_hotplug_event_bridge(struct work_struct *work)
+>  {
+>  	struct acpiphp_bridge *bridge;
+> Index: linux-2.6/include/linux/pci-acpi.h
+> ===================================================================
+> --- linux-2.6.orig/include/linux/pci-acpi.h
+> +++ linux-2.6/include/linux/pci-acpi.h
+> @@ -60,11 +60,13 @@ static inline void acpi_pci_slot_remove(
+>  void acpiphp_init(void);
+>  void acpiphp_enumerate_slots(struct pci_bus *bus, acpi_handle handle);
+>  void acpiphp_remove_slots(struct pci_bus *bus);
+> +void acpiphp_check_host_bridge(acpi_handle handle);
+>  #else
+>  static inline void acpiphp_init(void) { }
+>  static inline void acpiphp_enumerate_slots(struct pci_bus *bus,
+>  					   acpi_handle handle) { }
+>  static inline void acpiphp_remove_slots(struct pci_bus *bus) { }
+> +static inline void acpiphp_check_host_bridge(acpi_handle handle) { }
+>  #endif
+>  
+>  #else	/* CONFIG_ACPI */
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
