@@ -1,61 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759587Ab3DZI7C (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 04:59:02 -0400
-Received: from mail-bk0-f41.google.com ([209.85.214.41]:63625 "EHLO
-	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759515Ab3DZI67 (ORCPT
+	id S932523Ab3DZI7y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 04:59:54 -0400
+Received: from mail-da0-f47.google.com ([209.85.210.47]:38186 "EHLO
+	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759515Ab3DZI7w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 04:58:59 -0400
-Message-ID: <517A4023.1090709@gmail.com>
-Date: Fri, 26 Apr 2013 10:51:47 +0200
-From: Marco Stornelli <marco.stornelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Fri, 26 Apr 2013 04:59:52 -0400
+Date: Fri, 26 Apr 2013 01:59:49 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Joe Perches <joe@perches.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
+        linux-usb <linux-usb@vger.kernel.org>,
+        usb-storage <usb-storage@lists.one-eyed-alien.net>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V2] usb: storage: Convert US_DEBUGP to usb_stor_dbg
+In-Reply-To: <20130425153209.5b590422dbd249a5e19ac570@linux-foundation.org>
+Message-ID: <alpine.DEB.2.02.1304260159310.21727@chino.kir.corp.google.com>
+References: <Pine.LNX.4.44L0.1304171426460.1623-100000@iolanthe.rowland.org> <1366254055.28609.61.camel@joe-AO722> <20130419173503.GA27495@kroah.com> <1366397040.3901.45.camel@joe-AO722> <alpine.DEB.2.02.1304221234270.16385@chino.kir.corp.google.com>
+ <20130425153209.5b590422dbd249a5e19ac570@linux-foundation.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: linux-fsdevel@vger.kernel.org
-CC: Alexander Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-        Jan Kara <jack@suse.cz>
-Subject: [PATCH 3/4] fsfreeze: use sb_start_write_killable instead of sb_start_write
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace sb_start_write with sb_start_write_killable where
-possible.
+On Thu, 25 Apr 2013, Andrew Morton wrote:
 
-Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
-Reviewed-by: Jan Kara <jack@suse.cz>
----
- fs/open.c |    8 ++++++--
- 1 files changed, 6 insertions(+), 2 deletions(-)
+> From: Andrew Morton <akpm@linux-foundation.org>
+> Subject: drivers/usb/storage/realtek_cr.c: fix build
+> 
+> Remove unused local `us', which broke the build.  Also nuke an unneeded
+> cast.
+> 
+> Repairs 191648d03d20 ("usb: storage: Convert US_DEBUGP to usb_stor_dbg").
+> 
+> Cc: Joe Perches <joe@perches.com>
+> Cc: David Rientjes <rientjes@google.com>
+> Cc: Greg KH <greg@kroah.com>
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 
-diff --git a/fs/open.c b/fs/open.c
-index 8c74100..d621d76 100644
---- a/fs/open.c
-+++ b/fs/open.c
-@@ -182,7 +182,9 @@ static long do_sys_ftruncate(unsigned int fd, loff_t length, int small)
- 	if (IS_APPEND(inode))
- 		goto out_putf;
- 
--	sb_start_write(inode->i_sb);
-+	error = sb_start_write_killable(inode->i_sb);
-+	if (error < 0)
-+		return error;
- 	error = locks_verify_truncate(inode, f.file, length);
- 	if (!error)
- 		error = security_path_truncate(&f.file->f_path);
-@@ -273,7 +275,9 @@ int do_fallocate(struct file *file, int mode, loff_t offset, loff_t len)
- 	if (!file->f_op->fallocate)
- 		return -EOPNOTSUPP;
- 
--	sb_start_write(inode->i_sb);
-+	ret = sb_start_write_killable(inode->i_sb);
-+	if (ret < 0)
-+		return ret;
- 	ret = file->f_op->fallocate(file, mode, offset, len);
- 	sb_end_write(inode->i_sb);
- 	return ret;
--- 
-1.7.3.4
+Acked-by: David Rientjes <rientjes@google.com>
+
+Fixes it for me, thanks Andrew.
