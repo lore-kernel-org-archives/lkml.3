@@ -1,94 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752025Ab3DZFCJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 01:02:09 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:53247 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751092Ab3DZFCH (ORCPT
+	id S1753286Ab3DZFJQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 01:09:16 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:57982 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752681Ab3DZFJO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 01:02:07 -0400
-X-AuditID: 9c930179-b7c28ae0000018a0-8f-517a0a4be2fd
-Subject: Re: [PATCH 1/2] lib: Add lz4 compressor module
-In-Reply-To: <5175014e.487a420a.4c58.ffffe0b9SMTPIN_ADDED_BROKEN@mx.google.com>
-References: <CAOAMb1D8rokZpQpp6mEJw6KXcQq8fJUWBJoC5+ZfkNaE6WvAZA@mail.gmail.com>
-	<CAMuHMdXXoaQjb9sRK=X3gEDwqQBJcJQtaJbUGB8cJmteHSN3vQ@mail.gmail.com>
-	<5175014e.487a420a.4c58.ffffe0b9SMTPIN_ADDED_BROKEN@mx.google.com>
+	Fri, 26 Apr 2013 01:09:14 -0400
+X-AuditID: 9c93016f-b7c3dae000000592-90-517a0bf794dc
+From: Kyungsik Lee <kyungsik.lee@lge.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Rob Landley <rob@landley.net>
+Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-kbuild@vger.kernel.org, x86@kernel.org,
+        celinux-dev@lists.celinuxforum.org, hyojun.im@lge.com,
+        chan.jeong@lge.com, raphael.andy.lee@gmail.com,
+        Kyungsik Lee <kyungsik.lee@lge.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Russell King <rmk@arm.linux.org.uk>, Borislav Petkov <bp@alien8.de>,
+        Florian Fainelli <florian@openwrt.org>,
+        Yann Collet <yann.collet.73@gmail.com>
+Subject: [PATCH -next] x86, doc: Add LZ4 magic number for the new compression
+Date: Fri, 26 Apr 2013 14:08:53 +0900
+Message-Id: <1366952933-31331-1-git-send-email-kyungsik.lee@lge.com>
+X-Mailer: git-send-email 1.8.1.1
 X-Brightmail-Tracker: AAAAAA==
-Reply-To: "Chanho Min" <chanho.min@lge.com>
-X-Priority: 3 (Normal)
-From: "Chanho Min" <chanho.min@lge.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "'Geert Uytterhoeven'" <geert@linux-m68k.org>,
-        "'Bob Pearson'" <rpearson@systemfabricworks.com>,
-        "'Richard Weinberger'" <richard@nod.at>,
-        <linux-kernel@vger.kernel.org>, <linux-crypto@vger.kernel.org>,
-        "'Yann Collet'" <yann.collet.73@gmail.com>,
-        =?EUC-KR?B?wMyw5r3E?= <kyungsik.lee@lge.com>,
-        "'Linux/m68k'" <linux-m68k@vger.kernel.org>,
-        "'sparclinux'" <sparclinux@vger.kernel.org>,
-        "'Linux-Next'" <linux-next@vger.kernel.org>
-Message-ID: <OF6B440C9E.4A0516C8-ON49257B59.001BA689-49257B59.001BA68A@lge.com>
-Date: Fri, 26 Apr 2013 14:02:01 +0900
-X-MIMETrack: Serialize by Router on LGEKRHQMS17/LGE/LG Group(Release 6.5.5FP3HF116 | July
- 11, 2008) at 2013/04/26 14:02:03
-MIME-Version: 1.0
-Content-type: text/plain; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Documentation/x86/boot.txt is updated to list the LZ4 magic number.
+This LZ4 magic number is used for the new compression format.
 
->> gcc seems to define __builtin_clz as __clzsi2 in some architecture.
->> But, kernel doesn't link libgcc.a.
->> If kernel should use gcc's built-in function without libgcc.a,
->> do we need to port __clzsi2 to 'arch/*/lib/*'?
->
->This breaks alpha (gcc-4.4.4) as well.  Can we please get this fixed
->promptly?
+Signed-off-by: Kyungsik Lee <kyungsik.lee@lge.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Russell King <rmk@arm.linux.org.uk>
+Cc: Borislav Petkov <bp@alien8.de>
+Cc: Florian Fainelli <florian@openwrt.org>
+Cc: Yann Collet <yann.collet.73@gmail.com>
+---
+ Documentation/x86/boot.txt | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-__clzsi2 can be implemented by using generic functions.
-It can be overridden by linking arch-specific versions may not be implemented.
-does this way look acceptable?
-
-diff --git a/lib/Makefile b/lib/Makefile
-index af79e8c..e17b3ee 100644
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -23,7 +23,7 @@ lib-y += kobject.o klist.o
-
- obj-y += bcd.o div64.o sort.o parser.o halfmd4.o debug_locks.o random32.o \
-       bust_spinlocks.o hexdump.o kasprintf.o bitmap.o scatterlist.o \
--      gcd.o lcm.o list_sort.o uuid.o flex_array.o \
-+      gcd.o lcm.o list_sort.o uuid.o flex_array.o clz.o\
-       bsearch.o find_last_bit.o find_next_bit.o llist.o memweight.o kfifo.o
- obj-y += string_helpers.o
- obj-$(CONFIG_TEST_STRING_HELPERS) += test-string_helpers.o
-diff --git a/lib/clz.c b/lib/clz.c
-index e69de29..6794b83 100644
---- a/lib/clz.c
-+++ b/lib/clz.c
-@@ -0,0 +1,23 @@
-+#include <linux/kernel.h>
+diff --git a/Documentation/x86/boot.txt b/Documentation/x86/boot.txt
+index 3840b6f..fc66d42 100644
+--- a/Documentation/x86/boot.txt
++++ b/Documentation/x86/boot.txt
+@@ -657,9 +657,10 @@ Protocol:	2.08+
+   uncompressed data should be determined using the standard magic
+   numbers.  The currently supported compression formats are gzip
+   (magic numbers 1F 8B or 1F 9E), bzip2 (magic number 42 5A), LZMA
+-  (magic number 5D 00), and XZ (magic number FD 37).  The uncompressed
+-  payload is currently always ELF (magic number 7F 45 4C 46).
+-  
++  (magic number 5D 00), XZ (magic number FD 37), and LZ4 (magic number
++  02 21).  The uncompressed payload is currently always ELF (magic
++  number 7F 45 4C 46).
 +
-+int __attribute__((weak)) __clzsi2(int val)
-+{
-+     return BITS_PER_LONG - fls(val);
-+}
-+EXPORT_SYMBOL(__clzsi2);
-+
-+#if BITS_PER_LONG == 32
-+int __attribute__((weak)) __clzdi2(long val)
-+{
-+     return BITS_PER_LONG - fls((int)val);
-+}
-+EXPORT_SYMBOL(__clzdi2);
-+#elif BITS_PER_LONG == 64
-+int __attribute__((weak)) __clzdi2(long val)
-+{
-+     return BITS_PER_LONG - fls64((u64)val);
-+}
-+EXPORT_SYMBOL(__clzdi2);
-+#else
-+#error BITS_PER_LONG not 32 or 64
-+#endif
+ Field name:	payload_length
+ Type:		read
+ Offset/size:	0x24c/4
+-- 
+1.8.1.1
 
