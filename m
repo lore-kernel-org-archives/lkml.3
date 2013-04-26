@@ -1,76 +1,309 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754237Ab3DZLzr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 07:55:47 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50343 "EHLO mx2.suse.de"
+	id S1755714Ab3DZL4E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 07:56:04 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50364 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752229Ab3DZLzp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 07:55:45 -0400
-Message-ID: <517A6B3F.6060000@suse.cz>
-Date: Fri, 26 Apr 2013 13:55:43 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1754444Ab3DZL4B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Apr 2013 07:56:01 -0400
+From: Oliver Neukum <oneukum@suse.de>
+To: Hayes Wang <hayeswang@realtek.com>
+Cc: gregkh@linuxfoundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        Realtek linux nic maintainers <nic_swsd@realtek.com>
+Subject: Re: [PATCH net-next] net/usb: new driver for RTL8152
+Date: Fri, 26 Apr 2013 13:56:52 +0200
+Message-ID: <5873028.qC8hWx1N8T@linux-5eaq.site>
+Organization: SUSE
+User-Agent: KMail/4.10 (Linux/3.7.10-1.1-desktop; KDE/4.10.0; x86_64; ; )
+In-Reply-To: <1366965948-1805-1-git-send-email-hayeswang@realtek.com>
+References: <1366965948-1805-1-git-send-email-hayeswang@realtek.com>
 MIME-Version: 1.0
-To: sedat.dilek@gmail.com
-Cc: "Yann E. MORIN" <yann.morin.1998@free.fr>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
-Subject: Re: linux-next: Tree for Apr 26
-References: <20130426180357.7599d1b6b7965470905dcdf3@canb.auug.org.au> <CA+icZUWt_W5FUQgQ2TFoQU0df+sAbxZZE8AcD16T3f_fiTD9DQ@mail.gmail.com> <517A4FC1.3070605@suse.cz> <20130426100435.GA28733@sepie.suse.cz> <CA+icZUVOfB2JuL1xh1EO1hTP_eOkntYFKsUJ0Zp6VZqn09NABA@mail.gmail.com> <CA+icZUWNVEsiTs6u_2R9krb45ub4t-pZj_VEPRmrX2c4DzwfmA@mail.gmail.com> <CA+icZUXSsqN1iE3ttQakvpZqG-oOL9NR6RMUezB7LGeUw3d00Q@mail.gmail.com> <517A6033.5060103@suse.cz> <517A615D.9020400@suse.cz> <CA+icZUWiZZDq1NsK9K9_dp0624ytU9n5Z49UmwONdM4M9jAt=A@mail.gmail.com> <CA+icZUVUPCU_pZBJeVNAGsF1rYLH=eCTig11fh=5i7RXdehMFA@mail.gmail.com>
-In-Reply-To: <CA+icZUVUPCU_pZBJeVNAGsF1rYLH=eCTig11fh=5i7RXdehMFA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26.4.2013 13:45, Sedat Dilek wrote:
-> On Fri, Apr 26, 2013 at 1:23 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->> On Fri, Apr 26, 2013 at 1:13 PM, Michal Marek <mmarek@suse.cz> wrote:
->>> On 26.4.2013 13:08, Michal Marek wrote:
->>>> On 26.4.2013 12:49, Sedat Dilek wrote:
->>>>> With reverting all kbuild-next commits I was able to build again.
->>>>>
->>>>>       Revert "kconfig: implement KCONFIG_PROBABILITY for randconfig"
->>>>>       Revert "kconfig: allow specifying the seed for randconfig"
->>>>>       Revert "kconfig: fix randomising choice entries in presence of
->>>>> KCONFIG_ALLCONFIG"
->>>>>       Revert "kconfig: do not override symbols already set"
->>>>>       Revert "kconfig: fix randconfig tristate detection"
->>>>
->>>> I did the same, then applied all the kconfig commits once more and did a
->>>> git bisect with this script:
->>>>
->>>> #!/bin/sh
->>>>
->>>> cp config-bad .config
->>>> make silentoldconfig </dev/null
->>>>
->>>> This resulted in
->>>>
->>>> 7ded2624f8988bd22819a60a6000ba6b7091db89 is the first bad commit
->>>> commit 7ded2624f8988bd22819a60a6000ba6b7091db89
->>>> Author: Yann E. MORIN <yann.morin.1998@free.fr>
->>>> Date:   Sun Mar 10 16:34:10 2013 +0100
->>>>
->>>>     kconfig: fix randomising choice entries in presence of KCONFIG_ALLCONFIG
->>>>
->>>> The commit id is different, because it is reverted and applied again. Yann?
->>>
->>> Commit 422c809 ("kconfig: fix randomising choice entries in presence of
->>> KCONFIG_ALLCONFIG") reverts cleanly and reverting it fixes the bug. So
->>> there is a plan B.
->>>
->>
->> Thanks for your efforts!
->>
-> 
-> Feel free to add my...
-> 
->      Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
+On Friday 26 April 2013 16:45:48 Hayes Wang wrote:
 
-Well, I hope that Yann will come up with a proper fix. He is usually
-online during evening hours (+0200), so let's wait some time. Of course,
-the fallback is to apply the revert and then I will add your Tested-by.
+> +static u16 r8152_mdio_read(struct r8152 *tp, u32 reg_addr)
+> +{
+> +	u32	ocp_data;
+> +	int	i;
+> +
+> +	ocp_data = (reg_addr & 0x1f) << 16;
+> +	ocp_write_dword(tp, MCU_TYPE_PLA, PLA_PHYAR, ocp_data);
+> +
+> +	for (i = 20; i > 0; i--) {
+> +		udelay(25);
+> +		ocp_data = ocp_read_dword(tp, MCU_TYPE_PLA, PLA_PHYAR);
+> +		if (ocp_data & PHYAR_FLAG)
+> +			break;
+> +	}
+> +	udelay(20);
+> +
+> +	return (u16)(ocp_data & 0xffff);
+> +}
 
-Michal
+Unfortunately this can fail, as it is physical IO and you throw away errors.
+
+> +static int read_mii_word(struct net_device *netdev, int phy_id, int reg)
+> +{
+> +	struct r8152 *tp = netdev_priv(netdev);
+> +
+> +	if (phy_id != R8152_PHY_ID)
+> +		return -1;
+> +
+> +	return r8152_mdio_read(tp, reg);
+> +}
+> +
+> +static
+> +void write_mii_word(struct net_device *netdev, int phy_id, int reg, int val)
+> +{
+> +	struct r8152 *tp = netdev_priv(netdev);
+> +
+> +	if (phy_id != R8152_PHY_ID)
+> +		return;
+> +
+> +	r8152_mdio_write(tp, reg, val);
+> +}
+> +
+> +static void ocp_reg_write(struct r8152 *tp, u16 addr, u16 data)
+> +{
+> +	u16 ocp_base, ocp_index;
+> +
+> +	ocp_base = addr & 0xf000;
+> +	if (ocp_base != tp->ocp_base) {
+> +		ocp_write_word(tp, MCU_TYPE_PLA, PLA_OCP_GPHY_BASE, ocp_base);
+> +		tp->ocp_base = ocp_base;
+> +	}
+> +
+> +	ocp_index = (addr & 0x0fff) | 0xb000;
+> +	ocp_write_word(tp, MCU_TYPE_PLA, ocp_index, data);
+> +}
+> +
+> +static inline void set_ethernet_addr(struct r8152 *tp)
+> +{
+> +	struct net_device *dev = tp->netdev;
+> +	u8 node_id[8] = {0};
+> +
+> +	if (pla_ocp_read(tp, PLA_IDR, sizeof(node_id), node_id) < 0)
+
+DMA coherency rules. No buffers on the stack.
+
+> +		netif_notice(tp, probe, dev, "inet addr fail\n");
+> +	else {
+> +		memcpy(dev->dev_addr, node_id, sizeof(node_id));
+> +		memcpy(dev->perm_addr, dev->dev_addr, dev->addr_len);
+> +	}
+> +}
+
+
+
+
+
+
+> +static void _rtl8152_set_rx_mode(struct net_device *netdev)
+> +{
+> +	struct r8152 *tp = netdev_priv(netdev);
+> +	u32 tmp, mc_filter[2];	/* Multicast hash filter */
+> +	u32 ocp_data;
+> +
+> +	clear_bit(RTL8152_SET_RX_MODE, &tp->flags);
+> +	netif_stop_queue(netdev);
+> +	ocp_data = ocp_read_dword(tp, MCU_TYPE_PLA, PLA_RCR);
+> +	ocp_data &= ~RCR_ACPT_ALL;
+> +	ocp_data |= RCR_AB | RCR_APM;
+> +
+> +	if (netdev->flags & IFF_PROMISC) {
+> +		/* Unconditionally log net taps. */
+> +		netif_notice(tp, link, netdev, "Promiscuous mode enabled\n");
+> +		ocp_data |= RCR_AM | RCR_AAP;
+> +		mc_filter[1] = mc_filter[0] = 0xffffffff;
+> +	} else if ((netdev_mc_count(netdev) > multicast_filter_limit) ||
+> +		   (netdev->flags & IFF_ALLMULTI)) {
+> +		/* Too many to filter perfectly -- accept all multicasts. */
+> +		ocp_data |= RCR_AM;
+> +		mc_filter[1] = mc_filter[0] = 0xffffffff;
+> +	} else {
+> +		struct netdev_hw_addr *ha;
+> +
+> +		mc_filter[1] = mc_filter[0] = 0;
+> +		netdev_for_each_mc_addr(ha, netdev) {
+> +			int bit_nr = ether_crc(ETH_ALEN, ha->addr) >> 26;
+> +			mc_filter[bit_nr >> 5] |= 1 << (bit_nr & 31);
+> +			ocp_data |= RCR_AM;
+> +		}
+> +	}
+> +
+> +	tmp = mc_filter[0];
+> +	mc_filter[0] = __cpu_to_le32(swab32(mc_filter[1]));
+> +	mc_filter[1] = __cpu_to_le32(swab32(tmp));
+> +
+> +	pla_ocp_write(tp, PLA_MAR, BYTE_EN_DWORD, sizeof(mc_filter), mc_filter);
+
+This looks like a violation of the DMA coherency rules.
+You cannot use buffers on the stack.
+
+> +	ocp_write_dword(tp, MCU_TYPE_PLA, PLA_RCR, ocp_data);
+> +	netif_wake_queue(netdev);
+> +}
+> +
+
+
+
+
+
+
+> +static void rtl_work_func_t(struct work_struct *work)
+> +{
+> +	struct r8152 *tp = container_of(work, struct r8152, schedule.work);
+> +
+> +	if (!netif_running(tp->netdev))
+> +		goto out1;
+> +
+> +	if (test_bit(RTL8152_UNPLUG, &tp->flags))
+> +		goto out1;
+> +
+> +	set_carrier(tp);
+> +
+> +	if (test_bit(RTL8152_SET_RX_MODE, &tp->flags))
+> +		_rtl8152_set_rx_mode(tp->netdev);
+> +
+> +	schedule_delayed_work(&tp->schedule, HZ);
+
+Why does this need to run permanently?
+
+> +
+> +out1:
+> +	return;
+> +}
+> +
+> +static int rtl8152_open(struct net_device *netdev)
+> +{
+> +	struct r8152 *tp = netdev_priv(netdev);
+> +	int res = 0;
+> +
+> +	tp->speed = rtl8152_get_speed(tp);
+> +	if (tp->speed & LINK_STATUS) {
+> +		res = rtl8152_enable(tp);
+> +		netif_carrier_on(netdev);
+
+And you leave it on in the error case?
+
+> +	} else {
+> +		netif_stop_queue(netdev);
+> +		netif_carrier_off(netdev);
+> +	}
+> +
+> +	if (res) {
+> +		if (res == -ENODEV)
+> +			netif_device_detach(tp->netdev);
+> +
+> +		netif_warn(tp, rx_err, netdev,
+> +			   "rx_urb submit failed: %d\n", res);
+> +		return res;
+> +	}
+> +
+> +	rtl8152_set_speed(tp, AUTONEG_ENABLE, SPEED_100, DUPLEX_FULL);
+> +	netif_start_queue(netdev);
+> +	schedule_delayed_work(&tp->schedule, 0);
+> +
+> +	return res;
+> +}
+> +
+> +static int rtl8152_close(struct net_device *netdev)
+> +{
+> +	struct r8152 *tp = netdev_priv(netdev);
+> +	int res = 0;
+> +
+> +	cancel_delayed_work_sync(&tp->schedule);
+
+Looks like a race. What makes sure the work isn't rescheduled?
+
+> +	netif_stop_queue(netdev);
+> +	rtl8152_disable(tp);
+> +
+> +	return res;
+> +}
+
+> +static int rtl8152_suspend(struct usb_interface *intf, pm_message_t message)
+> +{
+> +	struct r8152 *tp = usb_get_intfdata(intf);
+> +
+> +	netif_device_detach(tp->netdev);
+> +
+> +	if (netif_running(tp->netdev))
+> +		cancel_delayed_work_sync(&tp->schedule);
+
+This looks like a race. What makes sure that the work isn't rescheduled?
+
+> +
+> +	rtl8152_down(tp);
+> +
+> +	return 0;
+> +}
+> +
+> +static int rtl8152_resume(struct usb_interface *intf)
+> +{
+> +	struct r8152 *tp = usb_get_intfdata(intf);
+> +
+> +	r8152b_init(tp);
+> +	netif_device_attach(tp->netdev);
+> +	if (netif_running(tp->netdev)) {
+> +		rtl8152_enable(tp);
+> +		rtl8152_set_speed(tp, AUTONEG_ENABLE, SPEED_100, DUPLEX_FULL);
+
+But this may not be the speed that was selected before the device
+was suspended.
+
+> +		set_bit(RTL8152_SET_RX_MODE, &tp->flags);
+> +		schedule_delayed_work(&tp->schedule, 0);
+> +	}
+> +
+> +	return 0;
+> +}
+
+
+
+
+> +static void rtl8152_unload(struct r8152 *tp)
+> +{
+> +	u32	ocp_data;
+> +
+> +	if (tp->version != RTL_VER_01) {
+> +		ocp_data = ocp_read_word(tp, MCU_TYPE_USB, USB_UPS_CTRL);
+> +		ocp_data |= POWER_CUT;
+> +		ocp_write_word(tp, MCU_TYPE_USB, USB_UPS_CTRL, ocp_data);
+> +	}
+> +
+> +	ocp_data = ocp_read_word(tp, MCU_TYPE_USB, USB_PM_CTRL_STATUS);
+> +	ocp_data &= ~RWSUME_INDICATE;
+> +	ocp_write_word(tp, MCU_TYPE_USB, USB_PM_CTRL_STATUS, ocp_data);
+> +}
+> +
+> +static void rtl8152_disconnect(struct usb_interface *intf)
+> +{
+> +	struct r8152 *tp = usb_get_intfdata(intf);
+> +
+> +	usb_set_intfdata(intf, NULL);
+> +	if (tp) {
+> +		set_bit(RTL8152_UNPLUG, &tp->flags);
+> +		tasklet_kill(&tp->tl);
+
+This looks like a race condition. What prevents the tasklet from being
+scheduled here in case of a soft disconnect?
+
+> +		unregister_netdev(tp->netdev);
+> +		rtl8152_unload(tp);
+> +		free_all_urbs(tp);
+> +		if (tp->rx_skb)
+> +			dev_kfree_skb(tp->rx_skb);
+> +		free_netdev(tp->netdev);
+> +	}
+> +}
+
+	Regards
+		Oliver
+
