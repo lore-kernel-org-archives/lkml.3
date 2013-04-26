@@ -1,87 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757867Ab3DZHM2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 03:12:28 -0400
-Received: from mail-we0-f182.google.com ([74.125.82.182]:60469 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757078Ab3DZHM0 (ORCPT
+	id S1758502Ab3DZHMk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 03:12:40 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:36233 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757078Ab3DZHMc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 03:12:26 -0400
-Message-ID: <517A28D7.3010707@intel.com>
-Date: Fri, 26 Apr 2013 08:12:23 +0100
-From: Matt Fleming <matt.fleming@intel.com>
-Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
- Way, Swindon SN3 1RJ
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Michel Lespinasse <walken@google.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, Borislav Petkov <bp@suse.de>,
-        Ingo Molnar <mingo@elte.hu>, Josh Boyer <jwboyer@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Paul Bolle <pebolle@tiscali.nl>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [GIT PULL] x86 fixes for 3.9
-References: <201304252144.r3PLihDe025383@terminus.zytor.com> <CA+55aFxxWXrQU4oZUbHOBBkvtF=pSxMvyF6sYU9xpSDarWV-=Q@mail.gmail.com> <1366928604.9976.3.camel@x230> <CANN689EH-VyDefawtKdY=cVQNdZP1xN7cV4bDgXvYeniSCkvqA@mail.gmail.com> <5179B435.1000404@zytor.com> <CANN689EaFu32GKNj-U41ykGpNJekBL2=w92P1pSkETuKAffJDQ@mail.gmail.com>
-In-Reply-To: <CANN689EaFu32GKNj-U41ykGpNJekBL2=w92P1pSkETuKAffJDQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 26 Apr 2013 03:12:32 -0400
+Date: Fri, 26 Apr 2013 17:12:29 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Simon Horman <horms@verge.net.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Bastian Hecht <hechtb@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+Subject: linux-next: manual merge of the renesas tree with the input tree
+Message-Id: <20130426171229.134dc25101970f908132d523@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__26_Apr_2013_17_12_29_+1000_a+aKUwX1k7PK_bgm"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26/04/13 00:11, Michel Lespinasse wrote:
-> On Thu, Apr 25, 2013 at 3:54 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->> On 04/25/2013 03:53 PM, Michel Lespinasse wrote:
->>> On Thu, Apr 25, 2013 at 3:23 PM, Matthew Garrett
->>> <matthew.garrett@nebula.com> wrote:
->>>> On Thu, 2013-04-25 at 15:20 -0700, Linus Torvalds wrote:
->>>>> On Thu, Apr 25, 2013 at 2:44 PM, H. Peter Anvin <hpa@linux.intel.com> wrote:
->>>>>>
->>>>>> -       if (!sys_table->runtime->query_variable_info)
->>>>>> +       if (sys_table->runtime->hdr.revision < EFI_2_00_SYSTEM_TABLE_REVISION)
->>>>>>                 return EFI_UNSUPPORTED;
->>>>>
->>>>> Is a EFI 2.00 system table *guaranteed* to have that
->>>>> "query_variable_info" function? The above adds the version check, but
->>>>> removes the check for a NULL pointer.
->>>>
->>>> As far as the spec's concerned, yes. As far as reality's concerned - if
->>>> anything doesn't provide it, we're already crashing when
->>>> efi_virt_query_variable_info() gets called. Nobody's complained so far.
->>>
->>> Well, I don't know if this is related, but commit e971318bbed6 broke
->>> the google EFI SMI driver with
->>> BUG: unable to handle kernel NULL pointer dereference at (null)
->>> IP: [<ffffffff814a7245>] variable_is_present+0x55/0x170
->>> Call Trace:
->>> [<ffffffff814a9936>] register_efivars+0x106/0x370
->>> [<ffffffff818ff430>] ? firmware_map_add_early+0xb1/0xb1
->>> [<ffffffff818ff6dd>] gsmi_init+0x2ad/0x3da
->>> [<ffffffff8100020f>] do_one_initcall+0x3f/0x170
->>> ...
->>
->> I don't know either.  Could you test this patch and see if it does anything?
-> 
-> Nope, still seeing the crash with this patch applied.
+--Signature=_Fri__26_Apr_2013_17_12_29_+1000_a+aKUwX1k7PK_bgm
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Could you try the following patch against Linus' tree? The bug you've
-found and the changes in the pull request are unrelated.
+Hi Simon,
 
----
+Today's linux-next merge of the renesas tree got a conflict in
+arch/arm/mach-shmobile/board-armadillo800eva.c between commit
+cbaf7f808081 ("ARM - shmobile: Armadillo800EVA: Move st1232 reset pin
+handling") from the input tree and commit 0c5ba87e1b2e ("ARM: shmobile:
+armadillo800eva: Register pinctrl mapping for INTC") from the renesas
+tree.
 
-diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
-index 182ce94..2a4f619 100644
---- a/drivers/firmware/efivars.c
-+++ b/drivers/firmware/efivars.c
-@@ -1635,6 +1635,9 @@ static bool variable_is_present(efi_char16_t *variable_name, efi_guid_t *vendor)
- 	unsigned long strsize1, strsize2;
- 	bool found = false;
- 
-+	if (list_empty(&efivars->list))
-+		return false;
-+
- 	strsize1 = ucs2_strsize(variable_name, 1024);
- 	list_for_each_entry_safe(entry, n, &efivars->list, list) {
- 		strsize2 = ucs2_strsize(entry->var.VariableName, 1024);
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc arch/arm/mach-shmobile/board-armadillo800eva.c
+index b85b288,ff04d1e..0000000
+--- a/arch/arm/mach-shmobile/board-armadillo800eva.c
++++ b/arch/arm/mach-shmobile/board-armadillo800eva.c
+@@@ -1127,32 -1151,10 +1161,7 @@@ static void __init eva_init(void
+  	gpio_request_one(61, GPIOF_OUT_INIT_HIGH, NULL); /* LCDDON */
+  	gpio_request_one(202, GPIOF_OUT_INIT_LOW, NULL); /* LCD0_LED_CONT */
+ =20
+--	/* Touchscreen */
+- 	gpio_request(GPIO_FN_IRQ10,	NULL); /* TP_INT */
+-=20
+ -	gpio_request_one(166, GPIOF_OUT_INIT_HIGH, NULL); /* TP_RST_B */
+ -
+  	/* GETHER */
+- 	gpio_request(GPIO_FN_ET_CRS,		NULL);
+- 	gpio_request(GPIO_FN_ET_MDC,		NULL);
+- 	gpio_request(GPIO_FN_ET_MDIO,		NULL);
+- 	gpio_request(GPIO_FN_ET_TX_ER,		NULL);
+- 	gpio_request(GPIO_FN_ET_RX_ER,		NULL);
+- 	gpio_request(GPIO_FN_ET_ERXD0,		NULL);
+- 	gpio_request(GPIO_FN_ET_ERXD1,		NULL);
+- 	gpio_request(GPIO_FN_ET_ERXD2,		NULL);
+- 	gpio_request(GPIO_FN_ET_ERXD3,		NULL);
+- 	gpio_request(GPIO_FN_ET_TX_CLK,		NULL);
+- 	gpio_request(GPIO_FN_ET_TX_EN,		NULL);
+- 	gpio_request(GPIO_FN_ET_ETXD0,		NULL);
+- 	gpio_request(GPIO_FN_ET_ETXD1,		NULL);
+- 	gpio_request(GPIO_FN_ET_ETXD2,		NULL);
+- 	gpio_request(GPIO_FN_ET_ETXD3,		NULL);
+- 	gpio_request(GPIO_FN_ET_PHY_INT,	NULL);
+- 	gpio_request(GPIO_FN_ET_COL,		NULL);
+- 	gpio_request(GPIO_FN_ET_RX_DV,		NULL);
+- 	gpio_request(GPIO_FN_ET_RX_CLK,		NULL);
+-=20
+  	gpio_request_one(18, GPIOF_OUT_INIT_HIGH, NULL); /* PHY_RST */
+ =20
+  	/* USB */
+
+--Signature=_Fri__26_Apr_2013_17_12_29_+1000_a+aKUwX1k7PK_bgm
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJReijdAAoJEECxmPOUX5FEGfIP/0Y2uH7UKMh12yDSCaKdE7hN
+LEgKJljdJPhYV+j7VNaKQrCOxYB0OiGuxDE1AMZBoXAo57vwCmjlJjPW0/0FEr/S
+2agkgNbyINGDFz8Ae1UTZW0r9CWSR0aZpMFtDgpt/DaJp891ITVtskUb+nrypqQI
+S3CW8xCQdAVc+wOwd78EQdYPQJMy1RPXOamSNP6cWDosze0vLv5WuIv6irS6fNMm
++o9rJFcIOTPgwrzW50/tRE+4PiDivUm1oDsPVmqel0ldFUB1ap+9S8wuhp0/Fh5w
+2M9itJKn6wbBme9LuJHjcAFJDXd1mtn1sx67BzXYCimXE5S+XFY0Ut2U7nKM1TLd
+eshx3/Krtlm4n5Rm0IZi8grH5ws8PaXB1V74lYtvIf0jedCqk6cD0nDBAaO5aoeC
+IpGyX/pTwfPKt/iPBarQq6sOabp8Oie569RmXjpiiDqGuxrypoHX/79Cd6cpmnBF
+lmDATh0Haf/J9yeeMnAexVRiTv/oKdOA4f+iQiLklIy8ufeHUPQZ4tg/3AJNejsF
+0htxc0LB0vveZXaRVCt2m+2+OqTJaUgIjD5vdC4KqmmXaL4/uyC5Kr8eiW0s1LJ7
+8xEtFhOslP76RXrDZiL7XonfQmlXFfuMVGCVBwyYqmd3heDZlyWmDv2O8AFSBZh+
+lVyTzCcnQuqV/t442ZG2
+=2kSq
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__26_Apr_2013_17_12_29_+1000_a+aKUwX1k7PK_bgm--
