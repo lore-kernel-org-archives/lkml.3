@@ -1,222 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932477Ab3DZIlf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 04:41:35 -0400
-Received: from lan.nucleusys.com ([92.247.61.126]:37940 "EHLO
-	zztop.nucleusys.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932407Ab3DZIlc (ORCPT
+	id S932529Ab3DZIlq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 04:41:46 -0400
+Received: from www.linutronix.de ([62.245.132.108]:47649 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932490Ab3DZIll (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 04:41:32 -0400
-Date: Fri, 26 Apr 2013 11:41:21 +0300 (EEST)
-From: Petko Manolov <petkan@nucleusys.com>
-To: David Miller <davem@davemloft.net>
-cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] drivers: net: usb: pegasus: remove skb pool
-In-Reply-To: <alpine.DEB.2.02.1304260934030.3746@fry.nucleusys.com>
-Message-ID: <alpine.DEB.2.02.1304261133410.12284@fry.nucleusys.com>
-References: <alpine.DEB.2.02.1304260934030.3746@fry.nucleusys.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 26 Apr 2013 04:41:41 -0400
+Date: Fri, 26 Apr 2013 10:41:37 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Clark Williams <clark@redhat.com>, John Kacur <jkacur@redhat.com>,
+        Tony Luck <tony.luck@intel.com>, Borislav Petkov <bp@alien8.de>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Re: [PATCH RT v2] x86/mce: Defer mce wakeups to threads for
+ PREEMPT_RT
+Message-ID: <20130426084137.GC20927@linutronix.de>
+References: <1365705214.9609.58.camel@gandalf.local.home>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1365705214.9609.58.camel@gandalf.local.home>
+X-Key-Id: 97C4700B
+X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Petko Manolov <petkan@nucleusys.com>
+* Steven Rostedt | 2013-04-11 14:33:34 [-0400]:
 
-The socket buffer pool for the receive path is now gone.  It's existence 
-didn't make much difference (performance-wise) and the code is better off 
-without the spinlocks protecting it.
+>As wait queue locks are notorious for long hold times, we can not
+>convert them to raw_spin_locks without causing issues with -rt. But
+>Thomas has created a "simple-wait" structure that uses raw spin locks
+>which may have been a good fit.
+>
+>Unfortunately, wait queues are not the only issue, as the mce_notify_irq
+>also does a schedule_work(), which grabs the workqueue spin locks that
+>have the exact same issue.
 
-Signed-off-by: Petko Manolov <petkan@nucleusys.com>
----
-Diff made against latest net-next, not my git repository;
+mce_notify_irq() can use simple_waitqueue, no?
+The other issue is that mce_report_event() is scheduling a per-cpu
+workqueue (mce_schedule_work) in case of a memory fault. This has the
+same issue.
 
- drivers/net/usb/pegasus.c |   73 +++++------------------------------
- drivers/net/usb/pegasus.h |    3 --
- 2 files changed, 9 insertions(+), 67 deletions(-)
-
-diff --git a/drivers/net/usb/pegasus.c b/drivers/net/usb/pegasus.c
-index 73051d1..ff7b84d 100644
---- a/drivers/net/usb/pegasus.c
-+++ b/drivers/net/usb/pegasus.c
-@@ -575,51 +575,6 @@ static int enable_net_traffic(struct net_device *dev, struct usb_device *usb)
- 	return ret;
- }
- 
--static void fill_skb_pool(pegasus_t *pegasus)
--{
--	int i;
--
--	for (i = 0; i < RX_SKBS; i++) {
--		if (pegasus->rx_pool[i])
--			continue;
--		pegasus->rx_pool[i] = dev_alloc_skb(PEGASUS_MTU + 2);
--		/*
--		 ** we give up if the allocation fail. the tasklet will be
--		 ** rescheduled again anyway...
--		 */
--		if (pegasus->rx_pool[i] == NULL)
--			return;
--		skb_reserve(pegasus->rx_pool[i], 2);
--	}
--}
--
--static void free_skb_pool(pegasus_t *pegasus)
--{
--	int i;
--
--	for (i = 0; i < RX_SKBS; i++) {
--		if (pegasus->rx_pool[i]) {
--			dev_kfree_skb(pegasus->rx_pool[i]);
--			pegasus->rx_pool[i] = NULL;
--		}
--	}
--}
--
--static inline struct sk_buff *pull_skb(pegasus_t * pegasus)
--{
--	int i;
--	struct sk_buff *skb;
--
--	for (i = 0; i < RX_SKBS; i++) {
--		if (likely(pegasus->rx_pool[i] != NULL)) {
--			skb = pegasus->rx_pool[i];
--			pegasus->rx_pool[i] = NULL;
--			return skb;
--		}
--	}
--	return NULL;
--}
--
- static void read_bulk_callback(struct urb *urb)
- {
- 	pegasus_t *pegasus = urb->context;
-@@ -704,9 +659,8 @@ static void read_bulk_callback(struct urb *urb)
- 	if (pegasus->flags & PEGASUS_UNPLUG)
- 		return;
- 
--	spin_lock(&pegasus->rx_pool_lock);
--	pegasus->rx_skb = pull_skb(pegasus);
--	spin_unlock(&pegasus->rx_pool_lock);
-+	pegasus->rx_skb = __netdev_alloc_skb_ip_align(pegasus->net, PEGASUS_MTU,
-+						      GFP_ATOMIC);
- 
- 	if (pegasus->rx_skb == NULL)
- 		goto tl_sched;
-@@ -734,24 +688,23 @@ tl_sched:
- static void rx_fixup(unsigned long data)
- {
- 	pegasus_t *pegasus;
--	unsigned long flags;
- 	int status;
- 
- 	pegasus = (pegasus_t *) data;
- 	if (pegasus->flags & PEGASUS_UNPLUG)
- 		return;
- 
--	spin_lock_irqsave(&pegasus->rx_pool_lock, flags);
--	fill_skb_pool(pegasus);
- 	if (pegasus->flags & PEGASUS_RX_URB_FAIL)
- 		if (pegasus->rx_skb)
- 			goto try_again;
- 	if (pegasus->rx_skb == NULL)
--		pegasus->rx_skb = pull_skb(pegasus);
-+		pegasus->rx_skb = __netdev_alloc_skb_ip_align(pegasus->net,
-+							      PEGASUS_MTU,
-+							      GFP_ATOMIC);
- 	if (pegasus->rx_skb == NULL) {
- 		netif_warn(pegasus, rx_err, pegasus->net, "low on memory\n");
- 		tasklet_schedule(&pegasus->rx_tl);
--		goto done;
-+		return;
- 	}
- 	usb_fill_bulk_urb(pegasus->rx_urb, pegasus->usb,
- 			  usb_rcvbulkpipe(pegasus->usb, 1),
-@@ -767,8 +720,6 @@ try_again:
- 	} else {
- 		pegasus->flags &= ~PEGASUS_RX_URB_FAIL;
- 	}
--done:
--	spin_unlock_irqrestore(&pegasus->rx_pool_lock, flags);
- }
- 
- static void write_bulk_callback(struct urb *urb)
-@@ -1007,10 +958,9 @@ static int pegasus_open(struct net_device *net)
- 	int res;
- 
- 	if (pegasus->rx_skb == NULL)
--		pegasus->rx_skb = pull_skb(pegasus);
--	/*
--	 ** Note: no point to free the pool.  it is empty :-)
--	 */
-+		pegasus->rx_skb = __netdev_alloc_skb_ip_align(pegasus->net,
-+							      PEGASUS_MTU,
-+							      GFP_KERNEL);
- 	if (!pegasus->rx_skb)
- 		return -ENOMEM;
- 
-@@ -1044,7 +994,6 @@ static int pegasus_open(struct net_device *net)
- 		res = -EIO;
- 		usb_kill_urb(pegasus->rx_urb);
- 		usb_kill_urb(pegasus->intr_urb);
--		free_skb_pool(pegasus);
- 		goto exit;
- 	}
- 	set_carrier(net);
-@@ -1364,7 +1313,6 @@ static int pegasus_probe(struct usb_interface *intf,
- 	pegasus->mii.mdio_write = mdio_write;
- 	pegasus->mii.phy_id_mask = 0x1f;
- 	pegasus->mii.reg_num_mask = 0x1f;
--	spin_lock_init(&pegasus->rx_pool_lock);
- 	pegasus->msg_enable = netif_msg_init(msg_level, NETIF_MSG_DRV
- 				| NETIF_MSG_PROBE | NETIF_MSG_LINK);
- 
-@@ -1376,7 +1324,6 @@ static int pegasus_probe(struct usb_interface *intf,
- 		goto out2;
- 	}
- 	set_ethernet_addr(pegasus);
--	fill_skb_pool(pegasus);
- 	if (pegasus->features & PEGASUS_II) {
- 		dev_info(&intf->dev, "setup Pegasus II specific registers\n");
- 		setup_pegasus_II(pegasus);
-@@ -1404,7 +1351,6 @@ static int pegasus_probe(struct usb_interface *intf,
- 
- out3:
- 	usb_set_intfdata(intf, NULL);
--	free_skb_pool(pegasus);
- out2:
- 	free_all_urbs(pegasus);
- out1:
-@@ -1429,7 +1375,6 @@ static void pegasus_disconnect(struct usb_interface *intf)
- 	unregister_netdev(pegasus->net);
- 	unlink_all_urbs(pegasus);
- 	free_all_urbs(pegasus);
--	free_skb_pool(pegasus);
- 	if (pegasus->rx_skb != NULL) {
- 		dev_kfree_skb(pegasus->rx_skb);
- 		pegasus->rx_skb = NULL;
-diff --git a/drivers/net/usb/pegasus.h b/drivers/net/usb/pegasus.h
-index 65b78b3..00d44e3 100644
---- a/drivers/net/usb/pegasus.h
-+++ b/drivers/net/usb/pegasus.h
-@@ -13,7 +13,6 @@
- #define	HAS_HOME_PNA		0x40000000
- 
- #define	PEGASUS_MTU		1536
--#define	RX_SKBS			4
- 
- #define	EPROM_WRITE		0x01
- #define	EPROM_READ		0x02
-@@ -97,11 +96,9 @@ typedef struct pegasus {
- 	struct tasklet_struct	rx_tl;
- 	struct delayed_work	carrier_check;
- 	struct urb		*ctrl_urb, *rx_urb, *tx_urb, *intr_urb;
--	struct sk_buff		*rx_pool[RX_SKBS];
- 	struct sk_buff		*rx_skb;
- 	struct usb_ctrlrequest	dr;
- 	wait_queue_head_t	ctrl_wait;
--	spinlock_t		rx_pool_lock;
- 	int			chip;
- 	unsigned char		intr_buff[8];
- 	__u8			tx_buff[PEGASUS_MTU];
+Sebastian
