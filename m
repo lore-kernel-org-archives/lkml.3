@@ -1,125 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932537Ab3DZJvt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 05:51:49 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:55860 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932298Ab3DZJvr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 05:51:47 -0400
-Date: Fri, 26 Apr 2013 11:51:40 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>, Pekka Enberg <penberg@kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        lkml <linux-kernel@vger.kernel.org>, x86-ml <x86@kernel.org>,
-        kvm@vger.kernel.org
-Subject: [PATCH -v2.1] x86: Add a Kconfig shortcut for kvm guest kernel
-Message-ID: <20130426095140.GA15361@pd.tnic>
-References: <20130412181956.GA13099@pd.tnic>
- <516A7760.7030907@kernel.org>
- <20130414110320.GB20547@pd.tnic>
- <20130416161852.GH5332@pd.tnic>
- <20130417232507.GC31059@amt.cnet>
- <20130418094629.GC21719@pd.tnic>
- <20130418133631.GA30965@amt.cnet>
- <20130419103519.GB21981@pd.tnic>
- <20130426000553.GE32607@pd.tnic>
- <20130426064250.GA31064@gmail.com>
+	id S1758915Ab3DZJz7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 05:55:59 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:56692 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757705Ab3DZJz5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Apr 2013 05:55:57 -0400
+Message-ID: <517A4F2A.4080906@intel.com>
+Date: Fri, 26 Apr 2013 10:55:54 +0100
+From: Matt Fleming <matt.fleming@intel.com>
+Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
+ Way, Swindon SN3 1RJ
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130426064250.GA31064@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Seiji Aguchi <seiji.aguchi@hds.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@kernel.org" <mingo@kernel.org>, "hpa@zytor.com" <hpa@zytor.com>,
+        "mjg59@srcf.ucam.org" <mjg59@srcf.ucam.org>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        "jk@ozlabs.org" <jk@ozlabs.org>, "teg@jklm.no" <teg@jklm.no>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mikew@google.com" <mikew@google.com>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>
+Subject: Re: [tip:x86/efi2] efivars: efivar_entry API
+References: <tip-e14ab23dde12b80db4c94b684a2e485b72b16af3@git.kernel.org> <A5ED84D3BB3A384992CBB9C77DEDA4D41AFCC9D0@USINDEM103.corp.hds.com>
+In-Reply-To: <A5ED84D3BB3A384992CBB9C77DEDA4D41AFCC9D0@USINDEM103.corp.hds.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 26, 2013 at 08:42:50AM +0200, Ingo Molnar wrote:
->
-> ... < take all review comments >
+On 24/04/13 00:55, Seiji Aguchi wrote:
+> Hi,
+> 
+> I tested a current tip tree to check if the new API works.
+> But pstore_erase() doesn't work...
+> I'm checking the source code right now.
+> 
+> Seiji
 
-Here it is:
+[...]
 
---
->From 56880e448600ca1504df8c68c59f31153f7b5b0f Mon Sep 17 00:00:00 2001
-From: Borislav Petkov <bp@suse.de>
-Date: Tue, 16 Apr 2013 18:24:34 +0200
-Subject: [PATCH -v2.1] x86: Add a Kconfig shortcut for kvm guest kernel
+> Call Trace:
+>  [<ffffffff8143001f>] efi_pstore_erase+0xdf/0x130
+>  [<ffffffff81200038>] ? cap_socket_create+0x8/0x10
+>  [<ffffffff811ea491>] pstore_unlink+0x41/0x60
+>  [<ffffffff811741ff>] vfs_unlink+0x9f/0x110
+>  [<ffffffff8117813b>] do_unlinkat+0x18b/0x280
+>  [<ffffffff81178472>] sys_unlinkat+0x22/0x40
+>  [<ffffffff81542402>] system_call_fastpath+0x16/0x1b
 
-This is pretty useful for the case where people want to boot the
-resulting kernel in qemu/kvm or lkvm. Instead of going and searching for
-each required option through the Kconfig maze, this single option should
-simply enable everything required/good to have to boot the resulting
-kernel in the guest.
+Does this patch fix things?
 
-Patch has been adapted from a version in the external lkvm tree.
-
-Cc: Fengguang Wu <fengguang.wu@intel.com>
-Originally-by: Pekka Enberg <penberg@kernel.org>
-Originally-by: Sasha Levin <levinsasha928@gmail.com>
-Signed-off-by: Borislav Petkov <bp@suse.de>
 ---
- arch/x86/Kconfig | 39 +++++++++++++++++++++++++++++++++++++++
- 1 file changed, 39 insertions(+)
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 5651374d179f..432478a7b814 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -680,6 +680,45 @@ config KVM_GUEST
- 	  underlying device model, the host provides the guest with
- 	  timing infrastructure such as time of day, and system time
- 
-+config KVM_GUEST_COMMON_OPTIONS
-+	bool "Enable commodity options for a standalone KVM guest"
-+	depends on KVM_GUEST
-+	select NET
-+	select NETDEVICES
-+	select BLOCK
-+	select BLK_DEV
-+	select NETWORK_FILESYSTEMS
-+	select INET
-+	select EXPERIMENTAL
-+	select TTY
-+	select SERIAL_8250
-+	select SERIAL_8250_CONSOLE
-+	select IP_PNP
-+	select IP_PNP_DHCP
-+	select BINFMT_ELF
-+	select PCI_MSI
-+	select HAVE_ARCH_KGDB
-+	select DEBUG_KERNEL
-+	select KGDB
-+	select KGDB_SERIAL_CONSOLE
-+	select VIRTUALIZATION
-+	select VIRTIO
-+	select VIRTIO_RING
-+	select VIRTIO_PCI
-+	select VIRTIO_BLK
-+	select VIRTIO_CONSOLE
-+	select VIRTIO_NET
-+	select 9P_FS
-+	select NET_9P
-+	select NET_9P_VIRTIO
-+	---help---
-+	  Select guest kernel functionality which facilitates booting the
-+	  kernel as a guest in qemu or lkvm. This entails basic stuff like
-+	  serial support, kgdb, virtio and other so that you can be able to
-+	  have commodity functionality like serial output from the guest,
-+	  networking, seamless host file system integration into guest context
-+	  and other useful things.
-+
- source "arch/x86/lguest/Kconfig"
- 
- config PARAVIRT_TIME_ACCOUNTING
--- 
-1.8.2.135.g7b592fa
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+diff --git a/drivers/firmware/efi/efi-pstore.c b/drivers/firmware/efi/efi-pstore.c
+index 47ae712..b820593 100644
+--- a/drivers/firmware/efi/efi-pstore.c
++++ b/drivers/firmware/efi/efi-pstore.c
+@@ -173,7 +173,7 @@ static int efi_pstore_erase(enum pstore_type_id type, u64 id, int count,
+ 			    struct timespec time, struct pstore_info *psi)
+ {
+ 	struct pstore_erase_data edata;
+-	struct efivar_entry *entry;
++	struct efivar_entry *entry = NULL;
+ 	char name[DUMP_NAME_LEN];
+ 	efi_char16_t efi_name[DUMP_NAME_LEN];
+ 	int found, i;
