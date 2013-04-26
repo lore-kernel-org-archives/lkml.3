@@ -1,36 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756927Ab3DZQkt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 12:40:49 -0400
-Received: from mail-vb0-f49.google.com ([209.85.212.49]:37975 "EHLO
-	mail-vb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751387Ab3DZQkr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 12:40:47 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130426163022.GC23038@console-pimps.org>
-References: <20130426163022.GC23038@console-pimps.org>
-Date: Fri, 26 Apr 2013 09:40:46 -0700
-X-Google-Sender-Auth: uCSaHzGlr40hgk2fj-Sbk2xNZ0s
-Message-ID: <CA+55aFw+EOcVvz-3Sc-khBuLsMo64pp8PDO_UwidH07vbC08pA@mail.gmail.com>
-Subject: Re: [GIT PULL] EFI urgent fix
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
+	id S1756648Ab3DZQlW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 12:41:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1701 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751909Ab3DZQlU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Apr 2013 12:41:20 -0400
+Date: Fri, 26 Apr 2013 18:38:02 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Cyrill Gorcunov <gorcunov@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Thomas Gleixner <tglx@linutronix.de>,
+        David Miller <davem@davemloft.net>, "Theodore Ts'o" <tytso@mit.edu>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-efi@vger.kernel.org, Michel Lespinasse <walken@google.com>
-Content-Type: text/plain; charset=UTF-8
+        the arch/x86 maintainers <x86@kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        Fr??d??ric Weisbecker <fweisbec@gmail.com>
+Subject: [PATCH v2] x86: make DR*_RESERVED unsigned long
+Message-ID: <20130426163802.GA30351@redhat.com>
+References: <CA+55aFwpLu0qNms=hkQr43yqD0K9DgESNm91OEWKT1ZuT8MU6Q@mail.gmail.com> <20130424072630.GB1780@gmail.com> <20130424170702.GA1867@redhat.com> <5178282D.9030902@zytor.com> <20130425144818.GA25921@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130425144818.GA25921@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 26, 2013 at 9:30 AM, Matt Fleming <matt@console-pimps.org> wrote:
-> Hi Peter, Linus,
->
-> I've got a small patch that fixes a crash for the Google folks and their
-> EFI SMI driver, which was caused by dereferencing a garbage pointer.
+DR6_RESERVED and DR_CONTROL_RESERVED are used to clear the set
+bits in the "unsigned long" data, make them long to ensure that
+"&~" doesn't clear the upper bits.
 
-Hmm. I already took this from the earlier email you sent. Did it change since?
+This is only cleanup, the usage of ~DR*_RESERVED is safe but
+doesn't look clean and the pattern is error prone.
 
-            Linus
+	- do_debug:
+
+		dr6 &= ~DR6_RESERVED;
+
+	  this also wrongly clears 32-63 bits. Fortunately these
+	  bits are reserved and must be zero.
+
+	- ptrace_write_dr7:
+
+		data &= ~DR_CONTROL_RESERVED;
+
+	  on __i386__ this mixes long/int but sizeof should be the
+	  same.
+
+Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+ arch/x86/include/uapi/asm/debugreg.h |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/include/uapi/asm/debugreg.h b/arch/x86/include/uapi/asm/debugreg.h
+index 3c0874d..c0c1b89 100644
+--- a/arch/x86/include/uapi/asm/debugreg.h
++++ b/arch/x86/include/uapi/asm/debugreg.h
+@@ -15,7 +15,7 @@
+    are either reserved or not of interest to us. */
+ 
+ /* Define reserved bits in DR6 which are always set to 1 */
+-#define DR6_RESERVED	(0xFFFF0FF0)
++#define DR6_RESERVED	(0xFFFF0FF0UL)
+ 
+ #define DR_TRAP0	(0x1)		/* db0 */
+ #define DR_TRAP1	(0x2)		/* db1 */
+@@ -65,7 +65,7 @@
+    gdt or the ldt if we want to.  I am not sure why this is an advantage */
+ 
+ #ifdef __i386__
+-#define DR_CONTROL_RESERVED (0xFC00) /* Reserved by Intel */
++#define DR_CONTROL_RESERVED (0xFC00UL) /* Reserved by Intel */
+ #else
+ #define DR_CONTROL_RESERVED (0xFFFFFFFF0000FC00UL) /* Reserved */
+ #endif
+-- 
+1.5.5.1
+
+
