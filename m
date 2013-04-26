@@ -1,178 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754939Ab3DZVnR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 17:43:17 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:43667 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752260Ab3DZVnQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 17:43:16 -0400
-Date: Fri, 26 Apr 2013 23:43:14 +0200
-From: Pavel Machek <pavel@denx.de>
-To: Jamie Iles <jamie@jamieiles.com>
-Cc: dinguyen@altera.com, wd@denx.de, linux-arm-kernel@lists.infradead.org,
-        olof@lixom.net, arnd@arndb.de, johnstul@us.ibm.com, tglx@linutronix.de,
-        kernel list <linux-kernel@vger.kernel.org>
-Subject: Re: dw_apb_timer_of.c: remove parts that were picoxcell-specific
-Message-ID: <20130426214313.GB24891@amd.pavel.ucw.cz>
-References: <20130426121433.GA16249@amd.pavel.ucw.cz>
- <20130426124128.GB6946@page>
- <20130426213723.GA24891@amd.pavel.ucw.cz>
+	id S1755138Ab3DZVrz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 17:47:55 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:43667 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751265Ab3DZVry (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Apr 2013 17:47:54 -0400
+Message-ID: <517AF5D6.1040800@zytor.com>
+Date: Fri, 26 Apr 2013 14:47:02 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130426213723.GA24891@amd.pavel.ucw.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Kees Cook <keescook@chromium.org>
+CC: linux-kernel@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
+        Matthew Garrett <mjg@redhat.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Eric Northup <digitaleric@google.com>,
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>
+Subject: Re: [PATCH 2/6] x86: kaslr: move CPU flags out of cpucheck
+References: <1367003005-5560-1-git-send-email-keescook@chromium.org> <1367003005-5560-3-git-send-email-keescook@chromium.org>
+In-Reply-To: <1367003005-5560-3-git-send-email-keescook@chromium.org>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It seems we made a mistake when creating dw_apb_timer_of.c:
-picoxcell sched_clock had parts that were not related to
-dw_apb_timer, yet we moved them to dw_apb_timer_of, and tried to
-use them on socfpga.
+On 04/26/2013 12:03 PM, Kees Cook wrote:
+> +
+> +static inline void cpuid(u32 id, u32 *a, u32 *b, u32 *c, u32 *d)
+> +{
+> +	/* Handle x86_32 PIC using ebx. */
+> +	asm volatile("movl %%ebx, %%edi	\n\t"
+> +		     "cpuid		\n\t"
+> +		     "xchgl %%edi, %%ebx\n\t"
+> +		    : "=a" (*a),
+> +		      "=D" (*b),
+> +		      "=c" (*c),
+> +		      "=d" (*d)
+> +		    : "a" (id)
+> +	);
+> +}
 
-This results in system where user/system time is not measured
-properly, as demonstrated by
-    
-    time dd if=/dev/urandom of=/dev/zero bs=100000 count=100
-    
-So this patch switches sched_clock to hardware that exists on both
-platforms, and adds missing of_node_put() in dw_apb_timer_init().
-    
-Signed-off-by: Pavel Machek <pavel@denx.de>
+Please don't constrain registers unnecessarily.
 
-diff --git a/arch/arm/mach-picoxcell/common.h b/arch/arm/mach-picoxcell/common.h
-index 481b42a..237fb3b 100644
---- a/arch/arm/mach-picoxcell/common.h
-+++ b/arch/arm/mach-picoxcell/common.h
-@@ -12,6 +12,4 @@
- 
- #include <asm/mach/time.h>
- 
--extern void dw_apb_timer_init(void);
--
- #endif /* __PICOXCELL_COMMON_H__ */
-diff --git a/drivers/clocksource/dw_apb_timer.c b/drivers/clocksource/dw_apb_timer.c
-index 8c2a35f..460ac99 100644
---- a/drivers/clocksource/dw_apb_timer.c
-+++ b/drivers/clocksource/dw_apb_timer.c
-@@ -21,12 +21,6 @@
- #define APBT_MIN_PERIOD			4
- #define APBT_MIN_DELTA_USEC		200
- 
--#define APBTMR_N_LOAD_COUNT		0x00
--#define APBTMR_N_CURRENT_VALUE		0x04
--#define APBTMR_N_CONTROL		0x08
--#define APBTMR_N_EOI			0x0c
--#define APBTMR_N_INT_STATUS		0x10
--
- #define APBTMRS_INT_STATUS		0xa0
- #define APBTMRS_EOI			0xa4
- #define APBTMRS_RAW_INT_STATUS		0xa8
-diff --git a/drivers/clocksource/dw_apb_timer_of.c b/drivers/clocksource/dw_apb_timer_of.c
-index ab09ed3..0fa3104 100644
---- a/drivers/clocksource/dw_apb_timer_of.c
-+++ b/drivers/clocksource/dw_apb_timer_of.c
-@@ -57,6 +57,15 @@ static void add_clockevent(struct device_node *event_timer)
- 	dw_apb_clockevent_register(ced);
- }
- 
-+static void __iomem *sched_io_base;
-+
-+/* This is actually same as __apbt_read_clocksource(), but with
-+   different interface */
-+static u32 read_sched_clock_sptimer(void)
-+{
-+	return ~__raw_readl(sched_io_base + APBTMR_N_CURRENT_VALUE);
-+}
-+
- static void add_clocksource(struct device_node *source_timer)
- {
- 	void __iomem *iobase;
-@@ -71,41 +80,27 @@ static void add_clocksource(struct device_node *source_timer)
- 
- 	dw_apb_clocksource_start(cs);
- 	dw_apb_clocksource_register(cs);
--}
- 
--static void __iomem *sched_io_base;
--
--static u32 read_sched_clock(void)
--{
--	return __raw_readl(sched_io_base);
-+	sched_io_base = iobase;
-+	setup_sched_clock(read_sched_clock_sptimer, 32, rate);
- }
- 
--static const struct of_device_id sptimer_ids[] __initconst = {
--	{ .compatible = "picochip,pc3x2-rtc" },
-+static const struct of_device_id osctimer_ids[] __initconst = {
-+	{ .compatible = "picochip,pc3x2-timer" },
-+	{ .compatible = "snps,dw-apb-timer-osc" },
- 	{ .compatible = "snps,dw-apb-timer-sp" },
--	{ /* Sentinel */ },
-+	{  /* Sentinel */ },
- };
- 
--static void init_sched_clock(void)
--{
--	struct device_node *sched_timer;
--	u32 rate;
--
--	sched_timer = of_find_matching_node(NULL, sptimer_ids);
--	if (!sched_timer)
--		panic("No RTC for sched clock to use");
-+/*
-+   You don't have to use dw_apb_timer for scheduler clock,
-+   this should also work fine on arm:
- 
--	timer_get_base_and_rate(sched_timer, &sched_io_base, &rate);
--	of_node_put(sched_timer);
-+  twd_local_timer_of_register();
-+  arch_timer_of_register();                 
-+  arch_timer_sched_clock_init();
-+*/
- 
--	setup_sched_clock(read_sched_clock, 32, rate);
--}
--
--static const struct of_device_id osctimer_ids[] __initconst = {
--	{ .compatible = "picochip,pc3x2-timer" },
--	{ .compatible = "snps,dw-apb-timer-osc" },
--	{},
--};
- 
- void __init dw_apb_timer_init(void)
- {
-@@ -121,7 +116,6 @@ void __init dw_apb_timer_init(void)
- 		panic("No timer for clocksource");
- 	add_clocksource(source_timer);
- 
-+	of_node_put(event_timer);
- 	of_node_put(source_timer);
--
--	init_sched_clock();
- }
-diff --git a/include/linux/dw_apb_timer.h b/include/linux/dw_apb_timer.h
-index dd755ce..a64c987 100644
---- a/include/linux/dw_apb_timer.h
-+++ b/include/linux/dw_apb_timer.h
-@@ -17,6 +17,12 @@
- #include <linux/clocksource.h>
- #include <linux/interrupt.h>
- 
-+#define APBTMR_N_LOAD_COUNT		0x00
-+#define APBTMR_N_CURRENT_VALUE		0x04
-+#define APBTMR_N_CONTROL		0x08
-+#define APBTMR_N_EOI			0x0c
-+#define APBTMR_N_INT_STATUS		0x10
-+
- #define APBTMRS_REG_SIZE       0x14
- 
- struct dw_apb_timer {
+You can use "=r" there and let gcc assign whatever free register it pleases.
 
+You can also limit that to only:
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+#if defined(__i386__) && defined(__PIC__)
+
+	-hpa
+
