@@ -1,61 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759636Ab3DZBpa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 21:45:30 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:47729 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757061Ab3DZBp2 (ORCPT
+	id S1759825Ab3DZBrJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 21:47:09 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:46885 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758931Ab3DZBrG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 21:45:28 -0400
-From: Simon Horman <horms@verge.net.au>
-To: Eric Dumazet <eric.dumazet@gmail.com>, Julian Anastasov <ja@ssi.bg>,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
-Cc: lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
-        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Dipankar Sarma <dipankar@in.ibm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Simon Horman <horms@verge.net.au>
-Subject: [PATCH 1/2] sched: Add cond_resched_rcu_lock() helper
-Date: Fri, 26 Apr 2013 10:45:07 +0900
-Message-Id: <1366940708-10180-2-git-send-email-horms@verge.net.au>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1366940708-10180-1-git-send-email-horms@verge.net.au>
-References: <1366940708-10180-1-git-send-email-horms@verge.net.au>
+	Thu, 25 Apr 2013 21:47:06 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Huang Ying <ying.huang@intel.com>
+Cc: David Bulkow <David.Bulkow@stratus.com>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH] PCI: Remove duplicate pci_disable_device for pcie port
+Date: Thu, 25 Apr 2013 18:47:00 -0700
+Message-Id: <1366940820-15302-1-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <5AA430FFE4486C448003201AC83BC85E03DEA483@EXHQ.corp.stratus.com>
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is intended for use in loops which read data protected by RCU and may
-have a large number of iterations.  Such an example is dumping the list of
-connections known to IPVS: ip_vs_conn_array() and ip_vs_conn_seq_next().
+During chasing one PCI xHCI hotplug problem, David Bulkow found
 
-As suggested by Eric Dumazet.
+	static void pcie_portdrv_remove(struct pci_dev *dev)
+	{
+        	pcie_port_device_remove(dev);
+	        pci_disable_device(dev);
+	}
+and
+	void pcie_port_device_remove(struct pci_dev *dev)
+	{
+        	device_for_each_child(&dev->dev, NULL, remove_iter);
+	        cleanup_service_irqs(dev);
+	        pci_disable_device(dev);
+	}
 
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Julian Anastasov <ja@ssi.bg>
-Signed-off-by: Simon Horman <horms@verge.net.au>
+that extra pci_disable_device in pcie_port_device_remove() was added by
+| commit dc5351784eb36f1fec4efa88e01581be72c0b711
+| Author: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+| Date:   Wed Nov 25 21:04:00 2009 +0900
+|
+|    PCI: portdrv: cleanup service irqs initialization
+
+so pci_dsiable_device is called two times.
+
+We should remove extra one in pcie_portdrv_remove.
+
+Reported-by: David Bulkow <David.Bulkow@stratus.com>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+
 ---
- include/linux/sched.h | 9 +++++++++
- 1 file changed, 9 insertions(+)
+ drivers/pci/pcie/portdrv_pci.c |    1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index e692a02..7eec4c7 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -2787,3 +2787,12 @@ static inline unsigned long rlimit_max(unsigned int limit)
+Index: linux-2.6/drivers/pci/pcie/portdrv_pci.c
+===================================================================
+--- linux-2.6.orig/drivers/pci/pcie/portdrv_pci.c
++++ linux-2.6/drivers/pci/pcie/portdrv_pci.c
+@@ -223,7 +223,6 @@ static int pcie_portdrv_probe(struct pci
+ static void pcie_portdrv_remove(struct pci_dev *dev)
+ {
+ 	pcie_port_device_remove(dev);
+-	pci_disable_device(dev);
  }
  
- #endif
-+
-+static void inline cond_resched_rcu_lock(void)
-+{
-+	if (need_resched()) {
-+		rcu_read_unlock();
-+		cond_resched();
-+		rcu_read_lock();
-+	}
-+}
--- 
-1.8.2.1
-
+ static int error_detected_iter(struct device *device, void *data)
