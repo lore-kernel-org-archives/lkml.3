@@ -1,37 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756355Ab3DZXdN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 19:33:13 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:46619 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751476Ab3DZXdL (ORCPT
+	id S1756303Ab3DZXkF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 19:40:05 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:44682 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755890Ab3DZXkD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 19:33:11 -0400
-Date: Fri, 26 Apr 2013 19:33:07 -0400 (EDT)
-Message-Id: <20130426.193307.1725881115728895413.davem@davemloft.net>
-To: xi.wang@gmail.com
-Cc: dborkman@redhat.com, akpm@linux-foundation.org, arnd@arndb.de,
-        nschichan@freebox.fr, wad@chromium.org, mgherzan@gmail.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux@arm.linux.org.uk, daniel.borkmann@tik.ee.ethz.ch,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH V3 2/3] ARM: net: bpf_jit: make code generation less
- dependent on struct sk_filter.
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <CAKU6vyYOZ-24TSyLa8t6Oipib37fE1gtvM8nWj2TDzVw-tv0jA@mail.gmail.com>
-References: <20130426130948.cbfd2f6256afc0e3ee7abeed@linux-foundation.org>
-	<517AF926.3020302@redhat.com>
-	<CAKU6vyYOZ-24TSyLa8t6Oipib37fE1gtvM8nWj2TDzVw-tv0jA@mail.gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Fri, 26 Apr 2013 16:33:10 -0700 (PDT)
+	Fri, 26 Apr 2013 19:40:03 -0400
+From: Olof Johansson <olof@lixom.net>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Olof Johansson <olof@lixom.net>
+Subject: [PATCH] clk: add option to keep boot clocks on
+Date: Fri, 26 Apr 2013 16:39:51 -0700
+Message-Id: <1367019591-31685-1-git-send-email-olof@lixom.net>
+X-Mailer: git-send-email 1.8.1.192.gc4361b8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is primarily useful when there's a driver that doesn't claim clocks
+properly, but the bootloader does. It's not expected to be used in normal
+cases, but for bringup and debug it's very useful to have the option to
+not gate unclaimed clocks that are still on.
 
-Please stop top-posting.
+Signed-off-by: Olof Johansson <olof@lixom.net>
+---
 
-Thank you.
+Mike, this is a pretty trivial patch that I would love to see in 3.10
+even though it's getting late. I'm definitely not picky about the naming
+of the boot option, so feel free to change it.
+
+
+-Olof
+
+ drivers/clk/clk.c | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+index 20ce67f..b22551e 100644
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -499,10 +499,24 @@ out:
+ 	return;
+ }
+ 
++
++static bool keep_boot_clocks;
++static int __init clk_keep_boot_clocks(char *__unused)
++{
++	keep_boot_clocks = true;
++	return 1;
++}
++__setup("clk_keep_boot_clocks", clk_keep_boot_clocks);
++
+ static int clk_disable_unused(void)
+ {
+ 	struct clk *clk;
+ 
++	if (keep_boot_clocks) {
++		pr_warn("clk: Not disabling unused clocks\n");
++		return 0;
++	}
++
+ 	clk_prepare_lock();
+ 
+ 	hlist_for_each_entry(clk, &clk_root_list, child_node)
+-- 
+1.8.1.192.gc4361b8
+
