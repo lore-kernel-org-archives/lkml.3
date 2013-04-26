@@ -1,226 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932411Ab3DZUVZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 16:21:25 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:45493 "EHLO hydra.sisk.pl"
+	id S1757791Ab3DZUWA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 16:22:00 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:40366 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756855Ab3DZUVV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 16:21:21 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Yinghai Lu <yinghai@kernel.org>, Ram Pai <linuxram@us.ibm.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
-Subject: Re: [PATCH v4 27/29] PCI: Make piix4 quirk to use addon_res
-Date: Fri, 26 Apr 2013 22:29:29 +0200
-Message-ID: <1614149.2EDsY9ltHk@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0-rc8+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAErSpo42D-jyY+7f66fYUprDgh-3E0qV1O1cpXjWK2+iBZ_bBQ@mail.gmail.com>
-References: <1365806683-26717-1-git-send-email-yinghai@kernel.org> <CAErSpo6W-GtTHe+84XQMfie1K39ChGKmHNYSuru0veXxqxqhAA@mail.gmail.com> <CAErSpo42D-jyY+7f66fYUprDgh-3E0qV1O1cpXjWK2+iBZ_bBQ@mail.gmail.com>
+	id S1751893Ab3DZUV6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Apr 2013 16:21:58 -0400
+Message-ID: <517AE1D3.5050702@ti.com>
+Date: Sat, 27 Apr 2013 01:51:39 +0530
+From: Sourav Poddar <sourav.poddar@ti.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Sourav Poddar <sourav.poddar@ti.com>
+CC: <gregkh@linuxfoundation.org>, <tony@atomide.com>,
+        <rmk+kernel@arm.linux.org.uk>, <khilman@linaro.org>,
+        <linux-serial@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Felipe Balbi <balbi@ti.com>, Rajendra nayak <rnayak@ti.com>
+Subject: Re: [PATCHv5 0/3] Serial fixes
+References: <1367006686-3720-1-git-send-email-sourav.poddar@ti.com>
+In-Reply-To: <1367006686-3720-1-git-send-email-sourav.poddar@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, April 26, 2013 09:22:47 AM Bjorn Helgaas wrote:
-> [+cc Rafael, linux-acpi]
-> 
-> On Thu, Apr 25, 2013 at 2:39 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> > On Fri, Apr 12, 2013 at 4:44 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> >> After they are put in add-on resources, they will be safely claimed later.
-> >
-> > It took me a while to understand what's going on here, but this is
-> > actually a pretty cool idea.  It would be nice to explain a little
-> > about what the patch is doing and how these "pseudo-BARs" work, though
-> > :)
-> 
-> After thinking about this overnight, I'm not so sure about this.  I
-> think the point of this is to manage resources that are consumed by
-> the device but don't conform to the PCI spec.  Most resources don't
-> need quirks because they're either described by standard BAR registers
-> or by the exceptions for "legacy I/O devices," e.g., IDE or VGA.
-> 
-> I would expect that the "architected" way to deal with non-standard
-> resources like this is to describe them via a PNP0C02 or similar ACPI
-> device.  That way, the OS would not need device-specific quirks like
-> this.
-> 
-> If we do add something like this patch, we're also adding a way for
-> Linux to *write* these non-standard BARs, which means they can become
-> out-of-sync with the ACPI description of them.  I think the BIOS is
-> entitled to assume that if it describes a resource via _CRS and it
-> doesn't provide a corresponding _SRS, the resource will remain
-> unchanged by the OS.
-
-Agreed.
-
-Thanks,
-Rafael
-
-
-> >> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> >> ---
-> >>  drivers/pci/quirks.c | 95 +++++++++++++++++++++++++++++++++++++++++++---------
-> >>  1 file changed, 79 insertions(+), 16 deletions(-)
-> >>
-> >> diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-> >> index 2dac170..6706182 100644
-> >> --- a/drivers/pci/quirks.c
-> >> +++ b/drivers/pci/quirks.c
-> >> @@ -382,14 +382,14 @@ static void quirk_ali7101_acpi(struct pci_dev *dev)
-> >>  }
-> >>  DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_AL,     PCI_DEVICE_ID_AL_M7101,         quirk_ali7101_acpi);
-> >>
-> >> -static void piix4_io_quirk(struct pci_dev *dev, const char *name, unsigned int port, unsigned int enable)
-> >> +static int piix4_read_io(struct pci_dev *dev, struct resource *res, int port)
-> >
-> > We're reading from "port," which is really the address of a dword in
-> > config space, not a port, so I would have called it "pos" like
-> > __pci_read_base() did.  If I understand correctly, we're reading a
-> > BAR-like register that contains the base address of an I/O port
-> > region.
-> >
-> > "piix4_read_io_base(struct pci_dev *dev, struct resource *res, int
-> > pos)" would make more sense to me.
-> >
-> >>  {
-> >>         u32 devres;
-> >>         u32 mask, size, base;
-> >> +       struct pci_bus_region bus_region;
-> >>
-> >>         pci_read_config_dword(dev, port, &devres);
-> >> -       if ((devres & enable) != enable)
-> >> -               return;
-> >> +
-> >>         mask = (devres >> 16) & 15;
-> >>         base = devres & 0xffff;
-> >>         size = 16;
-> >> @@ -399,23 +399,54 @@ static void piix4_io_quirk(struct pci_dev *dev, const char *name, unsigned int p
-> >>                         break;
-> >>                 size = bit;
-> >>         }
-> >> -       /*
-> >> -        * For now we only print it out. Eventually we'll want to
-> >> -        * reserve it (at least if it's in the 0x1000+ range), but
-> >> -        * let's get enough confirmation reports first.
-> >> -        */
-> >>         base &= -size;
-> >> -       dev_info(&dev->dev, "%s PIO at %04x-%04x\n", name, base, base + size - 1);
-> >> +
-> >> +       bus_region.start = base;
-> >> +       bus_region.end = base + size - 1;
-> >> +       res->flags |= IORESOURCE_IO;
-> >> +       pcibios_bus_to_resource(dev, res, &bus_region);
-> >> +       dev_info(&dev->dev, "PIO at %pR\n", res);
-> >> +
-> >> +       return 0;
-> >>  }
-> >> +static int piix4_write_io(struct pci_dev *dev, struct resource *res, int port)
-> >> +{
-> >> +       u32 devres;
-> >> +       struct pci_bus_region bus_region;
-> >> +       unsigned size = to_pci_dev_addon_resource(res)->size;
-> >>
-> >> -static void piix4_mem_quirk(struct pci_dev *dev, const char *name, unsigned int port, unsigned int enable)
-> >> +       pcibios_resource_to_bus(dev, &bus_region, res);
-> >> +
-> >> +       pci_read_config_dword(dev, port, &devres);
-> >> +       devres &= 0xffff0000 | (size - 1);
-> >> +       devres |= bus_region.start & 0xffff & (~(size - 1));
-> >> +       pci_write_config_dword(dev, port, devres);
-> >> +
-> >> +       return 0;
-> >> +}
-> >> +static struct resource_ops piix4_io_ops = {
-> >> +       .read = piix4_read_io,
-> >> +       .write = piix4_write_io,
-> >> +};
-> >> +static void piix4_io_quirk(struct pci_dev *dev, char *name, unsigned int port,
-> >> +                               unsigned int enable)
-> >
-> > I think these (piix4_io_quirk() and piix4_mem_quirk()) would read
-> > better if they were something like:
-> >
-> >     piix4_add_io_bar(struct pci_dev *dev, unsigned int pos, u32
-> > enable, char *name);
-> >
-> >>  {
-> >>         u32 devres;
-> >> -       u32 mask, size, base;
-> >>
-> >>         pci_read_config_dword(dev, port, &devres);
-> >>         if ((devres & enable) != enable)
-> >>                 return;
-> >> +
-> >> +       pci_add_dev_addon_resource(dev, port, 0, &piix4_io_ops, name);
-> >> +}
-> >> +
-> >> +static int piix4_read_mem(struct pci_dev *dev, struct resource *res, int port)
-> >> +{
-> >> +       u32 devres;
-> >> +       u32 mask, size, base;
-> >> +       struct pci_bus_region bus_region;
-> >> +
-> >> +       pci_read_config_dword(dev, port, &devres);
-> >>         base = devres & 0xffff0000;
-> >>         mask = (devres & 0x3f) << 16;
-> >>         size = 128 << 16;
-> >> @@ -425,12 +456,44 @@ static void piix4_mem_quirk(struct pci_dev *dev, const char *name, unsigned int
-> >>                         break;
-> >>                 size = bit;
-> >>         }
-> >> -       /*
-> >> -        * For now we only print it out. Eventually we'll want to
-> >> -        * reserve it, but let's get enough confirmation reports first.
-> >> -        */
-> >>         base &= -size;
-> >> -       dev_info(&dev->dev, "%s MMIO at %04x-%04x\n", name, base, base + size - 1);
-> >> +       bus_region.start = base;
-> >> +       bus_region.end = base + size - 1;
-> >> +       res->flags |= IORESOURCE_MEM;
-> >> +       pcibios_bus_to_resource(dev, res, &bus_region);
-> >> +       dev_info(&dev->dev, "MMIO at %pR\n", res);
-> >> +
-> >> +       return 0;
-> >> +}
-> >> +static int piix4_write_mem(struct pci_dev *dev, struct resource *res, int port)
-> >> +{
-> >> +       u32 devres;
-> >> +       struct pci_bus_region bus_region;
-> >> +       unsigned size = to_pci_dev_addon_resource(res)->size;
-> >> +
-> >> +       pcibios_resource_to_bus(dev, &bus_region, res);
-> >> +
-> >> +       pci_read_config_dword(dev, port, &devres);
-> >> +       devres &= 0x0000ffff | ((size - 1) & 0xffff0000);
-> >> +       devres |= bus_region.start & 0xffff0000 & (~(size - 1));
-> >> +       pci_write_config_dword(dev, port, devres);
-> >> +
-> >> +       return 0;
-> >> +}
-> >> +static struct resource_ops piix4_mem_ops = {
-> >> +       .read = piix4_read_mem,
-> >> +       .write = piix4_write_mem,
-> >> +};
-> >> +static void piix4_mem_quirk(struct pci_dev *dev, char *name, unsigned int port,
-> >> +                               unsigned int enable)
-> >> +{
-> >> +       u32 devres;
-> >> +
-> >> +       pci_read_config_dword(dev, port, &devres);
-> >> +       if ((devres & enable) != enable)
-> >> +               return;
-> >> +
-> >> +       pci_add_dev_addon_resource(dev, port, 0, &piix4_mem_ops, name);
-> >>  }
-> >>
-> >>  /*
-> >> --
-> >> 1.8.1.4
-> >>
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+On Saturday 27 April 2013 01:34 AM, Sourav Poddar wrote:
+> Hi,
+>
+> This patch series contains fixes around the issue that
+> the console UART should not idled on suspend while using
+> "no_console_suspend" in bootargs.
+>
+> The approach thought of is to modify the serial core/serial driver to bypass
+> runtime PM if the UART in contention is a console and we are using "no_console_suspend"
+> in our bootargs.
+>
+> There were discussions about how to handle "no_idle_on_suspend" issue and all the
+> discussions are as follows:
+> https://lkml.org/lkml/2013/4/5/239
+> https://lkml.org/lkml/2013/4/2/350
+> https://lkml.org/lkml/2013/3/18/199
+> https://lkml.org/lkml/2013/3/18/295
+> Due to the amount of change in approach, I am posting
+> this as a new series.
+>
+> v4->v5
+> 1. Add comments
+> 2. Formatting.
+>
+> v3->v4
+> 1. check for console in runtime api.
+>
+> v2->v3
+> 1. Use "-EBUSY" for no_console_suspend case
+> 2. Bypass runtime PM only during suspend
+> 3. Improve the commit log based on community suggestion.
+>
+> v1->v2
+> 1. Remove the prepare/complete callback.
+> 2. Adapt runtime PM callback to deal with the issue.
+> 3. Fold patch(1,2) of previous series into 1.
+> 4. Reordered the patch.
+> 5. Change $subject and chage log for few patches.
+>
+> Cc: Santosh Shilimkar<santosh.shilimkar@ti.com>
+> Cc: Felipe Balbi<balbi@ti.com>
+> Cc: Rajendra nayak<rnayak@ti.com>
+>
+> Test info
+> Omap4430sdp:
+> - Tested wakeup from UART after suspend for dt and non dt case.
+> Omap5430evm:
+> - Tested wakeup from UART after suspend for dt case.
+>
+> These patches were the part of the bigger series[1]. Breaking them into
+> two relevant series as they go through the different tree.
+>
+> [1]: http://lkml.org/lkml/2013/4/26/274
+>
+> This patches are based on 3.9-rc8
+>
+> The following changes since commit 824282ca7d250bd7c301f221c3cd902ce906d731:
+>
+>    Merge branch 'upstream' of git://git.linux-mips.org/pub/scm/ralf/upstream-linus (2013-04-22 15:00:59 -0700)
+>
+> are available in the git repository at:
+>
+>    git://gitorious.org/linux-connectivity/linux-connectivity.git serial_fix
+>
+> Sourav Poddar (2):
+>        driver: tty: serial: Move "uart_console" def to core header file.
+>        driver: serial: omap: prevent runtime PM for "no_console_suspend"
+>
+>   drivers/tty/serial/mpc52xx_uart.c |   10 ----------
+>   drivers/tty/serial/omap-serial.c  |   34 +++++++++++++++++++++++++++++++++-
+>   drivers/tty/serial/serial_core.c  |    6 ------
+>   include/linux/serial_core.h       |    7 +++++++
+>   4 files changed, 40 insertions(+), 17 deletion
+Discard this cover..resend the cover with correct subject.
