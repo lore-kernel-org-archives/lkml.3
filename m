@@ -1,184 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758909Ab3DZIfO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 04:35:14 -0400
-Received: from relay.parallels.com ([195.214.232.42]:43428 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755292Ab3DZIfK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 04:35:10 -0400
-Message-ID: <517A3B98.807@parallels.com>
-Date: Fri, 26 Apr 2013 12:32:24 +0400
-From: "Maxim V. Patlasov" <mpatlasov@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	id S1759100Ab3DZIfj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 04:35:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30606 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758920Ab3DZIf0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Apr 2013 04:35:26 -0400
+Date: Fri, 26 Apr 2013 10:35:07 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 09/14] perf ftrace: Add 'record' sub-command
+Message-ID: <20130426083507.GA1054@krava.brq.redhat.com>
+References: <1366705872-12132-1-git-send-email-namhyung@kernel.org>
+ <1366705872-12132-10-git-send-email-namhyung@kernel.org>
+ <20130424141241.GG971@krava.brq.redhat.com>
+ <87bo939lgt.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
-To: Miklos Szeredi <miklos@szeredi.hu>
-CC: Kirill Korotaev <dev@parallels.com>, Pavel Emelianov <xemul@parallels.com>,
-        "fuse-devel@lists.sourceforge.net" <fuse-devel@lists.sourceforge.net>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        James Bottomley <jbottomley@parallels.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>, <devel@openvz.org>,
-        Andrew Morton <akpm@linux-foundation.org>, <fengguang.wu@intel.com>,
-        <mgorman@suse.de>, <riel@redhat.com>, <hughd@google.com>,
-        <gthelen@google.com>, <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [fuse-devel] [PATCH 14/14] mm: Account for WRITEBACK_TEMP in
- balance_dirty_pages
-References: <20130401103749.19027.89833.stgit@maximpc.sw.ru> <20130401104250.19027.27795.stgit@maximpc.sw.ru> <51793DE6.3000503@parallels.com> <CAJfpegv1zc4oeE=YXrQd0jmzVXB8jjvXkz-_4Nv_ELcvfsa74Q@mail.gmail.com> <517956ED.7060102@parallels.com> <20130425204331.GB16238@tucsk.piliscsaba.szeredi.hu>
-In-Reply-To: <20130425204331.GB16238@tucsk.piliscsaba.szeredi.hu>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.30.17.2]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87bo939lgt.fsf@sejong.aot.lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Miklos,
+On Thu, Apr 25, 2013 at 03:24:18PM +0900, Namhyung Kim wrote:
+> On Wed, 24 Apr 2013 16:12:41 +0200, Jiri Olsa wrote:
+> > I got following lockup for record command:
+> >
+> >   # ./perf --no-pager ftrace record ls
+> >   ...
+> >   hangs
+> >
+> >   in other terminal:
+> >
+> >   # pstack 14237
+> >   Thread 2 (Thread 0x7f3f1aa1d700 (LWP 14241)):
+> >   #0  0x0000003cec20b595 in pthread_cond_wait@@GLIBC_2.3.2 () from /lib64/libpthread.so.0
+> >   #1  0x0000000000446ebe in record_ftrace_raw_buffer (arg=0x21f9ce0) at builtin-ftrace.c:451
+> >   #2  0x0000003cec207d14 in start_thread () from /lib64/libpthread.so.0
+> >   #3  0x0000003cebaf168d in clone () from /lib64/libc.so.6
+> >   Thread 1 (Thread 0x7f3f1ba209c0 (LWP 14237)):
+> >   #0  0x0000003cec208e60 in pthread_join () from /lib64/libpthread.so.0
+> >   #1  0x0000000000449c8c in do_ftrace_record (ftrace=ftrace@entry=0x7fff1377d240) at builtin-ftrace.c:682
+> >   #2  0x000000000044a57b in __cmd_ftrace_record (argv=0x7fff1377d818, argc=<optimized out>, ftrace=0x7fff1377d240) at builtin-ftrace.c:1535
+> >   #3  cmd_ftrace (argc=2, argv=0x7fff1377d818, prefix=<optimized out>) at builtin-ftrace.c:1655
+> >   #4  0x000000000041a763 in run_builtin (p=p@entry=0x7d58a0, argc=argc@entry=3, argv=argv@entry=0x7fff1377d818) at perf.c:320
+> >   #5  0x0000000000419faf in handle_internal_command (argv=0x7fff1377d818, argc=3) at perf.c:377
+> >   #6  run_argv (argv=0x7fff1377d600, argcp=0x7fff1377d60c) at perf.c:421
+> >   #7  main (argc=3, argv=0x7fff1377d818) at perf.c:522
+> >
+> 
+> How often can you reproduce it?  I can't. :(
 
-04/26/2013 12:43 AM, Miklos Szeredi пишет:
-> On Thu, Apr 25, 2013 at 08:16:45PM +0400, Maxim V. Patlasov wrote:
->> As Mel Gorman pointed out, fuse daemon diving into
->> balance_dirty_pages should not kick flusher judging on
->> NR_WRITEBACK_TEMP. Essentially, all we need in balance_dirty_pages
->> is:
->>
->>      if (I'm not fuse daemon)
->>          nr_dirty += global_page_state(NR_WRITEBACK_TEMP);
-> I strongly dislike the above.
+yesterday it was more often than today ;-) but I still get it
+after several runs, this reproduces it for me:
 
-The above was well-discussed on mm track of LSF/MM. Everybody seemed to 
-agree with solution above. I'm cc-ing some guys who were involved in 
-discussion, mm mailing list and Andrew as well. For those who don't 
-follow from the beginning here is an excerpt:
+  # while [ 1 ]; do ./perf --no-pager ftrace record ls ; done
 
-> 04/25/2013 07:49 PM, Miklos Szeredi пишет:
->> On Thu, Apr 25, 2013 at 4:29 PM, Maxim V. Patlasov
->> <mpatlasov@parallels.com>  wrote:
->>>> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
->>>> index 0713bfb..c47bcd4 100644
->>>> --- a/mm/page-writeback.c
->>>> +++ b/mm/page-writeback.c
->>>> @@ -1235,7 +1235,8 @@ static void balance_dirty_pages(struct address_space
->>>> *mapping,
->>>>                    */
->>>>                   nr_reclaimable = global_page_state(NR_FILE_DIRTY) +
->>>>
->>>> global_page_state(NR_UNSTABLE_NFS);
->>>> -               nr_dirty = nr_reclaimable +
->>>> global_page_state(NR_WRITEBACK);
->>>> +               nr_dirty = nr_reclaimable +
->>>> global_page_state(NR_WRITEBACK) +
->>>> +                       global_page_state(NR_WRITEBACK_TEMP);
->>>>                   global_dirty_limits(&background_thresh, &dirty_thresh);
->>> Please drop this patch. As we discussed in LSF/MM, the fix above is correct,
->>> but it's not enough: we also need to ensure disregard of NR_WRITEBACK_TEMP
->>> when balance_dirty_pages() is called from fuse daemon. I'll send a separate
->>> patch-set soon.
->> Please elaborate.  From a technical perspective "fuse daemon" is very
->> hard to define, so anything that relies on whether something came from
->> the fuse daemon or not is conceptually broken.
-> As Mel Gorman pointed out, fuse daemon diving into balance_dirty_pages
-> should not kick flusher judging on NR_WRITEBACK_TEMP. Essentially, all
-> we need in balance_dirty_pages is:
->
->       if (I'm not fuse daemon)
->           nr_dirty += global_page_state(NR_WRITEBACK_TEMP);
->
-> The way how to identify fuse daemon was not thoroughly scrutinized
-> during LSF/MM. Firstly, I thought it would be enough to set a
-> per-process flag handling fuse device open. But now I understand that
-> fuse daemon may be quite a complicated multi-threaded multi-process
-> construction. I'm going to add new FUSE_NOTIFY to allow fuse daemon
-> decide when it works on behalf of draining writeout-s. Having in mind
-> that fuse-lib is multi-threaded, I'm also going to inherit the flag on
-> copy_process(). Does it make sense for you?
->
-> Also, another patch will put this ad-hoc FUSE_NOTIFY under fusermount
-> control. This will prevent malicious unprivileged fuse mounts from
-> setting the flag for malicious purposes.
+seems like there's no change in backtraces:
 
-And returning back to the last Miklos' mail...
+[root@krava tracing]# pstack 4139
+Thread 2 (Thread 0x7f4aa37fe700 (LWP 4145)):
+#0  0x0000003cec20b595 in pthread_cond_wait@@GLIBC_2.3.2 () from /lib64/libpthread.so.0
+#1  0x0000000000446ebe in record_ftrace_raw_buffer (arg=0xe10e90) at builtin-ftrace.c:451
+#2  0x0000003cec207d14 in start_thread () from /lib64/libpthread.so.0
+#3  0x0000003cebaf168d in clone () from /lib64/libc.so.6
+Thread 1 (Thread 0x7f4aac29c9c0 (LWP 4139)):
+#0  0x0000003cec208e60 in pthread_join () from /lib64/libpthread.so.0
+#1  0x0000000000449c8c in do_ftrace_record (ftrace=ftrace@entry=0x7fffaf9bc080) at builtin-ftrace.c:682
+#2  0x000000000044a57b in __cmd_ftrace_record (argv=0x7fffaf9bc658, argc=<optimized out>, ftrace=0x7fffaf9bc080) at builtin-ftrace.c:1535
+#3  cmd_ftrace (argc=2, argv=0x7fffaf9bc658, prefix=<optimized out>) at builtin-ftrace.c:1655
+#4  0x000000000041a763 in run_builtin (p=p@entry=0x7d58a0, argc=argc@entry=3, argv=argv@entry=0x7fffaf9bc658) at perf.c:320
+#5  0x0000000000419faf in handle_internal_command (argv=0x7fffaf9bc658, argc=3) at perf.c:377
+#6  run_argv (argv=0x7fffaf9bc440, argcp=0x7fffaf9bc44c) at perf.c:421
+#7  main (argc=3, argv=0x7fffaf9bc658) at perf.c:522
 
->
-> What about something like the following untested patch?
->
-> The idea is that fuse filesystems should not go over the bdi limit even if the
-> global limit hasn't been reached.
+---
 
-This might work, but kicking flusher every time someone write to fuse 
-mount and dives into balance_dirty_pages looks fishy. However, setting 
-ad-hoc inode flag for files on fuse makes much more sense than my 
-approach of identifying fuse daemons (a feeble hope that userspace 
-daemons would notify in-kernel fuse saying "I'm fuse daemon, please 
-disregard NR_WRITEBACK_TEMP for me"). Let's combine our suggestions: 
-mark fuse inodes with AS_FUSE_WRITEBACK flag and convert what you 
-strongly dislike above to:
+#0  0x0000003cec20b595 in pthread_cond_wait@@GLIBC_2.3.2 () from /lib64/libpthread.so.0
+#1  0x0000000000446ebe in record_ftrace_raw_buffer (arg=0xee9ce0) at builtin-ftrace.c:451
+#2  0x0000003cec207d14 in start_thread () from /lib64/libpthread.so.0
+#3  0x0000003cebaf168d in clone () from /lib64/libc.so.6
+Thread 1 (Thread 0x7f9b383139c0 (LWP 4397)):
+#0  0x0000003cec208e60 in pthread_join () from /lib64/libpthread.so.0
+#1  0x0000000000449c8c in do_ftrace_record (ftrace=ftrace@entry=0x7fffdea14e50) at builtin-ftrace.c:682
+#2  0x000000000044a57b in __cmd_ftrace_record (argv=0x7fffdea15428, argc=<optimized out>, ftrace=0x7fffdea14e50) at builtin-ftrace.c:1535
+#3  cmd_ftrace (argc=2, argv=0x7fffdea15428, prefix=<optimized out>) at builtin-ftrace.c:1655
+#4  0x000000000041a763 in run_builtin (p=p@entry=0x7d58a0, argc=argc@entry=3, argv=argv@entry=0x7fffdea15428) at perf.c:320
+#5  0x0000000000419faf in handle_internal_command (argv=0x7fffdea15428, argc=3) at perf.c:377
+#6  run_argv (argv=0x7fffdea15210, argcp=0x7fffdea1521c) at perf.c:421
+#7  main (argc=3, argv=0x7fffdea15428) at perf.c:522
 
-if (test_bit(AS_FUSE_WRITEBACK, &mapping->flags))
-nr_dirty += global_page_state(NR_WRITEBACK_TEMP);
 
-Thanks,
-Maxim
-
->
-> Thanks,
-> Miklos
->
-> diff --git a/fs/fuse/inode.c b/fs/fuse/inode.c
-> index 137185c..195ee45 100644
-> --- a/fs/fuse/inode.c
-> +++ b/fs/fuse/inode.c
-> @@ -291,6 +291,7 @@ struct inode *fuse_iget(struct super_block *sb, u64 nodeid,
->   		inode->i_flags |= S_NOATIME|S_NOCMTIME;
->   		inode->i_generation = generation;
->   		inode->i_data.backing_dev_info = &fc->bdi;
-> +		set_bit(AS_STRICTLIMIT, &inode->i_data.flags);
->   		fuse_init_inode(inode, attr);
->   		unlock_new_inode(inode);
->   	} else if ((inode->i_mode ^ attr->mode) & S_IFMT) {
-> diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
-> index 0e38e13..97f6a0c 100644
-> --- a/include/linux/pagemap.h
-> +++ b/include/linux/pagemap.h
-> @@ -25,6 +25,7 @@ enum mapping_flags {
->   	AS_MM_ALL_LOCKS	= __GFP_BITS_SHIFT + 2,	/* under mm_take_all_locks() */
->   	AS_UNEVICTABLE	= __GFP_BITS_SHIFT + 3,	/* e.g., ramdisk, SHM_LOCK */
->   	AS_BALLOON_MAP  = __GFP_BITS_SHIFT + 4, /* balloon page special map */
-> +	AS_STRICTLIMIT	= __GFP_BITS_SHIFT + 5, /* strict dirty limit */
->   };
->   
->   static inline void mapping_set_error(struct address_space *mapping, int error)
-> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-> index efe6814..91a9e6e 100644
-> --- a/mm/page-writeback.c
-> +++ b/mm/page-writeback.c
-> @@ -1226,6 +1226,7 @@ static void balance_dirty_pages(struct address_space *mapping,
->   	unsigned long dirty_ratelimit;
->   	unsigned long pos_ratio;
->   	struct backing_dev_info *bdi = mapping->backing_dev_info;
-> +	int strictlimit = test_bit(AS_STRICTLIMIT, &mapping->flags);
->   	unsigned long start_time = jiffies;
->   
->   	for (;;) {
-> @@ -1250,7 +1251,7 @@ static void balance_dirty_pages(struct address_space *mapping,
->   		 */
->   		freerun = dirty_freerun_ceiling(dirty_thresh,
->   						background_thresh);
-> -		if (nr_dirty <= freerun) {
-> +		if (nr_dirty <= freerun && !strictlimit) {
->   			current->dirty_paused_when = now;
->   			current->nr_dirtied = 0;
->   			current->nr_dirtied_pause =
-> @@ -1297,7 +1298,7 @@ static void balance_dirty_pages(struct address_space *mapping,
->   		}
->   
->   		dirty_exceeded = (bdi_dirty > bdi_thresh) &&
-> -				  (nr_dirty > dirty_thresh);
-> +				  ((nr_dirty > dirty_thresh) || strictlimit);
->   		if (dirty_exceeded && !bdi->dirty_exceeded)
->   			bdi->dirty_exceeded = 1;
->   
->
->
-
+jirka
