@@ -1,66 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756045Ab3DZOvD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 10:51:03 -0400
-Received: from a10-48.smtp-out.amazonses.com ([54.240.10.48]:44118 "EHLO
-	a10-48.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755986Ab3DZOvA (ORCPT
+	id S1756138Ab3DZOwy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 10:52:54 -0400
+Received: from mail-bk0-f52.google.com ([209.85.214.52]:47635 "EHLO
+	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753642Ab3DZOww (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 10:51:00 -0400
-X-Greylist: delayed 506 seconds by postgrey-1.27 at vger.kernel.org; Fri, 26 Apr 2013 10:51:00 EDT
-Date: Fri, 26 Apr 2013 14:42:32 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Han Pingtian <hanpt@linux.vnet.ibm.com>
-cc: LKML <linux-kernel@vger.kernel.org>, mhocko@suse.cz, penberg@kernel.org,
-        rientjes@google.com, linux-mm@kvack.org
-Subject: Re: OOM-killer and strange RSS value in 3.9-rc7
-In-Reply-To: <20130426062436.GB4441@localhost.localdomain>
-Message-ID: <0000013e46cba821-d5c54c99-3b5c-4669-9a54-9fb8f4ee516f-000000@email.amazonses.com>
-References: <20130417094750.GB2672@localhost.localdomain> <20130417141909.GA24912@dhcp22.suse.cz> <20130418101541.GC2672@localhost.localdomain> <20130418175513.GA12581@dhcp22.suse.cz> <20130423131558.GH8001@dhcp22.suse.cz> <20130424044848.GI2672@localhost.localdomain>
- <20130424094732.GB31960@dhcp22.suse.cz> <0000013e3cb0340d-00f360e3-076b-478e-b94c-ddd4476196ce-000000@email.amazonses.com> <20130425060705.GK2672@localhost.localdomain> <0000013e427023d7-9456c313-8654-420c-b85a-cb79cc3c4ffc-000000@email.amazonses.com>
- <20130426062436.GB4441@localhost.localdomain>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 26 Apr 2013 10:52:52 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.04.26-54.240.10.48
+In-Reply-To: <20130426131532.GB13964@dyad.programming.kicks-ass.net>
+References: <1366910611-20048-1-git-send-email-vincent.guittot@linaro.org>
+	<1366910611-20048-9-git-send-email-vincent.guittot@linaro.org>
+	<20130426131532.GB13964@dyad.programming.kicks-ass.net>
+Date: Fri, 26 Apr 2013 16:52:50 +0200
+Message-ID: <CAKfTPtCJzoYNEDu4WJWs0LraL59r8ZDuavBv9rypRKJiX4ZL7g@mail.gmail.com>
+Subject: Re: [PATCH 08/14] sched: trig ILB on an idle buddy
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Paul Turner <pjt@google.com>, Santosh <santosh.shilimkar@ti.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Chander Kashyap <chander.kashyap@linaro.org>,
+        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        Alex Shi <alex.shi@intel.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Len Brown <len.brown@intel.com>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Lukasz Majewski <l.majewski@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 26 Apr 2013, Han Pingtian wrote:
-
-> Could you give me some hints about how to verify them? Only I can do is
-> adding two printk() statements to print the vaules in those two
-> functions:
-
-Ok thats good. nr->partial needs to be bigger than min_partial in order
-for frees to occur. So they do occur.
-
-> And looks like only printk() in __slab_free() is invoked. I got about 6764
-> lines of something like this:
+On 26 April 2013 15:15, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Thu, Apr 25, 2013 at 07:23:24PM +0200, Vincent Guittot wrote:
+>> If the buddy CPU is not full and currently idle, we trigger an Idle Load
+>> Balance to give it the opportunity to pull more tasks.
+>>
+>> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+>> ---
+>>  kernel/sched/fair.c |   24 ++++++++++++++++++++++++
+>>  1 file changed, 24 insertions(+)
+>>
+>> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+>> index 874f330..954adfd 100644
+>> --- a/kernel/sched/fair.c
+>> +++ b/kernel/sched/fair.c
+>> @@ -5776,6 +5776,26 @@ end:
+>>       clear_bit(NOHZ_BALANCE_KICK, nohz_flags(this_cpu));
+>>  }
+>>
+>> +static int check_nohz_buddy(int cpu)
+>> +{
+>> +     int buddy = per_cpu(sd_pack_buddy, cpu);
+>> +
+>> +     if (sysctl_sched_packing_mode != SCHED_PACKING_FULL)
+>> +             return false;
+>> +
+>> +     /* No pack buddy for this CPU */
+>> +     if (buddy == -1)
+>> +             return false;
+>> +
+>> +     if (is_buddy_full(buddy))
+>> +             return false;
+>> +
+>> +     if (cpumask_test_cpu(buddy, nohz.idle_cpus_mask))
+>> +             return true;
+>> +
+>> +     return false;
 >
-> --------------------------------------------------------------------------------
-> Apr 26 01:04:05 riblp3 kernel: [    6.969775] In __slab_free(); kmalloc-8192: n->nr_partial=2, s->min_partial=6
-> Apr 26 01:04:05 riblp3 kernel: [    6.970154] In __slab_free(); kmalloc-8192: n->nr_partial=3, s->min_partial=6
-> Apr 26 01:04:05 riblp3 kernel: [    6.979489] In __slab_free(); kmalloc-8192: n->nr_partial=4, s->min_partial=6
-> Apr 26 01:04:05 riblp3 kernel: [    6.979823] In __slab_free(); kmalloc-8192: n->nr_partial=5, s->min_partial=6
-> Apr 26 01:04:05 riblp3 kernel: [    9.500383] In __slab_free(); kmalloc-8192: n->nr_partial=7, s->min_partial=6
-> Apr 26 01:04:05 riblp3 kernel: [    9.509736] In __slab_free(); kmalloc-8192: n->nr_partial=7, s->min_partial=6
-> Apr 26 01:04:08 riblp3 kernel: [   42.314395] In __slab_free(); kmalloc-8192: n->nr_partial=100, s->min_partial=6
-> Apr 26 01:04:08 riblp3 kernel: [   42.410333] In __slab_free(); kmalloc-8192: n->nr_partial=100, s->min_partial=6
-> Apr 26 01:04:09 riblp3 kernel: [   43.411851] In __slab_free(); kmalloc-8192: n->nr_partial=339, s->min_partial=6
-> Apr 26 01:04:09 riblp3 kernel: [   43.411980] In __slab_free(); kmalloc-8192: n->nr_partial=338, s->min_partial=6
-> Apr 26 01:04:09 riblp3 kernel: [   43.412083] In __slab_free(); kmalloc-8192: n->nr_partial=337, s->min_partial=6
-> --------------------------------------------------------------------------------
-> The s->min_partial is always "6" and most of n->nr_partial is bigger than
-> its partner of the same line.
+> return cpumask_test_cpu(..); ?
 
-Thats the way it should be. But the mystery is still there. Why do the
-pages not get freed? Can you add a printk in __free_slab to verify that it
-actually gets called? Print s->name to see which slab is affected by the
-free.
+right
 
-Is there any way I can run a powerpc kernel that shows the issue on x86
-with an emulator?
+>
+>> +}
+>> +
+>>  /*
+>>   * Current heuristic for kicking the idle load balancer in the presence
+>>   * of an idle cpu is the system.
+>> @@ -5813,6 +5833,10 @@ static inline int nohz_kick_needed(struct rq *rq, int cpu)
+>>       if (rq->nr_running >= 2)
+>>               goto need_kick;
+>>
+>> +     /* the buddy is idle and not busy so we can pack */
+>> +     if (check_nohz_buddy(cpu))
+>> +             goto need_kick;
+>> +
+>>       rcu_read_lock();
+>>       for_each_domain(cpu, sd) {
+>>               struct sched_group *sg = sd->groups;
+>
+> Bah.. this code is so confusing.. nohz_balance_kick(cpu) won't actually kick
+> @cpu.
+>
+> Again.. suppose we're a big cpu (2) and our little buddy cpu (0) is busy, we
+> miss an opportunity to kick the other little cpu into gear (1) and maybe take
+> the big core out.
 
+You're right that we can miss an opportunity but it means that cpus
+allocated to packing effort are full and a new buddy cpu is going to
+be allocated and will pull the task a bit later.
+
+
+>
+>
