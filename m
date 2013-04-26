@@ -1,71 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932246Ab3DZUUx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 16:20:53 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:43051 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757751Ab3DZUUv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932392Ab3DZUVK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 16:21:10 -0400
+Received: from mail-ia0-f179.google.com ([209.85.210.179]:62233 "EHLO
+	mail-ia0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757755Ab3DZUUv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 26 Apr 2013 16:20:51 -0400
-Message-ID: <517AE16A.8090602@zytor.com>
-Date: Fri, 26 Apr 2013 13:19:54 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Kyungsik Lee <kyungsik.lee@lge.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, Rob Landley <rob@landley.net>,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org, x86@kernel.org,
-        celinux-dev@lists.celinuxforum.org, hyojun.im@lge.com,
-        chan.jeong@lge.com, raphael.andy.lee@gmail.com,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <rmk@arm.linux.org.uk>, Borislav Petkov <bp@alien8.de>,
-        Florian Fainelli <florian@openwrt.org>,
-        Yann Collet <yann.collet.73@gmail.com>
-Subject: Re: [PATCH -next] x86, doc: Add LZ4 magic number for the new compression
-References: <1366952933-31331-1-git-send-email-kyungsik.lee@lge.com>
-In-Reply-To: <1366952933-31331-1-git-send-email-kyungsik.lee@lge.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAErSpo5zfHR-agNBdgqfVjCU+-KcTZV+1bvML5Uw-+icDqzzEA@mail.gmail.com>
+References: <1366940841-15370-1-git-send-email-yinghai@kernel.org>
+	<CAErSpo5zfHR-agNBdgqfVjCU+-KcTZV+1bvML5Uw-+icDqzzEA@mail.gmail.com>
+Date: Fri, 26 Apr 2013 13:20:51 -0700
+X-Google-Sender-Auth: gVCxECKoSftnLgv_3tBbbfeddqg
+Message-ID: <CAE9FiQVEQO-dLJRjn9Z7JgwGWAn1M8S1Tn2_V0Fq+6kB0rG=Bg@mail.gmail.com>
+Subject: Re: [PATCH] PCI: Fix racing for pci device removing via sysfs
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Gu Zheng <guz.fnst@cn.fujitsu.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: multipart/mixed; boundary=e89a8f642e40784da104db494563
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/25/2013 10:08 PM, Kyungsik Lee wrote:
-> Documentation/x86/boot.txt is updated to list the LZ4 magic number.
-> This LZ4 magic number is used for the new compression format.
-> 
-> Signed-off-by: Kyungsik Lee <kyungsik.lee@lge.com>
-> Cc: "H. Peter Anvin" <hpa@zytor.com>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Russell King <rmk@arm.linux.org.uk>
-> Cc: Borislav Petkov <bp@alien8.de>
-> Cc: Florian Fainelli <florian@openwrt.org>
-> Cc: Yann Collet <yann.collet.73@gmail.com>
-> ---
->  Documentation/x86/boot.txt | 7 ++++---
->  1 file changed, 4 insertions(+), 3 deletions(-)
-> 
-> diff --git a/Documentation/x86/boot.txt b/Documentation/x86/boot.txt
-> index 3840b6f..fc66d42 100644
-> --- a/Documentation/x86/boot.txt
-> +++ b/Documentation/x86/boot.txt
-> @@ -657,9 +657,10 @@ Protocol:	2.08+
->    uncompressed data should be determined using the standard magic
->    numbers.  The currently supported compression formats are gzip
->    (magic numbers 1F 8B or 1F 9E), bzip2 (magic number 42 5A), LZMA
-> -  (magic number 5D 00), and XZ (magic number FD 37).  The uncompressed
-> -  payload is currently always ELF (magic number 7F 45 4C 46).
-> -  
-> +  (magic number 5D 00), XZ (magic number FD 37), and LZ4 (magic number
-> +  02 21).  The uncompressed payload is currently always ELF (magic
-> +  number 7F 45 4C 46).
-> +
->  Field name:	payload_length
->  Type:		read
->  Offset/size:	0x24c/4
-> 
+--e89a8f642e40784da104db494563
+Content-Type: text/plain; charset=ISO-8859-1
 
-Acked-by: H. Peter Anvin <hpa@linux.intel.com>
+On Fri, Apr 26, 2013 at 9:28 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> This is a gross hack.  Iterating through all known pci_devs to see if
+> this one still exists?
+>
+> I reproduced the original problem, applied this patch, and verified
+> that it avoids the original crash.
+>
+> However, it's still incorrect because now you're looking at pdev after
+> it's been freed. With CONFIG_SLUB_DEBUG_ON=y, the removal still causes
+> a crash in remove_callback().
+>
 
+Yes, there is small window, that could have bus and dev get freed...
+
+Please check attached that should address your concerns.
+
+Thanks
+
+Yinghai
+
+--e89a8f642e40784da104db494563
+Content-Type: application/octet-stream; name="remove_callback_clean.patch"
+Content-Disposition: attachment; filename="remove_callback_clean.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hfzt0u3n0
+
+U3ViamVjdDogW1BBVENIXSBQQ0ksIHN5c2ZzOiBDbGVhbiB1cCByZXNjYW4gd2l0aCBzY2hlZHVs
+ZV9jYWxsYmFjawoKQ2hhbmdlIHRvIHVzZSB0aHJlZSByZXR1cm4gYWNjb3JkaW5nIHRvIEJqb3Ju
+LgoKU3VnZ2VzdGVkLWJ5OiBCam9ybiBIZWxnYWFzIDxiaGVsZ2Fhc0Bnb29nbGUuY29tPgpTaWdu
+ZWQtb2ZmLWJ5OiBZaW5naGFpIEx1IDx5aW5naGFpQGtlcm5lbC5vcmc+CgotLS0KIGRyaXZlcnMv
+cGNpL3BjaS1zeXNmcy5jIHwgICAxMyArKysrKysrKy0tLS0tCiAxIGZpbGUgY2hhbmdlZCwgOCBp
+bnNlcnRpb25zKCspLCA1IGRlbGV0aW9ucygtKQoKSW5kZXg6IGxpbnV4LTIuNi9kcml2ZXJzL3Bj
+aS9wY2ktc3lzZnMuYwo9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09Ci0tLSBsaW51eC0yLjYub3JpZy9kcml2ZXJzL3BjaS9w
+Y2ktc3lzZnMuYworKysgbGludXgtMi42L2RyaXZlcnMvcGNpL3BjaS1zeXNmcy5jCkBAIC0zMzks
+MTkgKzMzOSwyMiBAQCBzdGF0aWMgc3NpemVfdAogcmVtb3ZlX3N0b3JlKHN0cnVjdCBkZXZpY2Ug
+KmRldiwgc3RydWN0IGRldmljZV9hdHRyaWJ1dGUgKmR1bW15LAogCSAgICAgY29uc3QgY2hhciAq
+YnVmLCBzaXplX3QgY291bnQpCiB7Ci0JaW50IHJldCA9IDA7CisJaW50IGVycjsKIAl1bnNpZ25l
+ZCBsb25nIHZhbDsKIAogCWlmIChzdHJpY3Rfc3RydG91bChidWYsIDAsICZ2YWwpIDwgMCkKIAkJ
+cmV0dXJuIC1FSU5WQUw7CiAKKwlpZiAoIXZhbCkKKwkJcmV0dXJuIGNvdW50OworCiAJLyogQW4g
+YXR0cmlidXRlIGNhbm5vdCBiZSB1bnJlZ2lzdGVyZWQgYnkgb25lIG9mIGl0cyBvd24gbWV0aG9k
+cywKIAkgKiBzbyB3ZSBoYXZlIHRvIHVzZSB0aGlzIHJvdW5kYWJvdXQgYXBwcm9hY2guCiAJICov
+Ci0JaWYgKHZhbCkKLQkJcmV0ID0gZGV2aWNlX3NjaGVkdWxlX2NhbGxiYWNrKGRldiwgcmVtb3Zl
+X2NhbGxiYWNrKTsKLQlpZiAocmV0KQotCQljb3VudCA9IHJldDsKKwllcnIgPSBkZXZpY2Vfc2No
+ZWR1bGVfY2FsbGJhY2soZGV2LCByZW1vdmVfY2FsbGJhY2spOworCWlmIChlcnIpCisJCXJldHVy
+biBlcnI7CisKIAlyZXR1cm4gY291bnQ7CiB9CiAK
+--e89a8f642e40784da104db494563
+Content-Type: application/octet-stream; name="fix_racing_removing_2.patch"
+Content-Disposition: attachment; filename="fix_racing_removing_2.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hfzt1si61
+
+U3ViamVjdDogW1BBVENIIC12Ml0gUENJOiBGaXggcmFjaW5nIGZvciBwY2kgZGV2aWNlIHJlbW92
+aW5nIHZpYSBzeXNmcwpGcm9tOiBZaW5naGFpIEx1IDx5aW5naGFpQGtlcm5lbC5vcmc+CgpHdSBm
+b3VuZCBuZXN0ZWQgcmVtb3ZpbmcgdGhyb3VnaAoJZWNobyAtbiAxID4gL3N5cy9idXMvcGNpL2Rl
+dmljZXMvMDAwMFw6MTBcOjAwLjAvcmVtb3ZlIDsgZWNobyAtbiAxID4KL3N5cy9idXMvcGNpL2Rl
+dmljZXMvMDAwMFw6MWFcOjAxLjAvcmVtb3ZlCgp3aWxsIGNhdXNlIGtlcm5lbCBjcmFzaCBhcyBi
+dXMgZ2V0IGZyZWVkLgoKWyAgNDE4Ljk0NjQ2Ml0gQ1BVIDQKWyAgNDE4Ljk2ODM3N10gUGlkOiA1
+MTIsIGNvbW06IGt3b3JrZXIvdToyIFRhaW50ZWQ6IEcgICAgICAgIFcgICAgMy44LjAgIzIKRlVK
+SVRTVS1TViBQUklNRVFVRVNUIDE4MDBFL1NCClsgIDQxOS4wODE3NjNdIFJJUDogMDAxMDpbPGZm
+ZmZmZmZmODEzNzk3MmU+XSAgWzxmZmZmZmZmZjgxMzc5NzJlPl0KcGNpX2J1c19yZWFkX2NvbmZp
+Z193b3JkKzB4NWUvMHg5MApbICA0MjAuNDk0MTM3XSBDYWxsIFRyYWNlOgpbICA0MjAuNTIzMzI2
+XSAgWzxmZmZmZmZmZjgxMzg1MWVmPl0gPyByZW1vdmVfY2FsbGJhY2srMHgxZi8weDQwClsgIDQy
+MC41OTE5ODRdICBbPGZmZmZmZmZmODEzODA0NGI+XSBwY2lfcG1lX2FjdGl2ZSsweDRiLzB4MWMw
+ClsgIDQyMC42NTg1NDVdICBbPGZmZmZmZmZmODEzN2Q4ZTc+XSBwY2lfc3RvcF9idXNfZGV2aWNl
+KzB4NTcvMHhiMApbICA0MjAuNzI5MjU5XSAgWzxmZmZmZmZmZjgxMzdkYWI2Pl0gcGNpX3N0b3Bf
+YW5kX3JlbW92ZV9idXNfZGV2aWNlKzB4MTYvMHgzMApbICA0MjAuODExMzkyXSAgWzxmZmZmZmZm
+ZjgxMzg1MWZiPl0gcmVtb3ZlX2NhbGxiYWNrKzB4MmIvMHg0MApbICA0MjAuODc3OTU1XSAgWzxm
+ZmZmZmZmZjgxMjU3YTU2Pl0gc3lzZnNfc2NoZWR1bGVfY2FsbGJhY2tfd29yaysweDI2LzB4NzAK
+Cmh0dHBzOi8vYnVnemlsbGEua2VybmVsLm9yZy9zaG93X2J1Zy5jZ2k/aWQ9NTQ0MTEKCldlIGhh
+dmUgb25lIHBhdGNoIHRoYXQgd2lsbCBsZXQgZGV2aWNlIGhvbGQgYnVzIHJlZiB0byBwcmV2ZW50
+IGl0IGZyb20KYmVpbmcgZnJlZWQsIGJ1dCB0aGF0IHdpbGwgc3RpbGwgZ2VuZXJhdGUgd2Fybmlu
+Zy4KCi0tLS0tLS0tLS0tLVsgY3V0IGhlcmUgXS0tLS0tLS0tLS0tLQpXQVJOSU5HOiBhdCBsaWIv
+bGlzdF9kZWJ1Zy5jOjUzIF9fbGlzdF9kZWxfZW50cnkrMHg2My8weGQwKCkKSGFyZHdhcmUgbmFt
+ZTogUFJJTUVRVUVTVCAxODAwRQpsaXN0X2RlbCBjb3JydXB0aW9uLCBmZmZmODgwN2QxYjZjMDAw
+LT5uZXh0IGlzIExJU1RfUE9JU09OMSAoZGVhZDAwMDAwMDEwMDEwMCkKQ2FsbCBUcmFjZToKIFs8
+ZmZmZmZmZmY4MTA1NmQ0Zj5dIHdhcm5fc2xvd3BhdGhfY29tbW9uKzB4N2YvMHhjMAogWzxmZmZm
+ZmZmZjgxMDU2ZTQ2Pl0gd2Fybl9zbG93cGF0aF9mbXQrMHg0Ni8weDUwCiBbPGZmZmZmZmZmODEy
+ODBiMTM+XSBfX2xpc3RfZGVsX2VudHJ5KzB4NjMvMHhkMAogWzxmZmZmZmZmZjgxMjgwYjkxPl0g
+bGlzdF9kZWwrMHgxMS8weDQwCiBbPGZmZmZmZmZmODEyOTgzMzE+XSBwY2lfZGVzdHJveV9kZXYr
+MHgzMS8weGMwCiBbPGZmZmZmZmZmODEyOTg1YmI+XSBwY2lfcmVtb3ZlX2J1c19kZXZpY2UrMHg1
+Yi8weDcwCiBbPGZmZmZmZmZmODEyOTg1ZWU+XSBwY2lfc3RvcF9hbmRfcmVtb3ZlX2J1c19kZXZp
+Y2UrMHgxZS8weDMwCiBbPGZmZmZmZmZmODEyOWZjODk+XSByZW1vdmVfY2FsbGJhY2srMHgyOS8w
+eDQwCiBbPGZmZmZmZmZmODExZjNiODQ+XSBzeXNmc19zY2hlZHVsZV9jYWxsYmFja193b3JrKzB4
+MjQvMHg3MAoKV2UgY2FuIGp1c3QgY2hlY2sgaWYgdGhlIGRldmljZSBnZXQgcmVtb3ZlZCBmcm9t
+IHBjaSB0cmVlCmFscmVhZHkgaW4gdGhlIHByb3RlY3Rpb24gdW5kZXIgcGNpX3JlbW92ZV9yZXNj
+YW5fbXV0ZXguCgotdjI6IGNoZWNrIGlmIHRoZSBkZXYtPmJ1c19saXN0IGlzIHBvaXNvbmVkIGlu
+c3RlYWQgdG8KICAgICBmaW5kIG91dCBpZiBpdCBpcyByZW1vdmVkIGFscmVhZHkuCiAgICAgQWxz
+byBhZGQgb25lIGV4dHJhIHJlZiB0byBkZXYgdG8gbWFrZSBzdXJlIGRldiBpcyBub3QKICAgICBn
+ZXQgZnJlZWQgdG9vIGVhcmx5LgoKUmVwb3J0ZWQtYnk6IEd1IFpoZW5nIDxndXouZm5zdEBjbi5m
+dWppdHN1LmNvbT4KVGVzdGVkLWJ5OiBHdSBaaGVuZyA8Z3V6LmZuc3RAY24uZnVqaXRzdS5jb20+
+ClNpZ25lZC1vZmYtYnk6IFlpbmdoYWkgTHUgPHlpbmdoYWlAa2VybmVsLm9yZz4KCi0tLQogZHJp
+dmVycy9wY2kvcGNpLXN5c2ZzLmMgfCAgIDEyICsrKysrKysrKystLQogMSBmaWxlIGNoYW5nZWQs
+IDEwIGluc2VydGlvbnMoKyksIDIgZGVsZXRpb25zKC0pCgpJbmRleDogbGludXgtMi42L2RyaXZl
+cnMvcGNpL3BjaS1zeXNmcy5jCj09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KLS0tIGxpbnV4LTIuNi5vcmlnL2RyaXZlcnMv
+cGNpL3BjaS1zeXNmcy5jCisrKyBsaW51eC0yLjYvZHJpdmVycy9wY2kvcGNpLXN5c2ZzLmMKQEAg
+LTMyOSw5ICszMjksMTMgQEAgZGV2X3Jlc2Nhbl9zdG9yZShzdHJ1Y3QgZGV2aWNlICpkZXYsIHN0
+cgogc3RhdGljIHZvaWQgcmVtb3ZlX2NhbGxiYWNrKHN0cnVjdCBkZXZpY2UgKmRldikKIHsKIAlz
+dHJ1Y3QgcGNpX2RldiAqcGRldiA9IHRvX3BjaV9kZXYoZGV2KTsKKwlib29sIGZvdW5kOwogCiAJ
+bXV0ZXhfbG9jaygmcGNpX3JlbW92ZV9yZXNjYW5fbXV0ZXgpOwotCXBjaV9zdG9wX2FuZF9yZW1v
+dmVfYnVzX2RldmljZShwZGV2KTsKKwlmb3VuZCA9IHBkZXYtPmJ1c19saXN0Lm5leHQgIT0gTElT
+VF9QT0lTT04xOworCXBjaV9kZXZfcHV0KHBkZXYpOworCWlmIChmb3VuZCkKKwkJcGNpX3N0b3Bf
+YW5kX3JlbW92ZV9idXNfZGV2aWNlKHBkZXYpOwogCW11dGV4X3VubG9jaygmcGNpX3JlbW92ZV9y
+ZXNjYW5fbXV0ZXgpOwogfQogCkBAIC0zNDEsNiArMzQ1LDcgQEAgcmVtb3ZlX3N0b3JlKHN0cnVj
+dCBkZXZpY2UgKmRldiwgc3RydWN0CiB7CiAJaW50IGVycjsKIAl1bnNpZ25lZCBsb25nIHZhbDsK
+KwlzdHJ1Y3QgcGNpX2RldiAqcGRldjsKIAogCWlmIChzdHJpY3Rfc3RydG91bChidWYsIDAsICZ2
+YWwpIDwgMCkKIAkJcmV0dXJuIC1FSU5WQUw7CkBAIC0zNTEsOSArMzU2LDEyIEBAIHJlbW92ZV9z
+dG9yZShzdHJ1Y3QgZGV2aWNlICpkZXYsIHN0cnVjdAogCS8qIEFuIGF0dHJpYnV0ZSBjYW5ub3Qg
+YmUgdW5yZWdpc3RlcmVkIGJ5IG9uZSBvZiBpdHMgb3duIG1ldGhvZHMsCiAJICogc28gd2UgaGF2
+ZSB0byB1c2UgdGhpcyByb3VuZGFib3V0IGFwcHJvYWNoLgogCSAqLworCXBkZXYgPSBwY2lfZGV2
+X2dldCh0b19wY2lfZGV2KGRldikpOwogCWVyciA9IGRldmljZV9zY2hlZHVsZV9jYWxsYmFjayhk
+ZXYsIHJlbW92ZV9jYWxsYmFjayk7Ci0JaWYgKGVycikKKwlpZiAoZXJyKSB7CisJCXBjaV9kZXZf
+cHV0KHBkZXYpOwogCQlyZXR1cm4gZXJyOworCX0KIAogCXJldHVybiBjb3VudDsKIH0K
+--e89a8f642e40784da104db494563--
