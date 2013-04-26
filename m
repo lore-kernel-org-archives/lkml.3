@@ -1,75 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756784Ab3DZRV1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 13:21:27 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:34523
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755592Ab3DZRVZ (ORCPT
+	id S1756803Ab3DZRax (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 13:30:53 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:38528 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754814Ab3DZRau (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 13:21:25 -0400
-Date: Fri, 26 Apr 2013 19:19:49 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Simon Horman <horms@verge.net.au>, Eric Dumazet <eric.dumazet@gmail.com>,
-        Julian Anastasov <ja@ssi.bg>, Ingo Molnar <mingo@redhat.com>,
-        lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
-        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Dipankar Sarma <dipankar@in.ibm.com>, dhaval.giani@gmail.com
-Subject: Re: [PATCH 2/2] ipvs: Use cond_resched_rcu_lock() helper when
- dumping connections
-Message-ID: <20130426171948.GA31467@dyad.programming.kicks-ass.net>
-References: <1366940708-10180-1-git-send-email-horms@verge.net.au>
- <1366940708-10180-3-git-send-email-horms@verge.net.au>
- <20130426080313.GC8669@dyad.programming.kicks-ass.net>
- <20130426154547.GC3860@linux.vnet.ibm.com>
+	Fri, 26 Apr 2013 13:30:50 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130426154547.GC3860@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Reply-To: sedat.dilek@gmail.com
+Date: Fri, 26 Apr 2013 19:30:46 +0200
+Message-ID: <CA+icZUVCmFeh3Xna37VJDDzvZ34sYJ_Dser7i5rRzGLhMTi5-Q@mail.gmail.com>
+Subject: Re: linux-next: Tree for Apr 26 [ bluetooth on suspend/resume ]
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-bluetooth@vger.kernel.org, Marcel Holtmann <marcel@holtmann.org>,
+        Gustavo Padovan <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        Linux PM List <linux-pm@lists.linux-foundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 26, 2013 at 08:45:47AM -0700, Paul E. McKenney wrote:
-> On Fri, Apr 26, 2013 at 10:03:13AM +0200, Peter Zijlstra wrote:
-> > On Fri, Apr 26, 2013 at 10:45:08AM +0900, Simon Horman wrote:
-> > 
-> > > @@ -975,8 +975,7 @@ static void *ip_vs_conn_array(struct seq_file *seq, loff_t pos)
-> > >  				return cp;
-> > >  			}
-> > >  		}
-> > > -		rcu_read_unlock();
-> > > -		rcu_read_lock();
-> > > +		cond_resched_rcu_lock();
-> > >  	}
-> > 
-> > 
-> > While I agree with the sentiment I do find it a somewhat dangerous construct in
-> > that it might become far too easy to keep an RCU reference over this break and
-> > thus violate the RCU premise.
-> > 
-> > Is there anything that can detect this? Sparse / cocinelle / smatch? If so it
-> > would be great to add this to these checkers.
-> 
-> I have done some crude coccinelle patterns in the past, but they are
-> subject to false positives (from when you transfer the pointer from
-> RCU protection to reference-count protection) and also false negatives
-> (when you atomically increment some statistic unrelated to protection).
-> 
-> I could imagine maintaining a per-thread count of the number of outermost
-> RCU read-side critical sections at runtime, and then associating that
-> counter with a given pointer at rcu_dereference() time, but this would
-> require either compiler magic or an API for using a pointer returned
-> by rcu_dereference().  This API could in theory be enforced by sparse.
+On Fri, Apr 26, 2013 at 10:03 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi all,
+>
+> Changes since 20130424:
+>
+> Removed tree: ppc-temp (remerged into powerpc)
+>
+> The net-next tree gained conflicts against the net and pci trees and a
+> build failure for which I applied a merge fix patch.
+>
+> The omap_dss2 tree gained a build failure so I used the version from
+> next-20130424.
+>
+> The trivial tree gained a conflict against the arm tree.
+>
+> The staging tree still had its build failure for which I applied a
+> supplied patch.
+>
+> The arm-soc tree gained a conflict against the spi-mb tree.
+>
+> The renesas tree gained a conflict against the input tree.
+>
 
-Luckily cond_resched_rcu_lock() will typically only occur within loops, and
-loops tend to be contained in a single sourcefile.
+[ CC linux-bluetooth + linux-pm folks ]
 
-This would suggest a simple static checker should be able to tell without too
-much magic right? All it needs to do is track pointers returned from
-rcu_dereference*() and see if they're used after cond_resched_rcu_lock().
+I see the following:
 
-Also, cond_resched_rcu_lock() will only drop a single level of RCU refs; so
-that should be easier still.
+[  176.667799] PM: Syncing filesystems ... done.
+[  176.670014] PM: Preparing system for mem sleep
+[  176.670422] Freezing user space processes ...
+[  196.656719] Freezing of tasks failed after 20.00 seconds (1 tasks
+refusing to freeze, wq_busy=0):
+[  196.656728] bluetoothd      D ffffffff8180d8c0     0  1012    863 0x00000004
+[  196.656731]  ffff88008fdb3cc8 0000000000000046 ffff8800926530d0
+0000020000000000
+[  196.656735]  ffff88008feca200 ffff88008fdb3fd8 ffff88008fdb3fd8
+ffff88008fdb3fd8
+[  196.656738]  ffff880119f78300 ffff88008feca200 ffff88008fdb3cf8
+ffff880095281950
+[  196.656741] Call Trace:
+[  196.656749]  [<ffffffff816cfc99>] schedule+0x29/0x70
+[  196.656752]  [<ffffffff816cff9e>] schedule_preempt_disabled+0xe/0x10
+[  196.656754]  [<ffffffff816ce075>] __mutex_lock_slowpath+0x125/0x2f0
+[  196.656757]  [<ffffffff816ce25e>] mutex_lock+0x1e/0x40
+[  196.656773]  [<ffffffffa016f8b1>] hci_dev_open+0x51/0x2e0 [bluetooth]
+[  196.656780]  [<ffffffffa0182752>] hci_sock_ioctl+0x1f2/0x3f0 [bluetooth]
+[  196.656783]  [<ffffffff815c6050>] sock_do_ioctl+0x30/0x70
+[  196.656786]  [<ffffffff815c75f9>] sock_ioctl+0x79/0x2f0
+[  196.656790]  [<ffffffff811a8046>] do_vfs_ioctl+0x96/0x560
+[  196.656794]  [<ffffffff811a85a1>] SyS_ioctl+0x91/0xb0
+[  196.656797]  [<ffffffff816d989d>] system_call_fastpath+0x1a/0x1f
+[  196.656811]
+[  196.656812] Restarting tasks ... done.
