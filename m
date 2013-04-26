@@ -1,113 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756919Ab3DZFVn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 01:21:43 -0400
-Received: from mail-ia0-f175.google.com ([209.85.210.175]:35696 "EHLO
-	mail-ia0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753059Ab3DZFVm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 01:21:42 -0400
-Message-ID: <517A0ED8.6000404@gmail.com>
-Date: Fri, 26 Apr 2013 13:21:28 +0800
-From: Will Huck <will.huckk@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S1755124Ab3DZFXV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 01:23:21 -0400
+Received: from mga02.intel.com ([134.134.136.20]:58747 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751414Ab3DZFXS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Apr 2013 01:23:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,554,1363158000"; 
+   d="scan'208";a="326083560"
+Message-ID: <517A0FA1.3040406@intel.com>
+Date: Fri, 26 Apr 2013 13:24:49 +0800
+From: Aaron Lu <aaron.lu@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Frantisek Hrbata <fhrbata@redhat.com>, hpa@zytor.com
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org, tglx@linutronix.de,
-        mingo@redhat.com, x86@kernel.org, oleg@redhat.com,
-        kamaleshb@in.ibm.com, hechjie@cn.ibm.com
-Subject: Re: [PATCH] x86: add phys addr validity check for /dev/mem mmap
-References: <1364905733-23937-1-git-send-email-fhrbata@redhat.com>
-In-Reply-To: <1364905733-23937-1-git-send-email-fhrbata@redhat.com>
+To: Chun-Yi Lee <joeyli.kernel@gmail.com>
+CC: mjg@redhat.com, rjw@sisk.pl, platform-driver-x86@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Lee, Chun-Yi" <jlee@suse.com>,
+        Carlos Corbacho <carlos@strangeworlds.co.uk>,
+        Dmitry Torokhov <dtor@mail.ru>, Corentin Chary <corentincj@iksaif.net>,
+        Thomas Renninger <trenn@suse.de>
+Subject: Re: [PATCH 1/2] acpi: video: add function to support unregister backlight
+References: <1366634355-26482-1-git-send-email-jlee@suse.com> <1366634355-26482-2-git-send-email-jlee@suse.com>
+In-Reply-To: <1366634355-26482-2-git-send-email-jlee@suse.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
-On 04/02/2013 08:28 PM, Frantisek Hrbata wrote:
-> When CR4.PAE is set, the 64b PTE's are used(ARCH_PHYS_ADDR_T_64BIT is set for
-> X86_64 || X86_PAE). According to [1] Chapter 4 Paging, some higher bits in 64b
-> PTE are reserved and have to be set to zero. For example, for IA-32e and 4KB
-> page [1] 4.5 IA-32e Paging: Table 4-19, bits 51-M(MAXPHYADDR) are reserved. So
-> for a CPU with e.g. 48bit phys addr width, bits 51-48 have to be zero. If one of
-> the reserved bits is set, [1] 4.7 Page-Fault Exceptions, the #PF is generated
-> with RSVD error code.
+On 04/22/2013 08:39 PM, Chun-Yi Lee wrote:
+> From: "Lee, Chun-Yi" <jlee@suse.com>
 >
-> <quote>
-> RSVD flag (bit 3).
-> This flag is 1 if there is no valid translation for the linear address because a
-> reserved bit was set in one of the paging-structure entries used to translate
-> that address. (Because reserved bits are not checked in a paging-structure entry
-> whose P flag is 0, bit 3 of the error code can be set only if bit 0 is also
-> set.)
-> </quote>
+> There have situation we unregister whole acpi/video driver by downstream driver
+> just want to remove backlight control interface of acpi/video. It caues we lost
+> other functions of acpi/video, e.g. transfer acpi event to input event.
 >
-> In mmap_mem() the first check is valid_mmap_phys_addr_range(), but it always
-> returns 1 on x86. So it's possible to use any pgoff we want and to set the PTE's
-> reserved bits in remap_pfn_range(). Meaning there is a possibility to use mmap
-
-In this case, remap_pfn_range() setup the map and reserved bits for mmio 
-memory, so the mmio memory is already populated, why trigger #PF?
-
-> on /dev/mem and cause system panic. It's probably not that serious, because
-> access to /dev/mem is limited and the system has to have panic_on_oops set, but
-> still I think we should check this and return error.
+> So, this patch add a new function, find_video_unregister_backlight, it provide
+> the interface let downstream driver can tell acpi/video to unregister backlight
+> interface of all acpi video devices. Then we can keep functions of acpi/video
+> but only remove backlight support.
 >
-> This patch adds check for x86 when ARCH_PHYS_ADDR_T_64BIT is set, the same way
-> as it is already done in e.g. ioremap. With this fix mmap returns -EINVAL if the
-> requested phys addr is bigger then the supported phys addr width.
+> Reference: bko#35622
+>          https://bugzilla.kernel.org/show_bug.cgi?id=35622
 >
-> [1] Intel 64 and IA-32 Architectures Software Developer's Manual, Volume 3A
->
-> Signed-off-by: Frantisek Hrbata <fhrbata@redhat.com>
+> Tested-by: Andrzej Krentosz <endrjux@gmail.com>
+> Cc: Carlos Corbacho <carlos@strangeworlds.co.uk>
+> Cc: Matthew Garrett <mjg@redhat.com>
+> Cc: Dmitry Torokhov <dtor@mail.ru>
+> Cc: Corentin Chary <corentincj@iksaif.net>
+> Cc: Rafael J. Wysocki <rjw@sisk.pl>
+> Cc: Aaron Lu <aaron.lu@intel.com>
+> Cc: Thomas Renninger <trenn@suse.de>
+> Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
 > ---
->   arch/x86/include/asm/io.h |  4 ++++
->   arch/x86/mm/mmap.c        | 13 +++++++++++++
->   2 files changed, 17 insertions(+)
+>   drivers/acpi/video.c | 46 ++++++++++++++++++++++++++++++++++++++++++++++
+>   include/acpi/video.h |  2 ++
+>   2 files changed, 48 insertions(+)
 >
-> diff --git a/arch/x86/include/asm/io.h b/arch/x86/include/asm/io.h
-> index d8e8eef..39607c6 100644
-> --- a/arch/x86/include/asm/io.h
-> +++ b/arch/x86/include/asm/io.h
-> @@ -242,6 +242,10 @@ static inline void flush_write_buffers(void)
->   #endif
+> diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
+> index 313f959..acd2e7a 100644
+> --- a/drivers/acpi/video.c
+> +++ b/drivers/acpi/video.c
+> @@ -1793,6 +1793,52 @@ static int __init intel_opregion_present(void)
+>   	return opregion;
 >   }
->   
-> +#define ARCH_HAS_VALID_PHYS_ADDR_RANGE
-> +extern int valid_phys_addr_range(phys_addr_t addr, size_t count);
-> +extern int valid_mmap_phys_addr_range(unsigned long pfn, size_t count);
-> +
->   #endif /* __KERNEL__ */
->   
->   extern void native_io_delay(void);
-> diff --git a/arch/x86/mm/mmap.c b/arch/x86/mm/mmap.c
-> index 845df68..92ec31c 100644
-> --- a/arch/x86/mm/mmap.c
-> +++ b/arch/x86/mm/mmap.c
-> @@ -31,6 +31,8 @@
->   #include <linux/sched.h>
->   #include <asm/elf.h>
->   
-> +#include "physaddr.h"
-> +
->   struct __read_mostly va_alignment va_align = {
->   	.flags = -1,
->   };
-> @@ -122,3 +124,14 @@ void arch_pick_mmap_layout(struct mm_struct *mm)
->   		mm->unmap_area = arch_unmap_area_topdown;
->   	}
->   }
-> +
-> +int valid_phys_addr_range(phys_addr_t addr, size_t count)
+>
+> +static acpi_status
+> +find_video_unregister_backlight(acpi_handle handle, u32 lvl, void *context,
+> +				void **rv)
 > +{
-> +	return addr + count <= __pa(high_memory);
+> +	struct acpi_device *acpi_dev;
+> +	struct acpi_video_bus *video = NULL;
+> +	struct acpi_video_device *dev, *next;
+> +
+> +	if (acpi_bus_get_device(handle, &acpi_dev))
+> +		return AE_OK;
+> +
+> +	if (!acpi_match_device_ids(acpi_dev, video_device_ids)) {
+> +		video = acpi_driver_data(acpi_dev);
+> +		acpi_video_bus_stop_devices(video);
+> +		mutex_lock(&video->device_list_lock);
+> +		list_for_each_entry_safe(dev, next, &video->video_device_list,
+> +					entry) {
+> +			if (dev->backlight) {
+> +				backlight_device_unregister(dev->backlight);
+> +				dev->backlight = NULL;
+> +				kfree(dev->brightness->levels);
+> +				kfree(dev->brightness);
+> +			}
+
+The cooling_dev should also be unregistered I think.
+
+Thanks,
+Aaron
+
+> +		}
+> +		mutex_unlock(&video->device_list_lock);
+> +		acpi_video_bus_start_devices(video);
+> +	}
+> +	return AE_OK;
 > +}
 > +
-> +int valid_mmap_phys_addr_range(unsigned long pfn, size_t count)
+> +void acpi_video_backlight_unregister(void)
 > +{
-> +	resource_size_t addr = (pfn << PAGE_SHIFT) + count;
-> +	return phys_addr_valid(addr);
+> +	if (!register_count) {
+> +		/*
+> +		 * If the acpi video bus is already unloaded, don't
+> +		 * unregister backlight of devices and return directly.
+> +		 */
+> +		return;
+> +	}
+> +	acpi_walk_namespace(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT,
+> +			    ACPI_UINT32_MAX, find_video_unregister_backlight,
+> +			    NULL, NULL, NULL);
+> +	return;
 > +}
+> +EXPORT_SYMBOL(acpi_video_backlight_unregister);
+> +
+>   int acpi_video_register(void)
+>   {
+>   	int result = 0;
+> diff --git a/include/acpi/video.h b/include/acpi/video.h
+> index 61109f2..1e810a1 100644
+> --- a/include/acpi/video.h
+> +++ b/include/acpi/video.h
+> @@ -19,11 +19,13 @@ struct acpi_device;
+>   #if (defined CONFIG_ACPI_VIDEO || defined CONFIG_ACPI_VIDEO_MODULE)
+>   extern int acpi_video_register(void);
+>   extern void acpi_video_unregister(void);
+> +extern void acpi_video_backlight_unregister(void);
+>   extern int acpi_video_get_edid(struct acpi_device *device, int type,
+>   			       int device_id, void **edid);
+>   #else
+>   static inline int acpi_video_register(void) { return 0; }
+>   static inline void acpi_video_unregister(void) { return; }
+> +static inline void acpi_video_backlight_unregister(void) { return; }
+>   static inline int acpi_video_get_edid(struct acpi_device *device, int type,
+>   				      int device_id, void **edid)
+>   {
+>
 
