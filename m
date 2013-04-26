@@ -1,81 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759910Ab3DZKhq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 06:37:46 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:63070 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751103Ab3DZKhp (ORCPT
+	id S1759913Ab3DZKiM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 06:38:12 -0400
+Received: from mail-da0-f50.google.com ([209.85.210.50]:62737 "EHLO
+	mail-da0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759914Ab3DZKiJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 06:37:45 -0400
-MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CA+icZUVOfB2JuL1xh1EO1hTP_eOkntYFKsUJ0Zp6VZqn09NABA@mail.gmail.com>
-References: <20130426180357.7599d1b6b7965470905dcdf3@canb.auug.org.au>
-	<CA+icZUWt_W5FUQgQ2TFoQU0df+sAbxZZE8AcD16T3f_fiTD9DQ@mail.gmail.com>
-	<517A4FC1.3070605@suse.cz>
-	<20130426100435.GA28733@sepie.suse.cz>
-	<CA+icZUVOfB2JuL1xh1EO1hTP_eOkntYFKsUJ0Zp6VZqn09NABA@mail.gmail.com>
-Date: Fri, 26 Apr 2013 12:37:43 +0200
-Message-ID: <CA+icZUWNVEsiTs6u_2R9krb45ub4t-pZj_VEPRmrX2c4DzwfmA@mail.gmail.com>
-Subject: Re: linux-next: Tree for Apr 26
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Michal Marek <mmarek@suse.cz>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
-        "Yann E. MORIN" <yann.morin.1998@free.fr>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 26 Apr 2013 06:38:09 -0400
+From: Amit Daniel Kachhap <amit.daniel@samsung.com>
+To: linux-pm@vger.kernel.org
+Cc: Zhang Rui <rui.zhang@intel.com>, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, amit.kachhap@gmail.com,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>
+Subject: [PATCH V2 0/20] thermal: exynos: Add thermal driver for exynos5440
+Date: Fri, 26 Apr 2013 16:07:31 +0530
+Message-Id: <1366972671-9227-1-git-send-email-amit.daniel@samsung.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 26, 2013 at 12:35 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> On Fri, Apr 26, 2013 at 12:04 PM, Michal Marek <mmarek@suse.cz> wrote:
->> On Fri, Apr 26, 2013 at 11:58:25AM +0200, Michal Marek wrote:
->>> Can you send a copy of your .config?
->>
->> I can reproduce it as well:
->>
->> $ yes "" | make oldconfig
->> ...
->>   Enumeration method [M/y/?] (NEW)
->>     Basic (RAPIDIO_ENUM_BASIC) [N/m/?] n
->> ...
->> #
->> # configuration written to .config
->> #
->> $ make oldconfig
->> ...
->>   Enumeration method [M/y/?] (NEW)
->>
->>
->> .config is attached.
->>
->
-> Mine, too.
->
-> I hoped that -next release will be one w/o troubles
-> (cpufreq/intel_pstate / pm/timekeeping / ipc-sem-from-mmotm).
-> Unfortunately, I am not lucky :-(.
->
-> Anyway, waiting for a fix.
->
+Changes in V2:
+* Separated SOC data from TMU driver. This is as per suggestion from Eduardo.
+* Merged the new file created for exynos5440 TMU controller with the existing
+ TMU controller code.
+* Removed the DT parsing code as now the SOC specific data are cleanly put
+ inside the data specific file.
+* Even the register definations/bitfields are treated as data as there is
+ some variation across SOC's.
 
-Just FYI: Mail delivery troubles!
+This patchset adds TMU(Thermal management Unit) driver support for
+exynos5440 platform. There are 3 instances of the TMU controllers so
+necessary cleanup is done to handle multiple thermal zone.
 
-Delivery to the following recipient failed permanently:
+1 patch (exynos4: Add documentation for Exynos SoC thermal bindings) from
+Lukasz Majewski is already posted to mainline. Adding it here for completeness.
+(http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg17817.html)
 
-     yann.morin.1998@free.fr
+1 patch (thermal: exynos: Support thermal tripping ) from Jonghwan Choi is
+added here with some changes.
+(https://patchwork.kernel.org/patch/1668371/)
 
-Technical details of permanent failure:
-Google tried to deliver your message, but it was rejected by the
-server for the recipient domain free.fr by mx1.free.fr. [212.27.48.6].
+All these patches are based on thermal maintainers git tree,
+git://git.kernel.org/pub/scm/linux/kernel/git/rzhang/linux.git next.
 
-The error that the other server returned was:
-550 spam detected
-...
+Amit Daniel Kachhap (19):
+  thermal: exynos: Moving exynos thermal files into samsung directory
+  thermal: exynos: Bifurcate exynos thermal common and tmu controller
+    code
+  thermal: exynos: Rename exynos_thermal.c to exynos_tmu.c
+  thermal: exynos: Move exynos_thermal.h from include/* to driver/*
+    folder
+  thermal: exynos: Bifurcate exynos tmu driver and configuration data
+  thermal: exynos: Add missing definations and code cleanup
+  thermal: exynos: Add extra entries in the tmu platform data
+  thermal: exynos: Support thermal tripping
+  thermal: exynos: Move register definitions from driver file to data
+    file
+  thermal: exynos: Fix to clear only the generated interrupts
+  thermal: exynos: Add support for instance based register/unregister
+  thermal: exynos: Modify private_data to appropriate name driver_data
+  thermal: exynos: Return success even if no cooling data supplied
+  thermal: exynos: Make the zone handling dependent on trip count
+  thermal: exynos: Add support to handle many instances of TMU
+  thermal: exynos: Add features to check instead of SOC type
+  thermal: exynos: Add support for exynos5440 TMU sensor.
+  Documentation: thermal: Explain the exynos thermal driver model
+  ARM: dts: Add device tree node for exynos5440 TMU controller
 
-- Sedat -
+Lukasz Majewski (1):
+  ARM: dts: thermal: exynos4: Add documentation for Exynos SoC thermal
+    bindings
 
-> - Sedat -
->
->> Michal
+ .../devicetree/bindings/thermal/exynos-thermal.txt |   49 +
+ Documentation/thermal/exynos_thermal               |   43 +-
+ arch/arm/boot/dts/exynos5440.dtsi                  |   30 +
+ drivers/thermal/Kconfig                            |   13 +-
+ drivers/thermal/Makefile                           |    2 +-
+ drivers/thermal/exynos_thermal.c                   | 1066 --------------------
+ drivers/thermal/samsung/Kconfig                    |   21 +
+ drivers/thermal/samsung/Makefile                   |    7 +
+ drivers/thermal/samsung/exynos_thermal_common.c    |  401 ++++++++
+ drivers/thermal/samsung/exynos_thermal_common.h    |   85 ++
+ drivers/thermal/samsung/exynos_tmu.c               |  719 +++++++++++++
+ drivers/thermal/samsung/exynos_tmu.h               |  223 ++++
+ drivers/thermal/samsung/exynos_tmu_data.c          |  224 ++++
+ drivers/thermal/samsung/exynos_tmu_data.h          |  150 +++
+ include/linux/platform_data/exynos_thermal.h       |  119 ---
+ 15 files changed, 1949 insertions(+), 1203 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/thermal/exynos-thermal.txt
+ delete mode 100644 drivers/thermal/exynos_thermal.c
+ create mode 100644 drivers/thermal/samsung/Kconfig
+ create mode 100644 drivers/thermal/samsung/Makefile
+ create mode 100644 drivers/thermal/samsung/exynos_thermal_common.c
+ create mode 100644 drivers/thermal/samsung/exynos_thermal_common.h
+ create mode 100644 drivers/thermal/samsung/exynos_tmu.c
+ create mode 100644 drivers/thermal/samsung/exynos_tmu.h
+ create mode 100644 drivers/thermal/samsung/exynos_tmu_data.c
+ create mode 100644 drivers/thermal/samsung/exynos_tmu_data.h
+ delete mode 100644 include/linux/platform_data/exynos_thermal.h
+
