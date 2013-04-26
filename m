@@ -1,69 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753763Ab3DZGOK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 02:14:10 -0400
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:46453 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752917Ab3DZGOE (ORCPT
+	id S1754119Ab3DZGPU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 02:15:20 -0400
+Received: from mail-ve0-f171.google.com ([209.85.128.171]:59229 "EHLO
+	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752001Ab3DZGPT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 02:14:04 -0400
-Date: Fri, 26 Apr 2013 08:13:59 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Simon Horman <horms@verge.net.au>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, Julian Anastasov <ja@ssi.bg>,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
-        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Dipankar Sarma <dipankar@in.ibm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH 1/2] sched: Add cond_resched_rcu_lock() helper
-Message-ID: <20130426061359.GA25912@gmail.com>
-References: <1366940708-10180-1-git-send-email-horms@verge.net.au>
- <1366940708-10180-2-git-send-email-horms@verge.net.au>
+	Fri, 26 Apr 2013 02:15:19 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1366940708-10180-2-git-send-email-horms@verge.net.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5178EFC9.9080207@freescale.com>
+References: <1366707297-31309-1-git-send-email-b32955@freescale.com>
+	<1366707297-31309-7-git-send-email-b32955@freescale.com>
+	<CAN8TOE_5CeJfGpgJtKBXmb5ai3w9dZ8juk5GdQhRTZQ7MPKbZw@mail.gmail.com>
+	<5178EFC9.9080207@freescale.com>
+Date: Thu, 25 Apr 2013 23:15:18 -0700
+Message-ID: <CAN8TOE9VfdC38wJO0=_+nZ2d7qz3citSb7yVKsUj3Zsz91WpWA@mail.gmail.com>
+Subject: Re: [PATCH V3 6/9] mtd: add a new field for ecc info in the nand_flash_dev{}
+From: Brian Norris <computersforpeace@gmail.com>
+To: Huang Shijie <b32955@freescale.com>
+Cc: dwmw2@infradead.org, dedekind1@gmail.com, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Apr 25, 2013 at 1:56 AM, Huang Shijie <b32955@freescale.com> wrote:
+> 于 2013年04月25日 14:57, Brian Norris 写道:
+>
+>>
+>> A bit late on this one, but is there a good reason this wasn't just 2
+>> separate 16-bit fields? We already have a few, and I don't see why
+>> this couldn't be the same.
+>>
+> I just want to make the ecc_strength/ecc_size more coupled for the
+> nand_flash_dev{}.
+> If we spilit to two fields. It makes the nand_flash_ids[] less readable.
 
-* Simon Horman <horms@verge.net.au> wrote:
+Sure, that's a decent reason. But how about as an instance of an
+anonymous struct instead? See my suggestion below.
 
-> This is intended for use in loops which read data protected by RCU and may
-> have a large number of iterations.  Such an example is dumping the list of
-> connections known to IPVS: ip_vs_conn_array() and ip_vs_conn_seq_next().
-> 
-> As suggested by Eric Dumazet.
-> 
-> Cc: Eric Dumazet <eric.dumazet@gmail.com>
-> Cc: Julian Anastasov <ja@ssi.bg>
-> Signed-off-by: Simon Horman <horms@verge.net.au>
-> ---
->  include/linux/sched.h | 9 +++++++++
->  1 file changed, 9 insertions(+)
-> 
-> diff --git a/include/linux/sched.h b/include/linux/sched.h
-> index e692a02..7eec4c7 100644
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -2787,3 +2787,12 @@ static inline unsigned long rlimit_max(unsigned int limit)
->  }
->  
->  #endif
-> +
-> +static void inline cond_resched_rcu_lock(void)
-> +{
-> +	if (need_resched()) {
-> +		rcu_read_unlock();
-> +		cond_resched();
-> +		rcu_read_lock();
-> +	}
-> +}
+>>> Signed-off-by: Huang Shijie<b32955@freescale.com>
+>>> ---
+>>>   include/linux/mtd/nand.h |   10 ++++++++++
+>>>   1 files changed, 10 insertions(+), 0 deletions(-)
+>>>
+>>> diff --git a/include/linux/mtd/nand.h b/include/linux/mtd/nand.h
+>>> index 063e517..f4c7777 100644
+>>> --- a/include/linux/mtd/nand.h
+>>> +++ b/include/linux/mtd/nand.h
+>>> @@ -624,6 +624,10 @@ struct nand_chip {
+>>>          { .name = (nm), {{ .dev_id = (devid) }}, .chipsize = (chipsz), \
+>>>            .options = (opts) }
+>>>
+>>> +#define NAND_ECC_INFO(strength, size)  (((strength)<<  16) | (size))
+>>
+>> We could redefine this:
+>>
+>> #define NAND_ECC_INFO(strength, size) .ecc_strength = (strength),
+>> .ecc_size = (size)
+>
+> Do this type of macro could be accepted by the kernel?
 
-Acked-by: Ingo Molnar <mingo@kernel.org>
+Something like this should be acceptable, I think, if I can straighten
+it out so that it compiles right (!)
 
-	Ingo
+> I think your macro needs a pair of bracket, such as:
+> #define NAND_ECC_INFO(strength, size) (.ecc_strength = (strength), .ecc_size
+> = (size))
+>
+> But if we add the brackets, we will meet a compiler error.
+
+Here's my modification (note the underscores, since we can't have the
+field .strength in the same macro as the "parameter" strength):
+
+#define ECC_INFO(_strength, _size)        { .strength = (_strength),
+.size = (_size) }
+#define ECC_STRENGTH(type)              ((type)->ecc.strength)
+#define ECC_SIZE(type)                  ((type)->ecc.strength)
+
+And replace the field in nand_flash_dev with:
+
+        struct {
+                uint16_t strength;
+                uint16_t size;
+        } ecc;
+
+How does that look? It's actually quite similar to the construct Artem
+used with mfr_id and dev_id, except that we give the struct a name.
+And this time, it actually compiles!
+
+Brian
