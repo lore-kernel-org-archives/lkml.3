@@ -1,61 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756083Ab3DZPT4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 11:19:56 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:60041 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751902Ab3DZPTz (ORCPT
+	id S1756158Ab3DZPUk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 11:20:40 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:46804 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755894Ab3DZPUj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 11:19:55 -0400
-Date: Fri, 26 Apr 2013 16:19:48 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Fabio Baltieri <fabio.baltieri@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        mian.yousaf.kaukab@stericsson.com, linus.walleij@stericsson.com,
-        arnd@arndb.de
-Subject: Re: [PATCH 00/10] usb: musb: ux500: pathe the way for Device Tree
- enablement
-Message-ID: <20130426151948.GE31899@gmail.com>
-References: <1366729394-11406-1-git-send-email-lee.jones@linaro.org>
- <20130426134915.GA19558@balto.lan>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+	Fri, 26 Apr 2013 11:20:39 -0400
+Message-ID: <1366989636.8964.214.camel@edumazet-glaptop>
+Subject: Re: [RFC PATCH net-next 1/6] filter: refactor BPF JIT for seccomp
+ filters
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Xi Wang <xi.wang@gmail.com>
+Cc: Daniel Borkmann <dborkman@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Eric Dumazet <edumazet@google.com>, Will Drewry <wad@chromium.org>,
+        Andrew Morton <akpm@linux-foundation.org>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Fri, 26 Apr 2013 08:20:36 -0700
+In-Reply-To: <1366962706-24204-2-git-send-email-xi.wang@gmail.com>
+References: <1366962706-24204-1-git-send-email-xi.wang@gmail.com>
+	 <1366962706-24204-2-git-send-email-xi.wang@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130426134915.GA19558@balto.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 26 Apr 2013, Fabio Baltieri wrote:
-
-> Hi Lee,
+On Fri, 2013-04-26 at 03:51 -0400, Xi Wang wrote:
+> Currently, bpf_jit_compile() and bpf_jit_free() takes an sk_filter,
+> which seccomp filters cannot reuse.
 > 
-> On Tue, Apr 23, 2013 at 04:03:04PM +0100, Lee Jones wrote:
-> > In this patch-set we firstly ease the burden on data being passed from
-> > platform data, then start to build up support to finally enable Device
-> > Tree.
+> Change bpf_jit_compile() to take a pointer to BPF instructions and
+> the length, and to return a JITted function.
 > 
-> The whole series looks good to me, nice job!!
+> Change bpf_jit_free() to take a JITted function.
 > 
-> Acked-by: Fabio Baltieri <fabio.baltieri@linaro.org>
+> Add JIT calls for seccomp filters.
+> 
+> Signed-off-by: Xi Wang <xi.wang@gmail.com>
+> ---
 
-Thanks for reviewing.
+When submitting a patch serie, full kernel must be fully compile-able
+after each patch.
 
-> I was not able to apply the patches though, as I can imagine that there
-> are some dependencies with your other dma40 series.  If you can provide a
-> tree I would be happy to run some test for both host and device mode.
-> I still have a bunch of USB cables and adapters tangled together on my
-> desk ready for that.
+Thats mandatory to be able to perform git bisection in the future.
 
-The most recent branch on my public tree contains the latest code.
+You cannot change the prototypes as you do in this patch, because it
+breaks all the BPF JIT.
 
-Memcpy will probably fail though, as I haven't fixed up Linus'
-comments pertaining them that yet.
+arch/x86/net/bpf_jit_comp.c:147:6: error: conflicting types for ‘bpf_jit_compile’
+include/linux/filter.h:57:19: note: previous declaration of ‘bpf_jit_compile’ was here
+arch/x86/net/bpf_jit_comp.c:749:6: error: conflicting types for ‘bpf_jit_free’
+include/linux/filter.h:58:13: note: previous declaration of ‘bpf_jit_free’ was here
+make[1]: *** [arch/x86/net/bpf_jit_comp.o] Error 1
+make: *** [arch/x86/net/bpf_jit_comp.o] Error 2
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+
