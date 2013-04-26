@@ -1,109 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759577Ab3DZJmU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 05:42:20 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:11524 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757225Ab3DZJmS (ORCPT
+	id S932679Ab3DZJmx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 05:42:53 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39160 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759281Ab3DZJmw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 05:42:18 -0400
-Message-ID: <517A4BB0.30608@huawei.com>
-Date: Fri, 26 Apr 2013 17:41:04 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	Fri, 26 Apr 2013 05:42:52 -0400
+Date: Fri, 26 Apr 2013 10:41:23 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Lee Jones <lee.jones@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andreas Westin <andreas.westin@stericsson.com>,
+        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
+        magnus.p.persson@stericsson.com
+Subject: Re: [PATCH 6/9] crypto: ux500/cryp - Set DMA configuration though
+	dma_slave_config()
+Message-ID: <20130426094123.GG14496@n2100.arm.linux.org.uk>
+References: <1366280825-31136-1-git-send-email-lee.jones@linaro.org> <CACRpkdbFgW6bGYt59WtN4r2izuN09AJw4J1cqir82uzFsuMmWQ@mail.gmail.com> <20130425134402.GN4623@gmail.com> <201304251611.39667.arnd@arndb.de> <CACRpkdaBf++gy3sghC-t33uio2+eHp1MrQ2FM0XXBazZTtm3kA@mail.gmail.com> <20130426081646.GD24632@intel.com>
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Bjorn Helgaas <bhelgaas@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Huang Ying <ying.huang@intel.com>,
-        David Bulkow <David.Bulkow@stratus.com>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jiang Liu <jiang.liu@huawei.com>
-Subject: Re: [PATCH] PCI: Remove duplicate pci_disable_device for pcie port
-References: <1366940820-15302-1-git-send-email-yinghai@kernel.org> <5179FC4A.4080000@huawei.com> <CAE9FiQXOQJRxqAW4q8G1OsiHAgFqz8=oD6-f-gvizSL0fR60hQ@mail.gmail.com>
-In-Reply-To: <CAE9FiQXOQJRxqAW4q8G1OsiHAgFqz8=oD6-f-gvizSL0fR60hQ@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.76.69]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130426081646.GD24632@intel.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/4/26 14:20, Yinghai Lu wrote:
-> On Thu, Apr 25, 2013 at 9:02 PM, Yijing Wang <wangyijing@huawei.com> wrote:
->> Hi Yinghai,
->>    We should not remove this additional pci_disable_device().
->> Because we enable pcie port device twice before. The first is pci_enable_brides(),
->> in x86, it was called in pci_assign_unassigned_resources(). The second in pcie_port_device_register().
->> So we should call pci_disable_device() twice for pci_dev->enable_cnt balance.
->>
->> But there is still a problem here. If we unbind a pcie port device pcie port driver, we can not
->> use its child devices again, because this pcie port device was disabled absolutely.
->>
->> So I think we should move the second pci_disable_device() to remove.c.
->>
->> I sent this patch to Bjorn and following is Bjorn reply
->> "And it's not clear to me whether unbinding the
->> pcie port driver should disable the bridge at all.  I think one could
->> argue that the bridge should remain functional even if the driver is
->> unloaded, because the PCI core *enables* the bridge even if the driver
->> is never loaded."
->>
->> Yinghai, how do you think about this issue?
-> 
+On Fri, Apr 26, 2013 at 01:46:46PM +0530, Vinod Koul wrote:
+> On Fri, Apr 26, 2013 at 10:28:39AM +0200, Linus Walleij wrote:
+> > On Thu, Apr 25, 2013 at 4:11 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> > 
+> > > The dma engine driver must know the address in its dma space, while the
+> > > slave driver has it available in physical space. These two are often the
+> > > same, but there is no generic way to convert between the two, especially
+> > > if the dma engine resides behind an IOMMU.
+> > >
+> > > The best assumption we can make is that the dma engine driver knows
+> > > how to convert between the two. Interestingly the documentation for
+> > > dma_slave_config talks about "physical address", while the structure
+> > > itself uses a dma_addr_t. Linus Walleij introduced the structure in
+> > > c156d0a5b0 "DMAENGINE: generic slave channel control v3", so I assume
+> > > he can shed some light on what he was thinking. I assume the documentation
+> > > is right but the structure is not and should be converted to use
+> > > phys_add_t or resource_size_t.
+> > 
+> > OK I could cook a patch for that, but I think I need some input from
+> > Vinod and/or Russell on this.
+> the dma_slave_config is physical address that should be passed directly to the
+> controller. Obviosuly it should phys_addr_t :)
 
-Hi Yinghai,
-   Thanks for your comment!
-We enable_bridges in PCI core code, so I think we should disable device in remove.c(PCI core level),
-another reason is call second pci_disable_device() in pci_stop_bus_device() is safe, because all child device
-has been stopped(unbind driver already).
+What you've just said is actually confusing.
 
-> 1. we always enable bridges after assign unassigned resource for boot path
-> and hotplug path.
-> we should never call disable for that.
+"physical address" is normally the term used to describe the addresses
+seen to the RAM.  phys_addr_t describes this.  This is not necessarily
+what needs to be programmed into the DMA controller.
 
-I agree "we should never call second disable" unless we stop this sub pci-tree().
+For RAM addresses, they must be mapped via the DMA API - and this gives
+you a dma_addr_t.
 
-Maybe the attached patch last letter is not safe enough, should wait pci bridge complete
-to stop itself, then call the second pci_disable_device().
+"DMA address" is the address to be programmed into a DMA controller to
+access a particular address in RAM or device, and has type dma_addr_t.
+When you're programming a DMA controller to access a device, you are
+clearly telling it the address on the _DMA controller's bus_ to access
+that register, which may or may not be the same as the physical address.
 
-> 
-> 2. driver should be keep enable/disable during probe/remove
-
-I agree, use enable/disable balance is better.
-
-> 
-> looks like we need to rethink pci enable bridge.
-> 
-> if we want to enable one pci device, we should go up  to enable all bridges till
-> root.
-
-Yes, now we enable pci bridges from root to end. like in pci_assign_unassigned_resources().
-
-> 
-> let if we disable one pci device, we need to go up to disable bridge if its all
-> pci device children get disabled.
-
-Yes, This is what I think too. It seems like we only can do this in remove.c
-
-> 
-> if there is pci driver is bound with bridge device, those
-> disable/enable bridge should be skipped.
-
-Hmm, currently system achieve this by checking pci_dev->enable_cnt.
-
-> 
-> Thanks
-> 
-> Yinghai
-> 
-> .
-> 
-
-
--- 
-Thanks!
-Yijing
-
+There are platforms in existence where phys_addr_t can be 32-bit but
+dma_addr_t can be 64-bit.  Getting this stuff wrong can cause problems.
