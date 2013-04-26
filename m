@@ -1,146 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760008Ab3DZKuH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 06:50:07 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:44893 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759932Ab3DZKuF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 06:50:05 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Gavin Guo <tuffkidtt@gmail.com>, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -v3] PCI, ACPI, hotplug: Fix BUS_CHECK event handle on root bridge
-Date: Fri, 26 Apr 2013 12:58:12 +0200
-Message-ID: <4942906.jTIhNoktzo@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0-rc8+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1366940798-15268-1-git-send-email-yinghai@kernel.org>
-References: <1366940798-15268-1-git-send-email-yinghai@kernel.org>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1760060Ab3DZKwh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 06:52:37 -0400
+Received: from queue01c.mail.zen.net.uk ([212.23.3.237]:55001 "EHLO
+	queue01c.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750939Ab3DZKwg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Apr 2013 06:52:36 -0400
+Message-ID: <1366973488.3385.18.camel@linaro1.home>
+Subject: Re: [PATCH v2] mfd: vexpress: Handle pending config transactions
+From: "Jon Medhurst (Tixy)" <tixy@linaro.org>
+To: Pawel Moll <pawel.moll@arm.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Date: Fri, 26 Apr 2013 11:51:28 +0100
+In-Reply-To: <1366910091-17971-1-git-send-email-pawel.moll@arm.com>
+References: <1366821084-12815-1-git-send-email-pawel.moll@arm.com>
+	 <1366910091-17971-1-git-send-email-pawel.moll@arm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Originating-Smarthost01-IP: [82.69.122.217]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, April 25, 2013 06:46:38 PM Yinghai Lu wrote:
-> Gavin found that acpiphp does not handle hotplug anymore even after
-> now we have acpiphp built-in preparing for v3.10.
+On Thu, 2013-04-25 at 18:14 +0100, Pawel Moll wrote:
+> The config transactions "scheduler" was hopelessly broken,
+> repeating completed transaction instead of picking up
+> next pending one.
 > 
-> Bjorn analyzed bootlog, he found that 
->     acpiphp: ACPI Hot Plug PCI Controller Driver version: 0.5
->     ACPI: PCI Root Bridge [PCI0] (domain 0000 [bus 00-3e])
->     \_SB_.PCI0:_OSC invalid UUID
->     acpiphp: Slot [1] registered
->     acpiphp: Slot [1-1] registered
->    acpi root: \_SB_.PCI0 notify handler is installed
->     _handle_hotplug_event_root: Bus check notify on \_SB_.PCI0
->     _handle_hotplug_event_root: Bus check notify on \_SB_.PCI0
-> And that means:
->    So we should be using acpiphp, which you do have built in statically,
->    and it found a couple slots.  And we did get two bus check notifies on
->    \_SB_.PCI0, so we *should* be re-enumerating PCI bus 0000:00.  But it
->    looks like we're handling this as a host bridge hotplug event instead
->    of a PCI device hotplug.  My guess is that
->    handle_root_bridge_insertion() does nothing because the PCI0 ACPI
->    device already exists, though I would expect to see the "acpi device
->    exists..." in your dmesg log if this were the case.
+> Fixed now. Also improved debug messages.
 > 
-> Also according to Rafael and Bjorn, it is perfect fine that we
-> should enumerate bus by sending event to root bridge after hotadd
-> device to slots under that root bridge or children bridges.
-> 
-> It turns out that it is regression caused by
-> | commit 668192b678201d2fff27c6cc76bb003c1ec4a52a
-> | Author: Yinghai Lu <yinghai@kernel.org>
-> | Date:   Mon Jan 21 13:20:48 2013 -0800
-> |
-> |    PCI: acpiphp: Move host bridge hotplug to pci_root.c
-> 
-> We should check slots when BUS_CHECK is sent to root bridge acpi handle.
-> 
-> Restore the old behavoir by calling acpi_check_bridge and check_sub_bridge
-> in acpiphp.
-> 
-> Jiang Liu acctually have simimar patch but it forgets calling
-> acpi_check_bridge() for system that have slots on root bus directly.
-> That is still valid, as in QEMU we still have that slots on bus 0 at
-> least. But my first version patch wrongly check if root bridge exists
-> before check_sub_bridge for children bridges. 
-> 
-> -v2: Don't check bridge for acpi_walk_namespace with check_sub_bridges.
->      also put back bridge reference.
-> -v3: More changelog and etc.
-> 
-> Reported-by: Gavin Guo <tuffkidtt@gmail.com>
-> Tested-by: Gavin Guo <tuffkidtt@gmail.com>
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> Signed-off-by: Pawel Moll <pawel.moll@arm.com>
 
-Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Yes, looks really fixed now. :-)
+
+Reviewed-by: Jon Medhurst <tixy@linaro.org>
 
 > ---
->  drivers/acpi/pci_root.c            |    2 ++
->  drivers/pci/hotplug/acpiphp_glue.c |   14 ++++++++++++++
->  include/linux/pci-acpi.h           |    2 ++
->  3 files changed, 18 insertions(+)
+>  drivers/mfd/vexpress-config.c |   35 +++++++++++++++++++++--------------
+>  1 file changed, 21 insertions(+), 14 deletions(-)
 > 
-> Index: linux-2.6/drivers/acpi/pci_root.c
-> ===================================================================
-> --- linux-2.6.orig/drivers/acpi/pci_root.c
-> +++ linux-2.6/drivers/acpi/pci_root.c
-> @@ -643,6 +643,8 @@ static void _handle_hotplug_event_root(s
->  				 (char *)buffer.pointer);
->  		if (!root)
->  			handle_root_bridge_insertion(handle);
-> +		else
-> +			acpiphp_check_host_bridge(handle);
+> diff --git a/drivers/mfd/vexpress-config.c b/drivers/mfd/vexpress-config.c
+> index 3c1723aa..84ce6b9 100644
+> --- a/drivers/mfd/vexpress-config.c
+> +++ b/drivers/mfd/vexpress-config.c
+> @@ -184,13 +184,14 @@ static int vexpress_config_schedule(struct vexpress_config_trans *trans)
 >  
->  		break;
+>  	spin_lock_irqsave(&bridge->transactions_lock, flags);
 >  
-> Index: linux-2.6/drivers/pci/hotplug/acpiphp_glue.c
-> ===================================================================
-> --- linux-2.6.orig/drivers/pci/hotplug/acpiphp_glue.c
-> +++ linux-2.6/drivers/pci/hotplug/acpiphp_glue.c
-> @@ -950,6 +950,20 @@ check_sub_bridges(acpi_handle handle, u3
->  	return AE_OK ;
->  }
->  
-> +void acpiphp_check_host_bridge(acpi_handle handle)
-> +{
-> +	struct acpiphp_bridge *bridge;
-> +
-> +	bridge = acpiphp_handle_to_bridge(handle);
-> +	if (bridge) {
-> +		acpiphp_check_bridge(bridge);
-> +		put_bridge(bridge);
+> -	vexpress_config_dump_trans("Executing", trans);
+> -
+> -	if (list_empty(&bridge->transactions))
+> +	if (list_empty(&bridge->transactions)) {
+> +		vexpress_config_dump_trans("Executing", trans);
+>  		status = bridge->info->func_exec(trans->func->func,
+>  				trans->offset, trans->write, trans->data);
+> -	else
+> +	} else {
+> +		vexpress_config_dump_trans("Queuing", trans);
+>  		status = VEXPRESS_CONFIG_STATUS_WAIT;
 > +	}
-> +
-> +	acpi_walk_namespace(ACPI_TYPE_DEVICE, handle,
-> +		ACPI_UINT32_MAX, check_sub_bridges, NULL, NULL, NULL);
-> +}
-> +
->  static void _handle_hotplug_event_bridge(struct work_struct *work)
->  {
->  	struct acpiphp_bridge *bridge;
-> Index: linux-2.6/include/linux/pci-acpi.h
-> ===================================================================
-> --- linux-2.6.orig/include/linux/pci-acpi.h
-> +++ linux-2.6/include/linux/pci-acpi.h
-> @@ -60,11 +60,13 @@ static inline void acpi_pci_slot_remove(
->  void acpiphp_init(void);
->  void acpiphp_enumerate_slots(struct pci_bus *bus, acpi_handle handle);
->  void acpiphp_remove_slots(struct pci_bus *bus);
-> +void acpiphp_check_host_bridge(acpi_handle handle);
->  #else
->  static inline void acpiphp_init(void) { }
->  static inline void acpiphp_enumerate_slots(struct pci_bus *bus,
->  					   acpi_handle handle) { }
->  static inline void acpiphp_remove_slots(struct pci_bus *bus) { }
-> +static inline void acpiphp_check_host_bridge(acpi_handle handle) { }
->  #endif
 >  
->  #else	/* CONFIG_ACPI */
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+>  	switch (status) {
+>  	case VEXPRESS_CONFIG_STATUS_DONE:
+> @@ -212,25 +213,31 @@ void vexpress_config_complete(struct vexpress_config_bridge *bridge,
+>  {
+>  	struct vexpress_config_trans *trans;
+>  	unsigned long flags;
+> +	const char *message = "Completed";
+>  
+>  	spin_lock_irqsave(&bridge->transactions_lock, flags);
+>  
+>  	trans = list_first_entry(&bridge->transactions,
+>  			struct vexpress_config_trans, list);
+> -	vexpress_config_dump_trans("Completed", trans);
+> -
+>  	trans->status = status;
+> -	list_del(&trans->list);
+>  
+> -	if (!list_empty(&bridge->transactions)) {
+> -		vexpress_config_dump_trans("Pending", trans);
+> +	do {
+> +		vexpress_config_dump_trans(message, trans);
+> +		list_del(&trans->list);
+> +		complete(&trans->completion);
+>  
+> -		bridge->info->func_exec(trans->func->func, trans->offset,
+> -				trans->write, trans->data);
+> -	}
+> -	spin_unlock_irqrestore(&bridge->transactions_lock, flags);
+> +		if (list_empty(&bridge->transactions))
+> +			break;
+> +
+> +		trans = list_first_entry(&bridge->transactions,
+> +				struct vexpress_config_trans, list);
+> +		vexpress_config_dump_trans("Executing pending", trans);
+> +		trans->status = bridge->info->func_exec(trans->func->func,
+> +				trans->offset, trans->write, trans->data);
+> +		message = "Finished pending";
+> +	} while (trans->status == VEXPRESS_CONFIG_STATUS_DONE);
+>  
+> -	complete(&trans->completion);
+> +	spin_unlock_irqrestore(&bridge->transactions_lock, flags);
+>  }
+>  EXPORT_SYMBOL(vexpress_config_complete);
+>  
+
+
