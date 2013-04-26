@@ -1,98 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757809Ab3DZUW1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 16:22:27 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:40389 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753477Ab3DZUWZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 16:22:25 -0400
-From: Sourav Poddar <sourav.poddar@ti.com>
-To: <gregkh@linuxfoundation.org>, <tony@atomide.com>,
-        <rmk+kernel@arm.linux.org.uk>, <khilman@linaro.org>
-CC: <linux-serial@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Sourav Poddar <sourav.poddar@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Felipe Balbi <balbi@ti.com>, Rajendra nayak <rnayak@ti.com>
-Subject: [PATCHv5 0/2] Serial fixes
-Date: Sat, 27 Apr 2013 01:52:07 +0530
-Message-ID: <1367007727-3832-1-git-send-email-sourav.poddar@ti.com>
-X-Mailer: git-send-email 1.7.1
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1756981Ab3DZUYl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 16:24:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37347 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753477Ab3DZUYk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Apr 2013 16:24:40 -0400
+Date: Fri, 26 Apr 2013 13:24:38 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org, tj@kernel.org,
+        axboe@kernel.dk, James.Bottomley@hansenpartnership.com,
+        snitzer@redhat.com
+Subject: Re: Bcache v. whatever
+Message-Id: <20130426132438.4e48e0688fc3c3c298e71d7e@linux-foundation.org>
+In-Reply-To: <20130426194642.GC9931@google.com>
+References: <20130114223202.GV26407@google.com>
+	<20130425161704.3f0fc3b6af55cf75acbc9d9e@linux-foundation.org>
+	<20130426194642.GC9931@google.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, 26 Apr 2013 12:46:42 -0700 Kent Overstreet <koverstreet@google.com> wrote:
 
-This patch series contains fixes around the issue that
-the console UART should not idled on suspend while using 
-"no_console_suspend" in bootargs.
+> On Thu, Apr 25, 2013 at 04:17:04PM -0700, Andrew Morton wrote:
+> > On Mon, 14 Jan 2013 14:32:02 -0800 Kent Overstreet <koverstreet@google.com> wrote:
+> > 
+> ...
+> > drivers/md/bcache/btree.c: In function `bch_btree_refill_keybuf':
+> > drivers/md/bcache/btree.c:2330: error: invalid operands to binary +
+> > 
+> > due to
+> > 
+> > #define pbtree(b)       (&bch_pbtree(b).s[0])
+> > 
+> > I don't know why this is happening (presumably a gcc glitch), but
+> > returning an 80-byte struct by value from bch_pkey() and bch_pbtree()
+> > is just gruesome.  The compiler has to allocate the space on the caller
+> > stack, pass a hidden pointer into the callee and the callee copies its
+> > return value into that caller stack slot.  It's slow and consumes stack.
+> > 
+> > Something different, please.
+> 
+> Well, it is kind of... perverse but really the compiler's doing exactly
+> what I would've had to do otherwise - stick a char buf[80] on the
+> caller's stack and pass it to bch_pbtree(). With the caveat that I
+> haven't looked at the generated code.
 
-The approach thought of is to modify the serial core/serial driver to bypass
-runtime PM if the UART in contention is a console and we are using "no_console_suspend"
-in our bootargs.
+That's the more idiomatic way of doing things and yes, the code
+generation will be similarly awful.
 
-There were discussions about how to handle "no_idle_on_suspend" issue and all the
-discussions are as follows:
-https://lkml.org/lkml/2013/4/5/239
-https://lkml.org/lkml/2013/4/2/350
-https://lkml.org/lkml/2013/3/18/199
-https://lkml.org/lkml/2013/3/18/295
-Due to the amount of change in approach, I am posting
-this as a new series.
+> As far as I can tell the only real improvement would be to add a %p
+> format string to vsnprintf, but adding a global extension would obviously be
+> inappropriate for this. It'd be really nice to have a mechanism for
+> adding file/module private format strings to vsnprintf, but I haven't
+> cared enough yet to implement it myself.
+> 
+> Of course if you know a better solution I'm all ears.
+> 
+> Uhm, as for the actual bug - that is a fairly ancient gcc, I wasn't
+> aware we were supporting compilers that old but I'm sure you wouldn't be
+> bugging me about it if we weren't...
 
-v4->v5
-1. Add comments
-2. Formatting.
+Documentation/Changes is the official status.  It says gcc-3.2+.  We're
+very slow in updating those version numbers because it's hard. 
+gcc-3.4.5 for mips fails in the same way.
 
-v3->v4
-1. check for console in runtime api.
+Why are those things macros anyway?  urgh, it's because we want to jam
+a string into the caller's stack frame without declaring any of it.
 
-v2->v3
-1. Use "-EBUSY" for no_console_suspend case
-2. Bypass runtime PM only during suspend
-3. Improve the commit log based on community suggestion.
 
-v1->v2
-1. Remove the prepare/complete callback.
-2. Adapt runtime PM callback to deal with the issue.
-3. Fold patch(1,2) of previous series into 1.
-4. Reordered the patch.
-5. Change $subject and chage log for few patches.
+Really I do think it would be better to do away with the C party tricks
+and have callers do
 
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: Felipe Balbi <balbi@ti.com>
-Cc: Rajendra nayak <rnayak@ti.com>
+	char btree_buf[BTREE_BUF_SIZE];
 
-Test info
-Omap4430sdp:
-- Tested wakeup from UART after suspend for dt and non dt case.
-Omap5430evm:
-- Tested wakeup from UART after suspend for dt case.
+	btree_to_text(btree_buf, b);
+	pr_debug("%s\n", btree_buf);
 
-These patches were the part of the bigger series[1]. Breaking them into
-two relevant series as they go through the different tree.
+Nice, simple, explicit, direct and stupid.  It might generate
+unused-var warnings if DEBUG is undefined but from my reading of
+pr_debug() things will be OK.
 
-[1]: http://lkml.org/lkml/2013/4/26/274
-
-This patches are based on 3.9-rc8
-
-The following changes since commit 824282ca7d250bd7c301f221c3cd902ce906d731:
-
-  Merge branch 'upstream' of git://git.linux-mips.org/pub/scm/ralf/upstream-linus (2013-04-22 15:00:59 -0700)
-
-are available in the git repository at:
-
-  git://gitorious.org/linux-connectivity/linux-connectivity.git serial_fix
-
-Sourav Poddar (2):
-      driver: tty: serial: Move "uart_console" def to core header file.
-      driver: serial: omap: prevent runtime PM for "no_console_suspend"
-
- drivers/tty/serial/mpc52xx_uart.c |   10 ----------
- drivers/tty/serial/omap-serial.c  |   34 +++++++++++++++++++++++++++++++++-
- drivers/tty/serial/serial_core.c  |    6 ------
- include/linux/serial_core.h       |    7 +++++++
- 4 files changed, 40 insertions(+), 17 deletions(-)
-
+Then we can poke around at btree_to_text() until gcc-3.4.5 is happy
+with it.
