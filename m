@@ -1,70 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752442Ab3DZMF5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 08:05:57 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:44062 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751201Ab3DZMFz (ORCPT
+	id S1752947Ab3DZMGE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 08:06:04 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:54935 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751201Ab3DZMGB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 08:05:55 -0400
+	Fri, 26 Apr 2013 08:06:01 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Yann E. MORIN" <yann.morin.1998@free.fr>
+Cc: linux-kbuild@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
+        linux-kernel@vger.kernel.org,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Sam Ravnborg <sam@ravnborg.org>, Arnaud Lacombe <lacombar@gmail.com>,
+        Greg KH <greg@kroah.com>
+Subject: Re: [PATCH 6/8] kconfig: fix randomising choice entries in presence of KCONFIG_ALLCONFIG
+Date: Fri, 26 Apr 2013 14:05:37 +0200
+Message-ID: <6079984.JVoK3fHgsy@wuerfel>
+User-Agent: KMail/4.10.2 (Linux/3.8.0-17-generic; KDE/4.10.2; x86_64; ; )
+In-Reply-To: <422c809f03f043d0950d8362214818e956a9daee.1366841993.git.yann.morin.1998@free.fr>
+References: <cover.1366841993.git.yann.morin.1998@free.fr> <422c809f03f043d0950d8362214818e956a9daee.1366841993.git.yann.morin.1998@free.fr>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <20130425232702.AF3D831C265@corp2gmr1-1.hot.corp.google.com>
-References: <20130425232702.AF3D831C265@corp2gmr1-1.hot.corp.google.com>
-Date: Fri, 26 Apr 2013 14:05:52 +0200
-Message-ID: <CA+icZUXqmF5QcfVtGpEh5KX4OkgbUncyZB0DKixqSNquUpis1A@mail.gmail.com>
-Subject: Re: mmotm 2013-04-25-16-24 uploaded
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: akpm@linux-foundation.org
-Cc: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-next@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:A+Q3eNKV+KsCZjZ+3YeDmxSR3w4Sw/yeDDgWe//4cJd
+ fCqowb4m6ic1f9UgaayQUe1CzX4qszkYa/S0Fcf83NeBidyuIq
+ DZ/ET3aD+0HRlRW+GrxjTeOKjGo2BQ9tUA5Iul/3TaOSJEQZF5
+ M8OdJnQosKpibcvK1wpUtTgkArsgayeRw/GyYx2+ZJ/7MO1QhX
+ OAAjKCrc9GjoJoXtMCVSZVcfkaiX/yI1iRyGbPxyDnnBOCrYXo
+ LmIL3r9CeI73WjCfSE3VGG5mV+j0EHNyk3uH83rCgV1L7bKeJl
+ vyxqgagF7wv1AKpSPCt5rvVKH8y6P7T+iwSPXNxxL4cY+L8nY5
+ EZBVaJu4kB0Zua4p4arw=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 26, 2013 at 1:27 AM,  <akpm@linux-foundation.org> wrote:
-> The mm-of-the-moment snapshot 2013-04-25-16-24 has been uploaded to
->
->    http://www.ozlabs.org/~akpm/mmotm/
->
+On Thursday 25 April 2013 00:29:53 Yann E. MORIN wrote:
+> From: "Yann E. MORIN" <yann.morin.1998@free.fr>
+> 
+> Currently, randconfig does randomise choice entries, unless KCONFIG_ALLCONFIG
+> is specified.
+> 
+> For example, given those two files (Thomas' test-case):
 
-Hi Andrew,
+This patch has made it into linux-next today, and while I agree with
+the basic idea, it seems to cause regressions for me.
 
-Nice to see that IPC-SEM is now safe again with Linux-Next (next-20130426).
+For these ARM defconfigs, 'make' always asks about USB_GADGET now
+after doing any of these defconfigs:
 
-Affected patches...
+am200epdkit_defconfig
+at91_dt_defconfig
+at91rm9200_defconfig
+at91sam9260_defconfig
+at91sam9261_defconfig
+at91sam9263_defconfig
+at91sam9g20_defconfig
+at91sam9g45_defconfig
+corgi_defconfig
+ezx_defconfig
+h5000_defconfig
+imote2_defconfig
+kzm9g_defconfig
+lpc32xx_defconfig
+lubbock_defconfig
+mackerel_defconfig
+magician_defconfig
+mini2440_defconfig
+msm_defconfig
+omap1_defconfig
+prima2_defconfig
+sama5_defconfig
+tct_hammer_defconfig
 
-ipcsem-fine-grained-locking-for-semtimedop-do-not-call-sem_lock-when-bogus-sma.patch
-ipcsem-fine-grained-locking-for-semtimedop-fix-lockdep-false-positive.patch
-ipcsem-fine-grained-locking-for-semtimedop-fix-locking-in-semctl_main.patch
-ipcsem-fine-grained-locking-for-semtimedop-ipc-make-refcounter-atomic-fix.patch
-ipcsem-fine-grained-locking-for-semtimedop-ipc-make-refcounter-atomic.patch
-ipcsem-fine-grained-locking-for-semtimedop-untangle-rcu-locking-with-find_alloc_undo.patch
+~/arm-soc$ make at91_dt_defconfig
+make[1]: Entering directory `/git/arm-soc'
+  GEN     /git/arm-soc/obj-tmp/Makefile
+  HOSTCC  scripts/kconfig/zconf.tab.o
+  HOSTLD  scripts/kconfig/conf
+#
+# configuration written to .config
+#
+make[1]: Leaving directory `/git/arm-soc'
+~/arm-soc$ make -sj40
+make[1]: Entering directory `/git/arm-soc'
+  GEN     /git/arm-soc/obj-tmp/Makefile
+scripts/kconfig/conf --silentoldconfig Kconfig
+*
+* Restart config...
+*
+*
+* USB Gadget Support
+*
+USB Gadget Support (USB_GADGET) [Y/n/m/?] y
+  Debugging messages (DEVELOPMENT) (USB_GADGET_DEBUG) [N/y/?] n
+  Debugging information files (DEVELOPMENT) (USB_GADGET_DEBUG_FILES) [N/y/?] n
+  Debugging information files in debugfs (DEVELOPMENT) (USB_GADGET_DEBUG_FS) [N/y/?] n
+  Maximum VBUS Power usage (2-500 mA) (USB_GADGET_VBUS_DRAW) [2] 2
+  Number of storage pipeline buffers (USB_GADGET_STORAGE_NUM_BUFFERS) [2] 2
+  USB Gadget Drivers [M/y/?] (NEW) 
 
-Just see one patch has my Tested-by (Reported-by) ...
+I'm taking Greg on Cc here so he's aware of the problem and knows it's
+not caused by any of the USB Kconfig changes that I and others submitted
+recently. It took me a while to confirm that it's just your patch and
+not mine that caused the problem.
 
-All these 6 ipc-sem-next patches were tested several times by me.
-
-It took me approx 2 weeks and XX kernel-builds.
-Please gimme appropriate credits, Thanks.
-
-Have a nice weekend,
-- Sedat -
-
-P.S.: Check for Sedat's credits.
-
-ipcsem-fine-grained-locking-for-semtimedop-fix-lockdep-false-positive.patch:Cc:
-Sedat Dilek <sedat.dilek@gmail.com>
-
-ipcsem-fine-grained-locking-for-semtimedop-ipc-make-refcounter-atomic.patch:Sedat
-reported an issue leading to a NULL dereference in update_queue():
-ipcsem-fine-grained-locking-for-semtimedop-ipc-make-refcounter-atomic.patch:Tested-by:
-Sedat Dilek <sedat.dilek@gmail.com>
-
-ipcsem-fine-grained-locking-for-semtimedop-ipc-make-refcounter-atomic.patch:Reported-by:
-Sedat Dilek <sedat.dilek@gmail.com>
-
-ipcsem-fine-grained-locking-for-semtimedop-ipc-make-refcounter-atomic.patch:Cc:
-Sedat Dilek <sedat.dilek@gmail.com>
+	Arnd
