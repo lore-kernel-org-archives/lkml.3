@@ -1,72 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933029Ab3DZKjh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 06:39:37 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:48432 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760111Ab3DZKjZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 06:39:25 -0400
-From: Amit Daniel Kachhap <amit.daniel@samsung.com>
-To: linux-pm@vger.kernel.org
-Cc: Zhang Rui <rui.zhang@intel.com>, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, amit.kachhap@gmail.com,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>,
-        Lukasz Majewski <l.majewski@samsung.com>
-Subject: [PATCH V2 17/20] ARM: dts: thermal: exynos4: Add documentation for Exynos SoC thermal bindings
-Date: Fri, 26 Apr 2013 16:07:48 +0530
-Message-Id: <1366972671-9227-18-git-send-email-amit.daniel@samsung.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1366972671-9227-1-git-send-email-amit.daniel@samsung.com>
-References: <1366972671-9227-1-git-send-email-amit.daniel@samsung.com>
+	id S932879Ab3DZKjd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 06:39:33 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:57126 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760116Ab3DZKj0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Apr 2013 06:39:26 -0400
+From: Heiko =?utf-8?q?St=C3=BCbner?= <heiko@sntech.de>
+To: Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH 12/21] irqchip: s3c24xx: add missing __init annotations
+Date: Fri, 26 Apr 2013 12:39:38 +0200
+User-Agent: KMail/1.13.7 (Linux/3.2.0-2-amd64; KDE/4.8.4; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Kukjin Kim <kgene.kim@samsung.com>
+References: <1366910944-3033663-1-git-send-email-arnd@arndb.de> <1366910944-3033663-13-git-send-email-arnd@arndb.de>
+In-Reply-To: <1366910944-3033663-13-git-send-email-arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201304261239.38737.heiko@sntech.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lukasz Majewski <l.majewski@samsung.com>
+Am Donnerstag, 25. April 2013, 19:28:55 schrieb Arnd Bergmann:
+> The s3c24xx_init_intc and s3c2412_init_irq functions are only called
+> at init time, and they call functions already marked __init, so they
+> should be marked in the same way. This was reported as
+> 
+> WARNING: vmlinux.o(.text+0x19e0b4): Section mismatch in reference from the
+> function s3c2412_init_irq() to the function
+> .init.text:s3c24xx_init_intc.constprop.8() The function s3c2412_init_irq()
+> references
+> the function __init s3c24xx_init_intc.constprop.8().
+> This is often because s3c2412_init_irq lacks a __init
+> annotation or the annotation of s3c24xx_init_intc.constprop.8 is wrong.
+> 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Heiko Stuebner <heiko@sntech.de>
+> Cc: Kukjin Kim <kgene.kim@samsung.com>
 
-Proper description for Exynos4 bindings added to Documentation/devicetree/
-bindings
+Yeah, it seems "someone" forgot these, thanks for catching this.
 
-Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
- .../devicetree/bindings/thermal/exynos-thermal.txt |   25 ++++++++++++++++++++
- 1 files changed, 25 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/thermal/exynos-thermal.txt
+Acked-by: Heiko Stuebner <heiko@sntech.de>
 
-diff --git a/Documentation/devicetree/bindings/thermal/exynos-thermal.txt b/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
-new file mode 100644
-index 0000000..535fd0e
---- /dev/null
-+++ b/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
-@@ -0,0 +1,25 @@
-+* Exynos Thermal Management Unit (TMU)
-+
-+** Required properties:
-+
-+- compatible : One of the following:
-+	       "samsung,exynos4412-tmu"
-+	       "samsung,exynos4210-tmu"
-+	       "samsung,exynos5250-tmu"
-+- interrupt-parent : The phandle for the interrupt controller
-+- reg : Address range of the thermal registers
-+- interrupts : Should contain interrupt for thermal system
-+- clocks : The main clock for TMU device
-+- clock-names : Thermal system clock name
-+
-+Example:
-+
-+	tmu@100C0000 {
-+		compatible = "samsung,exynos4412-tmu";
-+		interrupt-parent = <&combiner>;
-+		reg = <0x100C0000 0x100>;
-+		interrupts = <2 4>;
-+		clocks = <&clock 383>;
-+		clock-names = "tmu_apbif";
-+		status = "disabled";
-+	};
--- 
-1.7.1
+
+> ---
+>  drivers/irqchip/irq-s3c24xx.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/irqchip/irq-s3c24xx.c b/drivers/irqchip/irq-s3c24xx.c
+> index c8afd7b..bbcc944 100644
+> --- a/drivers/irqchip/irq-s3c24xx.c
+> +++ b/drivers/irqchip/irq-s3c24xx.c
+> @@ -535,7 +535,7 @@ static void s3c24xx_clear_intc(struct s3c_irq_intc
+> *intc) }
+>  }
+> 
+> -static struct s3c_irq_intc *s3c24xx_init_intc(struct device_node *np,
+> +static struct s3c_irq_intc * __init s3c24xx_init_intc(struct device_node
+> *np, struct s3c_irq_data *irq_data,
+>  				       struct s3c_irq_intc *parent,
+>  				       unsigned long address)
+> @@ -795,7 +795,7 @@ static struct s3c_irq_data init_s3c2412subint[32] = {
+>  	{ .type = S3C_IRQTYPE_LEVEL, .parent_irq = 21 }, /* CF */
+>  };
+> 
+> -void s3c2412_init_irq(void)
+> +void __init s3c2412_init_irq(void)
+>  {
+>  	pr_info("S3C2412: IRQ Support\n");
 
