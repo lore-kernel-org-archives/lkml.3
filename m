@@ -1,92 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759818Ab3DZDid (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 23:38:33 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:47030 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754381Ab3DZDic (ORCPT
+	id S1758796Ab3DZDnh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 23:43:37 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:51092 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751636Ab3DZDng (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 23:38:32 -0400
-Date: Fri, 26 Apr 2013 13:38:29 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>
-Subject: linux-next: manual merge of the net-next tree with the net tree
-Message-Id: <20130426133829.e9f42486705f099a362e8086@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__26_Apr_2013_13_38_29_+1000_qPRyoi4BqSgrPpY."
+	Thu, 25 Apr 2013 23:43:36 -0400
+X-Spam-Score: -100.8
+Message-ID: <5179F7B8.5010701@asianux.com>
+Date: Fri, 26 Apr 2013 11:42:48 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Mike Qiu <qiudayu@linux.vnet.ibm.com>
+CC: Michael Neuling <mikey@neuling.org>, Paul Mackerras <paulus@samba.org>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        linuxppc-dev@lists.ozlabs.org, sfr@canb.auug.org.au, matt@ozlabs.org,
+        linux-kernel@vger.kernel.org,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: Re: [PATCH v2] PowerPC: kernel: compiling issue, make additional
+ room in exception vector area
+References: <5177965D.9090406@linux.vnet.ibm.com> <20130424083142.GB26834@concordia> <51779941.8080403@linux.vnet.ibm.com> <30651.1366799858@ale.ozlabs.ibm.com> <1366807638.5911.2.camel@localhost> <5178816D.3000309@asianux.com> <5178ABA2.4030109@linux.vnet.ibm.com> <20130425062539.GA421@iris.ozlabs.ibm.com> <517918AB.4020508@asianux.com> <30269.1366931768@ale.ozlabs.ibm.com> <5179D302.9060203@asianux.com> <5179D5D8.8080102@asianux.com> <5179DA23.8000407@asianux.com> <5179E056.2000709@linux.vnet.ibm.com> <5179E11F.8010007@asianux.com> <5179EFB6.3090602@linux.vnet.ibm.com> <5179F39C.5020408@asianux.com>
+In-Reply-To: <5179F39C.5020408@asianux.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__26_Apr_2013_13_38_29_+1000_qPRyoi4BqSgrPpY.
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 2013年04月26日 11:25, Chen Gang wrote:
+> On 2013年04月26日 11:08, Mike Qiu wrote:
+>> 于 2013/4/26 10:06, Chen Gang 写道:
+>>> On 2013年04月26日 10:03, Mike Qiu wrote:
+>>>> �� 2013/4/26 9:36, Chen Gang д��:
+>>>>>> On 2013��04��26�� 09:18, Chen Gang wrote:
+>>>>>>>> On 2013��04��26�� 09:06, Chen Gang wrote:
+>>>>>>>>>>>> CFAR is the Come From Register.  It saves the location of the
+>>>>>>>>>>>> last
+>>>>>>>>>>>>>> branch and is hence overwritten by any branch.
+>>>>>>>>>>>>>>
+>>>>>>>>>> Do we process it just like others done (e.g. 0x300, 0xe00,
+>>>>>>>>>> 0xe20 ...) ?
+>>>>>>>>>>     . = 0x900
+>>>>>>>>>>     .globl decrementer_pSeries
+>>>>>>>>>> decrementer_pSeries:
+>>>>>>>>>>       HMT_MEDIUM_PPR_DISCARD
+>>>>>>>>>>     SET_SCRATCH0(r13)
+>>>>>>>>>>     b decrementer_pSeries_0
+>>>>>>>>>>
+>>>>>>>>>>     ...
+>>>>>>>>>>
+>>>>>>>>>>
+>>>>>> Oh, it seems EXCEPTION_PROLOG_1 will save the regesters which related
+>>>>>> with CFAR, so I think need move EXCEPTION_PROLOG_1 to near 0x900.
+>>>> I will try your diff V2, to see if the machine can boot up
+>>> OK, thanks. (hope it can work)
+>> It seems that the machine can be bootup in powernv mode, but I'm not
+>> sure if my machine call that module.
+>>
+>> At lease my machine can boot up
+> 
 
-Hi all,
+Please reference commit number: 1707dd161349e6c54170c88d94fed012e3d224e3
+(1707dd1 powerpc: Save CFAR before branching in interrupt entry paths)
 
-Today's linux-next merge of the net-next tree got a conflict in
-include/net/tcp.h between commit 093162553c33 ("tcp: force a dst refcount
-when prequeue packet") from the net tree and commit b2fb4f54ecd4 ("tcp:
-uninline tcp_prequeue()") from the net-next tree.
+What our diff v2 has done is just the fix for our patch v2 (just like
+the commit 1707dd1 has done).
 
-I fixed it up (I used the next-next version of tcp.h and added the
-following patch) and can carry the fix as necessary (no action is
-required).  Thanks for the heads up Dave!
+Please check, thanks.
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Fri, 26 Apr 2013 13:35:50 +1000
-Subject: [PATCH] tcp: merge fixup for movemenet of tcp_prequeue
+:-)
 
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- net/ipv4/tcp_ipv4.c | 1 +
- 1 file changed, 1 insertion(+)
+> Thank you for your information !
+> 
+> I have checked the disassemble by powerpc64-linux-gnu-objdump, it seems
+> all we have done for 0x900 is almost like the original done for 0x200.
+> 
+> I am just learning about the CFAR (google it), And I plan to wait for a
+> day, if all things go smoothly, I will send patch v3.
+> 
+> 
+> :-)
+> 
 
-diff --git a/net/ipv4/tcp_ipv4.c b/net/ipv4/tcp_ipv4.c
-index 8667aaa..5dcf177 100644
---- a/net/ipv4/tcp_ipv4.c
-+++ b/net/ipv4/tcp_ipv4.c
-@@ -1926,6 +1926,7 @@ bool tcp_prequeue(struct sock *sk, struct sk_buff *sk=
-b)
- 	    skb_queue_len(&tp->ucopy.prequeue) =3D=3D 0)
- 		return false;
-=20
-+	skb_dst_force(skb);
- 	__skb_queue_tail(&tp->ucopy.prequeue, skb);
- 	tp->ucopy.memory +=3D skb->truesize;
- 	if (tp->ucopy.memory > sk->sk_rcvbuf) {
---=20
-1.8.1
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+-- 
+Chen Gang
 
---Signature=_Fri__26_Apr_2013_13_38_29_+1000_qPRyoi4BqSgrPpY.
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRefa1AAoJEECxmPOUX5FEwaUP/0VVnEUforo0PP9HDKc43k2T
-ERTA+v5s8a2P65v0I5119QPiqx/8sy3CqW0+cOVGc8pmvhguTGLFJpAMZPX4tCfo
-/DX2gmNRRkFJxNrhPevMuSeK+KNyFf+4CpfLaoz5Xp2D10j3/C2ksn48iNG25piy
-gs2aXicTWYy09iPy8F6AK6PR3dWNk1VTtSJ4sc2hYMiDOc2w1HJt9zLLcX+X/FAd
-i+SYqF1mIQoiGL3NCZobG7y23chb0otR82a7jBoet3iHYFWVusbr9RvQqBTVTSBG
-R4ZBk71zZMdhwlklAISsqQBzLToiP2GBH0H6XQSnGdhqsuTOj1VOj5NwYMrAgdg9
-JrQbtwZfLg8zVMveAWr8sBt1YT3ZXztiEr3vwERCtKcgYveyAPKjd8jbVmrc2mB6
-esoNRaE+EW2repeQYe1QaM0sKicq5qUPBz8T69J8VBhK7PMJUTr3Jtq2ehrqXBSY
-dUrguonOZ0ff5nhhp+uiY0PvTpE54EljQI4KvBrpU6XtVTg3SgEmF9hUXNEm1dz7
-H34dYtq5Iyubmo9vNDQBWP8DsWZHyD9cVrmF3R6cYDQ5oGxYGsWbDoWMPUnqk0ZD
-xqF1CeMdtzjyvQpK8qNrBi2BKvV7JIXIvrQeWGpgB0k9FJEroBYTTivX0GDne8/G
-VK6imZipTLJWHfjdNcTv
-=llet
------END PGP SIGNATURE-----
-
---Signature=_Fri__26_Apr_2013_13_38_29_+1000_qPRyoi4BqSgrPpY.--
+Asianux Corporation
