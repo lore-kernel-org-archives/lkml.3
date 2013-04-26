@@ -1,60 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757022Ab3DZQoc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 12:44:32 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:41239 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755251Ab3DZQo3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 12:44:29 -0400
-Message-ID: <517AAED5.7040400@zytor.com>
-Date: Fri, 26 Apr 2013 09:44:05 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S1757086Ab3DZQq5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 12:46:57 -0400
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:40439 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754092Ab3DZQq4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Apr 2013 12:46:56 -0400
+Date: Fri, 26 Apr 2013 20:46:52 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl, tytso@mit.edu,
+        davem@davemloft.net, fweisbec@gmail.com, oleg@redhat.com,
+        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:perf/core] perf/x86/intel/P4: Robistify P4 PMU types
+Message-ID: <20130426164652.GO13008@moon>
+References: <20130424072630.GB1780@gmail.com>
+ <tip-5ac2b5c2721501a8f5c5e1cd4116cbc31ace6886@git.kernel.org>
+ <20130426161328.GA16818@pd.tnic>
+ <20130426162444.GC17430@moon>
+ <20130426163952.GC15361@pd.tnic>
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Cyrill Gorcunov <gorcunov@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        David Miller <davem@davemloft.net>, "Theodore Ts'o" <tytso@mit.edu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        Fr??d??ric Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH v2] x86: make DR*_RESERVED unsigned long
-References: <CA+55aFwpLu0qNms=hkQr43yqD0K9DgESNm91OEWKT1ZuT8MU6Q@mail.gmail.com> <20130424072630.GB1780@gmail.com> <20130424170702.GA1867@redhat.com> <5178282D.9030902@zytor.com> <20130425144818.GA25921@redhat.com> <20130426163802.GA30351@redhat.com>
-In-Reply-To: <20130426163802.GA30351@redhat.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130426163952.GC15361@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/26/2013 09:38 AM, Oleg Nesterov wrote:
-> DR6_RESERVED and DR_CONTROL_RESERVED are used to clear the set
-> bits in the "unsigned long" data, make them long to ensure that
-> "&~" doesn't clear the upper bits.
+On Fri, Apr 26, 2013 at 06:39:52PM +0200, Borislav Petkov wrote:
+>                                              #    0.25  stalled cycles per insn
+>            590,855 branches                  #  237.877 M/sec
+>             12,882 branch-misses             #    2.18% of all branches
+> 	    ^^^^^^^^^^^^^^^^^^^^
 > 
-> This is only cleanup, the usage of ~DR*_RESERVED is safe but
-> doesn't look clean and the pattern is error prone.
-> 
-> 	- do_debug:
-> 
-> 		dr6 &= ~DR6_RESERVED;
-> 
-> 	  this also wrongly clears 32-63 bits. Fortunately these
-> 	  bits are reserved and must be zero.
-> 
+> Those above?
 
-I don't think this is wrongly at all.  The whole point is to mask out
-the bits that the handler doesn't want to deal with, so masking out the
-reserved bits [63:32] seems reasonable to me.
-
-The comment should probably be corrected, though.
-
-	-hpa
-
-
+Yeah, thanks!
