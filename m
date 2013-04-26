@@ -1,92 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757019Ab3DZP7N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 11:59:13 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:38575 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756240Ab3DZP7L (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 11:59:11 -0400
-Message-ID: <1366991947.8964.233.camel@edumazet-glaptop>
-Subject: Re: [PATCH 2/2] ipvs: Use cond_resched_rcu_lock() helper when
- dumping connections
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: Peter Zijlstra <peterz@infradead.org>, Simon Horman <horms@verge.net.au>,
-        Julian Anastasov <ja@ssi.bg>, Ingo Molnar <mingo@redhat.com>,
-        lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
-        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Dipankar Sarma <dipankar@in.ibm.com>, dhaval.giani@gmail.com
-Date: Fri, 26 Apr 2013 08:59:07 -0700
-In-Reply-To: <20130426154547.GC3860@linux.vnet.ibm.com>
-References: <1366940708-10180-1-git-send-email-horms@verge.net.au>
-	 <1366940708-10180-3-git-send-email-horms@verge.net.au>
-	 <20130426080313.GC8669@dyad.programming.kicks-ass.net>
-	 <20130426154547.GC3860@linux.vnet.ibm.com>
+	id S1756147Ab3DZQBR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 12:01:17 -0400
+Received: from mga03.intel.com ([143.182.124.21]:49517 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753972Ab3DZQBQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Apr 2013 12:01:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,559,1363158000"; 
+   d="scan'208";a="293668992"
+Message-ID: <1366992210.3603.49.camel@sauron.fi.intel.com>
+Subject: Re: eGalax touchscreen regression
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Reply-To: artem.bityutskiy@linux.intel.com
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Hui Wang <jason77.wang@gmail.com>,
+        Zhang Jiejing <jiejing.zhang@freescale.com>,
+        linux-input@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Hofemeier, Ulf" <ulf.hofemeier@intel.com>
+Date: Fri, 26 Apr 2013 19:03:30 +0300
+In-Reply-To: <20130426153911.GA18528@core.coreip.homeip.net>
+References: <1366708088.9823.16.camel@sauron.fi.intel.com>
+	 <20130423154007.GB4104@core.coreip.homeip.net>
+	 <1366794193.21369.11.camel@sauron.fi.intel.com>
+	 <3076410.nE1Nu6ITeM@wuerfel> <1366988945.3603.46.camel@sauron.fi.intel.com>
+	 <20130426153911.GA18528@core.coreip.homeip.net>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
 Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-04-26 at 08:45 -0700, Paul E. McKenney wrote:
-
-> I have done some crude coccinelle patterns in the past, but they are
-> subject to false positives (from when you transfer the pointer from
-> RCU protection to reference-count protection) and also false negatives
-> (when you atomically increment some statistic unrelated to protection).
+On Fri, 2013-04-26 at 08:39 -0700, Dmitry Torokhov wrote:
+> On Fri, Apr 26, 2013 at 06:09:05PM +0300, Artem Bityutskiy wrote:
+> > On Fri, 2013-04-26 at 16:59 +0200, Arnd Bergmann wrote:
+> > > On Wednesday 24 April 2013 12:03:13 Artem Bityutskiy wrote:
+> > > > On Tue, 2013-04-23 at 08:40 -0700, Dmitry Torokhov wrote:
+> > > > > > the eGalax driver now requires OF. For us this is a regression because
+> > > > > > we do not have OF: https://bugs.tizen.org/jira/browse/TIVI-740
+> > > > > 
+> > > > > I see. In this case we need to come up with a platform data to pass
+> > > > > wakeup gpio in case platform does not support OF. irq_to_gpio() is not
+> > > > > supported on many platforms, causing compilation errors.
+> > > > > 
+> > > > > Is the platform that you are trying to use the touchscreen upstream?
+> > > > 
+> > > > OK, so this is about just a monitor with a touchscreen (Giantec high-res
+> > > > capacitive 11.6” LCD monitor). The touchscreen is connected to a
+> > > > commodity hardware via USB.
+> > > > 
+> > > > So yes, the platform _is_ upstream  Namely, we use just a SandyBridge
+> > > > PC.
+> > > 
+> > > So you use a usb-to-i2c interface?
+> > 
+> > I do not think so. The problem is that I do not have the HW, so I was
+> > making guesses, and it looks like this driver has nothing to do with the
+> > regression we've got. Sorry for the noise. We'll investigate this more
+> > carefully internally.
 > 
-> I could imagine maintaining a per-thread count of the number of outermost
-> RCU read-side critical sections at runtime, and then associating that
-> counter with a given pointer at rcu_dereference() time, but this would
-> require either compiler magic or an API for using a pointer returned
-> by rcu_dereference().  This API could in theory be enforced by sparse.
+> OK, so assuming you simply using USB version of eGalax device the only
+> recent change (3.6-rc7) was:
 > 
-> Dhaval Giani might have some ideas as well, adding him to CC.
+> commit 037a833ed05a86d01ea27a2c32043b86c549be1b
+> Author: Forest Bond <forest.bond@rapidrollout.com>
+> Date:   Tue Sep 4 20:27:37 2012 -0700
 
+Thanks for the input Dmitry, appreciated. We'll be looking more
+carefully at this next week.
 
-We had this fix the otherday, because tcp prequeue code hit this check :
-
-static inline struct dst_entry *skb_dst(const struct sk_buff *skb)
-{
-        /* If refdst was not refcounted, check we still are in a 
-         * rcu_read_lock section
-         */
-        WARN_ON((skb->_skb_refdst & SKB_DST_NOREF) &&
-                !rcu_read_lock_held() &&
-                !rcu_read_lock_bh_held());
-        return (struct dst_entry *)(skb->_skb_refdst & SKB_DST_PTRMASK);
-}
-
-( http://git.kernel.org/cgit/linux/kernel/git/davem/net.git/commit/?id=093162553c33e9479283e107b4431378271c735d )
-
-Problem is the rcu protected pointer was escaping the rcu lock and was
-then used in another thread.
-
-
-What would be cool (but expensive maybe) , would be to get a cookie from
-rcu_read_lock(), and check the cookie at rcu_dereference(). These
-cookies would have system wide scope to catch any kind of errors.
-
-Because a per thread counter would not catch following problem :
-
-rcu_read_lock();
-
-ptr = rcu_dereference(x);
-if (!ptr)
-	return NULL;
-...
-
-
-rcu_read_unlock();
-
-...
-rcu_read_lock();
-/* no reload of x, ptr might be now stale/freed */
-if (ptr->field) { ... }
-
-
+-- 
+Best Regards,
+Artem Bityutskiy
 
