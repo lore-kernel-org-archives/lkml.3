@@ -1,75 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754312Ab3DZWAi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 18:00:38 -0400
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:54039 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751213Ab3DZWAg (ORCPT
+	id S1755384Ab3DZWBi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 18:01:38 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:40095 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751213Ab3DZWBh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 18:00:36 -0400
-Date: Fri, 26 Apr 2013 15:00:33 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch for-3.8-rc8] usb, chipidea: fix link error when
- USB_EHCI_HCD is a module
-Message-ID: <20130426220033.GA27963@kroah.com>
-References: <alpine.DEB.2.02.1304261323060.17754@chino.kir.corp.google.com>
- <20130426203345.GA25959@kroah.com>
- <alpine.DEB.2.02.1304261448350.25408@chino.kir.corp.google.com>
+	Fri, 26 Apr 2013 18:01:37 -0400
+Date: Sat, 27 Apr 2013 00:01:31 +0200
+From: "Yann E. MORIN" <yann.morin.1998@free.fr>
+To: Michal Marek <mmarek@suse.cz>
+Cc: sedat.dilek@gmail.com, Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-kbuild@vger.kernel.org
+Subject: Re: linux-next: Tree for Apr 26
+Message-ID: <20130426220131.GC5100@free.fr>
+References: <20130426180357.7599d1b6b7965470905dcdf3@canb.auug.org.au>
+ <CA+icZUWt_W5FUQgQ2TFoQU0df+sAbxZZE8AcD16T3f_fiTD9DQ@mail.gmail.com>
+ <517A4FC1.3070605@suse.cz>
+ <20130426100435.GA28733@sepie.suse.cz>
+ <CA+icZUVOfB2JuL1xh1EO1hTP_eOkntYFKsUJ0Zp6VZqn09NABA@mail.gmail.com>
+ <CA+icZUWNVEsiTs6u_2R9krb45ub4t-pZj_VEPRmrX2c4DzwfmA@mail.gmail.com>
+ <CA+icZUXSsqN1iE3ttQakvpZqG-oOL9NR6RMUezB7LGeUw3d00Q@mail.gmail.com>
+ <517A6033.5060103@suse.cz>
+ <517A615D.9020400@suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1304261448350.25408@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <517A615D.9020400@suse.cz>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 26, 2013 at 02:50:56PM -0700, David Rientjes wrote:
-> On Fri, 26 Apr 2013, Greg Kroah-Hartman wrote:
-> 
-> > I think you mean "3.9" in your subject: right?
+Michal, Sedat, All,
+
+On Fri, Apr 26, 2013 at 01:13:33PM +0200, Michal Marek wrote:
+> On 26.4.2013 13:08, Michal Marek wrote:
+> > On 26.4.2013 12:49, Sedat Dilek wrote:
+> >> With reverting all kbuild-next commits I was able to build again.
+> >>
+> >>       Revert "kconfig: implement KCONFIG_PROBABILITY for randconfig"
+> >>       Revert "kconfig: allow specifying the seed for randconfig"
+> >>       Revert "kconfig: fix randomising choice entries in presence of
+> >> KCONFIG_ALLCONFIG"
+> >>       Revert "kconfig: do not override symbols already set"
+> >>       Revert "kconfig: fix randconfig tristate detection"
 > > 
-> 
-> It's your subsystem, if you want to release a kernel with a known-broken 
-> config, that's your call.
-
-As you point out, it's been "known broken" since 3.7, no rush now to fix
-it, especially so late in the merge window. :)
-
-> > On Fri, Apr 26, 2013 at 01:25:01PM -0700, David Rientjes wrote:
-> > > Fixes link error when USB_EHCI_HCD=m and USB_CHIPIDEA_HOST=y:
-> > > 
-> > > 	drivers/built-in.o: In function `ci_hdrc_host_init':
-> > > 	drivers/usb/chipidea/host.c:104: undefined reference to `ehci_init_driver'
-> > > 
-> > > as a result of commit 09f6ffde2ece ("USB: EHCI: fix build error by making
-> > > ChipIdea host a normal EHCI driver").
-> > > 
-> > > Cc: stable@vger.kernel.org [v3.7+]
-> > > Signed-off-by: David Rientjes <rientjes@google.com>
-> > > ---
-> > >  drivers/usb/chipidea/Kconfig | 2 +-
-> > >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > I did the same, then applied all the kconfig commits once more and did a
+> > git bisect with this script:
 > > 
-> > There have been a ton of chipidea changes recently in linux-next.  This
-> > really just looks like you got the configuration wrong, nothing that is
-> > needed at this point in the release cycle, right?
+> > #!/bin/sh
 > > 
+> > cp config-bad .config
+> > make silentoldconfig </dev/null
+> > 
+> > This resulted in
+> > 
+> > 7ded2624f8988bd22819a60a6000ba6b7091db89 is the first bad commit
+> > commit 7ded2624f8988bd22819a60a6000ba6b7091db89
+> > Author: Yann E. MORIN <yann.morin.1998@free.fr>
+> > Date:   Sun Mar 10 16:34:10 2013 +0100
+> > 
+> >     kconfig: fix randomising choice entries in presence of KCONFIG_ALLCONFIG
+> > 
+> > The commit id is different, because it is reverted and applied again. Yann?
 > 
-> This happens in both linux-next as well as Linus's tree, and has since 
-> 3.7.
+> Commit 422c809 ("kconfig: fix randomising choice entries in presence of
+> KCONFIG_ALLCONFIG") reverts cleanly and reverting it fixes the bug. So
+> there is a plan B.
 
-The chipidea maintainer has a big update all queued up in my trees for
-3.10-rc1, if you could verify that linux-next fixes your problem, I
-would appreciate it.
+I do not understand how reverting 422c809 could have fixed the
+silentoldconfig issue: as I previously reported, it already happens on
+Linus' master.
 
-If not, please let us know.
+I tried again jsut a few minutes ago against:
+    d7d7271: Merge branch 'v4l_for_linus' of git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media
+and it is already broken, although 422c809 is not yet in Linus' tree:
 
-thanks,
+    $ make silentoldconfig </dev/null
+    scripts/kconfig/conf --silentoldconfig Kconfig
+    warning: (IA32_EMULATION) selects COMPAT_BINFMT_ELF which has unmet
+    direct dependencies (COMPAT && BINFMT_ELF)
+    *
+    * Restart config...
+    *
+    *
+    * Paravirtualized guest support
+    *
+    Paravirtualized guest support (PARAVIRT_GUEST) [N/y/?] (NEW) aborted!
 
-greg k-h
+    Console input/output is redirected. Run 'make oldconfig' to update configuration.
+
+    make[1]: *** [silentoldconfig] Error 1
+    make: *** [silentoldconfig] Error 2
+
+Or did I miss something?
+
+However, oldconfig just works (with an error for each new symbol):
+    $ make oldconfig </dev/null
+    [--SNIP--]
+      NOP USB Transceiver Driver (NOP_USB_XCEIV) [N/m/?] (NEW)
+    Error in reading or end of file.
+
+    #
+    # configuration written to .config
+    #
+
+(Which does not mean 422c809 can't be reverted for other reasons, more
+on that in another mail).
+
+Regards,
+Yann E. MORIN.
+
+PS. I'm sad that I do not receive Sedat's emails for some reasons... :-(
+YEM.
+
+-- 
+.-----------------.--------------------.------------------.--------------------.
+|  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
+| +33 662 376 056 | Software  Designer | \ / CAMPAIGN     |  ___               |
+| +33 223 225 172 `------------.-------:  X  AGAINST      |  \e/  There is no  |
+| http://ymorin.is-a-geek.org/ | _/*\_ | / \ HTML MAIL    |   v   conspiracy.  |
+'------------------------------^-------^------------------^--------------------'
