@@ -1,119 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758851Ab3DZG0X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 02:26:23 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:50588 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758537Ab3DZG0U (ORCPT
+	id S1759146Ab3DZG1Y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 02:27:24 -0400
+Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:59446 "HELO
+	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1758980Ab3DZG1X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 02:26:20 -0400
-Date: Fri, 26 Apr 2013 08:26:16 +0200 (CEST)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: devicetree-discuss@lists.ozlabs.org
-cc: Arnd Bergmann <arnd@arndb.de>, Vinod Koul <vinod.koul@intel.com>,
-        linux-sh@vger.kernel.org, Magnus Damm <magnus.damm@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 7/6] DMA: shdma: add DT binding documentation
-Message-ID: <Pine.LNX.4.64.1304260823050.30844@axis700.grange>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:ihI007l5n+rjR+f+hpWG6osLJNWMoQ7UvgMSznTb0UM
- 4+1jGoxhLXNkpkW6qdXgJdK1bMnkz5n1Cs192LF5VB9ttF2eil
- 18UfFXYWFNHsVF9vx66AICkXEnKeF4FAOqn8IV1v5DzZeq2g+z
- +MQUGiP7+OjsO+dVv/i5WcV/LSwVSQ08bO1Bq6iPiElD1Ef4lk
- 5RSM9ExcL8FXu1gM+TRu0j5rl2QT+NnKGFRLuexbjL5RRg7bWN
- Gl9JWv0e8shEo9fxS26qUBf6c/wTQ3md3YF5tjt/j4vDDQ4UC+
- OqY8yy5aJgkK/FVjRh76t5tSrsI5ZlU/rgJBNPYE0FaDi0+wkg
- ekhvigFupIaboYcp0xhiqeASpDpLsaExYTatpPuIooFF3w70d5
- PtUFSt2q0iXZg==
+	Fri, 26 Apr 2013 02:27:23 -0400
+Message-ID: <1366957639.7911.42.camel@Wailaba2>
+Subject: Re: [PATCH] process cputimer is moving faster than its
+ corresponding clock
+From: Olivier Langlois <olivier@trillion01.com>
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, schwidefsky@de.ibm.com,
+        Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Fri, 26 Apr 2013 02:27:19 -0400
+In-Reply-To: <1366951210.7911.28.camel@Wailaba2>
+References: <1365184746.874.103.camel@Wailaba2>
+	 <1365593710.30071.52.camel@laptop> <1365608911.707.65.camel@Wailaba2>
+	 <1365763837.17140.52.camel@laptop> <1365782115.17140.68.camel@laptop>
+	 <CAFTL4hwQ4FZs0VCNXP37f=+DBW7Q2EQc6PW_EtYiVnZCPWN4OQ@mail.gmail.com>
+	 <CAHGf_=pWPT4XdrJ8ZveL4zJKm1SE0whpL_fMHd5_TokuNQxSJQ@mail.gmail.com>
+	 <CAHGf_=psD4V-U4FFwAWr4k3ZP6p=GVkNY_0S-Cg06m-=89MM7Q@mail.gmail.com>
+	 <1366951210.7911.28.camel@Wailaba2>
+Organization: Trillion01 Inc
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {5686:box610.bluehost.com:olivierl:trillion01.com} {sentby:smtp auth 173.178.230.31 authed with olivier@trillion01.com}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-SHDMA uses only standard DMA Device Tree bindings. This patch adds
-documentation, exactly describing the use of the bindings and providing
-examples.
+On Fri, 2013-04-26 at 00:40 -0400, Olivier Langlois wrote:
+> On Fri, 2013-04-19 at 11:08 -0700, KOSAKI Motohiro wrote:
+> > On Fri, Apr 19, 2013 at 10:38 AM, KOSAKI Motohiro
+> > <kosaki.motohiro@gmail.com> wrote:
+> > >> I feel we are hitting the same issue than this patch:
+> > >> https://lkml.org/lkml/2013/4/5/116
+> > >>
+> > >> I'm adding Kosaki in Cc, who proposed roughly the same fix.
+> > >
+> > > Thanks to CCing. I'm now sitting LSF and I can't read whole tons emails.
+> > > However the fix is definitely same and I definitely agree this approach.
+> > >
+> > > thank you.
+> > 
+> > And if I understand correctly, update_gt_cputime() is no longer
+> > necessary after this patch because time never makes backward.
+> > 
+> > What do you think?
+> 
+> Kosaki, I would tend to say that what you propose is exact. After having
+> added the task deltas I was puzzled to see the cputimer still moving
+> faster than the process clock. I was seeing it with the the help of
+> printk statement inside update_gt_cputime().
+> 
+> After nailing down the last remaining cause of that inside sched/core.c,
+> I have never seen after the cputimer being in advance.
+> 
+I need to add that I can only confirm that to be true with
+sum_exec_runtime.
 
-Signed-off-by: Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
----
+To affirm it to be true for stime and utime would require more
+investigation. I didn't look them at all. I was only concerned with
+sum_exec_runtime.
 
-This patch adds the missing documentation to the patch series "DMA: shdma: 
-add Device Tree support"
-http://thread.gmane.org/gmane.linux.ports.sh.devel/21972
-Arnd, Vinod, I hope, now this series can be applied :)
+I will prepare a v2 of the patch accounting all the feedbacks that I
+received from KOSAKI Motohiro, Frederic Weisbecker and Peter Zijlstra
+and send it back here for further discussion.
 
- Documentation/devicetree/bindings/dma/shdma.txt |   61 +++++++++++++++++++++++
- 1 files changed, 61 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/dma/shdma.txt
+Thank you very much all!
+Olivier
 
-diff --git a/Documentation/devicetree/bindings/dma/shdma.txt b/Documentation/devicetree/bindings/dma/shdma.txt
-new file mode 100644
-index 0000000..f99618e
---- /dev/null
-+++ b/Documentation/devicetree/bindings/dma/shdma.txt
-@@ -0,0 +1,61 @@
-+* SHDMA Device Tree bindings
-+
-+Only generic DMA controller bindings are used for SHDMA DT nodes.
-+
-+* DMA controller
-+
-+Required properties:
-+- compatible:	should be "renesas,shdma"
-+- #dma-cells:	should be <1>, see "dmas" property below
-+
-+Optional properties (currently unused):
-+- dma-channels:	number of DMA channels
-+- dma-requests:	number of DMA request signals
-+
-+Example:
-+	dma0: shdma@fe000020 {
-+		compatible = "renesas,shdma";
-+		reg = <0xfe000020 0x89e0>;
-+		interrupt-parent = <&gic>;
-+		interrupts = <0 129 4
-+				0 109 4
-+				0 110 4
-+				0 111 4
-+				0 112 4
-+				0 113 4
-+				0 114 4
-+				0 115 4
-+				0 116 4
-+				0 117 4
-+				0 118 4
-+				0 119 4
-+				0 120 4
-+				0 121 4
-+				0 122 4
-+				0 123 4
-+				0 124 4
-+				0 125 4
-+				0 126 4
-+				0 127 4
-+				0 128 4>;
-+		interrupt-names = "error",
-+				"ch0", "ch1", "ch2", "ch3",
-+				"ch4", "ch5", "ch6", "ch7",
-+				"ch8", "ch9", "ch10", "ch11",
-+				"ch12", "ch13", "ch14", "ch15",
-+				"ch16", "ch17", "ch18", "ch19";
-+		#dma-cells = <1>;
-+		dma-channels = <20>;
-+		dma-requests = <256>;
-+	};
-+
-+* DMA client
-+
-+Required properties:
-+- dmas:		a list of <[DMA controller phandle] [MID/RID value]> pairs
-+- dma-names:	a list of DMA channel names, one per "dmas" entry
-+
-+Example:
-+	dmas = <&dma0 0xd1
-+		&dma0 0xd2>;
-+	dma-names = "tx", "rx";
--- 
-1.7.2.5
+
+
 
