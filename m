@@ -1,100 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757491Ab3DZVg7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 17:36:59 -0400
-Received: from mail-vc0-f170.google.com ([209.85.220.170]:58983 "EHLO
-	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754122Ab3DZVg6 (ORCPT
+	id S1757614Ab3DZVh2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 17:37:28 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:43550 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757559Ab3DZVh0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 17:36:58 -0400
+	Fri, 26 Apr 2013 17:37:26 -0400
+Date: Fri, 26 Apr 2013 23:37:23 +0200
+From: Pavel Machek <pavel@denx.de>
+To: Jamie Iles <jamie@jamieiles.com>
+Cc: dinguyen@altera.com, wd@denx.de, linux-arm-kernel@lists.infradead.org,
+        olof@lixom.net, arnd@arndb.de, johnstul@us.ibm.com, tglx@linutronix.de,
+        kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: dw_apb_timer_of.c: remove parts that were picoxcell-specific
+Message-ID: <20130426213723.GA24891@amd.pavel.ucw.cz>
+References: <20130426121433.GA16249@amd.pavel.ucw.cz>
+ <20130426124128.GB6946@page>
 MIME-Version: 1.0
-In-Reply-To: <CAErSpo6UkVhSf+nFW4zwJLBQw_0RQ5H9Bv-UuQRb6zdwsFPw4g@mail.gmail.com>
-References: <CAErSpo7qj2SNR7BfuBsfF-saZXvgcqqLtgoP5Hyb5u99qR4Ncg@mail.gmail.com>
- <Pine.LNX.4.44L0.1302191119270.2215-100000@iolanthe.rowland.org>
- <CAErSpo7NZoOQZyW76HEoOTVgdqL2CgbVScAeF6HGLAVaNCq0=w@mail.gmail.com>
- <337833384.57445.1361860509194.JavaMail.mail@webmail08> <CAErSpo6CbO5KYXiErv6J_Dnm1u694C5fQPP2_cZL8VKDEnZa9A@mail.gmail.com>
- <569718148.80620.1361906088301.JavaMail.mail@webmail13> <CAErSpo6UkVhSf+nFW4zwJLBQw_0RQ5H9Bv-UuQRb6zdwsFPw4g@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 26 Apr 2013 15:36:37 -0600
-Message-ID: <CAErSpo4X+XXKvWDfqh2CKZAtJ9WMQk91OcsWwdxwYv2MfEM_zQ@mail.gmail.com>
-Subject: Re: Abysmal HDD/USB write speed after sleep on a UEFI system
-To: "Artem S. Tashkinov" <t.artem@lycos.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130426124128.GB6946@page>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 6, 2013 at 5:17 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> On Tue, Feb 26, 2013 at 12:14 PM, Artem S. Tashkinov <t.artem@lycos.com> wrote:
->> Feb 27, 2013 12:47:01 AM, Bjorn Helgaas wrote:
->> On Mon, Feb 25, 2013 at 11:35 PM, Artem S. Tashkinov wrote:
->>>> Feb 26, 2013 03:57:52 AM, Bjorn Helgaas wrote:
->>>>>
->>>>>Where are we at with this, Artem?  I assume it's still a problem.
->>>>>
->>>>
->>>> Yes, it is, Bjorn.
->>>>
->>>> In order to eliminate this problem I switched back to MBR yesterday, because
->>>> so far I haven't received any instructions or guidance as to how I can debug
->>>> it further. I'm absolutely sure USB write speed is just another manifestation of
->>>> it so I decided not to debug USB specifically (it just doesn't make too much
->>>> sense).
->>>>
->>>> What I see is that something terribly wrong is going on but if Linus has no ideas
->>>> I, as an average Joe, don't have a slightest clue as to what I can do.
->>>>
->>>> The bug report with necessary, but seemingly useless information, can be
->>>> found here: https://bugzilla.kernel.org/show_bug.cgi?id=53551
->>>>
->>>> If anyone comes up with new ideas I can quickly try UEFI again now that I
->>>> have two HDDs at my disposal (the old one is formatted as GPT, the new one is
->>>> MBR).
->>>
->>>The ideas I saw are:
->>>
->>>1) Figure out whether it ever worked.  If an older kernel worked
->>>correctly and a newer one is broken, bisection is at least a
->>>possibility.  You mentioned that it did work before (Feb 12), but in
->>>the past you never suspended twice in one boot session, whereas maybe
->>>you did when seeing the problem?
->>
->> This is difficult to say since the first kernel I tried to run in EUFI mode was
->> 3.7.x, so I've no idea if any previous ones ever worked.
->>
->>>
->>>2) Try the "setpci" to set the MSI address back to the original value
->>>to see if it makes a difference (see my Feb 12 message).
->>
->> I will try it soon and report back to you.
->>
->>>
->>>3) Collect "lspci -vvv -xxxx" output to investigate the XHCI
->>>Unsupported Request errors.
->>>
->>>4) Use usbmon to collect traces before and after the suspend.
->>
->> Likewise. Still I don't quite understand why you are persistent in your
->> desire to investigate USB controllers specifically - my problem affects
->> all storage devices that I have.
->
-> Well, in the absence of good ideas about what's going on, I guess we
-> have to pursue even the bad ideas that don't seem like they'd be
-> related :)  Speaking of bad ideas, any news on 2) and 3) above?
->
-> You mentioned in the bugzilla that Windows complains about MTRRs being
-> changed across the S4 sleep state transition.  I don't think Linux
-> looks for such a change.  You could try looking at /proc/mtrr before
-> and after the suspend/resume to see if anything changed there.  It
-> looks like there's even support for *writing* the MTRRs via
-> /proc/mtrr, so if anything did change, you could also try changing it
-> back.
+Hi!
 
-Did this problem ever get resolved?
+> On Fri, Apr 26, 2013 at 02:14:34PM +0200, Pavel Machek wrote:
+> > diff --git a/arch/arm/mach-picoxcell/common.c b/arch/arm/mach-picoxcell/common.c
+> > index 70b441a..22759f5 100644
+> > --- a/arch/arm/mach-picoxcell/common.c
+> > +++ b/arch/arm/mach-picoxcell/common.c
+> > @@ -84,11 +84,39 @@ static void picoxcell_wdt_restart(char mode, const char *cmd)
+> >  	}
+> >  }
+> >  
+> > +static const struct of_device_id picochip_rtc_ids[] __initconst = {
+> > +        { .compatible = "picochip,pc3x2-rtc" },
+> > +        { /* Sentinel */ },
+> > +};
+> > +
+> > +static void __iomem *sched_io_base;
+> > +
+> > +static u32 read_sched_clock(void)
+> > +{
+> > +        return __raw_readl(sched_io_base);
+> > +}
+> > +
+> > +static void __init timer_init(void)
+> > +{
+> > +	u32 rate;
+> > +
+> > +	dw_apb_timer_init(0);
+> > +
+> > +	sched_timer = of_find_matching_node(timer, osctimer_ids);
+> > +	if (!sched_timer)
+> > +		panic("No suitable timer for scheduler clock\n");
+> > +
+> > +	timer_get_base_and_rate(sched_timer, &sched_io_base, &rate);
+> > +	of_node_put(sched_timer);
+> 
+> This doesn't work as osctimer_ids is private to the dw_apb_timer files 
+> as is timer_get_base_and_rate.  The other timer is unused in picoxcell 
+> though so dw_apb_timer_init(1), something like the patch below on top of 
+> yours.
 
-Bjorn
+That would still not compile due to common.h. ... _but_ it allows
+some very nice simplification, with this on top:
+
+I'll post merged-up patch in next mail.
+
+Thanks,
+									Pavel
+
+diff --git a/arch/arm/mach-picoxcell/common.c b/arch/arm/mach-picoxcell/common.c
+index c027920..70b441a 100644
+--- a/arch/arm/mach-picoxcell/common.c
++++ b/arch/arm/mach-picoxcell/common.c
+@@ -84,16 +84,11 @@ static void picoxcell_wdt_restart(char mode, const char *cmd)
+ 	}
+ }
+ 
+-static void __init timer_init(void)
+-{
+-	dw_apb_timer_init(1);
+-}
+-
+ DT_MACHINE_START(PICOXCELL, "Picochip picoXcell")
+ 	.map_io		= picoxcell_map_io,
+ 	.nr_irqs	= NR_IRQS_LEGACY,
+ 	.init_irq	= irqchip_init,
+-	.init_time	= timer_init,
++	.init_time	= dw_apb_timer_init,
+ 	.init_machine	= picoxcell_init_machine,
+ 	.dt_compat	= picoxcell_dt_match,
+ 	.restart	= picoxcell_wdt_restart,
+diff --git a/arch/arm/mach-picoxcell/common.h b/arch/arm/mach-picoxcell/common.h
+index 481b42a..237fb3b 100644
+--- a/arch/arm/mach-picoxcell/common.h
++++ b/arch/arm/mach-picoxcell/common.h
+@@ -12,6 +12,4 @@
+ 
+ #include <asm/mach/time.h>
+ 
+-extern void dw_apb_timer_init(void);
+-
+ #endif /* __PICOXCELL_COMMON_H__ */
+diff --git a/arch/arm/mach-socfpga/socfpga.c b/arch/arm/mach-socfpga/socfpga.c
+index 6efbc12..81b8f1e 100644
+--- a/arch/arm/mach-socfpga/socfpga.c
++++ b/arch/arm/mach-socfpga/socfpga.c
+@@ -110,17 +110,11 @@ static const char *altera_dt_match[] = {
+ 	NULL
+ };
+ 
+-static void __init timer_init(void)
+-{
+-	dw_apb_timer_init(1);
+-}
+-
+-
+ DT_MACHINE_START(SOCFPGA, "Altera SOCFPGA")
+ 	.smp		= smp_ops(socfpga_smp_ops),
+ 	.map_io		= socfpga_map_io,
+ 	.init_irq	= socfpga_init_irq,
+-	.init_time	= timer_init,
++	.init_time	= dw_apb_timer_init,
+ 	.init_machine	= socfpga_cyclone5_init,
+ 	.restart	= socfpga_cyclone5_restart,
+ 	.dt_compat	= altera_dt_match,
+diff --git a/drivers/clocksource/dw_apb_timer_of.c b/drivers/clocksource/dw_apb_timer_of.c
+index 872ce66..0fa3104 100644
+--- a/drivers/clocksource/dw_apb_timer_of.c
++++ b/drivers/clocksource/dw_apb_timer_of.c
+@@ -66,7 +66,7 @@ static u32 read_sched_clock_sptimer(void)
+ 	return ~__raw_readl(sched_io_base + APBTMR_N_CURRENT_VALUE);
+ }
+ 
+-static void add_clocksource(struct device_node *source_timer, int use_as_scheduler)
++static void add_clocksource(struct device_node *source_timer)
+ {
+ 	void __iomem *iobase;
+ 	struct dw_apb_clocksource *cs;
+@@ -81,10 +81,8 @@ static void add_clocksource(struct device_node *source_timer, int use_as_schedul
+ 	dw_apb_clocksource_start(cs);
+ 	dw_apb_clocksource_register(cs);
+ 
+-	if (use_as_scheduler) {
+-		sched_io_base = iobase;
+-		setup_sched_clock(read_sched_clock_sptimer, 32, rate);
+-	}
++	sched_io_base = iobase;
++	setup_sched_clock(read_sched_clock_sptimer, 32, rate);
+ }
+ 
+ static const struct of_device_id osctimer_ids[] __initconst = {
+@@ -104,7 +102,7 @@ static const struct of_device_id osctimer_ids[] __initconst = {
+ */
+ 
+ 
+-void __init dw_apb_timer_init(int use_as_scheduler)
++void __init dw_apb_timer_init(void)
+ {
+ 	struct device_node *event_timer, *source_timer;
+ 
+@@ -116,7 +114,7 @@ void __init dw_apb_timer_init(int use_as_scheduler)
+ 	source_timer = of_find_matching_node(event_timer, osctimer_ids);
+ 	if (!source_timer)
+ 		panic("No timer for clocksource");
+-	add_clocksource(source_timer, use_as_scheduler);
++	add_clocksource(source_timer);
+ 
+ 	of_node_put(event_timer);
+ 	of_node_put(source_timer);
+diff --git a/include/linux/dw_apb_timer.h b/include/linux/dw_apb_timer.h
+index d503245..a64c987 100644
+--- a/include/linux/dw_apb_timer.h
++++ b/include/linux/dw_apb_timer.h
+@@ -59,5 +59,5 @@ void dw_apb_clocksource_start(struct dw_apb_clocksource *dw_cs);
+ cycle_t dw_apb_clocksource_read(struct dw_apb_clocksource *dw_cs);
+ void dw_apb_clocksource_unregister(struct dw_apb_clocksource *dw_cs);
+ 
+-extern void dw_apb_timer_init(int);
++extern void dw_apb_timer_init(void);
+ #endif /* __DW_APB_TIMER_H__ */
+
+
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
