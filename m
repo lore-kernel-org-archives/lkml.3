@@ -1,73 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758718Ab3DZAVK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 20:21:10 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:51348 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757882Ab3DZAVJ (ORCPT
+	id S1759047Ab3DZAnA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 20:43:00 -0400
+Received: from mail-vb0-f50.google.com ([209.85.212.50]:43479 "EHLO
+	mail-vb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758891Ab3DZAm7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 20:21:09 -0400
-X-AuditID: 9c930179-b7c28ae0000018a0-24-5179c872455e
-Date: Fri, 26 Apr 2013 09:21:07 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Minchan Kim <minchan@kernel.org>
-Subject: Re: [PATCH] mm, highmem: remove useless virtual variable in
- page_address_map
-Message-ID: <20130426002107.GA3075@lge.com>
-References: <1366619188-28087-1-git-send-email-iamjoonsoo.kim@lge.com>
- <20130425150057.c25220a8f03e068f5bea5d58@linux-foundation.org>
+	Thu, 25 Apr 2013 20:42:59 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130425150057.c25220a8f03e068f5bea5d58@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <1366910944-3033663-11-git-send-email-arnd@arndb.de>
+References: <1366910944-3033663-1-git-send-email-arnd@arndb.de> <1366910944-3033663-11-git-send-email-arnd@arndb.de>
+From: Masanori Goto <gotom@sanori.org>
+Date: Thu, 25 Apr 2013 17:42:38 -0700
+X-Google-Sender-Auth: gPIo6DshXCO0HbdJHmrqeoDItJk
+Message-ID: <CALZLnaFeLcaGM7_McTZ=pKBRnpXk0AvqOTF=1YCqJv-53yk4XQ@mail.gmail.com>
+Subject: Re: [PATCH 10/21] [SCSI] nsp32: use mdelay instead of large udelay constants
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        YOKOTA Hiroshi <yokota@netlab.is.tsukuba.ac.jp>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 25, 2013 at 03:00:57PM -0700, Andrew Morton wrote:
-> On Mon, 22 Apr 2013 17:26:28 +0900 Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
-> 
-> > We can get virtual address without virtual field.
-> > So remove it.
-> > 
-> > ...
-> >
-> > --- a/mm/highmem.c
-> > +++ b/mm/highmem.c
-> > @@ -320,7 +320,6 @@ EXPORT_SYMBOL(kunmap_high);
-> >   */
-> >  struct page_address_map {
-> >  	struct page *page;
-> > -	void *virtual;
-> >  	struct list_head list;
-> >  };
-> >  
-> > @@ -362,7 +361,10 @@ void *page_address(const struct page *page)
-> >  
-> >  		list_for_each_entry(pam, &pas->lh, list) {
-> >  			if (pam->page == page) {
-> > -				ret = pam->virtual;
-> > +				int nr;
-> > +
-> > +				nr = pam - page_address_map;
-> 
-> Doesn't compile.  Presumably you meant page_address_maps.
-> 
-> I'll drop this - please resend if/when it has been runtime tested.
+2013/4/25 Arnd Bergmann <arnd@arndb.de>
+>
+> ARM cannot handle udelay for more than 2 miliseconds, so we
+> should use mdelay instead for those.
+>
 
-Sorry for that.
-I'll resend when it has been runtime tested.
+Singed-off-by: GOTO Masanori <gotom@debian.or.jp>
 
-Thanks.
-
-> 
-> 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: GOTO Masanori <gotom@debian.or.jp>
+> Cc: YOKOTA Hiroshi <yokota@netlab.is.tsukuba.ac.jp>
+> Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
+> Cc: linux-scsi@vger.kernel.org
+> ---
+>  drivers/scsi/nsp32.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/scsi/nsp32.c b/drivers/scsi/nsp32.c
+> index 1e3879d..0665f9c 100644
+> --- a/drivers/scsi/nsp32.c
+> +++ b/drivers/scsi/nsp32.c
+> @@ -2899,7 +2899,7 @@ static void nsp32_do_bus_reset(nsp32_hw_data *data)
+>          * reset SCSI bus
+>          */
+>         nsp32_write1(base, SCSI_BUS_CONTROL, BUSCTL_RST);
+> -       udelay(RESET_HOLD_TIME);
+> +       mdelay(RESET_HOLD_TIME / 1000);
+>         nsp32_write1(base, SCSI_BUS_CONTROL, 0);
+>         for(i = 0; i < 5; i++) {
+>                 intrdat = nsp32_read2(base, IRQ_STATUS); /* dummy read */
 > --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 1.8.1.2
+>
