@@ -1,104 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755021Ab3DZLIi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 07:08:38 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48043 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753854Ab3DZLIh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 07:08:37 -0400
-Message-ID: <517A6033.5060103@suse.cz>
-Date: Fri, 26 Apr 2013 13:08:35 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1755730Ab3DZLJr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 07:09:47 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:56734 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754367Ab3DZLJq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Apr 2013 07:09:46 -0400
+Date: Fri, 26 Apr 2013 12:09:29 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Stephen Boyd <sboyd@codeaurora.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Marc Zyngier <marc.zyngier@arm.com>
+Subject: Re: [PATCHv2 1/4] Documentation: Add memory mapped ARM architected
+ timer binding
+Message-ID: <20130426110929.GB11648@e106331-lin.cambridge.arm.com>
+References: <1365812863-5367-1-git-send-email-sboyd@codeaurora.org>
+ <1365812863-5367-2-git-send-email-sboyd@codeaurora.org>
+ <516C6F12.5020208@gmail.com>
+ <516C7231.6060305@codeaurora.org>
+ <5179A488.5050102@gmail.com>
+ <5179B2B2.8000201@codeaurora.org>
+ <5179B6ED.9000301@gmail.com>
 MIME-Version: 1.0
-To: sedat.dilek@gmail.com, "Yann E. MORIN" <yann.morin.1998@free.fr>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
-Subject: Re: linux-next: Tree for Apr 26
-References: <20130426180357.7599d1b6b7965470905dcdf3@canb.auug.org.au> <CA+icZUWt_W5FUQgQ2TFoQU0df+sAbxZZE8AcD16T3f_fiTD9DQ@mail.gmail.com> <517A4FC1.3070605@suse.cz> <20130426100435.GA28733@sepie.suse.cz> <CA+icZUVOfB2JuL1xh1EO1hTP_eOkntYFKsUJ0Zp6VZqn09NABA@mail.gmail.com> <CA+icZUWNVEsiTs6u_2R9krb45ub4t-pZj_VEPRmrX2c4DzwfmA@mail.gmail.com> <CA+icZUXSsqN1iE3ttQakvpZqG-oOL9NR6RMUezB7LGeUw3d00Q@mail.gmail.com>
-In-Reply-To: <CA+icZUXSsqN1iE3ttQakvpZqG-oOL9NR6RMUezB7LGeUw3d00Q@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5179B6ED.9000301@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26.4.2013 12:49, Sedat Dilek wrote:
-> On Fri, Apr 26, 2013 at 12:37 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->> On Fri, Apr 26, 2013 at 12:35 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->>> On Fri, Apr 26, 2013 at 12:04 PM, Michal Marek <mmarek@suse.cz> wrote:
->>>> On Fri, Apr 26, 2013 at 11:58:25AM +0200, Michal Marek wrote:
->>>>> Can you send a copy of your .config?
->>>>
->>>> I can reproduce it as well:
->>>>
->>>> $ yes "" | make oldconfig
->>>> ...
->>>>   Enumeration method [M/y/?] (NEW)
->>>>     Basic (RAPIDIO_ENUM_BASIC) [N/m/?] n
->>>> ...
->>>> #
->>>> # configuration written to .config
->>>> #
->>>> $ make oldconfig
->>>> ...
->>>>   Enumeration method [M/y/?] (NEW)
->>>>
->>>>
->>>> .config is attached.
->>>>
->>>
->>> Mine, too.
->>>
->>> I hoped that -next release will be one w/o troubles
->>> (cpufreq/intel_pstate / pm/timekeeping / ipc-sem-from-mmotm).
->>> Unfortunately, I am not lucky :-(.
->>>
->>> Anyway, waiting for a fix.
->>>
->>
->> Just FYI: Mail delivery troubles!
->>
->> Delivery to the following recipient failed permanently:
->>
->>      yann.morin.1998@free.fr
->>
->> Technical details of permanent failure:
->> Google tried to deliver your message, but it was rejected by the
->> server for the recipient domain free.fr by mx1.free.fr. [212.27.48.6].
->>
->> The error that the other server returned was:
->> 550 spam detected
->> ...
->>
+On Fri, Apr 26, 2013 at 12:06:21AM +0100, Rob Herring wrote:
+> On 04/25/2013 05:48 PM, Stephen Boyd wrote:
+> > On 04/25/13 14:47, Rob Herring wrote:
+> >> On 04/15/2013 04:33 PM, Stephen Boyd wrote:
+> >>> On 04/15/13 14:20, Rob Herring wrote:
+> >>>> On Fri, Apr 12, 2013 at 7:27 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+> >>>>> @@ -26,3 +30,52 @@ Example:
+> >>>>>                              <1 10 0xf08>;
+> >>>>>                 clock-frequency = <100000000>;
+> >>>>>         };
+> >>>>> +
+> >>>>> +** Memory mapped timer node properties
+> >>>>> +
+> >>>>> +- compatible : Should at least contain "arm,armv7-timer-mem".
+> >>>> Everything about this timer is architecturally defined? If not, let's
+> >>>> use a more specific name.
+> >>> I'm not sure I'm following you, but everything described here is part of
+> >>> the ARM definition. What would be a more specific name?
+> >> Something that corresponds to the particular implementation like
+> >> cortex-a15 (obviously not an example that has this). I'm fine with
+> >> leaving this for now, but would like to see that added when specific SOC
+> >> dts are added. Better to be specific in case we need to use it for
+> >> something like errata work-arounds. Of course we haven't done that so
+> >> far with the arch timer bindings...
+> > 
+> > Agreed. I'm under the impression that most of our compatible fields
+> > should be more specific than they currently are so we can workaround hw
+> > bugs like you say. Perhaps the catch all generic one should just be
+> > "arm,arm-timer-mem" since it isn't tied to any particular CPU type?
+> > 
+> >>
+> >>>>> +
+> >>>>> +- clock-frequency : The frequency of the main counter, in Hz. Optional.
+> >>>>> +
+> >>>>> +- reg : The control frame base address.
+> >>>>> +
+> >>>>> +Note that #address-cells, #size-cells, and ranges shall be present to ensure
+> >>>>> +the CPU can address a frame's registers.
+> >>>>> +
+> >>>>> +Frame:
+> >>>>> +
+> >>>>> +- frame-number: 0 to 7.
+> >>>> I'd really like to get rid of the frame numbers and sub-nodes. Is the
+> >>>> frame number significant to software?
+> >>> We need the frame number to read and write registers in the control
+> >>> frame (the first base in the parent node). We currently use it to
+> >>> determine if a frame has support for the virtual timer by reading the
+> >>> CNTTIDR (a register with 4 bits per frame describing capabilities). If
+> >>> we wanted to control access to the second view of a frame we would also
+> >>> need to configure the CNTPL0ACRn register that pertains to the frame
+> >>> we're controlling. Without a frame number we wouldn't know which
+> >>> register to write.
+> >> I've gone thru the memory mapped part of the spec now, so I think I
+> >> understand things better. I see how the frame number is needed, but...
+> >>
+> >> The control base is only accessible in secure or hyp mode. How does a
+> >> guest know that it is a guest and can't map the control base? Seems like
+> >> we need to allow a subset of the binding that is just a reg and
+> >> interrupts properties without the frame sub nodes.
+> > 
+> > I don't see that part. My understanding is that the control base is
+> > accessible in non-secure mode and by the guests. There are certain
+> > registers within that base that are only accessible in secure mode
+> > though: CNTFRQ and CNTNSAR. Also some registers are configurable:
+> > CNTACRn and CNTVOFFN. CNTVOFFN is only accessible in the hypervisor.
 > 
-> With reverting all kbuild-next commits I was able to build again.
+> The example is section E.8 seems to say otherwise. Perhaps Mark R can
+> comment further.
+
+I believe E.8 is an example system, not the general case.
+
+However, I don't see anything limiting accesses to CNTVOFFn to the hypervisor.
+As far as I can see, if the guest has access to the CNTCTLBase frame, it has
+the same access privileges as the host (and hypervisor).
+
+CNTACRn and CNTVOFFn only seem to be configurable with regard to
+secure/non-secure accesses.
+
 > 
->       Revert "kconfig: implement KCONFIG_PROBABILITY for randconfig"
->       Revert "kconfig: allow specifying the seed for randconfig"
->       Revert "kconfig: fix randomising choice entries in presence of
-> KCONFIG_ALLCONFIG"
->       Revert "kconfig: do not override symbols already set"
->       Revert "kconfig: fix randconfig tristate detection"
+> > We don't really care about CNTFRQ because it's duplicated into each
+> > view. We do care about CNTNSAR. Luckily the spec "just works" there in
+> > the sense that we can use CNTTIDR in conjunction with CNTACRn and
+> > determine if we have access to a frame we're interested in if the
+> > CNTTIDR bits say the frame is present and the CNTACRn register says we
+> > can access it. If not then it must be locked down for secure users.
+> > 
+> > Unfortunately hardware doesn't have a way to say that a particular frame
+> > is reserved for the hypervisor or the guest kernel/userspace. We need
+> > some help from software, so we have the status property express that a
+> > particular frame is available. We have to assume the DT is going to be
+> > different depending on if you're the hypervisor or the guest. That's a
+> > valid assumption right? Otherwise I hope we can do some trapping of the
+> > guest's mapping to the control base and then rewrite what they read so
+> > that they only see the frame that we want to be available to them.
+> 
+> Yeah, I believe the only way to prevent access within non-secure world
+> is with the MMU. So I guess the example is just policy that the
+> hypervisor would/may not create a stage2 mapping. You still have the
+> same issue that the guest should not be passed the control base. You
+> could make the reg property optional, but then what do you do with the
+> node name?
 
-I did the same, then applied all the kconfig commits once more and did a
-git bisect with this script:
+I'm not sure on if and how we'd want to expose this to guests. I'm adding Marc
+Zyngier to Cc, he may have some relevant thoughts.
 
-#!/bin/sh
-
-cp config-bad .config
-make silentoldconfig </dev/null
-
-This resulted in
-
-7ded2624f8988bd22819a60a6000ba6b7091db89 is the first bad commit
-commit 7ded2624f8988bd22819a60a6000ba6b7091db89
-Author: Yann E. MORIN <yann.morin.1998@free.fr>
-Date:   Sun Mar 10 16:34:10 2013 +0100
-
-    kconfig: fix randomising choice entries in presence of KCONFIG_ALLCONFIG
-
-The commit id is different, because it is reverted and applied again. Yann?
-
-Thanks,
-Michal
+Mark.
