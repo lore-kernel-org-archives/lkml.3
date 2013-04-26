@@ -1,44 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756020Ab3DZPaO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 11:30:14 -0400
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:36741 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751201Ab3DZPaM (ORCPT
+	id S1756605Ab3DZPbB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 11:31:01 -0400
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:59212 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754073Ab3DZPbA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 11:30:12 -0400
+	Fri, 26 Apr 2013 11:31:00 -0400
 MIME-Version: 1.0
-In-Reply-To: <1366989094.8964.212.camel@edumazet-glaptop>
-References: <1366962706-24204-1-git-send-email-xi.wang@gmail.com>
- <1366962706-24204-3-git-send-email-xi.wang@gmail.com> <1366985926.8964.190.camel@edumazet-glaptop>
- <CAKU6vyZfYR-2408G0_Fkp-PS5x5rMH+s4_OOWqqi7Nt+UfiUPg@mail.gmail.com> <1366989094.8964.212.camel@edumazet-glaptop>
-From: Xi Wang <xi.wang@gmail.com>
-Date: Fri, 26 Apr 2013 11:29:27 -0400
-Message-ID: <CAKU6vybrYK9oimKSEGhoLeNzhtk=7r3zouRgzDFqGwJHd=psGQ@mail.gmail.com>
-Subject: Re: [RFC PATCH net-next 2/6] x86: bpf_jit_comp: support
- BPF_S_ANC_SECCOMP_LD_W instruction
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Daniel Borkmann <dborkman@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Eric Dumazet <edumazet@google.com>, Will Drewry <wad@chromium.org>,
-        Andrew Morton <akpm@linux-foundation.org>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
+In-Reply-To: <CA+rthh9QuQ-V+=Of8GB-SwqX-Z8SUEz48YLyBfbng5j3wd23Jw@mail.gmail.com>
+References: <1366926860-26776-1-git-send-email-keescook@chromium.org>
+	<1366926860-26776-5-git-send-email-keescook@chromium.org>
+	<CA+rthh9QuQ-V+=Of8GB-SwqX-Z8SUEz48YLyBfbng5j3wd23Jw@mail.gmail.com>
+Date: Fri, 26 Apr 2013 08:30:59 -0700
+X-Google-Sender-Auth: tiz0ePbM-_ZBcYl_SfLkNF_uTDc
+Message-ID: <CAGXu5jKTe=bVOha0WxztdVZtmZf5j7+rek7ZkZVtONZ9LVaSbQ@mail.gmail.com>
+Subject: Re: [kernel-hardening] [PATCH 4/6] x86: kaslr: select random base offset
+From: Kees Cook <keescook@chromium.org>
+To: Mathias Krause <minipli@googlemail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kernel-hardening@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "x86@kernel.org" <x86@kernel.org>,
+        Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
+        Matthew Garrett <mjg@redhat.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Eric Northup <digitaleric@google.com>,
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 26, 2013 at 11:11 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> 2) Calling a function potentially destroys some registers.
->    %rdi,%r8,%r9 for instance, so we are going to crash very easily.
+On Thu, Apr 25, 2013 at 11:13 PM, Mathias Krause <minipli@googlemail.com> wrote:
+> On Thu, Apr 25, 2013 at 11:54 PM, Kees Cook <keescook@chromium.org> wrote:
+>> Select a random location when CONFIG_RANDOMIZE_BASE is used, bounded
+>> by CONFIG_RANDOMIZE_BASE_MAX_OFFSET. Sources of randomness currently
+>> include RDRAND and RDTSC.
+>>
+>> Signed-off-by: Kees Cook <keescook@chromium.org>
+>> ---
+>>  arch/x86/Kconfig                |   29 +++++++++++++--
+>>  arch/x86/boot/compressed/aslr.c |   75 +++++++++++++++++++++++++++++++++++++--
+>>  2 files changed, 100 insertions(+), 4 deletions(-)
+>>
+>> [snip]
+>>
+>> diff --git a/arch/x86/boot/compressed/aslr.c b/arch/x86/boot/compressed/aslr.c
+>> index d5331ee..11a91c6 100644
+>> --- a/arch/x86/boot/compressed/aslr.c
+>> +++ b/arch/x86/boot/compressed/aslr.c
+>> @@ -2,18 +2,89 @@
+>>
+>>  #ifdef CONFIG_RANDOMIZE_BASE
+>>
+>> +#include <asm/archrandom.h>
+>> +static inline int rdrand(unsigned long *v)
+>> +{
+>> +       int ok;
+>> +       asm volatile("1: " RDRAND_LONG "\n\t"
+>> +                    "jc 2f\n\t"
+>> +                    "decl %0\n\t"
+>> +                    "jnz 1b\n\t"
+>> +                    "2:"
+>> +                    : "=r" (ok), "=a" (*v)
+>> +                    : "0" (RDRAND_RETRY_LOOPS));
+>> +       return ok;
+>> +}
+>> +
+>> +static inline uint32_t rdtsc(void)
+>> +{
+>> +       uint32_t timer;
+>> +
+>> +       asm volatile("rdtsc\n" : "=a" (timer));
 >
-> I dont know, I feel a bit uncomfortable having to explain this to
-> someone sending security related patches...
+> '\n' in the assembly statement is not needed. Also, RDTSC trashes
+> edx/rdx as well so it should be mentioned in the clobber list, at
+> least.
+> Maybe using rdtscl() from <asm/msr.h> instead is an option?
 
-My old code did save these registers.  But, do we really need that for
-seccomp?  For example, %rdi (skb) is always NULL and never used by
-seccomp filters.  Did I miss anything?
+Ah yeah, rdtscl is perfect. I'll use that instead.
 
-- xi
+Thanks!
+
+-Kees
+
+-- 
+Kees Cook
+Chrome OS Security
