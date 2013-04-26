@@ -1,125 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755384Ab3DZWBi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 18:01:38 -0400
-Received: from mail-we0-f175.google.com ([74.125.82.175]:40095 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751213Ab3DZWBh (ORCPT
+	id S1755820Ab3DZWBl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 18:01:41 -0400
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:43272 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751213Ab3DZWBj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 18:01:37 -0400
-Date: Sat, 27 Apr 2013 00:01:31 +0200
-From: "Yann E. MORIN" <yann.morin.1998@free.fr>
-To: Michal Marek <mmarek@suse.cz>
-Cc: sedat.dilek@gmail.com, Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org
-Subject: Re: linux-next: Tree for Apr 26
-Message-ID: <20130426220131.GC5100@free.fr>
-References: <20130426180357.7599d1b6b7965470905dcdf3@canb.auug.org.au>
- <CA+icZUWt_W5FUQgQ2TFoQU0df+sAbxZZE8AcD16T3f_fiTD9DQ@mail.gmail.com>
- <517A4FC1.3070605@suse.cz>
- <20130426100435.GA28733@sepie.suse.cz>
- <CA+icZUVOfB2JuL1xh1EO1hTP_eOkntYFKsUJ0Zp6VZqn09NABA@mail.gmail.com>
- <CA+icZUWNVEsiTs6u_2R9krb45ub4t-pZj_VEPRmrX2c4DzwfmA@mail.gmail.com>
- <CA+icZUXSsqN1iE3ttQakvpZqG-oOL9NR6RMUezB7LGeUw3d00Q@mail.gmail.com>
- <517A6033.5060103@suse.cz>
- <517A615D.9020400@suse.cz>
+	Fri, 26 Apr 2013 18:01:39 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <517A615D.9020400@suse.cz>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <CAE9FiQVA17TGuY5_DFGUL8OSMLx+yJQV1fhe7JDkaoq1a9-oSw@mail.gmail.com>
+References: <1367003005-5560-1-git-send-email-keescook@chromium.org>
+	<1367003005-5560-6-git-send-email-keescook@chromium.org>
+	<CAE9FiQVA17TGuY5_DFGUL8OSMLx+yJQV1fhe7JDkaoq1a9-oSw@mail.gmail.com>
+Date: Fri, 26 Apr 2013 15:01:38 -0700
+X-Google-Sender-Auth: 9uKT-7JTJXr6GTAiyd6eTKhV7d8
+Message-ID: <CAGXu5j+QHxnPLkz1+uD5=1SCBpcARbHTUKWOW6wB4LwWNhsw6Q@mail.gmail.com>
+Subject: Re: [PATCH 5/6] x86: kaslr: select memory region from e820 maps
+From: Kees Cook <keescook@chromium.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "kernel-hardening@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
+        Matthew Garrett <mjg@redhat.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Eric Northup <digitaleric@google.com>,
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michal, Sedat, All,
+On Fri, Apr 26, 2013 at 2:51 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Fri, Apr 26, 2013 at 12:03 PM, Kees Cook <keescook@chromium.org> wrote:
+>> This chooses the largest contiguous RAM region for the KASLR offset
+>> to live in.
+>>
+>> Signed-off-by: Kees Cook <keescook@chromium.org>
+>> ---
+>> v2:
+>>  - make sure to exclude e820 regions outside the 32-bit memory range.
+>
+> Do you need to execlude range that is used for initrd and possible
+> command_line and boot_param ?
 
-On Fri, Apr 26, 2013 at 01:13:33PM +0200, Michal Marek wrote:
-> On 26.4.2013 13:08, Michal Marek wrote:
-> > On 26.4.2013 12:49, Sedat Dilek wrote:
-> >> With reverting all kbuild-next commits I was able to build again.
-> >>
-> >>       Revert "kconfig: implement KCONFIG_PROBABILITY for randconfig"
-> >>       Revert "kconfig: allow specifying the seed for randconfig"
-> >>       Revert "kconfig: fix randomising choice entries in presence of
-> >> KCONFIG_ALLCONFIG"
-> >>       Revert "kconfig: do not override symbols already set"
-> >>       Revert "kconfig: fix randconfig tristate detection"
-> > 
-> > I did the same, then applied all the kconfig commits once more and did a
-> > git bisect with this script:
-> > 
-> > #!/bin/sh
-> > 
-> > cp config-bad .config
-> > make silentoldconfig </dev/null
-> > 
-> > This resulted in
-> > 
-> > 7ded2624f8988bd22819a60a6000ba6b7091db89 is the first bad commit
-> > commit 7ded2624f8988bd22819a60a6000ba6b7091db89
-> > Author: Yann E. MORIN <yann.morin.1998@free.fr>
-> > Date:   Sun Mar 10 16:34:10 2013 +0100
-> > 
-> >     kconfig: fix randomising choice entries in presence of KCONFIG_ALLCONFIG
-> > 
-> > The commit id is different, because it is reverted and applied again. Yann?
-> 
-> Commit 422c809 ("kconfig: fix randomising choice entries in presence of
-> KCONFIG_ALLCONFIG") reverts cleanly and reverting it fixes the bug. So
-> there is a plan B.
+Yeah, and while doing a stress test here, I realized there's another
+problem. In the original version of this, the stack and heap are set
+up after relocation. In the C port, they're set up before, so there's
+even more to avoid. To illustrate... here's a CONFIG_RELOCATABLE=n
+boot:
 
-I do not understand how reverting 422c809 could have fixed the
-silentoldconfig issue: as I previously reported, it already happens on
-Linus' master.
+LOAD_PHYS:0x0000000001000000
+input:    0x0000000001dfe24d-0x00000000023db865
+output:   0x0000000001000000-0x00000000023c98c0
+heap:     0x00000000023e0740-0x00000000023e8740
+stack:    0x00000000023ec698
+chosen:   0x0000000001000000
 
-I tried again jsut a few minutes ago against:
-    d7d7271: Merge branch 'v4l_for_linus' of git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media
-and it is already broken, although 422c809 is not yet in Linus' tree:
+(stack is just cheating and reporting sp in decompress_kernel)
 
-    $ make silentoldconfig </dev/null
-    scripts/kconfig/conf --silentoldconfig Kconfig
-    warning: (IA32_EMULATION) selects COMPAT_BINFMT_ELF which has unmet
-    direct dependencies (COMPAT && BINFMT_ELF)
-    *
-    * Restart config...
-    *
-    *
-    * Paravirtualized guest support
-    *
-    Paravirtualized guest support (PARAVIRT_GUEST) [N/y/?] (NEW) aborted!
+And a CONFIG_RELOCATABLE=y and "noaslr" boot:
 
-    Console input/output is redirected. Run 'make oldconfig' to update configuration.
+LOAD_PHYS:0x0000000001000000
+input:    0x000000000108b25e-0x00000000016b3e96
+output:   0x0000000000200000-0x00000000016a1db8
+heap:     0x00000000016b9600-0x00000000016c1600
+stack:    0x00000000016c5558
+chosen:   0x0000000000200000
 
-    make[1]: *** [silentoldconfig] Error 1
-    make: *** [silentoldconfig] Error 2
+In that case, it's just so far under LOAD_PHYSICAL_START that it's
+safe. But if KASLR picks an area overlapping input, heap, or stack
+it's hosed. :)
 
-Or did I miss something?
+-Kees
 
-However, oldconfig just works (with an error for each new symbol):
-    $ make oldconfig </dev/null
-    [--SNIP--]
-      NOP USB Transceiver Driver (NOP_USB_XCEIV) [N/m/?] (NEW)
-    Error in reading or end of file.
-
-    #
-    # configuration written to .config
-    #
-
-(Which does not mean 422c809 can't be reverted for other reasons, more
-on that in another mail).
-
-Regards,
-Yann E. MORIN.
-
-PS. I'm sad that I do not receive Sedat's emails for some reasons... :-(
-YEM.
-
--- 
-.-----------------.--------------------.------------------.--------------------.
-|  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
-| +33 662 376 056 | Software  Designer | \ / CAMPAIGN     |  ___               |
-| +33 223 225 172 `------------.-------:  X  AGAINST      |  \e/  There is no  |
-| http://ymorin.is-a-geek.org/ | _/*\_ | / \ HTML MAIL    |   v   conspiracy.  |
-'------------------------------^-------^------------------^--------------------'
+--
+Kees Cook
+Chrome OS Security
