@@ -1,63 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756825Ab3DZMvs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 08:51:48 -0400
-Received: from mga09.intel.com ([134.134.136.24]:9035 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751971Ab3DZMvr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 08:51:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,558,1363158000"; 
-   d="scan'208";a="326537214"
-Subject: [PATCH V2] x86: eliminate irq_mis_count counted in arch_irq_stat
-From: Li Fei <fei.li@intel.com>
-To: mingo@redhat.com
-Cc: tglx@linutronix.de, hpa@zytor.com, x86@kernel.org,
-        chuansheng.liu@intel.com, tomoki.sekiyama.qu@hitachi.com,
-        joe@perches.com, linux-kernel@vger.kernel.org, fei.li@intel.com
-In-Reply-To: <1366962971.32469.4.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
-References: <1366962971.32469.4.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 26 Apr 2013 20:50:11 +0800
-Message-ID: <1366980611.32469.7.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1756833Ab3DZMwv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 08:52:51 -0400
+Received: from ringil.hengli.com.au ([178.18.16.133]:43423 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751420Ab3DZMwt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Apr 2013 08:52:49 -0400
+Date: Fri, 26 Apr 2013 20:52:24 +0800
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Tim Chen <tim.c.chen@linux.intel.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, "David S. Miller" <davem@davemloft.net>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        Jim Kukunas <james.t.kukunas@linux.intel.com>,
+        Keith Busch <keith.busch@intel.com>,
+        Erdinc Ozturk <erdinc.ozturk@intel.com>,
+        Vinodh Gopal <vinodh.gopal@intel.com>,
+        James Guilford <james.guilford@intel.com>,
+        Wajdi Feghali <wajdi.k.feghali@intel.com>,
+        Jussi Kivilinna <jussi.kivilinna@iki.fi>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-crypto@vger.kernel.org, linux-scsi@vger.kernel.org
+Subject: Re: [PATCH v2 1/4] Wrap crc_t10dif function all to use crypto
+ transform framework
+Message-ID: <20130426125224.GA4855@gondor.apana.org.au>
+References: <cover.1366214842.git.tim.c.chen@linux.intel.com>
+ <ea4271721b5ca130849b03da4f172f12f66e5628.1366214842.git.tim.c.chen@linux.intel.com>
+ <20130425132203.GA29501@gondor.apana.org.au>
+ <1366910910.27102.126.camel@schen9-DESK>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1366910910.27102.126.camel@schen9-DESK>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Apr 25, 2013 at 10:28:30AM -0700, Tim Chen wrote:
+>
+> @@ -51,6 +54,98 @@ static const __u16 t10_dif_crc_table[256] = {
+>  	0xF0D8, 0x7B6F, 0x6C01, 0xE7B6, 0x42DD, 0xC96A, 0xDE04, 0x55B3
+>  };
+>  
+> +#ifdef CONFIG_CRYPTO_CRCT10DIF
 
-With current implementation, kstat_cpu(cpu).irqs_sum is also
-increased in case of irq_mis_count increment.
-So there is no need to count irq_mis_count in arch_irq_stat,
-otherwise irq_mis_count will be counted twice in the sum of
-/proc/stat.
+No need for ifdefs, just make it unconditional like the crc32c
+case.
 
-Reported-by: Liu Chuansheng <chuansheng.liu@intel.com>
-Signed-off-by: Li Fei <fei.li@intel.com>
-Acked-by: Liu Chuansheng <chuansheng.liu@intel.com>
----
- arch/x86/kernel/irq.c |    4 ----
- 1 files changed, 0 insertions(+), 4 deletions(-)
-
-diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
-index e4595f1..84b7789 100644
---- a/arch/x86/kernel/irq.c
-+++ b/arch/x86/kernel/irq.c
-@@ -165,10 +165,6 @@ u64 arch_irq_stat_cpu(unsigned int cpu)
- u64 arch_irq_stat(void)
- {
- 	u64 sum = atomic_read(&irq_err_count);
--
--#ifdef CONFIG_X86_IO_APIC
--	sum += atomic_read(&irq_mis_count);
--#endif
- 	return sum;
- }
- 
+Thanks,
 -- 
-1.7.4.1
-
-
-
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
