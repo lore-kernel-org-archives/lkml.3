@@ -1,164 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759590Ab3DZHyg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 03:54:36 -0400
-Received: from mail-qe0-f50.google.com ([209.85.128.50]:50925 "EHLO
-	mail-qe0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758911Ab3DZHws (ORCPT
+	id S1759307Ab3DZH5Y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 03:57:24 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:60141
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754135Ab3DZH5X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 03:52:48 -0400
-From: Xi Wang <xi.wang@gmail.com>
-To: Daniel Borkmann <dborkman@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Eric Dumazet <edumazet@google.com>, Will Drewry <wad@chromium.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Xi Wang <xi.wang@gmail.com>
-Subject: [RFC PATCH net-next 1/6] filter: refactor BPF JIT for seccomp filters
-Date: Fri, 26 Apr 2013 03:51:41 -0400
-Message-Id: <1366962706-24204-2-git-send-email-xi.wang@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1366962706-24204-1-git-send-email-xi.wang@gmail.com>
-References: <1366962706-24204-1-git-send-email-xi.wang@gmail.com>
+	Fri, 26 Apr 2013 03:57:23 -0400
+Date: Fri, 26 Apr 2013 09:56:02 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        eranian@google.com, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 1/2] Fix perf LBR filtering
+Message-ID: <20130426075601.GB8669@dyad.programming.kicks-ass.net>
+References: <1366844694-2770-1-git-send-email-andi@firstfloor.org>
+ <20130425162535.GA5828@dyad.programming.kicks-ass.net>
+ <20130425164100.GC16732@two.firstfloor.org>
+ <20130425164837.GD5828@dyad.programming.kicks-ass.net>
+ <20130425170037.GD16732@two.firstfloor.org>
+ <20130425171842.GA8669@dyad.programming.kicks-ass.net>
+ <20130425174211.GE16732@two.firstfloor.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130425174211.GE16732@two.firstfloor.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, bpf_jit_compile() and bpf_jit_free() takes an sk_filter,
-which seccomp filters cannot reuse.
+On Thu, Apr 25, 2013 at 07:42:11PM +0200, Andi Kleen wrote:
+> There's the non cachable region tracking. But there's no guarantee a
+> MMIO has to be in there, driver may still rely just on MTRRs. Also
+> there may be MMIOs the kernel doesn't know about which just happen
+> to be somewhere in the direct mapping.
+> 
+> I don't see any reliable way to detect all mmios.
 
-Change bpf_jit_compile() to take a pointer to BPF instructions and
-the length, and to return a JITted function.
+Hmm.. that's unfortunate.
 
-Change bpf_jit_free() to take a JITted function.
+OK, so how about we use something like:
 
-Add JIT calls for seccomp filters.
+	 is_kernel_text() || is_module_text_address()
 
-Signed-off-by: Xi Wang <xi.wang@gmail.com>
----
- include/linux/filter.h | 16 ++++++++++------
- kernel/seccomp.c       |  6 +++++-
- net/core/filter.c      |  6 ++----
- 3 files changed, 17 insertions(+), 11 deletions(-)
-
-diff --git a/include/linux/filter.h b/include/linux/filter.h
-index d1248f4..8743093 100644
---- a/include/linux/filter.h
-+++ b/include/linux/filter.h
-@@ -21,12 +21,14 @@ struct compat_sock_fprog {
- struct sk_buff;
- struct sock;
- 
-+typedef unsigned int (*bpf_func_t)(const struct sk_buff *skb,
-+				   const struct sock_filter *filter);
-+
- struct sk_filter
- {
- 	atomic_t		refcnt;
- 	unsigned int         	len;	/* Number of filter blocks */
--	unsigned int		(*bpf_func)(const struct sk_buff *skb,
--					    const struct sock_filter *filter);
-+	bpf_func_t		bpf_func;
- 	struct rcu_head		rcu;
- 	struct sock_filter     	insns[0];
- };
-@@ -48,11 +50,12 @@ extern int sk_chk_filter(struct sock_filter *filter, unsigned int flen);
- extern int sk_get_filter(struct sock *sk, struct sock_filter __user *filter, unsigned len);
- 
- #ifdef CONFIG_BPF_JIT
-+#include <stdarg.h>
- #include <linux/linkage.h>
- #include <linux/printk.h>
- 
--extern void bpf_jit_compile(struct sk_filter *fp);
--extern void bpf_jit_free(struct sk_filter *fp);
-+extern bpf_func_t bpf_jit_compile(struct sock_filter *filter, unsigned int flen);
-+extern void bpf_jit_free(bpf_func_t bpf_func);
- 
- static inline void bpf_jit_dump(unsigned int flen, unsigned int proglen,
- 				u32 pass, void *image)
-@@ -65,10 +68,11 @@ static inline void bpf_jit_dump(unsigned int flen, unsigned int proglen,
- }
- #define SK_RUN_FILTER(FILTER, SKB) (*FILTER->bpf_func)(SKB, FILTER->insns)
- #else
--static inline void bpf_jit_compile(struct sk_filter *fp)
-+static inline bpf_func_t bpf_jit_compile(struct sock_filter *filter, unsigned int flen)
- {
-+	return sk_run_filter;
- }
--static inline void bpf_jit_free(struct sk_filter *fp)
-+static inline void bpf_jit_free(bpf_func_t bpf_func)
- {
- }
- #define SK_RUN_FILTER(FILTER, SKB) sk_run_filter(SKB, FILTER->insns)
-diff --git a/kernel/seccomp.c b/kernel/seccomp.c
-index 5af44b5..f784feb 100644
---- a/kernel/seccomp.c
-+++ b/kernel/seccomp.c
-@@ -55,6 +55,7 @@ struct seccomp_filter {
- 	atomic_t usage;
- 	struct seccomp_filter *prev;
- 	unsigned short len;  /* Instruction count */
-+	bpf_func_t bpf_func;
- 	struct sock_filter insns[];
- };
- 
-@@ -211,7 +212,7 @@ static u32 seccomp_run_filters(int syscall)
- 	 * value always takes priority (ignoring the DATA).
- 	 */
- 	for (f = current->seccomp.filter; f; f = f->prev) {
--		u32 cur_ret = sk_run_filter(NULL, f->insns);
-+		u32 cur_ret = SK_RUN_FILTER(f, NULL);
- 		if ((cur_ret & SECCOMP_RET_ACTION) < (ret & SECCOMP_RET_ACTION))
- 			ret = cur_ret;
- 	}
-@@ -273,6 +274,8 @@ static long seccomp_attach_filter(struct sock_fprog *fprog)
- 	if (ret)
- 		goto fail;
- 
-+	filter->bpf_func = bpf_jit_compile(filter->insns, filter->len);
-+
- 	/*
- 	 * If there is an existing filter, make it the prev and don't drop its
- 	 * task reference.
-@@ -330,6 +333,7 @@ void put_seccomp_filter(struct task_struct *tsk)
- 	while (orig && atomic_dec_and_test(&orig->usage)) {
- 		struct seccomp_filter *freeme = orig;
- 		orig = orig->prev;
-+		bpf_jit_free(freeme->bpf_func);
- 		kfree(freeme);
- 	}
- }
-diff --git a/net/core/filter.c b/net/core/filter.c
-index dad2a17..0a7900b 100644
---- a/net/core/filter.c
-+++ b/net/core/filter.c
-@@ -643,7 +643,7 @@ void sk_filter_release_rcu(struct rcu_head *rcu)
- {
- 	struct sk_filter *fp = container_of(rcu, struct sk_filter, rcu);
- 
--	bpf_jit_free(fp);
-+	bpf_jit_free(fp->bpf_func);
- 	kfree(fp);
- }
- EXPORT_SYMBOL(sk_filter_release_rcu);
-@@ -652,13 +652,11 @@ static int __sk_prepare_filter(struct sk_filter *fp)
- {
- 	int err;
- 
--	fp->bpf_func = sk_run_filter;
--
- 	err = sk_chk_filter(fp->insns, fp->len);
- 	if (err)
- 		return err;
- 
--	bpf_jit_compile(fp);
-+	fp->bpf_func = bpf_jit_compile(fp->insns, fp->len);
- 	return 0;
- }
- 
--- 
-1.8.1.2
-
+And bail if not; that should at least make it work for the simple case or
+normal text and not be worse than what you propose for JIT stuff.
