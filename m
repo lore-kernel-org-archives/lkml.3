@@ -1,112 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756544Ab3DZMlf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 08:41:35 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:49429 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752785Ab3DZMlc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 08:41:32 -0400
-Date: Fri, 26 Apr 2013 13:41:28 +0100
-From: Jamie Iles <jamie@jamieiles.com>
-To: Pavel Machek <pavel@denx.de>
-Cc: dinguyen@altera.com, wd@denx.de, jamie@jamieiles.com,
-        linux-arm-kernel@lists.infradead.org, olof@lixom.net, arnd@arndb.de,
-        johnstul@us.ibm.com, tglx@linutronix.de,
-        kernel list <linux-kernel@vger.kernel.org>
-Subject: Re: dw_apb_timer_of.c: remove parts that were picoxcell-specific
-Message-ID: <20130426124128.GB6946@page>
-References: <20130426121433.GA16249@amd.pavel.ucw.cz>
+	id S1756653Ab3DZMnN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 08:43:13 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:43779 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756588Ab3DZMnK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Apr 2013 08:43:10 -0400
+From: Sourav Poddar <sourav.poddar@ti.com>
+To: <gregkh@linuxfoundation.org>, <tony@atomide.com>,
+        <rmk+kernel@arm.linux.org.uk>, <khilman@linaro.org>,
+        <linux-kernel@vger.kernel.org>
+CC: <linux-serial@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        Sourav Poddar <sourav.poddar@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Felipe Balbi <balbi@ti.com>, Rajendra nayak <rnayak@ti.com>
+Subject: [PATCHv4 0/5] Serial Omap fixes and cleanups
+Date: Fri, 26 Apr 2013 18:12:43 +0530
+Message-ID: <1366980168-30566-1-git-send-email-sourav.poddar@ti.com>
+X-Mailer: git-send-email 1.7.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130426121433.GA16249@amd.pavel.ucw.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pavel,
+Hi,
 
-On Fri, Apr 26, 2013 at 02:14:34PM +0200, Pavel Machek wrote:
-> diff --git a/arch/arm/mach-picoxcell/common.c b/arch/arm/mach-picoxcell/common.c
-> index 70b441a..22759f5 100644
-> --- a/arch/arm/mach-picoxcell/common.c
-> +++ b/arch/arm/mach-picoxcell/common.c
-> @@ -84,11 +84,39 @@ static void picoxcell_wdt_restart(char mode, const char *cmd)
->  	}
->  }
->  
-> +static const struct of_device_id picochip_rtc_ids[] __initconst = {
-> +        { .compatible = "picochip,pc3x2-rtc" },
-> +        { /* Sentinel */ },
-> +};
-> +
-> +static void __iomem *sched_io_base;
-> +
-> +static u32 read_sched_clock(void)
-> +{
-> +        return __raw_readl(sched_io_base);
-> +}
-> +
-> +static void __init timer_init(void)
-> +{
-> +	u32 rate;
-> +
-> +	dw_apb_timer_init(0);
-> +
-> +	sched_timer = of_find_matching_node(timer, osctimer_ids);
-> +	if (!sched_timer)
-> +		panic("No suitable timer for scheduler clock\n");
-> +
-> +	timer_get_base_and_rate(sched_timer, &sched_io_base, &rate);
-> +	of_node_put(sched_timer);
+This patch series contains fixes and cleanups around the issue that
+the console UART should not idled on suspend while using "no_console_suspend"
+in bootargs.
 
-This doesn't work as osctimer_ids is private to the dw_apb_timer files 
-as is timer_get_base_and_rate.  The other timer is unused in picoxcell 
-though so dw_apb_timer_init(1), something like the patch below on top of 
-yours.
+The approach thought of is to modify the serial core/serial driver to bypass
+runtime PM if the UART in contention is a console and we are using "no_console_suspend"
+in our bootargs.
 
-Thanks,
+While fixing the above issue, there are other cleanups also done as part of
+this series which are no longer required. This cleanups mainly include getting
+rid of using "omap_device_disable_idle_on_suspend" api for both dt and non dt case
+as the serial driver will be self sufficient to handle the "no_idle_on_suspend" issue.
+Serial was the only one making use of "omap_device_disable_idle_on_suspend"
 
-Jamie
+There were discussions about how to handle "no_idle_on_suspend" issue and all the
+discussions are as follows:
+https://lkml.org/lkml/2013/4/5/239
+https://lkml.org/lkml/2013/4/2/350
+https://lkml.org/lkml/2013/3/18/199
+https://lkml.org/lkml/2013/3/18/295
+Due to the amount of change in approach and other cleanups coming around it, I am posting
+this as a new series.
 
+v3->v4
+1. check for console in runtime api.
+2. Prevent setting od->flags to OMAP_DEVICE_SUSPENDED
 
-diff --git i/arch/arm/mach-picoxcell/common.c w/arch/arm/mach-picoxcell/common.c
-index 1484841..a92d203 100644
---- i/arch/arm/mach-picoxcell/common.c
-+++ w/arch/arm/mach-picoxcell/common.c
-@@ -82,32 +82,9 @@ static void picoxcell_wdt_restart(char mode, const char *cmd)
- 	}
- }
- 
--static const struct of_device_id picochip_rtc_ids[] __initconst = {
--        { .compatible = "picochip,pc3x2-rtc" },
--        { /* Sentinel */ },
--};
--
--static void __iomem *sched_io_base;
--
--static u32 read_sched_clock(void)
--{
--        return __raw_readl(sched_io_base);
--}
--
- static void __init timer_init(void)
- {
--	u32 rate;
--
--	dw_apb_timer_init(0);
--
--	sched_timer = of_find_matching_node(timer, osctimer_ids);
--	if (!sched_timer)
--		panic("No suitable timer for scheduler clock\n");
--
--	timer_get_base_and_rate(sched_timer, &sched_io_base, &rate);
--	of_node_put(sched_timer);
--
--	setup_sched_clock(read_sched_clock, 32, rate);
-+	dw_apb_timer_init(1);
- }
- 
- DT_MACHINE_START(PICOXCELL, "Picochip picoXcell")
+v2->v3
+1. Use "-EBUSY" for no_console_suspend case
+2. Bypass runtime PM only during suspend
+3. Improve the commit log based on community suggestion.
+
+v1->v2
+1. Remove the prepare/complete callback.
+2. Adapt runtime PM callback to deal with the issue.
+3. Fold patch(1,2) of previous series into 1.
+4. Reordered the patch.
+5. Change $subject and chage log for few patches.
+
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: Felipe Balbi <balbi@ti.com>
+Cc: Rajendra nayak <rnayak@ti.com>
+
+Test info
+Omap4430sdp:
+- Tested wakeup from UART after suspend for dt and non dt case.
+Omap5430evm:
+- Tested wakeup from UART after suspend for dt case.
+
+This patches are based on 3.9-rc8
+
+The following changes since commit 824282ca7d250bd7c301f221c3cd902ce906d731:
+
+  Merge branch 'upstream' of git://git.linux-mips.org/pub/scm/ralf/upstream-linus (2013-04-22 15:00:59 -0700)
+
+are available in the git repository at:
+
+  git://gitorious.org/linux-connectivity/linux-connectivity.git serial_omap_fix_cleanup
+
+Sourav Poddar (5):
+      driver: tty: serial: Move "uart_console" def to core header file.
+      driver: serial: omap: prevent runtime PM for "no_console_suspend"
+      arm: omap2+: serial: remove no_console_suspend support
+      arm: dts: am33xx: Remove "ti,no_idle_on_suspend" property.
+      arm: omap2+: omap_device: remove no_idle_on_suspend
+
+ arch/arm/boot/dts/am33xx.dtsi     |    1 -
+ arch/arm/mach-omap2/omap_device.c |    9 ++-------
+ arch/arm/mach-omap2/omap_device.h |   10 ----------
+ arch/arm/mach-omap2/serial.c      |    7 -------
+ drivers/tty/serial/mpc52xx_uart.c |   10 ----------
+ drivers/tty/serial/omap-serial.c  |   28 +++++++++++++++++++++++++++-
+ drivers/tty/serial/serial_core.c  |    6 ------
+ include/linux/serial_core.h       |    7 +++++++
+ 8 files changed, 36 insertions(+), 42 deletions(-)
