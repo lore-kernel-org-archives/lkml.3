@@ -1,45 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759550Ab3DZC3P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 22:29:15 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34818 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758203Ab3DZC3O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 22:29:14 -0400
-Message-ID: <5179E652.808@zytor.com>
-Date: Thu, 25 Apr 2013 19:28:34 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S932966Ab3DZCyZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 22:54:25 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:58372 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758744Ab3DZCyX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Apr 2013 22:54:23 -0400
+Message-ID: <5179EC53.6080006@huawei.com>
+Date: Fri, 26 Apr 2013 10:54:11 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Simon Jeons <simon.jeons@gmail.com>
-CC: Minchan Kim <minchan@kernel.org>, Sasha Levin <sasha.levin@oracle.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Dave Jones <davej@redhat.com>, linux-mm <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: mm: BUG in do_huge_pmd_wp_page
-References: <51559150.3040407@oracle.com> <20130410080202.GB21292@blaptop> <517861E0.7030801@zytor.com> <51786D52.1080509@gmail.com>
-In-Reply-To: <51786D52.1080509@gmail.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
+To: Tejun Heo <tj@kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
+Subject: [PATCH] cgroup: fix use-after-free when umounting cgroupfs
+Content-Type: text/plain; charset="GB2312"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/24/2013 04:40 PM, Simon Jeons wrote:
-> 
-> I see in memblock_trim_memory(): start = round_up(orig_start, align);
-> here align is PAGE_SIZE, so the dump of zone ranges in my machine is [ 
->   0.000000]  DMA      [mem 0x00001000-0x00ffffff]. Why PFN 0 is not
-> used? just for align?
-> 
+Try:
+  # mount -t cgroup xxx /cgroup
+  # mkdir /cgroup/sub && rmdir /cgroup/sub && umount /cgroup
 
-PFN 0 contains the real-mode interrupt vector table and BIOS data area,
-so we just reserve it.  Avoids issues with zero being special, too.
+And you might see this:
 
-	-hpa
+ida_remove called for id=1 which is not allocated.
 
+It's because cgroup_kill_sb() is called to destroy root->cgroup_ida
+and free cgrp->root before ida_simple_removed() is called. What's
+worse is we're accessing cgrp->root while it has been freed.
 
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+---
+ kernel/cgroup.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 6780459..a45aa12 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -845,9 +845,12 @@ static void cgroup_free_fn(struct work_struct *work)
+ 	 */
+ 	dput(cgrp->parent->dentry);
+ 
++	ida_simple_remove(&cgrp->root->cgroup_ida, cgrp->id);
++	
+ 	/*
+ 	 * Drop the active superblock reference that we took when we
+-	 * created the cgroup
++	 * created the cgroup. This will free cgrp->root, if we are
++	 * holding the last reference to @sb.
+ 	 */
+ 	deactivate_super(cgrp->root->sb);
+ 
+@@ -859,7 +862,6 @@ static void cgroup_free_fn(struct work_struct *work)
+ 
+ 	simple_xattrs_free(&cgrp->xattrs);
+ 
+-	ida_simple_remove(&cgrp->root->cgroup_ida, cgrp->id);
+ 	kfree(rcu_dereference_raw(cgrp->name));
+ 	kfree(cgrp);
+ }
+-- 
+1.8.0.2
