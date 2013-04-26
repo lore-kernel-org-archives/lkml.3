@@ -1,68 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756459Ab3DZQSJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 12:18:09 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:26944 "EHLO SMTP.CITRIX.COM"
+	id S1756568Ab3DZQTp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 12:19:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25103 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751276Ab3DZQSH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 12:18:07 -0400
-X-IronPort-AV: E=Sophos;i="4.87,559,1363132800"; 
-   d="scan'208";a="21836671"
-Date: Fri, 26 Apr 2013 17:18:01 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-Subject: Re: [PATCH 6/9] xen/spinlock:  Check against default value of -1
- for IRQ line.
-In-Reply-To: <1366142947-18655-7-git-send-email-konrad.wilk@oracle.com>
-Message-ID: <alpine.DEB.2.02.1304261717300.4180@kaball.uk.xensource.com>
-References: <1366142947-18655-1-git-send-email-konrad.wilk@oracle.com> <1366142947-18655-7-git-send-email-konrad.wilk@oracle.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1755199Ab3DZQTo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Apr 2013 12:19:44 -0400
+Date: Fri, 26 Apr 2013 18:18:09 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Borislav Petkov <bp@alien8.de>, Stephane Eranian <eranian@google.com>,
+        Sam Ravnborg <sam@ravnborg.org>, David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH 03/26] perf tools: Move arch check into config/Makefile
+Message-ID: <20130426161809.GE1054@krava.brq.redhat.com>
+References: <1366796273-4780-1-git-send-email-jolsa@redhat.com>
+ <1366796273-4780-4-git-send-email-jolsa@redhat.com>
+ <87vc7b7yyf.fsf@sejong.aot.lge.com>
+ <20130426113709.GC1054@krava.brq.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130426113709.GC1054@krava.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16 Apr 2013, Konrad Rzeszutek Wilk wrote:
-> The default (uninitialized) value of the IRQ line is -1.
-> Check if we already have allocated an spinlock interrupt line
-> and if somebody is trying to do it again. Also set it to -1
-> when we offline the CPU.
+On Fri, Apr 26, 2013 at 01:37:09PM +0200, Jiri Olsa wrote:
+> On Thu, Apr 25, 2013 at 06:15:52PM +0900, Namhyung Kim wrote:
+> > On Wed, 24 Apr 2013 11:37:30 +0200, Jiri Olsa wrote:
+> > > Moving arch check into config/Makefile.
+> > >
+> > [SNIP]
+> > > +# include config/Makefile by default and rule out
+> > > +# non-config cases
+> > > +config := 1
+> > > +
+> > > +# standalone clean
+> > > +ifeq ($(MAKECMDGOALS),clean)
+> > > +  config := 0
+> > >  endif
+> > > -ifeq ($(ARCH),x86_64)
+> > > -	override ARCH := x86
+> > > -	IS_X86_64 := 0
+> > > -	ifeq (, $(findstring m32,$(EXTRA_CFLAGS)))
+> > > -		IS_X86_64 := $(shell echo __x86_64__ | ${CC} -E -x c - | tail -n 1)
+> > > -	endif
+> > > -	ifeq (${IS_X86_64}, 1)
+> > > -		RAW_ARCH := x86_64
+> > > -		ARCH_CFLAGS := -DARCH_X86_64
+> > > -		ARCH_INCLUDE = ../../arch/x86/lib/memcpy_64.S ../../arch/x86/lib/memset_64.S
+> > > -	endif
+> > > -	NO_PERF_REGS := 0
+> > > -	LIBUNWIND_LIBS = -lunwind -lunwind-x86_64
+> > > +
+> > > +# tags cscope
+> > > +ifneq ($(filter tags cscope,$(MAKECMDGOALS)),)
+> > > +  config := 0
+> > > +endif
+> > 
+> > Good idea!
+> > 
+> > How about consolidating them like:
+> > 
+> >   NON_CONFIG_TARGETS := clean TAGS tags cscope help
+> >   
+> >   ifeq ($(filter-out $(NON_CONFIG_TARGETS),$(MAKECMDGOALS)),)
+> >     config := 0
+> >   endif
 > 
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> ---
->  arch/x86/xen/spinlock.c | 4 ++++
->  1 file changed, 4 insertions(+)
+> nice, I'll do that
 > 
-> diff --git a/arch/x86/xen/spinlock.c b/arch/x86/xen/spinlock.c
-> index f7a080e..47ae032 100644
-> --- a/arch/x86/xen/spinlock.c
-> +++ b/arch/x86/xen/spinlock.c
-> @@ -364,6 +364,9 @@ void __cpuinit xen_init_lock_cpu(int cpu)
->  	int irq;
->  	const char *name;
->  
-> +	WARN(per_cpu(lock_kicker_irq, cpu) > 0, "spinlock on CPU%d exists on IRQ%d!\n",
-                  shouldn't this be >= ^
+> thanks,
+> jirka
 
+Namhyung,
+if you'd like to check, all changes addressing your comments are in here:
 
-> +	     cpu, per_cpu(lock_kicker_irq, cpu));
->
->  	name = kasprintf(GFP_KERNEL, "spinlock%d", cpu);
->  	irq = bind_ipi_to_irqhandler(XEN_SPIN_UNLOCK_VECTOR,
->  				     cpu,
-> @@ -383,6 +386,7 @@ void __cpuinit xen_init_lock_cpu(int cpu)
->  void xen_uninit_lock_cpu(int cpu)
->  {
->  	unbind_from_irqhandler(per_cpu(lock_kicker_irq, cpu), NULL);
-> +	per_cpu(lock_kicker_irq, cpu) = -1;
->  }
->  
->  void __init xen_init_spinlocks(void)
-> -- 
-> 1.8.1.4
-> 
+git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git
+perf/core_make
+
+I'll wait a bit for other comments and resend the patchset later
+
+thanks,
+jirka
