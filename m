@@ -1,55 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759356Ab3DZIh2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 04:37:28 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:44813 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751228Ab3DZIhZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 04:37:25 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>, robin.randhawa@arm.com,
-        Ben Dooks <ben-linux@fluff.org>, linux-pm@vger.kernel.org,
-        patches@linaro.org, Liviu.Dudau@arm.com, linux-kernel@vger.kernel.org,
-        cpufreq@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Steve.Bannister@arm.com,
-        arvind.chauhan@arm.com, linaro-kernel@lists.linaro.org,
-        charles.garcia-tobin@arm.com
-Subject: Re: [PATCH 07/18] cpufreq: s3c24xx: move cpufreq driver to drivers/cpufreq
-Date: Thu, 25 Apr 2013 20:12:29 +0200
-Message-ID: <1615834.7iOsapYTqY@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0-rc8+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <51795E53.5030908@samsung.com>
-References: <cover.1365079581.git.viresh.kumar@linaro.org> <2264237.NUtkmvZG3W@vostro.rjw.lan> <51795E53.5030908@samsung.com>
+	id S1759378Ab3DZIj1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 04:39:27 -0400
+Received: from mail-qc0-f176.google.com ([209.85.216.176]:41102 "EHLO
+	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758717Ab3DZIjU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Apr 2013 04:39:20 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <5179739C.9080005@redhat.com>
+References: <1366887900-24769-1-git-send-email-alex.mihai.c@gmail.com>
+	<1366887900-24769-2-git-send-email-alex.mihai.c@gmail.com>
+	<5179739C.9080005@redhat.com>
+Date: Fri, 26 Apr 2013 11:39:19 +0300
+Message-ID: <CAHG7+CDn4ELhmigo3j4R4qg29oO-NwdCR+=WGk7PmpVL2WTtaA@mail.gmail.com>
+Subject: Re: [PATCH 1/3 RFC v2] selftests: introduce testing abstractions
+From: Alexandru Copot <alex.mihai.c@gmail.com>
+To: Daniel Borkmann <dborkman@redhat.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        akpm@linux-foundation.org, davem@davemloft.net, willemb@google.com,
+        ebiederm@xmission.com, gorcunov@openvz.org, palewis@adobe.com,
+        edumazet@google.com, Daniel Baluta <dbaluta@ixiacom.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, April 26, 2013 01:48:19 AM Kukjin Kim wrote:
-> On 04/24/13 07:59, Rafael J. Wysocki wrote:
-> 
+On Thu, Apr 25, 2013 at 9:19 PM, Daniel Borkmann <dborkman@redhat.com> wrote:
+> Usually I associate sth named assert() that it does an ungraceful exit.
+> Maybe __test() or __check()?
+
+This looks like a good idea, will do.
+
+>> +       va_list vl;
+>> +       const char *m;
+>> +       char msg[BUFSIZ];
+>> +
+>> +       if (expr)
+>> +               return TEST_PASS;
+>> +
+>> +       fprintf(stderr, "\n(%s:%d) ", filename, line);
+>> +
+>> +       va_start(vl, fmt);
+>> +       m = va_arg(vl, char *);
+>> +       if (!m)
+>> +               m = fmt;
+>> +       else
+>> +               fprintf(stderr, "%s ", fmt);
+>> +
+>> +       vsnprintf(msg, sizeof msg, m, vl);
+>
+>
+> Nitpick: sizeof(msg)
+
+sizeof is actually an operator. I could change it especially to
+keep an uniform coding style with the rest of the kernel and tools.
+
+>
+>> +       va_end(vl);
+>> +
+>> +       fprintf(stderr, "%s\n", msg);
+>
+>
+> Not sure what exactly you are trying to accomplish here in this function?
+> Why don't you use vfprintf() and leave this hackery aside?
+>
+> va_list vl;
+>
+> va_start(vl, fmt);
+> fprintf(stderr, "(%s:%d) ", filename, line);
+> vfprintf(stderr, fmt, vl);
+> va_end(vl);
+>
+
+Here I am trying to format both using the fmt string and the one that
+the user might write as the next argument. It's not really safe, but
+this way we can print whatever data is needed to diagnose a failure.
+
+Example: check(r == 0, out_label, ret, "option %d", 5);
+
+But I think you are right, I will keep it simple for the moment.
+
+>> +typedef enum test_result {
+>> +       TEST_PASS = 0,
+>> +       TEST_FAIL,
+>> +} test_result_t;
+>
+>
+> I have no strong opinion here, but do we need to make this as an enum and
+> then do bit-operations on it?
+
+I like enums because of type safety, but I will change these to defines.
+
+>> +
+>> +#define pass_if(expr, label, ret)                              \
+>> +       do {                                                    \
+>> +               if (expr) {                                     \
+>> +                       ret = TEST_PASS;                        \
+>> +                       goto label;                             \
+>> +               }                                               \
+>> +       } while (0)
+>
+>
+> In cases where you make use of this macro, it's always like ...
+>
+> <function>
+> {
+>         pass_if(<cond>, out, ret);
 > [...]
-> 
-> >> Rafael, please take this patch with my ack in your tree, sorry for noise.
-> >>
-> >> Acked-by: Kukjin Kim<kgene.kim@samsung.com>
-> >>
-> >> If any problems, please kindly let me know.
-> >
-> > Well, I suppose I can take the original patch, but then it will conflict with
-> > your tree during merge.  Is that not a problem?
-> >
-> I think, some conflicts can be occurred but if so, we can fix it before 
-> merge window.
+> out:
+>         return ret;
+> }
+>
+> Not sure if this simplifies or rather obfuscates things. Maybe other people
+> like it, not sure ...
 
-Well, how exactly would you like to address them?
+This looks like the cleanest solution to me. We have found some other
+implementations
+which used weird things like setjmp/longjmp. We are open to any
+suggestions on this.
 
-Rafael
+>
+>> +struct generic_test {
+>> +       const char *name;
+>> +       void *private;
+>> +
+>> +
+>
+>
+> Why do you have two blank lines here?
+>
 
+Correct, will remove.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+>> +       void *testcases;
+>
+>
+> It seems you like having void* pointers, right? This is very unintuitive
+> here (and weird that you iterate with a char* pointer over it in function
+> run_all_tests())
+> and at least needs some comments. Otherwise people will have to look into
+> your example to get to know what you mean.
+
+Having void pointers is simpler because it doesn't force you to write casts. It
+is also generic. I iterate with char* because I can't do it with a void*.
+Yes, you are right about the comments.
+
+> Also, what is the difference between testcases and private? I have not seen
+> that you use private anywhere.
+
+The private field is mostly for future use, will remove it for now until
+we find some real use case.
+
+>> +       int testcase_size;
+>
+>
+> Nitpick (but that depends if you keep void*): size_t len;
+>
+>> +       int testcase_count;
+>
+>
+> Nitpick (ditto): unsigned int num_cases;
+>
+>
+>> +       /* Ends all tests if one fails */
+>> +       int abort_on_fail;
+>
+>
+> bool abort_on_fail;
+>
+> Also no blank lines at the end of a file!
+
+I agree with all of these.
+
+> Ok, for now I leave the other patches aside, maybe you have some comments to
+> the review, a new version, or wait a while for others to give feedback as well.
+>
+> Thanks and cheers,
+>
+> Daniel
+
+Thanks for being so thorough!
+
+Alex
