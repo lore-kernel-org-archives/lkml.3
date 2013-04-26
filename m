@@ -1,137 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759343Ab3DZCDP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 22:03:15 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:52249 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757971Ab3DZCDO (ORCPT
+	id S1759615Ab3DZCF4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 22:05:56 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:4264 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758702Ab3DZCFz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 22:03:14 -0400
-Message-ID: <5179E056.2000709@linux.vnet.ibm.com>
-Date: Fri, 26 Apr 2013 10:03:02 +0800
-From: Mike Qiu <qiudayu@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	Thu, 25 Apr 2013 22:05:55 -0400
+X-Spam-Score: -100.8
+Message-ID: <5179E0D3.8020507@asianux.com>
+Date: Fri, 26 Apr 2013 10:05:07 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Chen Gang <gang.chen@asianux.com>
-CC: Michael Neuling <mikey@neuling.org>, Paul Mackerras <paulus@samba.org>,
+To: Mike Qiu <qiudayu@linux.vnet.ibm.com>
+CC: Paul Mackerras <paulus@samba.org>, Michael Neuling <mikey@neuling.org>,
         Michael Ellerman <michael@ellerman.id.au>,
         linuxppc-dev@lists.ozlabs.org, sfr@canb.auug.org.au, matt@ozlabs.org,
         linux-kernel@vger.kernel.org,
         "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: Re: [PATCH v2] PowerPC: kernel: compiling issue, make additional
- room in exception vector area
-References: <5177965D.9090406@linux.vnet.ibm.com> <20130424083142.GB26834@concordia> <51779941.8080403@linux.vnet.ibm.com> <30651.1366799858@ale.ozlabs.ibm.com> <1366807638.5911.2.camel@localhost> <5178816D.3000309@asianux.com> <5178ABA2.4030109@linux.vnet.ibm.com> <20130425062539.GA421@iris.ozlabs.ibm.com> <517918AB.4020508@asianux.com> <30269.1366931768@ale.ozlabs.ibm.com> <5179D302.9060203@asianux.com> <5179D5D8.8080102@asianux.com> <5179DA23.8000407@asianux.com>
-In-Reply-To: <5179DA23.8000407@asianux.com>
-Content-Type: text/plain; charset=GB2312
+Subject: Re: "attempt to move .org backwards" still show up
+References: <5177965D.9090406@linux.vnet.ibm.com> <20130424083142.GB26834@concordia> <51779941.8080403@linux.vnet.ibm.com> <30651.1366799858@ale.ozlabs.ibm.com> <1366807638.5911.2.camel@localhost> <5178816D.3000309@asianux.com> <5178ABA2.4030109@linux.vnet.ibm.com> <20130425062539.GA421@iris.ozlabs.ibm.com> <51791076.9040405@asianux.com> <5179DF37.8020407@linux.vnet.ibm.com>
+In-Reply-To: <5179DF37.8020407@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13042601-7014-0000-0000-000002E98D3C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ÓÚ 2013/4/26 9:36, Chen Gang Ð´µÀ:
-> On 2013Äê04ÔÂ26ÈÕ 09:18, Chen Gang wrote:
->> On 2013Äê04ÔÂ26ÈÕ 09:06, Chen Gang wrote:
->>>> CFAR is the Come From Register.  It saves the location of the last
->>>>> branch and is hence overwritten by any branch.
+On 2013å¹´04æœˆ26æ—¥ 09:58, Mike Qiu wrote:
+> äºŽ 2013/4/25 19:16, Chen Gang å†™é“:
+>> On 2013å¹´04æœˆ25æ—¥ 14:25, Paul Mackerras wrote:
+>>> On Thu, Apr 25, 2013 at 12:05:54PM +0800, Mike Qiu wrote:
+>>>>> This has block my work now
+>>>>> So I hope you can take a look ASAP
+>>>>> Thanks
+>>>>> :)
 >>>>>
->>> Do we process it just like others done (e.g. 0x300, 0xe00, 0xe20 ...) ?
->>> 	. = 0x900
->>> 	.globl decrementer_pSeries
->>> decrementer_pSeries:
->>>  	HMT_MEDIUM_PPR_DISCARD
->>> 	SET_SCRATCH0(r13)
->>> 	b decrementer_pSeries_0
->>>
->>> 	...
->>>
->>>
-> Oh, it seems EXCEPTION_PROLOG_1 will save the regesters which related
-> with CFAR, so I think need move EXCEPTION_PROLOG_1 to near 0x900.
+>>>>> Mike
+>>> As a quick fix, turn on CONFIG_KVM_BOOK3S_64_HV.  That will eliminate
+>>> the immediate problem.
+>> Yes, just as my original reply to Mike to bypass it, but get no reply, I
+>> guess he has to face the CONFIG_KVM_BOOK3S_64_PR.
+>>
+>> Now, I am just fixing it, when I finish one patch, please help check.
+> Actually, I have compile pass by your patch, but I see Micheal Neuling's
+> reply,
+> I just stop to do that, and wait for you new patch :)
+> 
 
-I will try your diff V2, to see if the machine can boot up
-> ---------------------------------diff v2 begin-----------------------------
->
-> diff --git a/arch/powerpc/kernel/exceptions-64s.S b/arch/powerpc/kernel/exceptions-64s.S
-> index e789ee7..f0489c4 100644
-> --- a/arch/powerpc/kernel/exceptions-64s.S
-> +++ b/arch/powerpc/kernel/exceptions-64s.S
-> @@ -254,7 +254,15 @@ hardware_interrupt_hv:
->  	STD_EXCEPTION_PSERIES(0x800, 0x800, fp_unavailable)
->  	KVM_HANDLER_PR(PACA_EXGEN, EXC_STD, 0x800)
->
-> -	MASKABLE_EXCEPTION_PSERIES(0x900, 0x900, decrementer)
-> +	. = 0x900
-> +	.globl decrementer_pSeries
-> +decrementer_pSeries:
-> +	HMT_MEDIUM_PPR_DISCARD
-> +	SET_SCRATCH0(r13)		/* save r13 */
-> +	EXCEPTION_PROLOG_0(PACA_EXGEN)
-> +	EXCEPTION_PROLOG_1(PACA_EXGEN, SOFTEN_TEST_PR, 0x900)
-> +	b	decrementer_pSeries_0
-> +
->  	STD_EXCEPTION_HV(0x980, 0x982, hdecrementer)
->
->  	MASKABLE_EXCEPTION_PSERIES(0xa00, 0xa00, doorbell_super)
-> @@ -536,6 +544,11 @@ ALT_FTR_SECTION_END_IFCLR(CPU_FTR_ARCH_206)
->  #endif
->
->  	.align	7
-> +	/* moved from 0x900 */
-> +decrementer_pSeries_0:
-> +	EXCEPTION_PROLOG_PSERIES_1(decrementer_common, EXC_STD)
-> +
-> +	.align	7
->  	/* moved from 0xe00 */
->  	STD_EXCEPTION_HV_OOL(0xe02, h_data_storage)
->  	KVM_HANDLER_SKIP(PACA_EXGEN, EXC_HV, 0xe02)
->
->
-> ---------------------------------diff v2 end-------------------------------
->
->
->> Such as the fix below, is it OK (just like 0x300 or 0x200 has done) ?
->>
->> Please check, thanks.
->>
->> ---------------------------diff begin-------------------------------------
->>
->> diff --git a/arch/powerpc/kernel/exceptions-64s.S b/arch/powerpc/kernel/exceptions-64s.S
->> index e789ee7..a0a5ff2 100644
->> --- a/arch/powerpc/kernel/exceptions-64s.S
->> +++ b/arch/powerpc/kernel/exceptions-64s.S
->> @@ -254,7 +254,14 @@ hardware_interrupt_hv:
->>  	STD_EXCEPTION_PSERIES(0x800, 0x800, fp_unavailable)
->>  	KVM_HANDLER_PR(PACA_EXGEN, EXC_STD, 0x800)
->>  
->> -	MASKABLE_EXCEPTION_PSERIES(0x900, 0x900, decrementer)
->> +	. = 0x900
->> +	.globl decrementer_pSeries
->> +decrementer_pSeries:
->> +	HMT_MEDIUM_PPR_DISCARD
->> +	SET_SCRATCH0(r13)		/* save r13 */
->> +	EXCEPTION_PROLOG_0(PACA_EXGEN)
->> +	b	decrementer_pSeries_0
->> +
->>  	STD_EXCEPTION_HV(0x980, 0x982, hdecrementer)
->>  
->>  	MASKABLE_EXCEPTION_PSERIES(0xa00, 0xa00, doorbell_super)
->> @@ -536,6 +543,12 @@ ALT_FTR_SECTION_END_IFCLR(CPU_FTR_ARCH_206)
->>  #endif
->>  
->>  	.align	7
->> +	/* moved from 0x900 */
->> +decrementer_pSeries_0:
->> +	EXCEPTION_PROLOG_1(PACA_EXGEN, SOFTEN_TEST_PR, 0x900)
->> +	EXCEPTION_PROLOG_PSERIES_1(decrementer_common, EXC_STD)
->> +
->> +	.align	7
->>  	/* moved from 0xe00 */
->>  	STD_EXCEPTION_HV_OOL(0xe02, h_data_storage)
->>  	KVM_HANDLER_SKIP(PACA_EXGEN, EXC_HV, 0xe02)
->>
->> ---------------------------diff end---------------------------------------
->>
->
+I am just continuing (before get fixed, I should continue)
 
+
+> Now I will use your V2 patch to build
+
+Please see the discussion of patch v2, it still has another issues, but
+I am still trying (I guess Michael is just checking).
+
+:-)
+
+-- 
+Chen Gang
+
+Asianux Corporation
