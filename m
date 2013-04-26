@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757924Ab3DZTE7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 15:04:59 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:33625 "EHLO smtp.outflux.net"
+	id S1757898Ab3DZTF7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 15:05:59 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:46947 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757794Ab3DZTEV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 15:04:21 -0400
+	id S1757754Ab3DZTEL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Apr 2013 15:04:11 -0400
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
 Cc: kernel-hardening@lists.openwall.com, "H. Peter Anvin" <hpa@zytor.com>,
@@ -17,9 +17,9 @@ Cc: kernel-hardening@lists.openwall.com, "H. Peter Anvin" <hpa@zytor.com>,
         Dan Rosenberg <drosenberg@vsecurity.com>,
         Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>,
         Kees Cook <keescook@chromium.org>
-Subject: [PATCH 3/6] x86: kaslr: return location from decompress_kernel
-Date: Fri, 26 Apr 2013 12:03:22 -0700
-Message-Id: <1367003005-5560-4-git-send-email-keescook@chromium.org>
+Subject: [PATCH 2/6] x86: kaslr: move CPU flags out of cpucheck
+Date: Fri, 26 Apr 2013 12:03:21 -0700
+Message-Id: <1367003005-5560-3-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1367003005-5560-1-git-send-email-keescook@chromium.org>
 References: <1367003005-5560-1-git-send-email-keescook@chromium.org>
@@ -28,192 +28,340 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This allows decompress_kernel to return a new location for the kernel to
-be relocated to. With CONFIG_RANDOMIZE_BASE, the choose_kernel_location
-routine will select a new location to decompress the kernel, and is
-presently a no-op. The logic for bypassing this routine with "noaslr"
-on the kernel command line is handled.
+Refactor the CPU flags handling out of the cpucheck routines so that
+they can be reused by the future ASLR routines (in order to detect CPU
+features like RDRAND and RDTSC).
+
+This reworks has_eflag() and has_fpu() to be used on both 32-bit and
+64-bit, and refactors the calls to cpuid to make them PIC-safe on 32-bit.
 
 Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
- Documentation/kernel-parameters.txt |    4 ++++
+v2:
+ - clean up has_eflags and has_fpu to be 64-bit sane, thanks to HPA.
+---
+ arch/x86/boot/Makefile              |    2 +-
+ arch/x86/boot/boot.h                |   10 +---
  arch/x86/boot/compressed/Makefile   |    2 +-
- arch/x86/boot/compressed/aslr.c     |   21 +++++++++++++++++++++
- arch/x86/boot/compressed/cmdline.c  |    2 +-
- arch/x86/boot/compressed/head_32.S  |    2 +-
- arch/x86/boot/compressed/head_64.S  |    2 +-
- arch/x86/boot/compressed/misc.c     |    7 +++++--
- arch/x86/boot/compressed/misc.h     |   22 ++++++++++++++++------
- 8 files changed, 50 insertions(+), 12 deletions(-)
- create mode 100644 arch/x86/boot/compressed/aslr.c
+ arch/x86/boot/compressed/cpuflags.c |   12 +++++
+ arch/x86/boot/cpucheck.c            |   86 -----------------------------
+ arch/x86/boot/cpuflags.c            |  101 +++++++++++++++++++++++++++++++++++
+ arch/x86/boot/cpuflags.h            |   19 +++++++
+ 7 files changed, 135 insertions(+), 97 deletions(-)
+ create mode 100644 arch/x86/boot/compressed/cpuflags.c
+ create mode 100644 arch/x86/boot/cpuflags.c
+ create mode 100644 arch/x86/boot/cpuflags.h
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 8ccbf27..eb1c62c 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -1862,6 +1862,10 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 	noapic		[SMP,APIC] Tells the kernel to not make use of any
- 			IOAPICs that may be present in the system.
+diff --git a/arch/x86/boot/Makefile b/arch/x86/boot/Makefile
+index 379814b..0da2e37 100644
+--- a/arch/x86/boot/Makefile
++++ b/arch/x86/boot/Makefile
+@@ -20,7 +20,7 @@ targets		:= vmlinux.bin setup.bin setup.elf bzImage
+ targets		+= fdimage fdimage144 fdimage288 image.iso mtools.conf
+ subdir-		:= compressed
  
-+	noaslr		[X86]
-+			Disable kernel base offset ASLR (Address Space
-+			Layout Randomization) if built into the kernel.
-+
- 	noautogroup	Disable scheduler automatic task group creation.
+-setup-y		+= a20.o bioscall.o cmdline.o copy.o cpu.o cpucheck.o
++setup-y		+= a20.o bioscall.o cmdline.o copy.o cpu.o cpuflags.o cpucheck.o
+ setup-y		+= early_serial_console.o edd.o header.o main.o mca.o memory.o
+ setup-y		+= pm.o pmjump.o printf.o regs.o string.o tty.o video.o
+ setup-y		+= video-mode.o version.o
+diff --git a/arch/x86/boot/boot.h b/arch/x86/boot/boot.h
+index 5b75319..59c5ada 100644
+--- a/arch/x86/boot/boot.h
++++ b/arch/x86/boot/boot.h
+@@ -26,9 +26,8 @@
+ #include <asm/boot.h>
+ #include <asm/setup.h>
+ #include "bitops.h"
+-#include <asm/cpufeature.h>
+-#include <asm/processor-flags.h>
+ #include "ctype.h"
++#include "cpuflags.h"
  
- 	nobats		[PPC] Do not use BATs for mapping kernel lowmem
+ /* Useful macros */
+ #define BUILD_BUG_ON(condition) ((void)sizeof(char[1 - 2*!!(condition)]))
+@@ -307,14 +306,7 @@ static inline int cmdline_find_option_bool(const char *option)
+ 	return __cmdline_find_option_bool(cmd_line_ptr, option);
+ }
+ 
+-
+ /* cpu.c, cpucheck.c */
+-struct cpu_features {
+-	int level;		/* Family, or 64 for x86-64 */
+-	int model;
+-	u32 flags[NCAPINTS];
+-};
+-extern struct cpu_features cpu;
+ int check_cpu(int *cpu_level_ptr, int *req_level_ptr, u32 **err_flags_ptr);
+ int validate_cpu(void);
+ 
 diff --git a/arch/x86/boot/compressed/Makefile b/arch/x86/boot/compressed/Makefile
-index d854390..fa2629b 100644
+index 5ef205c..d854390 100644
 --- a/arch/x86/boot/compressed/Makefile
 +++ b/arch/x86/boot/compressed/Makefile
 @@ -26,7 +26,7 @@ HOST_EXTRACFLAGS += -I$(srctree)/tools/include
  
  VMLINUX_OBJS = $(obj)/vmlinux.lds $(obj)/head_$(BITS).o $(obj)/misc.o \
  	$(obj)/string.o $(obj)/cmdline.o $(obj)/early_serial_console.o \
--	$(obj)/piggy.o $(obj)/cpuflags.o
-+	$(obj)/piggy.o $(obj)/cpuflags.o $(obj)/aslr.o
+-	$(obj)/piggy.o
++	$(obj)/piggy.o $(obj)/cpuflags.o
  
  $(obj)/eboot.o: KBUILD_CFLAGS += -fshort-wchar -mno-red-zone
  
-diff --git a/arch/x86/boot/compressed/aslr.c b/arch/x86/boot/compressed/aslr.c
+diff --git a/arch/x86/boot/compressed/cpuflags.c b/arch/x86/boot/compressed/cpuflags.c
 new file mode 100644
-index 0000000..d5331ee
+index 0000000..931cba6
 --- /dev/null
-+++ b/arch/x86/boot/compressed/aslr.c
-@@ -0,0 +1,21 @@
-+#include "misc.h"
-+
++++ b/arch/x86/boot/compressed/cpuflags.c
+@@ -0,0 +1,12 @@
 +#ifdef CONFIG_RANDOMIZE_BASE
 +
-+unsigned char *choose_kernel_location(unsigned char *hint, unsigned long size)
-+{
-+	unsigned char *choice = hint;
-+	unsigned long random;
++#include "../cpuflags.c"
 +
-+	if (cmdline_find_option_bool("noaslr")) {
-+		debug_putstr("KASLR disabled...\n");
-+		goto out;
++bool has_cpuflag(int flag)
++{
++	get_flags();
++
++	return test_bit(flag, cpu.flags);
++}
++
++#endif
+diff --git a/arch/x86/boot/cpucheck.c b/arch/x86/boot/cpucheck.c
+index 4d3ff03..e1f3c16 100644
+--- a/arch/x86/boot/cpucheck.c
++++ b/arch/x86/boot/cpucheck.c
+@@ -28,8 +28,6 @@
+ #include <asm/required-features.h>
+ #include <asm/msr-index.h>
+ 
+-struct cpu_features cpu;
+-static u32 cpu_vendor[3];
+ static u32 err_flags[NCAPINTS];
+ 
+ static const int req_level = CONFIG_X86_MINIMUM_CPU_FAMILY;
+@@ -69,90 +67,6 @@ static int is_transmeta(void)
+ 	       cpu_vendor[2] == A32('M', 'x', '8', '6');
+ }
+ 
+-static int has_fpu(void)
+-{
+-	u16 fcw = -1, fsw = -1;
+-	u32 cr0;
+-
+-	asm("movl %%cr0,%0" : "=r" (cr0));
+-	if (cr0 & (X86_CR0_EM|X86_CR0_TS)) {
+-		cr0 &= ~(X86_CR0_EM|X86_CR0_TS);
+-		asm volatile("movl %0,%%cr0" : : "r" (cr0));
+-	}
+-
+-	asm volatile("fninit ; fnstsw %0 ; fnstcw %1"
+-		     : "+m" (fsw), "+m" (fcw));
+-
+-	return fsw == 0 && (fcw & 0x103f) == 0x003f;
+-}
+-
+-static int has_eflag(u32 mask)
+-{
+-	u32 f0, f1;
+-
+-	asm("pushfl ; "
+-	    "pushfl ; "
+-	    "popl %0 ; "
+-	    "movl %0,%1 ; "
+-	    "xorl %2,%1 ; "
+-	    "pushl %1 ; "
+-	    "popfl ; "
+-	    "pushfl ; "
+-	    "popl %1 ; "
+-	    "popfl"
+-	    : "=&r" (f0), "=&r" (f1)
+-	    : "ri" (mask));
+-
+-	return !!((f0^f1) & mask);
+-}
+-
+-static void get_flags(void)
+-{
+-	u32 max_intel_level, max_amd_level;
+-	u32 tfms;
+-
+-	if (has_fpu())
+-		set_bit(X86_FEATURE_FPU, cpu.flags);
+-
+-	if (has_eflag(X86_EFLAGS_ID)) {
+-		asm("cpuid"
+-		    : "=a" (max_intel_level),
+-		      "=b" (cpu_vendor[0]),
+-		      "=d" (cpu_vendor[1]),
+-		      "=c" (cpu_vendor[2])
+-		    : "a" (0));
+-
+-		if (max_intel_level >= 0x00000001 &&
+-		    max_intel_level <= 0x0000ffff) {
+-			asm("cpuid"
+-			    : "=a" (tfms),
+-			      "=c" (cpu.flags[4]),
+-			      "=d" (cpu.flags[0])
+-			    : "a" (0x00000001)
+-			    : "ebx");
+-			cpu.level = (tfms >> 8) & 15;
+-			cpu.model = (tfms >> 4) & 15;
+-			if (cpu.level >= 6)
+-				cpu.model += ((tfms >> 16) & 0xf) << 4;
+-		}
+-
+-		asm("cpuid"
+-		    : "=a" (max_amd_level)
+-		    : "a" (0x80000000)
+-		    : "ebx", "ecx", "edx");
+-
+-		if (max_amd_level >= 0x80000001 &&
+-		    max_amd_level <= 0x8000ffff) {
+-			u32 eax = 0x80000001;
+-			asm("cpuid"
+-			    : "+a" (eax),
+-			      "=c" (cpu.flags[6]),
+-			      "=d" (cpu.flags[1])
+-			    : : "ebx");
+-		}
+-	}
+-}
+-
+ /* Returns a bitmask of which words we have error bits in */
+ static int check_flags(void)
+ {
+diff --git a/arch/x86/boot/cpuflags.c b/arch/x86/boot/cpuflags.c
+new file mode 100644
+index 0000000..e0cb1c3
+--- /dev/null
++++ b/arch/x86/boot/cpuflags.c
+@@ -0,0 +1,101 @@
++#include <linux/types.h>
++#include "bitops.h"
++
++#include <asm/processor-flags.h>
++#include <asm/required-features.h>
++#include <asm/msr-index.h>
++#include "cpuflags.h"
++
++struct cpu_features cpu;
++u32 cpu_vendor[3];
++
++static bool loaded_flags;
++
++static int has_fpu(void)
++{
++	u16 fcw = -1, fsw = -1;
++	unsigned long cr0;
++
++	asm volatile("mov %%cr0,%0" : "=r" (cr0));
++	if (cr0 & (X86_CR0_EM|X86_CR0_TS)) {
++		cr0 &= ~(X86_CR0_EM|X86_CR0_TS);
++		asm volatile("mov %0,%%cr0" : : "r" (cr0));
 +	}
 +
-+	/* XXX: choose random location. */
++	asm volatile("fninit ; fnstsw %0 ; fnstcw %1"
++		     : "+m" (fsw), "+m" (fcw));
 +
-+out:
-+	return choice;
++	return fsw == 0 && (fcw & 0x103f) == 0x003f;
 +}
 +
-+#endif /* CONFIG_RANDOMIZE_BASE */
-diff --git a/arch/x86/boot/compressed/cmdline.c b/arch/x86/boot/compressed/cmdline.c
-index bffd73b..b68e303 100644
---- a/arch/x86/boot/compressed/cmdline.c
-+++ b/arch/x86/boot/compressed/cmdline.c
-@@ -1,6 +1,6 @@
- #include "misc.h"
- 
--#ifdef CONFIG_EARLY_PRINTK
-+#if CONFIG_EARLY_PRINTK || CONFIG_RANDOMIZE_BASE
- 
- static unsigned long fs;
- static inline void set_fs(unsigned long seg)
-diff --git a/arch/x86/boot/compressed/head_32.S b/arch/x86/boot/compressed/head_32.S
-index 5d6f689..a48631a 100644
---- a/arch/x86/boot/compressed/head_32.S
-+++ b/arch/x86/boot/compressed/head_32.S
-@@ -198,7 +198,7 @@ relocated:
-  * Jump to the decompressed kernel.
-  */
- 	xorl	%ebx, %ebx
--	jmp	*%ebp
-+	jmp	*%eax
- 
- /*
-  * Stack and heap for uncompression
-diff --git a/arch/x86/boot/compressed/head_64.S b/arch/x86/boot/compressed/head_64.S
-index 81ca174..bfd9be8 100644
---- a/arch/x86/boot/compressed/head_64.S
-+++ b/arch/x86/boot/compressed/head_64.S
-@@ -347,7 +347,7 @@ relocated:
- /*
-  * Jump to the decompressed kernel.
-  */
--	jmp	*%rbp
-+	jmp	*%rax
- 
- 	.code32
- no_longmode:
-diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
-index b756a04..15a3ea8 100644
---- a/arch/x86/boot/compressed/misc.c
-+++ b/arch/x86/boot/compressed/misc.c
-@@ -391,7 +391,7 @@ static void parse_elf(void *output)
- 	free(phdrs);
- }
- 
--asmlinkage void decompress_kernel(void *rmode, memptr heap,
-+asmlinkage void *decompress_kernel(void *rmode, memptr heap,
- 				  unsigned char *input_data,
- 				  unsigned long input_len,
- 				  unsigned char *output,
-@@ -418,6 +418,9 @@ asmlinkage void decompress_kernel(void *rmode, memptr heap,
- 	free_mem_ptr     = heap;	/* Heap */
- 	free_mem_end_ptr = heap + BOOT_HEAP_SIZE;
- 
-+	output = choose_kernel_location(output, output_len);
-+
-+	/* Validate memory location choices. */
- 	if ((unsigned long)output & (MIN_KERNEL_ALIGN - 1))
- 		error("Destination address inappropriately aligned");
- #ifdef CONFIG_X86_64
-@@ -437,5 +440,5 @@ asmlinkage void decompress_kernel(void *rmode, memptr heap,
- 	parse_elf(output);
- 	handle_relocations(output, output_len);
- 	debug_putstr("done.\nBooting the kernel.\n");
--	return;
-+	return output;
- }
-diff --git a/arch/x86/boot/compressed/misc.h b/arch/x86/boot/compressed/misc.h
-index 674019d..2a5c7aa 100644
---- a/arch/x86/boot/compressed/misc.h
-+++ b/arch/x86/boot/compressed/misc.h
-@@ -39,23 +39,33 @@ static inline void debug_putstr(const char *s)
- 
- #endif
- 
--#ifdef CONFIG_EARLY_PRINTK
--
-+#if CONFIG_EARLY_PRINTK || CONFIG_RANDOMIZE_BASE
- /* cmdline.c */
- int cmdline_find_option(const char *option, char *buffer, int bufsize);
- int cmdline_find_option_bool(const char *option);
-+#endif
-+
-+#if CONFIG_RANDOMIZE_BASE
-+/* aslr.c */
-+unsigned char *choose_kernel_location(unsigned char *hint, unsigned long size);
-+/* cpuflags.c */
-+bool has_cpuflag(int flag);
-+#else
-+static inline unsigned char *choose_kernel_location(unsigned char *hint,
-+						    unsigned long size)
++int has_eflag(unsigned long mask)
 +{
-+	return hint;
++	unsigned long f0, f1;
++
++	asm volatile("pushf	\n\t"
++		     "pushf	\n\t"
++		     "pop %0	\n\t"
++		     "mov %0,%1	\n\t"
++		     "xor %2,%1	\n\t"
++		     "push %1	\n\t"
++		     "popf	\n\t"
++		     "pushf	\n\t"
++		     "pop %1	\n\t"
++		     "popf"
++		     : "=&r" (f0), "=&r" (f1)
++		     : "ri" (mask));
++
++	return !!((f0^f1) & mask);
 +}
++
++static inline void cpuid(u32 id, u32 *a, u32 *b, u32 *c, u32 *d)
++{
++	/* Handle x86_32 PIC using ebx. */
++	asm volatile("movl %%ebx, %%edi	\n\t"
++		     "cpuid		\n\t"
++		     "xchgl %%edi, %%ebx\n\t"
++		    : "=a" (*a),
++		      "=D" (*b),
++		      "=c" (*c),
++		      "=d" (*d)
++		    : "a" (id)
++	);
++}
++
++void get_flags(void)
++{
++	u32 max_intel_level, max_amd_level;
++	u32 tfms;
++	u32 ignored;
++
++	if (loaded_flags)
++		return;
++	loaded_flags = true;
++
++	if (has_fpu())
++		set_bit(X86_FEATURE_FPU, cpu.flags);
++
++	if (has_eflag(X86_EFLAGS_ID)) {
++		cpuid(0x0, &max_intel_level, &cpu_vendor[0], &cpu_vendor[2],
++		      &cpu_vendor[1]);
++
++		if (max_intel_level >= 0x00000001 &&
++		    max_intel_level <= 0x0000ffff) {
++			cpuid(0x1, &tfms, &ignored, &cpu.flags[4],
++			      &cpu.flags[0]);
++			cpu.level = (tfms >> 8) & 15;
++			cpu.model = (tfms >> 4) & 15;
++			if (cpu.level >= 6)
++				cpu.model += ((tfms >> 16) & 0xf) << 4;
++		}
++
++		cpuid(0x80000000, &max_amd_level, &ignored, &ignored,
++		      &ignored);
++
++		if (max_amd_level >= 0x80000001 &&
++		    max_amd_level <= 0x8000ffff) {
++			cpuid(0x80000001, &ignored, &ignored, &cpu.flags[6],
++			      &cpu.flags[1]);
++		}
++	}
++}
+diff --git a/arch/x86/boot/cpuflags.h b/arch/x86/boot/cpuflags.h
+new file mode 100644
+index 0000000..9bb4e25
+--- /dev/null
++++ b/arch/x86/boot/cpuflags.h
+@@ -0,0 +1,19 @@
++#ifndef BOOT_CPUFLAGS_H
++#define BOOT_CPUFLAGS_H
++
++#include <asm/cpufeature.h>
++#include <asm/processor-flags.h>
++
++struct cpu_features {
++	int level;		/* Family, or 64 for x86-64 */
++	int model;
++	u32 flags[NCAPINTS];
++};
++
++extern struct cpu_features cpu;
++extern u32 cpu_vendor[3];
++
++int has_eflag(unsigned long mask);
++void get_flags(void);
++
 +#endif
- 
-+#ifdef CONFIG_EARLY_PRINTK
- /* early_serial_console.c */
- extern int early_serial_base;
- void console_init(void);
--
- #else
--
--/* early_serial_console.c */
- static const int early_serial_base;
- static inline void console_init(void)
- { }
--
- #endif
- 
- #endif
 -- 
 1.7.9.5
 
