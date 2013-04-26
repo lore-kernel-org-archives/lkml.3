@@ -1,67 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757514Ab3DZSxa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 14:53:30 -0400
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:54027 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757169Ab3DZSx2 (ORCPT
+	id S1757539Ab3DZSzi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 14:55:38 -0400
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:43226 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757117Ab3DZSzg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 14:53:28 -0400
+	Fri, 26 Apr 2013 14:55:36 -0400
 MIME-Version: 1.0
-In-Reply-To: <5179A7CE.2050605@zytor.com>
-References: <1366926860-26776-1-git-send-email-keescook@chromium.org>
-	<5179A7CE.2050605@zytor.com>
-Date: Fri, 26 Apr 2013 11:53:28 -0700
-X-Google-Sender-Auth: ujKAUzfq58Zf7gepY_7oWsjUHAg
-Message-ID: <CAGXu5jJ0ZQqphMkzEGt4tDL-F9Y47pCftFJGB4f3buFmJ6h8ZA@mail.gmail.com>
-Subject: Re: [PATCH v3 0/6] kernel ASLR
-From: Kees Cook <keescook@chromium.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
-        Matthew Garrett <mjg@redhat.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Eric Northup <digitaleric@google.com>,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>
+In-Reply-To: <1353047903-14363-1-git-send-email-acourbot@nvidia.com>
+References: <1353047903-14363-1-git-send-email-acourbot@nvidia.com>
+Date: Fri, 26 Apr 2013 11:55:35 -0700
+X-Google-Sender-Auth: 8NrTCnp1E8c3PuobuQd9MKCK8HM
+Message-ID: <CAPnjgZ1P6dmRB0sO2qBUtd=WBiNcY339NAit2faaotAfEqQDeQ@mail.gmail.com>
+Subject: Re: [PATCH v8 0/3] Runtime Interpreted Power Sequences
+From: Simon Glass <sjg@chromium.org>
+To: Alexandre Courbot <acourbot@nvidia.com>
+Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Mark Zhang <markz@nvidia.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        David Woodhouse <dwmw2@infradead.org>, Arnd Bergmann <arnd@arndb.de>,
+        Leela Krishna Amudala <l.krishna@samsung.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        lk <linux-kernel@vger.kernel.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        linux-pm@vger.kernel.org, Alexandre Courbot <gnurou@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 25, 2013 at 3:01 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 04/25/2013 02:54 PM, Kees Cook wrote:
->> This continues to build on the tip/kaslr patches for KASLR. This series
->> converts the logic to C, and moves both relocation and address selection
->> into the decompress_kernel path. Several areas were refactored to allow
->> for some code reuse (e.g. CPU flags, kernel command line).
->>
->> This does not yet attempt to rework the page tables to handle an arbitrary
->> physical memory location on x86_64. I would love some suggestions on
->> how to do this. :)
->>
+Hi,
+
+On Thu, Nov 15, 2012 at 10:38 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
+> Hopefully the final series before the feature gets merged. Anton Vorontsov
+> kindly accepted to take it into his tree, so this series is mostly a call for
+> acks, tests and reviews notices before the merge window for 3.8 opens. If you
+> are interested in seeing this feature, please add your name.
 >
-> We *should* already support arbitrary physical memory locations at least
-> in the kernel proper (the decompressor might need some work.)
+> This series also adds an entry for the subsystem into MAINTAINERS, setting me as
+> the person in charge.
 >
-> We may want to do in the decompressor what we already do in the kernel,
-> and set up a #PF handler which creates page tables on demand.  That way
-> you can simply treat the entire memory space as a single linear space.
+> Changes from v7:
+> - fix bug reported by Tony Prisk
+> - add MAINTAINERS entry
+>
+> Alexandre Courbot (3):
+>   Runtime Interpreted Power Sequences
+>   pwm_backlight: use power sequences
+>   Take maintainership of power sequences
 
-I'll need to compare the logic used for that against what's in
-head_64.S for setting up the initial tables. And mapping the kernel
-chunk as not 1-to-1, etc.
+Did this actually land? I can't see it in linux-next.
 
-In the meantime, I'll send a v4 series with the other identified
-changes since everything else (up to the 64-bit phy/virt detachment)
-seems to be working.
-
--Kees
-
---
-Kees Cook
-Chrome OS Security
+Regards,
+Simon
