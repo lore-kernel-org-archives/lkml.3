@@ -1,66 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754867Ab3DZPGw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 11:06:52 -0400
-Received: from mga11.intel.com ([192.55.52.93]:3429 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751381Ab3DZPGu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 11:06:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,559,1363158000"; 
-   d="scan'208";a="328104019"
-Message-ID: <1366988945.3603.46.camel@sauron.fi.intel.com>
-Subject: Re: eGalax touchscreen regression
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Reply-To: artem.bityutskiy@linux.intel.com
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Hui Wang <jason77.wang@gmail.com>,
-        Zhang Jiejing <jiejing.zhang@freescale.com>,
-        linux-input@vger.kernel.org,
+	id S1755034Ab3DZPIE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 11:08:04 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:56826 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751381Ab3DZPID (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Apr 2013 11:08:03 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Will Deacon <will.deacon@arm.com>
+Subject: Re: [PATCH 01/21] ARM: topology: export cpu_topology
+Date: Fri, 26 Apr 2013 17:07:57 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Hofemeier, Ulf" <ulf.hofemeier@intel.com>
-Date: Fri, 26 Apr 2013 18:09:05 +0300
-In-Reply-To: <3076410.nE1Nu6ITeM@wuerfel>
-References: <1366708088.9823.16.camel@sauron.fi.intel.com>
-	 <20130423154007.GB4104@core.coreip.homeip.net>
-	 <1366794193.21369.11.camel@sauron.fi.intel.com>
-	 <3076410.nE1Nu6ITeM@wuerfel>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Nicolas Pitre <nico@linaro.org>,
+        Vincent Guittot <vincent.guittot@linaro.org>
+References: <1366910944-3033663-1-git-send-email-arnd@arndb.de> <1366910944-3033663-2-git-send-email-arnd@arndb.de> <20130426085333.GA30284@mudshark.cambridge.arm.com>
+In-Reply-To: <20130426085333.GA30284@mudshark.cambridge.arm.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201304261707.57328.arnd@arndb.de>
+X-Provags-ID: V02:K0:22ZG0S3FU7FkozVmMFHx24PJW4Ik2suZHv03JsyNQCP
+ c5j+uQ+Q0jECKuUQlDHiVo4nlbXtPpo77sEtORH8VxVCCy8pLk
+ yywgvS/GK2EPX6zGhKkyV6IYYlT3GoaZr7GozhOZW1edAEB/8n
+ Yca2f0TOmEPGTFdjPuxg4L66spTlG9n9Z/mZBZqAmjXrX5fJta
+ hkb31FZJd6vGTikfowtli6z3DH+PBS49I/jshDMe62d6bb1CAp
+ siabQVjcDqOie6VvgU4O0BZKSR8vfCox4R0Fr/u3LxuYFEXuO6
+ tTk05D1SVXYPHmxfbzOfXZQzGnfilxAmvxhBcjRrnLL8KV5/ZS
+ 6t3ELWpJayZEnqZUXERY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-04-26 at 16:59 +0200, Arnd Bergmann wrote:
-> On Wednesday 24 April 2013 12:03:13 Artem Bityutskiy wrote:
-> > On Tue, 2013-04-23 at 08:40 -0700, Dmitry Torokhov wrote:
-> > > > the eGalax driver now requires OF. For us this is a regression because
-> > > > we do not have OF: https://bugs.tizen.org/jira/browse/TIVI-740
-> > > 
-> > > I see. In this case we need to come up with a platform data to pass
-> > > wakeup gpio in case platform does not support OF. irq_to_gpio() is not
-> > > supported on many platforms, causing compilation errors.
-> > > 
-> > > Is the platform that you are trying to use the touchscreen upstream?
+On Friday 26 April 2013, Will Deacon wrote:
+> On Thu, Apr 25, 2013 at 06:28:44PM +0100, Arnd Bergmann wrote:
+> > The cpu_topology symbol is required by any driver using the topology
+> > interfaces, which leads to a couple of build errors:
 > > 
-> > OK, so this is about just a monitor with a touchscreen (Giantec high-res
-> > capacitive 11.6” LCD monitor). The touchscreen is connected to a
-> > commodity hardware via USB.
-> > 
-> > So yes, the platform _is_ upstream  Namely, we use just a SandyBridge
-> > PC.
+> > ERROR: "cpu_topology" [drivers/net/ethernet/sfc/sfc.ko] undefined!
+> > ERROR: "cpu_topology" [drivers/cpufreq/arm_big_little.ko] undefined!
 > 
-> So you use a usb-to-i2c interface?
+> Are these first two in mainline?
 
-I do not think so. The problem is that I do not have the HW, so I was
-making guesses, and it looks like this driver has nothing to do with the
-regression we've got. Sorry for the noise. We'll investigate this more
-carefully internally.
+I think they are both newly added in linux-next.
 
--- 
-Best Regards,
-Artem Bityutskiy
-
+	Arnd
