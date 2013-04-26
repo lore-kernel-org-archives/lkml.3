@@ -1,71 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756807Ab3DZPqJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 11:46:09 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:42812 "EHLO e8.ny.us.ibm.com"
+	id S1756889Ab3DZPqb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 11:46:31 -0400
+Received: from mga14.intel.com ([143.182.124.37]:26015 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754410Ab3DZPqG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 11:46:06 -0400
-Date: Fri, 26 Apr 2013 08:45:47 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Simon Horman <horms@verge.net.au>, Eric Dumazet <eric.dumazet@gmail.com>,
-        Julian Anastasov <ja@ssi.bg>, Ingo Molnar <mingo@redhat.com>,
-        lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
-        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Dipankar Sarma <dipankar@in.ibm.com>, dhaval.giani@gmail.com
-Subject: Re: [PATCH 2/2] ipvs: Use cond_resched_rcu_lock() helper when
- dumping connections
-Message-ID: <20130426154547.GC3860@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1366940708-10180-1-git-send-email-horms@verge.net.au>
- <1366940708-10180-3-git-send-email-horms@verge.net.au>
- <20130426080313.GC8669@dyad.programming.kicks-ass.net>
+	id S1756817Ab3DZPq1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Apr 2013 11:46:27 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,559,1363158000"; 
+   d="scan'208";a="293659683"
+Message-ID: <517AA14D.7060202@linux.intel.com>
+Date: Fri, 26 Apr 2013 08:46:21 -0700
+From: Arjan van de Ven <arjan@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130426080313.GC8669@dyad.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13042615-9360-0000-0000-000011E9E77A
+To: Vincent Guittot <vincent.guittot@linaro.org>
+CC: linux-kernel <linux-kernel@vger.kernel.org>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Paul Turner <pjt@google.com>, Santosh <santosh.shilimkar@ti.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Chander Kashyap <chander.kashyap@linaro.org>,
+        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        Alex Shi <alex.shi@intel.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Len Brown <len.brown@intel.com>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Lukasz Majewski <l.majewski@samsung.com>
+Subject: Re: [RFC PATCH v4 00/14] sched: packing small tasks
+References: <1366910611-20048-1-git-send-email-vincent.guittot@linaro.org> <517A969B.5040606@linux.intel.com> <CAKfTPtCwdw1mYpWRFbPo9zT=9vFANpJyubh1eX-0vJLqrqizgA@mail.gmail.com>
+In-Reply-To: <CAKfTPtCwdw1mYpWRFbPo9zT=9vFANpJyubh1eX-0vJLqrqizgA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 26, 2013 at 10:03:13AM +0200, Peter Zijlstra wrote:
-> On Fri, Apr 26, 2013 at 10:45:08AM +0900, Simon Horman wrote:
-> 
-> > @@ -975,8 +975,7 @@ static void *ip_vs_conn_array(struct seq_file *seq, loff_t pos)
-> >  				return cp;
-> >  			}
-> >  		}
-> > -		rcu_read_unlock();
-> > -		rcu_read_lock();
-> > +		cond_resched_rcu_lock();
-> >  	}
-> 
-> 
-> While I agree with the sentiment I do find it a somewhat dangerous construct in
-> that it might become far too easy to keep an RCU reference over this break and
-> thus violate the RCU premise.
-> 
-> Is there anything that can detect this? Sparse / cocinelle / smatch? If so it
-> would be great to add this to these checkers.
+>>
+>>
+>> so I got to ask the hard question; what percentage of system level (not just
+>> cpu level)
+>> power consumption gain can you measure (pick your favorite workload)...
+>>
+>
+> I haven't system level figures for my patches but only for the cpu
+> subsystem. If we use the MP3 results in the back of my mail, they show
+> an improvement of 37 % (113/178) for the CPU subsystem of the
+> platform. If we assume that the CPU subsystem contributes 25% of an
+> embedded system power consumption (this can vary across platform
+> depending of the use of HW accelerator but it should be a almost fair
+> percentage), the patch can impact the power consumption on up to 9%.
+>
 
-I have done some crude coccinelle patterns in the past, but they are
-subject to false positives (from when you transfer the pointer from
-RCU protection to reference-count protection) and also false negatives
-(when you atomically increment some statistic unrelated to protection).
+sadly the math tends to not work quite that easy;
+memory takes significantly more power when the system is not idle than when it is idle for example. [*]
+so while reducing cpu power by making it run a bit longer (at lower frequency or
+slower core or whatever) is a pure win if you only look at the cpu, but it may
+(or may not) be a loss when looking at a whole system level.
 
-I could imagine maintaining a per-thread count of the number of outermost
-RCU read-side critical sections at runtime, and then associating that
-counter with a given pointer at rcu_dereference() time, but this would
-require either compiler magic or an API for using a pointer returned
-by rcu_dereference().  This API could in theory be enforced by sparse.
+I've learned the hard way that you cannot just look at the cpu numbers; you must look
+at the whole-system power when playing with such tradeoffs.
 
-Dhaval Giani might have some ideas as well, adding him to CC.
+That does not mean that your patch is not useful; it very well can be, but
+without having looked at whole-system power that's a very dangerous conclusion to make.
+So.. if you get a chance, I'd love to see data on a whole-system level... even for just one workload
+and one system
+(playing mp3 sounds like a quite reasonable workload for such things indeed)
 
-							Thanx, Paul
+
+[*] I assume that on your ARM systems, memory goes into self refresh during system idle just as it does on x86
 
