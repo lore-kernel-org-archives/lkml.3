@@ -1,59 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755591Ab3DZOzN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 10:55:13 -0400
-Received: from mail-we0-f176.google.com ([74.125.82.176]:54593 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751582Ab3DZOzL (ORCPT
+	id S1754011Ab3DZO7M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 10:59:12 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:53652 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750839Ab3DZO7K convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 10:55:11 -0400
-Message-ID: <517A954C.7060505@intel.com>
-Date: Fri, 26 Apr 2013 15:55:08 +0100
-From: Matt Fleming <matt.fleming@intel.com>
-Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
- Way, Swindon SN3 1RJ
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Fri, 26 Apr 2013 10:59:10 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: artem.bityutskiy@linux.intel.com
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Hui Wang <jason77.wang@gmail.com>,
+        Zhang Jiejing <jiejing.zhang@freescale.com>,
+        linux-input@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Hofemeier, Ulf" <ulf.hofemeier@intel.com>
+Subject: Re: eGalax touchscreen regression
+Date: Fri, 26 Apr 2013 16:59:09 +0200
+Message-ID: <3076410.nE1Nu6ITeM@wuerfel>
+User-Agent: KMail/4.10.2 (Linux/3.8.0-17-generic; KDE/4.10.2; x86_64; ; )
+In-Reply-To: <1366794193.21369.11.camel@sauron.fi.intel.com>
+References: <1366708088.9823.16.camel@sauron.fi.intel.com> <20130423154007.GB4104@core.coreip.homeip.net> <1366794193.21369.11.camel@sauron.fi.intel.com>
 MIME-Version: 1.0
-To: Seiji Aguchi <seiji.aguchi@hds.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@kernel.org" <mingo@kernel.org>, "hpa@zytor.com" <hpa@zytor.com>,
-        "mjg59@srcf.ucam.org" <mjg59@srcf.ucam.org>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        "jk@ozlabs.org" <jk@ozlabs.org>, "teg@jklm.no" <teg@jklm.no>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mikew@google.com" <mikew@google.com>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>
-Subject: Re: [tip:x86/efi2] efivars: efivar_entry API
-References: <tip-e14ab23dde12b80db4c94b684a2e485b72b16af3@git.kernel.org> <A5ED84D3BB3A384992CBB9C77DEDA4D41AFCC9D0@USINDEM103.corp.hds.com> <517A4F2A.4080906@intel.com> <A5ED84D3BB3A384992CBB9C77DEDA4D41AFD1E2B@USINDEM103.corp.hds.com>
-In-Reply-To: <A5ED84D3BB3A384992CBB9C77DEDA4D41AFD1E2B@USINDEM103.corp.hds.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
+X-Provags-ID: V02:K0:hAHF9j9SppNbaIJQjUt0lLR7ODEaA3fucEZv17VDKpk
+ PFBn3+0BTqpqOOVvJmRkBHlPiINLY55vTwxgcmvcN058sLdrfF
+ tJ1gduKclGUdklYZSSpWtSqK0nmVb1BnExnCRy97rOvrJHMJSE
+ giBuhTQX+vBGEPffVrJXGyHEz7XMMQW9xPlUikEJvgeEXlBzu7
+ gGM1DuR66hhco2v4NSvR+OhZh24H0TJ59etcWoSACrAv0FRgdA
+ VEUcKk7Z4/gT8dnU7becyZUWRoBFttsXHsUH6JYzGLbhEOOn/O
+ 6TqqmdhOxu3W6BQZlrrBVo7lYn6pHoURdtPy6eMJS44V+Ha8td
+ P/96Tcen/Ew3Ni0QKVEo=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26/04/13 15:25, Seiji Aguchi wrote:
-> Matt,
+On Wednesday 24 April 2013 12:03:13 Artem Bityutskiy wrote:
+> On Tue, 2013-04-23 at 08:40 -0700, Dmitry Torokhov wrote:
+> > > the eGalax driver now requires OF. For us this is a regression because
+> > > we do not have OF: https://bugs.tizen.org/jira/browse/TIVI-740
+> > 
+> > I see. In this case we need to come up with a platform data to pass
+> > wakeup gpio in case platform does not support OF. irq_to_gpio() is not
+> > supported on many platforms, causing compilation errors.
+> > 
+> > Is the platform that you are trying to use the touchscreen upstream?
 > 
-> Thanks.
-> With your patch, It works in case each entry is erased one by one as below.
-> # rm dmesg-efi-1
-> #rm dmesg-efi-2 
+> OK, so this is about just a monitor with a touchscreen (Giantec high-res
+> capacitive 11.6” LCD monitor). The touchscreen is connected to a
+> commodity hardware via USB.
+> 
+> So yes, the platform _is_ upstream  Namely, we use just a SandyBridge
+> PC.
 
-How about if you add this to efi_pstore_erase_func()?
+So you use a usb-to-i2c interface?
 
----
+You have to figure out how the wakeup line is connected to the eGalax
+device and provide an alternative implementation for egalax_wake_up_device
+that can be used in your case then.
 
-diff --git a/drivers/firmware/efi/efi-pstore.c b/drivers/firmware/efi/efi-pstore.c
-index b820593..393d63a 100644
---- a/drivers/firmware/efi/efi-pstore.c
-+++ b/drivers/firmware/efi/efi-pstore.c
-@@ -166,6 +166,7 @@ static int efi_pstore_erase_func(struct efivar_entry *entry, void *data)
- 
- 	/* found */
- 	__efivar_entry_delete(entry);
-+	list_del(&entry->list);
- 	return 1;
- }
- 
+	Arnd
