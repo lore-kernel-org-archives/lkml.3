@@ -1,95 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756828Ab3DZVwW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 17:52:22 -0400
-Received: from mail-gg0-f201.google.com ([209.85.161.201]:53142 "EHLO
-	mail-gg0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752978Ab3DZVwU (ORCPT
+	id S1754312Ab3DZWAi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 18:00:38 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:54039 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751213Ab3DZWAg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 17:52:20 -0400
-From: Peter Klausler <pmk@google.com>
-To: Jesse Gross <jesse@nicira.com>, "David S. Miller" <davem@davemloft.net>
-Cc: dev@openvswitch.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Peter Klausler <pmk@google.com>
-Subject: [PATCH] net/openvswitch: replace memcmp() with specialized comparator
-Date: Fri, 26 Apr 2013 17:46:32 -0400
-Message-Id: <1367012792-25335-1-git-send-email-pmk@google.com>
-X-Mailer: git-send-email 1.8.2.1
+	Fri, 26 Apr 2013 18:00:36 -0400
+Date: Fri, 26 Apr 2013 15:00:33 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch for-3.8-rc8] usb, chipidea: fix link error when
+ USB_EHCI_HCD is a module
+Message-ID: <20130426220033.GA27963@kroah.com>
+References: <alpine.DEB.2.02.1304261323060.17754@chino.kir.corp.google.com>
+ <20130426203345.GA25959@kroah.com>
+ <alpine.DEB.2.02.1304261448350.25408@chino.kir.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1304261448350.25408@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tune flow table lookup in net/openvswitch, replacing a call to
-the slow-but-safe memcmp() in lib/string.c with a key comparator
-routine that presumes most comparisons will succeed.  Besides
-avoiding an early-exit test on each iteration, it also compares
-keys 4 or 8 bytes at a time on architectures that can load an
-unaligned long efficiently.
+On Fri, Apr 26, 2013 at 02:50:56PM -0700, David Rientjes wrote:
+> On Fri, 26 Apr 2013, Greg Kroah-Hartman wrote:
+> 
+> > I think you mean "3.9" in your subject: right?
+> > 
+> 
+> It's your subsystem, if you want to release a kernel with a known-broken 
+> config, that's your call.
 
-On a 3.2GHz Xeon (5679) this patch reduces the minimum back-to-back
-hot-cache latency of a 128-byte key comparison by 7x, from 130ns with
-the default byte-at-a-time memcmp() in lib/string.c down to 17ns.
+As you point out, it's been "known broken" since 3.7, no rush now to fix
+it, especially so late in the merge window. :)
 
-More important, replacing the default memcmp() with this specialized
-routine speeds up openvswitch's packet rate by 10% in a closed-loop
-benchmark that simply routes traffic from one tap device to another.
+> > On Fri, Apr 26, 2013 at 01:25:01PM -0700, David Rientjes wrote:
+> > > Fixes link error when USB_EHCI_HCD=m and USB_CHIPIDEA_HOST=y:
+> > > 
+> > > 	drivers/built-in.o: In function `ci_hdrc_host_init':
+> > > 	drivers/usb/chipidea/host.c:104: undefined reference to `ehci_init_driver'
+> > > 
+> > > as a result of commit 09f6ffde2ece ("USB: EHCI: fix build error by making
+> > > ChipIdea host a normal EHCI driver").
+> > > 
+> > > Cc: stable@vger.kernel.org [v3.7+]
+> > > Signed-off-by: David Rientjes <rientjes@google.com>
+> > > ---
+> > >  drivers/usb/chipidea/Kconfig | 2 +-
+> > >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > There have been a ton of chipidea changes recently in linux-next.  This
+> > really just looks like you got the configuration wrong, nothing that is
+> > needed at this point in the release cycle, right?
+> > 
+> 
+> This happens in both linux-next as well as Linus's tree, and has since 
+> 3.7.
 
-Signed-off-by: Peter Klausler <pmk@google.com>
----
- net/openvswitch/flow.c | 33 ++++++++++++++++++++++++++++++++-
- 1 file changed, 32 insertions(+), 1 deletion(-)
+The chipidea maintainer has a big update all queued up in my trees for
+3.10-rc1, if you could verify that linux-next fixes your problem, I
+would appreciate it.
 
-diff --git a/net/openvswitch/flow.c b/net/openvswitch/flow.c
-index 67a2b78..d5facf6 100644
---- a/net/openvswitch/flow.c
-+++ b/net/openvswitch/flow.c
-@@ -764,6 +764,37 @@ u32 ovs_flow_hash(const struct sw_flow_key *key, int key_len)
- 	return jhash2((u32 *)key, DIV_ROUND_UP(key_len, sizeof(u32)), 0);
- }
- 
-+/*
-+ * Key comparison routine, optimized for the common case of
-+ * equality due to low average hash collision frequency
-+ * (1.5 mean items per nonempty bucket when total table item
-+ * count equals the number of buckets, which is when openvswitch
-+ * expands its hash table).
-+ */
-+static bool equal_keys(const struct sw_flow_key *key1,
-+		       const struct sw_flow_key *key2,
-+		       size_t key_len)
-+{
-+	const char *cp1 = (const char *)key1;
-+	const char *cp2 = (const char *)key2;
-+	long diffs = 0;
-+
-+#ifdef CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS
-+	{
-+		const long *lp1 = (const long *)cp1;
-+		const long *lp2 = (const long *)cp2;
-+		for (; key_len >= sizeof(long); key_len -= sizeof(long))
-+			diffs |= *lp1++ ^ *lp2++;
-+		cp1 = (const char *)lp1;
-+		cp2 = (const char *)lp2;
-+	}
-+#endif
-+
-+	while (key_len-- > 0)
-+		diffs |= *cp1++ ^ *cp2++;
-+	return diffs == 0;
-+}
-+
- struct sw_flow *ovs_flow_tbl_lookup(struct flow_table *table,
- 				struct sw_flow_key *key, int key_len)
- {
-@@ -777,7 +808,7 @@ struct sw_flow *ovs_flow_tbl_lookup(struct flow_table *table,
- 	hlist_for_each_entry_rcu(flow, head, hash_node[table->node_ver]) {
- 
- 		if (flow->hash == hash &&
--		    !memcmp(&flow->key, key, key_len)) {
-+		    equal_keys(&flow->key, key, key_len)) {
- 			return flow;
- 		}
- 	}
--- 
-1.8.2.1
+If not, please let us know.
 
+thanks,
+
+greg k-h
