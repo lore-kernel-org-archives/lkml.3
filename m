@@ -1,116 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757378Ab3DZVBn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 17:01:43 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:47102 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752262Ab3DZVBm (ORCPT
+	id S1756874Ab3DZVHt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 17:07:49 -0400
+Received: from mail-we0-f171.google.com ([74.125.82.171]:60637 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755572Ab3DZVHr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 17:01:42 -0400
+	Fri, 26 Apr 2013 17:07:47 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAErSpo7DUDQ_XgVKAfWxqYJA=q85ps46bffV-4a7b0vOzAP5DA@mail.gmail.com>
-References: <1366940841-15370-1-git-send-email-yinghai@kernel.org>
-	<CAErSpo5zfHR-agNBdgqfVjCU+-KcTZV+1bvML5Uw-+icDqzzEA@mail.gmail.com>
-	<CAE9FiQVEQO-dLJRjn9Z7JgwGWAn1M8S1Tn2_V0Fq+6kB0rG=Bg@mail.gmail.com>
-	<CAErSpo7DUDQ_XgVKAfWxqYJA=q85ps46bffV-4a7b0vOzAP5DA@mail.gmail.com>
-Date: Fri, 26 Apr 2013 14:01:41 -0700
-X-Google-Sender-Auth: i7NuhUuROg1QWDQCmSJDqwEo5Ds
-Message-ID: <CAE9FiQWv-bN2XzHiQ0WU+Y678zcqs_Owua6vXXijdMO6=0OWpg@mail.gmail.com>
-Subject: Re: [PATCH] PCI: Fix racing for pci device removing via sysfs
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Gu Zheng <guz.fnst@cn.fujitsu.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=047d7b10cd2984ae0904db49d742
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <20130426182239.GA25767@mtj.dyndns.org>
+References: <CA+icZUVCmFeh3Xna37VJDDzvZ34sYJ_Dser7i5rRzGLhMTi5-Q@mail.gmail.com>
+	<CA+icZUXeDT8x60iUtjJV2GO5KkDnm8CJsz8mntz5hREoOD+YJw@mail.gmail.com>
+	<CA+icZUWkyP9TE0eeqstyvVNP++MtN8rYfGcPBT6NuMOHEHm7dw@mail.gmail.com>
+	<20130426182239.GA25767@mtj.dyndns.org>
+Date: Fri, 26 Apr 2013 23:07:44 +0200
+Message-ID: <CA+icZUVWRkP_fxTH22ywx9Ntnnp1xW_2dVRjwTvBfs0eJBcEVg@mail.gmail.com>
+Subject: Re: linux-next: Tree for Apr 26 [ bluetooth on suspend/resume ]
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Gustavo Padovan <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        Linux PM List <linux-pm@lists.linux-foundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---047d7b10cd2984ae0904db49d742
-Content-Type: text/plain; charset=ISO-8859-1
-
-On Fri, Apr 26, 2013 at 1:53 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-
+On Fri, Apr 26, 2013 at 8:22 PM, Tejun Heo <tj@kernel.org> wrote:
+> On Fri, Apr 26, 2013 at 07:40:20PM +0200, Sedat Dilek wrote:
+>> Oops, NULL-pointer-deref [ __queue_work() ]
+>>
+>> [   25.974932] BUG: unable to handle kernel NULL pointer dereference
+>> at 0000000000000100
+>> [   25.974944] IP: [<ffffffff81077502>] __queue_work+0x32/0x3d0
 >
-> You can't be serious.  This is a disgusting mess.  Checking a list
-> pointer for LIST_POISON1?  As far as I'm concerned, this is a waste of
-> my time.
+> So, 0x100 deref near the top of the function.
+>
+> ...
+>> [   25.975037] RIP: 0010:[<ffffffff81077502>]  [<ffffffff81077502>]
+>> __queue_work+0x32/0x3d0
+>> [   25.975047] RSP: 0018:ffff88008fed5c48  EFLAGS: 00010046
+>> [   25.975052] RAX: 0000000000000096 RBX: 0000000000000292 RCX: 0000000000000000
+>> [   25.975058] RDX: ffff880095281850 RSI: 0000000000000000 RDI: 0000000000000100
+>> [   25.975063] RBP: ffff88008fed5c88 R08: 0000000000000000 R09: 0000000000000300
+>> [   25.975069] R10: ffff880094981a00 R11: 0000000000000000 R12: ffff880095281850
+>> [   25.975074] R13: 0000000000000000 R14: 0000000000000100 R15: 00000000000009c4
+>> [   25.975081] FS:  00007f2f61707740(0000) GS:ffff88011fac0000(0000)
+>> knlGS:0000000000000000
+>> [   25.975088] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+>> [   25.975093] CR2: 0000000000000100 CR3: 000000009101f000 CR4: 00000000000407e0
+>> [   25.975099] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+>> [   25.975104] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> ...
+>> [   25.975143] Call Trace:
+>> [   25.975151]  [<ffffffff81077be5>] queue_work_on+0x45/0x50
+>> [   25.975165]  [<ffffffffa016e8ff>] hci_req_run+0xbf/0xf0 [bluetooth]
+>> [   25.975188]  [<ffffffffa016ea06>] __hci_req_sync+0xd6/0x1c0 [bluetooth]
+>> [   25.975217]  [<ffffffffa016fad5>] hci_dev_open+0x275/0x2e0 [bluetooth]
+>> [   25.975230]  [<ffffffffa0182752>] hci_sock_ioctl+0x1f2/0x3f0 [bluetooth]
+>> [   25.975238]  [<ffffffff815c6050>] sock_do_ioctl+0x30/0x70
+>> [   25.975245]  [<ffffffff815c75f9>] sock_ioctl+0x79/0x2f0
+>> [   25.975254]  [<ffffffff811a8046>] do_vfs_ioctl+0x96/0x560
+>> [   25.975262]  [<ffffffff811a85a1>] SyS_ioctl+0x91/0xb0
+>> [   25.975271]  [<ffffffff816d989d>] system_call_fastpath+0x1a/0x1f
+>> [   25.975276] Code: 89 e5 41 57 41 56 41 89 fe 41 55 49 89 f5 41 54
+>> 49 89 d4 53 48 83 ec 18 89 7d c8 9c 58 66 66 90 66 90 f6 c4 02 0f 85
+>> 56 02 00 00 <41> 8b 85 00 01 00 00 a9 00 00 01 00 0f 85 b0 02 00 00 48
+>> c7 c2
+>
+> All code
+> ========
+>    0:   89 e5                   mov    %esp,%ebp
+>    2:   41 57                   push   %r15
+>    4:   41 56                   push   %r14
+>    6:   41 89 fe                mov    %edi,%r14d
+>    9:   41 55                   push   %r13
+>    b:   49 89 f5                mov    %rsi,%r13
+>    e:   41 54                   push   %r12
+>   10:   49 89 d4                mov    %rdx,%r12
+>   13:   53                      push   %rbx
+>   14:   48 83 ec 18             sub    $0x18,%rsp
+>   18:   89 7d c8                mov    %edi,-0x38(%rbp)
+>   1b:   9c                      pushfq
+>   1c:   58                      pop    %rax
+>   1d:   66 66 90                data32 xchg %ax,%ax
+>   20:   66 90                   xchg   %ax,%ax
+>   22:   f6 c4 02                test   $0x2,%ah
+>   25:   0f 85 56 02 00 00       jne    0x281
+>   2b:*  41 8b 85 00 01 00 00    mov    0x100(%r13),%eax     <-- trapping instruction
+>   32:   a9 00 00 01 00          test   $0x10000,%eax
+>   37:   0f 85 b0 02 00 00       jne    0x2ed
+>   3d:   48                      rex.W
+>   3e:   c7                      .byte 0xc7
+>   3f:   c2                      .byte 0xc2
+>
+> The second argument %rsi is zero, which got transferred to %r13 and
+> then offset deref on it trapped.
+>
+> The second argument is @wq and the oopsing code is the wq->flags deref
+> in the following if condition.
+>
+>         /* if dying, only works from the same workqueue are allowed */
+>         if (unlikely(wq->flags & __WQ_DRAINING) &&
+>                 WARN_ON_ONCE(!is_chained_work(wq)))
+>                 return;
+>
+> So, umm, don't pass in NULL as @wq. :)
+>
 
-Well, then need to hold the bus ref, and check bus->devices list instead.
+Do you have a patch for this?
 
---047d7b10cd2984ae0904db49d742
-Content-Type: application/octet-stream; name="fix_racing_removing_3.patch"
-Content-Disposition: attachment; filename="fix_racing_removing_3.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hfzuig8l0
+- Sedat -
 
-U3ViamVjdDogW1BBVENIIC12M10gUENJOiBGaXggcmFjaW5nIGZvciBwY2kgZGV2aWNlIHJlbW92
-aW5nIHZpYSBzeXNmcwpGcm9tOiBZaW5naGFpIEx1IDx5aW5naGFpQGtlcm5lbC5vcmc+CgpHdSBm
-b3VuZCBuZXN0ZWQgcmVtb3ZpbmcgdGhyb3VnaAoJZWNobyAtbiAxID4gL3N5cy9idXMvcGNpL2Rl
-dmljZXMvMDAwMFw6MTBcOjAwLjAvcmVtb3ZlIDsgZWNobyAtbiAxID4KL3N5cy9idXMvcGNpL2Rl
-dmljZXMvMDAwMFw6MWFcOjAxLjAvcmVtb3ZlCgp3aWxsIGNhdXNlIGtlcm5lbCBjcmFzaCBhcyBi
-dXMgZ2V0IGZyZWVkLgoKWyAgNDE4Ljk0NjQ2Ml0gQ1BVIDQKWyAgNDE4Ljk2ODM3N10gUGlkOiA1
-MTIsIGNvbW06IGt3b3JrZXIvdToyIFRhaW50ZWQ6IEcgICAgICAgIFcgICAgMy44LjAgIzIKRlVK
-SVRTVS1TViBQUklNRVFVRVNUIDE4MDBFL1NCClsgIDQxOS4wODE3NjNdIFJJUDogMDAxMDpbPGZm
-ZmZmZmZmODEzNzk3MmU+XSAgWzxmZmZmZmZmZjgxMzc5NzJlPl0KcGNpX2J1c19yZWFkX2NvbmZp
-Z193b3JkKzB4NWUvMHg5MApbICA0MjAuNDk0MTM3XSBDYWxsIFRyYWNlOgpbICA0MjAuNTIzMzI2
-XSAgWzxmZmZmZmZmZjgxMzg1MWVmPl0gPyByZW1vdmVfY2FsbGJhY2srMHgxZi8weDQwClsgIDQy
-MC41OTE5ODRdICBbPGZmZmZmZmZmODEzODA0NGI+XSBwY2lfcG1lX2FjdGl2ZSsweDRiLzB4MWMw
-ClsgIDQyMC42NTg1NDVdICBbPGZmZmZmZmZmODEzN2Q4ZTc+XSBwY2lfc3RvcF9idXNfZGV2aWNl
-KzB4NTcvMHhiMApbICA0MjAuNzI5MjU5XSAgWzxmZmZmZmZmZjgxMzdkYWI2Pl0gcGNpX3N0b3Bf
-YW5kX3JlbW92ZV9idXNfZGV2aWNlKzB4MTYvMHgzMApbICA0MjAuODExMzkyXSAgWzxmZmZmZmZm
-ZjgxMzg1MWZiPl0gcmVtb3ZlX2NhbGxiYWNrKzB4MmIvMHg0MApbICA0MjAuODc3OTU1XSAgWzxm
-ZmZmZmZmZjgxMjU3YTU2Pl0gc3lzZnNfc2NoZWR1bGVfY2FsbGJhY2tfd29yaysweDI2LzB4NzAK
-Cmh0dHBzOi8vYnVnemlsbGEua2VybmVsLm9yZy9zaG93X2J1Zy5jZ2k/aWQ9NTQ0MTEKCldlIGhh
-dmUgb25lIHBhdGNoIHRoYXQgd2lsbCBsZXQgZGV2aWNlIGhvbGQgYnVzIHJlZiB0byBwcmV2ZW50
-IGl0IGZyb20KYmVpbmcgZnJlZWQsIGJ1dCB0aGF0IHdpbGwgc3RpbGwgZ2VuZXJhdGUgd2Fybmlu
-Zy4KCi0tLS0tLS0tLS0tLVsgY3V0IGhlcmUgXS0tLS0tLS0tLS0tLQpXQVJOSU5HOiBhdCBsaWIv
-bGlzdF9kZWJ1Zy5jOjUzIF9fbGlzdF9kZWxfZW50cnkrMHg2My8weGQwKCkKSGFyZHdhcmUgbmFt
-ZTogUFJJTUVRVUVTVCAxODAwRQpsaXN0X2RlbCBjb3JydXB0aW9uLCBmZmZmODgwN2QxYjZjMDAw
-LT5uZXh0IGlzIExJU1RfUE9JU09OMSAoZGVhZDAwMDAwMDEwMDEwMCkKQ2FsbCBUcmFjZToKIFs8
-ZmZmZmZmZmY4MTA1NmQ0Zj5dIHdhcm5fc2xvd3BhdGhfY29tbW9uKzB4N2YvMHhjMAogWzxmZmZm
-ZmZmZjgxMDU2ZTQ2Pl0gd2Fybl9zbG93cGF0aF9mbXQrMHg0Ni8weDUwCiBbPGZmZmZmZmZmODEy
-ODBiMTM+XSBfX2xpc3RfZGVsX2VudHJ5KzB4NjMvMHhkMAogWzxmZmZmZmZmZjgxMjgwYjkxPl0g
-bGlzdF9kZWwrMHgxMS8weDQwCiBbPGZmZmZmZmZmODEyOTgzMzE+XSBwY2lfZGVzdHJveV9kZXYr
-MHgzMS8weGMwCiBbPGZmZmZmZmZmODEyOTg1YmI+XSBwY2lfcmVtb3ZlX2J1c19kZXZpY2UrMHg1
-Yi8weDcwCiBbPGZmZmZmZmZmODEyOTg1ZWU+XSBwY2lfc3RvcF9hbmRfcmVtb3ZlX2J1c19kZXZp
-Y2UrMHgxZS8weDMwCiBbPGZmZmZmZmZmODEyOWZjODk+XSByZW1vdmVfY2FsbGJhY2srMHgyOS8w
-eDQwCiBbPGZmZmZmZmZmODExZjNiODQ+XSBzeXNmc19zY2hlZHVsZV9jYWxsYmFja193b3JrKzB4
-MjQvMHg3MAoKV2UgY2FuIGp1c3QgY2hlY2sgaWYgdGhlIGRldmljZSBnZXQgcmVtb3ZlZCBmcm9t
-IHBjaSB0cmVlCmFscmVhZHkgaW4gdGhlIHByb3RlY3Rpb24gdW5kZXIgcGNpX3JlbW92ZV9yZXNj
-YW5fbXV0ZXguCgotdjI6IGNoZWNrIGlmIHRoZSBkZXYtPmJ1c19saXN0IGlzIHBvaXNvbmVkIGlu
-c3RlYWQgdG8KICAgICBmaW5kIG91dCBpZiBpdCBpcyByZW1vdmVkIGFscmVhZHkuCiAgICAgQWxz
-byBhZGQgb25lIGV4dHJhIHJlZiB0byBkZXYgdG8gbWFrZSBzdXJlIGRldiBpcyBub3QKICAgICBn
-ZXQgZnJlZWQgdG9vIGVhcmx5LgoKLXYzOiBob2xkIGJ1cyByZWYgYW5kIGRldiByZWYgaW5zdGVh
-ZC4KClJlcG9ydGVkLWJ5OiBHdSBaaGVuZyA8Z3V6LmZuc3RAY24uZnVqaXRzdS5jb20+ClRlc3Rl
-ZC1ieTogR3UgWmhlbmcgPGd1ei5mbnN0QGNuLmZ1aml0c3UuY29tPgpTaWduZWQtb2ZmLWJ5OiBZ
-aW5naGFpIEx1IDx5aW5naGFpQGtlcm5lbC5vcmc+CgotLS0KIGRyaXZlcnMvcGNpL3BjaS1zeXNm
-cy5jIHwgICAyMyArKysrKysrKysrKysrKysrKysrKy0tLQogMSBmaWxlIGNoYW5nZWQsIDIwIGlu
-c2VydGlvbnMoKyksIDMgZGVsZXRpb25zKC0pCgpJbmRleDogbGludXgtMi42L2RyaXZlcnMvcGNp
-L3BjaS1zeXNmcy5jCj09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT0KLS0tIGxpbnV4LTIuNi5vcmlnL2RyaXZlcnMvcGNpL3Bj
-aS1zeXNmcy5jCisrKyBsaW51eC0yLjYvZHJpdmVycy9wY2kvcGNpLXN5c2ZzLmMKQEAgLTMyOCwx
-MCArMzI4LDIxIEBAIGRldl9yZXNjYW5fc3RvcmUoc3RydWN0IGRldmljZSAqZGV2LCBzdHIKIAog
-c3RhdGljIHZvaWQgcmVtb3ZlX2NhbGxiYWNrKHN0cnVjdCBkZXZpY2UgKmRldikKIHsKLQlzdHJ1
-Y3QgcGNpX2RldiAqcGRldiA9IHRvX3BjaV9kZXYoZGV2KTsKKwlzdHJ1Y3QgcGNpX2RldiAqcGRl
-diA9IHRvX3BjaV9kZXYoZGV2KSwgKnRtcDsKKwlzdHJ1Y3QgcGNpX2J1cyAqYnVzID0gcGRldi0+
-YnVzOworCWJvb2wgZm91bmQgPSBmYWxzZTsKIAogCW11dGV4X2xvY2soJnBjaV9yZW1vdmVfcmVz
-Y2FuX211dGV4KTsKLQlwY2lfc3RvcF9hbmRfcmVtb3ZlX2J1c19kZXZpY2UocGRldik7CisJbGlz
-dF9mb3JfZWFjaF9lbnRyeSh0bXAsICZidXMtPmRldmljZXMsIGJ1c19saXN0KQorCQlpZiAodG1w
-ID09IHBkZXYpIHsKKwkJCWZvdW5kID0gdHJ1ZTsKKwkJCWJyZWFrOworCQl9CisKKwlwdXRfZGV2
-aWNlKCZwZGV2LT5idXMtPmRldik7CisJcGNpX2Rldl9wdXQocGRldik7CisJaWYgKGZvdW5kKQor
-CQlwY2lfc3RvcF9hbmRfcmVtb3ZlX2J1c19kZXZpY2UocGRldik7CiAJbXV0ZXhfdW5sb2NrKCZw
-Y2lfcmVtb3ZlX3Jlc2Nhbl9tdXRleCk7CiB9CiAKQEAgLTM0MSw2ICszNTIsNyBAQCByZW1vdmVf
-c3RvcmUoc3RydWN0IGRldmljZSAqZGV2LCBzdHJ1Y3QKIHsKIAlpbnQgZXJyOwogCXVuc2lnbmVk
-IGxvbmcgdmFsOworCXN0cnVjdCBwY2lfZGV2ICpwZGV2OwogCiAJaWYgKHN0cmljdF9zdHJ0b3Vs
-KGJ1ZiwgMCwgJnZhbCkgPCAwKQogCQlyZXR1cm4gLUVJTlZBTDsKQEAgLTM1MSw5ICszNjMsMTQg
-QEAgcmVtb3ZlX3N0b3JlKHN0cnVjdCBkZXZpY2UgKmRldiwgc3RydWN0CiAJLyogQW4gYXR0cmli
-dXRlIGNhbm5vdCBiZSB1bnJlZ2lzdGVyZWQgYnkgb25lIG9mIGl0cyBvd24gbWV0aG9kcywKIAkg
-KiBzbyB3ZSBoYXZlIHRvIHVzZSB0aGlzIHJvdW5kYWJvdXQgYXBwcm9hY2guCiAJICovCisJcGRl
-diA9IHBjaV9kZXZfZ2V0KHRvX3BjaV9kZXYoZGV2KSk7CisJZ2V0X2RldmljZSgmcGRldi0+YnVz
-LT5kZXYpOwogCWVyciA9IGRldmljZV9zY2hlZHVsZV9jYWxsYmFjayhkZXYsIHJlbW92ZV9jYWxs
-YmFjayk7Ci0JaWYgKGVycikKKwlpZiAoZXJyKSB7CisJCXB1dF9kZXZpY2UoJnBkZXYtPmJ1cy0+
-ZGV2KTsKKwkJcGNpX2Rldl9wdXQocGRldik7CiAJCXJldHVybiBlcnI7CisJfQogCiAJcmV0dXJu
-IGNvdW50OwogfQo=
---047d7b10cd2984ae0904db49d742--
+> --
+> tejun
