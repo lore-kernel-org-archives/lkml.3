@@ -1,101 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932128Ab3DZUFo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 16:05:44 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:43689 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757386Ab3DZUFI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 16:05:08 -0400
-From: Sourav Poddar <sourav.poddar@ti.com>
-To: <gregkh@linuxfoundation.org>, <tony@atomide.com>,
-        <rmk+kernel@arm.linux.org.uk>, <khilman@linaro.org>
-CC: <linux-serial@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Sourav Poddar <sourav.poddar@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Felipe Balbi <balbi@ti.com>, Rajendra nayak <rnayak@ti.com>
-Subject: [PATCHv5 1/2] driver: tty: serial: Move "uart_console" def to core header file.
-Date: Sat, 27 Apr 2013 01:34:45 +0530
-Message-ID: <1367006686-3720-2-git-send-email-sourav.poddar@ti.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1367006686-3720-1-git-send-email-sourav.poddar@ti.com>
-References: <1367006686-3720-1-git-send-email-sourav.poddar@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S932331Ab3DZUJv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 16:09:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37328 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932210Ab3DZUJu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Apr 2013 16:09:50 -0400
+Date: Fri, 26 Apr 2013 13:09:48 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Daniel Borkmann <dborkman@redhat.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Nicolas Schichan <nschichan@freebox.fr>,
+        Will Drewry <wad@chromium.org>, Mircea Gherzan <mgherzan@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>,
+        "David S. Miller" <davem@davemloft.net>,
+        Daniel Borkmann <daniel.borkmann@tik.ee.ethz.ch>,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH V3 2/3] ARM: net: bpf_jit: make code generation less
+ dependent on struct sk_filter.
+Message-Id: <20130426130948.cbfd2f6256afc0e3ee7abeed@linux-foundation.org>
+In-Reply-To: <517AD9E2.2090704@redhat.com>
+References: <1366824429-26652-1-git-send-email-nschichan@freebox.fr>
+	<1366824429-26652-3-git-send-email-nschichan@freebox.fr>
+	<3592414.M8kQZLCXlW@wuerfel>
+	<20130426122601.10ec05fcb4860df1b0a5b409@linux-foundation.org>
+	<517AD9E2.2090704@redhat.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move "uart_console" definition to serial core header file, so that it can be
-used by serial drivers.
-Get rid of the uart_console defintion from mpc52xx_uart driver.
+On Fri, 26 Apr 2013 21:47:46 +0200 Daniel Borkmann <dborkman@redhat.com> wrote:
 
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: Felipe Balbi <balbi@ti.com>
-Cc: Rajendra nayak <rnayak@ti.com>
-Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
-Reviewed-by: Felipe Balbi <balbi@ti.com>
----
- drivers/tty/serial/mpc52xx_uart.c |   10 ----------
- drivers/tty/serial/serial_core.c  |    6 ------
- include/linux/serial_core.h       |    7 +++++++
- 3 files changed, 7 insertions(+), 16 deletions(-)
+> On 04/26/2013 09:26 PM, Andrew Morton wrote:
+> > On Fri, 26 Apr 2013 16:04:44 +0200 Arnd Bergmann <arnd@arndb.de> wrote:
+> >> On Wednesday 24 April 2013 19:27:08 Nicolas Schichan wrote:
+> >>> @@ -858,7 +858,7 @@ b_epilogue:
+> >>>   }
+> >>>
+> >>>
+> >>> -void bpf_jit_compile(struct sk_filter *fp)
+> >>> +static void __bpf_jit_compile(struct jit_ctx *out_ctx)
+> >>>   {
+> >>>          struct jit_ctx ctx;
+> >>>          unsigned tmp_idx;
+> >>> @@ -867,11 +867,10 @@ void bpf_jit_compile(struct sk_filter *fp)
+> >>>          if (!bpf_jit_enable)
+> >>>                  return;
+> >>>
+> >>> -       memset(&ctx, 0, sizeof(ctx));
+> >>> -       ctx.skf         = fp;
+> >>> +       ctx = *out_ctx;
+> >>>          ctx.ret0_fp_idx = -1;
+> >>>
+> >>> -       ctx.offsets = kzalloc(4 * (ctx.skf->len + 1), GFP_KERNEL);
+> >>> +       ctx.offsets = kzalloc(4 * (ctx.prog_len + 1), GFP_KERNEL);
+> >>>          if (ctx.offsets == NULL)
+> >>>                  return;
+> >>>
+> >>> @@ -921,13 +920,26 @@ void bpf_jit_compile(struct sk_filter *fp)
+> >>>                  print_hex_dump(KERN_INFO, "BPF JIT code: ",
+> >>>                                 DUMP_PREFIX_ADDRESS, 16, 4, ctx.target,
+> >>>                                 alloc_size, false);
+> >>> -
+> >>> -       fp->bpf_func = (void *)ctx.target;
+> >>>   out:
+> >>>          kfree(ctx.offsets);
+> >>> +
+> >>> +       *out_ctx = ctx;
+> >>>          return;
+> >>
+> >> This part of the patch, in combination with 79617801e "filter: bpf_jit_comp:
+> >> refactor and unify BPF JIT image dump output" is now causing build errors
+> >> in linux-next:
+> >>
+> >> arch/arm/net/bpf_jit_32.c: In function '__bpf_jit_compile':
+> >> arch/arm/net/bpf_jit_32.c:930:16: error: 'fp' undeclared (first use in this function)
+> >>     bpf_jit_dump(fp->len, alloc_size, 2, ctx.target);
+> >
+> > Thanks, I did this.  There may be a smarter way...
+> 
+> I think also seccomp_jit_compile() would need this change then, otherwise the build
+> with CONFIG_SECCOMP_FILTER_JIT might break.
 
-diff --git a/drivers/tty/serial/mpc52xx_uart.c b/drivers/tty/serial/mpc52xx_uart.c
-index 018bad9..d74ac06 100644
---- a/drivers/tty/serial/mpc52xx_uart.c
-+++ b/drivers/tty/serial/mpc52xx_uart.c
-@@ -84,16 +84,6 @@ static void mpc52xx_uart_of_enumerate(void);
- static irqreturn_t mpc52xx_uart_int(int irq, void *dev_id);
- static irqreturn_t mpc5xxx_uart_process_int(struct uart_port *port);
- 
--
--/* Simple macro to test if a port is console or not. This one is taken
-- * for serial_core.c and maybe should be moved to serial_core.h ? */
--#ifdef CONFIG_SERIAL_CORE_CONSOLE
--#define uart_console(port) \
--	((port)->cons && (port)->cons->index == (port)->line)
--#else
--#define uart_console(port)	(0)
--#endif
--
- /* ======================================================================== */
- /* PSC fifo operations for isolating differences between 52xx and 512x      */
- /* ======================================================================== */
-diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
-index a400002..b5f74bf 100644
---- a/drivers/tty/serial/serial_core.c
-+++ b/drivers/tty/serial/serial_core.c
-@@ -50,12 +50,6 @@ static struct lock_class_key port_lock_key;
- 
- #define HIGH_BITS_OFFSET	((sizeof(long)-sizeof(int))*8)
- 
--#ifdef CONFIG_SERIAL_CORE_CONSOLE
--#define uart_console(port)	((port)->cons && (port)->cons->index == (port)->line)
--#else
--#define uart_console(port)	(0)
--#endif
--
- static void uart_change_speed(struct tty_struct *tty, struct uart_state *state,
- 					struct ktermios *old_termios);
- static void uart_wait_until_sent(struct tty_struct *tty, int timeout);
-diff --git a/include/linux/serial_core.h b/include/linux/serial_core.h
-index 87d4bbc..b98291a 100644
---- a/include/linux/serial_core.h
-+++ b/include/linux/serial_core.h
-@@ -31,6 +31,13 @@
- #include <linux/sysrq.h>
- #include <uapi/linux/serial_core.h>
- 
-+#ifdef CONFIG_SERIAL_CORE_CONSOLE
-+#define uart_console(port) \
-+	((port)->cons && (port)->cons->index == (port)->line)
-+#else
-+#define uart_console(port)      (0)
-+#endif
-+
- struct uart_port;
- struct serial_struct;
- struct device;
--- 
-1.7.1
+urgh, that tears it.
+
+> I can fix this up for you if not already applied. I presume it's against
+> linux-next tree?
+
+Yup, please send something.
 
