@@ -1,53 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757722Ab3DZTDk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 15:03:40 -0400
-Received: from mail-qc0-f171.google.com ([209.85.216.171]:51165 "EHLO
-	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754567Ab3DZTDj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 15:03:39 -0400
-Date: Fri, 26 Apr 2013 12:03:33 -0700
-From: Tejun Heo <tj@kernel.org>
-To: scameron@beardog.cce.hp.com
-Cc: axboe@kernel.dk, neilb@suse.de, hch@infradead.org, jmoyer@redhat.com,
-        hare@suse.de, vgoyal@redhat.com, stephenmcameron@gmail.com,
-        linux-kernel@vger.kernel.org, lsorense@csclub.uwaterloo.ca
-Subject: Re: [RFC PATCH] block: Add new generic block device naming interface
-Message-ID: <20130426190327.GC1433@mtj.dyndns.org>
-References: <20130425202215.20557.75283.stgit@beardog.cce.hp.com>
- <20130425204033.GB10990@mtj.dyndns.org>
- <20130425210726.GL7917@beardog.cce.hp.com>
- <20130425211459.GC10990@mtj.dyndns.org>
- <20130425221220.GM7917@beardog.cce.hp.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130425221220.GM7917@beardog.cce.hp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757772Ab3DZTEM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 15:04:12 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:42841 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757751Ab3DZTEL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Apr 2013 15:04:11 -0400
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: kernel-hardening@lists.openwall.com, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
+        Matthew Garrett <mjg@redhat.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Eric Northup <digitaleric@google.com>,
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>,
+        Kees Cook <keescook@chromium.org>
+Subject: [PATCH v4 0/6] kernel ASLR
+Date: Fri, 26 Apr 2013 12:03:19 -0700
+Message-Id: <1367003005-5560-1-git-send-email-keescook@chromium.org>
+X-Mailer: git-send-email 1.7.9.5
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hey,
+This series includes various small cleanups noted in the individual
+patches. Further work will include 64-bit separation of physical and
+virtual memory locations.
 
-On Thu, Apr 25, 2013 at 05:12:20PM -0500, scameron@beardog.cce.hp.com wrote:
-> It looks like these are called from a function called init_device_map() 
-> that is called from grub_stage2() at least in the version of grub I looked
-> at (0.97, from rhel6).
-> 
-> So my assumption is that adding a new block driver with yet another name space
-> would require adding another bit of code into grub like those above.  When I
-> asked about "best practices" for new block driver device names on the grub devel
-> mailing list to minimize required changes to grub, nobody argued against that
-> assumption. 
+-Kees
 
-I think we kinda need to get down to the root cause of the issue.
-Nothing against giving common names to devices in itself but there's a
-non-insigificant chance that we end up with something half-way if the
-original problem isn't properly understodd.
-
-Thanks.
-
--- 
-tejun
