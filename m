@@ -1,179 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932601Ab3DZJWr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 05:22:47 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:17557 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932427Ab3DZJWl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 05:22:41 -0400
-Message-ID: <517A475D.8060606@imgtec.com>
-Date: Fri, 26 Apr 2013 10:22:37 +0100
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S932558Ab3DZJWp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 05:22:45 -0400
+Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:38877 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756856Ab3DZJU4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Apr 2013 05:20:56 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 5
+X-BigFish: VS5(z616jzzz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1082kzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1155h)
+From: Huang Shijie <b32955@freescale.com>
+To: <dwmw2@infradead.org>
+CC: <dedekind1@gmail.com>, <computersforpeace@gmail.com>,
+        <linux-mtd@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Huang Shijie <b32955@freescale.com>
+Subject: [PATCH V4 4/9] mtd: get the ECC info from the Extended Parameter Page
+Date: Fri, 26 Apr 2013 17:08:52 +0800
+Message-ID: <1366967337-5534-5-git-send-email-b32955@freescale.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1366967337-5534-1-git-send-email-b32955@freescale.com>
+References: <1366967337-5534-1-git-send-email-b32955@freescale.com>
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Grant Likely" <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Rob Landley <rob@landley.net>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Subject: Re: [PATCH 6/8] gpio-tz1090: add TZ1090 gpio driver
-References: <1366727607-27444-1-git-send-email-james.hogan@imgtec.com> <1366727607-27444-7-git-send-email-james.hogan@imgtec.com> <CACRpkdbzYpQqe4yabAwFSAG2rPstT8jM_--LssHi=ttUYtu1ug@mail.gmail.com>
-In-Reply-To: <CACRpkdbzYpQqe4yabAwFSAG2rPstT8jM_--LssHi=ttUYtu1ug@mail.gmail.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01181__2013_04_26_10_22_38
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Since the ONFI 2.1, the onfi spec adds the Extended Parameter Page
+to store the ECC info.
 
-Thanks for reviewing these patches.
+The onfi spec tells us that if the nand chip's recommended ECC codeword
+size is not 512 bytes, then the @ecc_bits is 0xff. The host _SHOULD_ then
+read the Extended ECC information that is part of the extended parameter
+page to retrieve the ECC requirements for this device.
 
-On 26/04/13 00:01, Linus Walleij wrote:
-> On Tue, Apr 23, 2013 at 4:33 PM, James Hogan <james.hogan@imgtec.com> wrote:
-> 
->> Add a GPIO driver for the main GPIOs found in the TZ1090 (Comet) SoC.
->> This doesn't include low-power GPIOs as they're controlled separately
->> via the Powerdown Controller (PDC) registers.
->>
->> The driver is instantiated by device tree and supports interrupts for
->> all GPIOs.
->>
->> Signed-off-by: James Hogan <james.hogan@imgtec.com>
->> Cc: Grant Likely <grant.likely@secretlab.ca>
->> Cc: Rob Herring <rob.herring@calxeda.com>
->> Cc: Rob Landley <rob@landley.net>
->> Cc: Linus Walleij <linus.walleij@linaro.org>
->> Cc: linux-doc@vger.kernel.org
-> 
-> (...)
->> +  - #gpio-cells: Should be 2. The syntax of the gpio specifier used by client
->> +    nodes should have the following values.
->> +       <[phandle of the gpio controller node]
->> +        [gpio number within the gpio bank]
->> +        [standard Linux gpio flags]>
-> 
-> So when someone using this device tree for Symbian or Windows
-> Mobile start to work, what does "standard Linux gpio flags" tell them?
+This patch implement the reading of the Extended Parameter Page, and parses
+the sections for ECC type, and get the ECC info from the ECC section.
 
-well this is what of_gpio.h says:
-> /*
->  * This is Linux-specific flags. By default controllers' and Linux' mapping
->  * match, but GPIO controllers are free to translate their own flags to
->  * Linux-specific in their .xlate callback. Though, 1:1 mapping is recommended.
->  */
-> enum of_gpio_flags {
-> 	OF_GPIO_ACTIVE_LOW = 0x1,
-> };
+Tested this patch with Micron MT29F64G08CBABAWP.
 
-So do you mean that the bindings docs should just explicitly state those
-flag values rather than referring to Linux?
+Signed-off-by: Huang Shijie <b32955@freescale.com>
+---
+ drivers/mtd/nand/nand_base.c |   77 ++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 77 insertions(+), 0 deletions(-)
 
->> +  Bank subnode optional properties:
->> +  - gpio-ranges: Mapping to pin controller pins
-> 
-> Here you seem to use DT GPIO ranges, yet the pinctrl driver registers
-> some GPIO range, care to explain how that fits together?
+diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
+index beff911..abec615 100644
+--- a/drivers/mtd/nand/nand_base.c
++++ b/drivers/mtd/nand/nand_base.c
+@@ -2846,6 +2846,68 @@ static u16 onfi_crc16(u16 crc, u8 const *p, size_t len)
+ 	return crc;
+ }
+ 
++/* Parse the Extended Parameter Page. */
++static int nand_flash_detect_ext_param_page(struct mtd_info *mtd,
++		struct nand_chip *chip, struct nand_onfi_params *p)
++{
++	struct onfi_ext_param_page *ep;
++	struct onfi_ext_section *s;
++	struct onfi_ext_ecc_info *ecc;
++	uint8_t *cursor;
++	int len;
++	int ret;
++	int i;
++
++	len = le16_to_cpu(p->ext_param_page_length) * 16;
++	ep = kmalloc(len, GFP_KERNEL);
++	if (!ep) {
++		ret = -ENOMEM;
++		goto ext_out;
++	}
++
++	/* Send our own NAND_CMD_PARAM. */
++	chip->cmdfunc(mtd, NAND_CMD_PARAM, 0, -1);
++
++	/* Use the Change Read Column command to skip the ONFI param pages. */
++	chip->cmdfunc(mtd, NAND_CMD_RNDOUT,
++			sizeof(*p) * p->num_of_param_pages , -1);
++
++	/* Read out the Extended Parameter Page. */
++	chip->read_buf(mtd, (uint8_t *)ep, len);
++	if ((onfi_crc16(ONFI_CRC_BASE, ((uint8_t *)ep) + 2, len - 2)
++		!= le16_to_cpu(ep->crc)) || strncmp(ep->sig, "EPPS", 4)) {
++		pr_debug("fail in the CRC.\n");
++		ret = -EINVAL;
++		goto ext_out;
++	}
++
++	/* find the ECC section. */
++	cursor = (uint8_t *)(ep + 1);
++	for (i = 0; i < ONFI_EXT_SECTION_MAX; i++) {
++		s = ep->sections + i;
++		if (s->type == ONFI_SECTION_TYPE_2)
++			break;
++		cursor += s->length * 16;
++	}
++	if (i == ONFI_EXT_SECTION_MAX) {
++		pr_debug("We can not find the ECC section.\n");
++		ret = -EINVAL;
++		goto ext_out;
++	}
++
++	/* get the info we want. */
++	ecc = (struct onfi_ext_ecc_info *)cursor;
++	chip->ecc_strength = ecc->ecc_bits;
++	chip->ecc_size = 1 << ecc->codeword_size;
++
++	pr_info("ONFI extended param page detected.\n");
++	return 0;
++
++ext_out:
++	kfree(ep);
++	return ret;
++}
++
+ /*
+  * Check if the NAND chip is ONFI compliant, returns 1 if it is, 0 otherwise.
+  */
+@@ -2914,6 +2976,21 @@ static int nand_flash_detect_onfi(struct mtd_info *mtd, struct nand_chip *chip,
+ 	if (p->ecc_bits != 0xff) {
+ 		chip->ecc_strength = p->ecc_bits;
+ 		chip->ecc_size = 512;
++	} else if (chip->onfi_version >= 21 &&
++		(onfi_feature(chip) & ONFI_FEATURE_EXT_PARAM_PAGE)) {
++
++		/*
++		 * The nand_flash_detect_ext_param_page() uses the
++		 * Change Read Column command which maybe not supported
++		 * by the chip->cmdfunc. So try to update the chip->cmdfunc
++		 * now. We do not replace user supplied command function.
++		 */
++		if (mtd->writesize > 512 && chip->cmdfunc == nand_command)
++			chip->cmdfunc = nand_command_lp;
++
++		/* The Extended Parameter Page is supported since ONFI 2.1. */
++		if (nand_flash_detect_ext_param_page(mtd, chip, p))
++			pr_info("Failed to detect the extended param page.\n");
+ 	}
+ 
+ 	pr_info("ONFI flash detected\n");
+-- 
+1.7.1
 
-I'll look into this a bit deeper. I suspect the one in the pinctrl
-driver shouldn't be there.
-
-> +#include <asm/global_lock.h>
-> 
-> What on earth is that. I can only fear it. I don't like the
-> looks of that thing.
-
-Yes, it's not particularly pleasant.
-
-The TZ1090 is designed for digital radios. It has a 2-threaded Meta HTP
-as the CPU (which might typically run Linux on one thread and an RTOS
-doing audio decode and driving the audio hardware on the other), and 2
-UCCPs (these are Radio Processing Units each containing a small Meta
-MTX, which will typically interface to a tuner chip and do things like
-DAB/FM radio or WiFi).
-
-So basically a bunch of global registers (e.g. pinctrl and gpio) are
-shared between all 3 cores (up to 4 OSes). The __global_lock2 should do
-all that is required to ensure exclusive access to the register (as long
-as the other OSes do something similar when they access the same
-registers). This is one of the reasons why there are 3 gpio banks with
-separate interrupts, and each bank's interrupt is optional in this driver.
-
-> 
-> (...)
->> +/* Convenience register accessors */
->> +static void tz1090_gpio_write(struct tz1090_gpio_bank *bank,
->> +                             unsigned int reg_offs, u32 data)
->> +{
->> +       iowrite32(data, bank->reg + reg_offs);
->> +}
->> +
->> +static u32 tz1090_gpio_read(struct tz1090_gpio_bank *bank,
->> +                           unsigned int reg_offs)
->> +{
->> +       return ioread32(bank->reg + reg_offs);
->> +}
-> 
-> The pinctrl driver included the keyword "inline" for these so
-> this should be consistent and do that too.
-
-Okay
-
-> +static inline void _tz1090_gpio_clear_bit(struct tz1090_gpio_bank *bank,
-> +                                         unsigned int reg_offs,
-> +                                         unsigned int offset)
-> +{
-> +       u32 value;
-> +
-> +       value = tz1090_gpio_read(bank, reg_offs);
-> +       value &= ~(0x1 << offset);
-> 
-> I usually do this:
-> 
-> #include <linux/bitops.h>
-> 
-> value &= ~BIT(offset);
-
-Good idea.
-
->> +/* caller must hold LOCK2 */
->> +static inline void _tz1090_gpio_mod_bit(struct tz1090_gpio_bank *bank,
->> +                                       unsigned int reg_offs,
->> +                                       unsigned int offset,
->> +                                       int val)
-> 
-> If val is used as it is, make it a bool.
-> 
->> +{
->> +       u32 value;
->> +
->> +       value = tz1090_gpio_read(bank, reg_offs);
->> +       value &= ~(0x1 << offset);
->> +       value |= !!val << offset;
-> 
-> You're claming val to [0,1] obviously it's a bool.
-
-It's often simply passing on things like the int output_value from the
-direction_output and set callbacks. Is it necessary to confuse things by
-making it a bool and then turning it back into an int to write into the
-register?
-
-> This is also very nice and handling the toggling edge in
-> a working way.
-
-Credit goes to some engineers from PURE for the toggling magic :-)
-
-> Overall looking very nice, just needs som polishing, and I'm way
-> scared about that global lock.
-
-Thanks again for taking the time to review.
-
-Cheers
-James
 
