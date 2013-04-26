@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759497Ab3DZJVl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 05:21:41 -0400
-Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:45576 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759397Ab3DZJVB (ORCPT
+	id S932362Ab3DZJWD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 05:22:03 -0400
+Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:45190
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759368Ab3DZJVA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 05:21:01 -0400
+	Fri, 26 Apr 2013 05:21:00 -0400
 X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 3
-X-BigFish: VS3(zzzz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1082kzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1155h)
+X-SpamScore: 6
+X-BigFish: VS6(z3121kzzz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1082kzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1155h)
 From: Huang Shijie <b32955@freescale.com>
 To: <dwmw2@infradead.org>
 CC: <dedekind1@gmail.com>, <computersforpeace@gmail.com>,
         <linux-mtd@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
         Huang Shijie <b32955@freescale.com>
-Subject: [PATCH V4 7/9] mtd: parse out the ECC info for the full-id nand chips
-Date: Fri, 26 Apr 2013 17:08:55 +0800
-Message-ID: <1366967337-5534-8-git-send-email-b32955@freescale.com>
+Subject: [PATCH V4 6/9] mtd: add ECC info for nand_flash_dev{}
+Date: Fri, 26 Apr 2013 17:08:54 +0800
+Message-ID: <1366967337-5534-7-git-send-email-b32955@freescale.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1366967337-5534-1-git-send-email-b32955@freescale.com>
 References: <1366967337-5534-1-git-send-email-b32955@freescale.com>
@@ -28,26 +28,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Parse out the ECC information for the full-id nand chips.
+Add an instance of an anonymous struct to store the ECC infor for full id
+nand chips.
+	@ecc.strength: ECC correctability from the datasheet.
+	@ecc.size: ECC size required by the @ecc.strength,
+
+Also add the necessary macros to make the code simple and clean.
 
 Signed-off-by: Huang Shijie <b32955@freescale.com>
 ---
- drivers/mtd/nand/nand_base.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ include/linux/mtd/nand.h |   15 +++++++++++++++
+ 1 files changed, 15 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
-index bc3442a..5fe65ad 100644
---- a/drivers/mtd/nand/nand_base.c
-+++ b/drivers/mtd/nand/nand_base.c
-@@ -3254,6 +3254,8 @@ static bool find_full_id_nand(struct mtd_info *mtd, struct nand_chip *chip,
- 		chip->cellinfo = id_data[2];
- 		chip->chipsize = (uint64_t)type->chipsize << 20;
- 		chip->options |= type->options;
-+		chip->ecc_strength = NAND_ECC_STRENGTH(type);
-+		chip->ecc_size = NAND_ECC_SIZE(type);
+diff --git a/include/linux/mtd/nand.h b/include/linux/mtd/nand.h
+index 9b28739..5f1c0d1 100644
+--- a/include/linux/mtd/nand.h
++++ b/include/linux/mtd/nand.h
+@@ -625,6 +625,11 @@ struct nand_chip {
+ 	{ .name = (nm), {{ .dev_id = (devid) }}, .chipsize = (chipsz), \
+ 	  .options = (opts) }
  
- 		*busw = type->options & NAND_BUSWIDTH_16;
++#define NAND_ECC_INFO(_strength, _size)	\
++			{ .strength = (_strength), .size = (_size) }
++#define NAND_ECC_STRENGTH(type)		((type)->ecc.strength)
++#define NAND_ECC_SIZE(type)		((type)->ecc.size)
++
+ /**
+  * struct nand_flash_dev - NAND Flash Device ID Structure
+  * @name: a human-readable name of the NAND chip
+@@ -642,6 +647,12 @@ struct nand_chip {
+  * @options: stores various chip bit options
+  * @id_len: The valid length of the @id.
+  * @oobsize: OOB size
++ * @ecc.strength: The ECC correctability from the datasheet, same as the
++ *                @ecc_strength in nand_chip{}.
++ * @ecc.size: The ECC size required by the @ecc.strength, same as the
++ *            @ecc_size in nand_chip{}.
++ *            For example, the "4bit ECC for each 512Byte" can be set with
++ *            NAND_ECC_INFO(4, 512).
+  */
+ struct nand_flash_dev {
+ 	char *name;
+@@ -658,6 +669,10 @@ struct nand_flash_dev {
+ 	unsigned int options;
+ 	uint16_t id_len;
+ 	uint16_t oobsize;
++	struct {
++		uint16_t strength;
++		uint16_t size;
++	} ecc;
+ };
  
+ /**
 -- 
 1.7.1
 
