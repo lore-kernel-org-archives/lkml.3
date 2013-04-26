@@ -1,64 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756281Ab3DZMeB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 08:34:01 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:57754 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751975Ab3DZMeA (ORCPT
+	id S1756425Ab3DZMgP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 08:36:15 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:46745 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755618Ab3DZMgN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 08:34:00 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linaro-kernel@lists.linaro.org
-Cc: Anup Patel <anup.patel@linaro.org>,
-        Peter Maydell <peter.maydell@linaro.org>, patches@linaro.org,
-        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
-        Alexander Graf <agraf@suse.de>, kvmarm@lists.cs.columbia.edu,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 0/2] Early printk support for virtio console devices.
-Date: Fri, 26 Apr 2013 14:33:59 +0200
-Message-ID: <1577576.O1Cm2pf5KD@wuerfel>
-User-Agent: KMail/4.10.2 (Linux/3.8.0-17-generic; KDE/4.10.2; x86_64; ; )
-In-Reply-To: <CALrVBkuOmu4u9egdzzfn1tU9B-CFe3w85HZQ9s2gpKvYnaSqvA@mail.gmail.com>
-References: <1366974299-17877-1-git-send-email-pranavkumar@linaro.org> <CAFEAcA_xmrHTvR7FxUr3PCKBJY-hZnkeBcqyHksTB4-hqOZS0w@mail.gmail.com> <CALrVBkuOmu4u9egdzzfn1tU9B-CFe3w85HZQ9s2gpKvYnaSqvA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:8VHemkHvEwt+wMvhDSA8avb5ekgt6xn3ko/vw0q5NOT
- ndw2esJUOiRZmZWoNgConGarvatUDAzOF4pn4Ompyz6o8T4DYu
- BiBTbUktka/JlypLPE6fGzDbGhmcww4Qmt/iYMa+SrN8DOUtiu
- yHNQtUWR3zlnqeH3iD0ANs7yqzDfyUVjhjKtKgaC0nYwptTtl3
- x5MSZv7SZmL0OXSuqg9pdxXW7ANJYQ4xfF+s8V+D83qwKbpkYr
- JJQpytsH8sCymFOx9nZjpIBwmERQ4sjTU7DA0khWkRnOpcQ+mC
- Z2E5CaDTFBNkw+Nk9D/LFESW0zdJ0/wUX2c5I0iLXAQdsi1LzK
- 9RskTj1iPaNp10UE1GUU=
+	Fri, 26 Apr 2013 08:36:13 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@sisk.pl
+Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, robin.randhawa@arm.com,
+        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
+        charles.garcia-tobin@arm.com, arvind.chauhan@arm.com,
+        linaro-kernel@lists.linaro.org, patches@linaro.org,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH] cpufreq: MAINTAINERS: Add co-maintainer
+Date: Fri, 26 Apr 2013 18:06:00 +0530
+Message-Id: <19a42d164b0e68a3ac16cd8865f0587ce383f5bf.1366979508.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 26 April 2013 17:36:16 Anup Patel wrote:
-> On 26 April 2013 17:03, Peter Maydell <peter.maydell@linaro.org> wrote:
-> > On 26 April 2013 12:19, Alexander Graf <agraf@suse.de> wrote:
-> >> MMIO registers are handled by a different layer than the virtio
-> >> console itself. After the virtio refactoring in QEMU, they will
-> >> be completely separate drivers.
-> >
-> > Good point -- we don't really want to be mixing up the
-> > transport and the backend. You can see it in the kvmtool
-> > patch, in fact -- it introduces an "if this is virtio-console"
-> > special case into the mmio.c file which previously was
-> > entirely backend agnostic.
-> 
-> Well, we can always have virtio device specific config registers
-> handle by virtio device backends and generic virtio config register
-> handled by transport.
-> 
-> kvmtool patch is hacky because it does not provide virtio device
-> specific config read/write callbacks.
+With prior discussions (Over private emails) with current Maintainer of cpufreq
+framework (Rafael), I am adding myself as a co-maintainer of cpufreq framework.
 
-Couldn't kvmtool implement the interface used by smh_printch()
-for early output instead?
+This would mostly be for cpufreq core and ARM drivers but not restricted to
+them.
 
-Or if that's not a fitting inteface, maybe a psci call for writing
-a character to the console?
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+ MAINTAINERS | 1 +
+ 1 file changed, 1 insertion(+)
 
-	Arnd
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 68d376e..bcef513 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -2211,6 +2211,7 @@ F:	drivers/net/ethernet/ti/cpmac.c
+ 
+ CPU FREQUENCY DRIVERS
+ M:	Rafael J. Wysocki <rjw@sisk.pl>
++M:	Viresh Kumar <viresh.kumar@linaro.org>
+ L:	cpufreq@vger.kernel.org
+ L:	linux-pm@vger.kernel.org
+ S:	Maintained
+-- 
+1.7.12.rc2.18.g61b472e
+
