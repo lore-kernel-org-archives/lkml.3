@@ -1,76 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757991Ab3DZU0m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 16:26:42 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:59683 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757857Ab3DZUZt (ORCPT
+	id S1758011Ab3DZUdu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 16:33:50 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:63085 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757261Ab3DZUds (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 16:25:49 -0400
-From: Sourav Poddar <sourav.poddar@ti.com>
-To: <gregkh@linuxfoundation.org>, <tony@atomide.com>,
-        <rmk+kernel@arm.linux.org.uk>, <khilman@linaro.org>
-CC: <linux-serial@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Sourav Poddar <sourav.poddar@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Felipe Balbi <balbi@ti.com>, Rajendra nayak <rnayak@ti.com>
-Subject: [PATCH 1/3] arm: omap2+: serial: remove no_console_suspend support
-Date: Sat, 27 Apr 2013 01:55:32 +0530
-Message-ID: <1367007934-3906-2-git-send-email-sourav.poddar@ti.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1367007934-3906-1-git-send-email-sourav.poddar@ti.com>
-References: <1367007934-3906-1-git-send-email-sourav.poddar@ti.com>
+	Fri, 26 Apr 2013 16:33:48 -0400
+Date: Fri, 26 Apr 2013 13:33:45 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch for-3.8-rc8] usb, chipidea: fix link error when
+ USB_EHCI_HCD is a module
+Message-ID: <20130426203345.GA25959@kroah.com>
+References: <alpine.DEB.2.02.1304261323060.17754@chino.kir.corp.google.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1304261323060.17754@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"no_console_suspend" is no longer handled in platform file,
-Since the omap serial driver is now adapted to prevent
-console UART idleing during suspend.
+I think you mean "3.9" in your subject: right?
 
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: Felipe Balbi <balbi@ti.com>
-Cc: Rajendra nayak <rnayak@ti.com>
-Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
-Reviewed-by: Felipe Balbi <balbi@ti.com>
----
- arch/arm/mach-omap2/serial.c |    7 -------
- 1 files changed, 0 insertions(+), 7 deletions(-)
+On Fri, Apr 26, 2013 at 01:25:01PM -0700, David Rientjes wrote:
+> Fixes link error when USB_EHCI_HCD=m and USB_CHIPIDEA_HOST=y:
+> 
+> 	drivers/built-in.o: In function `ci_hdrc_host_init':
+> 	drivers/usb/chipidea/host.c:104: undefined reference to `ehci_init_driver'
+> 
+> as a result of commit 09f6ffde2ece ("USB: EHCI: fix build error by making
+> ChipIdea host a normal EHCI driver").
+> 
+> Cc: stable@vger.kernel.org [v3.7+]
+> Signed-off-by: David Rientjes <rientjes@google.com>
+> ---
+>  drivers/usb/chipidea/Kconfig | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/arm/mach-omap2/serial.c b/arch/arm/mach-omap2/serial.c
-index 8396b5b..25fb6e9 100644
---- a/arch/arm/mach-omap2/serial.c
-+++ b/arch/arm/mach-omap2/serial.c
-@@ -63,7 +63,6 @@ struct omap_uart_state {
- static LIST_HEAD(uart_list);
- static u8 num_uarts;
- static u8 console_uart_id = -1;
--static u8 no_console_suspend;
- static u8 uart_debug;
- 
- #define DEFAULT_RXDMA_POLLRATE		1	/* RX DMA polling rate (us) */
-@@ -236,9 +235,6 @@ static int __init omap_serial_early_init(void)
- 					uart_name, uart->num);
- 			}
- 
--			if (cmdline_find_option("no_console_suspend"))
--				no_console_suspend = true;
--
- 			/*
- 			 * omap-uart can be used for earlyprintk logs
- 			 * So if omap-uart is used as console then prevent
-@@ -323,9 +319,6 @@ void __init omap_serial_init_port(struct omap_board_data *bdata,
- 		return;
- 	}
- 
--	if ((console_uart_id == bdata->id) && no_console_suspend)
--		omap_device_disable_idle_on_suspend(pdev);
--
- 	oh->mux = omap_hwmod_mux_init(bdata->pads, bdata->pads_cnt);
- 
- 	if (console_uart_id == bdata->id) {
--- 
-1.7.1
+There have been a ton of chipidea changes recently in linux-next.  This
+really just looks like you got the configuration wrong, nothing that is
+needed at this point in the release cycle, right?
 
+thanks,
+
+greg k-h
