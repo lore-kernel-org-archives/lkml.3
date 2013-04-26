@@ -1,104 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759100Ab3DZIfj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 04:35:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30606 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758920Ab3DZIf0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 04:35:26 -0400
-Date: Fri, 26 Apr 2013 10:35:07 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 09/14] perf ftrace: Add 'record' sub-command
-Message-ID: <20130426083507.GA1054@krava.brq.redhat.com>
-References: <1366705872-12132-1-git-send-email-namhyung@kernel.org>
- <1366705872-12132-10-git-send-email-namhyung@kernel.org>
- <20130424141241.GG971@krava.brq.redhat.com>
- <87bo939lgt.fsf@sejong.aot.lge.com>
+	id S1759353Ab3DZIgv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 04:36:51 -0400
+Received: from mail-bk0-f52.google.com ([209.85.214.52]:51118 "EHLO
+	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758896Ab3DZIgs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Apr 2013 04:36:48 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87bo939lgt.fsf@sejong.aot.lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130426171229.134dc25101970f908132d523@canb.auug.org.au>
+References: <20130426171229.134dc25101970f908132d523@canb.auug.org.au>
+Date: Fri, 26 Apr 2013 10:36:46 +0200
+Message-ID: <CABYn4szu+auF9v76tJYzowZ0M2AWgeBuAcEcLsDaYwFDvro5hA@mail.gmail.com>
+Subject: Re: linux-next: manual merge of the renesas tree with the input tree
+From: Bastian Hecht <hechtb@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Simon Horman <horms@verge.net.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 25, 2013 at 03:24:18PM +0900, Namhyung Kim wrote:
-> On Wed, 24 Apr 2013 16:12:41 +0200, Jiri Olsa wrote:
-> > I got following lockup for record command:
-> >
-> >   # ./perf --no-pager ftrace record ls
-> >   ...
-> >   hangs
-> >
-> >   in other terminal:
-> >
-> >   # pstack 14237
-> >   Thread 2 (Thread 0x7f3f1aa1d700 (LWP 14241)):
-> >   #0  0x0000003cec20b595 in pthread_cond_wait@@GLIBC_2.3.2 () from /lib64/libpthread.so.0
-> >   #1  0x0000000000446ebe in record_ftrace_raw_buffer (arg=0x21f9ce0) at builtin-ftrace.c:451
-> >   #2  0x0000003cec207d14 in start_thread () from /lib64/libpthread.so.0
-> >   #3  0x0000003cebaf168d in clone () from /lib64/libc.so.6
-> >   Thread 1 (Thread 0x7f3f1ba209c0 (LWP 14237)):
-> >   #0  0x0000003cec208e60 in pthread_join () from /lib64/libpthread.so.0
-> >   #1  0x0000000000449c8c in do_ftrace_record (ftrace=ftrace@entry=0x7fff1377d240) at builtin-ftrace.c:682
-> >   #2  0x000000000044a57b in __cmd_ftrace_record (argv=0x7fff1377d818, argc=<optimized out>, ftrace=0x7fff1377d240) at builtin-ftrace.c:1535
-> >   #3  cmd_ftrace (argc=2, argv=0x7fff1377d818, prefix=<optimized out>) at builtin-ftrace.c:1655
-> >   #4  0x000000000041a763 in run_builtin (p=p@entry=0x7d58a0, argc=argc@entry=3, argv=argv@entry=0x7fff1377d818) at perf.c:320
-> >   #5  0x0000000000419faf in handle_internal_command (argv=0x7fff1377d818, argc=3) at perf.c:377
-> >   #6  run_argv (argv=0x7fff1377d600, argcp=0x7fff1377d60c) at perf.c:421
-> >   #7  main (argc=3, argv=0x7fff1377d818) at perf.c:522
-> >
-> 
-> How often can you reproduce it?  I can't. :(
+Hi Simon,
 
-yesterday it was more often than today ;-) but I still get it
-after several runs, this reproduces it for me:
+as long as the snippet below survives from the patch (which should),
+from my side it's fine.
 
-  # while [ 1 ]; do ./perf --no-pager ftrace record ls ; done
+Thanks for merging Stephen,
 
-seems like there's no change in backtraces:
-
-[root@krava tracing]# pstack 4139
-Thread 2 (Thread 0x7f4aa37fe700 (LWP 4145)):
-#0  0x0000003cec20b595 in pthread_cond_wait@@GLIBC_2.3.2 () from /lib64/libpthread.so.0
-#1  0x0000000000446ebe in record_ftrace_raw_buffer (arg=0xe10e90) at builtin-ftrace.c:451
-#2  0x0000003cec207d14 in start_thread () from /lib64/libpthread.so.0
-#3  0x0000003cebaf168d in clone () from /lib64/libc.so.6
-Thread 1 (Thread 0x7f4aac29c9c0 (LWP 4139)):
-#0  0x0000003cec208e60 in pthread_join () from /lib64/libpthread.so.0
-#1  0x0000000000449c8c in do_ftrace_record (ftrace=ftrace@entry=0x7fffaf9bc080) at builtin-ftrace.c:682
-#2  0x000000000044a57b in __cmd_ftrace_record (argv=0x7fffaf9bc658, argc=<optimized out>, ftrace=0x7fffaf9bc080) at builtin-ftrace.c:1535
-#3  cmd_ftrace (argc=2, argv=0x7fffaf9bc658, prefix=<optimized out>) at builtin-ftrace.c:1655
-#4  0x000000000041a763 in run_builtin (p=p@entry=0x7d58a0, argc=argc@entry=3, argv=argv@entry=0x7fffaf9bc658) at perf.c:320
-#5  0x0000000000419faf in handle_internal_command (argv=0x7fffaf9bc658, argc=3) at perf.c:377
-#6  run_argv (argv=0x7fffaf9bc440, argcp=0x7fffaf9bc44c) at perf.c:421
-#7  main (argc=3, argv=0x7fffaf9bc658) at perf.c:522
-
----
-
-#0  0x0000003cec20b595 in pthread_cond_wait@@GLIBC_2.3.2 () from /lib64/libpthread.so.0
-#1  0x0000000000446ebe in record_ftrace_raw_buffer (arg=0xee9ce0) at builtin-ftrace.c:451
-#2  0x0000003cec207d14 in start_thread () from /lib64/libpthread.so.0
-#3  0x0000003cebaf168d in clone () from /lib64/libc.so.6
-Thread 1 (Thread 0x7f9b383139c0 (LWP 4397)):
-#0  0x0000003cec208e60 in pthread_join () from /lib64/libpthread.so.0
-#1  0x0000000000449c8c in do_ftrace_record (ftrace=ftrace@entry=0x7fffdea14e50) at builtin-ftrace.c:682
-#2  0x000000000044a57b in __cmd_ftrace_record (argv=0x7fffdea15428, argc=<optimized out>, ftrace=0x7fffdea14e50) at builtin-ftrace.c:1535
-#3  cmd_ftrace (argc=2, argv=0x7fffdea15428, prefix=<optimized out>) at builtin-ftrace.c:1655
-#4  0x000000000041a763 in run_builtin (p=p@entry=0x7d58a0, argc=argc@entry=3, argv=argv@entry=0x7fffdea15428) at perf.c:320
-#5  0x0000000000419faf in handle_internal_command (argv=0x7fffdea15428, argc=3) at perf.c:377
-#6  run_argv (argv=0x7fffdea15210, argcp=0x7fffdea1521c) at perf.c:421
-#7  main (argc=3, argv=0x7fffdea15428) at perf.c:522
+ Bastian
 
 
-jirka
+ /* I2C */
++static struct st1232_pdata st1232_i2c0_pdata = {
++    .reset_gpio = 166,
++};
++
+ static struct i2c_board_info i2c0_devices[] = {
+     {
+         I2C_BOARD_INFO("st1232-ts", 0x55),
+         .irq = irq_pin(10),
++        .platform_data = &st1232_i2c0_pdata,
+     },
+
+2013/4/26 Stephen Rothwell <sfr@canb.auug.org.au>:
+> Hi Simon,
+>
+> Today's linux-next merge of the renesas tree got a conflict in
+> arch/arm/mach-shmobile/board-armadillo800eva.c between commit
+> cbaf7f808081 ("ARM - shmobile: Armadillo800EVA: Move st1232 reset pin
+> handling") from the input tree and commit 0c5ba87e1b2e ("ARM: shmobile:
+> armadillo800eva: Register pinctrl mapping for INTC") from the renesas
+> tree.
+>
+> I fixed it up (see below) and can carry the fix as necessary (no action
+> is required).
+>
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+>
+> diff --cc arch/arm/mach-shmobile/board-armadillo800eva.c
+> index b85b288,ff04d1e..0000000
+> --- a/arch/arm/mach-shmobile/board-armadillo800eva.c
+> +++ b/arch/arm/mach-shmobile/board-armadillo800eva.c
+> @@@ -1127,32 -1151,10 +1161,7 @@@ static void __init eva_init(void
+>         gpio_request_one(61, GPIOF_OUT_INIT_HIGH, NULL); /* LCDDON */
+>         gpio_request_one(202, GPIOF_OUT_INIT_LOW, NULL); /* LCD0_LED_CONT */
+>
+> --      /* Touchscreen */
+> -       gpio_request(GPIO_FN_IRQ10,     NULL); /* TP_INT */
+> -
+>  -      gpio_request_one(166, GPIOF_OUT_INIT_HIGH, NULL); /* TP_RST_B */
+>  -
+>         /* GETHER */
+> -       gpio_request(GPIO_FN_ET_CRS,            NULL);
+> -       gpio_request(GPIO_FN_ET_MDC,            NULL);
+> -       gpio_request(GPIO_FN_ET_MDIO,           NULL);
+> -       gpio_request(GPIO_FN_ET_TX_ER,          NULL);
+> -       gpio_request(GPIO_FN_ET_RX_ER,          NULL);
+> -       gpio_request(GPIO_FN_ET_ERXD0,          NULL);
+> -       gpio_request(GPIO_FN_ET_ERXD1,          NULL);
+> -       gpio_request(GPIO_FN_ET_ERXD2,          NULL);
+> -       gpio_request(GPIO_FN_ET_ERXD3,          NULL);
+> -       gpio_request(GPIO_FN_ET_TX_CLK,         NULL);
+> -       gpio_request(GPIO_FN_ET_TX_EN,          NULL);
+> -       gpio_request(GPIO_FN_ET_ETXD0,          NULL);
+> -       gpio_request(GPIO_FN_ET_ETXD1,          NULL);
+> -       gpio_request(GPIO_FN_ET_ETXD2,          NULL);
+> -       gpio_request(GPIO_FN_ET_ETXD3,          NULL);
+> -       gpio_request(GPIO_FN_ET_PHY_INT,        NULL);
+> -       gpio_request(GPIO_FN_ET_COL,            NULL);
+> -       gpio_request(GPIO_FN_ET_RX_DV,          NULL);
+> -       gpio_request(GPIO_FN_ET_RX_CLK,         NULL);
+> -
+>         gpio_request_one(18, GPIOF_OUT_INIT_HIGH, NULL); /* PHY_RST */
+>
+>         /* USB */
