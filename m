@@ -1,163 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759730Ab3DZJ4e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 05:56:34 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:46080 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759669Ab3DZJ43 (ORCPT
+	id S1759767Ab3DZJ4j (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 05:56:39 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:30858 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759348Ab3DZJ4h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 05:56:29 -0400
-Subject: [PATCH 2/3] powerpc/pseries: Re-organise the oops compression code
-To: linuxppc-dev@ozlabs.org, paulus@samba.org, linux-kernel@vger.kernel.org,
-        benh@kernel.crashing.org
-From: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
-Cc: jkenisto@linux.vnet.ibm.com, tony.luck@intel.com, ananth@in.ibm.com,
-        mahesh@linux.vnet.ibm.com, ccross@android.com, anton@samba.org,
-        cbouatmailru@gmail.com, keescook@chromium.org
-Date: Fri, 26 Apr 2013 15:26:14 +0530
-Message-ID: <20130426095614.14323.77770.stgit@aruna-ThinkPad-T420>
-In-Reply-To: <20130426094923.14323.80567.stgit@aruna-ThinkPad-T420>
-References: <20130426094923.14323.80567.stgit@aruna-ThinkPad-T420>
-User-Agent: StGit/0.16-41-gd1dd
+	Fri, 26 Apr 2013 05:56:37 -0400
+Message-ID: <517A4F21.1070503@huawei.com>
+Date: Fri, 26 Apr 2013 17:55:45 +0800
+From: Libo Chen <clbchenlibo.chen@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: <mmarek@suse.cz>
+CC: <linux-kbuild@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] menuconfig: print more info for symbol without prompts
+References: <517A4DC3.1010604@huawei.com>
+In-Reply-To: <517A4DC3.1010604@huawei.com>
+X-Forwarded-Message-Id: <517A4DC3.1010604@huawei.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13042609-5564-0000-0000-000007AA66EC
+X-Originating-IP: [10.135.72.158]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-nvram_compress() and zip_oops() is used by the nvram_pstore_write
-API to compress oops messages hence re-organise the functions
-accordingly to avoid forward declarations.
+From: Wengmeiling <wengmeiling.weng@huawei.com>
 
-Signed-off-by: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+When we search a config symbol, if it has no prompt the position of this
+symbol in the Kconfig file and it's dependencies are not printed. This can
+be inconvenient, especially when it's set to n and we want to find out why.
+
+the following is an example:
+
+before:
+
+Symbol: GENERIC_SMP_IDLE_THREAD [=y]
+Type  : boolean
+  Selected by: X86 [=y]
+
+after:
+
+Symbol: GENERIC_SMP_IDLE_THREAD [=y]
+Type  : boolean
+  Defined at arch/Kconfig:213
+  Selected by: X86 [=y]
+
+Signed-off-by: Weng Meiling <wengmeiling.weng@huawei.com>
+Signed-off-by: Libo Chen <libo.chen@huawei.com>
 ---
- arch/powerpc/platforms/pseries/nvram.c |  104 ++++++++++++++++----------------
- 1 file changed, 52 insertions(+), 52 deletions(-)
+ scripts/kconfig/menu.c |   27 ++++++++++++++++++++-------
+ 1 files changed, 20 insertions(+), 7 deletions(-)
 
-diff --git a/arch/powerpc/platforms/pseries/nvram.c b/arch/powerpc/platforms/pseries/nvram.c
-index 14cc486..0159d74 100644
---- a/arch/powerpc/platforms/pseries/nvram.c
-+++ b/arch/powerpc/platforms/pseries/nvram.c
-@@ -486,6 +486,58 @@ static int clobbering_unread_rtas_event(void)
- 						NVRAM_RTAS_READ_TIMEOUT);
- }
- 
-+/* Derived from logfs_compress() */
-+static int nvram_compress(const void *in, void *out, size_t inlen,
-+							size_t outlen)
-+{
-+	int err, ret;
-+
-+	ret = -EIO;
-+	err = zlib_deflateInit2(&stream, COMPR_LEVEL, Z_DEFLATED, WINDOW_BITS,
-+						MEM_LEVEL, Z_DEFAULT_STRATEGY);
-+	if (err != Z_OK)
-+		goto error;
-+
-+	stream.next_in = in;
-+	stream.avail_in = inlen;
-+	stream.total_in = 0;
-+	stream.next_out = out;
-+	stream.avail_out = outlen;
-+	stream.total_out = 0;
-+
-+	err = zlib_deflate(&stream, Z_FINISH);
-+	if (err != Z_STREAM_END)
-+		goto error;
-+
-+	err = zlib_deflateEnd(&stream);
-+	if (err != Z_OK)
-+		goto error;
-+
-+	if (stream.total_out >= stream.total_in)
-+		goto error;
-+
-+	ret = stream.total_out;
-+error:
-+	return ret;
-+}
-+
-+/* Compress the text from big_oops_buf into oops_buf. */
-+static int zip_oops(size_t text_len)
-+{
-+	struct oops_log_info *oops_hdr = (struct oops_log_info *)oops_buf;
-+	int zipped_len = nvram_compress(big_oops_buf, oops_data, text_len,
-+								oops_data_sz);
-+	if (zipped_len < 0) {
-+		pr_err("nvram: compression failed; returned %d\n", zipped_len);
-+		pr_err("nvram: logging uncompressed oops/panic report\n");
-+		return -1;
-+	}
-+	oops_hdr->version = OOPS_HDR_VERSION;
-+	oops_hdr->report_length = (u16) zipped_len;
-+	oops_hdr->timestamp = get_seconds();
-+	return 0;
-+}
-+
- #ifdef CONFIG_PSTORE
- static int nvram_pstore_open(struct pstore_info *psi)
- {
-@@ -757,58 +809,6 @@ int __init pSeries_nvram_init(void)
- }
- 
- 
--/* Derived from logfs_compress() */
--static int nvram_compress(const void *in, void *out, size_t inlen,
--							size_t outlen)
--{
--	int err, ret;
--
--	ret = -EIO;
--	err = zlib_deflateInit2(&stream, COMPR_LEVEL, Z_DEFLATED, WINDOW_BITS,
--						MEM_LEVEL, Z_DEFAULT_STRATEGY);
--	if (err != Z_OK)
--		goto error;
--
--	stream.next_in = in;
--	stream.avail_in = inlen;
--	stream.total_in = 0;
--	stream.next_out = out;
--	stream.avail_out = outlen;
--	stream.total_out = 0;
--
--	err = zlib_deflate(&stream, Z_FINISH);
--	if (err != Z_STREAM_END)
--		goto error;
--
--	err = zlib_deflateEnd(&stream);
--	if (err != Z_OK)
--		goto error;
--
--	if (stream.total_out >= stream.total_in)
--		goto error;
--
--	ret = stream.total_out;
--error:
--	return ret;
--}
--
--/* Compress the text from big_oops_buf into oops_buf. */
--static int zip_oops(size_t text_len)
--{
--	struct oops_log_info *oops_hdr = (struct oops_log_info *)oops_buf;
--	int zipped_len = nvram_compress(big_oops_buf, oops_data, text_len,
--								oops_data_sz);
--	if (zipped_len < 0) {
--		pr_err("nvram: compression failed; returned %d\n", zipped_len);
--		pr_err("nvram: logging uncompressed oops/panic report\n");
--		return -1;
+diff --git a/scripts/kconfig/menu.c b/scripts/kconfig/menu.c
+index f3bffa3..826da66 100644
+--- a/scripts/kconfig/menu.c
++++ b/scripts/kconfig/menu.c
+@@ -515,13 +515,6 @@ static void get_prompt_str(struct gstr *r, struct property *prop,
+ 	struct jump_key *jump;
+
+ 	str_printf(r, _("Prompt: %s\n"), _(prop->text));
+-	str_printf(r, _("  Defined at %s:%d\n"), prop->menu->file->name,
+-		prop->menu->lineno);
+-	if (!expr_is_yes(prop->visible.expr)) {
+-		str_append(r, _("  Depends on: "));
+-		expr_gstr_print(prop->visible.expr, r);
+-		str_append(r, "\n");
 -	}
--	oops_hdr->version = OOPS_HDR_VERSION;
--	oops_hdr->report_length = (u16) zipped_len;
--	oops_hdr->timestamp = get_seconds();
--	return 0;
--}
--
+ 	menu = prop->menu->parent;
+ 	for (i = 0; menu != &rootmenu && i < 8; menu = menu->parent) {
+ 		bool accessible = menu_is_visible(menu);
+@@ -572,6 +565,18 @@ static void get_prompt_str(struct gstr *r, struct property *prop,
+ }
+
  /*
-  * This is our kmsg_dump callback, called after an oops or panic report
-  * has been written to the printk buffer.  We want to capture as much
++ * get peoperty of type P_SYMBOL
++ */
++static struct property *get_symbol_prop(struct symbol *sym)
++{
++	struct property *prop = NULL;
++
++	for_all_properties(sym, prop, P_SYMBOL)
++		break;
++	return prop;
++}
++
++/*
+  * head is optional and may be NULL
+  */
+ void get_symbol_str(struct gstr *r, struct symbol *sym,
+@@ -595,6 +600,14 @@ void get_symbol_str(struct gstr *r, struct symbol *sym,
+ 	}
+ 	for_all_prompts(sym, prop)
+ 		get_prompt_str(r, prop, head);
++	prop = get_symbol_prop(sym);
++	str_printf(r, _("  Defined at %s:%d\n"), prop->menu->file->name,
++		prop->menu->lineno);
++	if (!expr_is_yes(prop->visible.expr)) {
++		str_append(r, _("  Depends on: "));
++		expr_gstr_print(prop->visible.expr, r);
++		str_append(r, "\n");
++	}
+ 	hit = false;
+ 	for_all_properties(sym, prop, P_SELECT) {
+ 		if (!hit) {
+-- 
+1.7.1
+
+
+.
+
+
+
 
