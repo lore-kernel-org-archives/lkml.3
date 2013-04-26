@@ -1,81 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756108Ab3DZWwi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 18:52:38 -0400
-Received: from one.firstfloor.org ([193.170.194.197]:44367 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752002Ab3DZWwh (ORCPT
+	id S1755989Ab3DZWx2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 18:53:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38031 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754233Ab3DZWx1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 18:52:37 -0400
-Date: Sat, 27 Apr 2013 00:52:35 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Andi Kleen <andi@firstfloor.org>, mingo@elte.hu,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: Basic perf PMU support for Haswell v11
-Message-ID: <20130426225235.GI16732@two.firstfloor.org>
-References: <1366484783-15613-1-git-send-email-andi@firstfloor.org>
- <20130426065503.GA31197@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130426065503.GA31197@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 26 Apr 2013 18:53:27 -0400
+Date: Fri, 26 Apr 2013 15:53:25 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Alexandre Bounine <alexandre.bounine@idt.com>
+Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        Matt Porter <mporter@kernel.crashing.org>,
+        Li Yang <leoli@freescale.com>, Kumar Gala <galak@kernel.crashing.org>,
+        Andre van Herk <andre.van.herk@Prodrive.nl>,
+        Micha Nelissen <micha.nelissen@Prodrive.nl>
+Subject: Re: [PATCH 1/3] rapidio: make enumeration/discovery configurable
+Message-Id: <20130426155325.09fbad8c382dc8c549d503d0@linux-foundation.org>
+In-Reply-To: <1366813919-13766-2-git-send-email-alexandre.bounine@idt.com>
+References: <1366813919-13766-1-git-send-email-alexandre.bounine@idt.com>
+	<1366813919-13766-2-git-send-email-alexandre.bounine@idt.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> How well was this 
-> patch-set tested on non-Haswell hardware, which makes up 99.99% of our 
-> installed base?
+On Wed, 24 Apr 2013 10:31:57 -0400 Alexandre Bounine <alexandre.bounine@idt.com> wrote:
 
-I tested on a couple systems now and then: usually Haswell, IvyBridge,
-sometimes also Westmere and Atom. I don't retest every iteration,
-as you know most of the changes you're requesting don't affect
-the binary.
-
-My test bed is likely to be smaller than yours though and as usual
-as you well know some part of the kernel QA is after release.
-
+> Rework to implement RapidIO enumeration/discovery method selection
+> combined with ability to use enumeration/discovery as a kernel module.
 > 
-> In particular, after applying your patches, 'perf top' stopped working on 
-> an Intel testbox of mine:
+> This patch adds ability to introduce new RapidIO enumeration/discovery methods
+> using kernel configuration options or loadable modules. Configuration option
+> mechanism allows to select built-in or modular enumeration/discovery method from
+> the list of existing methods or use external modules.
+> If a modular enumeration/discovery is selected each RapidIO mport device can
+> have its own method attached to it.
 > 
->   processor       : 15
->   vendor_id       : GenuineIntel
->   cpu family      : 6
->   model           : 26
->   model name      : Intel(R) Xeon(R) CPU           X55600 @ 2.80GHz
+> The currently existing enumeration/discovery code was updated to be used
+> as built-in or modular method. This configuration option is named "Basic
+> enumeration/discovery" method.
+> 
+> Several common routines have been moved from rio-scan.c to make them available
+> to other enumeration methods and reduce number of exported symbols.
+> 
+> ...
+>
+> --- a/drivers/rapidio/Kconfig
+> +++ b/drivers/rapidio/Kconfig
+> @@ -47,4 +47,23 @@ config RAPIDIO_DEBUG
+>  
+>  	  If you are unsure about this, say N here.
+>  
+> +choice
+> +	prompt "Enumeration method"
+> +	depends on RAPIDIO
+> +	help
+> +	  There are different enumeration and discovery mechanisms offered
+> +	  for RapidIO subsystem. You may select single built-in method or
+> +	  or any number of methods to be built as modules.
+> +	  Selecting a built-in method disables use of loadable methods.
+> +
+> +	  If unsure, select Basic built-in.
+> +
+> +config RAPIDIO_ENUM_BASIC
+> +	tristate "Basic"
+> +	help
+> +	  This option includes basic RapidIO fabric enumeration and discovery
+> +	  mechanism similar to one described in RapidIO specification Annex 1.
+> +
+> +endchoice
 
-I assume the second 0 is a typo?
+This Kconfig change makes my kbuild do Weird Things.
 
->   stepping        : 5
+make mrproper ; yes "" | make allmodconfig ; make 2>/tmp/x
 
-> 'perf top' just does not produce any profiling output - it says 0 events.
+: scripts/kconfig/conf --silentoldconfig Kconfig
+: *
+: * Restart config...
+: *
+: *
+: * Bus options (PCI etc.)
+: *
+: PCI support (PCI) [Y/n/?] y
+:   Support mmconfig PCI config space access (PCI_MMCONFIG) [Y/n] y
+:   Read CNB20LE Host Bridge Windows (PCI_CNB20LE_QUIRK) [Y/n/?] y
+:   PCI Express support (PCIEPORTBUS) [Y/n/?] y
+:     PCI Express Hotplug driver (HOTPLUG_PCI_PCIE) [M/n/?] m
+:     Root Port Advanced Error Reporting support (PCIEAER) [Y/n/?] y
+:       PCI Express ECRC settings control (PCIE_ECRC) [Y/n/?] y
+:       PCIe AER error injector support (PCIEAER_INJECT) [M/n/y/?] m
+:     PCI Express ASPM control (PCIEASPM) [Y/n/?] y
+:       Debug PCI Express ASPM (PCIEASPM_DEBUG) [Y/n/?] y
+:       Default ASPM policy
+:       > 1. BIOS default (PCIEASPM_DEFAULT)
+:         2. Powersave (PCIEASPM_POWERSAVE)
+:         3. Performance (PCIEASPM_PERFORMANCE)
+:       choice[1-3]: 1
+: Message Signaled Interrupts (MSI and MSI-X) (PCI_MSI) [Y/?] y
+: PCI Debugging (PCI_DEBUG) [Y/n/?] y
+: Enable PCI resource re-allocation detection (PCI_REALLOC_ENABLE_AUTO) [Y/n/?] y
+: PCI Stub driver (PCI_STUB) [M/n/y/?] m
+: Xen PCI Frontend (XEN_PCIDEV_FRONTEND) [M/n/y/?] m
+: Interrupts on hypertransport devices (HT_IRQ) [Y/n/?] y
+: PCI IOV support (PCI_IOV) [Y/n/?] y
+: PCI PRI support (PCI_PRI) [Y/?] y
+: PCI PASID support (PCI_PASID) [Y/?] y
+: PCI IO-APIC hotplug support (PCI_IOAPIC) [M/n/y] m
+: ISA-style DMA support (ISA_DMA_API) [Y/n/?] y
+: RapidIO support (RAPIDIO) [Y/n/?] y
+:   IDT Tsi721 PCI Express SRIO Controller support (RAPIDIO_TSI721) [Y/n/?] y
+:   Discovery timeout duration (seconds) (RAPIDIO_DISC_TIMEOUT) [30] 30
+:   Enable RapidIO Input/Output Ports (RAPIDIO_ENABLE_RX_TX_PORTS) [Y/n/?] y
+:   DMA Engine support for RapidIO (RAPIDIO_DMA_ENGINE) [Y/n/?] y
+:   RapidIO subsystem debug messages (RAPIDIO_DEBUG) [Y/n/?] y
+:   Enumeration method [M/y/?] (NEW) aborted!
+: 
+: Console input/output is redirected. Run 'make oldconfig' to update configuration.
+: 
+:   SYSHDR  arch/x86/syscalls/../include/generated/uapi/asm/unistd_32.h
+:   SYSHDR  arch/x86/syscalls/../include/generated/uapi/asm/unistd_64.h
+:   SYSHDR  arch/x86/syscalls/../include/generated/uapi/asm/unistd_x32.h
 
-Thanks for testing.
 
-I found a similar system (not same stepping, but same model) and tested
-perf top works fine here. Also on a couple of other systems.
+See the "Enumeration method [M/y/?] (NEW) aborted!"
 
-Since I cannot reproduce I would need your help debugging it.
+Note that this only happens when make's stderr is redirected.
 
-I assume it worked before my patches.  If you don't know
-please double check. Also I assume there's no general
-problem between the user land perf you used and the kernel.
+I've no idea what's going on here.  This appears to fix things:
 
-The only patch I could think of which may affect other systems
-is the moving of the APIC ack.
+--- a/drivers/rapidio/Kconfig~rapidio-make-enumeration-discovery-configurable-fix
++++ a/drivers/rapidio/Kconfig
+@@ -59,7 +59,7 @@ choice
+ 	  If unsure, select Basic built-in.
+ 
+ config RAPIDIO_ENUM_BASIC
+-	tristate "Basic"
++	bool "Basic"
+ 	help
+ 	  This option includes basic RapidIO fabric enumeration and discovery
+ 	  mechanism similar to one described in RapidIO specification Annex 1.
 
-So does it work if you revert 
-
- perf, x86: Move NMI clearing to end of PMI handler after ...
-
-If that is it we could white list it for Haswell.
-
-If that's not it I may need a bisect, assuming the problem is stable.
-
--Andi
+but doesn't appear to be what you intended.
