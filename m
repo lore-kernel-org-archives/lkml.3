@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932558Ab3DZJWp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 05:22:45 -0400
-Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:38877 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756856Ab3DZJU4 (ORCPT
+	id S932505Ab3DZJWn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 05:22:43 -0400
+Received: from [65.55.88.15] ([65.55.88.15]:28074 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1757406Ab3DZJU4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 26 Apr 2013 05:20:56 -0400
 X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 5
-X-BigFish: VS5(z616jzzz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1082kzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1155h)
+X-SpamScore: 3
+X-BigFish: VS3(zzzz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1082kzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1155h)
 From: Huang Shijie <b32955@freescale.com>
 To: <dwmw2@infradead.org>
 CC: <dedekind1@gmail.com>, <computersforpeace@gmail.com>,
         <linux-mtd@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
         Huang Shijie <b32955@freescale.com>
-Subject: [PATCH V4 4/9] mtd: get the ECC info from the Extended Parameter Page
-Date: Fri, 26 Apr 2013 17:08:52 +0800
-Message-ID: <1366967337-5534-5-git-send-email-b32955@freescale.com>
+Subject: [PATCH V4 1/9] mtd: add more comment for ecc_strength/ecc_size
+Date: Fri, 26 Apr 2013 17:08:49 +0800
+Message-ID: <1366967337-5534-2-git-send-email-b32955@freescale.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1366967337-5534-1-git-send-email-b32955@freescale.com>
 References: <1366967337-5534-1-git-send-email-b32955@freescale.com>
@@ -28,119 +28,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the ONFI 2.1, the onfi spec adds the Extended Parameter Page
-to store the ECC info.
-
-The onfi spec tells us that if the nand chip's recommended ECC codeword
-size is not 512 bytes, then the @ecc_bits is 0xff. The host _SHOULD_ then
-read the Extended ECC information that is part of the extended parameter
-page to retrieve the ECC requirements for this device.
-
-This patch implement the reading of the Extended Parameter Page, and parses
-the sections for ECC type, and get the ECC info from the ECC section.
-
-Tested this patch with Micron MT29F64G08CBABAWP.
+Add more commit for ecc_strength and ecc_size fields.
+We can treat the comment as the initial semantics for the two fields.
 
 Signed-off-by: Huang Shijie <b32955@freescale.com>
 ---
- drivers/mtd/nand/nand_base.c |   77 ++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 77 insertions(+), 0 deletions(-)
+ include/linux/mtd/nand.h |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
-index beff911..abec615 100644
---- a/drivers/mtd/nand/nand_base.c
-+++ b/drivers/mtd/nand/nand_base.c
-@@ -2846,6 +2846,68 @@ static u16 onfi_crc16(u16 crc, u8 const *p, size_t len)
- 	return crc;
- }
- 
-+/* Parse the Extended Parameter Page. */
-+static int nand_flash_detect_ext_param_page(struct mtd_info *mtd,
-+		struct nand_chip *chip, struct nand_onfi_params *p)
-+{
-+	struct onfi_ext_param_page *ep;
-+	struct onfi_ext_section *s;
-+	struct onfi_ext_ecc_info *ecc;
-+	uint8_t *cursor;
-+	int len;
-+	int ret;
-+	int i;
-+
-+	len = le16_to_cpu(p->ext_param_page_length) * 16;
-+	ep = kmalloc(len, GFP_KERNEL);
-+	if (!ep) {
-+		ret = -ENOMEM;
-+		goto ext_out;
-+	}
-+
-+	/* Send our own NAND_CMD_PARAM. */
-+	chip->cmdfunc(mtd, NAND_CMD_PARAM, 0, -1);
-+
-+	/* Use the Change Read Column command to skip the ONFI param pages. */
-+	chip->cmdfunc(mtd, NAND_CMD_RNDOUT,
-+			sizeof(*p) * p->num_of_param_pages , -1);
-+
-+	/* Read out the Extended Parameter Page. */
-+	chip->read_buf(mtd, (uint8_t *)ep, len);
-+	if ((onfi_crc16(ONFI_CRC_BASE, ((uint8_t *)ep) + 2, len - 2)
-+		!= le16_to_cpu(ep->crc)) || strncmp(ep->sig, "EPPS", 4)) {
-+		pr_debug("fail in the CRC.\n");
-+		ret = -EINVAL;
-+		goto ext_out;
-+	}
-+
-+	/* find the ECC section. */
-+	cursor = (uint8_t *)(ep + 1);
-+	for (i = 0; i < ONFI_EXT_SECTION_MAX; i++) {
-+		s = ep->sections + i;
-+		if (s->type == ONFI_SECTION_TYPE_2)
-+			break;
-+		cursor += s->length * 16;
-+	}
-+	if (i == ONFI_EXT_SECTION_MAX) {
-+		pr_debug("We can not find the ECC section.\n");
-+		ret = -EINVAL;
-+		goto ext_out;
-+	}
-+
-+	/* get the info we want. */
-+	ecc = (struct onfi_ext_ecc_info *)cursor;
-+	chip->ecc_strength = ecc->ecc_bits;
-+	chip->ecc_size = 1 << ecc->codeword_size;
-+
-+	pr_info("ONFI extended param page detected.\n");
-+	return 0;
-+
-+ext_out:
-+	kfree(ep);
-+	return ret;
-+}
-+
- /*
-  * Check if the NAND chip is ONFI compliant, returns 1 if it is, 0 otherwise.
-  */
-@@ -2914,6 +2976,21 @@ static int nand_flash_detect_onfi(struct mtd_info *mtd, struct nand_chip *chip,
- 	if (p->ecc_bits != 0xff) {
- 		chip->ecc_strength = p->ecc_bits;
- 		chip->ecc_size = 512;
-+	} else if (chip->onfi_version >= 21 &&
-+		(onfi_feature(chip) & ONFI_FEATURE_EXT_PARAM_PAGE)) {
-+
-+		/*
-+		 * The nand_flash_detect_ext_param_page() uses the
-+		 * Change Read Column command which maybe not supported
-+		 * by the chip->cmdfunc. So try to update the chip->cmdfunc
-+		 * now. We do not replace user supplied command function.
-+		 */
-+		if (mtd->writesize > 512 && chip->cmdfunc == nand_command)
-+			chip->cmdfunc = nand_command_lp;
-+
-+		/* The Extended Parameter Page is supported since ONFI 2.1. */
-+		if (nand_flash_detect_ext_param_page(mtd, chip, p))
-+			pr_info("Failed to detect the extended param page.\n");
- 	}
- 
- 	pr_info("ONFI flash detected\n");
+diff --git a/include/linux/mtd/nand.h b/include/linux/mtd/nand.h
+index 5458021..a0c486b 100644
+--- a/include/linux/mtd/nand.h
++++ b/include/linux/mtd/nand.h
+@@ -435,8 +435,11 @@ struct nand_buffers {
+  *			not bad when badblockbits == 7
+  * @cellinfo:		[INTERN] MLC/multichip data from chip ident
+  * @ecc_strength:	[INTERN] ECC correctability from the datasheet.
++ *			The minimum number of bits correctability, if known;
++ *			if unknown, set to 0.
+  * @ecc_size:		[INTERN] ECC size required by the @ecc_strength,
+- *                      also from the datasheet.
++ *                      also from the datasheet. It is the recommended ECC step
++ *			size, if known; if unknown, set to 0.
+  * @numchips:		[INTERN] number of physical chips
+  * @chipsize:		[INTERN] the size of one chip for multichip arrays
+  * @pagemask:		[INTERN] page number mask = number of (pages / chip) - 1
 -- 
 1.7.1
 
