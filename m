@@ -1,63 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756762Ab3DZRUn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 13:20:43 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:56716 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756590Ab3DZRUl (ORCPT
+	id S1756784Ab3DZRV1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 13:21:27 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:34523
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755592Ab3DZRVZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 13:20:41 -0400
-From: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
-To: matt.fleming@intel.com, mjg59@srcf.ucam.org
-Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Lee, Chun-Yi" <jlee@suse.com>, Matthew Garrett <mjg@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH] x86, efi: initial the local variable of DataSize to zero
-Date: Sat, 27 Apr 2013 01:19:27 +0800
-Message-Id: <1366996767-8234-1-git-send-email-jlee@suse.com>
-X-Mailer: git-send-email 1.6.0.2
+	Fri, 26 Apr 2013 13:21:25 -0400
+Date: Fri, 26 Apr 2013 19:19:49 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Simon Horman <horms@verge.net.au>, Eric Dumazet <eric.dumazet@gmail.com>,
+        Julian Anastasov <ja@ssi.bg>, Ingo Molnar <mingo@redhat.com>,
+        lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
+        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Dipankar Sarma <dipankar@in.ibm.com>, dhaval.giani@gmail.com
+Subject: Re: [PATCH 2/2] ipvs: Use cond_resched_rcu_lock() helper when
+ dumping connections
+Message-ID: <20130426171948.GA31467@dyad.programming.kicks-ass.net>
+References: <1366940708-10180-1-git-send-email-horms@verge.net.au>
+ <1366940708-10180-3-git-send-email-horms@verge.net.au>
+ <20130426080313.GC8669@dyad.programming.kicks-ass.net>
+ <20130426154547.GC3860@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130426154547.GC3860@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-That will be better initial the value of DataSize to zero for the input of
-GetVariable(), otherwise we will feed a random value. The debug log of input
-DataSize like this:
+On Fri, Apr 26, 2013 at 08:45:47AM -0700, Paul E. McKenney wrote:
+> On Fri, Apr 26, 2013 at 10:03:13AM +0200, Peter Zijlstra wrote:
+> > On Fri, Apr 26, 2013 at 10:45:08AM +0900, Simon Horman wrote:
+> > 
+> > > @@ -975,8 +975,7 @@ static void *ip_vs_conn_array(struct seq_file *seq, loff_t pos)
+> > >  				return cp;
+> > >  			}
+> > >  		}
+> > > -		rcu_read_unlock();
+> > > -		rcu_read_lock();
+> > > +		cond_resched_rcu_lock();
+> > >  	}
+> > 
+> > 
+> > While I agree with the sentiment I do find it a somewhat dangerous construct in
+> > that it might become far too easy to keep an RCU reference over this break and
+> > thus violate the RCU premise.
+> > 
+> > Is there anything that can detect this? Sparse / cocinelle / smatch? If so it
+> > would be great to add this to these checkers.
+> 
+> I have done some crude coccinelle patterns in the past, but they are
+> subject to false positives (from when you transfer the pointer from
+> RCU protection to reference-count protection) and also false negatives
+> (when you atomically increment some statistic unrelated to protection).
+> 
+> I could imagine maintaining a per-thread count of the number of outermost
+> RCU read-side critical sections at runtime, and then associating that
+> counter with a given pointer at rcu_dereference() time, but this would
+> require either compiler magic or an API for using a pointer returned
+> by rcu_dereference().  This API could in theory be enforced by sparse.
 
-...
-[  195.915612] EFI Variables Facility v0.08 2004-May-17
-[  195.915819] efi: size: 18446744071581821342
-[  195.915969] efi:  size': 18446744071581821342
-[  195.916324] efi: size: 18446612150714306560
-[  195.916632] efi:  size': 18446612150714306560
-[  195.917159] efi: size: 18446612150714306560
-[  195.917453] efi:  size': 18446612150714306560
-...
+Luckily cond_resched_rcu_lock() will typically only occur within loops, and
+loops tend to be contained in a single sourcefile.
 
-Found on Acer Aspire V3 BIOS, it will not return the size of data if we input a
-non-zero DataSize.
+This would suggest a simple static checker should be able to tell without too
+much magic right? All it needs to do is track pointers returned from
+rcu_dereference*() and see if they're used after cond_resched_rcu_lock().
 
-Cc: Matthew Garrett <mjg@redhat.com>
-Cc: Matt Fleming <matt.fleming@intel.com>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
----
- arch/x86/platform/efi/efi.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-index e4a86a6..cb59732 100644
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -204,7 +204,7 @@ static efi_status_t virt_efi_get_next_variable(unsigned long *name_size,
- 	}
- 
- 	if (boot_used_size && !finished) {
--		unsigned long size;
-+		unsigned long size = 0;
- 		u32 attr;
- 		efi_status_t s;
- 		void *tmp;
--- 
-1.6.0.2
-
+Also, cond_resched_rcu_lock() will only drop a single level of RCU refs; so
+that should be easier still.
