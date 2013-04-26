@@ -1,247 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753215Ab3DZMBi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 08:01:38 -0400
-Received: from mail-la0-f41.google.com ([209.85.215.41]:38755 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755823Ab3DZMAB (ORCPT
+	id S1755856Ab3DZL74 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 07:59:56 -0400
+Received: from mail-la0-f49.google.com ([209.85.215.49]:36517 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755777Ab3DZL7x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 08:00:01 -0400
+	Fri, 26 Apr 2013 07:59:53 -0400
 From: Pavel Shilovsky <piastry@etersoft.ru>
 To: linux-kernel@vger.kernel.org
 Cc: linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
         linux-nfs@vger.kernel.org, wine-devel@winehq.org
-Subject: [PATCH v6 4/7] CIFS: Add O_DENY* open flags support
-Date: Fri, 26 Apr 2013 16:04:18 +0400
-Message-Id: <1366977861-27678-5-git-send-email-piastry@etersoft.ru>
+Subject: [PATCH v6 0/7] Add O_DENY* support for VFS and CIFS/NFS
+Date: Fri, 26 Apr 2013 16:04:14 +0400
+Message-Id: <1366977861-27678-1-git-send-email-piastry@etersoft.ru>
 X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1366977861-27678-1-git-send-email-piastry@etersoft.ru>
-References: <1366977861-27678-1-git-send-email-piastry@etersoft.ru>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Construct share_access value from O_DENY* flags and send it to
-the server. Use NTCreateAndX command rather than Trans2
-all the time we have any of O_DENY* flags regardless of unix
-extensions support. Also change smb error mapping of
-NT_STATUS_SHARING_VIOLATION to -ESHAREDENIED.
+Main changes from v5:
+1) O_DENYDELETE is now supported by VFS.
+2) ESHAREDENIED erro code is introduced to be returned on sharelock conflicts.
+3) forcemand dependancy is removed. CIFS module detects if it should use NTCreateAndX command according to existence of O_DENY flags.
+4) Term 'deny lock' is replaced by 'sharelock' (function names, code comments, patch descriptions).
 
-Signed-off-by: Pavel Shilovsky <piastry@etersoft.ru>
----
- fs/cifs/cifsfs.c       |  2 +-
- fs/cifs/cifsglob.h     | 16 +++++++++++++++-
- fs/cifs/dir.c          |  4 ++++
- fs/cifs/file.c         | 15 +++++++++++++--
- fs/cifs/inode.c        |  5 +++--
- fs/cifs/netmisc.c      |  2 +-
- fs/cifs/smb2maperror.c |  2 +-
- fs/locks.c             | 11 ++++++++++-
- include/linux/fs.h     |  1 +
- 9 files changed, 49 insertions(+), 9 deletions(-)
+Main changes from v4:
+1) deny_lock_file uses FS_DOES_SHARELOCK flag from fs_flags to determine whether to use VFS locks or not.
+2) Make nfs code return -EBUSY for share conflicts (was -EACCESS).
 
-diff --git a/fs/cifs/cifsfs.c b/fs/cifs/cifsfs.c
-index 345fc89..92bd685 100644
---- a/fs/cifs/cifsfs.c
-+++ b/fs/cifs/cifsfs.c
-@@ -799,7 +799,7 @@ struct file_system_type cifs_fs_type = {
- 	.name = "cifs",
- 	.mount = cifs_do_mount,
- 	.kill_sb = cifs_kill_sb,
--	/*  .fs_flags */
-+	.fs_flags = FS_DOES_SHARELOCK,
- };
- MODULE_ALIAS_FS("cifs");
- const struct inode_operations cifs_dir_inode_ops = {
-diff --git a/fs/cifs/cifsglob.h b/fs/cifs/cifsglob.h
-index 80af61d..85703f6 100644
---- a/fs/cifs/cifsglob.h
-+++ b/fs/cifs/cifsglob.h
-@@ -465,7 +465,7 @@ struct smb_vol {
- 			 CIFS_MOUNT_CIFS_BACKUPUID | CIFS_MOUNT_CIFS_BACKUPGID)
- 
- #define CIFS_MS_MASK (MS_RDONLY | MS_MANDLOCK | MS_NOEXEC | MS_NOSUID | \
--		      MS_NODEV | MS_SYNCHRONOUS)
-+		      MS_NODEV | MS_SYNCHRONOUS | MS_SHARELOCK)
- 
- struct cifs_mnt_data {
- 	struct cifs_sb_info *cifs_sb;
-@@ -947,6 +947,20 @@ struct cifsFileInfo {
- 	struct work_struct oplock_break; /* work for oplock breaks */
- };
- 
-+static inline int
-+cifs_get_share_flags(unsigned int flags)
-+{
-+	int share_access = 0;
-+
-+	if (!(flags & O_DENYREAD))
-+		share_access |= FILE_SHARE_READ;
-+	if (!(flags & O_DENYWRITE))
-+		share_access |= FILE_SHARE_WRITE;
-+	if (!(flags & O_DENYDELETE))
-+		share_access |= FILE_SHARE_DELETE;
-+	return share_access;
-+}
-+
- struct cifs_io_parms {
- 	__u16 netfid;
- #ifdef CONFIG_CIFS_SMB2
-diff --git a/fs/cifs/dir.c b/fs/cifs/dir.c
-index e5f6723..c03ad8c 100644
---- a/fs/cifs/dir.c
-+++ b/fs/cifs/dir.c
-@@ -216,7 +216,11 @@ cifs_do_create(struct inode *inode, struct dentry *direntry, unsigned int xid,
- 		goto out;
- 	}
- 
-+	if (IS_SHARELOCK(inode))
-+		share_access = cifs_get_share_flags(oflags);
-+
- 	if (tcon->unix_ext && cap_unix(tcon->ses) && !tcon->broken_posix_open &&
-+	    (share_access == FILE_SHARE_ALL) &&
- 	    (CIFS_UNIX_POSIX_PATH_OPS_CAP &
- 			le64_to_cpu(tcon->fsUnixInfo.Capability))) {
- 		rc = cifs_posix_open(full_path, &newinode, inode->i_sb, mode,
-diff --git a/fs/cifs/file.c b/fs/cifs/file.c
-index 7631b0c..febf807 100644
---- a/fs/cifs/file.c
-+++ b/fs/cifs/file.c
-@@ -216,6 +216,8 @@ cifs_nt_open(char *full_path, struct inode *inode, struct cifs_sb_info *cifs_sb,
-  *********************************************************************/
- 
- 	disposition = cifs_get_disposition(f_flags);
-+	if (IS_SHARELOCK(inode))
-+		share_access = cifs_get_share_flags(f_flags);
- 
- 	/* BB pass O_SYNC flag through on file attributes .. BB */
- 
-@@ -428,6 +430,7 @@ int cifs_open(struct inode *inode, struct file *file)
- 	int rc = -EACCES;
- 	unsigned int xid;
- 	__u32 oplock;
-+	int share_access = FILE_SHARE_ALL;
- 	struct cifs_sb_info *cifs_sb;
- 	struct TCP_Server_Info *server;
- 	struct cifs_tcon *tcon;
-@@ -463,8 +466,12 @@ int cifs_open(struct inode *inode, struct file *file)
- 	else
- 		oplock = 0;
- 
--	if (!tcon->broken_posix_open && tcon->unix_ext &&
--	    cap_unix(tcon->ses) && (CIFS_UNIX_POSIX_PATH_OPS_CAP &
-+	if (IS_SHARELOCK(inode))
-+		share_access = cifs_get_share_flags(file->f_flags);
-+
-+	if (!tcon->broken_posix_open && tcon->unix_ext && cap_unix(tcon->ses) &&
-+	    (share_access == FILE_SHARE_ALL) &&
-+	    (CIFS_UNIX_POSIX_PATH_OPS_CAP &
- 				le64_to_cpu(tcon->fsUnixInfo.Capability))) {
- 		/* can not refresh inode info since size could be stale */
- 		rc = cifs_posix_open(full_path, &inode, inode->i_sb,
-@@ -631,7 +638,11 @@ cifs_reopen_file(struct cifsFileInfo *cfile, bool can_flush)
- 	else
- 		oplock = 0;
- 
-+	if (IS_SHARELOCK(inode))
-+		share_access = cifs_get_share_flags(cfile->f_flags);
-+
- 	if (tcon->unix_ext && cap_unix(tcon->ses) &&
-+	    (share_access == FILE_SHARE_ALL) &&
- 	    (CIFS_UNIX_POSIX_PATH_OPS_CAP &
- 				le64_to_cpu(tcon->fsUnixInfo.Capability))) {
- 		/*
-diff --git a/fs/cifs/inode.c b/fs/cifs/inode.c
-index ecb951f..f145971 100644
---- a/fs/cifs/inode.c
-+++ b/fs/cifs/inode.c
-@@ -1166,7 +1166,8 @@ psx_del_no_retry:
- 			cifs_drop_nlink(inode);
- 	} else if (rc == -ENOENT) {
- 		d_drop(dentry);
--	} else if (rc == -EBUSY) {
-+	} else if (rc == -ESHAREDENIED) {
-+		rc = -EBUSY;
- 		if (server->ops->rename_pending_delete) {
- 			rc = server->ops->rename_pending_delete(full_path,
- 								dentry, xid);
-@@ -1513,7 +1514,7 @@ cifs_do_rename(const unsigned int xid, struct dentry *from_dentry,
- 	 * source. Note that cross directory moves do not work with
- 	 * rename by filehandle to various Windows servers.
- 	 */
--	if (rc == 0 || rc != -EBUSY)
-+	if (rc == 0 || rc != -ESHAREDENIED)
- 		goto do_rename_exit;
- 
- 	/* open-file renames don't work across directories */
-diff --git a/fs/cifs/netmisc.c b/fs/cifs/netmisc.c
-index c0b25b2..a9c8bef 100644
---- a/fs/cifs/netmisc.c
-+++ b/fs/cifs/netmisc.c
-@@ -62,7 +62,7 @@ static const struct smb_to_posix_error mapping_table_ERRDOS[] = {
- 	{ERRdiffdevice, -EXDEV},
- 	{ERRnofiles, -ENOENT},
- 	{ERRwriteprot, -EROFS},
--	{ERRbadshare, -EBUSY},
-+	{ERRbadshare, -ESHAREDENIED},
- 	{ERRlock, -EACCES},
- 	{ERRunsup, -EINVAL},
- 	{ERRnosuchshare, -ENXIO},
-diff --git a/fs/cifs/smb2maperror.c b/fs/cifs/smb2maperror.c
-index 494c912..d70b6ca 100644
---- a/fs/cifs/smb2maperror.c
-+++ b/fs/cifs/smb2maperror.c
-@@ -356,7 +356,7 @@ static const struct status_to_posix_error smb2_error_map_table[] = {
- 	{STATUS_PORT_CONNECTION_REFUSED, -ECONNREFUSED,
- 	"STATUS_PORT_CONNECTION_REFUSED"},
- 	{STATUS_INVALID_PORT_HANDLE, -EIO, "STATUS_INVALID_PORT_HANDLE"},
--	{STATUS_SHARING_VIOLATION, -EBUSY, "STATUS_SHARING_VIOLATION"},
-+	{STATUS_SHARING_VIOLATION, -ESHAREDENIED, "STATUS_SHARING_VIOLATION"},
- 	{STATUS_QUOTA_EXCEEDED, -EDQUOT, "STATUS_QUOTA_EXCEEDED"},
- 	{STATUS_INVALID_PAGE_PROTECTION, -EIO,
- 	"STATUS_INVALID_PAGE_PROTECTION"},
-diff --git a/fs/locks.c b/fs/locks.c
-index 1cc68a9..abe8986 100644
---- a/fs/locks.c
-+++ b/fs/locks.c
-@@ -847,6 +847,10 @@ sharelock_may_delete(struct dentry *dentry)
- 	if (!IS_SHARELOCK(dentry->d_inode))
- 		return rc;
- 
-+	/* Don't check a lock on file systems that do it internally */
-+	if (dentry->d_inode->i_sb->s_type->fs_flags & FS_DOES_SHARELOCK)
-+		return rc;
-+
- 	lock_flocks();
- 	for_each_lock(dentry->d_inode, before) {
- 		struct file_lock *fl = *before;
-@@ -873,8 +877,13 @@ sharelock_lock_file(struct file *filp)
- {
- 	struct file_lock *lock;
- 	int error = 0;
-+	struct inode *inode = filp->f_path.dentry->d_inode;
-+
-+	if (!IS_SHARELOCK(inode))
-+		return error;
- 
--	if (!IS_SHARELOCK(filp->f_path.dentry->d_inode))
-+	/* Don't set a lock on file systems that do it internally */
-+	if (inode->i_sb->s_type->fs_flags & FS_DOES_SHARELOCK)
- 		return error;
- 
- 	error = flock_make_lock(filp, &lock, deny_flags_to_cmd(filp->f_flags));
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index afd56b1..9487b0f 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1821,6 +1821,7 @@ struct file_system_type {
- #define FS_USERNS_MOUNT		8	/* Can be mounted by userns root */
- #define FS_USERNS_DEV_MOUNT	16 /* A userns mount does not imply MNT_NODEV */
- #define FS_RENAME_DOES_D_MOVE	32768	/* FS will handle d_move() during rename() internally. */
-+#define FS_DOES_SHARELOCK	65536	/* FS does sharelocks internally */
- 	struct dentry *(*mount) (struct file_system_type *, int,
- 		       const char *, void *);
- 	void (*kill_sb) (struct super_block *);
+Main changes from v3
+1) O_DENYMAND is removed, sharelock mount option is introduced.
+2) Patch fcntl.h and VFS patches are united into one.
+3) flock/LOCK_MAND is disabled for sharelock mounts.
+
+This patchset adds support of O_DENY* flags for Linux fs layer. These flags can be used by any application that needs share reservations to organize a file access. VFS already has some sort of this capability - now it's done through flock/LOCK_MAND mechanis, but that approach is non-atomic. This patchset build new capabilities on top of the existing one but doesn't bring any changes into the flock call semantic.
+
+These flags can be used by NFS (built-in-kernel) and CIFS (Samba) servers and Wine applications through VFS (for local filesystems) or CIFS/NFS modules. This will help when e.g. Samba and NFS server share the same directory for Windows and Linux users or Wine applications use Samba/NFS share to access the same data from different clients.
+
+According to the previous discussions the most problematic question is how to prevent situations like DoS attacks where e.g /lib/liba.so file can be open with DENYREAD, or smth like this. That's why extra mount option 'sharelock' is added for switching on/off O_DENY* flags processing. It allows us to avoid use of these flags on critical places (like /, /lib) and turn them on if we really want it proccessed that way.
+
+So, we have 3 new flags:
+O_DENYREAD - to prevent other opens with read access,
+O_DENYWRITE - to prevent other opens with write access,
+O_DENYDELETE - to prevent delete operations (this flag is not implemented in VFS and NFS part and only suitable for CIFS module),
+
+The patchset avoid data races problem on newely created files: open with O_CREAT can return the -ETXTBSY error for a successfully created file if this files was locked with a sharelock by another task. Also, it turns flock/LOCK_MAND capability off for mounts with 'sharelock' option. This lets us not mix one share reservation approach with another.
+
+The #1 patch adds flags to fcntl and implements VFS part. The patches #3, #4, #5 are related to CIFS-specific changes, #6 and #7 describe NFS and NFSD parts.
+
+The preliminary patch for Samba that replaces the existing use of flock/LOCK_MAND mechanism with O_DENY* flags:
+http://git.etersoft.ru/people/piastry/packages/?p=samba.git;a=commitdiff;h=173070262b7f29134ad6b2e49a760017c11aec4a
+
+The future part of open man page patch:
+
+-----
+O_DENYREAD, O_DENYWRIYE, O_DENYDELETE - used to inforce a mandatory share reservation scheme of the file access. If these flag is passed, the open fails with -ESHAREDENIED in following cases:
+1) if O_DENYREAD flag is specified and there is another open with READ access to the file;
+2) if O_DENYWRITE flag is specified and there is another open with WRITE access to the file;
+3) if READ access is requested and there is another open with O_DENYREAD flags;
+4) if WRITE access is requested and there is another open with O_DENYWRITE flags.
+
+If O_DENYDELETE flag is specified and the open succeded, any further unlink operation will fail with -ESHAREDENIED untill this open is closed. Now this flag is processed by VFS and CIFS filesystem.
+
+This mechanism is done through flocks. If O_DENY* flags are specified, flock syscall is processed after the open. The share modes are translated into flock according the following rules:
+1) !O_DENYREAD   -> LOCK_READ   | LOCK_MAND
+2) !O_DENYWRITE  -> LOCK_WRITE  | LOCK_MAND
+3) !O_DENYDELETE -> LOCK_DELETE | LOCK_MAND
+-----
+
+Pavel Shilovsky (7):
+  VFS: Introduce new O_DENY* open flags
+  VFS: Add O_DENYDELETE support for VFS
+  CIFS: Add share_access parm to open request
+  CIFS: Add O_DENY* open flags support
+  NFSv4: Add O_DENY* open flags support
+  NFSD: Pass share reservations flags to VFS
+  locks: Disable LOCK_MAND support for MS_SHARELOCK mounts
+
+ fs/cifs/cifsacl.c                |   8 +-
+ fs/cifs/cifsfs.c                 |   2 +-
+ fs/cifs/cifsglob.h               |  18 ++++-
+ fs/cifs/cifsproto.h              |   8 +-
+ fs/cifs/cifssmb.c                |  50 +++++++------
+ fs/cifs/dir.c                    |  16 ++--
+ fs/cifs/file.c                   |  25 +++++--
+ fs/cifs/inode.c                  |  21 +++---
+ fs/cifs/link.c                   |  25 ++-----
+ fs/cifs/netmisc.c                |   2 +-
+ fs/cifs/readdir.c                |   5 +-
+ fs/cifs/smb1ops.c                |  16 ++--
+ fs/cifs/smb2file.c               |  10 +--
+ fs/cifs/smb2inode.c              |   4 +-
+ fs/cifs/smb2maperror.c           |   2 +-
+ fs/cifs/smb2ops.c                |  10 ++-
+ fs/cifs/smb2pdu.c                |   6 +-
+ fs/cifs/smb2proto.h              |  14 ++--
+ fs/fcntl.c                       |   5 +-
+ fs/locks.c                       | 158 ++++++++++++++++++++++++++++++++++++---
+ fs/namei.c                       |  48 +++++++++++-
+ fs/nfs/dir.c                     |   4 +
+ fs/nfs/internal.h                |   3 +-
+ fs/nfs/nfs4file.c                |   4 +
+ fs/nfs/nfs4proc.c                |   4 +-
+ fs/nfs/nfs4super.c               |   9 ++-
+ fs/nfs/nfs4xdr.c                 |  21 +++++-
+ fs/nfs/super.c                   |   7 +-
+ fs/nfsd/nfs4state.c              |  46 +++++++++++-
+ fs/nfsd/nfsproc.c                |   1 +
+ fs/proc_namespace.c              |   1 +
+ include/linux/fs.h               |  14 ++++
+ include/uapi/asm-generic/errno.h |   2 +
+ include/uapi/asm-generic/fcntl.h |  12 +++
+ include/uapi/linux/fs.h          |   1 +
+ 35 files changed, 443 insertions(+), 139 deletions(-)
+
 -- 
 1.8.1.5
 
