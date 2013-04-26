@@ -1,80 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759633Ab3DZKbt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 06:31:49 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:60899
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759079Ab3DZKbs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 06:31:48 -0400
-Date: Fri, 26 Apr 2013 12:30:19 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
-        mingo@kernel.org, linux@arm.linux.org.uk, pjt@google.com,
-        santosh.shilimkar@ti.com, morten.rasmussen@arm.com,
-        chander.kashyap@linaro.org, cmetcalf@tilera.com, tony.luck@intel.com,
-        alex.shi@intel.com, paulmck@linux.vnet.ibm.com, tglx@linutronix.de,
-        len.brown@intel.com, arjan@linux.intel.com, amit.kucheria@linaro.org,
-        corbet@lwn.net
-Subject: Re: [RFC PATCH v3 3/6] sched: pack small tasks
-Message-ID: <20130426103019.GE8669@dyad.programming.kicks-ass.net>
-References: <1363955155-18382-1-git-send-email-vincent.guittot@linaro.org>
- <1363955155-18382-4-git-send-email-vincent.guittot@linaro.org>
- <1364300782.5053.6.camel@laptop>
- <5152C83F.6060509@linux.vnet.ibm.com>
- <CAKfTPtCphgnT6_WSdHJR+_GcdfroL+OFhiqsr_rBFx5=apkTVQ@mail.gmail.com>
+	id S1759687Ab3DZKd5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 06:33:57 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:30626 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753215Ab3DZKd4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Apr 2013 06:33:56 -0400
+X-IronPort-AV: E=Sophos;i="4.87,557,1363132800"; 
+   d="scan'208";a="21763089"
+Date: Fri, 26 Apr 2013 11:33:50 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Ian Campbell <Ian.Campbell@citrix.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>
+Subject: Re: [PATCH v4 2/7] xen/arm: SMP support
+In-Reply-To: <1366972256.3142.60.camel@zakaz.uk.xensource.com>
+Message-ID: <alpine.DEB.2.02.1304261132470.4180@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1304242012590.4180@kaball.uk.xensource.com>  <1366831695-13214-2-git-send-email-stefano.stabellini@eu.citrix.com>  <1366897221.20256.544.camel@zakaz.uk.xensource.com>  <alpine.DEB.2.02.1304251503100.4180@kaball.uk.xensource.com>
+  <1366909184.3142.0.camel@zakaz.uk.xensource.com>  <alpine.DEB.2.02.1304251945290.4180@kaball.uk.xensource.com>  <1366966304.3142.33.camel@zakaz.uk.xensource.com>  <alpine.DEB.2.02.1304261125440.4180@kaball.uk.xensource.com>
+ <1366972256.3142.60.camel@zakaz.uk.xensource.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKfTPtCphgnT6_WSdHJR+_GcdfroL+OFhiqsr_rBFx5=apkTVQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 27, 2013 at 12:00:40PM +0100, Vincent Guittot wrote:
-> On 27 March 2013 11:21, Preeti U Murthy <preeti@linux.vnet.ibm.com> wrote:
-> > Hi,
-> >
-> > On 03/26/2013 05:56 PM, Peter Zijlstra wrote:
-> >> On Fri, 2013-03-22 at 13:25 +0100, Vincent Guittot wrote:
-> >>> +static bool is_buddy_busy(int cpu)
-> >>> +{
-> >>> +       struct rq *rq = cpu_rq(cpu);
-> >>> +
-> >>> +       /*
-> >>> +        * A busy buddy is a CPU with a high load or a small load with
-> >>> a lot of
-> >>> +        * running tasks.
-> >>> +        */
-> >>> +       return (rq->avg.runnable_avg_sum >
-> >>> +                       (rq->avg.runnable_avg_period / (rq->nr_running
-> >>> + 2)));
-> >>> +}
-> >>
-> >> Why does the comment talk about load but we don't see it in the
-> >> equation. Also, why does nr_running matter at all? I thought we'd
-> >> simply bother with utilization, if fully utilized we're done etc..
+On Fri, 26 Apr 2013, Ian Campbell wrote:
+> On Fri, 2013-04-26 at 11:27 +0100, Stefano Stabellini wrote:
+> > On Fri, 26 Apr 2013, Ian Campbell wrote:
+> > > On Thu, 2013-04-25 at 19:45 +0100, Stefano Stabellini wrote:
+> > > > On Thu, 25 Apr 2013, Ian Campbell wrote:
+> > > > > > > > @@ -216,6 +245,8 @@ static int __init xen_guest_init(void)
+> > > > > > > >  	 * is required to use VCPUOP_register_vcpu_info to place vcpu info
+> > > > > > > >  	 * for secondary CPUs as they are brought up. */
+> > > > > > > >  	per_cpu(xen_vcpu, 0) = &HYPERVISOR_shared_info->vcpu_info[0];
+> > > > > > > > +	for_each_online_cpu(i)
+> > > > > > > > +		xen_secondary_init(i);
+> > > > > > > >  
+> > > > > > > >  	gnttab_init();
+> > > > > > > >  	if (!xen_initial_domain())
+> > > > > > > [...]
+> > > > > > > > @@ -244,7 +280,7 @@ static int __init xen_init_events(void)
+> > > > > > > >  		return -EINVAL;
+> > > > > > > >  	}
+> > > > > > > >  
+> > > > > > > > -	enable_percpu_irq(xen_events_irq, 0);
+> > > > > > > > +	on_each_cpu(xen_percpu_enable_events, NULL, 0);
+> > > > > > > 
+> > > > > > > It feels like there ought to be some sort of per-cpu bringup callback
+> > > > > > > which takes care of these dynamically. Maybe that doesn't matter until
+> > > > > > > we get vcpu hotplug going?
+> > > > > > 
+> > > > > > I suspect there isn't one, considering that on_each_cpu is also used by 
+> > > > > > kvm_vgic_hyp_init, kvm_timer_hyp_init and others.
+> > > > > 
+> > > > > Could we use cpu_notifiers for this?
+> > > > 
+> > > > cpu_notifiers are for cpu hotplug, not for secondary cpu bringup
+> > > 
+> > > Are you sure they don't also trigger during bringup, because the
+> > > distinction is a little bit academic...
+> > 
+> > My mistake, they do run on secondary cpus, but not in our case because
+> > xen_guest_init is called *after* cpu_notifiers are called.
+> > So, they are too early for Xen.
 > 
-> By load, I mean : 100 * avg.runnable_avg_sum / avg.runnable_avg_period
-> In addition, i take into account the number of tasks already in the
-> runqueue in order to define the business of a CPU. A CPU with a load
-> of 50% without any tasks in the runqeue in not busy at this time and
-> we can migrate tasks on it but if the CPU already has 2 tasks in its
-> runqueue, it means that newly wake up task will have to share the CPU
-> with other tasks so we consider that the CPU is already busy and we
-> will fall back to default behavior. The equation considers that a CPU
-> is not busy if
-> 100 * avg.runnable_avg_sum / avg.runnable_avg_period < 100 / (nr_running + 2)
+> Another reason to consider calling xen_guest_init much earlier then
+> IMHO. although we can live with the solution you have now I suppose.
 
-I'm still somewhat confused by all this. So raising nr_running will lower the
-required utilization to be considered busy. Suppose we have 50 tasks running,
-all at 1% utilization (bulk wakeup) we'd consider the cpu busy, even though its
-picking its nose for half the time.
-
-
-I'm assuming it's mean to limit process latency or so? Why are you concerned
-with that? This seems like an arbitrary power vs performance tweak without
-solid effidence its needed or even wanted.
+Yeah, moving the call to xen_guest_init earlier might be a good idea,
+but I wouldn't want to do it in this patch series, at this point of the
+Linux release cycle.
