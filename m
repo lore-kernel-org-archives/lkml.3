@@ -1,55 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757157Ab3DZRxZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 13:53:25 -0400
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:42672
-	"EHLO p3plsmtps2ded01.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756904Ab3DZRxY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 13:53:24 -0400
-x-originating-ip: 72.167.245.219
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: davem@davemloft.net, netdev@vger.kernel.org
-Cc: haiyangz@microsoft.com, kys@microsoft.com, olaf@aepfle.de,
-        jasowang@redhat.com, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org
-Subject: [PATCH net-next] hyperv: Fix a compiler warning in netvsc_send()
-Date: Fri, 26 Apr 2013 11:25:55 -0700
-Message-Id: <1367000755-2571-1-git-send-email-haiyangz@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1756920Ab3DZR7j (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 13:59:39 -0400
+Received: from senator.holtmann.net ([87.106.208.187]:59428 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756402Ab3DZR7i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Apr 2013 13:59:38 -0400
+Content-Type: text/plain; charset=iso-8859-1
+Mime-Version: 1.0 (Mac OS X Mail 6.3 \(1503\))
+Subject: Re: linux-next: Tree for Apr 26 (nfc)
+From: Marcel Holtmann <marcel@holtmann.org>
+In-Reply-To: <517ABA92.304@infradead.org>
+Date: Fri, 26 Apr 2013 10:59:40 -0700
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        linux-wireless <linux-wireless@vger.kernel.org>, linux-nfc@ml01.01.org
+Content-Transfer-Encoding: 7bit
+Message-Id: <C716D09B-A010-4024-B115-9BDB834DE905@holtmann.org>
+References: <20130426180357.7599d1b6b7965470905dcdf3@canb.auug.org.au> <517ABA92.304@infradead.org>
+To: Randy Dunlap <rdunlap@infradead.org>
+X-Mailer: Apple Mail (2.1503)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed: warning: cast from pointer to integer of different size
+Hi Randy,
 
-The Hyper-V hosts always use 64 bit request id. The guests can have 32 or 64
-bit pointers which equal to the ulong type size. So we cast it to ulong type.
-And, assigning 32bit integer to 64 bit variable works fine.
+>> Hi all,
+>> 
+>> Changes since 20130424:
+>> 
+> 
+> 
+> on i386:
+> 
+> net/built-in.o: In function `nfc_unregister_device':
+> (.text+0x6a36d): undefined reference to `rfkill_unregister'
+> net/built-in.o: In function `nfc_unregister_device':
+> (.text+0x6a378): undefined reference to `rfkill_destroy'
+> net/built-in.o: In function `nfc_register_device':
+> (.text+0x6a493): undefined reference to `rfkill_alloc'
+> net/built-in.o: In function `nfc_register_device':
+> (.text+0x6a4a4): undefined reference to `rfkill_register'
+> net/built-in.o: In function `nfc_register_device':
+> (.text+0x6a4b3): undefined reference to `rfkill_destroy'
+> net/built-in.o: In function `nfc_dev_up':
+> (.text+0x6a8e8): undefined reference to `rfkill_blocked'
+> 
+> 
+> when CONFIG_RFKILL=m but NFC is builtin.
+> 
+> Full randconfig file is attached.
 
-The VMBus returns the same id in the completion packet. But the value has no
-effect on the host side.
+it is missing the depends RFKILL || !RFKILL here. I send a patch for it.
 
-Reported-by: kbuild test robot <fengguang.wu@intel.com>
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
----
- drivers/net/hyperv/netvsc.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Regards
 
-diff --git a/drivers/net/hyperv/netvsc.c b/drivers/net/hyperv/netvsc.c
-index f5f0f09..2b04804 100644
---- a/drivers/net/hyperv/netvsc.c
-+++ b/drivers/net/hyperv/netvsc.c
-@@ -522,7 +522,7 @@ int netvsc_send(struct hv_device *device,
- 	sendMessage.msg.v1_msg.send_rndis_pkt.send_buf_section_size = 0;
- 
- 	if (packet->completion.send.send_completion)
--		req_id = (u64)packet;
-+		req_id = (ulong)packet;
- 	else
- 		req_id = 0;
- 
--- 
-1.7.4.1
+Marcel
 
