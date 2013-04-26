@@ -1,48 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756427Ab3DZMib (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 08:38:31 -0400
-Received: from mail-ea0-f170.google.com ([209.85.215.170]:40811 "EHLO
-	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751090Ab3DZMi3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 08:38:29 -0400
-From: Marek Belisko <marek.belisko@gmail.com>
-To: perex@perex.cz, tiwai@suse.de
-Cc: alsa-devel@alsa-project.org, zonque@gmail.com,
-        linux-kernel@vger.kernel.org, lgirdwood@gmail.com, broonie@kernel.org,
-        Marek Belisko <marek.belisko@streamunlimited.com>
-Subject: [PATCH] ASoC: McASP: Add pins output direction for rx clocks when configured in CBS_CFS format.
-Date: Fri, 26 Apr 2013 14:38:11 +0200
-Message-Id: <1366979891-15434-1-git-send-email-marek.belisko@streamunlimited.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1756489Ab3DZMi5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 08:38:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46185 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754114Ab3DZMiz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Apr 2013 08:38:55 -0400
+Message-ID: <517A754A.8030902@redhat.com>
+Date: Fri, 26 Apr 2013 14:38:34 +0200
+From: Daniel Borkmann <dborkman@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Xi Wang <xi.wang@gmail.com>
+CC: Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Eric Dumazet <edumazet@google.com>, Will Drewry <wad@chromium.org>,
+        Andrew Morton <akpm@linux-foundation.org>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Nicolas Schichan <nschichan@freebox.fr>,
+        Mircea Gherzan <mgherzan@gmail.com>
+Subject: Re: [RFC PATCH net-next 0/6] seccomp filter JIT
+References: <1366962706-24204-1-git-send-email-xi.wang@gmail.com> <20130426112539.GA3736@osiris> <517A6915.2020208@redhat.com> <CAKU6vybdnpoM-szTrJRDVM2sqNPvAe3Tszg+tCuziKSOEXjJ1w@mail.gmail.com>
+In-Reply-To: <CAKU6vybdnpoM-szTrJRDVM2sqNPvAe3Tszg+tCuziKSOEXjJ1w@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When McASP is bit clock and frame clock master enable pin output for rx clocks.
+On 04/26/2013 02:31 PM, Xi Wang wrote:
+> On Fri, Apr 26, 2013 at 7:46 AM, Daniel Borkmann <dborkman@redhat.com> wrote:
+>> I think BPF JIT for seccomp on ARM recently got applied to -mm tree
+>> if I'm not mistaken. It was from Nicolas Schichan (cc):
+>>
+>> http://thread.gmane.org/gmane.linux.ports.arm.kernel/233416/
+>
+> Thanks for the pointer.
+>
+> For the ARM part, looks like Nicolas's patch requires to implement two
+> wrappers for each arch:
+>
+>    void seccomp_jit_compile(struct seccomp_filter *fp);
+>    void seccomp_jit_free(struct seccomp_filter *fp);
+>
+> The implementation of these wrappers is almost identical to:
+>
+>    void bpf_jit_compile(struct sk_filter *fp);
+>    void bpf_jit_free(struct sk_filter *fp);
+>
+> While this patch uses a unified interface for both packet & seccomp filters.
+>
+>    bpf_func_t bpf_jit_compile(struct sock_filter *filter, unsigned int flen);
+>    void bpf_jit_free(bpf_func_t bpf_func);
 
-Signed-off-by: Marek Belisko <marek.belisko@streamunlimited.com>
----
- sound/soc/davinci/davinci-mcasp.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+A unified interface seems more clean, imho.
 
-diff --git a/sound/soc/davinci/davinci-mcasp.c b/sound/soc/davinci/davinci-mcasp.c
-index d54e0d9..2953c55 100644
---- a/sound/soc/davinci/davinci-mcasp.c
-+++ b/sound/soc/davinci/davinci-mcasp.c
-@@ -505,7 +505,10 @@ static int davinci_mcasp_set_dai_fmt(struct snd_soc_dai *cpu_dai,
- 		mcasp_set_bits(base + DAVINCI_MCASP_ACLKRCTL_REG, ACLKRE);
- 		mcasp_set_bits(base + DAVINCI_MCASP_RXFMCTL_REG, AFSRE);
- 
--		mcasp_set_bits(base + DAVINCI_MCASP_PDIR_REG, ACLKX | AFSX);
-+		mcasp_set_bits(base + DAVINCI_MCASP_PDIR_REG,
-+				ACLKX | ACLKR);
-+		mcasp_set_bits(base + DAVINCI_MCASP_PDIR_REG,
-+				AFSX | AFSR);
- 		break;
- 	case SND_SOC_DAIFMT_CBM_CFS:
- 		/* codec is clock master and frame slave */
--- 
-1.7.9.5
-
+> Shouldn't be hard to merge though.
