@@ -1,102 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757850Ab3DZIL4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 04:11:56 -0400
-Received: from g6t0186.atlanta.hp.com ([15.193.32.63]:5795 "EHLO
-	g6t0186.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753930Ab3DZILv (ORCPT
+	id S1758276Ab3DZIOE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 04:14:04 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:45429 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757944Ab3DZIN7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 04:11:51 -0400
-Message-ID: <517A3690.7000806@hp.com>
-Date: Fri, 26 Apr 2013 16:10:56 +0800
-From: ZhenHua <zhen-hual@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130117 Thunderbird/19.0
+	Fri, 26 Apr 2013 04:13:59 -0400
 MIME-Version: 1.0
-To: ZhenHua <zhen-hual@hp.com>, "Li, Zhen-Hua" <zhen-hual@hp.com>,
-        stern@rowland.harvard.edu, gregkh@linuxfoundation.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] driver,usb: Fix a warning in uhci-hcd driver
-References: <1366961884-14238-1-git-send-email-zhen-hual@hp.com> <517A31A9.5070504@hp.com>
-In-Reply-To: <517A31A9.5070504@hp.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1366734653-488286-21-git-send-email-arnd@arndb.de>
+References: <1366734653-488286-1-git-send-email-arnd@arndb.de>
+	<1366734653-488286-21-git-send-email-arnd@arndb.de>
+Date: Fri, 26 Apr 2013 10:13:59 +0200
+Message-ID: <CACRpkda6GpxUf8oPw74A08D0RJKZWir4hqXLjz-fe8Kq02vmDg@mail.gmail.com>
+Subject: Re: [PATCH 20/21] MFD: ab8500: export ab8500_gpadc_sw_hw_convert properly
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "M'boumba Cedric Madianga" <cedric.madianga@stericsson.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Mattias WALLIN <mattias.wallin@stericsson.com>,
+        Michel JAOUEN <michel.jaouen@stericsson.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/26/2013 03:50 PM, ZhenHua wrote:
+On Tue, Apr 23, 2013 at 6:30 PM, Arnd Bergmann <arnd@arndb.de> wrote:
 
-> I think there is another patch needed. As Alan said in another
-> mail, in the UHCI_RH_RUNNING_NODEVS case, it should not be stopped
-> if the uhci device is HP iLo virtual usb.
+> Apparently the ab8500_gpadc_sw_hw_convert function got renamed
+> from ab8500_gpadc_convert to ab8500_gpadc_sw_hw_convert in
+> commit 734823462 "mfd: ab8500-gpadc: Add gpadc hw conversion",
+> but the export for this function did not get changed at the
+> same time, causing this allyesconfig error:
 >
-correct: it should not be auto stopped if the uhci device is HP iLo 
-virtual usb.
+> ERROR: "ab8500_gpadc_sw_hw_convert" [drivers/hwmon/ab8500.ko] undefined!
 >
-> Thanks
-> Zhen-Hua
+> This patch fixes the export.
 >
-> On 04/26/2013 03:38 PM, Li, Zhen-Hua wrote:
->> This patch is trying to fix this bug on SLES11 SP2:
->>      https://bugzilla.novell.com/show_bug.cgi?id=817035
->>
->> On a large HP system with 64T memory and 60 logical cpus, when usb
->> driver inits the iLo Virtual USB Controller, there comes a warning
->> "Controller not stopped yet!". It is because the HP iLo virtual usb
->> device requires a longer delay.
->>
->> Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
->> ---
->>   drivers/usb/host/uhci-hcd.c |    5 +++++
->>   drivers/usb/host/uhci-hub.c |   12 +++++++-----
->>   2 files changed, 12 insertions(+), 5 deletions(-)
->>
->> diff --git a/drivers/usb/host/uhci-hcd.c b/drivers/usb/host/uhci-hcd.c
->> index 4a86b63..af30517 100644
->> --- a/drivers/usb/host/uhci-hcd.c
->> +++ b/drivers/usb/host/uhci-hcd.c
->> @@ -355,6 +355,11 @@ __acquires(uhci->lock)
->>           if (uhci->dead)
->>               return;
->>       }
->> +
->> +    /* HP's iLo Virtual USB Controller requires a longer delay. */
->> +    if (uhci->wait_for_hp)
->> +        wait_for_HP(uhci, USBSTS, USBSTS_HCH, 1000);
->> +
->>       if (!(uhci_readw(uhci, USBSTS) & USBSTS_HCH))
->>           dev_warn(uhci_dev(uhci), "Controller not stopped yet!\n");
->>   diff --git a/drivers/usb/host/uhci-hub.c b/drivers/usb/host/uhci-hub.c
->> index f87bee6..c3f772c 100644
->> --- a/drivers/usb/host/uhci-hub.c
->> +++ b/drivers/usb/host/uhci-hub.c
->> @@ -120,14 +120,15 @@ static void uhci_finish_suspend(struct uhci_hcd 
->> *uhci, int port,
->>   }
->>     /* Wait for the UHCI controller in HP's iLO2 server management chip.
->> - * It can take up to 250 us to finish a reset and set the CSC bit.
->> + * It can take up to max_wait us to finish the operation.
->>    */
->> -static void wait_for_HP(struct uhci_hcd *uhci, unsigned long port_addr)
->> +static void wait_for_HP(struct uhci_hcd *uhci, unsigned long port_addr,
->> +        u16 status, int max_wait)
->>   {
->>       int i;
->>   -    for (i = 10; i < 250; i += 10) {
->> -        if (uhci_readw(uhci, port_addr) & USBPORTSC_CSC)
->> +    for (i = 10; i < max_wait; i += 10) {
->> +        if (uhci_readw(uhci, port_addr) & status)
->>               return;
->>           udelay(10);
->>       }
->> @@ -151,7 +152,8 @@ static void uhci_check_ports(struct uhci_hcd *uhci)
->>                   /* HP's server management chip requires
->>                    * a longer delay. */
->>                   if (uhci->wait_for_hp)
->> -                    wait_for_HP(uhci, port_addr);
->> +                    wait_for_HP(uhci, port_addr,
->> +                        USBPORTSC_CSC, 250);
->>                     /* If the port was enabled before, turning
->>                    * reset on caused a port enable change.
->
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: M'boumba Cedric Madianga <cedric.madianga@stericsson.com>
+> Cc: Lee Jones <lee.jones@linaro.org>
+> Cc: Mattias WALLIN <mattias.wallin@stericsson.com>
+> Cc: Michel JAOUEN <michel.jaouen@stericsson.com>
+> Cc: Samuel Ortiz <sameo@linux.intel.com>
 
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+
+Sam -> please pick this...
+
+Yours,
+Linus Walleij
