@@ -1,59 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758051Ab3DZTqj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 15:46:39 -0400
-Received: from one.firstfloor.org ([193.170.194.197]:43745 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757500Ab3DZTqg (ORCPT
+	id S1758073Ab3DZTqv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 15:46:51 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:61381 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757500Ab3DZTqq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 15:46:36 -0400
-Date: Fri, 26 Apr 2013 21:46:33 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Andi Kleen <andi@firstfloor.org>, mingo@kernel.org,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        eranian@google.com, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 1/2] Fix perf LBR filtering
-Message-ID: <20130426194633.GF16732@two.firstfloor.org>
-References: <1366844694-2770-1-git-send-email-andi@firstfloor.org>
- <20130425162535.GA5828@dyad.programming.kicks-ass.net>
- <20130425164100.GC16732@two.firstfloor.org>
- <20130425164837.GD5828@dyad.programming.kicks-ass.net>
- <20130425170037.GD16732@two.firstfloor.org>
- <20130425171842.GA8669@dyad.programming.kicks-ass.net>
- <20130425174211.GE16732@two.firstfloor.org>
- <20130426075601.GB8669@dyad.programming.kicks-ass.net>
+	Fri, 26 Apr 2013 15:46:46 -0400
+Date: Fri, 26 Apr 2013 12:46:42 -0700
+From: Kent Overstreet <koverstreet@google.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org, tj@kernel.org,
+        axboe@kernel.dk, James.Bottomley@hansenpartnership.com,
+        snitzer@redhat.com
+Subject: Re: Bcache v. whatever
+Message-ID: <20130426194642.GC9931@google.com>
+References: <20130114223202.GV26407@google.com>
+ <20130425161704.3f0fc3b6af55cf75acbc9d9e@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130426075601.GB8669@dyad.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130425161704.3f0fc3b6af55cf75acbc9d9e@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Apr 25, 2013 at 04:17:04PM -0700, Andrew Morton wrote:
+> On Mon, 14 Jan 2013 14:32:02 -0800 Kent Overstreet <koverstreet@google.com> wrote:
 > 
-> OK, so how about we use something like:
+> > Bcache: a block layer SSD cache
 > 
-> 	 is_kernel_text() || is_module_text_address()
+> sparc64 gcc-3.4.5:
+> 
+> drivers/md/bcache/btree.c: In function `bch_btree_read':
+> drivers/md/bcache/btree.c:266: error: invalid operands to binary +
+> drivers/md/bcache/btree.c: In function `__btree_write':
+> drivers/md/bcache/btree.c:379: error: invalid operands to binary +
+> drivers/md/bcache/btree.c: In function `btree_node_free':
+> drivers/md/bcache/btree.c:980: error: invalid operands to binary +
+> drivers/md/bcache/btree.c: In function `btree_insert_key':
+> drivers/md/bcache/btree.c:1857: error: invalid operands to binary +
+> drivers/md/bcache/btree.c:1857: error: invalid operands to binary +
+> drivers/md/bcache/btree.c:1859: error: invalid operands to binary +
+> drivers/md/bcache/btree.c:1859: error: invalid operands to binary +
+> drivers/md/bcache/btree.c:1864: error: invalid operands to binary +
+> drivers/md/bcache/btree.c:1864: error: invalid operands to binary +
+> drivers/md/bcache/btree.c: In function `btree_split':
+> drivers/md/bcache/btree.c:1934: error: invalid operands to binary +
+> drivers/md/bcache/btree.c: In function `bch_btree_set_root':
+> drivers/md/bcache/btree.c:2159: error: invalid operands to binary +
+> drivers/md/bcache/btree.c: In function `bch_btree_search_recurse':
+> drivers/md/bcache/btree.c:2262: error: invalid operands to binary +
+> drivers/md/bcache/btree.c: In function `bch_btree_refill_keybuf':
+> drivers/md/bcache/btree.c:2330: error: invalid operands to binary +
+> 
+> due to
+> 
+> #define pbtree(b)       (&bch_pbtree(b).s[0])
+> 
+> I don't know why this is happening (presumably a gcc glitch), but
+> returning an 80-byte struct by value from bch_pkey() and bch_pbtree()
+> is just gruesome.  The compiler has to allocate the space on the caller
+> stack, pass a hidden pointer into the callee and the callee copies its
+> return value into that caller stack slot.  It's slow and consumes stack.
+> 
+> Something different, please.
 
-is_module_text_address() has to walk all modules.
-A random system with a distro kernel I checked has 101 modules loaded.
+Well, it is kind of... perverse but really the compiler's doing exactly
+what I would've had to do otherwise - stick a char buf[80] on the
+caller's stack and pass it to bch_pbtree(). With the caveat that I
+haven't looked at the generated code.
 
-16 * 101 = too much
+As far as I can tell the only real improvement would be to add a %p
+format string to vsnprintf, but adding a global extension would obviously be
+inappropriate for this. It'd be really nice to have a mechanism for
+adding file/module private format strings to vsnprintf, but I haven't
+cared enough yet to implement it myself.
 
-I don't think you want to spend that many cycles in the NMI
-handler for a dubious feature.  Ok in theory you could
-add something with binary search, but that would be quite
-a bit of effort and it would be probably challenging 
-to do that all NMI safe.
+Of course if you know a better solution I'm all ears.
 
-Also it wouldn't work for all these new kernel JITs people 
-are doing of course.
+Uhm, as for the actual bug - that is a fairly ancient gcc, I wasn't
+aware we were supporting compilers that old but I'm sure you wouldn't be
+bugging me about it if we weren't...
 
-Still think my patch is the best so far? (plus the missing
-root check)
+If you _really_ want me to rip out the macro/struct return hack I
+will... but this is just debug code and I hate making it more verbose if
+I don't have to.
 
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only.
+Otherwise, I'll set up gcc-3.4.5 (hopefully it doesn't have to be a
+sparc compiler :P) and see if I can get gcc to stop complaining.
