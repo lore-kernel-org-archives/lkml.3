@@ -1,90 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756739Ab3DZQ12 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 12:27:28 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:10776 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756186Ab3DZQ10 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 12:27:26 -0400
-X-IronPort-AV: E=Sophos;i="4.87,559,1363132800"; 
-   d="scan'208";a="21838434"
-Date: Fri, 26 Apr 2013 17:27:20 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-Subject: Re: [PATCH 8/9] xen/smp/pvhvm: Don't initialize IRQ_WORKER as we
- are using the native one.
-In-Reply-To: <1366142947-18655-9-git-send-email-konrad.wilk@oracle.com>
-Message-ID: <alpine.DEB.2.02.1304261726260.4180@kaball.uk.xensource.com>
-References: <1366142947-18655-1-git-send-email-konrad.wilk@oracle.com> <1366142947-18655-9-git-send-email-konrad.wilk@oracle.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1756766Ab3DZQ27 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 12:28:59 -0400
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:37742 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756454Ab3DZQ25 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Apr 2013 12:28:57 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+In-Reply-To: <1366940841-15370-1-git-send-email-yinghai@kernel.org>
+References: <1366940841-15370-1-git-send-email-yinghai@kernel.org>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 26 Apr 2013 10:28:37 -0600
+Message-ID: <CAErSpo5zfHR-agNBdgqfVjCU+-KcTZV+1bvML5Uw-+icDqzzEA@mail.gmail.com>
+Subject: Re: [PATCH] PCI: Fix racing for pci device removing via sysfs
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Gu Zheng <guz.fnst@cn.fujitsu.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16 Apr 2013, Konrad Rzeszutek Wilk wrote:
-> There is no need to use the PV version of the IRQ_WORKER mechanism
-> as under PVHVM we are using the native version. The native
-> version is using the SMP API.
-> 
-> They just sit around unused:
-> 
->   69:          0          0  xen-percpu-ipi       irqwork0
->   83:          0          0  xen-percpu-ipi       irqwork1
-> 
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+On Thu, Apr 25, 2013 at 7:47 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> Gu found nested removing through
+>         echo -n 1 > /sys/bus/pci/devices/0000\:10\:00.0/remove ; echo -n 1 >
+> /sys/bus/pci/devices/0000\:1a\:01.0/remove
+>
+> will cause kernel crash as bus get freed.
+>
+> [  418.946462] CPU 4
+> [  418.968377] Pid: 512, comm: kworker/u:2 Tainted: G        W    3.8.0 #2
+> FUJITSU-SV PRIMEQUEST 1800E/SB
+> [  419.081763] RIP: 0010:[<ffffffff8137972e>]  [<ffffffff8137972e>]
+> pci_bus_read_config_word+0x5e/0x90
+> [  420.494137] Call Trace:
+> [  420.523326]  [<ffffffff813851ef>] ? remove_callback+0x1f/0x40
+> [  420.591984]  [<ffffffff8138044b>] pci_pme_active+0x4b/0x1c0
+> [  420.658545]  [<ffffffff8137d8e7>] pci_stop_bus_device+0x57/0xb0
+> [  420.729259]  [<ffffffff8137dab6>] pci_stop_and_remove_bus_device+0x16/0x30
+> [  420.811392]  [<ffffffff813851fb>] remove_callback+0x2b/0x40
+> [  420.877955]  [<ffffffff81257a56>] sysfs_schedule_callback_work+0x26/0x70
+>
+> https://bugzilla.kernel.org/show_bug.cgi?id=54411
+>
+> We have one patch that will let device hold bus ref to prevent it from
+> being freed, but that will still generate warning.
+>
+> ------------[ cut here ]------------
+> WARNING: at lib/list_debug.c:53 __list_del_entry+0x63/0xd0()
+> Hardware name: PRIMEQUEST 1800E
+> list_del corruption, ffff8807d1b6c000->next is LIST_POISON1 (dead000000100100)
+> Call Trace:
+>  [<ffffffff81056d4f>] warn_slowpath_common+0x7f/0xc0
+>  [<ffffffff81056e46>] warn_slowpath_fmt+0x46/0x50
+>  [<ffffffff81280b13>] __list_del_entry+0x63/0xd0
+>  [<ffffffff81280b91>] list_del+0x11/0x40
+>  [<ffffffff81298331>] pci_destroy_dev+0x31/0xc0
+>  [<ffffffff812985bb>] pci_remove_bus_device+0x5b/0x70
+>  [<ffffffff812985ee>] pci_stop_and_remove_bus_device+0x1e/0x30
+>  [<ffffffff8129fc89>] remove_callback+0x29/0x40
+>  [<ffffffff811f3b84>] sysfs_schedule_callback_work+0x24/0x70
+>
+> We can just check if the device get removed from pci tree
+> already in the protection under pci_remove_rescan_mutex.
+>
+> Reported-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+> Tested-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+>
+> ---
+>  drivers/pci/pci-sysfs.c |    9 ++++++++-
+>  1 file changed, 8 insertions(+), 1 deletion(-)
+>
+> Index: linux-2.6/drivers/pci/pci-sysfs.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/pci/pci-sysfs.c
+> +++ linux-2.6/drivers/pci/pci-sysfs.c
+> @@ -329,9 +329,16 @@ dev_rescan_store(struct device *dev, str
+>  static void remove_callback(struct device *dev)
+>  {
+>         struct pci_dev *pdev = to_pci_dev(dev);
+> +       int domain = pci_domain_nr(pdev->bus);
+> +       u8 bus = pdev->bus->number;
+> +       u8 devfn = pdev->devfn;
+>
+>         mutex_lock(&pci_remove_rescan_mutex);
+> -       pci_stop_and_remove_bus_device(pdev);
+> +       pdev = pci_get_domain_bus_and_slot(domain, bus, devfn);
 
-Might be worth trying to make it work instead?
-Is it just because we don't set the apic->send_IPI_* functions to the
-xen specific version on PVHVM?
+This is a gross hack.  Iterating through all known pci_devs to see if
+this one still exists?
 
+I reproduced the original problem, applied this patch, and verified
+that it avoids the original crash.
 
->  arch/x86/xen/smp.c | 13 ++++++++++++-
->  1 file changed, 12 insertions(+), 1 deletion(-)
-> 
-> diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
-> index 22c800a..415694c 100644
-> --- a/arch/x86/xen/smp.c
-> +++ b/arch/x86/xen/smp.c
-> @@ -144,6 +144,13 @@ static int xen_smp_intr_init(unsigned int cpu)
->  		goto fail;
->  	per_cpu(xen_callfuncsingle_irq, cpu) = rc;
->  
-> +	/*
-> +	 * The IRQ worker on PVHVM goes through the native path and uses the
-> +	 * IPI mechanism.
-> +	 */
-> +	if (xen_hvm_domain())
-> +		return 0;
-> +
->  	callfunc_name = kasprintf(GFP_KERNEL, "irqwork%d", cpu);
->  	rc = bind_ipi_to_irqhandler(XEN_IRQ_WORK_VECTOR,
->  				    cpu,
-> @@ -167,6 +174,9 @@ static int xen_smp_intr_init(unsigned int cpu)
->  	if (per_cpu(xen_callfuncsingle_irq, cpu) >= 0)
->  		unbind_from_irqhandler(per_cpu(xen_callfuncsingle_irq, cpu),
->  				       NULL);
-> +	if (xen_hvm_domain())
-> +		return rc;
-> +
->  	if (per_cpu(xen_irq_work, cpu) >= 0)
->  		unbind_from_irqhandler(per_cpu(xen_irq_work, cpu), NULL);
->  
-> @@ -661,7 +671,8 @@ static void xen_hvm_cpu_die(unsigned int cpu)
->  	unbind_from_irqhandler(per_cpu(xen_callfunc_irq, cpu), NULL);
->  	unbind_from_irqhandler(per_cpu(xen_debug_irq, cpu), NULL);
->  	unbind_from_irqhandler(per_cpu(xen_callfuncsingle_irq, cpu), NULL);
-> -	unbind_from_irqhandler(per_cpu(xen_irq_work, cpu), NULL);
-> +	if (!xen_hvm_domain())
-> +		unbind_from_irqhandler(per_cpu(xen_irq_work, cpu), NULL);
->  	xen_uninit_lock_cpu(cpu);
->  	xen_teardown_timer(cpu);
->  	native_cpu_die(cpu);
-> -- 
-> 1.8.1.4
-> 
+However, it's still incorrect because now you're looking at pdev after
+it's been freed. With CONFIG_SLUB_DEBUG_ON=y, the removal still causes
+a crash in remove_callback().
+
+Bjorn
+
+> +       if (pdev) {
+> +               pci_dev_put(pdev);
+> +               pci_stop_and_remove_bus_device(pdev);
+> +       }
+>         mutex_unlock(&pci_remove_rescan_mutex);
+>  }
+>
