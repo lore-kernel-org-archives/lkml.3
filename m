@@ -1,160 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756972Ab3DZRrP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 13:47:15 -0400
-Received: from relay.parallels.com ([195.214.232.42]:34136 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756702Ab3DZRrN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 13:47:13 -0400
-Message-ID: <517ABCF6.5040103@parallels.com>
-Date: Fri, 26 Apr 2013 21:44:22 +0400
-From: "Maxim V. Patlasov" <mpatlasov@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	id S1757034Ab3DZRsk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 13:48:40 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:60111 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756698Ab3DZRsi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Apr 2013 13:48:38 -0400
+Date: Fri, 26 Apr 2013 10:48:16 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Simon Horman <horms@verge.net.au>, Eric Dumazet <eric.dumazet@gmail.com>,
+        Julian Anastasov <ja@ssi.bg>, Ingo Molnar <mingo@redhat.com>,
+        lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
+        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Dipankar Sarma <dipankar@in.ibm.com>, dhaval.giani@gmail.com
+Subject: Re: [PATCH 2/2] ipvs: Use cond_resched_rcu_lock() helper when
+ dumping connections
+Message-ID: <20130426174815.GI3860@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1366940708-10180-1-git-send-email-horms@verge.net.au>
+ <1366940708-10180-3-git-send-email-horms@verge.net.au>
+ <20130426080313.GC8669@dyad.programming.kicks-ass.net>
+ <20130426154547.GC3860@linux.vnet.ibm.com>
+ <20130426171948.GA31467@dyad.programming.kicks-ass.net>
 MIME-Version: 1.0
-To: Miklos Szeredi <miklos@szeredi.hu>
-CC: Kirill Korotaev <dev@parallels.com>, Pavel Emelianov <xemul@parallels.com>,
-        "fuse-devel@lists.sourceforge.net" <fuse-devel@lists.sourceforge.net>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        James Bottomley <jbottomley@parallels.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>, <devel@openvz.org>,
-        Andrew Morton <akpm@linux-foundation.org>, <fengguang.wu@intel.com>,
-        <mgorman@suse.de>, <riel@redhat.com>, <hughd@google.com>,
-        <gthelen@google.com>, <linux-mm@kvack.org>
-Subject: Re: [fuse-devel] [PATCH 14/14] mm: Account for WRITEBACK_TEMP in
- balance_dirty_pages
-References: <20130401103749.19027.89833.stgit@maximpc.sw.ru> <20130401104250.19027.27795.stgit@maximpc.sw.ru> <51793DE6.3000503@parallels.com> <CAJfpegv1zc4oeE=YXrQd0jmzVXB8jjvXkz-_4Nv_ELcvfsa74Q@mail.gmail.com> <517956ED.7060102@parallels.com> <20130425204331.GB16238@tucsk.piliscsaba.szeredi.hu> <517A3B98.807@parallels.com> <20130426140240.GC16238@tucsk.piliscsaba.szeredi.hu>
-In-Reply-To: <20130426140240.GC16238@tucsk.piliscsaba.szeredi.hu>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.30.17.2]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130426171948.GA31467@dyad.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13042617-5806-0000-0000-000020E4AF73
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Miklos, MM folks,
+On Fri, Apr 26, 2013 at 07:19:49PM +0200, Peter Zijlstra wrote:
+> On Fri, Apr 26, 2013 at 08:45:47AM -0700, Paul E. McKenney wrote:
+> > On Fri, Apr 26, 2013 at 10:03:13AM +0200, Peter Zijlstra wrote:
+> > > On Fri, Apr 26, 2013 at 10:45:08AM +0900, Simon Horman wrote:
+> > > 
+> > > > @@ -975,8 +975,7 @@ static void *ip_vs_conn_array(struct seq_file *seq, loff_t pos)
+> > > >  				return cp;
+> > > >  			}
+> > > >  		}
+> > > > -		rcu_read_unlock();
+> > > > -		rcu_read_lock();
+> > > > +		cond_resched_rcu_lock();
+> > > >  	}
+> > > 
+> > > 
+> > > While I agree with the sentiment I do find it a somewhat dangerous construct in
+> > > that it might become far too easy to keep an RCU reference over this break and
+> > > thus violate the RCU premise.
+> > > 
+> > > Is there anything that can detect this? Sparse / cocinelle / smatch? If so it
+> > > would be great to add this to these checkers.
+> > 
+> > I have done some crude coccinelle patterns in the past, but they are
+> > subject to false positives (from when you transfer the pointer from
+> > RCU protection to reference-count protection) and also false negatives
+> > (when you atomically increment some statistic unrelated to protection).
+> > 
+> > I could imagine maintaining a per-thread count of the number of outermost
+> > RCU read-side critical sections at runtime, and then associating that
+> > counter with a given pointer at rcu_dereference() time, but this would
+> > require either compiler magic or an API for using a pointer returned
+> > by rcu_dereference().  This API could in theory be enforced by sparse.
+> 
+> Luckily cond_resched_rcu_lock() will typically only occur within loops, and
+> loops tend to be contained in a single sourcefile.
+> 
+> This would suggest a simple static checker should be able to tell without too
+> much magic right? All it needs to do is track pointers returned from
+> rcu_dereference*() and see if they're used after cond_resched_rcu_lock().
+> 
+> Also, cond_resched_rcu_lock() will only drop a single level of RCU refs; so
+> that should be easier still.
 
-04/26/2013 06:02 PM, Miklos Szeredi пишет:
-> On Fri, Apr 26, 2013 at 12:32:24PM +0400, Maxim V. Patlasov wrote:
->
->>> The idea is that fuse filesystems should not go over the bdi limit even if
->>> the global limit hasn't been reached.
->> This might work, but kicking flusher every time someone write to
->> fuse mount and dives into balance_dirty_pages looks fishy.
-> Yeah.  Fixed patch attached.
+Don't get me wrong, I am not opposing cond_resched_rcu_lock() because it
+will be difficult to validate.  For one thing, until there are a lot of
+them, manual inspection is quite possible.  So feel free to apply my
+Acked-by to the patch.
 
-The patch didn't work for me. I'll investigate what's wrong and get back 
-to you later.
+But it is definitely not too early to start thinking about how best to
+automatically validate this sort of thing!
 
->
->> Let's combine
->> our suggestions: mark fuse inodes with AS_FUSE_WRITEBACK flag and
->> convert what you strongly dislike above to:
->>
->> if (test_bit(AS_FUSE_WRITEBACK, &mapping->flags))
->> nr_dirty += global_page_state(NR_WRITEBACK_TEMP);
-> I don't think this is right.  The fuse daemon could itself be writing to another
-> fuse filesystem, in which case blocking because of NR_WRITEBACK_TEMP being high
-> isn't a smart strategy.
-
-Please don't say 'blocking'. Per-bdi checks will decide whether to block 
-or not. In the case you set forth, judging on per-bdi checks would be 
-completely fine for upper fuse: it may and should block for a while if 
-lower fuse doesn't catch up.
-
->
-> Furthermore it isn't enough.  Becuase the root problem, I think, is that we
-> allow fuse filesystems to grow a large number of dirty pages before throttling.
-> This was never intended and it may actually have worked properly at a point in
-> time but broke by some change to the dirty throttling algorithm.
-
-Could someone from mm list step in and comment on this point? Which 
-approach is better to follow: account NR_WRITEBACK_TEMP in 
-balance_dirty_pages accurately (as we discussed in LSF/MM) or re-work 
-balance_dirty_pages in direction suggested by Miklos (fuse should never 
-go over the bdi limit even if the global limit hasn't been reached)?
-
-I'm for accounting NR_WRITEBACK_TEMP because balance_dirty_pages is 
-already overcomplicated (imho) and adding new clauses for FUSE makes me 
-sick.
-
-Thanks,
-Maxim
-
->
-> Thanks,
-> Miklos
->
->
-> diff --git a/fs/fuse/inode.c b/fs/fuse/inode.c
-> index 137185c..195ee45 100644
-> --- a/fs/fuse/inode.c
-> +++ b/fs/fuse/inode.c
-> @@ -291,6 +291,7 @@ struct inode *fuse_iget(struct super_block *sb, u64 nodeid,
->   		inode->i_flags |= S_NOATIME|S_NOCMTIME;
->   		inode->i_generation = generation;
->   		inode->i_data.backing_dev_info = &fc->bdi;
-> +		set_bit(AS_STRICTLIMIT, &inode->i_data.flags);
->   		fuse_init_inode(inode, attr);
->   		unlock_new_inode(inode);
->   	} else if ((inode->i_mode ^ attr->mode) & S_IFMT) {
-> diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
-> index 0e38e13..97f6a0c 100644
-> --- a/include/linux/pagemap.h
-> +++ b/include/linux/pagemap.h
-> @@ -25,6 +25,7 @@ enum mapping_flags {
->   	AS_MM_ALL_LOCKS	= __GFP_BITS_SHIFT + 2,	/* under mm_take_all_locks() */
->   	AS_UNEVICTABLE	= __GFP_BITS_SHIFT + 3,	/* e.g., ramdisk, SHM_LOCK */
->   	AS_BALLOON_MAP  = __GFP_BITS_SHIFT + 4, /* balloon page special map */
-> +	AS_STRICTLIMIT	= __GFP_BITS_SHIFT + 5, /* strict dirty limit */
->   };
->   
->   static inline void mapping_set_error(struct address_space *mapping, int error)
-> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-> index efe6814..b6db421 100644
-> --- a/mm/page-writeback.c
-> +++ b/mm/page-writeback.c
-> @@ -1226,6 +1226,7 @@ static void balance_dirty_pages(struct address_space *mapping,
->   	unsigned long dirty_ratelimit;
->   	unsigned long pos_ratio;
->   	struct backing_dev_info *bdi = mapping->backing_dev_info;
-> +	int strictlimit = test_bit(AS_STRICTLIMIT, &mapping->flags);
->   	unsigned long start_time = jiffies;
->   
->   	for (;;) {
-> @@ -1250,7 +1251,7 @@ static void balance_dirty_pages(struct address_space *mapping,
->   		 */
->   		freerun = dirty_freerun_ceiling(dirty_thresh,
->   						background_thresh);
-> -		if (nr_dirty <= freerun) {
-> +		if (nr_dirty <= freerun && !strictlimit) {
->   			current->dirty_paused_when = now;
->   			current->nr_dirtied = 0;
->   			current->nr_dirtied_pause =
-> @@ -1258,7 +1259,7 @@ static void balance_dirty_pages(struct address_space *mapping,
->   			break;
->   		}
->   
-> -		if (unlikely(!writeback_in_progress(bdi)))
-> +		if (unlikely(!writeback_in_progress(bdi)) && !strictlimit)
->   			bdi_start_background_writeback(bdi);
->   
->   		/*
-> @@ -1296,8 +1297,12 @@ static void balance_dirty_pages(struct address_space *mapping,
->   				    bdi_stat(bdi, BDI_WRITEBACK);
->   		}
->   
-> +		if (unlikely(!writeback_in_progress(bdi)) &&
-> +		    bdi_dirty > bdi_thresh / 2)
-> +			bdi_start_background_writeback(bdi);
-> +
->   		dirty_exceeded = (bdi_dirty > bdi_thresh) &&
-> -				  (nr_dirty > dirty_thresh);
-> +				  ((nr_dirty > dirty_thresh) || strictlimit);
->   		if (dirty_exceeded && !bdi->dirty_exceeded)
->   			bdi->dirty_exceeded = 1;
->   
->
->
+							Thanx, Paul
 
