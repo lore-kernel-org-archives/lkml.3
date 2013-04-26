@@ -1,103 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756195Ab3DZW7q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 18:59:46 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:63227 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754896Ab3DZW7p (ORCPT
+	id S1755586Ab3DZXBd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 19:01:33 -0400
+Received: from mail-la0-f42.google.com ([209.85.215.42]:39671 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751321Ab3DZXBc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 18:59:45 -0400
-Message-ID: <1367017182.8964.258.camel@edumazet-glaptop>
-Subject: Re: [PATCH] net/openvswitch: replace memcmp() with specialized
- comparator
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Peter Klausler <pmk@google.com>
-Cc: Jesse Gross <jesse@nicira.com>, "David S. Miller" <davem@davemloft.net>,
-        dev@openvswitch.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 26 Apr 2013 15:59:42 -0700
-In-Reply-To: <1367012792-25335-1-git-send-email-pmk@google.com>
-References: <1367012792-25335-1-git-send-email-pmk@google.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 26 Apr 2013 19:01:32 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130426162214.GB30716@somewhere>
+References: <1366988007-30665-1-git-send-email-fweisbec@gmail.com>
+	<1366988007-30665-2-git-send-email-fweisbec@gmail.com>
+	<20130426153956.GB3860@linux.vnet.ibm.com>
+	<20130426162214.GB30716@somewhere>
+Date: Sat, 27 Apr 2013 01:01:30 +0200
+Message-ID: <CAFTL4hxe8Rwj7sqo0G_xPisvXB_tMhVSdD+z32aQnJM9A=31WQ@mail.gmail.com>
+Subject: Re: [PATCH 1/2] nohz: Select VIRT_CPU_ACCOUNTING_GEN from full
+ dynticks config
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Christoph Lameter <cl@linux.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@linaro.org>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-04-26 at 17:46 -0400, Peter Klausler wrote:
-> Tune flow table lookup in net/openvswitch, replacing a call to
-> the slow-but-safe memcmp() in lib/string.c with a key comparator
-> routine that presumes most comparisons will succeed.  Besides
-> avoiding an early-exit test on each iteration, it also compares
-> keys 4 or 8 bytes at a time on architectures that can load an
-> unaligned long efficiently.
-> 
-> On a 3.2GHz Xeon (5679) this patch reduces the minimum back-to-back
-> hot-cache latency of a 128-byte key comparison by 7x, from 130ns with
-> the default byte-at-a-time memcmp() in lib/string.c down to 17ns.
-> 
-> More important, replacing the default memcmp() with this specialized
-> routine speeds up openvswitch's packet rate by 10% in a closed-loop
-> benchmark that simply routes traffic from one tap device to another.
-> 
-> Signed-off-by: Peter Klausler <pmk@google.com>
-> ---
->  net/openvswitch/flow.c | 33 ++++++++++++++++++++++++++++++++-
->  1 file changed, 32 insertions(+), 1 deletion(-)
-> 
-> diff --git a/net/openvswitch/flow.c b/net/openvswitch/flow.c
-> index 67a2b78..d5facf6 100644
-> --- a/net/openvswitch/flow.c
-> +++ b/net/openvswitch/flow.c
-> @@ -764,6 +764,37 @@ u32 ovs_flow_hash(const struct sw_flow_key *key, int key_len)
->  	return jhash2((u32 *)key, DIV_ROUND_UP(key_len, sizeof(u32)), 0);
->  }
->  
-> +/*
-> + * Key comparison routine, optimized for the common case of
-> + * equality due to low average hash collision frequency
-> + * (1.5 mean items per nonempty bucket when total table item
-> + * count equals the number of buckets, which is when openvswitch
-> + * expands its hash table).
-> + */
-> +static bool equal_keys(const struct sw_flow_key *key1,
-> +		       const struct sw_flow_key *key2,
-> +		       size_t key_len)
-> +{
-> +	const char *cp1 = (const char *)key1;
-> +	const char *cp2 = (const char *)key2;
-> +	long diffs = 0;
-> +
-> +#ifdef CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS
-> +	{
-> +		const long *lp1 = (const long *)cp1;
-> +		const long *lp2 = (const long *)cp2;
-> +		for (; key_len >= sizeof(long); key_len -= sizeof(long))
-> +			diffs |= *lp1++ ^ *lp2++;
-> +		cp1 = (const char *)lp1;
-> +		cp2 = (const char *)lp2;
-> +	}
-> +#endif
+2013/4/26 Frederic Weisbecker <fweisbec@gmail.com>:
+> On Fri, Apr 26, 2013 at 08:39:56AM -0700, Paul E. McKenney wrote:
+>> >  config VIRT_CPU_ACCOUNTING_GEN
+>> >     bool "Full dynticks CPU time accounting"
+>> > -   depends on HAVE_CONTEXT_TRACKING && 64BIT
+>> > +   depends on HAVE_CONTEXT_TRACKING && 64BIT && NO_HZ_FULL
+>>
+>> Do you really want this change?  This prohibits VIRT_CPU_ACCOUNTING_GEN
+>> unless NO_HZ_FULL, which means that it can no longer be used in situations
+>> where it used to be usable.  My guess is that you want to leave this
+>> particular line as it was.
+>
+> Hmm, this can make sense. This can be used to perform comparisons between
+> tick-based and tickless cputime accounting easily.
+>
+> I'll respin.
 
-This seems a suboptimal condition, a bit tweaked for x86
+So Ingo please pull "timers/nohz-v2" instead. It does the same but
+keeps VIRT_CPU_ACCOUNTING_GEN available even without full dynticks
+(could be useful when users need something more precise than tick
+based cputime accounting.)
 
-Some 32bit arches do not have CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS,
-still struct sw_flow_key is 32bit word aligned.
+HEAD is 8c23b80ec7f1f5405f07bb56c2f8378800ecf401
 
-Either its a generic bcmp(s1,s2,len) function without any information on
-s1/s2 alignment, and it should not a private ovs thing, 
-or 
-its OVS private helper, and you can make sure alignof(struct
-sw_flow_key) == alignof(unsigned long) and remove the #ifdef
-CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS
+If you've already pulled the previous branch I'll make a delta instead.
 
-Check include/net/flow.h for an example
-
-struct flowi4 {
-...
-}  __attribute__((__aligned__(BITS_PER_LONG/8)));
-
-
-
+Thanks.
