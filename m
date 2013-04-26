@@ -1,82 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759495Ab3DZAvN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 20:51:13 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:60868 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751431Ab3DZAvM (ORCPT
+	id S932358Ab3DZAwj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 20:52:39 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:20249 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756045Ab3DZAwi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 20:51:12 -0400
-Date: Fri, 26 Apr 2013 10:50:54 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mark Brown <broonie@kernel.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [PATCH] MAINTAINERS: Update Grant's email address and
- maintainership
-Message-Id: <20130426105054.90b267268251d3d1cf9f950e@canb.auug.org.au>
-In-Reply-To: <20130419102237.GS13687@opensource.wolfsonmicro.com>
-References: <1366109016-27442-1-git-send-email-grant.likely@linaro.org>
-	<20130417095207.24b24f31e2166d20c07f01fa@canb.auug.org.au>
-	<CACxGe6uao632OopSdWaxifanH0t2iG2gQb902L+0PW0kmG3UdQ@mail.gmail.com>
-	<20130417172134.dea24373a65d78b53cfd3a54@canb.auug.org.au>
-	<20130418110439.GB13687@opensource.wolfsonmicro.com>
-	<20130419091858.c2030abfb050c3935785ae9a@canb.auug.org.au>
-	<20130419102237.GS13687@opensource.wolfsonmicro.com>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__26_Apr_2013_10_50_54_+1000_vY6GQFFiTD_k1bLX"
+	Thu, 25 Apr 2013 20:52:38 -0400
+Message-ID: <5179CF8F.7000702@oracle.com>
+Date: Thu, 25 Apr 2013 20:51:27 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130408 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Minchan Kim <minchan@kernel.org>, David Rientjes <rientjes@google.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Mel Gorman <mgorman@suse.de>,
+        Dave Jones <davej@redhat.com>, linux-mm <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: mm: BUG in do_huge_pmd_wp_page
+References: <51559150.3040407@oracle.com> <20130410080202.GB21292@blaptop> <5166CEDD.9050301@oracle.com> <20130411151323.89D40E0085@blue.fi.intel.com> <5166D355.2060103@oracle.com> <20130424154607.60e9b9895539eb5668d2f505@linux-foundation.org>
+In-Reply-To: <20130424154607.60e9b9895539eb5668d2f505@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__26_Apr_2013_10_50_54_+1000_vY6GQFFiTD_k1bLX
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 04/24/2013 06:46 PM, Andrew Morton wrote:
+> On Thu, 11 Apr 2013 11:14:29 -0400 Sasha Levin <sasha.levin@oracle.com> wrote:
+> 
+>> On 04/11/2013 11:13 AM, Kirill A. Shutemov wrote:
+>>> Sasha Levin wrote:
+>>>> On 04/10/2013 04:02 AM, Minchan Kim wrote:
+>>>>> I don't know this issue was already resolved. If so, my reply become a just
+>>>>> question to Kirill regardless of this BUG.
+>>>>
+>>>> The issue is still reproducible with today's -next.
+>>>
+>>> Could you share your kernel config and configuration of your virtual machine?
+>>
+>> I've attached my .config.
+>>
+>> I start the vm using:
+>>
+>> ./vm sandbox --rng --balloon -k /usr/src/linux/arch/x86/boot/bzImage -d run -d /dev/shm/swap --no-dhcp -m 3072 -c 6 -p
+>> "init=/virt/init zcache ftrace_dump_on_oops debugpat kvm.mmu_audit=1 memblock=debug slub_debug=FZPU" -- /runtrin.sh
+>>
+>> Where /runtrin.sh inside the vm simply mounts some stuff like sysfs and proc,
+>> creates the swap space and runs trinity.
+> 
+> Guys, did this get fixed?
 
-Hi Mark,
+I've stopped seeing that during fuzzing, so I guess that it got fixed somehow...
 
-On Fri, 19 Apr 2013 11:22:37 +0100 Mark Brown <broonie@kernel.org> wrote:
->
-> On Fri, Apr 19, 2013 at 09:18:58AM +1000, Stephen Rothwell wrote:
->=20
-> > Done.  Should I also use your kernel.org address as your contact address
-> > (instead of broonie@opensource.wolfsonmicro.com)?
->=20
-> Yes, please - the Wolfson one won't work at some point.  I always
-> assumed you got that stuff from MAINTAINERS, please also check that
-> you're using lgirdwood@gmail.com for Liam Girdwood.
 
-Done.  I had already changed Liam's address.
+Thanks,
+Sasha
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Fri__26_Apr_2013_10_50_54_+1000_vY6GQFFiTD_k1bLX
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRec9uAAoJEECxmPOUX5FEJHAP/1SpDuYOUdCHemvIPpksOdH/
-ukxdEWz26deEgW2S5/aiP/sRKp18oZfWEgHrJsxkkMY6fFq32fFsveHTYkucGVgK
-yarOyD7qzIqYiUCDYWdDT9YI6TyYld1tiono1634JbLWGT/pn7gKhBMrz+fgHrUm
-iBW/VTZtQqoi6MVFPko4c2aPu9FpbCk/Cv3hESvrGUZGxePNK1HWaG18ttc4sm3N
-aD3f5FYtEAQqg1Y40CfP4oA/ZqgymuLEBn/qA6jsMQt3VT19aRijLhdldzzNaO3y
-fdtAGuWmZrmYlOJKqUsD0R1t2+Lnc3MztZo/4+3hZcd+m1jTCtntfd0Kjz+DQRGK
-aRaGr5TxqBUyIWEnrJOAi2LcEnV4h0sEmhI+EnWThtLkjtxjgTpSwnssCcRZhonW
-8X3rLqIIGX8Id7dmTv0Wbv2OVqk8N3BpYsFQb29iJwBBE6h/F3Z2Br/OeQCvKy3+
-XPXrxZe3n+zdDT5xmA60cFZyNrGJ6Y7YOi38ugI15YINdbw2s8vURLlBsd0SZhim
-TizVxFj/h98RHC3X8Uf+kWKmRs3II/myA8eGUup+eMWdggB14UNT6/5cgm8d6N5V
-Xd93J+GVUyVikBkKxfFaCQD11eDxrqS2jXWzAvDfEeu1UwfrWpEvp98/nJnAFl+A
-tCERlQm4NDtQfGfayeQq
-=6zd1
------END PGP SIGNATURE-----
-
---Signature=_Fri__26_Apr_2013_10_50_54_+1000_vY6GQFFiTD_k1bLX--
