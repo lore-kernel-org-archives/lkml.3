@@ -1,92 +1,473 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759785Ab3DZG5j (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 02:57:39 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:59138 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759684Ab3DZG5c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 02:57:32 -0400
-Message-ID: <517A2552.30808@ti.com>
-Date: Fri, 26 Apr 2013 09:57:22 +0300
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S1759853Ab3DZG5o (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 02:57:44 -0400
+Received: from lan.nucleusys.com ([92.247.61.126]:37932 "EHLO
+	zztop.nucleusys.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1759794Ab3DZG5m (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Apr 2013 02:57:42 -0400
+Date: Fri, 26 Apr 2013 09:57:34 +0300 (EEST)
+From: Petko Manolov <petkan@nucleusys.com>
+To: David Miller <davem@davemloft.net>
+cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 3/3] drivers: net: usb: pegasus: fix control urb submission
+Message-ID: <alpine.DEB.2.02.1304260950350.3746@fry.nucleusys.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Tony Breeds <tony@bakeyournoodle.com>
-Subject: Re: linux-next: build failure after merge of the omap_dss2 tree
-References: <20130426151027.db71ddf367c85fe0682cbff6@canb.auug.org.au> <517A1117.7000501@ti.com> <20130426155659.f203481f914edeaba9f1e493@canb.auug.org.au>
-In-Reply-To: <20130426155659.f203481f914edeaba9f1e493@canb.auug.org.au>
-X-Enigmail-Version: 1.4.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="------------enig9568ACAC880CA2EFD9CE51D3"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---------------enig9568ACAC880CA2EFD9CE51D3
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+From: Petko Manolov <petkan@nucleusys.com>
 
-On 2013-04-26 08:56, Stephen Rothwell wrote:
-> Hi Tomi,
->=20
-> On Fri, 26 Apr 2013 08:31:03 +0300 Tomi Valkeinen <tomi.valkeinen@ti.co=
-m> wrote:
->>
->> On 2013-04-26 08:10, Stephen Rothwell wrote:
->>>
->>> After merging the omap_dss2 tree, today's linux-next build (powerpc
->>> ppc64_defconfig) failed like this:
->>>
->>> drivers/video/ps3fb.c: In function 'ps3fb_mmap':
->>> drivers/video/ps3fb.c:710:2: error: implicit declaration of function =
-'vm_ioremap_memory' [-Werror=3Dimplicit-function-declaration]
->>> drivers/video/ps3fb.c:712:2: error: 'offset' undeclared (first use in=
- this function)
->>>
->>> Caused by commit 6ea19860d6c5 ("fbdev/ps3fb: use vm_iomap_memory()").=
+Pegasus driver used single callback for sync and async control URBs. 
+Special flags were employed to distinguish between both, but due to flawed 
+logic it didn't always work.  As a result of this change 
+[get|set]_registers() are now much simpler.  Async write is also leaner 
+and does not use single, statically allocated memory for usb_ctrlrequest, 
+which is another potential race when asynchronously submitting URBs.
 
->>>
->>> I have used the omap_dss2 tree from next-20130424 for today.
->>>
->>
->> Thanks. Updated patch below. I couldn't right away find where to downl=
-oad a
->> ppc64 toolchain, so not compile tested...
->=20
-> https://www.kernel.org/pub/tools/crosstool/
+Signed-off-by: Petko Manolov <petkan@nucleusys.com>
+---
+ pegasus.c |  284 +++++++++++++--------------------------------------
+ pegasus.h |    4 +-
+ 2 files changed, 75 insertions(+), 213 deletions(-)
 
-Thanks. It compiles now. I've pushed new version to my for-next branch.
-
- Tomi
-
-
-
-
---------------enig9568ACAC880CA2EFD9CE51D3
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Using GnuPG with undefined - http://www.enigmail.net/
-
-iQIcBAEBAgAGBQJReiVSAAoJEPo9qoy8lh71l+UP/3uxcPMPOewbeFagVkHBhgoK
-MphfS1ehCipIMoiDmSIZMDke9YATwsI/0nc/WEqDq5VjnZPIwadVEX+mL4gogj1H
-uMG4d9BKe86oSv+XZWDEmsVEuT2q/3h7bFIu5EYIXfhswd91XhgrbEIBPOLU+Cmd
-L8+9YIGRJBtV3/uRDkiiBxpI9cyEYGrLvybuWFFNyE0/I/3aCfoXM1VeH9gP1eEx
-t6fzo+NJhSwdcSzWgQbIUrPiDOfbmpaawBUFXrmz25Kt0eoCkhOtqLMEsuvKlGTe
-gMKut1T3BNB3iGYyRLb6R14o/uWZtgoFZibmLJF8LW1HzCQJsQOH1aWYs+/qFGU3
-9MSW7vCEbQrGrUUz4O+1RtcBjm3zsG8YI1hCBWo5COzUhee5g2trpsRexGRdjjuy
-OADlTg4s55C3i8wXvQvtkL+y0iUbFELUnJ81IbkWMLX+dpYCwDxo7RrcqsmhIBxX
-tVA4ik6zZaRkwDQcOY8z3wlt3hr0uMN8yeVy0tK8LWSryzo8bEF7pLTo97oWYG5z
-R6JsqNX/nQyyJdsrzyG8IVQKWRu+TZccYqT0+Ya/yA/u7PzGwMmT/cZ+u31GZjDC
-a9n9difHK8BPrV1EZbOYsuTINvOMBfDuNk6TQnmh4Rb1hsqzW1cnGaOjTa8tenYk
-tXwAhmboyf3jonp4J4Uv
-=mKHL
------END PGP SIGNATURE-----
-
---------------enig9568ACAC880CA2EFD9CE51D3--
+diff --git a/pegasus.c b/pegasus.c
+index 5eefb27..2221c40 100644
+--- a/pegasus.c
++++ b/pegasus.c
+@@ -1,5 +1,5 @@
+ /*
+- *  Copyright (c) 1999-2005 Petko Manolov (petkan@users.sourceforge.net)
++ *  Copyright (c) 1999-2013 Petko Manolov (petkan@nucleusys.com)
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 as
+@@ -26,6 +26,9 @@
+  *		v0.5.1	ethtool support added
+  *		v0.5.5	rx socket buffers are in a pool and the their allocation
+  *			is out of the interrupt routine.
++ *		...
++ *		v0.9.3	simplified [get|set]_register(s), async update registers
++ *			logic revisited, receive skb_pool removed.
+  */
+ 
+ #include <linux/sched.h>
+@@ -45,7 +48,7 @@
+ /*
+  * Version Information
+  */
+-#define DRIVER_VERSION "v0.6.14 (2006/09/27)"
++#define DRIVER_VERSION "v0.9.3 (2013/04/25)"
+ #define DRIVER_AUTHOR "Petko Manolov <petkan@users.sourceforge.net>"
+ #define DRIVER_DESC "Pegasus/Pegasus II USB Ethernet driver"
+ 
+@@ -108,220 +111,90 @@ MODULE_PARM_DESC(msg_level, "Override default message level");
+ MODULE_DEVICE_TABLE(usb, pegasus_ids);
+ static const struct net_device_ops pegasus_netdev_ops;
+ 
+-static int update_eth_regs_async(pegasus_t *);
+-/* Aargh!!! I _really_ hate such tweaks */
+-static void ctrl_callback(struct urb *urb)
++/*****/
++
++static void async_ctrl_callback(struct urb *urb)
+ {
+-	pegasus_t *pegasus = urb->context;
++	struct usb_ctrlrequest *req = (struct usb_ctrlrequest *)urb->context;
+ 	int status = urb->status;
+ 
+-	if (!pegasus)
+-		return;
+-
+-	switch (status) {
+-	case 0:
+-		if (pegasus->flags & ETH_REGS_CHANGE) {
+-			pegasus->flags &= ~ETH_REGS_CHANGE;
+-			pegasus->flags |= ETH_REGS_CHANGED;
+-			update_eth_regs_async(pegasus);
+-			return;
+-		}
+-		break;
+-	case -EINPROGRESS:
+-		return;
+-	case -ENOENT:
+-		break;
+-	default:
+-		if (net_ratelimit())
+-			netif_dbg(pegasus, drv, pegasus->net,
+-				  "%s, status %d\n", __func__, status);
+-		break;
+-	}
+-	pegasus->flags &= ~ETH_REGS_CHANGED;
+-	wake_up(&pegasus->ctrl_wait);
++	if (status < 0)
++		dev_dbg(&urb->dev->dev, "%s failed with %d", __func__, status);
++	kfree(req);
++	usb_free_urb(urb);
+ }
+ 
+-static int get_registers(pegasus_t *pegasus, __u16 indx, __u16 size,
+-			 void *data)
++static int get_registers(pegasus_t *pegasus, __u16 indx, __u16 size, void *data)
+ {
+ 	int ret;
+-	char *buffer;
+-	DECLARE_WAITQUEUE(wait, current);
+-
+-	buffer = kmalloc(size, GFP_KERNEL);
+-	if (!buffer) {
+-		netif_warn(pegasus, drv, pegasus->net,
+-			   "out of memory in %s\n", __func__);
+-		return -ENOMEM;
+-	}
+-	add_wait_queue(&pegasus->ctrl_wait, &wait);
+-	set_current_state(TASK_UNINTERRUPTIBLE);
+-	while (pegasus->flags & ETH_REGS_CHANGED)
+-		schedule();
+-	remove_wait_queue(&pegasus->ctrl_wait, &wait);
+-	set_current_state(TASK_RUNNING);
+-
+-	pegasus->dr.bRequestType = PEGASUS_REQT_READ;
+-	pegasus->dr.bRequest = PEGASUS_REQ_GET_REGS;
+-	pegasus->dr.wValue = cpu_to_le16(0);
+-	pegasus->dr.wIndex = cpu_to_le16(indx);
+-	pegasus->dr.wLength = cpu_to_le16(size);
+-	pegasus->ctrl_urb->transfer_buffer_length = size;
+-
+-	usb_fill_control_urb(pegasus->ctrl_urb, pegasus->usb,
+-			     usb_rcvctrlpipe(pegasus->usb, 0),
+-			     (char *) &pegasus->dr,
+-			     buffer, size, ctrl_callback, pegasus);
+-
+-	add_wait_queue(&pegasus->ctrl_wait, &wait);
+-	set_current_state(TASK_UNINTERRUPTIBLE);
+-
+-	/* using ATOMIC, we'd never wake up if we slept */
+-	if ((ret = usb_submit_urb(pegasus->ctrl_urb, GFP_ATOMIC))) {
+-		set_current_state(TASK_RUNNING);
+-		if (ret == -ENODEV)
+-			netif_device_detach(pegasus->net);
+-		if (net_ratelimit())
+-			netif_err(pegasus, drv, pegasus->net,
+-				  "%s, status %d\n", __func__, ret);
+-		goto out;
+-	}
+-
+-	schedule();
+-out:
+-	remove_wait_queue(&pegasus->ctrl_wait, &wait);
+-	memcpy(data, buffer, size);
+-	kfree(buffer);
+ 
++	ret = usb_control_msg(pegasus->usb, usb_rcvctrlpipe(pegasus->usb, 0),
++			      PEGASUS_REQ_GET_REGS, PEGASUS_REQT_READ, 0,
++			      indx, data, size, 1000);
++	if (ret < 0)
++		netif_dbg(pegasus, drv, pegasus->net,
++			  "%s returned %d\n", __func__, ret);
+ 	return ret;
+ }
+ 
+-static int set_registers(pegasus_t *pegasus, __u16 indx, __u16 size,
+-			 void *data)
++static int set_registers(pegasus_t *pegasus, __u16 indx, __u16 size, void *data)
+ {
+ 	int ret;
+-	char *buffer;
+-	DECLARE_WAITQUEUE(wait, current);
+-
+-	buffer = kmemdup(data, size, GFP_KERNEL);
+-	if (!buffer) {
+-		netif_warn(pegasus, drv, pegasus->net,
+-			   "out of memory in %s\n", __func__);
+-		return -ENOMEM;
+-	}
+-
+-	add_wait_queue(&pegasus->ctrl_wait, &wait);
+-	set_current_state(TASK_UNINTERRUPTIBLE);
+-	while (pegasus->flags & ETH_REGS_CHANGED)
+-		schedule();
+-	remove_wait_queue(&pegasus->ctrl_wait, &wait);
+-	set_current_state(TASK_RUNNING);
+-
+-	pegasus->dr.bRequestType = PEGASUS_REQT_WRITE;
+-	pegasus->dr.bRequest = PEGASUS_REQ_SET_REGS;
+-	pegasus->dr.wValue = cpu_to_le16(0);
+-	pegasus->dr.wIndex = cpu_to_le16(indx);
+-	pegasus->dr.wLength = cpu_to_le16(size);
+-	pegasus->ctrl_urb->transfer_buffer_length = size;
+-
+-	usb_fill_control_urb(pegasus->ctrl_urb, pegasus->usb,
+-			     usb_sndctrlpipe(pegasus->usb, 0),
+-			     (char *) &pegasus->dr,
+-			     buffer, size, ctrl_callback, pegasus);
+-
+-	add_wait_queue(&pegasus->ctrl_wait, &wait);
+-	set_current_state(TASK_UNINTERRUPTIBLE);
+-
+-	if ((ret = usb_submit_urb(pegasus->ctrl_urb, GFP_ATOMIC))) {
+-		if (ret == -ENODEV)
+-			netif_device_detach(pegasus->net);
+-		netif_err(pegasus, drv, pegasus->net,
+-			  "%s, status %d\n", __func__, ret);
+-		goto out;
+-	}
+-
+-	schedule();
+-out:
+-	remove_wait_queue(&pegasus->ctrl_wait, &wait);
+-	kfree(buffer);
+ 
++	ret = usb_control_msg(pegasus->usb, usb_sndctrlpipe(pegasus->usb, 0),
++			      PEGASUS_REQ_SET_REGS, PEGASUS_REQT_WRITE, 0,
++			      indx, data, size, 100);
++	if (ret < 0)
++		netif_dbg(pegasus, drv, pegasus->net,
++			  "%s returned %d\n", __func__, ret);
+ 	return ret;
+ }
+ 
+ static int set_register(pegasus_t *pegasus, __u16 indx, __u8 data)
+ {
+ 	int ret;
+-	char *tmp;
+-	DECLARE_WAITQUEUE(wait, current);
+-
+-	tmp = kmemdup(&data, 1, GFP_KERNEL);
+-	if (!tmp) {
+-		netif_warn(pegasus, drv, pegasus->net,
+-			   "out of memory in %s\n", __func__);
+-		return -ENOMEM;
+-	}
+-	add_wait_queue(&pegasus->ctrl_wait, &wait);
+-	set_current_state(TASK_UNINTERRUPTIBLE);
+-	while (pegasus->flags & ETH_REGS_CHANGED)
+-		schedule();
+-	remove_wait_queue(&pegasus->ctrl_wait, &wait);
+-	set_current_state(TASK_RUNNING);
+-
+-	pegasus->dr.bRequestType = PEGASUS_REQT_WRITE;
+-	pegasus->dr.bRequest = PEGASUS_REQ_SET_REG;
+-	pegasus->dr.wValue = cpu_to_le16(data);
+-	pegasus->dr.wIndex = cpu_to_le16(indx);
+-	pegasus->dr.wLength = cpu_to_le16(1);
+-	pegasus->ctrl_urb->transfer_buffer_length = 1;
+-
+-	usb_fill_control_urb(pegasus->ctrl_urb, pegasus->usb,
+-			     usb_sndctrlpipe(pegasus->usb, 0),
+-			     (char *) &pegasus->dr,
+-			     tmp, 1, ctrl_callback, pegasus);
+-
+-	add_wait_queue(&pegasus->ctrl_wait, &wait);
+-	set_current_state(TASK_UNINTERRUPTIBLE);
+-
+-	if ((ret = usb_submit_urb(pegasus->ctrl_urb, GFP_ATOMIC))) {
+-		if (ret == -ENODEV)
+-			netif_device_detach(pegasus->net);
+-		if (net_ratelimit())
+-			netif_err(pegasus, drv, pegasus->net,
+-				  "%s, status %d\n", __func__, ret);
+-		goto out;
+-	}
+-
+-	schedule();
+-out:
+-	remove_wait_queue(&pegasus->ctrl_wait, &wait);
+-	kfree(tmp);
+ 
++	ret = usb_control_msg(pegasus->usb, usb_sndctrlpipe(pegasus->usb, 0),
++			      PEGASUS_REQ_SET_REG, PEGASUS_REQT_WRITE, data,
++			      indx, &data, 1, 1000);
++	if (ret < 0)
++		netif_dbg(pegasus, drv, pegasus->net,
++			  "%s returned %d\n", __func__, ret);
+ 	return ret;
+ }
+ 
+ static int update_eth_regs_async(pegasus_t *pegasus)
+ {
+-	int ret;
+-
+-	pegasus->dr.bRequestType = PEGASUS_REQT_WRITE;
+-	pegasus->dr.bRequest = PEGASUS_REQ_SET_REGS;
+-	pegasus->dr.wValue = cpu_to_le16(0);
+-	pegasus->dr.wIndex = cpu_to_le16(EthCtrl0);
+-	pegasus->dr.wLength = cpu_to_le16(3);
+-	pegasus->ctrl_urb->transfer_buffer_length = 3;
++	int ret = -ENOMEM;
++	struct urb *async_urb;
++	struct usb_ctrlrequest *req;
+ 
+-	usb_fill_control_urb(pegasus->ctrl_urb, pegasus->usb,
+-			     usb_sndctrlpipe(pegasus->usb, 0),
+-			     (char *) &pegasus->dr,
+-			     pegasus->eth_regs, 3, ctrl_callback, pegasus);
++	req = kmalloc(sizeof(struct usb_ctrlrequest), GFP_ATOMIC);
++	if (req == NULL)
++		return ret;
+ 
+-	if ((ret = usb_submit_urb(pegasus->ctrl_urb, GFP_ATOMIC))) {
++	async_urb = usb_alloc_urb(0, GFP_ATOMIC);
++	if (async_urb == NULL) {
++		kfree(req);
++		return ret;
++	}
++	req->bRequestType = PEGASUS_REQT_WRITE;
++	req->bRequest = PEGASUS_REQ_SET_REGS;
++	req->wValue = cpu_to_le16(0);
++	req->wIndex = cpu_to_le16(EthCtrl0);
++	req->wLength = cpu_to_le16(3);
++
++	usb_fill_control_urb(async_urb, pegasus->usb,
++			     usb_sndctrlpipe(pegasus->usb, 0), (void *)req,
++			     pegasus->eth_regs, 3, async_ctrl_callback, req);
++
++	ret = usb_submit_urb(async_urb, GFP_ATOMIC);
++	if (ret) {
+ 		if (ret == -ENODEV)
+ 			netif_device_detach(pegasus->net);
+ 		netif_err(pegasus, drv, pegasus->net,
+-			  "%s, status %d\n", __func__, ret);
++			  "%s returned %d\n", __func__, ret);
+ 	}
+-
+ 	return ret;
+ }
+ 
+@@ -901,7 +774,6 @@ static void free_all_urbs(pegasus_t *pegasus)
+ 	usb_free_urb(pegasus->intr_urb);
+ 	usb_free_urb(pegasus->tx_urb);
+ 	usb_free_urb(pegasus->rx_urb);
+-	usb_free_urb(pegasus->ctrl_urb);
+ }
+ 
+ static void unlink_all_urbs(pegasus_t *pegasus)
+@@ -909,47 +781,42 @@ static void unlink_all_urbs(pegasus_t *pegasus)
+ 	usb_kill_urb(pegasus->intr_urb);
+ 	usb_kill_urb(pegasus->tx_urb);
+ 	usb_kill_urb(pegasus->rx_urb);
+-	usb_kill_urb(pegasus->ctrl_urb);
+ }
+ 
+ static int alloc_urbs(pegasus_t *pegasus)
+ {
+-	pegasus->ctrl_urb = usb_alloc_urb(0, GFP_KERNEL);
+-	if (!pegasus->ctrl_urb)
+-		return 0;
++	int res = -ENOMEM;
++
+ 	pegasus->rx_urb = usb_alloc_urb(0, GFP_KERNEL);
+ 	if (!pegasus->rx_urb) {
+-		usb_free_urb(pegasus->ctrl_urb);
+-		return 0;
++		return res;
+ 	}
+ 	pegasus->tx_urb = usb_alloc_urb(0, GFP_KERNEL);
+ 	if (!pegasus->tx_urb) {
+ 		usb_free_urb(pegasus->rx_urb);
+-		usb_free_urb(pegasus->ctrl_urb);
+-		return 0;
++		return res;
+ 	}
+ 	pegasus->intr_urb = usb_alloc_urb(0, GFP_KERNEL);
+ 	if (!pegasus->intr_urb) {
+ 		usb_free_urb(pegasus->tx_urb);
+ 		usb_free_urb(pegasus->rx_urb);
+-		usb_free_urb(pegasus->ctrl_urb);
+-		return 0;
++		return res;
+ 	}
+ 
+-	return 1;
++	return 0;
+ }
+ 
+ static int pegasus_open(struct net_device *net)
+ {
+ 	pegasus_t *pegasus = netdev_priv(net);
+-	int res;
++	int res=-ENOMEM;
+ 
+ 	if (pegasus->rx_skb == NULL)
+ 		pegasus->rx_skb = __netdev_alloc_skb_ip_align(pegasus->net,
+ 							      PEGASUS_MTU,
+ 							      GFP_KERNEL);
+ 	if (!pegasus->rx_skb)
+-		return -ENOMEM;
++		goto exit;
+ 
+ 	res = set_registers(pegasus, EthID, 6, net->dev_addr);
+ 
+@@ -975,7 +842,8 @@ static int pegasus_open(struct net_device *net)
+ 		usb_kill_urb(pegasus->rx_urb);
+ 		goto exit;
+ 	}
+-	if ((res = enable_net_traffic(net, pegasus->usb))) {
++	res = enable_net_traffic(net, pegasus->usb);
++	if (res < 0) {
+ 		netif_dbg(pegasus, ifup, net,
+ 			  "can't enable_net_traffic() - %d\n", res);
+ 		res = -EIO;
+@@ -1148,11 +1016,7 @@ static void pegasus_set_multicast(struct net_device *net)
+ 		pegasus->eth_regs[EthCtrl0] &= ~RX_MULTICAST;
+ 		pegasus->eth_regs[EthCtrl2] &= ~RX_PROMISCUOUS;
+ 	}
+-
+-	pegasus->ctrl_urb->status = 0;
+-
+-	pegasus->flags |= ETH_REGS_CHANGE;
+-	ctrl_callback(pegasus->ctrl_urb);
++	update_eth_regs_async(pegasus);
+ }
+ 
+ static __u8 mii_phy_probe(pegasus_t *pegasus)
+@@ -1271,7 +1135,8 @@ static int pegasus_probe(struct usb_interface *intf,
+ 	pegasus->dev_index = dev_index;
+ 	init_waitqueue_head(&pegasus->ctrl_wait);
+ 
+-	if (!alloc_urbs(pegasus)) {
++	res = alloc_urbs(pegasus);
++	if (res < 0) {
+ 		dev_err(&intf->dev, "can't allocate %s\n", "urbs");
+ 		goto out1;
+ 	}
+@@ -1321,12 +1186,9 @@ static int pegasus_probe(struct usb_interface *intf,
+ 	if (res)
+ 		goto out3;
+ 	queue_delayed_work(pegasus_workqueue, &pegasus->carrier_check,
+-				CARRIER_CHECK_DELAY);
+-
+-	dev_info(&intf->dev, "%s, %s, %pM\n",
+-		 net->name,
+-		 usb_dev_id[dev_index].name,
+-		 net->dev_addr);
++			   CARRIER_CHECK_DELAY);
++	dev_info(&intf->dev, "%s, %s, %pM\n", net->name,
++		 usb_dev_id[dev_index].name, net->dev_addr);
+ 	return 0;
+ 
+ out3:
+diff --git a/pegasus.h b/pegasus.h
+index 00d44e3..4d835fc 100644
+--- a/pegasus.h
++++ b/pegasus.h
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (c) 1999-2003 Petko Manolov - Petkan (petkan@users.sourceforge.net)
++ * Copyright (c) 1999-2013 Petko Manolov (petkan@nucleusys.com)
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 as published
+@@ -95,7 +95,7 @@ typedef struct pegasus {
+ 	int			intr_interval;
+ 	struct tasklet_struct	rx_tl;
+ 	struct delayed_work	carrier_check;
+-	struct urb		*ctrl_urb, *rx_urb, *tx_urb, *intr_urb;
++	struct urb		*rx_urb, *tx_urb, *intr_urb;
+ 	struct sk_buff		*rx_skb;
+ 	struct usb_ctrlrequest	dr;
+ 	wait_queue_head_t	ctrl_wait;
