@@ -1,39 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757411Ab3DZSsM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 14:48:12 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:43696 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754410Ab3DZSsJ (ORCPT
+	id S1757514Ab3DZSxa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 14:53:30 -0400
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:54027 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757169Ab3DZSx2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 14:48:09 -0400
-Date: Fri, 26 Apr 2013 14:48:07 -0400 (EDT)
-Message-Id: <20130426.144807.1034863907146808723.davem@davemloft.net>
-To: eric.dumazet@gmail.com
-Cc: xi.wang@gmail.com, dborkman@redhat.com, linux@arm.linux.org.uk,
-        heiko.carstens@de.ibm.com, edumazet@google.com, wad@chromium.org,
-        akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH net-next 2/6] x86: bpf_jit_comp: support
- BPF_S_ANC_SECCOMP_LD_W instruction
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1366991021.8964.221.camel@edumazet-glaptop>
-References: <1366989094.8964.212.camel@edumazet-glaptop>
-	<CAKU6vybrYK9oimKSEGhoLeNzhtk=7r3zouRgzDFqGwJHd=psGQ@mail.gmail.com>
-	<1366991021.8964.221.camel@edumazet-glaptop>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Fri, 26 Apr 2013 11:48:09 -0700 (PDT)
+	Fri, 26 Apr 2013 14:53:28 -0400
+MIME-Version: 1.0
+In-Reply-To: <5179A7CE.2050605@zytor.com>
+References: <1366926860-26776-1-git-send-email-keescook@chromium.org>
+	<5179A7CE.2050605@zytor.com>
+Date: Fri, 26 Apr 2013 11:53:28 -0700
+X-Google-Sender-Auth: ujKAUzfq58Zf7gepY_7oWsjUHAg
+Message-ID: <CAGXu5jJ0ZQqphMkzEGt4tDL-F9Y47pCftFJGB4f3buFmJ6h8ZA@mail.gmail.com>
+Subject: Re: [PATCH v3 0/6] kernel ASLR
+From: Kees Cook <keescook@chromium.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "kernel-hardening@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
+        Matthew Garrett <mjg@redhat.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Eric Northup <digitaleric@google.com>,
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
-Date: Fri, 26 Apr 2013 08:43:41 -0700
+On Thu, Apr 25, 2013 at 3:01 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 04/25/2013 02:54 PM, Kees Cook wrote:
+>> This continues to build on the tip/kaslr patches for KASLR. This series
+>> converts the logic to C, and moves both relocation and address selection
+>> into the decompress_kernel path. Several areas were refactored to allow
+>> for some code reuse (e.g. CPU flags, kernel command line).
+>>
+>> This does not yet attempt to rework the page tables to handle an arbitrary
+>> physical memory location on x86_64. I would love some suggestions on
+>> how to do this. :)
+>>
+>
+> We *should* already support arbitrary physical memory locations at least
+> in the kernel proper (the decompressor might need some work.)
+>
+> We may want to do in the decompressor what we already do in the kernel,
+> and set up a #PF handler which creates page tables on demand.  That way
+> you can simply treat the entire memory space as a single linear space.
 
-> You send patches and ask us to spend hours on it, this is not how it
-> works.
+I'll need to compare the logic used for that against what's in
+head_64.S for setting up the initial tables. And mapping the kernel
+chunk as not 1-to-1, etc.
 
-+1
+In the meantime, I'll send a v4 series with the other identified
+changes since everything else (up to the 64-bit phy/virt detachment)
+seems to be working.
+
+-Kees
+
+--
+Kees Cook
+Chrome OS Security
