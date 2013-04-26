@@ -1,92 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756605Ab3DZPbB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 11:31:01 -0400
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:59212 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754073Ab3DZPbA (ORCPT
+	id S1756633Ab3DZPbv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 11:31:51 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36174 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755329Ab3DZPbu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 11:31:00 -0400
+	Fri, 26 Apr 2013 11:31:50 -0400
+Date: Fri, 26 Apr 2013 16:31:45 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Cyril Chemparathy <cyril@ti.com>, Liam Girdwood <lgirdwood@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] regulator: tps6524x: Use regulator_map_voltage_ascend
+Message-ID: <20130426153144.GY5019@opensource.wolfsonmicro.com>
+References: <1366957552.22992.1.camel@phoenix>
 MIME-Version: 1.0
-In-Reply-To: <CA+rthh9QuQ-V+=Of8GB-SwqX-Z8SUEz48YLyBfbng5j3wd23Jw@mail.gmail.com>
-References: <1366926860-26776-1-git-send-email-keescook@chromium.org>
-	<1366926860-26776-5-git-send-email-keescook@chromium.org>
-	<CA+rthh9QuQ-V+=Of8GB-SwqX-Z8SUEz48YLyBfbng5j3wd23Jw@mail.gmail.com>
-Date: Fri, 26 Apr 2013 08:30:59 -0700
-X-Google-Sender-Auth: tiz0ePbM-_ZBcYl_SfLkNF_uTDc
-Message-ID: <CAGXu5jKTe=bVOha0WxztdVZtmZf5j7+rek7ZkZVtONZ9LVaSbQ@mail.gmail.com>
-Subject: Re: [kernel-hardening] [PATCH 4/6] x86: kaslr: select random base offset
-From: Kees Cook <keescook@chromium.org>
-To: Mathias Krause <minipli@googlemail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "x86@kernel.org" <x86@kernel.org>,
-        Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
-        Matthew Garrett <mjg@redhat.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Eric Northup <digitaleric@google.com>,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="R9qb+eAX/AZDW6n0"
+Content-Disposition: inline
+In-Reply-To: <1366957552.22992.1.camel@phoenix>
+X-Cookie: Caution: Keep out of reach of children.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 25, 2013 at 11:13 PM, Mathias Krause <minipli@googlemail.com> wrote:
-> On Thu, Apr 25, 2013 at 11:54 PM, Kees Cook <keescook@chromium.org> wrote:
->> Select a random location when CONFIG_RANDOMIZE_BASE is used, bounded
->> by CONFIG_RANDOMIZE_BASE_MAX_OFFSET. Sources of randomness currently
->> include RDRAND and RDTSC.
->>
->> Signed-off-by: Kees Cook <keescook@chromium.org>
->> ---
->>  arch/x86/Kconfig                |   29 +++++++++++++--
->>  arch/x86/boot/compressed/aslr.c |   75 +++++++++++++++++++++++++++++++++++++--
->>  2 files changed, 100 insertions(+), 4 deletions(-)
->>
->> [snip]
->>
->> diff --git a/arch/x86/boot/compressed/aslr.c b/arch/x86/boot/compressed/aslr.c
->> index d5331ee..11a91c6 100644
->> --- a/arch/x86/boot/compressed/aslr.c
->> +++ b/arch/x86/boot/compressed/aslr.c
->> @@ -2,18 +2,89 @@
->>
->>  #ifdef CONFIG_RANDOMIZE_BASE
->>
->> +#include <asm/archrandom.h>
->> +static inline int rdrand(unsigned long *v)
->> +{
->> +       int ok;
->> +       asm volatile("1: " RDRAND_LONG "\n\t"
->> +                    "jc 2f\n\t"
->> +                    "decl %0\n\t"
->> +                    "jnz 1b\n\t"
->> +                    "2:"
->> +                    : "=r" (ok), "=a" (*v)
->> +                    : "0" (RDRAND_RETRY_LOOPS));
->> +       return ok;
->> +}
->> +
->> +static inline uint32_t rdtsc(void)
->> +{
->> +       uint32_t timer;
->> +
->> +       asm volatile("rdtsc\n" : "=a" (timer));
->
-> '\n' in the assembly statement is not needed. Also, RDTSC trashes
-> edx/rdx as well so it should be mentioned in the clobber list, at
-> least.
-> Maybe using rdtscl() from <asm/msr.h> instead is an option?
 
-Ah yeah, rdtscl is perfect. I'll use that instead.
+--R9qb+eAX/AZDW6n0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Thanks!
+On Fri, Apr 26, 2013 at 02:25:52PM +0800, Axel Lin wrote:
+> All regulators have ascendant voltage list in this driver.
+> Use regulator_map_voltage_ascend for them.
 
--Kees
+Applied, thanks.
 
--- 
-Kees Cook
-Chrome OS Security
+--R9qb+eAX/AZDW6n0
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRep3WAAoJELSic+t+oim9aXoP/iplNLrdwDcK15Odga+zrVIH
+jTn86tKltJIJQ5aJuf0gGPbly/zjYnUJgbymQp4idbK/IMe/XjfI7/YRb22YFHZZ
+sdbpWqEuE0lRlO3nUjRnv7MElslIAFdv5H/X++pIxiH8hhsJLbrChdhmeFgSyR+E
+qj5WJ4aN0TjwtWYaBBPMaxFqSjOoOU8x9r8dmO8l5+sgpP2HJOTmqep+wn/m0Byo
+YVWR+ZMDuZ7iaLjbsEUFCk1whlo5qXNIpS7R2lATFcnfkfD1XeP/5lN5p1lucP6+
+JymrqDlISHU0QeAFvz0ZW3FKooytCHqhlZYQnGhu9OnM89RJ/7ZGMKDlM3FSvfji
+bQlkOSCxfa3qpJ0a2Nk0JONA1AotLwgg0ISnIJnXk7mm9lyyKJ7beY+DOClSk3G8
+/yhNqlJc9IyyUNXzw74AhSjIOBFKdpiTeZUUR3UksVvVlwDx7MH8vUwhh/5sugma
+mp+CzeVAoPfT6ikON6rvsFufT+gHxpFAgIsO8p4p7v7yu/DFQ2g2ULCoHGZn6O8m
+vtbFexgeXy0s50hRqPcB2j2hxaKOZ9zRAWwEncnLaIqswzFiXdjOJClLQKVxOX4r
+FLSNLxa/CpPu28IVUUoQs3I+I30bS2P5mLXpcSyoV6he1Spi7wUcY4NTCC3G0g4B
+TxevW3hCTz7olLhb3ha0
+=K8YB
+-----END PGP SIGNATURE-----
+
+--R9qb+eAX/AZDW6n0--
