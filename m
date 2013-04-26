@@ -1,50 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757152Ab3DZQuj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 12:50:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58338 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756588Ab3DZQui (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 12:50:38 -0400
-Date: Fri, 26 Apr 2013 18:47:16 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Jacob Shin <jacob.shin@amd.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Will Deacon <will.deacon@arm.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "x86@kernel.org" <x86@kernel.org>,
-        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V2 1/4] perf: Add hardware breakpoint address mask
-Message-ID: <20130426164716.GA30402@redhat.com>
-References: <20130423095437.GD17593@mudshark.cambridge.arm.com> <20130423143423.GB17021@jshin-Toonie> <20130423144057.GA19644@jshin-Toonie> <20130423150240.GD18616@mudshark.cambridge.arm.com> <20130423151846.GA22052@jshin-Toonie> <20130424094853.GB21850@mudshark.cambridge.arm.com> <20130424163038.GA29816@jshin-Toonie> <20130425170635.GA1324@redhat.com> <5179652F.8080507@zytor.com> <20130425231911.GB31751@jshin-Toonie>
+	id S1757189Ab3DZQvf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 12:51:35 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:55058 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751420Ab3DZQve (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Apr 2013 12:51:34 -0400
+Date: Fri, 26 Apr 2013 12:51:33 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: ZhenHua <zhen-hual@hp.com>
+cc: gregkh@linuxfoundation.org, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1] driver,usb: Fix a warning in uhci-hcd driver
+In-Reply-To: <517A31A9.5070504@hp.com>
+Message-ID: <Pine.LNX.4.44L0.1304261247490.1075-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130425231911.GB31751@jshin-Toonie>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/25, Jacob Shin wrote:
->
-> Right now perf
-> userland tool hard codes bp_len to 4, so I need to modify it to allow
-> user to override the length if desired.
+On Fri, 26 Apr 2013, ZhenHua wrote:
 
-imho this itself looks like a good change...
+> There is a function  wait_for_HP() in uhci-hub.c. In this
+> patch, it is used in suspend_rh(),  I think this can be a
+> solution. And I have tested this patch, it can fix the bug.
+> 
+> I think there is another patch needed. As Alan said in another
+> mail, in the UHCI_RH_RUNNING_NODEVS case, it should not be stopped
+> if the uhci device is HP iLo virtual usb.
 
-> Oleg, Frederic, et al.
->
-> Which syntax do you prefer?
->
->   $ perf stat -e mem:0x1000/16
+I believe that if you change the UHCI_RH_RUNNING_NODEVS case, you will 
+find that this patch (calling wait_for_HP) isn't needed.
 
-Personally I like this a bit more, but I won't argue in any case.
+In fact, the patch is so easy that I am including it below.  Please 
+test this (without either of your patches) to see if it works.
 
-Oleg.
+Alan Stern
+
+
+
+
+Index: usb-3.9/drivers/usb/host/uhci-hub.c
+===================================================================
+--- usb-3.9.orig/drivers/usb/host/uhci-hub.c
++++ usb-3.9/drivers/usb/host/uhci-hub.c
+@@ -225,7 +225,8 @@ static int uhci_hub_status_data(struct u
+ 		/* auto-stop if nothing connected for 1 second */
+ 		if (any_ports_active(uhci))
+ 			uhci->rh_state = UHCI_RH_RUNNING;
+-		else if (time_after_eq(jiffies, uhci->auto_stop_time))
++		else if (time_after_eq(jiffies, uhci->auto_stop_time) &&
++				!uhci->wait_for_hp)
+ 			suspend_rh(uhci, UHCI_RH_AUTO_STOPPED);
+ 		break;
+ 
 
