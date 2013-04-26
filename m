@@ -1,60 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759047Ab3DZAnA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 20:43:00 -0400
-Received: from mail-vb0-f50.google.com ([209.85.212.50]:43479 "EHLO
-	mail-vb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758891Ab3DZAm7 (ORCPT
+	id S1759272Ab3DZAsl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 20:48:41 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:47195 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758853Ab3DZAsk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 20:42:59 -0400
-MIME-Version: 1.0
-In-Reply-To: <1366910944-3033663-11-git-send-email-arnd@arndb.de>
-References: <1366910944-3033663-1-git-send-email-arnd@arndb.de> <1366910944-3033663-11-git-send-email-arnd@arndb.de>
-From: Masanori Goto <gotom@sanori.org>
-Date: Thu, 25 Apr 2013 17:42:38 -0700
-X-Google-Sender-Auth: gPIo6DshXCO0HbdJHmrqeoDItJk
-Message-ID: <CALZLnaFeLcaGM7_McTZ=pKBRnpXk0AvqOTF=1YCqJv-53yk4XQ@mail.gmail.com>
-Subject: Re: [PATCH 10/21] [SCSI] nsp32: use mdelay instead of large udelay constants
+	Thu, 25 Apr 2013 20:48:40 -0400
+Date: Fri, 26 Apr 2013 09:48:35 +0900
+From: Simon Horman <horms@verge.net.au>
 To: Arnd Bergmann <arnd@arndb.de>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        YOKOTA Hiroshi <yokota@netlab.is.tsukuba.ac.jp>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+        Bastian Hecht <hechtb+renesas@gmail.com>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
+Subject: Re: [PATCH 03/21] ARM: shmobile: don't call irqchip_init
+ unconditionally
+Message-ID: <20130426004835.GA20070@verge.net.au>
+References: <1366910944-3033663-1-git-send-email-arnd@arndb.de>
+ <1366910944-3033663-4-git-send-email-arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1366910944-3033663-4-git-send-email-arnd@arndb.de>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/4/25 Arnd Bergmann <arnd@arndb.de>
->
-> ARM cannot handle udelay for more than 2 miliseconds, so we
-> should use mdelay instead for those.
->
-
-Singed-off-by: GOTO Masanori <gotom@debian.or.jp>
-
+On Thu, Apr 25, 2013 at 07:28:46PM +0200, Arnd Bergmann wrote:
+> The irqchip_init function is only available when building
+> with CONFIG_OF enabled, which causes this build failure for
+> bonito_defconfig:
+> 
+> arch/arm/mach-shmobile/built-in.o: In function `r8a7740_init_irq_of':
+> :(.init.text+0x580): undefined reference to `irqchip_init'
+> 
+> This makes both the OF and the ATAGS portion of the driver
+> conditional, which avoids the build error and also results
+> in smaller object code if not both are enabled, without the
+> need for an #ifdef.
+> 
 > Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: GOTO Masanori <gotom@debian.or.jp>
-> Cc: YOKOTA Hiroshi <yokota@netlab.is.tsukuba.ac.jp>
-> Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
-> Cc: linux-scsi@vger.kernel.org
+> Cc: Bastian Hecht <hechtb+renesas@gmail.com>
+> Cc: Simon Horman <horms+renesas@verge.net.au>
+> Cc: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
 > ---
->  drivers/scsi/nsp32.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/scsi/nsp32.c b/drivers/scsi/nsp32.c
-> index 1e3879d..0665f9c 100644
-> --- a/drivers/scsi/nsp32.c
-> +++ b/drivers/scsi/nsp32.c
-> @@ -2899,7 +2899,7 @@ static void nsp32_do_bus_reset(nsp32_hw_data *data)
->          * reset SCSI bus
->          */
->         nsp32_write1(base, SCSI_BUS_CONTROL, BUSCTL_RST);
-> -       udelay(RESET_HOLD_TIME);
-> +       mdelay(RESET_HOLD_TIME / 1000);
->         nsp32_write1(base, SCSI_BUS_CONTROL, 0);
->         for(i = 0; i < 5; i++) {
->                 intrdat = nsp32_read2(base, IRQ_STATUS); /* dummy read */
-> --
-> 1.8.1.2
->
+>  arch/arm/mach-shmobile/intc-r8a7740.c | 13 +++++++++++--
+>  1 file changed, 11 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/arm/mach-shmobile/intc-r8a7740.c b/arch/arm/mach-shmobile/intc-r8a7740.c
+> index 8871f77..5dc57f1 100644
+> --- a/arch/arm/mach-shmobile/intc-r8a7740.c
+> +++ b/arch/arm/mach-shmobile/intc-r8a7740.c
+> @@ -53,14 +53,23 @@ static void __init r8a7740_init_irq_common(void)
+>  
+>  void __init r8a7740_init_irq_of(void)
+>  {
+> +	if (!IS_ENABLED(CONFIG_OF))
+> +		return;
+> +
+
+In other parts of the shmobile I believe that such code is
+guarded by #ifdef CONFIG_OF and I believe not guarding this code in
+some way was an oversight.
+
+The above change seems fine to me.
+
+>  	irqchip_init();
+>  	r8a7740_init_irq_common();
+>  }
+>  
+>  void __init r8a7740_init_irq(void)
+>  {
+> -	void __iomem *gic_dist_base = ioremap_nocache(0xc2800000, 0x1000);
+> -	void __iomem *gic_cpu_base = ioremap_nocache(0xc2000000, 0x1000);
+> +	void __iomem *gic_dist_base;
+> +	void __iomem *gic_cpu_base;
+> +
+> +	if (!IS_ENABLED(CONFIG_ATAGS))
+> +		return;
+> +
+> +	gic_dist_base = ioremap_nocache(0xc2800000, 0x1000);
+> +	gic_cpu_base = ioremap_nocache(0xc2000000, 0x1000);
+>  
+>  	/* initialize the Generic Interrupt Controller PL390 r0p0 */
+>  	gic_init(0, 29, gic_dist_base, gic_cpu_base);
+
+This one seems broken as the armadillo800eva board currently uses
+it to initialise GIC even if CONFIG_ATAGS is not defined.
+
+I did test the above change on the armadillo800eva board
+with the above change and CONFIG_ATAGS disabled, the result was
+a boot failure. With the change reverted booting seems fine.
