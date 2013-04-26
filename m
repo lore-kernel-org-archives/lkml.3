@@ -1,88 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755427Ab3DZQGj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 12:06:39 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:7849 "EHLO SMTP02.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751396Ab3DZQGh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 12:06:37 -0400
-X-IronPort-AV: E=Sophos;i="4.87,559,1363132800"; 
-   d="scan'208";a="20802940"
-Date: Fri, 26 Apr 2013 17:06:04 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	id S1755318Ab3DZQKi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 12:10:38 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:64174 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751276Ab3DZQKh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Apr 2013 12:10:37 -0400
+Date: Fri, 26 Apr 2013 17:10:12 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
         "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>
-Subject: Re: [PATCH 1/9] xen/smp: Fix leakage of timer interrupt line for
- every CPU online/offline.
-In-Reply-To: <1366142947-18655-2-git-send-email-konrad.wilk@oracle.com>
-Message-ID: <alpine.DEB.2.02.1304261705490.4180@kaball.uk.xensource.com>
-References: <1366142947-18655-1-git-send-email-konrad.wilk@oracle.com> <1366142947-18655-2-git-send-email-konrad.wilk@oracle.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "olof@lixom.net" <olof@lixom.net>
+Subject: Re: [PATCH v8 1/2] arm: introduce psci_smp_ops
+Message-ID: <20130426161012.GH30858@mudshark.cambridge.arm.com>
+References: <alpine.DEB.2.02.1304241935010.4180@kaball.uk.xensource.com>
+ <1366828819-10745-1-git-send-email-stefano.stabellini@eu.citrix.com>
+ <20130425084711.GA12848@mudshark.cambridge.arm.com>
+ <alpine.DEB.2.02.1304251104090.4180@kaball.uk.xensource.com>
+ <20130425104508.GG12848@mudshark.cambridge.arm.com>
+ <alpine.LFD.2.03.1304251054420.1258@syhkavp.arg>
+ <alpine.DEB.2.02.1304261630110.4180@kaball.uk.xensource.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1304261630110.4180@kaball.uk.xensource.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16 Apr 2013, Konrad Rzeszutek Wilk wrote:
-> In the PVHVM path when we do CPU online/offline path we would
-> leak the timer%d IRQ line everytime we do a offline event. The
-> online path (xen_hvm_setup_cpu_clockevents via
-> x86_cpuinit.setup_percpu_clockev) would allocate a new interrupt
-> line for the timer%d.
+On Fri, Apr 26, 2013 at 04:36:26PM +0100, Stefano Stabellini wrote:
+> On Thu, 25 Apr 2013, Nicolas Pitre wrote:
+> > On Thu, 25 Apr 2013, Will Deacon wrote:
+> > > I disagree. You're explicitly stating that we pass the `cpuid of target CPU,
+> > > as from MPIDR'. That's simply not true -- the firmware could choose any
+> > > numbering scheme to identify the CPUs. For KVM and Xen, it *is* the mpidr,
+> > > which is why psci-smp.c works at all, but that's where the comment belongs,
+> > > not in this header file.
+> > 
+> > At some point, the _kernel_ API for interfacing with the firmware's PSCI 
+> > will have to ensure uniformity somehow.  The PSCI interface code could 
+> > translate the passed MPIDR into whatever the firmware decided to use for 
+> > identifying CPUs if needed, keeping this issue localized.
 > 
-> But we would still use the old interrupt line leading to:
-> 
-> kernel BUG at /home/konrad/ssd/konrad/linux/kernel/hrtimer.c:1261!
-> invalid opcode: 0000 [#1] SMP
-> RIP: 0010:[<ffffffff810b9e21>]  [<ffffffff810b9e21>] hrtimer_interrupt+0x261/0x270
-> .. snip..
->  <IRQ>
->  [<ffffffff810445ef>] xen_timer_interrupt+0x2f/0x1b0
->  [<ffffffff81104825>] ? stop_machine_cpu_stop+0xb5/0xf0
->  [<ffffffff8111434c>] handle_irq_event_percpu+0x7c/0x240
->  [<ffffffff811175b9>] handle_percpu_irq+0x49/0x70
->  [<ffffffff813a74a3>] __xen_evtchn_do_upcall+0x1c3/0x2f0
->  [<ffffffff813a760a>] xen_evtchn_do_upcall+0x2a/0x40
->  [<ffffffff8167c26d>] xen_hvm_callback_vector+0x6d/0x80
->  <EOI>
->  [<ffffffff81666d01>] ? start_secondary+0x193/0x1a8
->  [<ffffffff81666cfd>] ? start_secondary+0x18f/0x1a8
-> 
-> There is also the oddity (timer1) in the /proc/interrupts after
-> offlining CPU1:
-> 
->   64:       1121          0  xen-percpu-virq      timer0
->   78:          0          0  xen-percpu-virq      timer1
->   84:          0       2483  xen-percpu-virq      timer2
-> 
-> This patch fixes it.
-> 
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> CC: stable@vger.kernel.org
+> That is what I had in mind when I said to keep the comment in psci.h
+> before.
+> We have to draw the line somewhere to expose a uniform internal kernel
+> API. However it is a bit difficult to do now given that we have only one
+> user of the API.
 
-Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+I see psci.h as representing the firmware interface, and psci-smp.c or
+whatever sits on top as exposing the kernel `API'.
 
+> I don't feel to strongly about this, please let me know what is the
+> final decision and I'll update the code accordingly. I remind you that
+> the merge window is approaching :-)
 
->  arch/x86/xen/smp.c | 1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
-> index 09ea61d..f80e69c 100644
-> --- a/arch/x86/xen/smp.c
-> +++ b/arch/x86/xen/smp.c
-> @@ -662,6 +662,7 @@ static void xen_hvm_cpu_die(unsigned int cpu)
->  	unbind_from_irqhandler(per_cpu(xen_debug_irq, cpu), NULL);
->  	unbind_from_irqhandler(per_cpu(xen_callfuncsingle_irq, cpu), NULL);
->  	unbind_from_irqhandler(per_cpu(xen_irq_work, cpu), NULL);
-> +	xen_teardown_timer(cpu);
->  	native_cpu_die(cpu);
->  }
->  
-> -- 
-> 1.8.1.4
-> 
+I'd still like the comment to be in psci-smp.c, or a header separate from
+the firmware bits.
+
+Will
