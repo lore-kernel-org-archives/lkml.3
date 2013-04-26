@@ -1,119 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757287Ab3DZSk1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 14:40:27 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:34153 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750987Ab3DZSkY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 14:40:24 -0400
-Message-ID: <517AC9FF.1030504@ti.com>
-Date: Sat, 27 Apr 2013 00:09:59 +0530
-From: Sourav Poddar <sourav.poddar@ti.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+	id S1757496Ab3DZSnp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 14:43:45 -0400
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:50697 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756600Ab3DZSnn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Apr 2013 14:43:43 -0400
 MIME-Version: 1.0
-To: Kevin Hilman <khilman@linaro.org>
-CC: <gregkh@linuxfoundation.org>, <tony@atomide.com>,
-        <rmk+kernel@arm.linux.org.uk>, <linux-kernel@vger.kernel.org>,
-        <linux-serial@vger.kernel.org>, <linux-omap@vger.kernel.org>
-Subject: Re: [PATCHv4 2/5] driver: serial: omap: prevent runtime PM for "no_console_suspend"
-References: <1366980168-30566-1-git-send-email-sourav.poddar@ti.com>	<1366980168-30566-3-git-send-email-sourav.poddar@ti.com> <87mwslw3h1.fsf@linaro.org>
-In-Reply-To: <87mwslw3h1.fsf@linaro.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CA+icZUW5t8gAjBbKaJUFGabCXvxb8QXEE3Yn5=EpbDfUNHM60w@mail.gmail.com>
+References: <CA+icZUVCmFeh3Xna37VJDDzvZ34sYJ_Dser7i5rRzGLhMTi5-Q@mail.gmail.com>
+	<CA+icZUXeDT8x60iUtjJV2GO5KkDnm8CJsz8mntz5hREoOD+YJw@mail.gmail.com>
+	<CA+icZUWkyP9TE0eeqstyvVNP++MtN8rYfGcPBT6NuMOHEHm7dw@mail.gmail.com>
+	<20130426182239.GA25767@mtj.dyndns.org>
+	<CA+icZUW5t8gAjBbKaJUFGabCXvxb8QXEE3Yn5=EpbDfUNHM60w@mail.gmail.com>
+Date: Fri, 26 Apr 2013 20:43:41 +0200
+Message-ID: <CAFTL4hyPLQQNbsoh9FYFg+VbGicREFZdP6Sc0V+EfgdWuwSOmQ@mail.gmail.com>
+Subject: Re: linux-next: Tree for Apr 26 [ bluetooth on suspend/resume ]
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: sedat.dilek@gmail.com
+Cc: Tejun Heo <tj@kernel.org>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-bluetooth@vger.kernel.org, Marcel Holtmann <marcel@holtmann.org>,
+        Gustavo Padovan <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        Linux PM List <linux-pm@lists.linux-foundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kevin,
-On Friday 26 April 2013 11:58 PM, Kevin Hilman wrote:
-> Sourav Poddar<sourav.poddar@ti.com>  writes:
->
->> The driver manages "no_console_suspend" by preventing runtime PM
->> during the suspend path, which forces the console UART to stay awake.
+2013/4/26 Sedat Dilek <sedat.dilek@gmail.com>:
+> On Fri, Apr 26, 2013 at 8:22 PM, Tejun Heo <tj@kernel.org> wrote:
+>> On Fri, Apr 26, 2013 at 07:40:20PM +0200, Sedat Dilek wrote:
+>>> Oops, NULL-pointer-deref [ __queue_work() ]
+>>>
+>>> [   25.974932] BUG: unable to handle kernel NULL pointer dereference
+>>> at 0000000000000100
+>>> [   25.974944] IP: [<ffffffff81077502>] __queue_work+0x32/0x3d0
 >>
->> Signed-off-by: Sourav Poddar<sourav.poddar@ti.com>
->> Reviewed-by: Felipe Balbi<balbi@ti.com>
->> ---
->>   drivers/tty/serial/omap-serial.c |   28 +++++++++++++++++++++++++++-
->>   1 files changed, 27 insertions(+), 1 deletions(-)
+>> So, 0x100 deref near the top of the function.
 >>
->> diff --git a/drivers/tty/serial/omap-serial.c b/drivers/tty/serial/omap-serial.c
->> index 30d4f7a..eddff3c 100644
->> --- a/drivers/tty/serial/omap-serial.c
->> +++ b/drivers/tty/serial/omap-serial.c
->> @@ -161,6 +161,7 @@ struct uart_omap_port {
->>   	u32			calc_latency;
->>   	struct work_struct	qos_work;
->>   	struct pinctrl		*pins;
->> +	bool			is_suspending;
->>   };
+>> ...
+>>> [   25.975037] RIP: 0010:[<ffffffff81077502>]  [<ffffffff81077502>]
+>>> __queue_work+0x32/0x3d0
+>>> [   25.975047] RSP: 0018:ffff88008fed5c48  EFLAGS: 00010046
+>>> [   25.975052] RAX: 0000000000000096 RBX: 0000000000000292 RCX: 0000000000000000
+>>> [   25.975058] RDX: ffff880095281850 RSI: 0000000000000000 RDI: 0000000000000100
+>>> [   25.975063] RBP: ffff88008fed5c88 R08: 0000000000000000 R09: 0000000000000300
+>>> [   25.975069] R10: ffff880094981a00 R11: 0000000000000000 R12: ffff880095281850
+>>> [   25.975074] R13: 0000000000000000 R14: 0000000000000100 R15: 00000000000009c4
+>>> [   25.975081] FS:  00007f2f61707740(0000) GS:ffff88011fac0000(0000)
+>>> knlGS:0000000000000000
+>>> [   25.975088] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+>>> [   25.975093] CR2: 0000000000000100 CR3: 000000009101f000 CR4: 00000000000407e0
+>>> [   25.975099] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+>>> [   25.975104] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+>> ...
+>>> [   25.975143] Call Trace:
+>>> [   25.975151]  [<ffffffff81077be5>] queue_work_on+0x45/0x50
+>>> [   25.975165]  [<ffffffffa016e8ff>] hci_req_run+0xbf/0xf0 [bluetooth]
+>>> [   25.975188]  [<ffffffffa016ea06>] __hci_req_sync+0xd6/0x1c0 [bluetooth]
+>>> [   25.975217]  [<ffffffffa016fad5>] hci_dev_open+0x275/0x2e0 [bluetooth]
+>>> [   25.975230]  [<ffffffffa0182752>] hci_sock_ioctl+0x1f2/0x3f0 [bluetooth]
+>>> [   25.975238]  [<ffffffff815c6050>] sock_do_ioctl+0x30/0x70
+>>> [   25.975245]  [<ffffffff815c75f9>] sock_ioctl+0x79/0x2f0
+>>> [   25.975254]  [<ffffffff811a8046>] do_vfs_ioctl+0x96/0x560
+>>> [   25.975262]  [<ffffffff811a85a1>] SyS_ioctl+0x91/0xb0
+>>> [   25.975271]  [<ffffffff816d989d>] system_call_fastpath+0x1a/0x1f
+>>> [   25.975276] Code: 89 e5 41 57 41 56 41 89 fe 41 55 49 89 f5 41 54
+>>> 49 89 d4 53 48 83 ec 18 89 7d c8 9c 58 66 66 90 66 90 f6 c4 02 0f 85
+>>> 56 02 00 00 <41> 8b 85 00 01 00 00 a9 00 00 01 00 0f 85 b0 02 00 00 48
+>>> c7 c2
 >>
->>   #define to_uart_omap_port(p)	((container_of((p), struct uart_omap_port, port)))
->> @@ -1312,6 +1313,22 @@ static struct uart_driver serial_omap_reg = {
->>   };
+>> All code
+>> ========
+>>    0:   89 e5                   mov    %esp,%ebp
+>>    2:   41 57                   push   %r15
+>>    4:   41 56                   push   %r14
+>>    6:   41 89 fe                mov    %edi,%r14d
+>>    9:   41 55                   push   %r13
+>>    b:   49 89 f5                mov    %rsi,%r13
+>>    e:   41 54                   push   %r12
+>>   10:   49 89 d4                mov    %rdx,%r12
+>>   13:   53                      push   %rbx
+>>   14:   48 83 ec 18             sub    $0x18,%rsp
+>>   18:   89 7d c8                mov    %edi,-0x38(%rbp)
+>>   1b:   9c                      pushfq
+>>   1c:   58                      pop    %rax
+>>   1d:   66 66 90                data32 xchg %ax,%ax
+>>   20:   66 90                   xchg   %ax,%ax
+>>   22:   f6 c4 02                test   $0x2,%ah
+>>   25:   0f 85 56 02 00 00       jne    0x281
+>>   2b:*  41 8b 85 00 01 00 00    mov    0x100(%r13),%eax     <-- trapping instruction
+>>   32:   a9 00 00 01 00          test   $0x10000,%eax
+>>   37:   0f 85 b0 02 00 00       jne    0x2ed
+>>   3d:   48                      rex.W
+>>   3e:   c7                      .byte 0xc7
+>>   3f:   c2                      .byte 0xc2
 >>
->>   #ifdef CONFIG_PM_SLEEP
->> +static int serial_omap_prepare(struct device *dev)
->> +{
->> +	struct uart_omap_port *up = dev_get_drvdata(dev);
->> +
->> +	up->is_suspending = true;
->> +
->> +	return 0;
->> +}
->> +
->> +static void serial_omap_complete(struct device *dev)
->> +{
->> +	struct uart_omap_port *up = dev_get_drvdata(dev);
->> +
->> +	up->is_suspending = false;
->> +}
->> +
->>   static int serial_omap_suspend(struct device *dev)
->>   {
->>   	struct uart_omap_port *up = dev_get_drvdata(dev);
->> @@ -1330,7 +1347,10 @@ static int serial_omap_resume(struct device *dev)
+>> The second argument %rsi is zero, which got transferred to %r13 and
+>> then offset deref on it trapped.
 >>
->>   	return 0;
->>   }
->> -#endif
->> +#else
->> +#define serial_omap_prepare NULL
->> +#define serial_omap_prepare NULL
->> +#endif /* CONFIG_PM_SLEEP */
+>> The second argument is @wq and the oopsing code is the wq->flags deref
+>> in the following if condition.
 >>
->>   static void omap_serial_fill_features_erratas(struct uart_omap_port *up)
->>   {
->> @@ -1616,6 +1636,10 @@ static int serial_omap_runtime_suspend(struct device *dev)
->>   	struct uart_omap_port *up = dev_get_drvdata(dev);
->>   	struct omap_uart_port_info *pdata = dev->platform_data;
+>>         /* if dying, only works from the same workqueue are allowed */
+>>         if (unlikely(wq->flags & __WQ_DRAINING) &&
+>>                 WARN_ON_ONCE(!is_chained_work(wq)))
+>>                 return;
 >>
-> I'd like to see a comment here about why we return error.  It's written
-> in the changelog, but it deserves a comment here as well.  Something like:
+>> So, umm, don't pass in NULL as @wq. :)
+>>
 >
-> When using 'no_console_suspend', the console UART must not be suspended.
-> Since driver suspend is managed by runtime suspend, preventing runtime
-> suspend (by returning error) will keep device active during suspend.
+> [ CC Frederic (linux-dynticks) ]
 >
+> Great, Tejun!
+> Anyway a bug...
 >
-Ok. Will add this.
->> +	if (up->is_suspending&&  !console_suspend_enabled
->> +			&&  uart_console(&up->port))
-> nit: can you put the '&&' at the end of the first line, and have the
-> 2nd line line up with the start of the first line?
+> Just wanted to mention I switched to a full-cpu-dynticks config-setup:
 >
-Ok. Will modify this part.
-> See other examples of similiar multi-line checks elsewhere in the
-> driver.
+> 1. TICK_CPU_ACCOUNTING -> VIRT_CPU_ACCOUNTING_GEN
 >
-> Other than those minor things, this patch is good.
+> 2. [X] NO_HZ_FULL
 >
-> Then, can you repost and break this into 2 series since they can go
-> independently.
+> From [2]:
 >
-> Patches 1-2 need to go through the serial tree (Greg), and I will queue
-> up the OMAP specific changes once Greg has queued the serial core changes.
+>  config VIRT_CPU_ACCOUNTING_GEN
+> bool "Full dynticks CPU time accounting"
+> - depends on HAVE_CONTEXT_TRACKING && 64BIT
+> + depends on HAVE_CONTEXT_TRACKING && 64BIT && NO_HZ_FULL
 >
-Yes, sounds good. Will break it in the next version into two series.
-> Kevin
+> Choosing NO_HZ_FULL depends leads to a different kernel-config which
+> seems not to show the trace.
+>
+> - Sedat -
+>
+> [1] http://git.kernel.org/cgit/linux/kernel/git/frederic/linux-dynticks.git/log/?h=timers/nohz
+> [2] http://git.kernel.org/cgit/linux/kernel/git/frederic/linux-dynticks.git/commit/?h=timers/nohz&id=7f40072a53838380e3902d94fae49efed506b34e
 
+Hmm that patch shouldn't change the kernel code itself. Do the warning
+shows unless you run full dynticks?
