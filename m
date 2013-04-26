@@ -1,99 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757534Ab3DZUFJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 16:05:09 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:58794 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755278Ab3DZUFH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 16:05:07 -0400
+	id S1757625Ab3DZUFO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 16:05:14 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:37972 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755278Ab3DZUFK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Apr 2013 16:05:10 -0400
 From: Sourav Poddar <sourav.poddar@ti.com>
 To: <gregkh@linuxfoundation.org>, <tony@atomide.com>,
         <rmk+kernel@arm.linux.org.uk>, <khilman@linaro.org>
 CC: <linux-serial@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Sourav Poddar <sourav.poddar@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Felipe Balbi <balbi@ti.com>, Rajendra nayak <rnayak@ti.com>
-Subject: [PATCHv5 0/3] Serial fixes
-Date: Sat, 27 Apr 2013 01:34:44 +0530
-Message-ID: <1367006686-3720-1-git-send-email-sourav.poddar@ti.com>
+        <linux-kernel@vger.kernel.org>, Sourav Poddar <sourav.poddar@ti.com>
+Subject: [PATCHv5 2/2] driver: serial: omap: prevent runtime PM for "no_console_suspend"
+Date: Sat, 27 Apr 2013 01:34:46 +0530
+Message-ID: <1367006686-3720-3-git-send-email-sourav.poddar@ti.com>
 X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1367006686-3720-1-git-send-email-sourav.poddar@ti.com>
+References: <1367006686-3720-1-git-send-email-sourav.poddar@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+The driver manages "no_console_suspend" by preventing runtime PM
+during the suspend path, which forces the console UART to stay awake.
 
-This patch series contains fixes around the issue that
-the console UART should not idled on suspend while using 
-"no_console_suspend" in bootargs.
+Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
+Reviewed-by: Felipe Balbi <balbi@ti.com>
+---
+ drivers/tty/serial/omap-serial.c |   34 +++++++++++++++++++++++++++++++++-
+ 1 files changed, 33 insertions(+), 1 deletions(-)
 
-The approach thought of is to modify the serial core/serial driver to bypass
-runtime PM if the UART in contention is a console and we are using "no_console_suspend"
-in our bootargs.
-
-There were discussions about how to handle "no_idle_on_suspend" issue and all the
-discussions are as follows:
-https://lkml.org/lkml/2013/4/5/239
-https://lkml.org/lkml/2013/4/2/350
-https://lkml.org/lkml/2013/3/18/199
-https://lkml.org/lkml/2013/3/18/295
-Due to the amount of change in approach, I am posting
-this as a new series.
-
-v4->v5
-1. Add comments
-2. Formatting.
-
-v3->v4
-1. check for console in runtime api.
-
-v2->v3
-1. Use "-EBUSY" for no_console_suspend case
-2. Bypass runtime PM only during suspend
-3. Improve the commit log based on community suggestion.
-
-v1->v2
-1. Remove the prepare/complete callback.
-2. Adapt runtime PM callback to deal with the issue.
-3. Fold patch(1,2) of previous series into 1.
-4. Reordered the patch.
-5. Change $subject and chage log for few patches.
-
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: Felipe Balbi <balbi@ti.com>
-Cc: Rajendra nayak <rnayak@ti.com>
-
-Test info
-Omap4430sdp:
-- Tested wakeup from UART after suspend for dt and non dt case.
-Omap5430evm:
-- Tested wakeup from UART after suspend for dt case.
-
-These patches were the part of the bigger series[1]. Breaking them into
-two relevant series as they go through the different tree.
-
-[1]: http://lkml.org/lkml/2013/4/26/274
-
-This patches are based on 3.9-rc8
-
-The following changes since commit 824282ca7d250bd7c301f221c3cd902ce906d731:
-
-  Merge branch 'upstream' of git://git.linux-mips.org/pub/scm/ralf/upstream-linus (2013-04-22 15:00:59 -0700)
-
-are available in the git repository at:
-
-  git://gitorious.org/linux-connectivity/linux-connectivity.git serial_fix
-
-Sourav Poddar (2):
-      driver: tty: serial: Move "uart_console" def to core header file.
-      driver: serial: omap: prevent runtime PM for "no_console_suspend"
-
- drivers/tty/serial/mpc52xx_uart.c |   10 ----------
- drivers/tty/serial/omap-serial.c  |   34 +++++++++++++++++++++++++++++++++-
- drivers/tty/serial/serial_core.c  |    6 ------
- include/linux/serial_core.h       |    7 +++++++
- 4 files changed, 40 insertions(+), 17 deletions(-)
+diff --git a/drivers/tty/serial/omap-serial.c b/drivers/tty/serial/omap-serial.c
+index 30d4f7a..9457fe3 100644
+--- a/drivers/tty/serial/omap-serial.c
++++ b/drivers/tty/serial/omap-serial.c
+@@ -161,6 +161,7 @@ struct uart_omap_port {
+ 	u32			calc_latency;
+ 	struct work_struct	qos_work;
+ 	struct pinctrl		*pins;
++	bool			is_suspending;
+ };
+ 
+ #define to_uart_omap_port(p)	((container_of((p), struct uart_omap_port, port)))
+@@ -1312,6 +1313,22 @@ static struct uart_driver serial_omap_reg = {
+ };
+ 
+ #ifdef CONFIG_PM_SLEEP
++static int serial_omap_prepare(struct device *dev)
++{
++	struct uart_omap_port *up = dev_get_drvdata(dev);
++
++	up->is_suspending = true;
++
++	return 0;
++}
++
++static void serial_omap_complete(struct device *dev)
++{
++	struct uart_omap_port *up = dev_get_drvdata(dev);
++
++	up->is_suspending = false;
++}
++
+ static int serial_omap_suspend(struct device *dev)
+ {
+ 	struct uart_omap_port *up = dev_get_drvdata(dev);
+@@ -1330,7 +1347,10 @@ static int serial_omap_resume(struct device *dev)
+ 
+ 	return 0;
+ }
+-#endif
++#else
++#define serial_omap_prepare NULL
++#define serial_omap_prepare NULL
++#endif /* CONFIG_PM_SLEEP */
+ 
+ static void omap_serial_fill_features_erratas(struct uart_omap_port *up)
+ {
+@@ -1616,6 +1636,16 @@ static int serial_omap_runtime_suspend(struct device *dev)
+ 	struct uart_omap_port *up = dev_get_drvdata(dev);
+ 	struct omap_uart_port_info *pdata = dev->platform_data;
+ 
++	/*
++	* When using 'no_console_suspend', the console UART must not be
++	* suspended. Since driver suspend is managed by runtime suspend,
++	* preventing runtime suspend (by returning error) will keep device
++	* active during suspend.
++	*/
++	if (up->is_suspending && !console_suspend_enabled &&
++	    uart_console(&up->port))
++		return -EBUSY;
++
+ 	if (!up)
+ 		return -EINVAL;
+ 
+@@ -1666,6 +1696,8 @@ static const struct dev_pm_ops serial_omap_dev_pm_ops = {
+ 	SET_SYSTEM_SLEEP_PM_OPS(serial_omap_suspend, serial_omap_resume)
+ 	SET_RUNTIME_PM_OPS(serial_omap_runtime_suspend,
+ 				serial_omap_runtime_resume, NULL)
++	.prepare        = serial_omap_prepare,
++	.complete       = serial_omap_complete,
+ };
+ 
+ #if defined(CONFIG_OF)
+-- 
+1.7.1
 
