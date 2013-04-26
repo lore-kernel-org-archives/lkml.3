@@ -1,309 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755714Ab3DZL4E (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 07:56:04 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50364 "EHLO mx2.suse.de"
+	id S1755172Ab3DZL7i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 07:59:38 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:44979 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754444Ab3DZL4B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 07:56:01 -0400
-From: Oliver Neukum <oneukum@suse.de>
-To: Hayes Wang <hayeswang@realtek.com>
-Cc: gregkh@linuxfoundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        Realtek linux nic maintainers <nic_swsd@realtek.com>
-Subject: Re: [PATCH net-next] net/usb: new driver for RTL8152
-Date: Fri, 26 Apr 2013 13:56:52 +0200
-Message-ID: <5873028.qC8hWx1N8T@linux-5eaq.site>
-Organization: SUSE
-User-Agent: KMail/4.10 (Linux/3.7.10-1.1-desktop; KDE/4.10.0; x86_64; ; )
-In-Reply-To: <1366965948-1805-1-git-send-email-hayeswang@realtek.com>
-References: <1366965948-1805-1-git-send-email-hayeswang@realtek.com>
+	id S1750939Ab3DZL7h convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Apr 2013 07:59:37 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Zhang Rui <rui.zhang@intel.com>
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-acpi@vger.kernel.org, lenb@kernel.org, eduardo.valentin@ti.com
+Subject: Re: [PATCH] ACPI thermal: do not always return THERMAL_TREND_RAISING for active trip points
+Date: Fri, 26 Apr 2013 14:07:45 +0200
+Message-ID: <2045208.arlEGZ66vS@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.9.0-rc8+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1366967993-3812-1-git-send-email-rui.zhang@intel.com>
+References: <1366967993-3812-1-git-send-email-rui.zhang@intel.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 26 April 2013 16:45:48 Hayes Wang wrote:
+On Friday, April 26, 2013 05:19:53 PM Zhang Rui wrote:
+> Commit 4ae46befb49d4173122e0afa995c4e93d01948a2
+> introduces a regression that the fan is always on
+> even if the system is in idle state.
+> 
+> My original idea in that commit is that:
+> when the current temperature is above the trip point,
+> keep the fan on, even if the temperature is dropping.
+> when the current temperature is below the trip point,
+> turn on the fan when the temperature is raising,
+> turn off the fan when the temperature is dropping.
+> 
+> But this is what the code actually does:
+> when the current temperature is above the trip point,
+> the fan keeps on.
+> when the current temperature is below the trip point,
+> the fan is always on because thermal_get_trend()
+> in driver/acpi/thermal.c returns THERMAL_TREND_RAISING.
+> Thus the fan keeps running even if the system is idle.
+> 
+> Fix this in drivers/acpi/thermal.c.
+> 
+> https://bugzilla.kernel.org/show_bug.cgi?id=56591
+> https://bugzilla.kernel.org/show_bug.cgi?id=56601
+> https://bugzilla.kernel.org/show_bug.cgi?id=50041#c45
+> 
+> Patch should be applied to 3.7 stable kernel and later.
+> 
+> Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+> Tested-by: Matthias <morpheusxyz123@yahoo.de>
+> Tested-by: Ville Syrjälä <syrjala@sci.fi>
+> Cc: <stable@vger.kernel.org> # v3.7+
 
-> +static u16 r8152_mdio_read(struct r8152 *tp, u32 reg_addr)
-> +{
-> +	u32	ocp_data;
-> +	int	i;
-> +
-> +	ocp_data = (reg_addr & 0x1f) << 16;
-> +	ocp_write_dword(tp, MCU_TYPE_PLA, PLA_PHYAR, ocp_data);
-> +
-> +	for (i = 20; i > 0; i--) {
-> +		udelay(25);
-> +		ocp_data = ocp_read_dword(tp, MCU_TYPE_PLA, PLA_PHYAR);
-> +		if (ocp_data & PHYAR_FLAG)
-> +			break;
-> +	}
-> +	udelay(20);
-> +
-> +	return (u16)(ocp_data & 0xffff);
-> +}
+Applied.
 
-Unfortunately this can fail, as it is physical IO and you throw away errors.
-
-> +static int read_mii_word(struct net_device *netdev, int phy_id, int reg)
-> +{
-> +	struct r8152 *tp = netdev_priv(netdev);
-> +
-> +	if (phy_id != R8152_PHY_ID)
-> +		return -1;
-> +
-> +	return r8152_mdio_read(tp, reg);
-> +}
-> +
-> +static
-> +void write_mii_word(struct net_device *netdev, int phy_id, int reg, int val)
-> +{
-> +	struct r8152 *tp = netdev_priv(netdev);
-> +
-> +	if (phy_id != R8152_PHY_ID)
-> +		return;
-> +
-> +	r8152_mdio_write(tp, reg, val);
-> +}
-> +
-> +static void ocp_reg_write(struct r8152 *tp, u16 addr, u16 data)
-> +{
-> +	u16 ocp_base, ocp_index;
-> +
-> +	ocp_base = addr & 0xf000;
-> +	if (ocp_base != tp->ocp_base) {
-> +		ocp_write_word(tp, MCU_TYPE_PLA, PLA_OCP_GPHY_BASE, ocp_base);
-> +		tp->ocp_base = ocp_base;
-> +	}
-> +
-> +	ocp_index = (addr & 0x0fff) | 0xb000;
-> +	ocp_write_word(tp, MCU_TYPE_PLA, ocp_index, data);
-> +}
-> +
-> +static inline void set_ethernet_addr(struct r8152 *tp)
-> +{
-> +	struct net_device *dev = tp->netdev;
-> +	u8 node_id[8] = {0};
-> +
-> +	if (pla_ocp_read(tp, PLA_IDR, sizeof(node_id), node_id) < 0)
-
-DMA coherency rules. No buffers on the stack.
-
-> +		netif_notice(tp, probe, dev, "inet addr fail\n");
-> +	else {
-> +		memcpy(dev->dev_addr, node_id, sizeof(node_id));
-> +		memcpy(dev->perm_addr, dev->dev_addr, dev->addr_len);
-> +	}
-> +}
+Thanks,
+Rafael
 
 
-
-
-
-
-> +static void _rtl8152_set_rx_mode(struct net_device *netdev)
-> +{
-> +	struct r8152 *tp = netdev_priv(netdev);
-> +	u32 tmp, mc_filter[2];	/* Multicast hash filter */
-> +	u32 ocp_data;
+> ---
+>  drivers/acpi/thermal.c |   16 +++++++++++++---
+>  1 file changed, 13 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/acpi/thermal.c b/drivers/acpi/thermal.c
+> index 8470771..a33821c 100644
+> --- a/drivers/acpi/thermal.c
+> +++ b/drivers/acpi/thermal.c
+> @@ -723,9 +723,19 @@ static int thermal_get_trend(struct thermal_zone_device *thermal,
+>  		return -EINVAL;
+>  
+>  	if (type == THERMAL_TRIP_ACTIVE) {
+> -		/* aggressive active cooling */
+> -		*trend = THERMAL_TREND_RAISING;
+> -		return 0;
+> +		unsigned long trip_temp;
+> +		unsigned long temp = KELVIN_TO_MILLICELSIUS(tz->temperature,
+> +							tz->kelvin_offset);
+> +		if (thermal_get_trip_temp(thermal, trip, &trip_temp))
+> +			return -EINVAL;
 > +
-> +	clear_bit(RTL8152_SET_RX_MODE, &tp->flags);
-> +	netif_stop_queue(netdev);
-> +	ocp_data = ocp_read_dword(tp, MCU_TYPE_PLA, PLA_RCR);
-> +	ocp_data &= ~RCR_ACPT_ALL;
-> +	ocp_data |= RCR_AB | RCR_APM;
-> +
-> +	if (netdev->flags & IFF_PROMISC) {
-> +		/* Unconditionally log net taps. */
-> +		netif_notice(tp, link, netdev, "Promiscuous mode enabled\n");
-> +		ocp_data |= RCR_AM | RCR_AAP;
-> +		mc_filter[1] = mc_filter[0] = 0xffffffff;
-> +	} else if ((netdev_mc_count(netdev) > multicast_filter_limit) ||
-> +		   (netdev->flags & IFF_ALLMULTI)) {
-> +		/* Too many to filter perfectly -- accept all multicasts. */
-> +		ocp_data |= RCR_AM;
-> +		mc_filter[1] = mc_filter[0] = 0xffffffff;
-> +	} else {
-> +		struct netdev_hw_addr *ha;
-> +
-> +		mc_filter[1] = mc_filter[0] = 0;
-> +		netdev_for_each_mc_addr(ha, netdev) {
-> +			int bit_nr = ether_crc(ETH_ALEN, ha->addr) >> 26;
-> +			mc_filter[bit_nr >> 5] |= 1 << (bit_nr & 31);
-> +			ocp_data |= RCR_AM;
+> +		if (temp > trip_temp) {
+> +			*trend = THERMAL_TREND_RAISING;
+> +			return 0;
+> +		} else {
+> +			/* Fall back on default trend */
+> +			return -EINVAL;
 > +		}
-> +	}
-> +
-> +	tmp = mc_filter[0];
-> +	mc_filter[0] = __cpu_to_le32(swab32(mc_filter[1]));
-> +	mc_filter[1] = __cpu_to_le32(swab32(tmp));
-> +
-> +	pla_ocp_write(tp, PLA_MAR, BYTE_EN_DWORD, sizeof(mc_filter), mc_filter);
-
-This looks like a violation of the DMA coherency rules.
-You cannot use buffers on the stack.
-
-> +	ocp_write_dword(tp, MCU_TYPE_PLA, PLA_RCR, ocp_data);
-> +	netif_wake_queue(netdev);
-> +}
-> +
-
-
-
-
-
-
-> +static void rtl_work_func_t(struct work_struct *work)
-> +{
-> +	struct r8152 *tp = container_of(work, struct r8152, schedule.work);
-> +
-> +	if (!netif_running(tp->netdev))
-> +		goto out1;
-> +
-> +	if (test_bit(RTL8152_UNPLUG, &tp->flags))
-> +		goto out1;
-> +
-> +	set_carrier(tp);
-> +
-> +	if (test_bit(RTL8152_SET_RX_MODE, &tp->flags))
-> +		_rtl8152_set_rx_mode(tp->netdev);
-> +
-> +	schedule_delayed_work(&tp->schedule, HZ);
-
-Why does this need to run permanently?
-
-> +
-> +out1:
-> +	return;
-> +}
-> +
-> +static int rtl8152_open(struct net_device *netdev)
-> +{
-> +	struct r8152 *tp = netdev_priv(netdev);
-> +	int res = 0;
-> +
-> +	tp->speed = rtl8152_get_speed(tp);
-> +	if (tp->speed & LINK_STATUS) {
-> +		res = rtl8152_enable(tp);
-> +		netif_carrier_on(netdev);
-
-And you leave it on in the error case?
-
-> +	} else {
-> +		netif_stop_queue(netdev);
-> +		netif_carrier_off(netdev);
-> +	}
-> +
-> +	if (res) {
-> +		if (res == -ENODEV)
-> +			netif_device_detach(tp->netdev);
-> +
-> +		netif_warn(tp, rx_err, netdev,
-> +			   "rx_urb submit failed: %d\n", res);
-> +		return res;
-> +	}
-> +
-> +	rtl8152_set_speed(tp, AUTONEG_ENABLE, SPEED_100, DUPLEX_FULL);
-> +	netif_start_queue(netdev);
-> +	schedule_delayed_work(&tp->schedule, 0);
-> +
-> +	return res;
-> +}
-> +
-> +static int rtl8152_close(struct net_device *netdev)
-> +{
-> +	struct r8152 *tp = netdev_priv(netdev);
-> +	int res = 0;
-> +
-> +	cancel_delayed_work_sync(&tp->schedule);
-
-Looks like a race. What makes sure the work isn't rescheduled?
-
-> +	netif_stop_queue(netdev);
-> +	rtl8152_disable(tp);
-> +
-> +	return res;
-> +}
-
-> +static int rtl8152_suspend(struct usb_interface *intf, pm_message_t message)
-> +{
-> +	struct r8152 *tp = usb_get_intfdata(intf);
-> +
-> +	netif_device_detach(tp->netdev);
-> +
-> +	if (netif_running(tp->netdev))
-> +		cancel_delayed_work_sync(&tp->schedule);
-
-This looks like a race. What makes sure that the work isn't rescheduled?
-
-> +
-> +	rtl8152_down(tp);
-> +
-> +	return 0;
-> +}
-> +
-> +static int rtl8152_resume(struct usb_interface *intf)
-> +{
-> +	struct r8152 *tp = usb_get_intfdata(intf);
-> +
-> +	r8152b_init(tp);
-> +	netif_device_attach(tp->netdev);
-> +	if (netif_running(tp->netdev)) {
-> +		rtl8152_enable(tp);
-> +		rtl8152_set_speed(tp, AUTONEG_ENABLE, SPEED_100, DUPLEX_FULL);
-
-But this may not be the speed that was selected before the device
-was suspended.
-
-> +		set_bit(RTL8152_SET_RX_MODE, &tp->flags);
-> +		schedule_delayed_work(&tp->schedule, 0);
-> +	}
-> +
-> +	return 0;
-> +}
-
-
-
-
-> +static void rtl8152_unload(struct r8152 *tp)
-> +{
-> +	u32	ocp_data;
-> +
-> +	if (tp->version != RTL_VER_01) {
-> +		ocp_data = ocp_read_word(tp, MCU_TYPE_USB, USB_UPS_CTRL);
-> +		ocp_data |= POWER_CUT;
-> +		ocp_write_word(tp, MCU_TYPE_USB, USB_UPS_CTRL, ocp_data);
-> +	}
-> +
-> +	ocp_data = ocp_read_word(tp, MCU_TYPE_USB, USB_PM_CTRL_STATUS);
-> +	ocp_data &= ~RWSUME_INDICATE;
-> +	ocp_write_word(tp, MCU_TYPE_USB, USB_PM_CTRL_STATUS, ocp_data);
-> +}
-> +
-> +static void rtl8152_disconnect(struct usb_interface *intf)
-> +{
-> +	struct r8152 *tp = usb_get_intfdata(intf);
-> +
-> +	usb_set_intfdata(intf, NULL);
-> +	if (tp) {
-> +		set_bit(RTL8152_UNPLUG, &tp->flags);
-> +		tasklet_kill(&tp->tl);
-
-This looks like a race condition. What prevents the tasklet from being
-scheduled here in case of a soft disconnect?
-
-> +		unregister_netdev(tp->netdev);
-> +		rtl8152_unload(tp);
-> +		free_all_urbs(tp);
-> +		if (tp->rx_skb)
-> +			dev_kfree_skb(tp->rx_skb);
-> +		free_netdev(tp->netdev);
-> +	}
-> +}
-
-	Regards
-		Oliver
-
+>  	}
+>  
+>  	/*
+> 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
