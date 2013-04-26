@@ -1,141 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756291Ab3DZOxv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 10:53:51 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:36284 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753642Ab3DZOxh (ORCPT
+	id S1755591Ab3DZOzN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 10:55:13 -0400
+Received: from mail-we0-f176.google.com ([74.125.82.176]:54593 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751582Ab3DZOzL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 10:53:37 -0400
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Kevin Hilman <khilman@linaro.org>,
-        Christoph Lameter <cl@linux.com>, Hakan Akkan <hakanakkan@gmail.com>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 2/2] cputime_nsecs: use math64.h for nsec resolution conversion helpers
-Date: Fri, 26 Apr 2013 16:53:27 +0200
-Message-Id: <1366988007-30665-3-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1366988007-30665-1-git-send-email-fweisbec@gmail.com>
-References: <1366988007-30665-1-git-send-email-fweisbec@gmail.com>
+	Fri, 26 Apr 2013 10:55:11 -0400
+Message-ID: <517A954C.7060505@intel.com>
+Date: Fri, 26 Apr 2013 15:55:08 +0100
+From: Matt Fleming <matt.fleming@intel.com>
+Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
+ Way, Swindon SN3 1RJ
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Seiji Aguchi <seiji.aguchi@hds.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@kernel.org" <mingo@kernel.org>, "hpa@zytor.com" <hpa@zytor.com>,
+        "mjg59@srcf.ucam.org" <mjg59@srcf.ucam.org>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        "jk@ozlabs.org" <jk@ozlabs.org>, "teg@jklm.no" <teg@jklm.no>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mikew@google.com" <mikew@google.com>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>
+Subject: Re: [tip:x86/efi2] efivars: efivar_entry API
+References: <tip-e14ab23dde12b80db4c94b684a2e485b72b16af3@git.kernel.org> <A5ED84D3BB3A384992CBB9C77DEDA4D41AFCC9D0@USINDEM103.corp.hds.com> <517A4F2A.4080906@intel.com> <A5ED84D3BB3A384992CBB9C77DEDA4D41AFD1E2B@USINDEM103.corp.hds.com>
+In-Reply-To: <A5ED84D3BB3A384992CBB9C77DEDA4D41AFD1E2B@USINDEM103.corp.hds.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kevin Hilman <khilman@linaro.org>
+On 26/04/13 15:25, Seiji Aguchi wrote:
+> Matt,
+> 
+> Thanks.
+> With your patch, It works in case each entry is erased one by one as below.
+> # rm dmesg-efi-1
+> #rm dmesg-efi-2 
 
-For the nsec resolution conversions to be useable on non 64-bit
-architectures, the helpers in <linux/math64.h> need to be used so the
-right arch-specific 64-bit math helpers can be used (e.g. do_div())
+How about if you add this to efi_pstore_erase_func()?
 
-Signed-off-by: Kevin Hilman <khilman@linaro.org>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Hakan Akkan <hakanakkan@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Kevin Hilman <khilman@linaro.org>
-Cc: Li Zhong <zhong@linux.vnet.ibm.com>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- include/asm-generic/cputime_nsecs.h |   28 +++++++++++++++++++---------
- 1 files changed, 19 insertions(+), 9 deletions(-)
 
-diff --git a/include/asm-generic/cputime_nsecs.h b/include/asm-generic/cputime_nsecs.h
-index a8ece9a..2c9e62c 100644
---- a/include/asm-generic/cputime_nsecs.h
-+++ b/include/asm-generic/cputime_nsecs.h
-@@ -16,21 +16,27 @@
- #ifndef _ASM_GENERIC_CPUTIME_NSECS_H
- #define _ASM_GENERIC_CPUTIME_NSECS_H
+diff --git a/drivers/firmware/efi/efi-pstore.c b/drivers/firmware/efi/efi-pstore.c
+index b820593..393d63a 100644
+--- a/drivers/firmware/efi/efi-pstore.c
++++ b/drivers/firmware/efi/efi-pstore.c
+@@ -166,6 +166,7 @@ static int efi_pstore_erase_func(struct efivar_entry *entry, void *data)
  
-+#include <linux/math64.h>
-+
- typedef u64 __nocast cputime_t;
- typedef u64 __nocast cputime64_t;
- 
- #define cputime_one_jiffy		jiffies_to_cputime(1)
- 
-+#define cputime_div(__ct, divisor)  div_u64((__force u64)__ct, divisor)
-+#define cputime_div_rem(__ct, divisor, remainder) \
-+	div_u64_rem((__force u64)__ct, divisor, remainder);
-+
- /*
-  * Convert cputime <-> jiffies (HZ)
-  */
- #define cputime_to_jiffies(__ct)	\
--	((__force u64)(__ct) / (NSEC_PER_SEC / HZ))
-+	cputime_div(__ct, NSEC_PER_SEC / HZ)
- #define cputime_to_scaled(__ct)		(__ct)
- #define jiffies_to_cputime(__jif)	\
- 	(__force cputime_t)((__jif) * (NSEC_PER_SEC / HZ))
- #define cputime64_to_jiffies64(__ct)	\
--	((__force u64)(__ct) / (NSEC_PER_SEC / HZ))
-+	cputime_div(__ct, NSEC_PER_SEC / HZ)
- #define jiffies64_to_cputime64(__jif)	\
- 	(__force cputime64_t)((__jif) * (NSEC_PER_SEC / HZ))
- 
-@@ -45,7 +51,7 @@ typedef u64 __nocast cputime64_t;
-  * Convert cputime <-> microseconds
-  */
- #define cputime_to_usecs(__ct)		\
--	((__force u64)(__ct) / NSEC_PER_USEC)
-+	cputime_div(__ct, NSEC_PER_USEC)
- #define usecs_to_cputime(__usecs)	\
- 	(__force cputime_t)((__usecs) * NSEC_PER_USEC)
- #define usecs_to_cputime64(__usecs)	\
-@@ -55,7 +61,7 @@ typedef u64 __nocast cputime64_t;
-  * Convert cputime <-> seconds
-  */
- #define cputime_to_secs(__ct)		\
--	((__force u64)(__ct) / NSEC_PER_SEC)
-+	cputime_div(__ct, NSEC_PER_SEC)
- #define secs_to_cputime(__secs)		\
- 	(__force cputime_t)((__secs) * NSEC_PER_SEC)
- 
-@@ -69,8 +75,10 @@ static inline cputime_t timespec_to_cputime(const struct timespec *val)
- }
- static inline void cputime_to_timespec(const cputime_t ct, struct timespec *val)
- {
--	val->tv_sec  = (__force u64) ct / NSEC_PER_SEC;
--	val->tv_nsec = (__force u64) ct % NSEC_PER_SEC;
-+	u32 rem;
-+
-+	val->tv_sec = cputime_div_rem(ct, NSEC_PER_SEC, &rem);
-+	val->tv_nsec = rem;
+ 	/* found */
+ 	__efivar_entry_delete(entry);
++	list_del(&entry->list);
+ 	return 1;
  }
  
- /*
-@@ -83,15 +91,17 @@ static inline cputime_t timeval_to_cputime(const struct timeval *val)
- }
- static inline void cputime_to_timeval(const cputime_t ct, struct timeval *val)
- {
--	val->tv_sec = (__force u64) ct / NSEC_PER_SEC;
--	val->tv_usec = ((__force u64) ct % NSEC_PER_SEC) / NSEC_PER_USEC;
-+	u32 rem;
-+
-+	val->tv_sec = cputime_div_rem(ct, NSEC_PER_SEC, &rem);
-+	val->tv_usec = rem / NSEC_PER_USEC;
- }
- 
- /*
-  * Convert cputime <-> clock (USER_HZ)
-  */
- #define cputime_to_clock_t(__ct)	\
--	((__force u64)(__ct) / (NSEC_PER_SEC / USER_HZ))
-+	cputime_div(__ct, (NSEC_PER_SEC / USER_HZ))
- #define clock_t_to_cputime(__x)		\
- 	(__force cputime_t)((__x) * (NSEC_PER_SEC / USER_HZ))
- 
--- 
-1.7.5.4
-
