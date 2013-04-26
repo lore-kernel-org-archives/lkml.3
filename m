@@ -1,57 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755832Ab3DZMcW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 08:32:22 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:40250 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751089Ab3DZMcV (ORCPT
+	id S1756281Ab3DZMeB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 08:34:01 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:57754 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751975Ab3DZMeA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 08:32:21 -0400
+	Fri, 26 Apr 2013 08:34:00 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linaro-kernel@lists.linaro.org
+Cc: Anup Patel <anup.patel@linaro.org>,
+        Peter Maydell <peter.maydell@linaro.org>, patches@linaro.org,
+        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
+        Alexander Graf <agraf@suse.de>, kvmarm@lists.cs.columbia.edu,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 0/2] Early printk support for virtio console devices.
+Date: Fri, 26 Apr 2013 14:33:59 +0200
+Message-ID: <1577576.O1Cm2pf5KD@wuerfel>
+User-Agent: KMail/4.10.2 (Linux/3.8.0-17-generic; KDE/4.10.2; x86_64; ; )
+In-Reply-To: <CALrVBkuOmu4u9egdzzfn1tU9B-CFe3w85HZQ9s2gpKvYnaSqvA@mail.gmail.com>
+References: <1366974299-17877-1-git-send-email-pranavkumar@linaro.org> <CAFEAcA_xmrHTvR7FxUr3PCKBJY-hZnkeBcqyHksTB4-hqOZS0w@mail.gmail.com> <CALrVBkuOmu4u9egdzzfn1tU9B-CFe3w85HZQ9s2gpKvYnaSqvA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <517A6915.2020208@redhat.com>
-References: <1366962706-24204-1-git-send-email-xi.wang@gmail.com>
- <20130426112539.GA3736@osiris> <517A6915.2020208@redhat.com>
-From: Xi Wang <xi.wang@gmail.com>
-Date: Fri, 26 Apr 2013 08:31:39 -0400
-Message-ID: <CAKU6vybdnpoM-szTrJRDVM2sqNPvAe3Tszg+tCuziKSOEXjJ1w@mail.gmail.com>
-Subject: Re: [RFC PATCH net-next 0/6] seccomp filter JIT
-To: Daniel Borkmann <dborkman@redhat.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Eric Dumazet <edumazet@google.com>, Will Drewry <wad@chromium.org>,
-        Andrew Morton <akpm@linux-foundation.org>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Nicolas Schichan <nschichan@freebox.fr>,
-        Mircea Gherzan <mgherzan@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:8VHemkHvEwt+wMvhDSA8avb5ekgt6xn3ko/vw0q5NOT
+ ndw2esJUOiRZmZWoNgConGarvatUDAzOF4pn4Ompyz6o8T4DYu
+ BiBTbUktka/JlypLPE6fGzDbGhmcww4Qmt/iYMa+SrN8DOUtiu
+ yHNQtUWR3zlnqeH3iD0ANs7yqzDfyUVjhjKtKgaC0nYwptTtl3
+ x5MSZv7SZmL0OXSuqg9pdxXW7ANJYQ4xfF+s8V+D83qwKbpkYr
+ JJQpytsH8sCymFOx9nZjpIBwmERQ4sjTU7DA0khWkRnOpcQ+mC
+ Z2E5CaDTFBNkw+Nk9D/LFESW0zdJ0/wUX2c5I0iLXAQdsi1LzK
+ 9RskTj1iPaNp10UE1GUU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 26, 2013 at 7:46 AM, Daniel Borkmann <dborkman@redhat.com> wrote:
-> I think BPF JIT for seccomp on ARM recently got applied to -mm tree
-> if I'm not mistaken. It was from Nicolas Schichan (cc):
->
-> http://thread.gmane.org/gmane.linux.ports.arm.kernel/233416/
+On Friday 26 April 2013 17:36:16 Anup Patel wrote:
+> On 26 April 2013 17:03, Peter Maydell <peter.maydell@linaro.org> wrote:
+> > On 26 April 2013 12:19, Alexander Graf <agraf@suse.de> wrote:
+> >> MMIO registers are handled by a different layer than the virtio
+> >> console itself. After the virtio refactoring in QEMU, they will
+> >> be completely separate drivers.
+> >
+> > Good point -- we don't really want to be mixing up the
+> > transport and the backend. You can see it in the kvmtool
+> > patch, in fact -- it introduces an "if this is virtio-console"
+> > special case into the mmio.c file which previously was
+> > entirely backend agnostic.
+> 
+> Well, we can always have virtio device specific config registers
+> handle by virtio device backends and generic virtio config register
+> handled by transport.
+> 
+> kvmtool patch is hacky because it does not provide virtio device
+> specific config read/write callbacks.
 
-Thanks for the pointer.
+Couldn't kvmtool implement the interface used by smh_printch()
+for early output instead?
 
-For the ARM part, looks like Nicolas's patch requires to implement two
-wrappers for each arch:
+Or if that's not a fitting inteface, maybe a psci call for writing
+a character to the console?
 
-  void seccomp_jit_compile(struct seccomp_filter *fp);
-  void seccomp_jit_free(struct seccomp_filter *fp);
-
-The implementation of these wrappers is almost identical to:
-
-  void bpf_jit_compile(struct sk_filter *fp);
-  void bpf_jit_free(struct sk_filter *fp);
-
-While this patch uses a unified interface for both packet & seccomp filters.
-
-  bpf_func_t bpf_jit_compile(struct sock_filter *filter, unsigned int flen);
-  void bpf_jit_free(bpf_func_t bpf_func);
-
-Shouldn't be hard to merge though.
-
-- xi
+	Arnd
