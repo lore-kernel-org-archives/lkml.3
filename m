@@ -1,147 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755989Ab3DZWx2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 18:53:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38031 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754233Ab3DZWx1 (ORCPT
+	id S1756195Ab3DZW7q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 18:59:46 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:63227 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754896Ab3DZW7p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 18:53:27 -0400
-Date: Fri, 26 Apr 2013 15:53:25 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Alexandre Bounine <alexandre.bounine@idt.com>
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Li Yang <leoli@freescale.com>, Kumar Gala <galak@kernel.crashing.org>,
-        Andre van Herk <andre.van.herk@Prodrive.nl>,
-        Micha Nelissen <micha.nelissen@Prodrive.nl>
-Subject: Re: [PATCH 1/3] rapidio: make enumeration/discovery configurable
-Message-Id: <20130426155325.09fbad8c382dc8c549d503d0@linux-foundation.org>
-In-Reply-To: <1366813919-13766-2-git-send-email-alexandre.bounine@idt.com>
-References: <1366813919-13766-1-git-send-email-alexandre.bounine@idt.com>
-	<1366813919-13766-2-git-send-email-alexandre.bounine@idt.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Fri, 26 Apr 2013 18:59:45 -0400
+Message-ID: <1367017182.8964.258.camel@edumazet-glaptop>
+Subject: Re: [PATCH] net/openvswitch: replace memcmp() with specialized
+ comparator
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Peter Klausler <pmk@google.com>
+Cc: Jesse Gross <jesse@nicira.com>, "David S. Miller" <davem@davemloft.net>,
+        dev@openvswitch.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Fri, 26 Apr 2013 15:59:42 -0700
+In-Reply-To: <1367012792-25335-1-git-send-email-pmk@google.com>
+References: <1367012792-25335-1-git-send-email-pmk@google.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 24 Apr 2013 10:31:57 -0400 Alexandre Bounine <alexandre.bounine@idt.com> wrote:
-
-> Rework to implement RapidIO enumeration/discovery method selection
-> combined with ability to use enumeration/discovery as a kernel module.
+On Fri, 2013-04-26 at 17:46 -0400, Peter Klausler wrote:
+> Tune flow table lookup in net/openvswitch, replacing a call to
+> the slow-but-safe memcmp() in lib/string.c with a key comparator
+> routine that presumes most comparisons will succeed.  Besides
+> avoiding an early-exit test on each iteration, it also compares
+> keys 4 or 8 bytes at a time on architectures that can load an
+> unaligned long efficiently.
 > 
-> This patch adds ability to introduce new RapidIO enumeration/discovery methods
-> using kernel configuration options or loadable modules. Configuration option
-> mechanism allows to select built-in or modular enumeration/discovery method from
-> the list of existing methods or use external modules.
-> If a modular enumeration/discovery is selected each RapidIO mport device can
-> have its own method attached to it.
+> On a 3.2GHz Xeon (5679) this patch reduces the minimum back-to-back
+> hot-cache latency of a 128-byte key comparison by 7x, from 130ns with
+> the default byte-at-a-time memcmp() in lib/string.c down to 17ns.
 > 
-> The currently existing enumeration/discovery code was updated to be used
-> as built-in or modular method. This configuration option is named "Basic
-> enumeration/discovery" method.
+> More important, replacing the default memcmp() with this specialized
+> routine speeds up openvswitch's packet rate by 10% in a closed-loop
+> benchmark that simply routes traffic from one tap device to another.
 > 
-> Several common routines have been moved from rio-scan.c to make them available
-> to other enumeration methods and reduce number of exported symbols.
+> Signed-off-by: Peter Klausler <pmk@google.com>
+> ---
+>  net/openvswitch/flow.c | 33 ++++++++++++++++++++++++++++++++-
+>  1 file changed, 32 insertions(+), 1 deletion(-)
 > 
-> ...
->
-> --- a/drivers/rapidio/Kconfig
-> +++ b/drivers/rapidio/Kconfig
-> @@ -47,4 +47,23 @@ config RAPIDIO_DEBUG
+> diff --git a/net/openvswitch/flow.c b/net/openvswitch/flow.c
+> index 67a2b78..d5facf6 100644
+> --- a/net/openvswitch/flow.c
+> +++ b/net/openvswitch/flow.c
+> @@ -764,6 +764,37 @@ u32 ovs_flow_hash(const struct sw_flow_key *key, int key_len)
+>  	return jhash2((u32 *)key, DIV_ROUND_UP(key_len, sizeof(u32)), 0);
+>  }
 >  
->  	  If you are unsure about this, say N here.
->  
-> +choice
-> +	prompt "Enumeration method"
-> +	depends on RAPIDIO
-> +	help
-> +	  There are different enumeration and discovery mechanisms offered
-> +	  for RapidIO subsystem. You may select single built-in method or
-> +	  or any number of methods to be built as modules.
-> +	  Selecting a built-in method disables use of loadable methods.
+> +/*
+> + * Key comparison routine, optimized for the common case of
+> + * equality due to low average hash collision frequency
+> + * (1.5 mean items per nonempty bucket when total table item
+> + * count equals the number of buckets, which is when openvswitch
+> + * expands its hash table).
+> + */
+> +static bool equal_keys(const struct sw_flow_key *key1,
+> +		       const struct sw_flow_key *key2,
+> +		       size_t key_len)
+> +{
+> +	const char *cp1 = (const char *)key1;
+> +	const char *cp2 = (const char *)key2;
+> +	long diffs = 0;
 > +
-> +	  If unsure, select Basic built-in.
-> +
-> +config RAPIDIO_ENUM_BASIC
-> +	tristate "Basic"
-> +	help
-> +	  This option includes basic RapidIO fabric enumeration and discovery
-> +	  mechanism similar to one described in RapidIO specification Annex 1.
-> +
-> +endchoice
+> +#ifdef CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS
+> +	{
+> +		const long *lp1 = (const long *)cp1;
+> +		const long *lp2 = (const long *)cp2;
+> +		for (; key_len >= sizeof(long); key_len -= sizeof(long))
+> +			diffs |= *lp1++ ^ *lp2++;
+> +		cp1 = (const char *)lp1;
+> +		cp2 = (const char *)lp2;
+> +	}
+> +#endif
 
-This Kconfig change makes my kbuild do Weird Things.
+This seems a suboptimal condition, a bit tweaked for x86
 
-make mrproper ; yes "" | make allmodconfig ; make 2>/tmp/x
+Some 32bit arches do not have CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS,
+still struct sw_flow_key is 32bit word aligned.
 
-: scripts/kconfig/conf --silentoldconfig Kconfig
-: *
-: * Restart config...
-: *
-: *
-: * Bus options (PCI etc.)
-: *
-: PCI support (PCI) [Y/n/?] y
-:   Support mmconfig PCI config space access (PCI_MMCONFIG) [Y/n] y
-:   Read CNB20LE Host Bridge Windows (PCI_CNB20LE_QUIRK) [Y/n/?] y
-:   PCI Express support (PCIEPORTBUS) [Y/n/?] y
-:     PCI Express Hotplug driver (HOTPLUG_PCI_PCIE) [M/n/?] m
-:     Root Port Advanced Error Reporting support (PCIEAER) [Y/n/?] y
-:       PCI Express ECRC settings control (PCIE_ECRC) [Y/n/?] y
-:       PCIe AER error injector support (PCIEAER_INJECT) [M/n/y/?] m
-:     PCI Express ASPM control (PCIEASPM) [Y/n/?] y
-:       Debug PCI Express ASPM (PCIEASPM_DEBUG) [Y/n/?] y
-:       Default ASPM policy
-:       > 1. BIOS default (PCIEASPM_DEFAULT)
-:         2. Powersave (PCIEASPM_POWERSAVE)
-:         3. Performance (PCIEASPM_PERFORMANCE)
-:       choice[1-3]: 1
-: Message Signaled Interrupts (MSI and MSI-X) (PCI_MSI) [Y/?] y
-: PCI Debugging (PCI_DEBUG) [Y/n/?] y
-: Enable PCI resource re-allocation detection (PCI_REALLOC_ENABLE_AUTO) [Y/n/?] y
-: PCI Stub driver (PCI_STUB) [M/n/y/?] m
-: Xen PCI Frontend (XEN_PCIDEV_FRONTEND) [M/n/y/?] m
-: Interrupts on hypertransport devices (HT_IRQ) [Y/n/?] y
-: PCI IOV support (PCI_IOV) [Y/n/?] y
-: PCI PRI support (PCI_PRI) [Y/?] y
-: PCI PASID support (PCI_PASID) [Y/?] y
-: PCI IO-APIC hotplug support (PCI_IOAPIC) [M/n/y] m
-: ISA-style DMA support (ISA_DMA_API) [Y/n/?] y
-: RapidIO support (RAPIDIO) [Y/n/?] y
-:   IDT Tsi721 PCI Express SRIO Controller support (RAPIDIO_TSI721) [Y/n/?] y
-:   Discovery timeout duration (seconds) (RAPIDIO_DISC_TIMEOUT) [30] 30
-:   Enable RapidIO Input/Output Ports (RAPIDIO_ENABLE_RX_TX_PORTS) [Y/n/?] y
-:   DMA Engine support for RapidIO (RAPIDIO_DMA_ENGINE) [Y/n/?] y
-:   RapidIO subsystem debug messages (RAPIDIO_DEBUG) [Y/n/?] y
-:   Enumeration method [M/y/?] (NEW) aborted!
-: 
-: Console input/output is redirected. Run 'make oldconfig' to update configuration.
-: 
-:   SYSHDR  arch/x86/syscalls/../include/generated/uapi/asm/unistd_32.h
-:   SYSHDR  arch/x86/syscalls/../include/generated/uapi/asm/unistd_64.h
-:   SYSHDR  arch/x86/syscalls/../include/generated/uapi/asm/unistd_x32.h
+Either its a generic bcmp(s1,s2,len) function without any information on
+s1/s2 alignment, and it should not a private ovs thing, 
+or 
+its OVS private helper, and you can make sure alignof(struct
+sw_flow_key) == alignof(unsigned long) and remove the #ifdef
+CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS
+
+Check include/net/flow.h for an example
+
+struct flowi4 {
+...
+}  __attribute__((__aligned__(BITS_PER_LONG/8)));
 
 
-See the "Enumeration method [M/y/?] (NEW) aborted!"
 
-Note that this only happens when make's stderr is redirected.
-
-I've no idea what's going on here.  This appears to fix things:
-
---- a/drivers/rapidio/Kconfig~rapidio-make-enumeration-discovery-configurable-fix
-+++ a/drivers/rapidio/Kconfig
-@@ -59,7 +59,7 @@ choice
- 	  If unsure, select Basic built-in.
- 
- config RAPIDIO_ENUM_BASIC
--	tristate "Basic"
-+	bool "Basic"
- 	help
- 	  This option includes basic RapidIO fabric enumeration and discovery
- 	  mechanism similar to one described in RapidIO specification Annex 1.
-
-but doesn't appear to be what you intended.
