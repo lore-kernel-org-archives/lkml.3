@@ -1,60 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753192Ab3DZPAt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 11:00:49 -0400
-Received: from mga02.intel.com ([134.134.136.20]:39415 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750839Ab3DZPAs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 11:00:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,559,1363158000"; 
-   d="scan'208";a="326630349"
-Message-ID: <517A969B.5040606@linux.intel.com>
-Date: Fri, 26 Apr 2013 08:00:43 -0700
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	id S1752938Ab3DZPDj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 11:03:39 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:52553 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750709Ab3DZPDi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Apr 2013 11:03:38 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Anup Patel <anup.patel@linaro.org>
+Subject: Re: [PATCH 0/2] Early printk support for virtio console devices.
+Date: Fri, 26 Apr 2013 17:03:17 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
+Cc: linaro-kernel@lists.linaro.org, Peter Maydell <peter.maydell@linaro.org>,
+        patches@linaro.org,
+        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
+        Alexander Graf <agraf@suse.de>, kvmarm@lists.cs.columbia.edu,
+        linux-arm-kernel@lists.infradead.org
+References: <1366974299-17877-1-git-send-email-pranavkumar@linaro.org> <1577576.O1Cm2pf5KD@wuerfel> <CALrVBkuyby_KY_M+yp0e=PLk=7_W_kSxxm62YYSwwp8rwLsCAQ@mail.gmail.com>
+In-Reply-To: <CALrVBkuyby_KY_M+yp0e=PLk=7_W_kSxxm62YYSwwp8rwLsCAQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Vincent Guittot <vincent.guittot@linaro.org>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linaro-kernel@lists.linaro.org, peterz@infradead.org, mingo@kernel.org,
-        linux@arm.linux.org.uk, pjt@google.com, santosh.shilimkar@ti.com,
-        Morten.Rasmussen@arm.com, chander.kashyap@linaro.org,
-        cmetcalf@tilera.com, tony.luck@intel.com, alex.shi@intel.com,
-        preeti@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
-        tglx@linutronix.de, len.brown@intel.com, amit.kucheria@linaro.org,
-        corbet@lwn.net, l.majewski@samsung.com
-Subject: Re: [RFC PATCH v4 00/14] sched: packing small tasks
-References: <1366910611-20048-1-git-send-email-vincent.guittot@linaro.org>
-In-Reply-To: <1366910611-20048-1-git-send-email-vincent.guittot@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201304261703.17798.arnd@arndb.de>
+X-Provags-ID: V02:K0:KE8Q/4a+qj5rQUDaF5/4WPSZagObv0TiACAZ+pyi2zi
+ 4/8cnPozYINq5lBzaOdn8ITz52A4KxbH6OLxyQewPRxeP9i8pw
+ 0uLEoFMHvEMaMymh545ZAHXgB7viVf4ZgaS4nHVWHlX2ov4myy
+ WzBNUl/bGAnWouP7ZNdUdfLbjeeJVxPQApr0GR21Lm21GSvlEI
+ EsJZYBwBgX4Ok3b1XRQFXEEqkj7OmlC+7MkGlzCPxZ/qj/FiQt
+ 0yzBuGm6uXNIeqeKZB/ik+aZPm13gv7IJjW45E65eWG0tWjhv6
+ IOrMqQptsHC72Bi5R7FrqFQ5R8Hw5Qwp+lkBxqh2tpBP//CmV9
+ 7x4xHiRva1co/cOk3aRs=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/25/2013 10:23 AM, Vincent Guittot wrote:
-> Hi,
->
-> This patchset takes advantage of the new per-task load tracking that is
-> available in the kernel for packing the tasks in as few as possible
-> CPU/Cluster/Core. It has got 2 packing modes:
-> -The 1st mode packs the small tasks when the system is not too busy. The main
-> goal is to reduce the power consumption in the low system load use cases by
-> minimizing the number of power domain that are enabled but it also keeps the
-> default behavior which is performance oriented.
-> -The 2nd mode packs all tasks in as few as possible power domains in order to
-> improve the power consumption of the system but at the cost of possible
-> performance decrease because of the increase of the rate of ressources sharing
-> compared to the default mode.
+On Friday 26 April 2013, Anup Patel wrote:
+> I am curious about how smh-based or hypercall-based early prints would
+> be handled in following scenario:
+> 
+> "A board is running KVM ARM enabled kernel and linux console on serial
+> port. Now a user remotely connects to the board via telnet/ssh and
+> launches a VM with smh-based or hypercall-based earlyprintk."
+> 
+> In the above scenario, will smh-based or hypercall-based earlyprints
+> appear to user on remote shell or not ?
 
+The implementation of the console device would still be done by KVM,
+as for any other virtual device, so it shows up whereever kvm is
+configured to output the console data.
 
-so I got to ask the hard question; what percentage of system level (not just cpu level)
-power consumption gain can you measure (pick your favorite workload)...
-
-on x86 (even on the low power stuff) I expect this to be very far into the noise
-(since we have per core power gates, and power transitions are pretty fast)
-
-you have some numbers in the back of your mail, but it's hard for me to get a conclusion out of
-that (they either measure only cpu power, or are just vague in general)
-
-
+	Arnd
