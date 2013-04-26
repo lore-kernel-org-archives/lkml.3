@@ -1,91 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759923Ab3DZBrw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 21:47:52 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:33573 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759807Ab3DZBrH (ORCPT
+	id S932343Ab3DZB6J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 21:58:09 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:34628 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758173Ab3DZB6H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 21:47:07 -0400
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: David Bulkow <David.Bulkow@stratus.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH] PCI: move down pci_fixup_final for hotplug path
-Date: Thu, 25 Apr 2013 18:47:07 -0700
-Message-Id: <1366940827-15336-1-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <5AA430FFE4486C448003201AC83BC85E03DEA379@EXHQ.corp.stratus.com>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Thu, 25 Apr 2013 21:58:07 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <5179DF12.80908@jp.fujitsu.com>
+Date: Fri, 26 Apr 2013 10:57:38 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: <hannes@cmpxchg.org>, <toshi.kani@hp.com>, <linuxram@us.ibm.com>,
+        <rientjes@google.com>, <linux-kernel@vger.kernel.org>,
+        <linux-mm@kvack.org>
+Subject: Re: [Resend][Bug fix PATCH v5] Reusing a resource structure allocated
+ by bootmem
+References: <5175E5E8.3010003@jp.fujitsu.com> <51771E3D.6060203@jp.fujitsu.com> <20130424133719.94c7d301df844c4bcc987a53@linux-foundation.org>
+In-Reply-To: <20130424133719.94c7d301df844c4bcc987a53@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David found some resource conflict issue after
-| PCI: Put pci_dev in device tree as early as possible
-| commit 4f535093cf8f6da8cfda7c36c2c1ecd2e9586ee4
+2013/04/25 5:37, Andrew Morton wrote:
+> On Wed, 24 Apr 2013 08:50:21 +0900 Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com> wrote:
+>
+>> When hot removing memory presented at boot time, following messages are shown:
+>>
+>> [  296.867031] ------------[ cut here ]------------
+>> [  296.922273] kernel BUG at mm/slub.c:3409!
+>>
+>> ...
+>>
+>> The reason why the messages are shown is to release a resource structure,
+>> allocated by bootmem, by kfree(). So when we release a resource structure,
+>> we should check whether it is allocated by bootmem or not.
+>>
+>> But even if we know a resource structure is allocated by bootmem, we cannot
+>> release it since SLxB cannot treat it. So for reusing a resource structure,
+>> this patch remembers it by using bootmem_resource as follows:
+>>
+>> When releasing a resource structure by free_resource(), free_resource() checks
+>> whether the resource structure is allocated by bootmem or not. If it is
+>> allocated by bootmem, free_resource() adds it to bootmem_resource. If it is
+>> not allocated by bootmem, free_resource() release it by kfree().
+>>
+>> And when getting a new resource structure by get_resource(), get_resource()
+>> checks whether bootmem_resource has released resource structures or not. If
+>> there is a released resource structure, get_resource() returns it. If there is
+>> not a releaed resource structure, get_resource() returns new resource structure
+>> allocated by kzalloc().
+>>
+>> ...
+>>
+>
+> Looks good to me.
+>
+>> --- a/kernel/resource.c
+>> +++ b/kernel/resource.c
+>> @@ -21,6 +21,7 @@
+>>   #include <linux/seq_file.h>
+>>   #include <linux/device.h>
+>>   #include <linux/pfn.h>
+>> +#include <linux/mm.h>
+>>   #include <asm/io.h>
+>>
+>>
+>> @@ -50,6 +51,14 @@ struct resource_constraint {
+>>
+>>   static DEFINE_RWLOCK(resource_lock);
+>>
+>> +/*
+>> + * For memory hotplug, there is no way to free resource entries allocated
+>> + * by boot mem after the system is up. So for reusing the resource entry
+>> + * we need to remember the resource.
+>> + */
+>> +static struct resource *bootmem_resource_free;
+>> +static DEFINE_SPINLOCK(bootmem_resource_lock);
+>> +
+>>   static void *r_next(struct seq_file *m, void *v, loff_t *pos)
+>>   {
+>>   	struct resource *p = v;
+>> @@ -151,6 +160,40 @@ __initcall(ioresources_init);
+>>
+>>   #endif /* CONFIG_PROC_FS */
+>>
+>> +static void free_resource(struct resource *res)
+>> +{
+>> +	if (!res)
+>> +		return;
+>> +
+>> +	if (!PageSlab(virt_to_head_page(res))) {
+>
+> Did you consider using a bit in resource.flags?  There appear to be
+> four free ones left.  The VM trickery will work OK I guess, but isn't
+> very "nice".
+>
+>> +		spin_lock(&bootmem_resource_lock);
+>> +		res->sibling = bootmem_resource_free;
+>> +		bootmem_resource_free = res;
+>> +		spin_unlock(&bootmem_resource_lock);
+>> +	} else {
+>> +		kfree(res);
+>> +	}
+>> +}
+>> +
+>> +static struct resource *get_resource(gfp_t flags)
+>> +{
+>> +	struct resource *res = NULL;
+>> +
+>> +	spin_lock(&bootmem_resource_lock);
+>> +	if (bootmem_resource_free) {
+>> +		res = bootmem_resource_free;
+>> +		bootmem_resource_free = res->sibling;
+>> +	}
+>> +	spin_unlock(&bootmem_resource_lock);
+>> +
+>> +	if (res)
+>> +		memset(res, 0, sizeof(struct resource));
+>> +	else
+>> +		res = kzalloc(sizeof(struct resource), flags);
+>> +
+>> +	return res;
+>> +}
+>
 
-and
-| USB: Fix handoff when BIOS disables host PCI device
-| commit: cab928ee1f221c9cc48d6615070fefe2e444384a
+> I think I'll rename this to alloc_resource().  In Linux "get" often
+> (but not always) means "take a reference on".  So "get" pairs with
+> "put" and "alloc" pairs with "free".
 
-for usb qirks for hotplug path.
+I forgot to answer it.
+I think so too. And I have no objection about your update patch.
 
-After checking pci_fixup_device() with pci_fixup_final,
-now we have different path for boot path and hotadd path.
+Thanks,
+Yasuaki Ishimatsu
 
-Boot path: because pci_apply_fix_final_quirks is not set yet,
-	so pci_fixup_device(pci_fixup_final) will be skipped
-	from pci_device_add().
-        And later pci_apply_final_quirks will be called for all
-	pci devices via fs_initcall.
-	That is after pci_assign_unassign resource.
-	In that case quirk could use bars with problem.
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>
 
-Hotadd path: pci_fixup_device(pci_fixup_final) will be executed
-	via pci_device_add(), and that is too early for hotplug
-	path, as pci bar for hot add devices is not assigned yet
-	after commit 4f535093.
 
-So we need to move down that for hotplug path, call that in
-pci_bus_add_devices instead, as at that time just before
-drivers get attached. 
-And that is simliar calling place for pci_device_add before
-commit 4f535093 is applied.
-
-We should apply this fix for v3.9, but is too late now.
-so get it into v3.10 and could get into v3.9 stable instead.
-
-Reported-by: David Bulkow <David.Bulkow@stratus.com>
-Tested-by: David Bulkow <David.Bulkow@stratus.com>
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-
----
- drivers/pci/bus.c   |    1 +
- drivers/pci/probe.c |    1 -
- 2 files changed, 1 insertion(+), 1 deletion(-)
-
-Index: linux-2.6/drivers/pci/bus.c
-===================================================================
---- linux-2.6.orig/drivers/pci/bus.c
-+++ linux-2.6/drivers/pci/bus.c
-@@ -201,6 +201,7 @@ void pci_bus_add_devices(const struct pc
- 		/* Skip already-added devices */
- 		if (dev->is_added)
- 			continue;
-+		pci_fixup_device(pci_fixup_final, dev);
- 		retval = pci_bus_add_device(dev);
- 		if (retval)
- 			dev_err(&dev->dev, "Error adding device (%d)\n",
-Index: linux-2.6/drivers/pci/probe.c
-===================================================================
---- linux-2.6.orig/drivers/pci/probe.c
-+++ linux-2.6/drivers/pci/probe.c
-@@ -1341,7 +1341,6 @@ void pci_device_add(struct pci_dev *dev,
- 	list_add_tail(&dev->bus_list, &bus->devices);
- 	up_write(&pci_bus_sem);
- 
--	pci_fixup_device(pci_fixup_final, dev);
- 	ret = pcibios_add_device(dev);
- 	WARN_ON(ret < 0);
- 
