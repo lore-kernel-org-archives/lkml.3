@@ -1,67 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753286Ab3DZFJQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 01:09:16 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:57982 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752681Ab3DZFJO (ORCPT
+	id S1754617Ab3DZFKj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 01:10:39 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:38989 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751530Ab3DZFKh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 01:09:14 -0400
-X-AuditID: 9c93016f-b7c3dae000000592-90-517a0bf794dc
-From: Kyungsik Lee <kyungsik.lee@lge.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Rob Landley <rob@landley.net>
-Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org, x86@kernel.org,
-        celinux-dev@lists.celinuxforum.org, hyojun.im@lge.com,
-        chan.jeong@lge.com, raphael.andy.lee@gmail.com,
-        Kyungsik Lee <kyungsik.lee@lge.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <rmk@arm.linux.org.uk>, Borislav Petkov <bp@alien8.de>,
-        Florian Fainelli <florian@openwrt.org>,
-        Yann Collet <yann.collet.73@gmail.com>
-Subject: [PATCH -next] x86, doc: Add LZ4 magic number for the new compression
-Date: Fri, 26 Apr 2013 14:08:53 +0900
-Message-Id: <1366952933-31331-1-git-send-email-kyungsik.lee@lge.com>
-X-Mailer: git-send-email 1.8.1.1
-X-Brightmail-Tracker: AAAAAA==
+	Fri, 26 Apr 2013 01:10:37 -0400
+Date: Fri, 26 Apr 2013 15:10:27 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the omap_dss2 tree
+Message-Id: <20130426151027.db71ddf367c85fe0682cbff6@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__26_Apr_2013_15_10_27_+1000_664yTLzvJr6n2Mhm"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Documentation/x86/boot.txt is updated to list the LZ4 magic number.
-This LZ4 magic number is used for the new compression format.
+--Signature=_Fri__26_Apr_2013_15_10_27_+1000_664yTLzvJr6n2Mhm
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Kyungsik Lee <kyungsik.lee@lge.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Russell King <rmk@arm.linux.org.uk>
-Cc: Borislav Petkov <bp@alien8.de>
-Cc: Florian Fainelli <florian@openwrt.org>
-Cc: Yann Collet <yann.collet.73@gmail.com>
----
- Documentation/x86/boot.txt | 7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+Hi Tomi,
 
-diff --git a/Documentation/x86/boot.txt b/Documentation/x86/boot.txt
-index 3840b6f..fc66d42 100644
---- a/Documentation/x86/boot.txt
-+++ b/Documentation/x86/boot.txt
-@@ -657,9 +657,10 @@ Protocol:	2.08+
-   uncompressed data should be determined using the standard magic
-   numbers.  The currently supported compression formats are gzip
-   (magic numbers 1F 8B or 1F 9E), bzip2 (magic number 42 5A), LZMA
--  (magic number 5D 00), and XZ (magic number FD 37).  The uncompressed
--  payload is currently always ELF (magic number 7F 45 4C 46).
--  
-+  (magic number 5D 00), XZ (magic number FD 37), and LZ4 (magic number
-+  02 21).  The uncompressed payload is currently always ELF (magic
-+  number 7F 45 4C 46).
-+
- Field name:	payload_length
- Type:		read
- Offset/size:	0x24c/4
--- 
-1.8.1.1
+After merging the omap_dss2 tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
 
+drivers/video/ps3fb.c: In function 'ps3fb_mmap':
+drivers/video/ps3fb.c:710:2: error: implicit declaration of function 'vm_io=
+remap_memory' [-Werror=3Dimplicit-function-declaration]
+drivers/video/ps3fb.c:712:2: error: 'offset' undeclared (first use in this =
+function)
+
+Caused by commit 6ea19860d6c5 ("fbdev/ps3fb: use vm_iomap_memory()").
+
+I have used the omap_dss2 tree from next-20130424 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Fri__26_Apr_2013_15_10_27_+1000_664yTLzvJr6n2Mhm
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRegxDAAoJEECxmPOUX5FE1vgP/RYl87Xow7YyIwk/OoimCCgy
+zzU/9paXOQpSmrjnL5Q1nfXumUekBG3o9XmoZFgGWxo0GevnCxGIRJopsnd0bmaJ
+qUVmzcFkgxcVdjP9hguYJnb1Q01bEobuoCZfQWSGTg7QrpPjDrnnsinUKOHJ20/7
+cZV48KKcRVkYTzkS/KtX05RlGoOM4kPOicorjBM6pFiulhgmbqKavQT1La6HX7T5
+8S7893VWSOoQ5QDv3ZuFNmRCxqHFkO/nhUS+jeUW4IGMrJsVT5wP6COt8U8h8JK0
+iiDmd/Dd3Ahpncn7Yrgm3oyrLDRUtWpl7SN0ITLZ1VJDePgHHgAxKZMzMFD9WhZ+
+3hAUxCeO4x6IcJMPEtQ9SvCjxVcOTUQeu5+c9p6b3AQLhiY7Jc2v5IM96xUbwb92
+H3cwSORTUCF1738Yrjmhv5enS5vTb+T07F0e21BsNtLaUkMVrULbtFbWNhhlVyjC
+G+1ILAsrYB3XltuW5CzGCo6JmvE/EZ/uOZ702lp/sx0NHCpf34F6EjVbU0t9+aFy
+uLrrOnqDXqBMBhZlOczfmU/PubuVTFDPcmlRYJg9AqvMMKbNNmACZMQStIRRka9c
+aHzs3pSeNf5eJEf7IDWoBg0qirBe9g0Hc8dhOClyHfO7ruJLLIRVzEeOrclRIgaf
+IhH6A06jCPkShT8+znvq
+=Tp05
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__26_Apr_2013_15_10_27_+1000_664yTLzvJr6n2Mhm--
