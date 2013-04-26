@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756633Ab3DZPbv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 11:31:51 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36174 "EHLO
+	id S1756650Ab3DZPd5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 11:33:57 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36175 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755329Ab3DZPbu (ORCPT
+	by vger.kernel.org with ESMTP id S1754558Ab3DZPd4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 11:31:50 -0400
-Date: Fri, 26 Apr 2013 16:31:45 +0100
+	Fri, 26 Apr 2013 11:33:56 -0400
+Date: Fri, 26 Apr 2013 16:33:55 +0100
 From: Mark Brown <broonie@kernel.org>
 To: Axel Lin <axel.lin@ingics.com>
-Cc: Cyril Chemparathy <cyril@ti.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] regulator: tps6524x: Use regulator_map_voltage_ascend
-Message-ID: <20130426153144.GY5019@opensource.wolfsonmicro.com>
-References: <1366957552.22992.1.camel@phoenix>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] regulator: ab3100: Fix regulator register error handling
+Message-ID: <20130426153354.GZ5019@opensource.wolfsonmicro.com>
+References: <1366984629.31523.1.camel@phoenix>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="R9qb+eAX/AZDW6n0"
+	protocol="application/pgp-signature"; boundary="70fLfmUGd5x0AJTB"
 Content-Disposition: inline
-In-Reply-To: <1366957552.22992.1.camel@phoenix>
+In-Reply-To: <1366984629.31523.1.camel@phoenix>
 X-Cookie: Caution: Keep out of reach of children.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -27,36 +27,43 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---R9qb+eAX/AZDW6n0
+--70fLfmUGd5x0AJTB
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Fri, Apr 26, 2013 at 02:25:52PM +0800, Axel Lin wrote:
-> All regulators have ascendant voltage list in this driver.
-> Use regulator_map_voltage_ascend for them.
+On Fri, Apr 26, 2013 at 09:57:09PM +0800, Axel Lin wrote:
+> Ensure to unregister all regulators before return error in probe().
+>=20
+> The regulator register order depends on the regulator ID pass to
+> ab3100_regulator_register() function. Thus we need to scan ab3100_regulat=
+or_desc
+> and find the index of successfully registered regulators, or alternativel=
+y just
+> call ab3100_regulators_remove() to unregister all registered regulators.
 
 Applied, thanks.
 
---R9qb+eAX/AZDW6n0
+--70fLfmUGd5x0AJTB
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJRep3WAAoJELSic+t+oim9aXoP/iplNLrdwDcK15Odga+zrVIH
-jTn86tKltJIJQ5aJuf0gGPbly/zjYnUJgbymQp4idbK/IMe/XjfI7/YRb22YFHZZ
-sdbpWqEuE0lRlO3nUjRnv7MElslIAFdv5H/X++pIxiH8hhsJLbrChdhmeFgSyR+E
-qj5WJ4aN0TjwtWYaBBPMaxFqSjOoOU8x9r8dmO8l5+sgpP2HJOTmqep+wn/m0Byo
-YVWR+ZMDuZ7iaLjbsEUFCk1whlo5qXNIpS7R2lATFcnfkfD1XeP/5lN5p1lucP6+
-JymrqDlISHU0QeAFvz0ZW3FKooytCHqhlZYQnGhu9OnM89RJ/7ZGMKDlM3FSvfji
-bQlkOSCxfa3qpJ0a2Nk0JONA1AotLwgg0ISnIJnXk7mm9lyyKJ7beY+DOClSk3G8
-/yhNqlJc9IyyUNXzw74AhSjIOBFKdpiTeZUUR3UksVvVlwDx7MH8vUwhh/5sugma
-mp+CzeVAoPfT6ikON6rvsFufT+gHxpFAgIsO8p4p7v7yu/DFQ2g2ULCoHGZn6O8m
-vtbFexgeXy0s50hRqPcB2j2hxaKOZ9zRAWwEncnLaIqswzFiXdjOJClLQKVxOX4r
-FLSNLxa/CpPu28IVUUoQs3I+I30bS2P5mLXpcSyoV6he1Spi7wUcY4NTCC3G0g4B
-TxevW3hCTz7olLhb3ha0
-=K8YB
+iQIcBAEBAgAGBQJRep5VAAoJELSic+t+oim9/XcP/iCNZV7S1juKsavnymZ/uPLu
+hpewWKFWZmZFoFKR/wLhShkzjr5qqrRrJkJt33vArAlEKQl749lMaIcFgZ7IqjhE
+l9AwBNdnPyIQDfhR77K1RVxpY8GULWtNnNnw3AuD7QFF2VohqLInZyonLrzFvmUH
++aQMU324f/UptSds5jS62C4mKEVP86p5BSEGqji43ZcI5bbJJP/WWJ2u1bvb80XO
+6D4pxIjftUj7n8T0xmuFlKQ5g5xMstcV9Yg1LqAKDNAe96vmbYM6gqx9q0oLjrez
+48Z9hKIXD8K3tT7RRk63cvpwxbBQxqMp4vNalnZX1HcF+ehkbsTgcO+UW3b2I7ee
+JUXTcaxErX4iaXlfa7zeRpokaZQ9AS354aQRBsKns/KPqIoKwZL8oT3W+lbmyLg6
+Smke8JoqKm5u12o5ibxrnQE0pWJnctEgpZG3ZDHu7TIkuFCDi2nmoIXnX2CKsXFK
+ITiP2S7/zXF23REgIsmXxEupr6fxAolDxEURQ0ToOQjlcATIcg+HXRX10IcOvTha
+n3PQBnU4zM510lWYPLxpeussRRj1a7vJGW0zAK5EL3jYoMHfbUPYA/hT7usYXvPC
+YxG+nwJ9TvsLdqdZIBJAZTFFbWKGfPWFqElU3bGeatoX6Es1YgITHfqpZ9GXkvFl
+l3tufSNvP8N6hpncvtBG
+=zfdA
 -----END PGP SIGNATURE-----
 
---R9qb+eAX/AZDW6n0--
+--70fLfmUGd5x0AJTB--
