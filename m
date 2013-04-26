@@ -1,139 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759888Ab3DZBrV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 21:47:21 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:46915 "EHLO
+	id S1759869Ab3DZBrU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 21:47:20 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:46951 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759809Ab3DZBrI (ORCPT
+	with ESMTP id S1759843Ab3DZBrQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 21:47:08 -0400
+	Thu, 25 Apr 2013 21:47:16 -0400
 From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Jiang Liu <jiang.liu@huawei.com>
-Cc: Gavin Guo <tuffkidtt@gmail.com>, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH -v3] PCI, ACPI, hotplug: Fix BUS_CHECK event handle on root bridge
-Date: Thu, 25 Apr 2013 18:46:38 -0700
-Message-Id: <1366940798-15268-1-git-send-email-yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Gu Zheng <guz.fnst@cn.fujitsu.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH] PCI: Fix racing for pci device removing via sysfs
+Date: Thu, 25 Apr 2013 18:47:21 -0700
+Message-Id: <1366940841-15370-1-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <CAAh6nkn2WxQAcmtLM1bu66Ngn+BheJNfoAUMN=dO9eY2HXi7YQ@mail.gmail.com>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Gavin found that acpiphp does not handle hotplug anymore even after
-now we have acpiphp built-in preparing for v3.10.
+Gu found nested removing through
+	echo -n 1 > /sys/bus/pci/devices/0000\:10\:00.0/remove ; echo -n 1 >
+/sys/bus/pci/devices/0000\:1a\:01.0/remove
 
-Bjorn analyzed bootlog, he found that 
-    acpiphp: ACPI Hot Plug PCI Controller Driver version: 0.5
-    ACPI: PCI Root Bridge [PCI0] (domain 0000 [bus 00-3e])
-    \_SB_.PCI0:_OSC invalid UUID
-    acpiphp: Slot [1] registered
-    acpiphp: Slot [1-1] registered
-   acpi root: \_SB_.PCI0 notify handler is installed
-    _handle_hotplug_event_root: Bus check notify on \_SB_.PCI0
-    _handle_hotplug_event_root: Bus check notify on \_SB_.PCI0
-And that means:
-   So we should be using acpiphp, which you do have built in statically,
-   and it found a couple slots.  And we did get two bus check notifies on
-   \_SB_.PCI0, so we *should* be re-enumerating PCI bus 0000:00.  But it
-   looks like we're handling this as a host bridge hotplug event instead
-   of a PCI device hotplug.  My guess is that
-   handle_root_bridge_insertion() does nothing because the PCI0 ACPI
-   device already exists, though I would expect to see the "acpi device
-   exists..." in your dmesg log if this were the case.
+will cause kernel crash as bus get freed.
 
-Also according to Rafael and Bjorn, it is perfect fine that we
-should enumerate bus by sending event to root bridge after hotadd
-device to slots under that root bridge or children bridges.
+[  418.946462] CPU 4
+[  418.968377] Pid: 512, comm: kworker/u:2 Tainted: G        W    3.8.0 #2
+FUJITSU-SV PRIMEQUEST 1800E/SB
+[  419.081763] RIP: 0010:[<ffffffff8137972e>]  [<ffffffff8137972e>]
+pci_bus_read_config_word+0x5e/0x90
+[  420.494137] Call Trace:
+[  420.523326]  [<ffffffff813851ef>] ? remove_callback+0x1f/0x40
+[  420.591984]  [<ffffffff8138044b>] pci_pme_active+0x4b/0x1c0
+[  420.658545]  [<ffffffff8137d8e7>] pci_stop_bus_device+0x57/0xb0
+[  420.729259]  [<ffffffff8137dab6>] pci_stop_and_remove_bus_device+0x16/0x30
+[  420.811392]  [<ffffffff813851fb>] remove_callback+0x2b/0x40
+[  420.877955]  [<ffffffff81257a56>] sysfs_schedule_callback_work+0x26/0x70
 
-It turns out that it is regression caused by
-| commit 668192b678201d2fff27c6cc76bb003c1ec4a52a
-| Author: Yinghai Lu <yinghai@kernel.org>
-| Date:   Mon Jan 21 13:20:48 2013 -0800
-|
-|    PCI: acpiphp: Move host bridge hotplug to pci_root.c
+https://bugzilla.kernel.org/show_bug.cgi?id=54411
 
-We should check slots when BUS_CHECK is sent to root bridge acpi handle.
+We have one patch that will let device hold bus ref to prevent it from
+being freed, but that will still generate warning.
 
-Restore the old behavoir by calling acpi_check_bridge and check_sub_bridge
-in acpiphp.
+------------[ cut here ]------------
+WARNING: at lib/list_debug.c:53 __list_del_entry+0x63/0xd0()
+Hardware name: PRIMEQUEST 1800E
+list_del corruption, ffff8807d1b6c000->next is LIST_POISON1 (dead000000100100)
+Call Trace:
+ [<ffffffff81056d4f>] warn_slowpath_common+0x7f/0xc0
+ [<ffffffff81056e46>] warn_slowpath_fmt+0x46/0x50
+ [<ffffffff81280b13>] __list_del_entry+0x63/0xd0
+ [<ffffffff81280b91>] list_del+0x11/0x40
+ [<ffffffff81298331>] pci_destroy_dev+0x31/0xc0
+ [<ffffffff812985bb>] pci_remove_bus_device+0x5b/0x70
+ [<ffffffff812985ee>] pci_stop_and_remove_bus_device+0x1e/0x30
+ [<ffffffff8129fc89>] remove_callback+0x29/0x40
+ [<ffffffff811f3b84>] sysfs_schedule_callback_work+0x24/0x70
 
-Jiang Liu acctually have simimar patch but it forgets calling
-acpi_check_bridge() for system that have slots on root bus directly.
-That is still valid, as in QEMU we still have that slots on bus 0 at
-least. But my first version patch wrongly check if root bridge exists
-before check_sub_bridge for children bridges. 
+We can just check if the device get removed from pci tree
+already in the protection under pci_remove_rescan_mutex.
 
--v2: Don't check bridge for acpi_walk_namespace with check_sub_bridges.
-     also put back bridge reference.
--v3: More changelog and etc.
-
-Reported-by: Gavin Guo <tuffkidtt@gmail.com>
-Tested-by: Gavin Guo <tuffkidtt@gmail.com>
+Reported-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+Tested-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 
 ---
- drivers/acpi/pci_root.c            |    2 ++
- drivers/pci/hotplug/acpiphp_glue.c |   14 ++++++++++++++
- include/linux/pci-acpi.h           |    2 ++
- 3 files changed, 18 insertions(+)
+ drivers/pci/pci-sysfs.c |    9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
-Index: linux-2.6/drivers/acpi/pci_root.c
+Index: linux-2.6/drivers/pci/pci-sysfs.c
 ===================================================================
---- linux-2.6.orig/drivers/acpi/pci_root.c
-+++ linux-2.6/drivers/acpi/pci_root.c
-@@ -643,6 +643,8 @@ static void _handle_hotplug_event_root(s
- 				 (char *)buffer.pointer);
- 		if (!root)
- 			handle_root_bridge_insertion(handle);
-+		else
-+			acpiphp_check_host_bridge(handle);
+--- linux-2.6.orig/drivers/pci/pci-sysfs.c
++++ linux-2.6/drivers/pci/pci-sysfs.c
+@@ -329,9 +329,16 @@ dev_rescan_store(struct device *dev, str
+ static void remove_callback(struct device *dev)
+ {
+ 	struct pci_dev *pdev = to_pci_dev(dev);
++	int domain = pci_domain_nr(pdev->bus);
++	u8 bus = pdev->bus->number;
++	u8 devfn = pdev->devfn;
  
- 		break;
- 
-Index: linux-2.6/drivers/pci/hotplug/acpiphp_glue.c
-===================================================================
---- linux-2.6.orig/drivers/pci/hotplug/acpiphp_glue.c
-+++ linux-2.6/drivers/pci/hotplug/acpiphp_glue.c
-@@ -950,6 +950,20 @@ check_sub_bridges(acpi_handle handle, u3
- 	return AE_OK ;
+ 	mutex_lock(&pci_remove_rescan_mutex);
+-	pci_stop_and_remove_bus_device(pdev);
++	pdev = pci_get_domain_bus_and_slot(domain, bus, devfn);
++	if (pdev) {
++		pci_dev_put(pdev);
++		pci_stop_and_remove_bus_device(pdev);
++	}
+ 	mutex_unlock(&pci_remove_rescan_mutex);
  }
  
-+void acpiphp_check_host_bridge(acpi_handle handle)
-+{
-+	struct acpiphp_bridge *bridge;
-+
-+	bridge = acpiphp_handle_to_bridge(handle);
-+	if (bridge) {
-+		acpiphp_check_bridge(bridge);
-+		put_bridge(bridge);
-+	}
-+
-+	acpi_walk_namespace(ACPI_TYPE_DEVICE, handle,
-+		ACPI_UINT32_MAX, check_sub_bridges, NULL, NULL, NULL);
-+}
-+
- static void _handle_hotplug_event_bridge(struct work_struct *work)
- {
- 	struct acpiphp_bridge *bridge;
-Index: linux-2.6/include/linux/pci-acpi.h
-===================================================================
---- linux-2.6.orig/include/linux/pci-acpi.h
-+++ linux-2.6/include/linux/pci-acpi.h
-@@ -60,11 +60,13 @@ static inline void acpi_pci_slot_remove(
- void acpiphp_init(void);
- void acpiphp_enumerate_slots(struct pci_bus *bus, acpi_handle handle);
- void acpiphp_remove_slots(struct pci_bus *bus);
-+void acpiphp_check_host_bridge(acpi_handle handle);
- #else
- static inline void acpiphp_init(void) { }
- static inline void acpiphp_enumerate_slots(struct pci_bus *bus,
- 					   acpi_handle handle) { }
- static inline void acpiphp_remove_slots(struct pci_bus *bus) { }
-+static inline void acpiphp_check_host_bridge(acpi_handle handle) { }
- #endif
- 
- #else	/* CONFIG_ACPI */
