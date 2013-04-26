@@ -1,145 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756816Ab3DZQfM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 12:35:12 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:49629 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756601Ab3DZQfK (ORCPT
+	id S1756495Ab3DZQjo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 12:39:44 -0400
+Received: from mail.digidescorp.com ([50.73.98.161]:53272 "EHLO
+	mail.digidescorp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751268Ab3DZQjm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 12:35:10 -0400
-Date: Fri, 26 Apr 2013 09:30:46 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Simon Horman <horms@verge.net.au>,
-        Julian Anastasov <ja@ssi.bg>, Ingo Molnar <mingo@redhat.com>,
-        lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
-        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Dipankar Sarma <dipankar@in.ibm.com>, dhaval.giani@gmail.com
-Subject: Re: [PATCH 2/2] ipvs: Use cond_resched_rcu_lock() helper when
- dumping connections
-Message-ID: <20130426163046.GG3860@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1366940708-10180-1-git-send-email-horms@verge.net.au>
- <1366940708-10180-3-git-send-email-horms@verge.net.au>
- <20130426080313.GC8669@dyad.programming.kicks-ass.net>
- <20130426154547.GC3860@linux.vnet.ibm.com>
- <1366991947.8964.233.camel@edumazet-glaptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1366991947.8964.233.camel@edumazet-glaptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13042616-4834-0000-0000-000006377C7D
+	Fri, 26 Apr 2013 12:39:42 -0400
+DomainKey-Signature: a=rsa-sha1; s=MDaemon; d=digidescorp.com;
+	c=simple; q=dns; h=from:message-id;
+	b=Zn8Br2ZmyMkujylFrX7KhwpLRkkALBQFdwZq9XC0sq9sr0lcFCax6SIWP3pc
+	wM2IIKVPtJ9HLJP2R1A/IZbOWpvdxKI05SHLl6djPLTSbBkC5U+UgTJEo
+	yVq287pJdwR18Bl0gYwNFhCw7fePLwT/T6njVMrPk6I6qgA6kj3/yQ=;
+X-Spam-Processed: mail.digidescorp.com, Fri, 26 Apr 2013 11:39:39 -0500
+	(not processed: message from trusted or authenticated source)
+X-Authenticated-Sender: steve@digidescorp.com
+X-Return-Path: prvs=1828b68054=steve@digidescorp.com
+X-Envelope-From: steve@digidescorp.com
+From: "Steven J. Magnani" <steve@digidescorp.com>
+To: "James E.J. Bottomley" <James.Bottomley@HansenPartnership.com>
+Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, <stable@vger.kernel.org>,
+        "Steven J. Magnani" <steve@digidescorp.com>
+Subject: [PATCH RESEND^2] sd: fix infinite kernel/udev loop on non-removable Medium Not Present
+Date: Fri, 26 Apr 2013 11:39:33 -0500
+Message-Id: <1366994373-13324-1-git-send-email-steve@digidescorp.com>
+X-Mailer: git-send-email 1.6.0.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 26, 2013 at 08:59:07AM -0700, Eric Dumazet wrote:
-> On Fri, 2013-04-26 at 08:45 -0700, Paul E. McKenney wrote:
-> 
-> > I have done some crude coccinelle patterns in the past, but they are
-> > subject to false positives (from when you transfer the pointer from
-> > RCU protection to reference-count protection) and also false negatives
-> > (when you atomically increment some statistic unrelated to protection).
-> > 
-> > I could imagine maintaining a per-thread count of the number of outermost
-> > RCU read-side critical sections at runtime, and then associating that
-> > counter with a given pointer at rcu_dereference() time, but this would
-> > require either compiler magic or an API for using a pointer returned
-> > by rcu_dereference().  This API could in theory be enforced by sparse.
-> > 
-> > Dhaval Giani might have some ideas as well, adding him to CC.
-> 
-> 
-> We had this fix the otherday, because tcp prequeue code hit this check :
-> 
-> static inline struct dst_entry *skb_dst(const struct sk_buff *skb)
-> {
->         /* If refdst was not refcounted, check we still are in a 
->          * rcu_read_lock section
->          */
->         WARN_ON((skb->_skb_refdst & SKB_DST_NOREF) &&
->                 !rcu_read_lock_held() &&
->                 !rcu_read_lock_bh_held());
->         return (struct dst_entry *)(skb->_skb_refdst & SKB_DST_PTRMASK);
-> }
-> 
-> ( http://git.kernel.org/cgit/linux/kernel/git/davem/net.git/commit/?id=093162553c33e9479283e107b4431378271c735d )
-> 
-> Problem is the rcu protected pointer was escaping the rcu lock and was
-> then used in another thread.
+Commit eface65c336eff420d70beb0fb6787a732e05ffb (2.6.38) altered
+set_media_not_present() in a way that prevents the sd driver from
+remembering that a non-removable device has reported "Medium Not Present".
+This condition can occur on hotplug of a (i.e.) USB Mass Storage device
+whose medium is offline due to an unrecoverable controller error,
+but which is otherwise capable of SCSI communication (to download new 
+microcode, etc.).
 
-All the way to some other thread?  That is a serious escape!  ;-)
+Under these conditions, the changed code results in an infinite loop
+between the kernel and udevd. When udevd attempts to open the device
+in response to a change notification, a SCSI "Medium Not Present" error
+occurs which causes the kernel to signal another change. The cycle
+repeats until the device is unplugged, resulting in udevd consuming ever-
+increasing amounts of CPU and virtual memory.
 
-> What would be cool (but expensive maybe) , would be to get a cookie from
-> rcu_read_lock(), and check the cookie at rcu_dereference(). These
-> cookies would have system wide scope to catch any kind of errors.
+Resolve this by remembering "media not present" whether the device has
+declared itself "removable" or not.
 
-I suspect that your cookie and my counter are quite similar.
-
-> Because a per thread counter would not catch following problem :
-> 
-> rcu_read_lock();
-> 
-> ptr = rcu_dereference(x);
-> if (!ptr)
-> 	return NULL;
-> ...
-> 
-> 
-> rcu_read_unlock();
-> 
-> ...
-> rcu_read_lock();
-> /* no reload of x, ptr might be now stale/freed */
-> if (ptr->field) { ... }
-
-Well, that is why I needed to appeal to compiler magic or an API
-extension.  Either way, the pointer returned from rcu_dereference()
-must be tagged with the ID of the outermost rcu_read_lock() that
-covers it.  Then that tag must be checked against that of the outermost
-rcu_read_lock() when it is dereferenced.  If we introduced yet another
-set of RCU API members (shudder!) with which to wrapper your
-ptr->field use, we could associate additional storage with the
-pointer to hold the cookie/counter.  And then use sparse to enforce
-use of the new API.
-
-Of course, if we were using C++, we could define a template for pointers
-returned by rcu_dereference() in order to make this work.  Now, where
-did I put that asbestos suit, you know, the one with the titanium
-pinstripes?  ;-)
-
-But even that has some "interesting" issues.  To see this, let's
-modify your example a bit:
-
-	rcu_read_lock();
-
-	...
-
-	rcu_read_lock_bh();
-
-	ptr = rcu_dereference(x);
-	if (!ptr)
-		return NULL;
-	...
-
-
-	rcu_read_unlock_bh();
-
-	...
-	/* no reload of x, ptr might be now stale/freed */
-	if (ptr->field) { ... }
-
-	...
-
-	rcu_read_unlock();
-
-
-Now, is it the rcu_read_lock() or the rcu_read_lock_bh() that protects
-the rcu_dereference()?
-
-							Thanx, Paul
+Signed-off-by: Steven J. Magnani <steve@digidescorp.com>
+---
+--- a/drivers/scsi/sd.c	2013-04-12 14:16:12.252531097 -0500
++++ b/drivers/scsi/sd.c	2013-04-12 14:21:55.197216521 -0500
+@@ -1298,10 +1298,8 @@ out:
+ 
+ static void set_media_not_present(struct scsi_disk *sdkp)
+ {
+-	if (sdkp->media_present)
++	if (sdkp->media_present) {
+ 		sdkp->device->changed = 1;
+-
+-	if (sdkp->device->removable) {
+ 		sdkp->media_present = 0;
+ 		sdkp->capacity = 0;
+ 	}
 
