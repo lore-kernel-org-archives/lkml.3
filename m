@@ -1,125 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757973Ab3DZTFD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 15:05:03 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:46117 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757791Ab3DZTEU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 15:04:20 -0400
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: kernel-hardening@lists.openwall.com, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
-        Matthew Garrett <mjg@redhat.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Eric Northup <digitaleric@google.com>,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>,
-        Kees Cook <keescook@chromium.org>
-Subject: [PATCH 5/6] x86: kaslr: select memory region from e820 maps
-Date: Fri, 26 Apr 2013 12:03:24 -0700
-Message-Id: <1367003005-5560-6-git-send-email-keescook@chromium.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1367003005-5560-1-git-send-email-keescook@chromium.org>
-References: <1367003005-5560-1-git-send-email-keescook@chromium.org>
-X-HELO: www.outflux.net
+	id S1757951Ab3DZTFA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 15:05:00 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:39428 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757890Ab3DZTE5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Apr 2013 15:04:57 -0400
+Date: Fri, 26 Apr 2013 12:04:28 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Simon Horman <horms@verge.net.au>,
+        Julian Anastasov <ja@ssi.bg>, Ingo Molnar <mingo@redhat.com>,
+        lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
+        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Dipankar Sarma <dipankar@in.ibm.com>, dhaval.giani@gmail.com
+Subject: Re: [PATCH 2/2] ipvs: Use cond_resched_rcu_lock() helper when
+ dumping connections
+Message-ID: <20130426190428.GJ3860@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1366940708-10180-1-git-send-email-horms@verge.net.au>
+ <1366940708-10180-3-git-send-email-horms@verge.net.au>
+ <20130426080313.GC8669@dyad.programming.kicks-ass.net>
+ <20130426154547.GC3860@linux.vnet.ibm.com>
+ <20130426171948.GA31467@dyad.programming.kicks-ass.net>
+ <20130426174815.GI3860@linux.vnet.ibm.com>
+ <1367000815.8964.243.camel@edumazet-glaptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1367000815.8964.243.camel@edumazet-glaptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13042619-5518-0000-0000-00000DFD8A91
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This chooses the largest contiguous RAM region for the KASLR offset
-to live in.
+On Fri, Apr 26, 2013 at 11:26:55AM -0700, Eric Dumazet wrote:
+> On Fri, 2013-04-26 at 10:48 -0700, Paul E. McKenney wrote:
+> 
+> > Don't get me wrong, I am not opposing cond_resched_rcu_lock() because it
+> > will be difficult to validate.  For one thing, until there are a lot of
+> > them, manual inspection is quite possible.  So feel free to apply my
+> > Acked-by to the patch.
+> 
+> One question : If some thread(s) is(are) calling rcu_barrier() and
+> waiting we exit from rcu_read_lock() section, is need_resched() enough
+> for allowing to break the section ?
+> 
+> If not, maybe we should not test need_resched() at all.
+> 
+> rcu_read_unlock();
+> cond_resched();
+> rcu_read_lock();
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
----
-v2:
- - make sure to exclude e820 regions outside the 32-bit memory range.
----
- arch/x86/boot/compressed/aslr.c |   47 ++++++++++++++++++++++++++++++++++-----
- 1 file changed, 41 insertions(+), 6 deletions(-)
+A call to rcu_barrier() only blocks on already-queued RCU callbacks, so if
+there are no RCU callbacks queued in the system, it need not block at all.
 
-diff --git a/arch/x86/boot/compressed/aslr.c b/arch/x86/boot/compressed/aslr.c
-index 4647e3f..3d3789e 100644
---- a/arch/x86/boot/compressed/aslr.c
-+++ b/arch/x86/boot/compressed/aslr.c
-@@ -2,6 +2,7 @@
- 
- #ifdef CONFIG_RANDOMIZE_BASE
- #include <asm/msr.h>
-+#include <asm/e820.h>
- 
- #include <asm/archrandom.h>
- static inline int rdrand(unsigned long *v)
-@@ -48,28 +49,62 @@ static unsigned long get_random_long(void)
- 	return 0;
- }
- 
-+int largest_ram_region(unsigned long *start, unsigned long *size)
-+{
-+	int i, rc = 0;
-+
-+	*size = 0;
-+	for (i = 0; i < real_mode->e820_entries; i++) {
-+		struct e820entry *entry = &real_mode->e820_map[i];
-+
-+		if (entry->type != E820_RAM)
-+			continue;
-+
-+		/* XXX: Handle arbitrary physical location. */
-+		if (entry->addr > UINT_MAX)
-+			continue;
-+
-+		if (entry->size > *size) {
-+			*size = entry->size;
-+			*start = entry->addr;
-+			rc = 1;
-+		}
-+	}
-+	return rc;
-+}
-+
- unsigned char *choose_kernel_location(unsigned char *hint, unsigned long size)
- {
- 	unsigned char *choice = hint;
- 	unsigned long random, mask;
-+	unsigned long addr, length;
- 
- 	if (cmdline_find_option_bool("noaslr")) {
- 		debug_putstr("KASLR disabled...\n");
- 		goto out;
- 	}
- 
-+	/* Find an appropriate E820 entry. */
-+	if (!largest_ram_region(&addr, &length)) {
-+		debug_putstr("KASLR could not find suitable E820 region...\n");
-+		goto out;
-+	}
-+
- 	random = get_random_long();
- 
--	/* Clip off top of the range. */
-+	/* XXX: Rework page tables to handle arbitrary physical location. */
- 	mask = CONFIG_RANDOMIZE_BASE_MAX_OFFSET - 1;
- 	random &= mask;
- 
--	/* XXX: Find an appropriate E820 hole, instead of adding hint. */
--	random += (unsigned long)hint;
-+	/* Clip to E820 entry size. */
-+	while (random > length)
-+		random >>= 1;
-+
-+	/* Offset the target. */
-+	random += addr;
- 
--	/* XXX: Clip to E820 hole, instead of just using hint. */
--	mask = (unsigned long)hint + CONFIG_RANDOMIZE_BASE_MAX_OFFSET;
--	while (random + size > mask)
-+	/* Clip end to E820 entry size. */
-+	while (random + size > addr + length)
- 		random >>= 1;
- 
- 	/* Clip off bottom of range (via alignment). */
--- 
-1.7.9.5
+But it might need to wait on some callbacks, and thus might need to
+wait for a grace period.  So, is cond_resched() sufficient?
+Currently, it depends:
+
+1.	CONFIG_TINY_RCU: Here cond_resched() doesn't do anything unless
+	there is at least one other process that is at and appropriate
+	priority level.  So if the system has absolutely nothing else
+	to do other than run the in-kernel loop containing the
+	cond_resched_rcu_lock(), the grace period will never end.
+
+	But as soon as some other process wakes up, there will be a
+	context switch and the grace period will end.  Unless you
+	are running at some high real-time priority, in which case
+	either throttling kicks in after a second or so or you get
+	what you deserve.  ;-)
+
+	So for any reasonable workload, cond_resched() will eventually
+	suffice.
+
+2.	CONFIG_TREE_RCU without adaptive ticks (which is not yet in
+	tree):  Same as #1, except that there is a greater chance
+	that the eventual wakeup might happen on some other CPU.
+
+3.	CONFIG_TREE_RCU with adaptive ticks (once it makes it into
+	mainline):  After a new jiffies, RCU will kick the offending
+	CPU, which will turn on the scheduling-clock interrupt.
+	This won't end the grace period, but the kick could do a
+	bit more if needed.
+
+4.	CONFIG_TREE_PREEMPT_RCU:  When the next scheduling-clock
+	interrupt notices that it happened in an RCU read-side
+	critical section and that there is a grace period pending,
+	it will set a flag in the task structure.  The next
+	rcu_read_unlock() will report a quiescent state to the
+	RCU core.
+
+So perhaps RCU should do a bit more in cases #2 and #3.  It used to
+send a resched IPI in this case, but if there is no reason to
+reschedule, the resched IPI does nothing.  In the worst case, I
+can fire up a prio 99 kthread on each CPU and send that kthread a
+wakeup from RCU's rcu_gp_fqs() code.
+
+Other thoughts?
+
+							Thanx, Paul
 
