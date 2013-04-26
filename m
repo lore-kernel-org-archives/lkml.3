@@ -1,57 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756833Ab3DZMwv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 08:52:51 -0400
-Received: from ringil.hengli.com.au ([178.18.16.133]:43423 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751420Ab3DZMwt (ORCPT
+	id S1756861Ab3DZMxc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 08:53:32 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:49057 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756836Ab3DZMxa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 08:52:49 -0400
-Date: Fri, 26 Apr 2013 20:52:24 +0800
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, "David S. Miller" <davem@davemloft.net>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        Jim Kukunas <james.t.kukunas@linux.intel.com>,
-        Keith Busch <keith.busch@intel.com>,
-        Erdinc Ozturk <erdinc.ozturk@intel.com>,
-        Vinodh Gopal <vinodh.gopal@intel.com>,
-        James Guilford <james.guilford@intel.com>,
-        Wajdi Feghali <wajdi.k.feghali@intel.com>,
-        Jussi Kivilinna <jussi.kivilinna@iki.fi>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-crypto@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: Re: [PATCH v2 1/4] Wrap crc_t10dif function all to use crypto
- transform framework
-Message-ID: <20130426125224.GA4855@gondor.apana.org.au>
-References: <cover.1366214842.git.tim.c.chen@linux.intel.com>
- <ea4271721b5ca130849b03da4f172f12f66e5628.1366214842.git.tim.c.chen@linux.intel.com>
- <20130425132203.GA29501@gondor.apana.org.au>
- <1366910910.27102.126.camel@schen9-DESK>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1366910910.27102.126.camel@schen9-DESK>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 26 Apr 2013 08:53:30 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@sisk.pl
+Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, robin.randhawa@arm.com,
+        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
+        charles.garcia-tobin@arm.com, arvind.chauhan@arm.com,
+        linaro-kernel@lists.linaro.org, patches@linaro.org,
+        arnd.bergmann@linaro.org, olof@lixom.net,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH V2] cpufreq: MAINTAINERS: Add co-maintainer
+Date: Fri, 26 Apr 2013 18:23:16 +0530
+Message-Id: <d62f23f626eaf334236cb9694c83ee4619460b76.1366980696.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 25, 2013 at 10:28:30AM -0700, Tim Chen wrote:
->
-> @@ -51,6 +54,98 @@ static const __u16 t10_dif_crc_table[256] = {
->  	0xF0D8, 0x7B6F, 0x6C01, 0xE7B6, 0x42DD, 0xC96A, 0xDE04, 0x55B3
->  };
->  
-> +#ifdef CONFIG_CRYPTO_CRCT10DIF
+With prior discussions (Over private emails) with current Maintainer of cpufreq
+framework (Rafael), I am adding myself as a co-maintainer of cpufreq framework.
 
-No need for ifdefs, just make it unconditional like the crc32c
-case.
+This would mostly be for cpufreq core and ARM drivers but not restricted to
+them.
 
-Thanks,
+This also adds path of the git tree where cpufreq patches are pulled in.
+
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+V1->V2:
+- Added path of git tree too.
+- Cc'd ARM SoC Maintainers.
+
+ MAINTAINERS | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 68d376e..cbed63c 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -2211,9 +2211,11 @@ F:	drivers/net/ethernet/ti/cpmac.c
+ 
+ CPU FREQUENCY DRIVERS
+ M:	Rafael J. Wysocki <rjw@sisk.pl>
++M:	Viresh Kumar <viresh.kumar@linaro.org>
+ L:	cpufreq@vger.kernel.org
+ L:	linux-pm@vger.kernel.org
+ S:	Maintained
++T:	git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git
+ F:	drivers/cpufreq/
+ F:	include/linux/cpufreq.h
+ 
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+1.7.12.rc2.18.g61b472e
+
