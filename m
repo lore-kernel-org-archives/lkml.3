@@ -1,108 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757951Ab3DZTFA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 15:05:00 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:39428 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757890Ab3DZTE5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 15:04:57 -0400
-Date: Fri, 26 Apr 2013 12:04:28 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Simon Horman <horms@verge.net.au>,
-        Julian Anastasov <ja@ssi.bg>, Ingo Molnar <mingo@redhat.com>,
-        lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
-        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Dipankar Sarma <dipankar@in.ibm.com>, dhaval.giani@gmail.com
-Subject: Re: [PATCH 2/2] ipvs: Use cond_resched_rcu_lock() helper when
- dumping connections
-Message-ID: <20130426190428.GJ3860@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1366940708-10180-1-git-send-email-horms@verge.net.au>
- <1366940708-10180-3-git-send-email-horms@verge.net.au>
- <20130426080313.GC8669@dyad.programming.kicks-ass.net>
- <20130426154547.GC3860@linux.vnet.ibm.com>
- <20130426171948.GA31467@dyad.programming.kicks-ass.net>
- <20130426174815.GI3860@linux.vnet.ibm.com>
- <1367000815.8964.243.camel@edumazet-glaptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1367000815.8964.243.camel@edumazet-glaptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13042619-5518-0000-0000-00000DFD8A91
+	id S1757924Ab3DZTE7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 15:04:59 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:33625 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757794Ab3DZTEV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Apr 2013 15:04:21 -0400
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: kernel-hardening@lists.openwall.com, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
+        Matthew Garrett <mjg@redhat.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Eric Northup <digitaleric@google.com>,
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>,
+        Kees Cook <keescook@chromium.org>
+Subject: [PATCH 3/6] x86: kaslr: return location from decompress_kernel
+Date: Fri, 26 Apr 2013 12:03:22 -0700
+Message-Id: <1367003005-5560-4-git-send-email-keescook@chromium.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1367003005-5560-1-git-send-email-keescook@chromium.org>
+References: <1367003005-5560-1-git-send-email-keescook@chromium.org>
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 26, 2013 at 11:26:55AM -0700, Eric Dumazet wrote:
-> On Fri, 2013-04-26 at 10:48 -0700, Paul E. McKenney wrote:
-> 
-> > Don't get me wrong, I am not opposing cond_resched_rcu_lock() because it
-> > will be difficult to validate.  For one thing, until there are a lot of
-> > them, manual inspection is quite possible.  So feel free to apply my
-> > Acked-by to the patch.
-> 
-> One question : If some thread(s) is(are) calling rcu_barrier() and
-> waiting we exit from rcu_read_lock() section, is need_resched() enough
-> for allowing to break the section ?
-> 
-> If not, maybe we should not test need_resched() at all.
-> 
-> rcu_read_unlock();
-> cond_resched();
-> rcu_read_lock();
+This allows decompress_kernel to return a new location for the kernel to
+be relocated to. With CONFIG_RANDOMIZE_BASE, the choose_kernel_location
+routine will select a new location to decompress the kernel, and is
+presently a no-op. The logic for bypassing this routine with "noaslr"
+on the kernel command line is handled.
 
-A call to rcu_barrier() only blocks on already-queued RCU callbacks, so if
-there are no RCU callbacks queued in the system, it need not block at all.
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+ Documentation/kernel-parameters.txt |    4 ++++
+ arch/x86/boot/compressed/Makefile   |    2 +-
+ arch/x86/boot/compressed/aslr.c     |   21 +++++++++++++++++++++
+ arch/x86/boot/compressed/cmdline.c  |    2 +-
+ arch/x86/boot/compressed/head_32.S  |    2 +-
+ arch/x86/boot/compressed/head_64.S  |    2 +-
+ arch/x86/boot/compressed/misc.c     |    7 +++++--
+ arch/x86/boot/compressed/misc.h     |   22 ++++++++++++++++------
+ 8 files changed, 50 insertions(+), 12 deletions(-)
+ create mode 100644 arch/x86/boot/compressed/aslr.c
 
-But it might need to wait on some callbacks, and thus might need to
-wait for a grace period.  So, is cond_resched() sufficient?
-Currently, it depends:
-
-1.	CONFIG_TINY_RCU: Here cond_resched() doesn't do anything unless
-	there is at least one other process that is at and appropriate
-	priority level.  So if the system has absolutely nothing else
-	to do other than run the in-kernel loop containing the
-	cond_resched_rcu_lock(), the grace period will never end.
-
-	But as soon as some other process wakes up, there will be a
-	context switch and the grace period will end.  Unless you
-	are running at some high real-time priority, in which case
-	either throttling kicks in after a second or so or you get
-	what you deserve.  ;-)
-
-	So for any reasonable workload, cond_resched() will eventually
-	suffice.
-
-2.	CONFIG_TREE_RCU without adaptive ticks (which is not yet in
-	tree):  Same as #1, except that there is a greater chance
-	that the eventual wakeup might happen on some other CPU.
-
-3.	CONFIG_TREE_RCU with adaptive ticks (once it makes it into
-	mainline):  After a new jiffies, RCU will kick the offending
-	CPU, which will turn on the scheduling-clock interrupt.
-	This won't end the grace period, but the kick could do a
-	bit more if needed.
-
-4.	CONFIG_TREE_PREEMPT_RCU:  When the next scheduling-clock
-	interrupt notices that it happened in an RCU read-side
-	critical section and that there is a grace period pending,
-	it will set a flag in the task structure.  The next
-	rcu_read_unlock() will report a quiescent state to the
-	RCU core.
-
-So perhaps RCU should do a bit more in cases #2 and #3.  It used to
-send a resched IPI in this case, but if there is no reason to
-reschedule, the resched IPI does nothing.  In the worst case, I
-can fire up a prio 99 kthread on each CPU and send that kthread a
-wakeup from RCU's rcu_gp_fqs() code.
-
-Other thoughts?
-
-							Thanx, Paul
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 8ccbf27..eb1c62c 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -1862,6 +1862,10 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 	noapic		[SMP,APIC] Tells the kernel to not make use of any
+ 			IOAPICs that may be present in the system.
+ 
++	noaslr		[X86]
++			Disable kernel base offset ASLR (Address Space
++			Layout Randomization) if built into the kernel.
++
+ 	noautogroup	Disable scheduler automatic task group creation.
+ 
+ 	nobats		[PPC] Do not use BATs for mapping kernel lowmem
+diff --git a/arch/x86/boot/compressed/Makefile b/arch/x86/boot/compressed/Makefile
+index d854390..fa2629b 100644
+--- a/arch/x86/boot/compressed/Makefile
++++ b/arch/x86/boot/compressed/Makefile
+@@ -26,7 +26,7 @@ HOST_EXTRACFLAGS += -I$(srctree)/tools/include
+ 
+ VMLINUX_OBJS = $(obj)/vmlinux.lds $(obj)/head_$(BITS).o $(obj)/misc.o \
+ 	$(obj)/string.o $(obj)/cmdline.o $(obj)/early_serial_console.o \
+-	$(obj)/piggy.o $(obj)/cpuflags.o
++	$(obj)/piggy.o $(obj)/cpuflags.o $(obj)/aslr.o
+ 
+ $(obj)/eboot.o: KBUILD_CFLAGS += -fshort-wchar -mno-red-zone
+ 
+diff --git a/arch/x86/boot/compressed/aslr.c b/arch/x86/boot/compressed/aslr.c
+new file mode 100644
+index 0000000..d5331ee
+--- /dev/null
++++ b/arch/x86/boot/compressed/aslr.c
+@@ -0,0 +1,21 @@
++#include "misc.h"
++
++#ifdef CONFIG_RANDOMIZE_BASE
++
++unsigned char *choose_kernel_location(unsigned char *hint, unsigned long size)
++{
++	unsigned char *choice = hint;
++	unsigned long random;
++
++	if (cmdline_find_option_bool("noaslr")) {
++		debug_putstr("KASLR disabled...\n");
++		goto out;
++	}
++
++	/* XXX: choose random location. */
++
++out:
++	return choice;
++}
++
++#endif /* CONFIG_RANDOMIZE_BASE */
+diff --git a/arch/x86/boot/compressed/cmdline.c b/arch/x86/boot/compressed/cmdline.c
+index bffd73b..b68e303 100644
+--- a/arch/x86/boot/compressed/cmdline.c
++++ b/arch/x86/boot/compressed/cmdline.c
+@@ -1,6 +1,6 @@
+ #include "misc.h"
+ 
+-#ifdef CONFIG_EARLY_PRINTK
++#if CONFIG_EARLY_PRINTK || CONFIG_RANDOMIZE_BASE
+ 
+ static unsigned long fs;
+ static inline void set_fs(unsigned long seg)
+diff --git a/arch/x86/boot/compressed/head_32.S b/arch/x86/boot/compressed/head_32.S
+index 5d6f689..a48631a 100644
+--- a/arch/x86/boot/compressed/head_32.S
++++ b/arch/x86/boot/compressed/head_32.S
+@@ -198,7 +198,7 @@ relocated:
+  * Jump to the decompressed kernel.
+  */
+ 	xorl	%ebx, %ebx
+-	jmp	*%ebp
++	jmp	*%eax
+ 
+ /*
+  * Stack and heap for uncompression
+diff --git a/arch/x86/boot/compressed/head_64.S b/arch/x86/boot/compressed/head_64.S
+index 81ca174..bfd9be8 100644
+--- a/arch/x86/boot/compressed/head_64.S
++++ b/arch/x86/boot/compressed/head_64.S
+@@ -347,7 +347,7 @@ relocated:
+ /*
+  * Jump to the decompressed kernel.
+  */
+-	jmp	*%rbp
++	jmp	*%rax
+ 
+ 	.code32
+ no_longmode:
+diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
+index b756a04..15a3ea8 100644
+--- a/arch/x86/boot/compressed/misc.c
++++ b/arch/x86/boot/compressed/misc.c
+@@ -391,7 +391,7 @@ static void parse_elf(void *output)
+ 	free(phdrs);
+ }
+ 
+-asmlinkage void decompress_kernel(void *rmode, memptr heap,
++asmlinkage void *decompress_kernel(void *rmode, memptr heap,
+ 				  unsigned char *input_data,
+ 				  unsigned long input_len,
+ 				  unsigned char *output,
+@@ -418,6 +418,9 @@ asmlinkage void decompress_kernel(void *rmode, memptr heap,
+ 	free_mem_ptr     = heap;	/* Heap */
+ 	free_mem_end_ptr = heap + BOOT_HEAP_SIZE;
+ 
++	output = choose_kernel_location(output, output_len);
++
++	/* Validate memory location choices. */
+ 	if ((unsigned long)output & (MIN_KERNEL_ALIGN - 1))
+ 		error("Destination address inappropriately aligned");
+ #ifdef CONFIG_X86_64
+@@ -437,5 +440,5 @@ asmlinkage void decompress_kernel(void *rmode, memptr heap,
+ 	parse_elf(output);
+ 	handle_relocations(output, output_len);
+ 	debug_putstr("done.\nBooting the kernel.\n");
+-	return;
++	return output;
+ }
+diff --git a/arch/x86/boot/compressed/misc.h b/arch/x86/boot/compressed/misc.h
+index 674019d..2a5c7aa 100644
+--- a/arch/x86/boot/compressed/misc.h
++++ b/arch/x86/boot/compressed/misc.h
+@@ -39,23 +39,33 @@ static inline void debug_putstr(const char *s)
+ 
+ #endif
+ 
+-#ifdef CONFIG_EARLY_PRINTK
+-
++#if CONFIG_EARLY_PRINTK || CONFIG_RANDOMIZE_BASE
+ /* cmdline.c */
+ int cmdline_find_option(const char *option, char *buffer, int bufsize);
+ int cmdline_find_option_bool(const char *option);
++#endif
++
++#if CONFIG_RANDOMIZE_BASE
++/* aslr.c */
++unsigned char *choose_kernel_location(unsigned char *hint, unsigned long size);
++/* cpuflags.c */
++bool has_cpuflag(int flag);
++#else
++static inline unsigned char *choose_kernel_location(unsigned char *hint,
++						    unsigned long size)
++{
++	return hint;
++}
++#endif
+ 
++#ifdef CONFIG_EARLY_PRINTK
+ /* early_serial_console.c */
+ extern int early_serial_base;
+ void console_init(void);
+-
+ #else
+-
+-/* early_serial_console.c */
+ static const int early_serial_base;
+ static inline void console_init(void)
+ { }
+-
+ #endif
+ 
+ #endif
+-- 
+1.7.9.5
 
