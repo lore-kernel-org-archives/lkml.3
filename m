@@ -1,60 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757189Ab3DZQvf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 12:51:35 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:55058 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751420Ab3DZQve (ORCPT
+	id S1757193Ab3DZQzP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 12:55:15 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:58781 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751387Ab3DZQzN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 12:51:34 -0400
-Date: Fri, 26 Apr 2013 12:51:33 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: ZhenHua <zhen-hual@hp.com>
-cc: gregkh@linuxfoundation.org, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/1] driver,usb: Fix a warning in uhci-hcd driver
-In-Reply-To: <517A31A9.5070504@hp.com>
-Message-ID: <Pine.LNX.4.44L0.1304261247490.1075-100000@iolanthe.rowland.org>
+	Fri, 26 Apr 2013 12:55:13 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: rjw@sisk.pl, cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, robin.randhawa@arm.com,
+        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
+        charles.garcia-tobin@arm.com, arvind.chauhan@arm.com,
+        linaro-kernel@lists.linaro.org, patches@linaro.org,
+        arnd.bergmann@linaro.org, olof@lixom.net
+Subject: Re: [PATCH V2] cpufreq: MAINTAINERS: Add co-maintainer
+References: <d62f23f626eaf334236cb9694c83ee4619460b76.1366980696.git.viresh.kumar@linaro.org>
+Date: Fri, 26 Apr 2013 09:55:08 -0700
+In-Reply-To: <d62f23f626eaf334236cb9694c83ee4619460b76.1366980696.git.viresh.kumar@linaro.org>
+	(Viresh Kumar's message of "Fri, 26 Apr 2013 18:23:16 +0530")
+Message-ID: <87k3npz0yb.fsf@linaro.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 26 Apr 2013, ZhenHua wrote:
+Viresh Kumar <viresh.kumar@linaro.org> writes:
 
-> There is a function  wait_for_HP() in uhci-hub.c. In this
-> patch, it is used in suspend_rh(),  I think this can be a
-> solution. And I have tested this patch, it can fix the bug.
-> 
-> I think there is another patch needed. As Alan said in another
-> mail, in the UHCI_RH_RUNNING_NODEVS case, it should not be stopped
-> if the uhci device is HP iLo virtual usb.
+> With prior discussions (Over private emails) with current Maintainer of cpufreq
+> framework (Rafael), I am adding myself as a co-maintainer of cpufreq framework.
+>
+> This would mostly be for cpufreq core and ARM drivers but not restricted to
+> them.
+>
+> This also adds path of the git tree where cpufreq patches are pulled in.
+>
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 
-I believe that if you change the UHCI_RH_RUNNING_NODEVS case, you will 
-find that this patch (calling wait_for_HP) isn't needed.
+As long as you continue to make an effort to ensure that the
+platform-specific drivers have proper acks from platform-specific folks.
+For ARM, this means not the arm-soc maintainers but the ARM subarch
+maintianers.
 
-In fact, the patch is so easy that I am including it below.  Please 
-test this (without either of your patches) to see if it works.
+Acked-by: Kevin Hilman <khilman@linaro.org>
 
-Alan Stern
-
-
-
-
-Index: usb-3.9/drivers/usb/host/uhci-hub.c
-===================================================================
---- usb-3.9.orig/drivers/usb/host/uhci-hub.c
-+++ usb-3.9/drivers/usb/host/uhci-hub.c
-@@ -225,7 +225,8 @@ static int uhci_hub_status_data(struct u
- 		/* auto-stop if nothing connected for 1 second */
- 		if (any_ports_active(uhci))
- 			uhci->rh_state = UHCI_RH_RUNNING;
--		else if (time_after_eq(jiffies, uhci->auto_stop_time))
-+		else if (time_after_eq(jiffies, uhci->auto_stop_time) &&
-+				!uhci->wait_for_hp)
- 			suspend_rh(uhci, UHCI_RH_AUTO_STOPPED);
- 		break;
- 
-
+> ---
+> V1->V2:
+> - Added path of git tree too.
+> - Cc'd ARM SoC Maintainers.
+>
+>  MAINTAINERS | 2 ++
+>  1 file changed, 2 insertions(+)
+>
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 68d376e..cbed63c 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -2211,9 +2211,11 @@ F:	drivers/net/ethernet/ti/cpmac.c
+>  
+>  CPU FREQUENCY DRIVERS
+>  M:	Rafael J. Wysocki <rjw@sisk.pl>
+> +M:	Viresh Kumar <viresh.kumar@linaro.org>
+>  L:	cpufreq@vger.kernel.org
+>  L:	linux-pm@vger.kernel.org
+>  S:	Maintained
+> +T:	git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git
+>  F:	drivers/cpufreq/
+>  F:	include/linux/cpufreq.h
