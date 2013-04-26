@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932362Ab3DZJWD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 05:22:03 -0400
-Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:45190
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759368Ab3DZJVA (ORCPT
+	id S932256Ab3DZJU5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 05:20:57 -0400
+Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:6168 "EHLO
+	va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754404Ab3DZJUz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 05:21:00 -0400
+	Fri, 26 Apr 2013 05:20:55 -0400
 X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 6
-X-BigFish: VS6(z3121kzzz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1082kzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1155h)
+X-SpamScore: 3
+X-BigFish: VS3(zzzz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1082kzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1155h)
 From: Huang Shijie <b32955@freescale.com>
 To: <dwmw2@infradead.org>
 CC: <dedekind1@gmail.com>, <computersforpeace@gmail.com>,
         <linux-mtd@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
         Huang Shijie <b32955@freescale.com>
-Subject: [PATCH V4 6/9] mtd: add ECC info for nand_flash_dev{}
-Date: Fri, 26 Apr 2013 17:08:54 +0800
-Message-ID: <1366967337-5534-7-git-send-email-b32955@freescale.com>
+Subject: [PATCH V4 2/9] mtd: add data structures for Extended Parameter Page
+Date: Fri, 26 Apr 2013 17:08:50 +0800
+Message-ID: <1366967337-5534-3-git-send-email-b32955@freescale.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1366967337-5534-1-git-send-email-b32955@freescale.com>
 References: <1366967337-5534-1-git-send-email-b32955@freescale.com>
@@ -28,58 +28,82 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add an instance of an anonymous struct to store the ECC infor for full id
-nand chips.
-	@ecc.strength: ECC correctability from the datasheet.
-	@ecc.size: ECC size required by the @ecc.strength,
+Since the ONFI 2.1, the onfi spec adds the Extended Parameter Page
+to store the ECC info.
 
-Also add the necessary macros to make the code simple and clean.
+The onfi spec tells us that if the nand chip's recommended ECC codeword
+size is not 512 bytes, then the @ecc_bits is 0xff. The host _SHOULD_ then
+read the Extended ECC information that is part of the extended parameter
+page to retrieve the ECC requirements for this device.
+
+This patch adds
+    [1] the neccessary fields for nand_onfi_params{},
+    [2] and adds the onfi_ext_ecc_info{} for Extended ECC information,
+    [3] adds onfi_ext_section{} for extended sections,
+    [4] and adds onfi_ext_param_page{} for the Extended Parameter Page.
 
 Signed-off-by: Huang Shijie <b32955@freescale.com>
 ---
- include/linux/mtd/nand.h |   15 +++++++++++++++
- 1 files changed, 15 insertions(+), 0 deletions(-)
+ include/linux/mtd/nand.h |   39 ++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 38 insertions(+), 1 deletions(-)
 
 diff --git a/include/linux/mtd/nand.h b/include/linux/mtd/nand.h
-index 9b28739..5f1c0d1 100644
+index a0c486b..9bad296 100644
 --- a/include/linux/mtd/nand.h
 +++ b/include/linux/mtd/nand.h
-@@ -625,6 +625,11 @@ struct nand_chip {
- 	{ .name = (nm), {{ .dev_id = (devid) }}, .chipsize = (chipsz), \
- 	  .options = (opts) }
+@@ -224,7 +224,10 @@ struct nand_onfi_params {
+ 	__le16 revision;
+ 	__le16 features;
+ 	__le16 opt_cmd;
+-	u8 reserved[22];
++	u8 reserved0[2];
++	__le16 ext_param_page_length; /* since ONFI 2.1 */
++	u8 num_of_param_pages;        /* since ONFI 2.1 */
++	u8 reserved1[17];
  
-+#define NAND_ECC_INFO(_strength, _size)	\
-+			{ .strength = (_strength), .size = (_size) }
-+#define NAND_ECC_STRENGTH(type)		((type)->ecc.strength)
-+#define NAND_ECC_SIZE(type)		((type)->ecc.size)
+ 	/* manufacturer information block */
+ 	char manufacturer[12];
+@@ -281,6 +284,40 @@ struct nand_onfi_params {
+ 
+ #define ONFI_CRC_BASE	0x4F4E
+ 
++/* Extended ECC information Block Definition (since ONFI 2.1) */
++struct onfi_ext_ecc_info {
++	u8 ecc_bits;
++	u8 codeword_size;
++	__le16 bb_per_lun;
++	__le16 block_endurance;
++	u8 reserved[2];
++} __attribute__((packed));
++
++#define ONFI_SECTION_TYPE_0	0	/* Unused section. */
++#define ONFI_SECTION_TYPE_1	1	/* for additional sections. */
++#define ONFI_SECTION_TYPE_2	2	/* for ECC information. */
++struct onfi_ext_section {
++	u8 type;
++	u8 length;
++} __attribute__((packed));
++
++#define ONFI_EXT_SECTION_MAX 8
++
++/* Extended Parameter Page Definition (since ONFI 2.1) */
++struct onfi_ext_param_page {
++	__le16 crc;
++	u8 sig[4];             /* 'E' 'P' 'P' 'S' */
++	u8 reserved0[10];
++	struct onfi_ext_section sections[ONFI_EXT_SECTION_MAX];
++
++	/*
++	 * The actual size of the Extended Parameter Page is in
++	 * @ext_param_page_length of nand_onfi_params{}.
++	 * The following are the variable length sections.
++	 * So we do not add any fields below. Please see the ONFI spec.
++	 */
++} __attribute__((packed));
 +
  /**
-  * struct nand_flash_dev - NAND Flash Device ID Structure
-  * @name: a human-readable name of the NAND chip
-@@ -642,6 +647,12 @@ struct nand_chip {
-  * @options: stores various chip bit options
-  * @id_len: The valid length of the @id.
-  * @oobsize: OOB size
-+ * @ecc.strength: The ECC correctability from the datasheet, same as the
-+ *                @ecc_strength in nand_chip{}.
-+ * @ecc.size: The ECC size required by the @ecc.strength, same as the
-+ *            @ecc_size in nand_chip{}.
-+ *            For example, the "4bit ECC for each 512Byte" can be set with
-+ *            NAND_ECC_INFO(4, 512).
-  */
- struct nand_flash_dev {
- 	char *name;
-@@ -658,6 +669,10 @@ struct nand_flash_dev {
- 	unsigned int options;
- 	uint16_t id_len;
- 	uint16_t oobsize;
-+	struct {
-+		uint16_t strength;
-+		uint16_t size;
-+	} ecc;
- };
- 
- /**
+  * struct nand_hw_control - Control structure for hardware controller (e.g ECC generator) shared among independent devices
+  * @lock:               protection lock
 -- 
 1.7.1
 
