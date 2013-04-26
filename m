@@ -1,69 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754617Ab3DZFKj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 01:10:39 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:38989 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751530Ab3DZFKh (ORCPT
+	id S1756919Ab3DZFVn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 01:21:43 -0400
+Received: from mail-ia0-f175.google.com ([209.85.210.175]:35696 "EHLO
+	mail-ia0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753059Ab3DZFVm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 01:10:37 -0400
-Date: Fri, 26 Apr 2013 15:10:27 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build failure after merge of the omap_dss2 tree
-Message-Id: <20130426151027.db71ddf367c85fe0682cbff6@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__26_Apr_2013_15_10_27_+1000_664yTLzvJr6n2Mhm"
+	Fri, 26 Apr 2013 01:21:42 -0400
+Message-ID: <517A0ED8.6000404@gmail.com>
+Date: Fri, 26 Apr 2013 13:21:28 +0800
+From: Will Huck <will.huckk@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Frantisek Hrbata <fhrbata@redhat.com>, hpa@zytor.com
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org, tglx@linutronix.de,
+        mingo@redhat.com, x86@kernel.org, oleg@redhat.com,
+        kamaleshb@in.ibm.com, hechjie@cn.ibm.com
+Subject: Re: [PATCH] x86: add phys addr validity check for /dev/mem mmap
+References: <1364905733-23937-1-git-send-email-fhrbata@redhat.com>
+In-Reply-To: <1364905733-23937-1-git-send-email-fhrbata@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__26_Apr_2013_15_10_27_+1000_664yTLzvJr6n2Mhm
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Peter,
+On 04/02/2013 08:28 PM, Frantisek Hrbata wrote:
+> When CR4.PAE is set, the 64b PTE's are used(ARCH_PHYS_ADDR_T_64BIT is set for
+> X86_64 || X86_PAE). According to [1] Chapter 4 Paging, some higher bits in 64b
+> PTE are reserved and have to be set to zero. For example, for IA-32e and 4KB
+> page [1] 4.5 IA-32e Paging: Table 4-19, bits 51-M(MAXPHYADDR) are reserved. So
+> for a CPU with e.g. 48bit phys addr width, bits 51-48 have to be zero. If one of
+> the reserved bits is set, [1] 4.7 Page-Fault Exceptions, the #PF is generated
+> with RSVD error code.
+>
+> <quote>
+> RSVD flag (bit 3).
+> This flag is 1 if there is no valid translation for the linear address because a
+> reserved bit was set in one of the paging-structure entries used to translate
+> that address. (Because reserved bits are not checked in a paging-structure entry
+> whose P flag is 0, bit 3 of the error code can be set only if bit 0 is also
+> set.)
+> </quote>
+>
+> In mmap_mem() the first check is valid_mmap_phys_addr_range(), but it always
+> returns 1 on x86. So it's possible to use any pgoff we want and to set the PTE's
+> reserved bits in remap_pfn_range(). Meaning there is a possibility to use mmap
 
-Hi Tomi,
+In this case, remap_pfn_range() setup the map and reserved bits for mmio 
+memory, so the mmio memory is already populated, why trigger #PF?
 
-After merging the omap_dss2 tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
+> on /dev/mem and cause system panic. It's probably not that serious, because
+> access to /dev/mem is limited and the system has to have panic_on_oops set, but
+> still I think we should check this and return error.
+>
+> This patch adds check for x86 when ARCH_PHYS_ADDR_T_64BIT is set, the same way
+> as it is already done in e.g. ioremap. With this fix mmap returns -EINVAL if the
+> requested phys addr is bigger then the supported phys addr width.
+>
+> [1] Intel 64 and IA-32 Architectures Software Developer's Manual, Volume 3A
+>
+> Signed-off-by: Frantisek Hrbata <fhrbata@redhat.com>
+> ---
+>   arch/x86/include/asm/io.h |  4 ++++
+>   arch/x86/mm/mmap.c        | 13 +++++++++++++
+>   2 files changed, 17 insertions(+)
+>
+> diff --git a/arch/x86/include/asm/io.h b/arch/x86/include/asm/io.h
+> index d8e8eef..39607c6 100644
+> --- a/arch/x86/include/asm/io.h
+> +++ b/arch/x86/include/asm/io.h
+> @@ -242,6 +242,10 @@ static inline void flush_write_buffers(void)
+>   #endif
+>   }
+>   
+> +#define ARCH_HAS_VALID_PHYS_ADDR_RANGE
+> +extern int valid_phys_addr_range(phys_addr_t addr, size_t count);
+> +extern int valid_mmap_phys_addr_range(unsigned long pfn, size_t count);
+> +
+>   #endif /* __KERNEL__ */
+>   
+>   extern void native_io_delay(void);
+> diff --git a/arch/x86/mm/mmap.c b/arch/x86/mm/mmap.c
+> index 845df68..92ec31c 100644
+> --- a/arch/x86/mm/mmap.c
+> +++ b/arch/x86/mm/mmap.c
+> @@ -31,6 +31,8 @@
+>   #include <linux/sched.h>
+>   #include <asm/elf.h>
+>   
+> +#include "physaddr.h"
+> +
+>   struct __read_mostly va_alignment va_align = {
+>   	.flags = -1,
+>   };
+> @@ -122,3 +124,14 @@ void arch_pick_mmap_layout(struct mm_struct *mm)
+>   		mm->unmap_area = arch_unmap_area_topdown;
+>   	}
+>   }
+> +
+> +int valid_phys_addr_range(phys_addr_t addr, size_t count)
+> +{
+> +	return addr + count <= __pa(high_memory);
+> +}
+> +
+> +int valid_mmap_phys_addr_range(unsigned long pfn, size_t count)
+> +{
+> +	resource_size_t addr = (pfn << PAGE_SHIFT) + count;
+> +	return phys_addr_valid(addr);
+> +}
 
-drivers/video/ps3fb.c: In function 'ps3fb_mmap':
-drivers/video/ps3fb.c:710:2: error: implicit declaration of function 'vm_io=
-remap_memory' [-Werror=3Dimplicit-function-declaration]
-drivers/video/ps3fb.c:712:2: error: 'offset' undeclared (first use in this =
-function)
-
-Caused by commit 6ea19860d6c5 ("fbdev/ps3fb: use vm_iomap_memory()").
-
-I have used the omap_dss2 tree from next-20130424 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Fri__26_Apr_2013_15_10_27_+1000_664yTLzvJr6n2Mhm
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRegxDAAoJEECxmPOUX5FE1vgP/RYl87Xow7YyIwk/OoimCCgy
-zzU/9paXOQpSmrjnL5Q1nfXumUekBG3o9XmoZFgGWxo0GevnCxGIRJopsnd0bmaJ
-qUVmzcFkgxcVdjP9hguYJnb1Q01bEobuoCZfQWSGTg7QrpPjDrnnsinUKOHJ20/7
-cZV48KKcRVkYTzkS/KtX05RlGoOM4kPOicorjBM6pFiulhgmbqKavQT1La6HX7T5
-8S7893VWSOoQ5QDv3ZuFNmRCxqHFkO/nhUS+jeUW4IGMrJsVT5wP6COt8U8h8JK0
-iiDmd/Dd3Ahpncn7Yrgm3oyrLDRUtWpl7SN0ITLZ1VJDePgHHgAxKZMzMFD9WhZ+
-3hAUxCeO4x6IcJMPEtQ9SvCjxVcOTUQeu5+c9p6b3AQLhiY7Jc2v5IM96xUbwb92
-H3cwSORTUCF1738Yrjmhv5enS5vTb+T07F0e21BsNtLaUkMVrULbtFbWNhhlVyjC
-G+1ILAsrYB3XltuW5CzGCo6JmvE/EZ/uOZ702lp/sx0NHCpf34F6EjVbU0t9+aFy
-uLrrOnqDXqBMBhZlOczfmU/PubuVTFDPcmlRYJg9AqvMMKbNNmACZMQStIRRka9c
-aHzs3pSeNf5eJEf7IDWoBg0qirBe9g0Hc8dhOClyHfO7ruJLLIRVzEeOrclRIgaf
-IhH6A06jCPkShT8+znvq
-=Tp05
------END PGP SIGNATURE-----
-
---Signature=_Fri__26_Apr_2013_15_10_27_+1000_664yTLzvJr6n2Mhm--
