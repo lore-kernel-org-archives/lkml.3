@@ -1,92 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759329Ab3DZJUI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 05:20:08 -0400
-Received: from mga03.intel.com ([143.182.124.21]:56632 "EHLO mga03.intel.com"
+	id S932242Ab3DZJUo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 05:20:44 -0400
+Received: from mout.gmx.net ([212.227.17.22]:61917 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759216Ab3DZJUF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 05:20:05 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,557,1363158000"; 
-   d="scan'208";a="232978467"
-From: Zhang Rui <rui.zhang@intel.com>
-To: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Cc: rjw@sisk.pl, lenb@kernel.org, eduardo.valentin@ti.com,
-        Zhang Rui <rui.zhang@intel.com>
-Subject: [PATCH] ACPI thermal: do not always return THERMAL_TREND_RAISING for active trip points
-Date: Fri, 26 Apr 2013 17:19:53 +0800
-Message-Id: <1366967993-3812-1-git-send-email-rui.zhang@intel.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1758699Ab3DZJUm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Apr 2013 05:20:42 -0400
+X-Authenticated: #815327
+X-Provags-ID: V01U2FsdGVkX19Qdhw+nGZQLrsGGadYD9oMlnFgtV8y+w7MiHYRfw
+	uZW5kosOwU2UgT
+Message-ID: <517A46E7.1020404@gmx.de>
+Date: Fri, 26 Apr 2013 11:20:39 +0200
+From: =?UTF-8?B?TWFsdGUgU2NocsO2ZGVy?= <maltesch@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130413 Icedove/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: NFS4 sec=krb5 broken in 3.9-rc8
+References: <5176E715.2070201@gmx.de> <20130423215807.GL3676@fieldses.org> <51777494.8010306@gmx.de> <20130424140152.GA9794@fieldses.org> <5178116F.1010608@gmx.de> <20130424192353.GI20275@fieldses.org>
+In-Reply-To: <20130424192353.GI20275@fieldses.org>
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="----enig2BQALLGAAINHOHCRWLBUT"
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 4ae46befb49d4173122e0afa995c4e93d01948a2
-introduces a regression that the fan is always on
-even if the system is in idle state.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+------enig2BQALLGAAINHOHCRWLBUT
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-My original idea in that commit is that:
-when the current temperature is above the trip point,
-keep the fan on, even if the temperature is dropping.
-when the current temperature is below the trip point,
-turn on the fan when the temperature is raising,
-turn off the fan when the temperature is dropping.
+On 24.04.2013 21:23, J. Bruce Fields wrote:
+> On Wed, Apr 24, 2013 at 07:07:59PM +0200, Malte Schr=C3=B6der wrote:
+> Probably some of those "svc_process dropit"s are coming from attempts t=
+o
+> look up the newly created cred (so lookups in the rsc_cache) which fail=
 
-But this is what the code actually does:
-when the current temperature is above the trip point,
-the fan keeps on.
-when the current temperature is below the trip point,
-the fan is always on because thermal_get_trend()
-in driver/acpi/thermal.c returns THERMAL_TREND_RAISING.
-Thus the fan keeps running even if the system is idle.
+> for some reason.  I'm not sure what that would be.
+>=20
+> --b.
 
-Fix this in drivers/acpi/thermal.c.
+Hi,
+I tried bisecting the problem. It identified
+683428fae8c73d7d7da0fa2e0b6beb4d8df4e808 as the problem, reverting it
+didn't fix the problem, though. During the process there where some
+states where mounting wouldn't hang but be denied. I will try bisecting
+again, later.
 
-https://bugzilla.kernel.org/show_bug.cgi?id=56591
-https://bugzilla.kernel.org/show_bug.cgi?id=56601
-https://bugzilla.kernel.org/show_bug.cgi?id=50041#c45
+/Malte
 
-Patch should be applied to 3.7 stable kernel and later.
 
-Signed-off-by: Zhang Rui <rui.zhang@intel.com>
-Tested-by: Matthias <morpheusxyz123@yahoo.de>
-Tested-by: Ville Syrjälä <syrjala@sci.fi>
-Cc: <stable@vger.kernel.org> # v3.7+
----
- drivers/acpi/thermal.c |   16 +++++++++++++---
- 1 file changed, 13 insertions(+), 3 deletions(-)
+------enig2BQALLGAAINHOHCRWLBUT
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-diff --git a/drivers/acpi/thermal.c b/drivers/acpi/thermal.c
-index 8470771..a33821c 100644
---- a/drivers/acpi/thermal.c
-+++ b/drivers/acpi/thermal.c
-@@ -723,9 +723,19 @@ static int thermal_get_trend(struct thermal_zone_device *thermal,
- 		return -EINVAL;
- 
- 	if (type == THERMAL_TRIP_ACTIVE) {
--		/* aggressive active cooling */
--		*trend = THERMAL_TREND_RAISING;
--		return 0;
-+		unsigned long trip_temp;
-+		unsigned long temp = KELVIN_TO_MILLICELSIUS(tz->temperature,
-+							tz->kelvin_offset);
-+		if (thermal_get_trip_temp(thermal, trip, &trip_temp))
-+			return -EINVAL;
-+
-+		if (temp > trip_temp) {
-+			*trend = THERMAL_TREND_RAISING;
-+			return 0;
-+		} else {
-+			/* Fall back on default trend */
-+			return -EINVAL;
-+		}
- 	}
- 
- 	/*
--- 
-1.7.9.5
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iEYEARECAAYFAlF6RucACgkQ4q3E2oMjYtU5QQCg69zPnfT28hI0MyIBCNJmKvVx
+GXwAnRauZYt7m9GaWFCsEdhaF7ua1klQ
+=getX
+-----END PGP SIGNATURE-----
+
+------enig2BQALLGAAINHOHCRWLBUT--
