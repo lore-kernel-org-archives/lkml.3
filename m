@@ -1,65 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755164Ab3DZGf6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 02:35:58 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:42477 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752907Ab3DZGf4 (ORCPT
+	id S1759391Ab3DZGm5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 02:42:57 -0400
+Received: from mail-ea0-f176.google.com ([209.85.215.176]:41212 "EHLO
+	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755505Ab3DZGmz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 02:35:56 -0400
-Date: Fri, 26 Apr 2013 09:35:38 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Christopher Li <sparse@chrisli.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        kbuild test robot <fengguang.wu@intel.com>,
-        Jingoo Han <jg1.han@samsung.com>, kbuild-all@01.org,
-        Linux-Sparse <linux-sparse@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] forced argument Was Re: sparse: incorrect type in
- argument 1 (different address spaces)
-Message-ID: <20130426063538.GA5072@mwanda>
-References: <5171d93a.0NZAGYYKNj8hjsAs%fengguang.wu@intel.com>
- <20130422165629.bae79e6c5251bf148a3bae73@linux-foundation.org>
- <CANeU7QmDXRj-rNWvb0qhXCmzyJBFv=1URzzjEZN6ARaAf15-hw@mail.gmail.com>
- <20130423061600.GN6638@mwanda>
- <5179E1E1.4050304@chrisli.org>
+	Fri, 26 Apr 2013 02:42:55 -0400
+Date: Fri, 26 Apr 2013 08:42:50 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>, Pekka Enberg <penberg@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        lkml <linux-kernel@vger.kernel.org>, x86-ml <x86@kernel.org>,
+        kvm@vger.kernel.org
+Subject: Re: [PATCH -v2] x86: Add a Kconfig shortcut for kvm guest kernel
+Message-ID: <20130426064250.GA31064@gmail.com>
+References: <20130412181956.GA13099@pd.tnic>
+ <516A7760.7030907@kernel.org>
+ <20130414110320.GB20547@pd.tnic>
+ <20130416161852.GH5332@pd.tnic>
+ <20130417232507.GC31059@amt.cnet>
+ <20130418094629.GC21719@pd.tnic>
+ <20130418133631.GA30965@amt.cnet>
+ <20130419103519.GB21981@pd.tnic>
+ <20130426000553.GE32607@pd.tnic>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5179E1E1.4050304@chrisli.org>
+In-Reply-To: <20130426000553.GE32607@pd.tnic>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 25, 2013 at 07:09:37PM -0700, Christopher Li wrote:
-> On 04/22/2013 11:16 PM, Dan Carpenter wrote:
-> > That didn't work.  It's the the void * in the parameter list that's
-> > the problem.  We'd need to do something like the patch below:
-> > 
-> > Otherwise we could add "__ok_to_cast" thing to Sparse maybe?
-> 
-> Thanks for the insight. I make a small patch to test the __ok_to_cast
-> feature. The syntax is adding the force attribute to the argument
-> declaration.
-> 
-> it will look like this:
-> static inline long __must_check PTR_ERR( __force const void *ptr)
-> 
-> That means the "ptr" argument will perform a forced cast when receiving
-> the argument. It is OK to pass __iomem pointer to "ptr".
-> 
-> The example are in the patch. It need to patch both sparse and the
-> Linux tree.
-> 
-> What do you say?
 
-That's looks great.  :)
+* Borislav Petkov <bp@alien8.de> wrote:
 
-I tested a patched kernel with an unpatched kernel as well and that
-doesn't cause any new problems.
+> From: Borislav Petkov <bp@suse.de>
+> Date: Tue, 16 Apr 2013 18:24:34 +0200
+> Subject: [PATCH -v2] x86: Add a Kconfig shortcut for kvm guest kernel
+> 
+> This is pretty useful for the case where people want to boot the
+> resulting kernel in qemu/kvm. Instead of going and searching for each
+> required option through the Kconfig maze, this single option should
+> simply enable everything required/good to have to boot the resulting
+> kernel in the guest.
 
-regards,
-dan carpenter
+Please mention:
 
+ ' This patch is based on a similar utility patch of the external
+   lkvm tree. '
+
+> 
+> Cc: Fengguang Wu <fengguang.wu@intel.com>
+> Originally-by: Pekka Enberg <penberg@kernel.org>
+> Originally-by: Sasha Levin <levinsasha928@gmail.com>
+> Signed-off-by: Borislav Petkov <bp@suse.de>
+> ---
+> 
+> 
+> Here's v2 which should be addressing all review comments so far.
+> 
+> 
+>  arch/x86/Kconfig | 38 ++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 38 insertions(+)
+> 
+> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> index 5651374d179f..76a95ffa959a 100644
+> --- a/arch/x86/Kconfig
+> +++ b/arch/x86/Kconfig
+> @@ -680,6 +680,44 @@ config KVM_GUEST
+>  	  underlying device model, the host provides the guest with
+>  	  timing infrastructure such as time of day, and system time
+>  
+> +config KVM_GUEST_COMMODITY_OPTIONS
+
+Call this KVM_GUEST_COMMON_OPTIONS?
+
+> +	bool "Enable commodity options for a standalone KVM guest"
+> +	depends on KVM_GUEST
+> +	select NET
+> +	select NETDEVICES
+> +	select BLOCK
+> +	select BLK_DEV
+> +	select NETWORK_FILESYSTEMS
+> +	select INET
+> +	select EXPERIMENTAL
+> +	select TTY
+> +	select SERIAL_8250
+> +	select SERIAL_8250_CONSOLE
+> +	select IP_PNP
+> +	select IP_PNP_DHCP
+> +	select BINFMT_ELF
+> +	select PCI_MSI
+> +	select HAVE_ARCH_KGDB
+> +	select DEBUG_KERNEL
+> +	select KGDB
+> +	select KGDB_SERIAL_CONSOLE
+> +	select VIRTUALIZATION
+> +	select VIRTIO
+> +	select VIRTIO_RING
+> +	select VIRTIO_PCI
+> +	select VIRTIO_BLK
+> +	select VIRTIO_CONSOLE
+> +	select VIRTIO_NET
+> +	select 9P_FS
+> +	select NET_9P
+> +	select NET_9P_VIRTIO
+> +	---help---
+> +	  Select guest kernel functionality which facilitates booting the
+> +	  kernel as a guest in qemu/kvm. This entails basic stuff like
+
+s/qemu/qemu or lkvm
+
+> +	  serial support, kgdb, virtio and other so that you can be able to
+> +	  have commodity functionality like serial output from the guest,
+> +	  networking, etc.
+
+And seemless host file system integration into guest context. (that is 
+what the 9P options are about)
+
+Thanks,
+
+	Ingo
