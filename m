@@ -1,54 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756354Ab3DZPXg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 11:23:36 -0400
-Received: from fieldses.org ([174.143.236.118]:45525 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756238Ab3DZPXf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 11:23:35 -0400
-Date: Fri, 26 Apr 2013 11:23:34 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Malte =?utf-8?B?U2NocsO2ZGVy?= <maltesch@gmx.de>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: NFS4 sec=krb5 broken in 3.9-rc8
-Message-ID: <20130426152334.GC17268@fieldses.org>
-References: <5176E715.2070201@gmx.de>
- <20130423215807.GL3676@fieldses.org>
- <51777494.8010306@gmx.de>
- <20130424140152.GA9794@fieldses.org>
- <5178116F.1010608@gmx.de>
- <20130424192353.GI20275@fieldses.org>
- <517A46E7.1020404@gmx.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <517A46E7.1020404@gmx.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756418Ab3DZP1v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 11:27:51 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:45221 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754253Ab3DZP1t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Apr 2013 11:27:49 -0400
+Message-ID: <1366990066.8964.216.camel@edumazet-glaptop>
+Subject: RE: [RFC PATCH net-next 2/6] x86: bpf_jit_comp: support
+ BPF_S_ANC_SECCOMP_LD_W instruction
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: David Laight <David.Laight@ACULAB.COM>
+Cc: Xi Wang <xi.wang@gmail.com>, Daniel Borkmann <dborkman@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Eric Dumazet <edumazet@google.com>, Will Drewry <wad@chromium.org>,
+        Andrew Morton <akpm@linux-foundation.org>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Fri, 26 Apr 2013 08:27:46 -0700
+In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6026B7208@saturn3.aculab.com>
+References: <1366962706-24204-1-git-send-email-xi.wang@gmail.com>
+	 <1366962706-24204-3-git-send-email-xi.wang@gmail.com>
+	 <1366985926.8964.190.camel@edumazet-glaptop>
+	 <CAKU6vyZfYR-2408G0_Fkp-PS5x5rMH+s4_OOWqqi7Nt+UfiUPg@mail.gmail.com>
+	 <AE90C24D6B3A694183C094C60CF0A2F6026B7208@saturn3.aculab.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 26, 2013 at 11:20:39AM +0200, Malte Schröder wrote:
-> On 24.04.2013 21:23, J. Bruce Fields wrote:
-> > On Wed, Apr 24, 2013 at 07:07:59PM +0200, Malte Schröder wrote:
-> > Probably some of those "svc_process dropit"s are coming from attempts to
-> > look up the newly created cred (so lookups in the rsc_cache) which fail
-> > for some reason.  I'm not sure what that would be.
+On Fri, 2013-04-26 at 16:15 +0100, David Laight wrote:
+> > >> +#ifdef CONFIG_SECCOMP_FILTER
+> > >> +                     case BPF_S_ANC_SECCOMP_LD_W:
+> > >> +                             if (K == offsetof(struct seccomp_data, arch)) {
+> > >> +                                     int arch = syscall_get_arch(current, NULL);
+> > >> +
+> > >> +                                     EMIT1_off32(0xb8, arch); /* mov arch,%eax */
+> > >> +                                     break;
+> > >> +                             }
+> > >> +                             func = (u8 *)seccomp_bpf_load;
+> > >> +                             t_offset = func - (image + addrs[i]);
+> > >> +                             EMIT1_off32(0xbf, K); /* mov imm32,%edi */
+> > >> +                             EMIT1_off32(0xe8, t_offset); /* call seccomp_bpf_load */
+> > >> +                             break;
+> > >> +#endif
+> > >
+> > > This seems seriously wrong to me.
 > > 
-> > --b.
+> > Can you elaborate?
 > 
-> Hi,
-> I tried bisecting the problem. It identified
-> 683428fae8c73d7d7da0fa2e0b6beb4d8df4e808 as the problem, reverting it
-> didn't fix the problem, though. During the process there where some
-> states where mounting wouldn't hang but be denied. I will try bisecting
-> again, later.
+> The 'call seccomp_bpf_load' needs a pc-relative offset,
+> I assume that is what EMIT1_off32() generates.
+> 
+> The other two instructions want an absolute 32 bit value...
 
-Oh, so probably 3c34ae11fac3b30629581d0bfaf80f58e82cfbfb "nfsd: fix krb5
-handling of anonymous principals" needs backporting to stable--could you
-confirm whether applying that helps?
+Hmm, this part is fine, we perform the relative adjustments in 
+t_offset = func - (image + addrs[i]);
 
-Thanks for the bisection.
 
---b.
+
+
