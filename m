@@ -1,46 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757124Ab3DZQsv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 12:48:51 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:54523 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751387Ab3DZQsu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 12:48:50 -0400
-Date: Fri, 26 Apr 2013 17:48:45 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Matt Fleming <matt@console-pimps.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
+	id S1757152Ab3DZQuj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 12:50:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58338 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756588Ab3DZQui (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Apr 2013 12:50:38 -0400
+Date: Fri, 26 Apr 2013 18:47:16 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Jacob Shin <jacob.shin@amd.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Will Deacon <will.deacon@arm.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-efi@vger.kernel.org, Michel Lespinasse <walken@google.com>
-Subject: Re: [GIT PULL] EFI urgent fix
-Message-ID: <20130426164845.GD23038@console-pimps.org>
-References: <20130426163022.GC23038@console-pimps.org>
- <CA+55aFw+EOcVvz-3Sc-khBuLsMo64pp8PDO_UwidH07vbC08pA@mail.gmail.com>
+        "x86@kernel.org" <x86@kernel.org>,
+        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V2 1/4] perf: Add hardware breakpoint address mask
+Message-ID: <20130426164716.GA30402@redhat.com>
+References: <20130423095437.GD17593@mudshark.cambridge.arm.com> <20130423143423.GB17021@jshin-Toonie> <20130423144057.GA19644@jshin-Toonie> <20130423150240.GD18616@mudshark.cambridge.arm.com> <20130423151846.GA22052@jshin-Toonie> <20130424094853.GB21850@mudshark.cambridge.arm.com> <20130424163038.GA29816@jshin-Toonie> <20130425170635.GA1324@redhat.com> <5179652F.8080507@zytor.com> <20130425231911.GB31751@jshin-Toonie>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFw+EOcVvz-3Sc-khBuLsMo64pp8PDO_UwidH07vbC08pA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130425231911.GB31751@jshin-Toonie>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 26 Apr, at 09:40:46AM, Linus Torvalds wrote:
-> On Fri, Apr 26, 2013 at 9:30 AM, Matt Fleming <matt@console-pimps.org> wrote:
-> > Hi Peter, Linus,
-> >
-> > I've got a small patch that fixes a crash for the Google folks and their
-> > EFI SMI driver, which was caused by dereferencing a garbage pointer.
-> 
-> Hmm. I already took this from the earlier email you sent. Did it change since?
+On 04/25, Jacob Shin wrote:
+>
+> Right now perf
+> userland tool hard codes bp_len to 4, so I need to modify it to allow
+> user to override the length if desired.
 
-Nope, there hasn't been any change. I just didn't know whether you
-preferred to take the fix via email or a pull request.
+imho this itself looks like a good change...
 
-Thanks for picking this up.
+> Oleg, Frederic, et al.
+>
+> Which syntax do you prefer?
+>
+>   $ perf stat -e mem:0x1000/16
 
--- 
-Matt Fleming, Intel Open Source Technology Center
+Personally I like this a bit more, but I won't argue in any case.
+
+Oleg.
+
