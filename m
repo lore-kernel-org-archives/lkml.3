@@ -1,146 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756774Ab3DZPkM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 11:40:12 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:36687 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753884Ab3DZPkJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 11:40:09 -0400
-Date: Fri, 26 Apr 2013 08:39:56 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Christoph Lameter <cl@linux.com>, Hakan Akkan <hakanakkan@gmail.com>,
-        Kevin Hilman <khilman@linaro.org>, Li Zhong <zhong@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 1/2] nohz: Select VIRT_CPU_ACCOUNTING_GEN from full
- dynticks config
-Message-ID: <20130426153956.GB3860@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1366988007-30665-1-git-send-email-fweisbec@gmail.com>
- <1366988007-30665-2-git-send-email-fweisbec@gmail.com>
+	id S1756796Ab3DZPke (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 11:40:34 -0400
+Received: from mail-bk0-f41.google.com ([209.85.214.41]:42765 "EHLO
+	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753561Ab3DZPk3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Apr 2013 11:40:29 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1366988007-30665-2-git-send-email-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13042615-5806-0000-0000-000020E43F8B
+In-Reply-To: <517A969B.5040606@linux.intel.com>
+References: <1366910611-20048-1-git-send-email-vincent.guittot@linaro.org>
+	<517A969B.5040606@linux.intel.com>
+Date: Fri, 26 Apr 2013 17:40:27 +0200
+Message-ID: <CAKfTPtCwdw1mYpWRFbPo9zT=9vFANpJyubh1eX-0vJLqrqizgA@mail.gmail.com>
+Subject: Re: [RFC PATCH v4 00/14] sched: packing small tasks
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: Arjan van de Ven <arjan@linux.intel.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Paul Turner <pjt@google.com>, Santosh <santosh.shilimkar@ti.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Chander Kashyap <chander.kashyap@linaro.org>,
+        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        Alex Shi <alex.shi@intel.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Len Brown <len.brown@intel.com>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Lukasz Majewski <l.majewski@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 26, 2013 at 04:53:26PM +0200, Frederic Weisbecker wrote:
-> Turn the full dynticks passive dependency on VIRT_CPU_ACCOUNTING_GEN
-> to an active one.
-> 
-> The full dynticks Kconfig is currently hidden behind the full dynticks
-> cputime accounting, which is an awkward and counter-intuitive layout:
-> the user first has to select the dynticks cputime accounting in order
-> to make the full dynticks feature to be visible.
-> 
-> We definetly want it the other way around. The usual way to perform
-> this kind of active dependency is use "select" on the depended target.
-> Now we can't use the Kconfig "select" instruction when the target is
-> a "choice".
-> 
-> So this patch inspires on how the RCU subsystem Kconfig interact
-> with its dependencies on SMP and PREEMPT: we make sure that cputime
-> accounting can't propose another option than VIRT_CPU_ACCOUNTING_GEN
-> when NO_HZ_FULL is selected by using the right "depends on" instruction
-> for each cputime accounting choices.
+On 26 April 2013 17:00, Arjan van de Ven <arjan@linux.intel.com> wrote:
+> On 4/25/2013 10:23 AM, Vincent Guittot wrote:
+>>
+>> Hi,
+>>
+>> This patchset takes advantage of the new per-task load tracking that is
+>> available in the kernel for packing the tasks in as few as possible
+>> CPU/Cluster/Core. It has got 2 packing modes:
+>> -The 1st mode packs the small tasks when the system is not too busy. The
+>> main
+>> goal is to reduce the power consumption in the low system load use cases
+>> by
+>> minimizing the number of power domain that are enabled but it also keeps
+>> the
+>> default behavior which is performance oriented.
+>> -The 2nd mode packs all tasks in as few as possible power domains in order
+>> to
+>> improve the power consumption of the system but at the cost of possible
+>> performance decrease because of the increase of the rate of ressources
+>> sharing
+>> compared to the default mode.
+>
+>
+>
+> so I got to ask the hard question; what percentage of system level (not just
+> cpu level)
+> power consumption gain can you measure (pick your favorite workload)...
+>
 
-Ah, putting it back onto VIRT_CPU_ACCOUNTING_GEN, cute!
+I haven't system level figures for my patches but only for the cpu
+subsystem. If we use the MP3 results in the back of my mail, they show
+an improvement of 37 % (113/178) for the CPU subsystem of the
+platform. If we assume that the CPU subsystem contributes 25% of an
+embedded system power consumption (this can vary across platform
+depending of the use of HW accelerator but it should be a almost fair
+percentage), the patch can impact the power consumption on up to 9%.
 
-> Reported-by: Ingo Molnar <mingo@kernel.org>
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Christoph Lameter <cl@linux.com>
-> Cc: Hakan Akkan <hakanakkan@gmail.com>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Kevin Hilman <khilman@linaro.org>
-> Cc: Li Zhong <zhong@linux.vnet.ibm.com>
-> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> ---
->  init/Kconfig        |    8 ++++----
->  kernel/time/Kconfig |    4 +++-
->  2 files changed, 7 insertions(+), 5 deletions(-)
-> 
-> diff --git a/init/Kconfig b/init/Kconfig
-> index edc8132..572db53 100644
-> --- a/init/Kconfig
-> +++ b/init/Kconfig
-> @@ -306,7 +306,7 @@ choice
->  # Kind of a stub config for the pure tick based cputime accounting
->  config TICK_CPU_ACCOUNTING
->  	bool "Simple tick based cputime accounting"
-> -	depends on !S390
-> +	depends on !S390 && !NO_HZ_FULL
->  	help
->  	  This is the basic tick based cputime accounting that maintains
->  	  statistics about user, system and idle time spent on per jiffies
-> @@ -316,7 +316,7 @@ config TICK_CPU_ACCOUNTING
-> 
->  config VIRT_CPU_ACCOUNTING_NATIVE
->  	bool "Deterministic task and CPU time accounting"
-> -	depends on HAVE_VIRT_CPU_ACCOUNTING
-> +	depends on HAVE_VIRT_CPU_ACCOUNTING && !NO_HZ_FULL
->  	select VIRT_CPU_ACCOUNTING
->  	help
->  	  Select this option to enable more accurate task and CPU time
-> @@ -329,7 +329,7 @@ config VIRT_CPU_ACCOUNTING_NATIVE
-> 
->  config VIRT_CPU_ACCOUNTING_GEN
->  	bool "Full dynticks CPU time accounting"
-> -	depends on HAVE_CONTEXT_TRACKING && 64BIT
-> +	depends on HAVE_CONTEXT_TRACKING && 64BIT && NO_HZ_FULL
-
-Do you really want this change?  This prohibits VIRT_CPU_ACCOUNTING_GEN
-unless NO_HZ_FULL, which means that it can no longer be used in situations
-where it used to be usable.  My guess is that you want to leave this
-particular line as it was.
-
-							Thanx, Paul
-
->  	select VIRT_CPU_ACCOUNTING
->  	select CONTEXT_TRACKING
->  	help
-> @@ -346,7 +346,7 @@ config VIRT_CPU_ACCOUNTING_GEN
-> 
->  config IRQ_TIME_ACCOUNTING
->  	bool "Fine granularity task level IRQ time accounting"
-> -	depends on HAVE_IRQ_TIME_ACCOUNTING
-> +	depends on HAVE_IRQ_TIME_ACCOUNTING && !NO_HZ_FULL
->  	help
->  	  Select this option to enable fine granularity task irq time
->  	  accounting. This is done by reading a timestamp on each
-> diff --git a/kernel/time/Kconfig b/kernel/time/Kconfig
-> index 1ea2bba..a2ddd65 100644
-> --- a/kernel/time/Kconfig
-> +++ b/kernel/time/Kconfig
-> @@ -104,11 +104,13 @@ config NO_HZ_FULL
->  	depends on SMP
->  	# RCU_USER_QS dependency
->  	depends on HAVE_CONTEXT_TRACKING
-> -	depends on VIRT_CPU_ACCOUNTING_GEN
-> +	# VIRT_CPU_ACCOUNTING_GEN dependency
-> +	depends on 64BIT
->  	select NO_HZ_COMMON
->  	select RCU_USER_QS
->  	select RCU_NOCB_CPU
->  	select RCU_NOCB_CPU_ALL
-> +	select VIRT_CPU_ACCOUNTING_GEN
->  	select CONTEXT_TRACKING_FORCE
->  	select IRQ_WORK
->  	help
-> -- 
-> 1.7.5.4
-> 
-
+> on x86 (even on the low power stuff) I expect this to be very far into the
+> noise
+> (since we have per core power gates, and power transitions are pretty fast)
+>
+> you have some numbers in the back of your mail, but it's hard for me to get
+> a conclusion out of
+> that (they either measure only cpu power, or are just vague in general)
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
