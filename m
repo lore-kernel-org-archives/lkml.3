@@ -1,71 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756186Ab3DZRQm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 13:16:42 -0400
-Received: from fieldses.org ([174.143.236.118]:53218 "EHLO fieldses.org"
+	id S1756483Ab3DZRSl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 13:18:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46338 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753781Ab3DZRQl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 13:16:41 -0400
-Date: Fri, 26 Apr 2013 13:16:40 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Malte =?utf-8?B?U2NocsO2ZGVy?= <maltesch@gmx.de>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: NFS4 sec=krb5 broken in 3.9-rc8
-Message-ID: <20130426171640.GF17268@fieldses.org>
-References: <5176E715.2070201@gmx.de>
- <20130423215807.GL3676@fieldses.org>
- <51777494.8010306@gmx.de>
- <20130424140152.GA9794@fieldses.org>
- <5178116F.1010608@gmx.de>
- <20130424192353.GI20275@fieldses.org>
- <517A46E7.1020404@gmx.de>
- <20130426152334.GC17268@fieldses.org>
- <517AB1B3.7000301@gmx.de>
+	id S1754092Ab3DZRSi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Apr 2013 13:18:38 -0400
+Date: Fri, 26 Apr 2013 19:15:26 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Cyrill Gorcunov <gorcunov@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        David Miller <davem@davemloft.net>, "Theodore Ts'o" <tytso@mit.edu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        Fr??d??ric Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH v2] x86: make DR*_RESERVED unsigned long
+Message-ID: <20130426171526.GA30875@redhat.com>
+References: <CA+55aFwpLu0qNms=hkQr43yqD0K9DgESNm91OEWKT1ZuT8MU6Q@mail.gmail.com> <20130424072630.GB1780@gmail.com> <20130424170702.GA1867@redhat.com> <5178282D.9030902@zytor.com> <20130425144818.GA25921@redhat.com> <20130426163802.GA30351@redhat.com> <517AAED5.7040400@zytor.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <517AB1B3.7000301@gmx.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <517AAED5.7040400@zytor.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 26, 2013 at 06:56:19PM +0200, Malte Schröder wrote:
-> On 26.04.2013 17:23, J. Bruce Fields wrote:
-> > On Fri, Apr 26, 2013 at 11:20:39AM +0200, Malte Schröder wrote:
-> >> On 24.04.2013 21:23, J. Bruce Fields wrote:
-> >>> On Wed, Apr 24, 2013 at 07:07:59PM +0200, Malte Schröder wrote:
-> >>> Probably some of those "svc_process dropit"s are coming from attempts to
-> >>> look up the newly created cred (so lookups in the rsc_cache) which fail
-> >>> for some reason.  I'm not sure what that would be.
-> >>>
-> >>> --b.
-> >>
-> >> Hi,
-> >> I tried bisecting the problem. It identified
-> >> 683428fae8c73d7d7da0fa2e0b6beb4d8df4e808 as the problem, reverting it
-> >> didn't fix the problem, though. During the process there where some
-> >> states where mounting wouldn't hang but be denied. I will try bisecting
-> >> again, later.
-> > 
-> > Oh, so probably 3c34ae11fac3b30629581d0bfaf80f58e82cfbfb "nfsd: fix krb5
-> > handling of anonymous principals" needs backporting to stable--could you
-> > confirm whether applying that helps?
-> > 
-> > Thanks for the bisection.
-> > 
-> > --b.
-> > 
-> 
-> Well, I have the problem on 3.9-rc8, 3.8.5 works totally fine for me.
+On 04/26, H. Peter Anvin wrote:
+>
+> On 04/26/2013 09:38 AM, Oleg Nesterov wrote:
+> >
+> > 	- do_debug:
+> >
+> > 		dr6 &= ~DR6_RESERVED;
+> >
+> > 	  this also wrongly clears 32-63 bits. Fortunately these
+> > 	  bits are reserved and must be zero.
+>
+> I don't think this is wrongly at all.
 
-Oops, right--should have looked at the subject line.
+OK, I meant that it also clears the bits that are not specified in
+DR6_RESERVED mask.
 
-> Just for fun I reverted the path you mentioned, and now the behaviour
-> has changed: It doesn't hang anymore, now I get access denied from the
-> server.
+> The whole point is to mask out
+> the bits that the handler doesn't want to deal with, so masking out the
+> reserved bits [63:32] seems reasonable to me.
 
-OK, I'm out of ideas for now....
+Then we should do
 
---b.
+	- #define DR6_RESERVED    0xFFFF0FF0
+	+ #define DR6_RESERVED    0xFFFFFFFFFFFF0FF0
+
+?
+
+or what? (just in case, I will happily agree with "do nothing" ;)
+
+> The comment should probably be corrected, though.
+
+Which one?
+
+	/* Define reserved bits in DR6 which are always set to 1 */
+	#define DR6_RESERVED    (0xFFFF0FF0UL)
+
+	/* Filter out all the reserved bits which are preset to 1 */
+	dr6 &= ~DR6_RESERVED;
+
+I guess both should be updated then. But if I read the doc correctly
+the lower reserved bits are set to 1.
+
+However do_debug() does set_debugreg(0, 6) and this looks correct, the
+doc says "debug handlers should clear the register before returning to
+the interrupted task".
+
+Oleg.
+
