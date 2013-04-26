@@ -1,61 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754939Ab3DZG7b (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 02:59:31 -0400
-Received: from mail-ea0-f181.google.com ([209.85.215.181]:33717 "EHLO
-	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753046Ab3DZG7a (ORCPT
+	id S1754567Ab3DZHGI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 03:06:08 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:35892 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752295Ab3DZHGG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 02:59:30 -0400
-Date: Fri, 26 Apr 2013 08:59:26 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: mingo@elte.hu, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: Basic perf PMU support for Haswell v11
-Message-ID: <20130426065926.GA31487@gmail.com>
-References: <1366484783-15613-1-git-send-email-andi@firstfloor.org>
- <20130426065503.GA31197@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130426065503.GA31197@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 26 Apr 2013 03:06:06 -0400
+Date: Fri, 26 Apr 2013 03:06:04 -0400 (EDT)
+Message-Id: <20130426.030604.1072047771260272521.davem@davemloft.net>
+To: petkan@nucleusys.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] drivers: net: usb: pegasus: remove skb pool
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <alpine.DEB.2.02.1304260934030.3746@fry.nucleusys.com>
+References: <alpine.DEB.2.02.1304260934030.3746@fry.nucleusys.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Fri, 26 Apr 2013 00:06:05 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Ingo Molnar <mingo@kernel.org> wrote:
+I explicitly asked for an initial "[PATCH 0/N] " posting, preceeding
+the patches, giving a high level description of the changes made in
+this series.
 
-> You say it's barebones, yet it does not work :-( How well was this 
-> patch-set tested on non-Haswell hardware, which makes up 99.99% of our 
-> installed base?
-> 
-> In particular, after applying your patches, 'perf top' stopped working 
-> on an Intel testbox of mine:
-
-The other problem I noticed was stylistic: when I applied your patches for 
-testing even Git complained about their cleanliness ...
-
-To quote from Documentation/SubmittingPatches:
-
-  4) Style check your changes.
-
-  Check your patch for basic style violations, details of which can be
-  found in Documentation/CodingStyle.  Failure to do so simply wastes
-  the reviewers time and will get your patch rejected, probably
-  without even being read.
-
-  At a minimum you should check your patches with the patch style
-  checker prior to submission (scripts/checkpatch.pl).  You should
-  be able to justify all violations that remain in your patch.
-
-Please make your patches less sloppy!
-
-Thanks,
-
-	Ingo
+Where is it?
