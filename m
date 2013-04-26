@@ -1,86 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758458Ab3DZF5E (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 01:57:04 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:44461 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752973Ab3DZF5C (ORCPT
+	id S1752785Ab3DZGNz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 02:13:55 -0400
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:56856 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750759Ab3DZGNy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 01:57:02 -0400
-Date: Fri, 26 Apr 2013 15:56:59 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Cc: <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Tony Breeds <tony@bakeyournoodle.com>
-Subject: Re: linux-next: build failure after merge of the omap_dss2 tree
-Message-Id: <20130426155659.f203481f914edeaba9f1e493@canb.auug.org.au>
-In-Reply-To: <517A1117.7000501@ti.com>
-References: <20130426151027.db71ddf367c85fe0682cbff6@canb.auug.org.au>
-	<517A1117.7000501@ti.com>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__26_Apr_2013_15_56_59_+1000_OlLwstuNhuvCwfE1"
+	Fri, 26 Apr 2013 02:13:54 -0400
+MIME-Version: 1.0
+In-Reply-To: <1366926860-26776-5-git-send-email-keescook@chromium.org>
+References: <1366926860-26776-1-git-send-email-keescook@chromium.org>
+	<1366926860-26776-5-git-send-email-keescook@chromium.org>
+Date: Fri, 26 Apr 2013 08:13:53 +0200
+Message-ID: <CA+rthh9QuQ-V+=Of8GB-SwqX-Z8SUEz48YLyBfbng5j3wd23Jw@mail.gmail.com>
+Subject: Re: [kernel-hardening] [PATCH 4/6] x86: kaslr: select random base offset
+From: Mathias Krause <minipli@googlemail.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        kernel-hardening@lists.openwall.com, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
+        Matthew Garrett <mjg@redhat.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Eric Northup <digitaleric@google.com>,
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__26_Apr_2013_15_56_59_+1000_OlLwstuNhuvCwfE1
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi Tomi,
-
-On Fri, 26 Apr 2013 08:31:03 +0300 Tomi Valkeinen <tomi.valkeinen@ti.com> w=
-rote:
+On Thu, Apr 25, 2013 at 11:54 PM, Kees Cook <keescook@chromium.org> wrote:
+> Select a random location when CONFIG_RANDOMIZE_BASE is used, bounded
+> by CONFIG_RANDOMIZE_BASE_MAX_OFFSET. Sources of randomness currently
+> include RDRAND and RDTSC.
 >
-> On 2013-04-26 08:10, Stephen Rothwell wrote:
-> >=20
-> > After merging the omap_dss2 tree, today's linux-next build (powerpc
-> > ppc64_defconfig) failed like this:
-> >=20
-> > drivers/video/ps3fb.c: In function 'ps3fb_mmap':
-> > drivers/video/ps3fb.c:710:2: error: implicit declaration of function 'v=
-m_ioremap_memory' [-Werror=3Dimplicit-function-declaration]
-> > drivers/video/ps3fb.c:712:2: error: 'offset' undeclared (first use in t=
-his function)
-> >=20
-> > Caused by commit 6ea19860d6c5 ("fbdev/ps3fb: use vm_iomap_memory()").
-> >=20
-> > I have used the omap_dss2 tree from next-20130424 for today.
-> >=20
->=20
-> Thanks. Updated patch below. I couldn't right away find where to download=
- a
-> ppc64 toolchain, so not compile tested...
+> Signed-off-by: Kees Cook <keescook@chromium.org>
+> ---
+>  arch/x86/Kconfig                |   29 +++++++++++++--
+>  arch/x86/boot/compressed/aslr.c |   75 +++++++++++++++++++++++++++++++++++++--
+>  2 files changed, 100 insertions(+), 4 deletions(-)
+>
+> [snip]
+>
+> diff --git a/arch/x86/boot/compressed/aslr.c b/arch/x86/boot/compressed/aslr.c
+> index d5331ee..11a91c6 100644
+> --- a/arch/x86/boot/compressed/aslr.c
+> +++ b/arch/x86/boot/compressed/aslr.c
+> @@ -2,18 +2,89 @@
+>
+>  #ifdef CONFIG_RANDOMIZE_BASE
+>
+> +#include <asm/archrandom.h>
+> +static inline int rdrand(unsigned long *v)
+> +{
+> +       int ok;
+> +       asm volatile("1: " RDRAND_LONG "\n\t"
+> +                    "jc 2f\n\t"
+> +                    "decl %0\n\t"
+> +                    "jnz 1b\n\t"
+> +                    "2:"
+> +                    : "=r" (ok), "=a" (*v)
+> +                    : "0" (RDRAND_RETRY_LOOPS));
+> +       return ok;
+> +}
+> +
+> +static inline uint32_t rdtsc(void)
+> +{
+> +       uint32_t timer;
+> +
+> +       asm volatile("rdtsc\n" : "=a" (timer));
 
-https://www.kernel.org/pub/tools/crosstool/
+'\n' in the assembly statement is not needed. Also, RDTSC trashes
+edx/rdx as well so it should be mentioned in the clobber list, at
+least.
+Maybe using rdtscl() from <asm/msr.h> instead is an option?
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Fri__26_Apr_2013_15_56_59_+1000_OlLwstuNhuvCwfE1
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRehcrAAoJEECxmPOUX5FEm6IP/Rcx9iNcMzffejY9uP8h1TGr
-pwF755aN4rrEfCYB2FNJ5ufhgoHPJlb6vflpo4YVSF4ukpMR41li2POBVFSyGBDv
-Y3IudHIxcU4FEgfsF9QPq5mssiAhUUTANYJVUEti5/nZFZ9ZDOi3i73Tmut02IDp
-OEfoIGyXZ0vSZMPgxwSClG4uzRi947cR3eh0XAMyuyvO+l4xKc8dj6zV9U3+Thqn
-pvAZ2kE/xTeKWj4QhqQB+lXKFDZewBdLBSClvSjb1ZwoepX4431hpYvnLQah8t67
-yalA/kFjNH5hGcs6v65tkmrEhZH4sbIm0q4gDTYc0kOWWlqUhUj+D4VbBrQLBGMH
-LaY5XnpPvaLgzB4UEEV38bdAMiSb3+Nq6V1WRHlIboUzGerp/zxdzYyRuO3TnKSU
-02qUkaOIPG9zn46dH768VKZ2oN17ztDhCWvb5dW6SimQKMxRWqU/xwI86735qbR1
-h8mifibxbgEWz2otBU/im1h6BzvM+ATrrcdAi7K89ThKtB59ROS88QB4yuetuWfF
-uig31HHBHjyUGQthnT+Iodif5tAdGnrt+2J/Ady57/jJQ0c8dpWbwo8A5G2on7ee
-p19ARFlITu3HzyGE0rfpNi07ebaadBI+rQ9LNggFpWJyGr5kUz9YkMzdAs0yr1QF
-lhqHX88fJt8RyUkcYc/c
-=UUsp
------END PGP SIGNATURE-----
-
---Signature=_Fri__26_Apr_2013_15_56_59_+1000_OlLwstuNhuvCwfE1--
+> +
+> +       return timer;
+> +}
+> +
+> +static unsigned long get_random_long(void)
+> +{
+> +       if (has_cpuflag(X86_FEATURE_RDRAND)) {
+> +               unsigned long random;
+> +
+> +               debug_putstr("KASLR using RDRAND...\n");
+> +               if (rdrand(&random))
+> +                       return random;
+> +       }
+> +
+> +       if (has_cpuflag(X86_FEATURE_TSC)) {
+> +               uint32_t raw;
+> +               unsigned long timer;
+> +
+> +               debug_putstr("KASLR using RDTSC...\n");
+> +               raw = rdtsc();
+> +
+> +               /* Repeat the low bits of rdtsc. */
+> +               timer = raw & 0xffff;
+> +               timer |= (timer << 16);
+> +#ifdef CONFIG_X86_64
+> +               timer |= (timer << 32) | (timer << 48);
+> +#endif
+> +
+> +               return timer;
+> +       }
+> +
+> +       debug_putstr("KASLR found no entropy source...\n");
+> +       return 0;
+> +}
+> +
+>  unsigned char *choose_kernel_location(unsigned char *hint, unsigned long size)
+>  {
+>         unsigned char *choice = hint;
+> -       unsigned long random;
+> +       unsigned long random, mask;
+>
+>         if (cmdline_find_option_bool("noaslr")) {
+>                 debug_putstr("KASLR disabled...\n");
+>                 goto out;
+>         }
+>
+> -       /* XXX: choose random location. */
+> +       random = get_random_long();
+> +
+> +       /* Clip off top of the range. */
+> +       mask = CONFIG_RANDOMIZE_BASE_MAX_OFFSET - 1;
+> +       random &= mask;
+> +
+> +       /* XXX: Find an appropriate E820 hole, instead of adding hint. */
+> +       random += (unsigned long)hint;
+> +
+> +       /* XXX: Clip to E820 hole, instead of just using hint. */
+> +       mask = (unsigned long)hint + CONFIG_RANDOMIZE_BASE_MAX_OFFSET;
+> +       while (random + size > mask)
+> +               random >>= 1;
+> +
+> +       /* Clip off bottom of range (via alignment). */
+> +       mask = CONFIG_PHYSICAL_ALIGN - 1;
+> +       random &= ~mask;
+>
+> +       choice = (unsigned char *)random;
+>  out:
+>         return choice;
+>  }
+> --
+> 1.7.9.5
+>
