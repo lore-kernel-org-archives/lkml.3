@@ -1,65 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755987Ab3DZPPq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 11:15:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53009 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751396Ab3DZPPp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 11:15:45 -0400
-From: atomlin@redhat.com
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, cl@linux.com, penberg@kernel.org,
-        riel@redhat.com, aquini@redhat.com, rientjes@google.com,
-        Aaron Tomlin <atomlin@redhat.com>
-Subject: [PATCH v3] mm: slab: Verify the nodeid passed to ____cache_alloc_node
-Date: Fri, 26 Apr 2013 16:15:34 +0100
-Message-Id: <1366989334-13293-1-git-send-email-atomlin@redhat.com>
+	id S1755993Ab3DZPQa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 11:16:30 -0400
+Received: from mx0.aculab.com ([213.249.233.131]:40060 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751341Ab3DZPQ2 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Apr 2013 11:16:28 -0400
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [RFC PATCH net-next 2/6] x86: bpf_jit_comp: support BPF_S_ANC_SECCOMP_LD_W instruction
+Date: Fri, 26 Apr 2013 16:15:02 +0100
+Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6026B7208@saturn3.aculab.com>
+In-Reply-To: <CAKU6vyZfYR-2408G0_Fkp-PS5x5rMH+s4_OOWqqi7Nt+UfiUPg@mail.gmail.com>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [RFC PATCH net-next 2/6] x86: bpf_jit_comp: support BPF_S_ANC_SECCOMP_LD_W instruction
+Thread-Index: Ac5CjV0EuVf9XzeRRrSQ6H6HDMtn6AAAyVPg
+References: <1366962706-24204-1-git-send-email-xi.wang@gmail.com> <1366962706-24204-3-git-send-email-xi.wang@gmail.com> <1366985926.8964.190.camel@edumazet-glaptop> <CAKU6vyZfYR-2408G0_Fkp-PS5x5rMH+s4_OOWqqi7Nt+UfiUPg@mail.gmail.com>
+From: "David Laight" <David.Laight@ACULAB.COM>
+To: "Xi Wang" <xi.wang@gmail.com>, "Eric Dumazet" <eric.dumazet@gmail.com>
+Cc: "Daniel Borkmann" <dborkman@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Russell King" <linux@arm.linux.org.uk>,
+        "Heiko Carstens" <heiko.carstens@de.ibm.com>,
+        "Eric Dumazet" <edumazet@google.com>, "Will Drewry" <wad@chromium.org>,
+        "Andrew Morton" <akpm@linux-foundation.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Aaron Tomlin <atomlin@redhat.com>
+> >> +#ifdef CONFIG_SECCOMP_FILTER
+> >> +                     case BPF_S_ANC_SECCOMP_LD_W:
+> >> +                             if (K == offsetof(struct seccomp_data, arch)) {
+> >> +                                     int arch = syscall_get_arch(current, NULL);
+> >> +
+> >> +                                     EMIT1_off32(0xb8, arch); /* mov arch,%eax */
+> >> +                                     break;
+> >> +                             }
+> >> +                             func = (u8 *)seccomp_bpf_load;
+> >> +                             t_offset = func - (image + addrs[i]);
+> >> +                             EMIT1_off32(0xbf, K); /* mov imm32,%edi */
+> >> +                             EMIT1_off32(0xe8, t_offset); /* call seccomp_bpf_load */
+> >> +                             break;
+> >> +#endif
+> >
+> > This seems seriously wrong to me.
+> 
+> Can you elaborate?
 
-Hi,
+The 'call seccomp_bpf_load' needs a pc-relative offset,
+I assume that is what EMIT1_off32() generates.
 
-This patch is in response to BZ#42967 [1].
-Using VM_BUG_ON so it's used only when CONFIG_DEBUG_VM is set,
-given that ____cache_alloc_node() is a hot code path.
+The other two instructions want an absolute 32 bit value...
 
-Cheers,
-Aaron
+	David
 
-[1]: https://bugzilla.kernel.org/show_bug.cgi?id=42967
 
----8<---
-mm: slab: Verify the nodeid passed to ____cache_alloc_node
-
-If the nodeid is > num_online_nodes() this can cause an
-Oops and a panic(). The purpose of this patch is to assert
-if this condition is true to aid debugging efforts rather
-than some random NULL pointer dereference or page fault.
-
-Signed-off-by: Aaron Tomlin <atomlin@redhat.com>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Acked-by: Christoph Lameter <cl@linux.com>
-Acked-by: Rafael Aquini <aquini@redhat.com>
-Acked-by: David Rientjes <rientjes@google.com>
----
- mm/slab.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/mm/slab.c b/mm/slab.c
-index 856e4a1..09b4e20 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -3412,6 +3412,7 @@ static void *____cache_alloc_node(struct kmem_cache *cachep, gfp_t flags,
- 	void *obj;
- 	int x;
- 
-+	VM_BUG_ON(nodeid > num_online_nodes());
- 	l3 = cachep->nodelists[nodeid];
- 	BUG_ON(!l3);
- 
--- 
-1.8.1.4
 
