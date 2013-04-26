@@ -1,60 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932381Ab3DZIko (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 04:40:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59100 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753564Ab3DZIkl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 04:40:41 -0400
-Date: Fri, 26 Apr 2013 10:40:23 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 12/14] perf ftrace: Use pager for displaying result
-Message-ID: <20130426084023.GB1054@krava.brq.redhat.com>
-References: <1366705872-12132-1-git-send-email-namhyung@kernel.org>
- <1366705872-12132-13-git-send-email-namhyung@kernel.org>
- <20130424141724.GH971@krava.brq.redhat.com>
- <877gjr9k8q.fsf@sejong.aot.lge.com>
+	id S932477Ab3DZIlf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 04:41:35 -0400
+Received: from lan.nucleusys.com ([92.247.61.126]:37940 "EHLO
+	zztop.nucleusys.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932407Ab3DZIlc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Apr 2013 04:41:32 -0400
+Date: Fri, 26 Apr 2013 11:41:21 +0300 (EEST)
+From: Petko Manolov <petkan@nucleusys.com>
+To: David Miller <davem@davemloft.net>
+cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] drivers: net: usb: pegasus: remove skb pool
+In-Reply-To: <alpine.DEB.2.02.1304260934030.3746@fry.nucleusys.com>
+Message-ID: <alpine.DEB.2.02.1304261133410.12284@fry.nucleusys.com>
+References: <alpine.DEB.2.02.1304260934030.3746@fry.nucleusys.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <877gjr9k8q.fsf@sejong.aot.lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 25, 2013 at 03:50:45PM +0900, Namhyung Kim wrote:
-> On Wed, 24 Apr 2013 16:17:24 +0200, Jiri Olsa wrote:
-> > On Tue, Apr 23, 2013 at 05:31:10PM +0900, Namhyung Kim wrote:
-> >> From: Namhyung Kim <namhyung.kim@lge.com>
-> >> 
-> >> It's convenient to use pager when seeing many lines of result.
-> >> 
-> > for some reason I'm able to get any output for 'live' command only
-> > when using --no-pager option. I dont get any data for:
-> >
-> >   # ./perf ftrace live ls
-> >
-> >   not even ls output
+From: Petko Manolov <petkan@nucleusys.com>
 
-ok, now with your patch I get allways ls output correctly in pager
+The socket buffer pool for the receive path is now gone.  It's existence 
+didn't make much difference (performance-wise) and the code is better off 
+without the spinlocks protecting it.
 
-> >
-> > But sometime I dont even get ftrace output for:
-> >
-> >   # ./perf --no-pager ftrace live ls
-> >
-> >   just ls output
+Signed-off-by: Petko Manolov <petkan@nucleusys.com>
+---
+Diff made against latest net-next, not my git repository;
 
-this one still persists
+ drivers/net/usb/pegasus.c |   73 +++++------------------------------
+ drivers/net/usb/pegasus.h |    3 --
+ 2 files changed, 9 insertions(+), 67 deletions(-)
 
-jirka
+diff --git a/drivers/net/usb/pegasus.c b/drivers/net/usb/pegasus.c
+index 73051d1..ff7b84d 100644
+--- a/drivers/net/usb/pegasus.c
++++ b/drivers/net/usb/pegasus.c
+@@ -575,51 +575,6 @@ static int enable_net_traffic(struct net_device *dev, struct usb_device *usb)
+ 	return ret;
+ }
+ 
+-static void fill_skb_pool(pegasus_t *pegasus)
+-{
+-	int i;
+-
+-	for (i = 0; i < RX_SKBS; i++) {
+-		if (pegasus->rx_pool[i])
+-			continue;
+-		pegasus->rx_pool[i] = dev_alloc_skb(PEGASUS_MTU + 2);
+-		/*
+-		 ** we give up if the allocation fail. the tasklet will be
+-		 ** rescheduled again anyway...
+-		 */
+-		if (pegasus->rx_pool[i] == NULL)
+-			return;
+-		skb_reserve(pegasus->rx_pool[i], 2);
+-	}
+-}
+-
+-static void free_skb_pool(pegasus_t *pegasus)
+-{
+-	int i;
+-
+-	for (i = 0; i < RX_SKBS; i++) {
+-		if (pegasus->rx_pool[i]) {
+-			dev_kfree_skb(pegasus->rx_pool[i]);
+-			pegasus->rx_pool[i] = NULL;
+-		}
+-	}
+-}
+-
+-static inline struct sk_buff *pull_skb(pegasus_t * pegasus)
+-{
+-	int i;
+-	struct sk_buff *skb;
+-
+-	for (i = 0; i < RX_SKBS; i++) {
+-		if (likely(pegasus->rx_pool[i] != NULL)) {
+-			skb = pegasus->rx_pool[i];
+-			pegasus->rx_pool[i] = NULL;
+-			return skb;
+-		}
+-	}
+-	return NULL;
+-}
+-
+ static void read_bulk_callback(struct urb *urb)
+ {
+ 	pegasus_t *pegasus = urb->context;
+@@ -704,9 +659,8 @@ static void read_bulk_callback(struct urb *urb)
+ 	if (pegasus->flags & PEGASUS_UNPLUG)
+ 		return;
+ 
+-	spin_lock(&pegasus->rx_pool_lock);
+-	pegasus->rx_skb = pull_skb(pegasus);
+-	spin_unlock(&pegasus->rx_pool_lock);
++	pegasus->rx_skb = __netdev_alloc_skb_ip_align(pegasus->net, PEGASUS_MTU,
++						      GFP_ATOMIC);
+ 
+ 	if (pegasus->rx_skb == NULL)
+ 		goto tl_sched;
+@@ -734,24 +688,23 @@ tl_sched:
+ static void rx_fixup(unsigned long data)
+ {
+ 	pegasus_t *pegasus;
+-	unsigned long flags;
+ 	int status;
+ 
+ 	pegasus = (pegasus_t *) data;
+ 	if (pegasus->flags & PEGASUS_UNPLUG)
+ 		return;
+ 
+-	spin_lock_irqsave(&pegasus->rx_pool_lock, flags);
+-	fill_skb_pool(pegasus);
+ 	if (pegasus->flags & PEGASUS_RX_URB_FAIL)
+ 		if (pegasus->rx_skb)
+ 			goto try_again;
+ 	if (pegasus->rx_skb == NULL)
+-		pegasus->rx_skb = pull_skb(pegasus);
++		pegasus->rx_skb = __netdev_alloc_skb_ip_align(pegasus->net,
++							      PEGASUS_MTU,
++							      GFP_ATOMIC);
+ 	if (pegasus->rx_skb == NULL) {
+ 		netif_warn(pegasus, rx_err, pegasus->net, "low on memory\n");
+ 		tasklet_schedule(&pegasus->rx_tl);
+-		goto done;
++		return;
+ 	}
+ 	usb_fill_bulk_urb(pegasus->rx_urb, pegasus->usb,
+ 			  usb_rcvbulkpipe(pegasus->usb, 1),
+@@ -767,8 +720,6 @@ try_again:
+ 	} else {
+ 		pegasus->flags &= ~PEGASUS_RX_URB_FAIL;
+ 	}
+-done:
+-	spin_unlock_irqrestore(&pegasus->rx_pool_lock, flags);
+ }
+ 
+ static void write_bulk_callback(struct urb *urb)
+@@ -1007,10 +958,9 @@ static int pegasus_open(struct net_device *net)
+ 	int res;
+ 
+ 	if (pegasus->rx_skb == NULL)
+-		pegasus->rx_skb = pull_skb(pegasus);
+-	/*
+-	 ** Note: no point to free the pool.  it is empty :-)
+-	 */
++		pegasus->rx_skb = __netdev_alloc_skb_ip_align(pegasus->net,
++							      PEGASUS_MTU,
++							      GFP_KERNEL);
+ 	if (!pegasus->rx_skb)
+ 		return -ENOMEM;
+ 
+@@ -1044,7 +994,6 @@ static int pegasus_open(struct net_device *net)
+ 		res = -EIO;
+ 		usb_kill_urb(pegasus->rx_urb);
+ 		usb_kill_urb(pegasus->intr_urb);
+-		free_skb_pool(pegasus);
+ 		goto exit;
+ 	}
+ 	set_carrier(net);
+@@ -1364,7 +1313,6 @@ static int pegasus_probe(struct usb_interface *intf,
+ 	pegasus->mii.mdio_write = mdio_write;
+ 	pegasus->mii.phy_id_mask = 0x1f;
+ 	pegasus->mii.reg_num_mask = 0x1f;
+-	spin_lock_init(&pegasus->rx_pool_lock);
+ 	pegasus->msg_enable = netif_msg_init(msg_level, NETIF_MSG_DRV
+ 				| NETIF_MSG_PROBE | NETIF_MSG_LINK);
+ 
+@@ -1376,7 +1324,6 @@ static int pegasus_probe(struct usb_interface *intf,
+ 		goto out2;
+ 	}
+ 	set_ethernet_addr(pegasus);
+-	fill_skb_pool(pegasus);
+ 	if (pegasus->features & PEGASUS_II) {
+ 		dev_info(&intf->dev, "setup Pegasus II specific registers\n");
+ 		setup_pegasus_II(pegasus);
+@@ -1404,7 +1351,6 @@ static int pegasus_probe(struct usb_interface *intf,
+ 
+ out3:
+ 	usb_set_intfdata(intf, NULL);
+-	free_skb_pool(pegasus);
+ out2:
+ 	free_all_urbs(pegasus);
+ out1:
+@@ -1429,7 +1375,6 @@ static void pegasus_disconnect(struct usb_interface *intf)
+ 	unregister_netdev(pegasus->net);
+ 	unlink_all_urbs(pegasus);
+ 	free_all_urbs(pegasus);
+-	free_skb_pool(pegasus);
+ 	if (pegasus->rx_skb != NULL) {
+ 		dev_kfree_skb(pegasus->rx_skb);
+ 		pegasus->rx_skb = NULL;
+diff --git a/drivers/net/usb/pegasus.h b/drivers/net/usb/pegasus.h
+index 65b78b3..00d44e3 100644
+--- a/drivers/net/usb/pegasus.h
++++ b/drivers/net/usb/pegasus.h
+@@ -13,7 +13,6 @@
+ #define	HAS_HOME_PNA		0x40000000
+ 
+ #define	PEGASUS_MTU		1536
+-#define	RX_SKBS			4
+ 
+ #define	EPROM_WRITE		0x01
+ #define	EPROM_READ		0x02
+@@ -97,11 +96,9 @@ typedef struct pegasus {
+ 	struct tasklet_struct	rx_tl;
+ 	struct delayed_work	carrier_check;
+ 	struct urb		*ctrl_urb, *rx_urb, *tx_urb, *intr_urb;
+-	struct sk_buff		*rx_pool[RX_SKBS];
+ 	struct sk_buff		*rx_skb;
+ 	struct usb_ctrlrequest	dr;
+ 	wait_queue_head_t	ctrl_wait;
+-	spinlock_t		rx_pool_lock;
+ 	int			chip;
+ 	unsigned char		intr_buff[8];
+ 	__u8			tx_buff[PEGASUS_MTU];
