@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760095Ab3DZKjR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 06:39:17 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:63482 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760054Ab3DZKjK (ORCPT
+	id S933046Ab3DZKjk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 06:39:40 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:45146 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932901Ab3DZKjg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 06:39:10 -0400
+	Fri, 26 Apr 2013 06:39:36 -0400
 From: Amit Daniel Kachhap <amit.daniel@samsung.com>
 To: linux-pm@vger.kernel.org
 Cc: Zhang Rui <rui.zhang@intel.com>, linux-samsung-soc@vger.kernel.org,
         linux-kernel@vger.kernel.org, amit.kachhap@gmail.com,
         Kukjin Kim <kgene.kim@samsung.com>,
         Eduardo Valentin <eduardo.valentin@ti.com>
-Subject: [PATCH V2 14/20] thermal: exynos: Make the zone handling dependent on trip count
-Date: Fri, 26 Apr 2013 16:07:45 +0530
-Message-Id: <1366972671-9227-15-git-send-email-amit.daniel@samsung.com>
+Subject: [PATCH V2 19/20] Documentation: thermal: Explain the exynos thermal driver model
+Date: Fri, 26 Apr 2013 16:07:50 +0530
+Message-Id: <1366972671-9227-20-git-send-email-amit.daniel@samsung.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1366972671-9227-1-git-send-email-amit.daniel@samsung.com>
 References: <1366972671-9227-1-git-send-email-amit.daniel@samsung.com>
@@ -23,120 +23,88 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This code simplifies the zone handling to use the trip count passed
-by the TMU driver. This also helps in adding more zone support.
+This patch updates the documentation to explain the driver model
+and file layout.
 
 Acked-by: Kukjin Kim <kgene.kim@samsung.com>
 Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
 ---
- drivers/thermal/samsung/exynos_thermal_common.c |   55 ++++++++++++-----------
- drivers/thermal/samsung/exynos_thermal_common.h |    2 -
- 2 files changed, 29 insertions(+), 28 deletions(-)
+ Documentation/thermal/exynos_thermal |   43 ++++++++++++++++++++++++++-------
+ 1 files changed, 34 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/thermal/samsung/exynos_thermal_common.c b/drivers/thermal/samsung/exynos_thermal_common.c
-index b7ca8a4..b0dc63e 100644
---- a/drivers/thermal/samsung/exynos_thermal_common.c
-+++ b/drivers/thermal/samsung/exynos_thermal_common.c
-@@ -83,17 +83,16 @@ static int exynos_set_mode(struct thermal_zone_device *thermal,
- static int exynos_get_trip_type(struct thermal_zone_device *thermal, int trip,
- 				 enum thermal_trip_type *type)
- {
--	switch (GET_ZONE(trip)) {
--	case MONITOR_ZONE:
--	case WARN_ZONE:
--		*type = THERMAL_TRIP_ACTIVE;
--		break;
--	case PANIC_ZONE:
--		*type = THERMAL_TRIP_CRITICAL;
--		break;
--	default:
-+	struct exynos_thermal_zone *th_zone = thermal->devdata;
-+	int max_trip = th_zone->sensor_conf->trip_data.trip_count;
+diff --git a/Documentation/thermal/exynos_thermal b/Documentation/thermal/exynos_thermal
+index 2b46f67..9010c44 100644
+--- a/Documentation/thermal/exynos_thermal
++++ b/Documentation/thermal/exynos_thermal
+@@ -1,17 +1,17 @@
+-Kernel driver exynos4_tmu
++Kernel driver exynos_tmu
+ =================
+ 
+ Supported chips:
+-* ARM SAMSUNG EXYNOS4 series of SoC
+-  Prefix: 'exynos4-tmu'
++* ARM SAMSUNG EXYNOS4, EXYNOS5 series of SoC
+   Datasheet: Not publicly available
+ 
+ Authors: Donggeun Kim <dg77.kim@samsung.com>
++Authors: Amit Daniel <amit.daniel@samsung.com>
+ 
+-Description
+------------
++TMU controller Description:
++---------------------------
+ 
+-This driver allows to read temperature inside SAMSUNG EXYNOS4 series of SoC.
++This driver allows to read temperature inside SAMSUNG EXYNOS4/5 series of SoC.
+ 
+ The chip only exposes the measured 8-bit temperature code value
+ through a register.
+@@ -34,9 +34,9 @@ The three equations are:
+   TI2: Trimming info for 85 degree Celsius (stored at TRIMINFO register)
+        Temperature code measured at 85 degree Celsius which is unchanged
+ 
+-TMU(Thermal Management Unit) in EXYNOS4 generates interrupt
++TMU(Thermal Management Unit) in EXYNOS4/5 generates interrupt
+ when temperature exceeds pre-defined levels.
+-The maximum number of configurable threshold is four.
++The maximum number of configurable threshold is five.
+ The threshold levels are defined as follows:
+   Level_0: current temperature > trigger_level_0 + threshold
+   Level_1: current temperature > trigger_level_1 + threshold
+@@ -47,6 +47,31 @@ The threshold levels are defined as follows:
+   through the corresponding registers.
+ 
+ When an interrupt occurs, this driver notify kernel thermal framework
+-with the function exynos4_report_trigger.
++with the function exynos_report_trigger.
+ Although an interrupt condition for level_0 can be set,
+ it can be used to synchronize the cooling action.
 +
-+	if (trip < 0 || trip >= max_trip)
- 		return -EINVAL;
--	}
-+	else if (trip == (max_trip - 1))
-+		*type = THERMAL_TRIP_CRITICAL;
-+	else
-+		*type = THERMAL_TRIP_ACTIVE;
++TMU driver description:
++-----------------------
 +
- 	return 0;
- }
- 
-@@ -102,8 +101,9 @@ static int exynos_get_trip_temp(struct thermal_zone_device *thermal, int trip,
- 				unsigned long *temp)
- {
- 	struct exynos_thermal_zone *th_zone = thermal->devdata;
-+	int max_trip = th_zone->sensor_conf->trip_data.trip_count;
- 
--	if (trip < GET_TRIP(MONITOR_ZONE) || trip > GET_TRIP(PANIC_ZONE))
-+	if (trip < 0 || trip >= max_trip)
- 		return -EINVAL;
- 
- 	*temp = th_zone->sensor_conf->trip_data.trip_val[trip];
-@@ -117,10 +117,10 @@ static int exynos_get_trip_temp(struct thermal_zone_device *thermal, int trip,
- static int exynos_get_crit_temp(struct thermal_zone_device *thermal,
- 				unsigned long *temp)
- {
--	int ret;
--	/* Panic zone */
--	ret = exynos_get_trip_temp(thermal, GET_TRIP(PANIC_ZONE), temp);
--	return ret;
-+	struct exynos_thermal_zone *th_zone = thermal->devdata;
-+	int max_trip = th_zone->sensor_conf->trip_data.trip_count;
-+	/* Get the temp of highest trip*/
-+	return exynos_get_trip_temp(thermal, max_trip - 1, temp);
- }
- 
- /* Bind callback functions for thermal zone */
-@@ -345,19 +345,22 @@ int exynos_register_thermal(struct thermal_sensor_conf *sensor_conf)
- 		return -ENOMEM;
- 
- 	th_zone->sensor_conf = sensor_conf;
--	cpumask_set_cpu(0, &mask_val);
--	th_zone->cool_dev[0] = cpufreq_cooling_register(&mask_val);
--	if (IS_ERR(th_zone->cool_dev[0])) {
--		pr_err("Failed to register cpufreq cooling device\n");
--		ret = -EINVAL;
--		goto err_unregister;
-+	if (sensor_conf->cooling_data.freq_clip_count > 0) {
-+		cpumask_set_cpu(0, &mask_val);
-+		th_zone->cool_dev[0] = cpufreq_cooling_register(&mask_val);
-+		if (IS_ERR(th_zone->cool_dev[0])) {
-+			pr_err("Failed to register cpufreq cooling device\n");
-+			ret = -EINVAL;
-+			goto err_unregister;
-+		}
-+		th_zone->cool_dev_size++;
- 	}
--	th_zone->cool_dev_size++;
- 
--	th_zone->therm_dev = thermal_zone_device_register(sensor_conf->name,
--			EXYNOS_ZONE_COUNT, 0, th_zone, &exynos_dev_ops, NULL, 0,
--			sensor_conf->trip_data.trigger_falling ?
--			0 : IDLE_INTERVAL);
-+	th_zone->therm_dev = thermal_zone_device_register(
-+			sensor_conf->name, sensor_conf->trip_data.trip_count,
-+			0, th_zone, &exynos_dev_ops, NULL, 0,
-+			sensor_conf->trip_data.trigger_falling ? 0 :
-+			IDLE_INTERVAL);
- 
- 	if (IS_ERR(th_zone->therm_dev)) {
- 		pr_err("Failed to register thermal zone device\n");
-diff --git a/drivers/thermal/samsung/exynos_thermal_common.h b/drivers/thermal/samsung/exynos_thermal_common.h
-index 878120b..58c3a88 100644
---- a/drivers/thermal/samsung/exynos_thermal_common.h
-+++ b/drivers/thermal/samsung/exynos_thermal_common.h
-@@ -42,8 +42,6 @@
- #define GET_ZONE(trip) (trip + 2)
- #define GET_TRIP(zone) (zone - 2)
- 
--#define EXYNOS_ZONE_COUNT	3
--
- /**
-  * struct freq_clip_table
-  * @freq_clip_max: maximum frequency allowed for this cooling state.
++The exynos thermal driver is structured as,
++
++					Kernel Core thermal framework
++				(thermal_core.c, step_wise.c, cpu_cooling.c)
++								^
++								|
++								|
++TMU configuration data -------> TMU Driver  <------> Exynos Core thermal wrapper
++(exynos_tmu_data.c)	      (exynos_tmu.c)	   (exynos_thermal_common.c)
++(exynos_tmu_data.h)	      (exynos_tmu.h)	   (exynos_thermal_common.h)
++
++a) TMU configuration data: This consist of TMU register offsets/bitfields
++		described through structure exynos_tmu_registers. Also several
++		other platform data (struct exynos_tmu_platform_data) members
++		are used to configure the TMU.
++b) TMU driver: This component initialises the TMU controller and sets different
++		thresholds. It invokes core thermal implementation with the call
++		exynos_report_trigger.
++c) Exynos Core thermal wrapper: This provides 3 wrapper function to use the
++		Kernel core thermal framework. They are exynos_unregister_thermal,
++		exynos_register_thermal and exynos_report_trigger.
 -- 
 1.7.1
 
