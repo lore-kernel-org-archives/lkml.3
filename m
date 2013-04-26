@@ -1,57 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755865Ab3DZNcw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 09:32:52 -0400
-Received: from hedwig.cmf.nrl.navy.mil ([134.207.12.162]:38346 "EHLO
-	hedwig.cmf.nrl.navy.mil" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754218Ab3DZNcu (ORCPT
+	id S1756066Ab3DZNfB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 09:35:01 -0400
+Received: from mail-da0-f42.google.com ([209.85.210.42]:60029 "EHLO
+	mail-da0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753248Ab3DZNe7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 09:32:50 -0400
-X-Greylist: delayed 835 seconds by postgrey-1.27 at vger.kernel.org; Fri, 26 Apr 2013 09:32:50 EDT
-Date: Fri, 26 Apr 2013 09:12:20 -0400
-From: chas williams - CONTRACTOR <chas@cmf.nrl.navy.mil>
-To: "David Laight" <David.Laight@ACULAB.COM>
-Cc: "Arnd Bergmann" <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>,
-        <linux-atm-general@lists.sourceforge.net>, <netdev@vger.kernel.org>
-Subject: Re: [PATCH 05/21] atm: he: use mdelay instead of large udelay
- constants
-Message-ID: <20130426091220.468cf59e@thirdoffive.cmf.nrl.navy.mil>
-In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6026B7203@saturn3.aculab.com>
-References: <1366910944-3033663-1-git-send-email-arnd@arndb.de>
-	<1366910944-3033663-6-git-send-email-arnd@arndb.de>
-	<AE90C24D6B3A694183C094C60CF0A2F6026B7203@saturn3.aculab.com>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Fri, 26 Apr 2013 09:34:59 -0400
+Message-ID: <517A827B.1080905@gmail.com>
+Date: Fri, 26 Apr 2013 07:34:51 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 05/14] perf tools: Introduce new 'ftrace' tool
+References: <1366705872-12132-1-git-send-email-namhyung@kernel.org>  <1366705872-12132-6-git-send-email-namhyung@kernel.org>  <20130424140918.GF971@krava.brq.redhat.com>  <87fvyf9maa.fsf@sejong.aot.lge.com>  <20130425090956.GA1033@krava.brq.redhat.com>  <87r4hz7xal.fsf@sejong.aot.lge.com> <1366895121.10248.12.camel@gandalf.local.home>
+In-Reply-To: <1366895121.10248.12.camel@gandalf.local.home>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-NRLCMF-Spam-Score: () hits=0
-X-NRLCMF-Virus-Scanned: No virus found
-X-NRLCMF-Languages: en
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 26 Apr 2013 09:21:59 +0100
-"David Laight" <David.Laight@ACULAB.COM> wrote:
+On 4/25/13 7:05 AM, Steven Rostedt wrote:
+>   Perf was added in 2.6.31, but do all
+> functionalities still work that far back?
 
-> > ARM cannot handle udelay for more than 2 miliseconds, so we
-> > should use mdelay instead for those.
-> ...
-> > @@ -1055,7 +1055,7 @@ static int he_start(struct atm_dev *dev)
-> >  	he_writel(he_dev, 0x0, RESET_CNTL);
-> >  	he_writel(he_dev, 0xff, RESET_CNTL);
-> > 
-> > -	udelay(16*1000);	/* 16 ms */
-> > +	mdelay(16);	/* 16 ms */
-> >  	status = he_readl(he_dev, RESET_CNTL);
-> 
-> 16ms seems a long time to spin.
-> I'd have thought a sleep would be more appropriate.
-> Since this looks like timing a hardware reset pulse
-> it can't matter if it is somewhat longer.
 
-Yes, I wrote this bit some time ago when I was less wise. The
-programmer's guide doesn't say how long to sleep, so the value isn't
-critical.  It just has to be "long enough".  An msleep() would be fine
-here.
+perf was accepted into 2.6.28 - first commit is 0793a61d.
+
+It does have limited functionality (H/W and S/W counters) until 2.6.31.
+
+David
