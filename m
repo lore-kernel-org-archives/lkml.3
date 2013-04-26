@@ -1,39 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756624Ab3DZQ07 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 12:26:59 -0400
-Received: from mail-da0-f51.google.com ([209.85.210.51]:36875 "EHLO
-	mail-da0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756216Ab3DZQ06 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 12:26:58 -0400
-Message-ID: <517AAACD.10508@gmail.com>
-Date: Fri, 26 Apr 2013 10:26:53 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	id S1756739Ab3DZQ12 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 12:27:28 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:10776 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756186Ab3DZQ10 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Apr 2013 12:27:26 -0400
+X-IronPort-AV: E=Sophos;i="4.87,559,1363132800"; 
+   d="scan'208";a="21838434"
+Date: Fri, 26 Apr 2013 17:27:20 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Subject: Re: [PATCH 8/9] xen/smp/pvhvm: Don't initialize IRQ_WORKER as we
+ are using the native one.
+In-Reply-To: <1366142947-18655-9-git-send-email-konrad.wilk@oracle.com>
+Message-ID: <alpine.DEB.2.02.1304261726260.4180@kaball.uk.xensource.com>
+References: <1366142947-18655-1-git-send-email-konrad.wilk@oracle.com> <1366142947-18655-9-git-send-email-konrad.wilk@oracle.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Jiri Olsa <jolsa@redhat.com>
-CC: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, Borislav Petkov <bp@alien8.de>,
-        Stephane Eranian <eranian@google.com>, Sam Ravnborg <sam@ravnborg.org>
-Subject: Re: [PATCH 21/26] perf tools: Switch to full patch C include directories
-References: <1366796273-4780-1-git-send-email-jolsa@redhat.com> <1366796273-4780-22-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1366796273-4780-22-git-send-email-jolsa@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/24/13 3:37 AM, Jiri Olsa wrote:
-> Switching to full patch C include directories, to make
-> the includes clear.
+On Tue, 16 Apr 2013, Konrad Rzeszutek Wilk wrote:
+> There is no need to use the PV version of the IRQ_WORKER mechanism
+> as under PVHVM we are using the native version. The native
+> version is using the SMP API.
+> 
+> They just sit around unused:
+> 
+>   69:          0          0  xen-percpu-ipi       irqwork0
+>   83:          0          0  xen-percpu-ipi       irqwork1
+> 
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-s/patch/path/ ?  email subject line too
+Might be worth trying to make it work instead?
+Is it just because we don't set the apic->send_IPI_* functions to the
+xen specific version on PVHVM?
 
-David
+
+>  arch/x86/xen/smp.c | 13 ++++++++++++-
+>  1 file changed, 12 insertions(+), 1 deletion(-)
+> 
+> diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
+> index 22c800a..415694c 100644
+> --- a/arch/x86/xen/smp.c
+> +++ b/arch/x86/xen/smp.c
+> @@ -144,6 +144,13 @@ static int xen_smp_intr_init(unsigned int cpu)
+>  		goto fail;
+>  	per_cpu(xen_callfuncsingle_irq, cpu) = rc;
+>  
+> +	/*
+> +	 * The IRQ worker on PVHVM goes through the native path and uses the
+> +	 * IPI mechanism.
+> +	 */
+> +	if (xen_hvm_domain())
+> +		return 0;
+> +
+>  	callfunc_name = kasprintf(GFP_KERNEL, "irqwork%d", cpu);
+>  	rc = bind_ipi_to_irqhandler(XEN_IRQ_WORK_VECTOR,
+>  				    cpu,
+> @@ -167,6 +174,9 @@ static int xen_smp_intr_init(unsigned int cpu)
+>  	if (per_cpu(xen_callfuncsingle_irq, cpu) >= 0)
+>  		unbind_from_irqhandler(per_cpu(xen_callfuncsingle_irq, cpu),
+>  				       NULL);
+> +	if (xen_hvm_domain())
+> +		return rc;
+> +
+>  	if (per_cpu(xen_irq_work, cpu) >= 0)
+>  		unbind_from_irqhandler(per_cpu(xen_irq_work, cpu), NULL);
+>  
+> @@ -661,7 +671,8 @@ static void xen_hvm_cpu_die(unsigned int cpu)
+>  	unbind_from_irqhandler(per_cpu(xen_callfunc_irq, cpu), NULL);
+>  	unbind_from_irqhandler(per_cpu(xen_debug_irq, cpu), NULL);
+>  	unbind_from_irqhandler(per_cpu(xen_callfuncsingle_irq, cpu), NULL);
+> -	unbind_from_irqhandler(per_cpu(xen_irq_work, cpu), NULL);
+> +	if (!xen_hvm_domain())
+> +		unbind_from_irqhandler(per_cpu(xen_irq_work, cpu), NULL);
+>  	xen_uninit_lock_cpu(cpu);
+>  	xen_teardown_timer(cpu);
+>  	native_cpu_die(cpu);
+> -- 
+> 1.8.1.4
+> 
