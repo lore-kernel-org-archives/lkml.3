@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758305Ab3DZFkE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 01:40:04 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34845 "EHLO mx2.suse.de"
+	id S1757835Ab3DZFlg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 01:41:36 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34892 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753957Ab3DZFkB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 01:40:01 -0400
-Date: Fri, 26 Apr 2013 07:40:00 +0200
-Message-ID: <s5hy5c597f3.wl%tiwai@suse.de>
+	id S1752769Ab3DZFlf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Apr 2013 01:41:35 -0400
+Date: Fri, 26 Apr 2013 07:41:33 +0200
+Message-ID: <s5hwqrp97ci.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
 To: Arnd Bergmann <arnd@arndb.de>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org
-Subject: Re: [PATCH 06/21] ALSA: ali5451: use mdelay instead of large udelay constants
-In-Reply-To: <1366910944-3033663-7-git-send-email-arnd@arndb.de>
+        Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org
+Subject: Re: [PATCH 07/21] oss/dmabuf: use dma_map_single
+In-Reply-To: <1366910944-3033663-8-git-send-email-arnd@arndb.de>
 References: <1366910944-3033663-1-git-send-email-arnd@arndb.de>
-	<1366910944-3033663-7-git-send-email-arnd@arndb.de>
+	<1366910944-3033663-8-git-send-email-arnd@arndb.de>
 User-Agent: Wanderlust/2.15.9 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.8 Emacs/24.2
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -25,60 +25,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Thu, 25 Apr 2013 19:28:49 +0200,
+At Thu, 25 Apr 2013 19:28:50 +0200,
 Arnd Bergmann wrote:
 > 
-> ARM cannot handle udelay for more than 2 miliseconds, so we
-> should use mdelay instead for those.
+> The virt_to_bus/bus_to_virt functions have been deprecated
+> for as long as I can remember, and they are used in very
+> few remaining instances, usually in obscure ISA device
+> drivers. The OSS sound drivers are the only ones that are
+> still used on the ARM architecture, and only on some of
+> the earliest StrongARM machines.
+> 
+> The problem for converting the OSS subsystem to use
+> dma_map_single instead is that the caller of virt_to_bus
+> does not have a device pointer, since the subsystem has
+> never been ported to use the common device infrastructure.
 > 
 > Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Jaroslav Kysela <perex@perex.cz>
 > Cc: Takashi Iwai <tiwai@suse.de>
 > Cc: alsa-devel@alsa-project.org
 
-Thanks, applied to sound git tree.
+Applied now, but the only problem is that it's difficult to test it :)
+Let's see.
 
+
+Thanks!
 
 Takashi
 
-
 > ---
->  sound/pci/ali5451/ali5451.c | 8 ++++----
->  1 file changed, 4 insertions(+), 4 deletions(-)
+>  sound/oss/dmabuf.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
 > 
-> diff --git a/sound/pci/ali5451/ali5451.c b/sound/pci/ali5451/ali5451.c
-> index e760af9..53754f5 100644
-> --- a/sound/pci/ali5451/ali5451.c
-> +++ b/sound/pci/ali5451/ali5451.c
-> @@ -451,10 +451,10 @@ static int snd_ali_reset_5451(struct snd_ali *codec)
->  	if (pci_dev) {
->  		pci_read_config_dword(pci_dev, 0x7c, &dwVal);
->  		pci_write_config_dword(pci_dev, 0x7c, dwVal | 0x08000000);
-> -		udelay(5000);
-> +		mdelay(5);
->  		pci_read_config_dword(pci_dev, 0x7c, &dwVal);
->  		pci_write_config_dword(pci_dev, 0x7c, dwVal & 0xf7ffffff);
-> -		udelay(5000);
-> +		mdelay(5);
+> diff --git a/sound/oss/dmabuf.c b/sound/oss/dmabuf.c
+> index bcc3e8e..a59c888 100644
+> --- a/sound/oss/dmabuf.c
+> +++ b/sound/oss/dmabuf.c
+> @@ -114,7 +114,7 @@ static int sound_alloc_dmap(struct dma_buffparms *dmap)
+>  		}
 >  	}
->  	
->  	pci_dev = codec->pci;
-> @@ -463,14 +463,14 @@ static int snd_ali_reset_5451(struct snd_ali *codec)
->  	udelay(500);
->  	pci_read_config_dword(pci_dev, 0x44, &dwVal);
->  	pci_write_config_dword(pci_dev, 0x44, dwVal & 0xfffbffff);
-> -	udelay(5000);
-> +	mdelay(5);
->  	
->  	wCount = 200;
->  	while(wCount--) {
->  		wReg = snd_ali_codec_peek(codec, 0, AC97_POWERDOWN);
->  		if ((wReg & 0x000f) == 0x000f)
->  			return 0;
-> -		udelay(5000);
-> +		mdelay(5);
->  	}
+>  	dmap->raw_buf = start_addr;
+> -	dmap->raw_buf_phys = virt_to_bus(start_addr);
+> +	dmap->raw_buf_phys = dma_map_single(NULL, start_addr, dmap->buffsize, DMA_BIDIRECTIONAL);
 >  
->  	/* non-fatal if you have a non PM capable codec */
+>  	for (page = virt_to_page(start_addr); page <= virt_to_page(end_addr); page++)
+>  		SetPageReserved(page);
+> @@ -139,6 +139,7 @@ static void sound_free_dmap(struct dma_buffparms *dmap)
+>  	for (page = virt_to_page(start_addr); page <= virt_to_page(end_addr); page++)
+>  		ClearPageReserved(page);
+>  
+> +	dma_unmap_single(NULL, dmap->raw_buf_phys, dmap->buffsize, DMA_BIDIRECTIONAL);
+>  	free_pages((unsigned long) dmap->raw_buf, sz);
+>  	dmap->raw_buf = NULL;
+>  }
 > -- 
 > 1.8.1.2
 > 
