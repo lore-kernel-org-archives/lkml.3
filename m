@@ -1,28 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932308Ab3DZT0G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 15:26:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37111 "EHLO
+	id S1757482Ab3DZTqb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 15:46:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37219 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932210Ab3DZT0E (ORCPT
+	with ESMTP id S1753986Ab3DZTq3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 15:26:04 -0400
-Date: Fri, 26 Apr 2013 12:26:01 -0700
+	Fri, 26 Apr 2013 15:46:29 -0400
+Date: Fri, 26 Apr 2013 12:46:25 -0700
 From: Andrew Morton <akpm@linux-foundation.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Nicolas Schichan <nschichan@freebox.fr>, Will Drewry <wad@chromium.org>,
-        Mircea Gherzan <mgherzan@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>,
-        "David S. Miller" <davem@davemloft.net>,
-        Daniel Borkmann <daniel.borkmann@tik.ee.ethz.ch>
-Subject: Re: [PATCH V3 2/3] ARM: net: bpf_jit: make code generation less
- dependent on struct sk_filter.
-Message-Id: <20130426122601.10ec05fcb4860df1b0a5b409@linux-foundation.org>
-In-Reply-To: <3592414.M8kQZLCXlW@wuerfel>
-References: <1366824429-26652-1-git-send-email-nschichan@freebox.fr>
-	<1366824429-26652-3-git-send-email-nschichan@freebox.fr>
-	<3592414.M8kQZLCXlW@wuerfel>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: "Chanho Min" <chanho.min@lge.com>,
+        "'Geert Uytterhoeven'" <geert@linux-m68k.org>,
+        "'Bob Pearson'" <rpearson@systemfabricworks.com>,
+        "'Richard Weinberger'" <richard@nod.at>,
+        <linux-kernel@vger.kernel.org>, <linux-crypto@vger.kernel.org>,
+        "'Yann Collet'" <yann.collet.73@gmail.com>,
+        =?UTF-8?Q?=EC=9D=B4=EA=B2=BD=EC=8B=9D?= <kyungsik.lee@lge.com>,
+        "'Linux/m68k'" <linux-m68k@vger.kernel.org>,
+        "'sparclinux'" <sparclinux@vger.kernel.org>,
+        "'Linux-Next'" <linux-next@vger.kernel.org>
+Subject: Re: [PATCH 1/2] lib: Add lz4 compressor module
+Message-Id: <20130426124625.60bee0e2bcd255c62528e621@linux-foundation.org>
+In-Reply-To: <20130426155105.337d821415d8bfa845bf23f5@canb.auug.org.au>
+References: <CAOAMb1D8rokZpQpp6mEJw6KXcQq8fJUWBJoC5+ZfkNaE6WvAZA@mail.gmail.com>
+	<CAMuHMdXXoaQjb9sRK=X3gEDwqQBJcJQtaJbUGB8cJmteHSN3vQ@mail.gmail.com>
+	<5175014e.487a420a.4c58.ffffe0b9SMTPIN_ADDED_BROKEN@mx.google.com>
+	<OF6B440C9E.4A0516C8-ON49257B59.001BA689-49257B59.001BA68A@lge.com>
+	<20130426155105.337d821415d8bfa845bf23f5@canb.auug.org.au>
 X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -31,73 +36,22 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 26 Apr 2013 16:04:44 +0200 Arnd Bergmann <arnd@arndb.de> wrote:
+On Fri, 26 Apr 2013 15:51:05 +1000 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 
-> On Wednesday 24 April 2013 19:27:08 Nicolas Schichan wrote:
-> > @@ -858,7 +858,7 @@ b_epilogue:
-> >  }
-> >  
-> >  
-> > -void bpf_jit_compile(struct sk_filter *fp)
-> > +static void __bpf_jit_compile(struct jit_ctx *out_ctx)
-> >  {
-> >         struct jit_ctx ctx;
-> >         unsigned tmp_idx;
-> > @@ -867,11 +867,10 @@ void bpf_jit_compile(struct sk_filter *fp)
-> >         if (!bpf_jit_enable)
-> >                 return;
-> >  
-> > -       memset(&ctx, 0, sizeof(ctx));
-> > -       ctx.skf         = fp;
-> > +       ctx = *out_ctx;
-> >         ctx.ret0_fp_idx = -1;
-> >  
-> > -       ctx.offsets = kzalloc(4 * (ctx.skf->len + 1), GFP_KERNEL);
-> > +       ctx.offsets = kzalloc(4 * (ctx.prog_len + 1), GFP_KERNEL);
-> >         if (ctx.offsets == NULL)
-> >                 return;
-> >  
-> > @@ -921,13 +920,26 @@ void bpf_jit_compile(struct sk_filter *fp)
-> >                 print_hex_dump(KERN_INFO, "BPF JIT code: ",
-> >                                DUMP_PREFIX_ADDRESS, 16, 4, ctx.target,
-> >                                alloc_size, false);
-> > -
-> > -       fp->bpf_func = (void *)ctx.target;
-> >  out:
-> >         kfree(ctx.offsets);
+> Hi,
+> 
+> On Fri, 26 Apr 2013 14:02:01 +0900 "Chanho Min" <chanho.min@lge.com> wrote:
+> >
+> > 
+> > @@ -0,0 +1,23 @@
+> > +#include <linux/kernel.h>
 > > +
-> > +       *out_ctx = ctx;
-> >         return;
+> > +int __attribute__((weak)) __clzsi2(int val)
 > 
-> This part of the patch, in combination with 79617801e "filter: bpf_jit_comp:
-> refactor and unify BPF JIT image dump output" is now causing build errors
-> in linux-next:
-> 
-> arch/arm/net/bpf_jit_32.c: In function '__bpf_jit_compile':
-> arch/arm/net/bpf_jit_32.c:930:16: error: 'fp' undeclared (first use in this function)
->    bpf_jit_dump(fp->len, alloc_size, 2, ctx.target);
+> We have __weak in <linux/compiler.h>
 
-Thanks, I did this.  There may be a smarter way...
+And lib/clz.c needs a few more includes, for EXPORT_SYMBOL,
+BITS_PER_LONG maybe.
 
---- a/arch/arm/net/bpf_jit_32.c~arm-net-bpf_jit-make-code-generation-less-dependent-on-struct-sk_filter-fix
-+++ a/arch/arm/net/bpf_jit_32.c
-@@ -858,7 +858,7 @@ b_epilogue:
- }
- 
- 
--static void __bpf_jit_compile(struct jit_ctx *out_ctx)
-+static void __bpf_jit_compile(struct sk_filter *fp, struct jit_ctx *out_ctx)
- {
- 	struct jit_ctx ctx;
- 	unsigned tmp_idx;
-@@ -934,7 +934,7 @@ void bpf_jit_compile(struct sk_filter *f
- 	ctx.prog_len = fp->len;
- 	ctx.prog_insns = fp->insns;
- 
--	__bpf_jit_compile(&ctx);
-+	__bpf_jit_compile(fp, &ctx);
- 	if (ctx.target)
- 		fp->bpf_func = (void *)ctx.target;
- }
-_
+Plus a changelog and a signed-off-by, please.
 
