@@ -1,83 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755820Ab3DZWBl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 18:01:41 -0400
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:43272 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751213Ab3DZWBj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 18:01:39 -0400
+	id S1756446Ab3DZWBr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 18:01:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45280 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755939Ab3DZWBn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Apr 2013 18:01:43 -0400
+Message-ID: <517AF926.3020302@redhat.com>
+Date: Sat, 27 Apr 2013 00:01:10 +0200
+From: Daniel Borkmann <dborkman@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQVA17TGuY5_DFGUL8OSMLx+yJQV1fhe7JDkaoq1a9-oSw@mail.gmail.com>
-References: <1367003005-5560-1-git-send-email-keescook@chromium.org>
-	<1367003005-5560-6-git-send-email-keescook@chromium.org>
-	<CAE9FiQVA17TGuY5_DFGUL8OSMLx+yJQV1fhe7JDkaoq1a9-oSw@mail.gmail.com>
-Date: Fri, 26 Apr 2013 15:01:38 -0700
-X-Google-Sender-Auth: 9uKT-7JTJXr6GTAiyd6eTKhV7d8
-Message-ID: <CAGXu5j+QHxnPLkz1+uD5=1SCBpcARbHTUKWOW6wB4LwWNhsw6Q@mail.gmail.com>
-Subject: Re: [PATCH 5/6] x86: kaslr: select memory region from e820 maps
-From: Kees Cook <keescook@chromium.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
-        Matthew Garrett <mjg@redhat.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Eric Northup <digitaleric@google.com>,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Arnd Bergmann <arnd@arndb.de>, Nicolas Schichan <nschichan@freebox.fr>,
+        Will Drewry <wad@chromium.org>, Mircea Gherzan <mgherzan@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>,
+        "David S. Miller" <davem@davemloft.net>,
+        Daniel Borkmann <daniel.borkmann@tik.ee.ethz.ch>,
+        netdev@vger.kernel.org, Xi Wang <xi.wang@gmail.com>
+Subject: Re: [PATCH V3 2/3] ARM: net: bpf_jit: make code generation less dependent
+ on struct sk_filter.
+References: <1366824429-26652-1-git-send-email-nschichan@freebox.fr> <1366824429-26652-3-git-send-email-nschichan@freebox.fr> <3592414.M8kQZLCXlW@wuerfel> <20130426122601.10ec05fcb4860df1b0a5b409@linux-foundation.org> <517AD9E2.2090704@redhat.com> <20130426130948.cbfd2f6256afc0e3ee7abeed@linux-foundation.org>
+In-Reply-To: <20130426130948.cbfd2f6256afc0e3ee7abeed@linux-foundation.org>
+Content-Type: multipart/mixed;
+ boundary="------------080108090705060902020509"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 26, 2013 at 2:51 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Fri, Apr 26, 2013 at 12:03 PM, Kees Cook <keescook@chromium.org> wrote:
->> This chooses the largest contiguous RAM region for the KASLR offset
->> to live in.
+This is a multi-part message in MIME format.
+--------------080108090705060902020509
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+
+On 04/26/2013 10:09 PM, Andrew Morton wrote:
+> On Fri, 26 Apr 2013 21:47:46 +0200 Daniel Borkmann <dborkman@redhat.com> wrote:
+>> On 04/26/2013 09:26 PM, Andrew Morton wrote:
+>>> On Fri, 26 Apr 2013 16:04:44 +0200 Arnd Bergmann <arnd@arndb.de> wrote:
+>>>> On Wednesday 24 April 2013 19:27:08 Nicolas Schichan wrote:
+>>>>> @@ -858,7 +858,7 @@ b_epilogue:
+>>>>>    }
+>>>>>
+>>>>>
+>>>>> -void bpf_jit_compile(struct sk_filter *fp)
+>>>>> +static void __bpf_jit_compile(struct jit_ctx *out_ctx)
+>>>>>    {
+>>>>>           struct jit_ctx ctx;
+>>>>>           unsigned tmp_idx;
+>>>>> @@ -867,11 +867,10 @@ void bpf_jit_compile(struct sk_filter *fp)
+>>>>>           if (!bpf_jit_enable)
+>>>>>                   return;
+>>>>>
+>>>>> -       memset(&ctx, 0, sizeof(ctx));
+>>>>> -       ctx.skf         = fp;
+>>>>> +       ctx = *out_ctx;
+>>>>>           ctx.ret0_fp_idx = -1;
+>>>>>
+>>>>> -       ctx.offsets = kzalloc(4 * (ctx.skf->len + 1), GFP_KERNEL);
+>>>>> +       ctx.offsets = kzalloc(4 * (ctx.prog_len + 1), GFP_KERNEL);
+>>>>>           if (ctx.offsets == NULL)
+>>>>>                   return;
+>>>>>
+>>>>> @@ -921,13 +920,26 @@ void bpf_jit_compile(struct sk_filter *fp)
+>>>>>                   print_hex_dump(KERN_INFO, "BPF JIT code: ",
+>>>>>                                  DUMP_PREFIX_ADDRESS, 16, 4, ctx.target,
+>>>>>                                  alloc_size, false);
+>>>>> -
+>>>>> -       fp->bpf_func = (void *)ctx.target;
+>>>>>    out:
+>>>>>           kfree(ctx.offsets);
+>>>>> +
+>>>>> +       *out_ctx = ctx;
+>>>>>           return;
+>>>>
+>>>> This part of the patch, in combination with 79617801e "filter: bpf_jit_comp:
+>>>> refactor and unify BPF JIT image dump output" is now causing build errors
+>>>> in linux-next:
+>>>>
+>>>> arch/arm/net/bpf_jit_32.c: In function '__bpf_jit_compile':
+>>>> arch/arm/net/bpf_jit_32.c:930:16: error: 'fp' undeclared (first use in this function)
+>>>>      bpf_jit_dump(fp->len, alloc_size, 2, ctx.target);
+>>>
+>>> Thanks, I did this.  There may be a smarter way...
 >>
->> Signed-off-by: Kees Cook <keescook@chromium.org>
->> ---
->> v2:
->>  - make sure to exclude e820 regions outside the 32-bit memory range.
+>> I think also seccomp_jit_compile() would need this change then, otherwise the build
+>> with CONFIG_SECCOMP_FILTER_JIT might break.
 >
-> Do you need to execlude range that is used for initrd and possible
-> command_line and boot_param ?
+> urgh, that tears it.
+>
+>> I can fix this up for you if not already applied. I presume it's against
+>> linux-next tree?
+>
+> Yup, please send something.
 
-Yeah, and while doing a stress test here, I realized there's another
-problem. In the original version of this, the stack and heap are set
-up after relocation. In the C port, they're set up before, so there's
-even more to avoid. To illustrate... here's a CONFIG_RELOCATABLE=n
-boot:
+Patch is attached. However, I currently don't have an ARM toolchain at hand, so
+uncompiled, untested.
 
-LOAD_PHYS:0x0000000001000000
-input:    0x0000000001dfe24d-0x00000000023db865
-output:   0x0000000001000000-0x00000000023c98c0
-heap:     0x00000000023e0740-0x00000000023e8740
-stack:    0x00000000023ec698
-chosen:   0x0000000001000000
+@Nicolas, Xi (cc, ref: http://thread.gmane.org/gmane.linux.kernel/1481464):
 
-(stack is just cheating and reporting sp in decompress_kernel)
+If there is someday support for other archs as well, it would be nice if we
+do not have each time duplicated seccomp_jit_compile() etc functions in each
+JIT implementation, i.e. because they do basically the same. So follow-up
+{fix,clean}up is appreciated.
 
-And a CONFIG_RELOCATABLE=y and "noaslr" boot:
+Also, I find it a bit weird that seccomp_filter_get_len() and some other
+_one-line_ functions from kernel/seccomp.c are not placed into the
+corresponding header file as inlines.
 
-LOAD_PHYS:0x0000000001000000
-input:    0x000000000108b25e-0x00000000016b3e96
-output:   0x0000000000200000-0x00000000016a1db8
-heap:     0x00000000016b9600-0x00000000016c1600
-stack:    0x00000000016c5558
-chosen:   0x0000000000200000
+--------------080108090705060902020509
+Content-Type: text/x-patch;
+ name="0001-ARM-bpf_jit-seccomp-filtering-fixup-merge-conflict.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename*0="0001-ARM-bpf_jit-seccomp-filtering-fixup-merge-conflict.patc";
+ filename*1="h"
 
-In that case, it's just so far under LOAD_PHYSICAL_START that it's
-safe. But if KASLR picks an area overlapping input, heap, or stack
-it's hosed. :)
+>From 655f4aabee7ccb909345ccfce92a405e3d173de5 Mon Sep 17 00:00:00 2001
+Message-Id: <655f4aabee7ccb909345ccfce92a405e3d173de5.1367012811.git.dborkman@redhat.com>
+In-Reply-To: <cover.1367012811.git.dborkman@redhat.com>
+References: <cover.1367012811.git.dborkman@redhat.com>
+From: Daniel Borkmann <dborkman@redhat.com>
+Date: Fri, 26 Apr 2013 23:41:06 +0200
+Subject: [PATCH linux-next -mm] ARM: bpf_jit: seccomp filtering: fixup merge conflict
 
--Kees
+Commit e4c67f4c0479d8e3cb0 (ARM: net: bpf_jit: make code generation
+less dependent on struct sk_filter.) caused a merge conflict with
+commit 79617801ea0c0e6 (filter: bpf_jit_comp: refactor and unify
+BPF JIT image dump output) resulting in a build failure:
 
---
-Kees Cook
-Chrome OS Security
+arch/arm/net/bpf_jit_32.c: In function '__bpf_jit_compile':
+arch/arm/net/bpf_jit_32.c:930:16: error: 'fp' undeclared (first use in this function)
+    bpf_jit_dump(fp->len, alloc_size, 2, ctx.target);
+
+Fix this up by using ctx.prog_len that is being set before we enter
+__bpf_jit_compile().
+
+Reported-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Nicolas Schichan <nschichan@freebox.fr>
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+---
+ arch/arm/net/bpf_jit_32.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm/net/bpf_jit_32.c b/arch/arm/net/bpf_jit_32.c
+index c5ef845..eb4daba 100644
+--- a/arch/arm/net/bpf_jit_32.c
++++ b/arch/arm/net/bpf_jit_32.c
+@@ -927,7 +927,7 @@ static void __bpf_jit_compile(struct jit_ctx *out_ctx)
+ 
+ 	if (bpf_jit_enable > 1)
+ 		/* there are 2 passes here */
+-		bpf_jit_dump(fp->len, alloc_size, 2, ctx.target);
++		bpf_jit_dump(ctx.prog_len, alloc_size, 2, ctx.target);
+ out:
+ 	kfree(ctx.offsets);
+ 
+-- 
+1.7.11.7
+
+
+--------------080108090705060902020509--
