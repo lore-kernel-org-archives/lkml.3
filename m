@@ -1,157 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757141Ab3DZRkY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 13:40:24 -0400
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:61478 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754814Ab3DZRkW (ORCPT
+	id S1756972Ab3DZRrP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 13:47:15 -0400
+Received: from relay.parallels.com ([195.214.232.42]:34136 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756702Ab3DZRrN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 13:40:22 -0400
+	Fri, 26 Apr 2013 13:47:13 -0400
+Message-ID: <517ABCF6.5040103@parallels.com>
+Date: Fri, 26 Apr 2013 21:44:22 +0400
+From: "Maxim V. Patlasov" <mpatlasov@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CA+icZUXeDT8x60iUtjJV2GO5KkDnm8CJsz8mntz5hREoOD+YJw@mail.gmail.com>
-References: <CA+icZUVCmFeh3Xna37VJDDzvZ34sYJ_Dser7i5rRzGLhMTi5-Q@mail.gmail.com>
-	<CA+icZUXeDT8x60iUtjJV2GO5KkDnm8CJsz8mntz5hREoOD+YJw@mail.gmail.com>
-Date: Fri, 26 Apr 2013 19:40:20 +0200
-Message-ID: <CA+icZUWkyP9TE0eeqstyvVNP++MtN8rYfGcPBT6NuMOHEHm7dw@mail.gmail.com>
-Subject: Re: linux-next: Tree for Apr 26 [ bluetooth on suspend/resume ]
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-bluetooth@vger.kernel.org, Marcel Holtmann <marcel@holtmann.org>,
-        Gustavo Padovan <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        Linux PM List <linux-pm@lists.linux-foundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Content-Type: text/plain; charset=UTF-8
+To: Miklos Szeredi <miklos@szeredi.hu>
+CC: Kirill Korotaev <dev@parallels.com>, Pavel Emelianov <xemul@parallels.com>,
+        "fuse-devel@lists.sourceforge.net" <fuse-devel@lists.sourceforge.net>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        James Bottomley <jbottomley@parallels.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>, <devel@openvz.org>,
+        Andrew Morton <akpm@linux-foundation.org>, <fengguang.wu@intel.com>,
+        <mgorman@suse.de>, <riel@redhat.com>, <hughd@google.com>,
+        <gthelen@google.com>, <linux-mm@kvack.org>
+Subject: Re: [fuse-devel] [PATCH 14/14] mm: Account for WRITEBACK_TEMP in
+ balance_dirty_pages
+References: <20130401103749.19027.89833.stgit@maximpc.sw.ru> <20130401104250.19027.27795.stgit@maximpc.sw.ru> <51793DE6.3000503@parallels.com> <CAJfpegv1zc4oeE=YXrQd0jmzVXB8jjvXkz-_4Nv_ELcvfsa74Q@mail.gmail.com> <517956ED.7060102@parallels.com> <20130425204331.GB16238@tucsk.piliscsaba.szeredi.hu> <517A3B98.807@parallels.com> <20130426140240.GC16238@tucsk.piliscsaba.szeredi.hu>
+In-Reply-To: <20130426140240.GC16238@tucsk.piliscsaba.szeredi.hu>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.30.17.2]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 26, 2013 at 7:32 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> On Fri, Apr 26, 2013 at 7:30 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->> On Fri, Apr 26, 2013 at 10:03 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->>> Hi all,
->>>
->>> Changes since 20130424:
->>>
->>> Removed tree: ppc-temp (remerged into powerpc)
->>>
->>> The net-next tree gained conflicts against the net and pci trees and a
->>> build failure for which I applied a merge fix patch.
->>>
->>> The omap_dss2 tree gained a build failure so I used the version from
->>> next-20130424.
->>>
->>> The trivial tree gained a conflict against the arm tree.
->>>
->>> The staging tree still had its build failure for which I applied a
->>> supplied patch.
->>>
->>> The arm-soc tree gained a conflict against the spi-mb tree.
->>>
->>> The renesas tree gained a conflict against the input tree.
->>>
->>
->> [ CC linux-bluetooth + linux-pm folks ]
->>
->> I see the following:
->>
->> [  176.667799] PM: Syncing filesystems ... done.
->> [  176.670014] PM: Preparing system for mem sleep
->> [  176.670422] Freezing user space processes ...
->> [  196.656719] Freezing of tasks failed after 20.00 seconds (1 tasks
->> refusing to freeze, wq_busy=0):
->> [  196.656728] bluetoothd      D ffffffff8180d8c0     0  1012    863 0x00000004
->> [  196.656731]  ffff88008fdb3cc8 0000000000000046 ffff8800926530d0
->> 0000020000000000
->> [  196.656735]  ffff88008feca200 ffff88008fdb3fd8 ffff88008fdb3fd8
->> ffff88008fdb3fd8
->> [  196.656738]  ffff880119f78300 ffff88008feca200 ffff88008fdb3cf8
->> ffff880095281950
->> [  196.656741] Call Trace:
->> [  196.656749]  [<ffffffff816cfc99>] schedule+0x29/0x70
->> [  196.656752]  [<ffffffff816cff9e>] schedule_preempt_disabled+0xe/0x10
->> [  196.656754]  [<ffffffff816ce075>] __mutex_lock_slowpath+0x125/0x2f0
->> [  196.656757]  [<ffffffff816ce25e>] mutex_lock+0x1e/0x40
->> [  196.656773]  [<ffffffffa016f8b1>] hci_dev_open+0x51/0x2e0 [bluetooth]
->> [  196.656780]  [<ffffffffa0182752>] hci_sock_ioctl+0x1f2/0x3f0 [bluetooth]
->> [  196.656783]  [<ffffffff815c6050>] sock_do_ioctl+0x30/0x70
->> [  196.656786]  [<ffffffff815c75f9>] sock_ioctl+0x79/0x2f0
->> [  196.656790]  [<ffffffff811a8046>] do_vfs_ioctl+0x96/0x560
->> [  196.656794]  [<ffffffff811a85a1>] SyS_ioctl+0x91/0xb0
->> [  196.656797]  [<ffffffff816d989d>] system_call_fastpath+0x1a/0x1f
->> [  196.656811]
->> [  196.656812] Restarting tasks ... done.
+Miklos, MM folks,
+
+04/26/2013 06:02 PM, Miklos Szeredi пишет:
+> On Fri, Apr 26, 2013 at 12:32:24PM +0400, Maxim V. Patlasov wrote:
 >
-> Forgot to attach dmesg + config, sorry.
+>>> The idea is that fuse filesystems should not go over the bdi limit even if
+>>> the global limit hasn't been reached.
+>> This might work, but kicking flusher every time someone write to
+>> fuse mount and dives into balance_dirty_pages looks fishy.
+> Yeah.  Fixed patch attached.
+
+The patch didn't work for me. I'll investigate what's wrong and get back 
+to you later.
+
+>
+>> Let's combine
+>> our suggestions: mark fuse inodes with AS_FUSE_WRITEBACK flag and
+>> convert what you strongly dislike above to:
+>>
+>> if (test_bit(AS_FUSE_WRITEBACK, &mapping->flags))
+>> nr_dirty += global_page_state(NR_WRITEBACK_TEMP);
+> I don't think this is right.  The fuse daemon could itself be writing to another
+> fuse filesystem, in which case blocking because of NR_WRITEBACK_TEMP being high
+> isn't a smart strategy.
+
+Please don't say 'blocking'. Per-bdi checks will decide whether to block 
+or not. In the case you set forth, judging on per-bdi checks would be 
+completely fine for upper fuse: it may and should block for a while if 
+lower fuse doesn't catch up.
+
+>
+> Furthermore it isn't enough.  Becuase the root problem, I think, is that we
+> allow fuse filesystems to grow a large number of dirty pages before throttling.
+> This was never intended and it may actually have worked properly at a point in
+> time but broke by some change to the dirty throttling algorithm.
+
+Could someone from mm list step in and comment on this point? Which 
+approach is better to follow: account NR_WRITEBACK_TEMP in 
+balance_dirty_pages accurately (as we discussed in LSF/MM) or re-work 
+balance_dirty_pages in direction suggested by Miklos (fuse should never 
+go over the bdi limit even if the global limit hasn't been reached)?
+
+I'm for accounting NR_WRITEBACK_TEMP because balance_dirty_pages is 
+already overcomplicated (imho) and adding new clauses for FUSE makes me 
+sick.
+
+Thanks,
+Maxim
+
+>
+> Thanks,
+> Miklos
+>
+>
+> diff --git a/fs/fuse/inode.c b/fs/fuse/inode.c
+> index 137185c..195ee45 100644
+> --- a/fs/fuse/inode.c
+> +++ b/fs/fuse/inode.c
+> @@ -291,6 +291,7 @@ struct inode *fuse_iget(struct super_block *sb, u64 nodeid,
+>   		inode->i_flags |= S_NOATIME|S_NOCMTIME;
+>   		inode->i_generation = generation;
+>   		inode->i_data.backing_dev_info = &fc->bdi;
+> +		set_bit(AS_STRICTLIMIT, &inode->i_data.flags);
+>   		fuse_init_inode(inode, attr);
+>   		unlock_new_inode(inode);
+>   	} else if ((inode->i_mode ^ attr->mode) & S_IFMT) {
+> diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
+> index 0e38e13..97f6a0c 100644
+> --- a/include/linux/pagemap.h
+> +++ b/include/linux/pagemap.h
+> @@ -25,6 +25,7 @@ enum mapping_flags {
+>   	AS_MM_ALL_LOCKS	= __GFP_BITS_SHIFT + 2,	/* under mm_take_all_locks() */
+>   	AS_UNEVICTABLE	= __GFP_BITS_SHIFT + 3,	/* e.g., ramdisk, SHM_LOCK */
+>   	AS_BALLOON_MAP  = __GFP_BITS_SHIFT + 4, /* balloon page special map */
+> +	AS_STRICTLIMIT	= __GFP_BITS_SHIFT + 5, /* strict dirty limit */
+>   };
+>   
+>   static inline void mapping_set_error(struct address_space *mapping, int error)
+> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+> index efe6814..b6db421 100644
+> --- a/mm/page-writeback.c
+> +++ b/mm/page-writeback.c
+> @@ -1226,6 +1226,7 @@ static void balance_dirty_pages(struct address_space *mapping,
+>   	unsigned long dirty_ratelimit;
+>   	unsigned long pos_ratio;
+>   	struct backing_dev_info *bdi = mapping->backing_dev_info;
+> +	int strictlimit = test_bit(AS_STRICTLIMIT, &mapping->flags);
+>   	unsigned long start_time = jiffies;
+>   
+>   	for (;;) {
+> @@ -1250,7 +1251,7 @@ static void balance_dirty_pages(struct address_space *mapping,
+>   		 */
+>   		freerun = dirty_freerun_ceiling(dirty_thresh,
+>   						background_thresh);
+> -		if (nr_dirty <= freerun) {
+> +		if (nr_dirty <= freerun && !strictlimit) {
+>   			current->dirty_paused_when = now;
+>   			current->nr_dirtied = 0;
+>   			current->nr_dirtied_pause =
+> @@ -1258,7 +1259,7 @@ static void balance_dirty_pages(struct address_space *mapping,
+>   			break;
+>   		}
+>   
+> -		if (unlikely(!writeback_in_progress(bdi)))
+> +		if (unlikely(!writeback_in_progress(bdi)) && !strictlimit)
+>   			bdi_start_background_writeback(bdi);
+>   
+>   		/*
+> @@ -1296,8 +1297,12 @@ static void balance_dirty_pages(struct address_space *mapping,
+>   				    bdi_stat(bdi, BDI_WRITEBACK);
+>   		}
+>   
+> +		if (unlikely(!writeback_in_progress(bdi)) &&
+> +		    bdi_dirty > bdi_thresh / 2)
+> +			bdi_start_background_writeback(bdi);
+> +
+>   		dirty_exceeded = (bdi_dirty > bdi_thresh) &&
+> -				  (nr_dirty > dirty_thresh);
+> +				  ((nr_dirty > dirty_thresh) || strictlimit);
+>   		if (dirty_exceeded && !bdi->dirty_exceeded)
+>   			bdi->dirty_exceeded = 1;
+>   
+>
 >
 
-Oops, NULL-pointer-deref [ __queue_work() ]
-
-[   25.968262] Bluetooth: BNEP socket layer initialized
-[   25.974875] usb 2-1.5: link qh1-0e01/ffff880091bc90c0 start 0 [1/2 us]
-[   25.974932] BUG: unable to handle kernel NULL pointer dereference
-at 0000000000000100
-[   25.974944] IP: [<ffffffff81077502>] __queue_work+0x32/0x3d0
-[   25.974955] PGD 0
-[   25.974960] Oops: 0000 [#1] SMP
-[   25.974966] Modules linked in: bnep btusb(+) videobuf2_memops
-snd_timer drm_kms_helper videobuf2_core snd_seq_device drm parport_pc
-bluetooth microcode videodev ppdev psmouse snd cfg80211 soundcore
-samsung_laptop wmi lp serio_raw video parport mac_hid lpc_ich
-hid_generic usbhid hid r8169
-[   25.975014] CPU: 3 PID: 1007 Comm: bluetoothd Not tainted
-3.9.0-rc8-next20130426-3-iniza-small #1
-[   25.975022] Hardware name: SAMSUNG ELECTRONICS CO., LTD.
-530U3BI/530U4BI/530U4BH/530U3BI/530U4BI/530U4BH, BIOS 13XK 03/28/2013
-[   25.975030] task: ffff88008feda300 ti: ffff88008fed4000 task.ti:
-ffff88008fed4000
-[   25.975037] RIP: 0010:[<ffffffff81077502>]  [<ffffffff81077502>]
-__queue_work+0x32/0x3d0
-[   25.975047] RSP: 0018:ffff88008fed5c48  EFLAGS: 00010046
-[   25.975052] RAX: 0000000000000096 RBX: 0000000000000292 RCX: 0000000000000000
-[   25.975058] RDX: ffff880095281850 RSI: 0000000000000000 RDI: 0000000000000100
-[   25.975063] RBP: ffff88008fed5c88 R08: 0000000000000000 R09: 0000000000000300
-[   25.975069] R10: ffff880094981a00 R11: 0000000000000000 R12: ffff880095281850
-[   25.975074] R13: 0000000000000000 R14: 0000000000000100 R15: 00000000000009c4
-[   25.975081] FS:  00007f2f61707740(0000) GS:ffff88011fac0000(0000)
-knlGS:0000000000000000
-[   25.975088] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[   25.975093] CR2: 0000000000000100 CR3: 000000009101f000 CR4: 00000000000407e0
-[   25.975099] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[   25.975104] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[   25.975109] Stack:
-[   25.975113]  ffff88008fed5c88 ffffffff00000100 ffff880095281000
-0000000000000292
-[   25.975124]  ffff880095281000 ffff880095281908 ffff88008fed5cf0
-00000000000009c4
-[   25.975133]  ffff88008fed5ca8 ffffffff81077be5 ffff880095281000
-ffff88008fed5ce8
-[   25.975143] Call Trace:
-[   25.975151]  [<ffffffff81077be5>] queue_work_on+0x45/0x50
-[   25.975165]  [<ffffffffa016e8ff>] hci_req_run+0xbf/0xf0 [bluetooth]
-[   25.975177]  [<ffffffffa01709b0>] ? hci_init2_req+0x720/0x720 [bluetooth]
-[   25.975188]  [<ffffffffa016ea06>] __hci_req_sync+0xd6/0x1c0 [bluetooth]
-[   25.975197]  [<ffffffff8108ee10>] ? try_to_wake_up+0x2b0/0x2b0
-[   25.975205]  [<ffffffff8150e3f0>] ? usb_autopm_put_interface+0x30/0x40
-[   25.975217]  [<ffffffffa016fad5>] hci_dev_open+0x275/0x2e0 [bluetooth]
-[   25.975230]  [<ffffffffa0182752>] hci_sock_ioctl+0x1f2/0x3f0 [bluetooth]
-[   25.975238]  [<ffffffff815c6050>] sock_do_ioctl+0x30/0x70
-[   25.975245]  [<ffffffff815c75f9>] sock_ioctl+0x79/0x2f0
-[   25.975254]  [<ffffffff811a8046>] do_vfs_ioctl+0x96/0x560
-[   25.975262]  [<ffffffff811a85a1>] SyS_ioctl+0x91/0xb0
-[   25.975271]  [<ffffffff816d989d>] system_call_fastpath+0x1a/0x1f
-[   25.975276] Code: 89 e5 41 57 41 56 41 89 fe 41 55 49 89 f5 41 54
-49 89 d4 53 48 83 ec 18 89 7d c8 9c 58 66 66 90 66 90 f6 c4 02 0f 85
-56 02 00 00 <41> 8b 85 00 01 00 00 a9 00 00 01 00 0f 85 b0 02 00 00 48
-c7 c2
-[   25.975344] RIP  [<ffffffff81077502>] __queue_work+0x32/0x3d0
-[   25.975352]  RSP <ffff88008fed5c48>
-[   25.975355] CR2: 0000000000000100
-[   25.975361] ---[ end trace bb65f3a8c853eb97 ]---
-[   25.976305] usbcore: registered new interface driver btusb
-
-- Sedat -
-
-> - Sedat -
