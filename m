@@ -1,91 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758796Ab3DZDnh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Apr 2013 23:43:37 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:51092 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751636Ab3DZDng (ORCPT
+	id S1759434Ab3DZDqF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Apr 2013 23:46:05 -0400
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:60364 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758957Ab3DZDqD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Apr 2013 23:43:36 -0400
-X-Spam-Score: -100.8
-Message-ID: <5179F7B8.5010701@asianux.com>
-Date: Fri, 26 Apr 2013 11:42:48 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Thu, 25 Apr 2013 23:46:03 -0400
 MIME-Version: 1.0
-To: Mike Qiu <qiudayu@linux.vnet.ibm.com>
-CC: Michael Neuling <mikey@neuling.org>, Paul Mackerras <paulus@samba.org>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        linuxppc-dev@lists.ozlabs.org, sfr@canb.auug.org.au, matt@ozlabs.org,
-        linux-kernel@vger.kernel.org,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: Re: [PATCH v2] PowerPC: kernel: compiling issue, make additional
- room in exception vector area
-References: <5177965D.9090406@linux.vnet.ibm.com> <20130424083142.GB26834@concordia> <51779941.8080403@linux.vnet.ibm.com> <30651.1366799858@ale.ozlabs.ibm.com> <1366807638.5911.2.camel@localhost> <5178816D.3000309@asianux.com> <5178ABA2.4030109@linux.vnet.ibm.com> <20130425062539.GA421@iris.ozlabs.ibm.com> <517918AB.4020508@asianux.com> <30269.1366931768@ale.ozlabs.ibm.com> <5179D302.9060203@asianux.com> <5179D5D8.8080102@asianux.com> <5179DA23.8000407@asianux.com> <5179E056.2000709@linux.vnet.ibm.com> <5179E11F.8010007@asianux.com> <5179EFB6.3090602@linux.vnet.ibm.com> <5179F39C.5020408@asianux.com>
-In-Reply-To: <5179F39C.5020408@asianux.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <5179AE2F.3040403@ti.com>
+References: <1363145021-14339-1-git-send-email-s-anna@ti.com>
+	<CABb+yY0RYkVeo2Sb4WsDJY0jf17488FEz0d2CB994eQaSOEsVg@mail.gmail.com>
+	<37C860A02101E749A747FA2D3C1E3C504A5DF7@DLEE11.ent.ti.com>
+	<CABb+yY1x4x_A+QtGG9ohsLPgs8c3nEVnd_ExJBGOOR8=6YLPFA@mail.gmail.com>
+	<37C860A02101E749A747FA2D3C1E3C504A63B4@DLEE11.ent.ti.com>
+	<CAJe_ZhehnniZd730jjiOLrHozq8TOJZgFYLqUe4KqgBiQEu8PA@mail.gmail.com>
+	<51779304.4040003@st.com>
+	<CAJe_ZhdZv5LW6kdwyPtJe69mfW6t=WQ4OJnG2H4sUhibattN2A@mail.gmail.com>
+	<517867E1.7050301@ti.com>
+	<CAJe_ZhfDZzq+DzA9XDF3PWFUmwcZnDy-mhE4hLNHmf+V4GhOxw@mail.gmail.com>
+	<5179AE2F.3040403@ti.com>
+Date: Fri, 26 Apr 2013 09:16:02 +0530
+Message-ID: <CAJe_Zhf4miUm4yTyuwc56kpD8Mu4=vsmX4wdQkFDT96JbKR=MQ@mail.gmail.com>
+Subject: Re: [PATCHv3 00/14] drivers: mailbox: framework creation
+From: Jassi Brar <jaswinder.singh@linaro.org>
+To: Suman Anna <s-anna@ti.com>
+Cc: Loic PALLARDY <loic.pallardy@st.com>,
+        Jassi Brar <jassisinghbrar@gmail.com>,
+        "Ohad Ben-Cohen (ohad@wizery.com)" <ohad@wizery.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        "Andy Green (andy.green@linaro.org)" <andy.green@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Tony Lindgren <tony@atomide.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Omar Ramirez Luna (omar.ramirez@copitl.com)" 
+	<omar.ramirez@copitl.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013年04月26日 11:25, Chen Gang wrote:
-> On 2013年04月26日 11:08, Mike Qiu wrote:
->> 于 2013/4/26 10:06, Chen Gang 写道:
->>> On 2013年04月26日 10:03, Mike Qiu wrote:
->>>> �� 2013/4/26 9:36, Chen Gang д��:
->>>>>> On 2013��04��26�� 09:18, Chen Gang wrote:
->>>>>>>> On 2013��04��26�� 09:06, Chen Gang wrote:
->>>>>>>>>>>> CFAR is the Come From Register.  It saves the location of the
->>>>>>>>>>>> last
->>>>>>>>>>>>>> branch and is hence overwritten by any branch.
->>>>>>>>>>>>>>
->>>>>>>>>> Do we process it just like others done (e.g. 0x300, 0xe00,
->>>>>>>>>> 0xe20 ...) ?
->>>>>>>>>>     . = 0x900
->>>>>>>>>>     .globl decrementer_pSeries
->>>>>>>>>> decrementer_pSeries:
->>>>>>>>>>       HMT_MEDIUM_PPR_DISCARD
->>>>>>>>>>     SET_SCRATCH0(r13)
->>>>>>>>>>     b decrementer_pSeries_0
->>>>>>>>>>
->>>>>>>>>>     ...
->>>>>>>>>>
->>>>>>>>>>
->>>>>> Oh, it seems EXCEPTION_PROLOG_1 will save the regesters which related
->>>>>> with CFAR, so I think need move EXCEPTION_PROLOG_1 to near 0x900.
->>>> I will try your diff V2, to see if the machine can boot up
->>> OK, thanks. (hope it can work)
->> It seems that the machine can be bootup in powernv mode, but I'm not
->> sure if my machine call that module.
->>
->> At lease my machine can boot up
-> 
+Hi Suman,
 
-Please reference commit number: 1707dd161349e6c54170c88d94fed012e3d224e3
-(1707dd1 powerpc: Save CFAR before branching in interrupt entry paths)
+On 26 April 2013 03:59, Suman Anna <s-anna@ti.com> wrote:
+> On 04/25/2013 12:20 AM, Jassi Brar wrote:
+> tranmitting right away. OK, I thought you didn't want buffering, if that
+> is not the case, then the buffering should be within the main driver
+> code, like it is now, but configurable based on the controller or
+> mailbox properties. If it is present in individual controller drivers,
+> then we would be duplicating stuff. Are you envisioning that this be
+> left to the individual controllers?
+>
+Please don't accuse me of such bad visions :)
+I never said no-buffering and I never said buffering should be in
+controller drivers. In fact I don't remember ever objecting to how
+buffering is done in TI's framework.
+A controller could service only 1 request at a time so lets give it
+just 1 at a time. Let the API handle the complexity of buffering.
 
-What our diff v2 has done is just the fix for our patch v2 (just like
-the commit 1707dd1 has done).
+>> I am afraid you are confusing the meaning of 'atomic context' here.
+>> atomic context doesn't mean instant transmission of data, but that the
+>> API calls could be made from even atomic context and that the client &
+>> controller can't sleep in callbacks from the API. So it's not moot.
+>
+> I understood the atomic context, and the question is about the behavior
+> of the '.tx_done' callback when sending from atomic context. Is there
+> such a usecase/need for you in that you want to send a response back
+> from an atomic context, yet get a callback?
+>
+Let me get in detail...
+The TX-Wheel has to tick. Someone has to tell the framework that the
+last TX was consumed by the remote and now it's time to submit the
+next TX (RX will always be driven by the controller's IRQ so it's
+straight).
+If the controller h/w gets some interrupt indicating
+Remote-RTR/TX-Done then the ticker is driven by controller's TX-IRQ
+handler. Otherwise, if the controller does sense RTR but not report
+(by reading status in some register but no irq), then API has to poll
+it periodically and move the ticker. If the controller can neither
+report nor sense RTR, the client/protocol driver must run the ticker
+(usually upon receiving some ACK packet on the RX channel).
+This TX ticker should be callable from atomic context (controller's
+IRQ handler) and calls into callback of the client. It is desirable
+that the client be able to submit yet another TX request from the
+callback. That way the client can avoid having to schedule work from
+the callback if the TX doesn't involve any sleepable task. The scheme
+is working very well in DMA-Engine stack.
 
-Please check, thanks.
-
-:-)
-
-> Thank you for your information !
-> 
-> I have checked the disassemble by powerpc64-linux-gnu-objdump, it seems
-> all we have done for 0x900 is almost like the original done for 0x200.
-> 
-> I am just learning about the CFAR (google it), And I plan to wait for a
-> day, if all things go smoothly, I will send patch v3.
-> 
-> 
-> :-)
-> 
+BTW, TI's RX mechanism too seems broken for common API. Receiving
+every few bytes via 'notify' mechanism is very inefficient. Imagine a
+platform with no shared memory between co-processors and the local
+wants to diagnose the remote by asking critical data at least KBs in
+size.
+ So when API has nothing to do with received packet and the controller
+has to get rid of it asap so as to be able to receive the next, IMHO
+there should be short-circuit from controller to client via the API.
+No delay, no buffering of RX.
 
 
--- 
-Chen Gang
+>> It's the controller driver that actually puts the data on the bus. So
+>> only it should define the format in which it accepts data from the
+>> clients. Every client should simply populate the packet structure
+>> defined in  my_lovely_controller.h and pass on the struct pointer to
+>> the controller driver via API.
+>> No negotiations for the driver seat among passengers :)
+>
+> OK, I was trying to avoid including my_lovely_controller.h and only
+> include the standard .h file as a client user, the client would anyway
+> need to have the intrinsic knowledge of the packet structure.
+>
+Not including my_controller.h doesn't make things standard.
+As we know, the client anyway has to have intrinsic knowledge of the
+packet structure(which is dictated by the controller), so not
+including my_controller.h will only confuse people as to where the
+packet info came from?
 
-Asianux Corporation
+>>>
+>> I think the mailbox should be exclusively held by a client. That makes
+>> many things simpler. Also remote firmwares won't be always robust
+>> enough to handle commands from different subsystems intermixed. The
+>> API only has to make sure the mailbox_get/put operations are very
+>> thin.
+>
+> This might be the case for specific remotes where we expect only one
+> client driver to be responsible for talking to it, but for generic
+> offloading, you do not want to have this restriction. You do not want
+> peer clients to go through a single main client, as the latencies or the
+> infrastructure imposed by the main client may not be suitable for the
+> other clients. The stricter usecase here would be the shareable mailbox,
+> and if it is exclusive, as dictated by a controller or device property,
+> then so be it and things would get simplified for that controller/device.
+>
+Shared Vs Exclusive had been the dilemma of DMAEngine too.
+If the controller has physical channels at least as many as clients,
+exclusivity is no problem.
+Sharing is desirable when the controller has to serve clients more
+than its physical channels. We solve that by having the controller
+declare exclusive virtual channels and internally scheduling the
+requests onto physical channels.
+ And as Andy pointed out, some remote-ends may not cope with requests
+coming from different subsystems intermixed.
+
+Regards,
+-Jassi
