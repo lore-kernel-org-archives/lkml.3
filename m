@@ -1,78 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757530Ab3DZVu4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 17:50:56 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:43703 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753758Ab3DZVuz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 17:50:55 -0400
-Message-ID: <517AF6A5.7070507@zytor.com>
-Date: Fri, 26 Apr 2013 14:50:29 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S1757673Ab3DZVvE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 17:51:04 -0400
+Received: from mail-da0-f53.google.com ([209.85.210.53]:54393 "EHLO
+	mail-da0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753758Ab3DZVu6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Apr 2013 17:50:58 -0400
+Date: Fri, 26 Apr 2013 14:50:56 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch for-3.8-rc8] usb, chipidea: fix link error when USB_EHCI_HCD
+ is a module
+In-Reply-To: <20130426203345.GA25959@kroah.com>
+Message-ID: <alpine.DEB.2.02.1304261448350.25408@chino.kir.corp.google.com>
+References: <alpine.DEB.2.02.1304261323060.17754@chino.kir.corp.google.com> <20130426203345.GA25959@kroah.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Kees Cook <keescook@chromium.org>
-CC: linux-kernel@vger.kernel.org, kernel-hardening@lists.openwall.com,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
-        Matthew Garrett <mjg@redhat.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Eric Northup <digitaleric@google.com>,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>
-Subject: Re: [PATCH 4/6] x86: kaslr: select random base offset
-References: <1367003005-5560-1-git-send-email-keescook@chromium.org> <1367003005-5560-5-git-send-email-keescook@chromium.org>
-In-Reply-To: <1367003005-5560-5-git-send-email-keescook@chromium.org>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/26/2013 12:03 PM, Kees Cook wrote:
-> +
-> +static unsigned long get_random_long(void)
-> +{
-> +	if (has_cpuflag(X86_FEATURE_RDRAND)) {
-> +		unsigned long random;
-> +
-> +		debug_putstr("KASLR using RDRAND...\n");
-> +		if (rdrand(&random))
-> +			return random;
-> +	}
-> +
-> +	if (has_cpuflag(X86_FEATURE_TSC)) {
-> +		uint32_t raw;
-> +		unsigned long timer;
-> +
-> +		debug_putstr("KASLR using RDTSC...\n");
-> +		rdtscl(raw);
-> +
-> +		/* Repeat the low bits of rdtsc. */
-> +		timer = raw & 0xffff;
-> +		timer |= (timer << 16);
-> +#ifdef CONFIG_X86_64
-> +		timer |= (timer << 32) | (timer << 48);
-> +#endif
-> +
+On Fri, 26 Apr 2013, Greg Kroah-Hartman wrote:
 
-This seems like a very odd thing to do.  If you want to scramble bits,
-it would make more sense to do a multiply -- or much better, a
-*circular* multiply -- with a large constant.
+> I think you mean "3.9" in your subject: right?
+> 
 
-> +		return timer;
-> +	}
-> +
-> +	debug_putstr("KASLR found no entropy source...\n");
-> +	return 0;
-> +}
->  
+It's your subsystem, if you want to release a kernel with a known-broken 
+config, that's your call.
 
-It might be safe to assume that anything old enough to lack RDTSC
-(basically a 486) will have an 8254, and reading back the 8254 counter
-register.
+> On Fri, Apr 26, 2013 at 01:25:01PM -0700, David Rientjes wrote:
+> > Fixes link error when USB_EHCI_HCD=m and USB_CHIPIDEA_HOST=y:
+> > 
+> > 	drivers/built-in.o: In function `ci_hdrc_host_init':
+> > 	drivers/usb/chipidea/host.c:104: undefined reference to `ehci_init_driver'
+> > 
+> > as a result of commit 09f6ffde2ece ("USB: EHCI: fix build error by making
+> > ChipIdea host a normal EHCI driver").
+> > 
+> > Cc: stable@vger.kernel.org [v3.7+]
+> > Signed-off-by: David Rientjes <rientjes@google.com>
+> > ---
+> >  drivers/usb/chipidea/Kconfig | 2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> There have been a ton of chipidea changes recently in linux-next.  This
+> really just looks like you got the configuration wrong, nothing that is
+> needed at this point in the release cycle, right?
+> 
 
-	-hpa
-
-
+This happens in both linux-next as well as Linus's tree, and has since 
+3.7.
