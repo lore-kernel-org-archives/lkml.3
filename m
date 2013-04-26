@@ -1,138 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755651Ab3DZOCs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 10:02:48 -0400
-Received: from mail-ea0-f172.google.com ([209.85.215.172]:59894 "EHLO
-	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752801Ab3DZOCq (ORCPT
+	id S1751509Ab3DZOEs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 10:04:48 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:55395 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750939Ab3DZOEr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 10:02:46 -0400
-Date: Fri, 26 Apr 2013 16:02:40 +0200
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: "Maxim V. Patlasov" <mpatlasov@parallels.com>
-Cc: Kirill Korotaev <dev@parallels.com>, Pavel Emelianov <xemul@parallels.com>,
-        "fuse-devel@lists.sourceforge.net" <fuse-devel@lists.sourceforge.net>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        James Bottomley <jbottomley@parallels.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>, devel@openvz.org,
-        Andrew Morton <akpm@linux-foundation.org>, fengguang.wu@intel.com,
-        mgorman@suse.de, riel@redhat.com, hughd@google.com, gthelen@google.com,
-        linux-mm@kvack.org
-Subject: Re: [fuse-devel] [PATCH 14/14] mm: Account for WRITEBACK_TEMP in
- balance_dirty_pages
-Message-ID: <20130426140240.GC16238@tucsk.piliscsaba.szeredi.hu>
-References: <20130401103749.19027.89833.stgit@maximpc.sw.ru>
- <20130401104250.19027.27795.stgit@maximpc.sw.ru>
- <51793DE6.3000503@parallels.com>
- <CAJfpegv1zc4oeE=YXrQd0jmzVXB8jjvXkz-_4Nv_ELcvfsa74Q@mail.gmail.com>
- <517956ED.7060102@parallels.com>
- <20130425204331.GB16238@tucsk.piliscsaba.szeredi.hu>
- <517A3B98.807@parallels.com>
+	Fri, 26 Apr 2013 10:04:47 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Nicolas Schichan <nschichan@freebox.fr>
+Cc: Will Drewry <wad@chromium.org>, Mircea Gherzan <mgherzan@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>,
+        "David S. Miller" <davem@davemloft.net>,
+        Daniel Borkmann <daniel.borkmann@tik.ee.ethz.ch>
+Subject: Re: [PATCH V3 2/3] ARM: net: bpf_jit: make code generation less dependent on struct sk_filter.
+Date: Fri, 26 Apr 2013 16:04:44 +0200
+Message-ID: <3592414.M8kQZLCXlW@wuerfel>
+User-Agent: KMail/4.10.2 (Linux/3.8.0-17-generic; KDE/4.10.2; x86_64; ; )
+In-Reply-To: <1366824429-26652-3-git-send-email-nschichan@freebox.fr>
+References: <1366824429-26652-1-git-send-email-nschichan@freebox.fr> <1366824429-26652-3-git-send-email-nschichan@freebox.fr>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <517A3B98.807@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:rjzKgtTLflyZt59M5XvXNRnArulqwnR/cr4yVtweNYJ
+ NfKeeJaFLiRFGuNVO1RyG4qRK2WIqtvAOsRXZ6lZLPiMwsSayR
+ 7DofHwEhxv6tohRGeJmfsWuQ9jkz9U5M+26FsT0f6KzDcvPR7r
+ KHnXBI8/yKxJvDGI05FgMVGWUQ4XEWTIrqdWH0u8Q4W/z3qABJ
+ cofMElAss/ubwse/CXYOsmLt9e9qCJCsIGYhFElkOJdn1GA1v6
+ 0ri0IxtWLbauek1BL4ez04DL+wLM8wHchn24fPFDHwe3Tfg4V0
+ HQB5MThlQigvJamEAmoBEhRn5aA+qQyFfDVuGGiVQptegVBpnT
+ QxmyPNPPlZR6mPwIJmz8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 26, 2013 at 12:32:24PM +0400, Maxim V. Patlasov wrote:
+On Wednesday 24 April 2013 19:27:08 Nicolas Schichan wrote:
+> @@ -858,7 +858,7 @@ b_epilogue:
+>  }
+>  
+>  
+> -void bpf_jit_compile(struct sk_filter *fp)
+> +static void __bpf_jit_compile(struct jit_ctx *out_ctx)
+>  {
+>         struct jit_ctx ctx;
+>         unsigned tmp_idx;
+> @@ -867,11 +867,10 @@ void bpf_jit_compile(struct sk_filter *fp)
+>         if (!bpf_jit_enable)
+>                 return;
+>  
+> -       memset(&ctx, 0, sizeof(ctx));
+> -       ctx.skf         = fp;
+> +       ctx = *out_ctx;
+>         ctx.ret0_fp_idx = -1;
+>  
+> -       ctx.offsets = kzalloc(4 * (ctx.skf->len + 1), GFP_KERNEL);
+> +       ctx.offsets = kzalloc(4 * (ctx.prog_len + 1), GFP_KERNEL);
+>         if (ctx.offsets == NULL)
+>                 return;
+>  
+> @@ -921,13 +920,26 @@ void bpf_jit_compile(struct sk_filter *fp)
+>                 print_hex_dump(KERN_INFO, "BPF JIT code: ",
+>                                DUMP_PREFIX_ADDRESS, 16, 4, ctx.target,
+>                                alloc_size, false);
+> -
+> -       fp->bpf_func = (void *)ctx.target;
+>  out:
+>         kfree(ctx.offsets);
+> +
+> +       *out_ctx = ctx;
+>         return;
 
-> > The idea is that fuse filesystems should not go over the bdi limit even if
-> > the global limit hasn't been reached.
-> 
-> This might work, but kicking flusher every time someone write to
-> fuse mount and dives into balance_dirty_pages looks fishy.
+This part of the patch, in combination with 79617801e "filter: bpf_jit_comp:
+refactor and unify BPF JIT image dump output" is now causing build errors
+in linux-next:
 
-Yeah.  Fixed patch attached.
-
-> Let's combine
-> our suggestions: mark fuse inodes with AS_FUSE_WRITEBACK flag and
-> convert what you strongly dislike above to:
-> 
-> if (test_bit(AS_FUSE_WRITEBACK, &mapping->flags))
-> nr_dirty += global_page_state(NR_WRITEBACK_TEMP);
-
-I don't think this is right.  The fuse daemon could itself be writing to another
-fuse filesystem, in which case blocking because of NR_WRITEBACK_TEMP being high
-isn't a smart strategy.
-
-Furthermore it isn't enough.  Becuase the root problem, I think, is that we
-allow fuse filesystems to grow a large number of dirty pages before throttling.
-This was never intended and it may actually have worked properly at a point in
-time but broke by some change to the dirty throttling algorithm.
-
-Thanks,
-Miklos
+arch/arm/net/bpf_jit_32.c: In function '__bpf_jit_compile':
+arch/arm/net/bpf_jit_32.c:930:16: error: 'fp' undeclared (first use in this function)
+   bpf_jit_dump(fp->len, alloc_size, 2, ctx.target);
+                ^
 
 
-diff --git a/fs/fuse/inode.c b/fs/fuse/inode.c
-index 137185c..195ee45 100644
---- a/fs/fuse/inode.c
-+++ b/fs/fuse/inode.c
-@@ -291,6 +291,7 @@ struct inode *fuse_iget(struct super_block *sb, u64 nodeid,
- 		inode->i_flags |= S_NOATIME|S_NOCMTIME;
- 		inode->i_generation = generation;
- 		inode->i_data.backing_dev_info = &fc->bdi;
-+		set_bit(AS_STRICTLIMIT, &inode->i_data.flags);
- 		fuse_init_inode(inode, attr);
- 		unlock_new_inode(inode);
- 	} else if ((inode->i_mode ^ attr->mode) & S_IFMT) {
-diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
-index 0e38e13..97f6a0c 100644
---- a/include/linux/pagemap.h
-+++ b/include/linux/pagemap.h
-@@ -25,6 +25,7 @@ enum mapping_flags {
- 	AS_MM_ALL_LOCKS	= __GFP_BITS_SHIFT + 2,	/* under mm_take_all_locks() */
- 	AS_UNEVICTABLE	= __GFP_BITS_SHIFT + 3,	/* e.g., ramdisk, SHM_LOCK */
- 	AS_BALLOON_MAP  = __GFP_BITS_SHIFT + 4, /* balloon page special map */
-+	AS_STRICTLIMIT	= __GFP_BITS_SHIFT + 5, /* strict dirty limit */
- };
- 
- static inline void mapping_set_error(struct address_space *mapping, int error)
-diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-index efe6814..b6db421 100644
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -1226,6 +1226,7 @@ static void balance_dirty_pages(struct address_space *mapping,
- 	unsigned long dirty_ratelimit;
- 	unsigned long pos_ratio;
- 	struct backing_dev_info *bdi = mapping->backing_dev_info;
-+	int strictlimit = test_bit(AS_STRICTLIMIT, &mapping->flags);
- 	unsigned long start_time = jiffies;
- 
- 	for (;;) {
-@@ -1250,7 +1251,7 @@ static void balance_dirty_pages(struct address_space *mapping,
- 		 */
- 		freerun = dirty_freerun_ceiling(dirty_thresh,
- 						background_thresh);
--		if (nr_dirty <= freerun) {
-+		if (nr_dirty <= freerun && !strictlimit) {
- 			current->dirty_paused_when = now;
- 			current->nr_dirtied = 0;
- 			current->nr_dirtied_pause =
-@@ -1258,7 +1259,7 @@ static void balance_dirty_pages(struct address_space *mapping,
- 			break;
- 		}
- 
--		if (unlikely(!writeback_in_progress(bdi)))
-+		if (unlikely(!writeback_in_progress(bdi)) && !strictlimit)
- 			bdi_start_background_writeback(bdi);
- 
- 		/*
-@@ -1296,8 +1297,12 @@ static void balance_dirty_pages(struct address_space *mapping,
- 				    bdi_stat(bdi, BDI_WRITEBACK);
- 		}
- 
-+		if (unlikely(!writeback_in_progress(bdi)) &&
-+		    bdi_dirty > bdi_thresh / 2)
-+			bdi_start_background_writeback(bdi);
-+
- 		dirty_exceeded = (bdi_dirty > bdi_thresh) &&
--				  (nr_dirty > dirty_thresh);
-+				  ((nr_dirty > dirty_thresh) || strictlimit);
- 		if (dirty_exceeded && !bdi->dirty_exceeded)
- 			bdi->dirty_exceeded = 1;
- 
+	Arnd
