@@ -1,91 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757034Ab3DZRsk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 13:48:40 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:60111 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756698Ab3DZRsi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 13:48:38 -0400
-Date: Fri, 26 Apr 2013 10:48:16 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Simon Horman <horms@verge.net.au>, Eric Dumazet <eric.dumazet@gmail.com>,
-        Julian Anastasov <ja@ssi.bg>, Ingo Molnar <mingo@redhat.com>,
-        lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
-        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Dipankar Sarma <dipankar@in.ibm.com>, dhaval.giani@gmail.com
-Subject: Re: [PATCH 2/2] ipvs: Use cond_resched_rcu_lock() helper when
- dumping connections
-Message-ID: <20130426174815.GI3860@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1366940708-10180-1-git-send-email-horms@verge.net.au>
- <1366940708-10180-3-git-send-email-horms@verge.net.au>
- <20130426080313.GC8669@dyad.programming.kicks-ass.net>
- <20130426154547.GC3860@linux.vnet.ibm.com>
- <20130426171948.GA31467@dyad.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130426171948.GA31467@dyad.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13042617-5806-0000-0000-000020E4AF73
+	id S932105Ab3DZRud (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 13:50:33 -0400
+Received: from mail-la0-f42.google.com ([209.85.215.42]:64108 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757043Ab3DZRub (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Apr 2013 13:50:31 -0400
+From: Emil Goode <emilgoode@gmail.com>
+To: airlied@linux.ie, swarren@wwwdotorg.org
+Cc: dri-devel@lists.freedesktop.org, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        Emil Goode <emilgoode@gmail.com>
+Subject: [PATCH] drm/tegra: Include header drm/drm.h
+Date: Fri, 26 Apr 2013 19:49:51 +0200
+Message-Id: <1366998591-8508-1-git-send-email-emilgoode@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 26, 2013 at 07:19:49PM +0200, Peter Zijlstra wrote:
-> On Fri, Apr 26, 2013 at 08:45:47AM -0700, Paul E. McKenney wrote:
-> > On Fri, Apr 26, 2013 at 10:03:13AM +0200, Peter Zijlstra wrote:
-> > > On Fri, Apr 26, 2013 at 10:45:08AM +0900, Simon Horman wrote:
-> > > 
-> > > > @@ -975,8 +975,7 @@ static void *ip_vs_conn_array(struct seq_file *seq, loff_t pos)
-> > > >  				return cp;
-> > > >  			}
-> > > >  		}
-> > > > -		rcu_read_unlock();
-> > > > -		rcu_read_lock();
-> > > > +		cond_resched_rcu_lock();
-> > > >  	}
-> > > 
-> > > 
-> > > While I agree with the sentiment I do find it a somewhat dangerous construct in
-> > > that it might become far too easy to keep an RCU reference over this break and
-> > > thus violate the RCU premise.
-> > > 
-> > > Is there anything that can detect this? Sparse / cocinelle / smatch? If so it
-> > > would be great to add this to these checkers.
-> > 
-> > I have done some crude coccinelle patterns in the past, but they are
-> > subject to false positives (from when you transfer the pointer from
-> > RCU protection to reference-count protection) and also false negatives
-> > (when you atomically increment some statistic unrelated to protection).
-> > 
-> > I could imagine maintaining a per-thread count of the number of outermost
-> > RCU read-side critical sections at runtime, and then associating that
-> > counter with a given pointer at rcu_dereference() time, but this would
-> > require either compiler magic or an API for using a pointer returned
-> > by rcu_dereference().  This API could in theory be enforced by sparse.
-> 
-> Luckily cond_resched_rcu_lock() will typically only occur within loops, and
-> loops tend to be contained in a single sourcefile.
-> 
-> This would suggest a simple static checker should be able to tell without too
-> much magic right? All it needs to do is track pointers returned from
-> rcu_dereference*() and see if they're used after cond_resched_rcu_lock().
-> 
-> Also, cond_resched_rcu_lock() will only drop a single level of RCU refs; so
-> that should be easier still.
+Include definitions of used types by including drm/drm.h
 
-Don't get me wrong, I am not opposing cond_resched_rcu_lock() because it
-will be difficult to validate.  For one thing, until there are a lot of
-them, manual inspection is quite possible.  So feel free to apply my
-Acked-by to the patch.
+Sparse output:
+/usr/include/drm/tegra_drm.h:21:
+	found __[us]{8,16,32,64} type without
+	#include <linux/types.h>
 
-But it is definitely not too early to start thinking about how best to
-automatically validate this sort of thing!
+Signed-off-by: Emil Goode <emilgoode@gmail.com>
+---
+ include/uapi/drm/tegra_drm.h |    2 ++
+ 1 file changed, 2 insertions(+)
 
-							Thanx, Paul
+diff --git a/include/uapi/drm/tegra_drm.h b/include/uapi/drm/tegra_drm.h
+index 6e132a2..73bde4e 100644
+--- a/include/uapi/drm/tegra_drm.h
++++ b/include/uapi/drm/tegra_drm.h
+@@ -17,6 +17,8 @@
+ #ifndef _UAPI_TEGRA_DRM_H_
+ #define _UAPI_TEGRA_DRM_H_
+ 
++#include <drm/drm.h>
++
+ struct drm_tegra_gem_create {
+ 	__u64 size;
+ 	__u32 flags;
+-- 
+1.7.10.4
 
