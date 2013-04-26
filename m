@@ -1,187 +1,265 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754196Ab3DZMNP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 08:13:15 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:54301 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751396Ab3DZMNO (ORCPT
+	id S1755523Ab3DZMOi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 08:14:38 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:57469 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752536Ab3DZMOg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 08:13:14 -0400
-From: "Zhang Yi" <wetpzy@gmail.com>
-To: <linux-kernel@vger.kernel.org>
-Cc: "'Peter Zijlstra'" <peterz@infradead.org>,
-        "'Darren Hart'" <dvhart@linux.intel.com>,
-        "'Thomas Gleixner'" <tglx@linutronix.de>,
-        "'Ingo Molnar'" <mingo@kernel.org>,
-        "'Dave Hansen'" <dave.hansen@linux.intel.com>, <zhang.yi20@zte.com.cn>,
-        <wetpzy@163.com>
-Subject: [PATCH] futex: bugfix for futex-key conflict when futex use hugepage
-Date: Fri, 26 Apr 2013 20:13:00 +0800
-Message-ID: <000101ce4277$69df5af0$3d9e10d0$@com>
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-Index: Ac5Cd2U4DOp90fmBR9ea72OWPbDe8A==
-Content-Language: zh-cn
+	Fri, 26 Apr 2013 08:14:36 -0400
+Date: Fri, 26 Apr 2013 14:14:34 +0200
+From: Pavel Machek <pavel@denx.de>
+To: dinguyen@altera.com, wd@denx.de, jamie@jamieiles.com,
+        linux-arm-kernel@lists.infradead.org, olof@lixom.net, arnd@arndb.de,
+        johnstul@us.ibm.com, tglx@linutronix.de,
+        kernel list <linux-kernel@vger.kernel.org>
+Subject: dw_apb_timer_of.c: remove parts that were picoxcell-specific
+Message-ID: <20130426121433.GA16249@amd.pavel.ucw.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi ,
+It seems we made a mistake when creating dw_apb_timer_of.c:
+picoxcell sched_clock parts were not related to dw_apb_timer, yet
+we moved them to dw_apb_timer_of, and tried to use them on socfpga.
+    
+This results in system where user/system time is not measured properly,
+as demonstrated by
+    
+    time dd if=/dev/urandom of=/dev/zero bs=100000 count=100
+    
+    .
+    
+So this patch:
+    
+    1) moves picoxcell sched_clock parts back to picoxcell
+    
+    2) adds support to use dw_apb_timer s as sched_clock. Picoxcell could
+    consider switching to these
+    
+    3) adds missing of_node_put() in dw_apb_timer_init().
+    
+Tested on socfpga, soc-next (3.9-rc6) based tree.
+    
+Signed-off-by: Pavel Machek <pavel@denx.de>
+Tested-by: Dinh Nguyen <dinguyen@altera.com>
 
-At 2013-04-26 04:52:31,"Thomas Gleixner" <tglx@linutronix.de> wrote:
->
->Unfortunately this did not work out very well.
->
->1. Your patch now lacks a proper changelog which explains the change
->
->2. Your patch lacks any newline characters as you can see below
->
+---
 
-I am so sorry for my mistakes. : )
-
-
-
-
-The futex-keys of processes share futex determined by page-offset, mapping-host, and
-mapping-index of the user space address.
-User appications using hugepage for futex may lead to futex-key conflict.
-Assume there are two or more futexes in diffrent normal pages of the hugepage,
-and each futex has the same offset in its normal page, causing all the futexes have the same futex-key.
-In that case, futex may not work well.
-
-This patch adds the normal page index in the compound page into the offset of futex-key.
-
-Steps to reproduce the bug:
-1. The 1st thread map a file of hugetlbfs, and use the return address as the 1st mutex's
-address, and use the return address with PAGE_SIZE added as the 2nd mutex's address;
-2. The 1st thread initialize the two mutexes with pshared attribute, and lock the two mutexes.
-3. The 1st thread create the 2nd thread, and the 2nd thread block on the 1st mutex.
-4. The 1st thread create the 3rd thread, and the 3rd thread block on the 2nd mutex.
-5. The 1st thread unlock the 2nd mutex, the 3rd thread can not take the 2nd mutex, and
-may block forever.
+I think this is ready to go to soc-next tree. Please apply,
+									Pavel
 
 
-Signed-off-by: Zhang Yi <zhang.yi20@zte.com.cn>
-Tested-by: Ma Chenggong <ma.chenggong@zte.com.cn>
-Reviewed-by: Liu Dong <liu.dong3@zte.com.cn>
-Reviewed-by: Cui Yunfeng <cui.yunfeng@zte.com.cn>
-Reviewed-by: Lu Zhongjun <lu.zhongjun@zte.com.cn>
-Reviewed-by: Jiang Biao <jiang.biao2@zte.com.cn>
-
-
-diff -uprN orig/linux3.9-rc7/include/linux/futex.h new/linux3.9-rc7/include/linux/futex.h
---- orig/linux3.9-rc7/include/linux/futex.h	2013-04-15 00:45:16.000000000 +0000
-+++ new/linux3.9-rc7/include/linux/futex.h	2013-04-19 16:33:58.725880000 +0000
-@@ -19,7 +19,7 @@ handle_futex_death(u32 __user *uaddr, st
-  * The key type depends on whether it's a shared or private mapping.
-  * Don't rearrange members without looking at hash_futex().
-  *
-- * offset is aligned to a multiple of sizeof(u32) (== 4) by definition.
-+ * There are three components in offset:
-  * We use the two low order bits of offset to tell what is the kind of key :
-  *  00 : Private process futex (PTHREAD_PROCESS_PRIVATE)
-  *       (no reference on an inode or mm)
-@@ -27,6 +27,9 @@ handle_futex_death(u32 __user *uaddr, st
-  *	mapped on a file (reference on the underlying inode)
-  *  10 : Shared futex (PTHREAD_PROCESS_SHARED)
-  *       (but private mapping on an mm, and reference taken on it)
-+ * Bits 2 to (PAGE_SHIFT-1) indicates the offset of futex in its page.
-+ * The rest hign order bits indicates the index if the page is a
-+ * subpage of a compound page.
- */
-
- #define FUT_OFF_INODE    1 /* We set bit 0 if key has a reference on inode */
-@@ -36,17 +39,17 @@ union futex_key {
- 	struct {
- 		unsigned long pgoff;
- 		struct inode *inode;
--		int offset;
-+		long offset;
- 	} shared;
- 	struct {
- 		unsigned long address;
- 		struct mm_struct *mm;
--		int offset;
-+		long offset;
- 	} private;
- 	struct {
- 		unsigned long word;
- 		void *ptr;
--		int offset;
-+		long offset;
- 	} both;
- };
-
-diff -uprN orig/linux3.9-rc7/kernel/futex.c new/linux3.9-rc7/kernel/futex.c
---- orig/linux3.9-rc7/kernel/futex.c	2013-04-15 00:45:16.000000000 +0000
-+++ new/linux3.9-rc7/kernel/futex.c	2013-04-19 16:24:05.629143000 +0000
-@@ -215,6 +215,22 @@ static void drop_futex_key_refs(union fu
+diff --git a/arch/arm/mach-picoxcell/common.c b/arch/arm/mach-picoxcell/common.c
+index 70b441a..22759f5 100644
+--- a/arch/arm/mach-picoxcell/common.c
++++ b/arch/arm/mach-picoxcell/common.c
+@@ -84,11 +84,39 @@ static void picoxcell_wdt_restart(char mode, const char *cmd)
  	}
  }
-
-+/*
-+* Get subpage index in compound page, for futex_key.
-+*/
-+static inline int get_page_compound_index(struct page *page)
-+{
-+	struct page *head_page;
-+	if (PageHead(page))
-+		return 0;
+ 
++static const struct of_device_id picochip_rtc_ids[] __initconst = {
++        { .compatible = "picochip,pc3x2-rtc" },
++        { /* Sentinel */ },
++};
 +
-+	head_page = compound_head(page);
-+	if (compound_order(head_page) >= MAX_ORDER)
-+		return page_to_pfn(page) - page_to_pfn(head_page);
-+	else
-+		return page - compound_head(page);
++static void __iomem *sched_io_base;
++
++static u32 read_sched_clock(void)
++{
++        return __raw_readl(sched_io_base);
 +}
 +
- /**
-  * get_futex_key() - Get parameters which are the keys for a futex
-  * @uaddr:	virtual address of the futex
-@@ -228,7 +244,8 @@ static void drop_futex_key_refs(union fu
-  * The key words are stored in *key on success.
-  *
-  * For shared mappings, it's (page->index, file_inode(vma->vm_file),
-- * offset_within_page).  For private mappings, it's (uaddr, current->mm).
-+ * page_compound_index and offset_within_page).
-+ * For private mappings, it's (uaddr, current->mm).
-  * We can usually work out the index without swapping in the page.
-  *
-  * lock_page() might sleep, the caller should not hold a spinlock.
-@@ -239,7 +256,7 @@ get_futex_key(u32 __user *uaddr, int fsh
- 	unsigned long address = (unsigned long)uaddr;
- 	struct mm_struct *mm = current->mm;
- 	struct page *page, *page_head;
--	int err, ro = 0;
-+	int err, ro = 0, comp_idx = 0;
++static void __init timer_init(void)
++{
++	u32 rate;
++
++	dw_apb_timer_init(0);
++
++	sched_timer = of_find_matching_node(timer, osctimer_ids);
++	if (!sched_timer)
++		panic("No suitable timer for scheduler clock\n");
++
++	timer_get_base_and_rate(sched_timer, &sched_io_base, &rate);
++	of_node_put(sched_timer);
++
++	setup_sched_clock(read_sched_clock, 32, rate);
++}
++
+ DT_MACHINE_START(PICOXCELL, "Picochip picoXcell")
+ 	.map_io		= picoxcell_map_io,
+ 	.nr_irqs	= NR_IRQS_LEGACY,
+ 	.init_irq	= irqchip_init,
+-	.init_time	= dw_apb_timer_init,
++	.init_time	= timer_init,
+ 	.init_machine	= picoxcell_init_machine,
+ 	.dt_compat	= picoxcell_dt_match,
+ 	.restart	= picoxcell_wdt_restart,
+diff --git a/arch/arm/mach-socfpga/socfpga.c b/arch/arm/mach-socfpga/socfpga.c
+index 46a0513..3a030e5 100644
+--- a/arch/arm/mach-socfpga/socfpga.c
++++ b/arch/arm/mach-socfpga/socfpga.c
+@@ -116,11 +116,17 @@ static const char *altera_dt_match[] = {
+ 	NULL
+ };
+ 
++static void __init timer_init(void)
++{
++	dw_apb_timer_init(1);
++}
++
++
+ DT_MACHINE_START(SOCFPGA, "Altera SOCFPGA")
+ 	.smp		= smp_ops(socfpga_smp_ops),
+ 	.map_io		= socfpga_map_io,
+ 	.init_irq	= socfpga_init_irq,
+-	.init_time	= dw_apb_timer_init,
++	.init_time	= timer_init,
+ 	.init_machine	= socfpga_cyclone5_init,
+ 	.restart	= socfpga_cyclone5_restart,
+ 	.dt_compat	= altera_dt_match,
+diff --git a/drivers/clocksource/dw_apb_timer.c b/drivers/clocksource/dw_apb_timer.c
+index 8c2a35f..460ac99 100644
+--- a/drivers/clocksource/dw_apb_timer.c
++++ b/drivers/clocksource/dw_apb_timer.c
+@@ -21,12 +21,6 @@
+ #define APBT_MIN_PERIOD			4
+ #define APBT_MIN_DELTA_USEC		200
+ 
+-#define APBTMR_N_LOAD_COUNT		0x00
+-#define APBTMR_N_CURRENT_VALUE		0x04
+-#define APBTMR_N_CONTROL		0x08
+-#define APBTMR_N_EOI			0x0c
+-#define APBTMR_N_INT_STATUS		0x10
+-
+ #define APBTMRS_INT_STATUS		0xa0
+ #define APBTMRS_EOI			0xa4
+ #define APBTMRS_RAW_INT_STATUS		0xa8
+diff --git a/drivers/clocksource/dw_apb_timer_of.c b/drivers/clocksource/dw_apb_timer_of.c
+index ab09ed3..ac4ea00 100644
+--- a/drivers/clocksource/dw_apb_timer_of.c
++++ b/drivers/clocksource/dw_apb_timer_of.c
+@@ -57,7 +57,16 @@ static void add_clockevent(struct device_node *event_timer)
+ 	dw_apb_clockevent_register(ced);
+ }
+ 
+-static void add_clocksource(struct device_node *source_timer)
++static void __iomem *sched_io_base;
++
++/* This is actually same as __apbt_read_clocksource(), but with
++   different interface */
++static u32 read_sched_clock_sptimer(void)
++{
++	return ~__raw_readl(sched_io_base + APBTMR_N_CURRENT_VALUE);
++}
++
++static void add_clocksource(struct device_node *source_timer, int use_as_scheduler)
+ {
+ 	void __iomem *iobase;
+ 	struct dw_apb_clocksource *cs;
+@@ -71,45 +80,33 @@ static void add_clocksource(struct device_node *source_timer)
+ 
+ 	dw_apb_clocksource_start(cs);
+ 	dw_apb_clocksource_register(cs);
+-}
+ 
+-static void __iomem *sched_io_base;
+-
+-static u32 read_sched_clock(void)
+-{
+-	return __raw_readl(sched_io_base);
++	if (use_as_scheduler) {
++		sched_io_base = iobase;
++		setup_sched_clock(read_sched_clock_sptimer, 32, rate);
++	}
+ }
+ 
+-static const struct of_device_id sptimer_ids[] __initconst = {
+-	{ .compatible = "picochip,pc3x2-rtc" },
++static const struct of_device_id osctimer_ids[] __initconst = {
++	{ .compatible = "picochip,pc3x2-timer" },
++	{ .compatible = "snps,dw-apb-timer-osc" },
+ 	{ .compatible = "snps,dw-apb-timer-sp" },
+-	{ /* Sentinel */ },
++	{  /* Sentinel */ },
+ };
+ 
+-static void init_sched_clock(void)
+-{
+-	struct device_node *sched_timer;
+-	u32 rate;
+-
+-	sched_timer = of_find_matching_node(NULL, sptimer_ids);
+-	if (!sched_timer)
+-		panic("No RTC for sched clock to use");
+-
+-	timer_get_base_and_rate(sched_timer, &sched_io_base, &rate);
+-	of_node_put(sched_timer);
++/*
++   You don't have to use dw_apb_timer for scheduler clock,
++   this should also work fine on arm:
+ 
+-	setup_sched_clock(read_sched_clock, 32, rate);
+-}
++  twd_local_timer_of_register();
++  arch_timer_of_register();                 
++  arch_timer_sched_clock_init();
++*/
+ 
+-static const struct of_device_id osctimer_ids[] __initconst = {
+-	{ .compatible = "picochip,pc3x2-timer" },
+-	{ .compatible = "snps,dw-apb-timer-osc" },
+-	{},
+-};
+ 
+-void __init dw_apb_timer_init(void)
++void __init dw_apb_timer_init(int use_as_scheduler)
+ {
+ 	struct device_node *event_timer, *source_timer;
+ 
+ 	event_timer = of_find_matching_node(NULL, osctimer_ids);
+ 	if (!event_timer)
+@@ -119,9 +117,8 @@ void __init dw_apb_timer_init(void)
+ 	source_timer = of_find_matching_node(event_timer, osctimer_ids);
+ 	if (!source_timer)
+ 		panic("No timer for clocksource");
+-	add_clocksource(source_timer);
++	add_clocksource(source_timer, use_as_scheduler);
+ 
++	of_node_put(event_timer);
+ 	of_node_put(source_timer);
+-
+-	init_sched_clock();
+ }
+diff --git a/include/linux/dw_apb_timer.h b/include/linux/dw_apb_timer.h
+index dd755ce..d503245 100644
+--- a/include/linux/dw_apb_timer.h
++++ b/include/linux/dw_apb_timer.h
+@@ -17,6 +17,12 @@
+ #include <linux/clocksource.h>
+ #include <linux/interrupt.h>
+ 
++#define APBTMR_N_LOAD_COUNT		0x00
++#define APBTMR_N_CURRENT_VALUE		0x04
++#define APBTMR_N_CONTROL		0x08
++#define APBTMR_N_EOI			0x0c
++#define APBTMR_N_INT_STATUS		0x10
++
+ #define APBTMRS_REG_SIZE       0x14
+ 
+ struct dw_apb_timer {
+@@ -53,5 +59,5 @@ void dw_apb_clocksource_start(struct dw_apb_clocksource *dw_cs);
+ cycle_t dw_apb_clocksource_read(struct dw_apb_clocksource *dw_cs);
+ void dw_apb_clocksource_unregister(struct dw_apb_clocksource *dw_cs);
+ 
+-extern void dw_apb_timer_init(void);
++extern void dw_apb_timer_init(int);
+ #endif /* __DW_APB_TIMER_H__ */
 
- 	/*
- 	 * The futex address must be "naturally" aligned.
-@@ -299,6 +316,7 @@ again:
- 			 * freed from under us.
- 			 */
- 			if (page != page_head) {
-+				comp_idx = get_page_compound_index(page);
- 				get_page(page_head);
- 				put_page(page);
- 			}
-@@ -311,6 +329,7 @@ again:
- #else
- 	page_head = compound_head(page);
- 	if (page != page_head) {
-+		comp_idx = get_page_compound_index(page);
- 		get_page(page_head);
- 		put_page(page);
- 	}
-@@ -363,7 +382,9 @@ again:
- 		key->private.mm = mm;
- 		key->private.address = address;
- 	} else {
--		key->both.offset |= FUT_OFF_INODE; /* inode-based key */
-+		/* inode-based key */
-+		key->both.offset |= ((long)comp_idx << PAGE_SHIFT)
-+				   | FUT_OFF_INODE;
- 		key->shared.inode = page_head->mapping->host;
- 		key->shared.pgoff = page_head->index;
- 	}
-
-
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
