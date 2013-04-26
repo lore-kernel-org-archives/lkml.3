@@ -1,76 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758765Ab3DZGzP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 02:55:15 -0400
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:38541 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757744Ab3DZGzN (ORCPT
+	id S1759125Ab3DZGz0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 02:55:26 -0400
+Received: from vsp-authed02.binero.net ([195.74.38.226]:24478 "HELO
+	vsp-authed-03-02.binero.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752704Ab3DZGzV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 02:55:13 -0400
-Date: Fri, 26 Apr 2013 08:55:03 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: mingo@elte.hu, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: Basic perf PMU support for Haswell v11
-Message-ID: <20130426065503.GA31197@gmail.com>
-References: <1366484783-15613-1-git-send-email-andi@firstfloor.org>
+	Fri, 26 Apr 2013 02:55:21 -0400
+Message-ID: <517A24D3.4060000@gaisler.com>
+Date: Fri, 26 Apr 2013 08:55:15 +0200
+From: Andreas Larson <andreas@gaisler.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1366484783-15613-1-git-send-email-andi@firstfloor.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        software@gaisler.com
+Subject: Re: [PATCH v6 1/2] gpio: grgpio: Add device driver for GRGPIO cores
+References: <1366202211-6743-1-git-send-email-andreas@gaisler.com> <1366202211-6743-2-git-send-email-andreas@gaisler.com> <CACRpkdZV3_59XUyOCYHxDH+HZoBxgNCP=-NZRvH+bXaFS1C5-g@mail.gmail.com>
+In-Reply-To: <CACRpkdZV3_59XUyOCYHxDH+HZoBxgNCP=-NZRvH+bXaFS1C5-g@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 2013-04-26 08:51, Linus Walleij wrote:
+> On Wed, Apr 17, 2013 at 2:36 PM, Andreas Larsson <andreas@gaisler.com> wrote:
+>
+>> This driver supports GRGPIO gpio cores available in the GRLIB VHDL IP
+>> core library from Aeroflex Gaisler.
+>>
+>> Signed-off-by: Andreas Larsson <andreas@gaisler.com>
+>
+> Patch applied.
+>
+> It's late in the merge cycle but this is a new driver and you
+> have done a terrific job, so merging.
+>
+> Yours,
+> Linus Walleij
+>
 
-* Andi Kleen <andi@firstfloor.org> wrote:
+Thanks! And thank you for all the feedback!
 
-> This is based on v7 of the full Haswell PMU support,
-> rebased, and stripped down to the bare bones
+Cheers,
+Andreas Larsson
 
-Ok, I found some time to still squeeze this into the v3.10 x86 PMU bits 
-merge window but ran into problems.
-
-You say it's barebones, yet it does not work :-( How well was this 
-patch-set tested on non-Haswell hardware, which makes up 99.99% of our 
-installed base?
-
-In particular, after applying your patches, 'perf top' stopped working on 
-an Intel testbox of mine:
-
-  processor       : 15
-  vendor_id       : GenuineIntel
-  cpu family      : 6
-  model           : 26
-  model name      : Intel(R) Xeon(R) CPU           X55600 @ 2.80GHz
-  stepping        : 5
-
-'perf top' just does not produce any profiling output - it says 0 events.
-
-> Most interesting new features are not in this patchkit
-
-Sigh, we don't want esoteric Haswell-only features that only a very small 
-subset of people will use.
-
-As I mentioned before, we want _EXISTING_ tools to work and we want the 
-patchset to be well-tested. Your Haswell-only extensions might be 
-'interesting' to you but are completely uninteresting to most users who 
-just want bog standard profiling to work!
-
-Until you don't understand that you will run into problems like this, 
-putting priorities not into making existing stuff work, but working on 
-esoteric extensions and featurities, missing the forest from all the 
-trees...
-
-Your stubborn incompetence is the reason why we are at version 11 of the 
-patch-set (!) which is _still_ trivially unacceptable and there's _still_ 
-no Haswell support in the upstream kernel...
-
-Thanks,
-
-	Ingo
