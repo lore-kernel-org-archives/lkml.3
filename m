@@ -1,48 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758938Ab3DZHV6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 03:21:58 -0400
-Received: from mail-ia0-f179.google.com ([209.85.210.179]:33790 "EHLO
-	mail-ia0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752001Ab3DZHV5 (ORCPT
+	id S1758562Ab3DZH3Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 03:29:25 -0400
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:49895 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753474Ab3DZH3Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 03:21:57 -0400
+	Fri, 26 Apr 2013 03:29:24 -0400
+Date: Fri, 26 Apr 2013 09:29:19 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Matthew Garrett <matthew.garrett@nebula.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, Borislav Petkov <bp@suse.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Josh Boyer <jwboyer@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Matt Fleming <matt.fleming@intel.com>, Paul Bolle <pebolle@tiscali.nl>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [GIT PULL] x86 fixes for 3.9
+Message-ID: <20130426072919.GA31557@gmail.com>
+References: <201304252144.r3PLihDe025383@terminus.zytor.com>
+ <CA+55aFxxWXrQU4oZUbHOBBkvtF=pSxMvyF6sYU9xpSDarWV-=Q@mail.gmail.com>
+ <1366928604.9976.3.camel@x230>
 MIME-Version: 1.0
-In-Reply-To: <20130426170649.d21c2d7a74e56d836ff6f04f@canb.auug.org.au>
-References: <20130426170649.d21c2d7a74e56d836ff6f04f@canb.auug.org.au>
-From: Richard Genoud <richard.genoud@gmail.com>
-Date: Fri, 26 Apr 2013 09:21:36 +0200
-Message-ID: <CACQ1gAidYqDm_SHea9jQFGqernZpgT8RuaRSP2N0ZPUX7JYyrA@mail.gmail.com>
-Subject: Re: linux-next: manual merge of the arm-soc tree with the spi-mb tree
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Wenyou Yang <wenyou.yang@atmel.com>,
-        Mark Brown <broonie@kernel.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1366928604.9976.3.camel@x230>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/4/26 Stephen Rothwell <sfr@canb.auug.org.au>:
-> Hi all,
->
-> Today's linux-next merge of the arm-soc tree got a conflict in
-> arch/arm/boot/dts/at91sam9x5.dtsi between commits d50f88a0c304 ("ARM:
-> dts: add spi nodes for atmel SoC") and a68b728f7a21 ("ARM: dts: add
-> pinctrl property for spi node for atmel SoC") from the spi-mb tree and
-> commits e9a72ee81d58 ("ARM: at91: dt: at91sam9x5: add i2c pinctrl"),
-> 463c9c7bf1f3 ("ARM: at91: dt: at91sam9x5: add i2c-gpio pinctrl") and
-> b909c6c94462 ("ARM: at91/at91sam9x5: add RTC node") from the arm-soc tree.
->
-> I fixed it up (hopefully - see below) and can carry the fix as necessary
-> (no action is required).
 
-Hi,
+* Matthew Garrett <matthew.garrett@nebula.com> wrote:
 
-It's all ok for me !
+> On Thu, 2013-04-25 at 15:20 -0700, Linus Torvalds wrote:
+> > On Thu, Apr 25, 2013 at 2:44 PM, H. Peter Anvin <hpa@linux.intel.com> wrote:
+> > >
+> > > -       if (!sys_table->runtime->query_variable_info)
+> > > +       if (sys_table->runtime->hdr.revision < EFI_2_00_SYSTEM_TABLE_REVISION)
+> > >                 return EFI_UNSUPPORTED;
+> > 
+> > Is a EFI 2.00 system table *guaranteed* to have that
+> > "query_variable_info" function? The above adds the version check, but
+> > removes the check for a NULL pointer.
+> 
+> As far as the spec's concerned, yes. As far as reality's concerned - if
+> anything doesn't provide it, we're already crashing when
+> efi_virt_query_variable_info() gets called. Nobody's complained so far.
+
+I'm worried about the fragility of this code - this is firmware code ...
+
+I think firmware code should be fundamentally paranoid and robust, and in 
+this case treat all EFI-provided data as hostile and do a much sanity 
+checking of it as possible - and provide an actionable error message if 
+the checks fail, not just 'crash'.
+
+Even if no-one complained, yet.
 
 Thanks,
 
-Richard.
+	Ingo
