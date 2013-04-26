@@ -1,56 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756499Ab3DZP2x (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 11:28:53 -0400
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:41198 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756468Ab3DZP2w (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 11:28:52 -0400
-MIME-Version: 1.0
-In-Reply-To: <5179A797.9040200@zytor.com>
-References: <1366926860-26776-1-git-send-email-keescook@chromium.org>
-	<1366926860-26776-3-git-send-email-keescook@chromium.org>
-	<5179A797.9040200@zytor.com>
-Date: Fri, 26 Apr 2013 08:28:51 -0700
-X-Google-Sender-Auth: YRMXpljAR-l3NMjBCKW14lOPhLo
-Message-ID: <CAGXu5jLT494F_jM3Q6GFaestU0cg-=bx_+g-1v2myTsCmnVH5A@mail.gmail.com>
-Subject: Re: [PATCH 2/6] x86: kaslr: move CPU flags out of cpucheck
-From: Kees Cook <keescook@chromium.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
-        Matthew Garrett <mjg@redhat.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Eric Northup <digitaleric@google.com>,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751956Ab3DZP3I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 11:29:08 -0400
+Received: from mga14.intel.com ([143.182.124.37]:48987 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756516Ab3DZP3G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Apr 2013 11:29:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,559,1363158000"; 
+   d="scan'208";a="293646067"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Dave Hansen <dave@sr71.net>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <5163155D.7030401@sr71.net>
+References: <1365163198-29726-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <1365163198-29726-33-git-send-email-kirill.shutemov@linux.intel.com>
+ <5163155D.7030401@sr71.net>
+Subject: Re: [PATCHv3, RFC 32/34] thp: handle write-protect exception to
+ file-backed huge pages
+Content-Transfer-Encoding: 7bit
+Message-Id: <20130426153104.92450E0085@blue.fi.intel.com>
+Date: Fri, 26 Apr 2013 18:31:04 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 25, 2013 at 3:00 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 04/25/2013 02:54 PM, Kees Cook wrote:
->> Since has_eflag() and has_fpu() are 32-bit only, short-circuit the
->> routines on 64-bit when they are built without -m32. This also refactors
->> the calls to cpuid to make them PIC-safe on 32-bit.
->
-> These functions can trivially be made 32- and 64-bit agnostic by
-> changing "u32" to "unsigned long" and drop the -l suffixes in the
-> assembly code.
+Dave Hansen wrote:
+> > +			if (!PageAnon(page)) {
+> > +				add_mm_counter(mm, MM_FILEPAGES, -HPAGE_PMD_NR);
+> > +				add_mm_counter(mm, MM_ANONPAGES, HPAGE_PMD_NR);
+> > +			}
+> 
+> This seems like a bit of a hack.  Shouldn't we have just been accounting
+> to MM_FILEPAGES in the first place?
 
-Ah, good call. I found what was stopping me earlier. The u32 argument
-needed to be switched to unsigned long too. Duh. :)
+No, it's not.
 
-Thanks!
+It handles MAP_PRIVATE file mappings. The page was read first and
+accounted to MM_FILEPAGES and then COW'ed by anon page here, so we have to
+adjust counters. do_wp_page() has similar code.
 
--Kees
-
---
-Kees Cook
-Chrome OS Security
+-- 
+ Kirill A. Shutemov
