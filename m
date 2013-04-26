@@ -1,98 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759712Ab3DZLG5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 07:06:57 -0400
-Received: from mail-da0-f45.google.com ([209.85.210.45]:61654 "EHLO
-	mail-da0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759521Ab3DZLG4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 07:06:56 -0400
-From: Pranavkumar Sawargaonkar <pranavkumar@linaro.org>
-To: linux-arm-kernel@lists.infradead.org
-Cc: kvmarm@lists.cs.columbia.edu, linux-kernel@vger.kernel.org,
-        rusty@rustcorp.com.au, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, anup.patel@linaro.org,
-        Pranavkumar Sawargaonkar <pranavkumar@linaro.org>
-Subject: [PATCH 2/2] arm64: earlyprintk support for virtio-mmio console
-Date: Fri, 26 Apr 2013 16:34:56 +0530
-Message-Id: <1366974299-17877-3-git-send-email-pranavkumar@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1366974299-17877-1-git-send-email-pranavkumar@linaro.org>
-References: <1366974299-17877-1-git-send-email-pranavkumar@linaro.org>
+	id S1755021Ab3DZLIi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 07:08:38 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48043 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753854Ab3DZLIh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Apr 2013 07:08:37 -0400
+Message-ID: <517A6033.5060103@suse.cz>
+Date: Fri, 26 Apr 2013 13:08:35 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: sedat.dilek@gmail.com, "Yann E. MORIN" <yann.morin.1998@free.fr>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
+Subject: Re: linux-next: Tree for Apr 26
+References: <20130426180357.7599d1b6b7965470905dcdf3@canb.auug.org.au> <CA+icZUWt_W5FUQgQ2TFoQU0df+sAbxZZE8AcD16T3f_fiTD9DQ@mail.gmail.com> <517A4FC1.3070605@suse.cz> <20130426100435.GA28733@sepie.suse.cz> <CA+icZUVOfB2JuL1xh1EO1hTP_eOkntYFKsUJ0Zp6VZqn09NABA@mail.gmail.com> <CA+icZUWNVEsiTs6u_2R9krb45ub4t-pZj_VEPRmrX2c4DzwfmA@mail.gmail.com> <CA+icZUXSsqN1iE3ttQakvpZqG-oOL9NR6RMUezB7LGeUw3d00Q@mail.gmail.com>
+In-Reply-To: <CA+icZUXSsqN1iE3ttQakvpZqG-oOL9NR6RMUezB7LGeUw3d00Q@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch implements earlyprintk based on virtio console using early_wr config register.
+On 26.4.2013 12:49, Sedat Dilek wrote:
+> On Fri, Apr 26, 2013 at 12:37 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>> On Fri, Apr 26, 2013 at 12:35 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>>> On Fri, Apr 26, 2013 at 12:04 PM, Michal Marek <mmarek@suse.cz> wrote:
+>>>> On Fri, Apr 26, 2013 at 11:58:25AM +0200, Michal Marek wrote:
+>>>>> Can you send a copy of your .config?
+>>>>
+>>>> I can reproduce it as well:
+>>>>
+>>>> $ yes "" | make oldconfig
+>>>> ...
+>>>>   Enumeration method [M/y/?] (NEW)
+>>>>     Basic (RAPIDIO_ENUM_BASIC) [N/m/?] n
+>>>> ...
+>>>> #
+>>>> # configuration written to .config
+>>>> #
+>>>> $ make oldconfig
+>>>> ...
+>>>>   Enumeration method [M/y/?] (NEW)
+>>>>
+>>>>
+>>>> .config is attached.
+>>>>
+>>>
+>>> Mine, too.
+>>>
+>>> I hoped that -next release will be one w/o troubles
+>>> (cpufreq/intel_pstate / pm/timekeeping / ipc-sem-from-mmotm).
+>>> Unfortunately, I am not lucky :-(.
+>>>
+>>> Anyway, waiting for a fix.
+>>>
+>>
+>> Just FYI: Mail delivery troubles!
+>>
+>> Delivery to the following recipient failed permanently:
+>>
+>>      yann.morin.1998@free.fr
+>>
+>> Technical details of permanent failure:
+>> Google tried to deliver your message, but it was rejected by the
+>> server for the recipient domain free.fr by mx1.free.fr. [212.27.48.6].
+>>
+>> The error that the other server returned was:
+>> 550 spam detected
+>> ...
+>>
+> 
+> With reverting all kbuild-next commits I was able to build again.
+> 
+>       Revert "kconfig: implement KCONFIG_PROBABILITY for randconfig"
+>       Revert "kconfig: allow specifying the seed for randconfig"
+>       Revert "kconfig: fix randomising choice entries in presence of
+> KCONFIG_ALLCONFIG"
+>       Revert "kconfig: do not override symbols already set"
+>       Revert "kconfig: fix randconfig tristate detection"
 
-Kernel args for using this will be: earlyprintk=virtio-console,<phys_address>
+I did the same, then applied all the kconfig commits once more and did a
+git bisect with this script:
 
-Signed-off-by: Pranavkumar Sawargaonkar <pranavkumar@linaro.org>
-Signed-off-by: Anup Patel <anup.patel@linaro.org>
----
- arch/arm64/kernel/early_printk.c |   35 +++++++++++++++++++++++++++++++++++
- 1 file changed, 35 insertions(+)
+#!/bin/sh
 
-diff --git a/arch/arm64/kernel/early_printk.c b/arch/arm64/kernel/early_printk.c
-index ac974f4..52ac6b0 100644
---- a/arch/arm64/kernel/early_printk.c
-+++ b/arch/arm64/kernel/early_printk.c
-@@ -25,6 +25,9 @@
- 
- #include <linux/amba/serial.h>
- #include <linux/serial_reg.h>
-+#include <linux/virtio_ids.h>
-+#include <linux/virtio_mmio.h>
-+#include <linux/virtio_console.h>
- 
- static void __iomem *early_base;
- static void (*printch)(char ch);
-@@ -53,6 +56,37 @@ static void smh_printch(char ch)
- }
- 
- /*
-+ * VIRTIO MMIO console single character Tx.
-+ */
-+static void virtio_console_printch(char ch)
-+{
-+	u32 tmp;
-+	static u32 init_done;
-+	static u32 can_write;
-+	struct virtio_console_config *p = early_base + VIRTIO_MMIO_CONFIG;
-+
-+	if (!init_done) {
-+		tmp = readl_relaxed(early_base + VIRTIO_MMIO_DEVICE_ID);
-+		if (tmp != VIRTIO_ID_CONSOLE) {
-+			init_done = 1;
-+			return;
-+		}
-+
-+		tmp = readl_relaxed(early_base + VIRTIO_MMIO_HOST_FEATURES);
-+		if (!(tmp & (1 << VIRTIO_CONSOLE_F_EARLY_WRITE))) {
-+			init_done = 1;
-+			return;
-+		}
-+
-+		init_done = 1;
-+		can_write = 1;
-+	}
-+
-+	if (can_write)
-+		writeb_relaxed(ch, &p->early_wr);
-+}
-+
-+/*
-  * 8250/16550 (8-bit aligned registers) single character TX.
-  */
- static void uart8250_8bit_printch(char ch)
-@@ -82,6 +116,7 @@ static const struct earlycon_match earlycon_match[] __initconst = {
- 	{ .name = "smh", .printch = smh_printch, },
- 	{ .name = "uart8250-8bit", .printch = uart8250_8bit_printch, },
- 	{ .name = "uart8250-32bit", .printch = uart8250_32bit_printch, },
-+	{ .name = "virtio-console", .printch = virtio_console_printch, },
- 	{}
- };
- 
--- 
-1.7.9.5
+cp config-bad .config
+make silentoldconfig </dev/null
 
+This resulted in
+
+7ded2624f8988bd22819a60a6000ba6b7091db89 is the first bad commit
+commit 7ded2624f8988bd22819a60a6000ba6b7091db89
+Author: Yann E. MORIN <yann.morin.1998@free.fr>
+Date:   Sun Mar 10 16:34:10 2013 +0100
+
+    kconfig: fix randomising choice entries in presence of KCONFIG_ALLCONFIG
+
+The commit id is different, because it is reverted and applied again. Yann?
+
+Thanks,
+Michal
