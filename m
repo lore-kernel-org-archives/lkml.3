@@ -1,148 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755806Ab3D0Wpz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Apr 2013 18:45:55 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:52229 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753811Ab3D0Wo4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Apr 2013 18:44:56 -0400
-From: "H. Peter Anvin" <hpa@zytor.com>
-To: "Ted Ts'o" <tytso@mit.edu>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        DJ Johnston <dj.johnston@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, <stable@vger.kernel.org>
-Subject: [PATCH 1/3] random: Statically compute poolbitshift, poolbytes, poolbits
-Date: Sat, 27 Apr 2013 15:44:37 -0700
-Message-Id: <1367102679-5178-2-git-send-email-hpa@zytor.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1367102679-5178-1-git-send-email-hpa@zytor.com>
-References: <1367102679-5178-1-git-send-email-hpa@zytor.com>
+	id S1755135Ab3D0Xrh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Apr 2013 19:47:37 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:65057 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751870Ab3D0Xrf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Apr 2013 19:47:35 -0400
+MIME-Version: 1.0
+In-Reply-To: <1367097352.1782.14.camel@buesod1.americas.hpqcorp.net>
+References: <1363344869-15732-1-git-send-email-walken@google.com>
+	<1367097352.1782.14.camel@buesod1.americas.hpqcorp.net>
+Date: Sat, 27 Apr 2013 16:47:35 -0700
+Message-ID: <CANN689FBCNx4NGJECTZUj90F6VZcg5R9HuwHdsUxwhvPMU7VFg@mail.gmail.com>
+Subject: Re: [PATCH v2 00/13] rwsem fast-path write lock stealing
+From: Michel Lespinasse <walken@google.com>
+To: Davidlohr Bueso <davidlohr.bueso@hp.com>
+Cc: Alex Shi <alex.shi@intel.com>, Ingo Molnar <mingo@kernel.org>,
+        David Howells <dhowells@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Yuanhan Liu <yuanhan.liu@linux.intel.com>,
+        Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Dave Chinner <david@fromorbit.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Vinod, Chegu" <chegu_vinod@hp.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "H. Peter Anvin" <hpa@linux.intel.com>
+On Sat, Apr 27, 2013 at 2:15 PM, Davidlohr Bueso <davidlohr.bueso@hp.com> wrote:
+> Hi Michel,
+>
+> On Fri, 2013-03-15 at 03:54 -0700, Michel Lespinasse wrote:
+>> These patches extend Alex Shi's work (which added write lock stealing
+>> on the rwsem slow path) in order to provide rwsem write lock stealing
+>> on the fast path (that is, without taking the rwsem's wait_lock).
+>>
+>> I initially sent a shorter series shortly before v3.9, however some
+>> patches were doing too much at once which made them confusing to
+>> review. I have now split the series at a smaller granularity;
+>> hope this will help :)
+>
+> Coincidentally, I was doing some similar work with similar results. But
+> I have to say I like your series and cleanups better than mine :)
+>
+> I've run a few tests on this patchset and I'm pretty happy with the
+> numbers. The first series of tests were on my quad-core laptop running
+> pgbench on three different database sizes, each with various number of
+> clients:
 
-Use a macro to statically compute poolbitshift (will be used in a
-subsequent patch), poolbytes, and poolbits.  On virtually all
-architectures the cost of a memory load with an offset is the same as
-the one of a memory load.
+Thanks a lot for this testing. I was getting discouraged with this
+series, as I would have hoped for it to be picked in -next a long long
+time ago. Anyway, I will resend a v3 with the (mostly style) updates I
+got from everyone on v2 and try submitting it to Linus.
 
-It is still possible for this to generate worse code since the C
-compiler doesn't know the fixed relationship between these fields, but
-that is somewhat unlikely.
-
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: <stable@vger.kernel.org>
----
- drivers/char/random.c | 39 +++++++++++++++++++--------------------
- 1 file changed, 19 insertions(+), 20 deletions(-)
-
-diff --git a/drivers/char/random.c b/drivers/char/random.c
-index 57d4b15..106b9b2 100644
---- a/drivers/char/random.c
-+++ b/drivers/char/random.c
-@@ -309,46 +309,45 @@ static DEFINE_PER_CPU(int, trickle_count);
-  * scaled squared error sum) except for the last tap, which is 1 to
-  * get the twisting happening as fast as possible.
-  */
-+
- static struct poolinfo {
--	int poolwords;
-+	int poolbitshift, poolwords, poolbytes, poolbits;
-+#define S(x) ilog2(x)+5, (x), (x)*4, (x)*32
- 	int tap1, tap2, tap3, tap4, tap5;
- } poolinfo_table[] = {
- 	/* x^128 + x^103 + x^76 + x^51 +x^25 + x + 1 -- 105 */
--	{ 128,	103,	76,	51,	25,	1 },
-+	{ S(128),	103,	76,	51,	25,	1 },
- 	/* x^32 + x^26 + x^20 + x^14 + x^7 + x + 1 -- 15 */
--	{ 32,	26,	20,	14,	7,	1 },
-+	{ S(32),	26,	20,	14,	7,	1 },
- #if 0
- 	/* x^2048 + x^1638 + x^1231 + x^819 + x^411 + x + 1  -- 115 */
--	{ 2048,	1638,	1231,	819,	411,	1 },
-+	{ S(2048),	1638,	1231,	819,	411,	1 },
- 
- 	/* x^1024 + x^817 + x^615 + x^412 + x^204 + x + 1 -- 290 */
--	{ 1024,	817,	615,	412,	204,	1 },
-+	{ S(1024),	817,	615,	412,	204,	1 },
- 
- 	/* x^1024 + x^819 + x^616 + x^410 + x^207 + x^2 + 1 -- 115 */
--	{ 1024,	819,	616,	410,	207,	2 },
-+	{ S(1024),	819,	616,	410,	207,	2 },
- 
- 	/* x^512 + x^411 + x^308 + x^208 + x^104 + x + 1 -- 225 */
--	{ 512,	411,	308,	208,	104,	1 },
-+	{ S(512),	411,	308,	208,	104,	1 },
- 
- 	/* x^512 + x^409 + x^307 + x^206 + x^102 + x^2 + 1 -- 95 */
--	{ 512,	409,	307,	206,	102,	2 },
-+	{ S(512),	409,	307,	206,	102,	2 },
- 	/* x^512 + x^409 + x^309 + x^205 + x^103 + x^2 + 1 -- 95 */
--	{ 512,	409,	309,	205,	103,	2 },
-+	{ S(512),	409,	309,	205,	103,	2 },
- 
- 	/* x^256 + x^205 + x^155 + x^101 + x^52 + x + 1 -- 125 */
--	{ 256,	205,	155,	101,	52,	1 },
-+	{ S(256),	205,	155,	101,	52,	1 },
- 
- 	/* x^128 + x^103 + x^78 + x^51 + x^27 + x^2 + 1 -- 70 */
--	{ 128,	103,	78,	51,	27,	2 },
-+	{ S(128),	103,	78,	51,	27,	2 },
- 
- 	/* x^64 + x^52 + x^39 + x^26 + x^14 + x + 1 -- 15 */
--	{ 64,	52,	39,	26,	14,	1 },
-+	{ S(64),	52,	39,	26,	14,	1 },
- #endif
- };
- 
--#define POOLBITS	poolwords*32
--#define POOLBYTES	poolwords*4
--
- /*
-  * For the purposes of better mixing, we use the CRC-32 polynomial as
-  * well to make a twisted Generalized Feedback Shift Reigster
-@@ -599,8 +598,8 @@ retry:
- 	if (entropy_count < 0) {
- 		DEBUG_ENT("negative entropy/overflow\n");
- 		entropy_count = 0;
--	} else if (entropy_count > r->poolinfo->POOLBITS)
--		entropy_count = r->poolinfo->POOLBITS;
-+	} else if (entropy_count > r->poolinfo->poolbits)
-+		entropy_count = r->poolinfo->poolbits;
- 	if (cmpxchg(&r->entropy_count, orig, entropy_count) != orig)
- 		goto retry;
- 
-@@ -815,7 +814,7 @@ static void xfer_secondary_pool(struct entropy_store *r, size_t nbytes)
- 	__u32	tmp[OUTPUT_POOL_WORDS];
- 
- 	if (r->pull && r->entropy_count < nbytes * 8 &&
--	    r->entropy_count < r->poolinfo->POOLBITS) {
-+	    r->entropy_count < r->poolinfo->poolbits) {
- 		/* If we're limited, always leave two wakeup worth's BITS */
- 		int rsvd = r->limit ? 0 : random_read_wakeup_thresh/4;
- 		int bytes = nbytes;
-@@ -857,7 +856,7 @@ static size_t account(struct entropy_store *r, size_t nbytes, int min,
- 	/* Hold lock while accounting */
- 	spin_lock_irqsave(&r->lock, flags);
- 
--	BUG_ON(r->entropy_count > r->poolinfo->POOLBITS);
-+	BUG_ON(r->entropy_count > r->poolinfo->poolbits);
- 	DEBUG_ENT("trying to extract %zu bits from %s\n",
- 		  nbytes * 8, r->name);
- 
-@@ -1104,7 +1103,7 @@ static void init_std_data(struct entropy_store *r)
- 	r->entropy_total = 0;
- 	r->last_data_init = false;
- 	mix_pool_bytes(r, &now, sizeof(now), NULL);
--	for (i = r->poolinfo->POOLBYTES; i > 0; i -= sizeof(rv)) {
-+	for (i = r->poolinfo->poolbytes; i > 0; i -= sizeof(rv)) {
- 		if (!arch_get_random_long(&rv))
- 			break;
- 		mix_pool_bytes(r, &rv, sizeof(rv), NULL);
 -- 
-1.7.11.7
-
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
