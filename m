@@ -1,75 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756171Ab3D0SiF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Apr 2013 14:38:05 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:39789 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755667Ab3D0SiD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Apr 2013 14:38:03 -0400
-Date: Sat, 27 Apr 2013 20:38:00 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Zhang Rui <rui.zhang@intel.com>
-Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-acpi@vger.kernel.org, rjw@sisk.pl, lenb@kernel.org,
-        eduardo.valentin@ti.com
-Subject: Re: [PATCH] ACPI thermal: do not always return
- THERMAL_TREND_RAISING for active trip points
-Message-ID: <20130427183800.GA8929@amd.pavel.ucw.cz>
-References: <1366967993-3812-1-git-send-email-rui.zhang@intel.com>
- <20130427102346.GA30588@amd.pavel.ucw.cz>
- <1367065950.2128.11.camel@rzhang1-mobl4>
+	id S1755784Ab3D0Ofr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Apr 2013 10:35:47 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:59264 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754555Ab3D0Ofq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Apr 2013 10:35:46 -0400
+X-IronPort-AV: E=Sophos;i="4.87,562,1363132800"; 
+   d="scan'208";a="21961243"
+Date: Sat, 27 Apr 2013 15:35:39 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Wei Yongjun <weiyj.lk@gmail.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "yongjun_wei@trendmicro.com.cn" <yongjun_wei@trendmicro.com.cn>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -next] xen/arm: remove duplicated include from
+ enlighten.c
+In-Reply-To: <CAPgLHd95AtzEDXUMHryWmmVAkBfkh42hgeLKdSLFYwkO_JB-ZA@mail.gmail.com>
+Message-ID: <alpine.DEB.2.02.1304271535210.4180@kaball.uk.xensource.com>
+References: <CAPgLHd95AtzEDXUMHryWmmVAkBfkh42hgeLKdSLFYwkO_JB-ZA@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1367065950.2128.11.camel@rzhang1-mobl4>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-
-> > Is that even right algoritm?
-> > 
-> sorry the changelog is not clear enough here.
-> I should say,
-> "keep the fan on when the temperature is raising"
-> "turn off the fan when the temperature is dropping"
+On Sat, 27 Apr 2013, Wei Yongjun wrote:
+> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 > 
-> > Assume I'm running at very cold room, lets say -10C. Assume idle CPU
-> > will hover around 30C with no fan, or hover around 10C with fan
-> > running, trip point being 50C.
-> > 
-> > You _could_ leave fan off until 50C, having silent, passively cooled
-> > system.
-> > 
-> > What it will do instead is annoyingly pulse fan at 10C.
-> > 
-> First, fan will never spins on if the temperature never hits 50C.
+> Remove duplicated include.
 > 
-> let's see how ACPI 3.0 fan (just have on and off state) is supposed to
-> work after overheat.
-> 1. temperature goes above 50C
-> 2. Fan starts to spin.
-> 3. a) if temperature goes higher (if possible), fan keeps on.
->    b) if temperature drops, but still above 50C. the fan keeps on.
->    c) if temperature drops below 50C, the last temperature is above 50C,
-> thus the fan is turned off.
->    d) if the temperature goes higher again, the fan will not spin on
-> until the temperature is higher than the trip point (50C) again.
+> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-So the fan is spinning iff the temperature is over threshold, right?
+Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
-> is this behavior what you want?
 
-That's better, yes. Even better would be if it had some hysteresis:
-turn the fan on at threshold temperature, but turn it off only if it
-drops below temperature-5C, or if it is below threshold for 1 minute.
-
-Thanks,
-      	    		       	     	      		      Pavel
-
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+>  arch/arm/xen/enlighten.c | 1 -
+>  1 file changed, 1 deletion(-)
+> 
+> diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
+> index 9a0a917..d30042e 100644
+> --- a/arch/arm/xen/enlighten.c
+> +++ b/arch/arm/xen/enlighten.c
+> @@ -10,7 +10,6 @@
+>  #include <xen/platform_pci.h>
+>  #include <xen/xenbus.h>
+>  #include <xen/page.h>
+> -#include <xen/xen.h>
+>  #include <xen/interface/sched.h>
+>  #include <xen/xen-ops.h>
+>  #include <asm/xen/hypervisor.h>
+> 
