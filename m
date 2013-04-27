@@ -1,293 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755822Ab3D0BJx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 21:09:53 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:24568 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751442Ab3D0BJw (ORCPT
+	id S1756520Ab3D0BKQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 21:10:16 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:41839 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756316Ab3D0BKF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 21:09:52 -0400
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Yijing Wang <wangyijing@huawei.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [RFC PATCH] PCI: Enable pci bridge when it is needed
-Date: Fri, 26 Apr 2013 18:09:34 -0700
-Message-Id: <1367024974-6063-1-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.8.1.4
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Fri, 26 Apr 2013 21:10:05 -0400
+Message-ID: <517B242D.7040902@ti.com>
+Date: Fri, 26 Apr 2013 20:04:45 -0500
+From: Suman Anna <s-anna@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Jassi Brar <jaswinder.singh@linaro.org>
+CC: Loic PALLARDY <loic.pallardy@st.com>,
+        Jassi Brar <jassisinghbrar@gmail.com>,
+        "Ohad Ben-Cohen (ohad@wizery.com)" <ohad@wizery.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        "Andy Green (andy.green@linaro.org)" <andy.green@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Tony Lindgren <tony@atomide.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Omar Ramirez Luna (omar.ramirez@copitl.com)" 
+	<omar.ramirez@copitl.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCHv3 00/14] drivers: mailbox: framework creation
+References: <1363145021-14339-1-git-send-email-s-anna@ti.com> <CABb+yY0RYkVeo2Sb4WsDJY0jf17488FEz0d2CB994eQaSOEsVg@mail.gmail.com> <37C860A02101E749A747FA2D3C1E3C504A5DF7@DLEE11.ent.ti.com> <CABb+yY1x4x_A+QtGG9ohsLPgs8c3nEVnd_ExJBGOOR8=6YLPFA@mail.gmail.com> <37C860A02101E749A747FA2D3C1E3C504A63B4@DLEE11.ent.ti.com> <CAJe_ZhehnniZd730jjiOLrHozq8TOJZgFYLqUe4KqgBiQEu8PA@mail.gmail.com> <51779304.4040003@st.com> <CAJe_ZhdZv5LW6kdwyPtJe69mfW6t=WQ4OJnG2H4sUhibattN2A@mail.gmail.com> <517867E1.7050301@ti.com> <CAJe_ZhfDZzq+DzA9XDF3PWFUmwcZnDy-mhE4hLNHmf+V4GhOxw@mail.gmail.com> <5179AE2F.3040403@ti.com> <CAJe_Zhf4miUm4yTyuwc56kpD8Mu4=vsmX4wdQkFDT96JbKR=MQ@mail.gmail.com>
+In-Reply-To: <CAJe_Zhf4miUm4yTyuwc56kpD8Mu4=vsmX4wdQkFDT96JbKR=MQ@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current we enable bridges after bus scan and assign resources.
-and it is spreaded a lot of places.
+Hi Jassi,
 
-We can move it to where pci device is enabled, and need
-to go up to root bus and enable bridge one by one down to pci
-dev.
+On 04/25/2013 10:46 PM, Jassi Brar wrote:
+> Hi Suman,
+> 
+> On 26 April 2013 03:59, Suman Anna <s-anna@ti.com> wrote:
+>> On 04/25/2013 12:20 AM, Jassi Brar wrote:
+>> tranmitting right away. OK, I thought you didn't want buffering, if that
+>> is not the case, then the buffering should be within the main driver
+>> code, like it is now, but configurable based on the controller or
+>> mailbox properties. If it is present in individual controller drivers,
+>> then we would be duplicating stuff. Are you envisioning that this be
+>> left to the individual controllers?
+>>
+> Please don't accuse me of such bad visions :)
+> I never said no-buffering and I never said buffering should be in
+> controller drivers. In fact I don't remember ever objecting to how
+> buffering is done in TI's framework.
+> A controller could service only 1 request at a time so lets give it
+> just 1 at a time. Let the API handle the complexity of buffering.
+> 
 
-So that will delay enable bridge late as needed bassis,
-also kill one inconsistent between boot path and hotplug
-path in acpi_pci_root_add().
+Alright, guess this got lost in translation :). I interpreted based on
+the fact that you wanted to get rid of the size field from the
+mailbox_msg definition. Do you have a different mechanism in mind for
+the buffering compared to the present one?
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+>>> I am afraid you are confusing the meaning of 'atomic context' here.
+>>> atomic context doesn't mean instant transmission of data, but that the
+>>> API calls could be made from even atomic context and that the client &
+>>> controller can't sleep in callbacks from the API. So it's not moot.
+>>
+>> I understood the atomic context, and the question is about the behavior
+>> of the '.tx_done' callback when sending from atomic context. Is there
+>> such a usecase/need for you in that you want to send a response back
+>> from an atomic context, yet get a callback?
+>>
+> Let me get in detail...
+> The TX-Wheel has to tick. Someone has to tell the framework that the
+> last TX was consumed by the remote and now it's time to submit the
+> next TX (RX will always be driven by the controller's IRQ so it's
+> straight).
+> If the controller h/w gets some interrupt indicating
+> Remote-RTR/TX-Done then the ticker is driven by controller's TX-IRQ
+> handler. Otherwise, if the controller does sense RTR but not report
+> (by reading status in some register but no irq), then API has to poll
+> it periodically and move the ticker. If the controller can neither
+> report nor sense RTR, the client/protocol driver must run the ticker
+> (usually upon receiving some ACK packet on the RX channel).
 
----
- arch/arm/kernel/bios32.c           |    5 -----
- arch/m68k/platform/coldfire/pci.c  |    1 -
- arch/mips/pci/pci.c                |    1 -
- arch/sh/drivers/pci/pci.c          |    1 -
- drivers/acpi/pci_root.c            |    4 ----
- drivers/parisc/lba_pci.c           |    1 -
- drivers/pci/bus.c                  |   19 -------------------
- drivers/pci/hotplug/acpiphp_glue.c |    1 -
- drivers/pci/pci.c                  |   20 ++++++++++++++++++++
- drivers/pci/probe.c                |    1 -
- drivers/pci/setup-bus.c            |   11 +++--------
- drivers/pcmcia/cardbus.c           |    1 -
- include/linux/pci.h                |    1 -
- 13 files changed, 23 insertions(+), 44 deletions(-)
+OK, I didn't think of a no RTR interrupt-based controller. I would thing
+that such a controller is very rudimentary. I wonder if there are any
+controllers like this out there.
 
-Index: linux-2.6/arch/arm/kernel/bios32.c
-===================================================================
---- linux-2.6.orig/arch/arm/kernel/bios32.c
-+++ linux-2.6/arch/arm/kernel/bios32.c
-@@ -523,11 +523,6 @@ void pci_common_init(struct hw_pci *hw)
- 			 * Assign resources.
- 			 */
- 			pci_bus_assign_resources(bus);
--
--			/*
--			 * Enable bridges
--			 */
--			pci_enable_bridges(bus);
- 		}
- 
- 		/*
-Index: linux-2.6/arch/m68k/platform/coldfire/pci.c
-===================================================================
---- linux-2.6.orig/arch/m68k/platform/coldfire/pci.c
-+++ linux-2.6/arch/m68k/platform/coldfire/pci.c
-@@ -319,7 +319,6 @@ static int __init mcf_pci_init(void)
- 	pci_fixup_irqs(pci_common_swizzle, mcf_pci_map_irq);
- 	pci_bus_size_bridges(rootbus);
- 	pci_bus_assign_resources(rootbus);
--	pci_enable_bridges(rootbus);
- 	pci_bus_add_devices(rootbus);
- 	return 0;
- }
-Index: linux-2.6/arch/mips/pci/pci.c
-===================================================================
---- linux-2.6.orig/arch/mips/pci/pci.c
-+++ linux-2.6/arch/mips/pci/pci.c
-@@ -113,7 +113,6 @@ static void pcibios_scanbus(struct pci_c
- 		if (!pci_has_flag(PCI_PROBE_ONLY)) {
- 			pci_bus_size_bridges(bus);
- 			pci_bus_assign_resources(bus);
--			pci_enable_bridges(bus);
- 		}
- 	}
- }
-Index: linux-2.6/arch/sh/drivers/pci/pci.c
-===================================================================
---- linux-2.6.orig/arch/sh/drivers/pci/pci.c
-+++ linux-2.6/arch/sh/drivers/pci/pci.c
-@@ -69,7 +69,6 @@ static void pcibios_scanbus(struct pci_c
- 
- 		pci_bus_size_bridges(bus);
- 		pci_bus_assign_resources(bus);
--		pci_enable_bridges(bus);
- 	} else {
- 		pci_free_resource_list(&resources);
- 	}
-Index: linux-2.6/drivers/acpi/pci_root.c
-===================================================================
---- linux-2.6.orig/drivers/acpi/pci_root.c
-+++ linux-2.6/drivers/acpi/pci_root.c
-@@ -538,10 +538,6 @@ static int acpi_pci_root_add(struct acpi
- 		pci_assign_unassigned_bus_resources(root->bus);
- 	}
- 
--	/* need to after hot-added ioapic is registered */
--	if (system_state != SYSTEM_BOOTING)
--		pci_enable_bridges(root->bus);
--
- 	pci_bus_add_devices(root->bus);
- 	return 1;
- 
-Index: linux-2.6/drivers/parisc/lba_pci.c
-===================================================================
---- linux-2.6.orig/drivers/parisc/lba_pci.c
-+++ linux-2.6/drivers/parisc/lba_pci.c
-@@ -1533,7 +1533,6 @@ lba_driver_probe(struct parisc_device *d
- 		lba_dump_res(&lba_dev->hba.lmmio_space, 2);
- #endif
- 	}
--	pci_enable_bridges(lba_bus);
- 
- 	/*
- 	** Once PCI register ops has walked the bus, access to config
-Index: linux-2.6/drivers/pci/bus.c
-===================================================================
---- linux-2.6.orig/drivers/pci/bus.c
-+++ linux-2.6/drivers/pci/bus.c
-@@ -215,24 +215,6 @@ void pci_bus_add_devices(const struct pc
- 	}
- }
- 
--void pci_enable_bridges(struct pci_bus *bus)
--{
--	struct pci_dev *dev;
--	int retval;
--
--	list_for_each_entry(dev, &bus->devices, bus_list) {
--		if (dev->subordinate) {
--			if (!pci_is_enabled(dev)) {
--				retval = pci_enable_device(dev);
--				if (retval)
--					dev_err(&dev->dev, "Error enabling bridge (%d), continuing\n", retval);
--				pci_set_master(dev);
--			}
--			pci_enable_bridges(dev->subordinate);
--		}
--	}
--}
--
- /** pci_walk_bus - walk devices on/under bus, calling callback.
-  *  @top      bus whose devices should be walked
-  *  @cb       callback to be called for each device found
-@@ -285,4 +267,3 @@ EXPORT_SYMBOL_GPL(pci_walk_bus);
- EXPORT_SYMBOL(pci_bus_alloc_resource);
- EXPORT_SYMBOL_GPL(pci_bus_add_device);
- EXPORT_SYMBOL(pci_bus_add_devices);
--EXPORT_SYMBOL(pci_enable_bridges);
-Index: linux-2.6/drivers/pci/hotplug/acpiphp_glue.c
-===================================================================
---- linux-2.6.orig/drivers/pci/hotplug/acpiphp_glue.c
-+++ linux-2.6/drivers/pci/hotplug/acpiphp_glue.c
-@@ -704,7 +704,6 @@ static int __ref enable_device(struct ac
- 	acpiphp_sanitize_bus(bus);
- 	acpiphp_set_hpp_values(bus);
- 	acpiphp_set_acpi_region(slot);
--	pci_enable_bridges(bus);
- 
- 	list_for_each_entry(dev, &bus->devices, bus_list) {
- 		/* Assume that newly added devices are powered on already. */
-Index: linux-2.6/drivers/pci/pci.c
-===================================================================
---- linux-2.6.orig/drivers/pci/pci.c
-+++ linux-2.6/drivers/pci/pci.c
-@@ -1145,6 +1145,24 @@ int pci_reenable_device(struct pci_dev *
- 	return 0;
- }
- 
-+static void pci_enable_bridge(struct pci_dev *dev)
-+{
-+	int retval;
-+
-+	if (!dev)
-+		return;
-+
-+	pci_enable_bridge(dev->bus->self);
-+
-+	if (pci_is_enabled(dev))
-+		return;
-+	retval = pci_enable_device(dev);
-+	if (retval)
-+		dev_err(&dev->dev, "Error enabling bridge (%d), continuing\n",
-+			retval);
-+	pci_set_master(dev);
-+}
-+
- static int pci_enable_device_flags(struct pci_dev *dev, unsigned long flags)
- {
- 	int err;
-@@ -1165,6 +1183,8 @@ static int pci_enable_device_flags(struc
- 	if (atomic_inc_return(&dev->enable_cnt) > 1)
- 		return 0;		/* already enabled */
- 
-+	pci_enable_bridge(dev->bus->self);
-+
- 	/* only skip sriov related */
- 	for (i = 0; i <= PCI_ROM_RESOURCE; i++)
- 		if (dev->resource[i].flags & flags)
-Index: linux-2.6/drivers/pci/probe.c
-===================================================================
---- linux-2.6.orig/drivers/pci/probe.c
-+++ linux-2.6/drivers/pci/probe.c
-@@ -1949,7 +1949,6 @@ unsigned int __ref pci_rescan_bus(struct
- 
- 	max = pci_scan_child_bus(bus);
- 	pci_assign_unassigned_bus_resources(bus);
--	pci_enable_bridges(bus);
- 	pci_bus_add_devices(bus);
- 
- 	return max;
-Index: linux-2.6/drivers/pci/setup-bus.c
-===================================================================
---- linux-2.6.orig/drivers/pci/setup-bus.c
-+++ linux-2.6/drivers/pci/setup-bus.c
-@@ -1435,7 +1435,7 @@ again:
- 
- 	/* any device complain? */
- 	if (list_empty(&fail_head))
--		goto enable_and_dump;
-+		goto dump;
- 
- 	if (tried_times >= pci_try_num) {
- 		if (pci_realloc_enable == undefined)
-@@ -1444,7 +1444,7 @@ again:
- 			printk(KERN_INFO "Automatically enabled pci realloc, if you have problem, try booting with pci=realloc=off\n");
- 
- 		free_list(&fail_head);
--		goto enable_and_dump;
-+		goto dump;
- 	}
- 
- 	printk(KERN_DEBUG "PCI: No. %d try to assign unassigned res\n",
-@@ -1478,11 +1478,7 @@ again:
- 
- 	goto again;
- 
--enable_and_dump:
--	/* Depth last, update the hardware. */
--	list_for_each_entry(bus, &pci_root_buses, node)
--		pci_enable_bridges(bus);
--
-+dump:
- 	/* dump the resource on buses */
- 	list_for_each_entry(bus, &pci_root_buses, node)
- 		pci_bus_dump_resources(bus);
-@@ -1548,7 +1544,6 @@ enable_all:
- 	if (retval)
- 		dev_err(&bridge->dev, "Error reenabling bridge (%d)\n", retval);
- 	pci_set_master(bridge);
--	pci_enable_bridges(parent);
- }
- EXPORT_SYMBOL_GPL(pci_assign_unassigned_bridge_resources);
- 
-Index: linux-2.6/drivers/pcmcia/cardbus.c
-===================================================================
---- linux-2.6.orig/drivers/pcmcia/cardbus.c
-+++ linux-2.6/drivers/pcmcia/cardbus.c
-@@ -91,7 +91,6 @@ int __ref cb_alloc(struct pcmcia_socket
- 	if (s->tune_bridge)
- 		s->tune_bridge(s, bus);
- 
--	pci_enable_bridges(bus);
- 	pci_bus_add_devices(bus);
- 
- 	return 0;
-Index: linux-2.6/include/linux/pci.h
-===================================================================
---- linux-2.6.orig/include/linux/pci.h
-+++ linux-2.6/include/linux/pci.h
-@@ -1040,7 +1040,6 @@ int __must_check pci_bus_alloc_resource(
- 						  resource_size_t,
- 						  resource_size_t),
- 			void *alignf_data);
--void pci_enable_bridges(struct pci_bus *bus);
- 
- /* Proper probing supporting hot-pluggable devices */
- int __must_check __pci_register_driver(struct pci_driver *, struct module *,
+> This TX ticker should be callable from atomic context (controller's
+> IRQ handler) and calls into callback of the client. It is desirable
+> that the client be able to submit yet another TX request from the
+> callback. That way the client can avoid having to schedule work from
+> the callback if the TX doesn't involve any sleepable task. The scheme
+> is working very well in DMA-Engine stack.
+> 
+> BTW, TI's RX mechanism too seems broken for common API. Receiving
+> every few bytes via 'notify' mechanism is very inefficient. Imagine a
+> platform with no shared memory between co-processors and the local
+> wants to diagnose the remote by asking critical data at least KBs in
+> size.
+
+No shared memory between co-processors and a relatively slow wire
+transport is a bad architecture design to begin with.
+
+>  So when API has nothing to do with received packet and the controller
+> has to get rid of it asap so as to be able to receive the next, IMHO
+> there should be short-circuit from controller to client via the API.
+> No delay, no buffering of RX.
+
+The current TI design is based on the fact that we can get multiple
+messages on a single interrupt due to the h/w fifo and the driver takes
+care of the bottom-half. Leaving it to the client is putting a lot of
+faith in the client and doesn't scale to multiple clients. The client
+would have to perform mostly the same as the driver is doing - so this
+goes back to the base discussion point that we have - which is the lack
+of support for atomic_context receivers in the current code. I perceive
+this as an attribute of the controller/mailbox device itself rather than
+the client.
+
+> 
+> 
+>>> It's the controller driver that actually puts the data on the bus. So
+>>> only it should define the format in which it accepts data from the
+>>> clients. Every client should simply populate the packet structure
+>>> defined in  my_lovely_controller.h and pass on the struct pointer to
+>>> the controller driver via API.
+>>> No negotiations for the driver seat among passengers :)
+>>
+>> OK, I was trying to avoid including my_lovely_controller.h and only
+>> include the standard .h file as a client user, the client would anyway
+>> need to have the intrinsic knowledge of the packet structure.
+>>
+> Not including my_controller.h doesn't make things standard.
+> As we know, the client anyway has to have intrinsic knowledge of the
+> packet structure(which is dictated by the controller), so not
+> including my_controller.h will only confuse people as to where the
+> packet info came from?
+
+OK, agreed.
+
+> 
+>>>>
+>>> I think the mailbox should be exclusively held by a client. That makes
+>>> many things simpler. Also remote firmwares won't be always robust
+>>> enough to handle commands from different subsystems intermixed. The
+>>> API only has to make sure the mailbox_get/put operations are very
+>>> thin.
+>>
+>> This might be the case for specific remotes where we expect only one
+>> client driver to be responsible for talking to it, but for generic
+>> offloading, you do not want to have this restriction. You do not want
+>> peer clients to go through a single main client, as the latencies or the
+>> infrastructure imposed by the main client may not be suitable for the
+>> other clients. The stricter usecase here would be the shareable mailbox,
+>> and if it is exclusive, as dictated by a controller or device property,
+>> then so be it and things would get simplified for that controller/device.
+>>
+> Shared Vs Exclusive had been the dilemma of DMAEngine too.
+> If the controller has physical channels at least as many as clients,
+> exclusivity is no problem.
+> Sharing is desirable when the controller has to serve clients more
+> than its physical channels. We solve that by having the controller
+> declare exclusive virtual channels and internally scheduling the
+> requests onto physical channels.
+>  And as Andy pointed out, some remote-ends may not cope with requests
+> coming from different subsystems intermixed.
+
+Even though both the scenarios look very similar, I believe there are
+some slight differences. All the devices belonging to a controller may
+not be of the same type (meaning, intended towards the same remote or be
+used interchangeably with one another). It is definitely possible if you
+have a similar scenario to the DMA physical channels and your remote
+rx interrupt can identify the device/channel to process. This would be
+very much dependent on the architecture of a controller. The particular
+example that I have in mind is s/w clients between the same set of
+remote and host entities using the same device - the send part is anyway
+arbitrated by the controller, and the same received message can be
+delivered to the clients, with the clients making the decision whether
+the packet belongs to them or not. I agree that all remote-ends will not
+be able to cope up intermixed requests, but isn't this again a
+controller architecture dependent?
+
+regards
+Suman
