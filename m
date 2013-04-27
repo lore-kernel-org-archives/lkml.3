@@ -1,108 +1,293 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756222Ab3D0BBH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 21:01:07 -0400
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:41170 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753343Ab3D0BBG (ORCPT
+	id S1755822Ab3D0BJx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 21:09:53 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:24568 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751442Ab3D0BJw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 21:01:06 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAPM=9tw7YOeUZo8-2Y4SKqgBjUYdBn_Ugic+Eo2CYEri45JCmw@mail.gmail.com>
-References: <CALCETrVBor6fKwxP=+0mtJ4SjKn2YrFczSdXhazw3m8E5Sxx6A@mail.gmail.com>
-	<CALCETrUsRDVUBs_O5VB7LxS-nRBqOv6YQcUFvP7e=8UVoHwzhA@mail.gmail.com>
-	<CAPM=9tw7YOeUZo8-2Y4SKqgBjUYdBn_Ugic+Eo2CYEri45JCmw@mail.gmail.com>
-Date: Sat, 27 Apr 2013 11:01:04 +1000
-Message-ID: <CAPM=9twFx2ourMTF3wD=dph1evGjr6Zs2-1HUyhin2mCMhrO8g@mail.gmail.com>
-Subject: Re: WT memory type on x86_64?
-From: Dave Airlie <airlied@gmail.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 26 Apr 2013 21:09:52 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Yijing Wang <wangyijing@huawei.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [RFC PATCH] PCI: Enable pci bridge when it is needed
+Date: Fri, 26 Apr 2013 18:09:34 -0700
+Message-Id: <1367024974-6063-1-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.8.1.4
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 27, 2013 at 11:00 AM, Dave Airlie <airlied@gmail.com> wrote:
-> On Sat, Apr 27, 2013 at 10:37 AM, Andy Lutomirski <luto@amacapital.net> wrote:
->> On Wed, Apr 24, 2013 at 12:33 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->>> For an upcoming (and, sadly, NDA'd [1]) project, I may need to use
->>> write-through memory.  I'd like to gauge how unpleasant this will be.
->>>
->>> AFAICT, modern CPUs allow the WT type to be set using MTRR or a PAT
->>> entry.  Sadly, MTRRs are in short supply, and the four fully-usable
->>> PAT slots are used for UC, UC-, WB, and WC.  I can keep my fingers
->>> crossed and hope that there are enough free MTRRs, or I could try to
->>> free up a PAT entry.
->>>
->>> How nasty will the latter be?  I just looked at two rather different
->>> modern Sandy Bridge machines, and BIOS doesn't appear to set up any
->>> MTRRs in the WC or WP states.  As long as those MTRR types aren't
->>> used, I think the UC- PAT entry is useless -- it behaves identically
->>> to UC.  Lots of DRM drivers, though, seen to add a WC MTRR to cover
->>> video memory.  Is there any need for this on modern machines?  That
->>> is, are there any drivers that actually need the mtrr_add call to
->>> succeed on a machine that has a working PAT?
->>>
->>
->> FWIW, I've done a bit of a survey.  Things that use UC or UC- include:
->>
->>  - ioremap_nocache: ISTM that any correct caller wants genuine UC memory.
->>
->>  - plain ioremap: Are there architectures where it's not
->> ioremap_nocache?  (Tn any case, this is irrelevant.)
->>
->>  - pci_iomap: This is used all over the framebuffer code.  It seems to
->> be equivalent to ioremap or ioremap_nocache, which are the same thing
->> on x86.
->>
->>  - AGP: The AGP code seems inconsistent.  alloc_page gets a cacheable
->> page of RAM.  alloc_pages gets uncached pages of RAM.  In there's a WC
->> MTRR on RAM, then everything is screwed up anyway.
->>
->>  - ttm: This code is newish.  I imagine that everything using ttm that
->> wants WC memory asks TTM for WC, which will work just fine.  In any
->> case, the allocations are AFAICS backed by RAM, so there should be no
->> conflicts.
->>
->>  - radeon's gart: Ditto
->>
->>  - efi: presumably !WB means UC is fine.  (Why would EFI need WC?)
->>
->>  - uvesafb: The MTRR code is terrifying.  It looks nearly useless (it
->> has alignment issues) and it's unnecessary on a system with PAT.  In
->> any case, this code certainly isn't expecting a WC MTRR with any kind
->> of mapping other than ioremap_wc.
->>
->>
->> mtrr_add users include:
->>
->>  - tdfxfb, vt8623fb, sgivwfb, s3fb, etc. should be converted to use ioremap_wc
->>  - myri10ge tries to use an MTRR.  This is, IMO, strange.
->>  - Infiniband.  I think it's okay if the MTRR doesn't work.
->>
->>
->> The only problematic (and not trivially fixable) thing I found is
->> pci_mmap_page_range, which uses UC- and is part of the ABI -- old X
->> drivers may care.
->>
->> I wonder if X (using UMS) will slow down if WC MTRRs become illegal or
->> stop being added by old framebuffer drivers.  (If so, they can be
->> randomly slow anyway -- lots of machines have no free MTRRs).
->
-> Don't forget you can add mtrrs from userspace via /proc/mtrr. I'm not sure
-> what sort ABI guarantees are on this.
->
-> TTM allocations are not necessarily backed by RAM, they can also from
-> device memory.
->
-> Also i915 has mtrr code, but we avoid touching mtrrs if we are on a PAT cpu.
+Current we enable bridges after bus scan and assign resources.
+and it is spreaded a lot of places.
 
-i915 also has this comment:
-        /* Set up a WC MTRR for non-PAT systems.  This is more common than
-         * one would think, because the kernel disables PAT on first
-         * generation Core chips because WC PAT gets overridden by a UC
-         * MTRR if present.  Even if a UC MTRR isn't present.
-         */
+We can move it to where pci device is enabled, and need
+to go up to root bus and enable bridge one by one down to pci
+dev.
 
-Dave.
+So that will delay enable bridge late as needed bassis,
+also kill one inconsistent between boot path and hotplug
+path in acpi_pci_root_add().
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+
+---
+ arch/arm/kernel/bios32.c           |    5 -----
+ arch/m68k/platform/coldfire/pci.c  |    1 -
+ arch/mips/pci/pci.c                |    1 -
+ arch/sh/drivers/pci/pci.c          |    1 -
+ drivers/acpi/pci_root.c            |    4 ----
+ drivers/parisc/lba_pci.c           |    1 -
+ drivers/pci/bus.c                  |   19 -------------------
+ drivers/pci/hotplug/acpiphp_glue.c |    1 -
+ drivers/pci/pci.c                  |   20 ++++++++++++++++++++
+ drivers/pci/probe.c                |    1 -
+ drivers/pci/setup-bus.c            |   11 +++--------
+ drivers/pcmcia/cardbus.c           |    1 -
+ include/linux/pci.h                |    1 -
+ 13 files changed, 23 insertions(+), 44 deletions(-)
+
+Index: linux-2.6/arch/arm/kernel/bios32.c
+===================================================================
+--- linux-2.6.orig/arch/arm/kernel/bios32.c
++++ linux-2.6/arch/arm/kernel/bios32.c
+@@ -523,11 +523,6 @@ void pci_common_init(struct hw_pci *hw)
+ 			 * Assign resources.
+ 			 */
+ 			pci_bus_assign_resources(bus);
+-
+-			/*
+-			 * Enable bridges
+-			 */
+-			pci_enable_bridges(bus);
+ 		}
+ 
+ 		/*
+Index: linux-2.6/arch/m68k/platform/coldfire/pci.c
+===================================================================
+--- linux-2.6.orig/arch/m68k/platform/coldfire/pci.c
++++ linux-2.6/arch/m68k/platform/coldfire/pci.c
+@@ -319,7 +319,6 @@ static int __init mcf_pci_init(void)
+ 	pci_fixup_irqs(pci_common_swizzle, mcf_pci_map_irq);
+ 	pci_bus_size_bridges(rootbus);
+ 	pci_bus_assign_resources(rootbus);
+-	pci_enable_bridges(rootbus);
+ 	pci_bus_add_devices(rootbus);
+ 	return 0;
+ }
+Index: linux-2.6/arch/mips/pci/pci.c
+===================================================================
+--- linux-2.6.orig/arch/mips/pci/pci.c
++++ linux-2.6/arch/mips/pci/pci.c
+@@ -113,7 +113,6 @@ static void pcibios_scanbus(struct pci_c
+ 		if (!pci_has_flag(PCI_PROBE_ONLY)) {
+ 			pci_bus_size_bridges(bus);
+ 			pci_bus_assign_resources(bus);
+-			pci_enable_bridges(bus);
+ 		}
+ 	}
+ }
+Index: linux-2.6/arch/sh/drivers/pci/pci.c
+===================================================================
+--- linux-2.6.orig/arch/sh/drivers/pci/pci.c
++++ linux-2.6/arch/sh/drivers/pci/pci.c
+@@ -69,7 +69,6 @@ static void pcibios_scanbus(struct pci_c
+ 
+ 		pci_bus_size_bridges(bus);
+ 		pci_bus_assign_resources(bus);
+-		pci_enable_bridges(bus);
+ 	} else {
+ 		pci_free_resource_list(&resources);
+ 	}
+Index: linux-2.6/drivers/acpi/pci_root.c
+===================================================================
+--- linux-2.6.orig/drivers/acpi/pci_root.c
++++ linux-2.6/drivers/acpi/pci_root.c
+@@ -538,10 +538,6 @@ static int acpi_pci_root_add(struct acpi
+ 		pci_assign_unassigned_bus_resources(root->bus);
+ 	}
+ 
+-	/* need to after hot-added ioapic is registered */
+-	if (system_state != SYSTEM_BOOTING)
+-		pci_enable_bridges(root->bus);
+-
+ 	pci_bus_add_devices(root->bus);
+ 	return 1;
+ 
+Index: linux-2.6/drivers/parisc/lba_pci.c
+===================================================================
+--- linux-2.6.orig/drivers/parisc/lba_pci.c
++++ linux-2.6/drivers/parisc/lba_pci.c
+@@ -1533,7 +1533,6 @@ lba_driver_probe(struct parisc_device *d
+ 		lba_dump_res(&lba_dev->hba.lmmio_space, 2);
+ #endif
+ 	}
+-	pci_enable_bridges(lba_bus);
+ 
+ 	/*
+ 	** Once PCI register ops has walked the bus, access to config
+Index: linux-2.6/drivers/pci/bus.c
+===================================================================
+--- linux-2.6.orig/drivers/pci/bus.c
++++ linux-2.6/drivers/pci/bus.c
+@@ -215,24 +215,6 @@ void pci_bus_add_devices(const struct pc
+ 	}
+ }
+ 
+-void pci_enable_bridges(struct pci_bus *bus)
+-{
+-	struct pci_dev *dev;
+-	int retval;
+-
+-	list_for_each_entry(dev, &bus->devices, bus_list) {
+-		if (dev->subordinate) {
+-			if (!pci_is_enabled(dev)) {
+-				retval = pci_enable_device(dev);
+-				if (retval)
+-					dev_err(&dev->dev, "Error enabling bridge (%d), continuing\n", retval);
+-				pci_set_master(dev);
+-			}
+-			pci_enable_bridges(dev->subordinate);
+-		}
+-	}
+-}
+-
+ /** pci_walk_bus - walk devices on/under bus, calling callback.
+  *  @top      bus whose devices should be walked
+  *  @cb       callback to be called for each device found
+@@ -285,4 +267,3 @@ EXPORT_SYMBOL_GPL(pci_walk_bus);
+ EXPORT_SYMBOL(pci_bus_alloc_resource);
+ EXPORT_SYMBOL_GPL(pci_bus_add_device);
+ EXPORT_SYMBOL(pci_bus_add_devices);
+-EXPORT_SYMBOL(pci_enable_bridges);
+Index: linux-2.6/drivers/pci/hotplug/acpiphp_glue.c
+===================================================================
+--- linux-2.6.orig/drivers/pci/hotplug/acpiphp_glue.c
++++ linux-2.6/drivers/pci/hotplug/acpiphp_glue.c
+@@ -704,7 +704,6 @@ static int __ref enable_device(struct ac
+ 	acpiphp_sanitize_bus(bus);
+ 	acpiphp_set_hpp_values(bus);
+ 	acpiphp_set_acpi_region(slot);
+-	pci_enable_bridges(bus);
+ 
+ 	list_for_each_entry(dev, &bus->devices, bus_list) {
+ 		/* Assume that newly added devices are powered on already. */
+Index: linux-2.6/drivers/pci/pci.c
+===================================================================
+--- linux-2.6.orig/drivers/pci/pci.c
++++ linux-2.6/drivers/pci/pci.c
+@@ -1145,6 +1145,24 @@ int pci_reenable_device(struct pci_dev *
+ 	return 0;
+ }
+ 
++static void pci_enable_bridge(struct pci_dev *dev)
++{
++	int retval;
++
++	if (!dev)
++		return;
++
++	pci_enable_bridge(dev->bus->self);
++
++	if (pci_is_enabled(dev))
++		return;
++	retval = pci_enable_device(dev);
++	if (retval)
++		dev_err(&dev->dev, "Error enabling bridge (%d), continuing\n",
++			retval);
++	pci_set_master(dev);
++}
++
+ static int pci_enable_device_flags(struct pci_dev *dev, unsigned long flags)
+ {
+ 	int err;
+@@ -1165,6 +1183,8 @@ static int pci_enable_device_flags(struc
+ 	if (atomic_inc_return(&dev->enable_cnt) > 1)
+ 		return 0;		/* already enabled */
+ 
++	pci_enable_bridge(dev->bus->self);
++
+ 	/* only skip sriov related */
+ 	for (i = 0; i <= PCI_ROM_RESOURCE; i++)
+ 		if (dev->resource[i].flags & flags)
+Index: linux-2.6/drivers/pci/probe.c
+===================================================================
+--- linux-2.6.orig/drivers/pci/probe.c
++++ linux-2.6/drivers/pci/probe.c
+@@ -1949,7 +1949,6 @@ unsigned int __ref pci_rescan_bus(struct
+ 
+ 	max = pci_scan_child_bus(bus);
+ 	pci_assign_unassigned_bus_resources(bus);
+-	pci_enable_bridges(bus);
+ 	pci_bus_add_devices(bus);
+ 
+ 	return max;
+Index: linux-2.6/drivers/pci/setup-bus.c
+===================================================================
+--- linux-2.6.orig/drivers/pci/setup-bus.c
++++ linux-2.6/drivers/pci/setup-bus.c
+@@ -1435,7 +1435,7 @@ again:
+ 
+ 	/* any device complain? */
+ 	if (list_empty(&fail_head))
+-		goto enable_and_dump;
++		goto dump;
+ 
+ 	if (tried_times >= pci_try_num) {
+ 		if (pci_realloc_enable == undefined)
+@@ -1444,7 +1444,7 @@ again:
+ 			printk(KERN_INFO "Automatically enabled pci realloc, if you have problem, try booting with pci=realloc=off\n");
+ 
+ 		free_list(&fail_head);
+-		goto enable_and_dump;
++		goto dump;
+ 	}
+ 
+ 	printk(KERN_DEBUG "PCI: No. %d try to assign unassigned res\n",
+@@ -1478,11 +1478,7 @@ again:
+ 
+ 	goto again;
+ 
+-enable_and_dump:
+-	/* Depth last, update the hardware. */
+-	list_for_each_entry(bus, &pci_root_buses, node)
+-		pci_enable_bridges(bus);
+-
++dump:
+ 	/* dump the resource on buses */
+ 	list_for_each_entry(bus, &pci_root_buses, node)
+ 		pci_bus_dump_resources(bus);
+@@ -1548,7 +1544,6 @@ enable_all:
+ 	if (retval)
+ 		dev_err(&bridge->dev, "Error reenabling bridge (%d)\n", retval);
+ 	pci_set_master(bridge);
+-	pci_enable_bridges(parent);
+ }
+ EXPORT_SYMBOL_GPL(pci_assign_unassigned_bridge_resources);
+ 
+Index: linux-2.6/drivers/pcmcia/cardbus.c
+===================================================================
+--- linux-2.6.orig/drivers/pcmcia/cardbus.c
++++ linux-2.6/drivers/pcmcia/cardbus.c
+@@ -91,7 +91,6 @@ int __ref cb_alloc(struct pcmcia_socket
+ 	if (s->tune_bridge)
+ 		s->tune_bridge(s, bus);
+ 
+-	pci_enable_bridges(bus);
+ 	pci_bus_add_devices(bus);
+ 
+ 	return 0;
+Index: linux-2.6/include/linux/pci.h
+===================================================================
+--- linux-2.6.orig/include/linux/pci.h
++++ linux-2.6/include/linux/pci.h
+@@ -1040,7 +1040,6 @@ int __must_check pci_bus_alloc_resource(
+ 						  resource_size_t,
+ 						  resource_size_t),
+ 			void *alignf_data);
+-void pci_enable_bridges(struct pci_bus *bus);
+ 
+ /* Proper probing supporting hot-pluggable devices */
+ int __must_check __pci_register_driver(struct pci_driver *, struct module *,
