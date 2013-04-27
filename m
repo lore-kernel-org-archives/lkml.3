@@ -1,84 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756771Ab3D0Cyy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 22:54:54 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:65239 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753894Ab3D0Cyw (ORCPT
+	id S1755648Ab3D0DNd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 23:13:33 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:47556 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751097Ab3D0DNb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 22:54:52 -0400
-X-AuditID: cbfee68d-b7f016d000007930-b9-517b3dfa6fbb
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Andrew Morton'" <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "'Len Brown'" <len.brown@intel.com>,
-        "'Pavel Machek'" <pavel@ucw.cz>, "'Rafael J. Wysocki'" <rjw@sisk.pl>,
-        linux-pm@vger.kernel.org, Jingoo Han <jg1.han@samsung.com>
-Subject: [PATCH] PM: Add pm_ops_ptr() macro
-Date: Sat, 27 Apr 2013 11:54:50 +0900
-Message-id: <000001ce42f2$96128cc0$c237a640$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac5C8o6cbQXPVHyVQgC21Tqr9UQ2BA==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrIIsWRmVeSWpSXmKPExsVy+t8zfd1fttWBBs0nbCzmrF/DZvHykKbF
-	5YWXWC1mTdnLZHF51xw2i8+9Rxgt7p46ymbRv7CXyYHDY/Gel0weJ2b8ZvHo27KK0ePR4hZG
-	jxWrv7N7fN4kF8AWxWWTkpqTWZZapG+XwJWx/5BywUXWivXPMhsYj7N0MXJySAiYSLz/8oER
-	whaTuHBvPVsXIxeHkMAyRoktX78ywRSd6XsPlVjEKLHr7ltGCOcXo8TBx4fAqtgE1CS+fDnM
-	3sXIwSEioC/R1qIBUsMscJxRYumF9ywgcWEBbYl1H6NAylkEVCW2d81iA7F5BSwlWj98hLIF
-	JX5Mvgd2HbOAlsT6nceZIGx5ic1r3jJDHKQgsePsa7CrRQT0JGb+3McOUSMise/FO7DbJARu
-	sUss3rWFDWKZgMS3yYfAbpAQkJXYdABqjqTEwRU3WCYwis1CsnoWktWzkKyehWTFAkaWVYyi
-	qQXJBcVJ6UWGesWJucWleel6yfm5mxgh0dm7g/H2AetDjMlA6ycyS4km5wOjO68k3tDYzMjC
-	1MTU2Mjc0ow0YSVxXrUW60AhgfTEktTs1NSC1KL4otKc1OJDjEwcnFINjPcv2D/Y9W0K++/X
-	l8/ODIwKNfnbffNqRQvrUlMemeQjZSL+Kcv4Ns23fWsl/G1PH9fL+XwK7mfei85+tqthiRBf
-	5/J7Wqw3m8VPFzDze/GzMftrXOtb+UfDuKDnVk9jwr5ZnlZfnVZ8jVH+GSts7huUvu4QtzZ/
-	wbUr/TteJe0z+XWh3PXwByWW4oxEQy3mouJEAACaW9zkAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrHKsWRmVeSWpSXmKPExsVy+t9jAd1fttWBBocbLCzmrF/DZvHykKbF
-	5YWXWC1mTdnLZHF51xw2i8+9Rxgt7p46ymbRv7CXyYHDY/Gel0weJ2b8ZvHo27KK0ePR4hZG
-	jxWrv7N7fN4kF8AW1cBok5GamJJapJCal5yfkpmXbqvkHRzvHG9qZmCoa2hpYa6kkJeYm2qr
-	5OIToOuWmQN0kJJCWWJOKVAoILG4WEnfDtOE0BA3XQuYxghd35AguB4jAzSQsI4xY/8h5YKL
-	rBXrn2U2MB5n6WLk5JAQMJE40/eeDcIWk7hwbz2QzcUhJLCIUWLX3beMEM4vRomDjw8xgVSx
-	CahJfPlymL2LkYNDREBfoq1FA6SGWeA4o8TSC+9ZQOLCAtoS6z5GgZSzCKhKbO+aBbaAV8BS
-	ovXDRyhbUOLH5HtgRzALaEms33mcCcKWl9i85i0zxEEKEjvOvmYEsUUE9CRm/tzHDlEjIrHv
-	xTvGCYwCs5CMmoVk1Cwko2YhaVnAyLKKUTS1ILmgOCk910ivODG3uDQvXS85P3cTIzj2n0nv
-	YFzVYHGIUYCDUYmHV2NRVaAQa2JZcWXuIUYJDmYlEV6FZ0Ah3pTEyqrUovz4otKc1OJDjMlA
-	n05klhJNzgempbySeENjEzMjSyMzCyMTc3PShJXEeQ+2WgcKCaQnlqRmp6YWpBbBbGHi4JRq
-	YGzOau/vyW3zv+78YYPC34REX/mQKctE7jr/Tm6v2jtJhNPbOmdWlb4zf7jfhH3v9Jo+PvAW
-	+fYnhFunp45PrGTOTBmdRo4r6st/ftA+dN+NbVv7bPcf7oIGKdeOhUz7ldqhfLLmX/gFoRiH
-	FW/aNHZXLg5aXFdWwH5760au3+1tf22L68VClFiKMxINtZiLihMBH4/YQ0EDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Fri, 26 Apr 2013 23:13:31 -0400
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+To: mtosatti@redhat.com
+Cc: gleb@redhat.com, avi.kivity@gmail.com, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Subject: [PATCH v4 0/6] KVM: MMU: fast zap all shadow pages
+Date: Sat, 27 Apr 2013 11:13:16 +0800
+Message-Id: <1367032402-13729-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.7.6
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13042703-2674-0000-0000-000008C0CD69
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add pm_ops_ptr() macro that allows the .pm entry in the driver structures
-to be assigned without having an #define xxx NULL for the case that PM is
-not enabled.
+This patchset is based on current 'queue' branch on kvm tree.
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
----
- include/linux/pm.h |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+Changlog:
 
-diff --git a/include/linux/pm.h b/include/linux/pm.h
-index a224c7f..bd50d15 100644
---- a/include/linux/pm.h
-+++ b/include/linux/pm.h
-@@ -55,8 +55,10 @@ struct device;
- 
- #ifdef CONFIG_PM
- extern const char power_group_name[];		/* = "power" */
-+#define pm_ops_ptr(_ptr)	(_ptr)
- #else
- #define power_group_name	NULL
-+#define pm_ops_ptr(_ptr)	NULL
- #endif
- 
- typedef struct pm_message {
+V4:
+  1): drop unmapping invalid rmap out of mmu-lock and use lock-break technique
+      instead. Thanks to Gleb's comments.
+
+  2): needn't handle invalid-gen pages specially due to page table always
+      switched by KVM_REQ_MMU_RELOAD. Thanks to Marcelo's comments.
+
+V3:
+  completely redesign the algorithm, please see below.
+
+V2:
+  - do not reset n_requested_mmu_pages and n_max_mmu_pages
+  - batch free root shadow pages to reduce vcpu notification and mmu-lock
+    contention
+  - remove the first patch that introduce kvm->arch.mmu_cache since we only
+    'memset zero' on hashtable rather than all mmu cache members in this
+    version
+  - remove unnecessary kvm_reload_remote_mmus after kvm_mmu_zap_all
+
+* Issue
+The current kvm_mmu_zap_all is really slow - it is holding mmu-lock to
+walk and zap all shadow pages one by one, also it need to zap all guest
+page's rmap and all shadow page's parent spte list. Particularly, things
+become worse if guest uses more memory or vcpus. It is not good for
+scalability.
+
+* Idea
+KVM maintains a global mmu invalid generation-number which is stored in
+kvm->arch.mmu_valid_gen and every shadow page stores the current global
+generation-number into sp->mmu_valid_gen when it is created.
+
+When KVM need zap all shadow pages sptes, it just simply increase the
+global generation-number then reload root shadow pages on all vcpus.
+Vcpu will create a new shadow page table according to current kvm's
+generation-number. It ensures the old pages are not used any more.
+
+The invalid-gen pages (sp->mmu_valid_gen != kvm->arch.mmu_valid_gen)
+are keeped in mmu-cache until page allocator reclaims page.
+
+* Challenges
+Some page invalidation is requested when memslot is moved or deleted
+and kvm is being destroy who call zap_all_pages to delete all sp using
+their rmap and lpage-info, after call zap_all_pages, the rmap and lpage-info
+will be freed.
+
+For the lpage-info, we clear all lpage count when do zap-all-pages, then
+all invalid shadow pages are not counted in lpage-info, after that lpage-info
+on the invalid memslot can be safely freed. This is also good for the
+performance - it allows guest to use hugepage as far as possible.
+
+For the rmap, we use lock-break technique to zap all sptes linked on the
+invalid rmap, it is not very effective but good for the first step.
+
+* TODO
+Unmapping invalid rmap out of mmu-lock with a clear way.
+
+Xiao Guangrong (6):
+  KVM: MMU: drop unnecessary kvm_reload_remote_mmus
+  KVM: x86: introduce memslot_set_lpage_disallowed
+  KVM: MMU: introduce kvm_clear_all_lpage_info
+  KVM: MMU: fast invalid all shadow pages
+  KVM: x86: use the fast way to invalid all pages
+  KVM: MMU: make kvm_mmu_zap_all preemptable
+
+ arch/x86/include/asm/kvm_host.h |    2 +
+ arch/x86/kvm/mmu.c              |   88 ++++++++++++++++++++++++++++++++++++++-
+ arch/x86/kvm/mmu.h              |    2 +
+ arch/x86/kvm/x86.c              |   87 ++++++++++++++++++++++++++++-----------
+ arch/x86/kvm/x86.h              |    2 +
+ 5 files changed, 155 insertions(+), 26 deletions(-)
+
 -- 
-1.7.2.5
-
+1.7.7.6
 
