@@ -1,139 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754795Ab3D0Evu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Apr 2013 00:51:50 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:61630 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752797Ab3D0Evt (ORCPT
+	id S1753857Ab3D0FC3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Apr 2013 01:02:29 -0400
+Received: from oproxy12-pub.bluehost.com ([50.87.16.10]:48979 "HELO
+	oproxy12-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752058Ab3D0FC2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Apr 2013 00:51:49 -0400
-MIME-Version: 1.0
-In-Reply-To: <517B242D.7040902@ti.com>
-References: <1363145021-14339-1-git-send-email-s-anna@ti.com>
-	<CABb+yY0RYkVeo2Sb4WsDJY0jf17488FEz0d2CB994eQaSOEsVg@mail.gmail.com>
-	<37C860A02101E749A747FA2D3C1E3C504A5DF7@DLEE11.ent.ti.com>
-	<CABb+yY1x4x_A+QtGG9ohsLPgs8c3nEVnd_ExJBGOOR8=6YLPFA@mail.gmail.com>
-	<37C860A02101E749A747FA2D3C1E3C504A63B4@DLEE11.ent.ti.com>
-	<CAJe_ZhehnniZd730jjiOLrHozq8TOJZgFYLqUe4KqgBiQEu8PA@mail.gmail.com>
-	<51779304.4040003@st.com>
-	<CAJe_ZhdZv5LW6kdwyPtJe69mfW6t=WQ4OJnG2H4sUhibattN2A@mail.gmail.com>
-	<517867E1.7050301@ti.com>
-	<CAJe_ZhfDZzq+DzA9XDF3PWFUmwcZnDy-mhE4hLNHmf+V4GhOxw@mail.gmail.com>
-	<5179AE2F.3040403@ti.com>
-	<CAJe_Zhf4miUm4yTyuwc56kpD8Mu4=vsmX4wdQkFDT96JbKR=MQ@mail.gmail.com>
-	<517B242D.7040902@ti.com>
-Date: Sat, 27 Apr 2013 10:21:48 +0530
-Message-ID: <CAJe_ZhdH+SCs5crguXrm6y-6bu+eGnTqeJS6cOS5H5Yz=m15Cw@mail.gmail.com>
-Subject: Re: [PATCHv3 00/14] drivers: mailbox: framework creation
-From: Jassi Brar <jaswinder.singh@linaro.org>
-To: Suman Anna <s-anna@ti.com>
-Cc: Loic PALLARDY <loic.pallardy@st.com>,
-        Jassi Brar <jassisinghbrar@gmail.com>,
-        "Ohad Ben-Cohen (ohad@wizery.com)" <ohad@wizery.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        "Andy Green (andy.green@linaro.org)" <andy.green@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Tony Lindgren <tony@atomide.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Omar Ramirez Luna (omar.ramirez@copitl.com)" 
-	<omar.ramirez@copitl.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 27 Apr 2013 01:02:28 -0400
+Message-ID: <1367038943.12779.10.camel@Wailaba2>
+Subject: Re: [PATCH] process cputimer is moving faster than its
+ corresponding clock
+From: Olivier Langlois <olivier@trillion01.com>
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, schwidefsky@de.ibm.com,
+        Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Sat, 27 Apr 2013 01:02:23 -0400
+In-Reply-To: <CAHGf_=q5W1brnzmsK0bN9s07RXsRUyRoYKN347kySQs_3g2_Lg@mail.gmail.com>
+References: <1365184746.874.103.camel@Wailaba2>
+	 <1365593710.30071.52.camel@laptop> <1365608911.707.65.camel@Wailaba2>
+	 <1365763837.17140.52.camel@laptop> <1365782115.17140.68.camel@laptop>
+	 <CAFTL4hwQ4FZs0VCNXP37f=+DBW7Q2EQc6PW_EtYiVnZCPWN4OQ@mail.gmail.com>
+	 <CAHGf_=pWPT4XdrJ8ZveL4zJKm1SE0whpL_fMHd5_TokuNQxSJQ@mail.gmail.com>
+	 <CAHGf_=psD4V-U4FFwAWr4k3ZP6p=GVkNY_0S-Cg06m-=89MM7Q@mail.gmail.com>
+	 <1366951210.7911.28.camel@Wailaba2> <1366957639.7911.42.camel@Wailaba2>
+	 <517AD0AE.1030404@gmail.com> <1367027476.7911.60.camel@Wailaba2>
+	 <CAHGf_=q5W1brnzmsK0bN9s07RXsRUyRoYKN347kySQs_3g2_Lg@mail.gmail.com>
+Organization: Trillion01 Inc
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {5686:box610.bluehost.com:olivierl:trillion01.com} {sentby:smtp auth 173.178.230.31 authed with olivier@trillion01.com}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Suman,
+On Fri, 2013-04-26 at 22:15 -0400, KOSAKI Motohiro wrote:
+> On Fri, Apr 26, 2013 at 9:51 PM, Olivier Langlois
+> <olivier@trillion01.com> wrote:
+> > On Fri, 2013-04-26 at 15:08 -0400, KOSAKI Motohiro wrote:
+> >> > I need to add that I can only confirm that to be true with
+> >> > sum_exec_runtime.
+> >> >
+> >> > To affirm it to be true for stime and utime would require more
+> >> > investigation. I didn't look them at all. I was only concerned with
+> >> > sum_exec_runtime.
+> >> >
+> >> > I will prepare a v2 of the patch accounting all the feedbacks that I
+> >> > received from KOSAKI Motohiro, Frederic Weisbecker and Peter Zijlstra
+> >> > and send it back here for further discussion.
+> >> >
+> >> > Thank you very much all!
+> >>
+> >> Do you mean your utime test case still failure? If you share your test-case,
+> >> I'm going to look at your issue too.
+> >>
+> > Sure with pleasure. My testcase is glibc-2.17/rt/tst-cputimer1.c
+> >
+> > That being said, it strictly test CPUCLOCK_SCHED timers. Hence my focus
+> > when modifying the code was strictly on sum_exec_runtime.
+> >
+> > If utime and stime components of cputimer are moving faster than their
+> > associated clock, this is something that I did not address.
+> 
+> Hmm... Sorry. I'm confused. 1) I haven't seen any glibc test failure
+> after applying
+> my patch. 2) tst-cputimer1.c only have CLOCK_PROCESS_CPUTIME_ID test and
+> don't have any utime, stime tests.
+> 
+> Please let me know if you've seen any failure after applying my patch.
 
->> On 26 April 2013 03:59, Suman Anna <s-anna@ti.com> wrote:
->>> On 04/25/2013 12:20 AM, Jassi Brar wrote:
+Basically it is to exclude deltas away from the cputimer initialization
+value.
 
->> I never said no-buffering and I never said buffering should be in
->> controller drivers. In fact I don't remember ever objecting to how
->> buffering is done in TI's framework.
->> A controller could service only 1 request at a time so lets give it
->> just 1 at a time. Let the API handle the complexity of buffering.
->>
->
-> Alright, guess this got lost in translation :). I interpreted based on
-> the fact that you wanted to get rid of the size field from the
-> mailbox_msg definition. Do you have a different mechanism in mind for
-> the buffering compared to the present one?
->
-Sure, a very simple but efficient one. I had started on pseudo code
-implementation the day I first replied, but now I have real code with
-the PL320 controller and the Highbank client converted to the API. All
-that I say features in the new design. Polishing and documentation
-will take just a few hours more. You could see end to end what I have
-been talking about.
+Yes I still have the failure. My patch can be broken into 3 elements.
 
+1. fair.c - cputimer slow down
+2. Add deltas to cputimer sample
+3. Address race condition
 
->
-> OK, I didn't think of a no RTR interrupt-based controller. I would thing
-> that such a controller is very rudimentary. I wonder if there are any
-> controllers like this out there.
->
-One of my controllers is like that :)
+If any of these 3 elements are missing, you get the failure.
 
->>
->> BTW, TI's RX mechanism too seems broken for common API. Receiving
->> every few bytes via 'notify' mechanism is very inefficient. Imagine a
->> platform with no shared memory between co-processors and the local
->> wants to diagnose the remote by asking critical data at least KBs in
->> size.
->
-> No shared memory between co-processors and a relatively slow wire
-> transport is a bad architecture design to begin with.
->
-IMHO it's only about private memory. Even if the controller transfers,
-say, 10bytes/interrupt there could always be a requirement to read
-some 1MB region of remote's private memory. And the same logic implies
-that our TX too should be as fast as possible - the remote might need
-its 1MB firmware over the link. So let us just try to serve all
-designs rather than evaluate them :)
+That being said, it is not a systematic failure. It is intermittent. I
+am wrapping the execution of the unittest into a simple perl script:
 
+#!/usr/bin/perl
 
->>  So when API has nothing to do with received packet and the controller
->> has to get rid of it asap so as to be able to receive the next, IMHO
->> there should be short-circuit from controller to client via the API.
->> No delay, no buffering of RX.
->
-> The current TI design is based on the fact that we can get multiple
-> messages on a single interrupt due to the h/w fifo and the driver takes
-> care of the bottom-half. Leaving it to the client is putting a lot of
-> faith in the client and doesn't scale to multiple clients. The client
-> would have to perform mostly the same as the driver is doing - so this
-> goes back to the base discussion point that we have - which is the lack
-> of support for atomic_context receivers in the current code. I perceive
-> this as an attribute of the controller/mailbox device itself rather than
-> the client.
->
-Sorry, I don't understand the concern about faith.
-If the controller h/w absolutely can not tell the remote(sender) of a
-received packet (as seems to be your case), its driver shouldn't even
-try to demux the received messages. The client driver must know which
-remotes could send it a message and how to discern them on the
-platform. Some 'server' RX client is needed here.
-If the controller could indeed map received packet onto remotes, then
-ideally the controller driver should declare one (RX only) channel for
-each such remote and demux packets onto them.
-In either case, 'notify' mechanism is not necessary.
+use strict;
+use warnings;
+
+my $i = 0;
+
+while (system("./tst-cputimer1") == 0) { ++$i; }
+
+print "run $i successful iteration\n";
+
+----------------------------------------
+
+I get the failure after 10-300 iterations depending how I am
+lucky/unlucky.
+
+Also other factors to consider it is are you doing the test on a very
+loaded system? What is your platform?
+
+I have tested it positively on 32 bit, 64 bits build on Atom N450
+
+i7 first and second generation system.
+
+I did vary HZ from 300 to 1000 HZ, I tried the 3 three different
+preemption models.
+
+With all these combinations, I still have the problem.
+
+Basically the timer error is usually < 500 uS so depending when the
+process is called as a response to the timer event and this depends on
+scheduler decisions, your failure rate will vary depending on the system
+load IMO.
 
 
-> I agree that all remote-ends will not
-> be able to cope up intermixed requests, but isn't this again a
-> controller architecture dependent?
->
-I think it's more about remote's protocol implementation than
-controller's architecture.
-If tomorrow TI's remote firmware introduces a new set of critical
-commands that may arrive only in a particular sequence, you'll find
-yourself sharing a ride on our dinghy :)
-And Andy already explained where we come from.
 
-Regards,
--Jassi
