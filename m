@@ -1,93 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756120Ab3D0QVC (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Apr 2013 12:21:02 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:60530 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753035Ab3D0QU5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Apr 2013 12:20:57 -0400
-Date: Sat, 27 Apr 2013 09:20:49 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Julian Anastasov <ja@ssi.bg>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Simon Horman <horms@verge.net.au>, Ingo Molnar <mingo@redhat.com>,
-        lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
-        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Dipankar Sarma <dipankar@in.ibm.com>, dhaval.giani@gmail.com
-Subject: Re: [PATCH 2/2] ipvs: Use cond_resched_rcu_lock() helper when
- dumping connections
-Message-ID: <20130427162049.GB3780@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1366940708-10180-1-git-send-email-horms@verge.net.au>
- <1366940708-10180-3-git-send-email-horms@verge.net.au>
- <20130426080313.GC8669@dyad.programming.kicks-ass.net>
- <20130426154547.GC3860@linux.vnet.ibm.com>
- <20130426171948.GA31467@dyad.programming.kicks-ass.net>
- <20130426174815.GI3860@linux.vnet.ibm.com>
- <1367000815.8964.243.camel@edumazet-glaptop>
- <alpine.LFD.2.00.1304271342260.1633@ja.ssi.bg>
+	id S1755966Ab3D0PhK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Apr 2013 11:37:10 -0400
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:64723 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755114Ab3D0PhH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Apr 2013 11:37:07 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1304271342260.1633@ja.ssi.bg>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13042716-7182-0000-0000-0000066E70FF
+In-Reply-To: <CAPnjgZ1P6dmRB0sO2qBUtd=WBiNcY339NAit2faaotAfEqQDeQ@mail.gmail.com>
+References: <1353047903-14363-1-git-send-email-acourbot@nvidia.com> <CAPnjgZ1P6dmRB0sO2qBUtd=WBiNcY339NAit2faaotAfEqQDeQ@mail.gmail.com>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Sun, 28 Apr 2013 00:36:45 +0900
+Message-ID: <CAAVeFuLCoi07-9KWyi+iJ58Zb-aiQg1pgCvq1fmF+FKuzfCRiQ@mail.gmail.com>
+Subject: Re: [PATCH v8 0/3] Runtime Interpreted Power Sequences
+To: Simon Glass <sjg@chromium.org>
+Cc: Alexandre Courbot <acourbot@nvidia.com>,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Mark Zhang <markz@nvidia.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        David Woodhouse <dwmw2@infradead.org>, Arnd Bergmann <arnd@arndb.de>,
+        Leela Krishna Amudala <l.krishna@samsung.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        lk <linux-kernel@vger.kernel.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 27, 2013 at 02:32:48PM +0300, Julian Anastasov wrote:
-> 
-> 	Hello,
-> 
-> On Fri, 26 Apr 2013, Eric Dumazet wrote:
-> 
-> > On Fri, 2013-04-26 at 10:48 -0700, Paul E. McKenney wrote:
-> > 
-> > > Don't get me wrong, I am not opposing cond_resched_rcu_lock() because it
-> > > will be difficult to validate.  For one thing, until there are a lot of
-> > > them, manual inspection is quite possible.  So feel free to apply my
-> > > Acked-by to the patch.
-> > 
-> > One question : If some thread(s) is(are) calling rcu_barrier() and
-> > waiting we exit from rcu_read_lock() section, is need_resched() enough
-> > for allowing to break the section ?
-> > 
-> > If not, maybe we should not test need_resched() at all.
-> > 
-> > rcu_read_unlock();
-> > cond_resched();
-> > rcu_read_lock();
-> 
-> 	So, I assume, to help realtime kernels and rcu_barrier
-> it is not a good idea to guard rcu_read_unlock with checks.
-> I see that rcu_read_unlock will try to reschedule in the 
-> !CONFIG_PREEMPT_RCU case (via preempt_enable), can we
-> use ifdefs to avoid double TIF_NEED_RESCHED check?:
-> 
-> 	rcu_read_unlock();
-> #if !defined(CONFIG_PREEMPT) || defined(CONFIG_PREEMPT_RCU)
+Hi Simon,
 
-I would instead suggest something like:
+On Sat, Apr 27, 2013 at 3:55 AM, Simon Glass <sjg@chromium.org> wrote:
+> Hi,
+>
+> On Thu, Nov 15, 2012 at 10:38 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
+>> Hopefully the final series before the feature gets merged. Anton Vorontsov
+>> kindly accepted to take it into his tree, so this series is mostly a call for
+>> acks, tests and reviews notices before the merge window for 3.8 opens. If you
+>> are interested in seeing this feature, please add your name.
+>>
+>> This series also adds an entry for the subsystem into MAINTAINERS, setting me as
+>> the person in charge.
+>>
+>> Changes from v7:
+>> - fix bug reported by Tony Prisk
+>> - add MAINTAINERS entry
+>>
+>> Alexandre Courbot (3):
+>>   Runtime Interpreted Power Sequences
+>>   pwm_backlight: use power sequences
+>>   Take maintainership of power sequences
+>
+> Did this actually land? I can't see it in linux-next.
 
-#ifndef CONFIG_PREEMPT_RCU
+It has not landed yet, and will not land in the form that I proposed
+initially. There were some obvious issues with describing the
+sequences in the device tree, and I decided to rethink the whole
+thing, study the state of the art some more (especially ACPI) and
+start again from a blank page.
 
-But yes, in the CONFIG_PREEMPT_RCU case, the cond_resched() is not
-needed.
+The v2 idea is almost ready to be shared, but it needs a cleaner way
+to manage GPIOs, which itself requires gpiolib to be refactored and
+the GENERIC_GPIO option to be removed. These last two items will land
+in 3.10, so I hope to have both the gpiod interface *and* the new
+power seqs ready and approved for 3.11. Then my $@?*^! panel backlight
+will maybe finally switch on (no kidding - that's really what this
+whole thing is about).
 
-							Thanx, Paul
+The new power seqs will fundamentally work in a similar fashion to v1
+(a simple bytecode that controls power-related items), but will not be
+encoded through the DT. Instead, I'd like to have small power control
+objects that can be referenced by the platform data of pseq-enabled
+drivers, or fetched and associated to the driver through the
+compatible property of the DT. These objects will have, as before,
+power resources they need to request, and power methods that the
+driver can call as needed.
 
-> 	cond_resched();
-> #endif
-> 	rcu_read_lock();
-> 
-> Regards
-> 
-> --
-> Julian Anastasov <ja@ssi.bg>
-> 
+I hate to give dates, but my wish is to come with a first version of
+the code by the time the merge window closes. And yes, I still plan to
+use Anton as a trojan horse to get this in. ;)
 
+Thanks,
+Alex.
