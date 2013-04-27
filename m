@@ -1,57 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755751Ab3D0PuG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Apr 2013 11:50:06 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:47327 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751629Ab3D0PuE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Apr 2013 11:50:04 -0400
-Date: Sat, 27 Apr 2013 17:49:56 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: vitalif@yourcmc.ru
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ben Hutchings <ben@decadent.org.uk>,
-        "Venkatesh Pallipadi (Venki)" <venki@google.com>,
-        700333@bugs.debian.org, LKML <linux-kernel@vger.kernel.org>,
-        Clemens Ladisch <clemens@ladisch.de>
-Subject: Re: Bug#700333: Stack trace
-Message-ID: <20130427154956.GC4358@pd.tnic>
-References: <20130305203952.GZ9079@decadent.org.uk>
- <4e8c511dcfd811c0f2ab822adaf52e50@yourcmc.ru>
- <1362536476.3768.416.camel@deadeye.wl.decadent.org.uk>
- <15ec7b46ebd929a67caea0d80b324af9@yourcmc.ru>
- <1362971451.3937.29.camel@deadeye.wl.decadent.org.uk>
- <cc9020446ea75ed733ec96c505039f2a@yourcmc.ru>
- <20130420225516.GB4649@pd.tnic>
- <alpine.LFD.2.02.1304221409420.21884@ionos>
- <alpine.LFD.2.02.1304251139340.21884@ionos>
- <2666050d6d50efdbfa3503aa10c0e5ec@yourcmc.ru>
+	id S1755789Ab3D0PyW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Apr 2013 11:54:22 -0400
+Received: from ch1outboundsmtppool2.messaging.microsoft.com ([157.55.116.166]:16899
+	"EHLO CH1EHSNDR002.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753071Ab3D0PyV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Apr 2013 11:54:21 -0400
+X-Forefront-Antispam-Report: CIP:71.125.14.20;KIP:(null);UIP:(null);IPV:NLI;H:theworrellgroup.com;RD:static-71-125-14-20.nycmny.fios.verizon.net;EFVD:NLI
+X-BigFish: VS141(zzzz1f42h1fc6h1ee6h1ce5h1fdah1202h1fd0h1e76h1d1ah1cabh1d2ahzz8275bhz2ei87h668h839h83dhce6he5bhfa3h10d2h1177h1288h12a5h12a9h12bdh137ah139eh13b6h13eah1441h1537h162dh1631h1758h17f1h184fh1898h18e1h1946h19b5h1b0ah1b2fh1d0ch1724kff4m5d4s19dbiha7jk221ln)
+X-FB-OUTBOUND-SPAM: yes
+X-SpamScore: 141
+X-FB-DOMAIN-IP-MATCH: fail
+Reply-To: <sen.mathew@yahoo.com>
+From: "Sen. Mathew Nwagwu" <senmathewn@gmail.com>
+Subject: TO YOUR NOTICE!!!
+Date: Sat, 27 Apr 2013 11:53:51 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <2666050d6d50efdbfa3503aa10c0e5ec@yourcmc.ru>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="_iso-2022-jp$ESC"
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2800.1081
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1081
+Message-ID: <SERVERaMnmNaGEfmI0x000028eb@theworrellgroup.com>
+X-OriginalArrivalTime: 27 Apr 2013 15:54:15.0072 (UTC) FILETIME=[77C5AA00:01CE435F]
+To: Undisclosed recipients:;
+X-SMTP-Mail-From: senmathewn@gmail.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 27, 2013 at 07:08:42PM +0400, vitalif@yourcmc.ru wrote:
-> >Looks like we can't do anything about that in the HPET code itself.
-> >
-> >Vitaliy, could you try that patch ?
-> 
-> Thanks, I've tried it several days ago (and still using a patched
-> kernel :)) - the box survives.
-> But at which moment should I check for "Spurious interrupt" in dmesg?
+MEMO
+Chairman of House
+Committee on Foreign Affairs
+Phone:-  234-8176733785
+Email: - Sen.Mathew@gpconsults.com
+ 
+ 
+Dear
+I am the new appointed Chairman of House Committee on Foreign Affairs. I discovered your original payment file where it was abandoned in an  old drawer in my new office. During my investigation about your payment file, I discovered another new file made in your name but your information was changed to divert your fund to a difference country and bank account. You should have received your fund long time ago but it seems that some group interests are after your fund to divert it to somewhere else. Your original payment file was approved to pay you $15 Million by the government some years back but it was abandoned. It is very important you get back to me to use my new office and position to assist you to get the fund release to you as my first assignment.
+ 
+ 
+Best regards
+Sen.Mathew I. Nwagwu
 
-When you do a suspend/resume cycle.
-
-The bug says "The photo shows a BUG in hrtimer_interrupt() after making
-the hibernation image and while resuming the non-boot CPUs." so I'm
-guessing with Thomas' patch it suspends fine now?
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
