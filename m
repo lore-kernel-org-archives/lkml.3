@@ -1,75 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756476Ab3D0ARa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 20:17:30 -0400
-Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:9162 "EHLO
-	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756154Ab3D0AR3 (ORCPT
+	id S1756777Ab3D0ASp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 20:18:45 -0400
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:48897 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754888Ab3D0ASn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 20:17:29 -0400
-Message-ID: <517B18E2.3060408@hp.com>
-Date: Sat, 27 Apr 2013 08:16:34 +0800
-From: ZhenHua <zhen-hual@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130117 Thunderbird/19.0
+	Fri, 26 Apr 2013 20:18:43 -0400
+Date: Fri, 26 Apr 2013 17:18:38 -0700
+From: Olof Johansson <olof@lixom.net>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: arm@kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Mark Rutland <mark.rutland@arm.com>
+Subject: Re: [PATCH/RESEND] ARM: arch_timer: Silence debug preempt warnings
+Message-ID: <20130427001838.GA2134@quad.lixom.net>
+References: <1366241178-16626-1-git-send-email-sboyd@codeaurora.org>
 MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] driver,usb: Fix a warning in uhci-hcd driver
-References: <Pine.LNX.4.44L0.1304261247490.1075-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1304261247490.1075-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1366241178-16626-1-git-send-email-sboyd@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/27/2013 12:51 AM, Alan Stern wrote:
-> On Fri, 26 Apr 2013, ZhenHua wrote:
->
->> There is a function  wait_for_HP() in uhci-hub.c. In this
->> patch, it is used in suspend_rh(),  I think this can be a
->> solution. And I have tested this patch, it can fix the bug.
->>
->> I think there is another patch needed. As Alan said in another
->> mail, in the UHCI_RH_RUNNING_NODEVS case, it should not be stopped
->> if the uhci device is HP iLo virtual usb.
-> I believe that if you change the UHCI_RH_RUNNING_NODEVS case, you will
-> find that this patch (calling wait_for_HP) isn't needed.
->
-> In fact, the patch is so easy that I am including it below.  Please
-> test this (without either of your patches) to see if it works.
->
-> Alan Stern
->
->
->
->
-> Index: usb-3.9/drivers/usb/host/uhci-hub.c
-> ===================================================================
-> --- usb-3.9.orig/drivers/usb/host/uhci-hub.c
-> +++ usb-3.9/drivers/usb/host/uhci-hub.c
-> @@ -225,7 +225,8 @@ static int uhci_hub_status_data(struct u
->   		/* auto-stop if nothing connected for 1 second */
->   		if (any_ports_active(uhci))
->   			uhci->rh_state = UHCI_RH_RUNNING;
-> -		else if (time_after_eq(jiffies, uhci->auto_stop_time))
-> +		else if (time_after_eq(jiffies, uhci->auto_stop_time) &&
-> +				!uhci->wait_for_hp)
->   			suspend_rh(uhci, UHCI_RH_AUTO_STOPPED);
->   		break;
->   
->
-I have tested the UHCI_RH_RUNNING_NODEVS case yeasterday, and it works.
-But the function suspend_rh is also called in other places, so I think 
-it only fixes
-the warning when auto stop is called, but not fix the warning when 
-uhci's bus_suspend
-is called,  it will come out again.
+On Wed, Apr 17, 2013 at 04:26:18PM -0700, Stephen Boyd wrote:
+> Hot-plugging with CONFIG_DEBUG_PREEMPT=y on a device with arm
+> architected timers causes a slew of "using smp_processor_id() in
+> preemptible" warnings:
+> 
+>   BUG: using smp_processor_id() in preemptible [00000000] code: sh/111
+>   caller is arch_timer_cpu_notify+0x14/0xc8
+> 
+> This happens because sometimes the cpu notifier,
+> arch_timer_cpu_notify(), is called in preemptible context and
+> other times in non-preemptible context but we use this_cpu_ptr()
+> to retrieve the clockevent in all cases. We're only going to
+> actually use the pointer in non-preemptible context though, so
+> push the this_cpu_ptr() access down into the cases to force the
+> checks to occur only in non-preemptible contexts.
+> 
+> Cc: John Stultz <john.stultz@linaro.org>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Mark Rutland <mark.rutland@arm.com>
+> Acked-by: Marc Zyngier <Marc.Zyngier@arm.com>
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> ---
+> 
+> Resending to arm-soc maintainers instead of timekeeping maintainers. Who
+> maintains this driver?
 
-And if you add uhci->wait_for_hp check in the UHCI_RH_RUNNING_NODEVS case,
-all hp uhci devices will not auto stop, not only the virtual devices. I 
-guess it may waste resource.
+Subsystem is maintained by John and Thomas, but given the recent moves of ARM
+drivers there (which mostly has been acked by them), we'll take the patch at
+this time.
 
-Thanks
-Zhen-Hua
+Applied on top of late/clksrc in arm-soc. Thanks.
+
+
+-Olof
