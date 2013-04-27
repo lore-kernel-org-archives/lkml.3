@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752414Ab3D0EkM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Apr 2013 00:40:12 -0400
-Received: from oproxy12-pub.bluehost.com ([50.87.16.10]:33551 "HELO
-	oproxy12-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750943Ab3D0EkL (ORCPT
+	id S1753993Ab3D0Ekm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Apr 2013 00:40:42 -0400
+Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:50726 "HELO
+	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752636Ab3D0Ekk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Apr 2013 00:40:11 -0400
-Message-ID: <1367037606.7911.66.camel@Wailaba2>
-Subject: [PATCH v2 1/3] process cputimer is moving faster than its
+	Sat, 27 Apr 2013 00:40:40 -0400
+Message-ID: <1367037635.7911.67.camel@Wailaba2>
+Subject: [PATCH v2 2/3] process cputimer is moving faster than its
  corresponding clock
 From: Olivier Langlois <olivier@trillion01.com>
 To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
@@ -17,8 +17,8 @@ To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
         Frederic Weisbecker <fweisbec@gmail.com>
 Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
         LKML <linux-kernel@vger.kernel.org>
-Date: Sat, 27 Apr 2013 00:40:06 -0400
-In-Reply-To: <517AD0AE.1030404@gmail.com>
+Date: Sat, 27 Apr 2013 00:40:35 -0400
+In-Reply-To: <1367036552.7911.63.camel@Wailaba2>
 References: <1365184746.874.103.camel@Wailaba2>
 	 <1365593710.30071.52.camel@laptop> <1365608911.707.65.camel@Wailaba2>
 	 <1365763837.17140.52.camel@laptop> <1365782115.17140.68.camel@laptop>
@@ -26,7 +26,7 @@ References: <1365184746.874.103.camel@Wailaba2>
 	 <CAHGf_=pWPT4XdrJ8ZveL4zJKm1SE0whpL_fMHd5_TokuNQxSJQ@mail.gmail.com>
 	 <CAHGf_=psD4V-U4FFwAWr4k3ZP6p=GVkNY_0S-Cg06m-=89MM7Q@mail.gmail.com>
 	 <1366951210.7911.28.camel@Wailaba2> <1366957639.7911.42.camel@Wailaba2>
-	 <517AD0AE.1030404@gmail.com>
+	 <517AD0AE.1030404@gmail.com> <1367036552.7911.63.camel@Wailaba2>
 Organization: Trillion01 Inc
 Content-Type: text/plain; charset="ISO-8859-1"
 X-Mailer: Evolution 3.8.1 
@@ -38,50 +38,173 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+Modify CFS API to be able to fetch separately a thread group cputime and its
+tasks delta. This is needed by the third part of this patch.
 
-Forbids the cputimer to drift ahead of its process clock by
-blocking its update when a tick occurs while a autoreaping task
-is currently in do_exit() between the call to release_task() and
-its final call to schedule().
-
-Any task stats update after having called release_task() will
-be lost because they are added to the global process stats located
-in the signal struct from release_task().
-
-Ideally, you should postpone the release_task() call after the
-final context switch to get all the stats added but this is
-more complex to achieve.
-
-In other words, this is slowing down the cputimer so it keep the same
-pace than the process clock but in fact, what should be done is to
-speed up the process clock by adding the missing stats to it.
+Note that the new function group_delta_exec() is not absolutely required as
+you could get the group delta by calling the modified task_sched_runtime().
 
 Signed-off-by: Olivier Langlois <olivier@trillion01.com>
 ---
- kernel/sched/fair.c | 10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ include/linux/kernel_stat.h |  1 +
+ include/linux/sched.h       |  5 +++++
+ kernel/sched/core.c         | 22 +++++++++++++++++----
+ kernel/sched/cputime.c      | 47 +++++++++++++++++++++++++++++++++++++++------
+ 4 files changed, 65 insertions(+), 10 deletions(-)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 7a33e59..52d7b10 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -708,7 +708,15 @@ static void update_curr(struct cfs_rq *cfs_rq)
+diff --git a/include/linux/kernel_stat.h b/include/linux/kernel_stat.h
+index ed5f6ed..9f38c80 100644
+--- a/include/linux/kernel_stat.h
++++ b/include/linux/kernel_stat.h
+@@ -121,6 +121,7 @@ static inline unsigned int kstat_cpu_irqs_sum(unsigned int cpu)
+  * Lock/unlock the current runqueue - to extract task statistics:
+  */
+ extern unsigned long long task_delta_exec(struct task_struct *);
++extern unsigned long long group_delta_exec(struct task_struct *);
  
-                trace_sched_stat_runtime(curtask, delta_exec, curr->vruntime);
-                cpuacct_charge(curtask, delta_exec);
--               account_group_exec_runtime(curtask, delta_exec);
-+               /*
-+                * Do not update the cputimer if the task is already released by
-+                * release_task().
-+                *
-+                * it would preferable to defer the autoreap release_task
-+                * after the last context switch but harder to do.
-+                */
-+               if (likely(curtask->sighand))
-+                       account_group_exec_runtime(curtask, delta_exec);
-        }
+ extern void account_user_time(struct task_struct *, cputime_t, cputime_t);
+ extern void account_system_time(struct task_struct *, int, cputime_t, cputime_t);
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index e692a02..d0b5104 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -2004,6 +2004,9 @@ static inline void disable_sched_clock_irqtime(void) {}
+ extern unsigned long long
+ task_sched_runtime(struct task_struct *task);
  
-        account_cfs_rq_runtime(cfs_rq, delta_exec);
++extern unsigned long long
++task_sched_runtime_nodelta(struct task_struct *task, unsigned long long *delta);
++
+ /* sched_exec is called by processes performing an exec */
+ #ifdef CONFIG_SMP
+ extern void sched_exec(void);
+@@ -2626,6 +2629,8 @@ static inline int spin_needbreak(spinlock_t *lock)
+  * Thread group CPU time accounting.
+  */
+ void thread_group_cputime(struct task_struct *tsk, struct task_cputime *times);
++void thread_group_cputime_nodelta(struct task_struct *tsk, struct task_cputime *times,
++                                  unsigned long long *delta);
+ void thread_group_cputimer(struct task_struct *tsk, struct task_cputime *times);
+ 
+ static inline void thread_group_cputime_init(struct signal_struct *sig)
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 67d0465..fe330f7 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -2661,23 +2661,37 @@ unsigned long long task_delta_exec(struct task_struct *p)
+ 
+ /*
+  * Return accounted runtime for the task.
+- * In case the task is currently running, return the runtime plus current's
+- * pending runtime that have not been accounted yet.
++ * Return separately the current's pending runtime that have not been
++ * accounted yet.
+  */
+-unsigned long long task_sched_runtime(struct task_struct *p)
++unsigned long long task_sched_runtime_nodelta(struct task_struct *p, unsigned long long *delta)
+ {
+        unsigned long flags;
+        struct rq *rq;
+        u64 ns = 0;
+ 
+        rq = task_rq_lock(p, &flags);
+-       ns = p->se.sum_exec_runtime + do_task_delta_exec(p, rq);
++       ns = p->se.sum_exec_runtime;
++       *delta = do_task_delta_exec(p, rq);
+        task_rq_unlock(rq, p, &flags);
+ 
+        return ns;
+ }
+ 
+ /*
++ * Return accounted runtime for the task.
++ * In case the task is currently running, return the runtime plus current's
++ * pending runtime that have not been accounted yet.
++ */
++unsigned long long task_sched_runtime(struct task_struct *p)
++{
++       unsigned long long delta;
++       u64 ns = task_sched_runtime_nodelta(p, &delta);
++       ns += delta;
++       return ns;
++}
++
++/*
+  * This function gets called by the timer code, with HZ frequency.
+  * We call it with interrupts disabled.
+  */
+diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
+index e93cca9..1217eca 100644
+--- a/kernel/sched/cputime.c
++++ b/kernel/sched/cputime.c
+@@ -289,15 +289,14 @@ static __always_inline bool steal_account_process_tick(void)
+        return false;
+ }
+ 
+-/*
+- * Accumulate raw cputime values of dead tasks (sig->[us]time) and live
+- * tasks (sum on group iteration) belonging to @tsk's group.
+- */
+-void thread_group_cputime(struct task_struct *tsk, struct task_cputime *times)
++void thread_group_cputime_nodelta(struct task_struct *tsk, struct task_cputime *times,
++                                 unsigned long long *delta)
+ {
+        struct signal_struct *sig = tsk->signal;
+        cputime_t utime, stime;
+        struct task_struct *t;
++       unsigned long long d = 0;
++       unsigned long long td;
+ 
+        times->utime = sig->utime;
+        times->stime = sig->stime;
+@@ -313,10 +312,46 @@ void thread_group_cputime(struct task_struct *tsk, struct task_cputime *times)
+                task_cputime(t, &utime, &stime);
+                times->utime += utime;
+                times->stime += stime;
+-               times->sum_exec_runtime += task_sched_runtime(t);
++               times->sum_exec_runtime += task_sched_runtime_nodelta(t, &td);
++               d += td;
+        } while_each_thread(tsk, t);
+ out:
+        rcu_read_unlock();
++
++       if (delta)
++               *delta = d;
++}
++
++/*
++ * Accumulate raw cputime values of dead tasks (sig->[us]time) and live
++ * tasks (sum on group iteration) belonging to @tsk's group.
++ */
++void thread_group_cputime(struct task_struct *tsk, struct task_cputime *times)
++{
++       unsigned long long d;
++       thread_group_cputime_nodelta(tsk, times, &d);
++       times->sum_exec_runtime += d;
++}
++
++
++unsigned long long group_delta_exec(struct task_struct *tsk)
++{
++       unsigned long long ns = 0;
++       struct task_struct *t;
++
++       rcu_read_lock();
++       /* make sure we can trust tsk->thread_group list */
++       if (!likely(pid_alive(tsk)))
++               goto out;
++
++       t = tsk;
++       do {
++               ns += task_delta_exec(t);
++       } while_each_thread(tsk, t);
++out:
++       rcu_read_unlock();
++
++       return ns;
+ }
+ 
+ #ifdef CONFIG_IRQ_TIME_ACCOUNTING
 -- 
 1.8.2.1
 
