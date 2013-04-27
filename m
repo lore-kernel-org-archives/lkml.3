@@ -1,56 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755834Ab3D0QRl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Apr 2013 12:17:41 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:54140 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753425Ab3D0QRj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Apr 2013 12:17:39 -0400
-Date: Sat, 27 Apr 2013 09:17:32 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, Simon Horman <horms@verge.net.au>,
-        Julian Anastasov <ja@ssi.bg>, Ingo Molnar <mingo@redhat.com>,
-        lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
-        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Dipankar Sarma <dipankar@in.ibm.com>, dhaval.giani@gmail.com
-Subject: Re: [PATCH 2/2] ipvs: Use cond_resched_rcu_lock() helper when
- dumping connections
-Message-ID: <20130427161732.GA3780@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1366940708-10180-1-git-send-email-horms@verge.net.au>
- <1366940708-10180-3-git-send-email-horms@verge.net.au>
- <20130426080313.GC8669@dyad.programming.kicks-ass.net>
- <20130426154547.GC3860@linux.vnet.ibm.com>
- <20130426171948.GA31467@dyad.programming.kicks-ass.net>
- <20130426174815.GI3860@linux.vnet.ibm.com>
- <1367000815.8964.243.camel@edumazet-glaptop>
- <20130426190428.GJ3860@linux.vnet.ibm.com>
- <20130427071814.GA31700@dyad.programming.kicks-ass.net>
+	id S1755986Ab3D0PIr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Apr 2013 11:08:47 -0400
+Received: from yourcmc.ru ([195.24.71.121]:57609 "EHLO yourcmc.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755855Ab3D0PIq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Apr 2013 11:08:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130427071814.GA31700@dyad.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13042716-7606-0000-0000-00000ADCF911
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
+Date: Sat, 27 Apr 2013 19:08:42 +0400
+From: vitalif@yourcmc.ru
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Borislav Petkov <bp@alien8.de>, Ben Hutchings <ben@decadent.org.uk>,
+        "Venkatesh Pallipadi (Venki)" <venki@google.com>,
+        <700333@bugs.debian.org>, LKML <linux-kernel@vger.kernel.org>,
+        Clemens Ladisch <clemens@ladisch.de>
+Subject: Re: Bug#700333: Stack trace
+In-Reply-To: <alpine.LFD.2.02.1304251139340.21884@ionos>
+References: <4bded8a24b0719d575f6ffa6b38aebb6@yourcmc.ru>
+ <1362490501.3768.409.camel@deadeye.wl.decadent.org.uk>
+ <1b81bc6219ee47a5b8e53d03e9944939@yourcmc.ru>
+ <20130305203952.GZ9079@decadent.org.uk>
+ <4e8c511dcfd811c0f2ab822adaf52e50@yourcmc.ru>
+ <1362536476.3768.416.camel@deadeye.wl.decadent.org.uk>
+ <15ec7b46ebd929a67caea0d80b324af9@yourcmc.ru>
+ <1362971451.3937.29.camel@deadeye.wl.decadent.org.uk>
+ <cc9020446ea75ed733ec96c505039f2a@yourcmc.ru>
+ <20130420225516.GB4649@pd.tnic> <alpine.LFD.2.02.1304221409420.21884@ionos>
+ <alpine.LFD.2.02.1304251139340.21884@ionos>
+Message-ID: <2666050d6d50efdbfa3503aa10c0e5ec@yourcmc.ru>
+User-Agent: Roundcube Webmail/0.8.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 27, 2013 at 09:18:15AM +0200, Peter Zijlstra wrote:
-> > In the worst case, I
-> > can fire up a prio 99 kthread on each CPU and send that kthread a
-> > wakeup from RCU's rcu_gp_fqs() code.
-> 
-> You just know that's going to be _so_ popular ;-)
+> Looks like we can't do anything about that in the HPET code itself.
+>
+> Vitaliy, could you try that patch ?
 
-;-) ;-) ;-)
-
-I must confess that I would prefer a somewhat less heavy-handed approach.
-
-							Thanx, Paul
-
+Thanks, I've tried it several days ago (and still using a patched 
+kernel :)) - the box survives.
+But at which moment should I check for "Spurious interrupt" in dmesg?
