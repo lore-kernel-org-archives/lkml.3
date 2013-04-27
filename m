@@ -1,87 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755472Ab3D0Jzz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Apr 2013 05:55:55 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:13923 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754807Ab3D0Jzy (ORCPT
+	id S1755349Ab3D0J7S (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Apr 2013 05:59:18 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:54567 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754807Ab3D0J7R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Apr 2013 05:55:54 -0400
-Message-ID: <517BA02C.8080005@huawei.com>
-Date: Sat, 27 Apr 2013 17:53:48 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Li Zhong <zhong@linux.vnet.ibm.com>, LKML <linux-kernel@vger.kernel.org>,
-        Cgroups <cgroups@vger.kernel.org>
-Subject: [PATCH 2/2] cpuset: fix cpu hotplug vs rebuild_sched_domains() race
-References: <517BA01C.6060806@huawei.com>
-In-Reply-To: <517BA01C.6060806@huawei.com>
-Content-Type: text/plain; charset="GB2312"
+	Sat, 27 Apr 2013 05:59:17 -0400
+Message-ID: <1367056747.6391.15.camel@ThinkPad-T5421.cn.ibm.com>
+Subject: [RFC PATCH]nohz: Use raw_smp_processor_id() in
+ tick_nohz_task_switch()
+From: Li Zhong <zhong@linux.vnet.ibm.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Date: Sat, 27 Apr 2013 17:59:07 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+Mime-Version: 1.0
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13042709-8256-0000-0000-0000073DAFAB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-rebuild_sched_domains() might pass doms with offlined cpu to
-partition_sched_domains(), which results in an oops:
+I saw following error when testing the latest nohz code on Power:
 
-general protection fault: 0000 [#1] SMP
-...
-RIP: 0010:[<ffffffff81077a1e>]  [<ffffffff81077a1e>] get_group+0x6e/0x90
-...
-Call Trace:
- [<ffffffff8107f07c>] build_sched_domains+0x70c/0xcb0
- [<ffffffff8107f2a7>] ? build_sched_domains+0x937/0xcb0
- [<ffffffff81173f64>] ? kfree+0xe4/0x1b0
- [<ffffffff8107f6e0>] ? partition_sched_domains+0xc0/0x470
- [<ffffffff8107f905>] partition_sched_domains+0x2e5/0x470
- [<ffffffff8107f6e0>] ? partition_sched_domains+0xc0/0x470
- [<ffffffff810c9007>] ? generate_sched_domains+0xc7/0x530
- [<ffffffff810c94a8>] rebuild_sched_domains_locked+0x38/0x70
- [<ffffffff810cb4a4>] cpuset_write_resmask+0x1a4/0x500
- [<ffffffff810c8700>] ? cpuset_mount+0xe0/0xe0
- [<ffffffff810c7f50>] ? cpuset_read_u64+0x100/0x100
- [<ffffffff810be890>] ? cgroup_iter_next+0x90/0x90
- [<ffffffff810cb300>] ? cpuset_css_offline+0x70/0x70
- [<ffffffff810c1a73>] cgroup_file_write+0x133/0x2e0
- [<ffffffff8118995b>] vfs_write+0xcb/0x130
- [<ffffffff8118a174>] sys_write+0x64/0xa0
+[   85.295384] BUG: using smp_processor_id() in preemptible [00000000] code: rsyslogd/3493
+[   85.295396] caller is .tick_nohz_task_switch+0x1c/0xb8
+[   85.295402] Call Trace:
+[   85.295408] [c0000001fababab0] [c000000000012dc4] .show_stack+0x110/0x25c (unreliable)
+[   85.295420] [c0000001fababba0] [c0000000007c4b54] .dump_stack+0x20/0x30
+[   85.295430] [c0000001fababc10] [c00000000044eb74] .debug_smp_processor_id+0xf4/0x124
+[   85.295438] [c0000001fababca0] [c0000000000d7594] .tick_nohz_task_switch+0x1c/0xb8
+[   85.295447] [c0000001fababd20] [c0000000000b9748] .finish_task_switch+0x13c/0x160
+[   85.295455] [c0000001fababdb0] [c0000000000bbe50] .schedule_tail+0x50/0x124
+[   85.295463] [c0000001fababe30] [c000000000009dc8] .ret_from_fork+0x4/0x54
 
-Reported-by: Li Zhong <zhong@linux.vnet.ibm.com>
-Signed-off-by: Li Zefan <lizefan@huawei.com>
+It seems to me that we could just use raw_smp_processor_id() here. Even
+if the tick_nohz_full_cpu() check is done on a !nohz_full cpu, then the
+task is moved to another nohz_full cpu, it seems the context switching
+because of the task moving would call tick_nohz_task_switch() again to
+evaluate the need for tick.
+
+I don't know whether I missed something here.
+
+Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
 ---
- kernel/cpuset.c | 10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ kernel/time/tick-sched.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index b0f18ba..ef05901 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -769,12 +769,20 @@ static void rebuild_sched_domains_locked(void)
- 	lockdep_assert_held(&cpuset_mutex);
- 	get_online_cpus();
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index da53c8f..0aa575b 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -251,7 +251,7 @@ void tick_nohz_task_switch(struct task_struct *tsk)
+ {
+ 	unsigned long flags;
  
-+	/*
-+	 * We have raced with CPU hotplug. Don't do anything to avoid
-+	 * passing doms with offlined cpu to partition_sched_domains().
-+	 * Anyways, hotplug work item will rebuild sched domains.
-+	 */
-+	if (!cpumask_equal(top_cpuset.cpus_allowed, cpu_active_mask))
-+		goto out;
-+
- 	/* Generate domain masks and attrs */
- 	ndoms = generate_sched_domains(&doms, &attr);
+-	if (!tick_nohz_full_cpu(smp_processor_id()))
++	if (!tick_nohz_full_cpu(raw_smp_processor_id()))
+ 		return;
  
- 	/* Have scheduler rebuild the domains */
- 	partition_sched_domains(ndoms, doms, attr);
--
-+out:
- 	put_online_cpus();
- }
- #else /* !CONFIG_SMP */
+ 	local_irq_save(flags);
 -- 
-1.8.0.2
+1.7.1
+
+
+
