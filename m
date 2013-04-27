@@ -1,60 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755031Ab3D0Cqo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 22:46:44 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:43840 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750839Ab3D0Cqn (ORCPT
+	id S1756740Ab3D0Ctf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 22:49:35 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:34590 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755904Ab3D0Ctd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 22:46:43 -0400
-Message-ID: <517B3C07.1020004@linux.vnet.ibm.com>
-Date: Sat, 27 Apr 2013 10:46:31 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Fri, 26 Apr 2013 22:49:33 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.32 with qID r3R2nEtX030581, This message is accepted by code: ctloc85258
+From: <wei_wang@realsil.com.cn>
+To: <rdunlap@infradead.org>
+CC: <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>,
+        <linux-next@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        Wei WANG <wei_wang@realsil.com.cn>
+Subject: [PATCH] linux-next:usb-stor:realtek_cr:Fix compile error
+Date: Sat, 27 Apr 2013 10:49:13 +0800
+Message-ID: <1367030953-24707-1-git-send-email-wei_wang@realsil.com.cn>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Mike Galbraith <efault@gmx.de>, Alex Shi <alex.shi@intel.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Turner <pjt@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        Ram Pai <linuxram@us.ibm.com>
-Subject: Re: [PATCH] sched: wake-affine throttle
-References: <5164DCE7.8080906@linux.vnet.ibm.com> <1366626208.2721.12.camel@laptop>
-In-Reply-To: <1366626208.2721.12.camel@laptop>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13042702-6102-0000-0000-000003648DE1
+Content-Type: text/plain
+X-Originating-IP: [172.29.41.8]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/22/2013 06:23 PM, Peter Zijlstra wrote:
-> 
-> OK,.. Ingo said that pipe-test was the original motivation for
-> wake_affine() and since that's currently broken to pieces due to
-> select_idle_sibling() is there still a benefit to having it at all?
-> 
-> Can anybody find any significant regression when simply killing
-> wake_affine()?
+From: Wei WANG <wei_wang@realsil.com.cn>
 
-Is it time for us to make the decision now?
+To fix the compile error when CONFIG_PM_RUNTIME is not enabled,
+move the declaration of us out of CONFIG_REALTEK_AUTOPM macro in rts51x_chip.
 
-Forgive me for urge the progress, but I really confused what is stopping
-us from adopt the throttle approach...
+drivers/usb/storage/realtek_cr.c: In function 'realtek_cr_destructor':
+drivers/usb/storage/realtek_cr.c:942:11: error: 'struct rts51x_chip' has no member named 'us'
 
-Is there any other option more simple, safe and faster?
+Signed-off-by: Wei WANG <wei_wang@realsil.com.cn>
+---
+ drivers/usb/storage/realtek_cr.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-Regards,
-Michael Wang
-
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+diff --git a/drivers/usb/storage/realtek_cr.c b/drivers/usb/storage/realtek_cr.c
+index 4797228..64c2b28 100644
+--- a/drivers/usb/storage/realtek_cr.c
++++ b/drivers/usb/storage/realtek_cr.c
+@@ -105,8 +105,9 @@ struct rts51x_chip {
+ 	int status_len;
+ 
+ 	u32 flag;
+-#ifdef CONFIG_REALTEK_AUTOPM
+ 	struct us_data *us;
++
++#ifdef CONFIG_REALTEK_AUTOPM
+ 	struct timer_list rts51x_suspend_timer;
+ 	unsigned long timer_expires;
+ 	int pwr_state;
+@@ -991,6 +992,7 @@ static int init_realtek_cr(struct us_data *us)
+ 	us->extra = chip;
+ 	us->extra_destructor = realtek_cr_destructor;
+ 	us->max_lun = chip->max_lun = rts51x_get_max_lun(us);
++	chip->us = us;
+ 
+ 	usb_stor_dbg(us, "chip->max_lun = %d\n", chip->max_lun);
+ 
+@@ -1013,10 +1015,8 @@ static int init_realtek_cr(struct us_data *us)
+ 			SET_AUTO_DELINK(chip);
+ 	}
+ #ifdef CONFIG_REALTEK_AUTOPM
+-	if (ss_en) {
+-		chip->us = us;
++	if (ss_en)
+ 		realtek_cr_autosuspend_setup(us);
+-	}
+ #endif
+ 
+ 	usb_stor_dbg(us, "chip->flag = 0x%x\n", chip->flag);
+-- 
+1.7.11.3
 
