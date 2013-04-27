@@ -1,120 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753498Ab3D0ISy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Apr 2013 04:18:54 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:63260 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751175Ab3D0ISv (ORCPT
+	id S1753409Ab3D0IUy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Apr 2013 04:20:54 -0400
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:43064 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751175Ab3D0IUv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Apr 2013 04:18:51 -0400
-Message-ID: <1367050696.20145.1.camel@phoenix>
-Subject: [PATCH] regulator: max77686: Don't update max77686->opmode if
- update register fails
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Chiwoong Byun <woong.byun@samsung.com>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>,
-        Yadwinder Singh Brar <yadi.brar@samsung.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Date: Sat, 27 Apr 2013 16:18:16 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
+	Sat, 27 Apr 2013 04:20:51 -0400
+Message-ID: <517B8A5D.1030308@gmail.com>
+Date: Sat, 27 Apr 2013 16:20:45 +0800
+From: Will Huck <will.huckk@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Christoph Lameter <cl@linux.com>
+CC: Han Pingtian <hanpt@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, mhocko@suse.cz,
+        Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>, linux-mm@kvack.org
+Subject: Re: OOM-killer and strange RSS value in 3.9-rc7
+References: <alpine.DEB.2.02.1304161315290.30779@chino.kir.corp.google.com> <20130417094750.GB2672@localhost.localdomain> <20130417141909.GA24912@dhcp22.suse.cz> <20130418101541.GC2672@localhost.localdomain> <20130418175513.GA12581@dhcp22.suse.cz> <20130423131558.GH8001@dhcp22.suse.cz> <20130424044848.GI2672@localhost.localdomain> <20130424094732.GB31960@dhcp22.suse.cz> <0000013e3cb0340d-00f360e3-076b-478e-b94c-ddd4476196ce-000000@email.amazonses.com> <20130425060705.GK2672@localhost.localdomain> <0000013e42332267-0b7fb3c0-9150-4058-8850-ae094b455b15-000000@email.amazonses.com>
+In-Reply-To: <0000013e42332267-0b7fb3c0-9150-4058-8850-ae094b455b15-000000@email.amazonses.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ensure max77686->opmode always has correct status.
+Hi Christoph,
+On 04/26/2013 01:17 AM, Christoph Lameter wrote:
+> On Thu, 25 Apr 2013, Han Pingtian wrote:
+>
+>> I have enabled "slub_debug" and here is the
+>> /sys/kernel/slab/kmalloc-512/alloc_calls contents:
+>>
+>>       50 .__alloc_workqueue_key+0x90/0x5d0 age=113630/116957/119419 pid=1-1730 cpus=0,6-8,13,24,26,44,53,57,60,68 nodes=1
+>>       11 .__alloc_workqueue_key+0x16c/0x5d0 age=113814/116733/119419 pid=1-1730 cpus=0,44,68 nodes=1
+>>       13 .add_sysfs_param.isra.2+0x80/0x210 age=115175/117994/118779 pid=1-1342 cpus=0,8,12,24,60 nodes=1
+>>      160 .build_sched_domains+0x108/0xe30 age=119111/119120/119131 pid=1 cpus=0 nodes=1
+>>     9000 .alloc_fair_sched_group+0xe4/0x220 age=110549/114471/117357 pid=1-2290 cpus=0-1,5,9-11,13,24,29,33,36,38,40-41,45,48-50,53,56-58,60-63,68-69,72-73,76-77,79 nodes=1
+>>     9000 .alloc_fair_sched_group+0x114/0x220 age=110549/114471/117357 pid=1-2290 cpus=0-1,5,9-11,13,24,29,33,36,38,40-41,45,48-50,53,56-58,60-63,68-69,72-73,76-77,79 nodes=1
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/regulator/max77686.c |   32 +++++++++++++++++++++-----------
- 1 file changed, 21 insertions(+), 11 deletions(-)
+Could you explain the meaning of  age=xx/xx/xx  pid=xx-xx cpus=xx here?
 
-diff --git a/drivers/regulator/max77686.c b/drivers/regulator/max77686.c
-index e4586ee..20935b1 100644
---- a/drivers/regulator/max77686.c
-+++ b/drivers/regulator/max77686.c
-@@ -75,17 +75,20 @@ static int max77686_buck_set_suspend_disable(struct regulator_dev *rdev)
- {
- 	unsigned int val;
- 	struct max77686_data *max77686 = rdev_get_drvdata(rdev);
--        int id = rdev_get_id(rdev);
-+	int ret, id = rdev_get_id(rdev);
- 
- 	if (id == MAX77686_BUCK1)
- 		val = 0x1;
- 	else
- 		val = 0x1 << MAX77686_OPMODE_BUCK234_SHIFT;
- 
-+	ret = regmap_update_bits(rdev->regmap, rdev->desc->enable_reg,
-+				 rdev->desc->enable_mask, val);
-+	if (ret)
-+		return ret;
-+
- 	max77686->opmode[id] = val;
--	return regmap_update_bits(rdev->regmap, rdev->desc->enable_reg,
--				  rdev->desc->enable_mask,
--				  val);
-+	return 0;
- }
- 
- /* Some LDOs supports [LPM/Normal]ON mode during suspend state */
-@@ -94,7 +97,7 @@ static int max77686_set_suspend_mode(struct regulator_dev *rdev,
- {
- 	struct max77686_data *max77686 = rdev_get_drvdata(rdev);
- 	unsigned int val;
--        int id = rdev_get_id(rdev);
-+	int ret, id = rdev_get_id(rdev);
- 
- 	/* BUCK[5-9] doesn't support this feature */
- 	if (id >= MAX77686_BUCK5)
-@@ -113,10 +116,13 @@ static int max77686_set_suspend_mode(struct regulator_dev *rdev,
- 		return -EINVAL;
- 	}
- 
-+	ret = regmap_update_bits(rdev->regmap, rdev->desc->enable_reg,
-+				  rdev->desc->enable_mask, val);
-+	if (ret)
-+		return ret;
-+
- 	max77686->opmode[id] = val;
--	return regmap_update_bits(rdev->regmap, rdev->desc->enable_reg,
--				  rdev->desc->enable_mask,
--				  val);
-+	return 0;
- }
- 
- /* Some LDOs supports LPM-ON/OFF/Normal-ON mode during suspend state */
-@@ -125,6 +131,7 @@ static int max77686_ldo_set_suspend_mode(struct regulator_dev *rdev,
- {
- 	unsigned int val;
- 	struct max77686_data *max77686 = rdev_get_drvdata(rdev);
-+	int ret;
- 
- 	switch (mode) {
- 	case REGULATOR_MODE_STANDBY:			/* switch off */
-@@ -142,10 +149,13 @@ static int max77686_ldo_set_suspend_mode(struct regulator_dev *rdev,
- 		return -EINVAL;
- 	}
- 
-+	ret = regmap_update_bits(rdev->regmap, rdev->desc->enable_reg,
-+				 rdev->desc->enable_mask, val);
-+	if (ret)
-+		return ret;
-+
- 	max77686->opmode[rdev_get_id(rdev)] = val;
--	return regmap_update_bits(rdev->regmap, rdev->desc->enable_reg,
--				  rdev->desc->enable_mask,
--				  val);
-+	return 0;
- }
- 
- static int max77686_enable(struct regulator_dev *rdev)
--- 
-1.7.10.4
-
-
+> ?? Is that normal to have that amount of sched group allocations?
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
