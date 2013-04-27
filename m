@@ -1,65 +1,320 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754694Ab3D0BvU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 21:51:20 -0400
-Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:59830 "HELO
-	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751108Ab3D0BvT (ORCPT
+	id S1756280Ab3D0Bvo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 21:51:44 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:54537 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752801Ab3D0Bvm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 21:51:19 -0400
-Message-ID: <1367027476.7911.60.camel@Wailaba2>
-Subject: Re: [PATCH] process cputimer is moving faster than its
- corresponding clock
-From: Olivier Langlois <olivier@trillion01.com>
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, schwidefsky@de.ibm.com,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Fri, 26 Apr 2013 21:51:16 -0400
-In-Reply-To: <517AD0AE.1030404@gmail.com>
-References: <1365184746.874.103.camel@Wailaba2>
-	 <1365593710.30071.52.camel@laptop> <1365608911.707.65.camel@Wailaba2>
-	 <1365763837.17140.52.camel@laptop> <1365782115.17140.68.camel@laptop>
-	 <CAFTL4hwQ4FZs0VCNXP37f=+DBW7Q2EQc6PW_EtYiVnZCPWN4OQ@mail.gmail.com>
-	 <CAHGf_=pWPT4XdrJ8ZveL4zJKm1SE0whpL_fMHd5_TokuNQxSJQ@mail.gmail.com>
-	 <CAHGf_=psD4V-U4FFwAWr4k3ZP6p=GVkNY_0S-Cg06m-=89MM7Q@mail.gmail.com>
-	 <1366951210.7911.28.camel@Wailaba2> <1366957639.7911.42.camel@Wailaba2>
-	 <517AD0AE.1030404@gmail.com>
-Organization: Trillion01 Inc
+	Fri, 26 Apr 2013 21:51:42 -0400
+Message-ID: <517B2F1B.6000704@huawei.com>
+Date: Sat, 27 Apr 2013 09:51:23 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Bjorn Helgaas <bhelgaas@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH] PCI: Enable pci bridge when it is needed
+References: <1367024974-6063-1-git-send-email-yinghai@kernel.org>
+In-Reply-To: <1367024974-6063-1-git-send-email-yinghai@kernel.org>
 Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.1 
-Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {5686:box610.bluehost.com:olivierl:trillion01.com} {sentby:smtp auth 173.178.230.31 authed with olivier@trillion01.com}
+X-Originating-IP: [10.135.76.69]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-04-26 at 15:08 -0400, KOSAKI Motohiro wrote:
-> > I need to add that I can only confirm that to be true with
-> > sum_exec_runtime.
-> > 
-> > To affirm it to be true for stime and utime would require more
-> > investigation. I didn't look them at all. I was only concerned with
-> > sum_exec_runtime.
-> > 
-> > I will prepare a v2 of the patch accounting all the feedbacks that I
-> > received from KOSAKI Motohiro, Frederic Weisbecker and Peter Zijlstra
-> > and send it back here for further discussion.
-> > 
-> > Thank you very much all!
+I think it's cool! Now we enable bridge in various places, this is a headache.
+
+hi, yinghai, in this patch, enable bridges depend on the driver call pci_enable_device() explicitly.
+I was a little worried If there has some devices don't have some drivers bound, but used by system.
+like ioapic, these devices maybe implemented as pci device, but no pci drivers bind, also, maybe they
+won't call pci_enable_device() explicity. So if they are under the pci bridge, no one will enable the bridge
+for them.
+
+Thanks!
+Yijing.
+
+On 2013/4/27 9:09, Yinghai Lu wrote:
+> Current we enable bridges after bus scan and assign resources.
+> and it is spreaded a lot of places.
 > 
-> Do you mean your utime test case still failure? If you share your test-case, 
-> I'm going to look at your issue too.
+> We can move it to where pci device is enabled, and need
+> to go up to root bus and enable bridge one by one down to pci
+> dev.
 > 
-Sure with pleasure. My testcase is glibc-2.17/rt/tst-cputimer1.c
+> So that will delay enable bridge late as needed bassis,
+> also kill one inconsistent between boot path and hotplug
+> path in acpi_pci_root_add().
+> 
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> 
+> ---
+>  arch/arm/kernel/bios32.c           |    5 -----
+>  arch/m68k/platform/coldfire/pci.c  |    1 -
+>  arch/mips/pci/pci.c                |    1 -
+>  arch/sh/drivers/pci/pci.c          |    1 -
+>  drivers/acpi/pci_root.c            |    4 ----
+>  drivers/parisc/lba_pci.c           |    1 -
+>  drivers/pci/bus.c                  |   19 -------------------
+>  drivers/pci/hotplug/acpiphp_glue.c |    1 -
+>  drivers/pci/pci.c                  |   20 ++++++++++++++++++++
+>  drivers/pci/probe.c                |    1 -
+>  drivers/pci/setup-bus.c            |   11 +++--------
+>  drivers/pcmcia/cardbus.c           |    1 -
+>  include/linux/pci.h                |    1 -
+>  13 files changed, 23 insertions(+), 44 deletions(-)
+> 
+> Index: linux-2.6/arch/arm/kernel/bios32.c
+> ===================================================================
+> --- linux-2.6.orig/arch/arm/kernel/bios32.c
+> +++ linux-2.6/arch/arm/kernel/bios32.c
+> @@ -523,11 +523,6 @@ void pci_common_init(struct hw_pci *hw)
+>  			 * Assign resources.
+>  			 */
+>  			pci_bus_assign_resources(bus);
+> -
+> -			/*
+> -			 * Enable bridges
+> -			 */
+> -			pci_enable_bridges(bus);
+>  		}
+>  
+>  		/*
+> Index: linux-2.6/arch/m68k/platform/coldfire/pci.c
+> ===================================================================
+> --- linux-2.6.orig/arch/m68k/platform/coldfire/pci.c
+> +++ linux-2.6/arch/m68k/platform/coldfire/pci.c
+> @@ -319,7 +319,6 @@ static int __init mcf_pci_init(void)
+>  	pci_fixup_irqs(pci_common_swizzle, mcf_pci_map_irq);
+>  	pci_bus_size_bridges(rootbus);
+>  	pci_bus_assign_resources(rootbus);
+> -	pci_enable_bridges(rootbus);
+>  	pci_bus_add_devices(rootbus);
+>  	return 0;
+>  }
+> Index: linux-2.6/arch/mips/pci/pci.c
+> ===================================================================
+> --- linux-2.6.orig/arch/mips/pci/pci.c
+> +++ linux-2.6/arch/mips/pci/pci.c
+> @@ -113,7 +113,6 @@ static void pcibios_scanbus(struct pci_c
+>  		if (!pci_has_flag(PCI_PROBE_ONLY)) {
+>  			pci_bus_size_bridges(bus);
+>  			pci_bus_assign_resources(bus);
+> -			pci_enable_bridges(bus);
+>  		}
+>  	}
+>  }
+> Index: linux-2.6/arch/sh/drivers/pci/pci.c
+> ===================================================================
+> --- linux-2.6.orig/arch/sh/drivers/pci/pci.c
+> +++ linux-2.6/arch/sh/drivers/pci/pci.c
+> @@ -69,7 +69,6 @@ static void pcibios_scanbus(struct pci_c
+>  
+>  		pci_bus_size_bridges(bus);
+>  		pci_bus_assign_resources(bus);
+> -		pci_enable_bridges(bus);
+>  	} else {
+>  		pci_free_resource_list(&resources);
+>  	}
+> Index: linux-2.6/drivers/acpi/pci_root.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/acpi/pci_root.c
+> +++ linux-2.6/drivers/acpi/pci_root.c
+> @@ -538,10 +538,6 @@ static int acpi_pci_root_add(struct acpi
+>  		pci_assign_unassigned_bus_resources(root->bus);
+>  	}
+>  
+> -	/* need to after hot-added ioapic is registered */
+> -	if (system_state != SYSTEM_BOOTING)
+> -		pci_enable_bridges(root->bus);
+> -
+>  	pci_bus_add_devices(root->bus);
+>  	return 1;
+>  
+> Index: linux-2.6/drivers/parisc/lba_pci.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/parisc/lba_pci.c
+> +++ linux-2.6/drivers/parisc/lba_pci.c
+> @@ -1533,7 +1533,6 @@ lba_driver_probe(struct parisc_device *d
+>  		lba_dump_res(&lba_dev->hba.lmmio_space, 2);
+>  #endif
+>  	}
+> -	pci_enable_bridges(lba_bus);
+>  
+>  	/*
+>  	** Once PCI register ops has walked the bus, access to config
+> Index: linux-2.6/drivers/pci/bus.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/pci/bus.c
+> +++ linux-2.6/drivers/pci/bus.c
+> @@ -215,24 +215,6 @@ void pci_bus_add_devices(const struct pc
+>  	}
+>  }
+>  
+> -void pci_enable_bridges(struct pci_bus *bus)
+> -{
+> -	struct pci_dev *dev;
+> -	int retval;
+> -
+> -	list_for_each_entry(dev, &bus->devices, bus_list) {
+> -		if (dev->subordinate) {
+> -			if (!pci_is_enabled(dev)) {
+> -				retval = pci_enable_device(dev);
+> -				if (retval)
+> -					dev_err(&dev->dev, "Error enabling bridge (%d), continuing\n", retval);
+> -				pci_set_master(dev);
+> -			}
+> -			pci_enable_bridges(dev->subordinate);
+> -		}
+> -	}
+> -}
+> -
+>  /** pci_walk_bus - walk devices on/under bus, calling callback.
+>   *  @top      bus whose devices should be walked
+>   *  @cb       callback to be called for each device found
+> @@ -285,4 +267,3 @@ EXPORT_SYMBOL_GPL(pci_walk_bus);
+>  EXPORT_SYMBOL(pci_bus_alloc_resource);
+>  EXPORT_SYMBOL_GPL(pci_bus_add_device);
+>  EXPORT_SYMBOL(pci_bus_add_devices);
+> -EXPORT_SYMBOL(pci_enable_bridges);
+> Index: linux-2.6/drivers/pci/hotplug/acpiphp_glue.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/pci/hotplug/acpiphp_glue.c
+> +++ linux-2.6/drivers/pci/hotplug/acpiphp_glue.c
+> @@ -704,7 +704,6 @@ static int __ref enable_device(struct ac
+>  	acpiphp_sanitize_bus(bus);
+>  	acpiphp_set_hpp_values(bus);
+>  	acpiphp_set_acpi_region(slot);
+> -	pci_enable_bridges(bus);
+>  
+>  	list_for_each_entry(dev, &bus->devices, bus_list) {
+>  		/* Assume that newly added devices are powered on already. */
+> Index: linux-2.6/drivers/pci/pci.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/pci/pci.c
+> +++ linux-2.6/drivers/pci/pci.c
+> @@ -1145,6 +1145,24 @@ int pci_reenable_device(struct pci_dev *
+>  	return 0;
+>  }
+>  
+> +static void pci_enable_bridge(struct pci_dev *dev)
+> +{
+> +	int retval;
+> +
+> +	if (!dev)
+> +		return;
+> +
+> +	pci_enable_bridge(dev->bus->self);
+> +
+> +	if (pci_is_enabled(dev))
+> +		return;
+> +	retval = pci_enable_device(dev);
+> +	if (retval)
+> +		dev_err(&dev->dev, "Error enabling bridge (%d), continuing\n",
+> +			retval);
+> +	pci_set_master(dev);
+> +}
+> +
+>  static int pci_enable_device_flags(struct pci_dev *dev, unsigned long flags)
+>  {
+>  	int err;
+> @@ -1165,6 +1183,8 @@ static int pci_enable_device_flags(struc
+>  	if (atomic_inc_return(&dev->enable_cnt) > 1)
+>  		return 0;		/* already enabled */
+>  
+> +	pci_enable_bridge(dev->bus->self);
+> +
+>  	/* only skip sriov related */
+>  	for (i = 0; i <= PCI_ROM_RESOURCE; i++)
+>  		if (dev->resource[i].flags & flags)
+> Index: linux-2.6/drivers/pci/probe.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/pci/probe.c
+> +++ linux-2.6/drivers/pci/probe.c
+> @@ -1949,7 +1949,6 @@ unsigned int __ref pci_rescan_bus(struct
+>  
+>  	max = pci_scan_child_bus(bus);
+>  	pci_assign_unassigned_bus_resources(bus);
+> -	pci_enable_bridges(bus);
+>  	pci_bus_add_devices(bus);
+>  
+>  	return max;
+> Index: linux-2.6/drivers/pci/setup-bus.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/pci/setup-bus.c
+> +++ linux-2.6/drivers/pci/setup-bus.c
+> @@ -1435,7 +1435,7 @@ again:
+>  
+>  	/* any device complain? */
+>  	if (list_empty(&fail_head))
+> -		goto enable_and_dump;
+> +		goto dump;
+>  
+>  	if (tried_times >= pci_try_num) {
+>  		if (pci_realloc_enable == undefined)
+> @@ -1444,7 +1444,7 @@ again:
+>  			printk(KERN_INFO "Automatically enabled pci realloc, if you have problem, try booting with pci=realloc=off\n");
+>  
+>  		free_list(&fail_head);
+> -		goto enable_and_dump;
+> +		goto dump;
+>  	}
+>  
+>  	printk(KERN_DEBUG "PCI: No. %d try to assign unassigned res\n",
+> @@ -1478,11 +1478,7 @@ again:
+>  
+>  	goto again;
+>  
+> -enable_and_dump:
+> -	/* Depth last, update the hardware. */
+> -	list_for_each_entry(bus, &pci_root_buses, node)
+> -		pci_enable_bridges(bus);
+> -
+> +dump:
+>  	/* dump the resource on buses */
+>  	list_for_each_entry(bus, &pci_root_buses, node)
+>  		pci_bus_dump_resources(bus);
+> @@ -1548,7 +1544,6 @@ enable_all:
+>  	if (retval)
+>  		dev_err(&bridge->dev, "Error reenabling bridge (%d)\n", retval);
+>  	pci_set_master(bridge);
+> -	pci_enable_bridges(parent);
+>  }
+>  EXPORT_SYMBOL_GPL(pci_assign_unassigned_bridge_resources);
+>  
+> Index: linux-2.6/drivers/pcmcia/cardbus.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/pcmcia/cardbus.c
+> +++ linux-2.6/drivers/pcmcia/cardbus.c
+> @@ -91,7 +91,6 @@ int __ref cb_alloc(struct pcmcia_socket
+>  	if (s->tune_bridge)
+>  		s->tune_bridge(s, bus);
+>  
+> -	pci_enable_bridges(bus);
+>  	pci_bus_add_devices(bus);
+>  
+>  	return 0;
+> Index: linux-2.6/include/linux/pci.h
+> ===================================================================
+> --- linux-2.6.orig/include/linux/pci.h
+> +++ linux-2.6/include/linux/pci.h
+> @@ -1040,7 +1040,6 @@ int __must_check pci_bus_alloc_resource(
+>  						  resource_size_t,
+>  						  resource_size_t),
+>  			void *alignf_data);
+> -void pci_enable_bridges(struct pci_bus *bus);
+>  
+>  /* Proper probing supporting hot-pluggable devices */
+>  int __must_check __pci_register_driver(struct pci_driver *, struct module *,
+> 
+> .
+> 
 
-That being said, it strictly test CPUCLOCK_SCHED timers. Hence my focus
-when modifying the code was strictly on sum_exec_runtime.
 
-If utime and stime components of cputimer are moving faster than their
-associated clock, this is something that I did not address.
-
+-- 
+Thanks!
+Yijing
 
