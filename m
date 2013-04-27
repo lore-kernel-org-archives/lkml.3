@@ -1,93 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755777Ab3D0GGE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Apr 2013 02:06:04 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:55360 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754499Ab3D0GGB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Apr 2013 02:06:01 -0400
+	id S1756040Ab3D0G1y (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Apr 2013 02:27:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37299 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754092Ab3D0G1x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Apr 2013 02:27:53 -0400
+Message-ID: <517B6FC5.7070003@redhat.com>
+Date: Sat, 27 Apr 2013 08:27:17 +0200
+From: Daniel Borkmann <dborkman@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Date: Sat, 27 Apr 2013 14:06:00 +0800
-Message-ID: <CAPgLHd-WbX7Lbb0EWimxU=BF5wYHNYQtbEcEQN-9idJ_DDhy=w@mail.gmail.com>
-Subject: [PATCH RESEND] spi-topcliff-pch: fix to use list_for_each_entry_safe()
- when delete list items
-From: Wei Yongjun <weiyj.lk@gmail.com>
-To: grant.likely@secretlab.ca, broonie@kernel.org
-Cc: yongjun_wei@trendmicro.com.cn, spi-devel-general@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Xi Wang <xi.wang@gmail.com>
+CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Will Drewry <wad@chromium.org>, Eric Dumazet <edumazet@google.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        David Laight <david.laight@aculab.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nicolas Schichan <nschichan@freebox.fr>
+Subject: Re: [PATCH v2 net-next 3/3] ARM: net: bpf_jit_32: support BPF_S_ANC_SECCOMP_LD_W
+ instruction
+References: <1367029047-14830-1-git-send-email-xi.wang@gmail.com> <1367029047-14830-4-git-send-email-xi.wang@gmail.com>
+In-Reply-To: <1367029047-14830-4-git-send-email-xi.wang@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+On 04/27/2013 04:17 AM, Xi Wang wrote:
+> This patch implements the seccomp BPF_S_ANC_SECCOMP_LD_W instruction
+> in ARM JIT.
+>
+> Signed-off-by: Xi Wang <xi.wang@gmail.com>
+> Cc: Daniel Borkmann <dborkman@redhat.com>
+> Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+> Cc: Will Drewry <wad@chromium.org>
+> Cc: Eric Dumazet <edumazet@google.com>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: David Laight <david.laight@aculab.com>
+> Cc: "David S. Miller" <davem@davemloft.net>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Nicolas Schichan <nschichan@freebox.fr>
+> ---
+>   arch/arm/net/bpf_jit_32.c | 14 ++++++++++++++
+>   1 file changed, 14 insertions(+)
+>
+> diff --git a/arch/arm/net/bpf_jit_32.c b/arch/arm/net/bpf_jit_32.c
+> index 073b085..9bfce464 100644
+> --- a/arch/arm/net/bpf_jit_32.c
+> +++ b/arch/arm/net/bpf_jit_32.c
+> @@ -19,6 +19,7 @@
+>   #include <linux/if_vlan.h>
+>   #include <asm/cacheflush.h>
+>   #include <asm/hwcap.h>
+> +#include <asm/syscall.h>
+>
+>   #include "bpf_jit_32.h"
+>
+> @@ -845,6 +846,19 @@ b_epilogue:
+>   			off = offsetof(struct sk_buff, queue_mapping);
+>   			emit(ARM_LDRH_I(r_A, r_skb, off), ctx);
+>   			break;
+> +#ifdef CONFIG_SECCOMP_FILTER
+> +		case BPF_S_ANC_SECCOMP_LD_W:
+> +			if (k == offsetof(struct seccomp_data, arch)) {
+> +				emit_mov_i(r_A, AUDIT_ARCH_ARM, ctx);
+> +				break;
+> +			}
 
-Since we will remove items off the list using list_del_init() we need
-to use a safe version of the list_for_each_entry() macro aptly named
-list_for_each_entry_safe().
+Not an expert in ARM, but ...
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
----
- drivers/spi/spi-topcliff-pch.c | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+Arent't you doing here a similar thing in terms of getting arch as Eric
+criticized (Nicolas' implementation does not use that part btw.)? Also,
+even if it would be possible here, now your 2 JIT implementations differ
+in behaviour. I think this is unintended.
 
-diff --git a/drivers/spi/spi-topcliff-pch.c b/drivers/spi/spi-topcliff-pch.c
-index f756481..7635803 100644
---- a/drivers/spi/spi-topcliff-pch.c
-+++ b/drivers/spi/spi-topcliff-pch.c
-@@ -615,7 +615,7 @@ static void pch_spi_set_tx(struct pch_spi_data *data, int *bpw)
- 	int size;
- 	u32 n_writes;
- 	int j;
--	struct spi_message *pmsg;
-+	struct spi_message *pmsg, *tmp;
- 	const u8 *tx_buf;
- 	const u16 *tx_sbuf;
- 
-@@ -656,7 +656,7 @@ static void pch_spi_set_tx(struct pch_spi_data *data, int *bpw)
- 	if (!data->pkt_rx_buff) {
- 		/* flush queue and set status of all transfers to -ENOMEM */
- 		dev_err(&data->master->dev, "%s :kzalloc failed\n", __func__);
--		list_for_each_entry(pmsg, data->queue.next, queue) {
-+		list_for_each_entry_safe(pmsg, tmp, data->queue.next, queue) {
- 			pmsg->status = -ENOMEM;
- 
- 			if (pmsg->complete != 0)
-@@ -703,7 +703,7 @@ static void pch_spi_set_tx(struct pch_spi_data *data, int *bpw)
- 
- static void pch_spi_nomore_transfer(struct pch_spi_data *data)
- {
--	struct spi_message *pmsg;
-+	struct spi_message *pmsg, *tmp;
- 	dev_dbg(&data->master->dev, "%s called\n", __func__);
- 	/* Invoke complete callback
- 	 * [To the spi core..indicating end of transfer] */
-@@ -740,7 +740,7 @@ static void pch_spi_nomore_transfer(struct pch_spi_data *data)
- 		dev_dbg(&data->master->dev,
- 			"%s suspend/remove initiated, flushing queue\n",
- 			__func__);
--		list_for_each_entry(pmsg, data->queue.next, queue) {
-+		list_for_each_entry_safe(pmsg, tmp, data->queue.next, queue) {
- 			pmsg->status = -EIO;
- 
- 			if (pmsg->complete)
-@@ -1187,7 +1187,7 @@ static void pch_spi_handle_dma(struct pch_spi_data *data, int *bpw)
- 
- static void pch_spi_process_messages(struct work_struct *pwork)
- {
--	struct spi_message *pmsg;
-+	struct spi_message *pmsg, *tmp;
- 	struct pch_spi_data *data;
- 	int bpw;
- 
-@@ -1199,7 +1199,7 @@ static void pch_spi_process_messages(struct work_struct *pwork)
- 	if (data->board_dat->suspend_sts || (data->status == STATUS_EXITING)) {
- 		dev_dbg(&data->master->dev, "%s suspend/remove initiated,"
- 			"flushing queue\n", __func__);
--		list_for_each_entry(pmsg, data->queue.next, queue) {
-+		list_for_each_entry_safe(pmsg, tmp, data->queue.next, queue) {
- 			pmsg->status = -EIO;
- 
- 			if (pmsg->complete != 0) {
+Besides all that, I think I also pointed you to a patch that already made
+it in for ARM, not sure why you keep posting the ARM JIT implementation?
 
+> +			ctx->seen |= SEEN_CALL;
+> +			emit_mov_i(ARM_R3, (u32)seccomp_bpf_load, ctx);
+> +			emit_mov_i(ARM_R0, k, ctx);
+> +			emit_blx_r(ARM_R3, ctx);
+> +			emit(ARM_MOV_R(r_A, ARM_R0), ctx);
+> +			break;
+> +#endif
+>   		default:
+>   			return -1;
+>   		}
+>
