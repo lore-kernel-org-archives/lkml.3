@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753993Ab3D0Ekm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Apr 2013 00:40:42 -0400
-Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:50726 "HELO
-	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752636Ab3D0Ekk (ORCPT
+	id S1754278Ab3D0ElM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Apr 2013 00:41:12 -0400
+Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:35139 "HELO
+	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752058Ab3D0ElJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Apr 2013 00:40:40 -0400
-Message-ID: <1367037635.7911.67.camel@Wailaba2>
-Subject: [PATCH v2 2/3] process cputimer is moving faster than its
+	Sat, 27 Apr 2013 00:41:09 -0400
+Message-ID: <1367037663.7911.68.camel@Wailaba2>
+Subject: [PATCH v2 3/3] process cputimer is moving faster than its
  corresponding clock
 From: Olivier Langlois <olivier@trillion01.com>
 To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
@@ -17,7 +17,7 @@ To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
         Frederic Weisbecker <fweisbec@gmail.com>
 Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
         LKML <linux-kernel@vger.kernel.org>
-Date: Sat, 27 Apr 2013 00:40:35 -0400
+Date: Sat, 27 Apr 2013 00:41:03 -0400
 In-Reply-To: <1367036552.7911.63.camel@Wailaba2>
 References: <1365184746.874.103.camel@Wailaba2>
 	 <1365593710.30071.52.camel@laptop> <1365608911.707.65.camel@Wailaba2>
@@ -38,175 +38,234 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Modify CFS API to be able to fetch separately a thread group cputime and its
-tasks delta. This is needed by the third part of this patch.
 
-Note that the new function group_delta_exec() is not absolutely required as
-you could get the group delta by calling the modified task_sched_runtime().
+Add thread group delta to cpu timer sample when computing a timer expiration.
+
+This is mandatory to make sure that the posix cpu timer does not fire too
+soon relative to the process cpu clock which do include the task group delta.
+
+test case to validate the patch is glibc-2.17/rt/tst-cputimer1.c
+
+There is a race condition hard to fix that the code simply need to acknowledge
+its presence and workaround.
+
+thread 1:
+
+1. Executing thread_group_cputimer_nodelta()
+2. Acquire cputimer->lock.
+
+thread 2:
+
+1. Executing update_curr() (rq lock acquired)
+2. waiting for cputimer->lock inside account_group_exec_runtime()
+
+thread 1:
+
+3. Get cputimer value
+4. release cputimer->lock
+5. call group_delta_exec()
+6. Wait for thread 2 rq lock (and it will get it only after thread 2 reinitiazed its delta)
+
+Now it should be clear why thread 2 delta will not appear anywhere in the cputimer sample.
+
+Simply inversing the function calls in thread_group_cputimer_nodelta() that is
+calling group_delta_exec() before getting the cputimer, eliminate the possibility
+of missing a task delta. The opposite can happen, that is, having a delta be counted
+twice but this is not having any serious consequences.
 
 Signed-off-by: Olivier Langlois <olivier@trillion01.com>
 ---
- include/linux/kernel_stat.h |  1 +
- include/linux/sched.h       |  5 +++++
- kernel/sched/core.c         | 22 +++++++++++++++++----
- kernel/sched/cputime.c      | 47 +++++++++++++++++++++++++++++++++++++++------
- 4 files changed, 65 insertions(+), 10 deletions(-)
+ kernel/posix-cpu-timers.c | 91 +++++++++++++++++++++++++++++++++++++++--------
+ 1 file changed, 76 insertions(+), 15 deletions(-)
 
-diff --git a/include/linux/kernel_stat.h b/include/linux/kernel_stat.h
-index ed5f6ed..9f38c80 100644
---- a/include/linux/kernel_stat.h
-+++ b/include/linux/kernel_stat.h
-@@ -121,6 +121,7 @@ static inline unsigned int kstat_cpu_irqs_sum(unsigned int cpu)
-  * Lock/unlock the current runqueue - to extract task statistics:
-  */
- extern unsigned long long task_delta_exec(struct task_struct *);
-+extern unsigned long long group_delta_exec(struct task_struct *);
+diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
+index 8fd709c..10d28cc 100644
+--- a/kernel/posix-cpu-timers.c
++++ b/kernel/posix-cpu-timers.c
+@@ -226,6 +226,9 @@ static int cpu_clock_sample(const clockid_t which_clock, struct task_struct *p,
+        return 0;
+ }
  
- extern void account_user_time(struct task_struct *, cputime_t, cputime_t);
- extern void account_system_time(struct task_struct *, int, cputime_t, cputime_t);
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index e692a02..d0b5104 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -2004,6 +2004,9 @@ static inline void disable_sched_clock_irqtime(void) {}
- extern unsigned long long
- task_sched_runtime(struct task_struct *task);
- 
-+extern unsigned long long
-+task_sched_runtime_nodelta(struct task_struct *task, unsigned long long *delta);
-+
- /* sched_exec is called by processes performing an exec */
- #ifdef CONFIG_SMP
- extern void sched_exec(void);
-@@ -2626,6 +2629,8 @@ static inline int spin_needbreak(spinlock_t *lock)
-  * Thread group CPU time accounting.
-  */
- void thread_group_cputime(struct task_struct *tsk, struct task_cputime *times);
-+void thread_group_cputime_nodelta(struct task_struct *tsk, struct task_cputime *times,
-+                                  unsigned long long *delta);
- void thread_group_cputimer(struct task_struct *tsk, struct task_cputime *times);
- 
- static inline void thread_group_cputime_init(struct signal_struct *sig)
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 67d0465..fe330f7 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -2661,23 +2661,37 @@ unsigned long long task_delta_exec(struct task_struct *p)
- 
- /*
-  * Return accounted runtime for the task.
-- * In case the task is currently running, return the runtime plus current's
-- * pending runtime that have not been accounted yet.
-+ * Return separately the current's pending runtime that have not been
-+ * accounted yet.
-  */
--unsigned long long task_sched_runtime(struct task_struct *p)
-+unsigned long long task_sched_runtime_nodelta(struct task_struct *p, unsigned long long *delta)
++/*
++ * Ensure the timer monotonicity.
++ */
+ static void update_gt_cputime(struct task_cputime *a, struct task_cputime *b)
  {
+        if (b->utime > a->utime)
+@@ -233,34 +236,84 @@ static void update_gt_cputime(struct task_cputime *a, struct task_cputime *b)
+ 
+        if (b->stime > a->stime)
+                a->stime = b->stime;
+-
+-       if (b->sum_exec_runtime > a->sum_exec_runtime)
+-               a->sum_exec_runtime = b->sum_exec_runtime;
+ }
+ 
+-void thread_group_cputimer(struct task_struct *tsk, struct task_cputime *times)
++/*
++ * Fetch the thread group cputime and the group tasks delta sum
++ * atomically when initializing the timer or make sure that the
++ * race condition does not make timers fire earlier than specified
++ * by having the timer sample earlier than its corresponding clock.
++ *
++ * Except when initializing the cputimer, it is not always necessary
++ * to fetch the delta. It is mandatory only when setting a timer
++ * to avoid shooting it before its time. So enhance the sample
++ * accurary when getting the delta is free or when really needed.
++ */
++#define CPUTIMER_NEED_DELTA 1
++#define CPUTIMER_NO_DELTA   0
++
++static void thread_group_cputimer_withdelta(struct task_struct *tsk,
++                                           struct task_cputime *times,
++                                           unsigned long long *delta)
+ {
+        struct thread_group_cputimer *cputimer = &tsk->signal->cputimer;
+        struct task_cputime sum;
         unsigned long flags;
-        struct rq *rq;
-        u64 ns = 0;
  
-        rq = task_rq_lock(p, &flags);
--       ns = p->se.sum_exec_runtime + do_task_delta_exec(p, rq);
-+       ns = p->se.sum_exec_runtime;
-+       *delta = do_task_delta_exec(p, rq);
-        task_rq_unlock(rq, p, &flags);
- 
-        return ns;
+-       if (!cputimer->running) {
++       if (unlikely(!cputimer->running)) {
+                /*
+                 * The POSIX timer interface allows for absolute time expiry
+                 * values through the TIMER_ABSTIME flag, therefore we have
+                 * to synchronize the timer to the clock every time we start
+                 * it.
++                *
++                * Exclude task deltas or else they will be accounted twice
++                * in the cputimer.
+                 */
+-               thread_group_cputime(tsk, &sum);
++               thread_group_cputime_nodelta(tsk, &sum, delta);
+                raw_spin_lock_irqsave(&cputimer->lock, flags);
+                cputimer->running = 1;
+                update_gt_cputime(&cputimer->cputime, &sum);
+-       } else
++       } else {
++               /*
++                * Ideally, you would expect to get:
++                *
++                * 1. delta = x, times->sum_exec_runtime = y or
++                * 2. delta = 0, times->sum_exec_runtime = y+x
++                *
++                * but because of the race condition between this function and
++                * update_curr(), it is possible to get:
++                *
++                * 3. delta = 0, times->sum_exec_runtime = y by fetching the
++                *    cputimer before delta or
++                * 4. delta = x, times->sum_exec_runtime = y+x by inverting the
++                *    sequence.
++                *
++                * Situation #3 is to be avoided or else it will make a timer being
++                * fired sooner than requested.
++                *
++                * Calling group_delta_exec() is required to guaranty accurate result
++                */
++               if (delta && *delta == CPUTIMER_NEED_DELTA) {
++                       /*
++                        * If rq lock contention is serious concern, the
++                        * following statement could be replaced with
++                        * *delta = task_delta_exec(tsk) + (NR_CPUS-1)*TICK_NSEC;
++                        * to trade accuracy for reduced rq locks contention.
++                        */
++                       *delta = group_delta_exec(tsk);
++               }
+                raw_spin_lock_irqsave(&cputimer->lock, flags);
++       }
+        *times = cputimer->cputime;
+        raw_spin_unlock_irqrestore(&cputimer->lock, flags);
  }
  
++void thread_group_cputimer(struct task_struct *tsk, struct task_cputime *times)
++{
++       thread_group_cputimer_withdelta(tsk, times, NULL);
++}
++
  /*
-+ * Return accounted runtime for the task.
-+ * In case the task is currently running, return the runtime plus current's
-+ * pending runtime that have not been accounted yet.
-+ */
-+unsigned long long task_sched_runtime(struct task_struct *p)
-+{
-+       unsigned long long delta;
-+       u64 ns = task_sched_runtime_nodelta(p, &delta);
-+       ns += delta;
-+       return ns;
-+}
-+
-+/*
-  * This function gets called by the timer code, with HZ frequency.
-  * We call it with interrupts disabled.
+  * Sample a process (thread group) clock for the given group_leader task.
+  * Must be called with tasklist_lock held for reading.
+@@ -615,22 +668,27 @@ static void cpu_timer_fire(struct k_itimer *timer)
   */
-diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
-index e93cca9..1217eca 100644
---- a/kernel/sched/cputime.c
-+++ b/kernel/sched/cputime.c
-@@ -289,15 +289,14 @@ static __always_inline bool steal_account_process_tick(void)
-        return false;
- }
- 
--/*
-- * Accumulate raw cputime values of dead tasks (sig->[us]time) and live
-- * tasks (sum on group iteration) belonging to @tsk's group.
-- */
--void thread_group_cputime(struct task_struct *tsk, struct task_cputime *times)
-+void thread_group_cputime_nodelta(struct task_struct *tsk, struct task_cputime *times,
-+                                 unsigned long long *delta)
+ static int cpu_timer_sample_group(const clockid_t which_clock,
+                                  struct task_struct *p,
+-                                 union cpu_time_count *cpu)
++                                 union cpu_time_count *cpu,
++                                 unsigned need_delta)
  {
-        struct signal_struct *sig = tsk->signal;
-        cputime_t utime, stime;
-        struct task_struct *t;
-+       unsigned long long d = 0;
-+       unsigned long long td;
+        struct task_cputime cputime;
++       unsigned long long delta;
  
-        times->utime = sig->utime;
-        times->stime = sig->stime;
-@@ -313,10 +312,46 @@ void thread_group_cputime(struct task_struct *tsk, struct task_cputime *times)
-                task_cputime(t, &utime, &stime);
-                times->utime += utime;
-                times->stime += stime;
--               times->sum_exec_runtime += task_sched_runtime(t);
-+               times->sum_exec_runtime += task_sched_runtime_nodelta(t, &td);
-+               d += td;
-        } while_each_thread(tsk, t);
- out:
-        rcu_read_unlock();
-+
-+       if (delta)
-+               *delta = d;
-+}
-+
-+/*
-+ * Accumulate raw cputime values of dead tasks (sig->[us]time) and live
-+ * tasks (sum on group iteration) belonging to @tsk's group.
-+ */
-+void thread_group_cputime(struct task_struct *tsk, struct task_cputime *times)
-+{
-+       unsigned long long d;
-+       thread_group_cputime_nodelta(tsk, times, &d);
-+       times->sum_exec_runtime += d;
-+}
-+
-+
-+unsigned long long group_delta_exec(struct task_struct *tsk)
-+{
-+       unsigned long long ns = 0;
-+       struct task_struct *t;
-+
-+       rcu_read_lock();
-+       /* make sure we can trust tsk->thread_group list */
-+       if (!likely(pid_alive(tsk)))
-+               goto out;
-+
-+       t = tsk;
-+       do {
-+               ns += task_delta_exec(t);
-+       } while_each_thread(tsk, t);
-+out:
-+       rcu_read_unlock();
-+
-+       return ns;
- }
+-       thread_group_cputimer(p, &cputime);
+        switch (CPUCLOCK_WHICH(which_clock)) {
+        default:
+                return -EINVAL;
+        case CPUCLOCK_PROF:
++               thread_group_cputimer_withdelta(p, &cputime, NULL);
+                cpu->cpu = cputime.utime + cputime.stime;
+                break;
+        case CPUCLOCK_VIRT:
++               thread_group_cputimer_withdelta(p, &cputime, NULL);
+                cpu->cpu = cputime.utime;
+                break;
+        case CPUCLOCK_SCHED:
+-               cpu->sched = cputime.sum_exec_runtime + task_delta_exec(p);
++               delta = need_delta;
++               thread_group_cputimer_withdelta(p, &cputime, &delta);
++               cpu->sched = cputime.sum_exec_runtime + delta;
+                break;
+        }
+        return 0;
+@@ -697,7 +755,8 @@ static int posix_cpu_timer_set(struct k_itimer *timer, int flags,
+        if (CPUCLOCK_PERTHREAD(timer->it_clock)) {
+                cpu_clock_sample(timer->it_clock, p, &val);
+        } else {
+-               cpu_timer_sample_group(timer->it_clock, p, &val);
++               cpu_timer_sample_group(timer->it_clock, p, &val,
++                                      CPUTIMER_NEED_DELTA);
+        }
  
- #ifdef CONFIG_IRQ_TIME_ACCOUNTING
+        if (old) {
+@@ -845,7 +904,8 @@ static void posix_cpu_timer_get(struct k_itimer *timer, struct itimerspec *itp)
+                        read_unlock(&tasklist_lock);
+                        goto dead;
+                } else {
+-                       cpu_timer_sample_group(timer->it_clock, p, &now);
++                       cpu_timer_sample_group(timer->it_clock, p, &now,
++                                              CPUTIMER_NO_DELTA);
+                        clear_dead = (unlikely(p->exit_state) &&
+                                      thread_group_empty(p));
+                }
+@@ -1042,7 +1102,7 @@ static void check_process_timers(struct task_struct *tsk,
+        /*
+         * Collect the current process totals.
+         */
+-       thread_group_cputimer(tsk, &cputime);
++       thread_group_cputimer_withdelta(tsk, &cputime, NULL);
+        utime = cputime.utime;
+        ptime = utime + cputime.stime;
+        sum_sched_runtime = cputime.sum_exec_runtime;
+@@ -1182,7 +1242,8 @@ void posix_cpu_timer_schedule(struct k_itimer *timer)
+                        goto out_unlock;
+                }
+                spin_lock(&p->sighand->siglock);
+-               cpu_timer_sample_group(timer->it_clock, p, &now);
++               cpu_timer_sample_group(timer->it_clock, p, &now,
++                                      CPUTIMER_NO_DELTA);
+                bump_cpu_timer(timer, now);
+                /* Leave the tasklist_lock locked for the call below.  */
+        }
+@@ -1348,7 +1409,7 @@ void set_process_cpu_timer(struct task_struct *tsk, unsigned int clock_idx,
+        union cpu_time_count now;
+ 
+        BUG_ON(clock_idx == CPUCLOCK_SCHED);
+-       cpu_timer_sample_group(clock_idx, tsk, &now);
++       cpu_timer_sample_group(clock_idx, tsk, &now, CPUTIMER_NEED_DELTA);
+ 
+        if (oldval) {
+                /*
 -- 
 1.8.2.1
+
 
 
 
