@@ -1,77 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755343Ab3D0Jtk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Apr 2013 05:49:40 -0400
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:58699 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754684Ab3D0Jti (ORCPT
+	id S1755472Ab3D0Jzz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Apr 2013 05:55:55 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:13923 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754807Ab3D0Jzy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Apr 2013 05:49:38 -0400
-Date: Sat, 27 Apr 2013 11:49:22 +0200
-From: Emil Goode <emilgoode@gmail.com>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: airlied@linux.ie, swarren@wwwdotorg.org, dri-devel@lists.freedesktop.org,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH] drm/tegra: Include header drm/drm.h
-Message-ID: <20130427094922.GA6348@debian>
-References: <1366998591-8508-1-git-send-email-emilgoode@gmail.com>
- <20130426192208.GA2945@avionic-0098.mockup.avionic-design.de>
+	Sat, 27 Apr 2013 05:55:54 -0400
+Message-ID: <517BA02C.8080005@huawei.com>
+Date: Sat, 27 Apr 2013 17:53:48 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130426192208.GA2945@avionic-0098.mockup.avionic-design.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tejun Heo <tj@kernel.org>
+CC: Li Zhong <zhong@linux.vnet.ibm.com>, LKML <linux-kernel@vger.kernel.org>,
+        Cgroups <cgroups@vger.kernel.org>
+Subject: [PATCH 2/2] cpuset: fix cpu hotplug vs rebuild_sched_domains() race
+References: <517BA01C.6060806@huawei.com>
+In-Reply-To: <517BA01C.6060806@huawei.com>
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thierry,
+rebuild_sched_domains() might pass doms with offlined cpu to
+partition_sched_domains(), which results in an oops:
 
-I don't know this code well but the drm/drm.h has an #if def so that
-either linux/types.h is included or the __[us]* types are defined in
-a different way with the comment "One of the BSDs".
-Also I sent a patch last year to include linux/types.h in exynos_drm.h
-but it now includes drm/drm.h instead.
+general protection fault: 0000 [#1] SMP
+...
+RIP: 0010:[<ffffffff81077a1e>]  [<ffffffff81077a1e>] get_group+0x6e/0x90
+...
+Call Trace:
+ [<ffffffff8107f07c>] build_sched_domains+0x70c/0xcb0
+ [<ffffffff8107f2a7>] ? build_sched_domains+0x937/0xcb0
+ [<ffffffff81173f64>] ? kfree+0xe4/0x1b0
+ [<ffffffff8107f6e0>] ? partition_sched_domains+0xc0/0x470
+ [<ffffffff8107f905>] partition_sched_domains+0x2e5/0x470
+ [<ffffffff8107f6e0>] ? partition_sched_domains+0xc0/0x470
+ [<ffffffff810c9007>] ? generate_sched_domains+0xc7/0x530
+ [<ffffffff810c94a8>] rebuild_sched_domains_locked+0x38/0x70
+ [<ffffffff810cb4a4>] cpuset_write_resmask+0x1a4/0x500
+ [<ffffffff810c8700>] ? cpuset_mount+0xe0/0xe0
+ [<ffffffff810c7f50>] ? cpuset_read_u64+0x100/0x100
+ [<ffffffff810be890>] ? cgroup_iter_next+0x90/0x90
+ [<ffffffff810cb300>] ? cpuset_css_offline+0x70/0x70
+ [<ffffffff810c1a73>] cgroup_file_write+0x133/0x2e0
+ [<ffffffff8118995b>] vfs_write+0xcb/0x130
+ [<ffffffff8118a174>] sys_write+0x64/0xa0
 
-Best regards,
+Reported-by: Li Zhong <zhong@linux.vnet.ibm.com>
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+---
+ kernel/cpuset.c | 10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
-Emil Goode
-
-
-On Fri, Apr 26, 2013 at 09:22:08PM +0200, Thierry Reding wrote:
-> On Fri, Apr 26, 2013 at 07:49:51PM +0200, Emil Goode wrote:
-> > Include definitions of used types by including drm/drm.h
-> > 
-> > Sparse output:
-> > /usr/include/drm/tegra_drm.h:21:
-> > 	found __[us]{8,16,32,64} type without
-> > 	#include <linux/types.h>
-> > 
-> > Signed-off-by: Emil Goode <emilgoode@gmail.com>
-> > ---
-> >  include/uapi/drm/tegra_drm.h |    2 ++
-> >  1 file changed, 2 insertions(+)
-> > 
-> > diff --git a/include/uapi/drm/tegra_drm.h b/include/uapi/drm/tegra_drm.h
-> > index 6e132a2..73bde4e 100644
-> > --- a/include/uapi/drm/tegra_drm.h
-> > +++ b/include/uapi/drm/tegra_drm.h
-> > @@ -17,6 +17,8 @@
-> >  #ifndef _UAPI_TEGRA_DRM_H_
-> >  #define _UAPI_TEGRA_DRM_H_
-> >  
-> > +#include <drm/drm.h>
-> > +
-> 
-> sparse complains about linux/types.h not being included, so I wonder if
-> it makes more sense to include that instead of drm/drm.h. In fact I have
-> a fix that does exactly that in a local branch and was going to put that
-> into my fixes branch. It's a bit more lightweight.
-> 
-> On the other hand, some drivers already include drm/drm.h in the public
-> header so I don't really have any objections to this patch.
-> 
-> Thierry
-
-
+diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+index b0f18ba..ef05901 100644
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -769,12 +769,20 @@ static void rebuild_sched_domains_locked(void)
+ 	lockdep_assert_held(&cpuset_mutex);
+ 	get_online_cpus();
+ 
++	/*
++	 * We have raced with CPU hotplug. Don't do anything to avoid
++	 * passing doms with offlined cpu to partition_sched_domains().
++	 * Anyways, hotplug work item will rebuild sched domains.
++	 */
++	if (!cpumask_equal(top_cpuset.cpus_allowed, cpu_active_mask))
++		goto out;
++
+ 	/* Generate domain masks and attrs */
+ 	ndoms = generate_sched_domains(&doms, &attr);
+ 
+ 	/* Have scheduler rebuild the domains */
+ 	partition_sched_domains(ndoms, doms, attr);
+-
++out:
+ 	put_online_cpus();
+ }
+ #else /* !CONFIG_SMP */
+-- 
+1.8.0.2
