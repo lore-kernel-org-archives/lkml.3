@@ -1,84 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755569Ab3D0PO4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Apr 2013 11:14:56 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:48358 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753859Ab3D0POz (ORCPT
+	id S1755477Ab3D0NcA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Apr 2013 09:32:00 -0400
+Received: from mail-bk0-f48.google.com ([209.85.214.48]:37193 "EHLO
+	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751538Ab3D0Nb6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Apr 2013 11:14:55 -0400
-Date: Sat, 27 Apr 2013 11:14:53 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: ZhenHua <zhen-hual@hp.com>
-cc: gregkh@linuxfoundation.org, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/1] driver,usb: Fix a warning in uhci-hcd driver
-In-Reply-To: <517B18E2.3060408@hp.com>
-Message-ID: <Pine.LNX.4.44L0.1304271111530.30732-100000@netrider.rowland.org>
+	Sat, 27 Apr 2013 09:31:58 -0400
+Message-ID: <517BD342.9080005@redhat.com>
+Date: Sat, 27 Apr 2013 15:31:46 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+CC: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org, corbet@lwn.net,
+        Tejun Heo <tj@kernel.org>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: PING^5 aka New ways to attract attentions Re: [PATCH v2 00/14] Corrections
+ and customization of the SG_IO command whitelist (CVE-2012-4542)
+References: <1360163761-8541-1-git-send-email-pbonzini@redhat.com> <5124F600.9030908@redhat.com> <514CDB6F.9030505@redhat.com> <515DC3FE.1010405@redhat.com> <516E94E7.4030202@redhat.com>
+In-Reply-To: <516E94E7.4030202@redhat.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 27 Apr 2013, ZhenHua wrote:
+PING^5
 
-> On 04/27/2013 12:51 AM, Alan Stern wrote:
-> > On Fri, 26 Apr 2013, ZhenHua wrote:
-> >
-> >> There is a function  wait_for_HP() in uhci-hub.c. In this
-> >> patch, it is used in suspend_rh(),  I think this can be a
-> >> solution. And I have tested this patch, it can fix the bug.
-> >>
-> >> I think there is another patch needed. As Alan said in another
-> >> mail, in the UHCI_RH_RUNNING_NODEVS case, it should not be stopped
-> >> if the uhci device is HP iLo virtual usb.
-> > I believe that if you change the UHCI_RH_RUNNING_NODEVS case, you will
-> > find that this patch (calling wait_for_HP) isn't needed.
-> >
-> > In fact, the patch is so easy that I am including it below.  Please
-> > test this (without either of your patches) to see if it works.
-> >
-> > Alan Stern
-> >
-> >
-> >
-> >
-> > Index: usb-3.9/drivers/usb/host/uhci-hub.c
-> > ===================================================================
-> > --- usb-3.9.orig/drivers/usb/host/uhci-hub.c
-> > +++ usb-3.9/drivers/usb/host/uhci-hub.c
-> > @@ -225,7 +225,8 @@ static int uhci_hub_status_data(struct u
-> >   		/* auto-stop if nothing connected for 1 second */
-> >   		if (any_ports_active(uhci))
-> >   			uhci->rh_state = UHCI_RH_RUNNING;
-> > -		else if (time_after_eq(jiffies, uhci->auto_stop_time))
-> > +		else if (time_after_eq(jiffies, uhci->auto_stop_time) &&
-> > +				!uhci->wait_for_hp)
-> >   			suspend_rh(uhci, UHCI_RH_AUTO_STOPPED);
-> >   		break;
-> >   
-> >
-> I have tested the UHCI_RH_RUNNING_NODEVS case yeasterday, and it works.
-> But the function suspend_rh is also called in other places, so I think 
-> it only fixes
-> the warning when auto stop is called, but not fix the warning when 
-> uhci's bus_suspend
-> is called,  it will come out again.
+So a blatant attempt at getting attention from LWN didn't work.  I'm
+desperate, so...
 
-Have you tried this?  I expect the warning will not occur when the
-bus_suspend routine is called, because then there will be a 1-ms delay,
-not just a 400-us delay.
+... look!  I'm top posting!
 
-> And if you add uhci->wait_for_hp check in the UHCI_RH_RUNNING_NODEVS case,
-> all hp uhci devices will not auto stop, not only the virtual devices. I 
-> guess it may waste resource.
+Paolo
 
-If you want, you can add a new flag specifically for virtual
-controllers.  But it shouldn't matter -- as long as your kernels are
-built with CONFIG_PM_RUNTIME enabled, there won't be any significant
-waste of resources.
-
-Alan Stern
+Il 17/04/2013 14:26, Paolo Bonzini ha scritto:
+> And a fourth ping comes...
+> 
+> Jon, the next time I read "it seems likely to be picked up fairly soon"
+> (http://lwn.net/Articles/535075/), I'll picture the author of the patch
+> attempting open-heart surgery on a long-red-haired voodoo doll!
+> 
+> Paolo
+> 
+> Il 04/04/2013 20:18, Paolo Bonzini ha scritto:
+>> Il 22/03/2013 23:30, Paolo Bonzini ha scritto:
+>>> Il 20/02/2013 17:12, Paolo Bonzini ha scritto:
+>>>> Il 06/02/2013 16:15, Paolo Bonzini ha scritto:
+>>>>> This series regards the whitelist that is used for the SG_IO ioctl.  This
+>>>>> whitelist has three problems:
+>>>>>
+>>>>> * the bitmap of allowed commands is designed for MMC devices (roughly,
+>>>>>   "play/burn CDs without requiring root") but some opcodes overlap across SCSI
+>>>>>   device classes and have different meanings for different classes.
+>>>>>
+>>>>> * also because the bitmap of allowed commands is designed for MMC devices
+>>>>>   only, some commands are missing even though they are generally useful and
+>>>>>   not insecure.  At least not more insecure than anything else you can
+>>>>>   do if you have access to /dev/sdX or /dev/stX nodes.
+>>>>>
+>>>>> * the whitelist can be disabled per-process but not per-disk.  In addition,
+>>>>>   the required capability (CAP_SYS_RAWIO) gives access to a range of other 
+>>>>>   resources, enough to make it insecure.
+>>>>>
+>>>>> The series corrects these problems.  Patches 1-4 solve the first problem,
+>>>>> which also has an assigned CVE, by using different bitmaps for the various
+>>>>> device classes.  Patches 5-11 solve the second by adding more commands
+>>>>> to the bitmaps.  Patches 12 and 13 solve the third, and were already
+>>>>> posted but ignored by the maintainers despite multiple pings.
+>>>>>
+>>>>> Note: checkpatch hates the formatting of the command table.  I know about this,
+>>>>> and ensured that there are no errors in the rest of the code.  The current
+>>>>> formatting is IMHO quite handy, and roughly based on the files available
+>>>>> from the SCSI standard body.
+>>>>>
+>>>>> Ok for the next merge window?
+>>>>>
+>>>>> Paolo
+>>>>>
+>>>>> v1->v2: remove 2 MMC commands and 6 SBC commands (see patches 6 and 9
+>>>>>         for details).  Added patch 14 and added a few more scanner
+>>>>>         commands based on SANE (scanners are not whitelisted by default,
+>>>>>         also were not in v1, but this makes it possible to opt into the
+>>>>>         whitelist out of paranoia).  Removed C++ comments.  Removed the
+>>>>>         large #if 0'd list of commands that the kernel does not pass
+>>>>>         though.  Marked blk_set_cmd_filter_defaults as __init.
+>>>>
+>>>> Ping...
+>>>>
+>>>> Jens/James, is anyone going to pick this up for 3.9?
+>>>
+>>> Another month has passed, Ping^2...
+>>
+>> Ping^3, any hope for 3.10?
+>>
+>> Paolo
+>>
+>>>
+>>> Paolo
+>>>
+>>>> Paolo
+>>>>
+>>>>>
+>>>>> Paolo Bonzini (14):
+>>>>>   sg_io: pass request_queue to blk_verify_command
+>>>>>   sg_io: reorganize list of allowed commands
+>>>>>   sg_io: use different default filters for each device class
+>>>>>   sg_io: resolve conflicts between commands assigned to multiple
+>>>>>     classes (CVE-2012-4542)
+>>>>>   sg_io: whitelist a few more commands for rare & obsolete device types
+>>>>>   sg_io: whitelist another command for multimedia devices
+>>>>>   sg_io: whitelist a few more commands for media changers
+>>>>>   sg_io: whitelist a few more commands for tapes
+>>>>>   sg_io: whitelist a few more commands for disks
+>>>>>   sg_io: whitelist a few obsolete commands
+>>>>>   sg_io: mark blk_set_cmd_filter_defaults as __init
+>>>>>   sg_io: remove remnants of sysfs SG_IO filters
+>>>>>   sg_io: introduce unpriv_sgio queue flag
+>>>>>   sg_io: use unpriv_sgio to disable whitelisting for scanners
+>>>>>
+>>>>>  Documentation/block/queue-sysfs.txt |    8 +
+>>>>>  block/blk-sysfs.c                   |   33 +++
+>>>>>  block/bsg.c                         |    2 +-
+>>>>>  block/scsi_ioctl.c                  |  369 ++++++++++++++++++++++++++---------
+>>>>>  drivers/scsi/scsi_scan.c            |   14 ++-
+>>>>>  drivers/scsi/sg.c                   |    6 +-
+>>>>>  include/linux/blkdev.h              |    8 +-
+>>>>>  include/linux/genhd.h               |    9 -
+>>>>>  include/scsi/scsi.h                 |    3 +
+>>>>>  9 files changed, 344 insertions(+), 108 deletions(-)
+>>>>>
+>>>>
+>>>
+>>
+> 
 
