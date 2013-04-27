@@ -1,52 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756394Ab3D0AMQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 20:12:16 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:40169 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753409Ab3D0AMP (ORCPT
+	id S1756476Ab3D0ARa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 20:17:30 -0400
+Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:9162 "EHLO
+	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756154Ab3D0AR3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 20:12:15 -0400
-Date: Fri, 26 Apr 2013 17:12:10 -0700
-From: Olof Johansson <olof@lixom.net>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "arm@kernel.org" <arm@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/4] clocksource: nomadik-mtu: fix up clocksource/timer
-Message-ID: <20130427001210.GA1714@quad.lixom.net>
-References: <1366463287-9922-1-git-send-email-linus.walleij@linaro.org>
- <CACRpkdYWSM0BK77qWbQWh0xsN+Ps95Q70zG-GE98MYvThrky2A@mail.gmail.com>
+	Fri, 26 Apr 2013 20:17:29 -0400
+Message-ID: <517B18E2.3060408@hp.com>
+Date: Sat, 27 Apr 2013 08:16:34 +0800
+From: ZhenHua <zhen-hual@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130117 Thunderbird/19.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACRpkdYWSM0BK77qWbQWh0xsN+Ps95Q70zG-GE98MYvThrky2A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] driver,usb: Fix a warning in uhci-hcd driver
+References: <Pine.LNX.4.44L0.1304261247490.1075-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1304261247490.1075-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 20, 2013 at 03:19:43PM +0200, Linus Walleij wrote:
-> ARM SoC folks:
-> 
-> On Sat, Apr 20, 2013 at 3:08 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> 
-> > The Nomadik clocksource driver has had a bad define making it
-> > impossible to use it for sched_clock() for a while. Fix this
-> > and also enable it for the Nomadik.
-> >
-> > Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-> 
-> This one should go to fixes ASAP, could you pick it to your fixes
-> branch? It could be tagged stable if desired - this only affects the
-> Nomadik which works just OK on jiffies so it's really no big regression.
-> The Ux500 does not use the MTU for sched_clock().
+On 04/27/2013 12:51 AM, Alan Stern wrote:
+> On Fri, 26 Apr 2013, ZhenHua wrote:
+>
+>> There is a function  wait_for_HP() in uhci-hub.c. In this
+>> patch, it is used in suspend_rh(),  I think this can be a
+>> solution. And I have tested this patch, it can fix the bug.
+>>
+>> I think there is another patch needed. As Alan said in another
+>> mail, in the UHCI_RH_RUNNING_NODEVS case, it should not be stopped
+>> if the uhci device is HP iLo virtual usb.
+> I believe that if you change the UHCI_RH_RUNNING_NODEVS case, you will
+> find that this patch (calling wait_for_HP) isn't needed.
+>
+> In fact, the patch is so easy that I am including it below.  Please
+> test this (without either of your patches) to see if it works.
+>
+> Alan Stern
+>
+>
+>
+>
+> Index: usb-3.9/drivers/usb/host/uhci-hub.c
+> ===================================================================
+> --- usb-3.9.orig/drivers/usb/host/uhci-hub.c
+> +++ usb-3.9/drivers/usb/host/uhci-hub.c
+> @@ -225,7 +225,8 @@ static int uhci_hub_status_data(struct u
+>   		/* auto-stop if nothing connected for 1 second */
+>   		if (any_ports_active(uhci))
+>   			uhci->rh_state = UHCI_RH_RUNNING;
+> -		else if (time_after_eq(jiffies, uhci->auto_stop_time))
+> +		else if (time_after_eq(jiffies, uhci->auto_stop_time) &&
+> +				!uhci->wait_for_hp)
+>   			suspend_rh(uhci, UHCI_RH_AUTO_STOPPED);
+>   		break;
+>   
+>
+I have tested the UHCI_RH_RUNNING_NODEVS case yeasterday, and it works.
+But the function suspend_rh is also called in other places, so I think 
+it only fixes
+the warning when auto stop is called, but not fix the warning when 
+uhci's bus_suspend
+is called,  it will come out again.
 
-Ok, applied on top of next/multiplatform, seems to be what it's based on.
+And if you add uhci->wait_for_hp check in the UHCI_RH_RUNNING_NODEVS case,
+all hp uhci devices will not auto stop, not only the virtual devices. I 
+guess it may waste resource.
 
-Tagging as stable is up to you as platform owner. :) Since it won't directly
-apply to older kernels you might be better of submitting it to Greg separately.
-
-
--Olof
+Thanks
+Zhen-Hua
