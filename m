@@ -1,81 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756806Ab3D0CSx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 22:18:53 -0400
-Received: from mail-qe0-f46.google.com ([209.85.128.46]:51651 "EHLO
-	mail-qe0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756484Ab3D0CSv (ORCPT
+	id S1756988Ab3D0CYa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 22:24:30 -0400
+Received: from mail-ve0-f174.google.com ([209.85.128.174]:33068 "EHLO
+	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752025Ab3D0CY2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 22:18:51 -0400
-From: Xi Wang <xi.wang@gmail.com>
-To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Daniel Borkmann <dborkman@redhat.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Will Drewry <wad@chromium.org>, Eric Dumazet <edumazet@google.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        David Laight <david.laight@aculab.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nicolas Schichan <nschichan@freebox.fr>, Xi Wang <xi.wang@gmail.com>
-Subject: [PATCH v2 net-next 3/3] ARM: net: bpf_jit_32: support BPF_S_ANC_SECCOMP_LD_W instruction
-Date: Fri, 26 Apr 2013 22:17:27 -0400
-Message-Id: <1367029047-14830-4-git-send-email-xi.wang@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1367029047-14830-1-git-send-email-xi.wang@gmail.com>
-References: <1367029047-14830-1-git-send-email-xi.wang@gmail.com>
+	Fri, 26 Apr 2013 22:24:28 -0400
+MIME-Version: 1.0
+In-Reply-To: <7vvc78u8jl.fsf@alter.siamese.dyndns.org>
+References: <7vvc78u8jl.fsf@alter.siamese.dyndns.org>
+From: shawn wilson <ag4ve.us@gmail.com>
+Date: Fri, 26 Apr 2013 22:24:07 -0400
+Message-ID: <CAH_OBievcf-_z_AX9UrmWL_HVFT2vSQTu+wXAjAFeQBM8iFSGw@mail.gmail.com>
+Subject: Re: [ANNOUNCE] Git v1.8.3-rc0
+To: Junio C Hamano <gitster@pobox.com>
+Cc: git@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch implements the seccomp BPF_S_ANC_SECCOMP_LD_W instruction
-in ARM JIT.
+On Fri, Apr 26, 2013 at 8:22 PM, Junio C Hamano <gitster@pobox.com> wrote:
 
-Signed-off-by: Xi Wang <xi.wang@gmail.com>
-Cc: Daniel Borkmann <dborkman@redhat.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Will Drewry <wad@chromium.org>
-Cc: Eric Dumazet <edumazet@google.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: David Laight <david.laight@aculab.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Nicolas Schichan <nschichan@freebox.fr>
----
- arch/arm/net/bpf_jit_32.c | 14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+>  * There was no good way to ask "I have a random string that came from
+>    outside world. I want to turn it into a 40-hex object name while
+>    making sure such an object exists".  A new peeling suffix ^{object}
+>    can be used for that purpose, together with "rev-parse --verify".
+>
 
-diff --git a/arch/arm/net/bpf_jit_32.c b/arch/arm/net/bpf_jit_32.c
-index 073b085..9bfce464 100644
---- a/arch/arm/net/bpf_jit_32.c
-+++ b/arch/arm/net/bpf_jit_32.c
-@@ -19,6 +19,7 @@
- #include <linux/if_vlan.h>
- #include <asm/cacheflush.h>
- #include <asm/hwcap.h>
-+#include <asm/syscall.h>
- 
- #include "bpf_jit_32.h"
- 
-@@ -845,6 +846,19 @@ b_epilogue:
- 			off = offsetof(struct sk_buff, queue_mapping);
- 			emit(ARM_LDRH_I(r_A, r_skb, off), ctx);
- 			break;
-+#ifdef CONFIG_SECCOMP_FILTER
-+		case BPF_S_ANC_SECCOMP_LD_W:
-+			if (k == offsetof(struct seccomp_data, arch)) {
-+				emit_mov_i(r_A, AUDIT_ARCH_ARM, ctx);
-+				break;
-+			}
-+			ctx->seen |= SEEN_CALL;
-+			emit_mov_i(ARM_R3, (u32)seccomp_bpf_load, ctx);
-+			emit_mov_i(ARM_R0, k, ctx);
-+			emit_blx_r(ARM_R3, ctx);
-+			emit(ARM_MOV_R(r_A, ARM_R0), ctx);
-+			break;
-+#endif
- 		default:
- 			return -1;
- 		}
--- 
-1.8.1.2
-
+What does this mean / what is the reason behind this? I can only think
+it might be useful in a test suite to make sure git isn't doing
+anything stupid with hashes...?
