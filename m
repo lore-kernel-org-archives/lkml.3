@@ -1,66 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755768Ab3D0CQF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 22:16:05 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:39985 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753894Ab3D0CQE (ORCPT
+	id S1756405Ab3D0CSs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 22:18:48 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:64727 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751108Ab3D0CSr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 22:16:04 -0400
-MIME-Version: 1.0
-In-Reply-To: <1367027476.7911.60.camel@Wailaba2>
-References: <1365184746.874.103.camel@Wailaba2> <1365593710.30071.52.camel@laptop>
- <1365608911.707.65.camel@Wailaba2> <1365763837.17140.52.camel@laptop>
- <1365782115.17140.68.camel@laptop> <CAFTL4hwQ4FZs0VCNXP37f=+DBW7Q2EQc6PW_EtYiVnZCPWN4OQ@mail.gmail.com>
- <CAHGf_=pWPT4XdrJ8ZveL4zJKm1SE0whpL_fMHd5_TokuNQxSJQ@mail.gmail.com>
- <CAHGf_=psD4V-U4FFwAWr4k3ZP6p=GVkNY_0S-Cg06m-=89MM7Q@mail.gmail.com>
- <1366951210.7911.28.camel@Wailaba2> <1366957639.7911.42.camel@Wailaba2>
- <517AD0AE.1030404@gmail.com> <1367027476.7911.60.camel@Wailaba2>
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Date: Fri, 26 Apr 2013 22:15:42 -0400
-Message-ID: <CAHGf_=q5W1brnzmsK0bN9s07RXsRUyRoYKN347kySQs_3g2_Lg@mail.gmail.com>
-Subject: Re: [PATCH] process cputimer is moving faster than its corresponding clock
-To: Olivier Langlois <olivier@trillion01.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, schwidefsky@de.ibm.com,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 26 Apr 2013 22:18:47 -0400
+From: Xi Wang <xi.wang@gmail.com>
+To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Daniel Borkmann <dborkman@redhat.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Will Drewry <wad@chromium.org>, Eric Dumazet <edumazet@google.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        David Laight <david.laight@aculab.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nicolas Schichan <nschichan@freebox.fr>, Xi Wang <xi.wang@gmail.com>
+Subject: [PATCH v2 net-next 0/3] seccomp filter JIT
+Date: Fri, 26 Apr 2013 22:17:24 -0400
+Message-Id: <1367029047-14830-1-git-send-email-xi.wang@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 26, 2013 at 9:51 PM, Olivier Langlois
-<olivier@trillion01.com> wrote:
-> On Fri, 2013-04-26 at 15:08 -0400, KOSAKI Motohiro wrote:
->> > I need to add that I can only confirm that to be true with
->> > sum_exec_runtime.
->> >
->> > To affirm it to be true for stime and utime would require more
->> > investigation. I didn't look them at all. I was only concerned with
->> > sum_exec_runtime.
->> >
->> > I will prepare a v2 of the patch accounting all the feedbacks that I
->> > received from KOSAKI Motohiro, Frederic Weisbecker and Peter Zijlstra
->> > and send it back here for further discussion.
->> >
->> > Thank you very much all!
->>
->> Do you mean your utime test case still failure? If you share your test-case,
->> I'm going to look at your issue too.
->>
-> Sure with pleasure. My testcase is glibc-2.17/rt/tst-cputimer1.c
->
-> That being said, it strictly test CPUCLOCK_SCHED timers. Hence my focus
-> when modifying the code was strictly on sum_exec_runtime.
->
-> If utime and stime components of cputimer are moving faster than their
-> associated clock, this is something that I did not address.
+The first patch refactors bpf_jit_compile()/bpf_jit_free() to provide
+a unified interface for both packet and seccomp filters.
 
-Hmm... Sorry. I'm confused. 1) I haven't seen any glibc test failure
-after applying
-my patch. 2) tst-cputimer1.c only have CLOCK_PROCESS_CPUTIME_ID test and
-don't have any utime, stime tests.
+The next two patches implement JIT for seccomp filters on x86 and ARM,
+respectively.
 
-Please let me know if you've seen any failure after applying my patch.
+Thanks to Heiko Carstens for testing the build on s390 and Eric Dumazet
+for the comments on x86 JIT.
+
+Changes:
+  make better patch splitting
+  remove arch at jit time in x86
+  add more comments in x86
+
+Xi Wang (3):
+  filter: refactor BPF JIT for seccomp filters
+  x86: bpf_jit_comp: support BPF_S_ANC_SECCOMP_LD_W instruction
+  ARM: net: bpf_jit_32: support BPF_S_ANC_SECCOMP_LD_W instruction
+
+ arch/arm/net/bpf_jit_32.c       | 64 +++++++++++++++++++++++++----------------
+ arch/powerpc/net/bpf_jit_comp.c | 36 +++++++++++------------
+ arch/s390/net/bpf_jit_comp.c    | 31 ++++++++++----------
+ arch/sparc/net/bpf_jit_comp.c   | 22 +++++++-------
+ arch/x86/net/bpf_jit_comp.c     | 32 ++++++++++++++-------
+ include/linux/filter.h          | 16 +++++++----
+ kernel/seccomp.c                |  6 +++-
+ net/core/filter.c               |  6 ++--
+ 8 files changed, 122 insertions(+), 91 deletions(-)
+
+-- 
+1.8.1.2
+
