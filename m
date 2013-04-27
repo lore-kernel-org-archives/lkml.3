@@ -1,74 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756654Ab3D0FcP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Apr 2013 01:32:15 -0400
-Received: from ALUM-MAILSEC-SCANNER-7.MIT.EDU ([18.7.68.19]:51043 "EHLO
-	alum-mailsec-scanner-7.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753957Ab3D0FcN (ORCPT
+	id S1755397Ab3D0F6Q (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Apr 2013 01:58:16 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:52348 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752817Ab3D0F6P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Apr 2013 01:32:13 -0400
-X-AuditID: 12074413-b7f226d000000902-87-517b62dd1ff2
-Message-ID: <517B62D8.5020006@alum.mit.edu>
-Date: Sat, 27 Apr 2013 07:32:08 +0200
-From: Michael Haggerty <mhagger@alum.mit.edu>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: shawn wilson <ag4ve.us@gmail.com>
-CC: Junio C Hamano <gitster@pobox.com>, git@vger.kernel.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [ANNOUNCE] Git v1.8.3-rc0
-References: <7vvc78u8jl.fsf@alter.siamese.dyndns.org> <CAH_OBievcf-_z_AX9UrmWL_HVFT2vSQTu+wXAjAFeQBM8iFSGw@mail.gmail.com>
-In-Reply-To: <CAH_OBievcf-_z_AX9UrmWL_HVFT2vSQTu+wXAjAFeQBM8iFSGw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	Sat, 27 Apr 2013 01:58:15 -0400
+Message-ID: <1367042288.7402.1.camel@phoenix>
+Subject: [PATCH] regulator: Remove NULL test before calling
+ regulator_unregister()
+From: Axel Lin <axel.lin@ingics.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Robert Jarzmik <robert.jarzmik@free.fr>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Sangbeom Kim <sbkim73@samsung.com>, Cyril Chemparathy <cyril@ti.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Date: Sat, 27 Apr 2013 13:58:08 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprHKsWRmVeSWpSXmKPExsUixO6iqHs3qTrQoOu/gMXKyVNYLbqudDNZ
-	NPReYba4vGsOmwOLx85Zd9k9Ll5S9vi8SS6AOYrbJimxpCw4Mz1P3y6BO6Oz6xJbwRquijmP
-	n7M3MC7j6GLk5JAQMJF4fnM6E4QtJnHh3nq2LkYuDiGBy4wS9z51s0A455kk2nd8ZgOp4hXQ
-	lui9doYdxGYRUJX4dOM3K4jNJqArsainGWySqECYxKr1y5gh6gUlTs58wgJiiwDVz1l9DSjO
-	wcEsUCjx9mk8SFhYQE2i9+BDVpCwkECVxJw58iBhToFAidlTVjNCVKtLrJ8nBBJmFpCX2P52
-	DvMERoFZSObPQqiahaRqASPzKka5xJzSXN3cxMyc4tRk3eLkxLy81CJdc73czBK91JTSTYyQ
-	8BXewbjrpNwhRgEORiUe3oYlVYFCrIllxZW5hxglOZiURHnXxFYHCvEl5adUZiQWZ8QXleak
-	Fh9ilOBgVhLhVXgGVM6bklhZlVqUD5OS5mBREudVW6LuJySQnliSmp2aWpBaBJOV4eBQkuDl
-	BsapkGBRanpqRVpmTglCmomDE2Q4l5RIcWpeSmpRYmlJRjwoRuOLgVEKkuIB2rsgEaidt7gg
-	MRcoCtF6ilGXY+WVJ68ZhVjy8vNSpcR574AUCYAUZZTmwa2AJatXjOJAHwvz3gOp4gEmOrhJ
-	r4CWMAEtqZ1eDrKkJBEhJdXA6Le85sIqyWmWbFe7zq5PuDKFYxXfI1HL3MNv+lfWVE42W/gv
-	YtrGj17muYHLXS+5N2eJF8rHOAgu2r+hkWHJvP0SU3v0pZpFHm6VCFuVczrwwr6ZVbW73ug8
-	Z4u9peCknyz59vLkbzt/cCVsSGI3dRc826X4IYtjm8q7s/0XTzeE7vJVazq2WYmlOCPRUIu5
-	qDgRABZ6mYAxAwAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/27/2013 04:24 AM, shawn wilson wrote:
-> On Fri, Apr 26, 2013 at 8:22 PM, Junio C Hamano <gitster@pobox.com> wrote:
-> 
->>  * There was no good way to ask "I have a random string that came from
->>    outside world. I want to turn it into a 40-hex object name while
->>    making sure such an object exists".  A new peeling suffix ^{object}
->>    can be used for that purpose, together with "rev-parse --verify".
->>
-> 
-> What does this mean / what is the reason behind this? I can only think
-> it might be useful in a test suite to make sure git isn't doing
-> anything stupid with hashes...?
+It's safe to call regulator_unregister() with NULL, thus remove the NULL test
+before regulator_unregister() calls.
 
-The topic is discussed here:
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Cc: Robert Jarzmik <robert.jarzmik@free.fr>
+Cc: Haojian Zhuang <haojian.zhuang@gmail.com>
+Cc: Wolfram Sang <w.sang@pengutronix.de>
+Cc: Sangbeom Kim <sbkim73@samsung.com>
+Cc: Cyril Chemparathy <cyril@ti.com>
+---
+ drivers/regulator/max1586.c            |    3 +--
+ drivers/regulator/max8649.c            |    6 ++----
+ drivers/regulator/max8660.c            |    3 +--
+ drivers/regulator/s5m8767.c            |    6 ++----
+ drivers/regulator/tps6524x-regulator.c |    3 +--
+ 5 files changed, 7 insertions(+), 14 deletions(-)
 
-http://git.661346.n2.nabble.com/Bug-in-quot-git-rev-parse-verify-quot-td7580929.html
-
-As discussed in the thread, when verifying that an argument names an
-existing object, it is usually also appropriate to verify that the named
-object is of a particular type (or can be converted to a particular
-type), which could already be done with syntax like
-"$userstring^{commit}".  But if, for example, you want to avoid
-unwrapping tags but also want to verify that the named object really
-exists, "$userstring^{object}" now provides a way.
-
-And what do you have against test suites? :-)
-
-Michael
-
+diff --git a/drivers/regulator/max1586.c b/drivers/regulator/max1586.c
+index dac0490..54af610 100644
+--- a/drivers/regulator/max1586.c
++++ b/drivers/regulator/max1586.c
+@@ -232,8 +232,7 @@ static int max1586_pmic_remove(struct i2c_client *client)
+ 	int i;
+ 
+ 	for (i = 0; i <= MAX1586_V6; i++)
+-		if (max1586->rdev[i])
+-			regulator_unregister(max1586->rdev[i]);
++		regulator_unregister(max1586->rdev[i]);
+ 	return 0;
+ }
+ 
+diff --git a/drivers/regulator/max8649.c b/drivers/regulator/max8649.c
+index fdb67ff..db6c9be 100644
+--- a/drivers/regulator/max8649.c
++++ b/drivers/regulator/max8649.c
+@@ -248,10 +248,8 @@ static int max8649_regulator_remove(struct i2c_client *client)
+ {
+ 	struct max8649_regulator_info *info = i2c_get_clientdata(client);
+ 
+-	if (info) {
+-		if (info->regulator)
+-			regulator_unregister(info->regulator);
+-	}
++	if (info)
++		regulator_unregister(info->regulator);
+ 
+ 	return 0;
+ }
+diff --git a/drivers/regulator/max8660.c b/drivers/regulator/max8660.c
+index 4d7c635..d428ef9 100644
+--- a/drivers/regulator/max8660.c
++++ b/drivers/regulator/max8660.c
+@@ -426,8 +426,7 @@ static int max8660_remove(struct i2c_client *client)
+ 	int i;
+ 
+ 	for (i = 0; i < MAX8660_V_END; i++)
+-		if (max8660->rdev[i])
+-			regulator_unregister(max8660->rdev[i]);
++		regulator_unregister(max8660->rdev[i]);
+ 	return 0;
+ }
+ 
+diff --git a/drivers/regulator/s5m8767.c b/drivers/regulator/s5m8767.c
+index 8e56198..c24448b 100644
+--- a/drivers/regulator/s5m8767.c
++++ b/drivers/regulator/s5m8767.c
+@@ -923,8 +923,7 @@ static int s5m8767_pmic_probe(struct platform_device *pdev)
+ 	return 0;
+ err:
+ 	for (i = 0; i < s5m8767->num_regulators; i++)
+-		if (rdev[i])
+-			regulator_unregister(rdev[i]);
++		regulator_unregister(rdev[i]);
+ 
+ 	return ret;
+ }
+@@ -936,8 +935,7 @@ static int s5m8767_pmic_remove(struct platform_device *pdev)
+ 	int i;
+ 
+ 	for (i = 0; i < s5m8767->num_regulators; i++)
+-		if (rdev[i])
+-			regulator_unregister(rdev[i]);
++		regulator_unregister(rdev[i]);
+ 
+ 	return 0;
+ }
+diff --git a/drivers/regulator/tps6524x-regulator.c b/drivers/regulator/tps6524x-regulator.c
+index 18b67d2..1094393 100644
+--- a/drivers/regulator/tps6524x-regulator.c
++++ b/drivers/regulator/tps6524x-regulator.c
+@@ -585,8 +585,7 @@ static int pmic_remove(struct spi_device *spi)
+ 	if (!hw)
+ 		return 0;
+ 	for (i = 0; i < N_REGULATORS; i++) {
+-		if (hw->rdev[i])
+-			regulator_unregister(hw->rdev[i]);
++		regulator_unregister(hw->rdev[i]);
+ 		hw->rdev[i] = NULL;
+ 	}
+ 	spi_set_drvdata(spi, NULL);
 -- 
-Michael Haggerty
-mhagger@alum.mit.edu
-http://softwareswirl.blogspot.com/
+1.7.10.4
+
+
+
