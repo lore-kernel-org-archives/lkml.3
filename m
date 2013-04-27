@@ -1,56 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756407Ab3D0FbK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Apr 2013 01:31:10 -0400
-Received: from oproxy12-pub.bluehost.com ([50.87.16.10]:38070 "HELO
-	oproxy12-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755130Ab3D0FbJ (ORCPT
+	id S1756654Ab3D0FcP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Apr 2013 01:32:15 -0400
+Received: from ALUM-MAILSEC-SCANNER-7.MIT.EDU ([18.7.68.19]:51043 "EHLO
+	alum-mailsec-scanner-7.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753957Ab3D0FcN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Apr 2013 01:31:09 -0400
-Message-ID: <1367040666.12779.20.camel@Wailaba2>
-Subject: Re: [PATCH] process cputimer is moving faster than its
- corresponding clock
-From: Olivier Langlois <olivier@olivierlanglois.net>
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, schwidefsky@de.ibm.com,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Sat, 27 Apr 2013 01:31:06 -0400
-In-Reply-To: <1367038943.12779.10.camel@Wailaba2>
-References: <1365184746.874.103.camel@Wailaba2>
-	 <1365593710.30071.52.camel@laptop> <1365608911.707.65.camel@Wailaba2>
-	 <1365763837.17140.52.camel@laptop> <1365782115.17140.68.camel@laptop>
-	 <CAFTL4hwQ4FZs0VCNXP37f=+DBW7Q2EQc6PW_EtYiVnZCPWN4OQ@mail.gmail.com>
-	 <CAHGf_=pWPT4XdrJ8ZveL4zJKm1SE0whpL_fMHd5_TokuNQxSJQ@mail.gmail.com>
-	 <CAHGf_=psD4V-U4FFwAWr4k3ZP6p=GVkNY_0S-Cg06m-=89MM7Q@mail.gmail.com>
-	 <1366951210.7911.28.camel@Wailaba2> <1366957639.7911.42.camel@Wailaba2>
-	 <517AD0AE.1030404@gmail.com> <1367027476.7911.60.camel@Wailaba2>
-	 <CAHGf_=q5W1brnzmsK0bN9s07RXsRUyRoYKN347kySQs_3g2_Lg@mail.gmail.com>
-	 <1367038943.12779.10.camel@Wailaba2>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.1 
-Mime-Version: 1.0
+	Sat, 27 Apr 2013 01:32:13 -0400
+X-AuditID: 12074413-b7f226d000000902-87-517b62dd1ff2
+Message-ID: <517B62D8.5020006@alum.mit.edu>
+Date: Sat, 27 Apr 2013 07:32:08 +0200
+From: Michael Haggerty <mhagger@alum.mit.edu>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: shawn wilson <ag4ve.us@gmail.com>
+CC: Junio C Hamano <gitster@pobox.com>, git@vger.kernel.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [ANNOUNCE] Git v1.8.3-rc0
+References: <7vvc78u8jl.fsf@alter.siamese.dyndns.org> <CAH_OBievcf-_z_AX9UrmWL_HVFT2vSQTu+wXAjAFeQBM8iFSGw@mail.gmail.com>
+In-Reply-To: <CAH_OBievcf-_z_AX9UrmWL_HVFT2vSQTu+wXAjAFeQBM8iFSGw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {5686:box610.bluehost.com:olivierl:olivierlanglois.net} {sentby:smtp auth 173.178.230.31 authed with olivier@olivierlanglois.net}
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprHKsWRmVeSWpSXmKPExsUixO6iqHs3qTrQoOu/gMXKyVNYLbqudDNZ
+	NPReYba4vGsOmwOLx85Zd9k9Ll5S9vi8SS6AOYrbJimxpCw4Mz1P3y6BO6Oz6xJbwRquijmP
+	n7M3MC7j6GLk5JAQMJF4fnM6E4QtJnHh3nq2LkYuDiGBy4wS9z51s0A455kk2nd8ZgOp4hXQ
+	lui9doYdxGYRUJX4dOM3K4jNJqArsainGWySqECYxKr1y5gh6gUlTs58wgJiiwDVz1l9DSjO
+	wcEsUCjx9mk8SFhYQE2i9+BDVpCwkECVxJw58iBhToFAidlTVjNCVKtLrJ8nBBJmFpCX2P52
+	DvMERoFZSObPQqiahaRqASPzKka5xJzSXN3cxMyc4tRk3eLkxLy81CJdc73czBK91JTSTYyQ
+	8BXewbjrpNwhRgEORiUe3oYlVYFCrIllxZW5hxglOZiURHnXxFYHCvEl5adUZiQWZ8QXleak
+	Fh9ilOBgVhLhVXgGVM6bklhZlVqUD5OS5mBREudVW6LuJySQnliSmp2aWpBaBJOV4eBQkuDl
+	BsapkGBRanpqRVpmTglCmomDE2Q4l5RIcWpeSmpRYmlJRjwoRuOLgVEKkuIB2rsgEaidt7gg
+	MRcoCtF6ilGXY+WVJ68ZhVjy8vNSpcR574AUCYAUZZTmwa2AJatXjOJAHwvz3gOp4gEmOrhJ
+	r4CWMAEtqZ1eDrKkJBEhJdXA6Le85sIqyWmWbFe7zq5PuDKFYxXfI1HL3MNv+lfWVE42W/gv
+	YtrGj17muYHLXS+5N2eJF8rHOAgu2r+hkWHJvP0SU3v0pZpFHm6VCFuVczrwwr6ZVbW73ug8
+	Z4u9peCknyz59vLkbzt/cCVsSGI3dRc826X4IYtjm8q7s/0XTzeE7vJVazq2WYmlOCPRUIu5
+	qDgRABZ6mYAxAwAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
+On 04/27/2013 04:24 AM, shawn wilson wrote:
+> On Fri, Apr 26, 2013 at 8:22 PM, Junio C Hamano <gitster@pobox.com> wrote:
 > 
+>>  * There was no good way to ask "I have a random string that came from
+>>    outside world. I want to turn it into a 40-hex object name while
+>>    making sure such an object exists".  A new peeling suffix ^{object}
+>>    can be used for that purpose, together with "rev-parse --verify".
+>>
 > 
-> I did vary HZ from 300 to 1000 HZ, I tried the 3 three different
-> preemption models.
-> 
-> With all these combinations, I still have the problem.
-> 
-Actually, I may have observed more failure with 1000 HZ and
-CONFIG_PREEMPT=y (low-latency desktop)
+> What does this mean / what is the reason behind this? I can only think
+> it might be useful in a test suite to make sure git isn't doing
+> anything stupid with hashes...?
 
-Also make sure that High resolution timers support is enabled
-(CONFIG_HIGH_RES_TIMERS).
+The topic is discussed here:
 
+http://git.661346.n2.nabble.com/Bug-in-quot-git-rev-parse-verify-quot-td7580929.html
 
+As discussed in the thread, when verifying that an argument names an
+existing object, it is usually also appropriate to verify that the named
+object is of a particular type (or can be converted to a particular
+type), which could already be done with syntax like
+"$userstring^{commit}".  But if, for example, you want to avoid
+unwrapping tags but also want to verify that the named object really
+exists, "$userstring^{object}" now provides a way.
 
+And what do you have against test suites? :-)
+
+Michael
+
+-- 
+Michael Haggerty
+mhagger@alum.mit.edu
+http://softwareswirl.blogspot.com/
