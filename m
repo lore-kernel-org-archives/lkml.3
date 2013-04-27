@@ -1,56 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756314Ab3D0AHj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 20:07:39 -0400
-Received: from mx3.valvesoftware.com ([208.64.203.145]:38167 "EHLO
-	mx3.valvesoftware.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754907Ab3D0AHh (ORCPT
+	id S1756048Ab3D0AJP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 20:09:15 -0400
+Received: from casper.infradead.org ([85.118.1.10]:53045 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751782Ab3D0AJO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 20:07:37 -0400
-X-Greylist: delayed 1262 seconds by postgrey-1.27 at vger.kernel.org; Fri, 26 Apr 2013 20:07:37 EDT
-Message-ID: <517B1153.8000401@valvesoftware.com>
-Date: Fri, 26 Apr 2013 16:44:19 -0700
-From: "Pierre-Loup A. Griffais" <pgriffais@valvesoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+	Fri, 26 Apr 2013 20:09:14 -0400
+Message-ID: <517B16FF.6070008@infradead.org>
+Date: Fri, 26 Apr 2013 17:08:31 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: <hannes@cmpxchg.org>
-CC: <linux-kernel@vger.kernel.org>, <torvalds@linux-foundation.org>,
-        <riel@redhat.com>, <sonnyrao@chromium.org>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, <akpm@linux-foundation.org>
-Subject: IO regression after ab8fabd46f on x86 kernels with high memory
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Olof Johansson <olof@lixom.net>
+CC: Mike Turquette <mturquette@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] clk: add option to keep boot clocks on
+References: <1367019591-31685-1-git-send-email-olof@lixom.net>
+In-Reply-To: <1367019591-31685-1-git-send-email-olof@lixom.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-EXCLAIMER-MD-CONFIG: 86b76815-e903-4403-b95d-5abb05264373
-X-Mlf-Version: 7.3.6.7163
-X-Mlf-UniqueId: o201304262346350004768
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I initially observed this between kernels 3.2 and 3.5: on 3.2, copying a 
-180M shared object on the same ext4 filesystem takes 0.6s. On 3.5, it 
-takes between two and three minutes. It looks like a similar throughput 
-regression happens on any machine running an i386 PAE kernel with high 
-amounts of memory; the threshold seems to be 16G; passing mem=15G to the 
-kernel commandline fixes it.
+On 04/26/13 16:39, Olof Johansson wrote:
+> This is primarily useful when there's a driver that doesn't claim clocks
+> properly, but the bootloader does. It's not expected to be used in normal
+> cases, but for bringup and debug it's very useful to have the option to
+> not gate unclaimed clocks that are still on.
+> 
+> Signed-off-by: Olof Johansson <olof@lixom.net>
 
-I bisected it to the following change:
+add to Documentation/kernel-parameters.txt or somewhere else?
 
-commit ab8fabd46f811d5153d8a0cd2fac9a0d41fb593d
-Author: Johannes Weiner <jweiner@redhat.com>
-Date:   Tue Jan 10 15:07:42 2012 -0800
+> ---
+> 
+> Mike, this is a pretty trivial patch that I would love to see in 3.10
+> even though it's getting late. I'm definitely not picky about the naming
+> of the boot option, so feel free to change it.
+> 
+> 
+> -Olof
+> 
+>  drivers/clk/clk.c | 14 ++++++++++++++
+>  1 file changed, 14 insertions(+)
+> 
+> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+> index 20ce67f..b22551e 100644
+> --- a/drivers/clk/clk.c
+> +++ b/drivers/clk/clk.c
+> @@ -499,10 +499,24 @@ out:
+>  	return;
+>  }
+>  
+> +
+> +static bool keep_boot_clocks;
+> +static int __init clk_keep_boot_clocks(char *__unused)
+> +{
+> +	keep_boot_clocks = true;
+> +	return 1;
+> +}
+> +__setup("clk_keep_boot_clocks", clk_keep_boot_clocks);
+> +
+>  static int clk_disable_unused(void)
+>  {
+>  	struct clk *clk;
+>  
+> +	if (keep_boot_clocks) {
+> +		pr_warn("clk: Not disabling unused clocks\n");
+> +		return 0;
+> +	}
+> +
+>  	clk_prepare_lock();
+>  
+>  	hlist_for_each_entry(clk, &clk_root_list, child_node)
+> 
 
-     mm: exclude reserved pages from dirtyable memory
 
-I realize running x86 kernels against high amounts of memory is not 
-advised for various reasons, but I would assume that such a big 
-regression in basic functionality to not be part of them. Is that 
-accurate, or are these configurations expected to become unusable from 
-3.3 onwards?
-
-Also CCing Sonny since it looks like he tried to fix an overflow issue 
-related to the same change with commit c8b74c2f66049, but I'm still 
-experiencing the problem with a kernel built from master.
-
-Thanks,
-  - Pierre-Loup
+-- 
+~Randy
