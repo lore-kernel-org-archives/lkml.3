@@ -1,130 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751943Ab3D0HAV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Apr 2013 03:00:21 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:54776 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751070Ab3D0HAU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Apr 2013 03:00:20 -0400
-Message-ID: <517B777B.5020303@gmail.com>
-Date: Sat, 27 Apr 2013 15:00:11 +0800
-From: Will Huck <will.huckk@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Frantisek Hrbata <fhrbata@redhat.com>
-CC: hpa@zytor.com, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        tglx@linutronix.de, mingo@redhat.com, x86@kernel.org, oleg@redhat.com,
-        kamaleshb@in.ibm.com, hechjie@cn.ibm.com
-Subject: Re: [PATCH] x86: add phys addr validity check for /dev/mem mmap
-References: <1364905733-23937-1-git-send-email-fhrbata@redhat.com> <517A0ED8.6000404@gmail.com> <20130426153502.GC3510@dhcp-26-164.brq.redhat.com>
-In-Reply-To: <20130426153502.GC3510@dhcp-26-164.brq.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752228Ab3D0HFl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Apr 2013 03:05:41 -0400
+Received: from mga02.intel.com ([134.134.136.20]:4157 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751442Ab3D0HFk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Apr 2013 03:05:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,562,1363158000"; 
+   d="scan'208";a="303853841"
+From: Qiaowei Ren <qiaowei.ren@intel.com>
+To: Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Richard L Maliszewski <richard.l.maliszewski@intel.com>,
+        Shane Wang <shane.wang@intel.com>, Gang Wei <gang.wei@intel.com>,
+        linux-kernel@vger.kernel.org, Qiaowei Ren <qiaowei.ren@intel.com>
+Subject: [PATCH 0/5] TXT driver
+Date: Sat, 27 Apr 2013 22:56:15 +0800
+Message-Id: <1367074580-16530-1-git-send-email-qiaowei.ren@intel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/26/2013 11:35 PM, Frantisek Hrbata wrote:
-> On Fri, Apr 26, 2013 at 01:21:28PM +0800, Will Huck wrote:
->> Hi Peter,
->> On 04/02/2013 08:28 PM, Frantisek Hrbata wrote:
->>> When CR4.PAE is set, the 64b PTE's are used(ARCH_PHYS_ADDR_T_64BIT is set for
->>> X86_64 || X86_PAE). According to [1] Chapter 4 Paging, some higher bits in 64b
->>> PTE are reserved and have to be set to zero. For example, for IA-32e and 4KB
->>> page [1] 4.5 IA-32e Paging: Table 4-19, bits 51-M(MAXPHYADDR) are reserved. So
->>> for a CPU with e.g. 48bit phys addr width, bits 51-48 have to be zero. If one of
->>> the reserved bits is set, [1] 4.7 Page-Fault Exceptions, the #PF is generated
->>> with RSVD error code.
->>>
->>> <quote>
->>> RSVD flag (bit 3).
->>> This flag is 1 if there is no valid translation for the linear address because a
->>> reserved bit was set in one of the paging-structure entries used to translate
->>> that address. (Because reserved bits are not checked in a paging-structure entry
->>> whose P flag is 0, bit 3 of the error code can be set only if bit 0 is also
->>> set.)
->>> </quote>
->>>
->>> In mmap_mem() the first check is valid_mmap_phys_addr_range(), but it always
->>> returns 1 on x86. So it's possible to use any pgoff we want and to set the PTE's
->>> reserved bits in remap_pfn_range(). Meaning there is a possibility to use mmap
->> In this case, remap_pfn_range() setup the map and reserved bits for
->> mmio memory, so the mmio memory is already populated, why trigger
->> #PF?
-> Hi,
->
-> I think this is described in the quote above for the RSVD flag.
->
-> remap_pfn_range() => page present => touch page => tlb miss =>
-> walk through paging structures => reserved bit set => #pf with rsvd flag
+This module is expected to be a better tool to access below resources
+  - TXT config space
+  - TXT heap
+  - Tboot log mem
+  - SMX parameter
 
-Page present can also trigger #PF? why?
+Intel TXT (Trusted Execution Technology) will provide higher assurance
+of system configuration and initial state as well as data reset
+protection. It also helps solve real end user concerns about having
+confidence that their hardware is running the VMM or kernel that
+it was configured with, especially since they may be responsible for
+providing such assurances to VMs and services running on it.
 
->
-> I hope I didn't misunderstand your question.
->
-> Thanks
->
->>> on /dev/mem and cause system panic. It's probably not that serious, because
->>> access to /dev/mem is limited and the system has to have panic_on_oops set, but
->>> still I think we should check this and return error.
->>>
->>> This patch adds check for x86 when ARCH_PHYS_ADDR_T_64BIT is set, the same way
->>> as it is already done in e.g. ioremap. With this fix mmap returns -EINVAL if the
->>> requested phys addr is bigger then the supported phys addr width.
->>>
->>> [1] Intel 64 and IA-32 Architectures Software Developer's Manual, Volume 3A
->>>
->>> Signed-off-by: Frantisek Hrbata <fhrbata@redhat.com>
->>> ---
->>>   arch/x86/include/asm/io.h |  4 ++++
->>>   arch/x86/mm/mmap.c        | 13 +++++++++++++
->>>   2 files changed, 17 insertions(+)
->>>
->>> diff --git a/arch/x86/include/asm/io.h b/arch/x86/include/asm/io.h
->>> index d8e8eef..39607c6 100644
->>> --- a/arch/x86/include/asm/io.h
->>> +++ b/arch/x86/include/asm/io.h
->>> @@ -242,6 +242,10 @@ static inline void flush_write_buffers(void)
->>>   #endif
->>>   }
->>> +#define ARCH_HAS_VALID_PHYS_ADDR_RANGE
->>> +extern int valid_phys_addr_range(phys_addr_t addr, size_t count);
->>> +extern int valid_mmap_phys_addr_range(unsigned long pfn, size_t count);
->>> +
->>>   #endif /* __KERNEL__ */
->>>   extern void native_io_delay(void);
->>> diff --git a/arch/x86/mm/mmap.c b/arch/x86/mm/mmap.c
->>> index 845df68..92ec31c 100644
->>> --- a/arch/x86/mm/mmap.c
->>> +++ b/arch/x86/mm/mmap.c
->>> @@ -31,6 +31,8 @@
->>>   #include <linux/sched.h>
->>>   #include <asm/elf.h>
->>> +#include "physaddr.h"
->>> +
->>>   struct __read_mostly va_alignment va_align = {
->>>   	.flags = -1,
->>>   };
->>> @@ -122,3 +124,14 @@ void arch_pick_mmap_layout(struct mm_struct *mm)
->>>   		mm->unmap_area = arch_unmap_area_topdown;
->>>   	}
->>>   }
->>> +
->>> +int valid_phys_addr_range(phys_addr_t addr, size_t count)
->>> +{
->>> +	return addr + count <= __pa(high_memory);
->>> +}
->>> +
->>> +int valid_mmap_phys_addr_range(unsigned long pfn, size_t count)
->>> +{
->>> +	resource_size_t addr = (pfn << PAGE_SHIFT) + count;
->>> +	return phys_addr_valid(addr);
->>> +}
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
+See <http://www.intel.com/technology/security/> for more information
+about Intel(R) TXT.
+
+Intel TXT configuration registers are a subset of chipset registers.
+These chipset registers that interact with SMX are accessed from two
+regions of memory, which represent the public and private configuration
+spaces, by system software using memory read/write protocols.
+
+Intel TXT Heap memory is a region of physically contiguous memory
+which is set aside by BIOS for the use of Intel TXT hardware and
+software.
+
+With this module, it will be easier to access TXT/tboot related
+information/logs.
+
+Qiaowei Ren (5):
+  driver: add TXT driver in kernel
+  driver: provide sysfs interfaces to access TXT config space
+  driver: provide sysfs interfaces to access TXT log
+  driver: provide sysfs interfaces to access SMX parameter
+  driver: provide sysfs interfaces to access TXT heap
+
+ drivers/char/Kconfig             |    2 +
+ drivers/char/Makefile            |    1 +
+ drivers/char/txt/Kconfig         |   18 +
+ drivers/char/txt/Makefile        |    5 +
+ drivers/char/txt/txt-config.c    | 1041 ++++++++++++++++++++++++
+ drivers/char/txt/txt-config.h    |  138 ++++
+ drivers/char/txt/txt-heap.c      | 1616 ++++++++++++++++++++++++++++++++++++++
+ drivers/char/txt/txt-heap.h      |  338 ++++++++
+ drivers/char/txt/txt-log.c       |  140 ++++
+ drivers/char/txt/txt-log.h       |   27 +
+ drivers/char/txt/txt-parameter.c |  261 ++++++
+ drivers/char/txt/txt-parameter.h |   40 +
+ drivers/char/txt/txt-sysfs.c     |   68 ++
+ 13 files changed, 3695 insertions(+)
+ create mode 100644 drivers/char/txt/Kconfig
+ create mode 100644 drivers/char/txt/Makefile
+ create mode 100644 drivers/char/txt/txt-config.c
+ create mode 100644 drivers/char/txt/txt-config.h
+ create mode 100644 drivers/char/txt/txt-heap.c
+ create mode 100644 drivers/char/txt/txt-heap.h
+ create mode 100644 drivers/char/txt/txt-log.c
+ create mode 100644 drivers/char/txt/txt-log.h
+ create mode 100644 drivers/char/txt/txt-parameter.c
+ create mode 100644 drivers/char/txt/txt-parameter.h
+ create mode 100644 drivers/char/txt/txt-sysfs.c
+
+-- 
+1.7.9.5
 
