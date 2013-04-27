@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756885Ab3D0CSz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 22:18:55 -0400
-Received: from mail-qa0-f47.google.com ([209.85.216.47]:37764 "EHLO
-	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756448Ab3D0CSt (ORCPT
+	id S1756806Ab3D0CSx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 22:18:53 -0400
+Received: from mail-qe0-f46.google.com ([209.85.128.46]:51651 "EHLO
+	mail-qe0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756484Ab3D0CSv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 22:18:49 -0400
+	Fri, 26 Apr 2013 22:18:51 -0400
 From: Xi Wang <xi.wang@gmail.com>
 To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: Daniel Borkmann <dborkman@redhat.com>,
@@ -17,9 +17,9 @@ Cc: Daniel Borkmann <dborkman@redhat.com>,
         "David S. Miller" <davem@davemloft.net>,
         Andrew Morton <akpm@linux-foundation.org>,
         Nicolas Schichan <nschichan@freebox.fr>, Xi Wang <xi.wang@gmail.com>
-Subject: [PATCH v2 net-next 2/3] x86: bpf_jit_comp: support BPF_S_ANC_SECCOMP_LD_W instruction
-Date: Fri, 26 Apr 2013 22:17:26 -0400
-Message-Id: <1367029047-14830-3-git-send-email-xi.wang@gmail.com>
+Subject: [PATCH v2 net-next 3/3] ARM: net: bpf_jit_32: support BPF_S_ANC_SECCOMP_LD_W instruction
+Date: Fri, 26 Apr 2013 22:17:27 -0400
+Message-Id: <1367029047-14830-4-git-send-email-xi.wang@gmail.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1367029047-14830-1-git-send-email-xi.wang@gmail.com>
 References: <1367029047-14830-1-git-send-email-xi.wang@gmail.com>
@@ -28,7 +28,7 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 This patch implements the seccomp BPF_S_ANC_SECCOMP_LD_W instruction
-in x86 JIT.
+in ARM JIT.
 
 Signed-off-by: Xi Wang <xi.wang@gmail.com>
 Cc: Daniel Borkmann <dborkman@redhat.com>
@@ -41,31 +41,41 @@ Cc: "David S. Miller" <davem@davemloft.net>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Nicolas Schichan <nschichan@freebox.fr>
 ---
- arch/x86/net/bpf_jit_comp.c | 11 +++++++++++
- 1 file changed, 11 insertions(+)
+ arch/arm/net/bpf_jit_32.c | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
-diff --git a/arch/x86/net/bpf_jit_comp.c b/arch/x86/net/bpf_jit_comp.c
-index 8898680..5f1dafb 100644
---- a/arch/x86/net/bpf_jit_comp.c
-+++ b/arch/x86/net/bpf_jit_comp.c
-@@ -683,6 +683,17 @@ cond_branch:			f_offset = addrs[i + filter[i].jf] - addrs[i];
- 				}
- 				EMIT_COND_JMP(f_op, f_offset);
- 				break;
+diff --git a/arch/arm/net/bpf_jit_32.c b/arch/arm/net/bpf_jit_32.c
+index 073b085..9bfce464 100644
+--- a/arch/arm/net/bpf_jit_32.c
++++ b/arch/arm/net/bpf_jit_32.c
+@@ -19,6 +19,7 @@
+ #include <linux/if_vlan.h>
+ #include <asm/cacheflush.h>
+ #include <asm/hwcap.h>
++#include <asm/syscall.h>
+ 
+ #include "bpf_jit_32.h"
+ 
+@@ -845,6 +846,19 @@ b_epilogue:
+ 			off = offsetof(struct sk_buff, queue_mapping);
+ 			emit(ARM_LDRH_I(r_A, r_skb, off), ctx);
+ 			break;
 +#ifdef CONFIG_SECCOMP_FILTER
-+			case BPF_S_ANC_SECCOMP_LD_W:
-+				func = (u8 *)seccomp_bpf_load;
-+				t_offset = func - (image + addrs[i]);
-+				/* seccomp filters don't use %rdi, %r8, %r9
-+				 * it is safe to not save these registers
-+				 */
-+				EMIT1_off32(0xbf, K); /* mov imm32,%edi */
-+				EMIT1_off32(0xe8, t_offset); /* call seccomp_bpf_load */
++		case BPF_S_ANC_SECCOMP_LD_W:
++			if (k == offsetof(struct seccomp_data, arch)) {
++				emit_mov_i(r_A, AUDIT_ARCH_ARM, ctx);
 +				break;
++			}
++			ctx->seen |= SEEN_CALL;
++			emit_mov_i(ARM_R3, (u32)seccomp_bpf_load, ctx);
++			emit_mov_i(ARM_R0, k, ctx);
++			emit_blx_r(ARM_R3, ctx);
++			emit(ARM_MOV_R(r_A, ARM_R0), ctx);
++			break;
 +#endif
- 			default:
- 				/* hmm, too complex filter, give up with jit compiler */
- 				goto out;
+ 		default:
+ 			return -1;
+ 		}
 -- 
 1.8.1.2
 
