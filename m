@@ -1,63 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755784Ab3D0Ofr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Apr 2013 10:35:47 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:59264 "EHLO SMTP.CITRIX.COM"
+	id S1755823Ab3D0PRt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Apr 2013 11:17:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52182 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754555Ab3D0Ofq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Apr 2013 10:35:46 -0400
-X-IronPort-AV: E=Sophos;i="4.87,562,1363132800"; 
-   d="scan'208";a="21961243"
-Date: Sat, 27 Apr 2013 15:35:39 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Wei Yongjun <weiyj.lk@gmail.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "yongjun_wei@trendmicro.com.cn" <yongjun_wei@trendmicro.com.cn>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -next] xen/arm: remove duplicated include from
- enlighten.c
-In-Reply-To: <CAPgLHd95AtzEDXUMHryWmmVAkBfkh42hgeLKdSLFYwkO_JB-ZA@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1304271535210.4180@kaball.uk.xensource.com>
-References: <CAPgLHd95AtzEDXUMHryWmmVAkBfkh42hgeLKdSLFYwkO_JB-ZA@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1753646Ab3D0PRs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Apr 2013 11:17:48 -0400
+Date: Sat, 27 Apr 2013 17:14:34 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Jacob Shin <jacob.shin@amd.com>
+Cc: Ingo Molnar <mingo@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        x86@kernel.org, Stephane Eranian <eranian@google.com>,
+        Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
+        Will Deacon <will.deacon@arm.com>
+Subject: Re: [PATCH 1/3] perf/x86/amd: AMD support for bp_len >
+	HW_BREAKPOINT_LEN_8
+Message-ID: <20130427151434.GA25746@redhat.com>
+References: <1367002666-6910-1-git-send-email-jacob.shin@amd.com> <1367002666-6910-2-git-send-email-jacob.shin@amd.com> <20130427150510.GA25109@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130427150510.GA25109@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 27 Apr 2013, Wei Yongjun wrote:
-> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> 
-> Remove duplicated include.
-> 
-> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+On 04/27, Oleg Nesterov wrote:
+>
+> Suppose that the kernel was compiled without CONFIG_CPU_SUP_AMD.
+> Then perf_event_open(attr => { .bp_len == 16 }) will succeed,
+                                                  ^^^^^^^^^^^^
+sorry, I meant "can succeed" if CPU has X86_FEATURE_BPEXT.
 
-Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Oleg.
 
-
->  arch/arm/xen/enlighten.c | 1 -
->  1 file changed, 1 deletion(-)
-> 
-> diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
-> index 9a0a917..d30042e 100644
-> --- a/arch/arm/xen/enlighten.c
-> +++ b/arch/arm/xen/enlighten.c
-> @@ -10,7 +10,6 @@
->  #include <xen/platform_pci.h>
->  #include <xen/xenbus.h>
->  #include <xen/page.h>
-> -#include <xen/xen.h>
->  #include <xen/interface/sched.h>
->  #include <xen/xen-ops.h>
->  #include <asm/xen/hypervisor.h>
-> 
