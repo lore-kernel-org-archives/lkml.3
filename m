@@ -1,61 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756090Ab3D0SU4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Apr 2013 14:20:56 -0400
-Received: from jacques.telenet-ops.be ([195.130.132.50]:33552 "EHLO
-	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753659Ab3D0SUo (ORCPT
+	id S1756171Ab3D0SiF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Apr 2013 14:38:05 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:39789 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755667Ab3D0SiD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Apr 2013 14:20:44 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Sanjay Lal <sanjayl@kymasys.com>, Ralf Baechle <ralf@linux-mips.org>
-Cc: kvm@vger.kernel.org, linux-mips@linux-mips.org, linux-ia64@vger.kernel.org,
-        James Hogan <james.hogan@imgtec.com>, linux-kernel@vger.kernel.org,
-        linux-next@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH -next] ia64, metag: Do not export min_low_pfn in arch-specific code
-Date: Sat, 27 Apr 2013 20:20:31 +0200
-Message-Id: <1367086831-10740-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.0.4
+	Sat, 27 Apr 2013 14:38:03 -0400
+Date: Sat, 27 Apr 2013 20:38:00 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Zhang Rui <rui.zhang@intel.com>
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-acpi@vger.kernel.org, rjw@sisk.pl, lenb@kernel.org,
+        eduardo.valentin@ti.com
+Subject: Re: [PATCH] ACPI thermal: do not always return
+ THERMAL_TREND_RAISING for active trip points
+Message-ID: <20130427183800.GA8929@amd.pavel.ucw.cz>
+References: <1366967993-3812-1-git-send-email-rui.zhang@intel.com>
+ <20130427102346.GA30588@amd.pavel.ucw.cz>
+ <1367065950.2128.11.camel@rzhang1-mobl4>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1367065950.2128.11.camel@rzhang1-mobl4>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As of commit 787dcbe6984b3638e94f60d807dcb51bb8a07211 ("MIPS: Export
-symbols used by KVM/MIPS module"), min_low_pfn is already exported by
-the generic mm/bootmem.c, causing:
+Hi!
 
-WARNING: vmlinux: 'min_low_pfn' exported twice. Previous export was in vmlinux
+> > Is that even right algoritm?
+> > 
+> sorry the changelog is not clear enough here.
+> I should say,
+> "keep the fan on when the temperature is raising"
+> "turn off the fan when the temperature is dropping"
+> 
+> > Assume I'm running at very cold room, lets say -10C. Assume idle CPU
+> > will hover around 30C with no fan, or hover around 10C with fan
+> > running, trip point being 50C.
+> > 
+> > You _could_ leave fan off until 50C, having silent, passively cooled
+> > system.
+> > 
+> > What it will do instead is annoyingly pulse fan at 10C.
+> > 
+> First, fan will never spins on if the temperature never hits 50C.
+> 
+> let's see how ACPI 3.0 fan (just have on and off state) is supposed to
+> work after overheat.
+> 1. temperature goes above 50C
+> 2. Fan starts to spin.
+> 3. a) if temperature goes higher (if possible), fan keeps on.
+>    b) if temperature drops, but still above 50C. the fan keeps on.
+>    c) if temperature drops below 50C, the last temperature is above 50C,
+> thus the fan is turned off.
+>    d) if the temperature goes higher again, the fan will not spin on
+> until the temperature is higher than the trip point (50C) again.
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
- arch/ia64/kernel/ia64_ksyms.c   |    1 -
- arch/metag/kernel/metag_ksyms.c |    1 -
- 2 files changed, 0 insertions(+), 2 deletions(-)
+So the fan is spinning iff the temperature is over threshold, right?
 
-diff --git a/arch/ia64/kernel/ia64_ksyms.c b/arch/ia64/kernel/ia64_ksyms.c
-index 5b7791d..ca95c8b 100644
---- a/arch/ia64/kernel/ia64_ksyms.c
-+++ b/arch/ia64/kernel/ia64_ksyms.c
-@@ -25,7 +25,6 @@ EXPORT_SYMBOL(copy_page);
- 
- #ifdef CONFIG_VIRTUAL_MEM_MAP
- #include <linux/bootmem.h>
--EXPORT_SYMBOL(min_low_pfn);	/* defined by bootmem.c, but not exported by generic code */
- EXPORT_SYMBOL(max_low_pfn);	/* defined by bootmem.c, but not exported by generic code */
- #endif
- 
-diff --git a/arch/metag/kernel/metag_ksyms.c b/arch/metag/kernel/metag_ksyms.c
-index ec872ef..08e9b6f 100644
---- a/arch/metag/kernel/metag_ksyms.c
-+++ b/arch/metag/kernel/metag_ksyms.c
-@@ -12,7 +12,6 @@ EXPORT_SYMBOL(copy_page);
- #ifdef CONFIG_FLATMEM
- /* needed for the pfn_valid macro */
- EXPORT_SYMBOL(max_pfn);
--EXPORT_SYMBOL(min_low_pfn);
- #endif
- 
- /* TBI symbols */
+> is this behavior what you want?
+
+That's better, yes. Even better would be if it had some hysteresis:
+turn the fan on at threshold temperature, but turn it off only if it
+drops below temperature-5C, or if it is below threshold for 1 minute.
+
+Thanks,
+      	    		       	     	      		      Pavel
+
 -- 
-1.7.0.4
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
