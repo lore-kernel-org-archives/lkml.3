@@ -1,38 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755574Ab3D0SCr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Apr 2013 14:02:47 -0400
-Received: from imentarabar.com ([89.144.129.18]:2555 "EHLO host2-askiran"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751300Ab3D0SCq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Apr 2013 14:02:46 -0400
-Reply-To: <info@webmail.co>
-From: "Webmail Classic Upgrade" <p.imanzadeh@iautalesh.ac.ir>
-Subject: !! Upgrade Your Mail Box
-Date: Sat, 27 Apr 2013 17:49:32 +0100
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-X-Antivirus: avast! (VPS 130427-0, 04/27/2013), Outbound message
-X-Antivirus-Status: Clean
-Message-ID: <auto-000006800890@host2-askiran>
-To: unlisted-recipients:; (no To-header on input)
+	id S1756090Ab3D0SU4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Apr 2013 14:20:56 -0400
+Received: from jacques.telenet-ops.be ([195.130.132.50]:33552 "EHLO
+	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753659Ab3D0SUo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Apr 2013 14:20:44 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Sanjay Lal <sanjayl@kymasys.com>, Ralf Baechle <ralf@linux-mips.org>
+Cc: kvm@vger.kernel.org, linux-mips@linux-mips.org, linux-ia64@vger.kernel.org,
+        James Hogan <james.hogan@imgtec.com>, linux-kernel@vger.kernel.org,
+        linux-next@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH -next] ia64, metag: Do not export min_low_pfn in arch-specific code
+Date: Sat, 27 Apr 2013 20:20:31 +0200
+Message-Id: <1367086831-10740-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We are currently Upgrading our data base and e-mail account center to classic webmail server. We are deleting all unused email account to create more space for new 
+As of commit 787dcbe6984b3638e94f60d807dcb51bb8a07211 ("MIPS: Export
+symbols used by KVM/MIPS module"), min_low_pfn is already exported by
+the generic mm/bootmem.c, causing:
 
-accounts.To prevent your account from closing please Click the link below for update and to migrate to new server
+WARNING: vmlinux: 'min_low_pfn' exported twice. Previous export was in vmlinux
 
-http://www.webmailclassicupgrade.org
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+ arch/ia64/kernel/ia64_ksyms.c   |    1 -
+ arch/metag/kernel/metag_ksyms.c |    1 -
+ 2 files changed, 0 insertions(+), 2 deletions(-)
 
-Warning!!! Email account owner that refuses to update his or her Account will lose it account permanently.
+diff --git a/arch/ia64/kernel/ia64_ksyms.c b/arch/ia64/kernel/ia64_ksyms.c
+index 5b7791d..ca95c8b 100644
+--- a/arch/ia64/kernel/ia64_ksyms.c
++++ b/arch/ia64/kernel/ia64_ksyms.c
+@@ -25,7 +25,6 @@ EXPORT_SYMBOL(copy_page);
+ 
+ #ifdef CONFIG_VIRTUAL_MEM_MAP
+ #include <linux/bootmem.h>
+-EXPORT_SYMBOL(min_low_pfn);	/* defined by bootmem.c, but not exported by generic code */
+ EXPORT_SYMBOL(max_low_pfn);	/* defined by bootmem.c, but not exported by generic code */
+ #endif
+ 
+diff --git a/arch/metag/kernel/metag_ksyms.c b/arch/metag/kernel/metag_ksyms.c
+index ec872ef..08e9b6f 100644
+--- a/arch/metag/kernel/metag_ksyms.c
++++ b/arch/metag/kernel/metag_ksyms.c
+@@ -12,7 +12,6 @@ EXPORT_SYMBOL(copy_page);
+ #ifdef CONFIG_FLATMEM
+ /* needed for the pfn_valid macro */
+ EXPORT_SYMBOL(max_pfn);
+-EXPORT_SYMBOL(min_low_pfn);
+ #endif
+ 
+ /* TBI symbols */
+-- 
+1.7.0.4
 
-Thank you for using our email.
-Copyright 2013 Webmail Classic
