@@ -1,49 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755617Ab3D0KO6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Apr 2013 06:14:58 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:39544 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755130Ab3D0KO5 (ORCPT
+	id S1756119Ab3D0KXu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Apr 2013 06:23:50 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:58188 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755792Ab3D0KXs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Apr 2013 06:14:57 -0400
+	Sat, 27 Apr 2013 06:23:48 -0400
+Date: Sat, 27 Apr 2013 12:23:47 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Zhang Rui <rui.zhang@intel.com>
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-acpi@vger.kernel.org, rjw@sisk.pl, lenb@kernel.org,
+        eduardo.valentin@ti.com
+Subject: Re: [PATCH] ACPI thermal: do not always return
+ THERMAL_TREND_RAISING for active trip points
+Message-ID: <20130427102346.GA30588@amd.pavel.ucw.cz>
+References: <1366967993-3812-1-git-send-email-rui.zhang@intel.com>
 MIME-Version: 1.0
-Date: Sat, 27 Apr 2013 18:14:56 +0800
-Message-ID: <CAPgLHd8Jf7qp=Ob5B5OOsfxuXndAs9a9JYqyEBz=VnjOHi_tVQ@mail.gmail.com>
-Subject: [PATCH] TTY: ehv_bytechan: add missing platform_driver_unregister()
- when module exit
-From: Wei Yongjun <weiyj.lk@gmail.com>
-To: gregkh@linuxfoundation.org, jslaby@suse.cz, grant.likely@linaro.org,
-        rob.herring@calxeda.com
-Cc: yongjun_wei@trendmicro.com.cn, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1366967993-3812-1-git-send-email-rui.zhang@intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Hi!
 
-We have registered platform driver when module init, and
-need unregister it when module exit.
+> Commit 4ae46befb49d4173122e0afa995c4e93d01948a2
+> introduces a regression that the fan is always on
+> even if the system is in idle state.
+> 
+> My original idea in that commit is that:
+> when the current temperature is above the trip point,
+> keep the fan on, even if the temperature is dropping.
+> when the current temperature is below the trip point,
+> turn on the fan when the temperature is raising,
+> turn off the fan when the temperature is dropping.
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
----
-no compile test.
----
- drivers/tty/ehv_bytechan.c | 1 +
- 1 file changed, 1 insertion(+)
+Is that even right algoritm?
 
-diff --git a/drivers/tty/ehv_bytechan.c b/drivers/tty/ehv_bytechan.c
-index 6d0c27c..9bffcec 100644
---- a/drivers/tty/ehv_bytechan.c
-+++ b/drivers/tty/ehv_bytechan.c
-@@ -859,6 +859,7 @@ error:
-  */
- static void __exit ehv_bc_exit(void)
- {
-+	platform_driver_unregister(&ehv_bc_tty_driver);
- 	tty_unregister_driver(ehv_bc_driver);
- 	put_tty_driver(ehv_bc_driver);
- 	kfree(bcs);
+Assume I'm running at very cold room, lets say -10C. Assume idle CPU
+will hover around 30C with no fan, or hover around 10C with fan
+running, trip point being 50C.
 
+You _could_ leave fan off until 50C, having silent, passively cooled
+system.
+
+What it will do instead is annoyingly pulse fan at 10C.
+
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
