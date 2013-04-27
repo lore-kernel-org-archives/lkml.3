@@ -1,94 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756040Ab3D0G1y (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Apr 2013 02:27:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37299 "EHLO mx1.redhat.com"
+	id S1752025Ab3D0Gyn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Apr 2013 02:54:43 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53583 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754092Ab3D0G1x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Apr 2013 02:27:53 -0400
-Message-ID: <517B6FC5.7070003@redhat.com>
-Date: Sat, 27 Apr 2013 08:27:17 +0200
-From: Daniel Borkmann <dborkman@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1751070Ab3D0Gyl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Apr 2013 02:54:41 -0400
+Message-ID: <517B762D.8030409@suse.cz>
+Date: Sat, 27 Apr 2013 08:54:37 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Xi Wang <xi.wang@gmail.com>
-CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Will Drewry <wad@chromium.org>, Eric Dumazet <edumazet@google.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        David Laight <david.laight@aculab.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nicolas Schichan <nschichan@freebox.fr>
-Subject: Re: [PATCH v2 net-next 3/3] ARM: net: bpf_jit_32: support BPF_S_ANC_SECCOMP_LD_W
- instruction
-References: <1367029047-14830-1-git-send-email-xi.wang@gmail.com> <1367029047-14830-4-git-send-email-xi.wang@gmail.com>
-In-Reply-To: <1367029047-14830-4-git-send-email-xi.wang@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: "Yann E. MORIN" <yann.morin.1998@free.fr>
+Cc: sedat.dilek@gmail.com, Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-kbuild@vger.kernel.org
+Subject: Re: linux-next: Tree for Apr 26
+References: <20130426180357.7599d1b6b7965470905dcdf3@canb.auug.org.au> <CA+icZUWt_W5FUQgQ2TFoQU0df+sAbxZZE8AcD16T3f_fiTD9DQ@mail.gmail.com> <517A4FC1.3070605@suse.cz> <20130426100435.GA28733@sepie.suse.cz> <CA+icZUVOfB2JuL1xh1EO1hTP_eOkntYFKsUJ0Zp6VZqn09NABA@mail.gmail.com> <CA+icZUWNVEsiTs6u_2R9krb45ub4t-pZj_VEPRmrX2c4DzwfmA@mail.gmail.com> <CA+icZUXSsqN1iE3ttQakvpZqG-oOL9NR6RMUezB7LGeUw3d00Q@mail.gmail.com> <517A6033.5060103@suse.cz> <517A615D.9020400@suse.cz> <20130426220131.GC5100@free.fr>
+In-Reply-To: <20130426220131.GC5100@free.fr>
+X-Enigmail-Version: 1.6a1pre
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/27/2013 04:17 AM, Xi Wang wrote:
-> This patch implements the seccomp BPF_S_ANC_SECCOMP_LD_W instruction
-> in ARM JIT.
->
-> Signed-off-by: Xi Wang <xi.wang@gmail.com>
-> Cc: Daniel Borkmann <dborkman@redhat.com>
-> Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-> Cc: Will Drewry <wad@chromium.org>
-> Cc: Eric Dumazet <edumazet@google.com>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: David Laight <david.laight@aculab.com>
-> Cc: "David S. Miller" <davem@davemloft.net>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Nicolas Schichan <nschichan@freebox.fr>
-> ---
->   arch/arm/net/bpf_jit_32.c | 14 ++++++++++++++
->   1 file changed, 14 insertions(+)
->
-> diff --git a/arch/arm/net/bpf_jit_32.c b/arch/arm/net/bpf_jit_32.c
-> index 073b085..9bfce464 100644
-> --- a/arch/arm/net/bpf_jit_32.c
-> +++ b/arch/arm/net/bpf_jit_32.c
-> @@ -19,6 +19,7 @@
->   #include <linux/if_vlan.h>
->   #include <asm/cacheflush.h>
->   #include <asm/hwcap.h>
-> +#include <asm/syscall.h>
->
->   #include "bpf_jit_32.h"
->
-> @@ -845,6 +846,19 @@ b_epilogue:
->   			off = offsetof(struct sk_buff, queue_mapping);
->   			emit(ARM_LDRH_I(r_A, r_skb, off), ctx);
->   			break;
-> +#ifdef CONFIG_SECCOMP_FILTER
-> +		case BPF_S_ANC_SECCOMP_LD_W:
-> +			if (k == offsetof(struct seccomp_data, arch)) {
-> +				emit_mov_i(r_A, AUDIT_ARCH_ARM, ctx);
-> +				break;
-> +			}
+Dne 27.4.2013 00:01, Yann E. MORIN napsal(a):
+> Michal, Sedat, All,
+> 
+> On Fri, Apr 26, 2013 at 01:13:33PM +0200, Michal Marek wrote:
+>> On 26.4.2013 13:08, Michal Marek wrote:
+>>> On 26.4.2013 12:49, Sedat Dilek wrote:
+>>>> With reverting all kbuild-next commits I was able to build again.
+>>>>
+>>>>       Revert "kconfig: implement KCONFIG_PROBABILITY for randconfig"
+>>>>       Revert "kconfig: allow specifying the seed for randconfig"
+>>>>       Revert "kconfig: fix randomising choice entries in presence of
+>>>> KCONFIG_ALLCONFIG"
+>>>>       Revert "kconfig: do not override symbols already set"
+>>>>       Revert "kconfig: fix randconfig tristate detection"
+>>>
+>>> I did the same, then applied all the kconfig commits once more and did a
+>>> git bisect with this script:
+>>>
+>>> #!/bin/sh
+>>>
+>>> cp config-bad .config
+>>> make silentoldconfig </dev/null
+>>>
+>>> This resulted in
+>>>
+>>> 7ded2624f8988bd22819a60a6000ba6b7091db89 is the first bad commit
+>>> commit 7ded2624f8988bd22819a60a6000ba6b7091db89
+>>> Author: Yann E. MORIN <yann.morin.1998@free.fr>
+>>> Date:   Sun Mar 10 16:34:10 2013 +0100
+>>>
+>>>     kconfig: fix randomising choice entries in presence of KCONFIG_ALLCONFIG
+>>>
+>>> The commit id is different, because it is reverted and applied again. Yann?
+>>
+>> Commit 422c809 ("kconfig: fix randomising choice entries in presence of
+>> KCONFIG_ALLCONFIG") reverts cleanly and reverting it fixes the bug. So
+>> there is a plan B.
+> 
+> I do not understand how reverting 422c809 could have fixed the
+> silentoldconfig issue: as I previously reported, it already happens on
+> Linus' master.
+> 
+> I tried again jsut a few minutes ago against:
+>     d7d7271: Merge branch 'v4l_for_linus' of git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media
+> and it is already broken, although 422c809 is not yet in Linus' tree:
+> 
+>     $ make silentoldconfig </dev/null
+>     scripts/kconfig/conf --silentoldconfig Kconfig
+>     warning: (IA32_EMULATION) selects COMPAT_BINFMT_ELF which has unmet
+>     direct dependencies (COMPAT && BINFMT_ELF)
+>     *
+>     * Restart config...
+>     *
+>     *
+>     * Paravirtualized guest support
+>     *
+>     Paravirtualized guest support (PARAVIRT_GUEST) [N/y/?] (NEW) aborted!
+> 
+>     Console input/output is redirected. Run 'make oldconfig' to update configuration.
+> 
+>     make[1]: *** [silentoldconfig] Error 1
+>     make: *** [silentoldconfig] Error 2
+> 
+> Or did I miss something?
+> 
+> However, oldconfig just works (with an error for each new symbol):
+>     $ make oldconfig </dev/null
+>     [--SNIP--]
+>       NOP USB Transceiver Driver (NOP_USB_XCEIV) [N/m/?] (NEW)
+>     Error in reading or end of file.
+> 
+>     #
+>     # configuration written to .config
+>     #
 
-Not an expert in ARM, but ...
+That (silent)oldconfig with stdin redirection throws an error if it
+encounters a new option is expected and correct. The bug here is that
+_normal_ oldconfig run apparently does not set all the options. I.e.
 
-Arent't you doing here a similar thing in terms of getting arch as Eric
-criticized (Nicolas' implementation does not use that part btw.)? Also,
-even if it would be possible here, now your 2 JIT implementations differ
-in behaviour. I think this is unintended.
+$ yes "" | make oldconfig; make silentoldconfig </dev/null
 
-Besides all that, I think I also pointed you to a patch that already made
-it in for ARM, not sure why you keep posting the ARM JIT implementation?
+should always pass.
 
-> +			ctx->seen |= SEEN_CALL;
-> +			emit_mov_i(ARM_R3, (u32)seccomp_bpf_load, ctx);
-> +			emit_mov_i(ARM_R0, k, ctx);
-> +			emit_blx_r(ARM_R3, ctx);
-> +			emit(ARM_MOV_R(r_A, ARM_R0), ctx);
-> +			break;
-> +#endif
->   		default:
->   			return -1;
->   		}
->
+Michal
