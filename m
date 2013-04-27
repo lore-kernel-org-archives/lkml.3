@@ -1,82 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756048Ab3D0AJP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 20:09:15 -0400
-Received: from casper.infradead.org ([85.118.1.10]:53045 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751782Ab3D0AJO (ORCPT
+	id S1756394Ab3D0AMQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 20:12:16 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:40169 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753409Ab3D0AMP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 20:09:14 -0400
-Message-ID: <517B16FF.6070008@infradead.org>
-Date: Fri, 26 Apr 2013 17:08:31 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Fri, 26 Apr 2013 20:12:15 -0400
+Date: Fri, 26 Apr 2013 17:12:10 -0700
+From: Olof Johansson <olof@lixom.net>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "arm@kernel.org" <arm@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/4] clocksource: nomadik-mtu: fix up clocksource/timer
+Message-ID: <20130427001210.GA1714@quad.lixom.net>
+References: <1366463287-9922-1-git-send-email-linus.walleij@linaro.org>
+ <CACRpkdYWSM0BK77qWbQWh0xsN+Ps95Q70zG-GE98MYvThrky2A@mail.gmail.com>
 MIME-Version: 1.0
-To: Olof Johansson <olof@lixom.net>
-CC: Mike Turquette <mturquette@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] clk: add option to keep boot clocks on
-References: <1367019591-31685-1-git-send-email-olof@lixom.net>
-In-Reply-To: <1367019591-31685-1-git-send-email-olof@lixom.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkdYWSM0BK77qWbQWh0xsN+Ps95Q70zG-GE98MYvThrky2A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/26/13 16:39, Olof Johansson wrote:
-> This is primarily useful when there's a driver that doesn't claim clocks
-> properly, but the bootloader does. It's not expected to be used in normal
-> cases, but for bringup and debug it's very useful to have the option to
-> not gate unclaimed clocks that are still on.
+On Sat, Apr 20, 2013 at 03:19:43PM +0200, Linus Walleij wrote:
+> ARM SoC folks:
 > 
-> Signed-off-by: Olof Johansson <olof@lixom.net>
+> On Sat, Apr 20, 2013 at 3:08 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> 
+> > The Nomadik clocksource driver has had a bad define making it
+> > impossible to use it for sched_clock() for a while. Fix this
+> > and also enable it for the Nomadik.
+> >
+> > Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+> 
+> This one should go to fixes ASAP, could you pick it to your fixes
+> branch? It could be tagged stable if desired - this only affects the
+> Nomadik which works just OK on jiffies so it's really no big regression.
+> The Ux500 does not use the MTU for sched_clock().
 
-add to Documentation/kernel-parameters.txt or somewhere else?
+Ok, applied on top of next/multiplatform, seems to be what it's based on.
 
-> ---
-> 
-> Mike, this is a pretty trivial patch that I would love to see in 3.10
-> even though it's getting late. I'm definitely not picky about the naming
-> of the boot option, so feel free to change it.
-> 
-> 
-> -Olof
-> 
->  drivers/clk/clk.c | 14 ++++++++++++++
->  1 file changed, 14 insertions(+)
-> 
-> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-> index 20ce67f..b22551e 100644
-> --- a/drivers/clk/clk.c
-> +++ b/drivers/clk/clk.c
-> @@ -499,10 +499,24 @@ out:
->  	return;
->  }
->  
-> +
-> +static bool keep_boot_clocks;
-> +static int __init clk_keep_boot_clocks(char *__unused)
-> +{
-> +	keep_boot_clocks = true;
-> +	return 1;
-> +}
-> +__setup("clk_keep_boot_clocks", clk_keep_boot_clocks);
-> +
->  static int clk_disable_unused(void)
->  {
->  	struct clk *clk;
->  
-> +	if (keep_boot_clocks) {
-> +		pr_warn("clk: Not disabling unused clocks\n");
-> +		return 0;
-> +	}
-> +
->  	clk_prepare_lock();
->  
->  	hlist_for_each_entry(clk, &clk_root_list, child_node)
-> 
+Tagging as stable is up to you as platform owner. :) Since it won't directly
+apply to older kernels you might be better of submitting it to Greg separately.
 
 
--- 
-~Randy
+-Olof
