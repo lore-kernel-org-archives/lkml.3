@@ -1,189 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756520Ab3D0BKQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 21:10:16 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:41839 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756316Ab3D0BKF (ORCPT
+	id S1754719Ab3D0BQr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 21:16:47 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:33336 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751442Ab3D0BQq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 21:10:05 -0400
-Message-ID: <517B242D.7040902@ti.com>
-Date: Fri, 26 Apr 2013 20:04:45 -0500
-From: Suman Anna <s-anna@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Jassi Brar <jaswinder.singh@linaro.org>
-CC: Loic PALLARDY <loic.pallardy@st.com>,
-        Jassi Brar <jassisinghbrar@gmail.com>,
-        "Ohad Ben-Cohen (ohad@wizery.com)" <ohad@wizery.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        "Andy Green (andy.green@linaro.org)" <andy.green@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Tony Lindgren <tony@atomide.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Omar Ramirez Luna (omar.ramirez@copitl.com)" 
-	<omar.ramirez@copitl.com>,
+	Fri, 26 Apr 2013 21:16:46 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Linus Walleij <linus.walleij@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCHv3 00/14] drivers: mailbox: framework creation
-References: <1363145021-14339-1-git-send-email-s-anna@ti.com> <CABb+yY0RYkVeo2Sb4WsDJY0jf17488FEz0d2CB994eQaSOEsVg@mail.gmail.com> <37C860A02101E749A747FA2D3C1E3C504A5DF7@DLEE11.ent.ti.com> <CABb+yY1x4x_A+QtGG9ohsLPgs8c3nEVnd_ExJBGOOR8=6YLPFA@mail.gmail.com> <37C860A02101E749A747FA2D3C1E3C504A63B4@DLEE11.ent.ti.com> <CAJe_ZhehnniZd730jjiOLrHozq8TOJZgFYLqUe4KqgBiQEu8PA@mail.gmail.com> <51779304.4040003@st.com> <CAJe_ZhdZv5LW6kdwyPtJe69mfW6t=WQ4OJnG2H4sUhibattN2A@mail.gmail.com> <517867E1.7050301@ti.com> <CAJe_ZhfDZzq+DzA9XDF3PWFUmwcZnDy-mhE4hLNHmf+V4GhOxw@mail.gmail.com> <5179AE2F.3040403@ti.com> <CAJe_Zhf4miUm4yTyuwc56kpD8Mu4=vsmX4wdQkFDT96JbKR=MQ@mail.gmail.com>
-In-Reply-To: <CAJe_Zhf4miUm4yTyuwc56kpD8Mu4=vsmX4wdQkFDT96JbKR=MQ@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	<linux-arm-kernel@lists.infradead.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        Anmar Oueja <anmar.oueja@linaro.org>, Pankaj Dev <pankaj.dev@st.com>
+Subject: Re: [PATCH] pinctrl: document the "GPIO mode" pitfall
+Date: Sat, 27 Apr 2013 03:16:47 +0200
+Message-ID: <2359346.pRaN3J5Bl7@avalon>
+User-Agent: KMail/4.10.2 (Linux/3.7.10-gentoo-r1; KDE/4.10.2; x86_64; ; )
+In-Reply-To: <CACRpkdaMdU4DHWULnSB_dvGk8pTRbirL1HVTGqJ2rwqXR798uQ@mail.gmail.com>
+References: <1363345636-2006-1-git-send-email-linus.walleij@stericsson.com> <1761651.lXztZzrj1S@avalon> <CACRpkdaMdU4DHWULnSB_dvGk8pTRbirL1HVTGqJ2rwqXR798uQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jassi,
+Hi Linus,
 
-On 04/25/2013 10:46 PM, Jassi Brar wrote:
-> Hi Suman,
+On Friday 26 April 2013 10:49:12 Linus Walleij wrote:
+> On Fri, Apr 26, 2013 at 1:15 AM, Laurent Pinchart wrote:
+> > On Thursday 25 April 2013 23:39:18 Linus Walleij wrote:
+> >> On Tue, Apr 23, 2013 at 3:33 PM, Laurent Pinchart wrote:
+> >> > Could you clarify the exact scope of the two configuration parameters ?
+> >> 
+> >> PIN_CONFIG_OUTPUT is left a bit unspecified, but here the idea was a
+> >> passive drive, like just connecting the pin to VDD or GND without any
+> >> driver stage at all.
+> > 
+> > Isn't that a driver stage ? :-)
 > 
-> On 26 April 2013 03:59, Suman Anna <s-anna@ti.com> wrote:
->> On 04/25/2013 12:20 AM, Jassi Brar wrote:
->> tranmitting right away. OK, I thought you didn't want buffering, if that
->> is not the case, then the buffering should be within the main driver
->> code, like it is now, but configurable based on the controller or
->> mailbox properties. If it is present in individual controller drivers,
->> then we would be duplicating stuff. Are you envisioning that this be
->> left to the individual controllers?
->>
-> Please don't accuse me of such bad visions :)
-> I never said no-buffering and I never said buffering should be in
-> controller drivers. In fact I don't remember ever objecting to how
-> buffering is done in TI's framework.
-> A controller could service only 1 request at a time so lets give it
-> just 1 at a time. Let the API handle the complexity of buffering.
+> OK something that is not a totempole type drive ...
+> push/pull surely implies a totempole type design.
 > 
-
-Alright, guess this got lost in translation :). I interpreted based on
-the fact that you wanted to get rid of the size field from the
-mailbox_msg definition. Do you have a different mechanism in mind for
-the buffering compared to the present one?
-
->>> I am afraid you are confusing the meaning of 'atomic context' here.
->>> atomic context doesn't mean instant transmission of data, but that the
->>> API calls could be made from even atomic context and that the client &
->>> controller can't sleep in callbacks from the API. So it's not moot.
->>
->> I understood the atomic context, and the question is about the behavior
->> of the '.tx_done' callback when sending from atomic context. Is there
->> such a usecase/need for you in that you want to send a response back
->> from an atomic context, yet get a callback?
->>
-> Let me get in detail...
-> The TX-Wheel has to tick. Someone has to tell the framework that the
-> last TX was consumed by the remote and now it's time to submit the
-> next TX (RX will always be driven by the controller's IRQ so it's
-> straight).
-> If the controller h/w gets some interrupt indicating
-> Remote-RTR/TX-Done then the ticker is driven by controller's TX-IRQ
-> handler. Otherwise, if the controller does sense RTR but not report
-> (by reading status in some register but no irq), then API has to poll
-> it periodically and move the ticker. If the controller can neither
-> report nor sense RTR, the client/protocol driver must run the ticker
-> (usually upon receiving some ACK packet on the RX channel).
-
-OK, I didn't think of a no RTR interrupt-based controller. I would thing
-that such a controller is very rudimentary. I wonder if there are any
-controllers like this out there.
-
-> This TX ticker should be callable from atomic context (controller's
-> IRQ handler) and calls into callback of the client. It is desirable
-> that the client be able to submit yet another TX request from the
-> callback. That way the client can avoid having to schedule work from
-> the callback if the TX doesn't involve any sleepable task. The scheme
-> is working very well in DMA-Engine stack.
+> > What is unclear to me is the interaction between OUTPUT and DRIVE_*.
+> > That's the part I would like to see clarified.
 > 
-> BTW, TI's RX mechanism too seems broken for common API. Receiving
-> every few bytes via 'notify' mechanism is very inefficient. Imagine a
-> platform with no shared memory between co-processors and the local
-> wants to diagnose the remote by asking critical data at least KBs in
-> size.
-
-No shared memory between co-processors and a relatively slow wire
-transport is a bad architecture design to begin with.
-
->  So when API has nothing to do with received packet and the controller
-> has to get rid of it asap so as to be able to receive the next, IMHO
-> there should be short-circuit from controller to client via the API.
-> No delay, no buffering of RX.
-
-The current TI design is based on the fact that we can get multiple
-messages on a single interrupt due to the h/w fifo and the driver takes
-care of the bottom-half. Leaving it to the client is putting a lot of
-faith in the client and doesn't scale to multiple clients. The client
-would have to perform mostly the same as the driver is doing - so this
-goes back to the base discussion point that we have - which is the lack
-of support for atomic_context receivers in the current code. I perceive
-this as an attribute of the controller/mailbox device itself rather than
-the client.
-
+> I sent some patch now, check it ... hm reported-by still doesn't add
+> you to CC :-/ better patch git-send-email...
 > 
+> > Does DRIVE_* imply that the pin is driven by the selected function, and
+> > OUTPUT imply that the pin is driven to a fixed level ?
 > 
->>> It's the controller driver that actually puts the data on the bus. So
->>> only it should define the format in which it accepts data from the
->>> clients. Every client should simply populate the packet structure
->>> defined in  my_lovely_controller.h and pass on the struct pointer to
->>> the controller driver via API.
->>> No negotiations for the driver seat among passengers :)
->>
->> OK, I was trying to avoid including my_lovely_controller.h and only
->> include the standard .h file as a client user, the client would anyway
->> need to have the intrinsic knowledge of the packet structure.
->>
-> Not including my_controller.h doesn't make things standard.
-> As we know, the client anyway has to have intrinsic knowledge of the
-> packet structure(which is dictated by the controller), so not
-> including my_controller.h will only confuse people as to where the
-> packet info came from?
-
-OK, agreed.
-
+> That is unclear, but I suggest DRIVE* implies that everything on the pin
+> is driven according to that configuration. (Else it is getting ignored...)
 > 
->>>>
->>> I think the mailbox should be exclusively held by a client. That makes
->>> many things simpler. Also remote firmwares won't be always robust
->>> enough to handle commands from different subsystems intermixed. The
->>> API only has to make sure the mailbox_get/put operations are very
->>> thin.
->>
->> This might be the case for specific remotes where we expect only one
->> client driver to be responsible for talking to it, but for generic
->> offloading, you do not want to have this restriction. You do not want
->> peer clients to go through a single main client, as the latencies or the
->> infrastructure imposed by the main client may not be suitable for the
->> other clients. The stricter usecase here would be the shareable mailbox,
->> and if it is exclusive, as dictated by a controller or device property,
->> then so be it and things would get simplified for that controller/device.
->>
-> Shared Vs Exclusive had been the dilemma of DMAEngine too.
-> If the controller has physical channels at least as many as clients,
-> exclusivity is no problem.
-> Sharing is desirable when the controller has to serve clients more
-> than its physical channels. We solve that by having the controller
-> declare exclusive virtual channels and internally scheduling the
-> requests onto physical channels.
->  And as Andy pointed out, some remote-ends may not cope with requests
-> coming from different subsystems intermixed.
+> OUTPUT would be used when you don't know the particulars or when
+> the driving cannot be controlled in a fine-grained manner like with the
+> DRIVE* configs.
+> 
+> Does this make sense?
 
-Even though both the scenarios look very similar, I believe there are
-some slight differences. All the devices belonging to a controller may
-not be of the same type (meaning, intended towards the same remote or be
-used interchangeably with one another). It is definitely possible if you
-have a similar scenario to the DMA physical channels and your remote
-rx interrupt can identify the device/channel to process. This would be
-very much dependent on the architecture of a controller. The particular
-example that I have in mind is s/w clients between the same set of
-remote and host entities using the same device - the send part is anyway
-arbitrated by the controller, and the same received message can be
-delivered to the clients, with the clients making the decision whether
-the packet belongs to them or not. I agree that all remote-ends will not
-be able to cope up intermixed requests, but isn't this again a
-controller architecture dependent?
+Kinda, but it's still unclear to me. While the options are (briefly) 
+documented, how they interact isn't.
+ 
+> > If so, how do you configure the drive type of a pin that will be used
+> > through the GPIO API ?
+> 
+> It is possible to use the pinctrl and GPIO APIs orthogonally.
+> 
+> For example the pinctrl can use hogs to reconfigure the pins during sleep
+> without intervention from the GPIO API.
+> 
+> So they will be fingering on the same pins registers. Maybe even the same
+> register (if access can be protected properly) from different APIs.
+>
+> > What about cases where I want to drive the pin to a fixed level in a non
+> > low-power output mode (for instance because I need more current that what
+> > the low-power output mode provides) ?
+> 
+> Just use pinconfig for that?
 
-regards
-Suman
+How would you do so ? Only OUTPUT allows setting the output level explictly, 
+the other DRIVE_* options don't specify the output level.
+
+> Is the usecase something like a power-supplying GPIO pin and then sometimes
+> you want to provide more power from it?
+> 
+> Then use pinconfig to shunt in the driver stages, and GPIO API to
+> enable/disable it.
+
+-- 
+Regards,
+
+Laurent Pinchart
+
