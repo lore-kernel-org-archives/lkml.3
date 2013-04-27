@@ -1,65 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755674Ab3D0Oc3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Apr 2013 10:32:29 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:46363 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754292Ab3D0Oc1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Apr 2013 10:32:27 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, "'Len Brown'" <len.brown@intel.com>,
-        "'Pavel Machek'" <pavel@ucw.cz>, linux-pm@vger.kernel.org
-Subject: Re: [PATCH] PM: Add pm_ops_ptr() macro
-Date: Sat, 27 Apr 2013 16:40:36 +0200
-Message-ID: <20119404.Sfu5WntByi@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0-rc8+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <000001ce42f2$96128cc0$c237a640$@samsung.com>
-References: <000001ce42f2$96128cc0$c237a640$@samsung.com>
+	id S1755834Ab3D0QRl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Apr 2013 12:17:41 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:54140 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753425Ab3D0QRj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Apr 2013 12:17:39 -0400
+Date: Sat, 27 Apr 2013 09:17:32 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, Simon Horman <horms@verge.net.au>,
+        Julian Anastasov <ja@ssi.bg>, Ingo Molnar <mingo@redhat.com>,
+        lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
+        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Dipankar Sarma <dipankar@in.ibm.com>, dhaval.giani@gmail.com
+Subject: Re: [PATCH 2/2] ipvs: Use cond_resched_rcu_lock() helper when
+ dumping connections
+Message-ID: <20130427161732.GA3780@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1366940708-10180-1-git-send-email-horms@verge.net.au>
+ <1366940708-10180-3-git-send-email-horms@verge.net.au>
+ <20130426080313.GC8669@dyad.programming.kicks-ass.net>
+ <20130426154547.GC3860@linux.vnet.ibm.com>
+ <20130426171948.GA31467@dyad.programming.kicks-ass.net>
+ <20130426174815.GI3860@linux.vnet.ibm.com>
+ <1367000815.8964.243.camel@edumazet-glaptop>
+ <20130426190428.GJ3860@linux.vnet.ibm.com>
+ <20130427071814.GA31700@dyad.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130427071814.GA31700@dyad.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13042716-7606-0000-0000-00000ADCF911
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, April 27, 2013 11:54:50 AM Jingoo Han wrote:
-> Add pm_ops_ptr() macro that allows the .pm entry in the driver structures
-> to be assigned without having an #define xxx NULL for the case that PM is
-> not enabled.
+On Sat, Apr 27, 2013 at 09:18:15AM +0200, Peter Zijlstra wrote:
+> > In the worst case, I
+> > can fire up a prio 99 kthread on each CPU and send that kthread a
+> > wakeup from RCU's rcu_gp_fqs() code.
 > 
-> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+> You just know that's going to be _so_ popular ;-)
 
-First, I'm not taking any more PM patches for v3.10 (that don't fix recent
-regressions).
+;-) ;-) ;-)
 
-Second, please add that macro along with a user.
+I must confess that I would prefer a somewhat less heavy-handed approach.
 
-Thanks,
-Rafael
+							Thanx, Paul
 
-
-> ---
->  include/linux/pm.h |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/linux/pm.h b/include/linux/pm.h
-> index a224c7f..bd50d15 100644
-> --- a/include/linux/pm.h
-> +++ b/include/linux/pm.h
-> @@ -55,8 +55,10 @@ struct device;
->  
->  #ifdef CONFIG_PM
->  extern const char power_group_name[];		/* = "power" */
-> +#define pm_ops_ptr(_ptr)	(_ptr)
->  #else
->  #define power_group_name	NULL
-> +#define pm_ops_ptr(_ptr)	NULL
->  #endif
->  
->  typedef struct pm_message {
-> 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
