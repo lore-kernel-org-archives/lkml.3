@@ -1,93 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755670Ab3D0LYZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Apr 2013 07:24:25 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:60496 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751712Ab3D0LYY (ORCPT
+	id S1755778Ab3D0Lah (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Apr 2013 07:30:37 -0400
+Received: from mail-we0-f176.google.com ([74.125.82.176]:39807 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754437Ab3D0Laf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Apr 2013 07:24:24 -0400
-Date: Sat, 27 Apr 2013 19:24:18 +0800
-From: Han Pingtian <hanpt@linux.vnet.ibm.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, mhocko@suse.cz, penberg@kernel.org,
-        rientjes@google.com, linux-mm@kvack.org
-Subject: Re: OOM-killer and strange RSS value in 3.9-rc7
-Message-ID: <20130427112418.GC4441@localhost.localdomain>
-Mail-Followup-To: Christoph Lameter <cl@linux.com>,
-	LKML <linux-kernel@vger.kernel.org>, mhocko@suse.cz,
-	penberg@kernel.org, rientjes@google.com, linux-mm@kvack.org
-References: <20130418101541.GC2672@localhost.localdomain>
- <20130418175513.GA12581@dhcp22.suse.cz>
- <20130423131558.GH8001@dhcp22.suse.cz>
- <20130424044848.GI2672@localhost.localdomain>
- <20130424094732.GB31960@dhcp22.suse.cz>
- <0000013e3cb0340d-00f360e3-076b-478e-b94c-ddd4476196ce-000000@email.amazonses.com>
- <20130425060705.GK2672@localhost.localdomain>
- <0000013e427023d7-9456c313-8654-420c-b85a-cb79cc3c4ffc-000000@email.amazonses.com>
- <20130426062436.GB4441@localhost.localdomain>
- <0000013e46cba821-d5c54c99-3b5c-4669-9a54-9fb8f4ee516f-000000@email.amazonses.com>
+	Sat, 27 Apr 2013 07:30:35 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <0000013e46cba821-d5c54c99-3b5c-4669-9a54-9fb8f4ee516f-000000@email.amazonses.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13042711-3620-0000-0000-00000237D9BA
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <517B762D.8030409@suse.cz>
+References: <20130426180357.7599d1b6b7965470905dcdf3@canb.auug.org.au>
+	<CA+icZUWt_W5FUQgQ2TFoQU0df+sAbxZZE8AcD16T3f_fiTD9DQ@mail.gmail.com>
+	<517A4FC1.3070605@suse.cz>
+	<20130426100435.GA28733@sepie.suse.cz>
+	<CA+icZUVOfB2JuL1xh1EO1hTP_eOkntYFKsUJ0Zp6VZqn09NABA@mail.gmail.com>
+	<CA+icZUWNVEsiTs6u_2R9krb45ub4t-pZj_VEPRmrX2c4DzwfmA@mail.gmail.com>
+	<CA+icZUXSsqN1iE3ttQakvpZqG-oOL9NR6RMUezB7LGeUw3d00Q@mail.gmail.com>
+	<517A6033.5060103@suse.cz>
+	<517A615D.9020400@suse.cz>
+	<20130426220131.GC5100@free.fr>
+	<517B762D.8030409@suse.cz>
+Date: Sat, 27 Apr 2013 13:30:33 +0200
+Message-ID: <CA+icZUWeQ_UcH4mFPr64Zm9Z48n1pen1Jh3LO3P4qVFKSq8kLw@mail.gmail.com>
+Subject: Re: linux-next: Tree for Apr 26
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Michal Marek <mmarek@suse.cz>
+Cc: "Yann E. MORIN" <yann.morin.1998@free.fr>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 26, 2013 at 02:42:32PM +0000, Christoph Lameter wrote:
-> On Fri, 26 Apr 2013, Han Pingtian wrote:
-> 
-> > Could you give me some hints about how to verify them? Only I can do is
-> > adding two printk() statements to print the vaules in those two
-> > functions:
-> 
-> Ok thats good. nr->partial needs to be bigger than min_partial in order
-> for frees to occur. So they do occur.
-> 
-> > And looks like only printk() in __slab_free() is invoked. I got about 6764
-> > lines of something like this:
-> >
-> > --------------------------------------------------------------------------------
-> > Apr 26 01:04:05 riblp3 kernel: [    6.969775] In __slab_free(); kmalloc-8192: n->nr_partial=2, s->min_partial=6
-> > Apr 26 01:04:05 riblp3 kernel: [    6.970154] In __slab_free(); kmalloc-8192: n->nr_partial=3, s->min_partial=6
-> > Apr 26 01:04:05 riblp3 kernel: [    6.979489] In __slab_free(); kmalloc-8192: n->nr_partial=4, s->min_partial=6
-> > Apr 26 01:04:05 riblp3 kernel: [    6.979823] In __slab_free(); kmalloc-8192: n->nr_partial=5, s->min_partial=6
-> > Apr 26 01:04:05 riblp3 kernel: [    9.500383] In __slab_free(); kmalloc-8192: n->nr_partial=7, s->min_partial=6
-> > Apr 26 01:04:05 riblp3 kernel: [    9.509736] In __slab_free(); kmalloc-8192: n->nr_partial=7, s->min_partial=6
-> > Apr 26 01:04:08 riblp3 kernel: [   42.314395] In __slab_free(); kmalloc-8192: n->nr_partial=100, s->min_partial=6
-> > Apr 26 01:04:08 riblp3 kernel: [   42.410333] In __slab_free(); kmalloc-8192: n->nr_partial=100, s->min_partial=6
-> > Apr 26 01:04:09 riblp3 kernel: [   43.411851] In __slab_free(); kmalloc-8192: n->nr_partial=339, s->min_partial=6
-> > Apr 26 01:04:09 riblp3 kernel: [   43.411980] In __slab_free(); kmalloc-8192: n->nr_partial=338, s->min_partial=6
-> > Apr 26 01:04:09 riblp3 kernel: [   43.412083] In __slab_free(); kmalloc-8192: n->nr_partial=337, s->min_partial=6
-> > --------------------------------------------------------------------------------
-> > The s->min_partial is always "6" and most of n->nr_partial is bigger than
-> > its partner of the same line.
-> 
-> Thats the way it should be. But the mystery is still there. Why do the
-> pages not get freed? Can you add a printk in __free_slab to verify that it
-> actually gets called? Print s->name to see which slab is affected by the
-> free.
-> 
-I added a printk() like this:
+On Sat, Apr 27, 2013 at 8:54 AM, Michal Marek <mmarek@suse.cz> wrote:
+> Dne 27.4.2013 00:01, Yann E. MORIN napsal(a):
+>> Michal, Sedat, All,
+>>
+>> On Fri, Apr 26, 2013 at 01:13:33PM +0200, Michal Marek wrote:
+>>> On 26.4.2013 13:08, Michal Marek wrote:
+>>>> On 26.4.2013 12:49, Sedat Dilek wrote:
+>>>>> With reverting all kbuild-next commits I was able to build again.
+>>>>>
+>>>>>       Revert "kconfig: implement KCONFIG_PROBABILITY for randconfig"
+>>>>>       Revert "kconfig: allow specifying the seed for randconfig"
+>>>>>       Revert "kconfig: fix randomising choice entries in presence of
+>>>>> KCONFIG_ALLCONFIG"
+>>>>>       Revert "kconfig: do not override symbols already set"
+>>>>>       Revert "kconfig: fix randconfig tristate detection"
+>>>>
+>>>> I did the same, then applied all the kconfig commits once more and did a
+>>>> git bisect with this script:
+>>>>
+>>>> #!/bin/sh
+>>>>
+>>>> cp config-bad .config
+>>>> make silentoldconfig </dev/null
+>>>>
+>>>> This resulted in
+>>>>
+>>>> 7ded2624f8988bd22819a60a6000ba6b7091db89 is the first bad commit
+>>>> commit 7ded2624f8988bd22819a60a6000ba6b7091db89
+>>>> Author: Yann E. MORIN <yann.morin.1998@free.fr>
+>>>> Date:   Sun Mar 10 16:34:10 2013 +0100
+>>>>
+>>>>     kconfig: fix randomising choice entries in presence of KCONFIG_ALLCONFIG
+>>>>
+>>>> The commit id is different, because it is reverted and applied again. Yann?
+>>>
+>>> Commit 422c809 ("kconfig: fix randomising choice entries in presence of
+>>> KCONFIG_ALLCONFIG") reverts cleanly and reverting it fixes the bug. So
+>>> there is a plan B.
+>>
+>> I do not understand how reverting 422c809 could have fixed the
+>> silentoldconfig issue: as I previously reported, it already happens on
+>> Linus' master.
+>>
+>> I tried again jsut a few minutes ago against:
+>>     d7d7271: Merge branch 'v4l_for_linus' of git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media
+>> and it is already broken, although 422c809 is not yet in Linus' tree:
+>>
+>>     $ make silentoldconfig </dev/null
+>>     scripts/kconfig/conf --silentoldconfig Kconfig
+>>     warning: (IA32_EMULATION) selects COMPAT_BINFMT_ELF which has unmet
+>>     direct dependencies (COMPAT && BINFMT_ELF)
+>>     *
+>>     * Restart config...
+>>     *
+>>     *
+>>     * Paravirtualized guest support
+>>     *
+>>     Paravirtualized guest support (PARAVIRT_GUEST) [N/y/?] (NEW) aborted!
+>>
+>>     Console input/output is redirected. Run 'make oldconfig' to update configuration.
+>>
+>>     make[1]: *** [silentoldconfig] Error 1
+>>     make: *** [silentoldconfig] Error 2
+>>
+>> Or did I miss something?
+>>
+>> However, oldconfig just works (with an error for each new symbol):
+>>     $ make oldconfig </dev/null
+>>     [--SNIP--]
+>>       NOP USB Transceiver Driver (NOP_USB_XCEIV) [N/m/?] (NEW)
+>>     Error in reading or end of file.
+>>
+>>     #
+>>     # configuration written to .config
+>>     #
+>
+> That (silent)oldconfig with stdin redirection throws an error if it
+> encounters a new option is expected and correct. The bug here is that
+> _normal_ oldconfig run apparently does not set all the options. I.e.
+>
+> $ yes "" | make oldconfig; make silentoldconfig </dev/null
+>
+> should always pass.
+>
 
-@@ -1388,6 +1388,8 @@ static void __free_slab(struct kmem_cache *s, struct page *page)
-        int order = compound_order(page);
-        int pages = 1 << order;
- 
-+       printk(KERN_INFO "__free_slab(): %s\n", s->name);
-+
-        if (kmem_cache_debug(s)) {
-                void *p;
+Yupp. That should be always tested... before sending patches and
+committing to a repo :-).
+Anyway, thanks for taking care and solving fast to all involved folks!
 
-and it is called so many times that the boot cannot be finished. So
-maybe the memory isn't freed even though __free_slab() get called?
+- Sedat -
 
-
-> Is there any way I can run a powerpc kernel that shows the issue on x86
-> with an emulator?
-
+> Michal
