@@ -1,56 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756506Ab3D0CDW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 22:03:22 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:20315 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752872Ab3D0CDV (ORCPT
+	id S1755512Ab3D0CJS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 22:09:18 -0400
+Received: from host171.canaca.com ([67.55.55.225]:42202 "EHLO
+	host171.canaca.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752801Ab3D0CJN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 22:03:21 -0400
-Message-ID: <517B31D4.9020909@huawei.com>
-Date: Sat, 27 Apr 2013 10:03:00 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Bjorn Helgaas <bhelgaas@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH] PCI: Enable pci bridge when it is needed
-References: <1367024974-6063-1-git-send-email-yinghai@kernel.org> <517B2F1B.6000704@huawei.com> <CAE9FiQWLfdgR8VoqeVOpCdHa3TpK26Bgs7mZ7Ed+Zq60S=g8Vg@mail.gmail.com>
-In-Reply-To: <CAE9FiQWLfdgR8VoqeVOpCdHa3TpK26Bgs7mZ7Ed+Zq60S=g8Vg@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.76.69]
-X-CFilter-Loop: Reflected
+	Fri, 26 Apr 2013 22:09:13 -0400
+X-Greylist: delayed 2224 seconds by postgrey-1.27 at vger.kernel.org; Fri, 26 Apr 2013 22:09:13 EDT
+From: Simon Wood <simon@mungewell.org>
+To: linux-input@vger.kernel.org
+Cc: Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
+        simon@mungewell.org, djovic78@gmail.com, madcatxster@gmail.com
+Subject: [PATCH] HID: hid-lg4ff add support for new version of DFGT wheel
+Date: Fri, 26 Apr 2013 19:29:54 -0600
+Message-Id: <1367026194-2103-1-git-send-email-simon@mungewell.org>
+X-Mailer: git-send-email 1.8.1.2
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - host171.canaca.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - mungewell.org
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/4/27 9:57, Yinghai Lu wrote:
-> On Fri, Apr 26, 2013 at 6:51 PM, Yijing Wang <wangyijing@huawei.com> wrote:
->> I think it's cool! Now we enable bridge in various places, this is a headache.
->>
->> hi, yinghai, in this patch, enable bridges depend on the driver call pci_enable_device() explicitly.
->> I was a little worried If there has some devices don't have some drivers bound, but used by system.
->> like ioapic, these devices maybe implemented as pci device, but no pci drivers bind, also, maybe they
->> won't call pci_enable_device() explicity. So if they are under the pci bridge, no one will enable the bridge
->> for them.
-> 
-> If there is really that case, we could call pci_enable_device in
-> pci_final quirk for
-> them.
+It has been reported that there is a new version (different USB rev)
+of the Logitech DFGT in the 'wild'.
 
-Hmm, ok, and I tested this patch in my hotplug machine, it looks good.
+This patch allows the kernel to recognise this wheel and send it the
+command to enter native mode.
 
+Reported-by: "Denis Jovic" <djovic78@gmail.com>
+Signed-off-by: Simon Wood <simon@mungewell.org>
+---
+ drivers/hid/hid-lg4ff.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-> 
-> Yinghai
-> 
-> 
-
-
+diff --git a/drivers/hid/hid-lg4ff.c b/drivers/hid/hid-lg4ff.c
+index 65a6ec8..2dd7360 100644
+--- a/drivers/hid/hid-lg4ff.c
++++ b/drivers/hid/hid-lg4ff.c
+@@ -34,6 +34,7 @@
+ 
+ #define DFGT_REV_MAJ 0x13
+ #define DFGT_REV_MIN 0x22
++#define DFGT2_REV_MIN 0x26
+ #define DFP_REV_MAJ 0x11
+ #define DFP_REV_MIN 0x06
+ #define FFEX_REV_MAJ 0x21
+@@ -125,6 +126,7 @@ static const struct lg4ff_native_cmd native_g27 = {
+ 
+ static const struct lg4ff_usb_revision lg4ff_revs[] = {
+ 	{DFGT_REV_MAJ, DFGT_REV_MIN, &native_dfgt},	/* Driving Force GT */
++	{DFGT_REV_MAJ, DFGT2_REV_MIN, &native_dfgt},	/* Driving Force GT v2 */
+ 	{DFP_REV_MAJ,  DFP_REV_MIN,  &native_dfp},	/* Driving Force Pro */
+ 	{G25_REV_MAJ,  G25_REV_MIN,  &native_g25},	/* G25 */
+ 	{G27_REV_MAJ,  G27_REV_MIN,  &native_g27},	/* G27 */
 -- 
-Thanks!
-Yijing
+1.8.1.2
 
