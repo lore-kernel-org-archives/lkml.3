@@ -1,61 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756606Ab3D0DNm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Apr 2013 23:13:42 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:55355 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753373Ab3D0DNd (ORCPT
+	id S1757231Ab3D0DOL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Apr 2013 23:14:11 -0400
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:32934 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756171Ab3D0DNh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Apr 2013 23:13:33 -0400
+	Fri, 26 Apr 2013 23:13:37 -0400
 From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 To: mtosatti@redhat.com
 Cc: gleb@redhat.com, avi.kivity@gmail.com, linux-kernel@vger.kernel.org,
         kvm@vger.kernel.org, Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Subject: [PATCH v4 1/6] KVM: MMU: drop unnecessary kvm_reload_remote_mmus
-Date: Sat, 27 Apr 2013 11:13:17 +0800
-Message-Id: <1367032402-13729-2-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+Subject: [PATCH v4 5/6] KVM: x86: use the fast way to invalid all pages
+Date: Sat, 27 Apr 2013 11:13:21 +0800
+Message-Id: <1367032402-13729-6-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1367032402-13729-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
 References: <1367032402-13729-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13042703-4790-0000-0000-0000080A3CF9
+x-cbid: 13042703-5816-0000-0000-000007BA66C6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is the responsibility of kvm_mmu_zap_all that keeps the
-consistent of mmu and tlbs. And it is also unnecessary after
-zap all mmio sptes since no mmio spte exists on root shadow
-page and it can not be cached into tlb
+Replace kvm_mmu_zap_all by kvm_mmu_invalid_all_pages except on
+the path of mmu_notifier->release() which will be fixed in
+the later patch
 
 Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 ---
- arch/x86/kvm/x86.c |    5 +----
- 1 files changed, 1 insertions(+), 4 deletions(-)
+ arch/x86/kvm/x86.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 2a434bf..91dd9f4 100644
+index 8e4494c..809a053 100644
 --- a/arch/x86/kvm/x86.c
 +++ b/arch/x86/kvm/x86.c
-@@ -7039,16 +7039,13 @@ void kvm_arch_commit_memory_region(struct kvm *kvm,
- 	 * If memory slot is created, or moved, we need to clear all
- 	 * mmio sptes.
+@@ -5483,7 +5483,7 @@ static int emulator_fix_hypercall(struct x86_emulate_ctxt *ctxt)
+ 	 * to ensure that the updated hypercall appears atomically across all
+ 	 * VCPUs.
  	 */
--	if ((change == KVM_MR_CREATE) || (change == KVM_MR_MOVE)) {
-+	if ((change == KVM_MR_CREATE) || (change == KVM_MR_MOVE))
- 		kvm_mmu_zap_mmio_sptes(kvm);
--		kvm_reload_remote_mmus(kvm);
--	}
- }
+-	kvm_mmu_zap_all(vcpu->kvm);
++	kvm_mmu_invalid_memslot_pages(vcpu->kvm, NULL);
  
- void kvm_arch_flush_shadow_all(struct kvm *kvm)
- {
- 	kvm_mmu_zap_all(kvm);
--	kvm_reload_remote_mmus(kvm);
- }
+ 	kvm_x86_ops->patch_hypercall(vcpu, instruction);
  
+@@ -7093,7 +7093,7 @@ void kvm_arch_flush_shadow_all(struct kvm *kvm)
  void kvm_arch_flush_shadow_memslot(struct kvm *kvm,
+ 				   struct kvm_memory_slot *slot)
+ {
+-	kvm_arch_flush_shadow_all(kvm);
++	kvm_mmu_invalid_memslot_pages(kvm, slot);
+ }
+ 
+ int kvm_arch_vcpu_runnable(struct kvm_vcpu *vcpu)
 -- 
 1.7.7.6
 
