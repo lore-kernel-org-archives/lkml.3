@@ -1,43 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756477Ab3D1Czl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Apr 2013 22:55:41 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:62990 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756424Ab3D1Czk (ORCPT
+	id S1756053Ab3D1DQw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Apr 2013 23:16:52 -0400
+Received: from server.prisktech.co.nz ([115.188.14.127]:60481 "EHLO
+	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754092Ab3D1DQt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Apr 2013 22:55:40 -0400
-Date: Sat, 27 Apr 2013 19:55:35 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: [PATCH] cpuset: fix compile warning when CONFIG_SMP=n
-Message-ID: <20130428025535.GA6569@htj.dyndns.org>
-References: <517C7F91.2030705@huawei.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <517C7F91.2030705@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 27 Apr 2013 23:16:49 -0400
+From: Tony Prisk <linux@prisktech.co.nz>
+To: Francois Romieu <romieu@fr.zoreil.com>
+Cc: netdev@vger.kernel.org, vt8500-wm8505-linux-kernel@googlegroups.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Tony Prisk <linux@prisktech.co.nz>
+Subject: [PATCH 1/4] net: velocity: Alphabetize #includes
+Date: Sun, 28 Apr 2013 15:16:43 +1200
+Message-Id: <1367119006-31280-2-git-send-email-linux@prisktech.co.nz>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1367119006-31280-1-git-send-email-linux@prisktech.co.nz>
+References: <1367119006-31280-1-git-send-email-linux@prisktech.co.nz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 28, 2013 at 09:46:57AM +0800, Li Zefan wrote:
-> Reported by Fengguang's kbuild test robot:
-> 
-> kernel/cpuset.c:787: warning: 'generate_sched_domains' defined but not used
-> 
-> Introduced by commit e0e80a02e5701c8790bd348ab59edb154fbda60b
-> ("cpuset: use rebuild_sched_domains() in cpuset_hotplug_workfn()),
-> which removed generate_sched_domains() from cpuset_hotplug_workfn().
-> 
-> Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-> Signed-off-by: Li Zefan <lizefan@huawei.com>
+Due to number of #includes, alphabetize them to help avoid duplicates.
 
-Applied to cgroup/for-3.10.  Thanks.
+Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
+---
+ drivers/net/ethernet/via/via-velocity.c |   48 +++++++++++++++----------------
+ 1 file changed, 24 insertions(+), 24 deletions(-)
 
+diff --git a/drivers/net/ethernet/via/via-velocity.c b/drivers/net/ethernet/via/via-velocity.c
+index 1bc7f9fd..eb2a023 100644
+--- a/drivers/net/ethernet/via/via-velocity.c
++++ b/drivers/net/ethernet/via/via-velocity.c
+@@ -42,40 +42,40 @@
+  *
+  */
+ 
+-#include <linux/module.h>
+-#include <linux/types.h>
+ #include <linux/bitops.h>
+-#include <linux/init.h>
+-#include <linux/mm.h>
++#include <linux/crc-ccitt.h>
++#include <linux/crc32.h>
++#include <linux/delay.h>
+ #include <linux/errno.h>
++#include <linux/etherdevice.h>
++#include <linux/ethtool.h>
++#include <linux/if.h>
++#include <linux/if_arp.h>
++#include <linux/if_vlan.h>
++#include <linux/in.h>
++#include <linux/inetdevice.h>
++#include <linux/init.h>
++#include <linux/interrupt.h>
++#include <linux/io.h>
+ #include <linux/ioport.h>
+-#include <linux/pci.h>
++#include <linux/ip.h>
+ #include <linux/kernel.h>
++#include <linux/mii.h>
++#include <linux/mm.h>
++#include <linux/module.h>
+ #include <linux/netdevice.h>
+-#include <linux/etherdevice.h>
++#include <linux/pci.h>
++#include <linux/proc_fs.h>
++#include <linux/reboot.h>
+ #include <linux/skbuff.h>
+-#include <linux/delay.h>
+-#include <linux/timer.h>
+ #include <linux/slab.h>
+-#include <linux/interrupt.h>
+ #include <linux/string.h>
+-#include <linux/wait.h>
+-#include <linux/io.h>
+-#include <linux/if.h>
+-#include <linux/uaccess.h>
+-#include <linux/proc_fs.h>
+-#include <linux/inetdevice.h>
+-#include <linux/reboot.h>
+-#include <linux/ethtool.h>
+-#include <linux/mii.h>
+-#include <linux/in.h>
+-#include <linux/if_arp.h>
+-#include <linux/if_vlan.h>
+-#include <linux/ip.h>
+ #include <linux/tcp.h>
++#include <linux/timer.h>
++#include <linux/types.h>
++#include <linux/uaccess.h>
+ #include <linux/udp.h>
+-#include <linux/crc-ccitt.h>
+-#include <linux/crc32.h>
++#include <linux/wait.h>
+ 
+ #include "via-velocity.h"
+ 
 -- 
-tejun
+1.7.9.5
+
