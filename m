@@ -1,151 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754135Ab3D1J5S (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Apr 2013 05:57:18 -0400
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:16332 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752419Ab3D1J5Q (ORCPT
+	id S1754626Ab3D1KKm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Apr 2013 06:10:42 -0400
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:44655 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752372Ab3D1KKk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Apr 2013 05:57:16 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VS-4(zzbb2dI98dI9371I1432Izz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275bhz2dh2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h16a6h1758h1806h18e1h1946h19b5h1ad9h1b0ah1d0ch1155h)
-Date: Sun, 28 Apr 2013 17:56:34 +0800
-From: Zhao Chenhui <chenhui.zhao@freescale.com>
-To: Scott Wood <scottwood@freescale.com>
-CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        <r58472@freescale.com>
-Subject: Re: [PATCH v2 12/15] powerpc/85xx: add time base sync support for
- e6500
-Message-ID: <20130428095634.GA27100@localhost.localdomain>
-References: <20130425002818.GE3172@localhost.localdomain>
- <1366934844.30341.16@snotra>
+	Sun, 28 Apr 2013 06:10:40 -0400
+Date: Sun, 28 Apr 2013 18:10:27 +0800
+From: Shaohua Li <shli@kernel.org>
+To: Markus <M4rkusXXL@web.de>
+Cc: lkml <linux-kernel@vger.kernel.org>, Jens Axboe <axboe@kernel.dk>
+Subject: Re: hybrid raid1 with trim support [REGRESSION]
+Message-ID: <20130428101027.GA1753@kernel.org>
+References: <3387108.NX1Tlx8b5x@f209>
+ <20130428005446.GA20018@kernel.org>
+ <20130428010016.GA26411@kernel.org>
+ <2069465.HvIQbCn58p@f209>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1366934844.30341.16@snotra>
+In-Reply-To: <2069465.HvIQbCn58p@f209>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 25, 2013 at 07:07:24PM -0500, Scott Wood wrote:
-> On 04/24/2013 07:28:18 PM, Zhao Chenhui wrote:
-> >On Wed, Apr 24, 2013 at 05:38:16PM -0500, Scott Wood wrote:
-> >> On 04/24/2013 06:29:29 AM, Zhao Chenhui wrote:
-> >> >On Tue, Apr 23, 2013 at 07:04:06PM -0500, Scott Wood wrote:
-> >> >> On 04/19/2013 05:47:45 AM, Zhao Chenhui wrote:
-> >> >> >From: Chen-Hui Zhao <chenhui.zhao@freescale.com>
-> >> >> >
-> >> >> >For e6500, two threads in one core share one time base. Just
-> >need
-> >> >> >to do time base sync on first thread of one core, and skip it on
-> >> >> >the other thread.
-> >> >> >
-> >> >> >Signed-off-by: Zhao Chenhui <chenhui.zhao@freescale.com>
-> >> >> >Signed-off-by: Li Yang <leoli@freescale.com>
-> >> >> >Signed-off-by: Andy Fleming <afleming@freescale.com>
-> >> >> >---
-> >> >> > arch/powerpc/platforms/85xx/smp.c |   52
-> >> >> >+++++++++++++++++++++++++++++++-----
-> >> >> > 1 files changed, 44 insertions(+), 8 deletions(-)
-> >> >> >
-> >> >> >diff --git a/arch/powerpc/platforms/85xx/smp.c
-> >> >> >b/arch/powerpc/platforms/85xx/smp.c
-> >> >> >index 74d8cde..5f3eee3 100644
-> >> >> >--- a/arch/powerpc/platforms/85xx/smp.c
-> >> >> >+++ b/arch/powerpc/platforms/85xx/smp.c
-> >> >> >@@ -53,26 +55,40 @@ static inline u32 get_phy_cpu_mask(void)
-> >> >> > 	u32 mask;
-> >> >> > 	int cpu;
-> >> >> >
-> >> >> >-	mask = 1 << cur_booting_core;
-> >> >> >-	for_each_online_cpu(cpu)
-> >> >> >-		mask |= 1 << get_hard_smp_processor_id(cpu);
-> >> >> >+	if (smt_capable()) {
-> >> >> >+		/* two threads in one core share one time base */
-> >> >> >+		mask = 1 << cpu_core_index_of_thread(cur_booting_core);
-> >> >> >+		for_each_online_cpu(cpu)
-> >> >> >+			mask |= 1 << cpu_core_index_of_thread(
-> >> >> >+					get_hard_smp_processor_id(cpu));
-> >> >> >+	} else {
-> >> >> >+		mask = 1 << cur_booting_core;
-> >> >> >+		for_each_online_cpu(cpu)
-> >> >> >+			mask |= 1 << get_hard_smp_processor_id(cpu);
-> >> >> >+	}
-> >> >>
-> >> >> Where is smt_capable defined()?  I assume somewhere in the
-> >patchset
-> >> >> but it's a pain to search 12 patches...
-> >> >>
-> >> >
-> >> >It is defined in arch/powerpc/include/asm/topology.h.
-> >> >	#define smt_capable()           (cpu_has_feature(CPU_FTR_SMT))
-> >> >
-> >> >Thanks for your review again.
-> >>
-> >> We shouldn't base it on CPU_FTR_SMT.  For example, e6500 doesn't
-> >> claim that feature yet, except in our SDK kernel.  That doesn't
-> >> change the topology of CPU numbering.
-> >>
-> >
-> >Then, where can I get the thread information? dts?
-> >Or, wait for upstream of the thread suppport of e6500.
+On Sun, Apr 28, 2013 at 11:40:42AM +0200, Markus wrote:
+> Hi!
 > 
-> It's an inherent property of e6500 (outside of some virtualization
-> scenarios, but you wouldn't run this code under a hypervisor) that
-> you have two threads per core (whether Linux uses them or not).  Or
-> you could read TMCFG0[NTHRD] if you know you're on a chip that has
-> TMRs but aren't positive it's an e6500, but I wouldn't bother.  If
-> we do ever have such a chip, there are probably other things that
-> will need updating.
-> 
+> Thanks for your work. The patch seems to work for me on a vanilla 3.8.10, at 
+> least the hdds are no longer dropped from the raid.
+> The code now ignores some request? What was the reason the disks fell off the 
+> raid? The discards are still passed to the ssd?
+Thanks for testing, I'll send to Neil soon.
 
-But how to know that there are TMRs on a chip except by CPU_FTR_SMT.
+Yes, the discard will still be passed to SSD, we just ignore the request for harddisk.
 
-> >> >static inline u32 get_phy_cpu_mask(void)
-> >> >{
-> >> >	u32 mask;
-> >> >	int cpu;
-> >> >
-> >> >	mask = 1 << cpu_core_index_of_thread(cur_booting_core);
-> >> >	for_each_online_cpu(cpu)
-> >> >		mask |= 1 << cpu_core_index_of_thread(
-> >> >				get_hard_smp_processor_id(cpu));
-> >> >
-> >> >	return mask;
-> >> >}
-> >>
-> >> Likewise, this will get it wrong if SMT is disabled or not yet
-> >> implemented on a core.
-> >>
-> >> -Scott
-> >
-> >Let's look into cpu_core_index_of_thread() in
-> >arch/powerpc/kernel/smp.c.
-> >
-> >  int cpu_core_index_of_thread(int cpu)
-> >  {
-> >      return cpu >> threads_shift;
-> >  }
-> >
-> >If no thread, the threads_shift is equal to 0. It can work with no
-> >thread.
+Thanks,
+Shaohua
+ 
+> Thanks,
+> Markus
 > 
-> My point is that if threads are disabled, threads_shift will be 0,
-> but e6500 cores will still be numbered 0, 2, 4, etc.
 > 
-> >Perhaps, I should submit this patch after the thread patches for
-> >e6500.
-> 
-> Why?
-> 
-> -Scott
-
-Even if threads are disabled, the threads_shift derived from dts is right.
-But, if there aren't the thread related patches existed in SDK, the threads_shift
-gets a wrong value on T4.
-
--Chenhui
-
+> Shaohua Li schrieb am 28.04.2013:
+> > On Sun, Apr 28, 2013 at 08:54:46AM +0800, Shaohua Li wrote:
+> > > On Sat, Apr 27, 2013 at 06:29:49PM +0200, Markus wrote:
+> > > > Hi!
+> > > > 
+> > > > Now I had the time to bisect, started with 3.7 as good and 3.8 as bad.
+> > > > 0cfbcafcae8b7364b5fa96c2b26ccde7a3a296a9 is the bad commit. [1]
+> > > > block: add plug for blkdev_issue_discard
+> > > > 
+> > > > While 3.8.10 was still bad, the same kernel with the reverted patch 
+> applied is fine.
+> > > Thanks for the reporting. Does below patch work for you?
+> > Oops, there is a typo there, should be this one:
+> > 
+> > ---
+> >  drivers/md/raid1.c  |    7 ++++++-
+> >  drivers/md/raid10.c |    7 ++++++-
+> >  2 files changed, 12 insertions(+), 2 deletions(-)
+> > 
+> > Index: linux/drivers/md/raid1.c
+> > ===================================================================
+> > --- linux.orig/drivers/md/raid1.c	2013-03-07 14:14:05.950824173 +0800
+> > +++ linux/drivers/md/raid1.c	2013-04-28 08:57:17.874058434 +0800
+> > @@ -981,7 +981,12 @@ static void raid1_unplug(struct blk_plug
+> >  	while (bio) { /* submit pending writes */
+> >  		struct bio *next = bio->bi_next;
+> >  		bio->bi_next = NULL;
+> > -		generic_make_request(bio);
+> > +		if (unlikely((bio->bi_rw & REQ_DISCARD) &&
+> > +		    !blk_queue_discard(bdev_get_queue(bio->bi_bdev))))
+> > +			/* Just ignore it */
+> > +			bio_endio(bio, 0);
+> > +		else
+> > +			generic_make_request(bio);
+> >  		bio = next;
+> >  	}
+> >  	kfree(plug);
+> > Index: linux/drivers/md/raid10.c
+> > ===================================================================
+> > --- linux.orig/drivers/md/raid10.c	2013-03-07 14:14:05.950824173 +0800
+> > +++ linux/drivers/md/raid10.c	2013-04-28 08:57:44.765719067 +0800
+> > @@ -1133,7 +1133,12 @@ static void raid10_unplug(struct blk_plu
+> >  	while (bio) { /* submit pending writes */
+> >  		struct bio *next = bio->bi_next;
+> >  		bio->bi_next = NULL;
+> > -		generic_make_request(bio);
+> > +		if (unlikely((bio->bi_rw & REQ_DISCARD) &&
+> > +		    !blk_queue_discard(bdev_get_queue(bio->bi_bdev))))
+> > +			/* Just ignore it */
+> > +			bio_endio(bio, 0);
+> > +		else
+> > +			generic_make_request(bio);
+> >  		bio = next;
+> >  	}
+> >  	kfree(plug);
