@@ -1,81 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755509Ab3D1BAY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Apr 2013 21:00:24 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:41056 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752874Ab3D1BAX (ORCPT
+	id S1755458Ab3D1BGH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Apr 2013 21:06:07 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:60408 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752141Ab3D1BGF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Apr 2013 21:00:23 -0400
-Date: Sun, 28 Apr 2013 09:00:16 +0800
-From: Shaohua Li <shli@kernel.org>
-To: Markus <M4rkusXXL@web.de>
-Cc: lkml <linux-kernel@vger.kernel.org>, Jens Axboe <axboe@kernel.dk>
-Subject: Re: hybrid raid1 with trim support [REGRESSION]
-Message-ID: <20130428010016.GA26411@kernel.org>
-References: <3387108.NX1Tlx8b5x@f209>
- <3642314.Bs77jRSGfY@f209>
- <1533550.VmvE7tiNM7@f209>
- <20130428005446.GA20018@kernel.org>
+	Sat, 27 Apr 2013 21:06:05 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Yann E. MORIN" <yann.morin.1998@free.fr>
+Subject: Re: [PATCH 6/8] kconfig: fix randomising choice entries in presence of KCONFIG_ALLCONFIG
+Date: Sun, 28 Apr 2013 03:05:57 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-kbuild@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
+        linux-kernel@vger.kernel.org,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Sam Ravnborg <sam@ravnborg.org>, Arnaud Lacombe <lacombar@gmail.com>,
+        Greg KH <greg@kroah.com>
+References: <cover.1366841993.git.yann.morin.1998@free.fr> <201304272301.00587.arnd@arndb.de> <20130427223158.GA24099@free.fr>
+In-Reply-To: <20130427223158.GA24099@free.fr>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130428005446.GA20018@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201304280305.57219.arnd@arndb.de>
+X-Provags-ID: V02:K0:ovyYViWLgWHV9HcEI4AK8vYCHj9nXOyewyAh0UpZVQX
+ 56UOQ3tu3/ExTTkvCUjyHiXjO0Q87LV1tVY54FDpoYrMvAbKpq
+ E04idOqI47aozneLnGcwaaNLZ/oaJ/5N19dgwZ/XmMRRDK8VaX
+ WHTQb2pHMMj4zBRku8Cv83TB26lZSGu3jyH48X/4yG9EFHR7pd
+ K2asXwhtgIKAyoQcWOA95bEw62OGJ/VZjt0MQ7Fg4h0p2Y9rIp
+ UMyvaEkugA7knXEkQ+y7yQbL6/+kKgA91Ac9nJitxYWBhG+fFR
+ XY3qfOaMc3DYQ5YXgirNoyTZnpQKwOScCkB1n8e2vKmniIxGbR
+ BuOO3aRXs88CO5F9ksBc=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 28, 2013 at 08:54:46AM +0800, Shaohua Li wrote:
-> On Sat, Apr 27, 2013 at 06:29:49PM +0200, Markus wrote:
-> > Hi!
-> > 
-> > Now I had the time to bisect, started with 3.7 as good and 3.8 as bad.
-> > 0cfbcafcae8b7364b5fa96c2b26ccde7a3a296a9 is the bad commit. [1]
-> > block: add plug for blkdev_issue_discard
-> > 
-> > While 3.8.10 was still bad, the same kernel with the reverted patch applied is fine.
-> Thanks for the reporting. Does below patch work for you?
-Oops, there is a typo there, should be this one:
+On Sunday 28 April 2013, Yann E. MORIN wrote:
+> Fact is, choices are properly randomised, unless KCONFIG_ALLCONFIG is
+> passed.
+> 
+> So, if you currently rely on choices not being randomised, it means
+> you're using KCONFIG_ALLCONFIG [*] so you can set CONFIG_ARCH_MULTIPLATFORM
+> in the defconfig you use.
 
----
- drivers/md/raid1.c  |    7 ++++++-
- drivers/md/raid10.c |    7 ++++++-
- 2 files changed, 12 insertions(+), 2 deletions(-)
+Yes, you are right, I can easily do this.
 
-Index: linux/drivers/md/raid1.c
-===================================================================
---- linux.orig/drivers/md/raid1.c	2013-03-07 14:14:05.950824173 +0800
-+++ linux/drivers/md/raid1.c	2013-04-28 08:57:17.874058434 +0800
-@@ -981,7 +981,12 @@ static void raid1_unplug(struct blk_plug
- 	while (bio) { /* submit pending writes */
- 		struct bio *next = bio->bi_next;
- 		bio->bi_next = NULL;
--		generic_make_request(bio);
-+		if (unlikely((bio->bi_rw & REQ_DISCARD) &&
-+		    !blk_queue_discard(bdev_get_queue(bio->bi_bdev))))
-+			/* Just ignore it */
-+			bio_endio(bio, 0);
-+		else
-+			generic_make_request(bio);
- 		bio = next;
- 	}
- 	kfree(plug);
-Index: linux/drivers/md/raid10.c
-===================================================================
---- linux.orig/drivers/md/raid10.c	2013-03-07 14:14:05.950824173 +0800
-+++ linux/drivers/md/raid10.c	2013-04-28 08:57:44.765719067 +0800
-@@ -1133,7 +1133,12 @@ static void raid10_unplug(struct blk_plu
- 	while (bio) { /* submit pending writes */
- 		struct bio *next = bio->bi_next;
- 		bio->bi_next = NULL;
--		generic_make_request(bio);
-+		if (unlikely((bio->bi_rw & REQ_DISCARD) &&
-+		    !blk_queue_discard(bdev_get_queue(bio->bi_bdev))))
-+			/* Just ignore it */
-+			bio_endio(bio, 0);
-+		else
-+			generic_make_request(bio);
- 		bio = next;
- 	}
- 	kfree(plug);
+	Arnd
