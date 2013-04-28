@@ -1,66 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756382Ab3D1OuY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Apr 2013 10:50:24 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:45757 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754836Ab3D1OuX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756421Ab3D1Oui (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Apr 2013 10:50:38 -0400
+Received: from mms2.broadcom.com ([216.31.210.18]:3507 "EHLO mms2.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754970Ab3D1OuX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 28 Apr 2013 10:50:23 -0400
-X-IronPort-AV: E=Sophos;i="4.87,566,1363132800"; 
-   d="scan'208";a="20977763"
-Date: Sun, 28 Apr 2013 15:50:20 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "will.deacon@arm.com" <will.deacon@arm.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Olof Johansson <olof@lixom.net>
-Subject: [PATCH 0/2 v9] arm: introduce psci_smp_ops
-Message-ID: <alpine.DEB.2.02.1304281544240.5398@kaball.uk.xensource.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+X-Server-Uuid: 4500596E-606A-40F9-852D-14843D8201B2
+Date: Sun, 28 Apr 2013 16:49:33 +0300
+From: "Yuval Mintz" <yuvalmin@broadcom.com>
+To: "Stephen Rothwell" <sfr@canb.auug.org.au>
+cc: "David Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Ariel Elior" <ariele@broadcom.com>,
+        "Yuval Mintz" <yuvalmin@broadcom.com>,
+        "Eilon Greenstein" <eilong@broadcom.com>
+Subject: Re: linux-next: manual merge of the net-next tree with the net
+ tree
+Message-ID: <20130428164933.6d3da501@lb-tlvb-yuvalmin.il.broadcom.com>
+In-Reply-To: <20130426132447.c7b06622240088ccad366b03@canb.auug.org.au>
+References: <20130426132447.c7b06622240088ccad366b03@canb.auug.org.au>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.18.9; x86_64-unknown-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+X-WSS-ID: 7D63EA6F1R06835217-01-01
+Content-Type: text/plain;
+ charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
-this is the nineth version of the patch series to move virt_smp_ops out
-of mach-virt and make it a generic set of reusable PSCI based smp_ops.
-psci_smp_ops are preferred over the platform smp_ops.  The last patch
-introduces smp_init.
+> Hi all,
+> 
+> Today's linux-next merge of the net-next tree got a conflict in
+> drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c between commit
+> ecf01c22be03 ("bnx2x: Prevent NULL pointer dereference in kdump") from
+> the net tree and commit 5b0752c863d7 ("bnx2x: Fix VF statistics") from
+> the net-next tree.
+> 
+> I am not sure about this, but I just used the net tree version but I
+> assume something more may be needed and can carry the fix as
+> necessary (no action is required).
+> 
 
-Only one change in this last iteration: the PSCI related comment has
-been moved from psci.h to psci_smp.c.
+Hi Stephen,
 
+This patch adds the missing functionality from the `net-next' patch
+which was lost due to the merge.
 
-Jon Medhurst (1):
-      ARM: Enable selection of SMP operations at boot time
+Is `linux-next' the correct tree to send it into?
+(I couldn't designate it to `net-next' as the merge between `net' and
+`net-next' hasn't occured yet, thus no collision there)
 
-Stefano Stabellini (1):
-      arm: introduce psci_smp_ops
+Signed-off-by: Yuval Mintz <yuvalmin@broadcom.com>
+Signed-off-by: Ariel Elior <ariele@broadcom.com>
+---
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
- arch/arm/include/asm/mach/arch.h |    3 +
- arch/arm/include/asm/psci.h      |    9 ++++
- arch/arm/kernel/Makefile         |    5 ++-
- arch/arm/kernel/psci.c           |    7 +--
- arch/arm/kernel/psci_smp.c       |   90 ++++++++++++++++++++++++++++++++++++++
- arch/arm/kernel/setup.c          |    9 +++-
- arch/arm/mach-virt/Makefile      |    1 -
- arch/arm/mach-virt/platsmp.c     |   58 ------------------------
- arch/arm/mach-virt/virt.c        |    3 -
- 9 files changed, 117 insertions(+), 68 deletions(-)
+diff --git a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
+b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c index
+06dee5c..52cf71c 100644 ---
+a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c +++
+b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c @@ -6053,6 +6053,8
+@@ void bnx2x_pre_irq_nic_init(struct bnx2x *bp) bnx2x_init_def_sb(bp);
+ 		bnx2x_update_dsb_idx(bp);
+ 		bnx2x_init_sp_ring(bp);
++	} else {
++		bnx2x_memset_stats(bp);
+ 	}
+ }
+ 
+-- 
+1.8.1.227.g44fe835
 
-git://git.kernel.org/pub/scm/linux/kernel/git/sstabellini/xen.git 3.9-rc3-psci-ops-9-tag
-
-Cheers,
-
-Stefano
