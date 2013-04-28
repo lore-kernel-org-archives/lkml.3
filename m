@@ -1,53 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760047Ab3EAWsa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 18:48:30 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9845 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759928Ab3EAWs1 (ORCPT
+	id S1762910Ab3ECPHO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 11:07:14 -0400
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:63373 "EHLO
+	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761561Ab3ECPHM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 18:48:27 -0400
-X-Authority-Analysis: v=2.0 cv=cOZiQyiN c=1 sm=0 a=tLUlnkoJZcZI9ocdGARlSQ==:17 a=c11ml42nfjYA:10 a=wom5GMh1gUkA:10 a=0-XA48YcNiwA:10 a=Rj1_iGo3bfgA:10 a=kj9zAlcOel0A:10 a=hBqU3vQJAAAA:8 a=2Ve8rObJkNIA:10 a=xkGCmgZVAAAA:8 a=Ud8Re2wkNlNuPFzoAZgA:9 a=CjuIK1q_8ugA:10 a=aZ5k6lslHxgA:10 a=tLUlnkoJZcZI9ocdGARlSQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 70.114.148.7
-Date: Mon, 29 Apr 2013 15:56:28 -0500
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: shea@shealevy.com
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Linux 3.8.9 Build Failure in user_namespace.c
-Message-ID: <20130429205628.GA20607@austin.hallyn.com>
-References: <af928063831e8eabf1236448484a8a9f@shealevy.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <af928063831e8eabf1236448484a8a9f@shealevy.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 3 May 2013 11:07:12 -0400
+From: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+Subject: [PATCH] drivers: parport: Use kzalloc
+Date: Sun, 28 Apr 2013 19:15:00 +0300
+Message-Id: <1367165700-22394-1-git-send-email-gheorghiuandru@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting shea@shealevy.com (shea@shealevy.com):
-> Hi All,
-> 
-> I just hit the following error trying to build 3.8.9:
-> 
-> /nix/store/vkvwpn6f7iff6zqrq2d9z2a1945pcsza-linux-3.8.9-source/kernel/user_namespace.c:
-> In function 'map_write':
-> /nix/store/vkvwpn6f7iff6zqrq2d9z2a1945pcsza-linux-3.8.9-source/kernel/user_namespace.c:582:2:
-> error: implicit declaration of function 'file_ns_capable'
-> [-Werror=implicit-function-declaration]
-> cc1: some warnings being treated as errors
-> 
-> Below is my .config, below that the build log.
+Replaced calls to kmalloc and memset with kzalloc.
+Patch found using coccinelle.
 
-I'm looking at 3.9.  file_ns_capable() is declared in capability.h, which gets
-included into user_namespace.c through cred.h.  I did also try building with
-CONFIG_SECURITY=n and CONFIG_USER_NS=y as you have it, but build succeeded,
-as I would expect given how it is included.
+Signed-off-by: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+---
+ drivers/parport/share.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-Do you have any custom patches applied by chance?
+diff --git a/drivers/parport/share.c b/drivers/parport/share.c
+index a848e02..6a83ee1 100644
+--- a/drivers/parport/share.c
++++ b/drivers/parport/share.c
+@@ -282,14 +282,13 @@ struct parport *parport_register_port(unsigned long base, int irq, int dma,
+ 	int device;
+ 	char *name;
+ 
+-	tmp = kmalloc(sizeof(struct parport), GFP_KERNEL);
++	tmp = kzalloc(sizeof(struct parport), GFP_KERNEL);
+ 	if (!tmp) {
+ 		printk(KERN_WARNING "parport: memory squeeze\n");
+ 		return NULL;
+ 	}
+ 
+ 	/* Init our structure */
+- 	memset(tmp, 0, sizeof(struct parport));
+ 	tmp->base = base;
+ 	tmp->irq = irq;
+ 	tmp->dma = dma;
+-- 
+1.7.9.5
 
--serge
