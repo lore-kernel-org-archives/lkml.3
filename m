@@ -1,72 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756074Ab3D1LRR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Apr 2013 07:17:17 -0400
-Received: from mga01.intel.com ([192.55.52.88]:35429 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755821Ab3D1LRL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Apr 2013 07:17:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,566,1363158000"; 
-   d="scan'208";a="329014994"
-From: Haicheng Li <haicheng.li@linux.intel.com>
-To: linux-f2fs-devel@lists.sourceforge.net,
-        Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Cc: linux-kernel@vger.kernel.org, Haicheng Li <haicheng.lee@gmail.com>,
-        Haicheng Li <haicheng.li@linux.intel.com>
-Subject: [PATCH 2/2] f2fs: remove useless #include <linux/proc_fs.h> as we're now using sysfs as debug entry.
-Date: Sun, 28 Apr 2013 19:16:07 +0800
-Message-Id: <1367147767-22155-2-git-send-email-haicheng.li@linux.intel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1367147767-22155-1-git-send-email-haicheng.li@linux.intel.com>
-References: <1367147767-22155-1-git-send-email-haicheng.li@linux.intel.com>
+	id S1755945Ab3D1Ls5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Apr 2013 07:48:57 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:6660 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754955Ab3D1Ls4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Apr 2013 07:48:56 -0400
+Message-ID: <517D0C1E.4090004@huawei.com>
+Date: Sun, 28 Apr 2013 19:46:38 +0800
+From: Zhao Hongjiang <zhaohongjiang@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: <bharrosh@panasas.com>, <bhalevy@tonian.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, <osd-dev@open-osd.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH] =?UTF-8?B?ZXhvZnPvvJogZG9uJ3QgaW5jcmVhc2UgdXJpbGVuIGlmIGs=?=
+ =?UTF-8?B?cmVhbGxvYygpIGZhaWxz?=
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.72.200]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Haicheng Li <haicheng.li@linux.intel.com>
----
- fs/f2fs/debug.c |    1 -
- fs/f2fs/gc.c    |    1 -
- fs/f2fs/super.c |    1 -
- 3 files changed, 3 deletions(-)
+Without the patch, edp->urilen is increased before krealloc(). If krealloc() fails,
+edp->urilen is too high. Fix that by only updating edp->urilen if krealloc() is successful.
 
-diff --git a/fs/f2fs/debug.c b/fs/f2fs/debug.c
-index 025b9e2..08c9ce3 100644
---- a/fs/f2fs/debug.c
-+++ b/fs/f2fs/debug.c
-@@ -13,7 +13,6 @@
+Signed-off-by: Zhao Hongjiang <zhaohongjiang@huawei.com>
+---
+ fs/exofs/sys.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/fs/exofs/sys.c b/fs/exofs/sys.c
+index 1b4f2f9..79b0a85 100644
+--- a/fs/exofs/sys.c
++++ b/fs/exofs/sys.c
+@@ -82,11 +82,11 @@ static ssize_t uri_store(struct exofs_dev *edp, const char *buf, size_t len)
+ {
+ 	uint8_t *new_uri;
  
- #include <linux/fs.h>
- #include <linux/backing-dev.h>
--#include <linux/proc_fs.h>
- #include <linux/f2fs_fs.h>
- #include <linux/blkdev.h>
- #include <linux/debugfs.h>
-diff --git a/fs/f2fs/gc.c b/fs/f2fs/gc.c
-index 94b8a0c..80d2747 100644
---- a/fs/f2fs/gc.c
-+++ b/fs/f2fs/gc.c
-@@ -11,7 +11,6 @@
- #include <linux/fs.h>
- #include <linux/module.h>
- #include <linux/backing-dev.h>
--#include <linux/proc_fs.h>
- #include <linux/init.h>
- #include <linux/f2fs_fs.h>
- #include <linux/kthread.h>
-diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
-index fea6e58..660e922 100644
---- a/fs/f2fs/super.c
-+++ b/fs/f2fs/super.c
-@@ -12,7 +12,6 @@
- #include <linux/init.h>
- #include <linux/fs.h>
- #include <linux/statfs.h>
--#include <linux/proc_fs.h>
- #include <linux/buffer_head.h>
- #include <linux/backing-dev.h>
- #include <linux/kthread.h>
--- 
-1.7.9.5
+-	edp->urilen = strlen(buf) + 1;
+-	new_uri = krealloc(edp->uri, edp->urilen, GFP_KERNEL);
++	new_uri = krealloc(edp->uri, strlen(buf) + 1, GFP_KERNEL);
+ 	if (new_uri == NULL)
+ 		return -ENOMEM;
+ 	edp->uri = new_uri;
++	edp->urilen = strlen(buf) + 1;
+ 	strncpy(edp->uri, buf, edp->urilen);
+ 	return edp->urilen;
+ }
+-- 1.7.1
 
