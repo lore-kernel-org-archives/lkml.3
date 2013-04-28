@@ -1,89 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756399Ab3D1SzS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Apr 2013 14:55:18 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:44592 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751707Ab3D1SzQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Apr 2013 14:55:16 -0400
-Date: Sun, 28 Apr 2013 14:55:14 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: ZhenHua <zhen-hual@hp.com>
-cc: gregkh@linuxfoundation.org, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/1] driver,usb: Fix a warning in uhci-hcd driver
-In-Reply-To: <517C808A.2060502@hp.com>
-Message-ID: <Pine.LNX.4.44L0.1304281447010.23571-100000@netrider.rowland.org>
+	id S1756460Ab3D1TGI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Apr 2013 15:06:08 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:49889 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756344Ab3D1TGG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Apr 2013 15:06:06 -0400
+Date: Sun, 28 Apr 2013 21:05:41 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: vitalif@yourcmc.ru
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ben Hutchings <ben@decadent.org.uk>,
+        "Venkatesh Pallipadi (Venki)" <venki@google.com>,
+        700333@bugs.debian.org, LKML <linux-kernel@vger.kernel.org>,
+        Clemens Ladisch <clemens@ladisch.de>
+Subject: Re: Bug#700333: Stack trace
+Message-ID: <20130428190541.GA2301@pd.tnic>
+References: <1362536476.3768.416.camel@deadeye.wl.decadent.org.uk>
+ <15ec7b46ebd929a67caea0d80b324af9@yourcmc.ru>
+ <1362971451.3937.29.camel@deadeye.wl.decadent.org.uk>
+ <cc9020446ea75ed733ec96c505039f2a@yourcmc.ru>
+ <20130420225516.GB4649@pd.tnic>
+ <alpine.LFD.2.02.1304221409420.21884@ionos>
+ <alpine.LFD.2.02.1304251139340.21884@ionos>
+ <2666050d6d50efdbfa3503aa10c0e5ec@yourcmc.ru>
+ <20130427154956.GC4358@pd.tnic>
+ <925b81fa055e645546ae9d237eeb2ef4@yourcmc.ru>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <925b81fa055e645546ae9d237eeb2ef4@yourcmc.ru>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 28 Apr 2013, ZhenHua wrote:
+On Sun, Apr 28, 2013 at 05:26:07PM +0400, vitalif@yourcmc.ru wrote:
+> >When you do a suspend/resume cycle.
+> 
+> OK, yes, I've found it there.
+> 
+> >The bug says "The photo shows a BUG in hrtimer_interrupt() after
+> >making
+> >the hibernation image and while resuming the non-boot CPUs." so I'm
+> >guessing with Thomas' patch it suspends fine now?
+> 
+> Yeah, now I'm using a patched kernel and it's OK.
+> 
+> So, does it mean the problem is fixed by this patch or it's just
+> confirmed and should be fixed by another one?
 
-> >>> In fact, the patch is so easy that I am including it below.  Please
-> >>> test this (without either of your patches) to see if it works.
-> >>>
-> >>> Alan Stern
-> >>>
-> >>>
-> >>>
-> >>>
-> >>> Index: usb-3.9/drivers/usb/host/uhci-hub.c
-> >>> ===================================================================
-> >>> --- usb-3.9.orig/drivers/usb/host/uhci-hub.c
-> >>> +++ usb-3.9/drivers/usb/host/uhci-hub.c
-> >>> @@ -225,7 +225,8 @@ static int uhci_hub_status_data(struct u
-> >>>    		/* auto-stop if nothing connected for 1 second */
-> >>>    		if (any_ports_active(uhci))
-> >>>    			uhci->rh_state = UHCI_RH_RUNNING;
-> >>> -		else if (time_after_eq(jiffies, uhci->auto_stop_time))
-> >>> +		else if (time_after_eq(jiffies, uhci->auto_stop_time) &&
-> >>> +				!uhci->wait_for_hp)
-> >>>    			suspend_rh(uhci, UHCI_RH_AUTO_STOPPED);
-> >>>    		break;
-> >>>    
-> >>>
-> >> I have tested the UHCI_RH_RUNNING_NODEVS case yeasterday, and it works.
-> >> But the function suspend_rh is also called in other places, so I think
-> >> it only fixes
-> >> the warning when auto stop is called, but not fix the warning when
-> >> uhci's bus_suspend
-> >> is called,  it will come out again.
-> > Have you tried this?  I expect the warning will not occur when the
-> > bus_suspend routine is called, because then there will be a 1-ms delay,
-> > not just a 400-us delay.
-> I tested this, and the warning is gone.  Is this patch committed ?
-> I need to paste the link to suse bugzilla.
+Well, it makes sense to me, at least: we remove the handler on suspend
+so that the HPET interrupt doesn't fire. If, when the box comes up
+again, the pending interrupt is cleared, then all is fine - we can
+safely register the handler again and everyone goes about their merry
+way.
 
-You must be joking.  I wrote that patch while composing the email
-message to you, and nobody except you has tested it.
+But don't worry, if Thomas has an idea, it is almost guaranteed you'll
+get a proper fix soon. :-)
 
-Since you confirm that it works, I will submit it.  But new patches
-like this won't be accepted until after the upcoming merge window
-closes, which won't be for more than two weeks.
+-- 
+Regards/Gruss,
+    Boris.
 
-> >> And if you add uhci->wait_for_hp check in the UHCI_RH_RUNNING_NODEVS case,
-> >> all hp uhci devices will not auto stop, not only the virtual devices. I
-> >> guess it may waste resource.
-> > If you want, you can add a new flag specifically for virtual
-> > controllers.  But it shouldn't matter -- as long as your kernels are
-> > built with CONFIG_PM_RUNTIME enabled, there won't be any significant
-> > waste of resources.
-> >
-> > Alan Stern
-> >
-> I think we can check the product id to determine whether a device is 
-> virtual.
-> Do you know if there is another way to check this?
-
-I don't know anything at all about your virtual UHCI controllers, other
-than what you have told me.  In particular, I don't know what product
-IDs are used by HP's virtual and non-virtual controllers.  Maybe
-somebody else at HP can tell you.
-
-Alan Stern
-
+Sent from a fat crate under my desk. Formatting is fine.
+--
