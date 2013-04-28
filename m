@@ -1,60 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755701Ab3D1Ayz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Apr 2013 20:54:55 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:35035 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752141Ab3D1Ayy (ORCPT
+	id S1755929Ab3D1A6W (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Apr 2013 20:58:22 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:59438 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752874Ab3D1A6U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Apr 2013 20:54:54 -0400
-Date: Sun, 28 Apr 2013 08:54:46 +0800
-From: Shaohua Li <shli@kernel.org>
-To: Markus <M4rkusXXL@web.de>
-Cc: lkml <linux-kernel@vger.kernel.org>, Jens Axboe <axboe@kernel.dk>
-Subject: Re: hybrid raid1 with trim support [REGRESSION]
-Message-ID: <20130428005446.GA20018@kernel.org>
-References: <3387108.NX1Tlx8b5x@f209>
- <3642314.Bs77jRSGfY@f209>
- <1533550.VmvE7tiNM7@f209>
+	Sat, 27 Apr 2013 20:58:20 -0400
+Date: Sun, 28 Apr 2013 02:58:16 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Cyrill Gorcunov <gorcunov@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        David Miller <davem@davemloft.net>, "Theodore Ts'o" <tytso@mit.edu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
+Subject: Re: [PATCH v2] x86: make DR*_RESERVED unsigned long
+Message-ID: <20130428005814.GB10354@somewhere>
+References: <CA+55aFwpLu0qNms=hkQr43yqD0K9DgESNm91OEWKT1ZuT8MU6Q@mail.gmail.com>
+ <20130424072630.GB1780@gmail.com>
+ <20130424170702.GA1867@redhat.com>
+ <5178282D.9030902@zytor.com>
+ <20130425144818.GA25921@redhat.com>
+ <20130426163802.GA30351@redhat.com>
+ <517AAED5.7040400@zytor.com>
+ <20130426171526.GA30875@redhat.com>
+ <20130427144537.GA24256@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1533550.VmvE7tiNM7@f209>
+In-Reply-To: <20130427144537.GA24256@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 27, 2013 at 06:29:49PM +0200, Markus wrote:
-> Hi!
+On Sat, Apr 27, 2013 at 04:45:37PM +0200, Oleg Nesterov wrote:
+> On 04/26, Oleg Nesterov wrote:
 > 
-> Now I had the time to bisect, started with 3.7 as good and 3.8 as bad.
-> 0cfbcafcae8b7364b5fa96c2b26ccde7a3a296a9 is the bad commit. [1]
-> block: add plug for blkdev_issue_discard
+> > On 04/26, H. Peter Anvin wrote:
+> > >
+> > > On 04/26/2013 09:38 AM, Oleg Nesterov wrote:
+> > > >
+> > > > 	- do_debug:
+> > > >
+> > > > 		dr6 &= ~DR6_RESERVED;
+> > > >
+> > > > 	  this also wrongly clears 32-63 bits. Fortunately these
+> > > > 	  bits are reserved and must be zero.
+> > >
+> > > I don't think this is wrongly at all.
+> >
+> > OK, I meant that it also clears the bits that are not specified in
+> > DR6_RESERVED mask.
+> >
+> > > The whole point is to mask out
+> > > the bits that the handler doesn't want to deal with, so masking out the
+> > > reserved bits [63:32] seems reasonable to me.
+> >
+> > Then we should do
+> >
+> > 	- #define DR6_RESERVED    0xFFFF0FF0
+> > 	+ #define DR6_RESERVED    0xFFFFFFFFFFFF0FF0
+> >
+> > ?
+> >
+> > or what? (just in case, I will happily agree with "do nothing" ;)
 > 
-> While 3.8.10 was still bad, the same kernel with the reverted patch applied is fine.
-Thanks for the reporting. Does below patch work for you?
+> Or we can do the s/reserved/mask/ change and avoid any "unexpected"
+> effect of "long &= ~int". This allso allows to kill ifdef(__i386__).
+> 
+> But this is include/uapi, I do not know if I can simply remove the
+> old define's.
+> 
+> In short: whatever you prefer, including "leave it alone".
+> 
+> Oleg.
+> 
+> diff --git a/arch/x86/include/uapi/asm/debugreg.h b/arch/x86/include/uapi/asm/debugreg.h
+> index 3c0874d..2678b23 100644
+> --- a/arch/x86/include/uapi/asm/debugreg.h
+> +++ b/arch/x86/include/uapi/asm/debugreg.h
+> @@ -14,8 +14,7 @@
+>     which debugging register was responsible for the trap.  The other bits
+>     are either reserved or not of interest to us. */
+>  
+> -/* Define reserved bits in DR6 which are always set to 1 */
+> -#define DR6_RESERVED	(0xFFFF0FF0)
+> +#define DR6_MASK	(0xF00FU)	/* Everything else is reserved */
 
-Thanks,
-Shaohua
+I'm personally fine either with that or with Peter's suggestion to do:
 
+-#define DR6_RESERVED (0xFFFF0FF0)
++#define DR6_RESERVED (~0xF00FUL)
 
----
- drivers/md/raid1.c |    4 ++++
- 1 file changed, 4 insertions(+)
+If this should stay stable UAPI, we probably want Peter's solution. Otherwise
+I really don't mind.
 
-Index: linux/drivers/md/raid1.c
-===================================================================
---- linux.orig/drivers/md/raid1.c	2013-03-07 14:14:05.950824173 +0800
-+++ linux/drivers/md/raid1.c	2013-04-28 08:52:06.761964780 +0800
-@@ -981,6 +981,10 @@ static void raid1_unplug(struct blk_plug
- 	while (bio) { /* submit pending writes */
- 		struct bio *next = bio->bi_next;
- 		bio->bi_next = NULL;
-+		if (unlikely((bio->bi_rw & REQ_DISCARD) &&
-+		    !blk_queue_discard(bdev_get_queue(bio->bi_bdev))))
-+			/* Just ignore it */
-+			bio_endio(bio, 0);
- 		generic_make_request(bio);
- 		bio = next;
- 	}
+Thanks.
