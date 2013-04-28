@@ -1,209 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755970Ab3D1BMr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Apr 2013 21:12:47 -0400
-Received: from mout.gmx.net ([212.227.15.19]:49195 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755081Ab3D1BMq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Apr 2013 21:12:46 -0400
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX1+tIt9uJsGtipjKuQURp46ctaIlKomY6inLhOXkon
-	FkGXQqnztMdyXI
-From: Peter =?iso-8859-1?q?H=FCwe?= <PeterHuewe@gmx.de>
-To: tpmdd-devel@lists.sourceforge.net
-Subject: Re: [tpmdd-devel] [PATCH 1/1] TPM: STMicroelectronics st33 driver SPI
-Date: Sun, 28 Apr 2013 03:16:33 +0200
-User-Agent: KMail/1.13.7 (Linux/3.8.4; KDE/4.9.5; x86_64; ; )
-Cc: Mathias Leblanc <mathias.leblanc@st.com>,
-        Kent Yoder <key@linux.vnet.ibm.com>, Rajiv Andrade <mail@srajiv.net>,
-        Marcel Selhorst <tpmdd@selhorst.net>, Sirrix AG <tpmdd@sirrix.com>,
-        "Jean-Luc Blanc" <jean-luc.blanc@st.com>, linux-kernel@vger.kernel.org,
-        Matthias Leblanc <matthias.leblanc@gmail.com>
-References: <1366620606-2952-1-git-send-email-mathias.leblanc@st.com>
-In-Reply-To: <1366620606-2952-1-git-send-email-mathias.leblanc@st.com>
+	id S1756114Ab3D1BNm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Apr 2013 21:13:42 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:40451 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755967Ab3D1BNl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Apr 2013 21:13:41 -0400
+Date: Sun, 28 Apr 2013 02:13:17 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Matt Sealey <matt@genesi-usa.com>,
+        Steev Klimaszewski <steev@genesi-usa.com>,
+        Yong Shen <yong.shen@linaro.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        linux-kernel@vger.kernel.org
+Message-ID: <20130428011317.GD20197@sirena.org.uk>
+References: <1366775472.22788.1.camel@phoenix>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201304280316.34094.PeterHuewe@gmx.de>
-X-Y-GMX-Trusted: 0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="lc9FT7cWel8HagAv"
+Content-Disposition: inline
+In-Reply-To: <1366775472.22788.1.camel@phoenix>
+X-Cookie: You love peace.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 82.42.102.178
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regulator: mc13892: Fix MC13892_SWITCHERS0_SWxHI bit in
+ set_voltage_sel
+X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Matthias,
 
-it's nice to see that you consider most of the comments, unfortunately I still 
-have some left ;)
+--lc9FT7cWel8HagAv
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> +/*
-> + * tpm_st33_spi_init initialize driver
-> + * @return: 0 if successful, else non zero value.
-> + */
-> +static int __init tpm_st33_spi_init(void)
-> +{
-> +	return spi_register_driver(&tpm_st33_spi_driver);
-> +}
-> +
-> +/*
-> + * tpm_st33_spi_exit The kernel calls this function during unloading the
-> + * module or during shut down process
-> + */
-> +static void __exit tpm_st33_spi_exit(void)
-> +{
-> +	spi_unregister_driver(&tpm_st33_spi_driver);
-> +}
-> +
-> +module_init(tpm_st33_spi_init);
-> +module_exit(tpm_st33_spi_exit);
+On Wed, Apr 24, 2013 at 11:51:12AM +0800, Axel Lin wrote:
+> It is necessary to clear MC13892_SWITCHERS0_SWxHI bit when set voltage to the
+> voltage range from 1100000 to 1375000. Leaving MC13892_SWITCHERS0_SWxHI bit
+> untouched may result in wrong voltage setting.
 
-Please use module_spi_driver(&tpm_st33_spi_driver); instead
-Boilerplate code sucks.
+Applied, thanks.
 
+--lc9FT7cWel8HagAv
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> +	u8 *data_buffer = platform_data->tpm_spi_buffer[0];
-> +	struct spi_transfer xfer = {
-> +		.tx_buf	 = data_buffer,
-> +		.rx_buf	 = platform_data->tpm_spi_buffer[1],
-> +	};
-> +	struct spi_message msg;
->...
-> +	xfer.len = total_length;
-> +	spi_message_init(&msg);
-> +	spi_message_add_tail(&xfer, &msg);
-> +	value = spi_sync(dev, &msg);
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
 
+iQIcBAEBAgAGBQJRfHeqAAoJELSic+t+oim90qYQAJ0QTjeEuePS4H3gdnrbiuAs
+BNFvJNIqjE/UY8izN7i0KV85zJHTKbr0/rms9V7WAGMz21TzZhk8FPPzEWFBfqGm
+6y8yO5IGG8/mvFoaHRKqgpf7l1mbaYINmedLdAGWuwQ3vr5LWuR5bICVUlKuTBw+
+2tta4GQIIZ6CmNfmvCc5x2i8lw5En5Gyl1uK6E5mqEFNcpUriZqgTV0O47SIz3hm
++9dOP+25XhUXWcMgWKitSanSwf7pRt+FEn2W/4aAF+LUHZuyn9zMppkQH9RNWZg3
+x3bR7W/qB3BXUSxgmYwNc8rF9AhbUherhFXB1owNwb5m3vOabDJFoecHNXmHVOGC
+QqukHUQl/KZAuNm/1D2LnV71Py67vuPJho4faaRK5jqY1IBdpKaMNv+INF16Mbnb
+6UoZLHaR2V4CscA+6GHaL0C9xi5lc800kETChNEmH7/wJDH8XvpM+3vglVgVOVvx
+Va6ro9EiWNm/Tegx9h+jJauopCURZOocZtnQnin6ATZpVIz8OuOpv3uy/K/NdmXe
+f/M7Cvqd1yD7f35qwflvpSqhkcmkAfkEp7SotMcpYhrfLjGweFcelcxPkNGc94vX
+CvjSSsyJ+yO90x78A484vz8j102wTbjNSuzNkxuMflj5uapfq3KL6vDF8/EtPZaD
+vUl+g1h7tE2I7rOSqc33
+=qivM
+-----END PGP SIGNATURE-----
 
-Doesn't spi_write fit here ?
-
-static inline int
-spi_write(struct spi_device *spi, const void *buf, size_t len)
-{
-	struct spi_transfer	t = {
-			.tx_buf		= buf,
-			.len		= len,
-		};
-	struct spi_message	m;
-
-	spi_message_init(&m);
-	spi_message_add_tail(&t, &m);
-	return spi_sync(spi, &m);
-}
-
-Seems pretty identical.
--> This would save some lines of code,
-and again - boilerplate code sucks.
-Same applies to spi_read,
-
-
-
-The driver generates some gcc warnings:
- drivers/char/tpm/tpm_spi_stm_st33.c: In function 'read8_reg': 
- drivers/char/tpm/tpm_spi_stm_st33.c:180:5: warning: unused variable 'latency'  
-[-Wunused-variable]
- drivers/char/tpm/tpm_spi_stm_st33.c: In function 'tpm_stm_spi_status':
- drivers/char/tpm/tpm_spi_stm_st33.c:353:2: warning: 'data' is used  
-uninitialized in this function [-Wuninitialized]
- drivers/char/tpm/tpm_spi_stm_st33.c: In function 'get_burstcount':
- drivers/char/tpm/tpm_spi_stm_st33.c:450:12: warning: 'temp' is used  
-uninitialized in this function [-Wuninitialized]
- drivers/char/tpm/tpm_spi_stm_st33.c: In function 'check_locality':
- drivers/char/tpm/tpm_spi_stm_st33.c:369:22: warning: 'data' may be used  
-uninitialized in this function [-Wuninitialized]
-
-
-
-The driver does give me some smatch errors:
-
-$ LANG=C make -j16 C=1 CHECK=smatch
- CHECK   drivers/char/tpm/tpm_spi_stm_st33.c
- drivers/char/tpm/tpm_spi_stm_st33.c:882 tpm_st33_spi_probe() warn: variable  
-dereferenced before check 'platform_data' (see line 781)
- drivers/char/tpm/tpm_spi_stm_st33.c:980 tpm_st33_spi_pm_resume() warn: should  
-this be a bitwise op?
- drivers/char/tpm/tpm_spi_stm_st33.c:980 tpm_st33_spi_pm_resume() warn: should  
-this be a bitwise op?
-
-
-
-and some sparse errors:
- drivers/char/tpm/tpm_spi_stm_st33.c:102:35: warning: cast removes address 
-space of expression
- drivers/char/tpm/tpm_spi_stm_st33.c:171:35: warning: cast removes address 
-space of expression
- drivers/char/tpm/tpm_spi_stm_st33.c:299:19: warning: cast removes address 
-space of expression
- drivers/char/tpm/tpm_spi_stm_st33.c:311:15: warning: symbol 
-'wait_for_serirq_timeout' was not declared. Should it be static?
- drivers/char/tpm/tpm_spi_stm_st33.c:546:19: warning: cast removes address 
-space of expression
-
-
-
-
-
-And here are some other, rather subjective remarks:
-
-> +		for (; nbr_dummy_bytes < total_length &&
-> +			 ((u8 *)xfer.rx_buf)[nbr_dummy_bytes] == 0;
-> +			 nbr_dummy_bytes++)
-> +			;
-
-Not sure if it would be easier to read using a while and putting the increment 
-into the loop body
-
->+		while (nbr_dummy_bytes < total_length && 
->+			((u8 *)xfer.rx_buf)[nbr_dummy_bytes] == 0)
->+			 nbr_dummy_bytes++;
-
-I usually don't like empty loop bodies, as they tend to be overlooked.
-
-
-
-> +static u32 SPI_WRITE_DATA(struct tpm_chip *tpm, u8 tpm_register,
-> +			  u8 *tpm_data, u16 tpm_size)
-> +{
-> +	u8 value = 0;
-> +	value = write8_reg(tpm, tpm_register, tpm_data, tpm_size);
-> +
-> +	switch (value) {
-> +	case TPM_ST_SPI_OK:
-> +		return TPM_ST_SPI_OK;
-> +	case 0:
-> +		return 0;
-> +	default:
-> +		return -EBUSY;
-> +	}
-> +} /* SPI_WRITE_DATA() */
-
-Why do you need a wrapper function here for the return code?
-write8_reg is only called from this location, so why doesn't it return the 
-correct error code directly?
-*confused*
-
-
-Same applies to read8_reg.
-
-
-
-
-> +static int _wait_for_interrupt_serirq_timeout(struct tpm_chip *chip,
-> +					unsigned long timeout)
-Is only called from wait_for_serirq_timeout - I'm not really sure if it helps 
-readability to have a separate function.
-
-
-
-
-> +	.resume = tpm_st33_spi_pm_resume,
-> +	.suspend = tpm_st33_spi_pm_suspend,
-Maybe use 
-SIMPLE_DEV_PM_OPS 
-instead as it is (afaik) the new standard way for PM_OPS.
-The conversion should be pretty similar to the one in your I2C TPM driver:
-https://github.com/shpedoikal/linux/commit/d459335381eca1cb91fefb87021d3d172342e55a
-
-
-Regards,
-Peter
-
+--lc9FT7cWel8HagAv--
