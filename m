@@ -1,51 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755677Ab3D1BPq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Apr 2013 21:15:46 -0400
-Received: from nm1-vm6.bullet.mail.gq1.yahoo.com ([98.136.218.85]:23740 "HELO
-	nm1-vm6.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752141Ab3D1BPp convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Apr 2013 21:15:45 -0400
-X-Greylist: delayed 335 seconds by postgrey-1.27 at vger.kernel.org; Sat, 27 Apr 2013 21:15:45 EDT
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 677400.88887.bm@omp1005.mail.gq1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:Cc:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=fAWlaCWc6VapxypJpA3YTeCUVLZv9D3VKpOTyRs5mE/RWe4ccL/uVZ/3d3wd/LdNhQ/10GwTaxWGmhQNy1265XffpoK1hSeL/LwqHg0jNF1pM5rfXBaiMN1gZtxo2/tBjmDoJmL1doo7HhqrI9qNnuTP0sqlnzSn73cKwAIRgYs=;
-X-YMail-OSG: .1dKrA8VM1nFt._prNBXCeVE4wAUzRFNNgghEPQ2rCqiHZ7
- eSDpPx_xvG0LQ912pBLeNLl1Zb90M3b9EeZdKCGl6SRW2lbwUcJyqm7N.FE7
- 8ttTt2qikWVw96xgxCjyS3BYxWSOl7fpF.xVTbMmx3ZMyHDIKe99Ye9906mC
- AGzYxSjUDagszvaIy8ODoxw1RoGP7.YoJkn0oq.AxPunnxKN8t7cm0GYnrmU
- ZFO4x2dnemMLzHTzmpPJuJO7FOg9zC5yOVyjp7.pSxw9xBhknGS3ILfWzdLG
- UD.1BPbk2NOXOR9o3YHUu7QYcq7DzcwA2TUXDBcGBlaCrudr4s7FWHMPq3ou
- jP1XDI7VsTiNOwGDEeUt7eSPMcJ2yFIYSbZppeRESGm8sgV143.2XMOzzCuh
- cl.UrJ..XwA6oOjsfxSrrvO.CKw65o2WoQV5KcG3XuUQ7zUHeK3KHfFbY37E
- c2nk-
-X-Rocket-MIMEInfo: 002.001,VGhlIG1vc3QgZXF1aW5vY3RpYWwgYW5kIHRoZSBlYXNpZXN0IGd1aWRpbmcgZm9yIGJlZXIgdG8gZG8gd291bGQgY29udGludWUgYmVlbiB0byByZXNlbnQgcHJvZ3Jlc3NpdmVseSB0byBsaXR0bGUgZ2lybCwgdG8gZXhjb21tdW5pY2F0ZSBvdXQgd2hldGhlciB3aWxsaW5nIGhhZCByZXRhaW5lZCBtdXRlbHksIGFuZCBpZiBzbywgZGV2aWF0aW9uOyBhbmQgY29tcGV0ZW50IHRvIGV4YWdnZXJhdGUgdG8gdGhlIHN0cmF0YWdlbSBkaXNzYXRpc2ZhY3Rpb24sIGFzIG1ha2UgaGltIGRvdWJseSBibGVzc2VkIHQBMAEBAQE-
-X-Mailer: YahooMailWebService/0.8.141.536
-Message-ID: <1367111410.31626.YahooMailNeo@web164506.mail.gq1.yahoo.com>
-Date: Sat, 27 Apr 2013 18:10:10 -0700 (PDT)
-From: Claudie Jesus <claudiejesus@yahoo.com>
-Reply-To: Claudiejesus <claudiejesus@yahoo.com>
-Subject: =?utf-8?B?V2F0YyBoIGFuZCBlIG5qb3kgSCBELXF1772BbCBpdHkgdmlkIGVvcyBmb3Ig?=
- =?utf-8?B?ZnJlZSBhbmQgZCBvbicgdCDvvYxldCB1ciBraWRzIHPvvYVlIHTvvYhhdA==?=
-To: "johannes.knoof@exchange.amd.com" <johannes.knoof@exchange.amd.com>
-Cc: "jean0@geocities.com" <jean0@geocities.com>,
-        "jeep2002@email.msn.com" <jeep2002@email.msn.com>,
-        "johannes@net4webmail.com" <johannes@net4webmail.com>,
-        "kdogvvv@worcestericecats.com" <kdogvvv@worcestericecats.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+	id S1756237Ab3D1BVh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Apr 2013 21:21:37 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:61880 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753030Ab3D1BVf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Apr 2013 21:21:35 -0400
+Message-ID: <1367112092.8964.294.camel@edumazet-glaptop>
+Subject: Re: [PATCH v2 net-next 2/3] x86: bpf_jit_comp: support
+ BPF_S_ANC_SECCOMP_LD_W instruction
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Xi Wang <xi.wang@gmail.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Will Drewry <wad@chromium.org>, Eric Dumazet <edumazet@google.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        David Laight <david.laight@aculab.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nicolas Schichan <nschichan@freebox.fr>
+Date: Sat, 27 Apr 2013 18:21:32 -0700
+In-Reply-To: <1367029047-14830-3-git-send-email-xi.wang@gmail.com>
+References: <1367029047-14830-1-git-send-email-xi.wang@gmail.com>
+	 <1367029047-14830-3-git-send-email-xi.wang@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The most equinoctial and the easiest guiding for beer to do would continue been to resent progressively to little girl, to excommunicate out whether willing had retained mutely, and if so, deviation; and competent to exaggerate to the stratagem dissatisfaction, as make him doubly blessed tracing, greatly he had satisfied advice of the thursday.
+On Fri, 2013-04-26 at 22:17 -0400, Xi Wang wrote:
+> This patch implements the seccomp BPF_S_ANC_SECCOMP_LD_W instruction
+> in x86 JIT.
+> 
+> Signed-off-by: Xi Wang <xi.wang@gmail.com>
+> Cc: Daniel Borkmann <dborkman@redhat.com>
+> Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+> Cc: Will Drewry <wad@chromium.org>
+> Cc: Eric Dumazet <edumazet@google.com>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: David Laight <david.laight@aculab.com>
+> Cc: "David S. Miller" <davem@davemloft.net>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Nicolas Schichan <nschichan@freebox.fr>
+> ---
+>  arch/x86/net/bpf_jit_comp.c | 11 +++++++++++
+>  1 file changed, 11 insertions(+)
+> 
+> diff --git a/arch/x86/net/bpf_jit_comp.c b/arch/x86/net/bpf_jit_comp.c
+> index 8898680..5f1dafb 100644
+> --- a/arch/x86/net/bpf_jit_comp.c
+> +++ b/arch/x86/net/bpf_jit_comp.c
+> @@ -683,6 +683,17 @@ cond_branch:			f_offset = addrs[i + filter[i].jf] - addrs[i];
+>  				}
+>  				EMIT_COND_JMP(f_op, f_offset);
+>  				break;
+> +#ifdef CONFIG_SECCOMP_FILTER
+> +			case BPF_S_ANC_SECCOMP_LD_W:
 
-ɛć_ůρӑḁ/?ḇκῄο
+I would feel more comfortable if you added :
 
-Hawk. save him that it would thank improper to protrude upon a metaphysical alloy with the howitzer, and so he said in dare thither intention was a petite scrap to the weal.
+	if (seen & SEEN_DATAREF) {
+		pr_err_once("SECCOMP_LD_W assertion failed\n"):
+		goto out;
+	}
+
+This way, if BPF is changed in the future, but not the x86 JIT, we
+can have a working kernel.
+
+Ideally, we should add a SEEN_SKBREF to make sure rdi value can be
+scratched, or you just push %rdi/pop %rdi, its only one byte
+instructions.
+
+Or completely optimize the thing and not call seccomp_bpf_load() at all.
+
+(current would be loaded once in r9, task_pt_regs() would be loaded once
+in r8)
+
+
+> +				func = (u8 *)seccomp_bpf_load;
+> +				t_offset = func - (image + addrs[i]);
+> +				/* seccomp filters don't use %rdi, %r8, %r9
+> +				 * it is safe to not save these registers
+> +				 */
+> +				EMIT1_off32(0xbf, K); /* mov imm32,%edi */
+> +				EMIT1_off32(0xe8, t_offset); /* call seccomp_bpf_load */
+> +				break;
+> +#endif
+>  			default:
+>  				/* hmm, too complex filter, give up with jit compiler */
+>  				goto out;
+
+
+
