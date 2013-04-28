@@ -1,46 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756261Ab3D1BcL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Apr 2013 21:32:11 -0400
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:8847 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755352Ab3D1BcJ (ORCPT
+	id S1755932Ab3D1BrK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Apr 2013 21:47:10 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:27271 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754105Ab3D1BrI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Apr 2013 21:32:09 -0400
-From: Chegu Vinod <chegu_vinod@hp.com>
-To: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: gleb@redhat.com, Chegu Vinod <chegu_vinod@hp.com>
-Subject: [PATCH] KVM: x86: Increase the "hard" max VCPU limit
-Date: Sat, 27 Apr 2013 18:31:04 -0700
-Message-Id: <1367112664-19862-1-git-send-email-chegu_vinod@hp.com>
-X-Mailer: git-send-email 1.7.5.4
+	Sat, 27 Apr 2013 21:47:08 -0400
+Message-ID: <517C7F91.2030705@huawei.com>
+Date: Sun, 28 Apr 2013 09:46:57 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        Fengguang Wu <fengguang.wu@intel.com>
+Subject: [PATCH] cpuset: fix compile warning when CONFIG_SMP=n
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-KVM guests today use 8bit APIC ids allowing for 256 ID's. Reserving one
-ID for Broadcast interrupts should leave 255 ID's. In case of KVM there
-is no need for reserving another ID for IO-APIC so the hard max limit for
-VCPUS can be increased from 254 to 255. (This was confirmed by Gleb Natapov
-http://article.gmane.org/gmane.comp.emulators.kvm.devel/99713  )
+Reported by Fengguang's kbuild test robot:
 
-Signed-off-by: Chegu Vinod <chegu_vinod@hp.com>
+kernel/cpuset.c:787: warning: 'generate_sched_domains' defined but not used
+
+Introduced by commit e0e80a02e5701c8790bd348ab59edb154fbda60b
+("cpuset: use rebuild_sched_domains() in cpuset_hotplug_workfn()),
+which removed generate_sched_domains() from cpuset_hotplug_workfn().
+
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Li Zefan <lizefan@huawei.com>
 ---
- arch/x86/include/asm/kvm_host.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ kernel/cpuset.c | 7 -------
+ 1 file changed, 7 deletions(-)
 
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index 4979778..bc57bfa 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -31,7 +31,7 @@
- #include <asm/msr-index.h>
- #include <asm/asm.h>
+diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+index ef05901..2422c5b 100644
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -789,13 +789,6 @@ out:
+ static void rebuild_sched_domains_locked(void)
+ {
+ }
+-
+-static int generate_sched_domains(cpumask_var_t **domains,
+-			struct sched_domain_attr **attributes)
+-{
+-	*domains = NULL;
+-	return 1;
+-}
+ #endif /* CONFIG_SMP */
  
--#define KVM_MAX_VCPUS 254
-+#define KVM_MAX_VCPUS 255
- #define KVM_SOFT_MAX_VCPUS 160
- #define KVM_USER_MEM_SLOTS 125
- /* memory slots that are not exposed to userspace */
+ void rebuild_sched_domains(void)
 -- 
-1.7.1
+1.8.0.2
