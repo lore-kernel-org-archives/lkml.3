@@ -1,57 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756616Ab3D1WOX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Apr 2013 18:14:23 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:48299 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753774Ab3D1WOV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Apr 2013 18:14:21 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Viresh Kumar <viresh.kumar@linaro.org>, Nathan Zimmer <nzimmer@sgi.com>
-Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH linux-next v8] cpufreq: convert the cpufreq_driver to use the rcu
-Date: Mon, 29 Apr 2013 00:22:32 +0200
-Message-ID: <3218775.0Qs2EbHdzR@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0-rc8+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAKohponJ3s_cpGmHv8MtqB0SCDXi_16=QYocLxOY-ZeLtj-5uA@mail.gmail.com>
-References: <515C5AB6.5090109@sgi.com> <1365087205-8708-1-git-send-email-nzimmer@sgi.com> <CAKohponJ3s_cpGmHv8MtqB0SCDXi_16=QYocLxOY-ZeLtj-5uA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1756652Ab3D1WQ0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Apr 2013 18:16:26 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:37378 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753774Ab3D1WQZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Apr 2013 18:16:25 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Mon, 29 Apr 2013 00:16:14 +0200
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: linux1394-devel@lists.sourceforge.net
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] firewire: core: typecast from gfp_t to bool more safely
+Message-ID: <20130429001614.677012df@stein>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.12; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, April 04, 2013 09:57:19 PM Viresh Kumar wrote:
-> On 4 April 2013 20:23, Nathan Zimmer <nzimmer@sgi.com> wrote:
-> > We eventually would like to remove the rwlock cpufreq_driver_lock or convert
-> > it back to a spinlock and protect the read sections with RCU.  The first step in
-> > that is moving the cpufreq_driver to use the rcu.
-> > I don't see an easy wasy to protect the cpufreq_cpu_data structure with the
-> > RCU, so I am leaving it with the rwlock for now since under certain configs
-> > __cpufreq_cpu_get is hot spot with 256+ cores.
-> >
-> > v5: Go a different way and split up the lock and use the rcu
-> > v6: use bools instead of checking function pointers
-> >     covert the cpufreq_data_lock to a rwlock
-> > v7: Rebase to use the already accepted half
-> > v8: Correct have_governor_per_policy
-> >     Reviewed location of rcu_read_(un)lock in several spots
-> 
-> Sorry for long delay or too many versions of this patch :)
-> 
-> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+An idr related patch introduced the following sparse warning:
+  drivers/firewire/core-cdev.c:488:33: warning: incorrect type in initializer (different base types)
+  drivers/firewire/core-cdev.c:488:33:    expected bool [unsigned] [usertype] preload
+  drivers/firewire/core-cdev.c:488:33:    got restricted gfp_t
+So let's convert from gfp_t bitfield to Boolean explicitly and safely.
 
-Unfortunately, I had to revert this one, because it is obviously buggy.  Why?
-Because it adds rcu_read_lock()/rcu_read_unlock() around sysfs_create_file()
-which may sleep due to a GFP_KERNEL memory allocation.  Sorry for failing to
-notice that earlier.
+Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+---
+ drivers/firewire/core-cdev.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Thanks,
-Rafael
+--- a/drivers/firewire/core-cdev.c
++++ b/drivers/firewire/core-cdev.c
+@@ -485,7 +485,7 @@ static int ioctl_get_info(struct client
+ static int add_client_resource(struct client *client,
+ 			       struct client_resource *resource, gfp_t gfp_mask)
+ {
+-	bool preload = gfp_mask & __GFP_WAIT;
++	bool preload = !!(gfp_mask & __GFP_WAIT);
+ 	unsigned long flags;
+ 	int ret;
+ 
 
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Stefan Richter
+-=====-===-= -=-- ===-=
+http://arcgraph.de/sr/
