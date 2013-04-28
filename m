@@ -1,41 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756319Ab3D1CBM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Apr 2013 22:01:12 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:36488 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755352Ab3D1CBK (ORCPT
+	id S1756477Ab3D1Czl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Apr 2013 22:55:41 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:62990 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756424Ab3D1Czk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Apr 2013 22:01:10 -0400
-Message-ID: <1367114462.6391.25.camel@ThinkPad-T5421.cn.ibm.com>
-Subject: Re: [PATCH] cpuset: fix compile warning when CONFIG_SMP=n
-From: Li Zhong <zhong@linux.vnet.ibm.com>
+	Sat, 27 Apr 2013 22:55:40 -0400
+Date: Sat, 27 Apr 2013 19:55:35 -0700
+From: Tejun Heo <tj@kernel.org>
 To: Li Zefan <lizefan@huawei.com>
-Cc: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Cgroups <cgroups@vger.kernel.org>,
+Cc: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
         Fengguang Wu <fengguang.wu@intel.com>
-Date: Sun, 28 Apr 2013 10:01:02 +0800
-In-Reply-To: <517C7F91.2030705@huawei.com>
+Subject: Re: [PATCH] cpuset: fix compile warning when CONFIG_SMP=n
+Message-ID: <20130428025535.GA6569@htj.dyndns.org>
 References: <517C7F91.2030705@huawei.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13042801-6102-0000-0000-0000036561E4
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <517C7F91.2030705@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2013-04-28 at 09:46 +0800, Li Zefan wrote:
+On Sun, Apr 28, 2013 at 09:46:57AM +0800, Li Zefan wrote:
 > Reported by Fengguang's kbuild test robot:
-
-Thank you for the quick fix, Zefan. 
-
-Strong robot :)
-
-Thanks, Zhong
-
 > 
 > kernel/cpuset.c:787: warning: 'generate_sched_domains' defined but not used
 > 
@@ -45,27 +36,8 @@ Thanks, Zhong
 > 
 > Reported-by: Fengguang Wu <fengguang.wu@intel.com>
 > Signed-off-by: Li Zefan <lizefan@huawei.com>
-> ---
->  kernel/cpuset.c | 7 -------
->  1 file changed, 7 deletions(-)
-> 
-> diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-> index ef05901..2422c5b 100644
-> --- a/kernel/cpuset.c
-> +++ b/kernel/cpuset.c
-> @@ -789,13 +789,6 @@ out:
->  static void rebuild_sched_domains_locked(void)
->  {
->  }
-> -
-> -static int generate_sched_domains(cpumask_var_t **domains,
-> -			struct sched_domain_attr **attributes)
-> -{
-> -	*domains = NULL;
-> -	return 1;
-> -}
->  #endif /* CONFIG_SMP */
-> 
->  void rebuild_sched_domains(void)
 
+Applied to cgroup/for-3.10.  Thanks.
 
+-- 
+tejun
