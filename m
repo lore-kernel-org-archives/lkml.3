@@ -1,55 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755945Ab3D1Ls5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Apr 2013 07:48:57 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:6660 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754955Ab3D1Ls4 (ORCPT
+	id S1756151Ab3D1MQP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Apr 2013 08:16:15 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:53138 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755821Ab3D1MQO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Apr 2013 07:48:56 -0400
-Message-ID: <517D0C1E.4090004@huawei.com>
-Date: Sun, 28 Apr 2013 19:46:38 +0800
-From: Zhao Hongjiang <zhaohongjiang@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: <bharrosh@panasas.com>, <bhalevy@tonian.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, <osd-dev@open-osd.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH] =?UTF-8?B?ZXhvZnPvvJogZG9uJ3QgaW5jcmVhc2UgdXJpbGVuIGlmIGs=?=
- =?UTF-8?B?cmVhbGxvYygpIGZhaWxz?=
-Content-Type: text/plain; charset="UTF-8"
+	Sun, 28 Apr 2013 08:16:14 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Sun, 28 Apr 2013 14:15:59 +0200
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] firewire: Fix 'failed to read phy reg' on FW643 rev8
+Message-ID: <20130428141559.0439c881@stein>
+In-Reply-To: <1364307560-27601-1-git-send-email-peter@hurleysoftware.com>
+References: <1364306830.12229.14.camel@thor.lan>
+	<1364307560-27601-1-git-send-email-peter@hurleysoftware.com>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.12; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.72.200]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Without the patch, edp->urilen is increased before krealloc(). If krealloc() fails,
-edp->urilen is too high. Fix that by only updating edp->urilen if krealloc() is successful.
+On Mar 26 Peter Hurley wrote:
+> --- a/drivers/firewire/ohci.c
+> +++ b/drivers/firewire/ohci.c
+> @@ -2268,8 +2268,8 @@ static int ohci_enable(struct fw_card *card,
+>  		  OHCI1394_HCControl_postedWriteEnable);
+>  	flush_writes(ohci);
+>  
+> -	for (lps = 0, i = 0; !lps && i < 3; i++) {
+> -		msleep(50);
+> +	for (lps = 0, i = 0; !lps && i < 150; i++) {
+> +		msleep(1);
+>  		lps = reg_read(ohci, OHCI1394_HCControlSet) &
+>  		      OHCI1394_HCControl_LPS;
+>  	}
 
-Signed-off-by: Zhao Hongjiang <zhaohongjiang@huawei.com>
----
- fs/exofs/sys.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/fs/exofs/sys.c b/fs/exofs/sys.c
-index 1b4f2f9..79b0a85 100644
---- a/fs/exofs/sys.c
-+++ b/fs/exofs/sys.c
-@@ -82,11 +82,11 @@ static ssize_t uri_store(struct exofs_dev *edp, const char *buf, size_t len)
- {
- 	uint8_t *new_uri;
- 
--	edp->urilen = strlen(buf) + 1;
--	new_uri = krealloc(edp->uri, edp->urilen, GFP_KERNEL);
-+	new_uri = krealloc(edp->uri, strlen(buf) + 1, GFP_KERNEL);
- 	if (new_uri == NULL)
- 		return -ENOMEM;
- 	edp->uri = new_uri;
-+	edp->urilen = strlen(buf) + 1;
- 	strncpy(edp->uri, buf, edp->urilen);
- 	return edp->urilen;
- }
--- 1.7.1
-
+This duplicates a mistake (?) that we already did a few times elsewhere in
+firewire-ohci:  msleep(1) may put the thread to sleep for much, much longer
+than 1 millisecond.  I will propose a patch soon.
+-- 
+Stefan Richter
+-=====-===-= -=-- ===--
+http://arcgraph.de/sr/
