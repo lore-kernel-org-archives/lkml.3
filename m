@@ -1,332 +1,264 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756501Ab3D1DRV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Apr 2013 23:17:21 -0400
-Received: from server.prisktech.co.nz ([115.188.14.127]:53156 "EHLO
-	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755440Ab3D1DQu (ORCPT
+	id S1756169Ab3D1DR6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Apr 2013 23:17:58 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:49004 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755485Ab3D1DRz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Apr 2013 23:16:50 -0400
-From: Tony Prisk <linux@prisktech.co.nz>
-To: Francois Romieu <romieu@fr.zoreil.com>
-Cc: netdev@vger.kernel.org, vt8500-wm8505-linux-kernel@googlegroups.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Tony Prisk <linux@prisktech.co.nz>
-Subject: [PATCH 2/4] net: velocity: Rename vptr->dev to vptr->netdev
-Date: Sun, 28 Apr 2013 15:16:44 +1200
-Message-Id: <1367119006-31280-3-git-send-email-linux@prisktech.co.nz>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1367119006-31280-1-git-send-email-linux@prisktech.co.nz>
-References: <1367119006-31280-1-git-send-email-linux@prisktech.co.nz>
+	Sat, 27 Apr 2013 23:17:55 -0400
+Message-ID: <517C94DA.9070002@gmail.com>
+Date: Sun, 28 Apr 2013 11:17:46 +0800
+From: Will Huck <will.huckk@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Frantisek Hrbata <fhrbata@redhat.com>
+CC: hpa@zytor.com, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        tglx@linutronix.de, mingo@redhat.com, x86@kernel.org, oleg@redhat.com,
+        kamaleshb@in.ibm.com, hechjie@cn.ibm.com
+Subject: Re: [PATCH] x86: add phys addr validity check for /dev/mem mmap
+References: <1364905733-23937-1-git-send-email-fhrbata@redhat.com> <517A0ED8.6000404@gmail.com> <20130426153502.GC3510@dhcp-26-164.brq.redhat.com> <517B777B.5020303@gmail.com> <20130427191349.GA3372@dhcp-26-164.brq.redhat.com>
+In-Reply-To: <20130427191349.GA3372@dhcp-26-164.brq.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Improve the clarity of the code in preparation for converting the
-dma functions to generic versions, which require a struct device *.
+On 04/28/2013 03:13 AM, Frantisek Hrbata wrote:
+> On Sat, Apr 27, 2013 at 03:00:11PM +0800, Will Huck wrote:
+>> On 04/26/2013 11:35 PM, Frantisek Hrbata wrote:
+>>> On Fri, Apr 26, 2013 at 01:21:28PM +0800, Will Huck wrote:
+>>>> Hi Peter,
+>>>> On 04/02/2013 08:28 PM, Frantisek Hrbata wrote:
+>>>>> When CR4.PAE is set, the 64b PTE's are used(ARCH_PHYS_ADDR_T_64BIT is set for
+>>>>> X86_64 || X86_PAE). According to [1] Chapter 4 Paging, some higher bits in 64b
+>>>>> PTE are reserved and have to be set to zero. For example, for IA-32e and 4KB
+>>>>> page [1] 4.5 IA-32e Paging: Table 4-19, bits 51-M(MAXPHYADDR) are reserved. So
+>>>>> for a CPU with e.g. 48bit phys addr width, bits 51-48 have to be zero. If one of
+>>>>> the reserved bits is set, [1] 4.7 Page-Fault Exceptions, the #PF is generated
+>>>>> with RSVD error code.
+>>>>>
+>>>>> <quote>
+>>>>> RSVD flag (bit 3).
+>>>>> This flag is 1 if there is no valid translation for the linear address because a
+>>>>> reserved bit was set in one of the paging-structure entries used to translate
+>>>>> that address. (Because reserved bits are not checked in a paging-structure entry
+>>>>> whose P flag is 0, bit 3 of the error code can be set only if bit 0 is also
+>>>>> set.)
+>>>>> </quote>
+>>>>>
+>>>>> In mmap_mem() the first check is valid_mmap_phys_addr_range(), but it always
+>>>>> returns 1 on x86. So it's possible to use any pgoff we want and to set the PTE's
+>>>>> reserved bits in remap_pfn_range(). Meaning there is a possibility to use mmap
+>>>> In this case, remap_pfn_range() setup the map and reserved bits for
+>>>> mmio memory, so the mmio memory is already populated, why trigger
+>>>> #PF?
+>>> Hi,
+>>>
+>>> I think this is described in the quote above for the RSVD flag.
+>>>
+>>> remap_pfn_range() => page present => touch page => tlb miss =>
+>>> walk through paging structures => reserved bit set => #pf with rsvd flag
+>> Page present can also trigger #PF? why?
+> Yes, please see
+> Intel 64 and IA-32 Architectures Software Developer's Manual, Volume 3A
+>
+> 4.7 PAGE-FAULT EXCEPTIONS
+> <quote>
+> · RSVD flag (bit 3).
+> This flag is 1 if there is no valid translation for the linear address because
+> a reserved bit was set in one of the paging-structure entries used to
+> translate that address. (Because reserved bits are not checked in a
+> paging-structure entry whose P flag is 0, bit 3 of the error code can be set
+> only if bit 0 is also set.) Bits reserved in the paging-structure entries are
+> reserved for future functionality. Software developers should be aware that
+> such bits may be used in the future and that a paging-structure entry that
+> causes a page-fault exception on one processor might not do so in the future.
+> </quote>
+>
+> I cannot tell you why. I guess this is more a question for some Intel guys.
+>
+> Anyway this patch is trying to fix the following problem and
+> the "Bad pagetable" oops.
+>
+> ---------------------------------8<--------------------------------------
+> #include <stdio.h>
+> #include <unistd.h>
+> #include <sys/types.h>
+> #include <sys/stat.h>
+> #include <fcntl.h>
+> #include <err.h>
+> #include <stdlib.h>
+> #include <sys/mman.h>
+>
+> #define die(fmt, ...) err(1, fmt, ##__VA_ARGS__)
+>
+> /*
+>     1) Find some non system ram in case the CONFIG_STRICT_DEVMEM is defined
+>     $ cat /proc/iomem | grep -v "\(System RAM\|reserved\)"
+>
+>     2) Find physical address width
+>     $ cat /proc/cpuinfo | grep "address sizes"
+>
+>     PTE bits 51 - M are reserved, where M is physical address width found 2)
+>     Note: step 2) is actually not needed, we can always set just the 51th bit
+>     (0x8000000000000)
 
-This makes it possible to store a 'struct device *dev' in the
-velocity_info structure.
+What's the meaning here? You trigger oops since the address is beyond 
+max address cpu supported or access to a reserved page? If the answer is 
+the latter, I'm think it's not right. For example, the kernel code/data 
+section is reserved in memory, kernel access it will trigger oops? I 
+don't think so.
 
-Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
----
- drivers/net/ethernet/via/via-velocity.c |   66 +++++++++++++++----------------
- drivers/net/ethernet/via/via-velocity.h |    4 +-
- 2 files changed, 35 insertions(+), 35 deletions(-)
+>
+>     Set OFFSET macro to
+>
+>     (start of iomem range found in 1)) | (1 << 51)
+>
+>     for example
+>     0x000a0000 | 0x8000000000000 = 0x80000000a0000
+>
+>     where 0x000a0000 is start of PCI BUS on my laptop
+>
+>   */
+>
+> #define OFFSET 0x80000000a0000LL
+>
+> int main(int argc, char *argv[])
+> {
+> 	int fd;
+> 	long ps;
+> 	long pgoff;
+> 	char *map;
+> 	char c;
+>
+> 	ps = sysconf(_SC_PAGE_SIZE);
+> 	if (ps == -1)
+> 		die("cannot get page size");
+>
+> 	fd = open("/dev/mem", O_RDONLY);
+> 	if (fd == -1)
+> 		die("cannot open /dev/mem");
+>
+> 	printf("%Lx\n", pgoff);
+> 	pgoff = (OFFSET + (ps - 1)) & ~(ps - 1);
+> 	printf("%Lx\n", pgoff);
+>
+> 	map = mmap(NULL, ps, PROT_READ, MAP_SHARED, fd, pgoff);
+> 	if (map == MAP_FAILED)
+> 		die("cannot mmap");
+>
+> 	c = map[0];
+>
+> 	if (munmap(map, ps) == -1)
+> 		die("cannot munmap");
+>
+> 	if (close(fd) == -1)
+> 		die("cannot close");
+>
+> 	return 0;
+> }
+> ---------------------------------8<--------------------------------------
+>
+> Apr 27 19:52:29 dhcp-26-164 kernel: [ 6464.814860] pfrsvd: Corrupted page table at address 7f34087c8000
+> Apr 27 19:52:29 dhcp-26-164 kernel: [ 6464.817356] PGD 12d0b3067 PUD 12d544067 PMD 12e29d067 PTE 80080000000a0225
+> Apr 27 19:52:29 dhcp-26-164 kernel: [ 6464.820216] Bad pagetable: 000d [#1] SMP
+> Apr 27 19:52:29 dhcp-26-164 kernel: [ 6464.822821] Modules linked in: fuse ebtable_nat xt_CHECKSUM bridge stp llc ipt_MASQUERADE nf_conntrack_netbios_ns nf_conntrack_broadcast ip6table_mangle ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 iptable_nat nf_nat_ipv4 nf_nat iptable_mangle nf_conntrack_ipv4 nf_defrag_ipv4 xt_conntrack nf_conntrack ebtable_filter ebtables ip6table_filter ip6_tables be2iscsi iscsi_boot_sysfs bnx2i cnic uio cxgb4i cxgb4 cxgb3i cxgb3 mdio libcxgbi ib_iser rdma_cm ib_addr iw_cm ib_cm ib_sa ib_mad ib_core iscsi_tcp libiscsi_tcp libiscsi scsi_transport_iscsi rfcomm bnep arc4 iwldvm mac80211 snd_hda_codec_hdmi snd_hda_codec_conexant snd_hda_intel snd_hda_codec uvcvideo snd_hwdep snd_seq snd_seq_device snd_pcm iTCO_wdt videobuf2_vmalloc videobuf2_memops videobuf2_core videodev btusb snd_page_alloc bluetooth snd_timer thinkpad_acpi iwlwifi media snd i2c_i801 cfg80211 iTCO_vendor_support intel_ips e1000e coretemp lpc_ich mfd_core soundcore rfkill mei microcode nfsd auth_rpcgss nfs_acl lockd sunrpc vhost_net tun macvtap macvlan kvm_intel kvm binfmt_misc uinput dm_crypt crc32c_intel i915 ghash_clmulni_intel firewire_ohci i2c_algo_bit drm_kms_helper firewire_core sdhci_pci crc_itu_t drm sdhci mmc_core i2c_core mxm_wmi video wmi
+> Apr 27 19:52:29 dhcp-26-164 kernel: [ 6464.845686] CPU 3
+> Apr 27 19:52:29 dhcp-26-164 kernel: [ 6464.845709] Pid: 8751, comm: pfrsvd Not tainted 3.8.1-201.fc18.x86_64 #1 LENOVO 4384AV1/4384AV1
+> Apr 27 19:52:29 dhcp-26-164 kernel: [ 6464.852876] RIP: 0033:[<00000000004007db>]  [<00000000004007db>] 0x4007da
+> Apr 27 19:52:29 dhcp-26-164 kernel: [ 6464.856587] RSP: 002b:00007ffff5c12620  EFLAGS: 00010213
+> Apr 27 19:52:29 dhcp-26-164 kernel: [ 6464.860296] RAX: 00007f34087c8000 RBX: 0000000000000000 RCX: 00000030fd4eed6a
+> Apr 27 19:52:29 dhcp-26-164 kernel: [ 6464.864061] RDX: 0000000000000001 RSI: 0000000000001000 RDI: 0000000000000000
+> Apr 27 19:52:29 dhcp-26-164 kernel: [ 6464.867878] RBP: 00007ffff5c12660 R08: 0000000000000003 R09: 00080000000a0000
+> Apr 27 19:52:29 dhcp-26-164 kernel: [ 6464.871706] R10: 0000000000000001 R11: 0000000000000206 R12: 00000000004005f0
+> Apr 27 19:52:29 dhcp-26-164 kernel: [ 6464.875566] R13: 00007ffff5c12740 R14: 0000000000000000 R15: 0000000000000000
+> Apr 27 19:52:29 dhcp-26-164 kernel: [ 6464.879490] FS:  00007f34087a0740(0000) GS:ffff880137d80000(0000) knlGS:0000000000000000
+> Apr 27 19:52:29 dhcp-26-164 kernel: [ 6464.883447] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> Apr 27 19:52:29 dhcp-26-164 kernel: [ 6464.887436] CR2: 00007f34087c8000 CR3: 0000000107509000 CR4: 00000000000007e0
+> Apr 27 19:52:29 dhcp-26-164 kernel: [ 6464.891495] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> Apr 27 19:52:29 dhcp-26-164 kernel: [ 6464.895603] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> Apr 27 19:52:29 dhcp-26-164 kernel: [ 6464.899739] Process pfrsvd (pid: 8751, threadinfo ffff880104ea8000, task ffff88012d9e1760)
+> Apr 27 19:52:29 dhcp-26-164 kernel: [ 6464.903944]
+> Apr 27 19:52:29 dhcp-26-164 kernel: [ 6464.908169] RIP  [<00000000004007db>] 0x4007da
+> Apr 27 19:52:29 dhcp-26-164 kernel: [ 6464.912447]  RSP <00007ffff5c12620>
+> Apr 27 19:52:29 dhcp-26-164 kernel: [ 6464.943802] ---[ end trace 1113d12a53145197 ]---
+>
+> Please note the PTE value 80080000000a0225
+>
+> HTH
+>
+> Thank you
+>>> I hope I didn't misunderstand your question.
+>>>
+>>> Thanks
+>>>
+>>>>> on /dev/mem and cause system panic. It's probably not that serious, because
+>>>>> access to /dev/mem is limited and the system has to have panic_on_oops set, but
+>>>>> still I think we should check this and return error.
+>>>>>
+>>>>> This patch adds check for x86 when ARCH_PHYS_ADDR_T_64BIT is set, the same way
+>>>>> as it is already done in e.g. ioremap. With this fix mmap returns -EINVAL if the
+>>>>> requested phys addr is bigger then the supported phys addr width.
+>>>>>
+>>>>> [1] Intel 64 and IA-32 Architectures Software Developer's Manual, Volume 3A
+>>>>>
+>>>>> Signed-off-by: Frantisek Hrbata <fhrbata@redhat.com>
+>>>>> ---
+>>>>>   arch/x86/include/asm/io.h |  4 ++++
+>>>>>   arch/x86/mm/mmap.c        | 13 +++++++++++++
+>>>>>   2 files changed, 17 insertions(+)
+>>>>>
+>>>>> diff --git a/arch/x86/include/asm/io.h b/arch/x86/include/asm/io.h
+>>>>> index d8e8eef..39607c6 100644
+>>>>> --- a/arch/x86/include/asm/io.h
+>>>>> +++ b/arch/x86/include/asm/io.h
+>>>>> @@ -242,6 +242,10 @@ static inline void flush_write_buffers(void)
+>>>>>   #endif
+>>>>>   }
+>>>>> +#define ARCH_HAS_VALID_PHYS_ADDR_RANGE
+>>>>> +extern int valid_phys_addr_range(phys_addr_t addr, size_t count);
+>>>>> +extern int valid_mmap_phys_addr_range(unsigned long pfn, size_t count);
+>>>>> +
+>>>>>   #endif /* __KERNEL__ */
+>>>>>   extern void native_io_delay(void);
+>>>>> diff --git a/arch/x86/mm/mmap.c b/arch/x86/mm/mmap.c
+>>>>> index 845df68..92ec31c 100644
+>>>>> --- a/arch/x86/mm/mmap.c
+>>>>> +++ b/arch/x86/mm/mmap.c
+>>>>> @@ -31,6 +31,8 @@
+>>>>>   #include <linux/sched.h>
+>>>>>   #include <asm/elf.h>
+>>>>> +#include "physaddr.h"
+>>>>> +
+>>>>>   struct __read_mostly va_alignment va_align = {
+>>>>>   	.flags = -1,
+>>>>>   };
+>>>>> @@ -122,3 +124,14 @@ void arch_pick_mmap_layout(struct mm_struct *mm)
+>>>>>   		mm->unmap_area = arch_unmap_area_topdown;
+>>>>>   	}
+>>>>>   }
+>>>>> +
+>>>>> +int valid_phys_addr_range(phys_addr_t addr, size_t count)
+>>>>> +{
+>>>>> +	return addr + count <= __pa(high_memory);
+>>>>> +}
+>>>>> +
+>>>>> +int valid_mmap_phys_addr_range(unsigned long pfn, size_t count)
+>>>>> +{
+>>>>> +	resource_size_t addr = (pfn << PAGE_SHIFT) + count;
+>>>>> +	return phys_addr_valid(addr);
+>>>>> +}
+>>>> --
+>>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>>>> the body of a message to majordomo@vger.kernel.org
+>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>> Please read the FAQ at  http://www.tux.org/lkml/
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
 
-diff --git a/drivers/net/ethernet/via/via-velocity.c b/drivers/net/ethernet/via/via-velocity.c
-index eb2a023..1168666 100644
---- a/drivers/net/ethernet/via/via-velocity.c
-+++ b/drivers/net/ethernet/via/via-velocity.c
-@@ -996,9 +996,9 @@ static void velocity_print_link_status(struct velocity_info *vptr)
- {
- 
- 	if (vptr->mii_status & VELOCITY_LINK_FAIL) {
--		VELOCITY_PRT(MSG_LEVEL_INFO, KERN_NOTICE "%s: failed to detect cable link\n", vptr->dev->name);
-+		VELOCITY_PRT(MSG_LEVEL_INFO, KERN_NOTICE "%s: failed to detect cable link\n", vptr->netdev->name);
- 	} else if (vptr->options.spd_dpx == SPD_DPX_AUTO) {
--		VELOCITY_PRT(MSG_LEVEL_INFO, KERN_NOTICE "%s: Link auto-negotiation", vptr->dev->name);
-+		VELOCITY_PRT(MSG_LEVEL_INFO, KERN_NOTICE "%s: Link auto-negotiation", vptr->netdev->name);
- 
- 		if (vptr->mii_status & VELOCITY_SPEED_1000)
- 			VELOCITY_PRT(MSG_LEVEL_INFO, " speed 1000M bps");
-@@ -1012,7 +1012,7 @@ static void velocity_print_link_status(struct velocity_info *vptr)
- 		else
- 			VELOCITY_PRT(MSG_LEVEL_INFO, " half duplex\n");
- 	} else {
--		VELOCITY_PRT(MSG_LEVEL_INFO, KERN_NOTICE "%s: Link forced", vptr->dev->name);
-+		VELOCITY_PRT(MSG_LEVEL_INFO, KERN_NOTICE "%s: Link forced", vptr->netdev->name);
- 		switch (vptr->options.spd_dpx) {
- 		case SPD_DPX_1000_FULL:
- 			VELOCITY_PRT(MSG_LEVEL_INFO, " speed 1000M bps full duplex\n");
-@@ -1317,7 +1317,7 @@ static void velocity_init_registers(struct velocity_info *vptr,
- 	case VELOCITY_INIT_RESET:
- 	case VELOCITY_INIT_WOL:
- 
--		netif_stop_queue(vptr->dev);
-+		netif_stop_queue(vptr->netdev);
- 
- 		/*
- 		 *	Reset RX to prevent RX pointer not on the 4X location
-@@ -1330,7 +1330,7 @@ static void velocity_init_registers(struct velocity_info *vptr,
- 		if (velocity_set_media_mode(vptr, mii_status) != VELOCITY_LINK_CHANGE) {
- 			velocity_print_link_status(vptr);
- 			if (!(vptr->mii_status & VELOCITY_LINK_FAIL))
--				netif_wake_queue(vptr->dev);
-+				netif_wake_queue(vptr->netdev);
- 		}
- 
- 		enable_flow_control_ability(vptr);
-@@ -1352,7 +1352,7 @@ static void velocity_init_registers(struct velocity_info *vptr,
- 
- 		mac_eeprom_reload(regs);
- 		for (i = 0; i < 6; i++)
--			writeb(vptr->dev->dev_addr[i], &(regs->PAR[i]));
-+			writeb(vptr->netdev->dev_addr[i], &(regs->PAR[i]));
- 
- 		/*
- 		 *	clear Pre_ACPI bit.
-@@ -1375,7 +1375,7 @@ static void velocity_init_registers(struct velocity_info *vptr,
- 		/*
- 		 *	Set packet filter: Receive directed and broadcast address
- 		 */
--		velocity_set_multi(vptr->dev);
-+		velocity_set_multi(vptr->netdev);
- 
- 		/*
- 		 *	Enable MII auto-polling
-@@ -1402,14 +1402,14 @@ static void velocity_init_registers(struct velocity_info *vptr,
- 		writel((CR0_DPOLL | CR0_TXON | CR0_RXON | CR0_STRT), &regs->CR0Set);
- 
- 		mii_status = velocity_get_opt_media_mode(vptr);
--		netif_stop_queue(vptr->dev);
-+		netif_stop_queue(vptr->netdev);
- 
- 		mii_init(vptr, mii_status);
- 
- 		if (velocity_set_media_mode(vptr, mii_status) != VELOCITY_LINK_CHANGE) {
- 			velocity_print_link_status(vptr);
- 			if (!(vptr->mii_status & VELOCITY_LINK_FAIL))
--				netif_wake_queue(vptr->dev);
-+				netif_wake_queue(vptr->netdev);
- 		}
- 
- 		enable_flow_control_ability(vptr);
-@@ -1472,7 +1472,7 @@ static int velocity_init_dma_rings(struct velocity_info *vptr)
- 				    rx_ring_size, &pool_dma);
- 	if (!pool) {
- 		dev_err(&pdev->dev, "%s : DMA memory allocation failed.\n",
--			vptr->dev->name);
-+			vptr->netdev->name);
- 		return -ENOMEM;
- 	}
- 
-@@ -1512,7 +1512,7 @@ static int velocity_alloc_rx_buf(struct velocity_info *vptr, int idx)
- 	struct rx_desc *rd = &(vptr->rx.ring[idx]);
- 	struct velocity_rd_info *rd_info = &(vptr->rx.info[idx]);
- 
--	rd_info->skb = netdev_alloc_skb(vptr->dev, vptr->rx.buf_sz + 64);
-+	rd_info->skb = netdev_alloc_skb(vptr->netdev, vptr->rx.buf_sz + 64);
- 	if (rd_info->skb == NULL)
- 		return -ENOMEM;
- 
-@@ -1618,7 +1618,7 @@ static int velocity_init_rd_ring(struct velocity_info *vptr)
- 
- 	if (velocity_rx_refill(vptr) != vptr->options.numrx) {
- 		VELOCITY_PRT(MSG_LEVEL_ERR, KERN_ERR
--			"%s: failed to allocate RX buffer.\n", vptr->dev->name);
-+			"%s: failed to allocate RX buffer.\n", vptr->netdev->name);
- 		velocity_free_rd_ring(vptr);
- 		goto out;
- 	}
-@@ -1807,7 +1807,7 @@ static void velocity_error(struct velocity_info *vptr, int status)
- 		printk(KERN_ERR "TD structure error TDindex=%hx\n", readw(&regs->TDIdx[0]));
- 		BYTE_REG_BITS_ON(TXESR_TDSTR, &regs->TXESR);
- 		writew(TRDCSR_RUN, &regs->TDCSRClr);
--		netif_stop_queue(vptr->dev);
-+		netif_stop_queue(vptr->netdev);
- 
- 		/* FIXME: port over the pci_device_failed code and use it
- 		   here */
-@@ -1848,10 +1848,10 @@ static void velocity_error(struct velocity_info *vptr, int status)
- 
- 		if (linked) {
- 			vptr->mii_status &= ~VELOCITY_LINK_FAIL;
--			netif_carrier_on(vptr->dev);
-+			netif_carrier_on(vptr->netdev);
- 		} else {
- 			vptr->mii_status |= VELOCITY_LINK_FAIL;
--			netif_carrier_off(vptr->dev);
-+			netif_carrier_off(vptr->netdev);
- 		}
- 
- 		velocity_print_link_status(vptr);
-@@ -1865,9 +1865,9 @@ static void velocity_error(struct velocity_info *vptr, int status)
- 		enable_mii_autopoll(regs);
- 
- 		if (vptr->mii_status & VELOCITY_LINK_FAIL)
--			netif_stop_queue(vptr->dev);
-+			netif_stop_queue(vptr->netdev);
- 		else
--			netif_wake_queue(vptr->dev);
-+			netif_wake_queue(vptr->netdev);
- 
- 	}
- 	if (status & ISR_MIBFI)
-@@ -1892,7 +1892,7 @@ static int velocity_tx_srv(struct velocity_info *vptr)
- 	int idx;
- 	int works = 0;
- 	struct velocity_td_info *tdinfo;
--	struct net_device_stats *stats = &vptr->dev->stats;
-+	struct net_device_stats *stats = &vptr->netdev->stats;
- 
- 	for (qnum = 0; qnum < vptr->tx.numq; qnum++) {
- 		for (idx = vptr->tx.tail[qnum]; vptr->tx.used[qnum] > 0;
-@@ -1937,9 +1937,9 @@ static int velocity_tx_srv(struct velocity_info *vptr)
- 	 *	Look to see if we should kick the transmit network
- 	 *	layer for more work.
- 	 */
--	if (netif_queue_stopped(vptr->dev) && (full == 0) &&
-+	if (netif_queue_stopped(vptr->netdev) && (full == 0) &&
- 	    (!(vptr->mii_status & VELOCITY_LINK_FAIL))) {
--		netif_wake_queue(vptr->dev);
-+		netif_wake_queue(vptr->netdev);
- 	}
- 	return works;
- }
-@@ -1987,7 +1987,7 @@ static int velocity_rx_copy(struct sk_buff **rx_skb, int pkt_size,
- 	if (pkt_size < rx_copybreak) {
- 		struct sk_buff *new_skb;
- 
--		new_skb = netdev_alloc_skb_ip_align(vptr->dev, pkt_size);
-+		new_skb = netdev_alloc_skb_ip_align(vptr->netdev, pkt_size);
- 		if (new_skb) {
- 			new_skb->ip_summed = rx_skb[0]->ip_summed;
- 			skb_copy_from_linear_data(*rx_skb, new_skb->data, pkt_size);
-@@ -2028,14 +2028,14 @@ static inline void velocity_iph_realign(struct velocity_info *vptr,
- static int velocity_receive_frame(struct velocity_info *vptr, int idx)
- {
- 	void (*pci_action)(struct pci_dev *, dma_addr_t, size_t, int);
--	struct net_device_stats *stats = &vptr->dev->stats;
-+	struct net_device_stats *stats = &vptr->netdev->stats;
- 	struct velocity_rd_info *rd_info = &(vptr->rx.info[idx]);
- 	struct rx_desc *rd = &(vptr->rx.ring[idx]);
- 	int pkt_len = le16_to_cpu(rd->rdesc0.len) & 0x3fff;
- 	struct sk_buff *skb;
- 
- 	if (rd->rdesc0.RSR & (RSR_STP | RSR_EDP)) {
--		VELOCITY_PRT(MSG_LEVEL_VERBOSE, KERN_ERR " %s : the received frame span multple RDs.\n", vptr->dev->name);
-+		VELOCITY_PRT(MSG_LEVEL_VERBOSE, KERN_ERR " %s : the received frame span multple RDs.\n", vptr->netdev->name);
- 		stats->rx_length_errors++;
- 		return -EINVAL;
- 	}
-@@ -2073,7 +2073,7 @@ static int velocity_receive_frame(struct velocity_info *vptr, int idx)
- 		   PCI_DMA_FROMDEVICE);
- 
- 	skb_put(skb, pkt_len - 4);
--	skb->protocol = eth_type_trans(skb, vptr->dev);
-+	skb->protocol = eth_type_trans(skb, vptr->netdev);
- 
- 	if (rd->rdesc0.RSR & RSR_DETAG) {
- 		u16 vid = swab16(le16_to_cpu(rd->rdesc1.PQTAG));
-@@ -2098,7 +2098,7 @@ static int velocity_receive_frame(struct velocity_info *vptr, int idx)
-  */
- static int velocity_rx_srv(struct velocity_info *vptr, int budget_left)
- {
--	struct net_device_stats *stats = &vptr->dev->stats;
-+	struct net_device_stats *stats = &vptr->netdev->stats;
- 	int rd_curr = vptr->rx.curr;
- 	int works = 0;
- 
-@@ -2290,7 +2290,7 @@ static int velocity_change_mtu(struct net_device *dev, int new_mtu)
- 
- 	if ((new_mtu < VELOCITY_MIN_MTU) || new_mtu > (VELOCITY_MAX_MTU)) {
- 		VELOCITY_PRT(MSG_LEVEL_ERR, KERN_NOTICE "%s: Invalid MTU.\n",
--				vptr->dev->name);
-+				vptr->netdev->name);
- 		ret = -EINVAL;
- 		goto out_0;
- 	}
-@@ -2312,7 +2312,7 @@ static int velocity_change_mtu(struct net_device *dev, int new_mtu)
- 			goto out_0;
- 		}
- 
--		tmp_vptr->dev = dev;
-+		tmp_vptr->netdev = dev;
- 		tmp_vptr->pdev = vptr->pdev;
- 		tmp_vptr->options = vptr->options;
- 		tmp_vptr->tx.numq = vptr->tx.numq;
-@@ -2690,7 +2690,7 @@ static int velocity_get_pci_info(struct velocity_info *vptr,
-  */
- static void velocity_print_info(struct velocity_info *vptr)
- {
--	struct net_device *dev = vptr->dev;
-+	struct net_device *dev = vptr->netdev;
- 
- 	printk(KERN_INFO "%s: %s\n", dev->name, get_chip_name(vptr->chip_id));
- 	printk(KERN_INFO "%s: Ethernet Address: %pM\n",
-@@ -2753,7 +2753,7 @@ static int velocity_found1(struct pci_dev *pdev,
- 
- 	velocity_init_info(pdev, vptr, info);
- 
--	vptr->dev = dev;
-+	vptr->netdev = dev;
- 
- 	ret = pci_enable_device(pdev);
- 	if (ret < 0)
-@@ -3007,10 +3007,10 @@ static int velocity_suspend(struct pci_dev *pdev, pm_message_t state)
- 	struct velocity_info *vptr = netdev_priv(dev);
- 	unsigned long flags;
- 
--	if (!netif_running(vptr->dev))
-+	if (!netif_running(vptr->netdev))
- 		return 0;
- 
--	netif_device_detach(vptr->dev);
-+	netif_device_detach(vptr->netdev);
- 
- 	spin_lock_irqsave(&vptr->lock, flags);
- 	pci_save_state(pdev);
-@@ -3075,7 +3075,7 @@ static int velocity_resume(struct pci_dev *pdev)
- 	unsigned long flags;
- 	int i;
- 
--	if (!netif_running(vptr->dev))
-+	if (!netif_running(vptr->netdev))
- 		return 0;
- 
- 	pci_set_power_state(pdev, PCI_D0);
-@@ -3098,7 +3098,7 @@ static int velocity_resume(struct pci_dev *pdev)
- 
- 	mac_enable_int(vptr->mac_regs);
- 	spin_unlock_irqrestore(&vptr->lock, flags);
--	netif_device_attach(vptr->dev);
-+	netif_device_attach(vptr->netdev);
- 
- 	return 0;
- }
-diff --git a/drivers/net/ethernet/via/via-velocity.h b/drivers/net/ethernet/via/via-velocity.h
-index 4cb9f13..ff8d7828 100644
---- a/drivers/net/ethernet/via/via-velocity.h
-+++ b/drivers/net/ethernet/via/via-velocity.h
-@@ -1435,7 +1435,7 @@ struct velocity_opt {
- 
- struct velocity_info {
- 	struct pci_dev *pdev;
--	struct net_device *dev;
-+	struct net_device *netdev;
- 
- 	unsigned long active_vlans[BITS_TO_LONGS(VLAN_N_VID)];
- 	u8 ip_addr[4];
-@@ -1514,7 +1514,7 @@ static inline int velocity_get_ip(struct velocity_info *vptr)
- 	int res = -ENOENT;
- 
- 	rcu_read_lock();
--	in_dev = __in_dev_get_rcu(vptr->dev);
-+	in_dev = __in_dev_get_rcu(vptr->netdev);
- 	if (in_dev != NULL) {
- 		ifa = (struct in_ifaddr *) in_dev->ifa_list;
- 		if (ifa != NULL) {
--- 
-1.7.9.5
 
