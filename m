@@ -1,84 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756593Ab3D1VMn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Apr 2013 17:12:43 -0400
-Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:43909 "EHLO
-	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752428Ab3D1VMm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Apr 2013 17:12:42 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
-	:subject:references:date:in-reply-to:message-id:mime-version
-	:content-type; q=dns; s=sasl; b=spxXW2olSSPgdlr7rq3xPSR3x5jsL2Sn
-	4JTaleRUYHEczR338cwByPU/wmgDnuC2ttEtONEc0vEq2iqXML11KlxYdHg08y9l
-	9CHYyNyYSXjzam+k1lW9yGYiZRmylrJfTF9StKDZyvYN26HUo9mCLdzHHru9SPGb
-	XqdblqwJbyA=
-From: Junio C Hamano <gitster@pobox.com>
-To: Michael Haggerty <mhagger@alum.mit.edu>
-Cc: shawn wilson <ag4ve.us@gmail.com>, git@vger.kernel.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [ANNOUNCE] Git v1.8.3-rc0
-References: <7vvc78u8jl.fsf@alter.siamese.dyndns.org>
-	<CAH_OBievcf-_z_AX9UrmWL_HVFT2vSQTu+wXAjAFeQBM8iFSGw@mail.gmail.com>
-	<517B62D8.5020006@alum.mit.edu>
-Date: Sun, 28 Apr 2013 14:12:39 -0700
-In-Reply-To: <517B62D8.5020006@alum.mit.edu> (Michael Haggerty's message of
-	"Sat, 27 Apr 2013 07:32:08 +0200")
-Message-ID: <7vvc76pdfc.fsf@alter.siamese.dyndns.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1756663Ab3D1VPP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Apr 2013 17:15:15 -0400
+Received: from relay03.pair.com ([209.68.5.17]:2633 "HELO relay03.pair.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1753859Ab3D1VPO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Apr 2013 17:15:14 -0400
+X-pair-Authenticated: 108.45.91.222
+Message-ID: <517D915F.4060103@flaterco.com>
+Date: Sun, 28 Apr 2013 17:15:11 -0400
+From: David Flater <vger@flaterco.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130403 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Pobox-Relay-ID: 5C471092-B048-11E2-8485-BCFF4146488D-77302942!b-pb-sasl-quonix.pobox.com
+To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+CC: LKML <linux-kernel@vger.kernel.org>, "Bjorn Helgaas" <bhelgaas@google.com>
+Subject: [PATCH v2 RESEND] pnp: restore automatic resolution of DMA conflicts
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michael Haggerty <mhagger@alum.mit.edu> writes:
+From: David Flater <dave@flaterco.com>
 
-> On 04/27/2013 04:24 AM, shawn wilson wrote:
->> On Fri, Apr 26, 2013 at 8:22 PM, Junio C Hamano <gitster@pobox.com> wrote:
->> 
->>>  * There was no good way to ask "I have a random string that came from
->>>    outside world. I want to turn it into a 40-hex object name while
->>>    making sure such an object exists".  A new peeling suffix ^{object}
->>>    can be used for that purpose, together with "rev-parse --verify".
->>>
->> 
->> What does this mean / what is the reason behind this? I can only think
->> it might be useful in a test suite to make sure git isn't doing
->> anything stupid with hashes...?
->
-> The topic is discussed here:
->
-> http://git.661346.n2.nabble.com/Bug-in-quot-git-rev-parse-verify-quot-td7580929.html
->
-> As discussed in the thread, when verifying that an argument names an
-> existing object, it is usually also appropriate to verify that the named
-> object is of a particular type (or can be converted to a particular
-> type), which could already be done with syntax like
-> "$userstring^{commit}".  But if, for example, you want to avoid
-> unwrapping tags but also want to verify that the named object really
-> exists, "$userstring^{object}" now provides a way.
->
-> And what do you have against test suites? :-)
+To fix a 5-year-old regression, reverse the changes made in the
+following commit:
 
-And it is not about test in the first place.  Git is designed to be
-scriptable, and it is not unreasonable for a scripted Porcelain to
-want to learn the full object name of the object that is referred to
-by a string that it suspects may be an object name.  Perhaps you are
-feeding the entire git mailing list archive to a script that picks
-up any object name in the messages and tallying the number of times
-each object is mentioned.  Then you would want to key the table that
-counts the number of appearances for each object with the object
-name, because different message may spell the name of the same
-object differently, e.g. f9fc12cf3, v1.8.3-rc0, etc.  With a helper
-function "found_one_more_instance" that records the fact you saw
-another mention of an object, such a program may do something like
-this:
+commit 7ef36390fabe2168fe31f245e49eb4e5f3762622
+Author: Jan Beulich <jbeulich@novell.com>
+Date:   Tue Oct 16 23:31:07 2007 -0700
 
-	tokenize_git_mailing_list_message |
-        while read userstring
-        do
-		canonical=$(git rev-parse $userstring^{object}) &&
-	        found_one_more_instance "$canonical"
-	done
+    PNP: don't fail device init if no DMA channel available
+    
+    Most drivers for devices supporting ISA DMA can operate without
+    DMA as well (falling back zo PIO).  Thus it seems inappropriate
+    for PNP to fail device initialization in case none of the possible
+    DMA channels are available.  Instead, it should be left to the
+    driver to decide what to do if request_dma() fails.
+    
+    The patch at once adjusts the code to account for the fact that
+    pnp_assign_dma() now doesn't need to report failure anymore.
 
+As an example to show the problem, my sound card provides a
+prioritized list of PnP "dependent sets" of requested resources:
+
+  dependent set 0 (preferred) wants DMA 5.
+  dependent set 1 (acceptable) will take DMA 5, 6, or 7.
+  ...
+  dependent set 4 (acceptable) doesn't request a high DMA.
+
+If DMA 5 is not available, pnp_assign_dma has to fail on set 0 so that
+pnp_auto_config_dev will move on to set 1 and get DMA 6 or 7.
+Instead, pnp_assign_dma adds the resource with flags |=
+IORESOURCE_DISABLED and returns success.  pnp_auto_config_dev just
+sees success and therefore chooses set 0 with a disabled DMA and never
+tries the sets that would have resolved the conflict.
+
+Furthermore, this mode of "success" is unexpected and unhandled in
+sound/isa/sb and probably other drivers.  sb assumes that the returned
+DMA is enabled and obliviously uses the invalid DMA number.  Observed
+consequences were sb successfully grabbing a DMA that was expressly
+forbidden by the kernel parameter pnp_reserve_dma.
+
+The only upside to the original change would be as a kludge for
+devices that can operate in degraded mode without a DMA but that don't
+provide the corresponding non-preferred dependent set.  The right
+workaround for those devices is to synthesize the missing set in
+quirks.c; otherwise, you're reinventing PnP fallback functionality at
+the driver level for that device and all others.
+
+Signed-off-by: David Flater <dave@flaterco.com>
+Cc: Jaroslav Kysela <perex@perex.cz>
+Cc: Bjorn Helgaas <bhelgaas@google.com>
+---
+History
+2013-04-28  No feedback.  Resent v2 to new maintainer and LKML.
+2013-03-28  v2: missed a spot (add back handling of empty map as really
+            disabled).
+2013-03-28  Orig sent to LKML and maintainers of record.
+
+This patch still applies to the current git kernel.
+The affected file was last modified 2012-12-15.
+
+ drivers/pnp/manager.c | 14 +++++++++-----
+ 1 file changed, 9 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/pnp/manager.c b/drivers/pnp/manager.c
+index 95cebf0..9357aa7 100644
+--- a/drivers/pnp/manager.c
++++ b/drivers/pnp/manager.c
+@@ -211,6 +211,12 @@ static int pnp_assign_dma(struct pnp_dev *dev, struct pnp_dma *rule, int idx)
+ 	res->start = -1;
+ 	res->end = -1;
+ 
++	if (!rule->map) {
++		res->flags |= IORESOURCE_DISABLED;
++		pnp_dbg(&dev->dev, "  dma %d disabled\n", idx);
++		goto __add;
++	}
++
+ 	for (i = 0; i < 8; i++) {
+ 		if (rule->map & (1 << xtab[i])) {
+ 			res->start = res->end = xtab[i];
+@@ -218,11 +224,9 @@ static int pnp_assign_dma(struct pnp_dev *dev, struct pnp_dma *rule, int idx)
+ 				goto __add;
+ 		}
+ 	}
+-#ifdef MAX_DMA_CHANNELS
+-	res->start = res->end = MAX_DMA_CHANNELS;
+-#endif
+-	res->flags |= IORESOURCE_DISABLED;
+-	pnp_dbg(&dev->dev, "  disable dma %d\n", idx);
++
++	pnp_dbg(&dev->dev, "  couldn't assign dma %d\n", idx);
++	return -EBUSY;
+ 
+ __add:
+ 	pnp_add_dma_resource(dev, res->start, res->flags);
