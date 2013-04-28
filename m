@@ -1,94 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756021Ab3D1BwE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Apr 2013 21:52:04 -0400
-Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:14050 "EHLO
-	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753894Ab3D1BwB (ORCPT
+	id S1756266Ab3D1B5A (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Apr 2013 21:57:00 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:35655 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755081Ab3D1B47 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Apr 2013 21:52:01 -0400
-Message-ID: <517C808A.2060502@hp.com>
-Date: Sun, 28 Apr 2013 09:51:06 +0800
-From: ZhenHua <zhen-hual@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130117 Thunderbird/19.0
-MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] driver,usb: Fix a warning in uhci-hcd driver
-References: <Pine.LNX.4.44L0.1304271111530.30732-100000@netrider.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1304271111530.30732-100000@netrider.rowland.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Sat, 27 Apr 2013 21:56:59 -0400
+Message-ID: <1367114209.6391.23.camel@ThinkPad-T5421.cn.ibm.com>
+Subject: Re: [RFC PATCH]nohz: Use raw_smp_processor_id() in
+ tick_nohz_task_switch()
+From: Li Zhong <zhong@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>
+Date: Sun, 28 Apr 2013 09:56:49 +0800
+In-Reply-To: <CAFTL4hwVXS9s7n=0Ji4+5cbOQSROk53OxMAWY3U=bzRPRijr9w@mail.gmail.com>
+References: <1367056747.6391.15.camel@ThinkPad-T5421.cn.ibm.com>
+	 <CAFTL4hwVXS9s7n=0Ji4+5cbOQSROk53OxMAWY3U=bzRPRijr9w@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13042801-1618-0000-0000-000003C7A854
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/27/2013 11:14 PM, Alan Stern wrote:
-> On Sat, 27 Apr 2013, ZhenHua wrote:
->
->> On 04/27/2013 12:51 AM, Alan Stern wrote:
->>> On Fri, 26 Apr 2013, ZhenHua wrote:
->>>
->>>> There is a function  wait_for_HP() in uhci-hub.c. In this
->>>> patch, it is used in suspend_rh(),  I think this can be a
->>>> solution. And I have tested this patch, it can fix the bug.
->>>>
->>>> I think there is another patch needed. As Alan said in another
->>>> mail, in the UHCI_RH_RUNNING_NODEVS case, it should not be stopped
->>>> if the uhci device is HP iLo virtual usb.
->>> I believe that if you change the UHCI_RH_RUNNING_NODEVS case, you will
->>> find that this patch (calling wait_for_HP) isn't needed.
->>>
->>> In fact, the patch is so easy that I am including it below.  Please
->>> test this (without either of your patches) to see if it works.
->>>
->>> Alan Stern
->>>
->>>
->>>
->>>
->>> Index: usb-3.9/drivers/usb/host/uhci-hub.c
->>> ===================================================================
->>> --- usb-3.9.orig/drivers/usb/host/uhci-hub.c
->>> +++ usb-3.9/drivers/usb/host/uhci-hub.c
->>> @@ -225,7 +225,8 @@ static int uhci_hub_status_data(struct u
->>>    		/* auto-stop if nothing connected for 1 second */
->>>    		if (any_ports_active(uhci))
->>>    			uhci->rh_state = UHCI_RH_RUNNING;
->>> -		else if (time_after_eq(jiffies, uhci->auto_stop_time))
->>> +		else if (time_after_eq(jiffies, uhci->auto_stop_time) &&
->>> +				!uhci->wait_for_hp)
->>>    			suspend_rh(uhci, UHCI_RH_AUTO_STOPPED);
->>>    		break;
->>>    
->>>
->> I have tested the UHCI_RH_RUNNING_NODEVS case yeasterday, and it works.
->> But the function suspend_rh is also called in other places, so I think
->> it only fixes
->> the warning when auto stop is called, but not fix the warning when
->> uhci's bus_suspend
->> is called,  it will come out again.
-> Have you tried this?  I expect the warning will not occur when the
-> bus_suspend routine is called, because then there will be a 1-ms delay,
-> not just a 400-us delay.
-I tested this, and the warning is gone.  Is this patch committed ?
-I need to paste the link to suse bugzilla.
+On Sat, 2013-04-27 at 15:40 +0200, Frederic Weisbecker wrote:
+> 2013/4/27 Li Zhong <zhong@linux.vnet.ibm.com>:
+> > I saw following error when testing the latest nohz code on Power:
+> >
+> > [   85.295384] BUG: using smp_processor_id() in preemptible [00000000] code: rsyslogd/3493
+> > [   85.295396] caller is .tick_nohz_task_switch+0x1c/0xb8
+> > [   85.295402] Call Trace:
+> > [   85.295408] [c0000001fababab0] [c000000000012dc4] .show_stack+0x110/0x25c (unreliable)
+> > [   85.295420] [c0000001fababba0] [c0000000007c4b54] .dump_stack+0x20/0x30
+> > [   85.295430] [c0000001fababc10] [c00000000044eb74] .debug_smp_processor_id+0xf4/0x124
+> > [   85.295438] [c0000001fababca0] [c0000000000d7594] .tick_nohz_task_switch+0x1c/0xb8
+> > [   85.295447] [c0000001fababd20] [c0000000000b9748] .finish_task_switch+0x13c/0x160
+> > [   85.295455] [c0000001fababdb0] [c0000000000bbe50] .schedule_tail+0x50/0x124
+> > [   85.295463] [c0000001fababe30] [c000000000009dc8] .ret_from_fork+0x4/0x54
+> >
+> > It seems to me that we could just use raw_smp_processor_id() here. Even
+> > if the tick_nohz_full_cpu() check is done on a !nohz_full cpu, then the
+> > task is moved to another nohz_full cpu, it seems the context switching
+> > because of the task moving would call tick_nohz_task_switch() again to
+> > evaluate the need for tick.
+> >
+> > I don't know whether I missed something here.
+> 
+> You're right it looks safe to do so. But I suggest we rather move the
+> test inside local_irq_save()/restore section to avoid confusion on
+> reviewers minds.
 
->
->> And if you add uhci->wait_for_hp check in the UHCI_RH_RUNNING_NODEVS case,
->> all hp uhci devices will not auto stop, not only the virtual devices. I
->> guess it may waste resource.
-> If you want, you can add a new flag specifically for virtual
-> controllers.  But it shouldn't matter -- as long as your kernels are
-> built with CONFIG_PM_RUNTIME enabled, there won't be any significant
-> waste of resources.
->
-> Alan Stern
->
-I think we can check the product id to determine whether a device is 
-virtual.
-Do you know if there is another way to check this?
+OK, I'll send an updated version, using local_irq_save() to protect it. 
+I tried using raw_* because seems it could avoid some unnecessary irq
+disabling...
 
-Thanks
-Zhen-Hua
+Thanks, Zhong
+
+> Thanks!
+> 
+
+
