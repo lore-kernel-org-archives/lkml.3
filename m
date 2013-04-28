@@ -1,49 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755458Ab3D1BGH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Apr 2013 21:06:07 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:60408 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752141Ab3D1BGF (ORCPT
+	id S1754847Ab3D1BIr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Apr 2013 21:08:47 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:51887 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752141Ab3D1BIq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Apr 2013 21:06:05 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Yann E. MORIN" <yann.morin.1998@free.fr>
-Subject: Re: [PATCH 6/8] kconfig: fix randomising choice entries in presence of KCONFIG_ALLCONFIG
-Date: Sun, 28 Apr 2013 03:05:57 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-kbuild@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
-        linux-kernel@vger.kernel.org,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Sam Ravnborg <sam@ravnborg.org>, Arnaud Lacombe <lacombar@gmail.com>,
-        Greg KH <greg@kroah.com>
-References: <cover.1366841993.git.yann.morin.1998@free.fr> <201304272301.00587.arnd@arndb.de> <20130427223158.GA24099@free.fr>
-In-Reply-To: <20130427223158.GA24099@free.fr>
+	Sat, 27 Apr 2013 21:08:46 -0400
+Date: Sun, 28 Apr 2013 02:08:38 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Chiwoong Byun <woong.byun@samsung.com>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>,
+        Yadwinder Singh Brar <yadi.brar@samsung.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Message-ID: <20130428010838.GA20197@sirena.org.uk>
+References: <1367050696.20145.1.camel@phoenix>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201304280305.57219.arnd@arndb.de>
-X-Provags-ID: V02:K0:ovyYViWLgWHV9HcEI4AK8vYCHj9nXOyewyAh0UpZVQX
- 56UOQ3tu3/ExTTkvCUjyHiXjO0Q87LV1tVY54FDpoYrMvAbKpq
- E04idOqI47aozneLnGcwaaNLZ/oaJ/5N19dgwZ/XmMRRDK8VaX
- WHTQb2pHMMj4zBRku8Cv83TB26lZSGu3jyH48X/4yG9EFHR7pd
- K2asXwhtgIKAyoQcWOA95bEw62OGJ/VZjt0MQ7Fg4h0p2Y9rIp
- UMyvaEkugA7knXEkQ+y7yQbL6/+kKgA91Ac9nJitxYWBhG+fFR
- XY3qfOaMc3DYQ5YXgirNoyTZnpQKwOScCkB1n8e2vKmniIxGbR
- BuOO3aRXs88CO5F9ksBc=
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="YZ5djTAD1cGYuMQK"
+Content-Disposition: inline
+In-Reply-To: <1367050696.20145.1.camel@phoenix>
+X-Cookie: You love peace.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 82.42.102.178
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regulator: max77686: Don't update max77686->opmode if
+ update register fails
+X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 28 April 2013, Yann E. MORIN wrote:
-> Fact is, choices are properly randomised, unless KCONFIG_ALLCONFIG is
-> passed.
-> 
-> So, if you currently rely on choices not being randomised, it means
-> you're using KCONFIG_ALLCONFIG [*] so you can set CONFIG_ARCH_MULTIPLATFORM
-> in the defconfig you use.
 
-Yes, you are right, I can easily do this.
+--YZ5djTAD1cGYuMQK
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-	Arnd
+On Sat, Apr 27, 2013 at 04:18:16PM +0800, Axel Lin wrote:
+> Ensure max77686->opmode always has correct status.
+
+Applied, thanks.
+
+--YZ5djTAD1cGYuMQK
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRfHaTAAoJELSic+t+oim9dmwP/jLM99dXr0W0rf1KOkRj1fVr
+Ts0mvgSZW0n3fFoWYIz6WdYl4rPiRGgaShJDjsqdae49+kh5DPr9TRcawENu22Pd
+vRZk5ONaznfSna5UjoqsJQOIxKqOfUP8jcH87Z6hvfrcThK+DO2X6MhmJqpigjaO
+xxLzrYbGvIfvedPOz4LusMe/OIbIDZn02v7ritHK1QOXlqcv4V3Z9yCCJPECqONf
+npynYdhvaca1bUcIpJaqcbImaQq8xKzG2kL8NE29a0ct/oWWoQhpAC0Y5CSco5ew
+YxdlsRGtNvJWJFsweJvXdj9i+pZG8up5wOdokEmspsS7oe9WH03WjoUq7fw7bg8u
+2jY4GaDgMpsFemkHAyNDRrgXfl6ofQ7hdiPTuFSfB/EYtjyA2W9cpOvgGhjoQEhj
+e6KwB8av4hJzLU2deImYeXhPaTivswUtW7igsopNEuIS2B/f5Bc4Kr/DksLe2yXZ
+Z4VKzt9OtuUqdDEGLQY/Mu4WYkJmh4vEEhLPjgPf0kGj1symsabmNcBN7OIm+SJz
+0yqwfe9dSERpa1qdV7Tz5cVqxKWw248Gux6yzmyuks8z+rOU0RZKKtXpAiVG3xbL
+PWc44Jhm3kgyvkIo9s13LsDo/MC7sfvSW4/r0/BBpV7+RNkL5kcT1PuGbzYXbu3C
+Z1U3x2EWPVFEE+rL/p3j
+=B/Rc
+-----END PGP SIGNATURE-----
+
+--YZ5djTAD1cGYuMQK--
