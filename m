@@ -1,76 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756177Ab3D1ALu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Apr 2013 20:11:50 -0400
-Received: from ringil.hengli.com.au ([178.18.16.133]:50888 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754310Ab3D1ALs (ORCPT
+	id S1755978Ab3D1AXP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Apr 2013 20:23:15 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:58439 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755283Ab3D1AXO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Apr 2013 20:11:48 -0400
-Date: Sun, 28 Apr 2013 08:11:22 +0800
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, "David S. Miller" <davem@davemloft.net>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        Jim Kukunas <james.t.kukunas@linux.intel.com>,
-        Keith Busch <keith.busch@intel.com>,
-        Erdinc Ozturk <erdinc.ozturk@intel.com>,
-        Vinodh Gopal <vinodh.gopal@intel.com>,
-        James Guilford <james.guilford@intel.com>,
-        Wajdi Feghali <wajdi.k.feghali@intel.com>,
-        Jussi Kivilinna <jussi.kivilinna@iki.fi>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-crypto@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: Re: [PATCH v2 1/4] Wrap crc_t10dif function all to use crypto
- transform framework
-Message-ID: <20130428001122.GA6973@gondor.apana.org.au>
-References: <cover.1366214842.git.tim.c.chen@linux.intel.com>
- <ea4271721b5ca130849b03da4f172f12f66e5628.1366214842.git.tim.c.chen@linux.intel.com>
- <20130425132203.GA29501@gondor.apana.org.au>
- <1366910910.27102.126.camel@schen9-DESK>
- <20130426125224.GA4855@gondor.apana.org.au>
- <1366994657.27102.129.camel@schen9-DESK>
+	Sat, 27 Apr 2013 20:23:14 -0400
+Date: Sat, 27 Apr 2013 17:05:00 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: mingo@elte.hu
+Cc: linux-kernel@vger.kernel.org, fweisbec@gmail.com, rostedt@goodmis.org,
+        bp@alien8.de, arjan@linux.intel.com, khilman@linaro.org, cl@linux.com,
+        tglx@linutronix.de, olivier.baetz@novasparks.com,
+        rdunlap@infradead.org, bp@suse.de
+Subject: [GIT PULL rcu/doc] Reducing OS jitter from per-CPU kthreads
+Message-ID: <20130428000500.GA20113@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1366994657.27102.129.camel@schen9-DESK>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13042800-7606-0000-0000-00000ADE4221
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 26, 2013 at 09:44:17AM -0700, Tim Chen wrote:
->
-> +	old_tfm = crct10dif_tfm;
-> +	crc_t10dif_newalg = true;
-> +	/* make sure new alg flag is turned on before starting to switch tfm */
-> +	mb();
-> +
-> +	new_tfm = crypto_alloc_shash("crct10dif", 0, 0);
-> +	if (IS_ERR(new_tfm))
-> +		goto done;
-> +
-> +	if (old_tfm)
-> +		if (crypto_tfm_alg_priority(&old_tfm->base) >=
-> +		    crypto_tfm_alg_priority(&new_tfm->base)) {
-> +			crypto_free_shash(new_tfm);
-> +			goto done;
-> +		}
-> +	crct10dif_tfm = new_tfm;
-> +	/* make sure update to tfm pointer is completed */
-> +	mb();
-> +	crypto_free_shash(old_tfm);
+Hello, Ingo,
 
-This is not safe at all.  You'd need to use something like RCU.
+This series includes documentation for reducing OS jitter due to
+per-CPU kthreads.  It is available in the git repository at:
 
-However, I think this is an overkill.  Initialising it once should
-be enough.  If someone really wanted to change things at run-time,
-they could always build this as a module and unload/reload it.
+  git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git rcu/doc
 
-Cheers,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+for you to fetch changes up to 49717cb40410fe4b563968680ff7c513967504c6:
+
+  kthread: Document ways of reducing OS jitter due to per-CPU kthreads (2013-04-27 16:52:47 -0700)
+
+							Thanx, Paul
+
+----------------------------------------------------------------
+Paul E. McKenney (1):
+      kthread: Document ways of reducing OS jitter due to per-CPU kthreads
+
+ Documentation/kernel-per-CPU-kthreads.txt | 202 ++++++++++++++++++++++++++++++
+ 1 file changed, 202 insertions(+)
+ create mode 100644 Documentation/kernel-per-CPU-kthreads.txt
+
