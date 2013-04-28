@@ -1,78 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756371Ab3D1SDl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Apr 2013 14:03:41 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:49998 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753958Ab3D1SDj (ORCPT
+	id S1756399Ab3D1SzS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Apr 2013 14:55:18 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:44592 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751707Ab3D1SzQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Apr 2013 14:03:39 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Subject: Re: [PATCH] clk: si5351: Allow to build without CONFIG_OF
-Date: Sun, 28 Apr 2013 20:03:26 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Mike Turquette <mturquette@linaro.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Dom Cobley <popcornmix@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
-        Rabeeh Khoury <rabeeh@solid-run.com>, Daniel Mack <zonque@gmail.com>,
-        "Jean-Francois Moine" <moinejf@free.fr>,
-        "Lars-Peter Clausen" <lars@metafoo.de>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Michal Bachraty <michal.bachraty@streamunlimited.com>,
-        Marek Belisko <marek.belisko@streamunlimited.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-References: <1367144681-14248-1-git-send-email-sebastian.hesselbarth@gmail.com>
-In-Reply-To: <1367144681-14248-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	Sun, 28 Apr 2013 14:55:16 -0400
+Date: Sun, 28 Apr 2013 14:55:14 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: ZhenHua <zhen-hual@hp.com>
+cc: gregkh@linuxfoundation.org, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1] driver,usb: Fix a warning in uhci-hcd driver
+In-Reply-To: <517C808A.2060502@hp.com>
+Message-ID: <Pine.LNX.4.44L0.1304281447010.23571-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201304282003.26593.arnd@arndb.de>
-X-Provags-ID: V02:K0:nbtvSx+HbnITcxK2sEOUvdUd45SeR58ImCH0O0ua8I/
- FJVaXjZyJDlAAr194UTZxCio+J9KsF9XwG8dNsITQMOpCKVnmJ
- WAIq7sqkT2WU8dBji330nvdl5UcNkvrMK5BvZ0vpOkgU9+jyv9
- UxIePw7ZwAMilKw1iIFEhG1TkNbgV8bsaYIld5M0JVc+WibnWB
- eAqq6WuAjLHL1voPjqCGjjGFVnwv5h8wwwS01Ln2TuGS9kmmeJ
- b9cdbjs+3gswcGtvjcq4LwEx2eyeibq2lms2gI1Oc0de1JGyhJ
- UjqszZGt+8pz6aTCc4Awhv7OcenSmUb4K265DjBva8qsBquwqY
- VY235pKW5Ylr61lwRo5U=
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 28 April 2013, Sebastian Hesselbarth wrote:
-> diff --git a/drivers/clk/clk-si5351.c b/drivers/clk/clk-si5351.c
-> index 8323c31..91c0f01 100644
-> --- a/drivers/clk/clk-si5351.c
-> +++ b/drivers/clk/clk-si5351.c
-> @@ -1489,12 +1489,14 @@ static int si5351_i2c_probe(struct i2c_client *client,
->                 }
->         }
->  
-> +#ifdef CONFIG_OF
->         ret = of_clk_add_provider(client->dev.of_node, of_clk_src_onecell_get,
->                                   &drvdata->onecell);
->         if (ret) {
->                 dev_err(&client->dev, "unable to add clk provider\n");
->                 return ret;
->         }
-> +#endif
->  
+On Sun, 28 Apr 2013, ZhenHua wrote:
 
-I think we should instead make of_clk_add_provider return 0 if CONFIG_OF
-is disabled, adn we don't consider it an error condition to call it.
-That is also what we return when CONFIG_OF is enabled and we boot without
-a device tree.
+> >>> In fact, the patch is so easy that I am including it below.  Please
+> >>> test this (without either of your patches) to see if it works.
+> >>>
+> >>> Alan Stern
+> >>>
+> >>>
+> >>>
+> >>>
+> >>> Index: usb-3.9/drivers/usb/host/uhci-hub.c
+> >>> ===================================================================
+> >>> --- usb-3.9.orig/drivers/usb/host/uhci-hub.c
+> >>> +++ usb-3.9/drivers/usb/host/uhci-hub.c
+> >>> @@ -225,7 +225,8 @@ static int uhci_hub_status_data(struct u
+> >>>    		/* auto-stop if nothing connected for 1 second */
+> >>>    		if (any_ports_active(uhci))
+> >>>    			uhci->rh_state = UHCI_RH_RUNNING;
+> >>> -		else if (time_after_eq(jiffies, uhci->auto_stop_time))
+> >>> +		else if (time_after_eq(jiffies, uhci->auto_stop_time) &&
+> >>> +				!uhci->wait_for_hp)
+> >>>    			suspend_rh(uhci, UHCI_RH_AUTO_STOPPED);
+> >>>    		break;
+> >>>    
+> >>>
+> >> I have tested the UHCI_RH_RUNNING_NODEVS case yeasterday, and it works.
+> >> But the function suspend_rh is also called in other places, so I think
+> >> it only fixes
+> >> the warning when auto stop is called, but not fix the warning when
+> >> uhci's bus_suspend
+> >> is called,  it will come out again.
+> > Have you tried this?  I expect the warning will not occur when the
+> > bus_suspend routine is called, because then there will be a 1-ms delay,
+> > not just a 400-us delay.
+> I tested this, and the warning is gone.  Is this patch committed ?
+> I need to paste the link to suse bugzilla.
 
-	Arnd
+You must be joking.  I wrote that patch while composing the email
+message to you, and nobody except you has tested it.
+
+Since you confirm that it works, I will submit it.  But new patches
+like this won't be accepted until after the upcoming merge window
+closes, which won't be for more than two weeks.
+
+> >> And if you add uhci->wait_for_hp check in the UHCI_RH_RUNNING_NODEVS case,
+> >> all hp uhci devices will not auto stop, not only the virtual devices. I
+> >> guess it may waste resource.
+> > If you want, you can add a new flag specifically for virtual
+> > controllers.  But it shouldn't matter -- as long as your kernels are
+> > built with CONFIG_PM_RUNTIME enabled, there won't be any significant
+> > waste of resources.
+> >
+> > Alan Stern
+> >
+> I think we can check the product id to determine whether a device is 
+> virtual.
+> Do you know if there is another way to check this?
+
+I don't know anything at all about your virtual UHCI controllers, other
+than what you have told me.  In particular, I don't know what product
+IDs are used by HP's virtual and non-virtual controllers.  Maybe
+somebody else at HP can tell you.
+
+Alan Stern
+
