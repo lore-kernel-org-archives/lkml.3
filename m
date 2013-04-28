@@ -1,254 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752185Ab3D1GGZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Apr 2013 02:06:25 -0400
-Received: from mail-db8lp0187.outbound.messaging.microsoft.com ([213.199.154.187]:13501
-	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751740Ab3D1GGV (ORCPT
+	id S1751832Ab3D1GJa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Apr 2013 02:09:30 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:57490 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751329Ab3D1GJ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Apr 2013 02:06:21 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275bhz2dh668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1155h)
-X-WSS-ID: 0MLYBLW-01-9B7-02
-X-M-MSG: 
-From: Jacob Shin <jacob.shin@amd.com>
-To: Ingo Molnar <mingo@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        <x86@kernel.org>, Stephane Eranian <eranian@google.com>,
-        Jiri Olsa <jolsa@redhat.com>, <linux-kernel@vger.kernel.org>,
-        Will Deacon <will.deacon@arm.com>, Jacob Shin <jacob.shin@amd.com>
-Subject: [PATCH 1/3] perf/x86/amd: AMD support for bp_len > HW_BREAKPOINT_LEN_8
-Date: Sun, 28 Apr 2013 01:05:50 -0500
-Message-ID: <1367129152-11621-2-git-send-email-jacob.shin@amd.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1367129152-11621-1-git-send-email-jacob.shin@amd.com>
-References: <1367129152-11621-1-git-send-email-jacob.shin@amd.com>
+	Sun, 28 Apr 2013 02:09:28 -0400
+Date: Sun, 28 Apr 2013 14:08:55 +0800
+From: Ram Pai <linuxram@us.ibm.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Yinghai Lu <yinghai@kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 03/27] PCI: pci resource iterator
+Message-ID: <20130428060855.GA2700@ram.oc3035372033.ibm.com>
+Reply-To: Ram Pai <linuxram@us.ibm.com>
+References: <1363217302-14383-1-git-send-email-yinghai@kernel.org>
+ <1363217302-14383-4-git-send-email-yinghai@kernel.org>
+ <CAErSpo4VzBZ=fAzPm1yWEs4+09_D1=rysMf6tGgnqpVEKytSzQ@mail.gmail.com>
+ <20130409045113.GA7251@ram.oc3035372033.ibm.com>
+ <CAErSpo7TReTzz289EMuh5gGKjskCLmACNT99o1s-QCzRHLGaXg@mail.gmail.com>
+ <20130425035503.GA15749@ram.oc3035372033.ibm.com>
+ <CAErSpo704b0OhSdeRWK+cZ++6RCDvoL7vzqZVEM1WOPp9f7MRQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAErSpo704b0OhSdeRWK+cZ++6RCDvoL7vzqZVEM1WOPp9f7MRQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13042806-2398-0000-0000-000013D1044E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implement hardware breakpoint address mask for AMD Family 16h and
-above processors. CPUID feature bit indicates hardware support for
-DRn_ADDR_MASK MSRs. These masks further qualify DRn/DR7 hardware
-breakpoint addresses to allow matching of larger addresses ranges.
+On Thu, Apr 25, 2013 at 11:22:59AM -0600, Bjorn Helgaas wrote:
+> On Wed, Apr 24, 2013 at 9:55 PM, Ram Pai <linuxram@us.ibm.com> wrote:
+> > On Wed, Apr 10, 2013 at 09:22:48AM -0600, Bjorn Helgaas wrote:
+> >> On Mon, Apr 8, 2013 at 10:51 PM, Ram Pai <linuxram@us.ibm.com> wrote:
+> >> > On Thu, Apr 04, 2013 at 04:18:01PM -0600, Bjorn Helgaas wrote:
+> >> >> On Wed, Mar 13, 2013 at 5:27 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> >> >> > From: Ram Pai <linuxram@us.ibm.com>
+> >> >> >
+> >> >> > Currently pci_dev structure holds an array of 17 PCI resources; six base
+> >> >> > BARs, one ROM BAR, four BRIDGE BARs, six sriov BARs.  This is wasteful.
+> >> >> > A bridge device just needs the 4 bridge resources. A non-bridge device
+> >> >> > just needs the six base resources and one ROM resource. The sriov
+> >> >> > resources are needed only if the device has SRIOV capability.
+> >> >> >
+> ...
+> >> > I agree. There are two cleanups needed.
+> >> >
+> >> > a) pci drivers should not assume the internal organization of the
+> >> >         resources in the struct pci_dev.
+> >>
+> >> Do you mean that drivers should not use "pci_dev->resource[i]"?  If
+> >> so, I agree that it would be great if we had an accessor for BARs, but
+> >> it seems impractical to change all the drivers that use the current
+> >> style.
+> >
+> > Sorry for the delay. Was vacationing.  I mean, we cannot let drivers
+> > assume anything about the how the resources are organized.
+> >
+> > The only thing the drivers should know is that there are 6 normal
+> > resources, 4 bridge resources, 1 ROM resource and 6 iov resources.
+> >
+> > Currently the drivers assume that ROM resource follows normal resources
+> > followed by IOV followed by bridge. These assumptions are making it hard
+> > to re-organize the layout of resources in struct pci_dev.
+> >
+> > I think we need to expose the following interfaces to drivers.
+> >
+> > a) return the nth normal resource
+> 
+> I think this needs to remain "pci_dev->resource[n]", because so many
+> drivers do this that it would be impractical to change them all.
 
-Valuable advice and pseudo code from Oleg Nesterov <oleg@redhat.com>
+Scanning through the entire kernel tree, I did find about 40 different
+drivers that are accessing pci_dev->resource[n]. These drivers can
+be changed to use the newer interface. Out-of-tree drivers can continue
+to access it directly, but they will break, when the
+datastructure is eventually re-organized.
 
-Signed-off-by: Jacob Shin <jacob.shin@amd.com>
----
- arch/x86/include/asm/cpufeature.h     |    2 ++
- arch/x86/include/asm/debugreg.h       |    5 ++++
- arch/x86/include/asm/hw_breakpoint.h  |    1 +
- arch/x86/include/uapi/asm/msr-index.h |    4 +++
- arch/x86/kernel/cpu/amd.c             |   19 +++++++++++++
- arch/x86/kernel/hw_breakpoint.c       |   47 +++++++++++++--------------------
- 6 files changed, 49 insertions(+), 29 deletions(-)
+I was thinking of a interface something like
 
-diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
-index ac10df7..bee6994 100644
---- a/arch/x86/include/asm/cpufeature.h
-+++ b/arch/x86/include/asm/cpufeature.h
-@@ -168,6 +168,7 @@
- #define X86_FEATURE_TOPOEXT	(6*32+22) /* topology extensions CPUID leafs */
- #define X86_FEATURE_PERFCTR_CORE (6*32+23) /* core performance counter extensions */
- #define X86_FEATURE_PERFCTR_NB  (6*32+24) /* NB performance counter extensions */
-+#define X86_FEATURE_BPEXT	(6*32+26) /* data breakpoint extension */
- #define X86_FEATURE_PERFCTR_L2	(6*32+28) /* L2 performance counter extensions */
- 
- /*
-@@ -317,6 +318,7 @@ extern const char * const x86_power_flags[32];
- #define cpu_has_cx16		boot_cpu_has(X86_FEATURE_CX16)
- #define cpu_has_eager_fpu	boot_cpu_has(X86_FEATURE_EAGER_FPU)
- #define cpu_has_topoext		boot_cpu_has(X86_FEATURE_TOPOEXT)
-+#define cpu_has_bpext		boot_cpu_has(X86_FEATURE_BPEXT)
- 
- #ifdef CONFIG_X86_64
- 
-diff --git a/arch/x86/include/asm/debugreg.h b/arch/x86/include/asm/debugreg.h
-index 4b528a9..145b009 100644
---- a/arch/x86/include/asm/debugreg.h
-+++ b/arch/x86/include/asm/debugreg.h
-@@ -114,5 +114,10 @@ static inline void debug_stack_usage_inc(void) { }
- static inline void debug_stack_usage_dec(void) { }
- #endif /* X86_64 */
- 
-+#ifdef CONFIG_CPU_SUP_AMD
-+extern void set_dr_addr_mask(unsigned long mask, int dr);
-+#else
-+static inline void set_dr_addr_mask(unsigned long mask, int dr) { }
-+#endif
- 
- #endif /* _ASM_X86_DEBUGREG_H */
-diff --git a/arch/x86/include/asm/hw_breakpoint.h b/arch/x86/include/asm/hw_breakpoint.h
-index ef1c4d2..6c98be8 100644
---- a/arch/x86/include/asm/hw_breakpoint.h
-+++ b/arch/x86/include/asm/hw_breakpoint.h
-@@ -12,6 +12,7 @@
-  */
- struct arch_hw_breakpoint {
- 	unsigned long	address;
-+	unsigned long	mask;
- 	u8		len;
- 	u8		type;
- };
-diff --git a/arch/x86/include/uapi/asm/msr-index.h b/arch/x86/include/uapi/asm/msr-index.h
-index b575788..dac1d3b 100644
---- a/arch/x86/include/uapi/asm/msr-index.h
-+++ b/arch/x86/include/uapi/asm/msr-index.h
-@@ -199,6 +199,10 @@
- /* Fam 16h MSRs */
- #define MSR_F16H_L2I_PERF_CTL		0xc0010230
- #define MSR_F16H_L2I_PERF_CTR		0xc0010231
-+#define MSR_F16H_DR1_ADDR_MASK		0xc0011019
-+#define MSR_F16H_DR2_ADDR_MASK		0xc001101a
-+#define MSR_F16H_DR3_ADDR_MASK		0xc001101b
-+#define MSR_F16H_DR0_ADDR_MASK		0xc0011027
- 
- /* Fam 15h MSRs */
- #define MSR_F15H_PERF_CTL		0xc0010200
-diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-index fa96eb0..2c3f12e 100644
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -910,3 +910,22 @@ bool cpu_has_amd_erratum(const int *erratum)
- }
- 
- EXPORT_SYMBOL_GPL(cpu_has_amd_erratum);
-+
-+void set_dr_addr_mask(unsigned long mask, int dr)
-+{
-+	if (!cpu_has_bpext)
-+		return;
-+
-+	switch (dr) {
-+	case 0:
-+		wrmsr(MSR_F16H_DR0_ADDR_MASK, mask, 0);
-+		break;
-+	case 1:
-+	case 2:
-+	case 3:
-+		wrmsr(MSR_F16H_DR1_ADDR_MASK - 1 + dr, mask, 0);
-+		break;
-+	default:
-+		break;
-+	}
-+}
-diff --git a/arch/x86/kernel/hw_breakpoint.c b/arch/x86/kernel/hw_breakpoint.c
-index 02f0763..885ce48 100644
---- a/arch/x86/kernel/hw_breakpoint.c
-+++ b/arch/x86/kernel/hw_breakpoint.c
-@@ -128,6 +128,8 @@ int arch_install_hw_breakpoint(struct perf_event *bp)
- 	*dr7 |= encode_dr7(i, info->len, info->type);
- 
- 	set_debugreg(*dr7, 7);
-+	if (info->mask)
-+		set_dr_addr_mask(info->mask, i);
- 
- 	return 0;
- }
-@@ -163,29 +165,8 @@ void arch_uninstall_hw_breakpoint(struct perf_event *bp)
- 	*dr7 &= ~__encode_dr7(i, info->len, info->type);
- 
- 	set_debugreg(*dr7, 7);
--}
--
--static int get_hbp_len(u8 hbp_len)
--{
--	unsigned int len_in_bytes = 0;
--
--	switch (hbp_len) {
--	case X86_BREAKPOINT_LEN_1:
--		len_in_bytes = 1;
--		break;
--	case X86_BREAKPOINT_LEN_2:
--		len_in_bytes = 2;
--		break;
--	case X86_BREAKPOINT_LEN_4:
--		len_in_bytes = 4;
--		break;
--#ifdef CONFIG_X86_64
--	case X86_BREAKPOINT_LEN_8:
--		len_in_bytes = 8;
--		break;
--#endif
--	}
--	return len_in_bytes;
-+	if (info->mask)
-+		set_dr_addr_mask(0, i);
- }
- 
- /*
-@@ -198,7 +179,7 @@ int arch_check_bp_in_kernelspace(struct perf_event *bp)
- 	struct arch_hw_breakpoint *info = counter_arch_bp(bp);
- 
- 	va = info->address;
--	len = get_hbp_len(info->len);
-+	len = bp->attr.bp_len;
- 
- 	return (va >= TASK_SIZE) && ((va + len - 1) >= TASK_SIZE);
- }
-@@ -279,7 +260,16 @@ static int arch_build_bp_info(struct perf_event *bp)
- 	}
- 
- 	/* Len */
-+	info->mask = 0;
-+
- 	switch (bp->attr.bp_len) {
-+	default:
-+		if (!is_power_of_2(bp->attr.bp_len))
-+			return -EINVAL;
-+		if (!cpu_has_bpext)
-+			return -EOPNOTSUPP;
-+		info->mask = bp->attr.bp_len - 1;
-+		/* fall through */
- 	case HW_BREAKPOINT_LEN_1:
- 		info->len = X86_BREAKPOINT_LEN_1;
- 		break;
-@@ -294,12 +284,11 @@ static int arch_build_bp_info(struct perf_event *bp)
- 		info->len = X86_BREAKPOINT_LEN_8;
- 		break;
- #endif
--	default:
--		return -EINVAL;
- 	}
- 
- 	return 0;
- }
-+
- /*
-  * Validate the arch-specific HW Breakpoint register settings
-  */
-@@ -314,11 +303,11 @@ int arch_validate_hwbkpt_settings(struct perf_event *bp)
- 	if (ret)
- 		return ret;
- 
--	ret = -EINVAL;
--
- 	switch (info->len) {
- 	case X86_BREAKPOINT_LEN_1:
- 		align = 0;
-+		if (info->mask)
-+			align = info->mask;
- 		break;
- 	case X86_BREAKPOINT_LEN_2:
- 		align = 1;
-@@ -332,7 +321,7 @@ int arch_validate_hwbkpt_settings(struct perf_event *bp)
- 		break;
- #endif
- 	default:
--		return ret;
-+		BUG();
- 	}
- 
- 	/*
--- 
-1.7.9.5
+pci_get_std_resource(dev,i) which is implemented internally as
 
+#define pci_get_std_resource(dev,i) dev->resource[i]
+
+> 
+> > b) return the nth iov resource
+> 
+> I could imagine a new interface for this, given that I only see a
+> dozen SR-IOV drivers in the tree.  There might be a few out-of-tree,
+> but there probably aren't many.
+> 
+> > c) return the rom resource
+> 
+> There are only about 30 drivers in the tree that reference
+> PCI_ROM_RESOURCE.  Fewer than I expected, but I'd still be hesitant
+> about make "pci_dev->resource[PCI_ROM_RESOURCE]" stop working.
+
+It will work till someday when the datastructure is re-organized.
+
+Again the interface will be something like
+
+pci_get_rom_resource(dev) which is implemented internally as
+
+#define pci_get_std_resource(dev)  pci_dev->resource[PCI_ROM_RESOURCE]
+
+> 
+> > d) return the nth bridge resource
+> 
+> I think it's reasonable to have a new interface for this because
+> bridges are handled almost entirely in the PCI core and architecture
+> code, and I doubt there are many, if any, drivers that care.
+> 
+> > e) return the type and index of a given resource, where 'index' is
+> >         the index w.r.t to that resource type; not w.r.t to all
+> >         the resources of the device.
+> > f) ability to loop through all resources of the given type/types.
+> 
+> We do loop through resources in the core when we're assigning, fixing
+> up, etc., and that makes some sense to me.  But I actually don't see
+> the use case for *drivers* to loop through resources.  All a driver
+> knows is "BAR X means Y", and it generally doesn't need to iterate and
+> do something generic to all of them.
+
+Yes mostly true. However I have seen a couple of drivers looping through
+the resources. An examples is ..
+
+yenta_free_resources()
+
+RP
 
