@@ -1,100 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756691Ab3D2A4c (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Apr 2013 20:56:32 -0400
-Received: from mail-vb0-f47.google.com ([209.85.212.47]:60140 "EHLO
-	mail-vb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756621Ab3D2A4a (ORCPT
+	id S1756772Ab3D2BYp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Apr 2013 21:24:45 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:55507 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756586Ab3D2BYo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Apr 2013 20:56:30 -0400
-MIME-Version: 1.0
-Date: Sun, 28 Apr 2013 17:56:29 -0700
-X-Google-Sender-Auth: Puhqy8tH_W0W43A37RKZNh-ZBbs
-Message-ID: <CA+55aFxcqR+5wK0QoGBA_jYP1epH2NCbVTRaE51rLK3mdRjN6Q@mail.gmail.com>
-Subject: Linux 3.9 released
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Sun, 28 Apr 2013 21:24:44 -0400
+Date: Mon, 29 Apr 2013 11:24:34 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Chuck Lever <chuck.lever@oracle.com>, Simo Sorce <simo@redhat.com>,
+        Trond Myklebust <trond.myklebust@fys.uio.no>
+Subject: linux-next: build failure after merge of the nfsd tree
+Message-Id: <20130429112434.dcc80cfce804beeacc68793a@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__29_Apr_2013_11_24_34_+1000_sgX0M30+kJRdxXme"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So the last week was much quieter than the preceding ones, which makes
-me suspect that one reason -rc7 was bigger than I liked was that
-people were gaming the system and had timed some of their pull
-requests for just before the release, explaining why -rc7 was big
-enough that I didn't actually want to do a final release last week.
-Please don't do that.
+--Signature=_Mon__29_Apr_2013_11_24_34_+1000_sgX0M30+kJRdxXme
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Anyway. Whatever the reason, this week has been very quiet, which
-makes me much more comfortable doing the final 3.9 release, so I guess
-the last -rc8 ended up working. Because not only aren't there very
-many commits here, even the ones that made it really are tiny and not
-pretty obscure and not very interesting.
+Hi J.,
 
-Also, this obviously means that the merge window is open. I won't be
-merging anything today, but if you start sending me your pull requests
-(Konrad already sent in his Xen pull request for the 3.10 merge window
-a week ago), tomorrow the flood gates start opening..
+After merging the nfsd tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
 
-                    Linus
+net/sunrpc/auth_gss/svcauth_gss.c: In function 'gss_proxy_save_rsc':
+net/sunrpc/auth_gss/svcauth_gss.c:1182:3: error: implicit declaration of fu=
+nction 'gss_mech_get_by_OID' [-Werror=3Dimplicit-function-declaration]
 
----
-Borislav Petkov (1):
-      x86, efi: Fix a build warning
+Caused byc ommit 030d794bf498 ("SUNRPC: Use gssproxy upcall for server
+RPCGSS authentication").  gss_mech_get_by_OID() made static to
+net/sunrpc/auth_gss/gss_mech_switch.c by commit 9568c5e9a61d ("SUNRPC:
+Introduce rpcauth_get_pseudoflavor()") in the nfs tree (part of the nfs
+tree that you did not merge).
 
-David S. Miller (1):
-      sparc64: Fix missing put_cpu_var() in tlb_batch_add_one() when
-not batching.
+I don't know how to fix this, so I have used the nfsd tree from
+next-20130426 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Hans Verkuil (1):
-      [media] cx25821: do not expose broken video output streams
+--Signature=_Mon__29_Apr_2013_11_24_34_+1000_sgX0M30+kJRdxXme
+Content-Type: application/pgp-signature
 
-Helge Deller (1):
-      parisc: disable -mlong-calls compiler option for kernel modules
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Jiri Slaby (1):
-      TTY: fix atime/mtime regression
+iQIcBAEBCAAGBQJRfcvSAAoJEECxmPOUX5FEjJwP/0Vq2kAnv/o6Hl0FBsQIBv3l
+/DPFJRxvqvisIS9t/KFC526vHHhCDz4JyNc+kXT8Mpp2nqJDe/Teim/HoH7ZbKSQ
+NLfq0RLBvFAaltF8PJKOC9oh71ZIpW52tvV6MdLMc/d630wGBhj4TakUxOH1+5Xm
+kzyLZH474fZopiYx8xMHg8yAvaNJ+cO6fXkW+GbR/CN+3qga/IV6MgJNK1yUxhc5
+x3vj3q3F3pMayRmwl6u5PjAAHLZA4Pe1DYFsP7hYt5dB+liX+BQvXk9QLlCD3wX+
+8x0EkthEXCnE3RtTV4rBWKZtVLnTAQrnqCIgrfvm1GxU/vtS02XDoPIRU2AMoXG+
+lGzSmdIWl0zZsOKYEXOwjfiNS2BUsc2ifKGZfOVQqWNZB2T0EIYod/C+8SHzOmZQ
+Z6cIRlp1esTcdTCXI0dyXS4F60KN2j2lYH2F5iCwvcABRhKbG09Tw62pYQXY/Bng
+LDMKnqDvARK1UZjPoJFyYZZD2Bh20BFfNKiGu87gyCdRaUHSrQmDVb3NKmNHHsNj
+8HQkGTfbk9vSPifNhK2g8ss0L96lBrL0is3Kk4tXQGoQel7JstlO5q3/AOLRcI4d
+gkV9IdL5zyasFfd1ofQlo+tLnISLSTBL9CmY6c60IAuwMKtZy9W3kNbsm3EuCieR
+/Yr2qTHbjsaij2ax/0Ja
+=69sz
+-----END PGP SIGNATURE-----
 
-John David Anglin (3):
-      parisc: Provide __ucmpdi2 to resolve undefined references in 32
-bit builds.
-      parisc: Change kunmap macro to static inline function
-      parisc: use spin_lock_irqsave/spin_unlock_irqrestore for PTE updates
-
-Josh Boyer (1):
-      efi: Check EFI revision in setup_efi_vars
-
-Kishon Vijay Abraham I (1):
-      ARM: OMAP4: hwmod data: make 'ocp2scp_usb_phy_phy_48m" as the main clock
-
-Linus Torvalds (2):
-      vm: add no-mmu vm_iomap_memory() stub
-      Linux 3.9
-
-Linus Walleij (1):
-      Revert "gpio: pxa: set initcall level to module init"
-
-Mathias Krause (1):
-      crypto: algif - suppress sending source address information in recvmsg
-
-Matt Fleming (1):
-      efivars: only check for duplicates on the registered list
-
-Mauro Carvalho Chehab (1):
-      [media] mb86a20s: Fix estimate_rate setting
-
-Paul E. McKenney (1):
-      events: Protect access via task_subsys_state_check()
-
-Ralf Baechle (1):
-      Revert "MIPS: page.h: Provide more readable definition for PAGE_MASK."
-
-Rusty Russell (1):
-      kernel/hz.bc: ignore.
-
-Will Deacon (1):
-      parisc: uaccess: fix compiler warnings caused by __put_user casting
-
-Zhao Hongjiang (1):
-      aio: fix possible invalid memory access when DEBUG is enabled
+--Signature=_Mon__29_Apr_2013_11_24_34_+1000_sgX0M30+kJRdxXme--
