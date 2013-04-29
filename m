@@ -1,86 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758547Ab3D2QrW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 12:47:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12439 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757677Ab3D2QrV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 12:47:21 -0400
-Subject: Re: linux-next: build failure after merge of the nfsd tree
-From: Simo Sorce <simo@redhat.com>
-To: Chuck Lever <chuck.lever@oracle.com>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+	id S1758169Ab3D2QtL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 12:49:11 -0400
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:52034 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757127Ab3D2QtJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Apr 2013 12:49:09 -0400
+MIME-Version: 1.0
+In-Reply-To: <517E9907.4030106@ti.com>
+References: <1363145021-14339-1-git-send-email-s-anna@ti.com>
+	<CABb+yY0RYkVeo2Sb4WsDJY0jf17488FEz0d2CB994eQaSOEsVg@mail.gmail.com>
+	<37C860A02101E749A747FA2D3C1E3C504A5DF7@DLEE11.ent.ti.com>
+	<CABb+yY1x4x_A+QtGG9ohsLPgs8c3nEVnd_ExJBGOOR8=6YLPFA@mail.gmail.com>
+	<37C860A02101E749A747FA2D3C1E3C504A63B4@DLEE11.ent.ti.com>
+	<CAJe_ZhehnniZd730jjiOLrHozq8TOJZgFYLqUe4KqgBiQEu8PA@mail.gmail.com>
+	<51779304.4040003@st.com>
+	<CAJe_ZhdZv5LW6kdwyPtJe69mfW6t=WQ4OJnG2H4sUhibattN2A@mail.gmail.com>
+	<517867E1.7050301@ti.com>
+	<CAJe_ZhfDZzq+DzA9XDF3PWFUmwcZnDy-mhE4hLNHmf+V4GhOxw@mail.gmail.com>
+	<5179AE2F.3040403@ti.com>
+	<CAJe_Zhf4miUm4yTyuwc56kpD8Mu4=vsmX4wdQkFDT96JbKR=MQ@mail.gmail.com>
+	<517B242D.7040902@ti.com>
+	<CAJe_ZhdH+SCs5crguXrm6y-6bu+eGnTqeJS6cOS5H5Yz=m15Cw@mail.gmail.com>
+	<517E9907.4030106@ti.com>
+Date: Mon, 29 Apr 2013 22:19:08 +0530
+Message-ID: <CAJe_Zhcm_jO6g2GjMEkQ=rYmav80f9bjj3OtypnRfcrh9zMRuw@mail.gmail.com>
+Subject: Re: [PATCHv3 00/14] drivers: mailbox: framework creation
+From: Jassi Brar <jaswinder.singh@linaro.org>
+To: Suman Anna <s-anna@ti.com>
+Cc: Loic PALLARDY <loic.pallardy@st.com>,
+        Jassi Brar <jassisinghbrar@gmail.com>,
+        "Ohad Ben-Cohen (ohad@wizery.com)" <ohad@wizery.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        "Andy Green (andy.green@linaro.org)" <andy.green@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Tony Lindgren <tony@atomide.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Trond Myklebust <trond.myklebust@fys.uio.no>
-In-Reply-To: <261DE171-B758-4211-AA10-AA67E9E6619B@oracle.com>
-References: <20130429112434.dcc80cfce804beeacc68793a@canb.auug.org.au>
-	 <CA52A586-E4DF-42D0-9020-D17F8822BF7C@oracle.com>
-	 <20130429154541.GI17268@fieldses.org>
-	 <09A69F90-5D9A-4AF6-9B7D-CC1D74A237EA@oracle.com>
-	 <1367252960.10084.491.camel@willson.li.ssimo.org>
-	 <261DE171-B758-4211-AA10-AA67E9E6619B@oracle.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat, Inc.
-Date: Mon, 29 Apr 2013 12:46:59 -0400
-Message-ID: <1367254019.10084.494.camel@willson.li.ssimo.org>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+        "Omar Ramirez Luna (omar.ramirez@copitl.com)" 
+	<omar.ramirez@copitl.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-04-29 at 12:37 -0400, Chuck Lever wrote:
-> On Apr 29, 2013, at 12:29 PM, Simo Sorce <simo@redhat.com> wrote:
-> 
-> > On Mon, 2013-04-29 at 12:05 -0400, Chuck Lever wrote:
-> >> On Apr 29, 2013, at 11:45 AM, "J. Bruce Fields" <bfields@fieldses.org> wrote:
-> >> 
-> >>> On Mon, Apr 29, 2013 at 10:53:37AM -0400, Chuck Lever wrote:
-> >>>> 
-> >>>> On Apr 28, 2013, at 9:24 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> >>>> 
-> >>>>> Hi J.,
-> >>>>> 
-> >>>>> After merging the nfsd tree, today's linux-next build (powerpc
-> >>>>> ppc64_defconfig) failed like this:
-> >>>>> 
-> >>>>> net/sunrpc/auth_gss/svcauth_gss.c: In function 'gss_proxy_save_rsc':
-> >>>>> net/sunrpc/auth_gss/svcauth_gss.c:1182:3: error: implicit declaration of function 'gss_mech_get_by_OID' [-Werror=implicit-function-declaration]
-> >>>>> 
-> >>>>> Caused byc ommit 030d794bf498 ("SUNRPC: Use gssproxy upcall for server
-> >>>>> RPCGSS authentication").  gss_mech_get_by_OID() made static to
-> >>>>> net/sunrpc/auth_gss/gss_mech_switch.c by commit 9568c5e9a61d ("SUNRPC:
-> >>>>> Introduce rpcauth_get_pseudoflavor()") in the nfs tree (part of the nfs
-> >>>>> tree that you did not merge).
-> >>>>> 
-> >>>>> I don't know how to fix this, so I have used the nfsd tree from
-> >>>>> next-20130426 for today.
-> >>>> 
-> >>>> Bruce, it might make sense for me to submit the three server-side RPC GSS patches, and then you can rebase the gssproxy work on top of those.  Let me know how you would like to proceed.
-> >>> 
-> >>> I'm happy to take those patches whenever you consider them ready.  Would
-> >>> that fix the problem?
-> >> 
-> >> Someone would need to modify the gssproxy patches to use the new interfaces.
-> >> 
-> >>> Also: it looks like 030d794bf498 "SUNRPC: Introduce
-> >>> rpcauth_get_pseudoflavor()" is in Trond's linux-next, but not his
-> >>> nfs-for-next.  I'm not sure what that means--is it safe to rebase on top
-> >>> of *that*?
-> >> 
-> >> That doesn't seem right to me.
-> > 
-> > GSS-Proxy patches are 1 year old and we've been delayed once already to
-> > accomodate the containers work, maybe it's time for your patches to be
-> > rebased on gssproxy ones ? :-)
-> 
-> Don't sweat it.  IMO this is a simple merge problem, unlike the containers work.
+Hi
 
-Glad to hear that.
+On 29 April 2013 21:30, Suman Anna <s-anna@ti.com> wrote:
+> Hi Jassi,
+>
+> On 04/26/2013 11:51 PM, Jassi Brar wrote:
 
-Simo.
+>>> OK, I didn't think of a no RTR interrupt-based controller. I would thing
+>>> that such a controller is very rudimentary. I wonder if there are any
+>>> controllers like this out there.
+>>>
+>> One of my controllers is like that :)
+>
+> I hope it does have a status register atleast, and not the "neither
+> report nor sense RTR" type.
+>
+Actually the status is not set by the h/w, but the remote's firmware
+implementation makes sure it sets a marker in the status register
+after accepting data. So with some other firmware, we might not even
+have the status read facility and the client will have to solely run
+the TX ticker.
 
--- 
-Simo Sorce * Red Hat, Inc * New York
+>> If the controller h/w absolutely can not tell the remote(sender) of a
+>> received packet (as seems to be your case), its driver shouldn't even
+>> try to demux the received messages. The client driver must know which
+>> remotes could send it a message and how to discern them on the
+>> platform. Some 'server' RX client is needed here.
+>
+> No demuxing, deliver the message to the different clients. It is a
+> protocol agreement between the clients on what the message means. Think
+> of this scenario akin to shared interrupts.
+>
+Please re-read. That's what I said - No demuxing by the controller driver :)
 
+>
+> The notify mechanism was the top-half on the interrupt handling. The
+> faith part is coming from the fact that you expect all the clients to do
+> the equivalent of the bottom-half (which would mean some duplication in
+> the different clients), the OMAP scenario is such that all the different
+> link interrupts (both rx & tx) are mapped onto a single physical
+> interrupt. I think this may not be applicable to your usecase, wherein
+> you probably expect a response back before proceeding.
+>
+Simply put - the RX by notifier method will fail should a client is
+speed critical.
+The api might provide it optionally, but direct handover should be the
+default option.
+
+Btw, I did put up an almost tested version of an API implementing most
+of the features we agree upon
+http://www.spinics.net/lists/kernel/msg1523873.html
+http://www.spinics.net/lists/kernel/msg1523874.html
+
+cheers.
