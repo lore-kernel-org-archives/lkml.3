@@ -1,57 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933209Ab3D2WCX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 18:02:23 -0400
-Received: from mail-ve0-f179.google.com ([209.85.128.179]:57123 "EHLO
-	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759408Ab3D2WCU (ORCPT
+	id S1760029Ab3D2WDY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 18:03:24 -0400
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:38496 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759384Ab3D2WDX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 18:02:20 -0400
+	Mon, 29 Apr 2013 18:03:23 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130429215745.GB2395@htj.dyndns.org>
-References: <1367271946-7239-1-git-send-email-ccross@android.com>
-	<1367271946-7239-3-git-send-email-ccross@android.com>
-	<20130429215157.GA2395@htj.dyndns.org>
-	<20130429215745.GB2395@htj.dyndns.org>
-Date: Mon, 29 Apr 2013 15:02:19 -0700
-X-Google-Sender-Auth: ulrwKJqMrpCDqKJDyNmY6a7AQJI
-Message-ID: <CAMbhsRQHkm=XTYtummEZq1h4sa-tRGwLpk8Uyhpj9D3+jQF3dg@mail.gmail.com>
-Subject: Re: [PATCH 02/10] freezer: skip waking up tasks with PF_FREEZER_SKIP set
-From: Colin Cross <ccross@android.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
-        Li Zefan <lizefan@huawei.com>, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <517EEBD1.503@valvesoftware.com>
+References: <517B1153.8000401@valvesoftware.com>
+	<517B2FB4.30605@redhat.com>
+	<20130427024248.GA1229@cmpxchg.org>
+	<517EEBD1.503@valvesoftware.com>
+Date: Mon, 29 Apr 2013 15:03:22 -0700
+X-Google-Sender-Auth: yoC1_I7IhWscmdf_gPTztY0v1XY
+Message-ID: <CA+55aFxcq44JsrrR5KKuT=DZQHCfOE3KHQrcD215T+deYesW2g@mail.gmail.com>
+Subject: Re: IO regression after ab8fabd46f on x86 kernels with high memory
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: "Pierre-Loup A. Griffais" <pgriffais@valvesoftware.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        sonnyrao@chromium.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 29, 2013 at 2:57 PM, Tejun Heo <tj@kernel.org> wrote:
-> On Mon, Apr 29, 2013 at 02:51:57PM -0700, Tejun Heo wrote:
->> I feel a bit weary of changes which try to optimize state checks for
->> freezer because the synchronization rules are kinda fragile and things
->> may not work reliably depending on who's testing the flag, and it has
->> been subtly broken in various ways in the past (maybe even now).  Can
+On Mon, Apr 29, 2013 at 2:53 PM, Pierre-Loup A. Griffais
+<pgriffais@valvesoftware.com> wrote:
 >
-> And BTW, this is why the function is only used when checking whether a
-> task is frozen rather than to decide to issue freeze_task() on it, and
-> it seems your change is correct now that we don't have per-task FREEZE
-> flag but I can't say I like the change.  I'd really like to keep
-> things as dumb as possible for freezer.
+> Other than this particular concern, what's the high-level take-away? Is PAE
+> support in the Linux kernel a false promise than distros should not be
+> shipping by default, if at all? Should it be removed from the kernel
+> entirely if these configurations are knowingly broken by commits like this?
 
-See the first patch in the series (which isn't available in the
-archive yet, so I can't link to it).  The short version is that
-Android goes through suspend/resume very often (every few seconds when
-on a busy wifi network with the screen off), and a significant portion
-of the energy used to go in and out of suspend is spent in the
-freezer.  This patch series takes the most common userspace sleep
-points and converts them to PF_FREEZER_SKIP, which reduces the number
-of context switches for every suspend or resume event on a
-freshly-booted Android device from 1000 to 25, and reduces the time
-spent freezing by a factor of 5.  It will have a similar effect on a
-non-Android system, although those generally don't care about
-suspend/resume optimization.
+PAE is "make it barely work". The whole concept is fundamentally
+flawed, and anybody who runs a 32-bit kernel with 16GB or RAM doesn't
+even understand *how* flawed and stupid that is.
+
+Don't do it. Upgrade to 64-bit, or live with the fact that IO
+performance will suck. The fact that it happened to work better under
+your particular load with one particular IO size is entirely just
+"random noise".
+
+Yeah, the difference between "we can cache it" and "we have to do IO"
+is huge. With a 32-bit kernel, we do IO much earlier now, just to
+avoid some really nasty situations. That makes you go from the "can
+sit in the cache" to the "do lots of IO" situation. Tough.
+
+Seriously, you can compile yourself a 64-bit kernel and continue to
+use your 32-bit user-land. And you can complain to whatever distro you
+used that it didn't do that in the first place. But we're not going to
+bother with trying to tune PAE for some particular load. It's just not
+worth it to anybody.
+
+                Linus
