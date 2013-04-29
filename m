@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759339Ab3D2TCf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 15:02:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60616 "EHLO
+	id S1760941Ab3D2Tne (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 15:43:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60637 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758442Ab3D2TCd (ORCPT
+	with ESMTP id S1759344Ab3D2TCg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 15:02:33 -0400
+	Mon, 29 Apr 2013 15:02:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Mathias Krause <minipli@googlemail.com>,
-        Sjur Braendeland <sjur.brandeland@stericsson.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 10/42] caif: Fix missing msg_namelen update in caif_seqpkt_recvmsg()
-Date: Mon, 29 Apr 2013 12:01:52 -0700
-Message-Id: <20130429184753.569998992@linuxfoundation.org>
+Subject: [ 13/42] l2tp: fix info leak in l2tp_ip6_recvmsg()
+Date: Mon, 29 Apr 2013 12:01:55 -0700
+Message-Id: <20130429184753.891705903@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130429184752.435249613@linuxfoundation.org>
 References: <20130429184752.435249613@linuxfoundation.org>
@@ -31,35 +30,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mathias Krause <minipli@googlemail.com>
 
-[ Upstream commit 2d6fbfe733f35c6b355c216644e08e149c61b271 ]
+[ Upstream commit b860d3cc62877fad02863e2a08efff69a19382d2 ]
 
-The current code does not fill the msg_name member in case it is set.
-It also does not set the msg_namelen member to 0 and therefore makes
-net/socket.c leak the local, uninitialized sockaddr_storage variable
-to userland -- 128 bytes of kernel stack memory.
+The L2TP code for IPv6 fails to initialize the l2tp_conn_id member of
+struct sockaddr_l2tpip6 and therefore leaks four bytes kernel stack
+in l2tp_ip6_recvmsg() in case msg_name is set.
 
-Fix that by simply setting msg_namelen to 0 as obviously nobody cared
-about caif_seqpkt_recvmsg() not filling the msg_name in case it was
-set.
+Initialize l2tp_conn_id with 0 to avoid the info leak.
 
 Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Cc: Sjur Braendeland <sjur.brandeland@stericsson.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/caif/caif_socket.c |    2 ++
- 1 file changed, 2 insertions(+)
+ net/l2tp/l2tp_ip6.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/net/caif/caif_socket.c
-+++ b/net/caif/caif_socket.c
-@@ -286,6 +286,8 @@ static int caif_seqpkt_recvmsg(struct ki
- 	if (m->msg_flags&MSG_OOB)
- 		goto read_error;
- 
-+	m->msg_namelen = 0;
-+
- 	skb = skb_recv_datagram(sk, flags, 0 , &ret);
- 	if (!skb)
- 		goto read_error;
+--- a/net/l2tp/l2tp_ip6.c
++++ b/net/l2tp/l2tp_ip6.c
+@@ -684,6 +684,7 @@ static int l2tp_ip6_recvmsg(struct kiocb
+ 		lsa->l2tp_addr = ipv6_hdr(skb)->saddr;
+ 		lsa->l2tp_flowinfo = 0;
+ 		lsa->l2tp_scope_id = 0;
++		lsa->l2tp_conn_id = 0;
+ 		if (ipv6_addr_type(&lsa->l2tp_addr) & IPV6_ADDR_LINKLOCAL)
+ 			lsa->l2tp_scope_id = IP6CB(skb)->iif;
+ 	}
 
 
