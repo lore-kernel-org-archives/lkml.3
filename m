@@ -1,39 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757538Ab3D2QAp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 12:00:45 -0400
-Received: from mail-we0-f182.google.com ([74.125.82.182]:51131 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756869Ab3D2QAn (ORCPT
+	id S1757216Ab3D2QB6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 12:01:58 -0400
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:11207 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756865Ab3D2QB5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 12:00:43 -0400
-Date: Mon, 29 Apr 2013 18:00:40 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>, Ingo Molnar <mingo@elte.hu>,
-        Jan Kratochvil <jan.kratochvil@redhat.com>,
-        Prasad <prasad@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/6] ptrace/x86: cleanup ptrace_set_debugreg()
-Message-ID: <20130429160038.GC31230@somewhere>
-References: <20130418184350.GA4407@redhat.com>
- <20130418184422.GA4447@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130418184422.GA4447@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 29 Apr 2013 12:01:57 -0400
+Date: Mon, 29 Apr 2013 18:01:44 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: lm-sensors@lm-sensors.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [lm-sensors] [GIT PULL] hwmon changes for 3.10
+Message-ID: <20130429180144.6c1461bf@endymion.delvare>
+In-Reply-To: <20130429145727.GA7967@roeck-us.net>
+References: <20130429145727.GA7967@roeck-us.net>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.14; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 18, 2013 at 08:44:22PM +0200, Oleg Nesterov wrote:
-> ptrace_set_debugreg() is trivial but looks horrible. Kill the
-> unnecessary goto's and return's to cleanup the code.
+On Mon, 29 Apr 2013 07:57:27 -0700, Guenter Roeck wrote:
+> ----------------------------------------------------------------
+> New drivers for NCT6775, NCT6776, NCT6779, and LM95234.
+> Added support for LTC2974, LTC3883, LM25056, TMP431, TMP432,
+> ADT7310, and ADT7320 to existing drivers.
+> Various code cleanups and minor improvements.
 > 
-> This matches ptrace_get_debugreg() which also needs the trivial
-> whitespace cleanups.
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> ----------------------------------------------------------------
+> Guenter Roeck (47):
 
-Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+This starts (or continues) being very impressive... Thanks a lot
+Guenter for all your work!
+
+-- 
+Jean Delvare
