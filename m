@@ -1,120 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758225Ab3D2Rgc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 13:36:32 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:52539 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757521Ab3D2Rga (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 13:36:30 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Cc: LMML <linux-media@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>
-Subject: Re: [PATCH] media: i2c: tvp7002: enable TVP7002 decoder for media controller based usage
-Date: Mon, 29 Apr 2013 19:36:36 +0200
-Message-ID: <1696679.tiFHy28fsU@avalon>
-User-Agent: KMail/4.10.2 (Linux/3.7.10-gentoo-r1; KDE/4.10.2; x86_64; ; )
-In-Reply-To: <CA+V-a8u_YA=TJaRebboigM6z-A=R6-ZdyxZSED7H+4w+LN+cTQ@mail.gmail.com>
-References: <1366963535-15963-1-git-send-email-prabhakar.csengg@gmail.com> <32556864.ElKWl0cdN2@avalon> <CA+V-a8u_YA=TJaRebboigM6z-A=R6-ZdyxZSED7H+4w+LN+cTQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1757940Ab3D2RiW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 13:38:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62099 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752235Ab3D2RiU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Apr 2013 13:38:20 -0400
+Subject: Re: linux-next: build failure after merge of the nfsd tree
+From: Simo Sorce <simo@redhat.com>
+To: Chuck Lever <chuck.lever@oracle.com>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>,
+        Trond Myklebust <trond.myklebust@fys.uio.no>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <DBD3CE27-3A93-4BC0-B390-2EDB9D0D2BBE@oracle.com>
+References: <20130429112434.dcc80cfce804beeacc68793a@canb.auug.org.au>
+	 <CA52A586-E4DF-42D0-9020-D17F8822BF7C@oracle.com>
+	 <20130429154541.GI17268@fieldses.org>
+	 <09A69F90-5D9A-4AF6-9B7D-CC1D74A237EA@oracle.com>
+	 <1367252460.19515.7.camel@leira.trondhjem.org>
+	 <DBD3CE27-3A93-4BC0-B390-2EDB9D0D2BBE@oracle.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat, Inc.
+Date: Mon, 29 Apr 2013 13:37:49 -0400
+Message-ID: <1367257069.10084.500.camel@willson.li.ssimo.org>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Prabhakar,
-
-On Monday 29 April 2013 23:00:26 Prabhakar Lad wrote:
-> On Mon, Apr 29, 2013 at 7:57 PM, Laurent Pinchart wrote:
-> > On Friday 26 April 2013 13:35:35 Prabhakar Lad wrote:
-> >> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+On Mon, 2013-04-29 at 13:04 -0400, Chuck Lever wrote:
+> On Apr 29, 2013, at 12:21 PM, Trond Myklebust <trond.myklebust@fys.uio.no> wrote:
+> 
+> > On Mon, 2013-04-29 at 12:05 -0400, Chuck Lever wrote:
+> >> On Apr 29, 2013, at 11:45 AM, "J. Bruce Fields" <bfields@fieldses.org> wrote:
 > >> 
-> >> This patch enables tvp7002 decoder driver for media controller
-> >> based usage by adding v4l2_subdev_pad_ops  operations support
-> >> for enum_mbus_code, set_pad_format, get_pad_format and
-> >> media_entity_init()
-> >> on probe and media_entity_cleanup() on remove.
+> >>> On Mon, Apr 29, 2013 at 10:53:37AM -0400, Chuck Lever wrote:
+> >>>> 
+> >>>> On Apr 28, 2013, at 9:24 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> >>>> 
+> >>>>> Hi J.,
+> >>>>> 
+> >>>>> After merging the nfsd tree, today's linux-next build (powerpc
+> >>>>> ppc64_defconfig) failed like this:
+> >>>>> 
+> >>>>> net/sunrpc/auth_gss/svcauth_gss.c: In function 'gss_proxy_save_rsc':
+> >>>>> net/sunrpc/auth_gss/svcauth_gss.c:1182:3: error: implicit declaration of function 'gss_mech_get_by_OID' [-Werror=implicit-function-declaration]
+> >>>>> 
+> >>>>> Caused byc ommit 030d794bf498 ("SUNRPC: Use gssproxy upcall for server
+> >>>>> RPCGSS authentication").  gss_mech_get_by_OID() made static to
+> >>>>> net/sunrpc/auth_gss/gss_mech_switch.c by commit 9568c5e9a61d ("SUNRPC:
+> >>>>> Introduce rpcauth_get_pseudoflavor()") in the nfs tree (part of the nfs
+> >>>>> tree that you did not merge).
+> >>>>> 
+> >>>>> I don't know how to fix this, so I have used the nfsd tree from
+> >>>>> next-20130426 for today.
+> >>>> 
+> >>>> Bruce, it might make sense for me to submit the three server-side RPC GSS patches, and then you can rebase the gssproxy work on top of those.  Let me know how you would like to proceed.
+> >>> 
+> >>> I'm happy to take those patches whenever you consider them ready.  Would
+> >>> that fix the problem?
 > >> 
-> >> The device supports 1 output pad and no input pads.
+> >> Someone would need to modify the gssproxy patches to use the new interfaces.
+> >> 
+> >>> Also: it looks like 030d794bf498 "SUNRPC: Introduce
+> >>> rpcauth_get_pseudoflavor()" is in Trond's linux-next, but not his
+> >>> nfs-for-next.  I'm not sure what that means--is it safe to rebase on top
+> >>> of *that*?
+> >> 
+> >> That doesn't seem right to me.
 > > 
-> > We should actually define input pads, connected to connector entities, but
-> > that's out of scope for this patch.
-> > 
-> >> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-> >> ---
-
-[snip]
-
-> >> +/*
-> >> + * tvp7002_set_pad_format() - set video format on pad
-> >> + * @sd: pointer to standard V4L2 sub-device structure
-> >> + * @fh: file handle for the subdev
-> >> + * @fmt: pointer to subdev format struct
-> >> + *
-> >> + * set video format for pad.
-> >> +*/
-> >> +static int
-> >> +tvp7002_set_pad_format(struct v4l2_subdev *sd, struct v4l2_subdev_fh
-> >> *fh,
-> >> +                    struct v4l2_subdev_format *fmt)
-> >> +{
-> >> +     struct tvp7002 *tvp7002 = to_tvp7002(sd);
-> >> +
-> >> +     /* Check pad index is valid */
-> >> +     if (fmt->pad != 0)
-> >> +             return -EINVAL;
-> > 
-> > Redundant check as well.
+> > I've now pulled the rpcsec_gss changes into the nfs-for-next. The main
+> > reason why they were not pulled in earlier was due to uncertainty what
+> > to do about the increase in "AUTH_GSS upcall timed out." syslog
+> > warnings.
 > 
-> OK
+> Trond's nfs-for-next now has the new rpcauth_get_gssinfo() and
+> rpcauth_get_pseudoflavor() APIs, which are replacements for direct
+> calls into the GSS mech switch.  These APIs are a little more generic,
+> and more robust in the face of unloaded GSS kernel modules.
 > 
-> >> +     if (fmt->format.field != tvp7002->current_timings->scanmode ||
-> >> +         fmt->format.code != V4L2_MBUS_FMT_YUYV10_1X20 ||
-> >> +         fmt->format.colorspace != tvp7002->current_timings->color_space
-> >> || +         fmt->format.width !=
-> >> tvp7002->current_timings->timings.bt.width || +        
-> >> fmt->format.height != tvp7002->current_timings->timings.bt.height) +    
-> >>         return -EINVAL;
-> > 
-> > You shouldn't return an error, but fix the input parameters according to
-> > what the device supports. As the format is fixed for a giving set of
-> > timings, the .set_pad_format() handler should just perform the same
-> > operations as .get_pad_format(). You could even define
-> > tvp7002_get_pad_format() only and use it as a handler for both
-> > .get_pad_format() and .set_pad_format().
-> 
-> OK. So its the job back in the application end to see what format was set.
+> Instead of gss_mech_get_by_OID(), I suspect you want
+> rpcauth_get_pseudoflavor(), but I haven't looked at the gssproxy code.
 
-That's right. The format ioctls work that way to negotiate formats with 
-userspace.
+The simplest way would be to make it not static again.
 
-> >> +     tvp7002->format = fmt->format;
-> >> +
-> >> +     return 0;
-> >> +}
+In my code we are using gss_mech_get_by_OID() instead of
+gss_mech_get_by_name() because we have a OID passed down from gssproxy.
 
-[snip]
-
-> >> +/* media pad related operation handlers */
-> >> +static const struct v4l2_subdev_pad_ops tvp7002_pad_ops = {
-> >> +     .enum_mbus_code = tvp7002_enum_mbus_code,
-> >> +     .get_fmt = tvp7002_get_pad_format,
-> >> +     .set_fmt = tvp7002_set_pad_format,
-> > 
-> > We will need to define pad-aware DV timings operations.
-> 
-> I didn't get you this?
-
-We will need to extend the pad operations (struct v4l2_subdev_pad_ops) with 
-operations to enumerate, get and set DV timings at the pad level.
+Simo.
 
 -- 
-Regards,
-
-Laurent Pinchart
+Simo Sorce * Red Hat, Inc * New York
 
