@@ -1,177 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756899Ab3D2LLd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 07:11:33 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:63447 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754242Ab3D2LLa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 07:11:30 -0400
+	id S1757101Ab3D2LMO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 07:12:14 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:48859 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753818Ab3D2LMM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Apr 2013 07:12:12 -0400
+X-IronPort-AV: E=Sophos;i="4.87,573,1363104000"; 
+   d="scan'208";a="7157336"
+Message-ID: <517E45C8.4060407@cn.fujitsu.com>
+Date: Mon, 29 Apr 2013 18:04:56 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-In-Reply-To: <20130429082128.GG32299@pengutronix.de>
-References: <1367222401-26649-1-git-send-email-prabhakar.csengg@gmail.com> <20130429082128.GG32299@pengutronix.de>
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Mon, 29 Apr 2013 16:41:07 +0530
-Message-ID: <CA+V-a8uM61Rzqa2y9b6FZVin2FWHg6o9kO7fqHupqq2dcBT3SA@mail.gmail.com>
-Subject: Re: [PATCH RFC] media: i2c: mt9p031: add OF support
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: LMML <linux-media@vger.kernel.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>, linux-doc@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Sakari Ailus <sakari.ailus@iki.fi>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] PCI: Fix racing for pci device removing via sysfs
+References: <1366940841-15370-1-git-send-email-yinghai@kernel.org> <CAErSpo5zfHR-agNBdgqfVjCU+-KcTZV+1bvML5Uw-+icDqzzEA@mail.gmail.com> <CAE9FiQVEQO-dLJRjn9Z7JgwGWAn1M8S1Tn2_V0Fq+6kB0rG=Bg@mail.gmail.com> <CAErSpo7DUDQ_XgVKAfWxqYJA=q85ps46bffV-4a7b0vOzAP5DA@mail.gmail.com> <CAE9FiQWv-bN2XzHiQ0WU+Y678zcqs_Owua6vXXijdMO6=0OWpg@mail.gmail.com>
+In-Reply-To: <CAE9FiQWv-bN2XzHiQ0WU+Y678zcqs_Owua6vXXijdMO6=0OWpg@mail.gmail.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/04/29 18:05:05,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/04/29 18:05:46,
+	Serialize complete at 2013/04/29 18:05:46
+Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sascha,
+Hi Yinghai,
 
-Thanks for the quick review.
+On 04/27/2013 05:01 AM, Yinghai Lu wrote:
 
-On Mon, Apr 29, 2013 at 1:51 PM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
-<Snip>
-
->> +Required Properties :
->> +- compatible : value should be either one among the following
->> +     (a) "aptina,mt9p031-sensor" for mt9p031 sensor
->> +     (b) "aptina,mt9p031m-sensor" for mt9p031m sensor
->> +
->> +- ext_freq: Input clock frequency.
->> +
->> +- target_freq:  Pixel clock frequency.
->
-> For devicetree properties '-' is preferred over '_'. Most devicetree
-> bindings we already have suggest that we shoud use 'frequency' and no
-> abbreviation. probably 'clock-frequency' should be used.
->
-Yeah i missed it..  following is the proposed bindings,
-let me know if something is wrong with it.
-
-Required Properties :
-- compatible : value should be either one among the following
-	(a) "aptina,mt9p031-sensor" for mt9p031 sensor
-	(b) "aptina,mt9p031m-sensor" for mt9p031m sensor
-
-- input-clock-frequency: Input clock frequency.
-
-- pixel-clock-frequency: Pixel clock frequency.
-
-Optional Properties :
--gpio-reset: Chip reset GPIO (If not specified defaults to -1)
-
-Example:
-
-i2c0@1c22000 {
-	...
-	...
-	mt9p031@5d {
-		compatible = "aptina,mt9p031-sensor";
-		reg = <0x5d>;
-
-		port {
-			mt9p031_1: endpoint {
-				input-clock-frequency = <6000000>;
-				pixel-clock-frequency = <96000000>;
-				gpio-reset = <&gpio3 30 0>;
-			};
-		};
-	};
-	...
-};
-
->> +
->> +Optional Properties :
->> +-reset: Chip reset GPIO (If not specified defaults to -1)
->
-> gpios must be specified as phandles, see of_get_named_gpio().
->
-Fixed it.
-
->> +
->> +Example:
->> +
->> +i2c0@1c22000 {
->> +     ...
->> +     ...
->> +     mt9p031@5d {
->> +             compatible = "aptina,mt9p031-sensor";
->> +             reg = <0x5d>;
->> +
->> +             port {
->> +                     mt9p031_1: endpoint {
->> +                             ext_freq = <6000000>;
->> +                             target_freq = <96000000>;
->> +                     };
->> +             };
->> +     };
->> +     ...
->> +};
->> \ No newline at end of file
->> diff --git a/drivers/media/i2c/mt9p031.c b/drivers/media/i2c/mt9p031.c
->> index 28cf95b..66078a6 100644
->> --- a/drivers/media/i2c/mt9p031.c
->> +++ b/drivers/media/i2c/mt9p031.c
->> @@ -23,11 +23,13 @@
->>  #include <linux/regulator/consumer.h>
->>  #include <linux/slab.h>
->>  #include <linux/videodev2.h>
->> +#include <linux/of_device.h>
+> On Fri, Apr 26, 2013 at 1:53 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> 
 >>
->>  #include <media/mt9p031.h>
->>  #include <media/v4l2-chip-ident.h>
->>  #include <media/v4l2-ctrls.h>
->>  #include <media/v4l2-device.h>
->> +#include <media/v4l2-of.h>
->>  #include <media/v4l2-subdev.h>
->>
->>  #include "aptina-pll.h"
->> @@ -928,10 +930,66 @@ static const struct v4l2_subdev_internal_ops mt9p031_subdev_internal_ops = {
->>   * Driver initialization and probing
->>   */
->>
->> +#if defined(CONFIG_OF)
->> +static const struct of_device_id mt9p031_of_match[] = {
->> +     {.compatible = "aptina,mt9p031-sensor", },
->> +     {.compatible = "aptina,mt9p031m-sensor", },
->> +     {},
->> +};
->> +MODULE_DEVICE_TABLE(of, mt9p031_of_match);
->> +
->> +static struct mt9p031_platform_data
->> +     *mt9p031_get_pdata(struct i2c_client *client)
->> +
->> +{
->> +     if (!client->dev.platform_data && client->dev.of_node) {
->
-> Just because the Kernel is compiled with devicetree support does not
-> necessarily mean you actually boot from devicetree. You must still
-> handle platform data properly.
->
-OK. which one should be given higher preference  client->dev.of_node
-or the client->dev.platform_data ?
+>> You can't be serious.  This is a disgusting mess.  Checking a list
+>> pointer for LIST_POISON1?  As far as I'm concerned, this is a waste of
+>> my time.
+> 
+> Well, then need to hold the bus ref, and check bus->devices list instead.
 
->> +             struct device_node *np;
->> +             struct mt9p031_platform_data *pdata;
->> +             int ret;
->> +
->> +             np = v4l2_of_get_next_endpoint(client->dev.of_node, NULL);
->> +             if (!np)
->> +                     return NULL;
->> +
->> +             pdata = devm_kzalloc(&client->dev,
->> +                                  sizeof(struct mt9p031_platform_data),
->> +                                  GFP_KERNEL);
->> +             if (!pdata) {
->> +                     pr_warn("mt9p031 failed allocate memeory\n");
->
-> Use dev_* for messages inside drivers.
->
-Fixed it.
+@@ -341,6 +352,7 @@ remove_store(struct device *dev, struct
+ {
+ 	int err;
+ 	unsigned long val;
++	struct pci_dev *pdev;
+ 
+ 	if (strict_strtoul(buf, 0, &val) < 0)
+ 		return -EINVAL;
+@@ -351,9 +363,14 @@ remove_store(struct device *dev, struct
+ 	/* An attribute cannot be unregistered by one of its own methods,
+ 	 * so we have to use this roundabout approach.
+ 	 */
++	pdev = pci_dev_get(to_pci_dev(dev));
 
-Regards,
---Prabhakar Lad
+There is no need to increase pci_dev's ref here, because we'll increase it 
+in sysfs_schedule_callback.
+
++	get_device(&pdev->bus->dev);
+
+So the pci_bus' ref management is still needed.
+ 
+ 	err = device_schedule_callback(dev, remove_callback);
+-	if (err)
++	if (err) {
++		put_device(&pdev->bus->dev);
++		pci_dev_put(pdev);
+ 		return err;
++	}
+ 
+ 	return count;
+ }
+
