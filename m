@@ -1,47 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757030Ab3D2DlN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Apr 2013 23:41:13 -0400
-Received: from gate.crashing.org ([63.228.1.57]:59997 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756821Ab3D2DlM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Apr 2013 23:41:12 -0400
-Message-ID: <1367206844.7288.0.camel@pasglop>
-Subject: Re: linux-next: manual merge of the vfs tree with the powerpc tree
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
-        Vasant Hegde <hegdevasant@linux.vnet.ibm.com>,
-        linuxppc-dev@lists.ozlabs.org
-Date: Mon, 29 Apr 2013 13:40:44 +1000
-In-Reply-To: <20130429113540.55b2593d303bc2a9142919fc@canb.auug.org.au>
-References: <20130429113540.55b2593d303bc2a9142919fc@canb.auug.org.au>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+	id S1750887Ab3D2EEt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 00:04:49 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:50286 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750696Ab3D2EEr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Apr 2013 00:04:47 -0400
+Date: Mon, 29 Apr 2013 14:04:33 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Nathan Fontenot <nfont@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        <linuxppc-dev@lists.ozlabs.org>, Li Zefan <lizefan@huawei.com>
+Subject: linux-next: build failure after merge of the cgroup tree
+Message-Id: <20130429140433.92d05cd48b66ac323616d572@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__29_Apr_2013_14_04_33_+1000_hYuiR+FI0xuOy/tt"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-04-29 at 11:35 +1000, Stephen Rothwell wrote:
-> Today's linux-next merge of the vfs tree got a conflict in
-> arch/powerpc/kernel/rtas_flash.c between commit ad18a364f186
-> ("powerpc/rtas_flash: Free kmem upon module exit"),  from the powerpc
-> tree and commit 5c0333c00ff6 ("ppc: Clean up rtas_flash driver
-> somewhat")
-> from the vfs tree.
-> 
-> I fixed it up (see below) and can carry the fix as necessary (no
-> action
-> is required).
+--Signature=_Mon__29_Apr_2013_14_04_33_+1000_hYuiR+FI0xuOy/tt
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Please don't merge Dave's rework until it's been acked & fully tested by
-us. AFAIK, there are outstanding comments from my guys who
-reviewed/tested the first pass.
+Hi Tejun,
 
+After merging the cgroup tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
+
+arch/powerpc/mm/numa.c: In function 'arch_update_cpu_topology':
+arch/powerpc/mm/numa.c:1465:2: error: implicit declaration of function 'kza=
+lloc' [-Werror=3Dimplicit-function-declaration]
+arch/powerpc/mm/numa.c:1465:10: error: assignment makes pointer from intege=
+r without a cast [-Werror]
+arch/powerpc/mm/numa.c:1497:2: error: implicit declaration of function 'kfr=
+ee' [-Werror=3Dimplicit-function-declaration]
+
+Caused by commit 30c05350c39d ("powerpc/pseries: Use stop machine to
+update cpu maps") from the powerpc tree interacting with (probably)
+commit ff794dea52ea ("cpuset: remove include of cgroup.h from cpuset.h")
+from the cgroup tree.  Removing includes from header files is fraught
+with danger ...
+
+The former should have added an include of linux/slab.h to
+arch/powerpc/mm/numa.c.
+
+I have added the following merge fix patch for today (but it should be
+applied to the powerpc tree ASAP).
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Mon, 29 Apr 2013 14:01:44 +1000
+Subject: [PATCH] powerpc: numa.c: using kzalloc/kfree requires including
+ slab.h
+
+fixes these build errors:
+
+arch/powerpc/mm/numa.c: In function 'arch_update_cpu_topology':
+arch/powerpc/mm/numa.c:1465:2: error: implicit declaration of function 'kza=
+lloc' [-Werror=3Dimplicit-function-declaration]
+arch/powerpc/mm/numa.c:1465:10: error: assignment makes pointer from intege=
+r without a cast [-Werror]
+arch/powerpc/mm/numa.c:1497:2: error: implicit declaration of function 'kfr=
+ee' [-Werror=3Dimplicit-function-declaration]
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ arch/powerpc/mm/numa.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/powerpc/mm/numa.c b/arch/powerpc/mm/numa.c
+index 2d13f90..490e39c 100644
+--- a/arch/powerpc/mm/numa.c
++++ b/arch/powerpc/mm/numa.c
+@@ -26,6 +26,7 @@
+ #include <linux/proc_fs.h>
+ #include <linux/seq_file.h>
+ #include <linux/uaccess.h>
++#include <linux/slab.h>
+ #include <asm/sparsemem.h>
+ #include <asm/prom.h>
+ #include <asm/smp.h>
+--=20
+1.8.1
+
+--=20
 Cheers,
-Ben.
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+--Signature=_Mon__29_Apr_2013_14_04_33_+1000_hYuiR+FI0xuOy/tt
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRffFRAAoJEECxmPOUX5FEzacP/jsGwiqZj6GlQgstb+DS6NQ7
+f2tW2Hi2aXmUokWOcwkrn55XpaGxt22wauQtwIVAkjYIpFS+QfCkpof/6niwrXiE
+7Tzyu8Cv4Y63eYTPn3Rtrj9MKTW7pHbnP/CK4jhvxmxGJzLMB+fEaFO46vLXkLbE
+RwgWskit8o1QDpoKOh9eSuOOd10xKlL6NDJwfRaISXTZdVKybNuB5pOfHTX8tdso
+Y0ZUe1hufiOkpR0TeHjjJka0MaTikxUnN5Aoi9yP4xca3FZ9R6T2RKcUPKlLEtPq
+FkViro0aecudpEvZpfH+QONt6Mneg2lyPEQftgPtV0E0yvtES1Is9JRHcQtLl62d
+S0DAaIgKMKRZiTWbn0GW7VcMhARRueLaiczJmVoIcFrIUqGZ/DNRiiYbrrqbK6r8
+zkfPw2h3GngJY9bEQUhd7Yis9Ray7b0w96iqmKwZUGyu7bRmbZhbYgnLtIRPJ33F
+mieCOfDOKuYauG5AteoCWRNAtsElCWF9JonlR5lBPOiGqDRKAe1VKlE+CE58KCbV
+HqZegbGh/GguCnqE9bXKAA3jZlycDCZiXvzn9LZm7t28pBAaq1rlLHp/UsGSP/lZ
+wds1fhG8zHGPd5pFL6fHGPOV08DK1TNWy7chXYVoZJB3TzO/gTSRabZnoLfzPQW7
+Z+WP+1FCTE0+FMtyeCAS
+=8K40
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__29_Apr_2013_14_04_33_+1000_hYuiR+FI0xuOy/tt--
