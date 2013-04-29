@@ -1,52 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932364Ab3D2VS6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 17:18:58 -0400
-Received: from mail-vb0-f51.google.com ([209.85.212.51]:49139 "EHLO
-	mail-vb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758773Ab3D2VS4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 17:18:56 -0400
-MIME-Version: 1.0
-In-Reply-To: <8yafvy92gfs.fsf@huya.qualcomm.com>
-References: <20130429162115.GA6893@kroah.com>
-	<CA+55aFwU-bXZ7wn2dOcLNfPMcjDv3Jvqx_LTt7B+-tj4WcP8Mg@mail.gmail.com>
-	<CA+55aFzLtBwsvVrnT2DrUOU+eYrQ5eiKeamRb4Y5+-TVgbuM5Q@mail.gmail.com>
-	<201304292154.15920.arnd@arndb.de>
-	<CA+55aFzefpRz2Y8oW9q0ArrR=XW0POBhy8NSNJ3DrCh9EowLqg@mail.gmail.com>
-	<8yafvy92gfs.fsf@huya.qualcomm.com>
-Date: Mon, 29 Apr 2013 14:18:55 -0700
-X-Google-Sender-Auth: 9SiyNtzOgPCuLWej8w0dJGNioL4
-Message-ID: <CA+55aFxaMP+=uMLLvnLHz_E0GStrDf_zO3XhVCDGHbk=tV6CqA@mail.gmail.com>
-Subject: Re: [GIT PATCH] char/misc patches for 3.10-rc1
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: David Brown <davidb@codeaurora.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, Greg KH <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nicolas Pitre <nico@fluxnic.net>, Richard Kuo <rkuo@codeaurora.org>,
-        linux-hexagon@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	id S932393Ab3D2VTQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 17:19:16 -0400
+Received: from smtp2.macqel.be ([194.78.208.39]:15154 "EHLO smtp2.macqel.be"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932368Ab3D2VTL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Apr 2013 17:19:11 -0400
+From: Philippe De Muyter <phdm@macqel.be>
+To: linux-kernel@vger.kernel.org
+Cc: Philippe De Muyter <phdm@macqel.be>, Karel Zak <kzak@redhat.com>,
+        Jens Axboe <axboe@kernel.dk>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 1/5] partitions/msdos.c: end-of-line whitespace and semicolon cleanup
+Date: Mon, 29 Apr 2013 23:18:29 +0200
+Message-Id: <1367270313-18871-2-git-send-email-phdm@macqel.be>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1367270313-18871-1-git-send-email-phdm@macqel.be>
+References: <1367270313-18871-1-git-send-email-phdm@macqel.be>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 29, 2013 at 2:08 PM, David Brown <davidb@codeaurora.org> wrote:
->
-> So, what is this saner place?  The hardware is theoretically shared
-> between ARM and Hexagon, but I don't know the hexagon plans to support
-> it, I've added them to the CC.
+Signed-off-by: Philippe De Muyter <phdm@macqel.be>
+Cc: Karel Zak <kzak@redhat.com>
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+---
+ block/partitions/msdos.c |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
 
-So I actually wouldn't have complained about it in drivers/misc/ssbi/
-or something like that. I don't think that's necessarily the best
-place for it, and maybe somebody can come up with better places. But
-even just in drivers/misc, at least you've moved it away to the point
-that it doesn't potentially compete with the pathname auto-completion
-of the fifty million other drivers we have under drivers/.
+diff --git a/block/partitions/msdos.c b/block/partitions/msdos.c
+index 7681cd2..9bf19e6 100644
+--- a/block/partitions/msdos.c
++++ b/block/partitions/msdos.c
+@@ -90,7 +90,7 @@ static int aix_magic_present(struct parsed_partitions *state, unsigned char *p)
+ 		if (d[0] == '_' && d[1] == 'L' && d[2] == 'V' && d[3] == 'M')
+ 			ret = 1;
+ 		put_dev_sector(sect);
+-	};
++	}
+ 	return ret;
+ }
+ 
+@@ -142,7 +142,7 @@ static void parse_extended(struct parsed_partitions *state,
+ 			return;
+ 
+ 		if (!msdos_magic_present(data + 510))
+-			goto done; 
++			goto done;
+ 
+ 		p = (struct partition *) (data + 0x1be);
+ 
+@@ -155,7 +155,7 @@ static void parse_extended(struct parsed_partitions *state,
+ 		 * and OS/2 seems to use all four entries.
+ 		 */
+ 
+-		/* 
++		/*
+ 		 * First process the data partition(s)
+ 		 */
+ 		for (i=0; i<4; i++, p++) {
+@@ -263,7 +263,7 @@ static void parse_solaris_x86(struct parsed_partitions *state,
+ }
+ 
+ #if defined(CONFIG_BSD_DISKLABEL)
+-/* 
++/*
+  * Create devices for BSD partitions listed in a disklabel, under a
+  * dos-like partition. See parse_extended() for more information.
+  */
+@@ -294,7 +294,7 @@ static void parse_bsd(struct parsed_partitions *state,
+ 
+ 		if (state->next == state->limit)
+ 			break;
+-		if (p->p_fstype == BSD_FS_UNUSED) 
++		if (p->p_fstype == BSD_FS_UNUSED)
+ 			continue;
+ 		bsd_start = le32_to_cpu(p->p_offset);
+ 		bsd_size = le32_to_cpu(p->p_size);
+@@ -441,7 +441,7 @@ static struct {
+ 	{NEW_SOLARIS_X86_PARTITION, parse_solaris_x86},
+ 	{0, NULL},
+ };
+- 
++
+ int msdos_partition(struct parsed_partitions *state)
+ {
+ 	sector_t sector_size = bdev_logical_block_size(state->bdev) / 512;
+-- 
+1.7.1
 
-Or maybe "drivers/platform/something-or-other" if there are possible
-other things that get shared together with this thing? I don't care
-that deeply, as long as it's just off in a little corner of the
-universe, rather than smack-dab in the middle.
-
-              Linus
