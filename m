@@ -1,85 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757941Ab3D2MPW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 08:15:22 -0400
-Received: from mxout1.idt.com ([157.165.5.25]:56180 "EHLO mxout1.idt.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753731Ab3D2MPV convert rfc822-to-8bit (ORCPT
+	id S1757975Ab3D2MRq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 08:17:46 -0400
+Received: from mailbackup.inode.at ([213.229.60.24]:46942 "EHLO
+	mailbackup.inode.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754695Ab3D2MRo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 08:15:21 -0400
-From: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Li Yang <leoli@freescale.com>, Kumar Gala <galak@kernel.crashing.org>,
-        Andre van Herk <andre.van.herk@Prodrive.nl>,
-        Micha Nelissen <micha.nelissen@Prodrive.nl>
-Subject: RE: [PATCH 1/3] rapidio: make enumeration/discovery configurable
-Thread-Topic: [PATCH 1/3] rapidio: make enumeration/discovery configurable
-Thread-Index: AQHOQPjCcpzLq65DOUWivk5TNMYZf5jplR6AgAOLuQA=
-Date: Mon, 29 Apr 2013 12:08:49 +0000
-Message-ID: <8D983423E7EDF846BB3056827B8CC5D14BC271B9@corpmail1.na.ads.idt.com>
-References: <1366813919-13766-1-git-send-email-alexandre.bounine@idt.com>
-	<1366813919-13766-2-git-send-email-alexandre.bounine@idt.com>
- <20130426155325.09fbad8c382dc8c549d503d0@linux-foundation.org>
-In-Reply-To: <20130426155325.09fbad8c382dc8c549d503d0@linux-foundation.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.165.140.50]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 29 Apr 2013 08:17:44 -0400
+Message-ID: <517E64A1.4020402@streamunlimited.com>
+Date: Mon, 29 Apr 2013 14:16:33 +0200
+From: Marek Belisko <marek.belisko@streamunlimited.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+CC: Marek Belisko <marek.belisko@gmail.com>, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, rob@landley.net, alsa-devel@alsa-project.org,
+        linux-doc@vger.kernel.org, tiwai@suse.de,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        broonie@kernel.org, perex@perex.cz
+Subject: Re: [PATCH v2 2/3] ASoC: spdif_transmitter: Add DT support.
+References: <1366895594-19596-1-git-send-email-marek.belisko@streamunlimited.com> <1366895594-19596-3-git-send-email-marek.belisko@streamunlimited.com> <517AD46A.2020402@gmail.com>
+In-Reply-To: <517AD46A.2020402@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated-Sender: marek.belisko@streamunlimited.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 26 Apr 2013 6:53 PM Andrew Morton <akpm@linux-foundation.org> wrote:
-> Subject: Re: [PATCH 1/3] rapidio: make enumeration/discovery
-> configurable
-> 
-> This Kconfig change makes my kbuild do Weird Things.
-> 
-> make mrproper ; yes "" | make allmodconfig ; make 2>/tmp/x
-... skip ... 
-> :   DMA Engine support for RapidIO (RAPIDIO_DMA_ENGINE) [Y/n/?] y
-> :   RapidIO subsystem debug messages (RAPIDIO_DEBUG) [Y/n/?] y
-> :   Enumeration method [M/y/?] (NEW) aborted!
-> :
-> : Console input/output is redirected. Run 'make oldconfig' to update configuration.
-> :
-> :   SYSHDR  arch/x86/syscalls/../include/generated/uapi/asm/unistd_32.h
-> :   SYSHDR  arch/x86/syscalls/../include/generated/uapi/asm/unistd_64.h
-> :   SYSHDR
-> arch/x86/syscalls/../include/generated/uapi/asm/unistd_x32.h
-> 
-> 
-> See the "Enumeration method [M/y/?] (NEW) aborted!"
-> 
-> Note that this only happens when make's stderr is redirected.
-> 
-> I've no idea what's going on here.  This appears to fix things:
-> 
-> --- a/drivers/rapidio/Kconfig~rapidio-make-enumeration-discovery-
-> configurable-fix
-> +++ a/drivers/rapidio/Kconfig
-> @@ -59,7 +59,7 @@ choice
->  	  If unsure, select Basic built-in.
-> 
->  config RAPIDIO_ENUM_BASIC
-> -	tristate "Basic"
-> +	bool "Basic"
->  	help
->  	  This option includes basic RapidIO fabric enumeration and
-> discovery
->  	  mechanism similar to one described in RapidIO specification
-> Annex 1.
-> 
-> but doesn't appear to be what you intended.
+Dear Sebastian Hesselbarth,
 
-Goal is to build enumerator as a module or built-in.
-I will retest v2 of patches for this issue.
-There are some changes to Kconfig (removed AUTO_ENUM option).
+On 04/26/2013 09:24 PM, Sebastian Hesselbarth wrote:
+> On 04/25/2013 03:13 PM, Marek Belisko wrote:
+>> Add devicetree support for this dummy audio soc driver.
+>>
+>> Signed-off-by: Michal Bachraty<michal.bachraty@streamunlimited.com>
+>> Signed-off-by: Marek Belisko<marek.belisko@streamunlimited.com>
+>> ---
+>>   .../bindings/sound/spdif-transmitter.txt           |   10 ++++++++++
+>>   sound/soc/codecs/spdif_transmitter.c               |   10 ++++++++++
+>>   2 files changed, 20 insertions(+)
+>>   create mode 100644
+>> Documentation/devicetree/bindings/sound/spdif-transmitter.txt
+>>
+>> diff --git
+>> a/Documentation/devicetree/bindings/sound/spdif-transmitter.txt
+>> b/Documentation/devicetree/bindings/sound/spdif-transmitter.txt
+>> new file mode 100644
+>> index 0000000..55a8584
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/sound/spdif-transmitter.txt
+>> @@ -0,0 +1,10 @@
+>> +Device-Tree bindings for dummy spdif transmitter
+>> +
+>> +Required properties:
+>> +    - compatible: should be "linux,spdif-dit".
+>
+> Marek,
+>
+> I remember Daniel commenting on the name already, but
+> what about "spdif-transmitter" and "spdif-receiver" respectively?
+Agree.
+> That is very generic and should allow to remove "linux," prefix.
+Not sure if linux, prefix can be removed. I believe (at least what 
+documentation said) is that <manufacturer>,<model> must be format for 
+compatible.
+> And there is a lot of drivers using more informative compatible
+> strings compared to the driver name.
+>
+> Sebastian
+>
 
+Cheers,
+
+	~marek
+-- 
+Marek Belisko
+
+Software Developer
+StreamUnlimited Engineering GmbH
+Gutheil Schodergasse 8-12
+A-1100 Vienna, Austria
+
+Office: +421 267200087
+
+e-mail: marek.belisko@streamunlimited.com
+http://www.streamunlimited.com
+
+Meet us at:
+
+High End - Munich, 09 - 12 May, Hall 4/F05
+IFA - Berlin, 6-11 September
+CEDIA - Denver, 25-28 September
