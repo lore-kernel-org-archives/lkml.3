@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932098Ab3D2TSL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 15:18:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60890 "EHLO
+	id S1759780Ab3D2TDK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 15:03:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60835 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759458Ab3D2TDL (ORCPT
+	with ESMTP id S1759458Ab3D2TDE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 15:03:11 -0400
+	Mon, 29 Apr 2013 15:03:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Huang, Xiong" <xiong@qca.qualcomm.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Mathias Krause <minipli@googlemail.com>,
+        Ursula Braun <ursula.braun@de.ibm.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 21/34] atl1e: limit gso segment size to prevent generation of wrong ip length fields
-Date: Mon, 29 Apr 2013 12:02:28 -0700
-Message-Id: <20130429184703.271850967@linuxfoundation.org>
+Subject: [ 11/34] iucv: Fix missing msg_namelen update in iucv_sock_recvmsg()
+Date: Mon, 29 Apr 2013 12:02:18 -0700
+Message-Id: <20130429184702.166251833@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130429184700.845644077@linuxfoundation.org>
 References: <20130429184700.845644077@linuxfoundation.org>
@@ -30,43 +29,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+From: Mathias Krause <minipli@googlemail.com>
 
-[ Upstream commit 31d1670e73f4911fe401273a8f576edc9c2b5fea ]
+[ Upstream commit a5598bd9c087dc0efc250a5221e5d0e6f584ee88 ]
 
-The limit of 0x3c00 is taken from the windows driver.
+The current code does not fill the msg_name member in case it is set.
+It also does not set the msg_namelen member to 0 and therefore makes
+net/socket.c leak the local, uninitialized sockaddr_storage variable
+to userland -- 128 bytes of kernel stack memory.
 
-Suggested-by: Huang, Xiong <xiong@qca.qualcomm.com>
-Cc: Huang, Xiong <xiong@qca.qualcomm.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Fix that by simply setting msg_namelen to 0 as obviously nobody cared
+about iucv_sock_recvmsg() not filling the msg_name in case it was set.
+
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Cc: Ursula Braun <ursula.braun@de.ibm.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/atheros/atl1e/atl1e.h      |    2 +-
- drivers/net/ethernet/atheros/atl1e/atl1e_main.c |    1 +
- 2 files changed, 2 insertions(+), 1 deletion(-)
+ net/iucv/af_iucv.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/net/ethernet/atheros/atl1e/atl1e.h
-+++ b/drivers/net/ethernet/atheros/atl1e/atl1e.h
-@@ -186,7 +186,7 @@ struct atl1e_tpd_desc {
- /* how about 0x2000 */
- #define MAX_TX_BUF_LEN      0x2000
- #define MAX_TX_BUF_SHIFT    13
--/*#define MAX_TX_BUF_LEN  0x3000 */
-+#define MAX_TSO_SEG_SIZE    0x3c00
+--- a/net/iucv/af_iucv.c
++++ b/net/iucv/af_iucv.c
+@@ -1331,6 +1331,8 @@ static int iucv_sock_recvmsg(struct kioc
+ 	struct sk_buff *skb, *rskb, *cskb;
+ 	int err = 0;
  
- /* rrs word 1 bit 0:31 */
- #define RRS_RX_CSUM_MASK	0xFFFF
---- a/drivers/net/ethernet/atheros/atl1e/atl1e_main.c
-+++ b/drivers/net/ethernet/atheros/atl1e/atl1e_main.c
-@@ -2354,6 +2354,7 @@ static int __devinit atl1e_probe(struct
- 
- 	INIT_WORK(&adapter->reset_task, atl1e_reset_task);
- 	INIT_WORK(&adapter->link_chg_task, atl1e_link_chg_task);
-+	netif_set_gso_max_size(netdev, MAX_TSO_SEG_SIZE);
- 	err = register_netdev(netdev);
- 	if (err) {
- 		netdev_err(netdev, "register netdevice failed\n");
++	msg->msg_namelen = 0;
++
+ 	if ((sk->sk_state == IUCV_DISCONN) &&
+ 	    skb_queue_empty(&iucv->backlog_skb_q) &&
+ 	    skb_queue_empty(&sk->sk_receive_queue) &&
 
 
