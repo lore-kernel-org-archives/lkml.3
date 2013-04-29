@@ -1,43 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932952Ab3D2TTB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 15:19:01 -0400
-Received: from server.prisktech.co.nz ([115.188.14.127]:65123 "EHLO
-	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932386Ab3D2TS7 (ORCPT
+	id S932981Ab3D2TT3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 15:19:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60877 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759763Ab3D2TDJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 15:18:59 -0400
-Message-ID: <517EC7A6.9030204@prisktech.co.nz>
-Date: Tue, 30 Apr 2013 07:19:02 +1200
-From: Tony Prisk <linux@prisktech.co.nz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: romieu@fr.zoreil.com, netdev@vger.kernel.org,
-        vt8500-wm8505-linux-kernel@googlegroups.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2 0/3] Add support for velocity network driver on platform
- devices
-References: <1367221841-14563-1-git-send-email-linux@prisktech.co.nz> <20130429.151528.2251094691456287740.davem@davemloft.net>
-In-Reply-To: <20130429.151528.2251094691456287740.davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 29 Apr 2013 15:03:09 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Vasily Averin <vvs@openvz.org>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 18/34] cbq: incorrect processing of high limits
+Date: Mon, 29 Apr 2013 12:02:25 -0700
+Message-Id: <20130429184702.943709248@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130429184700.845644077@linuxfoundation.org>
+References: <20130429184700.845644077@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30/04/13 07:15, David Miller wrote:
-> You prepared these patches against a net-next tree which is at least
-> a week old, I know this because that's when the NETIF_F_* flags for
-> VLAN offloading changed their names which causes your third patch
-> to fail to apply.
->
-> Do not do this, net-next changes every day and rapidly, don't take
-> the chance that the driver you're touching is unpopular and thus
-> hasn't had changes to it recently.  Tree-wide interface changes
-> happen all the time.
-Apologies - I didn't realise. These patches are based against 3.8-rc8.
-I will rebase against net-next and resend.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Regards
-Tony P
+------------------
+
+
+From: Vasily Averin <vvs@parallels.com>
+
+[ Upstream commit f0f6ee1f70c4eaab9d52cf7d255df4bd89f8d1c2 ]
+
+currently cbq works incorrectly for limits > 10% real link bandwidth,
+and practically does not work for limits > 50% real link bandwidth.
+Below are results of experiments taken on 1 Gbit link
+
+ In shaper | Actual Result
+-----------+---------------
+  100M     | 108 Mbps
+  200M     | 244 Mbps
+  300M     | 412 Mbps
+  500M     | 893 Mbps
+
+This happen because of q->now changes incorrectly in cbq_dequeue():
+when it is called before real end of packet transmitting,
+L2T is greater than real time delay, q_now gets an extra boost
+but never compensate it.
+
+To fix this problem we prevent change of q->now until its synchronization
+with real time.
+
+Signed-off-by: Vasily Averin <vvs@openvz.org>
+Reviewed-by: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
+Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ net/sched/sch_cbq.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+--- a/net/sched/sch_cbq.c
++++ b/net/sched/sch_cbq.c
+@@ -963,8 +963,11 @@ cbq_dequeue(struct Qdisc *sch)
+ 		cbq_update(q);
+ 		if ((incr -= incr2) < 0)
+ 			incr = 0;
++		q->now += incr;
++	} else {
++		if (now > q->now)
++			q->now = now;
+ 	}
+-	q->now += incr;
+ 	q->now_rt = now;
+ 
+ 	for (;;) {
+
+
