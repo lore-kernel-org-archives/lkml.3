@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760227Ab3D2TMx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 15:12:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60953 "EHLO
+	id S1760239Ab3D2TNK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 15:13:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60948 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759883Ab3D2TDU (ORCPT
+	with ESMTP id S1759878Ab3D2TDU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 29 Apr 2013 15:03:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tom Parkin <tparkin@katalix.com>, Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 34/34] net: drop dst before queueing fragments
-Date: Mon, 29 Apr 2013 12:02:41 -0700
-Message-Id: <20130429184704.740015739@linuxfoundation.org>
+        Andy Lutomirski <luto@amacapital.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 33/34] net: fix incorrect credentials passing
+Date: Mon, 29 Apr 2013 12:02:40 -0700
+Message-Id: <20130429184704.642438507@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130429184700.845644077@linuxfoundation.org>
 References: <20130429184700.845644077@linuxfoundation.org>
@@ -28,91 +31,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Eric Dumazet <edumazet@google.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-[ Upstream commit 97599dc792b45b1669c3cdb9a4b365aad0232f65 ]
+[ Upstream commit 83f1b4ba917db5dc5a061a44b3403ddb6e783494 ]
 
-Commit 4a94445c9a5c (net: Use ip_route_input_noref() in input path)
-added a bug in IP defragmentation handling, as non refcounted
-dst could escape an RCU protected section.
+Commit 257b5358b32f ("scm: Capture the full credentials of the scm
+sender") changed the credentials passing code to pass in the effective
+uid/gid instead of the real uid/gid.
 
-Commit 64f3b9e203bd068 (net: ip_expire() must revalidate route) fixed
-the case of timeouts, but not the general problem.
+Obviously this doesn't matter most of the time (since normally they are
+the same), but it results in differences for suid binaries when the wrong
+uid/gid ends up being used.
 
-Tom Parkin noticed crashes in UDP stack and provided a patch,
-but further analysis permitted us to pinpoint the root cause.
+This just undoes that (presumably unintentional) part of the commit.
 
-Before queueing a packet into a frag list, we must drop its dst,
-as this dst has limited lifetime (RCU protected)
-
-When/if a packet is finally reassembled, we use the dst of the very
-last skb, still protected by RCU and valid, as the dst of the
-reassembled packet.
-
-Use same logic in IPv6, as there is no need to hold dst references.
-
-Reported-by: Tom Parkin <tparkin@katalix.com>
-Tested-by: Tom Parkin <tparkin@katalix.com>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
+Reported-by: Andy Lutomirski <luto@amacapital.net>
+Cc: Eric W. Biederman <ebiederm@xmission.com>
+Cc: Serge E. Hallyn <serge@hallyn.com>
+Cc: David S. Miller <davem@davemloft.net>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Acked-by: "Eric W. Biederman" <ebiederm@xmission.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/ip_fragment.c |   15 +++++++++++----
- net/ipv6/reassembly.c  |   13 +++++++++++--
- 2 files changed, 22 insertions(+), 6 deletions(-)
+ include/linux/socket.h |    3 ++-
+ include/net/scm.h      |    2 +-
+ net/core/sock.c        |   14 ++++++++++----
+ 3 files changed, 13 insertions(+), 6 deletions(-)
 
---- a/net/ipv4/ip_fragment.c
-+++ b/net/ipv4/ip_fragment.c
-@@ -251,8 +251,7 @@ static void ip_expire(unsigned long arg)
- 		if (!head->dev)
- 			goto out_rcu_unlock;
+--- a/include/linux/socket.h
++++ b/include/linux/socket.h
+@@ -316,7 +316,8 @@ struct ucred {
+ /* IPX options */
+ #define IPX_TYPE	1
  
--		/* skb dst is stale, drop it, and perform route lookup again */
--		skb_dst_drop(head);
-+		/* skb has no dst, perform route lookup again */
- 		iph = ip_hdr(head);
- 		err = ip_route_input_noref(head, iph->daddr, iph->saddr,
- 					   iph->tos, head->dev);
-@@ -517,8 +516,16 @@ found:
- 		qp->q.last_in |= INET_FRAG_FIRST_IN;
+-extern void cred_to_ucred(struct pid *pid, const struct cred *cred, struct ucred *ucred);
++extern void cred_to_ucred(struct pid *pid, const struct cred *cred, struct ucred *ucred,
++			  bool use_effective);
  
- 	if (qp->q.last_in == (INET_FRAG_FIRST_IN | INET_FRAG_LAST_IN) &&
--	    qp->q.meat == qp->q.len)
--		return ip_frag_reasm(qp, prev, dev);
-+	    qp->q.meat == qp->q.len) {
-+		unsigned long orefdst = skb->_skb_refdst;
-+
-+		skb->_skb_refdst = 0UL;
-+		err = ip_frag_reasm(qp, prev, dev);
-+		skb->_skb_refdst = orefdst;
-+		return err;
-+	}
-+
-+	skb_dst_drop(skb);
+ extern int memcpy_fromiovec(unsigned char *kdata, struct iovec *iov, int len);
+ extern int memcpy_fromiovecend(unsigned char *kdata, const struct iovec *iov,
+--- a/include/net/scm.h
++++ b/include/net/scm.h
+@@ -50,7 +50,7 @@ static __inline__ void scm_set_cred(stru
+ {
+ 	scm->pid  = get_pid(pid);
+ 	scm->cred = cred ? get_cred(cred) : NULL;
+-	cred_to_ucred(pid, cred, &scm->creds);
++	cred_to_ucred(pid, cred, &scm->creds, false);
+ }
  
- 	write_lock(&ip4_frags.lock);
- 	list_move_tail(&qp->q.lru_list, &qp->q.net->lru_list);
---- a/net/ipv6/reassembly.c
-+++ b/net/ipv6/reassembly.c
-@@ -385,8 +385,17 @@ found:
+ static __inline__ void scm_destroy_cred(struct scm_cookie *scm)
+--- a/net/core/sock.c
++++ b/net/core/sock.c
+@@ -815,15 +815,20 @@ EXPORT_SYMBOL(sock_setsockopt);
+ 
+ 
+ void cred_to_ucred(struct pid *pid, const struct cred *cred,
+-		   struct ucred *ucred)
++		   struct ucred *ucred, bool use_effective)
+ {
+ 	ucred->pid = pid_vnr(pid);
+ 	ucred->uid = ucred->gid = -1;
+ 	if (cred) {
+ 		struct user_namespace *current_ns = current_user_ns();
+ 
+-		ucred->uid = user_ns_map_uid(current_ns, cred, cred->euid);
+-		ucred->gid = user_ns_map_gid(current_ns, cred, cred->egid);
++		if (use_effective) {
++			ucred->uid = user_ns_map_uid(current_ns, cred, cred->euid);
++			ucred->gid = user_ns_map_gid(current_ns, cred, cred->egid);
++		} else {
++			ucred->uid = user_ns_map_uid(current_ns, cred, cred->uid);
++			ucred->gid = user_ns_map_gid(current_ns, cred, cred->gid);
++		}
  	}
- 
- 	if (fq->q.last_in == (INET_FRAG_FIRST_IN | INET_FRAG_LAST_IN) &&
--	    fq->q.meat == fq->q.len)
--		return ip6_frag_reasm(fq, prev, dev);
-+	    fq->q.meat == fq->q.len) {
-+		int res;
-+		unsigned long orefdst = skb->_skb_refdst;
-+
-+		skb->_skb_refdst = 0UL;
-+		res = ip6_frag_reasm(fq, prev, dev);
-+		skb->_skb_refdst = orefdst;
-+		return res;
-+	}
-+
-+	skb_dst_drop(skb);
- 
- 	write_lock(&ip6_frags.lock);
- 	list_move_tail(&fq->q.lru_list, &fq->q.net->lru_list);
+ }
+ EXPORT_SYMBOL_GPL(cred_to_ucred);
+@@ -984,7 +989,8 @@ int sock_getsockopt(struct socket *sock,
+ 		struct ucred peercred;
+ 		if (len > sizeof(peercred))
+ 			len = sizeof(peercred);
+-		cred_to_ucred(sk->sk_peer_pid, sk->sk_peer_cred, &peercred);
++		cred_to_ucred(sk->sk_peer_pid, sk->sk_peer_cred,
++			      &peercred, true);
+ 		if (copy_to_user(optval, &peercred, len))
+ 			return -EFAULT;
+ 		goto lenout;
 
 
