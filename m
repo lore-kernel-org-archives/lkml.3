@@ -1,253 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933002Ab3D2TTm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 15:19:42 -0400
-Received: from mail-qc0-f181.google.com ([209.85.216.181]:47373 "EHLO
-	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932987Ab3D2TTk (ORCPT
+	id S932964Ab3D2TT2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 15:19:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60881 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759765Ab3D2TDJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 15:19:40 -0400
-Message-ID: <517EC7CA.8070309@gmail.com>
-Date: Mon, 29 Apr 2013 15:19:38 -0400
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
-MIME-Version: 1.0
+	Mon, 29 Apr 2013 15:03:09 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Olivier Langlois <olivier@trillion01.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        David Miller <davem@davemloft.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        kosaki.motohiro@gmail.com
-Subject: [PATCH 5/2] posix-cpu-timers: cleanup cpu_{clock,timer}_sample{,_group}
-References: <1367216762-3933-1-git-send-email-kosaki.motohiro@gmail.com>
-In-Reply-To: <1367216762-3933-1-git-send-email-kosaki.motohiro@gmail.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Balakumaran Kannan <Balakumaran.Kannan@ap.sony.com>,
+        Maruthi Thotad <Maruthi.Thotad@ap.sony.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 19/34] net IPv6 : Fix broken IPv6 routing table after loopback down-up
+Date: Mon, 29 Apr 2013 12:02:26 -0700
+Message-Id: <20130429184703.058645961@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130429184700.845644077@linuxfoundation.org>
+References: <20130429184700.845644077@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now we have similar four timer related functions, cpu_clock_sample(),
-cpu_clock_sample_group(), cpu_timer_sample() and cpu_timer_sample_group().
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-For readability, making do_cpu_clock_timer_sample() and thread_cputime()
-helper functions and all *_sample functions use them.
+------------------
 
-Suggested-by: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+
+From: Balakumaran Kannan <kumaran.4353@gmail.com>
+
+[ Upstream commit 25fb6ca4ed9cad72f14f61629b68dc03c0d9713f ]
+
+IPv6 Routing table becomes broken once we do ifdown, ifup of the loopback(lo)
+interface. After down-up, routes of other interface's IPv6 addresses through
+'lo' are lost.
+
+IPv6 addresses assigned to all interfaces are routed through 'lo' for internal
+communication. Once 'lo' is down, those routing entries are removed from routing
+table. But those removed entries are not being re-created properly when 'lo' is
+brought up. So IPv6 addresses of other interfaces becomes unreachable from the
+same machine. Also this breaks communication with other machines because of
+NDISC packet processing failure.
+
+This patch fixes this issue by reading all interface's IPv6 addresses and adding
+them to IPv6 routing table while bringing up 'lo'.
+
+==Testing==
+Before applying the patch:
+$ route -A inet6
+Kernel IPv6 routing table
+Destination                    Next Hop                   Flag Met Ref Use If
+2000::20/128                   ::                         U    256 0     0 eth0
+fe80::/64                      ::                         U    256 0     0 eth0
+::/0                           ::                         !n   -1  1     1 lo
+::1/128                        ::                         Un   0   1     0 lo
+2000::20/128                   ::                         Un   0   1     0 lo
+fe80::xxxx:xxxx:xxxx:xxxx/128  ::                         Un   0   1     0 lo
+ff00::/8                       ::                         U    256 0     0 eth0
+::/0                           ::                         !n   -1  1     1 lo
+$ sudo ifdown lo
+$ sudo ifup lo
+$ route -A inet6
+Kernel IPv6 routing table
+Destination                    Next Hop                   Flag Met Ref Use If
+2000::20/128                   ::                         U    256 0     0 eth0
+fe80::/64                      ::                         U    256 0     0 eth0
+::/0                           ::                         !n   -1  1     1 lo
+::1/128                        ::                         Un   0   1     0 lo
+ff00::/8                       ::                         U    256 0     0 eth0
+::/0                           ::                         !n   -1  1     1 lo
+$
+
+After applying the patch:
+$ route -A inet6
+Kernel IPv6 routing
+table
+Destination                    Next Hop                   Flag Met Ref Use If
+2000::20/128                   ::                         U    256 0     0 eth0
+fe80::/64                      ::                         U    256 0     0 eth0
+::/0                           ::                         !n   -1  1     1 lo
+::1/128                        ::                         Un   0   1     0 lo
+2000::20/128                   ::                         Un   0   1     0 lo
+fe80::xxxx:xxxx:xxxx:xxxx/128  ::                         Un   0   1     0 lo
+ff00::/8                       ::                         U    256 0     0 eth0
+::/0                           ::                         !n   -1  1     1 lo
+$ sudo ifdown lo
+$ sudo ifup lo
+$ route -A inet6
+Kernel IPv6 routing table
+Destination                    Next Hop                   Flag Met Ref Use If
+2000::20/128                   ::                         U    256 0     0 eth0
+fe80::/64                      ::                         U    256 0     0 eth0
+::/0                           ::                         !n   -1  1     1 lo
+::1/128                        ::                         Un   0   1     0 lo
+2000::20/128                   ::                         Un   0   1     0 lo
+fe80::xxxx:xxxx:xxxx:xxxx/128  ::                         Un   0   1     0 lo
+ff00::/8                       ::                         U    256 0     0 eth0
+::/0                           ::                         !n   -1  1     1 lo
+$
+
+Signed-off-by: Balakumaran Kannan <Balakumaran.Kannan@ap.sony.com>
+Signed-off-by: Maruthi Thotad <Maruthi.Thotad@ap.sony.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- include/linux/sched.h     |    1 +
- kernel/posix-cpu-timers.c |  123 +++++++++++++++++++++------------------------
- kernel/sched/cputime.c    |   11 ++++
- 3 files changed, 70 insertions(+), 65 deletions(-)
+ net/ipv6/addrconf.c |   27 +++++++++++++++++++++++++++
+ 1 file changed, 27 insertions(+)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 7863d4b..73ac8fa 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -2622,6 +2622,7 @@ static inline int spin_needbreak(spinlock_t *lock)
- #endif
- }
- 
-+void thread_cputime(struct task_struct *tsk, bool add_delta, struct task_cputime *times);
- /*
-  * Thread group CPU time accounting.
-  */
-diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
-index 651b6c7..9088023 100644
---- a/kernel/posix-cpu-timers.c
-+++ b/kernel/posix-cpu-timers.c
-@@ -203,36 +203,6 @@ posix_cpu_clock_set(const clockid_t which_clock, const struct timespec *tp)
- 	return error;
- }
- 
--static int do_cpu_clock_sample(const clockid_t which_clock,
--			       struct task_struct *p,
--			       bool add_delta,
--			       union cpu_time_count *cpu)
--{
--	switch (CPUCLOCK_WHICH(which_clock)) {
--	default:
--		return -EINVAL;
--	case CPUCLOCK_PROF:
--		cpu->cpu = prof_ticks(p);
--		break;
--	case CPUCLOCK_VIRT:
--		cpu->cpu = virt_ticks(p);
--		break;
--	case CPUCLOCK_SCHED:
--		cpu->sched = task_sched_runtime(p, add_delta);
--		break;
--	}
--	return 0;
--}
--
--/*
-- * Sample a per-thread clock for the given task.
-- */
--static int cpu_clock_sample(const clockid_t which_clock, struct task_struct *p,
--			    union cpu_time_count *cpu)
--{
--	return do_cpu_clock_sample(which_clock, p, true, cpu);
--}
--
- static void update_gt_cputime(struct task_cputime *a, struct task_cputime *b)
+--- a/net/ipv6/addrconf.c
++++ b/net/ipv6/addrconf.c
+@@ -2399,6 +2399,9 @@ static void sit_add_v4_addrs(struct inet
+ static void init_loopback(struct net_device *dev)
  {
- 	if (b->utime > a->utime)
-@@ -274,34 +244,84 @@ void thread_group_cputimer(struct task_struct *tsk, struct task_cputime *times)
- }
+ 	struct inet6_dev  *idev;
++	struct net_device *sp_dev;
++	struct inet6_ifaddr *sp_ifa;
++	struct rt6_info *sp_rt;
  
- /*
-- * Sample a process (thread group) clock for the given group_leader task.
-- * Must be called with tasklist_lock held for reading.
-+ * Sample time for the given task.
-+ * @which_clock:	Clock id.
-+ * @p:			Target task. Must be thread group leader when
-+ *			thread_group is true.
-+ * @thread_group:	True if want to get process time.
-+ * @add_delta:		True if want to get clock time,
-+ *			otherwise, get timer time.
-  */
--static int cpu_clock_sample_group(const clockid_t which_clock,
--				  struct task_struct *p,
--				  union cpu_time_count *cpu)
-+static int do_cpu_clock_timer_sample(const clockid_t which_clock,
-+				     struct task_struct *p,
-+				     bool thread_group,
-+				     bool clock_time,
-+				     union cpu_time_count *cpu)
- {
- 	struct task_cputime cputime;
+ 	/* ::1 */
  
-+	if (thread_group)
-+		thread_group_cputime(p, clock_time, &cputime);
-+	else
-+		thread_cputime(p, clock_time, &cputime);
-+
- 	switch (CPUCLOCK_WHICH(which_clock)) {
- 	default:
- 		return -EINVAL;
- 	case CPUCLOCK_PROF:
--		thread_group_cputime(p, true, &cputime);
- 		cpu->cpu = cputime.utime + cputime.stime;
- 		break;
- 	case CPUCLOCK_VIRT:
--		thread_group_cputime(p, true, &cputime);
- 		cpu->cpu = cputime.utime;
- 		break;
- 	case CPUCLOCK_SCHED:
--		thread_group_cputime(p, true, &cputime);
- 		cpu->sched = cputime.sum_exec_runtime;
- 		break;
+@@ -2410,6 +2413,30 @@ static void init_loopback(struct net_dev
  	}
- 	return 0;
+ 
+ 	add_addr(idev, &in6addr_loopback, 128, IFA_HOST);
++
++	/* Add routes to other interface's IPv6 addresses */
++	for_each_netdev(dev_net(dev), sp_dev) {
++		if (!strcmp(sp_dev->name, dev->name))
++			continue;
++
++		idev = __in6_dev_get(sp_dev);
++		if (!idev)
++			continue;
++
++		read_lock_bh(&idev->lock);
++		list_for_each_entry(sp_ifa, &idev->addr_list, if_list) {
++
++			if (sp_ifa->flags & (IFA_F_DADFAILED | IFA_F_TENTATIVE))
++				continue;
++
++			sp_rt = addrconf_dst_alloc(idev, &sp_ifa->addr, 0);
++
++			/* Failure cases are ignored */
++			if (!IS_ERR(sp_rt))
++				ip6_ins_rt(sp_rt);
++		}
++		read_unlock_bh(&idev->lock);
++	}
  }
  
-+/*
-+ * Get a per-thread clock time for the given task.
-+ */
-+static int cpu_clock_sample(const clockid_t which_clock, struct task_struct *p,
-+			    union cpu_time_count *cpu)
-+{
-+	return do_cpu_clock_timer_sample(which_clock, p, false, true, cpu);
-+}
-+
-+/*
-+ * Get a per-process clock time for the given task.
-+ * Must be called with tasklist_lock held for reading if p is not thread
-+ * group leader.
-+ */
-+static int cpu_clock_sample_group(const clockid_t which_clock,
-+				  struct task_struct *p,
-+				  union cpu_time_count *cpu)
-+{
-+	return do_cpu_clock_timer_sample(which_clock, p, true, true, cpu);
-+}
-+
-+/*
-+ * Sample a per-thread timer time for the given task.
-+ */
-+static int cpu_timer_sample(const clockid_t which_clock, struct task_struct *p,
-+			    union cpu_time_count *cpu)
-+{
-+	return do_cpu_clock_timer_sample(which_clock, p, false, false, cpu);
-+}
-+
-+/*
-+ * Sample a process timer time for the given task.
-+ * Must be called with tasklist_lock held for reading if p is not thread group
-+ * leader.
-+ */
-+static int cpu_timer_sample_group(const clockid_t which_clock,
-+				  struct task_struct *p,
-+				  union cpu_time_count *cpu)
-+{
-+	return do_cpu_clock_timer_sample(which_clock, p, true, false, cpu);
-+}
- 
- static int posix_cpu_clock_get(const clockid_t which_clock, struct timespec *tp)
- {
-@@ -622,33 +642,6 @@ static void cpu_timer_fire(struct k_itimer *timer)
- }
- 
- /*
-- * Sample a process (thread group) timer for the given group_leader task.
-- * Must be called with tasklist_lock held for reading.
-- */
--static int cpu_timer_sample_group(const clockid_t which_clock,
--				  struct task_struct *p,
--				  union cpu_time_count *cpu)
--{
--	struct task_cputime cputime;
--
--	thread_group_cputimer(p, &cputime);
--	switch (CPUCLOCK_WHICH(which_clock)) {
--	default:
--		return -EINVAL;
--	case CPUCLOCK_PROF:
--		cpu->cpu = cputime.utime + cputime.stime;
--		break;
--	case CPUCLOCK_VIRT:
--		cpu->cpu = cputime.utime;
--		break;
--	case CPUCLOCK_SCHED:
--		cpu->sched = cputime.sum_exec_runtime;
--		break;
--	}
--	return 0;
--}
--
--/*
-  * Guts of sys_timer_settime for CPU timers.
-  * This is called with the timer locked and interrupts disabled.
-  * If we return TIMER_RETRY, it's necessary to release the timer's lock
-diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
-index 69d3f6c..29ef7d7 100644
---- a/kernel/sched/cputime.c
-+++ b/kernel/sched/cputime.c
-@@ -289,6 +289,17 @@ static __always_inline bool steal_account_process_tick(void)
- 	return false;
- }
- 
-+void thread_cputime(struct task_struct *tsk, bool add_delta, struct task_cputime *times)
-+{
-+	struct signal_struct *sig = tsk->signal;
-+	cputime_t utime, stime;
-+
-+	task_cputime(tsk, &utime, &stime);
-+	times->utime = utime;
-+	times->stime = stime;
-+	times->sum_exec_runtime = task_sched_runtime(tsk, add_delta);
-+}
-+
- /*
-  * Accumulate raw cputime values of dead tasks (sig->[us]time) and live
-  * tasks (sum on group iteration) belonging to @tsk's group.
--- 
-1.7.1
+ static void addrconf_add_linklocal(struct inet6_dev *idev, const struct in6_addr *addr)
 
 
