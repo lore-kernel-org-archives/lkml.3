@@ -1,79 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932416Ab3D2Xaw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 19:30:52 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9628 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932264Ab3D2Xau (ORCPT
+	id S933213Ab3D2Xgy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 19:36:54 -0400
+Received: from mail-we0-f179.google.com ([74.125.82.179]:55958 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932389Ab3D2Xgx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 19:30:50 -0400
-X-Authority-Analysis: v=2.0 cv=UY7TuduN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=Ec5KRrUfgF4A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=3Rf8dyYKyM8A:10 a=VwQbUJbxAAAA:8 a=sbiLhyKNJr5kooBKuzIA:9 a=QEXdDO2ut3YA:10 a=BIPEw63E_3DNV8k9He8A:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-Id: <20130429233000.662744610@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Mon, 29 Apr 2013 19:30:00 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kbuild mailing list <linux-kbuild@vger.kernel.org>
-Subject: [PATCH 0/2] [GIT PULL take 2 ] localmodconfig: Fix missing depends of config files included in if statements
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
+	Mon, 29 Apr 2013 19:36:53 -0400
+Date: Tue, 30 Apr 2013 01:36:49 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Alan Stern <stern@rowland.harvard.edu>, Ingo Molnar <mingo@elte.hu>,
+        Jan Kratochvil <jan.kratochvil@redhat.com>,
+        Prasad <prasad@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 6/6] ptrace: PTRACE_DETACH should do
+ flush_ptrace_hw_breakpoint(child)
+Message-ID: <20130429233647.GD1760@somewhere>
+References: <20130418184350.GA4407@redhat.com>
+ <20130418184425.GA4454@redhat.com>
+ <20130429160931.GD31230@somewhere>
+ <20130429164038.GA27132@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130429164038.GA27132@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---00GvhwF7k39YY
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On Mon, Apr 29, 2013 at 06:40:38PM +0200, Oleg Nesterov wrote:
+> On 04/29, Frederic Weisbecker wrote:
+> >
+> > On Thu, Apr 18, 2013 at 08:44:25PM +0200, Oleg Nesterov wrote:
+> > > index 776ab3b..33752d9 100644
+> > > --- a/kernel/ptrace.c
+> > > +++ b/kernel/ptrace.c
+> > > @@ -467,6 +467,7 @@ static int ptrace_detach(struct task_struct *child, unsigned int data)
+> > >  	/* Architecture-specific hardware disable .. */
+> > >  	ptrace_disable(child);
+> > >  	clear_tsk_thread_flag(child, TIF_SYSCALL_TRACE);
+> > > +	flush_ptrace_hw_breakpoint(child);
+> >
+> > So I assume the tracee is still guaranteed to be stopped at that time, right?
+> 
+> Yes.
+> 
+> This is only called by PTRACE_DETACH which requires the stopped tracee,
+> like all ptrace requests except PTRACE_KILL/INTERRUPT. And only one
+> thread (the tracer) can do this.
 
+Ok.
 
-Linus,
+> 
+> > But it can't be concurrently killed given the patch you did that prevented that?
+> 
+> No, it can't. To clarify, the tracee can't run even if killed.
+> 
+> And just in case... If the tracer exits and does the implicit detach,
+> ptrace_detach() (and thus flush_ptrace_hw_breakpoint()) is not called,
+> that would be wrong exactly because we can race with the tracee.
 
-[
-  Sorry for the previous confusion. My scripts to make my patch sets
-  key off of the tag name. Thus by using the ktest tag, my scripts
-  put in the linux-ktest.git tree.
-]
+Great!
 
-A bug was recently found in the make localmodconfig where it would miss
-dependencies of config files are include in other config files inside
-an if statement.
+> 
+> > Also it seems to be a regression since we brought the breakpoint/perf
+> > infrastructure.
+> 
+> No, I think this (minor) problem is very old... At least, when I look
+> at 2.6.26 code I do not see anything which coould clear db regs on
+> detach.
 
-Also added a debug print that helped in solving this bug.
+Ok, if so then the conversion to perf hasn't changed much the picture I think.
+Also we are not holding a reference to the tracer from the event (event->owner is NULL)
+so I guess we haven't made it buggier. The breakpoints have just stayed persistent across
+tracers.
 
+> 
+> > backporting this patch prior to "ptrace: ensure arch_ptrace/ptrace_request can never race with SIGKILL"
+> > might be racy.
+> 
+> Yes, unlikely this is possible or even makes sense, the problem is
+> minor.
 
-Please pull the latest localmodconfig-v3.10 tree, which can be found at:
+Ok.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-kconfig.git
-localmodconfig-v3.10
+> Btw. perhaps flush_ptrace_hw_breakpoint() should also clear the
+> virtual registers like thread.debugreg7 ? Even without this patch,
+> flush_ is also called exec.
 
-Head SHA1: 0d0f18b32c5382431163391f224195dea251cae8
+Yeah makes sense.
 
+Thanks.
 
-Steven Rostedt (2):
-      localmodconfig: Add debug prints for dependencies of module configs
-      localmodconfig: Process source kconfig files as they are found
-
-----
- scripts/kconfig/streamline_config.pl |   26 ++++++++++++++++----------
- 1 file changed, 16 insertions(+), 10 deletions(-)
-
---00GvhwF7k39YY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQEcBAABAgAGBQJRfwKmAAoJEOdOSU1xswtMd0IIAMsHxNiia11NzyCDd01D+1Np
-g3Lqx/3LPA4o7wAfBHxHrAheES11w2J+PJg8Sq74z4V0TpdFYhdp5FbXdIYTQ/aV
-7pg+uPfmeALr6M3nl4rM55sJSyaq8jKLguFCNLziERsQIMQyFpqrtlpm7YvnTszJ
-RwZgh0fEZK69qOMCkacHdPd1XDu4YvXLhX+JHTwc3sR0MJYoPET6+qTQIY+ZRvrM
-uzVWl++jgBcC45wikPyIjQhQQoHAfILa/sHK9T56Z0fFgMbozlj6Ypo97fqY9hHk
-p6aOUefi7Up2+NsaoQ4PfN6WW52EnTse/JK5+topMkb1F8PK3eI8TSw2uLwY7gc=
-=NRGC
------END PGP SIGNATURE-----
-
---00GvhwF7k39YY--
+> 
+> Oleg.
+> 
