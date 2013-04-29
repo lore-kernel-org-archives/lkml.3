@@ -1,81 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751889Ab3D2FGx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 01:06:53 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:59923 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751639Ab3D2FGw (ORCPT
+	id S1752493Ab3D2FWE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 01:22:04 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:58270 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751106Ab3D2FWB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 01:06:52 -0400
-Message-ID: <517DFFE9.4050808@gmail.com>
-Date: Mon, 29 Apr 2013 01:06:49 -0400
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Olivier Langlois <olivier@trillion01.com>
-CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, schwidefsky@de.ibm.com,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 1/3] process cputimer is moving faster than its corresponding
- clock
-References: <1365184746.874.103.camel@Wailaba2>  <1365593710.30071.52.camel@laptop> <1365608911.707.65.camel@Wailaba2>  <1365763837.17140.52.camel@laptop> <1365782115.17140.68.camel@laptop>  <CAFTL4hwQ4FZs0VCNXP37f=+DBW7Q2EQc6PW_EtYiVnZCPWN4OQ@mail.gmail.com>  <CAHGf_=pWPT4XdrJ8ZveL4zJKm1SE0whpL_fMHd5_TokuNQxSJQ@mail.gmail.com>  <CAHGf_=psD4V-U4FFwAWr4k3ZP6p=GVkNY_0S-Cg06m-=89MM7Q@mail.gmail.com>  <1366951210.7911.28.camel@Wailaba2> <1366957639.7911.42.camel@Wailaba2>  <517AD0AE.1030404@gmail.com> <1367037606.7911.66.camel@Wailaba2>
-In-Reply-To: <1367037606.7911.66.camel@Wailaba2>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 29 Apr 2013 01:22:01 -0400
+Date: Mon, 29 Apr 2013 15:21:49 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Matt Fleming <matt.fleming@intel.com>,
+        David Howells <dhowells@redhat.com>, Tom Gundersen <teg@jklm.no>
+Subject: linux-next: manual merge of the tip tree with Linus' and the vfs
+ tree
+Message-Id: <20130429152149.d5bb408bf88bf46232282419@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__29_Apr_2013_15_21_49_+1000__sgeb./wvjQFhjm6"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(4/27/13 12:40 AM), Olivier Langlois wrote:
-> 
-> 
-> Forbids the cputimer to drift ahead of its process clock by
-> blocking its update when a tick occurs while a autoreaping task
-> is currently in do_exit() between the call to release_task() and
-> its final call to schedule().
-> 
-> Any task stats update after having called release_task() will
-> be lost because they are added to the global process stats located
-> in the signal struct from release_task().
-> 
-> Ideally, you should postpone the release_task() call after the
-> final context switch to get all the stats added but this is
-> more complex to achieve.
-> 
-> In other words, this is slowing down the cputimer so it keep the same
-> pace than the process clock but in fact, what should be done is to
-> speed up the process clock by adding the missing stats to it.
-> 
-> Signed-off-by: Olivier Langlois <olivier@trillion01.com>
-> ---
->  kernel/sched/fair.c | 10 +++++++++-
->  1 file changed, 9 insertions(+), 1 deletion(-)
-> 
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index 7a33e59..52d7b10 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -708,7 +708,15 @@ static void update_curr(struct cfs_rq *cfs_rq)
->  
->                 trace_sched_stat_runtime(curtask, delta_exec, curr->vruntime);
->                 cpuacct_charge(curtask, delta_exec);
-> -               account_group_exec_runtime(curtask, delta_exec);
-> +               /*
-> +                * Do not update the cputimer if the task is already released by
-> +                * release_task().
-> +                *
-> +                * it would preferable to defer the autoreap release_task
-> +                * after the last context switch but harder to do.
-> +                */
-> +               if (likely(curtask->sighand))
-> +                       account_group_exec_runtime(curtask, delta_exec);
->         }
+--Signature=_Mon__29_Apr_2013_15_21_49_+1000__sgeb./wvjQFhjm6
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I'm confused. glibc's rt/tst-cputimer1 doesn't have thread exiting code. I have
-no seen any issue in this accounting.
+Hi all,
 
+Today's linux-next merge of the tip tree got a conflict in
+drivers/firmware/efivars.c between commits f464246d85d5 ("efivars: only
+check for duplicates on the registered list") from Linus' tree and
+a2162ae42bc4 ("Include missing linux/magic.h inclusions") from the vfs
+tree and commits d68772b7c83f ("efivarfs: Move to fs/efivarfs") and
+e14ab23dde12 ("efivars: efivar_entry API") from the tip tree.
 
+I think that the second tip tree patch supersedes the patch in Linus'
+tree.
 
+I removed the file and applied the following fix up patch and can carry
+the fix as necessary (no action is required).
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Mon, 29 Apr 2013 15:18:07 +1000
+Subject: [PATCH] efivars: Include missing linux/magic.h inclusions
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ fs/efivarfs/super.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/fs/efivarfs/super.c b/fs/efivarfs/super.c
+index 34c48f1..1fa5e6d 100644
+--- a/fs/efivarfs/super.c
++++ b/fs/efivarfs/super.c
+@@ -12,6 +12,7 @@
+ #include <linux/fs.h>
+ #include <linux/module.h>
+ #include <linux/pagemap.h>
++#include <linux/magic.h>
+=20
+ #include "internal.h"
+=20
+--=20
+1.8.1
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Mon__29_Apr_2013_15_21_49_+1000__sgeb./wvjQFhjm6
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRfgNtAAoJEECxmPOUX5FE9NAQAIyvM9/+z2gONxOEQ3jLu0sc
+YMCdeJ0PCcVGjXA/ZbN6kWPF9feNhrB1U1tEJIYBVFEWZuZUcK89UWAUdfZ4BheO
+3E8DnnIEgQo8mvFJuW4GD/iTe8q+P3rKvQkeWehXHMoE2bklWTUaZD2dDc0/NovJ
+Y3LB2nNMYZR3yy2t9mLX+MY28791LkncDYXxNKQkStecyNRKKasnSWKtDTfaUd3k
+k3kTIvwizmlYrO8b/6mVH7uUL3wv5qOEcTBneuUFVXLHk543a0UHXBmM08Hu8sRk
+UnIGsCZcfQqPgwJVH+6q9P+CwLgchJTfROGUhCQT9leFchOufkqd3lX5CGPUj7EE
+wcnqJpPyx4BWDWz0AonPDQLcvfWvXuGxeCss+UKBt1zj5hQOaj0Aun5aHJO4rUH3
+Rupxx0caKLWFgjR4ON7VFz1m4/55Xuzst7hk+4li2IL0NqgprEaBfZIDsd8ADUd+
+n2bgIBa6+cTl0IT3r9XwzftxkTH1AJJDo5QYn5s1eMVlb2ftdw2zOSHJIYJfMNAJ
+Sou48dGeHLXmP6dcY8Id77ltAW8AWqSQxuq6XRg/gY959rJc9tZovj+G0+Lip/7f
+c7SRQ4LegaunsckdhnMNBY111drEo+KiFka+gG1PXihGXMdAj4D+nqIDb45HT2gw
+uHVHUq9zYHi+x9R0pZ/s
+=srVy
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__29_Apr_2013_15_21_49_+1000__sgeb./wvjQFhjm6--
