@@ -1,67 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933082Ab3D2TVx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 15:21:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60847 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759716Ab3D2TDF (ORCPT
+	id S933556Ab3D2T1T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 15:27:19 -0400
+Received: from mail-ea0-f180.google.com ([209.85.215.180]:50418 "EHLO
+	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933284Ab3D2T1Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 15:03:05 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mathias Krause <minipli@googlemail.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 13/34] netrom: fix info leak via msg_name in nr_recvmsg()
-Date: Mon, 29 Apr 2013 12:02:20 -0700
-Message-Id: <20130429184702.402983859@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130429184700.845644077@linuxfoundation.org>
-References: <20130429184700.845644077@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Mon, 29 Apr 2013 15:27:16 -0400
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH RESEND] ARM: dove: fix Dove cpu type from V7 to PJ4
+Date: Mon, 29 Apr 2013 21:26:52 +0200
+Message-Id: <1367263612-17596-1-git-send-email-sebastian.hesselbarth@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1364051211-24414-1-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1364051211-24414-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+The CPU used in Marvell Dove SoCs is a PJ4 Sheeva core. Using
+CONFIG_CPU_PJ4 instead of CONFIG_CPU_V7 will enable iWMMXt
+extensions on Dove.
 
-------------------
-
-
-From: Mathias Krause <minipli@googlemail.com>
-
-[ Upstream commits 3ce5efad47b62c57a4f5c54248347085a750ce0e and
-  c802d759623acbd6e1ee9fbdabae89159a513913 ]
-
-In case msg_name is set the sockaddr info gets filled out, as
-requested, but the code fails to initialize the padding bytes of
-struct sockaddr_ax25 inserted by the compiler for alignment. Also
-the sax25_ndigis member does not get assigned, leaking four more
-bytes.
-
-Both issues lead to the fact that the code will leak uninitialized
-kernel stack bytes in net/socket.c.
-
-Fix both issues by initializing the memory with memset(0).
-
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Cc: Ralf Baechle <ralf@linux-mips.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Acked-by: Jason Cooper <jason@lakedaemon.net>
+Acked-by: Andrew Lunn <andrew@lunn.ch>
 ---
- net/netrom/af_netrom.c |    1 +
- 1 file changed, 1 insertion(+)
+Note: This patch is rebased on v3.9 and patch message has been modified
+to point out that iWMMXt is now enforced on CPU_PJ4.
 
---- a/net/netrom/af_netrom.c
-+++ b/net/netrom/af_netrom.c
-@@ -1177,6 +1177,7 @@ static int nr_recvmsg(struct kiocb *iocb
- 	}
- 
- 	if (sax != NULL) {
-+		memset(sax, 0, sizeof(sax));
- 		sax->sax25_family = AF_NETROM;
- 		skb_copy_from_linear_data_offset(skb, 7, sax->sax25_call.ax25_call,
- 			      AX25_ADDR_LEN);
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: Andrew Lunn <andrew@lunn.ch>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+---
+ arch/arm/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 1cacda4..3c5e4da 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -555,7 +555,7 @@ config ARCH_IXP4XX
+ config ARCH_DOVE
+ 	bool "Marvell Dove"
+ 	select ARCH_REQUIRE_GPIOLIB
+-	select CPU_V7
++	select CPU_PJ4
+ 	select GENERIC_CLOCKEVENTS
+ 	select MIGHT_HAVE_PCI
+ 	select PINCTRL
+-- 
+1.7.10.4
 
