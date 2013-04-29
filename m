@@ -1,96 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933222Ab3D2Xh5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 19:37:57 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:45860 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932389Ab3D2Xh4 (ORCPT
+	id S932608Ab3D2XnH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 19:43:07 -0400
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:35519 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932471Ab3D2XnF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 19:37:56 -0400
-Date: Tue, 30 Apr 2013 01:37:52 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>, Ingo Molnar <mingo@elte.hu>,
-        Jan Kratochvil <jan.kratochvil@redhat.com>,
-        Prasad <prasad@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/6] ptrace: PTRACE_DETACH should do
- flush_ptrace_hw_breakpoint(child)
-Message-ID: <20130429233750.GE1760@somewhere>
-References: <20130418184350.GA4407@redhat.com>
- <20130418184425.GA4454@redhat.com>
+	Mon, 29 Apr 2013 19:43:05 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linaro-kernel@lists.linaro.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Magnus Damm <magnus.damm@gmail.com>
+Subject: Re: [PATCH] idle: fix hlt/nohlt command-line handling in new generic idle
+References: <1366849153-25564-1-git-send-email-khilman@linaro.org>
+	<5178D049.9090303@linux.vnet.ibm.com>
+Date: Mon, 29 Apr 2013 16:43:00 -0700
+In-Reply-To: <5178D049.9090303@linux.vnet.ibm.com> (Srivatsa S. Bhat's message
+	of "Thu, 25 Apr 2013 12:12:17 +0530")
+Message-ID: <87haiovr7f.fsf@linaro.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130418184425.GA4454@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 18, 2013 at 08:44:25PM +0200, Oleg Nesterov wrote:
-> Change ptrace_detach() to call flush_ptrace_hw_breakpoint(child).
-> This frees the slots for non-ptrace PERF_TYPE_BREAKPOINT users, and
-> this ensures that the tracee won't be killed by SIGTRAP triggered by
-> the active breakpoints.
-> 
-> Test-case:
-> 
-> 	unsigned long encode_dr7(int drnum, int enable, unsigned int type, unsigned int len)
-> 	{
-> 		unsigned long dr7;
-> 
-> 		dr7 = ((len | type) & 0xf)
-> 			<< (DR_CONTROL_SHIFT + drnum * DR_CONTROL_SIZE);
-> 		if (enable)
-> 			dr7 |= (DR_GLOBAL_ENABLE << (drnum * DR_ENABLE_SIZE));
-> 
-> 		return dr7;
-> 	}
-> 
-> 	int write_dr(int pid, int dr, unsigned long val)
-> 	{
-> 		return ptrace(PTRACE_POKEUSER, pid,
-> 				offsetof (struct user, u_debugreg[dr]),
-> 				val);
-> 	}
-> 
-> 	void func(void)
-> 	{
-> 	}
-> 
-> 	int main(void)
-> 	{
-> 		int pid, stat;
-> 		unsigned long dr7;
-> 
-> 		pid = fork();
-> 		if (!pid) {
-> 			assert(ptrace(PTRACE_TRACEME, 0,0,0) == 0);
-> 			kill(getpid(), SIGHUP);
-> 
-> 			func();
-> 			return 0x13;
-> 		}
-> 
-> 		assert(pid == waitpid(-1, &stat, 0));
-> 		assert(WSTOPSIG(stat) == SIGHUP);
-> 
-> 		assert(write_dr(pid, 0, (long)func) == 0);
-> 		dr7 = encode_dr7(0, 1, DR_RW_EXECUTE, DR_LEN_1);
-> 		assert(write_dr(pid, 7, dr7) == 0);
-> 
-> 		assert(ptrace(PTRACE_DETACH, pid, 0,0) == 0);
-> 		assert(pid == waitpid(-1, &stat, 0));
-> 		assert(stat == 0x1300);
-> 
-> 		return 0;
-> 	}
-> 
-> Before this patch the child is killed after PTRACE_DETACH.
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+"Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com> writes:
 
-ACK.
+> On 04/25/2013 05:49 AM, Kevin Hilman wrote:
+>> commit d1669912 (idle: Implement generic idle function) added a new
+>> generic idle along with support for hlt/nohlt command line options to
+>> override default idle loop behavior.  However, the command-line
+>> processing is never compiled.
+>> 
+>> The command-line handling is wrapped by CONFIG_GENERIC_IDLE_POLL_SETUP
+>> and arches that use this feature select it in their Kconfigs.
+>> However, no Kconfig definition was created for this option, so it is
+>> never enabled, and therefore command-line override of the idle-loop
+>> behavior is broken after migrating to the generic idle loop.
+>> 
+>> To fix, add a Kconfig definition for GENERIC_IDLE_POLL_SETUP.
+>> 
+>> Tested on ARM (OMAP4/Panda) which enables the command-line overrides
+>> by default.
+>> 
+>> Cc: Thomas Gleixner <tglx@linutronix.de>
+>> Cc: Linus Torvalds <torvalds@linux-foundation.org>
+>> Cc: Rusty Russell <rusty@rustcorp.com.au>
+>> Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
+>> Cc: Peter Zijlstra <peterz@infradead.org>
+>> Cc: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+>> Cc: Magnus Damm <magnus.damm@gmail.com>
+>> Signed-off-by: Kevin Hilman <khilman@linaro.org>
+>> ---
+>
+> Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 
-Thanks a lot for this very nice series!
+Thanks for the review.
+
+>> Applies on tip/smp/hotplug where generic idle feature is added
+
+Thomas, can this get into tip/smp/hotplug so the command-line override
+is not broken in v3.10?
+
+Thanks,
+
+Kevin
+
+>>
+>>  arch/Kconfig | 3 +++
+>>  1 file changed, 3 insertions(+)
+>> 
+>> diff --git a/arch/Kconfig b/arch/Kconfig
+>> index 1455579..e0ef57b 100644
+>> --- a/arch/Kconfig
+>> +++ b/arch/Kconfig
+>> @@ -216,6 +216,9 @@ config USE_GENERIC_SMP_HELPERS
+>>  config GENERIC_SMP_IDLE_THREAD
+>>         bool
+>> 
+>> +config GENERIC_IDLE_POLL_SETUP
+>> +       bool
+>> +
+>>  # Select if arch init_task initializer is different to init/init_task.c
+>>  config ARCH_INIT_TASK
+>>         bool
+>> 
