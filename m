@@ -1,54 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757873Ab3D2NVh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 09:21:37 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:59447 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757788Ab3D2NVZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 09:21:25 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Masanori Goto <gotom@sanori.org>
-Subject: Re: [PATCH 10/21] [SCSI] nsp32: use mdelay instead of large udelay constants
-Date: Mon, 29 Apr 2013 15:21:14 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        YOKOTA Hiroshi <yokota@netlab.is.tsukuba.ac.jp>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org
-References: <1366910944-3033663-1-git-send-email-arnd@arndb.de> <1366910944-3033663-11-git-send-email-arnd@arndb.de> <CALZLnaFeLcaGM7_McTZ=pKBRnpXk0AvqOTF=1YCqJv-53yk4XQ@mail.gmail.com>
-In-Reply-To: <CALZLnaFeLcaGM7_McTZ=pKBRnpXk0AvqOTF=1YCqJv-53yk4XQ@mail.gmail.com>
+	id S1757937Ab3D2NVl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 09:21:41 -0400
+Received: from ns.iliad.fr ([212.27.33.1]:53508 "EHLO ns.iliad.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757821Ab3D2NVg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Apr 2013 09:21:36 -0400
+Message-ID: <517E73DE.7050600@freebox.fr>
+Date: Mon, 29 Apr 2013 15:21:34 +0200
+From: Nicolas Schichan <nschichan@freebox.fr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Xi Wang <xi.wang@gmail.com>
+CC: Daniel Borkmann <dborkman@redhat.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Eric Dumazet <edumazet@google.com>, Will Drewry <wad@chromium.org>,
+        Andrew Morton <akpm@linux-foundation.org>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Mircea Gherzan <mgherzan@gmail.com>
+Subject: Re: [RFC PATCH net-next 0/6] seccomp filter JIT
+References: <1366962706-24204-1-git-send-email-xi.wang@gmail.com> <20130426112539.GA3736@osiris> <517A6915.2020208@redhat.com> <CAKU6vybdnpoM-szTrJRDVM2sqNPvAe3Tszg+tCuziKSOEXjJ1w@mail.gmail.com> <517E6505.6030005@freebox.fr>
+In-Reply-To: <517E6505.6030005@freebox.fr>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201304291521.14195.arnd@arndb.de>
-X-Provags-ID: V02:K0:QJ5RT3/MAhS7RKscEN7skQ/XE0QCtcMob+ZfhzftVQa
- 67fe88zoi8dvLWhu8CMKHcYovhdCZrsD0rsb5BgqFcRMxTrPXp
- gpYV83QABm2WY1bXyE9sKq4oAUilOild1QNrR268HmECRcZRAB
- +iHKVCAE/C2bi/51uDGgImSSLST/zLvBlVcX99g9Ev06BAPztV
- cbbsLcR3Fqbrd2uNrs2UxTztY99QsuwkPbT4JVItjm37pslihf
- eWS+Yc8AWw4xtwYQLBJbMmyGs4XyOGT4cSt4KH0JQgtNtbjeNd
- PeyyiV94l0N6L8xGQcOj3PJnot9hlpucoCjqMK9kbcIUXV3y7b
- wugd8rkiV+uPVfV/bBqs=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 26 April 2013, Masanori Goto wrote:
-> 2013/4/25 Arnd Bergmann <arnd@arndb.de>
-> >
-> > ARM cannot handle udelay for more than 2 miliseconds, so we
-> > should use mdelay instead for those.
-> >
-> 
-> Singed-off-by: GOTO Masanori <gotom@debian.or.jp>
+On 04/29/2013 02:18 PM, Nicolas Schichan wrote:
+> My solution also allows the seccomp jit code to be disabled while still
+> allowing jit on socket filters (via a Kconfig option). This might be useful to
+> some people.
 
-Thanks. I assume you mean "Acked-by", not "Singed-off" as in "burnt"
-or "Signed-off" as a notification that you have applied it to your
-own git tree.
+Please disregard the above, I had missed the fact that the 
+BPF_S_ANC_SECCOMP_LD_W case was embedded in an #ifdef CONFIG_SECCOMP_FILTER.
 
-I'll keep the patch with an your "Acked-by" line in my tree unless
-James wants to apply to the scsi tree.
+Regards,
 
-	Arnd
+-- 
+Nicolas Schichan
+Freebox SAS
