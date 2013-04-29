@@ -1,77 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758025Ab3D2Qot (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 12:44:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15752 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757248Ab3D2Qor (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 12:44:47 -0400
-Date: Mon, 29 Apr 2013 18:40:38 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>, Ingo Molnar <mingo@elte.hu>,
-        Jan Kratochvil <jan.kratochvil@redhat.com>,
-        Prasad <prasad@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/6] ptrace: PTRACE_DETACH should do
-	flush_ptrace_hw_breakpoint(child)
-Message-ID: <20130429164038.GA27132@redhat.com>
-References: <20130418184350.GA4407@redhat.com> <20130418184425.GA4454@redhat.com> <20130429160931.GD31230@somewhere>
+	id S1758067Ab3D2Qql (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 12:46:41 -0400
+Received: from mail-qe0-f51.google.com ([209.85.128.51]:41197 "EHLO
+	mail-qe0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756904Ab3D2Qqk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Apr 2013 12:46:40 -0400
+Message-ID: <517EA3DA.3070706@redhat.com>
+Date: Mon, 29 Apr 2013 18:46:18 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130429160931.GD31230@somewhere>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Gleb Natapov <gleb@redhat.com>
+CC: Randy Dunlap <rdunlap@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, KVM <kvm@vger.kernel.org>,
+        Alex Williamson <alex.williamson@redhat.com>
+Subject: Re: linux-next: Tree for Apr 29 (kvm)
+References: <20130429191754.8ee71fb814790bf345516ab8@canb.auug.org.au> <517E9758.4000506@infradead.org> <20130429163135.GA2737@redhat.com>
+In-Reply-To: <20130429163135.GA2737@redhat.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/29, Frederic Weisbecker wrote:
->
-> On Thu, Apr 18, 2013 at 08:44:25PM +0200, Oleg Nesterov wrote:
-> > index 776ab3b..33752d9 100644
-> > --- a/kernel/ptrace.c
-> > +++ b/kernel/ptrace.c
-> > @@ -467,6 +467,7 @@ static int ptrace_detach(struct task_struct *child, unsigned int data)
-> >  	/* Architecture-specific hardware disable .. */
-> >  	ptrace_disable(child);
-> >  	clear_tsk_thread_flag(child, TIF_SYSCALL_TRACE);
-> > +	flush_ptrace_hw_breakpoint(child);
->
-> So I assume the tracee is still guaranteed to be stopped at that time, right?
+Il 29/04/2013 18:31, Gleb Natapov ha scritto:
+>> > arch/x86/kvm/x86.c: In function 'kvm_dev_ioctl_check_extension':
+>> > arch/x86/kvm/x86.c:2547:22: error: 'pci_bus_type' undeclared (first use in this function)
+>> > 
+>> > 
+>> > Oops, CONFIG_PCI is not enabled.
+> Alex, can you look at this please. Before "kvm: Allow build-time configuration
+> of KVM device assignment" commit KVM depended on PCI to be enabled.
+> 
 
-Yes.
+KVM_CAP_IOMMU probably should depend on device assignment.  It doesn't
+really belong in KVM at all, and is only there for device assignment.
 
-This is only called by PTRACE_DETACH which requires the stopped tracee,
-like all ptrace requests except PTRACE_KILL/INTERRUPT. And only one
-thread (the tracer) can do this.
-
-> But it can't be concurrently killed given the patch you did that prevented that?
-
-No, it can't. To clarify, the tracee can't run even if killed.
-
-And just in case... If the tracer exits and does the implicit detach,
-ptrace_detach() (and thus flush_ptrace_hw_breakpoint()) is not called,
-that would be wrong exactly because we can race with the tracee.
-
-> Also it seems to be a regression since we brought the breakpoint/perf
-> infrastructure.
-
-No, I think this (minor) problem is very old... At least, when I look
-at 2.6.26 code I do not see anything which coould clear db regs on
-detach.
-
-> backporting this patch prior to "ptrace: ensure arch_ptrace/ptrace_request can never race with SIGKILL"
-> might be racy.
-
-Yes, unlikely this is possible or even makes sense, the problem is
-minor.
-
-
-
-Btw. perhaps flush_ptrace_hw_breakpoint() should also clear the
-virtual registers like thread.debugreg7 ? Even without this patch,
-flush_ is also called exec.
-
-Oleg.
-
+Paolo
