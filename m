@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932878Ab3D2THx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 15:07:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32812 "EHLO
+	id S1760021Ab3D2TIP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 15:08:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32800 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759977Ab3D2TDd (ORCPT
+	with ESMTP id S1759968Ab3D2TDc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 15:03:33 -0400
+	Mon, 29 Apr 2013 15:03:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mathias Krause <minipli@googlemail.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 18/30] ax25: fix info leak via msg_name in ax25_recvmsg()
-Date: Mon, 29 Apr 2013 12:02:42 -0700
-Message-Id: <20130429184357.353789210@linuxfoundation.org>
+        Andy Lutomirski <luto@amacapital.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 16/30] net: fix incorrect credentials passing
+Date: Mon, 29 Apr 2013 12:02:40 -0700
+Message-Id: <20130429184357.141645203@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130429184355.299556377@linuxfoundation.org>
 References: <20130429184355.299556377@linuxfoundation.org>
@@ -29,38 +31,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Mathias Krause <minipli@googlemail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-[ Upstream commit ef3313e84acbf349caecae942ab3ab731471f1a1 ]
+[ Upstream commit 83f1b4ba917db5dc5a061a44b3403ddb6e783494 ]
 
-When msg_namelen is non-zero the sockaddr info gets filled out, as
-requested, but the code fails to initialize the padding bytes of struct
-sockaddr_ax25 inserted by the compiler for alignment. Additionally the
-msg_namelen value is updated to sizeof(struct full_sockaddr_ax25) but is
-not always filled up to this size.
+Commit 257b5358b32f ("scm: Capture the full credentials of the scm
+sender") changed the credentials passing code to pass in the effective
+uid/gid instead of the real uid/gid.
 
-Both issues lead to the fact that the code will leak uninitialized
-kernel stack bytes in net/socket.c.
+Obviously this doesn't matter most of the time (since normally they are
+the same), but it results in differences for suid binaries when the wrong
+uid/gid ends up being used.
 
-Fix both issues by initializing the memory with memset(0).
+This just undoes that (presumably unintentional) part of the commit.
 
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Cc: Ralf Baechle <ralf@linux-mips.org>
+Reported-by: Andy Lutomirski <luto@amacapital.net>
+Cc: Eric W. Biederman <ebiederm@xmission.com>
+Cc: Serge E. Hallyn <serge@hallyn.com>
+Cc: David S. Miller <davem@davemloft.net>
+Cc: stable@vger.kernel.org
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Acked-by: "Eric W. Biederman" <ebiederm@xmission.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ax25/af_ax25.c |    1 +
- 1 file changed, 1 insertion(+)
+ include/linux/socket.h |    3 ++-
+ include/net/scm.h      |    2 +-
+ net/core/sock.c        |   14 ++++++++++----
+ 3 files changed, 13 insertions(+), 6 deletions(-)
 
---- a/net/ax25/af_ax25.c
-+++ b/net/ax25/af_ax25.c
-@@ -1641,6 +1641,7 @@ static int ax25_recvmsg(struct kiocb *io
- 		ax25_address src;
- 		const unsigned char *mac = skb_mac_header(skb);
+--- a/include/linux/socket.h
++++ b/include/linux/socket.h
+@@ -312,7 +312,8 @@ struct ucred {
+ /* IPX options */
+ #define IPX_TYPE	1
  
-+		memset(sax, 0, sizeof(struct full_sockaddr_ax25));
- 		ax25_addr_parse(mac + 1, skb->data - mac - 1, &src, NULL,
- 				&digi, NULL, NULL);
- 		sax->sax25_family = AF_AX25;
+-extern void cred_to_ucred(struct pid *pid, const struct cred *cred, struct ucred *ucred);
++extern void cred_to_ucred(struct pid *pid, const struct cred *cred, struct ucred *ucred,
++			  bool use_effective);
+ 
+ extern int memcpy_fromiovec(unsigned char *kdata, struct iovec *iov, int len);
+ extern int memcpy_fromiovecend(unsigned char *kdata, const struct iovec *iov,
+--- a/include/net/scm.h
++++ b/include/net/scm.h
+@@ -50,7 +50,7 @@ static __inline__ void scm_set_cred(stru
+ {
+ 	scm->pid  = get_pid(pid);
+ 	scm->cred = get_cred(cred);
+-	cred_to_ucred(pid, cred, &scm->creds);
++	cred_to_ucred(pid, cred, &scm->creds, false);
+ }
+ 
+ static __inline__ void scm_destroy_cred(struct scm_cookie *scm)
+--- a/net/core/sock.c
++++ b/net/core/sock.c
+@@ -752,15 +752,20 @@ EXPORT_SYMBOL(sock_setsockopt);
+ 
+ 
+ void cred_to_ucred(struct pid *pid, const struct cred *cred,
+-		   struct ucred *ucred)
++		   struct ucred *ucred, bool use_effective)
+ {
+ 	ucred->pid = pid_vnr(pid);
+ 	ucred->uid = ucred->gid = -1;
+ 	if (cred) {
+ 		struct user_namespace *current_ns = current_user_ns();
+ 
+-		ucred->uid = user_ns_map_uid(current_ns, cred, cred->euid);
+-		ucred->gid = user_ns_map_gid(current_ns, cred, cred->egid);
++		if (use_effective) {
++			ucred->uid = user_ns_map_uid(current_ns, cred, cred->euid);
++			ucred->gid = user_ns_map_gid(current_ns, cred, cred->egid);
++		} else {
++			ucred->uid = user_ns_map_uid(current_ns, cred, cred->uid);
++			ucred->gid = user_ns_map_gid(current_ns, cred, cred->gid);
++		}
+ 	}
+ }
+ EXPORT_SYMBOL_GPL(cred_to_ucred);
+@@ -921,7 +926,8 @@ int sock_getsockopt(struct socket *sock,
+ 		struct ucred peercred;
+ 		if (len > sizeof(peercred))
+ 			len = sizeof(peercred);
+-		cred_to_ucred(sk->sk_peer_pid, sk->sk_peer_cred, &peercred);
++		cred_to_ucred(sk->sk_peer_pid, sk->sk_peer_cred,
++			      &peercred, true);
+ 		if (copy_to_user(optval, &peercred, len))
+ 			return -EFAULT;
+ 		goto lenout;
 
 
