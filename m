@@ -1,59 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932482Ab3D2VTn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 17:19:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48150 "EHLO mx1.redhat.com"
+	id S932517Ab3D2VUJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 17:20:09 -0400
+Received: from smtp2.macqel.be ([194.78.208.39]:15170 "EHLO smtp2.macqel.be"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932402Ab3D2VTk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 17:19:40 -0400
-Date: Mon, 29 Apr 2013 16:19:25 -0500
-From: Clark Williams <williams@redhat.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: linux-rt-users <linux-rt-users@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, rostedt@goodmis.org
-Subject: Re: [ANNOUNCE] 3.8.10-rt6
-Message-ID: <20130429161925.2a6ea78a@riff.lan>
-In-Reply-To: <20130429201202.GB7979@linutronix.de>
-References: <20130429201202.GB7979@linutronix.de>
-Organization: Red Hat, Inc
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/nMflnjYfLYTfPEamWm6SSGi"; protocol="application/pgp-signature"
+	id S932382Ab3D2VTP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Apr 2013 17:19:15 -0400
+From: Philippe De Muyter <phdm@macqel.be>
+To: linux-kernel@vger.kernel.org
+Cc: Philippe De Muyter <phdm@macqel.be>, Karel Zak <kzak@redhat.com>,
+        Jens Axboe <axboe@kernel.dk>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 3/5] partitions/msdos: enumerate also AIX LVM partitions
+Date: Mon, 29 Apr 2013 23:18:31 +0200
+Message-Id: <1367270313-18871-4-git-send-email-phdm@macqel.be>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1367270313-18871-1-git-send-email-phdm@macqel.be>
+References: <1367270313-18871-1-git-send-email-phdm@macqel.be>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/nMflnjYfLYTfPEamWm6SSGi
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Graft AIX partitions enumeration in partitions/msdos.c
 
-On Mon, 29 Apr 2013 22:12:02 +0200
-Sebastian Andrzej Siewior <bigeasy@linutronix.de> wrote:
->     - suspend / resume seems to program program the timer wrong and wait
->       ages until it continues.
->=20
+There is already a AIX disks detection logic in msdos.c.  When an
+AIX disk has been found, and if configured to, call the aix partitions
+recognizer.  This avoids removal of AIX disks protection from msdos.c,
+avoids code duplication, and ensures that AIX partitions enumeration
+is called before plain msdos partitions enumeration.
 
-It has to be something we're doing when we apply RT to v3.8.x, since
-v3.8.x suspends/resumes with no issues and I was able to suspend and
-resume fine with the 3.6-rt series.=20
+Signed-off-by: Philippe De Muyter <phdm@macqel.be>
+Cc: Karel Zak <kzak@redhat.com>
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+---
+ block/partitions/msdos.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
-I'm looking at a git diff between 3.6.11-rt30 and 3.8.9-rt4,
-specifically in kernel/time* and arch/x86/kernel but so far I'm not
-seeing much that's RT specific.
+diff --git a/block/partitions/msdos.c b/block/partitions/msdos.c
+index 9bf19e6..9123f25 100644
+--- a/block/partitions/msdos.c
++++ b/block/partitions/msdos.c
+@@ -23,6 +23,7 @@
+ #include "check.h"
+ #include "msdos.h"
+ #include "efi.h"
++#include "aix.h"
+ 
+ /*
+  * Many architectures don't like unaligned accesses, while
+@@ -462,8 +463,12 @@ int msdos_partition(struct parsed_partitions *state)
+ 	 */
+ 	if (aix_magic_present(state, data)) {
+ 		put_dev_sector(sect);
++#ifdef CONFIG_AIX_PARTITION
++		return aix_partition(state);
++#else
+ 		strlcat(state->pp_buf, " [AIX]", PAGE_SIZE);
+ 		return 0;
++#endif
+ 	}
+ 
+ 	if (!msdos_magic_present(data + 510)) {
+-- 
+1.7.1
 
-Clark
-
---Sig_/nMflnjYfLYTfPEamWm6SSGi
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iEYEARECAAYFAlF+4+IACgkQHyuj/+TTEp2P/QCgo0U/kApDd5rhtIW64GqaeTBG
-bnwAmwVQP2HllnguXSkOCymbcHXN89aS
-=MFKP
------END PGP SIGNATURE-----
-
---Sig_/nMflnjYfLYTfPEamWm6SSGi--
