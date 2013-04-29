@@ -1,139 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758769Ab3D2SbM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 14:31:12 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:24512 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757950Ab3D2SbL convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 14:31:11 -0400
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 6.3 \(1503\))
-Subject: Re: linux-next: build failure after merge of the nfsd tree
-From: Chuck Lever <chuck.lever@oracle.com>
-In-Reply-To: <20130429175902.GK17268@fieldses.org>
-Date: Mon, 29 Apr 2013 14:30:33 -0400
-Cc: Trond Myklebust <trond.myklebust@fys.uio.no>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Simo Sorce <simo@redhat.com>
+	id S1758786Ab3D2Sbu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 14:31:50 -0400
+Received: from na01-by1-obe.ptr.o365filtering.com ([64.4.22.92]:38210 "EHLO
+	na01-by1-obe.outbound.o365filtering.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758372Ab3D2Sbt convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Apr 2013 14:31:49 -0400
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: David Miller <davem@davemloft.net>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        KY Srinivasan <kys@microsoft.com>, "olaf@aepfle.de" <olaf@aepfle.de>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
+Subject: RE: [PATCH net-next] hyperv: Fix a compiler warning in netvsc_send()
+Thread-Topic: [PATCH net-next] hyperv: Fix a compiler warning in
+ netvsc_send()
+Thread-Index: AQHOQqcXwPHi6RS5mUyvoQeajCPT8pjt+W8A//+P3PA=
+Date: Mon, 29 Apr 2013 18:30:53 +0000
+Message-ID: <2bef79e083dd4b14adc5e6d3549f8a05@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+References: <1367000755-2571-1-git-send-email-haiyangz@microsoft.com>
+ <20130429.140932.1477434738582260564.davem@davemloft.net>
+In-Reply-To: <20130429.140932.1477434738582260564.davem@davemloft.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.59.235.233]
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
-Message-Id: <756994C4-53FE-4723-A37C-A5E4DAB905D2@oracle.com>
-References: <20130429112434.dcc80cfce804beeacc68793a@canb.auug.org.au> <CA52A586-E4DF-42D0-9020-D17F8822BF7C@oracle.com> <20130429154541.GI17268@fieldses.org> <09A69F90-5D9A-4AF6-9B7D-CC1D74A237EA@oracle.com> <1367252460.19515.7.camel@leira.trondhjem.org> <DBD3CE27-3A93-4BC0-B390-2EDB9D0D2BBE@oracle.com> <20130429173821.GJ17268@fieldses.org> <BD32EC01-EA3A-403C-A8D2-904B77EB79BA@oracle.com> <20130429175902.GK17268@fieldses.org>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-X-Mailer: Apple Mail (2.1503)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+MIME-Version: 1.0
+X-Forefront-Antispam-Report: CIP:131.107.1.17;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(52604004)(189002)(199002)(51704004)(377454001)(164054002)(13464002)(31966008)(63696002)(65816001)(47776003)(23726002)(20776003)(79102001)(33646001)(50466002)(74662001)(53806001)(47446002)(74502001)(56776001)(44976003)(16406001)(81542001)(6806003)(46406003)(80022001)(54356001)(69226001)(81342001)(56816002)(77982001)(47976001)(46102001)(51856001)(50986001)(49866001)(74366001)(47736001)(4396001)(59766001)(76482001)(54316002)(66066001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BL2SR01MB593;H:hybrid.exchange.microsoft.com;RD:mail1.exchange.microsoft.com;MX:1;A:1;LANG:en;
+X-Forefront-PRVS: 0831C25939
+X-OriginatorOrg: DuplicateDomain-b1291ffc-369c-4c2a-9225-e2908f70a426.microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-On Apr 29, 2013, at 1:59 PM, "J. Bruce Fields" <bfields@fieldses.org> wrote:
 
-> On Mon, Apr 29, 2013 at 01:47:16PM -0400, Chuck Lever wrote:
->> 
->> On Apr 29, 2013, at 1:38 PM, "J. Bruce Fields" <bfields@fieldses.org> wrote:
->> 
->>> On Mon, Apr 29, 2013 at 01:04:01PM -0400, Chuck Lever wrote:
->>>> 
->>>> On Apr 29, 2013, at 12:21 PM, Trond Myklebust
->>>> <trond.myklebust@fys.uio.no> wrote:
->>>> 
->>>>> On Mon, 2013-04-29 at 12:05 -0400, Chuck Lever wrote:
->>>>>> On Apr 29, 2013, at 11:45 AM, "J. Bruce Fields"
->>>>>> <bfields@fieldses.org> wrote:
->>>>>> 
->>>>>>> On Mon, Apr 29, 2013 at 10:53:37AM -0400, Chuck Lever wrote:
->>>>>>>> 
->>>>>>>> On Apr 28, 2013, at 9:24 PM, Stephen Rothwell
->>>>>>>> <sfr@canb.auug.org.au> wrote:
->>>>>>>> 
->>>>>>>>> Hi J.,
->>>>>>>>> 
->>>>>>>>> After merging the nfsd tree, today's linux-next build (powerpc
->>>>>>>>> ppc64_defconfig) failed like this:
->>>>>>>>> 
->>>>>>>>> net/sunrpc/auth_gss/svcauth_gss.c: In function
->>>>>>>>> 'gss_proxy_save_rsc': net/sunrpc/auth_gss/svcauth_gss.c:1182:3:
->>>>>>>>> error: implicit declaration of function 'gss_mech_get_by_OID'
->>>>>>>>> [-Werror=implicit-function-declaration]
->>>>>>>>> 
->>>>>>>>> Caused byc ommit 030d794bf498 ("SUNRPC: Use gssproxy upcall for
->>>>>>>>> server RPCGSS authentication").  gss_mech_get_by_OID() made
->>>>>>>>> static to net/sunrpc/auth_gss/gss_mech_switch.c by commit
->>>>>>>>> 9568c5e9a61d ("SUNRPC: Introduce rpcauth_get_pseudoflavor()") in
->>>>>>>>> the nfs tree (part of the nfs tree that you did not merge).
->>>>>>>>> 
->>>>>>>>> I don't know how to fix this, so I have used the nfsd tree from
->>>>>>>>> next-20130426 for today.
->>>>>>>> 
->>>>>>>> Bruce, it might make sense for me to submit the three server-side
->>>>>>>> RPC GSS patches, and then you can rebase the gssproxy work on top
->>>>>>>> of those.  Let me know how you would like to proceed.
->>>>>>> 
->>>>>>> I'm happy to take those patches whenever you consider them ready.
->>>>>>> Would that fix the problem?
->>>>>> 
->>>>>> Someone would need to modify the gssproxy patches to use the new
->>>>>> interfaces.
->>>>>> 
->>>>>>> Also: it looks like 030d794bf498 "SUNRPC: Introduce
->>>>>>> rpcauth_get_pseudoflavor()" is in Trond's linux-next, but not his
->>>>>>> nfs-for-next.  I'm not sure what that means--is it safe to rebase
->>>>>>> on top of *that*?
->>>>>> 
->>>>>> That doesn't seem right to me.
->>>>> 
->>>>> I've now pulled the rpcsec_gss changes into the nfs-for-next. The
->>>>> main reason why they were not pulled in earlier was due to
->>>>> uncertainty what to do about the increase in "AUTH_GSS upcall timed
->>>>> out." syslog warnings.
->>>> 
->>>> Trond's nfs-for-next now has the new rpcauth_get_gssinfo() and
->>>> rpcauth_get_pseudoflavor() APIs, which are replacements for direct
->>>> calls into the GSS mech switch.  These APIs are a little more generic,
->>>> and more robust in the face of unloaded GSS kernel modules.
->>>> 
->>>> Instead of gss_mech_get_by_OID(), I suspect you want
->>>> rpcauth_get_pseudoflavor(), but I haven't looked at the gssproxy code.
->>> 
->>> It's doing
->>> 
->>> 		status = -EOPNOTSUPP;
->>> 		gm = gss_mech_get_by_OID(&ud->mech_oid);
->>> 		if (!gm)
->>> 			goto out;
->>> 		status = -EINVAL;
->>> 		status = gss_import_sec_context(ud->out_handle.data,
->>> 						ud->out_handle.len,
->>> 						gm, &rsci.mechctx,
->>> 						&expiry, GFP_KERNEL);
->>> 		if (status)
->>> 			goto out;
->>> 
->>> So we need a way to get from an OID and some mechanism-specific data to
->>> a context.
->>> 
->>> Looks to me like we just want to re-export gss_mech_get_by_OID().
->> 
->> The reason for the new wrappers is to load the kernel modules properly before trying to discover the OID -> mechanism mapping.
->> 
->> Where are you calling it from?  If it's from outside of the GSS module, how do you guarantee the rpc_gss_auth module is loaded?  What if the GSS mechanism for that OID isn't loaded?
+> -----Original Message-----
+> From: David Miller [mailto:davem@davemloft.net]
+> Sent: Monday, April 29, 2013 2:10 PM
+> To: Haiyang Zhang
+> Cc: netdev@vger.kernel.org; KY Srinivasan; olaf@aepfle.de;
+> jasowang@redhat.com; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org
+> Subject: Re: [PATCH net-next] hyperv: Fix a compiler warning in
+> netvsc_send()
 > 
-> Sorry, I should have said just "remove static from", not
-> "re-export"--it's in the same module.  So there should be no problem
-> here, right?
+> From: Haiyang Zhang <haiyangz@microsoft.com>
+> Date: Fri, 26 Apr 2013 11:25:55 -0700
+> 
+> > Fixed: warning: cast from pointer to integer of different size
+> >
+> > The Hyper-V hosts always use 64 bit request id. The guests can have 32
+> > or 64 bit pointers which equal to the ulong type size. So we cast it to ulong
+> type.
+> > And, assigning 32bit integer to 64 bit variable works fine.
+> >
+> > The VMBus returns the same id in the completion packet. But the value
+> > has no effect on the host side.
+> >
+> > Reported-by: kbuild test robot <fengguang.wu@intel.com>
+> > Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> > Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
+> 
+> Applied, but:
+> 
+> > -		req_id = (u64)packet;
+> > +		req_id = (ulong)packet;
+> 
+> I really do not like these shorthands for fundamental C types, we generally
+> do not use "ulong", "uint" etc.  Please expand them out explicitly to
+> "unsigned long", "unsigned int", etc.
 
-OK, gotcha.  Architecturally outside of the mech switch I'd like to see OIDs passed around embedded in GSS tuples rather than by themselves.
+Thanks for applying it. 
 
-An alternative would be to use gss_mech_get_by_name(), which is already visible, loads GSS mechanism modules automatically, and returns struct gss_api_mech *.  For NFS, we should already have a clean mapping of mechanism name to pseudoflavor to GSS tuple.  Looks like rsc_parse() already uses this API.
+Going forward, I will use the long format, like "unsigned long", instead of "ulong", etc.
 
-Do you have gssproxy patches published in a git tree somewhere I could review?
-
--- 
-Chuck Lever
-chuck[dot]lever[at]oracle[dot]com
-
-
-
+Thanks,
+- Haiyang
 
