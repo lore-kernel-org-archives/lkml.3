@@ -1,70 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758241Ab3D2Rma (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 13:42:30 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:37764 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757857Ab3D2Rm1 (ORCPT
+	id S1758255Ab3D2RnR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 13:43:17 -0400
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:37176 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757308Ab3D2RnP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 13:42:27 -0400
-Date: Mon, 29 Apr 2013 19:42:21 +0200
-From: "Yann E. MORIN" <yann.morin.1998@free.fr>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
-        Benjamin Poirier <bpoirier@suse.de>
-Subject: Re: linux-next: Tree for Apr 29 (kconfig)
-Message-ID: <20130429174221.GB3989@free.fr>
-References: <20130429191754.8ee71fb814790bf345516ab8@canb.auug.org.au>
- <517E9F12.1020309@infradead.org>
+	Mon, 29 Apr 2013 13:43:15 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <517E9F12.1020309@infradead.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <alpine.LRH.2.02.1304291124520.5728@tundra.namei.org>
+References: <1367003005-5560-1-git-send-email-keescook@chromium.org>
+	<1367003005-5560-4-git-send-email-keescook@chromium.org>
+	<517AF5F2.50404@zytor.com>
+	<alpine.LRH.2.02.1304291124520.5728@tundra.namei.org>
+Date: Mon, 29 Apr 2013 10:43:13 -0700
+X-Google-Sender-Auth: fSa6YPT1DthgieRlW8OsxOZSjCY
+Message-ID: <CAGXu5jJwu0rCLJo4Qd4Vook11+_yZ=L0YJvHxf8Cx7gyo3yHYg@mail.gmail.com>
+Subject: Re: [kernel-hardening] Re: [PATCH 3/6] x86: kaslr: return location
+ from decompress_kernel
+From: Kees Cook <keescook@chromium.org>
+To: James Morris <jmorris@namei.org>
+Cc: "kernel-hardening@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
+        Matthew Garrett <mjg@redhat.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Eric Northup <digitaleric@google.com>,
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Randy, All,
+On Sun, Apr 28, 2013 at 6:25 PM, James Morris <jmorris@namei.org> wrote:
+> On Fri, 26 Apr 2013, H. Peter Anvin wrote:
+>
+>> > +   noaslr          [X86]
+>> > +                   Disable kernel base offset ASLR (Address Space
+>> > +                   Layout Randomization) if built into the kernel.
+>> > +
+>> >     noautogroup     Disable scheduler automatic task group creation.
+>> >
+>> >     nobats          [PPC] Do not use BATs for mapping kernel lowmem
+>>
+>> Calling it "nokaslr" might be useful to note that it is specifically
+>> about the kernel.
+>
+> Agreed.
 
-On Mon, Apr 29, 2013 at 09:25:54AM -0700, Randy Dunlap wrote:
-> make ARCH=x86_64 O=X64 xconfig &
->   GEN     /local/lnx/next/linux-next-20130429/X64/Makefile
->   HOSTCXX scripts/kconfig/qconf.o
-> In file included from scripts/kconfig/expr.h:15:0,
->                  from scripts/kconfig/lkc.h:9,
->                  from scripts/kconfig/qconf.cc:46:
-> scripts/kconfig/list.h: In function 'void list_del(list_head*)':
-> scripts/kconfig/list.h:128:16: error: invalid conversion from 'void*' to 'list_head*' [-fpermissive]
-> scripts/kconfig/list.h:129:16: error: invalid conversion from 'void*' to 'list_head*' [-fpermissive]
-> make[2]: *** [scripts/kconfig/qconf.o] Error 1
+Yeah, good call. I'll get this changed. Thanks!
 
-Found the culprit:
+-Kees
 
-9a69abf80edf2ea0dac058cab156879d29362788 is the first bad commit
-commit 9a69abf80edf2ea0dac058cab156879d29362788
-Author: Benjamin Poirier <bpoirier@suse.de>
-Date:   Tue Apr 16 10:07:23 2013 -0400
-
-    menuconfig: Add "breadcrumbs" navigation aid
-
-    Displays a trail of the menu entries used to get to the current menu.
-
-    Signed-off-by: Benjamin Poirier <bpoirier@suse.de>
-    Tested-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
-    [yann.morin.1998@free.fr: small, trivial code re-ordering]
-    Signed-off-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
-
-I'll submit a fix in a moment.
-
-Regards,
-Yann E. MORIN.
-
--- 
-.-----------------.--------------------.------------------.--------------------.
-|  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
-| +33 662 376 056 | Software  Designer | \ / CAMPAIGN     |  ___               |
-| +33 223 225 172 `------------.-------:  X  AGAINST      |  \e/  There is no  |
-| http://ymorin.is-a-geek.org/ | _/*\_ | / \ HTML MAIL    |   v   conspiracy.  |
-'------------------------------^-------^------------------^--------------------'
+--
+Kees Cook
+Chrome OS Security
