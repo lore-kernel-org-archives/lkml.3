@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759579Ab3D2TmO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 15:42:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60668 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759375Ab3D2TCk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1759397Ab3D2TCk (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 29 Apr 2013 15:02:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60648 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759375Ab3D2TCh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Apr 2013 15:02:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Balakumaran Kannan <Balakumaran.Kannan@ap.sony.com>,
-        Maruthi Thotad <Maruthi.Thotad@ap.sony.com>,
+        Mathias Krause <minipli@googlemail.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 20/42] net IPv6 : Fix broken IPv6 routing table after loopback down-up
-Date: Mon, 29 Apr 2013 12:02:02 -0700
-Message-Id: <20130429184754.671926794@linuxfoundation.org>
+Subject: [ 15/42] netrom: fix info leak via msg_name in nr_recvmsg()
+Date: Mon, 29 Apr 2013 12:01:57 -0700
+Message-Id: <20130429184754.098897190@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130429184752.435249613@linuxfoundation.org>
 References: <20130429184752.435249613@linuxfoundation.org>
@@ -29,128 +29,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Balakumaran Kannan <kumaran.4353@gmail.com>
+From: Mathias Krause <minipli@googlemail.com>
 
-[ Upstream commit 25fb6ca4ed9cad72f14f61629b68dc03c0d9713f ]
+[ Upstream commits 3ce5efad47b62c57a4f5c54248347085a750ce0e and
+  c802d759623acbd6e1ee9fbdabae89159a513913 ]
 
-IPv6 Routing table becomes broken once we do ifdown, ifup of the loopback(lo)
-interface. After down-up, routes of other interface's IPv6 addresses through
-'lo' are lost.
+In case msg_name is set the sockaddr info gets filled out, as
+requested, but the code fails to initialize the padding bytes of
+struct sockaddr_ax25 inserted by the compiler for alignment. Also
+the sax25_ndigis member does not get assigned, leaking four more
+bytes.
 
-IPv6 addresses assigned to all interfaces are routed through 'lo' for internal
-communication. Once 'lo' is down, those routing entries are removed from routing
-table. But those removed entries are not being re-created properly when 'lo' is
-brought up. So IPv6 addresses of other interfaces becomes unreachable from the
-same machine. Also this breaks communication with other machines because of
-NDISC packet processing failure.
+Both issues lead to the fact that the code will leak uninitialized
+kernel stack bytes in net/socket.c.
 
-This patch fixes this issue by reading all interface's IPv6 addresses and adding
-them to IPv6 routing table while bringing up 'lo'.
+Fix both issues by initializing the memory with memset(0).
 
-==Testing==
-Before applying the patch:
-$ route -A inet6
-Kernel IPv6 routing table
-Destination                    Next Hop                   Flag Met Ref Use If
-2000::20/128                   ::                         U    256 0     0 eth0
-fe80::/64                      ::                         U    256 0     0 eth0
-::/0                           ::                         !n   -1  1     1 lo
-::1/128                        ::                         Un   0   1     0 lo
-2000::20/128                   ::                         Un   0   1     0 lo
-fe80::xxxx:xxxx:xxxx:xxxx/128  ::                         Un   0   1     0 lo
-ff00::/8                       ::                         U    256 0     0 eth0
-::/0                           ::                         !n   -1  1     1 lo
-$ sudo ifdown lo
-$ sudo ifup lo
-$ route -A inet6
-Kernel IPv6 routing table
-Destination                    Next Hop                   Flag Met Ref Use If
-2000::20/128                   ::                         U    256 0     0 eth0
-fe80::/64                      ::                         U    256 0     0 eth0
-::/0                           ::                         !n   -1  1     1 lo
-::1/128                        ::                         Un   0   1     0 lo
-ff00::/8                       ::                         U    256 0     0 eth0
-::/0                           ::                         !n   -1  1     1 lo
-$
-
-After applying the patch:
-$ route -A inet6
-Kernel IPv6 routing
-table
-Destination                    Next Hop                   Flag Met Ref Use If
-2000::20/128                   ::                         U    256 0     0 eth0
-fe80::/64                      ::                         U    256 0     0 eth0
-::/0                           ::                         !n   -1  1     1 lo
-::1/128                        ::                         Un   0   1     0 lo
-2000::20/128                   ::                         Un   0   1     0 lo
-fe80::xxxx:xxxx:xxxx:xxxx/128  ::                         Un   0   1     0 lo
-ff00::/8                       ::                         U    256 0     0 eth0
-::/0                           ::                         !n   -1  1     1 lo
-$ sudo ifdown lo
-$ sudo ifup lo
-$ route -A inet6
-Kernel IPv6 routing table
-Destination                    Next Hop                   Flag Met Ref Use If
-2000::20/128                   ::                         U    256 0     0 eth0
-fe80::/64                      ::                         U    256 0     0 eth0
-::/0                           ::                         !n   -1  1     1 lo
-::1/128                        ::                         Un   0   1     0 lo
-2000::20/128                   ::                         Un   0   1     0 lo
-fe80::xxxx:xxxx:xxxx:xxxx/128  ::                         Un   0   1     0 lo
-ff00::/8                       ::                         U    256 0     0 eth0
-::/0                           ::                         !n   -1  1     1 lo
-$
-
-Signed-off-by: Balakumaran Kannan <Balakumaran.Kannan@ap.sony.com>
-Signed-off-by: Maruthi Thotad <Maruthi.Thotad@ap.sony.com>
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv6/addrconf.c |   27 +++++++++++++++++++++++++++
- 1 file changed, 27 insertions(+)
+ net/netrom/af_netrom.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/net/ipv6/addrconf.c
-+++ b/net/ipv6/addrconf.c
-@@ -2525,6 +2525,9 @@ static void sit_add_v4_addrs(struct inet
- static void init_loopback(struct net_device *dev)
- {
- 	struct inet6_dev  *idev;
-+	struct net_device *sp_dev;
-+	struct inet6_ifaddr *sp_ifa;
-+	struct rt6_info *sp_rt;
- 
- 	/* ::1 */
- 
-@@ -2536,6 +2539,30 @@ static void init_loopback(struct net_dev
+--- a/net/netrom/af_netrom.c
++++ b/net/netrom/af_netrom.c
+@@ -1177,6 +1177,7 @@ static int nr_recvmsg(struct kiocb *iocb
  	}
  
- 	add_addr(idev, &in6addr_loopback, 128, IFA_HOST);
-+
-+	/* Add routes to other interface's IPv6 addresses */
-+	for_each_netdev(dev_net(dev), sp_dev) {
-+		if (!strcmp(sp_dev->name, dev->name))
-+			continue;
-+
-+		idev = __in6_dev_get(sp_dev);
-+		if (!idev)
-+			continue;
-+
-+		read_lock_bh(&idev->lock);
-+		list_for_each_entry(sp_ifa, &idev->addr_list, if_list) {
-+
-+			if (sp_ifa->flags & (IFA_F_DADFAILED | IFA_F_TENTATIVE))
-+				continue;
-+
-+			sp_rt = addrconf_dst_alloc(idev, &sp_ifa->addr, 0);
-+
-+			/* Failure cases are ignored */
-+			if (!IS_ERR(sp_rt))
-+				ip6_ins_rt(sp_rt);
-+		}
-+		read_unlock_bh(&idev->lock);
-+	}
- }
- 
- static void addrconf_add_linklocal(struct inet6_dev *idev, const struct in6_addr *addr)
+ 	if (sax != NULL) {
++		memset(sax, 0, sizeof(sax));
+ 		sax->sax25_family = AF_NETROM;
+ 		skb_copy_from_linear_data_offset(skb, 7, sax->sax25_call.ax25_call,
+ 			      AX25_ADDR_LEN);
 
 
