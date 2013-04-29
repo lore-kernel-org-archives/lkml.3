@@ -1,72 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756956Ab3D2Ovc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 10:51:32 -0400
-Received: from gecko.sbs.de ([194.138.37.40]:23729 "EHLO gecko.sbs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754783Ab3D2Ova convert rfc822-to-8bit (ORCPT
+	id S1757032Ab3D2OyH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 10:54:07 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:49817 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751019Ab3D2OyE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 10:51:30 -0400
-X-Greylist: delayed 1007 seconds by postgrey-1.27 at vger.kernel.org; Mon, 29 Apr 2013 10:51:30 EDT
-From: "Warlich, Christof" <christof.warlich@siemens.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: X86 fpu registers in a signal handler's ucontext 
-Thread-Topic: X86 fpu registers in a signal handler's ucontext 
-Thread-Index: Ac5E5q7NA96BXpsWSbCkjGXFgUmlzg==
-Date: Mon, 29 Apr 2013 14:34:41 +0000
-Message-ID: <6D83E89737156549AEA25EF9ED712C5DDEF7@DEFTHW99EK1MSX.ww902.siemens.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [139.22.70.9]
-Content-Type: text/plain; charset="us-ascii"
+	Mon, 29 Apr 2013 10:54:04 -0400
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 6.3 \(1503\))
+Subject: Re: linux-next: build failure after merge of the nfsd tree
+From: Chuck Lever <chuck.lever@oracle.com>
+In-Reply-To: <20130429112434.dcc80cfce804beeacc68793a@canb.auug.org.au>
+Date: Mon, 29 Apr 2013 10:53:37 -0400
+Cc: linux-next@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Simo Sorce <simo@redhat.com>,
+        Trond Myklebust <trond.myklebust@fys.uio.no>
 Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+Message-Id: <CA52A586-E4DF-42D0-9020-D17F8822BF7C@oracle.com>
+References: <20130429112434.dcc80cfce804beeacc68793a@canb.auug.org.au>
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        "J. Bruce Fields" <bfields@fieldses.org>
+X-Mailer: Apple Mail (2.1503)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-I want my signal handler to return from a SIGFPE and continue normal
-execution right _after_ the instruction that caused the signal.
+On Apr 28, 2013, at 9:24 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 
-My first attempt workes quite well: I just modify the EIP register
-though the ucontext pointer being passed to the signal handler:
+> Hi J.,
+> 
+> After merging the nfsd tree, today's linux-next build (powerpc
+> ppc64_defconfig) failed like this:
+> 
+> net/sunrpc/auth_gss/svcauth_gss.c: In function 'gss_proxy_save_rsc':
+> net/sunrpc/auth_gss/svcauth_gss.c:1182:3: error: implicit declaration of function 'gss_mech_get_by_OID' [-Werror=implicit-function-declaration]
+> 
+> Caused byc ommit 030d794bf498 ("SUNRPC: Use gssproxy upcall for server
+> RPCGSS authentication").  gss_mech_get_by_OID() made static to
+> net/sunrpc/auth_gss/gss_mech_switch.c by commit 9568c5e9a61d ("SUNRPC:
+> Introduce rpcauth_get_pseudoflavor()") in the nfs tree (part of the nfs
+> tree that you did not merge).
+> 
+> I don't know how to fix this, so I have used the nfsd tree from
+> next-20130426 for today.
 
-void fpeHandler(int, siginfo_t *info, void *context) {
-    // The following function calculates the size of the instruction being pointed to.
-    int size = instructionSize((unsigned char *) info->si_addr);
-    ((ucontext_t *) context)->uc_mcontext.gregs[REG_EIP] += size;
-}
+Bruce, it might make sense for me to submit the three server-side RPC GSS patches, and then you can rebase the gssproxy work on top of those.  Let me know how you would like to proceed.
 
-Doing this, my main program continues as expected as long as no other
-floating point instructions are involved, but as the exception
-condition is still active in the FP status register, any subsequent
-and _valid_ floating point calculation cause another exception.
 
-Thus, I tried to clear the exceptions in a similar way:
+-- 
+Chuck Lever
+chuck[dot]lever[at]oracle[dot]com
 
-void fpeHandler(int, siginfo_t *info, void *context) {
-    // This function calculates the size of the instruction being poined to.
-    int size = instructionSize((unsigned char *) info->si_addr);
-    ((ucontext_t *) context)->uc_mcontext.gregs[REG_EIP] += size;
-    ((ucontext_t *) context)->uc_mcontext.fpregs->status &= ~FE_ALL_EXCEPT
-}
 
-But unfortunately, this doesn't work:
 
-First, this link:
-http://valgrind.10908.n7.nabble.com/need-FPU-and-SSE-state-in-sigcontext-ucontext-td19844.html
-suggests that unlike the GPRs, the FP registers are _not_ restored after
-returnung from the signal handler. 
 
-Second, only FP state seems to be available through ucontext_t, and I would
-need to clear exceptions for SSE as well.
-
-Can anyone give me some advice on how to I could proceed?
-
-Thanks a lot,
-
-Chris
