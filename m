@@ -1,65 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758763Ab3D2UTG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 16:19:06 -0400
-Received: from mail-db8lp0188.outbound.messaging.microsoft.com ([213.199.154.188]:35186
-	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756830Ab3D2UTE convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 16:19:04 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VS-4(zzbb2dI98dI9371I1432Izz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzzz2dh2a8h668h839h944hd2bhf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h16a6h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1155h)
-Date: Mon, 29 Apr 2013 15:18:56 -0500
-From: Scott Wood <scottwood@freescale.com>
-Subject: Re: [PATCH v2 12/15] powerpc/85xx: add time base sync support for
- e6500
-To: Zhao Chenhui <chenhui.zhao@freescale.com>
-CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        <r58472@freescale.com>
-In-Reply-To: <20130428095634.GA27100@localhost.localdomain> (from
-	chenhui.zhao@freescale.com on Sun Apr 28 04:56:34 2013)
-X-Mailer: Balsa 2.4.12
-Message-ID: <1367266736.32182.11@snotra>
+	id S1759147Ab3D2UVk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 16:21:40 -0400
+Received: from mail-ve0-f173.google.com ([209.85.128.173]:57763 "EHLO
+	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757342Ab3D2UVj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Apr 2013 16:21:39 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"; delsp=Yes; format=Flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
+In-Reply-To: <CAFLxGvw-d4jZniV=KHSDVCQtJEzhZB0bJAW-VyUKdAqDJi+_nA@mail.gmail.com>
+References: <CAKgNAkjgmTJ1BiHVbqVtz-g-=yfewMiYaroDJELJpa1aRrFAvQ@mail.gmail.com>
+ <CAFLxGvy33QyJEMu_z47oyEEMY_awpT5rkoP4DYVjBQjsZysaGA@mail.gmail.com>
+ <87mwsmqfga.fsf@xmission.com> <CAFLxGvw-d4jZniV=KHSDVCQtJEzhZB0bJAW-VyUKdAqDJi+_nA@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 29 Apr 2013 13:21:18 -0700
+Message-ID: <CALCETrV=9Rebc3NNyQD3bLee_EL_222-oww45JXUasK=mq3dgA@mail.gmail.com>
+Subject: Re: For review (v2): user_namespaces(7) man page
+To: richard -rw- weinberger <richard.weinberger@gmail.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Michael Kerrisk-manpages <mtk.manpages@gmail.com>,
+        Rob Landley <rob@landley.net>, linux-man <linux-man@vger.kernel.org>,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Vasily Kulikov <segoon@openwall.com>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/28/2013 04:56:34 AM, Zhao Chenhui wrote:
-> On Thu, Apr 25, 2013 at 07:07:24PM -0500, Scott Wood wrote:
-> > On 04/24/2013 07:28:18 PM, Zhao Chenhui wrote:
-> > >On Wed, Apr 24, 2013 at 05:38:16PM -0500, Scott Wood wrote:
-> > >> We shouldn't base it on CPU_FTR_SMT.  For example, e6500 doesn't
-> > >> claim that feature yet, except in our SDK kernel.  That doesn't
-> > >> change the topology of CPU numbering.
-> > >>
-> > >
-> > >Then, where can I get the thread information? dts?
-> > >Or, wait for upstream of the thread suppport of e6500.
-> >
-> > It's an inherent property of e6500 (outside of some virtualization
-> > scenarios, but you wouldn't run this code under a hypervisor) that
-> > you have two threads per core (whether Linux uses them or not).  Or
-> > you could read TMCFG0[NTHRD] if you know you're on a chip that has
-> > TMRs but aren't positive it's an e6500, but I wouldn't bother.  If
-> > we do ever have such a chip, there are probably other things that
-> > will need updating.
-> >
-> 
-> But how to know that there are TMRs on a chip except by CPU_FTR_SMT.
+On Thu, Apr 25, 2013 at 10:48 PM, richard -rw- weinberger
+<richard.weinberger@gmail.com> wrote:
+> On Fri, Apr 26, 2013 at 2:54 AM, Eric W. Biederman
+> <ebiederm@xmission.com> wrote:
+>> richard -rw- weinberger <richard.weinberger@gmail.com> writes:
+>>
+>>> On Wed, Mar 27, 2013 at 10:26 PM, Michael Kerrisk (man-pages)
+>>> <mtk.manpages@gmail.com> wrote:
+>>>>        Inside the user namespace, the shell has user and group  ID  0,
+>>>>        and a full set of permitted and effective capabilities:
+>>>>
+>>>>            bash$ cat /proc/$$/status | egrep '^[UG]id'
+>>>>            Uid: 0    0    0    0
+>>>>            Gid: 0    0    0    0
+>>>>            bash$ cat /proc/$$/status | egrep '^Cap(Prm|Inh|Eff)'
+>>>>            CapInh:   0000000000000000
+>>>>            CapPrm:   0000001fffffffff
+>>>>            CapEff:   0000001fffffffff
+>>>
+>>> I've tried your demo program, but inside the new ns I'm automatically nobody.
+>>> As Eric said, setuid(0)/setgid(0) are missing.
+>>
+>> Is it the setuid/setgid or not setting up the uid/gid map?
+>
+> uid/git mapping are set up.
+>
+>>> Eric, maybe you can help me. How can I drop capabilities within a user
+>>> namespace?
+>>
+>>> In childFunc() I did add prctl(PR_CAPBSET_DROP, CAP_NET_ADMIN) but it always
+>>> returns ENOPERM.
+>>> What that? I thought I get a completely fresh set of cap which I can modify.
+>>> I don't want that uid 0 inside the container has all caps.
+>>
+>> There are weird things that happen with exec and the user namespace.  If
+>> you have exec'd as an unmapped user all of your capabilities have
+>> already been droped.
+>
+> I've setup the mappings. If I look into /proc/*/status I see that my process has
+> all caps.
+> So, in general it is possible to drop cap within a user namespace?
+> I really want to drop CAP_NET_ADMIN and some others.
+> root within my container must not change any networking settings.
 
-I don't know.  I said I wouldn't bother. :-)
+You may have the common issue that uid 0 tends to regain capabilities
+on exec due to "legacy" capability emulation.  Try playing with
+securebits and/or the bounding set.  (The setpriv command in very new
+util-linux-ng makes this easy to play with.)
 
-Just assume there are 2 threads per core on e6500.  Then you won't have  
-a dependency on the threading patches, and you won't break if  
-CPU_FTR_SMT gets disabled for some other reason, or if the threads are  
-missing from the device tree for some reason (I've seen some people  
-remove them manually in an attempt to disable threading -- I tell them  
-not to when I see it, but eventually others will do it again).
+Note that you almost certainly want to set no_new_privs if anything
+other than uid 0 is running with non-default securebits.
 
--Scott
+--Andy
