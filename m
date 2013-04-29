@@ -1,105 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757553Ab3D2OfQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 10:35:16 -0400
-Received: from smtp.eu.citrix.com ([46.33.159.39]:19090 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753853Ab3D2OfO (ORCPT
+	id S1751703Ab3D2Ons (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 10:43:48 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:49224 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750792Ab3D2Onr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 10:35:14 -0400
-X-IronPort-AV: E=Sophos;i="4.87,552,1363132800"; 
-   d="scan'208";a="4040847"
-Message-ID: <1367246111.3142.309.camel@zakaz.uk.xensource.com>
-Subject: Re: [PATCH v2 1/2] xen/balloon: Notify a host about a guest memory
- size limit
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Daniel Kiper <daniel.kiper@oracle.com>
-CC: "carsten@schiers.de" <carsten@schiers.de>,
-        "darren.s.shepherd@gmail.com" <darren.s.shepherd@gmail.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        "Ian Jackson" <Ian.Jackson@eu.citrix.com>,
-        "james-xen@dingwall.me.uk" <james-xen@dingwall.me.uk>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-Date: Mon, 29 Apr 2013 15:35:11 +0100
-In-Reply-To: <1367235468-8360-2-git-send-email-daniel.kiper@oracle.com>
-References: <1367235468-8360-1-git-send-email-daniel.kiper@oracle.com>
-	 <1367235468-8360-2-git-send-email-daniel.kiper@oracle.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
+	Mon, 29 Apr 2013 10:43:47 -0400
+Message-ID: <517E8758.9040803@parallels.com>
+Date: Mon, 29 Apr 2013 18:44:40 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
+To: Pekka Enberg <penberg@kernel.org>
+CC: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Christoph Lameter <cl@linux.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [linux-next-20130422] Bug in SLAB?
+References: <201304242108.FDC35910.VJMHFFFSOLOOQt@I-love.SAKURA.ne.jp> <201304252120.GII21814.FMJFtHLOOVQFOS@I-love.SAKURA.ne.jp> <201304291140.IFJ95894.OFLSFFHQOOMVJt@I-love.SAKURA.ne.jp> <CAOJsxLFYDC+EDdJrXVnc1qfEyd56bhFLeGE+6Mbhwiq73KQQLQ@mail.gmail.com>
+In-Reply-To: <CAOJsxLFYDC+EDdJrXVnc1qfEyd56bhFLeGE+6Mbhwiq73KQQLQ@mail.gmail.com>
+Content-Type: multipart/mixed;
+	boundary="------------000009000007080109040608"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-04-29 at 12:37 +0100, Daniel Kiper wrote:
-> Notify a host about a guest memory size limit.
+--------------000009000007080109040608
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+
+On 04/29/2013 02:12 PM, Pekka Enberg wrote:
+> On Mon, Apr 29, 2013 at 5:40 AM, Tetsuo Handa
+> <penguin-kernel@i-love.sakura.ne.jp> wrote:
+>> Tetsuo Handa wrote:
+>>> Also, kmalloc_index() in include/linux/slab.h can return 0 to 26.
+>>>
+>>> If (MAX_ORDER + PAGE_SHIFT - 1) > 25 is true and
+>>> kmalloc_index(64 * 1024 * 1024) is requested (I don't know whether such case
+>>> happens), kmalloc_caches[26] is beyond the array, for kmalloc_caches[26]
+>>> allows 0 to 25.
+>>>
+>>> If (MAX_ORDER + PAGE_SHIFT - 1) <= 25 is true and
+>>> kmalloc_index(64 * 1024 * 1024) is requested (I don't know whether such case
+>>> happens), kmalloc_caches[26] is beyond the array, for
+>>> kmalloc_caches[MAX_ORDER + PAGE_SHIFT] allows 0 to MAX_ORDER + PAGE_SHIFT - 1.
+>>>
+>>> Would you recheck that the array size is correct?
+>>>
+>>
+>> I confirmed (on x86_32) that
+>>
+>>   volatile unsigned int size = 8 * 1024 * 1024;
+>>   kmalloc(size, GFP_KERNEL);
+>>
+>> causes no warning at compile time and returns NULL at runtime. But
+>>
+>>   unsigned int size = 8 * 1024 * 1024;
+>>   kmalloc(size, GFP_KERNEL);
+>>
+>> causes compile time warning
+>>
+>>   include/linux/slab_def.h:136: warning: array subscript is above array bounds
+>>
+>> and runtime bug.
+>>
+>>   BUG: unable to handle kernel NULL pointer dereference at 00000058
+>>   IP: [<c10b9d76>] kmem_cache_alloc+0x26/0xb0
+>>
+>> I confirmed (on x86_32) that
+>>
+>>   kmalloc(64 * 1024 * 1024, GFP_KERNEL);
+>>
+>> causes compile time warning
+>>
+>>   include/linux/slab_def.h:136: warning: array subscript is above array bounds
+>>
+>> and runtime bug.
+>>
+>>   Kernel BUG at c10b9c5b [verbose debug info unavailable]
+>>   invalid opcode: 0000 [#1] SMP
+>>
+>> Also,
+>>
+>>   volatile unsigned int size = 64 * 1024 * 1024;
+>>   kmalloc(size, GFP_KERNEL);
+>>
+>> causes no warning at compile time but runtime bug.
+>>
+>>   Kernel BUG at c10b9c5b [verbose debug info unavailable]
+>>   invalid opcode: 0000 [#1] SMP
+>>
+>> There are kernel modules which expect kmalloc() to return NULL rather than
+>> oops when the requested size is too large.
 > 
-> Idea of this patch was discussed with Ian Campbell and Ian Jackson.
+> Christoph, Glauber, it seems like commit e3366016 ("slab: Use common
+> kmalloc_index/kmalloc_size functions") is causing some problems here.
+> Can you please take a look?
 > 
-> Signed-off-by: Daniel Kiper <daniel.kiper@oracle.com>
-> ---
->  drivers/xen/balloon.c |   25 +++++++++++++++++++++++++
->  1 file changed, 25 insertions(+)
+>                         Pekka
 > 
-> diff --git a/drivers/xen/balloon.c b/drivers/xen/balloon.c
-> index a56776d..856661f 100644
-> --- a/drivers/xen/balloon.c
-> +++ b/drivers/xen/balloon.c
-> @@ -65,6 +65,7 @@
->  #include <xen/balloon.h>
->  #include <xen/features.h>
->  #include <xen/page.h>
-> +#include <xen/xenbus.h>
->  
->  /*
->   * balloon_process() state:
-> @@ -586,6 +587,9 @@ static void __init balloon_add_region(unsigned long start_pfn,
->  static int __init balloon_init(void)
->  {
->  	int i;
-> +#ifdef CONFIG_XEN_BALLOON_MEMORY_HOTPLUG
-> +	int rc;
-> +#endif
->  
->  	if (!xen_domain())
->  		return -ENODEV;
-> @@ -621,6 +625,27 @@ static int __init balloon_init(void)
->  			balloon_add_region(PFN_UP(xen_extra_mem[i].start),
->  					   PFN_DOWN(xen_extra_mem[i].size));
->  
-> +#ifdef CONFIG_XEN_BALLOON_MEMORY_HOTPLUG
-> +	/*
-> +	 * Notify a host about our memory size limit.
-> +	 *
-> +	 * The guest-max value is in KiB, so MAX_DOMAIN_PAGES should
-> +	 * be converted respectively. PAGE_SHIFT converts pages to bytes,
-> +	 * hence PAGE_SHIFT - 10.
-> +	 */
-> +	rc = xenbus_printf(XBT_NIL, "memory", "guest-max", "%lu",
-> +				MAX_DOMAIN_PAGES << (PAGE_SHIFT - 10));
-> +
-> +	if (rc < 0)
-> +		pr_info("xen/balloon: Memory hotplug may not be supported "
-> +			"in some environments: %i\n", rc);
-> +#else
-> +	xenbus_printf(XBT_NIL, "memory", "guest-max", "%lu",
+I believe this is because the code now always assume that the cache is
+found when a constant is passed. Before this patch, we had a "found"
+statement that was mistakenly removed.
 
-Would it be OK to not do anything in the non-hotplug case? That's just
-the historical behaviour right?
-
-Would you expect this value to differ from static-max?
-
-> +			(balloon_stats.current_pages +
-> +			 balloon_stats.balloon_low +
-> +			 balloon_stats.balloon_high) << (PAGE_SHIFT - 10));
-> +#endif
-> +
->  	return 0;
->  }
->  
+If I am right, the following (untested) patch should solve the problem.
 
 
+--------------000009000007080109040608
+Content-Type: text/x-patch;
+	name="0001-slab-fix-kmalloc-regression-with-big-constant-alloca.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+	filename*0="0001-slab-fix-kmalloc-regression-with-big-constant-alloca.pa";
+	filename*1="tch"
+
+>From 45ad685c47e4c6bba7d772dbd298d321a73dc78a Mon Sep 17 00:00:00 2001
+From: Glauber Costa <glommer@openvz.org>
+Date: Mon, 29 Apr 2013 18:36:59 +0400
+Subject: [PATCH] slab: fix kmalloc regression with big constant allocations
+
+kmalloc have a maximum allocation size, but we are currently not
+respecting it. We create a list of kmalloc sizes and return an array
+index up to 26, which may or may not be within our limits, since this is
+architecture dependent.
+
+This patch fix this by making the slab code do the same as slub does: An
+explicit check for the maximum size before the call to kmalloc_index,
+and the use of the kmalloc non-constant fallback function in that case.
+
+Signed-off-by: Glauber Costa <glommer@openvz.org>
+---
+ include/linux/slab_def.h | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/include/linux/slab_def.h b/include/linux/slab_def.h
+index 113ec08..3a240c8 100644
+--- a/include/linux/slab_def.h
++++ b/include/linux/slab_def.h
+@@ -172,8 +172,10 @@ static __always_inline void *kmalloc_node(size_t size, gfp_t flags, int node)
+ 		if (!size)
+ 			return ZERO_SIZE_PTR;
+ 
+-		i = kmalloc_index(size);
++		if (size > KMALLOC_MAX_SIZE)
++			goto not_found;
+ 
++		i = kmalloc_index(size);
+ #ifdef CONFIG_ZONE_DMA
+ 		if (flags & GFP_DMA)
+ 			cachep = kmalloc_dma_caches[i];
+@@ -183,6 +185,7 @@ static __always_inline void *kmalloc_node(size_t size, gfp_t flags, int node)
+ 
+ 		return kmem_cache_alloc_node_trace(cachep, flags, node, size);
+ 	}
++not_found:
+ 	return __kmalloc_node(size, flags, node);
+ }
+ 
+-- 
+1.8.1.4
+
+
+--------------000009000007080109040608--
