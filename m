@@ -1,77 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752289Ab3D2EcB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 00:32:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40698 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752119Ab3D2Eb7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 00:31:59 -0400
-Date: Mon, 29 Apr 2013 06:33:11 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: x86@kernel.org, linux-pci@vger.kernel.org,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>, Joerg Roedel <joro@8bytes.org>,
-        Jan Beulich <JBeulich@suse.com>, Ingo Molnar <mingo@redhat.com>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: [PATCH -tip/apic 2/2] x86/MSI: Allocate as many multiple-MSIs as
- requested
-Message-ID: <eb84d5e5d4af81aa38832c21e49d3276f780a048.1367160713.git.agordeev@redhat.com>
-References: <cover.1367160713.git.agordeev@redhat.com>
+	id S1752490Ab3D2Ede (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 00:33:34 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:54018 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752298Ab3D2Edd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Apr 2013 00:33:33 -0400
+Message-ID: <517DF770.6020402@linux.vnet.ibm.com>
+Date: Mon, 29 Apr 2013 10:00:40 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1367160713.git.agordeev@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: liguang <lig.fnst@cn.fujitsu.com>
+CC: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>
+Subject: Re: [PATCH] cpu: rid cpu_hotplug_disabled check for cpu_down()
+References: <1367203791-9723-1-git-send-email-lig.fnst@cn.fujitsu.com>
+In-Reply-To: <1367203791-9723-1-git-send-email-lig.fnst@cn.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13042904-5490-0000-0000-0000035D2B25
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
----
- drivers/iommu/irq_remapping.c |    7 ++++---
- 1 files changed, 4 insertions(+), 3 deletions(-)
+On 04/29/2013 08:19 AM, liguang wrote:
+> in cpu_down(), _cpu_down() will do
+> "
+>         if (num_online_cpus() == 1)
+>                  return -EBUSY;
+> "
+> when cpu_hotplug_disabled was set, num_online_cpus
+> will return 1 for there's only 1 boot cpu.
+> so, it's unnecessary to check cpu_hotplug_disabled
+> here.
+>
 
-diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
-index d56f8c1..315c563 100644
---- a/drivers/iommu/irq_remapping.c
-+++ b/drivers/iommu/irq_remapping.c
-@@ -55,19 +55,19 @@ static int do_setup_msi_irqs(struct pci_dev *dev, int nvec)
- 	unsigned int irq;
- 	struct msi_desc *msidesc;
- 
--	nvec = __roundup_pow_of_two(nvec);
--
- 	WARN_ON(!list_is_singular(&dev->msi_list));
- 	msidesc = list_entry(dev->msi_list.next, struct msi_desc, list);
- 	WARN_ON(msidesc->irq);
- 	WARN_ON(msidesc->msi_attrib.multiple);
-+	WARN_ON(msidesc->nvec);
- 
- 	node = dev_to_node(&dev->dev);
- 	irq = __create_irqs(get_nr_irqs_gsi(), nvec, node);
- 	if (irq == 0)
- 		return -ENOSPC;
- 
--	msidesc->msi_attrib.multiple = ilog2(nvec);
-+	msidesc->nvec = nvec;
-+	msidesc->msi_attrib.multiple = ilog2(__roundup_pow_of_two(nvec));
- 	for (sub_handle = 0; sub_handle < nvec; sub_handle++) {
- 		if (!sub_handle) {
- 			index = msi_alloc_remapped_irq(dev, irq, nvec);
-@@ -95,6 +95,7 @@ error:
- 	 * IRQs from tearing down again in default_teardown_msi_irqs()
- 	 */
- 	msidesc->irq = 0;
-+	msidesc->nvec = 0;
- 	msidesc->msi_attrib.multiple = 0;
- 
- 	return ret;
--- 
-1.7.7.6
+The 2 checks serve very different purposes; they are not the same!
 
+The num_online_cpus() check is to ensure that the user doesn't do
+something insane like trying to offline the last online CPU in the
+system.
 
--- 
+Whereas, the flag 'cpu_hotplug_disabled' is used to prevent user-
+triggered CPU hotplug (such as those initiated through sysfs).
+This is useful in cases where the system itself wants to initiate CPU
+hotplug and it doesn't want annoying races with CPU hotplug going
+on in parallel due to other reasons. One such case is suspend/resume.
+That's why, if you have noticed, the suspend/resume code invokes the
+_cpu_down() version, in order to bypass the flag and get its job done.
+
+So, no, I think the check needs to stay.
+
 Regards,
-Alexander Gordeev
-agordeev@redhat.com
+Srivatsa S. Bhat
+
+> Signed-off-by: liguang <lig.fnst@cn.fujitsu.com>
+> ---
+>  kernel/cpu.c |    6 ------
+>  1 files changed, 0 insertions(+), 6 deletions(-)
+> 
+> diff --git a/kernel/cpu.c b/kernel/cpu.c
+> index b5e4ab2..cd166d3 100644
+> --- a/kernel/cpu.c
+> +++ b/kernel/cpu.c
+> @@ -330,14 +330,8 @@ int __ref cpu_down(unsigned int cpu)
+> 
+>  	cpu_maps_update_begin();
+> 
+> -	if (cpu_hotplug_disabled) {
+> -		err = -EBUSY;
+> -		goto out;
+> -	}
+> -
+>  	err = _cpu_down(cpu, 0);
+> 
+> -out:
+>  	cpu_maps_update_done();
+>  	return err;
+>  }
+> 
+
