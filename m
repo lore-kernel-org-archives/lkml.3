@@ -1,109 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757383Ab3D2Kf5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 06:35:57 -0400
-Received: from smtp.nue.novell.com ([195.135.221.5]:43577 "EHLO
-	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757065Ab3D2Kfz (ORCPT
+	id S1757467Ab3D2Khh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 06:37:37 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:43141 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757065Ab3D2Khg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 06:35:55 -0400
-Subject: Re: [PATCH] x86, efi: initial the local variable of DataSize to
- zero
-From: joeyli <jlee@suse.com>
-To: matt.fleming@intel.com
-Cc: mjg59@srcf.ucam.org, linux-efi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-In-Reply-To: <1367231111.22858.55.camel@linux-s257.site>
-References: <1366996767-8234-1-git-send-email-jlee@suse.com>
-	 <1367231111.22858.55.camel@linux-s257.site>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 29 Apr 2013 18:34:28 +0800
-Message-ID: <1367231668.22858.56.camel@linux-s257.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	Mon, 29 Apr 2013 06:37:36 -0400
+Date: Mon, 29 Apr 2013 12:36:00 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: kosaki.motohiro@gmail.com
+Cc: linux-kernel@vger.kernel.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Olivier Langlois <olivier@trillion01.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        David Miller <davem@davemloft.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH 2/2] posix-cpu-timers: fix wrong timer initialization
+Message-ID: <20130429103600.GB31700@dyad.programming.kicks-ass.net>
+References: <1367216762-3933-1-git-send-email-kosaki.motohiro@gmail.com>
+ <1367216762-3933-2-git-send-email-kosaki.motohiro@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1367216762-3933-2-git-send-email-kosaki.motohiro@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-於 一，2013-04-29 於 18:25 +0800，joeyli 提到：
-> 於 六，2013-04-27 於 01:19 +0800，Lee, Chun-Yi 提到：
-> > That will be better initial the value of DataSize to zero for the input of
-> > GetVariable(), otherwise we will feed a random value. The debug log of input
-> > DataSize like this:
-> > 
-> > ...
-> > [  195.915612] EFI Variables Facility v0.08 2004-May-17
-> > [  195.915819] efi: size: 18446744071581821342
-> > [  195.915969] efi:  size': 18446744071581821342
-> > [  195.916324] efi: size: 18446612150714306560
-> > [  195.916632] efi:  size': 18446612150714306560
-> > [  195.917159] efi: size: 18446612150714306560
-> > [  195.917453] efi:  size': 18446612150714306560
-> > ...
+On Mon, Apr 29, 2013 at 02:26:02AM -0400, kosaki.motohiro@gmail.com wrote:
+> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 > 
-> After applied patch, the log of size like this:
+> Currently glibc's rt/tst-cputimer1 testcase is spradically fail because
+> a timer created by timer_create() may faire earlier than an argument.
 > 
-> [   82.442042] EFI Variables Facility v0.08 2004-May-17
-> [   82.442202] efi: size: 0
-> [   82.442360] efi:  size': 1039
-> [   82.443828] efi: size: 0
-> [   82.444127] efi:  size': 2616
-> [   82.447057] efi: size: 0
-> [   82.447356] efi:  size': 5832
-> [   82.452669] efi: size: 0
-> [   82.453128] efi:  size': 1
-> [   82.454339] efi: size: 0
-> [   82.454843] efi:  size': 1
-> [   82.456173] efi: size: 0
-> [   82.456764] efi:  size': 8
-> [   82.458194] efi: size: 0
-> [   82.458905] efi:  size': 4
-> 
-> The size' is the return value of Acer BIOS, it return right size value
-> then we feed zero DataSize.
-^^^^^^^^^ when 
+> There are two faults. 1) cpu_timer_sample_group() adds task_delta_exec(current).
+> But it is definity silly idea especially when multi thread. cputimer should
+> be initialized by committed exec runtime. i.e. it should not be added
+> scheduler delta. 2) expire time should be current time + timeout. In the other
+> words, expire calculation should take care scheduler delta.
 
-Sorry for typo!
-Joey Lee
+I'm sorry, that completely fails to parse.
 
-> 
-> 
-> Thanks a lot!
-> Joey Lee
-> 
-> > 
-> > Found on Acer Aspire V3 BIOS, it will not return the size of data if we input a
-> > non-zero DataSize.
-> > 
-> > Cc: Matthew Garrett <mjg@redhat.com>
-> > Cc: Matt Fleming <matt.fleming@intel.com>
-> > Cc: H. Peter Anvin <hpa@zytor.com>
-> > Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
-> > ---
-> >  arch/x86/platform/efi/efi.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-> > index e4a86a6..cb59732 100644
-> > --- a/arch/x86/platform/efi/efi.c
-> > +++ b/arch/x86/platform/efi/efi.c
-> > @@ -204,7 +204,7 @@ static efi_status_t virt_efi_get_next_variable(unsigned long *name_size,
-> >  	}
-> >  
-> >  	if (boot_used_size && !finished) {
-> > -		unsigned long size;
-> > +		unsigned long size = 0;
-> >  		u32 attr;
-> >  		efi_status_t s;
-> >  		void *tmp;
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-efi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+> -/*
+> - * Lock/unlock the current runqueue - to extract task statistics:
+> - */
+> -extern unsigned long long task_delta_exec(struct task_struct *);
+
+Yay.. this thing dying is good -- it did seem strange to compute the current
+delta but not also read sum_exec_runtime under the same lock.
+
+> diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
+> index e56be4c..dc61bc3 100644
+> --- a/kernel/posix-cpu-timers.c
+> +++ b/kernel/posix-cpu-timers.c
+> @@ -203,12 +203,10 @@ posix_cpu_clock_set(const clockid_t which_clock, const struct timespec *tp)
+>  	return error;
+>  }
+>  
+> -
+> -/*
+> - * Sample a per-thread clock for the given task.
+> - */
+> -static int cpu_clock_sample(const clockid_t which_clock, struct task_struct *p,
+> -			    union cpu_time_count *cpu)
+> +static int do_cpu_clock_sample(const clockid_t which_clock,
+> +			       struct task_struct *p,
+> +			       bool add_delta,
+> +			       union cpu_time_count *cpu)
+
+Would not thread_cputime() (to mirror thread_group_cputime()) be a better name?
+
+Also, I would think both these functions would be a good place to insert a
+comment explaining the difference between timer and clock.
+
+> +static int cpu_clock_sample(const clockid_t which_clock, struct task_struct *p,
+> +			    union cpu_time_count *cpu)
+> +{
+> +	return do_cpu_clock_sample(which_clock, p, true, cpu);
+> +}
+
+> @@ -700,7 +707,7 @@ static int posix_cpu_timer_set(struct k_itimer *timer, int flags,
+>  	 * check if it's already passed.  In short, we need a sample.
+>  	 */
+>  	if (CPUCLOCK_PERTHREAD(timer->it_clock)) {
+> -		cpu_clock_sample(timer->it_clock, p, &val);
+> +		do_cpu_clock_sample(timer->it_clock, p, false, &val);
+>  	} else {
+>  		cpu_timer_sample_group(timer->it_clock, p, &val);
+>  	}
+
+This would suggest:
+
+static inline int cpu_timer_sample(const clockid_t which_clock, struct task_struct *p, union cpu_time_count *cpu)
+{
+	return do_cpu_clock_sample(which_clock, p, false, cpu);
+}
+
+That would preserve the: cpu_{timer,clock}_sample{,_group}() form.
+
+> @@ -749,7 +756,13 @@ static int posix_cpu_timer_set(struct k_itimer *timer, int flags,
+>  	}
+>  
+>  	if (new_expires.sched != 0 && !(flags & TIMER_ABSTIME)) {
+> -		cpu_time_add(timer->it_clock, &new_expires, val);
+> +		union cpu_time_count now;
+> +
+> +		if (CPUCLOCK_PERTHREAD(timer->it_clock))
+> +			cpu_clock_sample(timer->it_clock, p, &now);
+> +		else
+> +			cpu_clock_sample_group(timer->it_clock, p, &now);
+
+This triggered a pattern match against earlier in this function; but they're
+different now; timer vs clock. So nothing to merge...
 
 
+So I don't mind the code changes, although its still not entirely clear to me
+what exact problem is fixed how; and thus the Changelog needs TLC.
