@@ -1,241 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758541Ab3D2SEn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 14:04:43 -0400
-Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:52495 "HELO
-	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1758012Ab3D2SEk (ORCPT
+	id S1758034Ab3D2SH4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 14:07:56 -0400
+Received: from nm17.access.bullet.mail.sp2.yahoo.com ([98.139.44.144]:23148
+	"EHLO nm17.access.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754931Ab3D2SHz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 14:04:40 -0400
-Message-ID: <1367258677.8833.21.camel@Wailaba2>
-Subject: [PATCH v3 3/3] posix_timers: Correct deltas management for thread
- group cputimer samples
-From: Olivier Langlois <olivier@trillion01.com>
-To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, schwidefsky@de.ibm.com,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Mon, 29 Apr 2013 14:04:37 -0400
-References: <1367257428.8833.18.camel@Wailaba2>
-	 <1367257428.8833.19.camel@Wailaba2>
-Organization: Trillion01 Inc
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {5686:box610.bluehost.com:olivierl:trillion01.com} {sentby:smtp auth 173.178.230.31 authed with olivier@trillion01.com}
+	Mon, 29 Apr 2013 14:07:55 -0400
+X-Yahoo-Newman-Id: 914322.76609.bm@smtp118.sbc.mail.ne1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: VvQezucVM1kQOSbMkSw9lMSwCpeg50sMiC_EAYOLDoGqdCP
+ SeqSFs3arLg15k6POuWQYc.opDvB_HPU613dSqCiYURDbtd2ahcBhKZaJt5f
+ pTeATxmnEB8Fvg8dWpJZHZ3HkhvQeRwnwWkxMoZuJl18dz7PnnrA7qgzsSkU
+ Li.55K7U.EKO3i8tTZ4E3R0MWm0coKDk75PYFrLU_qPYjvpYY8M1Q8SvDlb0
+ 9DrlJ1WyfpkHcgXaGYXVBPfr8o1r1HE0F2fRtogWAEX0pgo7FYegAUrFtje8
+ n6XZ9w2MxcqACR.8tgoXSYOG6gTqh2A_KUSLgZImB8OPnl3oVmri7xljc1zA
+ 9kgBNGkSYISnuzuxXITfFDnbFD7GqQ58vAAN_gDyzTnMu4Kw9SiPmROjVJqR
+ 4b8p7Fk5wNudFGGrxQzlkpxN7B.0rb.6H1GqrxnEfPEtOqniCanzQe6TAvlL
+ z.oT8imrCMqN1SqFRtCCcoOIciQJJR3RP
+X-Yahoo-SMTP: zfeO.4KswBCc_PdwTE8HfYDCQ1aNmIcSvQHkDP4uSDBNBSXeKQ--
+X-Rocket-Received: from localhost (linux@108.223.40.66 with plain)
+        by smtp118.sbc.mail.ne1.yahoo.com with SMTP; 29 Apr 2013 18:07:54 +0000 UTC
+Date: Mon, 29 Apr 2013 11:07:55 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, "'Wim Van Sebroeck'" <wim@iguana.be>,
+        linux-watchdog@vger.kernel.org
+Subject: Re: [PATCH RESEND 6/7] watchdog: riowd: use devm_kzalloc()
+Message-ID: <20130429180755.GF5183@roeck-us.net>
+References: <001001ce44bc$faf2ce40$f0d86ac0$@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <001001ce44bc$faf2ce40$f0d86ac0$@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Apr 29, 2013 at 06:36:09PM +0900, Jingoo Han wrote:
+> Use devm_kzalloc() to make cleanup paths simpler.
+> 
+> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+> ---
+>  drivers/watchdog/riowd.c |    8 ++------
+>  1 files changed, 2 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/watchdog/riowd.c b/drivers/watchdog/riowd.c
+> index 0040451..13363ad 100644
+> --- a/drivers/watchdog/riowd.c
+> +++ b/drivers/watchdog/riowd.c
+> @@ -183,7 +183,7 @@ static int riowd_probe(struct platform_device *op)
+>  		goto out;
+>  
+>  	err = -ENOMEM;
+> -	p = kzalloc(sizeof(*p), GFP_KERNEL);
+> +	p = devm_kzalloc(&op->dev, sizeof(*p), GFP_KERNEL);
+>  	if (!p)
+>  		goto out;
+>  
+That goto is really unnecessary. Just return -ENOMEM and drop the label.
+Though that is really another logical change and should be done separately,
+so
 
+Reviewed-by: Guenter Roeck <linux@roeck-us.net>
 
-1. Add thread group delta to cpu timer sample when computing a timer expiration.
-
-This is mandatory to make sure that the posix cpu timer does not fire too
-soon relative to the process cpu clock which do include the task group delta.
-
-test case to validate the patch is glibc-2.17/rt/tst-cputimer1.c
-
-2. There is a race condition hard to fix that the code simply need to acknowledge
-its presence and workaround.
-
-3. Also, cputimer is initialized to the process clock value minus deltas. This is
-required for absolute timers.
-
-Signed-off-by: Olivier Langlois <olivier@trillion01.com>
----
- kernel/posix-cpu-timers.c | 91 +++++++++++++++++++++++++++++++++++++++--------
- 1 file changed, 76 insertions(+), 15 deletions(-)
-
-diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
-index 8fd709c..10d28cc 100644
---- a/kernel/posix-cpu-timers.c
-+++ b/kernel/posix-cpu-timers.c
-@@ -226,6 +226,9 @@ static int cpu_clock_sample(const clockid_t which_clock, struct task_struct *p,
-        return 0;
- }
- 
-+/*
-+ * Ensure the timer monotonicity.
-+ */
- static void update_gt_cputime(struct task_cputime *a, struct task_cputime *b)
- {
-        if (b->utime > a->utime)
-@@ -233,34 +236,84 @@ static void update_gt_cputime(struct task_cputime *a, struct task_cputime *b)
- 
-        if (b->stime > a->stime)
-                a->stime = b->stime;
--
--       if (b->sum_exec_runtime > a->sum_exec_runtime)
--               a->sum_exec_runtime = b->sum_exec_runtime;
- }
- 
--void thread_group_cputimer(struct task_struct *tsk, struct task_cputime *times)
-+/*
-+ * Fetch the thread group cputime and the group tasks delta sum
-+ * atomically when initializing the timer or make sure that the
-+ * race condition does not make timers fire earlier than specified
-+ * by having the timer sample earlier than its corresponding clock.
-+ *
-+ * Except when initializing the cputimer, it is not always necessary
-+ * to fetch the delta. It is mandatory only when setting a timer
-+ * to avoid shooting it before its time. So enhance the sample
-+ * accurary when getting the delta is free or when really needed.
-+ */
-+#define CPUTIMER_NEED_DELTA 1
-+#define CPUTIMER_NO_DELTA   0
-+
-+static void thread_group_cputimer_withdelta(struct task_struct *tsk,
-+                                           struct task_cputime *times,
-+                                           unsigned long long *delta)
- {
-        struct thread_group_cputimer *cputimer = &tsk->signal->cputimer;
-        struct task_cputime sum;
-        unsigned long flags;
- 
--       if (!cputimer->running) {
-+       if (unlikely(!cputimer->running)) {
-                /*
-                 * The POSIX timer interface allows for absolute time expiry
-                 * values through the TIMER_ABSTIME flag, therefore we have
-                 * to synchronize the timer to the clock every time we start
-                 * it.
-+                *
-+                * Exclude task deltas or else they will be accounted twice
-+                * in the cputimer.
-                 */
--               thread_group_cputime(tsk, &sum);
-+               thread_group_cputime_nodelta(tsk, &sum, delta);
-                raw_spin_lock_irqsave(&cputimer->lock, flags);
-                cputimer->running = 1;
-                update_gt_cputime(&cputimer->cputime, &sum);
--       } else
-+       } else {
-+               /*
-+                * Ideally, you would expect to get:
-+                *
-+                * 1. delta = x, times->sum_exec_runtime = y or
-+                * 2. delta = 0, times->sum_exec_runtime = y+x
-+                *
-+                * but because of the race condition between this function and
-+                * update_curr(), it is possible to get:
-+                *
-+                * 3. delta = 0, times->sum_exec_runtime = y by fetching the
-+                *    cputimer before delta or
-+                * 4. delta = x, times->sum_exec_runtime = y+x by inverting the
-+                *    sequence.
-+                *
-+                * Situation #3 is to be avoided or else it will make a timer being
-+                * fired sooner than requested.
-+                *
-+                * Calling group_delta_exec() is required to guaranty accurate result
-+                */
-+               if (delta && *delta == CPUTIMER_NEED_DELTA) {
-+                       /*
-+                        * If rq lock contention is serious concern, the
-+                        * following statement could be replaced with
-+                        * *delta = task_delta_exec(tsk) + (NR_CPUS-1)*TICK_NSEC;
-+                        * to trade accuracy for reduced rq locks contention.
-+                        */
-+                       *delta = group_delta_exec(tsk);
-+               }
-                raw_spin_lock_irqsave(&cputimer->lock, flags);
-+       }
-        *times = cputimer->cputime;
-        raw_spin_unlock_irqrestore(&cputimer->lock, flags);
- }
- 
-+void thread_group_cputimer(struct task_struct *tsk, struct task_cputime *times)
-+{
-+       thread_group_cputimer_withdelta(tsk, times, NULL);
-+}
-+
- /*
-  * Sample a process (thread group) clock for the given group_leader task.
-  * Must be called with tasklist_lock held for reading.
-@@ -615,22 +668,27 @@ static void cpu_timer_fire(struct k_itimer *timer)
-  */
- static int cpu_timer_sample_group(const clockid_t which_clock,
-                                  struct task_struct *p,
--                                 union cpu_time_count *cpu)
-+                                 union cpu_time_count *cpu,
-+                                 unsigned need_delta)
- {
-        struct task_cputime cputime;
-+       unsigned long long delta;
- 
--       thread_group_cputimer(p, &cputime);
-        switch (CPUCLOCK_WHICH(which_clock)) {
-        default:
-                return -EINVAL;
-        case CPUCLOCK_PROF:
-+               thread_group_cputimer_withdelta(p, &cputime, NULL);
-                cpu->cpu = cputime.utime + cputime.stime;
-                break;
-        case CPUCLOCK_VIRT:
-+               thread_group_cputimer_withdelta(p, &cputime, NULL);
-                cpu->cpu = cputime.utime;
-                break;
-        case CPUCLOCK_SCHED:
--               cpu->sched = cputime.sum_exec_runtime + task_delta_exec(p);
-+               delta = need_delta;
-+               thread_group_cputimer_withdelta(p, &cputime, &delta);
-+               cpu->sched = cputime.sum_exec_runtime + delta;
-                break;
-        }
-        return 0;
-@@ -697,7 +755,8 @@ static int posix_cpu_timer_set(struct k_itimer *timer, int flags,
-        if (CPUCLOCK_PERTHREAD(timer->it_clock)) {
-                cpu_clock_sample(timer->it_clock, p, &val);
-        } else {
--               cpu_timer_sample_group(timer->it_clock, p, &val);
-+               cpu_timer_sample_group(timer->it_clock, p, &val,
-+                                      CPUTIMER_NEED_DELTA);
-        }
- 
-        if (old) {
-@@ -845,7 +904,8 @@ static void posix_cpu_timer_get(struct k_itimer *timer, struct itimerspec *itp)
-                        read_unlock(&tasklist_lock);
-                        goto dead;
-                } else {
--                       cpu_timer_sample_group(timer->it_clock, p, &now);
-+                       cpu_timer_sample_group(timer->it_clock, p, &now,
-+                                              CPUTIMER_NEED_DELTA);
-                        clear_dead = (unlikely(p->exit_state) &&
-                                      thread_group_empty(p));
-                }
-@@ -1042,7 +1102,7 @@ static void check_process_timers(struct task_struct *tsk,
-        /*
-         * Collect the current process totals.
-         */
--       thread_group_cputimer(tsk, &cputime);
-+       thread_group_cputimer_withdelta(tsk, &cputime, NULL);
-        utime = cputime.utime;
-        ptime = utime + cputime.stime;
-        sum_sched_runtime = cputime.sum_exec_runtime;
-@@ -1182,7 +1242,8 @@ void posix_cpu_timer_schedule(struct k_itimer *timer)
-                        goto out_unlock;
-                }
-                spin_lock(&p->sighand->siglock);
--               cpu_timer_sample_group(timer->it_clock, p, &now);
-+               cpu_timer_sample_group(timer->it_clock, p, &now,
-+                                      CPUTIMER_NO_DELTA);
-                bump_cpu_timer(timer, now);
-                /* Leave the tasklist_lock locked for the call below.  */
-        }
-@@ -1348,7 +1409,7 @@ void set_process_cpu_timer(struct task_struct *tsk, unsigned int clock_idx,
-        union cpu_time_count now;
- 
-        BUG_ON(clock_idx == CPUCLOCK_SCHED);
--       cpu_timer_sample_group(clock_idx, tsk, &now);
-+       cpu_timer_sample_group(clock_idx, tsk, &now, CPUTIMER_NEED_DELTA);
- 
-        if (oldval) {
-                /*
--- 
-1.8.2.1
-
-
+> @@ -192,7 +192,7 @@ static int riowd_probe(struct platform_device *op)
+>  	p->regs = of_ioremap(&op->resource[0], 0, 2, DRIVER_NAME);
+>  	if (!p->regs) {
+>  		pr_err("Cannot map registers\n");
+> -		goto out_free;
+> +		goto out;
+>  	}
+>  	/* Make miscdev useable right away */
+>  	riowd_device = p;
+> @@ -213,9 +213,6 @@ out_iounmap:
+>  	riowd_device = NULL;
+>  	of_iounmap(&op->resource[0], p->regs, 2);
+>  
+> -out_free:
+> -	kfree(p);
+> -
+>  out:
+>  	return err;
+>  }
+> @@ -226,7 +223,6 @@ static int riowd_remove(struct platform_device *op)
+>  
+>  	misc_deregister(&riowd_miscdev);
+>  	of_iounmap(&op->resource[0], p->regs, 2);
+> -	kfree(p);
+>  
+>  	return 0;
+>  }
+> -- 
+> 1.7.2.5
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-watchdog" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
