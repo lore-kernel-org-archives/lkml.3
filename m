@@ -1,81 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757552Ab3D2Kkr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 06:40:47 -0400
-Received: from smtp-69.nebula.fi ([83.145.220.69]:52879 "EHLO
-	smtp-68.nebula.fi" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756853Ab3D2Kkq (ORCPT
+	id S1758091Ab3D2LF5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 07:05:57 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:41301 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757589Ab3D2LFz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 06:40:46 -0400
-From: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
-To: linux-kernel@vger.kernel.org, linux@openrisc.net
-Cc: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
-Subject: [PATCH v2] openrisc: call do_notify_resume() with interrupts enabled
-Date: Mon, 29 Apr 2013 13:40:32 +0300
-Message-Id: <1367232032-14270-1-git-send-email-stefan.kristiansson@saunalahti.fi>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <20130429095040.GA11785@chokladfabriken.org>
-References: <20130429095040.GA11785@chokladfabriken.org>
+	Mon, 29 Apr 2013 07:05:55 -0400
+MIME-Version: 1.0
+In-Reply-To: <1367203280.16581.3.camel@kjgkr>
+References: <1367107458-2439-1-git-send-email-linkinjeon@gmail.com>
+	<1367203280.16581.3.camel@kjgkr>
+Date: Mon, 29 Apr 2013 20:05:54 +0900
+Message-ID: <CAKYAXd85tdou4JX=a0jcWQ+9YrT16GD5tHdZrgX1hCCrdKzm7Q@mail.gmail.com>
+Subject: Re: [PATCH 1/2] f2fs: reorganize f2fs_vm_page_mkwrite
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: jaegeuk.kim@samsung.com
+Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A signal delivered through do_notify_resume() would cause the
-irqs_disabled() check in _local_bh_enable_ip() to be triggered.
+2013/4/29, Jaegeuk Kim <jaegeuk.kim@samsung.com>:
+> Hi,
+Hi. Jaegeuk.
+>
+> 2013-04-28 (일), 09:04 +0900, Namjae Jeon:
+>> From: Namjae Jeon <namjae.jeon@samsung.com>
+>>
+>> Few things can be changed in the default mkwrite function
+>> 1) Make file_update_time at the start before acquiring any lock
+>> 2) the condition page_offset(page) >= i_size_read(inode) should be
+>>  changed to page_offset(page) > i_size_read
+>> 3) Move wait_on_page_writeback.
+>>
+>> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+>> Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
+>> ---
+>>  fs/f2fs/file.c |   12 ++++++------
+>>  1 file changed, 6 insertions(+), 6 deletions(-)
+>>
+>> diff --git a/fs/f2fs/file.c b/fs/f2fs/file.c
+>> index 5cc4dd8..dc76f9b 100644
+>> --- a/fs/f2fs/file.c
+>> +++ b/fs/f2fs/file.c
+>> @@ -63,9 +63,10 @@ static int f2fs_vm_page_mkwrite(struct vm_area_struct
+>> *vma,
+>>  	f2fs_put_dnode(&dn);
+>>  	mutex_unlock_op(sbi, ilock);
+>>
+>> +	file_update_time(vma->vm_file);
+>
+> Should we update time even if error is occurred below?
+Should we update time even if error is occurred below?
+Even though the original time change position regarding
+file_update_time is correct with respect to the failure conditions,
+but we referred the code in other file systems.
+We found that file_update_time in page fault is not critical part, so
+first thing is to move this out of the locking.
+We can see the following comment in block_page_mkwrite.
+/*
+	 * Update file times before taking page lock. We may end up failing the
+	 * fault so this update may be superfluous but who really cares...
+	 */
+	
+Most filesystems use it regardless of below condition. Ext4 also does
+this at the beginning of mkwrite-> just after
+sb_start_pagefault(inode->i_sb);
+>
+>>  	lock_page(page);
+>>  	if (page->mapping != inode->i_mapping ||
+>> -			page_offset(page) >= i_size_read(inode) ||
+>> +			page_offset(page) > i_size_read(inode) ||
+>
+> Why? IMO, there was no problem.
+There is no problem and we could not find a test case either, but
+looking at the code we thought it could be an alignment issue if due
+to index, the page_offset() and i_size_read() ? may cause some
+boundary condition.
+The above changes were introduced without citing any issues, but just
+to align the code.
+So we can ignore this changed line :)
 
-Enable interrupts before calling do_notify_resume(), but read
-the current_thread_info->flags before doing so.
-
-Signed-off-by: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
----
- arch/openrisc/kernel/entry.S  | 5 +++--
- arch/openrisc/kernel/signal.c | 7 ++++---
- 2 files changed, 7 insertions(+), 5 deletions(-)
-
-diff --git a/arch/openrisc/kernel/entry.S b/arch/openrisc/kernel/entry.S
-index d8a455e..7564784 100644
---- a/arch/openrisc/kernel/entry.S
-+++ b/arch/openrisc/kernel/entry.S
-@@ -858,8 +858,8 @@ _work_pending:
- 	 * if (current_thread_info->flags & _TIF_NEED_RESCHED)
- 	 *     schedule();
- 	 */
--	l.lwz   r5,TI_FLAGS(r10)
--	l.andi	r3,r5,_TIF_NEED_RESCHED
-+	l.lwz   r4,TI_FLAGS(r10)
-+	l.andi	r3,r4,_TIF_NEED_RESCHED
- 	l.sfnei r3,0
- 	l.bnf   _work_notifysig
- 	 l.nop
-@@ -874,6 +874,7 @@ _work_pending:
-  * must be set so that the syscall restart functionality works.
-  */
- _work_notifysig:
-+	ENABLE_INTERRUPTS(r29)
- 	l.jal	do_notify_resume
- 	 l.ori	r3,r1,0		  /* pt_regs */
- 
-diff --git a/arch/openrisc/kernel/signal.c b/arch/openrisc/kernel/signal.c
-index ae167f7..032bed1 100644
---- a/arch/openrisc/kernel/signal.c
-+++ b/arch/openrisc/kernel/signal.c
-@@ -331,12 +331,13 @@ void do_signal(struct pt_regs *regs)
- 	return;
- }
- 
--asmlinkage void do_notify_resume(struct pt_regs *regs)
-+asmlinkage void do_notify_resume(struct pt_regs *regs,
-+				 unsigned long thread_flags)
- {
--	if (current_thread_info()->flags & _TIF_SIGPENDING)
-+	if (thread_flags & _TIF_SIGPENDING)
- 		do_signal(regs);
- 
--	if (current_thread_info()->flags & _TIF_NOTIFY_RESUME) {
-+	if (thread_flags & _TIF_NOTIFY_RESUME) {
- 		clear_thread_flag(TIF_NOTIFY_RESUME);
- 		tracehook_notify_resume(regs);
- 	}
--- 
-1.8.1.2
-
+Thanks~
+>
+>>  			!PageUptodate(page)) {
+>>  		unlock_page(page);
+>>  		err = -EFAULT;
+>> @@ -76,10 +77,7 @@ static int f2fs_vm_page_mkwrite(struct vm_area_struct
+>> *vma,
+>>  	 * check to see if the page is mapped already (no holes)
+>>  	 */
+>>  	if (PageMappedToDisk(page))
+>> -		goto out;
+>> -
+>> -	/* fill the page */
+>> -	wait_on_page_writeback(page);
+>> +		goto mapped;
+>>
+>>  	/* page is wholly or partially inside EOF */
+>>  	if (((page->index + 1) << PAGE_CACHE_SHIFT) > i_size_read(inode)) {
+>> @@ -90,7 +88,9 @@ static int f2fs_vm_page_mkwrite(struct vm_area_struct
+>> *vma,
+>>  	set_page_dirty(page);
+>>  	SetPageUptodate(page);
+>>
+>> -	file_update_time(vma->vm_file);
+>> +mapped:
+>> +	/* fill the page */
+>> +	wait_on_page_writeback(page);
+>>  out:
+>>  	sb_end_pagefault(inode->i_sb);
+>>  	return block_page_mkwrite_return(err);
+>
+> --
+> Jaegeuk Kim
+> Samsung
+>
