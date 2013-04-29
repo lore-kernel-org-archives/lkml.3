@@ -1,50 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757487Ab3D2Plw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 11:41:52 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:47141 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756809Ab3D2Plv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 11:41:51 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/nDzMa8WH2K74QAZXL6r9x
-Date: Mon, 29 Apr 2013 08:41:47 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Mark Jackson <mpfj-list@newflow.co.uk>
-Cc: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        tglx@linutronix.de, lkml <linux-kernel@vger.kernel.org>
-Subject: Re: v3.9.0-rc8 : oops in tick_do_update_jiffies64+0xbc/0x110
-Message-ID: <20130429154146.GB28721@atomide.com>
-References: <517E3039.2070204@newflow.co.uk>
+	id S1757522Ab3D2Pmo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 11:42:44 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:41853 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757386Ab3D2Pmn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Apr 2013 11:42:43 -0400
+Message-ID: <517E94E6.6040201@zytor.com>
+Date: Mon, 29 Apr 2013 08:42:30 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <517E3039.2070204@newflow.co.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Borislav Petkov <bp@alien8.de>
+CC: X86 ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>
+Subject: Re: [PATCH 3/3] x86, FPU: Do not use static_cpu_has before alternatives
+References: <1367244262-29511-1-git-send-email-bp@alien8.de> <1367244262-29511-4-git-send-email-bp@alien8.de>
+In-Reply-To: <1367244262-29511-4-git-send-email-bp@alien8.de>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Mark Jackson <mpfj-list@newflow.co.uk> [130429 01:38]:
-> I've been experiencing several crashes all pointing exactly the same place in the same tick routine (see below).
+On 04/29/2013 07:04 AM, Borislav Petkov wrote:
+> From: Borislav Petkov <bp@suse.de>
 > 
-> The "exception stack" trace at the end changes depending on when the oops occurs.
+> The call stack below shows how this happens: basically eager_fpu_init()
+> calls __thread_fpu_begin(current) which then does if (!use_eager_fpu()),
+> which, in turn, uses static_cpu_has.
 > 
-> I've had the oops occur maybe 6 times in the last 50 reboots.
+> And we're executing before alternatives so static_cpu_has doesn't work
+> there yet.
 > 
-> Any ideas ?
+> However, I don't want to cause the penalty of not using static_cpu_has
+> to all callers of use_eager_fpu() which are a bunch spread around the
+> tree so let's add the change only to __thread_fpu_begin() - it is still
+> on the context switch path but we can at least keep the static_cpu_has
+> call in the rest of the use_eager_fpu() callsites.
+> 
 
-Sounds like it might be an issue with the physical memory or
-the timings. It could also be related to the idle loop not
-restoring something right for deeper idle states that corrupts
-the memory. And that's why it would seem to appear while waking
-to a timer.
+I *was* considering adding static_cpu_has_safe() at some point which
+would have a three-state jump, with the default (pre-alternatives) jump
+pointing to dynamic detection code.
 
-Maybe disable PM and run memtester to see if that runs reliably?
+This might be useful here, on the other hand, perhaps it is acceptable
+for use_eager_fpu() to be initially false?
 
-Regards,
+	-hpa
 
-Tony
+
