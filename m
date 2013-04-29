@@ -1,48 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932153Ab3D2RxD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 13:53:03 -0400
-Received: from nm19.access.bullet.mail.sp2.yahoo.com ([98.139.44.146]:24909
-	"EHLO nm19.access.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932091Ab3D2RxA (ORCPT
+	id S932130Ab3D2RxB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 13:53:01 -0400
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:32971 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932090Ab3D2Rw7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 13:53:00 -0400
-X-Yahoo-Newman-Id: 746034.92436.bm@smtp118.sbc.mail.ne1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: jkX71r4VM1mj5vcKQx3mgoVJbSh_FkdEPaYjx0EO6XDg46r
- UvcsPFHUqpKbB9GiodlAA00cL.Q98eXC_AMQb03uvwXxdBNrVEjf0omqrexR
- DQPeDe8abbkZBXhYDpULdaVMJ9lFoVvpA3e.KGH1UmiGF_VeGRtC2xVygljZ
- CsTSYVa1aXXw2i0xUbuxJInBC08t9D_hCnAhkWHPY.ITkSWeD.5RZlb4ZPoY
- DPdsJkIaJt10q8sXx6NXUCLq1sCGhUGcCU4mSnFINeOhhanQR6M5q3RUQygY
- bvlnx04tMYqlO8J0ryviGI.49gupYkmkbHXm46VhYkCB9pdpbxQ1ujRly0Il
- LdMO45VDL1NYboaDZQfDtJ3m8vG1dzbvrt1bue6FvzMMBbPNSwEgVQsOYc8L
- TCImKxMpPlSWSj_wayHGPpARAIi8CyZgXX2LrBNg0Rl5G7QH.roTstbXjLjf
- OpqxmUYZYfuowdkqBC_HMeKG1Qg3SWDvmJM4EGA4-
-X-Yahoo-SMTP: zfeO.4KswBCc_PdwTE8HfYDCQ1aNmIcSvQHkDP4uSDBNBSXeKQ--
-X-Rocket-Received: from localhost (linux@108.223.40.66 with plain)
-        by smtp118.sbc.mail.ne1.yahoo.com with SMTP; 29 Apr 2013 17:52:59 +0000 UTC
-Date: Mon, 29 Apr 2013 10:52:59 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, "'Wim Van Sebroeck'" <wim@iguana.be>,
-        linux-watchdog@vger.kernel.org
-Subject: Re: [PATCH RESEND 2/7] watchdog: bcm63xx_wdt: use
- devm_ioremap_nocache()
-Message-ID: <20130429175259.GB5183@roeck-us.net>
-References: <000c01ce44bc$cfed7830$6fc86890$@samsung.com>
+	Mon, 29 Apr 2013 13:52:59 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <000c01ce44bc$cfed7830$6fc86890$@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAGXu5jJ8983fmX-hE4mUBpBvRvaEcvFGup7CaSbY=gp34MGeZQ@mail.gmail.com>
+References: <1367003005-5560-1-git-send-email-keescook@chromium.org>
+	<1367003005-5560-3-git-send-email-keescook@chromium.org>
+	<517AF5D6.1040800@zytor.com>
+	<517AFC38.5090500@zytor.com>
+	<CAGXu5jJ8983fmX-hE4mUBpBvRvaEcvFGup7CaSbY=gp34MGeZQ@mail.gmail.com>
+Date: Mon, 29 Apr 2013 10:52:58 -0700
+X-Google-Sender-Auth: onE6MUGL3JZ4Y7QtgHIu_3CqLb0
+Message-ID: <CAGXu5jLSiYhUtq6tEXqzV6KT5tY-T1ds_bCE1=pb-GKddneEAg@mail.gmail.com>
+Subject: Re: [PATCH 2/6] x86: kaslr: move CPU flags out of cpucheck
+From: Kees Cook <keescook@chromium.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "kernel-hardening@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
+        Matthew Garrett <mjg@redhat.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Eric Northup <digitaleric@google.com>,
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 29, 2013 at 06:34:57PM +0900, Jingoo Han wrote:
-> Use devm_ioremap_nocache() to make cleanup paths simpler.
-> 
-> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+On Mon, Apr 29, 2013 at 10:49 AM, Kees Cook <keescook@chromium.org> wrote:
+> On Fri, Apr 26, 2013 at 3:14 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>> On 04/26/2013 02:47 PM, H. Peter Anvin wrote:
+>>> On 04/26/2013 12:03 PM, Kees Cook wrote:
+>>>> +
+>>>> +static inline void cpuid(u32 id, u32 *a, u32 *b, u32 *c, u32 *d)
+>>>> +{
+>>>> +    /* Handle x86_32 PIC using ebx. */
+>>>> +    asm volatile("movl %%ebx, %%edi \n\t"
+>>>> +                 "cpuid             \n\t"
+>>>> +                 "xchgl %%edi, %%ebx\n\t"
+>>>> +                : "=a" (*a),
+>>>> +                  "=D" (*b),
+>>>> +                  "=c" (*c),
+>>>> +                  "=d" (*d)
+>>>> +                : "a" (id)
+>>>> +    );
+>>>> +}
+>>>
+>>> Please don't constrain registers unnecessarily.
+>>>
+>>> You can use "=r" there and let gcc assign whatever free register it pleases.
+>>>
+>>> You can also limit that to only:
+>>>
+>>> #if defined(__i386__) && defined(__PIC__)
+>>>
+>>
+>> How is this for a "beauty":
+>>
+>>
+>> #if defined(__i386__) && defined (__PIC__)
+>> # define EBX_REG "=r"
+>> #else
+>> # define EBX_REG "=b"
+>> #endif
+>>
+>>   asm volatile(".ifnc %%ebx,%3 ; movl %%ebx,%3 ; .endif ; "
+>>                "cpuid ; "
+>>                ".ifnc %%ebx,%3 ; xchgl %%ebx,%3 ; .endif"
+>>                : "=a" (*a), "=c" (*c), "=d" (*d),
+>>                  EBX_REG (*b)
+>>                : "a" (leaf), "c" (subleaf));
+>>
+>
+> Oh, very nice on the ifnc and register define! Is the leaf/subleaf
+> stuff needed there? That piece doesn't make sense to me.
 
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+Ah, nevermind, I just need the "leaf" bit for the cpuid input. Thanks!
+
+-Kees
+
+--
+Kees Cook
+Chrome OS Security
