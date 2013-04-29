@@ -1,72 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760167Ab3D2TlQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 15:41:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60676 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759427Ab3D2TCm (ORCPT
+	id S1760907Ab3D2Tlb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 15:41:31 -0400
+Received: from mail-vb0-f49.google.com ([209.85.212.49]:48399 "EHLO
+	mail-vb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759427Ab3D2TlZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 15:02:42 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Huang, Xiong" <xiong@qca.qualcomm.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 22/42] atl1e: limit gso segment size to prevent generation of wrong ip length fields
-Date: Mon, 29 Apr 2013 12:02:04 -0700
-Message-Id: <20130429184754.901514532@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130429184752.435249613@linuxfoundation.org>
-References: <20130429184752.435249613@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Mon, 29 Apr 2013 15:41:25 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130429162328.GA6963@kroah.com>
+References: <20130429162328.GA6963@kroah.com>
+Date: Mon, 29 Apr 2013 12:41:24 -0700
+X-Google-Sender-Auth: Z9NONkrHqkd7WXSv4H2d97b5Hxw
+Message-ID: <CA+55aFxi+PHvYwxLJfo=YG=93maOD0cQYVdjvG8kzEhpOZykpQ@mail.gmail.com>
+Subject: Re: [GIT PATCH] USB patches for 3.10-rc1
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Greg KH <gregkh@linuxfoundation.org>,
+        Alan Stern <stern@rowland.harvard.edu>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        USB list <linux-usb@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8-stable review patch.  If anyone has any objections, please let me know.
+On Mon, Apr 29, 2013 at 9:23 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+>
+>   git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb.git/ tags/usb-3.10-rc1
 
-------------------
+This has some odd things in it, but I made the mistake of pushing out
+my merge before I noticed, so it's out there now regardless.
 
+See here: commit 84ebc10294a3 ("USB: remove CONFIG_USB_SUSPEND
+option") claims to remove the USB_SUSPEND config option, but doesn't
+actually do so.
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+And no, it's not my merge that is in error, although there may be
+merge errors in addition to the oddities I've found. Doing a
 
-[ Upstream commit 31d1670e73f4911fe401273a8f576edc9c2b5fea ]
+   git grep -w USB_SUSPEND 84ebc10294a3
 
-The limit of 0x3c00 is taken from the windows driver.
+shows that there remains things that have "depends on .. USB_SUSPEND"
+even in the very commit that claims to remove the option. Later
+commits then move them around (eg the whole drivers/usb/otg ->
+drivers/usb/phy movement), but the USB_SUSPEND stays around.
 
-Suggested-by: Huang, Xiong <xiong@qca.qualcomm.com>
-Cc: Huang, Xiong <xiong@qca.qualcomm.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/ethernet/atheros/atl1e/atl1e.h      |    2 +-
- drivers/net/ethernet/atheros/atl1e/atl1e_main.c |    1 +
- 2 files changed, 2 insertions(+), 1 deletion(-)
+Hmm? I'm assuming you applied a patch without noticing that in the
+meantime other users of USB_SUSPEND had grow up?
 
---- a/drivers/net/ethernet/atheros/atl1e/atl1e.h
-+++ b/drivers/net/ethernet/atheros/atl1e/atl1e.h
-@@ -186,7 +186,7 @@ struct atl1e_tpd_desc {
- /* how about 0x2000 */
- #define MAX_TX_BUF_LEN      0x2000
- #define MAX_TX_BUF_SHIFT    13
--/*#define MAX_TX_BUF_LEN  0x3000 */
-+#define MAX_TSO_SEG_SIZE    0x3c00
- 
- /* rrs word 1 bit 0:31 */
- #define RRS_RX_CSUM_MASK	0xFFFF
---- a/drivers/net/ethernet/atheros/atl1e/atl1e_main.c
-+++ b/drivers/net/ethernet/atheros/atl1e/atl1e_main.c
-@@ -2332,6 +2332,7 @@ static int atl1e_probe(struct pci_dev *p
- 
- 	INIT_WORK(&adapter->reset_task, atl1e_reset_task);
- 	INIT_WORK(&adapter->link_chg_task, atl1e_link_chg_task);
-+	netif_set_gso_max_size(netdev, MAX_TSO_SEG_SIZE);
- 	err = register_netdev(netdev);
- 	if (err) {
- 		netdev_err(netdev, "register netdevice failed\n");
-
-
+                Linus
