@@ -1,175 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752748Ab3D2G0X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 02:26:23 -0400
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:34386 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750907Ab3D2G0N (ORCPT
+	id S1753100Ab3D2Ggb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 02:36:31 -0400
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:64669 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752066Ab3D2Gg3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 02:26:13 -0400
-From: kosaki.motohiro@gmail.com
-To: linux-kernel@vger.kernel.org
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Olivier Langlois <olivier@trillion01.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+	Mon, 29 Apr 2013 02:36:29 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130426191118.GD1433@mtj.dyndns.org>
+References: <cover.1366803121.git.viresh.kumar@linaro.org>
+	<480f5d6da920e2f2b868f311228c81635727799e.1366803121.git.viresh.kumar@linaro.org>
+	<CAP245DWtwguSp8ubid_KJnLSOqvCbmTXN+0Bg_MtDrUhBqve-Q@mail.gmail.com>
+	<CAKohpokN_o-RUX6MDwqqfzu4NKRysG-hSzmB=MHV7Y0aDbztuA@mail.gmail.com>
+	<20130424161208.GA16991@mtj.dyndns.org>
+	<CAP245DUGuaSQbP4026N8kgn6-NqXFJWR3zKoYud=HQ_b+v5+Xw@mail.gmail.com>
+	<CAKohpo=U5OqN7SM7XyOWv-WoUHOoJvGc6wcGH61+uikPK3novg@mail.gmail.com>
+	<20130426191118.GD1433@mtj.dyndns.org>
+Date: Mon, 29 Apr 2013 12:06:28 +0530
+Message-ID: <CAKohpokJSwi24goSG=dTKkH0p+-YgsVURa_4giyU-u2TuK1bdA@mail.gmail.com>
+Subject: Re: [PATCH V5 1/5] workqueues: Introduce new flag WQ_POWER_EFFICIENT
+ for power oriented workqueues
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Amit Kucheria <amit.kucheria@linaro.org>, davem@davemloft.net,
+        linux-rt-users@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Robin Randhawa <robin.randhawa@arm.com>,
+        Charles Garcia-Tobin <charles.garcia-tobin@arm.com>,
+        Steve Bannister <Steve.Bannister@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
         Steven Rostedt <rostedt@goodmis.org>,
-        David Miller <davem@davemloft.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH 2/2] posix-cpu-timers: fix wrong timer initialization
-Date: Mon, 29 Apr 2013 02:26:02 -0400
-Message-Id: <1367216762-3933-2-git-send-email-kosaki.motohiro@gmail.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1367216762-3933-1-git-send-email-kosaki.motohiro@gmail.com>
-References: <1367216762-3933-1-git-send-email-kosaki.motohiro@gmail.com>
+        Arvind Chauhan <arvind.chauhan@arm.com>,
+        Patch Tracking <patches@linaro.org>, airlied@redhat.com,
+        mingo@redhat.com, Jens Axboe <axboe@kernel.dk>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Hey Tejun,
 
-Currently glibc's rt/tst-cputimer1 testcase is spradically fail because
-a timer created by timer_create() may faire earlier than an argument.
+On 27 April 2013 00:41, Tejun Heo <tj@kernel.org> wrote:
+> Hey, Viresh.
+>
+> It's already too late for the upcoming merge window, but things
+> generally look good to me and I'll apply the patchset once wq/for-3.11
+> opens.  One nitpick tho.
 
-There are two faults. 1) cpu_timer_sample_group() adds task_delta_exec(current).
-But it is definity silly idea especially when multi thread. cputimer should
-be initialized by committed exec runtime. i.e. it should not be added
-scheduler delta. 2) expire time should be current time + timeout. In the other
-words, expire calculation should take care scheduler delta.
+Obviously. I understand this and agree with you on it. It should go in 3.11 now.
 
-Cc: Olivier Langlois <olivier@trillion01.com>
-CC: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: David Miller <davem@davemloft.net>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
----
- include/linux/kernel_stat.h |    5 -----
- kernel/posix-cpu-timers.c   |   33 +++++++++++++++++++++++----------
- kernel/sched/core.c         |   13 -------------
- 3 files changed, 23 insertions(+), 28 deletions(-)
+> On Thu, Apr 25, 2013 at 09:13:44AM +0530, Viresh Kumar wrote:
+>> +     workqueue.power_efficient
+>> +                     Workqueues can be performance or power-oriented.
+>> +                     Currently, most workqueues are bound to the CPU they
+>                                    ^^^^
+>                                    per-cpu would be better
+>
+>> +                     were created on. This gives good performance (due to
+>> +                     cache effects) at the cost of potentially waking up
+>> +                     otherwise idle cores just to process some work. To save
+>> +                     power, we can allow the work to be rescheduled on a core
+>> +                     that is already awake.
+>
+> The above description is confusing to me.  As have been discussed
+> multiple times before, per-cpu workqueue in itself doesn't wake up the
+> CPU physically.  The timer may but per-cpu workqueue doesn't.  It was
+> confusing when this patchset was first posted and the above phrasing
+> is still confusing.  What the patchset tries to do is preventing the
+> scheduler from perceiving the CPU as active due to the activated
+> worker thread pinned to that CPU, right?  The knob doesn't really do
+> anything about waking up the processor in itself.  It just avoids
+> feeding the scheduler with noisy activation events and allows it to
+> allocate work item execution according to the scheduler's view of CPU
+> active/idleness.  As the scheduler has longer / larger scope of
+> overall CPU activities and means to regulate them, this leads to more
+> power-efficient allocation of work item executions, right?  It'd be
+> really great if the descriptions and the comment above the flag makes
+> this abundantly clear because it's not something too apparent.
 
-diff --git a/include/linux/kernel_stat.h b/include/linux/kernel_stat.h
-index ed5f6ed..f5d4fdf 100644
---- a/include/linux/kernel_stat.h
-+++ b/include/linux/kernel_stat.h
-@@ -117,11 +117,6 @@ static inline unsigned int kstat_cpu_irqs_sum(unsigned int cpu)
- 	return kstat_cpu(cpu).irqs_sum;
- }
- 
--/*
-- * Lock/unlock the current runqueue - to extract task statistics:
-- */
--extern unsigned long long task_delta_exec(struct task_struct *);
--
- extern void account_user_time(struct task_struct *, cputime_t, cputime_t);
- extern void account_system_time(struct task_struct *, int, cputime_t, cputime_t);
- extern void account_steal_time(cputime_t);
-diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
-index e56be4c..dc61bc3 100644
---- a/kernel/posix-cpu-timers.c
-+++ b/kernel/posix-cpu-timers.c
-@@ -203,12 +203,10 @@ posix_cpu_clock_set(const clockid_t which_clock, const struct timespec *tp)
- 	return error;
- }
- 
--
--/*
-- * Sample a per-thread clock for the given task.
-- */
--static int cpu_clock_sample(const clockid_t which_clock, struct task_struct *p,
--			    union cpu_time_count *cpu)
-+static int do_cpu_clock_sample(const clockid_t which_clock,
-+			       struct task_struct *p,
-+			       bool add_delta,
-+			       union cpu_time_count *cpu)
- {
- 	switch (CPUCLOCK_WHICH(which_clock)) {
- 	default:
-@@ -220,12 +218,21 @@ static int cpu_clock_sample(const clockid_t which_clock, struct task_struct *p,
- 		cpu->cpu = virt_ticks(p);
- 		break;
- 	case CPUCLOCK_SCHED:
--		cpu->sched = task_sched_runtime(p, true);
-+		cpu->sched = task_sched_runtime(p, add_delta);
- 		break;
- 	}
- 	return 0;
- }
- 
-+/*
-+ * Sample a per-thread clock for the given task.
-+ */
-+static int cpu_clock_sample(const clockid_t which_clock, struct task_struct *p,
-+			    union cpu_time_count *cpu)
-+{
-+	return do_cpu_clock_sample(which_clock, p, true, cpu);
-+}
-+
- static void update_gt_cputime(struct task_cputime *a, struct task_cputime *b)
- {
- 	if (b->utime > a->utime)
-@@ -635,7 +642,7 @@ static int cpu_timer_sample_group(const clockid_t which_clock,
- 		cpu->cpu = cputime.utime;
- 		break;
- 	case CPUCLOCK_SCHED:
--		cpu->sched = cputime.sum_exec_runtime + task_delta_exec(p);
-+		cpu->sched = cputime.sum_exec_runtime;
- 		break;
- 	}
- 	return 0;
-@@ -700,7 +707,7 @@ static int posix_cpu_timer_set(struct k_itimer *timer, int flags,
- 	 * check if it's already passed.  In short, we need a sample.
- 	 */
- 	if (CPUCLOCK_PERTHREAD(timer->it_clock)) {
--		cpu_clock_sample(timer->it_clock, p, &val);
-+		do_cpu_clock_sample(timer->it_clock, p, false, &val);
- 	} else {
- 		cpu_timer_sample_group(timer->it_clock, p, &val);
- 	}
-@@ -749,7 +756,13 @@ static int posix_cpu_timer_set(struct k_itimer *timer, int flags,
- 	}
- 
- 	if (new_expires.sched != 0 && !(flags & TIMER_ABSTIME)) {
--		cpu_time_add(timer->it_clock, &new_expires, val);
-+		union cpu_time_count now;
-+
-+		if (CPUCLOCK_PERTHREAD(timer->it_clock))
-+			cpu_clock_sample(timer->it_clock, p, &now);
-+		else
-+			cpu_clock_sample_group(timer->it_clock, p, &now);
-+		cpu_time_add(timer->it_clock, &new_expires, now);
- 	}
- 
- 	/*
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index ad3339f..b817e6d 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -2646,19 +2646,6 @@ static u64 do_task_delta_exec(struct task_struct *p, struct rq *rq)
- 	return ns;
- }
- 
--unsigned long long task_delta_exec(struct task_struct *p)
--{
--	unsigned long flags;
--	struct rq *rq;
--	u64 ns = 0;
--
--	rq = task_rq_lock(p, &flags);
--	ns = do_task_delta_exec(p, rq);
--	task_rq_unlock(rq, p, &flags);
--
--	return ns;
--}
--
- /*
-  * Return accounted runtime for the task.
-  * In case the task is currently running, return the runtime plus current's
--- 
-1.7.1
+Whatever you wrote above confused me even more :)
+This is what i had in my mind until now. Its not about per-cpu workqueue.
 
+Lets take example of system_wq. It doesn't have WQ_UNBOUND flag set.
+Now if we call queue_work_on() with cpu x and sytem_wq, then work
+will execute on cpu x. If we call queue_work() then it will queue the work
+on local cpu.
+
+At this time local cpu may be busy or idle (Atleast according to scheduler).
+We don't want a idle cpu (From schedulers perspective) to be used for
+running this work's handler due to two reasons.
+- idle cpu may be in WFI or deeper idle states and so we can avoid waking
+  it up.
+- We will make idle cpu look busy and so other kernel stuff may be scheduled
+  on it now. But we could have kept it idle for a long time.
+
+And what timer are you talking about? I am not talking about deffered work only,
+but normal work too.
+
+I might have wrongly phrased some part of my patch (maybe used workqueue
+instead of work), will fix that up.
+
+--
+viresh
