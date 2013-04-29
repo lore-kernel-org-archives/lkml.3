@@ -1,80 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758595Ab3D2QuU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 12:50:20 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:48754 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757691Ab3D2QuS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 12:50:18 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 72.84.113.162
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18IN/yjgmk8mBoMQXjCYimdPyrjGM9i2F0=
-Date: Mon, 29 Apr 2013 12:50:06 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: dove: fix Dove cpu type from V7 to PJ4
-Message-ID: <20130429165006.GR32497@titan.lakedaemon.net>
-References: <1364051211-24414-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	id S1758611Ab3D2QvU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 12:51:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59590 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757710Ab3D2QvS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Apr 2013 12:51:18 -0400
+Message-ID: <517EA4E0.3020803@redhat.com>
+Date: Mon, 29 Apr 2013 12:50:40 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1364051211-24414-1-git-send-email-sebastian.hesselbarth@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Mel Gorman <mgorman@suse.de>
+CC: Alexey Lyahkov <alexey.lyashkov@gmail.com>,
+        Andrew Perepechko <anserper@ya.ru>, Robin Dong <sanbai@taobao.com>,
+        Theodore Tso <tytso@mit.edu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Bernd Schubert <bernd.schubert@fastmail.fm>,
+        David Howells <dhowells@redhat.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux-ext4 <linux-ext4@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>
+Subject: Re: [PATCH 1/3] mm: pagevec: Defer deciding what LRU to add a page
+ to until pagevec drain time
+References: <1367253119-6461-1-git-send-email-mgorman@suse.de> <1367253119-6461-2-git-send-email-mgorman@suse.de>
+In-Reply-To: <1367253119-6461-2-git-send-email-mgorman@suse.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 23, 2013 at 04:06:51PM +0100, Sebastian Hesselbarth wrote:
-> The CPU used in Marvell Dove SoCs is a PJ4 Sheeva core. Using
-> CONFIG_CPU_PJ4 instead of CONFIG_CPU_V7 will also allow to enable
-> iWMMXt extensions on Dove.
-> 
-> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> ---
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Jason Cooper <jason@lakedaemon.net>
-> Cc: Andrew Lunn <andrew@lunn.ch>
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
->  arch/arm/Kconfig |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+On 04/29/2013 12:31 PM, Mel Gorman wrote:
+> mark_page_accessed cannot activate an inactive page that is located on
+> an inactive LRU pagevec. Hints from filesystems may be ignored as a
+> result. In preparation for fixing that problem, this patch removes the
+> per-LRU pagevecs and leaves just one pagevec. The final LRU the page is
+> added to is deferred until the pagevec is drained.
+>
+> This means that fewer pagevecs are available and potentially there is
+> greater contention on the LRU lock. However, this only applies in the case
+> where there is an almost perfect mix of file, anon, active and inactive
+> pages being added to the LRU. In practice I expect that we are adding
+> stream of pages of a particular time and that the changes in contention
+> will barely be measurable.
+>
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
 
-Sebastian,
+Acked-by: Rik van Riel <riel@redhat.com>
 
-It looks as though Russell's fix for IWMMXT made it in.  Please place
-this patch in Russell's patch tracker.  If you don't have the original
-thread, Andrew Lunn gave this an Acked-by.  Now me as well:
 
-Acked-by: Jason Cooper <jason@lakedaemon.net>
-
-thx,
-
-Jason.
-
-> 
-> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> index 2c3bdce..4fc9bca 100644
-> --- a/arch/arm/Kconfig
-> +++ b/arch/arm/Kconfig
-> @@ -556,7 +556,7 @@ config ARCH_IXP4XX
->  config ARCH_DOVE
->  	bool "Marvell Dove"
->  	select ARCH_REQUIRE_GPIOLIB
-> -	select CPU_V7
-> +	select CPU_PJ4
->  	select GENERIC_CLOCKEVENTS
->  	select MIGHT_HAVE_PCI
->  	select PINCTRL
-> -- 
-> 1.7.10.4
-> 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+-- 
+All rights reversed
