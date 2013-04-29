@@ -1,60 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757032Ab3D2OyH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 10:54:07 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:49817 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751019Ab3D2OyE convert rfc822-to-8bit (ORCPT
+	id S1757148Ab3D2O4X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 10:56:23 -0400
+Received: from a9-58.smtp-out.amazonses.com ([54.240.9.58]:57849 "EHLO
+	a9-58.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752505Ab3D2O4W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 10:54:04 -0400
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 6.3 \(1503\))
-Subject: Re: linux-next: build failure after merge of the nfsd tree
-From: Chuck Lever <chuck.lever@oracle.com>
-In-Reply-To: <20130429112434.dcc80cfce804beeacc68793a@canb.auug.org.au>
-Date: Mon, 29 Apr 2013 10:53:37 -0400
-Cc: linux-next@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Simo Sorce <simo@redhat.com>,
-        Trond Myklebust <trond.myklebust@fys.uio.no>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <CA52A586-E4DF-42D0-9020-D17F8822BF7C@oracle.com>
-References: <20130429112434.dcc80cfce804beeacc68793a@canb.auug.org.au>
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        "J. Bruce Fields" <bfields@fieldses.org>
-X-Mailer: Apple Mail (2.1503)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Mon, 29 Apr 2013 10:56:22 -0400
+X-Greylist: delayed 372 seconds by postgrey-1.27 at vger.kernel.org; Mon, 29 Apr 2013 10:56:22 EDT
+Date: Mon, 29 Apr 2013 14:50:08 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Han Pingtian <hanpt@linux.vnet.ibm.com>
+cc: LKML <linux-kernel@vger.kernel.org>, mhocko@suse.cz, penberg@kernel.org,
+        rientjes@google.com, linux-mm@kvack.org
+Subject: Re: OOM-killer and strange RSS value in 3.9-rc7
+In-Reply-To: <20130427112418.GC4441@localhost.localdomain>
+Message-ID: <0000013e5645b356-09aa6796-0a95-40f1-8ec5-6e2e3d0c434f-000000@email.amazonses.com>
+References: <20130418101541.GC2672@localhost.localdomain> <20130418175513.GA12581@dhcp22.suse.cz> <20130423131558.GH8001@dhcp22.suse.cz> <20130424044848.GI2672@localhost.localdomain> <20130424094732.GB31960@dhcp22.suse.cz>
+ <0000013e3cb0340d-00f360e3-076b-478e-b94c-ddd4476196ce-000000@email.amazonses.com> <20130425060705.GK2672@localhost.localdomain> <0000013e427023d7-9456c313-8654-420c-b85a-cb79cc3c4ffc-000000@email.amazonses.com> <20130426062436.GB4441@localhost.localdomain>
+ <0000013e46cba821-d5c54c99-3b5c-4669-9a54-9fb8f4ee516f-000000@email.amazonses.com> <20130427112418.GC4441@localhost.localdomain>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.04.29-54.240.9.58
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, 27 Apr 2013, Han Pingtian wrote:
 
-On Apr 28, 2013, at 9:24 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> and it is called so many times that the boot cannot be finished. So
+> maybe the memory isn't freed even though __free_slab() get called?
 
-> Hi J.,
-> 
-> After merging the nfsd tree, today's linux-next build (powerpc
-> ppc64_defconfig) failed like this:
-> 
-> net/sunrpc/auth_gss/svcauth_gss.c: In function 'gss_proxy_save_rsc':
-> net/sunrpc/auth_gss/svcauth_gss.c:1182:3: error: implicit declaration of function 'gss_mech_get_by_OID' [-Werror=implicit-function-declaration]
-> 
-> Caused byc ommit 030d794bf498 ("SUNRPC: Use gssproxy upcall for server
-> RPCGSS authentication").  gss_mech_get_by_OID() made static to
-> net/sunrpc/auth_gss/gss_mech_switch.c by commit 9568c5e9a61d ("SUNRPC:
-> Introduce rpcauth_get_pseudoflavor()") in the nfs tree (part of the nfs
-> tree that you did not merge).
-> 
-> I don't know how to fix this, so I have used the nfsd tree from
-> next-20130426 for today.
-
-Bruce, it might make sense for me to submit the three server-side RPC GSS patches, and then you can rebase the gssproxy work on top of those.  Let me know how you would like to proceed.
-
-
--- 
-Chuck Lever
-chuck[dot]lever[at]oracle[dot]com
-
-
-
-
+Ok that suggests an issue with the page allocator then.
