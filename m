@@ -1,68 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758528Ab3D2Qmk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 12:42:40 -0400
-Received: from casper.infradead.org ([85.118.1.10]:34527 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757275Ab3D2Qmi (ORCPT
+	id S1758545Ab3D2Qmt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 12:42:49 -0400
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:34336 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757031Ab3D2Qmq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 12:42:38 -0400
-Message-ID: <517EA2E4.8030905@infradead.org>
-Date: Mon, 29 Apr 2013 09:42:12 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Mon, 29 Apr 2013 12:42:46 -0400
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>
-Subject: Re: linux-next: Tree for Apr 29 (staging/gdm72xx)
-References: <20130429191754.8ee71fb814790bf345516ab8@canb.auug.org.au>
-In-Reply-To: <20130429191754.8ee71fb814790bf345516ab8@canb.auug.org.au>
+In-Reply-To: <20130429161917.GB19814@mtj.dyndns.org>
+References: <cover.1366803121.git.viresh.kumar@linaro.org>
+	<480f5d6da920e2f2b868f311228c81635727799e.1366803121.git.viresh.kumar@linaro.org>
+	<CAP245DWtwguSp8ubid_KJnLSOqvCbmTXN+0Bg_MtDrUhBqve-Q@mail.gmail.com>
+	<CAKohpokN_o-RUX6MDwqqfzu4NKRysG-hSzmB=MHV7Y0aDbztuA@mail.gmail.com>
+	<20130424161208.GA16991@mtj.dyndns.org>
+	<CAP245DUGuaSQbP4026N8kgn6-NqXFJWR3zKoYud=HQ_b+v5+Xw@mail.gmail.com>
+	<CAKohpo=U5OqN7SM7XyOWv-WoUHOoJvGc6wcGH61+uikPK3novg@mail.gmail.com>
+	<20130426191118.GD1433@mtj.dyndns.org>
+	<CAKohpokJSwi24goSG=dTKkH0p+-YgsVURa_4giyU-u2TuK1bdA@mail.gmail.com>
+	<20130429161917.GB19814@mtj.dyndns.org>
+Date: Mon, 29 Apr 2013 22:12:46 +0530
+Message-ID: <CAKohponFvoi9HqdzJO61i3vb6iJonAA-kDLgKp2iPDphz8qP5Q@mail.gmail.com>
+Subject: Re: [PATCH V5 1/5] workqueues: Introduce new flag WQ_POWER_EFFICIENT
+ for power oriented workqueues
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Amit Kucheria <amit.kucheria@linaro.org>, davem@davemloft.net,
+        linux-rt-users@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Robin Randhawa <robin.randhawa@arm.com>,
+        Charles Garcia-Tobin <charles.garcia-tobin@arm.com>,
+        Steve Bannister <Steve.Bannister@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arvind Chauhan <arvind.chauhan@arm.com>,
+        Patch Tracking <patches@linaro.org>, airlied@redhat.com,
+        mingo@redhat.com, Jens Axboe <axboe@kernel.dk>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/29/13 02:17, Stephen Rothwell wrote:
-> Hi all,
-> 
-> Changes since 20130426:
-> 
+On 29 April 2013 21:49, Tejun Heo <tj@kernel.org> wrote:
+> On Mon, Apr 29, 2013 at 12:06:28PM +0530, Viresh Kumar wrote:
+> Yeap, !WQ_UNBOUND workqueues == per-cpu workqueues.
 
-on x86_64:
+Sigh!! You were talking about thread per cpu here... Sorry for missing
+it earlier :(
 
-when CONFIG_MMC=m and
-CONFIG_WIMAX_GDM72XX_SDIO=y (because it is boolean, not tristate):
+>> At this time local cpu may be busy or idle (Atleast according to scheduler).
+>> We don't want a idle cpu (From schedulers perspective) to be used for
+>> running this work's handler due to two reasons.
+>> - idle cpu may be in WFI or deeper idle states and so we can avoid waking
+>>   it up.
+>
+> I have no idea what WFI is but the physical CPU is already awake at
+> that time.  It can't be idle - it's running queue_work().  It could be
+> running in lower freq tho, which each code piece doesn't really have
+> much control over.
 
-gdm_sdio.c:(.text+0x147093): undefined reference to `sdio_claim_host'
-gdm_sdio.c:(.text+0x1470a2): undefined reference to `sdio_release_irq'
-gdm_sdio.c:(.text+0x1470b1): undefined reference to `sdio_disable_func'
-gdm_sdio.c:(.text+0x1470c0): undefined reference to `sdio_release_host'
-gdm_sdio.c:(.text+0x14725a): undefined reference to `sdio_claim_host'
-gdm_sdio.c:(.text+0x14728f): undefined reference to `sdio_memcpy_toio'
-gdm_sdio.c:(.text+0x1472fa): undefined reference to `sdio_memcpy_toio'
-gdm_sdio.c:(.text+0x147342): undefined reference to `sdio_release_host'
-gdm_sdio.c:(.text+0x1477b6): undefined reference to `sdio_readb'
-gdm_sdio.c:(.text+0x1477db): undefined reference to `sdio_writeb'
-gdm_sdio.c:(.text+0x1477f5): undefined reference to `sdio_memcpy_fromio'
-gdm_sdio.c:(.text+0x14795b): undefined reference to `sdio_memcpy_fromio'
-gdm_sdio.c:(.text+0x1479ba): undefined reference to `sdio_memcpy_fromio'
-gdm_sdio.c:(.text+0x147ba8): undefined reference to `sdio_writeb'
-gdm_sdio.c:(.text+0x147f45): undefined reference to `sdio_claim_host'
-gdm_sdio.c:(.text+0x147f54): undefined reference to `sdio_enable_func'
-gdm_sdio.c:(.text+0x147f6a): undefined reference to `sdio_claim_irq'
-gdm_sdio.c:(.text+0x148343): undefined reference to `sdio_writeb'
-gdm_sdio.c:(.text+0x148352): undefined reference to `sdio_release_host'
-sdio_boot.c:(.text+0x148543): undefined reference to `sdio_memcpy_toio'
-sdio_boot.c:(.text+0x1485b7): undefined reference to `sdio_readb'
-sdio_boot.c:(.text+0x14862c): undefined reference to `sdio_memcpy_fromio'
-sdio_boot.c:(.text+0x14867d): undefined reference to `sdio_writeb'
-sdio_boot.c:(.text+0x14869a): undefined reference to `sdio_writeb'
-gdm_sdio.c:(.init.text+0xa6bc): undefined reference to `sdio_register_driver'
-gdm_sdio.c:(.exit.text+0x23b6): undefined reference to `sdio_unregister_driver'
+Stupid point. WFI: Wait for interrupt (low power mode of cpu).
 
+>> - We will make idle cpu look busy and so other kernel stuff may be scheduled
+>>   on it now. But we could have kept it idle for a long time.
+>
+> Hmmm... yeah, about the same thing I wrote, it's not really about not
+> waking up the CPU right now physically but avoiding forcing the
+> scheduler scheduling a pinned task on an otherwise quiescent CPU.
+> This effectively allows the scheduler to migrate such work items
+> towards a CPU which the scheduler considers to be better (in power or
+> whatever) leading to noticeable powersave.
 
+Correct.
 
--- 
-~Randy
+>> And what timer are you talking about? I am not talking about deffered work only,
+>> but normal work too.
+>
+> Deferred work item == timer + work item.
+
+Ya, i knew that :)
+
+>> I might have wrongly phrased some part of my patch (maybe used workqueue
+>> instead of work), will fix that up.
+>
+> I think it'd be necessary to distinguish the physical CPU being idle
+> and the scheduler considers it to be idle (no task to schedule on it)
+> and explain how increasing the latter can lead to powersave.  As it's
+> currently written, it seemingly, to me anyway, suggests that the
+> proposed change somehow avoids waking up actually idle CPU, which
+> isn't the case as queue_work() *always* schedules on the local CPU.
+> The local CPU can't be idle by definition.
+
+Yes you are correct. I will fix it.
