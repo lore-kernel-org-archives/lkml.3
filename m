@@ -1,114 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758031Ab3D2RmF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 13:42:05 -0400
-Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:56829 "HELO
-	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757821Ab3D2RmA (ORCPT
+	id S1758241Ab3D2Rma (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 13:42:30 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:37764 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757857Ab3D2Rm1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 13:42:00 -0400
-Message-ID: <1367257314.8833.16.camel@Wailaba2>
-Subject: Re: [PATCH v2 1/3] process cputimer is moving faster than its
- corresponding clock
-From: Olivier Langlois <olivier@trillion01.com>
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, schwidefsky@de.ibm.com,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Mon, 29 Apr 2013 13:41:54 -0400
-In-Reply-To: <1367255407.8833.4.camel@Wailaba2>
-References: <1365184746.874.103.camel@Wailaba2>
-	 <1365593710.30071.52.camel@laptop> <1365608911.707.65.camel@Wailaba2>
-	 <1365763837.17140.52.camel@laptop> <1365782115.17140.68.camel@laptop>
-	 <CAFTL4hwQ4FZs0VCNXP37f=+DBW7Q2EQc6PW_EtYiVnZCPWN4OQ@mail.gmail.com>
-	 <CAHGf_=pWPT4XdrJ8ZveL4zJKm1SE0whpL_fMHd5_TokuNQxSJQ@mail.gmail.com>
-	 <CAHGf_=psD4V-U4FFwAWr4k3ZP6p=GVkNY_0S-Cg06m-=89MM7Q@mail.gmail.com>
-	 <1366951210.7911.28.camel@Wailaba2> <1366957639.7911.42.camel@Wailaba2>
-	 <517AD0AE.1030404@gmail.com> <1367037606.7911.66.camel@Wailaba2>
-	 <517DFFE9.4050808@gmail.com> <1367255407.8833.4.camel@Wailaba2>
-Organization: Trillion01 Inc
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {5686:box610.bluehost.com:olivierl:trillion01.com} {sentby:smtp auth 173.178.230.31 authed with olivier@trillion01.com}
+	Mon, 29 Apr 2013 13:42:27 -0400
+Date: Mon, 29 Apr 2013 19:42:21 +0200
+From: "Yann E. MORIN" <yann.morin.1998@free.fr>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
+        Benjamin Poirier <bpoirier@suse.de>
+Subject: Re: linux-next: Tree for Apr 29 (kconfig)
+Message-ID: <20130429174221.GB3989@free.fr>
+References: <20130429191754.8ee71fb814790bf345516ab8@canb.auug.org.au>
+ <517E9F12.1020309@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <517E9F12.1020309@infradead.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-04-29 at 13:10 -0400, Olivier Langlois wrote:
-> On Mon, 2013-04-29 at 01:06 -0400, KOSAKI Motohiro wrote:
-> > (4/27/13 12:40 AM), Olivier Langlois wrote:
-> > > 
-> > > 
-> > > Forbids the cputimer to drift ahead of its process clock by
-> > > blocking its update when a tick occurs while a autoreaping task
-> > > is currently in do_exit() between the call to release_task() and
-> > > its final call to schedule().
-> > > 
-> > > Any task stats update after having called release_task() will
-> > > be lost because they are added to the global process stats located
-> > > in the signal struct from release_task().
-> > > 
-> > > Ideally, you should postpone the release_task() call after the
-> > > final context switch to get all the stats added but this is
-> > > more complex to achieve.
-> > > 
-> > > In other words, this is slowing down the cputimer so it keep the same
-> > > pace than the process clock but in fact, what should be done is to
-> > > speed up the process clock by adding the missing stats to it.
-> > > 
-> > > Signed-off-by: Olivier Langlois <olivier@trillion01.com>
-> > > ---
-> > >  kernel/sched/fair.c | 10 +++++++++-
-> > >  1 file changed, 9 insertions(+), 1 deletion(-)
-> > > 
-> > > diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> > > index 7a33e59..52d7b10 100644
-> > > --- a/kernel/sched/fair.c
-> > > +++ b/kernel/sched/fair.c
-> > > @@ -708,7 +708,15 @@ static void update_curr(struct cfs_rq *cfs_rq)
-> > >  
-> > >                 trace_sched_stat_runtime(curtask, delta_exec, curr->vruntime);
-> > >                 cpuacct_charge(curtask, delta_exec);
-> > > -               account_group_exec_runtime(curtask, delta_exec);
-> > > +               /*
-> > > +                * Do not update the cputimer if the task is already released by
-> > > +                * release_task().
-> > > +                *
-> > > +                * it would preferable to defer the autoreap release_task
-> > > +                * after the last context switch but harder to do.
-> > > +                */
-> > > +               if (likely(curtask->sighand))
-> > > +                       account_group_exec_runtime(curtask, delta_exec);
-> > >         }
-> > 
-> > I'm confused. glibc's rt/tst-cputimer1 doesn't have thread exiting code. I have
-> > no seen any issue in this accounting.
-> 
-> glibc launch a helper thread to receive timer signal and will also
-> create a new thread upon signal reception when a timer is created with
-> sigev_notify = SIGEV_THREAD;
-> 
-> please see:
-> 
-> glibc-2.17/nptl/sysdeps/unix/sysv/linux/timer_create.c
-> glibc-2.17/nptl/sysdeps/unix/sysv/linux/timer_routines.c
-> 
-One very easy way to see the problem is to add a printk statement inside
-update_gt_cputime()
+Randy, All,
 
-        if (b->sum_exec_runtime > a->sum_exec_runtime)
-                a->sum_exec_runtime = b->sum_exec_runtime;
-	else
-		printk( KERN_DEBUG "cputimer %llu, process clock %llu, diff %llu\n",
-a->sum_exec_runtime, b->sum_exec_runtime,
-a->sum_exec_runtime-b->sum_exec_runtime);
+On Mon, Apr 29, 2013 at 09:25:54AM -0700, Randy Dunlap wrote:
+> make ARCH=x86_64 O=X64 xconfig &
+>   GEN     /local/lnx/next/linux-next-20130429/X64/Makefile
+>   HOSTCXX scripts/kconfig/qconf.o
+> In file included from scripts/kconfig/expr.h:15:0,
+>                  from scripts/kconfig/lkc.h:9,
+>                  from scripts/kconfig/qconf.cc:46:
+> scripts/kconfig/list.h: In function 'void list_del(list_head*)':
+> scripts/kconfig/list.h:128:16: error: invalid conversion from 'void*' to 'list_head*' [-fpermissive]
+> scripts/kconfig/list.h:129:16: error: invalid conversion from 'void*' to 'list_head*' [-fpermissive]
+> make[2]: *** [scripts/kconfig/qconf.o] Error 1
 
-Check the output with and without the fair.c modif when executing
-tst-cputimer1. As an extra bonus, this trace will show the spurious
-start/stop cputimer problem that I was trying to explain to Frederic.
+Found the culprit:
 
+9a69abf80edf2ea0dac058cab156879d29362788 is the first bad commit
+commit 9a69abf80edf2ea0dac058cab156879d29362788
+Author: Benjamin Poirier <bpoirier@suse.de>
+Date:   Tue Apr 16 10:07:23 2013 -0400
 
+    menuconfig: Add "breadcrumbs" navigation aid
+
+    Displays a trail of the menu entries used to get to the current menu.
+
+    Signed-off-by: Benjamin Poirier <bpoirier@suse.de>
+    Tested-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
+    [yann.morin.1998@free.fr: small, trivial code re-ordering]
+    Signed-off-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
+
+I'll submit a fix in a moment.
+
+Regards,
+Yann E. MORIN.
+
+-- 
+.-----------------.--------------------.------------------.--------------------.
+|  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
+| +33 662 376 056 | Software  Designer | \ / CAMPAIGN     |  ___               |
+| +33 223 225 172 `------------.-------:  X  AGAINST      |  \e/  There is no  |
+| http://ymorin.is-a-geek.org/ | _/*\_ | / \ HTML MAIL    |   v   conspiracy.  |
+'------------------------------^-------^------------------^--------------------'
