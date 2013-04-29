@@ -1,82 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759622Ab3D2TC5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 15:02:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60772 "EHLO
+	id S933717Ab3D2TcC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 15:32:02 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60798 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759276Ab3D2TCy (ORCPT
+	with ESMTP id S1759626Ab3D2TC6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 15:02:54 -0400
+	Mon, 29 Apr 2013 15:02:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [ 40/42] tracing: Fix selftest function recursion accounting
-Date: Mon, 29 Apr 2013 12:02:22 -0700
-Message-Id: <20130429184756.916335151@linuxfoundation.org>
+        Jiri Slaby <jslaby@suse.cz>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 03/34] TTY: fix atime/mtime regression
+Date: Mon, 29 Apr 2013 12:02:10 -0700
+Message-Id: <20130429184701.272477889@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130429184752.435249613@linuxfoundation.org>
-References: <20130429184752.435249613@linuxfoundation.org>
+In-Reply-To: <20130429184700.845644077@linuxfoundation.org>
+References: <20130429184700.845644077@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Steven Rostedt <srostedt@redhat.com>
+From: Jiri Slaby <jslaby@suse.cz>
 
-commit 05cbbf643b8eea1be21082c53cdb856d1dc6d765 upstream.
+commit 37b7f3c76595e23257f61bd80b223de8658617ee upstream.
 
-The test that checks function recursion does things differently
-if the arch does not support all ftrace features. But that really
-doesn't make a difference with how the test runs, and either way
-the count variable should be 2 at the end.
+In commit b0de59b5733d ("TTY: do not update atime/mtime on read/write")
+we removed timestamps from tty inodes to fix a security issue and waited
+if something breaks.  Well, 'w', the utility to find out logged users
+and their inactivity time broke.  It shows that users are inactive since
+the time they logged in.
 
-Currently the test wrongly fails for archs that don't support all
-the ftrace features.
+To revert to the old behaviour while still preventing attackers to
+guess the password length, we update the timestamps in one-minute
+intervals by this patch.
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/trace/trace_selftest.c |   16 +++-------------
- 1 file changed, 3 insertions(+), 13 deletions(-)
+ drivers/tty/tty_io.c |   16 +++++++++++++++-
+ 1 file changed, 15 insertions(+), 1 deletion(-)
 
---- a/kernel/trace/trace_selftest.c
-+++ b/kernel/trace/trace_selftest.c
-@@ -452,7 +452,6 @@ trace_selftest_function_recursion(void)
- 	char *func_name;
- 	int len;
- 	int ret;
--	int cnt;
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -938,6 +938,14 @@ void start_tty(struct tty_struct *tty)
  
- 	/* The previous test PASSED */
- 	pr_cont("PASSED\n");
-@@ -510,19 +509,10 @@ trace_selftest_function_recursion(void)
+ EXPORT_SYMBOL(start_tty);
  
- 	unregister_ftrace_function(&test_recsafe_probe);
++static void tty_update_time(struct timespec *time)
++{
++	unsigned long sec = get_seconds();
++	sec -= sec % 60;
++	if ((long)(sec - time->tv_sec) > 0)
++		time->tv_sec = sec;
++}
++
+ /**
+  *	tty_read	-	read method for tty device files
+  *	@file: pointer to tty file
+@@ -975,6 +983,9 @@ static ssize_t tty_read(struct file *fil
+ 		i = -EIO;
+ 	tty_ldisc_deref(ld);
  
--	/*
--	 * If arch supports all ftrace features, and no other task
--	 * was on the list, we should be fine.
--	 */
--	if (!ftrace_nr_registered_ops() && !FTRACE_FORCE_LIST_FUNC)
--		cnt = 2; /* Should have recursed */
--	else
--		cnt = 1;
--
- 	ret = -1;
--	if (trace_selftest_recursion_cnt != cnt) {
--		pr_cont("*callback not called expected %d times (%d)* ",
--			cnt, trace_selftest_recursion_cnt);
-+	if (trace_selftest_recursion_cnt != 2) {
-+		pr_cont("*callback not called expected 2 times (%d)* ",
-+			trace_selftest_recursion_cnt);
- 		goto out;
++	if (i > 0)
++		tty_update_time(&inode->i_atime);
++
+ 	return i;
+ }
+ 
+@@ -1075,8 +1086,11 @@ static inline ssize_t do_tty_write(
+ 			break;
+ 		cond_resched();
  	}
- 
+-	if (written)
++	if (written) {
++		struct inode *inode = file->f_path.dentry->d_inode;
++		tty_update_time(&inode->i_mtime);
+ 		ret = written;
++	}
+ out:
+ 	tty_write_unlock(tty);
+ 	return ret;
 
 
