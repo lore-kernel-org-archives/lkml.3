@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760158Ab3D2TIe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 15:08:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32792 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759963Ab3D2TDa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1759961Ab3D2TDa (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 29 Apr 2013 15:03:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60979 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759921Ab3D2TDY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Apr 2013 15:03:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        Vlad Yasevich <vyasevich@gmail.com>,
+        Balakumaran Kannan <Balakumaran.Kannan@ap.sony.com>,
+        Maruthi Thotad <Maruthi.Thotad@ap.sony.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 14/30] net: sctp: sctp_auth_key_put: use kzfree instead of kfree
-Date: Mon, 29 Apr 2013 12:02:38 -0700
-Message-Id: <20130429184356.929721603@linuxfoundation.org>
+Subject: [ 05/30] net IPv6 : Fix broken IPv6 routing table after loopback down-up
+Date: Mon, 29 Apr 2013 12:02:29 -0700
+Message-Id: <20130429184355.892164040@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130429184355.299556377@linuxfoundation.org>
 References: <20130429184355.299556377@linuxfoundation.org>
@@ -30,33 +29,128 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Balakumaran Kannan <kumaran.4353@gmail.com>
 
-[ Upstream commit 586c31f3bf04c290dc0a0de7fc91d20aa9a5ee53 ]
+[ Upstream commit 25fb6ca4ed9cad72f14f61629b68dc03c0d9713f ]
 
-For sensitive data like keying material, it is common practice to zero
-out keys before returning the memory back to the allocator. Thus, use
-kzfree instead of kfree.
+IPv6 Routing table becomes broken once we do ifdown, ifup of the loopback(lo)
+interface. After down-up, routes of other interface's IPv6 addresses through
+'lo' are lost.
 
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
-Acked-by: Vlad Yasevich <vyasevich@gmail.com>
+IPv6 addresses assigned to all interfaces are routed through 'lo' for internal
+communication. Once 'lo' is down, those routing entries are removed from routing
+table. But those removed entries are not being re-created properly when 'lo' is
+brought up. So IPv6 addresses of other interfaces becomes unreachable from the
+same machine. Also this breaks communication with other machines because of
+NDISC packet processing failure.
+
+This patch fixes this issue by reading all interface's IPv6 addresses and adding
+them to IPv6 routing table while bringing up 'lo'.
+
+==Testing==
+Before applying the patch:
+$ route -A inet6
+Kernel IPv6 routing table
+Destination                    Next Hop                   Flag Met Ref Use If
+2000::20/128                   ::                         U    256 0     0 eth0
+fe80::/64                      ::                         U    256 0     0 eth0
+::/0                           ::                         !n   -1  1     1 lo
+::1/128                        ::                         Un   0   1     0 lo
+2000::20/128                   ::                         Un   0   1     0 lo
+fe80::xxxx:xxxx:xxxx:xxxx/128  ::                         Un   0   1     0 lo
+ff00::/8                       ::                         U    256 0     0 eth0
+::/0                           ::                         !n   -1  1     1 lo
+$ sudo ifdown lo
+$ sudo ifup lo
+$ route -A inet6
+Kernel IPv6 routing table
+Destination                    Next Hop                   Flag Met Ref Use If
+2000::20/128                   ::                         U    256 0     0 eth0
+fe80::/64                      ::                         U    256 0     0 eth0
+::/0                           ::                         !n   -1  1     1 lo
+::1/128                        ::                         Un   0   1     0 lo
+ff00::/8                       ::                         U    256 0     0 eth0
+::/0                           ::                         !n   -1  1     1 lo
+$
+
+After applying the patch:
+$ route -A inet6
+Kernel IPv6 routing
+table
+Destination                    Next Hop                   Flag Met Ref Use If
+2000::20/128                   ::                         U    256 0     0 eth0
+fe80::/64                      ::                         U    256 0     0 eth0
+::/0                           ::                         !n   -1  1     1 lo
+::1/128                        ::                         Un   0   1     0 lo
+2000::20/128                   ::                         Un   0   1     0 lo
+fe80::xxxx:xxxx:xxxx:xxxx/128  ::                         Un   0   1     0 lo
+ff00::/8                       ::                         U    256 0     0 eth0
+::/0                           ::                         !n   -1  1     1 lo
+$ sudo ifdown lo
+$ sudo ifup lo
+$ route -A inet6
+Kernel IPv6 routing table
+Destination                    Next Hop                   Flag Met Ref Use If
+2000::20/128                   ::                         U    256 0     0 eth0
+fe80::/64                      ::                         U    256 0     0 eth0
+::/0                           ::                         !n   -1  1     1 lo
+::1/128                        ::                         Un   0   1     0 lo
+2000::20/128                   ::                         Un   0   1     0 lo
+fe80::xxxx:xxxx:xxxx:xxxx/128  ::                         Un   0   1     0 lo
+ff00::/8                       ::                         U    256 0     0 eth0
+::/0                           ::                         !n   -1  1     1 lo
+$
+
+Signed-off-by: Balakumaran Kannan <Balakumaran.Kannan@ap.sony.com>
+Signed-off-by: Maruthi Thotad <Maruthi.Thotad@ap.sony.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/sctp/auth.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/ipv6/addrconf.c |   27 +++++++++++++++++++++++++++
+ 1 file changed, 27 insertions(+)
 
---- a/net/sctp/auth.c
-+++ b/net/sctp/auth.c
-@@ -71,7 +71,7 @@ void sctp_auth_key_put(struct sctp_auth_
- 		return;
+--- a/net/ipv6/addrconf.c
++++ b/net/ipv6/addrconf.c
+@@ -2327,6 +2327,9 @@ static void sit_add_v4_addrs(struct inet
+ static void init_loopback(struct net_device *dev)
+ {
+ 	struct inet6_dev  *idev;
++	struct net_device *sp_dev;
++	struct inet6_ifaddr *sp_ifa;
++	struct rt6_info *sp_rt;
  
- 	if (atomic_dec_and_test(&key->refcnt)) {
--		kfree(key);
-+		kzfree(key);
- 		SCTP_DBG_OBJCNT_DEC(keys);
+ 	/* ::1 */
+ 
+@@ -2338,6 +2341,30 @@ static void init_loopback(struct net_dev
  	}
+ 
+ 	add_addr(idev, &in6addr_loopback, 128, IFA_HOST);
++
++	/* Add routes to other interface's IPv6 addresses */
++	for_each_netdev(dev_net(dev), sp_dev) {
++		if (!strcmp(sp_dev->name, dev->name))
++			continue;
++
++		idev = __in6_dev_get(sp_dev);
++		if (!idev)
++			continue;
++
++		read_lock_bh(&idev->lock);
++		list_for_each_entry(sp_ifa, &idev->addr_list, if_list) {
++
++			if (sp_ifa->flags & (IFA_F_DADFAILED | IFA_F_TENTATIVE))
++				continue;
++
++			sp_rt = addrconf_dst_alloc(idev, &sp_ifa->addr, 0);
++
++			/* Failure cases are ignored */
++			if (!IS_ERR(sp_rt))
++				ip6_ins_rt(sp_rt);
++		}
++		read_unlock_bh(&idev->lock);
++	}
  }
+ 
+ static void addrconf_add_linklocal(struct inet6_dev *idev, const struct in6_addr *addr)
 
 
