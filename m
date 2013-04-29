@@ -1,47 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758585Ab3D2QuB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 12:50:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26748 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757765Ab3D2Qt7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 12:49:59 -0400
-Message-ID: <1367254194.16887.100.camel@ul30vt.home>
-Subject: Re: linux-next: Tree for Apr 29 (kvm)
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, KVM <kvm@vger.kernel.org>
-Date: Mon, 29 Apr 2013 10:49:54 -0600
-In-Reply-To: <20130429163135.GA2737@redhat.com>
-References: <20130429191754.8ee71fb814790bf345516ab8@canb.auug.org.au>
-	 <517E9758.4000506@infradead.org> <20130429163135.GA2737@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1758595Ab3D2QuU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 12:50:20 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:48754 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757691Ab3D2QuS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Apr 2013 12:50:18 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18IN/yjgmk8mBoMQXjCYimdPyrjGM9i2F0=
+Date: Mon, 29 Apr 2013 12:50:06 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: dove: fix Dove cpu type from V7 to PJ4
+Message-ID: <20130429165006.GR32497@titan.lakedaemon.net>
+References: <1364051211-24414-1-git-send-email-sebastian.hesselbarth@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1364051211-24414-1-git-send-email-sebastian.hesselbarth@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-04-29 at 19:31 +0300, Gleb Natapov wrote:
-> On Mon, Apr 29, 2013 at 08:52:56AM -0700, Randy Dunlap wrote:
-> > On 04/29/13 02:17, Stephen Rothwell wrote:
-> > > Hi all,
-> > > 
-> > > Changes since 20130426:
-> > > 
-> > 
-> > 
-> > on x86_64:
-> > 
-> > arch/x86/kvm/x86.c: In function 'kvm_dev_ioctl_check_extension':
-> > arch/x86/kvm/x86.c:2547:22: error: 'pci_bus_type' undeclared (first use in this function)
-> > 
-> > 
-> > Oops, CONFIG_PCI is not enabled.
-> Alex, can you look at this please. Before "kvm: Allow build-time configuration
-> of KVM device assignment" commit KVM depended on PCI to be enabled.
+On Sat, Mar 23, 2013 at 04:06:51PM +0100, Sebastian Hesselbarth wrote:
+> The CPU used in Marvell Dove SoCs is a PJ4 Sheeva core. Using
+> CONFIG_CPU_PJ4 instead of CONFIG_CPU_V7 will also allow to enable
+> iWMMXt extensions on Dove.
+> 
+> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> ---
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Jason Cooper <jason@lakedaemon.net>
+> Cc: Andrew Lunn <andrew@lunn.ch>
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  arch/arm/Kconfig |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 
-Yep, patch coming...
+Sebastian,
 
+It looks as though Russell's fix for IWMMXT made it in.  Please place
+this patch in Russell's patch tracker.  If you don't have the original
+thread, Andrew Lunn gave this an Acked-by.  Now me as well:
+
+Acked-by: Jason Cooper <jason@lakedaemon.net>
+
+thx,
+
+Jason.
+
+> 
+> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+> index 2c3bdce..4fc9bca 100644
+> --- a/arch/arm/Kconfig
+> +++ b/arch/arm/Kconfig
+> @@ -556,7 +556,7 @@ config ARCH_IXP4XX
+>  config ARCH_DOVE
+>  	bool "Marvell Dove"
+>  	select ARCH_REQUIRE_GPIOLIB
+> -	select CPU_V7
+> +	select CPU_PJ4
+>  	select GENERIC_CLOCKEVENTS
+>  	select MIGHT_HAVE_PCI
+>  	select PINCTRL
+> -- 
+> 1.7.10.4
+> 
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
