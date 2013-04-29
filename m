@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759445Ab3D2TCn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 15:02:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60653 "EHLO
+	id S1759769Ab3D2Tkw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 15:40:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60683 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758442Ab3D2TCi (ORCPT
+	with ESMTP id S1759437Ab3D2TCm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 15:02:38 -0400
+	Mon, 29 Apr 2013 15:02:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mathias Krause <minipli@googlemail.com>,
-        Lauro Ramos Venancio <lauro.venancio@openbossa.org>,
-        Aloisio Almeida Jr <aloisio.almeida@openbossa.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
+        Nikolay Aleksandrov <nikolay@redhat.com>,
+        Veaceslav Falico <vfalico@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 16/42] NFC: llcp: fix info leaks via msg_name in llcp_sock_recvmsg()
-Date: Mon, 29 Apr 2013 12:01:58 -0700
-Message-Id: <20130429184754.201704000@linuxfoundation.org>
+Subject: [ 23/42] bonding: fix bonding_masters race condition in bond unloading
+Date: Mon, 29 Apr 2013 12:02:05 -0700
+Message-Id: <20130429184755.019153893@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130429184752.435249613@linuxfoundation.org>
 References: <20130429184752.435249613@linuxfoundation.org>
@@ -31,56 +29,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Mathias Krause <minipli@googlemail.com>
+From: "nikolay@redhat.com" <nikolay@redhat.com>
 
-[ Upstream commit d26d6504f23e803824e8ebd14e52d4fc0a0b09cb ]
+[ Upstream commit 69b0216ac255f523556fa3d4ff030d857eaaa37f ]
 
-The code in llcp_sock_recvmsg() does not initialize all the members of
-struct sockaddr_nfc_llcp when filling the sockaddr info. Nor does it
-initialize the padding bytes of the structure inserted by the compiler
-for alignment.
+While the bonding module is unloading, it is considered that after
+rtnl_link_unregister all bond devices are destroyed but since no
+synchronization mechanism exists, a new bond device can be created
+via bonding_masters before unregister_pernet_subsys which would
+lead to multiple problems (e.g. NULL pointer dereference, wrong RIP,
+list corruption).
 
-Also, if the socket is in state LLCP_CLOSED or is shutting down during
-receive the msg_namelen member is not updated to 0 while otherwise
-returning with 0, i.e. "success". The msg_namelen update is also
-missing for stream and seqpacket sockets which don't fill the sockaddr
-info.
+This patch fixes the issue by removing any bond devices left in the
+netns after bonding_masters is removed from sysfs.
 
-Both issues lead to the fact that the code will leak uninitialized
-kernel stack bytes in net/socket.c.
-
-Fix the first issue by initializing the memory used for sockaddr info
-with memset(0). Fix the second one by setting msg_namelen to 0 early.
-It will be updated later if we're going to fill the msg_name member.
-
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Cc: Lauro Ramos Venancio <lauro.venancio@openbossa.org>
-Cc: Aloisio Almeida Jr <aloisio.almeida@openbossa.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>
+Signed-off-by: Nikolay Aleksandrov <nikolay@redhat.com>
+Acked-by: Veaceslav Falico <vfalico@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/nfc/llcp/sock.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/net/bonding/bond_main.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/net/nfc/llcp/sock.c
-+++ b/net/nfc/llcp/sock.c
-@@ -644,6 +644,8 @@ static int llcp_sock_recvmsg(struct kioc
+--- a/drivers/net/bonding/bond_main.c
++++ b/drivers/net/bonding/bond_main.c
+@@ -4919,9 +4919,18 @@ static int __net_init bond_net_init(stru
+ static void __net_exit bond_net_exit(struct net *net)
+ {
+ 	struct bond_net *bn = net_generic(net, bond_net_id);
++	struct bonding *bond, *tmp_bond;
++	LIST_HEAD(list);
  
- 	pr_debug("%p %zu\n", sk, len);
- 
-+	msg->msg_namelen = 0;
+ 	bond_destroy_sysfs(bn);
+ 	bond_destroy_proc_dir(bn);
 +
- 	lock_sock(sk);
++	/* Kill off any bonds created after unregistering bond rtnl ops */
++	rtnl_lock();
++	list_for_each_entry_safe(bond, tmp_bond, &bn->dev_list, bond_list)
++		unregister_netdevice_queue(bond->dev, &list);
++	unregister_netdevice_many(&list);
++	rtnl_unlock();
+ }
  
- 	if (sk->sk_state == LLCP_CLOSED &&
-@@ -684,6 +686,7 @@ static int llcp_sock_recvmsg(struct kioc
- 
- 		pr_debug("Datagram socket %d %d\n", ui_cb->dsap, ui_cb->ssap);
- 
-+		memset(&sockaddr, 0, sizeof(sockaddr));
- 		sockaddr.sa_family = AF_NFC;
- 		sockaddr.nfc_protocol = NFC_PROTO_NFC_DEP;
- 		sockaddr.dsap = ui_cb->dsap;
+ static struct pernet_operations bond_net_ops = {
 
 
