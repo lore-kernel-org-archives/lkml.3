@@ -1,53 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757605Ab3D2QGE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 12:06:04 -0400
-Received: from casper.infradead.org ([85.118.1.10]:54855 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757256Ab3D2QGC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 12:06:02 -0400
-Message-ID: <517E9A4F.1080609@infradead.org>
-Date: Mon, 29 Apr 2013 09:05:35 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
+	id S1757727Ab3D2QGO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 12:06:14 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:56972 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757615Ab3D2QGJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Apr 2013 12:06:09 -0400
+Message-ID: <517E9907.4030106@ti.com>
+Date: Mon, 29 Apr 2013 11:00:07 -0500
+From: Suman Anna <s-anna@ti.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH -next] tty.h: fix build errors when PROC_FS is not enabled
-References: <20130429191754.8ee71fb814790bf345516ab8@canb.auug.org.au>
-In-Reply-To: <20130429191754.8ee71fb814790bf345516ab8@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Jassi Brar <jaswinder.singh@linaro.org>
+CC: Loic PALLARDY <loic.pallardy@st.com>,
+        Jassi Brar <jassisinghbrar@gmail.com>,
+        "Ohad Ben-Cohen (ohad@wizery.com)" <ohad@wizery.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        "Andy Green (andy.green@linaro.org)" <andy.green@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Tony Lindgren <tony@atomide.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Omar Ramirez Luna (omar.ramirez@copitl.com)" 
+	<omar.ramirez@copitl.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCHv3 00/14] drivers: mailbox: framework creation
+References: <1363145021-14339-1-git-send-email-s-anna@ti.com> <CABb+yY0RYkVeo2Sb4WsDJY0jf17488FEz0d2CB994eQaSOEsVg@mail.gmail.com> <37C860A02101E749A747FA2D3C1E3C504A5DF7@DLEE11.ent.ti.com> <CABb+yY1x4x_A+QtGG9ohsLPgs8c3nEVnd_ExJBGOOR8=6YLPFA@mail.gmail.com> <37C860A02101E749A747FA2D3C1E3C504A63B4@DLEE11.ent.ti.com> <CAJe_ZhehnniZd730jjiOLrHozq8TOJZgFYLqUe4KqgBiQEu8PA@mail.gmail.com> <51779304.4040003@st.com> <CAJe_ZhdZv5LW6kdwyPtJe69mfW6t=WQ4OJnG2H4sUhibattN2A@mail.gmail.com> <517867E1.7050301@ti.com> <CAJe_ZhfDZzq+DzA9XDF3PWFUmwcZnDy-mhE4hLNHmf+V4GhOxw@mail.gmail.com> <5179AE2F.3040403@ti.com> <CAJe_Zhf4miUm4yTyuwc56kpD8Mu4=vsmX4wdQkFDT96JbKR=MQ@mail.gmail.com> <517B242D.7040902@ti.com> <CAJe_ZhdH+SCs5crguXrm6y-6bu+eGnTqeJS6cOS5H5Yz=m15Cw@mail.gmail.com>
+In-Reply-To: <CAJe_ZhdH+SCs5crguXrm6y-6bu+eGnTqeJS6cOS5H5Yz=m15Cw@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@infradead.org>
+Hi Jassi,
 
-Fix build error when CONFIG_PROC_FS is not enabled:
+On 04/26/2013 11:51 PM, Jassi Brar wrote:
+> Hi Suman,
+> 
+>>> On 26 April 2013 03:59, Suman Anna <s-anna@ti.com> wrote:
+>>>> On 04/25/2013 12:20 AM, Jassi Brar wrote:
+> 
+>>> I never said no-buffering and I never said buffering should be in
+>>> controller drivers. In fact I don't remember ever objecting to how
+>>> buffering is done in TI's framework.
+>>> A controller could service only 1 request at a time so lets give it
+>>> just 1 at a time. Let the API handle the complexity of buffering.
+>>>
+>>
+>> Alright, guess this got lost in translation :). I interpreted based on
+>> the fact that you wanted to get rid of the size field from the
+>> mailbox_msg definition. Do you have a different mechanism in mind for
+>> the buffering compared to the present one?
+>>
+> Sure, a very simple but efficient one. I had started on pseudo code
+> implementation the day I first replied, but now I have real code with
+> the PL320 controller and the Highbank client converted to the API. All
+> that I say features in the new design. Polishing and documentation
+> will take just a few hours more. You could see end to end what I have
+> been talking about.
+>>
+>> OK, I didn't think of a no RTR interrupt-based controller. I would thing
+>> that such a controller is very rudimentary. I wonder if there are any
+>> controllers like this out there.
+>>
+> One of my controllers is like that :)
 
-include/linux/tty.h: In function 'proc_tty_register_driver':
-include/linux/tty.h:698:52: error: parameter name omitted
-include/linux/tty.h: In function 'proc_tty_unregister_driver':
-include/linux/tty.h:699:54: error: parameter name omitted
+I hope it does have a status register atleast, and not the "neither
+report nor sense RTR" type.
 
-Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
----
- include/linux/tty.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+>>>
+>>> BTW, TI's RX mechanism too seems broken for common API. Receiving
+>>> every few bytes via 'notify' mechanism is very inefficient. Imagine a
+>>> platform with no shared memory between co-processors and the local
+>>> wants to diagnose the remote by asking critical data at least KBs in
+>>> size.
+>>
+>> No shared memory between co-processors and a relatively slow wire
+>> transport is a bad architecture design to begin with.
+>>
+> IMHO it's only about private memory. Even if the controller transfers,
+> say, 10bytes/interrupt there could always be a requirement to read
+> some 1MB region of remote's private memory. And the same logic implies
+> that our TX too should be as fast as possible - the remote might need
+> its 1MB firmware over the link. So let us just try to serve all
+> designs rather than evaluate them :)
+> 
+> 
+>>>  So when API has nothing to do with received packet and the controller
+>>> has to get rid of it asap so as to be able to receive the next, IMHO
+>>> there should be short-circuit from controller to client via the API.
+>>> No delay, no buffering of RX.
+>>
+>> The current TI design is based on the fact that we can get multiple
+>> messages on a single interrupt due to the h/w fifo and the driver takes
+>> care of the bottom-half. Leaving it to the client is putting a lot of
+>> faith in the client and doesn't scale to multiple clients. The client
+>> would have to perform mostly the same as the driver is doing - so this
+>> goes back to the base discussion point that we have - which is the lack
+>> of support for atomic_context receivers in the current code. I perceive
+>> this as an attribute of the controller/mailbox device itself rather than
+>> the client.
+>>
+> Sorry, I don't understand the concern about faith.
+> If the controller h/w absolutely can not tell the remote(sender) of a
+> received packet (as seems to be your case), its driver shouldn't even
+> try to demux the received messages. The client driver must know which
+> remotes could send it a message and how to discern them on the
+> platform. Some 'server' RX client is needed here.
 
---- linux-next-20130429.orig/include/linux/tty.h
-+++ linux-next-20130429/include/linux/tty.h
-@@ -695,8 +695,8 @@ do {									\
- extern void proc_tty_register_driver(struct tty_driver *);
- extern void proc_tty_unregister_driver(struct tty_driver *);
- #else
--static inline void proc_tty_register_driver(struct tty_driver *) {}
--static inline void proc_tty_unregister_driver(struct tty_driver *) {}
-+static inline void proc_tty_register_driver(struct tty_driver *d) {}
-+static inline void proc_tty_unregister_driver(struct tty_driver *d) {}
- #endif
- 
- #endif
+No demuxing, deliver the message to the different clients. It is a
+protocol agreement between the clients on what the message means. Think
+of this scenario akin to shared interrupts.
+
+> If the controller could indeed map received packet onto remotes, then
+> ideally the controller driver should declare one (RX only) channel for
+> each such remote and demux packets onto them.
+> In either case, 'notify' mechanism is not necessary.
+
+The notify mechanism was the top-half on the interrupt handling. The
+faith part is coming from the fact that you expect all the clients to do
+the equivalent of the bottom-half (which would mean some duplication in
+the different clients), the OMAP scenario is such that all the different
+link interrupts (both rx & tx) are mapped onto a single physical
+interrupt. I think this may not be applicable to your usecase, wherein
+you probably expect a response back before proceeding.
+
+> 
+> 
+>> I agree that all remote-ends will not
+>> be able to cope up intermixed requests, but isn't this again a
+>> controller architecture dependent?
+>>
+> I think it's more about remote's protocol implementation than
+> controller's architecture.
+
+Right, I meant functional integration.
+
+> If tomorrow TI's remote firmware introduces a new set of critical
+> commands that may arrive only in a particular sequence, you'll find
+> yourself sharing a ride on our dinghy :)
+> And Andy already explained where we come from.
+
+This is almost always true when your remote is for offloading some h/w
+operations.
+
+regards
+Suman
+
