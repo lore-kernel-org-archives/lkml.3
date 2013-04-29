@@ -1,123 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758091Ab3D2LF5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 07:05:57 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:41301 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757589Ab3D2LFz convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 07:05:55 -0400
-MIME-Version: 1.0
-In-Reply-To: <1367203280.16581.3.camel@kjgkr>
-References: <1367107458-2439-1-git-send-email-linkinjeon@gmail.com>
-	<1367203280.16581.3.camel@kjgkr>
-Date: Mon, 29 Apr 2013 20:05:54 +0900
-Message-ID: <CAKYAXd85tdou4JX=a0jcWQ+9YrT16GD5tHdZrgX1hCCrdKzm7Q@mail.gmail.com>
-Subject: Re: [PATCH 1/2] f2fs: reorganize f2fs_vm_page_mkwrite
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: jaegeuk.kim@samsung.com
-Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1753277Ab3D2LLQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 07:11:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9330 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751639Ab3D2LLP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Apr 2013 07:11:15 -0400
+Subject: GFS2: Pull request (merge window)
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, cluster-devel@redhat.com
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-sKG/J23YodRJ0uKgVCbf"
+Organization: Red Hat UK Ltd
+Date: Mon, 29 Apr 2013 12:08:55 +0100
+Message-ID: <1367233735.2858.13.camel@menhir>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/4/29, Jaegeuk Kim <jaegeuk.kim@samsung.com>:
-> Hi,
-Hi. Jaegeuk.
->
-> 2013-04-28 (일), 09:04 +0900, Namjae Jeon:
->> From: Namjae Jeon <namjae.jeon@samsung.com>
->>
->> Few things can be changed in the default mkwrite function
->> 1) Make file_update_time at the start before acquiring any lock
->> 2) the condition page_offset(page) >= i_size_read(inode) should be
->>  changed to page_offset(page) > i_size_read
->> 3) Move wait_on_page_writeback.
->>
->> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
->> Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
->> ---
->>  fs/f2fs/file.c |   12 ++++++------
->>  1 file changed, 6 insertions(+), 6 deletions(-)
->>
->> diff --git a/fs/f2fs/file.c b/fs/f2fs/file.c
->> index 5cc4dd8..dc76f9b 100644
->> --- a/fs/f2fs/file.c
->> +++ b/fs/f2fs/file.c
->> @@ -63,9 +63,10 @@ static int f2fs_vm_page_mkwrite(struct vm_area_struct
->> *vma,
->>  	f2fs_put_dnode(&dn);
->>  	mutex_unlock_op(sbi, ilock);
->>
->> +	file_update_time(vma->vm_file);
->
-> Should we update time even if error is occurred below?
-Should we update time even if error is occurred below?
-Even though the original time change position regarding
-file_update_time is correct with respect to the failure conditions,
-but we referred the code in other file systems.
-We found that file_update_time in page fault is not critical part, so
-first thing is to move this out of the locking.
-We can see the following comment in block_page_mkwrite.
-/*
-	 * Update file times before taking page lock. We may end up failing the
-	 * fault so this update may be superfluous but who really cares...
-	 */
-	
-Most filesystems use it regardless of below condition. Ext4 also does
-this at the beginning of mkwrite-> just after
-sb_start_pagefault(inode->i_sb);
->
->>  	lock_page(page);
->>  	if (page->mapping != inode->i_mapping ||
->> -			page_offset(page) >= i_size_read(inode) ||
->> +			page_offset(page) > i_size_read(inode) ||
->
-> Why? IMO, there was no problem.
-There is no problem and we could not find a test case either, but
-looking at the code we thought it could be an alignment issue if due
-to index, the page_offset() and i_size_read() ? may cause some
-boundary condition.
-The above changes were introduced without citing any issues, but just
-to align the code.
-So we can ignore this changed line :)
 
-Thanks~
->
->>  			!PageUptodate(page)) {
->>  		unlock_page(page);
->>  		err = -EFAULT;
->> @@ -76,10 +77,7 @@ static int f2fs_vm_page_mkwrite(struct vm_area_struct
->> *vma,
->>  	 * check to see if the page is mapped already (no holes)
->>  	 */
->>  	if (PageMappedToDisk(page))
->> -		goto out;
->> -
->> -	/* fill the page */
->> -	wait_on_page_writeback(page);
->> +		goto mapped;
->>
->>  	/* page is wholly or partially inside EOF */
->>  	if (((page->index + 1) << PAGE_CACHE_SHIFT) > i_size_read(inode)) {
->> @@ -90,7 +88,9 @@ static int f2fs_vm_page_mkwrite(struct vm_area_struct
->> *vma,
->>  	set_page_dirty(page);
->>  	SetPageUptodate(page);
->>
->> -	file_update_time(vma->vm_file);
->> +mapped:
->> +	/* fill the page */
->> +	wait_on_page_writeback(page);
->>  out:
->>  	sb_end_pagefault(inode->i_sb);
->>  	return block_page_mkwrite_return(err);
->
-> --
-> Jaegeuk Kim
-> Samsung
->
+--=-sKG/J23YodRJ0uKgVCbf
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+
+Hi,
+
+Please consider pulling the following changes,
+
+Steve.
+
+----------------------------------------------------------------------
+
+There is not a whole lot of change this time - there are some further
+changes which are in the works, but those will be held over until next
+time.
+
+Here there are some clean ups to inode creation, the addition of an
+origin (local or remote) indicator to glock demote requests, removal
+of one of the remaining GFP_NOFAIL allocations during log flushes,
+one minor clean up, and a one liner bug fix.
+
+----------------------------------------------------------------------
+The following changes since commit 31880c37c11e28cb81c70757e38392b42e695dc6=
+:
+
+  Linux 3.9-rc6 (2013-04-07 20:49:54 -0700)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/steve/gfs2-3.0-nmw.git mast=
+er
+
+Benjamin Marzinski (1):
+      GFS2: replace gfs2_ail structure with gfs2_trans
+
+Bob Peterson (2):
+      GFS2: Remove vestigial parameter ip from function rs_deltree
+      GFS2: Flush work queue before clearing glock hash tables
+
+Steven Whitehouse (5):
+      GFS2: Clean up inode creation path
+      GFS2: Remove gfs2_refresh_inode from inode creation path
+      GFS2: Use gfs2_dinode_out() in the inode create path
+      GFS2: Add origin indicator to glock callbacks
+      GFS2: Add origin indicator to glock demote tracing
+
+ fs/gfs2/aops.c       |    2 +-
+ fs/gfs2/bmap.c       |    2 +-
+ fs/gfs2/glock.c      |   28 ++-----
+ fs/gfs2/glock.h      |    1 -
+ fs/gfs2/glops.c      |    4 +-
+ fs/gfs2/incore.h     |   19 +++---
+ fs/gfs2/inode.c      |  188 +++++++++++++++++-----------------------------=
+----
+ fs/gfs2/log.c        |  104 +++++++++++++++-------------
+ fs/gfs2/lops.c       |   32 ++++++---
+ fs/gfs2/lops.h       |    5 +-
+ fs/gfs2/meta_io.c    |    2 +-
+ fs/gfs2/rgrp.c       |   24 +++----
+ fs/gfs2/rgrp.h       |    2 +-
+ fs/gfs2/super.c      |    2 +-
+ fs/gfs2/trace_gfs2.h |   11 ++-
+ fs/gfs2/trans.c      |    4 +-
+ 16 files changed, 188 insertions(+), 242 deletions(-)
+
+
+--=-sKG/J23YodRJ0uKgVCbf
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAABAgAGBQJRflTDAAoJEMrg3m4a/8jS9woP/iuG8dWd5uUchuIErxBHAxLI
+CFJOkWmZrdyWyh4Rj8XMpSfV4V92MDh9NJKxLD09BSnJ3SOKWlhcOK6fPrFEN8hy
+1lM1/0QNCOknUU6K9l80E0gWQ/fiwc3lw8vmLX/fZxJd9tHvISMyYA1KKDu/HTbF
+msETxt9ENIFjldqAVpWdUlf9IxHKCU9u8JJ2WZ7jbJrZKHElsVa3KVlhfDvy/jZE
+e6aVYOOVpUUIjeuP/V51wK/Uexa/J7/RQMVAOTEZt0uYcjEXEClti3Gj1P32mQ8W
+trrmVpQGwOMXdOPXOk4hQyB0A4vBxnYaQLvJAHiPeOKoeLY7qPysMY7qcJp3PnQC
+koB0eTlQkal3/wE99nZJivDzSaCaKZwAgHgz2XFjebYsMsXS/VjNxQnfYY5tjGTe
+QMKYTyI4sGyXjOiyJLzRjq2wCHyjJo5pr4eWikcYQeZF8S1u6ScY+cTodeTmiWQt
+aqxc2zhEaIuI+LX45J4bSZFX/qUtpFppzGgNbZXM/RpMuPpzUhUWoyBOORaj+jWd
+nv28n7B6dPAhCT8CDpKKJRjCKl+OYd5I3oNoDYrjjq0LpGyiwWWYNf2WGOIPa+Ux
+Y+0FtaWm6SZsKOIN77D9/6JqvgANxMPSy1O6xD7tuVDyj8R60oP4k/fRE+nbumQX
+sdhZA2Ej5dTUueX45SMG
+=lhbJ
+-----END PGP SIGNATURE-----
+
+--=-sKG/J23YodRJ0uKgVCbf--
+
