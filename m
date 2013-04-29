@@ -1,39 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759144Ab3D2XFL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 19:05:11 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:58681 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758327Ab3D2XFK (ORCPT
+	id S1759644Ab3D2XFb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 19:05:31 -0400
+Received: from violet.fr.zoreil.com ([92.243.8.30]:52636 "EHLO
+	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759191Ab3D2XF2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 19:05:10 -0400
+	Mon, 29 Apr 2013 19:05:28 -0400
+Date: Tue, 30 Apr 2013 01:04:50 +0200
+From: Francois Romieu <romieu@fr.zoreil.com>
+To: Tony Prisk <linux@prisktech.co.nz>
+Cc: vt8500-wm8505-linux-kernel@googlegroups.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        davem@davemloft.net, netdev@vger.kernel.org
+Subject: Re: [PATCHv3 3/3] net: velocity: Add platform device support to VIA
+ velocity driver
+Message-ID: <20130429230450.GA2620@electric-eye.fr.zoreil.com>
+References: <1367264772-4557-1-git-send-email-linux@prisktech.co.nz>
+ <1367264772-4557-4-git-send-email-linux@prisktech.co.nz>
 MIME-Version: 1.0
-In-Reply-To: <20130429223455.GH19487@tassilo.jf.intel.com>
-References: <1366844694-2770-1-git-send-email-andi@firstfloor.org>
-	<1366844694-2770-2-git-send-email-andi@firstfloor.org>
-	<CABPqkBQSXWTd=ut+U-Mc8fEm+FaV7XAsWydTxQ7e+jSynpKU7w@mail.gmail.com>
-	<20130429223455.GH19487@tassilo.jf.intel.com>
-Date: Tue, 30 Apr 2013 01:05:09 +0200
-Message-ID: <CABPqkBQy04g22jdSr=+zJzeBpnneacauq4i=p7GdJp+w_C9Jzg@mail.gmail.com>
-Subject: Re: [PATCH 2/2] perf, x86: Don't allow unusual PEBS raw flags
-From: Stephane Eranian <eranian@google.com>
-To: Andi Kleen <ak@linux.intel.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, stable@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1367264772-4557-4-git-send-email-linux@prisktech.co.nz>
+X-Organisation: Land of Sunshine Inc.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 30, 2013 at 12:34 AM, Andi Kleen <ak@linux.intel.com> wrote:
->> Could you explain why those listed in the aliases avoid that problem?
->
-> The aliases are widely used now (by perf), so as a special case are expected
-> to work now (at least as long as we enable it by model number)
->
-I don't get that.
+Tony Prisk <linux@prisktech.co.nz> :
+[...]
+> +static int velocity_remove(void *pdev, enum velocity_bus_type bustype)
+> +{
+> +	struct net_device *netdev;
+> +	struct velocity_info *vptr;
+> +	int pci = (bustype == BUS_PCI) ? 1 : 0;
+> +
+> +	if (pci)
+> +		netdev = pci_get_drvdata(pdev);
+> +	else
+> +		netdev = platform_get_drvdata(pdev);
 
-uops_retired:cmask=16:i with precise=2 does not measure
-that based on your comments. It measures uops_retired
-if the filters are ignored with PEBS.
+The caller knows how to retrieve the net_device pointer, whence
+the struct velocity_info pointer, whence any bustype dependent
+function pointer to alleviate the "if (pci)" and CONFIG stuff.
+
+If you are not convinced, please consider turning the void *
+into an union *.
+
+-- 
+Ueimor
