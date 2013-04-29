@@ -1,79 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760216Ab3D2TMf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 15:12:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60965 "EHLO
+	id S1760227Ab3D2TMx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 15:12:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60953 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759897Ab3D2TDV (ORCPT
+	with ESMTP id S1759883Ab3D2TDU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 15:03:21 -0400
+	Mon, 29 Apr 2013 15:03:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [ 01/30] TTY: do not update atime/mtime on read/write
-Date: Mon, 29 Apr 2013 12:02:25 -0700
-Message-Id: <20130429184355.470922913@linuxfoundation.org>
+        Tom Parkin <tparkin@katalix.com>, Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 34/34] net: drop dst before queueing fragments
+Date: Mon, 29 Apr 2013 12:02:41 -0700
+Message-Id: <20130429184704.740015739@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130429184355.299556377@linuxfoundation.org>
-References: <20130429184355.299556377@linuxfoundation.org>
+In-Reply-To: <20130429184700.845644077@linuxfoundation.org>
+References: <20130429184700.845644077@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Jiri Slaby <jslaby@suse.cz>
 
-commit b0de59b5733d18b0d1974a060860a8b5c1b36a2e upstream.
+From: Eric Dumazet <edumazet@google.com>
 
-On http://vladz.devzero.fr/013_ptmx-timing.php, we can see how to find
-out length of a password using timestamps of /dev/ptmx. It is
-documented in "Timing Analysis of Keystrokes and Timing Attacks on
-SSH". To avoid that problem, do not update time when reading
-from/writing to a TTY.
+[ Upstream commit 97599dc792b45b1669c3cdb9a4b365aad0232f65 ]
 
-I am afraid of regressions as this is a behavior we have since 0.97
-and apps may expect the time to be current, e.g. for monitoring
-whether there was a change on the TTY. Now, there is no change. So
-this would better have a lot of testing before it goes upstream.
+Commit 4a94445c9a5c (net: Use ip_route_input_noref() in input path)
+added a bug in IP defragmentation handling, as non refcounted
+dst could escape an RCU protected section.
 
-References: CVE-2013-0160
+Commit 64f3b9e203bd068 (net: ip_expire() must revalidate route) fixed
+the case of timeouts, but not the general problem.
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Tom Parkin noticed crashes in UDP stack and provided a patch,
+but further analysis permitted us to pinpoint the root cause.
+
+Before queueing a packet into a frag list, we must drop its dst,
+as this dst has limited lifetime (RCU protected)
+
+When/if a packet is finally reassembled, we use the dst of the very
+last skb, still protected by RCU and valid, as the dst of the
+reassembled packet.
+
+Use same logic in IPv6, as there is no need to hold dst references.
+
+Reported-by: Tom Parkin <tparkin@katalix.com>
+Tested-by: Tom Parkin <tparkin@katalix.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/tty/tty_io.c |    8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+ net/ipv4/ip_fragment.c |   15 +++++++++++----
+ net/ipv6/reassembly.c  |   13 +++++++++++--
+ 2 files changed, 22 insertions(+), 6 deletions(-)
 
---- a/drivers/tty/tty_io.c
-+++ b/drivers/tty/tty_io.c
-@@ -975,8 +975,7 @@ static ssize_t tty_read(struct file *fil
- 	else
- 		i = -EIO;
- 	tty_ldisc_deref(ld);
--	if (i > 0)
--		inode->i_atime = current_fs_time(inode->i_sb);
-+
- 	return i;
- }
+--- a/net/ipv4/ip_fragment.c
++++ b/net/ipv4/ip_fragment.c
+@@ -251,8 +251,7 @@ static void ip_expire(unsigned long arg)
+ 		if (!head->dev)
+ 			goto out_rcu_unlock;
  
-@@ -1077,11 +1076,8 @@ static inline ssize_t do_tty_write(
- 			break;
- 		cond_resched();
+-		/* skb dst is stale, drop it, and perform route lookup again */
+-		skb_dst_drop(head);
++		/* skb has no dst, perform route lookup again */
+ 		iph = ip_hdr(head);
+ 		err = ip_route_input_noref(head, iph->daddr, iph->saddr,
+ 					   iph->tos, head->dev);
+@@ -517,8 +516,16 @@ found:
+ 		qp->q.last_in |= INET_FRAG_FIRST_IN;
+ 
+ 	if (qp->q.last_in == (INET_FRAG_FIRST_IN | INET_FRAG_LAST_IN) &&
+-	    qp->q.meat == qp->q.len)
+-		return ip_frag_reasm(qp, prev, dev);
++	    qp->q.meat == qp->q.len) {
++		unsigned long orefdst = skb->_skb_refdst;
++
++		skb->_skb_refdst = 0UL;
++		err = ip_frag_reasm(qp, prev, dev);
++		skb->_skb_refdst = orefdst;
++		return err;
++	}
++
++	skb_dst_drop(skb);
+ 
+ 	write_lock(&ip4_frags.lock);
+ 	list_move_tail(&qp->q.lru_list, &qp->q.net->lru_list);
+--- a/net/ipv6/reassembly.c
++++ b/net/ipv6/reassembly.c
+@@ -385,8 +385,17 @@ found:
  	}
--	if (written) {
--		struct inode *inode = file->f_path.dentry->d_inode;
--		inode->i_mtime = current_fs_time(inode->i_sb);
-+	if (written)
- 		ret = written;
--	}
- out:
- 	tty_write_unlock(tty);
- 	return ret;
+ 
+ 	if (fq->q.last_in == (INET_FRAG_FIRST_IN | INET_FRAG_LAST_IN) &&
+-	    fq->q.meat == fq->q.len)
+-		return ip6_frag_reasm(fq, prev, dev);
++	    fq->q.meat == fq->q.len) {
++		int res;
++		unsigned long orefdst = skb->_skb_refdst;
++
++		skb->_skb_refdst = 0UL;
++		res = ip6_frag_reasm(fq, prev, dev);
++		skb->_skb_refdst = orefdst;
++		return res;
++	}
++
++	skb_dst_drop(skb);
+ 
+ 	write_lock(&ip6_frags.lock);
+ 	list_move_tail(&fq->q.lru_list, &fq->q.net->lru_list);
 
 
