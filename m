@@ -1,62 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932525Ab3D2TsH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 15:48:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60594 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759060Ab3D2TCb (ORCPT
+	id S932887Ab3D2Tse (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 15:48:34 -0400
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:48470 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758818Ab3D2Tsb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 15:02:31 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+	Mon, 29 Apr 2013 15:48:31 -0400
+Date: Mon, 29 Apr 2013 15:52:27 -0400 (EDT)
+From: Vince Weaver <vincent.weaver@maine.edu>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mathias Krause <minipli@googlemail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 05/42] atm: update msg_namelen in vcc_recvmsg()
-Date: Mon, 29 Apr 2013 12:01:47 -0700
-Message-Id: <20130429184753.004084085@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130429184752.435249613@linuxfoundation.org>
-References: <20130429184752.435249613@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Stephane Eranian <eranian@gmail.com>
+Subject: [PATCH] perf: Add support for IvyBridge model 58 Uncore
+Message-ID: <alpine.DEB.2.02.1304291549320.15827@vincent-weaver-1.um.maine.edu>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8-stable review patch.  If anyone has any objections, please let me know.
 
-------------------
+According to Intel Vol3b 18.9, the IvyBridge model 58 uncore is the
+same as that of SandyBridge.
 
+I've done some simple tests and with this patch things seem to work
+on my mac-mini.
 
-From: Mathias Krause <minipli@googlemail.com>
+Signed-off-by: Vince Weaver <vincent.weaver@maine.edu>
 
-[ Upstream commit 9b3e617f3df53822345a8573b6d358f6b9e5ed87 ]
-
-The current code does not fill the msg_name member in case it is set.
-It also does not set the msg_namelen member to 0 and therefore makes
-net/socket.c leak the local, uninitialized sockaddr_storage variable
-to userland -- 128 bytes of kernel stack memory.
-
-Fix that by simply setting msg_namelen to 0 as obviously nobody cared
-about vcc_recvmsg() not filling the msg_name in case it was set.
-
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/atm/common.c |    2 ++
- 1 file changed, 2 insertions(+)
-
---- a/net/atm/common.c
-+++ b/net/atm/common.c
-@@ -532,6 +532,8 @@ int vcc_recvmsg(struct kiocb *iocb, stru
- 	struct sk_buff *skb;
- 	int copied, error = -EINVAL;
- 
-+	msg->msg_namelen = 0;
-+
- 	if (sock->state != SS_CONNECTED)
- 		return -ENOTCONN;
- 
-
-
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+index b43200d..7756c69 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+@@ -2853,6 +2853,7 @@ static int __init uncore_cpu_init(void)
+ 		msr_uncores = nhm_msr_uncores;
+ 		break;
+ 	case 42: /* Sandy Bridge */
++	case 58: /* Ivy Bridge */
+ 		if (snb_uncore_cbox.num_boxes > max_cores)
+ 			snb_uncore_cbox.num_boxes = max_cores;
+ 		msr_uncores = snb_msr_uncores;
