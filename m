@@ -1,110 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756657Ab3D1X5s (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Apr 2013 19:57:48 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:51884 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756538Ab3D1X5r (ORCPT
+	id S1756697Ab3D2Ap6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Apr 2013 20:45:58 -0400
+Received: from mail-la0-f48.google.com ([209.85.215.48]:46513 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756581Ab3D2Ap5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Apr 2013 19:57:47 -0400
-Date: Mon, 29 Apr 2013 09:57:35 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Yuval Mintz" <yuvalmin@broadcom.com>
-Cc: "David Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Ariel Elior" <ariele@broadcom.com>,
-        "Eilon Greenstein" <eilong@broadcom.com>
-Subject: Re: linux-next: manual merge of the net-next tree with the net tree
-Message-Id: <20130429095735.bbc99fd1444dbd756b645979@canb.auug.org.au>
-In-Reply-To: <20130428164933.6d3da501@lb-tlvb-yuvalmin.il.broadcom.com>
-References: <20130426132447.c7b06622240088ccad366b03@canb.auug.org.au>
-	<20130428164933.6d3da501@lb-tlvb-yuvalmin.il.broadcom.com>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__29_Apr_2013_09_57_35_+1000_IhBNHIdThyCbtaL3"
+	Sun, 28 Apr 2013 20:45:57 -0400
+MIME-Version: 1.0
+In-Reply-To: <1367037606.7911.66.camel@Wailaba2>
+References: <1365184746.874.103.camel@Wailaba2>
+	<1365593710.30071.52.camel@laptop>
+	<1365608911.707.65.camel@Wailaba2>
+	<1365763837.17140.52.camel@laptop>
+	<1365782115.17140.68.camel@laptop>
+	<CAFTL4hwQ4FZs0VCNXP37f=+DBW7Q2EQc6PW_EtYiVnZCPWN4OQ@mail.gmail.com>
+	<CAHGf_=pWPT4XdrJ8ZveL4zJKm1SE0whpL_fMHd5_TokuNQxSJQ@mail.gmail.com>
+	<CAHGf_=psD4V-U4FFwAWr4k3ZP6p=GVkNY_0S-Cg06m-=89MM7Q@mail.gmail.com>
+	<1366951210.7911.28.camel@Wailaba2>
+	<1366957639.7911.42.camel@Wailaba2>
+	<517AD0AE.1030404@gmail.com>
+	<1367037606.7911.66.camel@Wailaba2>
+Date: Mon, 29 Apr 2013 02:45:55 +0200
+Message-ID: <CAFTL4hwxW9dGZH0rWOAngpYd1DJMGHAF7002weA4stNv6n4t6Q@mail.gmail.com>
+Subject: Re: [PATCH v2 1/3] process cputimer is moving faster than its
+ corresponding clock
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Olivier Langlois <olivier@trillion01.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, schwidefsky@de.ibm.com,
+        Steven Rostedt <rostedt@goodmis.org>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__29_Apr_2013_09_57_35_+1000_IhBNHIdThyCbtaL3
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi,
-
-On Sun, 28 Apr 2013 16:49:33 +0300 "Yuval Mintz" <yuvalmin@broadcom.com> wr=
-ote:
+2013/4/27 Olivier Langlois <olivier@trillion01.com>:
 >
-> > Today's linux-next merge of the net-next tree got a conflict in
-> > drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c between commit
-> > ecf01c22be03 ("bnx2x: Prevent NULL pointer dereference in kdump") from
-> > the net tree and commit 5b0752c863d7 ("bnx2x: Fix VF statistics") from
-> > the net-next tree.
-> >=20
-> > I am not sure about this, but I just used the net tree version but I
-> > assume something more may be needed and can carry the fix as
-> > necessary (no action is required).
->=20
-> This patch adds the missing functionality from the `net-next' patch
-> which was lost due to the merge.
+>
+> Forbids the cputimer to drift ahead of its process clock by
+> blocking its update when a tick occurs while a autoreaping task
+> is currently in do_exit() between the call to release_task() and
+> its final call to schedule().
+>
+> Any task stats update after having called release_task() will
+> be lost because they are added to the global process stats located
+> in the signal struct from release_task().
+>
+> Ideally, you should postpone the release_task() call after the
+> final context switch to get all the stats added but this is
+> more complex to achieve.
+>
+> In other words, this is slowing down the cputimer so it keep the same
+> pace than the process clock but in fact, what should be done is to
+> speed up the process clock by adding the missing stats to it.
+>
+> Signed-off-by: Olivier Langlois <olivier@trillion01.com>
 
 Thanks.
 
-> Is `linux-next' the correct tree to send it into?
-> (I couldn't designate it to `net-next' as the merge between `net' and
-> `net-next' hasn't occured yet, thus no collision there)
+Could you please resend these three patches in a new mail thread to
+make reviews easier? Also it would be nice to propose a different
+subject for each individual patch. Each of which describing what the
+patch does in a few words.
 
-I have added this hunk to the merge conflict resolution in linux-next.  I
-assume that Dave will do this as well when he merges the net tree into
-the net-next tree.
-
-> Signed-off-by: Yuval Mintz <yuvalmin@broadcom.com>
-> Signed-off-by: Ariel Elior <ariele@broadcom.com>
-> ---
->  drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c | 2 ++
->  1 file changed, 2 insertions(+)
->=20
-> diff --git a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
-> b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c index
-> 06dee5c..52cf71c 100644 ---
-> a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c +++
-> b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c @@ -6053,6 +6053,8
-> @@ void bnx2x_pre_irq_nic_init(struct bnx2x *bp) bnx2x_init_def_sb(bp);
->  		bnx2x_update_dsb_idx(bp);
->  		bnx2x_init_sp_ring(bp);
-> +	} else {
-> +		bnx2x_memset_stats(bp);
->  	}
->  }
-
-This patch was badly corrupted ...
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Mon__29_Apr_2013_09_57_35_+1000_IhBNHIdThyCbtaL3
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRfbdwAAoJEECxmPOUX5FE0yoQAIJIsSrsLSmo+YhehLy41WDy
-8OqvmI1RxAlqTKf/jYi9V5snt/UFfg3JPjZch9Khi4qF1YHRSVsJZIJw6F71hmKQ
-cWlQPS8d9pgJa2OggG/SHCZgEhF1j2uyWK56Frvai95Sh4+rEwnYVUvOcHmXdJCU
-dszLt8ZN6Gna3lMtPKIlj7hsz7ioxeTbHiUQUb48ZhONA2yp462Hn30Z7B84kreA
-94Zx5sTd8+HdNBMygg0qxikYjioATldgXLbO8ROXnBxInYhaOtpIUk++nWKL61FP
-g6myCiovbdgbJQjAeE0YFpEksHKqHzuQ1oD+kjRLk+eoCwwZbxF3kCf7WI1pYeOF
-vt8Q40cE9HIm14MeTAxZrVnqV92HYAAXB3rw5feLRuWGJqxREUDC5xWdamXMvLLE
-9iwxk61O1AzZn+dAWVT6P4CMCFgCPBlswBAbzppEXyOBKbLTQ62qCrP0Cq5jOkZO
-CwU+3Sac1EVdtjOSpPkESo1eSjWqRYDcd8WyB0dioktesviDxQzyB1ehjXgzTgkd
-GHr+B5eS99KbV2DY4KUJ3wuLHgDUKfrh8CzUF9c1u2Lks275wqUQsN5DtbEx3pT4
-eWBinnNM22nOTrIOckianC+nWoINUq2FbvFWF+3ZZodBNWc9JQEDMKj5zkbedbAZ
-98HwuvdGGtbaxbNBpWN1
-=Bpma
------END PGP SIGNATURE-----
-
---Signature=_Mon__29_Apr_2013_09_57_35_+1000_IhBNHIdThyCbtaL3--
+Thanks.
