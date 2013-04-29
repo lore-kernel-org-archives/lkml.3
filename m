@@ -1,97 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753225Ab3D2HfX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 03:35:23 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:42397 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752678Ab3D2HfW (ORCPT
+	id S1753388Ab3D2Hps (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 03:45:48 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:47861 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750972Ab3D2Hpr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 03:35:22 -0400
-Date: Mon, 29 Apr 2013 09:35:18 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Inki Dae <inki.dae@samsung.com>
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] module: fix mutiple defined issue
-Message-ID: <20130429073518.GZ15233@pengutronix.de>
-References: <1367213521-26795-1-git-send-email-inki.dae@samsung.com>
+	Mon, 29 Apr 2013 03:45:47 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1367213521-26795-1-git-send-email-inki.dae@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <CAKgNAkiMOGtuCyvhSpku65p1ZJ5SfdYcOxxAU+H-mk-76wqOPw@mail.gmail.com>
+References: <CAKgNAkh1TEkQiQ2g2jhbNzVTwpDYOreJt3rAukZCP9H1wh0mLQ@mail.gmail.com>
+	<20130315153811.GD24305@sergelap>
+	<CAKgNAkiMOGtuCyvhSpku65p1ZJ5SfdYcOxxAU+H-mk-76wqOPw@mail.gmail.com>
+Date: Mon, 29 Apr 2013 09:45:45 +0200
+Message-ID: <CAFLxGvzXkGcR=Wyx8YZKKRACEnNLMA0xQoDfruq7CT1D-FNLnA@mail.gmail.com>
+Subject: Re: For review: user_namespaces(7) man page
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: Michael Kerrisk-manpages <mtk.manpages@gmail.com>
+Cc: Serge Hallyn <serge.hallyn@ubuntu.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux-man <linux-man@vger.kernel.org>,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Vasily Kulikov <segoon@openwall.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 29, 2013 at 02:32:01PM +0900, Inki Dae wrote:
-> This patch fixes mutiple defined issue to MODULE_DEVICE_TABLE
-s/mutiple/multiple/, still this sentence doesn't sound right. What is
-the error message you see?
- 
-> The issue could be induced when some framework which includes two
-> more sub drivers, is built as one moudle because those sub drivers
-s/moudle/module/
+On Thu, Mar 21, 2013 at 4:52 PM, Michael Kerrisk (man-pages)
+<mtk.manpages@gmail.com> wrote:
+> Hi Serge,
+>
+> On Fri, Mar 15, 2013 at 4:38 PM, Serge Hallyn <serge.hallyn@ubuntu.com> wrote:
+>> Hi,
+>>
+>> you mention that after creating a new user namespace you at first have
+>> all capabilities in the new ns.  You don't explicitly mention (or I
+>> missed it - I did see the mention of securebits) that if you want to
+>> keep those capabilities after doing an exec, you need to first have
+>> something mapped to uid 0 in the userns, and do setuid(0).
+>
+> Good point. I'll add something on that.
+>
+>> You might not want to list manpages from other projects,
+>
+> Actually, not a problem. Many of the pages in my set already do this.
+>
+>> but Eric's
+>> shadow patches introduce some good new manpages as well.  Those aren't yet
+>> accepted upstream, but if/when they are then mention at least of
+>> subuid(5), subgid(5), and newuidmap(1) and newgidmap(1) might be good.
+>
+> I'll add those.
+>
+> Cheers,
+>
+> Michael
 
-> could have their own MODULE_DEVICE_TABLE.
-> 
-> And 'struct of_device_id' isn't needed to be determined by type
-> argument because the definition of 'of_device_id' should be fixed.
-> So this patch makes 'of_devce_id' definition to be fixed and
-> only its instance name to be defined by type.
-include/linux/isapnp.h uses:
-#define ISAPNP_CARD_TABLE(name) \
-		MODULE_GENERIC_TABLE(isapnp_card, name)
+Can we please also document which capabilities are useless within an
+user namespace?
+E.g. CAP_MKNOD.
+You get this capability but the kernel always checks it against the
+initial userns.
 
-and you changed the table's type with your patch. Ditto for all users of
-
-	MODULE_DEVICE_TABLE(i2c, ...);
-	MODULE_DEVICE_TABLE(acpi, ...);
-	MODULE_DEVICE_TABLE(platform, ...);
-	MODULE_DEVICE_TABLE(pci, ...);
-	MODULE_DEVICE_TABLE(sdio, ...);
-
-So I'm pretty sure your patch is wrong and I expect it makes most
-defconfigs fail to compile.
-
-Best regards
-Uwe
-
-> 
-> Signed-off-by: Inki Dae <inki.dae@samsung.com>
-> ---
->  include/linux/module.h |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/include/linux/module.h b/include/linux/module.h
-> index 46f1ea0..ac5d79f 100644
-> --- a/include/linux/module.h
-> +++ b/include/linux/module.h
-> @@ -84,7 +84,7 @@ void trim_init_extable(struct module *m);
->  
->  #ifdef MODULE
->  #define MODULE_GENERIC_TABLE(gtype,name)			\
-> -extern const struct gtype##_id __mod_##gtype##_table		\
-> +extern const struct of_device_id __mod_##gtype##_table		\
->    __attribute__ ((unused, alias(__stringify(name))))
->  
->  #else  /* !MODULE */
-> -- 
-> 1.7.5.4
-> 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-> 
-
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Thanks,
+//richard
