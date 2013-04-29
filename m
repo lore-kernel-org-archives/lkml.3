@@ -1,66 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759736Ab3D2VjM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 17:39:12 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:49509 "EHLO hydra.sisk.pl"
+	id S932905Ab3D2Vmb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 17:42:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15160 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758574Ab3D2VjK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 17:39:10 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: paulmck@linux.vnet.ibm.com
-Cc: Viresh Kumar <viresh.kumar@linaro.org>, Nathan Zimmer <nzimmer@sgi.com>,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH linux-next v8] cpufreq: convert the cpufreq_driver to use the rcu
-Date: Mon, 29 Apr 2013 23:47:23 +0200
-Message-ID: <2810635.tjpGLjVH1J@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0-rc8+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <20130429213728.GR3780@linux.vnet.ibm.com>
-References: <515C5AB6.5090109@sgi.com> <3218775.0Qs2EbHdzR@vostro.rjw.lan> <20130429213728.GR3780@linux.vnet.ibm.com>
+	id S932828Ab3D2Vm2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Apr 2013 17:42:28 -0400
+Message-ID: <517EE940.8010005@redhat.com>
+Date: Mon, 29 Apr 2013 17:42:24 -0400
+From: Don Dutile <ddutile@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.11) Gecko/20121116 Thunderbird/10.0.11
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: "Duran, Leo" <leo.duran@amd.com>
+CC: "Suthikulpanit, Suravee" <Suravee.Suthikulpanit@amd.com>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: RFC: IOMMU/AMD: Error Handling
+References: <517ECDDA.3000606@amd.com> <517ED3A9.2050508@redhat.com> <BA42942F2D0DED45AFB0A6216D1E951D44CBE1F9@sausexdag01.amd.com>
+In-Reply-To: <BA42942F2D0DED45AFB0A6216D1E951D44CBE1F9@sausexdag01.amd.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, April 29, 2013 02:37:28 PM Paul E. McKenney wrote:
-> On Mon, Apr 29, 2013 at 12:22:32AM +0200, Rafael J. Wysocki wrote:
-> > On Thursday, April 04, 2013 09:57:19 PM Viresh Kumar wrote:
-> > > On 4 April 2013 20:23, Nathan Zimmer <nzimmer@sgi.com> wrote:
-> > > > We eventually would like to remove the rwlock cpufreq_driver_lock or convert
-> > > > it back to a spinlock and protect the read sections with RCU.  The first step in
-> > > > that is moving the cpufreq_driver to use the rcu.
-> > > > I don't see an easy wasy to protect the cpufreq_cpu_data structure with the
-> > > > RCU, so I am leaving it with the rwlock for now since under certain configs
-> > > > __cpufreq_cpu_get is hot spot with 256+ cores.
-> > > >
-> > > > v5: Go a different way and split up the lock and use the rcu
-> > > > v6: use bools instead of checking function pointers
-> > > >     covert the cpufreq_data_lock to a rwlock
-> > > > v7: Rebase to use the already accepted half
-> > > > v8: Correct have_governor_per_policy
-> > > >     Reviewed location of rcu_read_(un)lock in several spots
-> > > 
-> > > Sorry for long delay or too many versions of this patch :)
-> > > 
-> > > Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
-> > 
-> > Unfortunately, I had to revert this one, because it is obviously buggy.  Why?
-> > Because it adds rcu_read_lock()/rcu_read_unlock() around sysfs_create_file()
-> > which may sleep due to a GFP_KERNEL memory allocation.  Sorry for failing to
-> > notice that earlier.
-> 
-> One workaround might be to use SRCU, which allows sleeping in its
-> critical sections.
+On 04/29/2013 04:34 PM, Duran, Leo wrote:
+> I'm wondering if resetting the IOMMU at init-time (once) would clear any BIOS induced noise.
+> Leo
+>
+Well, depends what you mean by 'reset'....
+(a) setting it up for OS use is effectively a reset, but doesn't quiesce a device
+      doing dma reads of a (bios-setup) queue.  then the noisy messages begin
+(b) disable the iommu, and then the dma just occurs... and bad for writes, potentially.
 
-Agreed, but at this point of the cycle I'd just preferred to do the revert and
-start over.
+Similar issue is being reported & worked for kdump, where device are still
+doing DMA while the system is trying to 'reset' to the kexec'd kernel, and
+take a crash dump.
 
-Thanks,
-Rafael
+Solution: stop devices from doing dma... but some you _want_ enabled throughout...
+           like keyboard & mouse via usb controller, so you get to pick os from
+           grub...  not so for kexec...
 
+so, again, for isolation faults.... let the hw do its job -- isolate
+and throttle/silence the fault messages on a per-device, time-duration heuristic
+so the system can get through boot-up where enough OS is init'd (drivers started)
+to stop the temporary noise.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+>> -----Original Message-----
+>> From: iommu-bounces@lists.linux-foundation.org [mailto:iommu-
+>> bounces@lists.linux-foundation.org] On Behalf Of Don Dutile
+>> Sent: Monday, April 29, 2013 3:10 PM
+>> To: Suthikulpanit, Suravee
+>> Cc: iommu@lists.linux-foundation.org; linux-kernel@vger.kernel.org
+>> Subject: Re: RFC: IOMMU/AMD: Error Handling
+>>
+>> On 04/29/2013 03:45 PM, Suravee Suthikulanit wrote:
+>>> Joerg,
+>>>
+>>> We are in the process of implementing AMD IOMMU error handling, and I
+>> would like some comments from you and the community.
+>>>
+>>> Currently, the AMD IOMMU driver only reports events from the event log
+>> in the dmesg, and does not try to handle them in case of errors. AMD
+>> IOMMU errors can be categorized as device-specific errors and IOMMU
+>> errors.
+>>>
+>>> 1. For IOMMU errors such as:
+>>> - DEV_TAB_HADWARE_ERROR
+>>> - PAGE_TAB_ERROR
+>>> - COMMAND_HARDWARE_ERROR
+>>> If the error is detected during IOMMU initialization, we could disable
+>> IOMMU and proceed. If the error occurs after IOMMU is initialized, we won't
+>> be able to recover from this, and might need to result in panic.
+>>>
+>>> 2. For device-specific errors such as:
+>>> - ILLEGAL_DEV_TABLE_ENTRY
+>>> - IO_PAGE_FAULT
+>>> - INVALDE_DEVICE_REQUEST
+>>> We think the AMD IOMMU driver should try to isolate the device. This
+>> involves blocking device transactions at IOMMU DTE and tries to disable the
+>> device (e.g. calling the remove(struct pci_dev *pdev) interface generally
+>> provides by device drivers). This could prevents the device from continuing
+>> to fail and to risk of system instability.
+>>>
+>> disabling the device is not an option.
+>> We've seen mis-configured ACPI tables generate storms of invalide dte
+>> messages after iommu setup but before they are cleared up when the OS
+>> driver is started&  resets the device. The original storm is from bios-use of
+>> IOMMU with a device.
+>> I'd recommend creating a filter that prevents further logging from a device
+>> for 5 mins at a time if a storm of DTE-related errors are seen.
+>> by definition, the DMA is blocked from corrupting/changing memory, so
+>> isolation has been established; keeping the failure log from consuming the
+>> system is the needed fix.
+>>
+>>> 3. In case of posted memory write transaction, device driver might not be
+>> aware that the transaction has failed and blocked at IOMMU. If there is no
+>> HW IOMMU, I believe this is handled by PCI error handling code. If the
+>> IOMMU hardware reporth such case, could this potentially leverage the
+>> Linux IOMMU fault handling interface, iommu_set_fault_handler() and
+>> report_iommu_fault(), to communicate to device driver or PCI driver?
+>>>
+>> Wondering if you could use AER-like callback mechanism so a driver can be
+>> invoked when IOMMU error occurs, so the device driver can quiesce or reset
+>> the device if it deems it transient.
+>>
+>>
+>>> Any feedback or comments are appreciated.
+>>>
+>>> Thank you,
+>>> Suravee
+>>>
+>>>
+>>>
+>>>
+>>> _______________________________________________
+>>> iommu mailing list
+>>> iommu@lists.linux-foundation.org
+>>> https://lists.linuxfoundation.org/mailman/listinfo/iommu
+>>
+>> _______________________________________________
+>> iommu mailing list
+>> iommu@lists.linux-foundation.org
+>> https://lists.linuxfoundation.org/mailman/listinfo/iommu
+>
+>
+
