@@ -1,64 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759780Ab3D2TDK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 15:03:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60835 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759458Ab3D2TDE (ORCPT
+	id S932952Ab3D2TTB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 15:19:01 -0400
+Received: from server.prisktech.co.nz ([115.188.14.127]:65123 "EHLO
+	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932386Ab3D2TS7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 15:03:04 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mathias Krause <minipli@googlemail.com>,
-        Ursula Braun <ursula.braun@de.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 11/34] iucv: Fix missing msg_namelen update in iucv_sock_recvmsg()
-Date: Mon, 29 Apr 2013 12:02:18 -0700
-Message-Id: <20130429184702.166251833@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130429184700.845644077@linuxfoundation.org>
-References: <20130429184700.845644077@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Mon, 29 Apr 2013 15:18:59 -0400
+Message-ID: <517EC7A6.9030204@prisktech.co.nz>
+Date: Tue, 30 Apr 2013 07:19:02 +1200
+From: Tony Prisk <linux@prisktech.co.nz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: David Miller <davem@davemloft.net>
+CC: romieu@fr.zoreil.com, netdev@vger.kernel.org,
+        vt8500-wm8505-linux-kernel@googlegroups.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2 0/3] Add support for velocity network driver on platform
+ devices
+References: <1367221841-14563-1-git-send-email-linux@prisktech.co.nz> <20130429.151528.2251094691456287740.davem@davemloft.net>
+In-Reply-To: <20130429.151528.2251094691456287740.davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On 30/04/13 07:15, David Miller wrote:
+> You prepared these patches against a net-next tree which is at least
+> a week old, I know this because that's when the NETIF_F_* flags for
+> VLAN offloading changed their names which causes your third patch
+> to fail to apply.
+>
+> Do not do this, net-next changes every day and rapidly, don't take
+> the chance that the driver you're touching is unpopular and thus
+> hasn't had changes to it recently.  Tree-wide interface changes
+> happen all the time.
+Apologies - I didn't realise. These patches are based against 3.8-rc8.
+I will rebase against net-next and resend.
 
-------------------
-
-
-From: Mathias Krause <minipli@googlemail.com>
-
-[ Upstream commit a5598bd9c087dc0efc250a5221e5d0e6f584ee88 ]
-
-The current code does not fill the msg_name member in case it is set.
-It also does not set the msg_namelen member to 0 and therefore makes
-net/socket.c leak the local, uninitialized sockaddr_storage variable
-to userland -- 128 bytes of kernel stack memory.
-
-Fix that by simply setting msg_namelen to 0 as obviously nobody cared
-about iucv_sock_recvmsg() not filling the msg_name in case it was set.
-
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Cc: Ursula Braun <ursula.braun@de.ibm.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/iucv/af_iucv.c |    2 ++
- 1 file changed, 2 insertions(+)
-
---- a/net/iucv/af_iucv.c
-+++ b/net/iucv/af_iucv.c
-@@ -1331,6 +1331,8 @@ static int iucv_sock_recvmsg(struct kioc
- 	struct sk_buff *skb, *rskb, *cskb;
- 	int err = 0;
- 
-+	msg->msg_namelen = 0;
-+
- 	if ((sk->sk_state == IUCV_DISCONN) &&
- 	    skb_queue_empty(&iucv->backlog_skb_q) &&
- 	    skb_queue_empty(&sk->sk_receive_queue) &&
-
-
+Regards
+Tony P
