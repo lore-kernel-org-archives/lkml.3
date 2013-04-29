@@ -1,347 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932549Ab3D2VUf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 17:20:35 -0400
-Received: from smtp2.macqel.be ([194.78.208.39]:15163 "EHLO smtp2.macqel.be"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932370Ab3D2VTP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 17:19:15 -0400
-From: Philippe De Muyter <phdm@macqel.be>
-To: linux-kernel@vger.kernel.org
-Cc: Philippe De Muyter <phdm@macqel.be>, Karel Zak <kzak@redhat.com>,
-        Jens Axboe <axboe@kernel.dk>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 2/5] Add aix lvm partitions support files
-Date: Mon, 29 Apr 2013 23:18:30 +0200
-Message-Id: <1367270313-18871-3-git-send-email-phdm@macqel.be>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1367270313-18871-1-git-send-email-phdm@macqel.be>
-References: <1367270313-18871-1-git-send-email-phdm@macqel.be>
+	id S932578Ab3D2VVA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 17:21:00 -0400
+Received: from oproxy14-pub.unifiedlayer.com ([67.222.51.224]:60725 "HELO
+	oproxy14-pub.unifiedlayer.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S932336Ab3D2VU5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Apr 2013 17:20:57 -0400
+Message-ID: <1367270454.8833.45.camel@Wailaba2>
+Subject: Re: [PATCH v2 1/3] process cputimer is moving faster than its
+ corresponding clock
+From: Olivier Langlois <olivier@trillion01.com>
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, schwidefsky@de.ibm.com,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Mon, 29 Apr 2013 17:20:54 -0400
+In-Reply-To: <517EC582.8090400@gmail.com>
+References: <1365184746.874.103.camel@Wailaba2>
+	 <1365593710.30071.52.camel@laptop> <1365608911.707.65.camel@Wailaba2>
+	 <1365763837.17140.52.camel@laptop> <1365782115.17140.68.camel@laptop>
+	 <CAFTL4hwQ4FZs0VCNXP37f=+DBW7Q2EQc6PW_EtYiVnZCPWN4OQ@mail.gmail.com>
+	 <CAHGf_=pWPT4XdrJ8ZveL4zJKm1SE0whpL_fMHd5_TokuNQxSJQ@mail.gmail.com>
+	 <CAHGf_=psD4V-U4FFwAWr4k3ZP6p=GVkNY_0S-Cg06m-=89MM7Q@mail.gmail.com>
+	 <1366951210.7911.28.camel@Wailaba2> <1366957639.7911.42.camel@Wailaba2>
+	 <517AD0AE.1030404@gmail.com> <1367037606.7911.66.camel@Wailaba2>
+	 <517DFFE9.4050808@gmail.com> <1367255407.8833.4.camel@Wailaba2>
+	 <517EB45D.60007@gmail.com> <1367259631.8833.27.camel@Wailaba2>
+	 <517EBC71.4070709@gmail.com> <1367261667.8833.39.camel@Wailaba2>
+	 <517EC582.8090400@gmail.com>
+Organization: Trillion01 Inc
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {5686:box610.bluehost.com:olivierl:trillion01.com} {sentby:smtp auth 173.178.230.31 authed with olivier@trillion01.com}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-adding partitions/aix.h and partitions/aix.c
+On Mon, 2013-04-29 at 15:09 -0400, KOSAKI Motohiro wrote:
+> (4/29/13 2:54 PM), Olivier Langlois wrote:
+> > On Mon, 2013-04-29 at 14:31 -0400, KOSAKI Motohiro wrote:
+> >> (4/29/13 2:20 PM), Olivier Langlois wrote:
+> >>>
+> >>>>
+> >>>>>> I'm confused. glibc's rt/tst-cputimer1 doesn't have thread exiting code. I have
+> >>>>>> no seen any issue in this accounting.
+> >>>>>
+> >>>>> glibc launch a helper thread to receive timer signal and will also
+> >>>>> create a new thread upon signal reception when a timer is created with
+> >>>>> sigev_notify = SIGEV_THREAD;
+> >>>>>
+> >>>>> please see:
+> >>>>>
+> >>>>> glibc-2.17/nptl/sysdeps/unix/sysv/linux/timer_create.c
+> >>>>> glibc-2.17/nptl/sysdeps/unix/sysv/linux/timer_routines.c
+> >>>>
+> >>>> I know. I taled thread exiting. not thread creating. And, as far as I can see, only test sig1 can fail,
+> >>>> not thr[12].
+> >>>>
+> >>> Apart from glibc helper thread, the threads created for handling timer
+> >>> firing all do exit immediatly as soon as user callback returns.
+> >>
+> >> And, libc ensure its exiting finished before starting actual tests. Why such thread exiting
+> >> affect timers code? It shouldn't. becuase signal.cputimer is initialized timer_settime().
+> >> The initialization is incorrect, we should fix initialization.
+> > 
+> > It doesn't have anything to do with initialisation.
+> > 
+> > Quick Quiz #1: How does the cputimer tick?
+> > Answer: With calls to account_group_exec_runtime()
+> 
+> Only account when cputimer->running. Quick Quiz: When turn on cputimer->running?
+> 
+> 
+> > Every task updates occuring after release_task() has been called in
+> > do_exit() (scheduler ticks or the task final schedule() call) will be
+> > lost because tasks stats are added to the global group stats located in
+> > the signal struct in release_task() So every update after release_task()
+> > will be lost but account_group_exec_runtime is still called.
+> 
+> tick lost doesn't occur an issue. because glibc only test posix conformance and
+> posix allow inacculacy. In other words, timer must not run faster than real clock.
+> but lost and makes slower are accepted in the test.
+> 
+What is lost isn't cputimer tick. They are accounted
+account_group_exec_runtime(). What is lost it is what is added to
+curr->sum_exec_runtime. Thus making the thread group clock running
+slower than the cputimer.
 
-Partitions (called Logical Volumes in AIX) can be non-contiguous or
-even split on more than one disk.  Altough we detect such partitions,
-we cannot describe them to the Linux partitions layer, so we simply
-discard them and issue a diagnose message.
+Please spend some time reading the code and less time writing e-mails.
 
-Signed-off-by: Philippe De Muyter <phdm@macqel.be>
-Cc: Karel Zak <kzak@redhat.com>
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: Andrew Morton <akpm@linux-foundation.org>
----
- block/partitions/aix.c |  290 ++++++++++++++++++++++++++++++++++++++++++++++++
- block/partitions/aix.h |    1 +
- 2 files changed, 291 insertions(+), 0 deletions(-)
- create mode 100644 block/partitions/aix.c
- create mode 100644 block/partitions/aix.h
+Read the code of release_task() and where it is called in do_exit().
 
-diff --git a/block/partitions/aix.c b/block/partitions/aix.c
-new file mode 100644
-index 0000000..b3288d2
---- /dev/null
-+++ b/block/partitions/aix.c
-@@ -0,0 +1,290 @@
-+/*
-+ *  fs/partitions/aix.c
-+ *
-+ *  Copyright (C) 2012-2013 Philippe De Muyter <phdm@macqel.be>
-+ */
-+
-+#include "check.h"
-+#include "aix.h"
-+
-+struct lvm_rec {
-+	char lvm_id[4]; /* "_LVM" */
-+	char reserved4[16];
-+	__be32 lvmarea_len;
-+	__be32 vgda_len;
-+	__be32 vgda_psn[2];
-+	char reserved36[10];
-+	__be16 pp_size; /* log2(pp_size) */
-+	char reserved46[12];
-+	__be16 version;
-+	};
-+
-+struct vgda {
-+	__be32 secs;
-+	__be32 usec;
-+	char reserved8[16];
-+	__be16 numlvs;
-+	__be16 maxlvs;
-+	__be16 pp_size;
-+	__be16 numpvs;
-+	__be16 total_vgdas;
-+	__be16 vgda_size;
-+	};
-+
-+struct lvd {
-+	__be16 lv_ix;
-+	__be16 res2;
-+	__be16 res4;
-+	__be16 maxsize;
-+	__be16 lv_state;
-+	__be16 mirror;
-+	__be16 mirror_policy;
-+	__be16 num_lps;
-+	__be16 res10[8];
-+	};
-+
-+struct lvname {
-+	char name[64];
-+	};
-+
-+struct ppe {
-+	__be16 lv_ix;
-+	unsigned short res2;
-+	unsigned short res4;
-+	__be16 lp_ix;
-+	unsigned short res8[12];
-+	};
-+
-+struct pvd {
-+	char reserved0[16];
-+	__be16 pp_count;
-+	char reserved18[2];
-+	__be32 psn_part1;
-+	char reserved24[8];
-+	struct ppe ppe[1016];
-+	};
-+
-+#define LVM_MAXLVS 256
-+
-+/**
-+ * last_lba(): return number of last logical block of device
-+ * @bdev: block device
-+ *
-+ * Description: Returns last LBA value on success, 0 on error.
-+ * This is stored (by sd and ide-geometry) in
-+ *  the part[0] entry for this disk, and is the number of
-+ *  physical sectors available on the disk.
-+ */
-+static u64 last_lba(struct block_device *bdev)
-+{
-+	if (!bdev || !bdev->bd_inode)
-+		return 0;
-+	return (bdev->bd_inode->i_size >> 9) - 1ULL;
-+}
-+
-+/**
-+ * read_lba(): Read bytes from disk, starting at given LBA
-+ * @state
-+ * @lba
-+ * @buffer
-+ * @count
-+ *
-+ * Description:  Reads @count bytes from @state->bdev into @buffer.
-+ * Returns number of bytes read on success, 0 on error.
-+ */
-+static size_t read_lba(struct parsed_partitions *state, u64 lba, u8 * buffer, size_t count)
-+{
-+	size_t totalreadcount = 0;
-+
-+	if (!buffer || lba + count / 512 > last_lba(state->bdev))
-+                return 0;
-+
-+	while (count) {
-+		int copied = 512;
-+		Sector sect;
-+		unsigned char *data = read_part_sector(state, lba++, &sect);
-+		if (!data)
-+			break;
-+		if (copied > count)
-+			copied = count;
-+		memcpy(buffer, data, copied);
-+		put_dev_sector(sect);
-+		buffer += copied;
-+		totalreadcount +=copied;
-+		count -= copied;
-+	}
-+	return totalreadcount;
-+}
-+
-+/**
-+ * alloc_pvd(): reads physical volume descriptor
-+ * @state
-+ * @lba
-+ *
-+ * Description: Returns pvd on success,  NULL on error.
-+ * Allocates space for pvd and fill it with disk blocks at @lba
-+ * Notes: remember to free pvd when you're done!
-+ */
-+static struct pvd *alloc_pvd(struct parsed_partitions *state, u32 lba)
-+{
-+	size_t count = sizeof(struct pvd);
-+	struct pvd *p;
-+
-+	p = kmalloc(count, GFP_KERNEL);
-+	if (!p)
-+		return NULL;
-+
-+	if (read_lba(state, lba, (u8 *) p, count) < count) {
-+		kfree(p);
-+		return NULL;
-+	}
-+	return p;
-+}
-+
-+/**
-+ * alloc_lvn(): reads logical volume names
-+ * @state
-+ * @lba
-+ *
-+ * Description: Returns lvn on success,  NULL on error.
-+ * Allocates space for lvn and fill it with disk blocks at @lba
-+ * Notes: remember to free lvn when you're done!
-+ */
-+static struct lvname *alloc_lvn(struct parsed_partitions *state, u32 lba)
-+{
-+	size_t count = sizeof(struct lvname) * LVM_MAXLVS;
-+	struct lvname *p;
-+
-+	p = kmalloc(count, GFP_KERNEL);
-+	if (!p)
-+		return NULL;
-+
-+	if (read_lba(state, lba, (u8 *) p, count) < count) {
-+		kfree(p);
-+		return NULL;
-+	}
-+	return p;
-+}
-+
-+int aix_partition(struct parsed_partitions *state)
-+{
-+	int ret = 0;
-+	Sector sect;
-+	unsigned char *d;
-+	u32 pp_bytes_size;
-+	u32 pp_blocks_size = 0;
-+	u32 vgda_sector = 0;
-+	u32 vgda_len = 0;
-+	int numlvs = 0;
-+	struct pvd *pvd;
-+	struct lv_info {
-+		unsigned short pps_per_lv;
-+		unsigned short pps_found;
-+		unsigned char lv_is_contiguous;
-+	} *lvip;
-+	struct lvname *n = NULL;
-+
-+	d = read_part_sector(state, 7, &sect);
-+	if (d) {
-+		struct lvm_rec *p = (struct lvm_rec *)d;
-+		u16 lvm_version = be16_to_cpu(p->version);
-+		char tmp[64];
-+
-+		if (lvm_version == 1) {
-+			int pp_size_log2 = be16_to_cpu(p->pp_size);
-+
-+			pp_bytes_size = 1 << pp_size_log2;
-+			pp_blocks_size = pp_bytes_size / 512;
-+			snprintf(tmp, sizeof(tmp),
-+				" AIX LVM header version %u found\n",
-+				lvm_version);
-+			vgda_len = be32_to_cpu(p->vgda_len);
-+			vgda_sector = be32_to_cpu(p->vgda_psn[0]);
-+		} else {
-+			snprintf(tmp, sizeof(tmp),
-+				" unsupported AIX LVM version %d found\n",
-+				lvm_version);
-+		}
-+		strlcat(state->pp_buf, tmp, PAGE_SIZE);
-+		put_dev_sector(sect);
-+	}
-+	if (vgda_sector && (d = read_part_sector(state, vgda_sector, &sect))) {
-+		struct vgda *p = (struct vgda *)d;
-+
-+		numlvs = be16_to_cpu(p->numlvs);
-+		put_dev_sector(sect);
-+	}
-+	lvip = kzalloc(sizeof(struct lv_info) * state->limit, GFP_KERNEL);
-+	if (!lvip)
-+		return 0;
-+	if (numlvs && (d = read_part_sector(state, vgda_sector + 1, &sect))) {
-+		struct lvd *p = (struct lvd *)d;
-+		int i;
-+
-+		n = alloc_lvn(state, vgda_sector + vgda_len - 33);
-+		if (n) {
-+			int foundlvs = 0;
-+
-+			for (i = 0; foundlvs < numlvs && i < state->limit; i += 1) {
-+				lvip[i].pps_per_lv = be16_to_cpu(p[i].num_lps);
-+				if (lvip[i].pps_per_lv)
-+					foundlvs += 1;
-+			}
-+		}
-+		put_dev_sector(sect);
-+	}
-+	pvd = alloc_pvd(state, vgda_sector + 17);
-+	if (pvd) {
-+		int numpps = be16_to_cpu(pvd->pp_count);
-+		int psn_part1 = be32_to_cpu(pvd->psn_part1);
-+		int i;
-+		int cur_lv_ix = -1;
-+		int next_lp_ix = 1;
-+		int lp_ix;
-+
-+		for (i = 0; i < numpps; i += 1) {
-+			struct ppe *p = pvd->ppe + i;
-+			unsigned int lv_ix;
-+
-+			lp_ix = be16_to_cpu(p->lp_ix);
-+			if (!lp_ix) {
-+				next_lp_ix = 1;
-+				continue;
-+			}
-+			lv_ix = be16_to_cpu(p->lv_ix) - 1;
-+			if (lv_ix > state->limit) {
-+				cur_lv_ix = -1;
-+				continue;
-+			}
-+			lvip[lv_ix].pps_found += 1;
-+			if (lp_ix != next_lp_ix)
-+				continue;
-+			if (lp_ix == 1)
-+				cur_lv_ix = lv_ix;
-+			else if (lv_ix != cur_lv_ix)
-+				next_lp_ix = 1;
-+			if (lp_ix == lvip[lv_ix].pps_per_lv) {
-+				char tmp[70];
-+
-+				put_partition(state, lv_ix + 1,
-+					(i + 1 - lp_ix) * pp_blocks_size + psn_part1,
-+					lvip[lv_ix].pps_per_lv * pp_blocks_size);
-+				snprintf(tmp, sizeof(tmp), " <%s>\n", n[lv_ix].name);
-+				strlcat(state->pp_buf, tmp, PAGE_SIZE);
-+				lvip[lv_ix].lv_is_contiguous = 1;
-+				ret = 1;
-+				next_lp_ix = 1;
-+			} else
-+				next_lp_ix += 1;
-+		}
-+		for (i = 0; i < state->limit; i += 1)
-+			if (lvip[i].pps_found && !lvip[i].lv_is_contiguous)
-+				printk("partition %s (%u pp's found) is not contiguous\n",
-+					n[i].name, lvip[i].pps_found);
-+		kfree(pvd);
-+	}
-+	if (n)
-+		kfree(n);
-+	kfree(lvip);
-+	return ret;
-+}
-diff --git a/block/partitions/aix.h b/block/partitions/aix.h
-new file mode 100644
-index 0000000..e0c66a9
---- /dev/null
-+++ b/block/partitions/aix.h
-@@ -0,0 +1 @@
-+extern int aix_partition(struct parsed_partitions *state);
--- 
-1.7.1
+Once it is done, it should be clear to you.
+
 
