@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759258Ab3D2TCb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 15:02:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60580 "EHLO
+	id S932478Ab3D2Tro (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 15:47:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60596 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757798Ab3D2TC2 (ORCPT
+	with ESMTP id S1759245Ab3D2TCb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 15:02:28 -0400
+	Mon, 29 Apr 2013 15:02:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Zhao Hongjiang <zhaohongjiang@huawei.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 01/42] aio: fix possible invalid memory access when DEBUG is enabled
-Date: Mon, 29 Apr 2013 12:01:43 -0700
-Message-Id: <20130429184752.590511401@linuxfoundation.org>
+        Mathias Krause <minipli@googlemail.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 06/42] ax25: fix info leak via msg_name in ax25_recvmsg()
+Date: Mon, 29 Apr 2013 12:01:48 -0700
+Message-Id: <20130429184753.110028715@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130429184752.435249613@linuxfoundation.org>
 References: <20130429184752.435249613@linuxfoundation.org>
@@ -27,32 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Zhao Hongjiang <zhaohongjiang@huawei.com>
 
-commit 91d80a84bbc8f28375cca7e65ec666577b4209ad upstream.
+From: Mathias Krause <minipli@googlemail.com>
 
-dprintk() shouldn't access @ring after it's unmapped.
+[ Upstream commit ef3313e84acbf349caecae942ab3ab731471f1a1 ]
 
-Signed-off-by: Zhao Hongjiang <zhaohongjiang@huawei.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+When msg_namelen is non-zero the sockaddr info gets filled out, as
+requested, but the code fails to initialize the padding bytes of struct
+sockaddr_ax25 inserted by the compiler for alignment. Additionally the
+msg_namelen value is updated to sizeof(struct full_sockaddr_ax25) but is
+not always filled up to this size.
+
+Both issues lead to the fact that the code will leak uninitialized
+kernel stack bytes in net/socket.c.
+
+Fix both issues by initializing the memory with memset(0).
+
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- fs/aio.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/ax25/af_ax25.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -1027,9 +1027,9 @@ static int aio_read_evt(struct kioctx *i
- 	spin_unlock(&info->ring_lock);
+--- a/net/ax25/af_ax25.c
++++ b/net/ax25/af_ax25.c
+@@ -1647,6 +1647,7 @@ static int ax25_recvmsg(struct kiocb *io
+ 		ax25_address src;
+ 		const unsigned char *mac = skb_mac_header(skb);
  
- out:
--	kunmap_atomic(ring);
- 	dprintk("leaving aio_read_evt: %d  h%lu t%lu\n", ret,
- 		 (unsigned long)ring->head, (unsigned long)ring->tail);
-+	kunmap_atomic(ring);
- 	return ret;
- }
- 
++		memset(sax, 0, sizeof(struct full_sockaddr_ax25));
+ 		ax25_addr_parse(mac + 1, skb->data - mac - 1, &src, NULL,
+ 				&digi, NULL, NULL);
+ 		sax->sax25_family = AF_AX25;
 
 
