@@ -1,90 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932307Ab3D2TwI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 15:52:08 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:33571 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758471Ab3D2TwE (ORCPT
+	id S1760513Ab3D2Ty1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 15:54:27 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:55167 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755946Ab3D2TyZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 15:52:04 -0400
-X-Authority-Analysis: v=2.0 cv=GtrACzJC c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=zj-aDniqNm4A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=PSvuwpntFfAA:10 a=4kDAWb-mnydJKQ6nccMA:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=BSNKARNNu79jbrAcZAEA:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-Id: <20130429195201.462539345@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Mon, 29 Apr 2013 15:51:01 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kbuild mailing list <linux-kbuild@vger.kernel.org>
-Subject: [PATCH 1/2] localmodconfig: Add debug prints for dependencies of module configs
-References: <20130429195100.202681236@goodmis.org>
-Content-Disposition: inline; filename=0001-localmodconfig-Add-debug-prints-for-dependencies-of-.patch
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
+	Mon, 29 Apr 2013 15:54:25 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [GIT PATCH] char/misc patches for 3.10-rc1
+Date: Mon, 29 Apr 2013 21:54:15 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
+Cc: Greg KH <gregkh@linuxfoundation.org>, David Brown <davidb@codeaurora.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nicolas Pitre <nico@fluxnic.net>
+References: <20130429162115.GA6893@kroah.com> <CA+55aFwU-bXZ7wn2dOcLNfPMcjDv3Jvqx_LTt7B+-tj4WcP8Mg@mail.gmail.com> <CA+55aFzLtBwsvVrnT2DrUOU+eYrQ5eiKeamRb4Y5+-TVgbuM5Q@mail.gmail.com>
+In-Reply-To: <CA+55aFzLtBwsvVrnT2DrUOU+eYrQ5eiKeamRb4Y5+-TVgbuM5Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201304292154.15920.arnd@arndb.de>
+X-Provags-ID: V02:K0:aYNW6f62ywuelR0zdFpt3Pn13ejUFVIuQB9csBTEEWf
+ OgboqLJOwdk6hemMK9j94LJ9qddHR8K0fAqOZbhwYnlh4U1eug
+ ygFxE2EAT+a0BE+hYeoSfBW33k3g44G2Z2340QmSN3SHLHZ1NH
+ gjxs6dM079a9Gagqt3KS3MN+3RTQ38bEhwC6LXzm9KSoJV8YiS
+ miP8pAIMvTY42Z5gxCnsNQfsY+s1Ai8KyG2v9izTp9sXvUTYZj
+ tbJBfB3FmY64nFgbeA6rv2WQdV5mlr88WosQ/Qd+Cvp4mAQddo
+ mhpFe4/4559BwCL2HFYFvL3X1yEn3YwtR5wltqangfwTrgaLM9
+ HDYjTqVB0qQt5njn/7Ms=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---00GvhwF7k39YY
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On Monday 29 April 2013, Linus Torvalds wrote:
+> And I'm calling the ARM people out on this idiocy. Arnd and Nico -
+> stop encouraging this kind of crap. Move things to drivers only once
+> there is actual reason for it. If it's some proprierary single-SoC
+> thing, it can damn well stay away from other people. And it definitely
+> shouldn't mess up autocomplete in some core location.
 
-From: Steven Rostedt <rostedt@goodmis.org>
+First of all, I have to admit that I did not notice ssbi getting submitted,
+otherwise I would have suggested adding it to the drivers/bus directory
+that we created a while ago for bus drivers.
 
-When a config for a module is added to the list to save in the final
-config file, add a print to show what dependencies are used. This is
-useful to debug when a config is disabled by the make oldconfig after
-localmodconfig is finished.
+I think there are good reasons for most of the drivers we have moved out
+of arch/arm to stay out of there: we have added subdirectories for a lot
+of drivers that are alike:
 
-This print only appears if the environment variable LOCALMODCONFIG_DEBUG
-is defined.
+* drivers/irqchip
+* drivers/clocksource
+* drivers/cpufreq
+* drivers/pinctrl
+* drivers/pci/host
+* drivers/pwm
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- scripts/kconfig/streamline_config.pl |    9 +++++++++
- 1 file changed, 9 insertions(+)
+All of these (and probably a couple I missed) now have a subsystem
+maintainer who can look at the bigger picture across multiple platforms,
+create common infrastructure to avoid code duplication and point out
+when people create new drivers for hardware that already has an
+existing driver in the same subsystem (this happens more than you'd
+think).
 
-diff --git a/scripts/kconfig/streamline_config.pl b/scripts/kconfig/streaml=
-ine_config.pl
-index 3368939..343a568 100644
---- a/scripts/kconfig/streamline_config.pl
-+++ b/scripts/kconfig/streamline_config.pl
-@@ -396,6 +396,15 @@ foreach my $module (keys(%modules)) {
- 	foreach my $conf (@arr) {
- 	    $configs{$conf} =3D $module;
- 	    dprint "$conf added by direct ($module)\n";
-+	    if ($debugprint) {
-+		my $c=3D$conf;
-+		$c =3D~ s/^CONFIG_//;
-+		if (defined($depends{$c})) {
-+		    dprint " deps =3D $depends{$c}\n";
-+		} else {
-+		    dprint " no deps\n";
-+		}
-+	    }
- 	}
-     } else {
- 	# Most likely, someone has a custom (binary?) module loaded.
---=20
-1.7.10.4
+Moreoever, a lot of ARM platforms in share even the most basic
+building blocks with platforms on other architectures: powerpc,
+mips, hexagon, c6x, sh, and even x86. I think it's much better to
+consistently move those drivers into on directory per subsystem
+rather than having only half the irqchip drivers in one directory
+when they are shared across two architectures, and the rest hidden
+away in some platform. In the end, it's not much different from
+having a platform specific network driver sit under
+drivers/net/ethernet rather than arch/arm/mach-foo even if we
+know it's never going to be used elsewhere.
+In case of SSBI, I assume it's also being used by arch/hexagon,
+which is the other CPU core on many Qualcomm SoCs, but I'm sure
+that David can comment better on that one, maybe it's only used
+exclusively on SoCs that are ARM-only.
 
+I think about two years ago, I tried to move a lot of simple "bus"
+drivers into a common drivers/bus/ directory: amba, bcma, dio, eisa, hsi,
+nubus, vlynq, vme, zorro out of their own top-level drivers directory.
+That idea was almost universally rejected.
 
+I did ask people submitting new bus infrastructure to use drivers/bus
+though, and at least three of them were subsequently merged that way
+(or are queued up for this merge window). If you like, we can try to
+find a different place for those along with ssbi.
 
---00GvhwF7k39YY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQEcBAABAgAGBQJRfs9hAAoJEOdOSU1xswtM/kwH/3YTLGutkGz6EBA7Kp50cKw+
-Xm/S4vmnpy3Qy9OZqoKYOYuBuP5MzcKnYo8gT9bGlUysO5IJsK32906/ycwikyph
-uPZEXqKYyoPEAM03CFSlMR9DVGIbhln4iVMaKa+UkOuOVf6BKiAuv24Bswa5VXg8
-b0E/V2agiNeZsUHz1s01FU/fqzDlRvIlEMZY77nnPDn1VkFyO6ntltniUOm/XfyD
-QhImfViKUvvts2K9JpoS5hmqTcMwILIqzEwXnPMuPMT7TOOwE9C8niUut/sBNwxW
-9HlBpcYNgbuUY5ys0Ql7jWqapQZdOQ4HFIfw4avkVbtI+iwmpcZ/qzonywSojb4=
-=8Bla
------END PGP SIGNATURE-----
-
---00GvhwF7k39YY--
+	Arnd
