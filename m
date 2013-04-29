@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760186Ab3D2Tmj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 15:42:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60662 "EHLO
+	id S1760936Ab3D2Tm4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 15:42:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60658 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759391Ab3D2TCk (ORCPT
+	with ESMTP id S1759381Ab3D2TCj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 15:02:40 -0400
+	Mon, 29 Apr 2013 15:02:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vasily Averin <vvs@openvz.org>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        Eric Dumazet <edumazet@google.com>,
+        Mathias Krause <minipli@googlemail.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 19/42] cbq: incorrect processing of high limits
-Date: Mon, 29 Apr 2013 12:02:01 -0700
-Message-Id: <20130429184754.548083065@linuxfoundation.org>
+Subject: [ 17/42] rose: fix info leak via msg_name in rose_recvmsg()
+Date: Mon, 29 Apr 2013 12:01:59 -0700
+Message-Id: <20130429184754.321028139@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130429184752.435249613@linuxfoundation.org>
 References: <20130429184752.435249613@linuxfoundation.org>
@@ -30,52 +29,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Vasily Averin <vvs@parallels.com>
+From: Mathias Krause <minipli@googlemail.com>
 
-[ Upstream commit f0f6ee1f70c4eaab9d52cf7d255df4bd89f8d1c2 ]
+[ Upstream commit 4a184233f21645cf0b719366210ed445d1024d72 ]
 
-currently cbq works incorrectly for limits > 10% real link bandwidth,
-and practically does not work for limits > 50% real link bandwidth.
-Below are results of experiments taken on 1 Gbit link
+The code in rose_recvmsg() does not initialize all of the members of
+struct sockaddr_rose/full_sockaddr_rose when filling the sockaddr info.
+Nor does it initialize the padding bytes of the structure inserted by
+the compiler for alignment. This will lead to leaking uninitialized
+kernel stack bytes in net/socket.c.
 
- In shaper | Actual Result
------------+---------------
-  100M     | 108 Mbps
-  200M     | 244 Mbps
-  300M     | 412 Mbps
-  500M     | 893 Mbps
+Fix the issue by initializing the memory used for sockaddr info with
+memset(0).
 
-This happen because of q->now changes incorrectly in cbq_dequeue():
-when it is called before real end of packet transmitting,
-L2T is greater than real time delay, q_now gets an extra boost
-but never compensate it.
-
-To fix this problem we prevent change of q->now until its synchronization
-with real time.
-
-Signed-off-by: Vasily Averin <vvs@openvz.org>
-Reviewed-by: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
-Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/sched/sch_cbq.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ net/rose/af_rose.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/net/sched/sch_cbq.c
-+++ b/net/sched/sch_cbq.c
-@@ -962,8 +962,11 @@ cbq_dequeue(struct Qdisc *sch)
- 		cbq_update(q);
- 		if ((incr -= incr2) < 0)
- 			incr = 0;
-+		q->now += incr;
-+	} else {
-+		if (now > q->now)
-+			q->now = now;
- 	}
--	q->now += incr;
- 	q->now_rt = now;
+--- a/net/rose/af_rose.c
++++ b/net/rose/af_rose.c
+@@ -1257,6 +1257,7 @@ static int rose_recvmsg(struct kiocb *io
+ 	skb_copy_datagram_iovec(skb, 0, msg->msg_iov, copied);
  
- 	for (;;) {
+ 	if (srose != NULL) {
++		memset(srose, 0, msg->msg_namelen);
+ 		srose->srose_family = AF_ROSE;
+ 		srose->srose_addr   = rose->dest_addr;
+ 		srose->srose_call   = rose->dest_call;
 
 
