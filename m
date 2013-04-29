@@ -1,108 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760164Ab3D2WQp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 18:16:45 -0400
-Received: from mx3.valvesoftware.com ([208.64.203.145]:49584 "EHLO
-	mx3.valvesoftware.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760118Ab3D2WQl (ORCPT
+	id S1760184Ab3D2WR4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 18:17:56 -0400
+Received: from mail-ia0-f179.google.com ([209.85.210.179]:62601 "EHLO
+	mail-ia0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758766Ab3D2WRw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 18:16:41 -0400
-X-Greylist: delayed 1260 seconds by postgrey-1.27 at vger.kernel.org; Mon, 29 Apr 2013 18:16:41 EDT
-Message-ID: <517EEBD1.503@valvesoftware.com>
-Date: Mon, 29 Apr 2013 14:53:21 -0700
-From: "Pierre-Loup A. Griffais" <pgriffais@valvesoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+	Mon, 29 Apr 2013 18:17:52 -0400
 MIME-Version: 1.0
-To: Johannes Weiner <hannes@cmpxchg.org>
-CC: Rik van Riel <riel@redhat.com>, <linux-kernel@vger.kernel.org>,
-        <torvalds@linux-foundation.org>, <sonnyrao@chromium.org>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, <akpm@linux-foundation.org>
-Subject: Re: IO regression after ab8fabd46f on x86 kernels with high memory
-References: <517B1153.8000401@valvesoftware.com> <517B2FB4.30605@redhat.com> <20130427024248.GA1229@cmpxchg.org>
-In-Reply-To: <20130427024248.GA1229@cmpxchg.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-EXCLAIMER-MD-CONFIG: 86b76815-e903-4403-b95d-5abb05264373
-X-Mlf-Version: 7.3.6.7163
-X-Mlf-UniqueId: o201304292155360086151
+In-Reply-To: <20130429181550.GA17343@google.com>
+References: <1366940841-15370-1-git-send-email-yinghai@kernel.org>
+	<CAErSpo5zfHR-agNBdgqfVjCU+-KcTZV+1bvML5Uw-+icDqzzEA@mail.gmail.com>
+	<CAE9FiQVEQO-dLJRjn9Z7JgwGWAn1M8S1Tn2_V0Fq+6kB0rG=Bg@mail.gmail.com>
+	<CAErSpo7DUDQ_XgVKAfWxqYJA=q85ps46bffV-4a7b0vOzAP5DA@mail.gmail.com>
+	<CAE9FiQWv-bN2XzHiQ0WU+Y678zcqs_Owua6vXXijdMO6=0OWpg@mail.gmail.com>
+	<517E45C8.4060407@cn.fujitsu.com>
+	<CAE9FiQUXxCH0xjFPk1S7e_JRsBPosqQ=N5Kpcrjp3RNWDh9yZQ@mail.gmail.com>
+	<20130429181550.GA17343@google.com>
+Date: Mon, 29 Apr 2013 15:17:51 -0700
+X-Google-Sender-Auth: HVzWXN-NX935yoHraNewQlAvhpY
+Message-ID: <CAE9FiQURZTOEWn64AE4y6agoJhRLSW8983ZJ9RBs8Td9d9tpGA@mail.gmail.com>
+Subject: Re: [PATCH] PCI: Fix racing for pci device removing via sysfs
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Gu Zheng <guz.fnst@cn.fujitsu.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/26/2013 07:42 PM, Johannes Weiner wrote:
-> On Fri, Apr 26, 2013 at 09:53:56PM -0400, Rik van Riel wrote:
->> On 04/26/2013 07:44 PM, Pierre-Loup A. Griffais wrote:
->>> I initially observed this between kernels 3.2 and 3.5: on 3.2, copying a
->>> 180M shared object on the same ext4 filesystem takes 0.6s. On 3.5, it
->>> takes between two and three minutes. It looks like a similar throughput
->>> regression happens on any machine running an i386 PAE kernel with high
->>> amounts of memory; the threshold seems to be 16G; passing mem=15G to the
->>> kernel commandline fixes it.
->>
->> If you have that much memory in the system, you will
->> want to run a 64 bit kernel to avoid all kinds of
->> memory management corner cases.
+On Mon, Apr 29, 2013 at 11:15 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> On Mon, Apr 29, 2013 at 08:19:10AM -0700, Yinghai Lu wrote:
+>> ok, i missed that. if we can use LIST_POISON, then could be more simple.
+>> like -v4.
 >
-> Agreed.  You can even keep your 32 bit userland, just swap the
-> kernel...
+> I inlined your v4 patch below for convenience.
 >
->>> I bisected it to the following change:
->>>
->>> commit ab8fabd46f811d5153d8a0cd2fac9a0d41fb593d
->>> Author: Johannes Weiner <jweiner@redhat.com>
->>> Date:   Tue Jan 10 15:07:42 2012 -0800
->>>
->>>      mm: exclude reserved pages from dirtyable memory
->>>
->>> I realize running x86 kernels against high amounts of memory is not
->>> advised for various reasons, but I would assume that such a big
->>> regression in basic functionality to not be part of them. Is that
->>> accurate, or are these configurations expected to become unusable from
->>> 3.3 onwards?
->>
->> Reverting that patch would probably break i686 PAE systems with
->> lots of memory at a different threshold.
+> Maybe my allergic reaction to your use of LIST_POISON1 is unjustified,
+> but I am dubious about the idea that xhci was the only place that needed
+> it before now, and we just happened to find one more place in PCI that
+> needs it.  That doesn't make sense because good design patterns are used
+> many times, not just once or twice.
 >
-> It would also re-introduce the reclaim stalls when zones with very
-> little page cache due to lowmem reserves end up with a large
-> percentage of their LRU dirty.  And that affects modern machines too,
-> because of the lowmem reserves in DMA32 due to relatively bigger
-> Normal zones.
+> I thought the whole point of the get/put scheme was that if we had a
+> pointer to a correctly reference-counted object, we didn't need to check
+> whether the object was still valid because the object remains valid until
+> all the references are released.
 >
-> On such large highmem machines, however, the imbalance between highmem
-> and lowmem is so enormous that the lowmem reserves basically exclude
-> all of lowmem from page cache usage.
+> Gu's "[v2 2/2] PCI: Convert alloc_pci_dev(void) to pci_alloc_dev(bus)"
+> patch essentially did this:
 >
-> But because dirty highmem creates lowmem pressure, and the amount of
-> sanely allowable dirty memory is actually a function of lowmem, not
-> highmem, highmem is not included in the amount of dirtyable memory.
+>     pci_destroy_dev(struct pci_dev *dev) {
+>       ...
+> +     pci_bus_put(dev->bus)
+>       pci_free_resources(dev)
+>       put_device(&dev->dev)
+>     }
 >
-> So because your lowmem is not available for page cache and highmem is
-> not considered dirtyable out of the box, the amount of dirtyable
-> memory on your machine is 0.  You can workaround this by setting
-> vm.highmem_is_dirtyable=1.
+> I think this is the wrong place to do the pci_bus_put() because the
+> pci_dev is reference-counted, and there may be other users that still
+> have valid references to it.
+>
+> In this case, 10:00.0 is a bridge leading to [bus 11-1e], and 1a:01.0 is
+> part of that subtree.  The user removed both 10:00.0 and 1a:01.0 almost
+> simultaneously via sysfs and we scheduled a callback for each.
+>
+> Each callback acquires a pci_dev reference, and removal of 10:00.0 and the
+> subtree below it, including pci_destroy_dev(1a:01.0), is done first.  The
+> callback to remove 1a:01.0 is still pending and has a valid reference to
+> the 1a:01.0 pci_dev.
+>
+> Since the 1a:01.0 callback is still pending, the put_device in that first
+> pci_destroy_dev(1a:01.0) call decrements the ref count but doesn't release
+> the pci_dev.
+>
+> I think the 1a:01.0 pci_dev should retain its reference to the pci_bus
+> for as long as the pci_dev exists, so the pci_bus_put() should go in
+> pci_release_dev() instead.
 
-I understand the technical concerns; we had some existing issues on 3.2 
-with 24/32GB machines where the kernel would start erroneously 
-OOM-killing new processes after a while; booting with mem=16G solved 
-that. But now this goes a level further, since the machine is unusable 
-upfront, right at boot, even with mem=16G. As such this is clearly seems 
-like a regression more than a tradeoff.
+Good point.
 
-We're in a situation where popular distros ship 32-bit as the default 
-"use this if you're not sure what to get" option, with PAE also enabled 
-by default. most modern computers shipping with more than 16G of RAM, 
-especially for gaming. Looking at the Steam HW survey data we have 
-hundreds of users using this combination; this commit means that 
-installing package updates that pull in a new kernel will immediately 
-cause their system to become unusable.
+will rework pci remove sequence.
 
-Other than this particular concern, what's the high-level take-away? Is 
-PAE support in the Linux kernel a false promise than distros should not 
-be shipping by default, if at all? Should it be removed from the kernel 
-entirely if these configurations are knowingly broken by commits like this?
+Thanks
 
-Thanks,
-  - Pierre-Loup
-
-
+Yinghai
