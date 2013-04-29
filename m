@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932120Ab3D2THD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 15:07:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32832 "EHLO
+	id S932787Ab3D2THe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 15:07:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32826 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759991Ab3D2TDf (ORCPT
+	with ESMTP id S1759985Ab3D2TDe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 15:03:35 -0400
+	Mon, 29 Apr 2013 15:03:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Mathias Krause <minipli@googlemail.com>,
-        Sjur Braendeland <sjur.brandeland@stericsson.com>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Gustavo Padovan <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 21/30] caif: Fix missing msg_namelen update in caif_seqpkt_recvmsg()
-Date: Mon, 29 Apr 2013 12:02:45 -0700
-Message-Id: <20130429184357.679179748@linuxfoundation.org>
+Subject: [ 20/30] Bluetooth: RFCOMM - Fix missing msg_namelen update in rfcomm_sock_recvmsg()
+Date: Mon, 29 Apr 2013 12:02:44 -0700
+Message-Id: <20130429184357.588294181@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130429184355.299556377@linuxfoundation.org>
 References: <20130429184355.299556377@linuxfoundation.org>
@@ -31,35 +33,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mathias Krause <minipli@googlemail.com>
 
-[ Upstream commit 2d6fbfe733f35c6b355c216644e08e149c61b271 ]
+[ Upstream commit e11e0455c0d7d3d62276a0c55d9dfbc16779d691 ]
 
-The current code does not fill the msg_name member in case it is set.
-It also does not set the msg_namelen member to 0 and therefore makes
-net/socket.c leak the local, uninitialized sockaddr_storage variable
-to userland -- 128 bytes of kernel stack memory.
+If RFCOMM_DEFER_SETUP is set in the flags, rfcomm_sock_recvmsg() returns
+early with 0 without updating the possibly set msg_namelen member. This,
+in turn, leads to a 128 byte kernel stack leak in net/socket.c.
 
-Fix that by simply setting msg_namelen to 0 as obviously nobody cared
-about caif_seqpkt_recvmsg() not filling the msg_name in case it was
-set.
+Fix this by updating msg_namelen in this case. For all other cases it
+will be handled in bt_sock_stream_recvmsg().
 
 Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Cc: Sjur Braendeland <sjur.brandeland@stericsson.com>
+Cc: Marcel Holtmann <marcel@holtmann.org>
+Cc: Gustavo Padovan <gustavo@padovan.org>
+Cc: Johan Hedberg <johan.hedberg@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/caif/caif_socket.c |    2 ++
- 1 file changed, 2 insertions(+)
+ net/bluetooth/rfcomm/sock.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/net/caif/caif_socket.c
-+++ b/net/caif/caif_socket.c
-@@ -320,6 +320,8 @@ static int caif_seqpkt_recvmsg(struct ki
- 	if (m->msg_flags&MSG_OOB)
- 		goto read_error;
+--- a/net/bluetooth/rfcomm/sock.c
++++ b/net/bluetooth/rfcomm/sock.c
+@@ -624,6 +624,7 @@ static int rfcomm_sock_recvmsg(struct ki
  
-+	m->msg_namelen = 0;
-+
- 	skb = skb_recv_datagram(sk, flags, 0 , &ret);
- 	if (!skb)
- 		goto read_error;
+ 	if (test_and_clear_bit(RFCOMM_DEFER_SETUP, &d->flags)) {
+ 		rfcomm_dlc_accept(d);
++		msg->msg_namelen = 0;
+ 		return 0;
+ 	}
+ 
 
 
