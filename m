@@ -1,80 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752449Ab3D2FcG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 01:32:06 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:35534 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752068Ab3D2FcE (ORCPT
+	id S1751514Ab3D2Fk2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 01:40:28 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:54485 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750976Ab3D2Fk1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 01:32:04 -0400
-X-AuditID: cbfee691-b7fe56d000004b96-e5-517e05d20709
-From: Inki Dae <inki.dae@samsung.com>
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, dri-devel@lists.freedesktop.org,
-        Inki Dae <inki.dae@samsung.com>
-Subject: [PATCH] module: fix mutiple defined issue
-Date: Mon, 29 Apr 2013 14:32:01 +0900
-Message-id: <1367213521-26795-1-git-send-email-inki.dae@samsung.com>
-X-Mailer: git-send-email 1.7.5.4
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrELMWRmVeSWpSXmKPExsWyRsSkRPcSa12gwfcXEhZXvr5ns2hevJ7N
-	YtL9CSwWmx5fY7W4vGsOmwOrx/65a9g97ncfZ/LYvKTeo2/LKkaPz5vkAlijuGxSUnMyy1KL
-	9O0SuDLe9vayFjzlqDi8dDJbA+MS9i5GTg4JAROJGXsuMkLYYhIX7q1n62Lk4hASWMooMav1
-	HTNM0c8PJ9ghEosYJSYdamaGcLqYJK7tPs8KUsUmoCoxccV9oHYODhEBG4kLN+1BwswCORJL
-	vrwE2yAsYCRxZM9OsKEsQOVL9h8Gs3kFXCTaT69nhVimIPHryCoo+zObxK4neRD1AhLfJh9i
-	ARkvISArsekA1G2SEgdX3GCZwCi4gJFhFaNoakFyQXFSepGpXnFibnFpXrpecn7uJkZgeJ7+
-	92ziDsb7B6wPMSYDjZvILCWanA8M77ySeENjMyMLUxNTYyNzSzPShJXEedVbrAOFBNITS1Kz
-	U1MLUovii0pzUosPMTJxcEo1MPbsmbBkUdb7FZyiUZLv17BsXfroqMF7z9MX6ouczVnviGvX
-	Fv2MnRhwL+rQ9BshV1Rnn/I/7aTpdNBhinwta+mOrZxbjkpMXi9uonHbS9vkbtSWfQ/OX3xk
-	0DTzXBDf/3M7z6YxvTsjyLrioqSvicAZG75Zf3bPs3+2Kuv7BIXorM3COWqbFA2UWIozEg21
-	mIuKEwEwU6sxZQIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrAIsWRmVeSWpSXmKPExsVy+t9jAd1LrHWBBhceCFpc+fqezaJ58Xo2
-	i0n3J7BYbHp8jdXi8q45bA6sHvvnrmH3uN99nMlj85J6j74tqxg9Pm+SC2CNamC0yUhNTEkt
-	UkjNS85PycxLt1XyDo53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ0HXLzAFarqRQlphTChQKSCwu
-	VtK3wzQhNMRN1wKmMULXNyQIrsfIAA0krGHMeNvby1rwlKPi8NLJbA2MS9i7GDk5JARMJH5+
-	OAFli0lcuLeerYuRi0NIYBGjxKRDzcwQTheTxLXd51lBqtgEVCUmrrgPVMXBISJgI3Hhpj1I
-	mFkgR2LJl5eMILawgJHEkT07mUFsFqDyJfsPg9m8Ai4S7afXs0IsU5D4dWQV6wRG7gWMDKsY
-	RVMLkguKk9JzjfSKE3OLS/PS9ZLzczcxgsP/mfQOxlUNFocYBTgYlXh4AzbXBgqxJpYVV+Ye
-	YpTgYFYS4Z19GyjEm5JYWZValB9fVJqTWnyIMRlo+0RmKdHkfGBs5pXEGxqbmBlZGpkbWhgZ
-	m5MmrCTOe7DVOlBIID2xJDU7NbUgtQhmCxMHp1QD4+JnbuwN1pPW5d26o3a/xttkQ92hszei
-	v85/7Tj5VceUufXO7Ko8cVoVi+4Jdr1T685OtrG58ZjzhPoktllnnh0JC53mffvEza/NTDIH
-	P22327er9xbTpdf7vVcWrq9c+vvWtzSJN17PvaeySF+tUVqR6lSSsXvOnRvSa98Ima5eoZub
-	95jLxV2JpTgj0VCLuag4EQCjmweuwwIAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 29 Apr 2013 01:40:27 -0400
+X-AuditID: 9c93016f-b7c3dae000000592-7a-517e07c5d250
+From: Chanho Min <chanho.min@lge.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Kyungsik Lee <kyungsik.lee@lge.com>,
+        Yann Collet <yann.collet.73@gmail.com>,
+        Bob Pearson <rpearson@systemfabricworks.com>,
+        Richard Weinberger <richard@nod.at>,
+        Geert Uytterhoeven <geert.uytterhoeven@gmail.com>,
+        linux-kernel@vger.kernel.org, sparclinux@vger.kernel.org,
+        linux-m68k@vger.kernel.org, linux-next@vger.kernel.org,
+        Chanho Min <chanho.min@lge.com>
+Subject: [PATCH] lib: add weak __clzsi2()/__clzdi2() functions
+Date: Mon, 29 Apr 2013 14:40:05 +0900
+Message-Id: <1367214005-14302-1-git-send-email-chanho.min@lge.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes mutiple defined issue to MODULE_DEVICE_TABLE
+Some architectures need __clzsi2() or __clzdi2() for __builtin_clz and
+It causes build failure. They can be implemented using the fls() and
+overridden by linking arch-specific versions may not be implemented yet.
 
-The issue could be induced when some framework which includes two
-more sub drivers, is built as one moudle because those sub drivers
-could have their own MODULE_DEVICE_TABLE.
-
-And 'struct of_device_id' isn't needed to be determined by type
-argument because the definition of 'of_device_id' should be fixed.
-So this patch makes 'of_devce_id' definition to be fixed and
-only its instance name to be defined by type.
-
-Signed-off-by: Inki Dae <inki.dae@samsung.com>
+Reference: https://lkml.org/lkml/2013/4/18/603
+Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Signed-off-by: Chanho Min <chanho.min@lge.com>
 ---
- include/linux/module.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ lib/Makefile |    2 +-
+ lib/clz.c    |   36 ++++++++++++++++++++++++++++++++++++
+ 2 files changed, 37 insertions(+), 1 deletion(-)
+ create mode 100644 lib/clz.c
 
-diff --git a/include/linux/module.h b/include/linux/module.h
-index 46f1ea0..ac5d79f 100644
---- a/include/linux/module.h
-+++ b/include/linux/module.h
-@@ -84,7 +84,7 @@ void trim_init_extable(struct module *m);
+diff --git a/lib/Makefile b/lib/Makefile
+index af79e8c..e17b3ee 100644
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -23,7 +23,7 @@ lib-y	+= kobject.o klist.o
  
- #ifdef MODULE
- #define MODULE_GENERIC_TABLE(gtype,name)			\
--extern const struct gtype##_id __mod_##gtype##_table		\
-+extern const struct of_device_id __mod_##gtype##_table		\
-   __attribute__ ((unused, alias(__stringify(name))))
- 
- #else  /* !MODULE */
+ obj-y += bcd.o div64.o sort.o parser.o halfmd4.o debug_locks.o random32.o \
+ 	 bust_spinlocks.o hexdump.o kasprintf.o bitmap.o scatterlist.o \
+-	 gcd.o lcm.o list_sort.o uuid.o flex_array.o \
++	 gcd.o lcm.o list_sort.o uuid.o flex_array.o clz.o\
+ 	 bsearch.o find_last_bit.o find_next_bit.o llist.o memweight.o kfifo.o
+ obj-y += string_helpers.o
+ obj-$(CONFIG_TEST_STRING_HELPERS) += test-string_helpers.o
+diff --git a/lib/clz.c b/lib/clz.c
+new file mode 100644
+index 0000000..5222b2d
+--- /dev/null
++++ b/lib/clz.c
+@@ -0,0 +1,36 @@
++/*
++ * lib/clz.c
++ *
++ * Copyright (C) 2013 Chanho Min <chanho.min@lge.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * __clzsi2/_clzdi2() can be overridden by linking arch-specific versions.
++ */
++
++#include <linux/export.h>
++#include <linux/kernel.h>
++
++int __weak __clzsi2(int val)
++{
++	return BITS_PER_LONG - fls(val);
++}
++EXPORT_SYMBOL(__clzsi2);
++
++#if BITS_PER_LONG == 32
++int __weak __clzdi2(long val)
++{
++	return BITS_PER_LONG - fls((int)val);
++}
++EXPORT_SYMBOL(__clzdi2);
++#elif BITS_PER_LONG == 64
++int __weak __clzdi2i(long val)
++{
++	return BITS_PER_LONG - fls64((u64)val);
++}
++EXPORT_SYMBOL(__clzdi2);
++#else
++#error BITS_PER_LONG not 32 or 64
++#endif
 -- 
-1.7.5.4
+1.7.9.5
 
