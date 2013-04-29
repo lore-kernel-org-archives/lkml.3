@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759869Ab3D2TDS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 15:03:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60900 "EHLO
+	id S1760262Ab3D2TNb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 15:13:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60937 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759803Ab3D2TDM (ORCPT
+	with ESMTP id S1759865Ab3D2TDS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 15:03:12 -0400
+	Mon, 29 Apr 2013 15:03:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nikolay Aleksandrov <nikolay@redhat.com>,
+        Yuchung Cheng <ycheng@google.com>, Eric Dumazet <edumazet@google.com>,
+        Neal Cardwell <ncardwell@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 23/34] bonding: IFF_BONDING is not stripped on enslave failure
-Date: Mon, 29 Apr 2013 12:02:30 -0700
-Message-Id: <20130429184703.503215611@linuxfoundation.org>
+Subject: [ 31/34] tcp: call tcp_replace_ts_recent() from tcp_ack()
+Date: Mon, 29 Apr 2013 12:02:38 -0700
+Message-Id: <20130429184704.402950634@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130429184700.845644077@linuxfoundation.org>
 References: <20130429184700.845644077@linuxfoundation.org>
@@ -28,33 +29,155 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: "nikolay@redhat.com" <nikolay@redhat.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit b6a5a7b9a528a8b4c8bec940b607c5dd9102b8cc ]
+[ Upstream commit 12fb3dd9dc3c64ba7d64cec977cca9b5fb7b1d4e ]
 
-While enslaving a new device and after IFF_BONDING flag is set, in case
-of failure it is not stripped from the device's priv_flags while
-cleaning up, which could lead to other problems.
-Cleaning at err_close because the flag is set after dev_open().
+commit bd090dfc634d (tcp: tcp_replace_ts_recent() should not be called
+from tcp_validate_incoming()) introduced a TS ecr bug in slow path
+processing.
 
-v2: no change
+1 A > B P. 1:10001(10000) ack 1 <nop,nop,TS val 1001 ecr 200>
+2 B < A . 1:1(0) ack 1 win 257 <sack 9001:10001,TS val 300 ecr 1001>
+3 A > B . 1:1001(1000) ack 1 win 227 <nop,nop,TS val 1002 ecr 200>
+4 A > B . 1001:2001(1000) ack 1 win 227 <nop,nop,TS val 1002 ecr 200>
 
-Signed-off-by: Nikolay Aleksandrov <nikolay@redhat.com>
+(ecr 200 should be ecr 300 in packets 3 & 4)
+
+Problem is tcp_ack() can trigger send of new packets (retransmits),
+reflecting the prior TSval, instead of the TSval contained in the
+currently processed incoming packet.
+
+Fix this by calling tcp_replace_ts_recent() from tcp_ack() after the
+checks, but before the actions.
+
+Reported-by: Yuchung Cheng <ycheng@google.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Neal Cardwell <ncardwell@google.com>
+Acked-by: Neal Cardwell <ncardwell@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/bonding/bond_main.c |    1 +
- 1 file changed, 1 insertion(+)
+ net/ipv4/tcp_input.c |   65 +++++++++++++++++++++++++--------------------------
+ 1 file changed, 32 insertions(+), 33 deletions(-)
 
---- a/drivers/net/bonding/bond_main.c
-+++ b/drivers/net/bonding/bond_main.c
-@@ -1888,6 +1888,7 @@ err_detach:
- 	write_unlock_bh(&bond->lock);
+--- a/net/ipv4/tcp_input.c
++++ b/net/ipv4/tcp_input.c
+@@ -116,6 +116,7 @@ int sysctl_tcp_abc __read_mostly;
+ #define FLAG_DSACKING_ACK	0x800 /* SACK blocks contained D-SACK info */
+ #define FLAG_NONHEAD_RETRANS_ACKED	0x1000 /* Non-head rexmitted data was ACKed */
+ #define FLAG_SACK_RENEGING	0x2000 /* snd_una advanced to a sacked seq */
++#define FLAG_UPDATE_TS_RECENT	0x4000 /* tcp_replace_ts_recent() */
  
- err_close:
-+	slave_dev->priv_flags &= ~IFF_BONDING;
- 	dev_close(slave_dev);
+ #define FLAG_ACKED		(FLAG_DATA_ACKED|FLAG_SYN_ACKED)
+ #define FLAG_NOT_DUP		(FLAG_DATA|FLAG_WIN_UPDATE|FLAG_ACKED)
+@@ -3707,6 +3708,27 @@ static void tcp_send_challenge_ack(struc
+ 	}
+ }
  
- err_unset_master:
++static void tcp_store_ts_recent(struct tcp_sock *tp)
++{
++	tp->rx_opt.ts_recent = tp->rx_opt.rcv_tsval;
++	tp->rx_opt.ts_recent_stamp = get_seconds();
++}
++
++static void tcp_replace_ts_recent(struct tcp_sock *tp, u32 seq)
++{
++	if (tp->rx_opt.saw_tstamp && !after(seq, tp->rcv_wup)) {
++		/* PAWS bug workaround wrt. ACK frames, the PAWS discard
++		 * extra check below makes sure this can only happen
++		 * for pure ACK frames.  -DaveM
++		 *
++		 * Not only, also it occurs for expired timestamps.
++		 */
++
++		if (tcp_paws_check(&tp->rx_opt, 0))
++			tcp_store_ts_recent(tp);
++	}
++}
++
+ /* This routine deals with incoming acks, but not outgoing ones. */
+ static int tcp_ack(struct sock *sk, const struct sk_buff *skb, int flag)
+ {
+@@ -3756,6 +3778,12 @@ static int tcp_ack(struct sock *sk, cons
+ 	prior_fackets = tp->fackets_out;
+ 	prior_in_flight = tcp_packets_in_flight(tp);
+ 
++	/* ts_recent update must be made after we are sure that the packet
++	 * is in window.
++	 */
++	if (flag & FLAG_UPDATE_TS_RECENT)
++		tcp_replace_ts_recent(tp, TCP_SKB_CB(skb)->seq);
++
+ 	if (!(flag & FLAG_SLOWPATH) && after(ack, prior_snd_una)) {
+ 		/* Window is constant, pure forward advance.
+ 		 * No more checks are required.
+@@ -4053,27 +4081,6 @@ const u8 *tcp_parse_md5sig_option(const
+ EXPORT_SYMBOL(tcp_parse_md5sig_option);
+ #endif
+ 
+-static inline void tcp_store_ts_recent(struct tcp_sock *tp)
+-{
+-	tp->rx_opt.ts_recent = tp->rx_opt.rcv_tsval;
+-	tp->rx_opt.ts_recent_stamp = get_seconds();
+-}
+-
+-static inline void tcp_replace_ts_recent(struct tcp_sock *tp, u32 seq)
+-{
+-	if (tp->rx_opt.saw_tstamp && !after(seq, tp->rcv_wup)) {
+-		/* PAWS bug workaround wrt. ACK frames, the PAWS discard
+-		 * extra check below makes sure this can only happen
+-		 * for pure ACK frames.  -DaveM
+-		 *
+-		 * Not only, also it occurs for expired timestamps.
+-		 */
+-
+-		if (tcp_paws_check(&tp->rx_opt, 0))
+-			tcp_store_ts_recent(tp);
+-	}
+-}
+-
+ /* Sorry, PAWS as specified is broken wrt. pure-ACKs -DaveM
+  *
+  * It is not fatal. If this ACK does _not_ change critical state (seqs, window)
+@@ -5577,14 +5584,10 @@ slow_path:
+ 		return 0;
+ 
+ step5:
+-	if (th->ack && tcp_ack(sk, skb, FLAG_SLOWPATH) < 0)
++	if (th->ack &&
++	    tcp_ack(sk, skb, FLAG_SLOWPATH | FLAG_UPDATE_TS_RECENT) < 0)
+ 		goto discard;
+ 
+-	/* ts_recent update must be made after we are sure that the packet
+-	 * is in window.
+-	 */
+-	tcp_replace_ts_recent(tp, TCP_SKB_CB(skb)->seq);
+-
+ 	tcp_rcv_rtt_measure_ts(sk, skb);
+ 
+ 	/* Process urgent data. */
+@@ -5948,7 +5951,8 @@ int tcp_rcv_state_process(struct sock *s
+ 
+ 	/* step 5: check the ACK field */
+ 	if (th->ack) {
+-		int acceptable = tcp_ack(sk, skb, FLAG_SLOWPATH) > 0;
++		int acceptable = tcp_ack(sk, skb, FLAG_SLOWPATH |
++						  FLAG_UPDATE_TS_RECENT) > 0;
+ 
+ 		switch (sk->sk_state) {
+ 		case TCP_SYN_RECV:
+@@ -6055,11 +6059,6 @@ int tcp_rcv_state_process(struct sock *s
+ 	} else
+ 		goto discard;
+ 
+-	/* ts_recent update must be made after we are sure that the packet
+-	 * is in window.
+-	 */
+-	tcp_replace_ts_recent(tp, TCP_SKB_CB(skb)->seq);
+-
+ 	/* step 6: check the URG bit */
+ 	tcp_urg(sk, skb, th);
+ 
 
 
