@@ -1,52 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757251Ab3D2J0p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 05:26:45 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:22643 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756851Ab3D2J0n (ORCPT
+	id S1756994Ab3D2Jaq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 05:30:46 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:25537 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751678Ab3D2Jap (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 05:26:43 -0400
-X-AuditID: cbfee68e-b7efa6d000004d12-bd-517e3cd1cb10
+	Mon, 29 Apr 2013 05:30:45 -0400
+X-AuditID: cbfee68d-b7f016d000007930-dc-517e3dc4b485
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, "'Wim Van Sebroeck'" <wim@iguana.be>,
-        linux-watchdog@vger.kernel.org, Jingoo Han <jg1.han@samsung.com>
-Subject: [PATCH RESEND 2/2] watchdog: s3c2410_wdt: convert s3c2410wdt to
- dev_pm_ops
-Date: Mon, 29 Apr 2013 18:26:41 +0900
-Message-id: <000801ce44bb$a877ce00$f9676a00$@samsung.com>
+        linux-watchdog@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>
+Subject: [PATCH RESEND 1/2] watchdog: mtx1-wdt: use devm_gpio_request_one()
+Date: Mon, 29 Apr 2013 18:30:43 +0900
+Message-id: <000901ce44bc$38dcfbf0$aa96f3d0$@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac5Eu6eW3bLz0wbLSMyhE4iwhaHjNw==
+Thread-index: Ac5EvDaKp5djbsHuRPW7m7qSh3y5wA==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrFIsWRmVeSWpSXmKPExsVy+t8zY92LNnWBBt++mlrMWb+GzeLywkus
-	Fpd3zWGzuLFuH7vFrRkvWB1YPa5tFvM4MeM3i0ffllWMHp83yQWwRHHZpKTmZJalFunbJXBl
-	7D29jLngn2DFuqYvbA2M3/i6GDk5JARMJK7fOMIMYYtJXLi3nq2LkYtDSGAZo0TfmifMMEUX
-	/p5nhEhMZ5S4/uIUE4Tzi1Hi2PeJYFVsAmoSX74cZu9i5OAQEdCXaGvRAKlhFuhglDjwdCkr
-	SI2wQKhE7+ajYDUsAqoS+xtFQMK8ApYSX3t7mCBsQYkfk++xgNjMAloS63ceZ4Kw5SU2r3kL
-	dZCCxI6zrxlBbBEBPYm9G39C1YhI7HvxDuxQCYF97BL/rz8AK2IREJD4NvkQC8heCQFZiU0H
-	oOZIShxccYNlAqPYLCSrZyFZPQvJ6llIVixgZFnFKJpakFxQnJReZKRXnJhbXJqXrpecn7uJ
-	ERJvfTsYbx6wPsSYDLR+IrOUaHI+MF7zSuINjc2MLExNTI2NzC3NSBNWEudVa7EOFBJITyxJ
-	zU5NLUgtii8qzUktPsTIxMEp1cAooi7ex93hst9W88LKpSI50Q/jeW/ui+OY+2z9yhV6Eyuf
-	Wew8sGxFeW/ylS8paikZvNX59w7abT5Rwtsq7qDxU+iyWapo2CkLjctRWhNkPYzMvsh3Rv97
-	w+ZSJaq8ulXhVqXq6wXi7deMHl0t77A9IsqVNrf/zZmncRq5OZ+7Lz3eED911hclluKMREMt
-	5qLiRAAQQFW1zQIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprOKsWRmVeSWpSXmKPExsVy+t9jQd2LNnWBBvNXGlrMWb+GzeLywkus
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrNIsWRmVeSWpSXmKPExsVy+t8zY90jtnWBBg372CzmrF/DZnF54SVW
+	i8u75rBZ3Fi3j93i1owXrA6sHtc2i3mcmPGbxaNvyypGj8+b5AJYorhsUlJzMstSi/TtErgy
+	Vu16xlzwiL1iyelj7A2MR9i6GDk5JARMJG4dvsgOYYtJXLi3HijOxSEksIxRYv+RKXBFjye1
+	MEEkFjFK9Px5ww7h/GKUmPp+FVgVm4CaxJcvh4ESHBwiAvoSbS0aIDXMAl2MEnuf/wFbISzg
+	LXF8wx4wm0VAVaJpykkmEJtXwFKiY/oDFghbUOLH5HtgNrOAlsT6nceZIGx5ic1r3jJDXKQg
+	sePsa0YQW0RAT2Lt2i2sEDUiEvtevGMEWSwhsItd4vXTiSwQywQkvk0+xAJynISArMSmA1Bz
+	JCUOrrjBMoFRbBaS1bOQrJ6FZPUsJCsWMLKsYhRNLUguKE5KLzLUK07MLS7NS9dLzs/dxAiJ
+	uN4djLcPWB9iTAZaP5FZSjQ5HxixeSXxhsZmRhamJqbGRuaWZqQJK4nzqrVYBwoJpCeWpGan
+	phakFsUXleakFh9iZOLglGpg5HGMSdzzdV2s5oytFV8jHpzw/trybflX4Yr12wIdkkRPX59+
+	STM2pObencLrMdc9Xtw4v6CpNsgz/PvHK533J/q7btS1bt31Q1Bj62FZflY9BaO7a3Kmh63r
+	/P+bXdVRZKGQ+9X/MYVTn8Zf2TNT5Owdnso7/ko3W+5wz9VOy1yxIOOub35ljxJLcUaioRZz
+	UXEiAEv1bqHOAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprBKsWRmVeSWpSXmKPExsVy+t9jAd0jtnWBBv+uMFnMWb+GzeLywkus
 	Fpd3zWGzuLFuH7vFrRkvWB1YPa5tFvM4MeM3i0ffllWMHp83yQWwRDUw2mSkJqakFimk5iXn
 	p2TmpdsqeQfHO8ebmhkY6hpaWpgrKeQl5qbaKrn4BOi6ZeYA7VVSKEvMKQUKBSQWFyvp22Ga
-	EBripmsB0xih6xsSBNdjZIAGEtYxZuw9vYy54J9gxbqmL2wNjN/4uhg5OSQETCQu/D3PCGGL
-	SVy4t56ti5GLQ0hgOqPE9RenmCCcX4wSx75PZAapYhNQk/jy5TB7FyMHh4iAvkRbiwZIDbNA
-	B6PEgadLWUFqhAVCJXo3HwWrYRFQldjfKAIS5hWwlPja28MEYQtK/Jh8jwXEZhbQkli/8zgT
-	hC0vsXnNW2aIgxQkdpx9DXaciICexN6NP6FqRCT2vXjHOIFRYBaSUbOQjJqFZNQsJC0LGFlW
-	MYqmFiQXFCel5xrpFSfmFpfmpesl5+duYgRH8zPpHYyrGiwOMQpwMCrx8AZsrg0UYk0sK67M
-	PcQowcGsJMK7wrIuUIg3JbGyKrUoP76oNCe1+BBjMtCjE5mlRJPzgYkmryTe0NjEzMjSyMzC
-	yMTcnDRhJXHeg63WgUIC6YklqdmpqQWpRTBbmDg4pRoY+/u8ww9czL3sVOWVVSpzU/Fs+FqR
-	hsWrVQPFWl61NBxP/+NxQbwlquNpSWH6HsHv102XHvjAUlH1g3+F+YaC6R8uaV5b+KDk89pM
-	u5Dni5xn5mgt6jzFLH48J1ws4+00rbg9O3Zyqjz8FHjq2xFZlZgtJUzBLb/vH2d1j/eU1u19
-	k9t+rMVZiaU4I9FQi7moOBEAMZgCYCoDAAA=
+	EBripmsB0xih6xsSBNdjZIAGEtYxZqza9Yy54BF7xZLTx9gbGI+wdTFyckgImEg8ntTCBGGL
+	SVy4tx4ozsUhJLCIUaLnzxt2COcXo8TU96vAOtgE1CS+fDkMlODgEBHQl2hr0QCpYRboYpTY
+	+/wPO0iNsIC3xPENe8BsFgFViaYpJ8E28ApYSnRMf8ACYQtK/Jh8D8xmFtCSWL/zOBOELS+x
+	ec1bZoiLFCR2nH3NCGKLCOhJrF27hRWiRkRi34t3jBMYBWYhGTULyahZSEbNQtKygJFlFaNo
+	akFyQXFSeq6hXnFibnFpXrpecn7uJkZwPD+T2sG4ssHiEKMAB6MSD2/A5tpAIdbEsuLK3EOM
+	EhzMSiK8KyzrAoV4UxIrq1KL8uOLSnNSiw8xJgN9OpFZSjQ5H5hq8kriDY1NzIwsjcwsjEzM
+	zUkTVhLnPdBqHSgkkJ5YkpqdmlqQWgSzhYmDU6qBkee4lvpmy2o+VT3hN8lt53qz+EzPGW7Y
+	GHgmPLgpPbZLfAWH50n1u78ant7KtfunyBcsnnOig7thb1hFTH5ctuvR3T2zlh5nkE57qP/u
+	u0TjhDq3x1s6PPU3t04+eoHHIDP3ve2O77yb7+/m/PD+h+Hyyb+Fj6ZmVzUm7RCcbqjzUFHT
+	+vYlJZbijERDLeai4kQA40zAhysDAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -54,76 +53,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of using legacy suspend/resume methods, using newer
-dev_pm_ops structure allows better control over power management.
+Use devm_gpio_request_one() to make cleanup paths simpler.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/watchdog/s3c2410_wdt.c |   18 ++++++++----------
- 1 files changed, 8 insertions(+), 10 deletions(-)
+ drivers/watchdog/mtx-1_wdt.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/watchdog/s3c2410_wdt.c b/drivers/watchdog/s3c2410_wdt.c
-index c9f480d..d15fbe3 100644
---- a/drivers/watchdog/s3c2410_wdt.c
-+++ b/drivers/watchdog/s3c2410_wdt.c
-@@ -439,12 +439,12 @@ static void s3c2410wdt_shutdown(struct platform_device *dev)
- 	s3c2410wdt_stop(&s3c2410_wdd);
- }
+diff --git a/drivers/watchdog/mtx-1_wdt.c b/drivers/watchdog/mtx-1_wdt.c
+index 14dab6f..b434111 100644
+--- a/drivers/watchdog/mtx-1_wdt.c
++++ b/drivers/watchdog/mtx-1_wdt.c
+@@ -209,7 +209,7 @@ static int mtx1_wdt_probe(struct platform_device *pdev)
+ 	int ret;
  
--#ifdef CONFIG_PM
-+#ifdef CONFIG_PM_SLEEP
+ 	mtx1_wdt_device.gpio = pdev->resource[0].start;
+-	ret = gpio_request_one(mtx1_wdt_device.gpio,
++	ret = devm_gpio_request_one(&pdev->dev, mtx1_wdt_device.gpio,
+ 				GPIOF_OUT_INIT_HIGH, "mtx1-wdt");
+ 	if (ret < 0) {
+ 		dev_err(&pdev->dev, "failed to request gpio");
+@@ -241,7 +241,6 @@ static int mtx1_wdt_remove(struct platform_device *pdev)
+ 		wait_for_completion(&mtx1_wdt_device.stop);
+ 	}
  
- static unsigned long wtcon_save;
- static unsigned long wtdat_save;
- 
--static int s3c2410wdt_suspend(struct platform_device *dev, pm_message_t state)
-+static int s3c2410wdt_suspend(struct device *dev)
- {
- 	/* Save watchdog state, and turn it off. */
- 	wtcon_save = readl(wdt_base + S3C2410_WTCON);
-@@ -456,7 +456,7 @@ static int s3c2410wdt_suspend(struct platform_device *dev, pm_message_t state)
+-	gpio_free(mtx1_wdt_device.gpio);
+ 	misc_deregister(&mtx1_wdt_misc);
  	return 0;
  }
- 
--static int s3c2410wdt_resume(struct platform_device *dev)
-+static int s3c2410wdt_resume(struct device *dev)
- {
- 	/* Restore watchdog state. */
- 
-@@ -464,16 +464,15 @@ static int s3c2410wdt_resume(struct platform_device *dev)
- 	writel(wtdat_save, wdt_base + S3C2410_WTCNT); /* Reset count */
- 	writel(wtcon_save, wdt_base + S3C2410_WTCON);
- 
--	dev_info(&dev->dev, "watchdog %sabled\n",
-+	dev_info(dev, "watchdog %sabled\n",
- 		(wtcon_save & S3C2410_WTCON_ENABLE) ? "en" : "dis");
- 
- 	return 0;
- }
-+#endif
- 
--#else
--#define s3c2410wdt_suspend NULL
--#define s3c2410wdt_resume  NULL
--#endif /* CONFIG_PM */
-+static SIMPLE_DEV_PM_OPS(s3c2410wdt_pm_ops, s3c2410wdt_suspend,
-+			s3c2410wdt_resume);
- 
- #ifdef CONFIG_OF
- static const struct of_device_id s3c2410_wdt_match[] = {
-@@ -487,11 +486,10 @@ static struct platform_driver s3c2410wdt_driver = {
- 	.probe		= s3c2410wdt_probe,
- 	.remove		= s3c2410wdt_remove,
- 	.shutdown	= s3c2410wdt_shutdown,
--	.suspend	= s3c2410wdt_suspend,
--	.resume		= s3c2410wdt_resume,
- 	.driver		= {
- 		.owner	= THIS_MODULE,
- 		.name	= "s3c2410-wdt",
-+		.pm	= &s3c2410wdt_pm_ops,
- 		.of_match_table	= of_match_ptr(s3c2410_wdt_match),
- 	},
- };
 -- 
 1.7.2.5
 
