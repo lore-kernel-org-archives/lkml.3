@@ -1,313 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758102Ab3D2MWX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 08:22:23 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:48970 "EHLO hydra.sisk.pl"
+	id S1758119Ab3D2MWu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 08:22:50 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41777 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757698Ab3D2MVf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 08:21:35 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Toshi Kani <toshi.kani@hp.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, isimatu.yasuaki@jp.fujitsu.com,
-        vasilis.liaskovitis@profitbricks.com
-Subject: [PATCH 1/3 RFC] Driver core: Add offline/online device operations
-Date: Mon, 29 Apr 2013 14:26:56 +0200
-Message-ID: <1989524.p5J87p9Tnl@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0-rc8+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1576321.HU0tZ4cGWk@vostro.rjw.lan>
-References: <1576321.HU0tZ4cGWk@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1757687Ab3D2MWs convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Apr 2013 08:22:48 -0400
+References: <1366974299-17877-1-git-send-email-pranavkumar@linaro.org> <BA2076A6-0688-4E5C-85F9-A9CA8FD75782@suse.de> <87obcyc9sh.fsf@rustcorp.com.au>
+Mime-Version: 1.0 (1.0)
+In-Reply-To: <87obcyc9sh.fsf@rustcorp.com.au>
+Content-Type: text/plain;
+	charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+Message-Id: <336C59AA-D5D7-472E-A8DA-EEB413DD6C68@suse.de>
+Cc: Pranavkumar Sawargaonkar <pranavkumar@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
+        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
+        Peter Maydell <peter.maydell@linaro.org>
+X-Mailer: iPhone Mail (10B142)
+From: Alexander Graf <agraf@suse.de>
+Subject: Re: [PATCH 0/2] Early printk support for virtio console devices.
+Date: Mon, 29 Apr 2013 14:22:46 +0200
+To: Rusty Russell <rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-In some cases, graceful hot-removal of devices is not possible,
-although in principle the devices in question support hotplug.
-For example, that may happen for the last CPU in the system or
-for memory modules holding kernel memory.
 
-In those cases it is nice to be able to check if the given device
-can be safely hot-removed before triggering a removal procedure
-that cannot be aborted or reversed.  Unfortunately, however, the
-kernel currently doesn't provide any support for that.
+Am 29.04.2013 um 05:09 schrieb Rusty Russell <rusty@rustcorp.com.au>:
 
-To address that deficiency, introduce support for offline and
-online operations that can be performed on devices, respectively,
-before a hot-removal and in case when it is necessary (or convenient)
-to put a device back online after a successful offline (that has not
-been followed by removal).  The idea is that the offline will fail
-whenever the given device cannot be gracefully removed from the
-system and it will not be allowed to use the device after a
-successful offline (until a subsequent online) in analogy with the
-existing CPU offline/online mechanism.
+> Alexander Graf <agraf@suse.de> writes:
+>> On 26.04.2013, at 13:04, Pranavkumar Sawargaonkar wrote:
+>> 
+>>> This patch-set implements early printk support for virtio console devices without using any hypercalls.
+>>> 
+>>> The current virtio early printk code in kernel expects that hypervisor will provide some mechanism generally a hypercall to support early printk. This patch-set does not break existing hypercall based early print support.
+>>> 
+>>> This implementation adds:
+>>> 1. Early writeonly register named early_wr in virtio console's config space.
+>>> 2. Host feature flags namely VIRTIO_CONSOLE_F_EARLY_WRITE for telling guest about early-write capability in console device.
+>>> 
+>>> Early write mechanism:
+>>> 1. When a guest wants to out some character, it has to simply write the character to early_wr register in config space of virtio console device.
+>> 
+>> I won't nack this patch set, but I'll definitely express that I'm not happy with it.
+>> 
+>> MMIO registers are handled by a different layer than the virtio console itself. After the virtio refactoring in QEMU, they will be completely separate drivers. So we'll be in a similar mess with early printk as we are on the s390-virtio machine, where early printk is done through hypercalls and thus we can't directly link it to the console output.
+>> 
+>> I still don't see what the issue is with just implementing a small irq-less virtio driver for early printk.
+> 
+> Well, this shouldn't be mmio-specific, but I kind of get what you mean.
+> 
+> I consider this misnamed: it's an emergency write facility.  Linux may
+> use it for an early console,
 
-For now, the offline and online operations are introduced at the
-bus type level, as that should be sufficient for the most urgent use
-cases (CPUs and memory modules).  In the future, however, the
-approach may be extended to cover some more complicated device
-offline/online scenarios involving device drivers etc.
+If Linux uses it for early console, you won't see any messages from before the virtio-console driver is initialized, because Linux thinks that it's all been printed out.
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- Documentation/ABI/testing/sysfs-devices-online |   19 +++
- drivers/base/core.c                            |  134 +++++++++++++++++++++++++
- include/linux/device.h                         |   21 +++
- 3 files changed, 174 insertions(+)
+> but it's also useful for bringup and to
+> give a method of emitting errors like "the console ring is corrupt".
+> 
+> A valid implementation may well be to only offer it with some magic
+> qemu developer-only commandline and dump it to stdout.
 
-Index: linux-pm/include/linux/device.h
-===================================================================
---- linux-pm.orig/include/linux/device.h
-+++ linux-pm/include/linux/device.h
-@@ -70,6 +70,10 @@ extern void bus_remove_file(struct bus_t
-  *		the specific driver's probe to initial the matched device.
-  * @remove:	Called when a device removed from this bus.
-  * @shutdown:	Called at shut-down time to quiesce the device.
-+ *
-+ * @online:	Called to put the device back online (after offlining it).
-+ * @offline:	Called to put the device offline for hot-removal. May fail.
-+ *
-  * @suspend:	Called when a device on this bus wants to go to sleep mode.
-  * @resume:	Called to bring a device on this bus out of sleep mode.
-  * @pm:		Power management operations of this bus, callback the specific
-@@ -103,6 +107,9 @@ struct bus_type {
- 	int (*remove)(struct device *dev);
- 	void (*shutdown)(struct device *dev);
- 
-+	int (*online)(struct device *dev);
-+	int (*offline)(struct device *dev);
-+
- 	int (*suspend)(struct device *dev, pm_message_t state);
- 	int (*resume)(struct device *dev);
- 
-@@ -646,6 +653,8 @@ struct acpi_dev_node {
-  * @release:	Callback to free the device after all references have
-  * 		gone away. This should be set by the allocator of the
-  * 		device (i.e. the bus driver that discovered the device).
-+ * @offline_disabled: If set, the device is permanently online.
-+ * @offline:	Set after successful invocation of bus type's .offline().
-  *
-  * At the lowest level, every device in a Linux system is represented by an
-  * instance of struct device. The device structure contains the information
-@@ -718,6 +727,9 @@ struct device {
- 
- 	void	(*release)(struct device *dev);
- 	struct iommu_group	*iommu_group;
-+
-+	bool			offline_disabled:1;
-+	bool			offline:1;
- };
- 
- static inline struct device *kobj_to_dev(struct kobject *kobj)
-@@ -853,6 +865,15 @@ extern const char *device_get_devnode(st
- extern void *dev_get_drvdata(const struct device *dev);
- extern int dev_set_drvdata(struct device *dev, void *data);
- 
-+static inline bool device_supports_offline(struct device *dev)
-+{
-+	return dev->bus && dev->bus->offline && dev->bus->online;
-+}
-+
-+extern void lock_device_offline(void);
-+extern void unlock_device_offline(void);
-+extern int device_offline(struct device *dev);
-+extern int device_online(struct device *dev);
- /*
-  * Root device objects for grouping under /sys/devices
-  */
-Index: linux-pm/drivers/base/core.c
-===================================================================
---- linux-pm.orig/drivers/base/core.c
-+++ linux-pm/drivers/base/core.c
-@@ -397,6 +397,40 @@ static ssize_t store_uevent(struct devic
- static struct device_attribute uevent_attr =
- 	__ATTR(uevent, S_IRUGO | S_IWUSR, show_uevent, store_uevent);
- 
-+static ssize_t show_online(struct device *dev, struct device_attribute *attr,
-+			   char *buf)
-+{
-+	bool ret;
-+
-+	lock_device_offline();
-+	ret = !dev->offline;
-+	unlock_device_offline();
-+	return sprintf(buf, "%u\n", ret);
-+}
-+
-+static ssize_t store_online(struct device *dev, struct device_attribute *attr,
-+			    const char *buf, size_t count)
-+{
-+	int ret;
-+
-+	lock_device_offline();
-+	switch (buf[0]) {
-+	case '0':
-+		ret = device_offline(dev);
-+		break;
-+	case '1':
-+		ret = device_online(dev);
-+		break;
-+	default:
-+		ret = -EINVAL;
-+	}
-+	unlock_device_offline();
-+	return ret < 0 ? ret : count;
-+}
-+
-+static struct device_attribute online_attr =
-+	__ATTR(online, S_IRUGO | S_IWUSR, show_online, store_online);
-+
- static int device_add_attributes(struct device *dev,
- 				 struct device_attribute *attrs)
- {
-@@ -510,6 +544,12 @@ static int device_add_attrs(struct devic
- 	if (error)
- 		goto err_remove_type_groups;
- 
-+	if (device_supports_offline(dev) && !dev->offline_disabled) {
-+		error = device_create_file(dev, &online_attr);
-+		if (error)
-+			goto err_remove_type_groups;
-+	}
-+
- 	return 0;
- 
-  err_remove_type_groups:
-@@ -530,6 +570,7 @@ static void device_remove_attrs(struct d
- 	struct class *class = dev->class;
- 	const struct device_type *type = dev->type;
- 
-+	device_remove_file(dev, &online_attr);
- 	device_remove_groups(dev, dev->groups);
- 
- 	if (type)
-@@ -1415,6 +1456,99 @@ EXPORT_SYMBOL_GPL(put_device);
- EXPORT_SYMBOL_GPL(device_create_file);
- EXPORT_SYMBOL_GPL(device_remove_file);
- 
-+static DEFINE_MUTEX(device_offline_lock);
-+
-+void lock_device_offline(void)
-+{
-+	mutex_lock(&device_offline_lock);
-+}
-+
-+void unlock_device_offline(void)
-+{
-+	mutex_unlock(&device_offline_lock);
-+}
-+
-+static int device_check_offline(struct device *dev, void *not_used)
-+{
-+	int ret;
-+
-+	ret = device_for_each_child(dev, NULL, device_check_offline);
-+	if (ret)
-+		return ret;
-+
-+	return device_supports_offline(dev) && !dev->offline ? -EBUSY : 0;
-+}
-+
-+/**
-+ * device_offline - Prepare the device for hot-removal.
-+ * @dev: Device to be put offline.
-+ *
-+ * Execute the device bus type's .offline() callback, if present, to prepare
-+ * the device for a subsequent hot-removal.  If that succeeds, the device must
-+ * not be used until either it is removed or its bus type's .online() callback
-+ * is executed.
-+ *
-+ * Call under device_offline_lock.
-+ */
-+int device_offline(struct device *dev)
-+{
-+	int ret;
-+
-+	if (dev->offline_disabled)
-+		return -EPERM;
-+
-+	ret = device_for_each_child(dev, NULL, device_check_offline);
-+	if (ret)
-+		return ret;
-+
-+	device_lock(dev);
-+	if (device_supports_offline(dev)) {
-+		if (dev->offline) {
-+			ret = 1;
-+		} else {
-+			ret = dev->bus->offline(dev);
-+			if (!ret) {
-+				kobject_uevent(&dev->kobj, KOBJ_OFFLINE);
-+				dev->offline = true;
-+			}
-+		}
-+	}
-+	device_unlock(dev);
-+
-+	return ret;
-+}
-+
-+/**
-+ * device_online - Put the device back online after successful device_offline().
-+ * @dev: Device to be put back online.
-+ *
-+ * If device_offline() has been successfully executed for @dev, but the device
-+ * has not been removed subsequently, execute its bus type's .online() callback
-+ * to indicate that the device can be used again.
-+ *
-+ * Call under device_offline_lock.
-+ */
-+int device_online(struct device *dev)
-+{
-+	int ret = 0;
-+
-+	device_lock(dev);
-+	if (device_supports_offline(dev)) {
-+		if (dev->offline) {
-+			ret = dev->bus->online(dev);
-+			if (!ret) {
-+				kobject_uevent(&dev->kobj, KOBJ_ONLINE);
-+				dev->offline = false;
-+			}
-+		} else {
-+			ret = 1;
-+		}
-+	}
-+	device_unlock(dev);
-+
-+	return ret;
-+}
-+
- struct root_device {
- 	struct device dev;
- 	struct module *owner;
-Index: linux-pm/Documentation/ABI/testing/sysfs-devices-online
-===================================================================
---- /dev/null
-+++ linux-pm/Documentation/ABI/testing/sysfs-devices-online
-@@ -0,0 +1,19 @@
-+What:		/sys/devices/.../online
-+Date:		April 2013
-+Contact:	Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-+Description:
-+		The /sys/devices/.../online attribute is only present for
-+		devices whose bus types provide .online() and .offline()
-+		callbacks.  The number read from it (0 or 1) reflects the value
-+		of the device's 'offline' field.  If that number is 1 and 0
-+		is written to this file, the device bus type's .offline()
-+		callback is executed for the device and (if successful) its
-+		'offline' field is updated accordingly.  In turn, if that number
-+		is 0 and 1 is written to this file, the device bus type's
-+		.online() callback is executed for the device and (if
-+		successful) its 'offline' field is updated as appropriate.
-+
-+		After a successful execution of the bus type's .offline()
-+		callback the device cannot be used for any purpose until either
-+		it is removed (i.e. device_del() is called for it), or its bus
-+		type's .online() is exeucted successfully.
+Why implement it differently from other machines? There are facilities to call into firmware, so you could use that. There's the special Foundation model call that you could implement and reuse for this.
 
+I don't see why anything like this has to live in virtio-mmio. Oh, and it should default to off.
+
+Alex
+
+> 
+> So I think it has use, but less so if QEMU isn't ever going to implement
+> it.
+> 
+> Cheers,
+> Rusty.
+> 
