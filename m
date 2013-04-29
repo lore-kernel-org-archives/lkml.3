@@ -1,124 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757650Ab3D2QJk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 12:09:40 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:53015 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757436Ab3D2QJh (ORCPT
+	id S1757524Ab3D2QNA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 12:13:00 -0400
+Received: from vserver.eikelenboom.it ([84.200.39.61]:45600 "EHLO
+	smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757007Ab3D2QM5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 12:09:37 -0400
-Date: Mon, 29 Apr 2013 18:09:33 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>, Ingo Molnar <mingo@elte.hu>,
-        Jan Kratochvil <jan.kratochvil@redhat.com>,
-        Prasad <prasad@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/6] ptrace: PTRACE_DETACH should do
- flush_ptrace_hw_breakpoint(child)
-Message-ID: <20130429160931.GD31230@somewhere>
-References: <20130418184350.GA4407@redhat.com>
- <20130418184425.GA4454@redhat.com>
+	Mon, 29 Apr 2013 12:12:57 -0400
+X-Greylist: delayed 452 seconds by postgrey-1.27 at vger.kernel.org; Mon, 29 Apr 2013 12:12:57 EDT
+Date: Mon, 29 Apr 2013 18:05:20 +0200
+From: Sander Eikelenboom <linux@eikelenboom.it>
+Organization: Eikelenboom IT services
+X-Priority: 3 (Normal)
+Message-ID: <1366146101.20130429180520@eikelenboom.it>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: axboe@kernel.dk, xen-devel@lists.xensource.com, roger.pau@citrix.com,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [GIT PULL] (xen) stable/for-jens-3.10 xenwatch: page allocation failure: order:7, mode:0x10c0d0
+In-Reply-To: <20130429154623.GB12754@phenom.dumpdata.com>
+References: <20130419144401.GA14700@phenom.dumpdata.com> <1094538380.20130424201637@eikelenboom.it> <20130429154623.GB12754@phenom.dumpdata.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130418184425.GA4454@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 18, 2013 at 08:44:25PM +0200, Oleg Nesterov wrote:
-> Change ptrace_detach() to call flush_ptrace_hw_breakpoint(child).
-> This frees the slots for non-ptrace PERF_TYPE_BREAKPOINT users, and
-> this ensures that the tracee won't be killed by SIGTRAP triggered by
-> the active breakpoints.
-> 
-> Test-case:
-> 
-> 	unsigned long encode_dr7(int drnum, int enable, unsigned int type, unsigned int len)
-> 	{
-> 		unsigned long dr7;
-> 
-> 		dr7 = ((len | type) & 0xf)
-> 			<< (DR_CONTROL_SHIFT + drnum * DR_CONTROL_SIZE);
-> 		if (enable)
-> 			dr7 |= (DR_GLOBAL_ENABLE << (drnum * DR_ENABLE_SIZE));
-> 
-> 		return dr7;
-> 	}
-> 
-> 	int write_dr(int pid, int dr, unsigned long val)
-> 	{
-> 		return ptrace(PTRACE_POKEUSER, pid,
-> 				offsetof (struct user, u_debugreg[dr]),
-> 				val);
-> 	}
-> 
-> 	void func(void)
-> 	{
-> 	}
-> 
-> 	int main(void)
-> 	{
-> 		int pid, stat;
-> 		unsigned long dr7;
-> 
-> 		pid = fork();
-> 		if (!pid) {
-> 			assert(ptrace(PTRACE_TRACEME, 0,0,0) == 0);
-> 			kill(getpid(), SIGHUP);
-> 
-> 			func();
-> 			return 0x13;
-> 		}
-> 
-> 		assert(pid == waitpid(-1, &stat, 0));
-> 		assert(WSTOPSIG(stat) == SIGHUP);
-> 
-> 		assert(write_dr(pid, 0, (long)func) == 0);
-> 		dr7 = encode_dr7(0, 1, DR_RW_EXECUTE, DR_LEN_1);
-> 		assert(write_dr(pid, 7, dr7) == 0);
-> 
-> 		assert(ptrace(PTRACE_DETACH, pid, 0,0) == 0);
-> 		assert(pid == waitpid(-1, &stat, 0));
-> 		assert(stat == 0x1300);
-> 
-> 		return 0;
-> 	}
-> 
-> Before this patch the child is killed after PTRACE_DETACH.
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> ---
->  kernel/ptrace.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/kernel/ptrace.c b/kernel/ptrace.c
-> index 776ab3b..33752d9 100644
-> --- a/kernel/ptrace.c
-> +++ b/kernel/ptrace.c
-> @@ -467,6 +467,7 @@ static int ptrace_detach(struct task_struct *child, unsigned int data)
->  	/* Architecture-specific hardware disable .. */
->  	ptrace_disable(child);
->  	clear_tsk_thread_flag(child, TIF_SYSCALL_TRACE);
-> +	flush_ptrace_hw_breakpoint(child);
 
-So I assume the tracee is still guaranteed to be stopped at that time, right? Or already
-killed? But it can't be concurrently killed given the patch you did that prevented that?
+Monday, April 29, 2013, 5:46:23 PM, you wrote:
 
-I'm just asking to make sure we can't have two concurrent calls to flush_ptrace_hw_breakpoint()
-at the same time.
+> On Wed, Apr 24, 2013 at 08:16:37PM +0200, Sander Eikelenboom wrote:
+>> Friday, April 19, 2013, 4:44:01 PM, you wrote:
+>> 
+>> > Hey Jens,
+>> 
+>> > Please in your spare time (if there is such a thing at a conference)
+>> > pull this branch:
+>> 
+>> >  git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/for-jens-3.10
+>> 
 
-Also it seems to be a regression since we brought the breakpoint/perf infrastructure. But
-backporting this patch prior to "ptrace: ensure arch_ptrace/ptrace_request can never race with SIGKILL"
-might be racy. Hmm...
+> .. snip..
+>> Hi Konrad / Roger,
+>> 
+>> I tried this pull on top of latest Linus latest linux-3.9 tree, but although it seems to boot and work fine at first, i seem to get trouble after running for about a day.
+>> Without this pull it runs fine for several days.
+> .. snipp.
 
-Thanks.
+>> [18496.013743] xenwatch: page allocation failure: order:7, mode:0x10c0d0
+>> [18496.031948] Pid: 54, comm: xenwatch Not tainted 3.9.0-rc8-20130424-jens+ #1
+>> [18496.049897] Call Trace:
+>> [18496.067674]  [<ffffffff81100c51>] warn_alloc_failed+0xf1/0x140
+>> [18496.085453]  [<ffffffff810b25ed>] ? trace_hardirqs_on+0xd/0x10
+>> [18496.102951]  [<ffffffff810bdb24>] ? on_each_cpu_mask+0x94/0xd0
+>> [18496.120270]  [<ffffffff811028af>] __alloc_pages_nodemask+0x69f/0x960
+>> [18496.137306]  [<ffffffff8113a161>] alloc_pages_current+0xb1/0x160
+>> [18496.154051]  [<ffffffff81100679>] __get_free_pages+0x9/0x40
+>> [18496.170579]  [<ffffffff81142af4>] __kmalloc+0x134/0x160
+>> [18496.186921]  [<ffffffff815832d0>] xen_blkbk_probe+0x170/0x2f0
+>> [18496.202963]  [<ffffffff81474ce7>] xenbus_dev_probe+0x77/0x130
+>> [18496.218714]  [<ffffffff8156a390>] ? __driver_attach+0xa0/0xa0
+>> [18496.234237]  [<ffffffff8156a151>] driver_probe_device+0x81/0x220
+>> [18496.249605]  [<ffffffff8198198c>] ? klist_next+0x8c/0x110
+>> [18496.264681]  [<ffffffff8156a390>] ? __driver_attach+0xa0/0xa0
+>> [18496.279500]  [<ffffffff8156a3db>] __device_attach+0x4b/0x50
+>> [18496.294138]  [<ffffffff815684e8>] bus_for_each_drv+0x68/0x90
+>> [18496.308553]  [<ffffffff8156a0c9>] device_attach+0x89/0x90
+>> [18496.322694]  [<ffffffff81569258>] bus_probe_device+0xa8/0xd0
+>> [18496.336640]  [<ffffffff81567c80>] device_add+0x650/0x720
 
->  
->  	write_lock_irq(&tasklist_lock);
->  	/*
-> -- 
-> 1.5.5.1
-> 
+> .. snip..
+
+> Jens,
+> I don't know if you had pulled this git tree yet (I don't see it in
+> your for-3.10/* branches).
+
+> But if you have, Sander has found a bug (and Roger has a fix for it).
+
+> Whether you would like to wait until v3.11 to pull it (and me sending
+> the git pull around a month) is OK. Or pull it now and we will fix the
+> bugs in the -rc's as they creep up.
+
+Roger's fix seems to work for me ..
+
+--
+Sander
+
+> Thanks!
+
+
