@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933717Ab3D2TcC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 15:32:02 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60798 "EHLO
+	id S933733Ab3D2TcV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 15:32:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60789 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759626Ab3D2TC6 (ORCPT
+	with ESMTP id S1759619Ab3D2TC5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 15:02:58 -0400
+	Mon, 29 Apr 2013 15:02:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jiri Slaby <jslaby@suse.cz>,
+        Zhao Hongjiang <zhaohongjiang@huawei.com>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 03/34] TTY: fix atime/mtime regression
-Date: Mon, 29 Apr 2013 12:02:10 -0700
-Message-Id: <20130429184701.272477889@linuxfoundation.org>
+Subject: [ 01/34] aio: fix possible invalid memory access when DEBUG is enabled
+Date: Mon, 29 Apr 2013 12:02:08 -0700
+Message-Id: <20130429184701.025730758@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130429184700.845644077@linuxfoundation.org>
 References: <20130429184700.845644077@linuxfoundation.org>
@@ -27,67 +27,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Slaby <jslaby@suse.cz>
+From: Zhao Hongjiang <zhaohongjiang@huawei.com>
 
-commit 37b7f3c76595e23257f61bd80b223de8658617ee upstream.
+commit 91d80a84bbc8f28375cca7e65ec666577b4209ad upstream.
 
-In commit b0de59b5733d ("TTY: do not update atime/mtime on read/write")
-we removed timestamps from tty inodes to fix a security issue and waited
-if something breaks.  Well, 'w', the utility to find out logged users
-and their inactivity time broke.  It shows that users are inactive since
-the time they logged in.
+dprintk() shouldn't access @ring after it's unmapped.
 
-To revert to the old behaviour while still preventing attackers to
-guess the password length, we update the timestamps in one-minute
-intervals by this patch.
-
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Signed-off-by: Zhao Hongjiang <zhaohongjiang@huawei.com>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/tty_io.c |   16 +++++++++++++++-
- 1 file changed, 15 insertions(+), 1 deletion(-)
+ fs/aio.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/tty/tty_io.c
-+++ b/drivers/tty/tty_io.c
-@@ -938,6 +938,14 @@ void start_tty(struct tty_struct *tty)
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -1094,9 +1094,9 @@ static int aio_read_evt(struct kioctx *i
+ 	spin_unlock(&info->ring_lock);
  
- EXPORT_SYMBOL(start_tty);
- 
-+static void tty_update_time(struct timespec *time)
-+{
-+	unsigned long sec = get_seconds();
-+	sec -= sec % 60;
-+	if ((long)(sec - time->tv_sec) > 0)
-+		time->tv_sec = sec;
-+}
-+
- /**
-  *	tty_read	-	read method for tty device files
-  *	@file: pointer to tty file
-@@ -975,6 +983,9 @@ static ssize_t tty_read(struct file *fil
- 		i = -EIO;
- 	tty_ldisc_deref(ld);
- 
-+	if (i > 0)
-+		tty_update_time(&inode->i_atime);
-+
- 	return i;
+ out:
+-	kunmap_atomic(ring);
+ 	dprintk("leaving aio_read_evt: %d  h%lu t%lu\n", ret,
+ 		 (unsigned long)ring->head, (unsigned long)ring->tail);
++	kunmap_atomic(ring);
+ 	return ret;
  }
  
-@@ -1075,8 +1086,11 @@ static inline ssize_t do_tty_write(
- 			break;
- 		cond_resched();
- 	}
--	if (written)
-+	if (written) {
-+		struct inode *inode = file->f_path.dentry->d_inode;
-+		tty_update_time(&inode->i_mtime);
- 		ret = written;
-+	}
- out:
- 	tty_write_unlock(tty);
- 	return ret;
 
 
