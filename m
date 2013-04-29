@@ -1,76 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760523Ab3D2TR3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 15:17:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60896 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759320Ab3D2TDL (ORCPT
+	id S1760563Ab3D2TRu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 15:17:50 -0400
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:57119 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760548Ab3D2TRq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 15:03:11 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+	Mon, 29 Apr 2013 15:17:46 -0400
+Message-ID: <517EC757.20801@gmail.com>
+Date: Mon, 29 Apr 2013 15:17:43 -0400
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+MIME-Version: 1.0
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nikolay Aleksandrov <nikolay@redhat.com>,
-        Veaceslav Falico <vfalico@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 22/34] bonding: fix bonding_masters race condition in bond unloading
-Date: Mon, 29 Apr 2013 12:02:29 -0700
-Message-Id: <20130429184703.392955320@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130429184700.845644077@linuxfoundation.org>
-References: <20130429184700.845644077@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Olivier Langlois <olivier@trillion01.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        David Miller <davem@davemloft.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        kosaki.motohiro@gmail.com
+Subject: [BUGFIX PATCH 3/2] posix-cpu-timers: check_thread_timers() uses task_sched_runtime()
+References: <1367216762-3933-1-git-send-email-kosaki.motohiro@gmail.com>
+In-Reply-To: <1367216762-3933-1-git-send-email-kosaki.motohiro@gmail.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+A type of tsk->se.sum_exec_runtime is u64. Thus reading it is racy when
+running 32bit. We should use task_sched_runtime().
 
-------------------
-
-
-From: "nikolay@redhat.com" <nikolay@redhat.com>
-
-[ Upstream commit 69b0216ac255f523556fa3d4ff030d857eaaa37f ]
-
-While the bonding module is unloading, it is considered that after
-rtnl_link_unregister all bond devices are destroyed but since no
-synchronization mechanism exists, a new bond device can be created
-via bonding_masters before unregister_pernet_subsys which would
-lead to multiple problems (e.g. NULL pointer dereference, wrong RIP,
-list corruption).
-
-This patch fixes the issue by removing any bond devices left in the
-netns after bonding_masters is removed from sysfs.
-
-Signed-off-by: Nikolay Aleksandrov <nikolay@redhat.com>
-Acked-by: Veaceslav Falico <vfalico@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Olivier Langlois <olivier@trillion01.com>
+CC: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 ---
- drivers/net/bonding/bond_main.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ kernel/posix-cpu-timers.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
---- a/drivers/net/bonding/bond_main.c
-+++ b/drivers/net/bonding/bond_main.c
-@@ -4864,9 +4864,18 @@ static int __net_init bond_net_init(stru
- static void __net_exit bond_net_exit(struct net *net)
- {
- 	struct bond_net *bn = net_generic(net, bond_net_id);
-+	struct bonding *bond, *tmp_bond;
-+	LIST_HEAD(list);
- 
- 	bond_destroy_sysfs(bn);
- 	bond_destroy_proc_dir(bn);
-+
-+	/* Kill off any bonds created after unregistering bond rtnl ops */
-+	rtnl_lock();
-+	list_for_each_entry_safe(bond, tmp_bond, &bn->dev_list, bond_list)
-+		unregister_netdevice_queue(bond->dev, &list);
-+	unregister_netdevice_many(&list);
-+	rtnl_unlock();
- }
- 
- static struct pernet_operations bond_net_ops = {
+diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
+index dc61bc3..651b6c7 100644
+--- a/kernel/posix-cpu-timers.c
++++ b/kernel/posix-cpu-timers.c
+@@ -944,7 +944,8 @@ static void check_thread_timers(struct task_struct *tsk,
+ 		struct cpu_timer_list *t = list_first_entry(timers,
+ 						      struct cpu_timer_list,
+ 						      entry);
+-		if (!--maxfire || tsk->se.sum_exec_runtime < t->expires.sched) {
++		unsigned long long runtime = task_sched_runtime(tsk, false);
++		if (!--maxfire || runtime < t->expires.sched) {
+ 			tsk->cputime_expires.sched_exp = t->expires.sched;
+ 			break;
+ 		}
+-- 
+1.7.1
 
 
