@@ -1,183 +1,298 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760262Ab3D2TNb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 15:13:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60937 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759865Ab3D2TDS (ORCPT
+	id S1760272Ab3D2TNp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 15:13:45 -0400
+Received: from 212.199.104.198.static.012.net.il ([212.199.104.198]:60329 "EHLO
+	lx-merez.qi.qualcomm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1758608Ab3D2TNm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 15:03:18 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Yuchung Cheng <ycheng@google.com>, Eric Dumazet <edumazet@google.com>,
-        Neal Cardwell <ncardwell@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 31/34] tcp: call tcp_replace_ts_recent() from tcp_ack()
-Date: Mon, 29 Apr 2013 12:02:38 -0700
-Message-Id: <20130429184704.402950634@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130429184700.845644077@linuxfoundation.org>
-References: <20130429184700.845644077@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Mon, 29 Apr 2013 15:13:42 -0400
+From: Maya Erez <merez@codeaurora.org>
+To: linux-mmc@vger.kernel.org
+Cc: linux-arm-msm@vger.kernel.org, Maya Erez <merez@codeaurora.org>,
+        Lee Susman <lsusman@codeaurora.org>,
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH v6] mmc: block: Add write packing control
+Date: Mon, 29 Apr 2013 22:10:13 +0300
+Message-Id: <1367262811-18105-1-git-send-email-merez@codeaurora.org>
+X-Mailer: git-send-email 1.7.3.3
+In-Reply-To: <n>
+References: <n>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+The write packing control will ensure that read requests latency is
+not increased due to long write packed commands.
 
-------------------
+The trigger for enabling the write packing is calculated by the relation
+between the number of potential packed write requests and the mean
+value of all previous potential values:
+If the current potential is greater than the mean potential then
+the heuristic is that the following workload will contain many write
+requests, therefore we lower the packed trigger. In the opposite case
+we want to increase the trigger in order to get less packing events.
+The trigger for disabling the write packing is fetching a read request.
 
-
-From: Eric Dumazet <edumazet@google.com>
-
-[ Upstream commit 12fb3dd9dc3c64ba7d64cec977cca9b5fb7b1d4e ]
-
-commit bd090dfc634d (tcp: tcp_replace_ts_recent() should not be called
-from tcp_validate_incoming()) introduced a TS ecr bug in slow path
-processing.
-
-1 A > B P. 1:10001(10000) ack 1 <nop,nop,TS val 1001 ecr 200>
-2 B < A . 1:1(0) ack 1 win 257 <sack 9001:10001,TS val 300 ecr 1001>
-3 A > B . 1:1001(1000) ack 1 win 227 <nop,nop,TS val 1002 ecr 200>
-4 A > B . 1001:2001(1000) ack 1 win 227 <nop,nop,TS val 1002 ecr 200>
-
-(ecr 200 should be ecr 300 in packets 3 & 4)
-
-Problem is tcp_ack() can trigger send of new packets (retransmits),
-reflecting the prior TSval, instead of the TSval contained in the
-currently processed incoming packet.
-
-Fix this by calling tcp_replace_ts_recent() from tcp_ack() after the
-checks, but before the actions.
-
-Reported-by: Yuchung Cheng <ycheng@google.com>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Neal Cardwell <ncardwell@google.com>
-Acked-by: Neal Cardwell <ncardwell@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Maya Erez <merez@codeaurora.org>
+Signed-off-by: Lee Susman <lsusman@codeaurora.org>
 ---
- net/ipv4/tcp_input.c |   65 +++++++++++++++++++++++++--------------------------
- 1 file changed, 32 insertions(+), 33 deletions(-)
+Our experiments showed that the write packing can increase the worst case read latency.
+Since the read latency is critical for user experience we added a write packing control
+mechanism that disables the write packing in case of read requests.
+This will ensure that read requests latency is not increased due to long write packed commands.
 
---- a/net/ipv4/tcp_input.c
-+++ b/net/ipv4/tcp_input.c
-@@ -116,6 +116,7 @@ int sysctl_tcp_abc __read_mostly;
- #define FLAG_DSACKING_ACK	0x800 /* SACK blocks contained D-SACK info */
- #define FLAG_NONHEAD_RETRANS_ACKED	0x1000 /* Non-head rexmitted data was ACKed */
- #define FLAG_SACK_RENEGING	0x2000 /* snd_una advanced to a sacked seq */
-+#define FLAG_UPDATE_TS_RECENT	0x4000 /* tcp_replace_ts_recent() */
+The trigger for enabling the write packing is managing to pack several write requests.
+The number of potential packed requests that will trigger the packing can be configured via sysfs.
+The trigger for disabling the write packing is a fetch of a read request.
+
+Changes in v6:
+    - Dynamic calculation of the trigger for enabling te write packing (instead of a hardcoded value)
+
+Changes in v5:
+    - Revert v4 changes
+    - fix the device attribute removal in case of failure of device_create_file
+
+Changes in v4:
+    - Move MMC specific attributes to mmc sub-directory
+
+Changes in v3:
+    - Fix the settings of num_of_potential_packed_wr_reqs
+
+Changes in v2:
+    - Move the attribute for setting the packing enabling trigger to the block device
+    - Add documentation of the new attribute
+---
+ drivers/mmc/card/block.c |  131 ++++++++++++++++++++++++++++++++++++++++++++++
+ drivers/mmc/card/queue.c |    8 +++
+ drivers/mmc/card/queue.h |    3 +
+ include/linux/mmc/host.h |    1 +
+ 4 files changed, 143 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
+index e12a03c..e0ed0b4 100644
+--- a/drivers/mmc/card/block.c
++++ b/drivers/mmc/card/block.c
+@@ -64,6 +64,13 @@ MODULE_ALIAS("mmc:block");
+ 				  (rq_data_dir(req) == WRITE))
+ #define PACKED_CMD_VER	0x01
+ #define PACKED_CMD_WR	0x02
++#define PACKED_TRIGGER_MAX_ELEMENTS	5000
++#define PCKD_TRGR_INIT_MEAN_POTEN	17
++#define PCKD_TRGR_POTEN_LOWER_BOUND	5
++#define PCKD_TRGR_URGENT_PENALTY	2
++#define PCKD_TRGR_LOWER_BOUND		5
++#define PCKD_TRGR_PRECISION_MULTIPLIER	100
++
  
- #define FLAG_ACKED		(FLAG_DATA_ACKED|FLAG_SYN_ACKED)
- #define FLAG_NOT_DUP		(FLAG_DATA|FLAG_WIN_UPDATE|FLAG_ACKED)
-@@ -3707,6 +3708,27 @@ static void tcp_send_challenge_ack(struc
- 	}
+ static DEFINE_MUTEX(block_mutex);
+ 
+@@ -1405,6 +1412,122 @@ static inline u8 mmc_calc_packed_hdr_segs(struct request_queue *q,
+ 	return nr_segs;
  }
  
-+static void tcp_store_ts_recent(struct tcp_sock *tp)
++static int get_packed_trigger(int potential, struct mmc_card *card,
++			      struct request *req, int curr_trigger)
 +{
-+	tp->rx_opt.ts_recent = tp->rx_opt.rcv_tsval;
-+	tp->rx_opt.ts_recent_stamp = get_seconds();
-+}
++	static int num_mean_elements = 1;
++	static unsigned long mean_potential = PCKD_TRGR_INIT_MEAN_POTEN;
++	unsigned int trigger = curr_trigger;
++	unsigned int pckd_trgr_upper_bound = card->ext_csd.max_packed_writes;
 +
-+static void tcp_replace_ts_recent(struct tcp_sock *tp, u32 seq)
-+{
-+	if (tp->rx_opt.saw_tstamp && !after(seq, tp->rcv_wup)) {
-+		/* PAWS bug workaround wrt. ACK frames, the PAWS discard
-+		 * extra check below makes sure this can only happen
-+		 * for pure ACK frames.  -DaveM
-+		 *
-+		 * Not only, also it occurs for expired timestamps.
-+		 */
++	/* scale down the upper bound to 75% */
++	pckd_trgr_upper_bound = (pckd_trgr_upper_bound * 3) / 4;
 +
-+		if (tcp_paws_check(&tp->rx_opt, 0))
-+			tcp_store_ts_recent(tp);
-+	}
-+}
-+
- /* This routine deals with incoming acks, but not outgoing ones. */
- static int tcp_ack(struct sock *sk, const struct sk_buff *skb, int flag)
- {
-@@ -3756,6 +3778,12 @@ static int tcp_ack(struct sock *sk, cons
- 	prior_fackets = tp->fackets_out;
- 	prior_in_flight = tcp_packets_in_flight(tp);
- 
-+	/* ts_recent update must be made after we are sure that the packet
-+	 * is in window.
++	/*
++	 * since the most common calls for this function are with small
++	 * potential write values and since we don't want these calls to affect
++	 * the packed trigger, set a lower bound and ignore calls with
++	 * potential lower than that bound
 +	 */
-+	if (flag & FLAG_UPDATE_TS_RECENT)
-+		tcp_replace_ts_recent(tp, TCP_SKB_CB(skb)->seq);
++	if (potential <= PCKD_TRGR_POTEN_LOWER_BOUND)
++		return trigger;
 +
- 	if (!(flag & FLAG_SLOWPATH) && after(ack, prior_snd_una)) {
- 		/* Window is constant, pure forward advance.
- 		 * No more checks are required.
-@@ -4053,27 +4081,6 @@ const u8 *tcp_parse_md5sig_option(const
- EXPORT_SYMBOL(tcp_parse_md5sig_option);
- #endif
++	/*
++	 * this is to prevent integer overflow in the following calculation:
++	 * once every PACKED_TRIGGER_MAX_ELEMENTS reset the algorithm
++	 */
++	if (num_mean_elements > PACKED_TRIGGER_MAX_ELEMENTS) {
++		num_mean_elements = 1;
++		mean_potential = PCKD_TRGR_INIT_MEAN_POTEN;
++	}
++
++	/*
++	 * get next mean value based on previous mean value and current
++	 * potential packed writes. Calculation is as follows:
++	 * mean_pot[i+1] =
++	 *	((mean_pot[i] * num_mean_elem) + potential)/(num_mean_elem + 1)
++	 */
++	mean_potential *= num_mean_elements;
++	/*
++	 * add num_mean_elements so that the division of two integers doesn't
++	 * lower mean_potential too much
++	 */
++	if (potential > mean_potential)
++		mean_potential += num_mean_elements;
++	mean_potential += potential;
++	/* this is for gaining more precision when dividing two integers */
++	mean_potential *= PCKD_TRGR_PRECISION_MULTIPLIER;
++	/* this completes the mean calculation */
++	mean_potential /= ++num_mean_elements;
++	mean_potential /= PCKD_TRGR_PRECISION_MULTIPLIER;
++
++	/*
++	 * if current potential packed writes is greater than the mean potential
++	 * then the heuristic is that the following workload will contain many
++	 * write requests, therefore we lower the packed trigger. In the
++	 * opposite case we want to increase the trigger in order to get less
++	 * packing events.
++	 */
++	if (potential >= mean_potential)
++		trigger = (trigger <= PCKD_TRGR_LOWER_BOUND) ?
++				PCKD_TRGR_LOWER_BOUND : trigger - 1;
++	else
++		trigger = (trigger >= pckd_trgr_upper_bound) ?
++				pckd_trgr_upper_bound : trigger + 1;
++
++	return trigger;
++}
++
++static void mmc_blk_write_packing_control(struct mmc_queue *mq,
++					  struct request *req)
++{
++	struct mmc_host *host = mq->card->host;
++	int data_dir;
++
++	if (!(host->caps2 & MMC_CAP2_PACKED_WR))
++		return;
++
++	/*
++	 * In case the packing control is not supported by the host, it should
++	 * not have an effect on the write packing. Therefore we have to enable
++	 * the write packing
++	 */
++	if (!(host->caps2 & MMC_CAP2_PACKED_WR_CONTROL)) {
++		mq->wr_packing_enabled = true;
++		return;
++	}
++
++	if (!req || (req && (req->cmd_flags & REQ_FLUSH))) {
++		if (mq->num_of_potential_packed_wr_reqs >
++				mq->num_wr_reqs_to_start_packing)
++			mq->wr_packing_enabled = true;
++		mq->num_wr_reqs_to_start_packing =
++			get_packed_trigger(mq->num_of_potential_packed_wr_reqs,
++					   mq->card, req,
++					   mq->num_wr_reqs_to_start_packing);
++		mq->num_of_potential_packed_wr_reqs = 0;
++		return;
++	}
++
++	data_dir = rq_data_dir(req);
++
++	if (data_dir == READ) {
++		mq->num_of_potential_packed_wr_reqs = 0;
++		mq->wr_packing_enabled = false;
++		mq->num_wr_reqs_to_start_packing =
++			get_packed_trigger(mq->num_of_potential_packed_wr_reqs,
++					   mq->card, req,
++					   mq->num_wr_reqs_to_start_packing);
++		return;
++	} else if (data_dir == WRITE) {
++		mq->num_of_potential_packed_wr_reqs++;
++	}
++
++	if (mq->num_of_potential_packed_wr_reqs >
++			mq->num_wr_reqs_to_start_packing)
++		mq->wr_packing_enabled = true;
++}
++
+ static u8 mmc_blk_prep_packed_list(struct mmc_queue *mq, struct request *req)
+ {
+ 	struct request_queue *q = mq->queue;
+@@ -1422,6 +1545,9 @@ static u8 mmc_blk_prep_packed_list(struct mmc_queue *mq, struct request *req)
+ 	if (!(md->flags & MMC_BLK_PACKED_CMD))
+ 		goto no_packed;
  
--static inline void tcp_store_ts_recent(struct tcp_sock *tp)
--{
--	tp->rx_opt.ts_recent = tp->rx_opt.rcv_tsval;
--	tp->rx_opt.ts_recent_stamp = get_seconds();
--}
--
--static inline void tcp_replace_ts_recent(struct tcp_sock *tp, u32 seq)
--{
--	if (tp->rx_opt.saw_tstamp && !after(seq, tp->rcv_wup)) {
--		/* PAWS bug workaround wrt. ACK frames, the PAWS discard
--		 * extra check below makes sure this can only happen
--		 * for pure ACK frames.  -DaveM
--		 *
--		 * Not only, also it occurs for expired timestamps.
--		 */
--
--		if (tcp_paws_check(&tp->rx_opt, 0))
--			tcp_store_ts_recent(tp);
--	}
--}
--
- /* Sorry, PAWS as specified is broken wrt. pure-ACKs -DaveM
-  *
-  * It is not fatal. If this ACK does _not_ change critical state (seqs, window)
-@@ -5577,14 +5584,10 @@ slow_path:
- 		return 0;
++	if (!mq->wr_packing_enabled)
++		goto no_packed;
++
+ 	if ((rq_data_dir(cur) == WRITE) &&
+ 	    mmc_host_packed_wr(card->host))
+ 		max_packed_rw = card->ext_csd.max_packed_writes;
+@@ -1490,6 +1616,8 @@ static u8 mmc_blk_prep_packed_list(struct mmc_queue *mq, struct request *req)
+ 		if (phys_segments > max_phys_segs)
+ 			break;
  
- step5:
--	if (th->ack && tcp_ack(sk, skb, FLAG_SLOWPATH) < 0)
-+	if (th->ack &&
-+	    tcp_ack(sk, skb, FLAG_SLOWPATH | FLAG_UPDATE_TS_RECENT) < 0)
- 		goto discard;
++		if (rq_data_dir(next) == WRITE)
++			mq->num_of_potential_packed_wr_reqs++;
+ 		list_add_tail(&next->queuelist, &mqrq->packed->list);
+ 		cur = next;
+ 		reqs++;
+@@ -1908,6 +2036,9 @@ static int mmc_blk_issue_rq(struct mmc_queue *mq, struct request *req)
+ 	}
  
--	/* ts_recent update must be made after we are sure that the packet
--	 * is in window.
--	 */
--	tcp_replace_ts_recent(tp, TCP_SKB_CB(skb)->seq);
--
- 	tcp_rcv_rtt_measure_ts(sk, skb);
+ 	mq->flags &= ~MMC_QUEUE_NEW_REQUEST;
++
++	mmc_blk_write_packing_control(mq, req);
++
+ 	if (req && req->cmd_flags & REQ_DISCARD) {
+ 		/* complete ongoing async transfer before issuing discard */
+ 		if (card->host->areq)
+diff --git a/drivers/mmc/card/queue.c b/drivers/mmc/card/queue.c
+index 9447a0e..b876d92 100644
+--- a/drivers/mmc/card/queue.c
++++ b/drivers/mmc/card/queue.c
+@@ -23,6 +23,13 @@
+ #define MMC_QUEUE_BOUNCESZ	65536
  
- 	/* Process urgent data. */
-@@ -5948,7 +5951,8 @@ int tcp_rcv_state_process(struct sock *s
+ /*
++ * Based on benchmark tests the default num of requests to trigger the write
++ * packing was determined, to keep the read latency as low as possible and
++ * manage to keep the high write throughput.
++ */
++#define DEFAULT_NUM_REQS_TO_START_PACK 17
++
++/*
+  * Prepare a MMC request. This just filters out odd stuff.
+  */
+ static int mmc_prep_request(struct request_queue *q, struct request *req)
+@@ -206,6 +213,7 @@ int mmc_init_queue(struct mmc_queue *mq, struct mmc_card *card,
+ 	mq->mqrq_cur = mqrq_cur;
+ 	mq->mqrq_prev = mqrq_prev;
+ 	mq->queue->queuedata = mq;
++	mq->num_wr_reqs_to_start_packing = DEFAULT_NUM_REQS_TO_START_PACK;
  
- 	/* step 5: check the ACK field */
- 	if (th->ack) {
--		int acceptable = tcp_ack(sk, skb, FLAG_SLOWPATH) > 0;
-+		int acceptable = tcp_ack(sk, skb, FLAG_SLOWPATH |
-+						  FLAG_UPDATE_TS_RECENT) > 0;
+ 	blk_queue_prep_rq(mq->queue, mmc_prep_request);
+ 	queue_flag_set_unlocked(QUEUE_FLAG_NONROT, mq->queue);
+diff --git a/drivers/mmc/card/queue.h b/drivers/mmc/card/queue.h
+index 5752d50..864d81d 100644
+--- a/drivers/mmc/card/queue.h
++++ b/drivers/mmc/card/queue.h
+@@ -57,6 +57,9 @@ struct mmc_queue {
+ 	struct mmc_queue_req	mqrq[2];
+ 	struct mmc_queue_req	*mqrq_cur;
+ 	struct mmc_queue_req	*mqrq_prev;
++	bool			wr_packing_enabled;
++	int			num_of_potential_packed_wr_reqs;
++	int			num_wr_reqs_to_start_packing;
+ };
  
- 		switch (sk->sk_state) {
- 		case TCP_SYN_RECV:
-@@ -6055,11 +6059,6 @@ int tcp_rcv_state_process(struct sock *s
- 	} else
- 		goto discard;
+ extern int mmc_init_queue(struct mmc_queue *, struct mmc_card *, spinlock_t *,
+diff --git a/include/linux/mmc/host.h b/include/linux/mmc/host.h
+index e326ae2..b1e4ec9 100644
+--- a/include/linux/mmc/host.h
++++ b/include/linux/mmc/host.h
+@@ -281,6 +281,7 @@ struct mmc_host {
+ #define MMC_CAP2_PACKED_CMD	(MMC_CAP2_PACKED_RD | \
+ 				 MMC_CAP2_PACKED_WR)
+ #define MMC_CAP2_NO_PRESCAN_POWERUP (1 << 14)	/* Don't power up before scan */
++#define MMC_CAP2_PACKED_WR_CONTROL (1 << 15) /* Allow write packing control */
  
--	/* ts_recent update must be made after we are sure that the packet
--	 * is in window.
--	 */
--	tcp_replace_ts_recent(tp, TCP_SKB_CB(skb)->seq);
--
- 	/* step 6: check the URG bit */
- 	tcp_urg(sk, skb, th);
+ 	mmc_pm_flag_t		pm_caps;	/* supported pm features */
  
-
-
+-- 
+1.7.3.3
+-- 
+Sent by a consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
