@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760972Ab3D2ToQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 15:44:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60626 "EHLO
+	id S1759318Ab3D2TCd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 15:02:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60581 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759321Ab3D2TCe (ORCPT
+	with ESMTP id S1758442Ab3D2TC2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 15:02:34 -0400
+	Mon, 29 Apr 2013 15:02:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mathias Krause <minipli@googlemail.com>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Gustavo Padovan <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 09/42] Bluetooth: SCO - Fix missing msg_namelen update in sco_sock_recvmsg()
-Date: Mon, 29 Apr 2013 12:01:51 -0700
-Message-Id: <20130429184753.448369555@linuxfoundation.org>
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [ 02/42] TTY: do not update atime/mtime on read/write
+Date: Mon, 29 Apr 2013 12:01:44 -0700
+Message-Id: <20130429184752.700428715@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130429184752.435249613@linuxfoundation.org>
 References: <20130429184752.435249613@linuxfoundation.org>
@@ -30,38 +26,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Jiri Slaby <jslaby@suse.cz>
 
-From: Mathias Krause <minipli@googlemail.com>
+commit b0de59b5733d18b0d1974a060860a8b5c1b36a2e upstream.
 
-[ Upstream commit c8c499175f7d295ef867335bceb9a76a2c3cdc38 ]
+On http://vladz.devzero.fr/013_ptmx-timing.php, we can see how to find
+out length of a password using timestamps of /dev/ptmx. It is
+documented in "Timing Analysis of Keystrokes and Timing Attacks on
+SSH". To avoid that problem, do not update time when reading
+from/writing to a TTY.
 
-If the socket is in state BT_CONNECT2 and BT_SK_DEFER_SETUP is set in
-the flags, sco_sock_recvmsg() returns early with 0 without updating the
-possibly set msg_namelen member. This, in turn, leads to a 128 byte
-kernel stack leak in net/socket.c.
+I am afraid of regressions as this is a behavior we have since 0.97
+and apps may expect the time to be current, e.g. for monitoring
+whether there was a change on the TTY. Now, there is no change. So
+this would better have a lot of testing before it goes upstream.
 
-Fix this by updating msg_namelen in this case. For all other cases it
-will be handled in bt_sock_recvmsg().
+References: CVE-2013-0160
 
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Cc: Marcel Holtmann <marcel@holtmann.org>
-Cc: Gustavo Padovan <gustavo@padovan.org>
-Cc: Johan Hedberg <johan.hedberg@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/bluetooth/sco.c |    1 +
- 1 file changed, 1 insertion(+)
 
---- a/net/bluetooth/sco.c
-+++ b/net/bluetooth/sco.c
-@@ -667,6 +667,7 @@ static int sco_sock_recvmsg(struct kiocb
- 	    test_bit(BT_SK_DEFER_SETUP, &bt_sk(sk)->flags)) {
- 		hci_conn_accept(pi->conn->hcon, 0);
- 		sk->sk_state = BT_CONFIG;
-+		msg->msg_namelen = 0;
+---
+ drivers/tty/tty_io.c |    8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
+
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -977,8 +977,7 @@ static ssize_t tty_read(struct file *fil
+ 	else
+ 		i = -EIO;
+ 	tty_ldisc_deref(ld);
+-	if (i > 0)
+-		inode->i_atime = current_fs_time(inode->i_sb);
++
+ 	return i;
+ }
  
- 		release_sock(sk);
- 		return 0;
+@@ -1079,11 +1078,8 @@ static inline ssize_t do_tty_write(
+ 			break;
+ 		cond_resched();
+ 	}
+-	if (written) {
+-		struct inode *inode = file->f_path.dentry->d_inode;
+-		inode->i_mtime = current_fs_time(inode->i_sb);
++	if (written)
+ 		ret = written;
+-	}
+ out:
+ 	tty_write_unlock(tty);
+ 	return ret;
 
 
