@@ -1,51 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757293Ab3D2Jee (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 05:34:34 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:26146 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753523Ab3D2Jec (ORCPT
+	id S1757310Ab3D2JfA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 05:35:00 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:23910 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751639Ab3D2Je6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 05:34:32 -0400
-X-AuditID: cbfee690-b7f136d000000fea-1e-517e3ea723d0
+	Mon, 29 Apr 2013 05:34:58 -0400
+X-AuditID: cbfee68d-b7f016d000007930-91-517e3ec15049
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, "'Wim Van Sebroeck'" <wim@iguana.be>,
-        linux-watchdog@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>
-Subject: [PATCH RESEND 1/7] watchdog: at32ap700x_wdt: use devm_*() functions
-Date: Mon, 29 Apr 2013 18:34:31 +0900
-Message-id: <000b01ce44bc$c0960280$41c20780$@samsung.com>
+        linux-watchdog@vger.kernel.org, Jingoo Han <jg1.han@samsung.com>
+Subject: [PATCH RESEND 2/7] watchdog: bcm63xx_wdt: use devm_ioremap_nocache()
+Date: Mon, 29 Apr 2013 18:34:57 +0900
+Message-id: <000c01ce44bc$cfed7830$6fc86890$@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac5EvL/H9OS3/2XxQq+MDqCZADo6sA==
+Thread-index: Ac5EvM8DAPd75royTcaLV+FwlS+vYw==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrJIsWRmVeSWpSXmKPExsVy+t8zY93ldnWBBgefm1rMWb+GzeLywkus
-	Fpd3zWGzuLFuH7vFrRkvWB1YPa5tFvM4MeM3i0ffllWMHp83yQWwRHHZpKTmZJalFunbJXBl
-	bJ25kq2gga/i7cl17A2MG7i7GDk5JARMJKZfeM4GYYtJXLi3Hsjm4hASWMYo0dS7gQmmaN6G
-	VYwQiemMElt2LGKCcH4xSlx/8IMRpIpNQE3iy5fD7F2MHBwiAvoSbS0aIDXMAl2MEnuf/2EH
-	qREW8JFY37aCCaSGRUBV4vx7sFZeAUuJV2sfM0PYghI/Jt9jAbGZBbQk1u88zgRhy0tsXvOW
-	GeIgBYkdZ1+D9YoI6Ek8PrAYql5EYt+Ld4wQNfvYJY6/VQOxWQQEJL5NPsQCslZCQFZi0wGo
-	MZISB1fcYJnAKDYLyeZZSDbPQrJ5FpINCxhZVjGKphYkFxQnpReZ6BUn5haX5qXrJefnbmKE
-	RNuEHYz3DlgfYkwGWj+RWUo0OR8YrXkl8YbGZkYWpiamxkbmlmakCSuJ86q3WAcKCaQnlqRm
-	p6YWpBbFF5XmpBYfYmTi4JRqYJyWY7o82y48RHNfiUob23OdQ3XmLB0iYvpX9Jce3R+uz/no
-	WM6V0PxLmcEbDyye33VZ/mXzzHfu1+87mC712ebyVut66y5nziyFSuat9fKx78+fmr+AferH
-	ZffbTV34KvNClt1Zbp4VvfHEjtnlluGXAzYzXJ4VO/07x7olhnN+vj7OGuUVa6LEUpyRaKjF
-	XFScCAApimH0zAIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprOKsWRmVeSWpSXmKPExsVy+t9jQd3ldnWBBld+GlrMWb+GzeLywkus
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrNIsWRmVeSWpSXmKPExsVy+t8zQ92DdnWBBk3/FS3mrF/DZnF54SVW
+	i8u75rBZ3Fi3j93i1owXrA6sHtc2i3mcmPGbxaNvyypGj8+b5AJYorhsUlJzMstSi/TtErgy
+	Jrx5xF7wmbdixqPnLA2MF7m7GDk5JARMJJ7suckKYYtJXLi3nq2LkYtDSGAZo8SLE9eZYYqm
+	P/7GDpFYxCix/eN/RgjnF6NEY8MPsHY2ATWJL18OA1VxcIgI6Eu0tWiA1DALdDBKHHi6FKxG
+	WMBXov/yDkYQm0VAVeLIoc1gG3gFLCVOrW1nh7AFJX5MvscCYjMLaEms33mcCcKWl9i85i3U
+	RQoSO86+BpsjIqAn0dF3kB2iRkRi34t3YMdJCOxjl3j5aCkTxDIBiW+TD7GAHCchICux6QDU
+	HEmJgytusExgFJuFZPUsJKtnIVk9C8mKBYwsqxhFUwuSC4qT0osM9YoTc4tL89L1kvNzNzFC
+	Iq53B+PtA9aHGJOB1k9klhJNzgdGbF5JvKGxmZGFqYmpsZG5pRlpwkrivGot1oFCAumJJanZ
+	qakFqUXxRaU5qcWHGJk4OKUaGH3+POgI2T35mdWE3qinOXFqs/M5def4+LMGCLHOuH5SLVdv
+	tmPywxK5yTujfMJmFH18eKjmuNLhzwJXsk6qqj27a8oj895vQ0el7cKTcTN3fJ9r6yCeuO6f
+	EYP2Ti77ypBJskX+PcLuF6w85CPuaUr+v/3U3ehW7+0fn9tfvVbsijn59nHGeSWW4oxEQy3m
+	ouJEAGnQQyTOAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprBKsWRmVeSWpSXmKPExsVy+t9jAd2DdnWBBmdPyFrMWb+GzeLywkus
 	Fpd3zWGzuLFuH7vFrRkvWB1YPa5tFvM4MeM3i0ffllWMHp83yQWwRDUw2mSkJqakFimk5iXn
 	p2TmpdsqeQfHO8ebmhkY6hpaWpgrKeQl5qbaKrn4BOi6ZeYA7VVSKEvMKQUKBSQWFyvp22Ga
-	EBripmsB0xih6xsSBNdjZIAGEtYxZmyduZKtoIGv4u3JdewNjBu4uxg5OSQETCTmbVjFCGGL
-	SVy4t56ti5GLQ0hgOqPElh2LmCCcX4wS1x/8AKtiE1CT+PLlMHsXIweHiIC+RFuLBkgNs0AX
-	o8Te53/YQWqEBXwk1retYAKpYRFQlTj/HqyVV8BS4tXax8wQtqDEj8n3WEBsZgEtifU7jzNB
-	2PISm9e8ZYY4SEFix9nXYL0iAnoSjw8shqoXkdj34h3jBEaBWUhGzUIyahaSUbOQtCxgZFnF
-	KJpakFxQnJSea6RXnJhbXJqXrpecn7uJERzNz6R3MK5qsDjEKMDBqMTDG7C5NlCINbGsuDL3
-	EKMEB7OSCO8Ky7pAId6UxMqq1KL8+KLSnNTiQ4zJQI9OZJYSTc4HJpq8knhDYxMzI0sjMwsj
-	E3Nz0oSVxHkPtloHCgmkJ5akZqemFqQWwWxh4uCUamBcEc282+b8F2PL1i1lCtZr/FY6qhn0
-	2R7aK6la+Mks9NdDhaP3X/b2iB9ey/HNNV9oT4XlLLHO7xLbeY3UvBySvV0VNh8WPOTXUqJ7
-	JT5y0Tez8DWZ01dMd4wqYCoqP107T/Nk0ucrO65ujFi+5+frspQnV4xNP6Tbf7NT3HWu4/P2
-	inK7nV+VWIozEg21mIuKEwHAVG+2KgMAAA==
+	EBripmsB0xih6xsSBNdjZIAGEtYxZkx484i94DNvxYxHz1kaGC9ydzFyckgImEhMf/yNHcIW
+	k7hwbz1bFyMXh5DAIkaJ7R//M0I4vxglGht+sIJUsQmoSXz5chiog4NDREBfoq1FA6SGWaCD
+	UeLA06VgNcICvhL9l3cwgtgsAqoSRw5tZgaxeQUsJU6tbWeHsAUlfky+xwJiMwtoSazfeZwJ
+	wpaX2LzmLTPERQoSO86+BpsjIqAn0dF3kB2iRkRi34t3jBMYBWYhGTULyahZSEbNQtKygJFl
+	FaNoakFyQXFSeq6RXnFibnFpXrpecn7uJkZwPD+T3sG4qsHiEKMAB6MSD2/A5tpAIdbEsuLK
+	3EOMEhzMSiK8KyzrAoV4UxIrq1KL8uOLSnNSiw8xJgN9OpFZSjQ5H5hq8kriDY1NzIwsjcws
+	jEzMzUkTVhLnPdhqHSgkkJ5YkpqdmlqQWgSzhYmDU6qBsfTivLrqOUctZS51Lck6sqXD/taj
+	X7FH6tm42W6Z/HklLWrvN+NSGhfX6b0vztsuv8uczT/j1a+P70SmnvnLwe3Ytbxx/oL8ppWm
+	X1gf7N/vrC8w+ZILo4KGrsMq4zKj+EC18+WdziJHO9STnrWs5BffaL5q8oMXxjZPvvPZec+8
+	dFnD/VbFTiWW4oxEQy3mouJEAFuBTHUrAwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -53,63 +53,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use devm_*() functions to make cleanup paths simpler.
+Use devm_ioremap_nocache() to make cleanup paths simpler.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/watchdog/at32ap700x_wdt.c |   12 ++++--------
- 1 files changed, 4 insertions(+), 8 deletions(-)
+ drivers/watchdog/bcm63xx_wdt.c |    9 ++++-----
+ 1 files changed, 4 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/watchdog/at32ap700x_wdt.c b/drivers/watchdog/at32ap700x_wdt.c
-index 7a715e3..c4cb552 100644
---- a/drivers/watchdog/at32ap700x_wdt.c
-+++ b/drivers/watchdog/at32ap700x_wdt.c
-@@ -321,13 +321,14 @@ static int __init at32_wdt_probe(struct platform_device *pdev)
+diff --git a/drivers/watchdog/bcm63xx_wdt.c b/drivers/watchdog/bcm63xx_wdt.c
+index b2b80d4..a14a58d 100644
+--- a/drivers/watchdog/bcm63xx_wdt.c
++++ b/drivers/watchdog/bcm63xx_wdt.c
+@@ -16,6 +16,7 @@
+ #include <linux/errno.h>
+ #include <linux/fs.h>
+ #include <linux/init.h>
++#include <linux/io.h>
+ #include <linux/kernel.h>
+ #include <linux/miscdevice.h>
+ #include <linux/module.h>
+@@ -249,7 +250,8 @@ static int bcm63xx_wdt_probe(struct platform_device *pdev)
+ 		return -ENODEV;
+ 	}
+ 
+-	bcm63xx_wdt_device.regs = ioremap_nocache(r->start, resource_size(r));
++	bcm63xx_wdt_device.regs = devm_ioremap_nocache(&pdev->dev, r->start,
++							resource_size(r));
+ 	if (!bcm63xx_wdt_device.regs) {
+ 		dev_err(&pdev->dev, "failed to remap I/O resources\n");
  		return -ENXIO;
+@@ -258,7 +260,7 @@ static int bcm63xx_wdt_probe(struct platform_device *pdev)
+ 	ret = bcm63xx_timer_register(TIMER_WDT_ID, bcm63xx_wdt_isr, NULL);
+ 	if (ret < 0) {
+ 		dev_err(&pdev->dev, "failed to register wdt timer isr\n");
+-		goto unmap;
++		return ret;
  	}
  
--	wdt = kzalloc(sizeof(struct wdt_at32ap700x), GFP_KERNEL);
-+	wdt = devm_kzalloc(&pdev->dev, sizeof(struct wdt_at32ap700x),
-+			GFP_KERNEL);
- 	if (!wdt) {
- 		dev_dbg(&pdev->dev, "no memory for wdt structure\n");
- 		return -ENOMEM;
- 	}
+ 	if (bcm63xx_wdt_settimeout(wdt_time)) {
+@@ -281,8 +283,6 @@ static int bcm63xx_wdt_probe(struct platform_device *pdev)
  
--	wdt->regs = ioremap(regs->start, resource_size(regs));
-+	wdt->regs = devm_ioremap(&pdev->dev, regs->start, resource_size(regs));
- 	if (!wdt->regs) {
- 		ret = -ENOMEM;
- 		dev_dbg(&pdev->dev, "could not map I/O memory\n");
-@@ -342,7 +343,7 @@ static int __init at32_wdt_probe(struct platform_device *pdev)
- 		dev_info(&pdev->dev, "CPU must be reset with external "
- 				"reset or POR due to silicon errata.\n");
- 		ret = -EIO;
--		goto err_iounmap;
-+		goto err_free;
- 	} else {
- 		wdt->users = 0;
- 	}
-@@ -375,10 +376,7 @@ static int __init at32_wdt_probe(struct platform_device *pdev)
- 
- err_register:
- 	platform_set_drvdata(pdev, NULL);
--err_iounmap:
--	iounmap(wdt->regs);
- err_free:
--	kfree(wdt);
- 	wdt = NULL;
+ unregister_timer:
+ 	bcm63xx_timer_unregister(TIMER_WDT_ID);
+-unmap:
+-	iounmap(bcm63xx_wdt_device.regs);
  	return ret;
  }
-@@ -391,8 +389,6 @@ static int __exit at32_wdt_remove(struct platform_device *pdev)
- 			at32_wdt_stop();
  
- 		misc_deregister(&wdt->miscdev);
--		iounmap(wdt->regs);
--		kfree(wdt);
- 		wdt = NULL;
- 		platform_set_drvdata(pdev, NULL);
- 	}
+@@ -293,7 +293,6 @@ static int bcm63xx_wdt_remove(struct platform_device *pdev)
+ 
+ 	misc_deregister(&bcm63xx_wdt_miscdev);
+ 	bcm63xx_timer_unregister(TIMER_WDT_ID);
+-	iounmap(bcm63xx_wdt_device.regs);
+ 	return 0;
+ }
+ 
 -- 
 1.7.2.5
 
