@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760363Ab3D2ThL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 15:37:11 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:50799 "EHLO
+	id S1760810Ab3D2TiE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 15:38:04 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:50815 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759795Ab3D2ThI (ORCPT
+	with ESMTP id S1759797Ab3D2ThH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 15:37:08 -0400
+	Mon, 29 Apr 2013 15:37:07 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: linux-arm-kernel@lists.infradead.org
 Cc: kevin@allwinnertech.com, sunny@allwinnertech.com, shuge@allwinnertech.com,
@@ -15,9 +15,9 @@ Cc: kevin@allwinnertech.com, sunny@allwinnertech.com, shuge@allwinnertech.com,
         Florian Fainelly <florian@openwrt.org>,
         Maxime Ripard <maxime.ripard@free-electrons.com>,
         Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
-Subject: [PATCH 6/6] ARM: sunxi: Add EMAC Controller to Hackberry dt
-Date: Mon, 29 Apr 2013 21:36:58 +0200
-Message-Id: <1367264218-15235-7-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH 3/6] ARM: sun4i: Add muxing options for the ethernet controller
+Date: Mon, 29 Apr 2013 21:36:55 +0200
+Message-Id: <1367264218-15235-4-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1367264218-15235-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1367264218-15235-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -25,70 +25,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Hackberry has a PHY that needs to be powered up through a GPIO, so
-we need to use a fixed regulator here.
+The EMAC only has one pinset available for muxing, so hopefully, we
+cover all cases.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- arch/arm/boot/dts/sun4i-a10-hackberry.dts | 41 +++++++++++++++++++++++++++++++
- 1 file changed, 41 insertions(+)
+ arch/arm/boot/dts/sun4i-a10.dtsi | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
-diff --git a/arch/arm/boot/dts/sun4i-a10-hackberry.dts b/arch/arm/boot/dts/sun4i-a10-hackberry.dts
-index b9efac1..3514b37 100644
---- a/arch/arm/boot/dts/sun4i-a10-hackberry.dts
-+++ b/arch/arm/boot/dts/sun4i-a10-hackberry.dts
-@@ -23,10 +23,51 @@
- 	};
- 
- 	soc@01c20000 {
-+		emac: ethernet@01c0b000 {
-+			pinctrl-names = "default";
-+			pinctrl-0 = <&emac_pins_a>;
-+			phy = <&phy0>;
-+			status = "okay";
-+		};
+diff --git a/arch/arm/boot/dts/sun4i-a10.dtsi b/arch/arm/boot/dts/sun4i-a10.dtsi
+index e7ef619..ff1f41f 100644
+--- a/arch/arm/boot/dts/sun4i-a10.dtsi
++++ b/arch/arm/boot/dts/sun4i-a10.dtsi
+@@ -199,6 +199,17 @@
+ 				allwinner,drive = <0>;
+ 				allwinner,pull = <0>;
+ 			};
 +
-+		mdio@01c0b080 {
-+			phy-supply = <&reg_emac_3v3>;
-+			status = "okay";
-+
-+			phy0: ethernet-phy@0 {
-+				reg = <0>;
-+			};
-+		};
-+
-+		pio: pinctrl@01c20800 {
-+			pinctrl-names = "default";
-+			pinctrl-0 = <&hackberry_hogs>;
-+
-+			hackberry_hogs: hogs@0 {
-+				allwinner,pins = "PH19";
-+				allwinner,function = "gpio_out";
++			emac_pins_a: emac0@0 {
++				allwinner,pins = "PA0", "PA1", "PA2",
++						"PA3", "PA4", "PA5", "PA6",
++						"PA7", "PA8", "PA9", "PA10",
++						"PA11", "PA12", "PA13", "PA14",
++						"PA15", "PA16";
++				allwinner,function = "emac";
 +				allwinner,drive = <0>;
 +				allwinner,pull = <0>;
 +			};
-+		};
-+
- 		uart0: serial@01c28000 {
- 			pinctrl-names = "default";
- 			pinctrl-0 = <&uart0_pins_a>;
- 			status = "okay";
  		};
- 	};
-+
-+	regulators {
-+		compatible = "simple-bus";
-+
-+		reg_emac_3v3: emac-3v3 {
-+			compatible = "regulator-fixed";
-+			regulator-name = "emac-3v3";
-+			regulator-min-microvolt = <3300000>;
-+			regulator-max-microvolt = <3300000>;
-+			enable-active-high;
-+			gpio = <&pio 7 19 0>;
-+		};
-+	};
- };
+ 
+ 		timer@01c20c00 {
 -- 
 1.8.1.2
 
