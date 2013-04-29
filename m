@@ -1,103 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757219Ab3D2JWl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 05:22:41 -0400
-Received: from smtp.nue.novell.com ([195.135.221.5]:45939 "EHLO
-	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757185Ab3D2JWj (ORCPT
+	id S1757228Ab3D2JZM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 05:25:12 -0400
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:54682 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752471Ab3D2JZJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 05:22:39 -0400
-Subject: Re: [PATCH 2/2] acer-wmi: add Acer Aspire 5750G to video vendor
- list but keep acpi video driver
-From: joeyli <jlee@suse.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: mjg@redhat.com, rjw@sisk.pl, platform-driver-x86@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Carlos Corbacho <carlos@strangeworlds.co.uk>,
-        Corentin Chary <corentincj@iksaif.net>, Aaron Lu <aaron.lu@intel.com>,
-        Thomas Renninger <trenn@suse.de>
-In-Reply-To: <20130423040413.GA2435@core.coreip.homeip.net>
-References: <1366634355-26482-1-git-send-email-jlee@suse.com>
-	 <20130423040413.GA2435@core.coreip.homeip.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 29 Apr 2013 17:21:10 +0800
-Message-ID: <1367227270.22858.44.camel@linux-s257.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	Mon, 29 Apr 2013 05:25:09 -0400
+MIME-Version: 1.0
+Date: Mon, 29 Apr 2013 11:25:07 +0200
+Message-ID: <CA+xJJ1-2zHMjV3AFiprRjChEff=Bynj4uK_1wL6vKVR=H-T8Bg@mail.gmail.com>
+Subject: lttng and full nohz
+From: Mats Liljegren <liljegren.mats2@gmail.com>
+To: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry, 
+I've been investigating why lttng destroys full nohz mode, and the
+root cause is that lttng uses timers for flushing trace buffers. So
+I'm planning on moving the timers to the ticking CPU, so that any CPU
+using full nohz mode can continue to do so even though they might have
+tracepoints.
 
-Thanks for your review and suggestion!
+I can see that kernel/sched/core.c has the function
+get_nohz_timer_target() which tries to find an idle CPU to allocate
+for a timer that has not specified a CPU to be pinned to.
 
-於 一，2013-04-22 於 21:04 -0700，Dmitry Torokhov 提到：
-> On Mon, Apr 22, 2013 at 08:39:14PM +0800, Chun-Yi Lee wrote:
-> > From: Lee, Chun-Yi <jlee@suse.com>
-> > 
-> > After Andrzej's testing, we found the acpi backlight methods broken on Acer
-> > Aspire 5750G but the i915 backlight control works when we set to vendor mode.
-> > And, we still want to keep the acpi/video driver for transfer acpi event to key
-> > event but not unregister whole acpi/video driver.
-> > 
-> > This patch introduced a new capability flag is ACER_CAP_KEEP_VIDEO_KEY, it
-> > indicates the machine works fine with acpi/video driver for key event but want
-> > to unregister the backlight interface of acpi/video.
-> > 
-> > Reference: bko#35622
-> >         https://bugzilla.kernel.org/show_bug.cgi?id=35622
-> > 
-> > Tested-by: Andrzej Krentosz <endrjux@gmail.com>
-> > Cc: Carlos Corbacho <carlos@strangeworlds.co.uk>
-> > Cc: Matthew Garrett <mjg@redhat.com>
-> > Cc: Dmitry Torokhov <dtor@mail.ru>
-> > Cc: Corentin Chary <corentincj@iksaif.net>
-> > Cc: Rafael J. Wysocki <rjw@sisk.pl>
-> > Cc: Aaron Lu <aaron.lu@intel.com>
-> > Cc: Thomas Renninger <trenn@suse.de>
-> > Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
-> > ---
-> >  drivers/platform/x86/acer-wmi.c |   20 ++++++++++++++++++++
-> >  1 files changed, 20 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/drivers/platform/x86/acer-wmi.c b/drivers/platform/x86/acer-wmi.c
-> > index c9076bd..2a02409 100644
-> > --- a/drivers/platform/x86/acer-wmi.c
-> > +++ b/drivers/platform/x86/acer-wmi.c
-> > @@ -207,6 +207,7 @@ struct hotkey_function_type_aa {
-> >  #define ACER_CAP_BRIGHTNESS		(1<<3)
-> >  #define ACER_CAP_THREEG			(1<<4)
-> >  #define ACER_CAP_ACCEL			(1<<5)
-> > +#define ACER_CAP_KEEP_VIDEO_KEY		(1<<6)
-> >  #define ACER_CAP_ANY			(0xFFFFFFFF)
-> >  
-> >  /*
-> > @@ -539,6 +540,15 @@ static int video_set_backlight_video_vendor(const struct dmi_system_id *d)
-> >  	return 0;
-> >  }
-> >  
-> > +static int video_set_backlight_video_vendor_keep_acpi_video(
-> > +		const struct dmi_system_id *d)
-> > +{
-> > +	video_set_backlight_video_vendor(d);
-> > +	interface->capability |= ACER_CAP_KEEP_VIDEO_KEY;
-> > +	pr_info("Keep acpi video driver for emit keycode against backlight change\n");
-> 
-> Huh?
-> 
-> "Keeping acpi video driver active to emit backlight brightness change
-> key events"?
-> 
-> Thanks.
-> 
+My question here is: For full nohz mode, should this still be "only"
+an idle CPU, or should it be translated to a CPU not running in full
+nohz mode? I'd think this could make it a lot easier to allow
+applications to make full use of full nohz.
 
-Yes, this statement is more fluent, I will put to v2 patch.
-
-
-Thanks a lot!
-Joey Lee
-
-
-
+/Mats
