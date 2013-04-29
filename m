@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759961Ab3D2TDa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 15:03:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60979 "EHLO
+	id S1760171Ab3D2TIu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 15:08:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32785 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759921Ab3D2TDY (ORCPT
+	with ESMTP id S1759956Ab3D2TDa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 15:03:24 -0400
+	Mon, 29 Apr 2013 15:03:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Balakumaran Kannan <Balakumaran.Kannan@ap.sony.com>,
-        Maruthi Thotad <Maruthi.Thotad@ap.sony.com>,
+        Dmitry Popov <dp@highloadlab.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 05/30] net IPv6 : Fix broken IPv6 routing table after loopback down-up
-Date: Mon, 29 Apr 2013 12:02:29 -0700
-Message-Id: <20130429184355.892164040@linuxfoundation.org>
+Subject: [ 12/30] tcp: incoming connections might use wrong route under synflood
+Date: Mon, 29 Apr 2013 12:02:36 -0700
+Message-Id: <20130429184356.687306455@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130429184355.299556377@linuxfoundation.org>
 References: <20130429184355.299556377@linuxfoundation.org>
@@ -29,128 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Balakumaran Kannan <kumaran.4353@gmail.com>
+From: Dmitry Popov <dp@highloadlab.com>
 
-[ Upstream commit 25fb6ca4ed9cad72f14f61629b68dc03c0d9713f ]
+[ Upstream commit d66954a066158781ccf9c13c91d0316970fe57b6 ]
 
-IPv6 Routing table becomes broken once we do ifdown, ifup of the loopback(lo)
-interface. After down-up, routes of other interface's IPv6 addresses through
-'lo' are lost.
+There is a bug in cookie_v4_check (net/ipv4/syncookies.c):
+	flowi4_init_output(&fl4, 0, sk->sk_mark, RT_CONN_FLAGS(sk),
+			   RT_SCOPE_UNIVERSE, IPPROTO_TCP,
+			   inet_sk_flowi_flags(sk),
+			   (opt && opt->srr) ? opt->faddr : ireq->rmt_addr,
+			   ireq->loc_addr, th->source, th->dest);
 
-IPv6 addresses assigned to all interfaces are routed through 'lo' for internal
-communication. Once 'lo' is down, those routing entries are removed from routing
-table. But those removed entries are not being re-created properly when 'lo' is
-brought up. So IPv6 addresses of other interfaces becomes unreachable from the
-same machine. Also this breaks communication with other machines because of
-NDISC packet processing failure.
+Here we do not respect sk->sk_bound_dev_if, therefore wrong dst_entry may be
+taken. This dst_entry is used by new socket (get_cookie_sock ->
+tcp_v4_syn_recv_sock), so its packets may take the wrong path.
 
-This patch fixes this issue by reading all interface's IPv6 addresses and adding
-them to IPv6 routing table while bringing up 'lo'.
-
-==Testing==
-Before applying the patch:
-$ route -A inet6
-Kernel IPv6 routing table
-Destination                    Next Hop                   Flag Met Ref Use If
-2000::20/128                   ::                         U    256 0     0 eth0
-fe80::/64                      ::                         U    256 0     0 eth0
-::/0                           ::                         !n   -1  1     1 lo
-::1/128                        ::                         Un   0   1     0 lo
-2000::20/128                   ::                         Un   0   1     0 lo
-fe80::xxxx:xxxx:xxxx:xxxx/128  ::                         Un   0   1     0 lo
-ff00::/8                       ::                         U    256 0     0 eth0
-::/0                           ::                         !n   -1  1     1 lo
-$ sudo ifdown lo
-$ sudo ifup lo
-$ route -A inet6
-Kernel IPv6 routing table
-Destination                    Next Hop                   Flag Met Ref Use If
-2000::20/128                   ::                         U    256 0     0 eth0
-fe80::/64                      ::                         U    256 0     0 eth0
-::/0                           ::                         !n   -1  1     1 lo
-::1/128                        ::                         Un   0   1     0 lo
-ff00::/8                       ::                         U    256 0     0 eth0
-::/0                           ::                         !n   -1  1     1 lo
-$
-
-After applying the patch:
-$ route -A inet6
-Kernel IPv6 routing
-table
-Destination                    Next Hop                   Flag Met Ref Use If
-2000::20/128                   ::                         U    256 0     0 eth0
-fe80::/64                      ::                         U    256 0     0 eth0
-::/0                           ::                         !n   -1  1     1 lo
-::1/128                        ::                         Un   0   1     0 lo
-2000::20/128                   ::                         Un   0   1     0 lo
-fe80::xxxx:xxxx:xxxx:xxxx/128  ::                         Un   0   1     0 lo
-ff00::/8                       ::                         U    256 0     0 eth0
-::/0                           ::                         !n   -1  1     1 lo
-$ sudo ifdown lo
-$ sudo ifup lo
-$ route -A inet6
-Kernel IPv6 routing table
-Destination                    Next Hop                   Flag Met Ref Use If
-2000::20/128                   ::                         U    256 0     0 eth0
-fe80::/64                      ::                         U    256 0     0 eth0
-::/0                           ::                         !n   -1  1     1 lo
-::1/128                        ::                         Un   0   1     0 lo
-2000::20/128                   ::                         Un   0   1     0 lo
-fe80::xxxx:xxxx:xxxx:xxxx/128  ::                         Un   0   1     0 lo
-ff00::/8                       ::                         U    256 0     0 eth0
-::/0                           ::                         !n   -1  1     1 lo
-$
-
-Signed-off-by: Balakumaran Kannan <Balakumaran.Kannan@ap.sony.com>
-Signed-off-by: Maruthi Thotad <Maruthi.Thotad@ap.sony.com>
+Signed-off-by: Dmitry Popov <dp@highloadlab.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv6/addrconf.c |   27 +++++++++++++++++++++++++++
- 1 file changed, 27 insertions(+)
+ net/ipv4/syncookies.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/ipv6/addrconf.c
-+++ b/net/ipv6/addrconf.c
-@@ -2327,6 +2327,9 @@ static void sit_add_v4_addrs(struct inet
- static void init_loopback(struct net_device *dev)
- {
- 	struct inet6_dev  *idev;
-+	struct net_device *sp_dev;
-+	struct inet6_ifaddr *sp_ifa;
-+	struct rt6_info *sp_rt;
- 
- 	/* ::1 */
- 
-@@ -2338,6 +2341,30 @@ static void init_loopback(struct net_dev
- 	}
- 
- 	add_addr(idev, &in6addr_loopback, 128, IFA_HOST);
-+
-+	/* Add routes to other interface's IPv6 addresses */
-+	for_each_netdev(dev_net(dev), sp_dev) {
-+		if (!strcmp(sp_dev->name, dev->name))
-+			continue;
-+
-+		idev = __in6_dev_get(sp_dev);
-+		if (!idev)
-+			continue;
-+
-+		read_lock_bh(&idev->lock);
-+		list_for_each_entry(sp_ifa, &idev->addr_list, if_list) {
-+
-+			if (sp_ifa->flags & (IFA_F_DADFAILED | IFA_F_TENTATIVE))
-+				continue;
-+
-+			sp_rt = addrconf_dst_alloc(idev, &sp_ifa->addr, 0);
-+
-+			/* Failure cases are ignored */
-+			if (!IS_ERR(sp_rt))
-+				ip6_ins_rt(sp_rt);
-+		}
-+		read_unlock_bh(&idev->lock);
-+	}
- }
- 
- static void addrconf_add_linklocal(struct inet6_dev *idev, const struct in6_addr *addr)
+--- a/net/ipv4/syncookies.c
++++ b/net/ipv4/syncookies.c
+@@ -345,8 +345,8 @@ struct sock *cookie_v4_check(struct sock
+ 	 * hasn't changed since we received the original syn, but I see
+ 	 * no easy way to do this.
+ 	 */
+-	flowi4_init_output(&fl4, 0, sk->sk_mark, RT_CONN_FLAGS(sk),
+-			   RT_SCOPE_UNIVERSE, IPPROTO_TCP,
++	flowi4_init_output(&fl4, sk->sk_bound_dev_if, sk->sk_mark,
++			   RT_CONN_FLAGS(sk), RT_SCOPE_UNIVERSE, IPPROTO_TCP,
+ 			   inet_sk_flowi_flags(sk),
+ 			   (opt && opt->srr) ? opt->faddr : ireq->rmt_addr,
+ 			   ireq->loc_addr, th->source, th->dest);
 
 
