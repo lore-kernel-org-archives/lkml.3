@@ -1,175 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933166Ab3D2Vxg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 17:53:36 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39355 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933150Ab3D2Vxe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 17:53:34 -0400
-Date: Mon, 29 Apr 2013 22:53:27 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Rik van Riel <riel@redhat.com>
-Cc: Alexey Lyahkov <alexey.lyashkov@gmail.com>,
-        Andrew Perepechko <anserper@ya.ru>, Robin Dong <sanbai@taobao.com>,
-        Theodore Tso <tytso@mit.edu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Bernd Schubert <bernd.schubert@fastmail.fm>,
-        David Howells <dhowells@redhat.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux-ext4 <linux-ext4@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>
-Subject: Re: [PATCH 2/3] mm: Ensure that mark_page_accessed moves pages to
- the active list
-Message-ID: <20130429215327.GA11497@suse.de>
-References: <1367253119-6461-1-git-send-email-mgorman@suse.de>
- <1367253119-6461-3-git-send-email-mgorman@suse.de>
- <517EA9E3.6050407@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <517EA9E3.6050407@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933182Ab3D2Vxz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 17:53:55 -0400
+Received: from mail-vb0-f74.google.com ([209.85.212.74]:35305 "EHLO
+	mail-vb0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933170Ab3D2Vxy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Apr 2013 17:53:54 -0400
+From: Colin Cross <ccross@android.com>
+To: linux-pm@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        arve@android.com, Colin Cross <ccross@android.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>, devel@driverdev.osuosl.org
+Subject: [PATCH 04/10] binder: use freezable blocking calls
+Date: Mon, 29 Apr 2013 14:45:40 -0700
+Message-Id: <1367271946-7239-5-git-send-email-ccross@android.com>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <1367271946-7239-1-git-send-email-ccross@android.com>
+References: <1367271946-7239-1-git-send-email-ccross@android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 29, 2013 at 01:12:03PM -0400, Rik van Riel wrote:
-> On 04/29/2013 12:31 PM, Mel Gorman wrote:
-> 
-> >A PageActive page is now added to the inactivate list.
-> >
-> >While this looks strange, I think it is sufficiently harmless that additional
-> >barriers to address the case is not justified.  Unfortunately, while I never
-> >witnessed it myself, these parallel updates potentially trigger defensive
-> >DEBUG_VM checks on PageActive and hence they are removed by this patch.
-> 
-> Could this not cause issues with __page_cache_release, called from
-> munmap, exit, truncate, etc.?
-> 
+Avoid waking up every thread sleeping in a binder call during
+suspend and resume by calling a freezable blocking call.
 
-Possibly if the page was activated before it was freed to the page allocator.
-
-> Could the eventual skewing of active vs inactive numbers break page
-> reclaim heuristics?
-> 
-
-Yes, good point and it would be very difficult to detect that it happened.
-
-> I wonder if we would need to move to a scheme where the PG_active bit
-> is always the authoritive one, and we never pass an overriding "lru"
-> parameter to __pagevec_lru_add.
-> 
-
-I don't think that necessarily gets away from the various differnet races.
-
-> Would memory ordering between SetPageLRU and testing for PageLRU be
-> enough to then prevent the statistics from going off?
-> 
-
-I do not think all the holes in every cases can be closed. There are a
-lot of races and bugs would creep in eventually. As the common case of
-interest is when a page has recently been added to the local CPUs pagevec
-the following should be sufficient.
-
----8<---
-mm: Activate !PageLRU pages on mark_page_accessed if page is on local pagevec
-
-If a page is on a pagevec then it is !PageLRU and mark_page_accessed()
-may fail to move a page to the active list as expected. Now that the LRU
-is selected at LRU drain time, mark pages PageActive if they are on the
-local pagevec so it gets moved to the correct list at LRU drain time.
-Using a debugging patch it was found that for a simple git checkout based
-workload that pages were never added to the active file list in practice
-but with this patch applied they are.
-
-				before   after
-LRU Add Active File                  0      750583
-LRU Add Active Anon            2640587     2702818
-LRU Add Inactive File          8833662     8068353
-LRU Add Inactive Anon              207         200
-
-Note that only pages on the local pagevec are considered on purpose. A
-!PageLRU page could be in the process of being released, reclaimed, migrated
-or on a remote pagevec that is currently being drained. Marking it PageActive
-is vunerable to races where PageLRU and Active bits are checked at the
-wrong time. Page reclaim will trigger VM_BUG_ONs but depending on when the
-race hits, it could also free a PageActive page to the page allocator and
-trigger a bad_page warning. Similarly a potential race exists between a
-per-cpu drain on a pagevec list and an activation on a remote CPU.
-
-				lru_add_drain_cpu
-				__pagevec_lru_add
-				  lru = page_lru(page);
-mark_page_accessed
-  if (PageLRU(page))
-    activate_page
-  else
-    SetPageActive
-				  SetPageLRU(page);
-				  add_page_to_lru_list(page, lruvec, lru);
-
-In this case a PageActive page is added to the inactivate list and later the
-inactive/active stats will get skewed. While the PageActive checks in vmscan
-could be removed and potentially dealt with, a skew in the statistics would
-be very difficult to detect. Hence this patch deals just with the common case
-where a page being marked accessed has just been added to the local pagevec.
-
-Signed-off-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Colin Cross <ccross@android.com>
 ---
- mm/swap.c | 34 ++++++++++++++++++++++++++++++++--
- 1 file changed, 32 insertions(+), 2 deletions(-)
+ drivers/staging/android/binder.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/mm/swap.c b/mm/swap.c
-index 80fbc37..96565eb 100644
---- a/mm/swap.c
-+++ b/mm/swap.c
-@@ -427,6 +427,27 @@ void activate_page(struct page *page)
- }
- #endif
+diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
+index 24456a0..af8fba4 100644
+--- a/drivers/staging/android/binder.c
++++ b/drivers/staging/android/binder.c
+@@ -20,6 +20,7 @@
+ #include <asm/cacheflush.h>
+ #include <linux/fdtable.h>
+ #include <linux/file.h>
++#include <linux/freezer.h>
+ #include <linux/fs.h>
+ #include <linux/list.h>
+ #include <linux/miscdevice.h>
+@@ -2140,13 +2141,13 @@ retry:
+ 			if (!binder_has_proc_work(proc, thread))
+ 				ret = -EAGAIN;
+ 		} else
+-			ret = wait_event_interruptible_exclusive(proc->wait, binder_has_proc_work(proc, thread));
++			ret = wait_event_freezable_exclusive(proc->wait, binder_has_proc_work(proc, thread));
+ 	} else {
+ 		if (non_block) {
+ 			if (!binder_has_thread_work(thread))
+ 				ret = -EAGAIN;
+ 		} else
+-			ret = wait_event_interruptible(thread->wait, binder_has_thread_work(thread));
++			ret = wait_event_freezable(thread->wait, binder_has_thread_work(thread));
+ 	}
  
-+static void __lru_cache_activate_page(struct page *page)
-+{
-+	struct pagevec *pvec = &get_cpu_var(lru_add_pvec);
-+	int i;
-+
-+	/*
-+	 * Search backwards on the optimistic assumption that the page being
-+	 * activated has just been added to this pagevec
-+	 */
-+	for (i = pagevec_count(pvec) - 1; i >= 0; i--) {
-+		struct page *pagevec_page = pvec->pages[i];
-+
-+		if (pagevec_page == page) {
-+			SetPageActive(page);
-+			break;
-+		}
-+	}
-+
-+	put_cpu_var(lru_add_pvec);
-+}
-+
- /*
-  * Mark a page as having seen activity.
-  *
-@@ -437,8 +458,17 @@ void activate_page(struct page *page)
- void mark_page_accessed(struct page *page)
- {
- 	if (!PageActive(page) && !PageUnevictable(page) &&
--			PageReferenced(page) && PageLRU(page)) {
--		activate_page(page);
-+			PageReferenced(page)) {
-+
-+		/*
-+		 * If the page is on the LRU, promote immediately. Otherwise,
-+		 * assume the page is on a pagevec, mark it active and it'll
-+		 * be moved to the active LRU on the next drain
-+		 */
-+		if (PageLRU(page))
-+			activate_page(page);
-+		else
-+			__lru_cache_activate_page(page);
- 		ClearPageReferenced(page);
- 	} else if (!PageReferenced(page)) {
- 		SetPageReferenced(page);
+ 	binder_lock(__func__);
+-- 
+1.8.2.1
+
