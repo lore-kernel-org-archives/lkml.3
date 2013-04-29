@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760698Ab3D2TfE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 15:35:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60745 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759524Ab3D2TCu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1759527Ab3D2TCu (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 29 Apr 2013 15:02:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60727 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759473Ab3D2TCs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Apr 2013 15:02:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Willy Tarreau <w@1wt.eu>, Dmitri Epshtein <dima@marvell.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
+        Jim Foraker <foraker1@llnl.gov>, Thomas Graf <tgraf@suug.ch>,
+        Eric Dumazet <edumazet@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 34/42] net: mvneta: fix improper tx queue usage in mvneta_tx()
-Date: Mon, 29 Apr 2013 12:02:16 -0700
-Message-Id: <20130429184756.234610070@linuxfoundation.org>
+Subject: [ 31/42] tcp: Reallocate headroom if it would overflow csum_start
+Date: Mon, 29 Apr 2013 12:02:13 -0700
+Message-Id: <20130429184755.918426100@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130429184752.435249613@linuxfoundation.org>
 References: <20130429184752.435249613@linuxfoundation.org>
@@ -31,80 +29,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Willy Tarreau <w@1wt.eu>
+From: Thomas Graf <tgraf@suug.ch>
 
-[ Upstream commit ee40a116ebf139f900c3d2e6febb8388738e96d0 ]
+[ Upstream commit 50bceae9bd3569d56744882f3012734d48a1d413 ]
 
-mvneta_tx() was using a static tx queue number causing crashes as
-soon as a little bit of traffic was sent via the interface, because
-it is normally expected that the same queue should be used as in
-dev_queue_xmit().
+If a TCP retransmission gets partially ACKed and collapsed multiple
+times it is possible for the headroom to grow beyond 64K which will
+overflow the 16bit skb->csum_start which is based on the start of
+the headroom. It has been observed rarely in the wild with IPoIB due
+to the 64K MTU.
 
-As suggested by Ben Hutchings, let's use skb_get_queue_mapping() to
-get the proper Tx queue number, and use alloc_etherdev_mqs() instead
-of alloc_etherdev_mq() to create the queues.
+Verify if the acking and collapsing resulted in a headroom exceeding
+what csum_start can cover and reallocate the headroom if so.
 
-Both my Mirabox and my OpenBlocks AX3 used to crash without this patch
-and don't anymore with it. The issue appeared in 3.8 but became more
-visible after the fix allowing GSO to be enabled.
+A big thank you to Jim Foraker <foraker1@llnl.gov> and the team at
+LLNL for helping out with the investigation and testing.
 
-Original work was done by Dmitri Epshtein and Thomas Petazzoni. I
-just adapted it to take care of Ben's comments.
-
-Signed-off-by: Willy Tarreau <w@1wt.eu>
-Cc: Dmitri Epshtein <dima@marvell.com>
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Cc: Ben Hutchings <bhutchings@solarflare.com>
-Tested-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Reported-by: Jim Foraker <foraker1@llnl.gov>
+Signed-off-by: Thomas Graf <tgraf@suug.ch>
+Acked-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/marvell/mvneta.c |    9 ++++-----
- 1 file changed, 4 insertions(+), 5 deletions(-)
+ net/ipv4/tcp_output.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/drivers/net/ethernet/marvell/mvneta.c
-+++ b/drivers/net/ethernet/marvell/mvneta.c
-@@ -375,7 +375,6 @@ static int rxq_number = 8;
- static int txq_number = 8;
+--- a/net/ipv4/tcp_output.c
++++ b/net/ipv4/tcp_output.c
+@@ -2388,8 +2388,12 @@ int __tcp_retransmit_skb(struct sock *sk
+ 	 */
+ 	TCP_SKB_CB(skb)->when = tcp_time_stamp;
  
- static int rxq_def;
--static int txq_def;
- 
- #define MVNETA_DRIVER_NAME "mvneta"
- #define MVNETA_DRIVER_VERSION "1.0"
-@@ -1476,7 +1475,8 @@ error:
- static int mvneta_tx(struct sk_buff *skb, struct net_device *dev)
- {
- 	struct mvneta_port *pp = netdev_priv(dev);
--	struct mvneta_tx_queue *txq = &pp->txqs[txq_def];
-+	u16 txq_id = skb_get_queue_mapping(skb);
-+	struct mvneta_tx_queue *txq = &pp->txqs[txq_id];
- 	struct mvneta_tx_desc *tx_desc;
- 	struct netdev_queue *nq;
- 	int frags = 0;
-@@ -1486,7 +1486,7 @@ static int mvneta_tx(struct sk_buff *skb
- 		goto out;
- 
- 	frags = skb_shinfo(skb)->nr_frags + 1;
--	nq    = netdev_get_tx_queue(dev, txq_def);
-+	nq    = netdev_get_tx_queue(dev, txq_id);
- 
- 	/* Get a descriptor for the first part of the packet */
- 	tx_desc = mvneta_txq_next_desc_get(txq);
-@@ -2690,7 +2690,7 @@ static int mvneta_probe(struct platform_
- 		return -EINVAL;
- 	}
- 
--	dev = alloc_etherdev_mq(sizeof(struct mvneta_port), 8);
-+	dev = alloc_etherdev_mqs(sizeof(struct mvneta_port), txq_number, rxq_number);
- 	if (!dev)
- 		return -ENOMEM;
- 
-@@ -2844,4 +2844,3 @@ module_param(rxq_number, int, S_IRUGO);
- module_param(txq_number, int, S_IRUGO);
- 
- module_param(rxq_def, int, S_IRUGO);
--module_param(txq_def, int, S_IRUGO);
+-	/* make sure skb->data is aligned on arches that require it */
+-	if (unlikely(NET_IP_ALIGN && ((unsigned long)skb->data & 3))) {
++	/* make sure skb->data is aligned on arches that require it
++	 * and check if ack-trimming & collapsing extended the headroom
++	 * beyond what csum_start can cover.
++	 */
++	if (unlikely((NET_IP_ALIGN && ((unsigned long)skb->data & 3)) ||
++		     skb_headroom(skb) >= 0xFFFF)) {
+ 		struct sk_buff *nskb = __pskb_copy(skb, MAX_TCP_HEADER,
+ 						   GFP_ATOMIC);
+ 		return nskb ? tcp_transmit_skb(sk, nskb, 0, GFP_ATOMIC) :
 
 
