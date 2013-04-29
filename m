@@ -1,111 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757893Ab3D2KHi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 06:07:38 -0400
-Received: from smtp.nue.novell.com ([195.135.221.5]:35797 "EHLO
-	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757502Ab3D2KHf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 06:07:35 -0400
-Subject: Re: [PATCH 1/2] acpi: video: add function to support unregister
- backlight
-From: joeyli <jlee@suse.com>
-To: Aaron Lu <aaron.lu@intel.com>
-Cc: mjg@redhat.com, rjw@sisk.pl, platform-driver-x86@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Carlos Corbacho <carlos@strangeworlds.co.uk>,
-        Dmitry Torokhov <dtor@mail.ru>, Corentin Chary <corentincj@iksaif.net>,
-        Thomas Renninger <trenn@suse.de>
-In-Reply-To: <517A0FA1.3040406@intel.com>
-References: <1366634355-26482-1-git-send-email-jlee@suse.com>
-	 <1366634355-26482-2-git-send-email-jlee@suse.com>
-	 <517A0FA1.3040406@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 29 Apr 2013 18:06:06 +0800
-Message-ID: <1367229966.22858.52.camel@linux-s257.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	id S1757921Ab3D2KIG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 06:08:06 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:39119 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757490Ab3D2KE0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Apr 2013 06:04:26 -0400
+From: Kishon Vijay Abraham I <kishon@ti.com>
+To: <grant.likely@linaro.org>, <tony@atomide.com>, <balbi@ti.com>,
+        <kishon@ti.com>, <arnd@arndb.de>, <swarren@nvidia.com>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-usb@vger.kernel.org>,
+        <sylvester.nawrocki@gmail.com>
+CC: <rob.herring@calxeda.com>, <rob@landley.net>, <b-cousson@ti.com>,
+        <linux@arm.linux.org.uk>, <gregkh@linuxfoundation.org>,
+        <benoit.cousson@linaro.org>, <mchehab@redhat.com>,
+        <akpm@linux-foundation.org>, <cesarb@cesarb.net>,
+        <davem@davemloft.net>, <rnayak@ti.com>, <shawn.guo@linaro.org>,
+        <santosh.shilimkar@ti.com>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-doc@vger.kernel.org>, <nsekhar@ti.com>
+Subject: [PATCH v6 5/9] ARM: OMAP: USB: Add phy binding information
+Date: Mon, 29 Apr 2013 15:33:28 +0530
+Message-ID: <1367229812-30574-6-git-send-email-kishon@ti.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1367229812-30574-1-git-send-email-kishon@ti.com>
+References: <1367229812-30574-1-git-send-email-kishon@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-於 五，2013-04-26 於 13:24 +0800，Aaron Lu 提到：
-> On 04/22/2013 08:39 PM, Chun-Yi Lee wrote:
-> > From: "Lee, Chun-Yi" <jlee@suse.com>
-> >
-> > There have situation we unregister whole acpi/video driver by downstream driver
-> > just want to remove backlight control interface of acpi/video. It caues we lost
-> > other functions of acpi/video, e.g. transfer acpi event to input event.
-> >
-> > So, this patch add a new function, find_video_unregister_backlight, it provide
-> > the interface let downstream driver can tell acpi/video to unregister backlight
-> > interface of all acpi video devices. Then we can keep functions of acpi/video
-> > but only remove backlight support.
-> >
-> > Reference: bko#35622
-> >          https://bugzilla.kernel.org/show_bug.cgi?id=35622
-> >
-> > Tested-by: Andrzej Krentosz <endrjux@gmail.com>
-> > Cc: Carlos Corbacho <carlos@strangeworlds.co.uk>
-> > Cc: Matthew Garrett <mjg@redhat.com>
-> > Cc: Dmitry Torokhov <dtor@mail.ru>
-> > Cc: Corentin Chary <corentincj@iksaif.net>
-> > Cc: Rafael J. Wysocki <rjw@sisk.pl>
-> > Cc: Aaron Lu <aaron.lu@intel.com>
-> > Cc: Thomas Renninger <trenn@suse.de>
-> > Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
-> > ---
-> >   drivers/acpi/video.c | 46 ++++++++++++++++++++++++++++++++++++++++++++++
-> >   include/acpi/video.h |  2 ++
-> >   2 files changed, 48 insertions(+)
-> >
-> > diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
-> > index 313f959..acd2e7a 100644
-> > --- a/drivers/acpi/video.c
-> > +++ b/drivers/acpi/video.c
-> > @@ -1793,6 +1793,52 @@ static int __init intel_opregion_present(void)
-> >   	return opregion;
-> >   }
-> >
-> > +static acpi_status
-> > +find_video_unregister_backlight(acpi_handle handle, u32 lvl, void *context,
-> > +				void **rv)
-> > +{
-> > +	struct acpi_device *acpi_dev;
-> > +	struct acpi_video_bus *video = NULL;
-> > +	struct acpi_video_device *dev, *next;
-> > +
-> > +	if (acpi_bus_get_device(handle, &acpi_dev))
-> > +		return AE_OK;
-> > +
-> > +	if (!acpi_match_device_ids(acpi_dev, video_device_ids)) {
-> > +		video = acpi_driver_data(acpi_dev);
-> > +		acpi_video_bus_stop_devices(video);
-> > +		mutex_lock(&video->device_list_lock);
-> > +		list_for_each_entry_safe(dev, next, &video->video_device_list,
-> > +					entry) {
-> > +			if (dev->backlight) {
-> > +				backlight_device_unregister(dev->backlight);
-> > +				dev->backlight = NULL;
-> > +				kfree(dev->brightness->levels);
-> > +				kfree(dev->brightness);
-> > +			}
-> 
-> The cooling_dev should also be unregistered I think.
-> 
-> Thanks,
-> Aaron
-> 
+In order for controllers to get PHY in case of non dt boot, the phy
+binding information (phy device name) should be added in the platform
+data of the controller.
 
-Yes, you are right!
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+---
+ arch/arm/mach-omap2/usb-musb.c |    6 +++++-
+ include/linux/usb/musb.h       |    3 +++
+ 2 files changed, 8 insertions(+), 1 deletion(-)
 
-Unregistering  backlight interface of video devices means the backlight
-control functions broken, so it can not used for throttling.
-
-I will unregister cooling_dev in v2 patch.
-
-
-Thanks a lot!
-Joey Lee
+diff --git a/arch/arm/mach-omap2/usb-musb.c b/arch/arm/mach-omap2/usb-musb.c
+index 3242a55..228288a 100644
+--- a/arch/arm/mach-omap2/usb-musb.c
++++ b/arch/arm/mach-omap2/usb-musb.c
+@@ -85,8 +85,12 @@ void __init usb_musb_init(struct omap_musb_board_data *musb_board_data)
+ 	musb_plat.mode = board_data->mode;
+ 	musb_plat.extvbus = board_data->extvbus;
+ 
+-	if (cpu_is_omap44xx())
++	if (cpu_is_omap44xx()) {
+ 		musb_plat.has_mailbox = true;
++		musb_plat.phy_dev_name = "omap-usb2.3.auto.0";
++	} else if (cpu_is_omap34xx()) {
++		musb_plat.phy_dev_name = "twl4030_usb.0";
++	}
+ 
+ 	if (soc_is_am35xx()) {
+ 		oh_name = "am35x_otg_hs";
+diff --git a/include/linux/usb/musb.h b/include/linux/usb/musb.h
+index 053c268..0b733a3 100644
+--- a/include/linux/usb/musb.h
++++ b/include/linux/usb/musb.h
+@@ -104,6 +104,9 @@ struct musb_hdrc_platform_data {
+ 	/* for clk_get() */
+ 	const char	*clock;
+ 
++	/* phy device name */
++	const char	*phy_dev_name;
++
+ 	/* (HOST or OTG) switch VBUS on/off */
+ 	int		(*set_vbus)(struct device *dev, int is_on);
+ 
+-- 
+1.7.10.4
 
