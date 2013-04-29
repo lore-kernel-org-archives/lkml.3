@@ -1,83 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757444Ab3D2Jzy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 05:55:54 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:51928 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751694Ab3D2Jzx (ORCPT
+	id S1757471Ab3D2J4K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 05:56:10 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:33976 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755242Ab3D2J4G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 05:55:53 -0400
-From: Jan Luebbe <jlu@pengutronix.de>
-To: Alessandro Zummo <a.zummo@towertech.it>
-Cc: rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org,
-        Lucas Stach <l.stach@pengutronix.de>, Jan Luebbe <jlu@pengutronix.de>
-Subject: [PATCH] rtc: rs5c372: add R2221T/L variant to the driver
-Date: Mon, 29 Apr 2013 11:55:28 +0200
-Message-Id: <1367229328-25564-1-git-send-email-jlu@pengutronix.de>
-X-Mailer: git-send-email 1.8.2.rc2
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: jlu@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Mon, 29 Apr 2013 05:56:06 -0400
+Message-ID: <517E43AE.6050203@console-pimps.org>
+Date: Mon, 29 Apr 2013 10:55:58 +0100
+From: Matt Fleming <matt@console-pimps.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
+CC: matt.fleming@intel.com, mjg59@srcf.ucam.org, linux-efi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "Lee, Chun-Yi" <jlee@suse.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH] x86, efi: initial the local variable of DataSize to zero
+References: <1366996767-8234-1-git-send-email-jlee@suse.com>
+In-Reply-To: <1366996767-8234-1-git-send-email-jlee@suse.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lucas Stach <l.stach@pengutronix.de>
+On 26/04/13 18:19, Lee, Chun-Yi wrote:
+> That will be better initial the value of DataSize to zero for the input of
+> GetVariable(), otherwise we will feed a random value. The debug log of input
+> DataSize like this:
+> 
+> ...
+> [  195.915612] EFI Variables Facility v0.08 2004-May-17
+> [  195.915819] efi: size: 18446744071581821342
+> [  195.915969] efi:  size': 18446744071581821342
+> [  195.916324] efi: size: 18446612150714306560
+> [  195.916632] efi:  size': 18446612150714306560
+> [  195.917159] efi: size: 18446612150714306560
+> [  195.917453] efi:  size': 18446612150714306560
+> ...
+> 
+> Found on Acer Aspire V3 BIOS, it will not return the size of data if we input a
+> non-zero DataSize.
+> 
+> Cc: Matthew Garrett <mjg@redhat.com>
+> Cc: Matt Fleming <matt.fleming@intel.com>
+> Cc: H. Peter Anvin <hpa@zytor.com>
+> Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
+> ---
+>  arch/x86/platform/efi/efi.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+> index e4a86a6..cb59732 100644
+> --- a/arch/x86/platform/efi/efi.c
+> +++ b/arch/x86/platform/efi/efi.c
+> @@ -204,7 +204,7 @@ static efi_status_t virt_efi_get_next_variable(unsigned long *name_size,
+>  	}
+>  
+>  	if (boot_used_size && !finished) {
+> -		unsigned long size;
+> +		unsigned long size = 0;
+>  		u32 attr;
+>  		efi_status_t s;
+>  		void *tmp;
+> 
 
-Register layout is the same, so just add the variant to the
-appropriate places.
+Looks good to me. Matthew?
 
-Signed-off-by: Lucas Stach <l.stach@pengutronix.de>
-Signed-off-by: Jan Luebbe <jlu@pengutronix.de>
----
- drivers/rtc/rtc-rs5c372.c | 5 +++++
- 1 file changed, 5 insertions(+)
-
-diff --git a/drivers/rtc/rtc-rs5c372.c b/drivers/rtc/rtc-rs5c372.c
-index 581739f..b533acf 100644
---- a/drivers/rtc/rtc-rs5c372.c
-+++ b/drivers/rtc/rtc-rs5c372.c
-@@ -68,6 +68,7 @@
- enum rtc_type {
- 	rtc_undef = 0,
- 	rtc_r2025sd,
-+	rtc_r2221tl,
- 	rtc_rs5c372a,
- 	rtc_rs5c372b,
- 	rtc_rv5c386,
-@@ -76,6 +77,7 @@ enum rtc_type {
- 
- static const struct i2c_device_id rs5c372_id[] = {
- 	{ "r2025sd", rtc_r2025sd },
-+	{ "r2221tl", rtc_r2221tl },
- 	{ "rs5c372a", rtc_rs5c372a },
- 	{ "rs5c372b", rtc_rs5c372b },
- 	{ "rv5c386", rtc_rv5c386 },
-@@ -529,6 +531,7 @@ static int rs5c_oscillator_setup(struct rs5c372 *rs5c372)
- 		rs5c372->time24 = 1;
- 		break;
- 	case rtc_r2025sd:
-+	case rtc_r2221tl:
- 	case rtc_rv5c386:
- 	case rtc_rv5c387a:
- 		buf[0] |= RV5C387_CTRL1_24;
-@@ -607,6 +610,7 @@ static int rs5c372_probe(struct i2c_client *client,
- 			rs5c372->time24 = 1;
- 		break;
- 	case rtc_r2025sd:
-+	case rtc_r2221tl:
- 	case rtc_rv5c386:
- 	case rtc_rv5c387a:
- 		if (rs5c372->regs[RS5C_REG_CTRL1] & RV5C387_CTRL1_24)
-@@ -638,6 +642,7 @@ static int rs5c372_probe(struct i2c_client *client,
- 	dev_info(&client->dev, "%s found, %s, driver version " DRV_VERSION "\n",
- 			({ char *s; switch (rs5c372->type) {
- 			case rtc_r2025sd:	s = "r2025sd"; break;
-+			case rtc_r2221tl:	s = "r2221tl"; break;
- 			case rtc_rs5c372a:	s = "rs5c372a"; break;
- 			case rtc_rs5c372b:	s = "rs5c372b"; break;
- 			case rtc_rv5c386:	s = "rv5c386"; break;
 -- 
-1.8.2.rc2
-
+Matt Fleming, Intel Open Source Technology Center
