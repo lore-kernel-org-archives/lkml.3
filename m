@@ -1,40 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758155Ab3D2QZK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 12:25:10 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:63724 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758084Ab3D2QZI (ORCPT
+	id S1758032Ab3D2Q0W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 12:26:22 -0400
+Received: from casper.infradead.org ([85.118.1.10]:57558 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752454Ab3D2Q0U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 12:25:08 -0400
+	Mon, 29 Apr 2013 12:26:20 -0400
+Message-ID: <517E9F12.1020309@infradead.org>
+Date: Mon, 29 Apr 2013 09:25:54 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <4ece0e3662e670af6982baa43c1d3fd0.squirrel@webmail.iitg.ernet.in>
-References: <OFCF117D0B.61A9CA12-ON48257B4F.002F2292-48257B4F.0030E459@zte.com.cn>
-	<CAFLxGvxqwpc5fbyGpy9o4qzEfn0i3eocs36TrkX9=SfZ_oT-5w@mail.gmail.com>
-	<4ece0e3662e670af6982baa43c1d3fd0.squirrel@webmail.iitg.ernet.in>
-Date: Mon, 29 Apr 2013 18:25:06 +0200
-Message-ID: <CAFLxGvxMR-fGf2GgK+G5E3LOxQA73XRwqL3vyyPBhmZWyPWHBw@mail.gmail.com>
-Subject: Re: Placing ext3 journal on mtd device
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: d.soumyajit@iitg.ernet.in
-Cc: wang.bo116@zte.com.cn, liu.dong3@zte.com.cn,
-        artem.bityutskiy@linux.intel.com,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, cui.yunfeng@zte.com.cn
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-kbuild@vger.kernel.org
+Subject: Re: linux-next: Tree for Apr 29 (kconfig)
+References: <20130429191754.8ee71fb814790bf345516ab8@canb.auug.org.au>
+In-Reply-To: <20130429191754.8ee71fb814790bf345516ab8@canb.auug.org.au>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 29, 2013 at 6:08 PM,  <d.soumyajit@iitg.ernet.in> wrote:
-> Hi,
->
-> In Ext3 performance can be improved by placing journal on SSD. I am able
-> to place ext3 journal on an external device. Can you please help me
-> placing ext3 journal on mtd device.
+On 04/29/13 02:17, Stephen Rothwell wrote:
+> Hi all,
+> 
+> Changes since 20130426:
+> 
 
-*very* bad idea.
 
---
-Thanks,
-//richard
+> make ARCH=x86_64 O=X64 xconfig &
+  GEN     /local/lnx/next/linux-next-20130429/X64/Makefile
+  HOSTCXX scripts/kconfig/qconf.o
+In file included from scripts/kconfig/expr.h:15:0,
+                 from scripts/kconfig/lkc.h:9,
+                 from scripts/kconfig/qconf.cc:46:
+scripts/kconfig/list.h: In function 'void list_del(list_head*)':
+scripts/kconfig/list.h:128:16: error: invalid conversion from 'void*' to 'list_head*' [-fpermissive]
+scripts/kconfig/list.h:129:16: error: invalid conversion from 'void*' to 'list_head*' [-fpermissive]
+make[2]: *** [scripts/kconfig/qconf.o] Error 1
+
+
+
+-- 
+~Randy
