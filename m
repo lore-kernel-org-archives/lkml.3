@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760010Ab3D2TKc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 15:10:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60994 "EHLO
+	id S932899Ab3D2TKx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 15:10:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60989 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759929Ab3D2TD0 (ORCPT
+	with ESMTP id S1757834Ab3D2TDZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 15:03:26 -0400
+	Mon, 29 Apr 2013 15:03:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Huang, Xiong" <xiong@qca.qualcomm.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Vasily Averin <vvs@openvz.org>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        Eric Dumazet <edumazet@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 07/30] atl1e: limit gso segment size to prevent generation of wrong ip length fields
-Date: Mon, 29 Apr 2013 12:02:31 -0700
-Message-Id: <20130429184356.147563489@linuxfoundation.org>
+Subject: [ 04/30] cbq: incorrect processing of high limits
+Date: Mon, 29 Apr 2013 12:02:28 -0700
+Message-Id: <20130429184355.789332528@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130429184355.299556377@linuxfoundation.org>
 References: <20130429184355.299556377@linuxfoundation.org>
@@ -30,43 +30,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+From: Vasily Averin <vvs@parallels.com>
 
-[ Upstream commit 31d1670e73f4911fe401273a8f576edc9c2b5fea ]
+[ Upstream commit f0f6ee1f70c4eaab9d52cf7d255df4bd89f8d1c2 ]
 
-The limit of 0x3c00 is taken from the windows driver.
+currently cbq works incorrectly for limits > 10% real link bandwidth,
+and practically does not work for limits > 50% real link bandwidth.
+Below are results of experiments taken on 1 Gbit link
 
-Suggested-by: Huang, Xiong <xiong@qca.qualcomm.com>
-Cc: Huang, Xiong <xiong@qca.qualcomm.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+ In shaper | Actual Result
+-----------+---------------
+  100M     | 108 Mbps
+  200M     | 244 Mbps
+  300M     | 412 Mbps
+  500M     | 893 Mbps
+
+This happen because of q->now changes incorrectly in cbq_dequeue():
+when it is called before real end of packet transmitting,
+L2T is greater than real time delay, q_now gets an extra boost
+but never compensate it.
+
+To fix this problem we prevent change of q->now until its synchronization
+with real time.
+
+Signed-off-by: Vasily Averin <vvs@openvz.org>
+Reviewed-by: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
+Acked-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/atl1e/atl1e.h      |    2 +-
- drivers/net/atl1e/atl1e_main.c |    1 +
- 2 files changed, 2 insertions(+), 1 deletion(-)
+ net/sched/sch_cbq.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/net/atl1e/atl1e.h
-+++ b/drivers/net/atl1e/atl1e.h
-@@ -186,7 +186,7 @@ struct atl1e_tpd_desc {
- /* how about 0x2000 */
- #define MAX_TX_BUF_LEN      0x2000
- #define MAX_TX_BUF_SHIFT    13
--/*#define MAX_TX_BUF_LEN  0x3000 */
-+#define MAX_TSO_SEG_SIZE    0x3c00
+--- a/net/sched/sch_cbq.c
++++ b/net/sched/sch_cbq.c
+@@ -963,8 +963,11 @@ cbq_dequeue(struct Qdisc *sch)
+ 		cbq_update(q);
+ 		if ((incr -= incr2) < 0)
+ 			incr = 0;
++		q->now += incr;
++	} else {
++		if (now > q->now)
++			q->now = now;
+ 	}
+-	q->now += incr;
+ 	q->now_rt = now;
  
- /* rrs word 1 bit 0:31 */
- #define RRS_RX_CSUM_MASK	0xFFFF
---- a/drivers/net/atl1e/atl1e_main.c
-+++ b/drivers/net/atl1e/atl1e_main.c
-@@ -2333,6 +2333,7 @@ static int __devinit atl1e_probe(struct
- 
- 	INIT_WORK(&adapter->reset_task, atl1e_reset_task);
- 	INIT_WORK(&adapter->link_chg_task, atl1e_link_chg_task);
-+	netif_set_gso_max_size(netdev, MAX_TSO_SEG_SIZE);
- 	err = register_netdev(netdev);
- 	if (err) {
- 		netdev_err(netdev, "register netdevice failed\n");
+ 	for (;;) {
 
 
