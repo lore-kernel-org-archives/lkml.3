@@ -1,54 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759289Ab3D2XLL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 19:11:11 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:43064 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759231Ab3D2XLI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 19:11:08 -0400
-Date: Mon, 29 Apr 2013 16:11:06 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Toshi Kani <toshi.kani@hp.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, isimatu.yasuaki@jp.fujitsu.com,
-        vasilis.liaskovitis@profitbricks.com
-Subject: Re: [PATCH 2/3 RFC] Driver core: Use generic offline/online for CPU
- offline/online
-Message-ID: <20130429231106.GC1333@kroah.com>
-References: <1576321.HU0tZ4cGWk@vostro.rjw.lan>
- <5608485.T3GFgtNYov@vostro.rjw.lan>
+	id S1759551Ab3D2XLU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 19:11:20 -0400
+Received: from ja.ssi.bg ([178.16.129.10]:54746 "EHLO ja.ssi.bg"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1759231Ab3D2XLR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Apr 2013 19:11:17 -0400
+Date: Tue, 30 Apr 2013 02:12:10 +0300 (EEST)
+From: Julian Anastasov <ja@ssi.bg>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Simon Horman <horms@verge.net.au>, Ingo Molnar <mingo@redhat.com>,
+        lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
+        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Dipankar Sarma <dipankar@in.ibm.com>, dhaval.giani@gmail.com
+Subject: Re: [PATCH 2/2] ipvs: Use cond_resched_rcu_lock() helper when dumping
+ connections
+In-Reply-To: <20130429213002.GP3780@linux.vnet.ibm.com>
+Message-ID: <alpine.LFD.2.00.1304300148260.1822@ja.ssi.bg>
+References: <1366940708-10180-1-git-send-email-horms@verge.net.au> <1366940708-10180-3-git-send-email-horms@verge.net.au> <20130426080313.GC8669@dyad.programming.kicks-ass.net> <20130426154547.GC3860@linux.vnet.ibm.com> <20130426171948.GA31467@dyad.programming.kicks-ass.net>
+ <20130426174815.GI3860@linux.vnet.ibm.com> <1367000815.8964.243.camel@edumazet-glaptop> <alpine.LFD.2.00.1304271342260.1633@ja.ssi.bg> <20130427162049.GB3780@linux.vnet.ibm.com> <alpine.LFD.2.00.1304292356220.1822@ja.ssi.bg>
+ <20130429213002.GP3780@linux.vnet.ibm.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5608485.T3GFgtNYov@vostro.rjw.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 29, 2013 at 02:28:02PM +0200, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> 
-> Rework the CPU hotplug code in drivers/base/cpu.c to use the
-> generic offline/online support introduced previously instead of
-> its own CPU-specific code.
-> 
-> For this purpose, modify cpu_subsys to provide offline and online
-> callbacks for CONFIG_HOTPLUG_CPU set and remove the code handling
-> the CPU-specific 'online' sysfs attribute.
-> 
-> This modification is not supposed to change the user-observable
-> behavior of the kernel (i.e. the 'online' attribute will be present
-> in exactly the same place in sysfs and should trigger exactly the
-> same actions as before).
-> 
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> ---
->  drivers/base/cpu.c |   62 ++++++++++++-----------------------------------------
->  1 file changed, 15 insertions(+), 47 deletions(-)
 
-Very nice, I like reductions like this :)
+	Hello,
 
-greg k-h
+On Mon, 29 Apr 2013, Paul E. McKenney wrote:
+
+> On Tue, Apr 30, 2013 at 12:08:18AM +0300, Julian Anastasov wrote:
+> > 
+> > 	Hello,
+> > 
+> > On Sat, 27 Apr 2013, Paul E. McKenney wrote:
+> > 
+> > > I would instead suggest something like:
+> > > 
+> > > #ifndef CONFIG_PREEMPT_RCU
+> > > 
+> > > But yes, in the CONFIG_PREEMPT_RCU case, the cond_resched() is not
+> > > needed.
+> > 
+> > 	Hm, is this correct? If I follow the ifdefs
+> > preempt_schedule is called when CONFIG_PREEMPT is
+> > defined _and_ CONFIG_PREEMPT_RCU is not defined.
+> > Your example for CONFIG_PREEMPT_RCU is the opposite to this?
+> 
+> Yep, I really did intend to say "#ifndef CONFIG_PREEMPT_RCU".
+> 
+> A couple of things to keep in mind:
+> 
+> 1.	Although rcu_read_unlock() does map to preempt_enable() for
+> 	CONFIG_TINY_RCU and CONFIG_TREE_RCU, the current Kconfig refuses
+> 	to allow either CONFIG_TINY_RCU or CONFIG_TREE_RCU to be selected
+> 	if CONFIG_PREEMPT=y.
+
+	I see, CONFIG_PREEMPT_RCU depends on CONFIG_PREEMPT
+
+> 2.	In the CONFIG_PREEMPT_RCU case, __rcu_read_unlock() will check
+> 	to see if the RCU core needs to be informed, so there is no
+> 	need to invoke cond_resched() in that case.
+
+	OK
+
+> 3.	If we drop your "|| defined(CONFIG_PREEMPT_RCU)", we get an
+> 	almost-synonym for my "#ifndef CONFIG_PREEMPT_RCU".  The "almost"
+> 	applies to older kernels due to the possibility of having a
+> 	CONFIG_TINY_PREEMPT_RCU kernel -- but this possibility is going
+> 	away soon.
+> 
+> Make sense?
+
+	Yes, thanks for the explanation!
+
+	Simon, so lets do it as suggested by Eric and Paul:
+
+	rcu_read_unlock();
+#ifndef CONFIG_PREEMPT_RCU
+	cond_resched();
+#endif
+	rcu_read_lock();
+
+Regards
+
+--
+Julian Anastasov <ja@ssi.bg>
