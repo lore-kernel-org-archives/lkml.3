@@ -1,128 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932905Ab3D2Vmb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 17:42:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15160 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932828Ab3D2Vm2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 17:42:28 -0400
-Message-ID: <517EE940.8010005@redhat.com>
-Date: Mon, 29 Apr 2013 17:42:24 -0400
-From: Don Dutile <ddutile@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.11) Gecko/20121116 Thunderbird/10.0.11
-MIME-Version: 1.0
-To: "Duran, Leo" <leo.duran@amd.com>
-CC: "Suthikulpanit, Suravee" <Suravee.Suthikulpanit@amd.com>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: RFC: IOMMU/AMD: Error Handling
-References: <517ECDDA.3000606@amd.com> <517ED3A9.2050508@redhat.com> <BA42942F2D0DED45AFB0A6216D1E951D44CBE1F9@sausexdag01.amd.com>
-In-Reply-To: <BA42942F2D0DED45AFB0A6216D1E951D44CBE1F9@sausexdag01.amd.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S932944Ab3D2Vmm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 17:42:42 -0400
+Received: from mail-qe0-f44.google.com ([209.85.128.44]:62517 "EHLO
+	mail-qe0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932908Ab3D2Vmh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Apr 2013 17:42:37 -0400
+From: Benjamin Poirier <bpoirier@suse.de>
+To: "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <edumazet@google.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Cong Wang <xiyou.wangcong@gmail.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v3 1/3] unix/dgram: peek beyond 0-sized skbs
+Date: Mon, 29 Apr 2013 17:42:12 -0400
+Message-Id: <1367271734-14379-1-git-send-email-bpoirier@suse.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <kll5si$544$1@ger.gmane.org>
+References: <kll5si$544$1@ger.gmane.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/29/2013 04:34 PM, Duran, Leo wrote:
-> I'm wondering if resetting the IOMMU at init-time (once) would clear any BIOS induced noise.
-> Leo
->
-Well, depends what you mean by 'reset'....
-(a) setting it up for OS use is effectively a reset, but doesn't quiesce a device
-      doing dma reads of a (bios-setup) queue.  then the noisy messages begin
-(b) disable the iommu, and then the dma just occurs... and bad for writes, potentially.
+"77c1090 net: fix infinite loop in __skb_recv_datagram()" (v3.8) introduced a
+regression:
+After that commit, recv can no longer peek beyond a 0-sized skb in the queue.
+__skb_recv_datagram() instead stops at the first skb with len == 0 and results
+in the system call failing with -EFAULT via skb_copy_datagram_iovec().
 
-Similar issue is being reported & worked for kdump, where device are still
-doing DMA while the system is trying to 'reset' to the kexec'd kernel, and
-take a crash dump.
+When peeking at an offset with 0-sized skb(s), each one of those is received
+only once, in sequence. The offset starts moving forward again after receiving
+datagrams with len > 0.
 
-Solution: stop devices from doing dma... but some you _want_ enabled throughout...
-           like keyboard & mouse via usb controller, so you get to pick os from
-           grub...  not so for kexec...
+Signed-off-by: Benjamin Poirier <bpoirier@suse.de>
 
-so, again, for isolation faults.... let the hw do its job -- isolate
-and throttle/silence the fault messages on a per-device, time-duration heuristic
-so the system can get through boot-up where enough OS is init'd (drivers started)
-to stop the temporary noise.
+---
 
->> -----Original Message-----
->> From: iommu-bounces@lists.linux-foundation.org [mailto:iommu-
->> bounces@lists.linux-foundation.org] On Behalf Of Don Dutile
->> Sent: Monday, April 29, 2013 3:10 PM
->> To: Suthikulpanit, Suravee
->> Cc: iommu@lists.linux-foundation.org; linux-kernel@vger.kernel.org
->> Subject: Re: RFC: IOMMU/AMD: Error Handling
->>
->> On 04/29/2013 03:45 PM, Suravee Suthikulanit wrote:
->>> Joerg,
->>>
->>> We are in the process of implementing AMD IOMMU error handling, and I
->> would like some comments from you and the community.
->>>
->>> Currently, the AMD IOMMU driver only reports events from the event log
->> in the dmesg, and does not try to handle them in case of errors. AMD
->> IOMMU errors can be categorized as device-specific errors and IOMMU
->> errors.
->>>
->>> 1. For IOMMU errors such as:
->>> - DEV_TAB_HADWARE_ERROR
->>> - PAGE_TAB_ERROR
->>> - COMMAND_HARDWARE_ERROR
->>> If the error is detected during IOMMU initialization, we could disable
->> IOMMU and proceed. If the error occurs after IOMMU is initialized, we won't
->> be able to recover from this, and might need to result in panic.
->>>
->>> 2. For device-specific errors such as:
->>> - ILLEGAL_DEV_TABLE_ENTRY
->>> - IO_PAGE_FAULT
->>> - INVALDE_DEVICE_REQUEST
->>> We think the AMD IOMMU driver should try to isolate the device. This
->> involves blocking device transactions at IOMMU DTE and tries to disable the
->> device (e.g. calling the remove(struct pci_dev *pdev) interface generally
->> provides by device drivers). This could prevents the device from continuing
->> to fail and to risk of system instability.
->>>
->> disabling the device is not an option.
->> We've seen mis-configured ACPI tables generate storms of invalide dte
->> messages after iommu setup but before they are cleared up when the OS
->> driver is started&  resets the device. The original storm is from bios-use of
->> IOMMU with a device.
->> I'd recommend creating a filter that prevents further logging from a device
->> for 5 mins at a time if a storm of DTE-related errors are seen.
->> by definition, the DMA is blocked from corrupting/changing memory, so
->> isolation has been established; keeping the failure log from consuming the
->> system is the needed fix.
->>
->>> 3. In case of posted memory write transaction, device driver might not be
->> aware that the transaction has failed and blocked at IOMMU. If there is no
->> HW IOMMU, I believe this is handled by PCI error handling code. If the
->> IOMMU hardware reporth such case, could this potentially leverage the
->> Linux IOMMU fault handling interface, iommu_set_fault_handler() and
->> report_iommu_fault(), to communicate to device driver or PCI driver?
->>>
->> Wondering if you could use AER-like callback mechanism so a driver can be
->> invoked when IOMMU error occurs, so the device driver can quiesce or reset
->> the device if it deems it transient.
->>
->>
->>> Any feedback or comments are appreciated.
->>>
->>> Thank you,
->>> Suravee
->>>
->>>
->>>
->>>
->>> _______________________________________________
->>> iommu mailing list
->>> iommu@lists.linux-foundation.org
->>> https://lists.linuxfoundation.org/mailman/listinfo/iommu
->>
->> _______________________________________________
->> iommu mailing list
->> iommu@lists.linux-foundation.org
->> https://lists.linuxfoundation.org/mailman/listinfo/iommu
->
->
+* v1 fix the case when SO_PEEK_OFF is used to set sk_peek_off beyond a
+  0-sized skb
+
+* v2 also fix the situation when sk_peek_off must advance to and beyond a
+  0-sized skb
+
+ net/core/datagram.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/net/core/datagram.c b/net/core/datagram.c
+index 368f9c3..99c4f52 100644
+--- a/net/core/datagram.c
++++ b/net/core/datagram.c
+@@ -187,7 +187,8 @@ struct sk_buff *__skb_recv_datagram(struct sock *sk, unsigned int flags,
+ 		skb_queue_walk(queue, skb) {
+ 			*peeked = skb->peeked;
+ 			if (flags & MSG_PEEK) {
+-				if (*off >= skb->len && skb->len) {
++				if (*off >= skb->len && (skb->len || *off ||
++							 skb->peeked)) {
+ 					*off -= skb->len;
+ 					continue;
+ 				}
+-- 
+1.7.10.4
 
