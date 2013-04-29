@@ -1,69 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759593Ab3D2VMc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 17:12:32 -0400
-Received: from ja.ssi.bg ([178.16.129.10]:53695 "EHLO ja.ssi.bg"
-	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1758227Ab3D2VMa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 17:12:30 -0400
-Date: Tue, 30 Apr 2013 00:08:18 +0300 (EEST)
-From: Julian Anastasov <ja@ssi.bg>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Simon Horman <horms@verge.net.au>, Ingo Molnar <mingo@redhat.com>,
-        lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
-        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Dipankar Sarma <dipankar@in.ibm.com>, dhaval.giani@gmail.com
-Subject: Re: [PATCH 2/2] ipvs: Use cond_resched_rcu_lock() helper when dumping
- connections
-In-Reply-To: <20130427162049.GB3780@linux.vnet.ibm.com>
-Message-ID: <alpine.LFD.2.00.1304292356220.1822@ja.ssi.bg>
-References: <1366940708-10180-1-git-send-email-horms@verge.net.au> <1366940708-10180-3-git-send-email-horms@verge.net.au> <20130426080313.GC8669@dyad.programming.kicks-ass.net> <20130426154547.GC3860@linux.vnet.ibm.com> <20130426171948.GA31467@dyad.programming.kicks-ass.net>
- <20130426174815.GI3860@linux.vnet.ibm.com> <1367000815.8964.243.camel@edumazet-glaptop> <alpine.LFD.2.00.1304271342260.1633@ja.ssi.bg> <20130427162049.GB3780@linux.vnet.ibm.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1759661Ab3D2VNJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 17:13:09 -0400
+Received: from mail-ve0-f171.google.com ([209.85.128.171]:36689 "EHLO
+	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759619Ab3D2VNH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Apr 2013 17:13:07 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <201304292250.47699.arnd@arndb.de>
+References: <20130429162115.GA6893@kroah.com>
+	<201304292154.15920.arnd@arndb.de>
+	<CA+55aFzefpRz2Y8oW9q0ArrR=XW0POBhy8NSNJ3DrCh9EowLqg@mail.gmail.com>
+	<201304292250.47699.arnd@arndb.de>
+Date: Mon, 29 Apr 2013 14:13:06 -0700
+X-Google-Sender-Auth: 6qEawJV0ckspX2RZ7e1bwXefN0Q
+Message-ID: <CA+55aFzxyB375fKXW37e2JBB57VwMw6UWccRwWSGn_zUa0J7SA@mail.gmail.com>
+Subject: Re: [GIT PATCH] char/misc patches for 3.10-rc1
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Greg KH <gregkh@linuxfoundation.org>, David Brown <davidb@codeaurora.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nicolas Pitre <nico@fluxnic.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Apr 29, 2013 at 1:50 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+>
+> Fair enough. Of course the distinction here is not based on what it
+> does, but how it gets used.
 
-	Hello,
+Even technically, a "bus" generally has a topology. It has addresses,
+and it has a protocol.
 
-On Sat, 27 Apr 2013, Paul E. McKenney wrote:
+i2c is a bus. PCI is a bus. And something like SSB is a bus. There is
+a protocol, there's device with identity on the bus, there's stuff
+going on.
 
-> On Sat, Apr 27, 2013 at 02:32:48PM +0300, Julian Anastasov wrote:
-> > 
-> > 	So, I assume, to help realtime kernels and rcu_barrier
-> > it is not a good idea to guard rcu_read_unlock with checks.
-> > I see that rcu_read_unlock will try to reschedule in the 
-> > !CONFIG_PREEMPT_RCU case (via preempt_enable), can we
-> > use ifdefs to avoid double TIF_NEED_RESCHED check?:
-> > 
-> > 	rcu_read_unlock();
-> > #if !defined(CONFIG_PREEMPT) || defined(CONFIG_PREEMPT_RCU)
-> 
-> I would instead suggest something like:
-> 
-> #ifndef CONFIG_PREEMPT_RCU
-> 
-> But yes, in the CONFIG_PREEMPT_RCU case, the cond_resched() is not
-> needed.
+The SBBI driver has neither addresses nor a protocol. It's literally
+just an embedded on-chip serial device as far as I can tell. There's
+nothing "bus" about it. It's just a hose.
 
-	Hm, is this correct? If I follow the ifdefs
-preempt_schedule is called when CONFIG_PREEMPT is
-defined _and_ CONFIG_PREEMPT_RCU is not defined.
-Your example for CONFIG_PREEMPT_RCU is the opposite to this?
+Yeah, yeah, at some point you can call "anything" a bus. I could call
+my little two-seater car a "school bus", because it has wheels, it's
+even yellow exactly like the school buses around here. And I can put a
+child in it. So my little yellow two-seater must be a bus too. It's
+all just how you define your words.
 
-> 							Thanx, Paul
-> 
-> > 	cond_resched();
-> > #endif
-> > 	rcu_read_lock();
+But it's a damn big reach. I didn't use to call the serial line
+connecting my computer to the modem a "bus". Even if it connected two
+devices.
 
-Regards
-
---
-Julian Anastasov <ja@ssi.bg>
+               Linus
