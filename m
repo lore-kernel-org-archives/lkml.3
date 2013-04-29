@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760136Ab3D2TGq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 15:06:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32838 "EHLO
+	id S932120Ab3D2THD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 15:07:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32832 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759995Ab3D2TDg (ORCPT
+	with ESMTP id S1759991Ab3D2TDf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 15:03:36 -0400
+	Mon, 29 Apr 2013 15:03:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        Steffen Klassert <steffen.klassert@secunet.com>,
+        Mathias Krause <minipli@googlemail.com>,
+        Sjur Braendeland <sjur.brandeland@stericsson.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 13/30] esp4: fix error return code in esp_output()
-Date: Mon, 29 Apr 2013 12:02:37 -0700
-Message-Id: <20130429184356.808245385@linuxfoundation.org>
+Subject: [ 21/30] caif: Fix missing msg_namelen update in caif_seqpkt_recvmsg()
+Date: Mon, 29 Apr 2013 12:02:45 -0700
+Message-Id: <20130429184357.679179748@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130429184355.299556377@linuxfoundation.org>
 References: <20130429184355.299556377@linuxfoundation.org>
@@ -29,43 +29,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+From: Mathias Krause <minipli@googlemail.com>
 
-[ Upstream commit 06848c10f720cbc20e3b784c0df24930b7304b93 ]
+[ Upstream commit 2d6fbfe733f35c6b355c216644e08e149c61b271 ]
 
-Fix to return a negative error code from the error handling
-case instead of 0, as returned elsewhere in this function.
+The current code does not fill the msg_name member in case it is set.
+It also does not set the msg_namelen member to 0 and therefore makes
+net/socket.c leak the local, uninitialized sockaddr_storage variable
+to userland -- 128 bytes of kernel stack memory.
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-Acked-by: Steffen Klassert <steffen.klassert@secunet.com>
+Fix that by simply setting msg_namelen to 0 as obviously nobody cared
+about caif_seqpkt_recvmsg() not filling the msg_name in case it was
+set.
+
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Cc: Sjur Braendeland <sjur.brandeland@stericsson.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/esp4.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ net/caif/caif_socket.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/net/ipv4/esp4.c
-+++ b/net/ipv4/esp4.c
-@@ -137,8 +137,6 @@ static int esp_output(struct xfrm_state
+--- a/net/caif/caif_socket.c
++++ b/net/caif/caif_socket.c
+@@ -320,6 +320,8 @@ static int caif_seqpkt_recvmsg(struct ki
+ 	if (m->msg_flags&MSG_OOB)
+ 		goto read_error;
  
- 	/* skb is pure payload to encrypt */
- 
--	err = -ENOMEM;
--
- 	esp = x->data;
- 	aead = esp->aead;
- 	alen = crypto_aead_authsize(aead);
-@@ -174,8 +172,10 @@ static int esp_output(struct xfrm_state
- 	}
- 
- 	tmp = esp_alloc_tmp(aead, nfrags + sglists, seqhilen);
--	if (!tmp)
-+	if (!tmp) {
-+		err = -ENOMEM;
- 		goto error;
-+	}
- 
- 	seqhi = esp_tmp_seqhi(tmp);
- 	iv = esp_tmp_iv(aead, tmp, seqhilen);
++	m->msg_namelen = 0;
++
+ 	skb = skb_recv_datagram(sk, flags, 0 , &ret);
+ 	if (!skb)
+ 		goto read_error;
 
 
