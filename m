@@ -1,51 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757264Ab3D2JbX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 05:31:23 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:63648 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751678Ab3D2JbW (ORCPT
+	id S1757293Ab3D2Jee (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 05:34:34 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:26146 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753523Ab3D2Jec (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 05:31:22 -0400
-X-AuditID: cbfee690-b7f136d000000fea-31-517e3de83bc8
+	Mon, 29 Apr 2013 05:34:32 -0400
+X-AuditID: cbfee690-b7f136d000000fea-1e-517e3ea723d0
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, "'Wim Van Sebroeck'" <wim@iguana.be>,
-        linux-watchdog@vger.kernel.org, Jingoo Han <jg1.han@samsung.com>
-Subject: [PATCH RESEND 2/2] watchdog: wm831x_wdt: use devm_gpio_request_one()
-Date: Mon, 29 Apr 2013 18:31:20 +0900
-Message-id: <000a01ce44bc$4ebef180$ec3cd480$@samsung.com>
+        linux-watchdog@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>
+Subject: [PATCH RESEND 1/7] watchdog: at32ap700x_wdt: use devm_*() functions
+Date: Mon, 29 Apr 2013 18:34:31 +0900
+Message-id: <000b01ce44bc$c0960280$41c20780$@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac5EvEf+5FrrDCo0T4ypx10GaaR2Lg==
+Thread-index: Ac5EvL/H9OS3/2XxQq+MDqCZADo6sA==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrFIsWRmVeSWpSXmKPExsVy+t8zfd0XtnWBBgcmG1nMWb+GzeLywkus
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrJIsWRmVeSWpSXmKPExsVy+t8zY93ldnWBBgefm1rMWb+GzeLywkus
 	Fpd3zWGzuLFuH7vFrRkvWB1YPa5tFvM4MeM3i0ffllWMHp83yQWwRHHZpKTmZJalFunbJXBl
-	vN+xl7XgLF/F3OnzmRoYT3N3MXJySAiYSPTvm8gEYYtJXLi3nq2LkYtDSGAZo8TBl7dZYIpO
-	LfzLDJFYxCjxZdNCFgjnF6PEma5lrCBVbAJqEl++HGbvYuTgEBHQl2hr0QCpYRboYJQ48HQp
-	WI2wgK/EjVf/wWpYBFQl5h61BQnzClhKfD7bxQxhC0r8mHwPbDGzgJbE+p3HmSBseYnNa94y
-	QxykILHj7GtGEFtEQE+isesAO0SNiMS+F+8YQfZKCOxjl7jw8hlYM4uAgMS3yYdYQPZKCMhK
-	bDoANUdS4uCKGywTGMVmIVk9C8nqWUhWz0KyYgEjyypG0dSC5ILipPQiE73ixNzi0rx0veT8
-	3E2MkHibsIPx3gHrQ4zJQOsnMkuJJucD4zWvJN7Q2MzIwtTE1NjI3NKMNGElcV71FutAIYH0
-	xJLU7NTUgtSi+KLSnNTiQ4xMHJxSDYw1dRLVl5Tt/7Bf7jS7Ux6kEsaS7NbA9dLV2nRenn+n
-	Wvbm5UkT1nqbbN1wsPXIvh/BjBt9nxr351+aMk1/3qOdSx1bdtbyXD/k3Prz4pKTtxZ9Z954
-	z/Fb9/GvIY8mv0ztmblj//W6Q3kzwwu9GJ8v3+AjoSMiE9wjFnCP7bqfXJCE8MorrQeVWIoz
-	Eg21mIuKEwGnRVfezQIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprOKsWRmVeSWpSXmKPExsVy+t9jAd0XtnWBBr0tehZz1q9hs7i88BKr
-	xeVdc9gsbqzbx25xa8YLVgdWj2ubxTxOzPjN4tG3ZRWjx+dNcgEsUQ2MNhmpiSmpRQqpecn5
-	KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+AbpumTlAe5UUyhJzSoFCAYnFxUr6dpgm
-	hIa46VrANEbo+oYEwfUYGaCBhHWMGe937GUtOMtXMXf6fKYGxtPcXYycHBICJhKnFv5lhrDF
-	JC7cW8/WxcjFISSwiFHiy6aFLBDOL0aJM13LWEGq2ATUJL58OczexcjBISKgL9HWogFSwyzQ
-	wShx4OlSsBphAV+JG6/+g9WwCKhKzD1qCxLmFbCU+Hy2ixnCFpT4MfkeC4jNLKAlsX7ncSYI
-	W15i85q3UAcpSOw4+5oRxBYR0JNo7DrADlEjIrHvxTvGCYwCs5CMmoVk1Cwko2YhaVnAyLKK
-	UTS1ILmgOCk911CvODG3uDQvXS85P3cTIzian0ntYFzZYHGIUYCDUYmHN2BzbaAQa2JZcWXu
-	IUYJDmYlEd4VlnWBQrwpiZVVqUX58UWlOanFhxiTgR6dyCwlmpwPTDR5JfGGxiZmRpZGZhZG
-	JubmpAkrifMeaLUOFBJITyxJzU5NLUgtgtnCxMEp1cDoaBJwYu+GpI5dJm7b3R5MeFtzjSvE
-	9ckHNo7zy0r/3glYyVHKfLi9NPfbleQ7tx72Jd3y0dl24JenG/ORSc6nWo8/PH50MV9pUNDn
-	nclXcwKDXVmYK/+cMbS5/0s8U1nEXG/Nu8iq0OmM948av1d/xLtO9xO7rWAbR2de7OJzL2ef
-	1jg3Z9JMJZbijERDLeai4kQA3kMZOioDAAA=
+	bJ25kq2gga/i7cl17A2MG7i7GDk5JARMJKZfeM4GYYtJXLi3Hsjm4hASWMYo0dS7gQmmaN6G
+	VYwQiemMElt2LGKCcH4xSlx/8IMRpIpNQE3iy5fD7F2MHBwiAvoSbS0aIDXMAl2MEnuf/2EH
+	qREW8JFY37aCCaSGRUBV4vx7sFZeAUuJV2sfM0PYghI/Jt9jAbGZBbQk1u88zgRhy0tsXvOW
+	GeIgBYkdZ1+D9YoI6Ek8PrAYql5EYt+Ld4wQNfvYJY6/VQOxWQQEJL5NPsQCslZCQFZi0wGo
+	MZISB1fcYJnAKDYLyeZZSDbPQrJ5FpINCxhZVjGKphYkFxQnpReZ6BUn5haX5qXrJefnbmKE
+	RNuEHYz3DlgfYkwGWj+RWUo0OR8YrXkl8YbGZkYWpiamxkbmlmakCSuJ86q3WAcKCaQnlqRm
+	p6YWpBbFF5XmpBYfYmTi4JRqYJyWY7o82y48RHNfiUob23OdQ3XmLB0iYvpX9Jce3R+uz/no
+	WM6V0PxLmcEbDyye33VZ/mXzzHfu1+87mC712ebyVut66y5nziyFSuat9fKx78+fmr+AferH
+	ZffbTV34KvNClt1Zbp4VvfHEjtnlluGXAzYzXJ4VO/07x7olhnN+vj7OGuUVa6LEUpyRaKjF
+	XFScCAApimH0zAIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprOKsWRmVeSWpSXmKPExsVy+t9jQd3ldnWBBld+GlrMWb+GzeLywkus
+	Fpd3zWGzuLFuH7vFrRkvWB1YPa5tFvM4MeM3i0ffllWMHp83yQWwRDUw2mSkJqakFimk5iXn
+	p2TmpdsqeQfHO8ebmhkY6hpaWpgrKeQl5qbaKrn4BOi6ZeYA7VVSKEvMKQUKBSQWFyvp22Ga
+	EBripmsB0xih6xsSBNdjZIAGEtYxZmyduZKtoIGv4u3JdewNjBu4uxg5OSQETCTmbVjFCGGL
+	SVy4t56ti5GLQ0hgOqPElh2LmCCcX4wS1x/8AKtiE1CT+PLlMHsXIweHiIC+RFuLBkgNs0AX
+	o8Te53/YQWqEBXwk1retYAKpYRFQlTj/HqyVV8BS4tXax8wQtqDEj8n3WEBsZgEtifU7jzNB
+	2PISm9e8ZYY4SEFix9nXYL0iAnoSjw8shqoXkdj34h3jBEaBWUhGzUIyahaSUbOQtCxgZFnF
+	KJpakFxQnJSea6RXnJhbXJqXrpecn7uJERzNz6R3MK5qsDjEKMDBqMTDG7C5NlCINbGsuDL3
+	EKMEB7OSCO8Ky7pAId6UxMqq1KL8+KLSnNTiQ4zJQI9OZJYSTc4HJpq8knhDYxMzI0sjMwsj
+	E3Nz0oSVxHkPtloHCgmkJ5akZqemFqQWwWxh4uCUamBcEc282+b8F2PL1i1lCtZr/FY6qhn0
+	2R7aK6la+Mks9NdDhaP3X/b2iB9ey/HNNV9oT4XlLLHO7xLbeY3UvBySvV0VNh8WPOTXUqJ7
+	JT5y0Tez8DWZ01dMd4wqYCoqP107T/Nk0ucrO65ujFi+5+frspQnV4xNP6Tbf7NT3HWu4/P2
+	inK7nV+VWIozEg21mIuKEwHAVG+2KgMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -53,70 +53,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use devm_gpio_request_one() to make cleanup paths simpler.
-Also, GPIOF_DIR_OUT | GPIOF_INIT_LOW is replaced with
-GPIOF_OUT_INIT_LOW.
+Use devm_*() functions to make cleanup paths simpler.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/watchdog/wm831x_wdt.c |   17 ++++++-----------
- 1 files changed, 6 insertions(+), 11 deletions(-)
+ drivers/watchdog/at32ap700x_wdt.c |   12 ++++--------
+ 1 files changed, 4 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/watchdog/wm831x_wdt.c b/drivers/watchdog/wm831x_wdt.c
-index 9dcb6d0..3348ddd 100644
---- a/drivers/watchdog/wm831x_wdt.c
-+++ b/drivers/watchdog/wm831x_wdt.c
-@@ -247,9 +247,10 @@ static int wm831x_wdt_probe(struct platform_device *pdev)
- 		reg |= pdata->software << WM831X_WDOG_RST_SRC_SHIFT;
- 
- 		if (pdata->update_gpio) {
--			ret = gpio_request_one(pdata->update_gpio,
--					       GPIOF_DIR_OUT | GPIOF_INIT_LOW,
--					       "Watchdog update");
-+			ret = devm_gpio_request_one(&pdev->dev,
-+						pdata->update_gpio,
-+						GPIOF_OUT_INIT_LOW,
-+						"Watchdog update");
- 			if (ret < 0) {
- 				dev_err(wm831x->dev,
- 					"Failed to request update GPIO: %d\n",
-@@ -270,7 +271,7 @@ static int wm831x_wdt_probe(struct platform_device *pdev)
- 		} else {
- 			dev_err(wm831x->dev,
- 				"Failed to unlock security key: %d\n", ret);
--			goto err_gpio;
-+			goto err;
- 		}
+diff --git a/drivers/watchdog/at32ap700x_wdt.c b/drivers/watchdog/at32ap700x_wdt.c
+index 7a715e3..c4cb552 100644
+--- a/drivers/watchdog/at32ap700x_wdt.c
++++ b/drivers/watchdog/at32ap700x_wdt.c
+@@ -321,13 +321,14 @@ static int __init at32_wdt_probe(struct platform_device *pdev)
+ 		return -ENXIO;
  	}
  
-@@ -278,16 +279,13 @@ static int wm831x_wdt_probe(struct platform_device *pdev)
- 	if (ret != 0) {
- 		dev_err(wm831x->dev, "watchdog_register_device() failed: %d\n",
- 			ret);
--		goto err_gpio;
-+		goto err;
+-	wdt = kzalloc(sizeof(struct wdt_at32ap700x), GFP_KERNEL);
++	wdt = devm_kzalloc(&pdev->dev, sizeof(struct wdt_at32ap700x),
++			GFP_KERNEL);
+ 	if (!wdt) {
+ 		dev_dbg(&pdev->dev, "no memory for wdt structure\n");
+ 		return -ENOMEM;
  	}
  
- 	dev_set_drvdata(&pdev->dev, driver_data);
+-	wdt->regs = ioremap(regs->start, resource_size(regs));
++	wdt->regs = devm_ioremap(&pdev->dev, regs->start, resource_size(regs));
+ 	if (!wdt->regs) {
+ 		ret = -ENOMEM;
+ 		dev_dbg(&pdev->dev, "could not map I/O memory\n");
+@@ -342,7 +343,7 @@ static int __init at32_wdt_probe(struct platform_device *pdev)
+ 		dev_info(&pdev->dev, "CPU must be reset with external "
+ 				"reset or POR due to silicon errata.\n");
+ 		ret = -EIO;
+-		goto err_iounmap;
++		goto err_free;
+ 	} else {
+ 		wdt->users = 0;
+ 	}
+@@ -375,10 +376,7 @@ static int __init at32_wdt_probe(struct platform_device *pdev)
  
- 	return 0;
- 
--err_gpio:
--	if (driver_data->update_gpio)
--		gpio_free(driver_data->update_gpio);
- err:
+ err_register:
+ 	platform_set_drvdata(pdev, NULL);
+-err_iounmap:
+-	iounmap(wdt->regs);
+ err_free:
+-	kfree(wdt);
+ 	wdt = NULL;
  	return ret;
  }
-@@ -298,9 +296,6 @@ static int wm831x_wdt_remove(struct platform_device *pdev)
+@@ -391,8 +389,6 @@ static int __exit at32_wdt_remove(struct platform_device *pdev)
+ 			at32_wdt_stop();
  
- 	watchdog_unregister_device(&driver_data->wdt);
- 
--	if (driver_data->update_gpio)
--		gpio_free(driver_data->update_gpio);
--
- 	return 0;
- }
- 
+ 		misc_deregister(&wdt->miscdev);
+-		iounmap(wdt->regs);
+-		kfree(wdt);
+ 		wdt = NULL;
+ 		platform_set_drvdata(pdev, NULL);
+ 	}
 -- 
 1.7.2.5
 
