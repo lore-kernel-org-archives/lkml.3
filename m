@@ -1,41 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757466Ab3D2PqP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 11:46:15 -0400
-Received: from a194-210.smtp-out.amazonses.com ([199.255.194.210]:36428 "EHLO
-	a194-210.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756826Ab3D2PqO (ORCPT
+	id S1757598Ab3D2PqW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 11:46:22 -0400
+Received: from mercuryimc.plus.com ([80.229.200.144]:44905 "EHLO
+	centos1.newflow.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757256Ab3D2PqU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 11:46:14 -0400
-Date: Mon, 29 Apr 2013 15:46:12 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Glauber Costa <glommer@parallels.com>
-cc: Pekka Enberg <penberg@kernel.org>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [linux-next-20130422] Bug in SLAB?
-In-Reply-To: <517E8EE1.6090306@parallels.com>
-Message-ID: <0000013e5679080c-d205d4fa-a545-439d-a976-f234f48e1bcc-000000@email.amazonses.com>
-References: <201304242108.FDC35910.VJMHFFFSOLOOQt@I-love.SAKURA.ne.jp> <201304252120.GII21814.FMJFtHLOOVQFOS@I-love.SAKURA.ne.jp> <201304291140.IFJ95894.OFLSFFHQOOMVJt@I-love.SAKURA.ne.jp> <CAOJsxLFYDC+EDdJrXVnc1qfEyd56bhFLeGE+6Mbhwiq73KQQLQ@mail.gmail.com>
- <517E8758.9040803@parallels.com> <0000013e564e0e5a-121c52f9-e489-470f-99d5-67a5ad42eb75-000000@email.amazonses.com> <517E8EE1.6090306@parallels.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Mon, 29 Apr 2013 11:46:20 -0400
+Message-ID: <517E95CA.4000708@newflow.co.uk>
+Date: Mon, 29 Apr 2013 16:46:18 +0100
+From: Mark Jackson <mpfj-list@newflow.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.255.194.210
+To: Tony Lindgren <tony@atomide.com>
+CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        tglx@linutronix.de, lkml <linux-kernel@vger.kernel.org>
+Subject: Re: v3.9.0-rc8 : oops in tick_do_update_jiffies64+0xbc/0x110
+References: <517E3039.2070204@newflow.co.uk> <20130429154146.GB28721@atomide.com>
+In-Reply-To: <20130429154146.GB28721@atomide.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 29 Apr 2013, Glauber Costa wrote:
+On 29/04/13 16:41, Tony Lindgren wrote:
+> * Mark Jackson <mpfj-list@newflow.co.uk> [130429 01:38]:
+>> I've been experiencing several crashes all pointing exactly the same place in the same tick routine (see below).
+>>
+>> The "exception stack" trace at the end changes depending on when the oops occurs.
+>>
+>> I've had the oops occur maybe 6 times in the last 50 reboots.
+>>
+>> Any ideas ?
+> 
+> Sounds like it might be an issue with the physical memory or
+> the timings. It could also be related to the idle loop not
+> restoring something right for deeper idle states that corrupts
+> the memory. And that's why it would seem to appear while waking
+> to a timer.
 
-> On 04/29/2013 06:59 PM, Christoph Lameter wrote:
-> > The code in kmalloc_index() creates a BUG() and preferentially should
-> > create a compile time failure when a number that is too big is passed to it.
-> >
-> > What is MAX_ORDER on the architecture?
->
-> Returning NULL is fine, but kmalloc_index currently does not check for
-> MAX_ORDER at all.
+I am suspecting a borderline CPU.  We only have "X" AM3359 parts which
+are all pre-production.
 
-Could easily add that and BUG() on it?
+> Maybe disable PM and run memtester to see if that runs reliably?
+
+I'll see if I can get it running on our platform.
+
+Thanks
+Mark J.
