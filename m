@@ -1,52 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760907Ab3D2Tlb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 15:41:31 -0400
-Received: from mail-vb0-f49.google.com ([209.85.212.49]:48399 "EHLO
-	mail-vb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759427Ab3D2TlZ (ORCPT
+	id S1759421Ab3D2TCl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 15:02:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60642 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759360Ab3D2TCh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 15:41:25 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130429162328.GA6963@kroah.com>
-References: <20130429162328.GA6963@kroah.com>
-Date: Mon, 29 Apr 2013 12:41:24 -0700
-X-Google-Sender-Auth: Z9NONkrHqkd7WXSv4H2d97b5Hxw
-Message-ID: <CA+55aFxi+PHvYwxLJfo=YG=93maOD0cQYVdjvG8kzEhpOZykpQ@mail.gmail.com>
-Subject: Re: [GIT PATCH] USB patches for 3.10-rc1
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Greg KH <gregkh@linuxfoundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        USB list <linux-usb@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 29 Apr 2013 15:02:37 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Mathias Krause <minipli@googlemail.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 14/42] llc: Fix missing msg_namelen update in llc_ui_recvmsg()
+Date: Mon, 29 Apr 2013 12:01:56 -0700
+Message-Id: <20130429184753.987670282@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130429184752.435249613@linuxfoundation.org>
+References: <20130429184752.435249613@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 29, 2013 at 9:23 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
->
->   git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb.git/ tags/usb-3.10-rc1
+3.8-stable review patch.  If anyone has any objections, please let me know.
 
-This has some odd things in it, but I made the mistake of pushing out
-my merge before I noticed, so it's out there now regardless.
+------------------
 
-See here: commit 84ebc10294a3 ("USB: remove CONFIG_USB_SUSPEND
-option") claims to remove the USB_SUSPEND config option, but doesn't
-actually do so.
 
-And no, it's not my merge that is in error, although there may be
-merge errors in addition to the oddities I've found. Doing a
+From: Mathias Krause <minipli@googlemail.com>
 
-   git grep -w USB_SUSPEND 84ebc10294a3
+[ Upstream commit c77a4b9cffb6215a15196ec499490d116dfad181 ]
 
-shows that there remains things that have "depends on .. USB_SUSPEND"
-even in the very commit that claims to remove the option. Later
-commits then move them around (eg the whole drivers/usb/otg ->
-drivers/usb/phy movement), but the USB_SUSPEND stays around.
+For stream sockets the code misses to update the msg_namelen member
+to 0 and therefore makes net/socket.c leak the local, uninitialized
+sockaddr_storage variable to userland -- 128 bytes of kernel stack
+memory. The msg_namelen update is also missing for datagram sockets
+in case the socket is shutting down during receive.
 
-Hmm? I'm assuming you applied a patch without noticing that in the
-meantime other users of USB_SUSPEND had grow up?
+Fix both issues by setting msg_namelen to 0 early. It will be
+updated later if we're going to fill the msg_name member.
 
-                Linus
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ net/llc/af_llc.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+--- a/net/llc/af_llc.c
++++ b/net/llc/af_llc.c
+@@ -720,6 +720,8 @@ static int llc_ui_recvmsg(struct kiocb *
+ 	int target;	/* Read at least this many bytes */
+ 	long timeo;
+ 
++	msg->msg_namelen = 0;
++
+ 	lock_sock(sk);
+ 	copied = -ENOTCONN;
+ 	if (unlikely(sk->sk_type == SOCK_STREAM && sk->sk_state == TCP_LISTEN))
+
+
