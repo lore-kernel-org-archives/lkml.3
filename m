@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760067Ab3D2TDq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 15:03:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32877 "EHLO
+	id S1760051Ab3D2TDo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 15:03:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32881 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758095Ab3D2TDl (ORCPT
+	with ESMTP id S1758763Ab3D2TDm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 15:03:41 -0400
+	Mon, 29 Apr 2013 15:03:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sam Ravnborg <sam@ravnborg.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andreas Larsson <andreas@gaisler.com>
-Subject: [ 30/30] sparc32: support atomic64_t
-Date: Mon, 29 Apr 2013 12:02:54 -0700
-Message-Id: <20130429184358.679521952@linuxfoundation.org>
+        Mathias Krause <minipli@googlemail.com>,
+        Samuel Ortiz <samuel@sortiz.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 22/30] irda: Fix missing msg_namelen update in irda_recvmsg_dgram()
+Date: Mon, 29 Apr 2013 12:02:46 -0700
+Message-Id: <20130429184357.773840525@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130429184355.299556377@linuxfoundation.org>
 References: <20130429184355.299556377@linuxfoundation.org>
@@ -28,62 +28,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sam Ravnborg <sam@ravnborg.org>
 
-commit aea1181b0bd0a09c54546399768f359d1e198e45 upstream, Needed to
-compile ext4 for sparc32 since commit
-503f4bdcc078e7abee273a85ce322de81b18a224
+From: Mathias Krause <minipli@googlemail.com>
 
-There is no-one that really require atomic64_t support on sparc32.
-But several drivers fails to build without proper atomic64 support.
-And for an allyesconfig build for sparc32 this is annoying.
+[ Upstream commit 5ae94c0d2f0bed41d6718be743985d61b7f5c47d ]
 
-Include the generic atomic64_t support for sparc32.
-This has a text footprint cost:
+The current code does not fill the msg_name member in case it is set.
+It also does not set the msg_namelen member to 0 and therefore makes
+net/socket.c leak the local, uninitialized sockaddr_storage variable
+to userland -- 128 bytes of kernel stack memory.
 
-$size vmlinux (before atomic64_t support)
-   text    data     bss     dec     hex filename
-3578860  134260  108781 3821901  3a514d vmlinux
+Fix that by simply setting msg_namelen to 0 as obviously nobody cared
+about irda_recvmsg_dgram() not filling the msg_name in case it was
+set.
 
-$size vmlinux (after atomic64_t support)
-   text    data     bss     dec     hex filename
-3579892  130684  108781 3819357  3a475d vmlinux
-
-text increase (3579892 - 3578860) = 1032 bytes
-
-data decreases - but I fail to explain why!
-I have rebuild twice to check my numbers.
-
-Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Cc: Samuel Ortiz <samuel@sortiz.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Andreas Larsson <andreas@gaisler.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- arch/sparc/Kconfig                 |    1 +
- arch/sparc/include/asm/atomic_32.h |    2 ++
- 2 files changed, 3 insertions(+)
+ net/irda/af_irda.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/arch/sparc/Kconfig
-+++ b/arch/sparc/Kconfig
-@@ -31,6 +31,7 @@ config SPARC
+--- a/net/irda/af_irda.c
++++ b/net/irda/af_irda.c
+@@ -1386,6 +1386,8 @@ static int irda_recvmsg_dgram(struct kio
  
- config SPARC32
- 	def_bool !64BIT
-+	select GENERIC_ATOMIC64
+ 	IRDA_DEBUG(4, "%s()\n", __func__);
  
- config SPARC64
- 	def_bool 64BIT
---- a/arch/sparc/include/asm/atomic_32.h
-+++ b/arch/sparc/include/asm/atomic_32.h
-@@ -15,6 +15,8 @@
- 
- #ifdef __KERNEL__
- 
-+#include <asm-generic/atomic64.h>
++	msg->msg_namelen = 0;
 +
- #include <asm/system.h>
- 
- #define ATOMIC_INIT(i)  { (i) }
+ 	skb = skb_recv_datagram(sk, flags & ~MSG_DONTWAIT,
+ 				flags & MSG_DONTWAIT, &err);
+ 	if (!skb)
 
 
