@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760091Ab3D2TFr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 15:05:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32853 "EHLO
+	id S1760122Ab3D2TGN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 15:06:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32841 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760009Ab3D2TDi (ORCPT
+	with ESMTP id S1760002Ab3D2TDg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 15:03:38 -0400
+	Mon, 29 Apr 2013 15:03:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Mathias Krause <minipli@googlemail.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
+        Ursula Braun <ursula.braun@de.ibm.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 25/30] netrom: fix info leak via msg_name in nr_recvmsg()
-Date: Mon, 29 Apr 2013 12:02:49 -0700
-Message-Id: <20130429184358.080688530@linuxfoundation.org>
+Subject: [ 23/30] iucv: Fix missing msg_namelen update in iucv_sock_recvmsg()
+Date: Mon, 29 Apr 2013 12:02:47 -0700
+Message-Id: <20130429184357.875653523@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130429184355.299556377@linuxfoundation.org>
 References: <20130429184355.299556377@linuxfoundation.org>
@@ -31,37 +31,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mathias Krause <minipli@googlemail.com>
 
-[ Upstream commits 3ce5efad47b62c57a4f5c54248347085a750ce0e and
-  c802d759623acbd6e1ee9fbdabae89159a513913 ]
+[ Upstream commit a5598bd9c087dc0efc250a5221e5d0e6f584ee88 ]
 
-In case msg_name is set the sockaddr info gets filled out, as
-requested, but the code fails to initialize the padding bytes of
-struct sockaddr_ax25 inserted by the compiler for alignment. Also
-the sax25_ndigis member does not get assigned, leaking four more
-bytes.
+The current code does not fill the msg_name member in case it is set.
+It also does not set the msg_namelen member to 0 and therefore makes
+net/socket.c leak the local, uninitialized sockaddr_storage variable
+to userland -- 128 bytes of kernel stack memory.
 
-Both issues lead to the fact that the code will leak uninitialized
-kernel stack bytes in net/socket.c.
-
-Fix both issues by initializing the memory with memset(0).
+Fix that by simply setting msg_namelen to 0 as obviously nobody cared
+about iucv_sock_recvmsg() not filling the msg_name in case it was set.
 
 Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Cc: Ralf Baechle <ralf@linux-mips.org>
+Cc: Ursula Braun <ursula.braun@de.ibm.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/netrom/af_netrom.c |    1 +
- 1 file changed, 1 insertion(+)
+ net/iucv/af_iucv.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/net/netrom/af_netrom.c
-+++ b/net/netrom/af_netrom.c
-@@ -1178,6 +1178,7 @@ static int nr_recvmsg(struct kiocb *iocb
- 	}
+--- a/net/iucv/af_iucv.c
++++ b/net/iucv/af_iucv.c
+@@ -1157,6 +1157,8 @@ static int iucv_sock_recvmsg(struct kioc
+ 	struct sk_buff *skb, *rskb, *cskb;
+ 	int err = 0;
  
- 	if (sax != NULL) {
-+		memset(sax, 0, sizeof(sax));
- 		sax->sax25_family = AF_NETROM;
- 		skb_copy_from_linear_data_offset(skb, 7, sax->sax25_call.ax25_call,
- 			      AX25_ADDR_LEN);
++	msg->msg_namelen = 0;
++
+ 	if ((sk->sk_state == IUCV_DISCONN || sk->sk_state == IUCV_SEVERED) &&
+ 	    skb_queue_empty(&iucv->backlog_skb_q) &&
+ 	    skb_queue_empty(&sk->sk_receive_queue) &&
 
 
