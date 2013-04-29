@@ -1,37 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932196Ab3D2We6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 18:34:58 -0400
-Received: from mga03.intel.com ([143.182.124.21]:4915 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758221Ab3D2We5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 18:34:57 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,576,1363158000"; 
-   d="scan'208";a="234502521"
-Date: Mon, 29 Apr 2013 15:34:55 -0700
-From: Andi Kleen <ak@linux.intel.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, stable@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH 2/2] perf, x86: Don't allow unusual PEBS raw flags
-Message-ID: <20130429223455.GH19487@tassilo.jf.intel.com>
-References: <1366844694-2770-1-git-send-email-andi@firstfloor.org>
- <1366844694-2770-2-git-send-email-andi@firstfloor.org>
- <CABPqkBQSXWTd=ut+U-Mc8fEm+FaV7XAsWydTxQ7e+jSynpKU7w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABPqkBQSXWTd=ut+U-Mc8fEm+FaV7XAsWydTxQ7e+jSynpKU7w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932507Ab3D2WjK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 18:39:10 -0400
+Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:2340 "EHLO
+	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932227Ab3D2WjG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Apr 2013 18:39:06 -0400
+From: Jerry Hoemann <jerry.hoemann@hp.com>
+To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com
+Cc: x86@kernel.org, jacob.shin@amd.com, gregkh@linuxfoundation.org,
+        yinghai@kernel.org, linux-kernel@vger.kernel.org,
+        Jerry Hoemann <jerry.hoemann@hp.com>
+Subject: [PATCH] x86/mm: account for PGDIR_SIZE alignment
+Date: Mon, 29 Apr 2013 16:38:49 -0600
+Message-Id: <1367275129-22383-1-git-send-email-jerry.hoemann@hp.com>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Could you explain why those listed in the aliases avoid that problem?
+Patch for 3.0-stable.  Function find_early_table_space removed upstream.
 
-The aliases are widely used now (by perf), so as a special case are expected
-to work now (at least as long as we enable it by model number)
+Fixes panic in alloc_low_page due to pgt_buf overflow during
+init_memory_mapping.
 
--Andi
+find_early_table_space sizes pgt_buf based upon the size of the
+memory being mapped, but it does not take into account the alignment
+of the memory.  When the region being mapped spans a 512GB (PGDIR_SIZE)
+alignment, a panic from alloc_low_pages occurs.
+
+kernel_physical_mapping_init takes into account PGDIR_SIZE alignment.
+This causes an extra call to alloc_low_page to be made.  This extra call
+isn't accounted for by find_early_table_space and causes a kernel panic.
+
+Change is to take into account PGDIR_SIZE alignment in find_early_table_space.
+
+Signed-off-by: Jerry Hoemann <jerry.hoemann@hp.com>
+---
+ arch/x86/mm/init.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index c22c423..96c4577 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -44,11 +44,15 @@ static void __init find_early_table_space(struct map_range *mr, int nr_range)
+ 	int i;
+ 	unsigned long puds = 0, pmds = 0, ptes = 0, tables;
+ 	unsigned long start = 0, good_end;
++	unsigned long pgd_extra = 0;
+ 	phys_addr_t base;
+ 
+ 	for (i = 0; i < nr_range; i++) {
+ 		unsigned long range, extra;
+ 
++		if ((mr[i].end >> PGDIR_SHIFT) - (mr[i].start >> PGDIR_SHIFT))
++			pgd_extra++;
++
+ 		range = mr[i].end - mr[i].start;
+ 		puds += (range + PUD_SIZE - 1) >> PUD_SHIFT;
+ 
+@@ -73,6 +77,7 @@ static void __init find_early_table_space(struct map_range *mr, int nr_range)
+ 	tables = roundup(puds * sizeof(pud_t), PAGE_SIZE);
+ 	tables += roundup(pmds * sizeof(pmd_t), PAGE_SIZE);
+ 	tables += roundup(ptes * sizeof(pte_t), PAGE_SIZE);
++	tables += (pgd_extra * PAGE_SIZE);
+ 
+ #ifdef CONFIG_X86_32
+ 	/* for fixmap */
+-- 
+1.8.1.4
+
