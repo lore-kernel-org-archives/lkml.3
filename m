@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759899Ab3D2TDV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 15:03:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60910 "EHLO
+	id S1759925Ab3D2TDZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 15:03:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60922 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759810Ab3D2TDO (ORCPT
+	with ESMTP id S1759839Ab3D2TDQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 15:03:14 -0400
+	Mon, 29 Apr 2013 15:03:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Patrick McHardy <kaber@trash.net>,
+        Jim Foraker <foraker1@llnl.gov>, Thomas Graf <tgraf@suug.ch>,
+        Eric Dumazet <edumazet@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 25/34] netfilter: dont reset nf_trace in nf_reset()
-Date: Mon, 29 Apr 2013 12:02:32 -0700
-Message-Id: <20130429184703.755059070@linuxfoundation.org>
+Subject: [ 28/34] tcp: Reallocate headroom if it would overflow csum_start
+Date: Mon, 29 Apr 2013 12:02:35 -0700
+Message-Id: <20130429184704.100769998@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130429184700.845644077@linuxfoundation.org>
 References: <20130429184700.845644077@linuxfoundation.org>
@@ -28,68 +29,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Patrick McHardy <kaber@trash.net>
+From: Thomas Graf <tgraf@suug.ch>
 
-[ Upstream commit 124dff01afbdbff251f0385beca84ba1b9adda68 ]
+[ Upstream commit 50bceae9bd3569d56744882f3012734d48a1d413 ]
 
-Commit 130549fe ("netfilter: reset nf_trace in nf_reset") added code
-to reset nf_trace in nf_reset(). This is wrong and unnecessary.
+If a TCP retransmission gets partially ACKed and collapsed multiple
+times it is possible for the headroom to grow beyond 64K which will
+overflow the 16bit skb->csum_start which is based on the start of
+the headroom. It has been observed rarely in the wild with IPoIB due
+to the 64K MTU.
 
-nf_reset() is used in the following cases:
+Verify if the acking and collapsing resulted in a headroom exceeding
+what csum_start can cover and reallocate the headroom if so.
 
-- when passing packets up the the socket layer, at which point we want to
-  release all netfilter references that might keep modules pinned while
-  the packet is queued. nf_trace doesn't matter anymore at this point.
+A big thank you to Jim Foraker <foraker1@llnl.gov> and the team at
+LLNL for helping out with the investigation and testing.
 
-- when encapsulating or decapsulating IPsec packets. We want to continue
-  tracing these packets after IPsec processing.
-
-- when passing packets through virtual network devices. Only devices on
-  that encapsulate in IPv4/v6 matter since otherwise nf_trace is not
-  used anymore. Its not entirely clear whether those packets should
-  be traced after that, however we've always done that.
-
-- when passing packets through virtual network devices that make the
-  packet cross network namespace boundaries. This is the only cases
-  where we clearly want to reset nf_trace and is also what the
-  original patch intended to fix.
-
-Add a new function nf_reset_trace() and use it in dev_forward_skb() to
-fix this properly.
-
-Signed-off-by: Patrick McHardy <kaber@trash.net>
+Reported-by: Jim Foraker <foraker1@llnl.gov>
+Signed-off-by: Thomas Graf <tgraf@suug.ch>
+Acked-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- include/linux/skbuff.h |    7 +++++++
- net/core/dev.c         |    1 +
- 2 files changed, 8 insertions(+)
+ net/ipv4/tcp_output.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/include/linux/skbuff.h
-+++ b/include/linux/skbuff.h
-@@ -2392,6 +2392,13 @@ static inline void nf_reset(struct sk_bu
- #endif
- }
+--- a/net/ipv4/tcp_output.c
++++ b/net/ipv4/tcp_output.c
+@@ -2154,8 +2154,12 @@ int tcp_retransmit_skb(struct sock *sk,
+ 	 */
+ 	TCP_SKB_CB(skb)->when = tcp_time_stamp;
  
-+static inline void nf_reset_trace(struct sk_buff *skb)
-+{
-+#if IS_ENABLED(CONFIG_NETFILTER_XT_TARGET_TRACE)
-+	skb->nf_trace = 0;
-+#endif
-+}
-+
- /* Note: This doesn't put any conntrack and bridge info in dst. */
- static inline void __nf_copy(struct sk_buff *dst, const struct sk_buff *src)
- {
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -1628,6 +1628,7 @@ int dev_forward_skb(struct net_device *d
- 	skb->mark = 0;
- 	secpath_reset(skb);
- 	nf_reset(skb);
-+	nf_reset_trace(skb);
- 	return netif_rx(skb);
- }
- EXPORT_SYMBOL_GPL(dev_forward_skb);
+-	/* make sure skb->data is aligned on arches that require it */
+-	if (unlikely(NET_IP_ALIGN && ((unsigned long)skb->data & 3))) {
++	/* make sure skb->data is aligned on arches that require it
++	 * and check if ack-trimming & collapsing extended the headroom
++	 * beyond what csum_start can cover.
++	 */
++	if (unlikely((NET_IP_ALIGN && ((unsigned long)skb->data & 3)) ||
++		     skb_headroom(skb) >= 0xFFFF)) {
+ 		struct sk_buff *nskb = __pskb_copy(skb, MAX_TCP_HEADER,
+ 						   GFP_ATOMIC);
+ 		err = nskb ? tcp_transmit_skb(sk, nskb, 0, GFP_ATOMIC) :
 
 
