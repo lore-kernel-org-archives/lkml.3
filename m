@@ -1,56 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932688Ab3D2VcC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 17:32:02 -0400
-Received: from mail-vb0-f51.google.com ([209.85.212.51]:64473 "EHLO
-	mail-vb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932595Ab3D2VcA (ORCPT
+	id S932714Ab3D2VcW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 17:32:22 -0400
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:46640 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932595Ab3D2VcS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 17:32:00 -0400
+	Mon, 29 Apr 2013 17:32:18 -0400
+Date: Mon, 29 Apr 2013 14:32:15 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
+        Gu Zheng <guz.fnst@cn.fujitsu.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] PCI: Fix racing for pci device removing via sysfs
+Message-ID: <20130429213215.GA31064@kroah.com>
+References: <1366940841-15370-1-git-send-email-yinghai@kernel.org>
+ <CAErSpo5zfHR-agNBdgqfVjCU+-KcTZV+1bvML5Uw-+icDqzzEA@mail.gmail.com>
+ <CAE9FiQVEQO-dLJRjn9Z7JgwGWAn1M8S1Tn2_V0Fq+6kB0rG=Bg@mail.gmail.com>
+ <CAErSpo7DUDQ_XgVKAfWxqYJA=q85ps46bffV-4a7b0vOzAP5DA@mail.gmail.com>
+ <CAE9FiQWv-bN2XzHiQ0WU+Y678zcqs_Owua6vXXijdMO6=0OWpg@mail.gmail.com>
+ <517E45C8.4060407@cn.fujitsu.com>
+ <CAE9FiQUXxCH0xjFPk1S7e_JRsBPosqQ=N5Kpcrjp3RNWDh9yZQ@mail.gmail.com>
+ <20130429181550.GA17343@google.com>
+ <20130429182142.GA3385@kroah.com>
+ <20130429212350.GA14978@xanatos>
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1304291706360.1152-100000@iolanthe.rowland.org>
-References: <CA+55aFxi+PHvYwxLJfo=YG=93maOD0cQYVdjvG8kzEhpOZykpQ@mail.gmail.com>
-	<Pine.LNX.4.44L0.1304291706360.1152-100000@iolanthe.rowland.org>
-Date: Mon, 29 Apr 2013 14:31:59 -0700
-X-Google-Sender-Auth: EL2AoCs8P33Vg0UnFKgYPqBXz4Q
-Message-ID: <CA+55aFzOf3tE=Mbrrwt_aOn6GdUv26VnJ=wsmY2sYC90-aUfLQ@mail.gmail.com>
-Subject: Re: [GIT PATCH] USB patches for 3.10-rc1
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        USB list <linux-usb@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130429212350.GA14978@xanatos>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 29, 2013 at 2:14 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
->
-> What other things seemed odd about Greg's pull request?
+On Mon, Apr 29, 2013 at 02:23:50PM -0700, Sarah Sharp wrote:
+> On Mon, Apr 29, 2013 at 11:21:42AM -0700, Greg Kroah-Hartman wrote:
+> > On Mon, Apr 29, 2013 at 11:15:50AM -0700, Bjorn Helgaas wrote:
+> > > On Mon, Apr 29, 2013 at 08:19:10AM -0700, Yinghai Lu wrote:
+> > > > On Mon, Apr 29, 2013 at 3:04 AM, Gu Zheng <guz.fnst@cn.fujitsu.com> wrote:
+> > > > > On 04/27/2013 05:01 AM, Yinghai Lu wrote:
+> > > > >> On Fri, Apr 26, 2013 at 1:53 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> > > > >>>
+> > > > >>> You can't be serious.  This is a disgusting mess.  Checking a list
+> > > > >>> pointer for LIST_POISON1?  As far as I'm concerned, this is a waste of
+> > > > >>> my time.
+> > > > 
+> > > > looks like xhci is using that LIST_POISON1 ...
+> > > > 
+> > > Maybe my allergic reaction to your use of LIST_POISON1 is unjustified,
+> > > but I am dubious about the idea that xhci was the only place that needed
+> > > it before now, and we just happened to find one more place in PCI that
+> > > needs it.  That doesn't make sense because good design patterns are used
+> > > many times, not just once or twice.
+> > > 
+> > > I thought the whole point of the get/put scheme was that if we had a
+> > > pointer to a correctly reference-counted object, we didn't need to check
+> > > whether the object was still valid because the object remains valid until
+> > > all the references are released.
+> > 
+> > You are correct, you shouldn't have to worry about that.  If you have to
+> > do something like the LIST_POISON test, something is really wrong.
+> 
+> All right, I'll take a look at the xHCI code.  From a brief glance, both
+> places that use LIST_POISON are handling a timed-out command.  The
+> command handling in xHCI needs to get completely reworked anyway, due to
+> other race conditions.
+> 
+> Were you suggesting I use the get/put scheme in the xHCI driver, or was
+> that for Yinghai?
 
-The only other thing I noticed was the new CONFIG_USB_PHY quesiton,
-which is not something that I think is sensible to ask from a user,
-and the help text doesn't really help anything either.
+I thought for Yinghai, but really, no code should have to check that
+type of thing, so if the xhci driver is, it shouldn't :)
 
-I think the question may make sense, but the wording does not.
+thanks,
 
-*EVERYBODY* wants a USB PHY. You can't have USB without a physical
-layer unless it's a purely virtual device. There's one in a EHCI
-controller too. It's like a network chip - without a PHY there's no
-point. Why ask about whether you want to support a phy or not? The
-question makes no sense.
-
-So I don't think the question should be "do you want a USB PHY". The
-question should be "Do you want a driver for some of the specialized
-external USB controllers" or something like that. Because as it is
-now, anybody who actually reads the question is likely to answer "y",
-I think, even if he just wants one of the *normal* USB chips that
-don't split out the PHY.
-
-Hmm? Or does PHY have some magic other meaning in USB circles? In
-which case the wording should still be totally redone to not be so
-confusing and misleading.
-
-                     Linus
+greg k-h
