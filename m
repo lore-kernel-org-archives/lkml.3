@@ -1,92 +1,291 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758287Ab3D2QdY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 12:33:24 -0400
-Received: from nm29-vm0.access.bullet.mail.sp2.yahoo.com ([98.139.44.192]:23412
-	"EHLO nm29-vm0.access.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757576Ab3D2QdQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 12:33:16 -0400
-X-Yahoo-Newman-Id: 245532.72143.bm@smtp104.sbc.mail.ne1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: zAMJz1wVM1m0.O_xDDGxWiLObVBH0p_glXcPCDR9fo1yXL0
- 122oi4MSP4lfU3ZDOhGC9zfC75T3D6Stq5p1H4x37Tss3ysUU62reML2Xf8O
- 5c5w0yIjJumR2BYPZxTg9drsbhcIAoMk9Mnp8N2nySTrP0HzTBRT7mpb0sRM
- M.wzded49.NZBUQ5dUXtrHkfcROa7lhO3CdABUyY7xgvVgT79Gq3WxmAKVa9
- cZYbTlQZsCPv6O58ZUYENaWNiy_hmxYYpD2NoVWA.jCAUG6JIgH_mTquKn0q
- 7dJCDCwSkBGzFJ.6OpikrhSMVCnI05HdhdtPRN2hdXqkgIPW8MuLzehwK7Ip
- PXrilrvmIZAnAnp5mtyKIgdCuyS_M6rps2rnzr1vIkWMoXSXOaPElBXzY_2y
- w_fr6FRhai6LTttCdVOQGxEF0p9_PK1SZOBWOXvdxlJzQ5_pjOOpA3sQy7jR
- Fza71q1jkhO2P2oI9GZh8gnCv4Lqx7nNz
-X-Yahoo-SMTP: zfeO.4KswBCc_PdwTE8HfYDCQ1aNmIcSvQHkDP4uSDBNBSXeKQ--
-X-Rocket-Received: from localhost (linux@108.223.40.66 with plain)
-        by smtp104.sbc.mail.ne1.yahoo.com with SMTP; 29 Apr 2013 16:33:16 +0000 UTC
-Date: Mon, 29 Apr 2013 09:33:16 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, "'Wim Van Sebroeck'" <wim@iguana.be>,
-        linux-watchdog@vger.kernel.org
-Subject: Re: [PATCH RESEND 2/5] watchdog: imx2_wdt: use devm_clk_get()
-Message-ID: <20130429163316.GD23799@roeck-us.net>
-References: <000301ce44ba$266397b0$732ac710$@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <000301ce44ba$266397b0$732ac710$@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758343Ab3D2Qdh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 12:33:37 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54796 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757500Ab3D2QdX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Apr 2013 12:33:23 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Alexey Lyahkov <alexey.lyashkov@gmail.com>,
+        Andrew Perepechko <anserper@ya.ru>, Robin Dong <sanbai@taobao.com>
+Cc: Theodore Tso <tytso@mit.edu>, Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Bernd Schubert <bernd.schubert@fastmail.fm>,
+        David Howells <dhowells@redhat.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux-ext4 <linux-ext4@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
+        Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 3/3] mm: Remove lru parameter from __pagevec_lru_add and remove parts of pagevec API
+Date: Mon, 29 Apr 2013 17:31:59 +0100
+Message-Id: <1367253119-6461-4-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1367253119-6461-1-git-send-email-mgorman@suse.de>
+References: <1367253119-6461-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 29, 2013 at 06:15:53PM +0900, Jingoo Han wrote:
-> Use devm_clk_get() to make cleanup paths more simple.
-> 
-> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+Now that the LRU to add a page to is decided at LRU-add time, remove the
+misleading lru parameter from __pagevec_lru_add. A consequence of this is
+that the pagevec_lru_add_file, pagevec_lru_add_anon and similar helpers
+are misleading as the caller no longer has direct control over what LRU
+the page is added to. Unused helpers are removed by this patch and existing
+users of pagevec_lru_add_file() are converted to use lru_cache_add_file()
+directly and use the per-cpu pagevecs instead of creating their own pagevec.
 
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ fs/cachefiles/rdwr.c    | 30 +++++++-----------------------
+ fs/nfs/dir.c            |  7 ++-----
+ include/linux/pagevec.h | 34 +---------------------------------
+ mm/swap.c               | 12 ++++--------
+ 4 files changed, 14 insertions(+), 69 deletions(-)
 
-> ---
->  drivers/watchdog/imx2_wdt.c |    6 ++----
->  1 files changed, 2 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/watchdog/imx2_wdt.c b/drivers/watchdog/imx2_wdt.c
-> index ff90882..0c2b075 100644
-> --- a/drivers/watchdog/imx2_wdt.c
-> +++ b/drivers/watchdog/imx2_wdt.c
-> @@ -266,7 +266,7 @@ static int __init imx2_wdt_probe(struct platform_device *pdev)
->  	if (IS_ERR(imx2_wdt.base))
->  		return PTR_ERR(imx2_wdt.base);
->  
-> -	imx2_wdt.clk = clk_get(&pdev->dev, NULL);
-> +	imx2_wdt.clk = devm_clk_get(&pdev->dev, NULL);
->  	if (IS_ERR(imx2_wdt.clk)) {
->  		dev_err(&pdev->dev, "can't get Watchdog clock\n");
->  		return PTR_ERR(imx2_wdt.clk);
-> @@ -291,7 +291,6 @@ static int __init imx2_wdt_probe(struct platform_device *pdev)
->  
->  fail:
->  	imx2_wdt_miscdev.parent = NULL;
-> -	clk_put(imx2_wdt.clk);
->  	return ret;
->  }
->  
-> @@ -304,8 +303,7 @@ static int __exit imx2_wdt_remove(struct platform_device *pdev)
->  
->  		dev_crit(imx2_wdt_miscdev.parent,
->  			"Device removed: Expect reboot!\n");
-> -	} else
-> -		clk_put(imx2_wdt.clk);
-> +	}
->  
->  	imx2_wdt_miscdev.parent = NULL;
->  	return 0;
-> -- 
-> 1.7.2.5
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-watchdog" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+diff --git a/fs/cachefiles/rdwr.c b/fs/cachefiles/rdwr.c
+index 4809922..d24c13e 100644
+--- a/fs/cachefiles/rdwr.c
++++ b/fs/cachefiles/rdwr.c
+@@ -12,6 +12,7 @@
+ #include <linux/mount.h>
+ #include <linux/slab.h>
+ #include <linux/file.h>
++#include <linux/swap.h>
+ #include "internal.h"
+ 
+ /*
+@@ -227,8 +228,7 @@ static void cachefiles_read_copier(struct fscache_operation *_op)
+  */
+ static int cachefiles_read_backing_file_one(struct cachefiles_object *object,
+ 					    struct fscache_retrieval *op,
+-					    struct page *netpage,
+-					    struct pagevec *pagevec)
++					    struct page *netpage)
+ {
+ 	struct cachefiles_one_read *monitor;
+ 	struct address_space *bmapping;
+@@ -237,8 +237,6 @@ static int cachefiles_read_backing_file_one(struct cachefiles_object *object,
+ 
+ 	_enter("");
+ 
+-	pagevec_reinit(pagevec);
+-
+ 	_debug("read back %p{%lu,%d}",
+ 	       netpage, netpage->index, page_count(netpage));
+ 
+@@ -283,9 +281,7 @@ installed_new_backing_page:
+ 	backpage = newpage;
+ 	newpage = NULL;
+ 
+-	page_cache_get(backpage);
+-	pagevec_add(pagevec, backpage);
+-	__pagevec_lru_add_file(pagevec);
++	lru_cache_add_file(backpage);
+ 
+ read_backing_page:
+ 	ret = bmapping->a_ops->readpage(NULL, backpage);
+@@ -452,8 +448,7 @@ int cachefiles_read_or_alloc_page(struct fscache_retrieval *op,
+ 	if (block) {
+ 		/* submit the apparently valid page to the backing fs to be
+ 		 * read from disk */
+-		ret = cachefiles_read_backing_file_one(object, op, page,
+-						       &pagevec);
++		ret = cachefiles_read_backing_file_one(object, op, page);
+ 	} else if (cachefiles_has_space(cache, 0, 1) == 0) {
+ 		/* there's space in the cache we can use */
+ 		fscache_mark_page_cached(op, page);
+@@ -482,14 +477,11 @@ static int cachefiles_read_backing_file(struct cachefiles_object *object,
+ {
+ 	struct cachefiles_one_read *monitor = NULL;
+ 	struct address_space *bmapping = object->backer->d_inode->i_mapping;
+-	struct pagevec lru_pvec;
+ 	struct page *newpage = NULL, *netpage, *_n, *backpage = NULL;
+ 	int ret = 0;
+ 
+ 	_enter("");
+ 
+-	pagevec_init(&lru_pvec, 0);
+-
+ 	list_for_each_entry_safe(netpage, _n, list, lru) {
+ 		list_del(&netpage->lru);
+ 
+@@ -534,9 +526,7 @@ static int cachefiles_read_backing_file(struct cachefiles_object *object,
+ 		backpage = newpage;
+ 		newpage = NULL;
+ 
+-		page_cache_get(backpage);
+-		if (!pagevec_add(&lru_pvec, backpage))
+-			__pagevec_lru_add_file(&lru_pvec);
++		lru_cache_add_file(backpage);
+ 
+ 	reread_backing_page:
+ 		ret = bmapping->a_ops->readpage(NULL, backpage);
+@@ -559,9 +549,7 @@ static int cachefiles_read_backing_file(struct cachefiles_object *object,
+ 			goto nomem;
+ 		}
+ 
+-		page_cache_get(netpage);
+-		if (!pagevec_add(&lru_pvec, netpage))
+-			__pagevec_lru_add_file(&lru_pvec);
++		lru_cache_add_file(netpage);
+ 
+ 		/* install a monitor */
+ 		page_cache_get(netpage);
+@@ -643,9 +631,7 @@ static int cachefiles_read_backing_file(struct cachefiles_object *object,
+ 
+ 		fscache_mark_page_cached(op, netpage);
+ 
+-		page_cache_get(netpage);
+-		if (!pagevec_add(&lru_pvec, netpage))
+-			__pagevec_lru_add_file(&lru_pvec);
++		lru_cache_add_file(netpage);
+ 
+ 		/* the netpage is unlocked and marked up to date here */
+ 		fscache_end_io(op, netpage, 0);
+@@ -661,8 +647,6 @@ static int cachefiles_read_backing_file(struct cachefiles_object *object,
+ 
+ out:
+ 	/* tidy up */
+-	pagevec_lru_add_file(&lru_pvec);
+-
+ 	if (newpage)
+ 		page_cache_release(newpage);
+ 	if (netpage)
+diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
+index f23f455..787d89c 100644
+--- a/fs/nfs/dir.c
++++ b/fs/nfs/dir.c
+@@ -33,6 +33,7 @@
+ #include <linux/pagevec.h>
+ #include <linux/namei.h>
+ #include <linux/mount.h>
++#include <linux/swap.h>
+ #include <linux/sched.h>
+ #include <linux/kmemleak.h>
+ #include <linux/xattr.h>
+@@ -1757,7 +1758,6 @@ EXPORT_SYMBOL_GPL(nfs_unlink);
+  */
+ int nfs_symlink(struct inode *dir, struct dentry *dentry, const char *symname)
+ {
+-	struct pagevec lru_pvec;
+ 	struct page *page;
+ 	char *kaddr;
+ 	struct iattr attr;
+@@ -1797,11 +1797,8 @@ int nfs_symlink(struct inode *dir, struct dentry *dentry, const char *symname)
+ 	 * No big deal if we can't add this page to the page cache here.
+ 	 * READLINK will get the missing page from the server if needed.
+ 	 */
+-	pagevec_init(&lru_pvec, 0);
+-	if (!add_to_page_cache(page, dentry->d_inode->i_mapping, 0,
++	if (!add_to_page_cache_lru(page, dentry->d_inode->i_mapping, 0,
+ 							GFP_KERNEL)) {
+-		pagevec_add(&lru_pvec, page);
+-		pagevec_lru_add_file(&lru_pvec);
+ 		SetPageUptodate(page);
+ 		unlock_page(page);
+ 	} else
+diff --git a/include/linux/pagevec.h b/include/linux/pagevec.h
+index 2aa12b8..e4dbfab3 100644
+--- a/include/linux/pagevec.h
++++ b/include/linux/pagevec.h
+@@ -21,7 +21,7 @@ struct pagevec {
+ };
+ 
+ void __pagevec_release(struct pagevec *pvec);
+-void __pagevec_lru_add(struct pagevec *pvec, enum lru_list lru);
++void __pagevec_lru_add(struct pagevec *pvec);
+ unsigned pagevec_lookup(struct pagevec *pvec, struct address_space *mapping,
+ 		pgoff_t start, unsigned nr_pages);
+ unsigned pagevec_lookup_tag(struct pagevec *pvec,
+@@ -64,36 +64,4 @@ static inline void pagevec_release(struct pagevec *pvec)
+ 		__pagevec_release(pvec);
+ }
+ 
+-static inline void __pagevec_lru_add_anon(struct pagevec *pvec)
+-{
+-	__pagevec_lru_add(pvec, LRU_INACTIVE_ANON);
+-}
+-
+-static inline void __pagevec_lru_add_active_anon(struct pagevec *pvec)
+-{
+-	__pagevec_lru_add(pvec, LRU_ACTIVE_ANON);
+-}
+-
+-static inline void __pagevec_lru_add_file(struct pagevec *pvec)
+-{
+-	__pagevec_lru_add(pvec, LRU_INACTIVE_FILE);
+-}
+-
+-static inline void __pagevec_lru_add_active_file(struct pagevec *pvec)
+-{
+-	__pagevec_lru_add(pvec, LRU_ACTIVE_FILE);
+-}
+-
+-static inline void pagevec_lru_add_file(struct pagevec *pvec)
+-{
+-	if (pagevec_count(pvec))
+-		__pagevec_lru_add_file(pvec);
+-}
+-
+-static inline void pagevec_lru_add_anon(struct pagevec *pvec)
+-{
+-	if (pagevec_count(pvec))
+-		__pagevec_lru_add_anon(pvec);
+-}
+-
+ #endif /* _LINUX_PAGEVEC_H */
+diff --git a/mm/swap.c b/mm/swap.c
+index 2a10d08..83eff2f 100644
+--- a/mm/swap.c
++++ b/mm/swap.c
+@@ -474,7 +474,7 @@ void __lru_cache_add(struct page *page, enum lru_list lru)
+ 
+ 	page_cache_get(page);
+ 	if (!pagevec_space(pvec))
+-		__pagevec_lru_add(pvec, lru);
++		__pagevec_lru_add(pvec);
+ 	pagevec_add(pvec, page);
+ 	put_cpu_var(lru_add_pvec);
+ }
+@@ -594,7 +594,7 @@ void lru_add_drain_cpu(int cpu)
+ 	struct pagevec *pvec = &per_cpu(lru_add_pvec, cpu);
+ 
+ 	if (pagevec_count(pvec))
+-		__pagevec_lru_add(pvec, NR_LRU_LISTS);
++		__pagevec_lru_add(pvec);
+ 
+ 	pvec = &per_cpu(lru_rotate_pvecs, cpu);
+ 	if (pagevec_count(pvec)) {
+@@ -793,12 +793,10 @@ void lru_add_page_tail(struct page *page, struct page *page_tail,
+ static void __pagevec_lru_add_fn(struct page *page, struct lruvec *lruvec,
+ 				 void *arg)
+ {
+-	enum lru_list requested_lru = (enum lru_list)arg;
+ 	int file = page_is_file_cache(page);
+ 	int active = PageActive(page);
+ 	enum lru_list lru = page_lru(page);
+ 
+-	WARN_ON_ONCE(requested_lru < NR_LRU_LISTS && requested_lru != lru);
+ 	VM_BUG_ON(PageUnevictable(page));
+ 	VM_BUG_ON(PageLRU(page));
+ 
+@@ -811,11 +809,9 @@ static void __pagevec_lru_add_fn(struct page *page, struct lruvec *lruvec,
+  * Add the passed pages to the LRU, then drop the caller's refcount
+  * on them.  Reinitialises the caller's pagevec.
+  */
+-void __pagevec_lru_add(struct pagevec *pvec, enum lru_list lru)
++void __pagevec_lru_add(struct pagevec *pvec)
+ {
+-	VM_BUG_ON(is_unevictable_lru(lru));
+-
+-	pagevec_lru_move_fn(pvec, __pagevec_lru_add_fn, (void *)lru);
++	pagevec_lru_move_fn(pvec, __pagevec_lru_add_fn, NULL);
+ }
+ EXPORT_SYMBOL(__pagevec_lru_add);
+ 
+-- 
+1.8.1.4
+
