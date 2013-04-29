@@ -1,67 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757321Ab3D2Ld3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 07:33:29 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:36563 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751805Ab3D2Ld2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 07:33:28 -0400
-Message-ID: <517E5A38.7050609@cogentembedded.com>
-Date: Mon, 29 Apr 2013 15:32:08 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Alexander Gordeev <agordeev@redhat.com>
-CC: Jeff Garzik <jgarzik@pobox.com>, linux-kernel@vger.kernel.org,
-        linux-ide@vger.kernel.org, Jan Beulich <JBeulich@suse.com>
-Subject: Re: [PATCH] AHCI: Make distinct names for ports in /proc/interrupts
-References: <20130429101237.GA27738@dhcp-26-207.brq.redhat.com>
-In-Reply-To: <20130429101237.GA27738@dhcp-26-207.brq.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1757512Ab3D2LeV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 07:34:21 -0400
+Received: from plane.gmane.org ([80.91.229.3]:60653 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751206Ab3D2LeT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Apr 2013 07:34:19 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: "lkml@tigusoft.pl" <lkml@tigusoft.pl>
+Subject: debugging live kernel
+Date: Mon, 29 Apr 2013 13:34:08 +0200
+Organization: tigusoft.pl
+Message-ID: <klllre$plq$1@ger.gmane.org>
+Reply-To: lkml@tigusoft.pl
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@ger.gmane.org
+X-Gmane-NNTP-Posting-Host: bolobolo2.torservers.net
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Icedove/3.0.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
-
-On 29-04-2013 14:12, Alexander Gordeev wrote:
-
-> Currently all interrupts assigned to AHCI ports show up in
-> '/proc/interrupts' as 'ahci'. This fix adds port numbers as
-> suffixes and hence makes the descriptions distinct.
-
-> Reported-by: Jan Beulich <JBeulich@suse.com>
-> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-> ---
->   drivers/ata/ahci.c |    6 ++++--
->   drivers/ata/ahci.h |    1 +
->   2 files changed, 5 insertions(+), 2 deletions(-)
-
-> diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
-> index 3b9a7b1..dc5c1aa 100644
-> --- a/drivers/ata/ahci.c
-> +++ b/drivers/ata/ahci.c
-> @@ -1146,10 +1146,12 @@ int ahci_host_activate(struct ata_host *host, int irq, unsigned int n_msis,
->   			return -EINVAL;
->
->   		for (i = 0; i < n_irqs; i++) {
-> +			struct ahci_port_priv *pp = host->ports[i]->private_data;
-
-    Empty line wouldn't hurt here, after declaration.
-
-> +			snprintf(pp->irq_desc, sizeof(pp->irq_desc),
-> +				 "%s%d", dev_driver_string(host->dev), i);
->   			rc = devm_request_threaded_irq(host->dev, irq + i,
->   				ahci_multi_irqs_intr, ahci_port_thread_fn,
-> -				IRQF_SHARED, dev_driver_string(host->dev),
-> -				host->ports[i]);
-> +				IRQF_SHARED, pp->irq_desc, host->ports[i]);
->   			if (rc)
->   				goto out_free_irqs;
->   		}
-
-WBR, Sergei
+In case if my currently running kernel starts to do strange things and I
+suspect it might have bug or was corrupted, what steps can be taken to
+check for more info, other then dmesg?
 
