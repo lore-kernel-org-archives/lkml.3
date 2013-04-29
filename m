@@ -1,66 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757053Ab3D2Obk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 10:31:40 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:45588 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751449Ab3D2Obj (ORCPT
+	id S1757553Ab3D2OfQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 10:35:16 -0400
+Received: from smtp.eu.citrix.com ([46.33.159.39]:19090 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753853Ab3D2OfO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 10:31:39 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: Re: [PATCH RESEND v5] fat: editions to support fat_fallocate
-References: <1367107703-2665-1-git-send-email-linkinjeon@gmail.com>
-Date: Mon, 29 Apr 2013 23:31:33 +0900
-In-Reply-To: <1367107703-2665-1-git-send-email-linkinjeon@gmail.com> (Namjae
-	Jeon's message of "Sun, 28 Apr 2013 09:08:23 +0900")
-Message-ID: <87ppxd4ddm.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
+	Mon, 29 Apr 2013 10:35:14 -0400
+X-IronPort-AV: E=Sophos;i="4.87,552,1363132800"; 
+   d="scan'208";a="4040847"
+Message-ID: <1367246111.3142.309.camel@zakaz.uk.xensource.com>
+Subject: Re: [PATCH v2 1/2] xen/balloon: Notify a host about a guest memory
+ size limit
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Daniel Kiper <daniel.kiper@oracle.com>
+CC: "carsten@schiers.de" <carsten@schiers.de>,
+        "darren.s.shepherd@gmail.com" <darren.s.shepherd@gmail.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        "Ian Jackson" <Ian.Jackson@eu.citrix.com>,
+        "james-xen@dingwall.me.uk" <james-xen@dingwall.me.uk>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Date: Mon, 29 Apr 2013 15:35:11 +0100
+In-Reply-To: <1367235468-8360-2-git-send-email-daniel.kiper@oracle.com>
+References: <1367235468-8360-1-git-send-email-daniel.kiper@oracle.com>
+	 <1367235468-8360-2-git-send-email-daniel.kiper@oracle.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Namjae Jeon <linkinjeon@gmail.com> writes:
+On Mon, 2013-04-29 at 12:37 +0100, Daniel Kiper wrote:
+> Notify a host about a guest memory size limit.
+> 
+> Idea of this patch was discussed with Ian Campbell and Ian Jackson.
+> 
+> Signed-off-by: Daniel Kiper <daniel.kiper@oracle.com>
+> ---
+>  drivers/xen/balloon.c |   25 +++++++++++++++++++++++++
+>  1 file changed, 25 insertions(+)
+> 
+> diff --git a/drivers/xen/balloon.c b/drivers/xen/balloon.c
+> index a56776d..856661f 100644
+> --- a/drivers/xen/balloon.c
+> +++ b/drivers/xen/balloon.c
+> @@ -65,6 +65,7 @@
+>  #include <xen/balloon.h>
+>  #include <xen/features.h>
+>  #include <xen/page.h>
+> +#include <xen/xenbus.h>
+>  
+>  /*
+>   * balloon_process() state:
+> @@ -586,6 +587,9 @@ static void __init balloon_add_region(unsigned long start_pfn,
+>  static int __init balloon_init(void)
+>  {
+>  	int i;
+> +#ifdef CONFIG_XEN_BALLOON_MEMORY_HOTPLUG
+> +	int rc;
+> +#endif
+>  
+>  	if (!xen_domain())
+>  		return -ENODEV;
+> @@ -621,6 +625,27 @@ static int __init balloon_init(void)
+>  			balloon_add_region(PFN_UP(xen_extra_mem[i].start),
+>  					   PFN_DOWN(xen_extra_mem[i].size));
+>  
+> +#ifdef CONFIG_XEN_BALLOON_MEMORY_HOTPLUG
+> +	/*
+> +	 * Notify a host about our memory size limit.
+> +	 *
+> +	 * The guest-max value is in KiB, so MAX_DOMAIN_PAGES should
+> +	 * be converted respectively. PAGE_SHIFT converts pages to bytes,
+> +	 * hence PAGE_SHIFT - 10.
+> +	 */
+> +	rc = xenbus_printf(XBT_NIL, "memory", "guest-max", "%lu",
+> +				MAX_DOMAIN_PAGES << (PAGE_SHIFT - 10));
+> +
+> +	if (rc < 0)
+> +		pr_info("xen/balloon: Memory hotplug may not be supported "
+> +			"in some environments: %i\n", rc);
+> +#else
+> +	xenbus_printf(XBT_NIL, "memory", "guest-max", "%lu",
 
-I couldn't review fully though.
+Would it be OK to not do anything in the non-hotplug case? That's just
+the historical behaviour right?
 
-> +	if (mmu_private_ideal < MSDOS_I(inode)->mmu_private &&
-> +	    filp->f_dentry->d_count == 1)
-> +		fat_truncate_blocks(inode, inode->i_size);
+Would you expect this value to differ from static-max?
 
-Hm, why d_count == 1 check is needed? Feel strange and racy.
+> +			(balloon_stats.current_pages +
+> +			 balloon_stats.balloon_low +
+> +			 balloon_stats.balloon_high) << (PAGE_SHIFT - 10));
+> +#endif
+> +
+>  	return 0;
+>  }
+>  
 
-> +		/* Start the allocation.We are not zeroing out the clusters */
-> +		while (nr_cluster-- > 0) {
-> +			err = fat_alloc_clusters(inode, &cluster, 1);
 
-Why doesn't allocate clusters at once by fat_alloc_clusters()?
-
-> +	size = i_size_read(inode);
-> +	mmu_private_actual = MSDOS_I(inode)->mmu_private;
-> +	mmu_private_ideal = round_up(size, sb->s_blocksize);
-> +	if ((mmu_private_actual > mmu_private_ideal) && (pos > size)) {
-> +		err = fat_zero_falloc_area(file, mapping, pos);
-> +		if (err) {
-> +			fat_msg(sb, KERN_ERR,
-> +				"Error (%d) zeroing fallocated area", err);
-> +			return err;
-> +		}
-> +	}
-
-This way probably inefficient. This would write data twice times (one is
-zeroed, one is actual data). So, cpu time would be twice higher if
-user uses fallocated, right?
-
-Difference of fallocated area would be whether get_block() set
-buffer_new() or not? If true, we should change get_block(), not
-write_begin()?
-
-Thanks.
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
