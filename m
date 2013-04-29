@@ -1,91 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757524Ab3D2QNA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 12:13:00 -0400
-Received: from vserver.eikelenboom.it ([84.200.39.61]:45600 "EHLO
-	smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757007Ab3D2QM5 (ORCPT
+	id S1757715Ab3D2QNQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 12:13:16 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:38971 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757349Ab3D2QM7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 12:12:57 -0400
-X-Greylist: delayed 452 seconds by postgrey-1.27 at vger.kernel.org; Mon, 29 Apr 2013 12:12:57 EDT
-Date: Mon, 29 Apr 2013 18:05:20 +0200
-From: Sander Eikelenboom <linux@eikelenboom.it>
-Organization: Eikelenboom IT services
-X-Priority: 3 (Normal)
-Message-ID: <1366146101.20130429180520@eikelenboom.it>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: axboe@kernel.dk, xen-devel@lists.xensource.com, roger.pau@citrix.com,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [GIT PULL] (xen) stable/for-jens-3.10 xenwatch: page allocation failure: order:7, mode:0x10c0d0
-In-Reply-To: <20130429154623.GB12754@phenom.dumpdata.com>
-References: <20130419144401.GA14700@phenom.dumpdata.com> <1094538380.20130424201637@eikelenboom.it> <20130429154623.GB12754@phenom.dumpdata.com>
+	Mon, 29 Apr 2013 12:12:59 -0400
+To: Florian Westphal <fw@strlen.de>
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        martin.petersen@oracle.com, axboe@kernel.dk,
+        adam radford <aradford@gmail.com>
+Subject: Re: "WRITE SAME failed. Manually zeroing" with 3w-xxxx driver
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
+Organization: Oracle Corporation
+References: <20130429152639.GG32324@breakpoint.cc>
+Date: Mon, 29 Apr 2013 12:13:01 -0400
+In-Reply-To: <20130429152639.GG32324@breakpoint.cc> (Florian Westphal's
+	message of "Mon, 29 Apr 2013 17:26:39 +0200")
+Message-ID: <yq1obcxpb76.fsf@sermon.lab.mkp.net>
+User-Agent: Gnus/5.130005 (Ma Gnus v0.5) Emacs/24.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>>>>> "Florian" == Florian Westphal <fw@strlen.de> writes:
 
-Monday, April 29, 2013, 5:46:23 PM, you wrote:
+Florian> After update to 3.8 dmesg is spammed with: kernel: [
+Florian> 280.272094] 3w-xxxx: scsi8: Unknown scsi opcode: 0x41 kernel: [
+Florian> 280.272107] sd 8:0:0:0: [sda] Unhandled error code kernel: 
 
-> On Wed, Apr 24, 2013 at 08:16:37PM +0200, Sander Eikelenboom wrote:
->> Friday, April 19, 2013, 4:44:01 PM, you wrote:
->> 
->> > Hey Jens,
->> 
->> > Please in your spare time (if there is such a thing at a conference)
->> > pull this branch:
->> 
->> >  git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/for-jens-3.10
->> 
+Interesting. It looks like the 3ware handles this at the driver level
+instead of passing the command through to the disk and letting it
+fail. That in turn means that the logic we have in place to disable WS
+when the disk does not support it does not get triggered.
 
-> .. snip..
->> Hi Konrad / Roger,
->> 
->> I tried this pull on top of latest Linus latest linux-3.9 tree, but although it seems to boot and work fine at first, i seem to get trouble after running for about a day.
->> Without this pull it runs fine for several days.
-> .. snipp.
+The driver should really fill out the sense buffer in that case.
 
->> [18496.013743] xenwatch: page allocation failure: order:7, mode:0x10c0d0
->> [18496.031948] Pid: 54, comm: xenwatch Not tainted 3.9.0-rc8-20130424-jens+ #1
->> [18496.049897] Call Trace:
->> [18496.067674]  [<ffffffff81100c51>] warn_alloc_failed+0xf1/0x140
->> [18496.085453]  [<ffffffff810b25ed>] ? trace_hardirqs_on+0xd/0x10
->> [18496.102951]  [<ffffffff810bdb24>] ? on_each_cpu_mask+0x94/0xd0
->> [18496.120270]  [<ffffffff811028af>] __alloc_pages_nodemask+0x69f/0x960
->> [18496.137306]  [<ffffffff8113a161>] alloc_pages_current+0xb1/0x160
->> [18496.154051]  [<ffffffff81100679>] __get_free_pages+0x9/0x40
->> [18496.170579]  [<ffffffff81142af4>] __kmalloc+0x134/0x160
->> [18496.186921]  [<ffffffff815832d0>] xen_blkbk_probe+0x170/0x2f0
->> [18496.202963]  [<ffffffff81474ce7>] xenbus_dev_probe+0x77/0x130
->> [18496.218714]  [<ffffffff8156a390>] ? __driver_attach+0xa0/0xa0
->> [18496.234237]  [<ffffffff8156a151>] driver_probe_device+0x81/0x220
->> [18496.249605]  [<ffffffff8198198c>] ? klist_next+0x8c/0x110
->> [18496.264681]  [<ffffffff8156a390>] ? __driver_attach+0xa0/0xa0
->> [18496.279500]  [<ffffffff8156a3db>] __device_attach+0x4b/0x50
->> [18496.294138]  [<ffffffff815684e8>] bus_for_each_drv+0x68/0x90
->> [18496.308553]  [<ffffffff8156a0c9>] device_attach+0x89/0x90
->> [18496.322694]  [<ffffffff81569258>] bus_probe_device+0xa8/0xd0
->> [18496.336640]  [<ffffffff81567c80>] device_add+0x650/0x720
-
-> .. snip..
-
-> Jens,
-> I don't know if you had pulled this git tree yet (I don't see it in
-> your for-3.10/* branches).
-
-> But if you have, Sander has found a bug (and Roger has a fix for it).
-
-> Whether you would like to wait until v3.11 to pull it (and me sending
-> the git pull around a month) is OK. Or pull it now and we will fix the
-> bugs in the -rc's as they creep up.
-
-Roger's fix seems to work for me ..
-
---
-Sander
-
-> Thanks!
+Could you please test the patch below?
 
 
+Florian> This goes on and on.
+
+The second question is what it is that's issuing these zeroouts at boot?
+Which filesystem are you using? What's your DM/MD config?
+
+-- 
+Martin K. Petersen	Oracle Linux Engineering
+
+
+3w-xxxx: Create sense buffer for unsupported commands
+
+Make the driver return appropriate sense data when an unsupported
+operation is queued. This will cause the SCSI layer to stop issuing the
+offending command.
+
+Reported-by: Florian Westphal <fw@strlen.de>
+CC: adam radford <aradford@gmail.com>
+Signed-off-by: Martin K. Petersen <martin.petersen@oracle.com>
+
+diff --git a/drivers/scsi/3w-xxxx.c b/drivers/scsi/3w-xxxx.c
+index 56662ae..b9276d1 100644
+--- a/drivers/scsi/3w-xxxx.c
++++ b/drivers/scsi/3w-xxxx.c
+@@ -216,6 +216,7 @@
+ #include <scsi/scsi_host.h>
+ #include <scsi/scsi_tcq.h>
+ #include <scsi/scsi_cmnd.h>
++#include <scsi/scsi_eh.h>
+ #include "3w-xxxx.h"
+ 
+ /* Globals */
+@@ -2009,7 +2010,8 @@ static int tw_scsi_queue_lck(struct scsi_cmnd *SCpnt, void (*done)(struct scsi_c
+ 			printk(KERN_NOTICE "3w-xxxx: scsi%d: Unknown scsi opcode: 0x%x\n", tw_dev->host->host_no, *command);
+ 			tw_dev->state[request_id] = TW_S_COMPLETED;
+ 			tw_state_request_finish(tw_dev, request_id);
+-			SCpnt->result = (DID_BAD_TARGET << 16);
++			SCpnt->result = (DRIVER_SENSE << 24) | SAM_STAT_CHECK_CONDITION;
++			scsi_build_sense_buffer(1, SCpnt->sense_buffer, ILLEGAL_REQUEST, 0x20, 0);
+ 			done(SCpnt);
+ 			retval = 0;
+ 	}
