@@ -1,74 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932507Ab3D2WjK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 18:39:10 -0400
-Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:2340 "EHLO
-	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932227Ab3D2WjG (ORCPT
+	id S932818Ab3D2Wm3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 18:42:29 -0400
+Received: from mail-gg0-f181.google.com ([209.85.161.181]:60127 "EHLO
+	mail-gg0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932227Ab3D2Wm2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 18:39:06 -0400
-From: Jerry Hoemann <jerry.hoemann@hp.com>
-To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com
-Cc: x86@kernel.org, jacob.shin@amd.com, gregkh@linuxfoundation.org,
-        yinghai@kernel.org, linux-kernel@vger.kernel.org,
-        Jerry Hoemann <jerry.hoemann@hp.com>
-Subject: [PATCH] x86/mm: account for PGDIR_SIZE alignment
-Date: Mon, 29 Apr 2013 16:38:49 -0600
-Message-Id: <1367275129-22383-1-git-send-email-jerry.hoemann@hp.com>
-X-Mailer: git-send-email 1.8.1.4
+	Mon, 29 Apr 2013 18:42:28 -0400
+Message-ID: <517EF751.2050600@gmail.com>
+Date: Mon, 29 Apr 2013 18:42:25 -0400
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Olivier Langlois <olivier@trillion01.com>
+CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, schwidefsky@de.ibm.com,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 1/3] process cputimer is moving faster than its corresponding
+ clock
+References: <1365184746.874.103.camel@Wailaba2>  <1365593710.30071.52.camel@laptop> <1365608911.707.65.camel@Wailaba2>  <1365763837.17140.52.camel@laptop> <1365782115.17140.68.camel@laptop>  <CAFTL4hwQ4FZs0VCNXP37f=+DBW7Q2EQc6PW_EtYiVnZCPWN4OQ@mail.gmail.com>  <CAHGf_=pWPT4XdrJ8ZveL4zJKm1SE0whpL_fMHd5_TokuNQxSJQ@mail.gmail.com>  <CAHGf_=psD4V-U4FFwAWr4k3ZP6p=GVkNY_0S-Cg06m-=89MM7Q@mail.gmail.com>  <1366951210.7911.28.camel@Wailaba2> <1366957639.7911.42.camel@Wailaba2>  <517AD0AE.1030404@gmail.com> <1367037606.7911.66.camel@Wailaba2>  <517DFFE9.4050808@gmail.com> <1367255407.8833.4.camel@Wailaba2>  <517EB45D.60007@gmail.com> <1367259631.8833.27.camel@Wailaba2>  <517EBC71.4070709@gmail.com> <1367261667.8833.39.camel@Wailaba2>  <517EC582.8090400@gmail.com> <1367270454.8833.45.camel@Wailaba2>
+In-Reply-To: <1367270454.8833.45.camel@Wailaba2>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Patch for 3.0-stable.  Function find_early_table_space removed upstream.
+>> tick lost doesn't occur an issue. because glibc only test posix conformance and
+>> posix allow inacculacy. In other words, timer must not run faster than real clock.
+>> but lost and makes slower are accepted in the test.
+>>
+> What is lost isn't cputimer tick. They are accounted
+> account_group_exec_runtime(). What is lost it is what is added to
+> curr->sum_exec_runtime. Thus making the thread group clock running
+> slower than the cputimer.
+> 
+> Please spend some time reading the code and less time writing e-mails.
+> 
+> Read the code of release_task() and where it is called in do_exit().
+> 
+> Once it is done, it should be clear to you.
 
-Fixes panic in alloc_low_page due to pgt_buf overflow during
-init_memory_mapping.
+After several grepping, I may got your point. Guys, sig->sum_sched_runtime is gathered
+in __exit_signal, not release_task() nor do_exit().
 
-find_early_table_space sizes pgt_buf based upon the size of the
-memory being mapped, but it does not take into account the alignment
-of the memory.  When the region being mapped spans a 512GB (PGDIR_SIZE)
-alignment, a panic from alloc_low_pages occurs.
+So, I'm now convinced your patch is correct. Even though the comments is terribuly misleading.
 
-kernel_physical_mapping_init takes into account PGDIR_SIZE alignment.
-This causes an extra call to alloc_low_page to be made.  This extra call
-isn't accounted for by find_early_table_space and causes a kernel panic.
 
-Change is to take into account PGDIR_SIZE alignment in find_early_table_space.
-
-Signed-off-by: Jerry Hoemann <jerry.hoemann@hp.com>
----
- arch/x86/mm/init.c | 5 +++++
- 1 file changed, 5 insertions(+)
-
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index c22c423..96c4577 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -44,11 +44,15 @@ static void __init find_early_table_space(struct map_range *mr, int nr_range)
- 	int i;
- 	unsigned long puds = 0, pmds = 0, ptes = 0, tables;
- 	unsigned long start = 0, good_end;
-+	unsigned long pgd_extra = 0;
- 	phys_addr_t base;
- 
- 	for (i = 0; i < nr_range; i++) {
- 		unsigned long range, extra;
- 
-+		if ((mr[i].end >> PGDIR_SHIFT) - (mr[i].start >> PGDIR_SHIFT))
-+			pgd_extra++;
-+
- 		range = mr[i].end - mr[i].start;
- 		puds += (range + PUD_SIZE - 1) >> PUD_SHIFT;
- 
-@@ -73,6 +77,7 @@ static void __init find_early_table_space(struct map_range *mr, int nr_range)
- 	tables = roundup(puds * sizeof(pud_t), PAGE_SIZE);
- 	tables += roundup(pmds * sizeof(pmd_t), PAGE_SIZE);
- 	tables += roundup(ptes * sizeof(pte_t), PAGE_SIZE);
-+	tables += (pgd_extra * PAGE_SIZE);
- 
- #ifdef CONFIG_X86_32
- 	/* for fixmap */
--- 
-1.8.1.4
 
