@@ -1,71 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757729Ab3D2Nej (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 09:34:39 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:53467 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757298Ab3D2Neh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 09:34:37 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Gupta, Pekon" <pekon@ti.com>
-Subject: Re: [PATCH 21/21] mtd: omap2: allow bulding as a module
-Date: Mon, 29 Apr 2013 15:34:10 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
-Cc: Tony Lindgren <tony@atomide.com>, "Mohammed, Afzal" <afzal@ti.com>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-References: <1366734653-488286-1-git-send-email-arnd@arndb.de> <20130423180320.GJ10155@atomide.com> <20980858CB6D3A4BAE95CA194937D5E73E9BCFAE@DBDE04.ent.ti.com>
-In-Reply-To: <20980858CB6D3A4BAE95CA194937D5E73E9BCFAE@DBDE04.ent.ti.com>
+	id S1758235Ab3D2Ngr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 09:36:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56659 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757913Ab3D2Ngo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Apr 2013 09:36:44 -0400
+Date: Mon, 29 Apr 2013 09:29:53 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Michel Lespinasse <walken@google.com>
+Cc: Hugh Dickins <hughd@google.com>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: 3.9-rc5: Encountedred INFO: rcu_sched self-detected stall on CPU
+ due to 09a9f1d27
+Message-ID: <20130429132952.GA8204@redhat.com>
+References: <20130412181348.GA2253@redhat.com>
+ <CANN689GKfxM3R96wgY8-+FftpVT76zMFcHdgKccNKnjHGfYq1Q@mail.gmail.com>
+ <20130415163552.GA31868@redhat.com>
+ <20130415173424.GB31868@redhat.com>
+ <20130415175929.GB30583@redhat.com>
+ <20130415191304.GC30583@redhat.com>
+ <alpine.LNX.2.00.1304151425540.1030@eggly.anvils>
+ <20130416002123.GA29465@google.com>
+ <alpine.LNX.2.00.1304151825270.1376@eggly.anvils>
+ <CANN689EcqDg0xp+74SoQJYQMecU4z-WWdA+7FtM3Sc_R-uK=sg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201304291534.10539.arnd@arndb.de>
-X-Provags-ID: V02:K0:MIy0SF4cap3z3J9gW6tq5Lw+WEMLg+eEnn+ObM0B8fg
- 9lRU6PJw9i4Ych5xtJsoG4MswDMOc+WsrPL6JPUK5ivBLiF3ES
- xCx/TAXmNg4hch6OmG3Ok2xOo80tvXaNkJo/WXFczZwZ1+Gc0W
- I88aHaXmf3MJ0KNdLb+chr3YiR56M4PBYM1ZbO6OdsJGRUf1rU
- LvOo7lDg3sNm6nwNsInpxorb2VQ59sVT+AO9nBxHHDLmu6QJM/
- kYb5sK7xz/uqZul6n/6wPd7sRgotXohqhO+LRikKapLECQxEpz
- QcjRn95q+I9A/tIlKBQmrk3oOcXIVuUD0rGbu8XXKO9LCmxNjC
- pPEi851UZiF5IoqxAuW0=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CANN689EcqDg0xp+74SoQJYQMecU4z-WWdA+7FtM3Sc_R-uK=sg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 24 April 2013, Gupta, Pekon wrote:
-> [Pekon]: 
-> ELM module is required in for Hardware based ECC correction for 
-> NAND devices. And this driver has a very small foot-print.
+On Mon, Apr 29, 2013 at 01:57:18AM -0700, Michel Lespinasse wrote:
+> On Mon, Apr 15, 2013 at 6:27 PM, Hugh Dickins <hughd@google.com> wrote:
+> > On Mon, 15 Apr 2013, Michel Lespinasse wrote:
+> >> sys_brk() passes the length as the difference of two page aligned addresses, so it's fine. But vm_brk() doesn't - it calls do_brk() which page aligns the length, but then vm_brk passes the unaligned length to mm_populate().
+> >>
+> >> What do you think of the following ? len is already a PAGE_SIZE multiple when called from sys_brk()...
+> >
+> > Yes, that's good.
+> >>
+> >> diff --git a/mm/mmap.c b/mm/mmap.c
+> >> index 0db0de1c2fbe..6af8b0d1c7db 100644
+> >> --- a/mm/mmap.c
+> >> +++ b/mm/mmap.c
+> >> @@ -2557,10 +2557,6 @@ static unsigned long do_brk(unsigned long addr, unsigned long len)
+> >>       pgoff_t pgoff = addr >> PAGE_SHIFT;
+> >>       int error;
+> >>
+> >> -     len = PAGE_ALIGN(len);
+> >> -     if (!len)
+> >> -             return addr;
+> >> -
+> >>       flags = VM_DATA_DEFAULT_FLAGS | VM_ACCOUNT | mm->def_flags;
+> >>
+> >>       error = get_unmapped_area(NULL, addr, len, 0, MAP_FIXED);
+> >> @@ -2643,6 +2639,10 @@ unsigned long vm_brk(unsigned long addr, unsigned long len)
+> >>       unsigned long ret;
+> >>       bool populate;
+> >>
+> >> +     len = PAGE_ALIGN(len);
+> >> +     if (!len)
+> >> +             return addr;
+> >> +
+> >>       down_write(&mm->mmap_sem);
+> >>       ret = do_brk(addr, len);
+> >>       populate = ((mm->def_flags & VM_LOCKED) != 0);
 > 
-> The only cases this drives would not be used are:
-> (a) Using S/W based ECC scheme, which have vey high CPU utilization
-> (b) Using single bit ECC scheme, which are becoming obsolete due to
->  increasing NAND densities.
-> For most of the cases ELM module will be used with nand-driver. So
-> there should be no harm in having this module as built-in, if not used
-> in 10% of the use-cases.
+> Vivek - what should I do with this change ? Do you want to take it as
+> part of your series, or should I push to Linus/Andrew ?
 > 
-> Thus I think it's better to keep this module tied to GPMC module, 
-> rather than independent control via KConfig.
-> And user should just selects which ECC scheme he would like to
-> use via DT, without worrying about KConfig options.
+> All vm_brk calls are in elf and aout loaders, so I don' t think we can
+> hit the issue without your changes. Still, it may be good to make
+> vm_brk robust anyway.
 
-Sorry, I'm lost here and have no idea what you are actually suggesting
-we do. Can you phrase that as a patch?
+Hi Michel,
 
-Unless you come up with a better solution, I would still like to queue
-up my patch since it fixes an annoying bug and seems to have no downsides.
- 
-> I'm working in cleaning up omap2-nand driver to remove some 
-> redundancies. So would like to know your feedback on same..
+Thanks for the fix. Sorry, could not respond earlier as I was away from
+work.
 
-Sure, just Cc me on your patches.
+This patch did fix the issue for me. I think it is a good idea to push
+this fix to Andrew irrespective of my changes. My series is in RFC phase
+and there are no guarantees whether patches will be accespected or not.
 
-	Arnd
+So please go ahead and send this fix to andrew for inclusion. 
+
+Thanks
+Vivek
