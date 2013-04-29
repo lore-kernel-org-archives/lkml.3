@@ -1,123 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757467Ab3D2Khh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 06:37:37 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:43141 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757065Ab3D2Khg (ORCPT
+	id S1757552Ab3D2Kkr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 06:40:47 -0400
+Received: from smtp-69.nebula.fi ([83.145.220.69]:52879 "EHLO
+	smtp-68.nebula.fi" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756853Ab3D2Kkq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 06:37:36 -0400
-Date: Mon, 29 Apr 2013 12:36:00 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: kosaki.motohiro@gmail.com
-Cc: linux-kernel@vger.kernel.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Olivier Langlois <olivier@trillion01.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        David Miller <davem@davemloft.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH 2/2] posix-cpu-timers: fix wrong timer initialization
-Message-ID: <20130429103600.GB31700@dyad.programming.kicks-ass.net>
-References: <1367216762-3933-1-git-send-email-kosaki.motohiro@gmail.com>
- <1367216762-3933-2-git-send-email-kosaki.motohiro@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1367216762-3933-2-git-send-email-kosaki.motohiro@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 29 Apr 2013 06:40:46 -0400
+From: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
+To: linux-kernel@vger.kernel.org, linux@openrisc.net
+Cc: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
+Subject: [PATCH v2] openrisc: call do_notify_resume() with interrupts enabled
+Date: Mon, 29 Apr 2013 13:40:32 +0300
+Message-Id: <1367232032-14270-1-git-send-email-stefan.kristiansson@saunalahti.fi>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <20130429095040.GA11785@chokladfabriken.org>
+References: <20130429095040.GA11785@chokladfabriken.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 29, 2013 at 02:26:02AM -0400, kosaki.motohiro@gmail.com wrote:
-> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> 
-> Currently glibc's rt/tst-cputimer1 testcase is spradically fail because
-> a timer created by timer_create() may faire earlier than an argument.
-> 
-> There are two faults. 1) cpu_timer_sample_group() adds task_delta_exec(current).
-> But it is definity silly idea especially when multi thread. cputimer should
-> be initialized by committed exec runtime. i.e. it should not be added
-> scheduler delta. 2) expire time should be current time + timeout. In the other
-> words, expire calculation should take care scheduler delta.
+A signal delivered through do_notify_resume() would cause the
+irqs_disabled() check in _local_bh_enable_ip() to be triggered.
 
-I'm sorry, that completely fails to parse.
+Enable interrupts before calling do_notify_resume(), but read
+the current_thread_info->flags before doing so.
 
-> -/*
-> - * Lock/unlock the current runqueue - to extract task statistics:
-> - */
-> -extern unsigned long long task_delta_exec(struct task_struct *);
+Signed-off-by: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
+---
+ arch/openrisc/kernel/entry.S  | 5 +++--
+ arch/openrisc/kernel/signal.c | 7 ++++---
+ 2 files changed, 7 insertions(+), 5 deletions(-)
 
-Yay.. this thing dying is good -- it did seem strange to compute the current
-delta but not also read sum_exec_runtime under the same lock.
+diff --git a/arch/openrisc/kernel/entry.S b/arch/openrisc/kernel/entry.S
+index d8a455e..7564784 100644
+--- a/arch/openrisc/kernel/entry.S
++++ b/arch/openrisc/kernel/entry.S
+@@ -858,8 +858,8 @@ _work_pending:
+ 	 * if (current_thread_info->flags & _TIF_NEED_RESCHED)
+ 	 *     schedule();
+ 	 */
+-	l.lwz   r5,TI_FLAGS(r10)
+-	l.andi	r3,r5,_TIF_NEED_RESCHED
++	l.lwz   r4,TI_FLAGS(r10)
++	l.andi	r3,r4,_TIF_NEED_RESCHED
+ 	l.sfnei r3,0
+ 	l.bnf   _work_notifysig
+ 	 l.nop
+@@ -874,6 +874,7 @@ _work_pending:
+  * must be set so that the syscall restart functionality works.
+  */
+ _work_notifysig:
++	ENABLE_INTERRUPTS(r29)
+ 	l.jal	do_notify_resume
+ 	 l.ori	r3,r1,0		  /* pt_regs */
+ 
+diff --git a/arch/openrisc/kernel/signal.c b/arch/openrisc/kernel/signal.c
+index ae167f7..032bed1 100644
+--- a/arch/openrisc/kernel/signal.c
++++ b/arch/openrisc/kernel/signal.c
+@@ -331,12 +331,13 @@ void do_signal(struct pt_regs *regs)
+ 	return;
+ }
+ 
+-asmlinkage void do_notify_resume(struct pt_regs *regs)
++asmlinkage void do_notify_resume(struct pt_regs *regs,
++				 unsigned long thread_flags)
+ {
+-	if (current_thread_info()->flags & _TIF_SIGPENDING)
++	if (thread_flags & _TIF_SIGPENDING)
+ 		do_signal(regs);
+ 
+-	if (current_thread_info()->flags & _TIF_NOTIFY_RESUME) {
++	if (thread_flags & _TIF_NOTIFY_RESUME) {
+ 		clear_thread_flag(TIF_NOTIFY_RESUME);
+ 		tracehook_notify_resume(regs);
+ 	}
+-- 
+1.8.1.2
 
-> diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
-> index e56be4c..dc61bc3 100644
-> --- a/kernel/posix-cpu-timers.c
-> +++ b/kernel/posix-cpu-timers.c
-> @@ -203,12 +203,10 @@ posix_cpu_clock_set(const clockid_t which_clock, const struct timespec *tp)
->  	return error;
->  }
->  
-> -
-> -/*
-> - * Sample a per-thread clock for the given task.
-> - */
-> -static int cpu_clock_sample(const clockid_t which_clock, struct task_struct *p,
-> -			    union cpu_time_count *cpu)
-> +static int do_cpu_clock_sample(const clockid_t which_clock,
-> +			       struct task_struct *p,
-> +			       bool add_delta,
-> +			       union cpu_time_count *cpu)
-
-Would not thread_cputime() (to mirror thread_group_cputime()) be a better name?
-
-Also, I would think both these functions would be a good place to insert a
-comment explaining the difference between timer and clock.
-
-> +static int cpu_clock_sample(const clockid_t which_clock, struct task_struct *p,
-> +			    union cpu_time_count *cpu)
-> +{
-> +	return do_cpu_clock_sample(which_clock, p, true, cpu);
-> +}
-
-> @@ -700,7 +707,7 @@ static int posix_cpu_timer_set(struct k_itimer *timer, int flags,
->  	 * check if it's already passed.  In short, we need a sample.
->  	 */
->  	if (CPUCLOCK_PERTHREAD(timer->it_clock)) {
-> -		cpu_clock_sample(timer->it_clock, p, &val);
-> +		do_cpu_clock_sample(timer->it_clock, p, false, &val);
->  	} else {
->  		cpu_timer_sample_group(timer->it_clock, p, &val);
->  	}
-
-This would suggest:
-
-static inline int cpu_timer_sample(const clockid_t which_clock, struct task_struct *p, union cpu_time_count *cpu)
-{
-	return do_cpu_clock_sample(which_clock, p, false, cpu);
-}
-
-That would preserve the: cpu_{timer,clock}_sample{,_group}() form.
-
-> @@ -749,7 +756,13 @@ static int posix_cpu_timer_set(struct k_itimer *timer, int flags,
->  	}
->  
->  	if (new_expires.sched != 0 && !(flags & TIMER_ABSTIME)) {
-> -		cpu_time_add(timer->it_clock, &new_expires, val);
-> +		union cpu_time_count now;
-> +
-> +		if (CPUCLOCK_PERTHREAD(timer->it_clock))
-> +			cpu_clock_sample(timer->it_clock, p, &now);
-> +		else
-> +			cpu_clock_sample_group(timer->it_clock, p, &now);
-
-This triggered a pattern match against earlier in this function; but they're
-different now; timer vs clock. So nothing to merge...
-
-
-So I don't mind the code changes, although its still not entirely clear to me
-what exact problem is fixed how; and thus the Changelog needs TLC.
