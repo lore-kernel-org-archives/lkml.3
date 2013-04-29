@@ -1,149 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751759Ab3D2Flw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 01:41:52 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:37157 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750801Ab3D2Flu (ORCPT
+	id S1751773Ab3D2FpX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 01:45:23 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:37319 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750970Ab3D2FpW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 01:41:50 -0400
-X-AuditID: cbfee68f-b7f066d000003683-f4-517e081cc9b3
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Rafael J. Wysocki'" <rjw@sisk.pl>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "'Len Brown'" <len.brown@intel.com>,
-        "'Pavel Machek'" <pavel@ucw.cz>, linux-pm@vger.kernel.org,
-        Jingoo Han <jg1.han@samsung.com>
-References: <000001ce42f2$96128cc0$c237a640$@samsung.com>
- <20119404.Sfu5WntByi@vostro.rjw.lan>
-In-reply-to: <20119404.Sfu5WntByi@vostro.rjw.lan>
-Subject: Re: [PATCH] PM: Add pm_ops_ptr() macro
-Date: Mon, 29 Apr 2013 14:41:48 +0900
-Message-id: <000001ce449c$3e1ce0f0$ba56a2d0$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQGZyojvIl/md4KPBeuZMYPjUO77jQIGGS6nmUVwj5A=
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrBIsWRmVeSWpSXmKPExsVy+t8zQ11ZjrpAg/XXGS3mrF/DZnF54SVW
-	i1lT9jJZXN41h83ic+8RRou7p46yWfQv7GVyYPdYvOclk8eJGb9ZPPq2rGL0eLS4hdFjxerv
-	7B6fN8kFsEVx2aSk5mSWpRbp2yVwZWzY0MZUcEq44s2mFuYGxk98XYycHBICJhKdfz6xQdhi
-	EhfurQeyuTiEBJYxSpz78YwJpmjx2WXsEInpjBJL70+DqvrFKPFu7WwWkCo2ATWJL18Os4PY
-	IgJhErO2HQIrYhZYxCjxZtVWZpCEkECCxPkbL8HGcgoYSky73wwU5+AQFtCXOL7UAyTMIqAq
-	ce5lF1g5r4ClRM+0blYIW1Dix+R7YLuYBdQlJs1bxAxhy0tsXvOWGeJSBYkdZ18zQtxgJbGs
-	YRYrRI2IxL4X7xhB7pEQ+MoucX3lfiaIZQIS3yYfYgG5QUJAVmLTAag5khIHV9xgmcAoMQvJ
-	6llIVs9CsnoWkhULGFlWMYqmFiQXFCelFxnrFSfmFpfmpesl5+duYoTEcv8OxrsHrA8xJgOt
-	n8gsJZqcD0wFeSXxhsZmRhamJqbGRuaWZqQJK4nzqrVYBwoJpCeWpGanphakFsUXleakFh9i
-	ZOLglGpgDH38+sDclTPMXro5H9/IsKD87o+eDSvf9i+XO3ym0vbTpUSFpmWJpQcObqq5/+BN
-	U7SBqvoU9v6jhd9vWltHx8k8X6+j/sO/+3Yyn/uN9fXh8xQuWPqYmfBfiVi/KCAqxefwoxo/
-	1/c6p9RWNnBKTTbJLKmYI8v/QelwjLz4u6+f2a8/tWhbpMRSnJFoqMVcVJwIACoXCP37AgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKKsWRmVeSWpSXmKPExsVy+t9jQV0ZjrpAg6VHrCzmrF/DZnF54SVW
-	i1lT9jJZXN41h83ic+8RRou7p46yWfQv7GVyYPdYvOclk8eJGb9ZPPq2rGL0eLS4hdFjxerv
-	7B6fN8kFsEU1MNpkpCampBYppOYl56dk5qXbKnkHxzvHm5oZGOoaWlqYKynkJeam2iq5+ATo
-	umXmAB2jpFCWmFMKFApILC5W0rfDNCE0xE3XAqYxQtc3JAiux8gADSSsY8zYsKGNqeCUcMWb
-	TS3MDYyf+LoYOTkkBEwkFp9dxg5hi0lcuLeerYuRi0NIYDqjxNL706CcX4wS79bOZgGpYhNQ
-	k/jy5TBYh4hAmMSsbYfAipgFFjFKvFm1lRkkISSQIHH+xksmEJtTwFBi2v1moDgHh7CAvsTx
-	pR4gYRYBVYlzL7vAynkFLCV6pnWzQtiCEj8m3wPbxSygLjFp3iJmCFteYvOat8wQlypI7Dj7
-	mhHiBiuJZQ2zWCFqRCT2vXjHOIFRaBaSUbOQjJqFZNQsJC0LGFlWMYqmFiQXFCel5xrpFSfm
-	Fpfmpesl5+duYgQnimfSOxhXNVgcYhTgYFTi4Q3YXBsoxJpYVlyZe4hRgoNZSYR39m2gEG9K
-	YmVValF+fFFpTmrxIcZkoE8nMkuJJucDk1heSbyhsYmZkaWRmYWRibk5acJK4rwHW60DhQTS
-	E0tSs1NTC1KLYLYwcXBKNTAWzVy59YfQ2z+N3fwx9VsSWNZ8YJWPUj1xo2kDq+CbGsHSjG7+
-	dfuurnDZ4LN6wi3/rsIM/ePdty5O1mvfk74k49qk0rn+207bn2dguLtBNOAN3/nH6c+53G9I
-	FwgekXxkGyxwVqx+bh+fr92SJZzK4prGUT6z7KvbvdLWrU7Ye91h8hEvliAlluKMREMt5qLi
-	RABZ+0cmWAMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 29 Apr 2013 01:45:22 -0400
+Date: Mon, 29 Apr 2013 15:45:12 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tom Gundersen <teg@jklm.no>, Matt Fleming <matt.fleming@intel.com>
+Subject: linux-next: build failure after merge of the tip tree
+Message-Id: <20130429154512.13325eb1fe134fbfce93774b@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__29_Apr_2013_15_45_12_+1000_=3uQy5uIrnr2OwPH"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, April 27, 2013 11:41 PM, Rafael J. Wysocki:
-> 
-> On Saturday, April 27, 2013 11:54:50 AM Jingoo Han wrote:
-> > Add pm_ops_ptr() macro that allows the .pm entry in the driver structures
-> > to be assigned without having an #define xxx NULL for the case that PM is
-> > not enabled.
-> >
-> > Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-> 
-> First, I'm not taking any more PM patches for v3.10 (that don't fix recent
-> regressions).
-> 
-> Second, please add that macro along with a user.
+--Signature=_Mon__29_Apr_2013_15_45_12_+1000_=3uQy5uIrnr2OwPH
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Hi Rafael,
+Hi all,
 
-This macro can be used as below:
-This macro cannot affect the procedure of suspend/resume
-calls; thus, there is no side effect.
-It just reduces the code size of each drivers.
-In this way, of_match_ptr() macro has been already used.
+After merging the tip tree, today's linux-next build (x86_64 allmodconfig)
+failed like this:
 
+drivers/firmware/efi/efivars.c: In function 'efivar_release':
+drivers/firmware/efi/efivars.c:300:2: error: implicit declaration of functi=
+on 'kfree' [-Werror=3Dimplicit-function-declaration]
+drivers/firmware/efi/efivars.c: In function 'efivar_create':
+drivers/firmware/efi/efivars.c:341:2: error: implicit declaration of functi=
+on 'kzalloc' [-Werror=3Dimplicit-function-declaration]
+drivers/firmware/efi/efivars.c:341:12: warning: assignment makes pointer fr=
+om integer without a cast [enabled by default]
+drivers/firmware/efi/efivars.c: In function 'efivar_create_sysfs_entry':
+drivers/firmware/efi/efivars.c:420:13: warning: assignment makes pointer fr=
+om integer without a cast [enabled by default]
+drivers/firmware/efi/efivars.c: In function 'create_efivars_bin_attributes':
+drivers/firmware/efi/efivars.c:460:7: warning: assignment makes pointer fro=
+m integer without a cast [enabled by default]
+drivers/firmware/efi/efivars.c:470:7: warning: assignment makes pointer fro=
+m integer without a cast [enabled by default]
+drivers/firmware/efi/efivars.c: In function 'efivar_update_sysfs_entries':
+drivers/firmware/efi/efivars.c:527:8: warning: assignment makes pointer fro=
+m integer without a cast [enabled by default]
+drivers/firmware/efi/efivars.c: In function 'efivars_sysfs_callback':
+drivers/firmware/efi/efivars.c:551:8: warning: assignment makes pointer fro=
+m integer without a cast [enabled by default]
+fs/efivarfs/inode.c: In function 'efivarfs_create':
+fs/efivarfs/inode.c:115:2: error: implicit declaration of function 'kzalloc=
+' [-Werror=3Dimplicit-function-declaration]
+fs/efivarfs/inode.c:115:6: warning: assignment makes pointer from integer w=
+ithout a cast [enabled by default]
+fs/efivarfs/inode.c:139:3: error: implicit declaration of function 'kfree' =
+[-Werror=3Dimplicit-function-declaration]
+fs/efivarfs/file.c: In function 'efivarfs_file_write':
+fs/efivarfs/file.c:35:2: error: implicit declaration of function 'kmalloc' =
+[-Werror=3Dimplicit-function-declaration]
+fs/efivarfs/file.c:35:7: warning: assignment makes pointer from integer wit=
+hout a cast [enabled by default]
+fs/efivarfs/file.c:62:2: error: implicit declaration of function 'kfree' [-=
+Werror=3Dimplicit-function-declaration]
+fs/efivarfs/file.c: In function 'efivarfs_file_read':
+fs/efivarfs/file.c:81:7: warning: assignment makes pointer from integer wit=
+hout a cast [enabled by default]
+fs/efivarfs/super.c: In function 'efivarfs_callback':
+fs/efivarfs/super.c:132:2: error: implicit declaration of function 'kmalloc=
+' [-Werror=3Dimplicit-function-declaration]
+fs/efivarfs/super.c:132:8: warning: assignment makes pointer from integer w=
+ithout a cast [enabled by default]
+fs/efivarfs/super.c:142:7: warning: assignment makes pointer from integer w=
+ithout a cast [enabled by default]
+fs/efivarfs/super.c:166:2: error: implicit declaration of function 'kfree' =
+[-Werror=3Dimplicit-function-declaration]
+drivers/firmware/efi/efi-pstore.c: In function 'efi_pstore_read_func':
+drivers/firmware/efi/efi-pstore.c:77:2: error: implicit declaration of func=
+tion 'kmalloc' [-Werror=3Dimplicit-function-declaration]
+drivers/firmware/efi/efi-pstore.c:77:16: warning: assignment makes pointer =
+from integer without a cast [enabled by default]
+drivers/firmware/efi/efi-pstore.c: In function 'efivars_pstore_init':
+drivers/firmware/efi/efi-pstore.c:225:22: warning: assignment makes pointer=
+ from integer without a cast [enabled by default]
 
---- a/drivers/i2c/busses/i2c-s3c2410.c
-+++ b/drivers/i2c/busses/i2c-s3c2410.c
-@@ -1218,7 +1218,6 @@ static int s3c24xx_i2c_resume(struct device *dev)
- }
- #endif
+Probably caused by commits d68772b7c83f ("efivarfs: Move to fs/efivarfs")
+and/or a9499fa7cd3f ("efi: split efisubsystem from efivars") interacting
+with some header inclusion changes in the rest of today's trees.
 
--#ifdef CONFIG_PM
- static const struct dev_pm_ops s3c24xx_i2c_dev_pm_ops = {
- #ifdef CONFIG_PM_SLEEP
-        .suspend_noirq = s3c24xx_i2c_suspend_noirq,
-@@ -1226,11 +1225,6 @@ static const struct dev_pm_ops s3c24xx_i2c_dev_pm_ops = {
- #endif
- };
+See Rule 1 from Documentation/SubmitChecklist.
 
--#define S3C24XX_DEV_PM_OPS (&s3c24xx_i2c_dev_pm_ops)
--#else
--#define S3C24XX_DEV_PM_OPS NULL
--#endif
--
- /* device driver for platform bus bits */
+I have applied the following merge fix patch for today (this won't quite
+apply to the tip tree due to the other patch adding linux/magic.h to
+fs/efivarfs/super.c, but that could be applied as well):
 
- static struct platform_driver s3c24xx_i2c_driver = {
-@@ -1240,7 +1234,7 @@ static struct platform_driver s3c24xx_i2c_driver = {
-        .driver         = {
-                .owner  = THIS_MODULE,
-                .name   = "s3c-i2c",
--               .pm     = S3C24XX_DEV_PM_OPS,
-+               .pm     = pm_ops_ptr(&s3c24xx_i2c_dev_pm_ops),
-                .of_match_table = of_match_ptr(s3c24xx_i2c_match),
-        },
- };
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Mon, 29 Apr 2013 15:34:28 +1000
+Subject: [PATCH] efivars: use of kmalloc etc requires the inclusion of slab=
+.h
 
-Best regards,
-Jingoo Han
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ drivers/firmware/efi/efivars.c | 1 +
+ fs/efivarfs/file.c             | 1 +
+ fs/efivarfs/inode.c            | 1 +
+ fs/efivarfs/super.c            | 1 +
+ drivers/firmware/efi/efi-pstore.c | 1 +
+ 5 files changed, 5 insertions(+)
 
+diff --git a/drivers/firmware/efi/efivars.c b/drivers/firmware/efi/efivars.c
+index f8f5e5d..66928a3 100644
+--- a/drivers/firmware/efi/efivars.c
++++ b/drivers/firmware/efi/efivars.c
+@@ -68,6 +68,7 @@
+ #include <linux/efi.h>
+ #include <linux/module.h>
+ #include <linux/ucs2_string.h>
++#include <linux/slab.h>
+=20
+ #define EFIVARS_VERSION "0.08"
+ #define EFIVARS_DATE "2004-May-17"
+diff --git a/fs/efivarfs/file.c b/fs/efivarfs/file.c
+index ede07fc..bfb5315 100644
+--- a/fs/efivarfs/file.c
++++ b/fs/efivarfs/file.c
+@@ -9,6 +9,7 @@
+=20
+ #include <linux/efi.h>
+ #include <linux/fs.h>
++#include <linux/slab.h>
+=20
+ #include "internal.h"
+=20
+diff --git a/fs/efivarfs/inode.c b/fs/efivarfs/inode.c
+index 640e289..7e787fb 100644
+--- a/fs/efivarfs/inode.c
++++ b/fs/efivarfs/inode.c
+@@ -10,6 +10,7 @@
+ #include <linux/efi.h>
+ #include <linux/fs.h>
+ #include <linux/ctype.h>
++#include <linux/slab.h>
+=20
+ #include "internal.h"
+=20
+diff --git a/fs/efivarfs/super.c b/fs/efivarfs/super.c
+index 1fa5e6d..94d9192 100644
+--- a/fs/efivarfs/super.c
++++ b/fs/efivarfs/super.c
+@@ -12,6 +12,7 @@
+ #include <linux/fs.h>
+ #include <linux/module.h>
+ #include <linux/pagemap.h>
++#include <linux/slab.h>
+ #include <linux/magic.h>
+=20
+ #include "internal.h"
+diff --git a/drivers/firmware/efi/efi-pstore.c b/drivers/firmware/efi/efi-p=
+store.c
+index 221ad1b..0242795 100644
+--- a/drivers/firmware/efi/efi-pstore.c
++++ b/drivers/firmware/efi/efi-pstore.c
+@@ -2,6 +2,7 @@
+ #include <linux/module.h>
+ #include <linux/pstore.h>
+ #include <linux/ucs2_string.h>
++#include <linux/slab.h>
+=20
+ #define DUMP_NAME_LEN 52
+=20
 
-> 
-> Thanks,
-> Rafael
-> 
-> 
-> > ---
-> >  include/linux/pm.h |    2 ++
-> >  1 files changed, 2 insertions(+), 0 deletions(-)
-> >
-> > diff --git a/include/linux/pm.h b/include/linux/pm.h
-> > index a224c7f..bd50d15 100644
-> > --- a/include/linux/pm.h
-> > +++ b/include/linux/pm.h
-> > @@ -55,8 +55,10 @@ struct device;
-> >
-> >  #ifdef CONFIG_PM
-> >  extern const char power_group_name[];		/* = "power" */
-> > +#define pm_ops_ptr(_ptr)	(_ptr)
-> >  #else
-> >  #define power_group_name	NULL
-> > +#define pm_ops_ptr(_ptr)	NULL
-> >  #endif
-> >
-> >  typedef struct pm_message {
-> >
-> --
-> I speak only for myself.
-> Rafael J. Wysocki, Intel Open Source Technology Center.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+--Signature=_Mon__29_Apr_2013_15_45_12_+1000_=3uQy5uIrnr2OwPH
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRfgjoAAoJEECxmPOUX5FEYZsP/2Xjb1wkAJ6JfuZZOPQysry1
+i9+z+NS6ASBt/H6Jl0CARem4fE7OZFlzdgK4xjJ/40ZfvYbDqjkql9eHfYdVWuzB
+W4EWwnD48ZJ/63n5Cj6ADPL15Qy/jn27m4dYhUJ7/MJKsi7Rge1pKdS7kQtZ2TQU
+FopPtUqcncMMMMa8u0FMiEn6kGObNnOJ38iNFu5wWf32jDG3KhagC+VjHHkxEzlw
+330NBU4WeHR9ZlO7nBsDl6RsP1AyNmtdnDb8usw74UFBHyCHgGYsPIyoY7jgb5LX
+9qRGrsYiwbW3OPN9oOrmsqQqU4/xnZesJjJY9QJP7Xh1V7ZkcT3b32YAKvTr6glY
+JQZPUGiUO1T9thfdtagl61hbRVI5sYUbLfdah7KRIbEgLiLGc3w96V3DOOq1ljnb
+/gKWOAFBMJ9LFTZjouRLwwXTmg3um8gBDzKF7vqZd+UEk+5JP/GoHeCp0jnDTHvV
+6y0KLEEu/fBTJJ6m5cCeOkjWJib+N/ryrcnujn2pBGWkMeuwff9iMn9e7BLe3uxj
+EzZNg92TGuWvGOF2vigiwwK2ixLp02gq4orlu4n7TxyxKQSFeNF/MnknU/bbSKNU
+LGoxGBoZCbMkFOFVLC6jF/7Tq7vNXIjd9Udee2X99msiH0+XQtApS8uB6FEvbQux
+1ARX8NoRXVdqbPBe99/1
+=35Bn
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__29_Apr_2013_15_45_12_+1000_=3uQy5uIrnr2OwPH--
