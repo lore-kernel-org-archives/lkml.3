@@ -1,86 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759396Ab3D2Wwb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 18:52:31 -0400
-Received: from mga14.intel.com ([143.182.124.37]:28140 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758190Ab3D2Ww3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 18:52:29 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,576,1363158000"; 
-   d="scan'208";a="326227441"
-Message-ID: <517EF9AB.8080508@linux.intel.com>
-Date: Mon, 29 Apr 2013 15:52:27 -0700
-From: Darren Hart <dvhart@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1759016Ab3D2WzU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 18:55:20 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:46991 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757302Ab3D2WzS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Apr 2013 18:55:18 -0400
+Date: Mon, 29 Apr 2013 15:55:13 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Nathan Fontenot <nfont@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linuxppc-dev@lists.ozlabs.org, Li Zefan <lizefan@huawei.com>
+Subject: Re: linux-next: build failure after merge of the cgroup tree
+Message-ID: <20130429225513.GG2395@htj.dyndns.org>
+References: <20130429140433.92d05cd48b66ac323616d572@canb.auug.org.au>
 MIME-Version: 1.0
-To: Colin Cross <ccross@android.com>
-CC: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, arve@android.com,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Matthew Helsley <matthltc@us.ibm.com>
-Subject: Re: [PATCH 07/10] futex: use freezable blocking call
-References: <1367271946-7239-1-git-send-email-ccross@android.com> <1367271946-7239-8-git-send-email-ccross@android.com>
-In-Reply-To: <1367271946-7239-8-git-send-email-ccross@android.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130429140433.92d05cd48b66ac323616d572@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Colin,
+Hello,
 
-I don't know anything about when or when not to use freezable*, and I
-suspect that may be true for others as well. A more complete
-description of why it's acceptable here in the commit log might help
-expedite acceptance.
-
-
-Matt,
-
-I have a vague memory of discussing something similar to this with you.
-Do you see any potential problems here?
-
---
-Darren
-
-On 04/29/2013 02:45 PM, Colin Cross wrote:
-> Avoid waking up every thread sleeping in a futex_wait call during
-> suspend and resume by calling a freezable blocking call.
+On Mon, Apr 29, 2013 at 02:04:33PM +1000, Stephen Rothwell wrote:
+> I have added the following merge fix patch for today (but it should be
+> applied to the powerpc tree ASAP).
 > 
-> Signed-off-by: Colin Cross <ccross@android.com>
-> ---
->  kernel/futex.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Mon, 29 Apr 2013 14:01:44 +1000
+> Subject: [PATCH] powerpc: numa.c: using kzalloc/kfree requires including
+>  slab.h
 > 
-> diff --git a/kernel/futex.c b/kernel/futex.c
-> index b26dcfc..d710fae 100644
-> --- a/kernel/futex.c
-> +++ b/kernel/futex.c
-> @@ -61,6 +61,7 @@
->  #include <linux/nsproxy.h>
->  #include <linux/ptrace.h>
->  #include <linux/sched/rt.h>
-> +#include <linux/freezer.h>
->  
->  #include <asm/futex.h>
->  
-> @@ -1807,7 +1808,7 @@ static void futex_wait_queue_me(struct futex_hash_bucket *hb, struct futex_q *q,
->  		 * is no timeout, or if it has yet to expire.
->  		 */
->  		if (!timeout || timeout->task)
-> -			schedule();
-> +			freezable_schedule();
->  	}
->  	__set_current_state(TASK_RUNNING);
->  }
+> fixes these build errors:
 > 
+> arch/powerpc/mm/numa.c: In function 'arch_update_cpu_topology':
+> arch/powerpc/mm/numa.c:1465:2: error: implicit declaration of function 'kzalloc' [-Werror=implicit-function-declaration]
+> arch/powerpc/mm/numa.c:1465:10: error: assignment makes pointer from integer without a cast [-Werror]
+> arch/powerpc/mm/numa.c:1497:2: error: implicit declaration of function 'kfree' [-Werror=implicit-function-declaration]
+> 
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+
+Acked-by: Tejun Heo <tj@kernel.org>
+
+Benjamin, can you please pick this up?
+
+Thanks a lot and sorry about the trouble.
 
 -- 
-Darren Hart
-Intel Open Source Technology Center
-Yocto Project - Technical Lead - Linux Kernel
+tejun
