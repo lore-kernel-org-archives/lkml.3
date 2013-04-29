@@ -1,84 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758221Ab3D2M4o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 08:56:44 -0400
-Received: from smtp151.dfw.emailsrvr.com ([67.192.241.151]:56157 "EHLO
-	smtp151.dfw.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757221Ab3D2M4n (ORCPT
+	id S1758230Ab3D2M6X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 08:58:23 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:49353 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757353Ab3D2M6W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 08:56:43 -0400
-X-Greylist: delayed 550 seconds by postgrey-1.27 at vger.kernel.org; Mon, 29 Apr 2013 08:56:43 EDT
-Message-ID: <517E6BA3.30008@calxeda.com>
-Date: Mon, 29 Apr 2013 07:46:27 -0500
-From: Mark Langsdorf <mark.langsdorf@calxeda.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: "jaswinder.singh@linaro.org" <jaswinder.singh@linaro.org>
-CC: "s-anna@ti.com" <s-anna@ti.com>,
-        "loic.pallardy@st.com" <loic.pallardy@st.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	Mon, 29 Apr 2013 08:58:22 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Bastian Hecht <hechtb@gmail.com>
+Subject: Re: [PATCH 03/21] ARM: shmobile: don't call irqchip_init unconditionallyA
+Date: Mon, 29 Apr 2013 14:58:16 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
+Cc: Simon Horman <horms@verge.net.au>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        "andy.green@linaro.org" <andy.green@linaro.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: Re: [PATCH 1/3] mailbox: rename pl320-ipc specific mailbox.h
-References: <CAJe_ZhdH+SCs5crguXrm6y-6bu+eGnTqeJS6cOS5H5Yz=m15Cw@mail.gmail.com> <1367085953-28270-1-git-send-email-jaswinder.singh@linaro.org>
-In-Reply-To: <1367085953-28270-1-git-send-email-jaswinder.singh@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        linux-kernel@vger.kernel.org, Bastian Hecht <hechtb+renesas@gmail.com>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
+References: <1366910944-3033663-1-git-send-email-arnd@arndb.de> <20130426004835.GA20070@verge.net.au> <CABYn4sxjpp3yPkjDM9XhX6fyT-g_OoCjcnD1u=5oyb+Y6y=Nmw@mail.gmail.com>
+In-Reply-To: <CABYn4sxjpp3yPkjDM9XhX6fyT-g_OoCjcnD1u=5oyb+Y6y=Nmw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201304291458.16634.arnd@arndb.de>
+X-Provags-ID: V02:K0:R1VLuPUqj42VE+gCwjdPh0Va0NDGzozZ+cHNEI/CMB1
+ 1dDxyligkw9+unAgMnjI3lBW4mEVT+JSKCOJZC8wecQlLT5rsw
+ lMGT7Cf1NTBSIpy/gq9tfvKcl25O0Tmv6tyVMNjQ8bgf2LCWIU
+ bYFbuGR0DMpWlMuCT6TNz/HUwLcRJitbESd7Kn4zIkls5YW133
+ bUgaP+0W1YU4X+A2WyUMr6isR/anDJZl5adQp7DIoFy3nGpvG8
+ A0qOeYku7l/6snCH7WhprRt7dQ8JurFe/Y2Jm0TGER7dPfe95y
+ NRNJxuZnCWY8gjavwDWq3CZ3ObF6lMhOvxJtaaFvHXnPOEo29W
+ pwsrvcH8d2c8hqenbkV8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/27/2013 01:05 PM, jaswinder.singh@linaro.org wrote:
-> From: Suman Anna <s-anna@ti.com>
+On Friday 26 April 2013, Bastian Hecht wrote:
+> > This one seems broken as the armadillo800eva board currently uses
+> > it to initialise GIC even if CONFIG_ATAGS is not defined.
+> >
+> > I did test the above change on the armadillo800eva board
+> > with the above change and CONFIG_ATAGS disabled, the result was
+> > a boot failure. With the change reverted booting seems fine.
 > 
-> The patch 30058677 "ARM / highbank: add support for pl320 IPC"
-> added a pl320 IPC specific header file as a generic mailbox.h.
-> This file has been renamed appropriately to allow the
-> introduction of the generic mailbox API framework.
-> 
-> Signed-off-by: Suman Anna <s-anna@ti.com>
-> Cc: Mark Langsdorf <mark.langsdorf@calxeda.com>
-> Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> ---
->  drivers/cpufreq/highbank-cpufreq.c       |    2 +-
->  drivers/mailbox/pl320-ipc.c              |    2 +-
->  include/linux/{mailbox.h => pl320-ipc.h} |    0
->  3 files changed, 2 insertions(+), 2 deletions(-)
->  rename include/linux/{mailbox.h => pl320-ipc.h} (100%)
-> 
-> diff --git a/drivers/cpufreq/highbank-cpufreq.c b/drivers/cpufreq/highbank-cpufreq.c
-> index b61b5a3..3118b87 100644
-> --- a/drivers/cpufreq/highbank-cpufreq.c
-> +++ b/drivers/cpufreq/highbank-cpufreq.c
-> @@ -19,7 +19,7 @@
->  #include <linux/cpu.h>
->  #include <linux/err.h>
->  #include <linux/of.h>
-> -#include <linux/mailbox.h>
-> +#include <linux/pl320-ipc.h>
->  #include <linux/platform_device.h>
->  
->  #define HB_CPUFREQ_CHANGE_NOTE	0x80000001
-> diff --git a/drivers/mailbox/pl320-ipc.c b/drivers/mailbox/pl320-ipc.c
-> index d873cba..f3755e0 100644
-> --- a/drivers/mailbox/pl320-ipc.c
-> +++ b/drivers/mailbox/pl320-ipc.c
-> @@ -26,7 +26,7 @@
->  #include <linux/device.h>
->  #include <linux/amba/bus.h>
->  
-> -#include <linux/mailbox.h>
-> +#include <linux/pl320-ipc.h>
->  
->  #define IPCMxSOURCE(m)		((m) * 0x40)
->  #define IPCMxDSET(m)		(((m) * 0x40) + 0x004)
-> diff --git a/include/linux/mailbox.h b/include/linux/pl320-ipc.h
-> similarity index 100%
-> rename from include/linux/mailbox.h
-> rename to include/linux/pl320-ipc.h
-> 
+> CONFIG_ATAGS and CONFIG_ARM_APPENDED_DTB are two ways to pass the
+> device tree information, right?
 
-Acked-by: Mark Langsdorf <mark.langsdorf@calxeda.com>
+No, the two are methods alternative methods for booting from a legacy
+boot loader. CONFIG_ATAGS is the old boot method without a DT, using
+a board file and a MACHINE_START() macro. ARM_APPENDED_DTB means you
+have a DT linked into the kernel but pass ATAGS to the kernel which
+uses the passed data to modify the DT.
+
+> So we run into trouble when we use the later but disable the first.
+> Is there a reason why you wanted to avoid using two times just "if
+> (!IS_ENABLED(CONFIG_OF))", Arnd?
+
+I incorrectly assumed that the second one was only used without DT,
+since it uses hardcoded MMIO locations rather than using of_iomap().
+
+	Arnd
