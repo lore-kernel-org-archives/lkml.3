@@ -1,78 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757170Ab3D2DTJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Apr 2013 23:19:09 -0400
-Received: from ozlabs.org ([203.10.76.45]:60508 "EHLO ozlabs.org"
+	id S1757030Ab3D2DlN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Apr 2013 23:41:13 -0400
+Received: from gate.crashing.org ([63.228.1.57]:59997 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756954Ab3D2DSV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Apr 2013 23:18:21 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Tom Rini <trini@ti.com>, linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH] modpost.c: Add .text.unlikely to TEXT_SECTIONS
-In-Reply-To: <1366842363-7513-1-git-send-email-trini@ti.com>
-References: <1366842363-7513-1-git-send-email-trini@ti.com>
-User-Agent: Notmuch/0.15.2+81~gd2c8818 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Mon, 29 Apr 2013 12:29:12 +0930
-Message-ID: <87sj2aca9r.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1756821Ab3D2DlM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Apr 2013 23:41:12 -0400
+Message-ID: <1367206844.7288.0.camel@pasglop>
+Subject: Re: linux-next: manual merge of the vfs tree with the powerpc tree
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
+        Vasant Hegde <hegdevasant@linux.vnet.ibm.com>,
+        linuxppc-dev@lists.ozlabs.org
+Date: Mon, 29 Apr 2013 13:40:44 +1000
+In-Reply-To: <20130429113540.55b2593d303bc2a9142919fc@canb.auug.org.au>
+References: <20130429113540.55b2593d303bc2a9142919fc@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tom Rini <trini@ti.com> writes:
+On Mon, 2013-04-29 at 11:35 +1000, Stephen Rothwell wrote:
+> Today's linux-next merge of the vfs tree got a conflict in
+> arch/powerpc/kernel/rtas_flash.c between commit ad18a364f186
+> ("powerpc/rtas_flash: Free kmem upon module exit"),  from the powerpc
+> tree and commit 5c0333c00ff6 ("ppc: Clean up rtas_flash driver
+> somewhat")
+> from the vfs tree.
+> 
+> I fixed it up (see below) and can carry the fix as necessary (no
+> action
+> is required).
 
-> Recent gcc's may place functions into the .text.unlikely section and we
-> need to check this section as well for section mismatches now otherwise
-> we may have false negatives for this test.
+Please don't merge Dave's rework until it's been acked & fully tested by
+us. AFAIK, there are outstanding comments from my guys who
+reviewed/tested the first pass.
 
-Hmm, I don't think it's all that recent, is it?  I can find it back to
-gcc 4.0.4:
+Cheers,
+Ben.
 
-`-freorder-functions'
-     Reorder functions in the object file in order to improve code
-     locality.  This is implemented by using special subsections
-     `.text.hot' for most frequently executed functions and
-     `.text.unlikely' for unlikely executed functions.  Reordering is
-     done by the linker so object file format must support named
-     sections and linker must place them in a reasonable way.
 
-     Also profile feedback must be available in to make this option
-     effective.  See `-fprofile-arcs' for details.
-
-     Enabled at levels `-O2', `-O3', `-Os'.
-
-The comment is the same in in gcc 4.7.
-
-So is your real issue that this section is generated with
--fprofile-arcs, or has something changed with gcc 4.8, or...?
-
-Thanks,
-Rusty.
-
-> Cc: Rusty Russell <rusty@rustcorp.com.au>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: linux-kernel@vger.kernel.org
-> Cc: linux-kbuild@vger.kernel.org
-> Signed-off-by: Tom Rini <trini@ti.com>
-> ---
->  scripts/mod/modpost.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/scripts/mod/modpost.c b/scripts/mod/modpost.c
-> index ff36c50..13ff12f 100644
-> --- a/scripts/mod/modpost.c
-> +++ b/scripts/mod/modpost.c
-> @@ -880,7 +880,7 @@ static void check_section(const char *modname, struct elf_info *elf,
->  #define ALL_EXIT_SECTIONS EXIT_SECTIONS, ALL_XXXEXIT_SECTIONS
->  
->  #define DATA_SECTIONS ".data$", ".data.rel$"
-> -#define TEXT_SECTIONS ".text$"
-> +#define TEXT_SECTIONS ".text$", ".text.unlikely$"
->  
->  #define INIT_SECTIONS      ".init.*"
->  #define CPU_INIT_SECTIONS  ".cpuinit.*"
-> -- 
-> 1.7.9.5
