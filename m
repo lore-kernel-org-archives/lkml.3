@@ -1,21 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758814Ab3D2UbE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 16:31:04 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:51205 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757800Ab3D2UbC convert rfc822-to-8bit (ORCPT
+	id S1759041Ab3D2UbK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 16:31:10 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:63267 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757800Ab3D2UbF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 16:31:02 -0400
-Date: Mon, 29 Apr 2013 15:01:14 -0500
+	Mon, 29 Apr 2013 16:31:05 -0400
+Date: Mon, 29 Apr 2013 14:45:46 -0500
 From: Rob Landley <rob@landley.net>
-Subject: Re: debugging live kernel
-To: lkml@tigusoft.pl
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <klllre$plq$1@ger.gmane.org> (from lkml@tigusoft.pl on Mon Apr
-	29 06:34:08 2013)
+Subject: Re: For review: user_namespaces(7) man page
+To: richard -rw- weinberger <richard.weinberger@gmail.com>
+Cc: Michael Kerrisk-manpages <mtk.manpages@gmail.com>,
+        linux-man <linux-man@vger.kernel.org>,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Vasily Kulikov <segoon@openwall.com>
+In-Reply-To: <CAFLxGvzXkGcR=Wyx8YZKKRACEnNLMA0xQoDfruq7CT1D-FNLnA@mail.gmail.com>
+	(from richard.weinberger@gmail.com on Mon Apr 29 02:45:45 2013)
 X-Mailer: Balsa 2.4.11
-Message-Id: <1367265674.18069.187@driftwood>
+Message-Id: <1367264746.18069.186@driftwood>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
 Content-Disposition: inline
@@ -24,32 +30,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/29/2013 06:34:08 AM, lkml@tigusoft.pl wrote:
-> In case if my currently running kernel starts to do strange things  
-> and I
-> suspect it might have bug or was corrupted, what steps can be taken to
-> check for more info, other then dmesg?
+On 04/29/2013 02:45:45 AM, richard -rw- weinberger wrote:
+> On Thu, Mar 21, 2013 at 4:52 PM, Michael Kerrisk (man-pages)
+> <mtk.manpages@gmail.com> wrote:
+> > Hi Serge,
+> >
+> > On Fri, Mar 15, 2013 at 4:38 PM, Serge Hallyn  
+> <serge.hallyn@ubuntu.com> wrote:
+> >> Hi,
+> >>
+> >> you mention that after creating a new user namespace you at first  
+> have
+> >> all capabilities in the new ns.  You don't explicitly mention (or I
+> >> missed it - I did see the mention of securebits) that if you want  
+> to
+> >> keep those capabilities after doing an exec, you need to first have
+> >> something mapped to uid 0 in the userns, and do setuid(0).
+> >
+> > Good point. I'll add something on that.
+> >
+> >> You might not want to list manpages from other projects,
+> >
+> > Actually, not a problem. Many of the pages in my set already do  
+> this.
+> >
+> >> but Eric's
+> >> shadow patches introduce some good new manpages as well.  Those  
+> aren't yet
+> >> accepted upstream, but if/when they are then mention at least of
+> >> subuid(5), subgid(5), and newuidmap(1) and newgidmap(1) might be  
+> good.
+> >
+> > I'll add those.
+> >
+> > Cheers,
+> >
+> > Michael
+> 
+> Can we please also document which capabilities are useless within an
+> user namespace?
+> E.g. CAP_MKNOD.
+> You get this capability but the kernel always checks it against the
+> initial userns.
 
-If you built it with kgdb, you can use that. If you have a jtag  
-connected to the hardware, you can use that. If you built with kernel  
-crash dumps, you can use that. If you kept the vmlinux file  
-corresponding to your bzImage you can (VERY CAREFULLY) look at  
-/dev/kmem with gdb (or use the corresponding system.map to decode  
-addresses by hand; note this is horrible but possible)...
+Is there a device namespace?
 
-There's levels of difficulty here: "Kernel was hooked up to monitoring  
-stuff before it went wrong" is the easy path. "Kept the box it came in"  
-is the less easy path. "Flying blind on a rocketcycle" is not easy, and  
-you pretty much have to have experience with the first two before you  
-can even attempt the third. (And unless you're off in the enterprise  
-space you generally go "Can I reproduce the issue? Let's reproduce it  
-under a properly instrumented environment. If I _can't_ reproduce the  
-issue then a reboot fixed it and we're good.)
+I vaguely recall OpenVZ implemented moving individual PCI devices into  
+containers so some large movie company could put one video card in each  
+container for render farms. There are lots of devices that aren't  
+_really_ privileged (/dev/zero, /dev/null, /dev/full, /dev/ram) and  
+more that could be emulated...
 
-Your problem description is way too vague to give specific advice  
-about. "If I start to feel poorly, is there anything I can do to  
-diagnose my illness?" Ummm... yes? (No, I'm not going to exchange a  
-dozen emails with you to about it, and nothing here should be  
-considered medical advice.)
+(Really this seems like a situation where devtmpfs needs -o newinstance  
+and a corresponding filtered event netlink feed to pass to udev/mdev.  
+And that might even have been feasible before Greg decided that  
+devtmpfs needed to have opinions about uids. Oh well.)
 
 Rob
