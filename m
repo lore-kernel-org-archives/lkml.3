@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759558Ab3D2TCw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 15:02:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60733 "EHLO
+	id S1760125Ab3D2Te2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 15:34:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60757 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759502Ab3D2TCt (ORCPT
+	with ESMTP id S1759552Ab3D2TCw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 15:02:49 -0400
+	Mon, 29 Apr 2013 15:02:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Fengguang Wu <fengguang.wu@intel.com>,
+        Ben Greear <greearb@candelatech.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 32/42] net: mvmdio: add select PHYLIB
-Date: Mon, 29 Apr 2013 12:02:14 -0700
-Message-Id: <20130429184756.038843452@linuxfoundation.org>
+Subject: [ 37/42] net: rate-limit warn-bad-offload splats.
+Date: Mon, 29 Apr 2013 12:02:19 -0700
+Message-Id: <20130429184756.565350049@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130429184752.435249613@linuxfoundation.org>
 References: <20130429184752.435249613@linuxfoundation.org>
@@ -29,49 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+From: Ben Greear <greearb@candelatech.com>
 
-[ Upstream commit 2e0cbf2cc2c9371f0aa198857d799175ffe231a6 ]
+[ Upstream commit c846ad9b880ece01bb4d8d07ba917734edf0324f ]
 
-The mvmdio driver uses the phylib API, so it should select the PHYLIB
-symbol, otherwise, a build with mvmdio (but without mvneta) fails to
-build with undefined symbols such as mdiobus_unregister, mdiobus_free,
-etc.
+If one does do something unfortunate and allow a
+bad offload bug into the kernel, this the
+skb_warn_bad_offload can effectively live-lock the
+system, filling the logs with the same error over
+and over.
 
-The mvneta driver does not use the phylib API directly, so it does not
-need to select PHYLIB. It already selects the mvmdio driver anyway.
+Add rate limitation to this so that box remains otherwise
+functional in this case.
 
-Historically, this problem is due to the fact that the PHY handling
-was originally part of mvneta, and was later moved to a separate
-driver, without updating the Kconfig select statements
-accordingly. And since there was no functional reason to use mvmdio
-without mvneta, this case was not tested.
-
-Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Ben Greear <greearb@candelatech.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/marvell/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/core/dev.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/net/ethernet/marvell/Kconfig
-+++ b/drivers/net/ethernet/marvell/Kconfig
-@@ -33,6 +33,7 @@ config MV643XX_ETH
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -2018,6 +2018,9 @@ static void skb_warn_bad_offload(const s
+ 	struct net_device *dev = skb->dev;
+ 	const char *driver = "";
  
- config MVMDIO
- 	tristate "Marvell MDIO interface support"
-+	select PHYLIB
- 	---help---
- 	  This driver supports the MDIO interface found in the network
- 	  interface units of the Marvell EBU SoCs (Kirkwood, Orion5x,
-@@ -45,7 +46,6 @@ config MVMDIO
- config MVNETA
- 	tristate "Marvell Armada 370/XP network interface support"
- 	depends on MACH_ARMADA_370_XP
--	select PHYLIB
- 	select MVMDIO
- 	---help---
- 	  This driver supports the network interface units in the
++	if (!net_ratelimit())
++		return;
++
+ 	if (dev && dev->dev.parent)
+ 		driver = dev_driver_string(dev->dev.parent);
+ 
 
 
