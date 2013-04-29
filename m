@@ -1,95 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758545Ab3D2Qmt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 12:42:49 -0400
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:34336 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757031Ab3D2Qmq (ORCPT
+	id S1758561Ab3D2Qo0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 12:44:26 -0400
+Received: from nm30-vm0.access.bullet.mail.sp2.yahoo.com ([98.139.44.194]:31941
+	"EHLO nm30-vm0.access.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757279Ab3D2QoZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 12:42:46 -0400
+	Mon, 29 Apr 2013 12:44:25 -0400
+X-Yahoo-Newman-Id: 7852.81887.bm@smtp104.sbc.mail.gq1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: 5_VIZJgVM1kkEmp6jMAg5XqDRxcVcFgVm.sdxNQm1nHSoGe
+ cpq_IlXvKUXQd2dcwIQZnwRQjkO0Zp7kb8ZiA2804PQhzlG3OdMOlsgzHgfm
+ yUPUYerqhoz5tDqXouYoOllrTE2x5gF9AtAhhYC3TFF02en5C9sfKEH31lHG
+ iR6akYpnJ_pSJ_w6pEPNvyPfJxof4JDf_pTUYHFaHnOXoGIUj7JT5e_CT2Nj
+ _sXFYRPq79J3ikcYbo1LEuGTy1XAwmflDD3r3wneNWbjnU70y8OTLfIa89LX
+ Nf2y6ZswD6VKNP_9BMX1In2IQsd2ONfPjYAmNEGbAzYLfx9ExajdElCbizfb
+ JWp5hyugt4zLkIoBfhZzQ_9nAVktMa2dDUtPXTna5qw4kgN6j0SMpAgA9Jpg
+ MkdzYlwYFqzS6AAjXlIEweW7OEUQVCBmItnWBWjyLfMgptPzG65e109T6LfK
+ CXQtm.roYQ5GvLX4kGiQUZjr.AATVP_WF
+X-Yahoo-SMTP: zfeO.4KswBCc_PdwTE8HfYDCQ1aNmIcSvQHkDP4uSDBNBSXeKQ--
+X-Rocket-Received: from localhost (linux@108.223.40.66 with plain)
+        by smtp104.sbc.mail.gq1.yahoo.com with SMTP; 29 Apr 2013 09:44:24 -0700 PDT
+Date: Mon, 29 Apr 2013 09:44:25 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, "'Wim Van Sebroeck'" <wim@iguana.be>,
+        linux-watchdog@vger.kernel.org
+Subject: Re: [PATCH RESEND 1/2] watchdog: mtx1-wdt: use
+ devm_gpio_request_one()
+Message-ID: <20130429164425.GJ23799@roeck-us.net>
+References: <000901ce44bc$38dcfbf0$aa96f3d0$@samsung.com>
 MIME-Version: 1.0
-In-Reply-To: <20130429161917.GB19814@mtj.dyndns.org>
-References: <cover.1366803121.git.viresh.kumar@linaro.org>
-	<480f5d6da920e2f2b868f311228c81635727799e.1366803121.git.viresh.kumar@linaro.org>
-	<CAP245DWtwguSp8ubid_KJnLSOqvCbmTXN+0Bg_MtDrUhBqve-Q@mail.gmail.com>
-	<CAKohpokN_o-RUX6MDwqqfzu4NKRysG-hSzmB=MHV7Y0aDbztuA@mail.gmail.com>
-	<20130424161208.GA16991@mtj.dyndns.org>
-	<CAP245DUGuaSQbP4026N8kgn6-NqXFJWR3zKoYud=HQ_b+v5+Xw@mail.gmail.com>
-	<CAKohpo=U5OqN7SM7XyOWv-WoUHOoJvGc6wcGH61+uikPK3novg@mail.gmail.com>
-	<20130426191118.GD1433@mtj.dyndns.org>
-	<CAKohpokJSwi24goSG=dTKkH0p+-YgsVURa_4giyU-u2TuK1bdA@mail.gmail.com>
-	<20130429161917.GB19814@mtj.dyndns.org>
-Date: Mon, 29 Apr 2013 22:12:46 +0530
-Message-ID: <CAKohponFvoi9HqdzJO61i3vb6iJonAA-kDLgKp2iPDphz8qP5Q@mail.gmail.com>
-Subject: Re: [PATCH V5 1/5] workqueues: Introduce new flag WQ_POWER_EFFICIENT
- for power oriented workqueues
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Amit Kucheria <amit.kucheria@linaro.org>, davem@davemloft.net,
-        linux-rt-users@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Robin Randhawa <robin.randhawa@arm.com>,
-        Charles Garcia-Tobin <charles.garcia-tobin@arm.com>,
-        Steve Bannister <Steve.Bannister@arm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arvind Chauhan <arvind.chauhan@arm.com>,
-        Patch Tracking <patches@linaro.org>, airlied@redhat.com,
-        mingo@redhat.com, Jens Axboe <axboe@kernel.dk>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <000901ce44bc$38dcfbf0$aa96f3d0$@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29 April 2013 21:49, Tejun Heo <tj@kernel.org> wrote:
-> On Mon, Apr 29, 2013 at 12:06:28PM +0530, Viresh Kumar wrote:
-> Yeap, !WQ_UNBOUND workqueues == per-cpu workqueues.
+On Mon, Apr 29, 2013 at 06:30:43PM +0900, Jingoo Han wrote:
+> Use devm_gpio_request_one() to make cleanup paths simpler.
+> 
+> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 
-Sigh!! You were talking about thread per cpu here... Sorry for missing
-it earlier :(
+This patch also addresses the missing gpio_free in the probe error path
+(if the call to misc_register() fails).
 
->> At this time local cpu may be busy or idle (Atleast according to scheduler).
->> We don't want a idle cpu (From schedulers perspective) to be used for
->> running this work's handler due to two reasons.
->> - idle cpu may be in WFI or deeper idle states and so we can avoid waking
->>   it up.
->
-> I have no idea what WFI is but the physical CPU is already awake at
-> that time.  It can't be idle - it's running queue_work().  It could be
-> running in lower freq tho, which each code piece doesn't really have
-> much control over.
+Reviewed-by: Guenter Roeck <linux@roeck-us.net>
 
-Stupid point. WFI: Wait for interrupt (low power mode of cpu).
-
->> - We will make idle cpu look busy and so other kernel stuff may be scheduled
->>   on it now. But we could have kept it idle for a long time.
->
-> Hmmm... yeah, about the same thing I wrote, it's not really about not
-> waking up the CPU right now physically but avoiding forcing the
-> scheduler scheduling a pinned task on an otherwise quiescent CPU.
-> This effectively allows the scheduler to migrate such work items
-> towards a CPU which the scheduler considers to be better (in power or
-> whatever) leading to noticeable powersave.
-
-Correct.
-
->> And what timer are you talking about? I am not talking about deffered work only,
->> but normal work too.
->
-> Deferred work item == timer + work item.
-
-Ya, i knew that :)
-
->> I might have wrongly phrased some part of my patch (maybe used workqueue
->> instead of work), will fix that up.
->
-> I think it'd be necessary to distinguish the physical CPU being idle
-> and the scheduler considers it to be idle (no task to schedule on it)
-> and explain how increasing the latter can lead to powersave.  As it's
-> currently written, it seemingly, to me anyway, suggests that the
-> proposed change somehow avoids waking up actually idle CPU, which
-> isn't the case as queue_work() *always* schedules on the local CPU.
-> The local CPU can't be idle by definition.
-
-Yes you are correct. I will fix it.
+> ---
+>  drivers/watchdog/mtx-1_wdt.c |    3 +--
+>  1 files changed, 1 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/watchdog/mtx-1_wdt.c b/drivers/watchdog/mtx-1_wdt.c
+> index 14dab6f..b434111 100644
+> --- a/drivers/watchdog/mtx-1_wdt.c
+> +++ b/drivers/watchdog/mtx-1_wdt.c
+> @@ -209,7 +209,7 @@ static int mtx1_wdt_probe(struct platform_device *pdev)
+>  	int ret;
+>  
+>  	mtx1_wdt_device.gpio = pdev->resource[0].start;
+> -	ret = gpio_request_one(mtx1_wdt_device.gpio,
+> +	ret = devm_gpio_request_one(&pdev->dev, mtx1_wdt_device.gpio,
+>  				GPIOF_OUT_INIT_HIGH, "mtx1-wdt");
+>  	if (ret < 0) {
+>  		dev_err(&pdev->dev, "failed to request gpio");
+> @@ -241,7 +241,6 @@ static int mtx1_wdt_remove(struct platform_device *pdev)
+>  		wait_for_completion(&mtx1_wdt_device.stop);
+>  	}
+>  
+> -	gpio_free(mtx1_wdt_device.gpio);
+>  	misc_deregister(&mtx1_wdt_misc);
+>  	return 0;
+>  }
+> -- 
+> 1.7.2.5
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-watchdog" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
