@@ -1,68 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756883Ab3D2CwW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Apr 2013 22:52:22 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:19080 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1756674Ab3D2CwV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Apr 2013 22:52:21 -0400
-X-IronPort-AV: E=Sophos;i="4.87,570,1363104000"; 
-   d="scan'208";a="7156569"
-From: liguang <lig.fnst@cn.fujitsu.com>
-To: linux-kernel@vger.kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        liguang <lig.fnst@cn.fujitsu.com>
-Subject: [PATCH] cpu: rid cpu_hotplug_disabled check for cpu_down()
-Date: Mon, 29 Apr 2013 10:49:51 +0800
-Message-Id: <1367203791-9723-1-git-send-email-lig.fnst@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.2.5
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/04/29 10:50:37,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/04/29 10:50:38,
-	Serialize complete at 2013/04/29 10:50:38
+	id S1756921Ab3D2C50 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Apr 2013 22:57:26 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:41599 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756674Ab3D2C5Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Apr 2013 22:57:24 -0400
+MIME-Version: 1.0
+In-Reply-To: <201304252120.GII21814.FMJFtHLOOVQFOS@I-love.SAKURA.ne.jp>
+References: <201304242108.FDC35910.VJMHFFFSOLOOQt@I-love.SAKURA.ne.jp> <201304252120.GII21814.FMJFtHLOOVQFOS@I-love.SAKURA.ne.jp>
+From: Zhan Jianyu <nasa4836@gmail.com>
+Date: Mon, 29 Apr 2013 10:56:44 +0800
+Message-ID: <CAHz2CGXXbg8P94uLcN0K6yxLYg__HB75tGrpw9xR1Rqn=6ZhGg@mail.gmail.com>
+Subject: Re: [linux-next-20130422] Bug in SLAB?
+To: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
+Cc: glommer@parallels.com, cl@linux.com, penberg@kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-in cpu_down(), _cpu_down() will do
-"
-        if (num_online_cpus() == 1)
-                 return -EBUSY;
-"
-when cpu_hotplug_disabled was set, num_online_cpus
-will return 1 for there's only 1 boot cpu.
-so, it's unnecessary to check cpu_hotplug_disabled
-here.
+On Thu, Apr 25, 2013 at 8:20 PM, Tetsuo Handa
+<penguin-kernel@i-love.sakura.ne.jp> wrote:
+> Bisection (with a build fix from commit db845067 "slab: Fixup
+> CONFIG_PAGE_ALLOC/DEBUG_SLAB_LEAK sections") reached commit e3366016
+> "slab: Use common kmalloc_index/kmalloc_size functions".
+> Would you have a look at commit e3366016?
 
-Signed-off-by: liguang <lig.fnst@cn.fujitsu.com>
----
- kernel/cpu.c |    6 ------
- 1 files changed, 0 insertions(+), 6 deletions(-)
 
-diff --git a/kernel/cpu.c b/kernel/cpu.c
-index b5e4ab2..cd166d3 100644
---- a/kernel/cpu.c
-+++ b/kernel/cpu.c
-@@ -330,14 +330,8 @@ int __ref cpu_down(unsigned int cpu)
- 
- 	cpu_maps_update_begin();
- 
--	if (cpu_hotplug_disabled) {
--		err = -EBUSY;
--		goto out;
--	}
--
- 	err = _cpu_down(cpu, 0);
- 
--out:
- 	cpu_maps_update_done();
- 	return err;
- }
--- 
-1.7.2.5
+Cc:   linux-mm@kvack.org
 
+
+
+--
+
+Regards,
+Zhan Jianyu
