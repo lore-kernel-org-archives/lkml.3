@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759470Ab3D2TJM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 15:09:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32781 "EHLO
+	id S1757017Ab3D2TJb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 15:09:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32777 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759949Ab3D2TD3 (ORCPT
+	with ESMTP id S1759895Ab3D2TD2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 15:03:29 -0400
+	Mon, 29 Apr 2013 15:03:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Riesch <michael.riesch@omicron.at>,
-        "David S. Miller" <davem@davemloft.net>, Jiri Benc <jbenc@redhat.com>,
-        "Theodore Tso" <tytso@mit.edu>, Mark Rustad <mark.d.rustad@intel.com>
-Subject: [ 11/30] rtnetlink: Call nlmsg_parse() with correct header length
-Date: Mon, 29 Apr 2013 12:02:35 -0700
-Message-Id: <20130429184356.558000061@linuxfoundation.org>
+        Patrick McHardy <kaber@trash.net>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 10/30] netfilter: dont reset nf_trace in nf_reset()
+Date: Mon, 29 Apr 2013 12:02:34 -0700
+Message-Id: <20130429184356.447626221@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130429184355.299556377@linuxfoundation.org>
 References: <20130429184355.299556377@linuxfoundation.org>
@@ -29,42 +28,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Michael Riesch <michael.riesch@omicron.at>
+From: Patrick McHardy <kaber@trash.net>
 
-[ Upstream commit 88c5b5ce5cb57af6ca2a7cf4d5715fa320448ff9 ]
+[ Upstream commit 124dff01afbdbff251f0385beca84ba1b9adda68 ]
 
-Signed-off-by: Michael Riesch <michael.riesch@omicron.at>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jiri Benc <jbenc@redhat.com>
-Cc: "Theodore Ts'o" <tytso@mit.edu>
-Cc: linux-kernel@vger.kernel.org
-Acked-by: Mark Rustad <mark.d.rustad@intel.com>
+Commit 130549fe ("netfilter: reset nf_trace in nf_reset") added code
+to reset nf_trace in nf_reset(). This is wrong and unnecessary.
+
+nf_reset() is used in the following cases:
+
+- when passing packets up the the socket layer, at which point we want to
+  release all netfilter references that might keep modules pinned while
+  the packet is queued. nf_trace doesn't matter anymore at this point.
+
+- when encapsulating or decapsulating IPsec packets. We want to continue
+  tracing these packets after IPsec processing.
+
+- when passing packets through virtual network devices. Only devices on
+  that encapsulate in IPv4/v6 matter since otherwise nf_trace is not
+  used anymore. Its not entirely clear whether those packets should
+  be traced after that, however we've always done that.
+
+- when passing packets through virtual network devices that make the
+  packet cross network namespace boundaries. This is the only cases
+  where we clearly want to reset nf_trace and is also what the
+  original patch intended to fix.
+
+Add a new function nf_reset_trace() and use it in dev_forward_skb() to
+fix this properly.
+
+Signed-off-by: Patrick McHardy <kaber@trash.net>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/core/rtnetlink.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ include/linux/skbuff.h |    8 ++++++++
+ net/core/dev.c         |    1 +
+ 2 files changed, 9 insertions(+)
 
---- a/net/core/rtnetlink.c
-+++ b/net/core/rtnetlink.c
-@@ -1045,7 +1045,7 @@ static int rtnl_dump_ifinfo(struct sk_bu
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -2135,6 +2135,14 @@ static inline void nf_reset(struct sk_bu
+ #endif
+ }
  
- 	rcu_read_lock();
- 
--	if (nlmsg_parse(cb->nlh, sizeof(struct rtgenmsg), tb, IFLA_MAX,
-+	if (nlmsg_parse(cb->nlh, sizeof(struct ifinfomsg), tb, IFLA_MAX,
- 			ifla_policy) >= 0) {
- 
- 		if (tb[IFLA_EXT_MASK])
-@@ -1876,7 +1876,7 @@ static u16 rtnl_calcit(struct sk_buff *s
- 	u32 ext_filter_mask = 0;
- 	u16 min_ifinfo_dump_size = 0;
- 
--	if (nlmsg_parse(nlh, sizeof(struct rtgenmsg), tb, IFLA_MAX,
-+	if (nlmsg_parse(nlh, sizeof(struct ifinfomsg), tb, IFLA_MAX,
- 			ifla_policy) >= 0) {
- 		if (tb[IFLA_EXT_MASK])
- 			ext_filter_mask = nla_get_u32(tb[IFLA_EXT_MASK]);
++static inline void nf_reset_trace(struct sk_buff *skb)
++{
++#if defined(CONFIG_NETFILTER_XT_TARGET_TRACE) || \
++	defined(CONFIG_NETFILTER_XT_TARGET_TRACE_MODULE)
++	skb->nf_trace = 0;
++#endif
++}
++
+ /* Note: This doesn't put any conntrack and bridge info in dst. */
+ static inline void __nf_copy(struct sk_buff *dst, const struct sk_buff *src)
+ {
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -1545,6 +1545,7 @@ int dev_forward_skb(struct net_device *d
+ 	skb->mark = 0;
+ 	secpath_reset(skb);
+ 	nf_reset(skb);
++	nf_reset_trace(skb);
+ 	return netif_rx(skb);
+ }
+ EXPORT_SYMBOL_GPL(dev_forward_skb);
 
 
