@@ -1,221 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756938Ab3D2DCK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Apr 2013 23:02:10 -0400
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:35522 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756673Ab3D2DCI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Apr 2013 23:02:08 -0400
-From: "Yaakov (Cygwin/X)" <yselkowitz@users.sourceforge.net>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] tools/include: use stdint types for user-space byteshift headers
-Date: Sun, 28 Apr 2013 22:01:36 -0500
-Message-Id: <1367204496-6664-1-git-send-email-yselkowitz@users.sourceforge.net>
-X-Mailer: git-send-email 1.7.9
+	id S1757039Ab3D2DSX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Apr 2013 23:18:23 -0400
+Received: from ozlabs.org ([203.10.76.45]:36450 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756960Ab3D2DSV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Apr 2013 23:18:21 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Alexander Graf <agraf@suse.de>,
+        Pranavkumar Sawargaonkar <pranavkumar@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org,
+        "linux-kernel\@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
+        kvmarm@lists.cs.columbia.edu, Peter Maydell <peter.maydell@linaro.org>
+Subject: Re: [PATCH 0/2] Early printk support for virtio console devices.
+In-Reply-To: <BA2076A6-0688-4E5C-85F9-A9CA8FD75782@suse.de>
+References: <1366974299-17877-1-git-send-email-pranavkumar@linaro.org> <BA2076A6-0688-4E5C-85F9-A9CA8FD75782@suse.de>
+User-Agent: Notmuch/0.15.2+81~gd2c8818 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Mon, 29 Apr 2013 12:39:34 +0930
+Message-ID: <87obcyc9sh.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yaakov Selkowitz <yselkowitz@users.sourceforge.net>
+Alexander Graf <agraf@suse.de> writes:
+> On 26.04.2013, at 13:04, Pranavkumar Sawargaonkar wrote:
+>
+>> This patch-set implements early printk support for virtio console devices without using any hypercalls.
+>> 
+>> The current virtio early printk code in kernel expects that hypervisor will provide some mechanism generally a hypercall to support early printk. This patch-set does not break existing hypercall based early print support.
+>> 
+>> This implementation adds:
+>> 1. Early writeonly register named early_wr in virtio console's config space.
+>> 2. Host feature flags namely VIRTIO_CONSOLE_F_EARLY_WRITE for telling guest about early-write capability in console device.
+>> 
+>> Early write mechanism:
+>> 1. When a guest wants to out some character, it has to simply write the character to early_wr register in config space of virtio console device.
+>
+> I won't nack this patch set, but I'll definitely express that I'm not happy with it.
+>
+> MMIO registers are handled by a different layer than the virtio console itself. After the virtio refactoring in QEMU, they will be completely separate drivers. So we'll be in a similar mess with early printk as we are on the s390-virtio machine, where early printk is done through hypercalls and thus we can't directly link it to the console output.
+>
+> I still don't see what the issue is with just implementing a small irq-less virtio driver for early printk.
 
-Commit a07f7672d7cf0ff0d6e548a9feb6e0bd016d9c6c added user-space copies
-of the byteshift headers to be used by hostprogs, changing e.g. u8 to __u8.
-However, in order to cross-compile the kernel from a non-Linux system,
-stdint.h types need to be used instead of linux/types.h types.
+Well, this shouldn't be mmio-specific, but I kind of get what you mean.
 
-Signed-off-by: Yaakov Selkowitz <yselkowitz@users.sourceforge.net>
----
-Ping 3; still hasn't been merged and no on-list response to previous posts
-from 11 June and 15 October 2012.
+I consider this misnamed: it's an emergency write facility.  Linux may
+use it for an early console, but it's also useful for bringup and to
+give a method of emitting errors like "the console ring is corrupt".
 
-Also applies to linux-3.[3-9].y
+A valid implementation may well be to only offer it with some magic
+qemu developer-only commandline and dump it to stdout.
 
- tools/include/tools/be_byteshift.h |   34 +++++++++++++++++-----------------
- tools/include/tools/le_byteshift.h |   34 +++++++++++++++++-----------------
- 2 files changed, 34 insertions(+), 34 deletions(-)
+So I think it has use, but less so if QEMU isn't ever going to implement
+it.
 
-diff --git a/tools/include/tools/be_byteshift.h b/tools/include/tools/be_byteshift.h
-index f4912e2..84c17d8 100644
---- a/tools/include/tools/be_byteshift.h
-+++ b/tools/include/tools/be_byteshift.h
-@@ -1,68 +1,68 @@
- #ifndef _TOOLS_BE_BYTESHIFT_H
- #define _TOOLS_BE_BYTESHIFT_H
- 
--#include <linux/types.h>
-+#include <stdint.h>
- 
--static inline __u16 __get_unaligned_be16(const __u8 *p)
-+static inline uint16_t __get_unaligned_be16(const uint8_t *p)
- {
- 	return p[0] << 8 | p[1];
- }
- 
--static inline __u32 __get_unaligned_be32(const __u8 *p)
-+static inline uint32_t __get_unaligned_be32(const uint8_t *p)
- {
- 	return p[0] << 24 | p[1] << 16 | p[2] << 8 | p[3];
- }
- 
--static inline __u64 __get_unaligned_be64(const __u8 *p)
-+static inline uint64_t __get_unaligned_be64(const uint8_t *p)
- {
--	return (__u64)__get_unaligned_be32(p) << 32 |
-+	return (uint64_t)__get_unaligned_be32(p) << 32 |
- 	       __get_unaligned_be32(p + 4);
- }
- 
--static inline void __put_unaligned_be16(__u16 val, __u8 *p)
-+static inline void __put_unaligned_be16(uint16_t val, uint8_t *p)
- {
- 	*p++ = val >> 8;
- 	*p++ = val;
- }
- 
--static inline void __put_unaligned_be32(__u32 val, __u8 *p)
-+static inline void __put_unaligned_be32(uint32_t val, uint8_t *p)
- {
- 	__put_unaligned_be16(val >> 16, p);
- 	__put_unaligned_be16(val, p + 2);
- }
- 
--static inline void __put_unaligned_be64(__u64 val, __u8 *p)
-+static inline void __put_unaligned_be64(uint64_t val, uint8_t *p)
- {
- 	__put_unaligned_be32(val >> 32, p);
- 	__put_unaligned_be32(val, p + 4);
- }
- 
--static inline __u16 get_unaligned_be16(const void *p)
-+static inline uint16_t get_unaligned_be16(const void *p)
- {
--	return __get_unaligned_be16((const __u8 *)p);
-+	return __get_unaligned_be16((const uint8_t *)p);
- }
- 
--static inline __u32 get_unaligned_be32(const void *p)
-+static inline uint32_t get_unaligned_be32(const void *p)
- {
--	return __get_unaligned_be32((const __u8 *)p);
-+	return __get_unaligned_be32((const uint8_t *)p);
- }
- 
--static inline __u64 get_unaligned_be64(const void *p)
-+static inline uint64_t get_unaligned_be64(const void *p)
- {
--	return __get_unaligned_be64((const __u8 *)p);
-+	return __get_unaligned_be64((const uint8_t *)p);
- }
- 
--static inline void put_unaligned_be16(__u16 val, void *p)
-+static inline void put_unaligned_be16(uint16_t val, void *p)
- {
- 	__put_unaligned_be16(val, p);
- }
- 
--static inline void put_unaligned_be32(__u32 val, void *p)
-+static inline void put_unaligned_be32(uint32_t val, void *p)
- {
- 	__put_unaligned_be32(val, p);
- }
- 
--static inline void put_unaligned_be64(__u64 val, void *p)
-+static inline void put_unaligned_be64(uint64_t val, void *p)
- {
- 	__put_unaligned_be64(val, p);
- }
-diff --git a/tools/include/tools/le_byteshift.h b/tools/include/tools/le_byteshift.h
-index c99d45a..8fe9f24 100644
---- a/tools/include/tools/le_byteshift.h
-+++ b/tools/include/tools/le_byteshift.h
-@@ -1,68 +1,68 @@
- #ifndef _TOOLS_LE_BYTESHIFT_H
- #define _TOOLS_LE_BYTESHIFT_H
- 
--#include <linux/types.h>
-+#include <stdint.h>
- 
--static inline __u16 __get_unaligned_le16(const __u8 *p)
-+static inline uint16_t __get_unaligned_le16(const uint8_t *p)
- {
- 	return p[0] | p[1] << 8;
- }
- 
--static inline __u32 __get_unaligned_le32(const __u8 *p)
-+static inline uint32_t __get_unaligned_le32(const uint8_t *p)
- {
- 	return p[0] | p[1] << 8 | p[2] << 16 | p[3] << 24;
- }
- 
--static inline __u64 __get_unaligned_le64(const __u8 *p)
-+static inline uint64_t __get_unaligned_le64(const uint8_t *p)
- {
--	return (__u64)__get_unaligned_le32(p + 4) << 32 |
-+	return (uint64_t)__get_unaligned_le32(p + 4) << 32 |
- 	       __get_unaligned_le32(p);
- }
- 
--static inline void __put_unaligned_le16(__u16 val, __u8 *p)
-+static inline void __put_unaligned_le16(uint16_t val, uint8_t *p)
- {
- 	*p++ = val;
- 	*p++ = val >> 8;
- }
- 
--static inline void __put_unaligned_le32(__u32 val, __u8 *p)
-+static inline void __put_unaligned_le32(uint32_t val, uint8_t *p)
- {
- 	__put_unaligned_le16(val >> 16, p + 2);
- 	__put_unaligned_le16(val, p);
- }
- 
--static inline void __put_unaligned_le64(__u64 val, __u8 *p)
-+static inline void __put_unaligned_le64(uint64_t val, uint8_t *p)
- {
- 	__put_unaligned_le32(val >> 32, p + 4);
- 	__put_unaligned_le32(val, p);
- }
- 
--static inline __u16 get_unaligned_le16(const void *p)
-+static inline uint16_t get_unaligned_le16(const void *p)
- {
--	return __get_unaligned_le16((const __u8 *)p);
-+	return __get_unaligned_le16((const uint8_t *)p);
- }
- 
--static inline __u32 get_unaligned_le32(const void *p)
-+static inline uint32_t get_unaligned_le32(const void *p)
- {
--	return __get_unaligned_le32((const __u8 *)p);
-+	return __get_unaligned_le32((const uint8_t *)p);
- }
- 
--static inline __u64 get_unaligned_le64(const void *p)
-+static inline uint64_t get_unaligned_le64(const void *p)
- {
--	return __get_unaligned_le64((const __u8 *)p);
-+	return __get_unaligned_le64((const uint8_t *)p);
- }
- 
--static inline void put_unaligned_le16(__u16 val, void *p)
-+static inline void put_unaligned_le16(uint16_t val, void *p)
- {
- 	__put_unaligned_le16(val, p);
- }
- 
--static inline void put_unaligned_le32(__u32 val, void *p)
-+static inline void put_unaligned_le32(uint32_t val, void *p)
- {
- 	__put_unaligned_le32(val, p);
- }
- 
--static inline void put_unaligned_le64(__u64 val, void *p)
-+static inline void put_unaligned_le64(uint64_t val, void *p)
- {
- 	__put_unaligned_le64(val, p);
- }
--- 
-1.7.9
+Cheers,
+Rusty.
 
