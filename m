@@ -1,111 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753277Ab3D2LLQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 07:11:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9330 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751639Ab3D2LLP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 07:11:15 -0400
-Subject: GFS2: Pull request (merge window)
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, cluster-devel@redhat.com
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-sKG/J23YodRJ0uKgVCbf"
-Organization: Red Hat UK Ltd
-Date: Mon, 29 Apr 2013 12:08:55 +0100
-Message-ID: <1367233735.2858.13.camel@menhir>
-Mime-Version: 1.0
+	id S1756899Ab3D2LLd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 07:11:33 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:63447 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754242Ab3D2LLa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Apr 2013 07:11:30 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130429082128.GG32299@pengutronix.de>
+References: <1367222401-26649-1-git-send-email-prabhakar.csengg@gmail.com> <20130429082128.GG32299@pengutronix.de>
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Date: Mon, 29 Apr 2013 16:41:07 +0530
+Message-ID: <CA+V-a8uM61Rzqa2y9b6FZVin2FWHg6o9kO7fqHupqq2dcBT3SA@mail.gmail.com>
+Subject: Re: [PATCH RFC] media: i2c: mt9p031: add OF support
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: LMML <linux-media@vger.kernel.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>, linux-doc@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Sakari Ailus <sakari.ailus@iki.fi>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Sascha,
 
---=-sKG/J23YodRJ0uKgVCbf
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Thanks for the quick review.
 
-Hi,
+On Mon, Apr 29, 2013 at 1:51 PM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
+<Snip>
 
-Please consider pulling the following changes,
+>> +Required Properties :
+>> +- compatible : value should be either one among the following
+>> +     (a) "aptina,mt9p031-sensor" for mt9p031 sensor
+>> +     (b) "aptina,mt9p031m-sensor" for mt9p031m sensor
+>> +
+>> +- ext_freq: Input clock frequency.
+>> +
+>> +- target_freq:  Pixel clock frequency.
+>
+> For devicetree properties '-' is preferred over '_'. Most devicetree
+> bindings we already have suggest that we shoud use 'frequency' and no
+> abbreviation. probably 'clock-frequency' should be used.
+>
+Yeah i missed it..  following is the proposed bindings,
+let me know if something is wrong with it.
 
-Steve.
+Required Properties :
+- compatible : value should be either one among the following
+	(a) "aptina,mt9p031-sensor" for mt9p031 sensor
+	(b) "aptina,mt9p031m-sensor" for mt9p031m sensor
 
-----------------------------------------------------------------------
+- input-clock-frequency: Input clock frequency.
 
-There is not a whole lot of change this time - there are some further
-changes which are in the works, but those will be held over until next
-time.
+- pixel-clock-frequency: Pixel clock frequency.
 
-Here there are some clean ups to inode creation, the addition of an
-origin (local or remote) indicator to glock demote requests, removal
-of one of the remaining GFP_NOFAIL allocations during log flushes,
-one minor clean up, and a one liner bug fix.
+Optional Properties :
+-gpio-reset: Chip reset GPIO (If not specified defaults to -1)
 
-----------------------------------------------------------------------
-The following changes since commit 31880c37c11e28cb81c70757e38392b42e695dc6=
-:
+Example:
 
-  Linux 3.9-rc6 (2013-04-07 20:49:54 -0700)
+i2c0@1c22000 {
+	...
+	...
+	mt9p031@5d {
+		compatible = "aptina,mt9p031-sensor";
+		reg = <0x5d>;
 
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/steve/gfs2-3.0-nmw.git mast=
-er
+		port {
+			mt9p031_1: endpoint {
+				input-clock-frequency = <6000000>;
+				pixel-clock-frequency = <96000000>;
+				gpio-reset = <&gpio3 30 0>;
+			};
+		};
+	};
+	...
+};
 
-Benjamin Marzinski (1):
-      GFS2: replace gfs2_ail structure with gfs2_trans
+>> +
+>> +Optional Properties :
+>> +-reset: Chip reset GPIO (If not specified defaults to -1)
+>
+> gpios must be specified as phandles, see of_get_named_gpio().
+>
+Fixed it.
 
-Bob Peterson (2):
-      GFS2: Remove vestigial parameter ip from function rs_deltree
-      GFS2: Flush work queue before clearing glock hash tables
+>> +
+>> +Example:
+>> +
+>> +i2c0@1c22000 {
+>> +     ...
+>> +     ...
+>> +     mt9p031@5d {
+>> +             compatible = "aptina,mt9p031-sensor";
+>> +             reg = <0x5d>;
+>> +
+>> +             port {
+>> +                     mt9p031_1: endpoint {
+>> +                             ext_freq = <6000000>;
+>> +                             target_freq = <96000000>;
+>> +                     };
+>> +             };
+>> +     };
+>> +     ...
+>> +};
+>> \ No newline at end of file
+>> diff --git a/drivers/media/i2c/mt9p031.c b/drivers/media/i2c/mt9p031.c
+>> index 28cf95b..66078a6 100644
+>> --- a/drivers/media/i2c/mt9p031.c
+>> +++ b/drivers/media/i2c/mt9p031.c
+>> @@ -23,11 +23,13 @@
+>>  #include <linux/regulator/consumer.h>
+>>  #include <linux/slab.h>
+>>  #include <linux/videodev2.h>
+>> +#include <linux/of_device.h>
+>>
+>>  #include <media/mt9p031.h>
+>>  #include <media/v4l2-chip-ident.h>
+>>  #include <media/v4l2-ctrls.h>
+>>  #include <media/v4l2-device.h>
+>> +#include <media/v4l2-of.h>
+>>  #include <media/v4l2-subdev.h>
+>>
+>>  #include "aptina-pll.h"
+>> @@ -928,10 +930,66 @@ static const struct v4l2_subdev_internal_ops mt9p031_subdev_internal_ops = {
+>>   * Driver initialization and probing
+>>   */
+>>
+>> +#if defined(CONFIG_OF)
+>> +static const struct of_device_id mt9p031_of_match[] = {
+>> +     {.compatible = "aptina,mt9p031-sensor", },
+>> +     {.compatible = "aptina,mt9p031m-sensor", },
+>> +     {},
+>> +};
+>> +MODULE_DEVICE_TABLE(of, mt9p031_of_match);
+>> +
+>> +static struct mt9p031_platform_data
+>> +     *mt9p031_get_pdata(struct i2c_client *client)
+>> +
+>> +{
+>> +     if (!client->dev.platform_data && client->dev.of_node) {
+>
+> Just because the Kernel is compiled with devicetree support does not
+> necessarily mean you actually boot from devicetree. You must still
+> handle platform data properly.
+>
+OK. which one should be given higher preference  client->dev.of_node
+or the client->dev.platform_data ?
 
-Steven Whitehouse (5):
-      GFS2: Clean up inode creation path
-      GFS2: Remove gfs2_refresh_inode from inode creation path
-      GFS2: Use gfs2_dinode_out() in the inode create path
-      GFS2: Add origin indicator to glock callbacks
-      GFS2: Add origin indicator to glock demote tracing
+>> +             struct device_node *np;
+>> +             struct mt9p031_platform_data *pdata;
+>> +             int ret;
+>> +
+>> +             np = v4l2_of_get_next_endpoint(client->dev.of_node, NULL);
+>> +             if (!np)
+>> +                     return NULL;
+>> +
+>> +             pdata = devm_kzalloc(&client->dev,
+>> +                                  sizeof(struct mt9p031_platform_data),
+>> +                                  GFP_KERNEL);
+>> +             if (!pdata) {
+>> +                     pr_warn("mt9p031 failed allocate memeory\n");
+>
+> Use dev_* for messages inside drivers.
+>
+Fixed it.
 
- fs/gfs2/aops.c       |    2 +-
- fs/gfs2/bmap.c       |    2 +-
- fs/gfs2/glock.c      |   28 ++-----
- fs/gfs2/glock.h      |    1 -
- fs/gfs2/glops.c      |    4 +-
- fs/gfs2/incore.h     |   19 +++---
- fs/gfs2/inode.c      |  188 +++++++++++++++++-----------------------------=
-----
- fs/gfs2/log.c        |  104 +++++++++++++++-------------
- fs/gfs2/lops.c       |   32 ++++++---
- fs/gfs2/lops.h       |    5 +-
- fs/gfs2/meta_io.c    |    2 +-
- fs/gfs2/rgrp.c       |   24 +++----
- fs/gfs2/rgrp.h       |    2 +-
- fs/gfs2/super.c      |    2 +-
- fs/gfs2/trace_gfs2.h |   11 ++-
- fs/gfs2/trans.c      |    4 +-
- 16 files changed, 188 insertions(+), 242 deletions(-)
-
-
---=-sKG/J23YodRJ0uKgVCbf
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAABAgAGBQJRflTDAAoJEMrg3m4a/8jS9woP/iuG8dWd5uUchuIErxBHAxLI
-CFJOkWmZrdyWyh4Rj8XMpSfV4V92MDh9NJKxLD09BSnJ3SOKWlhcOK6fPrFEN8hy
-1lM1/0QNCOknUU6K9l80E0gWQ/fiwc3lw8vmLX/fZxJd9tHvISMyYA1KKDu/HTbF
-msETxt9ENIFjldqAVpWdUlf9IxHKCU9u8JJ2WZ7jbJrZKHElsVa3KVlhfDvy/jZE
-e6aVYOOVpUUIjeuP/V51wK/Uexa/J7/RQMVAOTEZt0uYcjEXEClti3Gj1P32mQ8W
-trrmVpQGwOMXdOPXOk4hQyB0A4vBxnYaQLvJAHiPeOKoeLY7qPysMY7qcJp3PnQC
-koB0eTlQkal3/wE99nZJivDzSaCaKZwAgHgz2XFjebYsMsXS/VjNxQnfYY5tjGTe
-QMKYTyI4sGyXjOiyJLzRjq2wCHyjJo5pr4eWikcYQeZF8S1u6ScY+cTodeTmiWQt
-aqxc2zhEaIuI+LX45J4bSZFX/qUtpFppzGgNbZXM/RpMuPpzUhUWoyBOORaj+jWd
-nv28n7B6dPAhCT8CDpKKJRjCKl+OYd5I3oNoDYrjjq0LpGyiwWWYNf2WGOIPa+Ux
-Y+0FtaWm6SZsKOIN77D9/6JqvgANxMPSy1O6xD7tuVDyj8R60oP4k/fRE+nbumQX
-sdhZA2Ej5dTUueX45SMG
-=lhbJ
------END PGP SIGNATURE-----
-
---=-sKG/J23YodRJ0uKgVCbf--
-
+Regards,
+--Prabhakar Lad
