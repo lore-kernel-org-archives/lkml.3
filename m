@@ -1,59 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757357Ab3D2RM1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 13:12:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20119 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756852Ab3D2RMZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 13:12:25 -0400
-Message-ID: <517EA9E3.6050407@redhat.com>
-Date: Mon, 29 Apr 2013 13:12:03 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
+	id S1757499Ab3D2RNq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 13:13:46 -0400
+Received: from casper.infradead.org ([85.118.1.10]:44899 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757236Ab3D2RNo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Apr 2013 13:13:44 -0400
+Message-ID: <517EAA2D.1000407@infradead.org>
+Date: Mon, 29 Apr 2013 10:13:17 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Alexey Lyahkov <alexey.lyashkov@gmail.com>,
-        Andrew Perepechko <anserper@ya.ru>, Robin Dong <sanbai@taobao.com>,
-        Theodore Tso <tytso@mit.edu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Bernd Schubert <bernd.schubert@fastmail.fm>,
-        David Howells <dhowells@redhat.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux-ext4 <linux-ext4@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>
-Subject: Re: [PATCH 2/3] mm: Ensure that mark_page_accessed moves pages to
- the active list
-References: <1367253119-6461-1-git-send-email-mgorman@suse.de> <1367253119-6461-3-git-send-email-mgorman@suse.de>
-In-Reply-To: <1367253119-6461-3-git-send-email-mgorman@suse.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: linux-next: Tree for Apr 29 (many build errors when PROC_FS is
+ not set -- part 1)
+References: <20130429191754.8ee71fb814790bf345516ab8@canb.auug.org.au>
+In-Reply-To: <20130429191754.8ee71fb814790bf345516ab8@canb.auug.org.au>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/29/2013 12:31 PM, Mel Gorman wrote:
+On 04/29/13 02:17, Stephen Rothwell wrote:
+> Hi all,
+> 
+> Changes since 20130426:
+> 
 
-> A PageActive page is now added to the inactivate list.
->
-> While this looks strange, I think it is sufficiently harmless that additional
-> barriers to address the case is not justified.  Unfortunately, while I never
-> witnessed it myself, these parallel updates potentially trigger defensive
-> DEBUG_VM checks on PageActive and hence they are removed by this patch.
 
-Could this not cause issues with __page_cache_release, called from
-munmap, exit, truncate, etc.?
+Many build errors happen when CONFIG_PROC_FS is not enabled.
+This is not new -- I also saw it about 2 weeks ago but did not analyze or report it.
 
-Could the eventual skewing of active vs inactive numbers break page
-reclaim heuristics?
 
-I wonder if we would need to move to a scheme where the PG_active bit
-is always the authoritive one, and we never pass an overriding "lru"
-parameter to __pagevec_lru_add.
+use of PDE_DATA() (from <linux/proc_fs.h>):
 
-Would memory ordering between SetPageLRU and testing for PageLRU be
-enough to then prevent the statistics from going off?
+drivers/net/wireless/hostap/hostap_ap.c:85:2: error: implicit declaration of function 'PDE_DATA' [-Werror=implicit-function-declaration]
+
+fs/afs/proc.c:193:2: error: implicit declaration of function 'PDE_DATA' [-Werror=implicit-function-declaration]
+
+drivers/block/pktcdvd.c:2598:2: error: implicit declaration of function 'PDE_DATA' [-Werror=implicit-function-declaration]
+
+fs/ext4/super.c:1809:2: error: implicit declaration of function 'PDE_DATA' [-Werror=implicit-function-declaration]
+fs/ext4/mballoc.c:2263:9: error: implicit declaration of function 'PDE_DATA' [-Werror=implicit-function-declaration]
+fs/jbd2/journal.c:982:2: error: implicit declaration of function 'PDE_DATA' [-Werror=implicit-function-declaration]
+
+net/sunrpc/cache.c:1465:9: error: implicit declaration of function 'PDE_DATA' [-Werror=implicit-function-declaration]
+
+drivers/char/ipmi/ipmi_si_intf.c:2842:2: error: implicit declaration of function 'PDE_DATA' [-Werror=implicit-function-declaration]
+drivers/gpu/drm/drm_proc.c:66:9: error: implicit declaration of function 'PDE_DATA' [-Werror=implicit-function-declaration]
+net/can/proc.c:381:2: error: implicit declaration of function 'PDE_DATA' [-Werror=implicit-function-declaration]
+net/can/bcm.c:229:2: error: implicit declaration of function 'PDE_DATA' [-Werror=implicit-function-declaration]
+
+
+Al, would it make sense to have a stub for PDE_DATA() in
+<linux/proc_fs.h> when CONFIG_PROC_FS is not enabled?
+
+
 
 -- 
-All rights reversed
+~Randy
