@@ -1,95 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757908Ab3D2RGA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 13:06:00 -0400
-Received: from smtp81.ord1c.emailsrvr.com ([108.166.43.81]:45007 "EHLO
-	smtp81.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757398Ab3D2RF7 (ORCPT
+	id S1757398Ab3D2RKQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 13:10:16 -0400
+Received: from oproxy9.bluehost.com ([69.89.24.6]:45138 "HELO
+	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756901Ab3D2RKO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 13:05:59 -0400
-X-Greylist: delayed 15575 seconds by postgrey-1.27 at vger.kernel.org; Mon, 29 Apr 2013 13:05:59 EDT
-Message-ID: <517EA87B.9090906@calxeda.com>
-Date: Mon, 29 Apr 2013 12:06:03 -0500
-From: Mark Langsdorf <mark.langsdorf@calxeda.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Jassi Brar <jaswinder.singh@linaro.org>
-CC: Suman Anna <s-anna@ti.com>, Jassi Brar <jassisinghbrar@gmail.com>,
-        "Loic PALLARDY (loic.pallardy@st.com)" <loic.pallardy@st.com>,
-        Arnd Bergmann <arnd@arndb.de>, lkml <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Andy Green <andy.green@linaro.org>
-Subject: Re: [RFC 3/3] mailbox: pl320: Introduce common API driver
-References: <CAJe_ZhdH+SCs5crguXrm6y-6bu+eGnTqeJS6cOS5H5Yz=m15Cw@mail.gmail.com> <1367086496-28647-1-git-send-email-jaswinder.singh@linaro.org> <517EA36E.2050106@ti.com> <CAJe_ZhcHVAQfPZJ-+upr-78B+MqLw36jTmS8geZpc2=_-gGzGQ@mail.gmail.com>
-In-Reply-To: <CAJe_ZhcHVAQfPZJ-+upr-78B+MqLw36jTmS8geZpc2=_-gGzGQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 29 Apr 2013 13:10:14 -0400
+Message-ID: <1367255407.8833.4.camel@Wailaba2>
+Subject: Re: [PATCH v2 1/3] process cputimer is moving faster than its
+ corresponding clock
+From: Olivier Langlois <olivier@trillion01.com>
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, schwidefsky@de.ibm.com,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Mon, 29 Apr 2013 13:10:07 -0400
+In-Reply-To: <517DFFE9.4050808@gmail.com>
+References: <1365184746.874.103.camel@Wailaba2>
+	 <1365593710.30071.52.camel@laptop> <1365608911.707.65.camel@Wailaba2>
+	 <1365763837.17140.52.camel@laptop> <1365782115.17140.68.camel@laptop>
+	 <CAFTL4hwQ4FZs0VCNXP37f=+DBW7Q2EQc6PW_EtYiVnZCPWN4OQ@mail.gmail.com>
+	 <CAHGf_=pWPT4XdrJ8ZveL4zJKm1SE0whpL_fMHd5_TokuNQxSJQ@mail.gmail.com>
+	 <CAHGf_=psD4V-U4FFwAWr4k3ZP6p=GVkNY_0S-Cg06m-=89MM7Q@mail.gmail.com>
+	 <1366951210.7911.28.camel@Wailaba2> <1366957639.7911.42.camel@Wailaba2>
+	 <517AD0AE.1030404@gmail.com> <1367037606.7911.66.camel@Wailaba2>
+	 <517DFFE9.4050808@gmail.com>
+Organization: Trillion01 Inc
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {5686:box610.bluehost.com:olivierl:trillion01.com} {sentby:smtp auth 173.178.230.31 authed with olivier@trillion01.com}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/29/2013 11:57 AM, Jassi Brar wrote:
-> On 29 April 2013 22:14, Suman Anna <s-anna@ti.com> wrote:
->> On 04/27/2013 01:14 PM, jassisinghbrar@gmail.com wrote:
->>> From: Jassi Brar <jaswinder.singh@linaro.org>
->>> Signed-off-by: Jassi Brar <jaswinder.singh@linaro.org>
->>> ---
->>>  drivers/cpufreq/highbank-cpufreq.c       |   22 +++-
->>>  drivers/mailbox/Makefile                 |    2 +-
->>>  drivers/mailbox/{pl320-ipc.c => pl320.c} |  194 ++++++++++++++++--------------
->>>  include/linux/pl320-ipc.h                |   17 ---
->>>  4 files changed, 125 insertions(+), 110 deletions(-)
->>>  rename drivers/mailbox/{pl320-ipc.c => pl320.c} (51%)
->>>  delete mode 100644 include/linux/pl320-ipc.h
->>>
->>> diff --git a/drivers/cpufreq/highbank-cpufreq.c b/drivers/cpufreq/highbank-cpufreq.c
->>> index 3118b87..5c057e0 100644
->>> --- a/drivers/cpufreq/highbank-cpufreq.c
->>> +++ b/drivers/cpufreq/highbank-cpufreq.c
->>> @@ -19,7 +19,7 @@
->>>  #include <linux/cpu.h>
->>>  #include <linux/err.h>
->>>  #include <linux/of.h>
->>> -#include <linux/pl320-ipc.h>
->>> +#include <linux/mailbox_client.h>
->>>  #include <linux/platform_device.h>
->>>
->>>  #define HB_CPUFREQ_CHANGE_NOTE       0x80000001
->>> @@ -29,8 +29,26 @@
->>>  static int hb_voltage_change(unsigned int freq)
->>>  {
->>>       u32 msg[HB_CPUFREQ_IPC_LEN] = {HB_CPUFREQ_CHANGE_NOTE, freq / 1000000};
->>> +     struct ipc_client cl;
->>> +     int ret = -ETIMEDOUT;
->>> +     void *chan;
->>>
->>> -     return pl320_ipc_transmit(msg);
->>> +     cl.rxcb = NULL;
->>> +     cl.txcb = NULL;
->>> +     cl.tx_block = true;
->>> +     cl.tx_tout = 1000; /* 1 sec */
->>> +     cl.cntlr_data = NULL;
->>> +     cl.knows_txdone = false;
->>> +     cl.chan_name = "pl320:A9_to_M3";
->>> +
->>> +     chan = ipc_request_channel(&cl);
->>> +
->>> +     if (ipc_send_message(chan, (void *)msg))
->>> +             ret = msg[1]; /* PL320 updates buffer with FIFO after ACK */
->>> +
->>> +     ipc_free_channel(chan);
->>
->> I think I understand why you have done this, but do you really want to
->> request and free every time in the highbank cpufreq driver?
->>
-> Exactly my aim - make the API light enough to enable the client to
-> use-and-throw. And also because the channel are exclusively assigned,
-> acquire a channel only for as long as you need it.
+On Mon, 2013-04-29 at 01:06 -0400, KOSAKI Motohiro wrote:
+> (4/27/13 12:40 AM), Olivier Langlois wrote:
+> > 
+> > 
+> > Forbids the cputimer to drift ahead of its process clock by
+> > blocking its update when a tick occurs while a autoreaping task
+> > is currently in do_exit() between the call to release_task() and
+> > its final call to schedule().
+> > 
+> > Any task stats update after having called release_task() will
+> > be lost because they are added to the global process stats located
+> > in the signal struct from release_task().
+> > 
+> > Ideally, you should postpone the release_task() call after the
+> > final context switch to get all the stats added but this is
+> > more complex to achieve.
+> > 
+> > In other words, this is slowing down the cputimer so it keep the same
+> > pace than the process clock but in fact, what should be done is to
+> > speed up the process clock by adding the missing stats to it.
+> > 
+> > Signed-off-by: Olivier Langlois <olivier@trillion01.com>
+> > ---
+> >  kernel/sched/fair.c | 10 +++++++++-
+> >  1 file changed, 9 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> > index 7a33e59..52d7b10 100644
+> > --- a/kernel/sched/fair.c
+> > +++ b/kernel/sched/fair.c
+> > @@ -708,7 +708,15 @@ static void update_curr(struct cfs_rq *cfs_rq)
+> >  
+> >                 trace_sched_stat_runtime(curtask, delta_exec, curr->vruntime);
+> >                 cpuacct_charge(curtask, delta_exec);
+> > -               account_group_exec_runtime(curtask, delta_exec);
+> > +               /*
+> > +                * Do not update the cputimer if the task is already released by
+> > +                * release_task().
+> > +                *
+> > +                * it would preferable to defer the autoreap release_task
+> > +                * after the last context switch but harder to do.
+> > +                */
+> > +               if (likely(curtask->sighand))
+> > +                       account_group_exec_runtime(curtask, delta_exec);
+> >         }
+> 
+> I'm confused. glibc's rt/tst-cputimer1 doesn't have thread exiting code. I have
+> no seen any issue in this accounting.
 
-Do you have any numbers on the performance impact? Our cpufreq
-transition throughput is bad enough without adding additional delays.
+glibc launch a helper thread to receive timer signal and will also
+create a new thread upon signal reception when a timer is created with
+sigev_notify = SIGEV_THREAD;
 
---Mark Langsdorf
-Calxeda, Inc.
+please see:
+
+glibc-2.17/nptl/sysdeps/unix/sysv/linux/timer_create.c
+glibc-2.17/nptl/sysdeps/unix/sysv/linux/timer_routines.c
+
+Greetings,
+Olivier
+
+
 
