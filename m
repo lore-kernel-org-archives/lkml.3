@@ -1,243 +1,264 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758309Ab3D2OSD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 10:18:03 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:37942 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751501Ab3D2OSA (ORCPT
+	id S1758313Ab3D2O1x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 10:27:53 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:51525 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757827Ab3D2O1w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 10:18:00 -0400
-Date: Mon, 29 Apr 2013 09:15:30 -0500
-From: Kent Yoder <key@linux.vnet.ibm.com>
-To: Peter =?iso-8859-1?Q?H=FCwe?= <PeterHuewe@gmx.de>
-Cc: tpmdd-devel@lists.sourceforge.net,
-        Mathias Leblanc <mathias.leblanc@st.com>,
-        Rajiv Andrade <mail@srajiv.net>, Marcel Selhorst <tpmdd@selhorst.net>,
-        Sirrix AG <tpmdd@sirrix.com>, Jean-Luc Blanc <jean-luc.blanc@st.com>,
-        linux-kernel@vger.kernel.org,
-        Matthias Leblanc <matthias.leblanc@gmail.com>
-Subject: Re: [tpmdd-devel] [PATCH 1/1] TPM: STMicroelectronics st33 driver SPI
-Message-ID: <20130429141530.GA4789@ennui.austin.ibm.com>
-References: <1366620606-2952-1-git-send-email-mathias.leblanc@st.com>
- <201304280316.34094.PeterHuewe@gmx.de>
+	Mon, 29 Apr 2013 10:27:52 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Cc: LMML <linux-media@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>
+Subject: Re: [PATCH] media: i2c: tvp7002: enable TVP7002 decoder for media controller based usage
+Date: Mon, 29 Apr 2013 16:27:57 +0200
+Message-ID: <32556864.ElKWl0cdN2@avalon>
+User-Agent: KMail/4.10.2 (Linux/3.7.10-gentoo-r1; KDE/4.10.2; x86_64; ; )
+In-Reply-To: <1366963535-15963-1-git-send-email-prabhakar.csengg@gmail.com>
+References: <1366963535-15963-1-git-send-email-prabhakar.csengg@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201304280316.34094.PeterHuewe@gmx.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13042914-3620-0000-0000-0000023D2A63
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 28, 2013 at 03:16:33AM +0200, Peter Hüwe wrote:
-> Hi Matthias,
-> 
-> it's nice to see that you consider most of the comments, unfortunately I still 
-> have some left ;)
-> 
-> > +/*
-> > + * tpm_st33_spi_init initialize driver
-> > + * @return: 0 if successful, else non zero value.
-> > + */
-> > +static int __init tpm_st33_spi_init(void)
-> > +{
-> > +	return spi_register_driver(&tpm_st33_spi_driver);
-> > +}
-> > +
-> > +/*
-> > + * tpm_st33_spi_exit The kernel calls this function during unloading the
-> > + * module or during shut down process
-> > + */
-> > +static void __exit tpm_st33_spi_exit(void)
-> > +{
-> > +	spi_unregister_driver(&tpm_st33_spi_driver);
-> > +}
-> > +
-> > +module_init(tpm_st33_spi_init);
-> > +module_exit(tpm_st33_spi_exit);
-> 
-> Please use module_spi_driver(&tpm_st33_spi_driver); instead
-> Boilerplate code sucks.
-> 
-> 
-> > +	u8 *data_buffer = platform_data->tpm_spi_buffer[0];
-> > +	struct spi_transfer xfer = {
-> > +		.tx_buf	 = data_buffer,
-> > +		.rx_buf	 = platform_data->tpm_spi_buffer[1],
-> > +	};
-> > +	struct spi_message msg;
-> >...
-> > +	xfer.len = total_length;
-> > +	spi_message_init(&msg);
-> > +	spi_message_add_tail(&xfer, &msg);
-> > +	value = spi_sync(dev, &msg);
-> 
-> 
-> Doesn't spi_write fit here ?
-> 
-> static inline int
-> spi_write(struct spi_device *spi, const void *buf, size_t len)
-> {
-> 	struct spi_transfer	t = {
-> 			.tx_buf		= buf,
-> 			.len		= len,
-> 		};
-> 	struct spi_message	m;
-> 
-> 	spi_message_init(&m);
-> 	spi_message_add_tail(&t, &m);
-> 	return spi_sync(spi, &m);
-> }
-> 
-> Seems pretty identical.
-> -> This would save some lines of code,
-> and again - boilerplate code sucks.
-> Same applies to spi_read,
-> 
-> 
-> 
-> The driver generates some gcc warnings:
->  drivers/char/tpm/tpm_spi_stm_st33.c: In function 'read8_reg': 
->  drivers/char/tpm/tpm_spi_stm_st33.c:180:5: warning: unused variable 'latency'  
-> [-Wunused-variable]
->  drivers/char/tpm/tpm_spi_stm_st33.c: In function 'tpm_stm_spi_status':
->  drivers/char/tpm/tpm_spi_stm_st33.c:353:2: warning: 'data' is used  
-> uninitialized in this function [-Wuninitialized]
->  drivers/char/tpm/tpm_spi_stm_st33.c: In function 'get_burstcount':
->  drivers/char/tpm/tpm_spi_stm_st33.c:450:12: warning: 'temp' is used  
-> uninitialized in this function [-Wuninitialized]
->  drivers/char/tpm/tpm_spi_stm_st33.c: In function 'check_locality':
->  drivers/char/tpm/tpm_spi_stm_st33.c:369:22: warning: 'data' may be used  
-> uninitialized in this function [-Wuninitialized]
+Hi Prabhakar,
 
- Thanks for pointing this out Peter -- it made me realize my bash
-aliases for checking were not working. :-)
+Thank you for the patch.
 
-Please take a look at these too:
+On Friday 26 April 2013 13:35:35 Prabhakar Lad wrote:
+> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> 
+> This patch enables tvp7002 decoder driver for media controller
+> based usage by adding v4l2_subdev_pad_ops  operations support
+> for enum_mbus_code, set_pad_format, get_pad_format and media_entity_init()
+> on probe and media_entity_cleanup() on remove.
+> 
+> The device supports 1 output pad and no input pads.
 
-drivers/char/tpm/tpm_spi_stm_st33.c:446 get_burstcount() warn: unsigned
-'status' is never less than zero.
-drivers/char/tpm/tpm_spi_stm_st33.c:452 get_burstcount() warn: unsigned
-'status' is never less than zero.
-drivers/char/tpm/tpm_spi_stm_st33.c:523 recv_data() warn: unsigned
-'status' is never less than zero.
-drivers/char/tpm/tpm_spi_stm_st33.c:572 tpm_stm_spi_send() warn:
-unsigned 'ret' is never less than zero.
-drivers/char/tpm/tpm_spi_stm_st33.c:590 tpm_stm_spi_send() warn:
-unsigned 'ret' is never less than zero.
-drivers/char/tpm/tpm_spi_stm_st33.c:613 tpm_stm_spi_send() warn:
-unsigned 'ret' is never less than zero.
-drivers/char/tpm/tpm_spi_stm_st33.c:836 tpm_st33_spi_probe() warn:
-unsigned 'err' is never less than zero.
-drivers/char/tpm/tpm_spi_stm_st33.c:842 tpm_st33_spi_probe() warn:
-unsigned 'err' is never less than zero.
-drivers/char/tpm/tpm_spi_stm_st33.c:854 tpm_st33_spi_probe() warn:
-unsigned 'err' is never less than zero.
-drivers/char/tpm/tpm_spi_stm_st33.c:859 tpm_st33_spi_probe() warn:
-unsigned 'err' is never less than zero.
-drivers/char/tpm/tpm_spi_stm_st33.c:863 tpm_st33_spi_probe() warn:
-unsigned 'err' is never less than zero.
+We should actually define input pads, connected to connector entities, but 
+that's out of scope for this patch.
 
-Kent
+> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> ---
+>  drivers/media/i2c/tvp7002.c |  125 ++++++++++++++++++++++++++++++++++++++--
+>  include/media/tvp7002.h     |    2 +
+>  2 files changed, 122 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/media/i2c/tvp7002.c b/drivers/media/i2c/tvp7002.c
+> index 027809c..b212d41 100644
+> --- a/drivers/media/i2c/tvp7002.c
+> +++ b/drivers/media/i2c/tvp7002.c
+> @@ -424,6 +424,8 @@ struct tvp7002 {
+>  	int streaming;
+> 
+>  	const struct tvp7002_timings_definition *current_timings;
+> +	struct media_pad pad;
+> +	struct v4l2_mbus_framefmt format;
+>  };
+> 
+>  /*
+> @@ -880,6 +882,93 @@ static const struct v4l2_ctrl_ops tvp7002_ctrl_ops = {
+>  	.s_ctrl = tvp7002_s_ctrl,
+>  };
+> 
+> +/*
+> + * tvp7002_enum_mbus_code() - Enum supported digital video format on pad
+> + * @sd: pointer to standard V4L2 sub-device structure
+> + * @fh: file handle for the subdev
+> + * @code: pointer to subdev enum mbus code struct
+> + *
+> + * Enumerate supported digital video formats for pad.
+> + */
+> +static int
+> +tvp7002_enum_mbus_code(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
+> +		       struct v4l2_subdev_mbus_code_enum *code)
+> +{
+> +	/* Check pad index is valid */
+> +	if (code->pad != 0)
+> +		return -EINVAL;
 
+That check is already performed in the subdev core, there's no need to 
+duplicate it here.
+
+> +
+> +	/* Check requested format index is within range */
+> +	if (code->index != 0)
+> +		return -EINVAL;
+> +
+> +	code->code = V4L2_MBUS_FMT_YUYV10_1X20;
+> +
+> +	return 0;
+> +}
+> +
+> +/*
+> + * tvp7002_set_pad_format() - set video format on pad
+> + * @sd: pointer to standard V4L2 sub-device structure
+> + * @fh: file handle for the subdev
+> + * @fmt: pointer to subdev format struct
+> + *
+> + * set video format for pad.
+> +*/
+> +static int
+> +tvp7002_set_pad_format(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
+> +		       struct v4l2_subdev_format *fmt)
+> +{
+> +	struct tvp7002 *tvp7002 = to_tvp7002(sd);
+> +
+> +	/* Check pad index is valid */
+> +	if (fmt->pad != 0)
+> +		return -EINVAL;
+
+Redundant check as well.
+
+> +	if (fmt->format.field != tvp7002->current_timings->scanmode ||
+> +	    fmt->format.code != V4L2_MBUS_FMT_YUYV10_1X20 ||
+> +	    fmt->format.colorspace != tvp7002->current_timings->color_space ||
+> +	    fmt->format.width != tvp7002->current_timings->timings.bt.width ||
+> +	    fmt->format.height != tvp7002->current_timings->timings.bt.height)
+> +		return -EINVAL;
+
+You shouldn't return an error, but fix the input parameters according to what 
+the device supports. As the format is fixed for a giving set of timings, the 
+.set_pad_format() handler should just perform the same operations as 
+.get_pad_format(). You could even define tvp7002_get_pad_format() only and use 
+it as a handler for both .get_pad_format() and .set_pad_format().
+
+> +	tvp7002->format = fmt->format;
+> +
+> +	return 0;
+> +}
+> +
+> +/*
+> + * tvp7002_get_pad_format() - get video format on pad
+> + * @sd: pointer to standard V4L2 sub-device structure
+> + * @fh: file handle for the subdev
+> + * @fmt: pointer to subdev format struct
+> + *
+> + * get video format for pad.
+> + */
+> +static int
+> +tvp7002_get_pad_format(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
+> +		       struct v4l2_subdev_format *fmt)
+> +{
+> +	struct tvp7002 *tvp7002 = to_tvp7002(sd);
+> +
+> +	/* Check pad index is valid */
+> +	if (fmt->pad != 0)
+> +		return -EINVAL;
+
+Redundant check.
+
+> +	if (fmt->which == V4L2_SUBDEV_FORMAT_ACTIVE) {
+> +		fmt->format = tvp7002->format;
+> +		return 0;
+> +	}
+> +
+> +	fmt->format.code = V4L2_MBUS_FMT_YUYV10_1X20;
+> +	fmt->format.width = tvp7002->current_timings->timings.bt.width;
+> +	fmt->format.height = tvp7002->current_timings->timings.bt.height;
+> +	fmt->format.field = tvp7002->current_timings->scanmode;
+> +	fmt->format.colorspace = tvp7002->current_timings->color_space;
+> +
+> +	return 0;
+> +}
+> +
+>  /* V4L2 core operation handlers */
+>  static const struct v4l2_subdev_core_ops tvp7002_core_ops = {
+>  	.g_chip_ident = tvp7002_g_chip_ident,
+> @@ -910,10 +999,18 @@ static const struct v4l2_subdev_video_ops
+> tvp7002_video_ops = { .enum_mbus_fmt = tvp7002_enum_mbus_fmt,
+>  };
 > 
+> +/* media pad related operation handlers */
+> +static const struct v4l2_subdev_pad_ops tvp7002_pad_ops = {
+> +	.enum_mbus_code = tvp7002_enum_mbus_code,
+> +	.get_fmt = tvp7002_get_pad_format,
+> +	.set_fmt = tvp7002_set_pad_format,
+
+We will need to define pad-aware DV timings operations.
+
+> +};
+> +
+>  /* V4L2 top level operation handlers */
+>  static const struct v4l2_subdev_ops tvp7002_ops = {
+>  	.core = &tvp7002_core_ops,
+>  	.video = &tvp7002_video_ops,
+> +	.pad = &tvp7002_pad_ops,
+>  };
 > 
-> The driver does give me some smatch errors:
+>  /*
+> @@ -993,19 +1090,35 @@ static int tvp7002_probe(struct i2c_client *c, const
+> struct i2c_device_id *id) timings = device->current_timings->timings;
+>  	error = tvp7002_s_dv_timings(sd, &timings);
 > 
-> $ LANG=C make -j16 C=1 CHECK=smatch
->  CHECK   drivers/char/tpm/tpm_spi_stm_st33.c
->  drivers/char/tpm/tpm_spi_stm_st33.c:882 tpm_st33_spi_probe() warn: variable  
-> dereferenced before check 'platform_data' (see line 781)
->  drivers/char/tpm/tpm_spi_stm_st33.c:980 tpm_st33_spi_pm_resume() warn: should  
-> this be a bitwise op?
->  drivers/char/tpm/tpm_spi_stm_st33.c:980 tpm_st33_spi_pm_resume() warn: should  
-> this be a bitwise op?
+> +#if defined(CONFIG_MEDIA_CONTROLLER)
+> +	strlcpy(sd->name, TVP7002_MODULE_NAME, sizeof(sd->name));
+> +	device->pad.flags = MEDIA_PAD_FL_SOURCE;
+> +	device->sd.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
+> +	device->sd.entity.flags |= MEDIA_ENT_T_V4L2_SUBDEV_DECODER;
+> +
+> +	error = media_entity_init(&device->sd.entity, 1, &device->pad, 0);
+> +	if (error < 0)
+> +		return error;
+> +#endif
+> +
+>  	v4l2_ctrl_handler_init(&device->hdl, 1);
+>  	v4l2_ctrl_new_std(&device->hdl, &tvp7002_ctrl_ops,
+>  			V4L2_CID_GAIN, 0, 255, 1, 0);
+>  	sd->ctrl_handler = &device->hdl;
+>  	if (device->hdl.error) {
+> -		int err = device->hdl.error;
+> -
+> -		v4l2_ctrl_handler_free(&device->hdl);
+> -		return err;
+> +		error = device->hdl.error;
+> +		goto done;
+>  	}
+>  	v4l2_ctrl_handler_setup(&device->hdl);
 > 
+>  	return 0;
+> +
+> +done:
+> +	v4l2_ctrl_handler_free(&device->hdl);
+> +#if defined(CONFIG_MEDIA_CONTROLLER)
+> +	media_entity_cleanup(&device->sd.entity);
+> +#endif
+> +	return error;
+>  }
 > 
+>  /*
+> @@ -1022,7 +1135,9 @@ static int tvp7002_remove(struct i2c_client *c)
 > 
-> and some sparse errors:
->  drivers/char/tpm/tpm_spi_stm_st33.c:102:35: warning: cast removes address 
-> space of expression
->  drivers/char/tpm/tpm_spi_stm_st33.c:171:35: warning: cast removes address 
-> space of expression
->  drivers/char/tpm/tpm_spi_stm_st33.c:299:19: warning: cast removes address 
-> space of expression
->  drivers/char/tpm/tpm_spi_stm_st33.c:311:15: warning: symbol 
-> 'wait_for_serirq_timeout' was not declared. Should it be static?
->  drivers/char/tpm/tpm_spi_stm_st33.c:546:19: warning: cast removes address 
-> space of expression
+>  	v4l2_dbg(1, debug, sd, "Removing tvp7002 adapter"
+>  				"on address 0x%x\n", c->addr);
+> -
+> +#if defined(CONFIG_MEDIA_CONTROLLER)
+> +	media_entity_cleanup(&device->sd.entity);
+> +#endif
+>  	v4l2_device_unregister_subdev(sd);
+>  	v4l2_ctrl_handler_free(&device->hdl);
+>  	return 0;
+> diff --git a/include/media/tvp7002.h b/include/media/tvp7002.h
+> index ee43534..7123048 100644
+> --- a/include/media/tvp7002.h
+> +++ b/include/media/tvp7002.h
+> @@ -26,6 +26,8 @@
+>  #ifndef _TVP7002_H_
+>  #define _TVP7002_H_
 > 
-> 
-> 
-> 
-> 
-> And here are some other, rather subjective remarks:
-> 
-> > +		for (; nbr_dummy_bytes < total_length &&
-> > +			 ((u8 *)xfer.rx_buf)[nbr_dummy_bytes] == 0;
-> > +			 nbr_dummy_bytes++)
-> > +			;
-> 
-> Not sure if it would be easier to read using a while and putting the increment 
-> into the loop body
-> 
-> >+		while (nbr_dummy_bytes < total_length && 
-> >+			((u8 *)xfer.rx_buf)[nbr_dummy_bytes] == 0)
-> >+			 nbr_dummy_bytes++;
-> 
-> I usually don't like empty loop bodies, as they tend to be overlooked.
-> 
-> 
-> 
-> > +static u32 SPI_WRITE_DATA(struct tpm_chip *tpm, u8 tpm_register,
-> > +			  u8 *tpm_data, u16 tpm_size)
-> > +{
-> > +	u8 value = 0;
-> > +	value = write8_reg(tpm, tpm_register, tpm_data, tpm_size);
-> > +
-> > +	switch (value) {
-> > +	case TPM_ST_SPI_OK:
-> > +		return TPM_ST_SPI_OK;
-> > +	case 0:
-> > +		return 0;
-> > +	default:
-> > +		return -EBUSY;
-> > +	}
-> > +} /* SPI_WRITE_DATA() */
-> 
-> Why do you need a wrapper function here for the return code?
-> write8_reg is only called from this location, so why doesn't it return the 
-> correct error code directly?
-> *confused*
-> 
-> 
-> Same applies to read8_reg.
-> 
-> 
-> 
-> 
-> > +static int _wait_for_interrupt_serirq_timeout(struct tpm_chip *chip,
-> > +					unsigned long timeout)
-> Is only called from wait_for_serirq_timeout - I'm not really sure if it helps 
-> readability to have a separate function.
-> 
-> 
-> 
-> 
-> > +	.resume = tpm_st33_spi_pm_resume,
-> > +	.suspend = tpm_st33_spi_pm_suspend,
-> Maybe use 
-> SIMPLE_DEV_PM_OPS 
-> instead as it is (afaik) the new standard way for PM_OPS.
-> The conversion should be pretty similar to the one in your I2C TPM driver:
-> https://github.com/shpedoikal/linux/commit/d459335381eca1cb91fefb87021d3d172342e55a
-> 
-> 
-> Regards,
-> Peter
-> 
+> +#define TVP7002_MODULE_NAME "tvp7002"
+> +
+>  /* Platform-dependent data
+>   *
+>   * clk_polarity:
+-- 
+Regards,
+
+Laurent Pinchart
 
