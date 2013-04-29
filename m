@@ -1,106 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753100Ab3D2Ggb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 02:36:31 -0400
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:64669 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752066Ab3D2Gg3 (ORCPT
+	id S1751711Ab3D2GpB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 02:45:01 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:62433 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750731Ab3D2Go7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 02:36:29 -0400
+	Mon, 29 Apr 2013 02:44:59 -0400
+Date: Mon, 29 Apr 2013 00:44:55 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] PCI changes for v3.10
+Message-ID: <20130429064455.GA14050@google.com>
 MIME-Version: 1.0
-In-Reply-To: <20130426191118.GD1433@mtj.dyndns.org>
-References: <cover.1366803121.git.viresh.kumar@linaro.org>
-	<480f5d6da920e2f2b868f311228c81635727799e.1366803121.git.viresh.kumar@linaro.org>
-	<CAP245DWtwguSp8ubid_KJnLSOqvCbmTXN+0Bg_MtDrUhBqve-Q@mail.gmail.com>
-	<CAKohpokN_o-RUX6MDwqqfzu4NKRysG-hSzmB=MHV7Y0aDbztuA@mail.gmail.com>
-	<20130424161208.GA16991@mtj.dyndns.org>
-	<CAP245DUGuaSQbP4026N8kgn6-NqXFJWR3zKoYud=HQ_b+v5+Xw@mail.gmail.com>
-	<CAKohpo=U5OqN7SM7XyOWv-WoUHOoJvGc6wcGH61+uikPK3novg@mail.gmail.com>
-	<20130426191118.GD1433@mtj.dyndns.org>
-Date: Mon, 29 Apr 2013 12:06:28 +0530
-Message-ID: <CAKohpokJSwi24goSG=dTKkH0p+-YgsVURa_4giyU-u2TuK1bdA@mail.gmail.com>
-Subject: Re: [PATCH V5 1/5] workqueues: Introduce new flag WQ_POWER_EFFICIENT
- for power oriented workqueues
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Amit Kucheria <amit.kucheria@linaro.org>, davem@davemloft.net,
-        linux-rt-users@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Robin Randhawa <robin.randhawa@arm.com>,
-        Charles Garcia-Tobin <charles.garcia-tobin@arm.com>,
-        Steve Bannister <Steve.Bannister@arm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arvind Chauhan <arvind.chauhan@arm.com>,
-        Patch Tracking <patches@linaro.org>, airlied@redhat.com,
-        mingo@redhat.com, Jens Axboe <axboe@kernel.dk>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Tejun,
+The following changes since commit f6161aa153581da4a3867a2d1a7caf4be19b6ec9:
 
-On 27 April 2013 00:41, Tejun Heo <tj@kernel.org> wrote:
-> Hey, Viresh.
->
-> It's already too late for the upcoming merge window, but things
-> generally look good to me and I'll apply the patchset once wq/for-3.11
-> opens.  One nitpick tho.
+  Linux 3.9-rc2 (2013-03-10 16:54:19 -0700)
 
-Obviously. I understand this and agree with you on it. It should go in 3.11 now.
+are available in the git repository at:
 
-> On Thu, Apr 25, 2013 at 09:13:44AM +0530, Viresh Kumar wrote:
->> +     workqueue.power_efficient
->> +                     Workqueues can be performance or power-oriented.
->> +                     Currently, most workqueues are bound to the CPU they
->                                    ^^^^
->                                    per-cpu would be better
->
->> +                     were created on. This gives good performance (due to
->> +                     cache effects) at the cost of potentially waking up
->> +                     otherwise idle cores just to process some work. To save
->> +                     power, we can allow the work to be rescheduled on a core
->> +                     that is already awake.
->
-> The above description is confusing to me.  As have been discussed
-> multiple times before, per-cpu workqueue in itself doesn't wake up the
-> CPU physically.  The timer may but per-cpu workqueue doesn't.  It was
-> confusing when this patchset was first posted and the above phrasing
-> is still confusing.  What the patchset tries to do is preventing the
-> scheduler from perceiving the CPU as active due to the activated
-> worker thread pinned to that CPU, right?  The knob doesn't really do
-> anything about waking up the processor in itself.  It just avoids
-> feeding the scheduler with noisy activation events and allows it to
-> allocate work item execution according to the scheduler's view of CPU
-> active/idleness.  As the scheduler has longer / larger scope of
-> overall CPU activities and means to regulate them, this leads to more
-> power-efficient allocation of work item executions, right?  It'd be
-> really great if the descriptions and the comment above the flag makes
-> this abundantly clear because it's not something too apparent.
+  git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git tags/pci-v3.10-changes
 
-Whatever you wrote above confused me even more :)
-This is what i had in my mind until now. Its not about per-cpu workqueue.
+for you to fetch changes up to d4f09c5d7fbabd1389a5f03f5c9329d790f544e3:
 
-Lets take example of system_wq. It doesn't have WQ_UNBOUND flag set.
-Now if we call queue_work_on() with cpu x and sytem_wq, then work
-will execute on cpu x. If we call queue_work() then it will queue the work
-on local cpu.
+  Merge branch 'pci/gavin-msi-cleanup' into next (2013-04-24 11:37:49 -0600)
 
-At this time local cpu may be busy or idle (Atleast according to scheduler).
-We don't want a idle cpu (From schedulers perspective) to be used for
-running this work's handler due to two reasons.
-- idle cpu may be in WFI or deeper idle states and so we can avoid waking
-  it up.
-- We will make idle cpu look busy and so other kernel stuff may be scheduled
-  on it now. But we could have kept it idle for a long time.
+----------------------------------------------------------------
 
-And what timer are you talking about? I am not talking about deffered work only,
-but normal work too.
+PCI changes for the v3.10 merge window:
 
-I might have wrongly phrased some part of my patch (maybe used workqueue
-instead of work), will fix that up.
+  PCI device hotplug
+    - Remove ACPI PCI subdrivers (Jiang Liu, Myron Stowe)
+    - Make acpiphp builtin only, not modular (Jiang Liu)
+    - Add acpiphp mutual exclusion (Jiang Liu)
 
---
-viresh
+  Power management
+    - Skip "PME enabled/disabled" messages when not supported (Rafael Wysocki)
+    - Fix fallback to PCI_D0 (Rafael Wysocki)
+
+  Miscellaneous
+    - Factor quirk_io_region (Yinghai Lu)
+    - Cache MSI capability offsets & cleanup (Gavin Shan, Bjorn Helgaas)
+    - Clean up EISA resource initialization and logging (Bjorn Helgaas)
+    - Fix prototype warnings (Andy Shevchenko, Bjorn Helgaas)
+    - MIPS: Initialize of_node before scanning bus (Gabor Juhos)
+    - Fix pcibios_get_phb_of_node() declaration "weak" annotation (Gabor Juhos)
+    - Add MSI INTX_DISABLE quirks for AR8161/AR8162/etc (Xiong Huang)
+    - Fix aer_inject return values (Prarit Bhargava)
+    - Remove PME/ACPI dependency (Andrew Murray)
+    - Use shared PCI_BUS_NUM() and PCI_DEVID() (Shuah Khan)
+
+----------------------------------------------------------------
+Andy Shevchenko (1):
+      PCI: Fix missing prototype for pcie_port_acpi_setup()
+
+Bjorn Helgaas (36):
+      Merge branch 'pci/shuah-defines' into next
+      PCI: Remove __weak annotation from pcibios_get_phb_of_node decl
+      PCI: Make local functions/structs static
+      PCI: Move cpci_hotplug_init() proto to header file
+      PCI: Remove unused variables
+      Merge branch 'pci/gabor-get-of-node' into next
+      PCI: Remove unnecessary dependencies between PME and ACPI
+      PCI: Use PCI_EXP_SLTCAP_PSN mask when extracting slot number
+      EISA: Use dev_printk() when possible
+      EISA: Mark vendor ID resource as I/O port space
+      EISA: Initialize device before its resources
+      EISA: Log device resources in dmesg
+      Merge branch 'pci/bjorn-eisa' into next
+      Merge branch 'pci/misc' into next
+      Merge branch 'pci/jiang-subdrivers' into next
+      PCI: Remove __must_check from definitions
+      PCI: Warn about failures instead of "must_check" functions
+      PCI: Remove "extern" from function declarations
+      Merge branch 'pci/cleanup' into next
+      Merge branch 'pci/rafael-pm' into next
+      [SCSI] megaraid_sas: Use correct #define for MSI-X capability
+      PCI: Use u8, not int, for PM capability offset
+      PCI: Clean up MSI/MSI-X capability #defines
+      PCI: Use cached MSI/MSI-X offsets from dev, not from msi_desc
+      PCI: Drop msi_control_reg() macro and use PCI_MSI_FLAGS directly
+      PCI: Drop msi_lower_address_reg() and msi_upper_address_reg() macros
+      PCI: Drop msi_data_reg() macro
+      PCI: Drop is_64bit_address() and is_mask_bit_support() macros
+      PCI: Drop msix_table_offset_reg() and msix_pba_offset_reg() macros
+      PCI: Use msix_table_size() directly, drop multi_msix_capable()
+      PCI: Drop msi_mask_reg() and remove drivers/pci/msi.h
+      PCI: Use PCI_MSIX_TABLE_BIR, not PCI_MSIX_FLAGS_BIRMASK
+      PCI: Remove "extern" from function declarations
+      vfio-pci: Use PCI_MSIX_TABLE_BIR, not PCI_MSIX_FLAGS_BIRMASK
+      vfio-pci: Use cached MSI/MSI-X capabilities
+      Merge branch 'pci/gavin-msi-cleanup' into next
+
+Gabor Juhos (1):
+      MIPS/PCI: Implement pcibios_get_phb_of_node
+
+Gavin Shan (4):
+      PCI: Cache MSI/MSI-X capability offsets in struct pci_dev
+      PCI: Remove MSI/MSI-X cap check in pci_msi_check_device()
+      PCI: Use cached MSI cap while enabling MSI interrupts
+      PCI: Use cached MSI-X cap while enabling MSI-X
+
+Jiang Liu (12):
+      PCI: When removing bus, always remove legacy files & unregister
+      PCI: Clean up usages of pci_bus->is_added
+      PCI: acpiphp: Remove all functions even if function 0 doesn't exist
+      PCI: acpiphp: Replace local macros with standard ACPI macros
+      PCI: Add pcibios hooks for adding and removing PCI buses
+      PCI/ACPI: Prepare stub functions to handle ACPI PCI (hotplug) slots
+      ia64/PCI: Implement pcibios_{add|remove}_bus() hooks
+      x86/PCI: Implement pcibios_{add|remove}_bus() hooks
+      PCI/ACPI: Handle PCI slot devices when creating/destroying PCI buses
+      PCI: acpiphp: Convert acpiphp to be builtin only, not modular
+      PCI: acpiphp: Do not use ACPI PCI subdriver mechanism
+      PCI: acpiphp: Protect acpiphp data structures from concurrent updates
+
+Libin (1):
+      PCI: Use vma_pages() to replace (vm_end - vm_start) >> PAGE_SHIFT
+
+Myron Stowe (4):
+      ahci: Use PCI_VENDOR_ID_MARVELL_EXT for 0x1b4b
+      [SCSI] mvsas: Use PCI_VENDOR_ID_MARVELL_EXT for 0x1b4b
+      [SCSI] mvumi: Use PCI_VENDOR_ID_MARVELL_EXT for 0x1b4b
+      PCI/ACPI: Remove support of ACPI PCI subdrivers
+
+Prarit Bhargava (1):
+      PCI: aer_inject: Fix return values when device not found
+
+Rafael J. Wysocki (2):
+      PCI/PM: Fix fallback to PCI_D0 in pci_platform_power_transition()
+      PCI/PM: Make pci_pme_active() ignore devices without PME support
+
+Shuah Khan (4):
+      PCI: Add PCI_BUS_NUM() and PCI_DEVID() interfaces
+      PCI/AER: Remove local PCI_BUS() define and use PCI_BUS_NUM() from PCI
+      iommu/amd: Remove local PCI_BUS() define and use PCI_BUS_NUM() from PCI
+      iommu/amd: Remove calc_devid() and use PCI_DEVID() from PCI
+
+Xiangliang Yu (1):
+      PCI: Define macro for Marvell vendor ID
+
+Xiong Huang (1):
+      PCI: Add MSI INTX_DISABLE quirks for AR8161/AR8162/AR8171/AR8172/E210X
+
+Yijing Wang (2):
+      PCI: acpiphp: Use list_for_each_entry_safe() in acpiphp_sanitize_bus()
+      PCI: acpiphp: Use normal list to simplify implementation
+
+Yinghai Lu (1):
+      PCI: Clean up quirk_io_region
+
+ arch/ia64/pci/pci.c                       |  11 +
+ arch/mips/pci/pci.c                       |   8 +-
+ arch/x86/pci/common.c                     |  11 +
+ drivers/acpi/pci_root.c                   |  48 +---
+ drivers/acpi/pci_slot.c                   | 170 ++----------
+ drivers/acpi/scan.c                       |   1 -
+ drivers/ata/ahci.c                        |  10 +-
+ drivers/eisa/eisa-bus.c                   |  82 +++---
+ drivers/eisa/pci_eisa.c                   |   5 +-
+ drivers/iommu/amd_iommu.c                 |  14 +-
+ drivers/iommu/amd_iommu_init.c            |  40 +--
+ drivers/iommu/amd_iommu_types.h           |  11 +-
+ drivers/pci/bus.c                         |  14 +-
+ drivers/pci/hotplug/Kconfig               |   7 +-
+ drivers/pci/hotplug/acpiphp.h             |  35 ++-
+ drivers/pci/hotplug/acpiphp_core.c        |  30 +--
+ drivers/pci/hotplug/acpiphp_glue.c        | 415 ++++++++++--------------------
+ drivers/pci/hotplug/cpci_hotplug.h        |  44 ++--
+ drivers/pci/hotplug/cpqphp.h              |  70 +++--
+ drivers/pci/hotplug/cpqphp_nvram.h        |  12 +-
+ drivers/pci/hotplug/ibmphp.h              |  66 ++---
+ drivers/pci/hotplug/pci_hotplug_core.c    |  15 +-
+ drivers/pci/hotplug/pciehp.h              |  22 +-
+ drivers/pci/hotplug/pciehp_acpi.c         |   2 +-
+ drivers/pci/hotplug/rpadlpar.h            |   8 +-
+ drivers/pci/hotplug/rpaphp.h              |  16 +-
+ drivers/pci/hotplug/shpchp.h              |  26 +-
+ drivers/pci/hotplug/shpchp_sysfs.c        |   2 +-
+ drivers/pci/msi.c                         | 180 ++++++-------
+ drivers/pci/msi.h                         |  24 --
+ drivers/pci/pci-acpi.c                    |  30 +++
+ drivers/pci/pci-sysfs.c                   |   2 +-
+ drivers/pci/pci.c                         |  25 +-
+ drivers/pci/pci.h                         |  89 ++++---
+ drivers/pci/pcie/Kconfig                  |   2 +-
+ drivers/pci/pcie/aer/aer_inject.c         |  10 +-
+ drivers/pci/pcie/aer/aerdrv.h             |  14 +-
+ drivers/pci/pcie/aer/aerdrv_core.c        |   4 +-
+ drivers/pci/pcie/pme.c                    |   2 -
+ drivers/pci/pcie/portdrv.h                |  18 +-
+ drivers/pci/pcie/portdrv_acpi.c           |   1 +
+ drivers/pci/pcie/portdrv_pci.c            |  17 +-
+ drivers/pci/probe.c                       |  15 +-
+ drivers/pci/quirks.c                      | 148 +++++------
+ drivers/pci/remove.c                      |   4 +-
+ drivers/pci/setup-bus.c                   |   4 +-
+ drivers/pci/setup-res.c                   |   2 -
+ drivers/pci/slot.c                        |   7 +-
+ drivers/scsi/megaraid/megaraid_sas.h      |   3 -
+ drivers/scsi/megaraid/megaraid_sas_base.c |   4 +-
+ drivers/scsi/mvsas/mv_init.c              |   6 +-
+ drivers/scsi/mvumi.c                      |   4 +-
+ drivers/scsi/mvumi.h                      |   1 -
+ drivers/vfio/pci/vfio_pci.c               |  10 +-
+ include/linux/acpi.h                      |   9 -
+ include/linux/msi.h                       |  23 +-
+ include/linux/pci-acpi.h                  |  29 +++
+ include/linux/pci-aspm.h                  |  20 +-
+ include/linux/pci-ats.h                   |  26 +-
+ include/linux/pci.h                       | 117 +++++----
+ include/linux/pci_hotplug.h               |  12 +-
+ include/linux/pci_ids.h                   |   1 +
+ include/linux/pcieport_if.h               |   4 +-
+ include/uapi/linux/pci_regs.h             |  30 ++-
+ 64 files changed, 884 insertions(+), 1208 deletions(-)
+ delete mode 100644 drivers/pci/msi.h
