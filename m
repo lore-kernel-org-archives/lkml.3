@@ -1,143 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758267Ab3D2QdM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 12:33:12 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54716 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757469Ab3D2QdF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 12:33:05 -0400
-From: Mel Gorman <mgorman@suse.de>
-To: Alexey Lyahkov <alexey.lyashkov@gmail.com>,
-        Andrew Perepechko <anserper@ya.ru>, Robin Dong <sanbai@taobao.com>
-Cc: Theodore Tso <tytso@mit.edu>, Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Bernd Schubert <bernd.schubert@fastmail.fm>,
-        David Howells <dhowells@redhat.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux-ext4 <linux-ext4@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 2/3] mm: Ensure that mark_page_accessed moves pages to the active list
-Date: Mon, 29 Apr 2013 17:31:58 +0100
-Message-Id: <1367253119-6461-3-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1367253119-6461-1-git-send-email-mgorman@suse.de>
-References: <1367253119-6461-1-git-send-email-mgorman@suse.de>
+	id S1758287Ab3D2QdY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 12:33:24 -0400
+Received: from nm29-vm0.access.bullet.mail.sp2.yahoo.com ([98.139.44.192]:23412
+	"EHLO nm29-vm0.access.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757576Ab3D2QdQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Apr 2013 12:33:16 -0400
+X-Yahoo-Newman-Id: 245532.72143.bm@smtp104.sbc.mail.ne1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: zAMJz1wVM1m0.O_xDDGxWiLObVBH0p_glXcPCDR9fo1yXL0
+ 122oi4MSP4lfU3ZDOhGC9zfC75T3D6Stq5p1H4x37Tss3ysUU62reML2Xf8O
+ 5c5w0yIjJumR2BYPZxTg9drsbhcIAoMk9Mnp8N2nySTrP0HzTBRT7mpb0sRM
+ M.wzded49.NZBUQ5dUXtrHkfcROa7lhO3CdABUyY7xgvVgT79Gq3WxmAKVa9
+ cZYbTlQZsCPv6O58ZUYENaWNiy_hmxYYpD2NoVWA.jCAUG6JIgH_mTquKn0q
+ 7dJCDCwSkBGzFJ.6OpikrhSMVCnI05HdhdtPRN2hdXqkgIPW8MuLzehwK7Ip
+ PXrilrvmIZAnAnp5mtyKIgdCuyS_M6rps2rnzr1vIkWMoXSXOaPElBXzY_2y
+ w_fr6FRhai6LTttCdVOQGxEF0p9_PK1SZOBWOXvdxlJzQ5_pjOOpA3sQy7jR
+ Fza71q1jkhO2P2oI9GZh8gnCv4Lqx7nNz
+X-Yahoo-SMTP: zfeO.4KswBCc_PdwTE8HfYDCQ1aNmIcSvQHkDP4uSDBNBSXeKQ--
+X-Rocket-Received: from localhost (linux@108.223.40.66 with plain)
+        by smtp104.sbc.mail.ne1.yahoo.com with SMTP; 29 Apr 2013 16:33:16 +0000 UTC
+Date: Mon, 29 Apr 2013 09:33:16 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, "'Wim Van Sebroeck'" <wim@iguana.be>,
+        linux-watchdog@vger.kernel.org
+Subject: Re: [PATCH RESEND 2/5] watchdog: imx2_wdt: use devm_clk_get()
+Message-ID: <20130429163316.GD23799@roeck-us.net>
+References: <000301ce44ba$266397b0$732ac710$@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <000301ce44ba$266397b0$732ac710$@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a page is on a pagevec then it is !PageLRU and mark_page_accessed()
-may fail to move a page to the active list as expected. Now that the
-LRU is selected at LRU drain time, mark pages PageActive if they are
-on a pagevec so it gets moved to the correct list at LRU drain time.
-Using a debugging patch it was found that for a simple git checkout
-based workload that pages were never added to the active file list in
-practice but with this patch applied they are.
+On Mon, Apr 29, 2013 at 06:15:53PM +0900, Jingoo Han wrote:
+> Use devm_clk_get() to make cleanup paths more simple.
+> 
+> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 
-				before   after
-LRU Add Active File                  0  757121
-LRU Add Active Anon            2678833 2633924
-LRU Add Inactive File          8821711 8085543
-LRU Add Inactive Anon              183     200
+Reviewed-by: Guenter Roeck <linux@roeck-us.net>
 
-The question to consider is if this is universally safe. If the page
-was isolated for reclaim and there is a parallel mark_page_accessed()
-then vmscan.c will get upset when it finds an isolated PageActive page.
-Similarly a potential race exists between a per-cpu drain on a pagevec
-list and an activation on a remote CPU.
-
-				lru_add_drain_cpu
-				__pagevec_lru_add
-				  lru = page_lru(page);
-mark_page_accessed
-  if (PageLRU(page))
-    activate_page
-  else
-    SetPageActive
-				  SetPageLRU(page);
-				  add_page_to_lru_list(page, lruvec, lru);
-
-A PageActive page is now added to the inactivate list.
-
-While this looks strange, I think it is sufficiently harmless that additional
-barriers to address the case is not justified.  Unfortunately, while I never
-witnessed it myself, these parallel updates potentially trigger defensive
-DEBUG_VM checks on PageActive and hence they are removed by this patch.
-
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- mm/swap.c   | 18 ++++++++++++------
- mm/vmscan.c |  3 ---
- 2 files changed, 12 insertions(+), 9 deletions(-)
-
-diff --git a/mm/swap.c b/mm/swap.c
-index 80fbc37..2a10d08 100644
---- a/mm/swap.c
-+++ b/mm/swap.c
-@@ -437,8 +437,17 @@ void activate_page(struct page *page)
- void mark_page_accessed(struct page *page)
- {
- 	if (!PageActive(page) && !PageUnevictable(page) &&
--			PageReferenced(page) && PageLRU(page)) {
--		activate_page(page);
-+			PageReferenced(page)) {
-+
-+		/*
-+		 * If the page is on the LRU, promote immediately. Otherwise,
-+		 * assume the page is on a pagevec, mark it active and it'll
-+		 * be moved to the active LRU on the next drain
-+		 */
-+		if (PageLRU(page))
-+			activate_page(page);
-+		else
-+			SetPageActive(page);
- 		ClearPageReferenced(page);
- 	} else if (!PageReferenced(page)) {
- 		SetPageReferenced(page);
-@@ -478,11 +487,8 @@ EXPORT_SYMBOL(__lru_cache_add);
-  */
- void lru_cache_add_lru(struct page *page, enum lru_list lru)
- {
--	if (PageActive(page)) {
-+	if (PageActive(page))
- 		VM_BUG_ON(PageUnevictable(page));
--	} else if (PageUnevictable(page)) {
--		VM_BUG_ON(PageActive(page));
--	}
- 
- 	VM_BUG_ON(PageLRU(page));
- 	__lru_cache_add(page, lru);
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 88c5fed..751b897 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -704,7 +704,6 @@ static unsigned long shrink_page_list(struct list_head *page_list,
- 		if (!trylock_page(page))
- 			goto keep;
- 
--		VM_BUG_ON(PageActive(page));
- 		VM_BUG_ON(page_zone(page) != zone);
- 
- 		sc->nr_scanned++;
-@@ -935,7 +934,6 @@ activate_locked:
- 		/* Not a candidate for swapping, so reclaim swap space. */
- 		if (PageSwapCache(page) && vm_swap_full())
- 			try_to_free_swap(page);
--		VM_BUG_ON(PageActive(page));
- 		SetPageActive(page);
- 		pgactivate++;
- keep_locked:
-@@ -3488,7 +3486,6 @@ void check_move_unevictable_pages(struct page **pages, int nr_pages)
- 		if (page_evictable(page)) {
- 			enum lru_list lru = page_lru_base_type(page);
- 
--			VM_BUG_ON(PageActive(page));
- 			ClearPageUnevictable(page);
- 			del_page_from_lru_list(page, lruvec, LRU_UNEVICTABLE);
- 			add_page_to_lru_list(page, lruvec, lru);
--- 
-1.8.1.4
-
+> ---
+>  drivers/watchdog/imx2_wdt.c |    6 ++----
+>  1 files changed, 2 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/watchdog/imx2_wdt.c b/drivers/watchdog/imx2_wdt.c
+> index ff90882..0c2b075 100644
+> --- a/drivers/watchdog/imx2_wdt.c
+> +++ b/drivers/watchdog/imx2_wdt.c
+> @@ -266,7 +266,7 @@ static int __init imx2_wdt_probe(struct platform_device *pdev)
+>  	if (IS_ERR(imx2_wdt.base))
+>  		return PTR_ERR(imx2_wdt.base);
+>  
+> -	imx2_wdt.clk = clk_get(&pdev->dev, NULL);
+> +	imx2_wdt.clk = devm_clk_get(&pdev->dev, NULL);
+>  	if (IS_ERR(imx2_wdt.clk)) {
+>  		dev_err(&pdev->dev, "can't get Watchdog clock\n");
+>  		return PTR_ERR(imx2_wdt.clk);
+> @@ -291,7 +291,6 @@ static int __init imx2_wdt_probe(struct platform_device *pdev)
+>  
+>  fail:
+>  	imx2_wdt_miscdev.parent = NULL;
+> -	clk_put(imx2_wdt.clk);
+>  	return ret;
+>  }
+>  
+> @@ -304,8 +303,7 @@ static int __exit imx2_wdt_remove(struct platform_device *pdev)
+>  
+>  		dev_crit(imx2_wdt_miscdev.parent,
+>  			"Device removed: Expect reboot!\n");
+> -	} else
+> -		clk_put(imx2_wdt.clk);
+> +	}
+>  
+>  	imx2_wdt_miscdev.parent = NULL;
+>  	return 0;
+> -- 
+> 1.7.2.5
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-watchdog" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
