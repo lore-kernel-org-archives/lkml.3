@@ -1,118 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760426Ab3D2TP5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 15:15:57 -0400
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:34843 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759880Ab3D2TPy (ORCPT
+	id S1760462Ab3D2TQj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 15:16:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60917 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759821Ab3D2TDP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 15:15:54 -0400
-MIME-Version: 1.0
-In-Reply-To: <517AF6A5.7070507@zytor.com>
-References: <1367003005-5560-1-git-send-email-keescook@chromium.org>
-	<1367003005-5560-5-git-send-email-keescook@chromium.org>
-	<517AF6A5.7070507@zytor.com>
-Date: Mon, 29 Apr 2013 12:15:53 -0700
-X-Google-Sender-Auth: EWEezFXXi1VOjFstANOYP9zoNJg
-Message-ID: <CAGXu5jLS+71p20qB-8x_A1SJuqQN+q17-B50FqFtHc4T2YVHGA@mail.gmail.com>
-Subject: Re: [PATCH 4/6] x86: kaslr: select random base offset
-From: Kees Cook <keescook@chromium.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
-        Matthew Garrett <mjg@redhat.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Eric Northup <digitaleric@google.com>,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 29 Apr 2013 15:03:15 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Dmitry Popov <dp@highloadlab.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 27/34] tcp: incoming connections might use wrong route under synflood
+Date: Mon, 29 Apr 2013 12:02:34 -0700
+Message-Id: <20130429184703.968178062@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130429184700.845644077@linuxfoundation.org>
+References: <20130429184700.845644077@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 26, 2013 at 2:50 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 04/26/2013 12:03 PM, Kees Cook wrote:
->> +
->> +static unsigned long get_random_long(void)
->> +{
->> +     if (has_cpuflag(X86_FEATURE_RDRAND)) {
->> +             unsigned long random;
->> +
->> +             debug_putstr("KASLR using RDRAND...\n");
->> +             if (rdrand(&random))
->> +                     return random;
->> +     }
->> +
->> +     if (has_cpuflag(X86_FEATURE_TSC)) {
->> +             uint32_t raw;
->> +             unsigned long timer;
->> +
->> +             debug_putstr("KASLR using RDTSC...\n");
->> +             rdtscl(raw);
->> +
->> +             /* Repeat the low bits of rdtsc. */
->> +             timer = raw & 0xffff;
->> +             timer |= (timer << 16);
->> +#ifdef CONFIG_X86_64
->> +             timer |= (timer << 32) | (timer << 48);
->> +#endif
->> +
->
-> This seems like a very odd thing to do.  If you want to scramble bits,
-> it would make more sense to do a multiply -- or much better, a
-> *circular* multiply -- with a large constant.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Well, my thought here was that the entropy is only being used in a
-very narrow band (since it's truncated by alignment on the low end and
-physical memory on the high end), so I didn't want to "dilute" the
-already bad entropy any more. Instead, I just repeated it. If a
-circular multiply would serve the same purpose, I can do that. Do you
-have any examples of that?
+------------------
 
->
->> +             return timer;
->> +     }
->> +
->> +     debug_putstr("KASLR found no entropy source...\n");
->> +     return 0;
->> +}
->>
->
-> It might be safe to assume that anything old enough to lack RDTSC
-> (basically a 486) will have an 8254, and reading back the 8254 counter
-> register.
 
-Ah, good idea. I've added this now, which seems to work if I force the
-TSC check to fail:
+From: Dmitry Popov <dp@highloadlab.com>
 
-#define I8254_PORT_CONTROL      0x43
-#define I8254_PORT_COUNTER0     0x40
-#define I8254_CMD_READBACK      0xC0
-#define I8254_SELECT_COUNTER0   0x02
-#define I8254_STATUS_NOTREADY   0x40
-static inline u16 i8254(void)
-{
-        u16 status, timer;
+[ Upstream commit d66954a066158781ccf9c13c91d0316970fe57b6 ]
 
-        do {
-                outb(I8254_PORT_CONTROL,
-                     I8254_CMD_READBACK | I8254_SELECT_COUNTER0);
-                status = inb(I8254_PORT_COUNTER0);
-                timer  = inb(I8254_PORT_COUNTER0);
-                timer |= inb(I8254_PORT_COUNTER0) << 8;
-        } while (status & I8254_STATUS_NOTREADY);
+There is a bug in cookie_v4_check (net/ipv4/syncookies.c):
+	flowi4_init_output(&fl4, 0, sk->sk_mark, RT_CONN_FLAGS(sk),
+			   RT_SCOPE_UNIVERSE, IPPROTO_TCP,
+			   inet_sk_flowi_flags(sk),
+			   (opt && opt->srr) ? opt->faddr : ireq->rmt_addr,
+			   ireq->loc_addr, th->source, th->dest);
 
-        return timer;
-}
+Here we do not respect sk->sk_bound_dev_if, therefore wrong dst_entry may be
+taken. This dst_entry is used by new socket (get_cookie_sock ->
+tcp_v4_syn_recv_sock), so its packets may take the wrong path.
 
-Thanks,
+Signed-off-by: Dmitry Popov <dp@highloadlab.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ net/ipv4/syncookies.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
--Kees
+--- a/net/ipv4/syncookies.c
++++ b/net/ipv4/syncookies.c
+@@ -347,8 +347,8 @@ struct sock *cookie_v4_check(struct sock
+ 	 * hasn't changed since we received the original syn, but I see
+ 	 * no easy way to do this.
+ 	 */
+-	flowi4_init_output(&fl4, 0, sk->sk_mark, RT_CONN_FLAGS(sk),
+-			   RT_SCOPE_UNIVERSE, IPPROTO_TCP,
++	flowi4_init_output(&fl4, sk->sk_bound_dev_if, sk->sk_mark,
++			   RT_CONN_FLAGS(sk), RT_SCOPE_UNIVERSE, IPPROTO_TCP,
+ 			   inet_sk_flowi_flags(sk),
+ 			   (opt && opt->srr) ? opt->faddr : ireq->rmt_addr,
+ 			   ireq->loc_addr, th->source, th->dest);
 
---
-Kees Cook
-Chrome OS Security
+
