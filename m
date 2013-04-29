@@ -1,99 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752493Ab3D2FWE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 01:22:04 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:58270 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751106Ab3D2FWB (ORCPT
+	id S1752449Ab3D2FcG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 01:32:06 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:35534 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752068Ab3D2FcE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 01:22:01 -0400
-Date: Mon, 29 Apr 2013 15:21:49 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Matt Fleming <matt.fleming@intel.com>,
-        David Howells <dhowells@redhat.com>, Tom Gundersen <teg@jklm.no>
-Subject: linux-next: manual merge of the tip tree with Linus' and the vfs
- tree
-Message-Id: <20130429152149.d5bb408bf88bf46232282419@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__29_Apr_2013_15_21_49_+1000__sgeb./wvjQFhjm6"
+	Mon, 29 Apr 2013 01:32:04 -0400
+X-AuditID: cbfee691-b7fe56d000004b96-e5-517e05d20709
+From: Inki Dae <inki.dae@samsung.com>
+To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, dri-devel@lists.freedesktop.org,
+        Inki Dae <inki.dae@samsung.com>
+Subject: [PATCH] module: fix mutiple defined issue
+Date: Mon, 29 Apr 2013 14:32:01 +0900
+Message-id: <1367213521-26795-1-git-send-email-inki.dae@samsung.com>
+X-Mailer: git-send-email 1.7.5.4
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrELMWRmVeSWpSXmKPExsWyRsSkRPcSa12gwfcXEhZXvr5ns2hevJ7N
+	YtL9CSwWmx5fY7W4vGsOmwOrx/65a9g97ncfZ/LYvKTeo2/LKkaPz5vkAlijuGxSUnMyy1KL
+	9O0SuDLe9vayFjzlqDi8dDJbA+MS9i5GTg4JAROJGXsuMkLYYhIX7q1n62Lk4hASWMooMav1
+	HTNM0c8PJ9ghEosYJSYdamaGcLqYJK7tPs8KUsUmoCoxccV9oHYODhEBG4kLN+1BwswCORJL
+	vrwE2yAsYCRxZM9OsKEsQOVL9h8Gs3kFXCTaT69nhVimIPHryCoo+zObxK4neRD1AhLfJh9i
+	ARkvISArsekA1G2SEgdX3GCZwCi4gJFhFaNoakFyQXFSepGpXnFibnFpXrpecn7uJkZgeJ7+
+	92ziDsb7B6wPMSYDjZvILCWanA8M77ySeENjMyMLUxNTYyNzSzPShJXEedVbrAOFBNITS1Kz
+	U1MLUovii0pzUosPMTJxcEo1MPbsmbBkUdb7FZyiUZLv17BsXfroqMF7z9MX6ouczVnviGvX
+	Fv2MnRhwL+rQ9BshV1Rnn/I/7aTpdNBhinwta+mOrZxbjkpMXi9uonHbS9vkbtSWfQ/OX3xk
+	0DTzXBDf/3M7z6YxvTsjyLrioqSvicAZG75Zf3bPs3+2Kuv7BIXorM3COWqbFA2UWIozEg21
+	mIuKEwEwU6sxZQIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrAIsWRmVeSWpSXmKPExsVy+t9jAd1LrHWBBhceCFpc+fqezaJ58Xo2
+	i0n3J7BYbHp8jdXi8q45bA6sHvvnrmH3uN99nMlj85J6j74tqxg9Pm+SC2CNamC0yUhNTEkt
+	UkjNS85PycxLt1XyDo53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ0HXLzAFarqRQlphTChQKSCwu
+	VtK3wzQhNMRN1wKmMULXNyQIrsfIAA0krGHMeNvby1rwlKPi8NLJbA2MS9i7GDk5JARMJH5+
+	OAFli0lcuLeerYuRi0NIYBGjxKRDzcwQTheTxLXd51lBqtgEVCUmrrgPVMXBISJgI3Hhpj1I
+	mFkgR2LJl5eMILawgJHEkT07mUFsFqDyJfsPg9m8Ai4S7afXs0IsU5D4dWQV6wRG7gWMDKsY
+	RVMLkguKk9JzjfSKE3OLS/PS9ZLzczcxgsP/mfQOxlUNFocYBTgYlXh4AzbXBgqxJpYVV+Ye
+	YpTgYFYS4Z19GyjEm5JYWZValB9fVJqTWnyIMRlo+0RmKdHkfGBs5pXEGxqbmBlZGpkbWhgZ
+	m5MmrCTOe7DVOlBIID2xJDU7NbUgtQhmCxMHp1QD4+JnbuwN1pPW5d26o3a/xttkQ92hszei
+	v85/7Tj5VceUufXO7Ko8cVoVi+4Jdr1T685OtrG58ZjzhPoktllnnh0JC53mffvEza/NTDIH
+	P22327er9xbTpdf7vVcWrq9c+vvWtzSJN17PvaeySF+tUVqR6lSSsXvOnRvSa98Ima5eoZub
+	95jLxV2JpTgj0VCLuag4EQCjmweuwwIAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__29_Apr_2013_15_21_49_+1000__sgeb./wvjQFhjm6
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This patch fixes mutiple defined issue to MODULE_DEVICE_TABLE
 
-Hi all,
+The issue could be induced when some framework which includes two
+more sub drivers, is built as one moudle because those sub drivers
+could have their own MODULE_DEVICE_TABLE.
 
-Today's linux-next merge of the tip tree got a conflict in
-drivers/firmware/efivars.c between commits f464246d85d5 ("efivars: only
-check for duplicates on the registered list") from Linus' tree and
-a2162ae42bc4 ("Include missing linux/magic.h inclusions") from the vfs
-tree and commits d68772b7c83f ("efivarfs: Move to fs/efivarfs") and
-e14ab23dde12 ("efivars: efivar_entry API") from the tip tree.
+And 'struct of_device_id' isn't needed to be determined by type
+argument because the definition of 'of_device_id' should be fixed.
+So this patch makes 'of_devce_id' definition to be fixed and
+only its instance name to be defined by type.
 
-I think that the second tip tree patch supersedes the patch in Linus'
-tree.
-
-I removed the file and applied the following fix up patch and can carry
-the fix as necessary (no action is required).
-
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Mon, 29 Apr 2013 15:18:07 +1000
-Subject: [PATCH] efivars: Include missing linux/magic.h inclusions
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: Inki Dae <inki.dae@samsung.com>
 ---
- fs/efivarfs/super.c | 1 +
- 1 file changed, 1 insertion(+)
+ include/linux/module.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/fs/efivarfs/super.c b/fs/efivarfs/super.c
-index 34c48f1..1fa5e6d 100644
---- a/fs/efivarfs/super.c
-+++ b/fs/efivarfs/super.c
-@@ -12,6 +12,7 @@
- #include <linux/fs.h>
- #include <linux/module.h>
- #include <linux/pagemap.h>
-+#include <linux/magic.h>
-=20
- #include "internal.h"
-=20
---=20
-1.8.1
+diff --git a/include/linux/module.h b/include/linux/module.h
+index 46f1ea0..ac5d79f 100644
+--- a/include/linux/module.h
++++ b/include/linux/module.h
+@@ -84,7 +84,7 @@ void trim_init_extable(struct module *m);
+ 
+ #ifdef MODULE
+ #define MODULE_GENERIC_TABLE(gtype,name)			\
+-extern const struct gtype##_id __mod_##gtype##_table		\
++extern const struct of_device_id __mod_##gtype##_table		\
+   __attribute__ ((unused, alias(__stringify(name))))
+ 
+ #else  /* !MODULE */
+-- 
+1.7.5.4
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Mon__29_Apr_2013_15_21_49_+1000__sgeb./wvjQFhjm6
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRfgNtAAoJEECxmPOUX5FE9NAQAIyvM9/+z2gONxOEQ3jLu0sc
-YMCdeJ0PCcVGjXA/ZbN6kWPF9feNhrB1U1tEJIYBVFEWZuZUcK89UWAUdfZ4BheO
-3E8DnnIEgQo8mvFJuW4GD/iTe8q+P3rKvQkeWehXHMoE2bklWTUaZD2dDc0/NovJ
-Y3LB2nNMYZR3yy2t9mLX+MY28791LkncDYXxNKQkStecyNRKKasnSWKtDTfaUd3k
-k3kTIvwizmlYrO8b/6mVH7uUL3wv5qOEcTBneuUFVXLHk543a0UHXBmM08Hu8sRk
-UnIGsCZcfQqPgwJVH+6q9P+CwLgchJTfROGUhCQT9leFchOufkqd3lX5CGPUj7EE
-wcnqJpPyx4BWDWz0AonPDQLcvfWvXuGxeCss+UKBt1zj5hQOaj0Aun5aHJO4rUH3
-Rupxx0caKLWFgjR4ON7VFz1m4/55Xuzst7hk+4li2IL0NqgprEaBfZIDsd8ADUd+
-n2bgIBa6+cTl0IT3r9XwzftxkTH1AJJDo5QYn5s1eMVlb2ftdw2zOSHJIYJfMNAJ
-Sou48dGeHLXmP6dcY8Id77ltAW8AWqSQxuq6XRg/gY959rJc9tZovj+G0+Lip/7f
-c7SRQ4LegaunsckdhnMNBY111drEo+KiFka+gG1PXihGXMdAj4D+nqIDb45HT2gw
-uHVHUq9zYHi+x9R0pZ/s
-=srVy
------END PGP SIGNATURE-----
-
---Signature=_Mon__29_Apr_2013_15_21_49_+1000__sgeb./wvjQFhjm6--
