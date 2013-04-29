@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760204Ab3D2TML (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 15:12:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60968 "EHLO
+	id S1760216Ab3D2TMf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 15:12:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60965 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759903Ab3D2TDW (ORCPT
+	with ESMTP id S1759897Ab3D2TDV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 15:03:22 -0400
+	Mon, 29 Apr 2013 15:03:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jiri Slaby <jslaby@suse.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 02/30] TTY: fix atime/mtime regression
-Date: Mon, 29 Apr 2013 12:02:26 -0700
-Message-Id: <20130429184355.588204199@linuxfoundation.org>
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [ 01/30] TTY: do not update atime/mtime on read/write
+Date: Mon, 29 Apr 2013 12:02:25 -0700
+Message-Id: <20130429184355.470922913@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130429184355.299556377@linuxfoundation.org>
 References: <20130429184355.299556377@linuxfoundation.org>
@@ -29,63 +28,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiri Slaby <jslaby@suse.cz>
 
-commit 37b7f3c76595e23257f61bd80b223de8658617ee upstream.
+commit b0de59b5733d18b0d1974a060860a8b5c1b36a2e upstream.
 
-In commit b0de59b5733d ("TTY: do not update atime/mtime on read/write")
-we removed timestamps from tty inodes to fix a security issue and waited
-if something breaks.  Well, 'w', the utility to find out logged users
-and their inactivity time broke.  It shows that users are inactive since
-the time they logged in.
+On http://vladz.devzero.fr/013_ptmx-timing.php, we can see how to find
+out length of a password using timestamps of /dev/ptmx. It is
+documented in "Timing Analysis of Keystrokes and Timing Attacks on
+SSH". To avoid that problem, do not update time when reading
+from/writing to a TTY.
 
-To revert to the old behaviour while still preventing attackers to
-guess the password length, we update the timestamps in one-minute
-intervals by this patch.
+I am afraid of regressions as this is a behavior we have since 0.97
+and apps may expect the time to be current, e.g. for monitoring
+whether there was a change on the TTY. Now, there is no change. So
+this would better have a lot of testing before it goes upstream.
+
+References: CVE-2013-0160
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/tty_io.c |   16 +++++++++++++++-
- 1 file changed, 15 insertions(+), 1 deletion(-)
+ drivers/tty/tty_io.c |    8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
 --- a/drivers/tty/tty_io.c
 +++ b/drivers/tty/tty_io.c
-@@ -939,6 +939,14 @@ void start_tty(struct tty_struct *tty)
- 
- EXPORT_SYMBOL(start_tty);
- 
-+static void tty_update_time(struct timespec *time)
-+{
-+	unsigned long sec = get_seconds();
-+	sec -= sec % 60;
-+	if ((long)(sec - time->tv_sec) > 0)
-+		time->tv_sec = sec;
-+}
-+
- /**
-  *	tty_read	-	read method for tty device files
-  *	@file: pointer to tty file
-@@ -976,6 +984,9 @@ static ssize_t tty_read(struct file *fil
+@@ -975,8 +975,7 @@ static ssize_t tty_read(struct file *fil
+ 	else
  		i = -EIO;
  	tty_ldisc_deref(ld);
- 
-+	if (i > 0)
-+		tty_update_time(&inode->i_atime);
+-	if (i > 0)
+-		inode->i_atime = current_fs_time(inode->i_sb);
 +
  	return i;
  }
  
-@@ -1076,8 +1087,11 @@ static inline ssize_t do_tty_write(
+@@ -1077,11 +1076,8 @@ static inline ssize_t do_tty_write(
  			break;
  		cond_resched();
  	}
--	if (written)
-+	if (written) {
-+		struct inode *inode = file->f_path.dentry->d_inode;
-+		tty_update_time(&inode->i_mtime);
+-	if (written) {
+-		struct inode *inode = file->f_path.dentry->d_inode;
+-		inode->i_mtime = current_fs_time(inode->i_sb);
++	if (written)
  		ret = written;
-+	}
+-	}
  out:
  	tty_write_unlock(tty);
  	return ret;
