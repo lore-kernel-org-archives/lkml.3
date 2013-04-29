@@ -1,77 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751236Ab3D2Rwc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 13:52:32 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:57311 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758636Ab3D2Ruq (ORCPT
+	id S932153Ab3D2RxD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 13:53:03 -0400
+Received: from nm19.access.bullet.mail.sp2.yahoo.com ([98.139.44.146]:24909
+	"EHLO nm19.access.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932091Ab3D2RxA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 13:50:46 -0400
+	Mon, 29 Apr 2013 13:53:00 -0400
+X-Yahoo-Newman-Id: 746034.92436.bm@smtp118.sbc.mail.ne1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: jkX71r4VM1mj5vcKQx3mgoVJbSh_FkdEPaYjx0EO6XDg46r
+ UvcsPFHUqpKbB9GiodlAA00cL.Q98eXC_AMQb03uvwXxdBNrVEjf0omqrexR
+ DQPeDe8abbkZBXhYDpULdaVMJ9lFoVvpA3e.KGH1UmiGF_VeGRtC2xVygljZ
+ CsTSYVa1aXXw2i0xUbuxJInBC08t9D_hCnAhkWHPY.ITkSWeD.5RZlb4ZPoY
+ DPdsJkIaJt10q8sXx6NXUCLq1sCGhUGcCU4mSnFINeOhhanQR6M5q3RUQygY
+ bvlnx04tMYqlO8J0ryviGI.49gupYkmkbHXm46VhYkCB9pdpbxQ1ujRly0Il
+ LdMO45VDL1NYboaDZQfDtJ3m8vG1dzbvrt1bue6FvzMMBbPNSwEgVQsOYc8L
+ TCImKxMpPlSWSj_wayHGPpARAIi8CyZgXX2LrBNg0Rl5G7QH.roTstbXjLjf
+ OpqxmUYZYfuowdkqBC_HMeKG1Qg3SWDvmJM4EGA4-
+X-Yahoo-SMTP: zfeO.4KswBCc_PdwTE8HfYDCQ1aNmIcSvQHkDP4uSDBNBSXeKQ--
+X-Rocket-Received: from localhost (linux@108.223.40.66 with plain)
+        by smtp118.sbc.mail.ne1.yahoo.com with SMTP; 29 Apr 2013 17:52:59 +0000 UTC
+Date: Mon, 29 Apr 2013 10:52:59 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, "'Wim Van Sebroeck'" <wim@iguana.be>,
+        linux-watchdog@vger.kernel.org
+Subject: Re: [PATCH RESEND 2/7] watchdog: bcm63xx_wdt: use
+ devm_ioremap_nocache()
+Message-ID: <20130429175259.GB5183@roeck-us.net>
+References: <000c01ce44bc$cfed7830$6fc86890$@samsung.com>
 MIME-Version: 1.0
-In-Reply-To: <1696679.tiFHy28fsU@avalon>
-References: <1366963535-15963-1-git-send-email-prabhakar.csengg@gmail.com>
- <32556864.ElKWl0cdN2@avalon> <CA+V-a8u_YA=TJaRebboigM6z-A=R6-ZdyxZSED7H+4w+LN+cTQ@mail.gmail.com>
- <1696679.tiFHy28fsU@avalon>
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Mon, 29 Apr 2013 23:20:24 +0530
-Message-ID: <CA+V-a8tE4SHk2VCRPBTX5CixPip95KduzMSdGt7PEWtFLu52gQ@mail.gmail.com>
-Subject: Re: [PATCH] media: i2c: tvp7002: enable TVP7002 decoder for media
- controller based usage
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: LMML <linux-media@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <000c01ce44bc$cfed7830$6fc86890$@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Laurent,
+On Mon, Apr 29, 2013 at 06:34:57PM +0900, Jingoo Han wrote:
+> Use devm_ioremap_nocache() to make cleanup paths simpler.
+> 
+> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 
-On Mon, Apr 29, 2013 at 11:06 PM, Laurent Pinchart
-<laurent.pinchart@ideasonboard.com> wrote:
-> Hi Prabhakar,
->
-> On Monday 29 April 2013 23:00:26 Prabhakar Lad wrote:
->> On Mon, Apr 29, 2013 at 7:57 PM, Laurent Pinchart wrote:
->> > On Friday 26 April 2013 13:35:35 Prabhakar Lad wrote:
->> >> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
->> >>
->> >> This patch enables tvp7002 decoder driver for media controller
->> >> based usage by adding v4l2_subdev_pad_ops  operations support
->> >> for enum_mbus_code, set_pad_format, get_pad_format and
->> >> media_entity_init()
->> >> on probe and media_entity_cleanup() on remove.
->> >>
->> >> The device supports 1 output pad and no input pads.
->> >
->> > We should actually define input pads, connected to connector entities, but
->> > that's out of scope for this patch.
->> >
->> >> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
->> >> ---
->
-[snip]
-
->> >> +/* media pad related operation handlers */
->> >> +static const struct v4l2_subdev_pad_ops tvp7002_pad_ops = {
->> >> +     .enum_mbus_code = tvp7002_enum_mbus_code,
->> >> +     .get_fmt = tvp7002_get_pad_format,
->> >> +     .set_fmt = tvp7002_set_pad_format,
->> >
->> > We will need to define pad-aware DV timings operations.
->>
->> I didn't get you this?
->
-> We will need to extend the pad operations (struct v4l2_subdev_pad_ops) with
-> operations to enumerate, get and set DV timings at the pad level.
->
-not sure if exposing get and set DV timings at the pad level would be a better
-idea, timings for pad's would be the same always and anyways we get DV timings
-on video node. I cant think of usecase where we require get and set DV
-timings at the pad level.
-
-Regards,
---Prabhakar Lad
+Reviewed-by: Guenter Roeck <linux@roeck-us.net>
