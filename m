@@ -1,163 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751703Ab3D2Ons (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 10:43:48 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:49224 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750792Ab3D2Onr (ORCPT
+	id S1752791Ab3D2OoP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 10:44:15 -0400
+Received: from smtp.eu.citrix.com ([46.33.159.39]:5653 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752303Ab3D2OoM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 10:43:47 -0400
-Message-ID: <517E8758.9040803@parallels.com>
-Date: Mon, 29 Apr 2013 18:44:40 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
+	Mon, 29 Apr 2013 10:44:12 -0400
+X-IronPort-AV: E=Sophos;i="4.87,552,1363132800"; 
+   d="scan'208";a="4041332"
+Message-ID: <1367246649.3142.316.camel@zakaz.uk.xensource.com>
+Subject: Re: [PATCH v2 2/2] xen/balloon: Enforce various limits on target
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Daniel Kiper <daniel.kiper@oracle.com>
+CC: "carsten@schiers.de" <carsten@schiers.de>,
+        "darren.s.shepherd@gmail.com" <darren.s.shepherd@gmail.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        "Ian Jackson" <Ian.Jackson@eu.citrix.com>,
+        "james-xen@dingwall.me.uk" <james-xen@dingwall.me.uk>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Date: Mon, 29 Apr 2013 15:44:09 +0100
+In-Reply-To: <1367235468-8360-3-git-send-email-daniel.kiper@oracle.com>
+References: <1367235468-8360-1-git-send-email-daniel.kiper@oracle.com>
+	 <1367235468-8360-3-git-send-email-daniel.kiper@oracle.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
 MIME-Version: 1.0
-To: Pekka Enberg <penberg@kernel.org>
-CC: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Christoph Lameter <cl@linux.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [linux-next-20130422] Bug in SLAB?
-References: <201304242108.FDC35910.VJMHFFFSOLOOQt@I-love.SAKURA.ne.jp> <201304252120.GII21814.FMJFtHLOOVQFOS@I-love.SAKURA.ne.jp> <201304291140.IFJ95894.OFLSFFHQOOMVJt@I-love.SAKURA.ne.jp> <CAOJsxLFYDC+EDdJrXVnc1qfEyd56bhFLeGE+6Mbhwiq73KQQLQ@mail.gmail.com>
-In-Reply-To: <CAOJsxLFYDC+EDdJrXVnc1qfEyd56bhFLeGE+6Mbhwiq73KQQLQ@mail.gmail.com>
-Content-Type: multipart/mixed;
-	boundary="------------000009000007080109040608"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---------------000009000007080109040608
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+On Mon, 2013-04-29 at 12:37 +0100, Daniel Kiper wrote:
 
-On 04/29/2013 02:12 PM, Pekka Enberg wrote:
-> On Mon, Apr 29, 2013 at 5:40 AM, Tetsuo Handa
-> <penguin-kernel@i-love.sakura.ne.jp> wrote:
->> Tetsuo Handa wrote:
->>> Also, kmalloc_index() in include/linux/slab.h can return 0 to 26.
->>>
->>> If (MAX_ORDER + PAGE_SHIFT - 1) > 25 is true and
->>> kmalloc_index(64 * 1024 * 1024) is requested (I don't know whether such case
->>> happens), kmalloc_caches[26] is beyond the array, for kmalloc_caches[26]
->>> allows 0 to 25.
->>>
->>> If (MAX_ORDER + PAGE_SHIFT - 1) <= 25 is true and
->>> kmalloc_index(64 * 1024 * 1024) is requested (I don't know whether such case
->>> happens), kmalloc_caches[26] is beyond the array, for
->>> kmalloc_caches[MAX_ORDER + PAGE_SHIFT] allows 0 to MAX_ORDER + PAGE_SHIFT - 1.
->>>
->>> Would you recheck that the array size is correct?
->>>
->>
->> I confirmed (on x86_32) that
->>
->>   volatile unsigned int size = 8 * 1024 * 1024;
->>   kmalloc(size, GFP_KERNEL);
->>
->> causes no warning at compile time and returns NULL at runtime. But
->>
->>   unsigned int size = 8 * 1024 * 1024;
->>   kmalloc(size, GFP_KERNEL);
->>
->> causes compile time warning
->>
->>   include/linux/slab_def.h:136: warning: array subscript is above array bounds
->>
->> and runtime bug.
->>
->>   BUG: unable to handle kernel NULL pointer dereference at 00000058
->>   IP: [<c10b9d76>] kmem_cache_alloc+0x26/0xb0
->>
->> I confirmed (on x86_32) that
->>
->>   kmalloc(64 * 1024 * 1024, GFP_KERNEL);
->>
->> causes compile time warning
->>
->>   include/linux/slab_def.h:136: warning: array subscript is above array bounds
->>
->> and runtime bug.
->>
->>   Kernel BUG at c10b9c5b [verbose debug info unavailable]
->>   invalid opcode: 0000 [#1] SMP
->>
->> Also,
->>
->>   volatile unsigned int size = 64 * 1024 * 1024;
->>   kmalloc(size, GFP_KERNEL);
->>
->> causes no warning at compile time but runtime bug.
->>
->>   Kernel BUG at c10b9c5b [verbose debug info unavailable]
->>   invalid opcode: 0000 [#1] SMP
->>
->> There are kernel modules which expect kmalloc() to return NULL rather than
->> oops when the requested size is too large.
+> This patch enforces on target limit statically defined in Linux Kernel
+> source and limit defined by hypervisor or host. This way the balloon
+> driver should not attempt to populate pages above given limits
+> because they may fail.
 > 
-> Christoph, Glauber, it seems like commit e3366016 ("slab: Use common
-> kmalloc_index/kmalloc_size functions") is causing some problems here.
-> Can you please take a look?
+> Particularly this patch fixes bug which led to flood
+> of dom0 kernel log with messages similar to:
 > 
->                         Pekka
-> 
-I believe this is because the code now always assume that the cache is
-found when a constant is passed. Before this patch, we had a "found"
-statement that was mistakenly removed.
+> System RAM resource [mem 0x1b8000000-0x1bfffffff] cannot be added
+> xen_balloon: reserve_additional_memory: add_memory() failed: -17
 
-If I am right, the following (untested) patch should solve the problem.
+I think it would be OK to simply tone down this message (and perhaps add
+the failed pages to the balloon, if that makes sense). This isn't
+dissimilar to increase_reservation failing.
+
+> +/*
+> + * Extra internal memory reserved by libxl.
+> + * Check tools/libxl/libxl_memory.txt file in Xen source for more details.
+> + */
+> +#define LIBXL_MAXMEM_CONSTANT_PAGES	(1024 * 1024 / PAGE_SIZE)
+
+I think we need to find a way to achieve your aims which doesn't require
+leaking internal implementation details of libxl into the guest kernels.
+What happens if libxl decides to double this?
+
+> +
+>  #ifdef CONFIG_HIGHMEM
+>  #define inc_totalhigh_pages() (totalhigh_pages++)
+>  #define dec_totalhigh_pages() (totalhigh_pages--)
+> @@ -491,11 +496,42 @@ static void balloon_process(struct work_struct *work)
+>  	mutex_unlock(&balloon_mutex);
+>  }
+>  
+> -/* Resets the Xen limit, sets new target, and kicks off processing. */
+> +/* Enforce limits, set new target and kick off processing. */
+>  void balloon_set_new_target(unsigned long target)
+>  {
+> +	domid_t domid = DOMID_SELF;
+> +	int rc;
+> +
+> +	/* Enforce statically defined limit. */
+> +	target = min(target, MAX_DOMAIN_PAGES);
+> +
+> +	rc = HYPERVISOR_memory_op(XENMEM_maximum_reservation, &domid);
+> +
+> +	if (xen_initial_domain()) {
+> +		if (rc <= 0) {
+> +			pr_debug("xen_balloon: %s: Initial domain target limit "
+> +					"could not be established: %i\n",
+> +					__func__, rc);
+> +			goto no_host_limit;
+> +		}
+> +	} else {
+> +		if (rc <= 0) {
+> +			pr_info("xen_balloon: %s: Guest domain target limit "
+> +				"could not be established: %i\n", __func__, rc);
+> +			goto no_host_limit;
+> +		}
+> +
+> +		/* Do not take into account memory reserved for internal stuff. */
+> +		rc -= LIBXL_MAXMEM_CONSTANT_PAGES;
+> +	}
+
+Why is this needed? Wouldn't it be a toolstack bug to set the target
+greater than this limit? But if it did ask then it would no doubt be
+expecting the guest to try and reach that limit (perhaps it intends to
+raise the maximum later?).
+
+In any case it should be handled the same way as a failure in
+increase_reservation is always handled, shouldn't it? No need for a
+special case.
+
+I don't think this change has anything to do with the add_memory()
+failure you mention in the commit message.
+
+> +
+> +	/* Enforce hypervisor/host defined limit. */
+> +	target = min_t(unsigned long, target, rc);
+> +
+> +no_host_limit:
+>  	/* No need for lock. Not read-modify-write updates. */
+>  	balloon_stats.target_pages = target;
+> +
+>  	schedule_delayed_work(&balloon_worker, 0);
+>  }
+>  EXPORT_SYMBOL_GPL(balloon_set_new_target);
 
 
---------------000009000007080109040608
-Content-Type: text/x-patch;
-	name="0001-slab-fix-kmalloc-regression-with-big-constant-alloca.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
-	filename*0="0001-slab-fix-kmalloc-regression-with-big-constant-alloca.pa";
-	filename*1="tch"
-
->From 45ad685c47e4c6bba7d772dbd298d321a73dc78a Mon Sep 17 00:00:00 2001
-From: Glauber Costa <glommer@openvz.org>
-Date: Mon, 29 Apr 2013 18:36:59 +0400
-Subject: [PATCH] slab: fix kmalloc regression with big constant allocations
-
-kmalloc have a maximum allocation size, but we are currently not
-respecting it. We create a list of kmalloc sizes and return an array
-index up to 26, which may or may not be within our limits, since this is
-architecture dependent.
-
-This patch fix this by making the slab code do the same as slub does: An
-explicit check for the maximum size before the call to kmalloc_index,
-and the use of the kmalloc non-constant fallback function in that case.
-
-Signed-off-by: Glauber Costa <glommer@openvz.org>
----
- include/linux/slab_def.h | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
-
-diff --git a/include/linux/slab_def.h b/include/linux/slab_def.h
-index 113ec08..3a240c8 100644
---- a/include/linux/slab_def.h
-+++ b/include/linux/slab_def.h
-@@ -172,8 +172,10 @@ static __always_inline void *kmalloc_node(size_t size, gfp_t flags, int node)
- 		if (!size)
- 			return ZERO_SIZE_PTR;
- 
--		i = kmalloc_index(size);
-+		if (size > KMALLOC_MAX_SIZE)
-+			goto not_found;
- 
-+		i = kmalloc_index(size);
- #ifdef CONFIG_ZONE_DMA
- 		if (flags & GFP_DMA)
- 			cachep = kmalloc_dma_caches[i];
-@@ -183,6 +185,7 @@ static __always_inline void *kmalloc_node(size_t size, gfp_t flags, int node)
- 
- 		return kmem_cache_alloc_node_trace(cachep, flags, node, size);
- 	}
-+not_found:
- 	return __kmalloc_node(size, flags, node);
- }
- 
--- 
-1.8.1.4
-
-
---------------000009000007080109040608--
