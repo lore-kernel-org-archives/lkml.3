@@ -1,69 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933597Ab3D2T2u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 15:28:50 -0400
-Received: from casper.infradead.org ([85.118.1.10]:37212 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757615Ab3D2T2q (ORCPT
+	id S933086Ab3D2TWP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 15:22:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60830 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759700Ab3D2TDD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 15:28:46 -0400
-Message-ID: <517EC9C7.9000903@infradead.org>
-Date: Mon, 29 Apr 2013 12:28:07 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: "Yann E. MORIN" <yann.morin.1998@free.fr>
-CC: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-next@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
-        Benjamin Poirier <bpoirier@suse.de>
-Subject: Re: [PATCH 1/1] kconfig: fix lists definition for C++
-References: <cover.1367258255.git.yann.morin.1998@free.fr> <21ca352b71ca252e1933b1538fe89da8a04395c3.1367258255.git.yann.morin.1998@free.fr>
-In-Reply-To: <21ca352b71ca252e1933b1538fe89da8a04395c3.1367258255.git.yann.morin.1998@free.fr>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 29 Apr 2013 15:03:03 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Mathias Krause <minipli@googlemail.com>,
+        Samuel Ortiz <samuel@sortiz.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 10/34] irda: Fix missing msg_namelen update in irda_recvmsg_dgram()
+Date: Mon, 29 Apr 2013 12:02:17 -0700
+Message-Id: <20130429184702.063056913@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130429184700.845644077@linuxfoundation.org>
+References: <20130429184700.845644077@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/29/13 10:59, Yann E. MORIN wrote:
-> From: "Yann E. MORIN" <yann.morin.1998@free.fr>
-> 
-> The C++ compiler is more strict in that it refuses to assign
-> a void* to a struct list_head*.
-> 
-> Fix that by explicitly casting the poisonning constants.
-> 
-> (Tested with all 5 frontends, now.)
-> 
-> Reported-by: Randy Dunlap <rdunlap@infradead.org>
-> Signed-off-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
-> Cc: Randy Dunlap <rdunlap@infradead.org>
-> Cc: Benjamin Poirier <bpoirier@suse.de>
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Acked-by: Randy Dunlap <rdunlap@infradead.org>
-
-Thanks.
-
-> ---
->  scripts/kconfig/list.h | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/scripts/kconfig/list.h b/scripts/kconfig/list.h
-> index ea1d581..685d80e 100644
-> --- a/scripts/kconfig/list.h
-> +++ b/scripts/kconfig/list.h
-> @@ -125,7 +125,7 @@ static inline void __list_del(struct list_head *prev, struct list_head *next)
->  static inline void list_del(struct list_head *entry)
->  {
->  	__list_del(entry->prev, entry->next);
-> -	entry->next = LIST_POISON1;
-> -	entry->prev = LIST_POISON2;
-> +	entry->next = (struct list_head*)LIST_POISON1;
-> +	entry->prev = (struct list_head*)LIST_POISON2;
->  }
->  #endif
-> 
+------------------
 
 
--- 
-~Randy
+From: Mathias Krause <minipli@googlemail.com>
+
+[ Upstream commit 5ae94c0d2f0bed41d6718be743985d61b7f5c47d ]
+
+The current code does not fill the msg_name member in case it is set.
+It also does not set the msg_namelen member to 0 and therefore makes
+net/socket.c leak the local, uninitialized sockaddr_storage variable
+to userland -- 128 bytes of kernel stack memory.
+
+Fix that by simply setting msg_namelen to 0 as obviously nobody cared
+about irda_recvmsg_dgram() not filling the msg_name in case it was
+set.
+
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Cc: Samuel Ortiz <samuel@sortiz.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ net/irda/af_irda.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+--- a/net/irda/af_irda.c
++++ b/net/irda/af_irda.c
+@@ -1386,6 +1386,8 @@ static int irda_recvmsg_dgram(struct kio
+ 
+ 	IRDA_DEBUG(4, "%s()\n", __func__);
+ 
++	msg->msg_namelen = 0;
++
+ 	skb = skb_recv_datagram(sk, flags & ~MSG_DONTWAIT,
+ 				flags & MSG_DONTWAIT, &err);
+ 	if (!skb)
+
+
