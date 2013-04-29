@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759981Ab3D2TDd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 15:03:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32771 "EHLO
+	id S932878Ab3D2THx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 15:07:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32812 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759943Ab3D2TD2 (ORCPT
+	with ESMTP id S1759977Ab3D2TDd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 15:03:28 -0400
+	Mon, 29 Apr 2013 15:03:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Karel Srot <ksrot@redhat.com>, Ding Tianhong <dingtianhong@huawei.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Mathias Krause <minipli@googlemail.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 09/30] af_unix: If we dont care about credentials coallesce all messages
-Date: Mon, 29 Apr 2013 12:02:33 -0700
-Message-Id: <20130429184356.337732226@linuxfoundation.org>
+Subject: [ 18/30] ax25: fix info leak via msg_name in ax25_recvmsg()
+Date: Mon, 29 Apr 2013 12:02:42 -0700
+Message-Id: <20130429184357.353789210@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130429184355.299556377@linuxfoundation.org>
 References: <20130429184355.299556377@linuxfoundation.org>
@@ -29,54 +29,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: "Eric W. Biederman" <ebiederm@xmission.com>
+From: Mathias Krause <minipli@googlemail.com>
 
-[ Upstream commit 0e82e7f6dfeec1013339612f74abc2cdd29d43d2 ]
+[ Upstream commit ef3313e84acbf349caecae942ab3ab731471f1a1 ]
 
-It was reported that the following LSB test case failed
-https://lsbbugs.linuxfoundation.org/attachment.cgi?id=2144 because we
-were not coallescing unix stream messages when the application was
-expecting us to.
+When msg_namelen is non-zero the sockaddr info gets filled out, as
+requested, but the code fails to initialize the padding bytes of struct
+sockaddr_ax25 inserted by the compiler for alignment. Additionally the
+msg_namelen value is updated to sizeof(struct full_sockaddr_ax25) but is
+not always filled up to this size.
 
-The problem was that the first send was before the socket was accepted
-and thus sock->sk_socket was NULL in maybe_add_creds, and the second
-send after the socket was accepted had a non-NULL value for sk->socket
-and thus we could tell the credentials were not needed so we did not
-bother.
+Both issues lead to the fact that the code will leak uninitialized
+kernel stack bytes in net/socket.c.
 
-The unnecessary credentials on the first message cause
-unix_stream_recvmsg to start verifying that all messages had the same
-credentials before coallescing and then the coallescing failed because
-the second message had no credentials.
+Fix both issues by initializing the memory with memset(0).
 
-Ignoring credentials when we don't care in unix_stream_recvmsg fixes a
-long standing pessimization which would fail to coallesce messages when
-reading from a unix stream socket if the senders were different even if
-we did not care about their credentials.
-
-I have tested this and verified that the in the LSB test case mentioned
-above that the messages do coallesce now, while the were failing to
-coallesce without this change.
-
-Reported-by: Karel Srot <ksrot@redhat.com>
-Reported-by: Ding Tianhong <dingtianhong@huawei.com>
-Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/unix/af_unix.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/ax25/af_ax25.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/net/unix/af_unix.c
-+++ b/net/unix/af_unix.c
-@@ -1940,7 +1940,7 @@ static int unix_stream_recvmsg(struct ki
- 				skb_queue_head(&sk->sk_receive_queue, skb);
- 				break;
- 			}
--		} else {
-+		} else if (test_bit(SOCK_PASSCRED, &sock->flags)) {
- 			/* Copy credentials */
- 			scm_set_cred(siocb->scm, UNIXCB(skb).pid, UNIXCB(skb).cred);
- 			check_creds = 1;
+--- a/net/ax25/af_ax25.c
++++ b/net/ax25/af_ax25.c
+@@ -1641,6 +1641,7 @@ static int ax25_recvmsg(struct kiocb *io
+ 		ax25_address src;
+ 		const unsigned char *mac = skb_mac_header(skb);
+ 
++		memset(sax, 0, sizeof(struct full_sockaddr_ax25));
+ 		ax25_addr_parse(mac + 1, skb->data - mac - 1, &src, NULL,
+ 				&digi, NULL, NULL);
+ 		sax->sax25_family = AF_AX25;
 
 
