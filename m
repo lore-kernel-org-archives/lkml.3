@@ -1,43 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933201Ab3D2VyU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 17:54:20 -0400
-Received: from mail-ia0-f176.google.com ([209.85.210.176]:55511 "EHLO
-	mail-ia0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933186Ab3D2VyS convert rfc822-to-8bit (ORCPT
+	id S1759996Ab3D2V5w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 17:57:52 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:39992 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758542Ab3D2V5u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 17:54:18 -0400
-Date: Mon, 29 Apr 2013 16:54:14 -0500
-From: Rob Landley <rob@landley.net>
-Subject: Re: [PATCH 1/1] kconfig: fix lists definition for C++
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: "Yann E. MORIN" <yann.morin.1998@free.fr>, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
-        Michal Marek <mmarek@suse.cz>, Benjamin Poirier <bpoirier@suse.de>
-References: <cover.1367258255.git.yann.morin.1998@free.fr>
-	<21ca352b71ca252e1933b1538fe89da8a04395c3.1367258255.git.yann.morin.1998@free.fr>
-	<517EC9C7.9000903@infradead.org>
-In-Reply-To: <517EC9C7.9000903@infradead.org> (from rdunlap@infradead.org on
-	Mon Apr 29 14:28:07 2013)
-X-Mailer: Balsa 2.4.11
-Message-Id: <1367272454.18069.191@driftwood>
+	Mon, 29 Apr 2013 17:57:50 -0400
+Date: Mon, 29 Apr 2013 14:57:45 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Colin Cross <ccross@android.com>
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, arve@android.com,
+        Li Zefan <lizefan@huawei.com>, Len Brown <len.brown@intel.com>,
+        Pavel Machek <pavel@ucw.cz>, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org
+Subject: Re: [PATCH 02/10] freezer: skip waking up tasks with PF_FREEZER_SKIP
+ set
+Message-ID: <20130429215745.GB2395@htj.dyndns.org>
+References: <1367271946-7239-1-git-send-email-ccross@android.com>
+ <1367271946-7239-3-git-send-email-ccross@android.com>
+ <20130429215157.GA2395@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20130429215157.GA2395@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/29/2013 02:28:07 PM, Randy Dunlap wrote:
-> On 04/29/13 10:59, Yann E. MORIN wrote:
-> > From: "Yann E. MORIN" <yann.morin.1998@free.fr>
-> >
-> > The C++ compiler is more strict in that it refuses to assign
-> > a void* to a struct list_head*.
+On Mon, Apr 29, 2013 at 02:51:57PM -0700, Tejun Heo wrote:
+> I feel a bit weary of changes which try to optimize state checks for
+> freezer because the synchronization rules are kinda fragile and things
+> may not work reliably depending on who's testing the flag, and it has
+> been subtly broken in various ways in the past (maybe even now).  Can
 
-Given that the code _isn't_ C++ (because C is not a subset of C++ but a  
-separate langauge in its own right where "throw" is a legitimate  
-variable name and so on), how is this an issue?
+And BTW, this is why the function is only used when checking whether a
+task is frozen rather than to decide to issue freeze_task() on it, and
+it seems your change is correct now that we don't have per-task FREEZE
+flag but I can't say I like the change.  I'd really like to keep
+things as dumb as possible for freezer.
 
-Rob
+Thanks.
+
+-- 
+tejun
