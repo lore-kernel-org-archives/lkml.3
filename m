@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759397Ab3D2TCk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 15:02:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60648 "EHLO
+	id S1760186Ab3D2Tmj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 15:42:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60662 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759375Ab3D2TCh (ORCPT
+	with ESMTP id S1759391Ab3D2TCk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 15:02:37 -0400
+	Mon, 29 Apr 2013 15:02:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mathias Krause <minipli@googlemail.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
+        Vasily Averin <vvs@openvz.org>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        Eric Dumazet <edumazet@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 15/42] netrom: fix info leak via msg_name in nr_recvmsg()
-Date: Mon, 29 Apr 2013 12:01:57 -0700
-Message-Id: <20130429184754.098897190@linuxfoundation.org>
+Subject: [ 19/42] cbq: incorrect processing of high limits
+Date: Mon, 29 Apr 2013 12:02:01 -0700
+Message-Id: <20130429184754.548083065@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130429184752.435249613@linuxfoundation.org>
 References: <20130429184752.435249613@linuxfoundation.org>
@@ -29,39 +30,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Mathias Krause <minipli@googlemail.com>
+From: Vasily Averin <vvs@parallels.com>
 
-[ Upstream commits 3ce5efad47b62c57a4f5c54248347085a750ce0e and
-  c802d759623acbd6e1ee9fbdabae89159a513913 ]
+[ Upstream commit f0f6ee1f70c4eaab9d52cf7d255df4bd89f8d1c2 ]
 
-In case msg_name is set the sockaddr info gets filled out, as
-requested, but the code fails to initialize the padding bytes of
-struct sockaddr_ax25 inserted by the compiler for alignment. Also
-the sax25_ndigis member does not get assigned, leaking four more
-bytes.
+currently cbq works incorrectly for limits > 10% real link bandwidth,
+and practically does not work for limits > 50% real link bandwidth.
+Below are results of experiments taken on 1 Gbit link
 
-Both issues lead to the fact that the code will leak uninitialized
-kernel stack bytes in net/socket.c.
+ In shaper | Actual Result
+-----------+---------------
+  100M     | 108 Mbps
+  200M     | 244 Mbps
+  300M     | 412 Mbps
+  500M     | 893 Mbps
 
-Fix both issues by initializing the memory with memset(0).
+This happen because of q->now changes incorrectly in cbq_dequeue():
+when it is called before real end of packet transmitting,
+L2T is greater than real time delay, q_now gets an extra boost
+but never compensate it.
 
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Cc: Ralf Baechle <ralf@linux-mips.org>
+To fix this problem we prevent change of q->now until its synchronization
+with real time.
+
+Signed-off-by: Vasily Averin <vvs@openvz.org>
+Reviewed-by: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
+Acked-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/netrom/af_netrom.c |    1 +
- 1 file changed, 1 insertion(+)
+ net/sched/sch_cbq.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/net/netrom/af_netrom.c
-+++ b/net/netrom/af_netrom.c
-@@ -1177,6 +1177,7 @@ static int nr_recvmsg(struct kiocb *iocb
+--- a/net/sched/sch_cbq.c
++++ b/net/sched/sch_cbq.c
+@@ -962,8 +962,11 @@ cbq_dequeue(struct Qdisc *sch)
+ 		cbq_update(q);
+ 		if ((incr -= incr2) < 0)
+ 			incr = 0;
++		q->now += incr;
++	} else {
++		if (now > q->now)
++			q->now = now;
  	}
+-	q->now += incr;
+ 	q->now_rt = now;
  
- 	if (sax != NULL) {
-+		memset(sax, 0, sizeof(sax));
- 		sax->sax25_family = AF_NETROM;
- 		skb_copy_from_linear_data_offset(skb, 7, sax->sax25_call.ax25_call,
- 			      AX25_ADDR_LEN);
+ 	for (;;) {
 
 
