@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760924Ab3D2Tlx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 15:41:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60673 "EHLO
+	id S1759579Ab3D2TmO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 15:42:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60668 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759408Ab3D2TCl (ORCPT
+	with ESMTP id S1759375Ab3D2TCk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 15:02:41 -0400
+	Mon, 29 Apr 2013 15:02:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vlad Yasevich <vyasevic@redhat.com>,
+        Balakumaran Kannan <Balakumaran.Kannan@ap.sony.com>,
+        Maruthi Thotad <Maruthi.Thotad@ap.sony.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 21/42] net: count hw_addr syncs so that unsync works properly.
-Date: Mon, 29 Apr 2013 12:02:03 -0700
-Message-Id: <20130429184754.779647214@linuxfoundation.org>
+Subject: [ 20/42] net IPv6 : Fix broken IPv6 routing table after loopback down-up
+Date: Mon, 29 Apr 2013 12:02:02 -0700
+Message-Id: <20130429184754.671926794@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130429184752.435249613@linuxfoundation.org>
 References: <20130429184752.435249613@linuxfoundation.org>
@@ -28,70 +29,128 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Vlad Yasevich <vyasevic@redhat.com>
+From: Balakumaran Kannan <kumaran.4353@gmail.com>
 
-[ Upstream commit 4543fbefe6e06a9e40d9f2b28d688393a299f079 ]
+[ Upstream commit 25fb6ca4ed9cad72f14f61629b68dc03c0d9713f ]
 
-A few drivers use dev_uc_sync/unsync to synchronize the
-address lists from master down to slave/lower devices.  In
-some cases (bond/team) a single address list is synched down
-to multiple devices.  At the time of unsync, we have a leak
-in these lower devices, because "synced" is treated as a
-boolean and the address will not be unsynced for anything after
-the first device/call.
+IPv6 Routing table becomes broken once we do ifdown, ifup of the loopback(lo)
+interface. After down-up, routes of other interface's IPv6 addresses through
+'lo' are lost.
 
-Treat "synced" as a count (same as refcount) and allow all
-unsync calls to work.
+IPv6 addresses assigned to all interfaces are routed through 'lo' for internal
+communication. Once 'lo' is down, those routing entries are removed from routing
+table. But those removed entries are not being re-created properly when 'lo' is
+brought up. So IPv6 addresses of other interfaces becomes unreachable from the
+same machine. Also this breaks communication with other machines because of
+NDISC packet processing failure.
 
-Signed-off-by: Vlad Yasevich <vyasevic@redhat.com>
+This patch fixes this issue by reading all interface's IPv6 addresses and adding
+them to IPv6 routing table while bringing up 'lo'.
+
+==Testing==
+Before applying the patch:
+$ route -A inet6
+Kernel IPv6 routing table
+Destination                    Next Hop                   Flag Met Ref Use If
+2000::20/128                   ::                         U    256 0     0 eth0
+fe80::/64                      ::                         U    256 0     0 eth0
+::/0                           ::                         !n   -1  1     1 lo
+::1/128                        ::                         Un   0   1     0 lo
+2000::20/128                   ::                         Un   0   1     0 lo
+fe80::xxxx:xxxx:xxxx:xxxx/128  ::                         Un   0   1     0 lo
+ff00::/8                       ::                         U    256 0     0 eth0
+::/0                           ::                         !n   -1  1     1 lo
+$ sudo ifdown lo
+$ sudo ifup lo
+$ route -A inet6
+Kernel IPv6 routing table
+Destination                    Next Hop                   Flag Met Ref Use If
+2000::20/128                   ::                         U    256 0     0 eth0
+fe80::/64                      ::                         U    256 0     0 eth0
+::/0                           ::                         !n   -1  1     1 lo
+::1/128                        ::                         Un   0   1     0 lo
+ff00::/8                       ::                         U    256 0     0 eth0
+::/0                           ::                         !n   -1  1     1 lo
+$
+
+After applying the patch:
+$ route -A inet6
+Kernel IPv6 routing
+table
+Destination                    Next Hop                   Flag Met Ref Use If
+2000::20/128                   ::                         U    256 0     0 eth0
+fe80::/64                      ::                         U    256 0     0 eth0
+::/0                           ::                         !n   -1  1     1 lo
+::1/128                        ::                         Un   0   1     0 lo
+2000::20/128                   ::                         Un   0   1     0 lo
+fe80::xxxx:xxxx:xxxx:xxxx/128  ::                         Un   0   1     0 lo
+ff00::/8                       ::                         U    256 0     0 eth0
+::/0                           ::                         !n   -1  1     1 lo
+$ sudo ifdown lo
+$ sudo ifup lo
+$ route -A inet6
+Kernel IPv6 routing table
+Destination                    Next Hop                   Flag Met Ref Use If
+2000::20/128                   ::                         U    256 0     0 eth0
+fe80::/64                      ::                         U    256 0     0 eth0
+::/0                           ::                         !n   -1  1     1 lo
+::1/128                        ::                         Un   0   1     0 lo
+2000::20/128                   ::                         Un   0   1     0 lo
+fe80::xxxx:xxxx:xxxx:xxxx/128  ::                         Un   0   1     0 lo
+ff00::/8                       ::                         U    256 0     0 eth0
+::/0                           ::                         !n   -1  1     1 lo
+$
+
+Signed-off-by: Balakumaran Kannan <Balakumaran.Kannan@ap.sony.com>
+Signed-off-by: Maruthi Thotad <Maruthi.Thotad@ap.sony.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- include/linux/netdevice.h |    2 +-
- net/core/dev_addr_lists.c |    6 +++---
- 2 files changed, 4 insertions(+), 4 deletions(-)
+ net/ipv6/addrconf.c |   27 +++++++++++++++++++++++++++
+ 1 file changed, 27 insertions(+)
 
---- a/include/linux/netdevice.h
-+++ b/include/linux/netdevice.h
-@@ -208,9 +208,9 @@ struct netdev_hw_addr {
- #define NETDEV_HW_ADDR_T_SLAVE		3
- #define NETDEV_HW_ADDR_T_UNICAST	4
- #define NETDEV_HW_ADDR_T_MULTICAST	5
--	bool			synced;
- 	bool			global_use;
- 	int			refcount;
-+	int			synced;
- 	struct rcu_head		rcu_head;
- };
+--- a/net/ipv6/addrconf.c
++++ b/net/ipv6/addrconf.c
+@@ -2525,6 +2525,9 @@ static void sit_add_v4_addrs(struct inet
+ static void init_loopback(struct net_device *dev)
+ {
+ 	struct inet6_dev  *idev;
++	struct net_device *sp_dev;
++	struct inet6_ifaddr *sp_ifa;
++	struct rt6_info *sp_rt;
  
---- a/net/core/dev_addr_lists.c
-+++ b/net/core/dev_addr_lists.c
-@@ -38,7 +38,7 @@ static int __hw_addr_create_ex(struct ne
- 	ha->type = addr_type;
- 	ha->refcount = 1;
- 	ha->global_use = global;
--	ha->synced = false;
-+	ha->synced = 0;
- 	list_add_tail_rcu(&ha->list, &list->list);
- 	list->count++;
+ 	/* ::1 */
  
-@@ -166,7 +166,7 @@ int __hw_addr_sync(struct netdev_hw_addr
- 					    addr_len, ha->type);
- 			if (err)
- 				break;
--			ha->synced = true;
-+			ha->synced++;
- 			ha->refcount++;
- 		} else if (ha->refcount == 1) {
- 			__hw_addr_del(to_list, ha->addr, addr_len, ha->type);
-@@ -187,7 +187,7 @@ void __hw_addr_unsync(struct netdev_hw_a
- 		if (ha->synced) {
- 			__hw_addr_del(to_list, ha->addr,
- 				      addr_len, ha->type);
--			ha->synced = false;
-+			ha->synced--;
- 			__hw_addr_del(from_list, ha->addr,
- 				      addr_len, ha->type);
- 		}
+@@ -2536,6 +2539,30 @@ static void init_loopback(struct net_dev
+ 	}
+ 
+ 	add_addr(idev, &in6addr_loopback, 128, IFA_HOST);
++
++	/* Add routes to other interface's IPv6 addresses */
++	for_each_netdev(dev_net(dev), sp_dev) {
++		if (!strcmp(sp_dev->name, dev->name))
++			continue;
++
++		idev = __in6_dev_get(sp_dev);
++		if (!idev)
++			continue;
++
++		read_lock_bh(&idev->lock);
++		list_for_each_entry(sp_ifa, &idev->addr_list, if_list) {
++
++			if (sp_ifa->flags & (IFA_F_DADFAILED | IFA_F_TENTATIVE))
++				continue;
++
++			sp_rt = addrconf_dst_alloc(idev, &sp_ifa->addr, 0);
++
++			/* Failure cases are ignored */
++			if (!IS_ERR(sp_rt))
++				ip6_ins_rt(sp_rt);
++		}
++		read_unlock_bh(&idev->lock);
++	}
+ }
+ 
+ static void addrconf_add_linklocal(struct inet6_dev *idev, const struct in6_addr *addr)
 
 
