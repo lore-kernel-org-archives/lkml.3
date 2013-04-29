@@ -1,65 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932935Ab3D2TSa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 15:18:30 -0400
-Received: from mail-qe0-f50.google.com ([209.85.128.50]:32985 "EHLO
-	mail-qe0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758062Ab3D2TS2 (ORCPT
+	id S932098Ab3D2TSL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 15:18:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60890 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759458Ab3D2TDL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 15:18:28 -0400
-Message-ID: <517EC781.5050600@gmail.com>
-Date: Mon, 29 Apr 2013 15:18:25 -0400
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
-MIME-Version: 1.0
+	Mon, 29 Apr 2013 15:03:11 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Olivier Langlois <olivier@trillion01.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        David Miller <davem@davemloft.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        kosaki.motohiro@gmail.com
-Subject: [PATCH 4/2] sched: task_sched_runtime introduce micro optimization
-References: <1367216762-3933-1-git-send-email-kosaki.motohiro@gmail.com>
-In-Reply-To: <1367216762-3933-1-git-send-email-kosaki.motohiro@gmail.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        "Huang, Xiong" <xiong@qca.qualcomm.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 21/34] atl1e: limit gso segment size to prevent generation of wrong ip length fields
+Date: Mon, 29 Apr 2013 12:02:28 -0700
+Message-Id: <20130429184703.271850967@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130429184700.845644077@linuxfoundation.org>
+References: <20130429184700.845644077@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-rq lock in task_sched_runtime() is necessary for two reasons. 1)
-accessing se.sum_exec_runtime is inatomic on 32bit and 2)
-do_task_delta_exec() require it.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-And then, 64bit can avoid holds rq lock when add_delta is false.
+------------------
 
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+
+[ Upstream commit 31d1670e73f4911fe401273a8f576edc9c2b5fea ]
+
+The limit of 0x3c00 is taken from the windows driver.
+
+Suggested-by: Huang, Xiong <xiong@qca.qualcomm.com>
+Cc: Huang, Xiong <xiong@qca.qualcomm.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- kernel/sched/core.c |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+ drivers/net/ethernet/atheros/atl1e/atl1e.h      |    2 +-
+ drivers/net/ethernet/atheros/atl1e/atl1e_main.c |    1 +
+ 2 files changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index b817e6d..24ba1c6 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -2657,6 +2657,12 @@ unsigned long long task_sched_runtime(struct task_struct *p, bool add_delta)
- 	struct rq *rq;
- 	u64 ns = 0;
+--- a/drivers/net/ethernet/atheros/atl1e/atl1e.h
++++ b/drivers/net/ethernet/atheros/atl1e/atl1e.h
+@@ -186,7 +186,7 @@ struct atl1e_tpd_desc {
+ /* how about 0x2000 */
+ #define MAX_TX_BUF_LEN      0x2000
+ #define MAX_TX_BUF_SHIFT    13
+-/*#define MAX_TX_BUF_LEN  0x3000 */
++#define MAX_TSO_SEG_SIZE    0x3c00
  
-+	/* Micro optimization. */
-+#ifdef CONFIG_64BIT
-+	if (!add_delta)
-+		return p->se.sum_exec_runtime;
-+#endif
-+
- 	rq = task_rq_lock(p, &flags);
- 	ns = p->se.sum_exec_runtime;
- 	if (add_delta)
--- 
-1.7.1
+ /* rrs word 1 bit 0:31 */
+ #define RRS_RX_CSUM_MASK	0xFFFF
+--- a/drivers/net/ethernet/atheros/atl1e/atl1e_main.c
++++ b/drivers/net/ethernet/atheros/atl1e/atl1e_main.c
+@@ -2354,6 +2354,7 @@ static int __devinit atl1e_probe(struct
+ 
+ 	INIT_WORK(&adapter->reset_task, atl1e_reset_task);
+ 	INIT_WORK(&adapter->link_chg_task, atl1e_link_chg_task);
++	netif_set_gso_max_size(netdev, MAX_TSO_SEG_SIZE);
+ 	err = register_netdev(netdev);
+ 	if (err) {
+ 		netdev_err(netdev, "register netdevice failed\n");
 
 
