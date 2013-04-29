@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759471Ab3D2TCp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 15:02:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60687 "EHLO
+	id S1760875Ab3D2Tjr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 15:39:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60698 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759449Ab3D2TCn (ORCPT
+	with ESMTP id S1757464Ab3D2TCo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 15:02:43 -0400
+	Mon, 29 Apr 2013 15:02:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nikolay Aleksandrov <nikolay@redhat.com>,
+        Karel Srot <ksrot@redhat.com>, Ding Tianhong <dingtianhong@huawei.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 24/42] bonding: IFF_BONDING is not stripped on enslave failure
-Date: Mon, 29 Apr 2013 12:02:06 -0700
-Message-Id: <20130429184755.137050534@linuxfoundation.org>
+Subject: [ 26/42] af_unix: If we dont care about credentials coallesce all messages
+Date: Mon, 29 Apr 2013 12:02:08 -0700
+Message-Id: <20130429184755.381019155@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130429184752.435249613@linuxfoundation.org>
 References: <20130429184752.435249613@linuxfoundation.org>
@@ -28,33 +29,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: "nikolay@redhat.com" <nikolay@redhat.com>
+From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-[ Upstream commit b6a5a7b9a528a8b4c8bec940b607c5dd9102b8cc ]
+[ Upstream commit 0e82e7f6dfeec1013339612f74abc2cdd29d43d2 ]
 
-While enslaving a new device and after IFF_BONDING flag is set, in case
-of failure it is not stripped from the device's priv_flags while
-cleaning up, which could lead to other problems.
-Cleaning at err_close because the flag is set after dev_open().
+It was reported that the following LSB test case failed
+https://lsbbugs.linuxfoundation.org/attachment.cgi?id=2144 because we
+were not coallescing unix stream messages when the application was
+expecting us to.
 
-v2: no change
+The problem was that the first send was before the socket was accepted
+and thus sock->sk_socket was NULL in maybe_add_creds, and the second
+send after the socket was accepted had a non-NULL value for sk->socket
+and thus we could tell the credentials were not needed so we did not
+bother.
 
-Signed-off-by: Nikolay Aleksandrov <nikolay@redhat.com>
+The unnecessary credentials on the first message cause
+unix_stream_recvmsg to start verifying that all messages had the same
+credentials before coallescing and then the coallescing failed because
+the second message had no credentials.
+
+Ignoring credentials when we don't care in unix_stream_recvmsg fixes a
+long standing pessimization which would fail to coallesce messages when
+reading from a unix stream socket if the senders were different even if
+we did not care about their credentials.
+
+I have tested this and verified that the in the LSB test case mentioned
+above that the messages do coallesce now, while the were failing to
+coallesce without this change.
+
+Reported-by: Karel Srot <ksrot@redhat.com>
+Reported-by: Ding Tianhong <dingtianhong@huawei.com>
+Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/bonding/bond_main.c |    1 +
- 1 file changed, 1 insertion(+)
+ net/unix/af_unix.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/bonding/bond_main.c
-+++ b/drivers/net/bonding/bond_main.c
-@@ -1888,6 +1888,7 @@ err_detach:
- 	write_unlock_bh(&bond->lock);
- 
- err_close:
-+	slave_dev->priv_flags &= ~IFF_BONDING;
- 	dev_close(slave_dev);
- 
- err_unset_master:
+--- a/net/unix/af_unix.c
++++ b/net/unix/af_unix.c
+@@ -1995,7 +1995,7 @@ again:
+ 			if ((UNIXCB(skb).pid  != siocb->scm->pid) ||
+ 			    (UNIXCB(skb).cred != siocb->scm->cred))
+ 				break;
+-		} else {
++		} else if (test_bit(SOCK_PASSCRED, &sock->flags)) {
+ 			/* Copy credentials */
+ 			scm_set_cred(siocb->scm, UNIXCB(skb).pid, UNIXCB(skb).cred);
+ 			check_creds = 1;
 
 
