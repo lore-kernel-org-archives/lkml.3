@@ -1,78 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756759Ab3D2OtV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 10:49:21 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:52929 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756490Ab3D2OtU (ORCPT
+	id S1756853Ab3D2Otb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 10:49:31 -0400
+Received: from a9-62.smtp-out.amazonses.com ([54.240.9.62]:39560 "EHLO
+	a9-62.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756490Ab3D2Ot2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 10:49:20 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Simon Horman <horms@verge.net.au>
-Subject: Re: [PATCH 03/21] ARM: shmobile: don't call irqchip_init unconditionally
-Date: Mon, 29 Apr 2013 16:49:07 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Bastian Hecht <hechtb+renesas@gmail.com>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
-References: <1366910944-3033663-1-git-send-email-arnd@arndb.de> <1366910944-3033663-4-git-send-email-arnd@arndb.de> <20130426004835.GA20070@verge.net.au>
-In-Reply-To: <20130426004835.GA20070@verge.net.au>
+	Mon, 29 Apr 2013 10:49:28 -0400
+Date: Mon, 29 Apr 2013 14:49:27 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Will Huck <will.huckk@gmail.com>
+cc: Han Pingtian <hanpt@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, mhocko@suse.cz,
+        Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>, linux-mm@kvack.org
+Subject: Re: OOM-killer and strange RSS value in 3.9-rc7
+In-Reply-To: <517B8A5D.1030308@gmail.com>
+Message-ID: <0000013e56450fd2-c7a854d1-ff7f-47a7-a235-30721fead5e0-000000@email.amazonses.com>
+References: <alpine.DEB.2.02.1304161315290.30779@chino.kir.corp.google.com> <20130417094750.GB2672@localhost.localdomain> <20130417141909.GA24912@dhcp22.suse.cz> <20130418101541.GC2672@localhost.localdomain> <20130418175513.GA12581@dhcp22.suse.cz>
+ <20130423131558.GH8001@dhcp22.suse.cz> <20130424044848.GI2672@localhost.localdomain> <20130424094732.GB31960@dhcp22.suse.cz> <0000013e3cb0340d-00f360e3-076b-478e-b94c-ddd4476196ce-000000@email.amazonses.com> <20130425060705.GK2672@localhost.localdomain>
+ <0000013e42332267-0b7fb3c0-9150-4058-8850-ae094b455b15-000000@email.amazonses.com> <517B8A5D.1030308@gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201304291649.08084.arnd@arndb.de>
-X-Provags-ID: V02:K0:8oJaIu5w1eL6+8S0QCTL2L2s6pqdhlyWeD38ZmHc6it
- dHGaKN6vq4dngd3jBu+Sb45Sy6+39sB4WCgBAhe0Pbld69DblC
- sXwpdFQcIpXmtjn3u6qhXUx286epnYj9Cbp+8ApjTQKi81olT4
- 0jj9a3R3J/CfypUDfzVepEtHvZb7KpHwIBKtX1DQufJF4S1vkN
- dpY8PU3jpKwZF6v/tszvW9wOs3mOITvqd8fVI2XbMgq3NH/Q/D
- jaxkxptWvij0ToKq/X/2Ta+RxRS/zpiGF2QThq8AY/gR8PMMhB
- sxzvNsfB2opEEPogI2w8APkXmGmULLBTh39ocq490h09oFT/4V
- I8iw85garELYmfvGrXhM=
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.04.29-54.240.9.62
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 26 April 2013, Simon Horman wrote:
-> > diff --git a/arch/arm/mach-shmobile/intc-r8a7740.c b/arch/arm/mach-shmobile/intc-r8a7740.c
-> > index 8871f77..5dc57f1 100644
-> > --- a/arch/arm/mach-shmobile/intc-r8a7740.c
-> > +++ b/arch/arm/mach-shmobile/intc-r8a7740.c
-> > @@ -53,14 +53,23 @@ static void __init r8a7740_init_irq_common(void)
-> >  
-> >  void __init r8a7740_init_irq_of(void)
-> >  {
-> > +     if (!IS_ENABLED(CONFIG_OF))
-> > +             return;
-> > +
-> 
-> In other parts of the shmobile I believe that such code is
-> guarded by #ifdef CONFIG_OF and I believe not guarding this code in
-> some way was an oversight.
-> 
-> The above change seems fine to me.
+On Sat, 27 Apr 2013, Will Huck wrote:
 
-Ok. The change that broke the code is only present in linux-next from
-one of your trees, but is not in arm-soc. Could you include the change
-in your tree, either by folding into one of your patches or adapting
-my patch appropriately?
+> Hi Christoph,
+> On 04/26/2013 01:17 AM, Christoph Lameter wrote:
+> > On Thu, 25 Apr 2013, Han Pingtian wrote:
+> >
+> > > I have enabled "slub_debug" and here is the
+> > > /sys/kernel/slab/kmalloc-512/alloc_calls contents:
+> > >
+> > >       50 .__alloc_workqueue_key+0x90/0x5d0 age=113630/116957/119419
+> > > pid=1-1730 cpus=0,6-8,13,24,26,44,53,57,60,68 nodes=1
+> > >       11 .__alloc_workqueue_key+0x16c/0x5d0 age=113814/116733/119419
+> > > pid=1-1730 cpus=0,44,68 nodes=1
+> > >       13 .add_sysfs_param.isra.2+0x80/0x210 age=115175/117994/118779
+> > > pid=1-1342 cpus=0,8,12,24,60 nodes=1
+> > >      160 .build_sched_domains+0x108/0xe30 age=119111/119120/119131 pid=1
+> > > cpus=0 nodes=1
+> > >     9000 .alloc_fair_sched_group+0xe4/0x220 age=110549/114471/117357
+> > > pid=1-2290
+> > > cpus=0-1,5,9-11,13,24,29,33,36,38,40-41,45,48-50,53,56-58,60-63,68-69,72-73,76-77,79
+> > > nodes=1
+> > >     9000 .alloc_fair_sched_group+0x114/0x220 age=110549/114471/117357
+> > > pid=1-2290
+> > > cpus=0-1,5,9-11,13,24,29,33,36,38,40-41,45,48-50,53,56-58,60-63,68-69,72-73,76-77,79
+> > > nodes=1
+>
+> Could you explain the meaning of  age=xx/xx/xx  pid=xx-xx cpus=xx here?
+>
 
-> > +
-> > +     gic_dist_base = ioremap_nocache(0xc2800000, 0x1000);
-> > +     gic_cpu_base = ioremap_nocache(0xc2000000, 0x1000);
-> >  
-> >       /* initialize the Generic Interrupt Controller PL390 r0p0 */
-> >       gic_init(0, 29, gic_dist_base, gic_cpu_base);
-> 
-> This one seems broken as the armadillo800eva board currently uses
-> it to initialise GIC even if CONFIG_ATAGS is not defined.
-> 
-> I did test the above change on the armadillo800eva board
-> with the above change and CONFIG_ATAGS disabled, the result was
-> a boot failure. With the change reverted booting seems fine.
+Age refers to the mininum / avg / maximum age of the object in ticks.
 
-Yes, I see my mistake now. The second change was clearly wrong
-as this function is also used for DT boards, not for ATAGS boards.
+pid refers to the range of pids by processes running when the objects were
+created.
 
-	Arnd
+cpus are the processors on which kernel threads where running when these
+objects were allocated.
+
