@@ -1,87 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760307Ab3D2TOk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 15:14:40 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:50359
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760289Ab3D2TOi (ORCPT
+	id S1760361Ab3D2TPM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 15:15:12 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:46160 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760344Ab3D2TPI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 15:14:38 -0400
-Date: Mon, 29 Apr 2013 21:14:29 +0200
-From: Jens Axboe <axboe@kernel.dk>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Sander Eikelenboom <linux@eikelenboom.it>, xen-devel@lists.xensource.com,
-        roger.pau@citrix.com, linux-kernel@vger.kernel.org
-Subject: Re: [Xen-devel] [GIT PULL] (xen) stable/for-jens-3.10 xenwatch: page
- allocation failure: order:7, mode:0x10c0d0
-Message-ID: <20130429191429.GA9563@kernel.dk>
-References: <20130419144401.GA14700@phenom.dumpdata.com>
- <1094538380.20130424201637@eikelenboom.it>
- <20130429154623.GB12754@phenom.dumpdata.com>
-MIME-Version: 1.0
+	Mon, 29 Apr 2013 15:15:08 -0400
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130429154623.GB12754@phenom.dumpdata.com>
+Mime-Version: 1.0 (Mac OS X Mail 6.3 \(1503\))
+Subject: Re: linux-next: build failure after merge of the nfsd tree
+From: Chuck Lever <chuck.lever@oracle.com>
+In-Reply-To: <20130429185712.GP17268@fieldses.org>
+Date: Mon, 29 Apr 2013 15:14:34 -0400
+Cc: Trond Myklebust <trond.myklebust@fys.uio.no>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Simo Sorce <simo@redhat.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <05D6BB77-3957-46D1-A7C2-B8813185ADCB@oracle.com>
+References: <20130429112434.dcc80cfce804beeacc68793a@canb.auug.org.au> <CA52A586-E4DF-42D0-9020-D17F8822BF7C@oracle.com> <20130429154541.GI17268@fieldses.org> <09A69F90-5D9A-4AF6-9B7D-CC1D74A237EA@oracle.com> <1367252460.19515.7.camel@leira.trondhjem.org> <DBD3CE27-3A93-4BC0-B390-2EDB9D0D2BBE@oracle.com> <20130429173821.GJ17268@fieldses.org> <BD32EC01-EA3A-403C-A8D2-904B77EB79BA@oracle.com> <20130429175902.GK17268@fieldses.org> <756994C4-53FE-4723-A37C-A5E4DAB905D2@oracle.com> <20130429185712.GP17268@fieldses.org>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+X-Mailer: Apple Mail (2.1503)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 29 2013, Konrad Rzeszutek Wilk wrote:
-> On Wed, Apr 24, 2013 at 08:16:37PM +0200, Sander Eikelenboom wrote:
-> > Friday, April 19, 2013, 4:44:01 PM, you wrote:
-> > 
-> > > Hey Jens,
-> > 
-> > > Please in your spare time (if there is such a thing at a conference)
-> > > pull this branch:
-> > 
-> > >  git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/for-jens-3.10
-> > 
-> 
-> .. snip..
-> > Hi Konrad / Roger,
-> > 
-> > I tried this pull on top of latest Linus latest linux-3.9 tree, but although it seems to boot and work fine at first, i seem to get trouble after running for about a day.
-> > Without this pull it runs fine for several days.
-> .. snipp.
-> 
-> > [18496.013743] xenwatch: page allocation failure: order:7, mode:0x10c0d0
-> > [18496.031948] Pid: 54, comm: xenwatch Not tainted 3.9.0-rc8-20130424-jens+ #1
-> > [18496.049897] Call Trace:
-> > [18496.067674]  [<ffffffff81100c51>] warn_alloc_failed+0xf1/0x140
-> > [18496.085453]  [<ffffffff810b25ed>] ? trace_hardirqs_on+0xd/0x10
-> > [18496.102951]  [<ffffffff810bdb24>] ? on_each_cpu_mask+0x94/0xd0
-> > [18496.120270]  [<ffffffff811028af>] __alloc_pages_nodemask+0x69f/0x960
-> > [18496.137306]  [<ffffffff8113a161>] alloc_pages_current+0xb1/0x160
-> > [18496.154051]  [<ffffffff81100679>] __get_free_pages+0x9/0x40
-> > [18496.170579]  [<ffffffff81142af4>] __kmalloc+0x134/0x160
-> > [18496.186921]  [<ffffffff815832d0>] xen_blkbk_probe+0x170/0x2f0
-> > [18496.202963]  [<ffffffff81474ce7>] xenbus_dev_probe+0x77/0x130
-> > [18496.218714]  [<ffffffff8156a390>] ? __driver_attach+0xa0/0xa0
-> > [18496.234237]  [<ffffffff8156a151>] driver_probe_device+0x81/0x220
-> > [18496.249605]  [<ffffffff8198198c>] ? klist_next+0x8c/0x110
-> > [18496.264681]  [<ffffffff8156a390>] ? __driver_attach+0xa0/0xa0
-> > [18496.279500]  [<ffffffff8156a3db>] __device_attach+0x4b/0x50
-> > [18496.294138]  [<ffffffff815684e8>] bus_for_each_drv+0x68/0x90
-> > [18496.308553]  [<ffffffff8156a0c9>] device_attach+0x89/0x90
-> > [18496.322694]  [<ffffffff81569258>] bus_probe_device+0xa8/0xd0
-> > [18496.336640]  [<ffffffff81567c80>] device_add+0x650/0x720
-> 
-> .. snip..
-> 
-> Jens,
-> I don't know if you had pulled this git tree yet (I don't see it in
-> your for-3.10/* branches).
-> 
-> But if you have, Sander has found a bug (and Roger has a fix for it).
-> 
-> Whether you would like to wait until v3.11 to pull it (and me sending
-> the git pull around a month) is OK. Or pull it now and we will fix the
-> bugs in the -rc's as they creep up.
 
-Thanks for letting me know. Lets postpone it for 3.11. If you have more
-critical bits in your current tree, you can send them in over this week.
+On Apr 29, 2013, at 2:57 PM, J. Bruce Fields <bfields@fieldses.org> wrote:
+
+> On Mon, Apr 29, 2013 at 02:30:33PM -0400, Chuck Lever wrote:
+>> 
+>> On Apr 29, 2013, at 1:59 PM, "J. Bruce Fields" <bfields@fieldses.org>
+>> wrote:
+>> 
+>>> On Mon, Apr 29, 2013 at 01:47:16PM -0400, Chuck Lever wrote:
+>>>> 
+>>>> On Apr 29, 2013, at 1:38 PM, "J. Bruce Fields"
+>>>> <bfields@fieldses.org> wrote:
+>>>> 
+>>>>> On Mon, Apr 29, 2013 at 01:04:01PM -0400, Chuck Lever wrote:
+>>>>>> Trond's nfs-for-next now has the new rpcauth_get_gssinfo() and
+>>>>>> rpcauth_get_pseudoflavor() APIs, which are replacements for
+>>>>>> direct calls into the GSS mech switch.  These APIs are a little
+>>>>>> more generic, and more robust in the face of unloaded GSS kernel
+>>>>>> modules.
+>>>>>> 
+>>>>>> Instead of gss_mech_get_by_OID(), I suspect you want
+>>>>>> rpcauth_get_pseudoflavor(), but I haven't looked at the gssproxy
+>>>>>> code.
+>>>>> 
+>>>>> It's doing
+>>>>> 
+>>>>> 		status = -EOPNOTSUPP; gm =
+>>>>> 		gss_mech_get_by_OID(&ud->mech_oid); if (!gm) goto out;
+>>>>> 		status = -EINVAL; status =
+>>>>> 		gss_import_sec_context(ud->out_handle.data,
+>>>>> 		ud->out_handle.len, gm, &rsci.mechctx, &expiry,
+>>>>> 		GFP_KERNEL); if (status) goto out;
+>>>>> 
+>>>>> So we need a way to get from an OID and some mechanism-specific
+>>>>> data to a context.
+>>>>> 
+>>>>> Looks to me like we just want to re-export gss_mech_get_by_OID().
+>>>> 
+>>>> The reason for the new wrappers is to load the kernel modules
+>>>> properly before trying to discover the OID -> mechanism mapping.
+>>>> 
+>>>> Where are you calling it from?  If it's from outside of the GSS
+>>>> module, how do you guarantee the rpc_gss_auth module is loaded?
+>>>> What if the GSS mechanism for that OID isn't loaded?
+>>> 
+>>> Sorry, I should have said just "remove static from", not
+>>> "re-export"--it's in the same module.  So there should be no problem
+>>> here, right?
+>> 
+>> OK, gotcha.  Architecturally outside of the mech switch I'd like to
+>> see OIDs passed around embedded in GSS tuples rather than by
+>> themselves.
+> 
+> I'm not sure what you mean.  When I accept a gss context I don't yet
+> know what service or qop it's going to be used with, I only know the
+> mechanism OID.
+
+RPC server GSS support didn't need the gss_mech_get_by_OID() interface before gssproxy, so I'm trying to understand why it is needed now.
+
+But it sounds like you do need it now, so go ahead and make gss_mech_get_by_OID() global within the AUTH_GSS module. 
+
+> 
+>> An alternative would be to use gss_mech_get_by_name(), which is
+>> already visible, loads GSS mechanism modules automatically, and
+>> returns struct gss_api_mech *.  For NFS, we should already have a
+>> clean mapping of mechanism name to pseudoflavor to GSS tuple.  Looks
+>> like rsc_parse() already uses this API.
+> 
+> We don't have a name here, only an OID.
+> 
+>> Do you have gssproxy patches published in a git tree somewhere I could
+>> review?
+> 
+> It's in my for-3.10 branch.
+> 
+> Which is more or less what I plan to submit for 3.10, so I'd prefer not
+> to rebase it at this point.
+> 
+> It looks like just removing "static" would resolve the immediate
+> conflict, is that right?  And then I'd happily help deal with cleaning
+> up the API as followup work.
+
+
 
 -- 
-Jens Axboe
+Chuck Lever
+chuck[dot]lever[at]oracle[dot]com
+
+
+
 
