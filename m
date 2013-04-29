@@ -1,126 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752791Ab3D2OoP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 10:44:15 -0400
-Received: from smtp.eu.citrix.com ([46.33.159.39]:5653 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752303Ab3D2OoM (ORCPT
+	id S1756759Ab3D2OtV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 10:49:21 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:52929 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756490Ab3D2OtU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 10:44:12 -0400
-X-IronPort-AV: E=Sophos;i="4.87,552,1363132800"; 
-   d="scan'208";a="4041332"
-Message-ID: <1367246649.3142.316.camel@zakaz.uk.xensource.com>
-Subject: Re: [PATCH v2 2/2] xen/balloon: Enforce various limits on target
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Daniel Kiper <daniel.kiper@oracle.com>
-CC: "carsten@schiers.de" <carsten@schiers.de>,
-        "darren.s.shepherd@gmail.com" <darren.s.shepherd@gmail.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        "Ian Jackson" <Ian.Jackson@eu.citrix.com>,
-        "james-xen@dingwall.me.uk" <james-xen@dingwall.me.uk>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-Date: Mon, 29 Apr 2013 15:44:09 +0100
-In-Reply-To: <1367235468-8360-3-git-send-email-daniel.kiper@oracle.com>
-References: <1367235468-8360-1-git-send-email-daniel.kiper@oracle.com>
-	 <1367235468-8360-3-git-send-email-daniel.kiper@oracle.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
+	Mon, 29 Apr 2013 10:49:20 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Simon Horman <horms@verge.net.au>
+Subject: Re: [PATCH 03/21] ARM: shmobile: don't call irqchip_init unconditionally
+Date: Mon, 29 Apr 2013 16:49:07 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Bastian Hecht <hechtb+renesas@gmail.com>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
+References: <1366910944-3033663-1-git-send-email-arnd@arndb.de> <1366910944-3033663-4-git-send-email-arnd@arndb.de> <20130426004835.GA20070@verge.net.au>
+In-Reply-To: <20130426004835.GA20070@verge.net.au>
 MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201304291649.08084.arnd@arndb.de>
+X-Provags-ID: V02:K0:8oJaIu5w1eL6+8S0QCTL2L2s6pqdhlyWeD38ZmHc6it
+ dHGaKN6vq4dngd3jBu+Sb45Sy6+39sB4WCgBAhe0Pbld69DblC
+ sXwpdFQcIpXmtjn3u6qhXUx286epnYj9Cbp+8ApjTQKi81olT4
+ 0jj9a3R3J/CfypUDfzVepEtHvZb7KpHwIBKtX1DQufJF4S1vkN
+ dpY8PU3jpKwZF6v/tszvW9wOs3mOITvqd8fVI2XbMgq3NH/Q/D
+ jaxkxptWvij0ToKq/X/2Ta+RxRS/zpiGF2QThq8AY/gR8PMMhB
+ sxzvNsfB2opEEPogI2w8APkXmGmULLBTh39ocq490h09oFT/4V
+ I8iw85garELYmfvGrXhM=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-04-29 at 12:37 +0100, Daniel Kiper wrote:
-
-> This patch enforces on target limit statically defined in Linux Kernel
-> source and limit defined by hypervisor or host. This way the balloon
-> driver should not attempt to populate pages above given limits
-> because they may fail.
+On Friday 26 April 2013, Simon Horman wrote:
+> > diff --git a/arch/arm/mach-shmobile/intc-r8a7740.c b/arch/arm/mach-shmobile/intc-r8a7740.c
+> > index 8871f77..5dc57f1 100644
+> > --- a/arch/arm/mach-shmobile/intc-r8a7740.c
+> > +++ b/arch/arm/mach-shmobile/intc-r8a7740.c
+> > @@ -53,14 +53,23 @@ static void __init r8a7740_init_irq_common(void)
+> >  
+> >  void __init r8a7740_init_irq_of(void)
+> >  {
+> > +     if (!IS_ENABLED(CONFIG_OF))
+> > +             return;
+> > +
 > 
-> Particularly this patch fixes bug which led to flood
-> of dom0 kernel log with messages similar to:
+> In other parts of the shmobile I believe that such code is
+> guarded by #ifdef CONFIG_OF and I believe not guarding this code in
+> some way was an oversight.
 > 
-> System RAM resource [mem 0x1b8000000-0x1bfffffff] cannot be added
-> xen_balloon: reserve_additional_memory: add_memory() failed: -17
+> The above change seems fine to me.
 
-I think it would be OK to simply tone down this message (and perhaps add
-the failed pages to the balloon, if that makes sense). This isn't
-dissimilar to increase_reservation failing.
+Ok. The change that broke the code is only present in linux-next from
+one of your trees, but is not in arm-soc. Could you include the change
+in your tree, either by folding into one of your patches or adapting
+my patch appropriately?
 
-> +/*
-> + * Extra internal memory reserved by libxl.
-> + * Check tools/libxl/libxl_memory.txt file in Xen source for more details.
-> + */
-> +#define LIBXL_MAXMEM_CONSTANT_PAGES	(1024 * 1024 / PAGE_SIZE)
+> > +
+> > +     gic_dist_base = ioremap_nocache(0xc2800000, 0x1000);
+> > +     gic_cpu_base = ioremap_nocache(0xc2000000, 0x1000);
+> >  
+> >       /* initialize the Generic Interrupt Controller PL390 r0p0 */
+> >       gic_init(0, 29, gic_dist_base, gic_cpu_base);
+> 
+> This one seems broken as the armadillo800eva board currently uses
+> it to initialise GIC even if CONFIG_ATAGS is not defined.
+> 
+> I did test the above change on the armadillo800eva board
+> with the above change and CONFIG_ATAGS disabled, the result was
+> a boot failure. With the change reverted booting seems fine.
 
-I think we need to find a way to achieve your aims which doesn't require
-leaking internal implementation details of libxl into the guest kernels.
-What happens if libxl decides to double this?
+Yes, I see my mistake now. The second change was clearly wrong
+as this function is also used for DT boards, not for ATAGS boards.
 
-> +
->  #ifdef CONFIG_HIGHMEM
->  #define inc_totalhigh_pages() (totalhigh_pages++)
->  #define dec_totalhigh_pages() (totalhigh_pages--)
-> @@ -491,11 +496,42 @@ static void balloon_process(struct work_struct *work)
->  	mutex_unlock(&balloon_mutex);
->  }
->  
-> -/* Resets the Xen limit, sets new target, and kicks off processing. */
-> +/* Enforce limits, set new target and kick off processing. */
->  void balloon_set_new_target(unsigned long target)
->  {
-> +	domid_t domid = DOMID_SELF;
-> +	int rc;
-> +
-> +	/* Enforce statically defined limit. */
-> +	target = min(target, MAX_DOMAIN_PAGES);
-> +
-> +	rc = HYPERVISOR_memory_op(XENMEM_maximum_reservation, &domid);
-> +
-> +	if (xen_initial_domain()) {
-> +		if (rc <= 0) {
-> +			pr_debug("xen_balloon: %s: Initial domain target limit "
-> +					"could not be established: %i\n",
-> +					__func__, rc);
-> +			goto no_host_limit;
-> +		}
-> +	} else {
-> +		if (rc <= 0) {
-> +			pr_info("xen_balloon: %s: Guest domain target limit "
-> +				"could not be established: %i\n", __func__, rc);
-> +			goto no_host_limit;
-> +		}
-> +
-> +		/* Do not take into account memory reserved for internal stuff. */
-> +		rc -= LIBXL_MAXMEM_CONSTANT_PAGES;
-> +	}
-
-Why is this needed? Wouldn't it be a toolstack bug to set the target
-greater than this limit? But if it did ask then it would no doubt be
-expecting the guest to try and reach that limit (perhaps it intends to
-raise the maximum later?).
-
-In any case it should be handled the same way as a failure in
-increase_reservation is always handled, shouldn't it? No need for a
-special case.
-
-I don't think this change has anything to do with the add_memory()
-failure you mention in the commit message.
-
-> +
-> +	/* Enforce hypervisor/host defined limit. */
-> +	target = min_t(unsigned long, target, rc);
-> +
-> +no_host_limit:
->  	/* No need for lock. Not read-modify-write updates. */
->  	balloon_stats.target_pages = target;
-> +
->  	schedule_delayed_work(&balloon_worker, 0);
->  }
->  EXPORT_SYMBOL_GPL(balloon_set_new_target);
-
-
+	Arnd
