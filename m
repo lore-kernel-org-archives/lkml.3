@@ -1,125 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932358Ab3D2X3y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 19:29:54 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:52930 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932258Ab3D2X3w (ORCPT
+	id S932459Ab3D2Xay (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 19:30:54 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:15192 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932285Ab3D2Xav (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 19:29:52 -0400
-Message-ID: <517F026D.2080701@linaro.org>
-Date: Mon, 29 Apr 2013 16:29:49 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Magnus Damm <magnus.damm@gmail.com>
-Subject: Re: [patch 06/15] clocksource: Split out user string input
-References: <20130425142452.908423538@linutronix.de> <20130425143435.895851338@linutronix.de>
-In-Reply-To: <20130425143435.895851338@linutronix.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 29 Apr 2013 19:30:51 -0400
+X-Authority-Analysis: v=2.0 cv=cOZiQyiN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=zj-aDniqNm4A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=PSvuwpntFfAA:10 a=4kDAWb-mnydJKQ6nccMA:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=j1jP541WmkCymAXiykwA:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-Id: <20130429233049.799089308@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Mon, 29 Apr 2013 19:30:01 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kbuild mailing list <linux-kbuild@vger.kernel.org>
+Subject: [PATCH 1/2] localmodconfig: Add debug prints for dependencies of module configs
+References: <20130429233000.662744610@goodmis.org>
+Content-Disposition: inline; filename=0001-localmodconfig-Add-debug-prints-for-dependencies-of-.patch
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 25, 2013 at 1:31 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+--00GvhwF7k39YY
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> Split out the user string input for clocksource override. Preparatory
-> patch for unbind.
+From: Steven Rostedt <rostedt@goodmis.org>
 
-This patch has a bug that causes the shell to hang when \n terminated 
-clocksource strings are sent to the sysfs interface.
+When a config for a module is added to the list to save in the final
+config file, add a print to show what dependencies are used. This is
+useful to debug when a config is disabled by the make oldconfig after
+localmodconfig is finished.
 
-echo hpet > /sys/devices/system/clocksource/clocksource0/current_clocksource
-<shell hang>
+This print only appears if the environment variable LOCALMODCONFIG_DEBUG
+is defined.
 
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ scripts/kconfig/streamline_config.pl |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-> +static size_t clocksource_get_uname(const char *buf, char *dst, size_t
-> cnt)
-> +{
-> +       /* strings from sysfs write are not 0 terminated! */
-> +       if (!cnt || cnt >= CS_NAME_LEN)
-> +               return -EINVAL;
-> +
-> +       /* strip of \n: */
-> +       if (buf[cnt-1] == '\n')
-> +               cnt--;
-> +       if (cnt > 0)
-> +               memcpy(dst, buf, cnt);
-> +       dst[cnt] = 0;
-> +       return cnt;
-> +}
-> +
->  /**
->   * sysfs_override_clocksource - interface for manually overriding
-> clocksource
->   * @dev:       unused
-> @@ -847,22 +863,13 @@ static ssize_t sysfs_override_clocksourc
->                                           struct device_attribute *attr,
->                                           const char *buf, size_t count)
->  {
-> -       size_t ret = count;
-> -
-> -       /* strings from sysfs write are not 0 terminated! */
-> -       if (count >= sizeof(override_name))
-> -               return -EINVAL;
-> -
-> -       /* strip of \n: */
-> -       if (buf[count-1] == '\n')
-> -               count--;
-> +       size_t ret;
->
->         mutex_lock(&clocksource_mutex);
->
-> -       if (count > 0)
-> -               memcpy(override_name, buf, count);
-> -       override_name[count] = 0;
-> -       clocksource_select(false);
-> +       ret = clocksource_get_uname(buf, override_name, count);
-> +       if (ret >= 0)
-> +               clocksource_select(false);
->
->         mutex_unlock(&clocksource_mutex);
-
-
-The change above *looks* ok, but is subtlly different then what we had 
-before. Note, in the old code, we saved count to ret, and never modified 
-ret before returning it.
-
-With the new code, we modify cnt, as we process the copied clocksource 
-name, and return cnt, thus we don't return to the sysfs interface the 
-same count value we were given, causing the write call to loop.
-
-So you probably want something like the following patch to fix this.
-
-thanks
--john
+diff --git a/scripts/kconfig/streamline_config.pl b/scripts/kconfig/streaml=
+ine_config.pl
+index 3368939..343a568 100644
+--- a/scripts/kconfig/streamline_config.pl
++++ b/scripts/kconfig/streamline_config.pl
+@@ -396,6 +396,15 @@ foreach my $module (keys(%modules)) {
+ 	foreach my $conf (@arr) {
+ 	    $configs{$conf} =3D $module;
+ 	    dprint "$conf added by direct ($module)\n";
++	    if ($debugprint) {
++		my $c=3D$conf;
++		$c =3D~ s/^CONFIG_//;
++		if (defined($depends{$c})) {
++		    dprint " deps =3D $depends{$c}\n";
++		} else {
++		    dprint " no deps\n";
++		}
++	    }
+ 	}
+     } else {
+ 	# Most likely, someone has a custom (binary?) module loaded.
+--=20
+1.7.10.4
 
 
 
-diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
-index e9c4f04..5f6c324 100644
---- a/kernel/time/clocksource.c
-+++ b/kernel/time/clocksource.c
-@@ -836,6 +836,8 @@ sysfs_show_current_clocksources(struct device *dev,
+--00GvhwF7k39YY
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
-  static size_t clocksource_get_uname(const char *buf, char *dst, size_t 
-cnt)
-  {
-+	size_t ret = cnt;
-+
-  	/* strings from sysfs write are not 0 terminated! */
-  	if (!cnt || cnt >= CS_NAME_LEN)
-  		return -EINVAL;
-@@ -846,7 +848,7 @@ static size_t clocksource_get_uname(const char *buf, 
-char *dst, size_t cnt)
-  	if (cnt > 0)
-  		memcpy(dst, buf, cnt);
-  	dst[cnt] = 0;
--	return cnt;
-+	return ret;
-  }
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-  /**
+iQEcBAABAgAGBQJRfwKpAAoJEOdOSU1xswtMiuQIAMnC76EjkDWCUF9Ax0wAU6Nx
+jQ/r1L2W9YoNSgWGVOKks74Nx1i/s6qZvAXfCUfbdy5BLs3TiQh7He5ST9ZjUBjW
+/x7a7FypvJy7z9L+C5nztQl/9yWKVSrZIPh0uU7eqGrOnqBI8u3XUYW7UDjnMnUg
+0bcraIhWEkvjAFA4BXE+mOY4j9eR5QziKyPUH1u77d3MBXSkSKpXaRnhOKubcZUh
++NlmrDTNo5LlZQ1wW78iIZCbcJUj2BL03AmFt+69wXEaffKCP1CpHIydUgo6cwK9
+lJMwvVI19SlWjfs1WFLm0vtmwpoMPygCYUJgNI9iiJ/D9zvms+oe3mtBhje3Sm0=
+=Zl/a
+-----END PGP SIGNATURE-----
+
+--00GvhwF7k39YY--
