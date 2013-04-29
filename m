@@ -1,68 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753388Ab3D2Hps (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 03:45:48 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:47861 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750972Ab3D2Hpr (ORCPT
+	id S1752355Ab3D2HtM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 03:49:12 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:35359 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750710Ab3D2HtK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 03:45:47 -0400
+	Mon, 29 Apr 2013 03:49:10 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAKgNAkiMOGtuCyvhSpku65p1ZJ5SfdYcOxxAU+H-mk-76wqOPw@mail.gmail.com>
-References: <CAKgNAkh1TEkQiQ2g2jhbNzVTwpDYOreJt3rAukZCP9H1wh0mLQ@mail.gmail.com>
-	<20130315153811.GD24305@sergelap>
-	<CAKgNAkiMOGtuCyvhSpku65p1ZJ5SfdYcOxxAU+H-mk-76wqOPw@mail.gmail.com>
-Date: Mon, 29 Apr 2013 09:45:45 +0200
-Message-ID: <CAFLxGvzXkGcR=Wyx8YZKKRACEnNLMA0xQoDfruq7CT1D-FNLnA@mail.gmail.com>
-Subject: Re: For review: user_namespaces(7) man page
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: Michael Kerrisk-manpages <mtk.manpages@gmail.com>
-Cc: Serge Hallyn <serge.hallyn@ubuntu.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        linux-man <linux-man@vger.kernel.org>,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Vasily Kulikov <segoon@openwall.com>
+In-Reply-To: <1367112092.8964.294.camel@edumazet-glaptop>
+References: <1367029047-14830-1-git-send-email-xi.wang@gmail.com>
+ <1367029047-14830-3-git-send-email-xi.wang@gmail.com> <1367112092.8964.294.camel@edumazet-glaptop>
+From: Xi Wang <xi.wang@gmail.com>
+Date: Mon, 29 Apr 2013 03:48:29 -0400
+Message-ID: <CAKU6vyaWgj4kKq0pBUYHa2hDMDOgtVghCWqpaD7riVe+KduOUA@mail.gmail.com>
+Subject: Re: [PATCH v2 net-next 2/3] x86: bpf_jit_comp: support
+ BPF_S_ANC_SECCOMP_LD_W instruction
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Will Drewry <wad@chromium.org>, Eric Dumazet <edumazet@google.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        David Laight <david.laight@aculab.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nicolas Schichan <nschichan@freebox.fr>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 21, 2013 at 4:52 PM, Michael Kerrisk (man-pages)
-<mtk.manpages@gmail.com> wrote:
-> Hi Serge,
+On Sat, Apr 27, 2013 at 9:21 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> I would feel more comfortable if you added :
 >
-> On Fri, Mar 15, 2013 at 4:38 PM, Serge Hallyn <serge.hallyn@ubuntu.com> wrote:
->> Hi,
->>
->> you mention that after creating a new user namespace you at first have
->> all capabilities in the new ns.  You don't explicitly mention (or I
->> missed it - I did see the mention of securebits) that if you want to
->> keep those capabilities after doing an exec, you need to first have
->> something mapped to uid 0 in the userns, and do setuid(0).
+>         if (seen & SEEN_DATAREF) {
+>                 pr_err_once("SECCOMP_LD_W assertion failed\n"):
+>                 goto out;
+>         }
 >
-> Good point. I'll add something on that.
+> This way, if BPF is changed in the future, but not the x86 JIT, we
+> can have a working kernel.
 >
->> You might not want to list manpages from other projects,
->
-> Actually, not a problem. Many of the pages in my set already do this.
->
->> but Eric's
->> shadow patches introduce some good new manpages as well.  Those aren't yet
->> accepted upstream, but if/when they are then mention at least of
->> subuid(5), subgid(5), and newuidmap(1) and newgidmap(1) might be good.
->
-> I'll add those.
->
-> Cheers,
->
-> Michael
+> Ideally, we should add a SEEN_SKBREF to make sure rdi value can be
+> scratched, or you just push %rdi/pop %rdi, its only one byte
+> instructions.
 
-Can we please also document which capabilities are useless within an
-user namespace?
-E.g. CAP_MKNOD.
-You get this capability but the kernel always checks it against the
-initial userns.
+Adding SEEN_SKBREF sounds like a good idea. :)
 
-Thanks,
-//richard
+> Or completely optimize the thing and not call seccomp_bpf_load() at all.
+
+This would be cool.
+
+> (current would be loaded once in r9, task_pt_regs() would be loaded once
+> in r8)
+
+Both syscall_get_arch() and syscall_get_arguments() need to test for
+the TS_COMPAT bit (in task_thread_info(current)->status); we should
+load that once, too.
+
+Thanks for the comments.  Will try a v3.
+
+- xi
