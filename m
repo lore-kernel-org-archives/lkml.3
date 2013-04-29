@@ -1,90 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757908Ab3D2MNh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 08:13:37 -0400
-Received: from smtp-out-009.synserver.de ([212.40.185.9]:1055 "EHLO
-	smtp-out-009.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757485Ab3D2MNf (ORCPT
+	id S1757941Ab3D2MPW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 08:15:22 -0400
+Received: from mxout1.idt.com ([157.165.5.25]:56180 "EHLO mxout1.idt.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753731Ab3D2MPV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 08:13:35 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 12939
-Message-ID: <517E63C8.6040809@metafoo.de>
-Date: Mon, 29 Apr 2013 14:12:56 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+	Mon, 29 Apr 2013 08:15:21 -0400
+From: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        Matt Porter <mporter@kernel.crashing.org>,
+        Li Yang <leoli@freescale.com>, Kumar Gala <galak@kernel.crashing.org>,
+        Andre van Herk <andre.van.herk@Prodrive.nl>,
+        Micha Nelissen <micha.nelissen@Prodrive.nl>
+Subject: RE: [PATCH 1/3] rapidio: make enumeration/discovery configurable
+Thread-Topic: [PATCH 1/3] rapidio: make enumeration/discovery configurable
+Thread-Index: AQHOQPjCcpzLq65DOUWivk5TNMYZf5jplR6AgAOLuQA=
+Date: Mon, 29 Apr 2013 12:08:49 +0000
+Message-ID: <8D983423E7EDF846BB3056827B8CC5D14BC271B9@corpmail1.na.ads.idt.com>
+References: <1366813919-13766-1-git-send-email-alexandre.bounine@idt.com>
+	<1366813919-13766-2-git-send-email-alexandre.bounine@idt.com>
+ <20130426155325.09fbad8c382dc8c549d503d0@linux-foundation.org>
+In-Reply-To: <20130426155325.09fbad8c382dc8c549d503d0@linux-foundation.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.165.140.50]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Jingoo Han <jg1.han@samsung.com>
-CC: "'Rafael J. Wysocki'" <rjw@sisk.pl>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, "'Len Brown'" <len.brown@intel.com>,
-        "'Pavel Machek'" <pavel@ucw.cz>, linux-pm@vger.kernel.org
-Subject: Re: [PATCH] PM: Add pm_ops_ptr() macro
-References: <000001ce42f2$96128cc0$c237a640$@samsung.com> <20119404.Sfu5WntByi@vostro.rjw.lan> <000001ce449c$3e1ce0f0$ba56a2d0$@samsung.com>
-In-Reply-To: <000001ce449c$3e1ce0f0$ba56a2d0$@samsung.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/29/2013 07:41 AM, Jingoo Han wrote:
-> On Saturday, April 27, 2013 11:41 PM, Rafael J. Wysocki:
->>
->> On Saturday, April 27, 2013 11:54:50 AM Jingoo Han wrote:
->>> Add pm_ops_ptr() macro that allows the .pm entry in the driver structures
->>> to be assigned without having an #define xxx NULL for the case that PM is
->>> not enabled.
->>>
->>> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
->>
->> First, I'm not taking any more PM patches for v3.10 (that don't fix recent
->> regressions).
->>
->> Second, please add that macro along with a user.
+On Fri, 26 Apr 2013 6:53 PM Andrew Morton <akpm@linux-foundation.org> wrote:
+> Subject: Re: [PATCH 1/3] rapidio: make enumeration/discovery
+> configurable
 > 
-> Hi Rafael,
+> This Kconfig change makes my kbuild do Weird Things.
 > 
-> This macro can be used as below:
-> This macro cannot affect the procedure of suspend/resume
-> calls; thus, there is no side effect.
-> It just reduces the code size of each drivers.
-> In this way, of_match_ptr() macro has been already used.
+> make mrproper ; yes "" | make allmodconfig ; make 2>/tmp/x
+... skip ... 
+> :   DMA Engine support for RapidIO (RAPIDIO_DMA_ENGINE) [Y/n/?] y
+> :   RapidIO subsystem debug messages (RAPIDIO_DEBUG) [Y/n/?] y
+> :   Enumeration method [M/y/?] (NEW) aborted!
+> :
+> : Console input/output is redirected. Run 'make oldconfig' to update configuration.
+> :
+> :   SYSHDR  arch/x86/syscalls/../include/generated/uapi/asm/unistd_32.h
+> :   SYSHDR  arch/x86/syscalls/../include/generated/uapi/asm/unistd_64.h
+> :   SYSHDR
+> arch/x86/syscalls/../include/generated/uapi/asm/unistd_x32.h
 > 
 > 
-> --- a/drivers/i2c/busses/i2c-s3c2410.c
-> +++ b/drivers/i2c/busses/i2c-s3c2410.c
-> @@ -1218,7 +1218,6 @@ static int s3c24xx_i2c_resume(struct device *dev)
->  }
->  #endif
+> See the "Enumeration method [M/y/?] (NEW) aborted!"
 > 
-> -#ifdef CONFIG_PM
->  static const struct dev_pm_ops s3c24xx_i2c_dev_pm_ops = {
->  #ifdef CONFIG_PM_SLEEP
->         .suspend_noirq = s3c24xx_i2c_suspend_noirq,
-> @@ -1226,11 +1225,6 @@ static const struct dev_pm_ops s3c24xx_i2c_dev_pm_ops = {
->  #endif
->  };
+> Note that this only happens when make's stderr is redirected.
 > 
-> -#define S3C24XX_DEV_PM_OPS (&s3c24xx_i2c_dev_pm_ops)
-> -#else
-> -#define S3C24XX_DEV_PM_OPS NULL
-> -#endif
-> -
->  /* device driver for platform bus bits */
+> I've no idea what's going on here.  This appears to fix things:
 > 
->  static struct platform_driver s3c24xx_i2c_driver = {
-> @@ -1240,7 +1234,7 @@ static struct platform_driver s3c24xx_i2c_driver = {
->         .driver         = {
->                 .owner  = THIS_MODULE,
->                 .name   = "s3c-i2c",
-> -               .pm     = S3C24XX_DEV_PM_OPS,
-> +               .pm     = pm_ops_ptr(&s3c24xx_i2c_dev_pm_ops),
->                 .of_match_table = of_match_ptr(s3c24xx_i2c_match),
->         },
->  };
+> --- a/drivers/rapidio/Kconfig~rapidio-make-enumeration-discovery-
+> configurable-fix
+> +++ a/drivers/rapidio/Kconfig
+> @@ -59,7 +59,7 @@ choice
+>  	  If unsure, select Basic built-in.
+> 
+>  config RAPIDIO_ENUM_BASIC
+> -	tristate "Basic"
+> +	bool "Basic"
+>  	help
+>  	  This option includes basic RapidIO fabric enumeration and
+> discovery
+>  	  mechanism similar to one described in RapidIO specification
+> Annex 1.
+> 
+> but doesn't appear to be what you intended.
 
-Won't that generate a warning about an unused s3c24xx_i2c_dev_pm_ops when
-CONFIG_PM is not enabled?
+Goal is to build enumerator as a module or built-in.
+I will retest v2 of patches for this issue.
+There are some changes to Kconfig (removed AUTO_ENUM option).
 
