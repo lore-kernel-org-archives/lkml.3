@@ -1,66 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933182Ab3D2Vxz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 17:53:55 -0400
-Received: from mail-vb0-f74.google.com ([209.85.212.74]:35305 "EHLO
-	mail-vb0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933170Ab3D2Vxy (ORCPT
+	id S933201Ab3D2VyU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 17:54:20 -0400
+Received: from mail-ia0-f176.google.com ([209.85.210.176]:55511 "EHLO
+	mail-ia0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933186Ab3D2VyS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 17:53:54 -0400
-From: Colin Cross <ccross@android.com>
-To: linux-pm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        arve@android.com, Colin Cross <ccross@android.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>, devel@driverdev.osuosl.org
-Subject: [PATCH 04/10] binder: use freezable blocking calls
-Date: Mon, 29 Apr 2013 14:45:40 -0700
-Message-Id: <1367271946-7239-5-git-send-email-ccross@android.com>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1367271946-7239-1-git-send-email-ccross@android.com>
-References: <1367271946-7239-1-git-send-email-ccross@android.com>
+	Mon, 29 Apr 2013 17:54:18 -0400
+Date: Mon, 29 Apr 2013 16:54:14 -0500
+From: Rob Landley <rob@landley.net>
+Subject: Re: [PATCH 1/1] kconfig: fix lists definition for C++
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: "Yann E. MORIN" <yann.morin.1998@free.fr>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
+        Michal Marek <mmarek@suse.cz>, Benjamin Poirier <bpoirier@suse.de>
+References: <cover.1367258255.git.yann.morin.1998@free.fr>
+	<21ca352b71ca252e1933b1538fe89da8a04395c3.1367258255.git.yann.morin.1998@free.fr>
+	<517EC9C7.9000903@infradead.org>
+In-Reply-To: <517EC9C7.9000903@infradead.org> (from rdunlap@infradead.org on
+	Mon Apr 29 14:28:07 2013)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1367272454.18069.191@driftwood>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Avoid waking up every thread sleeping in a binder call during
-suspend and resume by calling a freezable blocking call.
+On 04/29/2013 02:28:07 PM, Randy Dunlap wrote:
+> On 04/29/13 10:59, Yann E. MORIN wrote:
+> > From: "Yann E. MORIN" <yann.morin.1998@free.fr>
+> >
+> > The C++ compiler is more strict in that it refuses to assign
+> > a void* to a struct list_head*.
 
-Signed-off-by: Colin Cross <ccross@android.com>
----
- drivers/staging/android/binder.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+Given that the code _isn't_ C++ (because C is not a subset of C++ but a  
+separate langauge in its own right where "throw" is a legitimate  
+variable name and so on), how is this an issue?
 
-diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
-index 24456a0..af8fba4 100644
---- a/drivers/staging/android/binder.c
-+++ b/drivers/staging/android/binder.c
-@@ -20,6 +20,7 @@
- #include <asm/cacheflush.h>
- #include <linux/fdtable.h>
- #include <linux/file.h>
-+#include <linux/freezer.h>
- #include <linux/fs.h>
- #include <linux/list.h>
- #include <linux/miscdevice.h>
-@@ -2140,13 +2141,13 @@ retry:
- 			if (!binder_has_proc_work(proc, thread))
- 				ret = -EAGAIN;
- 		} else
--			ret = wait_event_interruptible_exclusive(proc->wait, binder_has_proc_work(proc, thread));
-+			ret = wait_event_freezable_exclusive(proc->wait, binder_has_proc_work(proc, thread));
- 	} else {
- 		if (non_block) {
- 			if (!binder_has_thread_work(thread))
- 				ret = -EAGAIN;
- 		} else
--			ret = wait_event_interruptible(thread->wait, binder_has_thread_work(thread));
-+			ret = wait_event_freezable(thread->wait, binder_has_thread_work(thread));
- 	}
- 
- 	binder_lock(__func__);
--- 
-1.8.2.1
-
+Rob
