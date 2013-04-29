@@ -1,65 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759754Ab3D2TDH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 15:03:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60841 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759283Ab3D2TDF (ORCPT
+	id S933044Ab3D2TUn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 15:20:43 -0400
+Received: from mail-qc0-f179.google.com ([209.85.216.179]:35522 "EHLO
+	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933027Ab3D2TUk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 15:03:05 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+	Mon, 29 Apr 2013 15:20:40 -0400
+Message-ID: <517EC806.6040403@gmail.com>
+Date: Mon, 29 Apr 2013 15:20:38 -0400
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+MIME-Version: 1.0
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mathias Krause <minipli@googlemail.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 12/34] llc: Fix missing msg_namelen update in llc_ui_recvmsg()
-Date: Mon, 29 Apr 2013 12:02:19 -0700
-Message-Id: <20130429184702.291130775@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130429184700.845644077@linuxfoundation.org>
-References: <20130429184700.845644077@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Olivier Langlois <olivier@trillion01.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        David Miller <davem@davemloft.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        kosaki.motohiro@gmail.com
+Subject: [PATCH 6/2] posix-cpu-timers: timer functions must use timer time
+ instead of clock time
+References: <1367216762-3933-1-git-send-email-kosaki.motohiro@gmail.com>
+In-Reply-To: <1367216762-3933-1-git-send-email-kosaki.motohiro@gmail.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+For process timer, we use cpu_clock_sample_group() and cpu_timer_sample_group
+correctly. However for thread timer, we always use cpu_clock_sample().
+That's wrong becuase cpu_clock_sample() account uncommited delta_exec too.
 
-------------------
+This is not big matter because following workaround code in
+posix_cpu_timer_get() hide the timer inversion issue. However it makes wrong
+rq lock held and would be better to fix.
 
+  if (cpu_time_before(timer->it_clock, now, timer->it.cpu.expires)) {
+    ...
+  } else {
+    /*
+     * The timer should have expired already, but the firing
+     * hasn't taken place yet.  Say it's just about to expire.
+     */
+     itp->it_value.tv_nsec = 1;
+     itp->it_value.tv_sec = 0;
 
-From: Mathias Krause <minipli@googlemail.com>
-
-[ Upstream commit c77a4b9cffb6215a15196ec499490d116dfad181 ]
-
-For stream sockets the code misses to update the msg_namelen member
-to 0 and therefore makes net/socket.c leak the local, uninitialized
-sockaddr_storage variable to userland -- 128 bytes of kernel stack
-memory. The msg_namelen update is also missing for datagram sockets
-in case the socket is shutting down during receive.
-
-Fix both issues by setting msg_namelen to 0 early. It will be
-updated later if we're going to fill the msg_name member.
-
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 ---
- net/llc/af_llc.c |    2 ++
- 1 file changed, 2 insertions(+)
+ kernel/posix-cpu-timers.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
---- a/net/llc/af_llc.c
-+++ b/net/llc/af_llc.c
-@@ -721,6 +721,8 @@ static int llc_ui_recvmsg(struct kiocb *
- 	int target;	/* Read at least this many bytes */
- 	long timeo;
- 
-+	msg->msg_namelen = 0;
-+
- 	lock_sock(sk);
- 	copied = -ENOTCONN;
- 	if (unlikely(sk->sk_type == SOCK_STREAM && sk->sk_state == TCP_LISTEN))
+diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
+index 9088023..472394b 100644
+--- a/kernel/posix-cpu-timers.c
++++ b/kernel/posix-cpu-timers.c
+@@ -700,7 +700,7 @@ static int posix_cpu_timer_set(struct k_itimer *timer, int flags,
+ 	 * check if it's already passed.  In short, we need a sample.
+ 	 */
+ 	if (CPUCLOCK_PERTHREAD(timer->it_clock)) {
+-		do_cpu_clock_sample(timer->it_clock, p, false, &val);
++		cpu_timer_sample(timer->it_clock, p, &val);
+ 	} else {
+ 		cpu_timer_sample_group(timer->it_clock, p, &val);
+ 	}
+@@ -840,7 +840,7 @@ static void posix_cpu_timer_get(struct k_itimer *timer, struct itimerspec *itp)
+ 	 * Sample the clock to take the difference with the expiry time.
+ 	 */
+ 	if (CPUCLOCK_PERTHREAD(timer->it_clock)) {
+-		cpu_clock_sample(timer->it_clock, p, &now);
++		cpu_timer_sample(timer->it_clock, p, &now);
+ 		clear_dead = p->exit_state;
+ 	} else {
+ 		read_lock(&tasklist_lock);
+@@ -1165,7 +1165,7 @@ void posix_cpu_timer_schedule(struct k_itimer *timer)
+ 	 * Fetch the current sample and update the timer's expiry time.
+ 	 */
+ 	if (CPUCLOCK_PERTHREAD(timer->it_clock)) {
+-		cpu_clock_sample(timer->it_clock, p, &now);
++		cpu_timer_sample(timer->it_clock, p, &now);
+ 		bump_cpu_timer(timer, now);
+ 		if (unlikely(p->exit_state)) {
+ 			clear_dead_task(timer, now);
+-- 
+1.7.1
 
 
