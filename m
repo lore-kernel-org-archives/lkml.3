@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760680Ab3D2Ter (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 15:34:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60753 "EHLO
+	id S1760698Ab3D2TfE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 15:35:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60745 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759536Ab3D2TCv (ORCPT
+	with ESMTP id S1759524Ab3D2TCu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 15:02:51 -0400
+	Mon, 29 Apr 2013 15:02:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Patrick McHardy <kaber@trash.net>,
+        Willy Tarreau <w@1wt.eu>, Dmitri Epshtein <dima@marvell.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 27/42] netfilter: dont reset nf_trace in nf_reset()
-Date: Mon, 29 Apr 2013 12:02:09 -0700
-Message-Id: <20130429184755.486113843@linuxfoundation.org>
+Subject: [ 34/42] net: mvneta: fix improper tx queue usage in mvneta_tx()
+Date: Mon, 29 Apr 2013 12:02:16 -0700
+Message-Id: <20130429184756.234610070@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130429184752.435249613@linuxfoundation.org>
 References: <20130429184752.435249613@linuxfoundation.org>
@@ -28,68 +31,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Patrick McHardy <kaber@trash.net>
+From: Willy Tarreau <w@1wt.eu>
 
-[ Upstream commit 124dff01afbdbff251f0385beca84ba1b9adda68 ]
+[ Upstream commit ee40a116ebf139f900c3d2e6febb8388738e96d0 ]
 
-Commit 130549fe ("netfilter: reset nf_trace in nf_reset") added code
-to reset nf_trace in nf_reset(). This is wrong and unnecessary.
+mvneta_tx() was using a static tx queue number causing crashes as
+soon as a little bit of traffic was sent via the interface, because
+it is normally expected that the same queue should be used as in
+dev_queue_xmit().
 
-nf_reset() is used in the following cases:
+As suggested by Ben Hutchings, let's use skb_get_queue_mapping() to
+get the proper Tx queue number, and use alloc_etherdev_mqs() instead
+of alloc_etherdev_mq() to create the queues.
 
-- when passing packets up the the socket layer, at which point we want to
-  release all netfilter references that might keep modules pinned while
-  the packet is queued. nf_trace doesn't matter anymore at this point.
+Both my Mirabox and my OpenBlocks AX3 used to crash without this patch
+and don't anymore with it. The issue appeared in 3.8 but became more
+visible after the fix allowing GSO to be enabled.
 
-- when encapsulating or decapsulating IPsec packets. We want to continue
-  tracing these packets after IPsec processing.
+Original work was done by Dmitri Epshtein and Thomas Petazzoni. I
+just adapted it to take care of Ben's comments.
 
-- when passing packets through virtual network devices. Only devices on
-  that encapsulate in IPv4/v6 matter since otherwise nf_trace is not
-  used anymore. Its not entirely clear whether those packets should
-  be traced after that, however we've always done that.
-
-- when passing packets through virtual network devices that make the
-  packet cross network namespace boundaries. This is the only cases
-  where we clearly want to reset nf_trace and is also what the
-  original patch intended to fix.
-
-Add a new function nf_reset_trace() and use it in dev_forward_skb() to
-fix this properly.
-
-Signed-off-by: Patrick McHardy <kaber@trash.net>
+Signed-off-by: Willy Tarreau <w@1wt.eu>
+Cc: Dmitri Epshtein <dima@marvell.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Ben Hutchings <bhutchings@solarflare.com>
+Tested-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- include/linux/skbuff.h |    7 +++++++
- net/core/dev.c         |    1 +
- 2 files changed, 8 insertions(+)
+ drivers/net/ethernet/marvell/mvneta.c |    9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
 
---- a/include/linux/skbuff.h
-+++ b/include/linux/skbuff.h
-@@ -2597,6 +2597,13 @@ static inline void nf_reset(struct sk_bu
- #endif
- }
+--- a/drivers/net/ethernet/marvell/mvneta.c
++++ b/drivers/net/ethernet/marvell/mvneta.c
+@@ -375,7 +375,6 @@ static int rxq_number = 8;
+ static int txq_number = 8;
  
-+static inline void nf_reset_trace(struct sk_buff *skb)
-+{
-+#if IS_ENABLED(CONFIG_NETFILTER_XT_TARGET_TRACE)
-+	skb->nf_trace = 0;
-+#endif
-+}
-+
- /* Note: This doesn't put any conntrack and bridge info in dst. */
- static inline void __nf_copy(struct sk_buff *dst, const struct sk_buff *src)
+ static int rxq_def;
+-static int txq_def;
+ 
+ #define MVNETA_DRIVER_NAME "mvneta"
+ #define MVNETA_DRIVER_VERSION "1.0"
+@@ -1476,7 +1475,8 @@ error:
+ static int mvneta_tx(struct sk_buff *skb, struct net_device *dev)
  {
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -1737,6 +1737,7 @@ int dev_forward_skb(struct net_device *d
- 	skb->mark = 0;
- 	secpath_reset(skb);
- 	nf_reset(skb);
-+	nf_reset_trace(skb);
- 	return netif_rx(skb);
- }
- EXPORT_SYMBOL_GPL(dev_forward_skb);
+ 	struct mvneta_port *pp = netdev_priv(dev);
+-	struct mvneta_tx_queue *txq = &pp->txqs[txq_def];
++	u16 txq_id = skb_get_queue_mapping(skb);
++	struct mvneta_tx_queue *txq = &pp->txqs[txq_id];
+ 	struct mvneta_tx_desc *tx_desc;
+ 	struct netdev_queue *nq;
+ 	int frags = 0;
+@@ -1486,7 +1486,7 @@ static int mvneta_tx(struct sk_buff *skb
+ 		goto out;
+ 
+ 	frags = skb_shinfo(skb)->nr_frags + 1;
+-	nq    = netdev_get_tx_queue(dev, txq_def);
++	nq    = netdev_get_tx_queue(dev, txq_id);
+ 
+ 	/* Get a descriptor for the first part of the packet */
+ 	tx_desc = mvneta_txq_next_desc_get(txq);
+@@ -2690,7 +2690,7 @@ static int mvneta_probe(struct platform_
+ 		return -EINVAL;
+ 	}
+ 
+-	dev = alloc_etherdev_mq(sizeof(struct mvneta_port), 8);
++	dev = alloc_etherdev_mqs(sizeof(struct mvneta_port), txq_number, rxq_number);
+ 	if (!dev)
+ 		return -ENOMEM;
+ 
+@@ -2844,4 +2844,3 @@ module_param(rxq_number, int, S_IRUGO);
+ module_param(txq_number, int, S_IRUGO);
+ 
+ module_param(rxq_def, int, S_IRUGO);
+-module_param(txq_def, int, S_IRUGO);
 
 
