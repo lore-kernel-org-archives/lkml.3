@@ -1,60 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933556Ab3D2T1T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 15:27:19 -0400
-Received: from mail-ea0-f180.google.com ([209.85.215.180]:50418 "EHLO
-	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933284Ab3D2T1Q (ORCPT
+	id S933597Ab3D2T2u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 15:28:50 -0400
+Received: from casper.infradead.org ([85.118.1.10]:37212 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757615Ab3D2T2q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 15:27:16 -0400
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH RESEND] ARM: dove: fix Dove cpu type from V7 to PJ4
-Date: Mon, 29 Apr 2013 21:26:52 +0200
-Message-Id: <1367263612-17596-1-git-send-email-sebastian.hesselbarth@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1364051211-24414-1-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1364051211-24414-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	Mon, 29 Apr 2013 15:28:46 -0400
+Message-ID: <517EC9C7.9000903@infradead.org>
+Date: Mon, 29 Apr 2013 12:28:07 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: "Yann E. MORIN" <yann.morin.1998@free.fr>
+CC: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-next@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
+        Benjamin Poirier <bpoirier@suse.de>
+Subject: Re: [PATCH 1/1] kconfig: fix lists definition for C++
+References: <cover.1367258255.git.yann.morin.1998@free.fr> <21ca352b71ca252e1933b1538fe89da8a04395c3.1367258255.git.yann.morin.1998@free.fr>
+In-Reply-To: <21ca352b71ca252e1933b1538fe89da8a04395c3.1367258255.git.yann.morin.1998@free.fr>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The CPU used in Marvell Dove SoCs is a PJ4 Sheeva core. Using
-CONFIG_CPU_PJ4 instead of CONFIG_CPU_V7 will enable iWMMXt
-extensions on Dove.
+On 04/29/13 10:59, Yann E. MORIN wrote:
+> From: "Yann E. MORIN" <yann.morin.1998@free.fr>
+> 
+> The C++ compiler is more strict in that it refuses to assign
+> a void* to a struct list_head*.
+> 
+> Fix that by explicitly casting the poisonning constants.
+> 
+> (Tested with all 5 frontends, now.)
+> 
+> Reported-by: Randy Dunlap <rdunlap@infradead.org>
+> Signed-off-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
+> Cc: Randy Dunlap <rdunlap@infradead.org>
+> Cc: Benjamin Poirier <bpoirier@suse.de>
 
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Acked-by: Jason Cooper <jason@lakedaemon.net>
-Acked-by: Andrew Lunn <andrew@lunn.ch>
----
-Note: This patch is rebased on v3.9 and patch message has been modified
-to point out that iWMMXt is now enforced on CPU_PJ4.
+Acked-by: Randy Dunlap <rdunlap@infradead.org>
 
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Andrew Lunn <andrew@lunn.ch>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
----
- arch/arm/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Thanks.
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 1cacda4..3c5e4da 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -555,7 +555,7 @@ config ARCH_IXP4XX
- config ARCH_DOVE
- 	bool "Marvell Dove"
- 	select ARCH_REQUIRE_GPIOLIB
--	select CPU_V7
-+	select CPU_PJ4
- 	select GENERIC_CLOCKEVENTS
- 	select MIGHT_HAVE_PCI
- 	select PINCTRL
+> ---
+>  scripts/kconfig/list.h | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/scripts/kconfig/list.h b/scripts/kconfig/list.h
+> index ea1d581..685d80e 100644
+> --- a/scripts/kconfig/list.h
+> +++ b/scripts/kconfig/list.h
+> @@ -125,7 +125,7 @@ static inline void __list_del(struct list_head *prev, struct list_head *next)
+>  static inline void list_del(struct list_head *entry)
+>  {
+>  	__list_del(entry->prev, entry->next);
+> -	entry->next = LIST_POISON1;
+> -	entry->prev = LIST_POISON2;
+> +	entry->next = (struct list_head*)LIST_POISON1;
+> +	entry->prev = (struct list_head*)LIST_POISON2;
+>  }
+>  #endif
+> 
+
+
 -- 
-1.7.10.4
-
+~Randy
