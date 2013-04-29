@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933052Ab3D2TVP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 15:21:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60858 "EHLO
+	id S933068Ab3D2TVf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 15:21:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60852 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759736Ab3D2TDH (ORCPT
+	with ESMTP id S1759727Ab3D2TDG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 15:03:07 -0400
+	Mon, 29 Apr 2013 15:03:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Mathias Krause <minipli@googlemail.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
+        Lauro Ramos Venancio <lauro.venancio@openbossa.org>,
+        Aloisio Almeida Jr <aloisio.almeida@openbossa.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 15/34] rose: fix info leak via msg_name in rose_recvmsg()
-Date: Mon, 29 Apr 2013 12:02:22 -0700
-Message-Id: <20130429184702.609591835@linuxfoundation.org>
+Subject: [ 14/34] NFC: llcp: fix info leaks via msg_name in llcp_sock_recvmsg()
+Date: Mon, 29 Apr 2013 12:02:21 -0700
+Message-Id: <20130429184702.509549397@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130429184700.845644077@linuxfoundation.org>
 References: <20130429184700.845644077@linuxfoundation.org>
@@ -31,34 +33,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mathias Krause <minipli@googlemail.com>
 
-[ Upstream commit 4a184233f21645cf0b719366210ed445d1024d72 ]
+[ Upstream commit d26d6504f23e803824e8ebd14e52d4fc0a0b09cb ]
 
-The code in rose_recvmsg() does not initialize all of the members of
-struct sockaddr_rose/full_sockaddr_rose when filling the sockaddr info.
-Nor does it initialize the padding bytes of the structure inserted by
-the compiler for alignment. This will lead to leaking uninitialized
+The code in llcp_sock_recvmsg() does not initialize all the members of
+struct sockaddr_nfc_llcp when filling the sockaddr info. Nor does it
+initialize the padding bytes of the structure inserted by the compiler
+for alignment.
+
+Also, if the socket is in state LLCP_CLOSED or is shutting down during
+receive the msg_namelen member is not updated to 0 while otherwise
+returning with 0, i.e. "success". The msg_namelen update is also
+missing for stream and seqpacket sockets which don't fill the sockaddr
+info.
+
+Both issues lead to the fact that the code will leak uninitialized
 kernel stack bytes in net/socket.c.
 
-Fix the issue by initializing the memory used for sockaddr info with
-memset(0).
+Fix the first issue by initializing the memory used for sockaddr info
+with memset(0). Fix the second one by setting msg_namelen to 0 early.
+It will be updated later if we're going to fill the msg_name member.
 
 Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Cc: Ralf Baechle <ralf@linux-mips.org>
+Cc: Lauro Ramos Venancio <lauro.venancio@openbossa.org>
+Cc: Aloisio Almeida Jr <aloisio.almeida@openbossa.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/rose/af_rose.c |    1 +
- 1 file changed, 1 insertion(+)
+ net/nfc/llcp/sock.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/net/rose/af_rose.c
-+++ b/net/rose/af_rose.c
-@@ -1257,6 +1257,7 @@ static int rose_recvmsg(struct kiocb *io
- 	skb_copy_datagram_iovec(skb, 0, msg->msg_iov, copied);
+--- a/net/nfc/llcp/sock.c
++++ b/net/nfc/llcp/sock.c
+@@ -514,6 +514,8 @@ static int llcp_sock_recvmsg(struct kioc
  
- 	if (srose != NULL) {
-+		memset(srose, 0, msg->msg_namelen);
- 		srose->srose_family = AF_ROSE;
- 		srose->srose_addr   = rose->dest_addr;
- 		srose->srose_call   = rose->dest_call;
+ 	pr_debug("%p %zu\n", sk, len);
+ 
++	msg->msg_namelen = 0;
++
+ 	lock_sock(sk);
+ 
+ 	if (sk->sk_state == LLCP_CLOSED &&
 
 
