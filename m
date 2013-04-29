@@ -1,51 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754166Ab3D2JQG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 05:16:06 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:62425 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751206Ab3D2JQE (ORCPT
+	id S1756817Ab3D2JQU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 05:16:20 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:61147 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755234Ab3D2JQP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 05:16:04 -0400
-X-AuditID: cbfee68e-b7efa6d000004d12-f1-517e3a4afc4c
+	Mon, 29 Apr 2013 05:16:15 -0400
+X-AuditID: cbfee68d-b7f016d000007930-56-517e3a5ef91c
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, "'Wim Van Sebroeck'" <wim@iguana.be>,
         linux-watchdog@vger.kernel.org, Jingoo Han <jg1.han@samsung.com>
-Subject: [PATCH RESEND 2/5] watchdog: imx2_wdt: use devm_clk_get()
-Date: Mon, 29 Apr 2013 18:15:53 +0900
-Message-id: <000301ce44ba$266397b0$732ac710$@samsung.com>
+Subject: [PATCH RESEND 3/5] watchdog: pnx4008_wdt: use devm_clk_get()
+Date: Mon, 29 Apr 2013 18:16:14 +0900
+Message-id: <000401ce44ba$326e7a70$974b6f50$@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac5EuiWxn4z7zvddSUq3ly0Okaz3Mg==
+Thread-index: Ac5EujCKEg908+dGS+WtCKJhRX4r3A==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrJIsWRmVeSWpSXmKPExsVy+t8zI10vq7pAg1+bBS3mrF/DZnF54SVW
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrNIsWRmVeSWpSXmKPExsVy+t8zI904q7pAg38XRSzmrF/DZnF54SVW
 	i8u75rBZ3Fi3j93i1owXrA6sHtc2i3mcmPGbxaNvyypGj8+b5AJYorhsUlJzMstSi/TtErgy
-	lnXNZSzYylkx/xB7A+Nj9i5GTg4JAROJRSu/MkPYYhIX7q1nA7GFBJYxSqz47QdTM2XnaqA4
-	F1B8EaPEtLPXGCGcX4wSfQcnsIBUsQmoSXz5chhoKgeHiIC+RFuLBkgNs0AHo8SBp0tZQWqE
-	BZwk5q/dzwhiswioSnz6toQJxOYVsJSYtXMXI4QtKPFj8j2wmcwCWhLrdx5ngrDlJTaveQt1
-	qYLEjrOvwepFBPQkVq3YzwZRIyKx78U7sOMkBPaxS0z/tocFYpmAxLfJh1hAjpMQkJXYdABq
-	jqTEwRU3WCYwis1CsnoWktWzkKyehWTFAkaWVYyiqQXJBcVJ6UVGesWJucWleel6yfm5mxgh
-	0da3g/HmAetDjMlA6ycyS4km5wOjNa8k3tDYzMjC1MTU2Mjc0ow0YSVxXrUW60AhgfTEktTs
-	1NSC1KL4otKc1OJDjEwcnFINjAa/ctf/1LSIPRWQJ32cf4fMjje7ha/2n9yXxqp3q+Nl3otD
-	m2SKZe+fZhJd8WjmKYaHynvP9nNN3Hhni1XvjAK3+/pnw3wPftTosT0Q+IXT/WTbI75Xbzdk
-	M6jrVuafK7zW7MSfdLVoqdfzCU1eU5ozTmVmOTZJn3ly399WKNj1e5o7T35evxJLcUaioRZz
-	UXEiAHV36XrMAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprOKsWRmVeSWpSXmKPExsVy+t9jAV0vq7pAg2mneC3mrF/DZnF54SVW
+	VrbNZyy4yllxdNkL5gbGr+xdjJwcEgImEl3/PzJD2GISF+6tZ+ti5OIQEljGKHH36DxGmKI7
+	PZOYIBLTGSWenLjADuH8YpT4+nAfC0gVm4CaxJcvh4ESHBwiAvoSbS0aIDXMAh2MEgeeLmUF
+	qREWcJX4s+sS2DoWAVWJTc9PgvXyClhKLDn8A8oWlPgx+R6YzSygJbF+53EmCFteYvOat1Cn
+	KkjsOPsa7DoRAT2J+S8+QtWLSOx78Y4RZLGEwD52ib6JD1ghlglIfJt8iAXkOAkBWYlNB6Dm
+	SEocXHGDZQKj2Cwkq2chWT0LyepZSFYsYGRZxSiaWpBcUJyUXmSoV5yYW1yal66XnJ+7iRES
+	cb07GG8fsD7EmAy0fiKzlGhyPjBi80riDY3NjCxMTUyNjcwtzUgTVhLnVWuxDhQSSE8sSc1O
+	TS1ILYovKs1JLT7EyMTBKdXA2JZl5iTd+/ua6oqaOs+AXbt+is1rzzjuoaKvOF+yJIO7OGwG
+	79TDX413zt796/lkSZtLk/isHhnOeJri9ODTZKtXGbbfxbqOyh/VOJp42+e/T5abRcqasw++
+	rlJynd9xwPaw/xWdavEG4QdP51i8qlzOYehYE3vU3q8y6U59pLT4rc2/7bflKLEUZyQaajEX
+	FScCACTRpKHOAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprBKsWRmVeSWpSXmKPExsVy+t9jQd04q7pAg+XfBCzmrF/DZnF54SVW
 	i8u75rBZ3Fi3j93i1owXrA6sHtc2i3mcmPGbxaNvyypGj8+b5AJYohoYbTJSE1NSixRS85Lz
 	UzLz0m2VvIPjneNNzQwMdQ0tLcyVFPISc1NtlVx8AnTdMnOA9ioplCXmlAKFAhKLi5X07TBN
-	CA1x07WAaYzQ9Q0JgusxMkADCesYM5Z1zWUs2MpZMf8QewPjY/YuRk4OCQETiSk7V7NB2GIS
-	F+6tB7K5OIQEFjFKTDt7jRHC+cUo0XdwAgtIFZuAmsSXL4eBujk4RAT0JdpaNEBqmAU6GCUO
-	PF3KClIjLOAkMX/tfkYQm0VAVeLTtyVMIDavgKXErJ27GCFsQYkfk++BzWQW0JJYv/M4E4Qt
-	L7F5zVtmiIsUJHacfQ1WLyKgJ7FqxX42iBoRiX0v3jFOYBSYhWTULCSjZiEZNQtJywJGllWM
-	oqkFyQXFSem5hnrFibnFpXnpesn5uZsYwdH8TGoH48oGi0OMAhyMSjy8AZtrA4VYE8uKK3MP
-	MUpwMCuJ8Coa1QUK8aYkVlalFuXHF5XmpBYfYkwG+nQis5Rocj4w0eSVxBsam5gZWRqZWRiZ
-	mJuTJqwkznug1TpQSCA9sSQ1OzW1ILUIZgsTB6dUA6NthlfQuffq0YY//qa9LHxy4MzE88vD
-	62YL6/PL/O9XKRSZ/eKLDrPSlACTU7OP6ujN2WZ6irnjnujblbMP3/Pc4KEX9UGKeYqprP1e
-	1ccNSjp3VJ5LhgkrcPwzuH5WedudfeeiTH6UpD3ebJmUvnW7t4LF7dOqkvMNKn5+vOsowH30
-	ROx/03NKLMUZiYZazEXFiQB7v1PDKgMAAA==
+	CA1x07WAaYzQ9Q0JgusxMkADCesYM1a2zWcsuMpZcXTZC+YGxq/sXYycHBICJhJ3eiYxQdhi
+	EhfurWfrYuTiEBKYzijx5MQFdgjnF6PE14f7WECq2ATUJL58OQyU4OAQEdCXaGvRAKlhFuhg
+	lDjwdCkrSI2wgKvEn12XmEFsFgFViU3PT4L18gpYSiw5/APKFpT4MfkemM0soCWxfudxJghb
+	XmLzmrfMEBcpSOw4+5oRxBYR0JOY/+IjVL2IxL4X7xgnMArMQjJqFpJRs5CMmoWkZQEjyypG
+	0dSC5ILipPRcQ73ixNzi0rx0veT83E2M4Hh+JrWDcWWDxSFGAQ5GJR7egM21gUKsiWXFlbmH
+	GCU4mJVEeBWN6gKFeFMSK6tSi/Lji0pzUosPMSYDfTqRWUo0OR+YavJK4g2NTcyMLI3MLIxM
+	zM1JE1YS5z3Qah0oJJCeWJKanZpakFoEs4WJg1OqgdHz8qqDFfNPLr3somG6P8gk/6W254sv
+	ii1HrfP0ZNV3f5A48crqn92j4jmGqpFHnbgO64Rt91C+2sNw+eapF9vC6lya/1dZJu08+0b2
+	pbuF/7ty07J/7RaHfkpt1FsvsMd3V+qqj/16T44FNSUtvRqwbuNjv/9Zok0tPQ4To6O3b3/m
+	MuvgjSVKLMUZiYZazEXFiQDykVscKwMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -57,40 +57,46 @@ Use devm_clk_get() to make cleanup paths more simple.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/watchdog/imx2_wdt.c |    6 ++----
- 1 files changed, 2 insertions(+), 4 deletions(-)
+ drivers/watchdog/pnx4008_wdt.c |    7 ++-----
+ 1 files changed, 2 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/watchdog/imx2_wdt.c b/drivers/watchdog/imx2_wdt.c
-index ff90882..0c2b075 100644
---- a/drivers/watchdog/imx2_wdt.c
-+++ b/drivers/watchdog/imx2_wdt.c
-@@ -266,7 +266,7 @@ static int __init imx2_wdt_probe(struct platform_device *pdev)
- 	if (IS_ERR(imx2_wdt.base))
- 		return PTR_ERR(imx2_wdt.base);
+diff --git a/drivers/watchdog/pnx4008_wdt.c b/drivers/watchdog/pnx4008_wdt.c
+index a3684a3..b30bd43 100644
+--- a/drivers/watchdog/pnx4008_wdt.c
++++ b/drivers/watchdog/pnx4008_wdt.c
+@@ -159,13 +159,13 @@ static int pnx4008_wdt_probe(struct platform_device *pdev)
+ 	if (IS_ERR(wdt_base))
+ 		return PTR_ERR(wdt_base);
  
--	imx2_wdt.clk = clk_get(&pdev->dev, NULL);
-+	imx2_wdt.clk = devm_clk_get(&pdev->dev, NULL);
- 	if (IS_ERR(imx2_wdt.clk)) {
- 		dev_err(&pdev->dev, "can't get Watchdog clock\n");
- 		return PTR_ERR(imx2_wdt.clk);
-@@ -291,7 +291,6 @@ static int __init imx2_wdt_probe(struct platform_device *pdev)
+-	wdt_clk = clk_get(&pdev->dev, NULL);
++	wdt_clk = devm_clk_get(&pdev->dev, NULL);
+ 	if (IS_ERR(wdt_clk))
+ 		return PTR_ERR(wdt_clk);
  
- fail:
- 	imx2_wdt_miscdev.parent = NULL;
--	clk_put(imx2_wdt.clk);
+ 	ret = clk_enable(wdt_clk);
+ 	if (ret)
+-		goto out;
++		return ret;
+ 
+ 	pnx4008_wdd.bootstatus = (readl(WDTIM_RES(wdt_base)) & WDOG_RESET) ?
+ 			WDIOF_CARDRESET : 0;
+@@ -186,8 +186,6 @@ static int pnx4008_wdt_probe(struct platform_device *pdev)
+ 
+ disable_clk:
+ 	clk_disable(wdt_clk);
+-out:
+-	clk_put(wdt_clk);
  	return ret;
  }
  
-@@ -304,8 +303,7 @@ static int __exit imx2_wdt_remove(struct platform_device *pdev)
+@@ -196,7 +194,6 @@ static int pnx4008_wdt_remove(struct platform_device *pdev)
+ 	watchdog_unregister_device(&pnx4008_wdd);
  
- 		dev_crit(imx2_wdt_miscdev.parent,
- 			"Device removed: Expect reboot!\n");
--	} else
--		clk_put(imx2_wdt.clk);
-+	}
+ 	clk_disable(wdt_clk);
+-	clk_put(wdt_clk);
  
- 	imx2_wdt_miscdev.parent = NULL;
  	return 0;
+ }
 -- 
 1.7.2.5
 
