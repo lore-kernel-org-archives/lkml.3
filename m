@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933669Ab3D2TbH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 15:31:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60816 "EHLO
+	id S933685Ab3D2Tb2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 15:31:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60805 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759664Ab3D2TDB (ORCPT
+	with ESMTP id S1759650Ab3D2TDA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 15:03:01 -0400
+	Mon, 29 Apr 2013 15:03:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Mathias Krause <minipli@googlemail.com>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Gustavo Padovan <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 07/34] Bluetooth: fix possible info leak in bt_sock_recvmsg()
-Date: Mon, 29 Apr 2013 12:02:14 -0700
-Message-Id: <20130429184701.740820889@linuxfoundation.org>
+Subject: [ 05/34] atm: update msg_namelen in vcc_recvmsg()
+Date: Mon, 29 Apr 2013 12:02:12 -0700
+Message-Id: <20130429184701.509555702@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130429184700.845644077@linuxfoundation.org>
 References: <20130429184700.845644077@linuxfoundation.org>
@@ -33,45 +30,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mathias Krause <minipli@googlemail.com>
 
-[ Upstream commit 4683f42fde3977bdb4e8a09622788cc8b5313778 ]
+[ Upstream commit 9b3e617f3df53822345a8573b6d358f6b9e5ed87 ]
 
-In case the socket is already shutting down, bt_sock_recvmsg() returns
-with 0 without updating msg_namelen leading to net/socket.c leaking the
-local, uninitialized sockaddr_storage variable to userland -- 128 bytes
-of kernel stack memory.
+The current code does not fill the msg_name member in case it is set.
+It also does not set the msg_namelen member to 0 and therefore makes
+net/socket.c leak the local, uninitialized sockaddr_storage variable
+to userland -- 128 bytes of kernel stack memory.
 
-Fix this by moving the msg_namelen assignment in front of the shutdown
-test.
+Fix that by simply setting msg_namelen to 0 as obviously nobody cared
+about vcc_recvmsg() not filling the msg_name in case it was set.
 
 Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Cc: Marcel Holtmann <marcel@holtmann.org>
-Cc: Gustavo Padovan <gustavo@padovan.org>
-Cc: Johan Hedberg <johan.hedberg@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/bluetooth/af_bluetooth.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/atm/common.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/net/bluetooth/af_bluetooth.c
-+++ b/net/bluetooth/af_bluetooth.c
-@@ -240,6 +240,8 @@ int bt_sock_recvmsg(struct kiocb *iocb,
- 	if (flags & (MSG_OOB))
- 		return -EOPNOTSUPP;
+--- a/net/atm/common.c
++++ b/net/atm/common.c
+@@ -520,6 +520,8 @@ int vcc_recvmsg(struct kiocb *iocb, stru
+ 	struct sk_buff *skb;
+ 	int copied, error = -EINVAL;
  
 +	msg->msg_namelen = 0;
 +
- 	skb = skb_recv_datagram(sk, flags, noblock, &err);
- 	if (!skb) {
- 		if (sk->sk_shutdown & RCV_SHUTDOWN)
-@@ -247,8 +249,6 @@ int bt_sock_recvmsg(struct kiocb *iocb,
- 		return err;
- 	}
+ 	if (sock->state != SS_CONNECTED)
+ 		return -ENOTCONN;
  
--	msg->msg_namelen = 0;
--
- 	copied = skb->len;
- 	if (len < copied) {
- 		msg->msg_flags |= MSG_TRUNC;
 
 
