@@ -1,50 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758431Ab3D2Qlu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 12:41:50 -0400
-Received: from nm3.access.bullet.mail.mud.yahoo.com ([66.94.237.204]:35254
-	"EHLO nm3.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757623Ab3D2Qlr (ORCPT
+	id S1758492Ab3D2Ql5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 12:41:57 -0400
+Received: from natasha.panasas.com ([67.152.220.90]:45806 "EHLO
+	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758470Ab3D2Qlz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 12:41:47 -0400
-X-Yahoo-Newman-Id: 536523.10983.bm@smtp106.sbc.mail.ne1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: ByUJOHsVM1mYCSsTfiNlIGR9o6YW4eplb4JgrSZylB4MSOe
- luR2bYvZ9Chraf.c06mMvytUtHa_q5nxfo3DtRwk7eKpq8lawkzUP_Q7eMei
- 9ADalaPwuu9dl4w_RrrfbfwjJiiqso_DJvyOcr0Q7SuuXzFeZa1ZAM0aHsj7
- Hfnj8EGSbkC.DHYWORGYPCkXBVpn6kliKmvRl_PoC.fGRXsqIzJeGkKB1hyu
- TVtdOs1gUmpHEGHy3Xp8zYceP7wpNPVeUNROcCm8r25t6iIq29hVqczy5ArE
- bpgdIYdduJj_j8W.ghHUBnUIjGfSqve_fJyzo.lH1zGObcZVnE6FwjhMKbWB
- ZeUuZeAMn69PFz4Iuk5bxBfUaG_lSe23A08nCA88Fxu7LijmzFY.6fDGahNm
- 47JkvtD9nBwlmD2pIfcPmT_71wTVqsKRAVug8qu4HgJenLdq2oXZm7lVmzw-
- -
-X-Yahoo-SMTP: zfeO.4KswBCc_PdwTE8HfYDCQ1aNmIcSvQHkDP4uSDBNBSXeKQ--
-X-Rocket-Received: from localhost (linux@108.223.40.66 with plain)
-        by smtp106.sbc.mail.ne1.yahoo.com with SMTP; 29 Apr 2013 09:41:46 -0700 PDT
-Date: Mon, 29 Apr 2013 09:41:46 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, "'Wim Van Sebroeck'" <wim@iguana.be>,
-        linux-watchdog@vger.kernel.org
-Subject: Re: [PATCH RESEND 2/2] watchdog: wm831x_wdt: use
- devm_gpio_request_one()
-Message-ID: <20130429164146.GI23799@roeck-us.net>
-References: <000a01ce44bc$4ebef180$ec3cd480$@samsung.com>
+	Mon, 29 Apr 2013 12:41:55 -0400
+Message-ID: <517EA27A.8080109@panasas.com>
+Date: Mon, 29 Apr 2013 09:40:26 -0700
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <000a01ce44bc$4ebef180$ec3cd480$@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Zhao Hongjiang <zhaohongjiang@huawei.com>
+CC: <bhalevy@tonian.com>, Andrew Morton <akpm@linux-foundation.org>,
+        <osd-dev@open-osd.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] =?UTF-8?B?ZXhvZnPvvJogZG9uJ3QgaW5jcmVhc2UgdXJpbGVuIGk=?=
+ =?UTF-8?B?ZiBrcmVhbGxvYygpIGZhaWxz?=
+References: <517D0C1E.4090004@huawei.com>
+In-Reply-To: <517D0C1E.4090004@huawei.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [172.17.67.144]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 29, 2013 at 06:31:20PM +0900, Jingoo Han wrote:
-> Use devm_gpio_request_one() to make cleanup paths simpler.
-> Also, GPIOF_DIR_OUT | GPIOF_INIT_LOW is replaced with
-> GPIOF_OUT_INIT_LOW.
+On 04/28/2013 04:46 AM, Zhao Hongjiang wrote:
+> Without the patch, edp->urilen is increased before krealloc(). If krealloc() fails,
+> edp->urilen is too high. Fix that by only updating edp->urilen if krealloc() is successful.
 > 
-> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+> Signed-off-by: Zhao Hongjiang <zhaohongjiang@huawei.com>
+> ---
+>  fs/exofs/sys.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/fs/exofs/sys.c b/fs/exofs/sys.c
+> index 1b4f2f9..79b0a85 100644
+> --- a/fs/exofs/sys.c
+> +++ b/fs/exofs/sys.c
+> @@ -82,11 +82,11 @@ static ssize_t uri_store(struct exofs_dev *edp, const char *buf, size_t len)
+>  {
+>  	uint8_t *new_uri;
+>  
+> -	edp->urilen = strlen(buf) + 1;
+> -	new_uri = krealloc(edp->uri, edp->urilen, GFP_KERNEL);
+> +	new_uri = krealloc(edp->uri, strlen(buf) + 1, GFP_KERNEL);
+>  	if (new_uri == NULL)
+>  		return -ENOMEM;
+>  	edp->uri = new_uri;
+> +	edp->urilen = strlen(buf) + 1;
+>  	strncpy(edp->uri, buf, edp->urilen);
+>  	return edp->urilen;
+>  }
+> -- 1.7.1
+> 
 
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+Thank you, will apply
+
+Boaz
