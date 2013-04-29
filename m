@@ -1,100 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751514Ab3D2Fk2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 01:40:28 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:54485 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750976Ab3D2Fk1 (ORCPT
+	id S1751759Ab3D2Flw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 01:41:52 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:37157 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750801Ab3D2Flu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 01:40:27 -0400
-X-AuditID: 9c93016f-b7c3dae000000592-7a-517e07c5d250
-From: Chanho Min <chanho.min@lge.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Kyungsik Lee <kyungsik.lee@lge.com>,
-        Yann Collet <yann.collet.73@gmail.com>,
-        Bob Pearson <rpearson@systemfabricworks.com>,
-        Richard Weinberger <richard@nod.at>,
-        Geert Uytterhoeven <geert.uytterhoeven@gmail.com>,
-        linux-kernel@vger.kernel.org, sparclinux@vger.kernel.org,
-        linux-m68k@vger.kernel.org, linux-next@vger.kernel.org,
-        Chanho Min <chanho.min@lge.com>
-Subject: [PATCH] lib: add weak __clzsi2()/__clzdi2() functions
-Date: Mon, 29 Apr 2013 14:40:05 +0900
-Message-Id: <1367214005-14302-1-git-send-email-chanho.min@lge.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: AAAAAA==
+	Mon, 29 Apr 2013 01:41:50 -0400
+X-AuditID: cbfee68f-b7f066d000003683-f4-517e081cc9b3
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Rafael J. Wysocki'" <rjw@sisk.pl>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "'Len Brown'" <len.brown@intel.com>,
+        "'Pavel Machek'" <pavel@ucw.cz>, linux-pm@vger.kernel.org,
+        Jingoo Han <jg1.han@samsung.com>
+References: <000001ce42f2$96128cc0$c237a640$@samsung.com>
+ <20119404.Sfu5WntByi@vostro.rjw.lan>
+In-reply-to: <20119404.Sfu5WntByi@vostro.rjw.lan>
+Subject: Re: [PATCH] PM: Add pm_ops_ptr() macro
+Date: Mon, 29 Apr 2013 14:41:48 +0900
+Message-id: <000001ce449c$3e1ce0f0$ba56a2d0$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQGZyojvIl/md4KPBeuZMYPjUO77jQIGGS6nmUVwj5A=
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrBIsWRmVeSWpSXmKPExsVy+t8zQ11ZjrpAg/XXGS3mrF/DZnF54SVW
+	i1lT9jJZXN41h83ic+8RRou7p46yWfQv7GVyYPdYvOclk8eJGb9ZPPq2rGL0eLS4hdFjxerv
+	7B6fN8kFsEVx2aSk5mSWpRbp2yVwZWzY0MZUcEq44s2mFuYGxk98XYycHBICJhKdfz6xQdhi
+	EhfurQeyuTiEBJYxSpz78YwJpmjx2WXsEInpjBJL70+DqvrFKPFu7WwWkCo2ATWJL18Os4PY
+	IgJhErO2HQIrYhZYxCjxZtVWZpCEkECCxPkbL8HGcgoYSky73wwU5+AQFtCXOL7UAyTMIqAq
+	ce5lF1g5r4ClRM+0blYIW1Dix+R7YLuYBdQlJs1bxAxhy0tsXvOWGeJSBYkdZ18zQtxgJbGs
+	YRYrRI2IxL4X7xhB7pEQ+MoucX3lfiaIZQIS3yYfYgG5QUJAVmLTAag5khIHV9xgmcAoMQvJ
+	6llIVs9CsnoWkhULGFlWMYqmFiQXFCelFxnrFSfmFpfmpesl5+duYoTEcv8OxrsHrA8xJgOt
+	n8gsJZqcD0wFeSXxhsZmRhamJqbGRuaWZqQJK4nzqrVYBwoJpCeWpGanphakFsUXleakFh9i
+	ZOLglGpgDH38+sDclTPMXro5H9/IsKD87o+eDSvf9i+XO3ym0vbTpUSFpmWJpQcObqq5/+BN
+	U7SBqvoU9v6jhd9vWltHx8k8X6+j/sO/+3Yyn/uN9fXh8xQuWPqYmfBfiVi/KCAqxefwoxo/
+	1/c6p9RWNnBKTTbJLKmYI8v/QelwjLz4u6+f2a8/tWhbpMRSnJFoqMVcVJwIACoXCP37AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKKsWRmVeSWpSXmKPExsVy+t9jQV0ZjrpAg6VHrCzmrF/DZnF54SVW
+	i1lT9jJZXN41h83ic+8RRou7p46yWfQv7GVyYPdYvOclk8eJGb9ZPPq2rGL0eLS4hdFjxerv
+	7B6fN8kFsEU1MNpkpCampBYppOYl56dk5qXbKnkHxzvHm5oZGOoaWlqYKynkJeam2iq5+ATo
+	umXmAB2jpFCWmFMKFApILC5W0rfDNCE0xE3XAqYxQtc3JAiux8gADSSsY8zYsKGNqeCUcMWb
+	TS3MDYyf+LoYOTkkBEwkFp9dxg5hi0lcuLeerYuRi0NIYDqjxNL706CcX4wS79bOZgGpYhNQ
+	k/jy5TBYh4hAmMSsbYfAipgFFjFKvFm1lRkkISSQIHH+xksmEJtTwFBi2v1moDgHh7CAvsTx
+	pR4gYRYBVYlzL7vAynkFLCV6pnWzQtiCEj8m3wPbxSygLjFp3iJmCFteYvOat8wQlypI7Dj7
+	mhHiBiuJZQ2zWCFqRCT2vXjHOIFRaBaSUbOQjJqFZNQsJC0LGFlWMYqmFiQXFCel5xrpFSfm
+	Fpfmpesl5+duYgQnimfSOxhXNVgcYhTgYFTi4Q3YXBsoxJpYVlyZe4hRgoNZSYR39m2gEG9K
+	YmVValF+fFFpTmrxIcZkoE8nMkuJJucDk1heSbyhsYmZkaWRmYWRibk5acJK4rwHW60DhQTS
+	E0tSs1NTC1KLYLYwcXBKNTAWzVy59YfQ2z+N3fwx9VsSWNZ8YJWPUj1xo2kDq+CbGsHSjG7+
+	dfuurnDZ4LN6wi3/rsIM/ePdty5O1mvfk74k49qk0rn+207bn2dguLtBNOAN3/nH6c+53G9I
+	FwgekXxkGyxwVqx+bh+fr92SJZzK4prGUT6z7KvbvdLWrU7Ye91h8hEvliAlluKMREMt5qLi
+	RABZ+0cmWAMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some architectures need __clzsi2() or __clzdi2() for __builtin_clz and
-It causes build failure. They can be implemented using the fls() and
-overridden by linking arch-specific versions may not be implemented yet.
+On Saturday, April 27, 2013 11:41 PM, Rafael J. Wysocki:
+> 
+> On Saturday, April 27, 2013 11:54:50 AM Jingoo Han wrote:
+> > Add pm_ops_ptr() macro that allows the .pm entry in the driver structures
+> > to be assigned without having an #define xxx NULL for the case that PM is
+> > not enabled.
+> >
+> > Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+> 
+> First, I'm not taking any more PM patches for v3.10 (that don't fix recent
+> regressions).
+> 
+> Second, please add that macro along with a user.
 
-Reference: https://lkml.org/lkml/2013/4/18/603
-Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Signed-off-by: Chanho Min <chanho.min@lge.com>
----
- lib/Makefile |    2 +-
- lib/clz.c    |   36 ++++++++++++++++++++++++++++++++++++
- 2 files changed, 37 insertions(+), 1 deletion(-)
- create mode 100644 lib/clz.c
+Hi Rafael,
 
-diff --git a/lib/Makefile b/lib/Makefile
-index af79e8c..e17b3ee 100644
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -23,7 +23,7 @@ lib-y	+= kobject.o klist.o
- 
- obj-y += bcd.o div64.o sort.o parser.o halfmd4.o debug_locks.o random32.o \
- 	 bust_spinlocks.o hexdump.o kasprintf.o bitmap.o scatterlist.o \
--	 gcd.o lcm.o list_sort.o uuid.o flex_array.o \
-+	 gcd.o lcm.o list_sort.o uuid.o flex_array.o clz.o\
- 	 bsearch.o find_last_bit.o find_next_bit.o llist.o memweight.o kfifo.o
- obj-y += string_helpers.o
- obj-$(CONFIG_TEST_STRING_HELPERS) += test-string_helpers.o
-diff --git a/lib/clz.c b/lib/clz.c
-new file mode 100644
-index 0000000..5222b2d
---- /dev/null
-+++ b/lib/clz.c
-@@ -0,0 +1,36 @@
-+/*
-+ * lib/clz.c
-+ *
-+ * Copyright (C) 2013 Chanho Min <chanho.min@lge.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * __clzsi2/_clzdi2() can be overridden by linking arch-specific versions.
-+ */
-+
-+#include <linux/export.h>
-+#include <linux/kernel.h>
-+
-+int __weak __clzsi2(int val)
-+{
-+	return BITS_PER_LONG - fls(val);
-+}
-+EXPORT_SYMBOL(__clzsi2);
-+
-+#if BITS_PER_LONG == 32
-+int __weak __clzdi2(long val)
-+{
-+	return BITS_PER_LONG - fls((int)val);
-+}
-+EXPORT_SYMBOL(__clzdi2);
-+#elif BITS_PER_LONG == 64
-+int __weak __clzdi2i(long val)
-+{
-+	return BITS_PER_LONG - fls64((u64)val);
-+}
-+EXPORT_SYMBOL(__clzdi2);
-+#else
-+#error BITS_PER_LONG not 32 or 64
-+#endif
--- 
-1.7.9.5
+This macro can be used as below:
+This macro cannot affect the procedure of suspend/resume
+calls; thus, there is no side effect.
+It just reduces the code size of each drivers.
+In this way, of_match_ptr() macro has been already used.
+
+
+--- a/drivers/i2c/busses/i2c-s3c2410.c
++++ b/drivers/i2c/busses/i2c-s3c2410.c
+@@ -1218,7 +1218,6 @@ static int s3c24xx_i2c_resume(struct device *dev)
+ }
+ #endif
+
+-#ifdef CONFIG_PM
+ static const struct dev_pm_ops s3c24xx_i2c_dev_pm_ops = {
+ #ifdef CONFIG_PM_SLEEP
+        .suspend_noirq = s3c24xx_i2c_suspend_noirq,
+@@ -1226,11 +1225,6 @@ static const struct dev_pm_ops s3c24xx_i2c_dev_pm_ops = {
+ #endif
+ };
+
+-#define S3C24XX_DEV_PM_OPS (&s3c24xx_i2c_dev_pm_ops)
+-#else
+-#define S3C24XX_DEV_PM_OPS NULL
+-#endif
+-
+ /* device driver for platform bus bits */
+
+ static struct platform_driver s3c24xx_i2c_driver = {
+@@ -1240,7 +1234,7 @@ static struct platform_driver s3c24xx_i2c_driver = {
+        .driver         = {
+                .owner  = THIS_MODULE,
+                .name   = "s3c-i2c",
+-               .pm     = S3C24XX_DEV_PM_OPS,
++               .pm     = pm_ops_ptr(&s3c24xx_i2c_dev_pm_ops),
+                .of_match_table = of_match_ptr(s3c24xx_i2c_match),
+        },
+ };
+
+Best regards,
+Jingoo Han
+
+
+> 
+> Thanks,
+> Rafael
+> 
+> 
+> > ---
+> >  include/linux/pm.h |    2 ++
+> >  1 files changed, 2 insertions(+), 0 deletions(-)
+> >
+> > diff --git a/include/linux/pm.h b/include/linux/pm.h
+> > index a224c7f..bd50d15 100644
+> > --- a/include/linux/pm.h
+> > +++ b/include/linux/pm.h
+> > @@ -55,8 +55,10 @@ struct device;
+> >
+> >  #ifdef CONFIG_PM
+> >  extern const char power_group_name[];		/* = "power" */
+> > +#define pm_ops_ptr(_ptr)	(_ptr)
+> >  #else
+> >  #define power_group_name	NULL
+> > +#define pm_ops_ptr(_ptr)	NULL
+> >  #endif
+> >
+> >  typedef struct pm_message {
+> >
+> --
+> I speak only for myself.
+> Rafael J. Wysocki, Intel Open Source Technology Center.
 
