@@ -1,79 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759179Ab3D2UpI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 16:45:08 -0400
-Received: from relais.videotron.ca ([24.201.245.36]:65180 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758137Ab3D2UpG (ORCPT
+	id S932282Ab3D2Upk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 16:45:40 -0400
+Received: from mail.digidescorp.com ([50.73.98.161]:24458 "EHLO
+	mail.digidescorp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932204Ab3D2Upi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 16:45:06 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; CHARSET=US-ASCII
-Date: Mon, 29 Apr 2013 16:45:05 -0400 (EDT)
-From: Nicolas Pitre <nico@fluxnic.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Greg KH <gregkh@linuxfoundation.org>, David Brown <davidb@codeaurora.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PATCH] char/misc patches for 3.10-rc1
-In-reply-to: <CA+55aFzLtBwsvVrnT2DrUOU+eYrQ5eiKeamRb4Y5+-TVgbuM5Q@mail.gmail.com>
-Message-id: <alpine.LFD.2.03.1304291605070.17372@syhkavp.arg>
-References: <20130429162115.GA6893@kroah.com>
- <CA+55aFz7bESS-T2_5vndVEzbk7ocmfEanBO+sviTSNekOLKRcg@mail.gmail.com>
- <20130429183851.GA8106@kroah.com>
- <CA+55aFwU-bXZ7wn2dOcLNfPMcjDv3Jvqx_LTt7B+-tj4WcP8Mg@mail.gmail.com>
- <CA+55aFzLtBwsvVrnT2DrUOU+eYrQ5eiKeamRb4Y5+-TVgbuM5Q@mail.gmail.com>
-User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
+	Mon, 29 Apr 2013 16:45:38 -0400
+DomainKey-Signature: a=rsa-sha1; s=MDaemon; d=digidescorp.com;
+	c=simple; q=dns; h=message-id:from;
+	b=CMsSJ82th0N/lS0ux/Hco43E1pSZeEV+gN8jbE+A5YJt+AqypuaEAlKt/p7L
+	B1E0n5fRzsX9YT24o64gpNfSZW5bowLEJXIQP3Y+1fNuR1e8PJR/JK9bs
+	Ej5lsT9Qw8ESY70LpFbNyHmQkxW/RyxbDfFcbdlb70qY+g+XHuhobM=;
+X-Spam-Processed: mail.digidescorp.com, Mon, 29 Apr 2013 15:45:35 -0500
+	(not processed: message from trusted or authenticated source)
+X-Authenticated-Sender: steve@digidescorp.com
+X-Return-Path: prvs=1831b5a88a=steve@digidescorp.com
+X-Envelope-From: steve@digidescorp.com
+Message-ID: <1367268334.1653.47.camel@iscandar.digidescorp.com>
+Subject: Re: [PATCH RESEND^2] sd: fix infinite kernel/udev loop on
+ non-removable Medium Not Present
+From: "Steven J. Magnani" <steve@digidescorp.com>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, stable@vger.kernel.org
+Date: Mon, 29 Apr 2013 15:45:34 -0500
+In-Reply-To: <1366997459.16829.4.camel@dabdike>
+References: <1366994373-13324-1-git-send-email-steve@digidescorp.com>
+	 <1366997459.16829.4.camel@dabdike>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 29 Apr 2013, Linus Torvalds wrote:
-
-> The "explanations" for why it should be in drivers/ is this mindless drivel:
+On Fri, 2013-04-26 at 10:30 -0700, James Bottomley wrote:
+On Fri, 2013-04-26 at 11:39 -0500, Steven J. Magnani wrote:
+> > Commit eface65c336eff420d70beb0fb6787a732e05ffb (2.6.38) altered
+> > set_media_not_present() in a way that prevents the sd driver from
+> > remembering that a non-removable device has reported "Medium Not
+Present".
+> > This condition can occur on hotplug of a (i.e.) USB Mass Storage
+device
+> > whose medium is offline due to an unrecoverable controller error,
+> > but which is otherwise capable of SCSI communication (to download
+new 
+> > microcode, etc.).
 > 
-> On Tue, Feb 22 2011, Daniel Walker wrote:
-> > On Tue, 2011-02-22 at 12:47 -0800, Dima Zavin wrote:
-> >
-> >> What is the problem leaving it under arch/arm/mach-msm?
-> >
-> > Because it's a driver.
+> This actually sounds to be a bug somewhere in the device.  Only
+> removable devices are supposed to signal medium not present.
+
+I don't see that spelled out in the -2 family of standards (SAM-2 /
+SPC-2 / SBC-2). We're only claiming SPC-2 compliance; perhaps that's
+something that got clarified in a later version? 
+
+> > Under these conditions, the changed code results in an infinite loop
+> > between the kernel and udevd. When udevd attempts to open the device
+> > in response to a change notification, a SCSI "Medium Not Present"
+error
+> > occurs which causes the kernel to signal another change. The cycle
+> > repeats until the device is unplugged, resulting in udevd consuming
+ever-
+> > increasing amounts of CPU and virtual memory.
+
+One precondition for the infinite loop that got lost between
+investigation of the problem and submission of the patch is that the
+device has to identify itself BOTH as  "non-removable" and "write
+protected". The reason is this clause in sd_open():
+
+    if (sdev->removable || sdkp->write_prot)
+        check_disk_change(bdev);
+
+...which causes READ CAPACITY to be issued, to which the device responds
+MEDIUM NOT PRESENT, which causes set_media_not_present() to be invoked
+and to signal another "changed" event for userland.
+
+Apologies for the oversight.
+
 > 
-> Seriously. That's the *ONLY* explanation given.
+> > Resolve this by remembering "media not present" whether the device
+has
+> > declared itself "removable" or not.
+> > 
+> > Signed-off-by: Steven J. Magnani <steve@digidescorp.com>
+> > ---
+> > --- a/drivers/scsi/sd.c 2013-04-12 14:16:12.252531097 -0500
+> > +++ b/drivers/scsi/sd.c 2013-04-12 14:21:55.197216521 -0500
+> > @@ -1298,10 +1298,8 @@ out:
+> >  
+> >  static void set_media_not_present(struct scsi_disk *sdkp)
+> >  {
+> > - if (sdkp->media_present)
+> > + if (sdkp->media_present) {
+> >  sdkp->device->changed = 1;
+> > -
+> > - if (sdkp->device->removable) {
+> >  sdkp->media_present = 0;
+> >  sdkp->capacity = 0;
+> 
+> I don't really like this change because it will affect TUR failure as
+> well, which looks like it would then zero the capacity of a
+> non-removable device which we aren't expecting.   
 
-This certainly sucks as an answer.
+I think that concern is easily addressed by tweaking the patch to keep
+the "sdkp->capacity = 0" statement conditional on
+sdkp->device->removable.
 
-> WTF? That's a singularly *bad* reason for moving things to "drivers".
+> Can we dig into what's
+> going wrong with the device first.  It sounds like it really is a
+> removable device and it just needs to be flagged that way (either that
+> or the USB SAT is so screwed up that we might need to apply other
+> blacklists)
 
-Agreed.
+Being a USB Mass Storage device, it is removable from a USB sense, but
+not I think in a SCSI sense - there is no ejectable cartridge or
+anything. Commands like PREVENT ALLOW MEDIUM REMOVAL, which
+identification as removable usually triggers, are nonsensical.
 
-> And I'm calling the ARM people out on this idiocy. Arnd and Nico -
-> stop encouraging this kind of crap. Move things to drivers only once
-> there is actual reason for it. If it's some proprierary single-SoC
-> thing, it can damn well stay away from other people. And it definitely
-> shouldn't mess up autocomplete in some core location.
+The scenario is generally one of these two uncommon use cases:
 
-All I wish to add to what Arnd already stated is this:
+1. The device has come up in "failsafe mode" because the user damaged
+the normal "operational" microcode by yanking power during an
+operational microcode update. Failsafe mode allows for microcode update,
+and not much else.
 
-We ought to gather drivers together according to their _purpose_.  
-Especially if they provide some generic functionality via a common API 
-to be used by the rest of the kernel.  In some cases that API just begs 
-to be created and commonalities factored out from individual drivers, 
-which also warrants a move to drivers/.
+B. The internal controller has experienced an unrecoverable error
+(reported with appropriate sense codes) during normal operation and the
+USB connection has since been cycled (disconnected and reconnected; the
+device is wall-powered, not bus-powered). 
 
-Of course the cpufreq drivers, or even the cpuidle drivers, are awfully 
-platform specific, or even proprietary single-SoC in many cases.  But 
-the interface they register into and the services they provide are 
-common, and it is far easier for someone maintaining the cpuidle 
-infrastructure to improve the interface and avoid conflicts by having 
-all the related drivers at the same place. .  It even helps next driver 
-author look for better examples than only the last SoC they worked with.
+I don't think either is invalid. 
 
-However this is a design goal, not a hard rule.  If a piece of code has 
-no interface commonality with anything else then it is indeed not worth 
-the hassle.
+I will stipulate that declaring a block device write-protected when no
+medium is present does not make a whole lot of sense, and that's
+something we will address going forward. However, I do think it's a Bad
+Thing (from a security perspective, at minimum) if simply connecting a
+device to a machine can bring down the system. The Windows FAT driver
+has such issues. Surely Linux can do better, at least in this particular
+case where only a minor tweak is needed, not even the addition of
+defensive code.
+
+Regards,
+------------------------------------------------------------------------
+Steven J. Magnani               "I claim this network for MARS!
+www.digidescorp.com              Earthling, return my space modulator!"
+
+#include <standard.disclaimer>
 
 
-Nicolas
+
