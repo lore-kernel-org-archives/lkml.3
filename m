@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760026Ab3D2Tc6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 15:32:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60772 "EHLO
+	id S1760667Ab3D2Tdf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 15:33:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60771 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759286Ab3D2TCz (ORCPT
+	with ESMTP id S1759578Ab3D2TCx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 15:02:55 -0400
+	Mon, 29 Apr 2013 15:02:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mikael Pettersson <mikpe@it.uu.se>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Jonghwan Choi <jhbird.choi@samsung.com>
-Subject: [ 42/42] ARM: 7692/1: iop3xx: move IOP3XX_PERIPHERAL_VIRT_BASE
-Date: Mon, 29 Apr 2013 12:02:24 -0700
-Message-Id: <20130429184757.119636706@linuxfoundation.org>
+        Tom Parkin <tparkin@katalix.com>, Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 39/42] net: drop dst before queueing fragments
+Date: Mon, 29 Apr 2013 12:02:21 -0700
+Message-Id: <20130429184756.815952144@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130429184752.435249613@linuxfoundation.org>
 References: <20130429184752.435249613@linuxfoundation.org>
@@ -29,72 +27,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
 
-commit f5d6a1441a5045824f36ff7c6b6bbae0373472a6 upstream.
+From: Eric Dumazet <edumazet@google.com>
 
-Currently IOP3XX_PERIPHERAL_VIRT_BASE conflicts with PCI_IO_VIRT_BASE:
+[ Upstream commit 97599dc792b45b1669c3cdb9a4b365aad0232f65 ]
 
-					address         size
-	PCI_IO_VIRT_BASE                0xfee00000      0x200000
-	IOP3XX_PERIPHERAL_VIRT_BASE     0xfeffe000      0x2000
+Commit 4a94445c9a5c (net: Use ip_route_input_noref() in input path)
+added a bug in IP defragmentation handling, as non refcounted
+dst could escape an RCU protected section.
 
-Fix by moving IOP3XX_PERIPHERAL_VIRT_BASE below PCI_IO_VIRT_BASE.
+Commit 64f3b9e203bd068 (net: ip_expire() must revalidate route) fixed
+the case of timeouts, but not the general problem.
 
-The patch fixes the following kernel panic with 3.9-rc1 on iop3xx boards:
+Tom Parkin noticed crashes in UDP stack and provided a patch,
+but further analysis permitted us to pinpoint the root cause.
 
-[    0.000000] Booting Linux on physical CPU 0x0
-[    0.000000] Initializing cgroup subsys cpu
-[    0.000000] Linux version 3.9.0-rc1-iop32x (aaro@blackmetal) (gcc version 4.7.2 (GCC) ) #20 PREEMPT Tue Mar 5 16:44:36 EET 2013
-[    0.000000] bootconsole [earlycon0] enabled
-[    0.000000] ------------[ cut here ]------------
-[    0.000000] kernel BUG at mm/vmalloc.c:1145!
-[    0.000000] Internal error: Oops - BUG: 0 [#1] PREEMPT ARM
-[    0.000000] Modules linked in:
-[    0.000000] CPU: 0    Not tainted  (3.9.0-rc1-iop32x #20)
-[    0.000000] PC is at vm_area_add_early+0x4c/0x88
-[    0.000000] LR is at add_static_vm_early+0x14/0x68
-[    0.000000] pc : [<c03e74a8>]    lr : [<c03e1c40>]    psr: 800000d3
-[    0.000000] sp : c03ffee4  ip : dfffdf88  fp : c03ffef4
-[    0.000000] r10: 00000002  r9 : 000000cf  r8 : 00000653
-[    0.000000] r7 : c040eca8  r6 : c03e2408  r5 : dfffdf60  r4 : 00200000
-[    0.000000] r3 : dfffdfd8  r2 : feffe000  r1 : ff000000  r0 : dfffdf60
-[    0.000000] Flags: Nzcv  IRQs off  FIQs off  Mode SVC_32  ISA ARM  Segment kernel
-[    0.000000] Control: 0000397f  Table: a0004000  DAC: 00000017
-[    0.000000] Process swapper (pid: 0, stack limit = 0xc03fe1b8)
-[    0.000000] Stack: (0xc03ffee4 to 0xc0400000)
-[    0.000000] fee0:          00200000 c03fff0c c03ffef8 c03e1c40 c03e7468 00200000 fee00000
-[    0.000000] ff00: c03fff2c c03fff10 c03e23e4 c03e1c38 feffe000 c0408ee4 ff000000 c0408f04
-[    0.000000] ff20: c03fff3c c03fff30 c03e2434 c03e23b4 c03fff84 c03fff40 c03e2c94 c03e2414
-[    0.000000] ff40: c03f8878 c03f6410 ffff0000 000bffff 00001000 00000008 c03fff84 c03f6410
-[    0.000000] ff60: c04227e8 c03fffd4 a0008000 c03f8878 69052e30 c02f96eb c03fffbc c03fff88
-[    0.000000] ff80: c03e044c c03e268c 00000000 0000397f c0385130 00000001 ffffffff c03f8874
-[    0.000000] ffa0: dfffffff a0004000 69052e30 a03f61a0 c03ffff4 c03fffc0 c03dd5cc c03e0184
-[    0.000000] ffc0: 00000000 00000000 00000000 00000000 00000000 c03f8878 0000397d c040601c
-[    0.000000] ffe0: c03f8874 c0408674 00000000 c03ffff8 a0008040 c03dd558 00000000 00000000
-[    0.000000] Backtrace:
-[    0.000000] [<c03e745c>] (vm_area_add_early+0x0/0x88) from [<c03e1c40>] (add_static_vm_early+0x14/0x68)
+Before queueing a packet into a frag list, we must drop its dst,
+as this dst has limited lifetime (RCU protected)
 
-Tested-by: Mikael Pettersson <mikpe@it.uu.se>
-Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
+When/if a packet is finally reassembled, we use the dst of the very
+last skb, still protected by RCU and valid, as the dst of the
+reassembled packet.
+
+Use same logic in IPv6, as there is no need to hold dst references.
+
+Reported-by: Tom Parkin <tparkin@katalix.com>
+Tested-by: Tom Parkin <tparkin@katalix.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- arch/arm/include/asm/hardware/iop3xx.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/ipv4/ip_fragment.c |   15 +++++++++++----
+ net/ipv6/reassembly.c  |   13 +++++++++++--
+ 2 files changed, 22 insertions(+), 6 deletions(-)
 
---- a/arch/arm/include/asm/hardware/iop3xx.h
-+++ b/arch/arm/include/asm/hardware/iop3xx.h
-@@ -37,7 +37,7 @@ extern int iop3xx_get_init_atu(void);
-  * IOP3XX processor registers
-  */
- #define IOP3XX_PERIPHERAL_PHYS_BASE	0xffffe000
--#define IOP3XX_PERIPHERAL_VIRT_BASE	0xfeffe000
-+#define IOP3XX_PERIPHERAL_VIRT_BASE	0xfedfe000
- #define IOP3XX_PERIPHERAL_SIZE		0x00002000
- #define IOP3XX_PERIPHERAL_UPPER_PA (IOP3XX_PERIPHERAL_PHYS_BASE +\
- 					IOP3XX_PERIPHERAL_SIZE - 1)
+--- a/net/ipv4/ip_fragment.c
++++ b/net/ipv4/ip_fragment.c
+@@ -255,8 +255,7 @@ static void ip_expire(unsigned long arg)
+ 		if (!head->dev)
+ 			goto out_rcu_unlock;
+ 
+-		/* skb dst is stale, drop it, and perform route lookup again */
+-		skb_dst_drop(head);
++		/* skb has no dst, perform route lookup again */
+ 		iph = ip_hdr(head);
+ 		err = ip_route_input_noref(head, iph->daddr, iph->saddr,
+ 					   iph->tos, head->dev);
+@@ -525,8 +524,16 @@ found:
+ 		qp->q.max_size = skb->len + ihl;
+ 
+ 	if (qp->q.last_in == (INET_FRAG_FIRST_IN | INET_FRAG_LAST_IN) &&
+-	    qp->q.meat == qp->q.len)
+-		return ip_frag_reasm(qp, prev, dev);
++	    qp->q.meat == qp->q.len) {
++		unsigned long orefdst = skb->_skb_refdst;
++
++		skb->_skb_refdst = 0UL;
++		err = ip_frag_reasm(qp, prev, dev);
++		skb->_skb_refdst = orefdst;
++		return err;
++	}
++
++	skb_dst_drop(skb);
+ 
+ 	write_lock(&ip4_frags.lock);
+ 	list_move_tail(&qp->q.lru_list, &qp->q.net->lru_list);
+--- a/net/ipv6/reassembly.c
++++ b/net/ipv6/reassembly.c
+@@ -342,8 +342,17 @@ found:
+ 	}
+ 
+ 	if (fq->q.last_in == (INET_FRAG_FIRST_IN | INET_FRAG_LAST_IN) &&
+-	    fq->q.meat == fq->q.len)
+-		return ip6_frag_reasm(fq, prev, dev);
++	    fq->q.meat == fq->q.len) {
++		int res;
++		unsigned long orefdst = skb->_skb_refdst;
++
++		skb->_skb_refdst = 0UL;
++		res = ip6_frag_reasm(fq, prev, dev);
++		skb->_skb_refdst = orefdst;
++		return res;
++	}
++
++	skb_dst_drop(skb);
+ 
+ 	write_lock(&ip6_frags.lock);
+ 	list_move_tail(&fq->q.lru_list, &fq->q.net->lru_list);
 
 
