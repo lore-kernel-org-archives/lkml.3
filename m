@@ -1,54 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759279Ab3D2Szh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 14:55:37 -0400
-Received: from mail-ve0-f179.google.com ([209.85.128.179]:60277 "EHLO
-	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759255Ab3D2Szf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 14:55:35 -0400
+	id S1758258Ab3D2S5W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 14:57:22 -0400
+Received: from fieldses.org ([174.143.236.118]:57057 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752188Ab3D2S5U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Apr 2013 14:57:20 -0400
+Date: Mon, 29 Apr 2013 14:57:12 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Chuck Lever <chuck.lever@oracle.com>
+Cc: Trond Myklebust <trond.myklebust@fys.uio.no>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Simo Sorce <simo@redhat.com>
+Subject: Re: linux-next: build failure after merge of the nfsd tree
+Message-ID: <20130429185712.GP17268@fieldses.org>
+References: <20130429112434.dcc80cfce804beeacc68793a@canb.auug.org.au>
+ <CA52A586-E4DF-42D0-9020-D17F8822BF7C@oracle.com>
+ <20130429154541.GI17268@fieldses.org>
+ <09A69F90-5D9A-4AF6-9B7D-CC1D74A237EA@oracle.com>
+ <1367252460.19515.7.camel@leira.trondhjem.org>
+ <DBD3CE27-3A93-4BC0-B390-2EDB9D0D2BBE@oracle.com>
+ <20130429173821.GJ17268@fieldses.org>
+ <BD32EC01-EA3A-403C-A8D2-904B77EB79BA@oracle.com>
+ <20130429175902.GK17268@fieldses.org>
+ <756994C4-53FE-4723-A37C-A5E4DAB905D2@oracle.com>
 MIME-Version: 1.0
-In-Reply-To: <20130429183851.GA8106@kroah.com>
-References: <20130429162115.GA6893@kroah.com>
-	<CA+55aFz7bESS-T2_5vndVEzbk7ocmfEanBO+sviTSNekOLKRcg@mail.gmail.com>
-	<20130429183851.GA8106@kroah.com>
-Date: Mon, 29 Apr 2013 11:55:34 -0700
-X-Google-Sender-Auth: 9MesoHlYbpO_BwJXLYTHipxXObs
-Message-ID: <CA+55aFwU-bXZ7wn2dOcLNfPMcjDv3Jvqx_LTt7B+-tj4WcP8Mg@mail.gmail.com>
-Subject: Re: [GIT PATCH] char/misc patches for 3.10-rc1
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: David Brown <davidb@codeaurora.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <756994C4-53FE-4723-A37C-A5E4DAB905D2@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 29, 2013 at 11:38 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
->
-> It's a "bus" type, that has individual drivers connecting to it.
+On Mon, Apr 29, 2013 at 02:30:33PM -0400, Chuck Lever wrote:
+> 
+> On Apr 29, 2013, at 1:59 PM, "J. Bruce Fields" <bfields@fieldses.org>
+> wrote:
+> 
+> > On Mon, Apr 29, 2013 at 01:47:16PM -0400, Chuck Lever wrote:
+> >> 
+> >> On Apr 29, 2013, at 1:38 PM, "J. Bruce Fields"
+> >> <bfields@fieldses.org> wrote:
+> >> 
+> >>> On Mon, Apr 29, 2013 at 01:04:01PM -0400, Chuck Lever wrote:
+> >>>> Trond's nfs-for-next now has the new rpcauth_get_gssinfo() and
+> >>>> rpcauth_get_pseudoflavor() APIs, which are replacements for
+> >>>> direct calls into the GSS mech switch.  These APIs are a little
+> >>>> more generic, and more robust in the face of unloaded GSS kernel
+> >>>> modules.
+> >>>> 
+> >>>> Instead of gss_mech_get_by_OID(), I suspect you want
+> >>>> rpcauth_get_pseudoflavor(), but I haven't looked at the gssproxy
+> >>>> code.
+> >>> 
+> >>> It's doing
+> >>> 
+> >>> 		status = -EOPNOTSUPP; gm =
+> >>> 		gss_mech_get_by_OID(&ud->mech_oid); if (!gm) goto out;
+> >>> 		status = -EINVAL; status =
+> >>> 		gss_import_sec_context(ud->out_handle.data,
+> >>> 		ud->out_handle.len, gm, &rsci.mechctx, &expiry,
+> >>> 		GFP_KERNEL); if (status) goto out;
+> >>> 
+> >>> So we need a way to get from an OID and some mechanism-specific
+> >>> data to a context.
+> >>> 
+> >>> Looks to me like we just want to re-export gss_mech_get_by_OID().
+> >> 
+> >> The reason for the new wrappers is to load the kernel modules
+> >> properly before trying to discover the OID -> mechanism mapping.
+> >> 
+> >> Where are you calling it from?  If it's from outside of the GSS
+> >> module, how do you guarantee the rpc_gss_auth module is loaded?
+> >> What if the GSS mechanism for that OID isn't loaded?
+> > 
+> > Sorry, I should have said just "remove static from", not
+> > "re-export"--it's in the same module.  So there should be no problem
+> > here, right?
+> 
+> OK, gotcha.  Architecturally outside of the mech switch I'd like to
+> see OIDs passed around embedded in GSS tuples rather than by
+> themselves.
 
-No it isn't, and no it doesn't.
+I'm not sure what you mean.  When I accept a gss context I don't yet
+know what service or qop it's going to be used with, I only know the
+mechanism OID.
 
-It's a "bus" exactly the same way the PS2 driver is a "bus", and it
-has individual devices connecting to it exactly the same way we have
-keyboards and mice connecting to the PS2 driver.
+> An alternative would be to use gss_mech_get_by_name(), which is
+> already visible, loads GSS mechanism modules automatically, and
+> returns struct gss_api_mech *.  For NFS, we should already have a
+> clean mapping of mechanism name to pseudoflavor to GSS tuple.  Looks
+> like rsc_parse() already uses this API.
 
-Except at least the PS2 driver is documented somewhere, and has been
-done by multiple different vendors. Afaik, ssbi is a single
-implementation by qualcomm or something.
+We don't have a name here, only an OID.
 
-Yes, we could have "drivers/ps2" too. Except we don't. It's actually
-hidden down in drivers/input/serio/.
+> Do you have gssproxy patches published in a git tree somewhere I could
+> review?
 
-Now, maybe I'm wrong, and maybe SSBI is some next-gen super-bus that
-just hides all the information about itself from me better than most
-hardware tends to. And hey, maybe it will eventually grow to replace
-something like i2c entirely. Maybe David can explain why it's such a
-big deal. But right now it smells like somethign that should not be at
-the top level.
+It's in my for-3.10 branch.
 
-                Linus
+Which is more or less what I plan to submit for 3.10, so I'd prefer not
+to rebase it at this point.
+
+It looks like just removing "static" would resolve the immediate
+conflict, is that right?  And then I'd happily help deal with cleaning
+up the API as followup work.
+
+--b.
