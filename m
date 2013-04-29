@@ -1,157 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757562Ab3D2KE2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 06:04:28 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:35059 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757487Ab3D2KEY (ORCPT
+	id S1757819Ab3D2KG3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 06:06:29 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:11514 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756831Ab3D2KGZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 06:04:24 -0400
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <grant.likely@linaro.org>, <tony@atomide.com>, <balbi@ti.com>,
-        <kishon@ti.com>, <arnd@arndb.de>, <swarren@nvidia.com>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-usb@vger.kernel.org>,
-        <sylvester.nawrocki@gmail.com>
-CC: <rob.herring@calxeda.com>, <rob@landley.net>, <b-cousson@ti.com>,
-        <linux@arm.linux.org.uk>, <gregkh@linuxfoundation.org>,
-        <benoit.cousson@linaro.org>, <mchehab@redhat.com>,
-        <akpm@linux-foundation.org>, <cesarb@cesarb.net>,
-        <davem@davemloft.net>, <rnayak@ti.com>, <shawn.guo@linaro.org>,
-        <santosh.shilimkar@ti.com>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-doc@vger.kernel.org>, <nsekhar@ti.com>
-Subject: [PATCH v6 6/9] ARM: dts: omap: update usb_otg_hs data
-Date: Mon, 29 Apr 2013 15:33:29 +0530
-Message-ID: <1367229812-30574-7-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1367229812-30574-1-git-send-email-kishon@ti.com>
-References: <1367229812-30574-1-git-send-email-kishon@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Mon, 29 Apr 2013 06:06:25 -0400
+X-AuditID: cbfee68f-b7f066d000003683-4d-517e461f2130
+From: Inki Dae <inki.dae@samsung.com>
+To: "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, linux-arm-kernel@lists.infradead.org
+References: <1367213521-26795-1-git-send-email-inki.dae@samsung.com>
+ <20130429095138.GJ14496@n2100.arm.linux.org.uk>
+In-reply-to: <20130429095138.GJ14496@n2100.arm.linux.org.uk>
+Subject: RE: [PATCH] module: fix mutiple defined issue
+Date: Mon, 29 Apr 2013 19:06:23 +0900
+Message-id: <019801ce44c1$34326d60$9c974820$%dae@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac5EvzF8LcV/8l/FTj2OPklnir6slwAAQk7A
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMIsWRmVeSWpSXmKPExsWyRsSkWFferS7QYF6HjcWVr+/ZLJoXr2ez
+	2PT4GqvF5V1z2CxuX+Z1YPVoae5h89g/dw27x/3u40wem5fUe3zeJBfAGsVlk5Kak1mWWqRv
+	l8CVcaP1L1vBC+GK9nU/2BsYpwt0MXJwSAiYSNz8ZNPFyAlkiklcuLeeDcQWEljKKLF1YyhM
+	SfNC2y5GLqDwdEaJA5uaWSCcn4wSj06tAWtgE1CVmLjiPpgtImAuMW/mJCaQImaBVkaJlzfn
+	sYFMEhIokzi1tBSkhlPARuL+99ksILawgJnEwpWrwHpZgOb8+tTCCmLzCthKTGj7wwhhC0r8
+	mHwPrJ5ZQEti/c7jTBC2vMTmNW+ZIQ5Vl3j0VxfiBCOJB1Mns0OUiEjse/GOEeQcCYFb7BKf
+	PzdD7RKQ+Db5EAtEr6zEpgPMkHCQlDi44gbLBEaJWUg2z0KyeRaSzbOQrFjAyLKKUTS1ILmg
+	OCm9yFivODG3uDQvXS85P3cTIzBCT/971r+D8e4B60OMyUDrJzJLiSbnAyM8ryTe0NjMyMLU
+	xNTYyNzSjDRhJXFetRbrQCGB9MSS1OzU1ILUovii0pzU4kOMTBycUg2MsR8FGl7si/ddfuDs
+	E7e6vbkyz3Wf2lZvPxa7l1/gj7/jrlhv/72Cfnceqf/Ov/a2R8XwxLqZO6a5nNl8I+Ux9/6b
+	Pqk7LMqkUm1P+xh/NTeo4T60ftNqpZ5PcZa61y7LfZZ4WLLt4vKZ63lbyhtfXAwv/GO4fXmg
+	wW5r/q3Hjf6JLUw/VbtBQImlOCPRUIu5qDgRAEpnTRPmAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrEKsWRmVeSWpSXmKPExsVy+t9jQV15t7pAg0s9phZXvr5ns2hevJ7N
+	YtPja6wWl3fNYbO4fZnXgdWjpbmHzWP/3DXsHve7jzN5bF5S7/F5k1wAa1QDo01GamJKapFC
+	al5yfkpmXrqtkndwvHO8qZmBoa6hpYW5kkJeYm6qrZKLT4CuW2YO0G4lhbLEnFKgUEBicbGS
+	vh2mCaEhbroWMI0Rur4hQXA9RgZoIGENY8aN1r9sBS+EK9rX/WBvYJwu0MXIwSEhYCLRvNC2
+	i5ETyBSTuHBvPVsXIxeHkMB0RokDm5pZIJyfjBKPTq1hA6liE1CVmLjiPpgtImAuMW/mJCaQ
+	ImaBVkaJlzfnsYFMFRIokzi1tBSkhlPARuL+99ksILawgJnEwpWrwHpZgOb8+tTCCmLzCthK
+	TGj7wwhhC0r8mHwPrJ5ZQEti/c7jTBC2vMTmNW+ZIY5Wl3j0VxfiBCOJB1Mns0OUiEjse/GO
+	cQKj0Cwkk2YhmTQLyaRZSFoWMLKsYhRNLUguKE5KzzXSK07MLS7NS9dLzs/dxAhOAc+kdzCu
+	arA4xCjAwajEwxuwuTZQiDWxrLgy9xCjBAezkgjvGce6QCHelMTKqtSi/Pii0pzU4kOMyUCP
+	TmSWEk3OB6anvJJ4Q2MTMyNLI3NDCyNjc9KElcR5D7ZaBwoJpCeWpGanphakFsFsYeLglGpg
+	rHDPbtX3/tj7d9f8v8+jVPmmvrMSW5Syxc/H/1kzk3vmz07pZL9JDeHebUEWL37lnThkmDyr
+	eN7qR3zLugyf8hYzbuQ8d3W5flxguqymV49quoiSqf5C3qKQ88EvpxTONg14xv3U6soyrXfB
+	ZseTcmrtC46e1LHd94vp5pP1S5k1uX9ncRgpsRRnJBpqMRcVJwIAQVvwIEUDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Updated the usb_otg_hs dt data to include the *phy* and *phy-names*
-binding in order for the driver to use the new generic PHY framework.
-Also updated the Documentation to include the binding information.
-The PHY binding information can be found at
-Documentation/devicetree/bindings/phy/phy-bindings.txt
 
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
----
- Documentation/devicetree/bindings/usb/omap-usb.txt |    5 +++++
- Documentation/devicetree/bindings/usb/usb-phy.txt  |    6 ++++++
- arch/arm/boot/dts/omap3.dtsi                       |    2 ++
- arch/arm/boot/dts/omap4.dtsi                       |    3 +++
- arch/arm/boot/dts/twl4030.dtsi                     |    1 +
- 5 files changed, 17 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/usb/omap-usb.txt b/Documentation/devicetree/bindings/usb/omap-usb.txt
-index d4769f3..c0871a7 100644
---- a/Documentation/devicetree/bindings/usb/omap-usb.txt
-+++ b/Documentation/devicetree/bindings/usb/omap-usb.txt
-@@ -19,6 +19,9 @@ OMAP MUSB GLUE
-  - power : Should be "50". This signifies the controller can supply upto
-    100mA when operating in host mode.
-  - usb-phy : the phandle for the PHY device
-+ - phys : the phandle for the PHY device (used by generic PHY framework)
-+ - phy-names : the names of the PHY corresponding to the PHYs present in the
-+   *phy* phandle.
- 
- Optional properties:
-  - ctrl-module : phandle of the control module this glue uses to write to
-@@ -33,6 +36,8 @@ usb_otg_hs: usb_otg_hs@4a0ab000 {
- 	num-eps = <16>;
- 	ram-bits = <12>;
- 	ctrl-module = <&omap_control_usb>;
-+	phys = <&usb2_phy>;
-+	phy-names = "usb2-phy";
- };
- 
- Board specific device node entry
-diff --git a/Documentation/devicetree/bindings/usb/usb-phy.txt b/Documentation/devicetree/bindings/usb/usb-phy.txt
-index 61496f5..c0245c8 100644
---- a/Documentation/devicetree/bindings/usb/usb-phy.txt
-+++ b/Documentation/devicetree/bindings/usb/usb-phy.txt
-@@ -5,6 +5,8 @@ OMAP USB2 PHY
- Required properties:
-  - compatible: Should be "ti,omap-usb2"
-  - reg : Address and length of the register set for the device.
-+ - #phy-cells: determine the number of cells that should be given in the
-+   phandle while referencing this phy.
- 
- Optional properties:
-  - ctrl-module : phandle of the control module used by PHY driver to power on
-@@ -16,6 +18,7 @@ usb2phy@4a0ad080 {
- 	compatible = "ti,omap-usb2";
- 	reg = <0x4a0ad080 0x58>;
- 	ctrl-module = <&omap_control_usb>;
-+	#phy-cells = <0>;
- };
- 
- OMAP USB3 PHY
-@@ -25,6 +28,8 @@ Required properties:
-  - reg : Address and length of the register set for the device.
-  - reg-names: The names of the register addresses corresponding to the registers
-    filled in "reg".
-+ - #phy-cells: determine the number of cells that should be given in the
-+   phandle while referencing this phy.
- 
- Optional properties:
-  - ctrl-module : phandle of the control module used by PHY driver to power on
-@@ -39,4 +44,5 @@ usb3phy@4a084400 {
- 	      <0x4a084c00 0x40>;
- 	reg-names = "phy_rx", "phy_tx", "pll_ctrl";
- 	ctrl-module = <&omap_control_usb>;
-+	#phy-cells = <0>;
- };
-diff --git a/arch/arm/boot/dts/omap3.dtsi b/arch/arm/boot/dts/omap3.dtsi
-index 4ad03d9..51b4bee 100644
---- a/arch/arm/boot/dts/omap3.dtsi
-+++ b/arch/arm/boot/dts/omap3.dtsi
-@@ -520,6 +520,8 @@
- 			interrupt-names = "mc", "dma";
- 			ti,hwmods = "usb_otg_hs";
- 			usb-phy = <&usb2_phy>;
-+			phys = <&usb2_phy>;
-+			phy-names = "usb2-phy";
- 			multipoint = <1>;
- 			num-eps = <16>;
- 			ram-bits = <12>;
-diff --git a/arch/arm/boot/dts/omap4.dtsi b/arch/arm/boot/dts/omap4.dtsi
-index 2a56428..dae620b 100644
---- a/arch/arm/boot/dts/omap4.dtsi
-+++ b/arch/arm/boot/dts/omap4.dtsi
-@@ -517,6 +517,7 @@
- 				compatible = "ti,omap-usb2";
- 				reg = <0x4a0ad080 0x58>;
- 				ctrl-module = <&omap_control_usb>;
-+				#phy-cells = <0>;
- 			};
- 		};
- 
-@@ -655,6 +656,8 @@
- 			interrupt-names = "mc", "dma";
- 			ti,hwmods = "usb_otg_hs";
- 			usb-phy = <&usb2_phy>;
-+			phys = <&usb2_phy>;
-+			phy-names = "usb2-phy";
- 			multipoint = <1>;
- 			num-eps = <16>;
- 			ram-bits = <12>;
-diff --git a/arch/arm/boot/dts/twl4030.dtsi b/arch/arm/boot/dts/twl4030.dtsi
-index b3034da..ce4cd6f 100644
---- a/arch/arm/boot/dts/twl4030.dtsi
-+++ b/arch/arm/boot/dts/twl4030.dtsi
-@@ -80,6 +80,7 @@
- 		usb1v8-supply = <&vusb1v8>;
- 		usb3v1-supply = <&vusb3v1>;
- 		usb_mode = <1>;
-+		#phy-cells = <0>;
- 	};
- 
- 	twl_pwm: pwm {
--- 
-1.7.10.4
+> -----Original Message-----
+> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
+> owner@vger.kernel.org] On Behalf Of Russell King - ARM Linux
+> Sent: Monday, April 29, 2013 6:52 PM
+> To: Inki Dae
+> Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org; dri-
+> devel@lists.freedesktop.org; linux-arm-kernel@lists.infradead.org
+> Subject: Re: [PATCH] module: fix mutiple defined issue
+> 
+> On Mon, Apr 29, 2013 at 02:32:01PM +0900, Inki Dae wrote:
+> > This patch fixes mutiple defined issue to MODULE_DEVICE_TABLE
+> >
+> > The issue could be induced when some framework which includes two
+> > more sub drivers, is built as one moudle because those sub drivers
+> > could have their own MODULE_DEVICE_TABLE.
+> >
+> > And 'struct of_device_id' isn't needed to be determined by type
+> > argument because the definition of 'of_device_id' should be fixed.
+> > So this patch makes 'of_devce_id' definition to be fixed and
+> > only its instance name to be defined by type.
+> >
+> > Signed-off-by: Inki Dae <inki.dae@samsung.com>
+> > ---
+> >  include/linux/module.h |    2 +-
+> >  1 files changed, 1 insertions(+), 1 deletions(-)
+> >
+> > diff --git a/include/linux/module.h b/include/linux/module.h
+> > index 46f1ea0..ac5d79f 100644
+> > --- a/include/linux/module.h
+> > +++ b/include/linux/module.h
+> > @@ -84,7 +84,7 @@ void trim_init_extable(struct module *m);
+> >
+> >  #ifdef MODULE
+> >  #define MODULE_GENERIC_TABLE(gtype,name)			\
+> > -extern const struct gtype##_id __mod_##gtype##_table		\
+> > +extern const struct of_device_id __mod_##gtype##_table		\
+> >    __attribute__ ((unused, alias(__stringify(name))))
+> >
+> >  #else  /* !MODULE */
+> 
+> This patch (a) looks wrong (why would a generic device table be limited
+> to of_device_id when it could be ISAPNP or something else?) and (b) how
+> does changing the type fix the "multiple defined issue" ?  (c) include
+> the errors that you're fixing in the commit log.
+
+There was my misunderstanding. So please ignore my patch. Some headers in
+include/linux/ have some kind of device_id structure such as of_device_id,
+platform_device_id, i2c_device_id, and so on. And these structures should be
+used properly. This was my missing point.
+
+Thanks,
+Inki Dae
+
+
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
