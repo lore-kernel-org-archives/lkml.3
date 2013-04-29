@@ -1,122 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756974Ab3D2Il1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 04:41:27 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60132 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751497Ab3D2Il0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 04:41:26 -0400
-Date: Mon, 29 Apr 2013 09:41:13 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH] Add a sysctl for numa_balancing.
-Message-ID: <20130429084113.GI2144@suse.de>
-References: <1366847784-29386-1-git-send-email-andi@firstfloor.org>
+	id S1756985Ab3D2Ioq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 04:44:46 -0400
+Received: from awesome.dsw2k3.info ([195.71.86.230]:40425 "EHLO
+	awesome.dsw2k3.info" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751311Ab3D2Iop (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Apr 2013 04:44:45 -0400
+X-Greylist: delayed 469 seconds by postgrey-1.27 at vger.kernel.org; Mon, 29 Apr 2013 04:44:45 EDT
+Date: Mon, 29 Apr 2013 10:36:49 +0200
+From: Matthias Schniedermeyer <ms@citd.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Build-failure with old files in build-directory (Was: Linux 3.9
+ released)
+Message-ID: <20130429083649.GA23540@citd.de>
+References: <CA+55aFxcqR+5wK0QoGBA_jYP1epH2NCbVTRaE51rLK3mdRjN6Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1366847784-29386-1-git-send-email-andi@firstfloor.org>
+In-Reply-To: <CA+55aFxcqR+5wK0QoGBA_jYP1epH2NCbVTRaE51rLK3mdRjN6Q@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 24, 2013 at 04:56:24PM -0700, Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
-> 
-> As discussed earlier, this adds a working sysctl to enable/disable
-> automatic numa memory balancing at runtime.
-> 
-> This was possible earlier through debugfs, but only with special
-> debugging options set. Also fix the boot message.
-> 
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+On 28.04.2013 17:56, Linus Torvalds wrote:
 
-Acked-by: Mel Gorman <mgorman@suse.de>
+I'm not sure if it is supported, but building with a O= -directory that 
+was previously used to build a 3.8.9-kernel that was "clean"ed (but not 
+"mrproper"ed) before building 3.9 results in a build-failure:
+make[2]: *** No rule to make target `/xssd/usr_src/ko/leeloo/include/config/hz.h', needed by `kernel/hz.bc'.  Stop.
 
-Would you like to merge the following patch with it to remove the TBD?
+After deleting everything in the KBUILD_OUTPUT-directory, except the 
+.config-file, the kernel-build worked again.
 
----8<---
-mm: numa: Document remaining automatic NUMA balancing sysctls
+At least in the past a "clean" seamed to be enough. I had a file with a 
+2.6.39-name inside, so it seams i have build my kernels this way for the 
+last few releases.
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- Documentation/sysctl/kernel.txt | 62 +++++++++++++++++++++++++++++++++++++----
- 1 file changed, 57 insertions(+), 5 deletions(-)
 
-diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
-index 17a7004..4d56060 100644
---- a/Documentation/sysctl/kernel.txt
-+++ b/Documentation/sysctl/kernel.txt
-@@ -356,11 +356,63 @@ utilize.
- 
- numa_balancing
- 
--Enables/disables automatic page fault based NUMA memory
--balancing. Memory is moved automatically to nodes
--that access it often.
--
--TBD someone document the other numa_balancing tunables
-+Enables/disables automatic NUMA memory balancing. On NUMA machines, there
-+is a performance penalty if remote memory is accessed by a CPU. When this
-+feature is enabled the kernel samples what task thread is accessing memory
-+by periodically unmapping pages and later trapping a page fault. At the
-+time of the page fault, it is determined if the data being accessed should
-+be migrated to a local memory node.
-+
-+The unmapping of pages and trapping faults incur additional overhead that
-+ideally is offset by improved memory locality but there is no universal
-+guarantee. If the target workload is already bound to NUMA nodes then this
-+feature should be disabled. Otherwise, if the system overhead from the
-+feature is too high then the rate the kernel samples for NUMA hinting
-+faults may be controlled by the numa_balancing_scan_period_min_ms,
-+numa_balancing_scan_delay_ms, numa_balancing_scan_period_reset,
-+numa_balancing_scan_period_max_ms and numa_balancing_scan_size_mb sysctls.
-+
-+==============================================================
-+
-+numa_balancing_scan_period_min_ms, numa_balancing_scan_delay_ms,
-+numa_balancing_scan_period_max_ms, numa_balancing_scan_period_reset,
-+numa_balancing_scan_size_mb
-+
-+Automatic NUMA balancing scans tasks address space and unmaps pages to
-+detect if pages are properly placed or if the data should be migrated to a
-+memory node local to where the task is running.  Every "scan delay" the task
-+scans the next "scan size" number of pages in its address space. When the
-+end of the address space is reached the scanner restarts from the beginning.
-+
-+In combination, the "scan delay" and "scan size" determine the scan rate.
-+When "scan delay" decreases, the scan rate increases.  The scan delay and
-+hence the scan rate of every task is adaptive and depends on historical
-+behaviour. If pages are properly placed then the scan delay increases,
-+otherwise the scan delay decreases.  The "scan size" is not adaptive but
-+the higher the "scan size", the higher the scan rate.
-+
-+Higher scan rates incur higher system overhead as page faults must be
-+trapped and potentially data must be migrated. However, the higher the scan
-+rate, the more quickly a tasks memory is migrated to a local node if the
-+workload pattern changes and minimises performance impact due to remote
-+memory accesses. These sysctls control the thresholds for scan delays and
-+the number of pages scanned.
-+
-+numa_balancing_scan_period_min_ms is the minimum delay in milliseconds
-+between scans. It effectively controls the maximum scanning rate for
-+each task.
-+
-+numa_balancing_scan_delay_ms is the starting "scan delay" used for a task
-+when it initially forks.
-+
-+numa_balancing_scan_period_max_ms is the maximum delay between scans. It
-+effectively controls the minimum scanning rate for each task.
-+
-+numa_balancing_scan_size_mb is how many megabytes worth of pages are
-+scanned for a given scan.
-+
-+numa_balancing_scan_period_reset is a blunt instrument that controls how
-+often a tasks scan delay is reset to detect sudden changes in task behaviour.
- 
- ==============================================================
- 
 
+
+
+-- 
+
+Matthias
