@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759658Ab3D2TDA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 15:03:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60795 "EHLO
+	id S933669Ab3D2TbH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 15:31:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60816 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759276Ab3D2TC6 (ORCPT
+	with ESMTP id S1759664Ab3D2TDB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 15:02:58 -0400
+	Mon, 29 Apr 2013 15:03:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [ 02/34] TTY: do not update atime/mtime on read/write
-Date: Mon, 29 Apr 2013 12:02:09 -0700
-Message-Id: <20130429184701.149261120@linuxfoundation.org>
+        Mathias Krause <minipli@googlemail.com>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Gustavo Padovan <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 07/34] Bluetooth: fix possible info leak in bt_sock_recvmsg()
+Date: Mon, 29 Apr 2013 12:02:14 -0700
+Message-Id: <20130429184701.740820889@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130429184700.845644077@linuxfoundation.org>
 References: <20130429184700.845644077@linuxfoundation.org>
@@ -26,54 +30,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Slaby <jslaby@suse.cz>
 
-commit b0de59b5733d18b0d1974a060860a8b5c1b36a2e upstream.
+From: Mathias Krause <minipli@googlemail.com>
 
-On http://vladz.devzero.fr/013_ptmx-timing.php, we can see how to find
-out length of a password using timestamps of /dev/ptmx. It is
-documented in "Timing Analysis of Keystrokes and Timing Attacks on
-SSH". To avoid that problem, do not update time when reading
-from/writing to a TTY.
+[ Upstream commit 4683f42fde3977bdb4e8a09622788cc8b5313778 ]
 
-I am afraid of regressions as this is a behavior we have since 0.97
-and apps may expect the time to be current, e.g. for monitoring
-whether there was a change on the TTY. Now, there is no change. So
-this would better have a lot of testing before it goes upstream.
+In case the socket is already shutting down, bt_sock_recvmsg() returns
+with 0 without updating msg_namelen leading to net/socket.c leaking the
+local, uninitialized sockaddr_storage variable to userland -- 128 bytes
+of kernel stack memory.
 
-References: CVE-2013-0160
+Fix this by moving the msg_namelen assignment in front of the shutdown
+test.
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Cc: Marcel Holtmann <marcel@holtmann.org>
+Cc: Gustavo Padovan <gustavo@padovan.org>
+Cc: Johan Hedberg <johan.hedberg@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/tty/tty_io.c |    8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+ net/bluetooth/af_bluetooth.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/tty/tty_io.c
-+++ b/drivers/tty/tty_io.c
-@@ -974,8 +974,7 @@ static ssize_t tty_read(struct file *fil
- 	else
- 		i = -EIO;
- 	tty_ldisc_deref(ld);
--	if (i > 0)
--		inode->i_atime = current_fs_time(inode->i_sb);
-+
- 	return i;
- }
+--- a/net/bluetooth/af_bluetooth.c
++++ b/net/bluetooth/af_bluetooth.c
+@@ -240,6 +240,8 @@ int bt_sock_recvmsg(struct kiocb *iocb,
+ 	if (flags & (MSG_OOB))
+ 		return -EOPNOTSUPP;
  
-@@ -1076,11 +1075,8 @@ static inline ssize_t do_tty_write(
- 			break;
- 		cond_resched();
++	msg->msg_namelen = 0;
++
+ 	skb = skb_recv_datagram(sk, flags, noblock, &err);
+ 	if (!skb) {
+ 		if (sk->sk_shutdown & RCV_SHUTDOWN)
+@@ -247,8 +249,6 @@ int bt_sock_recvmsg(struct kiocb *iocb,
+ 		return err;
  	}
--	if (written) {
--		struct inode *inode = file->f_path.dentry->d_inode;
--		inode->i_mtime = current_fs_time(inode->i_sb);
-+	if (written)
- 		ret = written;
--	}
- out:
- 	tty_write_unlock(tty);
- 	return ret;
+ 
+-	msg->msg_namelen = 0;
+-
+ 	copied = skb->len;
+ 	if (len < copied) {
+ 		msg->msg_flags |= MSG_TRUNC;
 
 
