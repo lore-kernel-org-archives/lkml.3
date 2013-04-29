@@ -1,68 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760651Ab3D2TgY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 15:36:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60718 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759478Ab3D2TCq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 15:02:46 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Riesch <michael.riesch@omicron.at>,
-        Jiri Benc <jbenc@redhat.com>, "Theodore Tso" <tytso@mit.edu>,
-        Mark Rustad <mark.d.rustad@intel.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 29/42] rtnetlink: Call nlmsg_parse() with correct header length
-Date: Mon, 29 Apr 2013 12:02:11 -0700
-Message-Id: <20130429184755.703064141@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130429184752.435249613@linuxfoundation.org>
-References: <20130429184752.435249613@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	id S1759699Ab3D2Tgu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 15:36:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5720 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758099Ab3D2Tgr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Apr 2013 15:36:47 -0400
+Date: Mon, 29 Apr 2013 15:36:12 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Cc: ebiederm@xmission.com, akpm@linux-foundation.org, cpw@sgi.com,
+        kumagai-atsushi@mxc.nes.nec.co.jp, lisa.mitchell@hp.com,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        zhangyanfei@cn.fujitsu.com, jingbai.ma@hp.com
+Subject: Re: [PATCH v4 5/8] vmcore: copy ELF note segments in the 2nd kernel
+ per page vmcore objects
+Message-ID: <20130429193611.GQ8204@redhat.com>
+References: <20130413002000.18245.21513.stgit@localhost6.localdomain6>
+ <20130413002133.18245.91528.stgit@localhost6.localdomain6>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130413002133.18245.91528.stgit@localhost6.localdomain6>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8-stable review patch.  If anyone has any objections, please let me know.
+On Sat, Apr 13, 2013 at 09:21:33AM +0900, HATAYAMA Daisuke wrote:
 
-------------------
+[..]
+> ELF notes are per-cpu, so total size of ELF note segments increases
+> according to the number of CPUs. The current maximum number of CPUs on
+> x86_64 is 5192, and there's already system with 4192 CPUs in SGI,
+> where total size amounts to 1MB. This can be larger in the neare
+> futrue or possibly even now on another architecture. Thus, to avoid
+> the case where memory allocation for large block fails, we allocate
+> vmcore objects per pages.
 
+IIRC, eric had suggested using vmalloc() and remap_vmalloc_range(). What's
+wrong with that? That should keep your vc_list relatively smaller.
 
-From: Michael Riesch <michael.riesch@omicron.at>
-
-[ Upstream commit 88c5b5ce5cb57af6ca2a7cf4d5715fa320448ff9 ]
-
-Signed-off-by: Michael Riesch <michael.riesch@omicron.at>
-Cc: Jiri Benc <jbenc@redhat.com>
-Cc: "Theodore Ts'o" <tytso@mit.edu>
-Acked-by: Mark Rustad <mark.d.rustad@intel.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/core/rtnetlink.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
---- a/net/core/rtnetlink.c
-+++ b/net/core/rtnetlink.c
-@@ -1068,7 +1068,7 @@ static int rtnl_dump_ifinfo(struct sk_bu
- 	rcu_read_lock();
- 	cb->seq = net->dev_base_seq;
- 
--	if (nlmsg_parse(cb->nlh, sizeof(struct rtgenmsg), tb, IFLA_MAX,
-+	if (nlmsg_parse(cb->nlh, sizeof(struct ifinfomsg), tb, IFLA_MAX,
- 			ifla_policy) >= 0) {
- 
- 		if (tb[IFLA_EXT_MASK])
-@@ -1924,7 +1924,7 @@ static u16 rtnl_calcit(struct sk_buff *s
- 	u32 ext_filter_mask = 0;
- 	u16 min_ifinfo_dump_size = 0;
- 
--	if (nlmsg_parse(nlh, sizeof(struct rtgenmsg), tb, IFLA_MAX,
-+	if (nlmsg_parse(nlh, sizeof(struct ifinfomsg), tb, IFLA_MAX,
- 			ifla_policy) >= 0) {
- 		if (tb[IFLA_EXT_MASK])
- 			ext_filter_mask = nla_get_u32(tb[IFLA_EXT_MASK]);
-
-
+Thanks
+Vivek
