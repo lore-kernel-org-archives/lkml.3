@@ -1,52 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759644Ab3D2XFb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 19:05:31 -0400
-Received: from violet.fr.zoreil.com ([92.243.8.30]:52636 "EHLO
-	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759191Ab3D2XF2 (ORCPT
+	id S1758778Ab3D2XI2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 19:08:28 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:34483 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757947Ab3D2XI1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 19:05:28 -0400
-Date: Tue, 30 Apr 2013 01:04:50 +0200
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: Tony Prisk <linux@prisktech.co.nz>
-Cc: vt8500-wm8505-linux-kernel@googlegroups.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        davem@davemloft.net, netdev@vger.kernel.org
-Subject: Re: [PATCHv3 3/3] net: velocity: Add platform device support to VIA
- velocity driver
-Message-ID: <20130429230450.GA2620@electric-eye.fr.zoreil.com>
-References: <1367264772-4557-1-git-send-email-linux@prisktech.co.nz>
- <1367264772-4557-4-git-send-email-linux@prisktech.co.nz>
+	Mon, 29 Apr 2013 19:08:27 -0400
+Date: Mon, 29 Apr 2013 16:08:23 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Christoph Lameter <cl@linux-foundation.org>
+Subject: [GIT PULL] percpu changes for v3.10-rc1
+Message-ID: <20130429230823.GH2395@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1367264772-4557-4-git-send-email-linux@prisktech.co.nz>
-X-Organisation: Land of Sunshine Inc.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tony Prisk <linux@prisktech.co.nz> :
-[...]
-> +static int velocity_remove(void *pdev, enum velocity_bus_type bustype)
-> +{
-> +	struct net_device *netdev;
-> +	struct velocity_info *vptr;
-> +	int pci = (bustype == BUS_PCI) ? 1 : 0;
-> +
-> +	if (pci)
-> +		netdev = pci_get_drvdata(pdev);
-> +	else
-> +		netdev = platform_get_drvdata(pdev);
+Hello, Linus.
 
-The caller knows how to retrieve the net_device pointer, whence
-the struct velocity_info pointer, whence any bustype dependent
-function pointer to alleviate the "if (pci)" and CONFIG stuff.
+A puny pull request for percpu.  We were expecting more cleanup
+patches but didn't happen this time, so just a single patch adding
+documentation from Christoph.
 
-If you are not convinced, please consider turning the void *
-into an union *.
+Thanks.
 
--- 
-Ueimor
+The following changes since commit 07961ac7c0ee8b546658717034fe692fd12eefa9:
+
+  Linux 3.9-rc5 (2013-03-31 15:12:43 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/percpu.git for-3.10
+
+for you to fetch changes up to a1b2a555d6375f1ed34d0a1761b540de3a8727c6:
+
+  percpu: add documentation on this_cpu operations (2013-04-04 10:24:53 -0700)
+
+----------------------------------------------------------------
+Christoph Lameter (1):
+      percpu: add documentation on this_cpu operations
+
+ Documentation/this_cpu_ops.txt | 205 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 205 insertions(+)
+ create mode 100644 Documentation/this_cpu_ops.txt
+
+--
+tejun
