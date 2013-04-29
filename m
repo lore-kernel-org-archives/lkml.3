@@ -1,95 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757969Ab3D2KMy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 06:12:54 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:54720 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752444Ab3D2KMx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 06:12:53 -0400
+	id S1757934Ab3D2KRD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 06:17:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54758 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754931Ab3D2KRC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Apr 2013 06:17:02 -0400
+Message-ID: <517E487F.2050700@redhat.com>
+Date: Mon, 29 Apr 2013 12:16:31 +0200
+From: Daniel Borkmann <dborkman@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <201304291140.IFJ95894.OFLSFFHQOOMVJt@I-love.SAKURA.ne.jp>
-References: <201304242108.FDC35910.VJMHFFFSOLOOQt@I-love.SAKURA.ne.jp>
-	<201304252120.GII21814.FMJFtHLOOVQFOS@I-love.SAKURA.ne.jp>
-	<201304291140.IFJ95894.OFLSFFHQOOMVJt@I-love.SAKURA.ne.jp>
-Date: Mon, 29 Apr 2013 13:12:51 +0300
-X-Google-Sender-Auth: elI61Ja8RRN9hjnxyhJxrjH18sg
-Message-ID: <CAOJsxLFYDC+EDdJrXVnc1qfEyd56bhFLeGE+6Mbhwiq73KQQLQ@mail.gmail.com>
-Subject: Re: [linux-next-20130422] Bug in SLAB?
-From: Pekka Enberg <penberg@kernel.org>
-To: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
-Cc: Glauber Costa <glommer@parallels.com>, Christoph Lameter <cl@linux.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Xi Wang <xi.wang@gmail.com>
+CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Will Drewry <wad@chromium.org>, Eric Dumazet <edumazet@google.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        David Laight <david.laight@aculab.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nicolas Schichan <nschichan@freebox.fr>
+Subject: Re: [PATCH v2 net-next 3/3] ARM: net: bpf_jit_32: support BPF_S_ANC_SECCOMP_LD_W
+ instruction
+References: <1367029047-14830-1-git-send-email-xi.wang@gmail.com> <1367029047-14830-4-git-send-email-xi.wang@gmail.com> <517B6FC5.7070003@redhat.com> <CAKU6vyathpp4Ky_kcTu_WFenLEdo9Mai4TUE=EWYo9=UuQUMcg@mail.gmail.com>
+In-Reply-To: <CAKU6vyathpp4Ky_kcTu_WFenLEdo9Mai4TUE=EWYo9=UuQUMcg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 29, 2013 at 5:40 AM, Tetsuo Handa
-<penguin-kernel@i-love.sakura.ne.jp> wrote:
-> Tetsuo Handa wrote:
->> Also, kmalloc_index() in include/linux/slab.h can return 0 to 26.
->>
->> If (MAX_ORDER + PAGE_SHIFT - 1) > 25 is true and
->> kmalloc_index(64 * 1024 * 1024) is requested (I don't know whether such case
->> happens), kmalloc_caches[26] is beyond the array, for kmalloc_caches[26]
->> allows 0 to 25.
->>
->> If (MAX_ORDER + PAGE_SHIFT - 1) <= 25 is true and
->> kmalloc_index(64 * 1024 * 1024) is requested (I don't know whether such case
->> happens), kmalloc_caches[26] is beyond the array, for
->> kmalloc_caches[MAX_ORDER + PAGE_SHIFT] allows 0 to MAX_ORDER + PAGE_SHIFT - 1.
->>
->> Would you recheck that the array size is correct?
->>
->
-> I confirmed (on x86_32) that
->
->   volatile unsigned int size = 8 * 1024 * 1024;
->   kmalloc(size, GFP_KERNEL);
->
-> causes no warning at compile time and returns NULL at runtime. But
->
->   unsigned int size = 8 * 1024 * 1024;
->   kmalloc(size, GFP_KERNEL);
->
-> causes compile time warning
->
->   include/linux/slab_def.h:136: warning: array subscript is above array bounds
->
-> and runtime bug.
->
->   BUG: unable to handle kernel NULL pointer dereference at 00000058
->   IP: [<c10b9d76>] kmem_cache_alloc+0x26/0xb0
->
-> I confirmed (on x86_32) that
->
->   kmalloc(64 * 1024 * 1024, GFP_KERNEL);
->
-> causes compile time warning
->
->   include/linux/slab_def.h:136: warning: array subscript is above array bounds
->
-> and runtime bug.
->
->   Kernel BUG at c10b9c5b [verbose debug info unavailable]
->   invalid opcode: 0000 [#1] SMP
->
-> Also,
->
->   volatile unsigned int size = 64 * 1024 * 1024;
->   kmalloc(size, GFP_KERNEL);
->
-> causes no warning at compile time but runtime bug.
->
->   Kernel BUG at c10b9c5b [verbose debug info unavailable]
->   invalid opcode: 0000 [#1] SMP
->
-> There are kernel modules which expect kmalloc() to return NULL rather than
-> oops when the requested size is too large.
+On 04/27/2013 08:32 PM, Xi Wang wrote:
+> On Sat, Apr 27, 2013 at 2:27 AM, Daniel Borkmann <dborkman@redhat.com> wrote:
 
-Christoph, Glauber, it seems like commit e3366016 ("slab: Use common
-kmalloc_index/kmalloc_size functions") is causing some problems here.
-Can you please take a look?
+>> Besides all that, I think I also pointed you to a patch that already made
+>> it in for ARM, not sure why you keep posting the ARM JIT implementation?
+>
+> That's why I asked in the other post if you wanted me to rebase
+> against linux-next or net-next.  The ARM part 3/3 is not needed if
+> rebased against linux-next with Nicolas's patches.
 
-                        Pekka
+This discussion was only in terms of the unified interface, not the seccomp
+JIT itself. If you speak about ``patch'' (and not ``patch set'') I assumed
+you were only referring to the first one.
