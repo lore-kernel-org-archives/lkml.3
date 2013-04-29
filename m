@@ -1,65 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933086Ab3D2TWP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 15:22:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60830 "EHLO
+	id S933652Ab3D2Tab (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 15:30:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60821 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759700Ab3D2TDD (ORCPT
+	with ESMTP id S1759679Ab3D2TDC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 15:03:03 -0400
+	Mon, 29 Apr 2013 15:03:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mathias Krause <minipli@googlemail.com>,
-        Samuel Ortiz <samuel@sortiz.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 10/34] irda: Fix missing msg_namelen update in irda_recvmsg_dgram()
-Date: Mon, 29 Apr 2013 12:02:17 -0700
-Message-Id: <20130429184702.063056913@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        stable@vger.kernel.org
+Subject: [ 00/34] 3.4.43-stable review
+Date: Mon, 29 Apr 2013 12:02:07 -0700
+Message-Id: <20130429184700.845644077@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130429184700.845644077@linuxfoundation.org>
-References: <20130429184700.845644077@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+This is the start of the stable review cycle for the 3.4.43 release.
+There are 34 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let me know.
 
-------------------
+Responses should be made by Wed May  1 18:46:13 UTC 2013.
+Anything received after that time might be too late.
+
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.43-rc1.gz
+and the diffstat can be found below.
+
+thanks,
+
+greg k-h
+
+-------------
+Pseudo-Shortlog of commits:
+
+Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    Linux 3.4.43-rc1
+
+Eric Dumazet <edumazet@google.com>
+    net: drop dst before queueing fragments
+
+Linus Torvalds <torvalds@linux-foundation.org>
+    net: fix incorrect credentials passing
+
+Ben Greear <greearb@candelatech.com>
+    net: rate-limit warn-bad-offload splats.
+
+Eric Dumazet <edumazet@google.com>
+    tcp: call tcp_replace_ts_recent() from tcp_ack()
+
+Daniel Borkmann <dborkman@redhat.com>
+    net: sctp: sctp_auth_key_put: use kzfree instead of kfree
+
+Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+    esp4: fix error return code in esp_output()
+
+Thomas Graf <tgraf@suug.ch>
+    tcp: Reallocate headroom if it would overflow csum_start
+
+Dmitry Popov <dp@highloadlab.com>
+    tcp: incoming connections might use wrong route under synflood
+
+Michael Riesch <michael.riesch@omicron.at>
+    rtnetlink: Call nlmsg_parse() with correct header length
+
+Patrick McHardy <kaber@trash.net>
+    netfilter: don't reset nf_trace in nf_reset()
+
+Eric W. Biederman <ebiederm@xmission.com>
+    af_unix: If we don't care about credentials coallesce all messages
+
+nikolay@redhat.com <nikolay@redhat.com>
+    bonding: IFF_BONDING is not stripped on enslave failure
+
+nikolay@redhat.com <nikolay@redhat.com>
+    bonding: fix bonding_masters race condition in bond unloading
+
+Hannes Frederic Sowa <hannes@stressinduktion.org>
+    atl1e: limit gso segment size to prevent generation of wrong ip length fields
+
+Vlad Yasevich <vyasevic@redhat.com>
+    net: count hw_addr syncs so that unsync works properly.
+
+Balakumaran Kannan <kumaran.4353@gmail.com>
+    net IPv6 : Fix broken IPv6 routing table after loopback down-up
+
+Vasily Averin <vvs@parallels.com>
+    cbq: incorrect processing of high limits
+
+Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+    netrom: fix invalid use of sizeof in nr_recvmsg()
+
+Mathias Krause <minipli@googlemail.com>
+    tipc: fix info leaks via msg_name in recv_msg/recv_stream
+
+Mathias Krause <minipli@googlemail.com>
+    rose: fix info leak via msg_name in rose_recvmsg()
+
+Mathias Krause <minipli@googlemail.com>
+    NFC: llcp: fix info leaks via msg_name in llcp_sock_recvmsg()
+
+Mathias Krause <minipli@googlemail.com>
+    netrom: fix info leak via msg_name in nr_recvmsg()
+
+Mathias Krause <minipli@googlemail.com>
+    llc: Fix missing msg_namelen update in llc_ui_recvmsg()
+
+Mathias Krause <minipli@googlemail.com>
+    iucv: Fix missing msg_namelen update in iucv_sock_recvmsg()
+
+Mathias Krause <minipli@googlemail.com>
+    irda: Fix missing msg_namelen update in irda_recvmsg_dgram()
+
+Mathias Krause <minipli@googlemail.com>
+    caif: Fix missing msg_namelen update in caif_seqpkt_recvmsg()
+
+Mathias Krause <minipli@googlemail.com>
+    Bluetooth: RFCOMM - Fix missing msg_namelen update in rfcomm_sock_recvmsg()
+
+Mathias Krause <minipli@googlemail.com>
+    Bluetooth: fix possible info leak in bt_sock_recvmsg()
+
+Mathias Krause <minipli@googlemail.com>
+    ax25: fix info leak via msg_name in ax25_recvmsg()
+
+Mathias Krause <minipli@googlemail.com>
+    atm: update msg_namelen in vcc_recvmsg()
+
+David S. Miller <davem@davemloft.net>
+    sparc64: Fix race in TLB batch processing.
+
+Jiri Slaby <jslaby@suse.cz>
+    TTY: fix atime/mtime regression
+
+Jiri Slaby <jslaby@suse.cz>
+    TTY: do not update atime/mtime on read/write
+
+Zhao Hongjiang <zhaohongjiang@huawei.com>
+    aio: fix possible invalid memory access when DEBUG is enabled
 
 
-From: Mathias Krause <minipli@googlemail.com>
+-------------
 
-[ Upstream commit 5ae94c0d2f0bed41d6718be743985d61b7f5c47d ]
+Diffstat:
 
-The current code does not fill the msg_name member in case it is set.
-It also does not set the msg_namelen member to 0 and therefore makes
-net/socket.c leak the local, uninitialized sockaddr_storage variable
-to userland -- 128 bytes of kernel stack memory.
-
-Fix that by simply setting msg_namelen to 0 as obviously nobody cared
-about irda_recvmsg_dgram() not filling the msg_name in case it was
-set.
-
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Cc: Samuel Ortiz <samuel@sortiz.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/irda/af_irda.c |    2 ++
- 1 file changed, 2 insertions(+)
-
---- a/net/irda/af_irda.c
-+++ b/net/irda/af_irda.c
-@@ -1386,6 +1386,8 @@ static int irda_recvmsg_dgram(struct kio
- 
- 	IRDA_DEBUG(4, "%s()\n", __func__);
- 
-+	msg->msg_namelen = 0;
-+
- 	skb = skb_recv_datagram(sk, flags & ~MSG_DONTWAIT,
- 				flags & MSG_DONTWAIT, &err);
- 	if (!skb)
+ Makefile                                        |   4 +-
+ arch/sparc/include/asm/pgtable_64.h             |   1 +
+ arch/sparc/include/asm/switch_to_64.h           |   3 +-
+ arch/sparc/include/asm/tlbflush_64.h            |  37 ++++++--
+ arch/sparc/kernel/smp_64.c                      |  41 +++++++-
+ arch/sparc/mm/tlb.c                             |  39 +++++++-
+ arch/sparc/mm/tsb.c                             |  57 +++++++++---
+ arch/sparc/mm/ultra.S                           | 119 +++++++++++++++++++-----
+ drivers/net/bonding/bond_main.c                 |  10 ++
+ drivers/net/ethernet/atheros/atl1e/atl1e.h      |   2 +-
+ drivers/net/ethernet/atheros/atl1e/atl1e_main.c |   1 +
+ drivers/tty/tty_io.c                            |  14 ++-
+ fs/aio.c                                        |   2 +-
+ include/linux/netdevice.h                       |   2 +-
+ include/linux/skbuff.h                          |   7 ++
+ include/linux/socket.h                          |   3 +-
+ include/net/scm.h                               |   2 +-
+ net/atm/common.c                                |   2 +
+ net/ax25/af_ax25.c                              |   1 +
+ net/bluetooth/af_bluetooth.c                    |   4 +-
+ net/bluetooth/rfcomm/sock.c                     |   1 +
+ net/caif/caif_socket.c                          |   2 +
+ net/core/dev.c                                  |   4 +
+ net/core/dev_addr_lists.c                       |   6 +-
+ net/core/rtnetlink.c                            |   4 +-
+ net/core/sock.c                                 |  14 ++-
+ net/ipv4/esp4.c                                 |   6 +-
+ net/ipv4/ip_fragment.c                          |  15 ++-
+ net/ipv4/syncookies.c                           |   4 +-
+ net/ipv4/tcp_input.c                            |  65 +++++++------
+ net/ipv4/tcp_output.c                           |   8 +-
+ net/ipv6/addrconf.c                             |  27 ++++++
+ net/ipv6/reassembly.c                           |  13 ++-
+ net/irda/af_irda.c                              |   2 +
+ net/iucv/af_iucv.c                              |   2 +
+ net/llc/af_llc.c                                |   2 +
+ net/netrom/af_netrom.c                          |   1 +
+ net/nfc/llcp/sock.c                             |   2 +
+ net/rose/af_rose.c                              |   1 +
+ net/sched/sch_cbq.c                             |   5 +-
+ net/sctp/auth.c                                 |   2 +-
+ net/tipc/socket.c                               |   7 ++
+ net/unix/af_unix.c                              |   2 +-
+ 43 files changed, 422 insertions(+), 124 deletions(-)
 
 
