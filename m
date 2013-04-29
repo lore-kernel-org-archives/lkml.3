@@ -1,74 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933287Ab3D3AIR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 20:08:17 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:30996 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932697Ab3D3AIQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 20:08:16 -0400
-X-Authority-Analysis: v=2.0 cv=UY7TuduN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=KBd73aRfIukA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=bsvyib-zOJsA:10 a=Z4Rwk6OoAAAA:8 a=8d_5vDQeRDVw5VbexQgA:9 a=QEXdDO2ut3YA:10 a=jbrJJM5MRmoA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1367280494.30667.38.camel@gandalf.local.home>
-Subject: Re: [PATCH 0/2] [GIT PULL] localmodconfig: Fix missing depends of
- config files included in if statements
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Kbuild mailing list <linux-kbuild@vger.kernel.org>
-Date: Mon, 29 Apr 2013 20:08:14 -0400
-In-Reply-To: <CA+55aFzSfRv26E3UF1a8jwQK+vHSru-YTg8ADefZxOKZNnn6fA@mail.gmail.com>
-References: <20130429195100.202681236@goodmis.org>
-	 <CA+55aFzEwRUWVQ8x1+f=6R_9+JO_Rmg=u2E1k_6jLuQEAorgtQ@mail.gmail.com>
-	 <CA+55aFzSfRv26E3UF1a8jwQK+vHSru-YTg8ADefZxOKZNnn6fA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1757947Ab3D3AQo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 20:16:44 -0400
+Received: from mga09.intel.com ([134.134.136.24]:30739 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757115Ab3D3AQn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Apr 2013 20:16:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,576,1363158000"; 
+   d="scan'208";a="328563135"
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Cc: Tim Chen <tim.c.chen@linux.intel.com>, Dave Hansen <dave.hansen@intel.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>
+Subject: [PATCH 1/2] Make the batch size of the percpu_counter configurable
+Date: Mon, 29 Apr 2013 10:12:28 -0700
+Message-Id: <c1f9c476a8bd1f5e7049b8ac79af48be61afd8f3.1367254913.git.tim.c.chen@linux.intel.com>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-04-29 at 14:42 -0700, Linus Torvalds wrote:
-> On Mon, Apr 29, 2013 at 2:01 PM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
-> >
-> > There's just too much confusion here for me to touch anything at all,
-> > so please fix things up.
-> 
-> Oh, and you might as well check that I resolved the conflicts in the
-> trace pull correctly while you're at it. They looked pretty obvious,
-> and it compiles for me, but ..
+Currently, there is a single, global, variable (percpu_counter_batch) that
+controls the batch sizes for every 'struct percpu_counter' on the system.
 
-Almost.
+However, there are some applications, e.g. memory accounting where it is
+more appropriate to scale the batch size according to the memory size.
+This patch adds the infrastructure to be able to change the batch sizes
+for each individual instance of 'struct percpu_counter'.
 
-I'll also run my full ftrace test suite on your latest kernel, and see
-if it finds anything else.
+I have chosen to implement the added field of batch as a pointer
+(by default point to percpu_counter_batch) instead
+of a static value.  The reason is the percpu_counter initialization
+can be called when we only have boot cpu and not all cpus are online.
+and percpu_counter_batch value have yet to be udpated with a
+call to compute_batch_value function.
 
-Please apply:
+Thanks to Dave Hansen and Andi Kleen for their comments and suggestions.
 
+Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
 ---
-tracing: Fix small merge bug
+ include/linux/percpu_counter.h | 20 +++++++++++++++++++-
+ lib/percpu_counter.c           | 23 ++++++++++++++++++++++-
+ 2 files changed, 41 insertions(+), 2 deletions(-)
 
-During the 3.10 merge, a conflict happened and the resolution was
-almost, but not quite, correct. An if statement was reversed.
-
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 581630a..ae6fa2d 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -904,7 +904,7 @@ update_max_tr_single(struct trace_array *tr, struct task_struct *tsk, int cpu)
- 		return;
+diff --git a/include/linux/percpu_counter.h b/include/linux/percpu_counter.h
+index d5dd465..5ca7df5 100644
+--- a/include/linux/percpu_counter.h
++++ b/include/linux/percpu_counter.h
+@@ -22,6 +22,7 @@ struct percpu_counter {
+ 	struct list_head list;	/* All percpu_counters are on a list */
+ #endif
+ 	s32 __percpu *counters;
++	int *batch ____cacheline_aligned_in_smp;
+ };
  
- 	WARN_ON_ONCE(!irqs_disabled());
--	if (tr->allocated_snapshot) {
-+	if (!tr->allocated_snapshot) {
- 		/* Only the nop tracer should hit this when disabling */
- 		WARN_ON_ONCE(tr->current_trace != &nop_trace);
- 		return;
-
+ extern int percpu_counter_batch;
+@@ -40,11 +41,22 @@ void percpu_counter_destroy(struct percpu_counter *fbc);
+ void percpu_counter_set(struct percpu_counter *fbc, s64 amount);
+ void __percpu_counter_add(struct percpu_counter *fbc, s64 amount, s32 batch);
+ s64 __percpu_counter_sum(struct percpu_counter *fbc);
++void __percpu_counter_batch_resize(struct percpu_counter *fbc, int *batch);
+ int percpu_counter_compare(struct percpu_counter *fbc, s64 rhs);
+ 
++static inline int percpu_counter_and_batch_init(struct percpu_counter *fbc,
++			s64 amount, int *batch)
++{
++	int ret = percpu_counter_init(fbc, amount);
++
++	if (batch && !ret)
++		__percpu_counter_batch_resize(fbc, batch);
++	return ret;
++}
++
+ static inline void percpu_counter_add(struct percpu_counter *fbc, s64 amount)
+ {
+-	__percpu_counter_add(fbc, amount, percpu_counter_batch);
++	__percpu_counter_add(fbc, amount, *fbc->batch);
+ }
+ 
+ static inline s64 percpu_counter_sum_positive(struct percpu_counter *fbc)
+@@ -95,6 +107,12 @@ static inline int percpu_counter_init(struct percpu_counter *fbc, s64 amount)
+ 	return 0;
+ }
+ 
++static inline int percpu_counter_and_batch_init(struct percpu_counter *fbc,
++			s64 amount, int *batch)
++{
++	return percpu_counter_init(fbc, amount);
++}
++
+ static inline void percpu_counter_destroy(struct percpu_counter *fbc)
+ {
+ }
+diff --git a/lib/percpu_counter.c b/lib/percpu_counter.c
+index ba6085d..a75951e 100644
+--- a/lib/percpu_counter.c
++++ b/lib/percpu_counter.c
+@@ -116,6 +116,7 @@ int __percpu_counter_init(struct percpu_counter *fbc, s64 amount,
+ 	lockdep_set_class(&fbc->lock, key);
+ 	fbc->count = amount;
+ 	fbc->counters = alloc_percpu(s32);
++	fbc->batch = &percpu_counter_batch;
+ 	if (!fbc->counters)
+ 		return -ENOMEM;
+ 
+@@ -131,6 +132,26 @@ int __percpu_counter_init(struct percpu_counter *fbc, s64 amount,
+ }
+ EXPORT_SYMBOL(__percpu_counter_init);
+ 
++void __percpu_counter_batch_resize(struct percpu_counter *fbc, int *batch)
++{
++	unsigned long flags;
++	int cpu;
++
++	if (!batch)
++		return;
++
++	raw_spin_lock_irqsave(&fbc->lock, flags);
++	for_each_online_cpu(cpu) {
++		s32 *pcount = per_cpu_ptr(fbc->counters, cpu);
++		fbc->count += *pcount;
++		*pcount = 0;
++	}
++	*batch = max(*batch, percpu_counter_batch);
++	fbc->batch = batch;
++	raw_spin_unlock_irqrestore(&fbc->lock, flags);
++}
++EXPORT_SYMBOL(__percpu_counter_batch_resize);
++
+ void percpu_counter_destroy(struct percpu_counter *fbc)
+ {
+ 	if (!fbc->counters)
+@@ -196,7 +217,7 @@ int percpu_counter_compare(struct percpu_counter *fbc, s64 rhs)
+ 
+ 	count = percpu_counter_read(fbc);
+ 	/* Check to see if rough count will be sufficient for comparison */
+-	if (abs(count - rhs) > (percpu_counter_batch*num_online_cpus())) {
++	if (abs(count - rhs) > ((*fbc->batch)*num_online_cpus())) {
+ 		if (count > rhs)
+ 			return 1;
+ 		else
+-- 
+1.7.11.7
 
