@@ -1,81 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759729Ab3D2UMF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 16:12:05 -0400
-Received: from www.linutronix.de ([62.245.132.108]:57862 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759634Ab3D2UMD (ORCPT
+	id S1760212Ab3D2UM5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 16:12:57 -0400
+Received: from mail-vc0-f178.google.com ([209.85.220.178]:57683 "EHLO
+	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758064Ab3D2UMz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 16:12:03 -0400
-Date: Mon, 29 Apr 2013 22:12:02 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        rostedt@goodmis.org
-Subject: [ANNOUNCE] 3.8.10-rt6
-Message-ID: <20130429201202.GB7979@linutronix.de>
+	Mon, 29 Apr 2013 16:12:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <201304292154.15920.arnd@arndb.de>
+References: <20130429162115.GA6893@kroah.com>
+	<CA+55aFwU-bXZ7wn2dOcLNfPMcjDv3Jvqx_LTt7B+-tj4WcP8Mg@mail.gmail.com>
+	<CA+55aFzLtBwsvVrnT2DrUOU+eYrQ5eiKeamRb4Y5+-TVgbuM5Q@mail.gmail.com>
+	<201304292154.15920.arnd@arndb.de>
+Date: Mon, 29 Apr 2013 13:12:54 -0700
+X-Google-Sender-Auth: bvuxXIwmyR9AeyY-s0HLMLg3YLo
+Message-ID: <CA+55aFzefpRz2Y8oW9q0ArrR=XW0POBhy8NSNJ3DrCh9EowLqg@mail.gmail.com>
+Subject: Re: [GIT PATCH] char/misc patches for 3.10-rc1
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Greg KH <gregkh@linuxfoundation.org>, David Brown <davidb@codeaurora.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nicolas Pitre <nico@fluxnic.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear RT Folks,
+On Mon, Apr 29, 2013 at 12:54 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+>
+> I think there are good reasons for most of the drivers we have moved out
+> of arch/arm to stay out of there: we have added subdirectories for a lot
+> of drivers that are alike:
 
-I'm pleased to announce the 3.8.10-rt6 release.
+Maybe. But this one is NOT such a case, and I saw Nico making excuses
+for it on lkml.
 
-changes since v3.8.10-rt5:
-- the i915 compiles again after I broke it in the last release. A patch
-  was sent by Carsten Emde.
+There are other things wrong with that whole SSBI driver crap that you
+seem to be ignoring:
 
-Known issues:
+ - it's not a bus, it's just a driver. Just because some people call
+it "serial bus" doesn't make it magically about a "bus". I can call an
+ethernet driver an "ethernet bus driver", and it may be technically
+correct, but it is still bullshit. And ethernet is damn more a real
+bus than that SSBI driver is. That's just a pure serial driver for a
+very specific piece of embedded hardware. Stop calling it a bus.
 
-    - SLxB is broken on PowerPC.
-    - suspend / resume seems to program program the timer wrong and wait
-      ages until it continues.
+ - The whole Kconfig thing is complete and utter garbage. There is no
+excuse what-so-ever for ever asking the user about it. Not on x86, not
+on ARM. The drivers that actually *use* that magical serial line
+driver should just have selected it.
 
-The delta patch against v3.8.10-rt5 is appended below and can be found here:
+ - I'm not seeing what commonalities this thing can have with anything
+else. Did anybody look at the code? There's nothing generic there.
 
-  https://www.kernel.org/pub/linux/kernel/projects/rt/3.8/incr/patch-3.8.10-rt5-rt6.patch.xz
+So move it to a saner place, fix the kconfig idiocy, and don't make
+noises as if it's some generic driver, much less some generic bus.
+It's not.
 
-The RT patch against 3.8.9 can be found here:
-
-  https://www.kernel.org/pub/linux/kernel/projects/rt/3.8/patch-3.8.10-rt6.patch.xz
-
-The split quilt queue is available at:
-
-  https://www.kernel.org/pub/linux/kernel/projects/rt/3.8/patches-3.8.10-rt6.tar.xz
-
-Sebastian
-
-diff --git a/drivers/gpu/drm/i915/i915_gem_execbuffer.c b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
-index 81125de..eabd3dd 100644
---- a/drivers/gpu/drm/i915/i915_gem_execbuffer.c
-+++ b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
-@@ -814,6 +814,7 @@ i915_gem_do_execbuffer(struct drm_device *dev, void *data,
- 	struct intel_ring_buffer *ring;
- 	u32 ctx_id = i915_execbuffer2_get_context_id(*args);
- 	u32 exec_start, exec_len;
-+	u32 seqno;
- 	u32 mask;
- 	u32 flags;
- 	int ret, mode, i;
-@@ -1068,7 +1069,8 @@ i915_gem_do_execbuffer(struct drm_device *dev, void *data,
- 			goto err;
- 	}
- 
--	trace_i915_gem_ring_dispatch(ring, intel_ring_get_seqno(ring), flags);
-+	seqno = intel_ring_get_seqno(ring);
-+	trace_i915_gem_ring_dispatch(ring, seqno, flags);
- 	i915_trace_irq_get(ring, seqno);
- 
- 	i915_gem_execbuffer_move_to_active(&objects, ring);
-diff --git a/localversion-rt b/localversion-rt
-index 0efe7ba..8fc605d 100644
---- a/localversion-rt
-+++ b/localversion-rt
-@@ -1 +1 @@
---rt5
-+-rt6
+                Linus
