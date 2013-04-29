@@ -1,78 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757921Ab3D2KIG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 06:08:06 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:39119 "EHLO comal.ext.ti.com"
+	id S1757657Ab3D2KLU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 06:11:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16148 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757490Ab3D2KE0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 06:04:26 -0400
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <grant.likely@linaro.org>, <tony@atomide.com>, <balbi@ti.com>,
-        <kishon@ti.com>, <arnd@arndb.de>, <swarren@nvidia.com>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-usb@vger.kernel.org>,
-        <sylvester.nawrocki@gmail.com>
-CC: <rob.herring@calxeda.com>, <rob@landley.net>, <b-cousson@ti.com>,
-        <linux@arm.linux.org.uk>, <gregkh@linuxfoundation.org>,
-        <benoit.cousson@linaro.org>, <mchehab@redhat.com>,
-        <akpm@linux-foundation.org>, <cesarb@cesarb.net>,
-        <davem@davemloft.net>, <rnayak@ti.com>, <shawn.guo@linaro.org>,
-        <santosh.shilimkar@ti.com>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-doc@vger.kernel.org>, <nsekhar@ti.com>
-Subject: [PATCH v6 5/9] ARM: OMAP: USB: Add phy binding information
-Date: Mon, 29 Apr 2013 15:33:28 +0530
-Message-ID: <1367229812-30574-6-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1367229812-30574-1-git-send-email-kishon@ti.com>
-References: <1367229812-30574-1-git-send-email-kishon@ti.com>
+	id S1752444Ab3D2KLS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Apr 2013 06:11:18 -0400
+Date: Mon, 29 Apr 2013 12:12:38 +0200
+From: Alexander Gordeev <agordeev@redhat.com>
+To: Jeff Garzik <jgarzik@pobox.com>
+Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
+        Jan Beulich <JBeulich@suse.com>
+Subject: [PATCH] AHCI: Make distinct names for ports in /proc/interrupts
+Message-ID: <20130429101237.GA27738@dhcp-26-207.brq.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order for controllers to get PHY in case of non dt boot, the phy
-binding information (phy device name) should be added in the platform
-data of the controller.
+Currently all interrupts assigned to AHCI ports show up in
+'/proc/interrupts' as 'ahci'. This fix adds port numbers as
+suffixes and hence makes the descriptions distinct.
 
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+Reported-by: Jan Beulich <JBeulich@suse.com>
+Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
 ---
- arch/arm/mach-omap2/usb-musb.c |    6 +++++-
- include/linux/usb/musb.h       |    3 +++
- 2 files changed, 8 insertions(+), 1 deletion(-)
+ drivers/ata/ahci.c |    6 ++++--
+ drivers/ata/ahci.h |    1 +
+ 2 files changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/usb-musb.c b/arch/arm/mach-omap2/usb-musb.c
-index 3242a55..228288a 100644
---- a/arch/arm/mach-omap2/usb-musb.c
-+++ b/arch/arm/mach-omap2/usb-musb.c
-@@ -85,8 +85,12 @@ void __init usb_musb_init(struct omap_musb_board_data *musb_board_data)
- 	musb_plat.mode = board_data->mode;
- 	musb_plat.extvbus = board_data->extvbus;
+diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
+index 3b9a7b1..dc5c1aa 100644
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -1146,10 +1146,12 @@ int ahci_host_activate(struct ata_host *host, int irq, unsigned int n_msis,
+ 			return -EINVAL;
  
--	if (cpu_is_omap44xx())
-+	if (cpu_is_omap44xx()) {
- 		musb_plat.has_mailbox = true;
-+		musb_plat.phy_dev_name = "omap-usb2.3.auto.0";
-+	} else if (cpu_is_omap34xx()) {
-+		musb_plat.phy_dev_name = "twl4030_usb.0";
-+	}
+ 		for (i = 0; i < n_irqs; i++) {
++			struct ahci_port_priv *pp = host->ports[i]->private_data;
++			snprintf(pp->irq_desc, sizeof(pp->irq_desc),
++				 "%s%d", dev_driver_string(host->dev), i);
+ 			rc = devm_request_threaded_irq(host->dev, irq + i,
+ 				ahci_multi_irqs_intr, ahci_port_thread_fn,
+-				IRQF_SHARED, dev_driver_string(host->dev),
+-				host->ports[i]);
++				IRQF_SHARED, pp->irq_desc, host->ports[i]);
+ 			if (rc)
+ 				goto out_free_irqs;
+ 		}
+diff --git a/drivers/ata/ahci.h b/drivers/ata/ahci.h
+index ed1fbc8..ceb5208 100644
+--- a/drivers/ata/ahci.h
++++ b/drivers/ata/ahci.h
+@@ -305,6 +305,7 @@ struct ahci_port_priv {
+ 	int			fbs_last_dev;	/* save FBS.DEV of last FIS */
+ 	/* enclosure management info per PM slot */
+ 	struct ahci_em_priv	em_priv[EM_MAX_SLOTS];
++	char			irq_desc[8];	/* bus + port # */
+ };
  
- 	if (soc_is_am35xx()) {
- 		oh_name = "am35x_otg_hs";
-diff --git a/include/linux/usb/musb.h b/include/linux/usb/musb.h
-index 053c268..0b733a3 100644
---- a/include/linux/usb/musb.h
-+++ b/include/linux/usb/musb.h
-@@ -104,6 +104,9 @@ struct musb_hdrc_platform_data {
- 	/* for clk_get() */
- 	const char	*clock;
- 
-+	/* phy device name */
-+	const char	*phy_dev_name;
-+
- 	/* (HOST or OTG) switch VBUS on/off */
- 	int		(*set_vbus)(struct device *dev, int is_on);
- 
+ struct ahci_host_priv {
 -- 
-1.7.10.4
+1.7.7.6
 
+
+-- 
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
