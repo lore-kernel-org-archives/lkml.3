@@ -1,93 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932130Ab3D2RxB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 13:53:01 -0400
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:32971 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932090Ab3D2Rw7 (ORCPT
+	id S1758826Ab3D2RyA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 13:54:00 -0400
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:39669 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758413Ab3D2Rx7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 13:52:59 -0400
+	Mon, 29 Apr 2013 13:53:59 -0400
+Message-ID: <517EB3B4.6040702@gmail.com>
+Date: Mon, 29 Apr 2013 13:53:56 -0400
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <CAGXu5jJ8983fmX-hE4mUBpBvRvaEcvFGup7CaSbY=gp34MGeZQ@mail.gmail.com>
-References: <1367003005-5560-1-git-send-email-keescook@chromium.org>
-	<1367003005-5560-3-git-send-email-keescook@chromium.org>
-	<517AF5D6.1040800@zytor.com>
-	<517AFC38.5090500@zytor.com>
-	<CAGXu5jJ8983fmX-hE4mUBpBvRvaEcvFGup7CaSbY=gp34MGeZQ@mail.gmail.com>
-Date: Mon, 29 Apr 2013 10:52:58 -0700
-X-Google-Sender-Auth: onE6MUGL3JZ4Y7QtgHIu_3CqLb0
-Message-ID: <CAGXu5jLSiYhUtq6tEXqzV6KT5tY-T1ds_bCE1=pb-GKddneEAg@mail.gmail.com>
-Subject: Re: [PATCH 2/6] x86: kaslr: move CPU flags out of cpucheck
-From: Kees Cook <keescook@chromium.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
-        Matthew Garrett <mjg@redhat.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Eric Northup <digitaleric@google.com>,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: kosaki.motohiro@gmail.com, linux-kernel@vger.kernel.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Olivier Langlois <olivier@trillion01.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        David Miller <davem@davemloft.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH 2/2] posix-cpu-timers: fix wrong timer initialization
+References: <1367216762-3933-1-git-send-email-kosaki.motohiro@gmail.com> <1367216762-3933-2-git-send-email-kosaki.motohiro@gmail.com> <20130429103600.GB31700@dyad.programming.kicks-ass.net>
+In-Reply-To: <20130429103600.GB31700@dyad.programming.kicks-ass.net>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 29, 2013 at 10:49 AM, Kees Cook <keescook@chromium.org> wrote:
-> On Fri, Apr 26, 2013 at 3:14 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->> On 04/26/2013 02:47 PM, H. Peter Anvin wrote:
->>> On 04/26/2013 12:03 PM, Kees Cook wrote:
->>>> +
->>>> +static inline void cpuid(u32 id, u32 *a, u32 *b, u32 *c, u32 *d)
->>>> +{
->>>> +    /* Handle x86_32 PIC using ebx. */
->>>> +    asm volatile("movl %%ebx, %%edi \n\t"
->>>> +                 "cpuid             \n\t"
->>>> +                 "xchgl %%edi, %%ebx\n\t"
->>>> +                : "=a" (*a),
->>>> +                  "=D" (*b),
->>>> +                  "=c" (*c),
->>>> +                  "=d" (*d)
->>>> +                : "a" (id)
->>>> +    );
->>>> +}
->>>
->>> Please don't constrain registers unnecessarily.
->>>
->>> You can use "=r" there and let gcc assign whatever free register it pleases.
->>>
->>> You can also limit that to only:
->>>
->>> #if defined(__i386__) && defined(__PIC__)
->>>
+(4/29/13 6:36 AM), Peter Zijlstra wrote:
+> On Mon, Apr 29, 2013 at 02:26:02AM -0400, kosaki.motohiro@gmail.com wrote:
+>> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 >>
->> How is this for a "beauty":
+>> Currently glibc's rt/tst-cputimer1 testcase is spradically fail because
+>> a timer created by timer_create() may faire earlier than an argument.
 >>
->>
->> #if defined(__i386__) && defined (__PIC__)
->> # define EBX_REG "=r"
->> #else
->> # define EBX_REG "=b"
->> #endif
->>
->>   asm volatile(".ifnc %%ebx,%3 ; movl %%ebx,%3 ; .endif ; "
->>                "cpuid ; "
->>                ".ifnc %%ebx,%3 ; xchgl %%ebx,%3 ; .endif"
->>                : "=a" (*a), "=c" (*c), "=d" (*d),
->>                  EBX_REG (*b)
->>                : "a" (leaf), "c" (subleaf));
->>
->
-> Oh, very nice on the ifnc and register define! Is the leaf/subleaf
-> stuff needed there? That piece doesn't make sense to me.
+>> There are two faults. 1) cpu_timer_sample_group() adds task_delta_exec(current).
+>> But it is definity silly idea especially when multi thread. cputimer should
+>> be initialized by committed exec runtime. i.e. it should not be added
+>> scheduler delta. 2) expire time should be current time + timeout. In the other
+>> words, expire calculation should take care scheduler delta.
+> 
+> I'm sorry, that completely fails to parse.
+> 
+>> -/*
+>> - * Lock/unlock the current runqueue - to extract task statistics:
+>> - */
+>> -extern unsigned long long task_delta_exec(struct task_struct *);
+> 
+> Yay.. this thing dying is good -- it did seem strange to compute the current
+> delta but not also read sum_exec_runtime under the same lock.
+> 
+>> diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
+>> index e56be4c..dc61bc3 100644
+>> --- a/kernel/posix-cpu-timers.c
+>> +++ b/kernel/posix-cpu-timers.c
+>> @@ -203,12 +203,10 @@ posix_cpu_clock_set(const clockid_t which_clock, const struct timespec *tp)
+>>  	return error;
+>>  }
+>>  
+>> -
+>> -/*
+>> - * Sample a per-thread clock for the given task.
+>> - */
+>> -static int cpu_clock_sample(const clockid_t which_clock, struct task_struct *p,
+>> -			    union cpu_time_count *cpu)
+>> +static int do_cpu_clock_sample(const clockid_t which_clock,
+>> +			       struct task_struct *p,
+>> +			       bool add_delta,
+>> +			       union cpu_time_count *cpu)
+> 
+> Would not thread_cputime() (to mirror thread_group_cputime()) be a better name?
 
-Ah, nevermind, I just need the "leaf" bit for the cpuid input. Thanks!
+agreed.
 
--Kees
 
---
-Kees Cook
-Chrome OS Security
+> Also, I would think both these functions would be a good place to insert a
+> comment explaining the difference between timer and clock.
+
+agreed.
+
+
+> 
+>> +static int cpu_clock_sample(const clockid_t which_clock, struct task_struct *p,
+>> +			    union cpu_time_count *cpu)
+>> +{
+>> +	return do_cpu_clock_sample(which_clock, p, true, cpu);
+>> +}
+> 
+>> @@ -700,7 +707,7 @@ static int posix_cpu_timer_set(struct k_itimer *timer, int flags,
+>>  	 * check if it's already passed.  In short, we need a sample.
+>>  	 */
+>>  	if (CPUCLOCK_PERTHREAD(timer->it_clock)) {
+>> -		cpu_clock_sample(timer->it_clock, p, &val);
+>> +		do_cpu_clock_sample(timer->it_clock, p, false, &val);
+>>  	} else {
+>>  		cpu_timer_sample_group(timer->it_clock, p, &val);
+>>  	}
+> 
+> This would suggest:
+> 
+> static inline int cpu_timer_sample(const clockid_t which_clock, struct task_struct *p, union cpu_time_count *cpu)
+> {
+> 	return do_cpu_clock_sample(which_clock, p, false, cpu);
+> }
+> 
+> That would preserve the: cpu_{timer,clock}_sample{,_group}() form.
+
+Yeah, agreed.
+And also, all timer function should use cpu_timer_sample() instead of cpu_clock_sample().
+check_thread_timers() uses p->se.sum_exec_runtime without delta. This is consitency with
+per-process timer. Thus, other functions (e.g. posix_cpu_timers_get) should also use the
+same.
+
+> 
+>> @@ -749,7 +756,13 @@ static int posix_cpu_timer_set(struct k_itimer *timer, int flags,
+>>  	}
+>>  
+>>  	if (new_expires.sched != 0 && !(flags & TIMER_ABSTIME)) {
+>> -		cpu_time_add(timer->it_clock, &new_expires, val);
+>> +		union cpu_time_count now;
+>> +
+>> +		if (CPUCLOCK_PERTHREAD(timer->it_clock))
+>> +			cpu_clock_sample(timer->it_clock, p, &now);
+>> +		else
+>> +			cpu_clock_sample_group(timer->it_clock, p, &now);
+> 
+> This triggered a pattern match against earlier in this function; but they're
+> different now; timer vs clock. So nothing to merge...
+
+Not different, I think.
+Relative timeout need to calculate "now + timeout" by definition.
+
+But which time is "now"? 
+
+Example, thread1 has 10ms sum_exec_runtime and 4ms delta and call timer_settime(4ms).
+Old code calculate an expire is 10+4=14. New one calculate  10+4+4=18.
+
+Which expire is correct? When using old one, timer will fire just after syscall. This
+is posix violation. 
+
+In the other words,
+
+	sighandler(){
+		t1 = clock_gettime()
+	}
+
+	t0 = clock_gettime()
+	timer_settime(timeout);
+	 ... wait to fire
+	
+	assert (t1 - t0 >= timeout)
+
+This pseudo code must be true. it is snippest what glibc rt/tst-cputimer1 test and failed.
+
+
+
+
+> So I don't mind the code changes, although its still not entirely clear to me
+> what exact problem is fixed how; and thus the Changelog needs TLC.
+> 
+
