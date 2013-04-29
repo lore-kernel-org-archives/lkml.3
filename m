@@ -1,39 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760404Ab3D2TPi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 15:15:38 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:33342 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759862Ab3D2TPe (ORCPT
+	id S1760426Ab3D2TP5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 15:15:57 -0400
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:34843 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759880Ab3D2TPy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 15:15:34 -0400
-Date: Mon, 29 Apr 2013 15:15:28 -0400 (EDT)
-Message-Id: <20130429.151528.2251094691456287740.davem@davemloft.net>
-To: linux@prisktech.co.nz
-Cc: romieu@fr.zoreil.com, netdev@vger.kernel.org,
-        vt8500-wm8505-linux-kernel@googlegroups.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2 0/3] Add support for velocity network driver on
- platform devices
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1367221841-14563-1-git-send-email-linux@prisktech.co.nz>
-References: <1367221841-14563-1-git-send-email-linux@prisktech.co.nz>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Mon, 29 Apr 2013 12:15:33 -0700 (PDT)
+	Mon, 29 Apr 2013 15:15:54 -0400
+MIME-Version: 1.0
+In-Reply-To: <517AF6A5.7070507@zytor.com>
+References: <1367003005-5560-1-git-send-email-keescook@chromium.org>
+	<1367003005-5560-5-git-send-email-keescook@chromium.org>
+	<517AF6A5.7070507@zytor.com>
+Date: Mon, 29 Apr 2013 12:15:53 -0700
+X-Google-Sender-Auth: EWEezFXXi1VOjFstANOYP9zoNJg
+Message-ID: <CAGXu5jLS+71p20qB-8x_A1SJuqQN+q17-B50FqFtHc4T2YVHGA@mail.gmail.com>
+Subject: Re: [PATCH 4/6] x86: kaslr: select random base offset
+From: Kees Cook <keescook@chromium.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "kernel-hardening@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
+        Matthew Garrett <mjg@redhat.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Eric Northup <digitaleric@google.com>,
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Apr 26, 2013 at 2:50 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 04/26/2013 12:03 PM, Kees Cook wrote:
+>> +
+>> +static unsigned long get_random_long(void)
+>> +{
+>> +     if (has_cpuflag(X86_FEATURE_RDRAND)) {
+>> +             unsigned long random;
+>> +
+>> +             debug_putstr("KASLR using RDRAND...\n");
+>> +             if (rdrand(&random))
+>> +                     return random;
+>> +     }
+>> +
+>> +     if (has_cpuflag(X86_FEATURE_TSC)) {
+>> +             uint32_t raw;
+>> +             unsigned long timer;
+>> +
+>> +             debug_putstr("KASLR using RDTSC...\n");
+>> +             rdtscl(raw);
+>> +
+>> +             /* Repeat the low bits of rdtsc. */
+>> +             timer = raw & 0xffff;
+>> +             timer |= (timer << 16);
+>> +#ifdef CONFIG_X86_64
+>> +             timer |= (timer << 32) | (timer << 48);
+>> +#endif
+>> +
+>
+> This seems like a very odd thing to do.  If you want to scramble bits,
+> it would make more sense to do a multiply -- or much better, a
+> *circular* multiply -- with a large constant.
 
-You prepared these patches against a net-next tree which is at least
-a week old, I know this because that's when the NETIF_F_* flags for
-VLAN offloading changed their names which causes your third patch
-to fail to apply.
+Well, my thought here was that the entropy is only being used in a
+very narrow band (since it's truncated by alignment on the low end and
+physical memory on the high end), so I didn't want to "dilute" the
+already bad entropy any more. Instead, I just repeated it. If a
+circular multiply would serve the same purpose, I can do that. Do you
+have any examples of that?
 
-Do not do this, net-next changes every day and rapidly, don't take
-the chance that the driver you're touching is unpopular and thus
-hasn't had changes to it recently.  Tree-wide interface changes
-happen all the time.
+>
+>> +             return timer;
+>> +     }
+>> +
+>> +     debug_putstr("KASLR found no entropy source...\n");
+>> +     return 0;
+>> +}
+>>
+>
+> It might be safe to assume that anything old enough to lack RDTSC
+> (basically a 486) will have an 8254, and reading back the 8254 counter
+> register.
+
+Ah, good idea. I've added this now, which seems to work if I force the
+TSC check to fail:
+
+#define I8254_PORT_CONTROL      0x43
+#define I8254_PORT_COUNTER0     0x40
+#define I8254_CMD_READBACK      0xC0
+#define I8254_SELECT_COUNTER0   0x02
+#define I8254_STATUS_NOTREADY   0x40
+static inline u16 i8254(void)
+{
+        u16 status, timer;
+
+        do {
+                outb(I8254_PORT_CONTROL,
+                     I8254_CMD_READBACK | I8254_SELECT_COUNTER0);
+                status = inb(I8254_PORT_COUNTER0);
+                timer  = inb(I8254_PORT_COUNTER0);
+                timer |= inb(I8254_PORT_COUNTER0) << 8;
+        } while (status & I8254_STATUS_NOTREADY);
+
+        return timer;
+}
+
+Thanks,
+
+-Kees
+
+--
+Kees Cook
+Chrome OS Security
