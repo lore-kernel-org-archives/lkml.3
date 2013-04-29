@@ -1,69 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756916Ab3D2N2j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 09:28:39 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:5482 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751700Ab3D2N2h (ORCPT
+	id S1757309Ab3D2Ncd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 09:32:33 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:28774 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757053Ab3D2Ncc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 09:28:37 -0400
-Message-ID: <517E7589.5030205@atmel.com>
-Date: Mon, 29 Apr 2013 15:28:41 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Mon, 29 Apr 2013 09:32:32 -0400
+Date: Mon, 29 Apr 2013 09:32:21 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        xen-devel@lists.xensource.com
+Subject: Re: [GIT PULL) xen (stable/for-linus-3.10-rc0-tag) for v3.10 merge
+ window.
+Message-ID: <20130429133221.GA3291@phenom.dumpdata.com>
+References: <20130419153241.GA22185@phenom.dumpdata.com>
 MIME-Version: 1.0
-To: Vinod Koul <vinod.koul@intel.com>
-CC: <ludovic.desroches@atmel.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-mmc@vger.kernel.org>, <linux-i2c@vger.kernel.org>,
-        <plagnioj@jcrosoft.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 1/6] at_hdmac: move to generic DMA binding
-References: <1366362683-14496-1-git-send-email-ludovic.desroches@atmel.com> <1366362683-14496-2-git-send-email-ludovic.desroches@atmel.com> <51750F68.4040701@atmel.com> <20130423034407.GY24632@intel.com>
-In-Reply-To: <20130423034407.GY24632@intel.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130419153241.GA22185@phenom.dumpdata.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/23/2013 05:44 AM, Vinod Koul :
-> On Mon, Apr 22, 2013 at 12:22:32PM +0200, Nicolas Ferre wrote:
->> On 04/19/2013 11:11 AM, ludovic.desroches@atmel.com :
->>> From: Ludovic Desroches <ludovic.desroches@atmel.com>
+On Fri, Apr 19, 2013 at 11:32:41AM -0400, Konrad Rzeszutek Wilk wrote:
+> Hey Linus,
 > 
->>> +#ifdef CONFIG_OF
->>> +static bool at_dma_filter(struct dma_chan *chan, void *slave)
-> this is not defined for else case here. Also this could be CONFIG_DMA_OF...?
+> I am heading out for a week of vacation but would hate to have missed
+> the merge window. Hence sending it out early in anticipation that you
+> will release v3.9 on Sunday.
 
-in fact, at_dma_filter() is only used in corresponding
-dma_request_channel() in at_dma_xlate() function just below and only in
-case of CONFIG_OF.
-As the at_dma_xlate() is an empty function in !CONFIG_OF case, the
-at_dma_filter() is not needed.
+Got the week wrong :-) Back from the vacation using this occasion to re-ping
+in case this git pull email got lost in your email folder.
 
-For the use of CONFIG_OF and not CONFIG_OF_DMA, it is simply because it
-it the directive that we currently use in drivers when we have to put
-the device tree condition around a piece of code. It is quite a common
-pattern I think.
-Moreover, it is what is used in dw_dmac.c and mv_xor.c...
+The tag is still the same:
+  git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/for-linus-3.10-rc0-tag
 
->>> +{
->>> +	struct at_dma_slave *atslave = slave;
->>> +
->>> +	if (atslave->dma_dev == chan->device->dev) {
->>> +		chan->private = atslave;
->>> +		return true;
->>> +	} else {
->>> +		return false;
->>> +	}
->>> +}
+Please pull!
+
 > 
-> --
-> ~Vinod
+> With that said, please git pull the following tag:
+> 
+>  git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/for-linus-3.10-rc0-tag
+> 
+> which has just a couple of features and mostly bug-fixes. Here is the blurb
+> copied from the signed tag:
+> <tag>
+> Features:
+>  - Populate the boot_params with EDD data.
+>  - Cleanups in the IRQ code.
+> Bug-fixes:
+>  - CPU hotplug offline/online in PVHVM mode.
+>  - Re-upload processor PM data after ACPI S3 suspend/resume cycle.
+> </tag>
+> 
+> Please pull!
+> 
+>  arch/x86/pci/xen.c               |  6 +--
+>  arch/x86/xen/enlighten.c         | 57 +++++++++++++++++++++++++++-
+>  arch/x86/xen/smp.c               | 21 ++++++----
+>  arch/x86/xen/spinlock.c          | 25 ++++++++++++
+>  arch/x86/xen/time.c              | 13 +++++--
+>  drivers/video/Kconfig            |  2 +-
+>  drivers/xen/events.c             | 33 +++++++++++-----
+>  drivers/xen/xen-acpi-processor.c | 82 +++++++++++++++++++++++++++-------------
+>  include/xen/events.h             |  3 +-
+>  9 files changed, 188 insertions(+), 54 deletions(-)
+> 
+> Andrew Jones (1):
+>       xen kconfig: fix select INPUT_XEN_KBDDEV_FRONTEND
+> 
+> Ben Guthro (2):
+>       xen: Re-upload processor PM data to hypervisor after S3 resume (v2)
+>       xen: resolve section mismatch warnings in xen-acpi-processor
+> 
+> David Vrabel (1):
+>       x86/xen: populate boot_params with EDD data
+> 
+> Jan Beulich (1):
+>       xen: drop tracking of IRQ vector
+> 
+> Konrad Rzeszutek Wilk (9):
+>       xen/smp: Fix leakage of timer interrupt line for every CPU online/offline.
+>       xen/smp/spinlock: Fix leakage of the spinlock interrupt line for every CPU online/offline
+>       xen/time: Fix kasprintf splat when allocating timer%d IRQ line.
+>       xen/events: Check that IRQ value passed in is valid.
+>       xen/time: Add default value of -1 for IRQ and check for that.
+>       xen/spinlock:  Check against default value of -1 for IRQ line.
+>       xen/spinlock: Disable IRQ spinlock (PV) allocation on PVHVM
+>       xen/smp/pvhvm: Don't initialize IRQ_WORKER as we are using the native one.
+>       xen/smp: Unifiy some of the PVs and PVHVM offline CPU path
+> 
 
-Best regards,
--- 
-Nicolas Ferre
+
