@@ -1,48 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932390Ab3D3Otq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 10:49:46 -0400
-Received: from mail-vb0-f48.google.com ([209.85.212.48]:61639 "EHLO
-	mail-vb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932195Ab3D3Oto (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 10:49:44 -0400
+	id S932531Ab3D3Ovk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 10:51:40 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:43523 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932285Ab3D3Ovi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Apr 2013 10:51:38 -0400
+X-IronPort-AV: E=Sophos;i="4.87,582,1363132800"; 
+   d="scan'208";a="22396642"
+Date: Tue, 30 Apr 2013 15:51:33 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        <xen-devel@lists.xensource.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        "stefano.stabellini@eu.citrix.com" <stefano.stabellini@eu.citrix.com>
+Subject: [GIT PULL] (arm/xen) 3.9-rc3-smp-6-tag
+Message-ID: <alpine.DEB.2.02.1304301515490.5398@kaball.uk.xensource.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <20130430065808.GA19736@gmail.com>
-References: <20130430065808.GA19736@gmail.com>
-Date: Tue, 30 Apr 2013 07:49:43 -0700
-X-Google-Sender-Auth: dwlarKRRXjnDznygHvcPgk-5ckc
-Message-ID: <CA+55aFwcX3oKYCFbq4XcX7Y2Yk6BWWKY4TRNOyfeZ9rYrQMRNQ@mail.gmail.com>
-Subject: Re: [GIT PULL] scheduler changes for v3.10
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 29, 2013 at 11:58 PM, Ingo Molnar <mingo@kernel.org> wrote:
->
-> Please pull the latest sched-core-for-linus git tree from:
->
-> The main changes in this development cycle were:
->
->   - full dynticks preparatory work by Frederic Weisbecker
+Hi Linus,
+this is my first pull request to you, Konrad decided to let me deal
+with the Xen/ARM stuff myself recently.
+Please pull the following tag (based on 3.9-rc3):
 
-Why does this have the crappy cputime scaling overflow code, when we
-had a long thread about how to do it right *without* any 64-bit
-divides, including a quality-tested patch?
+git://git.kernel.org/pub/scm/linux/kernel/git/sstabellini/xen.git 3.9-rc3-smp-6-tag
 
-This still has the garbage "div64_u64_rem()" crap which actually SLOWS
-DOWN 32-bit code even when not used (becuse it makes "div64_u64()"
-calculate it even when unnecessary.
+It contains a bunch of Xen/ARM specific changes, including some fixes,
+SMP support for Xen on ARM, and moving the xenvm machine from
+mach-vexpress to mach-virt.
 
-WTF happened here? I and others spent efforts so that we wouldn't need
-this kind of crap.
+The non-Xen files that are touched are arch/arm/Kconfig, to select
+ARM_PSCI on XEN, and arch/arm/boot/dts/Makefile, to build the xenvm DTB
+if CONFIG_ARCH_VIRT.
 
-               Linus
+
+Stefano Stabellini (7):
+      xen/arm: actually pass a non-NULL percpu pointer to request_percpu_irq
+      xen/arm: implement HYPERVISOR_vcpu_op
+      xen/arm: SMP support
+      xen: move the xenvm machine to mach-virt
+      xen/arm: XEN selects ARM_PSCI
+      xenvm: add a simple PSCI node and a second cpu
+      xen/arm: use sched_op hypercalls for machine reboot and power off
+
+Wei Yongjun (1):
+      xen/arm: remove duplicated include from enlighten.c
+
+ arch/arm/Kconfig                     |    1 +
+ arch/arm/boot/dts/Makefile           |    4 +-
+ arch/arm/boot/dts/xenvm-4.2.dts      |   13 ++++++
+ arch/arm/include/asm/xen/hypercall.h |    1 +
+ arch/arm/mach-vexpress/v2m.c         |    1 -
+ arch/arm/mach-virt/virt.c            |    1 +
+ arch/arm/xen/enlighten.c             |   74 ++++++++++++++++++++++++++++++---
+ arch/arm/xen/hypercall.S             |    1 +
+ 8 files changed, 86 insertions(+), 10 deletions(-)
+
+
+Cheers,
+Stefano
