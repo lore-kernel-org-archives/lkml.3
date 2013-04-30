@@ -1,47 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933364Ab3D3S46 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 14:56:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28595 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933350Ab3D3S4y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 14:56:54 -0400
-Date: Tue, 30 Apr 2013 20:53:22 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>, Ingo Molnar <mingo@elte.hu>,
-        Jan Kratochvil <jan.kratochvil@redhat.com>,
-        Prasad <prasad@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 0/2] (Was: ptrace: PTRACE_DETACH should do
-	flush_ptrace_hw_breakpoint(child))
-Message-ID: <20130430185322.GA12389@redhat.com>
-References: <20130418184350.GA4407@redhat.com> <20130418184425.GA4454@redhat.com> <20130429160931.GD31230@somewhere> <20130429164038.GA27132@redhat.com> <20130429233647.GD1760@somewhere> <20130430175138.GA30014@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130430175138.GA30014@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S933388Ab3D3S5K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 14:57:10 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:49446 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933369Ab3D3S5D (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Apr 2013 14:57:03 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+To: torvalds@linux-foundation.org
+Cc: mingo@kernel.org, peterz@infradead.org, linux-kernel@vger.kernel.org,
+        Sasha Levin <sasha.levin@oracle.com>, jamie.iles@oracle.com,
+        penberg@kernel.org, acme@ghostprotocols.net, paulus@samba.org,
+        namhyung@kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 8/9] liblockdep: Add the 'lockdep' user-space utility
+Date: Tue, 30 Apr 2013 14:54:39 -0400
+Message-Id: <1367348080-4680-9-git-send-email-sasha.levin@oracle.com>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <1367348080-4680-1-git-send-email-sasha.levin@oracle.com>
+References: <1367348080-4680-1-git-send-email-sasha.levin@oracle.com>
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/30, Oleg Nesterov wrote:
->
-> On 04/30, Frederic Weisbecker wrote:
-> >
-> > > Btw. perhaps flush_ptrace_hw_breakpoint() should also clear the
-> > > virtual registers like thread.debugreg7 ? Even without this patch,
-> > > flush_ is also called exec.
-> >
-> > Yeah makes sense.
->
-> OK, and probably debugreg6 too, but I need to recheck.
+This is a simple wrapper to make using liblockdep on existing
+applications much easier.
 
-Yes, looks like it should be cleared and we did this before.
+After running 'make && make install', it becomes quite simple to
+test things with liblockdep. For example, to try it on perf:
 
-And I think this change makes sense in this series, so could you
-review this patch too?
+	lockdep perf
 
-Oleg.
+No other integration required.
+
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+Cc: jamie.iles@oracle.com
+Cc: penberg@kernel.org
+Cc: acme@ghostprotocols.net
+Cc: paulus@samba.org
+Cc: namhyung@kernel.org
+Cc: peterz@infradead.org
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Link: http://lkml.kernel.org/r/1360456781-32462-11-git-send-email-sasha.levin@oracle.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ tools/lib/lockdep/lockdep | 3 +++
+ 1 file changed, 3 insertions(+)
+ create mode 100755 tools/lib/lockdep/lockdep
+
+diff --git a/tools/lib/lockdep/lockdep b/tools/lib/lockdep/lockdep
+new file mode 100755
+index 0000000..a805c81
+--- /dev/null
++++ b/tools/lib/lockdep/lockdep
+@@ -0,0 +1,3 @@
++#! /bin/bash
++
++LD_PRELOAD="liblockdep.so $LD_PRELOAD" "$@"
+-- 
+1.8.2.1
 
