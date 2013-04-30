@@ -1,68 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933388Ab3D3S5K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 14:57:10 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:49446 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933369Ab3D3S5D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 14:57:03 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-To: torvalds@linux-foundation.org
-Cc: mingo@kernel.org, peterz@infradead.org, linux-kernel@vger.kernel.org,
-        Sasha Levin <sasha.levin@oracle.com>, jamie.iles@oracle.com,
-        penberg@kernel.org, acme@ghostprotocols.net, paulus@samba.org,
-        namhyung@kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 8/9] liblockdep: Add the 'lockdep' user-space utility
-Date: Tue, 30 Apr 2013 14:54:39 -0400
-Message-Id: <1367348080-4680-9-git-send-email-sasha.levin@oracle.com>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1367348080-4680-1-git-send-email-sasha.levin@oracle.com>
-References: <1367348080-4680-1-git-send-email-sasha.levin@oracle.com>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	id S933404Ab3D3S5Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 14:57:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40351 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933391Ab3D3S5M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Apr 2013 14:57:12 -0400
+Date: Tue, 30 Apr 2013 20:53:41 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Alan Stern <stern@rowland.harvard.edu>, Ingo Molnar <mingo@elte.hu>,
+        Jan Kratochvil <jan.kratochvil@redhat.com>,
+        Prasad <prasad@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] ptrace/x86: flush_ptrace_hw_breakpoint() shoule clear
+	the virtual debug registers
+Message-ID: <20130430185341.GB12389@redhat.com>
+References: <20130418184350.GA4407@redhat.com> <20130418184425.GA4454@redhat.com> <20130429160931.GD31230@somewhere> <20130429164038.GA27132@redhat.com> <20130429233647.GD1760@somewhere> <20130430175138.GA30014@redhat.com> <20130430185322.GA12389@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130430185322.GA12389@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a simple wrapper to make using liblockdep on existing
-applications much easier.
+flush_ptrace_hw_breakpoint() destroys the counters set by ptrace, but
+"leaks" ->debugreg6 and ->ptrace_dr7.
 
-After running 'make && make install', it becomes quite simple to
-test things with liblockdep. For example, to try it on perf:
+The problem is minor, but still it doesn't look right and flush_thread()
+did this until 66cb5917. Now that PTRACE_DETACH does flush_ too this makes
+even more sense.
 
-	lockdep perf
-
-No other integration required.
-
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-Cc: jamie.iles@oracle.com
-Cc: penberg@kernel.org
-Cc: acme@ghostprotocols.net
-Cc: paulus@samba.org
-Cc: namhyung@kernel.org
-Cc: peterz@infradead.org
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Link: http://lkml.kernel.org/r/1360456781-32462-11-git-send-email-sasha.levin@oracle.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- tools/lib/lockdep/lockdep | 3 +++
- 1 file changed, 3 insertions(+)
- create mode 100755 tools/lib/lockdep/lockdep
+ arch/x86/kernel/hw_breakpoint.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/tools/lib/lockdep/lockdep b/tools/lib/lockdep/lockdep
-new file mode 100755
-index 0000000..a805c81
---- /dev/null
-+++ b/tools/lib/lockdep/lockdep
-@@ -0,0 +1,3 @@
-+#! /bin/bash
+diff --git a/arch/x86/kernel/hw_breakpoint.c b/arch/x86/kernel/hw_breakpoint.c
+index 02f0763..f66ff16 100644
+--- a/arch/x86/kernel/hw_breakpoint.c
++++ b/arch/x86/kernel/hw_breakpoint.c
+@@ -393,6 +393,9 @@ void flush_ptrace_hw_breakpoint(struct task_struct *tsk)
+ 		unregister_hw_breakpoint(t->ptrace_bps[i]);
+ 		t->ptrace_bps[i] = NULL;
+ 	}
 +
-+LD_PRELOAD="liblockdep.so $LD_PRELOAD" "$@"
++	t->debugreg6 = 0;
++	t->ptrace_dr7 = 0;
+ }
+ 
+ void hw_breakpoint_restore(void)
 -- 
-1.8.2.1
+1.5.5.1
+
 
