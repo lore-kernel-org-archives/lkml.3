@@ -1,110 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932979Ab3D3P2r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 11:28:47 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:19411 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932354Ab3D3P2p (ORCPT
+	id S933011Ab3D3P27 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 11:28:59 -0400
+Received: from a9-50.smtp-out.amazonses.com ([54.240.9.50]:56091 "EHLO
+	a9-50.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932354Ab3D3P24 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 11:28:45 -0400
-Date: Tue, 30 Apr 2013 11:28:03 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Ian Campbell <Ian.Campbell@citrix.com>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH v5 0/7] xen/arm: move to mach-virt and support SMP
-Message-ID: <20130430152803.GB21639@phenom.dumpdata.com>
-References: <alpine.DEB.2.02.1304251750160.4180@kaball.uk.xensource.com>
- <alpine.DEB.2.02.1304261134330.4180@kaball.uk.xensource.com>
+	Tue, 30 Apr 2013 11:28:56 -0400
+X-Greylist: delayed 762 seconds by postgrey-1.27 at vger.kernel.org; Tue, 30 Apr 2013 11:28:56 EDT
+Date: Tue, 30 Apr 2013 15:16:12 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+cc: glommer@parallels.com, penberg@kernel.org, linux-kernel@vger.kernel.org
+Subject: Fix off by one error in slab.h
+In-Reply-To: <201304300645.FCE37285.tVHJLSOMQFOFFO@I-love.SAKURA.ne.jp>
+Message-ID: <0000013e5b83ec27-03a11e6a-157a-40ac-a65d-0281ee0d40fe-000000@email.amazonses.com>
+References: <CAOJsxLFYDC+EDdJrXVnc1qfEyd56bhFLeGE+6Mbhwiq73KQQLQ@mail.gmail.com> <517E8758.9040803@parallels.com> <0000013e564e0e5a-121c52f9-e489-470f-99d5-67a5ad42eb75-000000@email.amazonses.com> <201304300028.IAD13051.OHOVMJSLFFFQOt@I-love.SAKURA.ne.jp>
+ <0000013e56e9304a-1042a95a-d4dd-43c5-8b8a-c670f50ac54e-000000@email.amazonses.com> <201304300645.FCE37285.tVHJLSOMQFOFFO@I-love.SAKURA.ne.jp>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1304261134330.4180@kaball.uk.xensource.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.04.30-54.240.9.50
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 26, 2013 at 11:41:32AM +0100, Stefano Stabellini wrote:
-> Arnd, Olof,
-> during the last few merge windows Konrad has always sent the Xen ARM
-> patches to Linus via his tree, but this time (3.10 merge window), after
-> consulting with Konrad I am thinking of sending to Linus the pull
-> request myself.
+Subject: Fix off by one error in slab.h
 
-<nods> They look good to me. If there are cross-platform patches
-(say in drivers/xen) they would still need my Ack (or Jeremy's).
+We ran into some strange issues as a result of an off by one isse in slab.h
 
-> 
-> Arnd, are you OK with this patch series?
-> 
-> It's all very Xen specific and it is already in linux-next.
-> The only non-Xen files that are touched are arch/arm/Kconfig, to select
-> ARM_PSCI on XEN, and arch/arm/boot/dts/Makefile, to build the xenvm DTB
-> if CONFIG_ARCH_VIRT.
+The root of the issue is the treatment of KMALLOC_SHIFT_HIGH that is confusing.
 
-I don't have much knowledge in the 'dts' Makefile but the rest looks
-OK to me.
-> 
-> Cheers,
-> 
-> Stefano
-> 
-> 
-> On Thu, 25 Apr 2013, Stefano Stabellini wrote:
-> > Hi all,
-> > this patch series, based on 3.9-rc3, moves xenvm to mach-virt,
-> > introduces SMP support in Xen on ARM and implements machine reboot and
-> > power off via Xen sched_op hypercalls.
-> > 
-> > Each patch comes with a detailed changelog.
-> > 
-> > 
-> > The merge window is approaching, this patch series only contains Xen
-> > specific changes for ARM, if anybody has any objections speak now
-> > please.
-> > 
-> > I would like an ack from an ARM maintainer on patch #4 and #5 since they
-> > touch generic ARM Makefiles.
-> > 
-> > 
-> > Changes in v5:
-> > - allocate xen_vcpu_info dynamically, aligning it to the size of the
-> > struct;
-> > - use VCPUOP_register_vcpu_info on cpu0 too;
-> > - set pm_power_off and arm_pm_restart from the Xen specific
-> > intialization code.
-> > 
-> > 
-> > 
-> > Stefano Stabellini (7):
-> >       xen/arm: actually pass a non-NULL percpu pointer to request_percpu_irq
-> >       xen/arm: implement HYPERVISOR_vcpu_op
-> >       xen/arm: SMP support
-> >       xen: move the xenvm machine to mach-virt
-> >       xen/arm: XEN selects ARM_PSCI
-> >       xenvm: add a simple PSCI node and a second cpu
-> >       xen/arm: use sched_op hypercalls for machine reboot and power off
-> > 
-> >  arch/arm/Kconfig                     |    1 +
-> >  arch/arm/boot/dts/Makefile           |    4 +-
-> >  arch/arm/boot/dts/xenvm-4.2.dts      |   13 ++++++
-> >  arch/arm/include/asm/xen/hypercall.h |    1 +
-> >  arch/arm/mach-vexpress/v2m.c         |    1 -
-> >  arch/arm/mach-virt/virt.c            |    1 +
-> >  arch/arm/xen/enlighten.c             |   75 ++++++++++++++++++++++++++++++---
-> >  arch/arm/xen/hypercall.S             |    1 +
-> >  8 files changed, 87 insertions(+), 10 deletions(-)
-> > 
-> > 
-> > git://git.kernel.org/pub/scm/linux/kernel/git/sstabellini/xen.git 3.9-rc3-smp-5-tag
-> > 
-> > Cheers,
-> > 
-> > Stefano
-> > 
+Make KMALLOC_SHIFT_HIGH the first unsupported size instead of the last supported.
+
+Signed-off-by: Christoph Lameter <cl@linux.com>
+
+Index: linux/include/linux/slab.h
+===================================================================
+--- linux.orig/include/linux/slab.h	2013-04-30 09:54:23.636533564 -0500
++++ linux/include/linux/slab.h	2013-04-30 10:10:35.676932866 -0500
+@@ -176,8 +176,8 @@ struct kmem_cache {
+  * to do various tricks to work around compiler limitations in order to
+  * ensure proper constant folding.
+  */
+-#define KMALLOC_SHIFT_HIGH	((MAX_ORDER + PAGE_SHIFT - 1) <= 25 ? \
+-				(MAX_ORDER + PAGE_SHIFT - 1) : 25)
++#define KMALLOC_SHIFT_HIGH	((MAX_ORDER + PAGE_SHIFT) <= 26 ? \
++				(MAX_ORDER + PAGE_SHIFT) : 26)
+ #define KMALLOC_SHIFT_MAX	KMALLOC_SHIFT_HIGH
+ #define KMALLOC_SHIFT_LOW	5
+ #else
+@@ -185,7 +185,7 @@ struct kmem_cache {
+  * SLUB allocates up to order 2 pages directly and otherwise
+  * passes the request to the page allocator.
+  */
+-#define KMALLOC_SHIFT_HIGH	(PAGE_SHIFT + 1)
++#define KMALLOC_SHIFT_HIGH	(PAGE_SHIFT + 2)
+ #define KMALLOC_SHIFT_MAX	(MAX_ORDER + PAGE_SHIFT)
+ #define KMALLOC_SHIFT_LOW	3
+ #endif
+@@ -193,7 +193,7 @@ struct kmem_cache {
+ /* Maximum allocatable size */
+ #define KMALLOC_MAX_SIZE	(1UL << KMALLOC_SHIFT_MAX)
+ /* Maximum size for which we actually use a slab cache */
+-#define KMALLOC_MAX_CACHE_SIZE	(1UL << KMALLOC_SHIFT_HIGH)
++#define KMALLOC_MAX_CACHE_SIZE	((1UL << (KMALLOC_SHIFT_HIGH -1)))
+ /* Maximum order allocatable via the slab allocagtor */
+ #define KMALLOC_MAX_ORDER	(KMALLOC_SHIFT_MAX - PAGE_SHIFT)
+
+@@ -206,9 +206,9 @@ struct kmem_cache {
+ #define KMALLOC_MIN_SIZE (1 << KMALLOC_SHIFT_LOW)
+ #endif
+
+-extern struct kmem_cache *kmalloc_caches[KMALLOC_SHIFT_HIGH + 1];
++extern struct kmem_cache *kmalloc_caches[KMALLOC_SHIFT_HIGH];
+ #ifdef CONFIG_ZONE_DMA
+-extern struct kmem_cache *kmalloc_dma_caches[KMALLOC_SHIFT_HIGH + 1];
++extern struct kmem_cache *kmalloc_dma_caches[KMALLOC_SHIFT_HIGH];
+ #endif
+
+ /*
+Index: linux/mm/slab_common.c
+===================================================================
+--- linux.orig/mm/slab_common.c	2013-04-30 09:54:23.636533564 -0500
++++ linux/mm/slab_common.c	2013-04-30 09:54:53.693039252 -0500
+@@ -319,11 +319,11 @@ struct kmem_cache *__init create_kmalloc
+ 	return s;
+ }
+
+-struct kmem_cache *kmalloc_caches[KMALLOC_SHIFT_HIGH + 1];
++struct kmem_cache *kmalloc_caches[KMALLOC_SHIFT_HIGH];
+ EXPORT_SYMBOL(kmalloc_caches);
+
+ #ifdef CONFIG_ZONE_DMA
+-struct kmem_cache *kmalloc_dma_caches[KMALLOC_SHIFT_HIGH + 1];
++struct kmem_cache *kmalloc_dma_caches[KMALLOC_SHIFT_HIGH];
+ EXPORT_SYMBOL(kmalloc_dma_caches);
+ #endif
+
+@@ -446,7 +446,7 @@ void __init create_kmalloc_caches(unsign
+ 	if (KMALLOC_MIN_SIZE <= 64 && !kmalloc_caches[2])
+ 		kmalloc_caches[2] = create_kmalloc_cache(NULL, 192, flags);
+
+-	for (i = KMALLOC_SHIFT_LOW; i <= KMALLOC_SHIFT_HIGH; i++)
++	for (i = KMALLOC_SHIFT_LOW; i < KMALLOC_SHIFT_HIGH; i++)
+ 		if (!kmalloc_caches[i])
+ 			kmalloc_caches[i] = create_kmalloc_cache(NULL,
+ 							1 << i, flags);
+@@ -454,7 +454,7 @@ void __init create_kmalloc_caches(unsign
+ 	/* Kmalloc array is now usable */
+ 	slab_state = UP;
+
+-	for (i = 0; i <= KMALLOC_SHIFT_HIGH; i++) {
++	for (i = 0; i < KMALLOC_SHIFT_HIGH; i++) {
+ 		struct kmem_cache *s = kmalloc_caches[i];
+ 		char *n;
+
+@@ -467,7 +467,7 @@ void __init create_kmalloc_caches(unsign
+ 	}
+
+ #ifdef CONFIG_ZONE_DMA
+-	for (i = 0; i <= KMALLOC_SHIFT_HIGH; i++) {
++	for (i = 0; i < KMALLOC_SHIFT_HIGH; i++) {
+ 		struct kmem_cache *s = kmalloc_caches[i];
+
+ 		if (s) {
