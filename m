@@ -1,46 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758709Ab3D3CV4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 22:21:56 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:2260 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756387Ab3D3CVz (ORCPT
+	id S1758776Ab3D3CYf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 22:24:35 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:60064 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757851Ab3D3CYd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 22:21:55 -0400
-X-Authority-Analysis: v=2.0 cv=DKcNElxb c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=BTRBD928usAA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=YPD5nf4ZmOMA:10 a=f-7Xb6j5qNcajQaW31kA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1367288513.30667.55.camel@gandalf.local.home>
-Subject: Re: [ANNOUNCE] 3.4.41-rt55-feat3
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: RT <linux-rt-users@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Carsten Emde <C.Emde@osadl.org>, John Kacur <jkacur@redhat.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Date: Mon, 29 Apr 2013 22:21:53 -0400
-In-Reply-To: <1367283987.30667.49.camel@gandalf.local.home>
-References: <1367283987.30667.49.camel@gandalf.local.home>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-2 
+	Mon, 29 Apr 2013 22:24:33 -0400
+Date: Tue, 30 Apr 2013 12:24:23 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Chen Gang <gang.chen@asianux.com>, Alan Ott <alan@signal11.us>
+Subject: linux-next: manual merge of the net-next tree with the net tree
+Message-Id: <20130430122423.ab57c82604f13f6773ef4aeb@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__30_Apr_2013_12_24_23_+1000_XyLL3_xSVTg2TfTS"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-04-29 at 21:06 -0400, Steven Rostedt wrote:
-> Dear RT Folks,
-> 
-> I'm pleased to announce the 3.4.41-rt55-feat3 feature release.
-> 
-> Note, I first uploaded -feat2 then realized I didn't add a compile fix by
-> Mike Galbraith, and then created the -feat3 with that fix.
-> 
+--Signature=_Tue__30_Apr_2013_12_24_23_+1000_XyLL3_xSVTg2TfTS
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Because of the -feat2/3 screw up, I forgot to thank Sebastian Andrzej
-Siewior for doing the SLUB backport.
+Hi all,
 
--- Steve
+Today's linux-next merge of the net-next tree got a conflict in
+net/mac802154/mac802154.h between commit 2c1bbbffa0b6 ("net: mac802154:
+comparision issue of type cast, finding by EXTRA_CFLAGS=3D-W") from the net
+tree and commit 7dd43d356e73 ("mac802154: Do not try to resend failed
+packets") from the net-next tree.
 
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc net/mac802154/mac802154.h
+index 703c121,5c9e021..0000000
+--- a/net/mac802154/mac802154.h
++++ b/net/mac802154/mac802154.h
+@@@ -88,9 -88,7 +88,7 @@@ struct mac802154_sub_if_data=20
+ =20
+  #define mac802154_to_priv(_hw)	container_of(_hw, struct mac802154_priv, h=
+w)
+ =20
+- #define MAC802154_MAX_XMIT_ATTEMPTS	3
+-=20
+ -#define MAC802154_CHAN_NONE		(~(u8)0) /* No channel is assigned */
+ +#define MAC802154_CHAN_NONE		0xff /* No channel is assigned */
+ =20
+  extern struct ieee802154_reduced_mlme_ops mac802154_mlme_reduced;
+  extern struct ieee802154_mlme_ops mac802154_mlme_wpan;
+
+--Signature=_Tue__30_Apr_2013_12_24_23_+1000_XyLL3_xSVTg2TfTS
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRfytXAAoJEECxmPOUX5FE5+cP/2Tm5OeSWmVJju9Ji18oAZhm
+zQVI0s9OkBPZRrCoeU39ADxOrvLh3p8eWEk4NZxJvU8SvpDFhJ80Rh7vBPh7cqQM
+TFU5chWD38TLbby/hTjeuv4fKRMjrwmkizgzmRBdt7Vc0fsG1sxj8lqwyLB3JSiw
+SYn+PcREo2OJoPs3liBkOq+rBors+duUq3lZBJ5q2g5tTjuGaj2nYImRCApM366d
+ROTi1ZDbwN5wKsWTqAWTYtNXmTlLlYYW0d9022ByySaP/nL2MpaTBSKKfVHxxyHh
++hAyb4SS/dJcGNKeTFVvFOSv64LlDRFj9CgK9nqMePLYvqA9t005xqbVmOwKWjJH
+hf2BdLVzB22qALI5sgFlaRRx1Oy1RWceKH3/QczRxaSggzzj3Mp8qMOeX6oJC+Bf
+f3GuL/+Pm3aVtjsHVR/9lLnxLZ6FXABNdQ+9KJ8aDYgsCva/e6yI6bYx3/3HZ5KC
+XcVxzquSpwF0oP3ZxBaxEMkdEwOHf5zCixy1To64SwOZw/4/ZrjWkqhWRDAGwGXd
+xS9ZoM4ybjAuRuHYXNW1iBm+bDuMIGEl0zPdFo6Ta8BbVyQL41LoU7LhCYtNYdp2
+9kUdt8Xt5MoDEcpxChtTTpm50ju3kLIke0fgsEyq36HuNHZx6nhJhXuAwEEGDcoy
+CHhukkUEEFQcGqTwzHbn
+=AHSv
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__30_Apr_2013_12_24_23_+1000_XyLL3_xSVTg2TfTS--
