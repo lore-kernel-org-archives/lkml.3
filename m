@@ -1,79 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760259Ab3D3B6p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 21:58:45 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:47041 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758378Ab3D3B6m (ORCPT
+	id S1756782Ab3D3CCW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 22:02:22 -0400
+Received: from mail-da0-f52.google.com ([209.85.210.52]:45185 "EHLO
+	mail-da0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755527Ab3D3CCU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 21:58:42 -0400
-Date: Tue, 30 Apr 2013 10:58:40 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Bastian Hecht <hechtb+renesas@gmail.com>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
-Subject: Re: [PATCH 03/21] ARM: shmobile: don't call irqchip_init
- unconditionally
-Message-ID: <20130430015840.GG22535@verge.net.au>
-References: <1366910944-3033663-1-git-send-email-arnd@arndb.de>
- <1366910944-3033663-4-git-send-email-arnd@arndb.de>
- <20130426004835.GA20070@verge.net.au>
- <201304291649.08084.arnd@arndb.de>
+	Mon, 29 Apr 2013 22:02:20 -0400
+Date: Mon, 29 Apr 2013 19:02:17 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Shuah Khan <shuah.kh@samsung.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Subject: Re: [ 00/42] 3.8.11-stable review
+Message-ID: <20130430020217.GA5858@kroah.com>
+References: <20130429184752.435249613@linuxfoundation.org>
+ <1367286877.14116.3.camel@lorien>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201304291649.08084.arnd@arndb.de>
-Organisation: Horms Solutions Ltd.
+In-Reply-To: <1367286877.14116.3.camel@lorien>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 29, 2013 at 04:49:07PM +0200, Arnd Bergmann wrote:
-> On Friday 26 April 2013, Simon Horman wrote:
-> > > diff --git a/arch/arm/mach-shmobile/intc-r8a7740.c b/arch/arm/mach-shmobile/intc-r8a7740.c
-> > > index 8871f77..5dc57f1 100644
-> > > --- a/arch/arm/mach-shmobile/intc-r8a7740.c
-> > > +++ b/arch/arm/mach-shmobile/intc-r8a7740.c
-> > > @@ -53,14 +53,23 @@ static void __init r8a7740_init_irq_common(void)
-> > >  
-> > >  void __init r8a7740_init_irq_of(void)
-> > >  {
-> > > +     if (!IS_ENABLED(CONFIG_OF))
-> > > +             return;
-> > > +
+On Tue, Apr 30, 2013 at 01:54:37AM +0000, Shuah Khan wrote:
+> On Mon, 2013-04-29 at 12:01 -0700, Greg Kroah-Hartman wrote:
+> > This is the start of the stable review cycle for the 3.8.11 release.
+> > There are 42 patches in this series, all will be posted as a response
+> > to this one.  If anyone has any issues with these being applied, please
+> > let me know.
 > > 
-> > In other parts of the shmobile I believe that such code is
-> > guarded by #ifdef CONFIG_OF and I believe not guarding this code in
-> > some way was an oversight.
+> > Responses should be made by Wed May  1 18:47:07 UTC 2013.
+> > Anything received after that time might be too late.
 > > 
-> > The above change seems fine to me.
+> > The whole patch series can be found in one patch at:
+> > 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.8.11-rc1.gz
+> > and the diffstat can be found below.
+> > 
+> > thanks,
+> > 
+> > greg k-h
+> > 
 > 
-> Ok. The change that broke the code is only present in linux-next from
-> one of your trees, but is not in arm-soc. Could you include the change
-> in your tree, either by folding into one of your patches or adapting
-> my patch appropriately?
+> Patches applied cleanly to 3.0.75, 3.4.42, and 3.8.10 
+> 
+> Compiled and booted on the following systems:
+> 
+> Samsung Series 9 Intel Corei5 (3.4.43-rc1 and 3.8.11-rc1)
+> HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics
+> 
+> dmesgs for all releases look good. No regressions compared to the
+> previous dmesgs for each of these releases.
 
-Yes, or of course. I'll queue-up your patch with
-the second hunk (below) removed.
+Great, thanks for testing and letting us know.
 
-> > > +
-> > > +     gic_dist_base = ioremap_nocache(0xc2800000, 0x1000);
-> > > +     gic_cpu_base = ioremap_nocache(0xc2000000, 0x1000);
-> > >  
-> > >       /* initialize the Generic Interrupt Controller PL390 r0p0 */
-> > >       gic_init(0, 29, gic_dist_base, gic_cpu_base);
-> > 
-> > This one seems broken as the armadillo800eva board currently uses
-> > it to initialise GIC even if CONFIG_ATAGS is not defined.
-> > 
-> > I did test the above change on the armadillo800eva board
-> > with the above change and CONFIG_ATAGS disabled, the result was
-> > a boot failure. With the change reverted booting seems fine.
-> 
-> Yes, I see my mistake now. The second change was clearly wrong
-> as this function is also used for DT boards, not for ATAGS boards.
-> 
-> 	Arnd
-> 
+greg k-h
