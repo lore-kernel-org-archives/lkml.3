@@ -1,29 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761222Ab3D3Qte (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 12:49:34 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:58401 "EHLO
+	id S1761207Ab3D3Qub (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 12:50:31 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:58429 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760969Ab3D3Qtc (ORCPT
+	with ESMTP id S1760830Ab3D3Qu3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 12:49:32 -0400
-Date: Tue, 30 Apr 2013 09:49:05 -0700
-From: tip-bot for Borislav Petkov <tipbot@zytor.com>
-Message-ID: <tip-83aee67833071c7b73a83f7803388f7a9e481908@git.kernel.org>
+	Tue, 30 Apr 2013 12:50:29 -0400
+Date: Tue, 30 Apr 2013 09:50:17 -0700
+From: "=?UTF-8?B?dGlwLWJvdCBmb3IgSmFuLVNpbW9uIE3DtmxsZXI=?=" 
+	<tipbot@zytor.com>
+Message-ID: <tip-1b0dac2ac6debdbf1541e15f2cede03613cf4465@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        penberg@kernel.org, bp@alien8.de, levinsasha928@gmail.com,
-        mtosatti@redhat.com, tglx@linutronix.de, fengguang.wu@intel.com,
-        bp@suse.de
+        dl9pf@gmx.de, stable@kernel.org, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        penberg@kernel.org, bp@alien8.de, levinsasha928@gmail.com,
-        mtosatti@redhat.com, tglx@linutronix.de, bp@suse.de,
-        fengguang.wu@intel.com
-In-Reply-To: <20130426095140.GA15361@pd.tnic>
-References: <20130426095140.GA15361@pd.tnic>
+        dl9pf@gmx.de, stable@kernel.org, tglx@linutronix.de
+In-Reply-To: <1367316153-14808-1-git-send-email-dl9pf@gmx.de>
+References: <1367316153-14808-1-git-send-email-dl9pf@gmx.de>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86/kconfig:
-  Add a Kconfig shortcut for building working KVM guest kernels
-Git-Commit-ID: 83aee67833071c7b73a83f7803388f7a9e481908
+Subject: [tip:perf/urgent] perf/x86/intel:
+  Fix unintended variable name reuse
+Git-Commit-ID: 1b0dac2ac6debdbf1541e15f2cede03613cf4465
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -36,83 +33,71 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  83aee67833071c7b73a83f7803388f7a9e481908
-Gitweb:     http://git.kernel.org/tip/83aee67833071c7b73a83f7803388f7a9e481908
-Author:     Borislav Petkov <bp@alien8.de>
-AuthorDate: Fri, 26 Apr 2013 11:51:40 +0200
+Commit-ID:  1b0dac2ac6debdbf1541e15f2cede03613cf4465
+Gitweb:     http://git.kernel.org/tip/1b0dac2ac6debdbf1541e15f2cede03613cf4465
+Author:     Jan-Simon Möller <dl9pf@gmx.de>
+AuthorDate: Tue, 30 Apr 2013 12:02:33 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 30 Apr 2013 11:00:11 +0200
+CommitDate: Tue, 30 Apr 2013 13:12:47 +0200
 
-x86/kconfig: Add a Kconfig shortcut for building working KVM guest kernels
+perf/x86/intel: Fix unintended variable name reuse
 
-This is pretty useful for the case where people want to boot the
-resulting kernel in qemu/kvm or lkvm. Instead of going and
-searching for each required option through the Kconfig maze,
-this single option should simply enable everything required/good
-to have to boot the resulting kernel in the guest.
+The variable name events_group is already in used and led to a
+compilation error when using clang to build the Linux Kernel .
+The fix is just to rename the var. No functional change. Please
+apply.
 
-Patch has been adapted from a version in the external lkvm tree.
+Fix suggested in discussion by PaX Team <pageexec@freemail.hu>
 
-Originally-by: Pekka Enberg <penberg@kernel.org>
-Originally-by: Sasha Levin <levinsasha928@gmail.com>
-Signed-off-by: Borislav Petkov <bp@suse.de>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: Pekka Enberg <penberg@kernel.org>
-Cc: Sasha Levin <levinsasha928@gmail.com>
-Cc: Fengguang Wu <fengguang.wu@intel.com>
-Link: http://lkml.kernel.org/r/20130426095140.GA15361@pd.tnic
+Signed-off-by: Jan-Simon Möller <dl9pf@gmx.de>
+Cc: rostedt@goodmis.org
+Cc: a.p.zijlstra@chello.nl
+Cc: paulus@samba.org
+Cc: acme@ghostprotocols.net
+Link: http://lkml.kernel.org/r/1367316153-14808-1-git-send-email-dl9pf@gmx.de
+Cc: <stable@kernel.org>
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/Kconfig | 39 +++++++++++++++++++++++++++++++++++++++
- 1 file changed, 39 insertions(+)
+ arch/x86/kernel/cpu/perf_event_intel_uncore.c | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 15b5cef..1d053dc 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -633,6 +633,45 @@ config KVM_GUEST
- 	  underlying device model, the host provides the guest with
- 	  timing infrastructure such as time of day, and system time
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+index 22ebaa8..45f6d13 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+@@ -2428,7 +2428,7 @@ static void __init uncore_types_exit(struct intel_uncore_type **types)
+ static int __init uncore_type_init(struct intel_uncore_type *type)
+ {
+ 	struct intel_uncore_pmu *pmus;
+-	struct attribute_group *events_group;
++	struct attribute_group *attr_group;
+ 	struct attribute **attrs;
+ 	int i, j;
  
-+config KVM_GUEST_COMMON_OPTIONS
-+	bool "Enable commodity options for a standalone KVM guest"
-+	depends on KVM_GUEST
-+	select NET
-+	select NETDEVICES
-+	select BLOCK
-+	select BLK_DEV
-+	select NETWORK_FILESYSTEMS
-+	select INET
-+	select EXPERIMENTAL
-+	select TTY
-+	select SERIAL_8250
-+	select SERIAL_8250_CONSOLE
-+	select IP_PNP
-+	select IP_PNP_DHCP
-+	select BINFMT_ELF
-+	select PCI_MSI
-+	select HAVE_ARCH_KGDB
-+	select DEBUG_KERNEL
-+	select KGDB
-+	select KGDB_SERIAL_CONSOLE
-+	select VIRTUALIZATION
-+	select VIRTIO
-+	select VIRTIO_RING
-+	select VIRTIO_PCI
-+	select VIRTIO_BLK
-+	select VIRTIO_CONSOLE
-+	select VIRTIO_NET
-+	select 9P_FS
-+	select NET_9P
-+	select NET_9P_VIRTIO
-+	---help---
-+	  Select guest kernel functionality which facilitates booting the
-+	  kernel as a guest in qemu or lkvm. This entails basic stuff like
-+	  serial support, kgdb, virtio and other so that you can be able to
-+	  have commodity functionality like serial output from the guest,
-+	  networking, seamless host file system integration into guest context
-+	  and other useful things.
-+
- source "arch/x86/lguest/Kconfig"
+@@ -2455,19 +2455,19 @@ static int __init uncore_type_init(struct intel_uncore_type *type)
+ 		while (type->event_descs[i].attr.attr.name)
+ 			i++;
  
- config PARAVIRT
+-		events_group = kzalloc(sizeof(struct attribute *) * (i + 1) +
+-					sizeof(*events_group), GFP_KERNEL);
+-		if (!events_group)
++		attr_group = kzalloc(sizeof(struct attribute *) * (i + 1) +
++					sizeof(*attr_group), GFP_KERNEL);
++		if (!attr_group)
+ 			goto fail;
+ 
+-		attrs = (struct attribute **)(events_group + 1);
+-		events_group->name = "events";
+-		events_group->attrs = attrs;
++		attrs = (struct attribute **)(attr_group + 1);
++		attr_group->name = "events";
++		attr_group->attrs = attrs;
+ 
+ 		for (j = 0; j < i; j++)
+ 			attrs[j] = &type->event_descs[j].attr.attr;
+ 
+-		type->events_group = events_group;
++		type->events_group = attr_group;
+ 	}
+ 
+ 	type->pmu_group = &uncore_pmu_attr_group;
