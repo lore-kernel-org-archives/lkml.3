@@ -1,105 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760166Ab3D3J4f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 05:56:35 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:52848 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759848Ab3D3J4c (ORCPT
+	id S1760202Ab3D3J4m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 05:56:42 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:54495 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759916Ab3D3J4i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 05:56:32 -0400
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Emilio Lopez <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] ARM: sun5i: Update the clock compatible strings
-Date: Tue, 30 Apr 2013 11:56:23 +0200
-Message-Id: <1367315783-21345-3-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1367315783-21345-1-git-send-email-maxime.ripard@free-electrons.com>
-References: <1367315783-21345-1-git-send-email-maxime.ripard@free-electrons.com>
+	Tue, 30 Apr 2013 05:56:38 -0400
+Message-ID: <1367315763.4616.93.camel@marge.simpson.net>
+Subject: Re: [patch v7 0/21] sched: power aware scheduling
+From: Mike Galbraith <bitbucket@online.de>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Len Brown <lenb@kernel.org>, Borislav Petkov <bp@alien8.de>,
+        Alex Shi <alex.shi@intel.com>, mingo@redhat.com, peterz@infradead.org,
+        tglx@linutronix.de, akpm@linux-foundation.org, arjan@linux.intel.com,
+        pjt@google.com, namhyung@kernel.org, morten.rasmussen@arm.com,
+        vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
+        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
+        linux-kernel@vger.kernel.org, len.brown@intel.com,
+        rafael.j.wysocki@intel.com, jkosina@suse.cz, clark.williams@gmail.com,
+        tony.luck@intel.com, keescook@chromium.org, mgorman@suse.de,
+        riel@redhat.com, Linux PM list <linux-pm@vger.kernel.org>
+Date: Tue, 30 Apr 2013 11:56:03 +0200
+In-Reply-To: <1367315380.4616.91.camel@marge.simpson.net>
+References: <1365040862-8390-1-git-send-email-alex.shi@intel.com>
+	 <516724F5.20504@kernel.org> <5167C9FA.8050406@intel.com>
+	 <20130412162348.GE2368@pd.tnic>
+	 <1365785311.5814.36.camel@marge.simpson.net> <516F19EE.5060309@kernel.org>
+	 <1366989087.30242.11.camel@marge.simpson.net>
+	 <1367298972.4616.41.camel@marge.simpson.net>
+	 <1367310625.4616.71.camel@marge.simpson.net>
+	 <20130430084135.GA21473@gmail.com>
+	 <1367314539.4616.88.camel@marge.simpson.net>
+	 <1367315380.4616.91.camel@marge.simpson.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Provags-ID: V02:K0:LRgWNm5fLvlZCWe3MEd/4tSOjOC884hN/Dh3WaCMhXN
+ H1A261KjMtQ8VAllBtpPT8V3bHBZu7aPO6wTmjDvReu5v8x55+
+ f4zGhg4YWZW/Qri34FnidT+F+ZZB2Ppdzad5ANPxQKETR5VUlz
+ 6ufZhliM0awnrf5VQPAAiQ2SQoeAsI/QuwWKEKH+OKP4mzaqO+
+ uE6DsSqOtM1qyzQ2QCn+QuHv73my1OIiBy5UUTDoNjvfKVdetm
+ 6AUHqyskR/1XZC+raOHchovC6hiQh4j/9fuG69HuolsMW3v0py
+ v1RAbFbT8qTDRTz4RlPZQzqUCDCCwxBXqphrNfUAstVtaWp490
+ +YdRToO4Ny+Kt37B0Yivk4NAlldyOZ56TPI6RnI04kFtCWXHra
+ bcFYnPJc/OGkQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Allwinner A13 has a smaller clock set than the one found in the A10.
-Fix the A13 device tree and documentation to reflect this.
+On Tue, 2013-04-30 at 11:49 +0200, Mike Galbraith wrote: 
+> On Tue, 2013-04-30 at 11:35 +0200, Mike Galbraith wrote: 
+> > On Tue, 2013-04-30 at 10:41 +0200, Ingo Molnar wrote: 
+> 
+> > > Which are the workloads where 'powersaving' mode hurts workload 
+> > > performance measurably?
+> > 
+> > Well, it'll lose throughput any time there's parallel execution
+> > potential but it's serialized instead.. using average will inevitably
+> > stack tasks sometimes, but that's its goal.  Hackbench shows it.
+> 
+> (but that consolidation can be a winner too, and I bet a nickle it would
+> be for a socket sized pgbench run)
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
----
- arch/arm/boot/dts/sun5i-a13.dtsi | 35 ++++++++++++-----------------------
- 1 file changed, 12 insertions(+), 23 deletions(-)
-
-diff --git a/arch/arm/boot/dts/sun5i-a13.dtsi b/arch/arm/boot/dts/sun5i-a13.dtsi
-index 31fa38f..8ba65c1 100644
---- a/arch/arm/boot/dts/sun5i-a13.dtsi
-+++ b/arch/arm/boot/dts/sun5i-a13.dtsi
-@@ -95,20 +95,15 @@
- 
- 		ahb_gates: ahb_gates@01c20060 {
- 			#clock-cells = <1>;
--			compatible = "allwinner,sun4i-ahb-gates-clk";
-+			compatible = "allwinner,sun5i-a13-ahb-gates-clk";
- 			reg = <0x01c20060 0x8>;
- 			clocks = <&ahb>;
--			clock-output-names = "ahb_usb0", "ahb_ehci0",
--				"ahb_ohci0", "ahb_ehci1", "ahb_ohci1", "ahb_ss",
--				"ahb_dma", "ahb_bist", "ahb_mmc0", "ahb_mmc1",
--				"ahb_mmc2", "ahb_mmc3", "ahb_ms", "ahb_nand",
--				"ahb_sdram", "ahb_ace",	"ahb_emac", "ahb_ts",
--				"ahb_spi0", "ahb_spi1", "ahb_spi2", "ahb_spi3",
--				"ahb_pata", "ahb_sata", "ahb_gps", "ahb_ve",
--				"ahb_tvd", "ahb_tve0", "ahb_tve1", "ahb_lcd0",
--				"ahb_lcd1", "ahb_csi0", "ahb_csi1", "ahb_hdmi",
--				"ahb_de_be0", "ahb_de_be1", "ahb_de_fe0",
--				"ahb_de_fe1", "ahb_mp", "ahb_mali400";
-+			clock-output-names = "ahb_usbotg", "ahb_ehci", "ahb_ohci",
-+				"ahb_ss", "ahb_dma", "ahb_bist", "ahb_mmc0",
-+				"ahb_mmc1", "ahb_mmc2", "ahb_nand", "ahb_sdram",
-+				"ahb_spi0", "ahb_spi1", "ahb_spi2", "ahb_stimer",
-+				"ahb_ve", "ahb_lcd", "ahb_csi", "ahb_de_be",
-+				"ahb_de_fe", "ahb_iep", "ahb_mali400";
- 		};
- 
- 		apb0: apb0@01c20054 {
-@@ -120,15 +115,13 @@
- 
- 		apb0_gates: apb0_gates@01c20068 {
- 			#clock-cells = <1>;
--			compatible = "allwinner,sun4i-apb0-gates-clk";
-+			compatible = "allwinner,sun5i-a13-apb0-gates-clk";
- 			reg = <0x01c20068 0x4>;
- 			clocks = <&apb0>;
--			clock-output-names = "apb0_codec", "apb0_spdif",
--				"apb0_ac97", "apb0_iis", "apb0_pio", "apb0_ir0",
--				"apb0_ir1", "apb0_keypad";
-+			clock-output-names = "apb0_codec", "apb0_pio", "apb0_ir";
- 		};
- 
--		/* dummy is pll62 */
-+		/* dummy is pll6 */
- 		apb1_mux: apb1_mux@01c20058 {
- 			#clock-cells = <0>;
- 			compatible = "allwinner,sun4i-apb1-mux-clk";
-@@ -145,15 +138,11 @@
- 
- 		apb1_gates: apb1_gates@01c2006c {
- 			#clock-cells = <1>;
--			compatible = "allwinner,sun4i-apb1-gates-clk";
-+			compatible = "allwinner,sun5i-a13-apb1-gates-clk";
- 			reg = <0x01c2006c 0x4>;
- 			clocks = <&apb1>;
- 			clock-output-names = "apb1_i2c0", "apb1_i2c1",
--				"apb1_i2c2", "apb1_can", "apb1_scr",
--				"apb1_ps20", "apb1_ps21", "apb1_uart0",
--				"apb1_uart1", "apb1_uart2", "apb1_uart3",
--				"apb1_uart4", "apb1_uart5", "apb1_uart6",
--				"apb1_uart7";
-+				"apb1_i2c2", "apb1_uart1", "apb1_uart3";
- 		};
- 	};
- 
--- 
-1.8.1.2
+(belay that, was thinking of keeping all tasks on a single node, but
+it'll likely stack the whole thing on a CPU or two, if so, it'll hurt)
 
