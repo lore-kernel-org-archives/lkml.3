@@ -1,173 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758975Ab3D3AVo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 20:21:44 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:36889 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758406Ab3D3AVl (ORCPT
+	id S1759079Ab3D3AW4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 20:22:56 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:45021 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758406Ab3D3AWy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 20:21:41 -0400
-X-AuditID: cbfee690-b7f136d000000fea-e7-517f0e8e235f
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Rafael J. Wysocki'" <rjw@sisk.pl>
-Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, "'Len Brown'" <len.brown@intel.com>,
-        "'Pavel Machek'" <pavel@ucw.cz>, linux-pm@vger.kernel.org,
-        Jingoo Han <jg1.han@samsung.com>
-References: <000001ce42f2$96128cc0$c237a640$@samsung.com>
- <20119404.Sfu5WntByi@vostro.rjw.lan>
- <000001ce449c$3e1ce0f0$ba56a2d0$@samsung.com>
- <2369076.UqXRQJTAqK@vostro.rjw.lan>
-In-reply-to: <2369076.UqXRQJTAqK@vostro.rjw.lan>
-Subject: Re: [PATCH] PM: Add pm_ops_ptr() macro
-Date: Tue, 30 Apr 2013 09:21:34 +0900
-Message-id: <000001ce4538$abc98940$035c9bc0$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQGZyojvIl/md4KPBeuZMYPjUO77jQIGGS6nAdetXXwBp4mjspkqsU7w
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKIsWRmVeSWpSXmKPExsVy+t8zY90+vvpAg+V7DC3mrF/DZnF54SVW
-	i1lT9jJZXN41h83ic+8RRou7p46yWfQv7GVyYPdYvOclk8eJGb9ZPPq2rGL0eLS4hdFjxerv
-	7B6fN8kFsEVx2aSk5mSWpRbp2yVwZfx70Mpc0Cpdcf/dOaYGxlaRLkZODgkBE4lfpz8zQ9hi
-	EhfurWfrYuTiEBJYxihxau9cFpiir5smsEIkFjFKXF+4hwkkISTwC6jqbRKIzSagJvHly2H2
-	LkYODhEBdYljJ0VA6pkFzjNKPJj9DKp5G6PEkU/rwJo5BQwkfr6dzQLSICygL3F8qQdImEVA
-	VeJG4xRWEJtXwFKicXofO4QtKPFj8j2wcmag+VOm5IKEmQXkJTaveQv1gILEjrOvGUFsEQE3
-	iXfnl7JD1IhI7HvxjhHkBAmBn+wSd1tuskPsEpD4NvkQ2EwJAVmJTQeg5khKHFxxg2UCo8Qs
-	JJtnIWyehWTzLCQbFjCyrGIUTS1ILihOSi8y0StOzC0uzUvXS87P3cQIieIJOxjvHbA+xJgM
-	tH0is5Rocj4wCeSVxBsamxlZmJqYGhuZW5qRJqwkzqveYh0oJJCeWJKanZpakFoUX1Sak1p8
-	iJGJg1OqgdFu65EV7WJG3+fY3rJZ7xIwTebSmv274g32i2pZecq0sT63jOFWa/547zhjx3ve
-	f+rfn8SunVDwO2ZyiYQI88X19Xt2PN7DzR8XeUPQWkIx03RrmkbT7+byhPKpehPaZfxu/nxz
-	3/5B+SPtu64hlq/Nr+Stn58d77it2P+UbNxilZBnxl4sN5RYijMSDbWYi4oTAc3qWGr4AgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrEKsWRmVeSWpSXmKPExsVy+t9jAd0+vvpAg4VPdCzmrF/DZnF54SVW
-	i1lT9jJZXN41h83ic+8RRou7p46yWfQv7GVyYPdYvOclk8eJGb9ZPPq2rGL0eLS4hdFjxerv
-	7B6fN8kFsEU1MNpkpCampBYppOYl56dk5qXbKnkHxzvHm5oZGOoaWlqYKynkJeam2iq5+ATo
-	umXmAB2jpFCWmFMKFApILC5W0rfDNCE0xE3XAqYxQtc3JAiux8gADSSsY8z496CVuaBVuuL+
-	u3NMDYytIl2MnBwSAiYSXzdNYIWwxSQu3FvP1sXIxSEksIhR4vrCPUwgCSGBX4wSp94mgdhs
-	AmoSX74cZu9i5OAQEVCXOHZSBKSeWeA8o8SD2c9YIZq3MUoc+bQOrJlTwEDi59vZLCANwgL6
-	EseXeoCEWQRUJW40TgFbzCtgKdE4vY8dwhaU+DH5Hlg5M9D8KVNyQcLMAvISm9e8ZYa4U0Fi
-	x9nXjCC2iICbxLvzS9khakQk9r14xziBUWgWkkmzECbNQjJpFpKOBYwsqxhFUwuSC4qT0nON
-	9IoTc4tL89L1kvNzNzGCU8Qz6R2MqxosDjEKcDAq8fDuWFIXKMSaWFZcmXuIUYKDWUmE9/RN
-	oBBvSmJlVWpRfnxRaU5q8SHGZKA/JzJLiSbnA9NXXkm8obGJmZGlkZmFkYm5OWnCSuK8B1ut
-	A4UE0hNLUrNTUwtSi2C2MHFwSjUwWuzgX932QKi6+eWSyuNVvD8ZdWV3yFzje3TgbtsiyTlH
-	/hstkJdg6fO/JfRsZnJT0fXPk4Jialv735ZzLNBZmbSgvnBqWGf4w/xj9+4eehoiVc5U166b
-	efXuT5n/Pq/LVz6R37du44HWDEU74xPaMkmrhVwvlpVcVqn+nvnZKJ4x4l1bYuUzJZbijERD
-	Leai4kQA1SB2E1UDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 29 Apr 2013 20:22:54 -0400
+Date: Mon, 29 Apr 2013 17:22:52 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: [patch] mm, memcg: add rss_huge stat to memory.stat
+In-Reply-To: <alpine.DEB.2.02.1304281432160.5570@chino.kir.corp.google.com>
+Message-ID: <alpine.DEB.2.02.1304291721550.4634@chino.kir.corp.google.com>
+References: <alpine.DEB.2.02.1304251440190.27228@chino.kir.corp.google.com> <20130426111739.GF31157@dhcp22.suse.cz> <alpine.DEB.2.02.1304281432160.5570@chino.kir.corp.google.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, April 29, 2013 8:35 PM, Rafael J. Wysocki:
-> On Monday, April 29, 2013 02:41:48 PM Jingoo Han wrote:
-> > On Saturday, April 27, 2013 11:41 PM, Rafael J. Wysocki:
-> > >
-> > > On Saturday, April 27, 2013 11:54:50 AM Jingoo Han wrote:
-> > > > Add pm_ops_ptr() macro that allows the .pm entry in the driver structures
-> > > > to be assigned without having an #define xxx NULL for the case that PM is
-> > > > not enabled.
-> > > >
-> > > > Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-> > >
-> > > First, I'm not taking any more PM patches for v3.10 (that don't fix recent
-> > > regressions).
-> > >
-> > > Second, please add that macro along with a user.
-> >
-> > Hi Rafael,
-> >
-> > This macro can be used as below:
-> > This macro cannot affect the procedure of suspend/resume
-> > calls; thus, there is no side effect.
-> > It just reduces the code size of each drivers.
-> > In this way, of_match_ptr() macro has been already used.
-> 
-> OK, so care to fold the below into your original patch?
+This exports the amount of anonymous transparent hugepages for each memcg
+via the new "rss_huge" stat in memory.stat.  The units are in bytes.
 
-OK, I will fold it into my original patch.
-Then, I will send v2 patch, soon.
-Thank you.
+This is helpful to determine the hugepage utilization for individual jobs
+on the system in comparison to rss and opportunities where MADV_HUGEPAGE
+may be helpful.
 
-Best regards,
-Jingoo Han
+The amount of anonymous transparent hugepages is also included in "rss"
+for backwards compatibility.
 
-> 
-> Rafael
-> 
-> 
-> > --- a/drivers/i2c/busses/i2c-s3c2410.c
-> > +++ b/drivers/i2c/busses/i2c-s3c2410.c
-> > @@ -1218,7 +1218,6 @@ static int s3c24xx_i2c_resume(struct device *dev)
-> >  }
-> >  #endif
-> >
-> > -#ifdef CONFIG_PM
-> >  static const struct dev_pm_ops s3c24xx_i2c_dev_pm_ops = {
-> >  #ifdef CONFIG_PM_SLEEP
-> >         .suspend_noirq = s3c24xx_i2c_suspend_noirq,
-> > @@ -1226,11 +1225,6 @@ static const struct dev_pm_ops s3c24xx_i2c_dev_pm_ops = {
-> >  #endif
-> >  };
-> >
-> > -#define S3C24XX_DEV_PM_OPS (&s3c24xx_i2c_dev_pm_ops)
-> > -#else
-> > -#define S3C24XX_DEV_PM_OPS NULL
-> > -#endif
-> > -
-> >  /* device driver for platform bus bits */
-> >
-> >  static struct platform_driver s3c24xx_i2c_driver = {
-> > @@ -1240,7 +1234,7 @@ static struct platform_driver s3c24xx_i2c_driver = {
-> >         .driver         = {
-> >                 .owner  = THIS_MODULE,
-> >                 .name   = "s3c-i2c",
-> > -               .pm     = S3C24XX_DEV_PM_OPS,
-> > +               .pm     = pm_ops_ptr(&s3c24xx_i2c_dev_pm_ops),
-> >                 .of_match_table = of_match_ptr(s3c24xx_i2c_match),
-> >         },
-> >  };
-> >
-> > Best regards,
-> > Jingoo Han
-> >
-> >
-> > >
-> > > Thanks,
-> > > Rafael
-> > >
-> > >
-> > > > ---
-> > > >  include/linux/pm.h |    2 ++
-> > > >  1 files changed, 2 insertions(+), 0 deletions(-)
-> > > >
-> > > > diff --git a/include/linux/pm.h b/include/linux/pm.h
-> > > > index a224c7f..bd50d15 100644
-> > > > --- a/include/linux/pm.h
-> > > > +++ b/include/linux/pm.h
-> > > > @@ -55,8 +55,10 @@ struct device;
-> > > >
-> > > >  #ifdef CONFIG_PM
-> > > >  extern const char power_group_name[];		/* = "power" */
-> > > > +#define pm_ops_ptr(_ptr)	(_ptr)
-> > > >  #else
-> > > >  #define power_group_name	NULL
-> > > > +#define pm_ops_ptr(_ptr)	NULL
-> > > >  #endif
-> > > >
-> > > >  typedef struct pm_message {
-> > > >
-> > > --
-> > > I speak only for myself.
-> > > Rafael J. Wysocki, Intel Open Source Technology Center.
-> >
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> --
-> I speak only for myself.
-> Rafael J. Wysocki, Intel Open Source Technology Center.
+Signed-off-by: David Rientjes <rientjes@google.com>
+---
+ Documentation/cgroups/memory.txt |  4 +++-
+ mm/memcontrol.c                  | 36 ++++++++++++++++++++++++++----------
+ 2 files changed, 29 insertions(+), 11 deletions(-)
 
+diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
+--- a/Documentation/cgroups/memory.txt
++++ b/Documentation/cgroups/memory.txt
+@@ -478,7 +478,9 @@ memory.stat file includes following statistics
+ 
+ # per-memory cgroup local status
+ cache		- # of bytes of page cache memory.
+-rss		- # of bytes of anonymous and swap cache memory.
++rss		- # of bytes of anonymous and swap cache memory (includes
++		transparent hugepages).
++rss_huge	- # of bytes of anonymous transparent hugepages.
+ mapped_file	- # of bytes of mapped file (includes tmpfs/shmem)
+ pgpgin		- # of charging events to the memory cgroup. The charging
+ 		event happens each time a page is accounted as either mapped
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -91,16 +91,18 @@ enum mem_cgroup_stat_index {
+ 	/*
+ 	 * For MEM_CONTAINER_TYPE_ALL, usage = pagecache + rss.
+ 	 */
+-	MEM_CGROUP_STAT_CACHE, 	   /* # of pages charged as cache */
+-	MEM_CGROUP_STAT_RSS,	   /* # of pages charged as anon rss */
+-	MEM_CGROUP_STAT_FILE_MAPPED,  /* # of pages charged as file rss */
+-	MEM_CGROUP_STAT_SWAP, /* # of pages, swapped out */
++	MEM_CGROUP_STAT_CACHE,		/* # of pages charged as cache */
++	MEM_CGROUP_STAT_RSS,		/* # of pages charged as anon rss */
++	MEM_CGROUP_STAT_RSS_HUGE,	/* # of pages charged as anon huge */
++	MEM_CGROUP_STAT_FILE_MAPPED,	/* # of pages charged as file rss */
++	MEM_CGROUP_STAT_SWAP,		/* # of pages, swapped out */
+ 	MEM_CGROUP_STAT_NSTATS,
+ };
+ 
+ static const char * const mem_cgroup_stat_names[] = {
+ 	"cache",
+ 	"rss",
++	"rss_huge",
+ 	"mapped_file",
+ 	"swap",
+ };
+@@ -888,6 +890,7 @@ static unsigned long mem_cgroup_read_events(struct mem_cgroup *memcg,
+ }
+ 
+ static void mem_cgroup_charge_statistics(struct mem_cgroup *memcg,
++					 struct page *page,
+ 					 bool anon, int nr_pages)
+ {
+ 	preempt_disable();
+@@ -903,6 +906,10 @@ static void mem_cgroup_charge_statistics(struct mem_cgroup *memcg,
+ 		__this_cpu_add(memcg->stat->count[MEM_CGROUP_STAT_CACHE],
+ 				nr_pages);
+ 
++	if (PageTransHuge(page))
++		__this_cpu_add(memcg->stat->count[MEM_CGROUP_STAT_RSS_HUGE],
++				nr_pages);
++
+ 	/* pagein of a big page is an event. So, ignore page size */
+ 	if (nr_pages > 0)
+ 		__this_cpu_inc(memcg->stat->events[MEM_CGROUP_EVENTS_PGPGIN]);
+@@ -2813,7 +2820,7 @@ static void __mem_cgroup_commit_charge(struct mem_cgroup *memcg,
+ 	else
+ 		anon = false;
+ 
+-	mem_cgroup_charge_statistics(memcg, anon, nr_pages);
++	mem_cgroup_charge_statistics(memcg, page, anon, nr_pages);
+ 	unlock_page_cgroup(pc);
+ 
+ 	/*
+@@ -3603,16 +3610,21 @@ void mem_cgroup_split_huge_fixup(struct page *head)
+ {
+ 	struct page_cgroup *head_pc = lookup_page_cgroup(head);
+ 	struct page_cgroup *pc;
++	struct mem_cgroup *memcg;
+ 	int i;
+ 
+ 	if (mem_cgroup_disabled())
+ 		return;
++
++	memcg = head_pc->mem_cgroup;
+ 	for (i = 1; i < HPAGE_PMD_NR; i++) {
+ 		pc = head_pc + i;
+-		pc->mem_cgroup = head_pc->mem_cgroup;
++		pc->mem_cgroup = memcg;
+ 		smp_wmb();/* see __commit_charge() */
+ 		pc->flags = head_pc->flags & ~PCGF_NOCOPY_AT_SPLIT;
+ 	}
++	__this_cpu_sub(memcg->stat->count[MEM_CGROUP_STAT_RSS_HUGE],
++		       HPAGE_PMD_NR);
+ }
+ #endif /* CONFIG_TRANSPARENT_HUGEPAGE */
+ 
+@@ -3668,11 +3680,11 @@ static int mem_cgroup_move_account(struct page *page,
+ 		__this_cpu_inc(to->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
+ 		preempt_enable();
+ 	}
+-	mem_cgroup_charge_statistics(from, anon, -nr_pages);
++	mem_cgroup_charge_statistics(from, page, anon, -nr_pages);
+ 
+ 	/* caller should have done css_get */
+ 	pc->mem_cgroup = to;
+-	mem_cgroup_charge_statistics(to, anon, nr_pages);
++	mem_cgroup_charge_statistics(to, page, anon, nr_pages);
+ 	move_unlock_mem_cgroup(from, &flags);
+ 	ret = 0;
+ unlock:
+@@ -4047,7 +4059,7 @@ __mem_cgroup_uncharge_common(struct page *page, enum charge_type ctype,
+ 		break;
+ 	}
+ 
+-	mem_cgroup_charge_statistics(memcg, anon, -nr_pages);
++	mem_cgroup_charge_statistics(memcg, page, anon, -nr_pages);
+ 
+ 	ClearPageCgroupUsed(pc);
+ 	/*
+@@ -4397,7 +4409,7 @@ void mem_cgroup_replace_page_cache(struct page *oldpage,
+ 	lock_page_cgroup(pc);
+ 	if (PageCgroupUsed(pc)) {
+ 		memcg = pc->mem_cgroup;
+-		mem_cgroup_charge_statistics(memcg, false, -1);
++		mem_cgroup_charge_statistics(memcg, oldpage, false, -1);
+ 		ClearPageCgroupUsed(pc);
+ 	}
+ 	unlock_page_cgroup(pc);
+@@ -4925,6 +4937,10 @@ static inline u64 mem_cgroup_usage(struct mem_cgroup *memcg, bool swap)
+ 			return res_counter_read_u64(&memcg->memsw, RES_USAGE);
+ 	}
+ 
++	/*
++	 * Transparent hugepages are still accounted for in MEM_CGROUP_STAT_RSS
++	 * as well as in MEM_CGROUP_STAT_RSS_HUGE.
++	 */
+ 	val = mem_cgroup_recursive_stat(memcg, MEM_CGROUP_STAT_CACHE);
+ 	val += mem_cgroup_recursive_stat(memcg, MEM_CGROUP_STAT_RSS);
+ 
