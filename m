@@ -1,45 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758002Ab3D3H0Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 03:26:24 -0400
-Received: from www.linutronix.de ([62.245.132.108]:59516 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750741Ab3D3H0X (ORCPT
+	id S1758890Ab3D3H1F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 03:27:05 -0400
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:61953 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752668Ab3D3H1D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 03:26:23 -0400
-Message-ID: <517F721D.60907@linutronix.de>
-Date: Tue, 30 Apr 2013 09:26:21 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+	Tue, 30 Apr 2013 03:27:03 -0400
 MIME-Version: 1.0
-To: Bernhard Schiffner <bernhard@schiffner-limbach.de>
-CC: linux-rt-users <linux-rt-users@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [ANNOUNCE] 3.8.10-rt6
-References: <20130429201202.GB7979@linutronix.de> <23187402.mkEEi1N7Lp@bs8>
-In-Reply-To: <23187402.mkEEi1N7Lp@bs8>
-X-Enigmail-Version: 1.4.1
+From: Christian Gmeiner <christian.gmeiner@gmail.com>
+Date: Tue, 30 Apr 2013 09:26:42 +0200
+Message-ID: <CAH9NwWe4HLLCjymFp0CLhHVLjTSJEXR0vwrLudQBBA04zTe5xA@mail.gmail.com>
+Subject: HPET rtc emulation
+To: LKML <linux-kernel@vger.kernel.org>, venki@google.com,
+        Thomas Gleixner <tglx@linutronix.de>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/29/2013 10:46 PM, Bernhard Schiffner wrote:
->> Known issues:
->>
->>     - SLxB is broken on PowerPC.
->>     - suspend / resume seems to program program the timer wrong and wait
->>       ages until it continues.
-> 
-> Yes, it's a annoying problem here too.
-> How can I help to solve it?
+Hi.
 
-Are you referring to the PowerPC issue or suspend / resume?
+I am working with a platform that has a problem with the RTC alarm
+interrupt - tested with rtctest from /Documentation/rtc.txt.
+So I thought that I could use the HPET emulation. As far as I
+understand in the HPET emulation mode no RTC irq will be used --> RTC
+alarm interrupt is done via HPET.
+Is this a correct assumption?
 
-> Bernhard
+root@OT:/home/vis# hwclock
+Tue 30 Apr 2013 09:24:28 AM CEST  -0.511012 seconds
+root@OT:/home/vis# hwclock
+Tue 30 Apr 2013 09:24:29 AM CEST  -0.511016 seconds
+root@OT:/home/vis# hwclock
+Tue 30 Apr 2013 09:24:30 AM CEST  -0.526659 seconds
+root@OT:/home/vis# hwclock
+Tue 30 Apr 2013 09:24:31 AM CEST  -0.620384 seconds
+root@OT:/home/vis# hwclock
+Tue 30 Apr 2013 09:24:32 AM CEST  -0.604838 seconds
+root@OT:/home/vis# hwclock
+Tue 30 Apr 2013 09:24:33 AM CEST  -0.651638 seconds
+root@OT:/home/vis# hwclock
+Tue 30 Apr 2013 09:24:34 AM CEST  -0.682915 seconds
+root@OT:/home/vis# hwclock
+Tue 30 Apr 2013 09:24:35 AM CEST  -0.026708 seconds
+root@OT:/home/vis# hwclock
+select() to /dev/rtc to wait for clock tick timed ou
 
-Sebastian
+
+Doing some quite simple tests indicates that HPET emulation does not emulate
+RTC alarm interrupts or my HPET has some problems.
+
+thanks
+--
+Christian Gmeiner, MSc
