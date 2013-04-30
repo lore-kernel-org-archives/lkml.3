@@ -1,73 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759953Ab3D3JXk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 05:23:40 -0400
-Received: from relay.medianet-world.de ([213.157.0.172]:37937 "HELO
-	relay.medianet-world.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1759641Ab3D3JXi convert rfc822-to-8bit (ORCPT
+	id S1759965Ab3D3Jdi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 05:33:38 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:52388 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752898Ab3D3Jdh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 05:23:38 -0400
-thread-index: Ac5FgyLPCQhJEMNaSkGZgPxJO5BeXQ==
-Thread-Topic: [ANNOUNCE] 3.4.41-rt55-feat3
-Content-Class: urn:content-classes:message
-Importance: normal
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4913
-From: "Tim Sander" <tim.sander@hbm.com>
-To: "Steven Rostedt" <rostedt@goodmis.org>
-Cc: "LKML" <linux-kernel@vger.kernel.org>,
-        "RT" <linux-rt-users@vger.kernel.org>,
-        "Thomas Gleixner" <tglx@linutronix.de>,
-        "Carsten Emde" <C.Emde@osadl.org>, "John Kacur" <jkacur@redhat.com>
-Subject: Re: [ANNOUNCE] 3.4.41-rt55-feat3
-Date: Tue, 30 Apr 2013 11:14:36 +0200
-Message-ID: <2805818.g7STVSuEne@dabox>
-Organization: Hottinger Baldwin Messtechnik
-User-Agent: KMail/4.10.2 (Linux/3.8.0+; KDE/4.10.2; x86_64; ; )
-In-Reply-To: <1367283987.30667.49.camel@gandalf.local.home>
-References: <1367283987.30667.49.camel@gandalf.local.home>
+	Tue, 30 Apr 2013 05:33:37 -0400
+Message-ID: <517F8FF4.3050901@atmel.com>
+Date: Tue, 30 Apr 2013 11:33:40 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain;
-	charset="us-ascii"
-X-OriginalArrivalTime: 30 Apr 2013 09:14:36.0662 (UTC) FILETIME=[22C3E960:01CE4583]
+To: Marc Zyngier <marc.zyngier@arm.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Jon Medhurst <tixy@linaro.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: Linux Kernel list <linux-kernel@vger.kernel.org>,
+        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>
+Subject: linux-next build error (at91) - use of bool in mach/arch.h
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Steve and all RT Folks
+Hi,
 
-> I'm pleased to announce the 3.4.41-rt55-feat3 feature release.
-> 
-> Note, I first uploaded -feat2 then realized I didn't add a compile fix by
-> Mike Galbraith, and then created the -feat3 with that fix.
-I just wanted to say thanks that this patch enables compilation again with the 
-preempt rt patchset with CONFIG_HIGH_RES_TIMERS disabled :-). 
-I think this patch* should be moved out of the feat patchset into the stable 
-rt backport branch as this also doesn't compile beginning with the 3.6.36-rt50 
-patch with CONFIG_HIGH_RES_TIMERS disabled .
+Today I discovered an issue while building linux-next for at91:
 
-As i understand that SLUB should give better realtime latencies? At least i 
-configured the kernel that way an its currently running some tests. 
+  CC      arch/arm/mach-at91/at91sam9260_devices.o
+In file included from /home/nferre/dev/lnx_buid_test/arch/arm/mach-at91/at91sam9260_devices.c:12:0:
+/home/nferre/dev/lnx_buid_test/arch/arm/include/asm/mach/arch.h:46:2: error: expected specifier-qualifier-list before ‘bool’
 
-Best regards
-Tim
+It also applies to all non-DT at91 platforms (~ 6 machines).
 
+It seems to be caused by inclusion of commmit
+4dbfa9a25367cfa91aec0e56d75a6905d3242cd3 (ARM: Enable selection of 
+SMP operations at boot time) and its use of the "bool" type.
 
-*That is the coresponding line:
-patch-3.4.41-rt55-feat3.patch:55:+#if defined(CONFIG_PREEMPT_RT_BASE) && 
-defined(CONFIG_HIGH_RES_TIMERS)
+In fact, we include asm/mach/arch.h file in our at91xxx_devices.c files and
+we include it as the first include directive.
 
-Please ignore this legalese as always on public lists (its attached 
-automatically):
+So, I am wondering if the best correction is to add the types.h header file
+in the asm/mach/arch.h file, like this:
 
-Hottinger Baldwin Messtechnik GmbH, Im Tiefen See 45, 64293 Darmstadt, Germany | www.hbm.com 
+--- a/arch/arm/include/asm/mach/arch.h
++++ b/arch/arm/include/asm/mach/arch.h
+@@ -8,6 +8,8 @@
+  * published by the Free Software Foundation.
+  */
+ 
++#include <linux/types.h>
++
+ #ifndef __ASSEMBLY__
+ 
+ struct tag;
 
-Registered as GmbH (German limited liability corporation) in the commercial register at the local court of Darmstadt, HRB 1147  
-Company domiciled in Darmstadt | CEO: Andreas Huellhorst | Chairman of the board: James Charles Webster
+or if a better option would be to re-arrange the include directives in
+various at91xxx_devices.c files?
 
-Als Gesellschaft mit beschraenkter Haftung eingetragen im Handelsregister des Amtsgerichts Darmstadt unter HRB 1147 
-Sitz der Gesellschaft: Darmstadt | Geschaeftsfuehrung: Andreas Huellhorst | Aufsichtsratsvorsitzender: James Charles Webster
-
-The information in this email is confidential. It is intended solely for the addressee. If you are not the intended recipient, please let me know and delete this email.
-
-Die in dieser E-Mail enthaltene Information ist vertraulich und lediglich fur den Empfaenger bestimmt. Sollten Sie nicht der eigentliche Empfaenger sein, informieren Sie mich bitte kurz und loeschen diese E-Mail.
+Thanks, bye,
+-- 
+Nicolas Ferre
