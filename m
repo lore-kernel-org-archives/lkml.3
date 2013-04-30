@@ -1,46 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933626Ab3D3Tvf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 15:51:35 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:38117 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932742Ab3D3Tve (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 15:51:34 -0400
-Date: Tue, 30 Apr 2013 14:51:25 -0500
-From: "Philip J. Kelleher" <pjk1939@linux.vnet.ibm.com>
+	id S933650Ab3D3TwU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 15:52:20 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:42695 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933606Ab3D3TwS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Apr 2013 15:52:18 -0400
+Date: Tue, 30 Apr 2013 12:52:14 -0700
+From: Kent Overstreet <koverstreet@google.com>
 To: axboe@kernel.dk
-Cc: linux-kernel@vger.kernel.org, klebers@linux.vnet.ibm.com,
-        brking@linux.vnet.ibm.com
-Subject: [PATCH 3/9] rsxx: Fixes incorrect stats calculation.
-Message-ID: <20130430195125.GC22764@oc6784271780.ibm.com>
+Cc: akpm@linux-foundation.org, linux-bcache@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT PULL] Bcache fixes for 3.10
+Message-ID: <20130430195214.GH9931@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13043019-9360-0000-0000-000011F7C446
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Philip J Kelleher <pjk1939@linux.vnet.ibm.com>
+Hey Jens, this is everything I've got ready for 3.10 - there's _still_
+one more bug I'm trying to track down.
 
-Fixing incorrect stats calculation during read retries.
+Andrew - I've got patches that rip out the pkey() and pbtree() macros,
+but they're somewhat tied up with some other nontrivial refactorings so
+I think I'm going to wait a bit on those.
 
-Signed-off-by: Philip J Kelleher <pjk1939@linux.vnet.ibm.com>
--------------------------------------------------------------------------------
+The following changes since commit cef5279735d3f6f0243e626963e6d5c84efade0a:
 
+  bcache: Disable broken btree fuzz tester (2013-04-08 13:33:49 -0700)
 
-diff -uprN -X linux-block-vanilla/Documentation/dontdiff linux-block-vanilla/drivers/block/rsxx/dma.c linux-block/drivers/block/rsxx/dma.c
---- linux-block-vanilla/drivers/block/rsxx/dma.c	2013-04-29 11:25:00.596187375 -0500
-+++ linux-block/drivers/block/rsxx/dma.c	2013-04-29 13:58:27.979188201 -0500
-@@ -253,6 +253,7 @@ static void rsxx_requeue_dma(struct rsxx
- 	 * first.
- 	 */
- 	spin_lock(&ctrl->queue_lock);
-+	ctrl->stats.sw_q_depth++;
- 	list_add(&dma->list, &ctrl->queue);
- 	spin_unlock(&ctrl->queue_lock);
- }
+are available in the git repository at:
 
+  http://evilpiepirate.org/git/linux-bcache.git bcache-for-upstream
+
+for you to fetch changes up to cd66f1f69ed40270bb34e20b25a8111bc72a1b2a:
+
+  bcache: Use bd_link_disk_holder() (2013-04-24 13:15:17 -0700)
+
+----------------------------------------------------------------
+Kent Overstreet (8):
+      bcache: Take data offset from the bdev superblock.
+      bcache: Set ra_pages based on backing device's ra_pages
+      bcache: Hack around stuff that clones up to bi_max_vecs
+      bcache: Correctly check against BIO_MAX_PAGES
+      bcache: Fix merge_bvec_fn usage for when it modifies the bvm
+      bcache: Make sure blocksize isn't smaller than device blocksize
+      bcache: Allocator cleanup/fixes
+      bcache: Use bd_link_disk_holder()
+
+ drivers/md/bcache/alloc.c   |  74 +++++++++++++-------
+ drivers/md/bcache/bcache.h  |  48 ++++++++++---
+ drivers/md/bcache/btree.c   |   8 +--
+ drivers/md/bcache/io.c      |  35 ++++++----
+ drivers/md/bcache/request.c |   2 +-
+ drivers/md/bcache/super.c   | 166 +++++++++++++++++++++++++++-----------------
+ 6 files changed, 215 insertions(+), 118 deletions(-)
