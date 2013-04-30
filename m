@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759112Ab3D3DTH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 23:19:07 -0400
-Received: from mail-qc0-f177.google.com ([209.85.216.177]:59180 "EHLO
-	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759037Ab3D3DTB (ORCPT
+	id S1758342Ab3D3DRf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 23:17:35 -0400
+Received: from mail-qe0-f45.google.com ([209.85.128.45]:62343 "EHLO
+	mail-qe0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758152Ab3D3DRc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 23:19:01 -0400
+	Mon, 29 Apr 2013 23:17:32 -0400
 From: kosaki.motohiro@gmail.com
 To: linux-kernel@vger.kernel.org
 Cc: Olivier Langlois <olivier@trillion01.com>,
@@ -16,10 +16,10 @@ Cc: Olivier Langlois <olivier@trillion01.com>,
         Thomas Gleixner <tglx@linutronix.de>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: [PATCH 10/10] posix-cpu-timers: cleanup cpu_{clock,timer}_sample{,_group}
-Date: Mon, 29 Apr 2013 23:17:18 -0400
-Message-Id: <1367291838-5490-11-git-send-email-kosaki.motohiro@gmail.com>
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 02/10] vm: add no-mmu vm_iomap_memory() stub
+Date: Mon, 29 Apr 2013 23:17:10 -0400
+Message-Id: <1367291838-5490-3-git-send-email-kosaki.motohiro@gmail.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1367291838-5490-1-git-send-email-kosaki.motohiro@gmail.com>
 References: <1367291838-5490-1-git-send-email-kosaki.motohiro@gmail.com>
@@ -27,232 +27,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-Now we have similar four timer related functions, cpu_clock_sample(),
-cpu_clock_sample_group(), cpu_timer_sample() and cpu_timer_sample_group().
+I think we could just move the full vm_iomap_memory() function into
+util.h or similar, but I didn't get any reply from anybody actually
+using nommu even to this trivial patch, so I'm not going to touch it any
+more than required.
 
-For readability, making do_cpu_clock_timer_sample() and thread_cputime()
-helper functions and all *_sample functions use them.
+Here's the fairly minimal stub to make the nommu case at least
+potentially work.  It doesn't seem like anybody cares, though.
 
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 ---
- include/linux/sched.h     |    1 +
- kernel/posix-cpu-timers.c |  132 +++++++++++++++++++-------------------------
- kernel/sched/cputime.c    |   11 ++++
- 3 files changed, 69 insertions(+), 75 deletions(-)
+ mm/nommu.c |   10 ++++++++++
+ 1 files changed, 10 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 7863d4b..73ac8fa 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -2622,6 +2622,7 @@ static inline int spin_needbreak(spinlock_t *lock)
- #endif
+diff --git a/mm/nommu.c b/mm/nommu.c
+index 2f3ea74..e001768 100644
+--- a/mm/nommu.c
++++ b/mm/nommu.c
+@@ -1838,6 +1838,16 @@ int remap_pfn_range(struct vm_area_struct *vma, unsigned long addr,
  }
+ EXPORT_SYMBOL(remap_pfn_range);
  
-+void thread_cputime(struct task_struct *tsk, bool add_delta, struct task_cputime *times);
- /*
-  * Thread group CPU time accounting.
-  */
-diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
-index 4043282..b33290d 100644
---- a/kernel/posix-cpu-timers.c
-+++ b/kernel/posix-cpu-timers.c
-@@ -203,46 +203,6 @@ posix_cpu_clock_set(const clockid_t which_clock, const struct timespec *tp)
- 	return error;
- }
- 
--
--static int do_cpu_clock_timer_sample(const clockid_t which_clock,
--				     struct task_struct *p,
--				     bool add_delta,
--				     union cpu_time_count *cpu)
--{
--	switch (CPUCLOCK_WHICH(which_clock)) {
--	default:
--		return -EINVAL;
--	case CPUCLOCK_PROF:
--		cpu->cpu = prof_ticks(p);
--		break;
--	case CPUCLOCK_VIRT:
--		cpu->cpu = virt_ticks(p);
--		break;
--	case CPUCLOCK_SCHED:
--		cpu->sched = task_sched_runtime(p, add_delta);
--		break;
--	}
--	return 0;
--}
--
--/*
-- * Sample a per-thread clock for the given task.
-- */
--static int cpu_clock_sample(const clockid_t which_clock, struct task_struct *p,
--			    union cpu_time_count *cpu)
--{
--	return do_cpu_clock_timer_sample(which_clock, p, true, cpu);
--}
--
--/*
-- * Sample a per-thread timer clock for the given task.
-- */
--static int cpu_timer_sample(const clockid_t which_clock, struct task_struct *p,
--			    union cpu_time_count *cpu)
--{
--	return do_cpu_clock_timer_sample(which_clock, p, false, cpu);
--}
--
- static void update_gt_cputime(struct task_cputime *a, struct task_cputime *b)
++int vm_iomap_memory(struct vm_area_struct *vma, phys_addr_t start, unsigned long len)
++{
++	unsigned long pfn = start >> PAGE_SHIFT;
++	unsigned long vm_len = vma->vm_end - vma->vm_start;
++
++	pfn += vma->vm_pgoff;
++	return io_remap_pfn_range(vma, vma->vm_start, pfn, vm_len, vma->vm_page_prot);
++}
++EXPORT_SYMBOL(vm_iomap_memory);
++
+ int remap_vmalloc_range(struct vm_area_struct *vma, void *addr,
+ 			unsigned long pgoff)
  {
- 	if (b->utime > a->utime)
-@@ -284,34 +244,83 @@ void thread_group_cputimer(struct task_struct *tsk, struct task_cputime *times)
- }
- 
- /*
-- * Sample a process (thread group) clock for the given group_leader task.
-- * Must be called with tasklist_lock held for reading.
-+ * Sample time for the given task.
-+ * @which_clock:	Clock id.
-+ * @p:			Target task. Must be thread group leader when
-+ *			thread_group is true.
-+ * @thread_group:	True if want to get process time.
-+ * @add_delta:		True if want to get clock time,
-+ *			otherwise, get timer time.
-  */
--static int cpu_clock_sample_group(const clockid_t which_clock,
--				  struct task_struct *p,
--				  union cpu_time_count *cpu)
-+static int do_cpu_clock_timer_sample(const clockid_t which_clock,
-+				     struct task_struct *p,
-+				     bool thread_group,
-+				     bool clock_time,
-+				     union cpu_time_count *cpu)
- {
- 	struct task_cputime cputime;
- 
-+	if (thread_group) {
-+		if (clock_time)
-+			thread_group_cputime(p, true, &cputime);
-+		else
-+			thread_group_cputimer(p, &cputime);
-+	} else
-+		thread_cputime(p, clock_time, &cputime);
-+
- 	switch (CPUCLOCK_WHICH(which_clock)) {
- 	default:
- 		return -EINVAL;
- 	case CPUCLOCK_PROF:
--		thread_group_cputime(p, true, &cputime);
- 		cpu->cpu = cputime.utime + cputime.stime;
- 		break;
- 	case CPUCLOCK_VIRT:
--		thread_group_cputime(p, true, &cputime);
- 		cpu->cpu = cputime.utime;
- 		break;
- 	case CPUCLOCK_SCHED:
--		thread_group_cputime(p, true, &cputime);
- 		cpu->sched = cputime.sum_exec_runtime;
- 		break;
- 	}
- 	return 0;
- }
- 
-+/*
-+ * Sample a per-thread clock time for the given task.
-+ */
-+static int cpu_clock_sample(const clockid_t which_clock, struct task_struct *p,
-+			    union cpu_time_count *cpu)
-+{
-+	return do_cpu_clock_timer_sample(which_clock, p, false, true, cpu);
-+}
-+
-+/*
-+ * Sample a per-process clock time for the given task.
-+ */
-+static int cpu_clock_sample_group(const clockid_t which_clock,
-+				  struct task_struct *p,
-+				  union cpu_time_count *cpu)
-+{
-+	return do_cpu_clock_timer_sample(which_clock, p, true, true, cpu);
-+}
-+
-+/*
-+ * Sample a per-thread timer time for the given task.
-+ */
-+static int cpu_timer_sample(const clockid_t which_clock, struct task_struct *p,
-+			    union cpu_time_count *cpu)
-+{
-+	return do_cpu_clock_timer_sample(which_clock, p, false, false, cpu);
-+}
-+
-+/*
-+ * Sample a per-process timer time for the given task.
-+ */
-+static int cpu_timer_sample_group(const clockid_t which_clock,
-+				  struct task_struct *p,
-+				  union cpu_time_count *cpu)
-+{
-+	return do_cpu_clock_timer_sample(which_clock, p, true, false, cpu);
-+}
- 
- static int posix_cpu_clock_get(const clockid_t which_clock, struct timespec *tp)
- {
-@@ -632,33 +641,6 @@ static void cpu_timer_fire(struct k_itimer *timer)
- }
- 
- /*
-- * Sample a process (thread group) timer for the given group_leader task.
-- * Must be called with tasklist_lock held for reading.
-- */
--static int cpu_timer_sample_group(const clockid_t which_clock,
--				  struct task_struct *p,
--				  union cpu_time_count *cpu)
--{
--	struct task_cputime cputime;
--
--	thread_group_cputimer(p, &cputime);
--	switch (CPUCLOCK_WHICH(which_clock)) {
--	default:
--		return -EINVAL;
--	case CPUCLOCK_PROF:
--		cpu->cpu = cputime.utime + cputime.stime;
--		break;
--	case CPUCLOCK_VIRT:
--		cpu->cpu = cputime.utime;
--		break;
--	case CPUCLOCK_SCHED:
--		cpu->sched = cputime.sum_exec_runtime;
--		break;
--	}
--	return 0;
--}
--
--/*
-  * Guts of sys_timer_settime for CPU timers.
-  * This is called with the timer locked and interrupts disabled.
-  * If we return TIMER_RETRY, it's necessary to release the timer's lock
-diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
-index 69d3f6c..29ef7d7 100644
---- a/kernel/sched/cputime.c
-+++ b/kernel/sched/cputime.c
-@@ -289,6 +289,17 @@ static __always_inline bool steal_account_process_tick(void)
- 	return false;
- }
- 
-+void thread_cputime(struct task_struct *tsk, bool add_delta, struct task_cputime *times)
-+{
-+	struct signal_struct *sig = tsk->signal;
-+	cputime_t utime, stime;
-+
-+	task_cputime(tsk, &utime, &stime);
-+	times->utime = utime;
-+	times->stime = stime;
-+	times->sum_exec_runtime = task_sched_runtime(tsk, add_delta);
-+}
-+
- /*
-  * Accumulate raw cputime values of dead tasks (sig->[us]time) and live
-  * tasks (sum on group iteration) belonging to @tsk's group.
 -- 
 1.7.1
 
