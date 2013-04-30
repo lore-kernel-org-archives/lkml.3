@@ -1,49 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761308Ab3D3Res (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 13:34:48 -0400
-Received: from mga02.intel.com ([134.134.136.20]:59797 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761187Ab3D3Rep (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 13:34:45 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,582,1363158000"; 
-   d="scan'208";a="326666380"
-Date: Tue, 30 Apr 2013 10:34:33 -0700
-From: Andi Kleen <ak@linux.intel.com>
-To: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: Christoph Lameter <cl@linux.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Dave Hansen <dave.hansen@intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>
-Subject: Re: [PATCH 1/2] Make the batch size of the percpu_counter
- configurable
-Message-ID: <20130430173433.GJ19487@tassilo.jf.intel.com>
-References: <c1f9c476a8bd1f5e7049b8ac79af48be61afd8f3.1367254913.git.tim.c.chen@linux.intel.com>
- <0000013e5b24d2c5-9b899862-e2fd-4413-8094-4f1e5a0c0f62-000000@email.amazonses.com>
- <1367339009.27102.174.camel@schen9-DESK>
+	id S1761325Ab3D3RfB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 13:35:01 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:52666 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761169Ab3D3Re4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Apr 2013 13:34:56 -0400
+X-IronPort-AV: E=Sophos;i="4.87,582,1363132800"; 
+   d="scan'208";a="21382015"
+Date: Tue, 30 Apr 2013 18:34:52 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Julien Grall <julien.grall@linaro.org>
+CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "patches@linaro.org" <patches@linaro.org>
+Subject: Re: [PATCH V2] xen: clear IRQ_NOAUTOEN and IRQ_NOREQUEST
+In-Reply-To: <1367342953-27509-1-git-send-email-julien.grall@linaro.org>
+Message-ID: <alpine.DEB.2.02.1304301834260.5398@kaball.uk.xensource.com>
+References: <1367342953-27509-1-git-send-email-julien.grall@linaro.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1367339009.27102.174.camel@schen9-DESK>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > What is this for and why does it have that alignmend?
+Konrad, are you going to take care of this patch (assuming that you are
+OK with it)?
+
+On Tue, 30 Apr 2013, Julien Grall wrote:
+> Reset the IRQ_NOAUTOEN and IRQ_NOREQUEST flags that are enabled by
+> default on ARM. If IRQ_NOAUTOEN is set, __setup_irq doesn't call
+> irq_startup, that is responsible for calling irq_unmask at startup time.
+> As a result event channels remain masked.
 > 
-> I was assuming that if batch is frequently referenced, it probably
-> should not share a cache line with the counters field.
+> The clear is already made in bind_evtchn_to_irq with commit a8636c0 but was
+> missing on all others bind_*_to_irq. Move the clear in xen_irq_info_common_init.
+> 
+> On x86, IRQ_NOAUTOEN and IRQ_NOREQUEST are cleared by default, so this commit
+> doesn't impact this architecture.
+> 
+> Signed-off-by: Julien Grall <julien.grall@linaro.org>
 
-As long as they are both read-mostly it should be fine to share
-(cache line will just be SHARED)
+Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
-Padding would be only useful if one gets changed regularly.
-I don't think that's the case here?
 
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only
+>  Changes since v1:
+>    - Specify this commit will not impact x86 in the comment
+>    - Clear flag directly in xen_irq_info_common_init, this function is
+>    called by all bind_*_to_irq
+> 
+>  drivers/xen/events.c |    3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/xen/events.c b/drivers/xen/events.c
+> index d8cc812..6a6bbe4 100644
+> --- a/drivers/xen/events.c
+> +++ b/drivers/xen/events.c
+> @@ -167,6 +167,8 @@ static void xen_irq_info_common_init(struct irq_info *info,
+>  	info->cpu = cpu;
+>  
+>  	evtchn_to_irq[evtchn] = irq;
+> +
+> +	irq_clear_status_flags(irq, IRQ_NOREQUEST|IRQ_NOAUTOEN);
+>  }
+>  
+>  static void xen_irq_info_evtchn_init(unsigned irq,
+> @@ -874,7 +876,6 @@ int bind_evtchn_to_irq(unsigned int evtchn)
+>  		struct irq_info *info = info_for_irq(irq);
+>  		WARN_ON(info == NULL || info->type != IRQT_EVTCHN);
+>  	}
+> -	irq_clear_status_flags(irq, IRQ_NOREQUEST|IRQ_NOAUTOEN);
+>  
+>  out:
+>  	mutex_unlock(&irq_mapping_update_lock);
+> -- 
+> 1.7.10.4
+> 
