@@ -1,50 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760757Ab3D3Onw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 10:43:52 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:54967 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760050Ab3D3Onu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 10:43:50 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: [PATCH v3.10] mmc: sdhci-s3c: Fix operation on non-single image Samsung platforms
-Date: Tue, 30 Apr 2013 16:43:43 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
-Cc: Chris Ball <cjb@laptop.org>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <1367330907-13525-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-In-Reply-To: <1367330907-13525-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	id S1760771Ab3D3Ooc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 10:44:32 -0400
+Received: from smtp1.uu.se ([130.238.7.54]:36021 "EHLO smtp1.uu.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760050Ab3D3Oo3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Apr 2013 10:44:29 -0400
+X-Spam-Flag: NO
+X-Spam-Score: -3.835
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Message-Id: <201304301643.43989.arnd@arndb.de>
-X-Provags-ID: V02:K0:eXQmIjaGjuT7xbD7U14k/Rw/644wiRm7CxjgGjwiyBZ
- yE3RdB/wRAcTtjDXkRBDjr4+SB5+LWotw690vCxFT2rlXcUIXh
- 8+qX3OOpdtpSF79ab+E5PaC04U2SaNO2YJyqT2+BVRVapstN84
- TKh2I2+3qDukRvh+O1oHH5nU4WMVF1w27eGtio71v7FcmKIOOb
- fxYCbKelhiFdB6lbwbcdTSAkkBhxWpWmxnh1AeaK7Z1BswPXwh
- lev7D04lbnf4XQ+j0qEKMYoj7NApdR+V1Zv3fSz0/dCHi+7JNf
- 2G+yLKFII5nWf0kn8245dMtaVCVaE9MZBqUELjZsSABiRGTRJV
- 1JPiuNw/xliSVjBZ9s+Y=
+Message-ID: <20863.55352.431848.272078@pilspetsen.it.uu.se>
+Date: Tue, 30 Apr 2013 16:42:00 +0200
+From: Mikael Pettersson <mikpe@it.uu.se>
+To: "Warlich, Christof" <christof.warlich@siemens.com>
+Cc: Mikael Pettersson <mikpe@it.uu.se>, Andi Kleen <andi@firstfloor.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: X86 fpu registers in a signal handler's ucontext
+In-Reply-To: <6D83E89737156549AEA25EF9ED712C5DE208@DEFTHW99EK1MSX.ww902.siemens.net>
+References: <6D83E89737156549AEA25EF9ED712C5DDEF7@DEFTHW99EK1MSX.ww902.siemens.net>
+	<m2a9ohusmp.fsf@firstfloor.org>
+	<6D83E89737156549AEA25EF9ED712C5DE0A9@DEFTHW99EK1MSX.ww902.siemens.net>
+	<20863.43739.999287.287981@pilspetsen.it.uu.se>
+	<6D83E89737156549AEA25EF9ED712C5DE208@DEFTHW99EK1MSX.ww902.siemens.net>
+X-Mailer: VM 7.17 under Emacs 20.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 30 April 2013, Mark Brown wrote:
-> Commit cc014f3 (mmc: sdhci-s3c: remove platform dependencies) changed
-> the platform dependency in Kconfig to depend on SAMSUNG_SINGLE, meaning
-> the driver was available only on single zImage Samsung platforms.  This
-> breaks platforms that haven't been converted such as S3C64xx.  Revert
-> that part of the change to fix.
-> 
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Warlich, Christof writes:
+ > Mikael Pettersson <mikpe@it.uu.se> writes:
+ > > Write to the fpstate ->mxcsr and ->swd fields in the sigaction handler's uc_mcontext.
+ > 
+ > To me, "sigaction handler's uc_mcontext" sounds like userspace, which really confuses me:
+ > Even in most recent glibc-2.17, uc_mcontext is of type mcontext_t, which us defined as:
+ > 
+ > typedef struct {
+ >   gregset_t gregs;
+ >   fpregset_t fpregs;
+ > } mcontext_t;
+ > 
+ > typedef struct fpregset {
+ >     union {
+ > 	struct fpchip_state {
+ > 	    int state[27];
+ > 	    int status;
+ > 	} fpchip_state;
+ > 	struct fp_emul_space {
+ > 	    char fp_emul[246];
+ > 	    char fp_epad[2];
+ > 	} fp_emul_space;
+ > 	int f_fpregs[62];
+ >     } fp_reg_set;
+ >     long int f_wregs[33];
+ > } fpregset_t;
+ > 
+ > So there is no fpstate whatsoever.
 
-Actually this part of my patch was just a mistake, and should never
-have been in there. I'll apply your patch and amend the changelog.
+You're looking at the wrong header: glibc-2.17/sysdeps/i386/sys/ucontext.h is legacy SVR4.
+Instead look at glibc-2.17/sysdeps/unix/sysv/linux/x86/sys/ucontext.h.
 
-Thanks a lot!
+(If the old one got installed on your system then something there is seriously wrong.)
 
-	Arnd
+The only quirk is that to access ->mxcsr on 32-bit you have to check if the high half of
+->status contains FXSR_MAGIC and if so you need to cast that pointer to struct _fpstate*.
