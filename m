@@ -1,110 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760156Ab3D3KHl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 06:07:41 -0400
-Received: from mail-bk0-f52.google.com ([209.85.214.52]:39839 "EHLO
-	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759863Ab3D3KHj (ORCPT
+	id S1760190Ab3D3KJl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 06:09:41 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:54043 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759863Ab3D3KJk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 06:07:39 -0400
-From: Marek Belisko <marek.belisko@gmail.com>
-To: lgirdwood@gmail.com, broonie@kernel.org, perex@perex.cz, tiwai@suse.de
-Cc: grant.likely@secretlab.ca, rob.herring@calxeda.com, rob@landley.net,
-        zonque@gmail.com, devicetree-discuss@lists.ozlabs.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Marek Belisko <marek.belisko@streamunlimited.com>
-Subject: [PATCH 1/1] ASoC: McASP: Add device tree binding for defining separate clock and sync used by tx and rx.
-Date: Tue, 30 Apr 2013 12:07:18 +0200
-Message-Id: <1367316438-20267-1-git-send-email-marek.belisko@streamunlimited.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 30 Apr 2013 06:09:40 -0400
+Message-ID: <517F985E.7040100@arm.com>
+Date: Tue, 30 Apr 2013 11:09:34 +0100
+From: Serban Constantinescu <Serban.Constantinescu@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "kernel-team@android.com" <kernel-team@android.com>,
+        "arve@android.com" <arve@android.com>,
+        "john.stultz@linaro.org" <john.stultz@linaro.org>,
+        Dave Butcher <Dave.Butcher@arm.com>
+Subject: Re: [PATCH v3 0/6] Android Binder IPC Fixes
+References: <1365769555-6052-1-git-send-email-serban.constantinescu@arm.com> <20130430073145.GA3623@shutemov.name> <517F8652.4070103@arm.com> <20130430100431.GA3973@shutemov.name>
+In-Reply-To: <20130430100431.GA3973@shutemov.name>
+X-OriginalArrivalTime: 30 Apr 2013 10:09:33.0164 (UTC) FILETIME=[CFA232C0:01CE458A]
+X-MC-Unique: 113043011093316501
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add new property tx-rx-clk-separate which we can distinquish between common
-and separate clock for tx and rx blocks.
+On 30/04/13 11:04, Kirill A. Shutemov wrote:
+> On Tue, Apr 30, 2013 at 09:52:34AM +0100, Serban Constantinescu wrote:
+>> Hi Kirill,
+>>
+>> On 30/04/13 08:31, Kirill A. Shutemov wrote:
+>>> On Fri, Apr 12, 2013 at 01:25:49PM +0100, Serban Constantinescu wrote:
+>>>> The patch set has been successfully tested with a 64bit Linux userspace and
+>>>> 64bit binder unit-tests.
+>>>>
+>>>> This patch set has been successfully tested on 32bit platforms(ARMv7 VExpress)
+>>>> and 64bit platforms(ARMv8 RTSM) running a 32bit Android userspace and an in
+>>>> kernel binder compat layer.
+>>>
+>>> I've tried to replace ugly hack with your patches to be able to boot
+>>> 32-bit userspace on x86-64. It fails. :(
+>>>
+>>
+>> This patch set fixes the binder interface so that it works on 32/32
+>> or 64/64 systems and preps the driver for the compat layer - 64bit
+>> kernel/32bit userspace. As discussed with the Android developers the
+>> binder compat will live in the userspace.
+>
+> Does the compat layer already exist or it's a plan?
+We were working with a kernel compat layer. However this wasn't 
+encouraged by the Android developers who would prefer a userspace binder 
+compat.
 
-Signed-off-by: Marek Belisko <marek.belisko@streamunlimited.com>
----
- .../bindings/sound/davinci-mcasp-audio.txt         |    2 ++
- include/linux/platform_data/davinci_asp.h          |    1 +
- sound/soc/davinci/davinci-mcasp.c                  |   11 ++++++++++-
- sound/soc/davinci/davinci-mcasp.h                  |    1 +
- 4 files changed, 14 insertions(+), 1 deletion(-)
+The changes in this patch set fix the kernel interface so that it will 
+work with the yet to be developed userspace wrapper.
 
-diff --git a/Documentation/devicetree/bindings/sound/davinci-mcasp-audio.txt b/Documentation/devicetree/bindings/sound/davinci-mcasp-audio.txt
-index 374e145..9afd2a0 100644
---- a/Documentation/devicetree/bindings/sound/davinci-mcasp-audio.txt
-+++ b/Documentation/devicetree/bindings/sound/davinci-mcasp-audio.txt
-@@ -23,6 +23,8 @@ Optional properties:
- - rx-num-evt : FIFO levels.
- - sram-size-playback : size of sram to be allocated during playback
- - sram-size-capture  : size of sram to be allocated during capture
-+- tx-rx-clk-separate : separate clock and frame sync used by transmit and
-+				receive sections
- 
- Example:
- 
-diff --git a/include/linux/platform_data/davinci_asp.h b/include/linux/platform_data/davinci_asp.h
-index 8db5ae0..da3099b 100644
---- a/include/linux/platform_data/davinci_asp.h
-+++ b/include/linux/platform_data/davinci_asp.h
-@@ -84,6 +84,7 @@ struct snd_platform_data {
- 	u8 version;
- 	u8 txnumevt;
- 	u8 rxnumevt;
-+	u8 tx_rx_clk_separate;
- };
- 
- enum {
-diff --git a/sound/soc/davinci/davinci-mcasp.c b/sound/soc/davinci/davinci-mcasp.c
-index 2953c55..849a187 100644
---- a/sound/soc/davinci/davinci-mcasp.c
-+++ b/sound/soc/davinci/davinci-mcasp.c
-@@ -771,7 +771,12 @@ static void davinci_hw_param(struct davinci_audio_dev *dev, int stream)
- 	for (i = 0; i < active_slots; i++)
- 		mask |= (1 << i);
- 
--	mcasp_clr_bits(dev->base + DAVINCI_MCASP_ACLKXCTL_REG, TX_ASYNC);
-+	if (dev->tx_rx_clk_separate == 1)
-+		mcasp_set_bits(dev->base + DAVINCI_MCASP_ACLKXCTL_REG,
-+				TX_ASYNC);
-+	else
-+		mcasp_clr_bits(dev->base + DAVINCI_MCASP_ACLKXCTL_REG,
-+				TX_ASYNC);
- 
- 	if (stream == SNDRV_PCM_STREAM_PLAYBACK) {
- 		/* bit stream is MSB first  with no delay */
-@@ -1121,6 +1126,9 @@ static struct snd_platform_data *davinci_mcasp_set_pdata_from_of(
- 	if (ret >= 0)
- 		pdata->sram_size_capture = val;
- 
-+	if (of_find_property(np, "tx-rx-clk-separate", NULL))
-+		pdata->tx_rx_clk_separate = 1;
-+
- 	return  pdata;
- 
- nodata:
-@@ -1191,6 +1199,7 @@ static int davinci_mcasp_probe(struct platform_device *pdev)
- 	dev->version = pdata->version;
- 	dev->txnumevt = pdata->txnumevt;
- 	dev->rxnumevt = pdata->rxnumevt;
-+	dev->tx_rx_clk_separate = pdata->tx_rx_clk_separate;
- 	dev->dev = &pdev->dev;
- 
- 	dma_data = &dev->dma_params[SNDRV_PCM_STREAM_PLAYBACK];
-diff --git a/sound/soc/davinci/davinci-mcasp.h b/sound/soc/davinci/davinci-mcasp.h
-index a9ac0c1..4440666 100644
---- a/sound/soc/davinci/davinci-mcasp.h
-+++ b/sound/soc/davinci/davinci-mcasp.h
-@@ -39,6 +39,7 @@ struct davinci_audio_dev {
- 	u8	*serial_dir;
- 	u8	version;
- 	u16	bclk_lrclk_ratio;
-+	u8	tx_rx_clk_separate;
- 
- 	/* McASP FIFO related */
- 	u8	txnumevt;
--- 
-1.7.9.5
+Some support for 64/32 systems has already been integrated - see ashmem.
+
+Thanks,
+Serban
 
