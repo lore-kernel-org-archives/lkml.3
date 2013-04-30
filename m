@@ -1,54 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933519Ab3D3RS3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 13:18:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42903 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933549Ab3D3RSV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 13:18:21 -0400
-Date: Tue, 30 Apr 2013 19:15:01 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Colin Cross <ccross@android.com>
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, arve@android.com,
-        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        containers@redhat.com
-Subject: Re: [PATCH 02/10] freezer: skip waking up tasks with
-	PF_FREEZER_SKIP set
-Message-ID: <20130430171501.GB28944@redhat.com>
-References: <1367271946-7239-1-git-send-email-ccross@android.com> <1367271946-7239-3-git-send-email-ccross@android.com> <20130430171059.GA28944@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130430171059.GA28944@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S932913Ab3D3RY7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 13:24:59 -0400
+Received: from mail-ea0-f178.google.com ([209.85.215.178]:40685 "EHLO
+	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932445Ab3D3RY4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Apr 2013 13:24:56 -0400
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] ARM: dove: add si5351 clock driver to CuBox DT
+Date: Tue, 30 Apr 2013 19:24:35 +0200
+Message-Id: <1367342675-15312-1-git-send-email-sebastian.hesselbarth@gmail.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/30, Oleg Nesterov wrote:
->
-> On 04/29, Colin Cross wrote:
-> >
-> > @@ -46,10 +46,10 @@ static int try_to_freeze_tasks(bool user_only)
-> >  		todo = 0;
-> >  		read_lock(&tasklist_lock);
-> >  		do_each_thread(g, p) {
-> > -			if (p == current || !freeze_task(p))
-> > +			if (p == current || freezer_should_skip(p))
-> >  				continue;
-> >
-> > -			if (!freezer_should_skip(p))
-> > +			if (freeze_task(p))
-> >  				todo++;
->
-> What if we race with freezer_count() ?
->
-> try_to_freeze_tasks() can wrongly succeed leaving the running task
-> unfrozen, no?
+This patch adds the device tree node for si5351 clock generator
+and the corresponding oscillator connected to it. It also limits
+i2c frequency to 100kHz as there are bus locks reported on higher
+frequencies.
 
-Ah, no, sorry for noise.
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+---
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+---
+ arch/arm/boot/dts/dove-cubox.dts |   51 +++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 50 insertions(+), 1 deletions(-)
 
-Oleg.
+diff --git a/arch/arm/boot/dts/dove-cubox.dts b/arch/arm/boot/dts/dove-cubox.dts
+index 7e3065a..5cae2ab 100644
+--- a/arch/arm/boot/dts/dove-cubox.dts
++++ b/arch/arm/boot/dts/dove-cubox.dts
+@@ -44,11 +44,60 @@
+ 			gpio = <&gpio0 1 0>;
+ 		};
+ 	};
++
++	clocks {
++		/* 25MHz reference crystal */
++		ref25: oscillator {
++			compatible = "fixed-clock";
++			#clock-cells = <0>;
++			clock-frequency = <25000000>;
++		};
++	};
+ };
+ 
+ &uart0 { status = "okay"; };
+ &sata0 { status = "okay"; };
+-&i2c0 { status = "okay"; };
++
++&i2c0 {
++	status = "okay";
++	clock-frequency = <100000>;
++
++	si5351: clock-generator {
++		compatible = "silabs,si5351a-msop";
++		reg = <0x60>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		#clock-cells = <1>;
++
++		/* connect xtal input to 25MHz reference */
++		clocks = <&ref25>;
++
++		/* connect xtal input as source of pll0 and pll1 */
++		silabs,pll-source = <0 0>, <1 0>;
++
++		clkout0 {
++			reg = <0>;
++			silabs,drive-strength = <8>;
++			silabs,multisynth-source = <0>;
++			silabs,clock-source = <0>;
++			silabs,pll-master;
++		};
++
++		clkout1 {
++			reg = <1>;
++			silabs,drive-strength = <8>;
++			silabs,multisynth-source = <1>;
++			silabs,clock-source = <0>;
++			silabs,pll-master;
++		};
++
++		clkout2 {
++			reg = <2>;
++			silabs,multisynth-source = <1>;
++			silabs,clock-source = <0>;
++		};
++	};
++};
+ 
+ &sdio0 {
+ 	status = "okay";
+-- 
+1.7.2.5
 
