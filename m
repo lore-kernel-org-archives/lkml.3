@@ -1,162 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933815Ab3D3V3h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 17:29:37 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:50938 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932969Ab3D3V3f (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 17:29:35 -0400
+	id S1756729Ab3D3Vhb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 17:37:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23473 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751268Ab3D3Vh0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Apr 2013 17:37:26 -0400
+Date: Tue, 30 Apr 2013 17:37:19 -0400
+From: Dave Jones <davej@redhat.com>
+To: Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: clockevents_program_event WARN_ON preventing boot.
+Message-ID: <20130430213719.GA14988@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Linux Kernel <linux-kernel@vger.kernel.org>
+References: <20130430212007.GB18598@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQURZTOEWn64AE4y6agoJhRLSW8983ZJ9RBs8Td9d9tpGA@mail.gmail.com>
-References: <1366940841-15370-1-git-send-email-yinghai@kernel.org>
-	<CAErSpo5zfHR-agNBdgqfVjCU+-KcTZV+1bvML5Uw-+icDqzzEA@mail.gmail.com>
-	<CAE9FiQVEQO-dLJRjn9Z7JgwGWAn1M8S1Tn2_V0Fq+6kB0rG=Bg@mail.gmail.com>
-	<CAErSpo7DUDQ_XgVKAfWxqYJA=q85ps46bffV-4a7b0vOzAP5DA@mail.gmail.com>
-	<CAE9FiQWv-bN2XzHiQ0WU+Y678zcqs_Owua6vXXijdMO6=0OWpg@mail.gmail.com>
-	<517E45C8.4060407@cn.fujitsu.com>
-	<CAE9FiQUXxCH0xjFPk1S7e_JRsBPosqQ=N5Kpcrjp3RNWDh9yZQ@mail.gmail.com>
-	<20130429181550.GA17343@google.com>
-	<CAE9FiQURZTOEWn64AE4y6agoJhRLSW8983ZJ9RBs8Td9d9tpGA@mail.gmail.com>
-Date: Tue, 30 Apr 2013 14:29:35 -0700
-X-Google-Sender-Auth: LMTEiMBKp8s0sDfmQg_qy3TctCg
-Message-ID: <CAE9FiQX-HKOm5qDsJycG_Yo5JPngk6dxSFehg9n6mmj2sbcmWQ@mail.gmail.com>
-Subject: Re: [PATCH] PCI: Fix racing for pci device removing via sysfs
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Gu Zheng <guz.fnst@cn.fujitsu.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Content-Type: multipart/mixed; boundary=089e013cb9e0a41b3d04db9ab242
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130430212007.GB18598@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---089e013cb9e0a41b3d04db9ab242
-Content-Type: text/plain; charset=ISO-8859-1
+On Tue, Apr 30, 2013 at 05:20:07PM -0400, Dave Jones wrote:
+ > I have a machine that crashes instantly on boot up on Linus'
+ > post-3.9 tree. (8c55f1463c1fd318d5e785f02b80bcc32176d342)
+ > 
+ > By booting with boot_delay=100, I was able to take a photo
+ > and capture the top of the trace.  (For some reason, larger boot
+ > delay parameters seem to make it take forever before printing
+ > even a single character, which made this a pain to debug).
+ > 
+ > The WARN_ON it prints right before locking up is this in clockevents_program_event
+ > 
+ > 208         if (unlikely(expires.tv64 < 0)) {
+ > 209                 WARN_ON_ONCE(1);
+ > 210                 return -ETIME;
+ > 211         }
+ > 
+ > booting with maxcpus=1 avoids the problem.
+ > 
+ > I'm still trying to get a complete stack trace, though it's painful
+ > due to the above reason.
 
-On Mon, Apr 29, 2013 at 3:17 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Mon, Apr 29, 2013 at 11:15 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->>
->> I think the 1a:01.0 pci_dev should retain its reference to the pci_bus
->> for as long as the pci_dev exists, so the pci_bus_put() should go in
->> pci_release_dev() instead.
->
-> Good point.
->
-> will rework pci remove sequence.
+On a second machine, I'm seeing an oops even earlier. As soon as I
+exit grub, I get a blinking cursor.  If I boot with earlyprintk=vga
+I can see..
 
-Please check attached version that will not need to touch pci sysfs bits.
+Call Trace:
+ <IRQ>
+  tick_check_oneshot_broadcast
+  tick_check_idle
+  irq_enter
+  do_IRQ
+  common_interrupt
+ <EOI>
+  x86_64_start_reservations
+  x86_64_start_kernel
+RIP: clockevents_set_mode+0x18
 
-Thanks
+Matching up the Code: line of the trace with the disassembly I see..
 
-Yinghai
+        if (dev->mode != mode) {
+ 4c8:   39 77 38                cmp    %esi,0x38(%rdi)
 
---089e013cb9e0a41b3d04db9ab242
-Content-Type: application/octet-stream; name="fix_racing_removing_5.patch"
-Content-Disposition: attachment; filename="fix_racing_removing_5.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hg5l6uh90
 
-U3ViamVjdDogW1BBVENIIC12NV0gUENJOiBGaXggcmFjaW5nIGZvciBwY2kgZGV2aWNlIHJlbW92
-aW5nIHZpYSBzeXNmcwpGcm9tOiBZaW5naGFpIEx1IDx5aW5naGFpQGtlcm5lbC5vcmc+CgpHdSBm
-b3VuZCBuZXN0ZWQgcmVtb3ZpbmcgdGhyb3VnaAoJZWNobyAtbiAxID4gL3N5cy9idXMvcGNpL2Rl
-dmljZXMvMDAwMFw6MTBcOjAwLjAvcmVtb3ZlIDsgZWNobyAtbiAxID4KL3N5cy9idXMvcGNpL2Rl
-dmljZXMvMDAwMFw6MWFcOjAxLjAvcmVtb3ZlCgp3aWxsIGNhdXNlIGtlcm5lbCBjcmFzaCBhcyBi
-dXMgZ2V0IGZyZWVkLgoKWyAgNDE4Ljk0NjQ2Ml0gQ1BVIDQKWyAgNDE4Ljk2ODM3N10gUGlkOiA1
-MTIsIGNvbW06IGt3b3JrZXIvdToyIFRhaW50ZWQ6IEcgICAgICAgIFcgICAgMy44LjAgIzIKRlVK
-SVRTVS1TViBQUklNRVFVRVNUIDE4MDBFL1NCClsgIDQxOS4wODE3NjNdIFJJUDogMDAxMDpbPGZm
-ZmZmZmZmODEzNzk3MmU+XSAgWzxmZmZmZmZmZjgxMzc5NzJlPl0KcGNpX2J1c19yZWFkX2NvbmZp
-Z193b3JkKzB4NWUvMHg5MApbICA0MjAuNDk0MTM3XSBDYWxsIFRyYWNlOgpbICA0MjAuNTIzMzI2
-XSAgWzxmZmZmZmZmZjgxMzg1MWVmPl0gPyByZW1vdmVfY2FsbGJhY2srMHgxZi8weDQwClsgIDQy
-MC41OTE5ODRdICBbPGZmZmZmZmZmODEzODA0NGI+XSBwY2lfcG1lX2FjdGl2ZSsweDRiLzB4MWMw
-ClsgIDQyMC42NTg1NDVdICBbPGZmZmZmZmZmODEzN2Q4ZTc+XSBwY2lfc3RvcF9idXNfZGV2aWNl
-KzB4NTcvMHhiMApbICA0MjAuNzI5MjU5XSAgWzxmZmZmZmZmZjgxMzdkYWI2Pl0gcGNpX3N0b3Bf
-YW5kX3JlbW92ZV9idXNfZGV2aWNlKzB4MTYvMHgzMApbICA0MjAuODExMzkyXSAgWzxmZmZmZmZm
-ZjgxMzg1MWZiPl0gcmVtb3ZlX2NhbGxiYWNrKzB4MmIvMHg0MApbICA0MjAuODc3OTU1XSAgWzxm
-ZmZmZmZmZjgxMjU3YTU2Pl0gc3lzZnNfc2NoZWR1bGVfY2FsbGJhY2tfd29yaysweDI2LzB4NzAK
-Cmh0dHBzOi8vYnVnemlsbGEua2VybmVsLm9yZy9zaG93X2J1Zy5jZ2k/aWQ9NTQ0MTEKCldlIGhh
-dmUgb25lIHBhdGNoIHRoYXQgd2lsbCBsZXQgZGV2aWNlIGhvbGQgYnVzIHJlZiB0byBwcmV2ZW50
-IGl0IGZyb20KYmVpbmcgZnJlZWQsIGJ1dCB0aGF0IHdpbGwgc3RpbGwgZ2VuZXJhdGUgd2Fybmlu
-Zy4KCi0tLS0tLS0tLS0tLVsgY3V0IGhlcmUgXS0tLS0tLS0tLS0tLQpXQVJOSU5HOiBhdCBsaWIv
-bGlzdF9kZWJ1Zy5jOjUzIF9fbGlzdF9kZWxfZW50cnkrMHg2My8weGQwKCkKSGFyZHdhcmUgbmFt
-ZTogUFJJTUVRVUVTVCAxODAwRQpsaXN0X2RlbCBjb3JydXB0aW9uLCBmZmZmODgwN2QxYjZjMDAw
-LT5uZXh0IGlzIExJU1RfUE9JU09OMSAoZGVhZDAwMDAwMDEwMDEwMCkKQ2FsbCBUcmFjZToKIFs8
-ZmZmZmZmZmY4MTA1NmQ0Zj5dIHdhcm5fc2xvd3BhdGhfY29tbW9uKzB4N2YvMHhjMAogWzxmZmZm
-ZmZmZjgxMDU2ZTQ2Pl0gd2Fybl9zbG93cGF0aF9mbXQrMHg0Ni8weDUwCiBbPGZmZmZmZmZmODEy
-ODBiMTM+XSBfX2xpc3RfZGVsX2VudHJ5KzB4NjMvMHhkMAogWzxmZmZmZmZmZjgxMjgwYjkxPl0g
-bGlzdF9kZWwrMHgxMS8weDQwCiBbPGZmZmZmZmZmODEyOTgzMzE+XSBwY2lfZGVzdHJveV9kZXYr
-MHgzMS8weGMwCiBbPGZmZmZmZmZmODEyOTg1YmI+XSBwY2lfcmVtb3ZlX2J1c19kZXZpY2UrMHg1
-Yi8weDcwCiBbPGZmZmZmZmZmODEyOTg1ZWU+XSBwY2lfc3RvcF9hbmRfcmVtb3ZlX2J1c19kZXZp
-Y2UrMHgxZS8weDMwCiBbPGZmZmZmZmZmODEyOWZjODk+XSByZW1vdmVfY2FsbGJhY2srMHgyOS8w
-eDQwCiBbPGZmZmZmZmZmODExZjNiODQ+XSBzeXNmc19zY2hlZHVsZV9jYWxsYmFja193b3JrKzB4
-MjQvMHg3MAoKQmpvcm4gcG9pbnRlZCBvdXQgdGhhdCBwY2lfZGV2IHNob3VsZCByZXRhaW4gaXRz
-IHJlZmVyZW5jZSB0byB0aGUgcGNpX2J1cwpmb3IgYXMgbG9uZyBhcyB0aGUgcGNpX2RldiBleGlz
-dHMsIHNvIHRoZSByZWxlYXNlIHJlZmVyZW5jZSBzaG91bGQgZ28gaW4KcGNpX3JlbGVhc2VfZGV2
-KCkgaW5zdGVhZC4KCkhlcmUgd2UgbW92ZSBvdGhlciBidXNfbGlzdCBjaGFuZ2UgdG8gcGNpX3Jl
-bGVhc2VfZGV2IHRvbyB0byBtYWtlCml0IGNvbnNpc3RlbnQgd2l0aCBidXMgcmVmZXJlbmNlIGNo
-YW5nZS4KCkFsc28gbWFrZSBzdG9wIGRldmljZSBhY3R1YWxseSBkZXRhY2ggZHJpdmVyIG9ubHks
-IGFuZCByZW1vdmUKZGV2aWNlIHdpbGwgZG8gZGV2aWNlX2RlbCBpbnN0ZWFkLiBUaGVuIGFsc28g
-Y291bGQgbWFrZSBob3N0YnJpZGdlCnRvIHVzZSBkZXZpY2VfdW5yZWdpc3RlciB0byBiZSBwYWly
-IHdpdGggZGV2aWNlX3JlZ2lzdGVyIGJlZm9yZS4KCkF0IGxhc3Qgd2Ugd2lsbCBub3QgbmVlZCB0
-byB0b3VjaCBwY2ktc3lzZnMgYml0cy4KClJlcG9ydGVkLWJ5OiBHdSBaaGVuZyA8Z3V6LmZuc3RA
-Y24uZnVqaXRzdS5jb20+ClNpZ25lZC1vZmYtYnk6IFlpbmdoYWkgTHUgPHlpbmdoYWlAa2VybmVs
-Lm9yZz4KCi0tLQogZHJpdmVycy9wY2kvcHJvYmUuYyAgfCAgIDIyICsrKysrKysrKysrKysrKysr
-KysrKysKIGRyaXZlcnMvcGNpL3JlbW92ZS5jIHwgICAzMiArKysrKysrKy0tLS0tLS0tLS0tLS0t
-LS0tLS0tLS0tLQogMiBmaWxlcyBjaGFuZ2VkLCAzMCBpbnNlcnRpb25zKCspLCAyNCBkZWxldGlv
-bnMoLSkKCkluZGV4OiBsaW51eC0yLjYvZHJpdmVycy9wY2kvcHJvYmUuYwo9PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09Ci0t
-LSBsaW51eC0yLjYub3JpZy9kcml2ZXJzL3BjaS9wcm9iZS5jCisrKyBsaW51eC0yLjYvZHJpdmVy
-cy9wY2kvcHJvYmUuYwpAQCAtMTExOSw2ICsxMTE5LDIwIEBAIHN0YXRpYyB2b2lkIHBjaV9yZWxl
-YXNlX2NhcGFiaWxpdGllcyhzdHIKIAlwY2lfZnJlZV9jYXBfc2F2ZV9idWZmZXJzKGRldik7CiB9
-CiAKK3N0YXRpYyB2b2lkIHBjaV9mcmVlX3Jlc291cmNlcyhzdHJ1Y3QgcGNpX2RldiAqZGV2KQor
-eworCWludCBpOworCisJbXNpX3JlbW92ZV9wY2lfaXJxX3ZlY3RvcnMoZGV2KTsKKworCXBjaV9j
-bGVhbnVwX3JvbShkZXYpOworCWZvciAoaSA9IDA7IGkgPCBQQ0lfTlVNX1JFU09VUkNFUzsgaSsr
-KSB7CisJCXN0cnVjdCByZXNvdXJjZSAqcmVzID0gZGV2LT5yZXNvdXJjZSArIGk7CisJCWlmIChy
-ZXMtPnBhcmVudCkKKwkJCXJlbGVhc2VfcmVzb3VyY2UocmVzKTsKKwl9Cit9CisKIC8qKgogICog
-cGNpX3JlbGVhc2VfZGV2IC0gZnJlZSBhIHBjaSBkZXZpY2Ugc3RydWN0dXJlIHdoZW4gYWxsIHVz
-ZXJzIG9mIGl0IGFyZSBmaW5pc2hlZC4KICAqIEBkZXY6IGRldmljZSB0aGF0J3MgYmVlbiBkaXNj
-b25uZWN0ZWQKQEAgLTExMzEsNiArMTE0NSwxMyBAQCBzdGF0aWMgdm9pZCBwY2lfcmVsZWFzZV9k
-ZXYoc3RydWN0IGRldmljCiAJc3RydWN0IHBjaV9kZXYgKnBjaV9kZXY7CiAKIAlwY2lfZGV2ID0g
-dG9fcGNpX2RldihkZXYpOworCisJZG93bl93cml0ZSgmcGNpX2J1c19zZW0pOworCWxpc3RfZGVs
-KCZwY2lfZGV2LT5idXNfbGlzdCk7CisJdXBfd3JpdGUoJnBjaV9idXNfc2VtKTsKKwlwY2lfZnJl
-ZV9yZXNvdXJjZXMocGNpX2Rldik7CisJcHV0X2RldmljZSgmcGNpX2Rldi0+YnVzLT5kZXYpOwor
-CiAJcGNpX3JlbGVhc2VfY2FwYWJpbGl0aWVzKHBjaV9kZXYpOwogCXBjaV9yZWxlYXNlX29mX25v
-ZGUocGNpX2Rldik7CiAJa2ZyZWUocGNpX2Rldik7CkBAIC0xMzQwLDYgKzEzNjEsNyBAQCB2b2lk
-IHBjaV9kZXZpY2VfYWRkKHN0cnVjdCBwY2lfZGV2ICpkZXYsCiAJZG93bl93cml0ZSgmcGNpX2J1
-c19zZW0pOwogCWxpc3RfYWRkX3RhaWwoJmRldi0+YnVzX2xpc3QsICZidXMtPmRldmljZXMpOwog
-CXVwX3dyaXRlKCZwY2lfYnVzX3NlbSk7CisJZ2V0X2RldmljZSgmYnVzLT5kZXYpOwogCiAJcmV0
-ID0gcGNpYmlvc19hZGRfZGV2aWNlKGRldik7CiAJV0FSTl9PTihyZXQgPCAwKTsKSW5kZXg6IGxp
-bnV4LTIuNi9kcml2ZXJzL3BjaS9yZW1vdmUuYwo9PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09Ci0tLSBsaW51eC0yLjYub3Jp
-Zy9kcml2ZXJzL3BjaS9yZW1vdmUuYworKysgbGludXgtMi42L2RyaXZlcnMvcGNpL3JlbW92ZS5j
-CkBAIC0zLDIwICszLDYgQEAKICNpbmNsdWRlIDxsaW51eC9wY2ktYXNwbS5oPgogI2luY2x1ZGUg
-InBjaS5oIgogCi1zdGF0aWMgdm9pZCBwY2lfZnJlZV9yZXNvdXJjZXMoc3RydWN0IHBjaV9kZXYg
-KmRldikKLXsKLQlpbnQgaTsKLQotIAltc2lfcmVtb3ZlX3BjaV9pcnFfdmVjdG9ycyhkZXYpOwot
-Ci0JcGNpX2NsZWFudXBfcm9tKGRldik7Ci0JZm9yIChpID0gMDsgaSA8IFBDSV9OVU1fUkVTT1VS
-Q0VTOyBpKyspIHsKLQkJc3RydWN0IHJlc291cmNlICpyZXMgPSBkZXYtPnJlc291cmNlICsgaTsK
-LQkJaWYgKHJlcy0+cGFyZW50KQotCQkJcmVsZWFzZV9yZXNvdXJjZShyZXMpOwotCX0KLX0KLQog
-c3RhdGljIHZvaWQgcGNpX3N0b3BfZGV2KHN0cnVjdCBwY2lfZGV2ICpkZXYpCiB7CiAJcGNpX3Bt
-ZV9hY3RpdmUoZGV2LCBmYWxzZSk7CkBAIC0yNCw4ICsxMCw3IEBAIHN0YXRpYyB2b2lkIHBjaV9z
-dG9wX2RldihzdHJ1Y3QgcGNpX2RldgogCWlmIChkZXYtPmlzX2FkZGVkKSB7CiAJCXBjaV9wcm9j
-X2RldGFjaF9kZXZpY2UoZGV2KTsKIAkJcGNpX3JlbW92ZV9zeXNmc19kZXZfZmlsZXMoZGV2KTsK
-LQkJZGV2aWNlX2RlbCgmZGV2LT5kZXYpOwotCQlkZXYtPmlzX2FkZGVkID0gMDsKKwkJZGV2aWNl
-X3JlbGVhc2VfZHJpdmVyKCZkZXYtPmRldik7CiAJfQogCiAJaWYgKGRldi0+YnVzLT5zZWxmKQpA
-QCAtMzQsMTIgKzE5LDExIEBAIHN0YXRpYyB2b2lkIHBjaV9zdG9wX2RldihzdHJ1Y3QgcGNpX2Rl
-dgogCiBzdGF0aWMgdm9pZCBwY2lfZGVzdHJveV9kZXYoc3RydWN0IHBjaV9kZXYgKmRldikKIHsK
-LQlkb3duX3dyaXRlKCZwY2lfYnVzX3NlbSk7Ci0JbGlzdF9kZWwoJmRldi0+YnVzX2xpc3QpOwot
-CXVwX3dyaXRlKCZwY2lfYnVzX3NlbSk7Ci0KLQlwY2lfZnJlZV9yZXNvdXJjZXMoZGV2KTsKLQlw
-dXRfZGV2aWNlKCZkZXYtPmRldik7CisJaWYgKGRldi0+aXNfYWRkZWQpIHsKKwkJZGV2aWNlX2Rl
-bCgmZGV2LT5kZXYpOworCQlwdXRfZGV2aWNlKCZkZXYtPmRldik7CisJCWRldi0+aXNfYWRkZWQg
-PSAwOworCX0KIH0KIAogdm9pZCBwY2lfcmVtb3ZlX2J1cyhzdHJ1Y3QgcGNpX2J1cyAqYnVzKQpA
-QCAtMTI2LDcgKzExMCw3IEBAIHZvaWQgcGNpX3N0b3Bfcm9vdF9idXMoc3RydWN0IHBjaV9idXMg
-KmIKIAkJcGNpX3N0b3BfYnVzX2RldmljZShjaGlsZCk7CiAKIAkvKiBzdG9wIHRoZSBob3N0IGJy
-aWRnZSAqLwotCWRldmljZV9kZWwoJmhvc3RfYnJpZGdlLT5kZXYpOworCWRldmljZV9yZWxlYXNl
-X2RyaXZlcigmaG9zdF9icmlkZ2UtPmRldik7CiB9CiAKIHZvaWQgcGNpX3JlbW92ZV9yb290X2J1
-cyhzdHJ1Y3QgcGNpX2J1cyAqYnVzKQpAQCAtMTQ1LDUgKzEyOSw1IEBAIHZvaWQgcGNpX3JlbW92
-ZV9yb290X2J1cyhzdHJ1Y3QgcGNpX2J1cwogCWhvc3RfYnJpZGdlLT5idXMgPSBOVUxMOwogCiAJ
-LyogcmVtb3ZlIHRoZSBob3N0IGJyaWRnZSAqLwotCXB1dF9kZXZpY2UoJmhvc3RfYnJpZGdlLT5k
-ZXYpOworCWRldmljZV91bnJlZ2lzdGVyKCZob3N0X2JyaWRnZS0+ZGV2KTsKIH0K
---089e013cb9e0a41b3d04db9ab242--
+the comment above that code is telling..
+
+/*
+ * Must be called with interrupts disabled !
+ */
+
+So how did we get an IRQ ?
+
