@@ -1,154 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933862Ab3D3VzS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 17:55:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21119 "EHLO mx1.redhat.com"
+	id S934016Ab3D3X7x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 19:59:53 -0400
+Received: from ozlabs.org ([203.10.76.45]:33181 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760241Ab3D3VzQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 17:55:16 -0400
-Date: Tue, 30 Apr 2013 16:54:58 -0500
-From: Clark Williams <williams@redhat.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>, rostedt@goodmis.org
-Subject: Re: Suspend resume problem (WAS Re: [ANNOUNCE] 3.8.10-rt6)
-Message-ID: <20130430165458.719d5556@riff.lan>
-In-Reply-To: <20130430141824.196bd758@riff.lan>
-References: <20130429201202.GB7979@linutronix.de>
-	<20130429161925.2a6ea78a@riff.lan>
-	<20130430170948.GB4688@linutronix.de>
-	<20130430141824.196bd758@riff.lan>
-Organization: Red Hat, Inc
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/XYWMb.gDaYFO9.HqtKQqVRe"; protocol="application/pgp-signature"
+	id S933959Ab3D3X7Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Apr 2013 19:59:24 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Alexander Graf <agraf@suse.de>
+Cc: Pranavkumar Sawargaonkar <pranavkumar@linaro.org>,
+        "linux-arm-kernel\@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel\@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "patches\@linaro.org" <patches@linaro.org>,
+        "linux-kernel\@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
+        "kvmarm\@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
+        Peter Maydell <peter.maydell@linaro.org>
+Subject: Re: [PATCH 0/2] Early printk support for virtio console devices.
+In-Reply-To: <336C59AA-D5D7-472E-A8DA-EEB413DD6C68@suse.de>
+References: <1366974299-17877-1-git-send-email-pranavkumar@linaro.org> <BA2076A6-0688-4E5C-85F9-A9CA8FD75782@suse.de> <87obcyc9sh.fsf@rustcorp.com.au> <336C59AA-D5D7-472E-A8DA-EEB413DD6C68@suse.de>
+User-Agent: Notmuch/0.15.2+81~gd2c8818 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Tue, 30 Apr 2013 10:02:15 +0930
+Message-ID: <87r4hsameo.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/XYWMb.gDaYFO9.HqtKQqVRe
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Alexander Graf <agraf@suse.de> writes:
+> Am 29.04.2013 um 05:09 schrieb Rusty Russell <rusty@rustcorp.com.au>:
+>
+>> Alexander Graf <agraf@suse.de> writes:
+>>> On 26.04.2013, at 13:04, Pranavkumar Sawargaonkar wrote:
+>>> 
+>>>> This patch-set implements early printk support for virtio console devices without using any hypercalls.
+>>>> 
+>>>> The current virtio early printk code in kernel expects that hypervisor will provide some mechanism generally a hypercall to support early printk. This patch-set does not break existing hypercall based early print support.
+>>>> 
+>>>> This implementation adds:
+>>>> 1. Early writeonly register named early_wr in virtio console's config space.
+>>>> 2. Host feature flags namely VIRTIO_CONSOLE_F_EARLY_WRITE for telling guest about early-write capability in console device.
+>>>> 
+>>>> Early write mechanism:
+>>>> 1. When a guest wants to out some character, it has to simply write the character to early_wr register in config space of virtio console device.
+>>> 
+>>> I won't nack this patch set, but I'll definitely express that I'm not happy with it.
+>>> 
+>>> MMIO registers are handled by a different layer than the virtio console itself. After the virtio refactoring in QEMU, they will be completely separate drivers. So we'll be in a similar mess with early printk as we are on the s390-virtio machine, where early printk is done through hypercalls and thus we can't directly link it to the console output.
+>>> 
+>>> I still don't see what the issue is with just implementing a small irq-less virtio driver for early printk.
+>> 
+>> Well, this shouldn't be mmio-specific, but I kind of get what you mean.
+>> 
+>> I consider this misnamed: it's an emergency write facility.  Linux may
+>> use it for an early console,
+>
+> If Linux uses it for early console, you won't see any messages from before the virtio-console driver is initialized, because Linux thinks that it's all been printed out.
 
-On Tue, 30 Apr 2013 14:18:24 -0500
-Clark Williams <williams@redhat.com> wrote:
+If you can't support it, don't offer the feature.
 
-> On Tue, 30 Apr 2013 19:09:48 +0200
-> Sebastian Andrzej Siewior <bigeasy@linutronix.de> wrote:
->=20
-> > * Clark Williams | 2013-04-29 16:19:25 [-0500]:
-> >=20
-> > >On Mon, 29 Apr 2013 22:12:02 +0200
-> > >Sebastian Andrzej Siewior <bigeasy@linutronix.de> wrote:
-> > >>     - suspend / resume seems to program program the timer wrong and =
-wait
-> > >>       ages until it continues.
-> > >
-> > >It has to be something we're doing when we apply RT to v3.8.x, since
-> > >v3.8.x suspends/resumes with no issues and I was able to suspend and
-> > >resume fine with the 3.6-rt series.=20
-> >=20
-> > I think I figured out what is going on or atleast I think I did.
-> >=20
-> > This log snippet is from the resume path (from suspend to mem):
-> >=20
-> > [   15.052115] Enabling non-boot CPUs ...
-> > [   15.052115] smpboot: Booting Node 0 Processor 1 APIC 0x1
-> > [   14.841378] Initializing CPU#1
-> > [   42.840017] [sched_delayed] sched: RT throttling activated
-> > [   42.842144] CPU1 is up
-> > [   42.842536] smpboot: Booting Node 0 Processor 2 APIC 0x2
-> >=20
-> > Two things happen here:
-> > - the time goes backwards from 15.X to 14.X. This is okay because the
-> >   14.X is the timestamp from the secondary CPU not - yet synchronized
-> >   with the bootcpu
-> > - the printk with "CPU1 is up" is comming from the boot CPU and
-> >   according to the timestamp about 28secs passed by. But this did not
-> >   really happen as the whole procedure took less time.
-> >=20
-> > The next thing that happens is that RCU assumes nobody is doing any
-> > progress (for almost 28secs) and triggers NMIs & printks to get some
-> > attention. I have a trace where
-> > - CPU0: arch_trigger_all_cpu_backtrace_handler() =3D> printk()
-> >         has "lock" and is spinning for logbuf_lock
-> >=20
-> > - CPU1: print_cpu_stall() =3D> printk() (spinning for the lock) =3D> NM=
-I =3D>
-> >   arch_trigger_all_cpu_backtrace_handler()
-> >         it may have logbuf_lock and is spinning for "lock"
-> >=20
-> > I can't tell if CPU1 got the logbuf_lock at this time but it seemed that
-> > it made no progress until I ended it.
-> > This NMI releated deadlock is a problem which should also trigger
-> > mainline, right?
-> >=20
-> > Now, the time jump on the other hand is the real issue here and is
-> > RT-only. It looks like we get a big number of timer updates via
-> > tick_do_update_jiffies64() because according to ktime_get() that much
-> > time really passed by.
-> >=20
-> > The sollution seems as simple as
-> >=20
-> > From c27eb2e0ab0b5acd96a4b62288976f1b72789b3e Mon Sep 17 00:00:00 2001
-> > From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-> > Date: Tue, 30 Apr 2013 18:53:55 +0200
-> > Subject: [PATCH] time/timekeeping: shadow tk->cycle_last together with
-> >  clock->cycle_last
-> >=20
-> > Commit ("timekeeping: Store cycle_last value in timekeeper struct as
-> > well") introduced a tk-> based cycle_last values which needs to be reset
-> > on resume path as well or else ktime_get() will think that time
-> > increased a lot.
-> >=20
-> > Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-> > ---
-> >  kernel/time/timekeeping.c |    1 +
-> >  1 file changed, 1 insertion(+)
-> >=20
-> > diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-> > index 99f943b..688817f 100644
-> > --- a/kernel/time/timekeeping.c
-> > +++ b/kernel/time/timekeeping.c
-> > @@ -777,6 +777,7 @@ static void timekeeping_resume(void)
-> >  	}
-> >  	/* re-base the last cycle value */
-> >  	tk->clock->cycle_last =3D tk->clock->read(tk->clock);
-> > +	tk->cycle_last =3D tk->clock->cycle_last;
-> >  	tk->ntp_error =3D 0;
-> >  	timekeeping_suspended =3D 0;
-> >  	timekeeping_update(tk, false, true);
-> > --=20
-> > 1.7.10.4
-> >=20
-> > So Clark, does this patch fix your problem?
-> >
->=20
-> It does seem to! I've got both patches applied right now (your patch to
-> vprintk_emit() and the above patch) and it fixes the long delay on my
-> lab box. When I get done today (or have a break in the action) I'll try
-> it on my laptop to verify.=20
->=20
-> Thanks Sebastian,
-> Clark
+>> but it's also useful for bringup and to
+>> give a method of emitting errors like "the console ring is corrupt".
+>> 
+>> A valid implementation may well be to only offer it with some magic
+>> qemu developer-only commandline and dump it to stdout.
+>
+> Why implement it differently from other machines? There are facilities to call into firmware, so you could use that. There's the special Foundation model call that you could implement and reuse for this.
 
-Tested on my laptop which now resumes.=20
+Sure, for ARM.  We *have* a console device.  It's the logical place to
+provide a simple write mechanism.  eg. consider bhyve on FreeBSD.
 
-Many thanks.
+> I don't see why anything like this has to live in virtio-mmio. Oh, and it should default to off.
 
-Clark
+virtio-console, not virtio-mmio.
 
---Sig_/XYWMb.gDaYFO9.HqtKQqVRe
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iEYEARECAAYFAlGAPbYACgkQHyuj/+TTEp1+9wCgyJMsmYR8k+dsVUAjXsZglSO1
-FVUAoOSzCOcQPuBBmC2ESwss85DV9ylQ
-=kT4R
------END PGP SIGNATURE-----
-
---Sig_/XYWMb.gDaYFO9.HqtKQqVRe--
+Cheers,
+Rusty.
