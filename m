@@ -1,43 +1,284 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934040Ab3EAAA4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 20:00:56 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:34403 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933970Ab3EAAAv (ORCPT
+	id S934082Ab3EAAA7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 20:00:59 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:50522 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933932Ab3D3X7L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 20:00:51 -0400
-Date: Tue, 30 Apr 2013 17:00:48 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Soren Brinkmann <soren.brinkmann@xilinx.com>
-Cc: Michal Simek <michal.simek@xilinx.com>,
+	Tue, 30 Apr 2013 19:59:11 -0400
+From: Soren Brinkmann <soren.brinkmann@xilinx.com>
+To: Michal Simek <michal.simek@xilinx.com>,
         Josh Cartwright <joshc@eso.teric.us>,
         Mike Turquette <mturquette@linaro.org>,
         Lars-Peter Clausen <lars@metafoo.de>,
-        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Peter Crosthwaite <peter.crosthwaite@xilinx.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
-        Stephen Warren <swarren@wwwdotorg.org>, Jiri Slaby <jslaby@suse.cz>,
-        linux-serial@vger.kernel.org
-Subject: Re: [PATCH 1/7] tty: xuartps: Sort #includes alphabetically
-Message-ID: <20130501000048.GA1840@kroah.com>
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Soren Brinkmann <soren.brinkmann@xilinx.com>
+Subject: [PATCH 4/7] clk: zynq: Factor out PLL driver
+Date: Tue, 30 Apr 2013 16:58:01 -0700
+Message-Id: <1367366284-28304-5-git-send-email-soren.brinkmann@xilinx.com>
+X-Mailer: git-send-email 1.8.2.2
+In-Reply-To: <1367366284-28304-1-git-send-email-soren.brinkmann@xilinx.com>
 References: <1367366284-28304-1-git-send-email-soren.brinkmann@xilinx.com>
- <1367366284-28304-2-git-send-email-soren.brinkmann@xilinx.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1367366284-28304-2-git-send-email-soren.brinkmann@xilinx.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 30, 2013 at 04:57:58PM -0700, Soren Brinkmann wrote:
-> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
-> CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> CC: Jiri Slaby <jslaby@suse.cz>
-> CC: linux-serial@vger.kernel.org
+Refactor the PLL driver so it works with the clock controller driver.
 
-Why would you need/want to do this?
+Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+---
+ drivers/clk/zynq/pll.c | 235 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 235 insertions(+)
+ create mode 100644 drivers/clk/zynq/pll.c
 
-greg k-h
+diff --git a/drivers/clk/zynq/pll.c b/drivers/clk/zynq/pll.c
+new file mode 100644
+index 0000000..47e307c
+--- /dev/null
++++ b/drivers/clk/zynq/pll.c
+@@ -0,0 +1,235 @@
++/*
++ * Zynq PLL driver
++ *
++ *  Copyright (C) 2013 Xilinx
++ *
++ *  Sören Brinkmann <soren.brinkmann@xilinx.com>
++ *
++ * This program is free software: you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License v2 as published by
++ * the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ *
++ */
++#include <linux/clk/zynq.h>
++#include <linux/clk-provider.h>
++#include <linux/slab.h>
++#include <linux/io.h>
++
++/**
++ * struct zynq_pll
++ * @hw:		Handle between common and hardware-specific interfaces
++ * @pll_ctrl:	PLL control register
++ * @pll_status:	PLL status register
++ * @lock:	Register lock
++ * @lockbit:	Indicates the associated PLL_LOCKED bit in the PLL status
++ *		register.
++ */
++struct zynq_pll {
++	struct clk_hw	hw;
++	void __iomem	*pll_ctrl;
++	void __iomem	*pll_status;
++	spinlock_t	*lock;
++	u8		lockbit;
++};
++#define to_zynq_pll(_hw)	container_of(_hw, struct zynq_pll, hw)
++
++/* Register bitfield defines */
++#define PLLCTRL_FBDIV_MASK	0x7f000
++#define PLLCTRL_FBDIV_SHIFT	12
++#define PLLCTRL_BPQUAL_MASK	(1 << 3)
++#define PLLCTRL_PWRDWN_MASK	2
++#define PLLCTRL_PWRDWN_SHIFT	1
++#define PLLCTRL_RESET_MASK	1
++#define PLLCTRL_RESET_SHIFT	0
++
++/**
++ * zynq_pll_round_rate() - Round a clock frequency
++ * @hw:		Handle between common and hardware-specific interfaces
++ * @rate:	Desired clock frequency
++ * @prate:	Clock frequency of parent clock
++ * Returns frequency closest to @rate the hardware can generate.
++ */
++static long zynq_pll_round_rate(struct clk_hw *hw, unsigned long rate,
++		unsigned long *prate)
++{
++	u32 fbdiv;
++
++	fbdiv = DIV_ROUND_CLOSEST(rate, *prate);
++	if (fbdiv < 13)
++		fbdiv = 13;
++	else if (fbdiv > 66)
++		fbdiv = 66;
++
++	return *prate * fbdiv;
++}
++
++/**
++ * zynq_pll_recalc_rate() - Recalculate clock frequency
++ * @hw:			Handle between common and hardware-specific interfaces
++ * @parent_rate:	Clock frequency of parent clock
++ * Returns current clock frequency.
++ */
++static unsigned long zynq_pll_recalc_rate(struct clk_hw *hw,
++		unsigned long parent_rate)
++{
++	struct zynq_pll *clk = to_zynq_pll(hw);
++	u32 fbdiv;
++
++	/*
++	 * makes probably sense to redundantly save fbdiv in the struct
++	 * zynq_pll to save the IO access.
++	 */
++	fbdiv = (readl(clk->pll_ctrl) & PLLCTRL_FBDIV_MASK) >>
++			PLLCTRL_FBDIV_SHIFT;
++
++	return parent_rate * fbdiv;
++}
++
++/**
++ * zynq_pll_is_enabled - Check if a clock is enabled
++ * @hw:		Handle between common and hardware-specific interfaces
++ * Returns 1 if the clock is enabled, 0 otherwise.
++ *
++ * Not sure this is a good idea, but since disabled means bypassed for
++ * this clock implementation we say we are always enabled.
++ */
++static int zynq_pll_is_enabled(struct clk_hw *hw)
++{
++	unsigned long flags = 0;
++	u32 reg;
++	struct zynq_pll *clk = to_zynq_pll(hw);
++
++	spin_lock_irqsave(clk->lock, flags);
++
++	reg = readl(clk->pll_ctrl);
++
++	spin_unlock_irqrestore(clk->lock, flags);
++
++	return !(reg & (PLLCTRL_RESET_MASK | PLLCTRL_PWRDWN_MASK));
++}
++
++/**
++ * zynq_pll_enable - Enable clock
++ * @hw:		Handle between common and hardware-specific interfaces
++ * Returns 0 on success
++ */
++static int zynq_pll_enable(struct clk_hw *hw)
++{
++	unsigned long flags = 0;
++	u32 reg;
++	struct zynq_pll *clk = to_zynq_pll(hw);
++
++	if (zynq_pll_is_enabled(hw))
++		return 0;
++
++	pr_info("PLL: enable\n");
++
++	/* Power up PLL and wait for lock */
++	spin_lock_irqsave(clk->lock, flags);
++
++	reg = readl(clk->pll_ctrl);
++	reg &= ~(PLLCTRL_RESET_MASK | PLLCTRL_PWRDWN_MASK);
++	writel(reg, clk->pll_ctrl);
++	while (!(readl(clk->pll_status) & (1 << clk->lockbit)))
++		;
++
++	spin_unlock_irqrestore(clk->lock, flags);
++
++	return 0;
++}
++
++/**
++ * zynq_pll_disable - Disable clock
++ * @hw:		Handle between common and hardware-specific interfaces
++ * Returns 0 on success
++ */
++static void zynq_pll_disable(struct clk_hw *hw)
++{
++	unsigned long flags = 0;
++	u32 reg;
++	struct zynq_pll *clk = to_zynq_pll(hw);
++
++	if (!zynq_pll_is_enabled(hw))
++		return;
++
++	pr_info("PLL: shutdown\n");
++
++	/* shut down PLL */
++	spin_lock_irqsave(clk->lock, flags);
++
++	reg = readl(clk->pll_ctrl);
++	reg |= PLLCTRL_RESET_MASK | PLLCTRL_PWRDWN_MASK;
++	writel(reg, clk->pll_ctrl);
++
++	spin_unlock_irqrestore(clk->lock, flags);
++}
++
++static const struct clk_ops zynq_pll_ops = {
++	.enable = zynq_pll_enable,
++	.disable = zynq_pll_disable,
++	.is_enabled = zynq_pll_is_enabled,
++	.round_rate = zynq_pll_round_rate,
++	.recalc_rate = zynq_pll_recalc_rate
++};
++
++/**
++ * clk_register_zynq_pll() - Register PLL with the clock framework
++ * @np	Pointer to the DT device node
++ */
++struct clk *clk_register_zynq_pll(const char *name, const char *parent,
++		void __iomem *pll_ctrl, void __iomem *pll_status, u8 lock_index,
++		spinlock_t *lock)
++{
++	struct zynq_pll *pll;
++	struct clk *clk;
++	u32 reg;
++	const char *parent_arr[1] = {parent};
++	unsigned long flags = 0;
++	struct clk_init_data initd = {
++		.name = name,
++		.parent_names = parent_arr,
++		.ops = &zynq_pll_ops,
++		.num_parents = 1,
++		.flags = 0
++	};
++
++	pll = kmalloc(sizeof(*pll), GFP_KERNEL);
++	if (!pll) {
++		pr_err("%s: Could not allocate Zynq PLL clk.\n", __func__);
++		return ERR_PTR(-ENOMEM);
++	}
++
++	/* Populate the struct */
++	pll->hw.init = &initd;
++	pll->pll_ctrl = pll_ctrl;
++	pll->pll_status = pll_status;
++	pll->lockbit = lock_index;
++	pll->lock = lock;
++
++	spin_lock_irqsave(pll->lock, flags);
++
++	reg = readl(pll->pll_ctrl);
++	reg &= ~PLLCTRL_BPQUAL_MASK;
++	writel(reg, pll->pll_ctrl);
++
++	spin_unlock_irqrestore(pll->lock, flags);
++
++	clk = clk_register(NULL, &pll->hw);
++	if (WARN_ON(IS_ERR(clk)))
++		goto free_pll;
++
++	return clk;
++
++free_pll:
++	kfree(pll);
++
++	return clk;
++}
+-- 
+1.8.2.2
+
