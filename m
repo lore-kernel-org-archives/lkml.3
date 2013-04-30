@@ -1,199 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758900Ab3D3HSq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 03:18:46 -0400
-Received: from smtp2.macqel.be ([194.78.208.39]:22098 "EHLO smtp2.macqel.be"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753162Ab3D3HSp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 03:18:45 -0400
-Date: Tue, 30 Apr 2013 09:18:40 +0200
-From: Philippe De Muyter <phdm@macqel.be>
-To: Karel Zak <kzak@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH 2/5] Add aix lvm partitions support files
-Message-ID: <20130430071840.GA5165@frolo.macqel>
-References: <1366924229-21569-1-git-send-email-phdm@macqel.be> <1366924229-21569-3-git-send-email-phdm@macqel.be> <20130429093756.GB12317@x2.net.home> <20130429114041.GA10884@frolo.macqel> <20130429215051.GA21825@frolo.macqel> <20130430070840.GA4046@frolo.macqel>
+	id S1758962Ab3D3HTM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 03:19:12 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:16861 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754112Ab3D3HTL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Apr 2013 03:19:11 -0400
+X-IronPort-AV: E=Sophos;i="4.87,579,1363104000"; 
+   d="scan'208";a="7158929"
+Message-ID: <517F7110.6000705@cn.fujitsu.com>
+Date: Tue, 30 Apr 2013 15:21:52 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="qDbXVdCdHGoSgWSk"
-Content-Disposition: inline
-In-Reply-To: <20130430070840.GA4046@frolo.macqel>
-User-Agent: Mutt/1.5.16 (2007-06-09)
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Thomas Renninger <trenn@suse.de>, linux-kernel@vger.kernel.org,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Subject: Re: [PATCH v4 00/22] x86, ACPI, numa: Parse numa info early
+References: <1365728168-32067-1-git-send-email-yinghai@kernel.org>
+In-Reply-To: <1365728168-32067-1-git-send-email-yinghai@kernel.org>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/04/30 15:17:19,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/04/30 15:17:20,
+	Serialize complete at 2013/04/30 15:17:20
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Yinghai, all,
 
---qDbXVdCdHGoSgWSk
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I've tested this patch-set with my following patch-set:
+[PATCH v1 00/12] Arrange hotpluggable memory in SRAT as ZONE_MOVABLE.
+https://lkml.org/lkml/2013/4/19/94
 
-On Tue, Apr 30, 2013 at 09:08:40AM +0200, Philippe De Muyter wrote:
-> On Mon, Apr 29, 2013 at 11:50:51PM +0200, Philippe De Muyter wrote:
-> > On Mon, Apr 29, 2013 at 01:40:41PM +0200, Philippe De Muyter wrote:
-> > > On Mon, Apr 29, 2013 at 11:37:56AM +0200, Karel Zak wrote:
-> > > > 
-> > > > Philippe, do you have any disk image with AIX LVM? It would be nice to
-> > > > have a way how to test the code. I'd like to add support for AIX to
-> > > > libblkid too.
-> > > 
-> > > Of course.  But that's not a couple of blocks.  I'll try to cut the
-> > > slice that you need.
-> > 
-> > Here is one example.  I'll try to send another one tomorrow.
-> 
-> Here is the other example.
+Using ACPI table override, I overrided SRAT on my box like this:
 
-And here is a third one
+[    0.000000] SRAT: Node 0 PXM 0 [mem 0x00000000-0x7fffffff]
+[    0.000000] SRAT: Node 0 PXM 0 [mem 0x100000000-0x307ffffff]
+[    0.000000] SRAT: Node 1 PXM 2 [mem 0x308000000-0x583ffffff] Hot 
+Pluggable
+[    0.000000] SRAT: Node 2 PXM 3 [mem 0x584000000-0x7ffffffff] Hot 
+Pluggable
 
-Philippe
+We had 3 nodes, node0 was not hotpluggable, and node1 and node2 were 
+hotpluggable.
 
--- 
-Philippe De Muyter +32 2 6101532 Macq SA rue de l'Aeronef 2 B-1140 Bruxelles
 
---qDbXVdCdHGoSgWSk
-Content-Type: application/x-bzip
-Content-Disposition: attachment; filename="aixlvmhdr-jori.bz2"
-Content-Transfer-Encoding: base64
+And memblock reserved pagetable pages (with flag 0x1) in local nodes.
+......
+[    0.000000]  reserved[0xb]   [0x00000307ff0000-0x00000307ff1fff], 
+0x2000 bytes flags: 0x0
+[    0.000000]  reserved[0xc]   [0x00000307ff2000-0x00000307ffffff], 
+0xe000 bytes on node 0 flags: 0x1
+[    0.000000]  reserved[0xd]   [0x00000583ff7000-0x00000583ffffff], 
+0x9000 bytes on node 1 flags: 0x1
+[    0.000000]  reserved[0xe]   [0x000007ffff9000-0x000007ffffffff], 
+0x7000 bytes on node 2 flags: 0x1
 
-QlpoOTFBWSZTWeKxFJ8AWGx/////////////////////////////////////////////4BNf
-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
-ejMNKrbeybj6qv6WjOv6f/4u5IpwoSHFYik+
+And after some bug fix, memblock can also reserve hotpluggable memory 
+with flag 0x2.
+......
+[    0.000000]  reserved[0xb]   [0x00000307ff0000-0x00000307ff1fff], 
+0x2000 bytes flags: 0x0
+[    0.000000]  reserved[0xc]   [0x00000307ff2000-0x00000307ffffff], 
+0xe000 bytes on node 0 flags: 0x1
+[    0.000000]  reserved[0xd]   [0x00000308000000-0x00000583ff6fff], 
+0x27bff7000 bytes on node 1 flags: 0x2
+[    0.000000]  reserved[0xe]   [0x00000583ff7000-0x00000583ffffff], 
+0x9000 bytes on node 1 flags: 0x1
+[    0.000000]  reserved[0xf]   [0x00000584000000-0x000007ffff7fff], 
+0x27bff8000 bytes on node 2 flags: 0x2
+[    0.000000]  reserved[0x10]  [0x000007ffff8000-0x000007ffffffff], 
+0x8000 bytes on node 2 flags: 0x1
 
---qDbXVdCdHGoSgWSk--
+And free it to buddy system when memory initialization finished.
+
+
+So the results:
+1. We can parse SRAT earlier correctly.
+2. We can override tables correctly.
+3. We can put pagetable pages in local node.
+4. We can prevent memblock from allocating hotpluggable memory.
+5. We can arrange ZONE_MOVABLE using SRAT info.
+
+
+Known problems:
+
+When we put pagetable pages in local node, memory hot-remove logic won't 
+work.
+I'm fixing it now. We need to fix the following:
+1. Improve hot-remove to support freeing local node pagetable pages.
+2. Improve hot-add to support putting hot-added pagetable pages in local 
+node.
+3. Do the same to vmemmap and page_cgrop pages.
+
+So I suggest to separate the job into 2 parts:
+1. Push Yinghai's patch1 ~ patch20, without putting pagetable in local node.
+    And push my work to use SRAT to arrange ZONE_MOVABLE.
+    In this case, we can enable memory hotplug in the kernel first.
+2. Merge patch21 and patch22 into the fixing work I am doing now, and 
+push them
+    together when finished.
+
+How do you think ?
+
+Reviewed-by: Tang Chen <tangchen@cn.fujitsu.com>
+Tested-by: Tang Chen <tangchen@cn.fujitsu.com>
+
+Thanks. :)
+
+
+
+
