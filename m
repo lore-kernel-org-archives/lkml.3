@@ -1,54 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761144Ab3D3QXx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 12:23:53 -0400
-Received: from mga02.intel.com ([134.134.136.20]:62751 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761072Ab3D3QXv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 12:23:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,582,1363158000"; 
-   d="scan'208";a="305691488"
-Subject: Re: [PATCH 1/2] Make the batch size of the percpu_counter
- configurable
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Dave Hansen <dave.hansen@intel.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>
-In-Reply-To: <0000013e5b24d2c5-9b899862-e2fd-4413-8094-4f1e5a0c0f62-000000@email.amazonses.com>
-References: <c1f9c476a8bd1f5e7049b8ac79af48be61afd8f3.1367254913.git.tim.c.chen@linux.intel.com>
-	 <0000013e5b24d2c5-9b899862-e2fd-4413-8094-4f1e5a0c0f62-000000@email.amazonses.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 30 Apr 2013 09:23:29 -0700
-Message-ID: <1367339009.27102.174.camel@schen9-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S932543Ab3D3Q1Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 12:27:16 -0400
+Received: from mail-ve0-f179.google.com ([209.85.128.179]:59659 "EHLO
+	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760951Ab3D3Q1N (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Apr 2013 12:27:13 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130430162300.GB28821@gmail.com>
+References: <20130430065808.GA19736@gmail.com>
+	<CA+55aFwcX3oKYCFbq4XcX7Y2Yk6BWWKY4TRNOyfeZ9rYrQMRNQ@mail.gmail.com>
+	<20130430153512.GA21930@redhat.com>
+	<20130430162300.GB28821@gmail.com>
+Date: Tue, 30 Apr 2013 09:27:12 -0700
+X-Google-Sender-Auth: uAX0lju3XubxxkBulTMIykDGG0U
+Message-ID: <CA+55aFwsv+p3wqx5eMr3iNPxmPZhSx-h5s5R7s9yd314Muajvg@mail.gmail.com>
+Subject: Re: [GIT PULL] scheduler changes for v3.10
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Stanislaw Gruszka <sgruszka@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "Fr?d?ric Weisbecker" <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-04-30 at 13:32 +0000, Christoph Lameter wrote:
-> On Mon, 29 Apr 2013, Tim Chen wrote:
-> 
-> > diff --git a/include/linux/percpu_counter.h b/include/linux/percpu_counter.h
-> > index d5dd465..5ca7df5 100644
-> > --- a/include/linux/percpu_counter.h
-> > +++ b/include/linux/percpu_counter.h
-> > @@ -22,6 +22,7 @@ struct percpu_counter {
-> >  	struct list_head list;	/* All percpu_counters are on a list */
-> >  #endif
-> >  	s32 __percpu *counters;
-> > +	int *batch ____cacheline_aligned_in_smp;
-> >  };
-> 
-> What is this for and why does it have that alignmend?
+On Tue, Apr 30, 2013 at 9:23 AM, Ingo Molnar <mingo@kernel.org> wrote:
+>
+> Linus, would you like me to revert d9a3c9823a2e and re-send the pull
+> request?
 
-I was assuming that if batch is frequently referenced, it probably
-should not share a cache line with the counters field.
+I took the pull request, but I'd like to see the non-64-bit divide
+version before the merge window ends. And with no more div_rem users I
+think we should at least double-check that the new div64_u64() (that
+uses the new div64_u64_rem) isn't noticeably slower than the old one.
+If it is, we should revert that new (and then unused) div64 code too.
 
-Tim
-
+              Linus
