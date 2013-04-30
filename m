@@ -1,67 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761123Ab3D3QXI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 12:23:08 -0400
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:51530 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761071Ab3D3QXF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 12:23:05 -0400
-Date: Tue, 30 Apr 2013 18:23:00 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Stanislaw Gruszka <sgruszka@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Fr?d?ric Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] scheduler changes for v3.10
-Message-ID: <20130430162300.GB28821@gmail.com>
-References: <20130430065808.GA19736@gmail.com>
- <CA+55aFwcX3oKYCFbq4XcX7Y2Yk6BWWKY4TRNOyfeZ9rYrQMRNQ@mail.gmail.com>
- <20130430153512.GA21930@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130430153512.GA21930@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1761144Ab3D3QXx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 12:23:53 -0400
+Received: from mga02.intel.com ([134.134.136.20]:62751 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761072Ab3D3QXv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Apr 2013 12:23:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,582,1363158000"; 
+   d="scan'208";a="305691488"
+Subject: Re: [PATCH 1/2] Make the batch size of the percpu_counter
+ configurable
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Dave Hansen <dave.hansen@intel.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>
+In-Reply-To: <0000013e5b24d2c5-9b899862-e2fd-4413-8094-4f1e5a0c0f62-000000@email.amazonses.com>
+References: <c1f9c476a8bd1f5e7049b8ac79af48be61afd8f3.1367254913.git.tim.c.chen@linux.intel.com>
+	 <0000013e5b24d2c5-9b899862-e2fd-4413-8094-4f1e5a0c0f62-000000@email.amazonses.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 30 Apr 2013 09:23:29 -0700
+Message-ID: <1367339009.27102.174.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Stanislaw Gruszka <sgruszka@redhat.com> wrote:
-
-> On Tue, Apr 30, 2013 at 07:49:43AM -0700, Linus Torvalds wrote:
-> > On Mon, Apr 29, 2013 at 11:58 PM, Ingo Molnar <mingo@kernel.org> wrote:
-> > >
-> > > Please pull the latest sched-core-for-linus git tree from:
-> > >
-> > > The main changes in this development cycle were:
-> > >
-> > >   - full dynticks preparatory work by Frederic Weisbecker
-> > 
-> > Why does this have the crappy cputime scaling overflow code, when we
-> > had a long thread about how to do it right *without* any 64-bit
-> > divides, including a quality-tested patch?
-> > 
-> > This still has the garbage "div64_u64_rem()" crap which actually SLOWS
-> > DOWN 32-bit code even when not used (becuse it makes "div64_u64()"
-> > calculate it even when unnecessary.
-> > 
-> > WTF happened here? I and others spent efforts so that we wouldn't need
-> > this kind of crap.
+On Tue, 2013-04-30 at 13:32 +0000, Christoph Lameter wrote:
+> On Mon, 29 Apr 2013, Tim Chen wrote:
 > 
-> I'm sorry, I was on vacations and has some other work to do, so I didn't
-> send patches in timely manner. I just posted them today.
+> > diff --git a/include/linux/percpu_counter.h b/include/linux/percpu_counter.h
+> > index d5dd465..5ca7df5 100644
+> > --- a/include/linux/percpu_counter.h
+> > +++ b/include/linux/percpu_counter.h
+> > @@ -22,6 +22,7 @@ struct percpu_counter {
+> >  	struct list_head list;	/* All percpu_counters are on a list */
+> >  #endif
+> >  	s32 __percpu *counters;
+> > +	int *batch ____cacheline_aligned_in_smp;
+> >  };
+> 
+> What is this for and why does it have that alignmend?
 
-Linus, would you like me to revert d9a3c9823a2e and re-send the pull 
-request?
+I was assuming that if batch is frequently referenced, it probably
+should not share a cache line with the counters field.
 
-I intended to queue up Stanislaw's fixes in sched/urgent as the real 
-solution, but they arrived earlier today and are too fresh.
+Tim
 
-Thanks,
-
-	Ingo
