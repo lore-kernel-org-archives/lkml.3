@@ -1,88 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760593Ab3D3Mya (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 08:54:30 -0400
-Received: from mail-we0-f180.google.com ([74.125.82.180]:57788 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752150Ab3D3My2 (ORCPT
+	id S1760616Ab3D3NAX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 09:00:23 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:49281 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759848Ab3D3NAW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 08:54:28 -0400
-Date: Tue, 30 Apr 2013 14:54:24 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Olivier Langlois <olivier@trillion01.com>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@linaro.org>,
-        Li Zhong <zhong@linux.vnet.ibm.com>, Oleg Nesterov <oleg@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 2/3] posix_timers: Defer per process timer stop after
- timers processing
-Message-ID: <20130430125423.GB8272@somewhere>
-References: <1366305822-5499-1-git-send-email-fweisbec@gmail.com>
- <1366305822-5499-3-git-send-email-fweisbec@gmail.com>
- <1366345802.2855.38.camel@Wailaba2>
- <CAFTL4hzTbko=jArO+kFF3icDbXmZzamDr1FJL3Vx+11Q54NABg@mail.gmail.com>
- <1366950479.7911.22.camel@Wailaba2>
+	Tue, 30 Apr 2013 09:00:22 -0400
+Date: Tue, 30 Apr 2013 14:59:52 +0200
+From: Daniel Kiper <daniel.kiper@oracle.com>
+To: Ian Campbell <Ian.Campbell@citrix.com>
+Cc: "carsten@schiers.de" <carsten@schiers.de>,
+        "darren.s.shepherd@gmail.com" <darren.s.shepherd@gmail.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Ian Jackson <Ian.Jackson@eu.citrix.com>,
+        "james-xen@dingwall.me.uk" <james-xen@dingwall.me.uk>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Subject: Re: [PATCH v2 2/2] xen/balloon: Enforce various limits on target
+Message-ID: <20130430125952.GD9904@debian70-amd64.local.net-space.pl>
+References: <1367235468-8360-1-git-send-email-daniel.kiper@oracle.com>
+ <1367235468-8360-3-git-send-email-daniel.kiper@oracle.com>
+ <1367246649.3142.316.camel@zakaz.uk.xensource.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1366950479.7911.22.camel@Wailaba2>
+In-Reply-To: <1367246649.3142.316.camel@zakaz.uk.xensource.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 26, 2013 at 12:27:59AM -0400, Olivier Langlois wrote:
-> On Fri, 2013-04-19 at 14:47 +0200, Frederic Weisbecker wrote:
-> 
-> > 
-> > >
-> > > I might be mistaken but I believe that firing timers are not rescheduled
-> > > in the current interrupt context. They are going to be rescheduled later
-> > > from the task context handling the timer generated signal.
-> > 
-> > No, when the timer fires, it might generate a signal. But it won't
-> > execute that signal right away in the same code path. Instead, after
-> > signal generation, it may reschedule the timer if necessary then look
-> > at the next firing timer in the list. This is all made from the same
-> > timer interrupt context from the same call to run_posix_cpu_timers().
-> > The signal itself is executed asynchronously. Either by interrupting a
-> > syscall, or from the irq return path.
-> > 
-> Frederic, be careful with the interpretation, there are 2 locations from
-> where posix_cpu_timer_schedule() can be called.
-> 
-> Call to posix_cpu_timer_schedule() from cpu_timer_fire() only happens if
-> the signal isn't sent because it is ignored by the recipient.
-> 
-> Maybe the condition around the posix_cpu_timer_schedule() block inside
-> cpu_timer_fire() could even be a good candidate for 'unlikely'
-> qualifier.
+On Mon, Apr 29, 2013 at 03:44:09PM +0100, Ian Campbell wrote:
+> On Mon, 2013-04-29 at 12:37 +0100, Daniel Kiper wrote:
+>
+> > This patch enforces on target limit statically defined in Linux Kernel
+> > source and limit defined by hypervisor or host. This way the balloon
+> > driver should not attempt to populate pages above given limits
+> > because they may fail.
+> >
+> > Particularly this patch fixes bug which led to flood
+> > of dom0 kernel log with messages similar to:
+> >
+> > System RAM resource [mem 0x1b8000000-0x1bfffffff] cannot be added
+> > xen_balloon: reserve_additional_memory: add_memory() failed: -17
+>
+> I think it would be OK to simply tone down this message (and perhaps add
+> the failed pages to the balloon, if that makes sense). This isn't
+> dissimilar to increase_reservation failing.
 
-Well, cpu_timer_fire() is probably not a fast path. So helping branch
-prediction there probably won't have much measurable effect in practice.
+If add_memory() fails it is hard error. It means that we do not
+know where new or ballooned pages should be placed.
 
-> 
-> IMO, a more likely scenario, posix_cpu_timer_schedule() will be called
-> from dequeue_signal() which will be from from a different context than
-> the interrupt context.
+> > +/*
+> > + * Extra internal memory reserved by libxl.
+> > + * Check tools/libxl/libxl_memory.txt file in Xen source for more details.
+> > + */
+> > +#define LIBXL_MAXMEM_CONSTANT_PAGES	(1024 * 1024 / PAGE_SIZE)
+>
+> I think we need to find a way to achieve your aims which doesn't require
+> leaking internal implementation details of libxl into the guest kernels.
+> What happens if libxl decides to double this?
 
-Oh you're right! I misunderstood that. So I need to take into consideration
-for the nohz code.
+I agree that this is not elegant solution. However, if we would like to
+be in line with docs/misc/libxl_memory.txt (this is correct path) this
+is a must. Once I thought that this value could be passed via xenstore
+but I think it is rather small chance it would be changed in near
+future. As I know this slack is reserved now just in case (correct me
+if I am wrong). If this value will be changed we could pass new value
+via xenstore (or other convenient mechanism).
 
-> 
-> At best, you have an interesting race!
-> 
-> dequeue_signal() is called when delivering a signal, not when it is
-> generated, right?
+> > +
+> >  #ifdef CONFIG_HIGHMEM
+> >  #define inc_totalhigh_pages() (totalhigh_pages++)
+> >  #define dec_totalhigh_pages() (totalhigh_pages--)
+> > @@ -491,11 +496,42 @@ static void balloon_process(struct work_struct *work)
+> >  	mutex_unlock(&balloon_mutex);
+> >  }
+> >
+> > -/* Resets the Xen limit, sets new target, and kicks off processing. */
+> > +/* Enforce limits, set new target and kick off processing. */
+> >  void balloon_set_new_target(unsigned long target)
+> >  {
+> > +	domid_t domid = DOMID_SELF;
+> > +	int rc;
+> > +
+> > +	/* Enforce statically defined limit. */
+> > +	target = min(target, MAX_DOMAIN_PAGES);
+> > +
+> > +	rc = HYPERVISOR_memory_op(XENMEM_maximum_reservation, &domid);
+> > +
+> > +	if (xen_initial_domain()) {
+> > +		if (rc <= 0) {
+> > +			pr_debug("xen_balloon: %s: Initial domain target limit "
+> > +					"could not be established: %i\n",
+> > +					__func__, rc);
+> > +			goto no_host_limit;
+> > +		}
+> > +	} else {
+> > +		if (rc <= 0) {
+> > +			pr_info("xen_balloon: %s: Guest domain target limit "
+> > +				"could not be established: %i\n", __func__, rc);
+> > +			goto no_host_limit;
+> > +		}
+> > +
+> > +		/* Do not take into account memory reserved for internal stuff. */
+> > +		rc -= LIBXL_MAXMEM_CONSTANT_PAGES;
+> > +	}
+>
+> Why is this needed? Wouldn't it be a toolstack bug to set the target
+> greater than this limit? But if it did ask then it would no doubt be
+> expecting the guest to try and reach that limit (perhaps it intends to
+> raise the maximum later?).
 
-Yeah you're right, sorry for the confusion. I'll reconsider your patches
-with that in mind.
+For domU XENMEM_maximum_reservation is always equal
+<user_requested_maximum> + LIBXL_MAXMEM_CONSTANT_PAGES.
+Acording to docs/misc/libxl_memory.txt LIBXL_MAXMEM_CONSTANT_PAGES
+is reserved for extra internal. It means that we should not allow
+balloon driver to reserve more than user_requested_maximum.
 
-Thanks.
+Daniel
