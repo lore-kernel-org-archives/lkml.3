@@ -1,71 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932526Ab3D3O6P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 10:58:15 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56618 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932363Ab3D3O6O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 10:58:14 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <517FB0F6.9030103@console-pimps.org>
-References: <20130429181819.GA2254@console-pimps.org> <20130430084731.GB21473@gmail.com> <517FB0F6.9030103@console-pimps.org>
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [GIT PULL] EFI merge botch fix
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Tue, 30 Apr 2013 07:57:32 -0700
-To: Matt Fleming <matt@console-pimps.org>, Ingo Molnar <mingo@kernel.org>
-CC: Tony Luck <tony.luck@intel.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-efi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <7b4ef246-c442-45e6-bc1e-0e1821f8fad9@email.android.com>
+	id S1760736Ab3D3O7W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 10:59:22 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:23660 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932349Ab3D3O7U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Apr 2013 10:59:20 -0400
+X-Authority-Analysis: v=2.0 cv=cOZiQyiN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=BTRBD928usAA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=YPD5nf4ZmOMA:10 a=NkMT6FMz6JdvkBJta2UA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1367333957.30667.61.camel@gandalf.local.home>
+Subject: Re: [ANNOUNCE] 3.4.41-rt55-feat3
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Tim Sander <tim.sander@hbm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>
+Date: Tue, 30 Apr 2013 10:59:17 -0400
+In-Reply-To: <2805818.g7STVSuEne@dabox>
+References: <1367283987.30667.49.camel@gandalf.local.home>
+	 <2805818.g7STVSuEne@dabox>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yes, please send pull requests.
+On Tue, 2013-04-30 at 11:14 +0200, Tim Sander wrote:
+> Hi Steve and all RT Folks
+> 
+> > I'm pleased to announce the 3.4.41-rt55-feat3 feature release.
+> > 
+> > Note, I first uploaded -feat2 then realized I didn't add a compile fix by
+> > Mike Galbraith, and then created the -feat3 with that fix.
+> I just wanted to say thanks that this patch enables compilation again with the 
+> preempt rt patchset with CONFIG_HIGH_RES_TIMERS disabled :-). 
+> I think this patch* should be moved out of the feat patchset into the stable 
+> rt backport branch as this also doesn't compile beginning with the 3.6.36-rt50 
+> patch with CONFIG_HIGH_RES_TIMERS disabled .
 
-Matt Fleming <matt@console-pimps.org> wrote:
+As the discussion was originally in the -feat thread, I didn't realize
+it was required for vanilla. Hmm, as it had nothing to do with softirqs
+I should have realized that. Oh well.
 
->On 30/04/13 09:47, Ingo Molnar wrote:
->> The other problem is that tip:x86/efi also conflicts with current
->-git, as 
->> of v3.9 - due to interaction with an EFI fix tree ...
->> 
->> This is getting ugly pretty fast, so I'd suggest to re-do the merges 
->> cleanly, not by rebasing the tree, but by redoing the first merge in 
->> essence:
->> 
->>   e29c2de5f591 Merge tag 'v3.9-rc8' into efi-for-tip
->> 
->> By correctly merging v3.9-final into f53f292 - making sure the
->changes to 
->> drivers/firmware/efivars.c correctly merge over, and making sure the
->ia64 
->> select does not get lost.
->> 
->> Something like this would do:
->> 
->>   git checkout -b x86-new-efi-branch f53f292
->>   git merge v3.9
->>   < ... resolve all the conflicts ...>
->>   git commit
->> 
->> I can then (non-fast-forward) fetch this new EFI branch as the new 
->> tip:x86/efi.
->
->OK, I re-did the merge against v3.9 as requested and published it as
->'efi-for-tip2'. Would you like me to send a proper pull request if
->that's easier to pull into the tip machinery?
->
->I have also started accumulating fixes against the EFI changes in
->tip/x86/efi. Would you like those as a separate pull request? The fixes
->branch is 'efi-for-tip-fixes' and is based on the above merge branch,
->'efi-for-tip2'. It mainly includes fixes for bugs in the pstore paths
->which Seiji Aguchi found.
+Anyway, I'm working on getting the mainline stable releases merged into
+the current stable-rt releases, and then I'll be looking at backports
+from upstream -rt. I'll add it then.
 
--- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+-- Steve
+
+
