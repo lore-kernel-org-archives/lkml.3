@@ -1,108 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932414Ab3D3Ocp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 10:32:45 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:61958 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932252Ab3D3Ocj (ORCPT
+	id S932449Ab3D3Ocw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 10:32:52 -0400
+Received: from a10-48.smtp-out.amazonses.com ([54.240.10.48]:41616 "EHLO
+	a10-48.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932421Ab3D3Ocs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 10:32:39 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@sisk.pl
-Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, robin.randhawa@arm.com,
-        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
-        charles.garcia-tobin@arm.com, arvind.chauhan@arm.com,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 1/2] cpufreq: governors: Fix CPUFREQ_GOV_POLICY_{INIT|EXIT} notifiers
-Date: Tue, 30 Apr 2013 20:02:17 +0530
-Message-Id: <49cc0bdaea95098d3782c8ff3ea0d6ffe21127aa.1367332148.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-In-Reply-To: <cover.1367332148.git.viresh.kumar@linaro.org>
-References: <cover.1367332148.git.viresh.kumar@linaro.org>
-In-Reply-To: <cover.1367332148.git.viresh.kumar@linaro.org>
-References: <cover.1367332148.git.viresh.kumar@linaro.org>
+	Tue, 30 Apr 2013 10:32:48 -0400
+X-Greylist: delayed 350 seconds by postgrey-1.27 at vger.kernel.org; Tue, 30 Apr 2013 10:32:48 EDT
+Date: Tue, 30 Apr 2013 14:26:56 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+cc: glommer@parallels.com, penberg@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [linux-next-20130422] Bug in SLAB?
+In-Reply-To: <201304300645.FCE37285.tVHJLSOMQFOFFO@I-love.SAKURA.ne.jp>
+Message-ID: <0000013e5b56d067-7982dfa6-08a2-4c48-ad77-6888b5114c5f-000000@email.amazonses.com>
+References: <CAOJsxLFYDC+EDdJrXVnc1qfEyd56bhFLeGE+6Mbhwiq73KQQLQ@mail.gmail.com> <517E8758.9040803@parallels.com> <0000013e564e0e5a-121c52f9-e489-470f-99d5-67a5ad42eb75-000000@email.amazonses.com> <201304300028.IAD13051.OHOVMJSLFFFQOt@I-love.SAKURA.ne.jp>
+ <0000013e56e9304a-1042a95a-d4dd-43c5-8b8a-c670f50ac54e-000000@email.amazonses.com> <201304300645.FCE37285.tVHJLSOMQFOFFO@I-love.SAKURA.ne.jp>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.04.30-54.240.10.48
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are two types of INIT/EXIT activities that we need to do for governors:
-- Done only once per governor (doesn't depend how many instances of governor
-  were there). eg: cpufreq_register_notifier() for conservative governor.
-- Done per instance of governor, eg: sysfs_{create|remove}_group().
+On Tue, 30 Apr 2013, Tetsuo Handa wrote:
 
-There were some corner cases where current code isn't able to handle them
-separately and so failing for some test cases.
+> The testcases still trigger BUG() at 32M:
 
-We use two separate variables now for keeping track of above two requirements.
-- governor->initialized for first one
-- dbs_data->usage_count for per governor instance
+I thought we established that MAX_ORDER only allows a maximum of 8M sized
+allocations? Why are you trying 32M?
 
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- drivers/cpufreq/cpufreq_governor.c | 11 +++++++----
- drivers/cpufreq/cpufreq_governor.h |  1 +
- 2 files changed, 8 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
-index 443442d..5af40ad 100644
---- a/drivers/cpufreq/cpufreq_governor.c
-+++ b/drivers/cpufreq/cpufreq_governor.c
-@@ -255,6 +255,7 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
- 		if (have_governor_per_policy()) {
- 			WARN_ON(dbs_data);
- 		} else if (dbs_data) {
-+			dbs_data->usage_count++;
- 			policy->governor_data = dbs_data;
- 			return 0;
- 		}
-@@ -266,6 +267,7 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
- 		}
- 
- 		dbs_data->cdata = cdata;
-+		dbs_data->usage_count = 1;
- 		rc = cdata->init(dbs_data);
- 		if (rc) {
- 			pr_err("%s: POLICY_INIT: init() failed\n", __func__);
-@@ -294,7 +296,8 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
- 		set_sampling_rate(dbs_data, max(dbs_data->min_sampling_rate,
- 					latency * LATENCY_MULTIPLIER));
- 
--		if (dbs_data->cdata->governor == GOV_CONSERVATIVE) {
-+		if ((cdata->governor == GOV_CONSERVATIVE) &&
-+				(!policy->governor->initialized)) {
- 			struct cs_ops *cs_ops = dbs_data->cdata->gov_ops;
- 
- 			cpufreq_register_notifier(cs_ops->notifier_block,
-@@ -306,12 +309,12 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
- 
- 		return 0;
- 	case CPUFREQ_GOV_POLICY_EXIT:
--		if ((policy->governor->initialized == 1) ||
--				have_governor_per_policy()) {
-+		if (!--dbs_data->usage_count) {
- 			sysfs_remove_group(get_governor_parent_kobj(policy),
- 					get_sysfs_attr(dbs_data));
- 
--			if (dbs_data->cdata->governor == GOV_CONSERVATIVE) {
-+			if ((dbs_data->cdata->governor == GOV_CONSERVATIVE) &&
-+				(policy->governor->initialized == 1)) {
- 				struct cs_ops *cs_ops = dbs_data->cdata->gov_ops;
- 
- 				cpufreq_unregister_notifier(cs_ops->notifier_block,
-diff --git a/drivers/cpufreq/cpufreq_governor.h b/drivers/cpufreq/cpufreq_governor.h
-index 8ac3353..e16a961 100644
---- a/drivers/cpufreq/cpufreq_governor.h
-+++ b/drivers/cpufreq/cpufreq_governor.h
-@@ -211,6 +211,7 @@ struct common_dbs_data {
- struct dbs_data {
- 	struct common_dbs_data *cdata;
- 	unsigned int min_sampling_rate;
-+	int usage_count;
- 	void *tuners;
- 
- 	/* dbs_mutex protects dbs_enable in governor start/stop */
--- 
-1.7.12.rc2.18.g61b472e
+The BUG() should trigger for these allocations.
 
