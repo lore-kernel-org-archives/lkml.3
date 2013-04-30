@@ -1,39 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759784Ab3D3BBi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 21:01:38 -0400
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:59782 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759449Ab3D3BBh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 21:01:37 -0400
-Message-ID: <517F17EE.1010402@linaro.org>
-Date: Mon, 29 Apr 2013 18:01:34 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Magnus Damm <magnus.damm@gmail.com>
-Subject: Re: [patch 08/15] clocksource: Let clocksource_unregister() return
- success/error
-References: <20130425142452.908423538@linutronix.de> <20130425143436.029915527@linutronix.de>
-In-Reply-To: <20130425143436.029915527@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1759271Ab3D3BDa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 21:03:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43218 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757677Ab3D3BD2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Apr 2013 21:03:28 -0400
+Date: Mon, 29 Apr 2013 21:03:08 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Cliff Wickman <cpw@sgi.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, mgorman@suse.de,
+        paul.mundt@nokia.com, dhowells@redhat.com, aarcange@redhat.com,
+        hughd@google.com, gorcunov@openvz.org, kamezawa.hiroyuki@gmail.com,
+        eag0628@gmail.com, khlebnikov@openvz.org, sasha.levin@oracle.com,
+        siddhesh.poyarekar@gmail.com, rientjes@google.com,
+        kirill.shutemov@linux.intel.com, viro@ZenIV.linux.org.uk,
+        amwang@redhat.com
+Message-ID: <1367283788-6nb3mvy8-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <E1UWva5-0005fY-Km@eag09.americas.sgi.com>
+References: <E1UWva5-0005fY-Km@eag09.americas.sgi.com>
+Subject: Re: [PATCH] fs/proc: smaps should avoid VM_PFNMAP areas
+Mime-Version: 1.0
+Content-Type: text/plain;
+ charset=iso-2022-jp
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+X-Mutt-References: <E1UWva5-0005fY-Km@eag09.americas.sgi.com>
+X-Mutt-Fcc: ~/Maildir/sent/
+User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/25/2013 01:31 PM, Thomas Gleixner wrote:
-> The unregister call can fail, if the clocksource is the current one
-> and there is no replacement clocksource available. It can also fail,
-> if the clocksource is the watchdog clocksource and I'm not going to
-> provide support for this.
->
-> Signed-off-by: Thomas Gleixner<tglx@linutronix.de>
-Acked-by: John Stultz <john.stultz@linaro.org>
+Hello Cliff,
 
-thanks
--john
+On Mon, Apr 29, 2013 at 04:25:53PM -0500, Cliff Wickman wrote:
+> 
+> /proc/<pid>/smaps should not be looking at VM_PFNMAP areas.
+> 
+> Certain tests in show_smap() (especially for huge pages) assume that the
+> mapped PFN's are backed with page structures.  And this is not usually true
+> for VM_PFNMAP areas.  This can result in panics on kernel page faults when
+> attempting to address those page structures.
 
+I think it's strange that you mention to hugepages, because in my understanding
+VM_PFNMAP and hugepage related vma (VM_HUGEPAGE or VM_HUGETLB) should not set
+at the same time. In what testcase are these flags both set?
+
+And I guess this race can also happen on reading pagemap or numa_maps because
+walk_page_range() is called in those code paths. Are you sure the race doesn't
+happen on these paths? If not, please add a few more flag checks for them.
+
+Thanks,
+Naoya Horiguchi
+
+> VM_PFNMAP areas are used by
+> - graphics memory manager   gpu/drm/drm_gem.c
+> - global reference unit     sgi-gru/grufile.c
+> - sgi special memory        char/mspec.c
+> - probably several out-of-tree modules
+> 
+> I'm copying everyone who has changed fs/proc/task_mmu.c recently, in case
+> of some reason to provide /proc/<pid>/smaps for these areas that I am not
+> aware of.
+> 
+> Signed-off-by: Cliff Wickman <cpw@sgi.com>
+> ---
+>  fs/proc/task_mmu.c |    3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> Index: linux/fs/proc/task_mmu.c
+> ===================================================================
+> --- linux.orig/fs/proc/task_mmu.c
+> +++ linux/fs/proc/task_mmu.c
+> @@ -589,6 +589,9 @@ static int show_smap(struct seq_file *m,
+>  		.private = &mss,
+>  	};
+>  
+> +	if (vma->vm_flags & VM_PFNMAP)
+> +		return 0;
+> +
+>  	memset(&mss, 0, sizeof mss);
+>  	mss.vma = vma;
+>  	/* mmap_sem is held in m_start */
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
