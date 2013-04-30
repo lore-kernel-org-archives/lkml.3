@@ -1,284 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934082Ab3EAAA7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 20:00:59 -0400
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:50522 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933932Ab3D3X7L (ORCPT
+	id S934029Ab3EAACa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 20:02:30 -0400
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:10061 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933881Ab3EAAC1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 19:59:11 -0400
-From: Soren Brinkmann <soren.brinkmann@xilinx.com>
-To: Michal Simek <michal.simek@xilinx.com>,
-        Josh Cartwright <joshc@eso.teric.us>,
-        Mike Turquette <mturquette@linaro.org>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Peter Crosthwaite <peter.crosthwaite@xilinx.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Soren Brinkmann <soren.brinkmann@xilinx.com>
-Subject: [PATCH 4/7] clk: zynq: Factor out PLL driver
-Date: Tue, 30 Apr 2013 16:58:01 -0700
-Message-Id: <1367366284-28304-5-git-send-email-soren.brinkmann@xilinx.com>
-X-Mailer: git-send-email 1.8.2.2
-In-Reply-To: <1367366284-28304-1-git-send-email-soren.brinkmann@xilinx.com>
-References: <1367366284-28304-1-git-send-email-soren.brinkmann@xilinx.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Tue, 30 Apr 2013 20:02:27 -0400
+Message-ID: <1367365778.16154.144.camel@misato.fc.hp.com>
+Subject: Re: [PATCH 3/3 RFC] ACPI / hotplug: Use device offline/online for
+ graceful hot-removal
+From: Toshi Kani <toshi.kani@hp.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, isimatu.yasuaki@jp.fujitsu.com,
+        vasilis.liaskovitis@profitbricks.com
+Date: Tue, 30 Apr 2013 17:49:38 -0600
+In-Reply-To: <2740694.MNypEzdXxd@vostro.rjw.lan>
+References: <1576321.HU0tZ4cGWk@vostro.rjw.lan>
+	 <2740694.MNypEzdXxd@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Refactor the PLL driver so it works with the clock controller driver.
+On Mon, 2013-04-29 at 14:29 +0200, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> 
+> Modify the generic ACPI hotplug code to be able to check if devices
+> scheduled for hot-removal may be gracefully removed from the system
+> using the device offline/online mechanism introduced previously.
+> 
+> Namely, make acpi_scan_hot_remove() which handles device hot-removal
+> call device_offline() for all physical companions of the ACPI device
+> nodes involved in the operation and check the results.  If any of
+> the device_offline() calls fails, the function will not progress to
+> the removal phase (which cannot be aborted), unless its (new) force
+> argument is set (in case of a failing offline it will put the devices
+> offlined by it back online).
+> 
+> In support of the 'forced' hot-removal, add a new sysfs attribute
+> 'force_remove' that will reside in every ACPI hotplug profile
+> present under /sys/firmware/acpi/hotplug/.
+> 
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> ---
+>  Documentation/ABI/testing/sysfs-firmware-acpi |    9 +-
+>  drivers/acpi/internal.h                       |    2 
+>  drivers/acpi/scan.c                           |   97 ++++++++++++++++++++++++--
+>  drivers/acpi/sysfs.c                          |   27 +++++++
+>  include/acpi/acpi_bus.h                       |    3 
+>  5 files changed, 131 insertions(+), 7 deletions(-)
+> 
+ :
+> Index: linux-pm/drivers/acpi/scan.c
+> ===================================================================
+> --- linux-pm.orig/drivers/acpi/scan.c
+> +++ linux-pm/drivers/acpi/scan.c
+> @@ -120,7 +120,61 @@ acpi_device_modalias_show(struct device
+>  }
+>  static DEVICE_ATTR(modalias, 0444, acpi_device_modalias_show, NULL);
+>  
+> -static int acpi_scan_hot_remove(struct acpi_device *device)
+> +static acpi_status acpi_bus_offline_companions(acpi_handle handle, u32 lvl,
+> +					       void *data, void **ret_p)
+> +{
+> +	struct acpi_device *device = NULL;
+> +	struct acpi_device_physical_node *pn;
+> +	bool force = *((bool *)data);
+> +	acpi_status status = AE_OK;
+> +
+> +	if (acpi_bus_get_device(handle, &device))
+> +		return AE_OK;
+> +
+> +	mutex_lock(&device->physical_node_lock);
+> +
+> +	list_for_each_entry(pn, &device->physical_node_list, node) {
 
-Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
----
- drivers/clk/zynq/pll.c | 235 +++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 235 insertions(+)
- create mode 100644 drivers/clk/zynq/pll.c
+I do not think physical_node_list is set for ACPI processor devices, so
+this code is NOP at this point.  I think properly initializing
+physical_node_list for CPU and memblk is one of the key items in this
+approach.
 
-diff --git a/drivers/clk/zynq/pll.c b/drivers/clk/zynq/pll.c
-new file mode 100644
-index 0000000..47e307c
---- /dev/null
-+++ b/drivers/clk/zynq/pll.c
-@@ -0,0 +1,235 @@
-+/*
-+ * Zynq PLL driver
-+ *
-+ *  Copyright (C) 2013 Xilinx
-+ *
-+ *  Sören Brinkmann <soren.brinkmann@xilinx.com>
-+ *
-+ * This program is free software: you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License v2 as published by
-+ * the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ *
-+ */
-+#include <linux/clk/zynq.h>
-+#include <linux/clk-provider.h>
-+#include <linux/slab.h>
-+#include <linux/io.h>
-+
-+/**
-+ * struct zynq_pll
-+ * @hw:		Handle between common and hardware-specific interfaces
-+ * @pll_ctrl:	PLL control register
-+ * @pll_status:	PLL status register
-+ * @lock:	Register lock
-+ * @lockbit:	Indicates the associated PLL_LOCKED bit in the PLL status
-+ *		register.
-+ */
-+struct zynq_pll {
-+	struct clk_hw	hw;
-+	void __iomem	*pll_ctrl;
-+	void __iomem	*pll_status;
-+	spinlock_t	*lock;
-+	u8		lockbit;
-+};
-+#define to_zynq_pll(_hw)	container_of(_hw, struct zynq_pll, hw)
-+
-+/* Register bitfield defines */
-+#define PLLCTRL_FBDIV_MASK	0x7f000
-+#define PLLCTRL_FBDIV_SHIFT	12
-+#define PLLCTRL_BPQUAL_MASK	(1 << 3)
-+#define PLLCTRL_PWRDWN_MASK	2
-+#define PLLCTRL_PWRDWN_SHIFT	1
-+#define PLLCTRL_RESET_MASK	1
-+#define PLLCTRL_RESET_SHIFT	0
-+
-+/**
-+ * zynq_pll_round_rate() - Round a clock frequency
-+ * @hw:		Handle between common and hardware-specific interfaces
-+ * @rate:	Desired clock frequency
-+ * @prate:	Clock frequency of parent clock
-+ * Returns frequency closest to @rate the hardware can generate.
-+ */
-+static long zynq_pll_round_rate(struct clk_hw *hw, unsigned long rate,
-+		unsigned long *prate)
-+{
-+	u32 fbdiv;
-+
-+	fbdiv = DIV_ROUND_CLOSEST(rate, *prate);
-+	if (fbdiv < 13)
-+		fbdiv = 13;
-+	else if (fbdiv > 66)
-+		fbdiv = 66;
-+
-+	return *prate * fbdiv;
-+}
-+
-+/**
-+ * zynq_pll_recalc_rate() - Recalculate clock frequency
-+ * @hw:			Handle between common and hardware-specific interfaces
-+ * @parent_rate:	Clock frequency of parent clock
-+ * Returns current clock frequency.
-+ */
-+static unsigned long zynq_pll_recalc_rate(struct clk_hw *hw,
-+		unsigned long parent_rate)
-+{
-+	struct zynq_pll *clk = to_zynq_pll(hw);
-+	u32 fbdiv;
-+
-+	/*
-+	 * makes probably sense to redundantly save fbdiv in the struct
-+	 * zynq_pll to save the IO access.
-+	 */
-+	fbdiv = (readl(clk->pll_ctrl) & PLLCTRL_FBDIV_MASK) >>
-+			PLLCTRL_FBDIV_SHIFT;
-+
-+	return parent_rate * fbdiv;
-+}
-+
-+/**
-+ * zynq_pll_is_enabled - Check if a clock is enabled
-+ * @hw:		Handle between common and hardware-specific interfaces
-+ * Returns 1 if the clock is enabled, 0 otherwise.
-+ *
-+ * Not sure this is a good idea, but since disabled means bypassed for
-+ * this clock implementation we say we are always enabled.
-+ */
-+static int zynq_pll_is_enabled(struct clk_hw *hw)
-+{
-+	unsigned long flags = 0;
-+	u32 reg;
-+	struct zynq_pll *clk = to_zynq_pll(hw);
-+
-+	spin_lock_irqsave(clk->lock, flags);
-+
-+	reg = readl(clk->pll_ctrl);
-+
-+	spin_unlock_irqrestore(clk->lock, flags);
-+
-+	return !(reg & (PLLCTRL_RESET_MASK | PLLCTRL_PWRDWN_MASK));
-+}
-+
-+/**
-+ * zynq_pll_enable - Enable clock
-+ * @hw:		Handle between common and hardware-specific interfaces
-+ * Returns 0 on success
-+ */
-+static int zynq_pll_enable(struct clk_hw *hw)
-+{
-+	unsigned long flags = 0;
-+	u32 reg;
-+	struct zynq_pll *clk = to_zynq_pll(hw);
-+
-+	if (zynq_pll_is_enabled(hw))
-+		return 0;
-+
-+	pr_info("PLL: enable\n");
-+
-+	/* Power up PLL and wait for lock */
-+	spin_lock_irqsave(clk->lock, flags);
-+
-+	reg = readl(clk->pll_ctrl);
-+	reg &= ~(PLLCTRL_RESET_MASK | PLLCTRL_PWRDWN_MASK);
-+	writel(reg, clk->pll_ctrl);
-+	while (!(readl(clk->pll_status) & (1 << clk->lockbit)))
-+		;
-+
-+	spin_unlock_irqrestore(clk->lock, flags);
-+
-+	return 0;
-+}
-+
-+/**
-+ * zynq_pll_disable - Disable clock
-+ * @hw:		Handle between common and hardware-specific interfaces
-+ * Returns 0 on success
-+ */
-+static void zynq_pll_disable(struct clk_hw *hw)
-+{
-+	unsigned long flags = 0;
-+	u32 reg;
-+	struct zynq_pll *clk = to_zynq_pll(hw);
-+
-+	if (!zynq_pll_is_enabled(hw))
-+		return;
-+
-+	pr_info("PLL: shutdown\n");
-+
-+	/* shut down PLL */
-+	spin_lock_irqsave(clk->lock, flags);
-+
-+	reg = readl(clk->pll_ctrl);
-+	reg |= PLLCTRL_RESET_MASK | PLLCTRL_PWRDWN_MASK;
-+	writel(reg, clk->pll_ctrl);
-+
-+	spin_unlock_irqrestore(clk->lock, flags);
-+}
-+
-+static const struct clk_ops zynq_pll_ops = {
-+	.enable = zynq_pll_enable,
-+	.disable = zynq_pll_disable,
-+	.is_enabled = zynq_pll_is_enabled,
-+	.round_rate = zynq_pll_round_rate,
-+	.recalc_rate = zynq_pll_recalc_rate
-+};
-+
-+/**
-+ * clk_register_zynq_pll() - Register PLL with the clock framework
-+ * @np	Pointer to the DT device node
-+ */
-+struct clk *clk_register_zynq_pll(const char *name, const char *parent,
-+		void __iomem *pll_ctrl, void __iomem *pll_status, u8 lock_index,
-+		spinlock_t *lock)
-+{
-+	struct zynq_pll *pll;
-+	struct clk *clk;
-+	u32 reg;
-+	const char *parent_arr[1] = {parent};
-+	unsigned long flags = 0;
-+	struct clk_init_data initd = {
-+		.name = name,
-+		.parent_names = parent_arr,
-+		.ops = &zynq_pll_ops,
-+		.num_parents = 1,
-+		.flags = 0
-+	};
-+
-+	pll = kmalloc(sizeof(*pll), GFP_KERNEL);
-+	if (!pll) {
-+		pr_err("%s: Could not allocate Zynq PLL clk.\n", __func__);
-+		return ERR_PTR(-ENOMEM);
-+	}
-+
-+	/* Populate the struct */
-+	pll->hw.init = &initd;
-+	pll->pll_ctrl = pll_ctrl;
-+	pll->pll_status = pll_status;
-+	pll->lockbit = lock_index;
-+	pll->lock = lock;
-+
-+	spin_lock_irqsave(pll->lock, flags);
-+
-+	reg = readl(pll->pll_ctrl);
-+	reg &= ~PLLCTRL_BPQUAL_MASK;
-+	writel(reg, pll->pll_ctrl);
-+
-+	spin_unlock_irqrestore(pll->lock, flags);
-+
-+	clk = clk_register(NULL, &pll->hw);
-+	if (WARN_ON(IS_ERR(clk)))
-+		goto free_pll;
-+
-+	return clk;
-+
-+free_pll:
-+	kfree(pll);
-+
-+	return clk;
-+}
--- 
-1.8.2.2
+> +		int ret;
+> +
+> +		ret = device_offline(pn->dev);
+> +		if (force)
+> +			continue;
+> +
+> +		if (ret < 0) {
+> +			status = AE_ERROR;
+> +			break;
+> +		}
+> +		pn->put_online = !ret;
+> +	}
+> +
+> +	mutex_unlock(&device->physical_node_lock);
+> +
+> +	return status;
+> +}
+> +
+> +static acpi_status acpi_bus_online_companions(acpi_handle handle, u32 lvl,
+> +					      void *data, void **ret_p)
+> +{
+> +	struct acpi_device *device = NULL;
+> +	struct acpi_device_physical_node *pn;
+> +
+> +	if (acpi_bus_get_device(handle, &device))
+> +		return AE_OK;
+> +
+> +	mutex_lock(&device->physical_node_lock);
+> +
+> +	list_for_each_entry(pn, &device->physical_node_list, node)
+> +		if (pn->put_online) {
+> +			device_online(pn->dev);
+> +			pn->put_online = false;
+> +		}
+> +
+> +	mutex_unlock(&device->physical_node_lock);
+> +
+> +	return AE_OK;
+> +}
+> +
+> +static int acpi_scan_hot_remove(struct acpi_device *device, bool force)
+>  {
+>  	acpi_handle handle = device->handle;
+>  	acpi_handle not_used;
+> @@ -136,10 +190,30 @@ static int acpi_scan_hot_remove(struct a
+>  		return -EINVAL;
+>  	}
+>  
+> +	lock_device_offline();
+> +
+> +	status = acpi_walk_namespace(ACPI_TYPE_ANY, handle, ACPI_UINT32_MAX,
+> +				     NULL, acpi_bus_offline_companions, &force,
+> +				     NULL);
+> +	if (ACPI_SUCCESS(status) || force)
+> +		status = acpi_bus_offline_companions(handle, 0, &force, NULL);
+> +
+> +	if (ACPI_FAILURE(status) && !force) {
+> +		acpi_bus_online_companions(handle, 0, NULL, NULL);
+> +		acpi_walk_namespace(ACPI_TYPE_ANY, handle, ACPI_UINT32_MAX,
+> +				    acpi_bus_online_companions, NULL, NULL,
+> +				    NULL);
+> +		unlock_device_offline();
+
+Don't we need put_device(&device->dev) here?
+
+Thanks,
+-Toshi
+
+
+> +		return -EBUSY;
+> +	}
+> +
+
 
