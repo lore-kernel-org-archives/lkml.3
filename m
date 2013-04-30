@@ -1,66 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760882Ab3D3R3w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 13:29:52 -0400
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:33929 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759233Ab3D3R3s (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 13:29:48 -0400
-From: Julien Grall <julien.grall@linaro.org>
-To: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
-Cc: konrad.wilk@oracle.com, Stefano.Stabellini@eu.citrix.com,
-        patches@linaro.org, Julien Grall <julien.grall@linaro.org>
-Subject: [PATCH V2] xen: clear IRQ_NOAUTOEN and IRQ_NOREQUEST
-Date: Tue, 30 Apr 2013 18:29:13 +0100
-Message-Id: <1367342953-27509-1-git-send-email-julien.grall@linaro.org>
-X-Mailer: git-send-email 1.7.10.4
+	id S1760945Ab3D3RbT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 13:31:19 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:47343 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759233Ab3D3RbR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Apr 2013 13:31:17 -0400
+Message-ID: <517FFFCF.4080301@parallels.com>
+Date: Tue, 30 Apr 2013 21:30:55 +0400
+From: Pavel Emelyanov <xemul@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+MIME-Version: 1.0
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        CRIU <criu@openvz.org>
+Subject: [Announce] Checkpoint-restore tool v0.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reset the IRQ_NOAUTOEN and IRQ_NOREQUEST flags that are enabled by
-default on ARM. If IRQ_NOAUTOEN is set, __setup_irq doesn't call
-irq_startup, that is responsible for calling irq_unmask at startup time.
-As a result event channels remain masked.
+Ladies and Gentlemen,
 
-The clear is already made in bind_evtchn_to_irq with commit a8636c0 but was
-missing on all others bind_*_to_irq. Move the clear in xen_irq_info_common_init.
+I'm glad to announce the 5th release of the checkpoint-restore tool!
 
-On x86, IRQ_NOAUTOEN and IRQ_NOREQUEST are cleared by default, so this commit
-doesn't impact this architecture.
+This release is mostly about the tool itself. The v3.9 kernel, with which the
+new CRIU tool should be used, only contains a couple of bug fixes related to
+the C/R project and no new related features. As for the tool itself, there's
+a lot of bugs fixed, thanks to new users that come to try the CRIU tool :)
 
-Signed-off-by: Julien Grall <julien.grall@linaro.org>
----
- Changes since v1:
-   - Specify this commit will not impact x86 in the comment
-   - Clear flag directly in xen_irq_info_common_init, this function is
-   called by all bind_*_to_irq
+The biggest "new-feature" change so far is about dumping the applications memory.
+We have two enhancements in this area:
 
- drivers/xen/events.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+* memory dumps can be directly sent to the remote node, to speed live migration up;
 
-diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-index d8cc812..6a6bbe4 100644
---- a/drivers/xen/events.c
-+++ b/drivers/xen/events.c
-@@ -167,6 +167,8 @@ static void xen_irq_info_common_init(struct irq_info *info,
- 	info->cpu = cpu;
- 
- 	evtchn_to_irq[evtchn] = irq;
-+
-+	irq_clear_status_flags(irq, IRQ_NOREQUEST|IRQ_NOAUTOEN);
- }
- 
- static void xen_irq_info_evtchn_init(unsigned irq,
-@@ -874,7 +876,6 @@ int bind_evtchn_to_irq(unsigned int evtchn)
- 		struct irq_info *info = info_for_irq(irq);
- 		WARN_ON(info == NULL || info->type != IRQT_EVTCHN);
- 	}
--	irq_clear_status_flags(irq, IRQ_NOREQUEST|IRQ_NOAUTOEN);
- 
- out:
- 	mutex_unlock(&irq_mapping_update_lock);
--- 
-1.7.10.4
+and
 
+* with the custom crkernel (patches are expected to get merged in Linux-3.10) one
+  can track the memory changes, which in turn allows to do e.g. incremental dumps
+  or optimize the live migration by sending memory to remote host before freezing
+  the application.
+
+The full list of changes is here: http://criu.org/Download/criu/0.5
+
+Have fun!
+
+Thanks,
+Pavel
