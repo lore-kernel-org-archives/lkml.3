@@ -1,46 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933672Ab3D3VMI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 17:12:08 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59925 "EHLO mx2.suse.de"
+	id S933699Ab3D3VVu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 17:21:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1224 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933058Ab3D3VMF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 17:12:05 -0400
-Date: Tue, 30 Apr 2013 23:12:04 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jonathan Corbet <corbet@lwn.net>, Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] dummy-irq: require the user to specify an IRQ number
-In-Reply-To: <20130430205016.GB26374@kroah.com>
-Message-ID: <alpine.LNX.2.00.1304302311260.20139@pobox.suse.cz>
-References: <20130429211605.GA4102@redhat.com> <alpine.LNX.2.00.1304300651080.20139@pobox.suse.cz> <20130430072817.61d3ca9f@lwn.net> <alpine.LNX.2.00.1304302240390.20139@pobox.suse.cz> <20130430205016.GB26374@kroah.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S932826Ab3D3VVt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Apr 2013 17:21:49 -0400
+Date: Tue, 30 Apr 2013 17:20:07 -0400
+From: Dave Jones <davej@redhat.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: clockevents_program_event WARN_ON preventing boot.
+Message-ID: <20130430212007.GB18598@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Linux Kernel <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Apr 2013, Greg Kroah-Hartman wrote:
+I have a machine that crashes instantly on boot up on Linus'
+post-3.9 tree. (8c55f1463c1fd318d5e785f02b80bcc32176d342)
 
-> > From: Jonathan Corbet <corbet@lwn.net>
-> > Subject: [PATCH] dummy-irq: require the user to specify an IRQ number
-> > 
-> > Make sure that we let the user know that without specifying IRQ#, 
-> > dummy-irq driver is useless.
-> > 
-> > Reported-by: Dave Jones <davej@redhat.com>
-> > Signed-off-by: Jonathan Corbet <corbet@lwn.net>
-> > Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-> 
-> Nice, I'll queue this up after 3.10-rc1 is out, thanks.
+By booting with boot_delay=100, I was able to take a photo
+and capture the top of the trace.  (For some reason, larger boot
+delay parameters seem to make it take forever before printing
+even a single character, which made this a pain to debug).
 
-Thanks Greg.
+The WARN_ON it prints right before locking up is this in clockevents_program_event
 
-Do you want me to resend this after rc1, or is it somewhere in your 
-post-rc1 queue already?
+208         if (unlikely(expires.tv64 < 0)) {
+209                 WARN_ON_ONCE(1);
+210                 return -ETIME;
+211         }
 
--- 
-Jiri Kosina
-SUSE Labs
+booting with maxcpus=1 avoids the problem.
+
+I'm still trying to get a complete stack trace, though it's painful
+due to the above reason.
+
+	Dave
+
