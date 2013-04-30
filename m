@@ -1,39 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760349Ab3D3Lgd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 07:36:33 -0400
-Received: from smtp.snhosting.dk ([87.238.248.203]:22582 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760270Ab3D3Lgc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 07:36:32 -0400
-Date: Tue, 30 Apr 2013 13:36:25 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-kbuild@vger.kernel.org
-Subject: Re: Kconfig "softdepends" idea
-Message-ID: <20130430113625.GA15645@merkur.ravnborg.org>
-References: <517F9472.2030106@ti.com> <20130430102440.GA15522@merkur.ravnborg.org> <20130430103318.GB12161@arwen.pp.htv.fi>
+	id S1760377Ab3D3Lhh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 07:37:37 -0400
+Received: from smtp1.uu.se ([130.238.7.54]:36855 "EHLO smtp1.uu.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759520Ab3D3Lhg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Apr 2013 07:37:36 -0400
+X-Greylist: delayed 404 seconds by postgrey-1.27 at vger.kernel.org; Tue, 30 Apr 2013 07:37:36 EDT
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130430103318.GB12161@arwen.pp.htv.fi>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 7bit
+Message-ID: <20863.43739.999287.287981@pilspetsen.it.uu.se>
+Date: Tue, 30 Apr 2013 13:28:27 +0200
+From: Mikael Pettersson <mikpe@it.uu.se>
+To: "Warlich, Christof" <christof.warlich@siemens.com>
+Cc: Andi Kleen <andi@firstfloor.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: X86 fpu registers in a signal handler's ucontext
+In-Reply-To: <6D83E89737156549AEA25EF9ED712C5DE0A9@DEFTHW99EK1MSX.ww902.siemens.net>
+References: <6D83E89737156549AEA25EF9ED712C5DDEF7@DEFTHW99EK1MSX.ww902.siemens.net>
+	<m2a9ohusmp.fsf@firstfloor.org>
+	<6D83E89737156549AEA25EF9ED712C5DE0A9@DEFTHW99EK1MSX.ww902.siemens.net>
+X-Mailer: VM 7.17 under Emacs 20.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 30, 2013 at 01:33:18PM +0300, Felipe Balbi wrote:
-> 
-> I think something like 'available on ARCH_OMAP' might be useful,
-> however.
+Warlich, Christof writes:
+ > Andi Kleen <andi@firstfloor.org> writes:
+ > > The FP registers are restored lazily, but the state for this is kept in
+ > > the kernel.
+ > 
+ > I'm not sure if I understand "lazily" in this context: Do you mean that FP
+ > registers _are_ restored within the kernel, but _not_ from a (possibly modified)
+ > ucontext of a userspace signal handler? If so, do you know a reason why the GP
+ > registers are so nicely restored from userspace, but not the FP registers?
+ >  
+ > > One easy way may be to catch the FPU exception too and clear from there?
+ > 
+ > Hmm - I _do_ catch SIGFPE in my userspace signal handler, but I obviously
+ > can't clear the FP exceptions from there. This, together with your answer
+ > so far, makes me conclude that there may be no way to achieve my goal from
+ > userspace, right :-(?
 
-In general I try to avoid extending the Kconfig language.
-Let's try to keep it simple.
-
-So as long as we can do it within the current language let's not invent
-something new.
-
-	Sam
+Write to the fpstate ->mxcsr and ->swd fields in the sigaction handler's uc_mcontext.
