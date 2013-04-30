@@ -1,50 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759986Ab3D3JkY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 05:40:24 -0400
-Received: from mout.gmx.net ([212.227.15.15]:55644 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758998Ab3D3JkX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 05:40:23 -0400
-X-Authenticated: #7313500
-X-Provags-ID: V01U2FsdGVkX18Ei1s46LYEg8AbNafv0h2b6yD9vZu6WVheMqHEFB
-	GFKLwleZmPigJA
-From: dl9pf@gmx.de
-To: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org, rjw@sisk.pl,
-        lenb@kernel.org
-Cc: dl9pf@gmx.de
-Subject: [PATCH] Fix section to __init. Align with usage in acpixf.h . Fixes warning during compilation with clang.
-Date: Tue, 30 Apr 2013 11:39:04 +0200
-Message-Id: <1367314744-9659-1-git-send-email-dl9pf@gmx.de>
-X-Mailer: git-send-email 1.8.1.4
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Y-GMX-Trusted: 0
+	id S1760049Ab3D3Jpl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 05:45:41 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:52795 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759173Ab3D3Jpk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Apr 2013 05:45:40 -0400
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Emilio Lopez <emilio@elopez.com.ar>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
+Subject: [PATCH] ARM: sunxi: Fix Mini X-plus device tree build
+Date: Tue, 30 Apr 2013 11:45:33 +0200
+Message-Id: <1367315134-20977-1-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan-Simon Möller <dl9pf@gmx.de>
+Commit b00adbe0 ("ARM: sunxi: Rename uart nodes to serial") changed the
+node names in the DTSI, changes that were not accordingly made to the
+Mini X-Plus device tree. This breakage slipped through because it was
+not properly declared in the Makefile.
 
-Signed-off-by: Jan-Simon Möller <dl9pf@gmx.de>
+Fix both issues.
+
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- include/acpi/acpiosxf.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ This is 3.10-rc* material.
 
-diff --git a/include/acpi/acpiosxf.h b/include/acpi/acpiosxf.h
-index 5b3d2bd..64b8c76 100644
---- a/include/acpi/acpiosxf.h
-+++ b/include/acpi/acpiosxf.h
-@@ -77,7 +77,7 @@ struct acpi_signal_fatal_info {
- /*
-  * OSL Initialization and shutdown primitives
-  */
--acpi_status __initdata acpi_os_initialize(void);
-+acpi_status __init acpi_os_initialize(void);
+ arch/arm/boot/dts/Makefile                 | 4 +++-
+ arch/arm/boot/dts/sun4i-a10-mini-xplus.dts | 4 ++--
+ 2 files changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+index 9c62558..6d774d0 100644
+--- a/arch/arm/boot/dts/Makefile
++++ b/arch/arm/boot/dts/Makefile
+@@ -147,7 +147,9 @@ dtb-$(CONFIG_ARCH_SPEAR3XX)+= spear300-evb.dtb \
+ 	spear320-evb.dtb \
+ 	spear320-hmi.dtb
+ dtb-$(CONFIG_ARCH_SPEAR6XX)+= spear600-evb.dtb
+-dtb-$(CONFIG_ARCH_SUNXI) += sun4i-a10-cubieboard.dtb \
++dtb-$(CONFIG_ARCH_SUNXI) += \
++	sun4i-a10-cubieboard.dtb \
++	sun4i-a10-mini-xplus.dtb \
+ 	sun4i-a10-hackberry.dtb \
+ 	sun5i-a13-olinuxino.dtb
+ dtb-$(CONFIG_ARCH_TEGRA) += tegra20-harmony.dtb \
+diff --git a/arch/arm/boot/dts/sun4i-a10-mini-xplus.dts b/arch/arm/boot/dts/sun4i-a10-mini-xplus.dts
+index 4a7c35d..078ed7f 100644
+--- a/arch/arm/boot/dts/sun4i-a10-mini-xplus.dts
++++ b/arch/arm/boot/dts/sun4i-a10-mini-xplus.dts
+@@ -22,8 +22,8 @@
+ 		bootargs = "earlyprintk console=ttyS0,115200";
+ 	};
  
- acpi_status acpi_os_terminate(void);
- 
+-	soc {
+-		uart0: uart@01c28000 {
++	soc@01c20000 {
++		uart0: serial@01c28000 {
+ 			pinctrl-names = "default";
+ 			pinctrl-0 = <&uart0_pins_a>;
+ 			status = "okay";
 -- 
-1.8.1.4
+1.8.1.2
 
