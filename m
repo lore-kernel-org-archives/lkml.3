@@ -1,77 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933793Ab3D3Uxz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 16:53:55 -0400
-Received: from mail-ia0-f173.google.com ([209.85.210.173]:41150 "EHLO
-	mail-ia0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933255Ab3D3Uxy (ORCPT
+	id S933812Ab3D3U4J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 16:56:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40962 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932355Ab3D3U4F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 16:53:54 -0400
-Message-ID: <1367355231.11020.10.camel@edumazet-glaptop>
-Subject: [PATCH net-next] mlx4_en: fix a build error on 32bit arches
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Randy Dunlap <rdunlap@infradead.org>, David Miller <davem@davemloft.net>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Amir Vadai <amirv@mellanox.com>
-Date: Tue, 30 Apr 2013 13:53:51 -0700
-In-Reply-To: <51802BE9.7020805@infradead.org>
-References: <20130430165730.7779d7e5d8fdca911213cce7@canb.auug.org.au>
-	  <51801449.7080600@infradead.org>
-	 <1367350578.11020.4.camel@edumazet-glaptop>
-	 <51802BE9.7020805@infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
+	Tue, 30 Apr 2013 16:56:05 -0400
+Date: Tue, 30 Apr 2013 13:56:02 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Kyungsik Lee <kyungsik.lee@lge.com>
+Cc: Russell King <linux@arm.linux.org.uk>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-kbuild@vger.kernel.org, x86@kernel.org,
+        celinux-dev@lists.celinuxforum.org, Nicolas Pitre <nico@fluxnic.net>,
+        David Sterba <dsterba@suse.cz>, Nitin Gupta <nitingupta910@gmail.com>,
+        Joe Millenbach <jmillenbach@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Michal Marek <mmarek@suse.cz>,
+        hyojun.im@lge.com, chan.jeong@lge.com, raphael.andy.lee@gmail.com
+Subject: Re: [PATCH v3 -next 3/5] arm: Add support for LZ4-compressed kernel
+Message-Id: <20130430135602.2aa0d3b4ec392bf83a9b64d0@linux-foundation.org>
+In-Reply-To: <1362484056-9778-4-git-send-email-kyungsik.lee@lge.com>
+References: <1362484056-9778-1-git-send-email-kyungsik.lee@lge.com>
+	<1362484056-9778-4-git-send-email-kyungsik.lee@lge.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <edumazet@google.com>
+On Tue,  5 Mar 2013 20:47:34 +0900 Kyungsik Lee <kyungsik.lee@lge.com> wrote:
 
-commit b6c39bfcf1d7d63 ("net/mlx4_en: Add a service task")
-added a build error on 32bit arches.
+> This patch integrates the LZ4 decompression code to the arm pre-boot code.
+> And it depends on two patchs below
+> 
+> lib: Add support for LZ4-compressed kernel
+> decompressor: Add LZ4 decompressor module
+> 
+> ...
+>
+> - Apply CFLAGS, -Os to decompress.o to improve decompress
+>   performance during boot-up process
+>
+> ...
+>
+> --- a/arch/arm/boot/compressed/Makefile
+> +++ b/arch/arm/boot/compressed/Makefile
+> @@ -24,6 +24,9 @@ endif
+>  AFLAGS_head.o += -DTEXT_OFFSET=$(TEXT_OFFSET)
+>  HEAD	= head.o
+>  OBJS	+= misc.o decompress.o
+> +ifeq ($(CONFIG_KERNEL_LZ4),y)
+> +CFLAGS_decompress.o := -Os
+> +endif
 
-ERROR: "__udivdi3" [drivers/net/ethernet/mellanox/mlx4/mlx4_en.ko]
-undefined!
-
-Fix this problem by using do_div()
-
-Reported-by: Randy Dunlap <rdunlap@infradead.org>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Acked-by: Randy Dunlap <rdunlap@infradead.org>
-Cc: Amir Vadai <amirv@mellanox.com>
----
- drivers/net/ethernet/mellanox/mlx4/en_clock.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/net/ethernet/mellanox/mlx4/en_clock.c b/drivers/net/ethernet/mellanox/mlx4/en_clock.c
-index 2f18121..fd64410 100644
---- a/drivers/net/ethernet/mellanox/mlx4/en_clock.c
-+++ b/drivers/net/ethernet/mellanox/mlx4/en_clock.c
-@@ -114,6 +114,7 @@ void mlx4_en_fill_hwtstamps(struct mlx4_en_dev *mdev,
- void mlx4_en_init_timestamp(struct mlx4_en_dev *mdev)
- {
- 	struct mlx4_dev *dev = mdev->dev;
-+	u64 ns;
- 
- 	memset(&mdev->cycles, 0, sizeof(mdev->cycles));
- 	mdev->cycles.read = mlx4_en_read_clock;
-@@ -133,10 +134,9 @@ void mlx4_en_init_timestamp(struct mlx4_en_dev *mdev)
- 	/* Calculate period in seconds to call the overflow watchdog - to make
- 	 * sure counter is checked at least once every wrap around.
- 	 */
--	mdev->overflow_period =
--		(cyclecounter_cyc2ns(&mdev->cycles,
--				    mdev->cycles.mask) / NSEC_PER_SEC / 2)
--		* HZ;
-+	ns = cyclecounter_cyc2ns(&mdev->cycles, mdev->cycles.mask);
-+	do_div(ns, NSEC_PER_SEC / 2 / HZ);
-+	mdev->overflow_period = ns;
- }
- 
- void mlx4_en_ptp_overflow_check(struct mlx4_en_dev *mdev)
-
+Surprised.  You found that -Os produces faster code than -O2?  Details,
+please?
 
