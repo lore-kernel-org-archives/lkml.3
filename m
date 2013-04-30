@@ -1,84 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758776Ab3D3CYf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 22:24:35 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:60064 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757851Ab3D3CYd (ORCPT
+	id S1759158Ab3D3C0A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 22:26:00 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:57978 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758783Ab3D3CZ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 22:24:33 -0400
-Date: Tue, 30 Apr 2013 12:24:23 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Chen Gang <gang.chen@asianux.com>, Alan Ott <alan@signal11.us>
-Subject: linux-next: manual merge of the net-next tree with the net tree
-Message-Id: <20130430122423.ab57c82604f13f6773ef4aeb@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__30_Apr_2013_12_24_23_+1000_XyLL3_xSVTg2TfTS"
+	Mon, 29 Apr 2013 22:25:59 -0400
+Date: Tue, 30 Apr 2013 11:25:55 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Bastian Hecht <hechtb+renesas@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 03/21] ARM: shmobile: don't call irqchip_init
+ unconditionally
+Message-ID: <20130430022555.GB24214@verge.net.au>
+References: <1366910944-3033663-1-git-send-email-arnd@arndb.de>
+ <1366910944-3033663-4-git-send-email-arnd@arndb.de>
+ <20130426004835.GA20070@verge.net.au>
+ <201304291649.08084.arnd@arndb.de>
+ <20130430015840.GG22535@verge.net.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130430015840.GG22535@verge.net.au>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__30_Apr_2013_12_24_23_+1000_XyLL3_xSVTg2TfTS
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Apr 30, 2013 at 10:58:40AM +0900, Simon Horman wrote:
+> On Mon, Apr 29, 2013 at 04:49:07PM +0200, Arnd Bergmann wrote:
+> > On Friday 26 April 2013, Simon Horman wrote:
+> > > > diff --git a/arch/arm/mach-shmobile/intc-r8a7740.c b/arch/arm/mach-shmobile/intc-r8a7740.c
+> > > > index 8871f77..5dc57f1 100644
+> > > > --- a/arch/arm/mach-shmobile/intc-r8a7740.c
+> > > > +++ b/arch/arm/mach-shmobile/intc-r8a7740.c
+> > > > @@ -53,14 +53,23 @@ static void __init r8a7740_init_irq_common(void)
+> > > >  
+> > > >  void __init r8a7740_init_irq_of(void)
+> > > >  {
+> > > > +     if (!IS_ENABLED(CONFIG_OF))
+> > > > +             return;
+> > > > +
+> > > 
+> > > In other parts of the shmobile I believe that such code is
+> > > guarded by #ifdef CONFIG_OF and I believe not guarding this code in
+> > > some way was an oversight.
+> > > 
+> > > The above change seems fine to me.
+> > 
+> > Ok. The change that broke the code is only present in linux-next from
+> > one of your trees, but is not in arm-soc. Could you include the change
+> > in your tree, either by folding into one of your patches or adapting
+> > my patch appropriately?
+> 
+> Yes, or of course. I'll queue-up your patch with
+> the second hunk (below) removed.
+> 
+> > > > +
+> > > > +     gic_dist_base = ioremap_nocache(0xc2800000, 0x1000);
+> > > > +     gic_cpu_base = ioremap_nocache(0xc2000000, 0x1000);
+> > > >  
+> > > >       /* initialize the Generic Interrupt Controller PL390 r0p0 */
+> > > >       gic_init(0, 29, gic_dist_base, gic_cpu_base);
+> > > 
+> > > This one seems broken as the armadillo800eva board currently uses
+> > > it to initialise GIC even if CONFIG_ATAGS is not defined.
+> > > 
+> > > I did test the above change on the armadillo800eva board
+> > > with the above change and CONFIG_ATAGS disabled, the result was
+> > > a boot failure. With the change reverted booting seems fine.
+> > 
+> > Yes, I see my mistake now. The second change was clearly wrong
+> > as this function is also used for DT boards, not for ATAGS boards.
+> > 
+> > 	Arnd
 
-Hi all,
+I have queued-up the following in the soc-r8a7740 branch of the
+renesas tree and will push it shortly. It should subsequently arrive
+in linux-next.
 
-Today's linux-next merge of the net-next tree got a conflict in
-net/mac802154/mac802154.h between commit 2c1bbbffa0b6 ("net: mac802154:
-comparision issue of type cast, finding by EXTRA_CFLAGS=3D-W") from the net
-tree and commit 7dd43d356e73 ("mac802154: Do not try to resend failed
-packets") from the net-next tree.
+>From ea19ad39e1d2b095fe867103fdf7c8dd8240a832 Mon Sep 17 00:00:00 2001
+From: Arnd Bergmann <arnd@arndb.de>
+Date: Thu, 25 Apr 2013 19:28:46 +0200
+Subject: [PATCH] ARM: shmobile: don't call irqchip_init unconditionally
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+The irqchip_init function is only available when building
+with CONFIG_OF enabled, which causes this build failure for
+bonito_defconfig:
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+arch/arm/mach-shmobile/built-in.o: In function `r8a7740_init_irq_of':
+:(.init.text+0x580): undefined reference to `irqchip_init'
 
-diff --cc net/mac802154/mac802154.h
-index 703c121,5c9e021..0000000
---- a/net/mac802154/mac802154.h
-+++ b/net/mac802154/mac802154.h
-@@@ -88,9 -88,7 +88,7 @@@ struct mac802154_sub_if_data=20
- =20
-  #define mac802154_to_priv(_hw)	container_of(_hw, struct mac802154_priv, h=
-w)
- =20
-- #define MAC802154_MAX_XMIT_ATTEMPTS	3
--=20
- -#define MAC802154_CHAN_NONE		(~(u8)0) /* No channel is assigned */
- +#define MAC802154_CHAN_NONE		0xff /* No channel is assigned */
- =20
-  extern struct ieee802154_reduced_mlme_ops mac802154_mlme_reduced;
-  extern struct ieee802154_mlme_ops mac802154_mlme_wpan;
+This makes the OF portion of the driver conditional, which avoids
+the build error and also results in smaller object code OF is disabled,
+without the need for an #ifdef.
 
---Signature=_Tue__30_Apr_2013_12_24_23_+1000_XyLL3_xSVTg2TfTS
-Content-Type: application/pgp-signature
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Bastian Hecht <hechtb+renesas@gmail.com>
+Cc: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
+[horms+renesas@verge.net.au: Remove ATAGS portion which causes boot failure]
+Signed-off-by: Simon Horman <horms+renesas@verge.net.au>
+---
+ arch/arm/mach-shmobile/intc-r8a7740.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+diff --git a/arch/arm/mach-shmobile/intc-r8a7740.c b/arch/arm/mach-shmobile/intc-r8a7740.c
+index 8871f77..61e2a21 100644
+--- a/arch/arm/mach-shmobile/intc-r8a7740.c
++++ b/arch/arm/mach-shmobile/intc-r8a7740.c
+@@ -53,6 +53,9 @@ static void __init r8a7740_init_irq_common(void)
+ 
+ void __init r8a7740_init_irq_of(void)
+ {
++	if (!IS_ENABLED(CONFIG_OF))
++		return;
++
+ 	irqchip_init();
+ 	r8a7740_init_irq_common();
+ }
+-- 
+1.8.2.1
 
-iQIcBAEBCAAGBQJRfytXAAoJEECxmPOUX5FE5+cP/2Tm5OeSWmVJju9Ji18oAZhm
-zQVI0s9OkBPZRrCoeU39ADxOrvLh3p8eWEk4NZxJvU8SvpDFhJ80Rh7vBPh7cqQM
-TFU5chWD38TLbby/hTjeuv4fKRMjrwmkizgzmRBdt7Vc0fsG1sxj8lqwyLB3JSiw
-SYn+PcREo2OJoPs3liBkOq+rBors+duUq3lZBJ5q2g5tTjuGaj2nYImRCApM366d
-ROTi1ZDbwN5wKsWTqAWTYtNXmTlLlYYW0d9022ByySaP/nL2MpaTBSKKfVHxxyHh
-+hAyb4SS/dJcGNKeTFVvFOSv64LlDRFj9CgK9nqMePLYvqA9t005xqbVmOwKWjJH
-hf2BdLVzB22qALI5sgFlaRRx1Oy1RWceKH3/QczRxaSggzzj3Mp8qMOeX6oJC+Bf
-f3GuL/+Pm3aVtjsHVR/9lLnxLZ6FXABNdQ+9KJ8aDYgsCva/e6yI6bYx3/3HZ5KC
-XcVxzquSpwF0oP3ZxBaxEMkdEwOHf5zCixy1To64SwOZw/4/ZrjWkqhWRDAGwGXd
-xS9ZoM4ybjAuRuHYXNW1iBm+bDuMIGEl0zPdFo6Ta8BbVyQL41LoU7LhCYtNYdp2
-9kUdt8Xt5MoDEcpxChtTTpm50ju3kLIke0fgsEyq36HuNHZx6nhJhXuAwEEGDcoy
-CHhukkUEEFQcGqTwzHbn
-=AHSv
------END PGP SIGNATURE-----
-
---Signature=_Tue__30_Apr_2013_12_24_23_+1000_XyLL3_xSVTg2TfTS--
