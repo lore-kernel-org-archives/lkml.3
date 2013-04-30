@@ -1,56 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758890Ab3D3H1F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 03:27:05 -0400
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:61953 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752668Ab3D3H1D (ORCPT
+	id S1758721Ab3D3H2s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 03:28:48 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:19891 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752124Ab3D3H2r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 03:27:03 -0400
+	Tue, 30 Apr 2013 03:28:47 -0400
+Date: Tue, 30 Apr 2013 10:28:14 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Joel Becker <jlbec@evilplan.org>
+Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [patch] configfs: use capped length for ->store_attribute()
+Message-ID: <20130430072813.GC7237@elgon.mountain>
 MIME-Version: 1.0
-From: Christian Gmeiner <christian.gmeiner@gmail.com>
-Date: Tue, 30 Apr 2013 09:26:42 +0200
-Message-ID: <CAH9NwWe4HLLCjymFp0CLhHVLjTSJEXR0vwrLudQBBA04zTe5xA@mail.gmail.com>
-Subject: HPET rtc emulation
-To: LKML <linux-kernel@vger.kernel.org>, venki@google.com,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi.
+The difference between "count" and "len" is that "len" is capped at
+4095.  Changing it like this makes it match how sysfs_write_file() is
+implemented.
 
-I am working with a platform that has a problem with the RTC alarm
-interrupt - tested with rtctest from /Documentation/rtc.txt.
-So I thought that I could use the HPET emulation. As far as I
-understand in the HPET emulation mode no RTC irq will be used --> RTC
-alarm interrupt is done via HPET.
-Is this a correct assumption?
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+---
+This is a static analysis patch.  I haven't found any store_attribute()
+functions where this change makes a difference.
 
-root@OT:/home/vis# hwclock
-Tue 30 Apr 2013 09:24:28 AM CEST  -0.511012 seconds
-root@OT:/home/vis# hwclock
-Tue 30 Apr 2013 09:24:29 AM CEST  -0.511016 seconds
-root@OT:/home/vis# hwclock
-Tue 30 Apr 2013 09:24:30 AM CEST  -0.526659 seconds
-root@OT:/home/vis# hwclock
-Tue 30 Apr 2013 09:24:31 AM CEST  -0.620384 seconds
-root@OT:/home/vis# hwclock
-Tue 30 Apr 2013 09:24:32 AM CEST  -0.604838 seconds
-root@OT:/home/vis# hwclock
-Tue 30 Apr 2013 09:24:33 AM CEST  -0.651638 seconds
-root@OT:/home/vis# hwclock
-Tue 30 Apr 2013 09:24:34 AM CEST  -0.682915 seconds
-root@OT:/home/vis# hwclock
-Tue 30 Apr 2013 09:24:35 AM CEST  -0.026708 seconds
-root@OT:/home/vis# hwclock
-select() to /dev/rtc to wait for clock tick timed ou
-
-
-Doing some quite simple tests indicates that HPET emulation does not emulate
-RTC alarm interrupts or my HPET has some problems.
-
-thanks
---
-Christian Gmeiner, MSc
+diff --git a/fs/configfs/file.c b/fs/configfs/file.c
+index 2b6cb23..1d1c41f 100644
+--- a/fs/configfs/file.c
++++ b/fs/configfs/file.c
+@@ -203,7 +203,7 @@ configfs_write_file(struct file *file, const char __user *buf, size_t count, lof
+ 	mutex_lock(&buffer->mutex);
+ 	len = fill_write_buffer(buffer, buf, count);
+ 	if (len > 0)
+-		len = flush_write_buffer(file->f_path.dentry, buffer, count);
++		len = flush_write_buffer(file->f_path.dentry, buffer, len);
+ 	if (len > 0)
+ 		*ppos += len;
+ 	mutex_unlock(&buffer->mutex);
