@@ -1,48 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759994Ab3D3JVZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 05:21:25 -0400
-Received: from mga11.intel.com ([192.55.52.93]:61278 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759627Ab3D3JVW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 05:21:22 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,580,1363158000"; 
-   d="scan'208";a="330014180"
-Date: Tue, 30 Apr 2013 14:18:25 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: ludovic.desroches@atmel.com, linux-arm-kernel@lists.infradead.org,
-        linux-mmc@vger.kernel.org, linux-i2c@vger.kernel.org,
-        plagnioj@jcrosoft.com,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 1/6] at_hdmac: move to generic DMA binding
-Message-ID: <20130430084825.GA1960@intel.com>
-References: <1366362683-14496-1-git-send-email-ludovic.desroches@atmel.com>
- <1366362683-14496-2-git-send-email-ludovic.desroches@atmel.com>
- <51750F68.4040701@atmel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51750F68.4040701@atmel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1760043Ab3D3JVo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 05:21:44 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:19629 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1759864Ab3D3JSl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Apr 2013 05:18:41 -0400
+X-IronPort-AV: E=Sophos;i="4.87,580,1363104000"; 
+   d="scan'208";a="7159149"
+From: Tang Chen <tangchen@cn.fujitsu.com>
+To: mingo@redhat.com, hpa@zytor.com, akpm@linux-foundation.org,
+        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, tj@kernel.org, laijs@cn.fujitsu.com,
+        davem@davemloft.net, mgorman@suse.de, minchan@kernel.org,
+        mina86@mina86.com
+Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: [PATCH v2 04/13] x86, numa, acpi, memory-hotplug: Introduce hotplug info into struct numa_meminfo.
+Date: Tue, 30 Apr 2013 17:21:14 +0800
+Message-Id: <1367313683-10267-5-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.10.1
+In-Reply-To: <1367313683-10267-1-git-send-email-tangchen@cn.fujitsu.com>
+References: <1367313683-10267-1-git-send-email-tangchen@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/04/30 17:16:50,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/04/30 17:16:52,
+	Serialize complete at 2013/04/30 17:16:52
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 22, 2013 at 12:22:32PM +0200, Nicolas Ferre wrote:
-> On 04/19/2013 11:11 AM, ludovic.desroches@atmel.com :
-> > From: Ludovic Desroches <ludovic.desroches@atmel.com>
-> > 
-> > Update at_hdmac driver to support generic DMA device tree binding. Devices
-> > can still request channel with dma_request_channel() then it doesn't break
-> > DMA for non DT boards.
-> > 
-> > Signed-off-by: Ludovic Desroches <ludovic.desroches@atmel.com>
-> > Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> > Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-> > Acked-by: Arnd Bergmann <arnd@arndb.de>
-Applied now thanks
+Since Yinghai has implement "Allocate pagetable pages in local node", for a
+node with hotpluggable memory, we have to allocate pagetable pages first, and
+then reserve the rest as hotpluggable memory in memblock.
 
---
-~Vinod
+But the kernel parse SRAT first, and then initialize memory mapping. So we have
+to remember the which memory ranges are hotpluggable for future usage.
+
+When parsing SRAT, we added each memory range to numa_meminfo. So we can store
+hotpluggable info in numa_meminfo.
+
+This patch introduces a "bool hotpluggable" member into struct
+numa_meminfo.
+
+And modifies the following APIs' prototypes to support it:
+   - numa_add_memblk()
+   - numa_add_memblk_to()
+
+And the following callers:
+   - numaq_register_node()
+   - dummy_numa_init()
+   - amd_numa_init()
+   - acpi_numa_memory_affinity_init() in x86
+
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+---
+ arch/x86/include/asm/numa.h     |    3 ++-
+ arch/x86/kernel/apic/numaq_32.c |    2 +-
+ arch/x86/mm/amdtopology.c       |    3 ++-
+ arch/x86/mm/numa.c              |   10 +++++++---
+ arch/x86/mm/numa_internal.h     |    1 +
+ arch/x86/mm/srat.c              |    2 +-
+ 6 files changed, 14 insertions(+), 7 deletions(-)
+
+diff --git a/arch/x86/include/asm/numa.h b/arch/x86/include/asm/numa.h
+index 1b99ee5..73096b2 100644
+--- a/arch/x86/include/asm/numa.h
++++ b/arch/x86/include/asm/numa.h
+@@ -31,7 +31,8 @@ extern int numa_off;
+ extern s16 __apicid_to_node[MAX_LOCAL_APIC];
+ extern nodemask_t numa_nodes_parsed __initdata;
+ 
+-extern int __init numa_add_memblk(int nodeid, u64 start, u64 end);
++extern int __init numa_add_memblk(int nodeid, u64 start, u64 end,
++				  bool hotpluggable);
+ extern void __init numa_set_distance(int from, int to, int distance);
+ 
+ static inline void set_apicid_to_node(int apicid, s16 node)
+diff --git a/arch/x86/kernel/apic/numaq_32.c b/arch/x86/kernel/apic/numaq_32.c
+index d661ee9..7a9c542 100644
+--- a/arch/x86/kernel/apic/numaq_32.c
++++ b/arch/x86/kernel/apic/numaq_32.c
+@@ -82,7 +82,7 @@ static inline void numaq_register_node(int node, struct sys_cfg_data *scd)
+ 	int ret;
+ 
+ 	node_set(node, numa_nodes_parsed);
+-	ret = numa_add_memblk(node, start, end);
++	ret = numa_add_memblk(node, start, end, false);
+ 	BUG_ON(ret < 0);
+ }
+ 
+diff --git a/arch/x86/mm/amdtopology.c b/arch/x86/mm/amdtopology.c
+index 5247d01..d521471 100644
+--- a/arch/x86/mm/amdtopology.c
++++ b/arch/x86/mm/amdtopology.c
+@@ -167,7 +167,8 @@ int __init amd_numa_init(void)
+ 			nodeid, base, limit);
+ 
+ 		prevbase = base;
+-		numa_add_memblk(nodeid, base, limit);
++		/* Do not support memory hotplug for AMD cpu. */
++		numa_add_memblk(nodeid, base, limit, false);
+ 		node_set(nodeid, numa_nodes_parsed);
+ 	}
+ 
+diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
+index 4f754e6..ecf37fd 100644
+--- a/arch/x86/mm/numa.c
++++ b/arch/x86/mm/numa.c
+@@ -134,6 +134,7 @@ void __init setup_node_to_cpumask_map(void)
+ }
+ 
+ static int __init numa_add_memblk_to(int nid, u64 start, u64 end,
++				     bool hotpluggable,
+ 				     struct numa_meminfo *mi)
+ {
+ 	/* ignore zero length blks */
+@@ -155,6 +156,7 @@ static int __init numa_add_memblk_to(int nid, u64 start, u64 end,
+ 	mi->blk[mi->nr_blks].start = start;
+ 	mi->blk[mi->nr_blks].end = end;
+ 	mi->blk[mi->nr_blks].nid = nid;
++	mi->blk[mi->nr_blks].hotpluggable = hotpluggable;
+ 	mi->nr_blks++;
+ 	return 0;
+ }
+@@ -179,15 +181,17 @@ void __init numa_remove_memblk_from(int idx, struct numa_meminfo *mi)
+  * @nid: NUMA node ID of the new memblk
+  * @start: Start address of the new memblk
+  * @end: End address of the new memblk
++ * @hotpluggable: True if memblk is hotpluggable
+  *
+  * Add a new memblk to the default numa_meminfo.
+  *
+  * RETURNS:
+  * 0 on success, -errno on failure.
+  */
+-int __init numa_add_memblk(int nid, u64 start, u64 end)
++int __init numa_add_memblk(int nid, u64 start, u64 end,
++			   bool hotpluggable)
+ {
+-	return numa_add_memblk_to(nid, start, end, &numa_meminfo);
++	return numa_add_memblk_to(nid, start, end, hotpluggable, &numa_meminfo);
+ }
+ 
+ /* Initialize NODE_DATA for a node on the local memory */
+@@ -631,7 +635,7 @@ static int __init dummy_numa_init(void)
+ 	       0LLU, PFN_PHYS(max_pfn) - 1);
+ 
+ 	node_set(0, numa_nodes_parsed);
+-	numa_add_memblk(0, 0, PFN_PHYS(max_pfn));
++	numa_add_memblk(0, 0, PFN_PHYS(max_pfn), false);
+ 
+ 	return 0;
+ }
+diff --git a/arch/x86/mm/numa_internal.h b/arch/x86/mm/numa_internal.h
+index bb2fbcc..1ce4e6b 100644
+--- a/arch/x86/mm/numa_internal.h
++++ b/arch/x86/mm/numa_internal.h
+@@ -8,6 +8,7 @@ struct numa_memblk {
+ 	u64			start;
+ 	u64			end;
+ 	int			nid;
++	bool			hotpluggable;
+ };
+ 
+ struct numa_meminfo {
+diff --git a/arch/x86/mm/srat.c b/arch/x86/mm/srat.c
+index 5055fa7..f7f6fd4 100644
+--- a/arch/x86/mm/srat.c
++++ b/arch/x86/mm/srat.c
+@@ -171,7 +171,7 @@ acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
+ 		goto out_err_bad_srat;
+ 	}
+ 
+-	if (numa_add_memblk(node, start, end) < 0)
++	if (numa_add_memblk(node, start, end, hotpluggable) < 0)
+ 		goto out_err_bad_srat;
+ 
+ 	node_set(node, numa_nodes_parsed);
+-- 
+1.7.1
+
