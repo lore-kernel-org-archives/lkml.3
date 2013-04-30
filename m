@@ -1,43 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760388Ab3D3LkI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 07:40:08 -0400
-Received: from smtp.snhosting.dk ([87.238.248.203]:18518 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759520Ab3D3LkF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 07:40:05 -0400
-Date: Tue, 30 Apr 2013 13:40:04 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Cc: balbi@ti.com, linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-kbuild@vger.kernel.org
-Subject: Re: Kconfig "softdepends" idea
-Message-ID: <20130430114004.GA15804@merkur.ravnborg.org>
-References: <517F9472.2030106@ti.com> <20130430102440.GA15522@merkur.ravnborg.org> <20130430103318.GB12161@arwen.pp.htv.fi> <517FA68B.20001@ti.com>
+	id S1760473Ab3D3Lkc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 07:40:32 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:50637 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759520Ab3D3Lka (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Apr 2013 07:40:30 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Tejun Heo <tj@kernel.org>
+Cc: Colin Cross <ccross@android.com>, Linux PM list <linux-pm@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>,
+        Li Zefan <lizefan@huawei.com>, Len Brown <len.brown@intel.com>,
+        Pavel Machek <pavel@ucw.cz>, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org
+Subject: Re: [PATCH 02/10] freezer: skip waking up tasks with PF_FREEZER_SKIP set
+Date: Tue, 30 Apr 2013 13:48:43 +0200
+Message-ID: <14549764.SU5BpuG0MO@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.9.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <20130429221624.GD2395@htj.dyndns.org>
+References: <1367271946-7239-1-git-send-email-ccross@android.com> <20130429220831.GC2395@htj.dyndns.org> <20130429221624.GD2395@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <517FA68B.20001@ti.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> SHOW_ALL_DRIVERS" is not very descriptive. I'm not sure if that matters,
-> though. One doesn't need to read the Kconfig files every day =).
+On Monday, April 29, 2013 03:16:24 PM Tejun Heo wrote:
+> On Mon, Apr 29, 2013 at 03:08:31PM -0700, Tejun Heo wrote:
+> > > spent freezing by a factor of 5.  It will have a similar effect on a
+> > > non-Android system, although those generally don't care about
+> > > suspend/resume optimization.
+> > 
+> > Yeah, if it's something which makes actual difference rather than
+> > "this seems to be a good idea" thing, sure, let's find a way.
 > 
-> But presuming most of the drivers would use that, it would add quite a
-> bit of repetition to the Kconfig files. Well, ok, I have no idea how
-> many drivers have dependencies that could be removed.
-> 
-> So SHOW_ALL_DRIVERS sounds quite an easy solution to this.
+> And a probably better approach would be rolling should_skip test into
+> freeze_task() with a comment explaining the interlocking rather than
+> adding should_skip test in its callers.
 
-Someone suggested to add symbols that are only set yo "y" for allyesconfig or allmodconfig.
-This would be what you actuayl require here as what you are after is better
-build coverage.
+Agreed.
 
-But we should not annouyt the user just to get better build coverage - which
-is why hiding irrelevant symbols is good.
+Thanks,
+Rafael
 
-	Sam
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
