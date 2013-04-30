@@ -1,55 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759489Ab3D3Asl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 20:48:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54876 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759443Ab3D3As3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 20:48:29 -0400
-Message-ID: <517F14D1.3070307@redhat.com>
-Date: Mon, 29 Apr 2013 20:48:17 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: "Pierre-Loup A. Griffais" <pgriffais@valvesoftware.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        sonnyrao@chromium.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: IO regression after ab8fabd46f on x86 kernels with high memory
-References: <517B1153.8000401@valvesoftware.com> <517B2FB4.30605@redhat.com> <20130427024248.GA1229@cmpxchg.org> <517EEBD1.503@valvesoftware.com> <CA+55aFxcq44JsrrR5KKuT=DZQHCfOE3KHQrcD215T+deYesW2g@mail.gmail.com>
-In-Reply-To: <CA+55aFxcq44JsrrR5KKuT=DZQHCfOE3KHQrcD215T+deYesW2g@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1759437Ab3D3As0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 20:48:26 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:33380 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757290Ab3D3AsY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Apr 2013 20:48:24 -0400
+Message-ID: <1367282900.8964.334.camel@edumazet-glaptop>
+Subject: Re: [PATCH v3 1/3] unix/dgram: peek beyond 0-sized skbs
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Benjamin Poirier <bpoirier@suse.de>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <edumazet@google.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Cong Wang <xiyou.wangcong@gmail.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 29 Apr 2013 17:48:20 -0700
+In-Reply-To: <1367271734-14379-1-git-send-email-bpoirier@suse.de>
+References: <kll5si$544$1@ger.gmane.org>
+	 <1367271734-14379-1-git-send-email-bpoirier@suse.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/29/2013 06:03 PM, Linus Torvalds wrote:
+On Mon, 2013-04-29 at 17:42 -0400, Benjamin Poirier wrote:
+> "77c1090 net: fix infinite loop in __skb_recv_datagram()" (v3.8) introduced a
+> regression:
+> After that commit, recv can no longer peek beyond a 0-sized skb in the queue.
+> __skb_recv_datagram() instead stops at the first skb with len == 0 and results
+> in the system call failing with -EFAULT via skb_copy_datagram_iovec().
+> 
+> When peeking at an offset with 0-sized skb(s), each one of those is received
+> only once, in sequence. The offset starts moving forward again after receiving
+> datagrams with len > 0.
+> 
+> Signed-off-by: Benjamin Poirier <bpoirier@suse.de>
+> 
+> ---
 
-> Seriously, you can compile yourself a 64-bit kernel and continue to
-> use your 32-bit user-land. And you can complain to whatever distro you
-> used that it didn't do that in the first place. But we're not going to
-> bother with trying to tune PAE for some particular load. It's just not
-> worth it to anybody.
+Acked-by: Eric Dumazet <edumazet@google.com>
 
-I can think of one way to "tune PAE" that will help
-avoid the breakage, and at the same time draw the
-attention of users.
-
-Limit the memory that a 32 bit PAE kernel uses, to
-something small enough where the user will not
-encounter random breakage.  Maybe 8 or 12GB?
-
-It could also print out a friendly message, to
-inform the user they should upgrade to a 64 bit
-kernel to enjoy the use of all of their memory.
-
-It is a bit of a heavy stick, but I suspect that
-it would clue in all of the affected users.
-
-If you have no objection to this, I'll whip up a
-patch.
 
