@@ -1,50 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933992Ab3D3XeI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 19:34:08 -0400
-Received: from mail-vc0-f169.google.com ([209.85.220.169]:50516 "EHLO
-	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933705Ab3D3XeF (ORCPT
+	id S934006Ab3D3XtM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 19:49:12 -0400
+Received: from peace.netnation.com ([204.174.223.2]:47742 "EHLO
+	peace.netnation.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933773Ab3D3XtJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 19:34:05 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.LRH.2.02.1304291237210.6626@tundra.namei.org>
-References: <alpine.LRH.2.02.1304291237210.6626@tundra.namei.org>
-Date: Tue, 30 Apr 2013 16:34:03 -0700
-X-Google-Sender-Auth: I1rNtIKCVA29ZvbUP3moDPhszqc
-Message-ID: <CA+55aFz2o8i+VnW_S8VBKVkLX1Pw7nQimqm+c6yOQjs-5zE3hA@mail.gmail.com>
-Subject: Re: [GIT] Security subsystem updates for 3.10
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: James Morris <jmorris@namei.org>
-Cc: LSM List <linux-security-module@vger.kernel.org>,
+	Tue, 30 Apr 2013 19:49:09 -0400
+Date: Tue, 30 Apr 2013 16:49:07 -0700
+From: Simon Kirby <sim@hostway.ca>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>, Craig Small <csmall-git@enc.com.au>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jirislaby@gmail.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Subject: Re: [PATCH v2] TTY: fix atime/mtime regression
+Message-ID: <20130430234907.GA17908@hostway.ca>
+References: <CA+55aFxVDub+aXyOrojz_yRCHHG50MnviOjP_-uRxKLuQRYXUw@mail.gmail.com>
+ <1366976933-5514-1-git-send-email-jslaby@suse.cz>
+ <CA+55aFxwCY3uagCUf1th6sr5+HGO0Mba-dhS-OtsnJ6o41JANw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFxwCY3uagCUf1th6sr5+HGO0Mba-dhS-OtsnJ6o41JANw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 28, 2013 at 7:48 PM, James Morris <jmorris@namei.org> wrote:
->
-> Note: I can't figure out why the patch from Lai Jiangshan shows up twice
-> in the shortlog.  Everything checks out otherwise.
+On Fri, Apr 26, 2013 at 10:02:12AM -0700, Linus Torvalds wrote:
 
-Because you applied it twice. in two different branches.
+> On Fri, Apr 26, 2013 at 4:48 AM, Jiri Slaby <jslaby@suse.cz> wrote:
+> >
+> > To revert to the old behaviour while still preventing attackers to
+> > guess the password length, we update the timestamps in one-minute
+> > intervals by this patch.
+> 
+> Thanks, applied.
+> 
+> And now that I see the behavior of "w", I can kind of understand why
+> you picked 10s intervals. That "w" output is really really quite ugly.
+> Talking about "27.00s" idle for the current terminal when we only
+> update at even minutes ends up not being sensible.
 
-It's there in both your "stage-for-3.10" and "ra-next" branch, commits
-505f14f7b8d4 and 921f3ac4c3f2 respectively.
+Ah, so it was your suggestion to go with one minute.
 
-You then merged things in commit 9b0271d8ca4d ("Merge branch
-'stage-for-3.10' of git://git.gitorious.org/smack-next/kernel into
-ra-next") and it all merged without any conflicts because the patches
-are identical and there wasn't any other work on top of it in either
-branch. But that doesn't change the fact that there are two distinct
-commits that just happen to have the same patch. So "git shortlog"
-will show it.
+I objected to the stable-backporting of this, since it was broken and
+didn't actually fix the inotify path, but I care more about the time
+granularity chosen here.
 
-I would seriously suggest using gitk regularly (limit it to just your
-own stuff with something like "gitk origin.." or whatever) to see the
-history of what you've done visually as often as possible, not only
-does it show up very clearly if you do that, but it really helps to
-have a feel for what you've done.
+> Craig, background: the current git kernel (so 3.9, and these commits
+> will presumably be back-ported) does not update tty timestamps very
+> often, because you can use the timestamps to look at peoples typing
+> behavior. Initially it didn't update the timestamps AT ALL, but that
+> broke the whole idle routine. Now it updates it only at minute
+> boundaries, so things like "w" _work_, but the hundreth-of-a-second
+> idle precision is obviously just totally random noise.
+> 
+> Not a biggie, I doubt I would even have noticed unless I was
+> explicitly looking at that field, but....
 
-             Linus
+I look at this field all the time, and would really like to see seconds.
+Surely anybody typing a password types it faster than 1 character per
+second. Why stretch it out so much? Can we at least make it 10 seconds?
+
+Simon-
+
+---
+
+Subject: [PATCH] TTY: increase atime/mtime update rate
+
+37b7f3c76595 introduces an update interval for TTY atime updates, making
+"w"'s IDLE column less useful than in the past. Since this is often used
+for checking to see if other users are actually using the system, reduce
+the time to 10 seconds.
+
+Signed-off-by: Simon Kirby <sim@hostway.ca>
+Cc: <stable@vger.kernel.org> # follow 37b7f3c76595e23257f61bd80b223de865
+---
+ drivers/tty/tty_io.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+index b045268..dee88ff 100644
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -944,7 +944,7 @@ EXPORT_SYMBOL(start_tty);
+ static void tty_update_time(struct timespec *time)
+ {
+ 	unsigned long sec = get_seconds();
+-	sec -= sec % 60;
++	sec -= sec % 10;
+ 	if ((long)(sec - time->tv_sec) > 0)
+ 		time->tv_sec = sec;
+ }
+-- 
+1.7.10.4
