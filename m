@@ -1,131 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933040Ab3D3Pja (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 11:39:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47599 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932934Ab3D3Pj1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 11:39:27 -0400
-Date: Tue, 30 Apr 2013 17:36:53 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [PATCHv4] perf: Fix vmalloc ring buffer pages handling
-Message-ID: <20130430153653.GD12715@krava.brq.redhat.com>
-References: <1363084030.14933.23.camel@laptop>
- <20130312135219.GA32001@krava.brq.redhat.com>
- <1363101972.24558.3.camel@laptop>
- <20130312153609.GC32001@krava.brq.redhat.com>
- <1363105490.24558.12.camel@laptop>
- <20130312170416.GD32001@krava.brq.redhat.com>
- <20130313111557.GC1064@krava.brq.redhat.com>
- <20130318190548.GA18920@krava.brq.redhat.com>
- <1363693618.22553.33.camel@laptop>
- <20130319143509.GA1128@krava.brq.redhat.com>
+	id S933063Ab3D3Pje (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 11:39:34 -0400
+Received: from mail-yh0-f46.google.com ([209.85.213.46]:61110 "EHLO
+	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932993Ab3D3Pj2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Apr 2013 11:39:28 -0400
+Message-ID: <517FE59C.1030109@redhat.com>
+Date: Tue, 30 Apr 2013 17:39:08 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130319143509.GA1128@krava.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Matthew Garrett <matthew.garrett@nebula.com>,
+        platform-driver-x86@vger.kernel.org
+CC: Hu Tao <hutao@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
+        qemu-devel <qemu-devel@nongnu.org>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>,
+        Blue Swirl <blauwirbel@gmail.com>, Eric Blake <eblake@redhat.com>,
+        Andrew Jones <drjones@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Luiz Capitulino <lcapitulino@redhat.com>,
+        Anthony Liguori <aliguori@us.ibm.com>,
+        Markus Armbruster <armbru@redhat.com>,
+        Stefan Hajnoczi <stefanha@redhat.com>,
+        Juan Quintela <quintela@redhat.com>,
+        Orit Wasserman <owasserm@redhat.com>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>, Alexander Graf <agraf@suse.de>
+Subject: Re: [PATCH v17] pvpanic: pvpanic device driver
+References: <cover.1365143012.git.hutao@cn.fujitsu.com> <1365145843-6000-1-git-send-email-hutao@cn.fujitsu.com>
+In-Reply-To: <1365145843-6000-1-git-send-email-hutao@cn.fujitsu.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 19, 2013 at 03:35:09PM +0100, Jiri Olsa wrote:
-> On Tue, Mar 19, 2013 at 12:46:58PM +0100, Peter Zijlstra wrote:
-> > 
-> > > are you going to include that, or should I repost it?
-> > 
-> > Ah, please repost (and prettify) it, I'm still very limited in the
-> > amount of work that I can do :/
-> > 
+Il 05/04/2013 09:10, Hu Tao ha scritto:
+> pvpanic device is a qemu simulated device through which guest panic
+> event is sent to host.
 > 
-> ok, attached
+> Signed-off-by: Hu Tao <hutao@cn.fujitsu.com>
 
-Ingo, Peter,
+Ping.  This will be in QEMU 1.5, is this on track for the 3.10 kernel?
 
-could this be pulled in?
+Thanks,
 
-thanks,
-jirka
+Paolo
 
-> 
-> jirka
-> 
 > ---
-> If we allocate perf ring buffer with the size of single (user)
-> page, we will get memory corruption when releasing itin rb_free_work
-> function (for CONFIG_PERF_USE_VMALLOC option).
 > 
-> For single page sized ring buffer the page_order is -1 (because
-> nr_pages is 0). This needs to be recognized in the rb_free_work
-> function to release proper amount of pages.
+> ref: http://lists.nongnu.org/archive/html/qemu-devel/2013-04/msg01028.html
 > 
-> Adding data_page_nr function that returns number of allocated
-> data pages. Customizing the rest of the code to use it.
+>  drivers/platform/x86/Kconfig   |   7 +++
+>  drivers/platform/x86/Makefile  |   2 +
+>  drivers/platform/x86/pvpanic.c | 115 +++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 124 insertions(+)
+>  create mode 100644 drivers/platform/x86/pvpanic.c
 > 
-> Reported-by: Jan Stancek <jstancek@redhat.com>
-> Original-patch-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Namhyung Kim <namhyung@kernel.org>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> ---
->  kernel/events/ring_buffer.c | 14 ++++++++++----
->  1 file changed, 10 insertions(+), 4 deletions(-)
-> 
-> diff --git a/kernel/events/ring_buffer.c b/kernel/events/ring_buffer.c
-> index 23cb34f..27a1af4 100644
-> --- a/kernel/events/ring_buffer.c
-> +++ b/kernel/events/ring_buffer.c
-> @@ -312,11 +312,16 @@ void rb_free(struct ring_buffer *rb)
->  }
+> diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
+> index 3338437..527ed04 100644
+> --- a/drivers/platform/x86/Kconfig
+> +++ b/drivers/platform/x86/Kconfig
+> @@ -781,4 +781,11 @@ config APPLE_GMUX
+>  	  graphics as well as the backlight. Currently only backlight
+>  	  control is supported by the driver.
 >  
->  #else
-> +static int data_page_nr(struct ring_buffer *rb)
+> +config PVPANIC
+> +	tristate "pvpanic device support"
+> +	depends on ACPI
+> +	---help---
+> +	  This driver provides support for pvpanic device, which is a qemu
+> +	  simulated device through which guest panic event is sent to host.
+> +
+>  endif # X86_PLATFORM_DEVICES
+> diff --git a/drivers/platform/x86/Makefile b/drivers/platform/x86/Makefile
+> index ace2b38..ef0ec74 100644
+> --- a/drivers/platform/x86/Makefile
+> +++ b/drivers/platform/x86/Makefile
+> @@ -51,3 +51,5 @@ obj-$(CONFIG_INTEL_OAKTRAIL)	+= intel_oaktrail.o
+>  obj-$(CONFIG_SAMSUNG_Q10)	+= samsung-q10.o
+>  obj-$(CONFIG_APPLE_GMUX)	+= apple-gmux.o
+>  obj-$(CONFIG_CHROMEOS_LAPTOP)	+= chromeos_laptop.o
+> +
+> +obj-$(CONFIG_PVPANIC)           += pvpanic.o
+> diff --git a/drivers/platform/x86/pvpanic.c b/drivers/platform/x86/pvpanic.c
+> new file mode 100644
+> index 0000000..81c95ec
+> --- /dev/null
+> +++ b/drivers/platform/x86/pvpanic.c
+> @@ -0,0 +1,115 @@
+> +/*
+> + *  pvpanic.c - pvpanic Device Support
+> + *
+> + *  Copyright (C) 2013 Fujitsu.
+> + *
+> + *  This program is free software; you can redistribute it and/or modify
+> + *  it under the terms of the GNU General Public License as published by
+> + *  the Free Software Foundation; either version 2 of the License, or
+> + *  (at your option) any later version.
+> + *
+> + *  This program is distributed in the hope that it will be useful,
+> + *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + *  GNU General Public License for more details.
+> + *
+> + *  You should have received a copy of the GNU General Public License
+> + *  along with this program; if not, write to the Free Software
+> + *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+> + */
+> +
+> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+> +
+> +#include <linux/kernel.h>
+> +#include <linux/module.h>
+> +#include <linux/init.h>
+> +#include <linux/types.h>
+> +#include <acpi/acpi_bus.h>
+> +#include <acpi/acpi_drivers.h>
+> +
+> +MODULE_AUTHOR("Hu Tao <hutao@cn.fujitsu.com>");
+> +MODULE_DESCRIPTION("pvpanic device driver");
+> +MODULE_LICENSE("GPL");
+> +
+> +static int pvpanic_add(struct acpi_device *device);
+> +static int pvpanic_remove(struct acpi_device *device);
+> +
+> +static const struct acpi_device_id pvpanic_device_ids[] = {
+> +	{ "QEMU0001", 0},
+> +	{ "", 0},
+> +};
+> +MODULE_DEVICE_TABLE(acpi, pvpanic_device_ids);
+> +
+> +#define PVPANIC_PANICKED	(1 << 0)
+> +
+> +static acpi_handle handle;
+> +
+> +static struct acpi_driver pvpanic_driver = {
+> +	.name =		"pvpanic",
+> +	.class =	"QEMU",
+> +	.ids =		pvpanic_device_ids,
+> +	.ops =		{
+> +				.add =		pvpanic_add,
+> +				.remove =	pvpanic_remove,
+> +			},
+> +	.owner =	THIS_MODULE,
+> +};
+> +
+> +static void
+> +pvpanic_send_event(unsigned int event)
 > +{
-> +	return rb->nr_pages << page_order(rb);
+> +	union acpi_object arg;
+> +	struct acpi_object_list arg_list;
+> +
+> +	if (!handle)
+> +		return;
+> +
+> +	arg.type = ACPI_TYPE_INTEGER;
+> +	arg.integer.value = event;
+> +
+> +	arg_list.count = 1;
+> +	arg_list.pointer = &arg;
+> +
+> +	acpi_evaluate_object(handle, "WRPT", &arg_list, NULL);
 > +}
->  
->  struct page *
->  perf_mmap_to_page(struct ring_buffer *rb, unsigned long pgoff)
->  {
-> -	if (pgoff > (1UL << page_order(rb)))
-> +	/* The '>' counts in the user page. */
-> +	if (pgoff > data_page_nr(rb))
->  		return NULL;
->  
->  	return vmalloc_to_page((void *)rb->user_page + pgoff * PAGE_SIZE);
-> @@ -336,10 +341,11 @@ static void rb_free_work(struct work_struct *work)
->  	int i, nr;
->  
->  	rb = container_of(work, struct ring_buffer, work);
-> -	nr = 1 << page_order(rb);
-> +	nr = data_page_nr(rb);
->  
->  	base = rb->user_page;
-> -	for (i = 0; i < nr + 1; i++)
-> +	/* The '<=' counts in the user page. */
-> +	for (i = 0; i <= nr; i++)
->  		perf_mmap_unmark_page(base + (i * PAGE_SIZE));
->  
->  	vfree(base);
-> @@ -373,7 +379,7 @@ struct ring_buffer *rb_alloc(int nr_pages, long watermark, int cpu, int flags)
->  	rb->user_page = all_buf;
->  	rb->data_pages[0] = all_buf + PAGE_SIZE;
->  	rb->page_order = ilog2(nr_pages);
-> -	rb->nr_pages = 1;
-> +	rb->nr_pages = !!nr_pages;
->  
->  	ring_buffer_init(rb, watermark, flags);
->  
-> -- 
-> 1.7.11.7
+> +
+> +static int
+> +pvpanic_panic_notify(struct notifier_block *nb, unsigned long code,
+> +		     void *unused)
+> +{
+> +	pvpanic_send_event(PVPANIC_PANICKED);
+> +	return NOTIFY_DONE;
+> +}
+> +
+> +static struct notifier_block pvpanic_panic_nb = {
+> +	.notifier_call = pvpanic_panic_notify,
+> +};
+> +
+> +static int pvpanic_add(struct acpi_device *device)
+> +{
+> +	acpi_status status;
+> +	u64 ret;
+> +
+> +	status = acpi_evaluate_integer(device->handle, "_STA", NULL,
+> +				       &ret);
+> +
+> +	if (ACPI_FAILURE(status) || (ret & 0x0B) != 0x0B)
+> +		return -ENODEV;
+> +
+> +	handle = device->handle;
+> +	atomic_notifier_chain_register(&panic_notifier_list,
+> +				       &pvpanic_panic_nb);
+> +
+> +	return 0;
+> +}
+> +
+> +static int pvpanic_remove(struct acpi_device *device)
+> +{
+> +
+> +	atomic_notifier_chain_unregister(&panic_notifier_list,
+> +					 &pvpanic_panic_nb);
+> +	handle = NULL;
+> +	return 0;
+> +}
+> +
+> +module_acpi_driver(pvpanic_driver);
 > 
+
