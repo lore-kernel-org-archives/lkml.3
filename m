@@ -1,69 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759988Ab3D3JWk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 05:22:40 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:19629 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1759715Ab3D3JSk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 05:18:40 -0400
-X-IronPort-AV: E=Sophos;i="4.87,580,1363104000"; 
-   d="scan'208";a="7159147"
-From: Tang Chen <tangchen@cn.fujitsu.com>
-To: mingo@redhat.com, hpa@zytor.com, akpm@linux-foundation.org,
-        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, tj@kernel.org, laijs@cn.fujitsu.com,
-        davem@davemloft.net, mgorman@suse.de, minchan@kernel.org,
-        mina86@mina86.com
-Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: [PATCH v2 01/13] x86: get pg_data_t's memory from other node
-Date: Tue, 30 Apr 2013 17:21:11 +0800
-Message-Id: <1367313683-10267-2-git-send-email-tangchen@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.10.1
-In-Reply-To: <1367313683-10267-1-git-send-email-tangchen@cn.fujitsu.com>
-References: <1367313683-10267-1-git-send-email-tangchen@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/04/30 17:16:50,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/04/30 17:16:52,
-	Serialize complete at 2013/04/30 17:16:52
+	id S1759953Ab3D3JXk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 05:23:40 -0400
+Received: from relay.medianet-world.de ([213.157.0.172]:37937 "HELO
+	relay.medianet-world.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1759641Ab3D3JXi convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Apr 2013 05:23:38 -0400
+thread-index: Ac5FgyLPCQhJEMNaSkGZgPxJO5BeXQ==
+Thread-Topic: [ANNOUNCE] 3.4.41-rt55-feat3
+Content-Class: urn:content-classes:message
+Importance: normal
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4913
+From: "Tim Sander" <tim.sander@hbm.com>
+To: "Steven Rostedt" <rostedt@goodmis.org>
+Cc: "LKML" <linux-kernel@vger.kernel.org>,
+        "RT" <linux-rt-users@vger.kernel.org>,
+        "Thomas Gleixner" <tglx@linutronix.de>,
+        "Carsten Emde" <C.Emde@osadl.org>, "John Kacur" <jkacur@redhat.com>
+Subject: Re: [ANNOUNCE] 3.4.41-rt55-feat3
+Date: Tue, 30 Apr 2013 11:14:36 +0200
+Message-ID: <2805818.g7STVSuEne@dabox>
+Organization: Hottinger Baldwin Messtechnik
+User-Agent: KMail/4.10.2 (Linux/3.8.0+; KDE/4.10.2; x86_64; ; )
+In-Reply-To: <1367283987.30667.49.camel@gandalf.local.home>
+References: <1367283987.30667.49.camel@gandalf.local.home>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+	charset="us-ascii"
+X-OriginalArrivalTime: 30 Apr 2013 09:14:36.0662 (UTC) FILETIME=[22C3E960:01CE4583]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Hi Steve and all RT Folks
 
-If system can create movable node which all memory of the
-node is allocated as ZONE_MOVABLE, setup_node_data() cannot
-allocate memory for the node's pg_data_t.
-So, use memblock_alloc_try_nid() instead of memblock_alloc_nid()
-to retry when the first allocation fails.
+> I'm pleased to announce the 3.4.41-rt55-feat3 feature release.
+> 
+> Note, I first uploaded -feat2 then realized I didn't add a compile fix by
+> Mike Galbraith, and then created the -feat3 with that fix.
+I just wanted to say thanks that this patch enables compilation again with the 
+preempt rt patchset with CONFIG_HIGH_RES_TIMERS disabled :-). 
+I think this patch* should be moved out of the feat patchset into the stable 
+rt backport branch as this also doesn't compile beginning with the 3.6.36-rt50 
+patch with CONFIG_HIGH_RES_TIMERS disabled .
 
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
----
- arch/x86/mm/numa.c |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
+As i understand that SLUB should give better realtime latencies? At least i 
+configured the kernel that way an its currently running some tests. 
 
-diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-index 11acdf6..4f754e6 100644
---- a/arch/x86/mm/numa.c
-+++ b/arch/x86/mm/numa.c
-@@ -214,10 +214,9 @@ static void __init setup_node_data(int nid, u64 start, u64 end)
- 	 * Allocate node data.  Try node-local memory and then any node.
- 	 * Never allocate in DMA zone.
- 	 */
--	nd_pa = memblock_alloc_nid(nd_size, SMP_CACHE_BYTES, nid);
-+	nd_pa = memblock_alloc_try_nid(nd_size, SMP_CACHE_BYTES, nid);
- 	if (!nd_pa) {
--		pr_err("Cannot find %zu bytes in node %d\n",
--		       nd_size, nid);
-+		pr_err("Cannot find %zu bytes in any node\n", nd_size);
- 		return;
- 	}
- 	nd = __va(nd_pa);
--- 
-1.7.1
+Best regards
+Tim
 
+
+*That is the coresponding line:
+patch-3.4.41-rt55-feat3.patch:55:+#if defined(CONFIG_PREEMPT_RT_BASE) && 
+defined(CONFIG_HIGH_RES_TIMERS)
+
+Please ignore this legalese as always on public lists (its attached 
+automatically):
+
+Hottinger Baldwin Messtechnik GmbH, Im Tiefen See 45, 64293 Darmstadt, Germany | www.hbm.com 
+
+Registered as GmbH (German limited liability corporation) in the commercial register at the local court of Darmstadt, HRB 1147  
+Company domiciled in Darmstadt | CEO: Andreas Huellhorst | Chairman of the board: James Charles Webster
+
+Als Gesellschaft mit beschraenkter Haftung eingetragen im Handelsregister des Amtsgerichts Darmstadt unter HRB 1147 
+Sitz der Gesellschaft: Darmstadt | Geschaeftsfuehrung: Andreas Huellhorst | Aufsichtsratsvorsitzender: James Charles Webster
+
+The information in this email is confidential. It is intended solely for the addressee. If you are not the intended recipient, please let me know and delete this email.
+
+Die in dieser E-Mail enthaltene Information ist vertraulich und lediglich fur den Empfaenger bestimmt. Sollten Sie nicht der eigentliche Empfaenger sein, informieren Sie mich bitte kurz und loeschen diese E-Mail.
