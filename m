@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758342Ab3D3DRf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 23:17:35 -0400
-Received: from mail-qe0-f45.google.com ([209.85.128.45]:62343 "EHLO
-	mail-qe0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758152Ab3D3DRc (ORCPT
+	id S1759205Ab3D3DTm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 23:19:42 -0400
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:45703 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758160Ab3D3DRe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 23:17:32 -0400
+	Mon, 29 Apr 2013 23:17:34 -0400
 From: kosaki.motohiro@gmail.com
 To: linux-kernel@vger.kernel.org
 Cc: Olivier Langlois <olivier@trillion01.com>,
@@ -16,53 +16,83 @@ Cc: Olivier Langlois <olivier@trillion01.com>,
         Thomas Gleixner <tglx@linutronix.de>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 02/10] vm: add no-mmu vm_iomap_memory() stub
-Date: Mon, 29 Apr 2013 23:17:10 -0400
-Message-Id: <1367291838-5490-3-git-send-email-kosaki.motohiro@gmail.com>
+        Kishon Vijay Abraham I <kishon@ti.com>, Keerthy <j-keerthy@ti.com>,
+        =?UTF-8?q?Beno=C3=AEt=20Cousson?= <b-cousson@ti.com>,
+        Paul Walmsley <paul@pwsan.com>, Tony Lindgren <tony@atomide.com>
+Subject: [PATCH 03/10] ARM: OMAP4: hwmod data: make 'ocp2scp_usb_phy_phy_48m" as the main clock
+Date: Mon, 29 Apr 2013 23:17:11 -0400
+Message-Id: <1367291838-5490-4-git-send-email-kosaki.motohiro@gmail.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1367291838-5490-1-git-send-email-kosaki.motohiro@gmail.com>
 References: <1367291838-5490-1-git-send-email-kosaki.motohiro@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Kishon Vijay Abraham I <kishon@ti.com>
 
-I think we could just move the full vm_iomap_memory() function into
-util.h or similar, but I didn't get any reply from anybody actually
-using nommu even to this trivial patch, so I'm not going to touch it any
-more than required.
+Commit 92702df3570e ("ARM: OMAP4: PM: fix PM regression introduced by recent
+clock cleanup") makes the 'ocp2scp_usb_phy_phy_48m' as optional
+functional clock causing regression in MUSB. But this 48MHz clock is a
+mandatory clock for usb phy attached to ocp2scp and hence made as the main
+clock for ocp2scp.
 
-Here's the fairly minimal stub to make the nommu case at least
-potentially work.  It doesn't seem like anybody cares, though.
-
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Keerthy <j-keerthy@ti.com>
+Cc: Benoît Cousson <b-cousson@ti.com>
+Cc: Paul Walmsley <paul@pwsan.com>
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+[paul@pwsan.com: add comment to the hwmod data to try to prevent any
+ future mistakes here]
+Signed-off-by: Paul Walmsley <paul@pwsan.com>
+Signed-off-by: Tony Lindgren <tony@atomide.com>
 ---
- mm/nommu.c |   10 ++++++++++
- 1 files changed, 10 insertions(+), 0 deletions(-)
+ arch/arm/mach-omap2/omap_hwmod_44xx_data.c |   18 +++++++++++-------
+ 1 files changed, 11 insertions(+), 7 deletions(-)
 
-diff --git a/mm/nommu.c b/mm/nommu.c
-index 2f3ea74..e001768 100644
---- a/mm/nommu.c
-+++ b/mm/nommu.c
-@@ -1838,6 +1838,16 @@ int remap_pfn_range(struct vm_area_struct *vma, unsigned long addr,
- }
- EXPORT_SYMBOL(remap_pfn_range);
+diff --git a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
+index 9e05765..eaba9dc 100644
+--- a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
++++ b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
+@@ -2714,16 +2714,22 @@ static struct omap_ocp2scp_dev ocp2scp_dev_attr[] = {
+ 	{ }
+ };
  
-+int vm_iomap_memory(struct vm_area_struct *vma, phys_addr_t start, unsigned long len)
-+{
-+	unsigned long pfn = start >> PAGE_SHIFT;
-+	unsigned long vm_len = vma->vm_end - vma->vm_start;
-+
-+	pfn += vma->vm_pgoff;
-+	return io_remap_pfn_range(vma, vma->vm_start, pfn, vm_len, vma->vm_page_prot);
-+}
-+EXPORT_SYMBOL(vm_iomap_memory);
-+
- int remap_vmalloc_range(struct vm_area_struct *vma, void *addr,
- 			unsigned long pgoff)
- {
+-static struct omap_hwmod_opt_clk ocp2scp_usb_phy_opt_clks[] = {
+-	{ .role = "48mhz", .clk = "ocp2scp_usb_phy_phy_48m" },
+-};
+-
+ /* ocp2scp_usb_phy */
+ static struct omap_hwmod omap44xx_ocp2scp_usb_phy_hwmod = {
+ 	.name		= "ocp2scp_usb_phy",
+ 	.class		= &omap44xx_ocp2scp_hwmod_class,
+ 	.clkdm_name	= "l3_init_clkdm",
+-	.main_clk	= "func_48m_fclk",
++	/*
++	 * ocp2scp_usb_phy_phy_48m is provided by the OMAP4 PRCM IP
++	 * block as an "optional clock," and normally should never be
++	 * specified as the main_clk for an OMAP IP block.  However it
++	 * turns out that this clock is actually the main clock for
++	 * the ocp2scp_usb_phy IP block:
++	 * http://lists.infradead.org/pipermail/linux-arm-kernel/2012-September/119943.html
++	 * So listing ocp2scp_usb_phy_phy_48m as a main_clk here seems
++	 * to be the best workaround.
++	 */
++	.main_clk	= "ocp2scp_usb_phy_phy_48m",
+ 	.prcm = {
+ 		.omap4 = {
+ 			.clkctrl_offs = OMAP4_CM_L3INIT_USBPHYOCP2SCP_CLKCTRL_OFFSET,
+@@ -2732,8 +2738,6 @@ static struct omap_hwmod omap44xx_ocp2scp_usb_phy_hwmod = {
+ 		},
+ 	},
+ 	.dev_attr	= ocp2scp_dev_attr,
+-	.opt_clks	= ocp2scp_usb_phy_opt_clks,
+-	.opt_clks_cnt	= ARRAY_SIZE(ocp2scp_usb_phy_opt_clks),
+ };
+ 
+ /*
 -- 
 1.7.1
 
