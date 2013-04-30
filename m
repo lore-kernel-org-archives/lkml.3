@@ -1,73 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932500Ab3D3O4a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 10:56:30 -0400
-Received: from co9ehsobe003.messaging.microsoft.com ([207.46.163.26]:42769
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932195Ab3D3O42 (ORCPT
+	id S932563Ab3D3O5A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 10:57:00 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:64966 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932195Ab3D3O46 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 10:56:28 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VPS-4(zzbb2dI98dI9371I1432Izz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzzz2dh668h839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1ad9h1b0ah1d0ch1d2eh1155h)
-X-WSS-ID: 0MM2PHY-01-4EZ-02
-X-M-MSG: 
-Message-ID: <517FDB96.7060602@amd.com>
-Date: Tue, 30 Apr 2013 09:56:22 -0500
-From: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Don Dutile <ddutile@redhat.com>
-CC: "Duran, Leo" <leo.duran@amd.com>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: RFC: IOMMU/AMD: Error Handling
-References: <517ECDDA.3000606@amd.com> <517ED3A9.2050508@redhat.com> <BA42942F2D0DED45AFB0A6216D1E951D44CBE1F9@sausexdag01.amd.com> <517EE940.8010005@redhat.com>
-In-Reply-To: <517EE940.8010005@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: amd.com
+	Tue, 30 Apr 2013 10:56:58 -0400
+Date: Tue, 30 Apr 2013 07:56:45 -0700
+From: Stephen Hemminger <stephen@networkplumber.org>
+To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [ANNOUNCE] iproute2 3.9.0
+Message-ID: <20130430075645.1747b8ff@nehalam.linuxnetplumber.net>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/29/2013 4:42 PM, Don Dutile wrote:
-> On 04/29/2013 04:34 PM, Duran, Leo wrote:
->> I'm wondering if resetting the IOMMU at init-time (once) would clear 
->> any BIOS induced noise.
->> Leo
->>
-> Well, depends what you mean by 'reset'....
-> (a) setting it up for OS use is effectively a reset, but doesn't 
-> quiesce a device
->      doing dma reads of a (bios-setup) queue.  then the noisy messages 
-> begin
-> (b) disable the iommu, and then the dma just occurs... and bad for 
-> writes, potentially.
->
-> Similar issue is being reported & worked for kdump, where device are 
-> still
-> doing DMA while the system is trying to 'reset' to the kexec'd kernel, 
-> and
-> take a crash dump.
->
-> Solution: stop devices from doing dma... but some you _want_ enabled 
-> throughout...
->           like keyboard & mouse via usb controller, so you get to pick 
-> os from
->           grub...  not so for kexec...
->
-> so, again, for isolation faults.... let the hw do its job -- isolate
-> and throttle/silence the fault messages on a per-device, time-duration 
-> heuristic
-> so the system can get through boot-up where enough OS is init'd 
-> (drivers started)
-> to stop the temporary noise.
-This sounds more like issue with the order of how things are initialized 
-in the system.
-If so, could we separate the code which enabling of IOMMU error 
-logging/handling and
-delay it until we are certain that systems are stable?
+This is update for iproute2 tools for 3.9 kernel.
+In addition the usual documentation fixes, this version includes the
+utilities to manage forwarding tables in bridge and vxlan.
 
-Suravee
+If you have been sitting on changes to iproute2 that are in
+net-next for 3.10 merge window, please submit them now.
+
+Iproute2 package is available at:
+  http://kernel.org/pub/linux/utils/net/iproute2/iproute2-3.9.0.tar.gz
+
+You can download the source from:
+  git://git.kernel.org/pub/scm/linux/kernel/git/shemminger/iproute2.git
+
+Alexander Duyck (1):
+      libnetlink: Use ifinfomsg instead of rtgenmsg in rtnl_wilddump_req_filter
+
+David Stevens (1):
+      generalize VXLAN forwarding tables
+
+David Ward (9):
+      ip/iptunnel: Fix incorrect syntax in man page
+      iplink_vlan: Add flag for Multiple VLAN Registration Protocol (MVRP)
+      ip/xfrm: Extend SPI validity checking
+      ip/xfrm: Do not allow redundant algorithm combinations to be specified
+      ip/xfrm: Improve transform protocol-specific parameter checking
+      ip/xfrm: Do not print a zero-length algorithm key
+      ip/xfrm: Command syntax should not expect a key for compression
+      ip/xfrm: Improve usage text and documentation
+      ip/xfrm: Improve error strings
+
+Eric W. Biederman (1):
+      iproute2: Document the -D and -I options
+
+Hannes Frederic Sowa (2):
+      ss: show send queue length on unix domain sockets
+      ss: show socket memory stats for unix sockets if requested
+
+Hubert Kario (1):
+      add short description of batch mode in tc man page
+
+James Chapman (2):
+      iproute2: add l2spec_type param to l2tp add session
+      iproute2: update ip-l2tp man page
+
+Nicolas Dichtel (1):
+      libnetlink: check flag NLM_F_DUMP_INTR during dumps
+
+Petr Sabata (1):
+      iproute2: Fix some manpage typos
+
+Petr Šabata (1):
+      iproute2: Mention the 'up' argument in documentation
+
+Stephen Hemminger (22):
+      ss: use rta_getattr_u32
+      ip: fix ipv6 ntable on ppc64
+      Update kernel headers to 3.9.0-rc1
+      fix dependency on sizeof(__u64) == sizeof(unsigned long long)
+      ipntable: more fixes for ppc64
+      Revert "generalize VXLAN forwarding tables"
+      bridge: cleanup usage message
+      Fix build when shared libraries are disabled
+      ipmaddr: add whitespace around =
+      ipaddress: minor white space cleanup
+      bridge: add oneline option
+      tc-tbf: remove ancient references to Alpha
+      ll_map: remove unused address fields
+      ll_map: use net/if.h to get prototype
+      ll_map: add name and index hash
+      ip: remove unnecessary ll_init_map
+      Update kernel headers to 3.9-rc5
+      utils: fix range checking for get_u32/get_u64 et all
+      add linux/fs.h
+      Revert "add linux/fs.h"
+      ipnetns: fix build on older systems
+      v3.9.0
+
+Thomas Egerer (2):
+      ip xfrm state: Allow different selector family
+      ip xfrm state: Allow different selector family
+
+Vijay Subramanian (1):
+      Fix compilation error of m_ipt.c with -Werror enabled
+
+Vlad Yasevich (6):
+      bridge: Add vlan support to fdb entries
+      bridge: Add vlan configuration support
+      bridge: Update bridge man pages to include vlan command
+      bridge: Add support for setting bridge port attributes
+      bridge: Add support for printing bridge port attributes
+      man: Add documentation for the bridge link operation.
+
+roopa (1):
+      Fix -oneline output when alias present
 
