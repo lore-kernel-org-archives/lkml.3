@@ -1,71 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759965Ab3D3Jdi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 05:33:38 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:52388 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752898Ab3D3Jdh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 05:33:37 -0400
-Message-ID: <517F8FF4.3050901@atmel.com>
-Date: Tue, 30 Apr 2013 11:33:40 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Marc Zyngier <marc.zyngier@arm.com>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Jon Medhurst <tixy@linaro.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: Linux Kernel list <linux-kernel@vger.kernel.org>,
-        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>
-Subject: linux-next build error (at91) - use of bool in mach/arch.h
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.161.30.18]
+	id S1759992Ab3D3JfL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 05:35:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45255 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758972Ab3D3JfG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Apr 2013 05:35:06 -0400
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, hpa@zytor.com,
+        rostedt@goodmis.org, akpm@linux-foundation.org, tglx@linutronix.de,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Dave Hansen <dave@sr71.net>,
+        Stanislaw Gruszka <sgruszka@redhat.com>
+Subject: [PATCH -tip 3/4] sched: Avoid prev->stime underflow
+Date: Tue, 30 Apr 2013 11:35:06 +0200
+Message-Id: <1367314507-9728-3-git-send-email-sgruszka@redhat.com>
+In-Reply-To: <1367314507-9728-1-git-send-email-sgruszka@redhat.com>
+References: <1367314507-9728-1-git-send-email-sgruszka@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Dave Hansen reported strange utime/stime values on his system:
+https://lkml.org/lkml/2013/4/4/435
 
-Today I discovered an issue while building linux-next for at91:
+This happens because prev->stime value is bigger than rtime value.
+Root of the problem are non-monotonic rtime values (i.e. current rtime
+is smaller than previous rtime) and that should be debugged and fixed.
 
-  CC      arch/arm/mach-at91/at91sam9260_devices.o
-In file included from /home/nferre/dev/lnx_buid_test/arch/arm/mach-at91/at91sam9260_devices.c:12:0:
-/home/nferre/dev/lnx_buid_test/arch/arm/include/asm/mach/arch.h:46:2: error: expected specifier-qualifier-list before ‘bool’
+But since problem did not manifest itself before commit
+62188451f0d63add7ad0cd2a1ae269d600c1663d "cputime: Avoid multiplication
+overflow on utime scaling", it should be threated as regression, which
+we can easily fixed on cputime_adjust() function.
 
-It also applies to all non-DT at91 platforms (~ 6 machines).
+For now, let's apply this fix, but further work is needed to fix root of
+the problem.
 
-It seems to be caused by inclusion of commmit
-4dbfa9a25367cfa91aec0e56d75a6905d3242cd3 (ARM: Enable selection of 
-SMP operations at boot time) and its use of the "bool" type.
+Reported-and-tested-by: Dave Hansen <dave@sr71.net>
+Cc: <stable@vger.kernel.org> # 3.9+
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+---
+ kernel/sched/cputime.c | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-In fact, we include asm/mach/arch.h file in our at91xxx_devices.c files and
-we include it as the first include directive.
-
-So, I am wondering if the best correction is to add the types.h header file
-in the asm/mach/arch.h file, like this:
-
---- a/arch/arm/include/asm/mach/arch.h
-+++ b/arch/arm/include/asm/mach/arch.h
-@@ -8,6 +8,8 @@
-  * published by the Free Software Foundation.
-  */
+diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
+index 3f192bf..cc2dc3e 100644
+--- a/kernel/sched/cputime.c
++++ b/kernel/sched/cputime.c
+@@ -558,7 +558,7 @@ static void cputime_adjust(struct task_cputime *curr,
+ 			   struct cputime *prev,
+ 			   cputime_t *ut, cputime_t *st)
+ {
+-	cputime_t rtime, stime, total;
++	cputime_t rtime, stime, utime, total;
  
-+#include <linux/types.h>
-+
- #ifndef __ASSEMBLY__
+ 	if (vtime_accounting_enabled()) {
+ 		*ut = curr->utime;
+@@ -589,13 +589,13 @@ static void cputime_adjust(struct task_cputime *curr,
+ 	if (prev->stime + prev->utime >= rtime)
+ 		goto out;
  
- struct tag;
-
-or if a better option would be to re-arrange the include directives in
-various at91xxx_devices.c files?
-
-Thanks, bye,
+-	if (!rtime) {
+-		stime = 0;
+-	} else if (!total) {
+-		stime = rtime;
+-	} else {
++	if (total) {
+ 		stime = scale_stime((__force u64)stime,
+ 				    (__force u64)rtime, (__force u64)total);
++		utime = rtime - stime;
++	} else {
++		stime = rtime;
++		utime = 0;
+ 	}
+ 
+ 	/*
+@@ -604,7 +604,7 @@ static void cputime_adjust(struct task_cputime *curr,
+ 	 * Let's enforce monotonicity.
+ 	 */
+ 	prev->stime = max(prev->stime, stime);
+-	prev->utime = max(prev->utime, rtime - prev->stime);
++	prev->utime = max(prev->utime, utime);
+ 
+ out:
+ 	*ut = prev->utime;
 -- 
-Nicolas Ferre
+1.7.11.7
+
