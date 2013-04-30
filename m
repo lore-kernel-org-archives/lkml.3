@@ -1,355 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761118Ab3D3QTP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 12:19:15 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:63954 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760971Ab3D3QTB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 12:19:01 -0400
-X-IronPort-AV: E=Sophos;i="4.87,582,1363132800"; 
-   d="scan'208";a="22425600"
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-To: <xen-devel@lists.xensource.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <will.deacon@arm.com>, <arnd@arndb.de>, <nicolas.pitre@linaro.org>,
-        <Stefano.Stabellini@eu.citrix.com>, <rob.herring@calxeda.com>,
-        <linux@arm.linux.org.uk>, <olof@lixom.net>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        <marc.zyngier@arm.com>, <nico@linaro.org>
-Subject: [PATCH v10 1/2] arm: introduce psci_smp_ops
-Date: Tue, 30 Apr 2013 17:18:39 +0100
-Message-ID: <1367338721-29152-1-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <alpine.DEB.2.02.1304301707290.5398@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1304301707290.5398@kaball.uk.xensource.com>
+	id S1761131Ab3D3QUZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 12:20:25 -0400
+Received: from mail-bn1lp0155.outbound.protection.outlook.com ([207.46.163.155]:21346
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1760997Ab3D3QUW convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Apr 2013 12:20:22 -0400
+X-Forefront-Antispam-Report-Untrusted: CIP:157.56.240.21;KIP:(null);UIP:(null);(null);H:BL2PRD0310HT005.namprd03.prod.outlook.com;R:internal;EFV:INT
+X-SpamScore: -1
+X-BigFish: PS-1(zz9371I542I1432Izz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahz97hz177df4h17326ah8275bh8275dhz31h2a8h668h839h944hd24hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h19ceh1ad9h1b0ah1d07h1d0ch1d2eh9a9j1155h)
+X-Forefront-Antispam-Report-Untrusted: SFV:SKI;SFS:;DIR:OUT;SFP:;SCL:-1;SRVR:SN2PR03MB062;H:SN2PR03MB061.namprd03.prod.outlook.com;LANG:en;
+From: KY Srinivasan <kys@microsoft.com>
+To: Sitsofe Wheeler <sitsofe@yahoo.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+CC: "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: Hyper-V stalls on device errors
+Thread-Topic: Hyper-V stalls on device errors
+Thread-Index: AQHORbgykjvQZQ533kmaF2QKC1fNjZju72OAgAABhrA=
+Date: Tue, 30 Apr 2013 16:17:51 +0000
+Message-ID: <8024ef25bbed4216a0ce96ff4318610a@SN2PR03MB061.namprd03.prod.outlook.com>
+References: <20130430153321.GA12115@sucs.org>
+ <20130430161146.GA15049@sucs.org>
+In-Reply-To: <20130430161146.GA15049@sucs.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [98.110.61.163]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
+X-OrganizationHeadersPreserved: SN2PR03MB062.namprd03.prod.outlook.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%PARALLELS.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%YAHOO.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-CrossPremisesHeadersPromoted: TK5EX14HUBC103.redmond.corp.microsoft.com
+X-CrossPremisesHeadersFiltered: TK5EX14HUBC103.redmond.corp.microsoft.com
+X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(13464002)(199002)(377454001)(189002)(51704004)(47976001)(4396001)(74502001)(74706001)(23726002)(33646001)(47446002)(49866001)(15395725003)(6806003)(47736001)(66066001)(54316002)(46406003)(31966008)(46102001)(15202345002)(69226001)(50986001)(53806001)(65816001)(20776003)(76482001)(56816002)(51856001)(47776003)(59766001)(81342001)(56776001)(74316001)(74662001)(50466002)(63696002)(81542001)(16676001)(1511001)(79102001)(74366001)(80022001)(44976003)(77982001)(54356001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BY2FFO11HUB030;H:TK5EX14HUBC103.redmond.corp.microsoft.com;RD:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-OriginatorOrg: microsoft.onmicrosoft.com
+X-Forefront-PRVS: 083289FD26
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rename virt_smp_ops to psci_smp_ops and move them to arch/arm/kernel/psci_smp.c.
-Remove mach-virt/platsmp.c, now unused.
-Compile psci_smp if CONFIG_ARM_PSCI and CONFIG_SMP.
+Thanks Sitsofe; we will look into this.
 
-Add a cpu_die smp_op based on psci_ops.cpu_off.
+Regards,
 
-Initialize PSCI before setting smp_ops in setup_arch.
+K. Y
 
-If PSCI is available on the platform, prefer psci_smp_ops over the
-platform smp_ops.
+> -----Original Message-----
+> From: Sitsofe Wheeler [mailto:sitsofe@yahoo.com]
+> Sent: Tuesday, April 30, 2013 12:12 PM
+> To: KY Srinivasan; Haiyang Zhang
+> Cc: devel@linuxdriverproject.org; James E.J. Bottomley; linux-
+> kernel@vger.kernel.org
+> Subject: Re: Hyper-V stalls on device errors
+> 
+> Apologies for the previous empty mail.
+> 
+> While testing a Windows 2012 host with a Fedora 18 guest running a 3.9
+> kernel I've found that Hyper-v will stall all access to
+> (para)virtualised disk devices when an underlying disk device returns an
+> error. Every ten seconds a tiny bit of I/O goes through before being
+> stalled again and it plays havoc with asynchronous I/O to disk devices
+> too.
+> 
+> To produce this I created a device mapper device with a single error in
+> it by using
+> 
+> dd if=/dev/zero of=/tmp/fakeblock0 bs=100M count=1
+> losetup --find --show /tmp/fakeblock0
+> # Assuming losetup uses /dev/loop0
+> cat << EOF | dmsetup create oneerror
+> 0 13443 linear /dev/loop0 0
+> 13443 1 error
+> 13444 191356 linear /dev/loop0 0
+> EOF
+> 
+> After installing scsi-target-utils the /dev/mapper/oneerror device was
+> then turned into a iSCSI target by adding
+> 
+> <target iqn.2013-04.com.stormagic:oneerror>
+>      backing-store /dev/mapper/oneerror
+>      write-cache off
+> </target>
+> 
+> to /etc/tgt/targets.conf . The iSCSI target service was started with
+> systemctl start tgtd.service (watch out for
+> https://bugzilla.redhat.com/show_bug.cgi?id=848942 and you may need to
+> disable the firewall by using systemctl stop firewalld.service ).
+> 
+> The Windows 2012 iSCSI initiator was used to add the target to the
+> machine with the hypervisor (the usual discovery should work to the
+> Linux box serving the SCSI target). Once done, this disk was then added
+> to the Linux guest's Hyper-V settings via the SCSI controller. A spare
+> IDE controller disk was also added.
+> 
+> In the Linux guest a badblock run was started on the spare IDE disk
+> block device so that I/O was visible. A
+> dd if=/dev/zero of=/dev/sdc oflag=direct
+> (where /dev/sdc is the erroring block device that was added earlier) was
+> then done to trigger the access of the bad sector.
+> 
+> The following appeared in dmesg:
+> 
+> [  160.718836] hv_storvsc vmbus_0_12: cmd 0x2a scsi status 0x2 srb status 0x4
+> [  170.991312] hv_storvsc vmbus_0_12: cmd 0x2a scsi status 0x2 srb status 0x4
+> [  181.039597] hv_storvsc vmbus_0_12: cmd 0x2a scsi status 0x2 srb status 0x4
+> [  191.081242] hv_storvsc vmbus_0_12: cmd 0x2a scsi status 0x2 srb status 0x4
+> [  201.116790] hv_storvsc vmbus_0_12: cmd 0x2a scsi status 0x2 srb status 0x4
+> [  211.127741] hv_storvsc vmbus_0_12: cmd 0x2a scsi status 0x2 srb status 0x4
+> [  221.140338] sd 3:0:0:2: [sdc] Unhandled error code
+> [  221.140346] sd 3:0:0:2: [sdc]
+> [  221.140349] Result: hostbyte=DID_OK driverbyte=DRIVER_OK
+> [  221.140352] sd 3:0:0:2: [sdc] CDB:
+> [  221.140354] Write(10): 2a 00 00 00 34 00 00 01 00 00
+> [  221.140366] end_request: critical target error, dev sdc, sector 13312
+> 
+> A Fedora 18 guest on VMWare ESXi returned the error in under a second
+> and only had the following in dmesg:
+> 
+> [  293.917383] sd 2:0:1:0: [sdb] Unhandled sense code
+> [  293.917391] sd 2:0:1:0: [sdb]
+> [  293.917394] Result: hostbyte=DID_OK driverbyte=DRIVER_SENSE
+> [  293.917408] sd 2:0:1:0: [sdb]
+> [  293.917414] Sense Key : Medium Error [current]
+> [  293.917418] sd 2:0:1:0: [sdb]
+> [  293.917421] Add. Sense: Unrecovered read error
+> [  293.917424] sd 2:0:1:0: [sdb] CDB:
+> [  293.917428] Write(10): 2a 00 00 00 34 00 00 04 00 00
+> [  293.917436] end_request: critical target error, dev sdb, sector 13312
+> 
+> The stalls do not occur when the bad block device is created directly in
+> the Linux guest.  From the previous log messages it looks like Hyper-V
+> is trying for up to a minute before returning an error and the I/O
+> stalls to separate (but virtualised) devices on different buses looks
+> like an unintended side effect...
+> 
+> --
+> Sitsofe | http://sucs.org/~sits/
+> 
 
-Changes in v9:
-- move comment about PSCI interface from psci.h to psci_smp.c.
-
-Changes in v8:
-- merge "prefer psci_smp_ops over mdesc->smp" into this patch.
-
-Changes in v6:
-- fixed return values for psci_smp_available and psci_init ifndef
-CONFIG_ARM_PSCI.
-
-Changes in v5:
-- document psci_operations;
-- psci_init returns NULL.
-
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Acked-by: Will Deacon <will.deacon@arm.com>
-CC: arnd@arndb.de
-CC: marc.zyngier@arm.com
-CC: linux@arm.linux.org.uk
-CC: nico@linaro.org
-CC: rob.herring@calxeda.com
----
- arch/arm/include/asm/psci.h  |    9 ++++
- arch/arm/kernel/Makefile     |    5 ++-
- arch/arm/kernel/psci.c       |    7 +--
- arch/arm/kernel/psci_smp.c   |   90 ++++++++++++++++++++++++++++++++++++++++++
- arch/arm/kernel/setup.c      |    7 +++-
- arch/arm/mach-virt/Makefile  |    1 -
- arch/arm/mach-virt/platsmp.c |   58 ---------------------------
- arch/arm/mach-virt/virt.c    |    3 -
- 8 files changed, 112 insertions(+), 68 deletions(-)
- create mode 100644 arch/arm/kernel/psci_smp.c
- delete mode 100644 arch/arm/mach-virt/platsmp.c
-
-diff --git a/arch/arm/include/asm/psci.h b/arch/arm/include/asm/psci.h
-index ce0dbe7..c4ae171 100644
---- a/arch/arm/include/asm/psci.h
-+++ b/arch/arm/include/asm/psci.h
-@@ -32,5 +32,14 @@ struct psci_operations {
- };
- 
- extern struct psci_operations psci_ops;
-+extern struct smp_operations psci_smp_ops;
-+
-+#ifdef CONFIG_ARM_PSCI
-+void psci_init(void);
-+bool psci_smp_available(void);
-+#else
-+static inline void psci_init(void) { }
-+static inline bool psci_smp_available(void) { return false; }
-+#endif
- 
- #endif /* __ASM_ARM_PSCI_H */
-diff --git a/arch/arm/kernel/Makefile b/arch/arm/kernel/Makefile
-index 5f3338e..dd9d90a 100644
---- a/arch/arm/kernel/Makefile
-+++ b/arch/arm/kernel/Makefile
-@@ -82,6 +82,9 @@ obj-$(CONFIG_DEBUG_LL)	+= debug.o
- obj-$(CONFIG_EARLY_PRINTK)	+= early_printk.o
- 
- obj-$(CONFIG_ARM_VIRT_EXT)	+= hyp-stub.o
--obj-$(CONFIG_ARM_PSCI)		+= psci.o
-+ifeq ($(CONFIG_ARM_PSCI),y)
-+obj-y				+= psci.o
-+obj-$(CONFIG_SMP)		+= psci_smp.o
-+endif
- 
- extra-y := $(head-y) vmlinux.lds
-diff --git a/arch/arm/kernel/psci.c b/arch/arm/kernel/psci.c
-index 3653164..4693188 100644
---- a/arch/arm/kernel/psci.c
-+++ b/arch/arm/kernel/psci.c
-@@ -158,7 +158,7 @@ static const struct of_device_id psci_of_match[] __initconst = {
- 	{},
- };
- 
--static int __init psci_init(void)
-+void __init psci_init(void)
- {
- 	struct device_node *np;
- 	const char *method;
-@@ -166,7 +166,7 @@ static int __init psci_init(void)
- 
- 	np = of_find_matching_node(NULL, psci_of_match);
- 	if (!np)
--		return 0;
-+		return;
- 
- 	pr_info("probing function IDs from device-tree\n");
- 
-@@ -206,6 +206,5 @@ static int __init psci_init(void)
- 
- out_put_node:
- 	of_node_put(np);
--	return 0;
-+	return;
- }
--early_initcall(psci_init);
-diff --git a/arch/arm/kernel/psci_smp.c b/arch/arm/kernel/psci_smp.c
-new file mode 100644
-index 0000000..6ef139d
---- /dev/null
-+++ b/arch/arm/kernel/psci_smp.c
-@@ -0,0 +1,90 @@
-+/*
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * Copyright (C) 2012 ARM Limited
-+ *
-+ * Author: Will Deacon <will.deacon@arm.com>
-+ */
-+
-+#include <linux/init.h>
-+#include <linux/irqchip/arm-gic.h>
-+#include <linux/smp.h>
-+#include <linux/of.h>
-+
-+#include <asm/psci.h>
-+#include <asm/smp_plat.h>
-+
-+/*
-+ * psci_smp assumes that the following is true about PSCI:
-+ *
-+ * cpu_suspend   Suspend the execution on a CPU
-+ * @state        we don't currently describe affinity levels, so just pass 0.
-+ * @entry_point  the first instruction to be executed on return
-+ * returns 0  success, < 0 on failure
-+ *
-+ * cpu_off       Power down a CPU
-+ * @state        we don't currently describe affinity levels, so just pass 0.
-+ * no return on successful call
-+ *
-+ * cpu_on        Power up a CPU
-+ * @cpuid        cpuid of target CPU, as from MPIDR
-+ * @entry_point  the first instruction to be executed on return
-+ * returns 0  success, < 0 on failure
-+ *
-+ * migrate       Migrate the context to a different CPU
-+ * @cpuid        cpuid of target CPU, as from MPIDR
-+ * returns 0  success, < 0 on failure
-+ *
-+ */
-+
-+extern void secondary_startup(void);
-+
-+static int __cpuinit psci_boot_secondary(unsigned int cpu,
-+					 struct task_struct *idle)
-+{
-+	if (psci_ops.cpu_on)
-+		return psci_ops.cpu_on(cpu_logical_map(cpu),
-+				       __pa(secondary_startup));
-+	return -ENODEV;
-+}
-+
-+static void __cpuinit psci_secondary_init(unsigned int cpu)
-+{
-+	gic_secondary_init(0);
-+}
-+
-+#ifdef CONFIG_HOTPLUG_CPU
-+void __ref psci_cpu_die(unsigned int cpu)
-+{
-+       const struct psci_power_state ps = {
-+               .type = PSCI_POWER_STATE_TYPE_POWER_DOWN,
-+       };
-+
-+       if (psci_ops.cpu_off)
-+               psci_ops.cpu_off(ps);
-+
-+       /* We should never return */
-+       panic("psci: cpu %d failed to shutdown\n", cpu);
-+}
-+#else
-+#define psci_cpu_die NULL
-+#endif
-+
-+bool __init psci_smp_available(void)
-+{
-+	/* is cpu_on available at least? */
-+	return (psci_ops.cpu_on != NULL);
-+}
-+
-+struct smp_operations __initdata psci_smp_ops = {
-+	.smp_secondary_init	= psci_secondary_init,
-+	.smp_boot_secondary	= psci_boot_secondary,
-+	.cpu_die		= psci_cpu_die,
-+};
-diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
-index 3f6cbb2..dad3048 100644
---- a/arch/arm/kernel/setup.c
-+++ b/arch/arm/kernel/setup.c
-@@ -36,6 +36,7 @@
- #include <asm/cputype.h>
- #include <asm/elf.h>
- #include <asm/procinfo.h>
-+#include <asm/psci.h>
- #include <asm/sections.h>
- #include <asm/setup.h>
- #include <asm/smp_plat.h>
-@@ -766,9 +767,13 @@ void __init setup_arch(char **cmdline_p)
- 	unflatten_device_tree();
- 
- 	arm_dt_init_cpu_maps();
-+	psci_init();
- #ifdef CONFIG_SMP
- 	if (is_smp()) {
--		smp_set_ops(mdesc->smp);
-+		if (psci_smp_available())
-+			smp_set_ops(&psci_smp_ops);
-+		else if (mdesc->smp)
-+			smp_set_ops(mdesc->smp);
- 		smp_init_cpus();
- 	}
- #endif
-diff --git a/arch/arm/mach-virt/Makefile b/arch/arm/mach-virt/Makefile
-index 042afc1..7ddbfa6 100644
---- a/arch/arm/mach-virt/Makefile
-+++ b/arch/arm/mach-virt/Makefile
-@@ -3,4 +3,3 @@
- #
- 
- obj-y					:= virt.o
--obj-$(CONFIG_SMP)			+= platsmp.o
-diff --git a/arch/arm/mach-virt/platsmp.c b/arch/arm/mach-virt/platsmp.c
-deleted file mode 100644
-index 8badaab..0000000
---- a/arch/arm/mach-virt/platsmp.c
-+++ /dev/null
-@@ -1,58 +0,0 @@
--/*
-- * Dummy Virtual Machine - does what it says on the tin.
-- *
-- * Copyright (C) 2012 ARM Ltd
-- * Author: Will Deacon <will.deacon@arm.com>
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as
-- * published by the Free Software Foundation.
-- *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
-- *
-- * You should have received a copy of the GNU General Public License
-- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-- */
--
--#include <linux/init.h>
--#include <linux/smp.h>
--#include <linux/of.h>
--
--#include <linux/irqchip/arm-gic.h>
--
--#include <asm/psci.h>
--#include <asm/smp_plat.h>
--
--extern void secondary_startup(void);
--
--static void __init virt_smp_init_cpus(void)
--{
--}
--
--static void __init virt_smp_prepare_cpus(unsigned int max_cpus)
--{
--}
--
--static int __cpuinit virt_boot_secondary(unsigned int cpu,
--					 struct task_struct *idle)
--{
--	if (psci_ops.cpu_on)
--		return psci_ops.cpu_on(cpu_logical_map(cpu),
--				       __pa(secondary_startup));
--	return -ENODEV;
--}
--
--static void __cpuinit virt_secondary_init(unsigned int cpu)
--{
--	gic_secondary_init(0);
--}
--
--struct smp_operations __initdata virt_smp_ops = {
--	.smp_init_cpus		= virt_smp_init_cpus,
--	.smp_prepare_cpus	= virt_smp_prepare_cpus,
--	.smp_secondary_init	= virt_secondary_init,
--	.smp_boot_secondary	= virt_boot_secondary,
--};
-diff --git a/arch/arm/mach-virt/virt.c b/arch/arm/mach-virt/virt.c
-index 31666f6..4438ed0 100644
---- a/arch/arm/mach-virt/virt.c
-+++ b/arch/arm/mach-virt/virt.c
-@@ -43,12 +43,9 @@ static const char *virt_dt_match[] = {
- 	NULL
- };
- 
--extern struct smp_operations virt_smp_ops;
--
- DT_MACHINE_START(VIRT, "Dummy Virtual Machine")
- 	.init_irq	= irqchip_init,
- 	.init_time	= virt_timer_init,
- 	.init_machine	= virt_init,
--	.smp		= smp_ops(virt_smp_ops),
- 	.dt_compat	= virt_dt_match,
- MACHINE_END
--- 
-1.7.2.5
 
