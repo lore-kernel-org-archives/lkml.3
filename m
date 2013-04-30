@@ -1,63 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760520Ab3D3RDi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 13:03:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33088 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753731Ab3D3RDf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 13:03:35 -0400
-Date: Tue, 30 Apr 2013 19:00:27 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Colin Cross <ccross@android.com>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>
-Subject: Re: [PATCH 09/10] sigtimedwait: use freezable blocking call
-Message-ID: <20130430170027.GA28380@redhat.com>
-References: <1367271946-7239-1-git-send-email-ccross@android.com> <1367271946-7239-10-git-send-email-ccross@android.com> <20130430163817.GA27304@redhat.com> <CAMbhsRTABgbWgFca03nVWVmVeK5Ci9BPon-zQwanM16LrN=fog@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMbhsRTABgbWgFca03nVWVmVeK5Ci9BPon-zQwanM16LrN=fog@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1760768Ab3D3REX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 13:04:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41964 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758281Ab3D3REV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Apr 2013 13:04:21 -0400
+Date: Tue, 30 Apr 2013 10:03:58 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Vincent =?ISO-8859-1?Q?Stehl=E9?= <vincent.stehle@laposte.net>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] memory hotplug: fix warnings
+Message-Id: <20130430100358.f3209dd5.akpm@linux-foundation.org>
+In-Reply-To: <alpine.DEB.2.02.1304300952210.31619@chino.kir.corp.google.com>
+References: <1367310697-6332-1-git-send-email-vincent.stehle@laposte.net>
+	<alpine.DEB.2.02.1304300916500.10368@chino.kir.corp.google.com>
+	<20130430092919.a9ab7108.akpm@linux-foundation.org>
+	<alpine.DEB.2.02.1304300952210.31619@chino.kir.corp.google.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/30, Colin Cross wrote:
-> On Tue, Apr 30, 2013 at 9:38 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> > On 04/29, Colin Cross wrote:
-> >>
-> >> Avoid waking up every thread sleeping in a sigtimedwait call during
-> >> suspend and resume by calling a freezable blocking call.
-> >
-> > This doesn't explain why do want this change...
-> >
-> > OK, probably to avoid -EAGAIN from sigtimedwait() if the freezer wakes
-> > up the caller.
->
-> See http://marc.info/?l=linux-pm&m=136727197819593&w=2 for the full
-> justification.  I will include a fuller description of the reason for
-> this patch in the next version.
+On Tue, 30 Apr 2013 09:54:18 -0700 (PDT) David Rientjes <rientjes@google.com> wrote:
 
-Yes, thanks, I already realized what are you trying to do.
+> On Tue, 30 Apr 2013, Andrew Morton wrote:
+> 
+> > > > diff --git a/include/linux/memory.h b/include/linux/memory.h
+> > > > index 73817af..85c31a8 100644
+> > > > --- a/include/linux/memory.h
+> > > > +++ b/include/linux/memory.h
+> > > > @@ -137,7 +137,7 @@ enum mem_add_context { BOOT, HOTPLUG };
+> > > >  #define register_hotmemory_notifier(nb)		register_memory_notifier(nb)
+> > > >  #define unregister_hotmemory_notifier(nb) 	unregister_memory_notifier(nb)
+> > > >  #else
+> > > > -#define hotplug_memory_notifier(fn, pri)	(0)
+> > > > +#define hotplug_memory_notifier(fn, pri)	({ 0; })
+> > > >  /* These aren't inline functions due to a GCC bug. */
+> > > >  #define register_hotmemory_notifier(nb)    ({ (void)(nb); 0; })
+> > > >  #define unregister_hotmemory_notifier(nb)  ({ (void)(nb); })
+> > > 
+> > > You can't use the standard do {} while (0)?
+> > 
+> > register_memory_notifier() (and hence hotplug_memory_notifier())
+> > returns an errno.  Which nobody bothers checking.
+> > 
+> 
+> The notifier itself is statically allocated so there's no memory 
+> allocations in this path, there's no chance it'll fail.  Should we just 
+> make register_memory_notifier() return void?
 
-> > The task will be interrupted anyway and the syscall will return
-> > -EAGAIN, this only changes the time when try_to_freeze() is called.
-> >
-> > For what? The task will call do_signal/try_to_freeze really "soon".
->
-> See http://marc.info/?l=linux-pm&m=136727204919622&w=2, which removes
-> the wakeup sent to skipped tasks, so schedule_timeout_interruptible()
-> will only return if the timeout finishes or another task
+Drill down and we end up in notifier_chain_register(), which
+unconditionally returns 0.
 
-Or if freeze_task() was already called.
-
-but I guess you do not care.
-
-Oleg.
+So we can either leave things as they are under the assumption that
+notifier_chain_register() might one day be changed to return an errno
+or we can change everything to return void.
 
