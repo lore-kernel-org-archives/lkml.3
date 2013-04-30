@@ -1,274 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933488Ab3D3S7V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 14:59:21 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:44921 "EHLO
+	id S933505Ab3D3S7k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 14:59:40 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:46674 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933303Ab3D3S41 (ORCPT
+	with ESMTP id S933302Ab3D3S7c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 14:56:27 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-To: torvalds@linux-foundation.org
-Cc: mingo@kernel.org, peterz@infradead.org, linux-kernel@vger.kernel.org,
-        Sasha Levin <sasha.levin@oracle.com>
-Subject: [PATCH 4/9] liblockdep: Add pthread_mutex_t test suite
-Date: Tue, 30 Apr 2013 14:54:35 -0400
-Message-Id: <1367348080-4680-5-git-send-email-sasha.levin@oracle.com>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1367348080-4680-1-git-send-email-sasha.levin@oracle.com>
-References: <1367348080-4680-1-git-send-email-sasha.levin@oracle.com>
+	Tue, 30 Apr 2013 14:59:32 -0400
+Date: Tue, 30 Apr 2013 20:58:52 +0200
+From: Daniel Kiper <daniel.kiper@oracle.com>
+To: Ian Campbell <ijc@hellion.org.uk>
+Cc: "carsten@schiers.de" <carsten@schiers.de>,
+        "darren.s.shepherd@gmail.com" <darren.s.shepherd@gmail.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Ian Jackson <Ian.Jackson@eu.citrix.com>,
+        "james-xen@dingwall.me.uk" <james-xen@dingwall.me.uk>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        keir@xen.org, stefano.stabellini@eu.citrix.com
+Subject: Re: [PATCH v2 2/2] xen/balloon: Enforce various limits on target
+Message-ID: <20130430185852.GF9904@debian70-amd64.local.net-space.pl>
+References: <1367235468-8360-1-git-send-email-daniel.kiper@oracle.com>
+ <1367235468-8360-3-git-send-email-daniel.kiper@oracle.com>
+ <1367246649.3142.316.camel@zakaz.uk.xensource.com>
+ <20130430125952.GD9904@debian70-amd64.local.net-space.pl>
+ <1367329458.3142.524.camel@zakaz.uk.xensource.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1367329458.3142.524.camel@zakaz.uk.xensource.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a rather simple and basic test suite to test common
-locking issues.
+On Tue, Apr 30, 2013 at 02:44:18PM +0100, Ian Campbell wrote:
+> On Tue, 2013-04-30 at 13:59 +0100, Daniel Kiper wrote:
+> > On Mon, Apr 29, 2013 at 03:44:09PM +0100, Ian Campbell wrote:
+> > > On Mon, 2013-04-29 at 12:37 +0100, Daniel Kiper wrote:
+> > >
+> > > > This patch enforces on target limit statically defined in Linux Kernel
+> > > > source and limit defined by hypervisor or host. This way the balloon
+> > > > driver should not attempt to populate pages above given limits
+> > > > because they may fail.
+> > > >
+> > > > Particularly this patch fixes bug which led to flood
+> > > > of dom0 kernel log with messages similar to:
+> > > >
+> > > > System RAM resource [mem 0x1b8000000-0x1bfffffff] cannot be added
+> > > > xen_balloon: reserve_additional_memory: add_memory() failed: -17
+> > >
+> > > I think it would be OK to simply tone down this message (and perhaps add
+> > > the failed pages to the balloon, if that makes sense). This isn't
+> > > dissimilar to increase_reservation failing.
+> >
+> > If add_memory() fails it is hard error. It means that we do not
+> > know where new or ballooned pages should be placed.
+>
+> I see that add_memory() is a generic or arch level function rather than
+> a ballooning specific one. Under what circumstances can it fail and how
+> do they relate the the setting of the balloon target?
 
-Beyond tests, it also shows how to use the library.
+It is generic function with some references to arch code. It is called
+when pages could not be taken from balloon any more and must be hotplugged.
+It reserves memory resource (start address and size is calculated on the
+base of target and max_pfn) and build some structures for new memory.
+It may fail in many places. In this case it failed because placement
+of new resource was incorrectly calculated because algorithm is very
+simple and not cover all cases. I am going to fix this issue but
+a bit later. However, first of all memory hotplug should not be
+activated because memory allocation limit was reached in this case.
+This patch solves this issue.
 
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
----
- tools/lib/lockdep/run_tests.sh           | 27 +++++++++++++++++++++++++++
- tools/lib/lockdep/tests/AA.c             | 13 +++++++++++++
- tools/lib/lockdep/tests/ABBA.c           | 13 +++++++++++++
- tools/lib/lockdep/tests/ABBCCA.c         | 15 +++++++++++++++
- tools/lib/lockdep/tests/ABBCCDDA.c       | 17 +++++++++++++++++
- tools/lib/lockdep/tests/ABCABC.c         | 15 +++++++++++++++
- tools/lib/lockdep/tests/ABCDBCDA.c       | 17 +++++++++++++++++
- tools/lib/lockdep/tests/ABCDBDDA.c       | 17 +++++++++++++++++
- tools/lib/lockdep/tests/common.h         | 12 ++++++++++++
- tools/lib/lockdep/tests/unlock_balance.c | 12 ++++++++++++
- 10 files changed, 158 insertions(+)
- create mode 100755 tools/lib/lockdep/run_tests.sh
- create mode 100644 tools/lib/lockdep/tests/AA.c
- create mode 100644 tools/lib/lockdep/tests/ABBA.c
- create mode 100644 tools/lib/lockdep/tests/ABBCCA.c
- create mode 100644 tools/lib/lockdep/tests/ABBCCDDA.c
- create mode 100644 tools/lib/lockdep/tests/ABCABC.c
- create mode 100644 tools/lib/lockdep/tests/ABCDBCDA.c
- create mode 100644 tools/lib/lockdep/tests/ABCDBDDA.c
- create mode 100644 tools/lib/lockdep/tests/common.h
- create mode 100644 tools/lib/lockdep/tests/unlock_balance.c
+> > > > +/*
+> > > > + * Extra internal memory reserved by libxl.
+> > > > + * Check tools/libxl/libxl_memory.txt file in Xen source for more details.
+> > > > + */
+> > > > +#define LIBXL_MAXMEM_CONSTANT_PAGES	(1024 * 1024 / PAGE_SIZE)
+> > >
+> > > I think we need to find a way to achieve your aims which doesn't require
+> > > leaking internal implementation details of libxl into the guest kernels.
+> > > What happens if libxl decides to double this?
+> >
+> > I agree that this is not elegant solution. However, if we would like to
+> > be in line with docs/misc/libxl_memory.txt (this is correct path) this
+> > is a must.
+>
+> I'm not sure about this, that file describes the toolstacks view of the
+> memory in a system. That need not necessarily correspond with the
+> guest's ideas (although you would hope it would be a superset).
+>
+> Surely it is logically wrong to bake toolstack specific knowledge in the
+> guest? If someone can describe a meaningful semantic for this number in
+> a toolstack independent way then perhaps it would be appropriate to do
+> something with it. I've no idea, having looked at both the document and
+> the code, what this value actually is.
 
-diff --git a/tools/lib/lockdep/run_tests.sh b/tools/lib/lockdep/run_tests.sh
-new file mode 100755
-index 0000000..240a93c
---- /dev/null
-+++ b/tools/lib/lockdep/run_tests.sh
-@@ -0,0 +1,27 @@
-+#! /bin/bash
-+
-+make &> /dev/null
-+
-+for i in `ls tests/*.c`; do
-+	testname=$(basename -s .c "$i")
-+	gcc -o tests/$testname -lpthread $i liblockdep.a -Iinclude -D__USE_LIBLOCKDEP &> /dev/null
-+	echo -ne "$testname... "
-+	if [ $(timeout 1 ./tests/$testname | wc -l) -gt 0 ]; then
-+		echo "PASSED!"
-+	else
-+		echo "FAILED!"
-+	fi
-+	rm tests/$testname
-+done
-+
-+for i in `ls tests/*.c`; do
-+	testname=$(basename -s .c "$i")
-+	gcc -o tests/$testname -lpthread -Iinclude $i &> /dev/null
-+	echo -ne "(PRELOAD) $testname... "
-+	if [ $(timeout 1 ./lockdep ./tests/$testname | wc -l) -gt 0 ]; then
-+		echo "PASSED!"
-+	else
-+		echo "FAILED!"
-+	fi
-+	rm tests/$testname
-+done
-diff --git a/tools/lib/lockdep/tests/AA.c b/tools/lib/lockdep/tests/AA.c
-new file mode 100644
-index 0000000..0f782ff
---- /dev/null
-+++ b/tools/lib/lockdep/tests/AA.c
-@@ -0,0 +1,13 @@
-+#include <liblockdep/mutex.h>
-+
-+void main(void)
-+{
-+	pthread_mutex_t a, b;
-+
-+	pthread_mutex_init(&a, NULL);
-+	pthread_mutex_init(&b, NULL);
-+
-+	pthread_mutex_lock(&a);
-+	pthread_mutex_lock(&b);
-+	pthread_mutex_lock(&a);
-+}
-diff --git a/tools/lib/lockdep/tests/ABBA.c b/tools/lib/lockdep/tests/ABBA.c
-new file mode 100644
-index 0000000..07f0e29
---- /dev/null
-+++ b/tools/lib/lockdep/tests/ABBA.c
-@@ -0,0 +1,13 @@
-+#include <liblockdep/mutex.h>
-+#include "common.h"
-+
-+void main(void)
-+{
-+	pthread_mutex_t a, b;
-+
-+	pthread_mutex_init(&a, NULL);
-+	pthread_mutex_init(&b, NULL);
-+
-+	LOCK_UNLOCK_2(a, b);
-+	LOCK_UNLOCK_2(b, a);
-+}
-diff --git a/tools/lib/lockdep/tests/ABBCCA.c b/tools/lib/lockdep/tests/ABBCCA.c
-new file mode 100644
-index 0000000..843db09
---- /dev/null
-+++ b/tools/lib/lockdep/tests/ABBCCA.c
-@@ -0,0 +1,15 @@
-+#include <liblockdep/mutex.h>
-+#include "common.h"
-+
-+void main(void)
-+{
-+	pthread_mutex_t a, b, c;
-+
-+	pthread_mutex_init(&a, NULL);
-+	pthread_mutex_init(&b, NULL);
-+	pthread_mutex_init(&c, NULL);
-+
-+	LOCK_UNLOCK_2(a, b);
-+	LOCK_UNLOCK_2(b, c);
-+	LOCK_UNLOCK_2(c, a);
-+}
-diff --git a/tools/lib/lockdep/tests/ABBCCDDA.c b/tools/lib/lockdep/tests/ABBCCDDA.c
-new file mode 100644
-index 0000000..33620e2
---- /dev/null
-+++ b/tools/lib/lockdep/tests/ABBCCDDA.c
-@@ -0,0 +1,17 @@
-+#include <liblockdep/mutex.h>
-+#include "common.h"
-+
-+void main(void)
-+{
-+	pthread_mutex_t a, b, c, d;
-+
-+	pthread_mutex_init(&a, NULL);
-+	pthread_mutex_init(&b, NULL);
-+	pthread_mutex_init(&c, NULL);
-+	pthread_mutex_init(&d, NULL);
-+
-+	LOCK_UNLOCK_2(a, b);
-+	LOCK_UNLOCK_2(b, c);
-+	LOCK_UNLOCK_2(c, d);
-+	LOCK_UNLOCK_2(d, a);
-+}
-diff --git a/tools/lib/lockdep/tests/ABCABC.c b/tools/lib/lockdep/tests/ABCABC.c
-new file mode 100644
-index 0000000..3fee51e
---- /dev/null
-+++ b/tools/lib/lockdep/tests/ABCABC.c
-@@ -0,0 +1,15 @@
-+#include <liblockdep/mutex.h>
-+#include "common.h"
-+
-+void main(void)
-+{
-+	pthread_mutex_t a, b, c;
-+
-+	pthread_mutex_init(&a, NULL);
-+	pthread_mutex_init(&b, NULL);
-+	pthread_mutex_init(&c, NULL);
-+
-+	LOCK_UNLOCK_2(a, b);
-+	LOCK_UNLOCK_2(c, a);
-+	LOCK_UNLOCK_2(b, c);
-+}
-diff --git a/tools/lib/lockdep/tests/ABCDBCDA.c b/tools/lib/lockdep/tests/ABCDBCDA.c
-new file mode 100644
-index 0000000..427ba56
---- /dev/null
-+++ b/tools/lib/lockdep/tests/ABCDBCDA.c
-@@ -0,0 +1,17 @@
-+#include <liblockdep/mutex.h>
-+#include "common.h"
-+
-+void main(void)
-+{
-+	pthread_mutex_t a, b, c, d;
-+
-+	pthread_mutex_init(&a, NULL);
-+	pthread_mutex_init(&b, NULL);
-+	pthread_mutex_init(&c, NULL);
-+	pthread_mutex_init(&d, NULL);
-+
-+	LOCK_UNLOCK_2(a, b);
-+	LOCK_UNLOCK_2(c, d);
-+	LOCK_UNLOCK_2(b, c);
-+	LOCK_UNLOCK_2(d, a);
-+}
-diff --git a/tools/lib/lockdep/tests/ABCDBDDA.c b/tools/lib/lockdep/tests/ABCDBDDA.c
-new file mode 100644
-index 0000000..680c6cf
---- /dev/null
-+++ b/tools/lib/lockdep/tests/ABCDBDDA.c
-@@ -0,0 +1,17 @@
-+#include <liblockdep/mutex.h>
-+#include "common.h"
-+
-+void main(void)
-+{
-+	pthread_mutex_t a, b, c, d;
-+
-+	pthread_mutex_init(&a, NULL);
-+	pthread_mutex_init(&b, NULL);
-+	pthread_mutex_init(&c, NULL);
-+	pthread_mutex_init(&d, NULL);
-+
-+	LOCK_UNLOCK_2(a, b);
-+	LOCK_UNLOCK_2(c, d);
-+	LOCK_UNLOCK_2(b, d);
-+	LOCK_UNLOCK_2(d, a);
-+}
-diff --git a/tools/lib/lockdep/tests/common.h b/tools/lib/lockdep/tests/common.h
-new file mode 100644
-index 0000000..d89e94d
---- /dev/null
-+++ b/tools/lib/lockdep/tests/common.h
-@@ -0,0 +1,12 @@
-+#ifndef _LIBLOCKDEP_TEST_COMMON_H
-+#define _LIBLOCKDEP_TEST_COMMON_H
-+
-+#define LOCK_UNLOCK_2(a, b)			\
-+	do {					\
-+		pthread_mutex_lock(&(a));	\
-+		pthread_mutex_lock(&(b));	\
-+		pthread_mutex_unlock(&(b));	\
-+		pthread_mutex_unlock(&(a));	\
-+	} while(0)
-+
-+#endif
-diff --git a/tools/lib/lockdep/tests/unlock_balance.c b/tools/lib/lockdep/tests/unlock_balance.c
-new file mode 100644
-index 0000000..0bc62de
---- /dev/null
-+++ b/tools/lib/lockdep/tests/unlock_balance.c
-@@ -0,0 +1,12 @@
-+#include <liblockdep/mutex.h>
-+
-+void main(void)
-+{
-+	pthread_mutex_t a;
-+
-+	pthread_mutex_init(&a, NULL);
-+
-+	pthread_mutex_lock(&a);
-+	pthread_mutex_unlock(&a);
-+	pthread_mutex_unlock(&a);
-+}
--- 
-1.8.2.1
+This was added by commit 9905ac2b90a3e7cecd9e7dfe21c252362e7080b2
+(libxenlight: implement libxl_set_memory_target). It was written
+by Keir and signed off by Stefano (both are CCed here). Guys,
+why did you added LIBXL_MAXMEM_CONSTANT? What does it mean?
 
+Daniel
