@@ -1,190 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759543Ab3D3Icl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 04:32:41 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54639 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759173Ab3D3Icj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 04:32:39 -0400
-Date: Tue, 30 Apr 2013 10:32:37 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT] HID
-Message-ID: <alpine.LNX.2.00.1304301023040.20139@pobox.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1759507Ab3D3Igs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 04:36:48 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:37544 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758199Ab3D3Igq convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Apr 2013 04:36:46 -0400
+Message-ID: <517F829B.3080602@arm.com>
+Date: Tue, 30 Apr 2013 09:36:43 +0100
+From: Serban Constantinescu <Serban.Constantinescu@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: =?UTF-8?B?QXJ2ZSBIasO4bm5ldsOlZw==?= <arve@android.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "kernel-team@android.com" <kernel-team@android.com>,
+        "john.stultz@linaro.org" <john.stultz@linaro.org>,
+        Dave Butcher <Dave.Butcher@arm.com>
+Subject: Re: [PATCH v3 0/6] Android Binder IPC Fixes
+References: <1365769555-6052-1-git-send-email-serban.constantinescu@arm.com> <517E9CDB.3020906@arm.com> <CAMP5XgfRkG2Q74=e6p1ieHh3M6Nr67ykOBY234gZ_nUJ07U48A@mail.gmail.com>
+In-Reply-To: <CAMP5XgfRkG2Q74=e6p1ieHh3M6Nr67ykOBY234gZ_nUJ07U48A@mail.gmail.com>
+X-OriginalArrivalTime: 30 Apr 2013 08:36:42.0293 (UTC) FILETIME=[D722BE50:01CE457D]
+X-MC-Unique: 113043009364401301
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+Hi Arve,
 
-please pull from
+On 30/04/13 00:13, Arve Hjønnevåg wrote:
+> On Mon, Apr 29, 2013 at 9:16 AM, Serban Constantinescu
+> <Serban.Constantinescu@arm.com> wrote:
+>> Hi all,
+>>
+>> Any feedback or comments on this patch set?
+>>
+>
+> You don't seem to have addressed my feedback on the previous patch set.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/jikos/hid.git for-linus
+For v3 I have modified the following according to your review:
 
-to receive HID subsystem updates for 3.10. Highlights:
+> Changes for v3:
+> 1:  Dropped the patch that was replacing uint32_t types with unsigned int
+> 2:  Dropped the patch fixing the IOCTL types(since it has been added to Greg's
+>     staging tree)
+> 3:  Split one patch into two: 'modify binder_write_read' and '64bit changes'
+> 4:  Modified BINDER_SET_MAX_THREADS ioctl definition accordint to Arve's review
+> 5:  Modified the binder command IOCTL declarations according to Arve's review
 
+The following were left out:
 
-- hid driver transport cleanup, finalizing the long-desired decoupling of 
-  core from transport layers, by Benjamin Tissoires and Henrik Rydberg
-- support for hybrid finger/pen multitouch HID devices, by Benjamin 
-  Tissoires
-- fix for long-standing issue in Logitech unifying driver sometimes not
-  inializing properly due to device specifics, by Andrew de los Reyes
-- Wii remote driver updates to support 2nd generation of devices, by David 
-  Herrmann
-- support for Apple IR remote
-- roccat driver now supports new devices (Roccat Kone Pure, IskuFX), by 
-  Stefan Achatz
-- debugfs locking fixes in hid debug interface, by Jiri Kosina
+> On 11/04/13 22:40, Arve Hjønnevåg wrote:
+> OK, relaxing the alignment requirement for *offp to what the hardware
+>> requires makes sense. Is there any macros in the kernel to help with
+>> this, instead of hard-coding it to 4 bytes?
 
+There is no kernel macro that I know which will help here(one that 
+springs to mind is PTR_ALIGN but it aligns to (unsigned long) - we need 
+one that aligns to (u32)). Any ideas?
 
-Thanks.
+> On 11/04/13 21:38, Arve Hjønnevåg wrote:
+> OK, but if you are using this change let a 64 bit user-space know that
+>> the driver has been fixed, then this patch needs to go after the
+>> patches that change the structures on 64 bit systems.
 
+For 32bit systems nothing has changed so they will continue to work as 
+before. For 64bit systems the size of binder_version was signed long 
+before the patch and __s32 after the patch is applied. Thus a 64bit 
+system using the old interface will fail immediately after opening the 
+binder driver, while cheeking the binder version (since the 
+BINDER_VERSION ioctl will be different pre/post patch - size of 
+binder_version differs).
 
-Adam Jiang (1):
-      HID: Add PID for Japanese version of NE4K keyboard
+For 64/32 systems once I will have the userspace wrapper ready I will 
+add another ioctl(as discussed) that will check if the driver is 64bit 
+ready(among the first things to do on binder_open).
 
-Andrew de los Reyes (3):
-      HID: Separate struct hid_device's driver_lock into two locks.
-      HID: logitech-dj: Allow incoming packets during probe().
-      Revert "HID: Fix logitech-dj: missing Unifying device issue"
+Please let me know if there is anything that skipped my review and you 
+would like to integrate in this patch set.
 
-Benjamin Tissoires (19):
-      HID: Kconfig: Remove explicit transport layer dependencies
-      HID: use hid_hw_request() instead of direct call to usbhid
-      HID: use hid_hw_wait() instead of direct call to usbhid
-      HID: multitouch: remove explicit usbhid dependency
-      HID: multitouch: Copyright and note on regression tests
-      HID: i2c-hid: implement request() callback
-      HID: multitouch: remove useless last_field_index field
-      HID: holtek: Holtek devices depends on USB_HID
-      HID: ll_driver: Extend the interface with idle requests
-      HID: multitouch: remove last usb dependency
-      HID: input: don't register unmapped input devices
-      HID: multitouch: breaks out touch handling in specific functions
-      HID: multitouch: do not map usage from non used reports
-      HID: multitouch: change touch sensor detection in mt_input_configured()
-      HID: multitouch: add handling for pen in dual-sensors device
-      HID: multitouch: append " Pen" to the name of the stylus input
-      HID: multitouch: force BTN_STYLUS for pen devices
-      HID: appleir: add support for Apple ir devices
-      HID: debug: break out hid_dump_report() into hid-debug
+Thanks for your feedback and help,
+Serban
 
-Chen Gang (1):
-      HID: icade: u16 which never < 0
-
-David Herrmann (3):
-      HID: wiimote: use unique battery names
-      HID: wiimote: add 2nd generation Wii Remote IDs
-      HID: wiimote: parse reduced status reports
-
-David King (1):
-      HID: clarify Magic Mouse Kconfig description
-
-Henrik Rydberg (2):
-      HID: Extend the interface with report requests
-      HID: Extend the interface with wait io request
-
-Huzefa Kankroliwala (1):
-      HID: i2c-hid: fix length for set/get report in i2c hid
-
-Jiri Kosina (2):
-      HID: hidraw: warn if userspace headers are outdated
-      HID: protect hid_debug_list
-
-Jiri Slaby (1):
-      HID: hid-lenovo-tpkbd: remove doubled hid_get_drvdata
-
-Mika Westerberg (1):
-      HID: make sensor autodetection independent of underlying bus
-
-Paul Bolle (2):
-      HID: Kconfig: fix "-- help---"
-      HID: fix ifdef comment for "CONFIG_HID_PICOLCD_CIR"
-
-Simon Wood (1):
-      HID: hid-lg4ff add support for new version of DFGT wheel
-
-Stefan Achatz (4):
-      HID: roccat: add support for Roccat Kone Pure gaming mouse
-      HID: roccat: add support for IskuFX
-      HID: roccat: fix comments on chardevice
-      HID: roccat: added media key support for Kone
-
-Wei Yongjun (1):
-      HID: steelseries: use module_hid_driver() to simplify the code
-
- .../ABI/testing/sysfs-driver-hid-roccat-isku       |   12 +-
- .../ABI/testing/sysfs-driver-hid-roccat-konepure   |  105 ++++++
- drivers/hid/Kconfig                                |  117 ++++---
- drivers/hid/Makefile                               |    5 +-
- drivers/hid/hid-apple.c                            |    5 -
- drivers/hid/hid-appleir.c                          |  352 ++++++++++++++++++++
- drivers/hid/hid-axff.c                             |    6 +-
- drivers/hid/hid-core.c                             |   63 ++--
- drivers/hid/hid-debug.c                            |   36 ++
- drivers/hid/hid-dr.c                               |    8 +-
- drivers/hid/hid-emsff.c                            |    6 +-
- drivers/hid/hid-gaff.c                             |   10 +-
- drivers/hid/hid-holtekff.c                         |    4 +-
- drivers/hid/hid-icade.c                            |    2 +-
- drivers/hid/hid-ids.h                              |    9 +-
- drivers/hid/hid-input.c                            |   77 +++++
- drivers/hid/hid-kye.c                              |    4 +-
- drivers/hid/hid-lenovo-tpkbd.c                     |    6 +-
- drivers/hid/hid-lg2ff.c                            |    6 +-
- drivers/hid/hid-lg3ff.c                            |    6 +-
- drivers/hid/hid-lg4ff.c                            |   20 +-
- drivers/hid/hid-lgff.c                             |    8 +-
- drivers/hid/hid-logitech-dj.c                      |   53 +---
- drivers/hid/hid-logitech-dj.h                      |    1 -
- drivers/hid/hid-magicmouse.c                       |    1 -
- drivers/hid/hid-microsoft.c                        |    2 +
- drivers/hid/hid-multitouch.c                       |  273 +++++++++++-----
- drivers/hid/hid-ntrig.c                            |   10 +-
- drivers/hid/hid-picolcd.h                          |    6 +-
- drivers/hid/hid-picolcd_backlight.c                |    4 +-
- drivers/hid/hid-picolcd_cir.c                      |    2 -
- drivers/hid/hid-picolcd_core.c                     |    8 +-
- drivers/hid/hid-picolcd_debugfs.c                  |    2 -
- drivers/hid/hid-picolcd_fb.c                       |   12 +-
- drivers/hid/hid-picolcd_lcd.c                      |    4 +-
- drivers/hid/hid-picolcd_leds.c                     |    4 +-
- drivers/hid/hid-pl.c                               |    6 +-
- drivers/hid/hid-prodikeys.c                        |    3 +-
- drivers/hid/hid-roccat-isku.c                      |   17 +-
- drivers/hid/hid-roccat-isku.h                      |    4 +-
- drivers/hid/hid-roccat-kone.c                      |    3 +-
- drivers/hid/hid-roccat-kone.h                      |    1 +
- drivers/hid/hid-roccat-konepure.c                  |  304 +++++++++++++++++
- drivers/hid/hid-roccat-konepure.h                  |   72 ++++
- drivers/hid/hid-roccat.c                           |    2 +-
- drivers/hid/hid-sensor-hub.c                       |   12 +-
- drivers/hid/hid-sjoy.c                             |    6 +-
- drivers/hid/hid-speedlink.c                        |    2 -
- drivers/hid/hid-steelseries.c                      |   16 +-
- drivers/hid/hid-thingm.c                           |    1 -
- drivers/hid/hid-tmff.c                             |    6 +-
- drivers/hid/hid-wiimote-core.c                     |   43 +++-
- drivers/hid/hid-zpff.c                             |    6 +-
- drivers/hid/i2c-hid/i2c-hid.c                      |   31 ++
- drivers/hid/usbhid/hid-core.c                      |   35 ++-
- drivers/hid/usbhid/hid-pidff.c                     |   80 +++---
- drivers/hid/usbhid/hiddev.c                        |    8 +-
- drivers/hid/usbhid/usbhid.h                        |    3 -
- include/linux/hid-debug.h                          |    6 +-
- include/linux/hid.h                                |  101 ++++++-
- samples/hidraw/hid-example.c                       |    3 +-
- 61 files changed, 1600 insertions(+), 420 deletions(-)
- create mode 100644 Documentation/ABI/testing/sysfs-driver-hid-roccat-konepure
- create mode 100644 drivers/hid/hid-appleir.c
- create mode 100644 drivers/hid/hid-roccat-konepure.c
- create mode 100644 drivers/hid/hid-roccat-konepure.h
-
--- 
-Jiri Kosina
-SUSE Labs
