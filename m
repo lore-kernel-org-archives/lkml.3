@@ -1,38 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933680Ab3D3VSp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 17:18:45 -0400
-Received: from mail.warren-wilson.edu ([64.147.210.171]:41742 "EHLO
-	mail.warren-wilson.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933058Ab3D3VSj convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 17:18:39 -0400
-X-Greylist: delayed 625 seconds by postgrey-1.27 at vger.kernel.org; Tue, 30 Apr 2013 17:18:39 EDT
-Content-Type: text/plain; charset=US-ASCII
+	id S933713Ab3D3WHJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 18:07:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50439 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756744Ab3D3WHE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Apr 2013 18:07:04 -0400
+Date: Tue, 30 Apr 2013 18:06:47 -0400
+From: Dave Jones <davej@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        paul.mckenney@linaro.org, mmarek@suse.cz, linux-kbuild@vger.kernel.org
+Subject: Re: rcu: Provide compile-time control for no-CBs CPUs
+Message-ID: <20130430220647.GA16524@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	paul.mckenney@linaro.org, mmarek@suse.cz,
+	linux-kbuild@vger.kernel.org
+References: <20130430214826.GK3780@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Description: Mail message body
-Subject: system administrator
-To: Recipients <info@web.net>
-From: "ADMIN" <info@web.net>
-Date: Wed, 01 May 2013 14:03:50 -0700
-Reply-To: upgrade1@dgoh.org
-X-Antivirus: avast! (VPS 130430-0, 04/30/2013), Outbound message
-X-Antivirus-Status: Clean
-Message-Id: <20130430210152.3BC5B5F64C91@mail.warren-wilson.edu>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130430214826.GK3780@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Your E-mail has exceeded 2 GB which was established by our website administrator, you are currently runing at 2.30GB, you can not send or receive new messages until you confirm your mailbox. Complete the form below to verify your account.
+On Tue, Apr 30, 2013 at 02:48:26PM -0700, Paul E. McKenney wrote:
 
-Fill in the required form below to cornfirm your account and sent the
-following e-mail:
+ > <snip excellent explanation>
+ >
+ > Should I add this to the Kconfig help text?  My guess is "not all of it",
+ > but figured I should ask.
 
-(1) E-mail:
-(2) Username:
-(3) Password:
-(4) Confirm Password:
+The commit msg would have been a great place for much of it, especially
+the part explaining your desire to have users kick the tires etc.
 
-thank you
-system administrator
+ >  See below for my current best guess.
+
+Much better. Be sure to pass on the 'terrible kconfig' award to the
+next lucky recipient when their time comes :)
+
+	Dave
+
