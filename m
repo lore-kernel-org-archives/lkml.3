@@ -1,104 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759615Ab3D3Avv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 20:51:51 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:40764 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758839Ab3D3Avt (ORCPT
+	id S1759677Ab3D3AwW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 20:52:22 -0400
+Received: from mail-da0-f43.google.com ([209.85.210.43]:37573 "EHLO
+	mail-da0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759540Ab3D3AwU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 20:51:49 -0400
-Message-ID: <517F15A2.3010300@linaro.org>
-Date: Mon, 29 Apr 2013 17:51:46 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Mon, 29 Apr 2013 20:52:20 -0400
+Date: Mon, 29 Apr 2013 17:52:14 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org
+Subject: [GIT PULL] cgroup changes for v3.10-rc1
+Message-ID: <20130430005214.GK2395@htj.dyndns.org>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Magnus Damm <magnus.damm@gmail.com>
-Subject: Re: [patch 04/15] clocksource: Add module refcount
-References: <20130425142452.908423538@linutronix.de> <20130425143435.762417789@linutronix.de>
-In-Reply-To: <20130425143435.762417789@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/25/2013 01:31 PM, Thomas Gleixner wrote:
-> Add a module refcount, so the current clocksource cannot be removed
-> unconditionally.
->
-> Signed-off-by: Thomas Gleixner<tglx@linutronix.de>
-> ---
->   include/linux/clocksource.h |    3 +++
->   kernel/time/timekeeping.c   |   15 ++++++++++-----
->   2 files changed, 13 insertions(+), 5 deletions(-)
->
-> Index: tip/include/linux/clocksource.h
-> ===================================================================
-> --- tip.orig/include/linux/clocksource.h
-> +++ tip/include/linux/clocksource.h
-> @@ -21,6 +21,7 @@
->   /* clocksource cycle base type */
->   typedef u64 cycle_t;
->   struct clocksource;
-> +struct module;
->   
->   #ifdef CONFIG_ARCH_CLOCKSOURCE_DATA
->   #include <asm/clocksource.h>
-> @@ -162,6 +163,7 @@ extern u64 timecounter_cyc2time(struct t
->    * @suspend:		suspend function for the clocksource, if necessary
->    * @resume:		resume function for the clocksource, if necessary
->    * @cycle_last:		most recent cycle counter value seen by ::read()
-> + * @owner:		module reference
->    */
->   struct clocksource {
->   	/*
-> @@ -195,6 +197,7 @@ struct clocksource {
->   	cycle_t cs_last;
->   	cycle_t wd_last;
->   #endif
-> +	struct module *owner;
+Hello, Linus.
 
-Maybe could you add a comment about who is expected to set the owner ptr?
+* Fixes and a lot of cleanups.  Locking cleanup is finally complete.
+  cgroup_mutex is no longer exposed to individual controlelrs which
+  used to cause nasty deadlock issues.  Li fixed and cleaned up quite
+  a bit including long standing ones like racy cgroup_path().
 
+* device cgroup now supports proper hierarchy thanks to Aristeu.
 
+* perf_event cgroup now supports proper hierarchy.
 
->   } ____cacheline_aligned;
->   
->   /*
-> Index: tip/kernel/time/timekeeping.c
-> ===================================================================
-> --- tip.orig/kernel/time/timekeeping.c
-> +++ tip/kernel/time/timekeeping.c
-> @@ -627,11 +627,16 @@ static int change_clocksource(void *data
->   	write_seqcount_begin(&timekeeper_seq);
->   
->   	timekeeping_forward_now(tk);
-> -	if (!new->enable || new->enable(new) == 0) {
-> -		old = tk->clock;
-> -		tk_setup_internals(tk, new);
-> -		if (old->disable)
-> -			old->disable(old);
-> +	if (try_module_get(new->owner)) {
+* A new mount option "__DEVEL__sane_behavior" is added.  As indicated
+  by the name, this option is to be used for development only at this
+  point and generates a warning message when used.  Unfortunately,
+  cgroup interface currently has too many brekages and inconsistencies
+  to implement a consistent and unified hierarchy on top.  The new
+  flag is used to collect the behavior changes which are necessary to
+  implement consistent unified hierarchy.  It's likely that this flag
+  won't be used verbatim when it becomes ready but will be enabled
+  implicitly along with unified hierarchy.
 
-Hrm..  So this works, but the interface is a bit non-intuitive, since 
-without looking up try_module_get() I'd be surprised that this would 
-succeed if the owner ptr is null. Maybe deserves a comment?
+  The option currently disables some of broken behaviors in cgroup
+  core and also .use_hierarchy switch in memcg (will be routed through
+  -mm), which can be used to make very unusual hierarchy where nesting
+  is partially honored.  It will also be used to implement hierarchy
+  support for blk-throttle which would be impossible otherwise without
+  introducing a full separate set of control knobs.
 
-> +		if (!new->enable || new->enable(new) == 0) {
-> +			old = tk->clock;
-> +			tk_setup_internals(tk, new);
-> +			if (old->disable)
-> +				old->disable(old);
-> +			module_put(old->owner);
-> +		} else {
-> +			module_put(new->owner);
-> +		}
->   	}
->   	timekeeping_update(tk, true, true);
->   
+  This is essentially versioning of interface which isn't very nice
+  but at this point I can't see any other options which would allow
+  keeping the interface the same while moving towards hierarchy
+  behavior which is at least somewhat sane.  The planned unified
+  hierarchy is likely to require some level of adaptation from
+  userland anyway, so I think it'd be best to take the chance and
+  update the interface such that it's supportable in the long term.
 
-thanks
--john
+  Maintaining the existing interface does complicate cgroup core but
+  shouldn't put too much strain on individual controllers and I think
+  it'd be manageable for the foreseeable future.  Maybe we'll be able
+  to drop it in a decade.
 
+This pull request creates the following trivial conflict in
+include/linux/res_counter.h
+
+  <<<<<<< HEAD
+  #include <linux/cgroup.h>
+  #include <linux/errno.h>
+  =======
+  #include <linux/spinlock.h>
+  >>>>>>> 2a0010af17b1739ef8ea8cf02647a127241ee674
+
+The conflict is between the following two commits.
+
+* ebf47beb6 ("include/linux/res_counter.h needs errno.h") added
+  errno.h inclusion.
+
+* 9259826cc ("res_counter: remove include of cgroup.h from
+  res_counter.h") removed cgroup.h inclusion.
+
+And can be resolved like the following - errno.h added and cgroup.h
+removed.  Just in case, test merge is available in the
+test-merge-v3.10 branch.
+
+  #include <linux/spinlock.h>
+  #include <linux/errno.h>
+
+Also, ff794dea52ea ("cpuset: remove include of cgroup.h from
+cpuset.h") caused build failure on ppc64 because
+arch/powerpc/mm/numa.c was getting slab.h through cpuset.h.  Stephen
+noticed this in -next and provided the following patch.  I think
+Benjamin is gonna pick this up before pushing the ppc tree but in case
+it breaks for you the patch is at
+
+  http://marc.info/?l=linux-next&m=136720831327947&w=2
+
+Thanks.
+
+The following changes since commit 6dbe51c251a327e012439c4772097a13df43c5b8:
+
+  Linux 3.9-rc1 (2013-03-03 15:11:05 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git for-3.10
+
+for you to fetch changes up to 2a0010af17b1739ef8ea8cf02647a127241ee674:
+
+  cpuset: fix compile warning when CONFIG_SMP=n (2013-04-27 19:55:04 -0700)
+
+----------------------------------------------------------------
+Aristeu Rozanski (4):
+      devcg: expand may_access() logic
+      devcg: prepare may_access() for hierarchy support
+      devcg: use css_online and css_offline
+      devcg: propagate local changes down the hierarchy
+
+Kevin Wilson (1):
+      cgroup: remove unused parameter in cgroup_task_migrate().
+
+Li Zefan (22):
+      cgroup: fix cgroup_path() vs rename() race
+      cpuset: use cgroup_name() in cpuset_print_task_mems_allowed()
+      cgroup: no need to check css refs for release notification
+      cgroup: avoid accessing modular cgroup subsys structure without locking
+      res_counter: remove include of cgroup.h from res_counter.h
+      cpuset: remove include of cgroup.h from cpuset.h
+      cpuset: fix RCU lockdep splat in cpuset_print_task_mems_allowed()
+      cgroup: remove cgroup_is_descendant()
+      cgroup: remove unused variables in cgroup_destroy_locked()
+      cgroup: hold cgroup_mutex before calling css_offline()
+      cgroup: don't bother to resize pid array
+      cgroup: remove useless code in cgroup_write_event_control()
+      cgroup: fix an off-by-one bug which may trigger BUG_ON()
+      cgroup: consolidate cgroup_attach_task() and cgroup_attach_proc()
+      cgroup: make sure parent won't be destroyed before its children
+      cgroup: implement cgroup_is_descendant()
+      cgroup: remove cgrp->top_cgroup
+      cgroup: fix broken file xattrs
+      cgroup: fix use-after-free when umounting cgroupfs
+      cgroup: restore the call to eventfd->poll()
+      cpuset: fix cpu hotplug vs rebuild_sched_domains() race
+      cpuset: fix compile warning when CONFIG_SMP=n
+
+Li Zhong (1):
+      cpuset: use rebuild_sched_domains() in cpuset_hotplug_workfn()
+
+Michal Hocko (1):
+      memcg: fix memcg_cache_name() to use cgroup_name()
+
+Rami Rosen (3):
+      cgroups: Documentation/cgroup/cgroup.txt - a trivial fix.
+      cgroup: remove bind() method from cgroup_subsys.
+      devcg: remove parent_cgroup.
+
+Tejun Heo (13):
+      cgroup, cpuset: replace move_member_tasks_to_cpuset() with cgroup_transfer_tasks()
+      cgroup: relocate cgroup_lock_live_group() and cgroup_attach_task_all()
+      cgroup: unexport locking interface and cgroup_attach_task()
+      cgroup: kill cgroup_[un]lock()
+      cgroup: remove cgroup_lock_is_held()
+      devcg: remove broken_hierarchy tag
+      perf: make perf_event cgroup hierarchical
+      Revert "cgroup: remove bind() method from cgroup_subsys."
+      cgroup: make cgroup_path() not print double slashes
+      cgroup: convert cgroupfs_root flag bits to masks and add CGRP_ prefix
+      move cgroupfs_root to include/linux/cgroup.h
+      cgroup: introduce sane_behavior mount option
+      memcg: force use_hierarchy if sane_behavior
+
+ Documentation/cgroups/cgroups.txt |   3 +-
+ Documentation/cgroups/devices.txt |  70 +++-
+ block/blk-cgroup.h                |   2 -
+ include/linux/cgroup.h            | 170 ++++++++-
+ include/linux/cpuset.h            |   1 -
+ include/linux/res_counter.h       |   2 +-
+ kernel/cgroup.c                   | 724 ++++++++++++++++----------------------
+ kernel/cpuset.c                   | 115 ++----
+ kernel/events/core.c              |  24 +-
+ mm/memcontrol.c                   |  80 +++--
+ security/device_cgroup.c          | 267 +++++++++++---
+ 11 files changed, 825 insertions(+), 633 deletions(-)
+
+--
+tejun
