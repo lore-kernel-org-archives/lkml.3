@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760014Ab3D3JSr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 05:18:47 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:50842 "EHLO song.cn.fujitsu.com"
+	id S1760047Ab3D3JTF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 05:19:05 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:26430 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1759933Ab3D3JSo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 05:18:44 -0400
+	id S1759775Ab3D3JSq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Apr 2013 05:18:46 -0400
 X-IronPort-AV: E=Sophos;i="4.87,580,1363104000"; 
-   d="scan'208";a="7159153"
+   d="scan'208";a="7159158"
 From: Tang Chen <tangchen@cn.fujitsu.com>
 To: mingo@redhat.com, hpa@zytor.com, akpm@linux-foundation.org,
         yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
@@ -16,9 +16,9 @@ To: mingo@redhat.com, hpa@zytor.com, akpm@linux-foundation.org,
         mina86@mina86.com
 Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org
-Subject: [PATCH v2 08/13] x86, numa: Move memory_add_physaddr_to_nid() to CONFIG_NUMA.
-Date: Tue, 30 Apr 2013 17:21:18 +0800
-Message-Id: <1367313683-10267-9-git-send-email-tangchen@cn.fujitsu.com>
+Subject: [PATCH v2 10/13] x86, acpi, numa, mem-hotplug: Introduce MEMBLK_HOTPLUGGABLE to mark and reserve hotpluggable memory.
+Date: Tue, 30 Apr 2013 17:21:20 +0800
+Message-Id: <1367313683-10267-11-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.10.1
 In-Reply-To: <1367313683-10267-1-git-send-email-tangchen@cn.fujitsu.com>
 References: <1367313683-10267-1-git-send-email-tangchen@cn.fujitsu.com>
@@ -31,34 +31,136 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-memory_add_physaddr_to_nid() is declared in include/linux/memory_hotplug.h,
-protected by CONFIG_NUMA. And in x86, the definitions are protected by
-CONFIG_MEMORY_HOTPLUG.
+We mark out movable memory ranges and reserve them with MEMBLK_HOTPLUGGABLE flag in
+memblock.reserved. This should be done after the memory mapping is initialized
+because the kernel now supports allocate pagetable pages on local node, which
+are kernel pages.
 
-memory_add_physaddr_to_nid() uses numa_meminfo to find the physical address's
-nid. It has nothing to do with memory hotplug. And also, it can be used by
-alloc_low_pages() to obtain nid of the allocated memory.
+The reserved hotpluggable will be freed to buddy when memory initialization
+is done.
 
-So in x86, also use CONFIG_NUMA to protect it.
+This idea is from Wen Congyang <wency@cn.fujitsu.com> and Jiang Liu <jiang.liu@huawei.com>.
 
+Suggested-by: Jiang Liu <jiang.liu@huawei.com>
+Suggested-by: Wen Congyang <wency@cn.fujitsu.com>
 Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
 ---
- arch/x86/mm/numa.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ arch/x86/mm/numa.c       |   28 ++++++++++++++++++++++++++++
+ include/linux/memblock.h |    3 +++
+ mm/memblock.c            |   19 +++++++++++++++++++
+ 3 files changed, 50 insertions(+), 0 deletions(-)
 
 diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-index 105b092..1367fe4 100644
+index 1367fe4..a1f1f90 100644
 --- a/arch/x86/mm/numa.c
 +++ b/arch/x86/mm/numa.c
-@@ -959,7 +959,7 @@ EXPORT_SYMBOL(cpumask_of_node);
+@@ -731,6 +731,32 @@ static void __init early_x86_numa_init_mapping(void)
+ }
+ #endif
  
- #endif	/* !CONFIG_DEBUG_PER_CPU_MAPS */
- 
--#ifdef CONFIG_MEMORY_HOTPLUG
-+#ifdef CONFIG_NUMA
- int memory_add_physaddr_to_nid(u64 start)
++#ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
++static void __init early_mem_hotplug_init()
++{
++	int i, nid;
++	phys_addr_t start, end;
++
++	if (!movablecore_enable_srat)
++		return;
++
++	for (i = 0; i < numa_meminfo.nr_blks; i++) {
++		if (!numa_meminfo.blk[i].hotpluggable)
++			continue;
++
++		nid = numa_meminfo.blk[i].nid;
++		start = numa_meminfo.blk[i].start;
++		end = numa_meminfo.blk[i].end;
++
++		memblock_reserve_hotpluggable(start, end - start, nid);
++	}
++}
++#else		/* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
++static inline void early_mem_hotplug_init()
++{
++}
++#endif		/* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
++
+ void __init early_initmem_init(void)
  {
- 	struct numa_meminfo *mi = &numa_meminfo;
+ 	early_x86_numa_init();
+@@ -740,6 +766,8 @@ void __init early_initmem_init(void)
+ 	load_cr3(swapper_pg_dir);
+ 	__flush_tlb_all();
+ 
++	early_mem_hotplug_init();
++
+ 	early_memtest(0, max_pfn_mapped<<PAGE_SHIFT);
+ }
+ 
+diff --git a/include/linux/memblock.h b/include/linux/memblock.h
+index 3b2d1c4..0f01930 100644
+--- a/include/linux/memblock.h
++++ b/include/linux/memblock.h
+@@ -24,6 +24,7 @@
+ /* Definition of memblock flags. */
+ enum memblock_flags {
+ 	MEMBLK_LOCAL_NODE,	/* node-life-cycle data */
++	MEMBLK_HOTPLUGGABLE,	/* hotpluggable region */
+ 	__NR_MEMBLK_FLAGS,	/* number of flags */
+ };
+ 
+@@ -67,8 +68,10 @@ int memblock_remove(phys_addr_t base, phys_addr_t size);
+ int memblock_free(phys_addr_t base, phys_addr_t size);
+ int memblock_reserve(phys_addr_t base, phys_addr_t size);
+ int memblock_reserve_local_node(phys_addr_t base, phys_addr_t size, int nid);
++int memblock_reserve_hotpluggable(phys_addr_t base, phys_addr_t size, int nid);
+ void memblock_trim_memory(phys_addr_t align);
+ void memblock_mark_kernel_nodes(void);
++bool memblock_is_kernel_node(int nid);
+ 
+ #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
+ void __next_mem_pfn_range(int *idx, int nid, unsigned long *out_start_pfn,
+diff --git a/mm/memblock.c b/mm/memblock.c
+index edde4c2..0c55588 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -596,6 +596,13 @@ int __init_memblock memblock_reserve_local_node(phys_addr_t base,
+ 	return memblock_reserve_region(base, size, nid, flags);
+ }
+ 
++int __init_memblock memblock_reserve_hotpluggable(phys_addr_t base,
++					phys_addr_t size, int nid)
++{
++	unsigned long flags = 1 << MEMBLK_HOTPLUGGABLE;
++	return memblock_reserve_region(base, size, nid, flags);
++}
++
+ /**
+  * __next_free_mem_range - next function for for_each_free_mem_range()
+  * @idx: pointer to u64 loop variable
+@@ -809,11 +816,23 @@ void __init_memblock memblock_mark_kernel_nodes()
+ 			node_set(nid, memblock_kernel_nodemask);
+ 		}
+ }
++
++bool __init_memblock memblock_is_kernel_node(int nid)
++{
++	if (node_isset(nid, memblock_kernel_nodemask))
++		return true;
++	return false;
++}
+ #else
+ void __init_memblock memblock_mark_kernel_nodes()
+ {
+ 	node_set(0, memblock_kernel_nodemask);
+ }
++
++bool __init_memblock memblock_is_kernel_node(int nid)
++{
++	return true;
++}
+ #endif /* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
+ 
+ static phys_addr_t __init memblock_alloc_base_nid(phys_addr_t size,
 -- 
 1.7.1
 
