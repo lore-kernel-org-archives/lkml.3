@@ -1,42 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755399Ab3D3Gpf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 02:45:35 -0400
-Received: from smtp2.macqel.be ([194.78.208.39]:12623 "EHLO smtp2.macqel.be"
+	id S1757047Ab3D3GsX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 02:48:23 -0400
+Received: from shutemov.name ([204.155.152.216]:37875 "EHLO shutemov.name"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753037Ab3D3Gpe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 02:45:34 -0400
-Date: Tue, 30 Apr 2013 08:45:30 +0200
-From: Philippe De Muyter <phdm@macqel.be>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Karel Zak <kzak@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/5] Add aix lvm partitions support files
-Message-ID: <20130430064530.GA2036@frolo.macqel>
-References: <1366924229-21569-1-git-send-email-phdm@macqel.be> <1366924229-21569-3-git-send-email-phdm@macqel.be> <20130429093756.GB12317@x2.net.home> <20130429114041.GA10884@frolo.macqel> <20130429123651.GA2400@x2.net.home> <20130429153450.GA25581@frolo.macqel> <20130430064152.GK9563@kernel.dk>
+	id S1753037Ab3D3GsW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Apr 2013 02:48:22 -0400
+X-Greylist: delayed 611 seconds by postgrey-1.27 at vger.kernel.org; Tue, 30 Apr 2013 02:48:22 EDT
+Date: Tue, 30 Apr 2013 10:31:45 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Serban Constantinescu <serban.constantinescu@arm.com>
+Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        kernel-team@android.com, arve@android.com, john.stultz@linaro.org,
+        Dave.Butcher@arm.com
+Subject: Re: [PATCH v3 0/6] Android Binder IPC Fixes
+Message-ID: <20130430073145.GA3623@shutemov.name>
+References: <1365769555-6052-1-git-send-email-serban.constantinescu@arm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130430064152.GK9563@kernel.dk>
-User-Agent: Mutt/1.5.16 (2007-06-09)
+In-Reply-To: <1365769555-6052-1-git-send-email-serban.constantinescu@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 30, 2013 at 08:41:52AM +0200, Jens Axboe wrote:
-> On Mon, Apr 29 2013, Philippe De Muyter wrote:
-> > 
-> > so sda is 8,0 and sdb is 8,16
-> > 
-> > and if, while discovering partitions of /dev/sda, I try to make a
-> > partition 16 or higher, it is silently discarded by 'put_partition'.
-> > 
-> > Is that changed ?
+On Fri, Apr 12, 2013 at 01:25:49PM +0100, Serban Constantinescu wrote:
+> The patch set has been successfully tested with a 64bit Linux userspace and
+> 64bit binder unit-tests.
 > 
-> That's a set limitation of sd, it does not apply to other devices. The
-> legacy IDE code used 64 for max partitions, for instance. So Karel is
-> right, you should not make any assumptions about the max number of
-> partitions, it is driver dependent.
+> This patch set has been successfully tested on 32bit platforms(ARMv7 VExpress)
+> and 64bit platforms(ARMv8 RTSM) running a 32bit Android userspace and an in
+> kernel binder compat layer.
 
-I replaced that by state->limit in the v2 series.
+I've tried to replace ugly hack with your patches to be able to boot
+32-bit userspace on x86-64. It fails. :(
 
-Philippe
+-- 
+ Kirill A. Shutemov
