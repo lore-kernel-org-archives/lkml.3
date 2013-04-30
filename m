@@ -1,68 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760932Ab3D3P7d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 11:59:33 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:2874 "EHLO SMTP02.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758280Ab3D3P7a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 11:59:30 -0400
-X-IronPort-AV: E=Sophos;i="4.87,582,1363132800"; 
-   d="scan'208";a="21357389"
-Date: Tue, 30 Apr 2013 16:59:26 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Jon Medhurst <tixy@linaro.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-Subject: Re: linux-next build error (at91) - use of bool in mach/arch.h
-In-Reply-To: <alpine.LFD.2.03.1304301114140.17372@syhkavp.arg>
-Message-ID: <alpine.DEB.2.02.1304301659010.5398@kaball.uk.xensource.com>
-References: <517F8FF4.3050901@atmel.com> <CAMuHMdXYaDHYq7CG8ftP+yyF18pMx8qZrvM3AUTAXk+tUruNcA@mail.gmail.com> <alpine.DEB.2.02.1304301257200.5398@kaball.uk.xensource.com> <alpine.LFD.2.03.1304301114140.17372@syhkavp.arg>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	id S1760915Ab3D3QCO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 12:02:14 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:60646 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753731Ab3D3QCL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Apr 2013 12:02:11 -0400
+X-Nat-Received: from [202.181.97.72]:60219 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1367337721.30970
+To: cl@linux.com
+Cc: glommer@parallels.com, penberg@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [linux-next-20130422] Bug in SLAB?
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <0000013e564e0e5a-121c52f9-e489-470f-99d5-67a5ad42eb75-000000@email.amazonses.com>
+	<201304300028.IAD13051.OHOVMJSLFFFQOt@I-love.SAKURA.ne.jp>
+	<0000013e56e9304a-1042a95a-d4dd-43c5-8b8a-c670f50ac54e-000000@email.amazonses.com>
+	<201304300645.FCE37285.tVHJLSOMQFOFFO@I-love.SAKURA.ne.jp>
+	<0000013e5b56d067-7982dfa6-08a2-4c48-ad77-6888b5114c5f-000000@email.amazonses.com>
+In-Reply-To: <0000013e5b56d067-7982dfa6-08a2-4c48-ad77-6888b5114c5f-000000@email.amazonses.com>
+Message-Id: <201305010101.CGB86424.JFQOtSFOVOLFHM@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Wed, 1 May 2013 01:01:58 +0900
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 30042013 #9858965, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Apr 2013, Nicolas Pitre wrote:
-> On Tue, 30 Apr 2013, Stefano Stabellini wrote:
+Christoph Lameter wrote:
+> On Tue, 30 Apr 2013, Tetsuo Handa wrote:
 > 
-> > On Tue, 30 Apr 2013, Geert Uytterhoeven wrote:
-> > > On Tue, Apr 30, 2013 at 11:33 AM, Nicolas Ferre <nicolas.ferre@atmel.com> wrote:
-> > > > So, I am wondering if the best correction is to add the types.h header file
-> > > > in the asm/mach/arch.h file, like this:
-> > > >
-> > > > --- a/arch/arm/include/asm/mach/arch.h
-> > > > +++ b/arch/arm/include/asm/mach/arch.h
-> > > > @@ -8,6 +8,8 @@
-> > > >   * published by the Free Software Foundation.
-> > > >   */
-> > > >
-> > > > +#include <linux/types.h>
-> > > > +
-> > > >  #ifndef __ASSEMBLY__
-> > > >
-> > > >  struct tag;
-> > > >
-> > > > or if a better option would be to re-arrange the include directives in
-> > > > various at91xxx_devices.c files?
-> > > 
-> > > Include files should be self-contained, so asm/mach/arch.h is the right place.
-> > 
-> > Nicolas,
-> > are you happy to come up with a proper patch to fix the issue?
+> > The testcases still trigger BUG() at 32M:
 > 
-> I'd prefer if you just folded the above include into the original patch, 
-> unless this has been pulled already.
+> I thought we established that MAX_ORDER only allows a maximum of 8M sized
+> allocations? Why are you trying 32M?
 
-No, I'll exploit the opportunity to resend the patch series and issue a
-PULL request for the arm-soc tree.
+Only for regression testing. At least until Linux 3.9, requesting too large
+size didn't trigger oops, did it? I'm not expecting kmalloc() to trigger oops
+for Linux 3.10 and future kernels.
+
+> 
+> The BUG() should trigger for these allocations.
+> 
+
+"kmalloc() returning NULL for these allocations" is needed by "try kmalloc()
+first, fallback to vmalloc()" allocation. There are kernel modules which expect
+kmalloc() to return NULL rather than oops when the requested size is larger
+than KMALLOC_MAX_SIZE bytes. If kmalloc() suddenly starts triggering oops, such
+modules will break.
+
+
+
+Anyway, there is a regression we want to fix : we won't be able to boot
+Linux 3.10-rc1 for x86_32 built with CONFIG_DEBUG_SLAB=y &&
+CONFIG_DEBUG_SPINLOCK=y && CONFIG_DEBUG_PAGEALLOC=y .
+("Fix off by one error in slab.h" did not fix the regression.)
+
+Regards.
