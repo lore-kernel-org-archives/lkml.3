@@ -1,98 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759205Ab3D3DTm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 23:19:42 -0400
-Received: from mail-qc0-f180.google.com ([209.85.216.180]:45703 "EHLO
-	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758160Ab3D3DRe (ORCPT
+	id S1759097Ab3D3D2M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 23:28:12 -0400
+Received: from ringil.hengli.com.au ([178.18.16.133]:44437 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758197Ab3D3D2K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 23:17:34 -0400
-From: kosaki.motohiro@gmail.com
-To: linux-kernel@vger.kernel.org
-Cc: Olivier Langlois <olivier@trillion01.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        David Miller <davem@davemloft.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Kishon Vijay Abraham I <kishon@ti.com>, Keerthy <j-keerthy@ti.com>,
-        =?UTF-8?q?Beno=C3=AEt=20Cousson?= <b-cousson@ti.com>,
-        Paul Walmsley <paul@pwsan.com>, Tony Lindgren <tony@atomide.com>
-Subject: [PATCH 03/10] ARM: OMAP4: hwmod data: make 'ocp2scp_usb_phy_phy_48m" as the main clock
-Date: Mon, 29 Apr 2013 23:17:11 -0400
-Message-Id: <1367291838-5490-4-git-send-email-kosaki.motohiro@gmail.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1367291838-5490-1-git-send-email-kosaki.motohiro@gmail.com>
-References: <1367291838-5490-1-git-send-email-kosaki.motohiro@gmail.com>
+	Mon, 29 Apr 2013 23:28:10 -0400
+Date: Tue, 30 Apr 2013 11:27:33 +0800
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Tim Chen <tim.c.chen@linux.intel.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, "David S. Miller" <davem@davemloft.net>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        Jim Kukunas <james.t.kukunas@linux.intel.com>,
+        Keith Busch <keith.busch@intel.com>,
+        Erdinc Ozturk <erdinc.ozturk@intel.com>,
+        Vinodh Gopal <vinodh.gopal@intel.com>,
+        James Guilford <james.guilford@intel.com>,
+        Wajdi Feghali <wajdi.k.feghali@intel.com>,
+        Jussi Kivilinna <jussi.kivilinna@iki.fi>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-crypto@vger.kernel.org, linux-scsi@vger.kernel.org
+Subject: Re: [PATCH v2 1/4] Wrap crc_t10dif function all to use crypto
+ transform framework
+Message-ID: <20130430032733.GB20471@gondor.apana.org.au>
+References: <cover.1366214842.git.tim.c.chen@linux.intel.com>
+ <ea4271721b5ca130849b03da4f172f12f66e5628.1366214842.git.tim.c.chen@linux.intel.com>
+ <20130425132203.GA29501@gondor.apana.org.au>
+ <1366910910.27102.126.camel@schen9-DESK>
+ <20130426125224.GA4855@gondor.apana.org.au>
+ <1366994657.27102.129.camel@schen9-DESK>
+ <20130428001122.GA6973@gondor.apana.org.au>
+ <1367268030.27102.172.camel@schen9-DESK>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1367268030.27102.172.camel@schen9-DESK>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kishon Vijay Abraham I <kishon@ti.com>
+On Mon, Apr 29, 2013 at 01:40:30PM -0700, Tim Chen wrote:
+>
+> If I allocate the transform under the mod init instead, how can I make
+> sure that the fast version is already registered if I have it compiled
+> in?  It is not clear to me how that's done looking at the libcrc32c
+> code.  
 
-Commit 92702df3570e ("ARM: OMAP4: PM: fix PM regression introduced by recent
-clock cleanup") makes the 'ocp2scp_usb_phy_phy_48m' as optional
-functional clock causing regression in MUSB. But this 48MHz clock is a
-mandatory clock for usb phy attached to ocp2scp and hence made as the main
-clock for ocp2scp.
+This is only an issue when everything is built-in to the kernel.
 
-Cc: Keerthy <j-keerthy@ti.com>
-Cc: Benoît Cousson <b-cousson@ti.com>
-Cc: Paul Walmsley <paul@pwsan.com>
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-[paul@pwsan.com: add comment to the hwmod data to try to prevent any
- future mistakes here]
-Signed-off-by: Paul Walmsley <paul@pwsan.com>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
----
- arch/arm/mach-omap2/omap_hwmod_44xx_data.c |   18 +++++++++++-------
- 1 files changed, 11 insertions(+), 7 deletions(-)
+In that case we could make the crc implementations register at a
+point earlier than device_initcall, but no earlier than subsys_initcall
+since that's where cryptomgr sits.
 
-diff --git a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
-index 9e05765..eaba9dc 100644
---- a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
-+++ b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
-@@ -2714,16 +2714,22 @@ static struct omap_ocp2scp_dev ocp2scp_dev_attr[] = {
- 	{ }
- };
- 
--static struct omap_hwmod_opt_clk ocp2scp_usb_phy_opt_clks[] = {
--	{ .role = "48mhz", .clk = "ocp2scp_usb_phy_phy_48m" },
--};
--
- /* ocp2scp_usb_phy */
- static struct omap_hwmod omap44xx_ocp2scp_usb_phy_hwmod = {
- 	.name		= "ocp2scp_usb_phy",
- 	.class		= &omap44xx_ocp2scp_hwmod_class,
- 	.clkdm_name	= "l3_init_clkdm",
--	.main_clk	= "func_48m_fclk",
-+	/*
-+	 * ocp2scp_usb_phy_phy_48m is provided by the OMAP4 PRCM IP
-+	 * block as an "optional clock," and normally should never be
-+	 * specified as the main_clk for an OMAP IP block.  However it
-+	 * turns out that this clock is actually the main clock for
-+	 * the ocp2scp_usb_phy IP block:
-+	 * http://lists.infradead.org/pipermail/linux-arm-kernel/2012-September/119943.html
-+	 * So listing ocp2scp_usb_phy_phy_48m as a main_clk here seems
-+	 * to be the best workaround.
-+	 */
-+	.main_clk	= "ocp2scp_usb_phy_phy_48m",
- 	.prcm = {
- 		.omap4 = {
- 			.clkctrl_offs = OMAP4_CM_L3INIT_USBPHYOCP2SCP_CLKCTRL_OFFSET,
-@@ -2732,8 +2738,6 @@ static struct omap_hwmod omap44xx_ocp2scp_usb_phy_hwmod = {
- 		},
- 	},
- 	.dev_attr	= ocp2scp_dev_attr,
--	.opt_clks	= ocp2scp_usb_phy_opt_clks,
--	.opt_clks_cnt	= ARRAY_SIZE(ocp2scp_usb_phy_opt_clks),
- };
- 
- /*
+Cheers,
 -- 
-1.7.1
-
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
