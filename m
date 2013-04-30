@@ -1,71 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760663Ab3D3N3q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 09:29:46 -0400
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:54076 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760460Ab3D3N3o (ORCPT
+	id S1760672Ab3D3Ne6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 09:34:58 -0400
+Received: from oproxy12-pub.bluehost.com ([50.87.16.10]:44384 "HELO
+	oproxy12-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1759102Ab3D3Ne4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 09:29:44 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAG6tG3wrHKTJBOu69XiV6BAPfvmK-QqJkBVpzkmkrLdLV5jRwQ@mail.gmail.com>
-References: <CAJsYZ5kk=J_Sc7w5dbMbkWWv8dXEU0ojKjEKNqH=Q6Tf2f7mQg@mail.gmail.com>
-	<20130422142218.GA26760@mwanda>
-	<CAG6tG3xc3RHD7sZXaEbg1vLRhFj+6d1wY=us4BfxBfi5y0o4zg@mail.gmail.com>
-	<CAJsYZ5nQg9g73r5yLicq6gAGbKEXVAFqtF2av=heeNtrNSPSWg@mail.gmail.com>
-	<CAG6tG3zcOdkA5QOBhaDzmMvcFSCwbfRAyKuRwXdn6ipOJhTVZQ@mail.gmail.com>
-	<CAJsYZ5mpukCM6TpFb27tJt6G7ZufugEP4kx8wzGxhRwAO46cCw@mail.gmail.com>
-	<CAG6tG3wrHKTJBOu69XiV6BAPfvmK-QqJkBVpzkmkrLdLV5jRwQ@mail.gmail.com>
-Date: Tue, 30 Apr 2013 18:59:44 +0530
-Message-ID: <CAJsYZ5kchksgObAS66T5b-4VPrjp4Mhn4HG0DHyWBgRXib3JTw@mail.gmail.com>
-Subject: Re: [BUG] staging: android: ashmem: Deadlock during ashmem_shrink
-From: Shankar Brahadeeswaran <shankoo77@gmail.com>
-To: Robert Love <rlove@google.com>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Bjorn Bringert <bringert@google.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, devel@driverdev.osuosl.org,
-        Hugh Dickins <hughd@google.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Anjana V Kumar <anjanavk12@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 30 Apr 2013 09:34:56 -0400
+Message-ID: <1367328894.8833.49.camel@Wailaba2>
+Subject: Re: [PATCH 06/10] posix-cpu-timers: fix wrong timer initialization
+From: Olivier Langlois <olivier@trillion01.com>
+To: kosaki.motohiro@gmail.com
+Cc: linux-kernel@vger.kernel.org, Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        David Miller <davem@davemloft.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Date: Tue, 30 Apr 2013 09:34:54 -0400
+In-Reply-To: <1367291838-5490-7-git-send-email-kosaki.motohiro@gmail.com>
+References: <1367291838-5490-1-git-send-email-kosaki.motohiro@gmail.com>
+	 <1367291838-5490-7-git-send-email-kosaki.motohiro@gmail.com>
+Organization: Trillion01 Inc
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {5686:box610.bluehost.com:olivierl:trillion01.com} {sentby:smtp auth 173.178.230.31 authed with olivier@trillion01.com}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Robert,
-Thanks for the patch. In the first email in this thread I was
-proposing the same solution and had asked whether doing this has any
-side effects.
-That is how this discussion started. I did some experiments and have
-got the answers for that. Just for every ones benefit I've re-worded
-the question again
-and put the details of the experiment below.
+On Mon, 2013-04-29 at 23:17 -0400, kosaki.motohiro@gmail.com wrote:
+> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> 
+> Currently glibc's rt/tst-cputimer1 testcase is spradically fail because
+> a timer created by timer_create() may fire earlier than it's specified.
+> 
+> posix_cpu_timer_set() uses "val" as current time for three purpose. 1)
+> initialize sig->cputimer. 2) calculation "old" val. 3) calculations an
+> expires time.
+> 
+> (1) and (2) should be used only committed time (i.e. without delta_exec)
+> because run_posix_cpu_timers() don't care of delta_exec and we need
+> consistency. But (3) need exact current time (aka cpu clock time) beucase
+> an expires should be "now + timeout" by definition.
+> 
+> This patch makes separete two kind of "now".
+> 
+Kosaki,
 
-Question:
-On occasions when we return because of the lock unavailability, what
-could be the worst case number of ashmem pages that are left
-unfreed (lru_count). Will it be very huge and have side effects?
+I must admit that this solution is simpler to what I originally
+proposed.
 
-To get the answer for this question, I added some instrumentation code
-to ashmem_shrink function on top of the patch. I ran Android monkey
-tests with lot of memory hungry applications so as to hit the Low
-Memory situation more frequently. After running this for almost a day
-I did not see a situation where the shrinker did not have the mutex.
-In fact what I found is that (in this use case at-least) most of the
-time the "lru_count" is zero, which means the application has not
-unpinned the pages. So the shrinker has no job to do (basically
-shrink_slab does not call ashmem_shrinker second time). So worst case
-if we hit a scenario where the shrinker is called I'm sure the
-lru_count would be very low. So even if the shrinker returns without
-freeing them (because of unavailability of the lock) its not going to
-be costly.
+good work!
+Olivier
 
-After this experiment, I too think that this patch (returning from
-ashmem_shrink if the lock is not available) is good enough and does
-not seem to have any major side effects.
 
-PS: Any plans of submitting this patch formally?
 
-Warm Regards,
-Shankar
