@@ -1,111 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761046Ab3D3QL6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 12:11:58 -0400
-Received: from silver.sucs.swan.ac.uk ([137.44.10.1]:52348 "EHLO
-	silver.sucs.swan.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761019Ab3D3QLz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 12:11:55 -0400
-Date: Tue, 30 Apr 2013 17:11:47 +0100
-From: Sitsofe Wheeler <sitsofe@yahoo.com>
-To: "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Cc: devel@linuxdriverproject.org,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Hyper-V stalls on device errors
-Message-ID: <20130430161146.GA15049@sucs.org>
-References: <20130430153321.GA12115@sucs.org>
+	id S1761002Ab3D3QMK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 12:12:10 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:6268 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760951Ab3D3QMF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Apr 2013 12:12:05 -0400
+Message-ID: <517FED51.8010008@parallels.com>
+Date: Tue, 30 Apr 2013 20:12:01 +0400
+From: Pavel Emelyanov <xemul@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130430153321.GA12115@sucs.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Glauber Costa <glommer@parallels.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Matt Mackall <mpm@selenic.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux MM <linux-mm@kvack.org>
+Subject: [PATCH 3/5] pagemap: introduce pagemap_entry_t without pmshift bits
+References: <517FED13.8090806@parallels.com>
+In-Reply-To: <517FED13.8090806@parallels.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Apologies for the previous empty mail.
+These bits are always constant (== PAGE_SHIFT) and just occupy space in
+the entry.  Moreover, in next patch we will need to report one more bit in
+the pagemap, but all bits are already busy on it.
 
-While testing a Windows 2012 host with a Fedora 18 guest running a 3.9
-kernel I've found that Hyper-v will stall all access to
-(para)virtualised disk devices when an underlying disk device returns an
-error. Every ten seconds a tiny bit of I/O goes through before being
-stalled again and it plays havoc with asynchronous I/O to disk devices
-too.
+That said, describe the pagemap entry that has 6 more free zero bits.
 
-To produce this I created a device mapper device with a single error in
-it by using
+Signed-off-by: Pavel Emelyanov <xemul@parallels.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Matt Mackall <mpm@selenic.com>
+Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Glauber Costa <glommer@parallels.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+---
+ fs/proc/task_mmu.c |   40 ++++++++++++++++++++++------------------
+ 1 files changed, 22 insertions(+), 18 deletions(-)
 
-dd if=/dev/zero of=/tmp/fakeblock0 bs=100M count=1
-losetup --find --show /tmp/fakeblock0
-# Assuming losetup uses /dev/loop0
-cat << EOF | dmsetup create oneerror
-0 13443 linear /dev/loop0 0
-13443 1 error
-13444 191356 linear /dev/loop0 0
-EOF
-
-After installing scsi-target-utils the /dev/mapper/oneerror device was
-then turned into a iSCSI target by adding
-
-<target iqn.2013-04.com.stormagic:oneerror>
-     backing-store /dev/mapper/oneerror
-     write-cache off
-</target>
-
-to /etc/tgt/targets.conf . The iSCSI target service was started with
-systemctl start tgtd.service (watch out for
-https://bugzilla.redhat.com/show_bug.cgi?id=848942 and you may need to
-disable the firewall by using systemctl stop firewalld.service ).
-
-The Windows 2012 iSCSI initiator was used to add the target to the
-machine with the hypervisor (the usual discovery should work to the
-Linux box serving the SCSI target). Once done, this disk was then added
-to the Linux guest's Hyper-V settings via the SCSI controller. A spare
-IDE controller disk was also added.
-
-In the Linux guest a badblock run was started on the spare IDE disk
-block device so that I/O was visible. A 
-dd if=/dev/zero of=/dev/sdc oflag=direct
-(where /dev/sdc is the erroring block device that was added earlier) was
-then done to trigger the access of the bad sector.
-
-The following appeared in dmesg:
-
-[  160.718836] hv_storvsc vmbus_0_12: cmd 0x2a scsi status 0x2 srb status 0x4
-[  170.991312] hv_storvsc vmbus_0_12: cmd 0x2a scsi status 0x2 srb status 0x4
-[  181.039597] hv_storvsc vmbus_0_12: cmd 0x2a scsi status 0x2 srb status 0x4
-[  191.081242] hv_storvsc vmbus_0_12: cmd 0x2a scsi status 0x2 srb status 0x4
-[  201.116790] hv_storvsc vmbus_0_12: cmd 0x2a scsi status 0x2 srb status 0x4
-[  211.127741] hv_storvsc vmbus_0_12: cmd 0x2a scsi status 0x2 srb status 0x4
-[  221.140338] sd 3:0:0:2: [sdc] Unhandled error code
-[  221.140346] sd 3:0:0:2: [sdc]  
-[  221.140349] Result: hostbyte=DID_OK driverbyte=DRIVER_OK
-[  221.140352] sd 3:0:0:2: [sdc] CDB: 
-[  221.140354] Write(10): 2a 00 00 00 34 00 00 01 00 00
-[  221.140366] end_request: critical target error, dev sdc, sector 13312
-
-A Fedora 18 guest on VMWare ESXi returned the error in under a second
-and only had the following in dmesg:
-
-[  293.917383] sd 2:0:1:0: [sdb] Unhandled sense code
-[  293.917391] sd 2:0:1:0: [sdb]
-[  293.917394] Result: hostbyte=DID_OK driverbyte=DRIVER_SENSE
-[  293.917408] sd 2:0:1:0: [sdb]
-[  293.917414] Sense Key : Medium Error [current]
-[  293.917418] sd 2:0:1:0: [sdb]
-[  293.917421] Add. Sense: Unrecovered read error
-[  293.917424] sd 2:0:1:0: [sdb] CDB:
-[  293.917428] Write(10): 2a 00 00 00 34 00 00 04 00 00
-[  293.917436] end_request: critical target error, dev sdb, sector 13312
-
-The stalls do not occur when the bad block device is created directly in
-the Linux guest.  From the previous log messages it looks like Hyper-V
-is trying for up to a minute before returning an error and the I/O
-stalls to separate (but virtualised) devices on different buses looks
-like an unintended side effect...
-
+diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+index ef6f6c6..39d6412 100644
+--- a/fs/proc/task_mmu.c
++++ b/fs/proc/task_mmu.c
+@@ -807,6 +807,7 @@ typedef struct {
+ struct pagemapread {
+ 	int pos, len;
+ 	pagemap_entry_t *buffer;
++	bool v2;
+ };
+ 
+ #define PAGEMAP_WALK_SIZE	(PMD_SIZE)
+@@ -820,14 +821,16 @@ struct pagemapread {
+ #define PM_PSHIFT_BITS      6
+ #define PM_PSHIFT_OFFSET    (PM_STATUS_OFFSET - PM_PSHIFT_BITS)
+ #define PM_PSHIFT_MASK      (((1LL << PM_PSHIFT_BITS) - 1) << PM_PSHIFT_OFFSET)
+-#define PM_PSHIFT(x)        (((u64) (x) << PM_PSHIFT_OFFSET) & PM_PSHIFT_MASK)
++#define __PM_PSHIFT(x)      (((u64) (x) << PM_PSHIFT_OFFSET) & PM_PSHIFT_MASK)
+ #define PM_PFRAME_MASK      ((1LL << PM_PSHIFT_OFFSET) - 1)
+ #define PM_PFRAME(x)        ((x) & PM_PFRAME_MASK)
++/* in "new" pagemap pshift bits are occupied with more status bits */
++#define PM_STATUS2(v2, x)   (__PM_PSHIFT(v2 ? x : PAGE_SHIFT))
+ 
+ #define PM_PRESENT          PM_STATUS(4LL)
+ #define PM_SWAP             PM_STATUS(2LL)
+ #define PM_FILE             PM_STATUS(1LL)
+-#define PM_NOT_PRESENT      PM_PSHIFT(PAGE_SHIFT)
++#define PM_NOT_PRESENT(v2)  PM_STATUS2(v2, 0)
+ #define PM_END_OF_BUFFER    1
+ 
+ static inline pagemap_entry_t make_pme(u64 val)
+@@ -850,7 +853,7 @@ static int pagemap_pte_hole(unsigned long start, unsigned long end,
+ 	struct pagemapread *pm = walk->private;
+ 	unsigned long addr;
+ 	int err = 0;
+-	pagemap_entry_t pme = make_pme(PM_NOT_PRESENT);
++	pagemap_entry_t pme = make_pme(PM_NOT_PRESENT(pm->v2));
+ 
+ 	for (addr = start; addr < end; addr += PAGE_SIZE) {
+ 		err = add_to_pagemap(addr, &pme, pm);
+@@ -860,7 +863,7 @@ static int pagemap_pte_hole(unsigned long start, unsigned long end,
+ 	return err;
+ }
+ 
+-static void pte_to_pagemap_entry(pagemap_entry_t *pme,
++static void pte_to_pagemap_entry(pagemap_entry_t *pme, struct pagemapread *pm,
+ 		struct vm_area_struct *vma, unsigned long addr, pte_t pte)
+ {
+ 	u64 frame, flags;
+@@ -879,18 +882,18 @@ static void pte_to_pagemap_entry(pagemap_entry_t *pme,
+ 		if (is_migration_entry(entry))
+ 			page = migration_entry_to_page(entry);
+ 	} else {
+-		*pme = make_pme(PM_NOT_PRESENT);
++		*pme = make_pme(PM_NOT_PRESENT(pm->v2));
+ 		return;
+ 	}
+ 
+ 	if (page && !PageAnon(page))
+ 		flags |= PM_FILE;
+ 
+-	*pme = make_pme(PM_PFRAME(frame) | PM_PSHIFT(PAGE_SHIFT) | flags);
++	*pme = make_pme(PM_PFRAME(frame) | PM_STATUS2(pm->v2, 0) | flags);
+ }
+ 
+ #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+-static void thp_pmd_to_pagemap_entry(pagemap_entry_t *pme,
++static void thp_pmd_to_pagemap_entry(pagemap_entry_t *pme, struct pagemapread *pm,
+ 					pmd_t pmd, int offset)
+ {
+ 	/*
+@@ -900,12 +903,12 @@ static void thp_pmd_to_pagemap_entry(pagemap_entry_t *pme,
+ 	 */
+ 	if (pmd_present(pmd))
+ 		*pme = make_pme(PM_PFRAME(pmd_pfn(pmd) + offset)
+-				| PM_PSHIFT(PAGE_SHIFT) | PM_PRESENT);
++				| PM_STATUS2(pm->v2, 0) | PM_PRESENT);
+ 	else
+-		*pme = make_pme(PM_NOT_PRESENT);
++		*pme = make_pme(PM_NOT_PRESENT(pm->v2));
+ }
+ #else
+-static inline void thp_pmd_to_pagemap_entry(pagemap_entry_t *pme,
++static inline void thp_pmd_to_pagemap_entry(pagemap_entry_t *pme, struct pagemapread *pm,
+ 						pmd_t pmd, int offset)
+ {
+ }
+@@ -918,7 +921,7 @@ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
+ 	struct pagemapread *pm = walk->private;
+ 	pte_t *pte;
+ 	int err = 0;
+-	pagemap_entry_t pme = make_pme(PM_NOT_PRESENT);
++	pagemap_entry_t pme = make_pme(PM_NOT_PRESENT(pm->v2));
+ 
+ 	/* find the first VMA at or above 'addr' */
+ 	vma = find_vma(walk->mm, addr);
+@@ -928,7 +931,7 @@ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
+ 
+ 			offset = (addr & ~PAGEMAP_WALK_MASK) >>
+ 					PAGE_SHIFT;
+-			thp_pmd_to_pagemap_entry(&pme, *pmd, offset);
++			thp_pmd_to_pagemap_entry(&pme, pm, *pmd, offset);
+ 			err = add_to_pagemap(addr, &pme, pm);
+ 			if (err)
+ 				break;
+@@ -945,7 +948,7 @@ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
+ 		 * and need a new, higher one */
+ 		if (vma && (addr >= vma->vm_end)) {
+ 			vma = find_vma(walk->mm, addr);
+-			pme = make_pme(PM_NOT_PRESENT);
++			pme = make_pme(PM_NOT_PRESENT(pm->v2));
+ 		}
+ 
+ 		/* check that 'vma' actually covers this address,
+@@ -953,7 +956,7 @@ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
+ 		if (vma && (vma->vm_start <= addr) &&
+ 		    !is_vm_hugetlb_page(vma)) {
+ 			pte = pte_offset_map(pmd, addr);
+-			pte_to_pagemap_entry(&pme, vma, addr, *pte);
++			pte_to_pagemap_entry(&pme, pm, vma, addr, *pte);
+ 			/* unmap before userspace copy */
+ 			pte_unmap(pte);
+ 		}
+@@ -968,14 +971,14 @@ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
+ }
+ 
+ #ifdef CONFIG_HUGETLB_PAGE
+-static void huge_pte_to_pagemap_entry(pagemap_entry_t *pme,
++static void huge_pte_to_pagemap_entry(pagemap_entry_t *pme, struct pagemapread *pm,
+ 					pte_t pte, int offset)
+ {
+ 	if (pte_present(pte))
+ 		*pme = make_pme(PM_PFRAME(pte_pfn(pte) + offset)
+-				| PM_PSHIFT(PAGE_SHIFT) | PM_PRESENT);
++				| PM_STATUS2(pm->v2, 0) | PM_PRESENT);
+ 	else
+-		*pme = make_pme(PM_NOT_PRESENT);
++		*pme = make_pme(PM_NOT_PRESENT(pm->v2));
+ }
+ 
+ /* This function walks within one hugetlb entry in the single call */
+@@ -989,7 +992,7 @@ static int pagemap_hugetlb_range(pte_t *pte, unsigned long hmask,
+ 
+ 	for (; addr != end; addr += PAGE_SIZE) {
+ 		int offset = (addr & ~hmask) >> PAGE_SHIFT;
+-		huge_pte_to_pagemap_entry(&pme, *pte, offset);
++		huge_pte_to_pagemap_entry(&pme, pm, *pte, offset);
+ 		err = add_to_pagemap(addr, &pme, pm);
+ 		if (err)
+ 			return err;
+@@ -1051,6 +1054,7 @@ static ssize_t pagemap_read(struct file *file, char __user *buf,
+ 	if (!count)
+ 		goto out_task;
+ 
++	pm.v2 = false;
+ 	pm.len = PM_ENTRY_BYTES * (PAGEMAP_WALK_SIZE >> PAGE_SHIFT);
+ 	pm.buffer = kmalloc(pm.len, GFP_TEMPORARY);
+ 	ret = -ENOMEM;
 -- 
-Sitsofe | http://sucs.org/~sits/
+1.7.6.5
