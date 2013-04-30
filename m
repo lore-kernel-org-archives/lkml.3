@@ -1,56 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759871Ab3D3Iwm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 04:52:42 -0400
-Received: from mail-bk0-f51.google.com ([209.85.214.51]:57304 "EHLO
-	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759453Ab3D3Iwi (ORCPT
+	id S1759778Ab3D3Iwj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 04:52:39 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:48241 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751285Ab3D3Iwh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 04:52:38 -0400
-Date: Tue, 30 Apr 2013 10:52:34 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: mingo@elte.hu, linux-kernel@vger.kernel.org, fweisbec@gmail.com,
-        rostedt@goodmis.org, bp@alien8.de, arjan@linux.intel.com,
-        khilman@linaro.org, cl@linux.com, peterz@infradead.org,
-        tglx@linutronix.de, olivier.baetz@novasparks.com,
-        rdunlap@infradead.org, bp@suse.de
-Subject: Re: [GIT PULL tip/timers/nohz] Documentation for adaptive ticks
-Message-ID: <20130430085234.GB23017@gmail.com>
-References: <20130428000130.GA19985@linux.vnet.ibm.com>
+	Tue, 30 Apr 2013 04:52:37 -0400
+Message-ID: <517F8652.4070103@arm.com>
+Date: Tue, 30 Apr 2013 09:52:34 +0100
+From: Serban Constantinescu <Serban.Constantinescu@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130428000130.GA19985@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "kernel-team@android.com" <kernel-team@android.com>,
+        "arve@android.com" <arve@android.com>,
+        "john.stultz@linaro.org" <john.stultz@linaro.org>,
+        Dave Butcher <Dave.Butcher@arm.com>
+Subject: Re: [PATCH v3 0/6] Android Binder IPC Fixes
+References: <1365769555-6052-1-git-send-email-serban.constantinescu@arm.com> <20130430073145.GA3623@shutemov.name>
+In-Reply-To: <20130430073145.GA3623@shutemov.name>
+X-OriginalArrivalTime: 30 Apr 2013 08:52:33.0162 (UTC) FILETIME=[0DE5D6A0:01CE4580]
+X-MC-Unique: 113043009523515201
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Kirill,
 
-* Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+On 30/04/13 08:31, Kirill A. Shutemov wrote:
+> On Fri, Apr 12, 2013 at 01:25:49PM +0100, Serban Constantinescu wrote:
+>> The patch set has been successfully tested with a 64bit Linux userspace and
+>> 64bit binder unit-tests.
+>>
+>> This patch set has been successfully tested on 32bit platforms(ARMv7 VExpress)
+>> and 64bit platforms(ARMv8 RTSM) running a 32bit Android userspace and an in
+>> kernel binder compat layer.
+>
+> I've tried to replace ugly hack with your patches to be able to boot
+> 32-bit userspace on x86-64. It fails. :(
+>
 
-> Hello, Ingo,
-> 
-> This change adds documentation for CONFIG_NO_HZ_IDLE and CONFIG_NO_HZ_FULL.
-> It is available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git rcu/nohz
-> 
-> for you to fetch changes up to 0c87f9b5ca5bdda1a868b0d7df4bec92e41a468d:
-> 
->   nohz_full: Add documentation. (2013-04-27 16:41:43 -0700)
-> 
-> 							Thanx, Paul
-> 
-> ----------------------------------------------------------------
-> Paul E. McKenney (1):
->       nohz_full: Add documentation.
-> 
->  Documentation/timers/NO_HZ.txt | 273 +++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 273 insertions(+)
->  create mode 100644 Documentation/timers/NO_HZ.txt
+This patch set fixes the binder interface so that it works on 32/32 or 
+64/64 systems and preps the driver for the compat layer - 64bit 
+kernel/32bit userspace. As discussed with the Android developers the 
+binder compat will live in the userspace. Thus for a 64bit kernel the 
+calls coming from 32 or 64bit file-systems will look alike.
 
-Pulled into tip:timers/nohz, thanks Paul!
+Thus for the moment it won't work.
 
-	Ingo
+Thanks,
+Serban
+
