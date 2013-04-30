@@ -1,217 +1,973 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761251Ab3D3SIl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 14:08:41 -0400
-Received: from smtp207.alice.it ([82.57.200.103]:52827 "EHLO smtp207.alice.it"
+	id S1761278Ab3D3SJl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 14:09:41 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:48462 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760881Ab3D3SIj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 14:08:39 -0400
-X-Greylist: delayed 353 seconds by postgrey-1.27 at vger.kernel.org; Tue, 30 Apr 2013 14:08:39 EDT
-Message-ID: <B42257E8CA4E4C23957DC087358A7ECA@unknown>
-Reply-To: "Roberto CORRADO" <i@secure.corradoroberto.it>
-From: "Roberto CORRADO" <i@secure.corradoroberto.it>
-To: <johannes@sipsolutions.net>, <IvDoorn@gmail.com>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: Fw: kernel BUG at net/rfkill/core.c:244!
-Date: Tue, 30 Apr 2013 20:02:53 +0200
+	id S1760203Ab3D3SJi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Apr 2013 14:09:38 -0400
+Date: Tue, 30 Apr 2013 11:09:31 -0700
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
+        Steve Grubb <sgrubb@redhat.com>
+Subject: [RESEND][PATCH] audit: fix event coverage of AUDIT_ANOM_LINK
+Message-ID: <20130430180931.GA17145@www.outflux.net>
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-	protocol="application/x-pkcs7-signature";
-	boundary="----=_NextPart_000_0021_01CE45DD.B2CA1480";
-	micalg=SHA1
-VER: 11
-G: L
-MTA: SENDMAIL
-TY: High
-X-Mailer: I'm too lame to use BSD,Linux or Windows
-UserAgent: CatWalker by Roberto Corrado Software
-RCS: 8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
+The userspace audit tools didn't like the existing formatting of the
+AUDIT_ANOM_LINK event. It needed to be expanded to emit an AUDIT_PATH
+event as well, so this implements the change. The bulk of the patch is
+moving code out of auditsc.c into audit.c and audit.h for general use.
+It expands audit_log_name to include an optional "struct path" argument
+for the simple case of just needing to report a pathname. This also makes
+audit_log_task_info available when syscall auditing is not enabled, since
+it is needed in either case for process details.
 
-------=_NextPart_000_0021_01CE45DD.B2CA1480
-Content-Type: text/plain;
-	charset="iso-8859-1"
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Reported-by: Steve Grubb <sgrubb@redhat.com>
+---
+v2:
+ - make task_info report non-optional (otherwise userspace can't correlate)
+---
+ include/linux/audit.h |   16 ++-
+ kernel/audit.c        |  244 ++++++++++++++++++++++++++++++++--
+ kernel/audit.h        |  159 ++++++++++++++++++++++
+ kernel/auditsc.c      |  353 +------------------------------------------------
+ 4 files changed, 405 insertions(+), 367 deletions(-)
 
-[    8.910064] ------------[ cut here ]------------
-[    8.911030] kernel BUG at net/rfkill/core.c:244!
-[    8.911030] invalid opcode: 0000 [#1] SMP=20
-[    8.911030] Modules linked in: hp_wmi(+) psmouse sparse_keymap rfkill =
-yenta_socket(+) pcmcia_rsrc pcmcia_core snd_hda_intel(+) snd_hda_codec =
-snd_hwdep snd_pcm wmi snd_page_alloc serio_raw snd_timer ehci_pci =
-ehci_hcd button battery ac snd soundcore microcode evdev loop reiserfs
-[    8.911030] Pid: 1075, comm: udevd Not tainted =
-3.9-hp530.corradoroberto.it #1 Hewlett-Packard HP 530 Notebook PC/30D5
-[    8.911030] EIP: 0060:[<f85b24dd>] EFLAGS: 00010246 CPU: 1
-[    8.911030] EIP is at rfkill_set_hw_state+0x8d/0x90 [rfkill]
-[    8.911030] EAX: 00000000 EBX: 00000001 ECX: 00000018 EDX: 00000001
-[    8.911030] ESI: 00000000 EDI: f59d0800 EBP: f58b7d20 ESP: f58b7d10
-[    8.911030]  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
-[    8.911030] CR0: 8005003b CR2: b76ab200 CR3: 358c7000 CR4: 000007f0
-[    8.911030] DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
-[    8.911030] DR6: ffff0ff0 DR7: 00000400
-[    8.911030] Process udevd (pid: 1075, ti=3Df58b6000 task=3Df60f0d50 =
-task.ti=3Df58b6000)
-[    8.911030] Stack:
-[    8.911030]  00000004 00000000 f59d080c f59d0800 f58b7d40 f863122f =
-f862f0e8 00000003
-[    8.911030]  00000f29 f59d080c f862f1d4 f59d0800 f58b7d54 c12dd8ee =
-f59d080c f862f1d4
-[    8.911030]  f862f1d4 f58b7d78 c12dbcfc f59d080c f862f1d4 f58b7d78 =
-c12dd959 f59d080c
-[    8.911030] Call Trace:
-[    8.911030]  [<f863122f>] hp_wmi_bios_setup+0x22f/0x34d [hp_wmi]
-[    8.911030]  [<c12dd8ee>] platform_drv_probe+0x2e/0x60
-[    8.911030]  [<c12dbcfc>] driver_probe_device+0x5c/0x1e0
-[    8.911030]  [<c12dd959>] ? platform_match+0x39/0x80
-[    8.911030]  [<c12dbf31>] __driver_attach+0x71/0x80
-[    8.911030]  [<c12dbec0>] ? __device_attach+0x40/0x40
-[    8.911030]  [<c12da417>] bus_for_each_dev+0x47/0x80
-[    8.911030]  [<c12db8fe>] driver_attach+0x1e/0x20
-[    8.911030]  [<c12dbec0>] ? __device_attach+0x40/0x40
-[    8.911030]  [<c12db5af>] bus_add_driver+0x1af/0x260
-[    8.911030]  [<c12dc4aa>] driver_register+0x6a/0x130
-[    8.911030]  [<c12dd51f>] ? platform_device_add+0x10f/0x240
-[    8.911030]  [<c12dd740>] platform_driver_register+0x40/0x50
-[    8.911030]  [<c12dd7f8>] platform_driver_probe+0x18/0x70
-[    8.911030]  [<f86314e1>] hp_wmi_init+0x194/0x1cb [hp_wmi]
-[    8.911030]  [<f863134d>] ? hp_wmi_bios_setup+0x34d/0x34d [hp_wmi]
-[    8.911030]  [<c10011f2>] do_one_initcall+0x102/0x150
-[    8.911030]  [<c105d434>] ? __blocking_notifier_call_chain+0x44/0x60
-[    8.911030]  [<c10937ce>] load_module+0x1b5e/0x20a0
-[    8.911030]  [<c1093d80>] sys_init_module+0x70/0xa0
-[    8.911030]  [<c14c8fdf>] syscall_call+0x7/0xb
-[    8.911030]  [<c14c0000>] ? percpu_counter_hotcpu_callback+0x11/0x7a
-[    8.911030] Code: e8 69 ff ff ff 80 7e 14 00 74 d8 0f b6 45 f0 83 e0 =
-01 38 c3 74 cd 8d 86 00 02 00 00 e8 3d f8 a9 c8 89 f8 83 c4 04 5b 5e 5f =
-5d c3 <0f> 0b 90 55 89 e5 3e 8d 74 26 00 8b 80 90 00 00 00 80 78 f4 00
-[    8.911030] EIP: [<f85b24dd>] rfkill_set_hw_state+0x8d/0x90 [rfkill] =
-SS:ESP 0068:f58b7d10
-[    8.920969] ---[ end trace 68e3bab393aad648 ]---
+diff --git a/include/linux/audit.h b/include/linux/audit.h
+index 5a6d718..b97809da 100644
+--- a/include/linux/audit.h
++++ b/include/linux/audit.h
+@@ -185,8 +185,6 @@ static inline int audit_get_sessionid(struct task_struct *tsk)
+ 	return tsk->sessionid;
+ }
+ 
+-extern void audit_log_task_context(struct audit_buffer *ab);
+-extern void audit_log_task_info(struct audit_buffer *ab, struct task_struct *tsk);
+ extern void __audit_ipc_obj(struct kern_ipc_perm *ipcp);
+ extern void __audit_ipc_set_perm(unsigned long qbytes, uid_t uid, gid_t gid, umode_t mode);
+ extern int __audit_bprm(struct linux_binprm *bprm);
+@@ -340,11 +338,6 @@ static inline int audit_get_sessionid(struct task_struct *tsk)
+ {
+ 	return -1;
+ }
+-static inline void audit_log_task_context(struct audit_buffer *ab)
+-{ }
+-static inline void audit_log_task_info(struct audit_buffer *ab,
+-				       struct task_struct *tsk)
+-{ }
+ static inline void audit_ipc_obj(struct kern_ipc_perm *ipcp)
+ { }
+ static inline void audit_ipc_set_perm(unsigned long qbytes, uid_t uid,
+@@ -429,6 +422,10 @@ static inline void	    audit_log_secctx(struct audit_buffer *ab, u32 secid)
+ { }
+ #endif
+ 
++extern void audit_log_task_context(struct audit_buffer *ab);
++extern void audit_log_task_info(struct audit_buffer *ab,
++				struct task_struct *tsk);
++
+ extern int		    audit_update_lsm_rules(void);
+ 
+ 				/* Private API (for audit.c only) */
+@@ -476,6 +473,11 @@ static inline void audit_log_link_denied(const char *string,
+ { }
+ static inline void audit_log_secctx(struct audit_buffer *ab, u32 secid)
+ { }
++static inline void audit_log_task_context(struct audit_buffer *ab)
++{ }
++static inline void audit_log_task_info(struct audit_buffer *ab,
++				       struct task_struct *tsk)
++{ }
+ #define audit_enabled 0
+ #endif /* CONFIG_AUDIT */
+ static inline void audit_log_string(struct audit_buffer *ab, const char *buf)
+diff --git a/kernel/audit.c b/kernel/audit.c
+index 9816a1b..b50660b 100644
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -49,6 +49,7 @@
+ #include <linux/slab.h>
+ #include <linux/err.h>
+ #include <linux/kthread.h>
++#include <linux/syscalls.h>
+ 
+ #include <linux/audit.h>
+ 
+@@ -1443,6 +1444,224 @@ void audit_log_key(struct audit_buffer *ab, char *key)
+ 		audit_log_format(ab, "(null)");
+ }
+ 
++void audit_log_cap(struct audit_buffer *ab, char *prefix, kernel_cap_t *cap)
++{
++	int i;
++
++	audit_log_format(ab, " %s=", prefix);
++	CAP_FOR_EACH_U32(i) {
++		audit_log_format(ab, "%08x",
++				 cap->cap[(_KERNEL_CAPABILITY_U32S-1) - i]);
++	}
++}
++
++void audit_log_fcaps(struct audit_buffer *ab, struct audit_names *name)
++{
++	kernel_cap_t *perm = &name->fcap.permitted;
++	kernel_cap_t *inh = &name->fcap.inheritable;
++	int log = 0;
++
++	if (!cap_isclear(*perm)) {
++		audit_log_cap(ab, "cap_fp", perm);
++		log = 1;
++	}
++	if (!cap_isclear(*inh)) {
++		audit_log_cap(ab, "cap_fi", inh);
++		log = 1;
++	}
++
++	if (log)
++		audit_log_format(ab, " cap_fe=%d cap_fver=%x",
++				 name->fcap.fE, name->fcap_ver);
++}
++
++static inline int audit_copy_fcaps(struct audit_names *name,
++				   const struct dentry *dentry)
++{
++	struct cpu_vfs_cap_data caps;
++	int rc;
++
++	if (!dentry)
++		return 0;
++
++	rc = get_vfs_caps_from_disk(dentry, &caps);
++	if (rc)
++		return rc;
++
++	name->fcap.permitted = caps.permitted;
++	name->fcap.inheritable = caps.inheritable;
++	name->fcap.fE = !!(caps.magic_etc & VFS_CAP_FLAGS_EFFECTIVE);
++	name->fcap_ver = (caps.magic_etc & VFS_CAP_REVISION_MASK) >>
++				VFS_CAP_REVISION_SHIFT;
++
++	return 0;
++}
++
++/* Copy inode data into an audit_names. */
++void audit_copy_inode(struct audit_names *name, const struct dentry *dentry,
++		      const struct inode *inode)
++{
++	name->ino   = inode->i_ino;
++	name->dev   = inode->i_sb->s_dev;
++	name->mode  = inode->i_mode;
++	name->uid   = inode->i_uid;
++	name->gid   = inode->i_gid;
++	name->rdev  = inode->i_rdev;
++	security_inode_getsecid(inode, &name->osid);
++	audit_copy_fcaps(name, dentry);
++}
++
++/**
++ * audit_log_name - produce AUDIT_PATH record from struct audit_names
++ * @context: audit_context for the task
++ * @n: audit_names structure with reportable details
++ * @path: optional path to report instead of audit_names->name
++ * @record_num: record number to report when handling a list of names
++ * @call_panic: optional pointer to int that will be updated if secid fails
++ */
++void audit_log_name(struct audit_context *context, struct audit_names *n,
++		    struct path *path, int record_num, int *call_panic)
++{
++	struct audit_buffer *ab;
++	ab = audit_log_start(context, GFP_KERNEL, AUDIT_PATH);
++	if (!ab)
++		return;
++
++	audit_log_format(ab, "item=%d", record_num);
++
++	if (path)
++		audit_log_d_path(ab, " name=", path);
++	else if (n->name) {
++		switch (n->name_len) {
++		case AUDIT_NAME_FULL:
++			/* log the full path */
++			audit_log_format(ab, " name=");
++			audit_log_untrustedstring(ab, n->name->name);
++			break;
++		case 0:
++			/* name was specified as a relative path and the
++			 * directory component is the cwd */
++			audit_log_d_path(ab, " name=", &context->pwd);
++			break;
++		default:
++			/* log the name's directory component */
++			audit_log_format(ab, " name=");
++			audit_log_n_untrustedstring(ab, n->name->name,
++						    n->name_len);
++		}
++	} else
++		audit_log_format(ab, " name=(null)");
++
++	if (n->ino != (unsigned long)-1) {
++		audit_log_format(ab, " inode=%lu"
++				 " dev=%02x:%02x mode=%#ho"
++				 " ouid=%u ogid=%u rdev=%02x:%02x",
++				 n->ino,
++				 MAJOR(n->dev),
++				 MINOR(n->dev),
++				 n->mode,
++				 from_kuid(&init_user_ns, n->uid),
++				 from_kgid(&init_user_ns, n->gid),
++				 MAJOR(n->rdev),
++				 MINOR(n->rdev));
++	}
++	if (n->osid != 0) {
++		char *ctx = NULL;
++		u32 len;
++		if (security_secid_to_secctx(
++			n->osid, &ctx, &len)) {
++			audit_log_format(ab, " osid=%u", n->osid);
++			if (call_panic)
++				*call_panic = 2;
++		} else {
++			audit_log_format(ab, " obj=%s", ctx);
++			security_release_secctx(ctx, len);
++		}
++	}
++
++	audit_log_fcaps(ab, n);
++	audit_log_end(ab);
++}
++
++void audit_log_task_context(struct audit_buffer *ab)
++{
++	char *ctx = NULL;
++	unsigned len;
++	int error;
++	u32 sid;
++
++	security_task_getsecid(current, &sid);
++	if (!sid)
++		return;
++
++	error = security_secid_to_secctx(sid, &ctx, &len);
++	if (error) {
++		if (error != -EINVAL)
++			goto error_path;
++		return;
++	}
++
++	audit_log_format(ab, " subj=%s", ctx);
++	security_release_secctx(ctx, len);
++	return;
++
++error_path:
++	audit_panic("error in audit_log_task_context");
++	return;
++}
++EXPORT_SYMBOL(audit_log_task_context);
++
++void audit_log_task_info(struct audit_buffer *ab, struct task_struct *tsk)
++{
++	const struct cred *cred;
++	char name[sizeof(tsk->comm)];
++	struct mm_struct *mm = tsk->mm;
++	char *tty;
++
++	if (!ab)
++		return;
++
++	/* tsk == current */
++	cred = current_cred();
++
++	spin_lock_irq(&tsk->sighand->siglock);
++	if (tsk->signal && tsk->signal->tty && tsk->signal->tty->name)
++		tty = tsk->signal->tty->name;
++	else
++		tty = "(none)";
++	spin_unlock_irq(&tsk->sighand->siglock);
++
++	audit_log_format(ab,
++			 " ppid=%ld pid=%d auid=%u uid=%u gid=%u"
++			 " euid=%u suid=%u fsuid=%u"
++			 " egid=%u sgid=%u fsgid=%u ses=%u tty=%s",
++			 sys_getppid(),
++			 tsk->pid,
++			 from_kuid(&init_user_ns, audit_get_loginuid(tsk)),
++			 from_kuid(&init_user_ns, cred->uid),
++			 from_kgid(&init_user_ns, cred->gid),
++			 from_kuid(&init_user_ns, cred->euid),
++			 from_kuid(&init_user_ns, cred->suid),
++			 from_kuid(&init_user_ns, cred->fsuid),
++			 from_kgid(&init_user_ns, cred->egid),
++			 from_kgid(&init_user_ns, cred->sgid),
++			 from_kgid(&init_user_ns, cred->fsgid),
++			 audit_get_sessionid(tsk), tty);
++
++	get_task_comm(name, tsk);
++	audit_log_format(ab, " comm=");
++	audit_log_untrustedstring(ab, name);
++
++	if (mm) {
++		down_read(&mm->mmap_sem);
++		if (mm->exe_file)
++			audit_log_d_path(ab, " exe=", &mm->exe_file->f_path);
++		up_read(&mm->mmap_sem);
++	}
++	audit_log_task_context(ab);
++}
++EXPORT_SYMBOL(audit_log_task_info);
++
+ /**
+  * audit_log_link_denied - report a link restriction denial
+  * @operation: specific link opreation
+@@ -1451,19 +1670,28 @@ void audit_log_key(struct audit_buffer *ab, char *key)
+ void audit_log_link_denied(const char *operation, struct path *link)
+ {
+ 	struct audit_buffer *ab;
++	struct audit_names *name;
++
++	name = kzalloc(sizeof(*name), GFP_NOFS);
++	if (!name)
++		return;
+ 
++	/* Generate AUDIT_ANOM_LINK with subject, operation, outcome. */
+ 	ab = audit_log_start(current->audit_context, GFP_KERNEL,
+ 			     AUDIT_ANOM_LINK);
+ 	if (!ab)
+-		return;
+-	audit_log_format(ab, "op=%s action=denied", operation);
+-	audit_log_format(ab, " pid=%d comm=", current->pid);
+-	audit_log_untrustedstring(ab, current->comm);
+-	audit_log_d_path(ab, " path=", link);
+-	audit_log_format(ab, " dev=");
+-	audit_log_untrustedstring(ab, link->dentry->d_inode->i_sb->s_id);
+-	audit_log_format(ab, " ino=%lu", link->dentry->d_inode->i_ino);
++		goto out;
++	audit_log_format(ab, "op=%s", operation);
++	audit_log_task_info(ab, current);
++	audit_log_format(ab, " res=0");
+ 	audit_log_end(ab);
++
++	/* Generate AUDIT_PATH record with object. */
++	name->type = AUDIT_TYPE_NORMAL;
++	audit_copy_inode(name, link->dentry, link->dentry->d_inode);
++	audit_log_name(current->audit_context, name, link, 0, NULL);
++out:
++	kfree(name);
+ }
+ 
+ /**
+diff --git a/kernel/audit.h b/kernel/audit.h
+index 11468d9..45c8325 100644
+--- a/kernel/audit.h
++++ b/kernel/audit.h
+@@ -22,6 +22,7 @@
+ #include <linux/fs.h>
+ #include <linux/audit.h>
+ #include <linux/skbuff.h>
++#include <uapi/linux/mqueue.h>
+ 
+ /* 0 = no checking
+    1 = put_count checking
+@@ -29,6 +30,11 @@
+ */
+ #define AUDIT_DEBUG 0
+ 
++/* AUDIT_NAMES is the number of slots we reserve in the audit_context
++ * for saving names from getname().  If we get more names we will allocate
++ * a name dynamically and also add those to the list anchored by names_list. */
++#define AUDIT_NAMES	5
++
+ /* At task start time, the audit_state is set in the audit_context using
+    a per-task filter.  At syscall entry, the audit_state is augmented by
+    the syscall filter. */
+@@ -59,8 +65,161 @@ struct audit_entry {
+ 	struct audit_krule	rule;
+ };
+ 
++struct audit_cap_data {
++	kernel_cap_t		permitted;
++	kernel_cap_t		inheritable;
++	union {
++		unsigned int	fE;		/* effective bit of file cap */
++		kernel_cap_t	effective;	/* effective set of process */
++	};
++};
++
++/* When fs/namei.c:getname() is called, we store the pointer in name and
++ * we don't let putname() free it (instead we free all of the saved
++ * pointers at syscall exit time).
++ *
++ * Further, in fs/namei.c:path_lookup() we store the inode and device.
++ */
++struct audit_names {
++	struct list_head	list;		/* audit_context->names_list */
++
++	struct filename		*name;
++	int			name_len;	/* number of chars to log */
++	bool			name_put;	/* call __putname()? */
++
++	unsigned long		ino;
++	dev_t			dev;
++	umode_t			mode;
++	kuid_t			uid;
++	kgid_t			gid;
++	dev_t			rdev;
++	u32			osid;
++	struct audit_cap_data	fcap;
++	unsigned int		fcap_ver;
++	unsigned char		type;		/* record type */
++	/*
++	 * This was an allocated audit_names and not from the array of
++	 * names allocated in the task audit context.  Thus this name
++	 * should be freed on syscall exit.
++	 */
++	bool			should_free;
++};
++
++/* The per-task audit context. */
++struct audit_context {
++	int		    dummy;	/* must be the first element */
++	int		    in_syscall;	/* 1 if task is in a syscall */
++	enum audit_state    state, current_state;
++	unsigned int	    serial;     /* serial number for record */
++	int		    major;      /* syscall number */
++	struct timespec	    ctime;      /* time of syscall entry */
++	unsigned long	    argv[4];    /* syscall arguments */
++	long		    return_code;/* syscall return code */
++	u64		    prio;
++	int		    return_valid; /* return code is valid */
++	/*
++	 * The names_list is the list of all audit_names collected during this
++	 * syscall.  The first AUDIT_NAMES entries in the names_list will
++	 * actually be from the preallocated_names array for performance
++	 * reasons.  Except during allocation they should never be referenced
++	 * through the preallocated_names array and should only be found/used
++	 * by running the names_list.
++	 */
++	struct audit_names  preallocated_names[AUDIT_NAMES];
++	int		    name_count; /* total records in names_list */
++	struct list_head    names_list;	/* struct audit_names->list anchor */
++	char		    *filterkey;	/* key for rule that triggered record */
++	struct path	    pwd;
++	struct audit_aux_data *aux;
++	struct audit_aux_data *aux_pids;
++	struct sockaddr_storage *sockaddr;
++	size_t sockaddr_len;
++				/* Save things to print about task_struct */
++	pid_t		    pid, ppid;
++	kuid_t		    uid, euid, suid, fsuid;
++	kgid_t		    gid, egid, sgid, fsgid;
++	unsigned long	    personality;
++	int		    arch;
++
++	pid_t		    target_pid;
++	kuid_t		    target_auid;
++	kuid_t		    target_uid;
++	unsigned int	    target_sessionid;
++	u32		    target_sid;
++	char		    target_comm[TASK_COMM_LEN];
++
++	struct audit_tree_refs *trees, *first_trees;
++	struct list_head killed_trees;
++	int tree_count;
++
++	int type;
++	union {
++		struct {
++			int nargs;
++			long args[6];
++		} socketcall;
++		struct {
++			kuid_t			uid;
++			kgid_t			gid;
++			umode_t			mode;
++			u32			osid;
++			int			has_perm;
++			uid_t			perm_uid;
++			gid_t			perm_gid;
++			umode_t			perm_mode;
++			unsigned long		qbytes;
++		} ipc;
++		struct {
++			mqd_t			mqdes;
++			struct mq_attr		mqstat;
++		} mq_getsetattr;
++		struct {
++			mqd_t			mqdes;
++			int			sigev_signo;
++		} mq_notify;
++		struct {
++			mqd_t			mqdes;
++			size_t			msg_len;
++			unsigned int		msg_prio;
++			struct timespec		abs_timeout;
++		} mq_sendrecv;
++		struct {
++			int			oflag;
++			umode_t			mode;
++			struct mq_attr		attr;
++		} mq_open;
++		struct {
++			pid_t			pid;
++			struct audit_cap_data	cap;
++		} capset;
++		struct {
++			int			fd;
++			int			flags;
++		} mmap;
++	};
++	int fds[2];
++
++#if AUDIT_DEBUG
++	int		    put_count;
++	int		    ino_count;
++#endif
++};
++
++#ifdef CONFIG_AUDIT
++extern int audit_enabled;
+ extern int audit_ever_enabled;
+ 
++extern void audit_copy_inode(struct audit_names *name,
++			     const struct dentry *dentry,
++			     const struct inode *inode);
++extern void audit_log_cap(struct audit_buffer *ab, char *prefix,
++			  kernel_cap_t *cap);
++extern void audit_log_fcaps(struct audit_buffer *ab, struct audit_names *name);
++extern void audit_log_name(struct audit_context *context,
++			   struct audit_names *n, struct path *path,
++			   int record_num, int *call_panic);
++#endif
++
+ extern int audit_pid;
+ 
+ #define AUDIT_INODE_BUCKETS	32
+diff --git a/kernel/auditsc.c b/kernel/auditsc.c
+index c682294..513d996 100644
+--- a/kernel/auditsc.c
++++ b/kernel/auditsc.c
+@@ -76,11 +76,6 @@
+ #define AUDITSC_SUCCESS 1
+ #define AUDITSC_FAILURE 2
+ 
+-/* AUDIT_NAMES is the number of slots we reserve in the audit_context
+- * for saving names from getname().  If we get more names we will allocate
+- * a name dynamically and also add those to the list anchored by names_list. */
+-#define AUDIT_NAMES	5
+-
+ /* no execve audit message should be longer than this (userspace limits) */
+ #define MAX_EXECVE_AUDIT_LEN 7500
+ 
+@@ -90,44 +85,6 @@ int audit_n_rules;
+ /* determines whether we collect data for signals sent */
+ int audit_signals;
+ 
+-struct audit_cap_data {
+-	kernel_cap_t		permitted;
+-	kernel_cap_t		inheritable;
+-	union {
+-		unsigned int	fE;		/* effective bit of a file capability */
+-		kernel_cap_t	effective;	/* effective set of a process */
+-	};
+-};
+-
+-/* When fs/namei.c:getname() is called, we store the pointer in name and
+- * we don't let putname() free it (instead we free all of the saved
+- * pointers at syscall exit time).
+- *
+- * Further, in fs/namei.c:path_lookup() we store the inode and device.
+- */
+-struct audit_names {
+-	struct list_head	list;		/* audit_context->names_list */
+-	struct filename	*name;
+-	unsigned long		ino;
+-	dev_t			dev;
+-	umode_t			mode;
+-	kuid_t			uid;
+-	kgid_t			gid;
+-	dev_t			rdev;
+-	u32			osid;
+-	struct audit_cap_data	 fcap;
+-	unsigned int		fcap_ver;
+-	int			name_len;	/* number of name's characters to log */
+-	unsigned char		type;		/* record type */
+-	bool			name_put;	/* call __putname() for this name */
+-	/*
+-	 * This was an allocated audit_names and not from the array of
+-	 * names allocated in the task audit context.  Thus this name
+-	 * should be freed on syscall exit
+-	 */
+-	bool			should_free;
+-};
+-
+ struct audit_aux_data {
+ 	struct audit_aux_data	*next;
+ 	int			type;
+@@ -175,106 +132,6 @@ struct audit_tree_refs {
+ 	struct audit_chunk *c[31];
+ };
+ 
+-/* The per-task audit context. */
+-struct audit_context {
+-	int		    dummy;	/* must be the first element */
+-	int		    in_syscall;	/* 1 if task is in a syscall */
+-	enum audit_state    state, current_state;
+-	unsigned int	    serial;     /* serial number for record */
+-	int		    major;      /* syscall number */
+-	struct timespec	    ctime;      /* time of syscall entry */
+-	unsigned long	    argv[4];    /* syscall arguments */
+-	long		    return_code;/* syscall return code */
+-	u64		    prio;
+-	int		    return_valid; /* return code is valid */
+-	/*
+-	 * The names_list is the list of all audit_names collected during this
+-	 * syscall.  The first AUDIT_NAMES entries in the names_list will
+-	 * actually be from the preallocated_names array for performance
+-	 * reasons.  Except during allocation they should never be referenced
+-	 * through the preallocated_names array and should only be found/used
+-	 * by running the names_list.
+-	 */
+-	struct audit_names  preallocated_names[AUDIT_NAMES];
+-	int		    name_count; /* total records in names_list */
+-	struct list_head    names_list;	/* anchor for struct audit_names->list */
+-	char *		    filterkey;	/* key for rule that triggered record */
+-	struct path	    pwd;
+-	struct audit_aux_data *aux;
+-	struct audit_aux_data *aux_pids;
+-	struct sockaddr_storage *sockaddr;
+-	size_t sockaddr_len;
+-				/* Save things to print about task_struct */
+-	pid_t		    pid, ppid;
+-	kuid_t		    uid, euid, suid, fsuid;
+-	kgid_t		    gid, egid, sgid, fsgid;
+-	unsigned long	    personality;
+-	int		    arch;
+-
+-	pid_t		    target_pid;
+-	kuid_t		    target_auid;
+-	kuid_t		    target_uid;
+-	unsigned int	    target_sessionid;
+-	u32		    target_sid;
+-	char		    target_comm[TASK_COMM_LEN];
+-
+-	struct audit_tree_refs *trees, *first_trees;
+-	struct list_head killed_trees;
+-	int tree_count;
+-
+-	int type;
+-	union {
+-		struct {
+-			int nargs;
+-			long args[6];
+-		} socketcall;
+-		struct {
+-			kuid_t			uid;
+-			kgid_t			gid;
+-			umode_t			mode;
+-			u32			osid;
+-			int			has_perm;
+-			uid_t			perm_uid;
+-			gid_t			perm_gid;
+-			umode_t			perm_mode;
+-			unsigned long		qbytes;
+-		} ipc;
+-		struct {
+-			mqd_t			mqdes;
+-			struct mq_attr 		mqstat;
+-		} mq_getsetattr;
+-		struct {
+-			mqd_t			mqdes;
+-			int			sigev_signo;
+-		} mq_notify;
+-		struct {
+-			mqd_t			mqdes;
+-			size_t			msg_len;
+-			unsigned int		msg_prio;
+-			struct timespec		abs_timeout;
+-		} mq_sendrecv;
+-		struct {
+-			int			oflag;
+-			umode_t			mode;
+-			struct mq_attr		attr;
+-		} mq_open;
+-		struct {
+-			pid_t			pid;
+-			struct audit_cap_data	cap;
+-		} capset;
+-		struct {
+-			int			fd;
+-			int			flags;
+-		} mmap;
+-	};
+-	int fds[2];
+-
+-#if AUDIT_DEBUG
+-	int		    put_count;
+-	int		    ino_count;
+-#endif
+-};
+-
+ static inline int open_arg(int flags, int mask)
+ {
+ 	int n = ACC_MODE(flags);
+@@ -1093,88 +950,6 @@ static inline void audit_free_context(struct audit_context *context)
+ 	kfree(context);
+ }
+ 
+-void audit_log_task_context(struct audit_buffer *ab)
+-{
+-	char *ctx = NULL;
+-	unsigned len;
+-	int error;
+-	u32 sid;
+-
+-	security_task_getsecid(current, &sid);
+-	if (!sid)
+-		return;
+-
+-	error = security_secid_to_secctx(sid, &ctx, &len);
+-	if (error) {
+-		if (error != -EINVAL)
+-			goto error_path;
+-		return;
+-	}
+-
+-	audit_log_format(ab, " subj=%s", ctx);
+-	security_release_secctx(ctx, len);
+-	return;
+-
+-error_path:
+-	audit_panic("error in audit_log_task_context");
+-	return;
+-}
+-
+-EXPORT_SYMBOL(audit_log_task_context);
+-
+-void audit_log_task_info(struct audit_buffer *ab, struct task_struct *tsk)
+-{
+-	const struct cred *cred;
+-	char name[sizeof(tsk->comm)];
+-	struct mm_struct *mm = tsk->mm;
+-	char *tty;
+-
+-	if (!ab)
+-		return;
+-
+-	/* tsk == current */
+-	cred = current_cred();
+-
+-	spin_lock_irq(&tsk->sighand->siglock);
+-	if (tsk->signal && tsk->signal->tty)
+-		tty = tsk->signal->tty->name;
+-	else
+-		tty = "(none)";
+-	spin_unlock_irq(&tsk->sighand->siglock);
+-
+-
+-	audit_log_format(ab,
+-			 " ppid=%ld pid=%d auid=%u uid=%u gid=%u"
+-			 " euid=%u suid=%u fsuid=%u"
+-			 " egid=%u sgid=%u fsgid=%u ses=%u tty=%s",
+-			 sys_getppid(),
+-			 tsk->pid,
+-			 from_kuid(&init_user_ns, tsk->loginuid),
+-			 from_kuid(&init_user_ns, cred->uid),
+-			 from_kgid(&init_user_ns, cred->gid),
+-			 from_kuid(&init_user_ns, cred->euid),
+-			 from_kuid(&init_user_ns, cred->suid),
+-			 from_kuid(&init_user_ns, cred->fsuid),
+-			 from_kgid(&init_user_ns, cred->egid),
+-			 from_kgid(&init_user_ns, cred->sgid),
+-			 from_kgid(&init_user_ns, cred->fsgid),
+-			 tsk->sessionid, tty);
+-
+-	get_task_comm(name, tsk);
+-	audit_log_format(ab, " comm=");
+-	audit_log_untrustedstring(ab, name);
+-
+-	if (mm) {
+-		down_read(&mm->mmap_sem);
+-		if (mm->exe_file)
+-			audit_log_d_path(ab, " exe=", &mm->exe_file->f_path);
+-		up_read(&mm->mmap_sem);
+-	}
+-	audit_log_task_context(ab);
+-}
+-
+-EXPORT_SYMBOL(audit_log_task_info);
+-
+ static int audit_log_pid_context(struct audit_context *context, pid_t pid,
+ 				 kuid_t auid, kuid_t uid, unsigned int sessionid,
+ 				 u32 sid, char *comm)
+@@ -1390,35 +1165,6 @@ static void audit_log_execve_info(struct audit_context *context,
+ 	kfree(buf);
+ }
+ 
+-static void audit_log_cap(struct audit_buffer *ab, char *prefix, kernel_cap_t *cap)
+-{
+-	int i;
+-
+-	audit_log_format(ab, " %s=", prefix);
+-	CAP_FOR_EACH_U32(i) {
+-		audit_log_format(ab, "%08x", cap->cap[(_KERNEL_CAPABILITY_U32S-1) - i]);
+-	}
+-}
+-
+-static void audit_log_fcaps(struct audit_buffer *ab, struct audit_names *name)
+-{
+-	kernel_cap_t *perm = &name->fcap.permitted;
+-	kernel_cap_t *inh = &name->fcap.inheritable;
+-	int log = 0;
+-
+-	if (!cap_isclear(*perm)) {
+-		audit_log_cap(ab, "cap_fp", perm);
+-		log = 1;
+-	}
+-	if (!cap_isclear(*inh)) {
+-		audit_log_cap(ab, "cap_fi", inh);
+-		log = 1;
+-	}
+-
+-	if (log)
+-		audit_log_format(ab, " cap_fe=%d cap_fver=%x", name->fcap.fE, name->fcap_ver);
+-}
+-
+ static void show_special(struct audit_context *context, int *call_panic)
+ {
+ 	struct audit_buffer *ab;
+@@ -1516,68 +1262,6 @@ static void show_special(struct audit_context *context, int *call_panic)
+ 	audit_log_end(ab);
+ }
+ 
+-static void audit_log_name(struct audit_context *context, struct audit_names *n,
+-			   int record_num, int *call_panic)
+-{
+-	struct audit_buffer *ab;
+-	ab = audit_log_start(context, GFP_KERNEL, AUDIT_PATH);
+-	if (!ab)
+-		return; /* audit_panic has been called */
+-
+-	audit_log_format(ab, "item=%d", record_num);
+-
+-	if (n->name) {
+-		switch (n->name_len) {
+-		case AUDIT_NAME_FULL:
+-			/* log the full path */
+-			audit_log_format(ab, " name=");
+-			audit_log_untrustedstring(ab, n->name->name);
+-			break;
+-		case 0:
+-			/* name was specified as a relative path and the
+-			 * directory component is the cwd */
+-			audit_log_d_path(ab, " name=", &context->pwd);
+-			break;
+-		default:
+-			/* log the name's directory component */
+-			audit_log_format(ab, " name=");
+-			audit_log_n_untrustedstring(ab, n->name->name,
+-						    n->name_len);
+-		}
+-	} else
+-		audit_log_format(ab, " name=(null)");
+-
+-	if (n->ino != (unsigned long)-1) {
+-		audit_log_format(ab, " inode=%lu"
+-				 " dev=%02x:%02x mode=%#ho"
+-				 " ouid=%u ogid=%u rdev=%02x:%02x",
+-				 n->ino,
+-				 MAJOR(n->dev),
+-				 MINOR(n->dev),
+-				 n->mode,
+-				 from_kuid(&init_user_ns, n->uid),
+-				 from_kgid(&init_user_ns, n->gid),
+-				 MAJOR(n->rdev),
+-				 MINOR(n->rdev));
+-	}
+-	if (n->osid != 0) {
+-		char *ctx = NULL;
+-		u32 len;
+-		if (security_secid_to_secctx(
+-			n->osid, &ctx, &len)) {
+-			audit_log_format(ab, " osid=%u", n->osid);
+-			*call_panic = 2;
+-		} else {
+-			audit_log_format(ab, " obj=%s", ctx);
+-			security_release_secctx(ctx, len);
+-		}
+-	}
+-
+-	audit_log_fcaps(ab, n);
+-
+-	audit_log_end(ab);
+-}
+-
+ static void audit_log_exit(struct audit_context *context, struct task_struct *tsk)
+ {
+ 	int i, call_panic = 0;
+@@ -1695,7 +1379,7 @@ static void audit_log_exit(struct audit_context *context, struct task_struct *ts
+ 
+ 	i = 0;
+ 	list_for_each_entry(n, &context->names_list, list)
+-		audit_log_name(context, n, i++, &call_panic);
++		audit_log_name(context, n, NULL, i++, &call_panic);
+ 
+ 	/* Send end of event record to help user space know we are finished */
+ 	ab = audit_log_start(context, GFP_KERNEL, AUDIT_EOE);
+@@ -2060,41 +1744,6 @@ void audit_putname(struct filename *name)
+ #endif
+ }
+ 
+-static inline int audit_copy_fcaps(struct audit_names *name, const struct dentry *dentry)
+-{
+-	struct cpu_vfs_cap_data caps;
+-	int rc;
+-
+-	if (!dentry)
+-		return 0;
+-
+-	rc = get_vfs_caps_from_disk(dentry, &caps);
+-	if (rc)
+-		return rc;
+-
+-	name->fcap.permitted = caps.permitted;
+-	name->fcap.inheritable = caps.inheritable;
+-	name->fcap.fE = !!(caps.magic_etc & VFS_CAP_FLAGS_EFFECTIVE);
+-	name->fcap_ver = (caps.magic_etc & VFS_CAP_REVISION_MASK) >> VFS_CAP_REVISION_SHIFT;
+-
+-	return 0;
+-}
+-
+-
+-/* Copy inode data into an audit_names. */
+-static void audit_copy_inode(struct audit_names *name, const struct dentry *dentry,
+-			     const struct inode *inode)
+-{
+-	name->ino   = inode->i_ino;
+-	name->dev   = inode->i_sb->s_dev;
+-	name->mode  = inode->i_mode;
+-	name->uid   = inode->i_uid;
+-	name->gid   = inode->i_gid;
+-	name->rdev  = inode->i_rdev;
+-	security_inode_getsecid(inode, &name->osid);
+-	audit_copy_fcaps(name, dentry);
+-}
+-
+ /**
+  * __audit_inode - store the inode and device from a lookup
+  * @name: name being audited
+-- 
+1.7.9.5
 
-Apr 30 17:38:34 hp530 udevd[1057]: worker [1298] timeout, kill it=20
-Apr 30 17:38:34 hp530 udevd[1057]: seq 2519 =
-'/devices/virtual/wmi/95F24279-4D7B-4334-9387-ACCDC67EF61C' killed=20
-Apr 30 17:38:34 hp530 udevd[1057]: worker [1298] terminated by signal 9 =
-(Killed)
-------=_NextPart_000_0021_01CE45DD.B2CA1480
-Content-Type: application/x-pkcs7-signature;
-	name="smime.p7s"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
-	filename="smime.p7s"
 
-MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIVGjCCBjQw
-ggQcoAMCAQICAR4wDQYJKoZIhvcNAQEFBQAwfTELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0
-Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxKTAn
-BgNVBAMTIFN0YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTA3MTAyNDIxMDE1NVoX
-DTE3MTAyNDIxMDE1NVowgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQuMSsw
-KQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQDEy9TdGFy
-dENvbSBDbGFzcyAxIFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQTCCASIwDQYJKoZIhvcN
-AQEBBQADggEPADCCAQoCggEBAMcJg8zOLdgasSmkLhOrlr6KMoOMpohBllVHrdRvEg/q6r8jR+EK
-75xCGhR8ToREoqe7zM9/UnC6TS2y9UKTpT1v7RSMzR0t6ndl0TWBuUr/UXBhPk+Kmy7bI4yW4urC
-+y7P3/1/X7U8ocb8VpH/Clt+4iq7nirMcNh6qJR+xjOhV+VHzQMALuGYn5KZmc1NbJQYclsGkDxD
-z2UbFqE2+6vIZoL+jb9x4Pa5gNf1TwSDkOkikZB1xtB4ZqtXThaABSONdfmv/Z1pua3FYxnCFmdr
-/+N2JLKutIxMYqQOJebr/f/h5t95m4JgrM3Y/w7YX9d7YAL9jvN4SydHsU6n65cCAwEAAaOCAa0w
-ggGpMA8GA1UdEwEB/wQFMAMBAf8wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBRTcu2SnODaywFc
-fH6WNU7y1LhRgjAfBgNVHSMEGDAWgBROC+8apEBbpRdphzDKNGhD0EGu8jBmBggrBgEFBQcBAQRa
-MFgwJwYIKwYBBQUHMAGGG2h0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9jYTAtBggrBgEFBQcwAoYh
-aHR0cDovL3d3dy5zdGFydHNzbC5jb20vc2ZzY2EuY3J0MFsGA1UdHwRUMFIwJ6AloCOGIWh0dHA6
-Ly93d3cuc3RhcnRzc2wuY29tL3Nmc2NhLmNybDAnoCWgI4YhaHR0cDovL2NybC5zdGFydHNzbC5j
-b20vc2ZzY2EuY3JsMIGABgNVHSAEeTB3MHUGCysGAQQBgbU3AQIBMGYwLgYIKwYBBQUHAgEWImh0
-dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93d3cu
-c3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwDQYJKoZIhvcNAQEFBQADggIBAAqDCH14qywG
-XLhjjF6uHLkjd02hcdh9hrw+VUsv+q1eeQWB21jWj3kJ96AUlPCoEGZ/ynJNScWy6QMVQjbbMXlt
-UfO4n4bGGdKo3awPWp61tjAFgraLJgDk+DsSvUD6EowjMTNx25GQgyYJ5RPIzKKR9tQW8gGK+2+R
-HxkUCTbYFnL6kl8Ch507rUdPPipJ9CgJFws3kDS3gOS5WFMxcjO5DwKfKSETEPrHh7p5shuuNktv
-sv6hxHTLhiMKX893gxdT3XLS9OKmCv87vkINQcNEcIIoFWbP9HORz9v3vQwR4e3ksLc2JZOAFK+s
-sS5XMEoznzpihEP0PLc4dCBYjbvSD7kxgDwZ+Aj8Q9PkbvE9sIPP7ON0fz095HdThKjiVJe6vofq
-+n6b1NBc8XdrQvBmunwxD5nvtTW4vtN6VY7mUCmxsCieuoBJ9OlqmsVWQvifIYf40dJPZkk9YgGT
-zWLpXDSfLSplbY2LL9C9U0ptvjcDjefLTvqSFc7tw1sEhF0n/qpA2r0GpvkLRDmcSwVyPvmjFBGq
-Up/pNy8ZuPGQmHwFi2/14+xeSUDG2bwnsYJQG2EdJCB6luQ57GEnTA/yKZSTKI8dDQa8Sd3zfXb1
-9mOgSF0bBdXbuKhEpuP9wirslFe6fQ1t5j5R0xi72MZ8ikMu1RQZKCyDbMwazlHiMIIHETCCBfmg
-AwIBAgIDBRuqMA0GCSqGSIb3DQEBCwUAMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRD
-b20gTHRkLjErMCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYG
-A1UEAxMvU3RhcnRDb20gQ2xhc3MgMSBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0EwHhcN
-MTIxMDE0MDgxOTQyWhcNMTMxMDE1MTU1NzU2WjBQMSMwIQYDVQQDDBppQHNlY3VyZS5jb3JyYWRv
-cm9iZXJ0by5pdDEpMCcGCSqGSIb3DQEJARYaaUBzZWN1cmUuY29ycmFkb3JvYmVydG8uaXQwggEi
-MA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDAvunSknCJZJ5SdAOHzRPNi3r3a5q9Zp9Mv0AJ
-Y29d/MT1e3xZI8ShCCcvydvvd2ahe73LWel0sFb5Z3BEv2Qf6TidaWFq7lkUP7euaSapsbfTyTln
-w/F3se4hVDi6RMf/Q2oCi3YNIGnXH2ME3RqBBlmaE4Rj/rguGmbId0ByH460s1zpYh44WVqFUisU
-b8PGj4sEUQxP1WSWlB1czAq4b/sCFDJVl4qJxjJAEq0IgHSqp4hQtMBsWjhLZf48YVWHgxvMYr+a
-3tWHCkjv2WLZbIQXxhv7X2Dw/5xs/DmjBAAP8P0TzzssX8QcPyVwWmIeAVSCqPYEril36vcqMapb
-AgMBAAGjggO1MIIDsTAJBgNVHRMEAjAAMAsGA1UdDwQEAwIEsDAdBgNVHSUEFjAUBggrBgEFBQcD
-AgYIKwYBBQUHAwQwHQYDVR0OBBYEFLQSDvkzDBb/q5rGR9m7/IO8PAF/MB8GA1UdIwQYMBaAFFNy
-7ZKc4NrLAVx8fpY1TvLUuFGCMCUGA1UdEQQeMByBGmlAc2VjdXJlLmNvcnJhZG9yb2JlcnRvLml0
-MIICIQYDVR0gBIICGDCCAhQwggIQBgsrBgEEAYG1NwECAjCCAf8wLgYIKwYBBQUHAgEWImh0dHA6
-Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93d3cuc3Rh
-cnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwgfcGCCsGAQUFBwICMIHqMCcWIFN0YXJ0Q29tIENl
-cnRpZmljYXRpb24gQXV0aG9yaXR5MAMCAQEagb5UaGlzIGNlcnRpZmljYXRlIHdhcyBpc3N1ZWQg
-YWNjb3JkaW5nIHRvIHRoZSBDbGFzcyAxIFZhbGlkYXRpb24gcmVxdWlyZW1lbnRzIG9mIHRoZSBT
-dGFydENvbSBDQSBwb2xpY3ksIHJlbGlhbmNlIG9ubHkgZm9yIHRoZSBpbnRlbmRlZCBwdXJwb3Nl
-IGluIGNvbXBsaWFuY2Ugb2YgdGhlIHJlbHlpbmcgcGFydHkgb2JsaWdhdGlvbnMuMIGcBggrBgEF
-BQcCAjCBjzAnFiBTdGFydENvbSBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTADAgECGmRMaWFiaWxp
-dHkgYW5kIHdhcnJhbnRpZXMgYXJlIGxpbWl0ZWQhIFNlZSBzZWN0aW9uICJMZWdhbCBhbmQgTGlt
-aXRhdGlvbnMiIG9mIHRoZSBTdGFydENvbSBDQSBwb2xpY3kuMDYGA1UdHwQvMC0wK6ApoCeGJWh0
-dHA6Ly9jcmwuc3RhcnRzc2wuY29tL2NydHUxLWNybC5jcmwwgY4GCCsGAQUFBwEBBIGBMH8wOQYI
-KwYBBQUHMAGGLWh0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9zdWIvY2xhc3MxL2NsaWVudC9jYTBC
-BggrBgEFBQcwAoY2aHR0cDovL2FpYS5zdGFydHNzbC5jb20vY2VydHMvc3ViLmNsYXNzMS5jbGll
-bnQuY2EuY3J0MCMGA1UdEgQcMBqGGGh0dHA6Ly93d3cuc3RhcnRzc2wuY29tLzANBgkqhkiG9w0B
-AQsFAAOCAQEAeiJAe22q+dD4+/zL5F/4ewC5IQNBUoZbA2h3H0lS07F9RZPVk8DvbB5xunxvMzV7
-8A3JFH13JzCz0WRvpYtLposA+QpCDVHG22r+uIS4ou0pwCxbStbu7Vol1UF9qLGo2u1vsEzc8Dz8
-0Rj98rflCi97d+7Wy8FilrbCwRwkG3F+5dm3EyvDv68qT+c9wkPmkJGFXm5Tp3i2FU981ZGDCDj3
-y99I9UjvKFFNEoGbCKqVDf3ypkqQAwPCT+mk+uG22SNS7/pZIpJuB7gvMlwCGtXP4pNh75Q63Pco
-HWIYDBQnlEczcJtXjb4OG2zWA9mwnxrCNXgVtaFsASeH36XZujCCB8kwggWxoAMCAQICAQEwDQYJ
-KoZIhvcNAQEFBQAwfTELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4xKzApBgNV
-BAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxKTAnBgNVBAMTIFN0YXJ0Q29t
-IENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTA2MDkxNzE5NDYzNloXDTM2MDkxNzE5NDYzNlow
-fTELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBE
-aWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxKTAnBgNVBAMTIFN0YXJ0Q29tIENlcnRpZmljYXRp
-b24gQXV0aG9yaXR5MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAwYjbCbxsRnx4n5V7
-tTOQ8nJi1sE2ICIkXs7pd/JDCqIGZKTMjjb4OOYj8G5tsTzdcqOFHKHTPbQzK9Mvr/7qsEFZZ7bE
-Bn0KnnSF1nlMgDd63zkFUln39BtGQ6TShYXSw3HzdWI0uiyKfx6P7u000BHHls1SPboz1t1N3gs7
-SkufwiYv+rUWHHI1d8o8XebK4SaLGjZ2XAHbdBQl/u21oIgP3XjKLR8HlzABLXJ5+kbWEyqouaar
-g0kd5fLv3eQBjhgKj2NTFoViqQ4ZOsy1ZqbCa3QH5Cvhdj60bdj2ROFzYh87xL6gU1YlbFEJ96qr
-yr92/W2b853bvz1mvAxWqq+YSJU6S9+nWFDZOHWpW+pDDAL/mevobE1wWyllnN2qXcyvATHsDOvS
-jejqnHvmbvcnZgwaSNduQuM/3iE+e+ENcPtjqqhsGlS0XCV6yaLJixamuyx+F14FTVhuEh0B7hIQ
-DcYyfxj//PT6zW6R6DZJvhpIaYvClk0aErJpF8EKkNb6eSJIv7p7afhwx/p6N9jYDdJ2T1f/kLfj
-kdLd78Jgt2c63f6qnPDUi39yIs7Gn5e2+K+KoBCo2fsYxra1XFI8ibYZKnMBCg8DsxJg8novgduj
-bv8mMJf1i92JV7atPbOvK8W3dgLwpdYrmoYUKnL24zOMXQlLE9+7jHQTUksCAwEAAaOCAlIwggJO
-MAwGA1UdEwQFMAMBAf8wCwYDVR0PBAQDAgGuMB0GA1UdDgQWBBROC+8apEBbpRdphzDKNGhD0EGu
-8jBkBgNVHR8EXTBbMCygKqAohiZodHRwOi8vY2VydC5zdGFydGNvbS5vcmcvc2ZzY2EtY3JsLmNy
-bDAroCmgJ4YlaHR0cDovL2NybC5zdGFydGNvbS5vcmcvc2ZzY2EtY3JsLmNybDCCAV0GA1UdIASC
-AVQwggFQMIIBTAYLKwYBBAGBtTcBAQEwggE7MC8GCCsGAQUFBwIBFiNodHRwOi8vY2VydC5zdGFy
-dGNvbS5vcmcvcG9saWN5LnBkZjA1BggrBgEFBQcCARYpaHR0cDovL2NlcnQuc3RhcnRjb20ub3Jn
-L2ludGVybWVkaWF0ZS5wZGYwgdAGCCsGAQUFBwICMIHDMCcWIFN0YXJ0IENvbW1lcmNpYWwgKFN0
-YXJ0Q29tKSBMdGQuMAMCAQEagZdMaW1pdGVkIExpYWJpbGl0eSwgcmVhZCB0aGUgc2VjdGlvbiAq
-TGVnYWwgTGltaXRhdGlvbnMqIG9mIHRoZSBTdGFydENvbSBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0
-eSBQb2xpY3kgYXZhaWxhYmxlIGF0IGh0dHA6Ly9jZXJ0LnN0YXJ0Y29tLm9yZy9wb2xpY3kucGRm
-MBEGCWCGSAGG+EIBAQQEAwIABzA4BglghkgBhvhCAQ0EKxYpU3RhcnRDb20gRnJlZSBTU0wgQ2Vy
-dGlmaWNhdGlvbiBBdXRob3JpdHkwDQYJKoZIhvcNAQEFBQADggIBABZsmfRmDDT10IVefQrs2hBO
-OBxe36YlBUuRMsHoO/E93UQJWwdJiinLZgK3sZr3JZgJPI4b4d02hytLu2jTOWY9oCbH8jmRHVGr
-gnt+1c5a5OIDV3Bplwj5XlimCt+MBppFFhY4Cl5X9mLHegIF5rwetfKe9Kkpg/iyFONuKIdEw5Aa
-3jipPKxDTWRFzt0oqVzyc3sE+Bfoq7HzLlxkbnMxOhK4vLMR5H2PgVGaO42J9E2TZns8A+3Tmh2a
-82VQ9aDQdZ8vr/DqgkOY+GmciXnEQ45GcuNkNhKv9yUeOImQd37Da2q5w8tES6x4kIvnxyweSxFE
-yDRSJ80KXZ+FwYnVGnjylRBTMt2AhGZ12bVoKPthLr6EqDjAmRKGpR5nZK0GLi+pcIXHlg98iWX1
-jkNUDqvdpYA5lGDANMmWcCyjEvUfSHu9HH5rt52Q9CI7rvj8Ksr6glKg769LVZPrwbXwIousNE4m
-IgShhyx1SrflfRPXuAxkwDbSyS+GEowjCcEbgjtzSaNqV4eU5dZ4xZlDY+NN4Hct4WWZcmkEGkcJ
-5g8BViT7H78OealYLrnECQF+lbptAAY+supKEDnY0Cv1v+x1v5cCxQkbCNxVN+KB+zeEQ2IgyudW
-S2Xq/mzBJJMkoTTrBf+aIq6bfT/xZVEKpjBqs/SIHIAN/HKK6INeMYICeTCCAnUCAQEwgZQwgYwx
-CzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQuMSswKQYDVQQLEyJTZWN1cmUgRGln
-aXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQDEy9TdGFydENvbSBDbGFzcyAxIFByaW1h
-cnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQQIDBRuqMAkGBSsOAwIaBQCggbowGAYJKoZIhvcNAQkD
-MQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMTMwNDMwMTgwMjUzWjAjBgkqhkiG9w0BCQQx
-FgQUMvlgagUCdlL17er5zlJWh8w4oo4wWwYJKoZIhvcNAQkPMU4wTDAKBggqhkiG9w0DBzAOBggq
-hkiG9w0DAgICAIAwDQYIKoZIhvcNAwICAUAwBwYFKw4DAgcwDQYIKoZIhvcNAwICASgwBwYFKw4D
-Ah0wDQYJKoZIhvcNAQEBBQAEggEAB/OQ+pV4mTVDzw3qOpuWkqpsdZ8yAISAnkv61UIMRazYfDXk
-ZyNC/m8+W7kIfaF+ChH4QIFOVyESJfXWRVtRRtF7UxGncBfQPdG64g4rVlIQ+d3Uq105Zn+kgCBV
-5O0BQvsTDZX3i4xMKl526ISupLvUjPSkiMklrB/KI24GNpvWiORHSFNN2jvOBA/eLvigTYWly6Xa
-59BtOMY810fzmzCCx+Dle0agKvvXFRptZgHZrmn/liynVQF8WiSdP2gyfard6xvEuMKxnsdOoLUg
-qSiFTXwJWkkL8UCZk7rXG+dC2d8rXtGhPyyw3iM6Zx9wtW9CrdW5OdmTAZfsUwJ0NwAAAAAAAA==
-
-------=_NextPart_000_0021_01CE45DD.B2CA1480--
-
+-- 
+Kees Cook
+Chrome OS Security
