@@ -1,29 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761213Ab3D3QsS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 12:48:18 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:58382 "EHLO
+	id S1761222Ab3D3Qte (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 12:49:34 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:58401 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760981Ab3D3QsQ (ORCPT
+	with ESMTP id S1760969Ab3D3Qtc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 12:48:16 -0400
-Date: Tue, 30 Apr 2013 09:47:54 -0700
-From: tip-bot for Vince Weaver <tipbot@zytor.com>
-Message-ID: <tip-9a6bc14350b130427725f33e371e86212fa56c85@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, paulus@samba.org, hpa@zytor.com,
-        mingo@kernel.org, a.p.zijlstra@chello.nl, acme@ghostprotocols.net,
-        eranian@gmail.com, vincent.weaver@maine.edu, stable@kernel.org,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        acme@ghostprotocols.net, eranian@gmail.com, vincent.weaver@maine.edu,
-        stable@kernel.org, tglx@linutronix.de
-In-Reply-To: <alpine.DEB.2.02.1304291549320.15827@vincent-weaver-1.um.maine.edu>
-References: <alpine.DEB.2.02.1304291549320.15827@vincent-weaver-1.um.maine.edu>
+	Tue, 30 Apr 2013 12:49:32 -0400
+Date: Tue, 30 Apr 2013 09:49:05 -0700
+From: tip-bot for Borislav Petkov <tipbot@zytor.com>
+Message-ID: <tip-83aee67833071c7b73a83f7803388f7a9e481908@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        penberg@kernel.org, bp@alien8.de, levinsasha928@gmail.com,
+        mtosatti@redhat.com, tglx@linutronix.de, fengguang.wu@intel.com,
+        bp@suse.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        penberg@kernel.org, bp@alien8.de, levinsasha928@gmail.com,
+        mtosatti@redhat.com, tglx@linutronix.de, bp@suse.de,
+        fengguang.wu@intel.com
+In-Reply-To: <20130426095140.GA15361@pd.tnic>
+References: <20130426095140.GA15361@pd.tnic>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf/x86/intel:
-  Add support for IvyBridge model 58 Uncore
-Git-Commit-ID: 9a6bc14350b130427725f33e371e86212fa56c85
+Subject: [tip:x86/urgent] x86/kconfig:
+  Add a Kconfig shortcut for building working KVM guest kernels
+Git-Commit-ID: 83aee67833071c7b73a83f7803388f7a9e481908
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -36,42 +36,83 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  9a6bc14350b130427725f33e371e86212fa56c85
-Gitweb:     http://git.kernel.org/tip/9a6bc14350b130427725f33e371e86212fa56c85
-Author:     Vince Weaver <vincent.weaver@maine.edu>
-AuthorDate: Mon, 29 Apr 2013 15:52:27 -0400
+Commit-ID:  83aee67833071c7b73a83f7803388f7a9e481908
+Gitweb:     http://git.kernel.org/tip/83aee67833071c7b73a83f7803388f7a9e481908
+Author:     Borislav Petkov <bp@alien8.de>
+AuthorDate: Fri, 26 Apr 2013 11:51:40 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 30 Apr 2013 10:56:45 +0200
+CommitDate: Tue, 30 Apr 2013 11:00:11 +0200
 
-perf/x86/intel: Add support for IvyBridge model 58 Uncore
+x86/kconfig: Add a Kconfig shortcut for building working KVM guest kernels
 
-According to Intel Vol3b 18.9, the IvyBridge model 58 uncore is
-the same as that of SandyBridge.
+This is pretty useful for the case where people want to boot the
+resulting kernel in qemu/kvm or lkvm. Instead of going and
+searching for each required option through the Kconfig maze,
+this single option should simply enable everything required/good
+to have to boot the resulting kernel in the guest.
 
-I've done some simple tests and with this patch things seem to
-work on my mac-mini.
+Patch has been adapted from a version in the external lkvm tree.
 
-Signed-off-by: Vince Weaver <vincent.weaver@maine.edu>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Stephane Eranian <eranian@gmail.com>
-Link: http://lkml.kernel.org/r/alpine.DEB.2.02.1304291549320.15827@vincent-weaver-1.um.maine.edu
-Cc: <stable@kernel.org>
+Originally-by: Pekka Enberg <penberg@kernel.org>
+Originally-by: Sasha Levin <levinsasha928@gmail.com>
+Signed-off-by: Borislav Petkov <bp@suse.de>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Pekka Enberg <penberg@kernel.org>
+Cc: Sasha Levin <levinsasha928@gmail.com>
+Cc: Fengguang Wu <fengguang.wu@intel.com>
+Link: http://lkml.kernel.org/r/20130426095140.GA15361@pd.tnic
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/kernel/cpu/perf_event_intel_uncore.c | 1 +
- 1 file changed, 1 insertion(+)
+ arch/x86/Kconfig | 39 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 39 insertions(+)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-index 0d5ec6d..22ebaa8 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-@@ -2853,6 +2853,7 @@ static int __init uncore_cpu_init(void)
- 		msr_uncores = nhm_msr_uncores;
- 		break;
- 	case 42: /* Sandy Bridge */
-+	case 58: /* Ivy Bridge */
- 		if (snb_uncore_cbox.num_boxes > max_cores)
- 			snb_uncore_cbox.num_boxes = max_cores;
- 		msr_uncores = snb_msr_uncores;
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 15b5cef..1d053dc 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -633,6 +633,45 @@ config KVM_GUEST
+ 	  underlying device model, the host provides the guest with
+ 	  timing infrastructure such as time of day, and system time
+ 
++config KVM_GUEST_COMMON_OPTIONS
++	bool "Enable commodity options for a standalone KVM guest"
++	depends on KVM_GUEST
++	select NET
++	select NETDEVICES
++	select BLOCK
++	select BLK_DEV
++	select NETWORK_FILESYSTEMS
++	select INET
++	select EXPERIMENTAL
++	select TTY
++	select SERIAL_8250
++	select SERIAL_8250_CONSOLE
++	select IP_PNP
++	select IP_PNP_DHCP
++	select BINFMT_ELF
++	select PCI_MSI
++	select HAVE_ARCH_KGDB
++	select DEBUG_KERNEL
++	select KGDB
++	select KGDB_SERIAL_CONSOLE
++	select VIRTUALIZATION
++	select VIRTIO
++	select VIRTIO_RING
++	select VIRTIO_PCI
++	select VIRTIO_BLK
++	select VIRTIO_CONSOLE
++	select VIRTIO_NET
++	select 9P_FS
++	select NET_9P
++	select NET_9P_VIRTIO
++	---help---
++	  Select guest kernel functionality which facilitates booting the
++	  kernel as a guest in qemu or lkvm. This entails basic stuff like
++	  serial support, kgdb, virtio and other so that you can be able to
++	  have commodity functionality like serial output from the guest,
++	  networking, seamless host file system integration into guest context
++	  and other useful things.
++
+ source "arch/x86/lguest/Kconfig"
+ 
+ config PARAVIRT
