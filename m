@@ -1,87 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760266Ab3D3LJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 07:09:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20487 "EHLO mx1.redhat.com"
+	id S1760290Ab3D3LKU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 07:10:20 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:43962 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760149Ab3D3LJ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 07:09:57 -0400
-Date: Tue, 30 Apr 2013 13:11:11 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: x86@kernel.org, linux-pci@vger.kernel.org,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>, Joerg Roedel <joro@8bytes.org>,
-        Jan Beulich <JBeulich@suse.com>, Ingo Molnar <mingo@redhat.com>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: [PATCH v2 -tip/apic 2/2] x86/MSI: Allocate as many multiple-MSIs as
- requested
-Message-ID: <096b258a86c1cb46e4f3084f1fbcf37c7859bb15.1367319112.git.agordeev@redhat.com>
-References: <cover.1367319112.git.agordeev@redhat.com>
+	id S1760149Ab3D3LKJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Apr 2013 07:10:09 -0400
+Message-ID: <517FA68B.20001@ti.com>
+Date: Tue, 30 Apr 2013 14:10:03 +0300
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <517E3BC102000078000D1793@nat28.tlf.novell.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: <balbi@ti.com>
+CC: Sam Ravnborg <sam@ravnborg.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        <linux-kbuild@vger.kernel.org>
+Subject: Re: Kconfig "softdepends" idea
+References: <517F9472.2030106@ti.com> <20130430102440.GA15522@merkur.ravnborg.org> <20130430103318.GB12161@arwen.pp.htv.fi>
+In-Reply-To: <20130430103318.GB12161@arwen.pp.htv.fi>
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="----enig2EFWDUUOAROBKOVRLQTJB"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
----
- drivers/iommu/irq_remapping.c |   12 +++++++-----
- 1 files changed, 7 insertions(+), 5 deletions(-)
+------enig2EFWDUUOAROBKOVRLQTJB
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
-index d56f8c1..9eeb6cf 100644
---- a/drivers/iommu/irq_remapping.c
-+++ b/drivers/iommu/irq_remapping.c
-@@ -51,26 +51,27 @@ static void irq_remapping_disable_io_apic(void)
- 
- static int do_setup_msi_irqs(struct pci_dev *dev, int nvec)
- {
--	int node, ret, sub_handle, index = 0;
-+	int node, ret, sub_handle, nvec_pow2, index = 0;
- 	unsigned int irq;
- 	struct msi_desc *msidesc;
- 
--	nvec = __roundup_pow_of_two(nvec);
--
- 	WARN_ON(!list_is_singular(&dev->msi_list));
- 	msidesc = list_entry(dev->msi_list.next, struct msi_desc, list);
- 	WARN_ON(msidesc->irq);
- 	WARN_ON(msidesc->msi_attrib.multiple);
-+	WARN_ON(msidesc->nvec);
- 
- 	node = dev_to_node(&dev->dev);
- 	irq = __create_irqs(get_nr_irqs_gsi(), nvec, node);
- 	if (irq == 0)
- 		return -ENOSPC;
- 
--	msidesc->msi_attrib.multiple = ilog2(nvec);
-+	nvec_pow2 = __roundup_pow_of_two(nvec);
-+	msidesc->nvec = nvec;
-+	msidesc->msi_attrib.multiple = ilog2(nvec_pow2);
- 	for (sub_handle = 0; sub_handle < nvec; sub_handle++) {
- 		if (!sub_handle) {
--			index = msi_alloc_remapped_irq(dev, irq, nvec);
-+			index = msi_alloc_remapped_irq(dev, irq, nvec_pow2);
- 			if (index < 0) {
- 				ret = index;
- 				goto error;
-@@ -95,6 +96,7 @@ error:
- 	 * IRQs from tearing down again in default_teardown_msi_irqs()
- 	 */
- 	msidesc->irq = 0;
-+	msidesc->nvec = 0;
- 	msidesc->msi_attrib.multiple = 0;
- 
- 	return ret;
--- 
-1.7.7.6
+On 04/30/2013 01:33 PM, Felipe Balbi wrote:
+> Hi,
+>=20
+> On Tue, Apr 30, 2013 at 12:24:40PM +0200, Sam Ravnborg wrote:
+>>> So, my idea is to have a new kind of Kconfig dependency. I'll call it=
+
+>>> "softdepends" in lack of better name. A driver maintainer could use
+>>> "softdepends on ARCH_OMAP", instead of "depends on ARCH_OMAP", to say=
+
+>>> that this driver does not actually build depend on ARCH_OMAP, but for=
+
+>>> all normal purposes it does.
+>>>
+>>> Normally, this would result in the same behavior as the normal
+>>> "depends", and Linus would not get a questions whether he wants to
+>>> enable this OMAP specific driver or not, and the driver would not be
+>>> visible on the menuconfig.
+>>>
+>>> But the user could enable the driver if he explicitly so wants. Perha=
+ps
+>>> a Kconfig option such as "ignore softdepends", enabling of which woul=
+d
+>>> allow the user to enable the drivers that use softdepends. Or, maybe
+>>> just require the user to add the config option manually into his .con=
+fig.
+>>
+>> If I understand you correct this is already possible today without
+>> extending the kconfig language.
+>>
+>> config OMAP_SPECIFIC_DRIVER
+>> 	depends on ARCH_OMAP || SHOW_ALL_DRIVERS
+>>
+>>
+>> If SHOW_ALL_DRIVERS are "y" then user can say "y" to the OMAP specific=
+
+>> driver too, even without ARCH_OMAP being selected.
+>=20
+> SHOW_ALL_DRIVERS might create another set of issues. If Linus isn't
+> taking patches removing 'depends on ARCH_OMAP' would he take patches
+> adding SHOW_ALL_DRIVERS ?
+
+Wouldn't the SHOW_ALL_DRIVERS be just a one time query from Kconfig to
+the user? So Linus only needs to say "n" once. Why would he object to tha=
+t?
+
+Then again, as a personal opinion, "depends on ARCH_OMAP ||
+SHOW_ALL_DRIVERS" is not very descriptive. I'm not sure if that matters,
+though. One doesn't need to read the Kconfig files every day =3D).
+
+But presuming most of the drivers would use that, it would add quite a
+bit of repetition to the Kconfig files. Well, ok, I have no idea how
+many drivers have dependencies that could be removed.
+
+So SHOW_ALL_DRIVERS sounds quite an easy solution to this.
+
+ Tomi
 
 
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+
+------enig2EFWDUUOAROBKOVRLQTJB
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQIcBAEBAgAGBQJRf6aLAAoJEPo9qoy8lh71eZ0P/iPaxK1MxwGbwewqTD4oibXM
+waav5U22+pzpw40OR3VWzUJqsQWrI04azG4h7tL988NdMkQe4yGlNORFSm4m96P/
+cIUxhAiESX2ZSBMndLLUlCCSuDSPJvjFkCl7VerZBDbI0oqwkoU/cKaDZLrVpkqW
+EUG3gzJ+ttCqjSxh/AuCAyxiFE/bqw42es7IvG06Fd1886m/7Ehw+jRkQTfLsl/g
+3TDHrfHOk6L2jQ/ydVdjyiaWvaGuZB8EsfxgYxKs45tWsNwGaoddCegqahYfBixG
+2U6cB4x8IJDQV8mPqP9Rv2s8AEfuzGjWukdqxiyQrwba6PmABnLgGR1GagOoyq7B
+RjcIW1iWqWkVmYkpo4FIOS2y6VCW0YZMY7lbKD5CD+n+DXmBD1o4eLlL39jXXJ28
+yhhTm88+o7ySn7eKt0A17qlGxoqPlLkiOTwZV0H0dAgomejS3mPEmvaYRcfeBbRj
+0gfoOkaNc1kNfsKTnGm0I3a+INp935ZeU+EHInWt5JOeyBlmHLiRnkj3i8ChiTyP
+bej/3o6DfkIwV7ZY987YaYcbeWyNurNMdqm92xeIhm8hDGahZvHb0UNOt2EG8ORN
+Dft5Z3zpJZ61yJSQvKOA3JTFCaheW8HXlSMNeifSfzSDtyH6vDyChmuD2PDjHAQ3
+3RlgDq2EiM9OQfx+bnym
+=FHhP
+-----END PGP SIGNATURE-----
+
+------enig2EFWDUUOAROBKOVRLQTJB--
