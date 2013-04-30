@@ -1,44 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933804Ab3D3VEO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 17:04:14 -0400
-Received: from yourcmc.ru ([195.24.71.121]:58868 "EHLO yourcmc.ru"
+	id S933655Ab3D3VLR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 17:11:17 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59907 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933769Ab3D3VED (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 17:04:03 -0400
+	id S933306Ab3D3VLQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Apr 2013 17:11:16 -0400
+Date: Tue, 30 Apr 2013 23:11:13 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Joe Perches <joe@perches.com>
+Cc: Hirokazu Takata <takata@linux-m32r.org>, linux-m32r@ml.linux-m32r.org,
+        linux-m32r-ja@ml.linux-m32r.org, linux-kernel@vger.kernel.org
+Subject: Re: [TRIVIAL PATCH 08/26] m32r: Convert print_symbol to %pSR
+In-Reply-To: <1367326618.2587.10.camel@joe-AO722>
+Message-ID: <alpine.LNX.2.00.1304302308470.20139@pobox.suse.cz>
+References: <cover.1355335227.git.joe@perches.com>  <df548c6911e1b46a73b9a417efb800d08e0ecf8f.1355335228.git.joe@perches.com>  <swfr4mu3b2o.wl%hirokazu.takata.wj@renesas.com>  <alpine.LNX.2.00.1304291521070.11889@pobox.suse.cz>
+ <1367326618.2587.10.camel@joe-AO722>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 7bit
-Date: Wed, 01 May 2013 01:04:00 +0400
-From: vitalif@yourcmc.ru
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Borislav Petkov <bp@alien8.de>, Ben Hutchings <ben@decadent.org.uk>,
-        "Venkatesh Pallipadi (Venki)" <venki@google.com>,
-        <700333@bugs.debian.org>, LKML <linux-kernel@vger.kernel.org>,
-        Clemens Ladisch <clemens@ladisch.de>
-Subject: Re: Bug#700333: Stack trace
-In-Reply-To: <alpine.LFD.2.02.1304282152220.21884@ionos>
-References: <1362536476.3768.416.camel@deadeye.wl.decadent.org.uk>
- <15ec7b46ebd929a67caea0d80b324af9@yourcmc.ru>
- <1362971451.3937.29.camel@deadeye.wl.decadent.org.uk>
- <cc9020446ea75ed733ec96c505039f2a@yourcmc.ru>
- <20130420225516.GB4649@pd.tnic> <alpine.LFD.2.02.1304221409420.21884@ionos>
- <alpine.LFD.2.02.1304251139340.21884@ionos>
- <2666050d6d50efdbfa3503aa10c0e5ec@yourcmc.ru>
- <20130427154956.GC4358@pd.tnic>
- <925b81fa055e645546ae9d237eeb2ef4@yourcmc.ru>
- <20130428190541.GA2301@pd.tnic> <alpine.LFD.2.02.1304282152220.21884@ionos>
-Message-ID: <9eab1d6a826bbd58d0b074f045a1c675@yourcmc.ru>
-User-Agent: Roundcube Webmail/0.8.1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I merged a slightly better fix, you all were on cc. It's going into
-> 3.10 and it's tagged stable, so it will show up in stable kernels
-> soon.
+On Tue, 30 Apr 2013, Joe Perches wrote:
 
-Thanks for the fix!
-But where did you post it - on LKML?
-(I didn't see it because I'm not subscribed to LKML?)
+> > On Thu, 13 Dec 2012, Hirokazu Takata wrote:
+> > > Acked-by: Hirokazu Takata <takata@linux-m32r.org>
+> 
+> Hi Jiri.
+> 
+> It's really not useful to cherry-pick a few patches
+> from this series.
+> 
+> You must first apply patch 1 of 26 before applying any
+> of the others as a new vsprintf pointer extension %pSR
+> is added by that patch.
+
+Omitting the actual addition of %pSR is of course completely my fault, 
+caused by my incorrect merge into for-linus branch, thanks for noticing 
+that. It's now fixed in Linus' tree.
+
+OTOH, cherry-picking the patches that have been Acked by maintainers is 
+what I usually do in the first round. For 3.11, I'd like to ask you to 
+send me a remaining conversions as one condensed patch, and I'll decide 
+whether I'll be taking those or not despite the missing Ack from 
+maintainers.
+
+Thanks,
+
+-- 
+Jiri Kosina
+SUSE Labs
