@@ -1,105 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753298Ab3D3GQv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 02:16:51 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:46749 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753111Ab3D3GQu (ORCPT
+	id S1754527Ab3D3GRD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 02:17:03 -0400
+Received: from server.prisktech.co.nz ([115.188.14.127]:54664 "EHLO
+	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753345Ab3D3GQ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 02:16:50 -0400
-Date: Tue, 30 Apr 2013 08:16:25 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Cc: LMML <linux-media@vger.kernel.org>, Hans Verkuil <hans.verkuil@cisco.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Sakari Ailus <sakari.ailus@iki.fi>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC] media: i2c: mt9p031: add OF support
-Message-ID: <20130430061625.GC16843@pengutronix.de>
-References: <1367222401-26649-1-git-send-email-prabhakar.csengg@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1367222401-26649-1-git-send-email-prabhakar.csengg@gmail.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 08:11:28 up 51 days, 15:51, 21 users,  load average: 0.06, 0.14,
- 0.13
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Tue, 30 Apr 2013 02:16:57 -0400
+From: Tony Prisk <linux@prisktech.co.nz>
+To: Francois Romieu <romieu@fr.zoreil.com>
+Cc: netdev@vger.kernel.org, vt8500-wm8505-linux-kernel@googlegroups.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        davem@davemloft.net, Tony Prisk <linux@prisktech.co.nz>
+Subject: [PATCHv4 0/3] Add support for velocity network driver on platform devices
+Date: Tue, 30 Apr 2013 18:16:57 +1200
+Message-Id: <1367302620-4620-1-git-send-email-linux@prisktech.co.nz>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+v4 changes:
+Code tidyup as requested by Francois Romieu
+Removed '#ifdef PCI' around PCI code. Compile tested on (!)PCI and (!)PM.
 
-One more point for your devicetree conversions,
+v3 changes:
+Rebased against net-next.
+Fix errors in pm code.
 
-On Mon, Apr 29, 2013 at 01:30:01PM +0530, Prabhakar Lad wrote:
-> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-> 
-> add OF support for the mt9p031 sensor driver.
-> 
-> +static struct mt9p031_platform_data
-> +	*mt9p031_get_pdata(struct i2c_client *client)
-> +
-> +{
-> +	if (!client->dev.platform_data && client->dev.of_node) {
-> +		struct device_node *np;
-> +		struct mt9p031_platform_data *pdata;
-> +		int ret;
-> +
-> +		np = v4l2_of_get_next_endpoint(client->dev.of_node, NULL);
-> +		if (!np)
-> +			return NULL;
-> +
-> +		pdata = devm_kzalloc(&client->dev,
-> +				     sizeof(struct mt9p031_platform_data),
-> +				     GFP_KERNEL);
-> +		if (!pdata) {
-> +			pr_warn("mt9p031 failed allocate memeory\n");
-> +			return NULL;
-> +		}
-> +		ret = of_property_read_u32(np, "reset", &pdata->reset);
-> +		if (ret == -EINVAL)
-> +			pdata->reset = -1;
-> +		else if (ret == -ENODATA)
-> +			return NULL;
-> +
-> +		if (of_property_read_u32(np, "ext_freq", &pdata->ext_freq))
-> +			return NULL;
-> +
-> +		if (of_property_read_u32(np, "target_freq",
-> +					 &pdata->target_freq))
-> +			return NULL;
-> +
-> +		return pdata;
-> +	}
+v2 changes:
+Drop patch #1 as requested by David Miller.
+Correct the PHYID_ICPLUS_IP101A MII bits - should be ON, rather than OFF.
+Read the platform rev_id from the correct register [regs->rev_id]. It's possible
+this would work for the PCI version as well and would remove the need for the
+'if (pci)' test to set vptr->rev_id.
 
-I don't know how the others see this, but IMO it would be cleaner to
-first add a duplicate of the members of pdata in struct mt9p031 and then
-initialize them either from pdata or from devicetree data. The
-(artificial) creation of platform_data for the devicetree case adds a
-new level of indirection. This may not be a problem here, but there are
-cases where there is no 1:1 transcription between pdata and devicetree
-possible.
+v1:
+The first three patches are general tidyup.
 
-Sascha
+[DROPPED] Patch ## just alphabetizes the #includes to make it easier to read.
+
+Patch #1 replaces vptr->dev with vptr->netdev, in preparation of adding a
+struct device *dev in Patch #3
+
+Patch #2 replaces the pci dma functions with the generic versions.
+
+I have build tested these patches but don't have a PCI velocity to run-test it.
+I can't see that they should introduce any problems as it is all renames and
+function swapping.
+
+Patch #3 adds support for the velocity driver on devicetree platform devices.
+Binding document included. This patch is compile-tested for PCI, and boot
+tested on a VIA APC8750.
+
+I think it would be pertinent to get some tested-by's for PCI users.
+
+Regards
+Tony Prisk
+
+Tony Prisk (3):
+  net: velocity: Rename vptr->dev to vptr->netdev
+  net: velocity: Convert to generic dma functions
+  net: velocity: Add platform device support to VIA velocity driver
+
+ .../devicetree/bindings/net/via-velocity.txt       |   20 +
+ drivers/net/ethernet/via/Kconfig                   |    3 +-
+ drivers/net/ethernet/via/via-velocity.c            |  546 ++++++++++++++------
+ drivers/net/ethernet/via/via-velocity.h            |   40 +-
+ 4 files changed, 438 insertions(+), 171 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/net/via-velocity.txt
 
 -- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+1.7.9.5
+
