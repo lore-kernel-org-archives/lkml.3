@@ -1,171 +1,274 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933304Ab3D3S41 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 14:56:27 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:44786 "EHLO
+	id S933488Ab3D3S7V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 14:59:21 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:44921 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933275Ab3D3S4V (ORCPT
+	with ESMTP id S933303Ab3D3S41 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 14:56:21 -0400
+	Tue, 30 Apr 2013 14:56:27 -0400
 From: Sasha Levin <sasha.levin@oracle.com>
 To: torvalds@linux-foundation.org
 Cc: mingo@kernel.org, peterz@infradead.org, linux-kernel@vger.kernel.org,
         Sasha Levin <sasha.levin@oracle.com>
-Subject: [PATCH 3/9] liblockdep: Add public headers for pthread_mutex_t implementation
-Date: Tue, 30 Apr 2013 14:54:34 -0400
-Message-Id: <1367348080-4680-4-git-send-email-sasha.levin@oracle.com>
+Subject: [PATCH 4/9] liblockdep: Add pthread_mutex_t test suite
+Date: Tue, 30 Apr 2013 14:54:35 -0400
+Message-Id: <1367348080-4680-5-git-send-email-sasha.levin@oracle.com>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <1367348080-4680-1-git-send-email-sasha.levin@oracle.com>
 References: <1367348080-4680-1-git-send-email-sasha.levin@oracle.com>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These headers provide the same API as their pthread mutex
-counterparts.
+This is a rather simple and basic test suite to test common
+locking issues.
 
-The design here is to allow to easily switch to liblockdep lock
-validation just by adding a "liblockdep_" to pthread_mutex_*()
-calls, which means that it's easy to integrate liblockdep into
-existing codebases.
+Beyond tests, it also shows how to use the library.
 
 Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
 ---
- tools/lib/lockdep/include/liblockdep/common.h | 43 ++++++++++++++++
- tools/lib/lockdep/include/liblockdep/mutex.h  | 73 +++++++++++++++++++++++++++
- 2 files changed, 116 insertions(+)
- create mode 100644 tools/lib/lockdep/include/liblockdep/common.h
- create mode 100644 tools/lib/lockdep/include/liblockdep/mutex.h
+ tools/lib/lockdep/run_tests.sh           | 27 +++++++++++++++++++++++++++
+ tools/lib/lockdep/tests/AA.c             | 13 +++++++++++++
+ tools/lib/lockdep/tests/ABBA.c           | 13 +++++++++++++
+ tools/lib/lockdep/tests/ABBCCA.c         | 15 +++++++++++++++
+ tools/lib/lockdep/tests/ABBCCDDA.c       | 17 +++++++++++++++++
+ tools/lib/lockdep/tests/ABCABC.c         | 15 +++++++++++++++
+ tools/lib/lockdep/tests/ABCDBCDA.c       | 17 +++++++++++++++++
+ tools/lib/lockdep/tests/ABCDBDDA.c       | 17 +++++++++++++++++
+ tools/lib/lockdep/tests/common.h         | 12 ++++++++++++
+ tools/lib/lockdep/tests/unlock_balance.c | 12 ++++++++++++
+ 10 files changed, 158 insertions(+)
+ create mode 100755 tools/lib/lockdep/run_tests.sh
+ create mode 100644 tools/lib/lockdep/tests/AA.c
+ create mode 100644 tools/lib/lockdep/tests/ABBA.c
+ create mode 100644 tools/lib/lockdep/tests/ABBCCA.c
+ create mode 100644 tools/lib/lockdep/tests/ABBCCDDA.c
+ create mode 100644 tools/lib/lockdep/tests/ABCABC.c
+ create mode 100644 tools/lib/lockdep/tests/ABCDBCDA.c
+ create mode 100644 tools/lib/lockdep/tests/ABCDBDDA.c
+ create mode 100644 tools/lib/lockdep/tests/common.h
+ create mode 100644 tools/lib/lockdep/tests/unlock_balance.c
 
-diff --git a/tools/lib/lockdep/include/liblockdep/common.h b/tools/lib/lockdep/include/liblockdep/common.h
-new file mode 100644
-index 0000000..1bad66c
+diff --git a/tools/lib/lockdep/run_tests.sh b/tools/lib/lockdep/run_tests.sh
+new file mode 100755
+index 0000000..240a93c
 --- /dev/null
-+++ b/tools/lib/lockdep/include/liblockdep/common.h
-@@ -0,0 +1,43 @@
-+#ifndef _LIBLOCKDEP_COMMON_H
-+#define _LIBLOCKDEP_COMMON_H
++++ b/tools/lib/lockdep/run_tests.sh
+@@ -0,0 +1,27 @@
++#! /bin/bash
 +
-+#include <pthread.h>
++make &> /dev/null
 +
-+#ifndef CALLER_ADDR0
-+#define CALLER_ADDR0 (__builtin_return_address(0))
-+#define _THIS_IP_ CALLER_ADDR0
-+#endif
++for i in `ls tests/*.c`; do
++	testname=$(basename -s .c "$i")
++	gcc -o tests/$testname -lpthread $i liblockdep.a -Iinclude -D__USE_LIBLOCKDEP &> /dev/null
++	echo -ne "$testname... "
++	if [ $(timeout 1 ./tests/$testname | wc -l) -gt 0 ]; then
++		echo "PASSED!"
++	else
++		echo "FAILED!"
++	fi
++	rm tests/$testname
++done
 +
-+#define NR_LOCKDEP_CACHING_CLASSES 2
-+#define MAX_LOCKDEP_SUBCLASSES 8UL
-+
-+struct lockdep_subclass_key {
-+	char __one_byte;
-+};
-+
-+struct lock_class_key {
-+	struct lockdep_subclass_key subkeys[MAX_LOCKDEP_SUBCLASSES];
-+};
-+
-+struct lockdep_map {
-+	struct lock_class_key	*key;
-+	struct lock_class	*class_cache[NR_LOCKDEP_CACHING_CLASSES];
-+	const char		*name;
-+#ifdef CONFIG_LOCK_STAT
-+	int			cpu;
-+	unsigned long		ip;
-+#endif
-+};
-+
-+void lockdep_init_map(struct lockdep_map *lock, const char *name,
-+			struct lock_class_key *key, int subclass);
-+void lock_acquire(struct lockdep_map *lock, unsigned int subclass,
-+			int trylock, int read, int check,
-+			struct lockdep_map *nest_lock, unsigned long ip);
-+void lock_release(struct lockdep_map *lock, int nested,
-+			unsigned long ip);
-+
-+#define STATIC_LOCKDEP_MAP_INIT(_name, _key) \
-+	{ .name = (_name), .key = (void *)(_key), }
-+
-+#endif
-diff --git a/tools/lib/lockdep/include/liblockdep/mutex.h b/tools/lib/lockdep/include/liblockdep/mutex.h
++for i in `ls tests/*.c`; do
++	testname=$(basename -s .c "$i")
++	gcc -o tests/$testname -lpthread -Iinclude $i &> /dev/null
++	echo -ne "(PRELOAD) $testname... "
++	if [ $(timeout 1 ./lockdep ./tests/$testname | wc -l) -gt 0 ]; then
++		echo "PASSED!"
++	else
++		echo "FAILED!"
++	fi
++	rm tests/$testname
++done
+diff --git a/tools/lib/lockdep/tests/AA.c b/tools/lib/lockdep/tests/AA.c
 new file mode 100644
-index 0000000..6ebe733
+index 0000000..0f782ff
 --- /dev/null
-+++ b/tools/lib/lockdep/include/liblockdep/mutex.h
-@@ -0,0 +1,73 @@
-+#ifndef _LIBLOCKDEP_MUTEX_H
-+#define _LIBLOCKDEP_MUTEX_H
++++ b/tools/lib/lockdep/tests/AA.c
+@@ -0,0 +1,13 @@
++#include <liblockdep/mutex.h>
 +
-+#include <pthread.h>
++void main(void)
++{
++	pthread_mutex_t a, b;
++
++	pthread_mutex_init(&a, NULL);
++	pthread_mutex_init(&b, NULL);
++
++	pthread_mutex_lock(&a);
++	pthread_mutex_lock(&b);
++	pthread_mutex_lock(&a);
++}
+diff --git a/tools/lib/lockdep/tests/ABBA.c b/tools/lib/lockdep/tests/ABBA.c
+new file mode 100644
+index 0000000..07f0e29
+--- /dev/null
++++ b/tools/lib/lockdep/tests/ABBA.c
+@@ -0,0 +1,13 @@
++#include <liblockdep/mutex.h>
 +#include "common.h"
 +
-+struct liblockdep_pthread_mutex {
-+	pthread_mutex_t mutex;
-+	struct lockdep_map dep_map;
-+};
-+
-+typedef struct liblockdep_pthread_mutex liblockdep_pthread_mutex_t;
-+
-+#define LIBLOCKDEP_PTHREAD_MUTEX_INITIALIZER(mtx)			\
-+		(const struct liblockdep_pthread_mutex) {		\
-+	.mutex = PTHREAD_MUTEX_INITIALIZER,				\
-+	.dep_map = STATIC_LOCKDEP_MAP_INIT(#mtx, &((&(mtx))->dep_map)),	\
-+}
-+
-+static inline int __mutex_init(liblockdep_pthread_mutex_t *lock,
-+				const char *name,
-+				struct lock_class_key *key,
-+				const pthread_mutexattr_t *__mutexattr)
++void main(void)
 +{
-+	lockdep_init_map(&lock->dep_map, name, key, 0);
-+	return pthread_mutex_init(&lock->mutex, __mutexattr);
++	pthread_mutex_t a, b;
++
++	pthread_mutex_init(&a, NULL);
++	pthread_mutex_init(&b, NULL);
++
++	LOCK_UNLOCK_2(a, b);
++	LOCK_UNLOCK_2(b, a);
 +}
+diff --git a/tools/lib/lockdep/tests/ABBCCA.c b/tools/lib/lockdep/tests/ABBCCA.c
+new file mode 100644
+index 0000000..843db09
+--- /dev/null
++++ b/tools/lib/lockdep/tests/ABBCCA.c
+@@ -0,0 +1,15 @@
++#include <liblockdep/mutex.h>
++#include "common.h"
 +
-+#define liblockdep_pthread_mutex_init(mutex, mutexattr)		\
-+({								\
-+	static struct lock_class_key __key;			\
-+								\
-+	__mutex_init((mutex), #mutex, &__key, (mutexattr));	\
-+})
-+
-+static inline int liblockdep_pthread_mutex_lock(liblockdep_pthread_mutex_t *lock)
++void main(void)
 +{
-+	void *ip = _THIS_IP_;
-+	lock_acquire(&lock->dep_map, 0, 0, 0, 2, NULL, (unsigned long)ip);
-+	return pthread_mutex_lock(&lock->mutex);
-+}
++	pthread_mutex_t a, b, c;
 +
-+static inline int liblockdep_pthread_mutex_unlock(liblockdep_pthread_mutex_t *lock)
++	pthread_mutex_init(&a, NULL);
++	pthread_mutex_init(&b, NULL);
++	pthread_mutex_init(&c, NULL);
++
++	LOCK_UNLOCK_2(a, b);
++	LOCK_UNLOCK_2(b, c);
++	LOCK_UNLOCK_2(c, a);
++}
+diff --git a/tools/lib/lockdep/tests/ABBCCDDA.c b/tools/lib/lockdep/tests/ABBCCDDA.c
+new file mode 100644
+index 0000000..33620e2
+--- /dev/null
++++ b/tools/lib/lockdep/tests/ABBCCDDA.c
+@@ -0,0 +1,17 @@
++#include <liblockdep/mutex.h>
++#include "common.h"
++
++void main(void)
 +{
-+	void *ip = _THIS_IP_;
-+	lock_release(&lock->dep_map, 0, (unsigned long)ip);
-+	return pthread_mutex_unlock(&lock->mutex);
-+}
++	pthread_mutex_t a, b, c, d;
 +
-+static inline int liblockdep_pthread_mutex_trylock(liblockdep_pthread_mutex_t *lock)
++	pthread_mutex_init(&a, NULL);
++	pthread_mutex_init(&b, NULL);
++	pthread_mutex_init(&c, NULL);
++	pthread_mutex_init(&d, NULL);
++
++	LOCK_UNLOCK_2(a, b);
++	LOCK_UNLOCK_2(b, c);
++	LOCK_UNLOCK_2(c, d);
++	LOCK_UNLOCK_2(d, a);
++}
+diff --git a/tools/lib/lockdep/tests/ABCABC.c b/tools/lib/lockdep/tests/ABCABC.c
+new file mode 100644
+index 0000000..3fee51e
+--- /dev/null
++++ b/tools/lib/lockdep/tests/ABCABC.c
+@@ -0,0 +1,15 @@
++#include <liblockdep/mutex.h>
++#include "common.h"
++
++void main(void)
 +{
-+	void *ip = _THIS_IP_;
-+	lock_acquire(&lock->dep_map, 0, 1, 0, 2, NULL, (unsigned long)ip);
-+	return pthread_mutex_trylock(&lock->mutex) == 0 ? 1 : 0;
-+}
++	pthread_mutex_t a, b, c;
 +
-+static inline int liblockdep_pthread_mutex_destroy(liblockdep_pthread_mutex_t *lock)
++	pthread_mutex_init(&a, NULL);
++	pthread_mutex_init(&b, NULL);
++	pthread_mutex_init(&c, NULL);
++
++	LOCK_UNLOCK_2(a, b);
++	LOCK_UNLOCK_2(c, a);
++	LOCK_UNLOCK_2(b, c);
++}
+diff --git a/tools/lib/lockdep/tests/ABCDBCDA.c b/tools/lib/lockdep/tests/ABCDBCDA.c
+new file mode 100644
+index 0000000..427ba56
+--- /dev/null
++++ b/tools/lib/lockdep/tests/ABCDBCDA.c
+@@ -0,0 +1,17 @@
++#include <liblockdep/mutex.h>
++#include "common.h"
++
++void main(void)
 +{
-+	return pthread_mutex_destroy(&lock->mutex);
++	pthread_mutex_t a, b, c, d;
++
++	pthread_mutex_init(&a, NULL);
++	pthread_mutex_init(&b, NULL);
++	pthread_mutex_init(&c, NULL);
++	pthread_mutex_init(&d, NULL);
++
++	LOCK_UNLOCK_2(a, b);
++	LOCK_UNLOCK_2(c, d);
++	LOCK_UNLOCK_2(b, c);
++	LOCK_UNLOCK_2(d, a);
 +}
+diff --git a/tools/lib/lockdep/tests/ABCDBDDA.c b/tools/lib/lockdep/tests/ABCDBDDA.c
+new file mode 100644
+index 0000000..680c6cf
+--- /dev/null
++++ b/tools/lib/lockdep/tests/ABCDBDDA.c
+@@ -0,0 +1,17 @@
++#include <liblockdep/mutex.h>
++#include "common.h"
 +
-+#ifdef __USE_LIBLOCKDEP
++void main(void)
++{
++	pthread_mutex_t a, b, c, d;
 +
-+#define pthread_mutex_t         liblockdep_pthread_mutex_t
-+#define pthread_mutex_init      liblockdep_pthread_mutex_init
-+#define pthread_mutex_lock      liblockdep_pthread_mutex_lock
-+#define pthread_mutex_unlock    liblockdep_pthread_mutex_unlock
-+#define pthread_mutex_trylock   liblockdep_pthread_mutex_trylock
-+#define pthread_mutex_destroy   liblockdep_pthread_mutex_destroy
++	pthread_mutex_init(&a, NULL);
++	pthread_mutex_init(&b, NULL);
++	pthread_mutex_init(&c, NULL);
++	pthread_mutex_init(&d, NULL);
++
++	LOCK_UNLOCK_2(a, b);
++	LOCK_UNLOCK_2(c, d);
++	LOCK_UNLOCK_2(b, d);
++	LOCK_UNLOCK_2(d, a);
++}
+diff --git a/tools/lib/lockdep/tests/common.h b/tools/lib/lockdep/tests/common.h
+new file mode 100644
+index 0000000..d89e94d
+--- /dev/null
++++ b/tools/lib/lockdep/tests/common.h
+@@ -0,0 +1,12 @@
++#ifndef _LIBLOCKDEP_TEST_COMMON_H
++#define _LIBLOCKDEP_TEST_COMMON_H
++
++#define LOCK_UNLOCK_2(a, b)			\
++	do {					\
++		pthread_mutex_lock(&(a));	\
++		pthread_mutex_lock(&(b));	\
++		pthread_mutex_unlock(&(b));	\
++		pthread_mutex_unlock(&(a));	\
++	} while(0)
 +
 +#endif
+diff --git a/tools/lib/lockdep/tests/unlock_balance.c b/tools/lib/lockdep/tests/unlock_balance.c
+new file mode 100644
+index 0000000..0bc62de
+--- /dev/null
++++ b/tools/lib/lockdep/tests/unlock_balance.c
+@@ -0,0 +1,12 @@
++#include <liblockdep/mutex.h>
 +
-+#endif
++void main(void)
++{
++	pthread_mutex_t a;
++
++	pthread_mutex_init(&a, NULL);
++
++	pthread_mutex_lock(&a);
++	pthread_mutex_unlock(&a);
++	pthread_mutex_unlock(&a);
++}
 -- 
 1.8.2.1
 
