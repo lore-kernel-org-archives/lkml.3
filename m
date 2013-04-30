@@ -1,65 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758800Ab3D3ARW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 20:17:22 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:17686 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758565Ab3D3ARU (ORCPT
+	id S1758917Ab3D3ATH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 20:19:07 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:52593 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758002Ab3D3ATE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 20:17:20 -0400
-X-Authority-Analysis: v=2.0 cv=GtrACzJC c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=KBd73aRfIukA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=bsvyib-zOJsA:10 a=Z4Rwk6OoAAAA:8 a=ODALAlx79TesetsP7QEA:9 a=QEXdDO2ut3YA:10 a=jbrJJM5MRmoA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1367281038.30667.43.camel@gandalf.local.home>
-Subject: Re: [PATCH 0/2] [GIT PULL] localmodconfig: Fix missing depends of
- config files included in if statements
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Kbuild mailing list <linux-kbuild@vger.kernel.org>
-Date: Mon, 29 Apr 2013 20:17:18 -0400
-In-Reply-To: <1367280494.30667.38.camel@gandalf.local.home>
-References: <20130429195100.202681236@goodmis.org>
-	 <CA+55aFzEwRUWVQ8x1+f=6R_9+JO_Rmg=u2E1k_6jLuQEAorgtQ@mail.gmail.com>
-	 <CA+55aFzSfRv26E3UF1a8jwQK+vHSru-YTg8ADefZxOKZNnn6fA@mail.gmail.com>
-	 <1367280494.30667.38.camel@gandalf.local.home>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 29 Apr 2013 20:19:04 -0400
+Date: Tue, 30 Apr 2013 02:19:00 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Frank Ch. Eigler" <fche@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        SystemTap <systemtap@sourceware.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: systemtap broken by removal of register_timer_hook
+Message-ID: <20130430001858.GF1760@somewhere>
+References: <20130403075017.GA2534@suse.de>
+ <CAFTL4hyYezB2ZxM-GJ70VoxOeRSG64V6u+nX2hTuhF30R-GdPg__32168.962484184$1364986928$gmane$org@mail.gmail.com>
+ <y0mvc83u79f.fsf@fche.csb>
+ <CAFTL4hxx_GHoa4uguSAtY0A=cC43qJPKvpqaoguS-WAjFj+HSw@mail.gmail.com>
+ <20130403144428.GA15432@redhat.com>
+ <CAFTL4hy+U-dLPwGR8BcZt=C8Tug-jvh+24epadfte7Ci2cDU5Q@mail.gmail.com>
+ <20130419144655.GD8308@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130419144655.GD8308@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-04-29 at 20:08 -0400, Steven Rostedt wrote:
-> On Mon, 2013-04-29 at 14:42 -0700, Linus Torvalds wrote:
-> > On Mon, Apr 29, 2013 at 2:01 PM, Linus Torvalds
-> > <torvalds@linux-foundation.org> wrote:
+On Fri, Apr 19, 2013 at 10:46:55AM -0400, Frank Ch. Eigler wrote:
+> Hi, Frederic -
+> 
+> 
+> > > How about this?
 > > >
-> > > There's just too much confusion here for me to touch anything at all,
-> > > so please fix things up.
+> > > Author: Frank Ch. Eigler <fche@redhat.com>
+> > > Date:   Wed Apr 3 10:35:21 2013 -0400
+> > >
+> > >     profiling: add profile_tick tracepoint
+> > > [...]
+> 
+> > It would be better not to tie this to CONFIG_PROFILING.
+> > A tracepoint in update_process_times() instead would be great but it's
+> > sometimes called several times in a tick from some archs.
+> > Probably we need something like:
 > > 
-> > Oh, and you might as well check that I resolved the conflicts in the
-> > trace pull correctly while you're at it. They looked pretty obvious,
-> > and it compiles for me, but ..
+> > static inline tick_trace(struct pt_regs *regs)
+> > {
+> >     trace_timer_tick(regs);
+> >     profile_tick(CPU_PROFILING);
+> > }
 > 
-> Almost.
+> I looked into this, but found no natural place to define such an
+> inline function from which to call into a tracepoint, without having
+> to #include the <event/FOO.h> file many times.
+
+You could include it from linux/profile.h or linux/tick.h and
+define profile_tick to "{ trace_tick(); __profile_tick()}" .
+
+But in a second thought, using a tracepoint in a general purpose header
+resulted in bad circular headers dependency in the past, we had bitter
+experiences with trace_softirq_raise for example.
+
+> Nor does it seem
+> appropriate to do the identical #define CREATE_TRACE_POINTSw part from
+> all the different arch/.../*.c files that may call into that inline.
+>
+> If you'd like to stick to this idea, please advise further where you
+> think the tracepoint definition & declarations should go.
 > 
+> In the alternative, here is v2 of the patch, just changing the
+> tracepoint-printing argument as suggested by jistone.
 
-BTW, what's the preferred method for this. I already posted a lot of
-work to linux-next when I found bugs that required going into your tree.
-I backported the fixes knowing that it will cause conflicts when you
-merge.
+But your tracepoint still depends on CONFIG_PROFILING and I would
+really like to avoid that.
 
-IIRC, you stated that you don't mind doing conflict resolutions
-yourself, so I did not try to fix it a head of time, as the conflicts
-were rather minor.
+How about creating trace_tick() in include/trace/events/timer.h
+and call it from tick_periodic() and tick_sched_handle().
 
-Should I have merged your tree and done the conflict resolutions myself,
-or was it OK to do what I did, and let you do the conflict resolution
-and send you any fixes that needed to be done afterward?
+This only leaves the archs that don't support generic clockevents
+behind. This should be no big deal, they can integrate this tracepoint
+later if they need to.
 
--- Steve
-
-
+Thanks.
