@@ -1,62 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760580Ab3D3MiM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 08:38:12 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:2998 "EHLO
+	id S1760574Ab3D3Mk0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 08:40:26 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:40238 "EHLO
 	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760235Ab3D3MiL (ORCPT
+	with ESMTP id S1760119Ab3D3MkZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 08:38:11 -0400
+	Tue, 30 Apr 2013 08:40:25 -0400
+Message-ID: <517FBBBB.6060003@atmel.com>
+Date: Tue, 30 Apr 2013 14:40:27 +0200
 From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: <linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>, <tixy@linaro.org>,
-        <stefano.stabellini@eu.citrix.com>
-CC: <linux-kernel@vger.kernel.org>, Marc Zyngier <marc.zyngier@arm.com>,
-        <nicolas.pitre@linaro.org>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH] ARM: add the "bool" type definition to asm/mach/arch.h
-Date: Tue, 30 Apr 2013 14:38:07 +0200
-Message-ID: <1367325487-8366-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <517F8FF4.3050901@atmel.com>
-References: <517F8FF4.3050901@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Jon Medhurst <tixy@linaro.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>
+Subject: Re: linux-next build error (at91) - use of bool in mach/arch.h
+References: <517F8FF4.3050901@atmel.com> <CAMuHMdXYaDHYq7CG8ftP+yyF18pMx8qZrvM3AUTAXk+tUruNcA@mail.gmail.com> <alpine.DEB.2.02.1304301257200.5398@kaball.uk.xensource.com>
+In-Reply-To: <alpine.DEB.2.02.1304301257200.5398@kaball.uk.xensource.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Addition of boolean field to machine_desc structure in commit
-4dbfa9a25367cfa91aec0e56d75a6905d3242cd3 (ARM: Enable selection of
-SMP operations at boot time) was triggering compilation errors like:
+On 04/30/2013 01:58 PM, Stefano Stabellini :
+> On Tue, 30 Apr 2013, Geert Uytterhoeven wrote:
+>> On Tue, Apr 30, 2013 at 11:33 AM, Nicolas Ferre <nicolas.ferre@atmel.com> wrote:
+>>> So, I am wondering if the best correction is to add the types.h header file
+>>> in the asm/mach/arch.h file, like this:
+>>>
+>>> --- a/arch/arm/include/asm/mach/arch.h
+>>> +++ b/arch/arm/include/asm/mach/arch.h
+>>> @@ -8,6 +8,8 @@
+>>>   * published by the Free Software Foundation.
+>>>   */
+>>>
+>>> +#include <linux/types.h>
+>>> +
+>>>  #ifndef __ASSEMBLY__
+>>>
+>>>  struct tag;
+>>>
+>>> or if a better option would be to re-arrange the include directives in
+>>> various at91xxx_devices.c files?
+>>
+>> Include files should be self-contained, so asm/mach/arch.h is the right place.
+> 
+> Nicolas,
+> are you happy to come up with a proper patch to fix the issue?
 
-  CC      arch/arm/mach-at91/at91sam9260_devices.o
-In file included from arch/arm/mach-at91/at91sam9260_devices.c:12:0:
-arch/arm/include/asm/mach/arch.h:46:2: error: expected specifier-qualifier-list before "bool"
+Yep, sent now.
 
-So, we add the definition of "bool" by including the linux/types.h
-file to asm/mach/arch.h and make it self-contained.
-
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
----
- arch/arm/include/asm/mach/arch.h | 2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/arch/arm/include/asm/mach/arch.h b/arch/arm/include/asm/mach/arch.h
-index af8c54c..75bf079 100644
---- a/arch/arm/include/asm/mach/arch.h
-+++ b/arch/arm/include/asm/mach/arch.h
-@@ -8,6 +8,8 @@
-  * published by the Free Software Foundation.
-  */
- 
-+#include <linux/types.h>
-+
- #ifndef __ASSEMBLY__
- 
- struct tag;
+Bye,
 -- 
-1.8.0
-
+Nicolas Ferre
