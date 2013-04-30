@@ -1,82 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761240Ab3D3Rc2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 13:32:28 -0400
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:52755 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761192Ab3D3RcY (ORCPT
+	id S1761229Ab3D3ReI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 13:34:08 -0400
+Received: from a10-63.smtp-out.amazonses.com ([54.240.10.63]:50631 "EHLO
+	a10-63.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1760805Ab3D3ReG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 13:32:24 -0400
+	Tue, 30 Apr 2013 13:34:06 -0400
+X-Greylist: delayed 330 seconds by postgrey-1.27 at vger.kernel.org; Tue, 30 Apr 2013 13:34:06 EDT
+Date: Tue, 30 Apr 2013 17:28:34 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Tim Chen <tim.c.chen@linux.intel.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Dave Hansen <dave.hansen@intel.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>
+Subject: Re: [PATCH 1/2] Make the batch size of the percpu_counter
+ configurable
+In-Reply-To: <1367339009.27102.174.camel@schen9-DESK>
+Message-ID: <0000013e5bfd1548-a6ef7962-7b00-495b-8e83-d7a08413e165-000000@email.amazonses.com>
+References: <c1f9c476a8bd1f5e7049b8ac79af48be61afd8f3.1367254913.git.tim.c.chen@linux.intel.com> <0000013e5b24d2c5-9b899862-e2fd-4413-8094-4f1e5a0c0f62-000000@email.amazonses.com> <1367339009.27102.174.camel@schen9-DESK>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <20130430072147.GA37866@bingao-desk1.fm.intel.com>
-References: <20130430072147.GA37866@bingao-desk1.fm.intel.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 30 Apr 2013 11:32:03 -0600
-Message-ID: <CAErSpo6sY_BejDqgO1Qsko7qH+oKn+wAbu5MnhE8zQeQCc7Qng@mail.gmail.com>
-Subject: Re: x86/pci/mrst: force all pci config toward 0:0:0, 0:2:0 and 0:3:0
- to type 1
-To: Bin Gao <bin.gao@linux.intel.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
-        Jacob Pan <jacob.jun.pan@linux.intel.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.04.30-54.240.10.63
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 30, 2013 at 1:21 AM, Bin Gao <bin.gao@linux.intel.com> wrote:
-> x86/pci/mrst: force all pci config access toward 0:0:0, 0:2:0 and 0:3:0 to type 1
->
-> For real pci devices 0:0:0, 0:2:0 and 0:3:0, there is either no pci shim, or
-> no guarantee of data correctness of offset 256-4k. So for whatever reason,
-> Linux kernel should not do MMCFG pci config access to those devices. Instead,
-> always use type 1 for those devices.
->
-> Signed-off-by: Bin Gao <bin.gao@linux.intel.com>
+On Tue, 30 Apr 2013, Tim Chen wrote:
 
-I applied this to my for-linus branch and will try to put this in v3.10.
+> On Tue, 2013-04-30 at 13:32 +0000, Christoph Lameter wrote:
+> > On Mon, 29 Apr 2013, Tim Chen wrote:
+> >
+> > > diff --git a/include/linux/percpu_counter.h b/include/linux/percpu_counter.h
+> > > index d5dd465..5ca7df5 100644
+> > > --- a/include/linux/percpu_counter.h
+> > > +++ b/include/linux/percpu_counter.h
+> > > @@ -22,6 +22,7 @@ struct percpu_counter {
+> > >  	struct list_head list;	/* All percpu_counters are on a list */
+> > >  #endif
+> > >  	s32 __percpu *counters;
+> > > +	int *batch ____cacheline_aligned_in_smp;
+> > >  };
+> >
+> > What is this for and why does it have that alignmend?
+>
+> I was assuming that if batch is frequently referenced, it probably
+> should not share a cache line with the counters field.
 
-> ---
->  arch/x86/pci/mrst.c |   10 ++++++----
->  1 files changed, 6 insertions(+), 4 deletions(-)
->
-> diff --git a/arch/x86/pci/mrst.c b/arch/x86/pci/mrst.c
-> index 6eb18c4..0e0fabf 100644
-> --- a/arch/x86/pci/mrst.c
-> +++ b/arch/x86/pci/mrst.c
-> @@ -141,6 +141,11 @@ static int pci_device_update_fixed(struct pci_bus *bus, unsigned int devfn,
->   */
->  static bool type1_access_ok(unsigned int bus, unsigned int devfn, int reg)
->  {
-> +       if (bus == 0 && (devfn == PCI_DEVFN(2, 0)
-> +                               || devfn == PCI_DEVFN(0, 0)
-> +                               || devfn == PCI_DEVFN(3, 0)))
-> +               return 1;
-> +
->         /* This is a workaround for A0 LNC bug where PCI status register does
->          * not have new CAP bit set. can not be written by SW either.
->          *
-> @@ -150,10 +155,7 @@ static bool type1_access_ok(unsigned int bus, unsigned int devfn, int reg)
->          */
->         if (reg >= 0x100 || reg == PCI_STATUS || reg == PCI_HEADER_TYPE)
->                 return 0;
-> -       if (bus == 0 && (devfn == PCI_DEVFN(2, 0)
-> -                               || devfn == PCI_DEVFN(0, 0)
-> -                               || devfn == PCI_DEVFN(3, 0)))
-> -               return 1;
-> +
->         return 0; /* langwell on others */
->  }
->
-> --
-> 1.7.4.4
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+And why is it a pointer?
+
+And the pointer is so frequently changed that it needs it own cache line?
+
