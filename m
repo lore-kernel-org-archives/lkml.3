@@ -1,56 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933093Ab3D3TEq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 15:04:46 -0400
-Received: from mail-qe0-f41.google.com ([209.85.128.41]:39871 "EHLO
-	mail-qe0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932467Ab3D3TEo (ORCPT
+	id S933279Ab3D3TGh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 15:06:37 -0400
+Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:60930 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932467Ab3D3TGd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 15:04:44 -0400
-Date: Tue, 30 Apr 2013 12:04:35 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: Christoph Lameter <cl@linux.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Dave Hansen <dave.hansen@intel.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>
-Subject: Re: [PATCH 1/2] Make the batch size of the percpu_counter
- configurable
-Message-ID: <20130430190435.GF19814@mtj.dyndns.org>
-References: <c1f9c476a8bd1f5e7049b8ac79af48be61afd8f3.1367254913.git.tim.c.chen@linux.intel.com>
- <0000013e5b24d2c5-9b899862-e2fd-4413-8094-4f1e5a0c0f62-000000@email.amazonses.com>
- <1367339009.27102.174.camel@schen9-DESK>
- <0000013e5bfd1548-a6ef7962-7b00-495b-8e83-d7a08413e165-000000@email.amazonses.com>
- <1367344094.27102.182.camel@schen9-DESK>
- <0000013e5c1377c5-49a8fca5-eb04-4e3a-a507-ce3a47fea685-000000@email.amazonses.com>
- <1367344522.27102.184.camel@schen9-DESK>
- <0000013e5c32f7fd-b4bf1b22-7924-42b5-b835-eb2b5926bbf6-000000@email.amazonses.com>
- <1367348457.27102.197.camel@schen9-DESK>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1367348457.27102.197.camel@schen9-DESK>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 30 Apr 2013 15:06:33 -0400
+X-Greylist: delayed 544 seconds by postgrey-1.27 at vger.kernel.org; Tue, 30 Apr 2013 15:06:33 EDT
+From: Reilly Grant <grantr@vmware.com>
+To: linux-kernel@vger.kernel.org
+Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, Reilly Grant <grantr@vmware.com>
+Subject: [PATCH] xhci: Compute last_ctx from complete set of endpoints.
+Date: Tue, 30 Apr 2013 11:56:44 -0700
+Message-Id: <1367348204-1997-1-git-send-email-grantr@vmware.com>
+X-Mailer: git-send-email 1.8.1.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+The context entries field of the slot context must be set to one more
+than the highest endpoint index currently active. The previous logic
+only included the set of endpoints currently being added, meaning that
+if an endpoint where dropped then the field would be reset to 1,
+deactivating all configured endpoints.
 
-On Tue, Apr 30, 2013 at 12:00:57PM -0700, Tim Chen wrote:
-> Will it be acceptable if I make the per cpu counter list under
-> CONFIG_CPU_HOTPLUG default? I will need the list to go through all
-> counters to update the batch value sizes.  The alternative will be to
-> make the configurable batch option only available under
-> CONFIG_HOTPLUG_CPU.
+The xHCI spec is decidedly unclear on whether this field includes all
+configured endpoints or only those being modified by a configure
+endpoint command. My interpretation is the former and is the behavior
+observed in the Apple's xHCI driver.
 
-I haven't looked at the patch but making cpu counter list default
-regardless of hotplug cpu should be okay.  Most modern configurations,
-even most embedded ones, enable CPU hotplug for PM anyway.
+Signed-off-by: Reilly Grant <grantr@vmware.com>
+---
+ drivers/usb/host/xhci.c | 52 +++++++++++++++++--------------------------------
+ 1 file changed, 18 insertions(+), 34 deletions(-)
 
-Thanks.
-
+diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+index 53b8f89..5c40d3e 100644
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -1557,12 +1557,10 @@ int xhci_drop_endpoint(struct usb_hcd *hcd, struct usb_device *udev,
+ 	struct xhci_hcd *xhci;
+ 	struct xhci_container_ctx *in_ctx, *out_ctx;
+ 	struct xhci_input_control_ctx *ctrl_ctx;
+-	struct xhci_slot_ctx *slot_ctx;
+-	unsigned int last_ctx;
+ 	unsigned int ep_index;
+ 	struct xhci_ep_ctx *ep_ctx;
+ 	u32 drop_flag;
+-	u32 new_add_flags, new_drop_flags, new_slot_info;
++	u32 new_add_flags, new_drop_flags;
+ 	int ret;
+ 
+ 	ret = xhci_check_args(hcd, udev, ep, 1, true, __func__);
+@@ -1603,24 +1601,13 @@ int xhci_drop_endpoint(struct usb_hcd *hcd, struct usb_device *udev,
+ 	ctrl_ctx->add_flags &= cpu_to_le32(~drop_flag);
+ 	new_add_flags = le32_to_cpu(ctrl_ctx->add_flags);
+ 
+-	last_ctx = xhci_last_valid_endpoint(le32_to_cpu(ctrl_ctx->add_flags));
+-	slot_ctx = xhci_get_slot_ctx(xhci, in_ctx);
+-	/* Update the last valid endpoint context, if we deleted the last one */
+-	if ((le32_to_cpu(slot_ctx->dev_info) & LAST_CTX_MASK) >
+-	    LAST_CTX(last_ctx)) {
+-		slot_ctx->dev_info &= cpu_to_le32(~LAST_CTX_MASK);
+-		slot_ctx->dev_info |= cpu_to_le32(LAST_CTX(last_ctx));
+-	}
+-	new_slot_info = le32_to_cpu(slot_ctx->dev_info);
+-
+ 	xhci_endpoint_zero(xhci, xhci->devs[udev->slot_id], ep);
+ 
+-	xhci_dbg(xhci, "drop ep 0x%x, slot id %d, new drop flags = %#x, new add flags = %#x, new slot info = %#x\n",
++	xhci_dbg(xhci, "drop ep 0x%x, slot id %d, new drop flags = %#x, new add flags = %#x\n",
+ 			(unsigned int) ep->desc.bEndpointAddress,
+ 			udev->slot_id,
+ 			(unsigned int) new_drop_flags,
+-			(unsigned int) new_add_flags,
+-			(unsigned int) new_slot_info);
++			(unsigned int) new_add_flags);
+ 	return 0;
+ }
+ 
+@@ -1643,11 +1630,9 @@ int xhci_add_endpoint(struct usb_hcd *hcd, struct usb_device *udev,
+ 	struct xhci_hcd *xhci;
+ 	struct xhci_container_ctx *in_ctx, *out_ctx;
+ 	unsigned int ep_index;
+-	struct xhci_slot_ctx *slot_ctx;
+ 	struct xhci_input_control_ctx *ctrl_ctx;
+ 	u32 added_ctxs;
+-	unsigned int last_ctx;
+-	u32 new_add_flags, new_drop_flags, new_slot_info;
++	u32 new_add_flags, new_drop_flags;
+ 	struct xhci_virt_device *virt_dev;
+ 	int ret = 0;
+ 
+@@ -1662,7 +1647,6 @@ int xhci_add_endpoint(struct usb_hcd *hcd, struct usb_device *udev,
+ 		return -ENODEV;
+ 
+ 	added_ctxs = xhci_get_endpoint_flag(&ep->desc);
+-	last_ctx = xhci_last_valid_endpoint(added_ctxs);
+ 	if (added_ctxs == SLOT_FLAG || added_ctxs == EP0_FLAG) {
+ 		/* FIXME when we have to issue an evaluate endpoint command to
+ 		 * deal with ep0 max packet size changing once we get the
+@@ -1723,24 +1707,14 @@ int xhci_add_endpoint(struct usb_hcd *hcd, struct usb_device *udev,
+ 	 */
+ 	new_drop_flags = le32_to_cpu(ctrl_ctx->drop_flags);
+ 
+-	slot_ctx = xhci_get_slot_ctx(xhci, in_ctx);
+-	/* Update the last valid endpoint context, if we just added one past */
+-	if ((le32_to_cpu(slot_ctx->dev_info) & LAST_CTX_MASK) <
+-	    LAST_CTX(last_ctx)) {
+-		slot_ctx->dev_info &= cpu_to_le32(~LAST_CTX_MASK);
+-		slot_ctx->dev_info |= cpu_to_le32(LAST_CTX(last_ctx));
+-	}
+-	new_slot_info = le32_to_cpu(slot_ctx->dev_info);
+-
+ 	/* Store the usb_device pointer for later use */
+ 	ep->hcpriv = udev;
+ 
+-	xhci_dbg(xhci, "add ep 0x%x, slot id %d, new drop flags = %#x, new add flags = %#x, new slot info = %#x\n",
++	xhci_dbg(xhci, "add ep 0x%x, slot id %d, new drop flags = %#x, new add flags = %#x\n",
+ 			(unsigned int) ep->desc.bEndpointAddress,
+ 			udev->slot_id,
+ 			(unsigned int) new_drop_flags,
+-			(unsigned int) new_add_flags,
+-			(unsigned int) new_slot_info);
++			(unsigned int) new_add_flags);
+ 	return 0;
+ }
+ 
+@@ -2684,10 +2658,20 @@ int xhci_check_bandwidth(struct usb_hcd *hcd, struct usb_device *udev)
+ 			ctrl_ctx->drop_flags == 0)
+ 		return 0;
+ 
+-	xhci_dbg(xhci, "New Input Control Context:\n");
++	/* Update the last valid endpoint context. */
+ 	slot_ctx = xhci_get_slot_ctx(xhci, virt_dev->in_ctx);
++	for (i = ARRAY_SIZE(virt_dev->eps) - 1; i >= 0; --i) {
++		if ((virt_dev->eps[i].ring &&
++		     !(le32_to_cpu(ctrl_ctx->drop_flags) & (1 << (i + 1)))) ||
++		    (le32_to_cpu(ctrl_ctx->add_flags) & (1 << (i + 1))))
++			break;
++	}
++	slot_ctx->dev_info &= cpu_to_le32(~LAST_CTX_MASK);
++	slot_ctx->dev_info |= cpu_to_le32(LAST_CTX(i + 1));
++
++	xhci_dbg(xhci, "New Input Control Context:\n");
+ 	xhci_dbg_ctx(xhci, virt_dev->in_ctx,
+-		     LAST_CTX_TO_EP_NUM(le32_to_cpu(slot_ctx->dev_info)));
++		     xhci_last_valid_endpoint(ctrl_ctx->add_flags));
+ 
+ 	ret = xhci_configure_endpoint(xhci, udev, NULL,
+ 			false, false);
 -- 
-tejun
+1.8.1.5
