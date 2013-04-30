@@ -1,61 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760285Ab3D3Lw5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 07:52:57 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:50666 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759401Ab3D3Lw4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 07:52:56 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Toshi Kani <toshi.kani@hp.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, isimatu.yasuaki@jp.fujitsu.com,
-        vasilis.liaskovitis@profitbricks.com
-Subject: Re: [PATCH 2/3 RFC] Driver core: Use generic offline/online for CPU offline/online
-Date: Tue, 30 Apr 2013 14:01:10 +0200
-Message-ID: <18234756.omYDfXWPpx@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <20130429231106.GC1333@kroah.com>
-References: <1576321.HU0tZ4cGWk@vostro.rjw.lan> <5608485.T3GFgtNYov@vostro.rjw.lan> <20130429231106.GC1333@kroah.com>
+	id S1760446Ab3D3Lyf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 07:54:35 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:35209 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759863Ab3D3Lyd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Apr 2013 07:54:33 -0400
+Message-ID: <517FB0F6.9030103@console-pimps.org>
+Date: Tue, 30 Apr 2013 12:54:30 +0100
+From: Matt Fleming <matt@console-pimps.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Ingo Molnar <mingo@kernel.org>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Tony Luck <tony.luck@intel.com>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-efi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] EFI merge botch fix
+References: <20130429181819.GA2254@console-pimps.org> <20130430084731.GB21473@gmail.com>
+In-Reply-To: <20130430084731.GB21473@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, April 29, 2013 04:11:06 PM Greg Kroah-Hartman wrote:
-> On Mon, Apr 29, 2013 at 02:28:02PM +0200, Rafael J. Wysocki wrote:
-> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > 
-> > Rework the CPU hotplug code in drivers/base/cpu.c to use the
-> > generic offline/online support introduced previously instead of
-> > its own CPU-specific code.
-> > 
-> > For this purpose, modify cpu_subsys to provide offline and online
-> > callbacks for CONFIG_HOTPLUG_CPU set and remove the code handling
-> > the CPU-specific 'online' sysfs attribute.
-> > 
-> > This modification is not supposed to change the user-observable
-> > behavior of the kernel (i.e. the 'online' attribute will be present
-> > in exactly the same place in sysfs and should trigger exactly the
-> > same actions as before).
-> > 
-> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > ---
-> >  drivers/base/cpu.c |   62 ++++++++++++-----------------------------------------
-> >  1 file changed, 15 insertions(+), 47 deletions(-)
+On 30/04/13 09:47, Ingo Molnar wrote:
+> The other problem is that tip:x86/efi also conflicts with current -git, as 
+> of v3.9 - due to interaction with an EFI fix tree ...
 > 
-> Very nice, I like reductions like this :)
+> This is getting ugly pretty fast, so I'd suggest to re-do the merges 
+> cleanly, not by rebasing the tree, but by redoing the first merge in 
+> essence:
+> 
+>   e29c2de5f591 Merge tag 'v3.9-rc8' into efi-for-tip
+> 
+> By correctly merging v3.9-final into f53f292 - making sure the changes to 
+> drivers/firmware/efivars.c correctly merge over, and making sure the ia64 
+> select does not get lost.
+> 
+> Something like this would do:
+> 
+>   git checkout -b x86-new-efi-branch f53f292
+>   git merge v3.9
+>   < ... resolve all the conflicts ...>
+>   git commit
+> 
+> I can then (non-fast-forward) fetch this new EFI branch as the new 
+> tip:x86/efi.
 
-Thanks!
+OK, I re-did the merge against v3.9 as requested and published it as
+'efi-for-tip2'. Would you like me to send a proper pull request if
+that's easier to pull into the tip machinery?
 
-So I guess the patches make sense to you overall?
-
-Rafael
-
+I have also started accumulating fixes against the EFI changes in
+tip/x86/efi. Would you like those as a separate pull request? The fixes
+branch is 'efi-for-tip-fixes' and is based on the above merge branch,
+'efi-for-tip2'. It mainly includes fixes for bugs in the pstore paths
+which Seiji Aguchi found.
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Matt Fleming, Intel Open Source Technology Center
