@@ -1,69 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933592Ab3D3TBH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 15:01:07 -0400
-Received: from mga09.intel.com ([134.134.136.24]:35039 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933573Ab3D3TA6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 15:00:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,582,1363158000"; 
-   d="scan'208";a="329098267"
-Subject: Re: [PATCH 1/2] Make the batch size of the percpu_counter
- configurable
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Dave Hansen <dave.hansen@intel.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>
-In-Reply-To: <0000013e5c32f7fd-b4bf1b22-7924-42b5-b835-eb2b5926bbf6-000000@email.amazonses.com>
-References: <c1f9c476a8bd1f5e7049b8ac79af48be61afd8f3.1367254913.git.tim.c.chen@linux.intel.com>
-	 <0000013e5b24d2c5-9b899862-e2fd-4413-8094-4f1e5a0c0f62-000000@email.amazonses.com>
-	 <1367339009.27102.174.camel@schen9-DESK>
-	 <0000013e5bfd1548-a6ef7962-7b00-495b-8e83-d7a08413e165-000000@email.amazonses.com>
-	 <1367344094.27102.182.camel@schen9-DESK>
-	 <0000013e5c1377c5-49a8fca5-eb04-4e3a-a507-ce3a47fea685-000000@email.amazonses.com>
-	 <1367344522.27102.184.camel@schen9-DESK>
-	 <0000013e5c32f7fd-b4bf1b22-7924-42b5-b835-eb2b5926bbf6-000000@email.amazonses.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 30 Apr 2013 12:00:57 -0700
-Message-ID: <1367348457.27102.197.camel@schen9-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S933550Ab3D3TAn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 15:00:43 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:44871 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933285Ab3D3S4Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Apr 2013 14:56:25 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+To: torvalds@linux-foundation.org
+Cc: mingo@kernel.org, peterz@infradead.org, linux-kernel@vger.kernel.org,
+        Sasha Levin <sasha.levin@oracle.com>, penberg@kernel.org
+Subject: [PATCH 1/9] lockdep: Be nice about building from userspace
+Date: Tue, 30 Apr 2013 14:54:32 -0400
+Message-Id: <1367348080-4680-2-git-send-email-sasha.levin@oracle.com>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <1367348080-4680-1-git-send-email-sasha.levin@oracle.com>
+References: <1367348080-4680-1-git-send-email-sasha.levin@oracle.com>
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-04-30 at 18:27 +0000, Christoph Lameter wrote:
-> On Tue, 30 Apr 2013, Tim Chen wrote:
-> 
-> > > But you will have to dereference the pointer whenever you want the batch
-> > > size from the hot path. Looks like it would be better to put the value
-> > > there directly. You have a list of percpu counters that can be traversed
-> > > to change the batch size.
-> > >
-> >
-> > I have considered that.  But the list is not available unless we have
-> > CONFIG_HOTPLUG_CPU compiled in.
-> 
-> percpu counters are performance sensitive and with the pointer you
-> will need to reference another one increasing the cache footprint. You are
-> touching an additional cacheline somewhere in memory frequently. Not good.
-> 
+Lockdep is an awesome piece of code which detects locking issues
+which are relevant both to userspace and kernelspace. We can
+easily make lockdep work in userspace since there is really no
+kernel spacific magic going on in the code.
 
-Seems like there's objection to make batch a pointer and I'll have to
-store its value in per cpu pointer.
+All we need is to wrap two functions which are used by lockdep
+and are very kernel specific.
 
-Will it be acceptable if I make the per cpu counter list under
-CONFIG_CPU_HOTPLUG default? I will need the list to go through all
-counters to update the batch value sizes.  The alternative will be to
-make the configurable batch option only available under
-CONFIG_HOTPLUG_CPU.
+Doing that will allow tools located in tools/ to easily utilize
+lockdep's code for their own use.
 
-Which is the preferable approach or there are other clever alternatives?
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+Cc: penberg@kernel.org
+Cc: peterz@infradead.org
+Link: http://lkml.kernel.org/r/1352753446-24109-1-git-send-email-sasha.levin@oracle.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ kernel/lockdep.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-Tim
+diff --git a/kernel/lockdep.c b/kernel/lockdep.c
+index 8a0efac..1966746 100644
+--- a/kernel/lockdep.c
++++ b/kernel/lockdep.c
+@@ -584,6 +584,7 @@ static int very_verbose(struct lock_class *class)
+ /*
+  * Is this the address of a static object:
+  */
++#ifdef __KERNEL__
+ static int static_obj(void *obj)
+ {
+ 	unsigned long start = (unsigned long) &_stext,
+@@ -610,6 +611,7 @@ static int static_obj(void *obj)
+ 	 */
+ 	return is_module_address(addr) || is_module_percpu_address(addr);
+ }
++#endif
+ 
+ /*
+  * To make lock name printouts unique, we calculate a unique
+@@ -4114,6 +4116,7 @@ void debug_check_no_locks_held(struct task_struct *task)
+ 		print_held_locks_bug(task);
+ }
+ 
++#ifdef __KERNEL__
+ void debug_show_all_locks(void)
+ {
+ 	struct task_struct *g, *p;
+@@ -4171,6 +4174,7 @@ retry:
+ 		read_unlock(&tasklist_lock);
+ }
+ EXPORT_SYMBOL_GPL(debug_show_all_locks);
++#endif
+ 
+ /*
+  * Careful: only use this function if you are sure that
+-- 
+1.8.2.1
 
