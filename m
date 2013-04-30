@@ -1,76 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932834Ab3D3SqU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 14:46:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21667 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932821Ab3D3SqR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 14:46:17 -0400
-Date: Tue, 30 Apr 2013 14:46:12 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: paul.mckenney@linaro.org
-Subject: Re: rcu: Provide compile-time control for no-CBs CPUs
-Message-ID: <20130430184612.GA14568@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	paul.mckenney@linaro.org
-References: <20130430152126.0C564660906@gitolite.kernel.org>
+	id S933097Ab3D3SwG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 14:52:06 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:49904 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S933077Ab3D3SwD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Apr 2013 14:52:03 -0400
+Date: Tue, 30 Apr 2013 13:52:02 -0500
+From: Cliff Wickman <cpw@sgi.com>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fs/proc: smaps should avoid VM_PFNMAP areas
+Message-ID: <20130430185202.GA8249@sgi.com>
+References: <E1UXF1l-00025N-UJ@eag09.americas.sgi.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130430152126.0C564660906@gitolite.kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <E1UXF1l-00025N-UJ@eag09.americas.sgi.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 30, 2013 at 03:21:26PM +0000, Linux Kernel wrote:
+> On Tue, Apr 30, 2013 at 01:11:45PM -0500, Naoya Horiguchi wrote:
+> > 
+> > /proc/<pid>/smaps should not be looking at VM_PFNMAP areas.
+> > 
+> > Certain tests in show_smap() (especially for huge pages) assume that the
+> > mapped PFN's are backed with page structures.  And this is not usually true
+> > for VM_PFNMAP areas.  This can result in panics on kernel page faults when
+> > attempting to address those page structures.
+> 
+> I think it's strange that you mention to hugepages, because in my understanding
+> VM_PFNMAP and hugepage related vma (VM_HUGEPAGE or VM_HUGETLB) should not set
+> at the same time. In what testcase are these flags both set?
 
- > +choice
- > +	prompt "Build-forced no-CBs CPUs"
- > +	default RCU_NOCB_CPU_NONE
- > +	help
- > +	  This option allows no-CBs CPUs to be specified at build time.
- > +	  Additional no-CBs CPUs may be specified by the rcu_nocbs=
- > +	  boot parameter.
- > +
- > +config RCU_NOCB_CPU_NONE
- > +	bool "No build_forced no-CBs CPUs"
- > +	depends on RCU_NOCB_CPU
- > +	help
- > +	  This option does not force any of the CPUs to be no-CBs CPUs.
- > +	  Only CPUs designated by the rcu_nocbs= boot parameter will be
- > +	  no-CBs CPUs.
- > +
- > +config RCU_NOCB_CPU_ZERO
- > +	bool "CPU 0 is a build_forced no-CBs CPU"
- > +	depends on RCU_NOCB_CPU
- > +	help
- > +	  This option forces CPU 0 to be a no-CBs CPU.  Additional CPUs
- > +	  may be designated as no-CBs CPUs using the rcu_nocbs= boot
- > +	  parameter will be no-CBs CPUs.
- > +
- > +	  Select this if CPU 0 needs to be a no-CBs CPU for real-time
- > +	  or energy-efficiency reasons.
- > +
- > +config RCU_NOCB_CPU_ALL
- > +	bool "All CPUs are build_forced no-CBs CPUs"
- > +	depends on RCU_NOCB_CPU
- > +	help
- > +	  This option forces all CPUs to be no-CBs CPUs.  The rcu_nocbs=
- > +	  boot parameter will be ignored.
- > +
- > +	  Select this if all CPUs need to be no-CBs CPUs for real-time
- > +	  or energy-efficiency reasons.
+I don't think VM_PFNMAP and VM_HUGE... set at the same time.
+The problem is that a VM_PFNMAP'd area might have 2MB mappings in its
+page table, but they may point to pfn's that are not backed by page
+structures.
 
-Note that entering '?' when prompted in oldconfig only outputs the help
-parameter from the choice section.
+Then a sequence like:
+show_smap
+  show_map_vma
+    walk_page_range
+      walk_pud_range
+        walk_pmd_range
+          split_huge_page_pmd(walk->mm, pmd)
+            __split_huge_page_pmd
+              page = pmd_page(*pmd)
+can address   (vmemmap + (pfn)) and panic
 
-Additionally, nowhere in any of this text does it say what a "no-CB CPU" is,
-or why I would care, or even what the downsides are for each option.
+Or a sequence like this:
+        walk_pmd_range
+          walk->pmd_entry(pmd, addr, next, walk)
+          smaps_pte_range
+            smaps_pte_entry(*pte, addr, PAGE_SIZE, walk)
+              page = vm_normal_page(vma, addr, ptent)
+                return pfn_to_page(pfn)
+> 
+> And I guess this race can also happen on reading pagemap or numa_maps because
+> walk_page_range() is called in those code paths. Are you sure the race doesn't
+> happen on these paths? If not, please add a few more flag checks for them.
 
-I nominate this changeset for an award for most obtuse kconfig text in 3.10 (so far)
+Okay.  I'll check and submit a version 2 of this patch.
 
-	Dave
+-Cliff Wickman
+ 
+> Thanks,
+> Naoya Horiguchi
+> 
+>  
+> > VM_PFNMAP areas are used by
+> > - graphics memory manager   gpu/drm/drm_gem.c
+> > - global reference unit     sgi-gru/grufile.c
+> > - sgi special memory        char/mspec.c
+> > - probably several out-of-tree modules
+> > 
+> > I'm copying everyone who has changed fs/proc/task_mmu.c recently, in case
+> > of some reason to provide /proc/<pid>/smaps for these areas that I am not
+> > aware of.
+> > 
+> > Signed-off-by: Cliff Wickman <cpw@sgi.com>
+> > ---
+> >  fs/proc/task_mmu.c |    3 +++
+> >  1 file changed, 3 insertions(+)
+> > 
+> > Index: linux/fs/proc/task_mmu.c
+> > ===================================================================
+> > --- linux.orig/fs/proc/task_mmu.c
+> > +++ linux/fs/proc/task_mmu.c
+> > @@ -589,6 +589,9 @@ static int show_smap(struct seq_file *m,
+> >  		.private = &mss,
+> >  	};
+> >  
+> > +	if (vma->vm_flags & VM_PFNMAP)
+> > +		return 0;
+> > +
+> >  	memset(&mss, 0, sizeof mss);
+> >  	mss.vma = vma;
+> >  	/* mmap_sem is held in m_start */
 
+-- 
+Cliff Wickman
+SGI
+cpw@sgi.com
+(651) 683-3824
