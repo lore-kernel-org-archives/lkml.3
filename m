@@ -1,184 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759324Ab3D3Bs7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 21:48:59 -0400
-Received: from host-64-47-164-142.masergy.com ([64.47.164.142]:31762 "EHLO
-	mta2.spacex.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758515Ab3D3Bs6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 21:48:58 -0400
-X-Greylist: delayed 1141 seconds by postgrey-1.27 at vger.kernel.org; Mon, 29 Apr 2013 21:48:58 EDT
-X-IronPort-AV: E=Sophos;i="4.87,576,1363158000"; 
-   d="scan'208";a="1361044"
-Date: Mon, 29 Apr 2013 18:20:28 -0700
-From: David VomLehn <David.VomLehn@spacex.com>
-To: <linux-kernel@vger.kernel.org>
-Subject: [PATCH] Msleep_interruptible() on a dual processor system may wait a
- long time.
-Message-ID: <20130430012015.GB1504@dvomlehn-z8.spacex.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1760104Ab3D3Bwt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 21:52:49 -0400
+Received: from gate.crashing.org ([63.228.1.57]:35890 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760078Ab3D3Bws (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Apr 2013 21:52:48 -0400
+Message-ID: <1367286692.7288.57.camel@pasglop>
+Subject: Re: linux-next: build failure after merge of the cgroup tree
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Nathan Fontenot <nfont@linux.vnet.ibm.com>,
+        linuxppc-dev@lists.ozlabs.org, Li Zefan <lizefan@huawei.com>
+Date: Tue, 30 Apr 2013 11:51:32 +1000
+In-Reply-To: <20130429225513.GG2395@htj.dyndns.org>
+References: <20130429140433.92d05cd48b66ac323616d572@canb.auug.org.au>
+	 <20130429225513.GG2395@htj.dyndns.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Msleep_interruptible() on a dual processor system may wait a long time.
+On Mon, 2013-04-29 at 15:55 -0700, Tejun Heo wrote:
+> Benjamin, can you please pick this up?
+> 
+> Thanks a lot and sorry about the trouble.
 
-On some reboots, calling msleep_interruptible() from CPU 1 on a dual
-processor system will not return for seconds or even minutes. This happens
-because ksoftirqd/1 migrates to CPU 0, which is allowed because its
-cpus_allowed mask is 0x3. Since ksoftirqd daemons only process the timer queue
-for their current CPU, no timer_list entries will be processed on CPU 1 until
-the ksoftirqd/1 migrates back to that CPU, which depends on system load and
-may take an arbitrary amount of time. The task associated with the
-msleep_interruptible() call may thus hang quite a while.
+Done.
 
-The root cause appears to be to a race condition between select_fallback_rq(),
-which selects a runqueue for a task, and set_cpu_active(), which sets the
-corresponding bit in cpu_active_mask for a newly active CPU. When ksoftirqd/1
-is run for the first time, its cpus_allowed mask is set to 0x2, i.e. it is
-restricted to CPU 1. The function select_task_rq() will be called, which calls
-select_task_rq_fair(). This will return a 0 for the CPU on which to run the
-task. When select_task_rq() finds the task is not allowed to run on CPU 0,
-it calls select_fallback_rq() to choose a new CPU. There are two cases:
+Cheers,
+Ben.
 
-o	If set_cpu_active() ran for CPU 1 before select_fallback_rq(), the
-	corresponding bit in cpu_active_mask will be set, allowing ksoftirqd/1
-	to run on that CPU.
-o	If the order of calls was reversed, select_fallback_rq() will call
-	cpuset_cpus_allowed_fallback(), which will replace the task's
-	cpus_allowed_mask with cpu_possible_mask, allowing ksoftirqd/1 to
-	run on any CPU. It will also choose any CPU from the active CPUs. 
 
-In the second case, ksoftirqd/1 will be able to roam freely across the
-system's CPUs, neglecting its responsibility to the timer queue.
-
-Signed-off-by: David VomLehn <dvomlehn@spacex.com>
----
- include/linux/cpu.h |    4 ++++
- include/linux/smp.h |    3 +++
- kernel/cpu.c        |    5 +----
- kernel/sched.c      |    4 ++++
- kernel/smp.c        |   22 ++++++++++++++++++++--
- 5 files changed, 32 insertions(+), 6 deletions(-)
-
-diff --git a/include/linux/cpu.h b/include/linux/cpu.h
-index c692acc..9679dfe 100644
---- a/include/linux/cpu.h
-+++ b/include/linux/cpu.h
-@@ -138,6 +138,7 @@ int cpu_up(unsigned int cpu);
- void notify_cpu_starting(unsigned int cpu);
- extern void cpu_maps_update_begin(void);
- extern void cpu_maps_update_done(void);
-+extern int cpu_notify(unsigned long val, void *v);
- 
- #else	/* CONFIG_SMP */
- 
-@@ -160,6 +161,9 @@ static inline void cpu_maps_update_done(void)
- {
- }
- 
-+static inline int cpu_notify(unsigned long val, void *v)
-+{
-+}
- #endif /* CONFIG_SMP */
- extern struct sysdev_class cpu_sysdev_class;
- 
-diff --git a/include/linux/smp.h b/include/linux/smp.h
-index 8cc38d3..1065d73 100644
---- a/include/linux/smp.h
-+++ b/include/linux/smp.h
-@@ -37,6 +37,9 @@ int smp_call_function_single(int cpuid, smp_call_func_t func, void *info,
- #include <linux/thread_info.h>
- #include <asm/smp.h>
- 
-+/* Number of CPUs we kicked that we are waiting to become active */
-+extern atomic_t active_cpu_pending;
-+
- /*
-  * main cross-CPU interfaces, handles INIT, TLB flush, STOP, etc.
-  * (defined in asm header):
-diff --git a/kernel/cpu.c b/kernel/cpu.c
-index 563f136..4a11f33 100644
---- a/kernel/cpu.c
-+++ b/kernel/cpu.c
-@@ -150,7 +150,7 @@ static int __cpu_notify(unsigned long val, void *v, int nr_to_call,
- 	return notifier_to_errno(ret);
- }
- 
--static int cpu_notify(unsigned long val, void *v)
-+int cpu_notify(unsigned long val, void *v)
- {
- 	return __cpu_notify(val, v, -1, NULL);
- }
-@@ -315,9 +315,6 @@ static int __cpuinit _cpu_up(unsigned int cpu, int tasks_frozen)
- 		goto out_notify;
- 	BUG_ON(!cpu_online(cpu));
- 
--	/* Now call notifier in preparation. */
--	cpu_notify(CPU_ONLINE | mod, hcpu);
--
- out_notify:
- 	if (ret != 0)
- 		__cpu_notify(CPU_UP_CANCELED | mod, hcpu, nr_calls, NULL);
-diff --git a/kernel/sched.c b/kernel/sched.c
-index fcc893f..907d166 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -2539,6 +2539,10 @@ static int select_fallback_rq(int cpu, struct task_struct *p)
- 	int dest_cpu;
- 	const struct cpumask *nodemask = cpumask_of_node(cpu_to_node(cpu));
- 
-+	/* Loop because preempt we may be disabled or in atomic context */
-+	while (atomic_read(&active_cpu_pending) != 0)
-+		;
-+
- 	/* Look for allowed, online CPU in same node. */
- 	for_each_cpu_and(dest_cpu, nodemask, cpu_active_mask)
- 		if (cpumask_test_cpu(dest_cpu, tsk_cpus_allowed(p)))
-diff --git a/kernel/smp.c b/kernel/smp.c
-index db197d6..d9635af 100644
---- a/kernel/smp.c
-+++ b/kernel/smp.c
-@@ -42,6 +42,17 @@ struct call_single_queue {
- 
- static DEFINE_PER_CPU_SHARED_ALIGNED(struct call_single_queue, call_single_queue);
- 
-+/*
-+ * Declarations to support waiting until the cpu_up() functions are all
-+ * called before trying to wake up associated softirqds. Note that
-+ * active_cpu_pending is initialized to one to prevent waiters from
-+ * trying to do things before we get to smp_init().
-+ */
-+atomic_t active_cpu_pending = ATOMIC_INIT(1);
-+static __initdata DECLARE_BITMAP(cpu_notify_pending_bits, CONFIG_NR_CPUS);
-+struct __initdata cpumask * const cpu_notify_pending_mask =
-+	to_cpumask(cpu_notify_pending_bits);
-+
- static int
- hotplug_cfd(struct notifier_block *nfb, unsigned long action, void *hcpu)
- {
-@@ -673,10 +684,17 @@ void __init smp_init(void)
- 	for_each_present_cpu(cpu) {
- 		if (num_online_cpus() >= setup_max_cpus)
- 			break;
--		if (!cpu_online(cpu))
--			cpu_up(cpu);
-+		if (!cpu_online(cpu) && cpu_up(cpu) == 0)
-+			cpumask_set_cpu(cpu, cpu_notify_pending_mask);
- 	}
- 
-+	/* Release anyone waiting for active CPUs to be identified */
-+	atomic_set(&active_cpu_pending, 0);
-+
-+	/* Now call notifier in preparation. */
-+	for_each_cpu(cpu, cpu_notify_pending_mask)
-+		cpu_notify(CPU_ONLINE, (void *)(long)cpu);
-+
- 	/* Any cleanup work */
- 	printk(KERN_INFO "Brought up %ld CPUs\n", (long)num_online_cpus());
- 	smp_cpus_done(setup_max_cpus);
--- 
-David VL
