@@ -1,63 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759097Ab3D3D2M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 23:28:12 -0400
-Received: from ringil.hengli.com.au ([178.18.16.133]:44437 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758197Ab3D3D2K (ORCPT
+	id S1758684Ab3D3Dia (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 23:38:30 -0400
+Received: from mail-qa0-f43.google.com ([209.85.216.43]:41626 "EHLO
+	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757716Ab3D3Di3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 23:28:10 -0400
-Date: Tue, 30 Apr 2013 11:27:33 +0800
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, "David S. Miller" <davem@davemloft.net>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        Jim Kukunas <james.t.kukunas@linux.intel.com>,
-        Keith Busch <keith.busch@intel.com>,
-        Erdinc Ozturk <erdinc.ozturk@intel.com>,
-        Vinodh Gopal <vinodh.gopal@intel.com>,
-        James Guilford <james.guilford@intel.com>,
-        Wajdi Feghali <wajdi.k.feghali@intel.com>,
-        Jussi Kivilinna <jussi.kivilinna@iki.fi>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-crypto@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: Re: [PATCH v2 1/4] Wrap crc_t10dif function all to use crypto
- transform framework
-Message-ID: <20130430032733.GB20471@gondor.apana.org.au>
-References: <cover.1366214842.git.tim.c.chen@linux.intel.com>
- <ea4271721b5ca130849b03da4f172f12f66e5628.1366214842.git.tim.c.chen@linux.intel.com>
- <20130425132203.GA29501@gondor.apana.org.au>
- <1366910910.27102.126.camel@schen9-DESK>
- <20130426125224.GA4855@gondor.apana.org.au>
- <1366994657.27102.129.camel@schen9-DESK>
- <20130428001122.GA6973@gondor.apana.org.au>
- <1367268030.27102.172.camel@schen9-DESK>
+	Mon, 29 Apr 2013 23:38:29 -0400
+Message-ID: <517F3CB1.6010705@gmail.com>
+Date: Mon, 29 Apr 2013 23:38:25 -0400
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1367268030.27102.172.camel@schen9-DESK>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: linux-kernel@vger.kernel.org
+CC: Olivier Langlois <olivier@trillion01.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        David Miller <davem@davemloft.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        kosaki.motohiro@gmail.com
+Subject: Re: [PATCH 04/10] posix-cpu-timers: don't account cpu timer after
+ stopped thread runtime accounting
+References: <1367291838-5490-1-git-send-email-kosaki.motohiro@gmail.com> <1367291838-5490-5-git-send-email-kosaki.motohiro@gmail.com>
+In-Reply-To: <1367291838-5490-5-git-send-email-kosaki.motohiro@gmail.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 29, 2013 at 01:40:30PM -0700, Tim Chen wrote:
->
-> If I allocate the transform under the mod init instead, how can I make
-> sure that the fast version is already registered if I have it compiled
-> in?  It is not clear to me how that's done looking at the libcrc32c
-> code.  
+Hm. I'm not sure why this path series start [patch 4/10]. maybe I need to review my script again.
+anyway, patch 1-3 don't exist. sorry for confusing.
 
-This is only an issue when everything is built-in to the kernel.
-
-In that case we could make the crc implementations register at a
-point earlier than device_initcall, but no earlier than subsys_initcall
-since that's where cryptomgr sits.
-
-Cheers,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
