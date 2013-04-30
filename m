@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934029Ab3EAACa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 20:02:30 -0400
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:10061 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933881Ab3EAAC1 (ORCPT
+	id S934091Ab3EAADB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 20:03:01 -0400
+Received: from g6t0187.atlanta.hp.com ([15.193.32.64]:5908 "EHLO
+	g6t0187.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933881Ab3EAAC6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 20:02:27 -0400
-Message-ID: <1367365778.16154.144.camel@misato.fc.hp.com>
-Subject: Re: [PATCH 3/3 RFC] ACPI / hotplug: Use device offline/online for
- graceful hot-removal
+	Tue, 30 Apr 2013 20:02:58 -0400
+X-Greylist: delayed 481 seconds by postgrey-1.27 at vger.kernel.org; Tue, 30 Apr 2013 20:02:57 EDT
+Message-ID: <1367365326.16154.139.camel@misato.fc.hp.com>
+Subject: Re: [PATCH 2/3 RFC] Driver core: Use generic offline/online for CPU
+ offline/online
 From: Toshi Kani <toshi.kani@hp.com>
 To: "Rafael J. Wysocki" <rjw@sisk.pl>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>, isimatu.yasuaki@jp.fujitsu.com,
         vasilis.liaskovitis@profitbricks.com
-Date: Tue, 30 Apr 2013 17:49:38 -0600
-In-Reply-To: <2740694.MNypEzdXxd@vostro.rjw.lan>
+Date: Tue, 30 Apr 2013 17:42:06 -0600
+In-Reply-To: <5608485.T3GFgtNYov@vostro.rjw.lan>
 References: <1576321.HU0tZ4cGWk@vostro.rjw.lan>
-	 <2740694.MNypEzdXxd@vostro.rjw.lan>
+	 <5608485.T3GFgtNYov@vostro.rjw.lan>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
 Mime-Version: 1.0
@@ -28,135 +29,94 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-04-29 at 14:29 +0200, Rafael J. Wysocki wrote:
+On Mon, 2013-04-29 at 14:28 +0200, Rafael J. Wysocki wrote:
 > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 > 
-> Modify the generic ACPI hotplug code to be able to check if devices
-> scheduled for hot-removal may be gracefully removed from the system
-> using the device offline/online mechanism introduced previously.
+> Rework the CPU hotplug code in drivers/base/cpu.c to use the
+> generic offline/online support introduced previously instead of
+> its own CPU-specific code.
 > 
-> Namely, make acpi_scan_hot_remove() which handles device hot-removal
-> call device_offline() for all physical companions of the ACPI device
-> nodes involved in the operation and check the results.  If any of
-> the device_offline() calls fails, the function will not progress to
-> the removal phase (which cannot be aborted), unless its (new) force
-> argument is set (in case of a failing offline it will put the devices
-> offlined by it back online).
+> For this purpose, modify cpu_subsys to provide offline and online
+> callbacks for CONFIG_HOTPLUG_CPU set and remove the code handling
+> the CPU-specific 'online' sysfs attribute.
 > 
-> In support of the 'forced' hot-removal, add a new sysfs attribute
-> 'force_remove' that will reside in every ACPI hotplug profile
-> present under /sys/firmware/acpi/hotplug/.
+> This modification is not supposed to change the user-observable
+> behavior of the kernel (i.e. the 'online' attribute will be present
+> in exactly the same place in sysfs and should trigger exactly the
+> same actions as before).
 > 
 > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 > ---
->  Documentation/ABI/testing/sysfs-firmware-acpi |    9 +-
->  drivers/acpi/internal.h                       |    2 
->  drivers/acpi/scan.c                           |   97 ++++++++++++++++++++++++--
->  drivers/acpi/sysfs.c                          |   27 +++++++
->  include/acpi/acpi_bus.h                       |    3 
->  5 files changed, 131 insertions(+), 7 deletions(-)
+>  drivers/base/cpu.c |   62 ++++++++++++-----------------------------------------
+>  1 file changed, 15 insertions(+), 47 deletions(-)
 > 
- :
-> Index: linux-pm/drivers/acpi/scan.c
+> Index: linux-pm/drivers/base/cpu.c
 > ===================================================================
-> --- linux-pm.orig/drivers/acpi/scan.c
-> +++ linux-pm/drivers/acpi/scan.c
-> @@ -120,7 +120,61 @@ acpi_device_modalias_show(struct device
->  }
->  static DEVICE_ATTR(modalias, 0444, acpi_device_modalias_show, NULL);
+> --- linux-pm.orig/drivers/base/cpu.c
+> +++ linux-pm/drivers/base/cpu.c
+> @@ -16,66 +16,25 @@
 >  
-> -static int acpi_scan_hot_remove(struct acpi_device *device)
-> +static acpi_status acpi_bus_offline_companions(acpi_handle handle, u32 lvl,
-> +					       void *data, void **ret_p)
-> +{
-> +	struct acpi_device *device = NULL;
-> +	struct acpi_device_physical_node *pn;
-> +	bool force = *((bool *)data);
-> +	acpi_status status = AE_OK;
-> +
-> +	if (acpi_bus_get_device(handle, &device))
-> +		return AE_OK;
-> +
-> +	mutex_lock(&device->physical_node_lock);
-> +
-> +	list_for_each_entry(pn, &device->physical_node_list, node) {
-
-I do not think physical_node_list is set for ACPI processor devices, so
-this code is NOP at this point.  I think properly initializing
-physical_node_list for CPU and memblk is one of the key items in this
-approach.
-
-> +		int ret;
-> +
-> +		ret = device_offline(pn->dev);
-> +		if (force)
-> +			continue;
-> +
-> +		if (ret < 0) {
-> +			status = AE_ERROR;
-> +			break;
-> +		}
-> +		pn->put_online = !ret;
-> +	}
-> +
-> +	mutex_unlock(&device->physical_node_lock);
-> +
-> +	return status;
-> +}
-> +
-> +static acpi_status acpi_bus_online_companions(acpi_handle handle, u32 lvl,
-> +					      void *data, void **ret_p)
-> +{
-> +	struct acpi_device *device = NULL;
-> +	struct acpi_device_physical_node *pn;
-> +
-> +	if (acpi_bus_get_device(handle, &device))
-> +		return AE_OK;
-> +
-> +	mutex_lock(&device->physical_node_lock);
-> +
-> +	list_for_each_entry(pn, &device->physical_node_list, node)
-> +		if (pn->put_online) {
-> +			device_online(pn->dev);
-> +			pn->put_online = false;
-> +		}
-> +
-> +	mutex_unlock(&device->physical_node_lock);
-> +
-> +	return AE_OK;
-> +}
-> +
-> +static int acpi_scan_hot_remove(struct acpi_device *device, bool force)
+>  #include "base.h"
+>  
+> -struct bus_type cpu_subsys = {
+> -	.name = "cpu",
+> -	.dev_name = "cpu",
+> -};
+> -EXPORT_SYMBOL_GPL(cpu_subsys);
+> -
+>  static DEFINE_PER_CPU(struct device *, cpu_sys_devices);
+>  
+>  #ifdef CONFIG_HOTPLUG_CPU
+> -static ssize_t show_online(struct device *dev,
+> -			   struct device_attribute *attr,
+> -			   char *buf)
+> +static int cpu_subsys_online(struct device *dev)
 >  {
->  	acpi_handle handle = device->handle;
->  	acpi_handle not_used;
-> @@ -136,10 +190,30 @@ static int acpi_scan_hot_remove(struct a
->  		return -EINVAL;
->  	}
+> -	struct cpu *cpu = container_of(dev, struct cpu, dev);
+> -
+> -	return sprintf(buf, "%u\n", !!cpu_online(cpu->dev.id));
+> +	return cpu_up(dev->id);
+>  }
 >  
-> +	lock_device_offline();
-> +
-> +	status = acpi_walk_namespace(ACPI_TYPE_ANY, handle, ACPI_UINT32_MAX,
-> +				     NULL, acpi_bus_offline_companions, &force,
-> +				     NULL);
-> +	if (ACPI_SUCCESS(status) || force)
-> +		status = acpi_bus_offline_companions(handle, 0, &force, NULL);
-> +
-> +	if (ACPI_FAILURE(status) && !force) {
-> +		acpi_bus_online_companions(handle, 0, NULL, NULL);
-> +		acpi_walk_namespace(ACPI_TYPE_ANY, handle, ACPI_UINT32_MAX,
-> +				    acpi_bus_online_companions, NULL, NULL,
-> +				    NULL);
-> +		unlock_device_offline();
+> -static ssize_t __ref store_online(struct device *dev,
+> -				  struct device_attribute *attr,
+> -				  const char *buf, size_t count)
+> +static int cpu_subsys_offline(struct device *dev)
+>  {
+> -	struct cpu *cpu = container_of(dev, struct cpu, dev);
+> -	ssize_t ret;
+> -
+> -	cpu_hotplug_driver_lock();
 
-Don't we need put_device(&device->dev) here?
+By replacing cpu_hotplug_driver_lock() with lock_device_offline() in
+patch 1/3, it no longer protects from other places that still use
+cpu_hotplug_device_lock(), such as save_mc_for_early().
 
 Thanks,
 -Toshi
 
 
-> +		return -EBUSY;
-> +	}
-> +
+> -	switch (buf[0]) {
+> -	case '0':
+> -		ret = cpu_down(cpu->dev.id);
+> -		if (!ret)
+> -			kobject_uevent(&dev->kobj, KOBJ_OFFLINE);
+> -		break;
+> -	case '1':
+> -		ret = cpu_up(cpu->dev.id);
+> -		if (!ret)
+> -			kobject_uevent(&dev->kobj, KOBJ_ONLINE);
+> -		break;
+> -	default:
+> -		ret = -EINVAL;
+> -	}
+> -	cpu_hotplug_driver_unlock();
+> -
+> -	if (ret >= 0)
+> -		ret = count;
+> -	return ret;
+> +	return cpu_down(dev->id);
+>  }
+> -static DEVICE_ATTR(online, 0644, show_online, store_online);
 
 
