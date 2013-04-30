@@ -1,52 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751440Ab3D3EMH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 00:12:07 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:39483 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750810Ab3D3EMG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 00:12:06 -0400
-Date: Tue, 30 Apr 2013 00:12:01 -0400 (EDT)
-Message-Id: <20130430.001201.1764845606650321215.davem@davemloft.net>
-To: linville@tuxdriver.com
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: pull request: wireless-next 2013-04-29
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20130429194550.GC4590@tuxdriver.com>
-References: <20130429194550.GC4590@tuxdriver.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1751724Ab3D3EYz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 00:24:55 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51934 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751267Ab3D3EYy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Apr 2013 00:24:54 -0400
+Message-ID: <517F477E.7090901@zytor.com>
+Date: Mon, 29 Apr 2013 21:24:30 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Matthias Schniedermeyer <ms@citd.de>, Michal Marek <mmarek@suse.cz>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>
+Subject: Re: Build-failure with old files in build-directory (Was: Linux 3.9
+ released)
+References: <CA+55aFxcqR+5wK0QoGBA_jYP1epH2NCbVTRaE51rLK3mdRjN6Q@mail.gmail.com> <20130429083649.GA23540@citd.de>
+In-Reply-To: <20130429083649.GA23540@citd.de>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Mon, 29 Apr 2013 21:12:05 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "John W. Linville" <linville@tuxdriver.com>
-Date: Mon, 29 Apr 2013 15:45:51 -0400
+On 04/29/2013 01:36 AM, Matthias Schniedermeyer wrote:
+> On 28.04.2013 17:56, Linus Torvalds wrote:
+> 
+> I'm not sure if it is supported, but building with a O= -directory that 
+> was previously used to build a 3.8.9-kernel that was "clean"ed (but not 
+> "mrproper"ed) before building 3.9 results in a build-failure:
+> make[2]: *** No rule to make target `/xssd/usr_src/ko/leeloo/include/config/hz.h', needed by `kernel/hz.bc'.  Stop.
+> 
+> After deleting everything in the KBUILD_OUTPUT-directory, except the 
+> .config-file, the kernel-build worked again.
+> 
+> At least in the past a "clean" seamed to be enough. I had a file with a 
+> 2.6.39-name inside, so it seams i have build my kernels this way for the 
+> last few releases.
+> 
 
-> For the Bluetooth bits, Gustavo says:
-> 
-> "A few more patches intended for 3.10, the most important one is the support in
-> btusb for fw loading for the Intel Bluetooth device. Other than that we have
-> only fixes and clean ups."
-> 
-> For the iwlwifi bits, Johannes says:
-> 
-> "Here are a few more changes for the 3.10 stream, some bugfixes,
-> adjustments to some powersave parameters and a new device ID."
-> 
-> For the NFC bits, Samuel says:
-> 
-> "This pull request includes Marcel's Kconfig dependency fix on top of the LLCP
-> code move to net/nfc."
-> 
-> On top of that...Yogesh Ashok Powar provides a few PCI-related mwifiex
-> updates, Hauke Mehrtens provides a small ssb feature for spurious
-> tone avoidance on a specific chip, and Larry Finger provides a small
-> rtlwifi fix related to avoiding false detection of AP loss.
+This is a question for the Kbuild people I believe...
 
-Pulled, thanks John.
+	-hpa
+
+
