@@ -1,79 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751947Ab3D3Er3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 00:47:29 -0400
-Received: from mail-ve0-f177.google.com ([209.85.128.177]:38798 "EHLO
-	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750810Ab3D3Er0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 00:47:26 -0400
+	id S1752105Ab3D3E72 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 00:59:28 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48385 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751254Ab3D3E7Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Apr 2013 00:59:25 -0400
+Date: Tue, 30 Apr 2013 06:59:22 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Dave Jones <davej@redhat.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: dummy irq trace 'Flags mismatch'
+In-Reply-To: <20130429211605.GA4102@redhat.com>
+Message-ID: <alpine.LNX.2.00.1304300651080.20139@pobox.suse.cz>
+References: <20130429211605.GA4102@redhat.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <771333906.75854.1367057440028.JavaMail.mail@webmail08>
-References: <CAErSpo7qj2SNR7BfuBsfF-saZXvgcqqLtgoP5Hyb5u99qR4Ncg@mail.gmail.com>
- <Pine.LNX.4.44L0.1302191119270.2215-100000@iolanthe.rowland.org>
- <CAErSpo7NZoOQZyW76HEoOTVgdqL2CgbVScAeF6HGLAVaNCq0=w@mail.gmail.com>
- <337833384.57445.1361860509194.JavaMail.mail@webmail08> <CAErSpo6CbO5KYXiErv6J_Dnm1u694C5fQPP2_cZL8VKDEnZa9A@mail.gmail.com>
- <569718148.80620.1361906088301.JavaMail.mail@webmail13> <CAErSpo6UkVhSf+nFW4zwJLBQw_0RQ5H9Bv-UuQRb6zdwsFPw4g@mail.gmail.com>
- <CAErSpo4X+XXKvWDfqh2CKZAtJ9WMQk91OcsWwdxwYv2MfEM_zQ@mail.gmail.com> <771333906.75854.1367057440028.JavaMail.mail@webmail08>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 29 Apr 2013 22:47:05 -0600
-Message-ID: <CAErSpo4B4sRco-nuqgXiYtGQxBcbEB6ArQjHD0A9cj4TRE+qQw@mail.gmail.com>
-Subject: Re: Abysmal HDD/USB write speed after sleep on a UEFI system
-To: "Artem S. Tashkinov" <t.artem@lycos.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 27, 2013 at 4:10 AM, Artem S. Tashkinov <t.artem@lycos.com> wrote:
->>
->>Did this problem ever get resolved?
->>
->
-> Hello,
->
-> Unfortunately, no. Out of curiosity I've tried booting kernel
-> 3.9-rc8 in EUFI mode but it exhibits the same problem.
->
-> Right after the boot:
->
-> [root@localhost ~]# dd if=/dev/zero of=test bs=64M count=3
-> 3+0 records in
-> 3+0 records out
-> 201326592 bytes (201 MB) copied, 1.08544 s, 185 MB/s
->
-> After suspend/resume:
->
-> # dd if=/dev/zero of=test bs=64M count=3
-> 3+0 records in
-> 3+0 records out
-> 201326592 bytes (201 MB) copied, 66.5392 s, 3.0 MB/s
->
-> That's for my primary SATA-3 HDD.
->
-> Forgive me my impudence but I believe debugging the USB stack is
-> tangential to this problem. Something far deeper than USB support
-> breaks, but so far no one has come even with the slightest clue of
-> what that might be.
+On Mon, 29 Apr 2013, Dave Jones wrote:
 
-I tend to agree that it sounds like something deeper than USB is
-broken.  I admit I'm just grasping at straws because I don't have any
-good ideas yet.
+> When set to built-in, the dummy irq driver causes this trace when I boot..
+> 
+> [    3.996055] genirq: Flags mismatch irq 0. 00000080 (dummy_irq) vs. 00015a20 (timer)
+> [    3.997055] Pid: 1, comm: swapper/0 Not tainted 3.9.0+ #29
+> [    3.997768] Call Trace:
+> [    3.998127]  [<ffffffff810f8635>] __setup_irq+0x515/0x550
+> [    3.998827]  [<ffffffff81f00e8c>] ? loop_init+0x150/0x150
+> [    3.999530]  [<ffffffff8146adf0>] ? transfer_xor+0x160/0x160
+> [    4.000259]  [<ffffffff810f8809>] request_threaded_irq+0xf9/0x1a0
+> [    4.001041]  [<ffffffff81f00e8c>] ? loop_init+0x150/0x150
+> [    4.001740]  [<ffffffff81f00eb8>] dummy_irq_init+0x2c/0x60
+> [    4.002450]  [<ffffffff810002e2>] do_one_initcall+0x122/0x170
+> [    4.003191]  [<ffffffff81ecef5c>] kernel_init_freeable+0x15b/0x1db
+> [    4.003978]  [<ffffffff81ece7da>] ? do_early_param+0x88/0x88
+> [    4.004710]  [<ffffffff816a87e0>] ? rest_init+0x140/0x140
+> [    4.005413]  [<ffffffff816a87ee>] kernel_init+0xe/0x180
+> [    4.006094]  [<ffffffff816ce91c>] ret_from_fork+0x7c/0xb0
+> [    4.006789]  [<ffffffff816a87e0>] ? rest_init+0x140/0x140
+> [    4.007561] dummy-irq: cannot register IRQ 0
 
-Here are three easy things you can try:
+Thanks for the report, Dave. That's actually kind of expected -- when one 
+of the handlers on the IRQ line that is being debugged doesn't share IRQs, 
+this is exactly what you want to get by the dummy-irq debugging facility.
 
-1) Collect "lspci -vvv -xxxx" output before and after the
-suspend/resume to investigate the XHCI Unsupported Request errors.
+In this case you haven't specified any IRQ# to the dummy-irq driver via 
+kernel commandline, i.e. IRQ# is 0, and timer is not sharing IRQs, 
+therefore dummy-irq debugging facility did its job, and you know that the 
+IRQ can't be shared.
 
-2) Collect the contents of /proc/mtrr before and after the suspend/resume.
+Not really sure whether this is something to fix. We could make dummy-irq 
+a module-only thing, but that might be counter-productive in cases you 
+really want to debug very early problems.
 
-3) After the suspend/resume, try the "setpci" to set the MSI address
-back to the original value to see if it makes a difference (see my Feb
-12 message).
+Or have it depend on CONFIG_EXPERT would probably make most sense ... ?
 
-Bjorn
+Thanks,
+
+-- 
+Jiri Kosina
+SUSE Labs
