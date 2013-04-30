@@ -1,147 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758892Ab3D3C5C (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 22:57:02 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:35829 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755889Ab3D3C5A (ORCPT
+	id S1759007Ab3D3C77 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 22:59:59 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:47271 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752475Ab3D3C74 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 22:57:00 -0400
-Message-ID: <1367290766.16334.77.camel@haakon3.risingtidesystems.com>
-Subject: [GIT PULL] target updates for v3.10-rc1
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Asias He <asias@redhat.com>,
-        Roland Dreier <roland@kernel.org>, Or Gerlitz <ogerlitz@mellanox.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>
-Date: Mon, 29 Apr 2013 19:59:26 -0700
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	Mon, 29 Apr 2013 22:59:56 -0400
+X-AuditID: cbfee68f-b7f066d000003683-10-517f33a984ed
+Message-id: <1367290734.16581.18.camel@kjgkr>
+Subject: Re: [PATCH] f2fs: use f2fs_iget_nowait again
+From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Reply-to: jaegeuk.kim@samsung.com
+To: linux-fsdevel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
+Date: Tue, 30 Apr 2013 11:58:54 +0900
+In-reply-to: <1367230878-10113-1-git-send-email-jaegeuk.kim@samsung.com>
+References: <1367230878-10113-1-git-send-email-jaegeuk.kim@samsung.com>
+Organization: samsung
+Content-type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature"; boundary="=-XaXEiLAgP4hBYuFGqc9b"
+X-Mailer: Evolution 3.2.3-0ubuntu6
+MIME-version: 1.0
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrNIsWRmVeSWpSXmKPExsVy+t8zfd2VxvWBBvPfmVpcWuRusWfvSRaL
+	y7vmsDkwe+xe8JnJ4/MmuQCmKC6blNSczLLUIn27BK6MQ//+sRfclq5Y9+sZewPjDvEuRk4O
+	CQETiZXzTzBD2GISF+6tZ+ti5OIQEljGKNGy9BgrTNGme9OgEosYJWbemMsC4bxmlJiwYAYT
+	SBWvgK5E+5czYLawgKnEqQU7gbo5ONgEtCU27zcACQsJKEq83X8XLCwCZF9+7wRiMgt4SOw6
+	VgpSwSKgKrHkw3k2EJsTKNzR3MMC0ekusejCPrBz+AVEJU62fmIEsZkFqiQ296+AOlNJYnd7
+	JzvEMYISPybfA7tSQuAtu8SiZ59ZIBYISHybfIgFZK+EgKzEpgNQv0tKHFxxg2UCo/gsJGNn
+	IRkFEdeUaN3+mx3C1pZYtvA1M4RtK7Fu3XuoGhuJTVcXMELY8hLb385hXsDIvopRNLUguaA4
+	Kb3IWK84Mbe4NC9dLzk/dxMjJEb7dzDePWB9iLEK6MSJzFKiyfnAGM8riTc0NjOyMDUxNTYy
+	tzSjirCSOK9ai3WgkEB6YklqdmpqQWpRfFFpTmrxIUYmDk6pBkauIwp1HC/8d/A7SeZ526p6
+	ff9vo/mf/6fphR1/rgq/6tPV3n3c9Gsl0/7ph6Z++xHF2naNge1St+h17rcFH9+u8flqHczT
+	xH3UjWNbVZWqaPwuSU63eRUhiqzaLF4Lr+8wL2m6qJKgqjtnoyv/Ye6itYZd05b+8pvk65IQ
+	05lnujNnPnvBTiWW4oxEQy3mouJEAOtC+vb+AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrDKsWRmVeSWpSXmKPExsVy+t9jAd2VxvWBBvPOGFpcWuRusWfvSRaL
+	y7vmsDkwe+xe8JnJ4/MmuQCmqAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3Ml
+	hbzE3FRbJRefAF23zBygHUoKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwjrG
+	jEP//rEX3JauWPfrGXsD4w7xLkZODgkBE4lN96axQdhiEhfurQeyuTiEBBYxSsy8MZcFwnnN
+	KDFhwQwmkCpeAV2J9i9nwGxhAVOJUwt2snYxcnCwCWhLbN5vABIWElCUeLv/LlhYBMi+/N4J
+	xGQW8JDYdawUpIJFQFViyYfzYGs5gcIdzT0sEJ3uEosu7GMFsfkFRCVOtn5iBLGZBaokNvev
+	YIU4U0lid3snO8QxghI/Jt9jmcAoOAtJ2SwkKYi4pkTr9t/sELa2xLKFr5khbFuJdeveQ9XY
+	SGy6uoARwpaX2P52DvMCRvZVjKKpBckFxUnpuUZ6xYm5xaV56XrJ+bmbGMEJ4Jn0DsZVDRaH
+	GAU4GJV4eHcsqQsUYk0sK67MPcSoAjTn0YbVFxilWPLy81KVRHjreOsDhXhTEiurUovy44tK
+	c1KLDzFOZAQGx0RmKdHkfGDayiuJNzQ2MTOyNDKzMDIxN6elsJI478FW60AhgfTEktTs1NSC
+	1CKYo5g4OKUaGKPDLU8GrzadoT35+Olt786zRbwzPS6rv3RS81a1yMk3kqSu7pr45EnlrFec
+	Hmt92O+evPx7lojnFRbR9P3pfBb7Jd/fnmUrNv27aDebA795mr681gSdiMwUW881drd3HW94
+	dOHlW989C4onnXJw2tB3cfpHqxuPTR9XqUusDVgh+3lBxsP13ziUWIozEg21mIuKEwEAKfOM
+	fwMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Linus!
 
-Here are the target pending changes for the v3.10-rc1 merge window.  
+--=-XaXEiLAgP4hBYuFGqc9b
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Please go ahead and pull from:
+change log from v1:
+ o found another deadlock case, so change the approach
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git for-next-merge
+=46rom 145b6ee0b2523bad0e28c09f4ac5bb050cd22085 Mon Sep 17 00:00:00 2001
+From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Date: Tue, 30 Apr 2013 11:33:27 +0900
+Subject: [PATCH] f2fs: avoid deadlock during evict after f2fs_gc
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+linux-f2fs-devel@lists.sourceforge.net
 
-The highlights this round include:
+o Deadlock case #1
 
- - Add fileio support for WRITE_SAME w/ UNMAP=1 discard (asias)
- - Add fileio support for UNMAP discard (asias)
- - Add tcm_vhost hotplug support to work with upstream QEMU  
-   vhost-scsi-pci code (asias + mst)
- - Check for aborted sequence in tcm_fc response path (mdr)
- - Add initial iscsit_transport support into iscsi-target code (nab)
- - Refactor iscsi-target RX PDU logic + export request PDU handling  (nab)
- - Refactor iscsi-target TX queue logic + export response PDU creation (nab)
- - Add new iSCSI Extentions for RDMA (ISER) target driver (Or + nab)
+Thread 1:
+- writeback_sb_inodes
+ - do_writepages
+  - f2fs_write_data_pages
+   - write_cache_pages
+    - f2fs_write_data_page
+     - f2fs_balance_fs
+      - wait mutex_lock(gc_mutex)
 
-The biggest changes revolve around iscsi-target refactoring in order to
-support the iser-target driver.  This includes the conversion of the
-iscsi-target data-path to use modern se_cmd->cmd_kref counting, and
-allowing transport independent aspects of RX/TX PDU request/response
-handling be shared across existing traditional iscsi-target code, and
-the new iser-target code.
+Thread 2:
+- f2fs_balance_fs
+ - mutex_lock(gc_mutex)
+ - f2fs_gc
+  - f2fs_iget
+   - wait iget_locked(inode->i_lock)
 
-Thanks to Or Gerlitz + Mellanox for supporting the iser-target
-development effort!
+Thread 3:
+- do_unlinkat
+ - iput
+  - lock(inode->i_lock)
+   - evict
+    - inode_wait_for_writeback
 
-Thank you,
+o Deadlock case #2
 
---nab
+Thread 1:
+- __writeback_single_inode
+ : set I_SYNC
+  - do_writepages
+   - f2fs_write_data_page
+    - f2fs_balance_fs
+     - f2fs_gc
+      - iput
+       - evict
+        - inode_wait_for_writeback(I_SYNC)
 
-Andy Grover (2):
-  target/iscsi: Remove chap_set_random()
-  target/iscsi: Use ISCSI_LOGIN_CURRENT/NEXT_STAGE macros
+In order to avoid this, even though iput is called with the
+zero-reference
+count, we need to stop the eviction procedure if the inode is on
+writeback.
+So this patch links f2fs_drop_inode which checks the I_SYNC flag.
 
-Asias He (10):
-  target/file: Add WRITE_SAME w/ UNMAP=1 emulation support
-  target/file: Add UNMAP emulation support
-  target/file: Add fd_do_unmap() helper
-  target/iblock: Add iblock_do_unmap() helper
-  target: Add sbc_execute_unmap() helper
-  target/file: Set is_nonrot attribute
-  tcm_vhost: Refactor the lock nesting rule
-  tcm_vhost: Add hotplug/hotunplug support
-  tcm_vhost: Add ioctl to get and set events missed flag
-  tcm_vhost: Enable VIRTIO_SCSI_F_HOTPLUG
+Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+---
+ fs/f2fs/super.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-Jörn Engel (2):
-  qla2xxx: Remove unused function
-  target: Change default sense key of NOT_READY
+diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
+index b015b6c..e1c54e4 100644
+--- a/fs/f2fs/super.c
++++ b/fs/f2fs/super.c
+@@ -99,6 +99,13 @@ static struct inode *f2fs_alloc_inode(struct
+super_block *sb)
+ 	return &fi->vfs_inode;
+ }
+=20
++static int f2fs_drop_inode(struct inode *inode)
++{
++	if (inode->i_state & I_SYNC)
++		return 0;
++	return generic_drop_inode(inode);
++}
++
+ static void f2fs_i_callback(struct rcu_head *head)
+ {
+ 	struct inode *inode =3D container_of(head, struct inode, i_rcu);
+@@ -233,6 +240,7 @@ static int f2fs_show_options(struct seq_file *seq,
+struct dentry *root)
+=20
+ static struct super_operations f2fs_sops =3D {
+ 	.alloc_inode	=3D f2fs_alloc_inode,
++	.drop_inode	=3D f2fs_drop_inode,
+ 	.destroy_inode	=3D f2fs_destroy_inode,
+ 	.write_inode	=3D f2fs_write_inode,
+ 	.show_options	=3D f2fs_show_options,
+--=20
+1.8.1.3.566.gaa39828
 
-Mark Rustad (1):
-  tcm_fc: Check for aborted sequence
 
-Nicholas Bellinger (9):
-  target: Add export of target_get_sess_cmd symbol
-  iscsi-target: Add iscsit_transport API template
-  iscsi-target: Initial traditional TCP conversion to iscsit_transport
-  iscsi-target: Add iser-target parameter keys + setup during login
-  iscsi-target: Add per transport iscsi_cmd alloc/free
-  iscsi-target: Refactor RX PDU logic + export request PDU handling
-  iscsi-target: Refactor TX queue logic + export response PDU creation
-  iscsi-target: Add iser network portal attribute
-  iser-target: Add iSCSI Extensions for RDMA (iSER) target driver
 
-Wei Yongjun (1):
-  tcm_fc: using kfree_rcu() to simplify the code
+--=20
+Jaegeuk Kim
+Samsung
 
- drivers/infiniband/Kconfig                     |    1 +
- drivers/infiniband/Makefile                    |    1 +
- drivers/infiniband/ulp/isert/Kconfig           |    5 +
- drivers/infiniband/ulp/isert/Makefile          |    2 +
- drivers/infiniband/ulp/isert/ib_isert.c        | 2281 ++++++++++++++++++++++++
- drivers/infiniband/ulp/isert/ib_isert.h        |  138 ++
- drivers/infiniband/ulp/isert/isert_proto.h     |   47 +
- drivers/scsi/qla2xxx/qla_target.c              |   19 -
- drivers/scsi/qla2xxx/qla_target.h              |    1 -
- drivers/target/iscsi/Makefile                  |    3 +-
- drivers/target/iscsi/iscsi_target.c            | 1184 ++++++++-----
- drivers/target/iscsi/iscsi_target.h            |    3 +-
- drivers/target/iscsi/iscsi_target_auth.c       |   28 +-
- drivers/target/iscsi/iscsi_target_configfs.c   |   98 +-
- drivers/target/iscsi/iscsi_target_core.h       |   26 +-
- drivers/target/iscsi/iscsi_target_device.c     |    7 +-
- drivers/target/iscsi/iscsi_target_erl1.c       |   13 +-
- drivers/target/iscsi/iscsi_target_login.c      |  472 ++++--
- drivers/target/iscsi/iscsi_target_login.h      |    6 +
- drivers/target/iscsi/iscsi_target_nego.c       |  194 +--
- drivers/target/iscsi/iscsi_target_nego.h       |   11 +-
- drivers/target/iscsi/iscsi_target_parameters.c |   87 +-
- drivers/target/iscsi/iscsi_target_parameters.h |   16 +-
- drivers/target/iscsi/iscsi_target_tmr.c        |    4 +-
- drivers/target/iscsi/iscsi_target_tpg.c        |    6 +-
- drivers/target/iscsi/iscsi_target_transport.c  |   55 +
- drivers/target/iscsi/iscsi_target_util.c       |   53 +-
- drivers/target/iscsi/iscsi_target_util.h       |    1 +
- drivers/target/target_core_file.c              |  122 ++-
- drivers/target/target_core_iblock.c            |  108 +-
- drivers/target/target_core_sbc.c               |   85 +
- drivers/target/target_core_transport.c         |   13 +-
- drivers/target/tcm_fc/tfc_io.c                 |    9 +-
- drivers/target/tcm_fc/tfc_sess.c               |    9 +-
- drivers/vhost/tcm_vhost.c                      |  262 +++-
- drivers/vhost/tcm_vhost.h                      |   13 +
- include/target/iscsi/iscsi_transport.h         |   83 +
- include/target/target_core_backend.h           |    4 +
- include/target/target_core_fabric.h            |    2 +-
- 39 files changed, 4470 insertions(+), 1002 deletions(-)
- create mode 100644 drivers/infiniband/ulp/isert/Kconfig
- create mode 100644 drivers/infiniband/ulp/isert/Makefile
- create mode 100644 drivers/infiniband/ulp/isert/ib_isert.c
- create mode 100644 drivers/infiniband/ulp/isert/ib_isert.h
- create mode 100644 drivers/infiniband/ulp/isert/isert_proto.h
- create mode 100644 drivers/target/iscsi/iscsi_target_transport.c
- create mode 100644 include/target/iscsi/iscsi_transport.h
+--=-XaXEiLAgP4hBYuFGqc9b
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAABAgAGBQJRfzNuAAoJEEAUqH6CSFDSq2IP/3p0Wjaqxfr4XfcckqXBSo2n
+dQ3iCgYakLRFkXTnSXFQdqqSdeYFhZRvMW0W51sRTAhKwGLCk3pL57CFO3YW5mIU
+0YY4j1KsiZ+d0I6E+JF11lHDSKUXm6tTmEgNAysu61EsBy+qw75QNq4hlmvrCjmw
+z4oFsG/qr+IlLjuInqRdeW6RfH3sFNkpKtfRBlWzUvrrnJqybilC0Y3cOEqHdkTe
+HfvzVL3hbTA+8y4JbVlrHYuzmUVH5Dx0r07M+f54kBfIzz6jIbbSoPyfBFoyAmke
+7l9YH2XaPs5sYkzVjyTKPqB3PnI+F0icMUJl5dZdEIrCN0A14JjuVpi4DY6gIWli
+gB08HzKJSnbrYbFpqQvinJJkLzkssGwQdMGRmLZeEKwdqIhGOjCuq6AmEb5/LcQ8
+FKsXeMoI9n6ML4p2imFgGsXpsdAirpYuKSHW+s5zBUZxUXLZQGaO6jvNTXgWGI5q
+dllZF2Ptdag7MVrz2pFgUg6vBjjTla3kmpZVYCLNJKSftkzoLrZq1lUC7XWnaHvg
+pIAl99sp21+c/+XkND5dOTwTU4MQBOmXBY6knNfUyyg2VvmipbTrhfvLt22gGzEf
+dzUcQhlp4mpk3o5IHizFJuU4OuzyvcfZ0LqAoqN+W3mjD+Js3jmx0Bzk9600HtSO
+sh+ACtT4SjpgfWeTWqWh
+=43jh
+-----END PGP SIGNATURE-----
+
+--=-XaXEiLAgP4hBYuFGqc9b--
 
