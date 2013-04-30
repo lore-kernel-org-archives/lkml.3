@@ -1,49 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760749Ab3D3Olj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 10:41:39 -0400
-Received: from a9-70.smtp-out.amazonses.com ([54.240.9.70]:55367 "EHLO
-	a9-70.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760050Ab3D3Olh (ORCPT
+	id S1760757Ab3D3Onw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 10:43:52 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:54967 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760050Ab3D3Onu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 10:41:37 -0400
-X-Greylist: delayed 415 seconds by postgrey-1.27 at vger.kernel.org; Tue, 30 Apr 2013 10:41:37 EDT
-Date: Tue, 30 Apr 2013 14:34:41 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-cc: glommer@parallels.com, penberg@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [linux-next-20130422] Bug in SLAB?
-In-Reply-To: <201304300645.FCE37285.tVHJLSOMQFOFFO@I-love.SAKURA.ne.jp>
-Message-ID: <0000013e5b5de8c2-75b84016-0faf-4b7f-b5e5-e40eb67552ab-000000@email.amazonses.com>
-References: <CAOJsxLFYDC+EDdJrXVnc1qfEyd56bhFLeGE+6Mbhwiq73KQQLQ@mail.gmail.com> <517E8758.9040803@parallels.com> <0000013e564e0e5a-121c52f9-e489-470f-99d5-67a5ad42eb75-000000@email.amazonses.com> <201304300028.IAD13051.OHOVMJSLFFFQOt@I-love.SAKURA.ne.jp>
- <0000013e56e9304a-1042a95a-d4dd-43c5-8b8a-c670f50ac54e-000000@email.amazonses.com> <201304300645.FCE37285.tVHJLSOMQFOFFO@I-love.SAKURA.ne.jp>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 30 Apr 2013 10:43:50 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: [PATCH v3.10] mmc: sdhci-s3c: Fix operation on non-single image Samsung platforms
+Date: Tue, 30 Apr 2013 16:43:43 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
+Cc: Chris Ball <cjb@laptop.org>, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <1367330907-13525-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+In-Reply-To: <1367330907-13525-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.04.30-54.240.9.70
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201304301643.43989.arnd@arndb.de>
+X-Provags-ID: V02:K0:eXQmIjaGjuT7xbD7U14k/Rw/644wiRm7CxjgGjwiyBZ
+ yE3RdB/wRAcTtjDXkRBDjr4+SB5+LWotw690vCxFT2rlXcUIXh
+ 8+qX3OOpdtpSF79ab+E5PaC04U2SaNO2YJyqT2+BVRVapstN84
+ TKh2I2+3qDukRvh+O1oHH5nU4WMVF1w27eGtio71v7FcmKIOOb
+ fxYCbKelhiFdB6lbwbcdTSAkkBhxWpWmxnh1AeaK7Z1BswPXwh
+ lev7D04lbnf4XQ+j0qEKMYoj7NApdR+V1Zv3fSz0/dCHi+7JNf
+ 2G+yLKFII5nWf0kn8245dMtaVCVaE9MZBqUELjZsSABiRGTRJV
+ 1JPiuNw/xliSVjBZ9s+Y=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Apr 2013, Tetsuo Handa wrote:
+On Tuesday 30 April 2013, Mark Brown wrote:
+> Commit cc014f3 (mmc: sdhci-s3c: remove platform dependencies) changed
+> the platform dependency in Kconfig to depend on SAMSUNG_SINGLE, meaning
+> the driver was available only on single zImage Samsung platforms.  This
+> breaks platforms that haven't been converted such as S3C64xx.  Revert
+> that part of the change to fix.
+> 
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-> Current diff is:
+Actually this part of my patch was just a mistake, and should never
+have been in there. I'll apply your patch and amend the changelog.
 
-[off by one stuff okay]
+Thanks a lot!
 
-> diff --git a/include/linux/slab_def.h b/include/linux/slab_def.h
-> index 113ec08..be1446a 100644
-> --- a/include/linux/slab_def.h
-> +++ b/include/linux/slab_def.h
-> @@ -126,6 +126,9 @@ static __always_inline void *kmalloc(size_t size, gfp_t flags)
->  		if (!size)
->  			return ZERO_SIZE_PTR;
->
-> +		if (size > KMALLOC_MAX_SIZE)
-> +			goto not_found;
-> +
->  		i = kmalloc_index(size);
-
-Why is this needed? kmalloc_index should BUG() for too large allocs.
-
+	Arnd
