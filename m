@@ -1,39 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760104Ab3D3Bwt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 21:52:49 -0400
-Received: from gate.crashing.org ([63.228.1.57]:35890 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760078Ab3D3Bws (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 21:52:48 -0400
-Message-ID: <1367286692.7288.57.camel@pasglop>
-Subject: Re: linux-next: build failure after merge of the cgroup tree
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Nathan Fontenot <nfont@linux.vnet.ibm.com>,
-        linuxppc-dev@lists.ozlabs.org, Li Zefan <lizefan@huawei.com>
-Date: Tue, 30 Apr 2013 11:51:32 +1000
-In-Reply-To: <20130429225513.GG2395@htj.dyndns.org>
-References: <20130429140433.92d05cd48b66ac323616d572@canb.auug.org.au>
-	 <20130429225513.GG2395@htj.dyndns.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1760146Ab3D3Bx0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 21:53:26 -0400
+Received: from sisa.samsung.com ([63.166.156.250]:48105 "EHLO
+	mx2.sisa.samsung.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1760078Ab3D3BxZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Apr 2013 21:53:25 -0400
+X-ASG-Debug-ID: 1367286798-0511296c6b2f3b0001-xx1T2L
+X-Barracuda-Envelope-From: shuah.kh@samsung.com
+X-Barracuda-Apparent-Source-IP: 105.144.21.115
+X-ASG-Whitelist: Client
+From: Shuah Khan <shuah.kh@samsung.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Subject: Re: [ 00/30] 3.0.76-stable review
+Thread-Topic: [ 00/30] 3.0.76-stable review
+X-ASG-Orig-Subj: Re: [ 00/30] 3.0.76-stable review
+Thread-Index: AQHORS1g0U1OPK/+9UmjvS3F7FfGWpjudfYA
+Date: Tue, 30 Apr 2013 01:53:18 +0000
+Message-ID: <1367286798.14116.1.camel@lorien>
+References: <20130429184355.299556377@linuxfoundation.org>
+In-Reply-To: <20130429184355.299556377@linuxfoundation.org>
+Reply-To: Shuah Khan <shuah.kh@samsung.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [105.144.34.3]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <3111FAC624B41A4A8211B1E7BA700E5E@sisa.samsung.com>
+MIME-Version: 1.0
+X-Barracuda-Connect: webmail.sisa.samsung.com[105.144.21.115]
+X-Barracuda-Start-Time: 1367286798
+X-Barracuda-URL: http://192.168.0.102:8000/cgi-mod/mark.cgi
+X-Barracuda-BRTS-Status: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r3U1rVTU020579
 
-On Mon, 2013-04-29 at 15:55 -0700, Tejun Heo wrote:
-> Benjamin, can you please pick this up?
+On Mon, 2013-04-29 at 12:02 -0700, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.0.76 release.
+> There are 30 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
 > 
-> Thanks a lot and sorry about the trouble.
+> Responses should be made by Wed May  1 18:42:50 UTC 2013.
+> Anything received after that time might be too late.
+> 
+> The whole patch series can be found in one patch at:
+> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.76-rc1.gz
+> and the diffstat can be found below.
+> 
+> thanks,
+> 
+> greg k-h
+> 
 
-Done.
+Patches applied cleanly to 3.0.75, 3.4.42, and 3.8.10 
 
-Cheers,
-Ben.
+Compiled and booted on the following systems:
 
+Samsung Series 9 Intel Corei5 (3.4.43-rc1 and 3.8.11-rc1)
+HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics
 
+dmesgs for all releases look good. No regressions compared to the
+previous dmesgs for each of these releases.
+
+Cross-compile tests results:
+
+alpha: defconfig passed on all
+arm: defconfig passed on all
+arm64: not applicable to 3.0.y, 3.4.y. defconfig passed on 3.8.y
+c6x: not applicable to 3.0.y, defconfig passed on 3.4.y, and 3.8.y.
+mips: defconfig passed on all
+mipsel: defconfig passed on all
+powerpc: wii_defconfig passed on all
+sh: defconfig passed on all 
+sparc: defconfig passed on all
+tile: tilegx_defconfig passed on all
+
+-- Shuah
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
