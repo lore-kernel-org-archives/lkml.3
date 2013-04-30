@@ -1,46 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760694Ab3D3Nhh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 09:37:37 -0400
-Received: from a9-42.smtp-out.amazonses.com ([54.240.9.42]:56778 "EHLO
-	a9-42.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759102Ab3D3Nhg (ORCPT
+	id S1760689Ab3D3Npf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 09:45:35 -0400
+Received: from gecko.sbs.de ([194.138.37.40]:25771 "EHLO gecko.sbs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760460Ab3D3Npe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 09:37:36 -0400
-X-Greylist: delayed 314 seconds by postgrey-1.27 at vger.kernel.org; Tue, 30 Apr 2013 09:37:36 EDT
-Date: Tue, 30 Apr 2013 13:32:20 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Tim Chen <tim.c.chen@linux.intel.com>
-cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Dave Hansen <dave.hansen@intel.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>
-Subject: Re: [PATCH 1/2] Make the batch size of the percpu_counter
- configurable
-In-Reply-To: <c1f9c476a8bd1f5e7049b8ac79af48be61afd8f3.1367254913.git.tim.c.chen@linux.intel.com>
-Message-ID: <0000013e5b24d2c5-9b899862-e2fd-4413-8094-4f1e5a0c0f62-000000@email.amazonses.com>
-References: <c1f9c476a8bd1f5e7049b8ac79af48be61afd8f3.1367254913.git.tim.c.chen@linux.intel.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 30 Apr 2013 09:45:34 -0400
+From: "Warlich, Christof" <christof.warlich@siemens.com>
+To: Mikael Pettersson <mikpe@it.uu.se>
+CC: Andi Kleen <andi@firstfloor.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: X86 fpu registers in a signal handler's ucontext
+Thread-Topic: X86 fpu registers in a signal handler's ucontext
+Thread-Index: AQHORZXVqvz3Ty+ARUuGAGM8sG/3EJjusiaw
+Date: Tue, 30 Apr 2013 13:45:09 +0000
+Message-ID: <6D83E89737156549AEA25EF9ED712C5DE208@DEFTHW99EK1MSX.ww902.siemens.net>
+References: <6D83E89737156549AEA25EF9ED712C5DDEF7@DEFTHW99EK1MSX.ww902.siemens.net>
+	<m2a9ohusmp.fsf@firstfloor.org>
+	<6D83E89737156549AEA25EF9ED712C5DE0A9@DEFTHW99EK1MSX.ww902.siemens.net>
+ <20863.43739.999287.287981@pilspetsen.it.uu.se>
+In-Reply-To: <20863.43739.999287.287981@pilspetsen.it.uu.se>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [139.22.70.9]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.04.30-54.240.9.42
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 29 Apr 2013, Tim Chen wrote:
+Mikael Pettersson <mikpe@it.uu.se> writes:
+> Write to the fpstate ->mxcsr and ->swd fields in the sigaction handler's uc_mcontext.
 
-> diff --git a/include/linux/percpu_counter.h b/include/linux/percpu_counter.h
-> index d5dd465..5ca7df5 100644
-> --- a/include/linux/percpu_counter.h
-> +++ b/include/linux/percpu_counter.h
-> @@ -22,6 +22,7 @@ struct percpu_counter {
->  	struct list_head list;	/* All percpu_counters are on a list */
->  #endif
->  	s32 __percpu *counters;
-> +	int *batch ____cacheline_aligned_in_smp;
->  };
+To me, "sigaction handler's uc_mcontext" sounds like userspace, which really confuses me:
+Even in most recent glibc-2.17, uc_mcontext is of type mcontext_t, which us defined as:
 
-What is this for and why does it have that alignmend?
+typedef struct {
+  gregset_t gregs;
+  fpregset_t fpregs;
+} mcontext_t;
+
+typedef struct fpregset {
+    union {
+	struct fpchip_state {
+	    int state[27];
+	    int status;
+	} fpchip_state;
+	struct fp_emul_space {
+	    char fp_emul[246];
+	    char fp_epad[2];
+	} fp_emul_space;
+	int f_fpregs[62];
+    } fp_reg_set;
+    long int f_wregs[33];
+} fpregset_t;
+
+So there is no fpstate whatsoever.
+
+However, these elements seem to be available in the uc_mcontext definition of the
+kernel, but I can't have a sigaction handler there, can I? Then, how does the
+kernel's uc_mcontext definition help me in my (userspace) signal handler?
