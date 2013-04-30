@@ -1,89 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758917Ab3D3ATH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 20:19:07 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:52593 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758002Ab3D3ATE (ORCPT
+	id S1758927Ab3D3AVW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 20:21:22 -0400
+Received: from mail-da0-f43.google.com ([209.85.210.43]:60016 "EHLO
+	mail-da0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758347Ab3D3AVU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 20:19:04 -0400
-Date: Tue, 30 Apr 2013 02:19:00 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Frank Ch. Eigler" <fche@redhat.com>
-Cc: Mel Gorman <mgorman@suse.de>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        SystemTap <systemtap@sourceware.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: systemtap broken by removal of register_timer_hook
-Message-ID: <20130430001858.GF1760@somewhere>
-References: <20130403075017.GA2534@suse.de>
- <CAFTL4hyYezB2ZxM-GJ70VoxOeRSG64V6u+nX2hTuhF30R-GdPg__32168.962484184$1364986928$gmane$org@mail.gmail.com>
- <y0mvc83u79f.fsf@fche.csb>
- <CAFTL4hxx_GHoa4uguSAtY0A=cC43qJPKvpqaoguS-WAjFj+HSw@mail.gmail.com>
- <20130403144428.GA15432@redhat.com>
- <CAFTL4hy+U-dLPwGR8BcZt=C8Tug-jvh+24epadfte7Ci2cDU5Q@mail.gmail.com>
- <20130419144655.GD8308@redhat.com>
+	Mon, 29 Apr 2013 20:21:20 -0400
+Date: Mon, 29 Apr 2013 17:21:17 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Simon Kirby <sim@hostway.ca>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [ 02/42] TTY: do not update atime/mtime on read/write
+Message-ID: <20130430002117.GA4202@kroah.com>
+References: <20130429184752.435249613@linuxfoundation.org>
+ <20130429184752.700428715@linuxfoundation.org>
+ <20130430001445.GA17260@hostway.ca>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130419144655.GD8308@redhat.com>
+In-Reply-To: <20130430001445.GA17260@hostway.ca>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 19, 2013 at 10:46:55AM -0400, Frank Ch. Eigler wrote:
-> Hi, Frederic -
+On Mon, Apr 29, 2013 at 05:14:45PM -0700, Simon Kirby wrote:
+> On Mon, Apr 29, 2013 at 12:01:44PM -0700, Greg Kroah-Hartman wrote:
 > 
+> > 3.8-stable review patch.  If anyone has any objections, please let me know.
 > 
-> > > How about this?
-> > >
-> > > Author: Frank Ch. Eigler <fche@redhat.com>
-> > > Date:   Wed Apr 3 10:35:21 2013 -0400
-> > >
-> > >     profiling: add profile_tick tracepoint
-> > > [...]
+> I object. This breaks functionality I use every day (seeing who else is
+> working on stuff with "w").
 > 
-> > It would be better not to tie this to CONFIG_PROFILING.
-> > A tracepoint in update_process_times() instead would be great but it's
-> > sometimes called several times in a tick from some archs.
-> > Probably we need something like:
-> > 
-> > static inline tick_trace(struct pt_regs *regs)
-> > {
-> >     trace_timer_tick(regs);
-> >     profile_tick(CPU_PROFILING);
-> > }
+> Furthermore, the patch does not actually fix the hole referenced (see
+> ptmx-keystroke-latency.c on http://vladz.devzero.fr/013_ptmx-timing.php).
+> I can still reproduce the timing capture even with this patch applied
+> (in 3.9-rc8).
+
+How?  There are no keystrokes being reported to other users, or did we
+miss something with this patch?
+
+> The grsec patch instead introdues another test within the inotify code
+> (is_sidechannel_device()-related bits) -- untested by me, but probably
+> more relevant.
 > 
-> I looked into this, but found no natural place to define such an
-> inline function from which to call into a tracepoint, without having
-> to #include the <event/FOO.h> file many times.
+> Even 37b7f3c76595e23257f61bd80b223de8658617ee, the "regression fix",
+> which Linus merged in for the 3.9 release, is still a regression for me.
 
-You could include it from linux/profile.h or linux/tick.h and
-define profile_tick to "{ trace_tick(); __profile_tick()}" .
+And I applied that one as well.
 
-But in a second thought, using a tracepoint in a general purpose header
-resulted in bad circular headers dependency in the past, we had bitter
-experiences with trace_softirq_raise for example.
+> 60 seconds means somebody is asleep in my environment, and so is still
+> the kind of thing that just pisses me off. I'd rather revert this whole
+> thing.
 
-> Nor does it seem
-> appropriate to do the identical #define CREATE_TRACE_POINTSw part from
-> all the different arch/.../*.c files that may call into that inline.
->
-> If you'd like to stick to this idea, please advise further where you
-> think the tracepoint definition & declarations should go.
-> 
-> In the alternative, here is v2 of the patch, just changing the
-> tracepoint-printing argument as suggested by jistone.
+Users taking a break for longer than a minute upset you?  What are you
+really trying to keep track of here?
 
-But your tracepoint still depends on CONFIG_PROFILING and I would
-really like to avoid that.
+> I'd stand maybe 1 seconds as maximum granularity. You could do that with
+> less code and no test.
 
-How about creating trace_tick() in include/trace/events/timer.h
-and call it from tick_periodic() and tick_sched_handle().
+Patch to show this?
 
-This only leaves the archs that don't support generic clockevents
-behind. This should be no big deal, they can integrate this tracepoint
-later if they need to.
+thanks,
 
-Thanks.
+greg k-h
