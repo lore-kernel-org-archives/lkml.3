@@ -1,79 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759326Ab3D3HsC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 03:48:02 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:36704 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752725Ab3D3HsA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 03:48:00 -0400
-Message-ID: <517F772A.3060806@ti.com>
-Date: Tue, 30 Apr 2013 10:47:54 +0300
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
+	id S1759284Ab3D3Htc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 03:49:32 -0400
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:44633 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752668Ab3D3Htb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Apr 2013 03:49:31 -0400
+Date: Tue, 30 Apr 2013 09:49:27 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [GIT PULL] x86/asm updates for v3.10
+Message-ID: <20130430074927.GA20521@gmail.com>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: linux-next: build warning while building Linus' tree
-References: <20130430095527.fd4c5ad48ece70c567991416@canb.auug.org.au>
-In-Reply-To: <20130430095527.fd4c5ad48ece70c567991416@canb.auug.org.au>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="----enig2NDKTPBIXPODSVKJHEEML"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-------enig2NDKTPBIXPODSVKJHEEML
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Linus,
 
-Hi,
+Please pull the latest x86-asm-for-linus git tree from:
 
-On 04/30/2013 02:55 AM, Stephen Rothwell wrote:
-> Hi Tomi,
->=20
-> In Linus' tree, today's linux-next build (powerpc ppc64_defconfig)
-> produced this warning:
->=20
-> drivers/video/ps3fb.c: In function 'ps3fb_mmap':
-> drivers/video/ps3fb.c:712:2: warning: suggest parentheses around '+' in=
-side '<<' [-Wparentheses]
->=20
-> Introduced by commit 11bd5933abe0 ("fbdev/ps3fb: use vm_iomap_memory()"=
-).
-> Sorry I missed this in yesterday's linux-next.
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-asm-for-linus
 
-Thanks. My bad, I should have checked the warnings also, not just if it
-compiles. Sigh...
+   HEAD: bec1b9e76353ecf05fac6a87f8e4102dfb618cd2 extable: Flip the sorting message
 
- Tomi
+Small tweak to reduce kmsg boot time spam.
+
+ out-of-topic modifications in x86-asm-for-linus:
+ ------------------------------------------------
+ kernel/extable.c                   # bec1b9e: extable: Flip the sorting message
+
+ Thanks,
+
+	Ingo
+
+------------------>
+Borislav Petkov (1):
+      extable: Flip the sorting message
 
 
+ kernel/extable.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-------enig2NDKTPBIXPODSVKJHEEML
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQIcBAEBAgAGBQJRf3cqAAoJEPo9qoy8lh71DnsP/3P2k97ldrx0tCz2ztx+1FPF
-34POIuBKwlOi2VhzVXBQ6ZnXlo8pGI6BaNkoDq0t1SrqLjojNihSCLwd8Wl069g9
-/hqdWfy/AlAIBHWWLvkz3DW2b/rCgFqoepfvVFtWU8RPJptcGOlitkaIXEZzdlUV
-KliHW005+eU5ns2qC3prEj0QuealS24ZRWNeKb11R0EuokQKtw1pEjkWYycxOHwP
-iygtkZjrahwaXdbo/q4CXojGZwBMTl2qrfk1r0HF8hsersmmQkW140cpth7b11Ql
-2CI/07KQSH1Kgbke8j894lhIbuBAmUmBysYIAzNlaXsB8e6Jwsfn83vg6Iuslvbw
-61KoR3w8c9BLjS0DL7ODzAJEX7RLzpt1I8DBQjgSLz4lj9e0uFLlUDRU6xoNQU3Y
-/aENSYrsvGfqEa2Ny91C/a3DTRB+fm2tqXA2FptQBGgv9VVcpkBMay2XKvdNxr03
-anPNpnx7Z29Z4pA97ds9/iV446AiwPewr2pgDGHpv89xZgvXXrlkrGmkqpdK3Lxx
-P05X3DJgwv6cMY8nRxi4Qx8kv2WdiI8X4iwYmSkNZPSiwpTy+DwX6qaVhWfJps7I
-8hMbC2DXcPGDmDJNRcYCoXC//3HhW+5MiaSLVHS7cLt8Vs/Bfm4R3c3ZeoNoRcIE
-RFMHYgphbl+HWMScml/d
-=z4l9
------END PGP SIGNATURE-----
-
-------enig2NDKTPBIXPODSVKJHEEML--
+diff --git a/kernel/extable.c b/kernel/extable.c
+index fe35a63..67460b9 100644
+--- a/kernel/extable.c
++++ b/kernel/extable.c
+@@ -41,10 +41,10 @@ u32 __initdata main_extable_sort_needed = 1;
+ /* Sort the kernel's built-in exception table */
+ void __init sort_main_extable(void)
+ {
+-	if (main_extable_sort_needed)
++	if (main_extable_sort_needed) {
++		pr_notice("Sorting __ex_table...\n");
+ 		sort_extable(__start___ex_table, __stop___ex_table);
+-	else
+-		pr_notice("__ex_table already sorted, skipping sort\n");
++	}
+ }
+ 
+ /* Given an address, look for it in the exception tables. */
