@@ -1,121 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758417Ab3D3ARJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Apr 2013 20:17:09 -0400
-Received: from mga02.intel.com ([134.134.136.20]:32571 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758062Ab3D3ARH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Apr 2013 20:17:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,576,1363158000"; 
-   d="scan'208";a="328563186"
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Cc: Tim Chen <tim.c.chen@linux.intel.com>, Dave Hansen <dave.hansen@intel.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>
-Subject: [PATCH 2/2] Make batch size for memory accounting configured according to size of memory
-Date: Mon, 29 Apr 2013 10:12:29 -0700
-Message-Id: <8c9bc7d4646d48154604820a3ec5952ba8949de4.1367254913.git.tim.c.chen@linux.intel.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <c1f9c476a8bd1f5e7049b8ac79af48be61afd8f3.1367254913.git.tim.c.chen@linux.intel.com>
-References: <c1f9c476a8bd1f5e7049b8ac79af48be61afd8f3.1367254913.git.tim.c.chen@linux.intel.com>
-In-Reply-To: <c1f9c476a8bd1f5e7049b8ac79af48be61afd8f3.1367254913.git.tim.c.chen@linux.intel.com>
-References: <c1f9c476a8bd1f5e7049b8ac79af48be61afd8f3.1367254913.git.tim.c.chen@linux.intel.com>
+	id S1758800Ab3D3ARW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Apr 2013 20:17:22 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:17686 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758565Ab3D3ARU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Apr 2013 20:17:20 -0400
+X-Authority-Analysis: v=2.0 cv=GtrACzJC c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=KBd73aRfIukA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=bsvyib-zOJsA:10 a=Z4Rwk6OoAAAA:8 a=ODALAlx79TesetsP7QEA:9 a=QEXdDO2ut3YA:10 a=jbrJJM5MRmoA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1367281038.30667.43.camel@gandalf.local.home>
+Subject: Re: [PATCH 0/2] [GIT PULL] localmodconfig: Fix missing depends of
+ config files included in if statements
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Kbuild mailing list <linux-kbuild@vger.kernel.org>
+Date: Mon, 29 Apr 2013 20:17:18 -0400
+In-Reply-To: <1367280494.30667.38.camel@gandalf.local.home>
+References: <20130429195100.202681236@goodmis.org>
+	 <CA+55aFzEwRUWVQ8x1+f=6R_9+JO_Rmg=u2E1k_6jLuQEAorgtQ@mail.gmail.com>
+	 <CA+55aFzSfRv26E3UF1a8jwQK+vHSru-YTg8ADefZxOKZNnn6fA@mail.gmail.com>
+	 <1367280494.30667.38.camel@gandalf.local.home>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently the per cpu counter's batch size for memory accounting is
-configured as twice the number of cpus in the system.  However,
-for system with very large memory, it is more appropriate to make it
-proportional to the memory size per cpu in the system.
+On Mon, 2013-04-29 at 20:08 -0400, Steven Rostedt wrote:
+> On Mon, 2013-04-29 at 14:42 -0700, Linus Torvalds wrote:
+> > On Mon, Apr 29, 2013 at 2:01 PM, Linus Torvalds
+> > <torvalds@linux-foundation.org> wrote:
+> > >
+> > > There's just too much confusion here for me to touch anything at all,
+> > > so please fix things up.
+> > 
+> > Oh, and you might as well check that I resolved the conflicts in the
+> > trace pull correctly while you're at it. They looked pretty obvious,
+> > and it compiles for me, but ..
+> 
+> Almost.
+> 
 
-For example, for a x86_64 system with 64 cpus and 128 GB of memory,
-the batch size is only 2*64 pages (0.5 MB).  So any memory accounting
-changes of more than 0.5MB will overflow the per cpu counter into
-the global counter.  Instead, for the new scheme, the batch size
-is configured to be 0.4% of the memory/cpu = 8MB (128 GB/64 /256),
-which is more inline with the memory size.
+BTW, what's the preferred method for this. I already posted a lot of
+work to linux-next when I found bugs that required going into your tree.
+I backported the fixes knowing that it will cause conflicts when you
+merge.
 
-Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
----
- mm/mmap.c  | 13 ++++++++++++-
- mm/nommu.c | 13 ++++++++++++-
- 2 files changed, 24 insertions(+), 2 deletions(-)
+IIRC, you stated that you don't mind doing conflict resolutions
+yourself, so I did not try to fix it a head of time, as the conflicts
+were rather minor.
 
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 0db0de1..082836e 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -89,6 +89,7 @@ int sysctl_max_map_count __read_mostly = DEFAULT_MAX_MAP_COUNT;
-  * other variables. It can be updated by several CPUs frequently.
-  */
- struct percpu_counter vm_committed_as ____cacheline_aligned_in_smp;
-+int vm_committed_batchsz ____cacheline_aligned_in_smp;
- 
- /*
-  * The global memory commitment made in the system can be a metric
-@@ -3090,10 +3091,20 @@ void mm_drop_all_locks(struct mm_struct *mm)
- /*
-  * initialise the VMA slab
-  */
-+static inline int mm_compute_batch(void)
-+{
-+	int nr = num_present_cpus();
-+
-+	/* batch size set to 0.4% of (total memory/#cpus) */
-+	return (int) (totalram_pages/nr) / 256;
-+}
-+
- void __init mmap_init(void)
- {
- 	int ret;
- 
--	ret = percpu_counter_init(&vm_committed_as, 0);
-+	vm_committed_batchsz = mm_compute_batch();
-+	ret = percpu_counter_and_batch_init(&vm_committed_as, 0,
-+						&vm_committed_batchsz);
- 	VM_BUG_ON(ret);
- }
-diff --git a/mm/nommu.c b/mm/nommu.c
-index 2f3ea74..a87a99c 100644
---- a/mm/nommu.c
-+++ b/mm/nommu.c
-@@ -59,6 +59,7 @@ unsigned long max_mapnr;
- unsigned long num_physpages;
- unsigned long highest_memmap_pfn;
- struct percpu_counter vm_committed_as;
-+int vm_committed_batchsz;
- int sysctl_overcommit_memory = OVERCOMMIT_GUESS; /* heuristic overcommit */
- int sysctl_overcommit_ratio = 50; /* default is 50% */
- int sysctl_max_map_count = DEFAULT_MAX_MAP_COUNT;
-@@ -526,11 +527,21 @@ SYSCALL_DEFINE1(brk, unsigned long, brk)
- /*
-  * initialise the VMA and region record slabs
-  */
-+static inline int mm_compute_batch(void)
-+{
-+	int nr = num_present_cpus();
-+
-+	/* batch size set to 0.4% of (total memory/#cpus) */
-+	return (int) (totalram_pages/nr) / 256;
-+}
-+
- void __init mmap_init(void)
- {
- 	int ret;
- 
--	ret = percpu_counter_init(&vm_committed_as, 0);
-+	vm_committed_batchsz = mm_compute_batch();
-+	ret = percpu_counter_and_batch_init(&vm_committed_as, 0,
-+			&vm_committed_batchsz);
- 	VM_BUG_ON(ret);
- 	vm_region_jar = KMEM_CACHE(vm_region, SLAB_PANIC);
- }
--- 
-1.7.11.7
+Should I have merged your tree and done the conflict resolutions myself,
+or was it OK to do what I did, and let you do the conflict resolution
+and send you any fixes that needed to be done afterward?
+
+-- Steve
+
 
