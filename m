@@ -1,103 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932582Ab3D3Q2q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 12:28:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18361 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932252Ab3D3Q2n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 12:28:43 -0400
-Date: Tue, 30 Apr 2013 12:28:40 -0400
-From: David Teigland <teigland@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PULL] dlm updates for 3.10
-Message-ID: <20130430162840.GA14735@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S932619Ab3D3Q3n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 12:29:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41841 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932252Ab3D3Q3l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Apr 2013 12:29:41 -0400
+Date: Tue, 30 Apr 2013 09:29:19 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Vincent =?ISO-8859-1?Q?Stehl=E9?= <vincent.stehle@laposte.net>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] memory hotplug: fix warnings
+Message-Id: <20130430092919.a9ab7108.akpm@linux-foundation.org>
+In-Reply-To: <alpine.DEB.2.02.1304300916500.10368@chino.kir.corp.google.com>
+References: <1367310697-6332-1-git-send-email-vincent.stehle@laposte.net>
+	<alpine.DEB.2.02.1304300916500.10368@chino.kir.corp.google.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Tue, 30 Apr 2013 09:17:11 -0700 (PDT) David Rientjes <rientjes@google.com> wrote:
 
-Please pull dlm updates from tag:
+> On Tue, 30 Apr 2013, Vincent Stehl__ wrote:
+> 
+> > diff --git a/include/linux/memory.h b/include/linux/memory.h
+> > index 73817af..85c31a8 100644
+> > --- a/include/linux/memory.h
+> > +++ b/include/linux/memory.h
+> > @@ -137,7 +137,7 @@ enum mem_add_context { BOOT, HOTPLUG };
+> >  #define register_hotmemory_notifier(nb)		register_memory_notifier(nb)
+> >  #define unregister_hotmemory_notifier(nb) 	unregister_memory_notifier(nb)
+> >  #else
+> > -#define hotplug_memory_notifier(fn, pri)	(0)
+> > +#define hotplug_memory_notifier(fn, pri)	({ 0; })
+> >  /* These aren't inline functions due to a GCC bug. */
+> >  #define register_hotmemory_notifier(nb)    ({ (void)(nb); 0; })
+> >  #define unregister_hotmemory_notifier(nb)  ({ (void)(nb); })
+> 
+> You can't use the standard do {} while (0)?
 
-git://git.kernel.org/pub/scm/linux/kernel/git/teigland/linux-dlm.git dlm-3.10
-
-This includes a single patch to avoid fully processing a
-posix unlock from close when no posix locks exist on the file.
-
-Patch copied below.
-
-Thanks,
-Dave
-
-
-dlm: avoid unnecessary posix unlock
-
-When the kernel clears flocks/plocks during close, it calls posix
-unlock when there are flocks but no posix locks.  Without this
-patch, that unnecessary posix unlock is passed to userland
-(dlm_controld), across the cluster, and back to the kernel.
-This can create a lot of plock activity, even when no posix
-locks had been used.
-
-This patch copies the nfs approach, and skips the full posix
-unlock if there is no plock found during the vfs unlock phase.
-
-Signed-off-by: David Teigland <teigland@redhat.com>
----
- fs/dlm/plock.c | 18 +++++++++++++++---
- 1 file changed, 15 insertions(+), 3 deletions(-)
-
-diff --git a/fs/dlm/plock.c b/fs/dlm/plock.c
-index 01fd5c1..f704458 100644
---- a/fs/dlm/plock.c
-+++ b/fs/dlm/plock.c
-@@ -247,6 +247,7 @@ int dlm_posix_unlock(dlm_lockspace_t *lockspace, u64 number, struct file *file,
- 	struct dlm_ls *ls;
- 	struct plock_op *op;
- 	int rv;
-+	unsigned char fl_flags = fl->fl_flags;
- 
- 	ls = dlm_find_lockspace_local(lockspace);
- 	if (!ls)
-@@ -258,9 +259,18 @@ int dlm_posix_unlock(dlm_lockspace_t *lockspace, u64 number, struct file *file,
- 		goto out;
- 	}
- 
--	if (posix_lock_file_wait(file, fl) < 0)
--		log_error(ls, "dlm_posix_unlock: vfs unlock error %llx",
--			  (unsigned long long)number);
-+	/* cause the vfs unlock to return ENOENT if lock is not found */
-+	fl->fl_flags |= FL_EXISTS;
-+
-+	rv = posix_lock_file_wait(file, fl);
-+	if (rv == -ENOENT) {
-+		rv = 0;
-+		goto out_free;
-+	}
-+	if (rv < 0) {
-+		log_error(ls, "dlm_posix_unlock: vfs unlock error %d %llx",
-+			  rv, (unsigned long long)number);
-+	}
- 
- 	op->info.optype		= DLM_PLOCK_OP_UNLOCK;
- 	op->info.pid		= fl->fl_pid;
-@@ -296,9 +306,11 @@ int dlm_posix_unlock(dlm_lockspace_t *lockspace, u64 number, struct file *file,
- 	if (rv == -ENOENT)
- 		rv = 0;
- 
-+out_free:
- 	kfree(op);
- out:
- 	dlm_put_lockspace(ls);
-+	fl->fl_flags = fl_flags;
- 	return rv;
- }
- EXPORT_SYMBOL_GPL(dlm_posix_unlock);
--- 
-1.8.1.rc1.5.g7e0651a
-
+register_memory_notifier() (and hence hotplug_memory_notifier())
+returns an errno.  Which nobody bothers checking.
