@@ -1,140 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932138Ab3D3LDo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 07:03:44 -0400
-Received: from mga03.intel.com ([143.182.124.21]:8031 "EHLO mga03.intel.com"
+	id S1760266Ab3D3LJ7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 07:09:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20487 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752591Ab3D3LDn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 07:03:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,580,1363158000"; 
-   d="scan'208";a="326482807"
-Date: Tue, 30 Apr 2013 16:00:46 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: djbw@fb.com, swarren@wwwdotorg.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] dma: tegra: implement suspend/resume callbacks
-Message-ID: <20130430103046.GD1960@intel.com>
-References: <1366797267-29567-1-git-send-email-ldewangan@nvidia.com>
+	id S1760149Ab3D3LJ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Apr 2013 07:09:57 -0400
+Date: Tue, 30 Apr 2013 13:11:11 +0200
+From: Alexander Gordeev <agordeev@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: x86@kernel.org, linux-pci@vger.kernel.org,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>, Joerg Roedel <joro@8bytes.org>,
+        Jan Beulich <JBeulich@suse.com>, Ingo Molnar <mingo@redhat.com>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: [PATCH v2 -tip/apic 2/2] x86/MSI: Allocate as many multiple-MSIs as
+ requested
+Message-ID: <096b258a86c1cb46e4f3084f1fbcf37c7859bb15.1367319112.git.agordeev@redhat.com>
+References: <cover.1367319112.git.agordeev@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1366797267-29567-1-git-send-email-ldewangan@nvidia.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <517E3BC102000078000D1793@nat28.tlf.novell.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 24, 2013 at 03:24:27PM +0530, Laxman Dewangan wrote:
-> Implement suspend/resume callbacks to store APB DMA channel's
-> register on suspend and restore APB DMA channel's register on
-> resume.
-> 
-> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
-> ---
->  drivers/dma/tegra20-apb-dma.c |   65 +++++++++++++++++++++++++++++++++++++++++
->  1 files changed, 65 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/dma/tegra20-apb-dma.c b/drivers/dma/tegra20-apb-dma.c
-> index 5a0b66c..ce19340 100644
-> --- a/drivers/dma/tegra20-apb-dma.c
-> +++ b/drivers/dma/tegra20-apb-dma.c
-> @@ -30,6 +30,7 @@
->  #include <linux/of.h>
->  #include <linux/of_device.h>
->  #include <linux/platform_device.h>
-> +#include <linux/pm.h>
->  #include <linux/pm_runtime.h>
->  #include <linux/slab.h>
->  #include <linux/clk/tegra.h>
-> @@ -199,6 +200,7 @@ struct tegra_dma_channel {
->  
->  	/* Channel-slave specific configuration */
->  	struct dma_slave_config dma_sconfig;
-> +	struct tegra_dma_channel_regs	channel_reg;
->  };
->  
->  /* tegra_dma: Tegra DMA specific information */
-> @@ -1440,11 +1442,74 @@ static int tegra_dma_runtime_resume(struct device *dev)
->  	return 0;
->  }
->  
-> +#ifdef CONFIG_PM_SLEEP
-> +static int tegra_dma_pm_suspend(struct device *dev)
-> +{
-> +	struct tegra_dma *tdma = dev_get_drvdata(dev);
-> +	int i;
-> +	int ret;
-> +
-> +	/* Enable clock before accessing register */
-> +	ret = tegra_dma_runtime_resume(dev);
-> +	if (ret < 0)
-> +		return ret;
-You dont seem to handle suspend when DMA is active? Otherwise looks fine.
-Stephen, you okay with this patch?
+Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+---
+ drivers/iommu/irq_remapping.c |   12 +++++++-----
+ 1 files changed, 7 insertions(+), 5 deletions(-)
 
---
-~Vinod
-> +
-> +	tdma->reg_gen = tdma_read(tdma, TEGRA_APBDMA_GENERAL);
-> +	for (i = 0; i < tdma->chip_data->nr_channels; i++) {
-> +		struct tegra_dma_channel *tdc = &tdma->channels[i];
-> +		struct tegra_dma_channel_regs *ch_reg = &tdc->channel_reg;
-> +
-> +		ch_reg->csr = tdc_read(tdc, TEGRA_APBDMA_CHAN_CSR);
-> +		ch_reg->ahb_ptr = tdc_read(tdc, TEGRA_APBDMA_CHAN_AHBPTR);
-> +		ch_reg->apb_ptr = tdc_read(tdc, TEGRA_APBDMA_CHAN_APBPTR);
-> +		ch_reg->ahb_seq = tdc_read(tdc, TEGRA_APBDMA_CHAN_AHBSEQ);
-> +		ch_reg->apb_seq = tdc_read(tdc, TEGRA_APBDMA_CHAN_APBSEQ);
-> +	}
-> +
-> +	/* Disable clock */
-> +	tegra_dma_runtime_suspend(dev);
-> +	return 0;
-> +}
-> +
-> +static int tegra_dma_pm_resume(struct device *dev)
-> +{
-> +	struct tegra_dma *tdma = dev_get_drvdata(dev);
-> +	int i;
-> +	int ret;
-> +
-> +	/* Enable clock before accessing register */
-> +	ret = tegra_dma_runtime_resume(dev);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	tdma_write(tdma, TEGRA_APBDMA_GENERAL, tdma->reg_gen);
-> +	tdma_write(tdma, TEGRA_APBDMA_CONTROL, 0);
-> +	tdma_write(tdma, TEGRA_APBDMA_IRQ_MASK_SET, 0xFFFFFFFFul);
-> +
-> +	for (i = 0; i < tdma->chip_data->nr_channels; i++) {
-> +		struct tegra_dma_channel *tdc = &tdma->channels[i];
-> +		struct tegra_dma_channel_regs *ch_reg = &tdc->channel_reg;
-> +
-> +		tdc_write(tdc, TEGRA_APBDMA_CHAN_APBSEQ, ch_reg->apb_seq);
-> +		tdc_write(tdc, TEGRA_APBDMA_CHAN_APBPTR, ch_reg->apb_ptr);
-> +		tdc_write(tdc, TEGRA_APBDMA_CHAN_AHBSEQ, ch_reg->ahb_seq);
-> +		tdc_write(tdc, TEGRA_APBDMA_CHAN_AHBPTR, ch_reg->ahb_ptr);
-> +		tdc_write(tdc, TEGRA_APBDMA_CHAN_CSR,
-> +			(ch_reg->csr & ~TEGRA_APBDMA_CSR_ENB));
-> +	}
-> +
-> +	/* Disable clock */
-> +	tegra_dma_runtime_suspend(dev);
-> +	return 0;
-> +}
-> +#endif
->  static const struct dev_pm_ops tegra_dma_dev_pm_ops = {
->  #ifdef CONFIG_PM_RUNTIME
->  	.runtime_suspend = tegra_dma_runtime_suspend,
->  	.runtime_resume = tegra_dma_runtime_resume,
->  #endif
-> +	SET_SYSTEM_SLEEP_PM_OPS(tegra_dma_pm_suspend, tegra_dma_pm_resume)
->  };
->  
->  static struct platform_driver tegra_dmac_driver = {
-> -- 
-> 1.7.1.1
-> 
+diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
+index d56f8c1..9eeb6cf 100644
+--- a/drivers/iommu/irq_remapping.c
++++ b/drivers/iommu/irq_remapping.c
+@@ -51,26 +51,27 @@ static void irq_remapping_disable_io_apic(void)
+ 
+ static int do_setup_msi_irqs(struct pci_dev *dev, int nvec)
+ {
+-	int node, ret, sub_handle, index = 0;
++	int node, ret, sub_handle, nvec_pow2, index = 0;
+ 	unsigned int irq;
+ 	struct msi_desc *msidesc;
+ 
+-	nvec = __roundup_pow_of_two(nvec);
+-
+ 	WARN_ON(!list_is_singular(&dev->msi_list));
+ 	msidesc = list_entry(dev->msi_list.next, struct msi_desc, list);
+ 	WARN_ON(msidesc->irq);
+ 	WARN_ON(msidesc->msi_attrib.multiple);
++	WARN_ON(msidesc->nvec);
+ 
+ 	node = dev_to_node(&dev->dev);
+ 	irq = __create_irqs(get_nr_irqs_gsi(), nvec, node);
+ 	if (irq == 0)
+ 		return -ENOSPC;
+ 
+-	msidesc->msi_attrib.multiple = ilog2(nvec);
++	nvec_pow2 = __roundup_pow_of_two(nvec);
++	msidesc->nvec = nvec;
++	msidesc->msi_attrib.multiple = ilog2(nvec_pow2);
+ 	for (sub_handle = 0; sub_handle < nvec; sub_handle++) {
+ 		if (!sub_handle) {
+-			index = msi_alloc_remapped_irq(dev, irq, nvec);
++			index = msi_alloc_remapped_irq(dev, irq, nvec_pow2);
+ 			if (index < 0) {
+ 				ret = index;
+ 				goto error;
+@@ -95,6 +96,7 @@ error:
+ 	 * IRQs from tearing down again in default_teardown_msi_irqs()
+ 	 */
+ 	msidesc->irq = 0;
++	msidesc->nvec = 0;
+ 	msidesc->msi_attrib.multiple = 0;
+ 
+ 	return ret;
+-- 
+1.7.7.6
+
+
+-- 
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
