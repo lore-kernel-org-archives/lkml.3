@@ -1,86 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932575Ab3D3Rks (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 13:40:48 -0400
-Received: from casper.infradead.org ([85.118.1.10]:52742 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759921Ab3D3Rkp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 13:40:45 -0400
-Message-ID: <518001FE.1010305@infradead.org>
-Date: Tue, 30 Apr 2013 10:40:14 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH -next] proc_fs.h: fix build error when PROC_FS is not
- enabled
-References: <20130429191754.8ee71fb814790bf345516ab8@canb.auug.org.au> <517E9A49.5080106@infradead.org> <alpine.DEB.2.02.1304300935290.31619@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.02.1304300935290.31619@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1760871Ab3D3Rsi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 13:48:38 -0400
+Received: from mga09.intel.com ([134.134.136.24]:39569 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760806Ab3D3Rsg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Apr 2013 13:48:36 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,582,1363158000"; 
+   d="scan'208";a="305742840"
+Subject: Re: [PATCH 1/2] Make the batch size of the percpu_counter
+ configurable
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Dave Hansen <dave.hansen@intel.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>
+In-Reply-To: <0000013e5bfd1548-a6ef7962-7b00-495b-8e83-d7a08413e165-000000@email.amazonses.com>
+References: <c1f9c476a8bd1f5e7049b8ac79af48be61afd8f3.1367254913.git.tim.c.chen@linux.intel.com>
+	 <0000013e5b24d2c5-9b899862-e2fd-4413-8094-4f1e5a0c0f62-000000@email.amazonses.com>
+	 <1367339009.27102.174.camel@schen9-DESK>
+	 <0000013e5bfd1548-a6ef7962-7b00-495b-8e83-d7a08413e165-000000@email.amazonses.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 30 Apr 2013 10:48:14 -0700
+Message-ID: <1367344094.27102.182.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/30/13 09:36, David Rientjes wrote:
-> On Mon, 29 Apr 2013, Randy Dunlap wrote:
+On Tue, 2013-04-30 at 17:28 +0000, Christoph Lameter wrote:
+> On Tue, 30 Apr 2013, Tim Chen wrote:
 > 
->> From: Randy Dunlap <rdunlap@infradead.org>
->>
->> Fix build error when CONFIG_PROC_FS is not enabled:
->> (remove duplicated line)
->>
->> include/linux/proc_fs.h:58:20: error: redefinition of 'proc_set_size'
->> include/linux/proc_fs.h:51:20: note: previous definition of 'proc_set_size' was here
->>
+> > On Tue, 2013-04-30 at 13:32 +0000, Christoph Lameter wrote:
+> > > On Mon, 29 Apr 2013, Tim Chen wrote:
+> > >
+> > > > diff --git a/include/linux/percpu_counter.h b/include/linux/percpu_counter.h
+> > > > index d5dd465..5ca7df5 100644
+> > > > --- a/include/linux/percpu_counter.h
+> > > > +++ b/include/linux/percpu_counter.h
+> > > > @@ -22,6 +22,7 @@ struct percpu_counter {
+> > > >  	struct list_head list;	/* All percpu_counters are on a list */
+> > > >  #endif
+> > > >  	s32 __percpu *counters;
+> > > > +	int *batch ____cacheline_aligned_in_smp;
+> > > >  };
+> > >
+> > > What is this for and why does it have that alignmend?
+> >
+> > I was assuming that if batch is frequently referenced, it probably
+> > should not share a cache line with the counters field.
 > 
-> I get more than that on linux-next:
-> 
-> include/linux/proc_fs.h:58:20: error: redefinition of 'proc_set_size'
-> include/linux/proc_fs.h:51:20: note: previous definition of 'proc_set_size' was here
-> include/linux/proc_fs.h: In function 'proc_net_mkdir':
-> include/linux/proc_fs.h:69:2: error: implicit declaration of function 'proc_mkdir_data' [-Werror=implicit-function-declaration]
-> include/linux/proc_fs.h:69:2: warning: return makes pointer from integer without a cast [enabled by default]
-> 
-> so don't we need to do this instead?
-> 
-> diff --git a/include/linux/proc_fs.h b/include/linux/proc_fs.h
-> --- a/include/linux/proc_fs.h
-> +++ b/include/linux/proc_fs.h
-> @@ -21,7 +21,6 @@ extern struct proc_dir_entry *proc_mkdir_data(const char *, umode_t,
->  					      struct proc_dir_entry *, void *);
->  extern struct proc_dir_entry *proc_mkdir_mode(const char *, umode_t,
->  					      struct proc_dir_entry *);
-> - 
->  extern struct proc_dir_entry *proc_create_data(const char *, umode_t,
->  					       struct proc_dir_entry *,
->  					       const struct file_operations *,
-> @@ -52,10 +51,11 @@ static inline void proc_set_size(struct proc_dir_entry *de, loff_t size) {}
->  static inline void proc_set_user(struct proc_dir_entry *de, kuid_t uid, kgid_t gid) {}
->  static inline void *proc_get_parent_data(const struct inode *inode) { return NULL; }
->  
-> +static inline struct proc_dir_entry *proc_mkdir_data(const char *name, umode_t mode,
-> +	struct proc_dir_entry *parent, void *data) { return NULL; }
->  static inline struct proc_dir_entry *proc_create_data(const char *name,
->  	umode_t mode, struct proc_dir_entry *parent,
->  	const struct file_operations *proc_fops, void *data) { return NULL; }
-> -static inline void proc_set_size(struct proc_dir_entry *de, loff_t size) {}
->  
->  static inline void proc_remove(struct proc_dir_entry *de) {}
->  static inline void remove_proc_entry(const char *name, struct proc_dir_entry *parent) {}
-> --
+> And why is it a pointer?
 
-Hi David,
+A pointer because the default percpu_counter_batch value could change
+later when cpus come online after we initialize per cpu counter and
+percpu_counter_batch will get computed again in percpu_counter_startup.
+Making it a pointer will make it unnecessary to come back and change the
+batch sizes if we use static batch value and default batch size.
 
-Al has a patchset for this mess here:
-https://git.kernel.org/cgit/linux/kernel/git/viro/vfs.git/commit/?h=for-next
+> 
+> And the pointer is so frequently changed that it needs it own cache line?
+> 
 
-so mine at least can be ignored.
+On second thought, your're right. It is unnecessary for *batch to have
+its own cache line as the counters pointer and head_list above it will
+not change frequently.  I'll remove the cache alignment.
 
--- 
-~Randy
+Tim
+
