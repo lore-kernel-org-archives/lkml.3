@@ -1,65 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752105Ab3D3E72 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 00:59:28 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48385 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751254Ab3D3E7Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 00:59:25 -0400
-Date: Tue, 30 Apr 2013 06:59:22 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Dave Jones <davej@redhat.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: dummy irq trace 'Flags mismatch'
-In-Reply-To: <20130429211605.GA4102@redhat.com>
-Message-ID: <alpine.LNX.2.00.1304300651080.20139@pobox.suse.cz>
-References: <20130429211605.GA4102@redhat.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1752379Ab3D3E7w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 00:59:52 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:24808 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751254Ab3D3E7u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Apr 2013 00:59:50 -0400
+X-AuditID: cbfee690-b7f136d000000fea-d9-517f4fc4cba3
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Andrew Morton'" <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "'Wim Van Sebroeck'" <wim@iguana.be>,
+        linux-watchdog@vger.kernel.org, "'Guenter Roeck'" <linux@roeck-us.net>,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+Subject: [PATCH V2 1/7] watchdog: at32ap700x_wdt: use devm_*() functions
+Date: Tue, 30 Apr 2013 13:59:48 +0900
+Message-id: <000d01ce455f$8a789110$9f69b330$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: Ac5FX4giBksd3S8/Rs2s+6yoclSgdA==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrIIsWRmVeSWpSXmKPExsVy+t8zQ92j/vWBBn+kLOasX8NmcXnhJVaL
+	y7vmsFncWLeP3eLJwjNMFrdmvGB1YPO4tlnM48SM3yweO783sHv0bVnF6PF5k1wAaxSXTUpq
+	TmZZapG+XQJXxtnpy9kKjvFVPHvM2sD4iruLkZNDQsBE4tnW7cwQtpjEhXvr2UBsIYFljBIn
+	V5nB1Fxa+Ieli5ELKD6dUWLK/k2MEEW/GCVu7OUFsdkE1CS+fDnM3sXIwSEioC/R1qIBUs8s
+	sIlR4u/uflaQGmEBD4k5n46A2SwCqhLfJ39mB7F5BSwlOs/3QdmCEj8m32MBsZkFtCTW7zzO
+	BGHLS2xe8xbqUAWJHWdfg90gIqAncWbXL0aIGhGJfS/eMYIslhA4xw7kXGeDWCYg8W3yIRaQ
+	4yQEZCU2HYCaIylxcMUNlgmMYrOQrJ6FZPUsJKtnIVmxgJFlFaNoakFyQXFSepGJXnFibnFp
+	Xrpecn7uJkZI9E3YwXjvgPUhxmSg9ROZpUST84HRm1cSb2hsZmRhamJqbGRuaUaasJI4r3qL
+	daCQQHpiSWp2ampBalF8UWlOavEhRiYOTqkGxszSVVUBAZ6Kpm9NvU46xZUvMr394Omt+psf
+	LrJ01B8tUdE//DZiot2zfbu1WEovJ10PSFmZo6Qh+cLJKtD54oGMUv3lx3iyFjcfl/T6dm7J
+	5AnP1aOY5DyCeoPWLfn2tFQ+Svdv0t0e/hP98x4suTzda/rspXszBTtyJ72/P/G8JGdNmceK
+	v0osxRmJhlrMRcWJAEKF+dPUAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrAKsWRmVeSWpSXmKPExsVy+t9jQd0j/vWBBtfnWlrMWb+GzeLywkus
+	Fpd3zWGzuLFuH7vFk4VnmCxuzXjB6sDmcW2zmMeJGb9ZPHZ+b2D36NuyitHj8ya5ANaoBkab
+	jNTElNQihdS85PyUzLx0WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKALlBTKEnNK
+	gUIBicXFSvp2mCaEhrjpWsA0Ruj6hgTB9RgZoIGEdYwZZ6cvZys4xlfx7DFrA+Mr7i5GTg4J
+	AROJSwv/sEDYYhIX7q1n62Lk4hASmM4oMWX/JkaQhJDAL0aJG3t5QWw2ATWJL18Os3cxcnCI
+	COhLtLVogNQzC2xilPi7u58VpEZYwENizqcjYDaLgKrE98mf2UFsXgFLic7zfVC2oMSPyffA
+	FjMLaEms33mcCcKWl9i85i0zxEEKEjvOvga7QURAT+LMrl+MEDUiEvtevGOcwCgwC8moWUhG
+	zUIyahaSlgWMLKsYRVMLkguKk9JzDfWKE3OLS/PS9ZLzczcxguP7mdQOxpUNFocYBTgYlXh4
+	dyypCxRiTSwrrsw9xCjBwawkwhvtWB8oxJuSWFmVWpQfX1Sak1p8iDEZ6NOJzFKiyfnA1JNX
+	Em9obGJmZGlkZmFkYm5OmrCSOO+BVutAIYH0xJLU7NTUgtQimC1MHJxSDYyMa9oN2x5WVWRe
+	U+x5d79vd8Y89p6SV/d3ZK1lz/M8s3Jenu2lHg7ZuXKV3xo6tlxyqu/g2pi+uCTB67Zl6JK1
+	CiU1KQcyH1X2qIb93bLJVMRl/69Sl+5zW8PuLfn7I/X01rshZ2PzNSavqxbnizmRPINn+X/p
+	f7fr/r+zKhILP2O1xcxU6bASS3FGoqEWc1FxIgClIws5MwMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 29 Apr 2013, Dave Jones wrote:
+Use devm_*() functions to make cleanup paths simpler.
 
-> When set to built-in, the dummy irq driver causes this trace when I boot..
-> 
-> [    3.996055] genirq: Flags mismatch irq 0. 00000080 (dummy_irq) vs. 00015a20 (timer)
-> [    3.997055] Pid: 1, comm: swapper/0 Not tainted 3.9.0+ #29
-> [    3.997768] Call Trace:
-> [    3.998127]  [<ffffffff810f8635>] __setup_irq+0x515/0x550
-> [    3.998827]  [<ffffffff81f00e8c>] ? loop_init+0x150/0x150
-> [    3.999530]  [<ffffffff8146adf0>] ? transfer_xor+0x160/0x160
-> [    4.000259]  [<ffffffff810f8809>] request_threaded_irq+0xf9/0x1a0
-> [    4.001041]  [<ffffffff81f00e8c>] ? loop_init+0x150/0x150
-> [    4.001740]  [<ffffffff81f00eb8>] dummy_irq_init+0x2c/0x60
-> [    4.002450]  [<ffffffff810002e2>] do_one_initcall+0x122/0x170
-> [    4.003191]  [<ffffffff81ecef5c>] kernel_init_freeable+0x15b/0x1db
-> [    4.003978]  [<ffffffff81ece7da>] ? do_early_param+0x88/0x88
-> [    4.004710]  [<ffffffff816a87e0>] ? rest_init+0x140/0x140
-> [    4.005413]  [<ffffffff816a87ee>] kernel_init+0xe/0x180
-> [    4.006094]  [<ffffffff816ce91c>] ret_from_fork+0x7c/0xb0
-> [    4.006789]  [<ffffffff816a87e0>] ? rest_init+0x140/0x140
-> [    4.007561] dummy-irq: cannot register IRQ 0
+Acked-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+---
+No changes since v1:
 
-Thanks for the report, Dave. That's actually kind of expected -- when one 
-of the handlers on the IRQ line that is being debugged doesn't share IRQs, 
-this is exactly what you want to get by the dummy-irq debugging facility.
+ drivers/watchdog/at32ap700x_wdt.c |   12 ++++--------
+ 1 files changed, 4 insertions(+), 8 deletions(-)
 
-In this case you haven't specified any IRQ# to the dummy-irq driver via 
-kernel commandline, i.e. IRQ# is 0, and timer is not sharing IRQs, 
-therefore dummy-irq debugging facility did its job, and you know that the 
-IRQ can't be shared.
-
-Not really sure whether this is something to fix. We could make dummy-irq 
-a module-only thing, but that might be counter-productive in cases you 
-really want to debug very early problems.
-
-Or have it depend on CONFIG_EXPERT would probably make most sense ... ?
-
-Thanks,
-
+diff --git a/drivers/watchdog/at32ap700x_wdt.c b/drivers/watchdog/at32ap700x_wdt.c
+index 7a715e3..c4cb552 100644
+--- a/drivers/watchdog/at32ap700x_wdt.c
++++ b/drivers/watchdog/at32ap700x_wdt.c
+@@ -321,13 +321,14 @@ static int __init at32_wdt_probe(struct platform_device *pdev)
+ 		return -ENXIO;
+ 	}
+ 
+-	wdt = kzalloc(sizeof(struct wdt_at32ap700x), GFP_KERNEL);
++	wdt = devm_kzalloc(&pdev->dev, sizeof(struct wdt_at32ap700x),
++			GFP_KERNEL);
+ 	if (!wdt) {
+ 		dev_dbg(&pdev->dev, "no memory for wdt structure\n");
+ 		return -ENOMEM;
+ 	}
+ 
+-	wdt->regs = ioremap(regs->start, resource_size(regs));
++	wdt->regs = devm_ioremap(&pdev->dev, regs->start, resource_size(regs));
+ 	if (!wdt->regs) {
+ 		ret = -ENOMEM;
+ 		dev_dbg(&pdev->dev, "could not map I/O memory\n");
+@@ -342,7 +343,7 @@ static int __init at32_wdt_probe(struct platform_device *pdev)
+ 		dev_info(&pdev->dev, "CPU must be reset with external "
+ 				"reset or POR due to silicon errata.\n");
+ 		ret = -EIO;
+-		goto err_iounmap;
++		goto err_free;
+ 	} else {
+ 		wdt->users = 0;
+ 	}
+@@ -375,10 +376,7 @@ static int __init at32_wdt_probe(struct platform_device *pdev)
+ 
+ err_register:
+ 	platform_set_drvdata(pdev, NULL);
+-err_iounmap:
+-	iounmap(wdt->regs);
+ err_free:
+-	kfree(wdt);
+ 	wdt = NULL;
+ 	return ret;
+ }
+@@ -391,8 +389,6 @@ static int __exit at32_wdt_remove(struct platform_device *pdev)
+ 			at32_wdt_stop();
+ 
+ 		misc_deregister(&wdt->miscdev);
+-		iounmap(wdt->regs);
+-		kfree(wdt);
+ 		wdt = NULL;
+ 		platform_set_drvdata(pdev, NULL);
+ 	}
 -- 
-Jiri Kosina
-SUSE Labs
+1.7.2.5
+
+
