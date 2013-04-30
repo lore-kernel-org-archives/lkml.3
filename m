@@ -1,111 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932990Ab3D3P2J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 11:28:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30755 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932354Ab3D3P2G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 11:28:06 -0400
-Date: Tue, 30 Apr 2013 17:27:21 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Stephane Eranian <eranian@google.com>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: [RFCv2] Re: BUG: using smp_processor_id() in preemptible [00000000]
- code: asm/8267
-Message-ID: <20130430152721.GC12715@krava.brq.redhat.com>
-References: <20130324115556.GA4866@pd.tnic>
- <20130324155924.GB4866@pd.tnic>
- <20130326183452.GC27518@pd.tnic>
- <87ip4dgz31.fsf@sejong.aot.lge.com>
- <20130327094932.GA8385@pd.tnic>
- <1364393372.5053.68.camel@laptop>
+	id S932979Ab3D3P2r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 11:28:47 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:19411 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932354Ab3D3P2p (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Apr 2013 11:28:45 -0400
+Date: Tue, 30 Apr 2013 11:28:03 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Ian Campbell <Ian.Campbell@citrix.com>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>
+Subject: Re: [PATCH v5 0/7] xen/arm: move to mach-virt and support SMP
+Message-ID: <20130430152803.GB21639@phenom.dumpdata.com>
+References: <alpine.DEB.2.02.1304251750160.4180@kaball.uk.xensource.com>
+ <alpine.DEB.2.02.1304261134330.4180@kaball.uk.xensource.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1364393372.5053.68.camel@laptop>
+In-Reply-To: <alpine.DEB.2.02.1304261134330.4180@kaball.uk.xensource.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 27, 2013 at 03:09:32PM +0100, Peter Zijlstra wrote:
-> On Wed, 2013-03-27 at 10:49 +0100, Borislav Petkov wrote:
-> > Ok, just for my own understanding: how do the events on the
-> > ->task_ctx->event_list relate to the current cpu in this path? I mean,
-> > we're on the task exit path here so is it possible to be rescheduled
-> > somewhere else and the check in event_filter_match to become
-> > meaningless?
+On Fri, Apr 26, 2013 at 11:41:32AM +0100, Stefano Stabellini wrote:
+> Arnd, Olof,
+> during the last few merge windows Konrad has always sent the Xen ARM
+> patches to Linus via his tree, but this time (3.10 merge window), after
+> consulting with Konrad I am thinking of sending to Linus the pull
+> request myself.
+
+<nods> They look good to me. If there are cross-platform patches
+(say in drivers/xen) they would still need my Ack (or Jeremy's).
+
 > 
-> Events can be per-cpu, so what could happen is that we'd send the exit
-> notification to a cpu we're not actually running on (anymore).
+> Arnd, are you OK with this patch series?
 > 
-> Furthermore, since we evaluate smp_processor_id() for every
-> event_filter_match(), it is possible we'd send the notification to
-> multiple events if our task migrates just right.
+> It's all very Xen specific and it is already in linux-next.
+> The only non-Xen files that are touched are arch/arm/Kconfig, to select
+> ARM_PSCI on XEN, and arch/arm/boot/dts/Makefile, to build the xenvm DTB
+> if CONFIG_ARCH_VIRT.
+
+I don't have much knowledge in the 'dts' Makefile but the rest looks
+OK to me.
 > 
-> Also, I suspect we want something like preempt_disable_notrace() to be
-> sure we don't recurse or something daft like that... but I'm not
-> entirely sure.
-
-hum, I did not find reason for using the *_notrace stuff in here
-also we use preempt_disable indirectly via get_cpu_ptr
-
-sending updated patch.. tests looks ok so far
-
-thanks for comments,
-jirka
-
-
----
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 82c01bf..bdcbda8 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -4459,7 +4459,7 @@ static void perf_event_task_ctx(struct perf_event_context *ctx,
- static void perf_event_task_event(struct perf_task_event *task_event)
- {
- 	struct perf_cpu_context *cpuctx;
--	struct perf_event_context *ctx;
-+	struct perf_event_context *ctx, *task_ctx = task_event->task_ctx;
- 	struct pmu *pmu;
- 	int ctxn;
- 
-@@ -4470,20 +4470,22 @@ static void perf_event_task_event(struct perf_task_event *task_event)
- 			goto next;
- 		perf_event_task_ctx(&cpuctx->ctx, task_event);
- 
--		ctx = task_event->task_ctx;
--		if (!ctx) {
--			ctxn = pmu->task_ctx_nr;
--			if (ctxn < 0)
--				goto next;
--			ctx = rcu_dereference(current->perf_event_ctxp[ctxn]);
--			if (ctx)
--				perf_event_task_ctx(ctx, task_event);
--		}
-+		if (task_ctx)
-+			goto next;
-+		ctxn = pmu->task_ctx_nr;
-+		if (ctxn < 0)
-+			goto next;
-+		ctx = rcu_dereference(current->perf_event_ctxp[ctxn]);
-+		if (ctx)
-+			perf_event_task_ctx(ctx, task_event);
- next:
- 		put_cpu_ptr(pmu->pmu_cpu_context);
- 	}
--	if (task_event->task_ctx)
--		perf_event_task_ctx(task_event->task_ctx, task_event);
-+	if (task_ctx) {
-+		preempt_disable();
-+		perf_event_task_ctx(task_ctx, task_event);
-+		preempt_enable();
-+	}
- 
- 	rcu_read_unlock();
- }
+> Cheers,
+> 
+> Stefano
+> 
+> 
+> On Thu, 25 Apr 2013, Stefano Stabellini wrote:
+> > Hi all,
+> > this patch series, based on 3.9-rc3, moves xenvm to mach-virt,
+> > introduces SMP support in Xen on ARM and implements machine reboot and
+> > power off via Xen sched_op hypercalls.
+> > 
+> > Each patch comes with a detailed changelog.
+> > 
+> > 
+> > The merge window is approaching, this patch series only contains Xen
+> > specific changes for ARM, if anybody has any objections speak now
+> > please.
+> > 
+> > I would like an ack from an ARM maintainer on patch #4 and #5 since they
+> > touch generic ARM Makefiles.
+> > 
+> > 
+> > Changes in v5:
+> > - allocate xen_vcpu_info dynamically, aligning it to the size of the
+> > struct;
+> > - use VCPUOP_register_vcpu_info on cpu0 too;
+> > - set pm_power_off and arm_pm_restart from the Xen specific
+> > intialization code.
+> > 
+> > 
+> > 
+> > Stefano Stabellini (7):
+> >       xen/arm: actually pass a non-NULL percpu pointer to request_percpu_irq
+> >       xen/arm: implement HYPERVISOR_vcpu_op
+> >       xen/arm: SMP support
+> >       xen: move the xenvm machine to mach-virt
+> >       xen/arm: XEN selects ARM_PSCI
+> >       xenvm: add a simple PSCI node and a second cpu
+> >       xen/arm: use sched_op hypercalls for machine reboot and power off
+> > 
+> >  arch/arm/Kconfig                     |    1 +
+> >  arch/arm/boot/dts/Makefile           |    4 +-
+> >  arch/arm/boot/dts/xenvm-4.2.dts      |   13 ++++++
+> >  arch/arm/include/asm/xen/hypercall.h |    1 +
+> >  arch/arm/mach-vexpress/v2m.c         |    1 -
+> >  arch/arm/mach-virt/virt.c            |    1 +
+> >  arch/arm/xen/enlighten.c             |   75 ++++++++++++++++++++++++++++++---
+> >  arch/arm/xen/hypercall.S             |    1 +
+> >  8 files changed, 87 insertions(+), 10 deletions(-)
+> > 
+> > 
+> > git://git.kernel.org/pub/scm/linux/kernel/git/sstabellini/xen.git 3.9-rc3-smp-5-tag
+> > 
+> > Cheers,
+> > 
+> > Stefano
+> > 
