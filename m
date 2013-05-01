@@ -1,76 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754196Ab3EAMek (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 08:34:40 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:33968 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751667Ab3EAMec (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 08:34:32 -0400
-Date: Wed, 1 May 2013 14:34:19 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Joe Perches <joe@perches.com>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Andy Whitcroft <apw@canonical.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Subject: Re: [PATCH] checkpatch: Make camelcase test --strict and less noisy
-Message-ID: <20130501123419.GA29567@pd.tnic>
-References: <1365544254.2946.53.camel@dabdike>
- <20130410132628.GV7511@dm>
- <1365604558.27174.36.camel@joe-AO722>
- <20130410145213.GA6854@pd.tnic>
- <1365606461.1942.3.camel@dabdike>
- <20130410151911.GG6857@pd.tnic>
- <1365691503.1929.15.camel@joe-AO722>
+	id S1755101Ab3EAMlX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 08:41:23 -0400
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:36831 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752468Ab3EAMlR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 May 2013 08:41:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1365691503.1929.15.camel@joe-AO722>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+From: Sumit Semwal <sumit.semwal@linaro.org>
+Date: Wed, 1 May 2013 18:10:56 +0530
+Message-ID: <CAO_48GGBRwXuSoWuCr1eHhjGFmkzoC4Ji8osv+frjO1em8odfQ@mail.gmail.com>
+Subject: [GIT PULL]: dma-buf updates for 3.10
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        DRI mailing list <dri-devel@lists.freedesktop.org>,
+        Linaro MM SIG <linaro-mm-sig@lists.linaro.org>,
+        linux-media@vger.kernel.org
+Cc: akpm@linux-foundation.org, Daniel Vetter <daniel@ffwll.ch>,
+        Arnd Bergmann <arnd@arndb.de>, Dave Airlie <airlied@linux.ie>,
+        Tom Gall <tom.gall@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 11, 2013 at 07:45:03AM -0700, Joe Perches wrote:
-> CamelCase tests are a bit noisy against certain
-> types of code acceptable to some kernel developers.
-> 
-> Make the test applicable only with --strict.
-> 
-> Do not bleat a message on nominally acceptable
-> CamelCase uses that are separated by an _ like
-> drm_core_has_MTRR.
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
->  scripts/checkpatch.pl | 6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-> index 3fb6d86..97226fb 100755
-> --- a/scripts/checkpatch.pl
-> +++ b/scripts/checkpatch.pl
-> @@ -2937,12 +2937,12 @@ sub process {
->  		while ($line =~ m{($Constant|$Lval)}g) {
->  			my $var = $1;
->  			if ($var !~ /$Constant/ &&
-> -			    $var =~ /[A-Z]\w*[a-z]|[a-z]\w*[A-Z]/ &&
-> +			    $var =~ /[A-Z][a-z]|[a-z][A-Z]/ &&
->  			    $var !~ /"^(?:Clear|Set|TestClear|TestSet|)Page[A-Z]/ &&
->  			    !defined $camelcase{$var}) {
->  				$camelcase{$var} = 1;
-> -				WARN("CAMELCASE",
-> -				     "Avoid CamelCase: <$var>\n" . $herecurr);
-> +				CHK("CAMELCASE",
-> +				    "Avoid CamelCase: <$var>\n" . $herecurr);
+Hi Linus,
 
-Yep, this is better.
+The 3.10 pull request for dma-buf framework updates: small one, could
+you please pull?
 
-James?
+Thanks and best regards,
+~Sumit.
 
--- 
-Regards/Gruss,
-    Boris.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+The following changes since commit 5f56886521d6ddd3648777fae44d82382dd8c87f:
+
+  Merge branch 'akpm' (incoming from Andrew) (2013-04-30 17:37:43 -0700)
+
+are available in the git repository at:
+
+
+  git://git.linaro.org/people/sumitsemwal/linux-dma-buf.git
+tags/tag-for-linus-3.10
+
+for you to fetch changes up to b89e35636bc75b72d15a1af6d49798802aff77d5:
+
+  dma-buf: Add debugfs support (2013-05-01 16:36:22 +0530)
+
+----------------------------------------------------------------
+3.10 dma-buf updates
+  Added debugfs support to dma-buf.
+----------------------------------------------------------------
+Sumit Semwal (2):
+      dma-buf: replace dma_buf_export() with dma_buf_export_named()
+      dma-buf: Add debugfs support
+
+ Documentation/dma-buf-sharing.txt |  13 ++-
+ drivers/base/dma-buf.c            | 169 +++++++++++++++++++++++++++++++++++++-
+ include/linux/dma-buf.h           |  16 +++-
+ 3 files changed, 189 insertions(+), 9 deletions(-)
