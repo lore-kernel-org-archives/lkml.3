@@ -1,40 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756619Ab3EASzk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 14:55:40 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:46950 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755349Ab3EASzd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 14:55:33 -0400
-Message-ID: <5181650E.1060805@zytor.com>
-Date: Wed, 01 May 2013 11:55:10 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S1756698Ab3EASzy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 14:55:54 -0400
+Received: from mail-ve0-f179.google.com ([209.85.128.179]:58586 "EHLO
+	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756536Ab3EASzg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 May 2013 14:55:36 -0400
+Message-ID: <51816525.7060305@gmail.com>
+Date: Wed, 01 May 2013 14:55:33 -0400
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Jonas Heinrich <onny@project-insanity.org>
-CC: len.brown@intel.com, pavel@ucw.cz, tglx@linutronix.de, mingo@redhat.com,
-        x86@kernel.org, rjw@sisk.pl, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Subject: Re: [Bisected] 3.7-rc1 can't resume (still present in 3.9)
-References: <20130218155439.GA902@onny> <cfd96a3d-5834-4687-b9de-9f044f43b588@email.android.com> <20130223131856.GA682@onny> <51293A8B.5060107@zytor.com> <20130320143257.GA473@onny> <20130501170118.GB488@onny> <518151DD.106@zytor.com> <20130501185104.GC488@onny>
-In-Reply-To: <20130501185104.GC488@onny>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=UTF-8
+To: Paul Turner <pjt@google.com>
+CC: Peter Zijlstra <peterz@infradead.org>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Olivier Langlois <olivier@trillion01.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        David Miller <davem@davemloft.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [PATCH 09/10] sched: task_sched_runtime introduce micro optimization
+References: <1367291838-5490-1-git-send-email-kosaki.motohiro@gmail.com> <1367291838-5490-10-git-send-email-kosaki.motohiro@gmail.com> <20130501110047.GD28253@dyad.programming.kicks-ass.net> <CAPM31RJ0HWQCU=oDnd=iTyEZzsTS3xSe89rmgVK8cd8umAC5BQ@mail.gmail.com>
+In-Reply-To: <CAPM31RJ0HWQCU=oDnd=iTyEZzsTS3xSe89rmgVK8cd8umAC5BQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/01/2013 11:51 AM, Jonas Heinrich wrote:
-> Well, you could give me instructions on how to debug this (I'll do 
-> everything ;)) or I could ship you the Thinkpad T43. I guess this
-> would worth the effort since this bug is somehow critical.
+> Stronger:
 > 
-> Best regards, Jonas
+> +#ifdef CONFIG_64BIT
+> +       if (!p->on_cpu)
+> +               return p->se.sum_exec_runtime;
+> +#endif
+> 
+> [ Or !p->on_cpu || !add_delta ].
+> 
+> We can take the racy read versus p->on_cpu since:
+>   If we race with it leaving cpu: we take lock, we're correct
+>   If we race with it entering cpu: unaccounted time ---> 0, this is
+> indistinguishable from the read occurring a few cycles earlier.
 
-I'll put together a debug patch unless I can trick Rafael into doing
-it first...
-
-	-hpa
+OK, agreed. That's nice.
 
 
