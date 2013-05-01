@@ -1,66 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755908Ab3EASmi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 14:42:38 -0400
-Received: from mail-vb0-f44.google.com ([209.85.212.44]:32920 "EHLO
-	mail-vb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750810Ab3EASmc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 14:42:32 -0400
-Message-ID: <51816214.1060308@gmail.com>
-Date: Wed, 01 May 2013 14:42:28 -0400
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	id S1756021Ab3EASnG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 14:43:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60834 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755916Ab3EASm6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 May 2013 14:42:58 -0400
+Subject: [RFC PATCH 0/8] pci: extended reset capabilities
+To: bhelgaas@google.com
+From: Alex Williamson <alex.williamson@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+Date: Wed, 01 May 2013 12:42:56 -0600
+Message-ID: <20130501181828.28515.68783.stgit@bling.home>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: kosaki.motohiro@gmail.com, linux-kernel@vger.kernel.org,
-        Olivier Langlois <olivier@trillion01.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        David Miller <davem@davemloft.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [PATCH 09/10] sched: task_sched_runtime introduce micro optimization
-References: <1367291838-5490-1-git-send-email-kosaki.motohiro@gmail.com> <1367291838-5490-10-git-send-email-kosaki.motohiro@gmail.com> <20130501110047.GD28253@dyad.programming.kicks-ass.net>
-In-Reply-To: <20130501110047.GD28253@dyad.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(5/1/13 7:00 AM), Peter Zijlstra wrote:
-> On Mon, Apr 29, 2013 at 11:17:17PM -0400, kosaki.motohiro@gmail.com wrote:
->> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
->>
->> rq lock in task_sched_runtime() is necessary for two reasons. 1)
->> accessing se.sum_exec_runtime is inatomic on 32bit and 2)
->> do_task_delta_exec() require it.
->>
->> And then, 64bit can avoid holds rq lock when add_delta is false.
->>
->> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
->> ---
->>  kernel/sched/core.c |    6 ++++++
->>  1 files changed, 6 insertions(+), 0 deletions(-)
->>
->> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
->> index b817e6d..24ba1c6 100644
->> --- a/kernel/sched/core.c
->> +++ b/kernel/sched/core.c
->> @@ -2657,6 +2657,12 @@ unsigned long long task_sched_runtime(struct task_struct *p, bool add_delta)
->>  	struct rq *rq;
->>  	u64 ns = 0;
->>  
->> +	/* Micro optimization. */
-> 
-> Instead of the above; how about something like:
-> 
->   /* 64-bit doesn't need locks to atomically read a 64bit value */
+PCI currently provides pci_reset_function() which will try several
+reset mechanisms including PCIe FLR, AF FLR, PM reset, and only if
+none of those are available and the device is alone on the bus, a
+secondary bus reset.  This is rather limiting because many devices
+don't support FLR and don't have useful PM resets.  A driver, like
+vfio, that may control all of the devices on a bus needs an interface
+to reset a bus even if it has multiple devices.
 
-Looks nicer. Indeed.
+This series adds pci_reset_slot() and pci_reset_bus() to allow that.
+pci_reset_slot() also corrects a problem in the secondary bus reset
+path where a bridge supporting pciehp with surprise removal may
+detect a device presence change during secondary bus reset and
+attempt to remove and re-add the device.  This series allows a driver
+to determine which reset mechanisms are available for a device and
+upgrade to a slot or bus reset depending on what the platform drivers
+support.
+
+I still need to integrate this all the way through to vfio, but I'd
+like some feedback on the PCI changes before investing too much in
+that.  I'm finding with attempting to support graphics devices
+exposed through vfio that they are typically multifunction devices
+(func0 = gfx, func1 = audio) where both devices are grouped in the
+same iommu group, thus vfio controls both of them.  They don't
+support any kind of FLR and a PM reset does nothing.  Also, host
+drivers or even userspace drivers, leave the device in an unusable
+state, so many users are having problems.  I think these interfaces
+should significantly improve our repeatability for such devices.
+Thanks,
+
+Alex
+
+---
+
+Alex Williamson (8):
+      pci: Create pci_reset_bridge_secondary_bus()
+      pci: Add hotplug_slot_ops.reset_slot()
+      pci: Add pci_hp_reset_slot
+      pci: Implement reset_slot for pciehp
+      pci: Add reset_slot option to pci_dev_reset
+      pci: Split out pci_dev lock/unlock and save/restore
+      pci: Add slot and bus reset interfaces
+      pci: Add reset probe functions
 
 
-
+ drivers/pci/hotplug/pci_hotplug_core.c |   24 ++
+ drivers/pci/hotplug/pciehp.h           |    1 
+ drivers/pci/hotplug/pciehp_core.c      |   12 +
+ drivers/pci/hotplug/pciehp_hpc.c       |   31 +++
+ drivers/pci/pci.c                      |  341 ++++++++++++++++++++++++++++++--
+ include/linux/pci.h                    |    6 +
+ include/linux/pci_hotplug.h            |   12 +
+ 7 files changed, 401 insertions(+), 26 deletions(-)
