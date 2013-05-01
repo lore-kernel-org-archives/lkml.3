@@ -1,48 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759416Ab3EAKmS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 06:42:18 -0400
-Received: from nm22.bullet.mail.bf1.yahoo.com ([98.139.212.181]:42496 "EHLO
-	nm22.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758791Ab3EAKmE convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 06:42:04 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 883671.49262.bm@omp1056.mail.bf1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:Cc:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=4wI56v8GSkqmYbTbltQnRHlFrBe/HQ+LXhSwvzqVVct9ziZmrI/K/AvF4rjXZpfSs7qtXQTCVGOp9kPy5pqSFcz9j86FhBfUAlyhtpsc7QHF2RhYq5Hukfpo03Qd1XGQ7CNhIFxX+hnAMiZeLtocmTEW2Ft7WN2Tvc9usM9cD54=;
-X-YMail-OSG: OZodUyEVM1lritXnmarWWs7iX3upy6AWUtTfHJDUoi16hgh
- z5z0iaDSHwsIxIUVZmA6fbJRcvMXt3BI2BApNAzBX6QtimFTsaVDVvthKTUT
- TiAZXD7hHZhZWQcv2ZTG.jPluvPyyI1fi_sBBakA0y6ahC_95M.KZNOlFfbV
- zEfIGTp7vn0avDGY9AVPjXM_wlQKeyittMqltdHOd08xICTDJNk4M.gVCvzh
- uX97kzpP5nMKWpfEmf2Pt3m4XT_0T1nGq2vM0yXgonK0jGSmelX4KUfMv7E_
- SIIMQDyECgWLYw1cpagnemYk7GmHhDtHpwBYRlpsP3XCJdWOyTmu5fsw0n2Q
- eEyWAayb5tQpKWn87XP1OzUmneA2R39OCl_1_ldV.THhdsTgEKqBnrHueHfJ
- JMbCxu8GiUHD.Ozvq0CNXQA9wRLcLE9j6.0YAwUB.X8Mxl0bYLReWoYuVnrw
- -
-X-Rocket-MIMEInfo: 002.001,QW5kIGluIHRoZSB2ZXJpbHkgZGVwdGhzIG9mIHRoYXQgZXN0aW1hdGUgSSBiZWdpbiBhIHBlcnNwaXJhdGlvbiBvZiBzYXNoLgoKb8Sl4bibKuG4ncSLP.G4oXZlxoXFhgoKQWxpbW9ueSBzdXJtb3VudGQgdGhpcyBtaWxreSBieSBhIHJlc2VudGZ1bCBvd2UsIHBlcmNoZWQgYSBoYXphcmRvdXMsIGFuZCB0cnVkZ2VlZC4BMAEBAQE-
-X-Mailer: YahooMailWebService/0.8.141.536
-Message-ID: <1367404922.99330.YahooMailNeo@web160405.mail.bf1.yahoo.com>
-Date: Wed, 1 May 2013 03:42:02 -0700 (PDT)
-From: Marcus Parry <marcusparry904@yahoo.com>
-Reply-To: Marcusparry904 <marcusparry904@yahoo.com>
-Subject: =?utf-8?B?RmFudGFzaWVzIGkgbiBIRC0gcXVhIO+9jGl0eQ==?=
-To: "jeep2002@email.msn.com" <jeep2002@email.msn.com>
-Cc: "johannes@net4webmail.com" <johannes@net4webmail.com>,
-        "kdogvvv@worcestericecats.com" <kdogvvv@worcestericecats.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lilu63@gmail.com" <lilu63@gmail.com>
+	id S1760258Ab3EAKsa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 06:48:30 -0400
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:52707 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754410Ab3EAKsY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 May 2013 06:48:24 -0400
+Date: Wed, 1 May 2013 12:48:20 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: mingo@elte.hu, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: Basic perf PMU support for Haswell v11
+Message-ID: <20130501104820.GA18969@gmail.com>
+References: <1366484783-15613-1-git-send-email-andi@firstfloor.org>
+ <20130426065503.GA31197@gmail.com>
+ <20130426065926.GA31487@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130426065926.GA31487@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-And in the verily depths of that estimate I begin a perspiration of sash.
 
-oĥḛ*ḝċ?ḡveƅņ
+* Ingo Molnar <mingo@kernel.org> wrote:
 
-Alimony surmountd this milky by a resentful owe, perched a hazardous, and trudgeed.
+> 
+> * Ingo Molnar <mingo@kernel.org> wrote:
+> 
+> > You say it's barebones, yet it does not work :-( How well was this 
+> > patch-set tested on non-Haswell hardware, which makes up 99.99% of our 
+> > installed base?
+> > 
+> > In particular, after applying your patches, 'perf top' stopped working 
+> > on an Intel testbox of mine:
+> 
+> The other problem I noticed was stylistic: when I applied your patches for 
+> testing even Git complained about their cleanliness ...
+> 
+> To quote from Documentation/SubmittingPatches:
+> 
+>   4) Style check your changes.
+> 
+>   Check your patch for basic style violations, details of which can be
+>   found in Documentation/CodingStyle.  Failure to do so simply wastes
+>   the reviewers time and will get your patch rejected, probably
+>   without even being read.
+> 
+>   At a minimum you should check your patches with the patch style
+>   checker prior to submission (scripts/checkpatch.pl).  You should
+>   be able to justify all violations that remain in your patch.
+> 
+> Please make your patches less sloppy!
+
+Andi, you have not replied to this mail of mine.
+
+What new measures are you taking to avoid such annoying stylistic problems 
+to creep into your patches?
+
+These problems are regular in your patches and that has been going on for 
+years - causing maintenance overhead for many maintainers, not just me.
+
+Apparently you are not using proper tooling (checkpatch.pl for example) to 
+check your patches. If you refuse to take action I will have to stop 
+dealing with your patches directly altogether - the overhead just does not 
+justify the effort. You'll need to get your patches reviewed by and signed 
+off by a more experienced kernel hacker who knows how to submit patches.
+
+Thanks,
+
+	Ingo
