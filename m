@@ -1,141 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760127Ab3EANMI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 09:12:08 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:54783 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755369Ab3EANMD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 09:12:03 -0400
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH] mm/pagewalk.c: walk_page_range should avoid VM_PFNMAP areas
-Cc: akpm@linux-foundation.org, mgorman@suse.de, aarcange@redhat.com,
-        dave.hansen@intel.com, dsterba@suse.cz, hannes@cmpxchg.org,
-        kosaki.motohiro@gmail.com, kirill.shutemov@linux.intel.com,
-        mpm@selenic.com, n-horiguchi@ah.jp.nec.com, rdunlap@infradead.org
-Message-Id: <E1UXWpF-0006Ya-Br@eag09.americas.sgi.com>
-From: Cliff Wickman <cpw@sgi.com>
-Date: Wed, 01 May 2013 08:12:01 -0500
+	id S1756110Ab3EANNy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 09:13:54 -0400
+Received: from fieldses.org ([174.143.236.118]:59403 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752356Ab3EANNq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 May 2013 09:13:46 -0400
+Date: Wed, 1 May 2013 09:13:41 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Simo Sorce <simo@redhat.com>,
+        David Howells <dhowells@redhat.com>
+Subject: Re: linux-next: build failure after merge of the vfs tree
+Message-ID: <20130501131341.GC32031@fieldses.org>
+References: <20130501122227.4c1d5cd6f2f2f98e35706f44@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130501122227.4c1d5cd6f2f2f98e35706f44@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, May 01, 2013 at 12:22:27PM +1000, Stephen Rothwell wrote:
+> Hi Al,
+> 
+> After merging the vfs tree, today's linux-next build (powerpc
+> ppc64_defconfig) failed like this:
+> 
+> net/sunrpc/auth_gss/svcauth_gss.c: In function 'write_gssp':
+> net/sunrpc/auth_gss/svcauth_gss.c:1329:9: error: implicit declaration of function 'PDE' [-Werror=implicit-function-declaration]
+> net/sunrpc/auth_gss/svcauth_gss.c:1329:53: error: invalid type argument of '->' (have 'int')
+> net/sunrpc/auth_gss/svcauth_gss.c: In function 'read_gssp':
+> net/sunrpc/auth_gss/svcauth_gss.c:1357:53: error: invalid type argument of '->' (have 'int')
+> 
+> Caused by commit 030d794bf498 ("SUNRPC: Use gssproxy upcall for server
+> RPCGSS authentication") from the nfsd tree interacting with commit
+> c3f2cb25be4f ("proc: Make the PROC_I() and PDE() macros internal to
+> procfs") from the vfs tree.
+> 
+> I applied the following merge fix patch (there may be a better way).
 
-This patch replaces "[PATCH] fs/proc: smaps should avoid VM_PFNMAP areas".
-/proc/<pid>/smaps and similar walks through a user page table should not
-be looking at VM_PFNMAP areas.
+Looks fine to me, thanks!
 
-Certain tests in walk_page_range() (specifically split_huge_page_pmd())
-assume that all the mapped PFN's are backed with page structures. And this is
-not usually true for VM_PFNMAP areas. This can result in panics on kernel
-page faults when attempting to address those page structures.
+--b.
 
-There are a half dozen callers of walk_page_range() that walk through
-a task's entire page table (as N. Horiguchi pointed out). So rather than
-change all of them, this patch changes just walk_page_range() to ignore 
-VM_PFNMAP areas.
+> 
+> From 62a0e3a08844eeeb6d85fb45d85c2f80d7de2797 Mon Sep 17 00:00:00 2001
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Wed, 1 May 2013 12:19:43 +1000
+> Subject: [PATCH] SUNRPC: update for PDE removal
+> 
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> ---
+>  net/sunrpc/auth_gss/svcauth_gss.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/net/sunrpc/auth_gss/svcauth_gss.c b/net/sunrpc/auth_gss/svcauth_gss.c
+> index b70ac1c..89ef709 100644
+> --- a/net/sunrpc/auth_gss/svcauth_gss.c
+> +++ b/net/sunrpc/auth_gss/svcauth_gss.c
+> @@ -1326,7 +1326,7 @@ static int wait_for_gss_proxy(struct net *net)
+>  static ssize_t write_gssp(struct file *file, const char __user *buf,
+>  			 size_t count, loff_t *ppos)
+>  {
+> -	struct net *net = PDE(file->f_path.dentry->d_inode)->data;
+> +	struct net *net = PDE_DATA(file->f_path.dentry->d_inode);
+>  	char tbuf[20];
+>  	unsigned long i;
+>  	int res;
+> @@ -1354,7 +1354,7 @@ static ssize_t write_gssp(struct file *file, const char __user *buf,
+>  static ssize_t read_gssp(struct file *file, char __user *buf,
+>  			 size_t count, loff_t *ppos)
+>  {
+> -	struct net *net = PDE(file->f_path.dentry->d_inode)->data;
+> +	struct net *net = PDE_DATA(file->f_path.dentry->d_inode);
+>  	unsigned long p = *ppos;
+>  	char tbuf[10];
+>  	size_t len;
+> -- 
+> 1.8.1
+> 
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
 
-The logic of hugetlb_vma() is moved back into walk_page_range(), as we
-want to test any vma in the range.
 
-VM_PFNMAP areas are used by:
-- graphics memory manager   gpu/drm/drm_gem.c
-- global reference unit     sgi-gru/grufile.c
-- sgi special memory        char/mspec.c
-- and probably several out-of-tree modules
-
-I'm copying everyone who has changed this file recently, in case
-there is some reason that I am not aware of to provide
-/proc/<pid>/smaps|clear_refs|maps|numa_maps for these VM_PFNMAP areas.
-
-Signed-off-by: Cliff Wickman <cpw@sgi.com>
----
- mm/pagewalk.c |   60 +++++++++++++++++++++++++++++-----------------------------
- 1 file changed, 31 insertions(+), 29 deletions(-)
-
-Index: linux/mm/pagewalk.c
-===================================================================
---- linux.orig/mm/pagewalk.c
-+++ linux/mm/pagewalk.c
-@@ -127,22 +127,6 @@ static int walk_hugetlb_range(struct vm_
- 	return 0;
- }
- 
--static struct vm_area_struct* hugetlb_vma(unsigned long addr, struct mm_walk *walk)
--{
--	struct vm_area_struct *vma;
--
--	/* We don't need vma lookup at all. */
--	if (!walk->hugetlb_entry)
--		return NULL;
--
--	VM_BUG_ON(!rwsem_is_locked(&walk->mm->mmap_sem));
--	vma = find_vma(walk->mm, addr);
--	if (vma && vma->vm_start <= addr && is_vm_hugetlb_page(vma))
--		return vma;
--
--	return NULL;
--}
--
- #else /* CONFIG_HUGETLB_PAGE */
- static struct vm_area_struct* hugetlb_vma(unsigned long addr, struct mm_walk *walk)
- {
-@@ -200,28 +184,46 @@ int walk_page_range(unsigned long addr,
- 
- 	pgd = pgd_offset(walk->mm, addr);
- 	do {
--		struct vm_area_struct *vma;
-+		struct vm_area_struct *vma = NULL;
- 
- 		next = pgd_addr_end(addr, end);
- 
- 		/*
--		 * handle hugetlb vma individually because pagetable walk for
--		 * the hugetlb page is dependent on the architecture and
--		 * we can't handled it in the same manner as non-huge pages.
-+		 * Check any special vma's within this range.
- 		 */
--		vma = hugetlb_vma(addr, walk);
-+		VM_BUG_ON(!rwsem_is_locked(&walk->mm->mmap_sem));
-+		vma = find_vma(walk->mm, addr);
- 		if (vma) {
--			if (vma->vm_end < next)
-+			/*
-+			 * There are no page structures backing a VM_PFNMAP
-+			 * range, so allow no split_huge_page_pmd().
-+			 */
-+			if (vma->vm_flags & VM_PFNMAP) {
- 				next = vma->vm_end;
-+				pgd = pgd_offset(walk->mm, next);
-+				continue;
-+			}
- 			/*
--			 * Hugepage is very tightly coupled with vma, so
--			 * walk through hugetlb entries within a given vma.
-+			 * Handle hugetlb vma individually because pagetable
-+			 * walk for the hugetlb page is dependent on the
-+			 * architecture and we can't handled it in the same
-+			 * manner as non-huge pages.
- 			 */
--			err = walk_hugetlb_range(vma, addr, next, walk);
--			if (err)
--				break;
--			pgd = pgd_offset(walk->mm, next);
--			continue;
-+			if (walk->hugetlb_entry && (vma->vm_start <= addr) &&
-+			    is_vm_hugetlb_page(vma)) {
-+				if (vma->vm_end < next)
-+					next = vma->vm_end;
-+				/*
-+				 * Hugepage is very tightly coupled with vma,
-+				 * so walk through hugetlb entries within a
-+				 * given vma.
-+				 */
-+				err = walk_hugetlb_range(vma, addr, next, walk);
-+				if (err)
-+					break;
-+				pgd = pgd_offset(walk->mm, next);
-+				continue;
-+			}
- 		}
- 
- 		if (pgd_none_or_clear_bad(pgd)) {
