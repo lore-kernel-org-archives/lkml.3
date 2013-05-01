@@ -1,52 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755677Ab3EATWH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 15:22:07 -0400
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:58545 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752263Ab3EATV4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 15:21:56 -0400
+	id S1756007Ab3EAT1R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 15:27:17 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:21536 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752703Ab3EAT1M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 May 2013 15:27:12 -0400
+X-IronPort-AV: E=Sophos;i="4.87,590,1363132800"; 
+   d="scan'208";a="22708177"
+Date: Wed, 1 May 2013 20:27:07 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: <xen-devel@lists.xensource.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, <marc.zyngier@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+Subject: [PATCH 0/3] xen/arm: account for stolen ticks
+Message-ID: <alpine.DEB.2.02.1305011939180.5398@kaball.uk.xensource.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <20130501191342.GH17814@two.firstfloor.org>
-References: <1367261108-9567-1-git-send-email-andi@firstfloor.org>
-	<20130501090718.GA28253@dyad.programming.kicks-ass.net>
-	<m261z3uipb.fsf@firstfloor.org>
-	<20130501111219.GF28253@dyad.programming.kicks-ass.net>
-	<CABPqkBT-VdWQ0c5AASDfQLssBRSfbtoH0-L1eHMXONqe5d_YRw@mail.gmail.com>
-	<20130501191342.GH17814@two.firstfloor.org>
-Date: Wed, 1 May 2013 21:21:55 +0200
-Message-ID: <CABPqkBS7FxoT1fioe_VdBMcLAdZtfwRiMmSMocSY5TB3QAyPQQ@mail.gmail.com>
-Subject: Re: [PATCH] perf, x86: Add workaround for MEM_*_RETIRED errata BV98
-From: Stephane Eranian <eranian@google.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 1, 2013 at 9:13 PM, Andi Kleen <andi@firstfloor.org> wrote:
->> Unfortunately, Andi's patch fails to correct the problem though
->> it is the right approach. As he said, the problem is unfortunately
->
-> perf stat -a / record -a / top will work.
->
-But it does not for perf stat -a. Look at my example, run it on your machine.
+Hi all,
+this small patch series introduces stolen ticks accounting for Xen on
+ARM. Stolen ticks are clocksource ticks that have been "stolen" from the
+cpu, typically because Linux is running in a virtual machine and the
+vcpu has been descheduled.
 
-> The case it doesn't fix is per thread when the other sibling
-> is not running a counter.
->
-> Essentially with the patch you may still get under-counting
-> on these specific events if they run per thread (or are really
-> unlucky in multiplexing), but never over-counting on anything.
->
-> In the past Ingo's guidance was to focus on the most common
-> use cases, which I think this patch does.
->
-> It would be possible to fix the per thread mode too, but it would
-> need quite a bit of new infrastructure and I have doubts that's
-> worth it.
->
-> -Andi
+
+Stefano Stabellini (3):
+      arm_arch_timer: introduce arch_timer_stolen_ticks
+      xen: move do_stolen_accounting to drivers/xen/time.c
+      xen/arm: account for stolen ticks
+
+ arch/arm/include/asm/arch_timer.h    |    5 +
+ arch/arm/xen/enlighten.c             |    4 +
+ arch/x86/xen/time.c                  |  127 +------------------------------
+ drivers/clocksource/arm_arch_timer.c |    6 ++
+ drivers/xen/Makefile                 |    2 +-
+ drivers/xen/time.c                   |  142 ++++++++++++++++++++++++++++++++++
+ include/xen/xen-ops.h                |    4 +
+ 7 files changed, 163 insertions(+), 127 deletions(-)
+ create mode 100644 drivers/xen/time.c
+
+
+ git://git.kernel.org/pub/scm/linux/kernel/git/sstabellini/xen.git lost_ticks_1
+
+
+Cheers,
+
+Stefano
