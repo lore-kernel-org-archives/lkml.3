@@ -1,65 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754860Ab3EARf7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 13:35:59 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:19257 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752493Ab3EARfx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 13:35:53 -0400
-X-Authority-Analysis: v=2.0 cv=cOZiQyiN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=WwcAzZA5hS8A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KhOJMQ402eIA:10 a=VwQbUJbxAAAA:8 a=pGLkceISAAAA:8 a=Z4Rwk6OoAAAA:8 a=yPCof4ZbAAAA:8 a=J-W6DWN7uNKZNbKHLuAA:9 a=QEXdDO2ut3YA:10 a=jbrJJM5MRmoA:10 a=7DSvI1NPTFQA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1367429751.30667.99.camel@gandalf.local.home>
-Subject: [PATCH v2] init: Do not warn on non-zero initcall return
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Date: Wed, 01 May 2013 13:35:51 -0400
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-2 
-Mime-Version: 1.0
+	id S1755181Ab3EARgU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 13:36:20 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:46187 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755014Ab3EARgM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 May 2013 13:36:12 -0400
+Message-ID: <5181527A.8080904@zytor.com>
+Date: Wed, 01 May 2013 10:35:54 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: "Theodore Ts'o" <tytso@mit.edu>, Borislav Petkov <bp@alien8.de>,
+        Andy Lutomirski <luto@amacapital.net>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, Andrew Lutomirski <luto@mit.edu>
+Subject: Re: [PATCH v5] x86: Enable fast strings on Intel if BIOS hasn't already
+References: <3cdeaedaa41e258e8aa9ca83d79a936e0b9462bc.1367385613.git.luto@amacapital.net> <20130501113352.GA29571@pd.tnic> <20130501163404.GA6286@thunk.org> <518145F6.3060800@zytor.com> <20130501172030.GA8609@thunk.org>
+In-Reply-To: <20130501172030.GA8609@thunk.org>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit f91eb62f71 "init: scream bloody murder if interrupts are enabled
-too early" added three new warnings. The first two seemed reasonable,
-but the third included a warning when an initcall returned non-zero.
-Although, the third WARN() does include an imbalanced preempt disabled,
-or irqs disable, it shouldn't warn if it only had an initcall that just
-returns non-zero.
+On 05/01/2013 10:20 AM, Theodore Ts'o wrote:
+> On Wed, May 01, 2013 at 09:42:30AM -0700, H. Peter Anvin wrote:
+>> The erratum reads seriously, but it only affects crossings between pages
+>> of different page types, which is rare in itself.  WT and WP are not
+>> even used in Linux; the UC case we end up doing 8-byte stores instead of
+>> the proper size, which is wrong, but for the case where the user is
+>> malicious the user could just do that directly, and it seems extremely
+>> hard to envision a scenario where someone would do that intentionally.
+> 
+> Yeah, I wasn't so much worried about a malicious user as much as a
+> situation where the you're trying to debug a mysterious and
+> hard-to-reproduce failure, start tearing your hair out, and wondering
+> whether you're going insane or the compiler hates you and is out to
+> get you and you start staring at assembly code to try to figure out
+> how some piece of memory got mysteriously corrupted....
+> 
 
-In fact, according to Linus, it shouldn't print at all. As it only
-prints with initcall_debug set, and that already shows enough
-information to fix things.
+If you are crossing pages with different memory types, the fact that the
+sizes being written are wrong is probably the least of your problems.
 
-Link: http://lkml.kernel.org/r/CA+55aFzaBC5SFi7=F2mfm+KWY5qTsBmOqgbbs8E+LUS8JK-sBg@mail.gmail.com
-
-Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
-Reported-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-
-diff --git a/init/main.c b/init/main.c
-index bea1287..ceed17a 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -686,11 +686,8 @@ int __init_or_module do_one_initcall(initcall_t fn)
- 
- 	msgbuf[0] = 0;
- 
--	if (ret && ret != -ENODEV && initcall_debug)
--		sprintf(msgbuf, "error code %d ", ret);
--
- 	if (preempt_count() != count) {
--		strlcat(msgbuf, "preemption imbalance ", sizeof(msgbuf));
-+		sprintf(msgbuf, "preemption imbalance ");
- 		preempt_count() = count;
- 	}
- 	if (irqs_disabled()) {
+	-hpa
 
 
