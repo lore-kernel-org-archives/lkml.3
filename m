@@ -1,200 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752253Ab3EAEmX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 00:42:23 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:39745 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751010Ab3EAEmQ (ORCPT
+	id S1752583Ab3EAEqS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 00:46:18 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:57936 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751010Ab3EAEqL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 00:42:16 -0400
-X-IronPort-AV: E=Sophos;i="4.87,587,1363158000"; 
-   d="scan'208";a="43180309"
-From: Saravana Kannan <skannan@codeaurora.org>
-To: linux-arm-kernel@lists.infradead.org,
-        Mike Turquette <mturquette@linaro.org>, Paul Walmsley <paul@pwsan.com>,
-        Shawn Guo <shawn.guo@freescale.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        Andrew Lunn <andrew@lunn.ch>, Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arnd Bergman <arnd.bergmann@linaro.org>,
-        Jamie Iles <jamie@jamieiles.com>,
-        Richard Zhao <richard.zhao@linaro.org>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Deepak Saxena <dsaxena@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: [PATCH] clk: Fix race condition between clk_set_parent and clk_enable()
-Date: Tue, 30 Apr 2013 21:42:08 -0700
-Message-Id: <1367383328-25700-1-git-send-email-skannan@codeaurora.org>
-X-Mailer: git-send-email 1.7.8.3
+	Wed, 1 May 2013 00:46:11 -0400
+Date: Wed, 1 May 2013 05:46:09 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [git pull] signal.git, first pile
+Message-ID: <20130501044609.GV4068@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Without this patch, the following race conditions are possible.
+Mostly about syscall wrappers this time; there will be another pile with
+patches in the same general area from various people, but I'd rather push
+those after both that and vfs.git pile are in.  Please, pull from
 
-Race condition 1:
-* clk-A has two parents - clk-X and clk-Y.
-* All three are disabled and clk-X is current parent.
-* Thread A: clk_set_parent(clk-A, clk-Y).
-* Thread A: <snip execution flow>
-* Thread A: Grabs enable lock.
-* Thread A: Sees enable count of clk-A is 0, so doesn't enable clk-Y.
-* Thread A: Updates clk-A SW parent to clk-Y
-* Thread A: Releases enable lock.
-* Thread B: clk_enable(clk-A).
-* Thread B: clk_enable() enables clk-Y, then enabled clk-A and returns.
+git://git.kernel.org/pub/scm/linux/kernel/git/viro/signal for-linus
 
-clk-A is now enabled in software, but not clocking in hardware since the
-hardware parent is still clk-X.
+Shortlog:
+Al Viro (20):
+      get rid of duplicate logics in __SC_....[1-6] definitions
+      teach SYSCALL_DEFINE<n> how to deal with long long/unsigned long long
+      consolidate cond_syscall and SYSCALL_ALIAS declarations
+      make HAVE_SYSCALL_WRAPPERS unconditional
+      make SYSCALL_DEFINE<n>-generated wrappers do asmlinkage_protect
+      switch signalfd{,4}() to COMPAT_SYSCALL_DEFINE
+      convert sendfile{,64} to COMPAT_SYSCALL_DEFINE
+      switch epoll_pwait to COMPAT_SYSCALL_DEFINE
+      switch getrusage() to COMPAT_SYSCALL_DEFINE
+      convert vmsplice to COMPAT_SYSCALL_DEFINE
+      consolidate compat lookup_dcookie()
+      merge compat sys_ipc instances
+      get rid of compat_sys_semctl() and friends in case of ARCH_WANT_OLD_COMPAT_IPC
+      x86: sys32_kill and sys32_mprotect are pointless
+      x86: trim sys_ia32.h
+      ppc compat wrappers for add_key(2) and request_key(2) are pointless
+      sparc: no need to sign-extend in sync_file_range() wrapper
+      make do_mremap() static
+      get rid of union semop in sys_semctl(2) arguments
+      syscalls.h: slightly reduce the jungles of macros
 
-The only way to avoid race conditions between clk_set_parent() and
-clk_enable/disable() is to ensure that clk_enable/disable() calls don't
-require changes to hardware enable state between changes to software clock
-topology and hardware clock topology.
-
-There are options to achieve the above:
-1. Grab the enable lock before changing software/hardware topology and
-   release it afterwards.
-2. Keep the clock enabled for the duration of software/hardware topology
-   change so that any additional enable/disable calls don't try to change
-   the hardware state. Once the topology change is complete, the clock can
-   be put back in its original enable state.
-
-Option (1) is not an acceptable solution since the set_parent() ops might
-need to sleep.
-
-Therefore, this patch implements option (2).
-
-This patch doesn't violate any API semantics. clk_disable() doesn't
-guarantee that the clock is actually disabled. So, no clients of a clock
-can assume that a clock is disabled after their last call to clk_disable().
-So, enabling the clock during a parent change is not a violation of any API
-semantics.
-
-This also has the nice side effect of simplifying the error handling code.
-
-Signed-off-by: Saravana Kannan <skannan@codeaurora.org>
----
-It's been a while since I submitted a patch. So, apologies if I'm cc'ing
-people who no longer care about the state of the common clock framework.
-
- drivers/clk/clk.c |   72 +++++++++++++++++++++++-----------------------------
- 1 files changed, 32 insertions(+), 40 deletions(-)
-
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index 934cfd1..fe4055f 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -1377,67 +1377,59 @@ static int __clk_set_parent(struct clk *clk, struct clk *parent, u8 p_index)
- 	unsigned long flags;
- 	int ret = 0;
- 	struct clk *old_parent = clk->parent;
--	bool migrated_enable = false;
- 
--	/* migrate prepare */
--	if (clk->prepare_count)
-+	/*
-+	 * Migrate prepare state between parents and prevent race with
-+	 * clk_enable().
-+	 *
-+	 * If the clock is not prepared, then a race with
-+	 * clk_enable/disable() is impossible since we already have the
-+	 * prepare lock (future calls to clk_enable() need to be preceded by
-+	 * a clk_prepare()).
-+	 *
-+	 * If the clock is prepared, migrate the prepared state to the new
-+	 * parent and also protect against a race with clk_enable() by
-+	 * forcing the clock and the new parent on.  This ensures that all
-+	 * future calls to clk_enable() are practically NOPs with respect to
-+	 * hardware and software states.
-+	 */
-+	if (clk->prepare_count) {
- 		__clk_prepare(parent);
--
--	flags = clk_enable_lock();
--
--	/* migrate enable */
--	if (clk->enable_count) {
--		__clk_enable(parent);
--		migrated_enable = true;
-+		clk_enable(parent);
-+		clk_enable(clk);
- 	}
- 
- 	/* update the clk tree topology */
-+	flags = clk_enable_lock();
- 	clk_reparent(clk, parent);
--
- 	clk_enable_unlock(flags);
- 
- 	/* change clock input source */
- 	if (parent && clk->ops->set_parent)
- 		ret = clk->ops->set_parent(clk->hw, p_index);
--
- 	if (ret) {
--		/*
--		 * The error handling is tricky due to that we need to release
--		 * the spinlock while issuing the .set_parent callback. This
--		 * means the new parent might have been enabled/disabled in
--		 * between, which must be considered when doing rollback.
--		 */
--		flags = clk_enable_lock();
- 
-+		flags = clk_enable_lock();
- 		clk_reparent(clk, old_parent);
--
--		if (migrated_enable && clk->enable_count) {
--			__clk_disable(parent);
--		} else if (migrated_enable && (clk->enable_count == 0)) {
--			__clk_disable(old_parent);
--		} else if (!migrated_enable && clk->enable_count) {
--			__clk_disable(parent);
--			__clk_enable(old_parent);
--		}
--
- 		clk_enable_unlock(flags);
- 
--		if (clk->prepare_count)
-+		if (clk->prepare_count) {
-+			clk_disable(clk);
-+			clk_disable(parent);
- 			__clk_unprepare(parent);
--
-+		}
- 		return ret;
- 	}
- 
--	/* clean up enable for old parent if migration was done */
--	if (migrated_enable) {
--		flags = clk_enable_lock();
--		__clk_disable(old_parent);
--		clk_enable_unlock(flags);
--	}
--
--	/* clean up prepare for old parent if migration was done */
--	if (clk->prepare_count)
-+	/*
-+	 * Finish the migration of prepare state and undo the changes done
-+	 * for preventing a race with clk_enable().
-+	 */
-+	if (clk->prepare_count) {
-+		clk_disable(clk);
-+		clk_disable(old_parent);
- 		__clk_unprepare(old_parent);
-+	}
- 
- 	/* update debugfs with new clk tree topology */
- 	clk_debug_reparent(clk, parent);
--- 
-1.7.8.3
-
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+Diffstat:
+ arch/Kconfig                            |    3 -
+ arch/alpha/Kconfig                      |    1 -
+ arch/alpha/include/asm/linkage.h        |    4 +-
+ arch/alpha/include/asm/unistd.h         |   12 --
+ arch/arm/include/asm/unistd.h           |    8 --
+ arch/arm64/kernel/sys32.S               |    7 --
+ arch/avr32/include/asm/unistd.h         |    8 --
+ arch/blackfin/include/asm/unistd.h      |    8 --
+ arch/cris/include/asm/unistd.h          |    8 --
+ arch/frv/include/asm/unistd.h           |   10 --
+ arch/h8300/include/asm/linkage.h        |    2 -
+ arch/h8300/include/asm/unistd.h         |    7 --
+ arch/ia64/include/asm/linkage.h         |    4 +
+ arch/ia64/include/asm/unistd.h          |   10 --
+ arch/m32r/include/asm/unistd.h          |   10 --
+ arch/m68k/include/asm/unistd.h          |    8 --
+ arch/microblaze/include/asm/unistd.h    |    8 --
+ arch/mips/Kconfig                       |    1 -
+ arch/mips/include/asm/linkage.h         |    3 +
+ arch/mips/include/asm/unistd.h          |    8 --
+ arch/mips/kernel/linux32.c              |  119 ---------------------
+ arch/mips/kernel/scall64-n32.S          |    8 +-
+ arch/mips/kernel/scall64-o32.S          |    6 +-
+ arch/mn10300/include/asm/unistd.h       |   10 --
+ arch/parisc/include/asm/unistd.h        |    8 --
+ arch/parisc/kernel/sys_parisc32.c       |   41 -------
+ arch/parisc/kernel/syscall_table.S      |    8 +-
+ arch/powerpc/Kconfig                    |    1 -
+ arch/powerpc/include/asm/linkage.h      |   13 +++
+ arch/powerpc/include/asm/systbl.h       |   10 +-
+ arch/powerpc/include/asm/unistd.h       |    6 -
+ arch/powerpc/include/uapi/asm/linkage.h |    6 -
+ arch/powerpc/kernel/sys_ppc32.c         |  109 -------------------
+ arch/s390/Kconfig                       |    1 -
+ arch/s390/include/asm/unistd.h          |    8 --
+ arch/s390/kernel/compat_linux.c         |   86 +---------------
+ arch/s390/kernel/compat_linux.h         |    5 -
+ arch/s390/kernel/compat_wrapper.S       |   64 -----------
+ arch/s390/kernel/sys_s390.c             |   14 +--
+ arch/s390/kernel/syscalls.S             |   18 ++--
+ arch/sh/include/asm/unistd.h            |    8 --
+ arch/sparc/Kconfig                      |    1 -
+ arch/sparc/include/asm/unistd.h         |    8 --
+ arch/sparc/kernel/sys32.S               |    4 -
+ arch/sparc/kernel/sys_sparc32.c         |   75 +-------------
+ arch/sparc/kernel/sys_sparc_64.c        |    6 +-
+ arch/sparc/kernel/systbls_64.S          |    8 +-
+ arch/tile/Kconfig                       |    1 -
+ arch/tile/kernel/compat.c               |    5 -
+ arch/x86/ia32/Makefile                  |    3 -
+ arch/x86/ia32/ipc32.c                   |   54 ----------
+ arch/x86/ia32/sys_ia32.c                |   37 -------
+ arch/x86/include/asm/sys_ia32.h         |   12 --
+ arch/x86/include/asm/syscalls.h         |    4 +-
+ arch/x86/include/asm/unistd.h           |    8 --
+ arch/x86/kernel/tls.c                   |   14 +--
+ arch/x86/syscalls/syscall_32.tbl        |   10 +-
+ arch/x86/um/tls_32.c                    |    5 +-
+ arch/xtensa/include/asm/unistd.h        |    8 --
+ fs/aio.c                                |    2 -
+ fs/compat.c                             |  121 ---------------------
+ fs/dcookies.c                           |   15 ++-
+ fs/eventpoll.c                          |   47 ++++++++
+ fs/notify/fanotify/fanotify_user.c      |   17 +---
+ fs/open.c                               |   52 ++--------
+ fs/read_write.c                         |   68 ++++++++----
+ fs/read_write.h                         |    2 -
+ fs/signalfd.c                           |   31 ++++++
+ fs/splice.c                             |   22 ++++
+ fs/sync.c                               |   26 +----
+ include/asm-generic/unistd.h            |   17 ---
+ include/linux/compat.h                  |   51 +++-------
+ include/linux/linkage.h                 |   21 ++++
+ include/linux/mm.h                      |    3 -
+ include/linux/syscalls.h                |  156 +++++++++-------------------
+ ipc/compat.c                            |  174 +++++++++++++++++--------------
+ ipc/sem.c                               |  123 ++++++++++++++--------
+ ipc/syscall.c                           |    6 +-
+ kernel/compat.c                         |   19 ----
+ kernel/exit.c                           |    5 -
+ kernel/fork.c                           |    5 +-
+ kernel/sys.c                            |   14 +++
+ kernel/sys_ni.c                         |    3 +-
+ kernel/uid16.c                          |   55 ++--------
+ mm/fadvise.c                            |   18 +---
+ mm/nommu.c                              |    3 +-
+ mm/readahead.c                          |    9 +--
+ 87 files changed, 539 insertions(+), 1488 deletions(-)
+ create mode 100644 arch/powerpc/include/asm/linkage.h
+ delete mode 100644 arch/powerpc/include/uapi/asm/linkage.h
+ delete mode 100644 arch/x86/ia32/ipc32.c
