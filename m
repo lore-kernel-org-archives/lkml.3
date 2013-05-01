@@ -1,152 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756426Ab3EATEo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 15:04:44 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:46060 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756172Ab3EATEe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 15:04:34 -0400
-Date: Wed, 1 May 2013 12:04:12 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Julian Anastasov <ja@ssi.bg>
-Cc: Peter Zijlstra <peterz@infradead.org>, Simon Horman <horms@verge.net.au>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
-        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Dipankar Sarma <dipankar@in.ibm.com>
-Subject: Re: [PATCH v2 1/2] sched: Add cond_resched_rcu_lock() helper
-Message-ID: <20130501190412.GU3780@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1367290378-29224-1-git-send-email-horms@verge.net.au>
- <1367290378-29224-2-git-send-email-horms@verge.net.au>
- <alpine.LFD.2.00.1304301011310.1700@ja.ssi.bg>
- <20130430072944.GA13959@verge.net.au>
- <alpine.LFD.2.00.1304301051260.1700@ja.ssi.bg>
- <20130501091012.GB28253@dyad.programming.kicks-ass.net>
- <alpine.LFD.2.00.1305011344320.1603@ja.ssi.bg>
- <20130501155501.GB7521@dyad.programming.kicks-ass.net>
- <alpine.LFD.2.00.1305012004360.3397@ja.ssi.bg>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1305012004360.3397@ja.ssi.bg>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13050119-5806-0000-0000-000020F5E745
+	id S1756778Ab3EATFQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 15:05:16 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:43079 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756691Ab3EATFL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 May 2013 15:05:11 -0400
+From: Mike Travis <travis@sgi.com>
+To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>
+Cc: Pierre-Louis Bossart <pierre-louis.bossart@linux.intel.com>,
+        David Henningsson <david.henningsson@canonical.com>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        Russ Anderson <rja@sgi.com>, Mike Travis <travis@sgi.com>
+Subject: [PATCH]: x86_64, audio: Fix system panic when DMA > 40 bits
+Date: Wed,  1 May 2013 14:04:08 -0500
+Message-Id: <1367435048-66137-1-git-send-email-travis@sgi.com>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 01, 2013 at 09:22:08PM +0300, Julian Anastasov wrote:
-> 
-> 	Hello,
-> 
-> On Wed, 1 May 2013, Peter Zijlstra wrote:
-> 
-> > On Wed, May 01, 2013 at 05:22:05PM +0300, Julian Anastasov wrote:
-> > 
-> > > 2. Same without need_resched because cond_resched already
-> > > performs the same checks:
-> > > 
-> > > static void inline cond_resched_rcu_lock(void)
-> > > {
-> > > #ifndef CONFIG_PREEMPT_RCU
-> > > 	rcu_read_unlock();
-> > > 	cond_resched();
-> > > 	rcu_read_lock();
-> > > #endif
-> > > }
-> > 
-> > Ah so the 'problem' with this last version is that it does an unconditional /
-> > unnessecary rcu_read_unlock().
-> 
-> 	It is just a barrier() for the non-preempt case.
-> 
-> > The below would be in line with all the other cond_resched*() implementations.
-> 
-> ...
-> 
-> > diff --git a/include/linux/sched.h b/include/linux/sched.h
-> > index 802a751..fd2c77f 100644
-> > --- a/include/linux/sched.h
-> > +++ b/include/linux/sched.h
-> > @@ -2449,6 +2449,13 @@ extern int __cond_resched_softirq(void);
-> >  	__cond_resched_softirq();					\
-> >  })
-> >  
-> > +extern int __cond_resched_rcu(void);
-> > +
-> > +#define cond_resched_rcu() ({			\
-> > +	__might_sleep(__FILE__, __LINE__, 0);	\
-> 
-> 	I see your goal. But digging into __might_sleep()
-> I see that rcu_sleep_check() will scream for the non-preempt
-> case because we are under rcu_read_lock.
-> 
-> 	What about such inline version:
-> 
-> static void inline cond_resched_rcu(void)
-> {
-> #ifndef CONFIG_PREEMPT_RCU
-> 	rcu_read_unlock();
-> 	__might_sleep(__FILE__, __LINE__, 0);
-> 	cond_resched();
-> 	rcu_read_lock();
-> #else
-> 	__might_sleep(__FILE__, __LINE__, 0);
-> 	rcu_lockdep_assert(rcu_preempt_depth() == 1,
-> 		"Illegal cond_resched_rcu() context");
+The audio driver mistakenly allows 64 bit addresses to be created for
+the audio driver on Nvidia GPUs.  Unfortunately, the hardware normally
+only supports up to 40 bits of DMA.  This can cause system panics as
+well as misdirected data when the address is > 40 bits as the upper
+part the address is truncated.
 
-The above requires that include/linux/sched.h be included.  This might
-be OK, but please check the current intended uses.
+Signed-off-by: Mike Travis <travis@sgi.com>
+Reviewed-by: Mike Habeck <habeck@sgi.com>
+---
+ sound/pci/hda/hda_intel.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-						Thanx, Paul
-
-> #endif
-> }
-> 
-> 	It will restrict to single RCU lock level for all
-> RCU implementations. But we don't have _cond_resched_rcu
-> helper for two reasons:
-> 
-> - __might_sleep uses __FILE__, __LINE__
-> - only cond_resched generates code, so need_resched() is
-> avoided
-> 
-> > +	__cond_resched_rcu();			\
-> > +})
-> > +
-> >  /*
-> >   * Does a critical section need to be broken due to another
-> >   * task waiting?: (technically does not depend on CONFIG_PREEMPT,
-> > diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> > index 7d7901a..2b3b4e6 100644
-> > --- a/kernel/sched/core.c
-> > +++ b/kernel/sched/core.c
-> > @@ -4358,6 +4358,20 @@ int __sched __cond_resched_softirq(void)
-> >  }
-> >  EXPORT_SYMBOL(__cond_resched_softirq);
-> >  
-> > +int __sched __cond_resched_rcu(void)
-> > +{
-> > +#ifndef CONFIG_PREEMPT_RCU
-> > +	if (should_resched()) {
-> > +		rcu_read_unlock();
-> > +		__cond_resched();
-> > +		rcu_read_lock();
-> > +		return 1;
-> > +	}
-> > +#endif
-> > +	return 0;
-> > +}
-> > +EXPORT_SYMBOL(__cond_resched_rcu);
-> > +
-> 
-> Regards
-> 
-> --
-> Julian Anastasov <ja@ssi.bg>
-> 
+diff --git a/sound/pci/hda/hda_intel.c b/sound/pci/hda/hda_intel.c
+index bcd40ee..45eb165 100644
+--- a/sound/pci/hda/hda_intel.c
++++ b/sound/pci/hda/hda_intel.c
+@@ -615,7 +615,7 @@ enum {
+ /* quirks for Nvidia */
+ #define AZX_DCAPS_PRESET_NVIDIA \
+ 	(AZX_DCAPS_NVIDIA_SNOOP | AZX_DCAPS_RIRB_DELAY | AZX_DCAPS_NO_MSI |\
+-	 AZX_DCAPS_ALIGN_BUFSIZE)
++	 AZX_DCAPS_ALIGN_BUFSIZE | AZX_DCAPS_NO_64BIT)
+ 
+ #define AZX_DCAPS_PRESET_CTHDA \
+ 	(AZX_DCAPS_NO_MSI | AZX_DCAPS_POSFIX_LPIB | AZX_DCAPS_4K_BDLE_BOUNDARY)
+-- 
+1.8.2.1
 
