@@ -1,72 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761236Ab3EALML (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 07:12:11 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:48996 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759844Ab3EALLc (ORCPT
+	id S1760968Ab3EALN6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 07:13:58 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:59184 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759557Ab3EALNw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 07:11:32 -0400
-From: Sudeep.KarkadaNagesha@arm.com
-To: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-Cc: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Shawn Guo <shawn.guo@linaro.org>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
-Subject: [PATCH 2/2] PM / OPP: check for existing OPP list when initialising from device tree
-Date: Wed,  1 May 2013 12:11:19 +0100
-Message-Id: <1367406679-21603-3-git-send-email-Sudeep.KarkadaNagesha@arm.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1367406679-21603-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
-References: <1367406679-21603-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
-X-OriginalArrivalTime: 01 May 2013 11:11:29.0892 (UTC) FILETIME=[A163A240:01CE465C]
-X-MC-Unique: 113050112113016701
-Content-Type: text/plain; charset=WINDOWS-1252
+	Wed, 1 May 2013 07:13:52 -0400
+Date: Wed, 1 May 2013 13:12:20 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: mingo@elte.hu, eranian@google.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf, x86: Add workaround for MEM_*_RETIRED errata BV98
+Message-ID: <20130501111219.GF28253@dyad.programming.kicks-ass.net>
+References: <1367261108-9567-1-git-send-email-andi@firstfloor.org>
+ <20130501090718.GA28253@dyad.programming.kicks-ass.net>
+ <m261z3uipb.fsf@firstfloor.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <m261z3uipb.fsf@firstfloor.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r41BCLM1029609
 
-From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
+On Wed, May 01, 2013 at 02:56:32AM -0700, Andi Kleen wrote:
+> Peter Zijlstra <peterz@infradead.org> writes:
+> >
+> > So you're saying that if two SMT siblings count the same MEM_*_RETIRED event
+> > (on the same counter?) events can get accounted to the wrong sibling?
+> 
+> It can happen regardless of what event is enabled on the other counter.
 
-CPUs are registered as devices and their OPPs can be initialised from
-the device tree. Whenever CPUs can be hotplugged out, the corresponding
-cpu devices are not removed. As a result all their OPPs remain intact
-even when they are offlined.
+What I was trying to ask is.. where does it leak to. Does it leak to whatever
+event the other counter is counting? Or does it explicitly leak to any sibilng
+counter also counting MEM_*_RETIRED?
 
-But when they are hotplugged back-in, the cpufreq along with other cpu
-related subsystem gets re-initialised. Since its almost same as secondary
-cpu being brought up, no special consideration is taken in the hotplug
-path. As a result of this the cpufreq will try to initialise the OPPs
-again though the cpu device already contains the OPPs.
+    SMT0   SMT1
 
-This patch checks if there exist an OPP list associated with the device,
-before attempting to initialise it.
+C0   MR     MR
+C1
+C2
+C3
 
-Signed-off-by: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
----
- drivers/base/power/opp.c |    5 +++++
- 1 file changed, 5 insertions(+)
+So here SMT[01]-C0 will cross count their events.
 
-diff --git a/drivers/base/power/opp.c b/drivers/base/power/opp.c
-index 4dfdc01..66d52d2 100644
---- a/drivers/base/power/opp.c
-+++ b/drivers/base/power/opp.c
-@@ -706,6 +706,11 @@ static int of_init_opp_table_from_ofnode(struct device *dev,
- 	const __be32 *val;
- 	int nr;
- 
-+	/* Check for existing list for 'dev' */
-+	dev_opp = find_device_opp(dev);
-+	if (!IS_ERR(dev_opp))
-+		return 0; /* Device OPP already initialized */
-+
- 	prop = of_find_property(of_node, "operating-points", NULL);
- 	if (!prop)
- 		return -ENODEV;
--- 
-1.7.10.4
+
+    SMT0   SMT1
+
+C0   MR     
+C1          MR
+C2
+C3
+
+Will they too here?
+
+
+    SMT0   SMT1
+
+C0   MR     Cycles
+C1
+C2
+C3
+
+What about here?
+
+
+So again; do they specifically leak between the same counters of siblings or
+between the same events of siblings. Your initial explanation wasn't clear on
+when and where exactly the leak happens.
+
+
+> > This begs the question what happens when the sibling does have the (same?)
+> > counter enabled but counting an all together different event; do we then still
+> > 'loose' events from the one sibling and add then to the other counter?
+> 
+> Yes, that is what the patch fixes.
+
+Well, it very much depends on the above answer; if case-3 leaks samples from
+SMT0-C0 to SMT1-C0 then the patch doesn't fix anything as the SMT1-C0 event
+(cycles) doesn't bother with the shared register.
 
 
