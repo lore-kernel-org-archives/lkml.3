@@ -1,75 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932692Ab3EAQHk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 12:07:40 -0400
-Received: from mga09.intel.com ([134.134.136.24]:42849 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754011Ab3EAQHf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 12:07:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,589,1363158000"; 
-   d="scan'208";a="306266938"
-Subject: Re: [PATCH 2/2] Make batch size for memory accounting configured
- according to size of memory
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Ric Mason <ric.masonn@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Dave Hansen <dave.hansen@intel.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>
-In-Reply-To: <5180A37E.8010701@gmail.com>
-References: <c1f9c476a8bd1f5e7049b8ac79af48be61afd8f3.1367254913.git.tim.c.chen@linux.intel.com>
-	 <8c9bc7d4646d48154604820a3ec5952ba8949de4.1367254913.git.tim.c.chen@linux.intel.com>
-	 <5180A37E.8010701@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 01 May 2013 09:07:34 -0700
-Message-ID: <1367424454.27102.204.camel@schen9-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S932744Ab3EAQK6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 12:10:58 -0400
+Received: from mail-ve0-f178.google.com ([209.85.128.178]:40383 "EHLO
+	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932595Ab3EAQKu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 May 2013 12:10:50 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130501105630.GA22552@amd.pavel.ucw.cz>
+References: <1367360914-23389-1-git-send-email-zoran.markovic@linaro.org>
+	<20130501003058.GB20042@amd.pavel.ucw.cz>
+	<CAMbhsRQkYFvOzDDn4zmbZAEsVs6iSy4mPVq5w=MzQ7p9STBDew@mail.gmail.com>
+	<20130501105630.GA22552@amd.pavel.ucw.cz>
+Date: Wed, 1 May 2013 09:10:49 -0700
+X-Google-Sender-Auth: 1kdNXNnCEQOfjcXlCoXmbg-ZBbs
+Message-ID: <CAMbhsRTtYSLpAmB0hsanBH3ez4bm8BgbcH1xEBQsZSj4dc069g@mail.gmail.com>
+Subject: Re: [RFC PATCH] drivers: power: Add watchdog timer to catch drivers
+ which lockup during suspend.
+From: Colin Cross <ccross@android.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Zoran Markovic <zoran.markovic@linaro.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Benoit Goby <benoit@android.com>,
+        Android Kernel Team <kernel-team@android.com>,
+        Todd Poynor <toddpoynor@google.com>, San Mehat <san@google.com>,
+        John Stultz <john.stultz@linaro.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <len.brown@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-05-01 at 13:09 +0800, Ric Mason wrote:
-> Hi Tim,
-> On 04/30/2013 01:12 AM, Tim Chen wrote:
-> > Currently the per cpu counter's batch size for memory accounting is
-> > configured as twice the number of cpus in the system.  However,
-> > for system with very large memory, it is more appropriate to make it
-> > proportional to the memory size per cpu in the system.
-> >
-> > For example, for a x86_64 system with 64 cpus and 128 GB of memory,
-> > the batch size is only 2*64 pages (0.5 MB).  So any memory accounting
-> > changes of more than 0.5MB will overflow the per cpu counter into
-> > the global counter.  Instead, for the new scheme, the batch size
-> > is configured to be 0.4% of the memory/cpu = 8MB (128 GB/64 /256),
-> 
-> If large batch size will lead to global counter more inaccurate?
-> 
+On Wed, May 1, 2013 at 3:56 AM, Pavel Machek <pavel@ucw.cz> wrote:
+> Hi!
+>
+>> >> @@ -663,6 +671,30 @@ static bool is_async(struct device *dev)
+>> >>  }
+>> >>
+>> >>  /**
+>> >> + *     dpm_drv_timeout - Driver suspend / resume watchdog handler
+>> >> + *     @data: struct device which timed out
+>> >> + *
+>> >> + *     Called when a driver has timed out suspending or resuming.
+>> >> + *     There's not much we can do here to recover so
+>> >> + *     BUG() out for a crash-dump
+>> >> + *
+>> >> + */
+>> >> +static void dpm_drv_timeout(unsigned long data)
+>> >> +{
+>> >> +     struct dpm_drv_wd_data *wd_data = (void *)data;
+>> >> +     struct device *dev = wd_data->dev;
+>> >> +     struct task_struct *tsk = wd_data->tsk;
+>> >> +
+>> >> +     pr_emerg("**** DPM device timeout: %s (%s)\n", dev_name(dev),
+>> >> +             (dev->driver ? dev->driver->name : "no driver"));
+>> >> +
+>> >> +     pr_emerg("dpm suspend stack:\n");
+>> >> +     show_stack(tsk, NULL);
+>> >> +
+>> >> +     BUG();
+>> >> +}
+>> >
+>> > So you:
+>> >
+>> > dump stack of the suspend task
+>> It dumps the stack of the suspend task if the suspend callback is run
+>> synchronously, or the async task if the suspend op is run
+>> asynchronously.
+>
+> Lets call that [a]suspend task.
+>
+>> > do BUG which
+>> >    dumps stack of current task
+>> >    kills current task
+>> >
+>> > Current task may very well be idle task; in such case you kill the
+>> > machine. Sounds like you should be doing something else, like kill -9
+>> > instead of BUG()?
+>>
+>> Not much else you can do, you are stuck part way into suspend with a
+>> driver's suspend callback half executed.  All userspace tasks are
+>> frozen, and the suspend task is blocked indefinitely.
+>
+> Yes, there's better option. Attempt killing the [a]suspend task,
+> instead of killing the current task.
 
-I've kept the error tolerance fairly small (0.4%), so it should not be
-an issue.
+That will leave you in a completely undefined state.  If you just kill
+the task, you are likely to kill the synchronous suspend task, which
+is the task that would resume your drivers and unfreeze tasks.  That
+will leave you with no userspace tasks running, and much of your
+hardware suspended.  How is that a useful result?  If you somehow
+respawn a resume thread to resume whatever hardware you can and
+unfreeze tasks, you still have the hardware that was suspending when
+it was killed in a bad state, and probably has locks held, so you're
+just going to deadlock or crash soon after.
 
-If this is a concern, we can switch to percpu_counter_compare that will
-use the global counter quick compare and switch to accurate compare if
-needed (like the following).
+> Try putting mdelay(100000) into suspend path. Your patch will do the
+> wrong thing in that case (actually turning debuggable problem into
+> undebuggable one).
 
-index d1e4124..c78be36 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -187,7 +187,7 @@ int __vm_enough_memory(struct mm_struct *mm, long pages, int cap_sys_admin)
-        if (mm)
-                allowed -= mm->total_vm / 32;
- 
--       if (percpu_counter_read_positive(&vm_committed_as) < allowed)
-+       if (percpu_counter_compare(&vm_committed_as, allowed) < 0)
-                return 0;
- error:
-        vm_unacct_memory(pages);
+I'm not saying this patch as is is right for everyone (it probably at
+least needs to be configurable to be turned off, change the delay, and
+change the panic to just a stack trace), but from a mobile perspective
+this patch is far more debuggable than without this patch.  We work
+very hard to make sure that panic's are highly debuggable, in fact we
+often prefer panics over any other behavior when the device is in a
+bad state, because it immediately gets the user's device working again
+while still giving us useful information in our automatic log
+collection.
 
-
-Tim
-
+With an mdelay(100000) in the suspend path, users in our debug device
+pool are likely to just pull the battery because their screen won't
+turn on, in which case I get no debugging information.  With this
+patch, the device will automatically reboot due to the panic, and I
+will get captured logs after reboot that show a stack trace ending
+with
+mdelay, which tells me exactly where to look for this mdelay(100000).
