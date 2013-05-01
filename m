@@ -1,81 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754138Ab3EAH0j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 03:26:39 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:34276
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753175Ab3EAH0c (ORCPT
+	id S1755412Ab3EAHfq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 03:35:46 -0400
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:62469 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753509Ab3EAHfg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 03:26:32 -0400
-Date: Wed, 1 May 2013 09:26:16 +0200
-From: Jens Axboe <axboe@kernel.dk>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: akpm@linux-foundation.org, linux-bcache@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] Bcache fixes for 3.10
-Message-ID: <20130501072616.GH7800@kernel.dk>
-References: <20130430195214.GH9931@google.com>
+	Wed, 1 May 2013 03:35:36 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130430195214.GH9931@google.com>
+In-Reply-To: <20130430144605.1a99a7397702b332ee818fc8@linux-foundation.org>
+References: <1367214005-14302-1-git-send-email-chanho.min@lge.com>
+	<CAMuHMdWk4oi_KCmZv7hLZ7JSwy=meziKPBMQ1HJiJR9W8AdrDg@mail.gmail.com>
+	<20130430144605.1a99a7397702b332ee818fc8@linux-foundation.org>
+Date: Wed, 1 May 2013 09:35:35 +0200
+X-Google-Sender-Auth: ozq37tUdmpXx9cxvqBipXMkEa9s
+Message-ID: <CAMuHMdXJaZTSNavsPxQQ8df+J=Rfyn6mKjP2g7xoDXnW5PiF3Q@mail.gmail.com>
+Subject: Re: [PATCH] lib: add weak __clzsi2()/__clzdi2() functions
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Chanho Min <chanho.min@lge.com>, Kyungsik Lee <kyungsik.lee@lge.com>,
+        Yann Collet <yann.collet.73@gmail.com>,
+        Bob Pearson <rpearson@systemfabricworks.com>,
+        Richard Weinberger <richard@nod.at>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        sparclinux <sparclinux@vger.kernel.org>,
+        "Linux/m68k" <linux-m68k@vger.kernel.org>,
+        Linux-Next <linux-next@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 30 2013, Kent Overstreet wrote:
-> Hey Jens, this is everything I've got ready for 3.10 - there's _still_
-> one more bug I'm trying to track down.
-> 
-> Andrew - I've got patches that rip out the pkey() and pbtree() macros,
-> but they're somewhat tied up with some other nontrivial refactorings so
-> I think I'm going to wait a bit on those.
-> 
-> The following changes since commit cef5279735d3f6f0243e626963e6d5c84efade0a:
-> 
->   bcache: Disable broken btree fuzz tester (2013-04-08 13:33:49 -0700)
-> 
-> are available in the git repository at:
-> 
->   http://evilpiepirate.org/git/linux-bcache.git bcache-for-upstream
-> 
-> for you to fetch changes up to cd66f1f69ed40270bb34e20b25a8111bc72a1b2a:
-> 
->   bcache: Use bd_link_disk_holder() (2013-04-24 13:15:17 -0700)
-> 
-> ----------------------------------------------------------------
-> Kent Overstreet (8):
->       bcache: Take data offset from the bdev superblock.
->       bcache: Set ra_pages based on backing device's ra_pages
->       bcache: Hack around stuff that clones up to bi_max_vecs
->       bcache: Correctly check against BIO_MAX_PAGES
->       bcache: Fix merge_bvec_fn usage for when it modifies the bvm
->       bcache: Make sure blocksize isn't smaller than device blocksize
->       bcache: Allocator cleanup/fixes
->       bcache: Use bd_link_disk_holder()
-> 
->  drivers/md/bcache/alloc.c   |  74 +++++++++++++-------
->  drivers/md/bcache/bcache.h  |  48 ++++++++++---
->  drivers/md/bcache/btree.c   |   8 +--
->  drivers/md/bcache/io.c      |  35 ++++++----
->  drivers/md/bcache/request.c |   2 +-
->  drivers/md/bcache/super.c   | 166 +++++++++++++++++++++++++++-----------------
->  6 files changed, 215 insertions(+), 118 deletions(-)
+On Tue, Apr 30, 2013 at 11:46 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Mon, 29 Apr 2013 09:20:25 +0200 Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+>> On Mon, Apr 29, 2013 at 7:40 AM, Chanho Min <chanho.min@lge.com> wrote:
+>> > Some architectures need __clzsi2() or __clzdi2() for __builtin_clz and
+>> > It causes build failure. They can be implemented using the fls() and
+>> > overridden by linking arch-specific versions may not be implemented yet.
+>> >
+>> > Reference: https://lkml.org/lkml/2013/4/18/603
+>> > Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
+>> > Signed-off-by: Chanho Min <chanho.min@lge.com>
+>>
+>> Thanks, this fixes the link error on m68k, so
+>>
+>> Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
+>
+> It doesn't work for alpha (gcc-4.4.4):
+>
+> ERROR: "__ctzdi2" [lib/lz4/lz4hc_compress.ko] undefined!
+> ERROR: "__ctzdi2" [lib/lz4/lz4_compress.ko] undefined!
+>
+> akpm3:/usr/src/25> nm vmlinux|grep ctzd
+> akpm3:/usr/src/25>
+>
+> I assume the linker threw the code away.
 
-This is what I got, when I pulled it in:
+No, the link errors are for __ctzdi2, not __clzdi2.
+__ctzdi2 can be implemented using __ffs().
 
-Merge made by the 'recursive' strategy.
- drivers/md/bcache/alloc.c   |  72 +++++++++++++------
- drivers/md/bcache/bcache.h  |  47 ++++++++++---
- drivers/md/bcache/btree.c   |   3 +-
- drivers/md/bcache/io.c      |  35 ++++++----
- drivers/md/bcache/request.c |   2 +-
- drivers/md/bcache/super.c   | 166 +++++++++++++++++++++++++++-----------------
- 6 files changed, 213 insertions(+), 112 deletions(-)
+> How's about we stop using __builtin_ctz[ll]() altogether?  Use N-fls()?
 
-I only see the same 8 commits there. What happened? Please check
-for-3.10/drivers and verify it looks as you expect.
+That was my first suggestion ;-)
 
--- 
-Jens Axboe
+> btw, this:
+>
+> int __weak __clzsi2(int val)
+> {
+>        return BITS_PER_LONG - fls(val);
+> }
+>
+> looks wrong.  It will give a different result for 32- and 64-bit.
 
+Indeed. It should be hardcoded 32.
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
