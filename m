@@ -1,74 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760896Ab3EALSF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 07:18:05 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:39741 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756263Ab3EALR5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 07:17:57 -0400
-Message-ID: <5180F9FB.8010307@ti.com>
-Date: Wed, 1 May 2013 07:18:19 -0400
-From: Tom Rini <trini@ti.com>
-Organization: Texas Instruments
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1761211Ab3EALT6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 07:19:58 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:39242 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756263Ab3EALTu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 May 2013 07:19:50 -0400
 MIME-Version: 1.0
-To: Rusty Russell <rusty@rustcorp.com.au>
-CC: <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-kbuild@vger.kernel.org>
-Subject: Re: [PATCH] modpost.c: Add .text.unlikely to TEXT_SECTIONS
-References: <1366842363-7513-1-git-send-email-trini@ti.com> <87sj2aca9r.fsf@rustcorp.com.au> <517E7260.5070204@ti.com> <87ppxbxwzg.fsf@rustcorp.com.au>
-In-Reply-To: <87ppxbxwzg.fsf@rustcorp.com.au>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <CA+icZUXqmF5QcfVtGpEh5KX4OkgbUncyZB0DKixqSNquUpis1A@mail.gmail.com>
+References: <20130425232702.AF3D831C265@corp2gmr1-1.hot.corp.google.com>
+	<CA+icZUXqmF5QcfVtGpEh5KX4OkgbUncyZB0DKixqSNquUpis1A@mail.gmail.com>
+Date: Wed, 1 May 2013 13:19:48 +0200
+Message-ID: <CA+icZUXOr90HvhrLd3rhu+uph1=t4LLL=aAPDHqHYzSHDDRKYQ@mail.gmail.com>
+Subject: Re: mmotm 2013-04-25-16-24 uploaded
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: akpm@linux-foundation.org
+Cc: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-next@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/30/2013 10:19 PM, Rusty Russell wrote:
-> Tom Rini <trini@ti.com> writes:
->> On 04/28/2013 10:59 PM, Rusty Russell wrote:
->>> Tom Rini <trini@ti.com> writes:
->>>
->>>> Recent gcc's may place functions into the .text.unlikely section and we
->>>> need to check this section as well for section mismatches now otherwise
->>>> we may have false negatives for this test.
->>>
->>> Hmm, I don't think it's all that recent, is it?  I can find it back to
->>> gcc 4.0.4:
->>>
->>> `-freorder-functions'
->>>      Reorder functions in the object file in order to improve code
->>>      locality.  This is implemented by using special subsections
->>>      `.text.hot' for most frequently executed functions and
->>>      `.text.unlikely' for unlikely executed functions.  Reordering is
->>>      done by the linker so object file format must support named
->>>      sections and linker must place them in a reasonable way.
->>>
->>>      Also profile feedback must be available in to make this option
->>>      effective.  See `-fprofile-arcs' for details.
->>>
->>>      Enabled at levels `-O2', `-O3', `-Os'.
->>>
->>> The comment is the same in in gcc 4.7.
->>>
->>> So is your real issue that this section is generated with
->>> -fprofile-arcs, or has something changed with gcc 4.8, or...?
+On Fri, Apr 26, 2013 at 2:05 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+> On Fri, Apr 26, 2013 at 1:27 AM,  <akpm@linux-foundation.org> wrote:
+>> The mm-of-the-moment snapshot 2013-04-25-16-24 has been uploaded to
 >>
->> I've started seeing this with Linaro based 4.7 toolchains.  I can go
->> back through their releases and see when it starts showing up there if
->> it helps.  I didn't add .text.hot as I didn't have that section at all,
->> fwiw.
-> 
-> Weird, did you turn on CONFIG_GCOV_KERNEL?  AFAICT you shouldn't see
-> this section without that.
+>>    http://www.ozlabs.org/~akpm/mmotm/
+>>
+>
+> Hi Andrew,
+>
+> Nice to see that IPC-SEM is now safe again with Linux-Next (next-20130426).
+>
+> Affected patches...
+>
+> ipcsem-fine-grained-locking-for-semtimedop-do-not-call-sem_lock-when-bogus-sma.patch
+> ipcsem-fine-grained-locking-for-semtimedop-fix-lockdep-false-positive.patch
+> ipcsem-fine-grained-locking-for-semtimedop-fix-locking-in-semctl_main.patch
+> ipcsem-fine-grained-locking-for-semtimedop-ipc-make-refcounter-atomic-fix.patch
+> ipcsem-fine-grained-locking-for-semtimedop-ipc-make-refcounter-atomic.patch
+> ipcsem-fine-grained-locking-for-semtimedop-untangle-rcu-locking-with-find_alloc_undo.patch
+>
+> Just see one patch has my Tested-by (Reported-by) ...
+>
+> All these 6 ipc-sem-next patches were tested several times by me.
+>
+> It took me approx 2 weeks and XX kernel-builds.
+> Please gimme appropriate credits, Thanks.
+>
 
-Nope, CONFIG_GCOV_KERNEL is off.  Must be related to whatever flags the
-Linaro folks set as default on -O2 (at least in their 2013.03 release),
-after reading over one of the .o.cmd files in the build.
+Today I got several mails on IPC-SEM stuff with CCs to me and
+Tested-by/Reported-by.
+All credits were given/respected.
+Thanks.
 
-Do you want me to re-word the commit message a bit or ?  Thanks!
+Hope I could help.
 
--- 
-Tom
+- Sedat -
+
+> Have a nice weekend,
+> - Sedat -
+>
+> P.S.: Check for Sedat's credits.
+>
+> ipcsem-fine-grained-locking-for-semtimedop-fix-lockdep-false-positive.patch:Cc:
+> Sedat Dilek <sedat.dilek@gmail.com>
+>
+> ipcsem-fine-grained-locking-for-semtimedop-ipc-make-refcounter-atomic.patch:Sedat
+> reported an issue leading to a NULL dereference in update_queue():
+> ipcsem-fine-grained-locking-for-semtimedop-ipc-make-refcounter-atomic.patch:Tested-by:
+> Sedat Dilek <sedat.dilek@gmail.com>
+>
+> ipcsem-fine-grained-locking-for-semtimedop-ipc-make-refcounter-atomic.patch:Reported-by:
+> Sedat Dilek <sedat.dilek@gmail.com>
+>
+> ipcsem-fine-grained-locking-for-semtimedop-ipc-make-refcounter-atomic.patch:Cc:
+> Sedat Dilek <sedat.dilek@gmail.com>
