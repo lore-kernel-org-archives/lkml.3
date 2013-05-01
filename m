@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755124Ab3EARJV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 13:09:21 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:59293 "EHLO relay.sgi.com"
+	id S1754547Ab3EARIn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 13:08:43 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:60662 "EHLO relay.sgi.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753130Ab3EARHH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 13:07:07 -0400
+	id S1753290Ab3EARHI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 May 2013 13:07:08 -0400
 From: Robin Holt <holt@sgi.com>
 To: Andrew Morton <akpm@linux-foundation.org>,
         "H. Peter Anvin" <hpa@zytor.com>,
@@ -16,9 +16,9 @@ Cc: Robin Holt <holt@sgi.com>, Russ Anderson <rja@sgi.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         the arch/x86 maintainers <x86@kernel.org>,
         Arm Mailing List <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH -v7 07/11] unicore32, prepare reboot_mode for moving to generic kernel code.
-Date: Wed,  1 May 2013 12:06:47 -0500
-Message-Id: <1367428011-17123-8-git-send-email-holt@sgi.com>
+Subject: [PATCH -v7 10/11] arm, change reboot_mode to use enum reboot_mode
+Date: Wed,  1 May 2013 12:06:50 -0500
+Message-Id: <1367428011-17123-11-git-send-email-holt@sgi.com>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <1367428011-17123-1-git-send-email-holt@sgi.com>
 References: <1367428011-17123-1-git-send-email-holt@sgi.com>
@@ -26,91 +26,2729 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch prepares for the moving the parsing of reboot= to the generic
-kernel code by making reboot_mode into a more generic form.
+Preparing to move the parsing of reboot= to generic kernel code
+forces the change in reboot_mode handling to use the enum.
 
 Signed-off-by: Robin Holt <holt@sgi.com>
 To: Andrew Morton <akpm@linux-foundation.org>
-To: Guan Xuetao <gxt@mprc.pku.edu.cn>
+To: Russell King <linux@arm.linux.org.uk>
 Cc: Russ Anderson <rja@sgi.com>
 Cc: Robin Holt <holt@sgi.com>
-Cc: Russell King <linux@arm.linux.org.uk>
 Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
 Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Cc: the arch/x86 maintainers <x86@kernel.org>
 Cc: Arm Mailing List <linux-arm-kernel@lists.infradead.org>
 ---
- arch/unicore32/kernel/process.c | 10 +++++-----
- arch/unicore32/kernel/setup.h   |  2 +-
- arch/unicore32/mm/mmu.c         |  2 +-
- 3 files changed, 7 insertions(+), 7 deletions(-)
+ arch/arm/include/asm/hardware/iop3xx.h         |  3 ++-
+ arch/arm/include/asm/mach/arch.h               |  2 +-
+ arch/arm/include/asm/system_misc.h             |  3 ++-
+ arch/arm/kernel/process.c                      |  5 +++--
+ arch/arm/mach-at91/at91rm9200.c                |  3 ++-
+ arch/arm/mach-at91/generic.h                   |  5 +++--
+ arch/arm/mach-bcm2835/bcm2835.c                |  4 ++--
+ arch/arm/mach-clps711x/common.c                |  2 +-
+ arch/arm/mach-clps711x/common.h                |  4 +++-
+ arch/arm/mach-cns3xxx/core.h                   |  4 +++-
+ arch/arm/mach-cns3xxx/pm.c                     |  2 +-
+ arch/arm/mach-davinci/devices-da8xx.c          |  3 ++-
+ arch/arm/mach-davinci/devices.c                |  3 ++-
+ arch/arm/mach-davinci/include/mach/common.h    |  3 ++-
+ arch/arm/mach-davinci/include/mach/da8xx.h     |  3 ++-
+ arch/arm/mach-davinci/include/mach/tnetv107x.h |  3 ++-
+ arch/arm/mach-davinci/tnetv107x.c              |  3 ++-
+ arch/arm/mach-dove/common.c                    |  2 +-
+ arch/arm/mach-dove/common.h                    |  4 +++-
+ arch/arm/mach-ebsa110/core.c                   |  2 +-
+ arch/arm/mach-ep93xx/core.c                    |  3 ++-
+ arch/arm/mach-ep93xx/include/mach/platform.h   |  4 +++-
+ arch/arm/mach-exynos/common.c                  |  4 ++--
+ arch/arm/mach-exynos/common.h                  |  6 ++++--
+ arch/arm/mach-footbridge/common.c              |  4 ++--
+ arch/arm/mach-footbridge/common.h              |  3 ++-
+ arch/arm/mach-footbridge/netwinder-hw.c        |  4 ++--
+ arch/arm/mach-h720x/common.c                   |  2 +-
+ arch/arm/mach-h720x/common.h                   |  4 +++-
+ arch/arm/mach-highbank/core.h                  |  4 +++-
+ arch/arm/mach-highbank/system.c                |  5 +++--
+ arch/arm/mach-imx/common.h                     |  4 +++-
+ arch/arm/mach-imx/mach-imx6q.c                 |  3 ++-
+ arch/arm/mach-imx/system.c                     |  2 +-
+ arch/arm/mach-integrator/common.h              |  3 ++-
+ arch/arm/mach-integrator/core.c                |  2 +-
+ arch/arm/mach-iop13xx/include/mach/iop13xx.h   |  5 ++++-
+ arch/arm/mach-iop13xx/setup.c                  |  2 +-
+ arch/arm/mach-iop32x/n2100.c                   |  2 +-
+ arch/arm/mach-ixp4xx/common.c                  |  4 ++--
+ arch/arm/mach-ixp4xx/dsmg600-setup.c           |  1 +
+ arch/arm/mach-ixp4xx/include/mach/platform.h   |  4 +++-
+ arch/arm/mach-ixp4xx/include/mach/timex.h      |  2 +-
+ arch/arm/mach-kirkwood/board-lsxl.c            |  2 +-
+ arch/arm/mach-kirkwood/common.c                |  3 ++-
+ arch/arm/mach-kirkwood/common.h                |  4 +++-
+ arch/arm/mach-ks8695/generic.h                 |  2 +-
+ arch/arm/mach-ks8695/time.c                    |  4 ++--
+ arch/arm/mach-lpc32xx/common.c                 |  6 +++---
+ arch/arm/mach-lpc32xx/common.h                 |  3 ++-
+ arch/arm/mach-mmp/common.c                     |  2 +-
+ arch/arm/mach-mmp/common.h                     |  3 ++-
+ arch/arm/mach-mmp/include/mach/pxa168.h        |  4 +++-
+ arch/arm/mach-mmp/pxa168.c                     |  2 +-
+ arch/arm/mach-mv78xx0/common.c                 |  2 +-
+ arch/arm/mach-mv78xx0/common.h                 |  4 +++-
+ arch/arm/mach-mvebu/common.h                   |  4 +++-
+ arch/arm/mach-mvebu/system-controller.c        |  3 ++-
+ arch/arm/mach-mxs/include/mach/common.h        |  4 +++-
+ arch/arm/mach-mxs/system.c                     |  2 +-
+ arch/arm/mach-netx/generic.c                   |  3 ++-
+ arch/arm/mach-netx/generic.h                   |  4 +++-
+ arch/arm/mach-nomadik/cpu-8815.c               |  2 +-
+ arch/arm/mach-omap1/board-voiceblue.c          |  3 ++-
+ arch/arm/mach-omap1/common.h                   |  3 ++-
+ arch/arm/mach-omap1/reset.c                    |  3 ++-
+ arch/arm/mach-omap2/am33xx-restart.c           |  3 ++-
+ arch/arm/mach-omap2/common.h                   | 17 +++++++++--------
+ arch/arm/mach-omap2/omap2-restart.c            |  2 +-
+ arch/arm/mach-omap2/omap3-restart.c            |  3 ++-
+ arch/arm/mach-omap2/omap4-common.c             |  3 ++-
+ arch/arm/mach-orion5x/common.c                 |  2 +-
+ arch/arm/mach-orion5x/common.h                 |  4 +++-
+ arch/arm/mach-orion5x/ls-chl-setup.c           |  2 +-
+ arch/arm/mach-orion5x/ls_hgl-setup.c           |  2 +-
+ arch/arm/mach-orion5x/lsmini-setup.c           |  2 +-
+ arch/arm/mach-picoxcell/common.c               |  3 ++-
+ arch/arm/mach-prima2/common.h                  |  4 +++-
+ arch/arm/mach-prima2/rstc.c                    |  3 ++-
+ arch/arm/mach-pxa/corgi.c                      |  6 +++---
+ arch/arm/mach-pxa/generic.h                    |  4 +++-
+ arch/arm/mach-pxa/mioa701.c                    |  7 ++++---
+ arch/arm/mach-pxa/poodle.c                     |  2 +-
+ arch/arm/mach-pxa/reset.c                      |  8 ++++----
+ arch/arm/mach-pxa/spitz.c                      |  5 +++--
+ arch/arm/mach-pxa/tosa.c                       |  5 +++--
+ arch/arm/mach-realview/realview_eb.c           |  3 ++-
+ arch/arm/mach-realview/realview_pb1176.c       |  3 ++-
+ arch/arm/mach-realview/realview_pb11mp.c       |  3 ++-
+ arch/arm/mach-realview/realview_pba8.c         |  3 ++-
+ arch/arm/mach-realview/realview_pbx.c          |  3 ++-
+ arch/arm/mach-rpc/riscpc.c                     |  3 ++-
+ arch/arm/mach-s3c24xx/common.h                 |  6 ++++--
+ arch/arm/mach-s3c24xx/s3c2410.c                |  5 +++--
+ arch/arm/mach-s3c24xx/s3c2412.c                |  5 +++--
+ arch/arm/mach-s3c24xx/s3c2416.c                |  5 +++--
+ arch/arm/mach-s3c24xx/s3c2443.c                |  5 +++--
+ arch/arm/mach-s3c24xx/s3c244x.c                |  5 +++--
+ arch/arm/mach-s3c64xx/common.c                 |  5 +++--
+ arch/arm/mach-s3c64xx/common.h                 |  4 +++-
+ arch/arm/mach-s5p64x0/common.c                 |  5 +++--
+ arch/arm/mach-s5p64x0/common.h                 |  4 +++-
+ arch/arm/mach-s5pc100/common.c                 |  5 +++--
+ arch/arm/mach-s5pc100/common.h                 |  4 +++-
+ arch/arm/mach-s5pv210/common.c                 |  2 +-
+ arch/arm/mach-s5pv210/common.h                 |  4 +++-
+ arch/arm/mach-sa1100/generic.c                 |  5 +++--
+ arch/arm/mach-sa1100/generic.h                 |  3 ++-
+ arch/arm/mach-shark/core.c                     |  3 ++-
+ arch/arm/mach-shmobile/board-armadillo800eva.c |  3 ++-
+ arch/arm/mach-shmobile/board-kzm9g.c           |  3 ++-
+ arch/arm/mach-socfpga/socfpga.c                |  3 ++-
+ arch/arm/mach-spear13xx/include/mach/generic.h |  4 +++-
+ arch/arm/mach-spear3xx/include/mach/generic.h  |  4 +++-
+ arch/arm/mach-spear6xx/include/mach/generic.h  |  3 ++-
+ arch/arm/mach-sunxi/sunxi.c                    |  3 ++-
+ arch/arm/mach-tegra/board.h                    |  3 ++-
+ arch/arm/mach-tegra/common.c                   |  3 ++-
+ arch/arm/mach-u300/core.c                      |  6 +++---
+ arch/arm/mach-versatile/core.c                 |  3 ++-
+ arch/arm/mach-versatile/core.h                 |  3 ++-
+ arch/arm/mach-vt8500/vt8500.c                  |  3 ++-
+ arch/arm/mach-w90x900/cpu.c                    |  4 ++--
+ arch/arm/mach-w90x900/nuc9xx.h                 |  5 ++++-
+ arch/arm/plat-iop/gpio.c                       |  1 +
+ arch/arm/plat-iop/restart.c                    |  2 +-
+ arch/arm/plat-samsung/include/plat/s3c2412.h   |  4 +++-
+ arch/arm/plat-samsung/include/plat/s3c2416.h   |  4 +++-
+ arch/arm/plat-samsung/include/plat/s3c2443.h   |  4 +++-
+ arch/arm/plat-spear/restart.c                  |  5 +++--
+ drivers/power/reset/restart-poweroff.c         |  3 ++-
+ drivers/power/reset/vexpress-poweroff.c        |  2 +-
+ include/linux/reboot.h                         |  1 +
+ include/linux/vexpress.h                       |  1 +
+ 134 files changed, 300 insertions(+), 172 deletions(-)
 
-diff --git a/arch/unicore32/kernel/process.c b/arch/unicore32/kernel/process.c
-index c944769..9dc6e48 100644
---- a/arch/unicore32/kernel/process.c
-+++ b/arch/unicore32/kernel/process.c
-@@ -51,14 +51,14 @@ void arch_cpu_idle(void)
- 	local_irq_enable();
- }
+diff --git a/arch/arm/include/asm/hardware/iop3xx.h b/arch/arm/include/asm/hardware/iop3xx.h
+index ed94b1a..423744b 100644
+--- a/arch/arm/include/asm/hardware/iop3xx.h
++++ b/arch/arm/include/asm/hardware/iop3xx.h
+@@ -223,11 +223,12 @@ extern int iop3xx_get_init_atu(void);
+ #ifndef __ASSEMBLY__
  
--static char reboot_mode = 'h';
-+static enum reboot_mode reboot_mode;
+ #include <linux/types.h>
++#include <linux/reboot.h>
  
- int __init reboot_setup(char *str)
+ void iop3xx_map_io(void);
+ void iop_init_cp6_handler(void);
+ void iop_init_time(unsigned long tickrate);
+-void iop3xx_restart(char, const char *);
++void iop3xx_restart(enum reboot_mode, const char *);
+ 
+ static inline u32 read_tmr0(void)
  {
--	reboot_mode = str[0];
-+	if ('s' == str[0])
-+		reboot_mode = REBOOT_WARM;
- 	return 1;
+diff --git a/arch/arm/include/asm/mach/arch.h b/arch/arm/include/asm/mach/arch.h
+index e2b551e..2353bc3 100644
+--- a/arch/arm/include/asm/mach/arch.h
++++ b/arch/arm/include/asm/mach/arch.h
+@@ -54,7 +54,7 @@ struct machine_desc {
+ #ifdef CONFIG_MULTI_IRQ_HANDLER
+ 	void			(*handle_irq)(struct pt_regs *);
+ #endif
+-	void			(*restart)(char, const char *);
++	void			(*restart)(enum reboot_mode, const char *);
+ };
+ 
+ /*
+diff --git a/arch/arm/include/asm/system_misc.h b/arch/arm/include/asm/system_misc.h
+index 21a23e3..a3d61ad 100644
+--- a/arch/arm/include/asm/system_misc.h
++++ b/arch/arm/include/asm/system_misc.h
+@@ -6,11 +6,12 @@
+ #include <linux/compiler.h>
+ #include <linux/linkage.h>
+ #include <linux/irqflags.h>
++#include <linux/reboot.h>
+ 
+ extern void cpu_init(void);
+ 
+ void soft_restart(unsigned long);
+-extern void (*arm_pm_restart)(char str, const char *cmd);
++extern void (*arm_pm_restart)(enum reboot_mode reboot_mode, const char *cmd);
+ extern void (*arm_pm_idle)(void);
+ 
+ #define UDBG_UNDEFINED	(1 << 0)
+diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
+index 8b4609e..f7a54c2 100644
+--- a/arch/arm/kernel/process.c
++++ b/arch/arm/kernel/process.c
+@@ -32,6 +32,7 @@
+ #include <linux/hw_breakpoint.h>
+ #include <linux/cpuidle.h>
+ #include <linux/leds.h>
++#include <linux/reboot.h>
+ 
+ #include <asm/cacheflush.h>
+ #include <asm/idmap.h>
+@@ -112,7 +113,7 @@ void soft_restart(unsigned long addr)
+ 	BUG();
  }
--
- __setup("reboot=", reboot_setup);
  
- void machine_halt(void)
-@@ -88,7 +88,7 @@ void machine_restart(char *cmd)
- 	 * we may need it to insert some 1:1 mappings so that
- 	 * soft boot works.
- 	 */
--	setup_mm_for_reboot(reboot_mode);
-+	setup_mm_for_reboot();
+-static void null_restart(char mode, const char *cmd)
++static void null_restart(enum reboot_mode reboot_mode, const char *cmd)
+ {
+ }
  
- 	/* Clean and invalidate caches */
- 	flush_cache_all();
-@@ -102,7 +102,7 @@ void machine_restart(char *cmd)
- 	/*
- 	 * Now handle reboot code.
- 	 */
--	if (reboot_mode == 's') {
-+	if (reboot_mode == REBOOT_WARM) {
- 		/* Jump into ROM at address 0xffff0000 */
- 		cpu_reset(VECTORS_BASE);
- 	} else {
-diff --git a/arch/unicore32/kernel/setup.h b/arch/unicore32/kernel/setup.h
-index 30f749d..f5c51b8 100644
---- a/arch/unicore32/kernel/setup.h
-+++ b/arch/unicore32/kernel/setup.h
-@@ -22,7 +22,7 @@ extern void puv3_ps2_init(void);
- extern void pci_puv3_preinit(void);
- extern void __init puv3_init_gpio(void);
+@@ -122,7 +123,7 @@ static void null_restart(char mode, const char *cmd)
+ void (*pm_power_off)(void);
+ EXPORT_SYMBOL(pm_power_off);
  
--extern void setup_mm_for_reboot(char mode);
-+extern void setup_mm_for_reboot(void);
+-void (*arm_pm_restart)(char str, const char *cmd) = null_restart;
++void (*arm_pm_restart)(enum reboot_mode reboot_mode, const char *cmd) = null_restart;
+ EXPORT_SYMBOL_GPL(arm_pm_restart);
  
- extern char __stubs_start[], __stubs_end[];
- extern char __vectors_start[], __vectors_end[];
-diff --git a/arch/unicore32/mm/mmu.c b/arch/unicore32/mm/mmu.c
-index 43c20b4..4f5a532 100644
---- a/arch/unicore32/mm/mmu.c
-+++ b/arch/unicore32/mm/mmu.c
-@@ -445,7 +445,7 @@ void __init paging_init(void)
-  * the user-mode pages.  This will then ensure that we have predictable
-  * results when turning the mmu off
+ /*
+diff --git a/arch/arm/mach-at91/at91rm9200.c b/arch/arm/mach-at91/at91rm9200.c
+index 9706c00..e15ff8b 100644
+--- a/arch/arm/mach-at91/at91rm9200.c
++++ b/arch/arm/mach-at91/at91rm9200.c
+@@ -11,6 +11,7 @@
   */
--void setup_mm_for_reboot(char mode)
-+void setup_mm_for_reboot(void)
+ 
+ #include <linux/module.h>
++#include <linux/reboot.h>
+ 
+ #include <asm/irq.h>
+ #include <asm/mach/arch.h>
+@@ -303,7 +304,7 @@ static void at91rm9200_idle(void)
+ 	at91_pmc_write(AT91_PMC_SCDR, AT91_PMC_PCK);
+ }
+ 
+-static void at91rm9200_restart(char mode, const char *cmd)
++static void at91rm9200_restart(enum reboot_mode reboot_mode, const char *cmd)
  {
- 	unsigned long base_pmdval;
- 	pgd_t *pgd;
+ 	/*
+ 	 * Perform a hardware reset with the use of the Watchdog timer.
+diff --git a/arch/arm/mach-at91/generic.h b/arch/arm/mach-at91/generic.h
+index 78ab065..0723ed6 100644
+--- a/arch/arm/mach-at91/generic.h
++++ b/arch/arm/mach-at91/generic.h
+@@ -10,6 +10,7 @@
+ 
+ #include <linux/clkdev.h>
+ #include <linux/of.h>
++#include <linux/reboot.h>
+ 
+  /* Map io */
+ extern void __init at91_map_io(void);
+@@ -60,8 +61,8 @@ extern void at91sam9_idle(void);
+ 
+ /* reset */
+ extern void at91_ioremap_rstc(u32 base_addr);
+-extern void at91sam9_alt_restart(char, const char *);
+-extern void at91sam9g45_restart(char, const char *);
++extern void at91sam9_alt_restart(enum reboot_mode, const char *);
++extern void at91sam9g45_restart(enum reboot_mode, const char *);
+ 
+ /* shutdown */
+ extern void at91_ioremap_shdwc(u32 base_addr);
+diff --git a/arch/arm/mach-bcm2835/bcm2835.c b/arch/arm/mach-bcm2835/bcm2835.c
+index 6f57859..342793e 100644
+--- a/arch/arm/mach-bcm2835/bcm2835.c
++++ b/arch/arm/mach-bcm2835/bcm2835.c
+@@ -51,7 +51,7 @@ static void bcm2835_setup_restart(void)
+ 	WARN(!wdt_regs, "failed to remap watchdog regs");
+ }
+ 
+-static void bcm2835_restart(char mode, const char *cmd)
++static void bcm2835_restart(enum reboot_mode mode, const char *cmd)
+ {
+ 	u32 val;
+ 
+@@ -89,7 +89,7 @@ static void bcm2835_power_off(void)
+ 	writel_relaxed(val, wdt_regs + PM_RSTS);
+ 
+ 	/* Continue with normal reset mechanism */
+-	bcm2835_restart(0, "");
++	bcm2835_restart(REBOOT_COLD, "");
+ }
+ 
+ static struct map_desc io_map __initdata = {
+diff --git a/arch/arm/mach-clps711x/common.c b/arch/arm/mach-clps711x/common.c
+index 20ff50f..54f6a8d 100644
+--- a/arch/arm/mach-clps711x/common.c
++++ b/arch/arm/mach-clps711x/common.c
+@@ -345,7 +345,7 @@ void __init clps711x_timer_init(void)
+ 	setup_irq(IRQ_TC2OI, &clps711x_timer_irq);
+ }
+ 
+-void clps711x_restart(char mode, const char *cmd)
++void clps711x_restart(enum reboot_mode mode, const char *cmd)
+ {
+ 	soft_restart(0);
+ }
+diff --git a/arch/arm/mach-clps711x/common.h b/arch/arm/mach-clps711x/common.h
+index f84a729..2da0ff5 100644
+--- a/arch/arm/mach-clps711x/common.h
++++ b/arch/arm/mach-clps711x/common.h
+@@ -4,6 +4,8 @@
+  * Common bits.
+  */
+ 
++#include <linux/reboot.h>
++
+ #define CLPS711X_NR_IRQS	(33)
+ #define CLPS711X_NR_GPIO	(4 * 8 + 3)
+ #define CLPS711X_GPIO(prt, bit)	((prt) * 8 + (bit))
+@@ -12,4 +14,4 @@ extern void clps711x_map_io(void);
+ extern void clps711x_init_irq(void);
+ extern void clps711x_timer_init(void);
+ extern void clps711x_handle_irq(struct pt_regs *regs);
+-extern void clps711x_restart(char mode, const char *cmd);
++extern void clps711x_restart(enum reboot_mode mode, const char *cmd);
+diff --git a/arch/arm/mach-cns3xxx/core.h b/arch/arm/mach-cns3xxx/core.h
+index b23b17b..5218b61 100644
+--- a/arch/arm/mach-cns3xxx/core.h
++++ b/arch/arm/mach-cns3xxx/core.h
+@@ -11,6 +11,8 @@
+ #ifndef __CNS3XXX_CORE_H
+ #define __CNS3XXX_CORE_H
+ 
++#include <linux/reboot.h>
++
+ extern void cns3xxx_timer_init(void);
+ 
+ #ifdef CONFIG_CACHE_L2X0
+@@ -22,6 +24,6 @@ static inline void cns3xxx_l2x0_init(void) {}
+ void __init cns3xxx_map_io(void);
+ void __init cns3xxx_init_irq(void);
+ void cns3xxx_power_off(void);
+-void cns3xxx_restart(char, const char *);
++void cns3xxx_restart(enum reboot_mode, const char *);
+ 
+ #endif /* __CNS3XXX_CORE_H */
+diff --git a/arch/arm/mach-cns3xxx/pm.c b/arch/arm/mach-cns3xxx/pm.c
+index 3645808..5aa02ec 100644
+--- a/arch/arm/mach-cns3xxx/pm.c
++++ b/arch/arm/mach-cns3xxx/pm.c
+@@ -89,7 +89,7 @@ void cns3xxx_pwr_soft_rst(unsigned int block)
+ }
+ EXPORT_SYMBOL(cns3xxx_pwr_soft_rst);
+ 
+-void cns3xxx_restart(char mode, const char *cmd)
++void cns3xxx_restart(enum reboot_mode mode, const char *cmd)
+ {
+ 	/*
+ 	 * To reset, we hit the on-board reset register
+diff --git a/arch/arm/mach-davinci/devices-da8xx.c b/arch/arm/mach-davinci/devices-da8xx.c
+index fc50243..04e95b5 100644
+--- a/arch/arm/mach-davinci/devices-da8xx.c
++++ b/arch/arm/mach-davinci/devices-da8xx.c
+@@ -16,6 +16,7 @@
+ #include <linux/serial_8250.h>
+ #include <linux/ahci_platform.h>
+ #include <linux/clk.h>
++#include <linux/reboot.h>
+ 
+ #include <mach/cputype.h>
+ #include <mach/common.h>
+@@ -366,7 +367,7 @@ static struct platform_device da8xx_wdt_device = {
+ 	.resource	= da8xx_watchdog_resources,
+ };
+ 
+-void da8xx_restart(char mode, const char *cmd)
++void da8xx_restart(enum reboot_mode mode, const char *cmd)
+ {
+ 	struct device *dev;
+ 
+diff --git a/arch/arm/mach-davinci/devices.c b/arch/arm/mach-davinci/devices.c
+index 4c48a36..5bdda3d 100644
+--- a/arch/arm/mach-davinci/devices.c
++++ b/arch/arm/mach-davinci/devices.c
+@@ -13,6 +13,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/dma-mapping.h>
+ #include <linux/io.h>
++#include <linux/reboot.h>
+ 
+ #include <mach/hardware.h>
+ #include <linux/platform_data/i2c-davinci.h>
+@@ -301,7 +302,7 @@ struct platform_device davinci_wdt_device = {
+ 	.resource	= wdt_resources,
+ };
+ 
+-void davinci_restart(char mode, const char *cmd)
++void davinci_restart(enum reboot_mode mode, const char *cmd)
+ {
+ 	davinci_watchdog_reset(&davinci_wdt_device);
+ }
+diff --git a/arch/arm/mach-davinci/include/mach/common.h b/arch/arm/mach-davinci/include/mach/common.h
+index b124b77..cce316b 100644
+--- a/arch/arm/mach-davinci/include/mach/common.h
++++ b/arch/arm/mach-davinci/include/mach/common.h
+@@ -14,6 +14,7 @@
+ 
+ #include <linux/compiler.h>
+ #include <linux/types.h>
++#include <linux/reboot.h>
+ 
+ extern void davinci_timer_init(void);
+ 
+@@ -81,7 +82,7 @@ extern struct davinci_soc_info davinci_soc_info;
+ 
+ extern void davinci_common_init(struct davinci_soc_info *soc_info);
+ extern void davinci_init_ide(void);
+-void davinci_restart(char mode, const char *cmd);
++void davinci_restart(enum reboot_mode mode, const char *cmd);
+ void davinci_init_late(void);
+ 
+ #ifdef CONFIG_DAVINCI_RESET_CLOCKS
+diff --git a/arch/arm/mach-davinci/include/mach/da8xx.h b/arch/arm/mach-davinci/include/mach/da8xx.h
+index de439b7..89592aa 100644
+--- a/arch/arm/mach-davinci/include/mach/da8xx.h
++++ b/arch/arm/mach-davinci/include/mach/da8xx.h
+@@ -17,6 +17,7 @@
+ #include <linux/davinci_emac.h>
+ #include <linux/spi/spi.h>
+ #include <linux/platform_data/davinci_asp.h>
++#include <linux/reboot.h>
+ #include <linux/videodev2.h>
+ 
+ #include <mach/serial.h>
+@@ -103,7 +104,7 @@ int __init da850_register_vpif_display
+ 			(struct vpif_display_config *display_config);
+ int __init da850_register_vpif_capture
+ 			(struct vpif_capture_config *capture_config);
+-void da8xx_restart(char mode, const char *cmd);
++void da8xx_restart(enum reboot_mode mode, const char *cmd);
+ 
+ extern struct platform_device da8xx_serial_device;
+ extern struct emac_platform_data da8xx_emac_pdata;
+diff --git a/arch/arm/mach-davinci/include/mach/tnetv107x.h b/arch/arm/mach-davinci/include/mach/tnetv107x.h
+index 1656a02..bc9479d 100644
+--- a/arch/arm/mach-davinci/include/mach/tnetv107x.h
++++ b/arch/arm/mach-davinci/include/mach/tnetv107x.h
+@@ -35,6 +35,7 @@
+ #include <linux/serial_8250.h>
+ #include <linux/input/matrix_keypad.h>
+ #include <linux/mfd/ti_ssp.h>
++#include <linux/reboot.h>
+ 
+ #include <linux/platform_data/mmc-davinci.h>
+ #include <linux/platform_data/mtd-davinci.h>
+@@ -54,7 +55,7 @@ extern struct platform_device tnetv107x_serial_device;
+ extern void __init tnetv107x_init(void);
+ extern void __init tnetv107x_devices_init(struct tnetv107x_device_info *);
+ extern void __init tnetv107x_irq_init(void);
+-void tnetv107x_restart(char mode, const char *cmd);
++void tnetv107x_restart(enum reboot_mode mode, const char *cmd);
+ 
+ #endif
+ 
+diff --git a/arch/arm/mach-davinci/tnetv107x.c b/arch/arm/mach-davinci/tnetv107x.c
+index dc1a209..00a4076 100644
+--- a/arch/arm/mach-davinci/tnetv107x.c
++++ b/arch/arm/mach-davinci/tnetv107x.c
+@@ -19,6 +19,7 @@
+ #include <linux/io.h>
+ #include <linux/err.h>
+ #include <linux/platform_device.h>
++#include <linux/reboot.h>
+ 
+ #include <asm/mach/map.h>
+ 
+@@ -730,7 +731,7 @@ static void tnetv107x_watchdog_reset(struct platform_device *pdev)
+ 	__raw_writel(1, &regs->kick);
+ }
+ 
+-void tnetv107x_restart(char mode, const char *cmd)
++void tnetv107x_restart(enum reboot_mode mode, const char *cmd)
+ {
+ 	tnetv107x_watchdog_reset(&tnetv107x_wdt_device);
+ }
+diff --git a/arch/arm/mach-dove/common.c b/arch/arm/mach-dove/common.c
+index c6b3b2b..c37dd81 100644
+--- a/arch/arm/mach-dove/common.c
++++ b/arch/arm/mach-dove/common.c
+@@ -345,7 +345,7 @@ void __init dove_init(void)
+ 	dove_xor1_init();
+ }
+ 
+-void dove_restart(char mode, const char *cmd)
++void dove_restart(enum reboot_mode mode, const char *cmd)
+ {
+ 	/*
+ 	 * Enable soft reset to assert RSTOUTn.
+diff --git a/arch/arm/mach-dove/common.h b/arch/arm/mach-dove/common.h
+index ee59fba..0a704ee 100644
+--- a/arch/arm/mach-dove/common.h
++++ b/arch/arm/mach-dove/common.h
+@@ -11,6 +11,8 @@
+ #ifndef __ARCH_DOVE_COMMON_H
+ #define __ARCH_DOVE_COMMON_H
+ 
++#include <linux/reboot.h>
++
+ struct mv643xx_eth_platform_data;
+ struct mv_sata_platform_data;
+ 
+@@ -42,6 +44,6 @@ void dove_spi1_init(void);
+ void dove_i2c_init(void);
+ void dove_sdio0_init(void);
+ void dove_sdio1_init(void);
+-void dove_restart(char, const char *);
++void dove_restart(enum reboot_mode, const char *);
+ 
+ #endif
+diff --git a/arch/arm/mach-ebsa110/core.c b/arch/arm/mach-ebsa110/core.c
+index 69a9d5d..62b928b 100644
+--- a/arch/arm/mach-ebsa110/core.c
++++ b/arch/arm/mach-ebsa110/core.c
+@@ -311,7 +311,7 @@ static int __init ebsa110_init(void)
+ 
+ arch_initcall(ebsa110_init);
+ 
+-static void ebsa110_restart(char mode, const char *cmd)
++static void ebsa110_restart(enum reboot_mode mode, const char *cmd)
+ {
+ 	soft_restart(0x80000000);
+ }
+diff --git a/arch/arm/mach-ep93xx/core.c b/arch/arm/mach-ep93xx/core.c
+index c49ed3d..df8612f 100644
+--- a/arch/arm/mach-ep93xx/core.c
++++ b/arch/arm/mach-ep93xx/core.c
+@@ -35,6 +35,7 @@
+ #include <linux/spi/spi.h>
+ #include <linux/export.h>
+ #include <linux/irqchip/arm-vic.h>
++#include <linux/reboot.h>
+ 
+ #include <mach/hardware.h>
+ #include <linux/platform_data/video-ep93xx.h>
+@@ -921,7 +922,7 @@ void __init ep93xx_init_devices(void)
+ 	gpio_led_register_device(-1, &ep93xx_led_data);
+ }
+ 
+-void ep93xx_restart(char mode, const char *cmd)
++void ep93xx_restart(enum reboot_mode mode, const char *cmd)
+ {
+ 	/*
+ 	 * Set then clear the SWRST bit to initiate a software reset
+diff --git a/arch/arm/mach-ep93xx/include/mach/platform.h b/arch/arm/mach-ep93xx/include/mach/platform.h
+index a14e1b3..e256e0b 100644
+--- a/arch/arm/mach-ep93xx/include/mach/platform.h
++++ b/arch/arm/mach-ep93xx/include/mach/platform.h
+@@ -4,6 +4,8 @@
+ 
+ #ifndef __ASSEMBLY__
+ 
++#include <linux/reboot.h>
++
+ struct i2c_gpio_platform_data;
+ struct i2c_board_info;
+ struct spi_board_info;
+@@ -55,7 +57,7 @@ void ep93xx_ide_release_gpio(struct platform_device *pdev);
+ void ep93xx_init_devices(void);
+ extern void ep93xx_timer_init(void);
+ 
+-void ep93xx_restart(char, const char *);
++void ep93xx_restart(enum reboot_mode, const char *);
+ void ep93xx_init_late(void);
+ 
+ #ifdef CONFIG_CRUNCH
+diff --git a/arch/arm/mach-exynos/common.c b/arch/arm/mach-exynos/common.c
+index d63d399..9342252 100644
+--- a/arch/arm/mach-exynos/common.c
++++ b/arch/arm/mach-exynos/common.c
+@@ -293,12 +293,12 @@ static struct map_desc exynos5440_iodesc0[] __initdata = {
+ 	},
+ };
+ 
+-void exynos4_restart(char mode, const char *cmd)
++void exynos4_restart(enum reboot_mode mode, const char *cmd)
+ {
+ 	__raw_writel(0x1, S5P_SWRESET);
+ }
+ 
+-void exynos5_restart(char mode, const char *cmd)
++void exynos5_restart(enum reboot_mode mode, const char *cmd)
+ {
+ 	struct device_node *np;
+ 	u32 val;
+diff --git a/arch/arm/mach-exynos/common.h b/arch/arm/mach-exynos/common.h
+index 9339bb8..92118c9 100644
+--- a/arch/arm/mach-exynos/common.h
++++ b/arch/arm/mach-exynos/common.h
+@@ -12,14 +12,16 @@
+ #ifndef __ARCH_ARM_MACH_EXYNOS_COMMON_H
+ #define __ARCH_ARM_MACH_EXYNOS_COMMON_H
+ 
++#include <linux/reboot.h>
++
+ extern void exynos4_timer_init(void);
+ 
+ struct map_desc;
+ void exynos_init_io(struct map_desc *mach_desc, int size);
+ void exynos4_init_irq(void);
+ void exynos5_init_irq(void);
+-void exynos4_restart(char mode, const char *cmd);
+-void exynos5_restart(char mode, const char *cmd);
++void exynos4_restart(enum reboot_mode mode, const char *cmd);
++void exynos5_restart(enum reboot_mode mode, const char *cmd);
+ void exynos_init_late(void);
+ 
+ #ifdef CONFIG_PM_GENERIC_DOMAINS
+diff --git a/arch/arm/mach-footbridge/common.c b/arch/arm/mach-footbridge/common.c
+index a42b369..b0a7dd3 100644
+--- a/arch/arm/mach-footbridge/common.c
++++ b/arch/arm/mach-footbridge/common.c
+@@ -198,9 +198,9 @@ void __init footbridge_map_io(void)
+ 	}
+ }
+ 
+-void footbridge_restart(char mode, const char *cmd)
++void footbridge_restart(enum reboot_mode mode, const char *cmd)
+ {
+-	if (mode == 's') {
++	if (mode == REBOOT_WARM) {
+ 		/* Jump into the ROM */
+ 		soft_restart(0x41000000);
+ 	} else {
+diff --git a/arch/arm/mach-footbridge/common.h b/arch/arm/mach-footbridge/common.h
+index a846e50..56607b3 100644
+--- a/arch/arm/mach-footbridge/common.h
++++ b/arch/arm/mach-footbridge/common.h
+@@ -1,3 +1,4 @@
++#include <linux/reboot.h>
+ 
+ extern void footbridge_timer_init(void);
+ extern void isa_timer_init(void);
+@@ -8,4 +9,4 @@ extern void footbridge_map_io(void);
+ extern void footbridge_init_irq(void);
+ 
+ extern void isa_init_irq(unsigned int irq);
+-extern void footbridge_restart(char, const char *);
++extern void footbridge_restart(enum reboot_mode, const char *);
+diff --git a/arch/arm/mach-footbridge/netwinder-hw.c b/arch/arm/mach-footbridge/netwinder-hw.c
+index 90ea23f..807f49a 100644
+--- a/arch/arm/mach-footbridge/netwinder-hw.c
++++ b/arch/arm/mach-footbridge/netwinder-hw.c
+@@ -634,9 +634,9 @@ fixup_netwinder(struct tag *tags, char **cmdline, struct meminfo *mi)
+ #endif
+ }
+ 
+-static void netwinder_restart(char mode, const char *cmd)
++static void netwinder_restart(enum reboot_mode mode, const char *cmd)
+ {
+-	if (mode == 's') {
++	if (mode == REBOOT_WARM) {
+ 		/* Jump into the ROM */
+ 		soft_restart(0x41000000);
+ 	} else {
+diff --git a/arch/arm/mach-h720x/common.c b/arch/arm/mach-h720x/common.c
+index 17ef91f..f335868 100644
+--- a/arch/arm/mach-h720x/common.c
++++ b/arch/arm/mach-h720x/common.c
+@@ -244,7 +244,7 @@ void __init h720x_map_io(void)
+ 	iotable_init(h720x_io_desc,ARRAY_SIZE(h720x_io_desc));
+ }
+ 
+-void h720x_restart(char mode, const char *cmd)
++void h720x_restart(enum reboot_mode mode, const char *cmd)
+ {
+ 	CPU_REG (PMU_BASE, PMU_STAT) |= PMU_WARMRESET;
+ }
+diff --git a/arch/arm/mach-h720x/common.h b/arch/arm/mach-h720x/common.h
+index 7e73841..95c5728 100644
+--- a/arch/arm/mach-h720x/common.h
++++ b/arch/arm/mach-h720x/common.h
+@@ -13,10 +13,12 @@
+  *
+  */
+ 
++#include <linux/reboot.h>
++
+ extern u32 h720x_gettimeoffset(void);
+ extern void __init h720x_init_irq(void);
+ extern void __init h720x_map_io(void);
+-extern void h720x_restart(char, const char *);
++extern void h720x_restart(enum reboot_mode, const char *);
+ 
+ #ifdef CONFIG_ARCH_H7202
+ extern void h7202_timer_init(void);
+diff --git a/arch/arm/mach-highbank/core.h b/arch/arm/mach-highbank/core.h
+index 3f65206..aea1ec5 100644
+--- a/arch/arm/mach-highbank/core.h
++++ b/arch/arm/mach-highbank/core.h
+@@ -1,8 +1,10 @@
+ #ifndef __HIGHBANK_CORE_H
+ #define __HIGHBANK_CORE_H
+ 
++#include <linux/reboot.h>
++
+ extern void highbank_set_cpu_jump(int cpu, void *jump_addr);
+-extern void highbank_restart(char, const char *);
++extern void highbank_restart(enum reboot_mode, const char *);
+ extern void __iomem *scu_base_addr;
+ 
+ #ifdef CONFIG_PM_SLEEP
+diff --git a/arch/arm/mach-highbank/system.c b/arch/arm/mach-highbank/system.c
+index 37d8384..9e56003 100644
+--- a/arch/arm/mach-highbank/system.c
++++ b/arch/arm/mach-highbank/system.c
+@@ -15,13 +15,14 @@
+  */
+ #include <linux/io.h>
+ #include <asm/proc-fns.h>
++#include <linux/reboot.h>
+ 
+ #include "core.h"
+ #include "sysregs.h"
+ 
+-void highbank_restart(char mode, const char *cmd)
++void highbank_restart(enum reboot_mode mode, const char *cmd)
+ {
+-	if (mode == 'h')
++	if (mode == REBOOT_COLD)
+ 		highbank_set_pwr_hard_reset();
+ 	else
+ 		highbank_set_pwr_soft_reset();
+diff --git a/arch/arm/mach-imx/common.h b/arch/arm/mach-imx/common.h
+index 5bf4a97..85ce305 100644
+--- a/arch/arm/mach-imx/common.h
++++ b/arch/arm/mach-imx/common.h
+@@ -11,6 +11,8 @@
+ #ifndef __ASM_ARCH_MXC_COMMON_H__
+ #define __ASM_ARCH_MXC_COMMON_H__
+ 
++#include <linux/reboot.h>
++
+ struct platform_device;
+ struct clk;
+ enum mxc_cpu_pwr_mode;
+@@ -71,7 +73,7 @@ extern int mx6q_clocks_init(void);
+ extern struct platform_device *mxc_register_gpio(char *name, int id,
+ 	resource_size_t iobase, resource_size_t iosize, int irq, int irq_high);
+ extern void mxc_set_cpu_type(unsigned int type);
+-extern void mxc_restart(char, const char *);
++extern void mxc_restart(enum reboot_mode, const char *);
+ extern void mxc_arch_reset_init(void __iomem *);
+ extern int mx53_revision(void);
+ extern int mx53_display_revision(void);
+diff --git a/arch/arm/mach-imx/mach-imx6q.c b/arch/arm/mach-imx/mach-imx6q.c
+index 9ffd103..2089c45 100644
+--- a/arch/arm/mach-imx/mach-imx6q.c
++++ b/arch/arm/mach-imx/mach-imx6q.c
+@@ -25,6 +25,7 @@
+ #include <linux/of_platform.h>
+ #include <linux/opp.h>
+ #include <linux/phy.h>
++#include <linux/reboot.h>
+ #include <linux/regmap.h>
+ #include <linux/micrel_phy.h>
+ #include <linux/mfd/syscon.h>
+@@ -73,7 +74,7 @@ static int imx6q_revision(void)
+ 	}
+ }
+ 
+-void imx6q_restart(char mode, const char *cmd)
++void imx6q_restart(enum reboot_mode mode, const char *cmd)
+ {
+ 	struct device_node *np;
+ 	void __iomem *wdog_base;
+diff --git a/arch/arm/mach-imx/system.c b/arch/arm/mach-imx/system.c
+index 695e0d7..d7ec547 100644
+--- a/arch/arm/mach-imx/system.c
++++ b/arch/arm/mach-imx/system.c
+@@ -34,7 +34,7 @@ static void __iomem *wdog_base;
+ /*
+  * Reset the system. It is called by machine_restart().
+  */
+-void mxc_restart(char mode, const char *cmd)
++void mxc_restart(enum reboot_mode mode, const char *cmd)
+ {
+ 	unsigned int wcr_enable;
+ 
+diff --git a/arch/arm/mach-integrator/common.h b/arch/arm/mach-integrator/common.h
+index 72516658b..ad0ac55 100644
+--- a/arch/arm/mach-integrator/common.h
++++ b/arch/arm/mach-integrator/common.h
+@@ -1,7 +1,8 @@
++#include <linux/reboot.h>
+ #include <linux/amba/serial.h>
+ extern struct amba_pl010_data ap_uart_data;
+ void integrator_init_early(void);
+ int integrator_init(bool is_cp);
+ void integrator_reserve(void);
+-void integrator_restart(char, const char *);
++void integrator_restart(enum reboot_mode, const char *);
+ void integrator_init_sysfs(struct device *parent, u32 id);
+diff --git a/arch/arm/mach-integrator/core.c b/arch/arm/mach-integrator/core.c
+index 81461d2..4cdfd73 100644
+--- a/arch/arm/mach-integrator/core.c
++++ b/arch/arm/mach-integrator/core.c
+@@ -124,7 +124,7 @@ void __init integrator_reserve(void)
+ /*
+  * To reset, we hit the on-board reset register in the system FPGA
+  */
+-void integrator_restart(char mode, const char *cmd)
++void integrator_restart(enum reboot_mode mode, const char *cmd)
+ {
+ 	cm_control(CM_CTRL_RESET, CM_CTRL_RESET);
+ }
+diff --git a/arch/arm/mach-iop13xx/include/mach/iop13xx.h b/arch/arm/mach-iop13xx/include/mach/iop13xx.h
+index 7480f58..17b4027 100644
+--- a/arch/arm/mach-iop13xx/include/mach/iop13xx.h
++++ b/arch/arm/mach-iop13xx/include/mach/iop13xx.h
+@@ -2,6 +2,9 @@
+ #define _IOP13XX_HW_H_
+ 
+ #ifndef __ASSEMBLY__
++
++#include <linux/reboot.h>
++
+ /* The ATU offsets can change based on the strapping */
+ extern u32 iop13xx_atux_pmmr_offset;
+ extern u32 iop13xx_atue_pmmr_offset;
+@@ -11,7 +14,7 @@ void iop13xx_map_io(void);
+ void iop13xx_platform_init(void);
+ void iop13xx_add_tpmi_devices(void);
+ void iop13xx_init_irq(void);
+-void iop13xx_restart(char, const char *);
++void iop13xx_restart(enum reboot_mode, const char *);
+ 
+ /* CPUID CP6 R0 Page 0 */
+ static inline int iop13xx_cpu_id(void)
+diff --git a/arch/arm/mach-iop13xx/setup.c b/arch/arm/mach-iop13xx/setup.c
+index 3181f61..97a4906 100644
+--- a/arch/arm/mach-iop13xx/setup.c
++++ b/arch/arm/mach-iop13xx/setup.c
+@@ -597,7 +597,7 @@ __setup("iop13xx_init_adma", iop13xx_init_adma_setup);
+ __setup("iop13xx_init_uart", iop13xx_init_uart_setup);
+ __setup("iop13xx_init_i2c", iop13xx_init_i2c_setup);
+ 
+-void iop13xx_restart(char mode, const char *cmd)
++void iop13xx_restart(enum reboot_mode mode, const char *cmd)
+ {
+ 	/*
+ 	 * Reset the internal bus (warning both cores are reset)
+diff --git a/arch/arm/mach-iop32x/n2100.c b/arch/arm/mach-iop32x/n2100.c
+index ea0984a..0691443 100644
+--- a/arch/arm/mach-iop32x/n2100.c
++++ b/arch/arm/mach-iop32x/n2100.c
+@@ -286,7 +286,7 @@ static void n2100_power_off(void)
+ 		;
+ }
+ 
+-static void n2100_restart(char mode, const char *cmd)
++static void n2100_restart(enum reboot_mode mode, const char *cmd)
+ {
+ 	gpio_line_set(N2100_HARDWARE_RESET, GPIO_LOW);
+ 	gpio_line_config(N2100_HARDWARE_RESET, GPIO_OUT);
+diff --git a/arch/arm/mach-ixp4xx/common.c b/arch/arm/mach-ixp4xx/common.c
+index 6600cff..b7ebbce 100644
+--- a/arch/arm/mach-ixp4xx/common.c
++++ b/arch/arm/mach-ixp4xx/common.c
+@@ -531,9 +531,9 @@ static void __init ixp4xx_clockevent_init(void)
+ 					0xf, 0xfffffffe);
+ }
+ 
+-void ixp4xx_restart(char mode, const char *cmd)
++void ixp4xx_restart(enum reboot_mode mode, const char *cmd)
+ {
+-	if ( 1 && mode == 's') {
++	if ( 1 && mode == REBOOT_WARM) {
+ 		/* Jump into ROM at address 0 */
+ 		soft_restart(0);
+ 	} else {
+diff --git a/arch/arm/mach-ixp4xx/dsmg600-setup.c b/arch/arm/mach-ixp4xx/dsmg600-setup.c
+index 5d413f8..686ef34 100644
+--- a/arch/arm/mach-ixp4xx/dsmg600-setup.c
++++ b/arch/arm/mach-ixp4xx/dsmg600-setup.c
+@@ -27,6 +27,7 @@
+ #include <linux/i2c.h>
+ #include <linux/i2c-gpio.h>
+ 
++#include <mach/hardware.h>
+ #include <asm/mach-types.h>
+ #include <asm/mach/arch.h>
+ #include <asm/mach/flash.h>
+diff --git a/arch/arm/mach-ixp4xx/include/mach/platform.h b/arch/arm/mach-ixp4xx/include/mach/platform.h
+index db5afb6..4c4c6a6 100644
+--- a/arch/arm/mach-ixp4xx/include/mach/platform.h
++++ b/arch/arm/mach-ixp4xx/include/mach/platform.h
+@@ -13,6 +13,8 @@
+ 
+ #ifndef __ASSEMBLY__
+ 
++#include <linux/reboot.h>
++
+ #include <asm/types.h>
+ 
+ #ifndef	__ARMEB__
+@@ -123,7 +125,7 @@ extern void ixp4xx_init_early(void);
+ extern void ixp4xx_init_irq(void);
+ extern void ixp4xx_sys_init(void);
+ extern void ixp4xx_timer_init(void);
+-extern void ixp4xx_restart(char, const char *);
++extern void ixp4xx_restart(enum reboot_mode, const char *);
+ extern void ixp4xx_pci_preinit(void);
+ struct pci_sys_data;
+ extern int ixp4xx_setup(int nr, struct pci_sys_data *sys);
+diff --git a/arch/arm/mach-ixp4xx/include/mach/timex.h b/arch/arm/mach-ixp4xx/include/mach/timex.h
+index c9e930f..729b2db 100644
+--- a/arch/arm/mach-ixp4xx/include/mach/timex.h
++++ b/arch/arm/mach-ixp4xx/include/mach/timex.h
+@@ -3,7 +3,7 @@
+  * 
+  */
+ 
+-#include <mach/hardware.h>
++// #include <mach/hardware.h>
+ 
+ /*
+  * We use IXP425 General purpose timer for our timer needs, it runs at 
+diff --git a/arch/arm/mach-kirkwood/board-lsxl.c b/arch/arm/mach-kirkwood/board-lsxl.c
+index 4ec8b7a..b54d0c7 100644
+--- a/arch/arm/mach-kirkwood/board-lsxl.c
++++ b/arch/arm/mach-kirkwood/board-lsxl.c
+@@ -35,7 +35,7 @@ static struct mv643xx_eth_platform_data lsxl_ge01_data = {
+  */
+ static void lsxl_power_off(void)
+ {
+-	kirkwood_restart('h', NULL);
++	kirkwood_restart(REBOOT_COLD, NULL);
+ }
+ 
+ void __init lsxl_init(void)
+diff --git a/arch/arm/mach-kirkwood/common.c b/arch/arm/mach-kirkwood/common.c
+index 49792a0..c3a8d30 100644
+--- a/arch/arm/mach-kirkwood/common.c
++++ b/arch/arm/mach-kirkwood/common.c
+@@ -20,6 +20,7 @@
+ #include <linux/mv643xx_i2c.h>
+ #include <linux/timex.h>
+ #include <linux/kexec.h>
++#include <linux/reboot.h>
+ #include <net/dsa.h>
+ #include <asm/page.h>
+ #include <asm/mach/map.h>
+@@ -695,7 +696,7 @@ void __init kirkwood_init(void)
+ #endif
+ }
+ 
+-void kirkwood_restart(char mode, const char *cmd)
++void kirkwood_restart(enum reboot_mode mode, const char *cmd)
+ {
+ 	/*
+ 	 * Enable soft reset to assert RSTOUTn.
+diff --git a/arch/arm/mach-kirkwood/common.h b/arch/arm/mach-kirkwood/common.h
+index 5ed7056..bdb8a60 100644
+--- a/arch/arm/mach-kirkwood/common.h
++++ b/arch/arm/mach-kirkwood/common.h
+@@ -11,6 +11,8 @@
+ #ifndef __ARCH_KIRKWOOD_COMMON_H
+ #define __ARCH_KIRKWOOD_COMMON_H
+ 
++#include <linux/reboot.h>
++
+ struct dsa_platform_data;
+ struct mv643xx_eth_platform_data;
+ struct mv_sata_platform_data;
+@@ -51,7 +53,7 @@ void kirkwood_nand_init_rnb(struct mtd_partition *parts, int nr_parts,
+ 			    int (*dev_ready)(struct mtd_info *));
+ void kirkwood_audio_init(void);
+ void kirkwood_cpuidle_init(void);
+-void kirkwood_restart(char, const char *);
++void kirkwood_restart(enum reboot_mode, const char *);
+ void kirkwood_clk_init(void);
+ 
+ /* board init functions for boards not fully converted to fdt */
+diff --git a/arch/arm/mach-ks8695/generic.h b/arch/arm/mach-ks8695/generic.h
+index 6e97ce4..43253f8 100644
+--- a/arch/arm/mach-ks8695/generic.h
++++ b/arch/arm/mach-ks8695/generic.h
+@@ -12,5 +12,5 @@
+ 
+ extern __init void ks8695_map_io(void);
+ extern __init void ks8695_init_irq(void);
+-extern void ks8695_restart(char, const char *);
++extern void ks8695_restart(enum reboot_mode, const char *);
+ extern void ks8695_timer_init(void);
+diff --git a/arch/arm/mach-ks8695/time.c b/arch/arm/mach-ks8695/time.c
+index c272a386..1a728ff 100644
+--- a/arch/arm/mach-ks8695/time.c
++++ b/arch/arm/mach-ks8695/time.c
+@@ -154,11 +154,11 @@ void __init ks8695_timer_init(void)
+ 	setup_irq(KS8695_IRQ_TIMER1, &ks8695_timer_irq);
+ }
+ 
+-void ks8695_restart(char mode, const char *cmd)
++void ks8695_restart(enum reboot_mode reboot_mode, const char *cmd)
+ {
+ 	unsigned int reg;
+ 
+-	if (mode == 's')
++	if (reboot_mode == REBOOT_WARM)
+ 		soft_restart(0);
+ 
+ 	/* disable timer0 */
+diff --git a/arch/arm/mach-lpc32xx/common.c b/arch/arm/mach-lpc32xx/common.c
+index 0d4db8c..a610434 100644
+--- a/arch/arm/mach-lpc32xx/common.c
++++ b/arch/arm/mach-lpc32xx/common.c
+@@ -207,11 +207,11 @@ void __init lpc32xx_map_io(void)
+ 	iotable_init(lpc32xx_io_desc, ARRAY_SIZE(lpc32xx_io_desc));
+ }
+ 
+-void lpc23xx_restart(char mode, const char *cmd)
++void lpc23xx_restart(enum reboot_mode mode, const char *cmd)
+ {
+ 	switch (mode) {
+-	case 's':
+-	case 'h':
++	case REBOOT_WARM:
++	case REBOOT_COLD:
+ 		lpc32xx_watchdog_reset();
+ 		break;
+ 
+diff --git a/arch/arm/mach-lpc32xx/common.h b/arch/arm/mach-lpc32xx/common.h
+index e0b2606..1cd8853 100644
+--- a/arch/arm/mach-lpc32xx/common.h
++++ b/arch/arm/mach-lpc32xx/common.h
+@@ -21,6 +21,7 @@
+ 
+ #include <mach/board.h>
+ #include <linux/platform_device.h>
++#include <linux/reboot.h>
+ 
+ /*
+  * Other arch specific structures and functions
+@@ -29,7 +30,7 @@ extern void lpc32xx_timer_init(void);
+ extern void __init lpc32xx_init_irq(void);
+ extern void __init lpc32xx_map_io(void);
+ extern void __init lpc32xx_serial_init(void);
+-extern void lpc23xx_restart(char, const char *);
++extern void lpc23xx_restart(enum reboot_mode, const char *);
+ 
+ 
+ /*
+diff --git a/arch/arm/mach-mmp/common.c b/arch/arm/mach-mmp/common.c
+index 9292b79..c03b4ab 100644
+--- a/arch/arm/mach-mmp/common.c
++++ b/arch/arm/mach-mmp/common.c
+@@ -47,7 +47,7 @@ void __init mmp_map_io(void)
+ 	mmp_chip_id = __raw_readl(MMP_CHIPID);
+ }
+ 
+-void mmp_restart(char mode, const char *cmd)
++void mmp_restart(enum reboot_mode mode, const char *cmd)
+ {
+ 	soft_restart(0);
+ }
+diff --git a/arch/arm/mach-mmp/common.h b/arch/arm/mach-mmp/common.h
+index 0bdc50b..991d7e9 100644
+--- a/arch/arm/mach-mmp/common.h
++++ b/arch/arm/mach-mmp/common.h
+@@ -1,10 +1,11 @@
++#include <linux/reboot.h>
+ #define ARRAY_AND_SIZE(x)	(x), ARRAY_SIZE(x)
+ 
+ extern void timer_init(int irq);
+ 
+ extern void __init icu_init_irq(void);
+ extern void __init mmp_map_io(void);
+-extern void mmp_restart(char, const char *);
++extern void mmp_restart(enum reboot_mode, const char *);
+ extern void __init pxa168_clk_init(void);
+ extern void __init pxa910_clk_init(void);
+ extern void __init mmp2_clk_init(void);
+diff --git a/arch/arm/mach-mmp/include/mach/pxa168.h b/arch/arm/mach-mmp/include/mach/pxa168.h
+index 7ed1df2..459c2d0 100644
+--- a/arch/arm/mach-mmp/include/mach/pxa168.h
++++ b/arch/arm/mach-mmp/include/mach/pxa168.h
+@@ -1,9 +1,11 @@
+ #ifndef __ASM_MACH_PXA168_H
+ #define __ASM_MACH_PXA168_H
+ 
++#include <linux/reboot.h>
++
+ extern void pxa168_timer_init(void);
+ extern void __init pxa168_init_irq(void);
+-extern void pxa168_restart(char, const char *);
++extern void pxa168_restart(enum reboot_mode, const char *);
+ extern void pxa168_clear_keypad_wakeup(void);
+ 
+ #include <linux/i2c.h>
+diff --git a/arch/arm/mach-mmp/pxa168.c b/arch/arm/mach-mmp/pxa168.c
+index 9bc7b86..9fbc2a1 100644
+--- a/arch/arm/mach-mmp/pxa168.c
++++ b/arch/arm/mach-mmp/pxa168.c
+@@ -172,7 +172,7 @@ int __init pxa168_add_usb_host(struct mv_usb_platform_data *pdata)
+ 	return platform_device_register(&pxa168_device_usb_host);
+ }
+ 
+-void pxa168_restart(char mode, const char *cmd)
++void pxa168_restart(enum reboot_mode mode, const char *cmd)
+ {
+ 	soft_restart(0xffff0000);
+ }
+diff --git a/arch/arm/mach-mv78xx0/common.c b/arch/arm/mach-mv78xx0/common.c
+index 0efa144..862ba67 100644
+--- a/arch/arm/mach-mv78xx0/common.c
++++ b/arch/arm/mach-mv78xx0/common.c
+@@ -407,7 +407,7 @@ void __init mv78xx0_init(void)
+ 	clk_init();
+ }
+ 
+-void mv78xx0_restart(char mode, const char *cmd)
++void mv78xx0_restart(enum reboot_mode mode, const char *cmd)
+ {
+ 	/*
+ 	 * Enable soft reset to assert RSTOUTn.
+diff --git a/arch/arm/mach-mv78xx0/common.h b/arch/arm/mach-mv78xx0/common.h
+index 5e9485b..6889af2 100644
+--- a/arch/arm/mach-mv78xx0/common.h
++++ b/arch/arm/mach-mv78xx0/common.h
+@@ -11,6 +11,8 @@
+ #ifndef __ARCH_MV78XX0_COMMON_H
+ #define __ARCH_MV78XX0_COMMON_H
+ 
++#include <linux/reboot.h>
++
+ struct mv643xx_eth_platform_data;
+ struct mv_sata_platform_data;
+ 
+@@ -45,7 +47,7 @@ void mv78xx0_uart1_init(void);
+ void mv78xx0_uart2_init(void);
+ void mv78xx0_uart3_init(void);
+ void mv78xx0_i2c_init(void);
+-void mv78xx0_restart(char, const char *);
++void mv78xx0_restart(enum reboot_mode, const char *);
+ 
+ extern void mv78xx0_timer_init(void);
+ 
+diff --git a/arch/arm/mach-mvebu/common.h b/arch/arm/mach-mvebu/common.h
+index aa27bc2..f7ad45e 100644
+--- a/arch/arm/mach-mvebu/common.h
++++ b/arch/arm/mach-mvebu/common.h
+@@ -15,7 +15,9 @@
+ #ifndef __ARCH_MVEBU_COMMON_H
+ #define __ARCH_MVEBU_COMMON_H
+ 
+-void mvebu_restart(char mode, const char *cmd);
++#include <linux/reboot.h>
++
++void mvebu_restart(enum reboot_mode mode, const char *cmd);
+ 
+ void armada_370_xp_init_irq(void);
+ void armada_370_xp_handle_irq(struct pt_regs *regs);
+diff --git a/arch/arm/mach-mvebu/system-controller.c b/arch/arm/mach-mvebu/system-controller.c
+index b8079df..f875124 100644
+--- a/arch/arm/mach-mvebu/system-controller.c
++++ b/arch/arm/mach-mvebu/system-controller.c
+@@ -26,6 +26,7 @@
+ #include <linux/init.h>
+ #include <linux/of_address.h>
+ #include <linux/io.h>
++#include <linux/reboot.h>
+ 
+ static void __iomem *system_controller_base;
+ 
+@@ -63,7 +64,7 @@ static struct of_device_id of_system_controller_table[] = {
+ 	{ /* end of list */ },
+ };
+ 
+-void mvebu_restart(char mode, const char *cmd)
++void mvebu_restart(enum reboot_mode mode, const char *cmd)
+ {
+ 	if (!system_controller_base) {
+ 		pr_err("Cannot restart, system-controller not available: check the device tree\n");
+diff --git a/arch/arm/mach-mxs/include/mach/common.h b/arch/arm/mach-mxs/include/mach/common.h
+index be5a9c9..ab4d384 100644
+--- a/arch/arm/mach-mxs/include/mach/common.h
++++ b/arch/arm/mach-mxs/include/mach/common.h
+@@ -11,10 +11,12 @@
+ #ifndef __MACH_MXS_COMMON_H__
+ #define __MACH_MXS_COMMON_H__
+ 
++#include <linux/reboot.h>
++
+ extern const u32 *mxs_get_ocotp(void);
+ extern int mxs_reset_block(void __iomem *);
+ extern void mxs_timer_init(void);
+-extern void mxs_restart(char, const char *);
++extern void mxs_restart(enum reboot_mode, const char *);
+ extern int mxs_saif_clkmux_select(unsigned int clkmux);
+ 
+ extern int mx23_clocks_init(void);
+diff --git a/arch/arm/mach-mxs/system.c b/arch/arm/mach-mxs/system.c
+index 30042e2..48abe02 100644
+--- a/arch/arm/mach-mxs/system.c
++++ b/arch/arm/mach-mxs/system.c
+@@ -42,7 +42,7 @@ static void __iomem *mxs_clkctrl_reset_addr;
+ /*
+  * Reset the system. It is called by machine_restart().
+  */
+-void mxs_restart(char mode, const char *cmd)
++void mxs_restart(enum reboot_mode mode, const char *cmd)
+ {
+ 	/* reset the chip */
+ 	__mxs_setl(MXS_CLKCTRL_RESET_CHIP, mxs_clkctrl_reset_addr);
+diff --git a/arch/arm/mach-netx/generic.c b/arch/arm/mach-netx/generic.c
+index 1504b68..db25b0c 100644
+--- a/arch/arm/mach-netx/generic.c
++++ b/arch/arm/mach-netx/generic.c
+@@ -24,6 +24,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/io.h>
+ #include <linux/irqchip/arm-vic.h>
++#include <linux/reboot.h>
+ #include <mach/hardware.h>
+ #include <asm/mach/map.h>
+ #include <mach/netx-regs.h>
+@@ -187,7 +188,7 @@ static int __init netx_init(void)
+ 
+ subsys_initcall(netx_init);
+ 
+-void netx_restart(char mode, const char *cmd)
++void netx_restart(enum reboot_mode mode, const char *cmd)
+ {
+ 	writel(NETX_SYSTEM_RES_CR_FIRMW_RES_EN | NETX_SYSTEM_RES_CR_FIRMW_RES,
+ 	       NETX_SYSTEM_RES_CR);
+diff --git a/arch/arm/mach-netx/generic.h b/arch/arm/mach-netx/generic.h
+index 768b26b..bb2ce47 100644
+--- a/arch/arm/mach-netx/generic.h
++++ b/arch/arm/mach-netx/generic.h
+@@ -17,8 +17,10 @@
+  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+  */
+ 
++#include <linux/reboot.h>
++
+ extern void __init netx_map_io(void);
+ extern void __init netx_init_irq(void);
+-extern void netx_restart(char, const char *);
++extern void netx_restart(enum reboot_mode, const char *);
+ 
+ extern void netx_timer_init(void);
+diff --git a/arch/arm/mach-nomadik/cpu-8815.c b/arch/arm/mach-nomadik/cpu-8815.c
+index 21c1aa5..b98a042 100644
+--- a/arch/arm/mach-nomadik/cpu-8815.c
++++ b/arch/arm/mach-nomadik/cpu-8815.c
+@@ -149,7 +149,7 @@ static void __init cpu8815_map_io(void)
+ 	iotable_init(cpu8815_io_desc, ARRAY_SIZE(cpu8815_io_desc));
+ }
+ 
+-static void cpu8815_restart(char mode, const char *cmd)
++static void cpu8815_restart(enum reboot_mode mode, const char *cmd)
+ {
+ 	void __iomem *srcbase = ioremap(NOMADIK_SRC_BASE, SZ_4K);
+ 
+diff --git a/arch/arm/mach-omap1/board-voiceblue.c b/arch/arm/mach-omap1/board-voiceblue.c
+index 6c116e1..4677a9c 100644
+--- a/arch/arm/mach-omap1/board-voiceblue.c
++++ b/arch/arm/mach-omap1/board-voiceblue.c
+@@ -26,6 +26,7 @@
+ #include <linux/serial_reg.h>
+ #include <linux/smc91x.h>
+ #include <linux/export.h>
++#include <linux/reboot.h>
+ 
+ #include <asm/mach-types.h>
+ #include <asm/mach/arch.h>
+@@ -215,7 +216,7 @@ void voiceblue_wdt_ping(void)
+ 	gpio_set_value(0, wdt_gpio_state);
+ }
+ 
+-static void voiceblue_restart(char mode, const char *cmd)
++static void voiceblue_restart(enum reboot_mode mode, const char *cmd)
+ {
+ 	/*
+ 	 * Workaround for 5912/1611b bug mentioned in sprz209d.pdf p. 28
+diff --git a/arch/arm/mach-omap1/common.h b/arch/arm/mach-omap1/common.h
+index 14f7e99..abec019 100644
+--- a/arch/arm/mach-omap1/common.h
++++ b/arch/arm/mach-omap1/common.h
+@@ -28,6 +28,7 @@
+ 
+ #include <linux/mtd/mtd.h>
+ #include <linux/i2c-omap.h>
++#include <linux/reboot.h>
+ 
+ #include <plat/i2c.h>
+ 
+@@ -70,7 +71,7 @@ static inline int omap_serial_wakeup_init(void)
+ void omap1_init_early(void);
+ void omap1_init_irq(void);
+ void omap1_init_late(void);
+-void omap1_restart(char, const char *);
++void omap1_restart(enum reboot_mode, const char *);
+ 
+ extern void __init omap_check_revision(void);
+ 
+diff --git a/arch/arm/mach-omap1/reset.c b/arch/arm/mach-omap1/reset.c
+index 5eebd7e..72bf4bf 100644
+--- a/arch/arm/mach-omap1/reset.c
++++ b/arch/arm/mach-omap1/reset.c
+@@ -3,6 +3,7 @@
+  */
+ #include <linux/kernel.h>
+ #include <linux/io.h>
++#include <linux/reboot.h>
+ 
+ #include <mach/hardware.h>
+ 
+@@ -22,7 +23,7 @@
+ #define OMAP_EXTWARM_RST_SRC_ID_SHIFT			5
+ 
+ 
+-void omap1_restart(char mode, const char *cmd)
++void omap1_restart(enum reboot_mode mode, const char *cmd)
+ {
+ 	/*
+ 	 * Workaround for 5912/1611b bug mentioned in sprz209d.pdf p. 28
+diff --git a/arch/arm/mach-omap2/am33xx-restart.c b/arch/arm/mach-omap2/am33xx-restart.c
+index 88e4fa8..1eae962 100644
+--- a/arch/arm/mach-omap2/am33xx-restart.c
++++ b/arch/arm/mach-omap2/am33xx-restart.c
+@@ -6,6 +6,7 @@
+  * published by the Free Software Foundation.
+  */
+ #include <linux/kernel.h>
++#include <linux/reboot.h>
+ 
+ #include "common.h"
+ #include "prm-regbits-33xx.h"
+@@ -19,7 +20,7 @@
+  * Resets the SoC.  For @cmd, see the 'reboot' syscall in
+  * kernel/sys.c.  No return value.
+  */
+-void am33xx_restart(char mode, const char *cmd)
++void am33xx_restart(enum reboot_mode mode, const char *cmd)
+ {
+ 	/* TODO: Handle mode and cmd if necessary */
+ 
+diff --git a/arch/arm/mach-omap2/common.h b/arch/arm/mach-omap2/common.h
+index 14522d0..12e6418 100644
+--- a/arch/arm/mach-omap2/common.h
++++ b/arch/arm/mach-omap2/common.h
+@@ -31,6 +31,7 @@
+ #include <linux/i2c.h>
+ #include <linux/i2c/twl.h>
+ #include <linux/i2c-omap.h>
++#include <linux/reboot.h>
+ 
+ #include <asm/proc-fns.h>
+ 
+@@ -111,33 +112,33 @@ void ti81xx_init_late(void);
+ int omap2_common_pm_late_init(void);
+ 
+ #if defined(CONFIG_SOC_OMAP2420) || defined(CONFIG_SOC_OMAP2430)
+-void omap2xxx_restart(char mode, const char *cmd);
++void omap2xxx_restart(enum reboot_mode mode, const char *cmd);
+ #else
+-static inline void omap2xxx_restart(char mode, const char *cmd)
++static inline void omap2xxx_restart(enum reboot_mode mode, const char *cmd)
+ {
+ }
+ #endif
+ 
+ #ifdef CONFIG_SOC_AM33XX
+-void am33xx_restart(char mode, const char *cmd);
++void am33xx_restart(enum reboot_mode mode, const char *cmd);
+ #else
+-static inline void am33xx_restart(char mode, const char *cmd)
++static inline void am33xx_restart(enum reboot_mode mode, const char *cmd)
+ {
+ }
+ #endif
+ 
+ #ifdef CONFIG_ARCH_OMAP3
+-void omap3xxx_restart(char mode, const char *cmd);
++void omap3xxx_restart(enum reboot_mode mode, const char *cmd);
+ #else
+-static inline void omap3xxx_restart(char mode, const char *cmd)
++static inline void omap3xxx_restart(enum reboot_mode mode, const char *cmd)
+ {
+ }
+ #endif
+ 
+ #if defined(CONFIG_ARCH_OMAP4) || defined(CONFIG_SOC_OMAP5)
+-void omap44xx_restart(char mode, const char *cmd);
++void omap44xx_restart(enum reboot_mode mode, const char *cmd);
+ #else
+-static inline void omap44xx_restart(char mode, const char *cmd)
++static inline void omap44xx_restart(enum reboot_mode mode, const char *cmd)
+ {
+ }
+ #endif
+diff --git a/arch/arm/mach-omap2/omap2-restart.c b/arch/arm/mach-omap2/omap2-restart.c
+index 719b716..68423e2 100644
+--- a/arch/arm/mach-omap2/omap2-restart.c
++++ b/arch/arm/mach-omap2/omap2-restart.c
+@@ -31,7 +31,7 @@ static struct clk *reset_virt_prcm_set_ck, *reset_sys_ck;
+  * Set the DPLL to bypass so that reboot completes successfully.  No
+  * return value.
+  */
+-void omap2xxx_restart(char mode, const char *cmd)
++void omap2xxx_restart(enum reboot_mode mode, const char *cmd)
+ {
+ 	u32 rate;
+ 
+diff --git a/arch/arm/mach-omap2/omap3-restart.c b/arch/arm/mach-omap2/omap3-restart.c
+index 923c582..5de2a0c 100644
+--- a/arch/arm/mach-omap2/omap3-restart.c
++++ b/arch/arm/mach-omap2/omap3-restart.c
+@@ -12,6 +12,7 @@
+  */
+ #include <linux/kernel.h>
+ #include <linux/init.h>
++#include <linux/reboot.h>
+ 
+ #include "iomap.h"
+ #include "common.h"
+@@ -28,7 +29,7 @@
+  * Resets the SoC.  For @cmd, see the 'reboot' syscall in
+  * kernel/sys.c.  No return value.
+  */
+-void omap3xxx_restart(char mode, const char *cmd)
++void omap3xxx_restart(enum reboot_mode mode, const char *cmd)
+ {
+ 	omap3_ctrl_write_boot_mode((cmd ? (u8)*cmd : 0));
+ 	omap3xxx_prm_dpll3_reset(); /* never returns */
+diff --git a/arch/arm/mach-omap2/omap4-common.c b/arch/arm/mach-omap2/omap4-common.c
+index 708bb11..2a1c80f 100644
+--- a/arch/arm/mach-omap2/omap4-common.c
++++ b/arch/arm/mach-omap2/omap4-common.c
+@@ -22,6 +22,7 @@
+ #include <linux/of_platform.h>
+ #include <linux/export.h>
+ #include <linux/irqchip/arm-gic.h>
++#include <linux/reboot.h>
+ 
+ #include <asm/hardware/cache-l2x0.h>
+ #include <asm/mach/map.h>
+@@ -326,7 +327,7 @@ int __init omap4_twl6030_hsmmc_init(struct omap2_hsmmc_info *controllers)
+  * Resets the SoC.  For @cmd, see the 'reboot' syscall in
+  * kernel/sys.c.  No return value.
+  */
+-void omap44xx_restart(char mode, const char *cmd)
++void omap44xx_restart(enum reboot_mode mode, const char *cmd)
+ {
+ 	/* XXX Should save 'cmd' into scratchpad for use after reboot */
+ 	omap4_prminst_global_warm_sw_reset(); /* never returns */
+diff --git a/arch/arm/mach-orion5x/common.c b/arch/arm/mach-orion5x/common.c
+index ad71c8a..b3fa5f8 100644
+--- a/arch/arm/mach-orion5x/common.c
++++ b/arch/arm/mach-orion5x/common.c
+@@ -310,7 +310,7 @@ void __init orion5x_init(void)
+ 	orion5x_wdt_init();
+ }
+ 
+-void orion5x_restart(char mode, const char *cmd)
++void orion5x_restart(enum reboot_mode mode, const char *cmd)
+ {
+ 	/*
+ 	 * Enable and issue soft reset
+diff --git a/arch/arm/mach-orion5x/common.h b/arch/arm/mach-orion5x/common.h
+index e603457..8304d6e 100644
+--- a/arch/arm/mach-orion5x/common.h
++++ b/arch/arm/mach-orion5x/common.h
+@@ -1,6 +1,8 @@
+ #ifndef __ARCH_ORION5X_COMMON_H
+ #define __ARCH_ORION5X_COMMON_H
+ 
++#include <linux/reboot.h>
++
+ struct dsa_platform_data;
+ struct mv643xx_eth_platform_data;
+ struct mv_sata_platform_data;
+@@ -40,7 +42,7 @@ void orion5x_spi_init(void);
+ void orion5x_uart0_init(void);
+ void orion5x_uart1_init(void);
+ void orion5x_xor_init(void);
+-void orion5x_restart(char, const char *);
++void orion5x_restart(enum reboot_mode, const char *);
+ 
+ /*
+  * PCIe/PCI functions.
+diff --git a/arch/arm/mach-orion5x/ls-chl-setup.c b/arch/arm/mach-orion5x/ls-chl-setup.c
+index 044da5b..6dfdae5 100644
+--- a/arch/arm/mach-orion5x/ls-chl-setup.c
++++ b/arch/arm/mach-orion5x/ls-chl-setup.c
+@@ -139,7 +139,7 @@ static struct mv_sata_platform_data lschl_sata_data = {
+ 
+ static void lschl_power_off(void)
+ {
+-	orion5x_restart('h', NULL);
++	orion5x_restart(REBOOT_COLD, NULL);
+ }
+ 
+ /*****************************************************************************
+diff --git a/arch/arm/mach-orion5x/ls_hgl-setup.c b/arch/arm/mach-orion5x/ls_hgl-setup.c
+index d49f934..417de0f 100644
+--- a/arch/arm/mach-orion5x/ls_hgl-setup.c
++++ b/arch/arm/mach-orion5x/ls_hgl-setup.c
+@@ -185,7 +185,7 @@ static struct mv_sata_platform_data ls_hgl_sata_data = {
+ 
+ static void ls_hgl_power_off(void)
+ {
+-	orion5x_restart('h', NULL);
++	orion5x_restart(REBOOT_COLD, NULL);
+ }
+ 
+ 
+diff --git a/arch/arm/mach-orion5x/lsmini-setup.c b/arch/arm/mach-orion5x/lsmini-setup.c
+index 8e3965c..417bbd3 100644
+--- a/arch/arm/mach-orion5x/lsmini-setup.c
++++ b/arch/arm/mach-orion5x/lsmini-setup.c
+@@ -185,7 +185,7 @@ static struct mv_sata_platform_data lsmini_sata_data = {
+ 
+ static void lsmini_power_off(void)
+ {
+-	orion5x_restart('h', NULL);
++	orion5x_restart(REBOOT_COLD, NULL);
+ }
+ 
+ 
+diff --git a/arch/arm/mach-picoxcell/common.c b/arch/arm/mach-picoxcell/common.c
+index 70b441a..d298ed0 100644
+--- a/arch/arm/mach-picoxcell/common.c
++++ b/arch/arm/mach-picoxcell/common.c
+@@ -15,6 +15,7 @@
+ #include <linux/of_address.h>
+ #include <linux/of_irq.h>
+ #include <linux/of_platform.h>
++#include <linux/reboot.h>
+ #include <linux/dw_apb_timer.h>
+ 
+ #include <asm/mach/arch.h>
+@@ -70,7 +71,7 @@ static const char *picoxcell_dt_match[] = {
+ 	NULL
+ };
+ 
+-static void picoxcell_wdt_restart(char mode, const char *cmd)
++static void picoxcell_wdt_restart(enum reboot_mode mode, const char *cmd)
+ {
+ 	/*
+ 	 * Configure the watchdog to reset with the shortest possible timeout
+diff --git a/arch/arm/mach-prima2/common.h b/arch/arm/mach-prima2/common.h
+index b7c26b6..6a363c0 100644
+--- a/arch/arm/mach-prima2/common.h
++++ b/arch/arm/mach-prima2/common.h
+@@ -10,6 +10,8 @@
+ #define __MACH_PRIMA2_COMMON_H__
+ 
+ #include <linux/init.h>
++#include <linux/reboot.h>
++
+ #include <asm/mach/time.h>
+ #include <asm/exception.h>
+ 
+@@ -22,7 +24,7 @@ extern void sirfsoc_cpu_die(unsigned int cpu);
+ 
+ extern void __init sirfsoc_of_irq_init(void);
+ extern void __init sirfsoc_of_clk_init(void);
+-extern void sirfsoc_restart(char, const char *);
++extern void sirfsoc_restart(enum reboot_mode, const char *);
+ extern asmlinkage void __exception_irq_entry sirfsoc_handle_irq(struct pt_regs *regs);
+ 
+ #ifndef CONFIG_DEBUG_LL
+diff --git a/arch/arm/mach-prima2/rstc.c b/arch/arm/mach-prima2/rstc.c
+index 435019c..bdf57d4 100644
+--- a/arch/arm/mach-prima2/rstc.c
++++ b/arch/arm/mach-prima2/rstc.c
+@@ -13,6 +13,7 @@
+ #include <linux/device.h>
+ #include <linux/of.h>
+ #include <linux/of_address.h>
++#include <linux/reboot.h>
+ 
+ void __iomem *sirfsoc_rstc_base;
+ static DEFINE_MUTEX(rstc_lock);
+@@ -82,7 +83,7 @@ int sirfsoc_reset_device(struct device *dev)
+ 
+ #define SIRFSOC_SYS_RST_BIT  BIT(31)
+ 
+-void sirfsoc_restart(char mode, const char *cmd)
++void sirfsoc_restart(enum reboot_mode mode, const char *cmd)
+ {
+ 	writel(SIRFSOC_SYS_RST_BIT, sirfsoc_rstc_base);
+ }
+diff --git a/arch/arm/mach-pxa/corgi.c b/arch/arm/mach-pxa/corgi.c
+index a5b8fea..e1f527b 100644
+--- a/arch/arm/mach-pxa/corgi.c
++++ b/arch/arm/mach-pxa/corgi.c
+@@ -663,16 +663,16 @@ static void corgi_poweroff(void)
+ 		/* Green LED off tells the bootloader to halt */
+ 		gpio_set_value(CORGI_GPIO_LED_GREEN, 0);
+ 
+-	pxa_restart('h', NULL);
++	pxa_restart(REBOOT_COLD, NULL);
+ }
+ 
+-static void corgi_restart(char mode, const char *cmd)
++static void corgi_restart(enum reboot_mode mode, const char *cmd)
+ {
+ 	if (!machine_is_corgi())
+ 		/* Green LED on tells the bootloader to reboot */
+ 		gpio_set_value(CORGI_GPIO_LED_GREEN, 1);
+ 
+-	pxa_restart('h', cmd);
++	pxa_restart(REBOOT_COLD, cmd);
+ }
+ 
+ static void __init corgi_init(void)
+diff --git a/arch/arm/mach-pxa/generic.h b/arch/arm/mach-pxa/generic.h
+index fd7ea39..8963984 100644
+--- a/arch/arm/mach-pxa/generic.h
++++ b/arch/arm/mach-pxa/generic.h
+@@ -9,6 +9,8 @@
+  * published by the Free Software Foundation.
+  */
+ 
++#include <linux/reboot.h>
++
+ struct irq_data;
+ 
+ extern void pxa_timer_init(void);
+@@ -56,4 +58,4 @@ void __init pxa_set_btuart_info(void *info);
+ void __init pxa_set_stuart_info(void *info);
+ void __init pxa_set_hwuart_info(void *info);
+ 
+-void pxa_restart(char, const char *);
++void pxa_restart(enum reboot_mode, const char *);
+diff --git a/arch/arm/mach-pxa/mioa701.c b/arch/arm/mach-pxa/mioa701.c
+index dbea67a..01ebf50 100644
+--- a/arch/arm/mach-pxa/mioa701.c
++++ b/arch/arm/mach-pxa/mioa701.c
+@@ -37,6 +37,7 @@
+ #include <linux/wm97xx.h>
+ #include <linux/mtd/physmap.h>
+ #include <linux/usb/gpio_vbus.h>
++#include <linux/reboot.h>
+ #include <linux/regulator/max1586.h>
+ #include <linux/slab.h>
+ #include <linux/i2c/pxa-i2c.h>
+@@ -691,13 +692,13 @@ static void mioa701_machine_exit(void);
+ static void mioa701_poweroff(void)
+ {
+ 	mioa701_machine_exit();
+-	pxa_restart('s', NULL);
++	pxa_restart(REBOOT_WARM, NULL);
+ }
+ 
+-static void mioa701_restart(char c, const char *cmd)
++static void mioa701_restart(enum reboot_mode c, const char *cmd)
+ {
+ 	mioa701_machine_exit();
+-	pxa_restart('s', cmd);
++	pxa_restart(REBOOT_WARM, cmd);
+ }
+ 
+ static struct gpio global_gpios[] = {
+diff --git a/arch/arm/mach-pxa/poodle.c b/arch/arm/mach-pxa/poodle.c
+index 50ccd5f..5d59bd4 100644
+--- a/arch/arm/mach-pxa/poodle.c
++++ b/arch/arm/mach-pxa/poodle.c
+@@ -422,7 +422,7 @@ static struct i2c_board_info __initdata poodle_i2c_devices[] = {
+ 
+ static void poodle_poweroff(void)
+ {
+-	pxa_restart('h', NULL);
++	pxa_restart(REBOOT_COLD, NULL);
+ }
+ 
+ static void __init poodle_init(void)
+diff --git a/arch/arm/mach-pxa/reset.c b/arch/arm/mach-pxa/reset.c
+index 3fab583..4a31c12 100644
+--- a/arch/arm/mach-pxa/reset.c
++++ b/arch/arm/mach-pxa/reset.c
+@@ -83,7 +83,7 @@ static void do_hw_reset(void)
+ 	writel_relaxed(readl_relaxed(OSCR) + 368640, OSMR3);
+ }
+ 
+-void pxa_restart(char mode, const char *cmd)
++void pxa_restart(enum reboot_mode mode, const char *cmd)
+ {
+ 	local_irq_disable();
+ 	local_fiq_disable();
+@@ -91,14 +91,14 @@ void pxa_restart(char mode, const char *cmd)
+ 	clear_reset_status(RESET_STATUS_ALL);
+ 
+ 	switch (mode) {
+-	case 's':
++	case REBOOT_WARM:
+ 		/* Jump into ROM at address 0 */
+ 		soft_restart(0);
+ 		break;
+-	case 'g':
++	case REBOOT_GPIO:
+ 		do_gpio_reset();
+ 		break;
+-	case 'h':
++	case REBOOT_COLD:
+ 	default:
+ 		do_hw_reset();
+ 		break;
+diff --git a/arch/arm/mach-pxa/spitz.c b/arch/arm/mach-pxa/spitz.c
+index c3c0042..2125df0 100644
+--- a/arch/arm/mach-pxa/spitz.c
++++ b/arch/arm/mach-pxa/spitz.c
+@@ -31,6 +31,7 @@
+ #include <linux/regulator/machine.h>
+ #include <linux/io.h>
+ #include <linux/module.h>
++#include <linux/reboot.h>
+ 
+ #include <asm/setup.h>
+ #include <asm/mach-types.h>
+@@ -924,10 +925,10 @@ static inline void spitz_i2c_init(void) {}
+  ******************************************************************************/
+ static void spitz_poweroff(void)
+ {
+-	pxa_restart('g', NULL);
++	pxa_restart(REBOOT_GPIO, NULL);
+ }
+ 
+-static void spitz_restart(char mode, const char *cmd)
++static void spitz_restart(enum reboot_mode mode, const char *cmd)
+ {
+ 	uint32_t msc0 = __raw_readl(MSC0);
+ 	/* Bootloader magic for a reboot */
+diff --git a/arch/arm/mach-pxa/tosa.c b/arch/arm/mach-pxa/tosa.c
+index a41992f..0206b91 100644
+--- a/arch/arm/mach-pxa/tosa.c
++++ b/arch/arm/mach-pxa/tosa.c
+@@ -36,6 +36,7 @@
+ #include <linux/input/matrix_keypad.h>
+ #include <linux/i2c/pxa-i2c.h>
+ #include <linux/usb/gpio_vbus.h>
++#include <linux/reboot.h>
+ 
+ #include <asm/setup.h>
+ #include <asm/mach-types.h>
+@@ -911,10 +912,10 @@ static struct platform_device *devices[] __initdata = {
+ 
+ static void tosa_poweroff(void)
+ {
+-	pxa_restart('g', NULL);
++	pxa_restart(REBOOT_GPIO, NULL);
+ }
+ 
+-static void tosa_restart(char mode, const char *cmd)
++static void tosa_restart(enum reboot_mode mode, const char *cmd)
+ {
+ 	uint32_t msc0 = __raw_readl(MSC0);
+ 
+diff --git a/arch/arm/mach-realview/realview_eb.c b/arch/arm/mach-realview/realview_eb.c
+index 5b1c8bf..c85ddb2 100644
+--- a/arch/arm/mach-realview/realview_eb.c
++++ b/arch/arm/mach-realview/realview_eb.c
+@@ -29,6 +29,7 @@
+ #include <linux/io.h>
+ #include <linux/irqchip/arm-gic.h>
+ #include <linux/platform_data/clk-realview.h>
++#include <linux/reboot.h>
+ 
+ #include <mach/hardware.h>
+ #include <asm/irq.h>
+@@ -418,7 +419,7 @@ static void __init realview_eb_timer_init(void)
+ 	realview_eb_twd_init();
+ }
+ 
+-static void realview_eb_restart(char mode, const char *cmd)
++static void realview_eb_restart(enum reboot_mode mode, const char *cmd)
+ {
+ 	void __iomem *reset_ctrl = __io_address(REALVIEW_SYS_RESETCTL);
+ 	void __iomem *lock_ctrl = __io_address(REALVIEW_SYS_LOCK);
+diff --git a/arch/arm/mach-realview/realview_pb1176.c b/arch/arm/mach-realview/realview_pb1176.c
+index d5e83a1..c5eade7 100644
+--- a/arch/arm/mach-realview/realview_pb1176.c
++++ b/arch/arm/mach-realview/realview_pb1176.c
+@@ -31,6 +31,7 @@
+ #include <linux/io.h>
+ #include <linux/irqchip/arm-gic.h>
+ #include <linux/platform_data/clk-realview.h>
++#include <linux/reboot.h>
+ 
+ #include <mach/hardware.h>
+ #include <asm/irq.h>
+@@ -329,7 +330,7 @@ static void __init realview_pb1176_timer_init(void)
+ 	realview_timer_init(IRQ_DC1176_TIMER0);
+ }
+ 
+-static void realview_pb1176_restart(char mode, const char *cmd)
++static void realview_pb1176_restart(enum reboot_mode mode, const char *cmd)
+ {
+ 	void __iomem *reset_ctrl = __io_address(REALVIEW_SYS_RESETCTL);
+ 	void __iomem *lock_ctrl = __io_address(REALVIEW_SYS_LOCK);
+diff --git a/arch/arm/mach-realview/realview_pb11mp.c b/arch/arm/mach-realview/realview_pb11mp.c
+index c3cfe21..f4b0962 100644
+--- a/arch/arm/mach-realview/realview_pb11mp.c
++++ b/arch/arm/mach-realview/realview_pb11mp.c
+@@ -29,6 +29,7 @@
+ #include <linux/io.h>
+ #include <linux/irqchip/arm-gic.h>
+ #include <linux/platform_data/clk-realview.h>
++#include <linux/reboot.h>
+ 
+ #include <mach/hardware.h>
+ #include <asm/irq.h>
+@@ -316,7 +317,7 @@ static void __init realview_pb11mp_timer_init(void)
+ 	realview_pb11mp_twd_init();
+ }
+ 
+-static void realview_pb11mp_restart(char mode, const char *cmd)
++static void realview_pb11mp_restart(enum reboot_mode mode, const char *cmd)
+ {
+ 	void __iomem *reset_ctrl = __io_address(REALVIEW_SYS_RESETCTL);
+ 	void __iomem *lock_ctrl = __io_address(REALVIEW_SYS_LOCK);
+diff --git a/arch/arm/mach-realview/realview_pba8.c b/arch/arm/mach-realview/realview_pba8.c
+index dde652a..10a3e1d 100644
+--- a/arch/arm/mach-realview/realview_pba8.c
++++ b/arch/arm/mach-realview/realview_pba8.c
+@@ -29,6 +29,7 @@
+ #include <linux/io.h>
+ #include <linux/irqchip/arm-gic.h>
+ #include <linux/platform_data/clk-realview.h>
++#include <linux/reboot.h>
+ 
+ #include <asm/irq.h>
+ #include <asm/mach-types.h>
+@@ -264,7 +265,7 @@ static void __init realview_pba8_timer_init(void)
+ 	realview_timer_init(IRQ_PBA8_TIMER0_1);
+ }
+ 
+-static void realview_pba8_restart(char mode, const char *cmd)
++static void realview_pba8_restart(enum reboot_mode mode, const char *cmd)
+ {
+ 	void __iomem *reset_ctrl = __io_address(REALVIEW_SYS_RESETCTL);
+ 	void __iomem *lock_ctrl = __io_address(REALVIEW_SYS_LOCK);
+diff --git a/arch/arm/mach-realview/realview_pbx.c b/arch/arm/mach-realview/realview_pbx.c
+index 54f0185..9d75493 100644
+--- a/arch/arm/mach-realview/realview_pbx.c
++++ b/arch/arm/mach-realview/realview_pbx.c
+@@ -28,6 +28,7 @@
+ #include <linux/io.h>
+ #include <linux/irqchip/arm-gic.h>
+ #include <linux/platform_data/clk-realview.h>
++#include <linux/reboot.h>
+ 
+ #include <asm/irq.h>
+ #include <asm/mach-types.h>
+@@ -344,7 +345,7 @@ static void realview_pbx_fixup(struct tag *tags, char **from,
+ #endif
+ }
+ 
+-static void realview_pbx_restart(char mode, const char *cmd)
++static void realview_pbx_restart(enum reboot_mode mode, const char *cmd)
+ {
+ 	void __iomem *reset_ctrl = __io_address(REALVIEW_SYS_RESETCTL);
+ 	void __iomem *lock_ctrl = __io_address(REALVIEW_SYS_LOCK);
+diff --git a/arch/arm/mach-rpc/riscpc.c b/arch/arm/mach-rpc/riscpc.c
+index a302cf5..09d602b 100644
+--- a/arch/arm/mach-rpc/riscpc.c
++++ b/arch/arm/mach-rpc/riscpc.c
+@@ -20,6 +20,7 @@
+ #include <linux/ata_platform.h>
+ #include <linux/io.h>
+ #include <linux/i2c.h>
++#include <linux/reboot.h>
+ 
+ #include <asm/elf.h>
+ #include <asm/mach-types.h>
+@@ -201,7 +202,7 @@ static int __init rpc_init(void)
+ 
+ arch_initcall(rpc_init);
+ 
+-static void rpc_restart(char mode, const char *cmd)
++static void rpc_restart(enum reboot_mode mode, const char *cmd)
+ {
+ 	iomd_writeb(0, IOMD_ROMCR0);
+ 
+diff --git a/arch/arm/mach-s3c24xx/common.h b/arch/arm/mach-s3c24xx/common.h
+index ed6276f..eac1b69 100644
+--- a/arch/arm/mach-s3c24xx/common.h
++++ b/arch/arm/mach-s3c24xx/common.h
+@@ -12,8 +12,10 @@
+ #ifndef __ARCH_ARM_MACH_S3C24XX_COMMON_H
+ #define __ARCH_ARM_MACH_S3C24XX_COMMON_H __FILE__
+ 
+-void s3c2410_restart(char mode, const char *cmd);
+-void s3c244x_restart(char mode, const char *cmd);
++#include <linux/reboot.h>
++
++void s3c2410_restart(enum reboot_mode mode, const char *cmd);
++void s3c244x_restart(enum reboot_mode mode, const char *cmd);
+ 
+ extern struct syscore_ops s3c24xx_irq_syscore_ops;
+ 
+diff --git a/arch/arm/mach-s3c24xx/s3c2410.c b/arch/arm/mach-s3c24xx/s3c2410.c
+index 9ebef95..7955f7e 100644
+--- a/arch/arm/mach-s3c24xx/s3c2410.c
++++ b/arch/arm/mach-s3c24xx/s3c2410.c
+@@ -22,6 +22,7 @@
+ #include <linux/syscore_ops.h>
+ #include <linux/serial_core.h>
+ #include <linux/platform_device.h>
++#include <linux/reboot.h>
+ #include <linux/io.h>
+ 
+ #include <asm/mach/arch.h>
+@@ -196,9 +197,9 @@ int __init s3c2410a_init(void)
+ 	return s3c2410_init();
+ }
+ 
+-void s3c2410_restart(char mode, const char *cmd)
++void s3c2410_restart(enum reboot_mode mode, const char *cmd)
+ {
+-	if (mode == 's') {
++	if (mode == REBOOT_WARM) {
+ 		soft_restart(0);
+ 	}
+ 
+diff --git a/arch/arm/mach-s3c24xx/s3c2412.c b/arch/arm/mach-s3c24xx/s3c2412.c
+index 0d59215..51fec68 100644
+--- a/arch/arm/mach-s3c24xx/s3c2412.c
++++ b/arch/arm/mach-s3c24xx/s3c2412.c
+@@ -22,6 +22,7 @@
+ #include <linux/serial_core.h>
+ #include <linux/platform_device.h>
+ #include <linux/io.h>
++#include <linux/reboot.h>
+ 
+ #include <asm/mach/arch.h>
+ #include <asm/mach/map.h>
+@@ -130,9 +131,9 @@ static void s3c2412_idle(void)
+ 	cpu_do_idle();
+ }
+ 
+-void s3c2412_restart(char mode, const char *cmd)
++void s3c2412_restart(enum reboot_mode mode, const char *cmd)
+ {
+-	if (mode == 's')
++	if (mode == REBOOT_WARM)
+ 		soft_restart(0);
+ 
+ 	/* errata "Watch-dog/Software Reset Problem" specifies that
+diff --git a/arch/arm/mach-s3c24xx/s3c2416.c b/arch/arm/mach-s3c24xx/s3c2416.c
+index e30476d..6f74edc 100644
+--- a/arch/arm/mach-s3c24xx/s3c2416.c
++++ b/arch/arm/mach-s3c24xx/s3c2416.c
+@@ -35,6 +35,7 @@
+ #include <linux/syscore_ops.h>
+ #include <linux/clk.h>
+ #include <linux/io.h>
++#include <linux/reboot.h>
+ 
+ #include <asm/mach/arch.h>
+ #include <asm/mach/map.h>
+@@ -80,9 +81,9 @@ static struct device s3c2416_dev = {
+ 	.bus		= &s3c2416_subsys,
+ };
+ 
+-void s3c2416_restart(char mode, const char *cmd)
++void s3c2416_restart(enum reboot_mode mode, const char *cmd)
+ {
+-	if (mode == 's')
++	if (mode == REBOOT_WARM)
+ 		soft_restart(0);
+ 
+ 	__raw_writel(S3C2443_SWRST_RESET, S3C2443_SWRST);
+diff --git a/arch/arm/mach-s3c24xx/s3c2443.c b/arch/arm/mach-s3c24xx/s3c2443.c
+index 165b6a6..8dcbd53 100644
+--- a/arch/arm/mach-s3c24xx/s3c2443.c
++++ b/arch/arm/mach-s3c24xx/s3c2443.c
+@@ -22,6 +22,7 @@
+ #include <linux/device.h>
+ #include <linux/clk.h>
+ #include <linux/io.h>
++#include <linux/reboot.h>
+ 
+ #include <asm/mach/arch.h>
+ #include <asm/mach/map.h>
+@@ -60,9 +61,9 @@ static struct device s3c2443_dev = {
+ 	.bus		= &s3c2443_subsys,
+ };
+ 
+-void s3c2443_restart(char mode, const char *cmd)
++void s3c2443_restart(enum reboot_mode mode, const char *cmd)
+ {
+-	if (mode == 's')
++	if (mode == REBOOT_WARM)
+ 		soft_restart(0);
+ 
+ 	__raw_writel(S3C2443_SWRST_RESET, S3C2443_SWRST);
+diff --git a/arch/arm/mach-s3c24xx/s3c244x.c b/arch/arm/mach-s3c24xx/s3c244x.c
+index ad2671b..b893a67 100644
+--- a/arch/arm/mach-s3c24xx/s3c244x.c
++++ b/arch/arm/mach-s3c24xx/s3c244x.c
+@@ -18,6 +18,7 @@
+ #include <linux/init.h>
+ #include <linux/serial_core.h>
+ #include <linux/platform_device.h>
++#include <linux/reboot.h>
+ #include <linux/device.h>
+ #include <linux/syscore_ops.h>
+ #include <linux/clk.h>
+@@ -199,9 +200,9 @@ struct syscore_ops s3c244x_pm_syscore_ops = {
+ 	.resume		= s3c244x_resume,
+ };
+ 
+-void s3c244x_restart(char mode, const char *cmd)
++void s3c244x_restart(enum reboot_mode mode, const char *cmd)
+ {
+-	if (mode == 's')
++	if (mode == REBOOT_WARM)
+ 		soft_restart(0);
+ 
+ 	arch_wdt_reset();
+diff --git a/arch/arm/mach-s3c64xx/common.c b/arch/arm/mach-s3c64xx/common.c
+index 0b9c0ba..a060fad 100644
+--- a/arch/arm/mach-s3c64xx/common.c
++++ b/arch/arm/mach-s3c64xx/common.c
+@@ -26,6 +26,7 @@
+ #include <linux/irq.h>
+ #include <linux/gpio.h>
+ #include <linux/irqchip/arm-vic.h>
++#include <linux/reboot.h>
+ 
+ #include <asm/mach/arch.h>
+ #include <asm/mach/map.h>
+@@ -375,9 +376,9 @@ static int __init s3c64xx_init_irq_eint(void)
+ }
+ arch_initcall(s3c64xx_init_irq_eint);
+ 
+-void s3c64xx_restart(char mode, const char *cmd)
++void s3c64xx_restart(enum reboot_mode mode, const char *cmd)
+ {
+-	if (mode != 's')
++	if (mode != REBOOT_WARM)
+ 		arch_wdt_reset();
+ 
+ 	/* if all else fails, or mode was for soft, jump to 0 */
+diff --git a/arch/arm/mach-s3c64xx/common.h b/arch/arm/mach-s3c64xx/common.h
+index 6cfc99b..e8f990b 100644
+--- a/arch/arm/mach-s3c64xx/common.h
++++ b/arch/arm/mach-s3c64xx/common.h
+@@ -17,13 +17,15 @@
+ #ifndef __ARCH_ARM_MACH_S3C64XX_COMMON_H
+ #define __ARCH_ARM_MACH_S3C64XX_COMMON_H
+ 
++#include <linux/reboot.h>
++
+ void s3c64xx_init_irq(u32 vic0, u32 vic1);
+ void s3c64xx_init_io(struct map_desc *mach_desc, int size);
+ 
+ void s3c64xx_register_clocks(unsigned long xtal, unsigned armclk_limit);
+ void s3c64xx_setup_clocks(void);
+ 
+-void s3c64xx_restart(char mode, const char *cmd);
++void s3c64xx_restart(enum reboot_mode mode, const char *cmd);
+ void s3c64xx_init_late(void);
+ 
+ #ifdef CONFIG_CPU_S3C6400
+diff --git a/arch/arm/mach-s5p64x0/common.c b/arch/arm/mach-s5p64x0/common.c
+index 8ae5800..1af3e02 100644
+--- a/arch/arm/mach-s5p64x0/common.c
++++ b/arch/arm/mach-s5p64x0/common.c
+@@ -24,6 +24,7 @@
+ #include <linux/dma-mapping.h>
+ #include <linux/gpio.h>
+ #include <linux/irq.h>
++#include <linux/reboot.h>
+ 
+ #include <asm/irq.h>
+ #include <asm/proc-fns.h>
+@@ -437,9 +438,9 @@ static int __init s5p64x0_init_irq_eint(void)
+ }
+ arch_initcall(s5p64x0_init_irq_eint);
+ 
+-void s5p64x0_restart(char mode, const char *cmd)
++void s5p64x0_restart(enum reboot_mode mode, const char *cmd)
+ {
+-	if (mode != 's')
++	if (mode != REBOOT_WARM)
+ 		arch_wdt_reset();
+ 
+ 	soft_restart(0);
+diff --git a/arch/arm/mach-s5p64x0/common.h b/arch/arm/mach-s5p64x0/common.h
+index f8a60fd..f3a9b43 100644
+--- a/arch/arm/mach-s5p64x0/common.h
++++ b/arch/arm/mach-s5p64x0/common.h
+@@ -12,6 +12,8 @@
+ #ifndef __ARCH_ARM_MACH_S5P64X0_COMMON_H
+ #define __ARCH_ARM_MACH_S5P64X0_COMMON_H
+ 
++#include <linux/reboot.h>
++
+ void s5p6440_init_irq(void);
+ void s5p6450_init_irq(void);
+ void s5p64x0_init_io(struct map_desc *mach_desc, int size);
+@@ -22,7 +24,7 @@ void s5p6440_setup_clocks(void);
+ void s5p6450_register_clocks(void);
+ void s5p6450_setup_clocks(void);
+ 
+-void s5p64x0_restart(char mode, const char *cmd);
++void s5p64x0_restart(enum reboot_mode mode, const char *cmd);
+ 
+ #ifdef CONFIG_CPU_S5P6440
+ 
+diff --git a/arch/arm/mach-s5pc100/common.c b/arch/arm/mach-s5pc100/common.c
+index cc6e561..2855bed 100644
+--- a/arch/arm/mach-s5pc100/common.c
++++ b/arch/arm/mach-s5pc100/common.c
+@@ -24,6 +24,7 @@
+ #include <linux/serial_core.h>
+ #include <linux/platform_device.h>
+ #include <linux/sched.h>
++#include <linux/reboot.h>
+ 
+ #include <asm/irq.h>
+ #include <asm/proc-fns.h>
+@@ -216,9 +217,9 @@ void __init s5pc100_init_uarts(struct s3c2410_uartcfg *cfg, int no)
+ 	s3c24xx_init_uartdevs("s3c6400-uart", s5p_uart_resources, cfg, no);
+ }
+ 
+-void s5pc100_restart(char mode, const char *cmd)
++void s5pc100_restart(enum reboot_mode mode, const char *cmd)
+ {
+-	if (mode != 's')
++	if (mode != REBOOT_WARM)
+ 		arch_wdt_reset();
+ 
+ 	soft_restart(0);
+diff --git a/arch/arm/mach-s5pc100/common.h b/arch/arm/mach-s5pc100/common.h
+index 9fbd3ae..87c50a1 100644
+--- a/arch/arm/mach-s5pc100/common.h
++++ b/arch/arm/mach-s5pc100/common.h
+@@ -12,13 +12,15 @@
+ #ifndef __ARCH_ARM_MACH_S5PC100_COMMON_H
+ #define __ARCH_ARM_MACH_S5PC100_COMMON_H
+ 
++#include <linux/reboot.h>
++
+ void s5pc100_init_io(struct map_desc *mach_desc, int size);
+ void s5pc100_init_irq(void);
+ 
+ void s5pc100_register_clocks(void);
+ void s5pc100_setup_clocks(void);
+ 
+-void s5pc100_restart(char mode, const char *cmd);
++void s5pc100_restart(enum reboot_mode mode, const char *cmd);
+ 
+ #ifdef CONFIG_CPU_S5PC100
+ 
+diff --git a/arch/arm/mach-s5pv210/common.c b/arch/arm/mach-s5pv210/common.c
+index 9dfe93e..023f1a7 100644
+--- a/arch/arm/mach-s5pv210/common.c
++++ b/arch/arm/mach-s5pv210/common.c
+@@ -143,7 +143,7 @@ static struct map_desc s5pv210_iodesc[] __initdata = {
+ 	}
+ };
+ 
+-void s5pv210_restart(char mode, const char *cmd)
++void s5pv210_restart(enum reboot_mode mode, const char *cmd)
+ {
+ 	__raw_writel(0x1, S5P_SWRESET);
+ }
+diff --git a/arch/arm/mach-s5pv210/common.h b/arch/arm/mach-s5pv210/common.h
+index 6ed2af5..6f29fc5 100644
+--- a/arch/arm/mach-s5pv210/common.h
++++ b/arch/arm/mach-s5pv210/common.h
+@@ -12,13 +12,15 @@
+ #ifndef __ARCH_ARM_MACH_S5PV210_COMMON_H
+ #define __ARCH_ARM_MACH_S5PV210_COMMON_H
+ 
++#include <linux/reboot.h>
++
+ void s5pv210_init_io(struct map_desc *mach_desc, int size);
+ void s5pv210_init_irq(void);
+ 
+ void s5pv210_register_clocks(void);
+ void s5pv210_setup_clocks(void);
+ 
+-void s5pv210_restart(char mode, const char *cmd);
++void s5pv210_restart(enum reboot_mode mode, const char *cmd);
+ 
+ #ifdef CONFIG_CPU_S5PV210
+ 
+diff --git a/arch/arm/mach-sa1100/generic.c b/arch/arm/mach-sa1100/generic.c
+index 9db3e98..040ce1c 100644
+--- a/arch/arm/mach-sa1100/generic.c
++++ b/arch/arm/mach-sa1100/generic.c
+@@ -19,6 +19,7 @@
+ #include <linux/cpufreq.h>
+ #include <linux/ioport.h>
+ #include <linux/platform_device.h>
++#include <linux/reboot.h>
+ 
+ #include <video/sa1100fb.h>
+ 
+@@ -131,9 +132,9 @@ static void sa1100_power_off(void)
+ 	PMCR = PMCR_SF;
+ }
+ 
+-void sa11x0_restart(char mode, const char *cmd)
++void sa11x0_restart(enum reboot_mode mode, const char *cmd)
+ {
+-	if (mode == 's') {
++	if (mode == REBOOT_WARM) {
+ 		/* Jump into ROM at address 0 */
+ 		soft_restart(0);
+ 	} else {
+diff --git a/arch/arm/mach-sa1100/generic.h b/arch/arm/mach-sa1100/generic.h
+index 2abc6a1..9a33695 100644
+--- a/arch/arm/mach-sa1100/generic.h
++++ b/arch/arm/mach-sa1100/generic.h
+@@ -3,12 +3,13 @@
+  *
+  * Author: Nicolas Pitre
+  */
++#include <linux/reboot.h>
+ 
+ extern void sa1100_timer_init(void);
+ extern void __init sa1100_map_io(void);
+ extern void __init sa1100_init_irq(void);
+ extern void __init sa1100_init_gpio(void);
+-extern void sa11x0_restart(char, const char *);
++extern void sa11x0_restart(enum reboot_mode, const char *);
+ extern void sa11x0_init_late(void);
+ 
+ #define SET_BANK(__nr,__start,__size) \
+diff --git a/arch/arm/mach-shark/core.c b/arch/arm/mach-shark/core.c
+index 1535557..1d32c5e 100644
+--- a/arch/arm/mach-shark/core.c
++++ b/arch/arm/mach-shark/core.c
+@@ -11,6 +11,7 @@
+ #include <linux/serial_8250.h>
+ #include <linux/io.h>
+ #include <linux/cpu.h>
++#include <linux/reboot.h>
+ 
+ #include <asm/setup.h>
+ #include <asm/mach-types.h>
+@@ -24,7 +25,7 @@
+ #define ROMCARD_SIZE            0x08000000
+ #define ROMCARD_START           0x10000000
+ 
+-static void shark_restart(char mode, const char *cmd)
++static void shark_restart(enum reboot_mode mode, const char *cmd)
+ {
+         short temp;
+         /* Reset the Machine via pc[3] of the sequoia chipset */
+diff --git a/arch/arm/mach-shmobile/board-armadillo800eva.c b/arch/arm/mach-shmobile/board-armadillo800eva.c
+index ff8b7ba..73c5946 100644
+--- a/arch/arm/mach-shmobile/board-armadillo800eva.c
++++ b/arch/arm/mach-shmobile/board-armadillo800eva.c
+@@ -38,6 +38,7 @@
+ #include <linux/mmc/sh_mmcif.h>
+ #include <linux/mmc/sh_mobile_sdhi.h>
+ #include <linux/i2c-gpio.h>
++#include <linux/reboot.h>
+ #include <mach/common.h>
+ #include <mach/irqs.h>
+ #include <mach/r8a7740.h>
+@@ -1196,7 +1197,7 @@ static void __init eva_add_early_devices(void)
+ }
+ 
+ #define RESCNT2 IOMEM(0xe6188020)
+-static void eva_restart(char mode, const char *cmd)
++static void eva_restart(enum reboot_mode mode, const char *cmd)
+ {
+ 	/* Do soft power on reset */
+ 	writel((1 << 31), RESCNT2);
+diff --git a/arch/arm/mach-shmobile/board-kzm9g.c b/arch/arm/mach-shmobile/board-kzm9g.c
+index a385f57..8ad4146 100644
+--- a/arch/arm/mach-shmobile/board-kzm9g.c
++++ b/arch/arm/mach-shmobile/board-kzm9g.c
+@@ -31,6 +31,7 @@
+ #include <linux/mmc/sh_mobile_sdhi.h>
+ #include <linux/mfd/tmio.h>
+ #include <linux/platform_device.h>
++#include <linux/reboot.h>
+ #include <linux/regulator/fixed.h>
+ #include <linux/regulator/machine.h>
+ #include <linux/smsc911x.h>
+@@ -774,7 +775,7 @@ static void __init kzm_init(void)
+ 	sh73a0_pm_init();
+ }
+ 
+-static void kzm9g_restart(char mode, const char *cmd)
++static void kzm9g_restart(enum reboot_mode mode, const char *cmd)
+ {
+ #define RESCNT2 IOMEM(0xe6188020)
+ 	/* Do soft power on reset */
+diff --git a/arch/arm/mach-socfpga/socfpga.c b/arch/arm/mach-socfpga/socfpga.c
+index 1042c02..78a92a6 100644
+--- a/arch/arm/mach-socfpga/socfpga.c
++++ b/arch/arm/mach-socfpga/socfpga.c
+@@ -19,6 +19,7 @@
+ #include <linux/of_address.h>
+ #include <linux/of_irq.h>
+ #include <linux/of_platform.h>
++#include <linux/reboot.h>
+ 
+ #include <asm/hardware/cache-l2x0.h>
+ #include <asm/mach/arch.h>
+@@ -85,7 +86,7 @@ static void __init socfpga_init_irq(void)
+ 	socfpga_sysmgr_init();
+ }
+ 
+-static void socfpga_cyclone5_restart(char mode, const char *cmd)
++static void socfpga_cyclone5_restart(enum reboot_mode mode, const char *cmd)
+ {
+ 	/* TODO: */
+ }
+diff --git a/arch/arm/mach-spear13xx/include/mach/generic.h b/arch/arm/mach-spear13xx/include/mach/generic.h
+index 633e678..110f579 100644
+--- a/arch/arm/mach-spear13xx/include/mach/generic.h
++++ b/arch/arm/mach-spear13xx/include/mach/generic.h
+@@ -15,6 +15,8 @@
+ #define __MACH_GENERIC_H
+ 
+ #include <linux/dmaengine.h>
++#include <linux/reboot.h>
++
+ #include <asm/mach/time.h>
+ 
+ /* Add spear13xx structure declarations here */
+@@ -30,7 +32,7 @@ void __init spear_setup_of_timer(void);
+ void __init spear13xx_map_io(void);
+ void __init spear13xx_l2x0_init(void);
+ bool dw_dma_filter(struct dma_chan *chan, void *slave);
+-void spear_restart(char, const char *);
++void spear_restart(enum reboot_mode, const char *);
+ void spear13xx_secondary_startup(void);
+ void __cpuinit spear13xx_cpu_die(unsigned int cpu);
+ 
+diff --git a/arch/arm/mach-spear3xx/include/mach/generic.h b/arch/arm/mach-spear3xx/include/mach/generic.h
+index df31079..be8461e 100644
+--- a/arch/arm/mach-spear3xx/include/mach/generic.h
++++ b/arch/arm/mach-spear3xx/include/mach/generic.h
+@@ -18,6 +18,8 @@
+ #include <linux/init.h>
+ #include <linux/platform_device.h>
+ #include <linux/amba/bus.h>
++#include <linux/reboot.h>
++
+ #include <asm/mach/time.h>
+ #include <asm/mach/map.h>
+ 
+@@ -31,6 +33,6 @@ void __init spear_setup_of_timer(void);
+ void __init spear3xx_clk_init(void);
+ void __init spear3xx_map_io(void);
+ 
+-void spear_restart(char, const char *);
++void spear_restart(enum reboot_mode, const char *);
+ 
+ #endif /* __MACH_GENERIC_H */
+diff --git a/arch/arm/mach-spear6xx/include/mach/generic.h b/arch/arm/mach-spear6xx/include/mach/generic.h
+index 65514b1..782bd99 100644
+--- a/arch/arm/mach-spear6xx/include/mach/generic.h
++++ b/arch/arm/mach-spear6xx/include/mach/generic.h
+@@ -15,9 +15,10 @@
+ #define __MACH_GENERIC_H
+ 
+ #include <linux/init.h>
++#include <linux/reboot.h>
+ 
+ void __init spear_setup_of_timer(void);
+-void spear_restart(char, const char *);
++void spear_restart(enum reboot_mode, const char *);
+ void __init spear6xx_clk_init(void);
+ 
+ #endif /* __MACH_GENERIC_H */
+diff --git a/arch/arm/mach-sunxi/sunxi.c b/arch/arm/mach-sunxi/sunxi.c
+index 23afb73..5c05687 100644
+--- a/arch/arm/mach-sunxi/sunxi.c
++++ b/arch/arm/mach-sunxi/sunxi.c
+@@ -18,6 +18,7 @@
+ #include <linux/of_platform.h>
+ #include <linux/io.h>
+ #include <linux/sunxi_timer.h>
++#include <linux/reboot.h>
+ 
+ #include <linux/irqchip/sunxi.h>
+ 
+@@ -45,7 +46,7 @@ static void sunxi_setup_restart(void)
+ 	WARN(!wdt_base, "failed to map watchdog base address");
+ }
+ 
+-static void sunxi_restart(char mode, const char *cmd)
++static void sunxi_restart(enum reboot_mode mode, const char *cmd)
+ {
+ 	if (!wdt_base)
+ 		return;
+diff --git a/arch/arm/mach-tegra/board.h b/arch/arm/mach-tegra/board.h
+index 86851c8..d99edf9 100644
+--- a/arch/arm/mach-tegra/board.h
++++ b/arch/arm/mach-tegra/board.h
+@@ -23,8 +23,9 @@
+ #define __MACH_TEGRA_BOARD_H
+ 
+ #include <linux/types.h>
++#include <linux/reboot.h>
+ 
+-void tegra_assert_system_reset(char mode, const char *cmd);
++void tegra_assert_system_reset(enum reboot_mode mode, const char *cmd);
+ 
+ void __init tegra20_init_early(void);
+ void __init tegra30_init_early(void);
+diff --git a/arch/arm/mach-tegra/common.c b/arch/arm/mach-tegra/common.c
+index 5449a3f..d9caa7b 100644
+--- a/arch/arm/mach-tegra/common.c
++++ b/arch/arm/mach-tegra/common.c
+@@ -24,6 +24,7 @@
+ #include <linux/delay.h>
+ #include <linux/irqchip.h>
+ #include <linux/clk/tegra.h>
++#include <linux/reboot.h>
+ 
+ #include <asm/hardware/cache-l2x0.h>
+ 
+@@ -66,7 +67,7 @@ void __init tegra_dt_init_irq(void)
+ }
+ #endif
+ 
+-void tegra_assert_system_reset(char mode, const char *cmd)
++void tegra_assert_system_reset(enum reboot_mode mode, const char *cmd)
+ {
+ 	void __iomem *reset = IO_ADDRESS(TEGRA_PMC_BASE + 0);
+ 	u32 reg;
+diff --git a/arch/arm/mach-u300/core.c b/arch/arm/mach-u300/core.c
+index a683d17..c5177c23e 100644
+--- a/arch/arm/mach-u300/core.c
++++ b/arch/arm/mach-u300/core.c
+@@ -671,11 +671,11 @@ static void __init u300_init_machine(void)
+ /* Forward declare this function from the watchdog */
+ void coh901327_watchdog_reset(void);
+ 
+-static void u300_restart(char mode, const char *cmd)
++static void u300_restart(enum reboot_mode mode, const char *cmd)
+ {
+ 	switch (mode) {
+-	case 's':
+-	case 'h':
++	case REBOOT_WARM:
++	case REBOOT_COLD:
+ #ifdef CONFIG_COH901327_WATCHDOG
+ 		coh901327_watchdog_reset();
+ #endif
+diff --git a/arch/arm/mach-versatile/core.c b/arch/arm/mach-versatile/core.c
+index 25160ae..9d16f58 100644
+--- a/arch/arm/mach-versatile/core.c
++++ b/arch/arm/mach-versatile/core.c
+@@ -38,6 +38,7 @@
+ #include <linux/clkdev.h>
+ #include <linux/mtd/physmap.h>
+ #include <linux/bitops.h>
++#include <linux/reboot.h>
+ 
+ #include <asm/irq.h>
+ #include <asm/hardware/arm_timer.h>
+@@ -733,7 +734,7 @@ static void versatile_leds_event(led_event_t ledevt)
+ }
+ #endif	/* CONFIG_LEDS */
+ 
+-void versatile_restart(char mode, const char *cmd)
++void versatile_restart(enum reboot_mode mode, const char *cmd)
+ {
+ 	void __iomem *sys = __io_address(VERSATILE_SYS_BASE);
+ 	u32 val;
+diff --git a/arch/arm/mach-versatile/core.h b/arch/arm/mach-versatile/core.h
+index 5c1b87d..f06d576 100644
+--- a/arch/arm/mach-versatile/core.h
++++ b/arch/arm/mach-versatile/core.h
+@@ -24,13 +24,14 @@
+ 
+ #include <linux/amba/bus.h>
+ #include <linux/of_platform.h>
++#include <linux/reboot.h>
+ 
+ extern void __init versatile_init(void);
+ extern void __init versatile_init_early(void);
+ extern void __init versatile_init_irq(void);
+ extern void __init versatile_map_io(void);
+ extern void versatile_timer_init(void);
+-extern void versatile_restart(char, const char *);
++extern void versatile_restart(enum reboot_mode, const char *);
+ extern unsigned int mmc_status(struct device *dev);
+ #ifdef CONFIG_OF
+ extern struct of_dev_auxdata versatile_auxdata_lookup[];
+diff --git a/arch/arm/mach-vt8500/vt8500.c b/arch/arm/mach-vt8500/vt8500.c
+index 49e8005..ea617e7 100644
+--- a/arch/arm/mach-vt8500/vt8500.c
++++ b/arch/arm/mach-vt8500/vt8500.c
+@@ -21,6 +21,7 @@
+ #include <linux/clocksource.h>
+ #include <linux/io.h>
+ #include <linux/pm.h>
++#include <linux/reboot.h>
+ 
+ #include <asm/mach-types.h>
+ #include <asm/mach/arch.h>
+@@ -46,7 +47,7 @@
+ 
+ static void __iomem *pmc_base;
+ 
+-void vt8500_restart(char mode, const char *cmd)
++void vt8500_restart(enum reboot_mode mode, const char *cmd)
+ {
+ 	if (pmc_base)
+ 		writel(1, pmc_base + VT8500_PMSR_REG);
+diff --git a/arch/arm/mach-w90x900/cpu.c b/arch/arm/mach-w90x900/cpu.c
+index 9e4dd8b..c1f9eed 100644
+--- a/arch/arm/mach-w90x900/cpu.c
++++ b/arch/arm/mach-w90x900/cpu.c
+@@ -230,9 +230,9 @@ void __init nuc900_init_clocks(void)
+ #define	WTE	(1 << 7)
+ #define	WTRE	(1 << 1)
+ 
+-void nuc9xx_restart(char mode, const char *cmd)
++void nuc9xx_restart(enum reboot_mode mode, const char *cmd)
+ {
+-	if (mode == 's') {
++	if (mode == REBOOT_WARM) {
+ 		/* Jump into ROM at address 0 */
+ 		soft_restart(0);
+ 	} else {
+diff --git a/arch/arm/mach-w90x900/nuc9xx.h b/arch/arm/mach-w90x900/nuc9xx.h
+index 88ef4b2..e3ab1e1 100644
+--- a/arch/arm/mach-w90x900/nuc9xx.h
++++ b/arch/arm/mach-w90x900/nuc9xx.h
+@@ -14,10 +14,13 @@
+  * published by the Free Software Foundation.
+  *
+  */
++
++#include <linux/reboot.h>
++
+ struct map_desc;
+ 
+ /* core initialisation functions */
+ 
+ extern void nuc900_init_irq(void);
+ extern void nuc900_timer_init(void);
+-extern void nuc9xx_restart(char, const char *);
++extern void nuc9xx_restart(enum reboot_mode, const char *);
+diff --git a/arch/arm/plat-iop/gpio.c b/arch/arm/plat-iop/gpio.c
+index e4de9be..697de6d 100644
+--- a/arch/arm/plat-iop/gpio.c
++++ b/arch/arm/plat-iop/gpio.c
+@@ -17,6 +17,7 @@
+ #include <linux/gpio.h>
+ #include <linux/export.h>
+ #include <asm/hardware/iop3xx.h>
++#include <mach/gpio.h>
+ 
+ void gpio_line_config(int line, int direction)
+ {
+diff --git a/arch/arm/plat-iop/restart.c b/arch/arm/plat-iop/restart.c
+index 33fa699..3a4d5e5 100644
+--- a/arch/arm/plat-iop/restart.c
++++ b/arch/arm/plat-iop/restart.c
+@@ -11,7 +11,7 @@
+ #include <asm/system_misc.h>
+ #include <mach/hardware.h>
+ 
+-void iop3xx_restart(char mode, const char *cmd)
++void iop3xx_restart(enum reboot_mode mode, const char *cmd)
+ {
+ 	*IOP3XX_PCSR = 0x30;
+ 
+diff --git a/arch/arm/plat-samsung/include/plat/s3c2412.h b/arch/arm/plat-samsung/include/plat/s3c2412.h
+index cbae50d..228b604 100644
+--- a/arch/arm/plat-samsung/include/plat/s3c2412.h
++++ b/arch/arm/plat-samsung/include/plat/s3c2412.h
+@@ -12,6 +12,8 @@
+ 
+ #ifdef CONFIG_CPU_S3C2412
+ 
++#include <linux/reboot.h>
++
+ extern  int s3c2412_init(void);
+ 
+ extern void s3c2412_map_io(void);
+@@ -22,7 +24,7 @@ extern void s3c2412_init_clocks(int xtal);
+ 
+ extern  int s3c2412_baseclk_add(void);
+ 
+-extern void s3c2412_restart(char mode, const char *cmd);
++extern void s3c2412_restart(enum reboot_mode mode, const char *cmd);
+ #else
+ #define s3c2412_init_clocks NULL
+ #define s3c2412_init_uarts NULL
+diff --git a/arch/arm/plat-samsung/include/plat/s3c2416.h b/arch/arm/plat-samsung/include/plat/s3c2416.h
+index f27399a..dd3d950 100644
+--- a/arch/arm/plat-samsung/include/plat/s3c2416.h
++++ b/arch/arm/plat-samsung/include/plat/s3c2416.h
+@@ -11,6 +11,8 @@
+ 
+ #ifdef CONFIG_CPU_S3C2416
+ 
++#include <linux/reboot.h>
++
+ struct s3c2410_uartcfg;
+ 
+ extern  int s3c2416_init(void);
+@@ -23,7 +25,7 @@ extern void s3c2416_init_clocks(int xtal);
+ 
+ extern  int s3c2416_baseclk_add(void);
+ 
+-extern void s3c2416_restart(char mode, const char *cmd);
++extern void s3c2416_restart(enum reboot_mode mode, const char *cmd);
+ 
+ extern void s3c2416_init_irq(void);
+ extern struct syscore_ops s3c2416_irq_syscore_ops;
+diff --git a/arch/arm/plat-samsung/include/plat/s3c2443.h b/arch/arm/plat-samsung/include/plat/s3c2443.h
+index 71b88ec..048b878 100644
+--- a/arch/arm/plat-samsung/include/plat/s3c2443.h
++++ b/arch/arm/plat-samsung/include/plat/s3c2443.h
+@@ -12,6 +12,8 @@
+ 
+ #ifdef CONFIG_CPU_S3C2443
+ 
++#include <linux/reboot.h>
++
+ struct s3c2410_uartcfg;
+ 
+ extern  int s3c2443_init(void);
+@@ -24,7 +26,7 @@ extern void s3c2443_init_clocks(int xtal);
+ 
+ extern  int s3c2443_baseclk_add(void);
+ 
+-extern void s3c2443_restart(char mode, const char *cmd);
++extern void s3c2443_restart(enum reboot_mode mode, const char *cmd);
+ 
+ extern void s3c2443_init_irq(void);
+ #else
+diff --git a/arch/arm/plat-spear/restart.c b/arch/arm/plat-spear/restart.c
+index 7d4616d..358fe45 100644
+--- a/arch/arm/plat-spear/restart.c
++++ b/arch/arm/plat-spear/restart.c
+@@ -12,14 +12,15 @@
+  */
+ #include <linux/io.h>
+ #include <linux/amba/sp810.h>
++#include <linux/reboot.h>
+ #include <asm/system_misc.h>
+ #include <mach/spear.h>
+ #include <mach/generic.h>
+ 
+ #define SPEAR13XX_SYS_SW_RES			(VA_MISC_BASE + 0x204)
+-void spear_restart(char mode, const char *cmd)
++void spear_restart(enum reboot_mode mode, const char *cmd)
+ {
+-	if (mode == 's') {
++	if (mode == REBOOT_WARM) {
+ 		/* software reset, Jump into ROM at address 0 */
+ 		soft_restart(0);
+ 	} else {
+diff --git a/drivers/power/reset/restart-poweroff.c b/drivers/power/reset/restart-poweroff.c
+index 059cd15..6ebcc11 100644
+--- a/drivers/power/reset/restart-poweroff.c
++++ b/drivers/power/reset/restart-poweroff.c
+@@ -15,11 +15,12 @@
+ #include <linux/platform_device.h>
+ #include <linux/of_platform.h>
+ #include <linux/module.h>
++#include <linux/reboot.h>
+ #include <asm/system_misc.h>
+ 
+ static void restart_poweroff_do_poweroff(void)
+ {
+-	arm_pm_restart('h', NULL);
++	arm_pm_restart(REBOOT_COLD, NULL);
+ }
+ 
+ static int restart_poweroff_probe(struct platform_device *pdev)
+diff --git a/drivers/power/reset/vexpress-poweroff.c b/drivers/power/reset/vexpress-poweroff.c
+index 469e696..476aa49 100644
+--- a/drivers/power/reset/vexpress-poweroff.c
++++ b/drivers/power/reset/vexpress-poweroff.c
+@@ -48,7 +48,7 @@ static void vexpress_power_off(void)
+ 
+ static struct device *vexpress_restart_device;
+ 
+-static void vexpress_restart(char str, const char *cmd)
++static void vexpress_restart(enum reboot_mode reboot_mode, const char *cmd)
+ {
+ 	vexpress_reset_do(vexpress_restart_device, "restart");
+ }
+diff --git a/include/linux/reboot.h b/include/linux/reboot.h
+index 2ca9ed7..871b18e 100644
+--- a/include/linux/reboot.h
++++ b/include/linux/reboot.h
+@@ -13,6 +13,7 @@
+ enum reboot_mode {
+ 	REBOOT_COLD = 0,
+ 	REBOOT_WARM,
++	REBOOT_GPIO,
+ };
+ 
+ extern int register_reboot_notifier(struct notifier_block *);
+diff --git a/include/linux/vexpress.h b/include/linux/vexpress.h
+index ea7168a..617c01b 100644
+--- a/include/linux/vexpress.h
++++ b/include/linux/vexpress.h
+@@ -15,6 +15,7 @@
+ #define _LINUX_VEXPRESS_H
+ 
+ #include <linux/device.h>
++#include <linux/reboot.h>
+ 
+ #define VEXPRESS_SITE_MB		0
+ #define VEXPRESS_SITE_DB1		1
 -- 
 1.8.2.1
 
