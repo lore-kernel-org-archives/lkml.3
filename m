@@ -1,50 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755572Ab3EASVr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 14:21:47 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:38111 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752201Ab3EASVl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 14:21:41 -0400
-Date: Wed, 1 May 2013 11:21:38 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Dave Hansen <dave.hansen@intel.com>
-Cc: SamuelOrtiz@kroah.com, Tomas Winkler <tomas.winkler@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: mei file2alias compile error
-Message-ID: <20130501182138.GA17550@kroah.com>
-References: <51814943.7000604@intel.com>
+	id S1755784Ab3EASWM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 14:22:12 -0400
+Received: from ja.ssi.bg ([178.16.129.10]:37119 "EHLO ja.ssi.bg"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755617Ab3EASWI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 May 2013 14:22:08 -0400
+Date: Wed, 1 May 2013 21:22:08 +0300 (EEST)
+From: Julian Anastasov <ja@ssi.bg>
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Simon Horman <horms@verge.net.au>, Eric Dumazet <eric.dumazet@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
+        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Dipankar Sarma <dipankar@in.ibm.com>
+Subject: Re: [PATCH v2 1/2] sched: Add cond_resched_rcu_lock() helper
+In-Reply-To: <20130501155501.GB7521@dyad.programming.kicks-ass.net>
+Message-ID: <alpine.LFD.2.00.1305012004360.3397@ja.ssi.bg>
+References: <1367290378-29224-1-git-send-email-horms@verge.net.au> <1367290378-29224-2-git-send-email-horms@verge.net.au> <alpine.LFD.2.00.1304301011310.1700@ja.ssi.bg> <20130430072944.GA13959@verge.net.au> <alpine.LFD.2.00.1304301051260.1700@ja.ssi.bg>
+ <20130501091012.GB28253@dyad.programming.kicks-ass.net> <alpine.LFD.2.00.1305011344320.1603@ja.ssi.bg> <20130501155501.GB7521@dyad.programming.kicks-ass.net>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <51814943.7000604@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 01, 2013 at 09:56:35AM -0700, Dave Hansen wrote:
-> Linus's current git isn't compiling for me:
-> 
-> >   HOSTCC  scripts/mod/file2alias.o
-> > /home/davehans/linux.git/scripts/mod/file2alias.c: In function ‘do_mei_entry’:
-> > /home/davehans/linux.git/scripts/mod/file2alias.c:1140:1: error: ‘OFF_mei_cl_device_id_name’ undeclared (first use in this function)
-> > /home/davehans/linux.git/scripts/mod/file2alias.c:1140:1: note: each undeclared identifier is reported only once for each function it appears in
-> > /home/davehans/linux.git/scripts/mod/file2alias.c: At top level:
-> > /home/davehans/linux.git/scripts/mod/file2alias.c:1146:1: error: ‘SIZE_mei_cl_device_id’ undeclared here (not in a function)
-> 
-> I confirmed that this commit: e5354107e is the one causing it for me.
-> My .config is here:
-> 
-> 	http://sr71.net/~dave/linux/config-3.9-meibad
-> 
-> Note that I don't even have CONFIG_INTEL_MEI enabled with this config.
 
-I don't have CONFIG_INTEL_MEI set either, and I can't duplicate this.
-Samuel and Tomas, can you please track this down?
+	Hello,
 
-thanks,
+On Wed, 1 May 2013, Peter Zijlstra wrote:
 
-greg k-h
+> On Wed, May 01, 2013 at 05:22:05PM +0300, Julian Anastasov wrote:
+> 
+> > 2. Same without need_resched because cond_resched already
+> > performs the same checks:
+> > 
+> > static void inline cond_resched_rcu_lock(void)
+> > {
+> > #ifndef CONFIG_PREEMPT_RCU
+> > 	rcu_read_unlock();
+> > 	cond_resched();
+> > 	rcu_read_lock();
+> > #endif
+> > }
+> 
+> Ah so the 'problem' with this last version is that it does an unconditional /
+> unnessecary rcu_read_unlock().
+
+	It is just a barrier() for the non-preempt case.
+
+> The below would be in line with all the other cond_resched*() implementations.
+
+...
+
+> diff --git a/include/linux/sched.h b/include/linux/sched.h
+> index 802a751..fd2c77f 100644
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -2449,6 +2449,13 @@ extern int __cond_resched_softirq(void);
+>  	__cond_resched_softirq();					\
+>  })
+>  
+> +extern int __cond_resched_rcu(void);
+> +
+> +#define cond_resched_rcu() ({			\
+> +	__might_sleep(__FILE__, __LINE__, 0);	\
+
+	I see your goal. But digging into __might_sleep()
+I see that rcu_sleep_check() will scream for the non-preempt
+case because we are under rcu_read_lock.
+
+	What about such inline version:
+
+static void inline cond_resched_rcu(void)
+{
+#ifndef CONFIG_PREEMPT_RCU
+	rcu_read_unlock();
+	__might_sleep(__FILE__, __LINE__, 0);
+	cond_resched();
+	rcu_read_lock();
+#else
+	__might_sleep(__FILE__, __LINE__, 0);
+	rcu_lockdep_assert(rcu_preempt_depth() == 1,
+		"Illegal cond_resched_rcu() context");
+#endif
+}
+
+	It will restrict to single RCU lock level for all
+RCU implementations. But we don't have _cond_resched_rcu
+helper for two reasons:
+
+- __might_sleep uses __FILE__, __LINE__
+- only cond_resched generates code, so need_resched() is
+avoided
+
+> +	__cond_resched_rcu();			\
+> +})
+> +
+>  /*
+>   * Does a critical section need to be broken due to another
+>   * task waiting?: (technically does not depend on CONFIG_PREEMPT,
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index 7d7901a..2b3b4e6 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -4358,6 +4358,20 @@ int __sched __cond_resched_softirq(void)
+>  }
+>  EXPORT_SYMBOL(__cond_resched_softirq);
+>  
+> +int __sched __cond_resched_rcu(void)
+> +{
+> +#ifndef CONFIG_PREEMPT_RCU
+> +	if (should_resched()) {
+> +		rcu_read_unlock();
+> +		__cond_resched();
+> +		rcu_read_lock();
+> +		return 1;
+> +	}
+> +#endif
+> +	return 0;
+> +}
+> +EXPORT_SYMBOL(__cond_resched_rcu);
+> +
+
+Regards
+
+--
+Julian Anastasov <ja@ssi.bg>
