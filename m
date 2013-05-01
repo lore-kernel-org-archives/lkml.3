@@ -1,36 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754281Ab3EAMda (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 08:33:30 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:35542
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752442Ab3EAMdW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 08:33:22 -0400
-Date: Wed, 1 May 2013 14:33:08 +0200
-From: Jens Axboe <axboe@kernel.dk>
-To: "Philip J. Kelleher" <pjk1939@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, klebers@linux.vnet.ibm.com,
-        brking@linux.vnet.ibm.com
-Subject: Re: [PATCH 1/9] rsxx: Adding in sysfs entries.
-Message-ID: <20130501123308.GB7800@kernel.dk>
-References: <20130430194855.GA22764@oc6784271780.ibm.com>
+	id S1754196Ab3EAMek (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 08:34:40 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:33968 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751667Ab3EAMec (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 May 2013 08:34:32 -0400
+Date: Wed, 1 May 2013 14:34:19 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Joe Perches <joe@perches.com>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Andy Whitcroft <apw@canonical.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>
+Subject: Re: [PATCH] checkpatch: Make camelcase test --strict and less noisy
+Message-ID: <20130501123419.GA29567@pd.tnic>
+References: <1365544254.2946.53.camel@dabdike>
+ <20130410132628.GV7511@dm>
+ <1365604558.27174.36.camel@joe-AO722>
+ <20130410145213.GA6854@pd.tnic>
+ <1365606461.1942.3.camel@dabdike>
+ <20130410151911.GG6857@pd.tnic>
+ <1365691503.1929.15.camel@joe-AO722>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20130430194855.GA22764@oc6784271780.ibm.com>
+In-Reply-To: <1365691503.1929.15.camel@joe-AO722>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 30 2013, Philip J. Kelleher wrote:
-> From: Philip J Kelleher <pjk1939@linux.vnet.ibm.com>
+On Thu, Apr 11, 2013 at 07:45:03AM -0700, Joe Perches wrote:
+> CamelCase tests are a bit noisy against certain
+> types of code acceptable to some kernel developers.
 > 
-> Adding in some sysfs entries to help with debugging and
-> testing code.
+> Make the test applicable only with --strict.
+> 
+> Do not bleat a message on nominally acceptable
+> CamelCase uses that are separated by an _ like
+> drm_core_has_MTRR.
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+>  scripts/checkpatch.pl | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+> index 3fb6d86..97226fb 100755
+> --- a/scripts/checkpatch.pl
+> +++ b/scripts/checkpatch.pl
+> @@ -2937,12 +2937,12 @@ sub process {
+>  		while ($line =~ m{($Constant|$Lval)}g) {
+>  			my $var = $1;
+>  			if ($var !~ /$Constant/ &&
+> -			    $var =~ /[A-Z]\w*[a-z]|[a-z]\w*[A-Z]/ &&
+> +			    $var =~ /[A-Z][a-z]|[a-z][A-Z]/ &&
+>  			    $var !~ /"^(?:Clear|Set|TestClear|TestSet|)Page[A-Z]/ &&
+>  			    !defined $camelcase{$var}) {
+>  				$camelcase{$var} = 1;
+> -				WARN("CAMELCASE",
+> -				     "Avoid CamelCase: <$var>\n" . $herecurr);
+> +				CHK("CAMELCASE",
+> +				    "Avoid CamelCase: <$var>\n" . $herecurr);
 
-Should be in debugfs...
+Yep, this is better.
+
+James?
 
 -- 
-Jens Axboe
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
