@@ -1,41 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758909Ab3EAJpd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 05:45:33 -0400
-Received: from mail-bk0-f52.google.com ([209.85.214.52]:60719 "EHLO
-	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756393Ab3EAJp2 (ORCPT
+	id S1758423Ab3EAJu7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 05:50:59 -0400
+Received: from ems.hssu.edu ([207.160.66.131]:39407 "EHLO ems.hssu.edu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751400Ab3EAJuv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 05:45:28 -0400
+	Wed, 1 May 2013 05:50:51 -0400
+X-Greylist: delayed 879 seconds by postgrey-1.27 at vger.kernel.org; Wed, 01 May 2013 05:50:51 EDT
+X-ASG-Debug-ID: 1367400522-079edf510001-xx1T2L
+X-Barracuda-Envelope-From: HutcherD@hssu.edu
+X-ASG-Whitelist: Client
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-Date: Wed, 1 May 2013 15:15:26 +0530
-Message-ID: <CA+G9fYvxf4tiU+SoTOdHOazCzd-iRWVAmaCyWtKgZebS_4KNoQ@mail.gmail.com>
-Subject: Re: [Linaro-QA-Service] [linux-next] Snowball build broken
-From: Naresh Kamboju <naresh.kamboju@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Lists linaro-dev <linaro-dev@lists.linaro.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+Subject: REPLY ME FOR MORE DETAILS VIA privatepostchaing07@zsk.name
+Date: Wed, 1 May 2013 04:28:40 -0500
+X-ASG-Orig-Subj: REPLY ME FOR MORE DETAILS VIA privatepostchaing07@zsk.name
+Message-ID: <7B9FF1294826494EAA361B238D88DC30054F6D7D@HMS1.mc.hssc.edu>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: REPLY ME FOR MORE DETAILS VIA privatepostchaing07@zsk.name
+Thread-Index: Ac5GTkMsA+MGPNVqRDOb/w4kUrg4aA==
+From: "Hutcherson, Don" <HutcherD@hssu.edu>
+X-Barracuda-Connect: UNKNOWN[10.16.10.80]
+X-Barracuda-Start-Time: 1367400522
+X-Barracuda-URL: http://192.168.192.1:8000/cgi-mod/mark.cgi
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping.
+ 
+ 
+Dear Friend,
+ 
+I have a legal business proposal of Thirty million Five Hundred Thousand United State Dollars only for you contact me via my private email privatepostchaing07@zsk.name if interested.
+Regards from,
+Ms CHIANG Lai Yuen JP
 
-On 17 April 2013 21:16, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Tue, Apr 16, 2013 at 3:48 PM, Naresh Kamboju
-> <naresh.kamboju@linaro.org> wrote:
->> On 12 April 2013 04:07, Linus Walleij <linus.walleij@linaro.org> wrote:
->>> Hey it works. Didn't see this before I fixed it tho :-)
->>> http://marc.info/?l=linux-kernel&m=136567139910888&w=2
->>
->> This commit not yet been merged in to linux-next  "next-20130416".
->> Due to this reason still snowball build fails at above error.
->
-> That is outside of my jurisdiction, only the MFD maintainer Samuel
-> Ortiz can merge this patch.
->
-> Yours,
-> Linus Walleij
+**********************Harris-Stowe State University**********************
+
+  This e-mail is confidential and sent only to specified recipient(s). 
+
+  However, all e-mail is subject to possible interception by third parties. 
+
+*************Contact postmaster@hssu.edu to report problems************** 
