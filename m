@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756102Ab3EATNt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 15:13:49 -0400
-Received: from one.firstfloor.org ([193.170.194.197]:60992 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755349Ab3EATNn (ORCPT
+	id S1756310Ab3EATTU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 15:19:20 -0400
+Received: from casper.infradead.org ([85.118.1.10]:49443 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752703Ab3EATTO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 15:13:43 -0400
-Date: Wed, 1 May 2013 21:13:42 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Andi Kleen <andi@firstfloor.org>,
-        "mingo@elte.hu" <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] perf, x86: Add workaround for MEM_*_RETIRED errata BV98
-Message-ID: <20130501191342.GH17814@two.firstfloor.org>
-References: <1367261108-9567-1-git-send-email-andi@firstfloor.org>
- <20130501090718.GA28253@dyad.programming.kicks-ass.net>
- <m261z3uipb.fsf@firstfloor.org>
- <20130501111219.GF28253@dyad.programming.kicks-ass.net>
- <CABPqkBT-VdWQ0c5AASDfQLssBRSfbtoH0-L1eHMXONqe5d_YRw@mail.gmail.com>
+	Wed, 1 May 2013 15:19:14 -0400
+Message-ID: <51816A93.4070802@infradead.org>
+Date: Wed, 01 May 2013 12:18:43 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABPqkBT-VdWQ0c5AASDfQLssBRSfbtoH0-L1eHMXONqe5d_YRw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Milo(Woogyom) Kim" <milo.kim@ti.com>, Anton Vorontsov <cbou@mail.ru>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: [PATCH -next] power: fix lp8788-charger kconfig & build
+References: <20130501183734.7ad1efca2d06e75432edabbd@canb.auug.org.au>
+In-Reply-To: <20130501183734.7ad1efca2d06e75432edabbd@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Unfortunately, Andi's patch fails to correct the problem though
-> it is the right approach. As he said, the problem is unfortunately
+From: Randy Dunlap <rdunlap@infradead.org>
 
-perf stat -a / record -a / top will work.
+Fix build errors in lp8788-charger by making it depend on IIO.
+Fixes errors when CONFIG_IIO=m and CHARGER_LP8788=y.
 
-The case it doesn't fix is per thread when the other sibling
-is not running a counter.
+lp8788-charger.c:(.text+0x2146b5): undefined reference to `iio_channel_get'
+lp8788-charger.c:(.text+0x2146ce): undefined reference to `iio_channel_get'
+lp8788-charger.c:(.text+0x214a86): undefined reference to `iio_read_channel_processed'
+lp8788-charger.c:(.text+0x214b51): undefined reference to `iio_read_channel_processed'
+lp8788-charger.c:(.text+0x214c30): undefined reference to `iio_read_channel_processed'
+lp8788-charger.c:(.text+0x214d93): undefined reference to `iio_channel_release'
+lp8788-charger.c:(.text+0x214dac): undefined reference to `iio_channel_release'
 
-Essentially with the patch you may still get under-counting
-on these specific events if they run per thread (or are really
-unlucky in multiplexing), but never over-counting on anything.
+Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+Cc: "Milo(Woogyom) Kim" <milo.kim@ti.com>
+---
+ drivers/power/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
-In the past Ingo's guidance was to focus on the most common 
-use cases, which I think this patch does.
-
-It would be possible to fix the per thread mode too, but it would
-need quite a bit of new infrastructure and I have doubts that's 
-worth it.
-
--Andi
+--- linux-next-20130501.orig/drivers/power/Kconfig
++++ linux-next-20130501/drivers/power/Kconfig
+@@ -284,6 +284,7 @@ config CHARGER_LP8788
+ 	tristate "TI LP8788 charger driver"
+ 	depends on MFD_LP8788
+ 	depends on LP8788_ADC
++	depends on IIO
+ 	help
+ 	  Say Y to enable support for the LP8788 linear charger.
+ 
