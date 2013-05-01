@@ -1,53 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755038Ab3EASSr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 14:18:47 -0400
-Received: from mail-ve0-f173.google.com ([209.85.128.173]:48526 "EHLO
-	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752079Ab3EASSk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 14:18:40 -0400
+	id S1755477Ab3EAST0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 14:19:26 -0400
+Received: from mga02.intel.com ([134.134.136.20]:44771 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752517Ab3EASTT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 May 2013 14:19:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,590,1363158000"; 
+   d="scan'208";a="329724356"
+Message-ID: <51815CA3.4090807@intel.com>
+Date: Wed, 01 May 2013 11:19:15 -0700
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <518156D3.8020909@zytor.com>
-References: <3cdeaedaa41e258e8aa9ca83d79a936e0b9462bc.1367385613.git.luto@amacapital.net>
- <20130501113352.GA29571@pd.tnic> <20130501163404.GA6286@thunk.org>
- <518145F6.3060800@zytor.com> <CALCETrX0WEGJ0UZz6PyQ4DrnpGg52S0cArDYLQ9Yjz3uic_N4A@mail.gmail.com>
- <51815252.4010103@zytor.com> <CALCETrWa64s2bMVq9xJ5FBg2NH8501V-YThVO7CrJa7-0-TVHg@mail.gmail.com>
- <518156D3.8020909@zytor.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 1 May 2013 11:18:19 -0700
-Message-ID: <CALCETrXRiZ+5OGauT5bxx0aKMAMmTpO92tjTO9CNfAMOh-VZaA@mail.gmail.com>
-Subject: Re: [PATCH v5] x86: Enable fast strings on Intel if BIOS hasn't already
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Borislav Petkov <bp@alien8.de>,
-        linux-kernel@vger.kernel.org, x86@kernel.org
+To: Will Huck <will.huckk@gmail.com>
+CC: Frantisek Hrbata <fhrbata@redhat.com>, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, tglx@linutronix.de,
+        mingo@redhat.com, x86@kernel.org, oleg@redhat.com,
+        kamaleshb@in.ibm.com, hechjie@cn.ibm.com
+Subject: Re: [PATCH] x86: add phys addr validity check for /dev/mem mmap
+References: <1364905733-23937-1-git-send-email-fhrbata@redhat.com> <517A0ED8.6000404@gmail.com> <20130426153502.GC3510@dhcp-26-164.brq.redhat.com> <517B777B.5020303@gmail.com> <20130427191349.GA3372@dhcp-26-164.brq.redhat.com> <517C94DA.9070002@gmail.com>
+In-Reply-To: <517C94DA.9070002@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 1, 2013 at 10:54 AM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 05/01/2013 10:50 AM, Andy Lutomirski wrote:
->>
->> Isn't the upper half incompatible with large pages?
->>
->
-> No, just with attributes *on the page tables themselves*.
+On 04/27/2013 08:17 PM, Will Huck wrote:
+>>     PTE bits 51 - M are reserved, where M is physical address width
+>> found 2)
+>>     Note: step 2) is actually not needed, we can always set just the
+>> 51th bit
+>>     (0x8000000000000)
+> 
+> What's the meaning here? You trigger oops since the address is beyond
+> max address cpu supported or access to a reserved page? If the answer is
+> the latter, I'm think it's not right. For example, the kernel code/data
+> section is reserved in memory, kernel access it will trigger oops? I
+> don't think so.
 
-Thanks :)  Now I found the somewhat alarming algorithm in section 4.9.2.
+I think you're confusing the original problem here with how we would
+implement the solution.
 
-This will be a bit unpleasant, though, since the _PAGE_CACHE_xxx
-macros will become rather confused.  I suppose there's no fundamental
-reason that pgprot_t has to correspond to pmd bit positions.  Sigh.
+/dev/mem essentially lets you create ptes with as large of a value as
+you like.  You just mmap() it, and the kernel will build you a pte to
+access whatever crazy offset you choose.
 
---Andy
+The problem is that on _some_ systems, you won't just get a bus error,
+the kernel actually sets up some ptes which the hardware objects to (the
+reserved bits in the pte), and we'll panic when the hardware sees the
+ptes.  We're trying to avoid these panics by ensuring that we never
+create these nasty ptes.
 
->
->         -hpa
->
+Those "nasty" PTEs point to memory which can not even possibly be
+*addressed* on the CPUs where they upset the hardware.  In other words,
+if we limit /dev/mem to *possible* memory on the system (which is sane
+all by itself) we will also fix this particular problem.
 
 
-
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
