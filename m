@@ -1,91 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758208Ab3EAXfI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 19:35:08 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:58975 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757394Ab3EAXfE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 19:35:04 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: Michael Riesch <michael.riesch@omicron.at>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Benc <jbenc@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        linux-kernel@vger.kernel.org, Mark Rustad <mark.d.rustad@intel.com>,
-        Luis Henriques <luis.henriques@canonical.com>,
-        kernel-team@lists.ubuntu.com
-Subject: [ 3.5.y.z extended stable ] Patch "rtnetlink: Call nlmsg_parse() with correct header length" has been added to staging queue
-Date: Thu,  2 May 2013 00:34:53 +0100
-Message-Id: <1367451293-20223-1-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-X-Extended-Stable: 3.5
+	id S1758614Ab3EAXfg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 19:35:36 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:51598 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757734Ab3EAXfd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 May 2013 19:35:33 -0400
+Date: Thu, 2 May 2013 01:35:31 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: David Rientjes <rientjes@google.com>
+Cc: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
+        levinsasha928@gmail.com, mtosatti@redhat.com, tglx@linutronix.de,
+        Borislav Petkov <bp@suse.de>, fengguang.wu@intel.com,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/urgent] x86/kconfig:  Add a Kconfig shortcut for
+ building working KVM guest kernels
+Message-ID: <20130501233530.GG15623@pd.tnic>
+References: <20130501203500.GC4466@pd.tnic>
+ <alpine.DEB.2.02.1305011358500.19189@chino.kir.corp.google.com>
+ <20130501211011.GD4466@pd.tnic>
+ <alpine.DEB.2.02.1305011419020.20298@chino.kir.corp.google.com>
+ <20130501215604.GA15623@pd.tnic>
+ <alpine.DEB.2.02.1305011503200.3267@chino.kir.corp.google.com>
+ <20130501222850.GB15623@pd.tnic>
+ <alpine.DEB.2.02.1305011531320.8804@chino.kir.corp.google.com>
+ <20130501230254.GC15623@pd.tnic>
+ <alpine.DEB.2.02.1305011606461.8804@chino.kir.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1305011606461.8804@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a note to let you know that I have just added a patch titled
+On Wed, May 01, 2013 at 04:16:40PM -0700, David Rientjes wrote:
+> So you're missing CONFIG_X86_LOCAL_APIC and/or CONFIG_X86_IO_APIC,
+> as already stated. Those are strict requirements for your
+> CONFIG_KVM_GUEST_COMMON_OPTIONS to build. I suggest depending on them,
+> most configs already have them.
+>
+> You'll probably also want to depend on NET_CORE since it requires that
+> as well.
+>
+> That would probably make your patch complete.
 
-    rtnetlink: Call nlmsg_parse() with correct header length
+See, we could've saved ourselves all the bullshit if you had started
+with the above.
 
-to the linux-3.5.y-queue branch of the 3.5.y.z extended stable tree 
-which can be found at:
+I'll add those to the lineup:
 
- http://kernel.ubuntu.com/git?p=ubuntu/linux.git;a=shortlog;h=refs/heads/linux-3.5.y-queue
+select PCI
+select NET_CORE
+select X86_IO_APIC
+select X86_LOCAL_APIC
 
-If you, or anyone else, feels it should not be added to this tree, please 
-reply to this email.
+-- 
+Regards/Gruss,
+    Boris.
 
-For more information about the 3.5.y.z tree, see
-https://wiki.ubuntu.com/Kernel/Dev/ExtendedStable
-
-Thanks.
--Luis
-
-------
-
->From 405330967394d929c806d2273ee573f73ec3271f Mon Sep 17 00:00:00 2001
-From: Michael Riesch <michael.riesch@omicron.at>
-Date: Mon, 8 Apr 2013 05:45:26 +0000
-Subject: [PATCH] rtnetlink: Call nlmsg_parse() with correct header length
-
-commit 88c5b5ce5cb57af6ca2a7cf4d5715fa320448ff9 upstream.
-
-Signed-off-by: Michael Riesch <michael.riesch@omicron.at>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jiri Benc <jbenc@redhat.com>
-Cc: "Theodore Ts'o" <tytso@mit.edu>
-Cc: linux-kernel@vger.kernel.org
-Acked-by: Mark Rustad <mark.d.rustad@intel.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- net/core/rtnetlink.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c
-index 844ccc6..ef7f0ab 100644
---- a/net/core/rtnetlink.c
-+++ b/net/core/rtnetlink.c
-@@ -1073,7 +1073,7 @@ static int rtnl_dump_ifinfo(struct sk_buff *skb, struct netlink_callback *cb)
- 	rcu_read_lock();
- 	cb->seq = net->dev_base_seq;
-
--	if (nlmsg_parse(cb->nlh, sizeof(struct rtgenmsg), tb, IFLA_MAX,
-+	if (nlmsg_parse(cb->nlh, sizeof(struct ifinfomsg), tb, IFLA_MAX,
- 			ifla_policy) >= 0) {
-
- 		if (tb[IFLA_EXT_MASK])
-@@ -1916,7 +1916,7 @@ static u16 rtnl_calcit(struct sk_buff *skb, struct nlmsghdr *nlh)
- 	u32 ext_filter_mask = 0;
- 	u16 min_ifinfo_dump_size = 0;
-
--	if (nlmsg_parse(nlh, sizeof(struct rtgenmsg), tb, IFLA_MAX,
-+	if (nlmsg_parse(nlh, sizeof(struct ifinfomsg), tb, IFLA_MAX,
- 			ifla_policy) >= 0) {
- 		if (tb[IFLA_EXT_MASK])
- 			ext_filter_mask = nla_get_u32(tb[IFLA_EXT_MASK]);
+Sent from a fat crate under my desk. Formatting is fine.
 --
-1.8.1.2
-
