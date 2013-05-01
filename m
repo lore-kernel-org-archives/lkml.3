@@ -1,55 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933988Ab3EAAXd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 20:23:33 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:56410 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934129Ab3EAAXY (ORCPT
+	id S934015Ab3EAAZW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 20:25:22 -0400
+Received: from tama50.ecl.ntt.co.jp ([129.60.39.147]:46002 "EHLO
+	tama50.ecl.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933881Ab3EAAZU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 20:23:24 -0400
-Date: Tue, 30 Apr 2013 17:23:21 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: =?iso-8859-1?Q?S=F6ren?= Brinkmann <soren.brinkmann@xilinx.com>
-Cc: Michal Simek <michal.simek@xilinx.com>,
-        Josh Cartwright <joshc@eso.teric.us>,
-        Mike Turquette <mturquette@linaro.org>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
-        Stephen Warren <swarren@wwwdotorg.org>, Jiri Slaby <jslaby@suse.cz>,
-        linux-serial@vger.kernel.org
-Subject: Re: [PATCH 1/7] tty: xuartps: Sort #includes alphabetically
-Message-ID: <20130501002321.GB7435@kroah.com>
-References: <1367366284-28304-1-git-send-email-soren.brinkmann@xilinx.com>
- <1367366284-28304-2-git-send-email-soren.brinkmann@xilinx.com>
- <20130501000048.GA1840@kroah.com>
- <cbd8c55c-066b-4396-9a4b-97d58a93b573@DB8EHSMHS005.ehs.local>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
+	Tue, 30 Apr 2013 20:25:20 -0400
+Message-ID: <1367367906.4712.4.camel@nexus>
+Subject: Re: [PATCH v2] HID: add support for Sony RF receiver with USB
+ product id 0x0374
+From: Fernando Luis =?ISO-8859-1?Q?V=E1zquez?= Cao 
+	<fernando_b1@lab.ntt.co.jp>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: linux-input@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Antonio Ospite <ospite@studenti.unina.it>
+Date: Wed, 01 May 2013 09:25:06 +0900
+In-Reply-To: <alpine.LNX.2.00.1301151702150.7734@pobox.suse.cz>
+References: <1358221428.9926.1.camel@nexus.lab.ntt.co.jp>
+	  <20130115103638.be566e39f0f5ad7186362dd8@studenti.unina.it>
+	  <50F52986.2080002@lab.ntt.co.jp>
+	 <1358246448.4897.3.camel@nexus.lab.ntt.co.jp>
+	 <alpine.LNX.2.00.1301151702150.7734@pobox.suse.cz>
+Organization: NTT Open Source Software Center
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <cbd8c55c-066b-4396-9a4b-97d58a93b573@DB8EHSMHS005.ehs.local>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 30, 2013 at 05:05:40PM -0700, Sören Brinkmann wrote:
-> On Tue, Apr 30, 2013 at 05:00:48PM -0700, Greg Kroah-Hartman wrote:
-> > On Tue, Apr 30, 2013 at 04:57:58PM -0700, Soren Brinkmann wrote:
-> > > Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
-> > > CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> > > CC: Jiri Slaby <jslaby@suse.cz>
-> > > CC: linux-serial@vger.kernel.org
+Hi Jiri,
+
+On Tue, 2013-01-15 at 17:02 +0100, Jiri Kosina wrote:
+> On Tue, 15 Jan 2013, Fernando Luis VÃ¡zquez Cao wrote:
+> 
+> > Some Vaio desktop computers, among them the VGC-LN51JGB multimedia PC, have
+> > a RF receiver, multi-interface USB device 054c:0374, that is used to connect
+> > a wireless keyboard and a wireless mouse.
 > > 
-> > Why would you need/want to do this?
-> I often come across duplicated includes. Having some kind of order helps
-> avoiding that, imho.
+> > The keyboard works flawlessly, but the mouse (VGP-WMS3 in my case) does not
+> > seem to be generating any pointer events. The problem is that the mouse pointer
+> > is wrongly declared as a constant non-data variable in the report descriptor
+> > (see lsusb and usbhid-dump output below), with the consequence that it is
+> > ignored by the HID code.
+> > 
+> > Add this device to the have-special-driver list and fix up the report
+> > descriptor in the Sony-specific driver which happens to already have a fixup
+> > for a similar firmware bug.
+> 
+> Applied, thanks.
 
-We have a tool to handle duplicated includes, no need to put them in
-sorted order for them to be detected.
+It looks like after the merge of the the sony and steelseries
+branches the hid core hunk was left out, which means that
+this fix-up is never applied.
 
-thanks,
+I will be replying to this email with a fix.
 
-greg k-h
+Thanks,
+Fernando
+
