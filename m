@@ -1,132 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755784Ab3EASWM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 14:22:12 -0400
-Received: from ja.ssi.bg ([178.16.129.10]:37119 "EHLO ja.ssi.bg"
-	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755617Ab3EASWI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 14:22:08 -0400
-Date: Wed, 1 May 2013 21:22:08 +0300 (EEST)
-From: Julian Anastasov <ja@ssi.bg>
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Simon Horman <horms@verge.net.au>, Eric Dumazet <eric.dumazet@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
-        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Dipankar Sarma <dipankar@in.ibm.com>
-Subject: Re: [PATCH v2 1/2] sched: Add cond_resched_rcu_lock() helper
-In-Reply-To: <20130501155501.GB7521@dyad.programming.kicks-ass.net>
-Message-ID: <alpine.LFD.2.00.1305012004360.3397@ja.ssi.bg>
-References: <1367290378-29224-1-git-send-email-horms@verge.net.au> <1367290378-29224-2-git-send-email-horms@verge.net.au> <alpine.LFD.2.00.1304301011310.1700@ja.ssi.bg> <20130430072944.GA13959@verge.net.au> <alpine.LFD.2.00.1304301051260.1700@ja.ssi.bg>
- <20130501091012.GB28253@dyad.programming.kicks-ass.net> <alpine.LFD.2.00.1305011344320.1603@ja.ssi.bg> <20130501155501.GB7521@dyad.programming.kicks-ass.net>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1755890Ab3EASjU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 14:39:20 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:45351 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755685Ab3EASjK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 May 2013 14:39:10 -0400
+Date: Wed, 1 May 2013 13:39:08 -0500
+From: Cliff Wickman <cpw@sgi.com>
+To: David Rientjes <rientjes@google.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, mgorman@suse.de,
+        aarcange@redhat.com, dave.hansen@intel.com, dsterba@suse.cz,
+        hannes@cmpxchg.org, kosaki.motohiro@gmail.com,
+        kirill.shutemov@linux.intel.com, mpm@selenic.com,
+        n-horiguchi@ah.jp.nec.com, rdunlap@infradead.org
+Subject: Re: [PATCH] mm/pagewalk.c: walk_page_range should avoid VM_PFNMAP
+	areas
+Message-ID: <20130501183908.GA27910@sgi.com>
+References: <E1UXWpF-0006Ya-Br@eag09.americas.sgi.com> <alpine.DEB.2.02.1305010843180.4547@chino.kir.corp.google.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1305010843180.4547@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-	Hello,
-
-On Wed, 1 May 2013, Peter Zijlstra wrote:
-
-> On Wed, May 01, 2013 at 05:22:05PM +0300, Julian Anastasov wrote:
+On Wed, May 01, 2013 at 08:47:02AM -0700, David Rientjes wrote:
+> On Wed, 1 May 2013, Cliff Wickman wrote:
 > 
-> > 2. Same without need_resched because cond_resched already
-> > performs the same checks:
-> > 
-> > static void inline cond_resched_rcu_lock(void)
-> > {
-> > #ifndef CONFIG_PREEMPT_RCU
-> > 	rcu_read_unlock();
-> > 	cond_resched();
-> > 	rcu_read_lock();
-> > #endif
-> > }
+> > Index: linux/mm/pagewalk.c
+> > ===================================================================
+> > --- linux.orig/mm/pagewalk.c
+> > +++ linux/mm/pagewalk.c
+> > @@ -127,22 +127,6 @@ static int walk_hugetlb_range(struct vm_
+> >  	return 0;
+> >  }
+> >  
+> > -static struct vm_area_struct* hugetlb_vma(unsigned long addr, struct mm_walk *walk)
+> > -{
+> > -	struct vm_area_struct *vma;
+> > -
+> > -	/* We don't need vma lookup at all. */
+> > -	if (!walk->hugetlb_entry)
+> > -		return NULL;
+> > -
+> > -	VM_BUG_ON(!rwsem_is_locked(&walk->mm->mmap_sem));
+> > -	vma = find_vma(walk->mm, addr);
+> > -	if (vma && vma->vm_start <= addr && is_vm_hugetlb_page(vma))
+> > -		return vma;
+> > -
+> > -	return NULL;
+> > -}
+> > -
+> >  #else /* CONFIG_HUGETLB_PAGE */
+> >  static struct vm_area_struct* hugetlb_vma(unsigned long addr, struct mm_walk *walk)
+> >  {
+> > @@ -200,28 +184,46 @@ int walk_page_range(unsigned long addr,
+> >  
+> >  	pgd = pgd_offset(walk->mm, addr);
+> >  	do {
+> > -		struct vm_area_struct *vma;
+> > +		struct vm_area_struct *vma = NULL;
+> >  
+> >  		next = pgd_addr_end(addr, end);
+> >  
+> >  		/*
+> > -		 * handle hugetlb vma individually because pagetable walk for
+> > -		 * the hugetlb page is dependent on the architecture and
+> > -		 * we can't handled it in the same manner as non-huge pages.
+> > +		 * Check any special vma's within this range.
+> >  		 */
+> > -		vma = hugetlb_vma(addr, walk);
+> > +		VM_BUG_ON(!rwsem_is_locked(&walk->mm->mmap_sem));
 > 
-> Ah so the 'problem' with this last version is that it does an unconditional /
-> unnessecary rcu_read_unlock().
+> I think this should be moved out of the iteration.  It's currently inside 
+> it even before your patch, but I think it's pointless.
 
-	It is just a barrier() for the non-preempt case.
+I don't follow.  We are iterating through a range of addresses.  When
+we come to a range that is VM_PFNMAP we skip it.  How can we take that
+out of the iteration?
+ 
+> > +		vma = find_vma(walk->mm, addr);
+> >  		if (vma) {
+> > -			if (vma->vm_end < next)
+> > +			/*
+> > +			 * There are no page structures backing a VM_PFNMAP
+> > +			 * range, so allow no split_huge_page_pmd().
+> > +			 */
+> > +			if (vma->vm_flags & VM_PFNMAP) {
+> >  				next = vma->vm_end;
+> > +				pgd = pgd_offset(walk->mm, next);
+> > +				continue;
+> > +			}
+> 
+> What if end < vma->vm_end?
 
-> The below would be in line with all the other cond_resched*() implementations.
+Yes, a bad omission.  Thanks for pointing that out.
+It should be if ((vma->vm_start <= addr) && (vma->vm_flags & VM_PFNMAP))
+as find_vma can return a vma above the addr.
 
-...
+-Cliff
+> >  			/*
+> > -			 * Hugepage is very tightly coupled with vma, so
+> > -			 * walk through hugetlb entries within a given vma.
+> > +			 * Handle hugetlb vma individually because pagetable
+> > +			 * walk for the hugetlb page is dependent on the
+> > +			 * architecture and we can't handled it in the same
+> > +			 * manner as non-huge pages.
+> >  			 */
+> > -			err = walk_hugetlb_range(vma, addr, next, walk);
+> > -			if (err)
+> > -				break;
+> > -			pgd = pgd_offset(walk->mm, next);
+> > -			continue;
+> > +			if (walk->hugetlb_entry && (vma->vm_start <= addr) &&
+> > +			    is_vm_hugetlb_page(vma)) {
+> > +				if (vma->vm_end < next)
+> > +					next = vma->vm_end;
+> > +				/*
+> > +				 * Hugepage is very tightly coupled with vma,
+> > +				 * so walk through hugetlb entries within a
+> > +				 * given vma.
+> > +				 */
+> > +				err = walk_hugetlb_range(vma, addr, next, walk);
+> > +				if (err)
+> > +					break;
+> > +				pgd = pgd_offset(walk->mm, next);
+> > +				continue;
+> > +			}
+> >  		}
+> >  
+> >  		if (pgd_none_or_clear_bad(pgd)) {
 
-> diff --git a/include/linux/sched.h b/include/linux/sched.h
-> index 802a751..fd2c77f 100644
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -2449,6 +2449,13 @@ extern int __cond_resched_softirq(void);
->  	__cond_resched_softirq();					\
->  })
->  
-> +extern int __cond_resched_rcu(void);
-> +
-> +#define cond_resched_rcu() ({			\
-> +	__might_sleep(__FILE__, __LINE__, 0);	\
-
-	I see your goal. But digging into __might_sleep()
-I see that rcu_sleep_check() will scream for the non-preempt
-case because we are under rcu_read_lock.
-
-	What about such inline version:
-
-static void inline cond_resched_rcu(void)
-{
-#ifndef CONFIG_PREEMPT_RCU
-	rcu_read_unlock();
-	__might_sleep(__FILE__, __LINE__, 0);
-	cond_resched();
-	rcu_read_lock();
-#else
-	__might_sleep(__FILE__, __LINE__, 0);
-	rcu_lockdep_assert(rcu_preempt_depth() == 1,
-		"Illegal cond_resched_rcu() context");
-#endif
-}
-
-	It will restrict to single RCU lock level for all
-RCU implementations. But we don't have _cond_resched_rcu
-helper for two reasons:
-
-- __might_sleep uses __FILE__, __LINE__
-- only cond_resched generates code, so need_resched() is
-avoided
-
-> +	__cond_resched_rcu();			\
-> +})
-> +
->  /*
->   * Does a critical section need to be broken due to another
->   * task waiting?: (technically does not depend on CONFIG_PREEMPT,
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index 7d7901a..2b3b4e6 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -4358,6 +4358,20 @@ int __sched __cond_resched_softirq(void)
->  }
->  EXPORT_SYMBOL(__cond_resched_softirq);
->  
-> +int __sched __cond_resched_rcu(void)
-> +{
-> +#ifndef CONFIG_PREEMPT_RCU
-> +	if (should_resched()) {
-> +		rcu_read_unlock();
-> +		__cond_resched();
-> +		rcu_read_lock();
-> +		return 1;
-> +	}
-> +#endif
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL(__cond_resched_rcu);
-> +
-
-Regards
-
---
-Julian Anastasov <ja@ssi.bg>
+-- 
+Cliff Wickman
+SGI
+cpw@sgi.com
+(651) 683-3824
