@@ -1,87 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755412Ab3EAHfq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 03:35:46 -0400
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:62469 "EHLO
+	id S1759206Ab3EAHi0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 03:38:26 -0400
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:59900 "EHLO
 	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753509Ab3EAHfg (ORCPT
+	with ESMTP id S1754108Ab3EAHiS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 03:35:36 -0400
+	Wed, 1 May 2013 03:38:18 -0400
+Message-ID: <5180C663.7080803@gmail.com>
+Date: Wed, 01 May 2013 15:38:11 +0800
+From: Will Huck <will.huckk@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <20130430144605.1a99a7397702b332ee818fc8@linux-foundation.org>
-References: <1367214005-14302-1-git-send-email-chanho.min@lge.com>
-	<CAMuHMdWk4oi_KCmZv7hLZ7JSwy=meziKPBMQ1HJiJR9W8AdrDg@mail.gmail.com>
-	<20130430144605.1a99a7397702b332ee818fc8@linux-foundation.org>
-Date: Wed, 1 May 2013 09:35:35 +0200
-X-Google-Sender-Auth: ozq37tUdmpXx9cxvqBipXMkEa9s
-Message-ID: <CAMuHMdXJaZTSNavsPxQQ8df+J=Rfyn6mKjP2g7xoDXnW5PiF3Q@mail.gmail.com>
-Subject: Re: [PATCH] lib: add weak __clzsi2()/__clzdi2() functions
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Chanho Min <chanho.min@lge.com>, Kyungsik Lee <kyungsik.lee@lge.com>,
-        Yann Collet <yann.collet.73@gmail.com>,
-        Bob Pearson <rpearson@systemfabricworks.com>,
-        Richard Weinberger <richard@nod.at>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        sparclinux <sparclinux@vger.kernel.org>,
-        "Linux/m68k" <linux-m68k@vger.kernel.org>,
-        Linux-Next <linux-next@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Jerome Marchand <jmarchan@redhat.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH] swap: redirty page if page write fails on swap file
+References: <516E918B.3050309@redhat.com> <20130422133746.ffbbb70c0394fdbf1096c7ee@linux-foundation.org> <5177AC75.7090101@redhat.com>
+In-Reply-To: <5177AC75.7090101@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 30, 2013 at 11:46 PM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Mon, 29 Apr 2013 09:20:25 +0200 Geert Uytterhoeven <geert@linux-m68k.org> wrote:
->> On Mon, Apr 29, 2013 at 7:40 AM, Chanho Min <chanho.min@lge.com> wrote:
->> > Some architectures need __clzsi2() or __clzdi2() for __builtin_clz and
->> > It causes build failure. They can be implemented using the fls() and
->> > overridden by linking arch-specific versions may not be implemented yet.
->> >
->> > Reference: https://lkml.org/lkml/2013/4/18/603
->> > Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
->> > Signed-off-by: Chanho Min <chanho.min@lge.com>
+Hi Jerome,
+On 04/24/2013 05:57 PM, Jerome Marchand wrote:
+> On 04/22/2013 10:37 PM, Andrew Morton wrote:
+>> On Wed, 17 Apr 2013 14:11:55 +0200 Jerome Marchand <jmarchan@redhat.com> wrote:
 >>
->> Thanks, this fixes the link error on m68k, so
+>>> Since commit 62c230b, swap_writepage() calls direct_IO on swap files.
+>>> However, in that case page isn't redirtied if I/O fails, and is therefore
+>>> handled afterwards as if it has been successfully written to the swap
+>>> file, leading to memory corruption when the page is eventually swapped
+>>> back in.
+>>> This patch sets the page dirty when direct_IO() fails. It fixes a memory
+>>> corruption that happened while using swap-over-NFS.
+>>>
+>>> ...
+>>>
+>>> --- a/mm/page_io.c
+>>> +++ b/mm/page_io.c
+>>> @@ -222,6 +222,8 @@ int swap_writepage(struct page *page, struct writeback_control *wbc)
+>>>   		if (ret == PAGE_SIZE) {
+>>>   			count_vm_event(PSWPOUT);
+>>>   			ret = 0;
+>>> +		} else {
+>>> +			set_page_dirty(page);
+>>>   		}
+>>>   		return ret;
+>>>   	}
+>> So what happens to the page now?  It remains dirty and the kernel later
+>> tries to write it again?
+> Yes. Also, AS_EIO or AS_ENOSPC is set to the address space flags (in this
+> case, swapper_space).
+
+After set AS_EIO or AS_ENOSPC, we can't touch swapper_space any more,  
+correct?
+
+>
+>> And if that write also fails, the page is
+>> effectively leaked until process exit?
+> AFAICT, there is no special handling for that page afterwards, so if all
+> subsequent attempts fail, it's indeed going to stay in memory until freed.
+>
+> Jerome
+>
+>
 >>
->> Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
->
-> It doesn't work for alpha (gcc-4.4.4):
->
-> ERROR: "__ctzdi2" [lib/lz4/lz4hc_compress.ko] undefined!
-> ERROR: "__ctzdi2" [lib/lz4/lz4_compress.ko] undefined!
->
-> akpm3:/usr/src/25> nm vmlinux|grep ctzd
-> akpm3:/usr/src/25>
->
-> I assume the linker threw the code away.
+>> Aside: Mel, __swap_writepage() is fairly hair-raising.  It unlocks the
+>> page before doing the IO and doesn't set PageWriteback().  Why such an
+>> exception from normal handling?
+>>
+>> Also, what is protecting the page from concurrent reclaim or exit()
+>> during the above swap_writepage()?
+>>
+>> Seems that the code needs a bunch of fixes or a bunch of comments
+>> explaining why it is safe and why it has to be this way.
+>>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-No, the link errors are for __ctzdi2, not __clzdi2.
-__ctzdi2 can be implemented using __ffs().
-
-> How's about we stop using __builtin_ctz[ll]() altogether?  Use N-fls()?
-
-That was my first suggestion ;-)
-
-> btw, this:
->
-> int __weak __clzsi2(int val)
-> {
->        return BITS_PER_LONG - fls(val);
-> }
->
-> looks wrong.  It will give a different result for 32- and 64-bit.
-
-Indeed. It should be hardcoded 32.
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
