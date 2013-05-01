@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932655Ab3EAQBo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 12:01:44 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:36347
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932438Ab3EAQBi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 12:01:38 -0400
-Date: Wed, 1 May 2013 17:59:58 +0200
-From: Peter Zijlstra <peterz@infradead.org>
+	id S932642Ab3EAQCr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 12:02:47 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:35600 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756889Ab3EAQCh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 May 2013 12:02:37 -0400
+Date: Wed, 1 May 2013 09:02:18 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Julian Anastasov <ja@ssi.bg>, Simon Horman <horms@verge.net.au>,
-        Ingo Molnar <mingo@redhat.com>, lvs-devel@vger.kernel.org,
-        netdev@vger.kernel.org, netfilter-devel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Pablo Neira Ayuso <pablo@netfilter.org>,
+Cc: Peter Zijlstra <peterz@infradead.org>, Julian Anastasov <ja@ssi.bg>,
+        Simon Horman <horms@verge.net.au>, Ingo Molnar <mingo@redhat.com>,
+        lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
+        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
         Dipankar Sarma <dipankar@in.ibm.com>
 Subject: Re: [PATCH v2 1/2] sched: Add cond_resched_rcu_lock() helper
-Message-ID: <20130501155957.GC7521@dyad.programming.kicks-ass.net>
+Message-ID: <20130501160218.GQ3780@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
 References: <1367290378-29224-1-git-send-email-horms@verge.net.au>
  <1367290378-29224-2-git-send-email-horms@verge.net.au>
  <alpine.LFD.2.00.1304301011310.1700@ja.ssi.bg>
@@ -31,7 +31,10 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 In-Reply-To: <1367422195.11020.46.camel@edumazet-glaptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13050116-5806-0000-0000-000020F528B5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -49,5 +52,8 @@ On Wed, May 01, 2013 at 08:29:55AM -0700, Eric Dumazet wrote:
 > BTW, I do not remember why cond_resched() is not an empty macro
 > when CONFIG_PREEMPT=y ?
 
-Good question.. at at least, only the __might_sleep() construct. Ingo, happen
-to remember why this is? Most of this infrastructure is from before my time.
+My guess would be for the case where sched_preempt_enable_no_resched()
+is followed some time later by cond_resched().
+
+							Thanx, Paul
+
