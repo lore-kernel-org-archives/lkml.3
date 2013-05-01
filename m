@@ -1,61 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759740Ab3EAKeR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 06:34:17 -0400
-Received: from mail-ea0-f172.google.com ([209.85.215.172]:64903 "EHLO
-	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754202Ab3EAKeG (ORCPT
+	id S1759904Ab3EAKhc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 06:37:32 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:38786 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758791Ab3EAKhZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 06:34:06 -0400
-Date: Wed, 1 May 2013 12:34:01 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [PATCHv4] perf: Fix vmalloc ring buffer pages handling
-Message-ID: <20130501103401.GC17360@gmail.com>
-References: <20130312135219.GA32001@krava.brq.redhat.com>
- <1363101972.24558.3.camel@laptop>
- <20130312153609.GC32001@krava.brq.redhat.com>
- <1363105490.24558.12.camel@laptop>
- <20130312170416.GD32001@krava.brq.redhat.com>
- <20130313111557.GC1064@krava.brq.redhat.com>
- <20130318190548.GA18920@krava.brq.redhat.com>
- <1363693618.22553.33.camel@laptop>
- <20130319143509.GA1128@krava.brq.redhat.com>
- <20130430153653.GD12715@krava.brq.redhat.com>
+	Wed, 1 May 2013 06:37:25 -0400
+Date: Wed, 1 May 2013 11:37:18 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Christian Daudt <csd@broadcom.com>
+Cc: Russell King <linux@arm.linux.org.uk>, John Stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>, Stephen Warren <swarren@wwwdotorg.org>,
+        "arm@kernel.org" <arm@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "csd_b@daudt.org" <csd_b@daudt.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Rob Landley <rob@landley.net>,
+        Josh Cartwright <josh.cartwright@ni.com>,
+        Yehuda Yitschak <yehuday@marvell.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        John Stultz <john.stultz@linaro.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: bcm281xx: Add L2 support for Rev A2 chips
+Message-ID: <20130501103718.GC22796@mudshark.cambridge.arm.com>
+References: <1367347089-23788-1-git-send-email-csd@broadcom.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130430153653.GD12715@krava.brq.redhat.com>
+In-Reply-To: <1367347089-23788-1-git-send-email-csd@broadcom.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Christian,
 
-* Jiri Olsa <jolsa@redhat.com> wrote:
+Thanks for CC'ing me.
 
-> On Tue, Mar 19, 2013 at 03:35:09PM +0100, Jiri Olsa wrote:
-> > On Tue, Mar 19, 2013 at 12:46:58PM +0100, Peter Zijlstra wrote:
-> > > 
-> > > > are you going to include that, or should I repost it?
-> > > 
-> > > Ah, please repost (and prettify) it, I'm still very limited in the
-> > > amount of work that I can do :/
-> > > 
-> > 
-> > ok, attached
-> 
-> Ingo, Peter,
-> 
-> could this be pulled in?
+On Tue, Apr 30, 2013 at 07:38:09PM +0100, Christian Daudt wrote:
+> Rev A2 SoCs have an unorthodox memory re-mapping and this needs
+> to be reflected in the cache operations.
+> This patch adds new outer cache functions for the l2x0 driver
+> to support this SoC revision. It also adds a new compatible
+> value for the cache to enable this functionality.
 
-Yeah, Peter acked it - I will pick it up.
+This is a pretty weird thing you've managed to build here...
 
-Thanks,
+> diff --git a/arch/arm/mm/cache-l2x0.c b/arch/arm/mm/cache-l2x0.c
+> index c465fac..6edba13 100644
+> --- a/arch/arm/mm/cache-l2x0.c
+> +++ b/arch/arm/mm/cache-l2x0.c
+> @@ -523,6 +523,162 @@ static void aurora_flush_range(unsigned long start, unsigned long end)
+>  	}
+>  }
+>  
+> +/*
+> + * For certain Broadcom SoCs, depending on the address range, different offsets
+> + * need to be added to the address before passing it to L2 for
+> + * invalidation/clean/flush
+> + *
+> + * Section Address Range              Offset        EMI
+> + *   1     0x00000000 - 0x3FFFFFFF    0x80000000    VC
+> + *   2     0x40000000 - 0xBFFFFFFF    0x40000000    SYS
+> + *   3     0xC0000000 - 0xFFFFFFFF    0x80000000    VC
 
-	Ingo
+Hmm, so am I right in thinking that the `Broadcom addresses' for section 1
+and 2 overlap? It would also be worth describing which physical addresses
+Linux actually wants to use; where is the memory in the physical memory map
+for devices with this L2 controller?
+
+> + * When the start and end addresses have crossed two different sections, we
+> + * need to break the L2 operation into two, each within its own section.
+> + * For example, if we need to invalidate addresses starts at 0xBFFF0000 and
+> + * ends at 0xC0001000, we need do invalidate 1) 0xBFFF0000 - 0xBFFFFFFF and 2)
+> + * 0xC0000000 - 0xC0001000
+> + *
+> + * Note 1:
+> + * By breaking a single L2 operation into two, we may potentially suffer some
+> + * performance hit, but keep in mind the cross section case is very rare
+> + *
+> + * Note 2:
+> + * We do not need to handle the case when the start address is in
+> + * Section 1 and the end address is in Section 3, since it is not a valid use
+> + * case
+> + */
+> +
+> +#define BCM_VC_EMI_SEC1_START_ADDR    0x00000000UL
+> +#define BCM_VC_EMI_SEC1_END_ADDR      0x3FFFFFFFUL
+> +#define BCM_SYS_EMI_START_ADDR        0x40000000UL
+> +#define BCM_SYS_EMI_END_ADDR          0xBFFFFFFFUL
+> +#define BCM_VC_EMI_SEC3_START_ADDR    0xC0000000UL
+> +#define BCM_VC_EMI_SEC3_END_ADDR      0xFFFFFFFFUL
+
+Seems a bit odd defining the END_ADDRs here, I'd just use strict '<' against
+the start of the next section in your code.
+
+> +#define BCM_SYS_EMI_OFFSET            0x40000000UL
+> +#define BCM_VC_EMI_OFFSET             0x80000000UL
+> +
+> +static inline int bcm_addr_is_sys_emi(unsigned long addr)
+> +{
+> +	return (addr >= BCM_SYS_EMI_START_ADDR) &&
+> +		(addr <= BCM_SYS_EMI_END_ADDR);
+> +}
+> +
+> +static inline unsigned long bcm_l2_phys_addr(unsigned long addr)
+> +{
+> +	if (bcm_addr_is_sys_emi(addr))
+> +		return addr + BCM_SYS_EMI_OFFSET;
+> +	else
+> +		return addr + BCM_VC_EMI_OFFSET;
+> +}
+> +
+> +static void bcm_inv_range(unsigned long start, unsigned long end)
+> +{
+> +	unsigned long new_start, new_end;
+> +
+> +	if (unlikely(end <= start))
+> +		return;
+> +
+> +	new_start = bcm_l2_phys_addr(start);
+> +	new_end = bcm_l2_phys_addr(end);
+> +
+> +	/* normal case, no cross section between start and end */
+> +	if (likely((bcm_addr_is_sys_emi(start) && bcm_addr_is_sys_emi(end)) ||
+> +		(!bcm_addr_is_sys_emi(start) && !bcm_addr_is_sys_emi(end)))) {
+
+You could avoid evaluating bcm_addr_is_sys_emi twice for each address. In
+fact, you know start < end, so you just need to check start >= EMI_START and
+end < EMI_END.
+
+Will
