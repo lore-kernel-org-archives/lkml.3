@@ -1,136 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753131Ab3EAFPG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 01:15:06 -0400
-Received: from mail-vb0-f44.google.com ([209.85.212.44]:63369 "EHLO
-	mail-vb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751737Ab3EAFO5 (ORCPT
+	id S1752851Ab3EAFRZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 01:17:25 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:35436 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751748Ab3EAFRU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 01:14:57 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAK7N6voYXxJKWDwSj5T9Y2fKK+Y5JqN9Wm8Qoffi9N7nRnsYhw@mail.gmail.com>
-References: <1367360914-23389-1-git-send-email-zoran.markovic@linaro.org>
-	<20130430233031.GA32310@kroah.com>
-	<CAMbhsRSV+om7w2f1ht6hLmK_BrgjjQZ91iBJzR5ySTytQdndBg@mail.gmail.com>
-	<20130501041731.GA24128@kroah.com>
-	<CAMbhsRT2eCKCuF1PbYY-NhGLCocE+809eZEkQYZWh42EB+SwBg@mail.gmail.com>
-	<CAK7N6voYXxJKWDwSj5T9Y2fKK+Y5JqN9Wm8Qoffi9N7nRnsYhw@mail.gmail.com>
-Date: Tue, 30 Apr 2013 22:14:56 -0700
-X-Google-Sender-Auth: 3vUW6KIwUdPvtVEx658geIi5aKQ
-Message-ID: <CAMbhsRSgHTwF3eTL5ODTH6yksQRLB5JT8_YRid8Ch5Y6EL+Z+g@mail.gmail.com>
-Subject: Re: [RFC PATCH] drivers: power: Add watchdog timer to catch drivers
- which lockup during suspend.
-From: Colin Cross <ccross@android.com>
-To: anish singh <anish198519851985@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Zoran Markovic <zoran.markovic@linaro.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Benoit Goby <benoit@android.com>,
-        Android Kernel Team <kernel-team@android.com>,
-        Todd Poynor <toddpoynor@google.com>, San Mehat <san@google.com>,
-        John Stultz <john.stultz@linaro.org>, Pavel Machek <pavel@ucw.cz>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <len.brown@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 1 May 2013 01:17:20 -0400
+Date: Wed, 1 May 2013 15:17:09 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Darrick J. Wong" <darrick.wong@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kent Overstreet <koverstreet@google.com>
+Subject: linux-next: manual merge of the block tree with Linus' tree
+Message-Id: <20130501151709.9ff4ebb3a76248b175bad9fc@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__1_May_2013_15_17_09_+1000_3RT0RlTspxfkoHy3"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 30, 2013 at 9:57 PM, anish singh
-<anish198519851985@gmail.com> wrote:
->
->
->
-> On Wed, May 1, 2013 at 10:09 AM, Colin Cross <ccross@android.com> wrote:
->>
->> On Tue, Apr 30, 2013 at 9:17 PM, Greg Kroah-Hartman
->> <gregkh@linuxfoundation.org> wrote:
->> > On Tue, Apr 30, 2013 at 08:36:21PM -0700, Colin Cross wrote:
->> >> On Tue, Apr 30, 2013 at 4:30 PM, Greg Kroah-Hartman
->> >> <gregkh@linuxfoundation.org> wrote:
->> >> > On Tue, Apr 30, 2013 at 03:28:33PM -0700, Zoran Markovic wrote:
->> >> >> From: Benoit Goby <benoit@android.com>
->> >> >>
->> >> >> Below is a patch from android kernel that detects a driver suspend
->> >> >> lockup and captures dump in the kernel log. Please review and
->> >> >> provide
->> >> >> comments.
->> >> >
->> >> > There's this really cool thing called a watchdog driver that does
->> >> > stuff
->> >> > like this :)
->> >>
->> >> If the watchdog driver worked in this case this patch wouldn't exist.
->> >
->> > Great, let's fix the watchdog timer then :)
->> >
->> > What's wrong with it?
->> >
->> >> >> Rather than hard-lock the kernel, dump the suspend thread stack and
->> >> >> BUG() when a driver takes too long to suspend.  The timeout is set
->> >> >> to
->> >> >> 12 seconds to be longer than the usbhid 10 second timeout.
->> >> >>
->> >> >> Exclude from the watchdog the time spent waiting for children that
->> >> >> are resumed asynchronously and time every device, whether or not
->> >> >> they
->> >> >> resumed synchronously.
->> >> >
->> >> > No, don't add a driver-core-only timer, use the existing watchdog
->> >> > timers
->> >> > if you are worried about the kernel locking up.
->> >>
->> >> The watchdog timers are useless here.  For one, they generally stop
->> >> when their driver suspend op is called, so you may not even have one
->> >> running when you lock up.
->> >
->> > But you can fix that, right?
->>
->> Ah, you're talking about the lockup detectors, and not drivers/watchdog.
->>
->> The hardlockup detector can tell you if timer interrupts are not
->> firing, which is unaffected by this patch since the timer wouldn't
->> fire any way.  The softlockup detector could eventually tell you that
->
-> I was wondering if timers don't fire then how is your dpm_drv_timeout
-> function gets called?
+--Signature=_Wed__1_May_2013_15_17_09_+1000_3RT0RlTspxfkoHy3
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-That's what I meant - this patch doesn't do anything if timers are not firing.
+Hi Jens,
 
->>
->> tasks were not being scheduled, but not why.  Even panic on softlockup
->> will only get you the stack trace of the current task, which will be
->> the locked up task if it is spinning, but is likely to be the idle
->> task if the suspend task is blocked on a wait_event.  This patch will
->> give the stack trace of the suspend operation that is blocked, even if
->> it is an asynchronous suspend callback.
->
-> ......but not when timers itself is not firing right?
->>
->> ...but not when ti
->> >> More importantly, the purpose of this patch is to tell you which
->> >> driver locked up and hopefully why, and the watchdog driver will
->> >> usually result in a silent reset.
->> >
->> > I thought it was an option as to what the watchdog does when it
->> > triggers.
->> >
->> >> This patch will cause a stack trace of the driver suspend op that is
->> >> blocking suspend progress, even if that call does not happen in the
->> >> suspend thread.
->> >
->> > But who can see this, the machine is now dead.
->>
->> I'm not sure what might still be working in this situation on x86, but
->> on ARM the machine is dead anyways.  Some random subset of drivers are
->> suspended, so you probably have no hardware watchdog, no console, no
->> video.  kexec on panic, kgdb on panic, console messages saved in
->> pstore, or jtag are the only options I know of.  This patch is very
->> useful in conjunction with pstore console.
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->
->
+Today's linux-next merge of the block tree got a conflict in
+include/linux/blk_types.h between commit 713685111774 ("mm: make
+snapshotting pages for stable writes a per-bio operation") from the  tree
+and commit a38352e0ac02 ("block: Add an explicit bio flag for bios that
+own their bvec") from the block tree.
+
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc include/linux/blk_types.h
+index 22990cf,e8de670..0000000
+--- a/include/linux/blk_types.h
++++ b/include/linux/blk_types.h
+@@@ -117,7 -116,8 +117,8 @@@ struct bio=20
+   * Flags starting here get preserved by bio_reset() - this includes
+   * BIO_POOL_IDX()
+   */
+ -#define BIO_RESET_BITS	12
+ -#define BIO_OWNS_VEC	12	/* bio_free() should free bvec */
+ +#define BIO_RESET_BITS	13
+++#define BIO_OWNS_VEC	13	/* bio_free() should free bvec */
+ =20
+  #define bio_flagged(bio, flag)	((bio)->bi_flags & (1 << (flag)))
+ =20
+
+--Signature=_Wed__1_May_2013_15_17_09_+1000_3RT0RlTspxfkoHy3
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRgKVVAAoJEECxmPOUX5FEbB0P/3CIPuRuvwx1cSzxr7m9JKRU
+/uQ5npQb+NG/ih1EYdiQkEmhIkzBY4Jf1t3dVipCQ4pIBirRzxlzfXyfdT6060Q+
+6D/dpECCY6+ebPX9yWj1IuQsiFuDRmipJ0F4iKlMoukTzfsJLmgN2uT9FSdae7I2
+AxjNGICu7PHDJur6VJlVv0M8PINiwoktwXKWhLDoJlHAeyxCRb4SaI3bXnlsc1QZ
+AxDX0wpId0DVENydJ5pM2vvS2XqigJaTf+QBxmu9/wrjFFjcQw6IwkkuaOKbOvt0
+u+lVUZhPbgzb72478crY5IH6xBndzsaLdQ+l0M6oOvEeAnHlR4R44krNPVnM2s7T
+T/c1GAm7qgfy5bl6DWKIwZ0MAhpzMRBziezgWgdh6t3NUJBVEw6lIk5Qq2gfSdnX
+tLGSV34rUcscP6k+HtrfztNpg+2HfZqacxiGM9ZNNxeZaTU62o6NKTIZCQE/btIW
+sLVNuvanl5qNWVZ+nMzsz0xFrg8kJL+k0IcO3+lptPH2YfMArPe7PhmK+i/zPOF+
+2fLWZbnWCcAU1RPQzCZwk/UqCHuHbIIUoNenIHqPthlG7wXDtHGPnAm3vx1biUaM
+5MNtpSJ0xYUW+05iuodB1vEDYFtXQbGrNCJdIMCgEs92VG5Kman4SYL93zshM3XW
+uA6WN1Xd1oOuoR129GwP
+=pkdN
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__1_May_2013_15_17_09_+1000_3RT0RlTspxfkoHy3--
