@@ -1,162 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757408Ab3EAUcM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 16:32:12 -0400
-Received: from host171.canaca.com ([67.55.55.225]:37451 "EHLO
-	host171.canaca.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755919Ab3EAUcI (ORCPT
+	id S1757170Ab3EAUdG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 16:33:06 -0400
+Received: from g6t0186.atlanta.hp.com ([15.193.32.63]:6852 "EHLO
+	g6t0186.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755278Ab3EAUdD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 16:32:08 -0400
-Message-ID: <60e441a9713d5f518ba3f951f9e8a062.squirrel@www.mungewell.org>
-In-Reply-To: <51816F8D.80607@infradead.org>
-References: <20130501183734.7ad1efca2d06e75432edabbd@canb.auug.org.au>
-    <51816271.3040400@infradead.org>
-    <c23b45b45b6a27055cdf18fe4dbc6309.squirrel@www.mungewell.org>
-    <51816F8D.80607@infradead.org>
-Date: Wed, 1 May 2013 16:32:04 -0400
-Subject: Re: [PATCH -next] hid: fix hid-steelseries kconfig/build
-From: simon@mungewell.org
-To: "Randy Dunlap" <rdunlap@infradead.org>
-Cc: simon@mungewell.org, "Stephen Rothwell" <sfr@canb.auug.org.au>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Jiri Kosina" <jkosina@suse.cz>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>
-User-Agent: SquirrelMail/1.4.22
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - host171.canaca.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - mungewell.org
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	Wed, 1 May 2013 16:33:03 -0400
+Message-ID: <1367439612.16154.166.camel@misato.fc.hp.com>
+Subject: Re: [PATCH 3/3 RFC] ACPI / hotplug: Use device offline/online for
+ graceful hot-removal
+From: Toshi Kani <toshi.kani@hp.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, isimatu.yasuaki@jp.fujitsu.com,
+        vasilis.liaskovitis@profitbricks.com
+Date: Wed, 01 May 2013 14:20:12 -0600
+In-Reply-To: <1513537.Pdbg9h7lkq@vostro.rjw.lan>
+References: <1576321.HU0tZ4cGWk@vostro.rjw.lan>
+	 <2740694.MNypEzdXxd@vostro.rjw.lan>
+	 <1367365778.16154.144.camel@misato.fc.hp.com>
+	 <1513537.Pdbg9h7lkq@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On 05/01/13 12:27, simon@mungewell.org wrote:
->> Hi Randy and all,
->> Seems like you found a problem... but the relevant sections of
->> 'hid-steelseries.c' already have
->> --
->> #if defined(CONFIG_LEDS_CLASS) || defined(CONFIG_LEDS_CLASS_MODULE)
->
-> which should be replaced with:
->
-> #include <linux/kconfig.h>
->
-> #if IS_ENABLED(LEDS_CLASS)
->
->
->> ...
->> #endif
->> --
->>
->> Shouldn't this prevent the module having calls to register/unregister if
->> the LED_CLASS is not enabled?
->
-> Please read the patch description.  CONFIG_LEDS_CLASS=m but
-> CONFIG_HID_STEELSEREIS=y.
-> A builtin driver cannot make calls to a modular driver if the modular
-> driver
-> is not loaded.  Is there a way to require that the modular driver is
-> loaded
-> for hid-steelseries?  Maybe so, but I don't know.
+On Wed, 2013-05-01 at 17:05 +0200, Rafael J. Wysocki wrote:
+> On Tuesday, April 30, 2013 05:49:38 PM Toshi Kani wrote:
+> > On Mon, 2013-04-29 at 14:29 +0200, Rafael J. Wysocki wrote:
+> > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > > 
+> > > Modify the generic ACPI hotplug code to be able to check if devices
+> > > scheduled for hot-removal may be gracefully removed from the system
+> > > using the device offline/online mechanism introduced previously.
+> > > 
+> > > Namely, make acpi_scan_hot_remove() which handles device hot-removal
+> > > call device_offline() for all physical companions of the ACPI device
+> > > nodes involved in the operation and check the results.  If any of
+> > > the device_offline() calls fails, the function will not progress to
+> > > the removal phase (which cannot be aborted), unless its (new) force
+> > > argument is set (in case of a failing offline it will put the devices
+> > > offlined by it back online).
+> > > 
+> > > In support of the 'forced' hot-removal, add a new sysfs attribute
+> > > 'force_remove' that will reside in every ACPI hotplug profile
+> > > present under /sys/firmware/acpi/hotplug/.
+> > > 
+> > > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > > ---
+> > >  Documentation/ABI/testing/sysfs-firmware-acpi |    9 +-
+> > >  drivers/acpi/internal.h                       |    2 
+> > >  drivers/acpi/scan.c                           |   97 ++++++++++++++++++++++++--
+> > >  drivers/acpi/sysfs.c                          |   27 +++++++
+> > >  include/acpi/acpi_bus.h                       |    3 
+> > >  5 files changed, 131 insertions(+), 7 deletions(-)
+> > > 
+> >  :
+> > > Index: linux-pm/drivers/acpi/scan.c
+> > > ===================================================================
+> > > --- linux-pm.orig/drivers/acpi/scan.c
+> > > +++ linux-pm/drivers/acpi/scan.c
+> > > @@ -120,7 +120,61 @@ acpi_device_modalias_show(struct device
+> > >  }
+> > >  static DEVICE_ATTR(modalias, 0444, acpi_device_modalias_show, NULL);
+> > >  
+> > > -static int acpi_scan_hot_remove(struct acpi_device *device)
+> > > +static acpi_status acpi_bus_offline_companions(acpi_handle handle, u32 lvl,
+> > > +					       void *data, void **ret_p)
+> > > +{
+> > > +	struct acpi_device *device = NULL;
+> > > +	struct acpi_device_physical_node *pn;
+> > > +	bool force = *((bool *)data);
+> > > +	acpi_status status = AE_OK;
+> > > +
+> > > +	if (acpi_bus_get_device(handle, &device))
+> > > +		return AE_OK;
+> > > +
+> > > +	mutex_lock(&device->physical_node_lock);
+> > > +
+> > > +	list_for_each_entry(pn, &device->physical_node_list, node) {
+> > 
+> > I do not think physical_node_list is set for ACPI processor devices, so
+> > this code is NOP at this point.  I think properly initializing
+> > physical_node_list for CPU and memblk is one of the key items in this
+> > approach.
+> 
+> It surely is. :-)
+> 
+> I've almost done that for CPUs, but that still requires some more work.
+> Hopefully, it'll be mostly done later this week.
 
-I had a look around what other drivers do, but there is not much 'case
-law' to follow (or copy from).
+Cool!
 
-'drivers/media/radio/radio-shark.c' does it like this:
---
-#if defined(CONFIG_LEDS_CLASS) || \
-    (defined(CONFIG_LEDS_CLASS_MODULE) && defined(CONFIG_RADIO_SHARK_MODULE))
-...
-#endif
---
+> Memory will take some more time I guess, though.
 
-Which I think is another solution, and perhaps a little more
-readable/understandable (ie. you have led control if LED_CLASS is
-built-in, or both the driver _and_ LED_CLASS are modules).
+Yes, memory has an ordering issue when using glue.c.
+https://lkml.org/lkml/2013/3/26/398
 
-
-If there is not an objection to this style I'll prepare and test a patch
-in the next couple of days.
-
-Simon.
-
-PS. 'drivers/platform/x86/fujitsu-laptop.c' might have the same issues as
-hid-steelseries....
-
->
->
->> Does forcing a 'depends on LED_CLASS' in Kconfig prevent the
->> hid-steelseries module being built on systems without LEDs, or is this
->> simply a way to ensure that the LED_CLASS module gets loaded first?
->
-> It prevents the driver from being built.  I think that a satisfactory
-> solution
-> would be this small change:
->
-> 	depends on LEDS_CLASS || LEDS_CLASS=n
->
-> That makes HID_STEELSERIES depend on LEDS_CLASS when it is enabled but
-> still
-> allows the driver to build when LEDS_CLASS=n.  Makes sense?
->
->
->
-> Oh, and please don't top-post.
->
-> Thanks.
->
->>
->> Simon.
->>
->>> From: Randy Dunlap <rdunlap@infradead.org>
->>>
->>> Fix hid-steelseries build by making it depends on LEDS_CLASS.
->>> Build errors happen when LEDS_CLASS=m  and HID_STEELSERIES=y.
->>>
->>> drivers/built-in.o: In function `steelseries_srws1_remove':
->>> hid-steelseries.c:(.text+0x3b97a1): undefined reference to
->>> `led_classdev_unregister'
->>> drivers/built-in.o: In function `steelseries_srws1_probe':
->>> hid-steelseries.c:(.text+0x3b9c51): undefined reference to
->>> `led_classdev_register'
->>> hid-steelseries.c:(.text+0x3b9ce5): undefined reference to
->>> `led_classdev_register'
->>> hid-steelseries.c:(.text+0x3b9d4b): undefined reference to
->>> `led_classdev_unregister'
->>>
->>> Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
->>> ---
->>>  drivers/hid/Kconfig |    1 +
->>>  1 file changed, 1 insertion(+)
->>>
->>> --- linux-next-20130501.orig/drivers/hid/Kconfig
->>> +++ linux-next-20130501/drivers/hid/Kconfig
->>> @@ -610,6 +610,7 @@ config HID_SPEEDLINK
->>>  config HID_STEELSERIES
->>>  	tristate "Steelseries SRW-S1 steering wheel support"
->>>  	depends on HID
->>> +	depends on LEDS_CLASS
->>>  	---help---
->>>  	Support for Steelseries SRW-S1 steering wheel
->>>
->>> --
->
->
-> --
-> ~Randy
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-input" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
-
+Thanks,
+-Toshi
 
