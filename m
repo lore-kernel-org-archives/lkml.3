@@ -1,152 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752831Ab3EAFlx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 01:41:53 -0400
-Received: from mail-ia0-f176.google.com ([209.85.210.176]:65468 "EHLO
-	mail-ia0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751790Ab3EAFln (ORCPT
+	id S1753370Ab3EAFqS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 01:46:18 -0400
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:36999 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751378Ab3EAFqJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 01:41:43 -0400
-Message-ID: <5180AB0E.6030407@gmail.com>
-Date: Wed, 01 May 2013 13:41:34 +0800
-From: Sam Ben <sam.bennn@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Alexey Lyahkov <alexey.lyashkov@gmail.com>,
-        Andrew Perepechko <anserper@ya.ru>, Robin Dong <sanbai@taobao.com>,
-        Theodore Tso <tytso@mit.edu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Bernd Schubert <bernd.schubert@fastmail.fm>,
-        David Howells <dhowells@redhat.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux-ext4 <linux-ext4@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>
-Subject: Re: [PATCH 2/3] mm: Ensure that mark_page_accessed moves pages to
- the active list
-References: <1367253119-6461-1-git-send-email-mgorman@suse.de> <1367253119-6461-3-git-send-email-mgorman@suse.de>
-In-Reply-To: <1367253119-6461-3-git-send-email-mgorman@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 1 May 2013 01:46:09 -0400
+From: Andy Lutomirski <luto@amacapital.net>
+To: linux-kernel@vger.kernel.org
+Cc: x86@kernel.org, Andrew Lutomirski <luto@mit.edu>,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: [PATCH v5] x86: Enable fast strings on Intel if BIOS hasn't already
+Date: Tue, 30 Apr 2013 22:46:00 -0700
+Message-Id: <3cdeaedaa41e258e8aa9ca83d79a936e0b9462bc.1367385613.git.luto@amacapital.net>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mel,
-On 04/30/2013 12:31 AM, Mel Gorman wrote:
-> If a page is on a pagevec then it is !PageLRU and mark_page_accessed()
-> may fail to move a page to the active list as expected. Now that the
-> LRU is selected at LRU drain time, mark pages PageActive if they are
-> on a pagevec so it gets moved to the correct list at LRU drain time.
-> Using a debugging patch it was found that for a simple git checkout
-> based workload that pages were never added to the active file list in
+From: Andrew Lutomirski <luto@mit.edu>
 
-Could you show us the details of your workload?
+Intel SDM volume 3A, 8.4.2 says:
 
-> practice but with this patch applied they are.
->
-> 				before   after
-> LRU Add Active File                  0  757121
-> LRU Add Active Anon            2678833 2633924
-> LRU Add Inactive File          8821711 8085543
-> LRU Add Inactive Anon              183     200
->
-> The question to consider is if this is universally safe. If the page
-> was isolated for reclaim and there is a parallel mark_page_accessed()
-> then vmscan.c will get upset when it finds an isolated PageActive page.
-> Similarly a potential race exists between a per-cpu drain on a pagevec
-> list and an activation on a remote CPU.
->
-> 				lru_add_drain_cpu
-> 				__pagevec_lru_add
-> 				  lru = page_lru(page);
-> mark_page_accessed
->    if (PageLRU(page))
->      activate_page
->    else
->      SetPageActive
-> 				  SetPageLRU(page);
-> 				  add_page_to_lru_list(page, lruvec, lru);
->
-> A PageActive page is now added to the inactivate list.
->
-> While this looks strange, I think it is sufficiently harmless that additional
-> barriers to address the case is not justified.  Unfortunately, while I never
-> witnessed it myself, these parallel updates potentially trigger defensive
-> DEBUG_VM checks on PageActive and hence they are removed by this patch.
->
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
-> ---
->   mm/swap.c   | 18 ++++++++++++------
->   mm/vmscan.c |  3 ---
->   2 files changed, 12 insertions(+), 9 deletions(-)
->
-> diff --git a/mm/swap.c b/mm/swap.c
-> index 80fbc37..2a10d08 100644
-> --- a/mm/swap.c
-> +++ b/mm/swap.c
-> @@ -437,8 +437,17 @@ void activate_page(struct page *page)
->   void mark_page_accessed(struct page *page)
->   {
->   	if (!PageActive(page) && !PageUnevictable(page) &&
-> -			PageReferenced(page) && PageLRU(page)) {
-> -		activate_page(page);
-> +			PageReferenced(page)) {
-> +
-> +		/*
-> +		 * If the page is on the LRU, promote immediately. Otherwise,
-> +		 * assume the page is on a pagevec, mark it active and it'll
-> +		 * be moved to the active LRU on the next drain
-> +		 */
-> +		if (PageLRU(page))
-> +			activate_page(page);
-> +		else
-> +			SetPageActive(page);
->   		ClearPageReferenced(page);
->   	} else if (!PageReferenced(page)) {
->   		SetPageReferenced(page);
-> @@ -478,11 +487,8 @@ EXPORT_SYMBOL(__lru_cache_add);
->    */
->   void lru_cache_add_lru(struct page *page, enum lru_list lru)
->   {
-> -	if (PageActive(page)) {
-> +	if (PageActive(page))
->   		VM_BUG_ON(PageUnevictable(page));
-> -	} else if (PageUnevictable(page)) {
-> -		VM_BUG_ON(PageActive(page));
-> -	}
->   
->   	VM_BUG_ON(PageLRU(page));
->   	__lru_cache_add(page, lru);
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 88c5fed..751b897 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -704,7 +704,6 @@ static unsigned long shrink_page_list(struct list_head *page_list,
->   		if (!trylock_page(page))
->   			goto keep;
->   
-> -		VM_BUG_ON(PageActive(page));
->   		VM_BUG_ON(page_zone(page) != zone);
->   
->   		sc->nr_scanned++;
-> @@ -935,7 +934,6 @@ activate_locked:
->   		/* Not a candidate for swapping, so reclaim swap space. */
->   		if (PageSwapCache(page) && vm_swap_full())
->   			try_to_free_swap(page);
-> -		VM_BUG_ON(PageActive(page));
->   		SetPageActive(page);
->   		pgactivate++;
->   keep_locked:
-> @@ -3488,7 +3486,6 @@ void check_move_unevictable_pages(struct page **pages, int nr_pages)
->   		if (page_evictable(page)) {
->   			enum lru_list lru = page_lru_base_type(page);
->   
-> -			VM_BUG_ON(PageActive(page));
->   			ClearPageUnevictable(page);
->   			del_page_from_lru_list(page, lruvec, LRU_UNEVICTABLE);
->   			add_page_to_lru_list(page, lruvec, lru);
+  Software can disable fast-string operation by clearing the
+  fast-string-enable bit (bit 0) of IA32_MISC_ENABLE MSR.
+  However, Intel recomments that system software always enable
+  fast-string operation.
+
+The Intel DQ67SW board (with latest BIOS) disables fast string
+operations if TXT is enabled.  A Lenovo X220 disables it regardless
+of TXT setting.  I doubt I'm the only person with a dumb BIOS like
+this.
+
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+---
+
+v4 was a almost two years ago, but I just noticed that this is still a problem.
+This is tested on v3.9.
+
+https://patchwork.kernel.org/patch/1073972/
+
+This is identical to v4 of this patch except that it uses wrmsrl_safe instead
+of wrmsr_safe.
+
+ arch/x86/kernel/cpu/intel.c | 27 ++++++++++++++++++++++-----
+ 1 file changed, 22 insertions(+), 5 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
+index 1905ce9..a4a3ef2 100644
+--- a/arch/x86/kernel/cpu/intel.c
++++ b/arch/x86/kernel/cpu/intel.c
+@@ -29,6 +29,7 @@
+ static void __cpuinit early_init_intel(struct cpuinfo_x86 *c)
+ {
+ 	u64 misc_enable;
++	bool allow_fast_string = true;
+ 
+ 	/* Unmask CPUID levels if masked: */
+ 	if (c->x86 > 6 || (c->x86 == 6 && c->x86_model >= 0xd)) {
+@@ -119,10 +120,11 @@ static void __cpuinit early_init_intel(struct cpuinfo_x86 *c)
+ 	 * (model 2) with the same problem.
+ 	 */
+ 	if (c->x86 == 15) {
+-		rdmsrl(MSR_IA32_MISC_ENABLE, misc_enable);
++		allow_fast_string = false;
+ 
++		rdmsrl(MSR_IA32_MISC_ENABLE, misc_enable);
+ 		if (misc_enable & MSR_IA32_MISC_ENABLE_FAST_STRING) {
+-			printk(KERN_INFO "kmemcheck: Disabling fast string operations\n");
++			printk_once(KERN_INFO "kmemcheck: Disabling fast string operations\n");
+ 
+ 			misc_enable &= ~MSR_IA32_MISC_ENABLE_FAST_STRING;
+ 			wrmsrl(MSR_IA32_MISC_ENABLE, misc_enable);
+@@ -131,13 +133,28 @@ static void __cpuinit early_init_intel(struct cpuinfo_x86 *c)
+ #endif
+ 
+ 	/*
+-	 * If fast string is not enabled in IA32_MISC_ENABLE for any reason,
+-	 * clear the fast string and enhanced fast string CPU capabilities.
++	 * If BIOS didn't enable fast string operation, try to enable
++	 * it ourselves.  If that fails, then clear the fast string
++	 * and enhanced fast string CPU capabilities.
+ 	 */
+ 	if (c->x86 > 6 || (c->x86 == 6 && c->x86_model >= 0xd)) {
+ 		rdmsrl(MSR_IA32_MISC_ENABLE, misc_enable);
++
++		if (allow_fast_string &&
++		    !(misc_enable & MSR_IA32_MISC_ENABLE_FAST_STRING)) {
++			misc_enable |= MSR_IA32_MISC_ENABLE_FAST_STRING;
++			wrmsrl_safe(MSR_IA32_MISC_ENABLE, misc_enable);
++
++			/* Re-read to make sure it stuck. */
++			rdmsrl(MSR_IA32_MISC_ENABLE, misc_enable);
++
++			if (misc_enable & MSR_IA32_MISC_ENABLE_FAST_STRING)
++				printk_once(KERN_INFO FW_WARN "IA32_MISC_ENABLE.FAST_STRING_ENABLE was not set\n");
++		}
++
+ 		if (!(misc_enable & MSR_IA32_MISC_ENABLE_FAST_STRING)) {
+-			printk(KERN_INFO "Disabled fast string operations\n");
++			if (allow_fast_string)
++				printk_once(KERN_INFO "Failed to enable fast string operations\n");
+ 			setup_clear_cpu_cap(X86_FEATURE_REP_GOOD);
+ 			setup_clear_cpu_cap(X86_FEATURE_ERMS);
+ 		}
+-- 
+1.8.1.4
 
