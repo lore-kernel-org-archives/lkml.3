@@ -1,59 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761288Ab3EAL4A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 07:56:00 -0400
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:38870 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755794Ab3EALzx (ORCPT
+	id S1761311Ab3EAMOy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 08:14:54 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:51460 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759317Ab3EAMOq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 07:55:53 -0400
-Date: Wed, 1 May 2013 13:55:49 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, eranian@google.com,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 1/2] Fix perf LBR filtering
-Message-ID: <20130501115549.GA19811@gmail.com>
-References: <1366844694-2770-1-git-send-email-andi@firstfloor.org>
- <20130425162535.GA5828@dyad.programming.kicks-ass.net>
- <20130425164100.GC16732@two.firstfloor.org>
- <20130425164837.GD5828@dyad.programming.kicks-ass.net>
- <20130425170037.GD16732@two.firstfloor.org>
- <20130425171842.GA8669@dyad.programming.kicks-ass.net>
- <20130425174211.GE16732@two.firstfloor.org>
- <20130426075601.GB8669@dyad.programming.kicks-ass.net>
- <20130426194633.GF16732@two.firstfloor.org>
- <20130501115125.GA19497@gmail.com>
-MIME-Version: 1.0
+	Wed, 1 May 2013 08:14:46 -0400
+X-Nat-Received: from [202.181.97.72]:58193 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1367410468.13635
+To: cl@linux.com
+Cc: glommer@parallels.com, penberg@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [linux-next-20130422] Bug in SLAB?
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <0000013e56e9304a-1042a95a-d4dd-43c5-8b8a-c670f50ac54e-000000@email.amazonses.com>
+	<201304300645.FCE37285.tVHJLSOMQFOFFO@I-love.SAKURA.ne.jp>
+	<0000013e5b56d067-7982dfa6-08a2-4c48-ad77-6888b5114c5f-000000@email.amazonses.com>
+	<201305010101.CGB86424.JFQOtSFOVOLFHM@I-love.SAKURA.ne.jp>
+	<0000013e5bfc7c4d-54fa9464-dccd-4157-b4a5-22594261eaf3-000000@email.amazonses.com>
+In-Reply-To: <0000013e5bfc7c4d-54fa9464-dccd-4157-b4a5-22594261eaf3-000000@email.amazonses.com>
+Message-Id: <201305012114.AED78178.tFSHFQOOJLMOFV@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Wed, 1 May 2013 21:14:23 +0900
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130501115125.GA19497@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 01052013 #9864460, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Ingo Molnar <mingo@kernel.org> wrote:
-
-> > I don't think you want to spend that many cycles in the NMI
-> > handler for a dubious feature.  Ok in theory you could
-> > add something with binary search, but that would be quite
-> > a bit of effort and it would be probably challenging 
-> > to do that all NMI safe.
+Christoph Lameter wrote:
+> > "kmalloc() returning NULL for these allocations" is needed by "try kmalloc()
+> > first, fallback to vmalloc()" allocation. There are kernel modules which expect
+> > kmalloc() to return NULL rather than oops when the requested size is larger
+> > than KMALLOC_MAX_SIZE bytes. If kmalloc() suddenly starts triggering oops, such
+> > modules will break.
 > 
-> If anyone using LBR sees that overhead it can be improved. You or others 
-> who care can improve it.
+> This behavior has been in there for years. Why try a kmalloc that
+> always fails since the size is too big?
+> 
 
-Also, improving the performance of is_module_text() shouldn't be too hard: 
-an RCU rbtree should be enough.
+This is nothing but a testcase. Size argument is sometimes unknown and/or
+user-controlled. We expect that not only kmalloc() etc. but also kstrdup(),
+kmemdup(), krealloc() etc. do not trigger oops. I think that checking the size
+in SLAB/SLUB is the only safe way.
 
-It's NMI-safe: when the rb-tree is in the middle of a rotation we'll 
-simply not find the address and 'revert' to the worst case non-filtering 
-your patch does all the time, but in the likely case it does find it and 
-works as expected.
+> > Anyway, there is a regression we want to fix : we won't be able to boot
+> > Linux 3.10-rc1 for x86_32 built with CONFIG_DEBUG_SLAB=y &&
+> > CONFIG_DEBUG_SPINLOCK=y && CONFIG_DEBUG_PAGEALLOC=y .
+> > ("Fix off by one error in slab.h" did not fix the regression.)
+> 
+> Hmm... Where does this fail? In slab?
+> 
+It hangs (with CPU#0 spinning) immediately after printing
 
-Thanks,
+  Decompressing Linux... Parsing ELF... done.
+  Booting the kernel.
 
-	Ingo
+lines. Today I heard that gdb can be used if I use qemu, but I doubt that I can
+manage time to understand and find the exact location within a few days.
+
+The culprit location is possibly in SLAB because the kernel boots if built with
+CONFIG_DEBUG_SLAB=n || CONFIG_DEBUG_SPINLOCK=n || CONFIG_DEBUG_PAGEALLOC=n.
