@@ -1,116 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757043Ab3EAUUk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 16:20:40 -0400
-Received: from g5t0009.atlanta.hp.com ([15.192.0.46]:29747 "EHLO
-	g5t0009.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755278Ab3EAUUh (ORCPT
+	id S1757242Ab3EAUX5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 16:23:57 -0400
+Received: from casper.infradead.org ([85.118.1.10]:56654 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756988Ab3EAUXz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 16:20:37 -0400
-Message-ID: <1367438865.16154.160.camel@misato.fc.hp.com>
-Subject: Re: [PATCH 2/3 RFC] Driver core: Use generic offline/online for CPU
- offline/online
-From: Toshi Kani <toshi.kani@hp.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, isimatu.yasuaki@jp.fujitsu.com,
-        vasilis.liaskovitis@profitbricks.com
-Date: Wed, 01 May 2013 14:07:45 -0600
-In-Reply-To: <4894519.gepD7lHY3G@vostro.rjw.lan>
-References: <1576321.HU0tZ4cGWk@vostro.rjw.lan>
-	 <5608485.T3GFgtNYov@vostro.rjw.lan>
-	 <1367365326.16154.139.camel@misato.fc.hp.com>
-	 <4894519.gepD7lHY3G@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
+	Wed, 1 May 2013 16:23:55 -0400
+Message-ID: <518179BD.3010407@infradead.org>
+Date: Wed, 01 May 2013 13:23:25 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: David Rientjes <rientjes@google.com>
+CC: "Yann E. MORIN" <yann.morin.1998@free.fr>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        linux-media <linux-media@vger.kernel.org>,
+        linux-kbuild@vger.kernel.org
+Subject: Re: linux-next: Tree for May 1 (media/usb/stk1160)
+References: <20130501183734.7ad1efca2d06e75432edabbd@canb.auug.org.au> <518157EB.3010700@infradead.org> <20130501192845.GA18811@free.fr> <alpine.DEB.2.02.1305011258180.8448@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.02.1305011258180.8448@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-05-01 at 16:49 +0200, Rafael J. Wysocki wrote:
-> On Tuesday, April 30, 2013 05:42:06 PM Toshi Kani wrote:
-> > On Mon, 2013-04-29 at 14:28 +0200, Rafael J. Wysocki wrote:
-> > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > > 
-> > > Rework the CPU hotplug code in drivers/base/cpu.c to use the
-> > > generic offline/online support introduced previously instead of
-> > > its own CPU-specific code.
-> > > 
-> > > For this purpose, modify cpu_subsys to provide offline and online
-> > > callbacks for CONFIG_HOTPLUG_CPU set and remove the code handling
-> > > the CPU-specific 'online' sysfs attribute.
-> > > 
-> > > This modification is not supposed to change the user-observable
-> > > behavior of the kernel (i.e. the 'online' attribute will be present
-> > > in exactly the same place in sysfs and should trigger exactly the
-> > > same actions as before).
-> > > 
-> > > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > > ---
-> > >  drivers/base/cpu.c |   62 ++++++++++++-----------------------------------------
-> > >  1 file changed, 15 insertions(+), 47 deletions(-)
-> > > 
-> > > Index: linux-pm/drivers/base/cpu.c
-> > > ===================================================================
-> > > --- linux-pm.orig/drivers/base/cpu.c
-> > > +++ linux-pm/drivers/base/cpu.c
-> > > @@ -16,66 +16,25 @@
-> > >  
-> > >  #include "base.h"
-> > >  
-> > > -struct bus_type cpu_subsys = {
-> > > -	.name = "cpu",
-> > > -	.dev_name = "cpu",
-> > > -};
-> > > -EXPORT_SYMBOL_GPL(cpu_subsys);
-> > > -
-> > >  static DEFINE_PER_CPU(struct device *, cpu_sys_devices);
-> > >  
-> > >  #ifdef CONFIG_HOTPLUG_CPU
-> > > -static ssize_t show_online(struct device *dev,
-> > > -			   struct device_attribute *attr,
-> > > -			   char *buf)
-> > > +static int cpu_subsys_online(struct device *dev)
-> > >  {
-> > > -	struct cpu *cpu = container_of(dev, struct cpu, dev);
-> > > -
-> > > -	return sprintf(buf, "%u\n", !!cpu_online(cpu->dev.id));
-> > > +	return cpu_up(dev->id);
-> > >  }
-> > >  
-> > > -static ssize_t __ref store_online(struct device *dev,
-> > > -				  struct device_attribute *attr,
-> > > -				  const char *buf, size_t count)
-> > > +static int cpu_subsys_offline(struct device *dev)
-> > >  {
-> > > -	struct cpu *cpu = container_of(dev, struct cpu, dev);
-> > > -	ssize_t ret;
-> > > -
-> > > -	cpu_hotplug_driver_lock();
-> > 
-> > By replacing cpu_hotplug_driver_lock() with lock_device_offline() in
-> > patch 1/3, it no longer protects from other places that still use
-> > cpu_hotplug_device_lock(), such as save_mc_for_early().
+On 05/01/13 12:58, David Rientjes wrote:
+> On Wed, 1 May 2013, Yann E. MORIN wrote:
 > 
-> Yes.
+>>> When CONFIG_SND=m and CONFIG_SND_AC97_CODEC=m and
+>>> CONFIG_VIDEO_STK1160=y
+>>> CONFIG_VIDEO_STK1160_AC97=y
+>>>
+>>> drivers/built-in.o: In function `stk1160_ac97_register':
+>>> (.text+0x122706): undefined reference to `snd_card_create'
+>>> drivers/built-in.o: In function `stk1160_ac97_register':
+>>> (.text+0x1227b2): undefined reference to `snd_ac97_bus'
+>>> drivers/built-in.o: In function `stk1160_ac97_register':
+>>> (.text+0x1227cd): undefined reference to `snd_card_free'
+>>> drivers/built-in.o: In function `stk1160_ac97_register':
+>>> (.text+0x12281b): undefined reference to `snd_ac97_mixer'
+>>> drivers/built-in.o: In function `stk1160_ac97_register':
+>>> (.text+0x122832): undefined reference to `snd_card_register'
+>>> drivers/built-in.o: In function `stk1160_ac97_unregister':
+>>> (.text+0x12285e): undefined reference to `snd_card_free'
+>>>
+>>>
+>>> This kconfig fragment:
+>>> config VIDEO_STK1160_AC97
+>>> 	bool "STK1160 AC97 codec support"
+>>> 	depends on VIDEO_STK1160 && SND
 > 
-> What about taking cpu_hotplug_driver_lock() around cpu_up() and
-> cpu_down() in cpu_subsys_online() and cpu_subsys_offline()?
+> This doesn't depend on SND, it depends on SND=y.
+> --
 
-Sounds like a reasonable approach to me. 
 
-> Alternatively, I can just replace cpu_hotplug_driver_lock() with
-> lock_device_offline() everywhere.
+Maybe this option *should* depend on SND=y, but that's not what the
+kconfig syntax says.  The kconfig language does not care if the variable is
+a bool or a tristate when evaluating a depends expression AFAICT (but I am
+only reading Documentation/kbuild/kconfig-language.txt, not the source code).
 
-That works too.  Not sure which way is better.  If we go this option,
-I'd suggest to rename lock_device_offline() since it could be misleading
-that the lock is only used for offline, i.e. excluding online.
-lock_device_hotplug() might be less confusing although we distinguish
-online/offline and hotplug operations.
 
-Thanks,
--Toshi
-
+-- 
+~Randy
