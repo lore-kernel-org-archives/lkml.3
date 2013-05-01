@@ -1,116 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754411Ab3EASNi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 14:13:38 -0400
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:49348 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752079Ab3EASNc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 14:13:32 -0400
+	id S1755061Ab3EASOk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 14:14:40 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:56945 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752079Ab3EASOd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 May 2013 14:14:33 -0400
+Message-ID: <51815BA0.1090209@ti.com>
+Date: Wed, 1 May 2013 14:14:56 -0400
+From: Tom Rini <trini@ti.com>
+Organization: Texas Instruments
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <20130501111219.GF28253@dyad.programming.kicks-ass.net>
-References: <1367261108-9567-1-git-send-email-andi@firstfloor.org>
-	<20130501090718.GA28253@dyad.programming.kicks-ass.net>
-	<m261z3uipb.fsf@firstfloor.org>
-	<20130501111219.GF28253@dyad.programming.kicks-ass.net>
-Date: Wed, 1 May 2013 20:13:31 +0200
-Message-ID: <CABPqkBT-VdWQ0c5AASDfQLssBRSfbtoH0-L1eHMXONqe5d_YRw@mail.gmail.com>
-Subject: Re: [PATCH] perf, x86: Add workaround for MEM_*_RETIRED errata BV98
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Andi Kleen <andi@firstfloor.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Rusty Russell <rusty@rustcorp.com.au>
+CC: <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-kbuild@vger.kernel.org>
+Subject: Re: [PATCH] modpost.c: Add .text.unlikely to TEXT_SECTIONS
+References: <1366842363-7513-1-git-send-email-trini@ti.com> <87sj2aca9r.fsf@rustcorp.com.au> <517E7260.5070204@ti.com> <87ppxbxwzg.fsf@rustcorp.com.au> <5180F9FB.8010307@ti.com>
+In-Reply-To: <5180F9FB.8010307@ti.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-This is a serious problem because it silently corrupts events on the
-sibling thread.
-The problem can be observed easily using a basic perf stat command. The idea
-is to use an event for which we easily know the final count in advance. I use
-ROB_MISC_EVENT:LBR_INSERTS, i.e., the number of entries inserted into
-the LBR. If I am not using the LBR, then the count should be zero.
-Given that LBR
-is not used by default, the count should be zero.  Then, you combine this
-event with the MEM_* events to cause multiplexing in system-wide mode
-and you use a workload which does a lot of memory accesses (I use a triad
-loop):
-
-On IVB (desktop), you can do:
-# perf stat -a -e r20cc,r81d0,r02d2,r02d4,r401d1 triad
-
-You will get a non-zero count for r20cc (lbr_inserts). That's wrong.
-
-If you restrict to one thread/core, you get the correct answer:
-
-# perf stat -C0-3 -a -e r20cc,r81d0,r02d2,r02d4,r401d1 triad
-
-Then, you get 0 for lbr_insert. This is the correct answer.
-
-Unfortunately, Andi's patch fails to correct the problem though
-it is the right approach. As he said, the problem is unfortunately
-deeper than this.
-
-
-On Wed, May 1, 2013 at 1:12 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Wed, May 01, 2013 at 02:56:32AM -0700, Andi Kleen wrote:
->> Peter Zijlstra <peterz@infradead.org> writes:
->> >
->> > So you're saying that if two SMT siblings count the same MEM_*_RETIRED event
->> > (on the same counter?) events can get accounted to the wrong sibling?
+On 05/01/2013 07:18 AM, Tom Rini wrote:
+> On 04/30/2013 10:19 PM, Rusty Russell wrote:
+>> Tom Rini <trini@ti.com> writes:
+>>> On 04/28/2013 10:59 PM, Rusty Russell wrote:
+>>>> Tom Rini <trini@ti.com> writes:
+>>>>
+>>>>> Recent gcc's may place functions into the .text.unlikely section and we
+>>>>> need to check this section as well for section mismatches now otherwise
+>>>>> we may have false negatives for this test.
+>>>>
+>>>> Hmm, I don't think it's all that recent, is it?  I can find it back to
+>>>> gcc 4.0.4:
+>>>>
+>>>> `-freorder-functions'
+>>>>      Reorder functions in the object file in order to improve code
+>>>>      locality.  This is implemented by using special subsections
+>>>>      `.text.hot' for most frequently executed functions and
+>>>>      `.text.unlikely' for unlikely executed functions.  Reordering is
+>>>>      done by the linker so object file format must support named
+>>>>      sections and linker must place them in a reasonable way.
+>>>>
+>>>>      Also profile feedback must be available in to make this option
+>>>>      effective.  See `-fprofile-arcs' for details.
+>>>>
+>>>>      Enabled at levels `-O2', `-O3', `-Os'.
+>>>>
+>>>> The comment is the same in in gcc 4.7.
+>>>>
+>>>> So is your real issue that this section is generated with
+>>>> -fprofile-arcs, or has something changed with gcc 4.8, or...?
+>>>
+>>> I've started seeing this with Linaro based 4.7 toolchains.  I can go
+>>> back through their releases and see when it starts showing up there if
+>>> it helps.  I didn't add .text.hot as I didn't have that section at all,
+>>> fwiw.
 >>
->> It can happen regardless of what event is enabled on the other counter.
->
-> What I was trying to ask is.. where does it leak to. Does it leak to whatever
-> event the other counter is counting? Or does it explicitly leak to any sibilng
-> counter also counting MEM_*_RETIRED?
->
->     SMT0   SMT1
->
-> C0   MR     MR
-> C1
-> C2
-> C3
->
-> So here SMT[01]-C0 will cross count their events.
->
->
->     SMT0   SMT1
->
-> C0   MR
-> C1          MR
-> C2
-> C3
->
-> Will they too here?
->
->
->     SMT0   SMT1
->
-> C0   MR     Cycles
-> C1
-> C2
-> C3
->
-> What about here?
->
->
-> So again; do they specifically leak between the same counters of siblings or
-> between the same events of siblings. Your initial explanation wasn't clear on
-> when and where exactly the leak happens.
->
->
->> > This begs the question what happens when the sibling does have the (same?)
->> > counter enabled but counting an all together different event; do we then still
->> > 'loose' events from the one sibling and add then to the other counter?
->>
->> Yes, that is what the patch fixes.
->
-> Well, it very much depends on the above answer; if case-3 leaks samples from
-> SMT0-C0 to SMT1-C0 then the patch doesn't fix anything as the SMT1-C0 event
-> (cycles) doesn't bother with the shared register.
->
->
+>> Weird, did you turn on CONFIG_GCOV_KERNEL?  AFAICT you shouldn't see
+>> this section without that.
+> 
+> Nope, CONFIG_GCOV_KERNEL is off.  Must be related to whatever flags the
+> Linaro folks set as default on -O2 (at least in their 2013.03 release),
+> after reading over one of the .o.cmd files in the build.
+> 
+> Do you want me to re-word the commit message a bit or ?  Thanks!
+
+I poked around, and every Linaro binary I can grab (2012.01 and gcc 4.6
+to 2013.04 and gcc 4.8) has this behaviour.
+
+-- 
+Tom
