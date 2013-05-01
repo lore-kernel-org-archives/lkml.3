@@ -1,104 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756252Ab3EAPoZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 11:44:25 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:60783 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751956Ab3EAPoR (ORCPT
+	id S1756633Ab3EAPrR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 11:47:17 -0400
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:62011 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751956Ab3EAPrG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 11:44:17 -0400
-Date: Wed, 1 May 2013 16:43:46 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Mehar Bajwa <mehar.bajwa@ti.com>
-Cc: linux-kernel@vger.kernel.org, sameo@linux.intel.com,
-        liam.r.girdwood@intel.com, navada@ti.com
-Message-ID: <20130501154346.GO26160@sirena.org.uk>
-References: <1366119816-9719-1-git-send-email-mehar.bajwa@ti.com>
+	Wed, 1 May 2013 11:47:06 -0400
+Date: Wed, 1 May 2013 08:47:02 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Cliff Wickman <cpw@sgi.com>
+cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, mgorman@suse.de,
+        aarcange@redhat.com, dave.hansen@intel.com, dsterba@suse.cz,
+        hannes@cmpxchg.org, kosaki.motohiro@gmail.com,
+        kirill.shutemov@linux.intel.com, mpm@selenic.com,
+        n-horiguchi@ah.jp.nec.com, rdunlap@infradead.org
+Subject: Re: [PATCH] mm/pagewalk.c: walk_page_range should avoid VM_PFNMAP
+ areas
+In-Reply-To: <E1UXWpF-0006Ya-Br@eag09.americas.sgi.com>
+Message-ID: <alpine.DEB.2.02.1305010843180.4547@chino.kir.corp.google.com>
+References: <E1UXWpF-0006Ya-Br@eag09.americas.sgi.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="9DptZICXTlJ7FQ09"
-Content-Disposition: inline
-In-Reply-To: <1366119816-9719-1-git-send-email-mehar.bajwa@ti.com>
-X-Cookie: Be different: conform.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 212.183.132.78
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH V2 1/4] mfd: Initial support for Texas Instruments AIC
- family of CODECs
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 1 May 2013, Cliff Wickman wrote:
 
---9DptZICXTlJ7FQ09
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> Index: linux/mm/pagewalk.c
+> ===================================================================
+> --- linux.orig/mm/pagewalk.c
+> +++ linux/mm/pagewalk.c
+> @@ -127,22 +127,6 @@ static int walk_hugetlb_range(struct vm_
+>  	return 0;
+>  }
+>  
+> -static struct vm_area_struct* hugetlb_vma(unsigned long addr, struct mm_walk *walk)
+> -{
+> -	struct vm_area_struct *vma;
+> -
+> -	/* We don't need vma lookup at all. */
+> -	if (!walk->hugetlb_entry)
+> -		return NULL;
+> -
+> -	VM_BUG_ON(!rwsem_is_locked(&walk->mm->mmap_sem));
+> -	vma = find_vma(walk->mm, addr);
+> -	if (vma && vma->vm_start <= addr && is_vm_hugetlb_page(vma))
+> -		return vma;
+> -
+> -	return NULL;
+> -}
+> -
+>  #else /* CONFIG_HUGETLB_PAGE */
+>  static struct vm_area_struct* hugetlb_vma(unsigned long addr, struct mm_walk *walk)
+>  {
+> @@ -200,28 +184,46 @@ int walk_page_range(unsigned long addr,
+>  
+>  	pgd = pgd_offset(walk->mm, addr);
+>  	do {
+> -		struct vm_area_struct *vma;
+> +		struct vm_area_struct *vma = NULL;
+>  
+>  		next = pgd_addr_end(addr, end);
+>  
+>  		/*
+> -		 * handle hugetlb vma individually because pagetable walk for
+> -		 * the hugetlb page is dependent on the architecture and
+> -		 * we can't handled it in the same manner as non-huge pages.
+> +		 * Check any special vma's within this range.
+>  		 */
+> -		vma = hugetlb_vma(addr, walk);
+> +		VM_BUG_ON(!rwsem_is_locked(&walk->mm->mmap_sem));
 
-On Tue, Apr 16, 2013 at 07:13:36PM +0530, Mehar Bajwa wrote:
+I think this should be moved out of the iteration.  It's currently inside 
+it even before your patch, but I think it's pointless.
 
-> +/**
-> + * set_aic_book: change book which we have to write/read to.
-> + *
-> + * @aic: Device to write/read to.
-> + * @book: Book to write/read to.
-> + */
-> +int set_aic_book(struct aic *aic, int book)
-> +{
-> +	int ret = 0;
-> +	u8 page_buf[] = { 0x0, 0x0 };
-> +	u8 book_buf[] = { 0x7f, 0x0 };
-> +
-> +	ret = regmap_write(aic->regmap, page_buf[0], page_buf[1]);
-> +
-> +	if (ret < 0)
-> +		return ret;
-> +	book_buf[1] = book;
-> +	ret = regmap_write(aic->regmap, book_buf[0], book_buf[1]);
+> +		vma = find_vma(walk->mm, addr);
+>  		if (vma) {
+> -			if (vma->vm_end < next)
+> +			/*
+> +			 * There are no page structures backing a VM_PFNMAP
+> +			 * range, so allow no split_huge_page_pmd().
+> +			 */
+> +			if (vma->vm_flags & VM_PFNMAP) {
+>  				next = vma->vm_end;
+> +				pgd = pgd_offset(walk->mm, next);
+> +				continue;
+> +			}
 
-This looks like just like register paging - there's support in the core
-for that, if it's not adequate then just extend the framework.  Looks
-like the pages are multi-level so perhaps that's required.
+What if end < vma->vm_end?
 
-> +	dev_info(aic->dev, "%s\n", devname);
-
-It's useful to display something like a device revision but if you're
-just announcing that the driver has been loaded that's not so useful and
-should be removed.  Similarly for the others.
-
-> +#ifdef CONFIG_MFD_AIC_IRQ
-> +	if (aic->irq) {
-> +		ret = aic_irq_init(aic);
-> +		if (ret < 0)
-> +			goto err_irq;
-> +	}
-> +#endif
-
-This doesn't look like it should be a config option?  If it should be
-then these should be done with inline functions in the headers for stubs
-rather than ifdefs in the code.
-
---9DptZICXTlJ7FQ09
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRgTgvAAoJELSic+t+oim9RfsQAJcFTW6vdVNDg7bSYlPHuoeI
-jbThlciEJwAE/AAv8uKD7Q4JgoiEI1CbkXw/gYAk3SiLoTcvHpH8PFOuYY3nRvNJ
-sowE898LPwcyEx35sCteQs6azrSNBfp57l/lpr7kn8PLvXlYqX/X8D1y6MteZ7Jv
-gcnWG6JZ0mZUULM0Iac9s4j5qrQmBW6OWxyMcET7JzU8Y8SciHTjdla6hoQzuD3k
-ts6sB3elMy8JD/VJUz0HaDXB+c4/uXoi/TldHjDT2ExAlsFV4o59CuOaRM6Dgykt
-M3/Gm1cCk5G3A2L6ZDFGIqjMcZOx213EOGsAFkt0wK7lVNny5Bf2ZVT+N2cjtnJB
-AjSMSGk17a8Pan3Bvrbl09LwSxbI+f10z9ug0WpSKBSOmUTlASw0kh4GtSbcL4Zl
-pE1h+MTGVguL5wpkjegLauwkVurmw1xVOyyahfTkvl8cdhKXN1Jl/n6QUd9kwvSS
-ejMlyDEKb2kV9KpUSXcnBRE5ES4szdyKNQ29RznK/qXpZI6Io4xN8NfRvu3Gw4FH
-pIFGrlpAMk6GGGjbDzG759tdmo57dBAeAGmB/A+7C5P9cbR8V9NtJlL+pcFh7fuy
-p9uLm+eihZbtBarCtRvwOcvGVa8LEcjI8gEbpuqpgKzgjsE1CqN6JTSzR1K/9JzC
-HOYK8rtoQAmxVL2QWpmX
-=C3nV
------END PGP SIGNATURE-----
-
---9DptZICXTlJ7FQ09--
+>  			/*
+> -			 * Hugepage is very tightly coupled with vma, so
+> -			 * walk through hugetlb entries within a given vma.
+> +			 * Handle hugetlb vma individually because pagetable
+> +			 * walk for the hugetlb page is dependent on the
+> +			 * architecture and we can't handled it in the same
+> +			 * manner as non-huge pages.
+>  			 */
+> -			err = walk_hugetlb_range(vma, addr, next, walk);
+> -			if (err)
+> -				break;
+> -			pgd = pgd_offset(walk->mm, next);
+> -			continue;
+> +			if (walk->hugetlb_entry && (vma->vm_start <= addr) &&
+> +			    is_vm_hugetlb_page(vma)) {
+> +				if (vma->vm_end < next)
+> +					next = vma->vm_end;
+> +				/*
+> +				 * Hugepage is very tightly coupled with vma,
+> +				 * so walk through hugetlb entries within a
+> +				 * given vma.
+> +				 */
+> +				err = walk_hugetlb_range(vma, addr, next, walk);
+> +				if (err)
+> +					break;
+> +				pgd = pgd_offset(walk->mm, next);
+> +				continue;
+> +			}
+>  		}
+>  
+>  		if (pgd_none_or_clear_bad(pgd)) {
