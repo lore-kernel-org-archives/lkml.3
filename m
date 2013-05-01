@@ -1,113 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758644Ab3EAXgx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 19:36:53 -0400
-Received: from mail-ia0-f175.google.com ([209.85.210.175]:45566 "EHLO
-	mail-ia0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753177Ab3EAXgv (ORCPT
+	id S1752938Ab3EAXxa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 19:53:30 -0400
+Received: from mail-ia0-f178.google.com ([209.85.210.178]:36020 "EHLO
+	mail-ia0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751966Ab3EAXx2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 19:36:51 -0400
-X-rim-org-msg-ref-id: 258902731
-Message-ID: <258902731-1367451404-cardhu_decombobulator_blackberry.rim.net-605780320-@b4.c4.bise6.blackberry>
+	Wed, 1 May 2013 19:53:28 -0400
+X-rim-org-msg-ref-id: 813455215
+Message-ID: <813455215-1367452406-cardhu_decombobulator_blackberry.rim.net-461706736-@b4.c4.bise6.blackberry>
 Reply-To: paul.ferrari@gmail.com
 X-Priority: Normal
-References: <20130501212445.496FB660D7C@gitolite.kernel.org>
-In-Reply-To: <20130501212445.496FB660D7C@gitolite.kernel.org>
+References: <20130501212450.B7F13660E0A@gitolite.kernel.org>
+In-Reply-To: <20130501212450.B7F13660E0A@gitolite.kernel.org>
 Sensitivity: Normal
 Importance: Normal
-Subject: Re: NFC: llcp: Only keep raw sockets alive when the LLCP local leaves
+Subject: Re: ath9k: merge ath_tx_start_dma into ath_tx_start
 To: "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>
 From: paul.ferrari@gmail.com
-Date: Wed, 1 May 2013 23:36:42 +0000
+Date: Wed, 1 May 2013 23:53:24 +0000
 Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r41NavFY000458
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r41Nrx2L000476
 
-Dd0 ddddDDddD$
-
+       
 Sent from my Verizon Wireless BlackBerry
 
 -----Original Message-----
 From:	"Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>
 Sender:	git-commits-head-owner@vger.kernel.org
-Date:	Wed,  1 May 2013 21:24:45 
+Date:	Wed,  1 May 2013 21:24:50 
 To: <git-commits-head@vger.kernel.org>
-Subject: NFC: llcp: Only keep raw sockets alive when the LLCP local leaves
+Subject: ath9k: merge ath_tx_start_dma into ath_tx_start
 
-Gitweb:     http://git.kernel.org/linus/;a=commit;h=b436a13debec2b3d2c671d6bebcdb91dabcb0795
-Commit:     b436a13debec2b3d2c671d6bebcdb91dabcb0795
-Parent:     495af72e1434724559e756ba32d9040125ac506b
-Author:     Samuel Ortiz <sameo@linux.intel.com>
-AuthorDate: Wed Apr 3 16:34:19 2013 +0200
-Committer:  Samuel Ortiz <sameo@linux.intel.com>
-CommitDate: Thu Apr 11 16:29:09 2013 +0200
+Gitweb:     http://git.kernel.org/linus/;a=commit;h=bdc21457ac2bb75b59e774303edbb623830284ae
+Commit:     bdc21457ac2bb75b59e774303edbb623830284ae
+Parent:     7c8f0db0d024efda38976fc2acf7743f458e1d96
+Author:     Felix Fietkau <nbd@openwrt.org>
+AuthorDate: Mon Apr 22 23:11:43 2013 +0200
+Committer:  John W. Linville <linville@tuxdriver.com>
+CommitDate: Tue Apr 23 14:14:52 2013 -0400
 
-    NFC: llcp: Only keep raw sockets alive when the LLCP local leaves
+    ath9k: merge ath_tx_start_dma into ath_tx_start
     
-    When the MAC goes down, connected and connection less sockets should be
-    notified, but raw sockets should be kept alive.
-    They will get notified only when the physical devices goes away.
+    The split makes no sense and merging the functions makes further changes
+    easier to implement
     
-    Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
+    Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+    Signed-off-by: John W. Linville <linville@tuxdriver.com>
 ---
- net/nfc/llcp/llcp.c |   26 +++-----------------------
- 1 files changed, 3 insertions(+), 23 deletions(-)
+ drivers/net/wireless/ath/ath9k/xmit.c |   80 +++++++++++++++------------------
+ 1 files changed, 36 insertions(+), 44 deletions(-)
 
-diff --git a/net/nfc/llcp/llcp.c b/net/nfc/llcp/llcp.c
-index 83e788e..99ec39d 100644
---- a/net/nfc/llcp/llcp.c
-+++ b/net/nfc/llcp/llcp.c
-@@ -76,7 +76,7 @@ static void nfc_llcp_socket_purge(struct nfc_llcp_sock *sock)
- 	}
+diff --git a/drivers/net/wireless/ath/ath9k/xmit.c b/drivers/net/wireless/ath/ath9k/xmit.c
+index 5bc5802..108fe5f 100644
+--- a/drivers/net/wireless/ath/ath9k/xmit.c
++++ b/drivers/net/wireless/ath/ath9k/xmit.c
+@@ -1892,49 +1892,6 @@ static struct ath_buf *ath_tx_setup_buffer(struct ath_softc *sc,
+ 	return bf;
  }
  
--static void nfc_llcp_socket_release(struct nfc_llcp_local *local, bool listen,
-+static void nfc_llcp_socket_release(struct nfc_llcp_local *local, bool device,
- 				    int err)
- {
- 	struct sock *sk;
-@@ -116,23 +116,6 @@ static void nfc_llcp_socket_release(struct nfc_llcp_local *local, bool listen,
- 
- 				bh_unlock_sock(accept_sk);
- 			}
+-/* FIXME: tx power */
+-static void ath_tx_start_dma(struct ath_softc *sc, struct sk_buff *skb,
+-			     struct ath_tx_control *txctl)
+-{
+-	struct ieee80211_tx_info *tx_info = IEEE80211_SKB_CB(skb);
+-	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)skb->data;
+-	struct ath_atx_tid *tid = NULL;
+-	struct ath_buf *bf;
+-	u8 tidno;
 -
--			if (listen == true) {
--				nfc_llcp_socket_remote_param_init(llcp_sock);
--				bh_unlock_sock(sk);
--				continue;
--			}
+-	if (txctl->an && ieee80211_is_data_qos(hdr->frame_control)) {
+-		tidno = ieee80211_get_qos_ctl(hdr)[0] &
+-			IEEE80211_QOS_CTL_TID_MASK;
+-		tid = ATH_AN_2_TID(txctl->an, tidno);
+-
+-		WARN_ON(tid->ac->txq != txctl->txq);
+-	}
+-
+-	if ((tx_info->flags & IEEE80211_TX_CTL_AMPDU) && tid) {
+-		/*
+-		 * Try aggregation if it's a unicast data frame
+-		 * and the destination is HT capable.
+-		 */
+-		ath_tx_send_ampdu(sc, tid, skb, txctl);
+-	} else {
+-		bf = ath_tx_setup_buffer(sc, txctl->txq, tid, skb);
+-		if (!bf) {
+-			if (txctl->paprd)
+-				dev_kfree_skb_any(skb);
+-			else
+-				ieee80211_free_txskb(sc->hw, skb);
+-			return;
 -		}
 -
--		/*
--		 * If we have a connection less socket bound, we keep it alive
--		 * if the device is still present.
--		 */
--		if (sk->sk_state == LLCP_BOUND && sk->sk_type == SOCK_DGRAM &&
--		    listen == true) {
--			nfc_llcp_socket_remote_param_init(llcp_sock);
--			bh_unlock_sock(sk);
--			continue;
- 		}
+-		bf->bf_state.bfs_paprd = txctl->paprd;
+-
+-		if (txctl->paprd)
+-			bf->bf_state.bfs_paprd_timestamp = jiffies;
+-
+-		ath_tx_send_normal(sc, txctl->txq, tid, skb);
+-	}
+-}
+-
+ /* Upon failure caller should free skb */
+ int ath_tx_start(struct ieee80211_hw *hw, struct sk_buff *skb,
+ 		 struct ath_tx_control *txctl)
+@@ -1945,8 +1902,11 @@ int ath_tx_start(struct ieee80211_hw *hw, struct sk_buff *skb,
+ 	struct ieee80211_vif *vif = info->control.vif;
+ 	struct ath_softc *sc = hw->priv;
+ 	struct ath_txq *txq = txctl->txq;
++	struct ath_atx_tid *tid = NULL;
++	struct ath_buf *bf;
+ 	int padpos, padsize;
+ 	int frmlen = skb->len + FCS_LEN;
++	u8 tidno;
+ 	int q;
  
- 		if (err)
-@@ -147,11 +130,8 @@ static void nfc_llcp_socket_release(struct nfc_llcp_local *local, bool listen,
+ 	/* NOTE:  sta can be NULL according to net/mac80211.h */
+@@ -2002,8 +1962,40 @@ int ath_tx_start(struct ieee80211_hw *hw, struct sk_buff *skb,
+ 		txq->stopped = true;
+ 	}
  
- 	write_unlock(&local->sockets.lock);
+-	ath_tx_start_dma(sc, skb, txctl);
++	if (txctl->an && ieee80211_is_data_qos(hdr->frame_control)) {
++		tidno = ieee80211_get_qos_ctl(hdr)[0] &
++			IEEE80211_QOS_CTL_TID_MASK;
++		tid = ATH_AN_2_TID(txctl->an, tidno);
++
++		WARN_ON(tid->ac->txq != txctl->txq);
++	}
++
++	if ((info->flags & IEEE80211_TX_CTL_AMPDU) && tid) {
++		/*
++		 * Try aggregation if it's a unicast data frame
++		 * and the destination is HT capable.
++		 */
++		ath_tx_send_ampdu(sc, tid, skb, txctl);
++		goto out;
++	}
++
++	bf = ath_tx_setup_buffer(sc, txctl->txq, tid, skb);
++	if (!bf) {
++		if (txctl->paprd)
++			dev_kfree_skb_any(skb);
++		else
++			ieee80211_free_txskb(sc->hw, skb);
++		goto out;
++	}
++
++	bf->bf_state.bfs_paprd = txctl->paprd;
++
++	if (txctl->paprd)
++		bf->bf_state.bfs_paprd_timestamp = jiffies;
++
++	ath_tx_send_normal(sc, txctl->txq, tid, skb);
  
--	/*
--	 * If we want to keep the listening sockets alive,
--	 * we don't touch the RAW ones.
--	 */
--	if (listen == true)
-+	/* If we still have a device, we keep the RAW sockets alive */
-+	if (device == true)
- 		return;
++out:
+ 	ath_txq_unlock(sc, txq);
  
- 	write_lock(&local->raw_sockets.lock);
+ 	return 0;
 --
 To unsubscribe from this list: send the line "unsubscribe git-commits-head" in
 the body of a message to majordomo@vger.kernel.org
