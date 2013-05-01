@@ -1,64 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761483Ab3EAPka (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 11:40:30 -0400
-Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:41077
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755164Ab3EAPkU convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 11:40:20 -0400
-X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VPS-2(zz98dIc89bh146fI1432Izz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275bh8275dhz2fh95h668h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah1d0ch1d2eh906i1155h)
-Date: Wed, 1 May 2013 08:39:35 -0700
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Michal Simek <michal.simek@xilinx.com>,
-        Josh Cartwright <joshc@eso.teric.us>,
-        Mike Turquette <mturquette@linaro.org>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
-        Stephen Warren <swarren@wwwdotorg.org>, Jiri Slaby <jslaby@suse.cz>,
-        <linux-serial@vger.kernel.org>
-Subject: Re: [PATCH 1/7] tty: xuartps: Sort #includes alphabetically
-References: <1367366284-28304-1-git-send-email-soren.brinkmann@xilinx.com>
- <1367366284-28304-2-git-send-email-soren.brinkmann@xilinx.com>
- <20130501000048.GA1840@kroah.com>
- <cbd8c55c-066b-4396-9a4b-97d58a93b573@DB8EHSMHS005.ehs.local>
- <20130501002321.GB7435@kroah.com>
+	id S1756252Ab3EAPoZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 11:44:25 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:60783 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751956Ab3EAPoR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 May 2013 11:44:17 -0400
+Date: Wed, 1 May 2013 16:43:46 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Mehar Bajwa <mehar.bajwa@ti.com>
+Cc: linux-kernel@vger.kernel.org, sameo@linux.intel.com,
+        liam.r.girdwood@intel.com, navada@ti.com
+Message-ID: <20130501154346.GO26160@sirena.org.uk>
+References: <1366119816-9719-1-git-send-email-mehar.bajwa@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="9DptZICXTlJ7FQ09"
 Content-Disposition: inline
-In-Reply-To: <20130501002321.GB7435@kroah.com>
+In-Reply-To: <1366119816-9719-1-git-send-email-mehar.bajwa@ti.com>
+X-Cookie: Be different: conform.
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-Message-ID: <79ff34b1-0494-4118-a60d-cd5b536d3daa@VA3EHSMHS006.ehs.local>
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: xilinx.com
+X-SA-Exim-Connect-IP: 212.183.132.78
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH V2 1/4] mfd: Initial support for Texas Instruments AIC
+ family of CODECs
+X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 30, 2013 at 05:23:21PM -0700, Greg Kroah-Hartman wrote:
-> On Tue, Apr 30, 2013 at 05:05:40PM -0700, Sören Brinkmann wrote:
-> > On Tue, Apr 30, 2013 at 05:00:48PM -0700, Greg Kroah-Hartman wrote:
-> > > On Tue, Apr 30, 2013 at 04:57:58PM -0700, Soren Brinkmann wrote:
-> > > > Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
-> > > > CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> > > > CC: Jiri Slaby <jslaby@suse.cz>
-> > > > CC: linux-serial@vger.kernel.org
-> > > 
-> > > Why would you need/want to do this?
-> > I often come across duplicated includes. Having some kind of order helps
-> > avoiding that, imho.
-> 
-> We have a tool to handle duplicated includes, no need to put them in
-> sorted order for them to be detected.
-During conflict resolution, I find it easier when there is some order.
-Anyway, consider it dropped.
 
-	Sören
+--9DptZICXTlJ7FQ09
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
+On Tue, Apr 16, 2013 at 07:13:36PM +0530, Mehar Bajwa wrote:
 
+> +/**
+> + * set_aic_book: change book which we have to write/read to.
+> + *
+> + * @aic: Device to write/read to.
+> + * @book: Book to write/read to.
+> + */
+> +int set_aic_book(struct aic *aic, int book)
+> +{
+> +	int ret = 0;
+> +	u8 page_buf[] = { 0x0, 0x0 };
+> +	u8 book_buf[] = { 0x7f, 0x0 };
+> +
+> +	ret = regmap_write(aic->regmap, page_buf[0], page_buf[1]);
+> +
+> +	if (ret < 0)
+> +		return ret;
+> +	book_buf[1] = book;
+> +	ret = regmap_write(aic->regmap, book_buf[0], book_buf[1]);
+
+This looks like just like register paging - there's support in the core
+for that, if it's not adequate then just extend the framework.  Looks
+like the pages are multi-level so perhaps that's required.
+
+> +	dev_info(aic->dev, "%s\n", devname);
+
+It's useful to display something like a device revision but if you're
+just announcing that the driver has been loaded that's not so useful and
+should be removed.  Similarly for the others.
+
+> +#ifdef CONFIG_MFD_AIC_IRQ
+> +	if (aic->irq) {
+> +		ret = aic_irq_init(aic);
+> +		if (ret < 0)
+> +			goto err_irq;
+> +	}
+> +#endif
+
+This doesn't look like it should be a config option?  If it should be
+then these should be done with inline functions in the headers for stubs
+rather than ifdefs in the code.
+
+--9DptZICXTlJ7FQ09
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRgTgvAAoJELSic+t+oim9RfsQAJcFTW6vdVNDg7bSYlPHuoeI
+jbThlciEJwAE/AAv8uKD7Q4JgoiEI1CbkXw/gYAk3SiLoTcvHpH8PFOuYY3nRvNJ
+sowE898LPwcyEx35sCteQs6azrSNBfp57l/lpr7kn8PLvXlYqX/X8D1y6MteZ7Jv
+gcnWG6JZ0mZUULM0Iac9s4j5qrQmBW6OWxyMcET7JzU8Y8SciHTjdla6hoQzuD3k
+ts6sB3elMy8JD/VJUz0HaDXB+c4/uXoi/TldHjDT2ExAlsFV4o59CuOaRM6Dgykt
+M3/Gm1cCk5G3A2L6ZDFGIqjMcZOx213EOGsAFkt0wK7lVNny5Bf2ZVT+N2cjtnJB
+AjSMSGk17a8Pan3Bvrbl09LwSxbI+f10z9ug0WpSKBSOmUTlASw0kh4GtSbcL4Zl
+pE1h+MTGVguL5wpkjegLauwkVurmw1xVOyyahfTkvl8cdhKXN1Jl/n6QUd9kwvSS
+ejMlyDEKb2kV9KpUSXcnBRE5ES4szdyKNQ29RznK/qXpZI6Io4xN8NfRvu3Gw4FH
+pIFGrlpAMk6GGGjbDzG759tdmo57dBAeAGmB/A+7C5P9cbR8V9NtJlL+pcFh7fuy
+p9uLm+eihZbtBarCtRvwOcvGVa8LEcjI8gEbpuqpgKzgjsE1CqN6JTSzR1K/9JzC
+HOYK8rtoQAmxVL2QWpmX
+=C3nV
+-----END PGP SIGNATURE-----
+
+--9DptZICXTlJ7FQ09--
