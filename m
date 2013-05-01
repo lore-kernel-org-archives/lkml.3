@@ -1,41 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756663Ab3EATFF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 15:05:05 -0400
-Received: from server.prisktech.co.nz ([115.188.14.127]:52354 "EHLO
-	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756535Ab3EATEz (ORCPT
+	id S1756848Ab3EATGC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 15:06:02 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:41729 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756120Ab3EATFw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 15:04:55 -0400
-Message-ID: <51816757.4090801@prisktech.co.nz>
-Date: Thu, 02 May 2013 07:04:55 +1200
-From: Tony Prisk <linux@prisktech.co.nz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: romieu@fr.zoreil.com, netdev@vger.kernel.org,
-        vt8500-wm8505-linux-kernel@googlegroups.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv4 0/3] Add support for velocity network driver on platform
- devices
-References: <1367302620-4620-1-git-send-email-linux@prisktech.co.nz> <20130501.145209.2011460600232631301.davem@davemloft.net>
-In-Reply-To: <20130501.145209.2011460600232631301.davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Wed, 1 May 2013 15:05:52 -0400
+Date: Wed, 01 May 2013 15:05:48 -0400 (EDT)
+Message-Id: <20130501.150548.1959140741961524114.davem@davemloft.net>
+To: mst@redhat.com
+Cc: kvm@vger.kernel.org, virtualization@lists.osdl.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, agrover@redhat.com, asias@redhat.com,
+        brian@purestorage.com, hch@lst.de, joern@logfs.org,
+        mark.d.rustad@intel.com, martin.petersen@oracle.com,
+        nab@linux-iscsi.org, ogerlitz@mellanox.com,
+        yongjun_wei@trendmicro.com.cn
+Subject: Re: [PULL] vhost: cleanups and fixes for 3.10
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20130501150130.GA21230@redhat.com>
+References: <20130501150130.GA21230@redhat.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Wed, 01 May 2013 12:05:51 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/05/13 06:52, David Miller wrote:
-> From: Tony Prisk <linux@prisktech.co.nz>
-> Date: Tue, 30 Apr 2013 18:16:57 +1200
->
->> I think it would be pertinent to get some tested-by's for PCI users.
-> Tony, this came in a bit late, and there hasn't been any PCI test
-> reports so I have to defer this to the next merge window, sorry.
-No problems - I didn't honestly expect it to go in for 3.10 any way.
-I was trying to get in nice and earlier for 3.11 to give people plenty 
-of time to test.
+From: "Michael S. Tsirkin" <mst@redhat.com>
+Date: Wed, 1 May 2013 18:01:31 +0300
 
-Regards
-Tony P
+> Please pull the following vhost core updates for 3.10 -
+> they affect both vhost-net and vhost-scsi devices.
+> They also *depend* on both net-next and target-pending.  Since Linus
+> merged target-pending but not net-next at this point, merging through
+> the net tree seems to make sense.
+
+I don't have target-pending in my tree though and I'm not going to pull
+it in just for this.
+
+Since you have such a multi-dependency situation, just ask Linus to pull
+this directly after I push net-next to him, which should be later today.
+
+Thanks.
