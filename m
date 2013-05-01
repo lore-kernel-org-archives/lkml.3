@@ -1,52 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757587Ab3EAVKQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 17:10:16 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:34116 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757086Ab3EAVKO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 17:10:14 -0400
-Date: Wed, 1 May 2013 23:10:11 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: David Rientjes <rientjes@google.com>
-Cc: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
-        levinsasha928@gmail.com, mtosatti@redhat.com, tglx@linutronix.de,
-        Borislav Petkov <bp@suse.de>, fengguang.wu@intel.com,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/urgent] x86/kconfig:  Add a Kconfig shortcut for
- building working KVM guest kernels
-Message-ID: <20130501211011.GD4466@pd.tnic>
-References: <20130426095140.GA15361@pd.tnic>
- <tip-83aee67833071c7b73a83f7803388f7a9e481908@git.kernel.org>
- <alpine.DEB.2.02.1305011248220.8448@chino.kir.corp.google.com>
- <20130501203500.GC4466@pd.tnic>
- <alpine.DEB.2.02.1305011358500.19189@chino.kir.corp.google.com>
+	id S1757625Ab3EAVTr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 17:19:47 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:42947 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757056Ab3EAVTp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 May 2013 17:19:45 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1305011358500.19189@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130501190553.GC7800@kernel.dk>
+References: <20130430195214.GH9931@google.com>
+	<20130501072616.GH7800@kernel.dk>
+	<20130501185450.GA4057@moria.home.lan>
+	<20130501190553.GC7800@kernel.dk>
+Date: Wed, 1 May 2013 14:19:43 -0700
+Message-ID: <CAC7rs0s7_EBcvLGtbFKcjOofhZC3U=PXoPqR3C7Doo8dKJTFXQ@mail.gmail.com>
+Subject: Re: [GIT PULL] Bcache fixes for 3.10
+From: Kent Overstreet <kent.overstreet@gmail.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Kent Overstreet <koverstreet@google.com>, akpm@linux-foundation.org,
+        linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 01, 2013 at 02:00:06PM -0700, David Rientjes wrote:
-> With this applied, two other types of conflicting dependencies:
-> 
-> warning: (KVM_GUEST_COMMON_OPTIONS) selects VIRTIO_NET which has unmet direct dependencies (NETDEVICES && NET_CORE && VIRTIO)
-> 
-> and
-> 
-> warning: (KVM_GUEST_COMMON_OPTIONS && AMD_IOMMU) selects PCI_MSI which has unmet direct dependencies (PCI && ARCH_SUPPORTS_MSI)
+On Wed, May 1, 2013 at 12:05 PM, Jens Axboe <axboe@kernel.dk> wrote:
+> Nope, in fact your series was on top of the last commit I got from you,
+> cef52797. Only non-bcache in between. Just wondering how that 215
+> insertions and 118 deletions becames 213/112 for that case.
 
-How do you trigger those? I don't see them here with this applied.
-
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Oh, that. That was a last minute bugfix, just backed out part of a
+change. Sorry :P
