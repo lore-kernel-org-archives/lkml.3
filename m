@@ -1,47 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761568Ab3EAQY0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 12:24:26 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:61469 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761489Ab3EAQYT (ORCPT
+	id S1761577Ab3EAQY7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 12:24:59 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:49275 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761542Ab3EAQYv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 12:24:19 -0400
+	Wed, 1 May 2013 12:24:51 -0400
+Date: Wed, 1 May 2013 09:24:48 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Colin Cross <ccross@android.com>
+Cc: Pavel Machek <pavel@ucw.cz>, Zoran Markovic <zoran.markovic@linaro.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Benoit Goby <benoit@android.com>,
+        Android Kernel Team <kernel-team@android.com>,
+        Todd Poynor <toddpoynor@google.com>, San Mehat <san@google.com>,
+        John Stultz <john.stultz@linaro.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <len.brown@intel.com>
+Subject: Re: [RFC PATCH] drivers: power: Add watchdog timer to catch drivers
+ which lockup during suspend.
+Message-ID: <20130501162448.GA6245@kroah.com>
+References: <1367360914-23389-1-git-send-email-zoran.markovic@linaro.org>
+ <20130501003058.GB20042@amd.pavel.ucw.cz>
+ <CAMbhsRQkYFvOzDDn4zmbZAEsVs6iSy4mPVq5w=MzQ7p9STBDew@mail.gmail.com>
+ <20130501105630.GA22552@amd.pavel.ucw.cz>
+ <CAMbhsRTtYSLpAmB0hsanBH3ez4bm8BgbcH1xEBQsZSj4dc069g@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1305011209370.929-100000@iolanthe.rowland.org>
-References: <Pine.LNX.4.44L0.1304291706360.1152-100000@iolanthe.rowland.org>
-	<Pine.LNX.4.44L0.1305011209370.929-100000@iolanthe.rowland.org>
-Date: Wed, 1 May 2013 09:24:18 -0700
-X-Google-Sender-Auth: oK2qj0AfIMJ6X6xpucIhJz07b38
-Message-ID: <CA+55aFyaQsOpJu=jkFmQyQrBNG7fyh8Vqy1eUCFKVug1s_P+QA@mail.gmail.com>
-Subject: Re: [PATCH] USB: remove remaining instances of USB_SUSPEND
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Greg KH <greg@kroah.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        USB list <linux-usb@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMbhsRTtYSLpAmB0hsanBH3ez4bm8BgbcH1xEBQsZSj4dc069g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 1, 2013 at 9:13 AM, Alan Stern <stern@rowland.harvard.edu> wrote:
->
-> This patch (as1677) removes the remaining instances of that symbol.
+On Wed, May 01, 2013 at 09:10:49AM -0700, Colin Cross wrote:
+> I'm not saying this patch as is is right for everyone (it probably at
+> least needs to be configurable to be turned off, change the delay, and
+> change the panic to just a stack trace),
 
-Btw, what are these "asXXXX" ID's, and what does the noise buy us?
+Those changes would be nice.
 
-Doing a
+> but from a mobile perspective
+> this patch is far more debuggable than without this patch.  We work
+> very hard to make sure that panic's are highly debuggable, in fact we
+> often prefer panics over any other behavior when the device is in a
+> bad state, because it immediately gets the user's device working again
+> while still giving us useful information in our automatic log
+> collection.
+> 
+> With an mdelay(100000) in the suspend path, users in our debug device
+> pool are likely to just pull the battery because their screen won't
+> turn on, in which case I get no debugging information.  With this
+> patch, the device will automatically reboot due to the panic, and I
+> will get captured logs after reboot that show a stack trace ending
+> with mdelay, which tells me exactly where to look for this
+> mdelay(100000).
 
-  git log | egrep -w 'as[0-9]{3,}'
+All of that information would be _great_ to have in the changelog for
+the patch, as it explains exactly why you need this.  {hint}
 
-shows that this has been going on forever, but it still doesn't make
-any *sense*. It adds nothing worthwhile. In fact, doing
+thanks,
 
-  git log | grep 'This patch ('
-
-shows that you're pretty the only one doing it, but there's *one*
-other one jidong xiao: jx001. I really don't see the advantage of
-having this kind of random noise in the kernel logs.
-
-                    Linus
+greg k-h
