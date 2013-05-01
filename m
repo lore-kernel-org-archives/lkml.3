@@ -1,117 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753061Ab3EAFgB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 01:36:01 -0400
-Received: from smtp2.macqel.be ([194.78.208.39]:13415 "EHLO smtp2.macqel.be"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751342Ab3EAFfy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 01:35:54 -0400
-Date: Wed, 1 May 2013 07:35:50 +0200
-From: Philippe De Muyter <phdm@macqel.be>
-To: Karel Zak <kzak@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH 2/5] Add aix lvm partitions support files
-Message-ID: <20130501053550.GA32026@frolo.macqel>
-References: <1366924229-21569-1-git-send-email-phdm@macqel.be> <1366924229-21569-3-git-send-email-phdm@macqel.be> <20130429093756.GB12317@x2.net.home> <20130429114041.GA10884@frolo.macqel> <20130429215051.GA21825@frolo.macqel> <20130430070840.GA4046@frolo.macqel> <20130430071840.GA5165@frolo.macqel>
+	id S1752831Ab3EAFlx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 01:41:53 -0400
+Received: from mail-ia0-f176.google.com ([209.85.210.176]:65468 "EHLO
+	mail-ia0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751790Ab3EAFln (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 May 2013 01:41:43 -0400
+Message-ID: <5180AB0E.6030407@gmail.com>
+Date: Wed, 01 May 2013 13:41:34 +0800
+From: Sam Ben <sam.bennn@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="gKMricLos+KVdGMg"
-Content-Disposition: inline
-In-Reply-To: <20130430071840.GA5165@frolo.macqel>
-User-Agent: Mutt/1.5.16 (2007-06-09)
+To: Mel Gorman <mgorman@suse.de>
+CC: Alexey Lyahkov <alexey.lyashkov@gmail.com>,
+        Andrew Perepechko <anserper@ya.ru>, Robin Dong <sanbai@taobao.com>,
+        Theodore Tso <tytso@mit.edu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Bernd Schubert <bernd.schubert@fastmail.fm>,
+        David Howells <dhowells@redhat.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux-ext4 <linux-ext4@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>
+Subject: Re: [PATCH 2/3] mm: Ensure that mark_page_accessed moves pages to
+ the active list
+References: <1367253119-6461-1-git-send-email-mgorman@suse.de> <1367253119-6461-3-git-send-email-mgorman@suse.de>
+In-Reply-To: <1367253119-6461-3-git-send-email-mgorman@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Mel,
+On 04/30/2013 12:31 AM, Mel Gorman wrote:
+> If a page is on a pagevec then it is !PageLRU and mark_page_accessed()
+> may fail to move a page to the active list as expected. Now that the
+> LRU is selected at LRU drain time, mark pages PageActive if they are
+> on a pagevec so it gets moved to the correct list at LRU drain time.
+> Using a debugging patch it was found that for a simple git checkout
+> based workload that pages were never added to the active file list in
 
---gKMricLos+KVdGMg
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Could you show us the details of your workload?
 
-On Tue, Apr 30, 2013 at 09:18:40AM +0200, Philippe De Muyter wrote:
-> On Tue, Apr 30, 2013 at 09:08:40AM +0200, Philippe De Muyter wrote:
-> > On Mon, Apr 29, 2013 at 11:50:51PM +0200, Philippe De Muyter wrote:
-> > > On Mon, Apr 29, 2013 at 01:40:41PM +0200, Philippe De Muyter wrote:
-> > > > On Mon, Apr 29, 2013 at 11:37:56AM +0200, Karel Zak wrote:
-> > > > > 
-> > > > > Philippe, do you have any disk image with AIX LVM? It would be nice to
-> > > > > have a way how to test the code. I'd like to add support for AIX to
-> > > > > libblkid too.
-> > > > 
-> > > > Of course.  But that's not a couple of blocks.  I'll try to cut the
-> > > > slice that you need.
-> > > 
-> > > Here is one example.  I'll try to send another one tomorrow.
-> > 
-> > Here is the other example.
-> 
-> And here is a third one
+> practice but with this patch applied they are.
+>
+> 				before   after
+> LRU Add Active File                  0  757121
+> LRU Add Active Anon            2678833 2633924
+> LRU Add Inactive File          8821711 8085543
+> LRU Add Inactive Anon              183     200
+>
+> The question to consider is if this is universally safe. If the page
+> was isolated for reclaim and there is a parallel mark_page_accessed()
+> then vmscan.c will get upset when it finds an isolated PageActive page.
+> Similarly a potential race exists between a per-cpu drain on a pagevec
+> list and an activation on a remote CPU.
+>
+> 				lru_add_drain_cpu
+> 				__pagevec_lru_add
+> 				  lru = page_lru(page);
+> mark_page_accessed
+>    if (PageLRU(page))
+>      activate_page
+>    else
+>      SetPageActive
+> 				  SetPageLRU(page);
+> 				  add_page_to_lru_list(page, lruvec, lru);
+>
+> A PageActive page is now added to the inactivate list.
+>
+> While this looks strange, I think it is sufficiently harmless that additional
+> barriers to address the case is not justified.  Unfortunately, while I never
+> witnessed it myself, these parallel updates potentially trigger defensive
+> DEBUG_VM checks on PageActive and hence they are removed by this patch.
+>
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> ---
+>   mm/swap.c   | 18 ++++++++++++------
+>   mm/vmscan.c |  3 ---
+>   2 files changed, 12 insertions(+), 9 deletions(-)
+>
+> diff --git a/mm/swap.c b/mm/swap.c
+> index 80fbc37..2a10d08 100644
+> --- a/mm/swap.c
+> +++ b/mm/swap.c
+> @@ -437,8 +437,17 @@ void activate_page(struct page *page)
+>   void mark_page_accessed(struct page *page)
+>   {
+>   	if (!PageActive(page) && !PageUnevictable(page) &&
+> -			PageReferenced(page) && PageLRU(page)) {
+> -		activate_page(page);
+> +			PageReferenced(page)) {
+> +
+> +		/*
+> +		 * If the page is on the LRU, promote immediately. Otherwise,
+> +		 * assume the page is on a pagevec, mark it active and it'll
+> +		 * be moved to the active LRU on the next drain
+> +		 */
+> +		if (PageLRU(page))
+> +			activate_page(page);
+> +		else
+> +			SetPageActive(page);
+>   		ClearPageReferenced(page);
+>   	} else if (!PageReferenced(page)) {
+>   		SetPageReferenced(page);
+> @@ -478,11 +487,8 @@ EXPORT_SYMBOL(__lru_cache_add);
+>    */
+>   void lru_cache_add_lru(struct page *page, enum lru_list lru)
+>   {
+> -	if (PageActive(page)) {
+> +	if (PageActive(page))
+>   		VM_BUG_ON(PageUnevictable(page));
+> -	} else if (PageUnevictable(page)) {
+> -		VM_BUG_ON(PageActive(page));
+> -	}
+>   
+>   	VM_BUG_ON(PageLRU(page));
+>   	__lru_cache_add(page, lru);
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index 88c5fed..751b897 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -704,7 +704,6 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+>   		if (!trylock_page(page))
+>   			goto keep;
+>   
+> -		VM_BUG_ON(PageActive(page));
+>   		VM_BUG_ON(page_zone(page) != zone);
+>   
+>   		sc->nr_scanned++;
+> @@ -935,7 +934,6 @@ activate_locked:
+>   		/* Not a candidate for swapping, so reclaim swap space. */
+>   		if (PageSwapCache(page) && vm_swap_full())
+>   			try_to_free_swap(page);
+> -		VM_BUG_ON(PageActive(page));
+>   		SetPageActive(page);
+>   		pgactivate++;
+>   keep_locked:
+> @@ -3488,7 +3486,6 @@ void check_move_unevictable_pages(struct page **pages, int nr_pages)
+>   		if (page_evictable(page)) {
+>   			enum lru_list lru = page_lru_base_type(page);
+>   
+> -			VM_BUG_ON(PageActive(page));
+>   			ClearPageUnevictable(page);
+>   			del_page_from_lru_list(page, lruvec, LRU_UNEVICTABLE);
+>   			add_page_to_lru_list(page, lruvec, lru);
 
-And now a fourth one, this one with partitions that are not contiguous.
-
-Philippe
-
--- 
-Philippe De Muyter +32 2 6101532 Macq SA rue de l'Aeronef 2 B-1140 Bruxelles
-
---gKMricLos+KVdGMg
-Content-Type: application/x-bzip
-Content-Disposition: attachment; filename="aixlvmhdr-136g.bz2"
-Content-Transfer-Encoding: base64
-
-QlpoOTFBWSZTWW5aaa0AdN5/////////////////////////////////////////////4BN/
-OSF4kLgpIQKAaoUAAAAAMHhDCBhDAAAAAAqqpKe1TabyqaeoH/6qoAeoAAAAAHqaGjQAAD9S
-AAADJpoNAAAeUDIAPUxo0INpkTf/6qqn//qqqMAAAYAAUAGgNAJVVTTAJgAACYmAAARgEwEw
-AAH/5VUJgABGAAJgAAAAJkwmCYAPU/VAAAAAAAEwAAEqqj//VVQAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAJVVP/9VVAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB
-JgAJgACYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABVMqREPUp6o2KbQammZIGTQAaBo
-aaGgNAYQAyADIyGRkGTagPUBtTQzU/U/1UTAmAT1Gjf6qntITTQaAAGIaZAzIGj/1UNQ1P3F
-bHE43IclyHJbm52pscpo2O1Nzjbm5ubnMbm5ubm5ubm5ubm5ubm5zG5uclxNGjRo0aKRERER
-ERERERERERERERERERERERERERERKqqqqiqqqqqqqqqqqqqqqqqqqiqqqqqqqpERERERERER
-ERERERERERERERERERERERERERERERERERERERERERERERERERERERERKqqqqqqqqqqqqqIi
-IREREREREREREREREREREREREREREREREREREREREREREREREREiIiIiIiIiI0qoiIiIiIiI
-i1UREREREREREIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiI
-iIiIiIiJERERmMzGxmPAuhd0dW6A98zk8ty0Rmc/1hrzYGxNkbM2hwR7w4M96cIe+PfnwD4J
-wp8I+GfEPqH1T6x9c+wcMcOfZPtH2z7h90+8ffPwH4T8Rpz8ZxBxJxRqDizjDUnGnKnLHLnM
-HMnNHNnOHOnPHPnQHQnRHRnSHSnTHTnUHUmtNca82BsTZGzNobU2xtzcG5N0bs3h7I9mdcde
-e0Pantj257g7A9ye6NTsTsjsznnqTqz/h/0/8a01xrzYGxNkbM2htTbG3Nwbk3RuzeH7D9p+
-4/efwP4n8j+Z/Q/qdUf2NT807E6g7I7M557s94e9O0P0T9I5p1J1JzTmnNPJnNPJm83nlDyp
-+yeUPLHlzzB5k80cQcScUag4s4w1Jxpxxx5+Q44/KfmPznIGqORNWaw5I5M/QcoQ/SU/UfrO
-VOWOXOYOZOaObOcOdOeOfOgOhOiOjOkOlOmOnOoOpNaa415sDYmyNmbQ2ptjbm4Nybo3Zuje
-Hsj2Z1x157Q9qe2PbnuDsD3J7o1OxOyOzOee7PeHvTtDU1NTU1NTU1NTU1NTU3m83m83m83m
-83m83m83m83m83mpqampqampqampqampqampqampqampqampqanA4HA4HA4HA4HA4HA4HA4H
-A4HA4HA4HA4H9zkjV6vQ7zP6xnldVqNA640LrJ5ppmmaVpX0X02laZvTRVymHcJjO+tH2OjG
-ZjmEzVMHGgY2TMzNiZmZmcuGIgxjGZm1o7QZ6cIzMMYiGedTDMYxoRmaJYyzMxFZUdarlI3I
-bUNrIjJgYwFeSekXY2MxmYxoqskOtjHg3G+laMGYxtQfATMHIRERoiIiIiIiIiqqIiIioqIi
-IrpNGiIiIiIiIjRVVVREREREREIiIiIiIiIiIiIiIiJERERFVURERERERERCIiIiIiIiIiIi
-IiIiRERyVVERERoqoilVERFVURERERERERERERERFVURERFVURERERERERERERURERUUiIiK
-RERERERERERERERESIiIiIiIi1URERERaq4zMMBVREREQilmZUMFVUGQKqmVVMqqZVUyqplV
-TKqmVVMqqZVUyqplVTKqmVVMqqZVUyqplVTKqmVVMqqZVUyqplVTKqmVVMqqZVUyqplVTKqm
-VVMqqZVUyqplVTKqmVVFVRVUVVFVRVUVVFVRVUVVFVRVUVVFVRVUVVFVRVUVVFVRVUVVFVRV
-UVVwqqKqiqoqrhVUVVFVRVUVVFVRVUVVFVRVUVVFVRVUVVFVRVUVVFVRVUVVFVRVUVVFVRVU
-VVFVRVUVVFVRVUqqVVKqlVSqpVUqqVVKqndGjRoVVKqlVSqpVUqqVVKqlVSqpVUqqVVKqlVS
-qpVUqqVVKqlVSqpVUqqVVKqlVSqpVUqqVVKqlVSqpVUqqVVKqlVSqpVUqqVVKqlVSqpVUqqV
-VKqlVSqpVUqqVVKqlVSqpVUqqVVKqlVSqpVUqqVVKqlVSqpVUqqVVKqlVSqpVUqqVVKqlVSq
-pGMgzmIyo7HyDx+nj+One+ZxcbZnTtOo0DMxjlJmHbmisx5EmAMwdE7sVxByylQivOGlZiO3
-c5ozMDREhmZmOipTMzGN6Vo3c3dVZG+KrfGRkZGRkZGRkZGRkVVV11ms1ms1mqqqqu4Kqu5K
-qqrtiqqqwwwwwwwwwwwwwwwwwwwwwwqqqqrxDfm+vFt+b68e8gryKqrw6qrSKqt/eMb+qqqq
-ryiqqqrziqqAgICAgICAgICAgJOIQhCEIQhCEIQhCEIQhCEIQhCEIQhCEIQhCEIQhCEIQhCE
-IQhCEIQhCEIQhCEIQhCEIQhCEIQhGczmczmczmczlVVVVVXsVVVVwiuDVVVVVVVXCqqqqq+Y
-qqqqqqqqqqqq4dVVVVVVVVVVVVVVVVyKtYrVq1itYqutdYM5zMIc5B9e8i2tG3MHOSMGMQZT
-EEIwgyMwY7s/JeEaGGD0sZmZ1UZmGD0rjK5ZSmJCZjGEZnPQVjMzEQZCGZGimV6l6Y0+p3tq
-jQMw3tomgREaJoURGVlZWVlZWVlZWVlZUR1tEZrNZrNZqIiIjsSIiIiNGiIiI7wwwwwwwwww
-wwwwwwwwwwwww7oiIiIiIiIiIiIjxKIiIiI0jM0jPMyIiIiIiIiIiI88iIiIiIiPVO0tG4Bw
-BjGMYxjGMYxjGMYxjGMYxjGMYxjGMYxjGMYxjGMYxjGMYxjGMYxjGMYxjGMYxjGMYxjGMYxj
-GMYxjGMhEIhEIhEIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIjhkRERERERERERERERERERER
-EREcmzOUOQcedYzM+Z40+qZ9mZ8jPA//NnG4xxZxEyGQ0aGhohkaNDQKpTTIyRnVK5yM2tpt
-OLYrIRkZnntraMGbAhmYQONDrEM/dNgzMzFBxxiEZBmYYgQ6x1rQ0KlM7JaGJ1foNA/fRmyH
-SIyxk99UKgJ5nKUhniXscKGiBGw9AaMZpGY+bOnU5hGYxsRmSHZ5lUyEA+zQRDyyDwY0dM0N
-jw6jYhWjpDQzRBxwruO1oNn7bvy40OJBUKgqBUFPhHQtDNGZsUzO8EPWoZj0k6WYxxHqVGdS
-/zLjPhUxn6jyCmbUM8u7k8x/d6t0fUcZh0SDOnQ6DYpj2LyTFA6pDHdYOCHbP11M7ugzpj65
-Rh8D/JRlQcaGPHBAeaPOId/Q42wzOYQ9+x6uJhXfaw7bAZ18YE2sBnIedPw2mAzkBzCCEEII
-Q/QQ9MNCiEO8oUghBtw5DQ0EIIyCEEIIQQghBCCEPKvWNHx+wvoYUQghBCCEEIIQRkIhCCEH
-cFKIQQghBCCEHeClEIO3qUQghBCCEEIIQQjOvRSHHCkEIIQQgjIIQQghBCCEEIIQbSlEIIQf
-sUo82UohBCCEEIIQQghB86pSwpB3x0poaH1KFVCiEPmEO+NCiEO8odW+WdW2s2CEIQhBCCEZ
-EdGp852/ptDrocp0LsNDM/lhn+sSMx0qH0CCQx8hhGD3/Mh4pAdAgcSHRkMd3TMZmMB0DMzM
-QPlx0jxz/8XckU4UJBuWmmtA
-
---gKMricLos+KVdGMg--
