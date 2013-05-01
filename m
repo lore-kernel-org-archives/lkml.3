@@ -1,64 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757005Ab3EAO1A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 10:27:00 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:52283 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751664Ab3EAO0w (ORCPT
+	id S1758247Ab3EAO2x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 10:28:53 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:39200 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751525Ab3EAO2q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 10:26:52 -0400
+	Wed, 1 May 2013 10:28:46 -0400
+Date: Wed, 1 May 2013 15:28:41 +0100
 From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        vinod.koul@intel.com, per.forlin@stericsson.com, rabin@rab.in
-Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        srinidhi.kasagar@stericsson.com, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH] dmaengine: ste_dma40: Rectify incorrect configuration validation checking
-Date: Wed,  1 May 2013 15:26:38 +0100
-Message-Id: <1367418399-30591-1-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.7.10.4
+To: vinod.koul@intel.com
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
+        Per Forlin <per.forlin@stericsson.com>, Rabin Vincent <rabin@rab.in>,
+        linus.walleij@linaro.org
+Subject: Re: [PATCH 08/32 v2] dmaengine: ste_dma40: Remove home-brew MAX()
+ macro
+Message-ID: <20130501142841.GF25256@gmail.com>
+References: <1366279934-30761-1-git-send-email-lee.jones@linaro.org>
+ <1366279934-30761-9-git-send-email-lee.jones@linaro.org>
+ <20130424084912.GH17416@gmail.com>
+ <CACRpkdaaa+gmsimkJVmhwv+zE+4ZmgZQ=AtHPry9=_EMScMC=w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACRpkdaaa+gmsimkJVmhwv+zE+4ZmgZQ=AtHPry9=_EMScMC=w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we compare an event's group (dev_type / 16) with STEDMA40_DEV_DST_MEMORY
-(-1), the only way we'd obtain a positive result is if we passed -16 as a
-device type, which is unfeasible. Instead, it would be much more sane to
-compare STEDMA40_DEV_DST_MEMORY against the raw dev_type in order to expect
-the expected result.
+> > The current implementation of the DMA40's local MAX() macro evaluates
+> > its arguments more times than is necessary and it not type checked.
+> > This patch strips replaces it with a new, more efficient constant.
+> >
+> > Cc: Vinod Koul <vinod.koul@intel.com>
+> > Cc: Dan Williams <djbw@fb.com>
+> > Cc: Per Forlin <per.forlin@stericsson.com>
+> > Cc: Rabin Vincent <rabin@rab.in>
+> > Reported-by: Harvey Harrison <harvey.harrison@gmail.com>
+> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> 
+> Ah this v2 version is OK, atleast it makes the kernel look nicer.
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- drivers/dma/ste_dma40.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+Vinod, poke.
 
-diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
-index 3b83dee..c79853f 100644
---- a/drivers/dma/ste_dma40.c
-+++ b/drivers/dma/ste_dma40.c
-@@ -1771,19 +1771,19 @@ static int d40_validate_conf(struct d40_chan *d40c,
- 	}
- 
- 	if (conf->dir == STEDMA40_MEM_TO_PERIPH &&
--	    dst_event_group == STEDMA40_DEV_DST_MEMORY) {
-+	    conf->dst_dev_type == STEDMA40_DEV_DST_MEMORY) {
- 		chan_err(d40c, "Invalid dst\n");
- 		res = -EINVAL;
- 	}
- 
- 	if (conf->dir == STEDMA40_PERIPH_TO_MEM &&
--	    src_event_group == STEDMA40_DEV_SRC_MEMORY) {
-+	    conf->src_dev_type == STEDMA40_DEV_SRC_MEMORY) {
- 		chan_err(d40c, "Invalid src\n");
- 		res = -EINVAL;
- 	}
- 
--	if (src_event_group == STEDMA40_DEV_SRC_MEMORY &&
--	    dst_event_group == STEDMA40_DEV_DST_MEMORY && is_log) {
-+	if (conf->src_dev_type == STEDMA40_DEV_SRC_MEMORY &&
-+	    conf->dst_dev_type == STEDMA40_DEV_DST_MEMORY && is_log) {
- 		chan_err(d40c, "No event line\n");
- 		res = -EINVAL;
- 	}
 -- 
-1.7.10.4
-
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
