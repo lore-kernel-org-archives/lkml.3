@@ -1,90 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756110Ab3EANNy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 09:13:54 -0400
-Received: from fieldses.org ([174.143.236.118]:59403 "EHLO fieldses.org"
+	id S1756445Ab3EANZ3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 09:25:29 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:55980 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752356Ab3EANNq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 09:13:46 -0400
-Date: Wed, 1 May 2013 09:13:41 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Simo Sorce <simo@redhat.com>,
-        David Howells <dhowells@redhat.com>
-Subject: Re: linux-next: build failure after merge of the vfs tree
-Message-ID: <20130501131341.GC32031@fieldses.org>
-References: <20130501122227.4c1d5cd6f2f2f98e35706f44@canb.auug.org.au>
+	id S1755142Ab3EANZV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 May 2013 09:25:21 -0400
+X-IronPort-AV: E=Sophos;i="4.87,589,1363132800"; 
+   d="scan'208";a="22608142"
+Date: Wed, 1 May 2013 14:25:16 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Subject: Re: [PATCH 8/9] xen/smp/pvhvm: Don't initialize IRQ_WORKER as we
+ are using the native one.
+In-Reply-To: <20130429183404.GA9431@phenom.dumpdata.com>
+Message-ID: <alpine.DEB.2.02.1305011424461.5398@kaball.uk.xensource.com>
+References: <1366142947-18655-1-git-send-email-konrad.wilk@oracle.com> <1366142947-18655-9-git-send-email-konrad.wilk@oracle.com> <alpine.DEB.2.02.1304261726260.4180@kaball.uk.xensource.com> <20130429183404.GA9431@phenom.dumpdata.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130501122227.4c1d5cd6f2f2f98e35706f44@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 01, 2013 at 12:22:27PM +1000, Stephen Rothwell wrote:
-> Hi Al,
+On Mon, 29 Apr 2013, Konrad Rzeszutek Wilk wrote:
+> On Fri, Apr 26, 2013 at 05:27:20PM +0100, Stefano Stabellini wrote:
+> > On Tue, 16 Apr 2013, Konrad Rzeszutek Wilk wrote:
+> > > There is no need to use the PV version of the IRQ_WORKER mechanism
+> > > as under PVHVM we are using the native version. The native
+> > > version is using the SMP API.
+> > > 
+> > > They just sit around unused:
+> > > 
+> > >   69:          0          0  xen-percpu-ipi       irqwork0
+> > >   83:          0          0  xen-percpu-ipi       irqwork1
+> > > 
+> > > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> > 
+> > Might be worth trying to make it work instead?
+> > Is it just because we don't set the apic->send_IPI_* functions to the
+> > xen specific version on PVHVM?
+> > 
 > 
-> After merging the vfs tree, today's linux-next build (powerpc
-> ppc64_defconfig) failed like this:
-> 
-> net/sunrpc/auth_gss/svcauth_gss.c: In function 'write_gssp':
-> net/sunrpc/auth_gss/svcauth_gss.c:1329:9: error: implicit declaration of function 'PDE' [-Werror=implicit-function-declaration]
-> net/sunrpc/auth_gss/svcauth_gss.c:1329:53: error: invalid type argument of '->' (have 'int')
-> net/sunrpc/auth_gss/svcauth_gss.c: In function 'read_gssp':
-> net/sunrpc/auth_gss/svcauth_gss.c:1357:53: error: invalid type argument of '->' (have 'int')
-> 
-> Caused by commit 030d794bf498 ("SUNRPC: Use gssproxy upcall for server
-> RPCGSS authentication") from the nfsd tree interacting with commit
-> c3f2cb25be4f ("proc: Make the PROC_I() and PDE() macros internal to
-> procfs") from the vfs tree.
-> 
-> I applied the following merge fix patch (there may be a better way).
+> Right. We use the baremetal mechanism to do it. And it works fine.
 
-Looks fine to me, thanks!
-
---b.
-
-> 
-> From 62a0e3a08844eeeb6d85fb45d85c2f80d7de2797 Mon Sep 17 00:00:00 2001
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Wed, 1 May 2013 12:19:43 +1000
-> Subject: [PATCH] SUNRPC: update for PDE removal
-> 
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> ---
->  net/sunrpc/auth_gss/svcauth_gss.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/net/sunrpc/auth_gss/svcauth_gss.c b/net/sunrpc/auth_gss/svcauth_gss.c
-> index b70ac1c..89ef709 100644
-> --- a/net/sunrpc/auth_gss/svcauth_gss.c
-> +++ b/net/sunrpc/auth_gss/svcauth_gss.c
-> @@ -1326,7 +1326,7 @@ static int wait_for_gss_proxy(struct net *net)
->  static ssize_t write_gssp(struct file *file, const char __user *buf,
->  			 size_t count, loff_t *ppos)
->  {
-> -	struct net *net = PDE(file->f_path.dentry->d_inode)->data;
-> +	struct net *net = PDE_DATA(file->f_path.dentry->d_inode);
->  	char tbuf[20];
->  	unsigned long i;
->  	int res;
-> @@ -1354,7 +1354,7 @@ static ssize_t write_gssp(struct file *file, const char __user *buf,
->  static ssize_t read_gssp(struct file *file, char __user *buf,
->  			 size_t count, loff_t *ppos)
->  {
-> -	struct net *net = PDE(file->f_path.dentry->d_inode)->data;
-> +	struct net *net = PDE_DATA(file->f_path.dentry->d_inode);
->  	unsigned long p = *ppos;
->  	char tbuf[10];
->  	size_t len;
-> -- 
-> 1.8.1
-> 
-> -- 
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
+OK, it works fine, but won't it generate many mores trap and emulate
+cycles?
 
 
+> > >  arch/x86/xen/smp.c | 13 ++++++++++++-
+> > >  1 file changed, 12 insertions(+), 1 deletion(-)
+> > > 
+> > > diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
+> > > index 22c800a..415694c 100644
+> > > --- a/arch/x86/xen/smp.c
+> > > +++ b/arch/x86/xen/smp.c
+> > > @@ -144,6 +144,13 @@ static int xen_smp_intr_init(unsigned int cpu)
+> > >  		goto fail;
+> > >  	per_cpu(xen_callfuncsingle_irq, cpu) = rc;
+> > >  
+> > > +	/*
+> > > +	 * The IRQ worker on PVHVM goes through the native path and uses the
+> > > +	 * IPI mechanism.
+> > > +	 */
+> > > +	if (xen_hvm_domain())
+> > > +		return 0;
+> > > +
+> > >  	callfunc_name = kasprintf(GFP_KERNEL, "irqwork%d", cpu);
+> > >  	rc = bind_ipi_to_irqhandler(XEN_IRQ_WORK_VECTOR,
+> > >  				    cpu,
+> > > @@ -167,6 +174,9 @@ static int xen_smp_intr_init(unsigned int cpu)
+> > >  	if (per_cpu(xen_callfuncsingle_irq, cpu) >= 0)
+> > >  		unbind_from_irqhandler(per_cpu(xen_callfuncsingle_irq, cpu),
+> > >  				       NULL);
+> > > +	if (xen_hvm_domain())
+> > > +		return rc;
+> > > +
+> > >  	if (per_cpu(xen_irq_work, cpu) >= 0)
+> > >  		unbind_from_irqhandler(per_cpu(xen_irq_work, cpu), NULL);
+> > >  
+> > > @@ -661,7 +671,8 @@ static void xen_hvm_cpu_die(unsigned int cpu)
+> > >  	unbind_from_irqhandler(per_cpu(xen_callfunc_irq, cpu), NULL);
+> > >  	unbind_from_irqhandler(per_cpu(xen_debug_irq, cpu), NULL);
+> > >  	unbind_from_irqhandler(per_cpu(xen_callfuncsingle_irq, cpu), NULL);
+> > > -	unbind_from_irqhandler(per_cpu(xen_irq_work, cpu), NULL);
+> > > +	if (!xen_hvm_domain())
+> > > +		unbind_from_irqhandler(per_cpu(xen_irq_work, cpu), NULL);
+> > >  	xen_uninit_lock_cpu(cpu);
+> > >  	xen_teardown_timer(cpu);
+> > >  	native_cpu_die(cpu);
+> > > -- 
+> > > 1.8.1.4
+> > > 
+> 
