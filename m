@@ -1,78 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758953Ab3EAJMA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 05:12:00 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:57713 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756990Ab3EAJLw (ORCPT
+	id S1759224Ab3EAJMm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 05:12:42 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:50013 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757427Ab3EAJMd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 05:11:52 -0400
-Date: Wed, 1 May 2013 11:10:12 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Julian Anastasov <ja@ssi.bg>
-Cc: Simon Horman <horms@verge.net.au>, Eric Dumazet <eric.dumazet@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
-        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Dipankar Sarma <dipankar@in.ibm.com>
-Subject: Re: [PATCH v2 1/2] sched: Add cond_resched_rcu_lock() helper
-Message-ID: <20130501091012.GB28253@dyad.programming.kicks-ass.net>
-References: <1367290378-29224-1-git-send-email-horms@verge.net.au>
- <1367290378-29224-2-git-send-email-horms@verge.net.au>
- <alpine.LFD.2.00.1304301011310.1700@ja.ssi.bg>
- <20130430072944.GA13959@verge.net.au>
- <alpine.LFD.2.00.1304301051260.1700@ja.ssi.bg>
+	Wed, 1 May 2013 05:12:33 -0400
+Date: Wed, 1 May 2013 10:11:08 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Rob Herring <robherring2@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "arm@kernel.org" <arm@kernel.org>, Will Deacon <Will.Deacon@arm.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 6/4] arm64: Move to generic sched_clock infrastructure
+Message-ID: <20130501091108.GB10984@arm.com>
+References: <1366417746-24990-1-git-send-email-sboyd@codeaurora.org>
+ <1367369675-13535-1-git-send-email-sboyd@codeaurora.org>
+ <1367369675-13535-2-git-send-email-sboyd@codeaurora.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1304301051260.1700@ja.ssi.bg>
+In-Reply-To: <1367369675-13535-2-git-send-email-sboyd@codeaurora.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 30, 2013 at 10:52:38AM +0300, Julian Anastasov wrote:
+On Wed, May 01, 2013 at 01:54:35AM +0100, Stephen Boyd wrote:
+> Use the generic sched_clock infrastructure instead of rolling our
+> own. This has the added benefit of fixing suspend/resume as
+> outlined in 6a4dae5 (ARM: 7565/1: sched: stop sched_clock()
+> during suspend, 2012-10-23) and correcting the timestamps when
+> the hardware returns a value instead of 0 upon the first read.
 > 
-> 	Hello,
-> 
-> On Tue, 30 Apr 2013, Simon Horman wrote:
-> 
-> > > > +static void inline cond_resched_rcu_lock(void)
-> > > > +{
-> > > > +	if (need_resched()) {
-> > > 
-> > > 	Ops, it should be without above need_resched.
-> > 
-> > Thanks, to clarify, just this:
-> > 
-> > static void inline cond_resched_rcu_lock(void)
-> > {
-> > 	rcu_read_unlock();
-> > #ifndef CONFIG_PREEMPT_RCU
-> > 	cond_resched();
-> > #endif
-> > 	rcu_read_lock();
-> > }
-> 
-> 	Yes, thanks!
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 
-OK, now I'm confused.. PREEMPT_RCU would preempt in any case, so why bother
-dropping rcu_read_lock() at all?
+Looks ok.
 
-That is; the thing that makes sense to me is:
-
-static void inline cond_resched_rcu_lock(void)
-{
-#ifdef CONFIG_PREEMPT_RCU
-	if (need_resched()) {
-		rcu_read_unlock();
-		cond_resched();
-		rcu_read_lock();
-	}
-#endif /* CONFIG_PREEMPT_RCU */
-}
-
-That would have an rcu_read_lock() break and voluntary preemption point for
-non-preemptible RCU and not bother with the stuff for preemptible RCU.
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
