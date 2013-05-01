@@ -1,103 +1,258 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759952Ab3EBCtI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 22:49:08 -0400
-Received: from mail-db8lp0189.outbound.messaging.microsoft.com ([213.199.154.189]:29656
-	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757234Ab3EBCtE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 22:49:04 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(zz98dI1432Izz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275dhz2dh87h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1151h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Thu, 2 May 2013 10:48:50 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: <rjw@sisk.pl>, <linaro-kernel@lists.linaro.org>, <patches@linaro.org>,
-        <cpufreq@vger.kernel.org>, <linux-pm@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <robin.randhawa@arm.com>,
-        <Steve.Bannister@arm.com>, <Liviu.Dudau@arm.com>,
-        <charles.garcia-tobin@arm.com>, <arvind.chauhan@arm.com>, <nm@ti.com>
-Subject: Re: [PATCH] cpufreq: cpu0: Free parent node for error cases
-Message-ID: <20130502024849.GF3442@S2101-09.ap.freescale.net>
-References: <ad5f8a25684dbdd6fcb385fb420da0b4709e7392.1367384647.git.viresh.kumar@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <ad5f8a25684dbdd6fcb385fb420da0b4709e7392.1367384647.git.viresh.kumar@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
+	id S932307Ab3EBC5O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 22:57:14 -0400
+Received: from mga09.intel.com ([134.134.136.24]:53930 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760081Ab3EBC5H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 May 2013 22:57:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,593,1363158000"; 
+   d="scan'208";a="306560209"
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Herbert Xu <herbert@gondor.hengli.com.au>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Tim Chen <tim.c.chen@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        Jim Kukunas <james.t.kukunas@linux.intel.com>,
+        Keith Busch <keith.busch@intel.com>,
+        Erdinc Ozturk <erdinc.ozturk@intel.com>,
+        Vinodh Gopal <vinodh.gopal@intel.com>,
+        James Guilford <james.guilford@intel.com>,
+        Wajdi Feghali <wajdi.k.feghali@intel.com>,
+        Jussi Kivilinna <jussi.kivilinna@iki.fi>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-crypto@vger.kernel.org, linux-scsi@vger.kernel.org
+Subject: [PATCH v3 3/4] Glue code to cast accelerated CRCT10DIF assembly as a crypto transform
+Date: Wed,  1 May 2013 12:52:50 -0700
+Message-Id: <0b841e39a3f48861b8199fb20f28f5831c22c837.1367436101.git.tim.c.chen@linux.intel.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <cover.1367436101.git.tim.c.chen@linux.intel.com>
+References: <cover.1367436101.git.tim.c.chen@linux.intel.com>
+In-Reply-To: <cover.1367436101.git.tim.c.chen@linux.intel.com>
+References: <cover.1367436101.git.tim.c.chen@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 01, 2013 at 10:34:43AM +0530, Viresh Kumar wrote:
-> We are freeing parent node in success cases but not in failure cases. Lets do
-> it.
-> 
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-> ---
->  drivers/cpufreq/cpufreq-cpu0.c | 13 ++++++++-----
->  1 file changed, 8 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/cpufreq/cpufreq-cpu0.c b/drivers/cpufreq/cpufreq-cpu0.c
-> index 3ab8294..c025714 100644
-> --- a/drivers/cpufreq/cpufreq-cpu0.c
-> +++ b/drivers/cpufreq/cpufreq-cpu0.c
-> @@ -189,7 +189,8 @@ static int cpu0_cpufreq_probe(struct platform_device *pdev)
->  
->  	if (!np) {
->  		pr_err("failed to find cpu0 node\n");
-> -		return -ENOENT;
-> +		ret = -ENOENT;
-> +		goto out_put_parent;
->  	}
->  
->  	cpu_dev = &pdev->dev;
-> @@ -199,7 +200,7 @@ static int cpu0_cpufreq_probe(struct platform_device *pdev)
->  	if (IS_ERR(cpu_clk)) {
->  		ret = PTR_ERR(cpu_clk);
->  		pr_err("failed to get cpu0 clock: %d\n", ret);
-> -		goto out_put_node;
-> +		goto out_put_np;
->  	}
->  
->  	cpu_reg = devm_regulator_get(cpu_dev, "cpu0");
-> @@ -211,13 +212,13 @@ static int cpu0_cpufreq_probe(struct platform_device *pdev)
->  	ret = of_init_opp_table(cpu_dev);
->  	if (ret) {
->  		pr_err("failed to init OPP table: %d\n", ret);
-> -		goto out_put_node;
-> +		goto out_put_np;
->  	}
->  
->  	ret = opp_init_cpufreq_table(cpu_dev, &freq_table);
->  	if (ret) {
->  		pr_err("failed to init cpufreq table: %d\n", ret);
-> -		goto out_put_node;
-> +		goto out_put_np;
->  	}
->  
->  	of_property_read_u32(np, "voltage-tolerance", &voltage_tolerance);
-> @@ -262,8 +263,10 @@ static int cpu0_cpufreq_probe(struct platform_device *pdev)
->  
->  out_free_table:
->  	opp_free_cpufreq_table(cpu_dev, &freq_table);
-> -out_put_node:
-> +out_put_np:
+Glue code that plugs the PCLMULQDQ accelerated CRC T10 DIF hash into the
+crypto framework.  The config CRYPTO_CRCT10DIF_PCLMUL should be turned
+on to enable the feature.  The crc_t10dif crypto library function will
+use this faster algorithm when crct10dif_pclmul module is loaded.
 
-Unnecessary renaming brings unnecessary diffstat?
+Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
+---
+ arch/x86/crypto/Makefile                |   2 +
+ arch/x86/crypto/crct10dif-pclmul_glue.c | 157 ++++++++++++++++++++++++++++++++
+ crypto/Kconfig                          |  11 +++
+ 3 files changed, 170 insertions(+)
+ create mode 100644 arch/x86/crypto/crct10dif-pclmul_glue.c
 
-Shawn
-
->  	of_node_put(np);
-> +out_put_parent:
-> +	of_node_put(parent);
->  	return ret;
->  }
->  
-> -- 
-> 1.7.12.rc2.18.g61b472e
-> 
+diff --git a/arch/x86/crypto/Makefile b/arch/x86/crypto/Makefile
+index 03cd731..d544a66 100644
+--- a/arch/x86/crypto/Makefile
++++ b/arch/x86/crypto/Makefile
+@@ -27,6 +27,7 @@ obj-$(CONFIG_CRYPTO_SHA1_SSSE3) += sha1-ssse3.o
+ obj-$(CONFIG_CRYPTO_CRC32_PCLMUL) += crc32-pclmul.o
+ obj-$(CONFIG_CRYPTO_SHA256_SSSE3) += sha256-ssse3.o
+ obj-$(CONFIG_CRYPTO_SHA512_SSSE3) += sha512-ssse3.o
++obj-$(CONFIG_CRYPTO_CRCT10DIF_PCLMUL) += crct10dif-pclmul.o
+ 
+ # These modules require assembler to support AVX.
+ ifeq ($(avx_supported),yes)
+@@ -70,3 +71,4 @@ crc32c-intel-$(CONFIG_64BIT) += crc32c-pcl-intel-asm_64.o
+ crc32-pclmul-y := crc32-pclmul_asm.o crc32-pclmul_glue.o
+ sha256-ssse3-y := sha256-ssse3-asm.o sha256-avx-asm.o sha256-avx2-asm.o sha256_ssse3_glue.o
+ sha512-ssse3-y := sha512-ssse3-asm.o sha512-avx-asm.o sha512-avx2-asm.o sha512_ssse3_glue.o
++crct10dif-pclmul-y := crct10dif-pcl-asm_64.o crct10dif-pclmul_glue.o
+diff --git a/arch/x86/crypto/crct10dif-pclmul_glue.c b/arch/x86/crypto/crct10dif-pclmul_glue.c
+new file mode 100644
+index 0000000..3c0abd3
+--- /dev/null
++++ b/arch/x86/crypto/crct10dif-pclmul_glue.c
+@@ -0,0 +1,157 @@
++/*
++ * Cryptographic API.
++ *
++ * T10 Data Integrity Field CRC16 Crypto Transform using PCLMULQDQ Instructions
++ *
++ * Copyright (C) 2013 Intel Corporation
++ * Author: Tim Chen <tim.c.chen@linux.intel.com>
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License as published by the Free
++ * Software Foundation; either version 2 of the License, or (at your option)
++ * any later version.
++ *
++ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
++ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
++ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
++ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
++ * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
++ * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
++ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
++ * SOFTWARE.
++ *
++ */
++
++#include <linux/types.h>
++#include <linux/module.h>
++#include <linux/crc-t10dif.h>
++#include <crypto/internal/hash.h>
++#include <linux/init.h>
++#include <linux/string.h>
++#include <linux/kernel.h>
++#include <asm/i387.h>
++#include <asm/cpufeature.h>
++#include <asm/cpu_device_id.h>
++
++asmlinkage __u16 crc_t10dif_pcl(__u16 crc, const unsigned char *buf,
++				size_t len);
++
++struct chksum_desc_ctx {
++	__u16 crc;
++};
++
++/*
++ * Steps through buffer one byte at at time, calculates reflected
++ * crc using table.
++ */
++
++static int chksum_init(struct shash_desc *desc)
++{
++	struct chksum_desc_ctx *ctx = shash_desc_ctx(desc);
++
++	ctx->crc = 0;
++
++	return 0;
++}
++
++static int chksum_update(struct shash_desc *desc, const u8 *data,
++			 unsigned int length)
++{
++	struct chksum_desc_ctx *ctx = shash_desc_ctx(desc);
++
++	if (irq_fpu_usable()) {
++		kernel_fpu_begin();
++		ctx->crc = crc_t10dif_pcl(ctx->crc, data, length);
++		kernel_fpu_end();
++	} else
++		ctx->crc = crc_t10dif_generic(ctx->crc, data, length);
++	return 0;
++}
++
++static int chksum_final(struct shash_desc *desc, u8 *out)
++{
++	struct chksum_desc_ctx *ctx = shash_desc_ctx(desc);
++
++	*(__u16 *)out = ctx->crc;
++	return 0;
++}
++
++static int __chksum_finup(__u16 *crcp, const u8 *data, unsigned int len,
++			u8 *out)
++{
++	if (irq_fpu_usable()) {
++		kernel_fpu_begin();
++		*(__u16 *)out = crc_t10dif_pcl(*crcp, data, len);
++		kernel_fpu_end();
++	} else
++		*(__u16 *)out = crc_t10dif_generic(*crcp, data, len);
++	return 0;
++}
++
++static int chksum_finup(struct shash_desc *desc, const u8 *data,
++			unsigned int len, u8 *out)
++{
++	struct chksum_desc_ctx *ctx = shash_desc_ctx(desc);
++
++	return __chksum_finup(&ctx->crc, data, len, out);
++}
++
++static int chksum_digest(struct shash_desc *desc, const u8 *data,
++			 unsigned int length, u8 *out)
++{
++	struct chksum_desc_ctx *ctx = shash_desc_ctx(desc);
++
++	return __chksum_finup(&ctx->crc, data, length, out);
++}
++
++static struct shash_alg alg = {
++	.digestsize		=	CRC_T10DIF_DIGEST_SIZE,
++	.init		=	chksum_init,
++	.update		=	chksum_update,
++	.final		=	chksum_final,
++	.finup		=	chksum_finup,
++	.digest		=	chksum_digest,
++	.descsize		=	sizeof(struct chksum_desc_ctx),
++	.base			=	{
++		.cra_name		=	"crct10dif",
++		.cra_driver_name	=	"crct10dif-pclmul",
++		.cra_priority		=	200,
++		.cra_blocksize		=	CRC_T10DIF_BLOCK_SIZE,
++		.cra_module		=	THIS_MODULE,
++	}
++};
++
++static const struct x86_cpu_id crct10dif_cpu_id[] = {
++	X86_FEATURE_MATCH(X86_FEATURE_PCLMULQDQ),
++	{}
++};
++MODULE_DEVICE_TABLE(x86cpu, crct10dif_cpu_id);
++
++static int __init crct10dif_intel_mod_init(void)
++{
++	int ret;
++
++	ret = 0;
++	if (!x86_match_cpu(crct10dif_cpu_id))
++		return -ENODEV;
++
++	ret = crypto_register_shash(&alg);
++	if (!ret)
++		crc_t10dif_update_lib();
++	return ret;
++}
++
++static void __exit crct10dif_intel_mod_fini(void)
++{
++	crypto_unregister_shash(&alg);
++}
++
++module_init(crct10dif_intel_mod_init);
++module_exit(crct10dif_intel_mod_fini);
++
++MODULE_AUTHOR("Tim Chen <tim.c.chen@linux.intel.com>");
++MODULE_DESCRIPTION("T10 DIF CRC calculation accelerated with PCLMULQDQ.");
++MODULE_LICENSE("GPL");
++
++MODULE_ALIAS("crct10dif");
++MODULE_ALIAS("crct10dif-pclmul");
+diff --git a/crypto/Kconfig b/crypto/Kconfig
+index 17b78e4..589edd4 100644
+--- a/crypto/Kconfig
++++ b/crypto/Kconfig
+@@ -385,6 +385,17 @@ config CRYPTO_CRCT10DIF
+ 	  a crypto transform.  This allows for faster crc t10 diff
+ 	  transforms to be used if they are available.
+ 
++config CRYPTO_CRCT10DIF_PCLMUL
++	tristate "CRCT10DIF PCLMULQDQ hardware acceleration"
++	depends on X86 && 64BIT && CRC_T10DIF
++	select CRYPTO_HASH
++	help
++	  For x86_64 processors with SSE4.2 and PCLMULQDQ supported,
++	  CRC T10 DIF PCLMULQDQ computation can be hardware
++	  accelerated PCLMULQDQ instruction. This option will create
++	  'crct10dif-plcmul' module, which is faster when computing the
++	  crct10dif checksum as compared with the generic table implementation.
++
+ config CRYPTO_GHASH
+ 	tristate "GHASH digest algorithm"
+ 	select CRYPTO_GF128MUL
+-- 
+1.7.11.7
 
