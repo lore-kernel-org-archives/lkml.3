@@ -1,148 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761623Ab3EAP5b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 11:57:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37075 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754740Ab3EAP5Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 11:57:25 -0400
-Date: Wed, 1 May 2013 17:52:53 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Jiri Olsa <jolsa@redhat.com>, Jan Kratochvil <jan.kratochvil@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Vince Weaver <vincent.weaver@maine.edu>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCHv3 0/4] perf, signal x86: Fix breakpoint events overflow
-	handling
-Message-ID: <20130501155253.GA5392@redhat.com>
-References: <1367421944-19082-1-git-send-email-jolsa@redhat.com>
+	id S1761639Ab3EAP5q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 11:57:46 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:39852 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754740Ab3EAP5k (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 May 2013 11:57:40 -0400
+Date: Wed, 1 May 2013 08:57:38 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Shawn Bohrer <sbohrer@rgmadvisors.com>
+cc: xfs@oss.sgi.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: deadlock on vmap_area_lock
+In-Reply-To: <20130501144341.GA2404@BohrerMBP.rgmadvisors.com>
+Message-ID: <alpine.DEB.2.02.1305010855440.4547@chino.kir.corp.google.com>
+References: <20130501144341.GA2404@BohrerMBP.rgmadvisors.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1367421944-19082-1-git-send-email-jolsa@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/01, Jiri Olsa wrote:
->
->   - added Oleg's Tested-by for signal related patches
+On Wed, 1 May 2013, Shawn Bohrer wrote:
 
-See the test-case below. Without 1/4 + 2/4 it fails, it can
-miss the 2nd bp or report the 1st one twice.
+> I've got two compute clusters with around 350 machines each which are
+> running kernels based off of 3.1.9 (Yes I realize this is ancient by
+> todays standards).  All of the machines run a 'find' command once an
+> hour on one of the mounted XFS filesystems.  Occasionally these find
+> commands get stuck requiring a reboot of the system.  I took a peek
+> today and see this with perf:
+> 
+>     72.22%          find  [kernel.kallsyms]          [k] _raw_spin_lock
+>                     |
+>                     --- _raw_spin_lock
+>                        |          
+>                        |--98.84%-- vm_map_ram
+>                        |          _xfs_buf_map_pages
+>                        |          xfs_buf_get
+>                        |          xfs_buf_read
+>                        |          xfs_trans_read_buf
+>                        |          xfs_da_do_buf
+>                        |          xfs_da_read_buf
+>                        |          xfs_dir2_block_getdents
+>                        |          xfs_readdir
+>                        |          xfs_file_readdir
+>                        |          vfs_readdir
+>                        |          sys_getdents
+>                        |          system_call_fastpath
+>                        |          __getdents64
+>                        |          
+>                        |--1.12%-- _xfs_buf_map_pages
+>                        |          xfs_buf_get
+>                        |          xfs_buf_read
+>                        |          xfs_trans_read_buf
+>                        |          xfs_da_do_buf
+>                        |          xfs_da_read_buf
+>                        |          xfs_dir2_block_getdents
+>                        |          xfs_readdir
+>                        |          xfs_file_readdir
+>                        |          vfs_readdir
+>                        |          sys_getdents
+>                        |          system_call_fastpath
+>                        |          __getdents64
+>                         --0.04%-- [...]
+> 
+> Looking at the code my best guess is that we are spinning on
+> vmap_area_lock, but I could be wrong.  This is the only process
+> spinning on the machine so I'm assuming either another process has
+> blocked while holding the lock, or perhaps this find process has tried
+> to acquire the vmap_area_lock twice?
+> 
 
-Jan, FYI.
-
-Oleg.
-
-#define _GNU_SOURCE 1
-#include <stdio.h>
-#include <unistd.h>
-#include <sys/ptrace.h>
-#include <sys/debugreg.h>
-#include <sys/user.h>
-#include <sys/wait.h>
-#include <assert.h>
-#include <assert.h>
-#include <stddef.h>
-
-#define DR_GLOBAL_ENABLE	0x2
-#define DR_LOCAL_ENABLE		0x1
-
-unsigned long encode_dr7(int drnum, int enable, unsigned int type, unsigned int len)
-{
-	unsigned long dr7;
-
-	dr7 = ((len | type) & 0xf)
-		<< (DR_CONTROL_SHIFT + drnum * DR_CONTROL_SIZE);
-	if (enable)
-		dr7 |= (DR_GLOBAL_ENABLE << (drnum * DR_ENABLE_SIZE));
-
-	return dr7;
-}
-
-int write_dr(int pid, int dr, unsigned long val)
-{
-	return ptrace(PTRACE_POKEUSER, pid,
-			offsetof (struct user, u_debugreg[dr]),
-			val);
-}
-
-#define GET_REG(pid, reg)				\
-	ptrace(PTRACE_PEEKUSER, (pid),			\
-		offsetof(struct user, regs.reg), 0)
-
-void *get_ip(int pid)
-{
-	return (void*)GET_REG(pid, rip);
-}
-
-
-void func(void)
-{
-	printf("bp_1 passed\n");
-}
-
-void sigh(int sig)
-{
-	printf("bp_2 passed\n");
-}
-
-int main(void)
-{
-	int pid, stat;
-	unsigned long dr7;
-
-	pid = fork();
-	if (!pid) {
-		assert(ptrace(PTRACE_TRACEME, 0,0,0) == 0);
-		kill(getpid(), SIGHUP);
-
-		signal(SIGINT, sigh);
-
-		func();
-
-		return 0x13;
-	}
-
-	assert(pid == waitpid(-1, &stat, 0));
-	assert(WSTOPSIG(stat) == SIGHUP);
-
-	assert(write_dr(pid, 0, (long)func) == 0);
-	assert(write_dr(pid, 1, (long)sigh) == 0);
-
-	dr7 = 0;
-	dr7 |= encode_dr7(0, 1, DR_RW_EXECUTE, DR_LEN_1);
-	dr7 |= encode_dr7(1, 1, DR_RW_EXECUTE, DR_LEN_1);
-
-	assert(write_dr(pid, 7, dr7) == 0);
-
-	assert(ptrace(PTRACE_CONT, pid, 0,0) == 0);
-	assert(pid == waitpid(-1, &stat, 0));
-	assert(WSTOPSIG(stat) == SIGTRAP);
-	assert(get_ip(pid) == func);
-
-	kill(pid, SIGINT);
-	assert(ptrace(PTRACE_CONT, pid, 0,0) == 0);
-	assert(pid == waitpid(-1, &stat, 0));
-	assert(WSTOPSIG(stat) == SIGINT);
-
-	assert(ptrace(PTRACE_CONT, pid, 0,SIGINT) == 0);
-	assert(pid == waitpid(-1, &stat, 0));
-	assert(WSTOPSIG(stat) == SIGTRAP);
-	assert(get_ip(pid) == sigh);
-
-	assert(ptrace(PTRACE_CONT, pid, 0,0) == 0);
-	assert(pid == waitpid(-1, &stat, 0));
-	assert(stat == 0x1300);
-
-	return 0;
-}
-
+Significant spinlock contention doesn't necessarily mean that there's a 
+deadlock, but it also doesn't mean the opposite.  Depending on your 
+definition of "occassionally", would it be possible to run with 
+CONFIG_PROVE_LOCKING and CONFIG_LOCKDEP to see if it uncovers any real 
+deadlock potential?
