@@ -1,71 +1,284 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751698Ab3EAHj6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 03:39:58 -0400
-Received: from mail-ia0-f179.google.com ([209.85.210.179]:52891 "EHLO
-	mail-ia0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753509Ab3EAHju (ORCPT
+	id S1754296Ab3EAHoJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 03:44:09 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:23284 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752279Ab3EAHoA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 03:39:50 -0400
-Message-ID: <5180C6C1.6010000@gmail.com>
-Date: Wed, 01 May 2013 15:39:45 +0800
-From: Simon Jeons <simon.jeons@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Wed, 1 May 2013 03:44:00 -0400
+X-IronPort-AV: E=Sophos;i="4.87,587,1363158000"; 
+   d="scan'208";a="43201133"
+Message-ID: <20156afaa810d94e35d0b72456fc3c4a.squirrel@www.codeaurora.org>
+In-Reply-To: <1367353620-2983-1-git-send-email-merez@codeaurora.org>
+References: <n> <1367353620-2983-1-git-send-email-merez@codeaurora.org>
+Date: Wed, 1 May 2013 00:43:59 -0700
+Subject: Re: [PATCH v4] mmc: card: Adding support for sanitize in eMMC 4.5
+From: merez@codeaurora.org
+To: "Maya Erez" <merez@codeaurora.org>
+Cc: linux-mmc@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        "Maya Erez" <merez@codeaurora.org>,
+        "Yaniv Gardi" <ygardi@codeaurora.org>,
+        "open list" <linux-kernel@vger.kernel.org>
+User-Agent: SquirrelMail/1.4.22
 MIME-Version: 1.0
-To: Jerome Marchand <jmarchan@redhat.com>
-CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Mel Gorman <mgorman@suse.de>
-Subject: Re: [PATCH] swap: redirty page if page write fails on swap file
-References: <516E918B.3050309@redhat.com> <516F3AA7.1000908@gmail.com>
-In-Reply-To: <516F3AA7.1000908@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping, ;-)
-On 04/18/2013 08:13 AM, Simon Jeons wrote:
-> Hi Jerome,
-> On 04/17/2013 08:11 PM, Jerome Marchand wrote:
->> Since commit 62c230b, swap_writepage() calls direct_IO on swap files.
->> However, in that case page isn't redirtied if I/O fails, and is 
->> therefore
->> handled afterwards as if it has been successfully written to the swap
->> file, leading to memory corruption when the page is eventually swapped
->> back in.
->> This patch sets the page dirty when direct_IO() fails. It fixes a memory
+Hi,
+
+Ulf / Luca - I would appreciate if you could review this new version with
+high priority.
+If you don't have additional concerns I would like to try and push the
+changes to kernel-3.10.
+
+Thanks,
+Maya
+> The sanitize support is added as a user-app ioctl call, and
+> was removed from the block-device request, since its purpose is
+> to be invoked not via File-System but by a user.
+> This feature deletes the unmap memory region of the eMMC card,
+> by writing to a specific register in the EXT_CSD.
+> unmap region is the memory region that was previously deleted
+> (by erase, trim or discard operation).
+> In order to avoid timeout when sanitizing large-scale cards,
+> the timeout for sanitize operation is 240 seconds.
 >
-> If swapfile has related page cache which cached swapfile in memory? It 
-> is not necessary, correct?
+> Signed-off-by: Yaniv Gardi <ygardi@codeaurora.org>
+> Signed-off-by: Maya Erez <merez@codeaurora.org>
+> ---
+>  drivers/mmc/card/block.c   |   67
+> ++++++++++++++++++++++++++++++--------------
+>  drivers/mmc/card/queue.c   |    2 +-
+>  drivers/mmc/core/core.c    |   22 ++++++++++++++
+>  drivers/mmc/core/mmc_ops.c |    2 +
+>  include/linux/mmc/core.h   |    2 +
+>  5 files changed, 73 insertions(+), 22 deletions(-)
 >
->> corruption that happened while using swap-over-NFS.
->>
->> Signed-off-by: Jerome Marchand <jmarchan@redhat.com>
->> ---
->>   mm/page_io.c |    2 ++
->>   1 files changed, 2 insertions(+), 0 deletions(-)
->>
->> diff --git a/mm/page_io.c b/mm/page_io.c
->> index 78eee32..04ca00d 100644
->> --- a/mm/page_io.c
->> +++ b/mm/page_io.c
->> @@ -222,6 +222,8 @@ int swap_writepage(struct page *page, struct 
->> writeback_control *wbc)
->>           if (ret == PAGE_SIZE) {
->>               count_vm_event(PSWPOUT);
->>               ret = 0;
->> +        } else {
->> +            set_page_dirty(page);
->>           }
->>           return ret;
->>       }
->>
->> -- 
->> To unsubscribe, send a message with 'unsubscribe linux-mm' in
->> the body to majordomo@kvack.org.  For more info on Linux MM,
->> see: http://www.linux-mm.org/ .
->> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
+> index e12a03c..d3fbc21 100644
+> --- a/drivers/mmc/card/block.c
+> +++ b/drivers/mmc/card/block.c
+> @@ -58,6 +58,8 @@ MODULE_ALIAS("mmc:block");
+>  #define INAND_CMD38_ARG_SECTRIM1 0x81
+>  #define INAND_CMD38_ARG_SECTRIM2 0x88
+>  #define MMC_BLK_TIMEOUT_MS  (10 * 60 * 1000)        /* 10 minute timeout
+> */
+> +#define MMC_SANITIZE_REQ_TIMEOUT 240000
+> +#define MMC_EXTRACT_INDEX_FROM_ARG(x) ((x & 0x00FF0000) >> 16)
 >
+>  #define mmc_req_rel_wr(req)	(((req->cmd_flags & REQ_FUA) || \
+>  				  (req->cmd_flags & REQ_META)) && \
+> @@ -409,6 +411,34 @@ static int ioctl_rpmb_card_status_poll(struct
+> mmc_card *card, u32 *status,
+>  	return err;
+>  }
+>
+> +static int ioctl_do_sanitize(struct mmc_card *card)
+> +{
+> +	int err;
+> +
+> +	if (!mmc_can_sanitize(card)) {
+> +		pr_warn("%s: %s - SANITIZE is not supported\n",
+> +			mmc_hostname(card->host), __func__);
+> +		err = -EOPNOTSUPP;
+> +		goto out;
+> +	}
+> +
+> +	pr_debug("%s: %s - SANITIZE IN PROGRESS...\n",
+> +		mmc_hostname(card->host), __func__);
+> +
+> +	err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
+> +					EXT_CSD_SANITIZE_START, 1,
+> +					MMC_SANITIZE_REQ_TIMEOUT);
+> +
+> +	if (err)
+> +		pr_err("%s: %s - EXT_CSD_SANITIZE_START failed. err=%d\n",
+> +		       mmc_hostname(card->host), __func__, err);
+> +
+> +	pr_debug("%s: %s - SANITIZE COMPLETED\n", mmc_hostname(card->host),
+> +					     __func__);
+> +out:
+> +	return err;
+> +}
+> +
+>  static int mmc_blk_ioctl_cmd(struct block_device *bdev,
+>  	struct mmc_ioc_cmd __user *ic_ptr)
+>  {
+> @@ -511,6 +541,16 @@ static int mmc_blk_ioctl_cmd(struct block_device
+> *bdev,
+>  			goto cmd_rel_host;
+>  	}
+>
+> +	if (MMC_EXTRACT_INDEX_FROM_ARG(cmd.arg) == EXT_CSD_SANITIZE_START) {
+> +		err = ioctl_do_sanitize(card);
+> +
+> +		if (err)
+> +			pr_err("%s: ioctl_do_sanitize() failed. err = %d",
+> +			       __func__, err);
+> +
+> +		goto cmd_rel_host;
+> +	}
+> +
+>  	mmc_wait_for_req(card->host, &mrq);
+>
+>  	if (cmd.error) {
+> @@ -940,10 +980,10 @@ static int mmc_blk_issue_secdiscard_rq(struct
+> mmc_queue *mq,
+>  {
+>  	struct mmc_blk_data *md = mq->data;
+>  	struct mmc_card *card = md->queue.card;
+> -	unsigned int from, nr, arg, trim_arg, erase_arg;
+> +	unsigned int from, nr, arg;
+>  	int err = 0, type = MMC_BLK_SECDISCARD;
+>
+> -	if (!(mmc_can_secure_erase_trim(card) || mmc_can_sanitize(card))) {
+> +	if (!(mmc_can_secure_erase_trim(card))) {
+>  		err = -EOPNOTSUPP;
+>  		goto out;
+>  	}
+> @@ -951,23 +991,11 @@ static int mmc_blk_issue_secdiscard_rq(struct
+> mmc_queue *mq,
+>  	from = blk_rq_pos(req);
+>  	nr = blk_rq_sectors(req);
+>
+> -	/* The sanitize operation is supported at v4.5 only */
+> -	if (mmc_can_sanitize(card)) {
+> -		erase_arg = MMC_ERASE_ARG;
+> -		trim_arg = MMC_TRIM_ARG;
+> -	} else {
+> -		erase_arg = MMC_SECURE_ERASE_ARG;
+> -		trim_arg = MMC_SECURE_TRIM1_ARG;
+> -	}
+> +	if (mmc_can_trim(card) && !mmc_erase_group_aligned(card, from, nr))
+> +		arg = MMC_SECURE_TRIM1_ARG;
+> +	else
+> +		arg = MMC_SECURE_ERASE_ARG;
+>
+> -	if (mmc_erase_group_aligned(card, from, nr))
+> -		arg = erase_arg;
+> -	else if (mmc_can_trim(card))
+> -		arg = trim_arg;
+> -	else {
+> -		err = -EINVAL;
+> -		goto out;
+> -	}
+>  retry:
+>  	if (card->quirks & MMC_QUIRK_INAND_CMD38) {
+>  		err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
+> @@ -1003,9 +1031,6 @@ retry:
+>  			goto out;
+>  	}
+>
+> -	if (mmc_can_sanitize(card))
+> -		err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
+> -				 EXT_CSD_SANITIZE_START, 1, 0);
+>  out_retry:
+>  	if (err && !mmc_blk_reset(md, card->host, type))
+>  		goto retry;
+> diff --git a/drivers/mmc/card/queue.c b/drivers/mmc/card/queue.c
+> index 9447a0e..fa9632e 100644
+> --- a/drivers/mmc/card/queue.c
+> +++ b/drivers/mmc/card/queue.c
+> @@ -173,7 +173,7 @@ static void mmc_queue_setup_discard(struct
+> request_queue *q,
+>  	/* granularity must not be greater than max. discard */
+>  	if (card->pref_erase > max_discard)
+>  		q->limits.discard_granularity = 0;
+> -	if (mmc_can_secure_erase_trim(card) || mmc_can_sanitize(card))
+> +	if (mmc_can_secure_erase_trim(card))
+>  		queue_flag_set_unlocked(QUEUE_FLAG_SECDISCARD, q);
+>  }
+>
+> diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
+> index 37c5dad..c103962 100644
+> --- a/drivers/mmc/core/core.c
+> +++ b/drivers/mmc/core/core.c
+> @@ -402,6 +402,7 @@ static int mmc_wait_for_data_req_done(struct mmc_host
+> *host,
+>  			context_info->is_done_rcv = false;
+>  			context_info->is_new_req = false;
+>  			cmd = mrq->cmd;
+> +
+>  			if (!cmd->error || !cmd->retries ||
+>  			    mmc_card_removed(host->card)) {
+>  				err = host->areq->err_check(host->card,
+> @@ -436,6 +437,27 @@ static void mmc_wait_for_req_done(struct mmc_host
+> *host,
+>  		wait_for_completion(&mrq->completion);
+>
+>  		cmd = mrq->cmd;
+> +
+> +		/*
+> +		 * If host has timed out waiting for the sanitize
+> +		 * to complete, card might be still in programming state
+> +		 * so let's try to bring the card out of programming
+> +		 * state.
+> +		 */
+> +		if (cmd->sanitize_busy && cmd->error == -ETIMEDOUT) {
+> +			if (!mmc_interrupt_hpi(host->card)) {
+> +				pr_warning("%s: %s: Interrupted "
+> +					   "sanitize\n",
+> +					   mmc_hostname(host),
+> +					   __func__);
+> +				cmd->error = 0;
+> +				break;
+> +			} else {
+> +				pr_err("%s: %s: Failed to interrupt "
+> +				       "sanitize\n",
+> +				       mmc_hostname(host), __func__);
+> +			}
+> +		}
+>  		if (!cmd->error || !cmd->retries ||
+>  		    mmc_card_removed(host->card))
+>  			break;
+> diff --git a/drivers/mmc/core/mmc_ops.c b/drivers/mmc/core/mmc_ops.c
+> index 49f04bc..124af52 100644
+> --- a/drivers/mmc/core/mmc_ops.c
+> +++ b/drivers/mmc/core/mmc_ops.c
+> @@ -431,6 +431,8 @@ int __mmc_switch(struct mmc_card *card, u8 set, u8
+> index, u8 value,
+>
+>
+>  	cmd.cmd_timeout_ms = timeout_ms;
+> +	if (index == EXT_CSD_SANITIZE_START)
+> +		cmd.sanitize_busy = true;
+>
+>  	err = mmc_wait_for_cmd(card->host, &cmd, MMC_CMD_RETRIES);
+>  	if (err)
+> diff --git a/include/linux/mmc/core.h b/include/linux/mmc/core.h
+> index 39613b9..bd06ff5 100644
+> --- a/include/linux/mmc/core.h
+> +++ b/include/linux/mmc/core.h
+> @@ -96,6 +96,8 @@ struct mmc_command {
+>   */
+>
+>  	unsigned int		cmd_timeout_ms;	/* in milliseconds */
+> +	/* Set this flag only for blocking sanitize request */
+> +	bool			sanitize_busy;
+>
+>  	struct mmc_data		*data;		/* data segment associated with cmd */
+>  	struct mmc_request	*mrq;		/* associated request */
+> --
+> 1.7.3.3
+> --
+> QUALCOMM ISRAEL, on behalf of Qualcomm Innovation Center, Inc. is a member
+> of Code Aurora Forum, hosted by The Linux Foundation
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+
+
+-- 
+Maya Erez
+QUALCOMM ISRAEL, on behalf of Qualcomm Innovation Center, Inc. is a member
+of Code Aurora Forum, hosted by The Linux Foundation
 
