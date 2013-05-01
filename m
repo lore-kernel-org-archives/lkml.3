@@ -1,72 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753753Ab3EAGoJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 02:44:09 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:46249 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753206Ab3EAGoB (ORCPT
+	id S1753834Ab3EAGom (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 02:44:42 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:37331 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753206Ab3EAGof (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 02:44:01 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Cc: Krzysztof Strasburger <strasbur@chkw386.ch.pwr.wroc.pl>
-Subject: [PATCH] fat: Fix possible overflow for fat_clusters
-References: <20130430172615.GA20597@chkw386.ch.pwr.wroc.pl>
-	<87fvy74jbi.fsf@devron.myhome.or.jp>
-	<20130501054916.GA23413@chkw386.ch.pwr.wroc.pl>
-Date: Wed, 01 May 2013 15:43:58 +0900
-In-Reply-To: <20130501054916.GA23413@chkw386.ch.pwr.wroc.pl> (Krzysztof
-	Strasburger's message of "Wed, 1 May 2013 07:49:16 +0200")
-Message-ID: <877gjj42tt.fsf_-_@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	Wed, 1 May 2013 02:44:35 -0400
+Date: Wed, 1 May 2013 16:44:23 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-arm-kernel@lists.infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Hiroshi Doyu <hdoyu@nvidia.com>, Stephen Warren <swarren@nvidia.com>,
+        Russell King <rmk@arm.linux.org.uk>
+Subject: linux-next: manual merge of the arm-soc tree with the arm tree
+Message-Id: <20130501164423.1233db0b618d0e6b7184c05b@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__1_May_2013_16_44_23_+1000_6cBp1.wTVVK=undr"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Wed__1_May_2013_16_44_23_+1000_6cBp1.wTVVK=undr
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Intermediate value of fat_clusters can be overflowed on 32bits arch.
+Hi all,
 
-Reported-by: Krzysztof Strasburger <strasbur@chkw386.ch.pwr.wroc.pl>
-Signed-off-by: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
----
+Today's linux-next merge of the arm-soc tree got a conflict in
+arch/arm/mach-tegra/hotplug.c between commit da2265b130f6 ("ARM: tegra:
+remove tegra specific cpu_disable()") from the arm tree and commit
+7469688e832e ("ARM: tegra: Unify tegra{20,30,114}_init_early()") from the
+arm-soc tree.
 
- fs/fat/inode.c |   15 ++++++++++++++-
- 1 file changed, 14 insertions(+), 1 deletion(-)
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-diff -puN fs/fat/inode.c~fat-fat_clusters-overflow-fix fs/fat/inode.c
---- linux/fs/fat/inode.c~fat-fat_clusters-overflow-fix	2013-05-01 09:37:27.000000000 +0900
-+++ linux-hirofumi/fs/fat/inode.c	2013-05-01 09:43:13.000000000 +0900
-@@ -1223,6 +1223,19 @@ static int fat_read_root(struct inode *i
- 	return 0;
- }
- 
-+static unsigned long calc_fat_clusters(struct super_block *sb)
-+{
-+	struct msdos_sb_info *sbi = MSDOS_SB(sb);
-+
-+	/* Divide first to avoid overflow */
-+	if (sbi->fat_bits != 12) {
-+		unsigned long ent_per_sec = sb->s_blocksize * 8 / sbi->fat_bits;
-+		return ent_per_sec * sbi->fat_length;
-+	}
-+
-+	return sbi->fat_length * sb->s_blocksize * 8 / sbi->fat_bits;
-+}
-+
- /*
-  * Read the super block of an MS-DOS FS.
-  */
-@@ -1427,7 +1440,7 @@ int fat_fill_super(struct super_block *s
- 		sbi->dirty = b->fat16.state & FAT_STATE_DIRTY;
- 
- 	/* check that FAT table does not overflow */
--	fat_clusters = sbi->fat_length * sb->s_blocksize * 8 / sbi->fat_bits;
-+	fat_clusters = calc_fat_clusters(sb);
- 	total_clusters = min(total_clusters, fat_clusters - FAT_START_ENT);
- 	if (total_clusters > MAX_FAT(sb)) {
- 		if (!silent)
-_
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc arch/arm/mach-tegra/hotplug.c
+index e8323bc,8da9f78..0000000
+--- a/arch/arm/mach-tegra/hotplug.c
++++ b/arch/arm/mach-tegra/hotplug.c
+@@@ -12,8 -11,10 +11,9 @@@
+  #include <linux/smp.h>
+  #include <linux/clk/tegra.h>
+ =20
+ -#include <asm/cacheflush.h>
+  #include <asm/smp_plat.h>
+ =20
++ #include "fuse.h"
+  #include "sleep.h"
+ =20
+  static void (*tegra_hotplug_shutdown)(void);
+@@@ -46,18 -47,22 +46,13 @@@ void __ref tegra_cpu_die(unsigned int c
+  	BUG();
+  }
+ =20
+- #ifdef CONFIG_ARCH_TEGRA_2x_SOC
+- extern void tegra20_hotplug_shutdown(void);
+- void __init tegra20_hotplug_init(void)
+ -int tegra_cpu_disable(unsigned int cpu)
+ -{
+ -	/*
+ -	 * we don't allow CPU 0 to be shutdown (it is still too special
+ -	 * e.g. clock tick interrupts)
+ -	 */
+ -	return cpu =3D=3D 0 ? -EPERM : 0;
+ -}
+ -
++ void __init tegra_hotplug_init(void)
+  {
+- 	tegra_hotplug_shutdown =3D tegra20_hotplug_shutdown;
+- }
+- #endif
++ 	if (!IS_ENABLED(CONFIG_HOTPLUG_CPU))
++ 		return;
+ =20
+- #ifdef CONFIG_ARCH_TEGRA_3x_SOC
+- extern void tegra30_hotplug_shutdown(void);
+- void __init tegra30_hotplug_init(void)
+- {
+- 	tegra_hotplug_shutdown =3D tegra30_hotplug_shutdown;
++ 	if (IS_ENABLED(CONFIG_ARCH_TEGRA_2x_SOC) && tegra_chip_id =3D=3D TEGRA20)
++ 		tegra_hotplug_shutdown =3D tegra20_hotplug_shutdown;
++ 	if (IS_ENABLED(CONFIG_ARCH_TEGRA_3x_SOC) && tegra_chip_id =3D=3D TEGRA30)
++ 		tegra_hotplug_shutdown =3D tegra30_hotplug_shutdown;
+  }
+- #endif
+
+--Signature=_Wed__1_May_2013_16_44_23_+1000_6cBp1.wTVVK=undr
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRgLnHAAoJEECxmPOUX5FE0EsP+wZBhYdWkVYf9/bDgFGJMjyw
+mcEv+hx5BcTRmfMsQPlFDZIk3uvlejQoOQiEv4ws1Y9jweFMMlh3msVcEzLlZwyu
+o80NE43eMHDBjHRWV3r/Hdi+fBjcXg+G/flYhG3H/0KtEb8I5znpJCkm2GHiXk2u
+b+s0UPcAwD2OiCF488lncPji7CNt02kX5qaajlLs5pHiSfBBIweoVwCgQPXGEi4K
+FVcKHan8dvmZzHabTBrrTd8gT2c3fI2fR6hFEVcZ6xerDasHXtXgXL+lFkJ7Tvko
+movs/SYwyX05d3JV5EyiQZnYev/27d47K3ZiWOkUEm+8cNIi9qBZR/zVTTEN5+un
+Rnm57mqrqpU7KPJnzyp30xY62v71mzRRutWnTS/NKV1D16ZG/sV/D//KcJohREhY
+1RpV5BVbqu+gmPuANskMFaHgQSqVZZWQcdylr29XLip3CFWzW1WXcqavpjcsBDlo
+Zdni8z9OBpwoZM2oygBQTxlOXM4Az0wGRCzuCgQysN30IUkNrBvhFOW8cQ2RUNFa
+GYaGWsW1Op9d4R+ix68YOHSYvYhm9/9APBoX36zfTVLZcoff/EFBgEBfiAIo29E/
+0G4UX67C6Wmt4F7pzK9x0jVhzjTfSt5yChKBFWkNe7JSUyuPYTZnF4rDMgGJN95C
+F2Oa4bmeQsRVf2Fy7ZaB
+=QSHt
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__1_May_2013_16_44_23_+1000_6cBp1.wTVVK=undr--
