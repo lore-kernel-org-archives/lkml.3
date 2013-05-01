@@ -1,87 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757530Ab3EAVGp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 17:06:45 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:58629 "EHLO multi.imgtec.com"
+	id S1757587Ab3EAVKQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 17:10:16 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:34116 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756988Ab3EAVGm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 17:06:42 -0400
-From: James Hogan <james.hogan@imgtec.com>
-To: <torvalds@linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>, James Hogan <james.hogan@imgtec.com>,
-        "Al Viro" <viro@zeniv.linux.org.uk>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Mike Frysinger <vapier@gentoo.org>,
-        <uclinux-dist-devel@blackfin.uclinux.org>
-Subject: [PATCH] linkage.h: fix build breakage due to symbol prefix handling
-Date: Wed, 1 May 2013 22:04:17 +0100
-Message-ID: <1367442257-7897-1-git-send-email-james.hogan@imgtec.com>
-X-Mailer: git-send-email 1.8.1.2
+	id S1757086Ab3EAVKO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 May 2013 17:10:14 -0400
+Date: Wed, 1 May 2013 23:10:11 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: David Rientjes <rientjes@google.com>
+Cc: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
+        levinsasha928@gmail.com, mtosatti@redhat.com, tglx@linutronix.de,
+        Borislav Petkov <bp@suse.de>, fengguang.wu@intel.com,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/urgent] x86/kconfig:  Add a Kconfig shortcut for
+ building working KVM guest kernels
+Message-ID: <20130501211011.GD4466@pd.tnic>
+References: <20130426095140.GA15361@pd.tnic>
+ <tip-83aee67833071c7b73a83f7803388f7a9e481908@git.kernel.org>
+ <alpine.DEB.2.02.1305011248220.8448@chino.kir.corp.google.com>
+ <20130501203500.GC4466@pd.tnic>
+ <alpine.DEB.2.02.1305011358500.19189@chino.kir.corp.google.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-SEF-Processed: 7_3_0_01181__2013_05_01_22_06_34
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1305011358500.19189@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Al's commit e1b5bb6d1236d4ad2084c53aa83dde7cdf6f8eea ("consolidate
-cond_syscall and SYSCALL_ALIAS declarations") broke the build on
-blackfin and metag due to the following code:
+On Wed, May 01, 2013 at 02:00:06PM -0700, David Rientjes wrote:
+> With this applied, two other types of conflicting dependencies:
+> 
+> warning: (KVM_GUEST_COMMON_OPTIONS) selects VIRTIO_NET which has unmet direct dependencies (NETDEVICES && NET_CORE && VIRTIO)
+> 
+> and
+> 
+> warning: (KVM_GUEST_COMMON_OPTIONS && AMD_IOMMU) selects PCI_MSI which has unmet direct dependencies (PCI && ARCH_SUPPORTS_MSI)
 
-  #ifndef SYMBOL_NAME
-  #ifdef CONFIG_SYMBOL_PREFIX
-  #define SYMBOL_NAME(x) CONFIG_SYMBOL_PREFIX ## x
-  #else
-  #define SYMBOL_NAME(x) x
-  #endif
-  #endif
-  #define __SYMBOL_NAME(x) __stringify(SYMBOL_NAME(x))
+How do you trigger those? I don't see them here with this applied.
 
-__stringify literally stringifies CONFIG_SYMBOL_PREFIX ##x, so you get
-lines like this in kernel/sys_ni.s:
+Thanks.
 
-  .weak CONFIG_SYMBOL_PREFIXsys_quotactl
-  .set CONFIG_SYMBOL_PREFIXsys_quotactl,CONFIG_SYMBOL_PREFIXsys_ni_syscall
-
-The patches in Rusty's modules-next tree such as "CONFIG_SYMBOL_PREFIX:
-cleanup." clean up the whole mess around symbol prefixes, so this patch
-just attempts to fix the build in the mean time. The intermediate
-definition of SYMBOL_NAME above isn't used and is incorrect when
-CONFIG_SYMBOL_PREFIX is defined as CONFIG_SYMBOL_PREFIX is a quoted
-string literal, so define __SYMBOL_NAME directly depending on
-CONFIG_SYMBOL_PREFIX.
-
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Mike Frysinger <vapier@gentoo.org>
-Cc: uclinux-dist-devel@blackfin.uclinux.org
----
- include/linux/linkage.h | 7 ++-----
- 1 file changed, 2 insertions(+), 5 deletions(-)
-
-diff --git a/include/linux/linkage.h b/include/linux/linkage.h
-index 829d66c..de09dec 100644
---- a/include/linux/linkage.h
-+++ b/include/linux/linkage.h
-@@ -15,14 +15,11 @@
- #define asmlinkage CPP_ASMLINKAGE
- #endif
- 
--#ifndef SYMBOL_NAME
- #ifdef CONFIG_SYMBOL_PREFIX
--#define SYMBOL_NAME(x) CONFIG_SYMBOL_PREFIX ## x
-+#define __SYMBOL_NAME(x) CONFIG_SYMBOL_PREFIX __stringify(x)
- #else
--#define SYMBOL_NAME(x) x
-+#define __SYMBOL_NAME(x) __stringify(x)
- #endif
--#endif
--#define __SYMBOL_NAME(x) __stringify(SYMBOL_NAME(x))
- 
- #ifndef cond_syscall
- #define cond_syscall(x) asm(".weak\t" __SYMBOL_NAME(x) \
 -- 
-1.8.1.2
+Regards/Gruss,
+    Boris.
 
-
+Sent from a fat crate under my desk. Formatting is fine.
+--
