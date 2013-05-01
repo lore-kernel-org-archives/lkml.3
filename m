@@ -1,112 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934171Ab3EACgj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 22:36:39 -0400
-Received: from tundra.namei.org ([65.99.196.166]:42964 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933396Ab3EACgd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 22:36:33 -0400
-Date: Wed, 1 May 2013 12:39:45 +1000 (EST)
-From: James Morris <jmorris@namei.org>
-To: John Johansen <john.johansen@canonical.com>
-cc: SECURITY SUBSYSTEM <linux-security-module@vger.kernel.org>,
-        LKLM <linux-kernel@vger.kernel.org>
-Subject: Re: [PULL] apparmor update
-In-Reply-To: <517CDB9C.8040001@canonical.com>
-Message-ID: <alpine.LRH.2.02.1305011238240.7261@tundra.namei.org>
-References: <517CDB9C.8040001@canonical.com>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S1761352Ab3EADNR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 23:13:17 -0400
+Received: from mail-ye0-f170.google.com ([209.85.213.170]:34770 "EHLO
+	mail-ye0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761315Ab3EADNL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Apr 2013 23:13:11 -0400
+Message-ID: <5180883F.3040003@gmail.com>
+Date: Wed, 01 May 2013 11:13:03 +0800
+From: Will Huck <will.huckk@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Christoph Lameter <cl@linux.com>
+CC: Han Pingtian <hanpt@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, mhocko@suse.cz,
+        Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>, linux-mm@kvack.org
+Subject: Re: OOM-killer and strange RSS value in 3.9-rc7
+References: <alpine.DEB.2.02.1304161315290.30779@chino.kir.corp.google.com> <20130417094750.GB2672@localhost.localdomain> <20130417141909.GA24912@dhcp22.suse.cz> <20130418101541.GC2672@localhost.localdomain> <20130418175513.GA12581@dhcp22.suse.cz> <20130423131558.GH8001@dhcp22.suse.cz> <20130424044848.GI2672@localhost.localdomain> <20130424094732.GB31960@dhcp22.suse.cz> <0000013e3cb0340d-00f360e3-076b-478e-b94c-ddd4476196ce-000000@email.amazonses.com> <20130425060705.GK2672@localhost.localdomain> <0000013e42332267-0b7fb3c0-9150-4058-8850-ae094b455b15-000000@email.amazonses.com> <517B8A5D.1030308@gmail.com> <0000013e56450fd2-c7a854d1-ff7f-47a7-a235-30721fead5e0-000000@email.amazonses.com>
+In-Reply-To: <0000013e56450fd2-c7a854d1-ff7f-47a7-a235-30721fead5e0-000000@email.amazonses.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 28 Apr 2013, John Johansen wrote:
+Hi Christoph,
+On 04/29/2013 10:49 PM, Christoph Lameter wrote:
+> On Sat, 27 Apr 2013, Will Huck wrote:
+>
+>> Hi Christoph,
+>> On 04/26/2013 01:17 AM, Christoph Lameter wrote:
+>>> On Thu, 25 Apr 2013, Han Pingtian wrote:
+>>>
+>>>> I have enabled "slub_debug" and here is the
+>>>> /sys/kernel/slab/kmalloc-512/alloc_calls contents:
+>>>>
+>>>>        50 .__alloc_workqueue_key+0x90/0x5d0 age=113630/116957/119419
+>>>> pid=1-1730 cpus=0,6-8,13,24,26,44,53,57,60,68 nodes=1
+>>>>        11 .__alloc_workqueue_key+0x16c/0x5d0 age=113814/116733/119419
+>>>> pid=1-1730 cpus=0,44,68 nodes=1
+>>>>        13 .add_sysfs_param.isra.2+0x80/0x210 age=115175/117994/118779
+>>>> pid=1-1342 cpus=0,8,12,24,60 nodes=1
+>>>>       160 .build_sched_domains+0x108/0xe30 age=119111/119120/119131 pid=1
+>>>> cpus=0 nodes=1
+>>>>      9000 .alloc_fair_sched_group+0xe4/0x220 age=110549/114471/117357
+>>>> pid=1-2290
+>>>> cpus=0-1,5,9-11,13,24,29,33,36,38,40-41,45,48-50,53,56-58,60-63,68-69,72-73,76-77,79
+>>>> nodes=1
+>>>>      9000 .alloc_fair_sched_group+0x114/0x220 age=110549/114471/117357
+>>>> pid=1-2290
+>>>> cpus=0-1,5,9-11,13,24,29,33,36,38,40-41,45,48-50,53,56-58,60-63,68-69,72-73,76-77,79
+>>>> nodes=1
+>> Could you explain the meaning of  age=xx/xx/xx  pid=xx-xx cpus=xx here?
+>>
+> Age refers to the mininum / avg / maximum age of the object in ticks.
 
-> Hi James,
-> 
-> Please pull these apparmor changes for 3.10 (or after is fine as I know
-> these are running late for the -security window)
+Why need monitor the age of the object?
 
-Yep -- patches need to be in -next for at least a week before the merge 
-window.  I suggest getting you pull requests to me around the -rc4 mark.
+>
+> pid refers to the range of pids by processes running when the objects were
+> created.
+>
+> cpus are the processors on which kernel threads where running when these
+> objects were allocated.
+>
 
-
-I'll pull these changes after -rc1.
-
-
-
-> 
-> There are no new features here just a set of small bug fixes and code
-> cleanups
-> 
-> thanks
-> -john,
-> 
-> 
-> 
-> The following changes since commit b7ae9f064bec903bd4a9f257a35da4d1e9bbcc99:
-> 
->   Merge branch 'tpmdd-04-17-13' of git://github.com/shpedoikal/linux into my-next (2013-04-20 09:00:45 -0700)
-> 
-> are available in the git repository at:
-> 
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/jj/linux-apparmor tags/aa-3.10
-> 
-> for you to fetch changes up to 2654bfbc2bd0e1e64f0b257c21da23f6cec32c6c:
-> 
->   apparmor: fix fully qualified name parsing (2013-04-28 00:39:37 -0700)
-> 
-> ----------------------------------------------------------------
-> apparmor patches for 3.10
-> 
-> ----------------------------------------------------------------
-> John Johansen (20):
->       apparmor: fix auditing of domain transition failures due to incomplete policy
->       apparmor: Remove -W1 warnings
->       apparmor: refactor profile mode macros
->       apparmor: fix error code to failure message mapping for name lookup
->       apparmor: add utility function to get an arbitrary tasks profile.
->       apparmor: add kvzalloc to handle zeroing for kvmalloc
->       apparmor: use common fn to clear task_context for domain transitions
->       apparmor: remove "permipc" command
->       apparmor: relax the restrictions on setting rlimits
->       apparmor: misc cleanup of match
->       apparmor: move perm defines into policy_unpack
->       apparmor: remove sid from profiles
->       apparmor: move the free_profile fn ahead of aa_alloc_profile
->       apparmor: reserve and mask off the top 8 bits of the base field
->       apparmor: fix the audit type table
->       apparmor: Fix smatch warning in aa_remove_profiles
->       apparmor: fix sparse warnings
->       apparmor: localize getting the security context to a few macros
->       apparmor: fix setprocattr arg processing for onexec
->       apparmor: fix fully qualified name parsing
-> 
->  security/apparmor/audit.c            |   2 +-
->  security/apparmor/context.c          |  44 +++++----
->  security/apparmor/domain.c           |  26 ++---
->  security/apparmor/include/apparmor.h |  12 ++-
->  security/apparmor/include/context.h  |  61 ++++++++----
->  security/apparmor/include/file.h     |  14 +--
->  security/apparmor/include/match.h    |  21 ++--
->  security/apparmor/include/policy.h   |  16 ++--
->  security/apparmor/include/procattr.h |   1 -
->  security/apparmor/include/sid.h      |   4 +-
->  security/apparmor/ipc.c              |  13 +--
->  security/apparmor/lib.c              |  20 ++--
->  security/apparmor/lsm.c              |  69 +++++++------
->  security/apparmor/match.c            |  23 ++---
->  security/apparmor/path.c             |   2 +-
->  security/apparmor/policy.c           | 181 ++++++++++++++++-------------------
->  security/apparmor/policy_unpack.c    |   4 +-
->  security/apparmor/procattr.c         |   6 --
->  security/apparmor/resource.c         |  15 ++-
->  19 files changed, 286 insertions(+), 248 deletions(-)
-> 
-
--- 
-James Morris
-<jmorris@namei.org>
