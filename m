@@ -1,90 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754758Ab3EARRi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 13:17:38 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:52365 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751051Ab3EARRa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 13:17:30 -0400
+	id S1753501Ab3EARUp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 13:20:45 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:45766 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751947Ab3EARUi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 May 2013 13:20:38 -0400
+Date: Wed, 1 May 2013 13:20:31 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Borislav Petkov <bp@alien8.de>, Andy Lutomirski <luto@amacapital.net>,
+        linux-kernel@vger.kernel.org, x86@kernel.org,
+        Andrew Lutomirski <luto@mit.edu>
+Subject: Re: [PATCH v5] x86: Enable fast strings on Intel if BIOS hasn't
+ already
+Message-ID: <20130501172030.GA8609@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	"H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>,
+	Andy Lutomirski <luto@amacapital.net>, linux-kernel@vger.kernel.org,
+	x86@kernel.org, Andrew Lutomirski <luto@mit.edu>
+References: <3cdeaedaa41e258e8aa9ca83d79a936e0b9462bc.1367385613.git.luto@amacapital.net>
+ <20130501113352.GA29571@pd.tnic>
+ <20130501163404.GA6286@thunk.org>
+ <518145F6.3060800@zytor.com>
 MIME-Version: 1.0
-In-Reply-To: <20130430072147.GA37866@bingao-desk1.fm.intel.com>
-References: <20130430072147.GA37866@bingao-desk1.fm.intel.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 1 May 2013 11:17:10 -0600
-Message-ID: <CAErSpo6g0xXo+HH+ZOYZav_Y6ZUH2D2FAqN+uDqrJqxQCRObog@mail.gmail.com>
-Subject: Re: x86/pci/mrst: force all pci config toward 0:0:0, 0:2:0 and 0:3:0
- to type 1
-To: Bin Gao <bin.gao@linux.intel.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
-        Jacob Pan <jacob.jun.pan@linux.intel.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <518145F6.3060800@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 30, 2013 at 1:21 AM, Bin Gao <bin.gao@linux.intel.com> wrote:
-> x86/pci/mrst: force all pci config access toward 0:0:0, 0:2:0 and 0:3:0 to type 1
->
-> For real pci devices 0:0:0, 0:2:0 and 0:3:0, there is either no pci shim, or
-> no guarantee of data correctness of offset 256-4k. So for whatever reason,
-> Linux kernel should not do MMCFG pci config access to those devices. Instead,
-> always use type 1 for those devices.
->
-> Signed-off-by: Bin Gao <bin.gao@linux.intel.com>
-> ---
->  arch/x86/pci/mrst.c |   10 ++++++----
->  1 files changed, 6 insertions(+), 4 deletions(-)
->
-> diff --git a/arch/x86/pci/mrst.c b/arch/x86/pci/mrst.c
-> index 6eb18c4..0e0fabf 100644
-> --- a/arch/x86/pci/mrst.c
-> +++ b/arch/x86/pci/mrst.c
-> @@ -141,6 +141,11 @@ static int pci_device_update_fixed(struct pci_bus *bus, unsigned int devfn,
->   */
->  static bool type1_access_ok(unsigned int bus, unsigned int devfn, int reg)
->  {
-> +       if (bus == 0 && (devfn == PCI_DEVFN(2, 0)
-> +                               || devfn == PCI_DEVFN(0, 0)
-> +                               || devfn == PCI_DEVFN(3, 0)))
-> +               return 1;
+On Wed, May 01, 2013 at 09:42:30AM -0700, H. Peter Anvin wrote:
+> The erratum reads seriously, but it only affects crossings between pages
+> of different page types, which is rare in itself.  WT and WP are not
+> even used in Linux; the UC case we end up doing 8-byte stores instead of
+> the proper size, which is wrong, but for the case where the user is
+> malicious the user could just do that directly, and it seems extremely
+> hard to envision a scenario where someone would do that intentionally.
 
-Is there any possibility of multi-function devices at bus 0, device 0, 2, or 3?
+Yeah, I wasn't so much worried about a malicious user as much as a
+situation where the you're trying to debug a mysterious and
+hard-to-reproduce failure, start tearing your hair out, and wondering
+whether you're going insane or the compiler hates you and is out to
+get you and you start staring at assembly code to try to figure out
+how some piece of memory got mysteriously corrupted....
 
-What about bridges -- can any of these be a bridge?
-
-If either of those could happen, these checks could be too specific.
-
-Is there a doc that identifies these cases where config mechanism #1
-should be used instead of MMCONFIG?
-
-Bjorn
-
-> +
->         /* This is a workaround for A0 LNC bug where PCI status register does
->          * not have new CAP bit set. can not be written by SW either.
->          *
-> @@ -150,10 +155,7 @@ static bool type1_access_ok(unsigned int bus, unsigned int devfn, int reg)
->          */
->         if (reg >= 0x100 || reg == PCI_STATUS || reg == PCI_HEADER_TYPE)
->                 return 0;
-> -       if (bus == 0 && (devfn == PCI_DEVFN(2, 0)
-> -                               || devfn == PCI_DEVFN(0, 0)
-> -                               || devfn == PCI_DEVFN(3, 0)))
-> -               return 1;
-> +
->         return 0; /* langwell on others */
->  }
->
-> --
-> 1.7.4.4
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+					- Ted
