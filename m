@@ -1,211 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934164Ab3EACG4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 22:06:56 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:34366 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934003Ab3EACGt (ORCPT
+	id S934187Ab3EACHI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 22:07:08 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:32376 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934089Ab3EACGu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 22:06:49 -0400
-Date: Wed, 1 May 2013 12:06:36 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Howells <dhowells@redhat.com>,
-        Vasant Hegde <hegdevasant@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        <linuxppc-dev@lists.ozlabs.org>
-Subject: linux-next: manual merge of the vfs tree with the powerpc tree
-Message-Id: <20130501120636.0e54681b2dfb7ebe6aeb27c4@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__1_May_2013_12_06_36_+1000_XYNZNJPro60xXbfT"
+	Tue, 30 Apr 2013 22:06:50 -0400
+X-IronPort-AV: E=Sophos;i="4.87,584,1363158000"; 
+   d="scan'208";a="43010592"
+Date: Tue, 30 Apr 2013 21:06:47 -0500
+From: rkuo <rkuo@codeaurora.org>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, linux-hexagon@vger.kernel.org
+Subject: [GIT PULL] Hexagon arch fixes
+Message-ID: <20130501020518.GA17080@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__1_May_2013_12_06_36_+1000_XYNZNJPro60xXbfT
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hello Linus,
 
-Hi Al,
+Please pull the following changes for the Hexagon architecture (and one
+touching OpenRISC).  They include various fixes to make use of additional
+arch features and cleanups.  The largest functional change is a cleanup
+of the signal and event return paths.
 
-Today's linux-next merge of the vfs tree got a conflict in
-arch/powerpc/kernel/rtas_flash.c between commit fb4696c39573
-("powerpc/rtas_flash: Fix bad memory access") from the powerpc tree and
-commits ad18a364f186 ("powerpc/rtas_flash: Free kmem upon module exit")
-and 2352ad01409d ("ppc: Clean up rtas_flash driver somewhat") from the
-vfs tree.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+Thanks,
+Richard Kuo
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --cc arch/powerpc/kernel/rtas_flash.c
-index 243e184,5b77026..0000000
---- a/arch/powerpc/kernel/rtas_flash.c
-+++ b/arch/powerpc/kernel/rtas_flash.c
-@@@ -310,9 -316,9 +328,9 @@@ static ssize_t rtas_flash_write(struct=20
-  	 * proc file
-  	 */
-  	if (uf->flist =3D=3D NULL) {
- -		uf->flist =3D kmem_cache_alloc(flash_block_cache, GFP_KERNEL);
- +		uf->flist =3D kmem_cache_zalloc(flash_block_cache, GFP_KERNEL);
-  		if (!uf->flist)
-- 			return -ENOMEM;
-+ 			goto nomem;
-  	}
- =20
-  	fl =3D uf->flist;
-@@@ -321,18 -327,18 +339,18 @@@
-  	next_free =3D fl->num_blocks;
-  	if (next_free =3D=3D FLASH_BLOCKS_PER_NODE) {
-  		/* Need to allocate another block_list */
- -		fl->next =3D kmem_cache_alloc(flash_block_cache, GFP_KERNEL);
- +		fl->next =3D kmem_cache_zalloc(flash_block_cache, GFP_KERNEL);
-  		if (!fl->next)
-- 			return -ENOMEM;
-+ 			goto nomem;
-  		fl =3D fl->next;
-  		next_free =3D 0;
-  	}
- =20
-  	if (count > RTAS_BLK_SIZE)
-  		count =3D RTAS_BLK_SIZE;
- -	p =3D kmem_cache_alloc(flash_block_cache, GFP_KERNEL);
- +	p =3D kmem_cache_zalloc(flash_block_cache, GFP_KERNEL);
-  	if (!p)
-- 		return -ENOMEM;
-+ 		goto nomem;
-  =09
-  	if(copy_from_user(p, buffer, count)) {
-  		kmem_cache_free(flash_block_cache, p);
-@@@ -722,65 -694,13 +706,13 @@@ static int __init rtas_flash_init(void
-  		return 1;
-  	}
- =20
-- 	firmware_flash_pde =3D create_flash_pde("powerpc/rtas/"
-- 					      FIRMWARE_FLASH_NAME,
-- 					      &rtas_flash_operations);
-- 	if (firmware_flash_pde =3D=3D NULL) {
-- 		rc =3D -ENOMEM;
-- 		goto cleanup;
-- 	}
--=20
-- 	rc =3D initialize_flash_pde_data("ibm,update-flash-64-and-reboot",
-- 			 	       sizeof(struct rtas_update_flash_t),=20
-- 				       firmware_flash_pde);
-- 	if (rc !=3D 0)
-- 		goto cleanup;
--=20
-- 	firmware_update_pde =3D create_flash_pde("powerpc/rtas/"
-- 					       FIRMWARE_UPDATE_NAME,
-- 					       &rtas_flash_operations);
-- 	if (firmware_update_pde =3D=3D NULL) {
-- 		rc =3D -ENOMEM;
-- 		goto cleanup;
-- 	}
--=20
-- 	rc =3D initialize_flash_pde_data("ibm,update-flash-64-and-reboot",
-- 			 	       sizeof(struct rtas_update_flash_t),=20
-- 				       firmware_update_pde);
-- 	if (rc !=3D 0)
-- 		goto cleanup;
--=20
-- 	validate_pde =3D create_flash_pde("powerpc/rtas/" VALIDATE_FLASH_NAME,
-- 			      		&validate_flash_operations);
-- 	if (validate_pde =3D=3D NULL) {
-- 		rc =3D -ENOMEM;
-- 		goto cleanup;
-- 	}
--=20
-- 	rc =3D initialize_flash_pde_data("ibm,validate-flash-image",
-- 		                       sizeof(struct rtas_validate_flash_t),=20
-- 				       validate_pde);
-- 	if (rc !=3D 0)
-- 		goto cleanup;
--=20
-- 	manage_pde =3D create_flash_pde("powerpc/rtas/" MANAGE_FLASH_NAME,
-- 				      &manage_flash_operations);
-- 	if (manage_pde =3D=3D NULL) {
-- 		rc =3D -ENOMEM;
-- 		goto cleanup;
-- 	}
--=20
-- 	rc =3D initialize_flash_pde_data("ibm,manage-flash-image",
-- 			               sizeof(struct rtas_manage_flash_t),
-- 				       manage_pde);
-- 	if (rc !=3D 0)
-- 		goto cleanup;
--=20
-- 	rtas_flash_term_hook =3D rtas_flash_firmware;
-+ 	rtas_validate_flash_data.buf =3D kzalloc(VALIDATE_BUF_SIZE, GFP_KERNEL);
-+ 	if (!rtas_validate_flash_data.buf)
-+ 		return -ENOMEM;
- =20
-  	flash_block_cache =3D kmem_cache_create("rtas_flash_cache",
- -					      RTAS_BLK_SIZE, RTAS_BLK_SIZE, 0,
- -					      rtas_block_ctor);
- +				RTAS_BLK_SIZE, RTAS_BLK_SIZE, 0,
- +				NULL);
-  	if (!flash_block_cache) {
-  		printk(KERN_ERR "%s: failed to create block cache\n",
-  				__func__);
-@@@ -800,20 -742,17 +754,22 @@@ enomem_buf
- =20
-  static void __exit rtas_flash_cleanup(void)
-  {
-+ 	int i;
-+=20
-  	rtas_flash_term_hook =3D NULL;
- =20
- +	if (rtas_firmware_flash_list) {
- +		free_flash_list(rtas_firmware_flash_list);
- +		rtas_firmware_flash_list =3D NULL;
- +	}
- +
-- 	if (flash_block_cache)
-- 		kmem_cache_destroy(flash_block_cache);
-+ 	for (i =3D 0; i < ARRAY_SIZE(rtas_flash_files); i++) {
-+ 		const struct rtas_flash_file *f =3D &rtas_flash_files[i];
-+ 		remove_proc_entry(f->filename, NULL);
-+ 	}
- =20
-- 	remove_flash_pde(firmware_flash_pde);
-- 	remove_flash_pde(firmware_update_pde);
-- 	remove_flash_pde(validate_pde);
-- 	remove_flash_pde(manage_pde);
-+ 	kmem_cache_destroy(flash_block_cache);
-+ 	kfree(rtas_validate_flash_data.buf);
-  }
- =20
-  module_init(rtas_flash_init);
+The following changes since commit c1be5a5b1b355d40e6cf79cc979eb66dafa24ad1:
 
---Signature=_Wed__1_May_2013_12_06_36_+1000_XYNZNJPro60xXbfT
-Content-Type: application/pgp-signature
+  Linux 3.9 (2013-04-28 17:36:01 -0700)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+are available in the git repository at:
 
-iQIcBAEBCAAGBQJRgHisAAoJEECxmPOUX5FEjEQP/iXqmm1eo+FfSL6lbQrwpO69
-kfKyhQyB1fqd4IU1ZBcpnlClBMCcQlx4qIr8ox0M+fnhdaqXMgjwkeRJU1QtfDif
-FLBLPH4awi+DqODSXtUcL1zRSOfVW3GVhvFylYeXx2v9HpFHsw6irREZMrcLGWOF
-NpyXiWJjMsQOJYVYKjpdlsw+Z4nBURuPg1ddz1WwPNN1pqMUrS7r974Q+21l8C6j
-23FMqJWbMK21U0IeWORpKNpT8Q/vyXRK89EnIv20YUNGU2oRFPI+6AQDcIHW4dqb
-MpS4QxqkaNT2Jl6rNMZfFGXEuLfoD8r7xnjumoyBohgTPCl/W476sBfjYM0pmhQ0
-y1MwLC8doGN3LQAzH1tGWaYm4leYMDwFq3k7gqOIj8BkAOOUWx7vZXHrFLzrTCr1
-az1JRF7Ibbfb+MN8V5U+CtWxueIksrmhLxDV+RsJ1P/AaFqVZFa+Wv0B2pXhhkJ4
-z0AK5NUXUuaAIRMtJY+dkwp3BtnPgpSxq3jh24Uts1ton6ls7WaZaMBdTw+s5QAe
-V0V58JX6vi28khfNTYoKFUBSh6XPZYkLqZRyFwHWhd12ChTKeEZzyku+BlydDg1B
-wYwRPRwGT/b6gB3V3Z0NjTIGM+59c284Cks5ULGXpkcbqskaBSRcz7rRsVcYLrCB
-rfqXo/KJ2zgpWv5PPJXl
-=iJ+g
------END PGP SIGNATURE-----
+  git://git.kernel.org/pub/scm/linux/kernel/git/rkuo/linux-hexagon-kernel.git for-linus
 
---Signature=_Wed__1_May_2013_12_06_36_+1000_XYNZNJPro60xXbfT--
+for you to fetch changes up to 426d29ccb2a8d44c18d3167327ee82b38287e7bf:
+
+  Hexagon: add v4 CS regs to core copyout macro (2013-04-30 19:40:29 -0500)
+
+----------------------------------------------------------------
+Paul Bolle (2):
+      arch: remove CONFIG_GENERIC_FIND_NEXT_BIT again
+      Hexagon: remove two Kconfig entries
+
+Richard Kuo (30):
+      Hexagon: clean up generic headers in Kbuild
+      Hexagon: fix __atomic_add_unless
+      Hexagon: add support for ARCH_PFN_OFFSET
+      Hexagon: change arch version config to allow comparisons
+      Hexagon: use GENERIC_CPU_DEVICES
+      Hexagon: use defines for MIN_KERNEL_SEG calculation
+      Hexagon: add individual register access for switch_stack
+      Hexagon: add support for new v4+ registers
+      Hexagon: Signal and return path fixes
+      Hexagon: check to if we will overflow the signal stack
+      Hexagon: remove keyring related call
+      Hexagon: fix initial page table setup prior to jump to VA
+      Hexagon: add support for additional exceptions
+      Hexagon: use correct work mask when checking for more work
+      Hexagon: add support for single-stepping (v4+)
+      Hexagon: don't print info for offline CPU's
+      Hexagon: switch to using the device type for IO mappings
+      Hexagon: add IOMEM and _relaxed IO macros
+      Hexagon: fix up int enable/disable at ret_from_fork
+      Hexagon: fix psp/sp macro
+      Hexagon: use generic sys_fork, sys_vfork, and sys_clone
+      Hexagon: break up user fn/arg register setting
+      Hexagon: fix signal.c compile error
+      Hexagon: add translation types for __vmnewmap
+      Hexagon: update copyright dates
+      Hexagon: fix signal number for user mem faults
+      Hexagon: fix return value for notify_resume case in do_work_pending
+      Hexagon: use correct translations for DMA mappings
+      Hexagon: use correct translation for VMALLOC_START
+      Hexagon: add v4 CS regs to core copyout macro
+
+ arch/hexagon/Kconfig                      |   33 +---
+ arch/hexagon/Makefile                     |   17 +-
+ arch/hexagon/include/asm/Kbuild           |    2 +-
+ arch/hexagon/include/asm/atomic.h         |   22 ++-
+ arch/hexagon/include/asm/elf.h            |   23 ++-
+ arch/hexagon/include/asm/hexagon_vm.h     |   56 +++---
+ arch/hexagon/include/asm/io.h             |   16 +-
+ arch/hexagon/include/asm/mem-layout.h     |   28 ++-
+ arch/hexagon/include/asm/page.h           |   12 +-
+ arch/hexagon/include/asm/processor.h      |   51 +++++-
+ arch/hexagon/include/asm/vm_mmu.h         |   11 +-
+ arch/hexagon/include/uapi/asm/ptrace.h    |    5 +
+ arch/hexagon/include/uapi/asm/registers.h |   17 +-
+ arch/hexagon/include/uapi/asm/signal.h    |    4 +
+ arch/hexagon/include/uapi/asm/unistd.h    |    3 +
+ arch/hexagon/include/uapi/asm/user.h      |    6 +
+ arch/hexagon/kernel/Makefile              |    2 +-
+ arch/hexagon/kernel/asm-offsets.c         |    5 +-
+ arch/hexagon/kernel/dma.c                 |   27 ++-
+ arch/hexagon/kernel/head.S                |  107 +++++++++--
+ arch/hexagon/kernel/kgdb.c                |    4 +-
+ arch/hexagon/kernel/process.c             |   42 ++++-
+ arch/hexagon/kernel/ptrace.c              |   26 ++-
+ arch/hexagon/kernel/setup.c               |    9 +-
+ arch/hexagon/kernel/signal.c              |   45 ++---
+ arch/hexagon/kernel/topology.c            |   52 ------
+ arch/hexagon/kernel/traps.c               |   36 ++--
+ arch/hexagon/kernel/vm_entry.S            |  282 ++++++++++++++++++++---------
+ arch/hexagon/kernel/vm_events.c           |    4 +-
+ arch/hexagon/kernel/vm_vectors.S          |    4 +-
+ arch/hexagon/kernel/vmlinux.lds.S         |   12 +-
+ arch/hexagon/mm/init.c                    |   35 ++--
+ arch/hexagon/mm/vm_fault.c                |    4 +-
+ arch/openrisc/Kconfig                     |    3 -
+ 34 files changed, 659 insertions(+), 346 deletions(-)
+ delete mode 100644 arch/hexagon/kernel/topology.c
+
+
+--
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
