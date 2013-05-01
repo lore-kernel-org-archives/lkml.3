@@ -1,28 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755312Ab3EAJvT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 05:51:19 -0400
-Received: from mail-we0-f178.google.com ([74.125.82.178]:36636 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751400Ab3EAJvQ (ORCPT
+	id S1759114Ab3EAJw4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 05:52:56 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:60340 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757164Ab3EAJwt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 05:51:16 -0400
-Date: Wed, 1 May 2013 10:51:11 +0100
+	Wed, 1 May 2013 05:52:49 -0400
+Date: Wed, 1 May 2013 10:52:43 +0100
 From: Lee Jones <lee.jones@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@stericsson.com, srinidhi.kasagar@stericsson.com,
-        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
-        Per Forlin <per.forlin@stericsson.com>, Rabin Vincent <rabin@rab.in>
-Subject: Re: [PATCH 1/5] dmaengine: ste_dma40: Allow memcpy channels to be
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: arnd@arndb.de, linus.walleij@stericsson.com,
+        srinidhi.kasagar@stericsson.com, Vinod Koul <vinod.koul@intel.com>,
+        Dan Williams <djbw@fb.com>, Per Forlin <per.forlin@stericsson.com>,
+        Rabin Vincent <rabin@rab.in>
+Subject: [PATCH 1/5 v2] dmaengine: ste_dma40: Allow memcpy channels to be
  configured from DT
-Message-ID: <20130501095111.GC25256@gmail.com>
+Message-ID: <20130501095243.GD25256@gmail.com>
 References: <1367336497-10650-1-git-send-email-lee.jones@linaro.org>
- <201304302242.24002.arnd@arndb.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201304302242.24002.arnd@arndb.de>
+In-Reply-To: <1367336497-10650-1-git-send-email-lee.jones@linaro.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
