@@ -1,50 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756778Ab3EATFQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 15:05:16 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:43079 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756691Ab3EATFL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 15:05:11 -0400
-From: Mike Travis <travis@sgi.com>
-To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>
-Cc: Pierre-Louis Bossart <pierre-louis.bossart@linux.intel.com>,
-        David Henningsson <david.henningsson@canonical.com>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        Russ Anderson <rja@sgi.com>, Mike Travis <travis@sgi.com>
-Subject: [PATCH]: x86_64, audio: Fix system panic when DMA > 40 bits
-Date: Wed,  1 May 2013 14:04:08 -0500
-Message-Id: <1367435048-66137-1-git-send-email-travis@sgi.com>
-X-Mailer: git-send-email 1.8.2.1
+	id S1756663Ab3EATFF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 15:05:05 -0400
+Received: from server.prisktech.co.nz ([115.188.14.127]:52354 "EHLO
+	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756535Ab3EATEz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 May 2013 15:04:55 -0400
+Message-ID: <51816757.4090801@prisktech.co.nz>
+Date: Thu, 02 May 2013 07:04:55 +1200
+From: Tony Prisk <linux@prisktech.co.nz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: David Miller <davem@davemloft.net>
+CC: romieu@fr.zoreil.com, netdev@vger.kernel.org,
+        vt8500-wm8505-linux-kernel@googlegroups.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv4 0/3] Add support for velocity network driver on platform
+ devices
+References: <1367302620-4620-1-git-send-email-linux@prisktech.co.nz> <20130501.145209.2011460600232631301.davem@davemloft.net>
+In-Reply-To: <20130501.145209.2011460600232631301.davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The audio driver mistakenly allows 64 bit addresses to be created for
-the audio driver on Nvidia GPUs.  Unfortunately, the hardware normally
-only supports up to 40 bits of DMA.  This can cause system panics as
-well as misdirected data when the address is > 40 bits as the upper
-part the address is truncated.
+On 02/05/13 06:52, David Miller wrote:
+> From: Tony Prisk <linux@prisktech.co.nz>
+> Date: Tue, 30 Apr 2013 18:16:57 +1200
+>
+>> I think it would be pertinent to get some tested-by's for PCI users.
+> Tony, this came in a bit late, and there hasn't been any PCI test
+> reports so I have to defer this to the next merge window, sorry.
+No problems - I didn't honestly expect it to go in for 3.10 any way.
+I was trying to get in nice and earlier for 3.11 to give people plenty 
+of time to test.
 
-Signed-off-by: Mike Travis <travis@sgi.com>
-Reviewed-by: Mike Habeck <habeck@sgi.com>
----
- sound/pci/hda/hda_intel.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/sound/pci/hda/hda_intel.c b/sound/pci/hda/hda_intel.c
-index bcd40ee..45eb165 100644
---- a/sound/pci/hda/hda_intel.c
-+++ b/sound/pci/hda/hda_intel.c
-@@ -615,7 +615,7 @@ enum {
- /* quirks for Nvidia */
- #define AZX_DCAPS_PRESET_NVIDIA \
- 	(AZX_DCAPS_NVIDIA_SNOOP | AZX_DCAPS_RIRB_DELAY | AZX_DCAPS_NO_MSI |\
--	 AZX_DCAPS_ALIGN_BUFSIZE)
-+	 AZX_DCAPS_ALIGN_BUFSIZE | AZX_DCAPS_NO_64BIT)
- 
- #define AZX_DCAPS_PRESET_CTHDA \
- 	(AZX_DCAPS_NO_MSI | AZX_DCAPS_POSFIX_LPIB | AZX_DCAPS_4K_BDLE_BOUNDARY)
--- 
-1.8.2.1
-
+Regards
+Tony P
