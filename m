@@ -1,88 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752690Ab3EAFFG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 01:05:06 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:48457 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751378Ab3EAFEz (ORCPT
+	id S1752167Ab3EAFJb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 01:09:31 -0400
+Received: from mail-da0-f45.google.com ([209.85.210.45]:52693 "EHLO
+	mail-da0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751275Ab3EAFJY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 01:04:55 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@sisk.pl
-Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, robin.randhawa@arm.com,
-        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
-        charles.garcia-tobin@arm.com, arvind.chauhan@arm.com,
-        shawn.guo@linaro.org, nm@ti.com,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH] cpufreq: cpu0: Free parent node for error cases
-Date: Wed,  1 May 2013 10:34:43 +0530
-Message-Id: <ad5f8a25684dbdd6fcb385fb420da0b4709e7392.1367384647.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+	Wed, 1 May 2013 01:09:24 -0400
+Message-ID: <5180A37E.8010701@gmail.com>
+Date: Wed, 01 May 2013 13:09:18 +0800
+From: Ric Mason <ric.masonn@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Tim Chen <tim.c.chen@linux.intel.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Dave Hansen <dave.hansen@intel.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>
+Subject: Re: [PATCH 2/2] Make batch size for memory accounting configured
+ according to size of memory
+References: <c1f9c476a8bd1f5e7049b8ac79af48be61afd8f3.1367254913.git.tim.c.chen@linux.intel.com> <8c9bc7d4646d48154604820a3ec5952ba8949de4.1367254913.git.tim.c.chen@linux.intel.com>
+In-Reply-To: <8c9bc7d4646d48154604820a3ec5952ba8949de4.1367254913.git.tim.c.chen@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We are freeing parent node in success cases but not in failure cases. Lets do
-it.
+Hi Tim,
+On 04/30/2013 01:12 AM, Tim Chen wrote:
+> Currently the per cpu counter's batch size for memory accounting is
+> configured as twice the number of cpus in the system.  However,
+> for system with very large memory, it is more appropriate to make it
+> proportional to the memory size per cpu in the system.
+>
+> For example, for a x86_64 system with 64 cpus and 128 GB of memory,
+> the batch size is only 2*64 pages (0.5 MB).  So any memory accounting
+> changes of more than 0.5MB will overflow the per cpu counter into
+> the global counter.  Instead, for the new scheme, the batch size
+> is configured to be 0.4% of the memory/cpu = 8MB (128 GB/64 /256),
 
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- drivers/cpufreq/cpufreq-cpu0.c | 13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
+If large batch size will lead to global counter more inaccurate?
 
-diff --git a/drivers/cpufreq/cpufreq-cpu0.c b/drivers/cpufreq/cpufreq-cpu0.c
-index 3ab8294..c025714 100644
---- a/drivers/cpufreq/cpufreq-cpu0.c
-+++ b/drivers/cpufreq/cpufreq-cpu0.c
-@@ -189,7 +189,8 @@ static int cpu0_cpufreq_probe(struct platform_device *pdev)
- 
- 	if (!np) {
- 		pr_err("failed to find cpu0 node\n");
--		return -ENOENT;
-+		ret = -ENOENT;
-+		goto out_put_parent;
- 	}
- 
- 	cpu_dev = &pdev->dev;
-@@ -199,7 +200,7 @@ static int cpu0_cpufreq_probe(struct platform_device *pdev)
- 	if (IS_ERR(cpu_clk)) {
- 		ret = PTR_ERR(cpu_clk);
- 		pr_err("failed to get cpu0 clock: %d\n", ret);
--		goto out_put_node;
-+		goto out_put_np;
- 	}
- 
- 	cpu_reg = devm_regulator_get(cpu_dev, "cpu0");
-@@ -211,13 +212,13 @@ static int cpu0_cpufreq_probe(struct platform_device *pdev)
- 	ret = of_init_opp_table(cpu_dev);
- 	if (ret) {
- 		pr_err("failed to init OPP table: %d\n", ret);
--		goto out_put_node;
-+		goto out_put_np;
- 	}
- 
- 	ret = opp_init_cpufreq_table(cpu_dev, &freq_table);
- 	if (ret) {
- 		pr_err("failed to init cpufreq table: %d\n", ret);
--		goto out_put_node;
-+		goto out_put_np;
- 	}
- 
- 	of_property_read_u32(np, "voltage-tolerance", &voltage_tolerance);
-@@ -262,8 +263,10 @@ static int cpu0_cpufreq_probe(struct platform_device *pdev)
- 
- out_free_table:
- 	opp_free_cpufreq_table(cpu_dev, &freq_table);
--out_put_node:
-+out_put_np:
- 	of_node_put(np);
-+out_put_parent:
-+	of_node_put(parent);
- 	return ret;
- }
- 
--- 
-1.7.12.rc2.18.g61b472e
+> which is more inline with the memory size.
+>
+> Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
+> ---
+>   mm/mmap.c  | 13 ++++++++++++-
+>   mm/nommu.c | 13 ++++++++++++-
+>   2 files changed, 24 insertions(+), 2 deletions(-)
+>
+> diff --git a/mm/mmap.c b/mm/mmap.c
+> index 0db0de1..082836e 100644
+> --- a/mm/mmap.c
+> +++ b/mm/mmap.c
+> @@ -89,6 +89,7 @@ int sysctl_max_map_count __read_mostly = DEFAULT_MAX_MAP_COUNT;
+>    * other variables. It can be updated by several CPUs frequently.
+>    */
+>   struct percpu_counter vm_committed_as ____cacheline_aligned_in_smp;
+> +int vm_committed_batchsz ____cacheline_aligned_in_smp;
+>   
+>   /*
+>    * The global memory commitment made in the system can be a metric
+> @@ -3090,10 +3091,20 @@ void mm_drop_all_locks(struct mm_struct *mm)
+>   /*
+>    * initialise the VMA slab
+>    */
+> +static inline int mm_compute_batch(void)
+> +{
+> +	int nr = num_present_cpus();
+> +
+> +	/* batch size set to 0.4% of (total memory/#cpus) */
+> +	return (int) (totalram_pages/nr) / 256;
+> +}
+> +
+>   void __init mmap_init(void)
+>   {
+>   	int ret;
+>   
+> -	ret = percpu_counter_init(&vm_committed_as, 0);
+> +	vm_committed_batchsz = mm_compute_batch();
+> +	ret = percpu_counter_and_batch_init(&vm_committed_as, 0,
+> +						&vm_committed_batchsz);
+>   	VM_BUG_ON(ret);
+>   }
+> diff --git a/mm/nommu.c b/mm/nommu.c
+> index 2f3ea74..a87a99c 100644
+> --- a/mm/nommu.c
+> +++ b/mm/nommu.c
+> @@ -59,6 +59,7 @@ unsigned long max_mapnr;
+>   unsigned long num_physpages;
+>   unsigned long highest_memmap_pfn;
+>   struct percpu_counter vm_committed_as;
+> +int vm_committed_batchsz;
+>   int sysctl_overcommit_memory = OVERCOMMIT_GUESS; /* heuristic overcommit */
+>   int sysctl_overcommit_ratio = 50; /* default is 50% */
+>   int sysctl_max_map_count = DEFAULT_MAX_MAP_COUNT;
+> @@ -526,11 +527,21 @@ SYSCALL_DEFINE1(brk, unsigned long, brk)
+>   /*
+>    * initialise the VMA and region record slabs
+>    */
+> +static inline int mm_compute_batch(void)
+> +{
+> +	int nr = num_present_cpus();
+> +
+> +	/* batch size set to 0.4% of (total memory/#cpus) */
+> +	return (int) (totalram_pages/nr) / 256;
+> +}
+> +
+>   void __init mmap_init(void)
+>   {
+>   	int ret;
+>   
+> -	ret = percpu_counter_init(&vm_committed_as, 0);
+> +	vm_committed_batchsz = mm_compute_batch();
+> +	ret = percpu_counter_and_batch_init(&vm_committed_as, 0,
+> +			&vm_committed_batchsz);
+>   	VM_BUG_ON(ret);
+>   	vm_region_jar = KMEM_CACHE(vm_region, SLAB_PANIC);
+>   }
 
