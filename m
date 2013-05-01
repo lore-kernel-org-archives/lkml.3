@@ -1,59 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756766Ab3EASpK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 14:45:10 -0400
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:51428 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755670Ab3EASo7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 14:44:59 -0400
-Date: Wed, 1 May 2013 11:44:56 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Cliff Wickman <cpw@sgi.com>
-cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, mgorman@suse.de,
-        aarcange@redhat.com, dave.hansen@intel.com, dsterba@suse.cz,
-        hannes@cmpxchg.org, kosaki.motohiro@gmail.com,
-        kirill.shutemov@linux.intel.com, mpm@selenic.com,
-        n-horiguchi@ah.jp.nec.com, rdunlap@infradead.org
-Subject: Re: [PATCH] mm/pagewalk.c: walk_page_range should avoid VM_PFNMAP
- areas
-In-Reply-To: <20130501183908.GA27910@sgi.com>
-Message-ID: <alpine.DEB.2.02.1305011144270.19598@chino.kir.corp.google.com>
-References: <E1UXWpF-0006Ya-Br@eag09.americas.sgi.com> <alpine.DEB.2.02.1305010843180.4547@chino.kir.corp.google.com> <20130501183908.GA27910@sgi.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1756151Ab3EASn2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 14:43:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34791 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755916Ab3EASnK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 May 2013 14:43:10 -0400
+Subject: [RFC PATCH 2/8] pci: Add hotplug_slot_ops.reset_slot()
+To: bhelgaas@google.com
+From: Alex Williamson <alex.williamson@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+Date: Wed, 01 May 2013 12:43:08 -0600
+Message-ID: <20130501184308.28515.85363.stgit@bling.home>
+In-Reply-To: <20130501181828.28515.68783.stgit@bling.home>
+References: <20130501181828.28515.68783.stgit@bling.home>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 1 May 2013, Cliff Wickman wrote:
+This optional callback allows htoplug controllers to perform slot
+specific resets.  These may be necessary in cases where a normal
+secondary bus reset can interact with controller logic and expose
+spurious hotplugs.
 
-> > > @@ -200,28 +184,46 @@ int walk_page_range(unsigned long addr,
-> > >  
-> > >  	pgd = pgd_offset(walk->mm, addr);
-> > >  	do {
-> > > -		struct vm_area_struct *vma;
-> > > +		struct vm_area_struct *vma = NULL;
-> > >  
-> > >  		next = pgd_addr_end(addr, end);
-> > >  
-> > >  		/*
-> > > -		 * handle hugetlb vma individually because pagetable walk for
-> > > -		 * the hugetlb page is dependent on the architecture and
-> > > -		 * we can't handled it in the same manner as non-huge pages.
-> > > +		 * Check any special vma's within this range.
-> > >  		 */
-> > > -		vma = hugetlb_vma(addr, walk);
-> > > +		VM_BUG_ON(!rwsem_is_locked(&walk->mm->mmap_sem));
-> > 
-> > I think this should be moved out of the iteration.  It's currently inside 
-> > it even before your patch, but I think it's pointless.
-> 
-> I don't follow.  We are iterating through a range of addresses.  When
-> we come to a range that is VM_PFNMAP we skip it.  How can we take that
-> out of the iteration?
->  
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+---
+ include/linux/pci_hotplug.h |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-I'm referring only to the VM_BUG_ON().
+diff --git a/include/linux/pci_hotplug.h b/include/linux/pci_hotplug.h
+index 8db71dc..bd32109 100644
+--- a/include/linux/pci_hotplug.h
++++ b/include/linux/pci_hotplug.h
+@@ -63,6 +63,9 @@ enum pcie_link_width {
+  * @get_adapter_status: Called to get see if an adapter is present in the slot or not.
+  *	If this field is NULL, the value passed in the struct hotplug_slot_info
+  *	will be used when this value is requested by a user.
++ * @reset_slot: Optional interface to allow override of a bus reset for the
++ *	slot for cases where a secondary bus reset can result in spurious
++ *	hotplug events or where a slot can be reset independent of the bus.
+  *
+  * The table of function pointers that is passed to the hotplug pci core by a
+  * hotplug pci driver.  These functions are called by the hotplug pci core when
+@@ -80,6 +83,7 @@ struct hotplug_slot_ops {
+ 	int (*get_attention_status)	(struct hotplug_slot *slot, u8 *value);
+ 	int (*get_latch_status)		(struct hotplug_slot *slot, u8 *value);
+ 	int (*get_adapter_status)	(struct hotplug_slot *slot, u8 *value);
++	int (*reset_slot)		(struct hotplug_slot *slot, int probe);
+ };
+ 
+ /**
+
