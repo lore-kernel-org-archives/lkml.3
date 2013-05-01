@@ -1,64 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932560Ab3EAQBY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 12:01:24 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:60398 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761657Ab3EAQBQ (ORCPT
+	id S932655Ab3EAQBo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 12:01:44 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:36347
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932438Ab3EAQBi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 12:01:16 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        srinidhi.kasagar@stericsson.com, vinod.koul@intel.com,
-        per.forlin@stericsson.com, rabin@rab.in,
-        Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH] dmaengine: ste_dma40: Remove redundant address fetching function
-Date: Wed,  1 May 2013 17:01:10 +0100
-Message-Id: <1367424070-326-1-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.7.10.4
+	Wed, 1 May 2013 12:01:38 -0400
+Date: Wed, 1 May 2013 17:59:58 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Julian Anastasov <ja@ssi.bg>, Simon Horman <horms@verge.net.au>,
+        Ingo Molnar <mingo@redhat.com>, lvs-devel@vger.kernel.org,
+        netdev@vger.kernel.org, netfilter-devel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Pablo Neira Ayuso <pablo@netfilter.org>,
+        Dipankar Sarma <dipankar@in.ibm.com>
+Subject: Re: [PATCH v2 1/2] sched: Add cond_resched_rcu_lock() helper
+Message-ID: <20130501155957.GC7521@dyad.programming.kicks-ass.net>
+References: <1367290378-29224-1-git-send-email-horms@verge.net.au>
+ <1367290378-29224-2-git-send-email-horms@verge.net.au>
+ <alpine.LFD.2.00.1304301011310.1700@ja.ssi.bg>
+ <20130430072944.GA13959@verge.net.au>
+ <alpine.LFD.2.00.1304301051260.1700@ja.ssi.bg>
+ <20130501091012.GB28253@dyad.programming.kicks-ass.net>
+ <20130501124637.GO3780@linux.vnet.ibm.com>
+ <20130501151752.GA7521@dyad.programming.kicks-ass.net>
+ <1367422195.11020.46.camel@edumazet-glaptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1367422195.11020.46.camel@edumazet-glaptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Addresses are now stored in local data structures and are easy to
-obtain, thus a specialist function used to fetch them is now surplus
-to requirement.
+On Wed, May 01, 2013 at 08:29:55AM -0700, Eric Dumazet wrote:
+> On Wed, 2013-05-01 at 17:17 +0200, Peter Zijlstra wrote:
+> > On Wed, May 01, 2013 at 05:46:37AM -0700, Paul E. McKenney wrote:
+> > 
+> > > If the only goal is to allow preemption, and if long grace periods are
+> > > not a concern, then this alternate approach would work fine as well.
+> > 
+> > Hmm.. if that were the goal I'd like it to have a different name;
+> > cond_resched*() has always been about preemption.
+> 
+> BTW, I do not remember why cond_resched() is not an empty macro
+> when CONFIG_PREEMPT=y ?
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- drivers/dma/ste_dma40.c |   18 ------------------
- 1 file changed, 18 deletions(-)
-
-diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
-index f00a428..18d9e12 100644
---- a/drivers/dma/ste_dma40.c
-+++ b/drivers/dma/ste_dma40.c
-@@ -2250,24 +2250,6 @@ err:
- 	return NULL;
- }
- 
--static dma_addr_t
--d40_get_dev_addr(struct d40_chan *chan, enum dma_transfer_direction direction)
--{
--	struct stedma40_platform_data *plat = chan->base->plat_data;
--	struct stedma40_chan_cfg *cfg = &chan->dma_cfg;
--	dma_addr_t addr = 0;
--
--	if (chan->runtime_addr)
--		return chan->runtime_addr;
--
--	if (direction == DMA_DEV_TO_MEM)
--		addr = plat->dev_rx[cfg->dev_type];
--	else if (direction == DMA_MEM_TO_DEV)
--		addr = plat->dev_tx[cfg->dev_type];
--
--	return addr;
--}
--
- static struct dma_async_tx_descriptor *
- d40_prep_sg(struct dma_chan *dchan, struct scatterlist *sg_src,
- 	    struct scatterlist *sg_dst, unsigned int sg_len,
--- 
-1.7.10.4
-
+Good question.. at at least, only the __might_sleep() construct. Ingo, happen
+to remember why this is? Most of this infrastructure is from before my time.
