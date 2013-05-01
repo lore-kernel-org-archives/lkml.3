@@ -1,131 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755505Ab3EAR5u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 13:57:50 -0400
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:33985 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754135Ab3EAR5n (ORCPT
+	id S1755587Ab3EAR7v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 13:59:51 -0400
+Received: from casper.infradead.org ([85.118.1.10]:36828 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752079Ab3EAR7k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 13:57:43 -0400
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>
-Cc: Mel Gorman <mgorman@suse.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>, LKML <linux-kernel@vger.kernel.org>
-Date: Wed, 01 May 2013 23:20:30 +0530
-Message-Id: <20130501175030.7229.32043.sendpatchset@srdronam.in.ibm.com>
-In-Reply-To: <20130501174950.7229.15267.sendpatchset@srdronam.in.ibm.com>
-References: <20130501174950.7229.15267.sendpatchset@srdronam.in.ibm.com>
-Subject: [PATCH 2/2] x86, mm: Prevent gcc to re-read the pagetables
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13050117-9264-0000-0000-000003A6C68A
+	Wed, 1 May 2013 13:59:40 -0400
+Message-ID: <518157EB.3010700@infradead.org>
+Date: Wed, 01 May 2013 10:59:07 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-media <linux-media@vger.kernel.org>,
+        linux-kbuild@vger.kernel.org
+Subject: Re: linux-next: Tree for May 1 (media/usb/stk1160)
+References: <20130501183734.7ad1efca2d06e75432edabbd@canb.auug.org.au>
+In-Reply-To: <20130501183734.7ad1efca2d06e75432edabbd@canb.auug.org.au>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrea Arcangeli <aarcange@redhat.com>
-Subject: [PATCH 2/2] x86, mm: Prevent gcc to re-read the pagetables
+On 05/01/13 01:37, Stephen Rothwell wrote:
+> Hi all,
+> 
+> Please do not add any v3.11 destined work to your linux-next included
+> branches until after v3.10-rc1 is released.
+> 
+> Changes since 20130430:
+> 
 
-GCC is very likely to read the pagetables just once and cache them in
-the local stack or in a register, but it is can also decide to re-read
-the pagetables. The problem is that the pagetable in those places can
-change from under gcc.
 
-In the page fault we only hold the ->mmap_sem for reading and both the
-page fault and MADV_DONTNEED only take the ->mmap_sem for reading and we
-don't hold any PT lock yet.
+When CONFIG_SND=m and CONFIG_SND_AC97_CODEC=m and
+CONFIG_VIDEO_STK1160=y
+CONFIG_VIDEO_STK1160_AC97=y
 
-In get_user_pages_fast() the TLB shootdown code can clear the pagetables
-before firing any TLB flush (the page can't be freed until the TLB
-flushing IPI has been delivered but the pagetables will be cleared well
-before sending any TLB flushing IPI).
+drivers/built-in.o: In function `stk1160_ac97_register':
+(.text+0x122706): undefined reference to `snd_card_create'
+drivers/built-in.o: In function `stk1160_ac97_register':
+(.text+0x1227b2): undefined reference to `snd_ac97_bus'
+drivers/built-in.o: In function `stk1160_ac97_register':
+(.text+0x1227cd): undefined reference to `snd_card_free'
+drivers/built-in.o: In function `stk1160_ac97_register':
+(.text+0x12281b): undefined reference to `snd_ac97_mixer'
+drivers/built-in.o: In function `stk1160_ac97_register':
+(.text+0x122832): undefined reference to `snd_card_register'
+drivers/built-in.o: In function `stk1160_ac97_unregister':
+(.text+0x12285e): undefined reference to `snd_card_free'
 
-With THP/hugetlbfs the pmd (and pud for hugetlbfs giga pages) can
-change as well under gup_fast, it won't just be cleared for the same
-reasons described above for the pte in the page fault case.
 
-[ This patch was picked up from the AutoNUMA tree. ]
+This kconfig fragment:
+config VIDEO_STK1160_AC97
+	bool "STK1160 AC97 codec support"
+	depends on VIDEO_STK1160 && SND
+	select SND_AC97_CODEC
 
-Originally-by: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>
-[ Ported to this tree, because we are modifying the page tables
-  at a high rate here, so this problem is potentially more
-  likely to show up in practice. ]
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-[ mostly unchanged except rebase to 3.9 ]
-Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
----
- arch/x86/mm/gup.c |   23 ++++++++++++++++++++---
- mm/memory.c       |    2 +-
- 2 files changed, 21 insertions(+), 4 deletions(-)
-
-diff --git a/arch/x86/mm/gup.c b/arch/x86/mm/gup.c
-index dd74e46..6dc9921 100644
---- a/arch/x86/mm/gup.c
-+++ b/arch/x86/mm/gup.c
-@@ -150,7 +150,13 @@ static int gup_pmd_range(pud_t pud, unsigned long addr, unsigned long end,
- 
- 	pmdp = pmd_offset(&pud, addr);
- 	do {
--		pmd_t pmd = *pmdp;
-+		/*
-+		 * With THP and hugetlbfs the pmd can change from
-+		 * under us and it can be cleared as well by the TLB
-+		 * shootdown, so read it with ACCESS_ONCE to do all
-+		 * computations on the same sampling.
-+		 */
-+		pmd_t pmd = ACCESS_ONCE(*pmdp);
- 
- 		next = pmd_addr_end(addr, end);
- 		/*
-@@ -220,7 +226,13 @@ static int gup_pud_range(pgd_t pgd, unsigned long addr, unsigned long end,
- 
- 	pudp = pud_offset(&pgd, addr);
- 	do {
--		pud_t pud = *pudp;
-+		/*
-+		 * With hugetlbfs giga pages the pud can change from
-+		 * under us and it can be cleared as well by the TLB
-+		 * shootdown, so read it with ACCESS_ONCE to do all
-+		 * computations on the same sampling.
-+		 */
-+		pud_t pud = ACCESS_ONCE(*pudp);
- 
- 		next = pud_addr_end(addr, end);
- 		if (pud_none(pud))
-@@ -280,7 +292,12 @@ int __get_user_pages_fast(unsigned long start, int nr_pages, int write,
- 	local_irq_save(flags);
- 	pgdp = pgd_offset(mm, addr);
- 	do {
--		pgd_t pgd = *pgdp;
-+		/*
-+		 * The pgd could be cleared by the TLB shootdown from
-+		 * under us so read it with ACCESS_ONCE to do all
-+		 * computations on the same sampling.
-+		 */
-+		pgd_t pgd = ACCESS_ONCE(*pgdp);
- 
- 		next = pgd_addr_end(addr, end);
- 		if (pgd_none(pgd))
-diff --git a/mm/memory.c b/mm/memory.c
-index e819b3e..5701b0f 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3703,7 +3703,7 @@ int handle_pte_fault(struct mm_struct *mm,
- 	pte_t entry;
- 	spinlock_t *ptl;
- 
--	entry = *pte;
-+	entry = ACCESS_ONCE(*pte);
- 	if (!pte_present(entry)) {
- 		if (pte_none(entry)) {
- 			if (vma->vm_ops) {
--- 
-1.7.1
+is unreliable (doesn't do what some people expect) when SND=m and SND_AC97_CODEC=m,
+since VIDEO_STK1160_AC97 is a bool.
 
 
 -- 
-Thanks and Regards
-Srikar Dronamraju
-
+~Randy
