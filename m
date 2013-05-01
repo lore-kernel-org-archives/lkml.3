@@ -1,86 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758386Ab3EAV4M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 17:56:12 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:40087 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757783Ab3EAV4I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 17:56:08 -0400
-Date: Wed, 1 May 2013 23:56:04 +0200
-From: Borislav Petkov <bp@alien8.de>
+	id S1757819Ab3EAWDK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 18:03:10 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:46337 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757056Ab3EAWDI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 May 2013 18:03:08 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvoRAE2QgVF5LC+Z/2dsb2JhbABSgwe6N4UZBAF7F3SCHwEBBAE6HCMQCAMYCSUPBSUDIROIBgW/GRWNcIEdB4NSA5coig+HI4MfKg
+Date: Thu, 2 May 2013 08:03:04 +1000
+From: Dave Chinner <david@fromorbit.com>
 To: David Rientjes <rientjes@google.com>
-Cc: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
-        levinsasha928@gmail.com, mtosatti@redhat.com, tglx@linutronix.de,
-        Borislav Petkov <bp@suse.de>, fengguang.wu@intel.com,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/urgent] x86/kconfig:  Add a Kconfig shortcut for
- building working KVM guest kernels
-Message-ID: <20130501215604.GA15623@pd.tnic>
-References: <20130426095140.GA15361@pd.tnic>
- <tip-83aee67833071c7b73a83f7803388f7a9e481908@git.kernel.org>
- <alpine.DEB.2.02.1305011248220.8448@chino.kir.corp.google.com>
- <20130501203500.GC4466@pd.tnic>
- <alpine.DEB.2.02.1305011358500.19189@chino.kir.corp.google.com>
- <20130501211011.GD4466@pd.tnic>
- <alpine.DEB.2.02.1305011419020.20298@chino.kir.corp.google.com>
+Cc: Shawn Bohrer <sbohrer@rgmadvisors.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+Subject: Re: deadlock on vmap_area_lock
+Message-ID: <20130501220303.GO10481@dastard>
+References: <20130501144341.GA2404@BohrerMBP.rgmadvisors.com>
+ <alpine.DEB.2.02.1305010855440.4547@chino.kir.corp.google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1305011419020.20298@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.02.1305010855440.4547@chino.kir.corp.google.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 01, 2013 at 02:30:05PM -0700, David Rientjes wrote:
-> It's an allnoconfig with HYPERVISOR_GUEST, PARAVIRT, KVM_GUEST, and
-> KVM_GUEST_COMMON_OPTIONS enabled.
+On Wed, May 01, 2013 at 08:57:38AM -0700, David Rientjes wrote:
+> On Wed, 1 May 2013, Shawn Bohrer wrote:
+> 
+> > I've got two compute clusters with around 350 machines each which are
+> > running kernels based off of 3.1.9 (Yes I realize this is ancient by
+> > todays standards).
 
-Hmm:
+xfs_info output of one of those filesystems? What platform are you
+running (32 or 64 bit)?
 
-$ make mrproper
-  CLEAN   scripts/basic
-  CLEAN   scripts/kconfig
-  CLEAN   include/config
-  CLEAN   .config
-$ make allnoconfig
-  HOSTCC  scripts/basic/fixdep
-  SHIPPED scripts/kconfig/zconf.tab.c
-  SHIPPED scripts/kconfig/zconf.lex.c
-  HOSTCC  scripts/kconfig/conf.o
-  SHIPPED scripts/kconfig/zconf.hash.c
-  HOSTCC  scripts/kconfig/zconf.tab.o
-  HOSTLD  scripts/kconfig/conf
-scripts/kconfig/conf --allnoconfig Kconfig
-#
-# configuration written to .config
-#
-$ make menuconfig				<--- select the options you mention above
-  HOSTCC  scripts/kconfig/mconf.o
-  HOSTCC  scripts/kconfig/lxdialog/checklist.o
-  HOSTCC  scripts/kconfig/lxdialog/inputbox.o
-  HOSTCC  scripts/kconfig/lxdialog/menubox.o
-  HOSTCC  scripts/kconfig/lxdialog/textbox.o
-  HOSTCC  scripts/kconfig/lxdialog/util.o
-  HOSTCC  scripts/kconfig/lxdialog/yesno.o
-  HOSTLD  scripts/kconfig/mconf
-scripts/kconfig/mconf Kconfig
-configuration written to .config
+> > All of the machines run a 'find' command once an
+> > hour on one of the mounted XFS filesystems.  Occasionally these find
+> > commands get stuck requiring a reboot of the system.  I took a peek
+> > today and see this with perf:
+> > 
+> >     72.22%          find  [kernel.kallsyms]          [k] _raw_spin_lock
+> >                     |
+> >                     --- _raw_spin_lock
+> >                        |          
+> >                        |--98.84%-- vm_map_ram
+> >                        |          _xfs_buf_map_pages
+> >                        |          xfs_buf_get
+> >                        |          xfs_buf_read
+> >                        |          xfs_trans_read_buf
+> >                        |          xfs_da_do_buf
+> >                        |          xfs_da_read_buf
+> >                        |          xfs_dir2_block_getdents
+> >                        |          xfs_readdir
+> >                        |          xfs_file_readdir
+> >                        |          vfs_readdir
+> >                        |          sys_getdents
+> >                        |          system_call_fastpath
+> >                        |          __getdents64
+> >                        |          
+> >                        |--1.12%-- _xfs_buf_map_pages
+> >                        |          xfs_buf_get
+> >                        |          xfs_buf_read
+> >                        |          xfs_trans_read_buf
+> >                        |          xfs_da_do_buf
+> >                        |          xfs_da_read_buf
+> >                        |          xfs_dir2_block_getdents
+> >                        |          xfs_readdir
+> >                        |          xfs_file_readdir
+> >                        |          vfs_readdir
+> >                        |          sys_getdents
+> >                        |          system_call_fastpath
+> >                        |          __getdents64
+> >                         --0.04%-- [...]
+> > 
+> > Looking at the code my best guess is that we are spinning on
+> > vmap_area_lock, but I could be wrong.  This is the only process
+> > spinning on the machine so I'm assuming either another process has
+> > blocked while holding the lock, or perhaps this find process has tried
+> > to acquire the vmap_area_lock twice?
+> > 
+> 
+> Significant spinlock contention doesn't necessarily mean that there's a 
+> deadlock, but it also doesn't mean the opposite.  Depending on your 
+> definition of "occassionally", would it be possible to run with 
+> CONFIG_PROVE_LOCKING and CONFIG_LOCKDEP to see if it uncovers any real 
+> deadlock potential?
 
-*** End of the configuration.
-*** Execute 'make' to start the build or try 'make help'.
+It sure will. We've been reporting that vm_map_ram is doing
+GFP_KERNEL allocations from GFP_NOFS context for years, and have
+reported plenty of lockdep dumps as a result of it.
 
-Nada. No warnings.
+But that's not the problem that is occurring above - lockstat is
+probably a good thing to look at here to determine exactly what
+locks are being contended on....
 
-However, it doesn't build:
+Cheers,
 
-arch/x86/built-in.o:(.data+0x2a0): undefined reference to `native_setup_msi_irqs'
-arch/x86/built-in.o:(.data+0x2a8): undefined reference to `native_teardown_msi_irq'
-
+Dave.
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Dave Chinner
+david@fromorbit.com
