@@ -1,94 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756382Ab3EAT1f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 15:27:35 -0400
-Received: from host171.canaca.com ([67.55.55.225]:55804 "EHLO
-	host171.canaca.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752703Ab3EAT13 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 15:27:29 -0400
-Message-ID: <c23b45b45b6a27055cdf18fe4dbc6309.squirrel@www.mungewell.org>
-In-Reply-To: <51816271.3040400@infradead.org>
-References: <20130501183734.7ad1efca2d06e75432edabbd@canb.auug.org.au>
-    <51816271.3040400@infradead.org>
-Date: Wed, 1 May 2013 15:27:22 -0400
-Subject: Re: [PATCH -next] hid: fix hid-steelseries kconfig/build
-From: simon@mungewell.org
-To: "Randy Dunlap" <rdunlap@infradead.org>
-Cc: "Stephen Rothwell" <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "Jiri Kosina" <jkosina@suse.cz>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>
-User-Agent: SquirrelMail/1.4.22
+	id S1756534Ab3EAT17 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 15:27:59 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:54637 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755748Ab3EAT1v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 May 2013 15:27:51 -0400
+X-IronPort-AV: E=Sophos;i="4.87,590,1363132800"; 
+   d="scan'208";a="22708351"
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+To: <xen-devel@lists.xensource.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <konrad.wilk@oracle.com>, <marc.zyngier@arm.com>,
+        <will.deacon@arm.com>, <Stefano.Stabellini@eu.citrix.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        <linux@arm.linux.org.uk>, <john.stultz@linaro.org>,
+        <catalin.marinas@arm.com>
+Subject: [PATCH 1/3] arm_arch_timer: introduce arch_timer_stolen_ticks
+Date: Wed, 1 May 2013 20:27:38 +0100
+Message-ID: <1367436460-10183-1-git-send-email-stefano.stabellini@eu.citrix.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <alpine.DEB.2.02.1305011939180.5398@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1305011939180.5398@kaball.uk.xensource.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - host171.canaca.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - mungewell.org
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Randy and all,
-Seems like you found a problem... but the relevant sections of
-'hid-steelseries.c' already have
---
-#if defined(CONFIG_LEDS_CLASS) || defined(CONFIG_LEDS_CLASS_MODULE)
-...
-#endif
---
+Introduce a function, called arch_timer_stolen_ticks, called from the
+arch_timer interrupt handler to account for stolen ticks.
 
-Shouldn't this prevent the module having calls to register/unregister if
-the LED_CLASS is not enabled?
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: linux@arm.linux.org.uk
+CC: john.stultz@linaro.org
+CC: catalin.marinas@arm.com
+CC: marc.zyngier@arm.com
+---
+ arch/arm/include/asm/arch_timer.h    |    5 +++++
+ drivers/clocksource/arm_arch_timer.c |    6 ++++++
+ 2 files changed, 11 insertions(+), 0 deletions(-)
 
-Does forcing a 'depends on LED_CLASS' in Kconfig prevent the
-hid-steelseries module being built on systems without LEDs, or is this
-simply a way to ensure that the LED_CLASS module gets loaded first?
-
-Simon.
-
-> From: Randy Dunlap <rdunlap@infradead.org>
->
-> Fix hid-steelseries build by making it depends on LEDS_CLASS.
-> Build errors happen when LEDS_CLASS=m  and HID_STEELSERIES=y.
->
-> drivers/built-in.o: In function `steelseries_srws1_remove':
-> hid-steelseries.c:(.text+0x3b97a1): undefined reference to
-> `led_classdev_unregister'
-> drivers/built-in.o: In function `steelseries_srws1_probe':
-> hid-steelseries.c:(.text+0x3b9c51): undefined reference to
-> `led_classdev_register'
-> hid-steelseries.c:(.text+0x3b9ce5): undefined reference to
-> `led_classdev_register'
-> hid-steelseries.c:(.text+0x3b9d4b): undefined reference to
-> `led_classdev_unregister'
->
-> Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
-> ---
->  drivers/hid/Kconfig |    1 +
->  1 file changed, 1 insertion(+)
->
-> --- linux-next-20130501.orig/drivers/hid/Kconfig
-> +++ linux-next-20130501/drivers/hid/Kconfig
-> @@ -610,6 +610,7 @@ config HID_SPEEDLINK
->  config HID_STEELSERIES
->  	tristate "Steelseries SRW-S1 steering wheel support"
->  	depends on HID
-> +	depends on LEDS_CLASS
->  	---help---
->  	Support for Steelseries SRW-S1 steering wheel
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-input" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
-
+diff --git a/arch/arm/include/asm/arch_timer.h b/arch/arm/include/asm/arch_timer.h
+index 7ade91d..30db413 100644
+--- a/arch/arm/include/asm/arch_timer.h
++++ b/arch/arm/include/asm/arch_timer.h
+@@ -13,6 +13,11 @@
+ int arch_timer_of_register(void);
+ int arch_timer_sched_clock_init(void);
+ 
++/* per-platform function to calculate stolen ticks (clock cycles stolen
++ * to the vcpu by the hypervisor).
++ */
++extern void (*arch_timer_stolen_ticks)(void);
++
+ /*
+  * These register accessors are marked inline so the compiler can
+  * nicely work out which register we want, and chuck away the rest of
+diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
+index d7ad425..d1ddf0b 100644
+--- a/drivers/clocksource/arm_arch_timer.c
++++ b/drivers/clocksource/arm_arch_timer.c
+@@ -37,6 +37,8 @@ static int arch_timer_ppi[MAX_TIMER_PPI];
+ 
+ static struct clock_event_device __percpu *arch_timer_evt;
+ 
++void (*arch_timer_stolen_ticks)(void);
++
+ static bool arch_timer_use_virtual = true;
+ 
+ /*
+@@ -52,6 +54,10 @@ static inline irqreturn_t timer_handler(const int access,
+ 		ctrl |= ARCH_TIMER_CTRL_IT_MASK;
+ 		arch_timer_reg_write(access, ARCH_TIMER_REG_CTRL, ctrl);
+ 		evt->event_handler(evt);
++
++		if ( arch_timer_stolen_ticks != NULL )
++			arch_timer_stolen_ticks();
++
+ 		return IRQ_HANDLED;
+ 	}
+ 
+-- 
+1.7.2.5
 
