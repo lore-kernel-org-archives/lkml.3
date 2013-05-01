@@ -1,63 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757321Ab3EAVAM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 17:00:12 -0400
-Received: from mail-da0-f47.google.com ([209.85.210.47]:38694 "EHLO
-	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756938Ab3EAVAJ (ORCPT
+	id S1757356Ab3EAVCQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 17:02:16 -0400
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:46353 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756882Ab3EAVCN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 17:00:09 -0400
-Date: Wed, 1 May 2013 14:00:06 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Borislav Petkov <bp@alien8.de>
-cc: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
-        levinsasha928@gmail.com, mtosatti@redhat.com, tglx@linutronix.de,
-        Borislav Petkov <bp@suse.de>, fengguang.wu@intel.com,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/urgent] x86/kconfig:  Add a Kconfig shortcut for building
- working KVM guest kernels
-In-Reply-To: <20130501203500.GC4466@pd.tnic>
-Message-ID: <alpine.DEB.2.02.1305011358500.19189@chino.kir.corp.google.com>
-References: <20130426095140.GA15361@pd.tnic> <tip-83aee67833071c7b73a83f7803388f7a9e481908@git.kernel.org> <alpine.DEB.2.02.1305011248220.8448@chino.kir.corp.google.com> <20130501203500.GC4466@pd.tnic>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 1 May 2013 17:02:13 -0400
+Date: Wed, 1 May 2013 23:02:02 +0200
+From: Oskar Andero <oskar.andero@gmail.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
+        Jonathan Cameron <jic23@cam.ac.uk>
+Subject: Re: [PATCH] iio: adc: add driver for MCP3204/08 12-bit ADC
+Message-ID: <20130501210202.GB21719@skinner.xfiles.lan>
+References: <1367360497-16820-1-git-send-email-oskar.andero@gmail.com>
+ <51812195.3030305@metafoo.de>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51812195.3030305@metafoo.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 1 May 2013, Borislav Petkov wrote:
+Hi,
 
-> ---
-> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-> index e8fff2f4ecb7..4f8ef85b0633 100644
-> --- a/arch/x86/Kconfig
-> +++ b/arch/x86/Kconfig
-> @@ -389,7 +389,8 @@ config X86_VSMP
->  	bool "ScaleMP vSMP"
->  	select HYPERVISOR_GUEST
->  	select PARAVIRT
-> -	depends on X86_64 && PCI
-> +	select PCI
-> +	depends on X86_64
->  	depends on X86_EXTENDED_PLATFORM
->  	depends on SMP
->  	---help---
-> @@ -664,6 +665,7 @@ config KVM_GUEST_COMMON_OPTIONS
->  	select IP_PNP
->  	select IP_PNP_DHCP
->  	select BINFMT_ELF
-> +	select PCI
->  	select PCI_MSI
->  	select HAVE_ARCH_KGDB
->  	select DEBUG_KERNEL
+On 16:07 Wed 01 May     , Lars-Peter Clausen wrote:
+> On 05/01/2013 12:21 AM, Oskar Andero wrote:
+> > This adds support for Microchip's 12 bit AD converters MCP3204 and
+> > MCP3208. These chips communicates over SPI and supports single-ended
+> > and pseudo-differential configurations.
+> > 
+> > Cc: Jonathan Cameron <jic23@cam.ac.uk>
+> > Cc: Lars-Peter Clausen <lars@metafoo.de>
+> > Signed-off-by: Oskar Andero <oskar.andero@gmail.com>
+> 
+> Hi,
+> 
+> Looks very good in general. A few minor things, mostly related to the regulator
+> handling and a couple of nitpicks inline.
 
-With this applied, two other types of conflicting dependencies:
+Thanks for reviewing! I will prepare version 2 shortly.
 
-warning: (KVM_GUEST_COMMON_OPTIONS) selects VIRTIO_NET which has unmet direct dependencies (NETDEVICES && NET_CORE && VIRTIO)
+> > +
+> > +		ret = regulator_enable(adc->reg);
+> > +		if (ret < 0)
+> > +			goto reg_free;
+> > +	} else {
+> > +		adc->ref_mv = pdata->ref_mv;
+> 
+> I'd like to see this fallback path go away. For supplies with a const voltage
+> the fixed-voltage-regulator can be used.
+> 
 
-and
+Ok. I added this since the voltage I use for reference is behind a level-shifter,
+meaning there is actually no regulator on the board providing that exact
+voltage level. Not sure what you mean with "the fixed-voltage-regulator", but
+maybe that is what I am looking for in my case?
 
-warning: (KVM_GUEST_COMMON_OPTIONS && AMD_IOMMU) selects PCI_MSI which has unmet direct dependencies (PCI && ARCH_SUPPORTS_MSI)
+Thanks!
+
+-Oskar
