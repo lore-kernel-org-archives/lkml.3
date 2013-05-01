@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758654Ab3EAI6J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 04:58:09 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:42052 "EHLO
+	id S1758857Ab3EAI61 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 04:58:27 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:42058 "EHLO
 	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756393Ab3EAI55 (ORCPT
+	with ESMTP id S1756331Ab3EAI55 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 1 May 2013 04:57:57 -0400
 From: Simon Horman <horms@verge.net.au>
@@ -15,32 +15,58 @@ Cc: lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
         netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
         Pablo Neira Ayuso <pablo@netfilter.org>,
         Dipankar Sarma <dipankar@in.ibm.com>,
-        Simon Horman <horms@verge.net.au>
-Subject: [PATCH v3 0/2] sched: Add cond_resched_rcu_lock() helper
-Date: Wed,  1 May 2013 17:57:51 +0900
-Message-Id: <1367398673-1253-1-git-send-email-horms@verge.net.au>
+        Simon Horman <horms@verge.net.au>, Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH v3 2/2] ipvs: Use cond_resched_rcu_lock() helper when dumping connections
+Date: Wed,  1 May 2013 17:57:53 +0900
+Message-Id: <1367398673-1253-3-git-send-email-horms@verge.net.au>
 X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <1367398673-1253-1-git-send-email-horms@verge.net.au>
+References: <1367398673-1253-1-git-send-email-horms@verge.net.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a helper that for use in loops which read data protected by RCU and
-may have a large number of iterations.  Such an example is dumping the list
-of connections known to IPVS: ip_vs_conn_array() and ip_vs_conn_seq_next().
+This avoids the situation where a dump of a large number of connections
+may prevent scheduling for a long time while also avoiding excessive
+calls to rcu_read_unlock() and rcu_read_lock().
 
-This series also updates the two ip_vs functions mentioned above
-to use the helper.
+Note that in the case of !CONFIG_PREEMPT_RCU this will
+add a call to cond_resched().
 
-Changes since v1 and v2 noted in the changelog of each patch.
+Compile tested only.
 
-Simon Horman (2):
-  sched: Add cond_resched_rcu_lock() helper
-  ipvs: Use cond_resched_rcu_lock() helper when dumping connections
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Julian Anastasov <ja@ssi.bg>
+Cc: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Simon Horman <horms@verge.net.au>
+---
+ net/netfilter/ipvs/ip_vs_conn.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
- include/linux/sched.h           | 11 +++++++++++
- net/netfilter/ipvs/ip_vs_conn.c |  6 ++----
- 2 files changed, 13 insertions(+), 4 deletions(-)
-
+diff --git a/net/netfilter/ipvs/ip_vs_conn.c b/net/netfilter/ipvs/ip_vs_conn.c
+index a083bda..42a7b33 100644
+--- a/net/netfilter/ipvs/ip_vs_conn.c
++++ b/net/netfilter/ipvs/ip_vs_conn.c
+@@ -975,8 +975,7 @@ static void *ip_vs_conn_array(struct seq_file *seq, loff_t pos)
+ 				return cp;
+ 			}
+ 		}
+-		rcu_read_unlock();
+-		rcu_read_lock();
++		cond_resched_rcu_lock();
+ 	}
+ 
+ 	return NULL;
+@@ -1015,8 +1014,7 @@ static void *ip_vs_conn_seq_next(struct seq_file *seq, void *v, loff_t *pos)
+ 			iter->l = &ip_vs_conn_tab[idx];
+ 			return cp;
+ 		}
+-		rcu_read_unlock();
+-		rcu_read_lock();
++		cond_resched_rcu_lock();
+ 	}
+ 	iter->l = NULL;
+ 	return NULL;
 -- 
 1.8.2.1
 
