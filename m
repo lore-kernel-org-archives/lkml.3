@@ -1,41 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754305Ab3EAIFe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 04:05:34 -0400
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:45454 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751228Ab3EAIFX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 04:05:23 -0400
-Message-ID: <5180CCC0.8070703@kernel.org>
-Date: Wed, 01 May 2013 11:05:20 +0300
-From: Pekka Enberg <penberg@kernel.org>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	id S1755455Ab3EAIHG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 04:07:06 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47185 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751228Ab3EAIGv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 May 2013 04:06:51 -0400
+Date: Wed, 1 May 2013 09:06:44 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Sam Ben <sam.bennn@gmail.com>
+Cc: Alexey Lyahkov <alexey.lyashkov@gmail.com>,
+        Andrew Perepechko <anserper@ya.ru>, Robin Dong <sanbai@taobao.com>,
+        Theodore Tso <tytso@mit.edu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Bernd Schubert <bernd.schubert@fastmail.fm>,
+        David Howells <dhowells@redhat.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux-ext4 <linux-ext4@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>
+Subject: Re: [PATCH 2/3] mm: Ensure that mark_page_accessed moves pages to
+ the active list
+Message-ID: <20130501080644.GE11497@suse.de>
+References: <1367253119-6461-1-git-send-email-mgorman@suse.de>
+ <1367253119-6461-3-git-send-email-mgorman@suse.de>
+ <5180AB0E.6030407@gmail.com>
 MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>, glommer@parallels.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [linux-next-20130422] Bug in SLAB?
-References: <0000013e564e0e5a-121c52f9-e489-470f-99d5-67a5ad42eb75-000000@email.amazonses.com> <201304300028.IAD13051.OHOVMJSLFFFQOt@I-love.SAKURA.ne.jp> <0000013e56e9304a-1042a95a-d4dd-43c5-8b8a-c670f50ac54e-000000@email.amazonses.com> <201304300645.FCE37285.tVHJLSOMQFOFFO@I-love.SAKURA.ne.jp> <0000013e5b56d067-7982dfa6-08a2-4c48-ad77-6888b5114c5f-000000@email.amazonses.com> <201305010101.CGB86424.JFQOtSFOVOLFHM@I-love.SAKURA.ne.jp> <0000013e5bfc7c4d-54fa9464-dccd-4157-b4a5-22594261eaf3-000000@email.amazonses.com>
-In-Reply-To: <0000013e5bfc7c4d-54fa9464-dccd-4157-b4a5-22594261eaf3-000000@email.amazonses.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <5180AB0E.6030407@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/30/13 8:27 PM, Christoph Lameter wrote:
->> "kmalloc() returning NULL for these allocations" is needed by "try kmalloc()
->> first, fallback to vmalloc()" allocation. There are kernel modules which expect
->> kmalloc() to return NULL rather than oops when the requested size is larger
->> than KMALLOC_MAX_SIZE bytes. If kmalloc() suddenly starts triggering oops, such
->> modules will break.
->
-> This behavior has been in there for years. Why try a kmalloc that
-> always fails since the size is too big?
+On Wed, May 01, 2013 at 01:41:34PM +0800, Sam Ben wrote:
+> Hi Mel,
+> On 04/30/2013 12:31 AM, Mel Gorman wrote:
+> >If a page is on a pagevec then it is !PageLRU and mark_page_accessed()
+> >may fail to move a page to the active list as expected. Now that the
+> >LRU is selected at LRU drain time, mark pages PageActive if they are
+> >on a pagevec so it gets moved to the correct list at LRU drain time.
+> >Using a debugging patch it was found that for a simple git checkout
+> >based workload that pages were never added to the active file list in
+> 
+> Could you show us the details of your workload?
+> 
 
-...because want the extra protection for cases where size is controlled 
-by userspace. This is consistent with kcalloc() that returns NULL on 
-integer overflow.
+The workload is git checkouts of a fixed number of commits for the
+kernel git tree. It starts with a warm-up run that is not timed and then
+records the time for a number of iterations.
 
-			Pekka
+-- 
+Mel Gorman
+SUSE Labs
