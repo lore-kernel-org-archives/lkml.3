@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753763Ab3EARHZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 13:07:25 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:59271 "EHLO relay.sgi.com"
+	id S1753754Ab3EARHd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 13:07:33 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:60627 "EHLO relay.sgi.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753061Ab3EARHG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753046Ab3EARHG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 1 May 2013 13:07:06 -0400
 From: Robin Holt <holt@sgi.com>
 To: Andrew Morton <akpm@linux-foundation.org>,
@@ -15,10 +15,11 @@ To: Andrew Morton <akpm@linux-foundation.org>,
 Cc: Robin Holt <holt@sgi.com>, Russ Anderson <rja@sgi.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         the arch/x86 maintainers <x86@kernel.org>,
-        Arm Mailing List <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH -v7 03/11] Remove -stable friendly PF_THREAD_BOUND define
-Date: Wed,  1 May 2013 12:06:43 -0500
-Message-Id: <1367428011-17123-4-git-send-email-holt@sgi.com>
+        Arm Mailing List <linux-arm-kernel@lists.infradead.org>,
+        <stable@vger.kernel.org>
+Subject: [PATCH -v7 02/11] Migrate shutdown/reboot to boot cpu.
+Date: Wed,  1 May 2013 12:06:42 -0500
+Message-Id: <1367428011-17123-3-git-send-email-holt@sgi.com>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <1367428011-17123-1-git-send-email-holt@sgi.com>
 References: <1367428011-17123-1-git-send-email-holt@sgi.com>
@@ -26,10 +27,21 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the prior patch's #define for easier backporting to the stable
-releases.
+We recently noticed that reboot of a 1024 cpu machine takes approx 16
+minutes of just stopping the cpus.  The slowdown was tracked to commit
+f96972f.
+
+The current implementation does all the work of hot removing the cpus
+before halting the system.  We are switching to just migrating to the
+boot cpu and then continuing with shutdown/reboot.
+
+This also has the effect of not breaking x86's command line parameter for
+specifying the reboot cpu.  Note, this code was shamelessly copied from
+arch/x86/kernel/reboot.c with bits removed pertaining to the reboot_cpu
+command line parameter.
 
 Signed-off-by: Robin Holt <holt@sgi.com>
+Tested-by: Shawn Guo <shawn.guo@linaro.org>
 To: Andrew Morton <akpm@linux-foundation.org>
 To: H. Peter Anvin <hpa@zytor.com>
 Cc: Russ Anderson <rja@sgi.com>
@@ -39,26 +51,78 @@ Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
 Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Cc: the arch/x86 maintainers <x86@kernel.org>
 Cc: Arm Mailing List <linux-arm-kernel@lists.infradead.org>
+Cc: <stable@vger.kernel.org>
+
 ---
- kernel/sys.c | 5 -----
- 1 file changed, 5 deletions(-)
+
+Changes since -v6:
+ - Add #define for PF_THREAD_BOUND as compatibility to make stable easier.
+ - Fixup s/reboot_cpu_id/reboot_cpu/
+---
+ kernel/sys.c | 29 ++++++++++++++++++++++++++---
+ 1 file changed, 26 insertions(+), 3 deletions(-)
 
 diff --git a/kernel/sys.c b/kernel/sys.c
-index dad3c63..79b5f61 100644
+index afd0f7e..dad3c63 100644
 --- a/kernel/sys.c
 +++ b/kernel/sys.c
-@@ -362,11 +362,6 @@ int unregister_reboot_notifier(struct notifier_block *nb)
+@@ -362,6 +362,29 @@ int unregister_reboot_notifier(struct notifier_block *nb)
  }
  EXPORT_SYMBOL(unregister_reboot_notifier);
  
--/* Add backwards compatibility for stable trees. */
--#ifndef PF_NO_SETAFFINITY
--#define PF_NO_SETAFFINITY		PF_THREAD_BOUND
--#endif
--
- static void migrate_to_reboot_cpu(void)
++/* Add backwards compatibility for stable trees. */
++#ifndef PF_NO_SETAFFINITY
++#define PF_NO_SETAFFINITY		PF_THREAD_BOUND
++#endif
++
++static void migrate_to_reboot_cpu(void)
++{
++	/* The boot cpu is always logical cpu 0 */
++	int reboot_cpu = 0;
++
++	cpu_hotplug_disable();
++
++	/* Make certain the cpu I'm about to reboot on is online */
++	if (!cpu_online(reboot_cpu))
++		reboot_cpu = cpumask_first(cpu_online_mask);
++
++	/* Prevent races with other tasks migrating this task */
++	current->flags |= PF_NO_SETAFFINITY;
++
++	/* Make certain I only run on the appropriate processor */
++	set_cpus_allowed_ptr(current, cpumask_of(reboot_cpu));
++}
++
+ /**
+  *	kernel_restart - reboot the system
+  *	@cmd: pointer to buffer containing command to execute for restart
+@@ -373,7 +396,7 @@ EXPORT_SYMBOL(unregister_reboot_notifier);
+ void kernel_restart(char *cmd)
  {
- 	/* The boot cpu is always logical cpu 0 */
+ 	kernel_restart_prepare(cmd);
+-	disable_nonboot_cpus();
++	migrate_to_reboot_cpu();
+ 	syscore_shutdown();
+ 	if (!cmd)
+ 		printk(KERN_EMERG "Restarting system.\n");
+@@ -400,7 +423,7 @@ static void kernel_shutdown_prepare(enum system_states state)
+ void kernel_halt(void)
+ {
+ 	kernel_shutdown_prepare(SYSTEM_HALT);
+-	disable_nonboot_cpus();
++	migrate_to_reboot_cpu();
+ 	syscore_shutdown();
+ 	printk(KERN_EMERG "System halted.\n");
+ 	kmsg_dump(KMSG_DUMP_HALT);
+@@ -419,7 +442,7 @@ void kernel_power_off(void)
+ 	kernel_shutdown_prepare(SYSTEM_POWER_OFF);
+ 	if (pm_power_off_prepare)
+ 		pm_power_off_prepare();
+-	disable_nonboot_cpus();
++	migrate_to_reboot_cpu();
+ 	syscore_shutdown();
+ 	printk(KERN_EMERG "Power down.\n");
+ 	kmsg_dump(KMSG_DUMP_POWEROFF);
 -- 
 1.8.2.1
 
