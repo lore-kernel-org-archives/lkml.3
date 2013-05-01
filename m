@@ -1,62 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761399Ab3EAOoi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 10:44:38 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:58401 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754746Ab3EAOod (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 10:44:33 -0400
-X-IronPort-AV: E=Sophos;i="4.87,589,1363158000"; 
-   d="scan'208";a="43286102"
-Message-ID: <51812A4F.7060400@codeaurora.org>
-Date: Wed, 01 May 2013 10:44:31 -0400
-From: Christopher Covington <cov@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	id S1761408Ab3EAOrB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 10:47:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38416 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754746Ab3EAOqw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 May 2013 10:46:52 -0400
+Message-ID: <51812AD8.1000804@redhat.com>
+Date: Wed, 01 May 2013 11:46:48 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: Stephen Boyd <sboyd@codeaurora.org>, Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "arm@kernel.org" <arm@kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 6/4] arm64: Move to generic sched_clock infrastructure
-References: <1366417746-24990-1-git-send-email-sboyd@codeaurora.org> <1367369675-13535-1-git-send-email-sboyd@codeaurora.org> <1367369675-13535-2-git-send-email-sboyd@codeaurora.org> <20130501091108.GB10984@arm.com>
-In-Reply-To: <20130501091108.GB10984@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL for v3.10-rc1] omap3isp generic clock
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/01/2013 05:11 AM, Catalin Marinas wrote:
-> On Wed, May 01, 2013 at 01:54:35AM +0100, Stephen Boyd wrote:
->> Use the generic sched_clock infrastructure instead of rolling our
->> own. This has the added benefit of fixing suspend/resume as
->> outlined in 6a4dae5 (ARM: 7565/1: sched: stop sched_clock()
->> during suspend, 2012-10-23) and correcting the timestamps when
->> the hardware returns a value instead of 0 upon the first read.
->>
->> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> 
-> Looks ok.
-> 
-> Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+Hi Linus,
 
-I built and ran this change and dependencies on top of Catalin's
-soc-armv8-model branch [1] and was able to verify that it fixed the printk
-timestamp jump.
+Please pull from:
+   git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media topic/omap3isp
 
-1.
-http://git.kernel.org/cgit/linux/kernel/git/cmarinas/linux-aarch64.git/log/?h=soc-armv8-model
+for a  patch that makes omap3isp to use the generic clock framework.
 
-Tested-by: Christopher Covington <cov@codeaurora.org>
+This patch were sent in separate as it depends on a merge from clock
+framework, that you merged on changeset 362ed48dee509abe24cf84b7e137c7a29a8f4d2d.
 
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by the Linux Foundation.
+Thanks!
+Mauro
+
+-
+
+The following changes since commit 4290fd1a5688f3510caa0625c62d73de568ed2c2:
+
+   [media] MAINTAINERS: Mark the SH VOU driver as Odd Fixes (2013-04-14 20:15:55 -0300)
+
+are available in the git repository at:
+
+   git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media topic/omap3isp
+
+for you to fetch changes up to 9b28ee3c9122cea62f2db02f5bb1e1606bb343a6:
+
+   [media] omap3isp: Use the common clock framework (2013-04-14 20:21:12 -0300)
+
+----------------------------------------------------------------
+Laurent Pinchart (1):
+       [media] omap3isp: Use the common clock framework
+
+  drivers/media/platform/omap3isp/isp.c | 277 +++++++++++++++++++++++++---------
+  drivers/media/platform/omap3isp/isp.h |  22 ++-
+  include/media/omap3isp.h              |  10 +-
+  3 files changed, 225 insertions(+), 84 deletions(-)
+
