@@ -1,141 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761602Ab3EAP4s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 11:56:48 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:33980 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756383Ab3EAP4j (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 11:56:39 -0400
-Date: Wed, 1 May 2013 17:55:02 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Julian Anastasov <ja@ssi.bg>
-Cc: Simon Horman <horms@verge.net.au>, Eric Dumazet <eric.dumazet@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
-        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Dipankar Sarma <dipankar@in.ibm.com>
-Subject: Re: [PATCH v2 1/2] sched: Add cond_resched_rcu_lock() helper
-Message-ID: <20130501155501.GB7521@dyad.programming.kicks-ass.net>
-References: <1367290378-29224-1-git-send-email-horms@verge.net.au>
- <1367290378-29224-2-git-send-email-horms@verge.net.au>
- <alpine.LFD.2.00.1304301011310.1700@ja.ssi.bg>
- <20130430072944.GA13959@verge.net.au>
- <alpine.LFD.2.00.1304301051260.1700@ja.ssi.bg>
- <20130501091012.GB28253@dyad.programming.kicks-ass.net>
- <alpine.LFD.2.00.1305011344320.1603@ja.ssi.bg>
+	id S1761623Ab3EAP5b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 11:57:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37075 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754740Ab3EAP5Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 May 2013 11:57:25 -0400
+Date: Wed, 1 May 2013 17:52:53 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Jiri Olsa <jolsa@redhat.com>, Jan Kratochvil <jan.kratochvil@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Vince Weaver <vincent.weaver@maine.edu>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCHv3 0/4] perf, signal x86: Fix breakpoint events overflow
+	handling
+Message-ID: <20130501155253.GA5392@redhat.com>
+References: <1367421944-19082-1-git-send-email-jolsa@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1305011344320.1603@ja.ssi.bg>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1367421944-19082-1-git-send-email-jolsa@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 01, 2013 at 05:22:05PM +0300, Julian Anastasov wrote:
+On 05/01, Jiri Olsa wrote:
+>
+>   - added Oleg's Tested-by for signal related patches
 
-> > static void inline cond_resched_rcu_lock(void)
-> > {
-> > #ifdef CONFIG_PREEMPT_RCU
-> 
-> 	You mean '#ifndef' here, right? But in the non-preempt
-> case is using the need_resched() needed? rcu_read_unlock
-> and rcu_read_lock do not generate code.
+See the test-case below. Without 1/4 + 2/4 it fails, it can
+miss the 2nd bp or report the 1st one twice.
 
-Uhm... yes!
+Jan, FYI.
 
-> > 	if (need_resched()) {
-> > 		rcu_read_unlock();
-> > 		cond_resched();
-> > 		rcu_read_lock();
-> > 	}
-> > #endif /* CONFIG_PREEMPT_RCU */
-> > }
-> > 
-> > That would have an rcu_read_lock() break and voluntary preemption point for
-> > non-preemptible RCU and not bother with the stuff for preemptible RCU.
-> 
-> 	I see. So, can we choose one of both variants:
-> 
-> 1. Your variant but with ifndef:
-> 
-> static void inline cond_resched_rcu_lock(void)
-> {
-> #ifndef CONFIG_PREEMPT_RCU
-> 	if (need_resched()) {
-> 		rcu_read_unlock();
-> 		cond_resched();
-> 		rcu_read_lock();
-> 	}
-> #endif
-> }
-> 
-> 2. Same without need_resched because cond_resched already
-> performs the same checks:
-> 
-> static void inline cond_resched_rcu_lock(void)
-> {
-> #ifndef CONFIG_PREEMPT_RCU
-> 	rcu_read_unlock();
-> 	cond_resched();
-> 	rcu_read_lock();
-> #endif
-> }
+Oleg.
 
-Ah so the 'problem' with this last version is that it does an unconditional /
-unnessecary rcu_read_unlock().
+#define _GNU_SOURCE 1
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/ptrace.h>
+#include <sys/debugreg.h>
+#include <sys/user.h>
+#include <sys/wait.h>
+#include <assert.h>
+#include <assert.h>
+#include <stddef.h>
 
-The below would be in line with all the other cond_resched*() implementations.
+#define DR_GLOBAL_ENABLE	0x2
+#define DR_LOCAL_ENABLE		0x1
 
----
- include/linux/sched.h |  7 +++++++
- kernel/sched/core.c   | 14 ++++++++++++++
- 2 files changed, 21 insertions(+)
+unsigned long encode_dr7(int drnum, int enable, unsigned int type, unsigned int len)
+{
+	unsigned long dr7;
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 802a751..fd2c77f 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -2449,6 +2449,13 @@ extern int __cond_resched_softirq(void);
- 	__cond_resched_softirq();					\
- })
- 
-+extern int __cond_resched_rcu(void);
-+
-+#define cond_resched_rcu() ({			\
-+	__might_sleep(__FILE__, __LINE__, 0);	\
-+	__cond_resched_rcu();			\
-+})
-+
- /*
-  * Does a critical section need to be broken due to another
-  * task waiting?: (technically does not depend on CONFIG_PREEMPT,
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 7d7901a..2b3b4e6 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -4358,6 +4358,20 @@ int __sched __cond_resched_softirq(void)
- }
- EXPORT_SYMBOL(__cond_resched_softirq);
- 
-+int __sched __cond_resched_rcu(void)
-+{
-+#ifndef CONFIG_PREEMPT_RCU
-+	if (should_resched()) {
-+		rcu_read_unlock();
-+		__cond_resched();
-+		rcu_read_lock();
-+		return 1;
-+	}
-+#endif
-+	return 0;
-+}
-+EXPORT_SYMBOL(__cond_resched_rcu);
-+
- /**
-  * yield - yield the current processor to other threads.
-  *
+	dr7 = ((len | type) & 0xf)
+		<< (DR_CONTROL_SHIFT + drnum * DR_CONTROL_SIZE);
+	if (enable)
+		dr7 |= (DR_GLOBAL_ENABLE << (drnum * DR_ENABLE_SIZE));
+
+	return dr7;
+}
+
+int write_dr(int pid, int dr, unsigned long val)
+{
+	return ptrace(PTRACE_POKEUSER, pid,
+			offsetof (struct user, u_debugreg[dr]),
+			val);
+}
+
+#define GET_REG(pid, reg)				\
+	ptrace(PTRACE_PEEKUSER, (pid),			\
+		offsetof(struct user, regs.reg), 0)
+
+void *get_ip(int pid)
+{
+	return (void*)GET_REG(pid, rip);
+}
+
+
+void func(void)
+{
+	printf("bp_1 passed\n");
+}
+
+void sigh(int sig)
+{
+	printf("bp_2 passed\n");
+}
+
+int main(void)
+{
+	int pid, stat;
+	unsigned long dr7;
+
+	pid = fork();
+	if (!pid) {
+		assert(ptrace(PTRACE_TRACEME, 0,0,0) == 0);
+		kill(getpid(), SIGHUP);
+
+		signal(SIGINT, sigh);
+
+		func();
+
+		return 0x13;
+	}
+
+	assert(pid == waitpid(-1, &stat, 0));
+	assert(WSTOPSIG(stat) == SIGHUP);
+
+	assert(write_dr(pid, 0, (long)func) == 0);
+	assert(write_dr(pid, 1, (long)sigh) == 0);
+
+	dr7 = 0;
+	dr7 |= encode_dr7(0, 1, DR_RW_EXECUTE, DR_LEN_1);
+	dr7 |= encode_dr7(1, 1, DR_RW_EXECUTE, DR_LEN_1);
+
+	assert(write_dr(pid, 7, dr7) == 0);
+
+	assert(ptrace(PTRACE_CONT, pid, 0,0) == 0);
+	assert(pid == waitpid(-1, &stat, 0));
+	assert(WSTOPSIG(stat) == SIGTRAP);
+	assert(get_ip(pid) == func);
+
+	kill(pid, SIGINT);
+	assert(ptrace(PTRACE_CONT, pid, 0,0) == 0);
+	assert(pid == waitpid(-1, &stat, 0));
+	assert(WSTOPSIG(stat) == SIGINT);
+
+	assert(ptrace(PTRACE_CONT, pid, 0,SIGINT) == 0);
+	assert(pid == waitpid(-1, &stat, 0));
+	assert(WSTOPSIG(stat) == SIGTRAP);
+	assert(get_ip(pid) == sigh);
+
+	assert(ptrace(PTRACE_CONT, pid, 0,0) == 0);
+	assert(pid == waitpid(-1, &stat, 0));
+	assert(stat == 0x1300);
+
+	return 0;
+}
 
