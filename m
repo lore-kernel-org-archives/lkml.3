@@ -1,48 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761477Ab3EAPTr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 11:19:47 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:33414 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755217Ab3EAPTj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 11:19:39 -0400
-Date: Wed, 1 May 2013 17:17:53 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Julian Anastasov <ja@ssi.bg>, Simon Horman <horms@verge.net.au>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
-        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Dipankar Sarma <dipankar@in.ibm.com>
-Subject: Re: [PATCH v2 1/2] sched: Add cond_resched_rcu_lock() helper
-Message-ID: <20130501151752.GA7521@dyad.programming.kicks-ass.net>
-References: <1367290378-29224-1-git-send-email-horms@verge.net.au>
- <1367290378-29224-2-git-send-email-horms@verge.net.au>
- <alpine.LFD.2.00.1304301011310.1700@ja.ssi.bg>
- <20130430072944.GA13959@verge.net.au>
- <alpine.LFD.2.00.1304301051260.1700@ja.ssi.bg>
- <20130501091012.GB28253@dyad.programming.kicks-ass.net>
- <20130501124637.GO3780@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130501124637.GO3780@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756365Ab3EAP0m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 11:26:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32707 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754899Ab3EAP0g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 May 2013 11:26:36 -0400
+From: Jiri Olsa <jolsa@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Vince Weaver <vincent.weaver@maine.edu>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 3/4] signal x86: Merge EFLAGS bit clearing into single statement
+Date: Wed,  1 May 2013 17:25:43 +0200
+Message-Id: <1367421944-19082-4-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1367421944-19082-1-git-send-email-jolsa@redhat.com>
+References: <1367421944-19082-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 01, 2013 at 05:46:37AM -0700, Paul E. McKenney wrote:
+Merging EFLAGS bit clearing into a single statement, to
+ensure EFLAGS bits being cleared in single instruction.
 
-> If the only goal is to allow preemption, and if long grace periods are
-> not a concern, then this alternate approach would work fine as well.
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Tested-by: Oleg Nesterov <oleg@redhat.com>
+Reviewed-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Vince Weaver <vincent.weaver@maine.edu>
+Cc: Stephane Eranian <eranian@google.com>
+---
+ arch/x86/kernel/signal.c | 10 +++-------
+ 1 file changed, 3 insertions(+), 7 deletions(-)
 
-Hmm.. if that were the goal I'd like it to have a different name;
-cond_resched*() has always been about preemption.
+diff --git a/arch/x86/kernel/signal.c b/arch/x86/kernel/signal.c
+index cb12fc9..cf91358 100644
+--- a/arch/x86/kernel/signal.c
++++ b/arch/x86/kernel/signal.c
+@@ -662,21 +662,17 @@ handle_signal(struct ksignal *ksig, struct pt_regs *regs)
+ 	if (!failed) {
+ 		/*
+ 		 * Clear the direction flag as per the ABI for function entry.
+-		 */
+-		regs->flags &= ~X86_EFLAGS_DF;
+-		/*
++		 *
+ 		 * Clear RF when entering the signal handler, because
+ 		 * it might disable possible debug exception from the
+ 		 * signal handler.
+-		 */
+-		regs->flags &= ~X86_EFLAGS_RF;
+-		/*
++		 *
+ 		 * Clear TF when entering the signal handler, but
+ 		 * notify any tracer that was single-stepping it.
+ 		 * The tracer may want to single-step inside the
+ 		 * handler too.
+ 		 */
+-		regs->flags &= ~X86_EFLAGS_TF;
++		regs->flags &= ~(X86_EFLAGS_DF|X86_EFLAGS_RF|X86_EFLAGS_TF);
+ 	}
+ 	signal_setup_done(failed, ksig, test_thread_flag(TIF_SINGLESTEP));
+ }
+-- 
+1.7.11.7
 
-> Of course, both approaches assume that the caller is in a place
-> where having all RCU-protected data disappear is OK!
-
-Quite :-)
