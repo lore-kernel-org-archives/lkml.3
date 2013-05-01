@@ -1,157 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752086Ab3EAFAE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 01:00:04 -0400
-Received: from mail-gg0-f182.google.com ([209.85.161.182]:44513 "EHLO
-	mail-gg0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751051Ab3EAE7z (ORCPT
+	id S1752397Ab3EAFBk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 01:01:40 -0400
+Received: from mail-ve0-f175.google.com ([209.85.128.175]:52774 "EHLO
+	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751051Ab3EAFBe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 00:59:55 -0400
-X-Greylist: delayed 438 seconds by postgrey-1.27 at vger.kernel.org; Wed, 01 May 2013 00:59:55 EDT
-Message-ID: <51809F8D.3040305@gmail.com>
-Date: Wed, 01 May 2013 12:52:29 +0800
-From: Simon Jeons <simon.jeons@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Wed, 1 May 2013 01:01:34 -0400
 MIME-Version: 1.0
-To: Tim Chen <tim.c.chen@linux.intel.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Dave Hansen <dave.hansen@intel.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>
-Subject: Re: [PATCH 1/2] Make the batch size of the percpu_counter configurable
-References: <c1f9c476a8bd1f5e7049b8ac79af48be61afd8f3.1367254913.git.tim.c.chen@linux.intel.com>
-In-Reply-To: <c1f9c476a8bd1f5e7049b8ac79af48be61afd8f3.1367254913.git.tim.c.chen@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [14.97.111.193]
+In-Reply-To: <2A4B3F6B-55DA-44F3-87DB-064DB4A8D8F8@suse.de>
+References: <1366974299-17877-1-git-send-email-pranavkumar@linaro.org>
+	<BA2076A6-0688-4E5C-85F9-A9CA8FD75782@suse.de>
+	<87obcyc9sh.fsf@rustcorp.com.au>
+	<336C59AA-D5D7-472E-A8DA-EEB413DD6C68@suse.de>
+	<87r4hsameo.fsf@rustcorp.com.au>
+	<2A4B3F6B-55DA-44F3-87DB-064DB4A8D8F8@suse.de>
+Date: Wed, 1 May 2013 10:31:32 +0530
+Message-ID: <CAAhSdy3A_aYKXhGVkWdK4amC14PduccyrGsPNEYKvue=T74_sA@mail.gmail.com>
+Subject: Re: [PATCH 0/2] Early printk support for virtio console devices.
+From: Anup Patel <anup@brainfault.org>
+To: Alexander Graf <agraf@suse.de>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        Pranavkumar Sawargaonkar <pranavkumar@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
+        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
+        Peter Maydell <peter.maydell@linaro.org>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tim,
-On 04/30/2013 01:12 AM, Tim Chen wrote:
-> Currently, there is a single, global, variable (percpu_counter_batch) that
-> controls the batch sizes for every 'struct percpu_counter' on the system.
+On Wed, May 1, 2013 at 5:56 AM, Alexander Graf <agraf@suse.de> wrote:
 >
-> However, there are some applications, e.g. memory accounting where it is
-> more appropriate to scale the batch size according to the memory size.
-> This patch adds the infrastructure to be able to change the batch sizes
-> for each individual instance of 'struct percpu_counter'.
+> On 30.04.2013, at 02:32, Rusty Russell wrote:
 >
-> I have chosen to implement the added field of batch as a pointer
-> (by default point to percpu_counter_batch) instead
-> of a static value.  The reason is the percpu_counter initialization
-> can be called when we only have boot cpu and not all cpus are online.
+>> Alexander Graf <agraf@suse.de> writes:
+>>> Am 29.04.2013 um 05:09 schrieb Rusty Russell <rusty@rustcorp.com.au>:
+>>>
+>>>> Alexander Graf <agraf@suse.de> writes:
+>>>>> On 26.04.2013, at 13:04, Pranavkumar Sawargaonkar wrote:
+>>>>>
+>>>>>> This patch-set implements early printk support for virtio console devices without using any hypercalls.
+>>>>>>
+>>>>>> The current virtio early printk code in kernel expects that hypervisor will provide some mechanism generally a hypercall to support early printk. This patch-set does not break existing hypercall based early print support.
+>>>>>>
+>>>>>> This implementation adds:
+>>>>>> 1. Early writeonly register named early_wr in virtio console's config space.
+>>>>>> 2. Host feature flags namely VIRTIO_CONSOLE_F_EARLY_WRITE for telling guest about early-write capability in console device.
+>>>>>>
+>>>>>> Early write mechanism:
+>>>>>> 1. When a guest wants to out some character, it has to simply write the character to early_wr register in config space of virtio console device.
+>>>>>
+>>>>> I won't nack this patch set, but I'll definitely express that I'm not happy with it.
+>>>>>
+>>>>> MMIO registers are handled by a different layer than the virtio console itself. After the virtio refactoring in QEMU, they will be completely separate drivers. So we'll be in a similar mess with early printk as we are on the s390-virtio machine, where early printk is done through hypercalls and thus we can't directly link it to the console output.
+>>>>>
+>>>>> I still don't see what the issue is with just implementing a small irq-less virtio driver for early printk.
+>>>>
+>>>> Well, this shouldn't be mmio-specific, but I kind of get what you mean.
+>>>>
+>>>> I consider this misnamed: it's an emergency write facility.  Linux may
+>>>> use it for an early console,
+>>>
+>>> If Linux uses it for early console, you won't see any messages from before the virtio-console driver is initialized, because Linux thinks that it's all been printed out.
+>>
+>> If you can't support it, don't offer the feature.
+>
+> Fair enough.
+>
+>>
+>>>> but it's also useful for bringup and to
+>>>> give a method of emitting errors like "the console ring is corrupt".
+>>>>
+>>>> A valid implementation may well be to only offer it with some magic
+>>>> qemu developer-only commandline and dump it to stdout.
+>>>
+>>> Why implement it differently from other machines? There are facilities to call into firmware, so you could use that. There's the special Foundation model call that you could implement and reuse for this.
+>>
+>> Sure, for ARM.  We *have* a console device.  It's the logical place to
+>> provide a simple write mechanism.  eg. consider bhyve on FreeBSD.
+>
+> I don't quite see the point. The reason early printk works so well for x86 is that you have a UART at a predefined place.
+>
+>>
+>>> I don't see why anything like this has to live in virtio-mmio. Oh, and it should default to off.
+>>
+>> virtio-console, not virtio-mmio.
+>
+> How will it live in virtio-console? Virtio-console speaks virtio, not register values. If you put this into the config space you break the s390 virtio model.
 
-What's the meaning of boot cpu? Do you mean cpu 0?
+This is a small limitation of QEMU VirtIO implementation and it can be
+easily fixed in QEMU VirtIO.
 
-> and percpu_counter_batch value have yet to be udpated with a
-> call to compute_batch_value function.
->
-> Thanks to Dave Hansen and Andi Kleen for their comments and suggestions.
->
-> Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
-> ---
->   include/linux/percpu_counter.h | 20 +++++++++++++++++++-
->   lib/percpu_counter.c           | 23 ++++++++++++++++++++++-
->   2 files changed, 41 insertions(+), 2 deletions(-)
->
-> diff --git a/include/linux/percpu_counter.h b/include/linux/percpu_counter.h
-> index d5dd465..5ca7df5 100644
-> --- a/include/linux/percpu_counter.h
-> +++ b/include/linux/percpu_counter.h
-> @@ -22,6 +22,7 @@ struct percpu_counter {
->   	struct list_head list;	/* All percpu_counters are on a list */
->   #endif
->   	s32 __percpu *counters;
-> +	int *batch ____cacheline_aligned_in_smp;
->   };
->   
->   extern int percpu_counter_batch;
-> @@ -40,11 +41,22 @@ void percpu_counter_destroy(struct percpu_counter *fbc);
->   void percpu_counter_set(struct percpu_counter *fbc, s64 amount);
->   void __percpu_counter_add(struct percpu_counter *fbc, s64 amount, s32 batch);
->   s64 __percpu_counter_sum(struct percpu_counter *fbc);
-> +void __percpu_counter_batch_resize(struct percpu_counter *fbc, int *batch);
->   int percpu_counter_compare(struct percpu_counter *fbc, s64 rhs);
->   
-> +static inline int percpu_counter_and_batch_init(struct percpu_counter *fbc,
-> +			s64 amount, int *batch)
-> +{
-> +	int ret = percpu_counter_init(fbc, amount);
-> +
-> +	if (batch && !ret)
-> +		__percpu_counter_batch_resize(fbc, batch);
-> +	return ret;
-> +}
-> +
->   static inline void percpu_counter_add(struct percpu_counter *fbc, s64 amount)
->   {
-> -	__percpu_counter_add(fbc, amount, percpu_counter_batch);
-> +	__percpu_counter_add(fbc, amount, *fbc->batch);
->   }
->   
->   static inline s64 percpu_counter_sum_positive(struct percpu_counter *fbc)
-> @@ -95,6 +107,12 @@ static inline int percpu_counter_init(struct percpu_counter *fbc, s64 amount)
->   	return 0;
->   }
->   
-> +static inline int percpu_counter_and_batch_init(struct percpu_counter *fbc,
-> +			s64 amount, int *batch)
-> +{
-> +	return percpu_counter_init(fbc, amount);
-> +}
-> +
->   static inline void percpu_counter_destroy(struct percpu_counter *fbc)
->   {
->   }
-> diff --git a/lib/percpu_counter.c b/lib/percpu_counter.c
-> index ba6085d..a75951e 100644
-> --- a/lib/percpu_counter.c
-> +++ b/lib/percpu_counter.c
-> @@ -116,6 +116,7 @@ int __percpu_counter_init(struct percpu_counter *fbc, s64 amount,
->   	lockdep_set_class(&fbc->lock, key);
->   	fbc->count = amount;
->   	fbc->counters = alloc_percpu(s32);
-> +	fbc->batch = &percpu_counter_batch;
->   	if (!fbc->counters)
->   		return -ENOMEM;
->   
-> @@ -131,6 +132,26 @@ int __percpu_counter_init(struct percpu_counter *fbc, s64 amount,
->   }
->   EXPORT_SYMBOL(__percpu_counter_init);
->   
-> +void __percpu_counter_batch_resize(struct percpu_counter *fbc, int *batch)
-> +{
-> +	unsigned long flags;
-> +	int cpu;
-> +
-> +	if (!batch)
-> +		return;
-> +
-> +	raw_spin_lock_irqsave(&fbc->lock, flags);
-> +	for_each_online_cpu(cpu) {
-> +		s32 *pcount = per_cpu_ptr(fbc->counters, cpu);
-> +		fbc->count += *pcount;
-> +		*pcount = 0;
-> +	}
-> +	*batch = max(*batch, percpu_counter_batch);
-> +	fbc->batch = batch;
-> +	raw_spin_unlock_irqrestore(&fbc->lock, flags);
-> +}
-> +EXPORT_SYMBOL(__percpu_counter_batch_resize);
-> +
->   void percpu_counter_destroy(struct percpu_counter *fbc)
->   {
->   	if (!fbc->counters)
-> @@ -196,7 +217,7 @@ int percpu_counter_compare(struct percpu_counter *fbc, s64 rhs)
->   
->   	count = percpu_counter_read(fbc);
->   	/* Check to see if rough count will be sufficient for comparison */
-> -	if (abs(count - rhs) > (percpu_counter_batch*num_online_cpus())) {
-> +	if (abs(count - rhs) > ((*fbc->batch)*num_online_cpus())) {
->   		if (count > rhs)
->   			return 1;
->   		else
+The VirtIO spec does not tell that VirtIO device specific config
+registers are to be emulated by VirtIO transport device (MMIO or PCI).
 
+As per VirtIO spec, the only register that should be emulated by
+transport device are the generic VirtIO registers and the VirtIO
+device specific config registers should be emulated by VirtIO device
+backend.
+
+>
+>
+> Alex
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+--Anup
