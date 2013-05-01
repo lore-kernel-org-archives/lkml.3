@@ -1,207 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761421Ab3EAPQj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 11:16:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42115 "EHLO mx1.redhat.com"
+	id S1761447Ab3EAPQs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 11:16:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40896 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752938Ab3EAPQb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 11:16:31 -0400
+	id S1756287Ab3EAPQf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 May 2013 11:16:35 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+Cc: Jiri Olsa <jolsa@redhat.com>, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>,
         Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ulrich Drepper <drepper@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Will Deacon <will.deacon@arm.com>,
+        Andi Kleen <andi@firstfloor.org>, David Ahern <dsahern@gmail.com>,
+        Ulrich Drepper <drepper@gmail.com>, Will Deacon <will.deacon@arm.com>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 2/8] perf tools: Factorize event parsing to be more general
-Date: Wed,  1 May 2013 17:15:40 +0200
-Message-Id: <1367421346-18257-3-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 8/8] perf list: List formulas counters
+Date: Wed,  1 May 2013 17:15:46 +0200
+Message-Id: <1367421346-18257-9-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1367421346-18257-1-git-send-email-jolsa@redhat.com>
 References: <1367421346-18257-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Making the event parsing processing more general so we
-can plug in strings with special processing like formula
-definition.
-
-The formula changes are coming in following patches.
+Make default formulas appear in 'perf list' command output
+with [Formula counter].
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: David Ahern <dsahern@gmail.com>
 Cc: Ulrich Drepper <drepper@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Will Deacon <will.deacon@arm.com>
 Cc: Stephane Eranian <eranian@google.com>
 ---
- tools/perf/util/parse-events.c | 21 ++++++++++++++++++
- tools/perf/util/parse-events.h | 17 +++++++++++++++
- tools/perf/util/parse-events.y | 48 +++++++++++++++++++++++++++++++-----------
- 3 files changed, 74 insertions(+), 12 deletions(-)
+ tools/perf/builtin-list.c      |  3 +++
+ tools/perf/util/formula.c      | 34 ++++++++++++++++++++++++++++++++++
+ tools/perf/util/formula.h      |  2 ++
+ tools/perf/util/parse-events.c |  3 +++
+ 4 files changed, 42 insertions(+)
 
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index 6c8bb0f..e8e9dc8 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -1238,3 +1238,24 @@ void parse_events__free_terms(struct list_head *terms)
+diff --git a/tools/perf/builtin-list.c b/tools/perf/builtin-list.c
+index 1948ece..71e6d1f 100644
+--- a/tools/perf/builtin-list.c
++++ b/tools/perf/builtin-list.c
+@@ -13,6 +13,7 @@
  
- 	free(terms);
+ #include "util/parse-events.h"
+ #include "util/cache.h"
++#include "util/formula.h"
+ 
+ int cmd_list(int argc, const char **argv, const char *prefix __maybe_unused)
+ {
+@@ -37,6 +38,8 @@ int cmd_list(int argc, const char **argv, const char *prefix __maybe_unused)
+ 			else if (strcmp(argv[i], "cache") == 0 ||
+ 				 strcmp(argv[i], "hwcache") == 0)
+ 				print_hwcache_events(NULL, false);
++			else if (strcmp(argv[i], "formulas") == 0)
++				print_formulas();
+ 			else if (strcmp(argv[i], "--raw-dump") == 0)
+ 				print_events(NULL, true);
+ 			else {
+diff --git a/tools/perf/util/formula.c b/tools/perf/util/formula.c
+index b9d95b2..71ae117 100644
+--- a/tools/perf/util/formula.c
++++ b/tools/perf/util/formula.c
+@@ -564,3 +564,37 @@ int perf_formula__preload(struct perf_formula *f)
+ 
+ 	return ret ? ret : perf_formula__preload_arch(f);
  }
 +
-+int parse_events_config_process(struct parse_events_evlist *data,
-+				struct list_head *head)
++static int print_set_cb(struct perf_formula_set *set, void *data)
 +{
-+	struct parse_events_config *cfg, *h;
++	bool *printed = (bool *) data;
++	char name[100];
 +
-+	list_for_each_entry_safe(cfg, h, head, list) {
-+		switch (cfg->type) {
-+		case PARSE_EVENTS_CONFIG_EVENTS:
-+			parse_events_update_lists(cfg->events, &data->list);
-+			break;
-+		default:
-+			break;
-+		}
++	scnprintf(name, 100, "formula-%s", set->name);
++	printf("  %-50s [Formula counter]\n", name);
 +
-+		list_del(&cfg->list);
-+		free(cfg);
++	if (!*printed)
++		*printed = true;
++
++	return CB_NEXT;
++}
++
++void print_formulas(void)
++{
++	struct perf_formula f;
++	bool printed = false;
++
++	perf_formula__init(&f);
++
++	if (perf_formula__preload(&f)) {
++		pr_err("formula: failed to preload formulas\n");
++		return;
 +	}
 +
-+	return 0;
++	printf("\n");
++
++	for_each_set(&f, print_set_cb, &printed);
++
++	if (printed)
++		printf("\n");
 +}
-diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
-index 8a48593..98810f1 100644
---- a/tools/perf/util/parse-events.h
-+++ b/tools/perf/util/parse-events.h
-@@ -71,6 +71,23 @@ struct parse_events_terms {
- 	struct list_head *terms;
- };
+diff --git a/tools/perf/util/formula.h b/tools/perf/util/formula.h
+index b6437d8..5288bc6 100644
+--- a/tools/perf/util/formula.h
++++ b/tools/perf/util/formula.h
+@@ -137,4 +137,6 @@ double perf_formula_expr__resolve(struct perf_formula_expr *expr,
  
-+enum parse_events_config_type {
-+	PARSE_EVENTS_CONFIG_EVENTS,
-+};
+ int perf_formula__preload(struct perf_formula *f);
+ int perf_formula__preload_arch(struct perf_formula *f);
 +
-+struct parse_events_config {
-+	enum parse_events_config_type type;
++void print_formulas(void);
+ #endif /* __PERF_FORMULA */
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index fe0a554..405f192 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -15,6 +15,7 @@
+ #define YY_EXTRA_TYPE int
+ #include "parse-events-flex.h"
+ #include "pmu.h"
++#include "formula.h"
+ 
+ #define MAX_NAME_LEN 100
+ 
+@@ -1133,6 +1134,8 @@ void print_events(const char *event_glob, bool name_only)
+ 
+ 	print_hwcache_events(event_glob, name_only);
+ 
++	print_formulas();
 +
-+	union {
-+		struct list_head *events;
-+		void *val;
-+	};
-+
-+	struct list_head list;
-+};
-+
-+int parse_events_config_process(struct parse_events_evlist *data,
-+				struct list_head *head);
- int parse_events__is_hardcoded_term(struct parse_events_term *term);
- int parse_events_term__num(struct parse_events_term **_term,
- 			   int type_term, char *config, u64 num);
-diff --git a/tools/perf/util/parse-events.y b/tools/perf/util/parse-events.y
-index afc44c1..bae1879 100644
---- a/tools/perf/util/parse-events.y
-+++ b/tools/perf/util/parse-events.y
-@@ -30,6 +30,21 @@ static inc_group_count(struct list_head *list,
- 		data->nr_groups++;
- }
+ 	if (event_glob != NULL)
+ 		return;
  
-+#define CONFIG(t, v) ({						\
-+	struct parse_events_config *c = zalloc(sizeof(*c));	\
-+	ABORT_ON(!c);						\
-+	c->type = PARSE_EVENTS_CONFIG_ ## t;			\
-+	c->val = v;						\
-+	c;							\
-+})
-+
-+#define HEAD() ({					\
-+	struct list_head *h = zalloc(sizeof(*h));	\
-+	ABORT_ON(!h);					\
-+	INIT_LIST_HEAD(h);				\
-+	h;						\
-+})
-+
- %}
- 
- %token PE_START_EVENTS PE_START_TERMS
-@@ -69,6 +84,7 @@ static inc_group_count(struct list_head *list,
- %type <head> group_def
- %type <head> group
- %type <head> groups
-+%type <cfg> groups_config
- 
- %union
- {
-@@ -76,6 +92,7 @@ static inc_group_count(struct list_head *list,
- 	u64 num;
- 	struct list_head *head;
- 	struct parse_events_term *term;
-+	struct parse_events_config *cfg;
- }
- %%
- 
-@@ -88,31 +105,38 @@ start_events: groups
- {
- 	struct parse_events_evlist *data = _data;
- 
--	parse_events_update_lists($1, &data->list);
-+	ABORT_ON(parse_events_config_process(data, $1));
- }
- 
- groups:
--groups ',' group
-+groups ',' groups_config
- {
--	struct list_head *list  = $1;
--	struct list_head *group = $3;
-+	struct list_head *head = $1;
-+	struct parse_events_config *cfg = $3;
- 
--	parse_events_update_lists(group, list);
--	$$ = list;
-+	list_add_tail(&cfg->list, head);
-+	$$ = head;
- }
- |
--groups ',' event
-+groups_config
- {
--	struct list_head *list  = $1;
--	struct list_head *event = $3;
-+	struct list_head *head = HEAD();
-+	struct parse_events_config *cfg = $1;
- 
--	parse_events_update_lists(event, list);
--	$$ = list;
-+	list_add_tail(&cfg->list, head);
-+	$$ = head;
- }
--|
-+
-+groups_config:
- group
-+{
-+	$$ = CONFIG(EVENTS, $1);
-+}
- |
- event
-+{
-+	$$ = CONFIG(EVENTS, $1);
-+}
- 
- group:
- group_def ':' PE_MODIFIER_EVENT
 -- 
 1.7.11.7
 
