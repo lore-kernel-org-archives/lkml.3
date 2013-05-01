@@ -1,64 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761423Ab3EAPCU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 11:02:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42108 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755144Ab3EAPCQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 11:02:16 -0400
-Date: Wed, 1 May 2013 18:01:31 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: David Miller <davem@davemloft.net>
-Cc: kvm@vger.kernel.org, virtualization@lists.osdl.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, agrover@redhat.com, asias@redhat.com,
-        brian@purestorage.com, hch@lst.de, joern@logfs.org,
-        mark.d.rustad@intel.com, martin.petersen@oracle.com, mst@redhat.com,
-        nab@linux-iscsi.org, ogerlitz@mellanox.com,
-        yongjun_wei@trendmicro.com.cn
-Subject: [PULL] vhost: cleanups and fixes for 3.10
-Message-ID: <20130501150130.GA21230@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+	id S1755690Ab3EAPCf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 11:02:35 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:2407 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760666Ab3EAPCT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 May 2013 11:02:19 -0400
+X-Authority-Analysis: v=2.0 cv=UY7TuduN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=PqpiappLIvcA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=v-06TqOow7oA:10 a=VwQbUJbxAAAA:8 a=RmgbkJcQAAAA:8 a=yPCof4ZbAAAA:8 a=7dDkqBXu-sf8KlXSAAoA:9 a=QEXdDO2ut3YA:10 a=7DSvI1NPTFQA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1367420537.30667.91.camel@gandalf.local.home>
+Subject: [PATCH] init: Do not warn on non-zero initcall return
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Date: Wed, 01 May 2013 11:02:17 -0400
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please pull the following vhost core updates for 3.10 -
-they affect both vhost-net and vhost-scsi devices.
-They also *depend* on both net-next and target-pending.  Since Linus
-merged target-pending but not net-next at this point, merging through
-the net tree seems to make sense.
+Commit f91eb62f71 "init: scream bloody murder if interrupts are enabled
+too early" added three new warnings. The first two seemed reasonable,
+but the third included a warning when an initcall returned non-zero.
+Although, the third WARN() does include an imbalanced preempt disabled,
+or irqs disable, it shouldn't warn if it only had an initcall that just
+returns non-zero.
 
-The following changes since commit bc7562355fda8075793bf66094cda573206ec693:
+Link: http://lkml.kernel.org/r/20130501134814.GA5001@phenom.dumpdata.com
 
-  Merge branch 'for-next-merge' of git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending into vhost-net-next (2013-05-01 09:16:50 +0300)
+Reported-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
-are available in the git repository at:
+diff --git a/init/main.c b/init/main.c
+index bea1287..f0106bf 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -678,6 +678,7 @@ int __init_or_module do_one_initcall(initcall_t fn)
+ {
+ 	int count = preempt_count();
+ 	int ret;
++	bool warn = false;
+ 
+ 	if (initcall_debug)
+ 		ret = do_one_initcall_debug(fn);
+@@ -692,12 +693,17 @@ int __init_or_module do_one_initcall(initcall_t fn)
+ 	if (preempt_count() != count) {
+ 		strlcat(msgbuf, "preemption imbalance ", sizeof(msgbuf));
+ 		preempt_count() = count;
++		warn = true;
+ 	}
+ 	if (irqs_disabled()) {
+ 		strlcat(msgbuf, "disabled interrupts ", sizeof(msgbuf));
+ 		local_irq_enable();
++		warn = true;
++	}
++	if (msgbuf[0]) {
++		pr_err("initcall %pF returned with %s\n", fn, msgbuf);
++		WARN_ON(warn);
+ 	}
+-	WARN(msgbuf[0], "initcall %pF returned with %s\n", fn, msgbuf);
+ 
+ 	return ret;
+ }
 
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/mst/vhost.git vhost-net-next
-
-for you to fetch changes up to 150b9e51ae975ca1fe468c565870fbc4a96e0574:
-
-  vhost: fix error handling in RESET_OWNER ioctl (2013-05-01 10:02:54 +0300)
-
-----------------------------------------------------------------
-Asias He (3):
-      vhost: Allow device specific fields per vq
-      tcm_vhost: Wait for pending requests in vhost_scsi_flush()
-      vhost: move vhost-net zerocopy fields to net.c
-
-Michael S. Tsirkin (4):
-      tcm_vhost: document inflight ref-counting use
-      vhost: move per-vq net specific fields out to net
-      tcm_vhost: remove virtio-net.h dependency
-      vhost: fix error handling in RESET_OWNER ioctl
-
- drivers/vhost/net.c       | 255 ++++++++++++++++++++++++++++++++++++----------
- drivers/vhost/tcm_vhost.c | 154 ++++++++++++++++++++++++----
- drivers/vhost/tcm_vhost.h |   3 +
- drivers/vhost/test.c      |   9 +-
- drivers/vhost/vhost.c     | 153 +++++++++-------------------
- drivers/vhost/vhost.h     |  32 +-----
- 6 files changed, 400 insertions(+), 206 deletions(-)
