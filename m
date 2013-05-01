@@ -1,123 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755492Ab3EAP2m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 11:28:42 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:54729 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761486Ab3EAP2b (ORCPT
+	id S1761518Ab3EAPaG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 11:30:06 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:59700 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754134Ab3EAP37 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 11:28:31 -0400
-Date: Wed, 1 May 2013 08:28:30 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Johannes Weiner <hannes@cmpxchg.org>
-cc: Michal Hocko <mhocko@suse.cz>, Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Zhouping Liu <zliu@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Glauber Costa <glommer@parallels.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>, caiqian <caiqian@redhat.com>,
-        Caspar Zhang <czhang@redhat.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Lingzhu Xiang <lxiang@redhat.com>
-Subject: Re: [v3.9-rc8]: kernel BUG at mm/memcontrol.c:3994! (was: Re:
- [BUG][s390x] mm: system crashed)
-In-Reply-To: <20130430172711.GE1229@cmpxchg.org>
-Message-ID: <alpine.LNX.2.00.1305010758090.12051@eggly.anvils>
-References: <2068164110.268217.1365996520440.JavaMail.root@redhat.com> <20130415055627.GB4207@osiris> <516B9B57.6050308@redhat.com> <20130416075047.GA4184@osiris> <1638103518.2400447.1366266465689.JavaMail.root@redhat.com> <20130418071303.GB4203@osiris>
- <20130424104255.GC4350@osiris> <20130424131851.GC31960@dhcp22.suse.cz> <20130424152043.GP2018@cmpxchg.org> <alpine.LNX.2.00.1304242022200.16233@eggly.anvils> <20130430172711.GE1229@cmpxchg.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 1 May 2013 11:29:59 -0400
+Message-ID: <1367422195.11020.46.camel@edumazet-glaptop>
+Subject: Re: [PATCH v2 1/2] sched: Add cond_resched_rcu_lock() helper
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Julian Anastasov <ja@ssi.bg>, Simon Horman <horms@verge.net.au>,
+        Ingo Molnar <mingo@redhat.com>, lvs-devel@vger.kernel.org,
+        netdev@vger.kernel.org, netfilter-devel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Pablo Neira Ayuso <pablo@netfilter.org>,
+        Dipankar Sarma <dipankar@in.ibm.com>
+Date: Wed, 01 May 2013 08:29:55 -0700
+In-Reply-To: <20130501151752.GA7521@dyad.programming.kicks-ass.net>
+References: <1367290378-29224-1-git-send-email-horms@verge.net.au>
+	 <1367290378-29224-2-git-send-email-horms@verge.net.au>
+	 <alpine.LFD.2.00.1304301011310.1700@ja.ssi.bg>
+	 <20130430072944.GA13959@verge.net.au>
+	 <alpine.LFD.2.00.1304301051260.1700@ja.ssi.bg>
+	 <20130501091012.GB28253@dyad.programming.kicks-ass.net>
+	 <20130501124637.GO3780@linux.vnet.ibm.com>
+	 <20130501151752.GA7521@dyad.programming.kicks-ass.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Apr 2013, Johannes Weiner wrote:
-> On Wed, Apr 24, 2013 at 08:50:01PM -0700, Hugh Dickins wrote:
-> > On Wed, 24 Apr 2013, Johannes Weiner wrote:
-> > > On Wed, Apr 24, 2013 at 03:18:51PM +0200, Michal Hocko wrote:
-> > > > On Wed 24-04-13 12:42:55, Heiko Carstens wrote:
-> > > > > On Thu, Apr 18, 2013 at 09:13:03AM +0200, Heiko Carstens wrote:
-> > > > > 
-> > > > > [   48.347963] ------------[ cut here ]------------
-> > > > > [   48.347972] kernel BUG at mm/memcontrol.c:3994!
-> > > > > __mem_cgroup_uncharge_common() triggers:
-> > > > > 
-> > > > > [...]
-> > > > >         if (mem_cgroup_disabled())
-> > > > >                 return NULL;
-> > > > > 
-> > > > >         VM_BUG_ON(PageSwapCache(page));
-> > > > > [...]
-> > 
-> > I agree that the actual memcg uncharging should be okay, but the memsw
-> > swap stats will go wrong (doesn't matter toooo much), and mem_cgroup_put
-> > get missed (leaking a struct mem_cgroup).
+On Wed, 2013-05-01 at 17:17 +0200, Peter Zijlstra wrote:
+> On Wed, May 01, 2013 at 05:46:37AM -0700, Paul E. McKenney wrote:
 > 
-> Ok, so I just went over this again.  For the swapout path the memsw
-> uncharge is deferred, but if we "steal" this uncharge from the swap
-> code, we actually do uncharge memsw in mem_cgroup_do_uncharge(), so we
-> may prematurely unaccount the swap page, but we never leak a charge.
-> Good.
+> > If the only goal is to allow preemption, and if long grace periods are
+> > not a concern, then this alternate approach would work fine as well.
 > 
-> Because of this stealing, we also don't do the following:
-> 
-> 	if (do_swap_account && ctype == MEM_CGROUP_CHARGE_TYPE_SWAPOUT) {
-> 		mem_cgroup_swap_statistics(memcg, true);
-> 		mem_cgroup_get(memcg);
-> 	}
-> 
-> I.e. it does not matter that mem_cgroup_uncharge_swap() doesn't do the
-> put, we are also not doing the get.  We should not leak references.
-> 
-> So the only thing that I can see go wrong is that we may have a
-> swapped out page that is not charged to memsw and not accounted as
-> MEM_CGROUP_STAT_SWAP.  But I don't know how likely that is, because we
-> check for PG_swapcache in this uncharge path after the last pte is
-> torn down, so even though the page is put on swap cache, it probably
-> won't be swapped.  It would require that the PG_swapcache setting
-> would become visible only after the page has been added to the swap
-> cache AND rmap has established at least one swap pte for us to
-> uncharge a page that actually continues to be used.  And that's a bit
-> of a stretch, I think.
+> Hmm.. if that were the goal I'd like it to have a different name;
+> cond_resched*() has always been about preemption.
 
-Sorry, our minds seem to work in different ways,
-I understood very little of what you wrote above :-(
+BTW, I do not remember why cond_resched() is not an empty macro
+when CONFIG_PREEMPT=y ?
 
-But once I try to disprove you with a counter-example, I seem to
-arrive at the same conclusion as you have (well, I haven't quite
-arrived there yet, but cannot give it any more time).
 
-Looking at it from my point of view, I concentrate on the racy
-	if (PageSwapCache(page))
-		return;
-	__mem_cgroup_uncharge_common(page, MEM_CGROUP_CHARGE_TYPE_ANON, false);
-in mem_cgroup_uncharge_page().
-
-Now, that may or may not catch the case where last reference to page
-is unmapped at the same time as the page is added to swap: but being
-a MEM_CGROUP_CHARGE_TYPE_ANON call, it does not interfere with the
-memsw stats and get/put at all, those remain in balance.
-
-And mem_cgroup_uncharge_swap() has all along been prepared to get
-a zero id from swap_cgroup_record(), if a SwapCache page should be
-uncharged when it was never quite charged as such.
-
-Yes, we may occasionally fail to charge a SwapCache page as such
-if its final unmap from userspace races with its being added to swap;
-but it's heading towards swap_writepage()'s try_to_free_swap() anyway,
-so I don't think that's anything to worry about.
-
-(If I had time to stop and read through that, I'd probably find it
-just as hard to understand as what you wrote!)
-
-> 
-> Did I miss something?  If not, I'll just send a patch that removes the
-> VM_BUG_ON() and adds a comment describing the scenarios and a note
-> that we may want to fix this in the future.
-
-I don't think you missed something.  Yes, please just send Linus and
-Andrew a patch to remove the VM_BUG_ON() (with Cc stable tag), I now
-agree that's all that's really needed - thanks.
-
-Hugh
