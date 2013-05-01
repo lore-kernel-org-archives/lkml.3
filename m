@@ -1,95 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755671Ab3EAMqv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 08:46:51 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:60915 "EHLO e9.ny.us.ibm.com"
+	id S1756096Ab3EAM7f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 08:59:35 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55101 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751667Ab3EAMqp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 08:46:45 -0400
-Date: Wed, 1 May 2013 05:46:37 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Julian Anastasov <ja@ssi.bg>, Simon Horman <horms@verge.net.au>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
-        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Dipankar Sarma <dipankar@in.ibm.com>
-Subject: Re: [PATCH v2 1/2] sched: Add cond_resched_rcu_lock() helper
-Message-ID: <20130501124637.GO3780@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1367290378-29224-1-git-send-email-horms@verge.net.au>
- <1367290378-29224-2-git-send-email-horms@verge.net.au>
- <alpine.LFD.2.00.1304301011310.1700@ja.ssi.bg>
- <20130430072944.GA13959@verge.net.au>
- <alpine.LFD.2.00.1304301051260.1700@ja.ssi.bg>
- <20130501091012.GB28253@dyad.programming.kicks-ass.net>
+	id S1755152Ab3EAM7d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 May 2013 08:59:33 -0400
+Date: Wed, 1 May 2013 14:59:29 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: =?ISO-8859-15?Q?Fernando_Luis_V=E1zquez_Cao?= 
+	<fernando_b1@lab.ntt.co.jp>
+Cc: linux-input@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Antonio Ospite <ospite@studenti.unina.it>
+Subject: Re: [PATCH] HID: fix botched tree merge that disabled fix-up for
+ certain Sony RF receivers
+In-Reply-To: <1367367983.4712.5.camel@nexus>
+Message-ID: <alpine.LNX.2.00.1305011458440.20139@pobox.suse.cz>
+References: <1358221428.9926.1.camel@nexus.lab.ntt.co.jp>  <20130115103638.be566e39f0f5ad7186362dd8@studenti.unina.it>  <50F52986.2080002@lab.ntt.co.jp>  <1358246448.4897.3.camel@nexus.lab.ntt.co.jp>  <alpine.LNX.2.00.1301151702150.7734@pobox.suse.cz> 
+ <1367367906.4712.4.camel@nexus> <1367367983.4712.5.camel@nexus>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130501091012.GB28253@dyad.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13050112-7182-0000-0000-0000067C7655
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 01, 2013 at 11:10:12AM +0200, Peter Zijlstra wrote:
-> On Tue, Apr 30, 2013 at 10:52:38AM +0300, Julian Anastasov wrote:
-> > 
-> > 	Hello,
-> > 
-> > On Tue, 30 Apr 2013, Simon Horman wrote:
-> > 
-> > > > > +static void inline cond_resched_rcu_lock(void)
-> > > > > +{
-> > > > > +	if (need_resched()) {
-> > > > 
-> > > > 	Ops, it should be without above need_resched.
-> > > 
-> > > Thanks, to clarify, just this:
-> > > 
-> > > static void inline cond_resched_rcu_lock(void)
-> > > {
-> > > 	rcu_read_unlock();
-> > > #ifndef CONFIG_PREEMPT_RCU
-> > > 	cond_resched();
-> > > #endif
-> > > 	rcu_read_lock();
-> > > }
-> > 
-> > 	Yes, thanks!
+On Wed, 1 May 2013, Fernando Luis Vázquez Cao wrote:
+
+> It looks like the manual merge 0d69a3c731e120b05b7da9fb976830475a3fbc01 ("Merge
+> branches 'for-3.9/sony' and 'for-3.9/steelseries' into for-linus") accidentally
+> removed Sony RF receiver with USB product id 0x0374 from the "have special
+> driver" list, effectively nullifying a464918419f94a0043d2f549d6defb4c3f69f68a
+> ("HID: add support for Sony RF receiver with USB product id 0x0374"). Add the
+> device back to the list.
 > 
-> OK, now I'm confused.. PREEMPT_RCU would preempt in any case, so why bother
-> dropping rcu_read_lock() at all?
-
-Good point, I was assuming that the goal was to let grace periods end
-as well as to allow preemption.  The momentary dropping out of the
-RCU read-side critical section allows the grace periods to end.
-
-> That is; the thing that makes sense to me is:
+> Cc: stable@vger.kernel.org
+> Signed-off-by: Fernando Luis Vazquez Cao <fernando@oss.ntt.co.jp>
+> ---
 > 
-> static void inline cond_resched_rcu_lock(void)
-> {
-> #ifdef CONFIG_PREEMPT_RCU
-> 	if (need_resched()) {
-> 		rcu_read_unlock();
-> 		cond_resched();
-> 		rcu_read_lock();
-> 	}
-> #endif /* CONFIG_PREEMPT_RCU */
-> }
-> 
-> That would have an rcu_read_lock() break and voluntary preemption point for
-> non-preemptible RCU and not bother with the stuff for preemptible RCU.
+> diff -urNp linux-3.9/drivers/hid/hid-core.c linux-3.9-fix/drivers/hid/hid-core.c
+> --- linux-3.9/drivers/hid/hid-core.c	2013-04-29 09:36:01.000000000 +0900
+> +++ linux-3.9-fix/drivers/hid/hid-core.c	2013-04-30 21:53:57.596269692 +0900
+> @@ -1702,6 +1702,7 @@ static const struct hid_device_id hid_ha
+>  	{ HID_USB_DEVICE(USB_VENDOR_ID_SONY, USB_DEVICE_ID_SONY_NAVIGATION_CONTROLLER) },
+>  	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_SONY, USB_DEVICE_ID_SONY_PS3_CONTROLLER) },
+>  	{ HID_USB_DEVICE(USB_VENDOR_ID_SONY, USB_DEVICE_ID_SONY_VAIO_VGX_MOUSE) },
+> +	{ HID_USB_DEVICE(USB_VENDOR_ID_SONY, USB_DEVICE_ID_SONY_VAIO_VGP_MOUSE) },
+>  	{ HID_USB_DEVICE(USB_VENDOR_ID_STEELSERIES, USB_DEVICE_ID_STEELSERIES_SRWS1) },
+>  	{ HID_USB_DEVICE(USB_VENDOR_ID_SUNPLUS, USB_DEVICE_ID_SUNPLUS_WDESKTOP) },
+>  	{ HID_USB_DEVICE(USB_VENDOR_ID_THINGM, USB_DEVICE_ID_BLINK1) },
 
-If the only goal is to allow preemption, and if long grace periods are
-not a concern, then this alternate approach would work fine as well.
+Thanks a lot for noticing. Applied.
 
-Of course, both approaches assume that the caller is in a place
-where having all RCU-protected data disappear is OK!
-
-							Thanx, Paul
-
+-- 
+Jiri Kosina
+SUSE Labs
