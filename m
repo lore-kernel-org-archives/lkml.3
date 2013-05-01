@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761416Ab3EAPRA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 11:17:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18669 "EHLO mx1.redhat.com"
+	id S1761460Ab3EAPRN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 11:17:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56992 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761446Ab3EAPQs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 11:16:48 -0400
+	id S1761439Ab3EAPQo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 May 2013 11:16:44 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>, Arnaldo Carvalho de Melo <acme@redhat.com>,
@@ -17,17 +17,25 @@ Cc: Jiri Olsa <jolsa@redhat.com>, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Andi Kleen <andi@firstfloor.org>, David Ahern <dsahern@gmail.com>,
         Ulrich Drepper <drepper@gmail.com>, Will Deacon <will.deacon@arm.com>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 6/8] perf tests: Add automated tests for formula object
-Date: Wed,  1 May 2013 17:15:44 +0200
-Message-Id: <1367421346-18257-7-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 5/8] perf tools: Add support to preload default formulas
+Date: Wed,  1 May 2013 17:15:43 +0200
+Message-Id: <1367421346-18257-6-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1367421346-18257-1-git-send-email-jolsa@redhat.com>
 References: <1367421346-18257-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding automated tests to test basic formula
-object definitions and interface.
+Adding support to read all formula definition files
+under common locations:
+
+  'formula'
+    - under perf developement tree
+  'PREFIX/PERF_EXEC_PATH/formulas'
+    - when installed
+
+Plus adding very basic formula definitions for CPI
+and branch related counters.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
@@ -44,276 +52,158 @@ Cc: Ulrich Drepper <drepper@gmail.com>
 Cc: Will Deacon <will.deacon@arm.com>
 Cc: Stephane Eranian <eranian@google.com>
 ---
- tools/perf/Makefile             |   1 +
- tools/perf/tests/builtin-test.c |   4 +
- tools/perf/tests/formula.c      | 183 ++++++++++++++++++++++++++++++++++++++++
- tools/perf/tests/parse-events.c |   8 --
- tools/perf/tests/tests.h        |  10 +++
- 5 files changed, 198 insertions(+), 8 deletions(-)
- create mode 100644 tools/perf/tests/formula.c
+ tools/perf/Makefile              |  8 ++++++
+ tools/perf/formulas/default.conf | 26 ++++++++++++++++++++
+ tools/perf/util/formula.c        | 53 ++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/formula.h        |  3 +++
+ 4 files changed, 90 insertions(+)
+ create mode 100644 tools/perf/formulas/default.conf
 
 diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index c35bb7f..aac10d0 100644
+index bcbc524..c35bb7f 100644
 --- a/tools/perf/Makefile
 +++ b/tools/perf/Makefile
-@@ -532,6 +532,7 @@ LIB_OBJS += $(OUTPUT)tests/bp_signal.o
- LIB_OBJS += $(OUTPUT)tests/bp_signal_overflow.o
- LIB_OBJS += $(OUTPUT)tests/task-exit.o
- LIB_OBJS += $(OUTPUT)tests/sw-clock.o
-+LIB_OBJS += $(OUTPUT)tests/formula.o
+@@ -1010,6 +1010,12 @@ $(OUTPUT)util/exec_cmd.o: util/exec_cmd.c $(OUTPUT)PERF-CFLAGS
+ 		'-DPREFIX="$(prefix_SQ)"' \
+ 		$<
  
- BUILTIN_OBJS += $(OUTPUT)builtin-annotate.o
- BUILTIN_OBJS += $(OUTPUT)builtin-bench.o
-diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
-index 0918ada..8c48adf 100644
---- a/tools/perf/tests/builtin-test.c
-+++ b/tools/perf/tests/builtin-test.c
-@@ -94,6 +94,10 @@ static struct test {
- 		.func = test__sw_clock_freq,
- 	},
- 	{
-+		.desc = "Test formula interface",
-+		.func = test__formula,
-+	},
-+	{
- 		.func = NULL,
- 	},
- };
-diff --git a/tools/perf/tests/formula.c b/tools/perf/tests/formula.c
++$(OUTPUT)util/formula.o: util/formula.c $(OUTPUT)PERF-CFLAGS
++	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) \
++		'-DPERF_EXEC_PATH="$(perfexecdir_SQ)"' \
++		'-DPREFIX="$(prefix_SQ)"' \
++		$<
++
+ $(OUTPUT)tests/attr.o: tests/attr.c $(OUTPUT)PERF-CFLAGS
+ 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) \
+ 		'-DBINDIR="$(bindir_SQ)"' -DPYTHON='"$(PYTHON_WORD)"' \
+@@ -1201,6 +1207,8 @@ install-bin: all
+ 	$(INSTALL) tests/attr.py '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/tests'
+ 	$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/tests/attr'
+ 	$(INSTALL) tests/attr/* '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/tests/attr'
++	$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/formulas'
++	$(INSTALL) -m 644 formulas/* $(DESTDIR_SQ)$(perfexec_instdir_SQ)/formulas
+ 
+ install: install-bin try-install-man
+ 
+diff --git a/tools/perf/formulas/default.conf b/tools/perf/formulas/default.conf
 new file mode 100644
-index 0000000..db2e71c
+index 0000000..56712d6
 --- /dev/null
-+++ b/tools/perf/tests/formula.c
-@@ -0,0 +1,183 @@
-+
-+#include <linux/kernel.h>
-+#include <linux/compiler.h>
-+#include <stdlib.h>
-+#include <unistd.h>
-+#include "tests.h"
-+#include "formula.h"
-+#include "evlist.h"
-+#include "evsel.h"
-+
-+static void file_put(const char *file)
-+{
-+	unlink(file);
-+}
-+
-+static char *file_get(const char *data, size_t size)
-+{
-+	char file[] = "/tmp/perf-tests-formula-XXXXXX";
-+	bool failed = false;
-+	int fd;
-+
-+	fd = mkstemp(file);
-+	if (fd < 0) {
-+		pr_debug("failed to create temp file\n");
-+		return NULL;
++++ b/tools/perf/formulas/default.conf
+@@ -0,0 +1,26 @@
++cpi {
++	events {
++		CY = cycles:u
++		IN = instructions:u
 +	}
 +
-+	if (size != (size_t) write(fd, data, size))
-+		failed = true;
++	cpi = CY / IN
 +
-+	close(fd);
-+
-+	if (failed)
-+		file_put(file);
-+
-+	return failed ? NULL : file;
++	print cpi
 +}
 +
-+static int __test_basics(char *file)
++branch {
++	events {
++		IN = instructions:u
++		BI = branch-instructions:u
++		BM = branch-misses:u
++	}
++
++	branch-rate       = BI / IN
++	branch-miss-rate  = BM / IN
++	branch-miss-ratio = BM / BI
++
++	print branch-rate
++	print branch-miss-rate
++	print branch-miss-ratio
++}
+diff --git a/tools/perf/util/formula.c b/tools/perf/util/formula.c
+index 2edc720..b9d95b2 100644
+--- a/tools/perf/util/formula.c
++++ b/tools/perf/util/formula.c
+@@ -159,6 +159,35 @@ int perf_formula__load(struct perf_formula *f, char *path)
+ 	return ret;
+ }
+ 
++int perf_formula__load_dir(struct perf_formula *f, char *path)
 +{
-+	struct perf_formula fml;
-+	struct perf_formula_set *set;
-+	struct perf_formula_counter *counter;
-+	struct perf_evlist *evlist;
-+	struct perf_evsel *evsel;
-+	struct perf_counts *counts;
-+	struct perf_formula_expr expr;
-+	int ret;
++	struct dirent *ent;
++	DIR *dir;
++	int ret = 0;
 +
-+	pr_debug("file %s\n", file);
++	dir = opendir(path);
++	if (!dir) {
++		pr_err("formula: can't open dir '%s' - %s\n",
++		       path, strerror(errno));
++		return -1;
++	}
 +
-+	perf_formula__init(&fml);
++	while (!ret && (ent = readdir(dir))) {
++		char file[PATH_MAX];
 +
-+	ret = perf_formula__load(&fml, file);
-+	TEST_ASSERT_VAL("failed to load formula", !ret);
++		if (!strcmp(ent->d_name, ".") ||
++		    !strcmp(ent->d_name, ".."))
++			continue;
 +
-+	set = perf_formula__set(&fml, (char *) "set");
-+	TEST_ASSERT_VAL("failed to load set", set);
-+	TEST_ASSERT_VAL("wrong set name", !strcmp(set->name, "set"));
++		scnprintf(file, PATH_MAX, "%s/%s", path, ent->d_name);
 +
-+	evlist = perf_evlist__new();
-+	TEST_ASSERT_VAL("failed to create evlist", evlist);
++		ret = perf_formula__load(f, file);
++	}
 +
-+	ret = perf_formula__evlist(&fml, set, evlist);
-+	TEST_ASSERT_VAL("failed to load evlist with set", !ret);
++	closedir(dir);
++	return ret;
++}
 +
-+	evsel = perf_evlist__first(evlist);
-+	TEST_ASSERT_VAL("wrong type", PERF_TYPE_HARDWARE == evsel->attr.type);
-+	TEST_ASSERT_VAL("wrong config",
-+		PERF_COUNT_HW_CPU_CYCLES == evsel->attr.config);
-+	TEST_ASSERT_VAL("wrong exclude_user", !evsel->attr.exclude_user);
-+	TEST_ASSERT_VAL("wrong exclude_kernel", evsel->attr.exclude_kernel);
-+	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
-+	TEST_ASSERT_VAL("wrong exclude guest", !evsel->attr.exclude_guest);
-+	TEST_ASSERT_VAL("wrong exclude host", !evsel->attr.exclude_host);
-+	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
+ int perf_formula__free(struct perf_formula *f)
+ {
+ 	struct perf_formula_file *file;
+@@ -511,3 +540,27 @@ double perf_formula_expr__resolve(struct perf_formula_expr *expr,
+ 	pr_debug2("formula resolve %s = %F\n", name, result);
+ 	return result;
+ }
 +
-+	ret = perf_evsel__alloc_counts(evsel, 1);
-+	TEST_ASSERT_VAL("failed to alloc coiunts for evsel", !ret);
 +
-+	counts = evsel->counts;
-+	counts->aggr.val = 1000;
-+
-+	evsel = perf_evsel__next(evsel);
-+	TEST_ASSERT_VAL("wrong type", PERF_TYPE_HARDWARE == evsel->attr.type);
-+	TEST_ASSERT_VAL("wrong config",
-+		PERF_COUNT_HW_INSTRUCTIONS == evsel->attr.config);
-+	TEST_ASSERT_VAL("wrong exclude_user", !evsel->attr.exclude_user);
-+	TEST_ASSERT_VAL("wrong exclude_kernel", evsel->attr.exclude_kernel);
-+	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
-+	TEST_ASSERT_VAL("wrong exclude guest", !evsel->attr.exclude_guest);
-+	TEST_ASSERT_VAL("wrong exclude host", !evsel->attr.exclude_host);
-+	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
-+
-+	ret = perf_evsel__alloc_counts(evsel, 1);
-+	TEST_ASSERT_VAL("failed to alloc coiunts for evsel", !ret);
-+
-+	counts = evsel->counts;
-+	counts->aggr.val = 500;
-+
-+	memset(&expr, 0x0, sizeof(expr));
-+	expr.set    = set;
-+	expr.evlist = evlist;
-+
-+	perf_formula__eval(&fml, set, &expr);
-+
-+	counter = list_first_entry(&set->head_counters,
-+				   struct perf_formula_counter,
-+				   list);
-+	TEST_ASSERT_VAL("failed to calculated the counter", !ret);
-+	TEST_ASSERT_VAL("wrong counter final value", counter->result == 4.5);
-+
-+	counter = list_entry(counter->list.next,
-+			     struct perf_formula_counter,
-+			     list);
-+	TEST_ASSERT_VAL("failed to calculated the counter", !ret);
-+	TEST_ASSERT_VAL("wrong counter final value", counter->result == 2);
-+
-+	perf_formula__free(&fml);
++__attribute__((weak))
++int perf_formula__preload_arch(struct perf_formula *f __maybe_unused)
++{
 +	return 0;
 +}
 +
-+static int test_basics(void)
++int perf_formula__preload(struct perf_formula *f)
 +{
-+	int ret;
-+	char *file;
-+	char data[] =
-+"							\n\
-+set {							\n\
-+	events {					\n\
-+		CY = cycles:u				\n\
-+		IN = instructions:u			\n\
-+	}						\n\
-+							\n\
-+	t   = -IN / 1000 + 5				\n\
-+	cpi = CY / -((t - 5) * 1000)			\n\
-+							\n\
-+	print cpi					\n\
-+}							\n\
-+";
-+
-+	file = file_get(data, sizeof(data));
-+	TEST_ASSERT_VAL("failed to get data file", file);
-+
-+	ret = __test_basics(file);
-+
-+	file_put(file);
-+	return ret;
-+}
-+
-+typedef int (*fn_t)(void);
-+
-+struct formula_test {
-+	const char *desc;
-+	fn_t fn;
-+} tests[] = {
-+	{
-+		.desc	= "basics",
-+		.fn	= test_basics,
-+	},
-+	{
-+		.desc	= NULL,
-+		.fn	= NULL,
-+	},
-+};
-+
-+
-+int test__formula(void)
-+{
-+	struct formula_test *t = &tests[0];
++	struct stat st;
 +	int ret = 0;
 +
-+	while (t->desc) {
-+		pr_debug("test: %s\n", t->desc);
++	if (!lstat("./formulas", &st))
++		ret = perf_formula__load_dir(f, (char *) "./formulas");
++	else {
++		char path[PATH_MAX];
 +
-+		if (t->fn())
-+			ret = -1;
-+
-+		t++;
++		scnprintf(path, PATH_MAX, "%s/%s/formulas/", PREFIX, PERF_EXEC_PATH);
++		ret = perf_formula__load_dir(f, path);
 +	}
 +
-+	return ret;
++	return ret ? ret : perf_formula__preload_arch(f);
 +}
-diff --git a/tools/perf/tests/parse-events.c b/tools/perf/tests/parse-events.c
-index 88e2f44..91a0004 100644
---- a/tools/perf/tests/parse-events.c
-+++ b/tools/perf/tests/parse-events.c
-@@ -7,14 +7,6 @@
- #include "tests.h"
- #include <linux/hw_breakpoint.h>
+diff --git a/tools/perf/util/formula.h b/tools/perf/util/formula.h
+index 90325ec..b6437d8 100644
+--- a/tools/perf/util/formula.h
++++ b/tools/perf/util/formula.h
+@@ -106,6 +106,7 @@ struct perf_formula_config {
+ void perf_formula__init(struct perf_formula *f);
  
--#define TEST_ASSERT_VAL(text, cond) \
--do { \
--	if (!(cond)) { \
--		pr_debug("FAILED %s:%d %s\n", __FILE__, __LINE__, text); \
--		return -1; \
--	} \
--} while (0)
--
- #define PERF_TP_SAMPLE_TYPE (PERF_SAMPLE_RAW | PERF_SAMPLE_TIME | \
- 			     PERF_SAMPLE_CPU | PERF_SAMPLE_PERIOD)
+ int perf_formula__load(struct perf_formula *f, char *path);
++int perf_formula__load_dir(struct perf_formula *f, char *path);
+ int perf_formula__free(struct perf_formula *f);
  
-diff --git a/tools/perf/tests/tests.h b/tools/perf/tests/tests.h
-index dd7feae..c3e3cea 100644
---- a/tools/perf/tests/tests.h
-+++ b/tools/perf/tests/tests.h
-@@ -7,6 +7,15 @@ enum {
- 	TEST_SKIP = -2,
- };
+ struct perf_formula_set*
+@@ -134,4 +135,6 @@ perf_formula_set__new(char *name, struct list_head *head);
+ double perf_formula_expr__resolve(struct perf_formula_expr *expr,
+ 				  char *name);
  
-+#define TEST_ASSERT_VAL(text, cond) \
-+do { \
-+	if (!(cond)) { \
-+		pr_debug("FAILED %s:%d %s\n", __FILE__, __LINE__, text); \
-+		return -1; \
-+	} \
-+} while (0)
-+
-+
- /* Tests */
- int test__vmlinux_matches_kallsyms(void);
- int test__open_syscall_event(void);
-@@ -27,5 +36,6 @@ int test__bp_signal(void);
- int test__bp_signal_overflow(void);
- int test__task_exit(void);
- int test__sw_clock_freq(void);
-+int test__formula(void);
- 
- #endif /* TESTS_H */
++int perf_formula__preload(struct perf_formula *f);
++int perf_formula__preload_arch(struct perf_formula *f);
+ #endif /* __PERF_FORMULA */
 -- 
 1.7.11.7
 
