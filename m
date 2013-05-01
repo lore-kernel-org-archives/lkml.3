@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756527Ab3EASn7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 14:43:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44203 "EHLO mx1.redhat.com"
+	id S1756556Ab3EASoN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 14:44:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36570 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756325Ab3EASnj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 14:43:39 -0400
-Subject: [RFC PATCH 7/8] pci: Add slot and bus reset interfaces
+	id S1756405Ab3EASnp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 May 2013 14:43:45 -0400
+Subject: [RFC PATCH 8/8] pci: Add reset probe functions
 To: bhelgaas@google.com
 From: Alex Williamson <alex.williamson@redhat.com>
 Cc: linux-kernel@vger.kernel.org
-Date: Wed, 01 May 2013 12:43:37 -0600
-Message-ID: <20130501184337.28515.21429.stgit@bling.home>
+Date: Wed, 01 May 2013 12:43:43 -0600
+Message-ID: <20130501184343.28515.50042.stgit@bling.home>
 In-Reply-To: <20130501181828.28515.68783.stgit@bling.home>
 References: <20130501181828.28515.68783.stgit@bling.home>
 User-Agent: StGit/0.16
@@ -22,252 +22,93 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sometimes pci_reset_function is not sufficient.  We have cases where
-devices do not support any kind of reset, but there might be multiple
-functions on the bus, preventing pci_reset_function from doing a
-secondary bus reset.  We also have cases where a device will advertise
-that it supports a PM reset, but really does nothing on D3hot->D0
-(graphics cards are notorious for this).  These devices often also
-have more than one function, so even blacklisting PM reset for them
-wouldn't allow a secondary bus reset through pci_reset_function.
-
-If a driver supports multiple devices it should have the ability to
-induce a bus reset when it needs to.  This patch provides that ability
-through pci_reset_slot and pci_reset_bus.  It's the caller's
-responsibility when using these interfaces to understand that all of
-the devices in or below the slot (or on or below the bus) will be
-reset and therefore should be under control of the caller.  PCI state
-of all the affected devices is saved and restored around these resets,
-but internal state of all of the affected devices is reset (which
-should be the intention).
+Sometimes it's not enough to call pci_reset_function() and hope for the
+best.  We may actually want to know which resets the device supports in
+order to determine if pci_reset_function is sufficient or we should
+call pci_reset_slot/bus.  Expose some helpers for this.
 
 Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
 ---
- drivers/pci/pci.c   |  199 +++++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/pci.h |    2 +
- 2 files changed, 201 insertions(+)
+ drivers/pci/pci.c   |   39 +++++++++++++++++++++++++++++++++++++++
+ include/linux/pci.h |    3 +++
+ 2 files changed, 42 insertions(+)
 
 diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-index a330ebb..6d17807 100644
+index 6d17807..798e5bd 100644
 --- a/drivers/pci/pci.c
 +++ b/drivers/pci/pci.c
-@@ -3432,6 +3432,205 @@ int pci_reset_function(struct pci_dev *dev)
+@@ -3123,6 +3123,18 @@ clear:
+ 	return 0;
  }
- EXPORT_SYMBOL_GPL(pci_reset_function);
  
-+static void pci_bus_lock(struct pci_bus *bus)
-+{
-+	struct pci_dev *dev;
-+
-+	list_for_each_entry(dev, &bus->devices, bus_list) {
-+		pci_dev_lock(dev);
-+		if (dev->subordinate)
-+			pci_bus_lock(dev->subordinate);
-+	}
-+}
-+
-+static void pci_bus_unlock(struct pci_bus *bus)
-+{
-+	struct pci_dev *dev;
-+
-+	list_for_each_entry(dev, &bus->devices, bus_list) {
-+		pci_dev_unlock(dev);
-+		if (dev->subordinate)
-+			pci_bus_unlock(dev->subordinate);
-+	}
-+}
-+
-+static void pci_slot_lock(struct pci_slot *slot)
-+{
-+	struct pci_dev *dev;
-+
-+	BUG_ON(!slot);
-+
-+	list_for_each_entry(dev, &slot->bus->devices, bus_list) {
-+		if (dev->slot && dev->slot == slot)
-+			pci_dev_lock(dev);
-+		if (dev->subordinate)
-+			pci_bus_lock(dev->subordinate);
-+	}
-+}
-+
-+static void pci_slot_unlock(struct pci_slot *slot)
-+{
-+	struct pci_dev *dev;
-+
-+	BUG_ON(!slot);
-+
-+	list_for_each_entry(dev, &slot->bus->devices, bus_list) {
-+		if (dev->slot && dev->slot == slot)
-+			pci_dev_unlock(dev);
-+		if (dev->subordinate)
-+			pci_bus_unlock(dev->subordinate);
-+	}
-+}
-+
-+static void pci_bus_save(struct pci_bus *bus)
-+{
-+	struct pci_dev *dev;
-+
-+	list_for_each_entry(dev, &bus->devices, bus_list) {
-+		pci_dev_save(dev);
-+		if (dev->subordinate)
-+			pci_bus_lock(dev->subordinate);
-+	}
-+}
-+
-+static void pci_bus_restore(struct pci_bus *bus)
-+{
-+	struct pci_dev *dev;
-+
-+	list_for_each_entry(dev, &bus->devices, bus_list) {
-+		pci_dev_restore(dev);
-+		if (dev->subordinate)
-+			pci_bus_unlock(dev->subordinate);
-+	}
-+}
-+
-+static void pci_slot_save(struct pci_slot *slot)
-+{
-+	struct pci_dev *dev;
-+
-+	BUG_ON(!slot);
-+
-+	list_for_each_entry(dev, &slot->bus->devices, bus_list) {
-+		if (dev->slot && dev->slot == slot)
-+			pci_dev_save(dev);
-+		if (dev->subordinate)
-+			pci_bus_save(dev->subordinate);
-+	}
-+}
-+
-+static void pci_slot_restore(struct pci_slot *slot)
-+{
-+	struct pci_dev *dev;
-+
-+	BUG_ON(!slot);
-+
-+	list_for_each_entry(dev, &slot->bus->devices, bus_list) {
-+		if (dev->slot && dev->slot == slot)
-+			pci_dev_restore(dev);
-+		if (dev->subordinate)
-+			pci_bus_restore(dev->subordinate);
-+	}
-+}
-+
-+static int pci_slot_reset(struct pci_slot *slot, int probe)
-+{
-+	int rc;
-+
-+	if (!slot)
-+		return -ENOTTY;
-+
-+	if (!probe)
-+		pci_slot_lock(slot);
-+
-+	might_sleep();
-+
-+	rc = pci_hp_reset_slot(slot->hotplug, probe);
-+
-+	if (!probe)
-+		pci_slot_unlock(slot);
-+
-+	return rc;
-+}
-+
 +/**
-+ * pci_reset_slot - reset a PCI slot
-+ * @slot: PCI slot to reset
++ * pci_probe_pcie_flr - Probe if device supports PCIe FLR
++ * @dev: PCI device to probe
 + *
-+ * A PCI bus may host multiple slots, each slot may support a reset mechanism
-+ * independent of other slots.  For instance, some slots may support slot power
-+ * control.  In the case of a 1:1 bus to slot architecture, this function may
-+ * wrap the bus reset to avoid spurious slot related events, such as hotplug.
-+ * Generally a slot reset should be attempted before a bus reset.  All of the
-+ * function of the slot and any subordinate buses behind the slot are reset
-+ * through this function.  PCI config space of all devices in the slot and
-+ * behind the slot is saved before and restored after reset.
-+ *
-+ * Return 0 on success, non-zero on error.
++ * Return 0 if device supports PCIe FLR, non-zero otherwise.
 + */
-+int pci_reset_slot(struct pci_slot *slot)
++int pci_probe_pcie_flr(struct pci_dev *dev)
 +{
-+	int rc;
-+
-+	rc = pci_slot_reset(slot, 1);
-+	if (rc)
-+		return rc;
-+
-+	pci_slot_save(slot);
-+
-+	rc = pci_slot_reset(slot, 0);
-+
-+	pci_slot_restore(slot);
-+
-+	return rc;
++	return pcie_flr(dev, 1);
 +}
-+EXPORT_SYMBOL_GPL(pci_reset_slot);
++EXPORT_SYMBOL_GPL(pci_probe_pcie_flr);
 +
-+static int pci_bus_reset(struct pci_bus *bus, int probe)
-+{
-+	if (!bus->self)
-+		return -ENOTTY;
-+
-+	if (probe)
-+		return 0;
-+
-+	pci_bus_lock(bus);
-+
-+	might_sleep();
-+
-+	pci_reset_bridge_secondary_bus(bus->self);
-+
-+	pci_bus_unlock(bus);
-+
-+	return 0;
-+}
-+
-+/**
-+ * pci_reset_bus - reset a PCI bus
-+ * @bus: top level PCI bus to reset
-+ *
-+ * Do a bus reset on the given bus and any subordinate buses, saving
-+ * and restoring state of all devices.
-+ *
-+ * Return 0 on success, non-zero on error.
-+ */
-+int pci_reset_bus(struct pci_bus *bus)
-+{
-+	int rc;
-+
-+	rc = pci_bus_reset(bus, 1);
-+	if (rc)
-+		return rc;
-+
-+	pci_bus_save(bus);
-+
-+	rc = pci_bus_reset(bus, 0);
-+
-+	pci_bus_restore(bus);
-+
-+	return rc;
-+}
-+EXPORT_SYMBOL_GPL(pci_reset_bus);
-+
+ static int pci_af_flr(struct pci_dev *dev, int probe)
+ {
+ 	int i;
+@@ -3162,6 +3174,19 @@ clear:
+ }
+ 
  /**
-  * pcix_get_max_mmrbc - get PCI-X maximum designed memory read byte count
-  * @dev: PCI device to query
++ * pci_probe_af_flr - Probe if device supports PCI AF FLR
++ * @dev: PCI device to probe
++ *
++ * Return 0 if device supports FLR through a PCI Advanced Features capability,
++ * non-zero otherwise.
++ */
++int pci_probe_af_flr(struct pci_dev *dev)
++{
++	return pci_af_flr(dev, 1);
++}
++EXPORT_SYMBOL_GPL(pci_probe_af_flr);
++
++/**
+  * pci_pm_reset - Put device into PCI_D3 and back into PCI_D0.
+  * @dev: Device to reset.
+  * @probe: If set, only check if the device can be reset this way.
+@@ -3207,6 +3232,20 @@ static int pci_pm_reset(struct pci_dev *dev, int probe)
+ }
+ 
+ /**
++ * pci_probe_pm_reset - Probe if device supports PM reset
++ * @dev: PCI device to probe
++ *
++ * Return 0 if device claims to support a soft reset on D3hot->D0 transition,
++ * non-zero otherwise.  Note that "soft reset" isn't well defined and may not
++ * do much of any reset, depending on the device.
++ */
++int pci_probe_pm_reset(struct pci_dev *dev)
++{
++	return pci_pm_reset(dev, 1);
++}
++EXPORT_SYMBOL_GPL(pci_probe_pm_reset);
++
++/**
+  * pci_reset_bridge_secondary_bus - Reset the secondary bus on a PCI bridge.
+  * @dev: Bridge device
+  *
 diff --git a/include/linux/pci.h b/include/linux/pci.h
-index fc85d68..cf4cf10 100644
+index cf4cf10..f6196a3 100644
 --- a/include/linux/pci.h
 +++ b/include/linux/pci.h
-@@ -922,6 +922,8 @@ int pcie_set_mps(struct pci_dev *dev, int mps);
+@@ -922,6 +922,9 @@ int pcie_set_mps(struct pci_dev *dev, int mps);
  int __pci_reset_function(struct pci_dev *dev);
  int __pci_reset_function_locked(struct pci_dev *dev);
  int pci_reset_function(struct pci_dev *dev);
-+int pci_reset_slot(struct pci_slot *slot);
-+int pci_reset_bus(struct pci_bus *bus);
++int pci_probe_pcie_flr(struct pci_dev *dev);
++int pci_probe_af_flr(struct pci_dev *dev);
++int pci_probe_pm_reset(struct pci_dev *dev);
+ int pci_reset_slot(struct pci_slot *slot);
+ int pci_reset_bus(struct pci_bus *bus);
  void pci_reset_bridge_secondary_bus(struct pci_dev *dev);
- void pci_update_resource(struct pci_dev *dev, int resno);
- int __must_check pci_assign_resource(struct pci_dev *dev, int i);
 
