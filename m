@@ -1,63 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757455Ab3EAUvR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 16:51:17 -0400
-Received: from mail-ia0-f179.google.com ([209.85.210.179]:44593 "EHLO
-	mail-ia0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756938Ab3EAUvN (ORCPT
+	id S1757537Ab3EAUxm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 16:53:42 -0400
+Received: from fold.natur.cuni.cz ([195.113.57.32]:37901 "EHLO
+	fold.natur.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756938Ab3EAUxk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 16:51:13 -0400
+	Wed, 1 May 2013 16:53:40 -0400
+Message-ID: <518180CE.1040308@fold.natur.cuni.cz>
+Date: Wed, 01 May 2013 22:53:34 +0200
+From: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:20.0) Gecko/20100101 Firefox/20.0 SeaMonkey/2.17.1
 MIME-Version: 1.0
-In-Reply-To: <20130416182550.27773.89310.stgit@warthog.procyon.org.uk>
-References: <20130416182550.27773.89310.stgit@warthog.procyon.org.uk>
-Date: Wed, 1 May 2013 22:51:12 +0200
-X-Google-Sender-Auth: fIqoMjmV1k9RkK1zxDdn3Bk9vGc
-Message-ID: <CAMuHMdXV0wg3h4XU1JmpSOi01H8gaHkXKK=qYhnT5wpDd-mK-A@mail.gmail.com>
-Subject: Re: [PATCH 00/28] Privatise procfs internals [RFC]
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: David Howells <dhowells@redhat.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
+To: LKML <linux-kernel@vger.kernel.org>, rafael.j.wysocki@intel.com,
+        toshi.kani@hp.com
+Subject: linux-3.9: OOPS in intel_timer_pstate_func
+X-Enigmail-Version: 1.6a1pre
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 16, 2013 at 8:25 PM, David Howells <dhowells@redhat.com> wrote:
-> Here is a series of patches to make the procfs internals private to the procfs
-> filesystem.  This is built on top of the patches to eliminate
-> create_proc_read_entry() after the kill-read_proc_t tag.
->
-> These patches include fixes for the places that are attempting to abuse
-> proc_dir_entry->count and doing it incorrectly because PID namespaces now
-> exist.
->
-> All accesses to the PDE struct have been replaced with out-of-line accessor
-> functions.  This is a bit less efficient than it used to be, but this could be
-> mitigated by using inode->i_private.
->
-> The internal procfs structs have moved to fs/procfs/internal.h.  Some of the
-> remaining stuff in linux/proc_fs.h has been split out to linux/kcore.h and
-> linux/proc_ns.h as they's separate specialised intefaces.
+Hi,
+  I just this kernel crash on my laptop running fine so far on 3.7.10 (and 3.8.5
+if really necessary). The 3.9 was running for maybe 2 hrs, at the most. :(
 
-drivers/nubus/proc.c:156:7: error: dereferencing pointer to incomplete type
-drivers/nubus/proc.c:158:22: error: dereferencing pointer to incomplete type
-make[3]: *** [drivers/nubus/proc.o] Error 1
-make[2]: *** [drivers/nubus] Error 2
-drivers/zorro/proc.c:142:7: error: dereferencing pointer to incomplete type
-make[3]: *** [drivers/zorro/proc.o] Error 1
-make[2]: *** [drivers/zorro] Error 2
+? cpumask_weight
+call_timer_fn.clone
+? init_timer_key
+run_timer_softirq
+? cpumask_weight
+__do_softirq
+smp_apic_timer_interrupt
+apic_timer_interrupt
+? cpuidle_wrap_enter
+? cpuidle_wrap_enter
+cpuidle_enter_tk
+cpuidle_enter_state
+cpuidle_call
+cpu_idel
+rest_init
+? csum_partial_copy_generic
+start_kernel
+? repair_env_string
+x86_64_start_reservations
+x86_64_start_kernel
 
-http://kisskb.ellerman.id.au/kisskb/buildresult/8673100/
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+  I just opened a bug at https://bugzilla.kernel.org/show_bug.cgi?id=57401
+with a camera picture of the screen with the stacktrace. I failed to find
+a component like CPU or IRQ so please forward this to the appropriate person.
+Thank you,
+Martin
