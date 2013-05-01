@@ -1,69 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761352Ab3EADNR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 23:13:17 -0400
-Received: from mail-ye0-f170.google.com ([209.85.213.170]:34770 "EHLO
-	mail-ye0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761315Ab3EADNL (ORCPT
+	id S1761356Ab3EADUd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 23:20:33 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:16243 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758801Ab3EADU0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 23:13:11 -0400
-Message-ID: <5180883F.3040003@gmail.com>
-Date: Wed, 01 May 2013 11:13:03 +0800
-From: Will Huck <will.huckk@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: Han Pingtian <hanpt@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, mhocko@suse.cz,
-        Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>, linux-mm@kvack.org
-Subject: Re: OOM-killer and strange RSS value in 3.9-rc7
-References: <alpine.DEB.2.02.1304161315290.30779@chino.kir.corp.google.com> <20130417094750.GB2672@localhost.localdomain> <20130417141909.GA24912@dhcp22.suse.cz> <20130418101541.GC2672@localhost.localdomain> <20130418175513.GA12581@dhcp22.suse.cz> <20130423131558.GH8001@dhcp22.suse.cz> <20130424044848.GI2672@localhost.localdomain> <20130424094732.GB31960@dhcp22.suse.cz> <0000013e3cb0340d-00f360e3-076b-478e-b94c-ddd4476196ce-000000@email.amazonses.com> <20130425060705.GK2672@localhost.localdomain> <0000013e42332267-0b7fb3c0-9150-4058-8850-ae094b455b15-000000@email.amazonses.com> <517B8A5D.1030308@gmail.com> <0000013e56450fd2-c7a854d1-ff7f-47a7-a235-30721fead5e0-000000@email.amazonses.com>
-In-Reply-To: <0000013e56450fd2-c7a854d1-ff7f-47a7-a235-30721fead5e0-000000@email.amazonses.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Tue, 30 Apr 2013 23:20:26 -0400
+X-Authority-Analysis: v=2.0 cv=cOZiQyiN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=NbYD9KISzMsA:10 a=VwQbUJbxAAAA:8 a=Mxy73vQu0w1m64p3YtoA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1367378424.30667.72.camel@gandalf.local.home>
+Subject: [ANNOUNCE] 3.4.42-rt56
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>
+Date: Tue, 30 Apr 2013 23:20:24 -0400
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Christoph,
-On 04/29/2013 10:49 PM, Christoph Lameter wrote:
-> On Sat, 27 Apr 2013, Will Huck wrote:
->
->> Hi Christoph,
->> On 04/26/2013 01:17 AM, Christoph Lameter wrote:
->>> On Thu, 25 Apr 2013, Han Pingtian wrote:
->>>
->>>> I have enabled "slub_debug" and here is the
->>>> /sys/kernel/slab/kmalloc-512/alloc_calls contents:
->>>>
->>>>        50 .__alloc_workqueue_key+0x90/0x5d0 age=113630/116957/119419
->>>> pid=1-1730 cpus=0,6-8,13,24,26,44,53,57,60,68 nodes=1
->>>>        11 .__alloc_workqueue_key+0x16c/0x5d0 age=113814/116733/119419
->>>> pid=1-1730 cpus=0,44,68 nodes=1
->>>>        13 .add_sysfs_param.isra.2+0x80/0x210 age=115175/117994/118779
->>>> pid=1-1342 cpus=0,8,12,24,60 nodes=1
->>>>       160 .build_sched_domains+0x108/0xe30 age=119111/119120/119131 pid=1
->>>> cpus=0 nodes=1
->>>>      9000 .alloc_fair_sched_group+0xe4/0x220 age=110549/114471/117357
->>>> pid=1-2290
->>>> cpus=0-1,5,9-11,13,24,29,33,36,38,40-41,45,48-50,53,56-58,60-63,68-69,72-73,76-77,79
->>>> nodes=1
->>>>      9000 .alloc_fair_sched_group+0x114/0x220 age=110549/114471/117357
->>>> pid=1-2290
->>>> cpus=0-1,5,9-11,13,24,29,33,36,38,40-41,45,48-50,53,56-58,60-63,68-69,72-73,76-77,79
->>>> nodes=1
->> Could you explain the meaning of  age=xx/xx/xx  pid=xx-xx cpus=xx here?
->>
-> Age refers to the mininum / avg / maximum age of the object in ticks.
 
-Why need monitor the age of the object?
+Dear RT Folks,
 
->
-> pid refers to the range of pids by processes running when the objects were
-> created.
->
-> cpus are the processors on which kernel threads where running when these
-> objects were allocated.
->
+I'm pleased to announce the 3.4.42-rt56 stable release.
+
+
+This release is just an update to the new stable 3.4.42 version
+and no RT specific changes have been made.
+
+
+You can get this release via the git tree at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
+
+  branch: v3.4-rt
+  Head SHA1: 3aeacbba3cd56dcfcdf6887f54081184869a3b72
+
+
+Or to build 3.4.42-rt56 directly, the following patches should be applied:
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.4.tar.xz
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.4.42.xz
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.4/patch-3.4.42-rt56.patch.xz
+
+
+
+
+Enjoy,
+
+-- Steve
+
+
 
