@@ -1,46 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757835Ab3EAXEi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 19:04:38 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:52726 "EHLO mail.zytor.com"
+	id S1758080Ab3EAXFU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 19:05:20 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:40156 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756747Ab3EAXEh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 19:04:37 -0400
-Message-ID: <51819F6C.1030201@zytor.com>
-Date: Wed, 01 May 2013 16:04:12 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S1757335Ab3EAXFS convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 May 2013 19:05:18 -0400
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: Randy Dunlap <rdunlap@infradead.org>, Anton Vorontsov <cbou@mail.ru>
+CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "David Woodhouse" <dwmw2@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: RE: [PATCH -next] power: fix lp8788-charger kconfig & build
+Thread-Topic: [PATCH -next] power: fix lp8788-charger kconfig & build
+Thread-Index: AQHORqDFhU1nKr/7p0mTe4t5m2cghJjw8nGQ
+Date: Wed, 1 May 2013 23:04:38 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998F82E5C1EC@DQHE06.ent.ti.com>
+References: <20130501183734.7ad1efca2d06e75432edabbd@canb.auug.org.au>
+ <51816A93.4070802@infradead.org>
+In-Reply-To: <51816A93.4070802@infradead.org>
+Accept-Language: ko-KR, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.16.34.32]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: David Rientjes <rientjes@google.com>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
-        levinsasha928@gmail.com, mtosatti@redhat.com, tglx@linutronix.de,
-        Borislav Petkov <bp@suse.de>, fengguang.wu@intel.com,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/urgent] x86/kconfig:  Add a Kconfig shortcut for building
- working KVM guest kernels
-References: <tip-83aee67833071c7b73a83f7803388f7a9e481908@git.kernel.org> <alpine.DEB.2.02.1305011248220.8448@chino.kir.corp.google.com> <20130501203500.GC4466@pd.tnic> <alpine.DEB.2.02.1305011358500.19189@chino.kir.corp.google.com> <20130501211011.GD4466@pd.tnic> <alpine.DEB.2.02.1305011419020.20298@chino.kir.corp.google.com> <20130501215604.GA15623@pd.tnic> <alpine.DEB.2.02.1305011503200.3267@chino.kir.corp.google.com> <20130501222850.GB15623@pd.tnic> <alpine.DEB.2.02.1305011531320.8804@chino.kir.corp.google.com> <20130501230254.GC15623@pd.tnic>
-In-Reply-To: <20130501230254.GC15623@pd.tnic>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/01/2013 04:02 PM, Borislav Petkov wrote:
-> On Wed, May 01, 2013 at 03:37:28PM -0700, David Rientjes wrote:
->> It means your patch is incomplete.
+> -----Original Message-----
+> From: Randy Dunlap [mailto:rdunlap@infradead.org]
+> Sent: Thursday, May 02, 2013 4:19 AM
+> To: Stephen Rothwell
+> Cc: linux-next@vger.kernel.org; linux-kernel@vger.kernel.org; Kim, Milo;
+> Anton Vorontsov; David Woodhouse
+> Subject: [PATCH -next] power: fix lp8788-charger kconfig & build
 > 
-> I'll gladly test and ack a patch which makes it complete.
+> From: Randy Dunlap <rdunlap@infradead.org>
 > 
-> Simple exercises in rhetoric about what does and what doesn't make sense
-> means a rat's ass to me. You need to show me a *real* use case which you
-> *actually* hit and this patch breaks it.
+> Fix build errors in lp8788-charger by making it depend on IIO.
+> Fixes errors when CONFIG_IIO=m and CHARGER_LP8788=y.
 > 
+> lp8788-charger.c:(.text+0x2146b5): undefined reference to
+> `iio_channel_get'
+> lp8788-charger.c:(.text+0x2146ce): undefined reference to
+> `iio_channel_get'
+> lp8788-charger.c:(.text+0x214a86): undefined reference to
+> `iio_read_channel_processed'
+> lp8788-charger.c:(.text+0x214b51): undefined reference to
+> `iio_read_channel_processed'
+> lp8788-charger.c:(.text+0x214c30): undefined reference to
+> `iio_read_channel_processed'
+> lp8788-charger.c:(.text+0x214d93): undefined reference to
+> `iio_channel_release'
+> lp8788-charger.c:(.text+0x214dac): undefined reference to
+> `iio_channel_release'
 
-The fundamental problem is that "select" is broken and doesn't track
-dependencies of things selected.
+Thanks for fixing this.
 
-	-hpa
+Acked-by: Milo Kim <milo.kim@ti.com>
 
