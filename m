@@ -1,96 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759293Ab3EANGN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 09:06:13 -0400
-Received: from zep00a03.dent.med.uni-muenchen.de ([138.246.161.8]:47694 "HELO
-	md.dent.med.uni-muenchen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753899Ab3EANGC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 09:06:02 -0400
-From: Wolfram Gloger <wmglo@dent.med.uni-muenchen.de>
+	id S1760127Ab3EANMI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 09:12:08 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:54783 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755369Ab3EANMD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 May 2013 09:12:03 -0400
 To: linux-kernel@vger.kernel.org
-Subject: Re: [ 02/42] TTY: do not update atime/mtime on read/write
-In-Reply-To: <CA+55aFzfxMvWVRjqV4pzz7XtpDGbxwGumGVeRT7OsF95noG4xw@mail.gmail.com>
-References: <CA+55aFzfxMvWVRjqV4pzz7XtpDGbxwGumGVeRT7OsF95noG4xw@mail.gmail.com>
-CC: wmglo@dent.med.uni-muenchen.de
-Date: Wed, 01 May 2013 15:05:58 +0200
-Message-ID: <u4obcuetop.fsf@md.dent.med.uni-muenchen.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Subject: [PATCH] mm/pagewalk.c: walk_page_range should avoid VM_PFNMAP areas
+Cc: akpm@linux-foundation.org, mgorman@suse.de, aarcange@redhat.com,
+        dave.hansen@intel.com, dsterba@suse.cz, hannes@cmpxchg.org,
+        kosaki.motohiro@gmail.com, kirill.shutemov@linux.intel.com,
+        mpm@selenic.com, n-horiguchi@ah.jp.nec.com, rdunlap@infradead.org
+Message-Id: <E1UXWpF-0006Ya-Br@eag09.americas.sgi.com>
+From: Cliff Wickman <cpw@sgi.com>
+Date: Wed, 01 May 2013 08:12:01 -0500
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-> --- snip snip ---
->  drivers/tty/pty.c    | 3 +++
->  drivers/tty/tty_io.c | 4 ++--
->  2 files changed, 5 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/tty/pty.c b/drivers/tty/pty.c
-> index a62798fcc014..59bfaecc4e14 100644
-> --- a/drivers/tty/pty.c
-> +++ b/drivers/tty/pty.c
-> @@ -681,6 +681,9 @@ static int ptmx_open(struct inode *inode, struct file *filp)
->
->         nonseekable_open(inode, filp);
->
-> +       /* We refuse fsnotify events on ptmx, since it's a shared resource */
-> +       filp->f_mode |= FMODE_NONOTIFY;
-> +
->         retval = tty_alloc_file(filp);
->         if (retval)
->                 return retval;
+This patch replaces "[PATCH] fs/proc: smaps should avoid VM_PFNMAP areas".
+/proc/<pid>/smaps and similar walks through a user page table should not
+be looking at VM_PFNMAP areas.
 
-This is definitely good.  But of course you can still poll on mtime.
+Certain tests in walk_page_range() (specifically split_huge_page_pmd())
+assume that all the mapped PFN's are backed with page structures. And this is
+not usually true for VM_PFNMAP areas. This can result in panics on kernel
+page faults when attempting to address those page structures.
 
-> diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-> index 97ebc8c5864e..6464029e4860 100644
-> --- a/drivers/tty/tty_io.c
-> +++ b/drivers/tty/tty_io.c
-> @@ -988,10 +988,10 @@ void start_tty(struct tty_struct *tty)
->
->  EXPORT_SYMBOL(start_tty);
->
-> +/* We limit tty time update visibility to every 8 seconds or so. */
->  static void tty_update_time(struct timespec *time)
->  {
-> -       unsigned long sec = get_seconds();
-> -       sec -= sec % 60;
-> +       unsigned long sec = get_seconds() & ~7;
->         if ((long)(sec - time->tv_sec) > 0)
->                 time->tv_sec = sec;
->  }
+There are a half dozen callers of walk_page_range() that walk through
+a task's entire page table (as N. Horiguchi pointed out). So rather than
+change all of them, this patch changes just walk_page_range() to ignore 
+VM_PFNMAP areas.
 
-I still find this mildly ugly.  I would prefer this:
+The logic of hugetlb_vma() is moved back into walk_page_range(), as we
+want to test any vma in the range.
 
---- linux-3.8.10/drivers/tty/tty_io.c~	2013-02-19 00:58:34.000000000 +0100
-+++ linux-3.8.10/drivers/tty/tty_io.c	2013-05-01 13:46:16.000000000 +0200
-@@ -1080,8 +1080,11 @@
- 		cond_resched();
- 	}
- 	if (written) {
-+		if (tty->driver->type != TTY_DRIVER_TYPE_PTY ||
-+		    tty->driver->subtype != PTY_TYPE_MASTER) {
- 		struct inode *inode = file->f_path.dentry->d_inode;
- 		inode->i_mtime = current_fs_time(inode->i_sb);
-+		}
- 		ret = written;
- 	}
- out:
+VM_PFNMAP areas are used by:
+- graphics memory manager   gpu/drm/drm_gem.c
+- global reference unit     sgi-gru/grufile.c
+- sgi special memory        char/mspec.c
+- and probably several out-of-tree modules
 
-(without the tty_update_time change).  This prevents polling on
-/dev/ptmx, but not on /dev/pts/*.  The latter seems unnecessary to me,
-because during password entry, echo mode is off so no bytes are read,
-and canonical mode is ON so no bytes are written until NL is entered.
-So you can only obtain the total time taken to enter the password, not
-individual keystrokes.
+I'm copying everyone who has changed this file recently, in case
+there is some reason that I am not aware of to provide
+/proc/<pid>/smaps|clear_refs|maps|numa_maps for these VM_PFNMAP areas.
 
-The canonical mode is also the reason why my suggestion to fix this in
-userspace (in the other subthread) is quite problematic (I tried to
-change PAM) as it looks impossible to delay or obfuscate the write
-events on /dev/ptmx.
+Signed-off-by: Cliff Wickman <cpw@sgi.com>
+---
+ mm/pagewalk.c |   60 +++++++++++++++++++++++++++++-----------------------------
+ 1 file changed, 31 insertions(+), 29 deletions(-)
 
-Regards,
-Wolfram.
+Index: linux/mm/pagewalk.c
+===================================================================
+--- linux.orig/mm/pagewalk.c
++++ linux/mm/pagewalk.c
+@@ -127,22 +127,6 @@ static int walk_hugetlb_range(struct vm_
+ 	return 0;
+ }
+ 
+-static struct vm_area_struct* hugetlb_vma(unsigned long addr, struct mm_walk *walk)
+-{
+-	struct vm_area_struct *vma;
+-
+-	/* We don't need vma lookup at all. */
+-	if (!walk->hugetlb_entry)
+-		return NULL;
+-
+-	VM_BUG_ON(!rwsem_is_locked(&walk->mm->mmap_sem));
+-	vma = find_vma(walk->mm, addr);
+-	if (vma && vma->vm_start <= addr && is_vm_hugetlb_page(vma))
+-		return vma;
+-
+-	return NULL;
+-}
+-
+ #else /* CONFIG_HUGETLB_PAGE */
+ static struct vm_area_struct* hugetlb_vma(unsigned long addr, struct mm_walk *walk)
+ {
+@@ -200,28 +184,46 @@ int walk_page_range(unsigned long addr,
+ 
+ 	pgd = pgd_offset(walk->mm, addr);
+ 	do {
+-		struct vm_area_struct *vma;
++		struct vm_area_struct *vma = NULL;
+ 
+ 		next = pgd_addr_end(addr, end);
+ 
+ 		/*
+-		 * handle hugetlb vma individually because pagetable walk for
+-		 * the hugetlb page is dependent on the architecture and
+-		 * we can't handled it in the same manner as non-huge pages.
++		 * Check any special vma's within this range.
+ 		 */
+-		vma = hugetlb_vma(addr, walk);
++		VM_BUG_ON(!rwsem_is_locked(&walk->mm->mmap_sem));
++		vma = find_vma(walk->mm, addr);
+ 		if (vma) {
+-			if (vma->vm_end < next)
++			/*
++			 * There are no page structures backing a VM_PFNMAP
++			 * range, so allow no split_huge_page_pmd().
++			 */
++			if (vma->vm_flags & VM_PFNMAP) {
+ 				next = vma->vm_end;
++				pgd = pgd_offset(walk->mm, next);
++				continue;
++			}
+ 			/*
+-			 * Hugepage is very tightly coupled with vma, so
+-			 * walk through hugetlb entries within a given vma.
++			 * Handle hugetlb vma individually because pagetable
++			 * walk for the hugetlb page is dependent on the
++			 * architecture and we can't handled it in the same
++			 * manner as non-huge pages.
+ 			 */
+-			err = walk_hugetlb_range(vma, addr, next, walk);
+-			if (err)
+-				break;
+-			pgd = pgd_offset(walk->mm, next);
+-			continue;
++			if (walk->hugetlb_entry && (vma->vm_start <= addr) &&
++			    is_vm_hugetlb_page(vma)) {
++				if (vma->vm_end < next)
++					next = vma->vm_end;
++				/*
++				 * Hugepage is very tightly coupled with vma,
++				 * so walk through hugetlb entries within a
++				 * given vma.
++				 */
++				err = walk_hugetlb_range(vma, addr, next, walk);
++				if (err)
++					break;
++				pgd = pgd_offset(walk->mm, next);
++				continue;
++			}
+ 		}
+ 
+ 		if (pgd_none_or_clear_bad(pgd)) {
