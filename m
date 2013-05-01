@@ -1,84 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761428Ab3EAPEV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 11:04:21 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:40697 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755370Ab3EAPEP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 11:04:15 -0400
-Date: Wed, 1 May 2013 10:04:03 -0500
-From: Nishanth Menon <nm@ti.com>
-To: <Sudeep.KarkadaNagesha@arm.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-pm@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Shawn Guo <shawn.guo@linaro.org>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>
-Subject: Re: [PATCH 2/2] PM / OPP: check for existing OPP list when
- initialising from device tree
-Message-ID: <20130501150403.GA20488@kahuna>
-References: <1367406679-21603-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
- <1367406679-21603-3-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+	id S1761431Ab3EAPHm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 11:07:42 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:53194 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755688Ab3EAPHg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 May 2013 11:07:36 -0400
+X-IronPort-AV: E=Sophos;i="4.87,589,1363132800"; 
+   d="scan'208";a="21567567"
+Date: Wed, 1 May 2013 16:07:07 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Subject: Re: [PATCH 8/9] xen/smp/pvhvm: Don't initialize IRQ_WORKER as we
+ are using the native one.
+In-Reply-To: <20130501145753.GB6614@phenom.dumpdata.com>
+Message-ID: <alpine.DEB.2.02.1305011606320.5398@kaball.uk.xensource.com>
+References: <1366142947-18655-1-git-send-email-konrad.wilk@oracle.com> <1366142947-18655-9-git-send-email-konrad.wilk@oracle.com> <alpine.DEB.2.02.1304261726260.4180@kaball.uk.xensource.com> <20130429183404.GA9431@phenom.dumpdata.com>
+ <alpine.DEB.2.02.1305011424461.5398@kaball.uk.xensource.com> <20130501145753.GB6614@phenom.dumpdata.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1367406679-21603-3-git-send-email-Sudeep.KarkadaNagesha@arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12:11-20130501, Sudeep.KarkadaNagesha@arm.com wrote:
-> From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
+On Wed, 1 May 2013, Konrad Rzeszutek Wilk wrote:
+> On Wed, May 01, 2013 at 02:25:16PM +0100, Stefano Stabellini wrote:
+> > On Mon, 29 Apr 2013, Konrad Rzeszutek Wilk wrote:
+> > > On Fri, Apr 26, 2013 at 05:27:20PM +0100, Stefano Stabellini wrote:
+> > > > On Tue, 16 Apr 2013, Konrad Rzeszutek Wilk wrote:
+> > > > > There is no need to use the PV version of the IRQ_WORKER mechanism
+> > > > > as under PVHVM we are using the native version. The native
+> > > > > version is using the SMP API.
+> > > > > 
+> > > > > They just sit around unused:
+> > > > > 
+> > > > >   69:          0          0  xen-percpu-ipi       irqwork0
+> > > > >   83:          0          0  xen-percpu-ipi       irqwork1
+> > > > > 
+> > > > > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> > > > 
+> > > > Might be worth trying to make it work instead?
+> > > > Is it just because we don't set the apic->send_IPI_* functions to the
+> > > > xen specific version on PVHVM?
+> > > > 
+> > > 
+> > > Right. We use the baremetal mechanism to do it. And it works fine.
+> > 
+> > OK, it works fine, but won't it generate many mores trap and emulate
+> > cycles?
 > 
-> CPUs are registered as devices and their OPPs can be initialised from
-> the device tree. Whenever CPUs can be hotplugged out, the corresponding
-> cpu devices are not removed. As a result all their OPPs remain intact
-> even when they are offlined.
+> No idea. We can certainly make use of the PV IPI mechanism for IRQ_WORKER
+> type mechaism but I would have to play with xentrace to get a good handle
+> of what is involved (And how the v Posted interrupt thing affects this).
 > 
-> But when they are hotplugged back-in, the cpufreq along with other cpu
-> related subsystem gets re-initialised. Since its almost same as secondary
-> cpu being brought up, no special consideration is taken in the hotplug
-> path. As a result of this the cpufreq will try to initialise the OPPs
-> again though the cpu device already contains the OPPs.
-> 
-> This patch checks if there exist an OPP list associated with the device,
-> before attempting to initialise it.
-> 
-> Signed-off-by: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
-> ---
->  drivers/base/power/opp.c |    5 +++++
->  1 file changed, 5 insertions(+)
-> 
-> diff --git a/drivers/base/power/opp.c b/drivers/base/power/opp.c
-> index 4dfdc01..66d52d2 100644
-> --- a/drivers/base/power/opp.c
-> +++ b/drivers/base/power/opp.c
-> @@ -706,6 +706,11 @@ static int of_init_opp_table_from_ofnode(struct device *dev,
->  	const __be32 *val;
->  	int nr;
->  
-> +	/* Check for existing list for 'dev' */
-> +	dev_opp = find_device_opp(dev);
-> +	if (!IS_ERR(dev_opp))
-> +		return 0; /* Device OPP already initialized */
-> +
-It gets a little touchy here -> the normal expectation is for the OPP
-entries to be populated onetime at boot.
-For example - driver bug where same device was attempted twice Vs the
-usecase you mention here - how'd we differentiate between the two?
->  	prop = of_find_property(of_node, "operating-points", NULL);
->  	if (!prop)
->  		return -ENODEV;
-> -- 
-> 1.7.10.4
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Right now that is something I can't do (buried in bugs).
 
--- 
-Regards,
-Nishanth Menon
+OK
