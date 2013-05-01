@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756365Ab3EAP0m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 11:26:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32707 "EHLO mx1.redhat.com"
+	id S1756354Ab3EAP0w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 11:26:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33776 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754899Ab3EAP0g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 11:26:36 -0400
+	id S1761469Ab3EAP0r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 May 2013 11:26:47 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
@@ -18,17 +18,20 @@ Cc: Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Vince Weaver <vincent.weaver@maine.edu>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 3/4] signal x86: Merge EFLAGS bit clearing into single statement
-Date: Wed,  1 May 2013 17:25:43 +0200
-Message-Id: <1367421944-19082-4-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 1/4] signal x86: Propage RF EFLAGS bit throught the signal restore call
+Date: Wed,  1 May 2013 17:25:41 +0200
+Message-Id: <1367421944-19082-2-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1367421944-19082-1-git-send-email-jolsa@redhat.com>
 References: <1367421944-19082-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Merging EFLAGS bit clearing into a single statement, to
-ensure EFLAGS bits being cleared in single instruction.
+Adding RF EFLAGS bit to be restored on return from signal from
+the original register context before the signal was entered.
+
+This will prevent the RF flag to disappear when returning
+from exception due to the signal handler being executed.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Tested-by: Oleg Nesterov <oleg@redhat.com>
@@ -46,38 +49,58 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Vince Weaver <vincent.weaver@maine.edu>
 Cc: Stephane Eranian <eranian@google.com>
 ---
- arch/x86/kernel/signal.c | 10 +++-------
- 1 file changed, 3 insertions(+), 7 deletions(-)
+ arch/x86/ia32/ia32_signal.c        | 2 --
+ arch/x86/include/asm/sighandling.h | 4 ++--
+ arch/x86/kernel/signal.c           | 6 ------
+ 3 files changed, 2 insertions(+), 10 deletions(-)
 
+diff --git a/arch/x86/ia32/ia32_signal.c b/arch/x86/ia32/ia32_signal.c
+index cf1a471..bccfca6 100644
+--- a/arch/x86/ia32/ia32_signal.c
++++ b/arch/x86/ia32/ia32_signal.c
+@@ -34,8 +34,6 @@
+ #include <asm/sys_ia32.h>
+ #include <asm/smap.h>
+ 
+-#define FIX_EFLAGS	__FIX_EFLAGS
+-
+ int copy_siginfo_to_user32(compat_siginfo_t __user *to, siginfo_t *from)
+ {
+ 	int err = 0;
+diff --git a/arch/x86/include/asm/sighandling.h b/arch/x86/include/asm/sighandling.h
+index beff97f..7a95816 100644
+--- a/arch/x86/include/asm/sighandling.h
++++ b/arch/x86/include/asm/sighandling.h
+@@ -7,10 +7,10 @@
+ 
+ #include <asm/processor-flags.h>
+ 
+-#define __FIX_EFLAGS	(X86_EFLAGS_AC | X86_EFLAGS_OF | \
++#define FIX_EFLAGS	(X86_EFLAGS_AC | X86_EFLAGS_OF | \
+ 			 X86_EFLAGS_DF | X86_EFLAGS_TF | X86_EFLAGS_SF | \
+ 			 X86_EFLAGS_ZF | X86_EFLAGS_AF | X86_EFLAGS_PF | \
+-			 X86_EFLAGS_CF)
++			 X86_EFLAGS_CF | X86_EFLAGS_RF)
+ 
+ void signal_fault(struct pt_regs *regs, void __user *frame, char *where);
+ 
 diff --git a/arch/x86/kernel/signal.c b/arch/x86/kernel/signal.c
-index cb12fc9..cf91358 100644
+index 6956299..9df4c0b 100644
 --- a/arch/x86/kernel/signal.c
 +++ b/arch/x86/kernel/signal.c
-@@ -662,21 +662,17 @@ handle_signal(struct ksignal *ksig, struct pt_regs *regs)
- 	if (!failed) {
- 		/*
- 		 * Clear the direction flag as per the ABI for function entry.
--		 */
--		regs->flags &= ~X86_EFLAGS_DF;
--		/*
-+		 *
- 		 * Clear RF when entering the signal handler, because
- 		 * it might disable possible debug exception from the
- 		 * signal handler.
--		 */
--		regs->flags &= ~X86_EFLAGS_RF;
--		/*
-+		 *
- 		 * Clear TF when entering the signal handler, but
- 		 * notify any tracer that was single-stepping it.
- 		 * The tracer may want to single-step inside the
- 		 * handler too.
- 		 */
--		regs->flags &= ~X86_EFLAGS_TF;
-+		regs->flags &= ~(X86_EFLAGS_DF|X86_EFLAGS_RF|X86_EFLAGS_TF);
- 	}
- 	signal_setup_done(failed, ksig, test_thread_flag(TIF_SINGLESTEP));
- }
+@@ -43,12 +43,6 @@
+ 
+ #include <asm/sigframe.h>
+ 
+-#ifdef CONFIG_X86_32
+-# define FIX_EFLAGS	(__FIX_EFLAGS | X86_EFLAGS_RF)
+-#else
+-# define FIX_EFLAGS	__FIX_EFLAGS
+-#endif
+-
+ #define COPY(x)			do {			\
+ 	get_user_ex(regs->x, &sc->x);			\
+ } while (0)
 -- 
 1.7.11.7
 
