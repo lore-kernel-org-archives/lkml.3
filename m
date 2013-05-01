@@ -1,44 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762315Ab3EAVae (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 17:30:34 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:54989 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762267Ab3EAVaI (ORCPT
+	id S1761908Ab3EAVew (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 17:34:52 -0400
+Received: from smtp73.ord1c.emailsrvr.com ([108.166.43.73]:47751 "EHLO
+	smtp73.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758962Ab3EAVeu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 17:30:08 -0400
-Date: Wed, 1 May 2013 14:30:05 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Borislav Petkov <bp@alien8.de>
-cc: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
-        levinsasha928@gmail.com, mtosatti@redhat.com, tglx@linutronix.de,
-        Borislav Petkov <bp@suse.de>, fengguang.wu@intel.com,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/urgent] x86/kconfig:  Add a Kconfig shortcut for building
- working KVM guest kernels
-In-Reply-To: <20130501211011.GD4466@pd.tnic>
-Message-ID: <alpine.DEB.2.02.1305011419020.20298@chino.kir.corp.google.com>
-References: <20130426095140.GA15361@pd.tnic> <tip-83aee67833071c7b73a83f7803388f7a9e481908@git.kernel.org> <alpine.DEB.2.02.1305011248220.8448@chino.kir.corp.google.com> <20130501203500.GC4466@pd.tnic> <alpine.DEB.2.02.1305011358500.19189@chino.kir.corp.google.com>
- <20130501211011.GD4466@pd.tnic>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 1 May 2013 17:34:50 -0400
+From: Mark Langsdorf <mark.langsdorf@calxeda.com>
+To: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org, jgarzik@pobox.com
+Cc: Mark Langsdorf <mark.langsdorf@calxeda.com>
+Subject: [PATCH] ata: increase retry count but shorten duration for Calxeda controller
+Date: Wed,  1 May 2013 16:34:47 -0500
+Message-Id: <1367444087-18336-1-git-send-email-mark.langsdorf@calxeda.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 1 May 2013, Borislav Petkov wrote:
+The Calxeda SATA phy intermittently fails to bring up a link with Gen3
+Retrying the phy hard reset can work around the issue, but the drive
+may fail again. In less than 150 out of 15000 test runs, it took more
+than 10 tries for the link to be established (but never more than 35).
+Increase the retry count to guarantee the link is established.
 
-> > warning: (KVM_GUEST_COMMON_OPTIONS) selects VIRTIO_NET which has unmet direct dependencies (NETDEVICES && NET_CORE && VIRTIO)
-> > 
-> > and
-> > 
-> > warning: (KVM_GUEST_COMMON_OPTIONS && AMD_IOMMU) selects PCI_MSI which has unmet direct dependencies (PCI && ARCH_SUPPORTS_MSI)
-> 
-> How do you trigger those? I don't see them here with this applied.
-> 
+Also, the default 2 second time-out on a failed drive is too long in
+this situation. Shorten it to 500 ms. This was also tested 15000 times
+on 24 drives and none of them experienced a time out.
 
-It's an allnoconfig with HYPERVISOR_GUEST, PARAVIRT, KVM_GUEST, and 
-KVM_GUEST_COMMON_OPTIONS enabled.
+Signed-off-by: Mark Langsdorf <mark.langsdorf@calxeda.com>
+---
+ drivers/ata/sata_highbank.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/ata/sata_highbank.c b/drivers/ata/sata_highbank.c
+index 0d7c4c2..536936f 100644
+--- a/drivers/ata/sata_highbank.c
++++ b/drivers/ata/sata_highbank.c
+@@ -199,7 +199,7 @@ static int highbank_initialize_phys(struct device *dev, void __iomem *addr)
+ static int ahci_highbank_hardreset(struct ata_link *link, unsigned int *class,
+ 				unsigned long deadline)
+ {
+-	const unsigned long *timing = sata_ehc_deb_timing(&link->eh_context);
++	unsigned long timing[] = { 5, 100, 500};
+ 	struct ata_port *ap = link->ap;
+ 	struct ahci_port_priv *pp = ap->private_data;
+ 	u8 *d2h_fis = pp->rx_fis + RX_FIS_D2H_REG;
+@@ -207,7 +207,7 @@ static int ahci_highbank_hardreset(struct ata_link *link, unsigned int *class,
+ 	bool online;
+ 	u32 sstatus;
+ 	int rc;
+-	int retry = 10;
++	int retry = 100;
+ 
+ 	ahci_stop_engine(ap);
+ 
+-- 
+1.7.10.4
+
