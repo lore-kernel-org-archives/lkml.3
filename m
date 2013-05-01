@@ -1,115 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933986Ab3EACWo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Apr 2013 22:22:44 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:50072 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933347Ab3EACWg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Apr 2013 22:22:36 -0400
-Date: Wed, 1 May 2013 12:22:27 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Simo Sorce <simo@redhat.com>, "J. Bruce Fields" <bfields@fieldses.org>,
-        David Howells <dhowells@redhat.com>
-Subject: linux-next: build failure after merge of the vfs tree
-Message-Id: <20130501122227.4c1d5cd6f2f2f98e35706f44@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__1_May_2013_12_22_27_+1000_czbbo7U8=qgoZhAh"
+	id S934144Ab3EACeV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Apr 2013 22:34:21 -0400
+Received: from tundra.namei.org ([65.99.196.166]:46103 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934061Ab3EACeM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Apr 2013 22:34:12 -0400
+Date: Wed, 1 May 2013 12:37:23 +1000 (EST)
+From: James Morris <jmorris@namei.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: LSM List <linux-security-module@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Casey Schaufler <casey@schaufler-ca.com>
+Subject: Re: [GIT] Security subsystem updates for 3.10
+In-Reply-To: <CA+55aFz2o8i+VnW_S8VBKVkLX1Pw7nQimqm+c6yOQjs-5zE3hA@mail.gmail.com>
+Message-ID: <alpine.LRH.2.02.1305011236040.7261@tundra.namei.org>
+References: <alpine.LRH.2.02.1304291237210.6626@tundra.namei.org> <CA+55aFz2o8i+VnW_S8VBKVkLX1Pw7nQimqm+c6yOQjs-5zE3hA@mail.gmail.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__1_May_2013_12_22_27_+1000_czbbo7U8=qgoZhAh
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, 30 Apr 2013, Linus Torvalds wrote:
 
-Hi Al,
+> On Sun, Apr 28, 2013 at 7:48 PM, James Morris <jmorris@namei.org> wrote:
+> >
+> > Note: I can't figure out why the patch from Lai Jiangshan shows up twice
+> > in the shortlog.  Everything checks out otherwise.
+> 
+> Because you applied it twice. in two different branches.
+> 
+> It's there in both your "stage-for-3.10" and "ra-next" branch, commits
+> 505f14f7b8d4 and 921f3ac4c3f2 respectively.
 
-After merging the vfs tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
+I don't have a stage-for-3.10 branch in my tree -- this must have come in 
+via the smack tree.
 
-net/sunrpc/auth_gss/svcauth_gss.c: In function 'write_gssp':
-net/sunrpc/auth_gss/svcauth_gss.c:1329:9: error: implicit declaration of fu=
-nction 'PDE' [-Werror=3Dimplicit-function-declaration]
-net/sunrpc/auth_gss/svcauth_gss.c:1329:53: error: invalid type argument of =
-'->' (have 'int')
-net/sunrpc/auth_gss/svcauth_gss.c: In function 'read_gssp':
-net/sunrpc/auth_gss/svcauth_gss.c:1357:53: error: invalid type argument of =
-'->' (have 'int')
 
-Caused by commit 030d794bf498 ("SUNRPC: Use gssproxy upcall for server
-RPCGSS authentication") from the nfsd tree interacting with commit
-c3f2cb25be4f ("proc: Make the PROC_I() and PDE() macros internal to
-procfs") from the vfs tree.
+> I would seriously suggest using gitk regularly (limit it to just your
+> own stuff with something like "gitk origin.." or whatever) to see the
+> history of what you've done visually as often as possible, not only
+> does it show up very clearly if you do that, but it really helps to
+> have a feel for what you've done.
 
-I applied the following merge fix patch (there may be a better way).
+Thanks.  Will do.
 
-=46rom 62a0e3a08844eeeb6d85fb45d85c2f80d7de2797 Mon Sep 17 00:00:00 2001
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Wed, 1 May 2013 12:19:43 +1000
-Subject: [PATCH] SUNRPC: update for PDE removal
 
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- net/sunrpc/auth_gss/svcauth_gss.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/net/sunrpc/auth_gss/svcauth_gss.c b/net/sunrpc/auth_gss/svcaut=
-h_gss.c
-index b70ac1c..89ef709 100644
---- a/net/sunrpc/auth_gss/svcauth_gss.c
-+++ b/net/sunrpc/auth_gss/svcauth_gss.c
-@@ -1326,7 +1326,7 @@ static int wait_for_gss_proxy(struct net *net)
- static ssize_t write_gssp(struct file *file, const char __user *buf,
- 			 size_t count, loff_t *ppos)
- {
--	struct net *net =3D PDE(file->f_path.dentry->d_inode)->data;
-+	struct net *net =3D PDE_DATA(file->f_path.dentry->d_inode);
- 	char tbuf[20];
- 	unsigned long i;
- 	int res;
-@@ -1354,7 +1354,7 @@ static ssize_t write_gssp(struct file *file, const ch=
-ar __user *buf,
- static ssize_t read_gssp(struct file *file, char __user *buf,
- 			 size_t count, loff_t *ppos)
- {
--	struct net *net =3D PDE(file->f_path.dentry->d_inode)->data;
-+	struct net *net =3D PDE_DATA(file->f_path.dentry->d_inode);
- 	unsigned long p =3D *ppos;
- 	char tbuf[10];
- 	size_t len;
---=20
-1.8.1
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Wed__1_May_2013_12_22_27_+1000_czbbo7U8=qgoZhAh
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRgHxjAAoJEECxmPOUX5FEKN0P/R1fuHFrMuJoLb8GCWwkK5x5
-AQ1jaXodogazT43rGkgDqJmB+zcwDUGbsJBDYg3fQN1QfU5cPQBLFrjDlTcyA0+6
-/n/2dQ9ytQzlSj8RzsK97o1zFYxApNw1DWKyCXR58OFmki24cdsh6PArahmGzoe7
-xXk2DL2E6TUELVFWi3B7aSZQKjzjwsDC1nsq8EwZjvOAp+4JKhns3godjy3Q96RH
-cwJCtgpv1VxT7w537nNfpnUVz1NGSTjdyzBC+aRbWEpPztzlq9UWr7Scwgt6EjWF
-zazveLRdOG/xJesweI1SiL0ntIj8SS7hzGtpLwzOyj2czEUmSIXaHJuehMVuDb7E
-mPxvFdX2zW1g0e0iBT64JM/wOdnHD09YXeCVv0N5qu7D/L5FOpqaM3rFOR3wFVH/
-ewijxoTbOcb1EXi+IivV7WZeG/v3WbVZP7BYrBtLIryZ4orNqZOxW4vwmq1LfsOd
-QkTspzaySC+IVdWVo2adF3NtdbxwKOQzY61BBSs1q50ejBMz8+p3XIrPJP54rIFD
-lyB8Jaiw2x0BwCLywItY4Kp0bUebUua2zvn85Yy09n/26wwlGqvk3T/itU82q8dm
-6GC/aDj7O4C2rwLuaCQFAcGHn12TLDyeWBU8eXzF322F7z9dYGkUWnjAzp1E/XU/
-UYP+hW6E4Mo2ZJ7H43zI
-=Dqfy
------END PGP SIGNATURE-----
-
---Signature=_Wed__1_May_2013_12_22_27_+1000_czbbo7U8=qgoZhAh--
+- James
+-- 
+James Morris
+<jmorris@namei.org>
