@@ -1,62 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755101Ab3EAMlX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 08:41:23 -0400
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:36831 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752468Ab3EAMlR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 08:41:17 -0400
+	id S1755671Ab3EAMqv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 08:46:51 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:60915 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751667Ab3EAMqp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 May 2013 08:46:45 -0400
+Date: Wed, 1 May 2013 05:46:37 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Julian Anastasov <ja@ssi.bg>, Simon Horman <horms@verge.net.au>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
+        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Dipankar Sarma <dipankar@in.ibm.com>
+Subject: Re: [PATCH v2 1/2] sched: Add cond_resched_rcu_lock() helper
+Message-ID: <20130501124637.GO3780@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1367290378-29224-1-git-send-email-horms@verge.net.au>
+ <1367290378-29224-2-git-send-email-horms@verge.net.au>
+ <alpine.LFD.2.00.1304301011310.1700@ja.ssi.bg>
+ <20130430072944.GA13959@verge.net.au>
+ <alpine.LFD.2.00.1304301051260.1700@ja.ssi.bg>
+ <20130501091012.GB28253@dyad.programming.kicks-ass.net>
 MIME-Version: 1.0
-From: Sumit Semwal <sumit.semwal@linaro.org>
-Date: Wed, 1 May 2013 18:10:56 +0530
-Message-ID: <CAO_48GGBRwXuSoWuCr1eHhjGFmkzoC4Ji8osv+frjO1em8odfQ@mail.gmail.com>
-Subject: [GIT PULL]: dma-buf updates for 3.10
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        DRI mailing list <dri-devel@lists.freedesktop.org>,
-        Linaro MM SIG <linaro-mm-sig@lists.linaro.org>,
-        linux-media@vger.kernel.org
-Cc: akpm@linux-foundation.org, Daniel Vetter <daniel@ffwll.ch>,
-        Arnd Bergmann <arnd@arndb.de>, Dave Airlie <airlied@linux.ie>,
-        Tom Gall <tom.gall@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130501091012.GB28253@dyad.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13050112-7182-0000-0000-0000067C7655
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Wed, May 01, 2013 at 11:10:12AM +0200, Peter Zijlstra wrote:
+> On Tue, Apr 30, 2013 at 10:52:38AM +0300, Julian Anastasov wrote:
+> > 
+> > 	Hello,
+> > 
+> > On Tue, 30 Apr 2013, Simon Horman wrote:
+> > 
+> > > > > +static void inline cond_resched_rcu_lock(void)
+> > > > > +{
+> > > > > +	if (need_resched()) {
+> > > > 
+> > > > 	Ops, it should be without above need_resched.
+> > > 
+> > > Thanks, to clarify, just this:
+> > > 
+> > > static void inline cond_resched_rcu_lock(void)
+> > > {
+> > > 	rcu_read_unlock();
+> > > #ifndef CONFIG_PREEMPT_RCU
+> > > 	cond_resched();
+> > > #endif
+> > > 	rcu_read_lock();
+> > > }
+> > 
+> > 	Yes, thanks!
+> 
+> OK, now I'm confused.. PREEMPT_RCU would preempt in any case, so why bother
+> dropping rcu_read_lock() at all?
 
-The 3.10 pull request for dma-buf framework updates: small one, could
-you please pull?
+Good point, I was assuming that the goal was to let grace periods end
+as well as to allow preemption.  The momentary dropping out of the
+RCU read-side critical section allows the grace periods to end.
 
-Thanks and best regards,
-~Sumit.
+> That is; the thing that makes sense to me is:
+> 
+> static void inline cond_resched_rcu_lock(void)
+> {
+> #ifdef CONFIG_PREEMPT_RCU
+> 	if (need_resched()) {
+> 		rcu_read_unlock();
+> 		cond_resched();
+> 		rcu_read_lock();
+> 	}
+> #endif /* CONFIG_PREEMPT_RCU */
+> }
+> 
+> That would have an rcu_read_lock() break and voluntary preemption point for
+> non-preemptible RCU and not bother with the stuff for preemptible RCU.
 
+If the only goal is to allow preemption, and if long grace periods are
+not a concern, then this alternate approach would work fine as well.
 
-The following changes since commit 5f56886521d6ddd3648777fae44d82382dd8c87f:
+Of course, both approaches assume that the caller is in a place
+where having all RCU-protected data disappear is OK!
 
-  Merge branch 'akpm' (incoming from Andrew) (2013-04-30 17:37:43 -0700)
+							Thanx, Paul
 
-are available in the git repository at:
-
-
-  git://git.linaro.org/people/sumitsemwal/linux-dma-buf.git
-tags/tag-for-linus-3.10
-
-for you to fetch changes up to b89e35636bc75b72d15a1af6d49798802aff77d5:
-
-  dma-buf: Add debugfs support (2013-05-01 16:36:22 +0530)
-
-----------------------------------------------------------------
-3.10 dma-buf updates
-  Added debugfs support to dma-buf.
-----------------------------------------------------------------
-Sumit Semwal (2):
-      dma-buf: replace dma_buf_export() with dma_buf_export_named()
-      dma-buf: Add debugfs support
-
- Documentation/dma-buf-sharing.txt |  13 ++-
- drivers/base/dma-buf.c            | 169 +++++++++++++++++++++++++++++++++++++-
- include/linux/dma-buf.h           |  16 +++-
- 3 files changed, 189 insertions(+), 9 deletions(-)
