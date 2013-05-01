@@ -1,82 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757424Ab3EAUfQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 16:35:16 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:47957 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757196Ab3EAUfN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 16:35:13 -0400
-Date: Wed, 1 May 2013 22:35:00 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: David Rientjes <rientjes@google.com>
-Cc: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
-        levinsasha928@gmail.com, mtosatti@redhat.com, tglx@linutronix.de,
-        Borislav Petkov <bp@suse.de>, fengguang.wu@intel.com,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/urgent] x86/kconfig:  Add a Kconfig shortcut for
- building working KVM guest kernels
-Message-ID: <20130501203500.GC4466@pd.tnic>
-References: <20130426095140.GA15361@pd.tnic>
- <tip-83aee67833071c7b73a83f7803388f7a9e481908@git.kernel.org>
- <alpine.DEB.2.02.1305011248220.8448@chino.kir.corp.google.com>
+	id S1757487Ab3EAUgT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 16:36:19 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:21868 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757196Ab3EAUgQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 May 2013 16:36:16 -0400
+X-IronPort-AV: E=Sophos;i="4.87,591,1363158000"; 
+   d="scan'208";a="43251660"
+Message-ID: <51817CBE.4050003@codeaurora.org>
+Date: Wed, 01 May 2013 16:36:14 -0400
+From: Christopher Covington <cov@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1305011248220.8448@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: xen-devel@lists.xensource.com, linux@arm.linux.org.uk,
+        marc.zyngier@arm.com, catalin.marinas@arm.com, konrad.wilk@oracle.com,
+        will.deacon@arm.com, linux-kernel@vger.kernel.org,
+        john.stultz@linaro.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/3] arm_arch_timer: introduce arch_timer_stolen_ticks
+References: <alpine.DEB.2.02.1305011939180.5398@kaball.uk.xensource.com> <1367436460-10183-1-git-send-email-stefano.stabellini@eu.citrix.com>
+In-Reply-To: <1367436460-10183-1-git-send-email-stefano.stabellini@eu.citrix.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 01, 2013 at 12:53:03PM -0700, David Rientjes wrote:
-> since KVM_GUEST_COMMON_OPTIONS selects PCI_MSI without selecting PCI.
-> 
-> If we select PCI in KVM_GUEST_COMMON_OPTIONS, we get:
-> 
-> arch/x86/Kconfig:651:error: recursive dependency detected!
-> arch/x86/Kconfig:651:	symbol KVM_GUEST_COMMON_OPTIONS depends on HYPERVISOR_GUEST
-> arch/x86/Kconfig:597:	symbol HYPERVISOR_GUEST is selected by X86_VSMP
-> arch/x86/Kconfig:388:	symbol X86_VSMP depends on PCI
-> arch/x86/Kconfig:2042:	symbol PCI is selected by KVM_GUEST_COMMON_OPTIONS
+Hi Stefano,
 
-Well, this was the reason why I dropped CONFIG_PCI from
-KVM_GUEST_COMMON_OPTIONS in the first place - to not have the circular
-dependency splat above and assuming that people simply have CONFIG_PCI
-enabled already.
+On 05/01/2013 03:27 PM, Stefano Stabellini wrote:
+> Introduce a function, called arch_timer_stolen_ticks, called from the
+> arch_timer interrupt handler to account for stolen ticks.
 
-Well, off the top of my head, we could do the following; I'd need to
-hammer on it for a while though before it feels ok with all that Kconfig
-jumble. Unless someone has a better idea, of course...
+[...]
 
----
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index e8fff2f4ecb7..4f8ef85b0633 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -389,7 +389,8 @@ config X86_VSMP
- 	bool "ScaleMP vSMP"
- 	select HYPERVISOR_GUEST
- 	select PARAVIRT
--	depends on X86_64 && PCI
-+	select PCI
-+	depends on X86_64
- 	depends on X86_EXTENDED_PLATFORM
- 	depends on SMP
- 	---help---
-@@ -664,6 +665,7 @@ config KVM_GUEST_COMMON_OPTIONS
- 	select IP_PNP
- 	select IP_PNP_DHCP
- 	select BINFMT_ELF
-+	select PCI
- 	select PCI_MSI
- 	select HAVE_ARCH_KGDB
- 	select DEBUG_KERNEL
---
+> diff --git a/arch/arm/include/asm/arch_timer.h b/arch/arm/include/asm/arch_timer.h
+> index 7ade91d..30db413 100644
+> --- a/arch/arm/include/asm/arch_timer.h
+> +++ b/arch/arm/include/asm/arch_timer.h
+> @@ -13,6 +13,11 @@
+>  int arch_timer_of_register(void);
+>  int arch_timer_sched_clock_init(void);
+>  
+> +/* per-platform function to calculate stolen ticks (clock cycles stolen
+> + * to the vcpu by the hypervisor).
+
+Stolen from the vcpu by the hypervisor?
+
+Is the hypervisor adjusting the Virtual Offset Register?
+
+[...]
+
+Thanks,
+Christopher
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by the Linux Foundation.
