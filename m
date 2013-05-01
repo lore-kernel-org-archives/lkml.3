@@ -1,104 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751657Ab3EAEjs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 00:39:48 -0400
-Received: from mail-ve0-f169.google.com ([209.85.128.169]:37590 "EHLO
-	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752527Ab3EAEj3 (ORCPT
+	id S1752253Ab3EAEmX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 00:42:23 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:39745 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751010Ab3EAEmQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 00:39:29 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130501041731.GA24128@kroah.com>
-References: <1367360914-23389-1-git-send-email-zoran.markovic@linaro.org>
-	<20130430233031.GA32310@kroah.com>
-	<CAMbhsRSV+om7w2f1ht6hLmK_BrgjjQZ91iBJzR5ySTytQdndBg@mail.gmail.com>
-	<20130501041731.GA24128@kroah.com>
-Date: Tue, 30 Apr 2013 21:39:27 -0700
-X-Google-Sender-Auth: SooDYAnWqRcpazaTKA5fq59BOfI
-Message-ID: <CAMbhsRT2eCKCuF1PbYY-NhGLCocE+809eZEkQYZWh42EB+SwBg@mail.gmail.com>
-Subject: Re: [RFC PATCH] drivers: power: Add watchdog timer to catch drivers
- which lockup during suspend.
-From: Colin Cross <ccross@android.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Zoran Markovic <zoran.markovic@linaro.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Benoit Goby <benoit@android.com>,
-        Android Kernel Team <kernel-team@android.com>,
-        Todd Poynor <toddpoynor@google.com>, San Mehat <san@google.com>,
-        John Stultz <john.stultz@linaro.org>, Pavel Machek <pavel@ucw.cz>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <len.brown@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 1 May 2013 00:42:16 -0400
+X-IronPort-AV: E=Sophos;i="4.87,587,1363158000"; 
+   d="scan'208";a="43180309"
+From: Saravana Kannan <skannan@codeaurora.org>
+To: linux-arm-kernel@lists.infradead.org,
+        Mike Turquette <mturquette@linaro.org>, Paul Walmsley <paul@pwsan.com>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        Andrew Lunn <andrew@lunn.ch>, Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Arnd Bergman <arnd.bergmann@linaro.org>,
+        Jamie Iles <jamie@jamieiles.com>,
+        Richard Zhao <richard.zhao@linaro.org>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: [PATCH] clk: Fix race condition between clk_set_parent and clk_enable()
+Date: Tue, 30 Apr 2013 21:42:08 -0700
+Message-Id: <1367383328-25700-1-git-send-email-skannan@codeaurora.org>
+X-Mailer: git-send-email 1.7.8.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 30, 2013 at 9:17 PM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> On Tue, Apr 30, 2013 at 08:36:21PM -0700, Colin Cross wrote:
->> On Tue, Apr 30, 2013 at 4:30 PM, Greg Kroah-Hartman
->> <gregkh@linuxfoundation.org> wrote:
->> > On Tue, Apr 30, 2013 at 03:28:33PM -0700, Zoran Markovic wrote:
->> >> From: Benoit Goby <benoit@android.com>
->> >>
->> >> Below is a patch from android kernel that detects a driver suspend
->> >> lockup and captures dump in the kernel log. Please review and provide
->> >> comments.
->> >
->> > There's this really cool thing called a watchdog driver that does stuff
->> > like this :)
->>
->> If the watchdog driver worked in this case this patch wouldn't exist.
->
-> Great, let's fix the watchdog timer then :)
->
-> What's wrong with it?
->
->> >> Rather than hard-lock the kernel, dump the suspend thread stack and
->> >> BUG() when a driver takes too long to suspend.  The timeout is set to
->> >> 12 seconds to be longer than the usbhid 10 second timeout.
->> >>
->> >> Exclude from the watchdog the time spent waiting for children that
->> >> are resumed asynchronously and time every device, whether or not they
->> >> resumed synchronously.
->> >
->> > No, don't add a driver-core-only timer, use the existing watchdog timers
->> > if you are worried about the kernel locking up.
->>
->> The watchdog timers are useless here.  For one, they generally stop
->> when their driver suspend op is called, so you may not even have one
->> running when you lock up.
->
-> But you can fix that, right?
+Without this patch, the following race conditions are possible.
 
-Ah, you're talking about the lockup detectors, and not drivers/watchdog.
+Race condition 1:
+* clk-A has two parents - clk-X and clk-Y.
+* All three are disabled and clk-X is current parent.
+* Thread A: clk_set_parent(clk-A, clk-Y).
+* Thread A: <snip execution flow>
+* Thread A: Grabs enable lock.
+* Thread A: Sees enable count of clk-A is 0, so doesn't enable clk-Y.
+* Thread A: Updates clk-A SW parent to clk-Y
+* Thread A: Releases enable lock.
+* Thread B: clk_enable(clk-A).
+* Thread B: clk_enable() enables clk-Y, then enabled clk-A and returns.
 
-The hardlockup detector can tell you if timer interrupts are not
-firing, which is unaffected by this patch since the timer wouldn't
-fire any way.  The softlockup detector could eventually tell you that
-tasks were not being scheduled, but not why.  Even panic on softlockup
-will only get you the stack trace of the current task, which will be
-the locked up task if it is spinning, but is likely to be the idle
-task if the suspend task is blocked on a wait_event.  This patch will
-give the stack trace of the suspend operation that is blocked, even if
-it is an asynchronous suspend callback.
+clk-A is now enabled in software, but not clocking in hardware since the
+hardware parent is still clk-X.
 
->> More importantly, the purpose of this patch is to tell you which
->> driver locked up and hopefully why, and the watchdog driver will
->> usually result in a silent reset.
->
-> I thought it was an option as to what the watchdog does when it
-> triggers.
->
->> This patch will cause a stack trace of the driver suspend op that is
->> blocking suspend progress, even if that call does not happen in the
->> suspend thread.
->
-> But who can see this, the machine is now dead.
+The only way to avoid race conditions between clk_set_parent() and
+clk_enable/disable() is to ensure that clk_enable/disable() calls don't
+require changes to hardware enable state between changes to software clock
+topology and hardware clock topology.
 
-I'm not sure what might still be working in this situation on x86, but
-on ARM the machine is dead anyways.  Some random subset of drivers are
-suspended, so you probably have no hardware watchdog, no console, no
-video.  kexec on panic, kgdb on panic, console messages saved in
-pstore, or jtag are the only options I know of.  This patch is very
-useful in conjunction with pstore console.
+There are options to achieve the above:
+1. Grab the enable lock before changing software/hardware topology and
+   release it afterwards.
+2. Keep the clock enabled for the duration of software/hardware topology
+   change so that any additional enable/disable calls don't try to change
+   the hardware state. Once the topology change is complete, the clock can
+   be put back in its original enable state.
+
+Option (1) is not an acceptable solution since the set_parent() ops might
+need to sleep.
+
+Therefore, this patch implements option (2).
+
+This patch doesn't violate any API semantics. clk_disable() doesn't
+guarantee that the clock is actually disabled. So, no clients of a clock
+can assume that a clock is disabled after their last call to clk_disable().
+So, enabling the clock during a parent change is not a violation of any API
+semantics.
+
+This also has the nice side effect of simplifying the error handling code.
+
+Signed-off-by: Saravana Kannan <skannan@codeaurora.org>
+---
+It's been a while since I submitted a patch. So, apologies if I'm cc'ing
+people who no longer care about the state of the common clock framework.
+
+ drivers/clk/clk.c |   72 +++++++++++++++++++++++-----------------------------
+ 1 files changed, 32 insertions(+), 40 deletions(-)
+
+diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+index 934cfd1..fe4055f 100644
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -1377,67 +1377,59 @@ static int __clk_set_parent(struct clk *clk, struct clk *parent, u8 p_index)
+ 	unsigned long flags;
+ 	int ret = 0;
+ 	struct clk *old_parent = clk->parent;
+-	bool migrated_enable = false;
+ 
+-	/* migrate prepare */
+-	if (clk->prepare_count)
++	/*
++	 * Migrate prepare state between parents and prevent race with
++	 * clk_enable().
++	 *
++	 * If the clock is not prepared, then a race with
++	 * clk_enable/disable() is impossible since we already have the
++	 * prepare lock (future calls to clk_enable() need to be preceded by
++	 * a clk_prepare()).
++	 *
++	 * If the clock is prepared, migrate the prepared state to the new
++	 * parent and also protect against a race with clk_enable() by
++	 * forcing the clock and the new parent on.  This ensures that all
++	 * future calls to clk_enable() are practically NOPs with respect to
++	 * hardware and software states.
++	 */
++	if (clk->prepare_count) {
+ 		__clk_prepare(parent);
+-
+-	flags = clk_enable_lock();
+-
+-	/* migrate enable */
+-	if (clk->enable_count) {
+-		__clk_enable(parent);
+-		migrated_enable = true;
++		clk_enable(parent);
++		clk_enable(clk);
+ 	}
+ 
+ 	/* update the clk tree topology */
++	flags = clk_enable_lock();
+ 	clk_reparent(clk, parent);
+-
+ 	clk_enable_unlock(flags);
+ 
+ 	/* change clock input source */
+ 	if (parent && clk->ops->set_parent)
+ 		ret = clk->ops->set_parent(clk->hw, p_index);
+-
+ 	if (ret) {
+-		/*
+-		 * The error handling is tricky due to that we need to release
+-		 * the spinlock while issuing the .set_parent callback. This
+-		 * means the new parent might have been enabled/disabled in
+-		 * between, which must be considered when doing rollback.
+-		 */
+-		flags = clk_enable_lock();
+ 
++		flags = clk_enable_lock();
+ 		clk_reparent(clk, old_parent);
+-
+-		if (migrated_enable && clk->enable_count) {
+-			__clk_disable(parent);
+-		} else if (migrated_enable && (clk->enable_count == 0)) {
+-			__clk_disable(old_parent);
+-		} else if (!migrated_enable && clk->enable_count) {
+-			__clk_disable(parent);
+-			__clk_enable(old_parent);
+-		}
+-
+ 		clk_enable_unlock(flags);
+ 
+-		if (clk->prepare_count)
++		if (clk->prepare_count) {
++			clk_disable(clk);
++			clk_disable(parent);
+ 			__clk_unprepare(parent);
+-
++		}
+ 		return ret;
+ 	}
+ 
+-	/* clean up enable for old parent if migration was done */
+-	if (migrated_enable) {
+-		flags = clk_enable_lock();
+-		__clk_disable(old_parent);
+-		clk_enable_unlock(flags);
+-	}
+-
+-	/* clean up prepare for old parent if migration was done */
+-	if (clk->prepare_count)
++	/*
++	 * Finish the migration of prepare state and undo the changes done
++	 * for preventing a race with clk_enable().
++	 */
++	if (clk->prepare_count) {
++		clk_disable(clk);
++		clk_disable(old_parent);
+ 		__clk_unprepare(old_parent);
++	}
+ 
+ 	/* update debugfs with new clk tree topology */
+ 	clk_debug_reparent(clk, parent);
+-- 
+1.7.8.3
+
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
