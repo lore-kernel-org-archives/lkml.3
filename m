@@ -1,120 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753834Ab3EAGom (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 02:44:42 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:37331 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753206Ab3EAGof (ORCPT
+	id S1754003Ab3EAGu0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 02:50:26 -0400
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:45345 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753402Ab3EAGuT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 02:44:35 -0400
-Date: Wed, 1 May 2013 16:44:23 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Hiroshi Doyu <hdoyu@nvidia.com>, Stephen Warren <swarren@nvidia.com>,
-        Russell King <rmk@arm.linux.org.uk>
-Subject: linux-next: manual merge of the arm-soc tree with the arm tree
-Message-Id: <20130501164423.1233db0b618d0e6b7184c05b@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__1_May_2013_16_44_23_+1000_6cBp1.wTVVK=undr"
+	Wed, 1 May 2013 02:50:19 -0400
+Message-ID: <5180BB21.2080306@monstr.eu>
+Date: Wed, 01 May 2013 08:50:09 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: =?ISO-8859-1?Q?S=F6ren_Brinkmann?= <soren.brinkmann@xilinx.com>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Josh Cartwright <joshc@eso.teric.us>,
+        Mike Turquette <mturquette@linaro.org>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
+        Stephen Warren <swarren@wwwdotorg.org>, Jiri Slaby <jslaby@suse.cz>,
+        linux-serial@vger.kernel.org
+Subject: Re: [PATCH 1/7] tty: xuartps: Sort #includes alphabetically
+References: <1367366284-28304-1-git-send-email-soren.brinkmann@xilinx.com> <1367366284-28304-2-git-send-email-soren.brinkmann@xilinx.com> <20130501000048.GA1840@kroah.com> <cbd8c55c-066b-4396-9a4b-97d58a93b573@DB8EHSMHS005.ehs.local> <20130501002321.GB7435@kroah.com>
+In-Reply-To: <20130501002321.GB7435@kroah.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="----enig2HHIMRCGXHWASFBPUPLRX"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__1_May_2013_16_44_23_+1000_6cBp1.wTVVK=undr
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+------enig2HHIMRCGXHWASFBPUPLRX
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: quoted-printable
 
-Hi all,
+On 05/01/2013 02:23 AM, Greg Kroah-Hartman wrote:
+> On Tue, Apr 30, 2013 at 05:05:40PM -0700, S=F6ren Brinkmann wrote:
+>> On Tue, Apr 30, 2013 at 05:00:48PM -0700, Greg Kroah-Hartman wrote:
+>>> On Tue, Apr 30, 2013 at 04:57:58PM -0700, Soren Brinkmann wrote:
+>>>> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+>>>> CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>>>> CC: Jiri Slaby <jslaby@suse.cz>
+>>>> CC: linux-serial@vger.kernel.org
+>>>
+>>> Why would you need/want to do this?
+>> I often come across duplicated includes. Having some kind of order hel=
+ps
+>> avoiding that, imho.
+>=20
+> We have a tool to handle duplicated includes, no need to put them in
+> sorted order for them to be detected.
 
-Today's linux-next merge of the arm-soc tree got a conflict in
-arch/arm/mach-tegra/hotplug.c between commit da2265b130f6 ("ARM: tegra:
-remove tegra specific cpu_disable()") from the arm tree and commit
-7469688e832e ("ARM: tegra: Unify tegra{20,30,114}_init_early()") from the
-arm-soc tree.
+What's the name of tool which does that?
+I have seen results from it but have never tried to find it out name and
+how to use it.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+Thanks,
+Michal
 
 --=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
 
-diff --cc arch/arm/mach-tegra/hotplug.c
-index e8323bc,8da9f78..0000000
---- a/arch/arm/mach-tegra/hotplug.c
-+++ b/arch/arm/mach-tegra/hotplug.c
-@@@ -12,8 -11,10 +11,9 @@@
-  #include <linux/smp.h>
-  #include <linux/clk/tegra.h>
- =20
- -#include <asm/cacheflush.h>
-  #include <asm/smp_plat.h>
- =20
-+ #include "fuse.h"
-  #include "sleep.h"
- =20
-  static void (*tegra_hotplug_shutdown)(void);
-@@@ -46,18 -47,22 +46,13 @@@ void __ref tegra_cpu_die(unsigned int c
-  	BUG();
-  }
- =20
-- #ifdef CONFIG_ARCH_TEGRA_2x_SOC
-- extern void tegra20_hotplug_shutdown(void);
-- void __init tegra20_hotplug_init(void)
- -int tegra_cpu_disable(unsigned int cpu)
- -{
- -	/*
- -	 * we don't allow CPU 0 to be shutdown (it is still too special
- -	 * e.g. clock tick interrupts)
- -	 */
- -	return cpu =3D=3D 0 ? -EPERM : 0;
- -}
- -
-+ void __init tegra_hotplug_init(void)
-  {
-- 	tegra_hotplug_shutdown =3D tegra20_hotplug_shutdown;
-- }
-- #endif
-+ 	if (!IS_ENABLED(CONFIG_HOTPLUG_CPU))
-+ 		return;
- =20
-- #ifdef CONFIG_ARCH_TEGRA_3x_SOC
-- extern void tegra30_hotplug_shutdown(void);
-- void __init tegra30_hotplug_init(void)
-- {
-- 	tegra_hotplug_shutdown =3D tegra30_hotplug_shutdown;
-+ 	if (IS_ENABLED(CONFIG_ARCH_TEGRA_2x_SOC) && tegra_chip_id =3D=3D TEGRA20)
-+ 		tegra_hotplug_shutdown =3D tegra20_hotplug_shutdown;
-+ 	if (IS_ENABLED(CONFIG_ARCH_TEGRA_3x_SOC) && tegra_chip_id =3D=3D TEGRA30)
-+ 		tegra_hotplug_shutdown =3D tegra30_hotplug_shutdown;
-  }
-- #endif
 
---Signature=_Wed__1_May_2013_16_44_23_+1000_6cBp1.wTVVK=undr
-Content-Type: application/pgp-signature
+
+------enig2HHIMRCGXHWASFBPUPLRX
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
 
-iQIcBAEBCAAGBQJRgLnHAAoJEECxmPOUX5FE0EsP+wZBhYdWkVYf9/bDgFGJMjyw
-mcEv+hx5BcTRmfMsQPlFDZIk3uvlejQoOQiEv4ws1Y9jweFMMlh3msVcEzLlZwyu
-o80NE43eMHDBjHRWV3r/Hdi+fBjcXg+G/flYhG3H/0KtEb8I5znpJCkm2GHiXk2u
-b+s0UPcAwD2OiCF488lncPji7CNt02kX5qaajlLs5pHiSfBBIweoVwCgQPXGEi4K
-FVcKHan8dvmZzHabTBrrTd8gT2c3fI2fR6hFEVcZ6xerDasHXtXgXL+lFkJ7Tvko
-movs/SYwyX05d3JV5EyiQZnYev/27d47K3ZiWOkUEm+8cNIi9qBZR/zVTTEN5+un
-Rnm57mqrqpU7KPJnzyp30xY62v71mzRRutWnTS/NKV1D16ZG/sV/D//KcJohREhY
-1RpV5BVbqu+gmPuANskMFaHgQSqVZZWQcdylr29XLip3CFWzW1WXcqavpjcsBDlo
-Zdni8z9OBpwoZM2oygBQTxlOXM4Az0wGRCzuCgQysN30IUkNrBvhFOW8cQ2RUNFa
-GYaGWsW1Op9d4R+ix68YOHSYvYhm9/9APBoX36zfTVLZcoff/EFBgEBfiAIo29E/
-0G4UX67C6Wmt4F7pzK9x0jVhzjTfSt5yChKBFWkNe7JSUyuPYTZnF4rDMgGJN95C
-F2Oa4bmeQsRVf2Fy7ZaB
-=QSHt
+iEYEARECAAYFAlGAuyIACgkQykllyylKDCEAJwCcCF+pLdFSrpn3D1i3UzlHfmpo
++rUAn2wVsWO82kPG118bE5NwICbEhIRS
+=NX8z
 -----END PGP SIGNATURE-----
 
---Signature=_Wed__1_May_2013_16_44_23_+1000_6cBp1.wTVVK=undr--
+------enig2HHIMRCGXHWASFBPUPLRX--
