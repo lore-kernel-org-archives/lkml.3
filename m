@@ -1,80 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761639Ab3EAP5q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 11:57:46 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:39852 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754740Ab3EAP5k (ORCPT
+	id S1756493Ab3EAP7x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 11:59:53 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:59698 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754740Ab3EAP7q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 11:57:40 -0400
-Date: Wed, 1 May 2013 08:57:38 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Shawn Bohrer <sbohrer@rgmadvisors.com>
-cc: xfs@oss.sgi.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: deadlock on vmap_area_lock
-In-Reply-To: <20130501144341.GA2404@BohrerMBP.rgmadvisors.com>
-Message-ID: <alpine.DEB.2.02.1305010855440.4547@chino.kir.corp.google.com>
-References: <20130501144341.GA2404@BohrerMBP.rgmadvisors.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 1 May 2013 11:59:46 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: arnd@arndb.de, linus.walleij@stericsson.com,
+        srinidhi.kasagar@stericsson.com, vinod.koul@intel.com,
+        per.forlin@stericsson.com, rabin@rab.in,
+        Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH] dmaengine: ste_dma40: Only use addresses passed as configuration information
+Date: Wed,  1 May 2013 16:59:40 +0100
+Message-Id: <1367423980-32716-1-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 1 May 2013, Shawn Bohrer wrote:
+Addresses are passed in from the client's driver via the invocation of
+dmaengine_slave_config(), so there's no need to fetch them from platform
+data too, hardwired or otherwise. This is a great step forward, as it
+elevates a large burden from platform data in the way of a look-up
+table.
 
-> I've got two compute clusters with around 350 machines each which are
-> running kernels based off of 3.1.9 (Yes I realize this is ancient by
-> todays standards).  All of the machines run a 'find' command once an
-> hour on one of the mounted XFS filesystems.  Occasionally these find
-> commands get stuck requiring a reboot of the system.  I took a peek
-> today and see this with perf:
-> 
->     72.22%          find  [kernel.kallsyms]          [k] _raw_spin_lock
->                     |
->                     --- _raw_spin_lock
->                        |          
->                        |--98.84%-- vm_map_ram
->                        |          _xfs_buf_map_pages
->                        |          xfs_buf_get
->                        |          xfs_buf_read
->                        |          xfs_trans_read_buf
->                        |          xfs_da_do_buf
->                        |          xfs_da_read_buf
->                        |          xfs_dir2_block_getdents
->                        |          xfs_readdir
->                        |          xfs_file_readdir
->                        |          vfs_readdir
->                        |          sys_getdents
->                        |          system_call_fastpath
->                        |          __getdents64
->                        |          
->                        |--1.12%-- _xfs_buf_map_pages
->                        |          xfs_buf_get
->                        |          xfs_buf_read
->                        |          xfs_trans_read_buf
->                        |          xfs_da_do_buf
->                        |          xfs_da_read_buf
->                        |          xfs_dir2_block_getdents
->                        |          xfs_readdir
->                        |          xfs_file_readdir
->                        |          vfs_readdir
->                        |          sys_getdents
->                        |          system_call_fastpath
->                        |          __getdents64
->                         --0.04%-- [...]
-> 
-> Looking at the code my best guess is that we are spinning on
-> vmap_area_lock, but I could be wrong.  This is the only process
-> spinning on the machine so I'm assuming either another process has
-> blocked while holding the lock, or perhaps this find process has tried
-> to acquire the vmap_area_lock twice?
-> 
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ drivers/dma/ste_dma40.c |   51 ++++++++++-------------------------------------
+ 1 file changed, 11 insertions(+), 40 deletions(-)
 
-Significant spinlock contention doesn't necessarily mean that there's a 
-deadlock, but it also doesn't mean the opposite.  Depending on your 
-definition of "occassionally", would it be possible to run with 
-CONFIG_PROVE_LOCKING and CONFIG_LOCKDEP to see if it uncovers any real 
-deadlock potential?
+diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
+index a4ce204..f00a428 100644
+--- a/drivers/dma/ste_dma40.c
++++ b/drivers/dma/ste_dma40.c
+@@ -1760,22 +1760,6 @@ static int d40_validate_conf(struct d40_chan *d40c,
+ 		res = -EINVAL;
+ 	}
+ 
+-	if (conf->dir == STEDMA40_MEM_TO_PERIPH &&
+-	    d40c->base->plat_data->dev_tx[conf->dev_type] == 0 &&
+-	    d40c->runtime_addr == 0) {
+-		chan_err(d40c, "Invalid TX channel address (%d)\n",
+-			 conf->dev_type);
+-		res = -EINVAL;
+-	}
+-
+-	if (conf->dir == STEDMA40_PERIPH_TO_MEM &&
+-	    d40c->base->plat_data->dev_rx[conf->dev_type] == 0 &&
+-	    d40c->runtime_addr == 0) {
+-		chan_err(d40c, "Invalid RX channel address (%d)\n",
+-			 conf->dev_type);
+-		res = -EINVAL;
+-	}
+-
+ 	if (conf->dir == STEDMA40_PERIPH_TO_PERIPH) {
+ 		/*
+ 		 * DMAC HW supports it. Will be added to this driver,
+@@ -2310,14 +2294,10 @@ d40_prep_sg(struct dma_chan *dchan, struct scatterlist *sg_src,
+ 	if (sg_next(&sg_src[sg_len - 1]) == sg_src)
+ 		desc->cyclic = true;
+ 
+-	if (direction != DMA_TRANS_NONE) {
+-		dma_addr_t dev_addr = d40_get_dev_addr(chan, direction);
+-
+-		if (direction == DMA_DEV_TO_MEM)
+-			src_dev_addr = dev_addr;
+-		else if (direction == DMA_MEM_TO_DEV)
+-			dst_dev_addr = dev_addr;
+-	}
++	if (direction == DMA_DEV_TO_MEM)
++		src_dev_addr = chan->runtime_addr;
++	else if (direction == DMA_MEM_TO_DEV)
++		dst_dev_addr = chan->runtime_addr;
+ 
+ 	if (chan_is_logical(chan))
+ 		ret = d40_prep_sg_log(chan, desc, sg_src, sg_dst,
+@@ -2764,15 +2744,8 @@ static int d40_set_runtime_config(struct dma_chan *chan,
+ 	dst_maxburst = config->dst_maxburst;
+ 
+ 	if (config->direction == DMA_DEV_TO_MEM) {
+-		dma_addr_t dev_addr_rx =
+-			d40c->base->plat_data->dev_rx[cfg->dev_type];
+-
+ 		config_addr = config->src_addr;
+-		if (dev_addr_rx)
+-			dev_dbg(d40c->base->dev,
+-				"channel has a pre-wired RX address %08x "
+-				"overriding with %08x\n",
+-				dev_addr_rx, config_addr);
++
+ 		if (cfg->dir != STEDMA40_PERIPH_TO_MEM)
+ 			dev_dbg(d40c->base->dev,
+ 				"channel was not configured for peripheral "
+@@ -2787,15 +2760,8 @@ static int d40_set_runtime_config(struct dma_chan *chan,
+ 			dst_maxburst = src_maxburst;
+ 
+ 	} else if (config->direction == DMA_MEM_TO_DEV) {
+-		dma_addr_t dev_addr_tx =
+-			d40c->base->plat_data->dev_tx[cfg->dev_type];
+-
+ 		config_addr = config->dst_addr;
+-		if (dev_addr_tx)
+-			dev_dbg(d40c->base->dev,
+-				"channel has a pre-wired TX address %08x "
+-				"overriding with %08x\n",
+-				dev_addr_tx, config_addr);
++
+ 		if (cfg->dir != STEDMA40_MEM_TO_PERIPH)
+ 			dev_dbg(d40c->base->dev,
+ 				"channel was not configured for memory "
+@@ -2815,6 +2781,11 @@ static int d40_set_runtime_config(struct dma_chan *chan,
+ 		return -EINVAL;
+ 	}
+ 
++	if (config_addr <= 0) {
++		dev_err(d40c->base->dev, "no address supplied\n");
++		return -EINVAL;
++	}
++
+ 	if (src_maxburst * src_addr_width != dst_maxburst * dst_addr_width) {
+ 		dev_err(d40c->base->dev,
+ 			"src/dst width/maxburst mismatch: %d*%d != %d*%d\n",
+-- 
+1.7.10.4
+
