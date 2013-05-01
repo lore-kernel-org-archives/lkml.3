@@ -1,48 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753995Ab3EAGLK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 02:11:10 -0400
-Received: from smtp2.macqel.be ([194.78.208.39]:12845 "EHLO smtp2.macqel.be"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753074Ab3EAGKU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 02:10:20 -0400
-From: Philippe De Muyter <phdm@macqel.be>
-To: linux-kernel@vger.kernel.org
-Cc: Jens Axboe <axboe@kernel.dk>, Karel Zak <kzak@redhat.com>,
+	id S1753411Ab3EAG2g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 02:28:36 -0400
+Received: from mail-ia0-f173.google.com ([209.85.210.173]:37411 "EHLO
+	mail-ia0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751769Ab3EAG2Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 May 2013 02:28:25 -0400
+Message-ID: <5180B601.8080005@gmail.com>
+Date: Wed, 01 May 2013 14:28:17 +0800
+From: Will Huck <will.huckk@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Mel Gorman <mgorman@suse.de>
+CC: Alexey Lyahkov <alexey.lyashkov@gmail.com>,
+        Andrew Perepechko <anserper@ya.ru>, Robin Dong <sanbai@taobao.com>,
+        Theodore Tso <tytso@mit.edu>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Philippe De Muyter <phdm@macqel.be>
-Subject: [PATCH 4/5] partitions/Makefile: compile aix.c if configured.
-Date: Wed,  1 May 2013 08:09:21 +0200
-Message-Id: <1367388562-2213-5-git-send-email-phdm@macqel.be>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1367388562-2213-1-git-send-email-phdm@macqel.be>
-References: <1367388562-2213-1-git-send-email-phdm@macqel.be>
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Bernd Schubert <bernd.schubert@fastmail.fm>,
+        David Howells <dhowells@redhat.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux-ext4 <linux-ext4@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>
+Subject: Re: [RFC PATCH 0/3] Obey mark_page_accessed hint given by filesystems
+References: <1367253119-6461-1-git-send-email-mgorman@suse.de>
+In-Reply-To: <1367253119-6461-1-git-send-email-mgorman@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Philippe De Muyter <phdm@macqel.be>
+Hi Mel,
+On 04/30/2013 12:31 AM, Mel Gorman wrote:
+> Andrew Perepechko reported a problem whereby pages are being prematurely
+> evicted as the mark_page_accessed() hint is ignored for pages that are
+> currently on a pagevec -- http://www.spinics.net/lists/linux-ext4/msg37340.html .
+> Alexey Lyahkov and Robin Dong have also reported problems recently that
+> could be due to hot pages reaching the end of the inactive list too quickly
+> and be reclaimed.
 
-Signed-off-by: Philippe De Muyter <phdm@macqel.be>
-Cc: Karel Zak <kzak@redhat.com>
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: Andrew Morton <akpm@linux-foundation.org>
----
- block/partitions/Makefile |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+Both shrink_active_list and shrink_inactive_list can call 
+lru_add_drain(), why the hot pages can't be mark Actived during this time?
 
-diff --git a/block/partitions/Makefile b/block/partitions/Makefile
-index 03af8ea..2be4d7b 100644
---- a/block/partitions/Makefile
-+++ b/block/partitions/Makefile
-@@ -7,6 +7,7 @@ obj-$(CONFIG_BLOCK) := check.o
- obj-$(CONFIG_ACORN_PARTITION) += acorn.o
- obj-$(CONFIG_AMIGA_PARTITION) += amiga.o
- obj-$(CONFIG_ATARI_PARTITION) += atari.o
-+obj-$(CONFIG_AIX_PARTITION) += aix.o
- obj-$(CONFIG_MAC_PARTITION) += mac.o
- obj-$(CONFIG_LDM_PARTITION) += ldm.o
- obj-$(CONFIG_MSDOS_PARTITION) += msdos.o
--- 
-1.7.1
+> Rather than addressing this on a per-filesystem basis, this series aims
+> to fix the mark_page_accessed() interface by deferring what LRU a page
+> is added to pagevec drain time and allowing mark_page_accessed() to call
+> SetPageActive on a pagevec page. This opens some important races that
+> I think should be harmless but needs double checking. The races and the
+> VM_BUG_ON checks that are removed are all described in patch 2.
+>
+> This series received only very light testing but it did not immediately
+> blow up and a debugging patch confirmed that pages are now getting added
+> to the active file LRU list that would previously have been added to the
+> inactive list.
+>
+>   fs/cachefiles/rdwr.c    | 30 ++++++------------------
+>   fs/nfs/dir.c            |  7 ++----
+>   include/linux/pagevec.h | 34 +--------------------------
+>   mm/swap.c               | 61 ++++++++++++++++++++++++-------------------------
+>   mm/vmscan.c             |  3 ---
+>   5 files changed, 40 insertions(+), 95 deletions(-)
+>
 
