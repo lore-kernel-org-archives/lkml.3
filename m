@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753452Ab3EARHj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 13:07:39 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:60626 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753049Ab3EARHG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 13:07:06 -0400
+	id S1753832Ab3EARHw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 13:07:52 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:59203 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753225Ab3EARHH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 May 2013 13:07:07 -0400
 From: Robin Holt <holt@sgi.com>
 To: Andrew Morton <akpm@linux-foundation.org>,
         "H. Peter Anvin" <hpa@zytor.com>,
         Russell King <linux@arm.linux.org.uk>,
         Guan Xuetao <gxt@mprc.pku.edu.cn>,
         Miguel Boton <mboton.lkml@gmail.com>
-Cc: Robin Holt <holt@sgi.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Russ Anderson <rja@sgi.com>,
+Cc: Robin Holt <holt@sgi.com>, Russ Anderson <rja@sgi.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         the arch/x86 maintainers <x86@kernel.org>,
-        Arm Mailing List <linux-arm-kernel@lists.infradead.org>,
-        <stable@vger.kernel.org>
-Subject: [PATCH -v7 01/11] CPU hotplug: Provide a generic helper to disable/enable CPU hotplug
-Date: Wed,  1 May 2013 12:06:41 -0500
-Message-Id: <1367428011-17123-2-git-send-email-holt@sgi.com>
+        Arm Mailing List <linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH -v7 06/11] x86, prepare reboot_mode for moving to generic kernel code.
+Date: Wed,  1 May 2013 12:06:46 -0500
+Message-Id: <1367428011-17123-7-git-send-email-holt@sgi.com>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <1367428011-17123-1-git-send-email-holt@sgi.com>
 References: <1367428011-17123-1-git-send-email-holt@sgi.com>
@@ -29,16 +26,11 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are instances in the kernel where we would like to disable
-CPU hotplug (from sysfs) during some important operation. Today
-the freezer code depends on this and the code to do it was kinda
-tailor-made for that.
+This patch prepares for the moving the parsing of reboot= to the generic
+kernel code by making reboot_mode into a more generic form.
 
-Restructure the code and make it generic enough to be useful for
-other usecases too.
-
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 Signed-off-by: Robin Holt <holt@sgi.com>
+To: Miguel Boton <mboton.lkml@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 To: H. Peter Anvin <hpa@zytor.com>
 Cc: Russ Anderson <rja@sgi.com>
@@ -48,94 +40,81 @@ Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
 Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Cc: the arch/x86 maintainers <x86@kernel.org>
 Cc: Arm Mailing List <linux-arm-kernel@lists.infradead.org>
-Cc: <stable@vger.kernel.org>
-
 ---
+ arch/x86/kernel/reboot.c | 12 +++++++-----
+ include/linux/reboot.h   |  5 +++++
+ 2 files changed, 12 insertions(+), 5 deletions(-)
 
-Changes since -v6:
- - Added a #define for non-hotplug case.
----
- include/linux/cpu.h |  3 +++
- kernel/cpu.c        | 27 +++++++++------------------
- 2 files changed, 12 insertions(+), 18 deletions(-)
-
-diff --git a/include/linux/cpu.h b/include/linux/cpu.h
-index c6f6e08..3e450c0 100644
---- a/include/linux/cpu.h
-+++ b/include/linux/cpu.h
-@@ -141,6 +141,8 @@ static inline void unregister_cpu_notifier(struct notifier_block *nb)
- }
- #endif
+diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
+index 76fa1e9..d42e3b2 100644
+--- a/arch/x86/kernel/reboot.c
++++ b/arch/x86/kernel/reboot.c
+@@ -36,7 +36,7 @@ void (*pm_power_off)(void);
+ EXPORT_SYMBOL(pm_power_off);
  
-+extern void cpu_hotplug_disable(void);
-+extern void cpu_hotplug_enable(void);
- int cpu_up(unsigned int cpu);
- void notify_cpu_starting(unsigned int cpu);
- extern void cpu_maps_update_begin(void);
-@@ -148,6 +150,7 @@ extern void cpu_maps_update_done(void);
+ static const struct desc_ptr no_idt = {};
+-static int reboot_mode;
++static enum reboot_mode reboot_mode = REBOOT_COLD;
+ enum reboot_type reboot_type = BOOT_ACPI;
+ int reboot_force;
  
- #else	/* CONFIG_SMP */
+@@ -88,11 +88,11 @@ static int __init reboot_setup(char *str)
  
-+#define cpu_hotplug_disable()	do { } while (0)
- #define cpu_notifier(fn, pri)	do { (void)(fn); } while (0)
+ 		switch (*str) {
+ 		case 'w':
+-			reboot_mode = 0x1234;
++			reboot_mode = REBOOT_WARM;
+ 			break;
  
- static inline int register_cpu_notifier(struct notifier_block *nb)
-diff --git a/kernel/cpu.c b/kernel/cpu.c
-index b5e4ab2..28769f5 100644
---- a/kernel/cpu.c
-+++ b/kernel/cpu.c
-@@ -541,29 +541,20 @@ static int __init alloc_frozen_cpus(void)
- core_initcall(alloc_frozen_cpus);
+ 		case 'c':
+-			reboot_mode = 0;
++			reboot_mode = REBOOT_COLD;
+ 			break;
  
- /*
-- * Prevent regular CPU hotplug from racing with the freezer, by disabling CPU
-- * hotplug when tasks are about to be frozen. Also, don't allow the freezer
-- * to continue until any currently running CPU hotplug operation gets
-- * completed.
-- * To modify the 'cpu_hotplug_disabled' flag, we need to acquire the
-- * 'cpu_add_remove_lock'. And this same lock is also taken by the regular
-- * CPU hotplug path and released only after it is complete. Thus, we
-- * (and hence the freezer) will block here until any currently running CPU
-- * hotplug operation gets completed.
-+ * Wait for currently running CPU hotplug operations to complete (if any) and
-+ * disable future CPU hotplug (from sysfs). The 'cpu_add_remove_lock' protects
-+ * the 'cpu_hotplug_disabled' flag. The same lock is also acquired by the
-+ * hotplug path before performing hotplug operations. So acquiring that lock
-+ * guarantees mutual exclusion from any currently running hotplug operations.
-  */
--void cpu_hotplug_disable_before_freeze(void)
-+void cpu_hotplug_disable(void)
- {
- 	cpu_maps_update_begin();
- 	cpu_hotplug_disabled = 1;
- 	cpu_maps_update_done();
- }
+ #ifdef CONFIG_SMP
+@@ -536,6 +536,7 @@ static void native_machine_emergency_restart(void)
+ 	int i;
+ 	int attempt = 0;
+ 	int orig_reboot_type = reboot_type;
++	unsigned short mode;
  
--
--/*
-- * When tasks have been thawed, re-enable regular CPU hotplug (which had been
-- * disabled while beginning to freeze tasks).
-- */
--void cpu_hotplug_enable_after_thaw(void)
-+void cpu_hotplug_enable(void)
- {
- 	cpu_maps_update_begin();
- 	cpu_hotplug_disabled = 0;
-@@ -589,12 +580,12 @@ cpu_hotplug_pm_callback(struct notifier_block *nb,
+ 	if (reboot_emergency)
+ 		emergency_vmx_disable_all();
+@@ -543,7 +544,8 @@ static void native_machine_emergency_restart(void)
+ 	tboot_shutdown(TB_SHUTDOWN_REBOOT);
  
- 	case PM_SUSPEND_PREPARE:
- 	case PM_HIBERNATION_PREPARE:
--		cpu_hotplug_disable_before_freeze();
-+		cpu_hotplug_disable();
- 		break;
+ 	/* Tell the BIOS if we want cold or warm reboot */
+-	*((unsigned short *)__va(0x472)) = reboot_mode;
++	mode = reboot_mode == REBOOT_WARM ? 0x1234 : 0;
++	*((unsigned short *)__va(0x472)) = mode;
  
- 	case PM_POST_SUSPEND:
- 	case PM_POST_HIBERNATION:
--		cpu_hotplug_enable_after_thaw();
-+		cpu_hotplug_enable();
- 		break;
+ 	for (;;) {
+ 		/* Could also try the reset bit in the Hammer NB */
+@@ -585,7 +587,7 @@ static void native_machine_emergency_restart(void)
  
- 	default:
+ 		case BOOT_EFI:
+ 			if (efi_enabled(EFI_RUNTIME_SERVICES))
+-				efi.reset_system(reboot_mode ?
++				efi.reset_system(reboot_mode == REBOOT_WARM ?
+ 						 EFI_RESET_WARM :
+ 						 EFI_RESET_COLD,
+ 						 EFI_SUCCESS, 0, NULL);
+diff --git a/include/linux/reboot.h b/include/linux/reboot.h
+index 23b3630..2ca9ed7 100644
+--- a/include/linux/reboot.h
++++ b/include/linux/reboot.h
+@@ -10,6 +10,11 @@
+ #define SYS_HALT	0x0002	/* Notify of system halt */
+ #define SYS_POWER_OFF	0x0003	/* Notify of system power off */
+ 
++enum reboot_mode {
++	REBOOT_COLD = 0,
++	REBOOT_WARM,
++};
++
+ extern int register_reboot_notifier(struct notifier_block *);
+ extern int unregister_reboot_notifier(struct notifier_block *);
+ 
 -- 
 1.8.2.1
 
