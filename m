@@ -1,61 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756218Ab3EAIOh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 04:14:37 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:37597 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753289Ab3EAIOZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 04:14:25 -0400
-Message-ID: <5180CED8.9040505@gmail.com>
-Date: Wed, 01 May 2013 16:14:16 +0800
-From: Ric Mason <ric.masonn@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S1756213Ab3EAIU0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 04:20:26 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47541 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755196Ab3EAIUW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 May 2013 04:20:22 -0400
+Date: Wed, 1 May 2013 09:20:18 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Ric Mason <ric.masonn@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Jerome Marchand <jmarchan@redhat.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH] mm: swap: Mark swap pages writeback before queueing for
+ direct IO
+Message-ID: <20130501082018.GG11497@suse.de>
+References: <516E918B.3050309@redhat.com>
+ <20130422133746.ffbbb70c0394fdbf1096c7ee@linux-foundation.org>
+ <20130424185744.GB2144@suse.de>
+ <5180BCFB.6090707@gmail.com>
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Sam Ben <sam.bennn@gmail.com>, Alexey Lyahkov <alexey.lyashkov@gmail.com>,
-        Andrew Perepechko <anserper@ya.ru>, Robin Dong <sanbai@taobao.com>,
-        Theodore Tso <tytso@mit.edu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Bernd Schubert <bernd.schubert@fastmail.fm>,
-        David Howells <dhowells@redhat.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux-ext4 <linux-ext4@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>
-Subject: Re: [PATCH 2/3] mm: Ensure that mark_page_accessed moves pages to
- the active list
-References: <1367253119-6461-1-git-send-email-mgorman@suse.de> <1367253119-6461-3-git-send-email-mgorman@suse.de> <5180AB0E.6030407@gmail.com> <20130501080644.GE11497@suse.de>
-In-Reply-To: <20130501080644.GE11497@suse.de>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <5180BCFB.6090707@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/01/2013 04:06 PM, Mel Gorman wrote:
-> On Wed, May 01, 2013 at 01:41:34PM +0800, Sam Ben wrote:
->> Hi Mel,
->> On 04/30/2013 12:31 AM, Mel Gorman wrote:
->>> If a page is on a pagevec then it is !PageLRU and mark_page_accessed()
->>> may fail to move a page to the active list as expected. Now that the
->>> LRU is selected at LRU drain time, mark pages PageActive if they are
->>> on a pagevec so it gets moved to the correct list at LRU drain time.
->>> Using a debugging patch it was found that for a simple git checkout
->>> based workload that pages were never added to the active file list in
->> Could you show us the details of your workload?
->>
-> The workload is git checkouts of a fixed number of commits for the
+On Wed, May 01, 2013 at 02:58:03PM +0800, Ric Mason wrote:
+> Hi Mel,
+> On 04/25/2013 02:57 AM, Mel Gorman wrote:
+> >As pointed out by Andrew Morton, the swap-over-NFS writeback is not setting
+> >PageWriteback before it is queued for direct IO. While swap pages do not
+> 
+> Before commit commit 62c230bc1 (mm: add support for a filesystem to
+> activate swap files and use direct_IO for writing swap pages), swap
+> pages will write to page cache firstly and then writeback?
+> 
 
-Is there script which you used?
+That commit added an *optional* address_space operations method that
+allowed a filesystem to use their aops->direct_IO method to write to a
+swapfile. The existing methods for writing swap files are still there so
+before and after commit 62c230bc1, swap partitions and most swapfiles
+(backed by filesystems that support bmap) are still the same. Look at
+swapfile.c, swap_state.c and page_io.c for the details on how swap gets
+activated, pages are added to swap cache and the writepage method used
+when aops->writepage is called to write the page to disk respectively.
 
-> kernel git tree. It starts with a warm-up run that is not timed and then
-> records the time for a number of iterations.
-
-How to record the time for a number of iterations? Is the iteration here 
-means lru scan?
-
->
-
+-- 
+Mel Gorman
+SUSE Labs
