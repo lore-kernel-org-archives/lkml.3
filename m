@@ -1,57 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756151Ab3EASn2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 14:43:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34791 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755916Ab3EASnK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 14:43:10 -0400
-Subject: [RFC PATCH 2/8] pci: Add hotplug_slot_ops.reset_slot()
-To: bhelgaas@google.com
-From: Alex Williamson <alex.williamson@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Date: Wed, 01 May 2013 12:43:08 -0600
-Message-ID: <20130501184308.28515.85363.stgit@bling.home>
-In-Reply-To: <20130501181828.28515.68783.stgit@bling.home>
-References: <20130501181828.28515.68783.stgit@bling.home>
-User-Agent: StGit/0.16
+	id S1756785Ab3EASph (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 14:45:37 -0400
+Received: from mail-ve0-f175.google.com ([209.85.128.175]:47427 "EHLO
+	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755670Ab3EASpQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 May 2013 14:45:16 -0400
+Message-ID: <518162B7.6040804@gmail.com>
+Date: Wed, 01 May 2013 14:45:11 -0400
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Peter Zijlstra <peterz@infradead.org>
+CC: kosaki.motohiro@gmail.com, linux-kernel@vger.kernel.org,
+        Olivier Langlois <olivier@trillion01.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        David Miller <davem@davemloft.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH v3 0/7] posix-cpu-timers fixlet
+References: <1367291838-5490-1-git-send-email-kosaki.motohiro@gmail.com> <20130501110121.GE28253@dyad.programming.kicks-ass.net>
+In-Reply-To: <20130501110121.GE28253@dyad.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This optional callback allows htoplug controllers to perform slot
-specific resets.  These may be necessary in cases where a normal
-secondary bus reset can interact with controller logic and expose
-spurious hotplugs.
+(5/1/13 7:01 AM), Peter Zijlstra wrote:
+> On Mon, Apr 29, 2013 at 11:17:08PM -0400, kosaki.motohiro@gmail.com wrote:
+>> Glibc's posix timer testcase found a lot of bugs in posix timer code. This series, hopefully,
+>> fixes all of them. All patches are independent each other logically.
+>>
+>>
+>> [PATCH 1/7] posix-cpu-timers: don't account cpu timer after stopped thread runtime accounting
+>> [PATCH 2/7] posix-cpu-timers: fix acounting delta_exec twice
+>> [PATCH 3/7] posix-cpu-timers: fix wrong timer initialization
+>> [PATCH 4/7] posix-cpu-timers: timer functions must use timer time instead of clock time
+>> [PATCH 5/7] posix-cpu-timers: check_thread_timers() uses task_sched_runtime()
+>> [PATCH 6/7] sched: task_sched_runtime introduce micro optimization
+>> [PATCH 7/7] posix-cpu-timers: cleanup cpu_{clock,timer}_sample{,_group}
+> 
+> 
+> Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> 
+> Thanks for doing this Kosaki-San!
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
----
- include/linux/pci_hotplug.h |    4 ++++
- 1 file changed, 4 insertions(+)
+Thanks.
+I've alread found several spell mistake in changelog. I'll resend patches soon.
 
-diff --git a/include/linux/pci_hotplug.h b/include/linux/pci_hotplug.h
-index 8db71dc..bd32109 100644
---- a/include/linux/pci_hotplug.h
-+++ b/include/linux/pci_hotplug.h
-@@ -63,6 +63,9 @@ enum pcie_link_width {
-  * @get_adapter_status: Called to get see if an adapter is present in the slot or not.
-  *	If this field is NULL, the value passed in the struct hotplug_slot_info
-  *	will be used when this value is requested by a user.
-+ * @reset_slot: Optional interface to allow override of a bus reset for the
-+ *	slot for cases where a secondary bus reset can result in spurious
-+ *	hotplug events or where a slot can be reset independent of the bus.
-  *
-  * The table of function pointers that is passed to the hotplug pci core by a
-  * hotplug pci driver.  These functions are called by the hotplug pci core when
-@@ -80,6 +83,7 @@ struct hotplug_slot_ops {
- 	int (*get_attention_status)	(struct hotplug_slot *slot, u8 *value);
- 	int (*get_latch_status)		(struct hotplug_slot *slot, u8 *value);
- 	int (*get_adapter_status)	(struct hotplug_slot *slot, u8 *value);
-+	int (*reset_slot)		(struct hotplug_slot *slot, int probe);
- };
- 
- /**
+
 
