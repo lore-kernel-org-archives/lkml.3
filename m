@@ -1,144 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761370Ab3EAOdd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 10:33:33 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:47950 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754498Ab3EAOdZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 10:33:25 -0400
-Date: Wed, 1 May 2013 07:32:58 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Julian Anastasov <ja@ssi.bg>, Simon Horman <horms@verge.net.au>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
-        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Dipankar Sarma <dipankar@in.ibm.com>
-Subject: Re: [PATCH v2 1/2] sched: Add cond_resched_rcu_lock() helper
-Message-ID: <20130501143258.GA31577@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1367290378-29224-1-git-send-email-horms@verge.net.au>
- <1367290378-29224-2-git-send-email-horms@verge.net.au>
- <alpine.LFD.2.00.1304301011310.1700@ja.ssi.bg>
- <20130430072944.GA13959@verge.net.au>
- <alpine.LFD.2.00.1304301051260.1700@ja.ssi.bg>
- <20130501091012.GB28253@dyad.programming.kicks-ass.net>
- <20130501124637.GO3780@linux.vnet.ibm.com>
+	id S1761340Ab3EAOfJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 10:35:09 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:57562 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754218Ab3EAOfA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 May 2013 10:35:00 -0400
+Date: Wed, 1 May 2013 09:34:49 -0500
+From: "Philip J. Kelleher" <pjk1939@linux.vnet.ibm.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-kernel@vger.kernel.org, klebers@linux.vnet.ibm.com,
+        brking@linux.vnet.ibm.com
+Subject: Re: [PATCH 8/9] rsxx: Fixes CPU usage issues on RHEL 6 Kernels.
+Message-ID: <20130501143449.GB17546@oc6784271780.ibm.com>
+References: <20130430200049.GA15930@oc6784271780.ibm.com>
+ <20130501114420.GX7800@kernel.dk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130501124637.GO3780@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130501114420.GX7800@kernel.dk>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13050114-3620-0000-0000-0000024798DD
+x-cbid: 13050114-7182-0000-0000-0000067CEC3B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 01, 2013 at 05:46:37AM -0700, Paul E. McKenney wrote:
-> On Wed, May 01, 2013 at 11:10:12AM +0200, Peter Zijlstra wrote:
-> > On Tue, Apr 30, 2013 at 10:52:38AM +0300, Julian Anastasov wrote:
-> > > 
-> > > 	Hello,
-> > > 
-> > > On Tue, 30 Apr 2013, Simon Horman wrote:
-> > > 
-> > > > > > +static void inline cond_resched_rcu_lock(void)
-> > > > > > +{
-> > > > > > +	if (need_resched()) {
-> > > > > 
-> > > > > 	Ops, it should be without above need_resched.
-> > > > 
-> > > > Thanks, to clarify, just this:
-> > > > 
-> > > > static void inline cond_resched_rcu_lock(void)
-> > > > {
-> > > > 	rcu_read_unlock();
-> > > > #ifndef CONFIG_PREEMPT_RCU
-> > > > 	cond_resched();
-> > > > #endif
-> > > > 	rcu_read_lock();
-> > > > }
-> > > 
-> > > 	Yes, thanks!
+Again, thanks for the prompt reply.
+
+Also, sorry for my poor explaination skills :)
+
+The RHEL 6.x version of the driver is using the legacy
+worqueue create function, 'create_singlethread_workqueue'.
+This would cause heavy usage of one CPU if data was being
+thrashed pretty hard. So, in order to fix it, workqueues
+are now being created with 'create_workqueue' and
+synchronization with mutexes.
+
+Thanks,
+-Philip Kelleher
+
+
+On Wed, May 01, 2013 at 01:44:20PM +0200, Jens Axboe wrote:
+> On Tue, Apr 30 2013, Philip J. Kelleher wrote:
+> > From: Philip J Kelleher <pjk1939@linux.vnet.ibm.com>
 > > 
-> > OK, now I'm confused.. PREEMPT_RCU would preempt in any case, so why bother
-> > dropping rcu_read_lock() at all?
-> 
-> Good point, I was assuming that the goal was to let grace periods end
-> as well as to allow preemption.  The momentary dropping out of the
-> RCU read-side critical section allows the grace periods to end.
-> 
-> > That is; the thing that makes sense to me is:
+> > This changes how the driver schedules the work to the
+> > workqueue threads. 
 > > 
-> > static void inline cond_resched_rcu_lock(void)
-> > {
-> > #ifdef CONFIG_PREEMPT_RCU
-> > 	if (need_resched()) {
-> > 		rcu_read_unlock();
-> > 		cond_resched();
-> > 		rcu_read_lock();
-> > 	}
-> > #endif /* CONFIG_PREEMPT_RCU */
-> > }
-> > 
-> > That would have an rcu_read_lock() break and voluntary preemption point for
-> > non-preemptible RCU and not bother with the stuff for preemptible RCU.
+> > Note: This patch is primarily for the Red Hat 6 Kernels.
 > 
-> If the only goal is to allow preemption, and if long grace periods are
-> not a concern, then this alternate approach would work fine as well.
-
-But now that I think about it, there is one big advantage to the
-unconditional exiting and reentering the RCU read-side critical section:
-It allows easy placement of unconditional lockdep debug code to catch
-the following type of bug:
-
-	rcu_read_lock();
-	...
-	rcu_read_lock();
-	...
-	cond_resched_rcu_lock();
-	...
-	rcu_read_unlock();
-	...
-	rcu_read_unlock();
-
-Here is how to detect this:
-
-	static void inline cond_resched_rcu_lock(void)
-	{
-		rcu_read_unlock();
-		WARN_ON_ONCE(rcu_read_lock_held());
-	#ifndef CONFIG_PREEMPT_RCU
-		cond_resched();
-	#endif
-		rcu_read_lock();
-	}
-
-Of course, we could do this in your implementation as well:
-
-	static void inline cond_resched_rcu_lock(void)
-	{
-	#ifdef CONFIG_PREEMPT_RCU
-		if (need_resched()) {
-			rcu_read_unlock();
-			WARN_ON_ONCE(rcu_read_lock_held());
-			cond_resched();
-			rcu_read_lock();
-		}
-	#endif /* CONFIG_PREEMPT_RCU */
-	}
-
-But this would fail to detect the bug -- and would silently fail -- on
-!CONFIG_PREEMPT_RCU systems.
-
-							Thanx, Paul
-
-> Of course, both approaches assume that the caller is in a place
-> where having all RCU-protected data disappear is OK!
+> You need to properly explain the problem and how it's fixed in the
+> changelog. The above really makes the read none the wiser on what the
+> issue is.
 > 
-> 							Thanx, Paul
+> -- 
+> Jens Axboe
+> 
 
