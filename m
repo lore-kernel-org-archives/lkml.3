@@ -1,109 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760033Ab3EAO0U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 10:26:20 -0400
-Received: from ja.ssi.bg ([178.16.129.10]:36724 "EHLO ja.ssi.bg"
-	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755627Ab3EAO0O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 10:26:14 -0400
-Date: Wed, 1 May 2013 17:22:05 +0300 (EEST)
-From: Julian Anastasov <ja@ssi.bg>
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Simon Horman <horms@verge.net.au>, Eric Dumazet <eric.dumazet@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
-        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Dipankar Sarma <dipankar@in.ibm.com>
-Subject: Re: [PATCH v2 1/2] sched: Add cond_resched_rcu_lock() helper
-In-Reply-To: <20130501091012.GB28253@dyad.programming.kicks-ass.net>
-Message-ID: <alpine.LFD.2.00.1305011344320.1603@ja.ssi.bg>
-References: <1367290378-29224-1-git-send-email-horms@verge.net.au> <1367290378-29224-2-git-send-email-horms@verge.net.au> <alpine.LFD.2.00.1304301011310.1700@ja.ssi.bg> <20130430072944.GA13959@verge.net.au> <alpine.LFD.2.00.1304301051260.1700@ja.ssi.bg>
- <20130501091012.GB28253@dyad.programming.kicks-ass.net>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1757005Ab3EAO1A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 10:27:00 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:52283 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751664Ab3EAO0w (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 May 2013 10:26:52 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        vinod.koul@intel.com, per.forlin@stericsson.com, rabin@rab.in
+Cc: arnd@arndb.de, linus.walleij@stericsson.com,
+        srinidhi.kasagar@stericsson.com, Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH] dmaengine: ste_dma40: Rectify incorrect configuration validation checking
+Date: Wed,  1 May 2013 15:26:38 +0100
+Message-Id: <1367418399-30591-1-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+If we compare an event's group (dev_type / 16) with STEDMA40_DEV_DST_MEMORY
+(-1), the only way we'd obtain a positive result is if we passed -16 as a
+device type, which is unfeasible. Instead, it would be much more sane to
+compare STEDMA40_DEV_DST_MEMORY against the raw dev_type in order to expect
+the expected result.
 
-	Hello,
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ drivers/dma/ste_dma40.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-On Wed, 1 May 2013, Peter Zijlstra wrote:
+diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
+index 3b83dee..c79853f 100644
+--- a/drivers/dma/ste_dma40.c
++++ b/drivers/dma/ste_dma40.c
+@@ -1771,19 +1771,19 @@ static int d40_validate_conf(struct d40_chan *d40c,
+ 	}
+ 
+ 	if (conf->dir == STEDMA40_MEM_TO_PERIPH &&
+-	    dst_event_group == STEDMA40_DEV_DST_MEMORY) {
++	    conf->dst_dev_type == STEDMA40_DEV_DST_MEMORY) {
+ 		chan_err(d40c, "Invalid dst\n");
+ 		res = -EINVAL;
+ 	}
+ 
+ 	if (conf->dir == STEDMA40_PERIPH_TO_MEM &&
+-	    src_event_group == STEDMA40_DEV_SRC_MEMORY) {
++	    conf->src_dev_type == STEDMA40_DEV_SRC_MEMORY) {
+ 		chan_err(d40c, "Invalid src\n");
+ 		res = -EINVAL;
+ 	}
+ 
+-	if (src_event_group == STEDMA40_DEV_SRC_MEMORY &&
+-	    dst_event_group == STEDMA40_DEV_DST_MEMORY && is_log) {
++	if (conf->src_dev_type == STEDMA40_DEV_SRC_MEMORY &&
++	    conf->dst_dev_type == STEDMA40_DEV_DST_MEMORY && is_log) {
+ 		chan_err(d40c, "No event line\n");
+ 		res = -EINVAL;
+ 	}
+-- 
+1.7.10.4
 
-> On Tue, Apr 30, 2013 at 10:52:38AM +0300, Julian Anastasov wrote:
-> > 
-> > 	Hello,
-> > 
-> > On Tue, 30 Apr 2013, Simon Horman wrote:
-> > 
-> > > Thanks, to clarify, just this:
-> > > 
-> > > static void inline cond_resched_rcu_lock(void)
-> > > {
-> > > 	rcu_read_unlock();
-> > > #ifndef CONFIG_PREEMPT_RCU
-> > > 	cond_resched();
-> > > #endif
-> > > 	rcu_read_lock();
-> > > }
-> > 
-> > 	Yes, thanks!
-> 
-> OK, now I'm confused.. PREEMPT_RCU would preempt in any case, so why bother
-> dropping rcu_read_lock() at all?
-> 
-> That is; the thing that makes sense to me is:
-> 
-> static void inline cond_resched_rcu_lock(void)
-> {
-> #ifdef CONFIG_PREEMPT_RCU
-
-	You mean '#ifndef' here, right? But in the non-preempt
-case is using the need_resched() needed? rcu_read_unlock
-and rcu_read_lock do not generate code.
-
-> 	if (need_resched()) {
-> 		rcu_read_unlock();
-> 		cond_resched();
-> 		rcu_read_lock();
-> 	}
-> #endif /* CONFIG_PREEMPT_RCU */
-> }
-> 
-> That would have an rcu_read_lock() break and voluntary preemption point for
-> non-preemptible RCU and not bother with the stuff for preemptible RCU.
-
-	I see. So, can we choose one of both variants:
-
-1. Your variant but with ifndef:
-
-static void inline cond_resched_rcu_lock(void)
-{
-#ifndef CONFIG_PREEMPT_RCU
-	if (need_resched()) {
-		rcu_read_unlock();
-		cond_resched();
-		rcu_read_lock();
-	}
-#endif
-}
-
-2. Same without need_resched because cond_resched already
-performs the same checks:
-
-static void inline cond_resched_rcu_lock(void)
-{
-#ifndef CONFIG_PREEMPT_RCU
-	rcu_read_unlock();
-	cond_resched();
-	rcu_read_lock();
-#endif
-}
-
-Regards
-
---
-Julian Anastasov <ja@ssi.bg>
