@@ -1,84 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752955Ab3EAFXN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 01:23:13 -0400
-Received: from mail-ea0-f176.google.com ([209.85.215.176]:39868 "EHLO
-	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751790Ab3EAFXF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 01:23:05 -0400
-Message-ID: <5180A6CA.1090404@suse.cz>
-Date: Wed, 01 May 2013 07:23:22 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130124 Thunderbird/19.0
+	id S1753290Ab3EAFbo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 01:31:44 -0400
+Received: from ozlabs.org ([203.10.76.45]:54671 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753088Ab3EAFbf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 May 2013 01:31:35 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Alexander Graf <agraf@suse.de>,
+        Pranavkumar Sawargaonkar <pranavkumar@linaro.org>
+Cc: "linux-arm-kernel\@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel\@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "patches\@linaro.org" <patches@linaro.org>,
+        "linux-kernel\@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
+        "kvmarm\@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
+        Peter Maydell <peter.maydell@linaro.org>
+Subject: Re: [PATCH 0/2] Early printk support for virtio console devices.
+In-Reply-To: <C52CCDD4-D8FB-4AD6-B83D-3B5251A7A0F5@suse.de>
+References: <1366974299-17877-1-git-send-email-pranavkumar@linaro.org> <BA2076A6-0688-4E5C-85F9-A9CA8FD75782@suse.de> <87obcyc9sh.fsf@rustcorp.com.au> <336C59AA-D5D7-472E-A8DA-EEB413DD6C68@suse.de> <CAAHg+Hj0tySbzUGnoFE9ybVYP291B-i8-Ck1EkwD57t8yG5wwg@mail.gmail.com> <C52CCDD4-D8FB-4AD6-B83D-3B5251A7A0F5@suse.de>
+User-Agent: Notmuch/0.15.2+81~gd2c8818 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Wed, 01 May 2013 11:37:36 +0930
+Message-ID: <87sj27xxjr.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Simon Kirby <sim@hostway.ca>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        stable <stable@vger.kernel.org>
-Subject: Re: [ 02/42] TTY: do not update atime/mtime on read/write
-References: <20130429184752.435249613@linuxfoundation.org> <20130429184752.700428715@linuxfoundation.org> <20130430001445.GA17260@hostway.ca> <20130430002117.GA4202@kroah.com> <20130430003639.GB17260@hostway.ca> <20130430013724.GA5358@kroah.com> <CA+55aFxNGBpoVCx3Vm_fmCPF4XrUfHCM8GqQMa-qh3RLYOOS7w@mail.gmail.com> <CA+55aFzfxMvWVRjqV4pzz7XtpDGbxwGumGVeRT7OsF95noG4xw@mail.gmail.com>
-In-Reply-To: <CA+55aFzfxMvWVRjqV4pzz7XtpDGbxwGumGVeRT7OsF95noG4xw@mail.gmail.com>
-X-Enigmail-Version: 1.6a1pre
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/01/2013 03:41 AM, Linus Torvalds wrote:
-> On Tue, Apr 30, 2013 at 5:57 PM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
->>
->> Patch is whitespace-damaged and totally untested! Caveat applicator.
-> 
-> Ok, so it's still whitespace-damaged, but it seems to work. The
-> appended has the "8 second rule" too..
-> 
-> Comments?
+Alexander Graf <agraf@suse.de> writes:
+> There are not device specific registers in
+> virtio-console. Virtio-console lives behind a virtio bus which doesn't
+> know what these registers are.
 
-Yeah, looks good to me.
+You're not going to make coherent arguments without reading that actual
+patch we're discussing.  And you're going to just waste everyone else's
+time.
 
-> --- snip snip ---
->  drivers/tty/pty.c    | 3 +++
->  drivers/tty/tty_io.c | 4 ++--
->  2 files changed, 5 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/tty/pty.c b/drivers/tty/pty.c
-> index a62798fcc014..59bfaecc4e14 100644
-> --- a/drivers/tty/pty.c
-> +++ b/drivers/tty/pty.c
-> @@ -681,6 +681,9 @@ static int ptmx_open(struct inode *inode, struct file *filp)
-> 
->         nonseekable_open(inode, filp);
-> 
-> +       /* We refuse fsnotify events on ptmx, since it's a shared resource */
-> +       filp->f_mode |= FMODE_NONOTIFY;
-> +
->         retval = tty_alloc_file(filp);
->         if (retval)
->                 return retval;
-> diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-> index 97ebc8c5864e..6464029e4860 100644
-> --- a/drivers/tty/tty_io.c
-> +++ b/drivers/tty/tty_io.c
-> @@ -988,10 +988,10 @@ void start_tty(struct tty_struct *tty)
-> 
->  EXPORT_SYMBOL(start_tty);
-> 
-> +/* We limit tty time update visibility to every 8 seconds or so. */
->  static void tty_update_time(struct timespec *time)
->  {
-> -       unsigned long sec = get_seconds();
-> -       sec -= sec % 60;
-> +       unsigned long sec = get_seconds() & ~7;
->         if ((long)(sec - time->tv_sec) > 0)
->                 time->tv_sec = sec;
->  }
-> 
+> Even if you shove it into config space,
 
-thanks,
--- 
-js
-suse labs
+Which is what the patch does...
+
+> it'd be broken because config access happens without intercepts on
+> some platforms.
+
+But people keep assuming it, which is one reason virtio_ccw switched
+from passive lguest-style config to active.  Only lguest and the old kvm
+virtio use it, and lguest can change.
+
+An emergency output is a reasonable idea, and this is a reasonable
+implementation.  The question is practical: will it be used?  Because we
+don't implement reasonable ideas which aren't going to be used.
+
+Cheers,
+Rusty.
