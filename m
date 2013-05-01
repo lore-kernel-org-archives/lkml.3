@@ -1,50 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761518Ab3EAPaG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 11:30:06 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:59700 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754134Ab3EAP37 (ORCPT
+	id S1761470Ab3EAPbS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 11:31:18 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:45183 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754011Ab3EAPbH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 11:29:59 -0400
-Message-ID: <1367422195.11020.46.camel@edumazet-glaptop>
-Subject: Re: [PATCH v2 1/2] sched: Add cond_resched_rcu_lock() helper
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Julian Anastasov <ja@ssi.bg>, Simon Horman <horms@verge.net.au>,
-        Ingo Molnar <mingo@redhat.com>, lvs-devel@vger.kernel.org,
-        netdev@vger.kernel.org, netfilter-devel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Pablo Neira Ayuso <pablo@netfilter.org>,
-        Dipankar Sarma <dipankar@in.ibm.com>
-Date: Wed, 01 May 2013 08:29:55 -0700
-In-Reply-To: <20130501151752.GA7521@dyad.programming.kicks-ass.net>
-References: <1367290378-29224-1-git-send-email-horms@verge.net.au>
-	 <1367290378-29224-2-git-send-email-horms@verge.net.au>
-	 <alpine.LFD.2.00.1304301011310.1700@ja.ssi.bg>
-	 <20130430072944.GA13959@verge.net.au>
-	 <alpine.LFD.2.00.1304301051260.1700@ja.ssi.bg>
-	 <20130501091012.GB28253@dyad.programming.kicks-ass.net>
-	 <20130501124637.GO3780@linux.vnet.ibm.com>
-	 <20130501151752.GA7521@dyad.programming.kicks-ass.net>
+	Wed, 1 May 2013 11:31:07 -0400
+Message-ID: <1367422261.8160.1.camel@phoenix>
+Subject: [RFT][PATCH 1/2] clk: wm831x: Fix update wrong register for
+ enable/disable FLL
+From: Axel Lin <axel.lin@ingics.com>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        patches@opensource.wolfsonmicro.com
+Date: Wed, 01 May 2013 23:31:01 +0800
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 3.6.4-0ubuntu1 
 Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-05-01 at 17:17 +0200, Peter Zijlstra wrote:
-> On Wed, May 01, 2013 at 05:46:37AM -0700, Paul E. McKenney wrote:
-> 
-> > If the only goal is to allow preemption, and if long grace periods are
-> > not a concern, then this alternate approach would work fine as well.
-> 
-> Hmm.. if that were the goal I'd like it to have a different name;
-> cond_resched*() has always been about preemption.
+According to the datasheet, FLL Enable is controlled by
+R16530 (4092h) FLL Control1
+        BIT 0: FLL Enable
+                0 = Disable
+                1 = Enable
 
-BTW, I do not remember why cond_resched() is not an empty macro
-when CONFIG_PREEMPT=y ?
+Thus the code should update WM831X_FLL_CONTROL_1 register rather than
+WM831X_FLL_CONTROL_2 register.
+
+Also fixes a trivial typo in dev_crit message.
+
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+ drivers/clk/clk-wm831x.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/clk/clk-wm831x.c b/drivers/clk/clk-wm831x.c
+index 16ed068..4bdf0b0 100644
+--- a/drivers/clk/clk-wm831x.c
++++ b/drivers/clk/clk-wm831x.c
+@@ -97,7 +97,7 @@ static int wm831x_fll_prepare(struct clk_hw *hw)
+ 	struct wm831x *wm831x = clkdata->wm831x;
+ 	int ret;
+ 
+-	ret = wm831x_set_bits(wm831x, WM831X_FLL_CONTROL_2,
++	ret = wm831x_set_bits(wm831x, WM831X_FLL_CONTROL_1,
+ 			      WM831X_FLL_ENA, WM831X_FLL_ENA);
+ 	if (ret != 0)
+ 		dev_crit(wm831x->dev, "Failed to enable FLL: %d\n", ret);
+@@ -114,9 +114,9 @@ static void wm831x_fll_unprepare(struct clk_hw *hw)
+ 	struct wm831x *wm831x = clkdata->wm831x;
+ 	int ret;
+ 
+-	ret = wm831x_set_bits(wm831x, WM831X_FLL_CONTROL_2, WM831X_FLL_ENA, 0);
++	ret = wm831x_set_bits(wm831x, WM831X_FLL_CONTROL_1, WM831X_FLL_ENA, 0);
+ 	if (ret != 0)
+-		dev_crit(wm831x->dev, "Failed to disaable FLL: %d\n", ret);
++		dev_crit(wm831x->dev, "Failed to disable FLL: %d\n", ret);
+ }
+ 
+ static unsigned long wm831x_fll_recalc_rate(struct clk_hw *hw,
+-- 
+1.8.1.2
+
 
 
