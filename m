@@ -1,138 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761395Ab3EAOm0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 10:42:26 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:58875 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754746Ab3EAOmT (ORCPT
+	id S1761382Ab3EAOny (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 10:43:54 -0400
+Received: from na3sys009aob106.obsmtp.com ([74.125.149.76]:45389 "EHLO
+	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754746Ab3EAOnt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 10:42:19 -0400
-Date: Wed, 1 May 2013 15:42:13 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: arnd@arndb.de, linus.walleij@stericsson.com
-Subject: Re: [PATCH 12/32] ARM: ux500: Remove superfluous 'psize' attribute
- from Audio platform data
-Message-ID: <20130501144213.GG25256@gmail.com>
-References: <1366279934-30761-1-git-send-email-lee.jones@linaro.org>
- <1366279934-30761-13-git-send-email-lee.jones@linaro.org>
+	Wed, 1 May 2013 10:43:49 -0400
+Date: Wed, 1 May 2013 09:43:41 -0500
+From: Shawn Bohrer <sbohrer@rgmadvisors.com>
+To: xfs@oss.sgi.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: deadlock on vmap_area_lock
+Message-ID: <20130501144341.GA2404@BohrerMBP.rgmadvisors.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1366279934-30761-13-git-send-email-lee.jones@linaro.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 18 Apr 2013, Lee Jones wrote:
+I've got two compute clusters with around 350 machines each which are
+running kernels based off of 3.1.9 (Yes I realize this is ancient by
+todays standards).  All of the machines run a 'find' command once an
+hour on one of the mounted XFS filesystems.  Occasionally these find
+commands get stuck requiring a reboot of the system.  I took a peek
+today and see this with perf:
 
-> 'psize' is used to calculate the maximum DMA burst size. However it
-> is only taken into consideration when editing the DMA channel's
-> configuration. The Audio DMA platform data is only used to allocate
-> a channel, not configure it. That will be done at a later date within
-> the MSP driver.
-> 
-> We're also removing comments which are no longer required, as
-> 'data_width' is no longer set in any device's platform data period.
-> 
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> ---
->  arch/arm/mach-ux500/board-mop500-audio.c |   38 ------------------------------
->  1 file changed, 38 deletions(-)
-> 
-> diff --git a/arch/arm/mach-ux500/board-mop500-audio.c b/arch/arm/mach-ux500/board-mop500-audio.c
-> index f012cfa..972bec0 100644
-> --- a/arch/arm/mach-ux500/board-mop500-audio.c
-> +++ b/arch/arm/mach-ux500/board-mop500-audio.c
-> @@ -23,25 +23,13 @@
->  static struct stedma40_chan_cfg msp0_dma_rx = {
->  	.high_priority = true,
->  	.dir = STEDMA40_PERIPH_TO_MEM,
-> -
->  	.dev_type = DB8500_DMA_DEV31_MSP0_SLIM0_CH0,
-> -
-> -	.src_info.psize = STEDMA40_PSIZE_LOG_4,
-> -	.dst_info.psize = STEDMA40_PSIZE_LOG_4,
-> -
-> -	/* data_width is set during configuration */
->  };
->  
->  static struct stedma40_chan_cfg msp0_dma_tx = {
->  	.high_priority = true,
->  	.dir = STEDMA40_MEM_TO_PERIPH,
-> -
->  	.dev_type = DB8500_DMA_DEV31_MSP0_SLIM0_CH0,
-> -
-> -	.src_info.psize = STEDMA40_PSIZE_LOG_4,
-> -	.dst_info.psize = STEDMA40_PSIZE_LOG_4,
-> -
-> -	/* data_width is set during configuration */
->  };
->  
->  struct msp_i2s_platform_data msp0_platform_data = {
-> @@ -53,25 +41,13 @@ struct msp_i2s_platform_data msp0_platform_data = {
->  static struct stedma40_chan_cfg msp1_dma_rx = {
->  	.high_priority = true,
->  	.dir = STEDMA40_PERIPH_TO_MEM,
-> -
->  	.dev_type = DB8500_DMA_DEV30_MSP3,
-> -
-> -	.src_info.psize = STEDMA40_PSIZE_LOG_4,
-> -	.dst_info.psize = STEDMA40_PSIZE_LOG_4,
-> -
-> -	/* data_width is set during configuration */
->  };
->  
->  static struct stedma40_chan_cfg msp1_dma_tx = {
->  	.high_priority = true,
->  	.dir = STEDMA40_MEM_TO_PERIPH,
-> -
->  	.dev_type = DB8500_DMA_DEV30_MSP1,
-> -
-> -	.src_info.psize = STEDMA40_PSIZE_LOG_4,
-> -	.dst_info.psize = STEDMA40_PSIZE_LOG_4,
-> -
-> -	/* data_width is set during configuration */
->  };
->  
->  struct msp_i2s_platform_data msp1_platform_data = {
-> @@ -83,29 +59,15 @@ struct msp_i2s_platform_data msp1_platform_data = {
->  static struct stedma40_chan_cfg msp2_dma_rx = {
->  	.high_priority = true,
->  	.dir = STEDMA40_PERIPH_TO_MEM,
-> -
->  	.dev_type = DB8500_DMA_DEV14_MSP2,
-> -
-> -	/* MSP2 DMA doesn't work with PSIZE == 4 on DB8500v2 */
-> -	.src_info.psize = STEDMA40_PSIZE_LOG_1,
-> -	.dst_info.psize = STEDMA40_PSIZE_LOG_1,
-> -
-> -	/* data_width is set during configuration */
->  };
->  
->  static struct stedma40_chan_cfg msp2_dma_tx = {
->  	.high_priority = true,
->  	.dir = STEDMA40_MEM_TO_PERIPH,
-> -
->  	.dev_type = DB8500_DMA_DEV14_MSP2,
-> -
-> -	.src_info.psize = STEDMA40_PSIZE_LOG_4,
-> -	.dst_info.psize = STEDMA40_PSIZE_LOG_4,
-> -
->  	.use_fixed_channel = true,
->  	.phy_channel = 1,
-> -
-> -	/* data_width is set during configuration */
->  };
->  
->  static struct platform_device *db8500_add_msp_i2s(struct device *parent,
+    72.22%          find  [kernel.kallsyms]          [k] _raw_spin_lock
+                    |
+                    --- _raw_spin_lock
+                       |          
+                       |--98.84%-- vm_map_ram
+                       |          _xfs_buf_map_pages
+                       |          xfs_buf_get
+                       |          xfs_buf_read
+                       |          xfs_trans_read_buf
+                       |          xfs_da_do_buf
+                       |          xfs_da_read_buf
+                       |          xfs_dir2_block_getdents
+                       |          xfs_readdir
+                       |          xfs_file_readdir
+                       |          vfs_readdir
+                       |          sys_getdents
+                       |          system_call_fastpath
+                       |          __getdents64
+                       |          
+                       |--1.12%-- _xfs_buf_map_pages
+                       |          xfs_buf_get
+                       |          xfs_buf_read
+                       |          xfs_trans_read_buf
+                       |          xfs_da_do_buf
+                       |          xfs_da_read_buf
+                       |          xfs_dir2_block_getdents
+                       |          xfs_readdir
+                       |          xfs_file_readdir
+                       |          vfs_readdir
+                       |          sys_getdents
+                       |          system_call_fastpath
+                       |          __getdents64
+                        --0.04%-- [...]
 
-Linus, poke.
+Looking at the code my best guess is that we are spinning on
+vmap_area_lock, but I could be wrong.  This is the only process
+spinning on the machine so I'm assuming either another process has
+blocked while holding the lock, or perhaps this find process has tried
+to acquire the vmap_area_lock twice?
+
+I've skimmed through the change logs between 3.1 and 3.9 but nothing
+stood out as fix for this bug.  Does this ring a bell with anyone?  If
+I have a machine that is currently in one of these stuck states does
+anyone have any tips to identifying the processes currently holding
+the lock?
+
+Additionally as I mentioned before I have two clusters of roughly
+equal size though one cluster hits this issue more frequently.  On
+that cluster with approximately 350 machines we get about 10 stuck
+machines a month.  The other cluster has about 450 machines but we
+only get about 1 or 2 stuck machines a month.  Both clusters run the
+same find command every hour, but the workloads on the machines are
+different.  The cluster that hits the issue more frequently tends to
+run more memory intensive jobs.
+
+I'm open to building some debug kernels to help track this down,
+though I can't upgrade all of the machines in one shot so it may take
+a while to reproduce.  I'm happy to provide any other information if
+people have questions.
+
+Thanks,
+Shawn
 
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+
+---------------------------------------------------------------
+This email, along with any attachments, is confidential. If you 
+believe you received this message in error, please contact the 
+sender immediately and delete all copies of the message.  
+Thank you.
