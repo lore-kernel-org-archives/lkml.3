@@ -1,44 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752355Ab3EAQ4p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 12:56:45 -0400
-Received: from mga02.intel.com ([134.134.136.20]:54163 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752086Ab3EAQ4i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 12:56:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,590,1363158000"; 
-   d="scan'208";a="306295566"
-Message-ID: <51814943.7000604@intel.com>
-Date: Wed, 01 May 2013 09:56:35 -0700
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S1752313Ab3EAQ7h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 12:59:37 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:36634
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750922Ab3EAQ72 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 May 2013 12:59:28 -0400
+Date: Wed, 1 May 2013 18:57:49 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, Julian Anastasov <ja@ssi.bg>,
+        Simon Horman <horms@verge.net.au>, Ingo Molnar <mingo@redhat.com>,
+        lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
+        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Dipankar Sarma <dipankar@in.ibm.com>
+Subject: Re: [PATCH v2 1/2] sched: Add cond_resched_rcu_lock() helper
+Message-ID: <20130501165748.GD7521@dyad.programming.kicks-ass.net>
+References: <1367290378-29224-1-git-send-email-horms@verge.net.au>
+ <1367290378-29224-2-git-send-email-horms@verge.net.au>
+ <alpine.LFD.2.00.1304301011310.1700@ja.ssi.bg>
+ <20130430072944.GA13959@verge.net.au>
+ <alpine.LFD.2.00.1304301051260.1700@ja.ssi.bg>
+ <20130501091012.GB28253@dyad.programming.kicks-ass.net>
+ <20130501124637.GO3780@linux.vnet.ibm.com>
+ <20130501151752.GA7521@dyad.programming.kicks-ass.net>
+ <1367422195.11020.46.camel@edumazet-glaptop>
+ <20130501160218.GQ3780@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Samuel.Ortiz@mail.home.local, Tomas Winkler <tomas.winkler@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Illegal-Object: Syntax error in To: address found on vger.kernel.org:
-	To:	Samuel Ortiz
-			^-extraneous tokens in address
-Subject: mei file2alias compile error
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130501160218.GQ3780@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus's current git isn't compiling for me:
+On Wed, May 01, 2013 at 09:02:18AM -0700, Paul E. McKenney wrote:
+> My guess would be for the case where sched_preempt_enable_no_resched()
+> is followed some time later by cond_resched().
 
->   HOSTCC  scripts/mod/file2alias.o
-> /home/davehans/linux.git/scripts/mod/file2alias.c: In function ‘do_mei_entry’:
-> /home/davehans/linux.git/scripts/mod/file2alias.c:1140:1: error: ‘OFF_mei_cl_device_id_name’ undeclared (first use in this function)
-> /home/davehans/linux.git/scripts/mod/file2alias.c:1140:1: note: each undeclared identifier is reported only once for each function it appears in
-> /home/davehans/linux.git/scripts/mod/file2alias.c: At top level:
-> /home/davehans/linux.git/scripts/mod/file2alias.c:1146:1: error: ‘SIZE_mei_cl_device_id’ undeclared here (not in a function)
-
-I confirmed that this commit: e5354107e is the one causing it for me.
-My .config is here:
-
-	http://sr71.net/~dave/linux/config-3.9-meibad
-
-Note that I don't even have CONFIG_INTEL_MEI enabled with this config.
+I might hope not.. preempt_enable_no_resched() is nasty and you're likely to be
+hit with a frozen fish of sorts by tglx if you try to use it ;-)
