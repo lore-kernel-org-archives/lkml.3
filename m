@@ -1,70 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753477Ab3EBWAr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 18:00:47 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:40945 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750792Ab3EBWAo (ORCPT
+	id S1757582Ab3EBWAz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 18:00:55 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:39121 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752220Ab3EBWAq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 18:00:44 -0400
-Date: Thu, 2 May 2013 15:00:31 -0700
-From: Joel Becker <jlbec@evilplan.org>
-To: "Theodore Ts'o" <tytso@mit.edu>, Lukas Czerner <lczerner@redhat.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        Mark Fasheh <mfasheh@suse.com>, ocfs2-devel@oss.oracle.com
-Subject: Re: [PATCH v3 06/18] ocfs2: use ->invalidatepage() length argument
-Message-ID: <20130502220030.GC26770@localhost>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Lukas Czerner <lczerner@redhat.com>, linux-mm@kvack.org,
-	linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-	linux-ext4@vger.kernel.org, Mark Fasheh <mfasheh@suse.com>,
-	ocfs2-devel@oss.oracle.com
-References: <1365498867-27782-1-git-send-email-lczerner@redhat.com>
- <1365498867-27782-7-git-send-email-lczerner@redhat.com>
- <20130423141604.GE31170@thunk.org>
+	Thu, 2 May 2013 18:00:46 -0400
+Date: Fri, 3 May 2013 01:00:34 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [patch] configfs: use capped length for ->store_attribute()
+Message-ID: <20130502220034.GP5123@mwanda>
+References: <20130430072813.GC7237@elgon.mountain>
+ <20130502215152.GB26770@localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130423141604.GE31170@thunk.org>
-X-Burt-Line: Trees are cool.
-X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
- come to perfection.
+In-Reply-To: <20130502215152.GB26770@localhost>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-by: Joel Becker <jlbec@evilplan.org>
-
-On Tue, Apr 23, 2013 at 10:16:04AM -0400, Theodore Ts'o wrote:
-> On Tue, Apr 09, 2013 at 11:14:15AM +0200, Lukas Czerner wrote:
-> > ->invalidatepage() aop now accepts range to invalidate so we can make
-> > use of it in ocfs2_invalidatepage().
+On Thu, May 02, 2013 at 02:51:53PM -0700, Joel Becker wrote:
+> On Tue, Apr 30, 2013 at 10:28:14AM +0300, Dan Carpenter wrote:
+> > The difference between "count" and "len" is that "len" is capped at
+> > 4095.  Changing it like this makes it match how sysfs_write_file() is
+> > implemented.
 > > 
-> > Signed-off-by: Lukas Czerner <lczerner@redhat.com>
-> > Cc: Joel Becker <jlbec@evilplan.org>
+> > Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 > 
-> +Mark Fasheh, ocfs2-devel
+> Acked-by: Joel Becker <jlbec@evilplan.org>
 > 
-> To the ocfs2 development team,
-> 
-> Since half of this patch series modifies ext4 extensively, and changes
-> to the other file systems are relatively small, I plan to carry the
-> invalidatepage patch set in the ext4 tree for the next development
-> cycle (i.e., not the upcoming merge window, but the next one).  To
-> that end, it would be great if you take a look at this patch set and
-> send us an Acked-by signoff.
-> 
-> Thanks!!
-> 
-> 						- Ted
+> Do you want me to push this up, or will you be sending it?
 
--- 
+Could you push it?
 
-"Ninety feet between bases is perhaps as close as man has ever come
- to perfection."
-	- Red Smith
+regards,
+dan carpenter
 
-			http://www.jlbec.org/
-			jlbec@evilplan.org
+
