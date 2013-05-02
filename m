@@ -1,56 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754695Ab3EBIEF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 04:04:05 -0400
-Received: from smtp-out-229.synserver.de ([212.40.185.229]:1082 "EHLO
-	smtp-out-227.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753754Ab3EBID4 (ORCPT
+	id S1753311Ab3EBIIU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 04:08:20 -0400
+Received: from relay.medianet-world.de ([213.157.0.172]:45203 "HELO
+	relay.medianet-world.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751270Ab3EBIIF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 04:03:56 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 22215
-Message-ID: <51821DC9.2010601@metafoo.de>
-Date: Thu, 02 May 2013 10:03:21 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+	Thu, 2 May 2013 04:08:05 -0400
+thread-index: Ac5HDCH8fgQVtTMhSLOD19RhyAfpwQ==
+Thread-Topic: [ANNOUNCE] 3.4.41-rt55-feat3
+Content-Class: urn:content-classes:message
+Importance: normal
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4913
+From: "Tim Sander" <tim.sander@hbm.com>
+To: "Steven Rostedt" <rostedt@goodmis.org>
+Cc: "LKML" <linux-kernel@vger.kernel.org>,
+        "RT" <linux-rt-users@vger.kernel.org>,
+        "Thomas Gleixner" <tglx@linutronix.de>,
+        "Carsten Emde" <C.Emde@osadl.org>, "John Kacur" <jkacur@redhat.com>
+Subject: Re: [ANNOUNCE] 3.4.41-rt55-feat3
+Date: Thu, 02 May 2013 10:07:47 +0200
+Message-ID: <5389720.ZZ1mLuoD9D@dabox>
+Organization: Hottinger Baldwin Messtechnik
+User-Agent: KMail/4.10.2 (Linux/3.8.0+; KDE/4.10.2; x86_64; ; )
+In-Reply-To: <1367333957.30667.61.camel@gandalf.local.home>
+References: <1367283987.30667.49.camel@gandalf.local.home> <2805818.g7STVSuEne@dabox> <1367333957.30667.61.camel@gandalf.local.home>
 MIME-Version: 1.0
-To: eunb.song@samsung.com
-CC: "ralf@linux-mips.org" <ralf@linux-mips.org>,
-        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] MIPS: Fix build error crash_dump.c file.
-References: <21270808.191281367481634509.JavaMail.weblogic@epv6ml12>
-In-Reply-To: <21270808.191281367481634509.JavaMail.weblogic@epv6ml12>
-Content-Type: text/plain; charset=EUC-KR
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+	charset="us-ascii"
+X-OriginalArrivalTime: 02 May 2013 08:07:47.0463 (UTC) FILETIME=[21EC3170:01CE470C]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/02/2013 10:00 AM, EUNBONG SONG wrote:
+Hi
+> > > I'm pleased to announce the 3.4.41-rt55-feat3 feature release.
+> > > 
+> > > Note, I first uploaded -feat2 then realized I didn't add a compile fix
+> > > by
+> > > Mike Galbraith, and then created the -feat3 with that fix.
+> > 
+> > I just wanted to say thanks that this patch enables compilation again with
+> > the preempt rt patchset with CONFIG_HIGH_RES_TIMERS disabled :-).
+> > I think this patch* should be moved out of the feat patchset into the
+> > stable rt backport branch as this also doesn't compile beginning with the
+> > 3.6.36-rt50 patch with CONFIG_HIGH_RES_TIMERS disabled .
 > 
-> This patch fixes crash_dump.c build error.
-> 
+> As the discussion was originally in the -feat thread, I didn't realize
+> it was required for vanilla. Hmm, as it had nothing to do with softirqs
+> I should have realized that. Oh well.
+Yes, i only realized it later on, that the compile failure with 
+CONFIG_HIGH_RES_TIMERS was introduced in 3.6.36-rt50 when i tried the feature 
+patch. Then i prepared a patch only to see that a fix was already in the 
+feature branch. Alas.
 
-When fixing a compile error/warning you should always include the error
-message in the commit log.
+> Anyway, I'm working on getting the mainline stable releases merged into
+> the current stable-rt releases, and then I'll be looking at backports
+> from upstream -rt. I'll add it then.
+Sounds good.
 
-> Signed-off-by: Eunbong Song <eunb.song@samsung.com>
-> ---
->  arch/mips/kernel/crash_dump.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/mips/kernel/crash_dump.c b/arch/mips/kernel/crash_dump.c
-> index 35bed0d..3be9e7b 100644
-> --- a/arch/mips/kernel/crash_dump.c
-> +++ b/arch/mips/kernel/crash_dump.c
-> @@ -2,6 +2,7 @@
->  #include <linux/bootmem.h>
->  #include <linux/crash_dump.h>
->  #include <asm/uaccess.h>
-> +#include <linux/slab.h>
->  
->  static int __init parse_savemaxmem(char *p)
->  {
+Tim
 
+Please ignore this legalese as always on public lists (its attached 
+automatically):
+
+Hottinger Baldwin Messtechnik GmbH, Im Tiefen See 45, 64293 Darmstadt, Germany | www.hbm.com 
+
+Registered as GmbH (German limited liability corporation) in the commercial register at the local court of Darmstadt, HRB 1147  
+Company domiciled in Darmstadt | CEO: Andreas Huellhorst | Chairman of the board: James Charles Webster
+
+Als Gesellschaft mit beschraenkter Haftung eingetragen im Handelsregister des Amtsgerichts Darmstadt unter HRB 1147 
+Sitz der Gesellschaft: Darmstadt | Geschaeftsfuehrung: Andreas Huellhorst | Aufsichtsratsvorsitzender: James Charles Webster
+
+The information in this email is confidential. It is intended solely for the addressee. If you are not the intended recipient, please let me know and delete this email.
+
+Die in dieser E-Mail enthaltene Information ist vertraulich und lediglich fur den Empfaenger bestimmt. Sollten Sie nicht der eigentliche Empfaenger sein, informieren Sie mich bitte kurz und loeschen diese E-Mail.
