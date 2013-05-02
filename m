@@ -1,86 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932152Ab3EBKwx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 06:52:53 -0400
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:48198 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757467Ab3EBKww (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 06:52:52 -0400
-Date: Thu, 2 May 2013 11:52:46 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        mian.yousaf.kaukab@stericsson.com
-Subject: Re: [PATCH 10/10] ARM: ux500: Remove empty function
- u8500_of_init_devices()
-Message-ID: <20130502105246.GK25256@gmail.com>
-References: <1366729394-11406-1-git-send-email-lee.jones@linaro.org>
- <1366729394-11406-11-git-send-email-lee.jones@linaro.org>
+	id S1758661Ab3EBKyI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 06:54:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38352 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757467Ab3EBKyF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 06:54:05 -0400
+Date: Thu, 2 May 2013 13:53:53 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: kvm@vger.kernel.org, virtualization@lists.osdl.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, asias@redhat.com, mst@redhat.com,
+        nab@linux-iscsi.org
+Subject: [PULL] vhost: cleanups and fixes
+Message-ID: <20130502105353.GA24655@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1366729394-11406-11-git-send-email-lee.jones@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Apr 2013, Lee Jones wrote:
+The following changes since commit c39904a0ac22cf05f5f44226457f6da0fe65457e:
 
-> As promised, now all devices which resided in u8500_of_init_devices()
-> have been enabled for Device Tree, we can completely remove it.
-> 
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> ---
->  arch/arm/mach-ux500/cpu-db8500.c |   14 +-------------
->  1 file changed, 1 insertion(+), 13 deletions(-)
-> 
-> diff --git a/arch/arm/mach-ux500/cpu-db8500.c b/arch/arm/mach-ux500/cpu-db8500.c
-> index 36ef6ed..a2c83c2 100644
-> --- a/arch/arm/mach-ux500/cpu-db8500.c
-> +++ b/arch/arm/mach-ux500/cpu-db8500.c
-> @@ -221,15 +221,6 @@ struct device * __init u8500_init_devices(struct ab8500_platform_data *ab8500)
->  }
->  
->  #ifdef CONFIG_MACH_UX500_DT
-> -
-> -/* TODO: Once all pieces are DT:ed, remove completely. */
-> -static struct device * __init u8500_of_init_devices(void)
-> -{
-> -	struct device *parent = db8500_soc_device_init();
-> -
-> -	return parent;
-> -}
-> -
->  static struct of_dev_auxdata u8500_auxdata_lookup[] __initdata = {
->  	/* Requires call-back bindings. */
->  	OF_DEV_AUXDATA("arm,cortex-a9-pmu", 0, "arm-pmu", &db8500_pmu_platdata),
-> @@ -288,7 +279,7 @@ static const struct of_device_id u8500_local_bus_nodes[] = {
->  
->  static void __init u8500_init_machine(void)
->  {
-> -	struct device *parent = NULL;
-> +	struct device *parent = db8500_soc_device_init();
->  
->  	/* Pinmaps must be in place before devices register */
->  	if (of_machine_is_compatible("st-ericsson,mop500"))
-> @@ -301,9 +292,6 @@ static void __init u8500_init_machine(void)
->  	else if (of_machine_is_compatible("st-ericsson,ccu9540")) {}
->  		/* TODO: Add pinmaps for ccu9540 board. */
->  
-> -	/* TODO: Export SoC, USB, cpu-freq and DMA40 */
-> -	parent = u8500_of_init_devices();
-> -
->  	/* automatically probe child nodes of db8500 device */
->  	of_platform_populate(NULL, u8500_local_bus_nodes, u8500_auxdata_lookup, parent);
->  }
+  Merge branch 'master' of git://git.kernel.org/pub/scm/linux/kernel/git/jkirsher/net-next (2013-04-26 23:33:41 -0400)
 
-Linus, poke.
+are available in the git repository at:
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/mst/vhost.git tags/for_linus
+
+for you to fetch changes up to 181c04a357bb791587c55a99362c2fdde2c64f18:
+
+  vhost_scsi: module rename (2013-05-02 13:40:22 +0300)
+
+----------------------------------------------------------------
+vhost: cleanups and fixes for 3.10
+
+Here are vhost cleanups and fixes by Asias He and myself.
+They affect both vhost-net and vhost-scsi devices.
+They also *depend* on both net-next and target-pending,
+where the net and target commits these changes depend on
+are already merged.
+So merging through the common vhost tree.
+
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+
+----------------------------------------------------------------
+Asias He (3):
+      vhost: Allow device specific fields per vq
+      tcm_vhost: Wait for pending requests in vhost_scsi_flush()
+      vhost: move vhost-net zerocopy fields to net.c
+
+Michael S. Tsirkin (8):
+      Merge branch 'for-next-merge' of git://git.kernel.org/.../nab/target-pending into vhost-net-next
+      tcm_vhost: document inflight ref-counting use
+      vhost: move per-vq net specific fields out to net
+      tcm_vhost: remove virtio-net.h dependency
+      vhost: fix error handling in RESET_OWNER ioctl
+      vhost: src file renames
+      tcm_vhost: header split up
+      vhost_scsi: module rename
+
+ drivers/infiniband/Kconfig                     |    1 +
+ drivers/infiniband/Makefile                    |    1 +
+ drivers/infiniband/ulp/isert/Kconfig           |    5 +
+ drivers/infiniband/ulp/isert/Makefile          |    2 +
+ drivers/infiniband/ulp/isert/ib_isert.c        | 2281 ++++++++++++++++++++++++
+ drivers/infiniband/ulp/isert/ib_isert.h        |  138 ++
+ drivers/infiniband/ulp/isert/isert_proto.h     |   47 +
+ drivers/scsi/qla2xxx/qla_target.c              |   19 -
+ drivers/scsi/qla2xxx/qla_target.h              |    1 -
+ drivers/target/iscsi/Makefile                  |    3 +-
+ drivers/target/iscsi/iscsi_target.c            | 1184 +++++++-----
+ drivers/target/iscsi/iscsi_target.h            |    3 +-
+ drivers/target/iscsi/iscsi_target_auth.c       |   28 +-
+ drivers/target/iscsi/iscsi_target_configfs.c   |   98 +-
+ drivers/target/iscsi/iscsi_target_core.h       |   26 +-
+ drivers/target/iscsi/iscsi_target_device.c     |    7 +-
+ drivers/target/iscsi/iscsi_target_erl1.c       |   13 +-
+ drivers/target/iscsi/iscsi_target_login.c      |  472 +++--
+ drivers/target/iscsi/iscsi_target_login.h      |    6 +
+ drivers/target/iscsi/iscsi_target_nego.c       |  194 +-
+ drivers/target/iscsi/iscsi_target_nego.h       |   11 +-
+ drivers/target/iscsi/iscsi_target_parameters.c |   87 +-
+ drivers/target/iscsi/iscsi_target_parameters.h |   16 +-
+ drivers/target/iscsi/iscsi_target_tmr.c        |    4 +-
+ drivers/target/iscsi/iscsi_target_tpg.c        |    6 +-
+ drivers/target/iscsi/iscsi_target_transport.c  |   55 +
+ drivers/target/iscsi/iscsi_target_util.c       |   53 +-
+ drivers/target/iscsi/iscsi_target_util.h       |    1 +
+ drivers/target/target_core_file.c              |  122 +-
+ drivers/target/target_core_iblock.c            |  108 +-
+ drivers/target/target_core_sbc.c               |   85 +
+ drivers/target/target_core_transport.c         |   13 +-
+ drivers/target/tcm_fc/tfc_io.c                 |    9 +-
+ drivers/target/tcm_fc/tfc_sess.c               |    9 +-
+ drivers/vhost/Kconfig                          |   10 +-
+ drivers/vhost/Kconfig.tcm                      |    6 -
+ drivers/vhost/Makefile                         |    3 +-
+ drivers/vhost/net.c                            |  255 ++-
+ drivers/vhost/{tcm_vhost.c => scsi.c}          |  507 +++++-
+ drivers/vhost/tcm_vhost.h                      |  115 --
+ drivers/vhost/test.c                           |    9 +-
+ drivers/vhost/vhost.c                          |  153 +-
+ drivers/vhost/vhost.h                          |   32 +-
+ include/target/iscsi/iscsi_transport.h         |   83 +
+ include/target/target_core_backend.h           |    4 +
+ include/target/target_core_fabric.h            |    2 +-
+ include/uapi/linux/vhost.h                     |   28 +
+ 47 files changed, 4985 insertions(+), 1330 deletions(-)
+ create mode 100644 drivers/infiniband/ulp/isert/Kconfig
+ create mode 100644 drivers/infiniband/ulp/isert/Makefile
+ create mode 100644 drivers/infiniband/ulp/isert/ib_isert.c
+ create mode 100644 drivers/infiniband/ulp/isert/ib_isert.h
+ create mode 100644 drivers/infiniband/ulp/isert/isert_proto.h
+ create mode 100644 drivers/target/iscsi/iscsi_target_transport.c
+ delete mode 100644 drivers/vhost/Kconfig.tcm
+ rename drivers/vhost/{tcm_vhost.c => scsi.c} (76%)
+ delete mode 100644 drivers/vhost/tcm_vhost.h
+ create mode 100644 include/target/iscsi/iscsi_transport.h
