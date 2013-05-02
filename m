@@ -1,81 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761598Ab3EBSpW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 14:45:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24147 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761358Ab3EBSpU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 14:45:20 -0400
-Date: Thu, 2 May 2013 14:45:14 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, lizefan@huawei.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org
-Subject: Re: [PATCHSET] blk-throttle: implement proper hierarchy support
-Message-ID: <20130502184514.GI30020@redhat.com>
-References: <1367455189-6957-1-git-send-email-tj@kernel.org>
- <20130502173428.GA4771@redhat.com>
- <20130502175701.GL19814@mtj.dyndns.org>
- <20130502181747.GH30020@redhat.com>
- <20130502182933.GN19814@mtj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130502182933.GN19814@mtj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1761654Ab3EBSpa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 14:45:30 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:15446 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761358Ab3EBSp1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 14:45:27 -0400
+X-Authority-Analysis: v=2.0 cv=UY7TuduN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=qVwF2erAZtkA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=Zh7nNSpF_ucA:10 a=pGLkceISAAAA:8 a=pu8zJxrd4HHR-FtzszsA:9 a=QEXdDO2ut3YA:10 a=lme0yl12AcQA:10 a=jeBq3FmKZ4MA:10 a=MSl-tDqOz04A:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1367520325.7373.2.camel@gandalf.local.home>
+Subject: Re: [PATCH v2] init: Do not warn on non-zero initcall return
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Date: Thu, 02 May 2013 14:45:25 -0400
+In-Reply-To: <CAMuHMdWX0kvVP09Ttrb8Q+HTR3HDndEDVnS2aEHnRS4SHcc=Fw@mail.gmail.com>
+References: <1367429751.30667.99.camel@gandalf.local.home>
+	 <CAMuHMdXguZknoR=A6Cpqoz4VYX6wuPtUWfV4yGhkBiGMQOdaYg@mail.gmail.com>
+	 <1367507873.30667.136.camel@gandalf.local.home>
+	 <CAMuHMdWX0kvVP09Ttrb8Q+HTR3HDndEDVnS2aEHnRS4SHcc=Fw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 02, 2013 at 11:29:33AM -0700, Tejun Heo wrote:
-> Hello, Vivek.
+On Thu, 2013-05-02 at 20:33 +0200, Geert Uytterhoeven wrote:
+> On Thu, May 2, 2013 at 5:17 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> > On Thu, 2013-05-02 at 09:43 +0200, Geert Uytterhoeven wrote:
+> >> On Wed, May 1, 2013 at 7:35 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> >> > --- a/init/main.c
+> >> > +++ b/init/main.c
+> >> > @@ -686,11 +686,8 @@ int __init_or_module do_one_initcall(initcall_t fn)
+> >> >
+> >> >         msgbuf[0] = 0;
+> >> >
+> >> > -       if (ret && ret != -ENODEV && initcall_debug)
+> >> > -               sprintf(msgbuf, "error code %d ", ret);
+> >> > -
+> >> >         if (preempt_count() != count) {
+> >> > -               strlcat(msgbuf, "preemption imbalance ", sizeof(msgbuf));
+> >> > +               sprintf(msgbuf, "preemption imbalance ");
+> >>
+> >> snprintf(), please?
+> >
+> > Why? The msgbuf is 64 bytes, this is the first occurrence and
+> > "preemption imbalance " is much less than 64 bytes.
 > 
-> On Thu, May 02, 2013 at 02:17:48PM -0400, Vivek Goyal wrote:
-> > Sorry, did not understand how did you arrive at 15% penalty. I think
-> > in worst case it will be 50%. Assume size of bio is 1MB. So it will
+> The day after tomorrow, someone will modify the code, and cause a buffer
+> overflow.
 > 
-> Oh, that's the number I got by running test.
+> I'm actually surprised (v)sprintf() is not tagged __deprecated.
 > 
-> > wait for 1 second in child group and then it will wait again for
-> > another second in parent group. Assume next bio gets queued only
-> > after first bio gets dispatched. 
-> > 
-> > That means each 1MB bio will wait for 2 second which will lead to
-> > effective rate of .5MB/second.
-> 
-> Then the scheduling algorithm is broken in itself regardless of
-> hierarchy.  That means an issuer which issues at exact the exactly
-> configured pace gets penalized, right?
 
-I did not understand this point. In flat model, application issuing
-at configured page will not get penalized.
+I actually did think for a second in adding that. Not sure why I didn't.
+Probably just because the original code didn't do that.
 
-This penalty is coming from the fact that we are moving bios after the
-wait and make them wait in another queue.
+But I'll let that clean up come another day by someone else.
 
-In flat model there is no such problem. So to me, it is the problem
-of how hierarchical scheduling is implemented. In flat model, I did
-not have to deal with it.
+-- Steve
 
-> 
-> > > I don't particularly like doing that as a separate step, maybe we can
-> > > just push the child's start time to the parent while dispatching?
-> > > Does that sound doable to you?
-> > 
-> > May be. But climbing the ladder has unfairness problems too. We might
-> > have to rethink about the hierarchical algorithm altogether.
-> 
-> Meh, it's not different from flat case.  It gives workable enough
-> fairness from the simple fact that the queues at each layer are FIFO.
-> Beyond that, as long as the limits are honored, it's fine.  If this
-> thing is going to be used for high-bandwidth applications, it should
-> probably get reimplemented as per-cpu token distributing hierarchy,
-> but blk-throttle is not gonna hold back the whole cgroup hierarchy
-> support.  If you want to reimplement the whole thing, please feel free
-> to do so afterwards.
 
-Ok. Not having a perfect algorithm now is fine. We can always redo it
-later.
-
-Thanks
-Vivek
