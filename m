@@ -1,58 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754086Ab3EBJ4U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 05:56:20 -0400
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:54886 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750771Ab3EBJ4T (ORCPT
+	id S1755077Ab3EBJ4r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 05:56:47 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:55504 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751303Ab3EBJ4p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 05:56:19 -0400
-MIME-Version: 1.0
-In-Reply-To: <87fvy53eun.fsf@devron.myhome.or.jp>
-References: <1367107703-2665-1-git-send-email-linkinjeon@gmail.com>
-	<87ppxd4ddm.fsf@devron.myhome.or.jp>
-	<CAKYAXd8v-eF0E2FzLfm1KaZaRu-adQcDVQQeWAiH6-8Pr+BxmA@mail.gmail.com>
-	<87bo8v42wx.fsf@devron.myhome.or.jp>
-	<CAKYAXd_-Z8Avm-FmLF=MVqHSkzfE1_jczBroyFXv5xgQmr5=XA@mail.gmail.com>
-	<87vc722cdu.fsf@devron.myhome.or.jp>
-	<CAKYAXd8nTUrW04ADyDkhnJWyjUKiniU+r65J5SMhXT-jHTG+UA@mail.gmail.com>
-	<87r4hp3kax.fsf@devron.myhome.or.jp>
-	<87k3nh3jzi.fsf@devron.myhome.or.jp>
-	<CAKYAXd_DRLG3KzjXEQ_8vD5mFWE95gR+jj3-MYhC3QKgQOLTEA@mail.gmail.com>
-	<87fvy53eun.fsf@devron.myhome.or.jp>
-Date: Thu, 2 May 2013 18:56:18 +0900
-Message-ID: <CAKYAXd95yVtbEmwiaDaxgDsJYbqWDV23rY0GuPKLVf0msSGJ2g@mail.gmail.com>
-Subject: Re: [PATCH RESEND v5] fat: editions to support fat_fallocate
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 2 May 2013 05:56:45 -0400
+X-AuditID: 9c930179-b7c28ae0000018a0-1d-51823859845a
+From: Chanho Min <chanho.min@lge.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Kyungsik Lee <kyungsik.lee@lge.com>,
+        Yann Collet <yann.collet.73@gmail.com>,
+        Bob Pearson <rpearson@systemfabricworks.com>,
+        Richard Weinberger <richard@nod.at>,
+        Geert Uytterhoeven <geert.uytterhoeven@gmail.com>,
+        linux-kernel@vger.kernel.org, sparclinux@vger.kernel.org,
+        linux-m68k@vger.kernel.org, linux-next@vger.kernel.org,
+        Chanho Min <chanho.min@lge.com>
+Subject: [PATCH] lib: add weak clz/ctz functions
+Date: Thu,  2 May 2013 18:56:19 +0900
+Message-Id: <1367488579-15456-1-git-send-email-chanho.min@lge.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/5/2, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
-> Namjae Jeon <linkinjeon@gmail.com> writes:
->
->>>> AFAIK, preallocation != fallocate. ext*'s preallocation was there at
->>>> before fallocation to optimize block allocation for user data blocks.
->> yes, this is correct , preallocation!= fallocate, we just adopted only
->> the "release part" from that approach
->> Sorry, Would you mind to adopt this approach :) ?
->
-> I'm ok as start if it works.
->
-> But from this discussion, discard at last close(2) doesn't look like
-> working for your requirement. Since you want to discard at last close of
-> inode, so, rather, I guess you actually want to discard at last
-> dereference of inode.
-Okay, I see. I will check your review points again.
+Some architectures need __c[lt]z[sd]i2() for __builtin_c[lt]z[ll] and
+It causes build failure. They can be implemented using the fls()/__ffs() and
+overridden by linking arch-specific versions may not be implemented yet.
 
-Thanks OGAWA for review!
->
-> Thanks.
-> --
-> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
->
+Reference: https://lkml.org/lkml/2013/4/18/603
+Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Signed-off-by: Chanho Min <chanho.min@lge.com>
+---
+ lib/Makefile  |    2 +-
+ lib/clz_ctz.c |   58 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 59 insertions(+), 1 deletion(-)
+ create mode 100644 lib/clz_ctz.c
+
+diff --git a/lib/Makefile b/lib/Makefile
+index af79e8c..3eacb2c 100644
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -23,7 +23,7 @@ lib-y	+= kobject.o klist.o
+ 
+ obj-y += bcd.o div64.o sort.o parser.o halfmd4.o debug_locks.o random32.o \
+ 	 bust_spinlocks.o hexdump.o kasprintf.o bitmap.o scatterlist.o \
+-	 gcd.o lcm.o list_sort.o uuid.o flex_array.o \
++	 gcd.o lcm.o list_sort.o uuid.o flex_array.o clz_ctz.o\
+ 	 bsearch.o find_last_bit.o find_next_bit.o llist.o memweight.o kfifo.o
+ obj-y += string_helpers.o
+ obj-$(CONFIG_TEST_STRING_HELPERS) += test-string_helpers.o
+diff --git a/lib/clz_ctz.c b/lib/clz_ctz.c
+new file mode 100644
+index 0000000..a8f8379
+--- /dev/null
++++ b/lib/clz_ctz.c
+@@ -0,0 +1,58 @@
++/*
++ * lib/clz_ctz.c
++ *
++ * Copyright (C) 2013 Chanho Min <chanho.min@lge.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * __c[lt]z[sd]i2 can be overridden by linking arch-specific versions.
++ */
++
++#include <linux/export.h>
++#include <linux/kernel.h>
++
++int __weak __ctzsi2(int val)
++{
++	return __ffs(val);
++}
++EXPORT_SYMBOL(__ctzsi2);
++
++int __weak __clzsi2(int val)
++{
++	return 32 - fls(val);
++}
++EXPORT_SYMBOL(__clzsi2);
++
++#if BITS_PER_LONG == 32
++
++int __weak __clzdi2(long val)
++{
++	return 32 - fls((int)val);
++}
++EXPORT_SYMBOL(__clzdi2);
++
++int __weak __ctzdi2(long val)
++{
++	return __ffs((u32)val);
++}
++EXPORT_SYMBOL(__ctzdi2);
++
++#elif BITS_PER_LONG == 64
++
++int __weak __clzdi2(long val)
++{
++	return 64 - fls64((u64)val);
++}
++EXPORT_SYMBOL(__clzdi2);
++
++int __weak __ctzdi2(long val)
++{
++	return __ffs64((u64)val);
++}
++EXPORT_SYMBOL(__ctzdi2);
++
++#else
++#error BITS_PER_LONG not 32 or 64
++#endif
+-- 
+1.7.9.5
+
