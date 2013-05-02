@@ -1,86 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761961Ab3EBSuJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 14:50:09 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:55329 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761824Ab3EBSuD (ORCPT
+	id S1761979Ab3EBSwT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 14:52:19 -0400
+Received: from mail-ve0-f182.google.com ([209.85.128.182]:35171 "EHLO
+	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761716Ab3EBSwQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 14:50:03 -0400
-Message-ID: <5182B557.4040804@wwwdotorg.org>
-Date: Thu, 02 May 2013 12:49:59 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Thu, 2 May 2013 14:52:16 -0400
 MIME-Version: 1.0
-To: Christian Ruppert <christian.ruppert@abilis.com>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Patrice CHOTARD <patrice.chotard@st.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Sascha Leuenberger <sascha.leuenberger@abilis.com>,
-        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Subject: Re: [PATCH 1/2] pinmux: Add TB10x pinmux driver
-References: <1365608728-30494-1-git-send-email-christian.ruppert@abilis.com> <516EEAA0.10906@wwwdotorg.org> <20130418090310.GA17636@ab42.lan> <CACRpkdZd0_W432od5565phhUcJMRWiV9vXX4QVF4osKkxstC0Q@mail.gmail.com> <20130429161725.GB30136@ab42.lan>
-In-Reply-To: <20130429161725.GB30136@ab42.lan>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1367519066.7757.19.camel@dcbw.foobar.com>
+References: <20130501.164755.1859264969403837546.davem@davemloft.net>
+	<CA+55aFzsvyQLLKbuETBqfhpgkSaXH9cvT0O-cQ-mTTXXxcMqwg@mail.gmail.com>
+	<1367512467.4000.7.camel@dcbw.foobar.com>
+	<1367519066.7757.19.camel@dcbw.foobar.com>
+Date: Thu, 2 May 2013 11:52:15 -0700
+X-Google-Sender-Auth: c6-GyGzI4WnIyuRURpA03tJj7J0
+Message-ID: <CA+55aFy04mY5g-Aics9dcGpv6zgn2bu4iQ-_ifE5hun_t4E54Q@mail.gmail.com>
+Subject: Re: [GIT] Networking
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Dan Williams <dcbw@redhat.com>
+Cc: David Miller <davem@davemloft.net>, hayeswang <hayeswang@realtek.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/29/2013 10:17 AM, Christian Ruppert wrote:
-> Hello Linus,
-> 
-> On Fri, Apr 26, 2013 at 09:47:16AM +0200, Linus Walleij wrote:
->> On Thu, Apr 18, 2013 at 11:03 AM, Christian Ruppert
->> <christian.ruppert@abilis.com> wrote:
->>
->>> We would like to avoid the use of Linux pin numbers in the device tree.
->>> Customers are used to physical pin numbers and exposing the logical
->>> Linux-internal numbering scheme through the device tree would generate
->>> quite some confusion. There are two reasons why we cannot align the two:
->>>   - Not all products supported by these drivers have the same pin outs.
->>>   - GPIO ranges must be consecutive in the Linux pin numbering space
->>>     which is generally not the case in physical pin numbering.
->>
->> If you are talking about the pin numbers really, i.e. the number we
->> put into
->>
->> struct pinctrl_pin_desc {
->>         unsigned number; <- this
->>         const char *name;
->> };
->>
->> Then are you aware that this is a sparse number space?
->>
->> I.e. you can choose whatever number you want. You do not have
->> to offset numbers from zero or anything like that. You just
->> need to make sure the numbers do not overlap (no two pins
->> have the same number).
->>
->> So if this is what you want to achieve, just use the same number
->> as in your datasheet in the pin number -> problem solved.
-> 
-> The problem is that we must support several products which are basically
-> different packaging options of the same chip (or simplified versions
-> thereof). Not all of those products will have the same number of pins
-> and as a consequence, data sheet pin numbering will also be different.
-> The port names are going to remain the same for all products, however.
-> Some of the ports are just not going to be physically available in some
-> or the products. Sorry if that wasn't clear from my previous mail.
+On Thu, May 2, 2013 at 11:24 AM, Dan Williams <dcbw@redhat.com> wrote:
+>
+> One more question Linus; what version of NetworkManager,
 
-It sounds like you can use the exact same numbering scheme for all the
-different packaging options; it's just that some of the pin numbers
-simply won't exist on some of the packaging options, so while defined by
-the DT binding, it simply won't make sense to use them?
+    NetworkManager-0.9.8.1-1.git20130327.fc18.x86_64
 
-Certainly, Tegra20 has two packaging options, and the pinctrl driver for
-it has zero knowledge of this. Perhaps we're just lucky though. I guess
-the Tegra TRM doesn't define any "Pin number" (just "pin name") for the
-pins, so there's no possibility of the same "number" meaning different
-things in the two packages, so perhaps we're just getting lucky here.
+> and can you
+> grab some syslog 'daemon' facility logs grepped for "
+> NetworkManger" | "eth0"?
+
+Here's the NetworkManager part of /var/log/messages from a bad boot:
+
+  NetworkManager[540]: <info> WEXT support is enabled
+  NetworkManager[540]: <info> VPN: loaded org.freedesktop.NetworkManager.openvpn
+  NetworkManager[540]: <info> VPN: loaded org.freedesktop.NetworkManager.vpnc
+  NetworkManager[540]: <info> VPN: loaded
+org.freedesktop.NetworkManager.openconnect
+  NetworkManager[540]: <info> VPN: loaded org.freedesktop.NetworkManager.pptp
+  NetworkManager[540]:    ifcfg-rh: Acquired D-Bus service com.redhat.ifcfgrh1
+  NetworkManager[540]: <info> Loaded plugin ifcfg-rh: (c) 2007 - 2010
+Red Hat, Inc.  To report bugs please use the NetworkManager mailing
+list.
+  NetworkManager[540]: <info> Loaded plugin keyfile: (c) 2007 - 2010
+Red Hat, Inc.  To report bugs please use the NetworkManager mailing
+list.
+  NetworkManager[540]:    ifcfg-rh: parsing
+/etc/sysconfig/network-scripts/ifcfg-lo ...
+  NetworkManager[540]:    ifcfg-rh: parsing
+/etc/sysconfig/network-scripts/ifcfg-eth0 ...
+  NetworkManager[540]:    ifcfg-rh:     read connection 'System eth0'
+  NetworkManager[540]: <info> monitoring kernel firmware directory
+'/lib/firmware'.
+  NetworkManager[540]: <info> WiFi enabled by radio killswitch;
+enabled by state file
+  NetworkManager[540]: <info> WWAN enabled by radio killswitch;
+enabled by state file
+  NetworkManager[540]: <info> WiMAX enabled by radio killswitch;
+enabled by state file
+  NetworkManager[540]: <info> Networking is enabled by state file
+  NetworkManager[540]: <warn> failed to allocate link cache: (-10)
+Operation not supported
+  NetworkManager[540]: <info> (eth0): carrier is OFF
+  NetworkManager[540]: <info> (eth0): new Ethernet device (driver:
+'r8169' ifindex: 2)
+  NetworkManager[540]: <info> (eth0): exported as
+/org/freedesktop/NetworkManager/Devices/0
+  NetworkManager[540]: <info> (eth0): device state change: unmanaged
+-> unavailable (reason 'managed') [10 20 2]
+  NetworkManager[540]: <info> (eth0): bringing up device.
+  NetworkManager[540]: <info> (eth0): preparing device.
+  NetworkManager[540]: <info> (eth0): deactivating device (reason 'managed') [2]
+  NetworkManager[540]: <warn> /sys/devices/virtual/net/lo: couldn't
+determine device driver; ignoring...
+  NetworkManager[540]: <warn> /sys/devices/virtual/net/lo: couldn't
+determine device driver; ignoring...
+  NetworkManager[540]: <info> (eth0): carrier now ON (device state 20)
+
+and that's all it says. hHere's a good boot:
+
+  NetworkManager[547]: <info> NetworkManager (version
+0.9.8.1-1.git20130327.fc18) is starting...
+  NetworkManager[547]: <info> Read config file
+/etc/NetworkManager/NetworkManager.conf
+  NetworkManager[547]: <info> WEXT support is enabled
+  NetworkManager[547]: <info> VPN: loaded org.freedesktop.NetworkManager.openvpn
+  NetworkManager[547]: <info> VPN: loaded org.freedesktop.NetworkManager.vpnc
+  NetworkManager[547]: <info> VPN: loaded
+org.freedesktop.NetworkManager.openconnect
+  NetworkManager[547]: <info> VPN: loaded org.freedesktop.NetworkManager.pptp
+  NetworkManager[547]:    ifcfg-rh: Acquired D-Bus service com.redhat.ifcfgrh1
+  NetworkManager[547]: <info> Loaded plugin ifcfg-rh: (c) 2007 - 2010
+Red Hat, Inc.  To report bugs please use the NetworkManager mailing
+list.
+  NetworkManager[547]: <info> Loaded plugin keyfile: (c) 2007 - 2010
+Red Hat, Inc.  To report bugs please use the NetworkManager mailing
+list.
+  NetworkManager[547]:    ifcfg-rh: parsing
+/etc/sysconfig/network-scripts/ifcfg-lo ...
+  NetworkManager[547]:    ifcfg-rh: parsing
+/etc/sysconfig/network-scripts/ifcfg-eth0 ...
+  NetworkManager[547]:    ifcfg-rh:     read connection 'System eth0'
+  NetworkManager[547]: <info> monitoring kernel firmware directory
+'/lib/firmware'.
+  NetworkManager[547]: <info> WiFi enabled by radio killswitch;
+enabled by state file
+  NetworkManager[547]: <info> WWAN enabled by radio killswitch;
+enabled by state file
+  NetworkManager[547]: <info> WiMAX enabled by radio killswitch;
+enabled by state file
+  NetworkManager[547]: <info> Networking is enabled by state file
+  NetworkManager[547]: <warn> failed to allocate link cache: (-10)
+Operation not supported
+  NetworkManager[547]: <info> (eth0): carrier is OFF
+  NetworkManager[547]: <info> (eth0): new Ethernet device (driver:
+'r8169' ifindex: 2)
+  NetworkManager[547]: <info> (eth0): exported as
+/org/freedesktop/NetworkManager/Devices/0
+  NetworkManager[547]: <info> (eth0): device state change: unmanaged
+-> unavailable (reason 'managed') [10 20 2]
+  NetworkManager[547]: <info> (eth0): bringing up device.
+  NetworkManager[547]: <info> (eth0): preparing device.
+  NetworkManager[547]: <info> (eth0): deactivating device (reason 'managed') [2]
+  NetworkManager[547]: <warn> /sys/devices/virtual/net/lo: couldn't
+determine device driver; ignoring...
+  NetworkManager[547]: <warn> /sys/devices/virtual/net/lo: couldn't
+determine device driver; ignoring...
+  NetworkManager[547]: <info> (eth0): carrier now ON (device state 20)
+  NetworkManager[547]: <info> (eth0): device state change: unavailable
+-> disconnected (reason 'carrier-changed') [20 30 40]
+  NetworkManager[547]: <info> Auto-activating connection 'System eth0'.
+  NetworkManager[547]: <info> Activation (eth0) starting connection
+'System eth0'
+  NetworkManager[547]: <info> (eth0): device state change:
+disconnected -> prepare (reason 'none') [30 40 0]
+  NetworkManager[547]: <info> Activation (eth0) Stage 1 of 5 (Device
+Prepare) scheduled...
+  NetworkManager[547]: <info> Activation (eth0) Stage 1 of 5 (Device
+Prepare) started...
+  NetworkManager[547]: <info> Activation (eth0) Stage 2 of 5 (Device
+Configure) scheduled...
+  NetworkManager[547]: <info> Activation (eth0) Stage 1 of 5 (Device
+Prepare) complete.
+  NetworkManager[547]: <info> Activation (eth0) Stage 2 of 5 (Device
+Configure) starting...
+  NetworkManager[547]: <info> (eth0): device state change: prepare ->
+config (reason 'none') [40 50 0]
+  NetworkManager[547]: <info> Activation (eth0) Stage 2 of 5 (Device
+Configure) successful.
+  NetworkManager[547]: <info> Activation (eth0) Stage 3 of 5 (IP
+Configure Start) scheduled.
+  NetworkManager[547]: <info> Activation (eth0) Stage 2 of 5 (Device
+Configure) complete.
+  NetworkManager[547]: <info> Activation (eth0) Stage 3 of 5 (IP
+Configure Start) started...
+  NetworkManager[547]: <info> (eth0): device state change: config ->
+ip-config (reason 'none') [50 70 0]
+  NetworkManager[547]: <info> Activation (eth0) Beginning DHCPv4
+transaction (timeout in 45 seconds)
+  NetworkManager[547]: <info> dhclient started with pid 910
+  NetworkManager[547]: <info> Activation (eth0) Stage 3 of 5 (IP
+Configure Start) complete.
+  NetworkManager[547]: <info> (eth0): DHCPv4 state changed nbi -> preinit
+  NetworkManager[547]: <info> (eth0): DHCPv4 state changed preinit -> reboot
+  NetworkManager[547]: <info>   address 192.168.0.52
+  NetworkManager[547]: <info>   prefix 24 (255.255.255.0)
+  NetworkManager[547]: <info>   gateway 192.168.0.1
+  NetworkManager[547]: <info>   nameserver '192.168.0.1'
+  NetworkManager[547]: <info> Activation (eth0) Stage 5 of 5 (IPv4
+Configure Commit) scheduled...
+  NetworkManager[547]: <info> Activation (eth0) Stage 5 of 5 (IPv4
+Commit) started...
+  NetworkManager[547]: <info> (eth0): device state change: ip-config
+-> secondaries (reason 'none') [70 90 0]
+  NetworkManager[547]: <info> Activation (eth0) Stage 5 of 5 (IPv4
+Commit) complete.
+  NetworkManager[547]: <info> (eth0): device state change: secondaries
+-> activated (reason 'none') [90 100 0]
+  NetworkManager[547]: <info> Policy set 'System eth0' (eth0) as
+default for IPv4 routing and DNS.
+  NetworkManager[547]: <info> Activation (eth0) successful, device activated.
+
+so apparently NM does see carrier even in the bad state, and it is
+just the NM-applet that then says "cable disconnected". Who knows what
+goes through NM-applets tiny little mind? Not me.
+
+Anyway, they seem to be identical (apart from the pid change, of
+course) up until the good case says
+
+  NetworkManager[540]: <info> (eth0): device state change: unavailable
+-> disconnected (reason 'carrier-changed') [20 30 40]
+
+and with a bad kernel, that just never happens. Don't ask me why.  In
+both cases, the preceding kernel messages were
+
+  r8169 0000:01:00.0 eth0: link up
+  IPv6: ADDRCONF(NETDEV_CHANGE): eth0: link becomes ready
+
+but for some reason in the bad case NM just doesn't react past the
+"carrier now ON" part.
+
+                    Linus
