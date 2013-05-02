@@ -1,63 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761355Ab3EBWVV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 18:21:21 -0400
-Received: from shelob.surriel.com ([74.92.59.67]:34221 "EHLO
-	shelob.surriel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757301Ab3EBWVU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 18:21:20 -0400
-Message-ID: <5182E667.1000603@surriel.com>
-Date: Thu, 02 May 2013 18:19:19 -0400
-From: Rik van Riel <riel@surriel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: question about lazy FPU restore
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753410Ab3EBWZr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 18:25:47 -0400
+Received: from mga14.intel.com ([143.182.124.37]:2648 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750850Ab3EBWZq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 18:25:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,599,1363158000"; 
+   d="asc'?scan'208";a="327957565"
+Message-ID: <1367533544.5663.7.camel@jtkirshe-mobl>
+Subject: Re: [PATCH][trivial] drivers/net: Fix checkpatch errors in
+ intel/e1000_82575.c
+From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Reply-To: jeffrey.t.kirsher@intel.com
+To: laura.vasilescu@rosedu.org
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        e1000-devel@lists.sourceforge.net, greg@kroah.com,
+        carolyn.wyborny@intel.com, anjali.singhai@intel.com
+Date: Thu, 02 May 2013 15:25:44 -0700
+In-Reply-To: <1367499998-7494-1-git-send-email-laura.vasilescu@rosedu.org>
+References: <1367499998-7494-1-git-send-email-laura.vasilescu@rosedu.org>
+Organization: Intel Corporation
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-0z414rB/dgTK3zptn+ZY"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Suresh,
 
-I have a question about the lazy fpu restore code in
-switch_fpu_prepare.  Specifically, about the case where
-the old task did not use the FPU, and the new task's
-FPU state is still in the cpu.
+--=-0z414rB/dgTK3zptn+ZY
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-         } else {
-                 old->fpu_counter = 0;
-                 old->thread.fpu.last_cpu = ~0;
-                 if (fpu.preload) {
-                         new->fpu_counter++;
-                         if (!use_eager_fpu() && fpu_lazy_restore(new, cpu))
-                                 fpu.preload = 0;
-                         else
-                                 prefetch(new->thread.fpu.state);
-                         __thread_fpu_begin(new);
-                 }
-         }
+On Thu, 2013-05-02 at 16:06 +0300, laura.vasilescu@rosedu.org wrote:
+> From: Laura Mihaela Vasilescu <laura.vasilescu@rosedu.org>
+>=20
+> Signed-off-by: Laura Mihaela Vasilescu <laura.vasilescu@rosedu.org>
+> ---
+>  drivers/net/ethernet/intel/igb/e1000_82575.c |   33
+> ++++++++++++--------------
+>  1 file changed, 15 insertions(+), 18 deletions(-)=20
 
-In this branch, we call fpu_lazy_restore, which
-confirms that the CPU still has the new task's state
-in it.
+I believe I already have a patch in my queue which corrects the
+checkpatch errors, but if I do not, I will add your patch to my queue.
+Thanks.
 
-However, if we are in eager fpu mode, we still end up
-calling restore_fpu_checking from switch_fpu_finish,
-even if the new task's FPU state is still resident in
-the CPU.
+--=-0z414rB/dgTK3zptn+ZY
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
-Is there a particular reason we do this?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.13 (GNU/Linux)
 
-Would it be possible to always set fpu.preload = 0,
-call clts, and __thread_set_has_fpu if fpu_lazy_restore
-returns true?
+iQIcBAABCgAGBQJRgufoAAoJEOVv75VaS+3OuN4P/31L+/JsuZBvXgMuW+nNFF3Q
+4q6yVySkh0sS0hebD/a2ED6E4Gl/Xv7UQQ0VW4YUDiWQkWY7Zj7eH5fEQX4+pB73
+2iiC9QJzj0i5pqChQkkeAGU8kz5zqnoz3PmjagkU3iFjpXC9TEBx4Uo5Be+FTIlh
+BwQHQ7Fg1TVeuQzUlsnOpHfN7rwHdHk/oj9+caiC2ihUwbYupoE4sLa2aetKTRVZ
+jyrP8IWkI81dxqlUWf+0gomg0xJUpYcj/JKpzocidEU6Nq5Ax2gj61nfZLdmiiAs
+9W6ZsOE7zkLkhi3IufCcGE4d/nnvmrKyIGzEO23OgUl3dXdxpL9KNXXooC+tmqZq
+UX5SSKMlH3Ln+xh4qlergr90K/xCAVJcCXYhsNZad7qORY8gjRPoYpKb1OJzU1xo
+1BNffnhmYTUR6ZHgktdLy+g64ImpsJkXqisARVroazowSlyMllWFgCoZq8UxZjPs
+rEPDvMjq8riq1tdvKRbISQI7rvVufg6lbtP1sDFX9BVNCQ5BnbcTfsHOdMOBjVSo
+ju7SOKXNM0F43KPsWMWc1KiHPuIl/rVS6QuLu3hCKush+K5TKcRoh+0L66DXcBAA
+Tb3nKZzE8PYIKzu/DcOTDWjZEC5LgtvEUJ0d9myy9shBXeasDC7qnRxdk8igtWJO
+kycAkAzBy4RQuXXlVvU5
+=15k7
+-----END PGP SIGNATURE-----
 
-That would allow us to skip the loading of FPU state
-when re-entering a process that went briefly idle, before
-getting something else to do, a common occurrance in
-message passing workloads.
+--=-0z414rB/dgTK3zptn+ZY--
+
