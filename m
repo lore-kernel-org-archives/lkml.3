@@ -1,102 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753273Ab3EBH1b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 03:27:31 -0400
-Received: from mail-bk0-f48.google.com ([209.85.214.48]:48585 "EHLO
-	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750949Ab3EBH13 (ORCPT
+	id S1752793Ab3EBH2M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 03:28:12 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:39689
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750769Ab3EBH2K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 03:27:29 -0400
+	Thu, 2 May 2013 03:28:10 -0400
+Date: Thu, 2 May 2013 09:26:24 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Julian Anastasov <ja@ssi.bg>
+Cc: Simon Horman <horms@verge.net.au>, Eric Dumazet <eric.dumazet@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
+        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Dipankar Sarma <dipankar@in.ibm.com>
+Subject: Re: [PATCH v2 1/2] sched: Add cond_resched_rcu_lock() helper
+Message-ID: <20130502072623.GE7521@dyad.programming.kicks-ass.net>
+References: <1367290378-29224-1-git-send-email-horms@verge.net.au>
+ <1367290378-29224-2-git-send-email-horms@verge.net.au>
+ <alpine.LFD.2.00.1304301011310.1700@ja.ssi.bg>
+ <20130430072944.GA13959@verge.net.au>
+ <alpine.LFD.2.00.1304301051260.1700@ja.ssi.bg>
+ <20130501091012.GB28253@dyad.programming.kicks-ass.net>
+ <alpine.LFD.2.00.1305011344320.1603@ja.ssi.bg>
+ <20130501155501.GB7521@dyad.programming.kicks-ass.net>
+ <alpine.LFD.2.00.1305012004360.3397@ja.ssi.bg>
 MIME-Version: 1.0
-In-Reply-To: <1366812872-26331-1-git-send-email-sthumma@codeaurora.org>
-References: <1366812872-26331-1-git-send-email-sthumma@codeaurora.org>
-From: Santosh Y <santoshsy@gmail.com>
-Date: Thu, 2 May 2013 12:57:07 +0530
-Message-ID: <CALMYJDut2=gwVsNxfeEM5mR2K9uJ0nMiV2y=xu3WZEUpfN-z7w@mail.gmail.com>
-Subject: Re: [PATCH 1/1] scsi: ufs: Add support for sending NOP OUT UPIU
-To: Sujit Reddy Thumma <sthumma@codeaurora.org>
-Cc: Vinayak Holikatti <vinholikatti@gmail.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-arm-msm@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1305012004360.3397@ja.ssi.bg>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +
-> +/**
-> + * ufshcd_validate_dev_connection() - Check device connection status
-> + * @hba: per-adapter instance
-> + *
-> + * Send NOP OUT UPIU and wait for NOP IN response to check whether the
-> + * device Transport Protocol (UTP) layer is ready after a reset.
-> + * If the UTP layer at the device side is not initialized, it may
-> + * not respond with NOP IN UPIU within timeout of %NOP_OUT_TIMEOUT
-> + * and we retry sending NOP OUT for %NOP_OUT_RETRIES iterations.
-> + */
-> +static int ufshcd_validate_dev_connection(struct ufs_hba *hba)
-> +{
-> +       int err;
-> +       struct ufshcd_lrb *lrbp;
-> +       unsigned long timeout;
-> +       unsigned long flags;
-> +       struct completion wait;
-> +       int retries = NOP_OUT_RETRIES;
-> +
-> +retry:
-> +       spin_lock_irqsave(hba->host->host_lock, flags);
-> +       lrbp = &hba->lrb[INTERNAL_CMD_TAG];
-> +       init_completion(&wait);
-> +
-> +       err = ufshcd_compose_nop_out_upiu(hba, lrbp);
-> +       if (err)
-> +               goto may_retry;
-> +
-> +       lrbp->completion = &wait;
-> +       ufshcd_send_command(hba, INTERNAL_CMD_TAG);
-> +       spin_unlock_irqrestore(hba->host->host_lock, flags);
-> +
-> +       timeout = wait_for_completion_timeout(
-> +                       &wait, msecs_to_jiffies(NOP_OUT_TIMEOUT));
-> +
-> +       spin_lock_irqsave(hba->host->host_lock, flags);
-> +       if (timeout > 0) {
-> +               int ocs;
-> +
-> +               ocs = ufshcd_get_tr_ocs(lrbp);
-> +               switch (ocs) {
-> +               case OCS_SUCCESS:
-> +                       goto out;
-> +               default:
-> +                       dev_dbg(hba->dev, "%s: OCS error %d\n", __func__, ocs);
-> +                       err = -EIO;
-> +                       goto may_retry;
-> +               }
-> +       } else {
-> +               u32 reg;
-> +
-> +               err = -ETIMEDOUT;
-> +
-> +               /* clear outstanding transaction before retry */
-> +               ufshcd_utrl_clear(hba, INTERNAL_CMD_TAG);
-> +               __clear_bit(INTERNAL_CMD_TAG, &hba->outstanding_reqs);
-> +
-> +               /* poll for max. 1 sec to clear door bell register by h/w */
-> +               spin_unlock_irqrestore(hba->host->host_lock, flags);
-> +               if (readl_poll_timeout(
-> +                               hba->mmio_base + REG_UTP_TRANSFER_REQ_DOOR_BELL,
-> +                               reg, !(reg & INTERNAL_CMD_TAG), 1000, 1000))
-
-Condition is always true here, change it to !(reg & (1 << INTERNAL_CMD_TAG)).
-
-> +                       retries = 0;
-> +               spin_lock_irqsave(hba->host->host_lock, flags);
-> +               goto may_retry;
-> +       }
-> +
+On Wed, May 01, 2013 at 09:22:08PM +0300, Julian Anastasov wrote:
+> > +extern int __cond_resched_rcu(void);
+> > +
+> > +#define cond_resched_rcu() ({			\
+> > +	__might_sleep(__FILE__, __LINE__, 0);	\
+> 
+> 	I see your goal. But digging into __might_sleep()
+> I see that rcu_sleep_check() will scream for the non-preempt
+> case because we are under rcu_read_lock.
 
 
+#ifdef CONFIG_PREEMPT_RCU
+#define PREEMPT_RCU_OFFSET 0
+#else
+#define PREEMPT_RCU_OFFSET 1
+#endif
 
--- 
-~Santosh
+#define cond_resched_rcu() ({	\
+	__might_sleep(__FILE__, __LINE__, PREEMPT_RCU_OFFSET);	\
+	__cond_resched_rcu();	\
+})
+
+Should work I think..
