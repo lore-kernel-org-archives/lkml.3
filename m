@@ -1,92 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756619Ab3EBHsO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 03:48:14 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:53313 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756457Ab3EBHsM (ORCPT
+	id S1755251Ab3EBHye (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 03:54:34 -0400
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:59117 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751121Ab3EBHyc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 03:48:12 -0400
-Date: Thu, 2 May 2013 09:47:52 +0200 (CEST)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: linux-sh@vger.kernel.org
-cc: Vinod Koul <vinod.koul@intel.com>, Magnus Damm <magnus.damm@gmail.com>,
-        linux-kernel@vger.kernel.org, Simon Horman <horms@verge.net.au>,
-        Chris Ball <cjb@laptop.org>
-Subject: Re: [PATCH/RFC 0/6] DMA: shdma: add Device Tree support
-In-Reply-To: <1365632389-2249-1-git-send-email-g.liakhovetski@gmx.de>
-Message-ID: <Pine.LNX.4.64.1305020936400.17181@axis700.grange>
-References: <1365632389-2249-1-git-send-email-g.liakhovetski@gmx.de>
+	Thu, 2 May 2013 03:54:32 -0400
+Date: Thu, 2 May 2013 09:54:21 +0200
+From: Fabio Baltieri <fabio.baltieri@linaro.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        Lee Jones <lee.jones@linaro.org>,
+        Ola Lilja <ola.o.lilja@stericsson.com>
+Subject: Re: [PATCH 2/3] ASoC: ux500: move clock controls to ab8500-codec
+Message-ID: <20130502075421.GA23346@balto.lan>
+References: <1367330994-7259-1-git-send-email-fabio.baltieri@linaro.org>
+ <1367330994-7259-3-git-send-email-fabio.baltieri@linaro.org>
+ <20130430183035.GC26160@sirena.org.uk>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:McebXOT07INmPBitKxPBnow+gl0w8KsalHQBUM9eo3P
- kOkUUzV5nWUxyrjT2eCu+6FRoEWQmLHPDuiUT7IY5SNBA4Vj1N
- JglOHNY35uQTA7wSMNiAmzvtNqLXlwuaIiKWl7B4+IUbgrkaQM
- h3byF82DhS8E+S2rn5v8NoA7xCtYaMqUStaJsMpbx8wSH7Zfbn
- 9dwHfYR078rNxbe5kex1mjC3WVai8xGWCm9lkrKuOXilXO7D0x
- qoconQ4hus3LKg2ZGlQ4nBqd6fV53Ts0goNVDEw0NnXJGe7cuP
- Yz4E1d52/ck0Qk5Ha9MiiIVyxGJyvbPJJnJR5kjlzg1XWtaf7h
- j0gyTXioC1YptL1NLvRBeX1D4fcKa7juv2oVfpTBAVHEXtqOGO
- TOmuY6vJtHR2w==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130430183035.GC26160@sirena.org.uk>
+X-Operating-System: Linux balto 3.9.0-rc8-00030-g4cbbd1d x86_64 GNU/Linux
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chris, Simon, Vinod (in alphabetical order :-) )
-
-On Thu, 11 Apr 2013, Guennadi Liakhovetski wrote:
-
-> This patch series adds Device Tree support to the shdma dmaengine driver 
-> and illustraits its use with the kzm9g-reference board's MMCIF interface.
-
-Formally patches in this series belong to your 3 trees: 1-3 and 7 
-(documentation, sent later separately) to DMA, 4 and 6 to ARM/shmobile, 5 
-to MMC. However, they can actually be safely applied in any order, as long 
-as per-tree patches are kept together. Even if the DMA portion is applied 
-last, the MMC driver will find DMA DT bindings in the DT, will request 
-channels, but no DMA channels will be found, then the driver will fall 
-back to PIO.
-
-So, it's up to you to decide, whether to pull these patches separately via 
-respective trees, or have some of them acked and push all of them via one 
-tree.
-
-Thanks
-Guennadi
-
-> Cc: Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
+On Tue, Apr 30, 2013 at 07:30:35PM +0100, Mark Brown wrote:
+> On Tue, Apr 30, 2013 at 04:09:53PM +0200, Fabio Baltieri wrote:
+> > Move ab8500 clock control definitions to the ab8500 codec driver,
+> > leaving only card specific setting in mop500_ab8500_ctrls.
 > 
-> Guennadi Liakhovetski (6):
->   DMA: shdma: (cosmetic) don't re-calculate a pointer
->   DMA: shdma: shdma_chan_filter() has to be in shdma-base.h
->   DMA: shdma: add DT support
->   ARM: shmobile: sh73a0: add support for the DMA0 controller in DT
->   mmc: sh_mmcif: add support for Device Tree DMA bindings
->   ARM: shmobile: kzm9g-reference: add DMA channels to the MMCIF DT
+> So, if this is some generic thing and not some weird stuff for the card
+> this really reopens the question about why this is done with user
+> visible controls...
 > 
->  arch/arm/boot/dts/sh73a0-kzm9g-reference.dts |    3 ++
->  arch/arm/boot/dts/sh73a0.dtsi                |   36 ++++++++++++++++++
->  arch/arm/mach-shmobile/setup-sh73a0.c        |    4 ++
->  drivers/dma/sh/shdma-base.c                  |   51 +++++++++++++++++++++++---
->  drivers/dma/sh/shdma.c                       |   46 ++++++++++++++++++++----
->  drivers/mmc/host/sh_mmcif.c                  |   29 +++++++++------
->  include/linux/sh_dma.h                       |    2 -
->  include/linux/shdma-base.h                   |    6 +++
->  8 files changed, 151 insertions(+), 26 deletions(-)
+> >  static struct snd_kcontrol_new ab8500_ctrls[] = {
+> > +	/* Digital interface - Clocks */
+> > +	SOC_SINGLE("Digital Interface Master Generator Switch",
+> > +		AB8500_DIGIFCONF1, AB8500_DIGIFCONF1_ENMASTGEN,
+> > +		1, 0),
+> > +	SOC_SINGLE("Digital Interface 0 Bit-clock Switch",
+> > +		AB8500_DIGIFCONF1, AB8500_DIGIFCONF1_ENFSBITCLK0,
+> > +		1, 0),
+> > +	SOC_SINGLE("Digital Interface 1 Bit-clock Switch",
+> > +		AB8500_DIGIFCONF1, AB8500_DIGIFCONF1_ENFSBITCLK1,
+> > +		1, 0),
 > 
-> -- 
-> 1.7.2.5
-> 
-> Thanks
-> Guennadi
-> ---
-> Guennadi Liakhovetski, Ph.D.
-> Freelance Open-Source Software Developer
-> http://www.open-technology.de/
-> 
+> ...this is all stuff that is normally figured out automatically by the
+> drivers, we know when the audio interface is in use and hence when it
+> needs to be clocked.
 
----
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+It makes sense, I'll poke the documentation I have and try to figure out
+how to control those bits from a more appropriate place.
+
+Thanks,
+Fabio
+
+-- 
+Fabio Baltieri
