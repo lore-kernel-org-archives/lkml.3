@@ -1,64 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756573Ab3EBIf2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 04:35:28 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:58717 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754896Ab3EBIfX (ORCPT
+	id S1756771Ab3EBIhG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 04:37:06 -0400
+Received: from stinky.trash.net ([213.144.137.162]:62576 "EHLO
+	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751880Ab3EBIhE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 04:35:23 -0400
-Message-ID: <51822547.20605@free-electrons.com>
-Date: Thu, 02 May 2013 10:35:19 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
+	Thu, 2 May 2013 04:37:04 -0400
+Date: Thu, 2 May 2013 10:36:49 +0200
+From: Patrick McHardy <kaber@trash.net>
+To: David Miller <davem@davemloft.net>
+Cc: torvalds@linux-foundation.org, hayeswang@realtek.com,
+        akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [GIT] Networking
+Message-ID: <20130502083619.GA22010@macbook.localnet>
+References: <CA+55aFxoP1vybnqdDwGmd-m0j=x=KDm7GHV6J1i8wGOaU0=5qw@mail.gmail.com>
+ <20130502.024552.1513488878160820332.davem@davemloft.net>
+ <20130502070256.GA29502@macbook.localnet>
+ <20130502.041625.412316202038784117.davem@davemloft.net>
 MIME-Version: 1.0
-To: Shawn Guo <shawn.guo@linaro.org>
-CC: linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mxs: icoll: Add function to register an interrupt as
- FIQ source
-References: <1367243917-5177-1-git-send-email-maxime.ripard@free-electrons.com> <20130502023858.GD3442@S2101-09.ap.freescale.net>
-In-Reply-To: <20130502023858.GD3442@S2101-09.ap.freescale.net>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/mixed; boundary="p4qYPpj5QlsIQJ0K"
+Content-Disposition: inline
+In-Reply-To: <20130502.041625.412316202038784117.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Shawn,
 
-Le 02/05/2013 04:39, Shawn Guo a écrit :
-> On Mon, Apr 29, 2013 at 03:58:37PM +0200, Maxime Ripard wrote:
->> MXS, unlike other ARM platforms,
+--p4qYPpj5QlsIQJ0K
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+On Thu, May 02, 2013 at 04:16:25AM -0400, David Miller wrote:
+> From: Patrick McHardy <kaber@trash.net>
+> Date: Thu, 2 May 2013 09:03:37 +0200
 > 
-> How are other ARM platforms handling that?
-
-Just like that. You can look at mxc_set_irq_fiq in
-arch/arm/mach-imx/irq-common.c or s3c24xx_set_fiq in
-arch/arm/mach-s3c24xx/irq.c
-
-I've also thought about declaring a IRQ type and using the .irq_set_type
-to register an interrupt as a FIQ source, but since FIQ are
-ARM-specific, it's probably a bad idea.
-
->> has no way to make a FIQ from an
->> interrupt from a driver, without poking directly into the icoll.
->>
->> Add an exported function to do this.
->>
->> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
->> ---
->>  arch/arm/mach-mxs/icoll.c | 11 +++++++++++
+> > I'll also have a look at this.
 > 
-> This will become drivers/irqchip/irq-mxs.c after the merge window.
+> By the mere existence of /sys/devices/${DEV_PATH}/net/${netdev_name}/flags
+> we have to preserve the bit layout.
+> 
+> So Linus was right.
+> 
+> So network manager is probably reading that flags sysfs file and
+> interpreting it.
 
-Ok, I'll rebase and repost then.
+Right, that seems plausible. 
 
-Thanks,
-Maxime
+> I'll fix the layout to how it was before.
 
--- 
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+I also found one spot in net/core/dev.c which was using an int for the
+features. Patch attached.
+
+
+
+--p4qYPpj5QlsIQJ0K
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename="01.patch"
+
+commit d0ed96507b21da2668766207f68518bef3193111
+Author: Patrick McHardy <kaber@trash.net>
+Date:   Thu May 2 10:35:02 2013 +0200
+
+    net: use netdev_features_t in skb_needs_linearize()
+    
+    Signed-off-by: Patrick McHardy <kaber@trash.net>
+
+diff --git a/net/core/dev.c b/net/core/dev.c
+index 4040673..40b1fad 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -2456,7 +2456,7 @@ EXPORT_SYMBOL(netif_skb_features);
+  *	2. skb is fragmented and the device does not support SG.
+  */
+ static inline int skb_needs_linearize(struct sk_buff *skb,
+-				      int features)
++				      netdev_features_t features)
+ {
+ 	return skb_is_nonlinear(skb) &&
+ 			((skb_has_frag_list(skb) &&
+
+--p4qYPpj5QlsIQJ0K--
