@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757496Ab3EBG1v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 02:27:51 -0400
-Received: from host171.canaca.com ([67.55.55.225]:49828 "EHLO
+	id S1757750Ab3EBGas (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 02:30:48 -0400
+Received: from host171.canaca.com ([67.55.55.225]:35349 "EHLO
 	host171.canaca.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752029Ab3EBG1t (ORCPT
+	with ESMTP id S1751834Ab3EBGaq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 02:27:49 -0400
+	Thu, 2 May 2013 02:30:46 -0400
 From: Simon Wood <simon@mungewell.org>
 To: linux-input@vger.kernel.org
 Cc: Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
         simon@mungewell.org, Randy Dunlap <rdunlap@infradead.org>
 Subject: [PATCH] HID: hid-steelseries fix led class build issue
-Date: Thu,  2 May 2013 00:27:21 -0600
-Message-Id: <1367476041-25760-1-git-send-email-simon@mungewell.org>
+Date: Thu,  2 May 2013 00:30:38 -0600
+Message-Id: <1367476238-25828-1-git-send-email-simon@mungewell.org>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <51816271.3040400@infradead.org>
 References: <51816271.3040400@infradead.org>
@@ -42,6 +42,8 @@ hid-steelseries.c:(.text+0x3b9d4b): undefined reference to `led_classdev_unregis
 
 Patch allows LED control when led-class is built in, or both hid-steelseries
 _and_ led-class are both modules.
+
+Signed-off-by: Simon Wood <simon@mungewell.org>
 ---
  drivers/hid/hid-steelseries.c | 9 ++++++---
  1 file changed, 6 insertions(+), 3 deletions(-)
