@@ -1,59 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752507Ab3EBHIc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 03:08:32 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:36451 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750769Ab3EBHI2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 03:08:28 -0400
-Date: Thu, 2 May 2013 09:08:24 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
-        levinsasha928@gmail.com, mtosatti@redhat.com, tglx@linutronix.de,
-        Borislav Petkov <bp@suse.de>, fengguang.wu@intel.com,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/urgent] x86/kconfig:  Add a Kconfig shortcut for
- building working KVM guest kernels
-Message-ID: <20130502070824.GB26361@gmail.com>
-References: <20130426095140.GA15361@pd.tnic>
- <tip-83aee67833071c7b73a83f7803388f7a9e481908@git.kernel.org>
- <alpine.DEB.2.02.1305011248220.8448@chino.kir.corp.google.com>
- <20130501203500.GC4466@pd.tnic>
- <alpine.DEB.2.02.1305011358500.19189@chino.kir.corp.google.com>
- <20130501211011.GD4466@pd.tnic>
- <alpine.DEB.2.02.1305011419020.20298@chino.kir.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1305011419020.20298@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751577Ab3EBHK5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 03:10:57 -0400
+Received: from mout.gmx.net ([212.227.15.18]:64016 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750769Ab3EBHKz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 03:10:55 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1/bUj8WQFHb1hoxowemZ108G11t0uPtL+93wALPSg
+	LfGtMMfTozE259
+Message-ID: <1367478643.5808.71.camel@marge.simpson.net>
+Subject: Re: [PATCH] sched: wake-affine throttle
+From: Mike Galbraith <efault@gmx.de>
+To: Michael Wang <wangyun@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Alex Shi <alex.shi@intel.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Turner <pjt@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        Ram Pai <linuxram@us.ibm.com>
+Date: Thu, 02 May 2013 09:10:43 +0200
+In-Reply-To: <5181FE1B.6010508@linux.vnet.ibm.com>
+References: <5164DCE7.8080906@linux.vnet.ibm.com>
+	 <1366626208.2721.12.camel@laptop> <5181FE1B.6010508@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* David Rientjes <rientjes@google.com> wrote:
-
-> On Wed, 1 May 2013, Borislav Petkov wrote:
-> 
-> > > warning: (KVM_GUEST_COMMON_OPTIONS) selects VIRTIO_NET which has unmet direct dependencies (NETDEVICES && NET_CORE && VIRTIO)
-> > > 
-> > > and
-> > > 
-> > > warning: (KVM_GUEST_COMMON_OPTIONS && AMD_IOMMU) selects PCI_MSI which has unmet direct dependencies (PCI && ARCH_SUPPORTS_MSI)
+On Thu, 2013-05-02 at 13:48 +0800, Michael Wang wrote: 
+> On 04/22/2013 06:23 PM, Peter Zijlstra wrote:
 > > 
-> > How do you trigger those? I don't see them here with this applied.
+> > OK,.. Ingo said that pipe-test was the original motivation for
+> > wake_affine() and since that's currently broken to pieces due to
+> > select_idle_sibling() is there still a benefit to having it at all?
 > > 
+> > Can anybody find any significant regression when simply killing
+> > wake_affine()?
 > 
-> It's an allnoconfig with HYPERVISOR_GUEST, PARAVIRT, KVM_GUEST, and 
-> KVM_GUEST_COMMON_OPTIONS enabled.
+> I got the proof that we could not simply killing the stuff (finally...).
+> 
+> It's the hackbench with a high pipe number, still on 12 cpu box, the
+> result of "./hackbench 48 process 10000" is:
+> 
+> 	Running with 48*40 (== 1920) tasks.
+> 	Time: 33.372
+> 
+> After killed the wake-affine, the result is:
+> 
+> 	Running with 48*40 (== 1920) tasks.
+> 	Time: 38.205
+> 
+> About 14.48% performance dropped without wake-affine, I guess it was
+> caused by the missing spread behaviour.
+> 
+> I've done the test for several times, also compared with the throttle
+> approach, default 1ms interval still works very well, the regression on
+> hackbench start to exceed 2% when interval become 100ms on my box, but
+> please note the pgbench already gain a lot benefit at that time.
+> 
+> I think now we could say that wake-affine is useful, and we could not
+> simply kill it.
 
-Please send a specific .config instead, with which you see warnings or 
-build failures.
+Oh, it's definitely useful.  Communicating tasks deeply resent talking
+over interconnects (advanced tin cans and string).  My little Q6600 box
+can even be described as dinky-numa given enough imagination.. place
+communicating tasks on different core2 "nodes" if you will, throughput
+falls through the floor.  Shared L2 is quick like bunny, dram ain't.
 
-Thanks,
+-Mike
 
-	Ingo
