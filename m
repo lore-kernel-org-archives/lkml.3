@@ -1,92 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759734Ab3EBQUE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 12:20:04 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:54578 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1758155Ab3EBQUB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 12:20:01 -0400
-Message-ID: <5182922E.4060305@sgi.com>
-Date: Thu, 02 May 2013 09:19:58 -0700
-From: Mike Travis <travis@sgi.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	id S1760317Ab3EBQVU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 12:21:20 -0400
+Received: from na3sys009aog110.obsmtp.com ([74.125.149.203]:50899 "EHLO
+	na3sys009aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759006Ab3EBQVS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 12:21:18 -0400
+Date: Thu, 2 May 2013 11:21:10 -0500
+From: Shawn Bohrer <sbohrer@rgmadvisors.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+Subject: Re: deadlock on vmap_area_lock
+Message-ID: <20130502162110.GA2970@BohrerMBP.rgmadvisors.com>
+References: <20130501144341.GA2404@BohrerMBP.rgmadvisors.com>
+ <alpine.DEB.2.02.1305010855440.4547@chino.kir.corp.google.com>
+ <20130501220303.GO10481@dastard>
 MIME-Version: 1.0
-To: David Henningsson <david.henningsson@canonical.com>
-CC: Stephen Warren <swarren@nvidia.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>,
-        Pierre-Louis Bossart <pierre-louis.bossart@linux.intel.com>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        Russ Anderson <rja@sgi.com>
-Subject: Re: [PATCH]: x86_64, audio: Fix system panic when DMA > 40 bits
-References: <1367435048-66137-1-git-send-email-travis@sgi.com> <518205A9.1050409@canonical.com> <51820968.7080303@sgi.com> <518223ED.3000509@canonical.com>
-In-Reply-To: <518223ED.3000509@canonical.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130501220303.GO10481@dastard>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, May 02, 2013 at 08:03:04AM +1000, Dave Chinner wrote:
+> On Wed, May 01, 2013 at 08:57:38AM -0700, David Rientjes wrote:
+> > On Wed, 1 May 2013, Shawn Bohrer wrote:
+> > 
+> > > I've got two compute clusters with around 350 machines each which are
+> > > running kernels based off of 3.1.9 (Yes I realize this is ancient by
+> > > todays standards).
+> 
+> xfs_info output of one of those filesystems? What platform are you
+> running (32 or 64 bit)?
 
+# cat /proc/mounts | grep data-cache
+/dev/sdb1 /data-cache xfs rw,nodiratime,relatime,attr2,delaylog,noquota 0 0
+# xfs_info /data-cache 
+meta-data=/dev/sdb1              isize=256    agcount=4, agsize=66705344 blks
+         =                       sectsz=512   attr=2
+data     =                       bsize=4096   blocks=266821376, imaxpct=25
+         =                       sunit=0      swidth=0 blks
+naming   =version 2              bsize=4096   ascii-ci=0
+log      =internal               bsize=4096   blocks=130283, version=2
+         =                       sectsz=512   sunit=0 blks, lazy-count=1
+realtime =none                   extsz=4096   blocks=0, rtextents=0
 
-On 5/2/2013 1:29 AM, David Henningsson wrote:
-> On 05/02/2013 08:36 AM, Mike Travis wrote:
->>
->>
->> On 5/1/2013 11:20 PM, David Henningsson wrote:
->>> On 05/01/2013 09:04 PM, Mike Travis wrote:
->>>> The audio driver mistakenly allows 64 bit addresses to be created for
->>>> the audio driver on Nvidia GPUs.  Unfortunately, the hardware normally
->>>> only supports up to 40 bits of DMA.  This can cause system panics as
->>>> well as misdirected data when the address is > 40 bits as the upper
->>>> part the address is truncated.
->>>
->>> Thanks for this patch. Stephen Warren, is this something you can
->>> confirm/deny, and do you know what range of hardware this actually
->>> applies to?
->>
->> The dma_mask can be read from the gpu device's pci entry.  I know it's
->> a stretch to try to link to that but past history has shown that it
->> ranges from 36 to 40 bits.
-> 
-> Ok, so the below patch is some kind of workaround, as we don't currently
-> take the dma_mask into account correctly? Or put in another way, would
-> it be possible/better to actually read the dma_mask and use that instead
-> of just clamping at 32 bit?\
+These are 64-bit systems.  The ones that hit the issue more frequently
+have 96 GB of RAM.
 
-Yes, it would.  There is a strange scenario where if you request
-a DMA32 address it must be on the lowest node (where the DMA32 area
-is).  But if you are running on a cpuset that excludes Node 0's
-memory, you'll get an error.  But I couldn't think of a workable
-way to link the two (except that the PCI id is the same except
-for the function #.)
->>>
->>>>
->>>> Signed-off-by: Mike Travis <travis@sgi.com>
->>>> Reviewed-by: Mike Habeck <habeck@sgi.com>
->>>> ---
->>>>    sound/pci/hda/hda_intel.c | 2 +-
->>>>    1 file changed, 1 insertion(+), 1 deletion(-)
->>>>
->>>> diff --git a/sound/pci/hda/hda_intel.c b/sound/pci/hda/hda_intel.c
->>>> index bcd40ee..45eb165 100644
->>>> --- a/sound/pci/hda/hda_intel.c
->>>> +++ b/sound/pci/hda/hda_intel.c
->>>> @@ -615,7 +615,7 @@ enum {
->>>>    /* quirks for Nvidia */
->>>>    #define AZX_DCAPS_PRESET_NVIDIA \
->>>>        (AZX_DCAPS_NVIDIA_SNOOP | AZX_DCAPS_RIRB_DELAY |
->>>> AZX_DCAPS_NO_MSI |\
->>>> -     AZX_DCAPS_ALIGN_BUFSIZE)
->>>> +     AZX_DCAPS_ALIGN_BUFSIZE | AZX_DCAPS_NO_64BIT)
->>>>
->>>>    #define AZX_DCAPS_PRESET_CTHDA \
->>>>        (AZX_DCAPS_NO_MSI | AZX_DCAPS_POSFIX_LPIB |
->>>> AZX_DCAPS_4K_BDLE_BOUNDARY)
->>>>
->>>
->>>
->>>
->>
+> > > All of the machines run a 'find' command once an
+> > > hour on one of the mounted XFS filesystems.  Occasionally these find
+> > > commands get stuck requiring a reboot of the system.  I took a peek
+> > > today and see this with perf:
+> > > 
+> > >     72.22%          find  [kernel.kallsyms]          [k] _raw_spin_lock
+> > >                     |
+> > >                     --- _raw_spin_lock
+> > >                        |          
+> > >                        |--98.84%-- vm_map_ram
+> > >                        |          _xfs_buf_map_pages
+> > >                        |          xfs_buf_get
+> > >                        |          xfs_buf_read
+> > >                        |          xfs_trans_read_buf
+> > >                        |          xfs_da_do_buf
+> > >                        |          xfs_da_read_buf
+> > >                        |          xfs_dir2_block_getdents
+> > >                        |          xfs_readdir
+> > >                        |          xfs_file_readdir
+> > >                        |          vfs_readdir
+> > >                        |          sys_getdents
+> > >                        |          system_call_fastpath
+> > >                        |          __getdents64
+> > >                        |          
+> > >                        |--1.12%-- _xfs_buf_map_pages
+> > >                        |          xfs_buf_get
+> > >                        |          xfs_buf_read
+> > >                        |          xfs_trans_read_buf
+> > >                        |          xfs_da_do_buf
+> > >                        |          xfs_da_read_buf
+> > >                        |          xfs_dir2_block_getdents
+> > >                        |          xfs_readdir
+> > >                        |          xfs_file_readdir
+> > >                        |          vfs_readdir
+> > >                        |          sys_getdents
+> > >                        |          system_call_fastpath
+> > >                        |          __getdents64
+> > >                         --0.04%-- [...]
+> > > 
+> > > Looking at the code my best guess is that we are spinning on
+> > > vmap_area_lock, but I could be wrong.  This is the only process
+> > > spinning on the machine so I'm assuming either another process has
+> > > blocked while holding the lock, or perhaps this find process has tried
+> > > to acquire the vmap_area_lock twice?
+> > > 
+> > 
+> > Significant spinlock contention doesn't necessarily mean that there's a 
+> > deadlock, but it also doesn't mean the opposite.  Depending on your 
+> > definition of "occassionally", would it be possible to run with 
+> > CONFIG_PROVE_LOCKING and CONFIG_LOCKDEP to see if it uncovers any real 
+> > deadlock potential?
 > 
+> It sure will. We've been reporting that vm_map_ram is doing
+> GFP_KERNEL allocations from GFP_NOFS context for years, and have
+> reported plenty of lockdep dumps as a result of it.
 > 
-> 
+> But that's not the problem that is occurring above - lockstat is
+> probably a good thing to look at here to determine exactly what
+> locks are being contended on....
+
+I've built a kernel with lock_stat, CONFIG_PROVE_LOCKING,
+CONFIG_LOCKDEP and have one machine running with that kernel.  We'll
+probably put machines on this debug kernel when we reboot them and
+hopefully one will trigger the issue.
+
+Thanks,
+Shawn
+
+-- 
+
+---------------------------------------------------------------
+This email, along with any attachments, is confidential. If you 
+believe you received this message in error, please contact the 
+sender immediately and delete all copies of the message.  
+Thank you.
