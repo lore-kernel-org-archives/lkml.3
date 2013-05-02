@@ -1,77 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758489Ab3EBAjO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 20:39:14 -0400
-Received: from mga14.intel.com ([143.182.124.37]:52779 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757311Ab3EBAjM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 20:39:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,592,1363158000"; 
-   d="scan'208";a="235602074"
-Message-ID: <5181B579.9000808@intel.com>
-Date: Thu, 02 May 2013 08:38:17 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: mingo@redhat.com, tglx@linutronix.de, akpm@linux-foundation.org,
-        arjan@linux.intel.com, bp@alien8.de, pjt@google.com,
-        namhyung@kernel.org, efault@gmx.de, morten.rasmussen@arm.com,
-        vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
-        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
-        linux-kernel@vger.kernel.org, len.brown@intel.com,
-        rafael.j.wysocki@intel.com, jkosina@suse.cz, clark.williams@gmail.com,
-        tony.luck@intel.com, keescook@chromium.org, mgorman@suse.de,
-        riel@redhat.com
-Subject: Re: [PATCH v4 0/6] sched: use runnable load based balance
-References: <1367040344-14485-1-git-send-email-alex.shi@intel.com> <20130501121421.GA19602@dyad.programming.kicks-ass.net>
-In-Reply-To: <20130501121421.GA19602@dyad.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1758581Ab3EBAkB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 20:40:01 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:65256 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752270Ab3EBAj6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 May 2013 20:39:58 -0400
+From: Tejun Heo <tj@kernel.org>
+To: axboe@kernel.dk
+Cc: linux-kernel@vger.kernel.org, lizefan@huawei.com,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        vgoyal@redhat.com
+Subject: [PATCHSET] blk-throttle: implement proper hierarchy support
+Date: Wed,  1 May 2013 17:39:18 -0700
+Message-Id: <1367455189-6957-1-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/01/2013 08:14 PM, Peter Zijlstra wrote:
-> On Sat, Apr 27, 2013 at 01:25:38PM +0800, Alex Shi wrote:
->> This patchset bases on tip/sched/core.
->>
->> The patchset remove the burst wakeup detection which had worked fine on 3.8
-> 
-> Was this part of the original series from PJT or some patches afterwards?
-> I missed a few months worth of patches so any extra information to help me
-> catch up is greatly appreciated :-)
+blk-throttle is the last controller with broken hierarchy support
+making blkcg the last one tagged with .broken_hierarchy.  This
+patchset implements hierarchy support for blk-throttle.  The semantics
+is pretty simple - limits on an intermediate node applies to the whole
+subtree and the statistics remain local.
 
-On 3.8 kernel, the first problem commit is 5a505085f043 ("mm/rmap:
-Convert the struct anon_vma::mutex to an rwsem"), It cause much
-imbalance among cpus on aim7 benchmark. The reason is here,
-https://lkml.org/lkml/2013/1/29/84.
+As this changes the meaning of the knobs in an incompatible manner -
+e.g. configuring limits on root cgroup now means setting the limit for
+the whole system - the hierarchy mode is enabled by "sane_behavior"
+cgroup mount flag.  If the flag is not specified, the original broken
+flat hierarchy behavior is retained.
 
-With PJT's patch, we know in first few seconds from wakeup, task's
-runnable load maybe nearly zero. The nearly zero runnable load increases
-the imbalance among cpus. So there are about extra 5% performance drop
-when use runnable load to do balance on aim7(in testing, aim7 will fork
-2000 threads, and then wait for a trigger, then run as fast as possible).
+While this patchset contains many patches, the implementation is
+pretty straight-forward.  throtl_grp's form a tree anchored at
+throtl_data and bios climb the tree as they get dispatched at each
+level.  The bios which reach the top of the tree - throl_data - are
+issued.  The scheduling algorithm remains unchanged at each level and
+blk-throttle should behave the same for flat hierarchy after the
+changes.  The same algorithm is repeated until bios clear all limits
+to the top of the tree.
 
-But, after we use rwsem lock stealing in 3.9 kernel, commit
-ce6711f3d196f09ca0e, aim7 wakeup won't has clear imbalance issue. And
-then aim7 won't need this extra burst wakeup detection.
-> 
->> kernel, since the aim7 is very imbalance. But rwsem write lock stealing 
->> enabled in 3.9 kernel. aim7 imbalance disappeared. So the burst wakeup
->> care doesn't needed. 
-> 
-> How does this follow.. surely something else can cause burst wakeups just fine
-> too?
-> 
->> Peter, 
->> Would you like to consider pick up the patchset? or give some comments? :)
-> 
-> I'll go read them.. :-)
-> 
+This patchset contains the following 31 patches.
 
-I appreciate for this. :)
+ 0001-blkcg-fix-error-return-path-in-blkg_create.patch
+ 0002-blkcg-move-blkg_for_each_descendant_pre-to-block-blk.patch
+ 0003-blkcg-implement-blkg_for_each_descendant_post.patch
+ 0004-blkcg-invoke-blkcg_policy-pd_init-after-parent-is-li.patch
+ 0005-blkcg-move-bulk-of-blkcg_gq-release-operations-to-th.patch
+ 0006-blk-throttle-remove-spurious-throtl_enqueue_tg-call-.patch
+ 0007-blk-throttle-removed-deferred-config-application-mec.patch
+ 0008-blk-throttle-collapse-throtl_dispatch-into-the-work-.patch
+ 0009-blk-throttle-relocate-throtl_schedule_delayed_work.patch
+ 0010-blk-throttle-remove-pointless-throtl_nr_queued-optim.patch
+ 0011-blk-throttle-rename-throtl_rb_root-to-throtl_service.patch
+ 0012-blk-throttle-simplify-throtl_grp-flag-handling.patch
+ 0013-blk-throttle-add-backlink-pointer-from-throtl_grp-to.patch
+ 0014-blk-throttle-pass-around-throtl_service_queue-instea.patch
+ 0015-blk-throttle-reorganize-throtl_service_queue-passed-.patch
+ 0016-blk-throttle-add-throtl_grp-service_queue.patch
+ 0017-blk-throttle-move-bio_lists-and-friends-to-throtl_se.patch
+ 0018-blk-throttle-dispatch-to-throtl_data-service_queue.b.patch
+ 0019-blk-throttle-generalize-update_disptime-optimization.patch
+ 0020-blk-throttle-add-throtl_service_queue-parent_sq.patch
+ 0021-blk-throttle-implement-sq_to_tg-sq_to_td-and-throtl_.patch
+ 0022-blk-throttle-set-REQ_THROTTLED-from-throtl_charge_bi.patch
+ 0023-blk-throttle-separate-out-throtl_service_queue-pendi.patch
+ 0024-blk-throttle-implement-dispatch-looping.patch
+ 0025-blk-throttle-dispatch-from-throtl_pending_timer_fn.patch
+ 0026-blk-throttle-make-blk_throtl_drain-ready-for-hierarc.patch
+ 0027-blk-throttle-make-blk_throtl_bio-ready-for-hierarchy.patch
+ 0028-blk-throttle-make-tg_dispatch_one_bio-ready-for-hier.patch
+ 0029-blk-throttle-make-throtl_pending_timer_fn-ready-for-.patch
+ 0030-blk-throttle-implement-throtl_grp-has_rules.patch
+ 0031-blk-throttle-implement-proper-hierarchy-support.patch
 
--- 
-Thanks Alex
+0001-0005 prepare blkcg so that hierarchy operations are easier.
+
+0006-0016 reorganize code piece-by-piece so that hierarchy support can
+be added.  These don't change behaviors.
+
+0017-0025 prepare for hierarchy support.  Moves fields which are used
+in hierarchy to throtl_service_queue and define parent-child
+relationship.
+
+0026-0030 make queueing, dispatching and configuration changes
+propagate through the hierarchy.
+
+0031 implemenats hierarchy support.
+
+As we're in the middle of a merge window, this patchset is currently
+based on cgroup/for-3.10.  Once 3.10-rc1 drops, I'll rebase the tree
+and send pull request to Jens so that it can be routed with other
+block changes.  The patches are also available on the following git
+branch.
+
+ git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-throtl-hierarchy
+
+diffstat follows.  Thanks.
+
+ block/blk-cgroup.c     |  105 ++---
+ block/blk-cgroup.h     |   38 ++
+ block/blk-throttle.c   |  875 +++++++++++++++++++++++++++++++------------------
+ include/linux/cgroup.h |    2 
+ 4 files changed, 635 insertions(+), 385 deletions(-)
+
+--
+tejun
