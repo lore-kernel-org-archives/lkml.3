@@ -1,51 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759187Ab3EBMca (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 08:32:30 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:35665 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758676Ab3EBMc3 (ORCPT
+	id S1759237Ab3EBMeJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 08:34:09 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:41638 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757060Ab3EBMeH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 08:32:29 -0400
-From: Laurent Navet <laurent.navet@gmail.com>
-To: arnd@arndb.de, gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, Laurent Navet <laurent.navet@gmail.com>
-Subject: [PATCH] drivers: misc: use devm_ioremap_resource()
-Date: Thu,  2 May 2013 14:39:34 +0200
-Message-Id: <1367498374-27426-1-git-send-email-laurent.navet@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Thu, 2 May 2013 08:34:07 -0400
+MIME-Version: 1.0
+In-Reply-To: <1366978638-967-1-git-send-email-fabio.baltieri@linaro.org>
+References: <1366978638-967-1-git-send-email-fabio.baltieri@linaro.org>
+Date: Thu, 2 May 2013 14:34:05 +0200
+Message-ID: <CACRpkdYSf8T8anTgU=rxhhJWdELxN22koQ=Y27uuS4WyxZn4DA@mail.gmail.com>
+Subject: Re: [PATCH 0/5] various ab8500 fixes
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Fabio Baltieri <fabio.baltieri@linaro.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Lee Jones <lee.jones@linaro.org>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace a call to deprecated devm_request_and_ioremap by devm_ioremap_resource.
+On Fri, Apr 26, 2013 at 2:17 PM, Fabio Baltieri
+<fabio.baltieri@linaro.org> wrote:
 
-Found with coccicheck and this semantic patch:
- scripts/coccinelle/api/devm_request_and_ioremap.cocci.
+> Hi Samuel,
+>
+> this series contains various fixes I found on the current -next ab8500
+> driver(s).
 
-Signed-off-by: Laurent Navet <laurent.navet@gmail.com>
----
- drivers/misc/sram.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+The series:
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
-diff --git a/drivers/misc/sram.c b/drivers/misc/sram.c
-index 437192e..4a93886 100644
---- a/drivers/misc/sram.c
-+++ b/drivers/misc/sram.c
-@@ -50,9 +50,10 @@ static int sram_probe(struct platform_device *pdev)
- 
- 	size = resource_size(res);
- 
--	virt_base = devm_request_and_ioremap(&pdev->dev, res);
--	if (!virt_base)
--		return -EADDRNOTAVAIL;
-+	virt_base = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(virt_base))
-+		return PTR_ERR(virt_base);
-+
- 
- 	sram = devm_kzalloc(&pdev->dev, sizeof(*sram), GFP_KERNEL);
- 	if (!sram)
--- 
-1.7.10.4
-
+Yours,
+Linus Walleij
