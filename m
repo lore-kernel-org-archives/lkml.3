@@ -1,109 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760103Ab3EBApK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 20:45:10 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:54357 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759988Ab3EBAo6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 20:44:58 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, isimatu.yasuaki@jp.fujitsu.com,
-        vasilis.liaskovitis@profitbricks.com
-Subject: Re: [PATCH 3/3 RFC] ACPI / hotplug: Use device offline/online for graceful hot-removal
-Date: Thu, 02 May 2013 02:53:13 +0200
-Message-ID: <2387162.Mp5gMh3zgJ@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1367439612.16154.166.camel@misato.fc.hp.com>
-References: <1576321.HU0tZ4cGWk@vostro.rjw.lan> <1513537.Pdbg9h7lkq@vostro.rjw.lan> <1367439612.16154.166.camel@misato.fc.hp.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1759122Ab3EBAk6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 20:40:58 -0400
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:62334 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758878Ab3EBAkp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 May 2013 20:40:45 -0400
+From: Tejun Heo <tj@kernel.org>
+To: axboe@kernel.dk
+Cc: linux-kernel@vger.kernel.org, lizefan@huawei.com,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        vgoyal@redhat.com, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 09/31] blk-throttle: relocate throtl_schedule_delayed_work()
+Date: Wed,  1 May 2013 17:39:27 -0700
+Message-Id: <1367455189-6957-10-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1367455189-6957-1-git-send-email-tj@kernel.org>
+References: <1367455189-6957-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, May 01, 2013 02:20:12 PM Toshi Kani wrote:
-> On Wed, 2013-05-01 at 17:05 +0200, Rafael J. Wysocki wrote:
-> > On Tuesday, April 30, 2013 05:49:38 PM Toshi Kani wrote:
-> > > On Mon, 2013-04-29 at 14:29 +0200, Rafael J. Wysocki wrote:
-> > > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > > > 
-> > > > Modify the generic ACPI hotplug code to be able to check if devices
-> > > > scheduled for hot-removal may be gracefully removed from the system
-> > > > using the device offline/online mechanism introduced previously.
-> > > > 
-> > > > Namely, make acpi_scan_hot_remove() which handles device hot-removal
-> > > > call device_offline() for all physical companions of the ACPI device
-> > > > nodes involved in the operation and check the results.  If any of
-> > > > the device_offline() calls fails, the function will not progress to
-> > > > the removal phase (which cannot be aborted), unless its (new) force
-> > > > argument is set (in case of a failing offline it will put the devices
-> > > > offlined by it back online).
-> > > > 
-> > > > In support of the 'forced' hot-removal, add a new sysfs attribute
-> > > > 'force_remove' that will reside in every ACPI hotplug profile
-> > > > present under /sys/firmware/acpi/hotplug/.
-> > > > 
-> > > > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > > > ---
-> > > >  Documentation/ABI/testing/sysfs-firmware-acpi |    9 +-
-> > > >  drivers/acpi/internal.h                       |    2 
-> > > >  drivers/acpi/scan.c                           |   97 ++++++++++++++++++++++++--
-> > > >  drivers/acpi/sysfs.c                          |   27 +++++++
-> > > >  include/acpi/acpi_bus.h                       |    3 
-> > > >  5 files changed, 131 insertions(+), 7 deletions(-)
-> > > > 
-> > >  :
-> > > > Index: linux-pm/drivers/acpi/scan.c
-> > > > ===================================================================
-> > > > --- linux-pm.orig/drivers/acpi/scan.c
-> > > > +++ linux-pm/drivers/acpi/scan.c
-> > > > @@ -120,7 +120,61 @@ acpi_device_modalias_show(struct device
-> > > >  }
-> > > >  static DEVICE_ATTR(modalias, 0444, acpi_device_modalias_show, NULL);
-> > > >  
-> > > > -static int acpi_scan_hot_remove(struct acpi_device *device)
-> > > > +static acpi_status acpi_bus_offline_companions(acpi_handle handle, u32 lvl,
-> > > > +					       void *data, void **ret_p)
-> > > > +{
-> > > > +	struct acpi_device *device = NULL;
-> > > > +	struct acpi_device_physical_node *pn;
-> > > > +	bool force = *((bool *)data);
-> > > > +	acpi_status status = AE_OK;
-> > > > +
-> > > > +	if (acpi_bus_get_device(handle, &device))
-> > > > +		return AE_OK;
-> > > > +
-> > > > +	mutex_lock(&device->physical_node_lock);
-> > > > +
-> > > > +	list_for_each_entry(pn, &device->physical_node_list, node) {
-> > > 
-> > > I do not think physical_node_list is set for ACPI processor devices, so
-> > > this code is NOP at this point.  I think properly initializing
-> > > physical_node_list for CPU and memblk is one of the key items in this
-> > > approach.
-> > 
-> > It surely is. :-)
-> > 
-> > I've almost done that for CPUs, but that still requires some more work.
-> > Hopefully, it'll be mostly done later this week.
-> 
-> Cool!
-> 
-> > Memory will take some more time I guess, though.
-> 
-> Yes, memory has an ordering issue when using glue.c.
-> https://lkml.org/lkml/2013/3/26/398
+Move throtl_schedule_delayed_work() above its first user so that the
+forward declaration can be removed.
 
-Well, that may not be such a big problem.  I'll have a look at that later.
+This patch is pure relocaiton.
 
-Thanks,
-Rafael
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ block/blk-throttle.c | 29 +++++++++++++----------------
+ 1 file changed, 13 insertions(+), 16 deletions(-)
 
-
+diff --git a/block/blk-throttle.c b/block/blk-throttle.c
+index d50d8d1..00e72f4 100644
+--- a/block/blk-throttle.c
++++ b/block/blk-throttle.c
+@@ -25,8 +25,6 @@ static struct blkcg_policy blkcg_policy_throtl;
+ 
+ /* A workqueue to queue throttle related work */
+ static struct workqueue_struct *kthrotld_workqueue;
+-static void throtl_schedule_delayed_work(struct throtl_data *td,
+-				unsigned long delay);
+ 
+ struct throtl_rb_root {
+ 	struct rb_root rb;
+@@ -398,6 +396,19 @@ static void throtl_dequeue_tg(struct throtl_data *td, struct throtl_grp *tg)
+ 		__throtl_dequeue_tg(td, tg);
+ }
+ 
++/* Call with queue lock held */
++static void throtl_schedule_delayed_work(struct throtl_data *td,
++					 unsigned long delay)
++{
++	struct delayed_work *dwork = &td->dispatch_work;
++
++	if (total_nr_queued(td)) {
++		mod_delayed_work(kthrotld_workqueue, dwork, delay);
++		throtl_log(td, "schedule work. delay=%lu jiffies=%lu",
++			   delay, jiffies);
++	}
++}
++
+ static void throtl_schedule_next_dispatch(struct throtl_data *td)
+ {
+ 	struct throtl_rb_root *st = &td->tg_service_tree;
+@@ -863,20 +874,6 @@ out:
+ 	}
+ }
+ 
+-/* Call with queue lock held */
+-static void
+-throtl_schedule_delayed_work(struct throtl_data *td, unsigned long delay)
+-{
+-
+-	struct delayed_work *dwork = &td->dispatch_work;
+-
+-	if (total_nr_queued(td)) {
+-		mod_delayed_work(kthrotld_workqueue, dwork, delay);
+-		throtl_log(td, "schedule work. delay=%lu jiffies=%lu",
+-				delay, jiffies);
+-	}
+-}
+-
+ static u64 tg_prfill_cpu_rwstat(struct seq_file *sf,
+ 				struct blkg_policy_data *pd, int off)
+ {
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.8.1.4
+
