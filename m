@@ -1,61 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761377Ab3EBVUQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 17:20:16 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:61772 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761462Ab3EBVUJ (ORCPT
+	id S1761628Ab3EBVXm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 17:23:42 -0400
+Received: from casper.infradead.org ([85.118.1.10]:46931 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750792Ab3EBVXk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 17:20:09 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Subject: Re: [PATCH 0/2] clk: add of_clk_provider stubs to enable clk-si5351 on non OF
-Date: Thu, 2 May 2013 23:20:00 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
-Cc: Mike Turquette <mturquette@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Stephen Warren <swarren@nvidia.com>, Daniel Mack <zonque@gmail.com>,
-        "Lars-Peter Clausen" <lars@metafoo.de>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Marek Belisko <marek.belisko@streamunlimited.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-References: <1367369910-20402-1-git-send-email-sebastian.hesselbarth@gmail.com>
-In-Reply-To: <1367369910-20402-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	Thu, 2 May 2013 17:23:40 -0400
+Message-ID: <5182D93C.4000706@infradead.org>
+Date: Thu, 02 May 2013 14:23:08 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+CC: "Yann E. MORIN" <yann.morin.1998@free.fr>,
+        =?UTF-8?B?RXplcXVpZWwgR2Fy?= =?UTF-8?B?Y8OtYQ==?= 
+	<elezegarcia@gmail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        linux-media <linux-media@vger.kernel.org>,
+        linux-kbuild@vger.kernel.org
+Subject: Re: linux-next: Tree for May 1 (media/usb/stk1160)
+References: <20130501183734.7ad1efca2d06e75432edabbd@canb.auug.org.au> <518157EB.3010700@infradead.org> <51827DB1.7000304@redhat.com>
+In-Reply-To: <51827DB1.7000304@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Message-Id: <201305022320.00769.arnd@arndb.de>
-X-Provags-ID: V02:K0:DqBciXiz21I8o5nTfnuyDxHO+oxmOT6ZrvfT1MKKDFt
- J8hNt0VQi9T6HXuH/ZA9E4H34dQ+KxA9E2jkEid/Z8Gp9329An
- FeBR0h860apzqj4yoavndOhKAL6zjmuZyo1NSAHkpxsGU5z9+O
- Ep8xOWarOp/ReGh/vpYZtPRh4uHSGDUkQn95VojYqW+1nm7bHp
- 6xNcRVJzfo7bm7Q1JRBElr8/sUyljIRwURaqLJGoLNUed3R4x5
- YAQRkaIlDgxYi3Er4pfLRf1vIGJyr94vulVhorGu8LqzFpTSwl
- iYm+9b33q4J+mgJ06SgJsBNk7SVGeRH5gNjHeGcu940nhiou8X
- JwCRzZisVOJj08aYDuBg=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 01 May 2013, Sebastian Hesselbarth wrote:
+On 05/02/13 07:52, Mauro Carvalho Chehab wrote:
+> [media] stk1160: Make stk1160 module if SND is m and audio support is selected
 > 
-> Yesterday 02:58:27
-> Enabling drivers that provide clocks on DT on platforms that don't have
-> CONFIG_OF set fails due to compilation errors. This patch set first adds
-> some stubs for of_clk_provider functions if CONFIG_OF is not set. Second
-> it allows those platforms to build and use clk-si5351 i2c clock driver
-> by removing the dependency on CONFIG_OF.
+> As reported by Randy:
 > 
-> The above approach has been suggested by Arnd Bergmann and replaces the
-> corresponding Kconfig patch for clk-si5351 posted earlier. It has been
-> compile tested with allmodconfig on x86_64 for post v3.9.
+> When CONFIG_SND=m and CONFIG_SND_AC97_CODEC=m and
+> CONFIG_VIDEO_STK1160=y
+> CONFIG_VIDEO_STK1160_AC97=y
 > 
-> Sebastian Hesselbarth (2):
->   clk: add non CONFIG_OF routines for clk-provider
->   clk: si5351: Allow to build without CONFIG_OF
+> drivers/built-in.o: In function `stk1160_ac97_register':
+> (.text+0x122706): undefined reference to `snd_card_create'
+> drivers/built-in.o: In function `stk1160_ac97_register':
+> (.text+0x1227b2): undefined reference to `snd_ac97_bus'
+> drivers/built-in.o: In function `stk1160_ac97_register':
+> (.text+0x1227cd): undefined reference to `snd_card_free'
+> drivers/built-in.o: In function `stk1160_ac97_register':
+> (.text+0x12281b): undefined reference to `snd_ac97_mixer'
+> drivers/built-in.o: In function `stk1160_ac97_register':
+> (.text+0x122832): undefined reference to `snd_card_register'
+> drivers/built-in.o: In function `stk1160_ac97_unregister':
+> (.text+0x12285e): undefined reference to `snd_card_free'
 > 
+> Reported-by: Randy Dunlap <rdunlap@infradead.org>
+> Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+Acked-by: Randy Dunlap <rdunlap@infradead.org>
+
+Thanks.
+
+> 
+> diff --git a/drivers/media/usb/stk1160/Kconfig b/drivers/media/usb/stk1160/Kconfig
+> index 1c3a1ec..2bf6392 100644
+> --- a/drivers/media/usb/stk1160/Kconfig
+> +++ b/drivers/media/usb/stk1160/Kconfig
+> @@ -1,8 +1,6 @@
+> -config VIDEO_STK1160
+> +config VIDEO_STK1160_COMMON
+>      tristate "STK1160 USB video capture support"
+>      depends on VIDEO_DEV && I2C
+> -    select VIDEOBUF2_VMALLOC
+> -    select VIDEO_SAA711X
+>  
+>      ---help---
+>        This is a video4linux driver for STK1160 based video capture devices.
+> @@ -12,9 +10,14 @@ config VIDEO_STK1160
+>  
+>  config VIDEO_STK1160_AC97
+>      bool "STK1160 AC97 codec support"
+> -    depends on VIDEO_STK1160 && SND
+> -    select SND_AC97_CODEC
+> -
+> +    depends on VIDEO_STK1160_COMMON && SND
+>      ---help---
+>        Enables AC97 codec support for stk1160 driver.
+> -.
+> +
+> +config VIDEO_STK1160
+> +    tristate
+> +    depends on (!VIDEO_STK1160_AC97 || (SND='n') || SND) && VIDEO_STK1160_COMMON
+> +    default y
+> +    select VIDEOBUF2_VMALLOC
+> +    select VIDEO_SAA711X
+> +    select SND_AC97_CODEC if SND
+> 
+> 
+> -- 
+
+
+-- 
+~Randy
