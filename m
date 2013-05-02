@@ -1,60 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761406Ab3EBSnG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 14:43:06 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:61141 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761170Ab3EBSnF (ORCPT
+	id S1761475Ab3EBSof (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 14:44:35 -0400
+Received: from mail-qe0-f45.google.com ([209.85.128.45]:57483 "EHLO
+	mail-qe0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756653Ab3EBSod (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 14:43:05 -0400
-X-IronPort-AV: E=Sophos;i="4.87,597,1363132800"; 
-   d="scan'208";a="21903748"
-Date: Thu, 2 May 2013 19:42:58 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        Will Deacon <will.deacon@arm.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH v10 0/2] (arm-soc for v3.10) arm: introduce
- psci_smp_ops
-In-Reply-To: <20130502182812.GD14496@n2100.arm.linux.org.uk>
-Message-ID: <alpine.DEB.2.02.1305021938170.5398@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1304301707290.5398@kaball.uk.xensource.com> <alpine.DEB.2.02.1305021811560.5398@kaball.uk.xensource.com> <20130502171516.GA3040@mudshark.cambridge.arm.com> <alpine.DEB.2.02.1305021816490.5398@kaball.uk.xensource.com>
- <20130502182812.GD14496@n2100.arm.linux.org.uk>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 2 May 2013 14:44:33 -0400
+Date: Thu, 2 May 2013 11:44:26 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, lizefan@huawei.com,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org
+Subject: Re: [PATCHSET] blk-throttle: implement proper hierarchy support
+Message-ID: <20130502184426.GO19814@mtj.dyndns.org>
+References: <1367455189-6957-1-git-send-email-tj@kernel.org>
+ <20130502173428.GA4771@redhat.com>
+ <20130502180815.GG30020@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130502180815.GG30020@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2 May 2013, Russell King - ARM Linux wrote:
-> On Thu, May 02, 2013 at 06:20:32PM +0100, Stefano Stabellini wrote:
-> > On Thu, 2 May 2013, Will Deacon wrote:
-> > > Hi Stefano,
-> > > 
-> > > On Thu, May 02, 2013 at 06:12:12PM +0100, Stefano Stabellini wrote:
-> > > > ping
-> > > 
-> > > Is this a ping to have this pulled into Russell's tree?
-> > 
-> > I thought that we agreed that the patches should go via the arm-soc
-> > tree, after Russell acks them.
+Hello, Vivek.
+
+On Thu, May 02, 2013 at 02:08:15PM -0400, Vivek Goyal wrote:
+> 			G1
+> 		       /  \
+> 	              T1  G2
+> 			  |
+> 			  T2
 > 
-> Okay, well, is there a reason for them to go through arm-soc?  They
-> look more like core code to me than SoC specific - they only minimally
-> touch mach-virt.
+> G1 and G2 are 2 groups and T1 and T2 are tasks in groups respectively.
+> Assume both G1 and G2 are having 1MB/s IO rate limit. Assume T1 and
+> T2 are doing enough IO to keep respective queues backlogged.
 
-The original reason is that some SoC specific code depends on this
-series (Calxeda I believe).
+For the most part, I don't really care as long as the limits are
+followed.  We can implement something better when dispatching from
+child group into ->bio_lists[].  ->bio_lists[] could be organized in a
+way that it round robins certain number of bios from different sources
+- ie. it becomes FIFO lists of different sources of bios which is
+fetched in round-robin.  We already have a similar logic in
+select_dispatch() BTW.
 
-But you are probably right, if you prefer that I issue a pull request
-for your tree, I have no problems with that.
+> I was thinking that we should implement it something along the lines
+> of what cpu scheduler has done. All parent groups get enqueued on 
+> service tree when IO gets queued in any of child groups. Time slice
+> accounting starts at each level. And at each level we do round robin
+> for dispatch of bio from each eligible child group/queue.
+
+Let's please not do something which is gonna take a lot of time and
+effort.  If the fairness bothers you, please implement something
+simple on top.  It really just comes down to doing RR when taking bios
+from ->bio_lists[].  If you wanna reimplement the whole thing, that's
+fine too but let's please do that after getting the basic hierarchy
+support working because blkcg literally is the last subsystem with
+.broken_hierarchy at this point.
+
+Also, if you're actually thinking about reimplementing blk-throttle,
+please do consider the followings.
+
+* Currently, blk-throttle doesn't throttle the number of bios being
+  queued.  Note that this breaks the basic back-pressure mechanism
+  where IO pressure is propagated back to the issuer by throttling the
+  issuing task.  blk-throttle breaks that link and converts it to a
+  memory pressure.
+
+* It's almost inherently unscalable with highops devices.  Given that
+  IO limiting doesn't require very fine granularity, I think doing
+  this per-cpu shouldn't be too hard.  e.g. build a per-cpu token
+  distributing hierarchy with rebalancing across CPUs happening
+  periodically.
+
+In short, right now, the goal is getting the hierarchy support
+acceptably working ASAP and yeap we wanna get the nested limits and at
+least certain level of fairness, but let's please implement something
+simple for now and strive for sophistification later because it's
+holding back everyone else.
+
+Thanks.
+
+-- 
+tejun
