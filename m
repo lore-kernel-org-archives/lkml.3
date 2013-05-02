@@ -1,59 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762187Ab3EBUxT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 16:53:19 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:14296 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759629Ab3EBUxR (ORCPT
+	id S1762200Ab3EBUyA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 16:54:00 -0400
+Received: from a9-66.smtp-out.amazonses.com ([54.240.9.66]:39370 "EHLO
+	a9-66.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759629Ab3EBUx7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 16:53:17 -0400
-X-IronPort-AV: E=Sophos;i="4.87,599,1363158000"; 
-   d="scan'208";a="43752833"
-From: David Brown <davidb@codeaurora.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nicolas Pitre <nico@fluxnic.net>, Richard Kuo <rkuo@codeaurora.org>,
-        linux-hexagon@vger.kernel.org
-Subject: Re: [GIT PATCH] char/misc patches for 3.10-rc1
-References: <20130429162115.GA6893@kroah.com>
-	<CA+55aFzefpRz2Y8oW9q0ArrR=XW0POBhy8NSNJ3DrCh9EowLqg@mail.gmail.com>
-	<8yafvy92gfs.fsf@huya.qualcomm.com> <201304292316.28464.arnd@arndb.de>
-	<20130501161350.GS26160@sirena.org.uk>
-Date: Thu, 02 May 2013 13:53:03 -0700
-In-Reply-To: <20130501161350.GS26160@sirena.org.uk> (Mark Brown's message of
-	"Wed, 1 May 2013 17:13:50 +0100")
-Message-ID: <8yay5bxums0.fsf@huya.qualcomm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Thu, 2 May 2013 16:53:59 -0400
+Date: Thu, 2 May 2013 20:53:57 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+cc: glommer@parallels.com, penberg@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [linux-next-20130422] Bug in SLAB?
+In-Reply-To: <201305012114.AED78178.tFSHFQOOJLMOFV@I-love.SAKURA.ne.jp>
+Message-ID: <0000013e6705da99-094923c6-e239-43d2-8f0c-5e661656a27c-000000@email.amazonses.com>
+References: <0000013e56e9304a-1042a95a-d4dd-43c5-8b8a-c670f50ac54e-000000@email.amazonses.com> <201304300645.FCE37285.tVHJLSOMQFOFFO@I-love.SAKURA.ne.jp> <0000013e5b56d067-7982dfa6-08a2-4c48-ad77-6888b5114c5f-000000@email.amazonses.com>
+ <201305010101.CGB86424.JFQOtSFOVOLFHM@I-love.SAKURA.ne.jp> <0000013e5bfc7c4d-54fa9464-dccd-4157-b4a5-22594261eaf3-000000@email.amazonses.com> <201305012114.AED78178.tFSHFQOOJLMOFV@I-love.SAKURA.ne.jp>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.05.02-54.240.9.66
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark Brown <broonie@kernel.org> writes:
+On Wed, 1 May 2013, Tetsuo Handa wrote:
 
-> On Mon, Apr 29, 2013 at 11:16:28PM +0200, Arnd Bergmann wrote:
->
->> Well, the only reason I see against putting it into drivers/mfd is that
->> this place is becoming a dumping ground for stuff that doesn't have a
->> real home anywhere else. On the other hand, this one would fit better
->> than a lot of drivers that are already there, and it would actually remove
->> the need for a global include/linux/*.h header file as the interface.
->
-> Well, this device should have a bunch of function drivers hanging off it
-> shouldn't it?  That's pretty much the definition of a MFD.
+> The culprit location is possibly in SLAB because the kernel boots if built with
+> CONFIG_DEBUG_SLAB=n || CONFIG_DEBUG_SPINLOCK=n || CONFIG_DEBUG_PAGEALLOC=n.
 
-Perhaps it's better to think of it as the library that other mfd devices
-use to talk to their device.  ssbi is not itself an MFD device, it is
-part of the other drivers.
+I have booted such a configuration just fine. Please have a look at the
+kernel config that I send or send me yours.
 
-David
+Here is a patch that restores the old behavior for SLAB
 
--- 
-sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+
+
+Subject: slab: Return NULL for oversized allocations
+
+The inline path seems to have changed the SLAB behavior for very large
+kmalloc allocations. This patch restores the old behavior.
+
+Signed-off-by: Christoph Lameter <cl@linux.com>
+
+
+Index: linux/include/linux/slab_def.h
+===================================================================
+--- linux.orig/include/linux/slab_def.h	2013-05-02 15:02:45.864728115 -0500
++++ linux/include/linux/slab_def.h	2013-05-02 15:06:14.940474110 -0500
+@@ -126,6 +126,9 @@ static __always_inline void *kmalloc(siz
+ 		if (!size)
+ 			return ZERO_SIZE_PTR;
+
++		if (size >= KMALLOC_MAX_SIZE)
++			return NULL;
++
+ 		i = kmalloc_index(size);
+
+ #ifdef CONFIG_ZONE_DMA
+@@ -172,6 +175,9 @@ static __always_inline void *kmalloc_nod
+ 		if (!size)
+ 			return ZERO_SIZE_PTR;
+
++		if (size > KMALLOC_MAX_SIZE)
++			return NULL;
++
+ 		i = kmalloc_index(size);
+
+ #ifdef CONFIG_ZONE_DMA
