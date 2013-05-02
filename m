@@ -1,52 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750906Ab3EBEbn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 00:31:43 -0400
-Received: from caibbdcaaaaf.dreamhost.com ([208.113.200.5]:42169 "EHLO
-	homiemail-a57.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750766Ab3EBEbl (ORCPT
+	id S1751303Ab3EBEhm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 00:37:42 -0400
+Received: from mail-ve0-f173.google.com ([209.85.128.173]:62060 "EHLO
+	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750809Ab3EBEhj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 00:31:41 -0400
-Message-ID: <5181EC2B.2030405@shealevy.com>
-Date: Thu, 02 May 2013 00:31:39 -0400
-From: Shea Levy <shea@shealevy.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	Thu, 2 May 2013 00:37:39 -0400
 MIME-Version: 1.0
-To: "Serge E. Hallyn" <serge@hallyn.com>
-CC: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Linux 3.8.9 Build Failure in user_namespace.c
-References: <af928063831e8eabf1236448484a8a9f@shealevy.com> <20130429205628.GA20607@austin.hallyn.com>
-In-Reply-To: <20130429205628.GA20607@austin.hallyn.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CA+55aFzsvyQLLKbuETBqfhpgkSaXH9cvT0O-cQ-mTTXXxcMqwg@mail.gmail.com>
+References: <20130501.164755.1859264969403837546.davem@davemloft.net>
+	<CA+55aFzsvyQLLKbuETBqfhpgkSaXH9cvT0O-cQ-mTTXXxcMqwg@mail.gmail.com>
+Date: Wed, 1 May 2013 21:37:38 -0700
+X-Google-Sender-Auth: Mtw6blBY6nOnzLuak3qz3nMxFUo
+Message-ID: <CA+55aFzinZSQAS6GW6vYOyQ06+GSMqkCGb8Fu829s_MxY0L0QA@mail.gmail.com>
+Subject: Re: [GIT] Networking
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: David Miller <davem@davemloft.net>, hayeswang <hayeswang@realtek.com>,
+        Patrick McHardy <kaber@trash.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/29/13 4:56 PM, Serge E. Hallyn wrote:
-> Quoting shea@shealevy.com (shea@shealevy.com):
->> Hi All,
->>
->> I just hit the following error trying to build 3.8.9:
->>
->> /nix/store/vkvwpn6f7iff6zqrq2d9z2a1945pcsza-linux-3.8.9-source/kernel/user_namespace.c:
->> In function 'map_write':
->> /nix/store/vkvwpn6f7iff6zqrq2d9z2a1945pcsza-linux-3.8.9-source/kernel/user_namespace.c:582:2:
->> error: implicit declaration of function 'file_ns_capable'
->> [-Werror=implicit-function-declaration]
->> cc1: some warnings being treated as errors
->>
->> Below is my .config, below that the build log.
-> I'm looking at 3.9.  file_ns_capable() is declared in capability.h, which gets
-> included into user_namespace.c through cred.h.  I did also try building with
-> CONFIG_SECURITY=n and CONFIG_USER_NS=y as you have it, but build succeeded,
-> as I would expect given how it is included.
-
-It turned out to be a commit Greg missed in 3.8.9, it was fixed in 3.8.10.
-
-> Do you have any custom patches applied by chance?
+On Wed, May 1, 2013 at 6:28 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
 >
-> -serge
+> Lowlight: it completely breaks my machine with r8169 ethernet.  In the
+> networkmanager applet, it claims no cable connection, which is a bit
+> odd, because (a) it works with an older kernel and (b) the kernel
+> messages actually say
+>
+>   r8169 0000:01:00.0 eth0: link up
+>
+> but nothing actually works.
+>
+>  r8169 Gigabit Ethernet driver 2.3LK-NAPI loaded
+>  r8169 0000:01:00.0 eth0: RTL8168d/8111d at 0xffffc90010ece000,
+> e0:cb:4e:95:1a:d7, XID 083000c0 IRQ 53
+>  r8169 0000:01:00.0 eth0: jumbo features [frames: 9200 bytes, tx
+> checksumming: ko]
+>
+> Any ideas?
 
+Hmm. I bisected it.
+
+And my machine is broken by commit 8ad227ff89a7 ("net: vlan: add
+802.1ad support"). I booted several times just to make sure, and it's
+consistent. The previous commit (86a9bad3ab6b) works fine, and
+8ad227ff89a7 is broken.
+
+I don't see what could be broken in that commit, and I'd *like* to
+just revert it on top of current -git, but that causes problems
+("error: ‘NETIF_F_HW_VLAN_STAG_TX_BIT’ undeclared"), so I can't just
+do a straight revert to double-check with the current tree state. But
+the bisection was very straightforward, and as mentioned, I checked
+that boundary several times just because it looked so odd.
+
+Maybe somebody who knows the code better just goes "Duh!". Anybody?
+
+                Linus
