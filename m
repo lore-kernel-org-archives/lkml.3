@@ -1,68 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761905Ab3EBSsO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 14:48:14 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42886 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761232Ab3EBSsN (ORCPT
+	id S1761921Ab3EBStZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 14:49:25 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:64248 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760862Ab3EBStY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 14:48:13 -0400
-Date: Thu, 2 May 2013 19:48:01 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: Will Deacon <will.deacon@arm.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH v10 0/2] (arm-soc for v3.10) arm: introduce psci_smp_ops
-Message-ID: <20130502184801.GF14496@n2100.arm.linux.org.uk>
-References: <alpine.DEB.2.02.1304301707290.5398@kaball.uk.xensource.com> <alpine.DEB.2.02.1305021811560.5398@kaball.uk.xensource.com> <20130502171516.GA3040@mudshark.cambridge.arm.com> <alpine.DEB.2.02.1305021816490.5398@kaball.uk.xensource.com> <20130502182812.GD14496@n2100.arm.linux.org.uk> <alpine.DEB.2.02.1305021938170.5398@kaball.uk.xensource.com>
+	Thu, 2 May 2013 14:49:24 -0400
+X-IronPort-AV: E=Sophos;i="4.87,597,1363158000"; 
+   d="scan'208";a="43712634"
+Message-ID: <5182B532.10607@codeaurora.org>
+Date: Thu, 02 May 2013 14:49:22 -0400
+From: Christopher Covington <cov@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1305021938170.5398@kaball.uk.xensource.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: xen-devel@lists.xensource.com, marc.zyngier@arm.com,
+        konrad.wilk@oracle.com, will.deacon@arm.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 2/3] xen: move do_stolen_accounting to drivers/xen/time.c
+References: <alpine.DEB.2.02.1305011939180.5398@kaball.uk.xensource.com> <1367436460-10183-2-git-send-email-stefano.stabellini@eu.citrix.com>
+In-Reply-To: <1367436460-10183-2-git-send-email-stefano.stabellini@eu.citrix.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 02, 2013 at 07:42:58PM +0100, Stefano Stabellini wrote:
-> On Thu, 2 May 2013, Russell King - ARM Linux wrote:
-> > On Thu, May 02, 2013 at 06:20:32PM +0100, Stefano Stabellini wrote:
-> > > On Thu, 2 May 2013, Will Deacon wrote:
-> > > > Hi Stefano,
-> > > > 
-> > > > On Thu, May 02, 2013 at 06:12:12PM +0100, Stefano Stabellini wrote:
-> > > > > ping
-> > > > 
-> > > > Is this a ping to have this pulled into Russell's tree?
-> > > 
-> > > I thought that we agreed that the patches should go via the arm-soc
-> > > tree, after Russell acks them.
-> > 
-> > Okay, well, is there a reason for them to go through arm-soc?  They
-> > look more like core code to me than SoC specific - they only minimally
-> > touch mach-virt.
+Hi Stefano,
+
+On 05/01/2013 03:27 PM, Stefano Stabellini wrote:
+> Move do_stolen_accounting, xen_vcpu_stolen and related functions and
+> static variables to common code (drivers/xen/time.c).
 > 
-> The original reason is that some SoC specific code depends on this
-> series (Calxeda I believe).
-> 
-> But you are probably right, if you prefer that I issue a pull request
-> for your tree, I have no problems with that.
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> ---
+>  arch/x86/xen/time.c   |  127 +-------------------------------------------
 
-The only issue that there is is where we are in the development cycle
-(almost mid merge window), and I've yet to push anything to Linus thanks
-to late discovery of various messups in other chunks of code submitted
-via my tree - I'm starting to drop stuff from my tree in the hope that
-I'll get back to something that's going to be suitable for mainline.
+In going through some of the code, it looked like there might be a few little
+bits that you might be interested in pulling out of arch/ia64/xen/time.c as well.
 
-I really don't want to go pulling anything else at the moment in the
-hope of getting what I currently have out the door.
+[...]
 
-And in any case, we shouldn't be adding any new code to our trees at
-this point in time.
+Regards,
+Christopher
+
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by the Linux Foundation.
