@@ -1,45 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752879Ab3EBXUm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 19:20:42 -0400
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:55314 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751202Ab3EBXUk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 19:20:40 -0400
-Date: Thu, 2 May 2013 16:20:34 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Colin Cross <ccross@android.com>
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, arve@android.com,
-        Oleg Nesterov <oleg@redhat.com>, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>
-Subject: Re: [PATCH v2 01/10] freezer: shorten freezer sleep time using
- exponential backoff
-Message-ID: <20130502232034.GU19814@mtj.dyndns.org>
-References: <1367458508-9133-1-git-send-email-ccross@android.com>
- <1367458508-9133-2-git-send-email-ccross@android.com>
+	id S1756351Ab3EBXUw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 19:20:52 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:55729 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753131Ab3EBXUt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 19:20:49 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Jonas Heinrich <onny@project-insanity.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, len.brown@intel.com, pavel@ucw.cz,
+        tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        Jarkko Sakkinen <jarkko.sakkinen@intel.com>
+Subject: Re: [Bisected] 3.7-rc1 can't resume (still present in 3.9)
+Date: Fri, 03 May 2013 01:29:04 +0200
+Message-ID: <1487368.CBCgti1nd5@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.9.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <20130502203229.GA433@onny.intranet.entropia.de>
+References: <20130218155439.GA902@onny> <1682771.1PVxk2VyJS@vostro.rjw.lan> <20130502203229.GA433@onny.intranet.entropia.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1367458508-9133-2-git-send-email-ccross@android.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/mixed; boundary="nextPart5650921.aMgYc9sYLS"
+Content-Transfer-Encoding: 7Bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+This is a multi-part message in MIME format.
 
-On Wed, May 01, 2013 at 06:34:59PM -0700, Colin Cross wrote:
-> All tasks can easily be frozen in under 10 ms, switch to using
-> an initial 1 ms sleep followed by exponential backoff until
-> 8 ms.  Also convert the printed time to ms instead of centiseconds.
+--nextPart5650921.aMgYc9sYLS
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 
-Can you please put the above as comment in the code?  Other than that,
+On Thursday, May 02, 2013 08:32:30 PM Jonas Heinrich wrote:
+> On 05-02 02:45, Rafael J. Wysocki wrote:
+> > On Wednesday, May 01, 2013 11:55:10 AM H. Peter Anvin wrote:
+> > > On 05/01/2013 11:51 AM, Jonas Heinrich wrote:
+> > > > Well, you could give me instructions on how to debug this (I'll do 
+> > > > everything ;)) or I could ship you the Thinkpad T43. I guess this
+> > > > would worth the effort since this bug is somehow critical.
+> > > > 
+> > > > Best regards, Jonas
+> > > 
+> > > I'll put together a debug patch unless I can trick Rafael into doing
+> > > it first...
+> > 
+> > I'm afraid that code has changed quite a bit since I looked at it last time.
+> > [Jarkko Sakkinen seems to have worked on it lately, CCed.]
+> > 
+> > Jonas, I wonder what happens if you drop the first hunk of the patch (it just
+> > uses a different register, which shouldn't matter)?  Does it still help then?
+> 
+> Hello Rafel, first of all, thank you for helping me out :)
+> You're right, the patch still solves the suspend bug, after removing the first 
+> hunk of the patch and applying it (see attachement:
+> suspendfix_first_hunk_dropped.patch).
+> 
+> > 
+> > If so, there are still a few things you can do to it, e.g:
+> > (1) drop the
+> > 
+> > -       btl     $WAKEUP_BEHAVIOR_RESTORE_CR4, %edi
+> > -       jnc     1f
+> > 
+> 
+> Still works :) (used suspendfix_1.patch)
+> 
+> > lines,
+> > (2) drop the
+> > 
+> > -       btl     $WAKEUP_BEHAVIOR_RESTORE_EFER, %edi
+> > -       jnc     1f
+> > 
+> > lines,
+> 
+> Still works :) (used suspendfix_2.patch)
+> 
+> > (3) drop the
+> > 
+> > +       jecxz   1f
+> > 
+> 
+> Still works :) (used suspendfix_3.patch)
+> 
+> > line,
+> > (4) drop the
+> > 
+> > +       movl    %eax, %ecx
+> > +       orl     %edx, %ecx
+> > +       jz      1f
+> > 
+> 
+> At this point, the bug reoccurs (used suspendfix_4.patch)! 
+> But that doesn't mean these lines are the only critical, because the more
+> minimal patch
+> 
+> @@ -119,6 +119,9 @@
+>         jnc     1f
+>         movl    pmode_efer, %eax
+>         movl    pmode_efer + 4, %edx
+> +       movl    %eax, %ecx
+> +       orl     %edx, %ecx
+> +       jz      1f
+>         movl    $MSR_EFER, %ecx
+>         wrmsr
+>  1:
+> 
+> 
+> with removing this part
+> 
+> -       movl    pmode_cr4, %eax
+> -       movl    %eax, %cr4
+> +       movl    pmode_cr4, %ecx
+> +       movl    %ecx, %cr4
+> 
+> also doesn't fix the issue (see suspendfix_5.patch).
+> 
+> > lines and see what the minimal patch needed for things to work again is.
+> > 
+> 
+> So the most minimal working patch is suspendfix_3.patch.
 
-Acked-by: Tejun Heo <tj@kernel.org>
+Thanks for doing that detective work!
 
-Thanks.
+The only explanation of why this particular patch can help that seems viable to
+us at the moment is that we have a memory corruption in the code region modified
+by it and the patch simply changes the alignment of the instructions that don't
+get corrupted.
+
+It looks like this may be verified by putting a bunch of nops into the region
+in question, so can you please check if the attached patch helps too?
+
+Rafael
+
 
 -- 
-tejun
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
+--nextPart5650921.aMgYc9sYLS
+Content-Disposition: attachment; filename="i386-resume-crash-debug.patch"
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/x-patch; charset="UTF-8"; name="i386-resume-crash-debug.patch"
+
+---
+ arch/x86/realmode/rm/wakeup_asm.S |   32 ++++++++++++++++++++++++++++++++
+ 1 file changed, 32 insertions(+)
+
+Index: linux-pm/arch/x86/realmode/rm/wakeup_asm.S
+===================================================================
+--- linux-pm.orig/arch/x86/realmode/rm/wakeup_asm.S
++++ linux-pm/arch/x86/realmode/rm/wakeup_asm.S
+@@ -117,6 +117,38 @@ ENTRY(wakeup_start)
+ 1:
+ 	btl	$WAKEUP_BEHAVIOR_RESTORE_EFER, %edi
+ 	jnc	1f
++	nop
++	nop
++	nop
++	nop
++	nop
++	nop
++	nop
++	nop
++	nop
++	nop
++	nop
++	nop
++	nop
++	nop
++	nop
++	nop
++	nop
++	nop
++	nop
++	nop
++	nop
++	nop
++	nop
++	nop
++	nop
++	nop
++	nop
++	nop
++	nop
++	nop
++	nop
++	nop
+ 	movl	pmode_efer, %eax
+ 	movl	pmode_efer + 4, %edx
+ 	movl	$MSR_EFER, %ecx
+
+--nextPart5650921.aMgYc9sYLS--
+
