@@ -1,51 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761921Ab3EBStZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 14:49:25 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:64248 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760862Ab3EBStY (ORCPT
+	id S1761942Ab3EBSuB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 14:50:01 -0400
+Received: from mail-qe0-f54.google.com ([209.85.128.54]:52527 "EHLO
+	mail-qe0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761824Ab3EBSt7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 14:49:24 -0400
-X-IronPort-AV: E=Sophos;i="4.87,597,1363158000"; 
-   d="scan'208";a="43712634"
-Message-ID: <5182B532.10607@codeaurora.org>
-Date: Thu, 02 May 2013 14:49:22 -0400
-From: Christopher Covington <cov@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Thu, 2 May 2013 14:49:59 -0400
+Date: Thu, 2 May 2013 11:49:53 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, lizefan@huawei.com,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org
+Subject: Re: [PATCHSET] blk-throttle: implement proper hierarchy support
+Message-ID: <20130502184953.GP19814@mtj.dyndns.org>
+References: <1367455189-6957-1-git-send-email-tj@kernel.org>
+ <20130502173428.GA4771@redhat.com>
+ <20130502175701.GL19814@mtj.dyndns.org>
+ <20130502181747.GH30020@redhat.com>
+ <20130502182933.GN19814@mtj.dyndns.org>
+ <20130502184514.GI30020@redhat.com>
 MIME-Version: 1.0
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: xen-devel@lists.xensource.com, marc.zyngier@arm.com,
-        konrad.wilk@oracle.com, will.deacon@arm.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 2/3] xen: move do_stolen_accounting to drivers/xen/time.c
-References: <alpine.DEB.2.02.1305011939180.5398@kaball.uk.xensource.com> <1367436460-10183-2-git-send-email-stefano.stabellini@eu.citrix.com>
-In-Reply-To: <1367436460-10183-2-git-send-email-stefano.stabellini@eu.citrix.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130502184514.GI30020@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stefano,
+Hello,
 
-On 05/01/2013 03:27 PM, Stefano Stabellini wrote:
-> Move do_stolen_accounting, xen_vcpu_stolen and related functions and
-> static variables to common code (drivers/xen/time.c).
+On Thu, May 02, 2013 at 02:45:14PM -0400, Vivek Goyal wrote:
+> I did not understand this point. In flat model, application issuing
+> at configured page will not get penalized.
 > 
-> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> ---
->  arch/x86/xen/time.c   |  127 +-------------------------------------------
+> This penalty is coming from the fact that we are moving bios after the
+> wait and make them wait in another queue.
+> 
+> In flat model there is no such problem. So to me, it is the problem
+> of how hierarchical scheduling is implemented. In flat model, I did
+> not have to deal with it.
 
-In going through some of the code, it looked like there might be a few little
-bits that you might be interested in pulling out of arch/ia64/xen/time.c as well.
+But seen from the parent, the child isn't different from any other
+issuer in flat hierarchy.  It's just being repeated, so if you assume
+a process which behaves in the exact same manner, that process would
+get penalized too.  e.g. imagine an application which throttles itself
+and issues exactly 1MB/s amount of data in direct IO.  It'd get
+penalized the same way, right?
 
-[...]
+> Ok. Not having a perfect algorithm now is fine. We can always redo it
+> later.
 
-Regards,
-Christopher
+I think we can do source-based RR on bio_lists[] fetching which is
+simple enough and should be able to avoid most of the problems, right?
+
+Thanks.
 
 -- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by the Linux Foundation.
+tejun
