@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758614Ab3EBMKE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 08:10:04 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:42347 "EHLO comal.ext.ti.com"
+	id S1758754Ab3EBMKq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 08:10:46 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:57204 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758355Ab3EBMJ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 08:09:58 -0400
+	id S1757522Ab3EBMKC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 08:10:02 -0400
 From: Peter Ujfalusi <peter.ujfalusi@ti.com>
 To: Santosh Shilimkar <santosh.shilimkar@ti.com>,
         Tony Lindgren <tony@atomide.com>
 CC: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
         <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>
-Subject: [PATCH 1/5] drivers: bus: omap_l3: Convert to use devm_kzalloc
-Date: Thu, 2 May 2013 14:09:43 +0200
-Message-ID: <1367496587-6210-2-git-send-email-peter.ujfalusi@ti.com>
+Subject: [PATCH 4/5] drivers: bus: omap_l3: Remove the platform driver's remove function
+Date: Thu, 2 May 2013 14:09:46 +0200
+Message-ID: <1367496587-6210-5-git-send-email-peter.ujfalusi@ti.com>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <1367496587-6210-1-git-send-email-peter.ujfalusi@ti.com>
 References: <1367496587-6210-1-git-send-email-peter.ujfalusi@ti.com>
@@ -23,61 +23,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We can remove the kfree() calls from probe and remove.
+It is NOP after the devm_* conversion.
 
 Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 ---
- drivers/bus/omap_l3_noc.c | 11 +++--------
- 1 file changed, 3 insertions(+), 8 deletions(-)
+ drivers/bus/omap_l3_noc.c | 6 ------
+ 1 file changed, 6 deletions(-)
 
 diff --git a/drivers/bus/omap_l3_noc.c b/drivers/bus/omap_l3_noc.c
-index feeecae..d25d727 100644
+index 2bbc87b..ed428ad 100644
 --- a/drivers/bus/omap_l3_noc.c
 +++ b/drivers/bus/omap_l3_noc.c
-@@ -134,7 +134,7 @@ static int omap4_l3_probe(struct platform_device *pdev)
- 	struct resource	*res;
- 	int ret;
- 
--	l3 = kzalloc(sizeof(*l3), GFP_KERNEL);
-+	l3 = devm_kzalloc(&pdev->dev, sizeof(*l3), GFP_KERNEL);
- 	if (!l3)
- 		return -ENOMEM;
- 
-@@ -142,15 +142,13 @@ static int omap4_l3_probe(struct platform_device *pdev)
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (!res) {
- 		dev_err(&pdev->dev, "couldn't find resource 0\n");
--		ret = -ENODEV;
--		goto err0;
-+		return -ENODEV;
- 	}
- 
- 	l3->l3_base[0] = ioremap(res->start, resource_size(res));
- 	if (!l3->l3_base[0]) {
- 		dev_err(&pdev->dev, "ioremap failed\n");
--		ret = -ENOMEM;
--		goto err0;
-+		return -ENOMEM;
- 	}
- 
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
-@@ -214,8 +212,6 @@ err2:
- 	iounmap(l3->l3_base[1]);
- err1:
- 	iounmap(l3->l3_base[0]);
--err0:
--	kfree(l3);
+@@ -177,11 +177,6 @@ static int omap4_l3_probe(struct platform_device *pdev)
  	return ret;
  }
  
-@@ -228,7 +224,6 @@ static int omap4_l3_remove(struct platform_device *pdev)
- 	iounmap(l3->l3_base[0]);
- 	iounmap(l3->l3_base[1]);
- 	iounmap(l3->l3_base[2]);
--	kfree(l3);
+-static int omap4_l3_remove(struct platform_device *pdev)
+-{
+-	return 0;
+-}
+-
+ #if defined(CONFIG_OF)
+ static const struct of_device_id l3_noc_match[] = {
+ 	{.compatible = "ti,omap4-l3-noc", },
+@@ -194,7 +189,6 @@ MODULE_DEVICE_TABLE(of, l3_noc_match);
  
- 	return 0;
- }
+ static struct platform_driver omap4_l3_driver = {
+ 	.probe		= omap4_l3_probe,
+-	.remove		= omap4_l3_remove,
+ 	.driver		= {
+ 		.name		= "omap_l3_noc",
+ 		.owner		= THIS_MODULE,
 -- 
 1.8.2.1
 
