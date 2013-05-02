@@ -1,64 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760028Ab3EBNmR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 09:42:17 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:49483 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759463Ab3EBNmP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 09:42:15 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: devicetree-discuss@lists.ozlabs.org
-Cc: Sascha Hauer <s.hauer@pengutronix.de>,
-        Prabhakar Lad <prabhakar.csengg@gmail.com>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>, linux-doc@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Sakari Ailus <sakari.ailus@iki.fi>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        LMML <linux-media@vger.kernel.org>
-Subject: Re: [PATCH RFC v2] media: i2c: mt9p031: add OF support
-Date: Thu, 02 May 2013 15:42:19 +0200
-Message-ID: <3547278.d3Q4LvxEgy@wuerfel>
-User-Agent: KMail/4.10.2 (Linux/3.8.0-17-generic; KDE/4.10.2; x86_64; ; )
-In-Reply-To: <20130502065518.GN32299@pengutronix.de>
-References: <1367475754-19477-1-git-send-email-prabhakar.csengg@gmail.com> <20130502065518.GN32299@pengutronix.de>
+	id S1759580Ab3EBNqo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 09:46:44 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:32790 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758155Ab3EBNqn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 09:46:43 -0400
+Date: Thu, 2 May 2013 08:43:45 -0500
+From: Kent Yoder <key@linux.vnet.ibm.com>
+To: Libo Chen <clbchenlibo.chen@huawei.com>
+Cc: mail@srajiv.net, tpmdd@selhorst.net, tpmdd@sirrix.com,
+        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        Li Zefan <lizefan@huawei.com>
+Subject: Re: [PATCH] tpm_tis: fix missing platform_driver_unregister
+Message-ID: <20130502134345.GA28020@ennui.austin.ibm.com>
+References: <51825086.3010205@huawei.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:Ti7O3QXfEGpCR0j+n49RU2iWYAbj4sYYEwVISjNAO6G
- pe+Qi7A7NRG/2O7pCdmy72Ai88zCdqQiMoE0eQgBr4SxRol8Ju
- DCHIxfQzelIRFlMVGKy/o1DcXgU4Lrp39dMFz3Cebidm7RbOD4
- VD9qx7c3IGJsnJKYmlZnfxZl38BE6QQyixjpwnKIauBiGT476J
- E/9m+T0+lDj9EXM2YB1MM/lvpwD8O7VOwFc/SoJ4POMQfGh/Ck
- 1Pb16ae0Mnr6HL9UiRJasccWLfa3/nrCL01cPR4vNyphtvF1BS
- /VrtPZcK787hjJ0UMPdZqjU4clo1Tu8VhQadqkGOOdHjwwGH7/
- YUkIWHPBL4HFNPjvj844=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51825086.3010205@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13050213-7182-0000-0000-0000068207D9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 02 May 2013 08:55:18 Sascha Hauer wrote:
-> > +#if defined(CONFIG_OF)
-> > +static struct mt9p031_platform_data *
-> > +     mt9p031_get_pdata(struct i2c_client *client)
-> > +
-> > +{
-> > +     if (client->dev.of_node) {
+On Thu, May 02, 2013 at 07:39:50PM +0800, Libo Chen wrote:
 > 
-> By inverting the logic here and returning immediately you can safe an
-> indention level for the bulk of this function.
+> Add missing unregister tis_drv after register pdev fail
+> 
+> Signed-off-by: Libo Chen <libo.chen@huawei.com>
 
-Right, also make this
+  Hi Libo - thanks for the contribution, but I got an similar patch
+last week from Wei Yongjun. Its staged over here [1] and will be pushed
+soon.
 
-	if (!IS_ENABLED(CONFIG_OF) || !client->dev.of_node)
-		return client->dev.platform_data;
+Thanks,
+Kent
 
-Then the rest of the function gets discarded by the compiler when CONFIG_OF
-is not set, and you can kill the #ifdef around the function.
+[1] git://github.com/shpedoikal/linux.git tpmdd-04-26-13
 
-	Arnd
+> ---
+>  drivers/char/tpm/tpm_tis.c |    7 +++++--
+>  1 files changed, 5 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/char/tpm/tpm_tis.c b/drivers/char/tpm/tpm_tis.c
+> index 8a41b6b..d5b0af4 100644
+> --- a/drivers/char/tpm/tpm_tis.c
+> +++ b/drivers/char/tpm/tpm_tis.c
+> @@ -884,8 +884,11 @@ static int __init init_tis(void)
+>  	rc = platform_driver_register(&tis_drv);
+>  	if (rc < 0)
+>  		return rc;
+> -	if (IS_ERR(pdev=platform_device_register_simple("tpm_tis", -1, NULL, 0)))
+> -		return PTR_ERR(pdev);
+> +	pdev = platform_device_register_simple("tpm_tis", -1, NULL, 0);
+> +	if (IS_ERR(pdev) {
+> +	    platform_driver_unregister(&tis_drv);
+> +	    return PTR_ERR(pdev);
+> +	}
+>  	if((rc=tpm_tis_init(&pdev->dev, TIS_MEM_BASE, TIS_MEM_LEN, 0)) != 0) {
+>  		platform_device_unregister(pdev);
+>  		platform_driver_unregister(&tis_drv);
+> -- 
+> 1.7.1
+> 
+
