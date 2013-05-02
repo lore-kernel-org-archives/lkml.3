@@ -1,66 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753311Ab3EBJxR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 05:53:17 -0400
-Received: from mail-ea0-f175.google.com ([209.85.215.175]:55248 "EHLO
-	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751834Ab3EBJxQ (ORCPT
+	id S1754086Ab3EBJ4U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 05:56:20 -0400
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:54886 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750771Ab3EBJ4T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 05:53:16 -0400
-From: Fabio Baltieri <fabio.baltieri@linaro.org>
-To: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>
-Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Lee Jones <lee.jones@linaro.org>,
-        Ola Lilja <ola.o.lilja@stericsson.com>,
-        Fabio Baltieri <fabio.baltieri@linaro.org>
-Subject: [PATCH v2 2/3] ASoC: ux500: drop clock gating widgets from machine driver
-Date: Thu,  2 May 2013 11:52:51 +0200
-Message-Id: <1367488371-18346-1-git-send-email-fabio.baltieri@linaro.org>
-X-Mailer: git-send-email 1.8.2
-In-Reply-To: <20130502075421.GA23346@balto.lan>
-References: <20130502075421.GA23346@balto.lan>
+	Thu, 2 May 2013 05:56:19 -0400
+MIME-Version: 1.0
+In-Reply-To: <87fvy53eun.fsf@devron.myhome.or.jp>
+References: <1367107703-2665-1-git-send-email-linkinjeon@gmail.com>
+	<87ppxd4ddm.fsf@devron.myhome.or.jp>
+	<CAKYAXd8v-eF0E2FzLfm1KaZaRu-adQcDVQQeWAiH6-8Pr+BxmA@mail.gmail.com>
+	<87bo8v42wx.fsf@devron.myhome.or.jp>
+	<CAKYAXd_-Z8Avm-FmLF=MVqHSkzfE1_jczBroyFXv5xgQmr5=XA@mail.gmail.com>
+	<87vc722cdu.fsf@devron.myhome.or.jp>
+	<CAKYAXd8nTUrW04ADyDkhnJWyjUKiniU+r65J5SMhXT-jHTG+UA@mail.gmail.com>
+	<87r4hp3kax.fsf@devron.myhome.or.jp>
+	<87k3nh3jzi.fsf@devron.myhome.or.jp>
+	<CAKYAXd_DRLG3KzjXEQ_8vD5mFWE95gR+jj3-MYhC3QKgQOLTEA@mail.gmail.com>
+	<87fvy53eun.fsf@devron.myhome.or.jp>
+Date: Thu, 2 May 2013 18:56:18 +0900
+Message-ID: <CAKYAXd95yVtbEmwiaDaxgDsJYbqWDV23rY0GuPKLVf0msSGJ2g@mail.gmail.com>
+Subject: Re: [PATCH RESEND v5] fat: editions to support fat_fallocate
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Drop ab8500 clock gating widgets from mop500_ab8500_ctrls, as these bits
-are already controlled by ab8500 codec driver and should not be exposed
-to the user.
+2013/5/2, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
+> Namjae Jeon <linkinjeon@gmail.com> writes:
+>
+>>>> AFAIK, preallocation != fallocate. ext*'s preallocation was there at
+>>>> before fallocation to optimize block allocation for user data blocks.
+>> yes, this is correct , preallocation!= fallocate, we just adopted only
+>> the "release part" from that approach
+>> Sorry, Would you mind to adopt this approach :) ?
+>
+> I'm ok as start if it works.
+>
+> But from this discussion, discard at last close(2) doesn't look like
+> working for your requirement. Since you want to discard at last close of
+> inode, so, rather, I guess you actually want to discard at last
+> dereference of inode.
+Okay, I see. I will check your review points again.
 
-Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
----
-
-Was: ASoC: ux500: move clock controls to ab8500-codec
-
-Changes from v1:
-- rewrote the patch to just drop the widgets, as those allowed the user
-  to control some bits already handled by the codec driver.
-
- sound/soc/ux500/mop500_ab8500.c | 10 ----------
- 1 file changed, 10 deletions(-)
-
-diff --git a/sound/soc/ux500/mop500_ab8500.c b/sound/soc/ux500/mop500_ab8500.c
-index 2c122de..4606194 100644
---- a/sound/soc/ux500/mop500_ab8500.c
-+++ b/sound/soc/ux500/mop500_ab8500.c
-@@ -162,16 +162,6 @@ static struct snd_kcontrol_new mop500_ab8500_ctrls[] = {
- 	SOC_ENUM_EXT("Master Clock Select",
- 		soc_enum_mclk,
- 		mclk_input_control_get, mclk_input_control_put),
--	/* Digital interface - Clocks */
--	SOC_SINGLE("Digital Interface Master Generator Switch",
--		AB8500_DIGIFCONF1, AB8500_DIGIFCONF1_ENMASTGEN,
--		1, 0),
--	SOC_SINGLE("Digital Interface 0 Bit-clock Switch",
--		AB8500_DIGIFCONF1, AB8500_DIGIFCONF1_ENFSBITCLK0,
--		1, 0),
--	SOC_SINGLE("Digital Interface 1 Bit-clock Switch",
--		AB8500_DIGIFCONF1, AB8500_DIGIFCONF1_ENFSBITCLK1,
--		1, 0),
- 	SOC_DAPM_PIN_SWITCH("Headset Left"),
- 	SOC_DAPM_PIN_SWITCH("Headset Right"),
- 	SOC_DAPM_PIN_SWITCH("Earpiece"),
--- 
-1.8.2
-
+Thanks OGAWA for review!
+>
+> Thanks.
+> --
+> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+>
