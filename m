@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761561Ab3EBS0F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 14:26:05 -0400
-Received: from mail-bk0-f50.google.com ([209.85.214.50]:63817 "EHLO
-	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932708Ab3EBS0B (ORCPT
+	id S1761598Ab3EBS0K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 14:26:10 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:41130 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760863Ab3EBS0G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 14:26:01 -0400
+	Thu, 2 May 2013 14:26:06 -0400
 From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
@@ -21,9 +21,9 @@ Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
         Jean-Francois Moine <moinejf@free.fr>,
         devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/3] ARM: dove: add DT parsing for legacy mv643xx_eth
-Date: Thu,  2 May 2013 20:25:38 +0200
-Message-Id: <1367519140-19716-2-git-send-email-sebastian.hesselbarth@gmail.com>
+Subject: [PATCH 3/3] ARM: dove: move DT boards to orion irqchip driver
+Date: Thu,  2 May 2013 20:25:40 +0200
+Message-Id: <1367519140-19716-4-git-send-email-sebastian.hesselbarth@gmail.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1367519140-19716-1-git-send-email-sebastian.hesselbarth@gmail.com>
 References: <1367519140-19716-1-git-send-email-sebastian.hesselbarth@gmail.com>
@@ -31,11 +31,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To allow to move to orion irqchip driver, existing legacy devices
-have to map their irqs. This patch adds a node for mv643xx_eth and
-some init code to map the corresponding irqs. While the device tree
-node can stay, the init code will vanish as soon as there is true
-device tree support for mv643xx_eth.
+With legacy devices mapping their irqs, we can now switch DT enabled
+boards to orion irqchip driver.
 
 Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 ---
@@ -56,84 +53,82 @@ Cc: linux-doc@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org
 ---
- arch/arm/boot/dts/dove.dtsi   |    7 +++++++
- arch/arm/mach-dove/board-dt.c |   31 ++++++++++++++++++++++++++++++-
- 2 files changed, 37 insertions(+), 1 deletions(-)
+ arch/arm/boot/dts/dove.dtsi   |    4 ++--
+ arch/arm/mach-dove/Kconfig    |    1 +
+ arch/arm/mach-dove/Makefile   |    4 ++--
+ arch/arm/mach-dove/board-dt.c |    4 ++--
+ 4 files changed, 7 insertions(+), 6 deletions(-)
 
 diff --git a/arch/arm/boot/dts/dove.dtsi b/arch/arm/boot/dts/dove.dtsi
-index f7509ca..ea7c5da 100644
+index 433cca1..8ba528a 100644
 --- a/arch/arm/boot/dts/dove.dtsi
 +++ b/arch/arm/boot/dts/dove.dtsi
-@@ -197,6 +197,13 @@
- 			status = "disabled";
+@@ -38,10 +38,10 @@
  		};
  
-+		gbe: ethernet-controller {
-+			compatible = "marvell,mv643xx-eth-block";
-+			reg = <0x72000 0x4000>;
-+			interrupts = <29>, <30>;
-+			status = "disabled";
-+		};
-+
- 		rtc@d8500 {
- 			compatible = "marvell,orion-rtc";
- 			reg = <0xd8500 0x20>;
+ 		intc: interrupt-controller {
+-			compatible = "marvell,orion-intc";
++			compatible = "marvell,orion-mpic";
+ 			interrupt-controller;
+ 			#interrupt-cells = <1>;
+-			reg = <0x20204 0x04>, <0x20214 0x04>;
++			reg = <0x20200 0x04>, <0x20210 0x04>;
+ 		};
+ 
+ 		core_clk: core-clocks@d0214 {
+diff --git a/arch/arm/mach-dove/Kconfig b/arch/arm/mach-dove/Kconfig
+index 36469d8..60d72b4 100644
+--- a/arch/arm/mach-dove/Kconfig
++++ b/arch/arm/mach-dove/Kconfig
+@@ -22,6 +22,7 @@ config MACH_CM_A510
+ 
+ config MACH_DOVE_DT
+ 	bool "Marvell Dove Flattened Device Tree"
++	select IRQCHIP_ORION
+ 	select MVEBU_CLK_CORE
+ 	select MVEBU_CLK_GATING
+ 	select REGULATOR
+diff --git a/arch/arm/mach-dove/Makefile b/arch/arm/mach-dove/Makefile
+index 3f0a858..4780f78 100644
+--- a/arch/arm/mach-dove/Makefile
++++ b/arch/arm/mach-dove/Makefile
+@@ -1,5 +1,5 @@
+-obj-y				+= common.o addr-map.o irq.o
+-obj-$(CONFIG_DOVE_LEGACY)	+= mpp.o
++obj-y				+= common.o addr-map.o
++obj-$(CONFIG_DOVE_LEGACY)	+= irq.o mpp.o
+ obj-$(CONFIG_PCI)		+= pcie.o
+ obj-$(CONFIG_MACH_DOVE_DB)	+= dove-db-setup.o
+ obj-$(CONFIG_MACH_DOVE_DT)	+= board-dt.o
 diff --git a/arch/arm/mach-dove/board-dt.c b/arch/arm/mach-dove/board-dt.c
-index fbde1dd..9df6dd7 100644
+index cea65b7..b6734b9 100644
 --- a/arch/arm/mach-dove/board-dt.c
 +++ b/arch/arm/mach-dove/board-dt.c
-@@ -12,6 +12,7 @@
+@@ -11,6 +11,7 @@
+ #include <linux/init.h>
  #include <linux/clk-provider.h>
  #include <linux/clk/mvebu.h>
++#include <linux/irqchip/orion.h>
  #include <linux/of.h>
-+#include <linux/of_irq.h>
- #include <linux/of_platform.h>
- #include <linux/platform_data/usb-ehci-orion.h>
- #include <asm/hardware/cache-tauros2.h>
-@@ -57,6 +58,34 @@ static struct mv643xx_eth_platform_data dove_dt_ge00_data = {
- 	.phy_addr = MV643XX_ETH_PHY_ADDR_DEFAULT,
- };
+ #include <linux/of_address.h>
+ #include <linux/of_irq.h>
+@@ -20,7 +21,6 @@
+ #include <asm/mach/arch.h>
+ #include <mach/pm.h>
+ #include <plat/common.h>
+-#include <plat/irq.h>
+ #include <plat/time.h>
+ #include "common.h"
  
-+#define DOVE_GE00_PHYS_BASE	0xf1070000
-+
-+static void __init dove_legacy_ge00_init(void)
-+{
-+	struct device_node *np = of_find_compatible_node(NULL, NULL,
-+					 "marvell,mv643xx-eth-block");
-+	int irq_sum, irq_err;
-+
-+	if (!np)
-+		return;
-+
-+	irq_sum = irq_of_parse_and_map(np, 0);
-+	if (!irq_sum) {
-+		pr_err("%s: missing sum irq\n", np->full_name);
-+		return;
-+	}
-+
-+	irq_err = irq_of_parse_and_map(np, 1);
-+	if (!irq_err) {
-+		pr_err("%s: missing err irq\n", np->full_name);
-+		return;
-+	}
-+
-+	/* legacy ge00_init wants phys base */
-+	orion_ge00_init(&dove_dt_ge00_data, DOVE_GE00_PHYS_BASE,
-+			irq_sum, irq_err, 1600);
-+}
-+
- static void __init dove_dt_init(void)
- {
- 	pr_info("Dove 88AP510 SoC\n");
-@@ -70,7 +99,7 @@ static void __init dove_dt_init(void)
- 	dove_of_clk_init();
+@@ -143,7 +143,7 @@ static const char * const dove_dt_board_compat[] = {
  
- 	/* Internal devices not ported to DT yet */
--	dove_ge00_init(&dove_dt_ge00_data);
-+	dove_legacy_ge00_init();
- 	dove_pcie_init(1, 1);
- 
- 	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
+ DT_MACHINE_START(DOVE_DT, "Marvell Dove (Flattened Device Tree)")
+ 	.map_io		= dove_map_io,
+-	.init_irq	= orion_dt_init_irq,
++	.init_irq	= orion_init_irq,
+ 	.init_time	= dove_legacy_timer_init,
+ 	.init_machine	= dove_dt_init,
+ 	.restart	= dove_restart,
 -- 
 1.7.2.5
 
