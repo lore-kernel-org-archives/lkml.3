@@ -1,75 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760598Ab3EBRCa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 13:02:30 -0400
-Received: from mga03.intel.com ([143.182.124.21]:51693 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753432Ab3EBRC2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 13:02:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,597,1363158000"; 
-   d="scan'208";a="296631994"
-Date: Thu, 2 May 2013 21:58:37 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: linux-sh@vger.kernel.org, Magnus Damm <magnus.damm@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>, Tony Lindgren <tony@atomide.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>
-Subject: Re: [PATCH/RFC 0/4] dmaengine: add DT support for DMA multiplexers
-Message-ID: <20130502162837.GM1960@intel.com>
-References: <1367305883-2997-1-git-send-email-g.liakhovetski@gmx.de>
- <20130430104354.GF1960@intel.com>
- <Pine.LNX.4.64.1304301405510.1489@axis700.grange>
+	id S1760381Ab3EBRFq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 13:05:46 -0400
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:58981 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758962Ab3EBRFo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 13:05:44 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1304301405510.1489@axis700.grange>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130502124826.GE22618@amd.pavel.ucw.cz>
+References: <1367271946-7239-1-git-send-email-ccross@android.com>
+	<1367271946-7239-4-git-send-email-ccross@android.com>
+	<20130502124826.GE22618@amd.pavel.ucw.cz>
+Date: Thu, 2 May 2013 10:05:43 -0700
+X-Google-Sender-Auth: 9VZEvJlqEOU8I2yHn_-nksoSFJg
+Message-ID: <CAMbhsRRhcM=59xVgitYPyY-rzJTjV1mgwwusOzqFUqT2=__JDg@mail.gmail.com>
+Subject: Re: [PATCH 03/10] freezer: add new freezable helpers using freezer_do_not_count()
+From: Colin Cross <ccross@android.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
+        Len Brown <len.brown@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 30, 2013 at 02:17:13PM +0200, Guennadi Liakhovetski wrote:
-> (added Russell to CC, sorry for not including initially)
-> 
-> Hi Vinod
-> 
-> On Tue, 30 Apr 2013, Vinod Koul wrote:
-> 
-> > On Tue, Apr 30, 2013 at 09:11:19AM +0200, Guennadi Liakhovetski wrote:
-> > > Previously an issue has been discussed, arising on sh-/r-mobile ARM-based 
-> > > systems. There we typically have multiple DMA controller instances with 
-> > > exactly equal or very similar capabilities. Each of them can serve the same 
-> > > slaves, using the same slave identifiers (request line IDs). With the 
-> > > present DMA DT implementation _each_ such DMA slave would have to reference 
-> > > _each_ of those DMA controllers in its DMA bindings, e.g.
-> > But why... if that is the case then we havent define DT-bindings clearly enough
-> 
-> Sorry, what do you mean "why?" Why each slave has to reference each DMA 
-> controller? We have discussed this A LOT before... My understanding is, 
-> that we decided, that the sh-/r-mobile case of multiple equal DMA 
-> controllers is an exception and that we don't want to punish everyone for 
-> it. So, the design includes only explicit requesting of specific DMA 
-> request lines on specific DMA controllers, no wild-cards. If a slave DMA 
-> channel can be provided by several DMA controllers we decided to list them 
-> all explicitly too. And for the sh-/r-mobile case a DMA-mux DT node has 
-> been proposed. This is exactly what this patch series is implementing. Is 
-> my understanding wrong?
-> 
-> > And we havent merged that yet, so why not fix that in first set itself
-> 
-> Sorry, don't understand. The series isn't merged yet, that's right. That's 
-> why I explicitly mention this dependency here. But this isn't a fix. This 
-> is a new feature. The first patch-series only touches a specific DMA 
-> controller driver and relevant platforms. No core changes, so, it's not 
-> that intrusive and can be applied quickly. Whereas this series affects the 
-> core and might need a more careful consideration, discussion, etc.
-What i mean from above is if we were already defining the sh-DT binding then why
-wasnt this taken care in the orignal definition?
+On Thu, May 2, 2013 at 5:48 AM, Pavel Machek <pavel@ucw.cz> wrote:
+> On Mon 2013-04-29 14:45:39, Colin Cross wrote:
+>> Freezing tasks will wake up almost every userspace task from
+>> where it is blocking and force it to run until it hits a
+>> call to try_to_sleep(), generally on the exit path from the syscall
+>> it is blocking in.  On resume each task will run again, usually
+>> restarting the syscall and running until it hits the same
+>> blocking call as it was originally blocked in.
+>
+> Ok, so you are optimizing suspend at the cost of runtime operations,
+> right?
+The runtime operations are negligible, it is setting a bit before
+blocking, and then clearing the bit and checking a single global
+counter as the fast-path after blocking.  Both will be lost in the
+noise of the context switch that is happening.
 
-It would make sense to have proper binding which works well for both of these
-case, why a two shot approach?
+> Would it make sense to do suspends entirely without freezer in your
+> configurations? With the right drivers, it should work ok.
 
---
-~Vinod
+No, we need userspace tasks to freeze.  That is one of the main
+reasons we go to suspend, to prevent recurring timers from firing.
+
+> Actually, would it make sense to simply enter deep idle and do runtime
+> powersaving in the drivers... n900 does that rather successfully and
+> it is certainly cleaner design.
+
+It depends on the SoC if that is even possible, and if we did do it we
+would still use cgroup freezers to prevent apps from running and
+eating the battery so this patch would still be applicable.
+
+>> +/* Like schedule_timeout(), but should not block the freezer. */
+>> +#define freezable_schedule_timeout(timeout)                          \
+>> +({                                                                   \
+>> +     long __retval;                                                  \
+>> +     freezer_do_not_count();                                         \
+>> +     __retval = schedule_timeout(timeout);                           \
+>> +     freezer_count();                                                \
+>> +     __retval;                                                       \
+>> +})
+>
+> You plan to use this a lot during normal operation, right? Is it going
+> to have some measureable impact?
+
+It has a very measurable impact on suspend/resume operations (reducing
+freeze time by a factor of 10, reducing context switches from 1000 to
+25).  I haven't measured the impact on total energy used for a
+suspend/resume cycle, but based on previous measurements I expect it
+to be beneficial.
+
+> Also, why not static inline?
+
+I copied the style of the existing helpers.  I can change them all to
+static inlines if you prefer.
