@@ -1,49 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761449Ab3EBSWZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 14:22:25 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:38442 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760877Ab3EBSWV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 14:22:21 -0400
-Date: Thu, 2 May 2013 11:22:18 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Robert Love <rlove@google.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-cc: Shankar Brahadeeswaran <shankoo77@gmail.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Bjorn Bringert <bringert@google.com>,
-        devel <devel@driverdev.osuosl.org>, Hugh Dickins <hughd@google.com>,
-        Anjana V Kumar <anjanavk12@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-next <linux-next@vger.kernel.org>
-Subject: Re: [PATCH -next] ashmem: Fix ashmem_shrink deadlock.
-In-Reply-To: <alpine.DEB.2.02.1305010853450.4547@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.02.1305021121160.2493@chino.kir.corp.google.com>
-References: <1367416573-5430-1-git-send-email-rlove@google.com> <alpine.DEB.2.02.1305010853450.4547@chino.kir.corp.google.com>
+	id S1761499Ab3EBSXT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 14:23:19 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:55782 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760261Ab3EBSXR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 14:23:17 -0400
+X-IronPort-AV: E=Sophos;i="4.87,597,1363132800"; 
+   d="scan'208";a="22986080"
+Date: Thu, 2 May 2013 19:23:11 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        Will Deacon <will.deacon@arm.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Olof Johansson <olof@lixom.net>
+Subject: Re: [PATCH v10 0/2] (arm-soc for v3.10) arm: introduce
+ psci_smp_ops
+In-Reply-To: <20130502181851.GB14496@n2100.arm.linux.org.uk>
+Message-ID: <alpine.DEB.2.02.1305021920070.5398@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1304301707290.5398@kaball.uk.xensource.com> <alpine.DEB.2.02.1305021811560.5398@kaball.uk.xensource.com> <20130502171516.GA3040@mudshark.cambridge.arm.com> <alpine.DEB.2.02.1305021816490.5398@kaball.uk.xensource.com>
+ <20130502181851.GB14496@n2100.arm.linux.org.uk>
 User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 1 May 2013, David Rientjes wrote:
-
-> > Don't acquire ashmem_mutex in ashmem_shrink if we've somehow recursed into the
-> > shrinker code from within ashmem. Just bail out, avoiding a deadlock. This is
-> > fine, as ashmem cache pruning is advisory anyhow.
+On Thu, 2 May 2013, Russell King - ARM Linux wrote:
+> On Thu, May 02, 2013 at 06:20:32PM +0100, Stefano Stabellini wrote:
+> > On Thu, 2 May 2013, Will Deacon wrote:
+> > > Hi Stefano,
+> > > 
+> > > On Thu, May 02, 2013 at 06:12:12PM +0100, Stefano Stabellini wrote:
+> > > > ping
+> > > 
+> > > Is this a ping to have this pulled into Russell's tree?
 > > 
-> > Signed-off-by: Robert Love <rlove@google.com>
+> > I thought that we agreed that the patches should go via the arm-soc
+> > tree, after Russell acks them.
+> > 
+> > The ping is for Russell to ack them and Arnd to merge them.
 > 
-> Any reason not to send this to stable@vger.kernel.org if it fixes an 
-> observable deadlock?  (It's annotated to be applied to linux-next, but I 
-> don't see any differences between it and Linus's tree.)
-> 
+> Sorry but I tend not to be around on Tuesdays and Wednesdays, which leads
+> to a hell of an email problem on Thursdays.  I haven't looked at them in
+> any great detail (I just paged through them so far and on to the next
+> email.)
 
-This was sent separately to stable@vger.kernel.org before being merged 
-into Linus's tree .  Greg, could this be queued up for 3.10 with a cc to 
-stable@vger.kernel.org?
+No problems, if there is one person that can understand being flooded by
+emails, that's me.
+
+
+> I don't really have sufficient time to properly deal with all the email
+> traffic that is now on this list - even from just flicking through the
+> messages.  It's far too much.
+
+This patches have been discussed in great details, would you be content
+with Will Deacon and Nicolas Pitre's Acks?
+Nobody objected again them so far.
