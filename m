@@ -1,50 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754931Ab3EBKGc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 06:06:32 -0400
-Received: from mail-la0-f51.google.com ([209.85.215.51]:58778 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751986Ab3EBKGb (ORCPT
+	id S1754987Ab3EBKJ0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 06:09:26 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:42344 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752449Ab3EBKJY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 06:06:31 -0400
+	Thu, 2 May 2013 06:09:24 -0400
+X-IronPort-AV: E=Sophos;i="4.87,595,1363158000"; 
+   d="scan'208";a="43403590"
+Message-ID: <f023185a0414961d3c30b3cfaf8b9a51.squirrel@www.codeaurora.org>
+In-Reply-To: <1367475929-32166-3-git-send-email-ambresh@ti.com>
+References: <1367475929-32166-1-git-send-email-ambresh@ti.com>
+    <1367475929-32166-3-git-send-email-ambresh@ti.com>
+Date: Thu, 2 May 2013 03:09:24 -0700
+Subject: Re: [Patch 2/3] clk: skip re-parenting orphan clk
+From: skannan@codeaurora.org
+To: "Ambresh K" <ambresh@ti.com>
+Cc: "Mike Turquette" <mturquette@linaro.org>, "Nishanth Menon" <nm@ti.com>,
+        "Rajendra" <rnayak@ti.com>, linux-kernel@vger.kernel.org,
+        "Tero Kristo" <t-kristo@ti.com>, "Ambresh K" <ambresh@ti.com>,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+User-Agent: SquirrelMail/1.4.22
 MIME-Version: 1.0
-In-Reply-To: <87sj27xxjr.fsf@rustcorp.com.au>
-References: <1366974299-17877-1-git-send-email-pranavkumar@linaro.org>
- <BA2076A6-0688-4E5C-85F9-A9CA8FD75782@suse.de> <87obcyc9sh.fsf@rustcorp.com.au>
- <336C59AA-D5D7-472E-A8DA-EEB413DD6C68@suse.de> <CAAHg+Hj0tySbzUGnoFE9ybVYP291B-i8-Ck1EkwD57t8yG5wwg@mail.gmail.com>
- <C52CCDD4-D8FB-4AD6-B83D-3B5251A7A0F5@suse.de> <87sj27xxjr.fsf@rustcorp.com.au>
-From: Peter Maydell <peter.maydell@linaro.org>
-Date: Thu, 2 May 2013 11:06:09 +0100
-Message-ID: <CAFEAcA9h8iSYfTBtf6n+Vk5sDtBR2yB2oafRxikHoWbKt0VRUw@mail.gmail.com>
-Subject: Re: [PATCH 0/2] Early printk support for virtio console devices.
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Alexander Graf <agraf@suse.de>,
-        Pranavkumar Sawargaonkar <pranavkumar@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
-        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1 May 2013 03:07, Rusty Russell <rusty@rustcorp.com.au> wrote:
-> An emergency output is a reasonable idea, and this is a reasonable
-> implementation.  The question is practical: will it be used?  Because we
-> don't implement reasonable ideas which aren't going to be used.
 
-If you think it fits reasonably into the virtio spec (ie doesn't
-implement things at the wrong level of the transport/backend
-abstraction) then we can implement it in QEMU, and I think it
-makes more sense to do this than to throw in a random extra
-serial port.
+Ambresh K wrote:
+> From: Ambresh K <ambresh@ti.com>
+>
+> If clk is same as orphan clk than skip the iteration, there
 
-To be actually useful we need to also specify something in
-the device tree to say "here is where you will find your
-emergency output and what it is".
+Typo: than => then
 
-thanks
--- PMM
+> by avoiding unnecessary look-up.
+>
+> Signed-off-by: Ambresh K <ambresh@ti.com>
+> ---
+>  drivers/clk/clk.c |    4 ++++
+>  1 files changed, 4 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+> index c187321..f4d2c73 100644
+> --- a/drivers/clk/clk.c
+> +++ b/drivers/clk/clk.c
+> @@ -1635,6 +1635,10 @@ int __clk_init(struct device *dev, struct clk *clk)
+>  	 * this clock
+>  	 */
+>  	hlist_for_each_entry_safe(orphan, tmp2, &clk_orphan_list, child_node) {
+> +		/* Skip if clk is same as orphan clk */
+> +		if (!strcmp(clk->name, orphan->name))
+> +			continue;
+> +
+>  		if (orphan->ops->get_parent) {
+>  			i = orphan->ops->get_parent(orphan->hw);
+>  			if (i < 0) {
+> --
+> 1.7.4.1
+>
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+>
+
+
+-- 
+The Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
+
