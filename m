@@ -1,50 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759959Ab3EBA5c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 20:57:32 -0400
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:36965 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756053Ab3EBA5b (ORCPT
+	id S1760439Ab3EBA6V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 20:58:21 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:49641 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756053Ab3EBA6Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 20:57:31 -0400
+	Wed, 1 May 2013 20:58:16 -0400
+X-AuditID: 9c93016f-b7b72ae00000104b-79-5181ba21456e
+In-Reply-To: <20130430144605.1a99a7397702b332ee818fc8@linux-foundation.org>
+References: <1367214005-14302-1-git-send-email-chanho.min@lge.com>
+	<CAMuHMdWk4oi_KCmZv7hLZ7JSwy=meziKPBMQ1HJiJR9W8AdrDg@mail.gmail.com>
+	<20130430144605.1a99a7397702b332ee818fc8@linux-foundation.org>
+X-Google-Sender-Auth: ozq37tUdmpXx9cxvqBipXMkEa9s
+Subject: Re: [PATCH] lib: add weak __clzsi2()/__clzdi2() functions
+X-Brightmail-Tracker: AAAAAA==
+Reply-To: "=?EUC-KR?B?uc7C+cij?=" <chanho.min@lge.com>
+X-Priority: 3 (Normal)
+From: "=?EUC-KR?B?uc7C+cij?=" <chanho.min@lge.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        =?EUC-KR?B?wMyw5r3E?= <kyungsik.lee@lge.com>,
+        Yann Collet <yann.collet.73@gmail.com>,
+        Bob Pearson <rpearson@systemfabricworks.com>,
+        Richard Weinberger <richard@nod.at>, linux-kernel@vger.kernel.org,
+        sparclinux <sparclinux@vger.kernel.org>,
+        Linux/m68k <linux-m68k@vger.kernel.org>,
+        Linux-Next <linux-next@vger.kernel.org>
+Message-ID: <OF7904F8C7.4731B9DC-ON49257B5F.00055048-49257B5F.0005504A@lge.com>
+Date: Thu, 2 May 2013 09:58:02 +0900
+X-MIMETrack: Serialize by Router on LGEKRHQMS17/LGE/LG Group(Release 6.5.5FP3HF116 | July
+ 11, 2008) at 2013/05/02 09:58:09
 MIME-Version: 1.0
-In-Reply-To: <CAKMK7uF=4spN_+BtwnXhWvNs4GjM1iXPCN6aTupPkykQqqnU2A@mail.gmail.com>
-References: <20130502000206.GH15623@pd.tnic>
-	<CAKMK7uF=4spN_+BtwnXhWvNs4GjM1iXPCN6aTupPkykQqqnU2A@mail.gmail.com>
-Date: Thu, 2 May 2013 10:57:27 +1000
-Message-ID: <CAPM=9tw-Ssu7ZYBZX7ipGt9w7zYG91tKbWZguM5DLPaqTakJPA@mail.gmail.com>
-Subject: Re: WARNING: at drivers/gpu/drm/drm_crtc.c:82 drm_warn_on_modeset_not_all_locked+0x8d/0xc0()
-From: Dave Airlie <airlied@gmail.com>
-To: Daniel Vetter <daniel@ffwll.ch>
-Cc: Borislav Petkov <bp@alien8.de>, lkml <linux-kernel@vger.kernel.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-type: text/plain; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 2, 2013 at 10:41 AM, Daniel Vetter <daniel@ffwll.ch> wrote:
-> On Thu, May 2, 2013 at 2:02 AM, Borislav Petkov <bp@alien8.de> wrote:
->> Hi,
->>
->> I'm seeing this when booting latest Linus tree + tip/master in kvm.
->> Config is attached. Looks like it cannot find root fs and panics and
->> calls the panic notifier which screams in drm_crtc.c because not all
->> modeset locks are taken. Maybe bogus?
+
+>No, the link errors are for __ctzdi2, not __clzdi2.
+>__ctzdi2 can be implemented using __ffs().
+>> How's about we stop using __builtin_ctz[ll]() altogether?  Use N-fls()?
 >
-> Locking in the drm panic notifiere is completely bogus (as in simply
-> does not exist). The only difference is that with the new locking
-> scheme in 3.9 we're now pretty obnixious about checking for these
-> kinds of things. Also, drm drivers love to sleep in the panic
-> handlers, too. It's somewhere on my giant list of things to fix in drm
-> land, but I'm not sure whether I'll get around to it in this life or
-> the next. Maybe we just need to shut up the WARN in case of a panic
-> ...
+>That was my first suggestion ;-)
+>
+Do we remove existing __builtin_ct[l]z?
+Some architecture's __builtin_clz will be more optimized than N-fls
+IMHO, This is not only about __builtin- but also supporting another
+libgcc functions in kernel.
+Some future user may need __clz[t]s[d]i2 symbol also.
 
-Maybe? of course you do.
+>> btw, this:
+>>
+>> int __weak __clzsi2(int val)
+>> {
+>>        return BITS_PER_LONG - fls(val);
+>> }
+>>
+>> looks wrong.  It will give a different result for 32- and 64-bit.
+>
+>Indeed. It should be hardcoded 32.
+>
+I will re-work this for 64-bit, and ctz also.
 
-its a panic, getting anything on the screen is vastly more important than
-the locking being perfect, any chance of any info landing on the screen
-is being decreased by this spew.
+Thanks
+Chanho Min
 
-Dave.
