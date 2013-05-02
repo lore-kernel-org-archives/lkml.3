@@ -1,60 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760920Ab3EBRzS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 13:55:18 -0400
-Received: from mail-ia0-f170.google.com ([209.85.210.170]:42524 "EHLO
-	mail-ia0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751746Ab3EBRzQ convert rfc822-to-8bit (ORCPT
+	id S932236Ab3EBRzh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 13:55:37 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:58313 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751746Ab3EBRzf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 13:55:16 -0400
+	Thu, 2 May 2013 13:55:35 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [PATCH, RFC 15/22] USB: EHCI: remove bogus #error
+Date: Thu, 2 May 2013 19:55:08 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+References: <Pine.LNX.4.44L0.1305021333020.1436-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1305021333020.1436-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <20130502.133947.387694205526879673.davem@davemloft.net>
-References: <20130501.164755.1859264969403837546.davem@davemloft.net>
- <CA+55aFzsvyQLLKbuETBqfhpgkSaXH9cvT0O-cQ-mTTXXxcMqwg@mail.gmail.com>
- <1367512467.4000.7.camel@dcbw.foobar.com> <20130502.133947.387694205526879673.davem@davemloft.net>
-From: =?ISO-8859-2?Q?Micha=B3_Miros=B3aw?= <mirqus@gmail.com>
-Date: Thu, 2 May 2013 19:47:25 +0200
-Message-ID: <CAHXqBF+Xb0ZVo2tO-0m59JJDrwy5vYX6=jLbts_ZAv5Pk+7SCw@mail.gmail.com>
-Subject: Re: [GIT] Networking
-To: David Miller <davem@davemloft.net>
-Cc: dcbw@redhat.com, torvalds@linux-foundation.org, hayeswang@realtek.com,
-        akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201305021955.08470.arnd@arndb.de>
+X-Provags-ID: V02:K0:HYXSAoLVnEyykqoXNd1SCmrUUGk0luCg9n/GO7oMBsW
+ T2BHsHJ3lcUxHY5PPvMxsDirCsvcfrNhy3CBJxCqxXO8af2sZq
+ utjBfYFaE9/Y47w1ctTwAqCRJJ5B4KWO++l+Gm94lurtlH94Ys
+ r1cVI739zZ8Zn142swrbZ3sWgJ9J7OEfffYYF4SEuRrIc2vBho
+ HpY+folLsKlovhYt86q6w+xYM5t5bcgXwv6lpiI7sxQitkbFEg
+ i5L0jjbY+7rlwNGD7UtwLE4VDubp+JsmSUEDt4KcEJHsAEyJ4P
+ wGftBO/KKi3xFn2WfJxvxuKcwY147Xnc46CO5Q7GnfBoqR3kE8
+ m9EYNKTL78/a8I6j4mYs=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/5/2 David Miller <davem@davemloft.net>:
-> From: Dan Williams <dcbw@redhat.com>
-> Date: Thu, 02 May 2013 11:34:27 -0500
->
->> On Wed, 2013-05-01 at 18:28 -0700, Linus Torvalds wrote:
->>> On Wed, May 1, 2013 at 1:47 PM, David Miller <davem@davemloft.net> wrote:
->>> >
->>> > Highlights (1721 non-merge commits, this has to be a record of some
->>> > sort):
->>>
->>> Lowlight: it completely breaks my machine with r8169 ethernet.  In the
->>> networkmanager applet, it claims no cable connection, which is a bit
->>> odd, because (a) it works with an older kernel and (b) the kernel
->>> messages actually say
->>>
->>>   r8169 0000:01:00.0 eth0: link up
->>
->> NM calls ETHTOOL_GLINK and if that returns success, NM expects the
->> driver to support carrier detection.  NM then listens to netlink for
->> device flags changes, and uses IFF_LOWER_UP to determine carrier on/off
->> state.  NM does not use NETIF_F_VLAN_CHALLENGED or any of the other
->> ETHTOOL_GFEATURES flags yet, but will in the future.
->>
->> Is the link status accurately reflected by /sys/class/net/eth0/carrier ?
-> Something cares about the .../eth0/flags value because with the bit
-> ordering different for bits 10 and above things break.
+On Thursday 02 May 2013, Alan Stern wrote:
+> On Thu, 2 May 2013, Arnd Bergmann wrote:
+> 
+> > The EHCI host controller driver can be built standalone now,
+> > without enabling any of the available bus glue drivers, so
+> > there is not really a reason to error out here:
+> 
+> On the other hand, there's no reason to build the driver without any 
+> bus glue.  It wouldn't do anything.
 
-Are you sure it's "flags"? /sys/class/net/*/features were removed some
-time ago, and flags don't depend on NETIF_F_*.
+Yes, as I mention below, we could also use Kconfig logic to prevent
+that case, as the OHCI and UHCI patches from this series do, but I felt
+that would be a lot of unnecessary churn, and having just ehci-hci.ko
+enabled without a bus glue is not an error, it's just as pointless
+as most of the other drivers we get with "make randconfig".
 
-Best Regards,
-Michał Mirosław
+> > drivers/usb/host/ehci-hcd.c:1303:2: error:
+> >  #error "missing bus glue for ehci-hcd"  #error "missing bus glue for ehci-hcd"
+> > 
+> > The alternative would be to change the Kconfig code to build
+> > the ehci-hcd module only if any of the symbols below are
+> > in fact enabled.
+
+	Arnd
