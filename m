@@ -1,62 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932362Ab3EBPQj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 11:16:39 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:60085 "EHLO
+	id S932236Ab3EBPQb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 11:16:31 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:64071 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760158Ab3EBPQg (ORCPT
+	with ESMTP id S1759006Ab3EBPQX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 11:16:36 -0400
+	Thu, 2 May 2013 11:16:23 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-kernel@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, Arnd Bergmann <arnd@arndb.de>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>, linux-pm@vger.kernel.org
-Subject: [PATCH, RFC 03/22] cpuidle: calxeda: select ARM_CPU_SUSPEND
-Date: Thu,  2 May 2013 17:16:07 +0200
-Message-Id: <1367507786-505303-4-git-send-email-arnd@arndb.de>
+        Robert Richter <rric@kernel.org>, oprofile-list@lists.sf.net
+Subject: [PATCH, RFC 14/22] oprofile: always enable IRQ_WORK
+Date: Thu,  2 May 2013 17:16:18 +0200
+Message-Id: <1367507786-505303-15-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1367507786-505303-1-git-send-email-arnd@arndb.de>
 References: <1367507786-505303-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:COQs+pOPh7gN0eC25C9eDAP8TgIyJMTRv6iEaTxRm9q
- +QUp+gWGEG68vVEI6PMrDri/GD+hyFlv8thc8mcR8EpvYCuRy4
- pRgxFdZRW7dIdy4UzfREJtBGtrLstYL8ZNlRW3L1m6AWTMlDeW
- 7p9JC6hByUk3p+WFAg44+JEQ79gJQchfg+mqfYiUrOImyKhGc5
- 9cwuKlLIZsYLmTDUzgZH8656K1R6fYYBU8Bi8ZY0/hRKHVJr0E
- ccqZfK+GagFeXjDbNq8H4Ziy8dYn+kQmYbwX0z7dJ3+SNVomYR
- 0FLYOH15ZYULgBOHu5OMPospjZ0tHnGlUwV4Xg2PSa45n0alGu
- 7/wVKYVIP/g4Xecg9OcfsBzwx3ZUO6KaVN3Ua4dK5
+X-Provags-ID: V02:K0:VaKeZ7xEIWv4gBxy6AIUcdjaXoCiPq8C6L5rZ1CL2I9
+ PdabqNwPJqJ2YO8E9cpnTtAyEh6sSphEECVo70CWNes0yVkzPs
+ r6NfrdatK/xuq7b3xR+g+sCyydZKzJDXD4YefEtSlXHJflFXeC
+ 3zhACycbM3cb+DueQymFuRRD8l4+KibW7js5CSj8X03t4FaBac
+ jMYtsqox8UEHOwZeIaESJUsWfwRoNhD9P7B5IpSipCOCs3KtzD
+ UCyPpXO8rjIdqrdVpVRKOIM2R97MK8rnoAaQ43Olojpn2N1UQX
+ +TRx1J9WKWCA+ESbAJZhd8vtbncDe0tzKeX5HZL7tB0SRR/PSA
+ as+LWGrLYSGfX1ZGqTDNPUhF4n0PC3LNAgSsh9x7P
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Like other ARM specific drivers, this one requires ARM_CPU_SUSPEND,
-as shown by this linker error:
+oprofile fails to build if CONFIG_IRQ_WORK is not already enabled,
+because of the dependency on the RING_BUFFER code that now uses
+the irq work library.
 
-drivers/built-in.o: In function `calxeda_pwrdown_idle':
-drivers/cpuidle/cpuidle-calxeda.c:84: undefined reference to `cpu_suspend'
-drivers/cpuidle/cpuidle-calxeda.c:86: undefined reference to `cpu_resume'
+kernel/built-in.o: In function `ring_buffer_unlock_commit':
+:(.text+0x5b8f0): undefined reference to `irq_work_queue'
+kernel/built-in.o: In function `ring_buffer_write':
+:(.text+0x5bd10): undefined reference to `irq_work_queue'
 
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
-Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: linux-pm@vger.kernel.org
+Cc: Robert Richter <rric@kernel.org>
+Cc: oprofile-list@lists.sf.net
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 ---
- drivers/cpuidle/Kconfig | 1 +
+ arch/Kconfig | 1 +
  1 file changed, 1 insertion(+)
 
-diff --git a/drivers/cpuidle/Kconfig b/drivers/cpuidle/Kconfig
-index c4cc27e..e21cdfa 100644
---- a/drivers/cpuidle/Kconfig
-+++ b/drivers/cpuidle/Kconfig
-@@ -36,6 +36,7 @@ if CPU_IDLE
- config CPU_IDLE_CALXEDA
- 	bool "CPU Idle Driver for Calxeda processors"
- 	depends on ARCH_HIGHBANK
-+	select ARM_CPU_SUSPEND
+diff --git a/arch/Kconfig b/arch/Kconfig
+index a6b1056..434a8dc 100644
+--- a/arch/Kconfig
++++ b/arch/Kconfig
+@@ -8,6 +8,7 @@ config OPROFILE
+ 	depends on HAVE_OPROFILE
+ 	select RING_BUFFER
+ 	select RING_BUFFER_ALLOW_SWAP
++	select IRQ_WORK
  	help
- 	  Select this to enable cpuidle on Calxeda processors.
- 
+ 	  OProfile is a profiling system capable of profiling the
+ 	  whole system, include the kernel, kernel modules, libraries,
 -- 
 1.8.1.2
 
