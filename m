@@ -1,70 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759530Ab3EBC7c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 22:59:32 -0400
-Received: from mga09.intel.com ([134.134.136.24]:46858 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752891Ab3EBC7a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 22:59:30 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,593,1363158000"; 
-   d="scan'208";a="306560724"
-Subject: Re: [PATCH v2 1/4] Wrap crc_t10dif function all to use crypto
- transform framework
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, "David S. Miller" <davem@davemloft.net>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        Jim Kukunas <james.t.kukunas@linux.intel.com>,
-        Keith Busch <keith.busch@intel.com>,
-        Erdinc Ozturk <erdinc.ozturk@intel.com>,
-        Vinodh Gopal <vinodh.gopal@intel.com>,
-        James Guilford <james.guilford@intel.com>,
-        Wajdi Feghali <wajdi.k.feghali@intel.com>,
-        Jussi Kivilinna <jussi.kivilinna@iki.fi>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-crypto@vger.kernel.org, linux-scsi@vger.kernel.org
-In-Reply-To: <20130430032733.GB20471@gondor.apana.org.au>
-References: <cover.1366214842.git.tim.c.chen@linux.intel.com>
-	 <ea4271721b5ca130849b03da4f172f12f66e5628.1366214842.git.tim.c.chen@linux.intel.com>
-	 <20130425132203.GA29501@gondor.apana.org.au>
-	 <1366910910.27102.126.camel@schen9-DESK>
-	 <20130426125224.GA4855@gondor.apana.org.au>
-	 <1366994657.27102.129.camel@schen9-DESK>
-	 <20130428001122.GA6973@gondor.apana.org.au>
-	 <1367268030.27102.172.camel@schen9-DESK>
-	 <20130430032733.GB20471@gondor.apana.org.au>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 01 May 2013 19:59:34 -0700
-Message-ID: <1367463574.27102.207.camel@schen9-DESK>
+	id S1757127Ab3EBDT2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 23:19:28 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:46078 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752743Ab3EBDTZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 May 2013 23:19:25 -0400
+Date: Thu, 2 May 2013 13:19:10 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Joe Perches <joe@perches.com>, Gabor Juhos <juhosg@openwrt.org>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: Re: linux-next: manual merge of the net-next tree with the wireless
+ tree
+Message-Id: <20130502131910.aefc70ed915dc403fa50d808@canb.auug.org.au>
+In-Reply-To: <20130404114444.de4e40c24f4e1a0e4c0b7328@canb.auug.org.au>
+References: <20130404114444.de4e40c24f4e1a0e4c0b7328@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__2_May_2013_13_19_10_+1000_CBqwPkbpgrr770bX"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-04-30 at 11:27 +0800, Herbert Xu wrote:
-> On Mon, Apr 29, 2013 at 01:40:30PM -0700, Tim Chen wrote:
-> >
-> > If I allocate the transform under the mod init instead, how can I make
-> > sure that the fast version is already registered if I have it compiled
-> > in?  It is not clear to me how that's done looking at the libcrc32c
-> > code.  
-> 
-> This is only an issue when everything is built-in to the kernel.
-> 
-> In that case we could make the crc implementations register at a
-> point earlier than device_initcall, but no earlier than subsys_initcall
-> since that's where cryptomgr sits.
+--Signature=_Thu__2_May_2013_13_19_10_+1000_CBqwPkbpgrr770bX
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I've spun version 3 of this patch series to address the concerns about
-version 2.  The patches are sent separately.
+Hi Dave,
 
-Thanks.
+On Thu, 4 Apr 2013 11:44:44 +1100 Stephen Rothwell <sfr@canb.auug.org.au> w=
+rote:
+>
+> Today's linux-next merge of the net-next tree got a conflict in
+> drivers/net/wireless/rt2x00/rt2x00pci.c between commit 69a2bac8984c
+> ("rt2x00: rt2x00pci: fix build error on Ralink RT3x5x SoCs") from the
+> wireless tree and commit 1f9061d27d3d ("drivers:net: dma_alloc_coherent:
+> use __GFP_ZERO instead of memset(, 0)") from the net-next tree.
+>=20
+> The former moved the code modified by the latter into a different file,
+> so I added the following merge fix patch and can carry the fix as
+> necessary (no action is required).
+>=20
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Thu, 4 Apr 2013 11:42:05 +1100
+> Subject: [PATCH] drivers:net: fix up for code movement from rt2x00pci.c
+>=20
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> ---
+>  drivers/net/wireless/rt2x00/rt2x00mmio.c | 4 +---
+>  1 file changed, 1 insertion(+), 3 deletions(-)
+>=20
+> diff --git a/drivers/net/wireless/rt2x00/rt2x00mmio.c b/drivers/net/wirel=
+ess/rt2x00/rt2x00mmio.c
+> index d84a680..9fe9a36 100644
+> --- a/drivers/net/wireless/rt2x00/rt2x00mmio.c
+> +++ b/drivers/net/wireless/rt2x00/rt2x00mmio.c
+> @@ -123,12 +123,10 @@ static int rt2x00pci_alloc_queue_dma(struct rt2x00_=
+dev *rt2x00dev,
+>  	 */
+>  	addr =3D dma_alloc_coherent(rt2x00dev->dev,
+>  				  queue->limit * queue->desc_size,
+> -				  &dma, GFP_KERNEL);
+> +				  &dma, GFP_KERNEL | __GFP_ZERO);
+>  	if (!addr)
+>  		return -ENOMEM;
+> =20
+> -	memset(addr, 0, queue->limit * queue->desc_size);
+> -
+>  	/*
+>  	 * Initialize all queue entries to contain valid addresses.
+>  	 */
 
-Tim
+This merge fix patch seems to have got lost somewhere ...
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+--Signature=_Thu__2_May_2013_13_19_10_+1000_CBqwPkbpgrr770bX
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRgdsuAAoJEECxmPOUX5FE4KYP/jrng8S+hFyiPS/71y59XFb8
+b2+lKf6dLc3tZQfaC8kAfFyOTp6P3MyNlMPXhb61bIP/qKtIjkjwqUko9N0LLG0l
+HjtWaECjQmtp8h54Bof75gW9XNjZkdH5tinosd05/2n4w3Etp48TeuT8exMpqVrO
+RTlP59tpfLOo5sB2UgZS0xXys2EZLE3AQDw3zgBR6QbrV8291jMwD9EHrDJSBos5
+2dYwt9pT7eHl9MIc/Wirkb6lhyPQapqhXoCoDpjIFx7yzvFP8aCxH4FiuYh3xUKT
+oxceJ3bEhKD1v39CHk3agu/1vi1Pv0FEpUkRSo6cKR2I4y7/ou+eyErv+FChlurT
+u/1SgCDs/dJ6ZCBiF+eQri64y7El8ZFxKQDhsJtaFcEG9HI5lfbJzBbc3xmN+zmN
+D9lGWG4VvgNSXVoBbBtzH0bMdTV6hQNJaDUZ7Z4GPkGesOVHTDP/HvuSIziesoRO
+A/aKb5gNoP7w3ZFdj1jIjLyUgyQsch3WkEN0N/WujiT2ThCaZzu7++hlsUnp6iaO
+Uor8D9jU4pFoV3YQCIj8r1NDZ6bGsMKUEwpoqPGy4Xok7Xro5ufcWzZ2ak+IB8BM
+1JHA9IR80UX33GQXfkPfpVx4FIMkp6k4H5fKP6u0RsneihBg3g+kLKbQSha0ySvI
+m+tAh+CRUUfc3wF+gkgW
+=OU0J
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__2_May_2013_13_19_10_+1000_CBqwPkbpgrr770bX--
