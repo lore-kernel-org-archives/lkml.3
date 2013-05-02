@@ -1,87 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757750Ab3EBGas (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 02:30:48 -0400
-Received: from host171.canaca.com ([67.55.55.225]:35349 "EHLO
-	host171.canaca.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751834Ab3EBGaq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 02:30:46 -0400
-From: Simon Wood <simon@mungewell.org>
-To: linux-input@vger.kernel.org
-Cc: Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
-        simon@mungewell.org, Randy Dunlap <rdunlap@infradead.org>
-Subject: [PATCH] HID: hid-steelseries fix led class build issue
-Date: Thu,  2 May 2013 00:30:38 -0600
-Message-Id: <1367476238-25828-1-git-send-email-simon@mungewell.org>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <51816271.3040400@infradead.org>
-References: <51816271.3040400@infradead.org>
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - host171.canaca.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - mungewell.org
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	id S1757934Ab3EBGg3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 02:36:29 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:33684 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752733Ab3EBGg1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 02:36:27 -0400
+Message-ID: <51820968.7080303@sgi.com>
+Date: Wed, 01 May 2013 23:36:24 -0700
+From: Mike Travis <travis@sgi.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: David Henningsson <david.henningsson@canonical.com>
+CC: Stephen Warren <swarren@nvidia.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>,
+        Pierre-Louis Bossart <pierre-louis.bossart@linux.intel.com>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        Russ Anderson <rja@sgi.com>
+Subject: Re: [PATCH]: x86_64, audio: Fix system panic when DMA > 40 bits
+References: <1367435048-66137-1-git-send-email-travis@sgi.com> <518205A9.1050409@canonical.com>
+In-Reply-To: <518205A9.1050409@canonical.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixes 'undefined reference' issue when hid-steelseries is built in,
-but led-class is a module.
---
-drivers/built-in.o: In function `steelseries_srws1_remove':
-hid-steelseries.c:(.text+0x3b97a1): undefined reference to `led_classdev_unregister'
-drivers/built-in.o: In function `steelseries_srws1_probe':
-hid-steelseries.c:(.text+0x3b9c51): undefined reference to `led_classdev_register'
-hid-steelseries.c:(.text+0x3b9ce5): undefined reference to `led_classdev_register'
-hid-steelseries.c:(.text+0x3b9d4b): undefined reference to `led_classdev_unregister'
---
 
-Patch allows LED control when led-class is built in, or both hid-steelseries
-_and_ led-class are both modules.
 
-Signed-off-by: Simon Wood <simon@mungewell.org>
----
- drivers/hid/hid-steelseries.c | 9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+On 5/1/2013 11:20 PM, David Henningsson wrote:
+> On 05/01/2013 09:04 PM, Mike Travis wrote:
+>> The audio driver mistakenly allows 64 bit addresses to be created for
+>> the audio driver on Nvidia GPUs.  Unfortunately, the hardware normally
+>> only supports up to 40 bits of DMA.  This can cause system panics as
+>> well as misdirected data when the address is > 40 bits as the upper
+>> part the address is truncated.
+> 
+> Thanks for this patch. Stephen Warren, is this something you can
+> confirm/deny, and do you know what range of hardware this actually
+> applies to?
 
-diff --git a/drivers/hid/hid-steelseries.c b/drivers/hid/hid-steelseries.c
-index 2ed995c..dbd5e2e 100644
---- a/drivers/hid/hid-steelseries.c
-+++ b/drivers/hid/hid-steelseries.c
-@@ -19,7 +19,8 @@
- #include "usbhid/usbhid.h"
- #include "hid-ids.h"
- 
--#if defined(CONFIG_LEDS_CLASS) || defined(CONFIG_LEDS_CLASS_MODULE)
-+#if defined(CONFIG_LEDS_CLASS) || \
-+    (defined(CONFIG_LEDS_CLASS_MODULE) && defined(CONFIG_HID_STEELSERIES_MODULE))
- #define SRWS1_NUMBER_LEDS 15
- struct steelseries_srws1_data {
- 	__u16 led_state;
-@@ -108,7 +109,8 @@ static __u8 steelseries_srws1_rdesc_fixed[] = {
- 0xC0                /*  End Collection                      */
- };
- 
--#if defined(CONFIG_LEDS_CLASS) || defined(CONFIG_LEDS_CLASS_MODULE)
-+#if defined(CONFIG_LEDS_CLASS) || \
-+    (defined(CONFIG_LEDS_CLASS_MODULE) && defined(CONFIG_HID_STEELSERIES_MODULE))
- static void steelseries_srws1_set_leds(struct hid_device *hdev, __u16 leds)
- {
- 	struct list_head *report_list = &hdev->report_enum[HID_OUTPUT_REPORT].report_list;
-@@ -371,7 +373,8 @@ MODULE_DEVICE_TABLE(hid, steelseries_srws1_devices);
- static struct hid_driver steelseries_srws1_driver = {
- 	.name = "steelseries_srws1",
- 	.id_table = steelseries_srws1_devices,
--#if defined(CONFIG_LEDS_CLASS) || defined(CONFIG_LEDS_CLASS_MODULE)
-+#if defined(CONFIG_LEDS_CLASS) || \
-+    (defined(CONFIG_LEDS_CLASS_MODULE) && defined(CONFIG_HID_STEELSERIES_MODULE))
- 	.probe = steelseries_srws1_probe,
- 	.remove = steelseries_srws1_remove,
- #endif
--- 
-1.8.1.2
+The dma_mask can be read from the gpu device's pci entry.  I know it's
+a stretch to try to link to that but past history has shown that it
+ranges from 36 to 40 bits.
 
+> 
+>>
+>> Signed-off-by: Mike Travis <travis@sgi.com>
+>> Reviewed-by: Mike Habeck <habeck@sgi.com>
+>> ---
+>>   sound/pci/hda/hda_intel.c | 2 +-
+>>   1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/sound/pci/hda/hda_intel.c b/sound/pci/hda/hda_intel.c
+>> index bcd40ee..45eb165 100644
+>> --- a/sound/pci/hda/hda_intel.c
+>> +++ b/sound/pci/hda/hda_intel.c
+>> @@ -615,7 +615,7 @@ enum {
+>>   /* quirks for Nvidia */
+>>   #define AZX_DCAPS_PRESET_NVIDIA \
+>>       (AZX_DCAPS_NVIDIA_SNOOP | AZX_DCAPS_RIRB_DELAY |
+>> AZX_DCAPS_NO_MSI |\
+>> -     AZX_DCAPS_ALIGN_BUFSIZE)
+>> +     AZX_DCAPS_ALIGN_BUFSIZE | AZX_DCAPS_NO_64BIT)
+>>
+>>   #define AZX_DCAPS_PRESET_CTHDA \
+>>       (AZX_DCAPS_NO_MSI | AZX_DCAPS_POSFIX_LPIB |
+>> AZX_DCAPS_4K_BDLE_BOUNDARY)
+>>
+> 
+> 
+> 
