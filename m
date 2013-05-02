@@ -1,49 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757275Ab3EBA14 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 20:27:56 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:40278 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756299Ab3EBA1n (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 20:27:43 -0400
-Date: Wed, 1 May 2013 19:27:37 -0500
-From: "Philip J. Kelleher" <pjk1939@linux.vnet.ibm.com>
-To: axboe@kernel.dk
-Cc: linux-kernel@vger.kernel.org, klebers@linux.vnet.ibm.com,
-        brking@linux.vnet.ibm.com
-Subject: [PATCH 4/8] rsxx: Corrected discard support version number.
-Message-ID: <20130502002737.GB29955@oc6784271780.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13050200-3620-0000-0000-0000024A025B
+	id S1757477Ab3EBA2w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 20:28:52 -0400
+Received: from mga03.intel.com ([143.182.124.21]:30954 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757020Ab3EBA2t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 May 2013 20:28:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,592,1363158000"; 
+   d="scan'208";a="235599682"
+Message-ID: <1367454625.2093.6.camel@ymzhang.sh.intel.com>
+Subject: Re: Subject : [ PATCH ]
+ pci-reset-error_state-to-pci_channel_io_normal-at-report_slot_reset
+From: Yanmin Zhang <yanmin_zhang@linux.intel.com>
+Reply-To: yanmin_zhang@linux.intel.com
+To: "Zhang, LongX" <longx.zhang@intel.com>
+Cc: "linasvepstas@gmail.com" <linasvepstas@gmail.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "bhelgaas@google.com" <bhelgaas@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Joseph.Liu@Emulex.Com" <Joseph.Liu@Emulex.Com>
+Date: Thu, 02 May 2013 08:30:25 +0800
+In-Reply-To: <F7B8FD780A346D46A0042F5C63B06AE785E3B2@SHSMSX102.ccr.corp.intel.com>
+References: <F7B8FD780A346D46A0042F5C63B06AE785E3B2@SHSMSX102.ccr.corp.intel.com>
+Organization: Intel.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Philip J Kelleher <pjk1939@linux.vnet.ibm.com>
+On Fri, 2013-04-26 at 06:28 +0000, Zhang, LongX wrote:
+> From: Zhang Long <longx.zhang@intel.com>
+> 
+> Specific pci device drivers might have many functions to call
+> pci_channel_offline to check device states. When slot_reset happens,
+> drivers' slot_reset callback might call such functions and eventually
+> abort the reset.
+> 
+> The patch resets pdev->error_state to pci_channel_io_normal at
+> the begining of report_slot_reset.
+> 
+> Thank Liu Joseph for pointing it out.
+Linas, Bjorn,
 
-Changing the Discard support version number to the correct
-value.
+Would you like to merge the patch to your testing tree?
+The patch resolves one issue pointed out by Joseph.
 
-Signed-off-by: Philip J Kelleher <pjk1939@linux.vnet.ibm.com>
--------------------------------------------------------------------------------
+Thanks,
+Yanmin
 
 
-diff -uprN -X linux-block-vanilla/Documentation/dontdiff linux-block-vanilla/drivers/block/rsxx/rsxx_priv.h linux-block/drivers/block/rsxx/rsxx_priv.h
---- linux-block-vanilla/drivers/block/rsxx/rsxx_priv.h	2013-05-01 18:36:44.698309293 -0500
-+++ linux-block/drivers/block/rsxx/rsxx_priv.h	2013-05-01 18:37:56.277183367 -0500
-@@ -273,7 +273,7 @@ enum rsxx_hw_fifo_flush {
- };
- 
- enum rsxx_pci_revision {
--	RSXX_DISCARD_SUPPORT = 2,
-+	RSXX_DISCARD_SUPPORT = 4,
- 	RSXX_EEH_SUPPORT     = 3,
- };
- 
+> 
+> Signed-off-by: Zhang Yanmin <yanmin_zhang@linux.intel.com>
+> Signed-off-by: Zhang Long <longx.zhang@intel.com>
+> ---
+>  drivers/pci/pcie/aer/aerdrv_core.c |    1 +
+>  drivers/pci/pcie/portdrv_pci.c     |   12 +++++-------
+>  2 files changed, 6 insertions(+), 7 deletions(-)
+> 
+> diff --git a/drivers/pci/pcie/aer/aerdrv_core.c b/drivers/pci/pcie/aer/aerdrv_core.c
+> index 564d97f..c61fd44 100644
+> --- a/drivers/pci/pcie/aer/aerdrv_core.c
+> +++ b/drivers/pci/pcie/aer/aerdrv_core.c
+> @@ -286,6 +286,7 @@ static int report_slot_reset(struct pci_dev *dev, void *data)
+>  	result_data = (struct aer_broadcast_data *) data;
+>  
+>  	device_lock(&dev->dev);
+> +	dev->error_state = pci_channel_io_normal;
+>  	if (!dev->driver ||
+>  		!dev->driver->err_handler ||
+>  		!dev->driver->err_handler->slot_reset)
+> diff --git a/drivers/pci/pcie/portdrv_pci.c b/drivers/pci/pcie/portdrv_pci.c
+> index ed4d094..7abefd9 100644
+> --- a/drivers/pci/pcie/portdrv_pci.c
+> +++ b/drivers/pci/pcie/portdrv_pci.c
+> @@ -332,13 +332,11 @@ static pci_ers_result_t pcie_portdrv_slot_reset(struct pci_dev *dev)
+>  	pci_ers_result_t status = PCI_ERS_RESULT_RECOVERED;
+>  	int retval;
+>  
+> -	/* If fatal, restore cfg space for possible link reset at upstream */
+> -	if (dev->error_state == pci_channel_io_frozen) {
+> -		dev->state_saved = true;
+> -		pci_restore_state(dev);
+> -		pcie_portdrv_restore_config(dev);
+> -		pci_enable_pcie_error_reporting(dev);
+> -	}
+> +	/* restore cfg space for possible link reset at upstream */
+> +	dev->state_saved = true;
+> +	pci_restore_state(dev);
+> +	pcie_portdrv_restore_config(dev);
+> +	pci_enable_pcie_error_reporting(dev);
+>  
+>  	/* get true return value from &status */
+>  	retval = device_for_each_child(&dev->dev, &status, slot_reset_iter);
+
 
