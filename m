@@ -1,60 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761131Ab3EBR5K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 13:57:10 -0400
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:36453 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760373Ab3EBR5I (ORCPT
+	id S932425Ab3EBR6A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 13:58:00 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:62112 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761175Ab3EBR56 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 13:57:08 -0400
-Date: Thu, 2 May 2013 10:57:01 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, lizefan@huawei.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org
-Subject: Re: [PATCHSET] blk-throttle: implement proper hierarchy support
-Message-ID: <20130502175701.GL19814@mtj.dyndns.org>
-References: <1367455189-6957-1-git-send-email-tj@kernel.org>
- <20130502173428.GA4771@redhat.com>
+	Thu, 2 May 2013 13:57:58 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: Re: [PATCH, RFC 22/22] radio-si4713: depend on SND_SOC
+Date: Thu, 2 May 2013 19:57:33 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Hans Verkuil <hverkuil@xs4all.nl>, linux-media@vger.kernel.org
+References: <1367507786-505303-1-git-send-email-arnd@arndb.de> <1367507786-505303-23-git-send-email-arnd@arndb.de> <5182A44E.7080701@redhat.com>
+In-Reply-To: <5182A44E.7080701@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130502173428.GA4771@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201305021957.33657.arnd@arndb.de>
+X-Provags-ID: V02:K0:LhXOkH8Tom3RGYrT1gouV02diOdAXTwdneXvVMGge5e
+ ibn0eDKE0hl3CKtqpRrwcUhLuZ2VUlxP1EFW7E/ioguYm79WVD
+ 5SC2PxrvkWYH1Q7jlkpqQAkB/EDnd9zP1dVhn8N2p5fV3+h845
+ +QfnBzgCNE7CWRpC4zVZmvks+e7HLbXvM354h+BtMlLp+6vlqz
+ c678seymbFCg3sutA5fY9x9dNR293OuSm4gpdmadoiZDPXUZP5
+ SZj1Y9EGfXr7YJyDG6HccuGCl4/ZIUZXWpszxYlUektYtzkKfE
+ NwF71eScFNn+scASUE6SAClaxSTTQ2HXUl9vIc6N3FcvUeOo6W
+ Ne55Tuy4v1kwCcSZPd+Q=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey, Vivek.
-
-On Thu, May 02, 2013 at 01:34:28PM -0400, Vivek Goyal wrote:
-> On Wed, May 01, 2013 at 05:39:18PM -0700, Tejun Heo wrote:
+On Thursday 02 May 2013, Mauro Carvalho Chehab wrote:
+> Do you prefer to send it via your tree or via mine? Either way works for me.
 > 
-> [..]
-> > While this patchset contains many patches, the implementation is
-> > pretty straight-forward.  throtl_grp's form a tree anchored at
-> > throtl_data and bios climb the tree as they get dispatched at each
-> > level.  The bios which reach the top of the tree - throl_data - are
-> > issued. 
+> If you're willing to send it via your tree:
 > 
-> Have a question here. Looks like when bio climbs from child group
-> to parent group, then parent group slice starts fresh if parent
-> was empty. So if we have a parent with 1MB/s limit and a child with
-> 1MB/s limit and a bio gets queued in child, then looks like effective
-> IO rate would be .5MB/s and not 1MB/s?
+> Acked-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 
-Hmmm.... not that drastic but when the same limit is configured in
-both parent and its single active child, the child gets penalized by
-about 15%, which is not nice.
+I'd prefer your tree, because the patch does not apply on 3.9.
 
-> IOW, when child gets queued, we should start time accounting for
-> all parents in the hiearchy too.
-
-I don't particularly like doing that as a separate step, maybe we can
-just push the child's start time to the parent while dispatching?
-Does that sound doable to you?
-
-Thanks.
-
--- 
-tejun
+	Arnd
