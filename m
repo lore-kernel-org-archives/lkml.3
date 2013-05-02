@@ -1,109 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759331Ab3EBN3C (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 09:29:02 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47207 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757877Ab3EBN3B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 09:29:01 -0400
-Date: Thu, 2 May 2013 16:28:40 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, Fenghua Yu <fenghua.yu@intel.com>
-Subject: Re: [PATCH RFC] x86: uaccess s/might_sleep/might_fault/
-Message-ID: <20130502132840.GA27322@redhat.com>
-References: <20130502022134.GA7700@redhat.com>
- <20130502085241.GA27969@gmail.com>
+	id S1759300Ab3EBNay (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 09:30:54 -0400
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:39015 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758008Ab3EBNax (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 09:30:53 -0400
+Message-ID: <51826A70.9050904@cogentembedded.com>
+Date: Thu, 02 May 2013 17:30:24 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130502085241.GA27969@gmail.com>
+To: Laurent Navet <laurent.navet@gmail.com>
+CC: dwmw2@infradead.org, artem.bityutskiy@linux.intel.com, m-karicheri2@ti.com,
+        mturquette@linaro.org, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers: mtd: nand: davinci: use devm_ioremap_resource()
+References: <1367500934-28030-1-git-send-email-laurent.navet@gmail.com>
+In-Reply-To: <1367500934-28030-1-git-send-email-laurent.navet@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 02, 2013 at 10:52:41AM +0200, Ingo Molnar wrote:
-> 
-> * Michael S. Tsirkin <mst@redhat.com> wrote:
-> 
-> > The only reason uaccess routines might sleep
-> > is if they fault. Make this explicit for
-> > __copy_from_user_nocache, and consistent with
-> > copy_from_user and friends.
-> > 
-> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> > ---
-> > 
-> > I've updated all other arches as well - still
-> > build-testing. Any objections to the x86 patch?
-> > 
-> >  arch/x86/include/asm/uaccess_64.h | 2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > 
-> > diff --git a/arch/x86/include/asm/uaccess_64.h b/arch/x86/include/asm/uaccess_64.h
-> > index 142810c..4f7923d 100644
-> > --- a/arch/x86/include/asm/uaccess_64.h
-> > +++ b/arch/x86/include/asm/uaccess_64.h
-> > @@ -235,7 +235,7 @@ extern long __copy_user_nocache(void *dst, const void __user *src,
-> >  static inline int
-> >  __copy_from_user_nocache(void *dst, const void __user *src, unsigned size)
-> >  {
-> > -	might_sleep();
-> > +	might_fault();
-> >  	return __copy_user_nocache(dst, src, size, 1);
-> 
-> Looks good to me:
-> 
-> Acked-by: Ingo Molnar <mingo@kernel.org>
-> 
-> 
-> ... but while reviewing the effects I noticed a bug in might_fault():
-> 
-> #ifdef CONFIG_PROVE_LOCKING
-> void might_fault(void)
-> {
->         /*
->          * Some code (nfs/sunrpc) uses socket ops on kernel memory while
->          * holding the mmap_sem, this is safe because kernel memory doesn't
->          * get paged out, therefore we'll never actually fault, and the
->          * below annotations will generate false positives.
->          */
->         if (segment_eq(get_fs(), KERNEL_DS))
->                 return;
-> 
->         might_sleep();
-> 
-> the might_sleep() call should come first. With the current code 
-> might_fault() schedules differently depending on CONFIG_PROVE_LOCKING, 
-> which is an undesired semantical side effect ...
-> 
-> So please fix that too while at it.
-> 
-> Thanks,
-> 
-> 	Ingo
+Hello.
 
+On 02-05-2013 17:22, Laurent Navet wrote:
 
-OK. And there's another bug that I'd like to fix:
-if caller does pagefault_disable, pagefaults don't
-actually sleep: the page fault handler will detect we are in
-tomic context and go directly to fixups instead of
-processing the page fault.
+> Replace a call to deprecated devm_request_and_ioremap by devm_ioremap_resource.
 
-So calling anything that faults in atomic context is
-ok, and it should be
+> Found with coccicheck and this semantic patch:
+>   scripts/coccinelle/api/devm_request_and_ioremap.cocci.
 
-	if (pagefault_disabled())
-		might_sleep();
+> Signed-off-by: Laurent Navet <laurent.navet@gmail.com>
+> ---
+>   drivers/mtd/nand/davinci_nand.c |   13 ++++++++-----
+>   1 file changed, 8 insertions(+), 5 deletions(-)
 
-Except we don't have pagefault_disabled(), and
-we still want to catch the calls within preempt_disable
-sections (as these can be compiled out), so
-I plan to add a per-cpu flag (only if CONFIG_DEBUG_ATOMIC_SLEEP
-is set) to distinguish between preempt_disable
-and pagefault_disable.
+> diff --git a/drivers/mtd/nand/davinci_nand.c b/drivers/mtd/nand/davinci_nand.c
+> index 94e17af..4a96e58 100644
+> --- a/drivers/mtd/nand/davinci_nand.c
+> +++ b/drivers/mtd/nand/davinci_nand.c
+> @@ -623,11 +623,14 @@ static int __init nand_davinci_probe(struct platform_device *pdev)
+>   		goto err_nomem;
+>   	}
+>
+> -	vaddr = devm_request_and_ioremap(&pdev->dev, res1);
+> -	base = devm_request_and_ioremap(&pdev->dev, res2);
+> -	if (!vaddr || !base) {
+> -		dev_err(&pdev->dev, "ioremap failed\n");
+> -		ret = -EADDRNOTAVAIL;
+> +	vaddr = devm_ioremap_resource(&pdev->dev, res1);
+> +	base = devm_ioremap_resource(&pdev->dev, res2);
 
--- 
-MST
+    I'd rather put this line before its corresponding error check.
+
+> +	if (IS_ERR(vaddr)) {
+> +		ret = PTR_ERR(vaddr);
+> +		goto err_ioremap;
+> +	}
+> +	if (IS_ERR(base)) {
+> +		ret = PTR_ERR(base);
+>   		goto err_ioremap;
+>   	}
+
+WBR, Sergei
+
