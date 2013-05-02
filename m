@@ -1,59 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761615Ab3EBU0o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 16:26:44 -0400
-Received: from mail-vb0-f51.google.com ([209.85.212.51]:62204 "EHLO
-	mail-vb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758644Ab3EBU0m (ORCPT
+	id S1761757Ab3EBU1X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 16:27:23 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:62598 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761381Ab3EBU1W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 16:26:42 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130502201106.GA17385@redhat.com>
-References: <20130502201106.GA17385@redhat.com>
-Date: Thu, 2 May 2013 13:26:41 -0700
-X-Google-Sender-Auth: qvcH5vu-j_et5zwb7JD72-p-oVw
-Message-ID: <CA+55aFyzq+EBHiKYyEw3OXWKeeTbwt1sCYACfD4YsOWCBBZTVQ@mail.gmail.com>
-Subject: Re: [PULLv2] vhost: cleanups and fixes
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: KVM list <kvm@vger.kernel.org>, virtualization@lists.osdl.org,
-        Network Development <netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Asias He <asias@redhat.com>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 2 May 2013 16:27:22 -0400
+From: Gernot Vormayr <gvormayr@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jens Axboe <axboe@kernel.dk>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Gernot Vormayr <gvormayr@gmail.com>
+Subject: [RESEND] [PATCH 1/1] block: Fix id of xsysace with missing port-number
+Date: Thu,  2 May 2013 22:27:45 +0200
+Message-Id: <1367526465-31886-1-git-send-email-gvormayr@gmail.com>
+X-Mailer: git-send-email 1.8.2.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 2, 2013 at 1:11 PM, Michael S. Tsirkin <mst@redhat.com> wrote:
-> Hi Linus,
-> This is exactly same code as my previous pull sent earlier, the diffstat
-> was wrong however, I did a merge with master which fixed that.
+If the port number is missing from the device-tree the device gets
+named xs` instead of xsa. This fixes the check for missing ids.
 
-See my other email. THIS IS NOT A VALID REASON TO DO A BACK-MERGE!
+Tested on ml507 board.
 
-Extraneous merge commits that have no actual reason for development
-are bad. They make it much harder to see what the actual development
-thread was, because they mix up different branches. In fact, the whole
-problem with the diffstat started with *another* extraneous merge, so
-the "fix" was a result of a previous merge. This is exactly the kind
-of reason why we want merges to be done by upstream developers, not
-"back-merges" by downstream.
+Signed-off-by: Gernot Vormayr <gvormayr@gmail.com>
+---
+ drivers/block/xsysace.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-Now that merge is in your development tree, and if/when you start
-doing development on top of that, the same kind of problem will
-continue. Together with making it much harder to see in the history
-what _your_ development stream was, because now it's no longer linear
-and mixes in random points of the merge window.
+diff --git a/drivers/block/xsysace.c b/drivers/block/xsysace.c
+index 1f38643..6b5807a 100644
+--- a/drivers/block/xsysace.c
++++ b/drivers/block/xsysace.c
+@@ -1161,8 +1161,7 @@ static int ace_probe(struct platform_device *dev)
+ 	dev_dbg(&dev->dev, "ace_probe(%p)\n", dev);
+ 
+ 	/* device id and bus width */
+-	of_property_read_u32(dev->dev.of_node, "port-number", &id);
+-	if (id < 0)
++	if (of_property_read_u32(dev->dev.of_node, "port-number", &id))
+ 		id = 0;
+ 	if (of_find_property(dev->dev.of_node, "8-bit", NULL))
+ 		bus_width = ACE_BUS_WIDTH_8;
+-- 
+1.8.2.2
 
-Don't do this. Why do I have to write one of these "DON'T DO
-BACK-MERGES" every single merge window? I really wish people listened,
-instead of every single developer deciding that "it's ok if _I_ do it,
-I'm sure Linus is complaining about all those *other* morons out
-there".
-
-When I say "don't do back-merges", I mean *you*. Yes, you. Not
-somebody else. You.
-
-                  Linus
