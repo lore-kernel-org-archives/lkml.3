@@ -1,52 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760150Ab3EBPAw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 11:00:52 -0400
-Received: from mail-we0-f170.google.com ([74.125.82.170]:56216 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753159Ab3EBPAv (ORCPT
+	id S1757568Ab3EBPF2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 11:05:28 -0400
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:55003 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751703Ab3EBPF1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 11:00:51 -0400
-From: Laurent Navet <laurent.navet@gmail.com>
-To: dwmw2@infradead.org
-Cc: artem.bityutskiy@linux.intel.com, avinashphilip@ti.com, jacmet@sunsite.dk,
-        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Laurent Navet <laurent.navet@gmail.com>
-Subject: [PATCH] drivers: mtd: devices: elm: use devm_ioremap_resource()
-Date: Thu,  2 May 2013 17:09:05 +0200
-Message-Id: <1367507346-29382-1-git-send-email-laurent.navet@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Thu, 2 May 2013 11:05:27 -0400
+MIME-Version: 1.0
+X-Originating-IP: [188.6.195.195]
+In-Reply-To: <51525328.2070407@gmail.com>
+References: <51525328.2070407@gmail.com>
+Date: Thu, 2 May 2013 17:05:25 +0200
+Message-ID: <CAJfpegvYY_fUMOA_CE1vg849Jga_iSvaswVs2Fb6EUJPH2f0uw@mail.gmail.com>
+Subject: Re: [PATCH] fuse: Consider the ->big_writes for allocing fuse_req
+ when do writing
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: majianpeng <majianpeng@gmail.com>
+Cc: fuse-devel <fuse-devel@lists.sourceforge.net>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace a call to deprecated devm_request_and_ioremap by devm_ioremap_resource.
+On Wed, Mar 27, 2013 at 3:02 AM, majianpeng <majianpeng@gmail.com> wrote:
+> If fc->big_writes == 0, for write-operation it only do 4k in func fuse_fill_write_pages.
+> So when alloc fuse_req,we should consider this restrict in order to
+> do additional operations.
+> The additional operations are memset-opeartion in func fuse_requenst_alloc and alloc more space if nr_pages is larger than FUSE_REQ_MIN_PAGES.
 
-Found with coccicheck and this semantic patch:
- scripts/coccinelle/api/devm_request_and_ioremap.cocci.
+Your mailer is removing whitespace from the patch.   Anyway, I applied
+it by hand, thanks.
 
-Signed-off-by: Laurent Navet <laurent.navet@gmail.com>
----
- drivers/mtd/devices/elm.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+Miklos
 
-diff --git a/drivers/mtd/devices/elm.c b/drivers/mtd/devices/elm.c
-index 2ec5da9..2bafb06 100644
---- a/drivers/mtd/devices/elm.c
-+++ b/drivers/mtd/devices/elm.c
-@@ -344,9 +344,9 @@ static int elm_probe(struct platform_device *pdev)
- 		return -ENODEV;
- 	}
- 
--	info->elm_base = devm_request_and_ioremap(&pdev->dev, res);
--	if (!info->elm_base)
--		return -EADDRNOTAVAIL;
-+	info->elm_base = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(info->elm_base))
-+		return PTR_ERR(info->elm_base);
- 
- 	ret = devm_request_irq(&pdev->dev, irq->start, elm_isr, 0,
- 			pdev->name, info);
--- 
-1.7.10.4
-
+>
+> Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
+> ---
+> fs/fuse/file.c | 7 ++++++-
+> 1 file changed, 6 insertions(+), 1 deletion(-)
+>
+> diff --git a/fs/fuse/file.c b/fs/fuse/file.c
+> index 34b80ba..c584a31 100644
+> --- a/fs/fuse/file.c
+> +++ b/fs/fuse/file.c
+> @@ -912,8 +912,13 @@ static ssize_t fuse_perform_write(struct file *file,
+> do {
+> struct fuse_req *req;
+> ssize_t count;
+> - unsigned nr_pages = fuse_wr_pages(pos, iov_iter_count(ii));
+> + unsigned nr_pages;
+>
+> + if (!fc->big_writes)
+> + nr_pages = 1;
+> + else
+> + nr_pages = fuse_wr_pages(pos, iov_iter_count(ii));
+> +
+> req = fuse_get_req(fc, nr_pages);
+> if (IS_ERR(req)) {
+> err = PTR_ERR(req);
+> --
+> 1.8.2.rc2.4.g7799588
+>
