@@ -1,181 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751842Ab3EBFav (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 01:30:51 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:37614 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751077Ab3EBFas (ORCPT
+	id S1751890Ab3EBFjb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 01:39:31 -0400
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:45990 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751397Ab3EBFj3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 01:30:48 -0400
-Date: Thu, 2 May 2013 15:30:35 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: James Hogan <james.hogan@imgtec.com>, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
-        Mike Frysinger <vapier@gentoo.org>,
-        uclinux-dist-devel@blackfin.uclinux.org
-Subject: Re: [PATCH] linkage.h: fix build breakage due to symbol prefix
- handling
-Message-Id: <20130502153035.03afb3f75d9bfd4693319e8c@canb.auug.org.au>
-In-Reply-To: <20130502133737.c2874e483bdc1380a59786f4@canb.auug.org.au>
-References: <1367442257-7897-1-git-send-email-james.hogan@imgtec.com>
-	<878v3yql7r.fsf@rustcorp.com.au>
-	<20130502133737.c2874e483bdc1380a59786f4@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__2_May_2013_15_30_35_+1000_hps_pDA=l3uAqvUy"
+	Thu, 2 May 2013 01:39:29 -0400
+From: Amit Daniel Kachhap <amit.daniel@samsung.com>
+To: linux-pm@vger.kernel.org
+Cc: Zhang Rui <rui.zhang@intel.com>, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, amit.kachhap@gmail.com,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Lukasz Majewski <l.majewski@samsung.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>
+Subject: [PATCH] thermal: exynos: Support for TMU regulator defined at device tree
+Date: Thu,  2 May 2013 11:07:41 +0530
+Message-Id: <1367473061-28863-1-git-send-email-amit.daniel@samsung.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__2_May_2013_15_30_35_+1000_hps_pDA=l3uAqvUy
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+TMU probe function now checks for a device tree defined regulator.
+For compatibility reasons it is allowed to probe driver even without
+this regulator defined.
 
-Hi Rusty,
-
-On Thu, 2 May 2013 13:37:37 +1000 Stephen Rothwell <sfr@canb.auug.org.au> w=
-rote:
->
-> This is the merge fix patch I have been carrying in linux-next since
-> March 14: (this probably does not quite apply any more but, hey ...)
->=20
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Thu, 14 Mar 2013 17:14:41 +1100
-> Subject: [PATCH] cond_syscall and SYSCALL_ALIAS merge fixup
->=20
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> ---
->  include/linux/linkage.h | 20 ++++++--------------
->  1 file changed, 6 insertions(+), 14 deletions(-)
->=20
-> diff --git a/include/linux/linkage.h b/include/linux/linkage.h
-> index 829d66c..bedcddf 100644
-> --- a/include/linux/linkage.h
-> +++ b/include/linux/linkage.h
-> @@ -2,7 +2,7 @@
->  #define _LINUX_LINKAGE_H
-> =20
->  #include <linux/compiler.h>
-> -#include <linux/stringify.h>
-> +#include <linux/export.h>
->  #include <asm/linkage.h>
-> =20
->  #ifdef __cplusplus
-> @@ -15,24 +15,16 @@
->  #define asmlinkage CPP_ASMLINKAGE
->  #endif
-> =20
-> -#ifndef SYMBOL_NAME
-> -#ifdef CONFIG_SYMBOL_PREFIX
-> -#define SYMBOL_NAME(x) CONFIG_SYMBOL_PREFIX ## x
-> -#else
-> -#define SYMBOL_NAME(x) x
-> -#endif
-> -#endif
-> -#define __SYMBOL_NAME(x) __stringify(SYMBOL_NAME(x))
-> -
->  #ifndef cond_syscall
-> -#define cond_syscall(x) asm(".weak\t" __SYMBOL_NAME(x) \
-> -	"\n\t.set\t" __SYMBOL_NAME(x) "," __SYMBOL_NAME(sys_ni_syscall));
-> +#define cond_syscall(x) asm(".weak\t" VMLINUX_SYMBOL_STR(x) "\n\t"	\
-> +			    ".set\t" VMLINUX_SYMBOL_STR(x) ","	\
-> +			    VMLINUX_SYMBOL_STR(sys_ni_syscall))
->  #endif
-> =20
->  #ifndef SYSCALL_ALIAS
->  #define SYSCALL_ALIAS(alias, name)				\
-> -	asm ("\t.globl " __SYMBOL_NAME(alias)			\
-> -	"\n\t.set\t" __SYMBOL_NAME(alias) "," __SYMBOL_NAME(name))
-> +	asm ("\t.globl " VMLINUX_SYMBOL_STR(alias)			\
-> +	"\n\t.set\t" VMLINUX_SYMBOL_STR(alias) "," VMLINUX_SYMBOL_STR(name))
->  #endif
-> =20
->  #define __page_aligned_data	__section(.data..page_aligned) __aligned(PAG=
-E_SIZE)
-> --=20
-> 1.8.1
-
-Version from today's merge fix.  Rusty, you should show this to Linus
-when you ask him to merge your modules tree (assuming it looks right :-)).
-
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Thu, 14 Mar 2013 17:14:41 +1100
-Subject: [PATCH] cond_syscall and SYSCALL_ALIAS merge fixup
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
 ---
- include/linux/linkage.h |   17 ++++++-----------
- 1 file changed, 6 insertions(+), 11 deletions(-)
 
-diff --git a/include/linux/linkage.h b/include/linux/linkage.h
-index de09dec..bedcddf 100644
---- a/include/linux/linkage.h
-+++ b/include/linux/linkage.h
-@@ -2,7 +2,7 @@
- #define _LINUX_LINKAGE_H
-=20
- #include <linux/compiler.h>
--#include <linux/stringify.h>
-+#include <linux/export.h>
- #include <asm/linkage.h>
-=20
- #ifdef __cplusplus
-@@ -15,21 +15,16 @@
- #define asmlinkage CPP_ASMLINKAGE
- #endif
-=20
--#ifdef CONFIG_SYMBOL_PREFIX
--#define __SYMBOL_NAME(x) CONFIG_SYMBOL_PREFIX __stringify(x)
--#else
--#define __SYMBOL_NAME(x) __stringify(x)
--#endif
--
- #ifndef cond_syscall
--#define cond_syscall(x) asm(".weak\t" __SYMBOL_NAME(x) \
--	"\n\t.set\t" __SYMBOL_NAME(x) "," __SYMBOL_NAME(sys_ni_syscall));
-+#define cond_syscall(x) asm(".weak\t" VMLINUX_SYMBOL_STR(x) "\n\t"	\
-+			    ".set\t" VMLINUX_SYMBOL_STR(x) ","	\
-+			    VMLINUX_SYMBOL_STR(sys_ni_syscall))
- #endif
-=20
- #ifndef SYSCALL_ALIAS
- #define SYSCALL_ALIAS(alias, name)				\
--	asm ("\t.globl " __SYMBOL_NAME(alias)			\
--	"\n\t.set\t" __SYMBOL_NAME(alias) "," __SYMBOL_NAME(name))
-+	asm ("\t.globl " VMLINUX_SYMBOL_STR(alias)			\
-+	"\n\t.set\t" VMLINUX_SYMBOL_STR(alias) "," VMLINUX_SYMBOL_STR(name))
- #endif
-=20
- #define __page_aligned_data	__section(.data..page_aligned) __aligned(PAGE_=
-SIZE)
+This patch is repost of the patch posted by Lukasz Majewski
+(https://patchwork.kernel.org/patch/2488211/). I have rebased this
+patch on top of my TMU re-structured patch series
+(http://lwn.net/Articles/548634/). Although I thought of handling
+regulator as one type of feature (newly added) but could not do
+so as regulator is a board/platform property and not SOC property so
+leaving the device tree to define and handle it.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+ .../devicetree/bindings/thermal/exynos-thermal.txt |    4 ++++
+ drivers/thermal/samsung/exynos_tmu.c               |   17 +++++++++++++++++
+ 2 files changed, 21 insertions(+), 0 deletions(-)
 
---Signature=_Thu__2_May_2013_15_30_35_+1000_hps_pDA=l3uAqvUy
-Content-Type: application/pgp-signature
+diff --git a/Documentation/devicetree/bindings/thermal/exynos-thermal.txt b/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
+index 970eeba..ff62f7a 100644
+--- a/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
++++ b/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
+@@ -14,6 +14,9 @@
+ - interrupts : Should contain interrupt for thermal system
+ - clocks : The main clock for TMU device
+ - clock-names : Thermal system clock name
++- vtmu-supply: This entry is optional and provides the regulator node supplying
++		voltage to TMU. If needed this entry can be placed inside
++		board/platform specific dts file.
+ 
+ Example 1):
+ 
+@@ -25,6 +28,7 @@ Example 1):
+ 		clocks = <&clock 383>;
+ 		clock-names = "tmu_apbif";
+ 		status = "disabled";
++		vtmu-supply = <&tmu_regulator_node>;
+ 	};
+ 
+ Example 2):
+diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
+index 72446c9..45b50c1 100644
+--- a/drivers/thermal/samsung/exynos_tmu.c
++++ b/drivers/thermal/samsung/exynos_tmu.c
+@@ -32,6 +32,7 @@
+ #include <linux/of_address.h>
+ #include <linux/of_irq.h>
+ #include <linux/platform_device.h>
++#include <linux/regulator/consumer.h>
+ #include <linux/slab.h>
+ #include <linux/workqueue.h>
+ #include "exynos_thermal_common.h"
+@@ -52,6 +53,7 @@
+  * @clk: pointer to the clock structure.
+  * @temp_error1: fused value of the first point trim.
+  * @temp_error2: fused value of the second point trim.
++ * @regulator: pointer to the TMU regulator structure.
+  * @reg_conf: pointer to structure to register with core thermal.
+  */
+ struct exynos_tmu_data {
+@@ -65,6 +67,7 @@ struct exynos_tmu_data {
+ 	struct mutex lock;
+ 	struct clk *clk;
+ 	u8 temp_error1, temp_error2;
++	struct regulator *regulator;
+ 	struct thermal_sensor_conf *reg_conf;
+ };
+ 
+@@ -501,10 +504,21 @@ static int exynos_map_dt_data(struct platform_device *pdev)
+ 	struct exynos_tmu_data *data = platform_get_drvdata(pdev);
+ 	struct exynos_tmu_platform_data *pdata = data->pdata;
+ 	struct resource res;
++	int ret;
+ 
+ 	if (!data)
+ 		return -ENODEV;
+ 
++	/* Try enabling the regulator if found */
++	data->regulator = devm_regulator_get(&pdev->dev, "vtmu");
++	if (!IS_ERR(data->regulator)) {
++		ret = regulator_enable(data->regulator);
++		if (ret) {
++			dev_err(&pdev->dev, "failed to enable vtmu\n");
++			return ret;
++		}
++	}
++
+ 	data->id = of_alias_get_id(pdev->dev.of_node, "tmuctrl");
+ 	if (data->id < 0)
+ 		data->id = 0;
+@@ -669,6 +683,9 @@ static int exynos_tmu_remove(struct platform_device *pdev)
+ 
+ 	clk_unprepare(data->clk);
+ 
++	if (data->regulator)
++		regulator_disable(data->regulator);
++
+ 	platform_set_drvdata(pdev, NULL);
+ 
+ 	return 0;
+-- 
+1.7.1
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRgfn7AAoJEECxmPOUX5FEKsQP/2p07FrD79WUVX1+wtWghHOt
-azB+7i2sKxYt4zquJVVQubFb5PlH1fXO6XKZ/EOSZHQlNuPMnP7aNzeJIZ1gtsK9
-ejsaXgVETTSOTITG2YottmSvyx+wi+GFqNVFFSdrRQVOHx9PteMzgXwVSEC3s9IK
-/d+7wXR7YDkXUzZZcURuN2y8LcmP/bm8Uy0fvOsR7yxlYtFGmDmrPEoCoUipNQQi
-vClLzUr+6/LEISvCNprnxepNpdMt1fpZs7aCzcicuk0X7pKoEF9djkLC7lfGIwuZ
-/bNyereB3lY64CHgCwMF/JwCFTLuMifsTJCBgr+a5JwOxcJJ3hC5ggIWZhzHRjrF
-hOrBOm6gbH6bgADH7jHpaaeLUpuO1Z3DVPEhgS6N2f9NregR7PKpr3RBG0YCvpFq
-rUUcVRPqYou5IvmLp1DTcCfkLMobKxcq0P/JeK0q20cu5toUvIjUbpbM4E8PU52S
-PBUqjRw9LZnwFaws8TwEsvGq5CXYr0qaAEeKGHLoGKf/tV4pNk8z93Nce6UFC7UU
-33NDmxzAD1ee1PpgFWjr2UrzGkOzzadSorz55qj9Nkg9EpSn2J3S/5lsz9HXJSJu
-4Wfb5F+oTSXKohO8pZ7SvkVfIvOEIXhgKxch5Al7UxrPlGia1TymyIxxYQ3gIyuW
-BQv+2bnQDDVNrUd5JfNx
-=PHWr
------END PGP SIGNATURE-----
-
---Signature=_Thu__2_May_2013_15_30_35_+1000_hps_pDA=l3uAqvUy--
