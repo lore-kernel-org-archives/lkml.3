@@ -1,41 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760639Ab3EBPWD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 11:22:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63982 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760158Ab3EBPWA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 11:22:00 -0400
-Date: Thu, 2 May 2013 11:21:48 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, lizefan@huawei.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org
-Subject: Re: [PATCH 15/31] blk-throttle: reorganize throtl_service_queue
- passed around as argument
-Message-ID: <20130502152148.GF30020@redhat.com>
-References: <1367455189-6957-1-git-send-email-tj@kernel.org>
- <1367455189-6957-16-git-send-email-tj@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1367455189-6957-16-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1759245Ab3EBPQQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 11:16:16 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:55251 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754040Ab3EBPQO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 11:16:14 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, Arnd Bergmann <arnd@arndb.de>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Arto Merilainen <amerilainen@nvidia.com>,
+        Terje Bergstrom <tbergstrom@nvidia.com>
+Subject: [PATCH, RFC 06/22] gpu/drm: host1x: add dependency on Tegra
+Date: Thu,  2 May 2013 17:16:10 +0200
+Message-Id: <1367507786-505303-7-git-send-email-arnd@arndb.de>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1367507786-505303-1-git-send-email-arnd@arndb.de>
+References: <1367507786-505303-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V02:K0:hIzQirefdEKlmH0BhMXkfr9lhr+KLjVliI+TwUs/wLH
+ eqBYWi+M4kBCNsZVay2hnabyG2yEjhr4ec2kuqyYJnYtu4uhUu
+ cq6I3LT9zfhYEQh5pPqjqJ9iOqqaRVHgjYsepewT/eH6VRnAi0
+ gkIe/OiguapDLjRBBD364r0Me/zeCqLChjjLCaIikbrMm1+Mgh
+ Cbd17udqwdz5m66mrS8viQXKs6zOkfOYWudGr/RK8i1VBs4mtu
+ ijcTn3MhV3m4H/1vl+SNJPSvhlX8+bs2HFBMORw+TGKKU7B+4L
+ Su4qzemJxs4OwZO/UkKokgnk53BYTL5PF4dYLP5t0z5zyNmrNI
+ WSD8wwCZK+qdTEzI5BlkfB5qUlNNvIujKEs0wjbPL
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 01, 2013 at 05:39:33PM -0700, Tejun Heo wrote:
-> throtl_service_queue will be the building block of hierarchy support
-> and will form a tree.  This patch updates its usages as arguments to
-> reduce confusion.
-> 
-> * When a service queue is used as the parent role - the host of the
->   rbtree - use @parent_sq instead of @sq.
+While we try to make drivers platform independent, this driver currently
+calls into an exported interface that is only provided on its own
+platform, so we have to add the dependency.
 
-Hi Tejun,
+drivers/built-in.o: In function `tegra_crtc_prepare':
+ drivers/gpu/host1x/drm/dc.c:650: undefined reference to `tegra_periph_reset_deassert'
+drivers/built-in.o: In function `tegra_output_hdmi_disable':
+ drivers/gpu/host1x/drm/hdmi.c:840: undefined reference to `tegra_periph_reset_assert'
+drivers/built-in.o: In function `tegra_output_hdmi_enable':
+ drivers/gpu/host1x/drm/hdmi.c:651: undefined reference to `tegra_periph_reset_assert'
+ drivers/gpu/host1x/drm/hdmi.c:653: undefined reference to `tegra_periph_reset_deassert'
 
-Apart from parent_sq, what other kind of sq are present.
+Cc: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: Arto Merilainen <amerilainen@nvidia.com>
+Cc: Terje Bergstrom <tbergstrom@nvidia.com>
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+---
+ drivers/gpu/host1x/drm/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
 
-Thanks
-Vivek
+diff --git a/drivers/gpu/host1x/drm/Kconfig b/drivers/gpu/host1x/drm/Kconfig
+index 69853a4..5a6a5cd 100644
+--- a/drivers/gpu/host1x/drm/Kconfig
++++ b/drivers/gpu/host1x/drm/Kconfig
+@@ -1,6 +1,7 @@
+ config DRM_TEGRA
+ 	bool "NVIDIA Tegra DRM"
+ 	depends on DRM
++	depends on ARCH_TEGRA
+ 	select DRM_KMS_HELPER
+ 	select FB_SYS_FILLRECT
+ 	select FB_SYS_COPYAREA
+-- 
+1.8.1.2
+
