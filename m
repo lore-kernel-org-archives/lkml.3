@@ -1,85 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757598Ab3EBLWi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 07:22:38 -0400
-Received: from drsnuggles.stderr.nl ([94.142.244.14]:60941 "EHLO
-	drsnuggles.stderr.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756886Ab3EBLWg (ORCPT
+	id S1757552Ab3EBLZy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 07:25:54 -0400
+Received: from nasmtp01.atmel.com ([192.199.1.245]:52473 "EHLO
+	DVREDG01.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752463Ab3EBLZx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 07:22:36 -0400
-Date: Thu, 2 May 2013 13:22:29 +0200
-From: Matthijs Kooijman <matthijs@stdin.nl>
-To: Laurent Navet <laurent.navet@gmail.com>
-Cc: paulz@synopsys.com, gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: dwc2: use devm_ioremap_resource()
-Message-ID: <20130502112228.GI13691@login.drsnuggles.stderr.nl>
-Mail-Followup-To: Laurent Navet <laurent.navet@gmail.com>,
-	paulz@synopsys.com, gregkh@linuxfoundation.org,
-	linux-usb@vger.kernel.org, devel@driverdev.osuosl.org,
-	linux-kernel@vger.kernel.org
-References: <1367493798-32354-1-git-send-email-laurent.navet@gmail.com>
+	Thu, 2 May 2013 07:25:53 -0400
+From: Wenyou Yang <wenyou.yang@atmel.com>
+To: <linux-arm-kernel@lists.infradead.org>
+CC: <broonie@kernel.org>, <grant.likely@linaro.org>, <nicolas.ferre@atmel.com>,
+        <richard.genoud@gmail.com>, <wenyou.yang@atmel.com>,
+        <spi-devel-general@lists.sourceforge.net>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH] spi/spi-atmel: BUG: fix doesn' support 16 bits transfers using PIO
+Date: Thu, 2 May 2013 19:25:11 +0800
+Message-ID: <1367493911-3182-1-git-send-email-wenyou.yang@atmel.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1367493801-3037-1-git-send-email-wenyou.yang@atmel.com>
+References: <1367493801-3037-1-git-send-email-wenyou.yang@atmel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1367493798-32354-1-git-send-email-laurent.navet@gmail.com>
-X-PGP-Fingerprint: 7F6A 9F44 2820 18E2 18DE  24AA CF49 D0E6 8A2F AFBC
-X-PGP-Key: http://www.stderr.nl/static/files/gpg_pubkey.asc
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Spam-Score: -2.2 (--)
-X-Spam-Report: Spamchecked on "mail.drsnuggles.stderr.nl"
-	pts  rule name              description
-	---- ---------------------- -------------------------------------------
-	-2.6 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
-	0.4 AWL                    AWL: From: address is in the auto white-list
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Laurent,
+From: Richard Genoud <richard.genoud@gmail.com>
 
-On Thu, May 02, 2013 at 01:23:17PM +0200, Laurent Navet wrote:
-> Replace a call to deprecated devm_request_and_ioremap by devm_ioremap_resource.
-> 
-> Found with coccicheck and this semantic patch:
->  scripts/coccinelle/api/devm_request_and_ioremap.cocci.
-> 
-> Signed-off-by: Laurent Navet <laurent.navet@gmail.com>
-> ---
->  drivers/staging/dwc2/pci.c |    6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
-> 
-Patch looks good, I had a bit-for-bit identical patch in my queue here
-as well :-)
+Fix using PIO transfer mode only support 8 bits transfer, doesn't support 16 bits.
 
-Reviewed-by: Matthijs Kooijman <matthijs@stdin.nl>
+Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
+Cc: spi-devel-general@lists.sourceforge.net
+Cc: linux-kernel@vger.kernel.org
+[wenyou.yang@atmel.com: submit the patch]
+Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
+---
+ drivers/spi/spi-atmel.c |   47 ++++++++++++++++++++++++++++++++++++++---------
+ 1 file changed, 38 insertions(+), 9 deletions(-)
 
-Gr.
+diff --git a/drivers/spi/spi-atmel.c b/drivers/spi/spi-atmel.c
+index 787bd2c..d8cb7da 100644
+--- a/drivers/spi/spi-atmel.c
++++ b/drivers/spi/spi-atmel.c
+@@ -526,13 +526,17 @@ static void atmel_spi_next_xfer_pio(struct spi_master *master,
+ 	}
+ 
+ 	if (xfer->tx_buf)
+-		spi_writel(as, TDR, *(u8 *)(xfer->tx_buf));
++		if (xfer->bits_per_word > 8)
++			spi_writel(as, TDR, *(u16 *)(xfer->tx_buf));
++		else
++			spi_writel(as, TDR, *(u8 *)(xfer->tx_buf));
+ 	else
+ 		spi_writel(as, TDR, 0);
+ 
+ 	dev_dbg(master->dev.parent,
+-		"  start pio xfer %p: len %u tx %p rx %p\n",
+-		xfer, xfer->len, xfer->tx_buf, xfer->rx_buf);
++		"  start pio xfer %p: len %u tx %p rx %p bitpw %d\n",
++		xfer, xfer->len, xfer->tx_buf, xfer->rx_buf,
++		xfer->bits_per_word);
+ 
+ 	/* Enable relevant interrupts */
+ 	spi_writel(as, IER, SPI_BIT(RDRF) | SPI_BIT(OVRES));
+@@ -950,21 +954,39 @@ atmel_spi_pump_pio_data(struct atmel_spi *as, struct spi_transfer *xfer)
+ {
+ 	u8		*txp;
+ 	u8		*rxp;
++	u16		*txp16;
++	u16		*rxp16;
+ 	unsigned long	xfer_pos = xfer->len - as->current_remaining_bytes;
+ 
+ 	if (xfer->rx_buf) {
+-		rxp = ((u8 *)xfer->rx_buf) + xfer_pos;
+-		*rxp = spi_readl(as, RDR);
++		if (xfer->bits_per_word > 8) {
++			rxp16 = (u16 *)(((u8 *)xfer->rx_buf) + xfer_pos);
++			*rxp16 = spi_readl(as, RDR);
++		} else {
++			rxp = ((u8 *)xfer->rx_buf) + xfer_pos;
++			*rxp = spi_readl(as, RDR);
++		}
+ 	} else {
+ 		spi_readl(as, RDR);
+ 	}
+-
+-	as->current_remaining_bytes--;
++	if (xfer->bits_per_word > 8) {
++		as->current_remaining_bytes -= 2;
++		if (as->current_remaining_bytes < 0)
++			as->current_remaining_bytes = 0;
++	} else {
++		as->current_remaining_bytes--;
++	}
+ 
+ 	if (as->current_remaining_bytes) {
+ 		if (xfer->tx_buf) {
+-			txp = ((u8 *)xfer->tx_buf) + xfer_pos + 1;
+-			spi_writel(as, TDR, *txp);
++			if (xfer->bits_per_word > 8) {
++				txp16 = (u16 *)(((u8 *)xfer->tx_buf)
++							+ xfer_pos + 2);
++				spi_writel(as, TDR, *txp16);
++			} else {
++				txp = ((u8 *)xfer->tx_buf) + xfer_pos + 1;
++				spi_writel(as, TDR, *txp);
++			}
+ 		} else {
+ 			spi_writel(as, TDR, 0);
+ 		}
+@@ -1378,6 +1400,13 @@ static int atmel_spi_transfer(struct spi_device *spi, struct spi_message *msg)
+ 			}
+ 		}
+ 
++		if (xfer->bits_per_word > 8) {
++			if (xfer->len % 2) {
++				dev_dbg(&spi->dev, "buffer len should be 16 bits aligned\n");
++				return -EINVAL;
++			}
++		}
++
+ 		/* FIXME implement these protocol options!! */
+ 		if (xfer->speed_hz) {
+ 			dev_dbg(&spi->dev, "no protocol options yet\n");
+-- 
+1.7.9.5
 
-Matthijs
-
-> diff --git a/drivers/staging/dwc2/pci.c b/drivers/staging/dwc2/pci.c
-> index 69c65eb..407e021 100644
-> --- a/drivers/staging/dwc2/pci.c
-> +++ b/drivers/staging/dwc2/pci.c
-> @@ -134,9 +134,9 @@ static int dwc2_driver_probe(struct pci_dev *dev,
->  	pci_set_power_state(dev, PCI_D0);
->  
->  	hsotg->dev = &dev->dev;
-> -	hsotg->regs = devm_request_and_ioremap(&dev->dev, &dev->resource[0]);
-> -	if (!hsotg->regs)
-> -		return -ENOMEM;
-> +	hsotg->regs = devm_ioremap_resource(&dev->dev, &dev->resource[0]);
-> +	if (IS_ERR(hsotg->regs))
-> +		return PTR_ERR(hsotg->regs);
->  
->  	dev_dbg(&dev->dev, "mapped PA %08lx to VA %p\n",
->  		(unsigned long)pci_resource_start(dev, 0), hsotg->regs);
-> -- 
-> 1.7.10.4
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
