@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758380Ab3EBKuK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 06:50:10 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:64103 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758305Ab3EBKuH (ORCPT
+	id S1758711Ab3EBKvY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 06:51:24 -0400
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:59336 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758408Ab3EBKuM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 06:50:07 -0400
+	Thu, 2 May 2013 06:50:12 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: arnd@arndb.de, linus.walleij@stericsson.com,
@@ -15,9 +15,9 @@ Cc: arnd@arndb.de, linus.walleij@stericsson.com,
         "David S. Miller" <davem@davemloft.net>,
         Andreas Westin <andreas.westin@stericsson.com>,
         linux-crypto@vger.kernel.org
-Subject: [PATCH 2/8] crypto: ux500/hash - Set DMA configuration though dma_slave_config()
-Date: Thu,  2 May 2013 11:49:44 +0100
-Message-Id: <1367491790-9727-3-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 5/8] crypto: ux500/cryp - Set DMA configuration though dma_slave_config()
+Date: Thu,  2 May 2013 11:49:47 +0100
+Message-Id: <1367491790-9727-6-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1367491790-9727-1-git-send-email-lee.jones@linaro.org>
 References: <1367491790-9727-1-git-send-email-lee.jones@linaro.org>
@@ -35,77 +35,87 @@ Cc: David S. Miller <davem@davemloft.net>
 Cc: Andreas Westin <andreas.westin@stericsson.com>
 Cc: linux-crypto@vger.kernel.org
 Acked-by: Arnd Bergmann <arnd@arndb.de>
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/crypto/ux500/hash/hash_alg.h  |    5 ++++-
- drivers/crypto/ux500/hash/hash_core.c |   10 ++++++++++
- 2 files changed, 14 insertions(+), 1 deletion(-)
+ drivers/crypto/ux500/cryp/cryp.h      |    7 ++++++-
+ drivers/crypto/ux500/cryp/cryp_core.c |   17 +++++++++++++++++
+ 2 files changed, 23 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/crypto/ux500/hash/hash_alg.h b/drivers/crypto/ux500/hash/hash_alg.h
-index cd9351c..be6eb54 100644
---- a/drivers/crypto/ux500/hash/hash_alg.h
-+++ b/drivers/crypto/ux500/hash/hash_alg.h
-@@ -11,6 +11,7 @@
- #include <linux/bitops.h>
+diff --git a/drivers/crypto/ux500/cryp/cryp.h b/drivers/crypto/ux500/cryp/cryp.h
+index 14cfd05..d1d6606 100644
+--- a/drivers/crypto/ux500/cryp/cryp.h
++++ b/drivers/crypto/ux500/cryp/cryp.h
+@@ -114,6 +114,9 @@ enum cryp_status_id {
+ };
  
- #define HASH_BLOCK_SIZE			64
-+#define HASH_DMA_FIFO			4
- #define HASH_DMA_ALIGN_SIZE		4
- #define HASH_DMA_PERFORMANCE_MIN_SIZE	1024
- #define HASH_BYTES_PER_WORD		4
-@@ -347,7 +348,8 @@ struct hash_req_ctx {
+ /* Cryp DMA interface */
++#define CRYP_DMA_TX_FIFO	0x08
++#define CRYP_DMA_RX_FIFO	0x10
++
+ enum cryp_dma_req_type {
+ 	CRYP_DMA_DISABLE_BOTH,
+ 	CRYP_DMA_ENABLE_IN_DATA,
+@@ -217,7 +220,8 @@ struct cryp_dma {
  
  /**
-  * struct hash_device_data - structure for a hash device.
-- * @base:		Pointer to the hardware base address.
-+ * @base:		Pointer to virtual base address of the hash device.
-+ * @phybase:		Pointer to physical memory location of the hash device.
-  * @list_node:		For inclusion in klist.
-  * @dev:		Pointer to the device dev structure.
-  * @ctx_lock:		Spinlock for current_ctx.
-@@ -361,6 +363,7 @@ struct hash_req_ctx {
+  * struct cryp_device_data - structure for a cryp device.
+- * @base: Pointer to the hardware base address.
++ * @base: Pointer to virtual base address of the cryp device.
++ * @phybase: Pointer to physical memory location of the cryp device.
+  * @dev: Pointer to the devices dev structure.
+  * @clk: Pointer to the device's clock control.
+  * @pwr_regulator: Pointer to the device's power control.
+@@ -232,6 +236,7 @@ struct cryp_dma {
   */
- struct hash_device_data {
- 	struct hash_register __iomem	*base;
-+	phys_addr_t             phybase;
- 	struct klist_node	list_node;
- 	struct device		*dev;
- 	struct spinlock		ctx_lock;
-diff --git a/drivers/crypto/ux500/hash/hash_core.c b/drivers/crypto/ux500/hash/hash_core.c
-index 1e8b2f3..5d8a7f3 100644
---- a/drivers/crypto/ux500/hash/hash_core.c
-+++ b/drivers/crypto/ux500/hash/hash_core.c
-@@ -123,6 +123,13 @@ static void hash_dma_setup_channel(struct hash_device_data *device_data,
- 				struct device *dev)
+ struct cryp_device_data {
+ 	struct cryp_register __iomem *base;
++	phys_addr_t phybase;
+ 	struct device *dev;
+ 	struct clk *clk;
+ 	struct regulator *pwr_regulator;
+diff --git a/drivers/crypto/ux500/cryp/cryp_core.c b/drivers/crypto/ux500/cryp/cryp_core.c
+index bf78d60..4b90493 100644
+--- a/drivers/crypto/ux500/cryp/cryp_core.c
++++ b/drivers/crypto/ux500/cryp/cryp_core.c
+@@ -476,6 +476,19 @@ static int cryp_get_device_data(struct cryp_ctx *ctx,
+ static void cryp_dma_setup_channel(struct cryp_device_data *device_data,
+ 				   struct device *dev)
  {
- 	struct hash_platform_data *platform_data = dev->platform_data;
-+	struct dma_slave_config conf = {
++	struct dma_slave_config mem2cryp = {
 +		.direction = DMA_MEM_TO_DEV,
-+		.dst_addr = device_data->phybase + HASH_DMA_FIFO,
++		.dst_addr = device_data->phybase + CRYP_DMA_TX_FIFO,
 +		.dst_addr_width = DMA_SLAVE_BUSWIDTH_2_BYTES,
-+		.dst_maxburst = 16,
++		.dst_maxburst = 4,
++        };
++	struct dma_slave_config cryp2mem = {
++		.direction = DMA_DEV_TO_MEM,
++		.src_addr = device_data->phybase + CRYP_DMA_RX_FIFO,
++		.src_addr_width = DMA_SLAVE_BUSWIDTH_2_BYTES,
++		.src_maxburst = 4,
 +        };
 +
  	dma_cap_zero(device_data->dma.mask);
  	dma_cap_set(DMA_SLAVE, device_data->dma.mask);
  
-@@ -132,6 +139,8 @@ static void hash_dma_setup_channel(struct hash_device_data *device_data,
- 				platform_data->dma_filter,
- 				device_data->dma.cfg_mem2hash);
+@@ -491,6 +504,9 @@ static void cryp_dma_setup_channel(struct cryp_device_data *device_data,
+ 				    stedma40_filter,
+ 				    device_data->dma.cfg_cryp2mem);
  
-+	dmaengine_slave_config(device_data->dma.chan_mem2hash, &conf);
++	dmaengine_slave_config(device_data->dma.chan_mem2cryp, &mem2cryp);
++	dmaengine_slave_config(device_data->dma.chan_cryp2mem, &cryp2mem);
 +
- 	init_completion(&device_data->dma.complete);
+ 	init_completion(&device_data->dma.cryp_dma_complete);
  }
  
-@@ -1700,6 +1709,7 @@ static int ux500_hash_probe(struct platform_device *pdev)
+@@ -1432,6 +1448,7 @@ static int ux500_cryp_probe(struct platform_device *pdev)
  		goto out_kfree;
  	}
  
 +	device_data->phybase = res->start;
  	device_data->base = ioremap(res->start, resource_size(res));
  	if (!device_data->base) {
- 		dev_err(dev, "[%s] ioremap() failed!",
+ 		dev_err(dev, "[%s]: ioremap failed!", __func__);
 -- 
 1.7.10.4
 
