@@ -1,108 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759548Ab3EBOvA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 10:51:00 -0400
-Received: from smtprelay01.ispgateway.de ([80.67.31.35]:56426 "EHLO
-	smtprelay01.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751611Ab3EBOu7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 10:50:59 -0400
-X-Greylist: delayed 327 seconds by postgrey-1.27 at vger.kernel.org; Thu, 02 May 2013 10:50:58 EDT
-From: dirk.eibach@gdsys.cc
-To: linux-kernel@vger.kernel.org
-Cc: Dirk Eibach <dirk.eibach@gdsys.cc>, Kumar Gala <galak@kernel.crashing.org>,
-        Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org
-Subject: [PATCH] powerpc: Make Book E watchdog reset type configurable
-Date: Thu,  2 May 2013 16:45:13 +0200
-Message-Id: <1367505913-18970-1-git-send-email-dirk.eibach@gdsys.cc>
-X-Mailer: git-send-email 1.7.2.5
-X-Df-Sender: ZGlyay5laWJhY2hAZ2RzeXMuY2M=
+	id S1760049Ab3EBOxN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 10:53:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48581 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751611Ab3EBOxK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 10:53:10 -0400
+Message-ID: <51827DB1.7000304@redhat.com>
+Date: Thu, 02 May 2013 11:52:33 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Randy Dunlap <rdunlap@infradead.org>,
+        "Yann E. MORIN" <yann.morin.1998@free.fr>,
+        =?UTF-8?B?RXplcXVpZWwgR2FyY8OtYQ==?= <elezegarcia@gmail.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        linux-media <linux-media@vger.kernel.org>,
+        linux-kbuild@vger.kernel.org
+Subject: Re: linux-next: Tree for May 1 (media/usb/stk1160)
+References: <20130501183734.7ad1efca2d06e75432edabbd@canb.auug.org.au> <518157EB.3010700@infradead.org>
+In-Reply-To: <518157EB.3010700@infradead.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dirk Eibach <dirk.eibach@gdsys.cc>
+Em 01-05-2013 14:59, Randy Dunlap escreveu:
+> On 05/01/13 01:37, Stephen Rothwell wrote:
+>> Hi all,
+>>
+>> Please do not add any v3.11 destined work to your linux-next included
+>> branches until after v3.10-rc1 is released.
+>>
+>> Changes since 20130430:
+>>
+>
+>
+> When CONFIG_SND=m and CONFIG_SND_AC97_CODEC=m and
+> CONFIG_VIDEO_STK1160=y
+> CONFIG_VIDEO_STK1160_AC97=y
+>
+> drivers/built-in.o: In function `stk1160_ac97_register':
+> (.text+0x122706): undefined reference to `snd_card_create'
+> drivers/built-in.o: In function `stk1160_ac97_register':
+> (.text+0x1227b2): undefined reference to `snd_ac97_bus'
+> drivers/built-in.o: In function `stk1160_ac97_register':
+> (.text+0x1227cd): undefined reference to `snd_card_free'
+> drivers/built-in.o: In function `stk1160_ac97_register':
+> (.text+0x12281b): undefined reference to `snd_ac97_mixer'
+> drivers/built-in.o: In function `stk1160_ac97_register':
+> (.text+0x122832): undefined reference to `snd_card_register'
+> drivers/built-in.o: In function `stk1160_ac97_unregister':
+> (.text+0x12285e): undefined reference to `snd_card_free'
+>
+>
+> This kconfig fragment:
+> config VIDEO_STK1160_AC97
+> 	bool "STK1160 AC97 codec support"
+> 	depends on VIDEO_STK1160 && SND
+> 	select SND_AC97_CODEC
+>
+> is unreliable (doesn't do what some people expect) when SND=m and SND_AC97_CODEC=m,
+> since VIDEO_STK1160_AC97 is a bool.
 
-Signed-off-by: Dirk Eibach <dirk.eibach@gdsys.cc>
-Cc: Kumar Gala <galak@kernel.crashing.org>
-Cc: Wim Van Sebroeck <wim@iguana.be>
-Cc: linux-watchdog@vger.kernel.org
----
- drivers/watchdog/Kconfig     |   32 ++++++++++++++++++++++++++++++++
- drivers/watchdog/booke_wdt.c |   10 +++++++++-
- 2 files changed, 41 insertions(+), 1 deletions(-)
+Using select is always tricky.
 
-diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
-index e89fc31..6048593 100644
---- a/drivers/watchdog/Kconfig
-+++ b/drivers/watchdog/Kconfig
-@@ -1172,6 +1172,38 @@ config BOOKE_WDT_DEFAULT_TIMEOUT
- 
- 	  The value can be overridden by the wdt_period command-line parameter.
- 
-+choice
-+	prompt "PowerPC Book-E Watchdog reset type"
-+	depends on BOOKE_WDT
-+	default BOOKE_WDT_RESET_CHIP
-+	help
-+	  Specify what kind of reset will be executed on watchdog timeout.
+I can see a few possible fixes for it:
+
+1) split the alsa part into a separate module. IMHO, this is cleaner,
+but requires a little more work.
+
+2) Use the Kconfig syntax:
+
+	depends on SND || (SND=n)
+
+on a tristate symbol. That behaves like:
+
+	if SND is 'n', it won't depend on SND;
+	if SND is 'm', the symbol will be 'm'
+	if SND is 'y', the symbol will be 'y'.
+
+However, as as VIDEO_STK1160_AC97 is boolean, this will require
+an additional hidden Kconfig. Something like:
+
+config VIDEO_STK1160_COMMON
+	tristate "STK1160 USB video capture support"
+	depends on VIDEO_DEV && I2C
+
+config VIDEO_STK1160_AC97
+	bool "STK1160 AC97 codec support"
+	depends on VIDEO_STK1160_COMMON && SND
+
+config VIDEO_STK1160
+	tristate
+	depends on ((SND || (SND=n) || !VIDEO_STK1160_AC97) && VIDEO_STK1160_COMMON
+	default y
+	select SND_AC97_CODEC if SND
+	select VIDEOBUF2_VMALLOC
+	select VIDEO_SAA711X
+	select SND_AC97_CODEC
+
+We do already something similar to the above for the mutual dependency
+of most media drivers for I2C and V4L2 and/or DVB core.
+
+There's just one small drawback with the above: if SND='m', even if
+the user selects VIDEO_STK1160_COMMON='y', VIDEO_STK1160 will be 'm'.
+
+A quick test here with make allyesconfig and then changing SND to m
+seemed to produce the right value for CONFIG_VIDEO_STK1160:
+
+Selecting STK1160_AC97:
+
+$ grep -e STK1160 -e SND= .config
+CONFIG_VIDEO_STK1160_COMMON=y
+CONFIG_VIDEO_STK1160_AC97=y
+CONFIG_VIDEO_STK1160=m
+CONFIG_SND=m
+
+Unselecting STK1160_AC97:
+
+$ grep -e STK1160 -e SND= .config
+CONFIG_VIDEO_STK1160_COMMON=y
+# CONFIG_VIDEO_STK1160_AC97 is not set
+CONFIG_VIDEO_STK1160=y
+CONFIG_SND=m
+
+With a little more work, it could be possible to find a way to
+avoid the drawback of saying to the user that the module will be
+builtin, but compiling it as a module.
+
+Regards,
+Mauro.
+
+-
+
+[media] stk1160: Make stk1160 module if SND is m and audio support is selected
+
+As reported by Randy:
+
+When CONFIG_SND=m and CONFIG_SND_AC97_CODEC=m and
+CONFIG_VIDEO_STK1160=y
+CONFIG_VIDEO_STK1160_AC97=y
+
+drivers/built-in.o: In function `stk1160_ac97_register':
+(.text+0x122706): undefined reference to `snd_card_create'
+drivers/built-in.o: In function `stk1160_ac97_register':
+(.text+0x1227b2): undefined reference to `snd_ac97_bus'
+drivers/built-in.o: In function `stk1160_ac97_register':
+(.text+0x1227cd): undefined reference to `snd_card_free'
+drivers/built-in.o: In function `stk1160_ac97_register':
+(.text+0x12281b): undefined reference to `snd_ac97_mixer'
+drivers/built-in.o: In function `stk1160_ac97_register':
+(.text+0x122832): undefined reference to `snd_card_register'
+drivers/built-in.o: In function `stk1160_ac97_unregister':
+(.text+0x12285e): undefined reference to `snd_card_free'
+
+Reported-by: Randy Dunlap <rdunlap@infradead.org>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+
+diff --git a/drivers/media/usb/stk1160/Kconfig b/drivers/media/usb/stk1160/Kconfig
+index 1c3a1ec..2bf6392 100644
+--- a/drivers/media/usb/stk1160/Kconfig
++++ b/drivers/media/usb/stk1160/Kconfig
+@@ -1,8 +1,6 @@
+-config VIDEO_STK1160
++config VIDEO_STK1160_COMMON
+  	tristate "STK1160 USB video capture support"
+  	depends on VIDEO_DEV && I2C
+-	select VIDEOBUF2_VMALLOC
+-	select VIDEO_SAA711X
+  
+  	---help---
+  	  This is a video4linux driver for STK1160 based video capture devices.
+@@ -12,9 +10,14 @@ config VIDEO_STK1160
+  
+  config VIDEO_STK1160_AC97
+  	bool "STK1160 AC97 codec support"
+-	depends on VIDEO_STK1160 && SND
+-	select SND_AC97_CODEC
+-
++	depends on VIDEO_STK1160_COMMON && SND
+  	---help---
+  	  Enables AC97 codec support for stk1160 driver.
+-.
 +
-+	config BOOKE_WDT_RESET_CORE
-+		bool "Core reset"
-+	help
-+	  Watchdog timeout will trigger a core reset.
-+	  The exact function of any of these settings is implementation-de-
-+	  pendent.
-+	  See the User's Manual for the implementation for further details.
-+
-+	config BOOKE_WDT_RESET_CHIP
-+		bool "Chip reset"
-+	help
-+	  Watchdog timeout will trigger a chip reset.
-+	  The exact function of any of these settings is implementation-de-
-+	  pendent.
-+	  See the User's Manual for the implementation for further details.
-+
-+	config BOOKE_WDT_RESET_SYSTEM
-+		bool "System reset"
-+	help
-+	  Watchdog timeout will trigger a system reset.
-+	  The exact function of any of these settings is implementation-de-
-+	  pendent.
-+	  See the User's Manual for the implementation for further details.
-+endchoice
-+
- # PPC64 Architecture
- 
- config WATCHDOG_RTAS
-diff --git a/drivers/watchdog/booke_wdt.c b/drivers/watchdog/booke_wdt.c
-index a8dbceb3..7791d19 100644
---- a/drivers/watchdog/booke_wdt.c
-+++ b/drivers/watchdog/booke_wdt.c
-@@ -22,6 +22,14 @@
- #include <asm/time.h>
- #include <asm/div64.h>
- 
-+#if defined(CONFIG_BOOKE_WDT_RESET_CORE)
-+#define WRC		WRC_CORE
-+#elif defined(CONFIG_BOOKE_WDT_RESET_CHIP)
-+#define WRC		WRC_CHIP
-+#elif defined(CONFIG_BOOKE_WDT_RESET_SYSTEM)
-+#define WRC		WRC_SYSTEM
-+#endif
-+
- /* If the kernel parameter wdt=1, the watchdog will be enabled at boot.
-  * Also, the wdt_period sets the watchdog timer period timeout.
-  * For E500 cpus the wdt_period sets which bit changing from 0->1 will
-@@ -136,7 +144,7 @@ static void __booke_wdt_enable(void *data)
- 	__booke_wdt_ping(NULL);
- 	val = mfspr(SPRN_TCR);
- 	val &= ~WDTP_MASK;
--	val |= (TCR_WIE|TCR_WRC(WRC_CHIP)|WDTP(booke_wdt_period));
-+	val |= (TCR_WIE|TCR_WRC(WRC)|WDTP(booke_wdt_period));
- 
- 	mtspr(SPRN_TCR, val);
- }
--- 
-1.7.2.5
++config VIDEO_STK1160
++	tristate
++	depends on (!VIDEO_STK1160_AC97 || (SND='n') || SND) && VIDEO_STK1160_COMMON
++	default y
++	select VIDEOBUF2_VMALLOC
++	select VIDEO_SAA711X
++	select SND_AC97_CODEC if SND
+
 
