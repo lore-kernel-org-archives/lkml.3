@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758711Ab3EBKvY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 06:51:24 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:59336 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758408Ab3EBKuM (ORCPT
+	id S1758776Ab3EBKvt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 06:51:49 -0400
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:55488 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758031Ab3EBKuJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 06:50:12 -0400
+	Thu, 2 May 2013 06:50:09 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        srinidhi.kasagar@stericsson.com, Lee Jones <lee.jones@linaro.org>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andreas Westin <andreas.westin@stericsson.com>,
-        linux-crypto@vger.kernel.org
-Subject: [PATCH 5/8] crypto: ux500/cryp - Set DMA configuration though dma_slave_config()
-Date: Thu,  2 May 2013 11:49:47 +0100
-Message-Id: <1367491790-9727-6-git-send-email-lee.jones@linaro.org>
+        srinidhi.kasagar@stericsson.com, Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 3/8] ARM: ux500: Stop passing Hash DMA channel config information though pdata
+Date: Thu,  2 May 2013 11:49:45 +0100
+Message-Id: <1367491790-9727-4-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1367491790-9727-1-git-send-email-lee.jones@linaro.org>
 References: <1367491790-9727-1-git-send-email-lee.jones@linaro.org>
@@ -25,97 +21,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The DMA controller currently takes configuration information from
-information passed though dma_channel_request(), but it shouldn't.
-Using the API, the DMA channel should only be configured during
-a dma_slave_config() call.
+DMA channel configuration information should be setup in the driver.
+The Ux500 Hash driver now does this, so there's no need to send it
+though here too.
 
-Cc: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: Andreas Westin <andreas.westin@stericsson.com>
-Cc: linux-crypto@vger.kernel.org
 Acked-by: Arnd Bergmann <arnd@arndb.de>
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/crypto/ux500/cryp/cryp.h      |    7 ++++++-
- drivers/crypto/ux500/cryp/cryp_core.c |   17 +++++++++++++++++
- 2 files changed, 23 insertions(+), 1 deletion(-)
+ arch/arm/mach-ux500/board-mop500.c |    4 ----
+ 1 file changed, 4 deletions(-)
 
-diff --git a/drivers/crypto/ux500/cryp/cryp.h b/drivers/crypto/ux500/cryp/cryp.h
-index 14cfd05..d1d6606 100644
---- a/drivers/crypto/ux500/cryp/cryp.h
-+++ b/drivers/crypto/ux500/cryp/cryp.h
-@@ -114,6 +114,9 @@ enum cryp_status_id {
+diff --git a/arch/arm/mach-ux500/board-mop500.c b/arch/arm/mach-ux500/board-mop500.c
+index 883dc66..cb7ae23 100644
+--- a/arch/arm/mach-ux500/board-mop500.c
++++ b/arch/arm/mach-ux500/board-mop500.c
+@@ -473,11 +473,7 @@ static struct cryp_platform_data u8500_cryp1_platform_data = {
+ static struct stedma40_chan_cfg u8500_hash_dma_cfg_tx = {
+ 		.dir = STEDMA40_MEM_TO_PERIPH,
+ 		.dev_type = DB8500_DMA_DEV50_HAC1_TX,
+-		.src_info.data_width = STEDMA40_WORD_WIDTH,
+-		.dst_info.data_width = STEDMA40_WORD_WIDTH,
+ 		.mode = STEDMA40_MODE_LOGICAL,
+-		.src_info.psize = STEDMA40_PSIZE_LOG_16,
+-		.dst_info.psize = STEDMA40_PSIZE_LOG_16,
  };
  
- /* Cryp DMA interface */
-+#define CRYP_DMA_TX_FIFO	0x08
-+#define CRYP_DMA_RX_FIFO	0x10
-+
- enum cryp_dma_req_type {
- 	CRYP_DMA_DISABLE_BOTH,
- 	CRYP_DMA_ENABLE_IN_DATA,
-@@ -217,7 +220,8 @@ struct cryp_dma {
- 
- /**
-  * struct cryp_device_data - structure for a cryp device.
-- * @base: Pointer to the hardware base address.
-+ * @base: Pointer to virtual base address of the cryp device.
-+ * @phybase: Pointer to physical memory location of the cryp device.
-  * @dev: Pointer to the devices dev structure.
-  * @clk: Pointer to the device's clock control.
-  * @pwr_regulator: Pointer to the device's power control.
-@@ -232,6 +236,7 @@ struct cryp_dma {
-  */
- struct cryp_device_data {
- 	struct cryp_register __iomem *base;
-+	phys_addr_t phybase;
- 	struct device *dev;
- 	struct clk *clk;
- 	struct regulator *pwr_regulator;
-diff --git a/drivers/crypto/ux500/cryp/cryp_core.c b/drivers/crypto/ux500/cryp/cryp_core.c
-index bf78d60..4b90493 100644
---- a/drivers/crypto/ux500/cryp/cryp_core.c
-+++ b/drivers/crypto/ux500/cryp/cryp_core.c
-@@ -476,6 +476,19 @@ static int cryp_get_device_data(struct cryp_ctx *ctx,
- static void cryp_dma_setup_channel(struct cryp_device_data *device_data,
- 				   struct device *dev)
- {
-+	struct dma_slave_config mem2cryp = {
-+		.direction = DMA_MEM_TO_DEV,
-+		.dst_addr = device_data->phybase + CRYP_DMA_TX_FIFO,
-+		.dst_addr_width = DMA_SLAVE_BUSWIDTH_2_BYTES,
-+		.dst_maxburst = 4,
-+        };
-+	struct dma_slave_config cryp2mem = {
-+		.direction = DMA_DEV_TO_MEM,
-+		.src_addr = device_data->phybase + CRYP_DMA_RX_FIFO,
-+		.src_addr_width = DMA_SLAVE_BUSWIDTH_2_BYTES,
-+		.src_maxburst = 4,
-+        };
-+
- 	dma_cap_zero(device_data->dma.mask);
- 	dma_cap_set(DMA_SLAVE, device_data->dma.mask);
- 
-@@ -491,6 +504,9 @@ static void cryp_dma_setup_channel(struct cryp_device_data *device_data,
- 				    stedma40_filter,
- 				    device_data->dma.cfg_cryp2mem);
- 
-+	dmaengine_slave_config(device_data->dma.chan_mem2cryp, &mem2cryp);
-+	dmaengine_slave_config(device_data->dma.chan_cryp2mem, &cryp2mem);
-+
- 	init_completion(&device_data->dma.cryp_dma_complete);
- }
- 
-@@ -1432,6 +1448,7 @@ static int ux500_cryp_probe(struct platform_device *pdev)
- 		goto out_kfree;
- 	}
- 
-+	device_data->phybase = res->start;
- 	device_data->base = ioremap(res->start, resource_size(res));
- 	if (!device_data->base) {
- 		dev_err(dev, "[%s]: ioremap failed!", __func__);
+ static struct hash_platform_data u8500_hash1_platform_data = {
 -- 
 1.7.10.4
 
