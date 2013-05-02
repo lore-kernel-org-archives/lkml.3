@@ -1,51 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760703Ab3EBQpL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 12:45:11 -0400
-Received: from mail-vb0-f43.google.com ([209.85.212.43]:52640 "EHLO
-	mail-vb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760657Ab3EBQpJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 12:45:09 -0400
+	id S1760697Ab3EBQzO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 12:55:14 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:44239 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760578Ab3EBQzM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 12:55:12 -0400
+Message-ID: <51829A45.7040307@ti.com>
+Date: Thu, 2 May 2013 12:54:29 -0400
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-In-Reply-To: <20130502145809.GA16236@linux-mips.org>
-References: <20522420.158691367384219315.JavaMail.weblogic@epml17>
-	<CAOiHx=mBPHmDse4EwL-+Fgmpz0=XhcgF_0nWdyvErFO4NU7E0Q@mail.gmail.com>
-	<alpine.LFD.2.02.1305021241040.3972@ionos>
-	<CAOiHx=mA-htk_2daeE9WpbEVV9YLvfLc1NYZZR=JeDdibchCnw@mail.gmail.com>
-	<alpine.LFD.2.02.1305021527010.3972@ionos>
-	<20130502145809.GA16236@linux-mips.org>
-Date: Thu, 2 May 2013 09:45:08 -0700
-X-Google-Sender-Auth: Dy7Ks3KjiA-TAD5jlGa8KOJtMrk
-Message-ID: <CA+55aFwDGyHOzu=Qh7SJOBK6QvAwAh7pMDL6LfMUE=AW_kapAw@mail.gmail.com>
-Subject: Re: [PATCH] MIPS: Enable interrupts in arch_cpu_idle()
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Jonas Gorski <jogo@openwrt.org>,
-        eunb.song@samsung.com,
-        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Eduardo Valentin <eduardo.valentin@ti.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Zhang Rui <rui.zhang@intel.com>,
+        Amit Daniel kachhap <amit.daniel@samsung.com>
+Subject: Re: [PATCH v2] thermal: cpu_cooling: fix stub function
+References: <1367507786-505303-1-git-send-email-arnd@arndb.de> <1367507786-505303-13-git-send-email-arnd@arndb.de> <51828A45.60909@ti.com> <201305021829.37343.arnd@arndb.de>
+In-Reply-To: <201305021829.37343.arnd@arndb.de>
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature";
+	boundary="----enig2APRMFCAIGEHLWUVELWGI"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 2, 2013 at 7:58 AM, Ralf Baechle <ralf@linux-mips.org> wrote:
->
-> For a while we just used to live with the race condition resulting from
-> not disabling interrupts in the idle loop.  Then c65a5480 fixed this by
-> checking if we're returning to the WAIT instruction in the idle loop
-> when returning from an interrupt and iff so, rolling back the
-> program counter to point to the if (test_thread_flag(TIF_NEED_RESCHED))
-> test at the beginning of rollback_r4k_wait.
+------enig2APRMFCAIGEHLWUVELWGI
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: quoted-printable
 
-Umm. That sounds buggy. What if there was an interrupt *between* the
-two places, not right at the wait instruction?
+Rui, Arnd,
 
-It seriously sounds like MIPS should do this by enabling interrupts in
-the *assembly* code immediately preceding the wait instruction. IOW,
-you'd effectively have the same kind of "sti; halt" kind of sequence
-that x86 has. Not "enable interrupts" + C compiler puts random
-instructions here + "wait".
+On 02-05-2013 12:29, Arnd Bergmann wrote:
+> The function stub for cpufreq_cooling_get_level introduced
+> in 57df81069 "Thermal: exynos: fix cooling state translation"
+> is not syntactically correct C and needs to be fixed to avoid
+> this error:
+>=20
+> In file included from drivers/thermal/db8500_thermal.c:20:0:
+>  include/linux/cpu_cooling.h: In function 'cpufreq_cooling_get_level':
+> include/linux/cpu_cooling.h:57:1:
+>  error: parameter name omitted  unsigned long cpufreq_cooling_get_level=
+(unsigned int, unsigned int)  ^
+>  include/linux/cpu_cooling.h:57:1: error: parameter name omitted
+>=20
+> Cc: Eduardo Valentin <eduardo.valentin@ti.com>
+> Cc: Zhang Rui <rui.zhang@intel.com>
+> Cc: Amit Daniel kachhap <amit.daniel@samsung.com>
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 
-                       Linus
+Acked-by: Eduardo Valentin <eduardo.valentin@ti.com>
+
+>=20
+> diff --git a/include/linux/cpu_cooling.h b/include/linux/cpu_cooling.h
+> index 282e270..a5d52ee 100644
+> --- a/include/linux/cpu_cooling.h
+> +++ b/include/linux/cpu_cooling.h
+> @@ -41,7 +41,7 @@ cpufreq_cooling_register(const struct cpumask *clip_c=
+pus);
+>   */
+>  void cpufreq_cooling_unregister(struct thermal_cooling_device *cdev);
+> =20
+> -unsigned long cpufreq_cooling_get_level(unsigned int, unsigned int);
+> +unsigned long cpufreq_cooling_get_level(unsigned int cpu, unsigned int=
+ freq);
+>  #else /* !CONFIG_CPU_THERMAL */
+>  static inline struct thermal_cooling_device *
+>  cpufreq_cooling_register(const struct cpumask *clip_cpus)
+> @@ -54,7 +54,7 @@ void cpufreq_cooling_unregister(struct thermal_coolin=
+g_device *cdev)
+>  	return;
+>  }
+>  static inline
+> -unsigned long cpufreq_cooling_get_level(unsigned int, unsigned int)
+> +unsigned long cpufreq_cooling_get_level(unsigned int cpu, unsigned int=
+ freq)
+>  {
+>  	return THERMAL_CSTATE_INVALID;
+>  }
+>=20
+>=20
+>=20
+
+>=20
+
+
+
+------enig2APRMFCAIGEHLWUVELWGI
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iF4EAREIAAYFAlGCmkUACgkQCXcVR3XQvP3JYQD/a4ueTTFuwRdfktuh6q2c9ZxG
+0YeJyUXiq0G9CpMUFbcA+wVoQDZgfdjywa8K5BJfeQCbDNxGltt7m9h/tbCf7rhz
+=9sto
+-----END PGP SIGNATURE-----
+
+------enig2APRMFCAIGEHLWUVELWGI--
