@@ -1,81 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758906Ab3EBKyZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 06:54:25 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:53052 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758470Ab3EBKyV (ORCPT
+	id S932258Ab3EBKy7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 06:54:59 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:39756 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932223Ab3EBKy6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 06:54:21 -0400
-X-IronPort-AV: E=Sophos;i="4.87,595,1363132800"; 
-   d="scan'208";a="21770145"
-Date: Thu, 2 May 2013 11:54:16 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Ian Campbell <Ian.Campbell@citrix.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "marc.zyngier@arm.com" <marc.zyngier@arm.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "will.deacon@arm.com" <will.deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [Xen-devel] [PATCH 3/3] xen/arm: account for stolen ticks
-In-Reply-To: <1367491708.21869.77.camel@zakaz.uk.xensource.com>
-Message-ID: <alpine.DEB.2.02.1305021153220.5398@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1305011939180.5398@kaball.uk.xensource.com>  <1367436460-10183-3-git-send-email-stefano.stabellini@eu.citrix.com>  <1367482862.21869.28.camel@zakaz.uk.xensource.com>  <alpine.DEB.2.02.1305021134160.5398@kaball.uk.xensource.com>
- <1367491708.21869.77.camel@zakaz.uk.xensource.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 2 May 2013 06:54:58 -0400
+Date: Thu, 2 May 2013 11:54:53 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: arnd@arndb.de, linus.walleij@stericsson.com
+Subject: Re: [PATCH 0/6] dmaengine: Refactor the DMA40 driver - continued
+Message-ID: <20130502105453.GL25256@gmail.com>
+References: <1366976295-11728-1-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1366976295-11728-1-git-send-email-lee.jones@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2 May 2013, Ian Campbell wrote:
-> On Thu, 2013-05-02 at 11:38 +0100, Stefano Stabellini wrote:
-> > On Thu, 2 May 2013, Ian Campbell wrote:
-> > > On Wed, 2013-05-01 at 20:27 +0100, Stefano Stabellini wrote:
-> > > > diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
-> > > > index d30042e..8f040a0 100644
-> > > > --- a/arch/arm/xen/enlighten.c
-> > > > +++ b/arch/arm/xen/enlighten.c
-> > > > @@ -14,6 +14,7 @@
-> > > >  #include <xen/xen-ops.h>
-> > > >  #include <asm/xen/hypervisor.h>
-> > > >  #include <asm/xen/hypercall.h>
-> > > > +#include <asm/arch_timer.h>
-> > > >  #include <asm/system_misc.h>
-> > > >  #include <linux/interrupt.h>
-> > > >  #include <linux/irqreturn.h>
-> > > > @@ -172,6 +173,8 @@ static int __init xen_secondary_init(unsigned int cpu)
-> > > >  		   later ones fail to. */
-> > > >  		per_cpu(xen_vcpu, cpu) = vcpup;
-> > > >  	}
-> > > > +
-> > > > +	xen_setup_runstate_info(cpu);
-> > > 
-> > > Is this called for the boot processor too?
-> > 
-> > Yep.
-> > 
-> > > (do you have a linux-next branch where I can easily find the baseline
-> > > for this series?)
-> > 
-> > git://git.kernel.org/pub/scm/linux/kernel/git/sstabellini/xen.git lost_ticks_1
+On Fri, 26 Apr 2013, Lee Jones wrote:
+
+> This is a continuation of the first "dmaengine: Refactor the DMA40 driver"
+> patch-set. It encompasses some recommendations given during the review of
+> it's predecessor.
 > 
-> Is that your Xen tree, I was after the Linux one...
-
-nope, that's my Linux tree disguised as a Xen tree to confuse the
-maintainers ;-)
-
-> > It's based on my 3.9-rc3-smp-6 branch currently in linux-next (that is
-> > based on 3.9-rc3).
-> > However lost_ticks_1 is not in linux-next yet.
+>  arch/arm/mach-ux500/board-mop500-audio.c    |   12 +++++-----
+>  arch/arm/mach-ux500/board-mop500-sdi.c      |   16 ++++++-------
+>  arch/arm/mach-ux500/board-mop500.c          |   22 ++++++++---------
+>  arch/arm/mach-ux500/usb.c                   |    4 ++--
+>  drivers/dma/ste_dma40.c                     |   99 +++++++++++++++++++++++++++++++++-------------------------------------------
+>  drivers/dma/ste_dma40_ll.c                  |  122 ++++++++++++++++++++++++++++++++++++++++++++++++++++++----------------------------------------
+>  include/linux/platform_data/dma-ste-dma40.h |   19 ++-------------
+>  sound/soc/ux500/ux500_pcm.c                 |   10 ++++----
+>  8 files changed, 147 insertions(+), 157 deletions(-)
 > 
-> Which branch is in Linux next? It doesn't seem to be your linux-next
-> (last commit 2011).
 
-that would be linux-next from
-git://git.kernel.org/pub/scm/linux/kernel/git/sstabellini/xen.git
+Linus, poke for this series.
+
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
