@@ -1,97 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760402Ab3EBQXK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 12:23:10 -0400
-Received: from mail-ia0-f178.google.com ([209.85.210.178]:45658 "EHLO
-	mail-ia0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758743Ab3EBQXI convert rfc822-to-8bit (ORCPT
+	id S932139Ab3EBQY1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 12:24:27 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:53835 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758873Ab3EBQY0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 12:23:08 -0400
+	Thu, 2 May 2013 12:24:26 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Lee Jones <lee.jones@linaro.org>
+Subject: Re: [PATCH, RFC 10/22] mfd: ab8500: debugfs code depends on gpadc
+Date: Thu, 2 May 2013 18:24:20 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Philippe LANGLAIS <philippe.langlais@stericsson.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+References: <1367507786-505303-1-git-send-email-arnd@arndb.de> <1367507786-505303-11-git-send-email-arnd@arndb.de> <20130502153624.GN25256@gmail.com>
+In-Reply-To: <20130502153624.GN25256@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <87zjwda9bl.fsf@nemi.mork.no>
-References: <20130502.041625.412316202038784117.davem@davemloft.net>
- <20130502083619.GA22010@macbook.localnet> <87d2t9bvj1.fsf@nemi.mork.no>
- <20130502.051727.949429506738234701.davem@davemloft.net> <1367490491.5106.137.camel@deadeye.wl.decadent.org.uk>
- <87zjwda9bl.fsf@nemi.mork.no>
-From: =?ISO-8859-2?Q?Micha=B3_Miros=B3aw?= <mirqus@gmail.com>
-Date: Thu, 2 May 2013 18:22:47 +0200
-Message-ID: <CAHXqBF+S3mSbktoDzuHkzvEQkfxa6-2R-sYpqVsZBzMDTjUifQ@mail.gmail.com>
-Subject: Re: [GIT] Networking
-To: =?ISO-8859-1?Q?Bj=F8rn_Mork?= <bjorn@mork.no>,
-        =?UTF-8?Q?Pavel_=C5=A0imerda?= <psimerda@redhat.com>
-Cc: Ben Hutchings <bhutchings@solarflare.com>,
-        David Miller <davem@davemloft.net>, kaber@trash.net,
-        torvalds@linux-foundation.org, hayeswang@realtek.com,
-        akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201305021824.20548.arnd@arndb.de>
+X-Provags-ID: V02:K0:y22UlBp3Wpgx8rqPMY6CGlw7mZ0g4sQmGeDo6nqymUz
+ qpQen9xIMdwaLScILFVAku9G83XfJ5Lfw0dgvFSmKe/7YN8PKU
+ 1C0iQMIffd3fVVAVJnNXu0ZC+NzVmZ52hG+DEl62cbGSvdnEtT
+ h6lpXTognToR3TNjcSBaZu/kN9mDRDSfI5I1fZSgYiFLHUiz8V
+ Ww3uUx2aLPzPTBakgB25c8KSQ33euZuPSIknmcyN+tHHjPpKma
+ eHe+TrzHVzGqM+kVHZ7liSDD00LnHEohRfRgXk+Bz1y6mo5mxh
+ h5l6w6roJxyMtqCLQTUGioCw1iecnN6XxAIaJyV5tDuBEx8MST
+ PyZz4q4LhzmEZfcS5HoY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/5/2 Bjørn Mork <bjorn@mork.no>:
-> Ben Hutchings <bhutchings@solarflare.com> writes:
->> On Thu, 2013-05-02 at 05:17 -0400, David Miller wrote:
->>> From: Bjørn Mork <bjorn@mork.no>
->>> Date: Thu, 02 May 2013 11:06:42 +0200
->>>
->>> > Adding the new netdev features will make it go from 1 to 2:
->>>
->>> We already had more than 31 feature bits before Patrick's
->>> changes, and I'm pretty sure this was the case when we added
->>> that ethtool API.
->>
->> It wasn't, but this should be OK.  Userland is supposed to query the
->> number of features using ETHTOOL_GSSET_INFO and then work out the number
->> of words/blocks using FEATURE_BITS_TO_BLOCKS().
->
->
-> Looking at
-> http://cgit.freedesktop.org/NetworkManager/NetworkManager/tree/src/platform/nm-linux-platform.c#n1025
-> there seems to be a couple of bugs in this area. This is certainly
-> abusing the exported API, but it does mean that NM breaks if you ever
-> move NETIF_F_VLAN_CHALLENGED (like the 802.1ad patch did):
->
-> ----
-> #define NETIF_F_VLAN_CHALLENGED (1 << 10)
->
-> static gboolean
-> link_supports_vlans (NMPlatform *platform, int ifindex)
-> {
->         auto_nl_object struct rtnl_link *rtnllink = link_get (platform, ifindex);
->         const char *name = nm_platform_link_get_name (ifindex);
->         struct {
->                 struct ethtool_gfeatures features;
->                 struct ethtool_get_features_block features_block;
->         } edata = { .features = { .cmd = ETHTOOL_GFEATURES, .size = 1 } };
->
->         /* Only ARPHRD_ETHER links can possibly support VLANs. */
->         if (!rtnllink || rtnl_link_get_arptype (rtnllink) != ARPHRD_ETHER)
->                 return FALSE;
->
->         if (!name || !ethtool_get (name, &edata))
->                 return FALSE;
->
->         return !(edata.features.features[0].active & NETIF_F_VLAN_CHALLENGED);
-> }
-> ----
->
->
-> Not that I see how this particular bug matters unless you need VLAN
-> support in NM.  But there could be similar issues around.  I guess
-> avoiding unnecessary renumbering of the NETIF_F bits can save us some
-> trouble.  Although you can certainly argue that those bits never were
-> intended to be part of the API, and that using them like this is a user
-> application bug.
+On Thursday 02 May 2013, Lee Jones wrote:
+> > @@ -580,7 +580,7 @@ config AB8500_CORE
+> >  
+> >  config AB8500_DEBUG
+> >         bool "Enable debug info via debugfs"
+> > -       depends on AB8500_CORE && DEBUG_FS
+> > +       depends on AB8500_GPADC && DEBUG_FS
+> >         default y if DEBUG_FS
+> >         help
+> >           Select this option if you want debug information using the debug
+> 
+> Did you find this with ALLCONFIG out of interest.
 
-This is certainly a bug in NM, and a fresh one: commit
-b636ea86b1c0a28b77eda311c84d3b2417cad22e from 2013-04-10 14:40:58
-(GMT). Userspace is expected to use ETHTOOL_GSTRINGS for
-ETH_SS_FEATURES and find a corresponding bit position by feature name
-("vlan-challenged" in this case).
+I used "make randconfig" with this KCONFIG_ALLCONFIG file:
 
-Cc: commit's author.
+CONFIG_MMU=y
+CONFIG_ARCH_MULTI_V7=y
+CONFIG_PREVENT_FIRMWARE_BUILD=y
+CONFIG_PROC_FS=y
+ 
+> Applied by the way.
 
-Best Regards,
-Michał Mirosław
+Thanks!
+
+	Arnd
