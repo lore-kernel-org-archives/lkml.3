@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758786Ab3EBMYh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 08:24:37 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:55040 "EHLO hydra.sisk.pl"
+	id S1758555Ab3EBMYf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 08:24:35 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:55045 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932080Ab3EBMXx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932081Ab3EBMXx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 2 May 2013 08:23:53 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Toshi Kani <toshi.kani@hp.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Toshi Kani <toshi.kani@hp.com>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>, isimatu.yasuaki@jp.fujitsu.com,
         vasilis.liaskovitis@profitbricks.com, Len Brown <lenb@kernel.org>
-Subject: [PATCH 1/4] Driver core: Add offline/online device operations
-Date: Thu, 02 May 2013 14:27:30 +0200
-Message-ID: <1647668.odH0HuOGZ9@vostro.rjw.lan>
+Subject: [PATCH 0/4] Driver core / ACPI: Add offline/online for graceful hot-removal of devices
+Date: Thu, 02 May 2013 14:26:39 +0200
+Message-ID: <3166726.elbgrUIZ0L@vostro.rjw.lan>
 User-Agent: KMail/4.9.5 (Linux/3.9.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <3166726.elbgrUIZ0L@vostro.rjw.lan>
-References: <1576321.HU0tZ4cGWk@vostro.rjw.lan> <3166726.elbgrUIZ0L@vostro.rjw.lan>
+In-Reply-To: <1576321.HU0tZ4cGWk@vostro.rjw.lan>
+References: <1576321.HU0tZ4cGWk@vostro.rjw.lan>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -25,291 +25,96 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Hi,
 
-In some cases, graceful hot-removal of devices is not possible,
-although in principle the devices in question support hotplug.
-For example, that may happen for the last CPU in the system or
-for memory modules holding kernel memory.
+The following introduction is still valid for patches [1-3/4] and patch [4/4]
+reworks the ACPI processor driver to use the new code.  Some details below.
 
-In those cases it is nice to be able to check if the given device
-can be gracefully hot-removed before triggering a removal procedure
-that cannot be aborted or reversed.  Unfortunately, however, the
-kernel currently doesn't provide any support for that.
+On Monday, April 29, 2013 02:23:59 PM Rafael J. Wysocki wrote:
+> 
+> It has been argued for a number of times that in some cases, if a device cannot
+> be gracefully removed from the system, it shouldn't be removed from it at all,
+> because that may lead to a kernel crash.  In particular, that will happen if a
+> memory module holding kernel memory is removed, but also removing the last CPU
+> in the system may not be a good idea.  [And I can imagine a few other cases
+> like that.]
+> 
+> The kernel currently only supports "forced" hot-remove which cannot be stopped
+> once started, so users have no choice but to try to hot-remove stuff and see
+> whether or not that crashes the kernel which is kind of unpleasant.  That seems
+> to be based on the "the user knows better" argument according to which users
+> triggering device hot-removal should really know what they are doing, so the
+> kernel doesn't have to worry about that.  However, for instance, this pretty
+> much isn't the case for memory modules, because the users have no way to see
+> whether or not any kernel memory has been allocated from a given module.
+> 
+> There have been a few attempts to address this issue, but none of them has
+> gained broader acceptance.  The following 3 patches are the heart of a new
+> proposal which is based on the idea to introduce device_offline() and
+> device_online() operations along the lines of the existing CPU offline/online
+> mechanism (or, rather, to extend the CPU offline/online so that analogous
+> operations are available for other devices).  The way it is supposed to work is
+> that device_offline() will fail if the given device cannot be gracefully
+> removed from the system (in the kernel's view).  Once it succeeds, though, the
+> device won't be used any more until either it is removed, or device_online() is
+> run for it.  That will allow the ACPI device hot-remove code, for one example,
+> to avoid triggering a non-reversible removal procedure for devices that cannot
+> be removed gracefully.
+> 
+> Patch [1/3] introduces device_offline() and device_online() as outlined above.
+> The .offline() and .online() callbacks are only added at the bus type level for
+> now, because that should be sufficient to cover the memory and CPU use cases.
 
-To address that deficiency, introduce support for offline and
-online operations that can be performed on devices, respectively,
-before a hot-removal and in case when it is necessary (or convenient)
-to put a device back online after a successful offline (that has not
-been followed by removal).  The idea is that the offline will fail
-whenever the given device cannot be gracefully removed from the
-system and it will not be allowed to use the device after a
-successful offline (until a subsequent online) in analogy with the
-existing CPU offline/online mechanism.
+That's [1/4] now and the changes from the previous version are:
+- strtobool() is used in store_online().
+- device_offline_lock has been renamed to device_hotplug_lock (and the
+  functions operating it accordingly) following the Toshi's advice.
 
-For now, the offline and online operations are introduced at the
-bus type level, as that should be sufficient for the most urgent use
-cases (CPUs and memory modules).  In the future, however, the
-approach may be extended to cover some more complicated device
-offline/online scenarios involving device drivers etc.
+> Patch [2/3] modifies the CPU hotplug support code to use device_offline() and
+> device_online() to support the sysfs 'online' attribute for CPUs.
 
-The lock_device_hotplug() and unlock_device_hotplug() functions are
-introduced because subsequent patches need to put larger pieces of
-code under device_hotplug_lock to prevent race conditions between
-device offline and removal from happening.
+That is [2/4] now and it takes cpu_hotplug_driver_lock() around cpu_up() and
+cpu_down().
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- Documentation/ABI/testing/sysfs-devices-online |   20 +++
- drivers/base/core.c                            |  130 +++++++++++++++++++++++++
- include/linux/device.h                         |   21 ++++
- 3 files changed, 171 insertions(+)
+> Patch [3/3] changes the ACPI device hot-remove code to use device_offline()
+> for checking if graceful removal of devices is possible.  The way it does that
+> is to walk the list of "physical" companion devices for each struct acpi_device
+> involved in the operation and call device_offline() for each of them.  If any
+> of the device_offline() calls fails (and the hot-removal is not "forced", which
+> is an option), the removal procedure (which is not reversible) is simply not
+> carried out.
 
-Index: linux-pm/include/linux/device.h
-===================================================================
---- linux-pm.orig/include/linux/device.h
-+++ linux-pm/include/linux/device.h
-@@ -70,6 +70,10 @@ extern void bus_remove_file(struct bus_t
-  *		the specific driver's probe to initial the matched device.
-  * @remove:	Called when a device removed from this bus.
-  * @shutdown:	Called at shut-down time to quiesce the device.
-+ *
-+ * @online:	Called to put the device back online (after offlining it).
-+ * @offline:	Called to put the device offline for hot-removal. May fail.
-+ *
-  * @suspend:	Called when a device on this bus wants to go to sleep mode.
-  * @resume:	Called to bring a device on this bus out of sleep mode.
-  * @pm:		Power management operations of this bus, callback the specific
-@@ -103,6 +107,9 @@ struct bus_type {
- 	int (*remove)(struct device *dev);
- 	void (*shutdown)(struct device *dev);
- 
-+	int (*online)(struct device *dev);
-+	int (*offline)(struct device *dev);
-+
- 	int (*suspend)(struct device *dev, pm_message_t state);
- 	int (*resume)(struct device *dev);
- 
-@@ -646,6 +653,8 @@ struct acpi_dev_node {
-  * @release:	Callback to free the device after all references have
-  * 		gone away. This should be set by the allocator of the
-  * 		device (i.e. the bus driver that discovered the device).
-+ * @offline_disabled: If set, the device is permanently online.
-+ * @offline:	Set after successful invocation of bus type's .offline().
-  *
-  * At the lowest level, every device in a Linux system is represented by an
-  * instance of struct device. The device structure contains the information
-@@ -718,6 +727,9 @@ struct device {
- 
- 	void	(*release)(struct device *dev);
- 	struct iommu_group	*iommu_group;
-+
-+	bool			offline_disabled:1;
-+	bool			offline:1;
- };
- 
- static inline struct device *kobj_to_dev(struct kobject *kobj)
-@@ -853,6 +865,15 @@ extern const char *device_get_devnode(st
- extern void *dev_get_drvdata(const struct device *dev);
- extern int dev_set_drvdata(struct device *dev, void *data);
- 
-+static inline bool device_supports_offline(struct device *dev)
-+{
-+	return dev->bus && dev->bus->offline && dev->bus->online;
-+}
-+
-+extern void lock_device_hotplug(void);
-+extern void unlock_device_hotplug(void);
-+extern int device_offline(struct device *dev);
-+extern int device_online(struct device *dev);
- /*
-  * Root device objects for grouping under /sys/devices
-  */
-Index: linux-pm/drivers/base/core.c
-===================================================================
---- linux-pm.orig/drivers/base/core.c
-+++ linux-pm/drivers/base/core.c
-@@ -397,6 +397,36 @@ static ssize_t store_uevent(struct devic
- static struct device_attribute uevent_attr =
- 	__ATTR(uevent, S_IRUGO | S_IWUSR, show_uevent, store_uevent);
- 
-+static ssize_t show_online(struct device *dev, struct device_attribute *attr,
-+			   char *buf)
-+{
-+	bool val;
-+
-+	lock_device_hotplug();
-+	val = !dev->offline;
-+	unlock_device_hotplug();
-+	return sprintf(buf, "%u\n", val);
-+}
-+
-+static ssize_t store_online(struct device *dev, struct device_attribute *attr,
-+			    const char *buf, size_t count)
-+{
-+	bool val;
-+	int ret;
-+
-+	ret = strtobool(buf, &val);
-+	if (ret < 0)
-+		return ret;
-+
-+	lock_device_hotplug();
-+	ret = val ? device_online(dev) : device_offline(dev);
-+	unlock_device_hotplug();
-+	return ret < 0 ? ret : count;
-+}
-+
-+static struct device_attribute online_attr =
-+	__ATTR(online, S_IRUGO | S_IWUSR, show_online, store_online);
-+
- static int device_add_attributes(struct device *dev,
- 				 struct device_attribute *attrs)
- {
-@@ -510,6 +540,12 @@ static int device_add_attrs(struct devic
- 	if (error)
- 		goto err_remove_type_groups;
- 
-+	if (device_supports_offline(dev) && !dev->offline_disabled) {
-+		error = device_create_file(dev, &online_attr);
-+		if (error)
-+			goto err_remove_type_groups;
-+	}
-+
- 	return 0;
- 
-  err_remove_type_groups:
-@@ -530,6 +566,7 @@ static void device_remove_attrs(struct d
- 	struct class *class = dev->class;
- 	const struct device_type *type = dev->type;
- 
-+	device_remove_file(dev, &online_attr);
- 	device_remove_groups(dev, dev->groups);
- 
- 	if (type)
-@@ -1415,6 +1452,99 @@ EXPORT_SYMBOL_GPL(put_device);
- EXPORT_SYMBOL_GPL(device_create_file);
- EXPORT_SYMBOL_GPL(device_remove_file);
- 
-+static DEFINE_MUTEX(device_hotplug_lock);
-+
-+void lock_device_hotplug(void)
-+{
-+	mutex_lock(&device_hotplug_lock);
-+}
-+
-+void unlock_device_hotplug(void)
-+{
-+	mutex_unlock(&device_hotplug_lock);
-+}
-+
-+static int device_check_offline(struct device *dev, void *not_used)
-+{
-+	int ret;
-+
-+	ret = device_for_each_child(dev, NULL, device_check_offline);
-+	if (ret)
-+		return ret;
-+
-+	return device_supports_offline(dev) && !dev->offline ? -EBUSY : 0;
-+}
-+
-+/**
-+ * device_offline - Prepare the device for hot-removal.
-+ * @dev: Device to be put offline.
-+ *
-+ * Execute the device bus type's .offline() callback, if present, to prepare
-+ * the device for a subsequent hot-removal.  If that succeeds, the device must
-+ * not be used until either it is removed or its bus type's .online() callback
-+ * is executed.
-+ *
-+ * Call under device_hotplug_lock.
-+ */
-+int device_offline(struct device *dev)
-+{
-+	int ret;
-+
-+	if (dev->offline_disabled)
-+		return -EPERM;
-+
-+	ret = device_for_each_child(dev, NULL, device_check_offline);
-+	if (ret)
-+		return ret;
-+
-+	device_lock(dev);
-+	if (device_supports_offline(dev)) {
-+		if (dev->offline) {
-+			ret = 1;
-+		} else {
-+			ret = dev->bus->offline(dev);
-+			if (!ret) {
-+				kobject_uevent(&dev->kobj, KOBJ_OFFLINE);
-+				dev->offline = true;
-+			}
-+		}
-+	}
-+	device_unlock(dev);
-+
-+	return ret;
-+}
-+
-+/**
-+ * device_online - Put the device back online after successful device_offline().
-+ * @dev: Device to be put back online.
-+ *
-+ * If device_offline() has been successfully executed for @dev, but the device
-+ * has not been removed subsequently, execute its bus type's .online() callback
-+ * to indicate that the device can be used again.
-+ *
-+ * Call under device_hotplug_lock.
-+ */
-+int device_online(struct device *dev)
-+{
-+	int ret = 0;
-+
-+	device_lock(dev);
-+	if (device_supports_offline(dev)) {
-+		if (dev->offline) {
-+			ret = dev->bus->online(dev);
-+			if (!ret) {
-+				kobject_uevent(&dev->kobj, KOBJ_ONLINE);
-+				dev->offline = false;
-+			}
-+		} else {
-+			ret = 1;
-+		}
-+	}
-+	device_unlock(dev);
-+
-+	return ret;
-+}
-+
- struct root_device {
- 	struct device dev;
- 	struct module *owner;
-Index: linux-pm/Documentation/ABI/testing/sysfs-devices-online
-===================================================================
---- /dev/null
-+++ linux-pm/Documentation/ABI/testing/sysfs-devices-online
-@@ -0,0 +1,20 @@
-+What:		/sys/devices/.../online
-+Date:		April 2013
-+Contact:	Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-+Description:
-+		The /sys/devices/.../online attribute is only present for
-+		devices whose bus types provide .online() and .offline()
-+		callbacks.  The number read from it (0 or 1) reflects the value
-+		of the device's 'offline' field.  If that number is 1 and '0'
-+		(or 'n', or 'N') is written to this file, the device bus type's
-+		.offline() callback is executed for the device and (if
-+		successful) its 'offline' field is updated accordingly.  In
-+		turn, if that number is 0 and '1' (or 'y', or 'Y') is written to
-+		this file, the device bus type's .online() callback is executed
-+		for the device and (if successful) its 'offline' field is
-+		updated as appropriate.
-+
-+		After a successful execution of the bus type's .offline()
-+		callback the device cannot be used for any purpose until either
-+		it is removed (i.e. device_del() is called for it), or its bus
-+		type's .online() is exeucted successfully.
+That's current [3/4].  It's a bit simpler, because I decided that it would be
+better to have a global 'force_remove' attribute (the semantics of the
+per-profile 'force_remove' wasn't clear and it didn't really add any value over
+a global one).  I also added lock/unlock_device_hotplug() around acpi_bus_scan()
+in acpi_scan_bus_device_check() to allow scan handlers to update dev->offline
+for "physical" companion devices safely (the processor's one added by the next
+patch actually does that).
 
+> Of some concern is that device_offline() (and possibly device_online()) is
+> called under physical_node_lock of the corresponding struct acpi_device, which
+> introduces ordering dependency between that lock and device locks for the
+> "physical" devices, but I didn't see any cleaner way to do that (I guess it
+> is avoidable at the expense of added complexity, but for now it's just better
+> to make the code as clean as possible IMO).
+
+Patch [4/4] reworks the ACPI processor driver to use the common hotplug code.
+It basically splits the driver into two parts as described in the changelog,
+where the first part is essentially a scan handler and the second part is
+a driver, but it doesn't bind to struct acpi_device any more.  Instead, it
+binds to processor devices under /sys/devices/system/cpu/ (the driver itself
+has a sysfs directory under /sys/bus/cpu/drivers/ which IMHO makes more sense
+than having it under /sys/bus/acpi/drivers/).
+
+The patch at https://patchwork.kernel.org/patch/2506371/ is a prerequisite
+for this series, but I'm going to push it for v3.10-rc2 if no one screams
+bloody murder.
+
+Thanks,
+Rafael
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
