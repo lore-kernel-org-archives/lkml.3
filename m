@@ -1,82 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757467Ab3EBKhQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 06:37:16 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:40593
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756042Ab3EBKhO (ORCPT
+	id S1757563Ab3EBKha (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 06:37:30 -0400
+Received: from www.linutronix.de ([62.245.132.108]:39083 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750878Ab3EBKh2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 06:37:14 -0400
-Date: Thu, 2 May 2013 12:35:08 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Alex Shi <alex.shi@intel.com>
-Cc: mingo@redhat.com, tglx@linutronix.de, akpm@linux-foundation.org,
-        arjan@linux.intel.com, bp@alien8.de, pjt@google.com,
-        namhyung@kernel.org, efault@gmx.de, morten.rasmussen@arm.com,
-        vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
-        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
-        linux-kernel@vger.kernel.org, len.brown@intel.com,
-        rafael.j.wysocki@intel.com, jkosina@suse.cz, clark.williams@gmail.com,
-        tony.luck@intel.com, keescook@chromium.org, mgorman@suse.de,
-        riel@redhat.com
-Subject: Re: [PATCH v4 0/6] sched: use runnable load based balance
-Message-ID: <20130502103508.GA13196@dyad.programming.kicks-ass.net>
-References: <1367040344-14485-1-git-send-email-alex.shi@intel.com>
- <20130501121421.GA19602@dyad.programming.kicks-ass.net>
- <5181B579.9000808@intel.com>
+	Thu, 2 May 2013 06:37:28 -0400
+Date: Thu, 2 May 2013 12:37:26 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Dave Jones <davej@redhat.com>
+cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: clockevents_program_event WARN_ON preventing boot.
+In-Reply-To: <20130430213719.GA14988@redhat.com>
+Message-ID: <alpine.LFD.2.02.1305021234510.3972@ionos>
+References: <20130430212007.GB18598@redhat.com> <20130430213719.GA14988@redhat.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5181B579.9000808@intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 02, 2013 at 08:38:17AM +0800, Alex Shi wrote:
-
-> On 3.8 kernel, the first problem commit is 5a505085f043 ("mm/rmap:
-> Convert the struct anon_vma::mutex to an rwsem"), It cause much
-> imbalance among cpus on aim7 benchmark. The reason is here,
-> https://lkml.org/lkml/2013/1/29/84.
-
-Hehe. yeah that one was going to be obvious.. rwsems were known to be totally
-bad performers. Not only were they lacking lock stealing but also the spinning.
+On Tue, 30 Apr 2013, Dave Jones wrote:
+> On Tue, Apr 30, 2013 at 05:20:07PM -0400, Dave Jones wrote:
+>  > I have a machine that crashes instantly on boot up on Linus'
+>  > post-3.9 tree. (8c55f1463c1fd318d5e785f02b80bcc32176d342)
+>  > 
+>  > By booting with boot_delay=100, I was able to take a photo
+>  > and capture the top of the trace.  (For some reason, larger boot
+>  > delay parameters seem to make it take forever before printing
+>  > even a single character, which made this a pain to debug).
+>  > 
+>  > The WARN_ON it prints right before locking up is this in clockevents_program_event
+>  > 
+>  > 208         if (unlikely(expires.tv64 < 0)) {
+>  > 209                 WARN_ON_ONCE(1);
+>  > 210                 return -ETIME;
+>  > 211         }
+>  > 
+>  > booting with maxcpus=1 avoids the problem.
+>  > 
+>  > I'm still trying to get a complete stack trace, though it's painful
+>  > due to the above reason.
+> 
+> On a second machine, I'm seeing an oops even earlier. As soon as I
+> exit grub, I get a blinking cursor.  If I boot with earlyprintk=vga
+> I can see..
+> 
+> Call Trace:
+>  <IRQ>
+>   tick_check_oneshot_broadcast
+>   tick_check_idle
+>   irq_enter
+>   do_IRQ
+>   common_interrupt
+>  <EOI>
+>   x86_64_start_reservations
+>   x86_64_start_kernel
+> RIP: clockevents_set_mode+0x18
+> 
+> Matching up the Code: line of the trace with the disassembly I see..
+> 
+>         if (dev->mode != mode) {
+>  4c8:   39 77 38                cmp    %esi,0x38(%rdi)
+> 
+> 
+> the comment above that code is telling..
+> 
+> /*
+>  * Must be called with interrupts disabled !
+>  */
+> 
+> So how did we get an IRQ ?
  
-> But, after we use rwsem lock stealing in 3.9 kernel, commit
-> ce6711f3d196f09ca0e, aim7 wakeup won't has clear imbalance issue. And
-> then aim7 won't need this extra burst wakeup detection.
+Well, we are inside an IRQ and the code is called with interrupts
+disabled from there. Fix below.
 
-OK, that seems like a nice fix for rwsems.. one nit:
+Thanks,
 
-+               raw_spin_lock_irq(&sem->wait_lock);
-+               /* Try to get the writer sem, may steal from the head writer: */
-+               if (flags == RWSEM_WAITING_FOR_WRITE)
-+                       if (try_get_writer_sem(sem, &waiter)) {
-+                               raw_spin_unlock_irq(&sem->wait_lock);
-+                               return sem;
-+                       }
-+               raw_spin_unlock_irq(&sem->wait_lock);
-                schedule();
+	tglx
 
-That should probably look like:
+diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
+index 61d00a8..db9da73 100644
+--- a/kernel/time/tick-broadcast.c
++++ b/kernel/time/tick-broadcast.c
+@@ -475,7 +475,8 @@ void tick_check_oneshot_broadcast(int cpu)
+ 	if (cpumask_test_cpu(cpu, tick_broadcast_oneshot_mask)) {
+ 		struct tick_device *td = &per_cpu(tick_cpu_device, cpu);
+ 
+-		clockevents_set_mode(td->evtdev, CLOCK_EVT_MODE_ONESHOT);
++		if (td)
++			clockevents_set_mode(td->evtdev, CLOCK_EVT_MODE_ONESHOT);
+ 	}
+ }
+ 
 
-	preempt_disable();
-	raw_spin_unlock_irq();
-	preempt_enable_no_resched();
-	schedule();
-
-Otherwise you might find a performance regression on PREEMPT=y kernels.
-
-> With PJT's patch, we know in first few seconds from wakeup, task's
-> runnable load maybe nearly zero. The nearly zero runnable load increases
-> the imbalance among cpus. So there are about extra 5% performance drop
-> when use runnable load to do balance on aim7(in testing, aim7 will fork
-> 2000 threads, and then wait for a trigger, then run as fast as possible).
-
-OK, so what I was asking after is if you changed the scheduler after PJTs
-patches landed to deal with this bulk wakeup. Also while aim7 might no longer
-trigger the bad pattern what is to say nothing ever will? In particular
-anything using pthread_cond_broadcast() is known to be suspect of bulk wakeups.
-
-Anyway, I'll go try and make sense of some of the actual patches.. :-)
