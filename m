@@ -1,57 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757922Ab3EBL75 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 07:59:57 -0400
-Received: from eu1sys200aog120.obsmtp.com ([207.126.144.149]:33964 "EHLO
-	eu1sys200aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753159Ab3EBL7z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 07:59:55 -0400
-Date: Thu, 2 May 2013 16:59:24 +0530
-From: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>
-Subject: Re: [PATCH 3/5] ARM: ux500: Stop passing DMA platform data though
- AUXDATA
-Message-ID: <20130502112923.GA22739@bnru10>
-References: <1367336497-10650-1-git-send-email-lee.jones@linaro.org>
- <1367336497-10650-3-git-send-email-lee.jones@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1367336497-10650-3-git-send-email-lee.jones@linaro.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757984Ab3EBMCb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 08:02:31 -0400
+Received: from mga11.intel.com ([192.55.52.93]:9641 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752463Ab3EBMCa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 08:02:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,595,1363158000"; 
+   d="scan'208";a="331243555"
+Message-ID: <1367496146.24182.16.camel@intelbox>
+Subject: Re: [PATCH] wait: fix false timeouts when using wait_event_timeout()
+From: Imre Deak <imre.deak@intel.com>
+Reply-To: imre.deak@intel.com
+To: David Howells <dhowells@redhat.com>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Dave Jones <davej@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        Lukas Czerner <lczerner@redhat.com>, linux-kernel@vger.kernel.org
+Date: Thu, 02 May 2013 15:02:26 +0300
+In-Reply-To: <15077.1367490569@warthog.procyon.org.uk>
+References: <1367485129-4423-1-git-send-email-imre.deak@intel.com>
+	 <15077.1367490569@warthog.procyon.org.uk>
+Organization: Intel
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 30, 2013 at 17:41:35 +0200, Lee Jones wrote:
-> The DMA platform data is now empty due to some recent refactoring,
-> so there is no longer a requirement to pass it though.
+On Thu, 2013-05-02 at 11:29 +0100, David Howells wrote:
+> Imre Deak <imre.deak@intel.com> wrote:
 > 
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> ---
->  arch/arm/mach-ux500/cpu-db8500.c |    3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
+> > Many callers of the wait_event_timeout() and
+> > wait_event_interruptible_timeout() expect that the return value will be
+> > positive if the specified condition becomes true before the timeout
+> > elapses. However, at the moment this isn't guaranteed. If the wake-up
+> > handler is delayed enough, the time remaining until timeout will be
+> > calculated as 0 - and passed back as a return value - even if the
+> > condition became true before the timeout has passed.
 > 
-> diff --git a/arch/arm/mach-ux500/cpu-db8500.c b/arch/arm/mach-ux500/cpu-db8500.c
-> index a2c83c2..2b6cbde 100644
-> --- a/arch/arm/mach-ux500/cpu-db8500.c
-> +++ b/arch/arm/mach-ux500/cpu-db8500.c
-> @@ -264,8 +264,7 @@ static struct of_dev_auxdata u8500_auxdata_lookup[] __initdata = {
->  	OF_DEV_AUXDATA("stericsson,ux500-msp-i2s", 0x80125000,
->  		"ux500-msp-i2s.3", &msp3_platform_data),
->  	/* Requires clock name bindings and channel address lookup table. */
-> -	OF_DEV_AUXDATA("stericsson,db8500-dma40", 0x801C0000,
-> -		       "dma40.0", &dma40_plat_data),
-> +	OF_DEV_AUXDATA("stericsson,db8500-dma40", 0x801C0000, "dma40.0", NULL),
->  	{},
->  };
+> Fun.
+> 
+> > Fix this by returning at least 1 if the condition becomes true. This
+> > semantic is in line with what wait_for_condition_timeout() does; see
+> > commit bb10ed09 - "sched: fix wait_for_completion_timeout() spurious
+> > failure under heavy load".
+> 
+> But now you can't distinguish the timer expiring first, if the thread doing
+> the waiting gets delayed sufficiently long for the event to happen.
 
-Acked-by:srinidhi kasagar <srinidhi.kasagar@stericsson.com>
+I'm trying to understand what sequence do you mean. I can think of the
+following - as an example - in case of starting a transaction that will
+set a completion flag:
 
-srinidhi 
+waiter                                               completion handler
+start transaction
+                                                     set completion_flag
+ret = wait_event_timeout(timeout, completion_flag)
+
+In this case ret will be timeout which is the original behavior, so
+should be ok. One exception is if timeout=0 to begin with, since then -
+after this change - ret will be 1. But I can't see how that use case is
+useful. I guess I'm missing something, could you elaborate?
+
+--Imre
+
+> I'm not sure there's a good answer - except maybe making the timer expiry
+> handler check the condition (which would likely get really yucky really
+> quickly).
+> 
+> David
+
+
