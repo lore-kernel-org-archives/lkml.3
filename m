@@ -1,72 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759634Ab3EBCo7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 22:44:59 -0400
-Received: from mail-db8lp0189.outbound.messaging.microsoft.com ([213.199.154.189]:52245
-	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756832Ab3EBCo5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 22:44:57 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(zz98dI1432Izz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275bh8275dhz2dh87h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1151h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Thu, 2 May 2013 10:44:44 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] gpio: mxs: Use set and clear capabilities of the gpio
- controller
-Message-ID: <20130502024443.GE3442@S2101-09.ap.freescale.net>
-References: <1367244438-5322-1-git-send-email-maxime.ripard@free-electrons.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1367244438-5322-1-git-send-email-maxime.ripard@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
+	id S1759903Ab3EBCqZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 22:46:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50777 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752571Ab3EBCqV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 May 2013 22:46:21 -0400
+Date: Wed, 1 May 2013 22:46:04 -0400
+From: Rik van Riel <riel@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "Pierre-Loup A. Griffais" <pgriffais@valvesoftware.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        sonnyrao@chromium.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH] mm,x86: limit 32 bit kernel to 12GB memory
+Message-ID: <20130501224604.21ebc42a@annuminas.surriel.com>
+In-Reply-To: <20130502013426.GC9583@home.goodmis.org>
+References: <517B1153.8000401@valvesoftware.com>
+	<517B2FB4.30605@redhat.com>
+	<20130427024248.GA1229@cmpxchg.org>
+	<517EEBD1.503@valvesoftware.com>
+	<CA+55aFxcq44JsrrR5KKuT=DZQHCfOE3KHQrcD215T+deYesW2g@mail.gmail.com>
+	<517F14D1.3070307@redhat.com>
+	<20130502013426.GC9583@home.goodmis.org>
+Organization: Red Hat, Inc.
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 29, 2013 at 04:07:18PM +0200, Maxime Ripard wrote:
-> The current driver doesn't use the set and clear registers found on the
-> mxs gpio controller.
+On Wed, 1 May 2013 21:34:26 -0400
+Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Mon, Apr 29, 2013 at 08:48:17PM -0400, Rik van Riel wrote:
+> > 
+> > It could also print out a friendly message, to
+> > inform the user they should upgrade to a 64 bit
+> > kernel to enjoy the use of all of their memory.
 > 
-> This leads the generic gpio controller to be using some internal value
-> to avoid looking up the value stored in the registers, making it behave
-> pretty much like a cache.
+> Oh, oh, oh!!! Can we use my message:
 > 
-> This raises some coherency problem when a gpio is not modified by the
-> gpio controller, while it can easily be fixed by using the set and clear
-> registers.
+>   http://lwn.net/Articles/501769/
 > 
-> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+> OK, maybe it's not so friendly ;-)
 
-Acked-by: Shawn Guo <shawn.guo@linaro.org>
+Here's a somewhat friendlier one. Printing out the total amount of
+memory in the system may give them some extra motivation to upgrade
+to a 64 bit kernel :)
 
-> ---
->  drivers/gpio/gpio-mxs.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/gpio/gpio-mxs.c b/drivers/gpio/gpio-mxs.c
-> index 25000b0..f8e6af2 100644
-> --- a/drivers/gpio/gpio-mxs.c
-> +++ b/drivers/gpio/gpio-mxs.c
-> @@ -326,7 +326,8 @@ static int mxs_gpio_probe(struct platform_device *pdev)
->  
->  	err = bgpio_init(&port->bgc, &pdev->dev, 4,
->  			 port->base + PINCTRL_DIN(port),
-> -			 port->base + PINCTRL_DOUT(port), NULL,
-> +			 port->base + PINCTRL_DOUT(port) + MXS_SET,
-> +			 port->base + PINCTRL_DOUT(port) + MXS_CLR,
->  			 port->base + PINCTRL_DOE(port), NULL, 0);
->  	if (err)
->  		goto out_irqdesc_free;
-> -- 
-> 1.8.1.2
-> 
+---8<----
+Subject: mm,x86: limit 32 bit kernel to 12GB memory
+ 
+Running 32 bit kernels on very large memory systems is a recipe
+for disaster, due to fundamental architectural limits in both
+Linux and the hardware. Moreover, all modern hardware with large
+memory supports 64 bits.
 
+However, many users continue using 32 bit kernels, and end up
+encountering stability and performance problems as a result.
+
+It may be better to save those people the frustration of stability
+issues by limiting memory on a 32 bit kernel to 12GB (about the upper
+limit that still works right), and printing a friendly reminder that
+they really should be using a 64 bit kernel.
+
+Signed-off-by: Rik van Riel <riel@redhat.com>
+---
+ arch/x86/include/asm/setup.h |  1 +
+ arch/x86/mm/init_32.c        | 11 +++++++++++
+ 2 files changed, 12 insertions(+)
+
+diff --git a/arch/x86/include/asm/setup.h b/arch/x86/include/asm/setup.h
+index b7bf350..79de6bf 100644
+--- a/arch/x86/include/asm/setup.h
++++ b/arch/x86/include/asm/setup.h
+@@ -14,6 +14,7 @@
+  */
+ #define MAXMEM_PFN	PFN_DOWN(MAXMEM)
+ #define MAX_NONPAE_PFN	(1 << 20)
++#define MAX_PAE_PFN	(3 << 20)
+ 
+ #endif /* __i386__ */
+ 
+diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
+index 3ac7e31..e35b3f5 100644
+--- a/arch/x86/mm/init_32.c
++++ b/arch/x86/mm/init_32.c
+@@ -600,6 +600,12 @@ static void __init lowmem_pfn_init(void)
+ 
+ #define MSG_HIGHMEM_TRIMMED \
+ 	"Warning: only 4GB will be used. Use a HIGHMEM64G enabled kernel!\n"
++
++#define MSG_HIGHMEM_INSANE \
++	"Warning: 32 bit kernels on large memory systems have problems.\n" \
++	"Limiting memory to 12GB for system stability.\n" \
++	"Use a 64 bit kernel to access all %lu MB of memory.\n"
++
+ /*
+  * We have more RAM than fits into lowmem - we try to put it into
+  * highmem, also taking the highmem=x boot parameter into account:
+@@ -634,6 +640,11 @@ static void __init highmem_pfn_init(void)
+ 		max_pfn = MAX_NONPAE_PFN;
+ 		printk(KERN_WARNING MSG_HIGHMEM_TRIMMED);
+ 	}
++#else /* !CONFIG_HIGHMEM64G */
++	if (max_pfn > MAX_PAE_PFN) {
++		printk(KERN_WARNING MSG_HIGHMEM_INSANE, max_pfn>>8);
++		max_pfn = MAX_PFN;
++	}
+ #endif /* !CONFIG_HIGHMEM64G */
+ #endif /* !CONFIG_HIGHMEM */
+ }
