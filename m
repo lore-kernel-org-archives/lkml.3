@@ -1,70 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761913Ab3EBTw7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 15:52:59 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:37101 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752562Ab3EBTw6 (ORCPT
+	id S1761945Ab3EBTx7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 15:53:59 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:51137 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760842Ab3EBTx6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 15:52:58 -0400
-Date: Thu, 2 May 2013 16:53:16 -0300
-From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-To: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Cc: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Nobuhiro Iwamatsu <iwamatsu@nigauri.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: kirkwood: add button for OpenBlock A6
-Message-ID: <20130502195315.GA4107@localhost>
-References: <1367523802-16372-1-git-send-email-gregory.clement@free-electrons.com>
+	Thu, 2 May 2013 15:53:58 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Alexander Shiyan <shc_work@mail.ru>
+Subject: Re: [PATCH, RFC 20/22] media: coda: select GENERIC_ALLOCATOR
+Date: Thu, 2 May 2013 21:53:19 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, Fabio Estevam <fabio.estevam@freescale.com>,
+        Shawn Guo <shawn.guo@linaro.org>, linux-arm-kernel@lists.infradead.org,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+References: <1367507786-505303-1-git-send-email-arnd@arndb.de> <1367507786-505303-21-git-send-email-arnd@arndb.de> <1367515255.447627800@f375.mail.ru>
+In-Reply-To: <1367515255.447627800@f375.mail.ru>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1367523802-16372-1-git-send-email-gregory.clement@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201305022153.19518.arnd@arndb.de>
+X-Provags-ID: V02:K0:rHWpAHsG9HQEhrpNAImbkZSRPh4ykR8Y8aNuZ3UbTpj
+ JmkElg+nFFODAI6eajXMmZQQclZJHyXvK/Z75bRsINRslpAiRb
+ oPXYwPsdmhmZP9qqzbcyP/JPBoHBji0Ul58kJVL+UQCNSZJgMX
+ mBviwqp7FD3JViyD9dE3x2jRZlvSyYJaKRbz+uhGhnQS/Qaz2U
+ PUpp4rlGtY5xMlK7fUfh+vduYEuXWdjdoOfSN9JUwGNukKb0xG
+ f2TZYZr885J2tulQlgA6AbrOYkmzl8Z06MbO9qkRiSk1lCnL1A
+ w5EXbGR1RCPcz0n0n9JIjFphElFDbXoMmcjV3GLCBWPcRLFMSk
+ QUk8RhBAF+T5iEO54X/g=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Gregory,
+On Thursday 02 May 2013, Alexander Shiyan wrote:
+> > The coda driver uses the generic allocator to get at the
+> > "iram" memory, so add the necessary dependency to avoid:
+> > 
 
-On Thu, May 02, 2013 at 09:43:22PM +0200, Gregory CLEMENT wrote:
-> The OpenBlocks A6 board has one software-controlled button on the
-> front side, labeled "INIT", so we add minimal support for this button
-> in the kernel.
+> > diff --git a/drivers/media/platform/Kconfig b/drivers/media/platform/Kconfig
+> > index 0494d27..4608d03 100644
+> > --- a/drivers/media/platform/Kconfig
+> > +++ b/drivers/media/platform/Kconfig
+> > @@ -145,6 +145,7 @@ config VIDEO_CODA
+> >       depends on VIDEO_DEV && VIDEO_V4L2 && ARCH_MXC
+> >       select VIDEOBUF2_DMA_CONTIG
+> >       select V4L2_MEM2MEM_DEV
+> > +     select GENERIC_ALLOCATOR
+> >       ---help---
+> >          Coda is a range of video codec IPs that supports
+> >          H.264, MPEG-4, and other video formats.
 > 
-> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
-> ---
->  arch/arm/boot/dts/kirkwood-openblocks_a6.dts |   13 +++++++++++++
->  1 file changed, 13 insertions(+)
+> Again?
 > 
-> diff --git a/arch/arm/boot/dts/kirkwood-openblocks_a6.dts b/arch/arm/boot/dts/kirkwood-openblocks_a6.dts
-> index d27f724..627d8d0 100644
-> --- a/arch/arm/boot/dts/kirkwood-openblocks_a6.dts
-> +++ b/arch/arm/boot/dts/kirkwood-openblocks_a6.dts
-> @@ -209,4 +209,17 @@
->  			gpios = <&gpio1 11 1>;
->  		};
->          };
-> +
-> +	gpio_keys {
-> +		compatible = "gpio-keys";
-> +		#address-cells = <1>;
-> +		#size-cells = <0>;
-> +
-> +			button@1 {
-> +			label = "Init Button";
-> +			linux,code = <116>;
-> +			gpios = <&gpio1 6 0>;
-> +		};
-> +	};
-> +
->  };
 
-Shouldn't you add a proper pinctrl entry for this as well?
+Ah, now I remember where I saw this before -- you sent the same patch, and
+Fabio commented that Shawn had already queued up a different solution.
 
--- 
-Ezequiel García, Free Electrons
-Embedded Linux, Kernel and Android Engineering
-http://free-electrons.com
+Unfortunately, linux-next as of today is still broken. Shawn, did I
+miss a pull request from you?
+
+	Arnd
