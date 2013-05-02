@@ -1,39 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760626Ab3EBWLO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 18:11:14 -0400
-Received: from poczta.mzo.bielsko.pl ([62.87.236.116]:53902 "EHLO
-	wuwa.mzo.bielsko.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750836Ab3EBWLM convert rfc822-to-8bit (ORCPT
+	id S1761355Ab3EBWVV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 18:21:21 -0400
+Received: from shelob.surriel.com ([74.92.59.67]:34221 "EHLO
+	shelob.surriel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757301Ab3EBWVU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 18:11:12 -0400
-X-Greylist: delayed 2626 seconds by postgrey-1.27 at vger.kernel.org; Thu, 02 May 2013 18:11:11 EDT
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 2 May 2013 18:21:20 -0400
+Message-ID: <5182E667.1000603@surriel.com>
+Date: Thu, 02 May 2013 18:19:19 -0400
+From: Rik van Riel <riel@surriel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Description: Mail message body
-Subject: system Administrator
-To: Recipients <pm44@mzo.bielsko.pl>
-From: "ADMIN " <pm44@mzo.bielsko.pl>
-Date: Fri, 03 May 2013 14:13:24 -0700
-Reply-To: upgrade1@dgoh.org
-X-Antivirus: avast! (VPS 130502-0, 05/02/2013), Outbound message
-X-Antivirus-Status: Clean
-Message-Id: <20130502211156.B4BCE1905E2@wuwa.mzo.bielsko.pl>
-X-AV-Checked: ClamAV using ClamSMTP
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: question about lazy FPU restore
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Your email has exceeded 2GB, which was created by our webmaster, you're currently using 2.30GB , you can not send or receive new messages until you confirm by e-mail mailbox. Fill out the form below to verify your account.
+Hi Suresh,
 
-Fill out the form you want to cornfirm your account and sent the
-Following e-mail:
+I have a question about the lazy fpu restore code in
+switch_fpu_prepare.  Specifically, about the case where
+the old task did not use the FPU, and the new task's
+FPU state is still in the cpu.
 
-(1) E-mail:
-(2) Username:
-(3) Password:
-(4) Confirm Password:
+         } else {
+                 old->fpu_counter = 0;
+                 old->thread.fpu.last_cpu = ~0;
+                 if (fpu.preload) {
+                         new->fpu_counter++;
+                         if (!use_eager_fpu() && fpu_lazy_restore(new, cpu))
+                                 fpu.preload = 0;
+                         else
+                                 prefetch(new->thread.fpu.state);
+                         __thread_fpu_begin(new);
+                 }
+         }
 
-thank you
-system Administrator
+In this branch, we call fpu_lazy_restore, which
+confirms that the CPU still has the new task's state
+in it.
+
+However, if we are in eager fpu mode, we still end up
+calling restore_fpu_checking from switch_fpu_finish,
+even if the new task's FPU state is still resident in
+the CPU.
+
+Is there a particular reason we do this?
+
+Would it be possible to always set fpu.preload = 0,
+call clts, and __thread_set_has_fpu if fpu_lazy_restore
+returns true?
+
+That would allow us to skip the loading of FPU state
+when re-entering a process that went briefly idle, before
+getting something else to do, a common occurrance in
+message passing workloads.
