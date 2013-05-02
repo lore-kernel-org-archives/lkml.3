@@ -1,44 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759338Ab3EBMgf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 08:36:35 -0400
-Received: from 8bytes.org ([85.214.48.195]:37594 "EHLO mail.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758822Ab3EBMge (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 08:36:34 -0400
-Date: Thu, 2 May 2013 14:36:31 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org, linux-pci@vger.kernel.org,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>, Jan Beulich <JBeulich@suse.com>,
-        Ingo Molnar <mingo@redhat.com>, Bjorn Helgaas <bhelgaas@google.com>
-Subject: Re: [PATCH v2 -tip/apic 2/2] x86/MSI: Allocate as many multiple-MSIs
- as requested
-Message-ID: <20130502123631.GB24440@8bytes.org>
-References: <cover.1367319112.git.agordeev@redhat.com>
- <096b258a86c1cb46e4f3084f1fbcf37c7859bb15.1367319112.git.agordeev@redhat.com>
+	id S1758355Ab3EBMsa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 08:48:30 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:35759 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756867Ab3EBMs2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 08:48:28 -0400
+Date: Thu, 2 May 2013 14:48:26 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Colin Cross <ccross@android.com>
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, arve@android.com,
+        Len Brown <len.brown@intel.com>
+Subject: Re: [PATCH 03/10] freezer: add new freezable helpers using
+ freezer_do_not_count()
+Message-ID: <20130502124826.GE22618@amd.pavel.ucw.cz>
+References: <1367271946-7239-1-git-send-email-ccross@android.com>
+ <1367271946-7239-4-git-send-email-ccross@android.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <096b258a86c1cb46e4f3084f1fbcf37c7859bb15.1367319112.git.agordeev@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Thu May  2 14:36:32 2013
-X-DSPAM-Confidence: 0.9992
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 51825dd023675160212991
+In-Reply-To: <1367271946-7239-4-git-send-email-ccross@android.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 30, 2013 at 01:11:11PM +0200, Alexander Gordeev wrote:
-> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+On Mon 2013-04-29 14:45:39, Colin Cross wrote:
+> Freezing tasks will wake up almost every userspace task from
+> where it is blocking and force it to run until it hits a
+> call to try_to_sleep(), generally on the exit path from the syscall
+> it is blocking in.  On resume each task will run again, usually
+> restarting the syscall and running until it hits the same
+> blocking call as it was originally blocked in.
 
-Please add a proper commit message explaining why this change is
-necessary or what problem it fixes.
+Ok, so you are optimizing suspend at the cost of runtime operations,
+right?
 
+Would it make sense to do suspends entirely without freezer in your
+configurations? With the right drivers, it should work ok.
 
-	Joerg
+Actually, would it make sense to simply enter deep idle and do runtime
+powersaving in the drivers... n900 does that rather successfully and
+it is certainly cleaner design.
 
+> +/* Like schedule_timeout(), but should not block the freezer. */
+> +#define freezable_schedule_timeout(timeout)				\
+> +({									\
+> +	long __retval;							\
+> +	freezer_do_not_count();						\
+> +	__retval = schedule_timeout(timeout);				\
+> +	freezer_count();						\
+> +	__retval;							\
+> +})
 
+You plan to use this a lot during normal operation, right? Is it going
+to have some measureable impact?
+
+Also, why not static inline?
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
