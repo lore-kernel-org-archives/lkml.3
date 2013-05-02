@@ -1,82 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760381Ab3EBRFq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 13:05:46 -0400
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:58981 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758962Ab3EBRFo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 13:05:44 -0400
+	id S1760726Ab3EBRMT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 13:12:19 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:44396 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757568Ab3EBRMS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 13:12:18 -0400
+X-IronPort-AV: E=Sophos;i="4.87,597,1363132800"; 
+   d="scan'208";a="22962512"
+Date: Thu, 2 May 2013 18:12:12 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "will.deacon@arm.com" <will.deacon@arm.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Olof Johansson <olof@lixom.net>
+Subject: Re: [PATCH v10 0/2] (arm-soc for v3.10) arm: introduce
+ psci_smp_ops
+In-Reply-To: <alpine.DEB.2.02.1304301707290.5398@kaball.uk.xensource.com>
+Message-ID: <alpine.DEB.2.02.1305021811560.5398@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1304301707290.5398@kaball.uk.xensource.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <20130502124826.GE22618@amd.pavel.ucw.cz>
-References: <1367271946-7239-1-git-send-email-ccross@android.com>
-	<1367271946-7239-4-git-send-email-ccross@android.com>
-	<20130502124826.GE22618@amd.pavel.ucw.cz>
-Date: Thu, 2 May 2013 10:05:43 -0700
-X-Google-Sender-Auth: 9VZEvJlqEOU8I2yHn_-nksoSFJg
-Message-ID: <CAMbhsRRhcM=59xVgitYPyY-rzJTjV1mgwwusOzqFUqT2=__JDg@mail.gmail.com>
-Subject: Re: [PATCH 03/10] freezer: add new freezable helpers using freezer_do_not_count()
-From: Colin Cross <ccross@android.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
-        Len Brown <len.brown@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 2, 2013 at 5:48 AM, Pavel Machek <pavel@ucw.cz> wrote:
-> On Mon 2013-04-29 14:45:39, Colin Cross wrote:
->> Freezing tasks will wake up almost every userspace task from
->> where it is blocking and force it to run until it hits a
->> call to try_to_sleep(), generally on the exit path from the syscall
->> it is blocking in.  On resume each task will run again, usually
->> restarting the syscall and running until it hits the same
->> blocking call as it was originally blocked in.
->
-> Ok, so you are optimizing suspend at the cost of runtime operations,
-> right?
-The runtime operations are negligible, it is setting a bit before
-blocking, and then clearing the bit and checking a single global
-counter as the fast-path after blocking.  Both will be lost in the
-noise of the context switch that is happening.
+ping
 
-> Would it make sense to do suspends entirely without freezer in your
-> configurations? With the right drivers, it should work ok.
-
-No, we need userspace tasks to freeze.  That is one of the main
-reasons we go to suspend, to prevent recurring timers from firing.
-
-> Actually, would it make sense to simply enter deep idle and do runtime
-> powersaving in the drivers... n900 does that rather successfully and
-> it is certainly cleaner design.
-
-It depends on the SoC if that is even possible, and if we did do it we
-would still use cgroup freezers to prevent apps from running and
-eating the battery so this patch would still be applicable.
-
->> +/* Like schedule_timeout(), but should not block the freezer. */
->> +#define freezable_schedule_timeout(timeout)                          \
->> +({                                                                   \
->> +     long __retval;                                                  \
->> +     freezer_do_not_count();                                         \
->> +     __retval = schedule_timeout(timeout);                           \
->> +     freezer_count();                                                \
->> +     __retval;                                                       \
->> +})
->
-> You plan to use this a lot during normal operation, right? Is it going
-> to have some measureable impact?
-
-It has a very measurable impact on suspend/resume operations (reducing
-freeze time by a factor of 10, reducing context switches from 1000 to
-25).  I haven't measured the impact on total energy used for a
-suspend/resume cycle, but based on previous measurements I expect it
-to be beneficial.
-
-> Also, why not static inline?
-
-I copied the style of the existing helpers.  I can change them all to
-static inlines if you prefer.
+On Tue, 30 Apr 2013, Stefano Stabellini wrote:
+> Hi all,
+> this is the tenth version of the patch series to move virt_smp_ops out
+> of mach-virt and make it a generic set of reusable PSCI based smp_ops.
+> psci_smp_ops are preferred over the platform smp_ops.  The last patch
+> introduces smp_init.
+> 
+> Changes in v10:
+> - add include <linux/types.h> to mach/arch.h.
+> 
+> 
+> 
+> Jon Medhurst (1):
+>       ARM: Enable selection of SMP operations at boot time
+> 
+> Stefano Stabellini (1):
+>       arm: introduce psci_smp_ops
+> 
+>  arch/arm/include/asm/mach/arch.h |    5 ++
+>  arch/arm/include/asm/psci.h      |    9 ++++
+>  arch/arm/kernel/Makefile         |    5 ++-
+>  arch/arm/kernel/psci.c           |    7 +--
+>  arch/arm/kernel/psci_smp.c       |   90 ++++++++++++++++++++++++++++++++++++++
+>  arch/arm/kernel/setup.c          |    9 +++-
+>  arch/arm/mach-virt/Makefile      |    1 -
+>  arch/arm/mach-virt/platsmp.c     |   58 ------------------------
+>  arch/arm/mach-virt/virt.c        |    3 -
+>  9 files changed, 119 insertions(+), 68 deletions(-)
+>  create mode 100644 arch/arm/kernel/psci_smp.c
+>  delete mode 100644 arch/arm/mach-virt/platsmp.c
+> 
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/sstabellini/xen.git 3.9-rc3-psci-ops-10-tag
+> 
+> Cheers,
+> 
+> Stefano
+> 
