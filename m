@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758808Ab3EBAkg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 20:40:36 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56022 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756226Ab3EBAkd (ORCPT
+	id S1758965Ab3EBAkt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 20:40:49 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:53878 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757688Ab3EBAki (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 20:40:33 -0400
+	Wed, 1 May 2013 20:40:38 -0400
 From: Tejun Heo <tj@kernel.org>
 To: axboe@kernel.dk
 Cc: linux-kernel@vger.kernel.org, lizefan@huawei.com,
         containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
         vgoyal@redhat.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 02/31] blkcg: move blkg_for_each_descendant_pre() to block/blk-cgroup.h
-Date: Wed,  1 May 2013 17:39:20 -0700
-Message-Id: <1367455189-6957-3-git-send-email-tj@kernel.org>
+Subject: [PATCH 05/31] blkcg: move bulk of blkcg_gq release operations to the RCU callback
+Date: Wed,  1 May 2013 17:39:23 -0700
+Message-Id: <1367455189-6957-6-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1367455189-6957-1-git-send-email-tj@kernel.org>
 References: <1367455189-6957-1-git-send-email-tj@kernel.org>
@@ -22,89 +22,107 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-blk-throttle hierarchy support will make use of it.  Move
-blkg_for_each_descendant_pre() from block/blk-cgroup.c to
-block/blk-cgroup.h.
+Currently, when the last reference of a blkcg_gq is put, all then
+release operations sans the actual freeing happen directly in
+blkg_put().  As blkg_put() may be called under queue_lock, all
+pd_exit_fn()s may be too.  This makes it impossible for pd_exit_fn()s
+to use del_timer_sync() on timers which grab the queue_lock which is
+an irq-safe lock due to the deadlock possibility described in the
+comment on top of del_timer_sync().
 
-signed-off-by: Tejun Heo <tj@kernel.org>
+This can be easily avoided by perfoming the release operations in the
+RCU callback instead of directly from blkg_put().  This patch moves
+the blkcg_gq release operations to the RCU callback.
+
+As this leaves __blkg_release() with only call_rcu() invocation,
+blkg_rcu_free() is renamed to __blkg_release_rcu(), exported and
+call_rcu() invocation is now done directly from blkg_put() instead of
+going through __blkg_release() which is removed.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- block/blk-cgroup.c | 24 ++----------------------
- block/blk-cgroup.h | 20 ++++++++++++++++++++
- 2 files changed, 22 insertions(+), 22 deletions(-)
+ block/blk-cgroup.c | 34 ++++++++++++++++------------------
+ block/blk-cgroup.h |  4 ++--
+ 2 files changed, 18 insertions(+), 20 deletions(-)
 
 diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-index 0ab211a..6b10d5c 100644
+index f13cf95..af2ca27 100644
 --- a/block/blk-cgroup.c
 +++ b/block/blk-cgroup.c
-@@ -32,26 +32,6 @@ EXPORT_SYMBOL_GPL(blkcg_root);
- 
- static struct blkcg_policy *blkcg_policy[BLKCG_MAX_POLS];
- 
--static struct blkcg_gq *__blkg_lookup(struct blkcg *blkcg,
--				      struct request_queue *q, bool update_hint);
--
--/**
-- * blkg_for_each_descendant_pre - pre-order walk of a blkg's descendants
-- * @d_blkg: loop cursor pointing to the current descendant
-- * @pos_cgrp: used for iteration
-- * @p_blkg: target blkg to walk descendants of
-- *
-- * Walk @c_blkg through the descendants of @p_blkg.  Must be used with RCU
-- * read locked.  If called under either blkcg or queue lock, the iteration
-- * is guaranteed to include all and only online blkgs.  The caller may
-- * update @pos_cgrp by calling cgroup_rightmost_descendant() to skip
-- * subtree.
-- */
--#define blkg_for_each_descendant_pre(d_blkg, pos_cgrp, p_blkg)		\
--	cgroup_for_each_descendant_pre((pos_cgrp), (p_blkg)->blkcg->css.cgroup) \
--		if (((d_blkg) = __blkg_lookup(cgroup_to_blkcg(pos_cgrp), \
--					      (p_blkg)->q, false)))
--
- static bool blkcg_policy_enabled(struct request_queue *q,
- 				 const struct blkcg_policy *pol)
- {
-@@ -158,8 +138,8 @@ err_free:
-  * @q's bypass state.  If @update_hint is %true, the caller should be
-  * holding @q->queue_lock and lookup hint is updated on success.
-  */
--static struct blkcg_gq *__blkg_lookup(struct blkcg *blkcg,
--				      struct request_queue *q, bool update_hint)
-+struct blkcg_gq *__blkg_lookup(struct blkcg *blkcg, struct request_queue *q,
-+			       bool update_hint)
- {
- 	struct blkcg_gq *blkg;
- 
-diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
-index 4e595ee..11f5b92 100644
---- a/block/blk-cgroup.h
-+++ b/block/blk-cgroup.h
-@@ -282,6 +282,26 @@ static inline void blkg_put(struct blkcg_gq *blkg)
- 		__blkg_release(blkg);
+@@ -369,13 +369,17 @@ static void blkg_destroy_all(struct request_queue *q)
+ 	q->root_rl.blkg = NULL;
  }
  
-+struct blkcg_gq *__blkg_lookup(struct blkcg *blkcg, struct request_queue *q,
-+			       bool update_hint);
-+
-+/**
-+ * blkg_for_each_descendant_pre - pre-order walk of a blkg's descendants
-+ * @d_blkg: loop cursor pointing to the current descendant
-+ * @pos_cgrp: used for iteration
-+ * @p_blkg: target blkg to walk descendants of
+-static void blkg_rcu_free(struct rcu_head *rcu_head)
+-{
+-	blkg_free(container_of(rcu_head, struct blkcg_gq, rcu_head));
+-}
+-
+-void __blkg_release(struct blkcg_gq *blkg)
++/*
++ * A group is RCU protected, but having an rcu lock does not mean that one
++ * can access all the fields of blkg and assume these are valid.  For
++ * example, don't try to follow throtl_data and request queue links.
 + *
-+ * Walk @c_blkg through the descendants of @p_blkg.  Must be used with RCU
-+ * read locked.  If called under either blkcg or queue lock, the iteration
-+ * is guaranteed to include all and only online blkgs.  The caller may
-+ * update @pos_cgrp by calling cgroup_rightmost_descendant() to skip
-+ * subtree.
++ * Having a reference to blkg under an rcu allows accesses to only values
++ * local to groups like group stats and group rate limits.
 + */
-+#define blkg_for_each_descendant_pre(d_blkg, pos_cgrp, p_blkg)		\
-+	cgroup_for_each_descendant_pre((pos_cgrp), (p_blkg)->blkcg->css.cgroup) \
-+		if (((d_blkg) = __blkg_lookup(cgroup_to_blkcg(pos_cgrp), \
-+					      (p_blkg)->q, false)))
-+
++void __blkg_release_rcu(struct rcu_head *rcu_head)
+ {
++	struct blkcg_gq *blkg = container_of(rcu_head, struct blkcg_gq, rcu_head);
+ 	int i;
+ 
+ 	/* tell policies that this one is being freed */
+@@ -388,21 +392,15 @@ void __blkg_release(struct blkcg_gq *blkg)
+ 
+ 	/* release the blkcg and parent blkg refs this blkg has been holding */
+ 	css_put(&blkg->blkcg->css);
+-	if (blkg->parent)
++	if (blkg->parent) {
++		spin_lock_irq(blkg->q->queue_lock);
+ 		blkg_put(blkg->parent);
++		spin_unlock_irq(blkg->q->queue_lock);
++	}
+ 
+-	/*
+-	 * A group is freed in rcu manner. But having an rcu lock does not
+-	 * mean that one can access all the fields of blkg and assume these
+-	 * are valid. For example, don't try to follow throtl_data and
+-	 * request queue links.
+-	 *
+-	 * Having a reference to blkg under an rcu allows acess to only
+-	 * values local to groups like group stats and group rate limits
+-	 */
+-	call_rcu(&blkg->rcu_head, blkg_rcu_free);
++	blkg_free(blkg);
+ }
+-EXPORT_SYMBOL_GPL(__blkg_release);
++EXPORT_SYMBOL_GPL(__blkg_release_rcu);
+ 
+ /*
+  * The next function used by blk_queue_for_each_rl().  It's a bit tricky
+diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
+index e15f731..8056c03 100644
+--- a/block/blk-cgroup.h
++++ b/block/blk-cgroup.h
+@@ -266,7 +266,7 @@ static inline void blkg_get(struct blkcg_gq *blkg)
+ 	blkg->refcnt++;
+ }
+ 
+-void __blkg_release(struct blkcg_gq *blkg);
++void __blkg_release_rcu(struct rcu_head *rcu);
+ 
  /**
-  * blk_get_rl - get request_list to use
-  * @q: request_queue of interest
+  * blkg_put - put a blkg reference
+@@ -279,7 +279,7 @@ static inline void blkg_put(struct blkcg_gq *blkg)
+ 	lockdep_assert_held(blkg->q->queue_lock);
+ 	WARN_ON_ONCE(blkg->refcnt <= 0);
+ 	if (!--blkg->refcnt)
+-		__blkg_release(blkg);
++		call_rcu(&blkg->rcu_head, __blkg_release_rcu);
+ }
+ 
+ struct blkcg_gq *__blkg_lookup(struct blkcg *blkcg, struct request_queue *q,
 -- 
 1.8.1.4
 
