@@ -1,99 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932751Ab3EBPSS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 11:18:18 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:58894 "EHLO
+	id S932716Ab3EBPSQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 11:18:16 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:51145 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932549Ab3EBPQx (ORCPT
+	with ESMTP id S932558Ab3EBPQx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 2 May 2013 11:16:53 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-kernel@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>
-Subject: [PATCH, RFC 04/22] staging/drm: imx: add missing dependencies
-Date: Thu,  2 May 2013 17:16:08 +0200
-Message-Id: <1367507786-505303-5-git-send-email-arnd@arndb.de>
+        Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH, RFC 16/22] USB: UHCI: clarify Kconfig dependencies
+Date: Thu,  2 May 2013 17:16:20 +0200
+Message-Id: <1367507786-505303-17-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1367507786-505303-1-git-send-email-arnd@arndb.de>
 References: <1367507786-505303-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:bJeJTKCE7AuSCtbZiiqWqH7zMf8vF9EFnpF73KIMo2j
- 21KX7tQSXV4TPDNYN7p1+n739lBXwugwM0ERM/cvb9KJ6+Fd4L
- bYwd95hw7jnjufR7yazpi8CYNS0mxDYFdhYo1RD1VVpcGAp29m
- YEekjulI9Wh04/M/18M0qPHPzDbm7DIJd0L0HnnX+/DS/j7FXU
- kDjEWSFpCCJ9rwqCXOnFhX/FsWo1b17dsmIRtMrUTsbNoCay92
- 18q64sWhs2WKtsEP560ntrDK83PAUaEVgPj+tHuKNdr8a/pG8D
- qTHkpgOsExXo/mcpJQLYs44gWEqXA3Q+LHCZwbj/X91YPr/x5M
- S3ijkuhszFQgcallG3jLBj4MmeLokKPvPRfdCRKcJ
+X-Provags-ID: V02:K0:t9mgKZk4YKDZl4xLlFn1WRb6uHzm2ot3INHU6owzn4Q
+ 8P37pNW3O1jlI6P1OEGjWzGod3JI9luvtzbvmoMXgsrffdeUvd
+ gNjB5OmjGaPd/Kyofd+WI6rogcIar8T6NVkL+Uwro0GnSlsygL
+ UtVPvNH3259OqAD5YkpLcSqPhHCpyOEdxBVUgMZfqP6SQrJJSr
+ nJamNt4F40OZy0P3wKRqA9nvmnHXhIFpeLfqBsg5AozpIN1zvb
+ 8M2av6E84BPuyDok9u8vuX/jfIcsBBK01EYqFue0+mT8fOm5AC
+ oN0k5qaar9j4t8rQVKe8seCIJ9jlzd7p8j2WvpGWrZOrheLDFj
+ lDUUeAKFy3ip/AFXNc+WaFFLetoa5vPbnSCf45JwB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The imx DRM driver needs a couple of extra Kconfig dependencies
-to avoid random build failures:
+The UHCI driver currently gives a build error if the base driver is
+enabled but none of the three bus glues are turned on:
 
-drivers/staging/imx-drm/ipuv3-crtc.c:448:
- undefined reference to `ipu_idmac_put'
- drivers/staging/imx-drm/ipuv3-crtc.c:450: undefined reference to
- `ipu_dmfc_put' drivers/staging/imx-drm/ipuv3-crtc.c:452:
- undefined reference to `ipu_dp_put'
- drivers/staging/imx-drm/ipuv3-crtc.c:454: undefined reference to
- `ipu_di_put'
-drivers/built-in.o: In function `ipu_probe':
- :(.text+0x4b4174): undefined reference to `device_reset'
-drivers/built-in.o: In function `imx_tve_probe':
- drivers/staging/imx-drm/imx-tve.c:648: undefined reference to
- `devm_regmap_init_mmio_clk'
-drivers/built-in.o: In function
- `imx_pd_connector_get_modes':
- drivers/staging/imx-drm/parallel-display.c:78: undefined
- reference to `of_get_drm_display_mode'
+drivers/usb/host/uhci-hcd.c:857:2: error: #error "missing bus glue for uhci-hcd"
 
+A better solution for this is to change the Kconfig statements to
+prevent getting into this situation. This adds a new USB_UHCI_CORE
+symbol in Kconfig, which is selected by each of the three bus glues.
+This way, the driver never gets built if all three of them are disabled.
+
+Cc: Alan Stern <stern@rowland.harvard.edu>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Shawn Guo <shawn.guo@linaro.org>
-Cc: Philipp Zabel <p.zabel@pengutronix.de>
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 ---
- drivers/staging/imx-drm/Kconfig | 4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/usb/host/Kconfig    | 36 +++++++++++++++++++++++++++---------
+ drivers/usb/host/Makefile   |  2 +-
+ drivers/usb/host/uhci-hcd.c |  4 ++--
+ 3 files changed, 30 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/staging/imx-drm/Kconfig b/drivers/staging/imx-drm/Kconfig
-index 8c9e403..35ccda5 100644
---- a/drivers/staging/imx-drm/Kconfig
-+++ b/drivers/staging/imx-drm/Kconfig
-@@ -1,6 +1,7 @@
- config DRM_IMX
- 	tristate "DRM Support for Freescale i.MX"
- 	select DRM_KMS_HELPER
-+	select VIDEOMODE_HELPERS
- 	select DRM_GEM_CMA_HELPER
- 	select DRM_KMS_CMA_HELPER
- 	depends on DRM && (ARCH_MXC || ARCH_MULTIPLATFORM)
-@@ -23,6 +24,7 @@ config DRM_IMX_PARALLEL_DISPLAY
- config DRM_IMX_TVE
- 	tristate "Support for TV and VGA displays"
- 	depends on DRM_IMX
-+	select REGMAP_MMIO
- 	help
- 	  Choose this to enable the internal Television Encoder (TVe)
- 	  found on i.MX53 processors.
-@@ -30,6 +32,7 @@ config DRM_IMX_TVE
- config DRM_IMX_IPUV3_CORE
- 	tristate "IPUv3 core support"
- 	depends on DRM_IMX
-+	depends on RESET_CONTROLLER
- 	help
- 	  Choose this if you have a i.MX5/6 system and want
- 	  to use the IPU. This option only enables IPU base
-@@ -38,5 +41,6 @@ config DRM_IMX_IPUV3_CORE
- config DRM_IMX_IPUV3
- 	tristate "DRM Support for i.MX IPUv3"
- 	depends on DRM_IMX
-+	depends on DRM_IMX_IPUV3_CORE
- 	help
- 	  Choose this if you have a i.MX5 or i.MX6 processor.
+diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
+index 7b176bc..656af4d 100644
+--- a/drivers/usb/host/Kconfig
++++ b/drivers/usb/host/Kconfig
+@@ -525,28 +525,46 @@ config USB_UHCI_HCD
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called uhci-hcd.
+ 
+-config USB_UHCI_SUPPORT_NON_PCI_HC
+-	bool
+-	depends on USB_UHCI_HCD
+-	default y if (SPARC_LEON || ARCH_VT8500)
++if USB_UHCI_HCD
++
++config USB_UHCI_PCI
++	tristate
++	default USB_UHCI_HCD
++	depends on PCI
++	select USB_UHCI_CORE
++
++config USB_UHCI_GRLIB
++	tristate
++	default USB_UHCI_HCD
++	depends on SPARC_LEON
++	select USB_UHCI_CORE
++	select USB_UHCI_SUPPORT_NON_PCI_HC
++	select USB_UHCI_BIG_ENDIAN_MMIO
++	select USB_UHCI_BIG_ENDIAN_DESC
+ 
+ config USB_UHCI_PLATFORM
+ 	bool "Generic UHCI Platform Driver support"
+-	depends on USB_UHCI_SUPPORT_NON_PCI_HC
+ 	default y if ARCH_VT8500
++	select USB_UHCI_SUPPORT_NON_PCI_HC
++	select USB_UHCI_CORE
+ 	---help---
+ 	  Enable support for generic UHCI platform devices that require no
+ 	  additional configuration.
+ 
++config USB_UHCI_CORE
++	tristate
++	depends on USB_UHCI_HCD
++
++config USB_UHCI_SUPPORT_NON_PCI_HC
++	bool
++
+ config USB_UHCI_BIG_ENDIAN_MMIO
+ 	bool
+-	depends on USB_UHCI_SUPPORT_NON_PCI_HC && SPARC_LEON
+-	default y
+ 
+ config USB_UHCI_BIG_ENDIAN_DESC
+ 	bool
+-	depends on USB_UHCI_SUPPORT_NON_PCI_HC && SPARC_LEON
+-	default y
++
++endif
+ 
+ config USB_FHCI_HCD
+ 	tristate "Freescale QE USB Host Controller support"
+diff --git a/drivers/usb/host/Makefile b/drivers/usb/host/Makefile
+index 4fb73c1..1441d42 100644
+--- a/drivers/usb/host/Makefile
++++ b/drivers/usb/host/Makefile
+@@ -38,7 +38,7 @@ obj-$(CONFIG_USB_OXU210HP_HCD)	+= oxu210hp-hcd.o
+ obj-$(CONFIG_USB_ISP116X_HCD)	+= isp116x-hcd.o
+ obj-$(CONFIG_USB_ISP1362_HCD)	+= isp1362-hcd.o
+ obj-$(CONFIG_USB_OHCI_HCD)	+= ohci-hcd.o
+-obj-$(CONFIG_USB_UHCI_HCD)	+= uhci-hcd.o
++obj-$(CONFIG_USB_UHCI_CORE)	+= uhci-hcd.o
+ obj-$(CONFIG_USB_FHCI_HCD)	+= fhci.o
+ obj-$(CONFIG_USB_XHCI_HCD)	+= xhci-hcd.o
+ obj-$(CONFIG_USB_SL811_HCD)	+= sl811-hcd.o
+diff --git a/drivers/usb/host/uhci-hcd.c b/drivers/usb/host/uhci-hcd.c
+index 4a86b63..612b792 100644
+--- a/drivers/usb/host/uhci-hcd.c
++++ b/drivers/usb/host/uhci-hcd.c
+@@ -838,12 +838,12 @@ static int uhci_count_ports(struct usb_hcd *hcd)
+ 
+ static const char hcd_name[] = "uhci_hcd";
+ 
+-#ifdef CONFIG_PCI
++#ifdef CONFIG_USB_UHCI_PCI
+ #include "uhci-pci.c"
+ #define	PCI_DRIVER		uhci_pci_driver
+ #endif
+ 
+-#ifdef CONFIG_SPARC_LEON
++#ifdef CONFIG_USB_UHCI_GRLIB
+ #include "uhci-grlib.c"
+ #define PLATFORM_DRIVER		uhci_grlib_driver
+ #endif
 -- 
 1.8.1.2
 
