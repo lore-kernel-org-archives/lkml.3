@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760393Ab3EBArV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 20:47:21 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:64064 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756226Ab3EBAkr (ORCPT
+	id S1760460Ab3EBArm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 20:47:42 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:43748 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758856Ab3EBAko (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 20:40:47 -0400
+	Wed, 1 May 2013 20:40:44 -0400
 From: Tejun Heo <tj@kernel.org>
 To: axboe@kernel.dk
 Cc: linux-kernel@vger.kernel.org, lizefan@huawei.com,
         containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
         vgoyal@redhat.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 10/31] blk-throttle: remove pointless throtl_nr_queued() optimizations
-Date: Wed,  1 May 2013 17:39:28 -0700
-Message-Id: <1367455189-6957-11-git-send-email-tj@kernel.org>
+Subject: [PATCH 08/31] blk-throttle: collapse throtl_dispatch() into the work function
+Date: Wed,  1 May 2013 17:39:26 -0700
+Message-Id: <1367455189-6957-9-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1367455189-6957-1-git-send-email-tj@kernel.org>
 References: <1367455189-6957-1-git-send-email-tj@kernel.org>
@@ -22,110 +22,95 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-throtl_nr_queued() is used in several places to avoid performing
-certain operations when the throtl_data is empty.  This usually is
-useless as those paths usually aren't traveled if there's no bio
-queued.
+blk-throttle is about to go through major restructuring to support
+hierarchy.  Do cosmetic updates in preparation.
 
-* throtl_schedule_delayed_work() skips scheduling dispatch work item
-  if @td doesn't have any bios queued; however, the only case it can
-  be called when @td is empty is from tg_set_conf() which isn't
-  something we should be optimizing for.
+* s/throtl_data->throtl_work/throtl_data->dispatch_work/
 
-* throtl_schedule_next_dispatch() takes a quick exit if @td is empty;
-  however, right after that it triggers BUG if the service tree is
-  empty.  The two conditions are equivalent and it can just test
-  @st->count for the quick exit.
+* s/blk_throtl_work()/blk_throtl_dispatch_work_fn()/
 
-* blk_throtl_dispatch_work_fn() skips dispatch if @td is empty.  This
-  work function isn't usually invoked when @td is empty.  The only
-  possibility is from tg_set_conf() and when it happens the normal
-  dispatching path can handle empty @td fine.  No need to add special
-  skip path.
+* Collapse throtl_dispatch() into blk_throtl_dispatch_work_fn()
 
-This patch removes the above three unnecessary optimizations, which
-leave throtl_log() call in blk_throtl_dispatch_work_fn() the only user
-of throtl_nr_queued().  Remove throtl_nr_queued() and open code it in
-throtl_log().  I don't think we need td->nr_queued[] at all.  Maybe we
-can remove it later.
+This patch is purely cosmetic.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- block/blk-throttle.c | 29 +++++++----------------------
- 1 file changed, 7 insertions(+), 22 deletions(-)
+ block/blk-throttle.c | 26 +++++++++-----------------
+ 1 file changed, 9 insertions(+), 17 deletions(-)
 
 diff --git a/block/blk-throttle.c b/block/blk-throttle.c
-index 00e72f4..6fd08a4 100644
+index 7a5e08e..d50d8d1 100644
 --- a/block/blk-throttle.c
 +++ b/block/blk-throttle.c
-@@ -166,11 +166,6 @@ THROTL_TG_FNS(on_rr);
- #define throtl_log(td, fmt, args...)	\
- 	blk_add_trace_msg((td)->queue, "throtl " fmt, ##args)
+@@ -108,7 +108,7 @@ struct throtl_data
+ 	unsigned int nr_undestroyed_grps;
  
--static inline unsigned int total_nr_queued(struct throtl_data *td)
--{
--	return td->nr_queued[0] + td->nr_queued[1];
--}
--
- /*
-  * Worker for allocating per cpu stat for tgs. This is scheduled on the
-  * system_wq once there are some groups on the alloc_list waiting for
-@@ -402,25 +397,18 @@ static void throtl_schedule_delayed_work(struct throtl_data *td,
- {
- 	struct delayed_work *dwork = &td->dispatch_work;
+ 	/* Work for dispatching throttled bios */
+-	struct delayed_work throtl_work;
++	struct delayed_work dispatch_work;
+ };
  
--	if (total_nr_queued(td)) {
--		mod_delayed_work(kthrotld_workqueue, dwork, delay);
--		throtl_log(td, "schedule work. delay=%lu jiffies=%lu",
--			   delay, jiffies);
--	}
-+	mod_delayed_work(kthrotld_workqueue, dwork, delay);
-+	throtl_log(td, "schedule work. delay=%lu jiffies=%lu", delay, jiffies);
+ /* list and work item to allocate percpu group stats */
+@@ -820,10 +820,12 @@ static int throtl_select_dispatch(struct throtl_data *td, struct bio_list *bl)
+ 	return nr_disp;
  }
  
- static void throtl_schedule_next_dispatch(struct throtl_data *td)
+-/* Dispatch throttled bios. Should be called without queue lock held. */
+-static int throtl_dispatch(struct request_queue *q)
++/* work function to dispatch throttled bios */
++void blk_throtl_dispatch_work_fn(struct work_struct *work)
  {
- 	struct throtl_rb_root *st = &td->tg_service_tree;
- 
--	/*
--	 * If there are more bios pending, schedule more work.
--	 */
--	if (!total_nr_queued(td))
-+	/* any pending children left? */
-+	if (!st->count)
- 		return;
- 
--	BUG_ON(!st->count);
+-	struct throtl_data *td = q->td;
++	struct throtl_data *td = container_of(to_delayed_work(work),
++					      struct throtl_data, dispatch_work);
++	struct request_queue *q = td->queue;
+ 	unsigned int nr_disp = 0;
+ 	struct bio_list bio_list_on_stack;
+ 	struct bio *bio;
+@@ -859,16 +861,6 @@ out:
+ 			generic_make_request(bio);
+ 		blk_finish_plug(&plug);
+ 	}
+-	return nr_disp;
+-}
 -
- 	update_min_dispatch_time(st);
- 
- 	if (time_before_eq(st->min_disptime, jiffies))
-@@ -844,14 +832,11 @@ void blk_throtl_dispatch_work_fn(struct work_struct *work)
- 
- 	spin_lock_irq(q->queue_lock);
- 
--	if (!total_nr_queued(td))
--		goto out;
+-void blk_throtl_work(struct work_struct *work)
+-{
+-	struct throtl_data *td = container_of(work, struct throtl_data,
+-					throtl_work.work);
+-	struct request_queue *q = td->queue;
 -
- 	bio_list_init(&bio_list_on_stack);
+-	throtl_dispatch(q);
+ }
  
- 	throtl_log(td, "dispatch nr_queued=%u read=%u write=%u",
--			total_nr_queued(td), td->nr_queued[READ],
--			td->nr_queued[WRITE]);
-+		   td->nr_queued[READ] + td->nr_queued[WRITE],
-+		   td->nr_queued[READ], td->nr_queued[WRITE]);
+ /* Call with queue lock held */
+@@ -876,7 +868,7 @@ static void
+ throtl_schedule_delayed_work(struct throtl_data *td, unsigned long delay)
+ {
  
- 	nr_disp = throtl_select_dispatch(td, &bio_list_on_stack);
+-	struct delayed_work *dwork = &td->throtl_work;
++	struct delayed_work *dwork = &td->dispatch_work;
  
-@@ -859,7 +844,7 @@ void blk_throtl_dispatch_work_fn(struct work_struct *work)
- 		throtl_log(td, "bios disp=%u", nr_disp);
+ 	if (total_nr_queued(td)) {
+ 		mod_delayed_work(kthrotld_workqueue, dwork, delay);
+@@ -1060,7 +1052,7 @@ static void throtl_shutdown_wq(struct request_queue *q)
+ {
+ 	struct throtl_data *td = q->td;
  
- 	throtl_schedule_next_dispatch(td);
--out:
-+
- 	spin_unlock_irq(q->queue_lock);
+-	cancel_delayed_work_sync(&td->throtl_work);
++	cancel_delayed_work_sync(&td->dispatch_work);
+ }
  
- 	/*
+ static struct blkcg_policy blkcg_policy_throtl = {
+@@ -1209,7 +1201,7 @@ int blk_throtl_init(struct request_queue *q)
+ 		return -ENOMEM;
+ 
+ 	td->tg_service_tree = THROTL_RB_ROOT;
+-	INIT_DELAYED_WORK(&td->throtl_work, blk_throtl_work);
++	INIT_DELAYED_WORK(&td->dispatch_work, blk_throtl_dispatch_work_fn);
+ 
+ 	q->td = td;
+ 	td->queue = q;
 -- 
 1.8.1.4
 
