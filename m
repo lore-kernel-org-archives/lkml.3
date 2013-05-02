@@ -1,60 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762000Ab3EBSwk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 14:52:40 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:58301 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761987Ab3EBSwi (ORCPT
+	id S1762021Ab3EBSw6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 14:52:58 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:46059 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761268Ab3EBSw4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 14:52:38 -0400
-Message-ID: <5182B5F1.7090800@wwwdotorg.org>
-Date: Thu, 02 May 2013 12:52:33 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Christian Ruppert <christian.ruppert@abilis.com>
-CC: linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Sascha Leuenberger <sascha.leuenberger@abilis.com>,
-        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org
-Subject: Re: [PATCH 1/2] pinmux: Add TB10x pinmux driver
-References: <1365608728-30494-1-git-send-email-christian.ruppert@abilis.com> <516EEAA0.10906@wwwdotorg.org> <20130418090310.GA17636@ab42.lan>
-In-Reply-To: <20130418090310.GA17636@ab42.lan>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 2 May 2013 14:52:56 -0400
+Message-ID: <1367520929.23900.114.camel@haakon3.risingtidesystems.com>
+Subject: Re: [PULL] vhost: cleanups and fixes
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: kvm@vger.kernel.org, virtualization@lists.osdl.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, asias@redhat.com,
+        target-devel <target-devel@vger.kernel.org>
+Date: Thu, 02 May 2013 11:55:29 -0700
+In-Reply-To: <20130502105353.GA24655@redhat.com>
+References: <20130502105353.GA24655@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/18/2013 03:03 AM, Christian Ruppert wrote:
-> Dear Stephen and Linus,
+On Thu, 2013-05-02 at 13:53 +0300, Michael S. Tsirkin wrote:
+> The following changes since commit c39904a0ac22cf05f5f44226457f6da0fe65457e:
 > 
-> I am responding to this message because it touches the core issue I was
-> wondering about when integrating pinctrl with GPIO. I think all
-> unrelated comments in your other messages are valid and will be
-> addressed in the next iteration of both drivers.
+>   Merge branch 'master' of git://git.kernel.org/pub/scm/linux/kernel/git/jkirsher/net-next (2013-04-26 23:33:41 -0400)
 > 
-> On Wed, Apr 17, 2013 at 12:32:00PM -0600, Stephen Warren wrote:
->> On 04/10/2013 09:45 AM, Christian Ruppert wrote:
->>> The pinmux driver of the Abilis Systems TB10x platform based on ARC700 CPUs.
->>> Used to control the pinmux and is a prerequisite for the GPIO driver.
->>
->> Linus already did a review of this, but I have a few extra comments:
->>
->>> diff --git a/Documentation/devicetree/bindings/pinctrl/abilis,tb10x-iomux.txt b/Documentation/devicetree/bindings/pinctrl/abilis,tb10x-iomux.txt
-...
->> * A list of pins/groups to apply the settings to.
+> are available in the git repository at:
 > 
-> This is what the pingrp string refers to. We really don't want to expose
-> Linux internal pin numbers!
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/mst/vhost.git tags/for_linus
+> 
+> for you to fetch changes up to 181c04a357bb791587c55a99362c2fdde2c64f18:
+> 
+>   vhost_scsi: module rename (2013-05-02 13:40:22 +0300)
+> 
+> ----------------------------------------------------------------
+> vhost: cleanups and fixes for 3.10
+> 
+> Here are vhost cleanups and fixes by Asias He and myself.
+> They affect both vhost-net and vhost-scsi devices.
+> They also *depend* on both net-next and target-pending,
+> where the net and target commits these changes depend on
+> are already merged.
+> So merging through the common vhost tree.
+> 
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> 
 
-I wasn't suggesting a particular naming/numbering scheme for the pins,
-but simply that the document has to state what that naming/numbering
-scheme is, so that people know how to fill in the DT. If the
-naming/numbering scheme exactly matches some HW manual, then it should
-be enough to say e.g. "see section X in Foo manual", to avoid
-duplicating the information. If not, then the valid values should be
-listed in the binding document.
+Just FYI, if this PULL request is going to Linus directly, you'll
+probably want to rebase a branch atop a more recent mainline HEAD in
+order to produce a correct diffstat, instead of the one including the
+target-pending/for-next-merge merge commit below..
+
+Then again, asking Linus what he prefers for this type of scenario never
+hurt anyone either.  ;)
+
+--nab
+
+> ----------------------------------------------------------------
+> Asias He (3):
+>       vhost: Allow device specific fields per vq
+>       tcm_vhost: Wait for pending requests in vhost_scsi_flush()
+>       vhost: move vhost-net zerocopy fields to net.c
+> 
+> Michael S. Tsirkin (8):
+>       Merge branch 'for-next-merge' of git://git.kernel.org/.../nab/target-pending into vhost-net-next
+>       tcm_vhost: document inflight ref-counting use
+>       vhost: move per-vq net specific fields out to net
+>       tcm_vhost: remove virtio-net.h dependency
+>       vhost: fix error handling in RESET_OWNER ioctl
+>       vhost: src file renames
+>       tcm_vhost: header split up
+>       vhost_scsi: module rename
+> 
+>  drivers/infiniband/Kconfig                     |    1 +
+>  drivers/infiniband/Makefile                    |    1 +
+>  drivers/infiniband/ulp/isert/Kconfig           |    5 +
+>  drivers/infiniband/ulp/isert/Makefile          |    2 +
+>  drivers/infiniband/ulp/isert/ib_isert.c        | 2281 ++++++++++++++++++++++++
+>  drivers/infiniband/ulp/isert/ib_isert.h        |  138 ++
+>  drivers/infiniband/ulp/isert/isert_proto.h     |   47 +
+>  drivers/scsi/qla2xxx/qla_target.c              |   19 -
+>  drivers/scsi/qla2xxx/qla_target.h              |    1 -
+>  drivers/target/iscsi/Makefile                  |    3 +-
+>  drivers/target/iscsi/iscsi_target.c            | 1184 +++++++-----
+>  drivers/target/iscsi/iscsi_target.h            |    3 +-
+>  drivers/target/iscsi/iscsi_target_auth.c       |   28 +-
+>  drivers/target/iscsi/iscsi_target_configfs.c   |   98 +-
+>  drivers/target/iscsi/iscsi_target_core.h       |   26 +-
+>  drivers/target/iscsi/iscsi_target_device.c     |    7 +-
+>  drivers/target/iscsi/iscsi_target_erl1.c       |   13 +-
+>  drivers/target/iscsi/iscsi_target_login.c      |  472 +++--
+>  drivers/target/iscsi/iscsi_target_login.h      |    6 +
+>  drivers/target/iscsi/iscsi_target_nego.c       |  194 +-
+>  drivers/target/iscsi/iscsi_target_nego.h       |   11 +-
+>  drivers/target/iscsi/iscsi_target_parameters.c |   87 +-
+>  drivers/target/iscsi/iscsi_target_parameters.h |   16 +-
+>  drivers/target/iscsi/iscsi_target_tmr.c        |    4 +-
+>  drivers/target/iscsi/iscsi_target_tpg.c        |    6 +-
+>  drivers/target/iscsi/iscsi_target_transport.c  |   55 +
+>  drivers/target/iscsi/iscsi_target_util.c       |   53 +-
+>  drivers/target/iscsi/iscsi_target_util.h       |    1 +
+>  drivers/target/target_core_file.c              |  122 +-
+>  drivers/target/target_core_iblock.c            |  108 +-
+>  drivers/target/target_core_sbc.c               |   85 +
+>  drivers/target/target_core_transport.c         |   13 +-
+>  drivers/target/tcm_fc/tfc_io.c                 |    9 +-
+>  drivers/target/tcm_fc/tfc_sess.c               |    9 +-
+>  drivers/vhost/Kconfig                          |   10 +-
+>  drivers/vhost/Kconfig.tcm                      |    6 -
+>  drivers/vhost/Makefile                         |    3 +-
+>  drivers/vhost/net.c                            |  255 ++-
+>  drivers/vhost/{tcm_vhost.c => scsi.c}          |  507 +++++-
+>  drivers/vhost/tcm_vhost.h                      |  115 --
+>  drivers/vhost/test.c                           |    9 +-
+>  drivers/vhost/vhost.c                          |  153 +-
+>  drivers/vhost/vhost.h                          |   32 +-
+>  include/target/iscsi/iscsi_transport.h         |   83 +
+>  include/target/target_core_backend.h           |    4 +
+>  include/target/target_core_fabric.h            |    2 +-
+>  include/uapi/linux/vhost.h                     |   28 +
+>  47 files changed, 4985 insertions(+), 1330 deletions(-)
+>  create mode 100644 drivers/infiniband/ulp/isert/Kconfig
+>  create mode 100644 drivers/infiniband/ulp/isert/Makefile
+>  create mode 100644 drivers/infiniband/ulp/isert/ib_isert.c
+>  create mode 100644 drivers/infiniband/ulp/isert/ib_isert.h
+>  create mode 100644 drivers/infiniband/ulp/isert/isert_proto.h
+>  create mode 100644 drivers/target/iscsi/iscsi_target_transport.c
+>  delete mode 100644 drivers/vhost/Kconfig.tcm
+>  rename drivers/vhost/{tcm_vhost.c => scsi.c} (76%)
+>  delete mode 100644 drivers/vhost/tcm_vhost.h
+>  create mode 100644 include/target/iscsi/iscsi_transport.h
+
+
