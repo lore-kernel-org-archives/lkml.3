@@ -1,59 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760590Ab3EBPst (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 11:48:49 -0400
-Received: from mail-we0-f180.google.com ([74.125.82.180]:62809 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760494Ab3EBPsr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 11:48:47 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        srinidhi.kasagar@stericsson.com, Lee Jones <lee.jones@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org
-Subject: [PATCH 4/4] =?UTF-8?q?staging:=20ste=5Frmi4:=20Suppress=20'ignoring?= =?UTF-8?q?=20return=20value=20of=20=E2=80=98regulator=5Fenable()'=20warning?=
-Date: Thu,  2 May 2013 16:48:10 +0100
-Message-Id: <1367509690-24022-5-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1367509690-24022-1-git-send-email-lee.jones@linaro.org>
-References: <1367509690-24022-1-git-send-email-lee.jones@linaro.org>
+	id S1760255Ab3EBPxn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 11:53:43 -0400
+Received: from ja.ssi.bg ([178.16.129.10]:44353 "EHLO ja.ssi.bg"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1759204Ab3EBPxl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 11:53:41 -0400
+Date: Thu, 2 May 2013 18:54:05 +0300 (EEST)
+From: Julian Anastasov <ja@ssi.bg>
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Simon Horman <horms@verge.net.au>, Eric Dumazet <eric.dumazet@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
+        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Dipankar Sarma <dipankar@in.ibm.com>
+Subject: Re: [PATCH v2 1/2] sched: Add cond_resched_rcu_lock() helper
+In-Reply-To: <20130502072623.GE7521@dyad.programming.kicks-ass.net>
+Message-ID: <alpine.LFD.2.00.1305021848450.31548@ja.ssi.bg>
+References: <1367290378-29224-1-git-send-email-horms@verge.net.au> <1367290378-29224-2-git-send-email-horms@verge.net.au> <alpine.LFD.2.00.1304301011310.1700@ja.ssi.bg> <20130430072944.GA13959@verge.net.au> <alpine.LFD.2.00.1304301051260.1700@ja.ssi.bg>
+ <20130501091012.GB28253@dyad.programming.kicks-ass.net> <alpine.LFD.2.00.1305011344320.1603@ja.ssi.bg> <20130501155501.GB7521@dyad.programming.kicks-ass.net> <alpine.LFD.2.00.1305012004360.3397@ja.ssi.bg>
+ <20130502072623.GE7521@dyad.programming.kicks-ass.net>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-drivers/staging/ste_rmi4/synaptics_i2c_rmi4.c:
-        In function ‘synaptics_rmi4_resume’:
-drivers/staging/ste_rmi4/synaptics_i2c_rmi4.c:1090:18:
-        warning: ignoring return value of ‘regulator_enable’, declared
-        with attribute warn_unused_result [-Wunused-result
 
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: devel@driverdev.osuosl.org
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- drivers/staging/ste_rmi4/synaptics_i2c_rmi4.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+	Hello,
 
-diff --git a/drivers/staging/ste_rmi4/synaptics_i2c_rmi4.c b/drivers/staging/ste_rmi4/synaptics_i2c_rmi4.c
-index fe667dd..c4d013d 100644
---- a/drivers/staging/ste_rmi4/synaptics_i2c_rmi4.c
-+++ b/drivers/staging/ste_rmi4/synaptics_i2c_rmi4.c
-@@ -1087,7 +1087,9 @@ static int synaptics_rmi4_resume(struct device *dev)
- 	unsigned char intr_status;
- 	struct synaptics_rmi4_data *rmi4_data = dev_get_drvdata(dev);
+On Thu, 2 May 2013, Peter Zijlstra wrote:
+
+> On Wed, May 01, 2013 at 09:22:08PM +0300, Julian Anastasov wrote:
+> > > +extern int __cond_resched_rcu(void);
+> > > +
+> > > +#define cond_resched_rcu() ({			\
+> > > +	__might_sleep(__FILE__, __LINE__, 0);	\
+> > 
+> > 	I see your goal. But digging into __might_sleep()
+> > I see that rcu_sleep_check() will scream for the non-preempt
+> > case because we are under rcu_read_lock.
+> 
+> 
+> #ifdef CONFIG_PREEMPT_RCU
+> #define PREEMPT_RCU_OFFSET 0
+> #else
+> #define PREEMPT_RCU_OFFSET 1
+> #endif
+> 
+> #define cond_resched_rcu() ({	\
+> 	__might_sleep(__FILE__, __LINE__, PREEMPT_RCU_OFFSET);	\
+> 	__cond_resched_rcu();	\
+> })
+> 
+> Should work I think..
+
+	I implemented your idea.
+
+	I tested the following patch in 2 variants,
+TINY_RCU and CONFIG_TREE_PREEMPT_RCU. I see the
+error if extra rcu_read_lock is added for testing.
+
+	I'm using the PREEMPT_ACTIVE flag to indicate
+that we are already under lock. It should work because
+__might_sleep is not called with such bit. I also tried to
+add new flag in include/linux/hardirq.h but PREEMPT_ACTIVE
+depends on the arch, so this alternative looked difficult to
+implement.
+
+ include/linux/rcupdate.h |    7 ++++---
+ include/linux/sched.h    |   14 ++++++++++++++
+ kernel/sched/core.c      |   20 ++++++++++++++++++--
+ 3 files changed, 36 insertions(+), 5 deletions(-)
+
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index b758ce1..b594759 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -480,9 +480,10 @@ static inline void rcu_preempt_sleep_check(void)
+ }
+ #endif /* #else #ifdef CONFIG_PROVE_RCU */
  
--	regulator_enable(rmi4_data->regulator);
-+	retval = regulator_enable(rmi4_data->regulator);
-+	if (retval < 0)
-+		return retval;
+-#define rcu_sleep_check()						\
++#define rcu_sleep_check(locked)						\
+ 	do {								\
+-		rcu_preempt_sleep_check();				\
++		if (!(locked))						\
++			rcu_preempt_sleep_check();			\
+ 		rcu_lockdep_assert(!lock_is_held(&rcu_bh_lock_map),	\
+ 				   "Illegal context switch in RCU-bh"	\
+ 				   " read-side critical section");	\
+@@ -494,7 +495,7 @@ static inline void rcu_preempt_sleep_check(void)
+ #else /* #ifdef CONFIG_PROVE_RCU */
  
- 	enable_irq(rmi4_data->i2c_client->irq);
- 	rmi4_data->touch_stopped = false;
+ #define rcu_lockdep_assert(c, s) do { } while (0)
+-#define rcu_sleep_check() do { } while (0)
++#define rcu_sleep_check(locked) do { } while (0)
+ 
+ #endif /* #else #ifdef CONFIG_PROVE_RCU */
+ 
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index e692a02..027deea 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -2608,6 +2608,20 @@ extern int __cond_resched_softirq(void);
+ 	__cond_resched_softirq();					\
+ })
+ 
++#ifdef CONFIG_PREEMPT_RCU
++#define PREEMPT_RCU_OFFSET	1
++#else
++#define PREEMPT_RCU_OFFSET	PREEMPT_CHECK_OFFSET
++#endif
++
++extern int __cond_resched_rcu(void);
++
++#define cond_resched_rcu() ({					\
++	__might_sleep(__FILE__, __LINE__, PREEMPT_ACTIVE |	\
++					  PREEMPT_RCU_OFFSET);	\
++	__cond_resched_rcu();					\
++})
++
+ /*
+  * Does a critical section need to be broken due to another
+  * task waiting?: (technically does not depend on CONFIG_PREEMPT,
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 67d0465..2724be7 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -2793,7 +2793,7 @@ static inline void schedule_debug(struct task_struct *prev)
+ 	 */
+ 	if (unlikely(in_atomic_preempt_off() && !prev->exit_state))
+ 		__schedule_bug(prev);
+-	rcu_sleep_check();
++	rcu_sleep_check(0);
+ 
+ 	profile_hit(SCHED_PROFILING, __builtin_return_address(0));
+ 
+@@ -4364,6 +4364,20 @@ int __sched __cond_resched_softirq(void)
+ }
+ EXPORT_SYMBOL(__cond_resched_softirq);
+ 
++int __sched __cond_resched_rcu(void)
++{
++#ifndef CONFIG_PREEMPT_RCU
++	if (should_resched()) {
++		rcu_read_unlock();
++		__cond_resched();
++		rcu_read_lock();
++		return 1;
++	}
++#endif
++	return 0;
++}
++EXPORT_SYMBOL(__cond_resched_rcu);
++
+ /**
+  * yield - yield the current processor to other threads.
+  *
+@@ -7062,7 +7076,9 @@ void __might_sleep(const char *file, int line, int preempt_offset)
+ {
+ 	static unsigned long prev_jiffy;	/* ratelimiting */
+ 
+-	rcu_sleep_check(); /* WARN_ON_ONCE() by default, no rate limit reqd. */
++	/* WARN_ON_ONCE() by default, no rate limit reqd. */
++	rcu_sleep_check(preempt_offset & PREEMPT_ACTIVE);
++	preempt_offset &= ~PREEMPT_ACTIVE;
+ 	if ((preempt_count_equals(preempt_offset) && !irqs_disabled()) ||
+ 	    system_state != SYSTEM_RUNNING || oops_in_progress)
+ 		return;
 -- 
-1.7.10.4
+1.7.3.4
 
+
+Regards
+
+--
+Julian Anastasov <ja@ssi.bg>
