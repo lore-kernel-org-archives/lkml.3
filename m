@@ -1,63 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758160Ab3EBPHn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 11:07:43 -0400
-Received: from mail-la0-f49.google.com ([209.85.215.49]:46473 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756927Ab3EBPHm (ORCPT
+	id S1758426Ab3EBPKT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 11:10:19 -0400
+Received: from a9-42.smtp-out.amazonses.com ([54.240.9.42]:37648 "EHLO
+	a9-42.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753159Ab3EBPKR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 11:07:42 -0400
+	Thu, 2 May 2013 11:10:17 -0400
+Date: Thu, 2 May 2013 15:10:15 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Han Pingtian <hanpt@linux.vnet.ibm.com>
+cc: LKML <linux-kernel@vger.kernel.org>, Michal Hocko <mhocko@suse.cz>,
+        penberg@kernel.org, rientjes@google.com, linux-mm@kvack.org
+Subject: Re: OOM-killer and strange RSS value in 3.9-rc7
+In-Reply-To: <20130502105637.GD4441@localhost.localdomain>
+Message-ID: <0000013e65cb32b3-047cd2d6-dfc8-41d2-a792-9b398f9a1baf-000000@email.amazonses.com>
+References: <20130424044848.GI2672@localhost.localdomain> <20130424094732.GB31960@dhcp22.suse.cz> <0000013e3cb0340d-00f360e3-076b-478e-b94c-ddd4476196ce-000000@email.amazonses.com> <20130425060705.GK2672@localhost.localdomain>
+ <0000013e427023d7-9456c313-8654-420c-b85a-cb79cc3c4ffc-000000@email.amazonses.com> <20130426062436.GB4441@localhost.localdomain> <0000013e46cba821-d5c54c99-3b5c-4669-9a54-9fb8f4ee516f-000000@email.amazonses.com> <20130427112418.GC4441@localhost.localdomain>
+ <0000013e5645b356-09aa6796-0a95-40f1-8ec5-6e2e3d0c434f-000000@email.amazonses.com> <20130429145711.GC1172@dhcp22.suse.cz> <20130502105637.GD4441@localhost.localdomain>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-X-Originating-IP: [188.6.195.195]
-In-Reply-To: <51550460.6050408@gmail.com>
-References: <51550460.6050408@gmail.com>
-Date: Thu, 2 May 2013 17:07:40 +0200
-Message-ID: <CAJfpegs2Mb8AYQ-8aoxn2su0MezxHc=WRvK+t+a5PyPRiTUxUQ@mail.gmail.com>
-Subject: Re: [PATCH] fuse: Don't do file_update_time for write_operation.
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: majianpeng <majianpeng@gmail.com>
-Cc: fuse-devel <fuse-devel@lists.sourceforge.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.05.02-54.240.9.42
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 29, 2013 at 4:02 AM, majianpeng <majianpeng@gmail.com> wrote:
-> For direct-write and normal-write operations, after write they will call fuse_invalidate_attr.
-> So it's make no sense to call file_update_time before writing.
->
-> In function file_update_time, there is other thing which update version of
-> inode.For this i am not sure.
+On Thu, 2 May 2013, Han Pingtian wrote:
 
-file_update_time will skip the actual file update anyway due to
-S_NOCMTIME.  And when we will do cached writes we actually need the
-time updates.  So I'm not applying this one.
+> Looks like "ibmvscsi" + "slub" can trigger this problem.
 
-Thanks,
-Miklos
+And the next merge of the slab-next tree will also cause SLAB to trigger
+this issue. I would like to have this fixes. The slab allocator purpose is
+to servr objects that are a fraction of a page and not objects that are
+larger than the maximum allowed sizes of the page allocator.
 
->
-> Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
-> ---
-> fs/fuse/file.c | 4 ----
-> 1 file changed, 4 deletions(-)
->
-> diff --git a/fs/fuse/file.c b/fs/fuse/file.c
-> index 34b80ba..214279c 100644
-> --- a/fs/fuse/file.c
-> +++ b/fs/fuse/file.c
-> @@ -988,10 +988,6 @@ static ssize_t fuse_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
-> if (err)
-> goto out;
->
-> - err = file_update_time(file);
-> - if (err)
-> - goto out;
-> -
-> if (file->f_flags & O_DIRECT) {
-> written = generic_file_direct_write(iocb, iov, &nr_segs,
-> pos, &iocb->ki_pos,
-> --
-> 1.8.2.rc2.4.g7799588
->
