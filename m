@@ -1,107 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757242Ab3EBKe6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 06:34:58 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:54507 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754086Ab3EBKe5 (ORCPT
+	id S1757467Ab3EBKhQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 06:37:16 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:40593
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756042Ab3EBKhO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 06:34:57 -0400
-Message-ID: <5182414F.1000201@atmel.com>
-Date: Thu, 2 May 2013 12:34:55 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
+	Thu, 2 May 2013 06:37:14 -0400
+Date: Thu, 2 May 2013 12:35:08 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Alex Shi <alex.shi@intel.com>
+Cc: mingo@redhat.com, tglx@linutronix.de, akpm@linux-foundation.org,
+        arjan@linux.intel.com, bp@alien8.de, pjt@google.com,
+        namhyung@kernel.org, efault@gmx.de, morten.rasmussen@arm.com,
+        vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
+        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
+        linux-kernel@vger.kernel.org, len.brown@intel.com,
+        rafael.j.wysocki@intel.com, jkosina@suse.cz, clark.williams@gmail.com,
+        tony.luck@intel.com, keescook@chromium.org, mgorman@suse.de,
+        riel@redhat.com
+Subject: Re: [PATCH v4 0/6] sched: use runnable load based balance
+Message-ID: <20130502103508.GA13196@dyad.programming.kicks-ass.net>
+References: <1367040344-14485-1-git-send-email-alex.shi@intel.com>
+ <20130501121421.GA19602@dyad.programming.kicks-ass.net>
+ <5181B579.9000808@intel.com>
 MIME-Version: 1.0
-To: "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        Grant Likely <grant.likely@linaro.org>
-CC: Richard Genoud <richard.genoud@gmail.com>,
-        "Yang, Wenyou" <Wenyou.Yang@atmel.com>,
-        Joachim Eastwood <manabian@gmail.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "plagnioj@jcrosoft.com" <plagnioj@jcrosoft.com>,
-        "Lin, JM" <JM.Lin@atmel.com>,
-        "spi-devel-general@lists.sourceforge.net" 
-	<spi-devel-general@lists.sourceforge.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: [PATCH v6 01/16] spi/spi-atmel: fix probing failure after xfer->speed_hz
- set
-References: <1362626715-6549-1-git-send-email-wenyou.yang@atmel.com> <1362626815-6628-1-git-send-email-wenyou.yang@atmel.com> <CAGhQ9VwW18LXY5Jn0FUFCaAzKxP1W3QADG=JBp9JbgaAwo=F2Q@mail.gmail.com> <B256D81BAE5131468A838E5D7A24364154236AB5@penmbx02> <CACQ1gAhZO3stjrwf5SiZf7jOO8T5bAJZiz97M7+7vwFmk2e65g@mail.gmail.com>
-In-Reply-To: <CACQ1gAhZO3stjrwf5SiZf7jOO8T5bAJZiz97M7+7vwFmk2e65g@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.161.30.18]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5181B579.9000808@intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/05/2013 10:12, Richard Genoud :
-> 2013/5/2 Yang, Wenyou <Wenyou.Yang@atmel.com>:
->> Hi, Joachim,
->>
->>> -----Original Message-----
->>> From: Joachim Eastwood [mailto:manabian@gmail.com]
->>> Sent: 2013年3月7日 20:31
->>> To: Yang, Wenyou
->>> Cc: linux-arm-kernel@lists.infradead.org; grant.likely@secretlab.ca; Ferre,
->>> Nicolas; plagnioj@jcrosoft.com; richard.genoud@gmail.com; Lin, JM;
->>> spi-devel-general@lists.sourceforge.net; linux-kernel@vger.kernel.org
->>> Subject: Re: [PATCH v6 01/16] spi/spi-atmel: fix probing failure after
->>> xfer->speed_hz set
->>>
->>> On 7 March 2013 04:26, Wenyou Yang <wenyou.yang@atmel.com> wrote:
->>>> commit: 059b8ffeee5b427949872bb6ed5db5ae0788054e
->>>> cause the atmel spi probing failure.
->>>>
->>>> Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
->>>> Cc: spi-devel-general@lists.sourceforge.net
->>>> Cc: linux-kernel@vger.kernel.org
->>>> ---
->>>>   drivers/spi/spi-atmel.c |    6 +++---
->>>>   1 file changed, 3 insertions(+), 3 deletions(-)
->>>>
->>>> diff --git a/drivers/spi/spi-atmel.c b/drivers/spi/spi-atmel.c
->>>> index 656d137..1eca815 100644
->>>> --- a/drivers/spi/spi-atmel.c
->>>> +++ b/drivers/spi/spi-atmel.c
->>>> @@ -846,9 +846,9 @@ static int atmel_spi_transfer(struct spi_device *spi,
->>> struct spi_message *msg)
->>>>                          }
->>>>                  }
->>>>
->>>> -               /* FIXME implement these protocol options!! */
->>>> -               if (xfer->speed_hz) {
->>>> -                       dev_dbg(&spi->dev, "no protocol options
->>> yet\n");
->>>> +               if (xfer->speed_hz < spi->max_speed_hz) {
->>>> +                       dev_dbg(&spi->dev,
->>>> +                               "speed in transfer less than bus
->>> speed\n");
->>>>                          return -ENOPROTOOPT;
->>>>                  }
->>>
->>> I sent a similar patch to spi-devl a while ago, which Grant said he applied.
->>> https://patchwork.kernel.org/patch/2165301/
->>>
->>> Can't find the patch in any upstream git tree so I guess Grant hasn't
->>> pushed it yet.
->> This patch hasn't still applied in any upstream git tree, so Atmel spi master doesn't work.
->> Could you help do some ping it?
->
-> it's in linux-next:
-> 3d3522604a5557e80fdcab61c54bd04eaf15b525
-> merged from spi-current/spi/merge
+On Thu, May 02, 2013 at 08:38:17AM +0800, Alex Shi wrote:
 
-Thanks Richard, yes I can find it here:
-http://git.secretlab.ca/?p=linux.git;a=commit;h=3d3522604a5557e80fdcab61c54bd04eaf15b525
+> On 3.8 kernel, the first problem commit is 5a505085f043 ("mm/rmap:
+> Convert the struct anon_vma::mutex to an rwsem"), It cause much
+> imbalance among cpus on aim7 benchmark. The reason is here,
+> https://lkml.org/lkml/2013/1/29/84.
 
-Grant, Mark,
+Hehe. yeah that one was going to be obvious.. rwsems were known to be totally
+bad performers. Not only were they lacking lock stealing but also the spinning.
+ 
+> But, after we use rwsem lock stealing in 3.9 kernel, commit
+> ce6711f3d196f09ca0e, aim7 wakeup won't has clear imbalance issue. And
+> then aim7 won't need this extra burst wakeup detection.
 
-Can you tell us if this SPI patch will be merged upstream using one of 
-your paths?
+OK, that seems like a nice fix for rwsems.. one nit:
 
-Best regards,
--- 
-Nicolas Ferre
++               raw_spin_lock_irq(&sem->wait_lock);
++               /* Try to get the writer sem, may steal from the head writer: */
++               if (flags == RWSEM_WAITING_FOR_WRITE)
++                       if (try_get_writer_sem(sem, &waiter)) {
++                               raw_spin_unlock_irq(&sem->wait_lock);
++                               return sem;
++                       }
++               raw_spin_unlock_irq(&sem->wait_lock);
+                schedule();
+
+That should probably look like:
+
+	preempt_disable();
+	raw_spin_unlock_irq();
+	preempt_enable_no_resched();
+	schedule();
+
+Otherwise you might find a performance regression on PREEMPT=y kernels.
+
+> With PJT's patch, we know in first few seconds from wakeup, task's
+> runnable load maybe nearly zero. The nearly zero runnable load increases
+> the imbalance among cpus. So there are about extra 5% performance drop
+> when use runnable load to do balance on aim7(in testing, aim7 will fork
+> 2000 threads, and then wait for a trigger, then run as fast as possible).
+
+OK, so what I was asking after is if you changed the scheduler after PJTs
+patches landed to deal with this bulk wakeup. Also while aim7 might no longer
+trigger the bad pattern what is to say nothing ever will? In particular
+anything using pthread_cond_broadcast() is known to be suspect of bulk wakeups.
+
+Anyway, I'll go try and make sense of some of the actual patches.. :-)
