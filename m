@@ -1,69 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759322Ab3EBPXq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 11:23:46 -0400
-Received: from mga09.intel.com ([134.134.136.24]:34382 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757340Ab3EBPXp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 11:23:45 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,597,1363158000"; 
-   d="scan'208";a="330358976"
-Message-ID: <518284E6.7040503@intel.com>
-Date: Thu, 02 May 2013 08:23:18 -0700
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S1759437Ab3EBPYV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 11:24:21 -0400
+Received: from mail-ve0-f172.google.com ([209.85.128.172]:33029 "EHLO
+	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756042Ab3EBPYU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 11:24:20 -0400
 MIME-Version: 1.0
-To: "Winkler, Tomas" <tomas.winkler@intel.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "SamuelOrtiz@kroah.com" <SamuelOrtiz@kroah.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: mei file2alias compile error
-References: <51814943.7000604@intel.com> <20130501182138.GA17550@kroah.com> <5B8DA87D05A7694D9FA63FD143655C1B01F18E66@HASMSX106.ger.corp.intel.com>
-In-Reply-To: <5B8DA87D05A7694D9FA63FD143655C1B01F18E66@HASMSX106.ger.corp.intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1367507786-505303-23-git-send-email-arnd@arndb.de>
+References: <1367507786-505303-1-git-send-email-arnd@arndb.de>
+	<1367507786-505303-23-git-send-email-arnd@arndb.de>
+Date: Thu, 2 May 2013 11:24:18 -0400
+Message-ID: <CAC-25o9Xp+pu_AUwxyh+YsiOCOebzMRF37v1VWZJD6nrbx5e6Q@mail.gmail.com>
+Subject: Re: [PATCH, RFC 22/22] radio-si4713: depend on SND_SOC
+From: "edubezval@gmail.com" <edubezval@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Hans Verkuil <hverkuil@xs4all.nl>, linux-media@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/01/2013 11:50 PM, Winkler, Tomas wrote:
->> On Wed, May 01, 2013 at 09:56:35AM -0700, Dave Hansen wrote:
->>> Linus's current git isn't compiling for me:
->>>>   HOSTCC  scripts/mod/file2alias.o
->>>> /home/davehans/linux.git/scripts/mod/file2alias.c: In function
->> ‘do_mei_entry’:
->>>> /home/davehans/linux.git/scripts/mod/file2alias.c:1140:1: error:
->> ‘OFF_mei_cl_device_id_name’ undeclared (first use in this function)
->>>> /home/davehans/linux.git/scripts/mod/file2alias.c:1140:1: note: each
->> undeclared identifier is reported only once for each function it appears in
->>>> /home/davehans/linux.git/scripts/mod/file2alias.c: At top level:
->>>> /home/davehans/linux.git/scripts/mod/file2alias.c:1146:1: error:
->> ‘SIZE_mei_cl_device_id’ undeclared here (not in a function)
->>>
->>> I confirmed that this commit: e5354107e is the one causing it for me.
->>> My .config is here:
->>>
->>> 	http://sr71.net/~dave/linux/config-3.9-meibad
->>>
->>> Note that I don't even have CONFIG_INTEL_MEI enabled with this config.
->>
->> I don't have CONFIG_INTEL_MEI set either, and I can't duplicate this.
->> Samuel and Tomas, can you please track this down?
-> 
-> I cannot reproduce it as well. I've tried with v3.9 and also with the latest tip.
+Arnd,
 
-I did some more poking around.  I was building with O= to put the
-binaries in another dir.  When I saw the error, one of the first things
-I did was do a "make mrproper" on the binary directory.  But, I never
-did one one the source directory.  Doing that seems to have made this go
-away.  There must have been some build gunk in the source directory
-causing this.
+On Thu, May 2, 2013 at 11:16 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> It is not possible to select SND_SOC_SI476X if we have not also
+> enabled SND_SOC.
+>
+> warning: (RADIO_SI476X) selects SND_SOC_SI476X which has unmet
+>          direct dependencies (SOUND && !M68K && !UML && SND && SND_SOC)
+>
+> Cc: Hans Verkuil <hverkuil@xs4all.nl>
+> Cc: linux-media@vger.kernel.org
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> ---
 
-Tomas, thanks for taking a look.
+Note on your patch title, this change is against si476X, not on *si4713*.
 
-For posterity:
 
-gcc version 4.6.3 20120306 (Red Hat 4.6.3-2) (GCC)
-Fedora release 16 (Verne)
-v3.9-5295-ga49fe6d
+
+>  drivers/media/radio/Kconfig | 1 +
+>  1 file changed, 1 insertion(+)
+>
+> diff --git a/drivers/media/radio/Kconfig b/drivers/media/radio/Kconfig
+> index c0beee2..d529ba7 100644
+> --- a/drivers/media/radio/Kconfig
+> +++ b/drivers/media/radio/Kconfig
+> @@ -22,6 +22,7 @@ config RADIO_SI476X
+>         tristate "Silicon Laboratories Si476x I2C FM Radio"
+>         depends on I2C && VIDEO_V4L2
+>         depends on MFD_SI476X_CORE
+> +       depends on SND_SOC
+>         select SND_SOC_SI476X
+>         ---help---
+>           Choose Y here if you have this FM radio chip.
+> --
+> 1.8.1.2
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-media" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
+
+-- 
+Eduardo Bezerra Valentin
