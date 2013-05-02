@@ -1,127 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755396Ab3EBJPY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 05:15:24 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:47386 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751486Ab3EBJPW convert rfc822-to-8bit (ORCPT
+	id S1754987Ab3EBJQR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 05:16:17 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:45036 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751529Ab3EBJQP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 05:15:22 -0400
-MIME-Version: 1.0
-In-Reply-To: <87k3nh3jzi.fsf@devron.myhome.or.jp>
-References: <1367107703-2665-1-git-send-email-linkinjeon@gmail.com>
-	<87ppxd4ddm.fsf@devron.myhome.or.jp>
-	<CAKYAXd8v-eF0E2FzLfm1KaZaRu-adQcDVQQeWAiH6-8Pr+BxmA@mail.gmail.com>
-	<87bo8v42wx.fsf@devron.myhome.or.jp>
-	<CAKYAXd_-Z8Avm-FmLF=MVqHSkzfE1_jczBroyFXv5xgQmr5=XA@mail.gmail.com>
-	<87vc722cdu.fsf@devron.myhome.or.jp>
-	<CAKYAXd8nTUrW04ADyDkhnJWyjUKiniU+r65J5SMhXT-jHTG+UA@mail.gmail.com>
-	<87r4hp3kax.fsf@devron.myhome.or.jp>
-	<87k3nh3jzi.fsf@devron.myhome.or.jp>
-Date: Thu, 2 May 2013 18:15:21 +0900
-Message-ID: <CAKYAXd_DRLG3KzjXEQ_8vD5mFWE95gR+jj3-MYhC3QKgQOLTEA@mail.gmail.com>
-Subject: Re: [PATCH RESEND v5] fat: editions to support fat_fallocate
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 2 May 2013 05:16:15 -0400
+From: "Hiremath, Vaibhav" <hvaibhav@ti.com>
+To: "Gupta, Pekon" <pekon@ti.com>, "Cousson, Benoit" <b-cousson@ti.com>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
+CC: "Philip, Avinash" <avinashphilip@ti.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Nori, Sekhar" <nsekhar@ti.com>,
+        "Hebbar, Gururaja" <gururaja.hebbar@ti.com>,
+        "zonque@gmail.com" <zonque@gmail.com>,
+        "jacmet@sunsite.dk" <jacmet@sunsite.dk>
+Subject: RE: [v3, 3/3] ARM: dts: AM33XX: Add NAND flash device tree data to
+ am335x-evm
+Thread-Topic: [v3, 3/3] ARM: dts: AM33XX: Add NAND flash device tree data to
+ am335x-evm
+Thread-Index: AQHORxHR0U17iAuBwkSDpiBbIRVGepjxnE8w
+Date: Thu, 2 May 2013 09:15:15 +0000
+Message-ID: <79CD15C6BA57404B839C016229A409A83EC747E9@DBDE04.ent.ti.com>
+References: <1367484501-3623-1-git-send-email-pekon@ti.com>
+In-Reply-To: <1367484501-3623-1-git-send-email-pekon@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="Windows-1252"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/5/2, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
-> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp> writes:
->
->> Namjae Jeon <linkinjeon@gmail.com> writes:
->>
->>>> Then, per-file discard fallocate space sounds like wrong. fallocate
->>>> space probably is inode attribute.
->>> Since, our preallocation will not be persistent after umount. So, we
->>> need to free up the space at some point.
->>> If we consider for normal pre-allocation in ext4, in that case also
->>> the blocks are removed in ext4_release_file when the last writer
->>> closes the file.
->>>
->>> ext4_release_file()
->>> {
->>> ...
->>> /* if we are the last writer on the inode, drop the block reservation */
->>> 	if ((filp->f_mode & FMODE_WRITE) &&
->>> 			(atomic_read(&inode->i_writecount) == 1) &&
->>> 		        !EXT4_I(inode)->i_reserved_data_blocks)
->>> 	{
->>> 		down_write(&EXT4_I(inode)->i_data_sem);
->>> 		ext4_discard_preallocations(inode);
->>> 		up_write(&EXT4_I(inode)->i_data_sem);
->>> 	}
->>>
->>> So, we will need to have this per file . May be the condition for
->>> checking is wrong which can be correct but the correctness points
->>> should be same. We can give a thought on using "i_writecount" for
->>> controlling the parallel write in FAT also.
->>> how do you think ?
->>
->> AFAIK, preallocation != fallocate. ext*'s preallocation was there at
->> before fallocation to optimize block allocation for user data blocks.
-yes, this is correct , preallocation!= fallocate, we just adopted only
-the "release part" from that approach
-Sorry, Would you mind to adopt this approach :) ?
 
->>
->>>>>> I know. Question is, why do we need to initialize twice.
->>>>>>
->>>>>> 1) zeroed for uninitialized area, 2) then copy user data area. We
->>>>>> need
->>>>>> only either, right? This seems to be doing both for all fallocated
->>>>>> area.
->>>>> We did not initialize twice. We are using the ‘pos’ as the attribute
->>>>> to define zeroing length in case of pre-allocation.
->>>>> Zeroing out occurs till the ‘pos’ while actual write occur after
->>>>> ‘pos’.
->>>>> If we file size is 100KB and we pre-allocated till 1MB. Next if we try
->>>>> to write at 500KB,
->>>>> Then zeroing out will occur only for 100KB->500KB, after that there
->>>>> will be normal write. There is no duplication for the same space.
->>>>
->>>> Ah. Then write_begin() really initialize after i_size until page cache
->>>> boudary for append write? I wonder if this patch works correctly for
->>>> mmap.
->>> Since you already provided me review comments to check truncate and
->>> mmap, we checked all points for those cases.
->>
->> cluster size == 512b
->>
->> 1) create new file
->> 2) fallocate 100MB
->> 3) write(2) data for each 512b
->>
->> With this, write_begin() will be called for each 512b data. When we
->> allocates new page for this file, write_begin() writes data 0-512. Then,
->> we have to initialize 512-4096 by zero. Because mmap read maps 0-4096,
->> even if i_size == 512.
->>
->> Who is initializing area for 512-4096?
->
-> From other view, I guess fat_zero_falloc_area() is for filling zero for
-> 0-10000, in the following case?
->
->      1) create new file
->      2) lseek(10000)
->      3) write data by write(2)
->
-> This job is for cont_write_begin(). If example is correct, why
-> cont_write_begin() doesn't work? I guess, because get_block() doesn't
-> set buffer_new() for those area.
->
-> If above is correct, right implement to change get_block().
-We will check your case.
+> -----Original Message-----
+> From: Gupta, Pekon
+> Sent: Thursday, May 02, 2013 2:18 PM
+> To: Gupta, Pekon; Cousson, Benoit; tony@atomide.com;
+> linux@arm.linux.org.uk
+> Cc: Philip, Avinash; linux-omap@vger.kernel.org; devicetree-
+> discuss@lists.ozlabs.org; linux-arm-kernel@lists.infradead.org; linux-
+> kernel@vger.kernel.org; Nori, Sekhar; Hebbar, Gururaja; Hiremath,
+> Vaibhav; zonque@gmail.com; jacmet@sunsite.dk
+> Subject: [v3, 3/3] ARM: dts: AM33XX: Add NAND flash device tree data to
+> am335x-evm
+> 
+> From: avinash philip <avinashphilip@ti.com>
+> 
+> NAND flash connected in am335x-evm on GPMC controller. This patch adds
+> device tree node in am3355-evm with GPMC contoller timing for NAND
+> flash
+> interface, NAND partition table, ECC scheme, elm handle id.
+> 
+> Signed-off-by: Philip Avinash <avinashphilip@ti.com>
+> Signed-off-by: Gupta, Pekon <pekon@ti.com>
+> ---
+>  arch/arm/boot/dts/am335x-evm.dts | 95
+> ++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 95 insertions(+)
+> 
+> diff --git a/arch/arm/boot/dts/am335x-evm.dts
+> b/arch/arm/boot/dts/am335x-evm.dts
+> index d649644..07761fd 100644
+> --- a/arch/arm/boot/dts/am335x-evm.dts
+> +++ b/arch/arm/boot/dts/am335x-evm.dts
+> @@ -44,6 +44,26 @@
+>  				0x154 0x27	/* spi0_d0.gpio0_3, INPUT | MODE7
+> */
+>  			>;
+>  		};
+> +
+> +		nandflash_pins_s0: nandflash_pins_s0 {
+> +			pinctrl-single,pins = <
+> +				0x0 0x30	/* gpmc_ad0.gpmc_ad0, INPUT |
+> PULLUP | MODE0 */
+> +				0x4 0x30	/* gpmc_ad1.gpmc_ad1, INPUT |
+> PULLUP | MODE0 */
+> +				0x8 0x30	/* gpmc_ad2.gpmc_ad2, INPUT |
+> PULLUP | MODE0 */
+> +				0xc 0x30	/* gpmc_ad3.gpmc_ad3, INPUT |
+> PULLUP | MODE0 */
+> +				0x10 0x30	/* gpmc_ad4.gpmc_ad4, INPUT |
+> PULLUP | MODE0 */
+> +				0x14 0x30	/* gpmc_ad5.gpmc_ad5, INPUT |
+> PULLUP | MODE0 */
+> +				0x18 0x30	/* gpmc_ad6.gpmc_ad6, INPUT |
+> PULLUP | MODE0 */
+> +				0x1c 0x30	/* gpmc_ad7.gpmc_ad7, INPUT |
+> PULLUP | MODE0 */
+> +				0x70 0x30	/* gpmc_wait0.gpmc_wait0, INPUT |
+> PULLUP | MODE0 */
+> +				0x74 0x37	/* gpmc_wpn.gpio0_30, INPUT |
+> PULLUP | MODE7 */
+> +				0x7c 0x8	/* gpmc_csn0.gpmc_csn0,  PULL DISA
+> */
+> +				0x90 0x8	/* gpmc_advn_ale.gpmc_advn_ale,
+> PULL DISA */
+> +				0x94 0x8	/* gpmc_oen_ren.gpmc_oen_ren, PULL
+> DISA */
+> +				0x98 0x8	/* gpmc_wen.gpmc_wen, PULL DISA */
+> +				0x9c 0x8	/* gpmc_be0n_cle.gpmc_be0n_cle,
+> PULL DISA */
+> +			>;
+> +		};
+>  	};
+> 
+>  	ocp {
+> @@ -102,6 +122,81 @@
+>  				reg = <0x48>;
+>  			};
+>  		};
+> +
+> +		elm: elm@48080000 {
+> +			status = "okay";
+> +		};
+> +
+> +		gpmc: gpmc@50000000 {
+> +			status = "okay";
+> +			pinctrl-0 = <&nandflash_pins_s0>;
 
-Thanks~
->
-> Thanks.
+It would be good, if you label this pin configuration with 'default' name,
+as below -
+
+
+pinctrl-names = "default";
+
+Thanks,
+Vaibhav
+
+> +			ranges = <0 0 0x08000000 0x10000000>;	/* CS0:
+> NAND */
+> +			nand@0,0 {
+> +				reg = <0 0 0>; /* CS0, offset 0 */
+> +				nand-bus-width = <8>;
+> +				ti,nand-ecc-opt = "bch8";
+> +
+> +				gpmc,sync-clk = <0>;
+> +				gpmc,cs-on = <0>;
+> +				gpmc,cs-rd-off = <44>;
+> +				gpmc,cs-wr-off = <44>;
+> +				gpmc,adv-on = <6>;
+> +				gpmc,adv-rd-off = <34>;
+> +				gpmc,adv-wr-off = <44>;
+> +				gpmc,we-off = <40>;
+> +				gpmc,oe-off = <54>;
+> +				gpmc,access = <64>;
+> +				gpmc,rd-cycle = <82>;
+> +				gpmc,wr-cycle = <82>;
+> +				gpmc,wr-access = <40>;
+> +				gpmc,wr-data-mux-bus = <0>;
+> +
+> +				#address-cells = <1>;
+> +				#size-cells = <1>;
+> +				elm_id = <&elm>;
+> +
+> +				/* MTD partition table */
+> +				partition@0 {
+> +					label = "SPL1";
+> +					reg = <0x00000000 0x000020000>;
+> +				};
+> +
+> +				partition@1 {
+> +					label = "SPL2";
+> +					reg = <0x00020000 0x00020000>;
+> +				};
+> +
+> +				partition@2 {
+> +					label = "SPL3";
+> +					reg = <0x00040000 0x00020000>;
+> +				};
+> +
+> +				partition@3 {
+> +					label = "SPL4";
+> +					reg = <0x00060000 0x00020000>;
+> +				};
+> +
+> +				partition@4 {
+> +					label = "U-boot";
+> +					reg = <0x00080000 0x001e0000>;
+> +				};
+> +
+> +				partition@5 {
+> +					label = "environment";
+> +					reg = <0x00260000 0x00020000>;
+> +				};
+> +
+> +				partition@6 {
+> +					label = "Kernel";
+> +					reg = <0x00280000 0x00500000>;
+> +				};
+> +
+> +				partition@7 {
+> +					label = "File-System";
+> +					reg = <0x00780000 0x0F880000>;
+> +				};
+> +			};
+> +		};
+>  	};
+> 
+>  	vbat: fixedregulator@0 {
 > --
-> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
->
+> 1.8.1
+
