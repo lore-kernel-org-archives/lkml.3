@@ -1,79 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760624Ab3EBQoy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 12:44:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13808 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758913Ab3EBQow (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 12:44:52 -0400
-Date: Thu, 02 May 2013 12:44:04 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Cliff Wickman <cpw@sgi.com>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, mgorman@suse.de,
-        aarcange@redhat.com, dave.hansen@intel.com, dsterba@suse.cz,
-        hannes@cmpxchg.org, kosaki.motohiro@gmail.com,
-        kirill.shutemov@linux.intel.com, mpm@selenic.com,
-        rdunlap@infradead.org
-Message-ID: <1367513044-s3jtazd5-mutt-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <E1UXsLY-0003oJ-KD@eag09.americas.sgi.com>
-References: <E1UXsLY-0003oJ-KD@eag09.americas.sgi.com>
-Subject: Re: [PATCH v2] mm/pagewalk.c: walk_page_range should avoid VM_PFNMAP
- areas
-Mime-Version: 1.0
-Content-Type: text/plain;
- charset=iso-2022-jp
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-X-Mutt-Fcc: ~/Maildir/sent/
-User-Agent: Mutt 1.5.21 (2010-09-15)
+	id S1760703Ab3EBQpL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 12:45:11 -0400
+Received: from mail-vb0-f43.google.com ([209.85.212.43]:52640 "EHLO
+	mail-vb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760657Ab3EBQpJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 12:45:09 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130502145809.GA16236@linux-mips.org>
+References: <20522420.158691367384219315.JavaMail.weblogic@epml17>
+	<CAOiHx=mBPHmDse4EwL-+Fgmpz0=XhcgF_0nWdyvErFO4NU7E0Q@mail.gmail.com>
+	<alpine.LFD.2.02.1305021241040.3972@ionos>
+	<CAOiHx=mA-htk_2daeE9WpbEVV9YLvfLc1NYZZR=JeDdibchCnw@mail.gmail.com>
+	<alpine.LFD.2.02.1305021527010.3972@ionos>
+	<20130502145809.GA16236@linux-mips.org>
+Date: Thu, 2 May 2013 09:45:08 -0700
+X-Google-Sender-Auth: Dy7Ks3KjiA-TAD5jlGa8KOJtMrk
+Message-ID: <CA+55aFwDGyHOzu=Qh7SJOBK6QvAwAh7pMDL6LfMUE=AW_kapAw@mail.gmail.com>
+Subject: Re: [PATCH] MIPS: Enable interrupts in arch_cpu_idle()
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Jonas Gorski <jogo@openwrt.org>,
+        eunb.song@samsung.com,
+        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 02, 2013 at 07:10:48AM -0500, Cliff Wickman wrote:
-> 
-> /proc/<pid>/smaps and similar walks through a user page table should not
-> be looking at VM_PFNMAP areas.
-> 
-> This is v2: 
-> - moves the VM_BUG_ON out of the loop
-> - adds the needed test for  vma->vm_start <= addr
-> 
-> Certain tests in walk_page_range() (specifically split_huge_page_pmd())
-> assume that all the mapped PFN's are backed with page structures. And this is
-> not usually true for VM_PFNMAP areas. This can result in panics on kernel
-> page faults when attempting to address those page structures.
-> 
-> There are a half dozen callers of walk_page_range() that walk through
-> a task's entire page table (as N. Horiguchi pointed out). So rather than
-> change all of them, this patch changes just walk_page_range() to ignore 
-> VM_PFNMAP areas.
-> 
-> The logic of hugetlb_vma() is moved back into walk_page_range(), as we
-> want to test any vma in the range.
-> 
-> VM_PFNMAP areas are used by:
-> - graphics memory manager   gpu/drm/drm_gem.c
-> - global reference unit     sgi-gru/grufile.c
-> - sgi special memory        char/mspec.c
-> - and probably several out-of-tree modules
-> 
-> I'm copying everyone who has changed this file recently, in case
-> there is some reason that I am not aware of to provide
-> /proc/<pid>/smaps|clear_refs|maps|numa_maps for these VM_PFNMAP areas.
-> 
-> Signed-off-by: Cliff Wickman <cpw@sgi.com>
+On Thu, May 2, 2013 at 7:58 AM, Ralf Baechle <ralf@linux-mips.org> wrote:
+>
+> For a while we just used to live with the race condition resulting from
+> not disabling interrupts in the idle loop.  Then c65a5480 fixed this by
+> checking if we're returning to the WAIT instruction in the idle loop
+> when returning from an interrupt and iff so, rolling back the
+> program counter to point to the if (test_thread_flag(TIF_NEED_RESCHED))
+> test at the beginning of rollback_r4k_wait.
 
-walk_page_range() does vma-based walk only for address ranges backed by
-hugetlbfs, and it doesn't see vma for address ranges backed by normal pages
-and thps (in those case we just walk over page table hierarchy).
+Umm. That sounds buggy. What if there was an interrupt *between* the
+two places, not right at the wait instruction?
 
-I think that vma-based walk was introduced as a kind of dirty hack to
-handle hugetlbfs, and it can be cleaned up in the future. So I'm afraid
-it's not a good idea to extend or adding code heavily depending on this hack.
-I recommend that you check VM_PFNMAP in the possible callers' side.
-But this patch seems to solve your problem, so with properly commenting
-this somewhere, I do not oppose it.
+It seriously sounds like MIPS should do this by enabling interrupts in
+the *assembly* code immediately preceding the wait instruction. IOW,
+you'd effectively have the same kind of "sti; halt" kind of sequence
+that x86 has. Not "enable interrupts" + C compiler puts random
+instructions here + "wait".
 
-Thanks,
-Naoya Horiguchi
+                       Linus
