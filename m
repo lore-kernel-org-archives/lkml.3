@@ -1,61 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761942Ab3EBSuB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 14:50:01 -0400
-Received: from mail-qe0-f54.google.com ([209.85.128.54]:52527 "EHLO
-	mail-qe0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761824Ab3EBSt7 (ORCPT
+	id S1761961Ab3EBSuJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 14:50:09 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:55329 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761824Ab3EBSuD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 14:49:59 -0400
-Date: Thu, 2 May 2013 11:49:53 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, lizefan@huawei.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org
-Subject: Re: [PATCHSET] blk-throttle: implement proper hierarchy support
-Message-ID: <20130502184953.GP19814@mtj.dyndns.org>
-References: <1367455189-6957-1-git-send-email-tj@kernel.org>
- <20130502173428.GA4771@redhat.com>
- <20130502175701.GL19814@mtj.dyndns.org>
- <20130502181747.GH30020@redhat.com>
- <20130502182933.GN19814@mtj.dyndns.org>
- <20130502184514.GI30020@redhat.com>
+	Thu, 2 May 2013 14:50:03 -0400
+Message-ID: <5182B557.4040804@wwwdotorg.org>
+Date: Thu, 02 May 2013 12:49:59 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130502184514.GI30020@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Christian Ruppert <christian.ruppert@abilis.com>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        Patrice CHOTARD <patrice.chotard@st.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Sascha Leuenberger <sascha.leuenberger@abilis.com>,
+        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH 1/2] pinmux: Add TB10x pinmux driver
+References: <1365608728-30494-1-git-send-email-christian.ruppert@abilis.com> <516EEAA0.10906@wwwdotorg.org> <20130418090310.GA17636@ab42.lan> <CACRpkdZd0_W432od5565phhUcJMRWiV9vXX4QVF4osKkxstC0Q@mail.gmail.com> <20130429161725.GB30136@ab42.lan>
+In-Reply-To: <20130429161725.GB30136@ab42.lan>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Thu, May 02, 2013 at 02:45:14PM -0400, Vivek Goyal wrote:
-> I did not understand this point. In flat model, application issuing
-> at configured page will not get penalized.
+On 04/29/2013 10:17 AM, Christian Ruppert wrote:
+> Hello Linus,
 > 
-> This penalty is coming from the fact that we are moving bios after the
-> wait and make them wait in another queue.
+> On Fri, Apr 26, 2013 at 09:47:16AM +0200, Linus Walleij wrote:
+>> On Thu, Apr 18, 2013 at 11:03 AM, Christian Ruppert
+>> <christian.ruppert@abilis.com> wrote:
+>>
+>>> We would like to avoid the use of Linux pin numbers in the device tree.
+>>> Customers are used to physical pin numbers and exposing the logical
+>>> Linux-internal numbering scheme through the device tree would generate
+>>> quite some confusion. There are two reasons why we cannot align the two:
+>>>   - Not all products supported by these drivers have the same pin outs.
+>>>   - GPIO ranges must be consecutive in the Linux pin numbering space
+>>>     which is generally not the case in physical pin numbering.
+>>
+>> If you are talking about the pin numbers really, i.e. the number we
+>> put into
+>>
+>> struct pinctrl_pin_desc {
+>>         unsigned number; <- this
+>>         const char *name;
+>> };
+>>
+>> Then are you aware that this is a sparse number space?
+>>
+>> I.e. you can choose whatever number you want. You do not have
+>> to offset numbers from zero or anything like that. You just
+>> need to make sure the numbers do not overlap (no two pins
+>> have the same number).
+>>
+>> So if this is what you want to achieve, just use the same number
+>> as in your datasheet in the pin number -> problem solved.
 > 
-> In flat model there is no such problem. So to me, it is the problem
-> of how hierarchical scheduling is implemented. In flat model, I did
-> not have to deal with it.
+> The problem is that we must support several products which are basically
+> different packaging options of the same chip (or simplified versions
+> thereof). Not all of those products will have the same number of pins
+> and as a consequence, data sheet pin numbering will also be different.
+> The port names are going to remain the same for all products, however.
+> Some of the ports are just not going to be physically available in some
+> or the products. Sorry if that wasn't clear from my previous mail.
 
-But seen from the parent, the child isn't different from any other
-issuer in flat hierarchy.  It's just being repeated, so if you assume
-a process which behaves in the exact same manner, that process would
-get penalized too.  e.g. imagine an application which throttles itself
-and issues exactly 1MB/s amount of data in direct IO.  It'd get
-penalized the same way, right?
+It sounds like you can use the exact same numbering scheme for all the
+different packaging options; it's just that some of the pin numbers
+simply won't exist on some of the packaging options, so while defined by
+the DT binding, it simply won't make sense to use them?
 
-> Ok. Not having a perfect algorithm now is fine. We can always redo it
-> later.
-
-I think we can do source-based RR on bio_lists[] fetching which is
-simple enough and should be able to avoid most of the problems, right?
-
-Thanks.
-
--- 
-tejun
+Certainly, Tegra20 has two packaging options, and the pinctrl driver for
+it has zero knowledge of this. Perhaps we're just lucky though. I guess
+the Tegra TRM doesn't define any "Pin number" (just "pin name") for the
+pins, so there's no possibility of the same "number" meaning different
+things in the two packages, so perhaps we're just getting lucky here.
