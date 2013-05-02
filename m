@@ -1,93 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760645Ab3EBVTJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 17:19:09 -0400
-Received: from www.linutronix.de ([62.245.132.108]:41998 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757056Ab3EBVTH (ORCPT
+	id S1761377Ab3EBVUQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 17:20:16 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:61772 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761462Ab3EBVUJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 17:19:07 -0400
-Date: Thu, 2 May 2013 23:19:02 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Yinghai Lu <yinghai@kernel.org>
-cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: clockevents_program_event WARN_ON preventing boot.
-In-Reply-To: <CAE9FiQXpV451xTzAJyNdC-+-oqF9v8Cy5evcNOHKFffERw2SwA@mail.gmail.com>
-Message-ID: <alpine.LFD.2.02.1305022304370.2891@ionos>
-References: <20130430212007.GB18598@redhat.com> <20130430213719.GA14988@redhat.com> <alpine.LFD.2.02.1305021234510.3972@ionos> <20130502154621.GA23990@redhat.com> <alpine.LFD.2.02.1305022152280.2891@ionos>
- <CAE9FiQXpV451xTzAJyNdC-+-oqF9v8Cy5evcNOHKFffERw2SwA@mail.gmail.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Thu, 2 May 2013 17:20:09 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Subject: Re: [PATCH 0/2] clk: add of_clk_provider stubs to enable clk-si5351 on non OF
+Date: Thu, 2 May 2013 23:20:00 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
+Cc: Mike Turquette <mturquette@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Stephen Warren <swarren@nvidia.com>, Daniel Mack <zonque@gmail.com>,
+        "Lars-Peter Clausen" <lars@metafoo.de>,
+        Guenter Roeck <linux@roeck-us.net>,
+        Marek Belisko <marek.belisko@streamunlimited.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+References: <1367369910-20402-1-git-send-email-sebastian.hesselbarth@gmail.com>
+In-Reply-To: <1367369910-20402-1-git-send-email-sebastian.hesselbarth@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201305022320.00769.arnd@arndb.de>
+X-Provags-ID: V02:K0:DqBciXiz21I8o5nTfnuyDxHO+oxmOT6ZrvfT1MKKDFt
+ J8hNt0VQi9T6HXuH/ZA9E4H34dQ+KxA9E2jkEid/Z8Gp9329An
+ FeBR0h860apzqj4yoavndOhKAL6zjmuZyo1NSAHkpxsGU5z9+O
+ Ep8xOWarOp/ReGh/vpYZtPRh4uHSGDUkQn95VojYqW+1nm7bHp
+ 6xNcRVJzfo7bm7Q1JRBElr8/sUyljIRwURaqLJGoLNUed3R4x5
+ YAQRkaIlDgxYi3Er4pfLRf1vIGJyr94vulVhorGu8LqzFpTSwl
+ iYm+9b33q4J+mgJ06SgJsBNk7SVGeRH5gNjHeGcu940nhiou8X
+ JwCRzZisVOJj08aYDuBg=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2 May 2013, Yinghai Lu wrote:
-> On Thu, May 2, 2013 at 12:58 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+On Wednesday 01 May 2013, Sebastian Hesselbarth wrote:
 > 
-> >
-> > The check should be:
-> >
-> >     if (td->evtdev && tick_device_is_functional(td->evtdev))
+> Yesterday 02:58:27
+> Enabling drivers that provide clocks on DT on platforms that don't have
+> CONFIG_OF set fails due to compilation errors. This patch set first adds
+> some stubs for of_clk_provider functions if CONFIG_OF is not set. Second
+> it allows those platforms to build and use clk-si5351 i2c clock driver
+> by removing the dependency on CONFIG_OF.
 > 
-> still happens.
+> The above approach has been suggested by Arnd Bergmann and replaces the
+> corresponding Kconfig patch for clk-si5351 posted earlier. It has been
+> compile tested with allmodconfig on x86_64 for post v3.9.
 > 
-> [    3.457866] checking TSC synchronization [CPU#0 -> CPU#10]: passed.
-> [    3.460806] SMP alternatives: lockdep: fixing up alternatives
-> [    3.464282] ------------[ cut here ]------------
-> [    3.464297] WARNING: at kernel/time/clockevents.c:209
-> clockevents_program_event+0x3b/0x100()
+> Sebastian Hesselbarth (2):
+>   clk: add non CONFIG_OF routines for clk-provider
+>   clk: si5351: Allow to build without CONFIG_OF
+> 
 
-I didn't expect it to fix the warning, I just wanted to prevent the
-crash which Dave decoded. Though the warning and the crash have
-probably the same root cause...
-
-> [    3.464300] Modules linked in:
-> [    3.464306] CPU: 10 PID: 0 Comm: swapper/10 Not tainted
-> 3.9.0-yh-08066-g1252014-dirty #1537
-> [    3.464308] Hardware name: Oracle Corporation  unknown       /
-> , BIOS 11016600    05/17/2011
-> [    3.464327]  0000000000000009 ffff88203e203ed8 ffffffff82091022
-> ffff88203e203f18
-> [    3.464343]  ffffffff81088990 ffff88203e203f08 80000000003d08ff
-> 80000000003d08ff
-> [    3.464359]  000000000000000a ffff881027557fd8 0000000000000000
-> ffff88203e203f28
-> [    3.464361] Call Trace:
-> [    3.464379]  <IRQ>  [<ffffffff82091022>] dump_stack+0x19/0x1b
-> [    3.464392]  [<ffffffff81088990>] warn_slowpath_common+0x70/0xa0
-> [    3.464395]  [<ffffffff810889da>] warn_slowpath_null+0x1a/0x20
-> [    3.464399]  [<ffffffff810e312b>] clockevents_program_event+0x3b/0x100
-> [    3.464403]  [<ffffffff810e35ec>] tick_handle_periodic+0x4c/0x80
-
-Now, that's really odd.
-
-     next = ktime_add(dev->next_event, tick_period);
-
-     clockevents_program_event(dev, next, false);
-
-     and next.tv64 is < 0 !?!
-
-Can you please apply the following debug patch and provide the output?
-
-Thanks,
-
-	tglx
-
-diff --git a/kernel/time/clockevents.c b/kernel/time/clockevents.c
-index c6d6400..b4d9622 100644
---- a/kernel/time/clockevents.c
-+++ b/kernel/time/clockevents.c
-@@ -207,6 +207,8 @@ int clockevents_program_event(struct clock_event_device *dev, ktime_t expires,
- 
- 	if (unlikely(expires.tv64 < 0)) {
- 		WARN_ON_ONCE(1);
-+		printk_once(KERN_INFO "expires %llx, dev->next %llx\n",
-+			    expires.tv64, dev->next_event.tv64);
- 		return -ETIME;
- 	}
- 
+Acked-by: Arnd Bergmann <arnd@arndb.de>
