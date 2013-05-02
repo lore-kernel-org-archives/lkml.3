@@ -1,101 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757563Ab3EBKha (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 06:37:30 -0400
-Received: from www.linutronix.de ([62.245.132.108]:39083 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750878Ab3EBKh2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 06:37:28 -0400
-Date: Thu, 2 May 2013 12:37:26 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Dave Jones <davej@redhat.com>
-cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: clockevents_program_event WARN_ON preventing boot.
-In-Reply-To: <20130430213719.GA14988@redhat.com>
-Message-ID: <alpine.LFD.2.02.1305021234510.3972@ionos>
-References: <20130430212007.GB18598@redhat.com> <20130430213719.GA14988@redhat.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1757635Ab3EBKiT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 06:38:19 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:32953 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754695Ab3EBKiS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 06:38:18 -0400
+X-IronPort-AV: E=Sophos;i="4.87,595,1363132800"; 
+   d="scan'208";a="22847538"
+Date: Thu, 2 May 2013 11:38:12 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Ian Campbell <Ian.Campbell@citrix.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "marc.zyngier@arm.com" <marc.zyngier@arm.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "will.deacon@arm.com" <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [Xen-devel] [PATCH 3/3] xen/arm: account for stolen ticks
+In-Reply-To: <1367482862.21869.28.camel@zakaz.uk.xensource.com>
+Message-ID: <alpine.DEB.2.02.1305021134160.5398@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1305011939180.5398@kaball.uk.xensource.com>  <1367436460-10183-3-git-send-email-stefano.stabellini@eu.citrix.com> <1367482862.21869.28.camel@zakaz.uk.xensource.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Apr 2013, Dave Jones wrote:
-> On Tue, Apr 30, 2013 at 05:20:07PM -0400, Dave Jones wrote:
->  > I have a machine that crashes instantly on boot up on Linus'
->  > post-3.9 tree. (8c55f1463c1fd318d5e785f02b80bcc32176d342)
->  > 
->  > By booting with boot_delay=100, I was able to take a photo
->  > and capture the top of the trace.  (For some reason, larger boot
->  > delay parameters seem to make it take forever before printing
->  > even a single character, which made this a pain to debug).
->  > 
->  > The WARN_ON it prints right before locking up is this in clockevents_program_event
->  > 
->  > 208         if (unlikely(expires.tv64 < 0)) {
->  > 209                 WARN_ON_ONCE(1);
->  > 210                 return -ETIME;
->  > 211         }
->  > 
->  > booting with maxcpus=1 avoids the problem.
->  > 
->  > I'm still trying to get a complete stack trace, though it's painful
->  > due to the above reason.
+On Thu, 2 May 2013, Ian Campbell wrote:
+> On Wed, 2013-05-01 at 20:27 +0100, Stefano Stabellini wrote:
+> > diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
+> > index d30042e..8f040a0 100644
+> > --- a/arch/arm/xen/enlighten.c
+> > +++ b/arch/arm/xen/enlighten.c
+> > @@ -14,6 +14,7 @@
+> >  #include <xen/xen-ops.h>
+> >  #include <asm/xen/hypervisor.h>
+> >  #include <asm/xen/hypercall.h>
+> > +#include <asm/arch_timer.h>
+> >  #include <asm/system_misc.h>
+> >  #include <linux/interrupt.h>
+> >  #include <linux/irqreturn.h>
+> > @@ -172,6 +173,8 @@ static int __init xen_secondary_init(unsigned int cpu)
+> >  		   later ones fail to. */
+> >  		per_cpu(xen_vcpu, cpu) = vcpup;
+> >  	}
+> > +
+> > +	xen_setup_runstate_info(cpu);
 > 
-> On a second machine, I'm seeing an oops even earlier. As soon as I
-> exit grub, I get a blinking cursor.  If I boot with earlyprintk=vga
-> I can see..
-> 
-> Call Trace:
->  <IRQ>
->   tick_check_oneshot_broadcast
->   tick_check_idle
->   irq_enter
->   do_IRQ
->   common_interrupt
->  <EOI>
->   x86_64_start_reservations
->   x86_64_start_kernel
-> RIP: clockevents_set_mode+0x18
-> 
-> Matching up the Code: line of the trace with the disassembly I see..
-> 
->         if (dev->mode != mode) {
->  4c8:   39 77 38                cmp    %esi,0x38(%rdi)
-> 
-> 
-> the comment above that code is telling..
-> 
-> /*
->  * Must be called with interrupts disabled !
->  */
-> 
-> So how did we get an IRQ ?
- 
-Well, we are inside an IRQ and the code is called with interrupts
-disabled from there. Fix below.
+> Is this called for the boot processor too?
 
-Thanks,
+Yep.
 
-	tglx
+> (do you have a linux-next branch where I can easily find the baseline
+> for this series?)
 
-diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
-index 61d00a8..db9da73 100644
---- a/kernel/time/tick-broadcast.c
-+++ b/kernel/time/tick-broadcast.c
-@@ -475,7 +475,8 @@ void tick_check_oneshot_broadcast(int cpu)
- 	if (cpumask_test_cpu(cpu, tick_broadcast_oneshot_mask)) {
- 		struct tick_device *td = &per_cpu(tick_cpu_device, cpu);
- 
--		clockevents_set_mode(td->evtdev, CLOCK_EVT_MODE_ONESHOT);
-+		if (td)
-+			clockevents_set_mode(td->evtdev, CLOCK_EVT_MODE_ONESHOT);
- 	}
- }
- 
+git://git.kernel.org/pub/scm/linux/kernel/git/sstabellini/xen.git lost_ticks_1
 
+It's based on my 3.9-rc3-smp-6 branch currently in linux-next (that is
+based on 3.9-rc3).
+However lost_ticks_1 is not in linux-next yet.
