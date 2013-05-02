@@ -1,63 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759222Ab3EBNVr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 09:21:47 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:48896 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757786Ab3EBNVp (ORCPT
+	id S1759326Ab3EBNYU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 09:24:20 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:44068 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757786Ab3EBNYS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 09:21:45 -0400
-Date: Thu, 2 May 2013 15:19:55 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Alex Shi <alex.shi@intel.com>
-Cc: mingo@redhat.com, tglx@linutronix.de, akpm@linux-foundation.org,
-        arjan@linux.intel.com, bp@alien8.de, pjt@google.com,
-        namhyung@kernel.org, efault@gmx.de, morten.rasmussen@arm.com,
-        vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
-        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
-        linux-kernel@vger.kernel.org, len.brown@intel.com,
-        rafael.j.wysocki@intel.com, jkosina@suse.cz, clark.williams@gmail.com,
-        tony.luck@intel.com, keescook@chromium.org, mgorman@suse.de,
-        riel@redhat.com
-Subject: Re: [PATCH v4 6/6] sched: consider runnable load average in
- effective_load
-Message-ID: <20130502131954.GH13837@dyad.programming.kicks-ass.net>
-References: <1367040344-14485-1-git-send-email-alex.shi@intel.com>
- <1367040344-14485-7-git-send-email-alex.shi@intel.com>
+	Thu, 2 May 2013 09:24:18 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Cc: Sascha Hauer <s.hauer@pengutronix.de>, LMML <linux-media@vger.kernel.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Sakari Ailus <sakari.ailus@iki.fi>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org
+Subject: Re: [PATCH RFC v2] media: i2c: mt9p031: add OF support
+Date: Thu, 02 May 2013 15:24:28 +0200
+Message-ID: <5629971.jIvxpOF1A0@avalon>
+User-Agent: KMail/4.10.2 (Linux/3.7.10-gentoo-r1; KDE/4.10.2; x86_64; ; )
+In-Reply-To: <CA+V-a8sXNhiHhu9HJgFKCAZGZwvqptLy56Akqqu+xDVQ-4amyg@mail.gmail.com>
+References: <1367475754-19477-1-git-send-email-prabhakar.csengg@gmail.com> <1561679.1AUpDgdnFy@avalon> <CA+V-a8sXNhiHhu9HJgFKCAZGZwvqptLy56Akqqu+xDVQ-4amyg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1367040344-14485-7-git-send-email-alex.shi@intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> @@ -3120,6 +3124,7 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
->  	struct task_group *tg;
->  	unsigned long weight;
->  	int balanced;
-> +	int runnable_avg;
->  
->  	idx	  = sd->wake_idx;
->  	this_cpu  = smp_processor_id();
-> @@ -3135,13 +3140,19 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
->  	if (sync) {
->  		tg = task_group(current);
->  		weight = current->se.load.weight;
-> +		runnable_avg = current->se.avg.runnable_avg_sum * NICE_0_LOAD
-> +				/ (current->se.avg.runnable_avg_period + 1);
->  
-> -		this_load += effective_load(tg, this_cpu, -weight, -weight);
-> -		load += effective_load(tg, prev_cpu, 0, -weight);
-> +		this_load += effective_load(tg, this_cpu, -weight, -weight)
-> +				* runnable_avg >> NICE_0_SHIFT;
-> +		load += effective_load(tg, prev_cpu, 0, -weight)
-> +				* runnable_avg >> NICE_0_SHIFT;
->  	}
+Hi Prabhakar,
 
+On Thursday 02 May 2013 18:48:37 Prabhakar Lad wrote:
+> On Thu, May 2, 2013 at 4:32 PM, Laurent Pinchart wrote:
+> > On Thursday 02 May 2013 12:34:25 Prabhakar Lad wrote:
+> >> On Thu, May 2, 2013 at 12:25 PM, Sascha Hauer wrote:
+> >> > On Thu, May 02, 2013 at 11:52:34AM +0530, Prabhakar Lad wrote:
+> >> >> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> >> >> 
+> >> >> add OF support for the mt9p031 sensor driver.
+> >> >> Alongside this patch sorts the header inclusion alphabetically.
 
-I'm fairly sure this is wrong; but I haven't bothered to take pencil to paper.
+[snip]
 
-I think you'll need to insert the runnable avg load and make sure
-effective_load() uses the right sums itself.
+> >> >> @@ -1070,8 +1120,16 @@ static const struct i2c_device_id mt9p031_id[]
+> >> >> = {
+> >> >>  };
+> >> >>  MODULE_DEVICE_TABLE(i2c, mt9p031_id);
+> >> >> 
+> >> >> +static const struct of_device_id mt9p031_of_match[] = {
+> >> >> +     { .compatible = "aptina,mt9p031", },
+> >> >> +     { .compatible = "aptina,mt9p031m", },
+> >> >> +     {},
+> >> >> +};
+> >> > 
+> >> > I would have expected something like:
+> >> > 
+> >> > static const struct of_device_id mt9p031_of_match[] = {
+> >> >         {
+> >> >                 .compatible = "aptina,mt9p031-sensor",
+> >> >                 .data = (void *)MT9P031_MODEL_COLOR,
+> >> >         }, {
+> >> >                 .compatible = "aptina,mt9p031m-sensor",
+> >> >                 .data = (void *)MT9P031_MODEL_MONOCHROME,
+> >> >         }, {
+> >> >                 /* sentinel */
+> >> >         },
+> >> > };
+> >> > 
+> >> >         of_id = of_match_device(mt9p031_of_match, &client->dev);
+> >> >         if (of_id)
+> >> >                 mt9p031->model = (enum mt9p031_model)of_id->data;
+> >> > 
+> >> > To handle monochrome sensors.
+> >> 
+> >> OK will do the same.
+> > 
+> > And please guard the table with #ifdef CONFIG_OF.
+> 
+> But guarding the table #ifdef CONFIG_OF would cause compilation failure
+> for below code when CONFIG_OF is undefined in probe
+> 
+> of_id = of_match_device(of_match_ptr(mt9p031_of_match),
+> 			&client->dev);
+> if (of_id)
+> 	mt9p031->model = (enum mt9p031_model)of_id->data;
+
+You could guard the above code with an #ifdef CONFIG_OF as well.
+
+> and also in mt9p031_i2c_driver structure,
+> of_match_table = of_match_ptr(mt9p031_of_match),
+> 
+> which force me to define mt9p031_of_match to NULL when
+> CONFIG_OF is undefined
+
+of_match_ptr is defined as NULL when CONFIG_OF is disabled.
+
+-- 
+Regards,
+
+Laurent Pinchart
+
