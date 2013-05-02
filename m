@@ -1,56 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756129Ab3EBK2R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 06:28:17 -0400
-Received: from webmail.solarflare.com ([12.187.104.25]:28200 "EHLO
-	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752896Ab3EBK2Q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 06:28:16 -0400
-Message-ID: <1367490491.5106.137.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [GIT] Networking
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: David Miller <davem@davemloft.net>
-CC: <bjorn@mork.no>, <kaber@trash.net>, <torvalds@linux-foundation.org>,
-        <hayeswang@realtek.com>, <akpm@linux-foundation.org>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Date: Thu, 2 May 2013 11:28:11 +0100
-In-Reply-To: <20130502.051727.949429506738234701.davem@davemloft.net>
-References: <20130502.041625.412316202038784117.davem@davemloft.net>
-	 <20130502083619.GA22010@macbook.localnet> <87d2t9bvj1.fsf@nemi.mork.no>
-	 <20130502.051727.949429506738234701.davem@davemloft.net>
-Organization: Solarflare Communications
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-2 
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [88.96.1.126]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-19834.005
-X-TM-AS-Result: No--24.019600-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+	id S1756325Ab3EBKbN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 06:31:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22359 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753370Ab3EBKbM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 06:31:12 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <1367485129-4423-1-git-send-email-imre.deak@intel.com>
+References: <1367485129-4423-1-git-send-email-imre.deak@intel.com>
+To: Imre Deak <imre.deak@intel.com>
+Cc: dhowells@redhat.com, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Dave Jones <davej@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        Lukas Czerner <lczerner@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] wait: fix false timeouts when using wait_event_timeout()
+Date: Thu, 02 May 2013 11:29:29 +0100
+Message-ID: <15077.1367490569@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-05-02 at 05:17 -0400, David Miller wrote:
-> From: Bjørn Mork <bjorn@mork.no>
-> Date: Thu, 02 May 2013 11:06:42 +0200
-> 
-> > Adding the new netdev features will make it go from 1 to 2:
-> 
-> We already had more than 31 feature bits before Patrick's
-> changes, and I'm pretty sure this was the case when we added
-> that ethtool API.
+Imre Deak <imre.deak@intel.com> wrote:
 
-It wasn't, but this should be OK.  Userland is supposed to query the
-number of features using ETHTOOL_GSSET_INFO and then work out the number
-of words/blocks using FEATURE_BITS_TO_BLOCKS().  
+> Many callers of the wait_event_timeout() and
+> wait_event_interruptible_timeout() expect that the return value will be
+> positive if the specified condition becomes true before the timeout
+> elapses. However, at the moment this isn't guaranteed. If the wake-up
+> handler is delayed enough, the time remaining until timeout will be
+> calculated as 0 - and passed back as a return value - even if the
+> condition became true before the timeout has passed.
 
-Ben.
+Fun.
 
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+> Fix this by returning at least 1 if the condition becomes true. This
+> semantic is in line with what wait_for_condition_timeout() does; see
+> commit bb10ed09 - "sched: fix wait_for_completion_timeout() spurious
+> failure under heavy load".
 
+But now you can't distinguish the timer expiring first, if the thread doing
+the waiting gets delayed sufficiently long for the event to happen.
+
+I'm not sure there's a good answer - except maybe making the timer expiry
+handler check the condition (which would likely get really yucky really
+quickly).
+
+David
