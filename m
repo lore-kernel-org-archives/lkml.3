@@ -1,99 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754952Ab3EBHg2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 03:36:28 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:46700 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752130Ab3EBHg0 (ORCPT
+	id S1755124Ab3EBHg5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 03:36:57 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:50728 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751545Ab3EBHgz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 03:36:26 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: Re: [PATCH RESEND v5] fat: editions to support fat_fallocate
-References: <1367107703-2665-1-git-send-email-linkinjeon@gmail.com>
-	<87ppxd4ddm.fsf@devron.myhome.or.jp>
-	<CAKYAXd8v-eF0E2FzLfm1KaZaRu-adQcDVQQeWAiH6-8Pr+BxmA@mail.gmail.com>
-	<87bo8v42wx.fsf@devron.myhome.or.jp>
-	<CAKYAXd_-Z8Avm-FmLF=MVqHSkzfE1_jczBroyFXv5xgQmr5=XA@mail.gmail.com>
-	<87vc722cdu.fsf@devron.myhome.or.jp>
-	<CAKYAXd8nTUrW04ADyDkhnJWyjUKiniU+r65J5SMhXT-jHTG+UA@mail.gmail.com>
-Date: Thu, 02 May 2013 16:36:22 +0900
-In-Reply-To: <CAKYAXd8nTUrW04ADyDkhnJWyjUKiniU+r65J5SMhXT-jHTG+UA@mail.gmail.com>
-	(Namjae Jeon's message of "Thu, 2 May 2013 15:12:55 +0900")
-Message-ID: <87r4hp3kax.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
+	Thu, 2 May 2013 03:36:55 -0400
+Message-ID: <5182178A.5020607@linux.vnet.ibm.com>
+Date: Thu, 02 May 2013 15:36:42 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-2022-jp
+To: Mike Galbraith <efault@gmx.de>
+CC: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Alex Shi <alex.shi@intel.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Turner <pjt@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        Ram Pai <linuxram@us.ibm.com>
+Subject: Re: [PATCH] sched: wake-affine throttle
+References: <5164DCE7.8080906@linux.vnet.ibm.com> <1366626208.2721.12.camel@laptop> <5181FE1B.6010508@linux.vnet.ibm.com> <1367478643.5808.71.camel@marge.simpson.net>
+In-Reply-To: <1367478643.5808.71.camel@marge.simpson.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13050207-1618-0000-0000-000003CE42BF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Namjae Jeon <linkinjeon@gmail.com> writes:
-
->> Then, per-file discard fallocate space sounds like wrong. fallocate
->> space probably is inode attribute.
-> Since, our preallocation will not be persistent after umount. So, we
-> need to free up the space at some point.
-> If we consider for normal pre-allocation in ext4, in that case also
-> the blocks are removed in ext4_release_file when the last writer
-> closes the file.
->
-> ext4_release_file()
-> {
-> ...
-> /* if we are the last writer on the inode, drop the block reservation */
-> 	if ((filp->f_mode & FMODE_WRITE) &&
-> 			(atomic_read(&inode->i_writecount) == 1) &&
-> 		        !EXT4_I(inode)->i_reserved_data_blocks)
-> 	{
-> 		down_write(&EXT4_I(inode)->i_data_sem);
-> 		ext4_discard_preallocations(inode);
-> 		up_write(&EXT4_I(inode)->i_data_sem);
-> 	}
->
-> So, we will need to have this per file . May be the condition for
-> checking is wrong which can be correct but the correctness points
-> should be same. We can give a thought on using "i_writecount" for
-> controlling the parallel write in FAT also.
-> how do you think ?
-
-AFAIK, preallocation != fallocate. ext*'s preallocation was there at
-before fallocation to optimize block allocation for user data blocks.
-
->>>> I know. Question is, why do we need to initialize twice.
->>>>
->>>> 1) zeroed for uninitialized area, 2) then copy user data area. We need
->>>> only either, right? This seems to be doing both for all fallocated area.
->>> We did not initialize twice. We are using the ‘pos’ as the attribute
->>> to define zeroing length in case of pre-allocation.
->>> Zeroing out occurs till the ‘pos’ while actual write occur after ‘pos’.
->>> If we file size is 100KB and we pre-allocated till 1MB. Next if we try
->>> to write at 500KB,
->>> Then zeroing out will occur only for 100KB->500KB, after that there
->>> will be normal write. There is no duplication for the same space.
+On 05/02/2013 03:10 PM, Mike Galbraith wrote:
 >>
->> Ah. Then write_begin() really initialize after i_size until page cache
->> boudary for append write? I wonder if this patch works correctly for
->> mmap.
-> Since you already provided me review comments to check truncate and
-> mmap, we checked all points for those cases.
+>> I've done the test for several times, also compared with the throttle
+>> approach, default 1ms interval still works very well, the regression on
+>> hackbench start to exceed 2% when interval become 100ms on my box, but
+>> please note the pgbench already gain a lot benefit at that time.
+>>
+>> I think now we could say that wake-affine is useful, and we could not
+>> simply kill it.
+> 
+> Oh, it's definitely useful.  Communicating tasks deeply resent talking
+> over interconnects (advanced tin cans and string).  My little Q6600 box
+> can even be described as dinky-numa given enough imagination.. place
+> communicating tasks on different core2 "nodes" if you will, throughput
+> falls through the floor.  Shared L2 is quick like bunny, dram ain't.
 
-cluster size == 512b
+Nice, so we got another proof to defend wake-affine now ;-)
 
-1) create new file
-2) fallocate 100MB
-3) write(2) data for each 512b
+Regards,
+Michael Wang
 
-With this, write_begin() will be called for each 512b data. When we
-allocates new page for this file, write_begin() writes data 0-512. Then,
-we have to initialize 512-4096 by zero. Because mmap read maps 0-4096,
-even if i_size == 512.
+> 
+> -Mike
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
-Who is initializing area for 512-4096?
-
-Thanks.
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
