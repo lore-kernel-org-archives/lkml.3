@@ -1,148 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758804Ab3EBMKy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 08:10:54 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:44467 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1758317Ab3EBMKv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 08:10:51 -0400
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH v2] mm/pagewalk.c: walk_page_range should avoid VM_PFNMAP areas
-Cc: akpm@linux-foundation.org, mgorman@suse.de, aarcange@redhat.com,
-        dave.hansen@intel.com, dsterba@suse.cz, hannes@cmpxchg.org,
-        kosaki.motohiro@gmail.com, kirill.shutemov@linux.intel.com,
-        mpm@selenic.com, n-horiguchi@ah.jp.nec.com, rdunlap@infradead.org
-Message-Id: <E1UXsLY-0003oJ-KD@eag09.americas.sgi.com>
-From: Cliff Wickman <cpw@sgi.com>
-Date: Thu, 02 May 2013 07:10:48 -0500
+	id S1758545Ab3EBMKC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 08:10:02 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:42349 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758357Ab3EBMJ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 08:09:58 -0400
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Tony Lindgren <tony@atomide.com>
+CC: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>
+Subject: [PATCH 2/5] drivers: bus: omap_l3: Convert to use devm_request_and_ioremap()
+Date: Thu, 2 May 2013 14:09:44 +0200
+Message-ID: <1367496587-6210-3-git-send-email-peter.ujfalusi@ti.com>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <1367496587-6210-1-git-send-email-peter.ujfalusi@ti.com>
+References: <1367496587-6210-1-git-send-email-peter.ujfalusi@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+We can then remove the iounmap() calls from probe and remove.
+Since the driver requests the resources via index we can do the mem resource
+request within a for loop.
 
-/proc/<pid>/smaps and similar walks through a user page table should not
-be looking at VM_PFNMAP areas.
-
-This is v2: 
-- moves the VM_BUG_ON out of the loop
-- adds the needed test for  vma->vm_start <= addr
-
-Certain tests in walk_page_range() (specifically split_huge_page_pmd())
-assume that all the mapped PFN's are backed with page structures. And this is
-not usually true for VM_PFNMAP areas. This can result in panics on kernel
-page faults when attempting to address those page structures.
-
-There are a half dozen callers of walk_page_range() that walk through
-a task's entire page table (as N. Horiguchi pointed out). So rather than
-change all of them, this patch changes just walk_page_range() to ignore 
-VM_PFNMAP areas.
-
-The logic of hugetlb_vma() is moved back into walk_page_range(), as we
-want to test any vma in the range.
-
-VM_PFNMAP areas are used by:
-- graphics memory manager   gpu/drm/drm_gem.c
-- global reference unit     sgi-gru/grufile.c
-- sgi special memory        char/mspec.c
-- and probably several out-of-tree modules
-
-I'm copying everyone who has changed this file recently, in case
-there is some reason that I am not aware of to provide
-/proc/<pid>/smaps|clear_refs|maps|numa_maps for these VM_PFNMAP areas.
-
-Signed-off-by: Cliff Wickman <cpw@sgi.com>
+Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 ---
- mm/pagewalk.c |   62 ++++++++++++++++++++++++++++++----------------------------
- 1 file changed, 33 insertions(+), 29 deletions(-)
+ drivers/bus/omap_l3_noc.c | 63 +++++++++++------------------------------------
+ 1 file changed, 15 insertions(+), 48 deletions(-)
 
-Index: linux/mm/pagewalk.c
-===================================================================
---- linux.orig/mm/pagewalk.c
-+++ linux/mm/pagewalk.c
-@@ -127,22 +127,6 @@ static int walk_hugetlb_range(struct vm_
- 	return 0;
+diff --git a/drivers/bus/omap_l3_noc.c b/drivers/bus/omap_l3_noc.c
+index d25d727..ca95d3d 100644
+--- a/drivers/bus/omap_l3_noc.c
++++ b/drivers/bus/omap_l3_noc.c
+@@ -131,52 +131,28 @@ static irqreturn_t l3_interrupt_handler(int irq, void *_l3)
+ static int omap4_l3_probe(struct platform_device *pdev)
+ {
+ 	static struct omap4_l3 *l3;
+-	struct resource	*res;
+-	int ret;
++	int ret, i;
+ 
+ 	l3 = devm_kzalloc(&pdev->dev, sizeof(*l3), GFP_KERNEL);
+ 	if (!l3)
+ 		return -ENOMEM;
+ 
+ 	platform_set_drvdata(pdev, l3);
+-	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!res) {
+-		dev_err(&pdev->dev, "couldn't find resource 0\n");
+-		return -ENODEV;
+-	}
+-
+-	l3->l3_base[0] = ioremap(res->start, resource_size(res));
+-	if (!l3->l3_base[0]) {
+-		dev_err(&pdev->dev, "ioremap failed\n");
+-		return -ENOMEM;
+-	}
+-
+-	res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
+-	if (!res) {
+-		dev_err(&pdev->dev, "couldn't find resource 1\n");
+-		ret = -ENODEV;
+-		goto err1;
+-	}
+ 
+-	l3->l3_base[1] = ioremap(res->start, resource_size(res));
+-	if (!l3->l3_base[1]) {
+-		dev_err(&pdev->dev, "ioremap failed\n");
+-		ret = -ENOMEM;
+-		goto err1;
+-	}
+-
+-	res = platform_get_resource(pdev, IORESOURCE_MEM, 2);
+-	if (!res) {
+-		dev_err(&pdev->dev, "couldn't find resource 2\n");
+-		ret = -ENODEV;
+-		goto err2;
+-	}
++	/* Get mem resources */
++	for (i = 0; i < 3; i++) {
++		struct resource	*res = platform_get_resource(pdev,
++							     IORESOURCE_MEM, i);
++		if (!res) {
++			dev_err(&pdev->dev, "couldn't find resource %d\n", i);
++			return -ENODEV;
++		}
+ 
+-	l3->l3_base[2] = ioremap(res->start, resource_size(res));
+-	if (!l3->l3_base[2]) {
+-		dev_err(&pdev->dev, "ioremap failed\n");
+-		ret = -ENOMEM;
+-		goto err2;
++		l3->l3_base[i] = devm_request_and_ioremap(&pdev->dev, res);
++		if (!l3->l3_base[i]) {
++			dev_err(&pdev->dev, "ioremap %d failed\n", i);
++			return -ENOMEM;
++		}
+ 	}
+ 
+ 	/*
+@@ -189,7 +165,7 @@ static int omap4_l3_probe(struct platform_device *pdev)
+ 	if (ret) {
+ 		pr_crit("L3: request_irq failed to register for 0x%x\n",
+ 						l3->debug_irq);
+-		goto err3;
++		return ret;
+ 	}
+ 
+ 	l3->app_irq = platform_get_irq(pdev, 1);
+@@ -206,12 +182,6 @@ static int omap4_l3_probe(struct platform_device *pdev)
+ 
+ err4:
+ 	free_irq(l3->debug_irq, l3);
+-err3:
+-	iounmap(l3->l3_base[2]);
+-err2:
+-	iounmap(l3->l3_base[1]);
+-err1:
+-	iounmap(l3->l3_base[0]);
+ 	return ret;
  }
  
--static struct vm_area_struct* hugetlb_vma(unsigned long addr, struct mm_walk *walk)
--{
--	struct vm_area_struct *vma;
--
--	/* We don't need vma lookup at all. */
--	if (!walk->hugetlb_entry)
--		return NULL;
--
--	VM_BUG_ON(!rwsem_is_locked(&walk->mm->mmap_sem));
--	vma = find_vma(walk->mm, addr);
--	if (vma && vma->vm_start <= addr && is_vm_hugetlb_page(vma))
--		return vma;
--
--	return NULL;
--}
--
- #else /* CONFIG_HUGETLB_PAGE */
- static struct vm_area_struct* hugetlb_vma(unsigned long addr, struct mm_walk *walk)
- {
-@@ -198,30 +182,50 @@ int walk_page_range(unsigned long addr,
- 	if (!walk->mm)
- 		return -EINVAL;
+@@ -221,9 +191,6 @@ static int omap4_l3_remove(struct platform_device *pdev)
  
-+	VM_BUG_ON(!rwsem_is_locked(&walk->mm->mmap_sem));
-+
- 	pgd = pgd_offset(walk->mm, addr);
- 	do {
--		struct vm_area_struct *vma;
-+		struct vm_area_struct *vma = NULL;
+ 	free_irq(l3->app_irq, l3);
+ 	free_irq(l3->debug_irq, l3);
+-	iounmap(l3->l3_base[0]);
+-	iounmap(l3->l3_base[1]);
+-	iounmap(l3->l3_base[2]);
  
- 		next = pgd_addr_end(addr, end);
- 
- 		/*
--		 * handle hugetlb vma individually because pagetable walk for
--		 * the hugetlb page is dependent on the architecture and
--		 * we can't handled it in the same manner as non-huge pages.
-+		 * Check any special vma's within this range.
- 		 */
--		vma = hugetlb_vma(addr, walk);
-+		vma = find_vma(walk->mm, addr);
- 		if (vma) {
--			if (vma->vm_end < next)
-+			/*
-+			 * There are no page structures backing a VM_PFNMAP
-+			 * range, so do not allow split_huge_page_pmd().
-+			 */
-+			if ((vma->vm_start <= addr) &&
-+			    (vma->vm_flags & VM_PFNMAP)) {
- 				next = vma->vm_end;
-+				pgd = pgd_offset(walk->mm, next);
-+				continue;
-+			}
- 			/*
--			 * Hugepage is very tightly coupled with vma, so
--			 * walk through hugetlb entries within a given vma.
-+			 * Handle hugetlb vma individually because pagetable
-+			 * walk for the hugetlb page is dependent on the
-+			 * architecture and we can't handled it in the same
-+			 * manner as non-huge pages.
- 			 */
--			err = walk_hugetlb_range(vma, addr, next, walk);
--			if (err)
--				break;
--			pgd = pgd_offset(walk->mm, next);
--			continue;
-+			if (walk->hugetlb_entry && (vma->vm_start <= addr) &&
-+			    is_vm_hugetlb_page(vma)) {
-+				if (vma->vm_end < next)
-+					next = vma->vm_end;
-+				/*
-+				 * Hugepage is very tightly coupled with vma,
-+				 * so walk through hugetlb entries within a
-+				 * given vma.
-+				 */
-+				err = walk_hugetlb_range(vma, addr, next, walk);
-+				if (err)
-+					break;
-+				pgd = pgd_offset(walk->mm, next);
-+				continue;
-+			}
- 		}
- 
- 		if (pgd_none_or_clear_bad(pgd)) {
+ 	return 0;
+ }
+-- 
+1.8.2.1
+
