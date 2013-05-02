@@ -1,167 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757228Ab3EBJo0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 05:44:26 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:61702 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751956Ab3EBJoX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 05:44:23 -0400
+	id S1757491Ab3EBJpM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 05:45:12 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:37406 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751703Ab3EBJpI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 05:45:08 -0400
+From: "Gupta, Pekon" <pekon@ti.com>
+To: <linux-mtd@lists.infradead.org>, <b-cousson@ti.com>, <tony@atomide.com>,
+        <linux@arm.linux.org.uk>
+CC: Philip Avinash <avinashphilip@ti.com>, <linux-omap@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <nsekhar@ti.com>, <gururaja.hebbar@ti.com>, <hvaibhav@ti.com>,
+        <zonque@gmail.com>, <jacmet@sunsite.dk>, "Gupta, Pekon" <pekon@ti.com>
+Subject: [PATCH v3, 3/3] ARM: dts: AM33XX: Add NAND flash device tree data to am335x-evm
+Date: Thu, 2 May 2013 15:14:28 +0530
+Message-ID: <1367487868-14767-1-git-send-email-pekon@ti.com>
+X-Mailer: git-send-email 1.8.1
 MIME-Version: 1.0
-In-Reply-To: <51823169.5050405@samsung.com>
-References: <1367473061-28863-1-git-send-email-amit.daniel@samsung.com>
-	<51823169.5050405@samsung.com>
-Date: Thu, 2 May 2013 15:14:22 +0530
-X-Google-Sender-Auth: Z8xGU5oQkmQYDI3rMHNLizENrc8
-Message-ID: <CADGdYn45rJJNtFHGiUAx=v+De0z3U=grApAJ2-ZKMnRTOnRSdQ@mail.gmail.com>
-Subject: Re: [PATCH] thermal: exynos: Support for TMU regulator defined at
- device tree
-From: amit daniel kachhap <amit.daniel@samsung.com>
-To: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Cc: Lukasz Majewski <l.majewski@samsung.com>, linux-pm@vger.kernel.org,
-        Zhang Rui <rui.zhang@intel.com>, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sylwester,
+From: Philip Avinash <avinashphilip@ti.com>
 
-On Thu, May 2, 2013 at 2:57 PM, Sylwester Nawrocki
-<s.nawrocki@samsung.com> wrote:
-> Hi,
->
-> On 05/02/2013 07:37 AM, Amit Daniel Kachhap wrote:
->> TMU probe function now checks for a device tree defined regulator.
->> For compatibility reasons it is allowed to probe driver even without
->> this regulator defined.
->>
->> Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
->> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
->> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
->> ---
->>
->> This patch is repost of the patch posted by Lukasz Majewski
->> (https://patchwork.kernel.org/patch/2488211/). I have rebased this
->> patch on top of my TMU re-structured patch series
->> (http://lwn.net/Articles/548634/). Although I thought of handling
->> regulator as one type of feature (newly added) but could not do
->> so as regulator is a board/platform property and not SOC property so
->> leaving the device tree to define and handle it.
->>
->>  .../devicetree/bindings/thermal/exynos-thermal.txt |    4 ++++
->>  drivers/thermal/samsung/exynos_tmu.c               |   17 +++++++++++++++++
->>  2 files changed, 21 insertions(+), 0 deletions(-)
->>
->> diff --git a/Documentation/devicetree/bindings/thermal/exynos-thermal.txt b/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
->> index 970eeba..ff62f7a 100644
->> --- a/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
->> +++ b/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
->> @@ -14,6 +14,9 @@
->>  - interrupts : Should contain interrupt for thermal system
->>  - clocks : The main clock for TMU device
->>  - clock-names : Thermal system clock name
->> +- vtmu-supply: This entry is optional and provides the regulator node supplying
->> +             voltage to TMU. If needed this entry can be placed inside
->> +             board/platform specific dts file.
->>
->>  Example 1):
->>
->> @@ -25,6 +28,7 @@ Example 1):
->>               clocks = <&clock 383>;
->>               clock-names = "tmu_apbif";
->>               status = "disabled";
->> +             vtmu-supply = <&tmu_regulator_node>;
->>       };
->>
->>  Example 2):
->> diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
->> index 72446c9..45b50c1 100644
->> --- a/drivers/thermal/samsung/exynos_tmu.c
->> +++ b/drivers/thermal/samsung/exynos_tmu.c
->> @@ -32,6 +32,7 @@
->>  #include <linux/of_address.h>
->>  #include <linux/of_irq.h>
->>  #include <linux/platform_device.h>
->> +#include <linux/regulator/consumer.h>
->>  #include <linux/slab.h>
->>  #include <linux/workqueue.h>
->>  #include "exynos_thermal_common.h"
->> @@ -52,6 +53,7 @@
->>   * @clk: pointer to the clock structure.
->>   * @temp_error1: fused value of the first point trim.
->>   * @temp_error2: fused value of the second point trim.
->> + * @regulator: pointer to the TMU regulator structure.
->>   * @reg_conf: pointer to structure to register with core thermal.
->>   */
->>  struct exynos_tmu_data {
->> @@ -65,6 +67,7 @@ struct exynos_tmu_data {
->>       struct mutex lock;
->>       struct clk *clk;
->>       u8 temp_error1, temp_error2;
->> +     struct regulator *regulator;
->>       struct thermal_sensor_conf *reg_conf;
->>  };
->>
->> @@ -501,10 +504,21 @@ static int exynos_map_dt_data(struct platform_device *pdev)
->>       struct exynos_tmu_data *data = platform_get_drvdata(pdev);
->>       struct exynos_tmu_platform_data *pdata = data->pdata;
->>       struct resource res;
->> +     int ret;
->>
->>       if (!data)
->>               return -ENODEV;
->>
->> +     /* Try enabling the regulator if found */
->> +     data->regulator = devm_regulator_get(&pdev->dev, "vtmu");
->
-> Wouldn't it better to require vtmu-supply property always ?
-> This way any errors would have not been ignored. And board/platform
-> would have to specify real or dummy regulator supply.
-Yes it makes sense but then it involves adding many lines in the
-current DT nodes.
->
-> However, if the DT binding is already defined it might be too late to
-> add a required property. Nevertless some log might be useful in case
-> regulator_get fails and the driver runs without the regulator's control.
-Yes correct will re-submit with some logs in error path.
->
->> +     if (!IS_ERR(data->regulator)) {
->> +             ret = regulator_enable(data->regulator);
->> +             if (ret) {
->> +                     dev_err(&pdev->dev, "failed to enable vtmu\n");
->> +                     return ret;
->> +             }
->> +     }
->> +
->>       data->id = of_alias_get_id(pdev->dev.of_node, "tmuctrl");
->>       if (data->id < 0)
->>               data->id = 0;
->> @@ -669,6 +683,9 @@ static int exynos_tmu_remove(struct platform_device *pdev)
->>
->>       clk_unprepare(data->clk);
->>
->> +     if (data->regulator)
->
-> Shouldn't this be:
->
->         if (!IS_ERR(data->regulator))
-Yes correct.
+NAND flash connected in am335x-evm on GPMC controller. This patch adds
+device tree node in am3355-evm with GPMC contoller timing for NAND flash
+interface, NAND partition table, ECC scheme, elm handle id.
 
-Thanks,
-Amit Daniel
->
-> You probably want to set data->regulator to some ERR_PTR() value
-> in probe, unless regulator get is first thing done there.
->
->> +             regulator_disable(data->regulator);
->> +
->>       platform_set_drvdata(pdev, NULL);
->>
->>       return 0;
->>
->
-> Regards,
-> Sylwester
+Signed-off-by: Philip Avinash <avinashphilip@ti.com>
+Signed-off-by: Gupta, Pekon <pekon@ti.com>
+
+---
+Changes in v3:
+	- moved GPMC pin-mux config to nand node
+
+ arch/arm/boot/dts/am335x-evm.dts | 95 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 95 insertions(+)
+
+diff --git a/arch/arm/boot/dts/am335x-evm.dts b/arch/arm/boot/dts/am335x-evm.dts
+index d649644..0b8f161 100644
+--- a/arch/arm/boot/dts/am335x-evm.dts
++++ b/arch/arm/boot/dts/am335x-evm.dts
+@@ -44,6 +44,26 @@
+ 				0x154 0x27	/* spi0_d0.gpio0_3, INPUT | MODE7 */
+ 			>;
+ 		};
++
++		nandflash_pins_s0: nandflash_pins_s0 {
++			pinctrl-single,pins = <
++				0x0 0x30	/* gpmc_ad0.gpmc_ad0, INPUT | PULLUP | MODE0 */
++				0x4 0x30	/* gpmc_ad1.gpmc_ad1, INPUT | PULLUP | MODE0 */
++				0x8 0x30	/* gpmc_ad2.gpmc_ad2, INPUT | PULLUP | MODE0 */
++				0xc 0x30	/* gpmc_ad3.gpmc_ad3, INPUT | PULLUP | MODE0 */
++				0x10 0x30	/* gpmc_ad4.gpmc_ad4, INPUT | PULLUP | MODE0 */
++				0x14 0x30	/* gpmc_ad5.gpmc_ad5, INPUT | PULLUP | MODE0 */
++				0x18 0x30	/* gpmc_ad6.gpmc_ad6, INPUT | PULLUP | MODE0 */
++				0x1c 0x30	/* gpmc_ad7.gpmc_ad7, INPUT | PULLUP | MODE0 */
++				0x70 0x30	/* gpmc_wait0.gpmc_wait0, INPUT | PULLUP | MODE0 */
++				0x74 0x37	/* gpmc_wpn.gpio0_30, INPUT | PULLUP | MODE7 */
++				0x7c 0x8	/* gpmc_csn0.gpmc_csn0,  PULL DISA */
++				0x90 0x8	/* gpmc_advn_ale.gpmc_advn_ale, PULL DISA */
++				0x94 0x8	/* gpmc_oen_ren.gpmc_oen_ren, PULL DISA */
++				0x98 0x8	/* gpmc_wen.gpmc_wen, PULL DISA */
++				0x9c 0x8	/* gpmc_be0n_cle.gpmc_be0n_cle, PULL DISA */
++			>;
++		};
+ 	};
+ 
+ 	ocp {
+@@ -102,6 +122,82 @@
+ 				reg = <0x48>;
+ 			};
+ 		};
++
++		elm: elm@48080000 {
++			status = "okay";
++		};
++
++		gpmc: gpmc@50000000 {
++			status = "okay";
++			pinctrl-names = "default";
++			pinctrl-0 = <&nandflash_pins_s0>;
++			ranges = <0 0 0x08000000 0x10000000>;	/* CS0: NAND */
++			nand@0,0 {
++				reg = <0 0 0>; /* CS0, offset 0 */
++				nand-bus-width = <8>;
++				ti,nand-ecc-opt = "bch8";
++
++				gpmc,sync-clk = <0>;
++				gpmc,cs-on = <0>;
++				gpmc,cs-rd-off = <44>;
++				gpmc,cs-wr-off = <44>;
++				gpmc,adv-on = <6>;
++				gpmc,adv-rd-off = <34>;
++				gpmc,adv-wr-off = <44>;
++				gpmc,we-off = <40>;
++				gpmc,oe-off = <54>;
++				gpmc,access = <64>;
++				gpmc,rd-cycle = <82>;
++				gpmc,wr-cycle = <82>;
++				gpmc,wr-access = <40>;
++				gpmc,wr-data-mux-bus = <0>;
++
++				#address-cells = <1>;
++				#size-cells = <1>;
++				elm_id = <&elm>;
++
++				/* MTD partition table */
++				partition@0 {
++					label = "SPL1";
++					reg = <0x00000000 0x000020000>;
++				};
++
++				partition@1 {
++					label = "SPL2";
++					reg = <0x00020000 0x00020000>;
++				};
++
++				partition@2 {
++					label = "SPL3";
++					reg = <0x00040000 0x00020000>;
++				};
++
++				partition@3 {
++					label = "SPL4";
++					reg = <0x00060000 0x00020000>;
++				};
++
++				partition@4 {
++					label = "U-boot";
++					reg = <0x00080000 0x001e0000>;
++				};
++
++				partition@5 {
++					label = "environment";
++					reg = <0x00260000 0x00020000>;
++				};
++
++				partition@6 {
++					label = "Kernel";
++					reg = <0x00280000 0x00500000>;
++				};
++
++				partition@7 {
++					label = "File-System";
++					reg = <0x00780000 0x0F880000>;
++				};
++			};
++		};
+ 	};
+ 
+ 	vbat: fixedregulator@0 {
