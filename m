@@ -1,92 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756404Ab3EBHrJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 03:47:09 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:39707 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754281Ab3EBHrH (ORCPT
+	id S1756619Ab3EBHsO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 03:48:14 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:53313 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756457Ab3EBHsM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 03:47:07 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.32 with qID r427kpXn018493, This message is accepted by code: ctloc85258
-From: hayeswang <hayeswang@realtek.com>
-To: "'Oliver Neukum'" <oneukum@suse.de>
-CC: <gregkh@linuxfoundation.org>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        "'nic_swsd'" <nic_swsd@realtek.com>
-References: <1366965948-1805-1-git-send-email-hayeswang@realtek.com> <201305020622.r426MYGv032465@rtits1.realtek.com>
-Subject: RE: [PATCH net-next] net/usb: new driver for RTL8152
-Date: Thu, 2 May 2013 15:46:50 +0800
-Message-ID: <95FC8A7CCB904AB6B26751C6DBEE49F2@realtek.com.tw>
+	Thu, 2 May 2013 03:48:12 -0400
+Date: Thu, 2 May 2013 09:47:52 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: linux-sh@vger.kernel.org
+cc: Vinod Koul <vinod.koul@intel.com>, Magnus Damm <magnus.damm@gmail.com>,
+        linux-kernel@vger.kernel.org, Simon Horman <horms@verge.net.au>,
+        Chris Ball <cjb@laptop.org>
+Subject: Re: [PATCH/RFC 0/6] DMA: shdma: add Device Tree support
+In-Reply-To: <1365632389-2249-1-git-send-email-g.liakhovetski@gmx.de>
+Message-ID: <Pine.LNX.4.64.1305020936400.17181@axis700.grange>
+References: <1365632389-2249-1-git-send-email-g.liakhovetski@gmx.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 11
-Thread-Index: Ac5G/W7XjE3FA+raS8eFac7xEr4HfAABeegw
-In-Reply-To: <201305020622.r426MYGv032465@rtits1.realtek.com>
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.6157
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:McebXOT07INmPBitKxPBnow+gl0w8KsalHQBUM9eo3P
+ kOkUUzV5nWUxyrjT2eCu+6FRoEWQmLHPDuiUT7IY5SNBA4Vj1N
+ JglOHNY35uQTA7wSMNiAmzvtNqLXlwuaIiKWl7B4+IUbgrkaQM
+ h3byF82DhS8E+S2rn5v8NoA7xCtYaMqUStaJsMpbx8wSH7Zfbn
+ 9dwHfYR078rNxbe5kex1mjC3WVai8xGWCm9lkrKuOXilXO7D0x
+ qoconQ4hus3LKg2ZGlQ4nBqd6fV53Ts0goNVDEw0NnXJGe7cuP
+ Yz4E1d52/ck0Qk5Ha9MiiIVyxGJyvbPJJnJR5kjlzg1XWtaf7h
+ j0gyTXioC1YptL1NLvRBeX1D4fcKa7juv2oVfpTBAVHEXtqOGO
+ TOmuY6vJtHR2w==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- Oliver Neukum [mailto:oneukum@suse.de] 
-> Sent: Friday, April 26, 2013 7:57 PM
-> To: Hayeswang
-> Cc: gregkh@linuxfoundation.org; netdev@vger.kernel.org; 
-> linux-kernel@vger.kernel.org; linux-usb@vger.kernel.org; nic_swsd
-> Subject: Re: [PATCH net-next] net/usb: new driver for RTL8152
+Hi Chris, Simon, Vinod (in alphabetical order :-) )
+
+On Thu, 11 Apr 2013, Guennadi Liakhovetski wrote:
+
+> This patch series adds Device Tree support to the shdma dmaengine driver 
+> and illustraits its use with the kzm9g-reference board's MMCIF interface.
+
+Formally patches in this series belong to your 3 trees: 1-3 and 7 
+(documentation, sent later separately) to DMA, 4 and 6 to ARM/shmobile, 5 
+to MMC. However, they can actually be safely applied in any order, as long 
+as per-tree patches are kept together. Even if the DMA portion is applied 
+last, the MMC driver will find DMA DT bindings in the DT, will request 
+channels, but no DMA channels will be found, then the driver will fall 
+back to PIO.
+
+So, it's up to you to decide, whether to pull these patches separately via 
+respective trees, or have some of them acked and push all of them via one 
+tree.
+
+Thanks
+Guennadi
+
+> Cc: Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
 > 
-[...]
-> > +static inline void set_ethernet_addr(struct r8152 *tp)
-> > +{
-> > +	struct net_device *dev = tp->netdev;
-> > +	u8 node_id[8] = {0};
-> > +
-> > +	if (pla_ocp_read(tp, PLA_IDR, sizeof(node_id), node_id) < 0)
+> Guennadi Liakhovetski (6):
+>   DMA: shdma: (cosmetic) don't re-calculate a pointer
+>   DMA: shdma: shdma_chan_filter() has to be in shdma-base.h
+>   DMA: shdma: add DT support
+>   ARM: shmobile: sh73a0: add support for the DMA0 controller in DT
+>   mmc: sh_mmcif: add support for Device Tree DMA bindings
+>   ARM: shmobile: kzm9g-reference: add DMA channels to the MMCIF DT
 > 
-> DMA coherency rules. No buffers on the stack.
-
-Excuse me. I don't understand what you mean. I reference the rtl8150.c and it
-uses the same way. Besides, when I check the other drivers, I find the data
-pointer of the parameter of the usb_control_msg() may be a pointer of a local
-variable from the other functions.
-
-[...]
-> > +static void rtl_work_func_t(struct work_struct *work)
-> > +{
-> > +	struct r8152 *tp = container_of(work, struct r8152, 
-> schedule.work);
-> > +
-> > +	if (!netif_running(tp->netdev))
-> > +		goto out1;
-> > +
-> > +	if (test_bit(RTL8152_UNPLUG, &tp->flags))
-> > +		goto out1;
-> > +
-> > +	set_carrier(tp);
-> > +
-> > +	if (test_bit(RTL8152_SET_RX_MODE, &tp->flags))
-> > +		_rtl8152_set_rx_mode(tp->netdev);
-> > +
-> > +	schedule_delayed_work(&tp->schedule, HZ);
+>  arch/arm/boot/dts/sh73a0-kzm9g-reference.dts |    3 ++
+>  arch/arm/boot/dts/sh73a0.dtsi                |   36 ++++++++++++++++++
+>  arch/arm/mach-shmobile/setup-sh73a0.c        |    4 ++
+>  drivers/dma/sh/shdma-base.c                  |   51 +++++++++++++++++++++++---
+>  drivers/dma/sh/shdma.c                       |   46 ++++++++++++++++++++----
+>  drivers/mmc/host/sh_mmcif.c                  |   29 +++++++++------
+>  include/linux/sh_dma.h                       |    2 -
+>  include/linux/shdma-base.h                   |    6 +++
+>  8 files changed, 151 insertions(+), 26 deletions(-)
 > 
-> Why does this need to run permanently?
-
-It is used to periodically check the speed, link status, and any other tasks
-which need to be finished.
-
-[...]
-> > +static int rtl8152_close(struct net_device *netdev)
-> > +{
-> > +	struct r8152 *tp = netdev_priv(netdev);
-> > +	int res = 0;
-> > +
-> > +	cancel_delayed_work_sync(&tp->schedule);
+> -- 
+> 1.7.2.5
 > 
-> Looks like a race. What makes sure the work isn't rescheduled?
+> Thanks
+> Guennadi
+> ---
+> Guennadi Liakhovetski, Ph.D.
+> Freelance Open-Source Software Developer
+> http://www.open-technology.de/
+> 
 
-netif_running would be checked.
-
- 
-Best Regards,
-Hayes
-
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
