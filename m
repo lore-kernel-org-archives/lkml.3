@@ -1,58 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751977Ab3EBGrx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 02:47:53 -0400
-Received: from mga03.intel.com ([143.182.124.21]:63207 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750771Ab3EBGrv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 02:47:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,594,1363158000"; 
-   d="scan'208";a="296359092"
-Date: Wed, 1 May 2013 23:53:58 -0700
-From: Bin Gao <bin.gao@linux.intel.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
-        Jacob Pan <jacob.jun.pan@linux.intel.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: x86/pci/mrst: force all pci config toward 0:0:0, 0:2:0 and 0:3:0
- to type 1
-Message-ID: <20130502065358.GA41008@bingao-desk1.fm.intel.com>
-References: <20130430072147.GA37866@bingao-desk1.fm.intel.com>
- <CAErSpo6g0xXo+HH+ZOYZav_Y6ZUH2D2FAqN+uDqrJqxQCRObog@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAErSpo6g0xXo+HH+ZOYZav_Y6ZUH2D2FAqN+uDqrJqxQCRObog@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752105Ab3EBGuY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 02:50:24 -0400
+Received: from tama50.ecl.ntt.co.jp ([129.60.39.147]:34623 "EHLO
+	tama50.ecl.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750887Ab3EBGuW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 02:50:22 -0400
+Message-ID: <1367476850.5660.2.camel@nexus>
+Subject: [PATCH] x86, 64bit: do not assume CPU is NX capable when setting
+ early page tables
+From: Fernando Luis =?ISO-8859-1?Q?V=E1zquez?= Cao 
+	<fernando_b1@lab.ntt.co.jp>
+To: "H. Peter Anvin" <hpa@linux.intel.com>, Yinghai Lu <yinghai@kernel.org>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org
+Date: Thu, 02 May 2013 15:40:50 +0900
+Organization: NTT Open Source Software Center
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 01, 2013 at 11:17:10AM -0600, Bjorn Helgaas wrote:
-> Is there any possibility of multi-function devices at bus 0, device 0, 2, or 3?
-> 
-> What about bridges -- can any of these be a bridge?
-> 
-> If either of those could happen, these checks could be too specific.
-0:2:0 and 0:3:0 are the only 2 devices behind the bridge 0:0:0.
-These devices don't implement pcie capability list in legacy config space
-so no offset above 255 would be triggered.
-The fixed bar pcie capability located at 0x100 is for pci-shimed device
-only, not for 0, 2 and 3. But current implementation applies it to 0,
-2 and 3 as well. This is what the patch is going to address.
+The kernel sets the NX bit in the early page tables without checking whether
+the CPU actually supports this feature. If it doesn't the first attempt to use
+them will cause a kernel hang. Since these are temporary page tables marked as
+initdata this fix takes the approach of not bothering with the NX bit at all.
 
-> 
-> Is there a doc that identifies these cases where config mechanism #1
-> should be used instead of MMCONFIG?
-Unfortunately no doc identifies this.
-But since FW doesn't provide pci shim for device 0, 2 and 3,
-and these 3 real pci devices have only 256 bytes legacy pci
-config space so they can only be accessed by type 1.
+Noticed when my AMD machine that happened to have the NX feature disabled by
+the BIOS failed to boot after the update to 3.9.
 
-> 
-> Bjorn
-> 
+Cc: stable@vger.kernel.org
+Signed-off-by: Fernando Luis Vazquez Cao <fernando@oss.ntt.co.jp>
+---
+
+diff -urNp linux-3.9/arch/x86/kernel/head64.c linux-3.9-fix/arch/x86/kernel/head64.c
+--- linux-3.9/arch/x86/kernel/head64.c	2013-04-29 09:36:01.000000000 +0900
++++ linux-3.9-fix/arch/x86/kernel/head64.c	2013-05-02 14:38:52.589276092 +0900
+@@ -99,7 +99,7 @@ again:
+ 			pmd_p[i] = 0;
+ 		*pud_p = (pudval_t)pmd_p - __START_KERNEL_map + phys_base + _KERNPG_TABLE;
+ 	}
+-	pmd = (physaddr & PMD_MASK) + (__PAGE_KERNEL_LARGE & ~_PAGE_GLOBAL);
++	pmd = (physaddr & PMD_MASK) + (__PAGE_KERNEL_LARGE_EXEC & ~_PAGE_GLOBAL);
+ 	pmd_p[pmd_index(address)] = pmd;
+ 
+ 	return 0;
+
+
