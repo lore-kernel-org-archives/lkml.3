@@ -1,214 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753130Ab3EBGW5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 02:22:57 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:61557 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751457Ab3EBGW4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 02:22:56 -0400
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-To: LMML <linux-media@vger.kernel.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Sakari Ailus <sakari.ailus@iki.fi>,
-        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org
-Subject: [PATCH RFC v2] media: i2c: mt9p031: add OF support
-Date: Thu,  2 May 2013 11:52:34 +0530
-Message-Id: <1367475754-19477-1-git-send-email-prabhakar.csengg@gmail.com>
+	id S1753238Ab3EBG0A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 02:26:00 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:56709 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751807Ab3EBGZ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 02:25:57 -0400
+From: Ambresh K <ambresh@ti.com>
+To: Mike Turquette <mturquette@linaro.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, Tero Kristo <t-kristo@ti.com>,
+        Rajendra <rnayak@ti.com>, Ambresh K <ambresh@ti.com>,
+        Nishanth Menon <nm@ti.com>
+Subject: [Patch 0/3] Fix to clk framework while handling orphan clks 
+Date: Thu, 2 May 2013 11:55:26 +0530
+Message-ID: <1367475929-32166-1-git-send-email-ambresh@ti.com>
 X-Mailer: git-send-email 1.7.4.1
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+From: Ambresh K <ambresh@ti.com>
 
-add OF support for the mt9p031 sensor driver.
-Alongside this patch sorts the header inclusion alphabetically.
+On a possible HW bug or in-correct configuration of clk_sel bits in bootloaders, there 
+are high probablity of returning a value greater than available parent clocks for a 
+MUX clk.     
+Sensing invalid parent index, clk_mux_get_parent returns -EINVALID. 
+Due to function's "u8" return type it will get converted into signed value,
+thus causing following pointer dereference on test platform.
 
-Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-Cc: Hans Verkuil <hans.verkuil@cisco.com>
-Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Cc: Sakari Ailus <sakari.ailus@iki.fi>
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Cc: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Rob Herring <rob.herring@calxeda.com>
-Cc: Rob Landley <rob@landley.net>
-Cc: devicetree-discuss@lists.ozlabs.org
-Cc: davinci-linux-open-source@linux.davincidsp.com
-Cc: linux-doc@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
----
- Changes for v2:
- 1: Used '-' instead of '_' for device properties.
- 2: Specified gpio reset pin as phandle in device node.
- 3: Handle platform data properly even if kernel is compiled with
-    devicetree support.
- 4: Used dev_* for messages in drivers instead of pr_*.
- 5: Changed compatible property to "aptina,mt9p031" and "aptina,mt9p031m".
- 6: Sorted the header inclusion alphabetically and fixed some minor code nits.
-
- .../devicetree/bindings/media/i2c/mt9p031.txt      |   37 ++++++++++++
- drivers/media/i2c/mt9p031.c                        |   62 +++++++++++++++++++-
- 2 files changed, 97 insertions(+), 2 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/media/i2c/mt9p031.txt
-
-diff --git a/Documentation/devicetree/bindings/media/i2c/mt9p031.txt b/Documentation/devicetree/bindings/media/i2c/mt9p031.txt
-new file mode 100644
-index 0000000..cbe352b
---- /dev/null
-+++ b/Documentation/devicetree/bindings/media/i2c/mt9p031.txt
-@@ -0,0 +1,37 @@
-+* Aptina 1/2.5-Inch 5Mp CMOS Digital Image Sensor
-+
-+The Aptina MT9P031 is a 1/2.5-inch CMOS active pixel digital image sensor with
-+an active array size of 2592H x 1944V. It is programmable through a simple
-+two-wire serial interface.
-+
-+Required Properties :
-+- compatible : value should be either one among the following
-+	(a) "aptina,mt9p031" for mt9p031 sensor
-+	(b) "aptina,mt9p031m" for mt9p031m sensor
-+
-+- input-clock-frequency : Input clock frequency.
-+
-+- pixel-clock-frequency : Pixel clock frequency.
-+
-+Optional Properties :
-+-gpio-reset: Chip reset GPIO
-+
-+Example:
-+
-+i2c0@1c22000 {
-+	...
-+	...
-+	mt9p031@5d {
-+		compatible = "aptina,mt9p031";
-+		reg = <0x5d>;
-+		gpio-reset = <&gpio3 30 0>;
-+
-+		port {
-+			mt9p031_1: endpoint {
-+				input-clock-frequency = <6000000>;
-+				pixel-clock-frequency = <96000000>;
-+			};
-+		};
-+	};
-+	...
-+};
-diff --git a/drivers/media/i2c/mt9p031.c b/drivers/media/i2c/mt9p031.c
-index 28cf95b..8ce3561 100644
---- a/drivers/media/i2c/mt9p031.c
-+++ b/drivers/media/i2c/mt9p031.c
-@@ -16,9 +16,11 @@
- #include <linux/delay.h>
- #include <linux/device.h>
- #include <linux/gpio.h>
--#include <linux/module.h>
- #include <linux/i2c.h>
- #include <linux/log2.h>
-+#include <linux/module.h>
-+#include <linux/of_device.h>
-+#include <linux/of_gpio.h>
- #include <linux/pm.h>
- #include <linux/regulator/consumer.h>
- #include <linux/slab.h>
-@@ -28,6 +30,7 @@
- #include <media/v4l2-chip-ident.h>
- #include <media/v4l2-ctrls.h>
- #include <media/v4l2-device.h>
-+#include <media/v4l2-of.h>
- #include <media/v4l2-subdev.h>
+Patch series fixes the bug and also minor optimzation while re-parenting orphan clk.
  
- #include "aptina-pll.h"
-@@ -928,10 +931,57 @@ static const struct v4l2_subdev_internal_ops mt9p031_subdev_internal_ops = {
-  * Driver initialization and probing
-  */
- 
-+#if defined(CONFIG_OF)
-+static struct mt9p031_platform_data *
-+	mt9p031_get_pdata(struct i2c_client *client)
-+
-+{
-+	if (client->dev.of_node) {
-+		struct device_node *np;
-+		struct mt9p031_platform_data *pdata;
-+
-+		np = v4l2_of_get_next_endpoint(client->dev.of_node, NULL);
-+		if (!np)
-+			return NULL;
-+
-+		pdata = devm_kzalloc(&client->dev,
-+				     sizeof(struct mt9p031_platform_data),
-+				     GFP_KERNEL);
-+		if (!pdata) {
-+			dev_err(&client->dev,
-+				"mt9p031 failed allocate memeory\n");
-+			return NULL;
-+		}
-+		pdata->reset = of_get_named_gpio(client->dev.of_node,
-+						 "gpio-reset", 0);
-+		if (!gpio_is_valid(pdata->reset))
-+			pdata->reset = -1;
-+
-+		if (of_property_read_u32(np, "input-clock-frequency",
-+					 &pdata->ext_freq))
-+			return NULL;
-+
-+		if (of_property_read_u32(np, "pixel-clock-frequency",
-+					 &pdata->target_freq))
-+			return NULL;
-+
-+		return pdata;
-+	}
-+
-+	return client->dev.platform_data;
-+}
-+#else
-+static struct mt9p031_platform_data *
-+	mt9p031_get_pdata(struct i2c_client *client)
-+{
-+	return client->dev.platform_data;
-+}
-+#endif
-+
- static int mt9p031_probe(struct i2c_client *client,
- 			 const struct i2c_device_id *did)
- {
--	struct mt9p031_platform_data *pdata = client->dev.platform_data;
-+	struct mt9p031_platform_data *pdata = mt9p031_get_pdata(client);
- 	struct i2c_adapter *adapter = to_i2c_adapter(client->dev.parent);
- 	struct mt9p031 *mt9p031;
- 	unsigned int i;
-@@ -1070,8 +1120,16 @@ static const struct i2c_device_id mt9p031_id[] = {
- };
- MODULE_DEVICE_TABLE(i2c, mt9p031_id);
- 
-+static const struct of_device_id mt9p031_of_match[] = {
-+	{ .compatible = "aptina,mt9p031", },
-+	{ .compatible = "aptina,mt9p031m", },
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, mt9p031_of_match);
-+
- static struct i2c_driver mt9p031_i2c_driver = {
- 	.driver = {
-+		.of_match_table = of_match_ptr(mt9p031_of_match),
- 		.name = "mt9p031",
- 	},
- 	.probe          = mt9p031_probe,
+M[    0.000000] dra7xx_clk_init: clk init (gpu_core_gclk_mux)^M
+^M[    0.000000] Unable to handle kernel NULL pointer dereference at virtual address 00000000^M
+^M[    0.000000] pgd = c0004000^M
+^M[    0.000000] [00000000] *pgd=00000000^M
+^M[    0.000000] Internal error: Oops: 5 [#1] SMP ARM^M
+^M[    0.000000] Modules linked in:^M
+^M[    0.000000] CPU: 0    Not tainted  (3.8.4-gb746a7c-dirty #59)^M
+^M[    0.000000] PC is at strcmp+0x8/0x34^M
+^M[    0.000000] LR is at __clk_init+0x16c/0x3cc^M
+^M[    0.000000] pc : [<c033af7c>]    lr : [<c04ca314>]    psr: 600001d3^M
+^M[    0.000000] sp : c09d1f70  ip : c0a12b3c  fp : 00000000^M
+^M[    0.000000] r10: 00000000  r9 : c0a0f8b4  r8 : 8000406a^M
+^M[    0.000000] r7 : c09d1fe4  r6 : c0a0ff40  r5 : c102888c  r4 : c0a0ff40^M
+^M[    0.000000] r3 : 00000000  r2 : 00000067  r1 : 00000000  r0 : c0731c14^M
+^M[    0.000000] Flags: nZCv  IRQs off  FIQs off  Mode SVC_32  ISA ARM  Segment kernel^M
+^M[    0.000000] Control: 10c53c7d  Table: 8000406a  DAC: 00000017^M
+^M[    0.000000] Process swapper (pid: 0, stack limit = 0xc09d0240)^M
+^M[    0.000000] Stack: (0xc09d1f70 to 0xc09d2000)^M
+^M[    0.000000] 1f60:                                     00000000 c05c0518 c0731dd4 c0a0c9f8^M
+^M[    0.000000] 1f80: c0a0d340 c0838f58 c09d1fe4 8000406a 412fc0f2 00000000 00000000 c0814370^M
+^M[    0.000000] 1fa0: 00000005 c0837140 c0a92b78 c0806124 00000000 c09d1fc4 c100d780 c09d0000^M
+^M[    0.000000] 1fc0: 00000001 00000000 c09dd6c4 c0802728 00000000 00000000 00000000 00000000^M
+^M[    0.000000] 1fe0: 00000000 c0838f58 10c53c7d c09d894c c0838f54 80008078 00000000 00000000^M
+^M[    0.000000] [<c033af7c>] (strcmp+0x8/0x34) from [<c04ca314>] (__clk_init+0x16c/0x3cc)^M
+^M[    0.000000] [<c04ca314>] (__clk_init+0x16c/0x3cc) from [<c0814370>] (dra7xx_clk_init+0x5c/0xa8)^M
+^M[    0.000000] [<c0814370>] (dra7xx_clk_init+0x5c/0xa8) from [<c0806124>] (setup_arch+0x148/0x194)^M
+^M[    0.000000] [<c0806124>] (setup_arch+0x148/0x194) from [<c0802728>] (start_kernel+0x80/0x2b8)^M
+^M[    0.000000] [<c0802728>] (start_kernel+0x80/0x2b8) from [<80008078>] (0x80008078)^M
+^M[    0.000000] Code: e8bd0070 e12fff1e e3a03000 e7d02003 (e7d1c003) ^M
+^M[    0.000000] ---[ end trace 1b75b31a2719ed1c ]---^M
+^M[    0.000000] Kernel panic - not syncing: Fatal exception^M 
+
+Note:
+1) With omap2plus_defconfig following warning are generated with the patches applied, will fix it on
+reviewing the patches series. 
+2) Other platforms too might have similar warnings.    
+
+arch/arm/mach-omap2/cclock2420_data.c:116: warning: initialization from incompatible pointer type
+arch/arm/mach-omap2/cclock2420_data.c:369: warning: initialization from incompatible pointer type
+arch/arm/mach-omap2/cclock2420_data.c:417: warning: initialization from incompatible pointer type
+arch/arm/mach-omap2/cclock2420_data.c:745: warning: initialization from incompatible pointer type
+arch/arm/mach-omap2/cclock2430_data.c:116: warning: initialization from incompatible pointer type
+arch/arm/mach-omap2/cclock2430_data.c:349: warning: initialization from incompatible pointer type
+arch/arm/mach-omap2/cclock2430_data.c:397: warning: initialization from incompatible pointer type
+arch/arm/mach-omap2/cclock2430_data.c:724: warning: initialization from incompatible pointer type
+arch/arm/mach-omap2/cclock3xxx_data.c:118: warning: initialization from incompatible pointer type
+arch/arm/mach-omap2/cclock3xxx_data.c:257: warning: initialization from incompatible pointer type
+arch/arm/mach-omap2/cclock3xxx_data.c:367: warning: initialization from incompatible pointer type
+arch/arm/mach-omap2/cclock3xxx_data.c:585: warning: initialization from incompatible pointer type
+arch/arm/mach-omap2/cclock3xxx_data.c:619: warning: initialization from incompatible pointer type
+arch/arm/mach-omap2/cclock3xxx_data.c:1176: warning: initialization from incompatible pointer type
+arch/arm/mach-omap2/cclock3xxx_data.c:2600: warning: initialization from incompatible pointer type
+arch/arm/mach-omap2/cclock3xxx_data.c:3091: warning: initialization from incompatible pointer type
+arch/arm/mach-omap2/cclock44xx_data.c:159: warning: initialization from incompatible pointer type
+arch/arm/mach-omap2/cclock44xx_data.c:257: warning: initialization from incompatible pointer type
+arch/arm/mach-omap2/cclock44xx_data.c:327: warning: initialization from incompatible pointer type
+arch/arm/mach-omap2/cclock44xx_data.c:334: warning: initialization from incompatible pointer type
+arch/arm/mach-omap2/cclock44xx_data.c:398: warning: initialization from incompatible pointer type
+arch/arm/mach-omap2/cclock44xx_data.c:614: warning: initialization from incompatible pointer type
+arch/arm/mach-omap2/cclock44xx_data.c:1329: warning: initialization from incompatible pointer type
+arch/arm/mach-omap2/cclock33xx_data.c:105: warning: initialization from incompatible pointer type
+arch/arm/mach-omap2/cclock33xx_data.c:182: warning: initialization from incompatible pointer type
+arch/arm/mach-omap2/cclock33xx_data.c:225: warning: initialization from incompatible pointer type
+arch/arm/mach-omap2/cclock33xx_data.c:481: warning: initialization from incompatible pointer type
+arch/arm/mach-omap2/cclock33xx_data.c:601: warning: initialization from incompatible pointer type
+arch/arm/mach-omap2/cclock33xx_data.c:644: warning: initialization from incompatible pointer type
+
+
+Ambresh K (3):
+  clk: fix clk_mux_get_parent return's signed value
+  clk: skip re-parenting orphan clk
+  clk: Avoid re-parenting orphan clk's having invalid parent index.
+
+ drivers/clk/clk-mux.c        |    2 +-
+ drivers/clk/clk.c            |   37 ++++++++++++++++++++++++++++++++++---
+ include/linux/clk-provider.h |    4 ++--
+ 3 files changed, 37 insertions(+), 6 deletions(-)
+
 -- 
 1.7.4.1
 
