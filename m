@@ -1,70 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932098Ab3EBO71 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 10:59:27 -0400
-Received: from eddie.linux-mips.org ([78.24.191.182]:56977 "EHLO
-	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753159Ab3EBO70 (ORCPT
+	id S1760150Ab3EBPAw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 11:00:52 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:56216 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753159Ab3EBPAv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 10:59:26 -0400
-Date: Thu, 2 May 2013 16:58:09 +0200
-From: Ralf Baechle <ralf@linux-mips.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Jonas Gorski <jogo@openwrt.org>, eunb.song@samsung.com,
-        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] MIPS: Enable interrupts in arch_cpu_idle()
-Message-ID: <20130502145809.GA16236@linux-mips.org>
-References: <20522420.158691367384219315.JavaMail.weblogic@epml17>
- <CAOiHx=mBPHmDse4EwL-+Fgmpz0=XhcgF_0nWdyvErFO4NU7E0Q@mail.gmail.com>
- <alpine.LFD.2.02.1305021241040.3972@ionos>
- <CAOiHx=mA-htk_2daeE9WpbEVV9YLvfLc1NYZZR=JeDdibchCnw@mail.gmail.com>
- <alpine.LFD.2.02.1305021527010.3972@ionos>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1305021527010.3972@ionos>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 2 May 2013 11:00:51 -0400
+From: Laurent Navet <laurent.navet@gmail.com>
+To: dwmw2@infradead.org
+Cc: artem.bityutskiy@linux.intel.com, avinashphilip@ti.com, jacmet@sunsite.dk,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Laurent Navet <laurent.navet@gmail.com>
+Subject: [PATCH] drivers: mtd: devices: elm: use devm_ioremap_resource()
+Date: Thu,  2 May 2013 17:09:05 +0200
+Message-Id: <1367507346-29382-1-git-send-email-laurent.navet@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 02, 2013 at 04:33:52PM +0200, Thomas Gleixner wrote:
+Replace a call to deprecated devm_request_and_ioremap by devm_ioremap_resource.
 
-> commit cdbedc61c8 (mips: Use generic idle loop) broke MIPS as I did
-> not realize that MIPS wants to invoke the wait instructions with
-> interrupts enabled. Don't ask why that works correctly; Ralf suggested
-> to get thoroughly drunk before even thinking about it. Looking sober
-> at commit c65a5480 ([MIPS] Fix potential latency problem due to
-> non-atomic cpu_wait) is not recommended.
-> 
-> Enable interrupts in arch_cpu_idle() on mips to repair the issue.
-> 
-> Reported-and-tested-by: Jonas Gorski <jogo@openwrt.org>
-> Reported-by: EunBong Song <eunb.song@samsung.com>
-> Booze-recommended-by: Ralf Baechle <ralf@linux-mips.org>
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Found with coccicheck and this semantic patch:
+ scripts/coccinelle/api/devm_request_and_ioremap.cocci.
 
-A very sobering commit message ;-)
+Signed-off-by: Laurent Navet <laurent.navet@gmail.com>
+---
+ drivers/mtd/devices/elm.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-The underlying issue is that the WAIT instruction on MIPS is architecturally
-defined as "[...] It is implementation-dependent whether the pipeline
-restarts when a non-enabled interrupt is requested.  [...]"
+diff --git a/drivers/mtd/devices/elm.c b/drivers/mtd/devices/elm.c
+index 2ec5da9..2bafb06 100644
+--- a/drivers/mtd/devices/elm.c
++++ b/drivers/mtd/devices/elm.c
+@@ -344,9 +344,9 @@ static int elm_probe(struct platform_device *pdev)
+ 		return -ENODEV;
+ 	}
+ 
+-	info->elm_base = devm_request_and_ioremap(&pdev->dev, res);
+-	if (!info->elm_base)
+-		return -EADDRNOTAVAIL;
++	info->elm_base = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(info->elm_base))
++		return PTR_ERR(info->elm_base);
+ 
+ 	ret = devm_request_irq(&pdev->dev, irq->start, elm_isr, 0,
+ 			pdev->name, info);
+-- 
+1.7.10.4
 
-arch_local_irq_disable() disables interrupts by clearing the IE bit in
-the CPU status register, thus disabling all interrupts.  If no a WAIT
-instruction is executed it's legal for a CPU to stop the pipeline for
-good.  Which obviously is pretty stupidtastik behaviour.
-
-For a while we just used to live with the race condition resulting from
-not disabling interrupts in the idle loop.  Then c65a5480 fixed this by
-checking if we're returning to the WAIT instruction in the idle loop
-when returning from an interrupt and iff so, rolling back the
-program counter to point to the if (test_thread_flag(TIF_NEED_RESCHED))
-test at the beginning of rollback_r4k_wait.
-
-Linux knows which CPUs have the problematic behaviour and uses this special
-variant of the idle loop only where needed.
-
-  Ralf
