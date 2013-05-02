@@ -1,140 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762021Ab3EBSw6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 14:52:58 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:46059 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761268Ab3EBSw4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 14:52:56 -0400
-Message-ID: <1367520929.23900.114.camel@haakon3.risingtidesystems.com>
-Subject: Re: [PULL] vhost: cleanups and fixes
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: kvm@vger.kernel.org, virtualization@lists.osdl.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, asias@redhat.com,
-        target-devel <target-devel@vger.kernel.org>
-Date: Thu, 02 May 2013 11:55:29 -0700
-In-Reply-To: <20130502105353.GA24655@redhat.com>
-References: <20130502105353.GA24655@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S932356Ab3EBSxn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 14:53:43 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:41015 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760889Ab3EBSxl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 14:53:41 -0400
+Date: Thu, 2 May 2013 12:53:22 -0600
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>, Arnd Bergmann <arnd@arndb.de>,
+        Jean-Francois Moine <moinejf@free.fr>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Rob Landley <rob@landley.net>, Grant Likely <grant.likely@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] irqchip: add support for Marvell Orion SoCs
+Message-ID: <20130502185322.GA29333@obsidianresearch.com>
+References: <1367519104-19677-1-git-send-email-sebastian.hesselbarth@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1367519104-19677-1-git-send-email-sebastian.hesselbarth@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.162
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-05-02 at 13:53 +0300, Michael S. Tsirkin wrote:
-> The following changes since commit c39904a0ac22cf05f5f44226457f6da0fe65457e:
-> 
->   Merge branch 'master' of git://git.kernel.org/pub/scm/linux/kernel/git/jkirsher/net-next (2013-04-26 23:33:41 -0400)
-> 
-> are available in the git repository at:
-> 
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/mst/vhost.git tags/for_linus
-> 
-> for you to fetch changes up to 181c04a357bb791587c55a99362c2fdde2c64f18:
-> 
->   vhost_scsi: module rename (2013-05-02 13:40:22 +0300)
-> 
-> ----------------------------------------------------------------
-> vhost: cleanups and fixes for 3.10
-> 
-> Here are vhost cleanups and fixes by Asias He and myself.
-> They affect both vhost-net and vhost-scsi devices.
-> They also *depend* on both net-next and target-pending,
-> where the net and target commits these changes depend on
-> are already merged.
-> So merging through the common vhost tree.
-> 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> 
+On Thu, May 02, 2013 at 08:25:04PM +0200, Sebastian Hesselbarth wrote:
+> +
+> +static void __iomem *orion_irq_base[ORION_MAX_IRQREG];
+> +static unsigned int orion_irq_regs;
+> +static struct irq_domain *orion_irq_domain;
+> +
+> +asmlinkage void __exception_irq_entry orion_handle_irq(struct
+> pt_regs *regs)
 
-Just FYI, if this PULL request is going to Linus directly, you'll
-probably want to rebase a branch atop a more recent mainline HEAD in
-order to produce a correct diffstat, instead of the one including the
-target-pending/for-next-merge merge commit below..
+This can be static?
 
-Then again, asking Linus what he prefers for this type of scenario never
-hurt anyone either.  ;)
+> +static int __init orion_of_init(struct device_node *np,
+> +				struct device_node *parent)
+> +{
+> +	int n;
+> +
+> +	for (n = 0; n < ORION_MAX_IRQREG; n++) {
+> +		orion_irq_base[n] = of_iomap(np, n);
 
---nab
+Is it possible to also reserve the resources for these registers at
+this point in the boot sequence?
 
-> ----------------------------------------------------------------
-> Asias He (3):
->       vhost: Allow device specific fields per vq
->       tcm_vhost: Wait for pending requests in vhost_scsi_flush()
->       vhost: move vhost-net zerocopy fields to net.c
-> 
-> Michael S. Tsirkin (8):
->       Merge branch 'for-next-merge' of git://git.kernel.org/.../nab/target-pending into vhost-net-next
->       tcm_vhost: document inflight ref-counting use
->       vhost: move per-vq net specific fields out to net
->       tcm_vhost: remove virtio-net.h dependency
->       vhost: fix error handling in RESET_OWNER ioctl
->       vhost: src file renames
->       tcm_vhost: header split up
->       vhost_scsi: module rename
-> 
->  drivers/infiniband/Kconfig                     |    1 +
->  drivers/infiniband/Makefile                    |    1 +
->  drivers/infiniband/ulp/isert/Kconfig           |    5 +
->  drivers/infiniband/ulp/isert/Makefile          |    2 +
->  drivers/infiniband/ulp/isert/ib_isert.c        | 2281 ++++++++++++++++++++++++
->  drivers/infiniband/ulp/isert/ib_isert.h        |  138 ++
->  drivers/infiniband/ulp/isert/isert_proto.h     |   47 +
->  drivers/scsi/qla2xxx/qla_target.c              |   19 -
->  drivers/scsi/qla2xxx/qla_target.h              |    1 -
->  drivers/target/iscsi/Makefile                  |    3 +-
->  drivers/target/iscsi/iscsi_target.c            | 1184 +++++++-----
->  drivers/target/iscsi/iscsi_target.h            |    3 +-
->  drivers/target/iscsi/iscsi_target_auth.c       |   28 +-
->  drivers/target/iscsi/iscsi_target_configfs.c   |   98 +-
->  drivers/target/iscsi/iscsi_target_core.h       |   26 +-
->  drivers/target/iscsi/iscsi_target_device.c     |    7 +-
->  drivers/target/iscsi/iscsi_target_erl1.c       |   13 +-
->  drivers/target/iscsi/iscsi_target_login.c      |  472 +++--
->  drivers/target/iscsi/iscsi_target_login.h      |    6 +
->  drivers/target/iscsi/iscsi_target_nego.c       |  194 +-
->  drivers/target/iscsi/iscsi_target_nego.h       |   11 +-
->  drivers/target/iscsi/iscsi_target_parameters.c |   87 +-
->  drivers/target/iscsi/iscsi_target_parameters.h |   16 +-
->  drivers/target/iscsi/iscsi_target_tmr.c        |    4 +-
->  drivers/target/iscsi/iscsi_target_tpg.c        |    6 +-
->  drivers/target/iscsi/iscsi_target_transport.c  |   55 +
->  drivers/target/iscsi/iscsi_target_util.c       |   53 +-
->  drivers/target/iscsi/iscsi_target_util.h       |    1 +
->  drivers/target/target_core_file.c              |  122 +-
->  drivers/target/target_core_iblock.c            |  108 +-
->  drivers/target/target_core_sbc.c               |   85 +
->  drivers/target/target_core_transport.c         |   13 +-
->  drivers/target/tcm_fc/tfc_io.c                 |    9 +-
->  drivers/target/tcm_fc/tfc_sess.c               |    9 +-
->  drivers/vhost/Kconfig                          |   10 +-
->  drivers/vhost/Kconfig.tcm                      |    6 -
->  drivers/vhost/Makefile                         |    3 +-
->  drivers/vhost/net.c                            |  255 ++-
->  drivers/vhost/{tcm_vhost.c => scsi.c}          |  507 +++++-
->  drivers/vhost/tcm_vhost.h                      |  115 --
->  drivers/vhost/test.c                           |    9 +-
->  drivers/vhost/vhost.c                          |  153 +-
->  drivers/vhost/vhost.h                          |   32 +-
->  include/target/iscsi/iscsi_transport.h         |   83 +
->  include/target/target_core_backend.h           |    4 +
->  include/target/target_core_fabric.h            |    2 +-
->  include/uapi/linux/vhost.h                     |   28 +
->  47 files changed, 4985 insertions(+), 1330 deletions(-)
->  create mode 100644 drivers/infiniband/ulp/isert/Kconfig
->  create mode 100644 drivers/infiniband/ulp/isert/Makefile
->  create mode 100644 drivers/infiniband/ulp/isert/ib_isert.c
->  create mode 100644 drivers/infiniband/ulp/isert/ib_isert.h
->  create mode 100644 drivers/infiniband/ulp/isert/isert_proto.h
->  create mode 100644 drivers/target/iscsi/iscsi_target_transport.c
->  delete mode 100644 drivers/vhost/Kconfig.tcm
->  rename drivers/vhost/{tcm_vhost.c => scsi.c} (76%)
->  delete mode 100644 drivers/vhost/tcm_vhost.h
->  create mode 100644 include/target/iscsi/iscsi_transport.h
+> +static struct of_device_id orion_irq_dt_ids[] __initconst = {
+> +	{ .compatible = "marvell,orion-mpic", .data = orion_of_init },
+> +	{ }
 
+Is there a strong reason to change the compatible string? Looks to me
+like either the new driver or the old driver will bind depending on
+what is in the machine description. No need for a new string?
 
+> +};
+> +
+> +void __init orion_init_irq(void)
+> +{
+> +	of_irq_init(orion_irq_dt_ids);
+> +}
+
+Shouldn't this use the new IRQCHIP_DECLARE mechanism?
+
+> diff --git a/include/linux/irqchip/orion.h b/include/linux/irqchip/orion.h
+
+> +extern void orion_init_irq(void);
+
+.. which lets this go away, use the generic irqchip_init instead of
+orion_init_irq.
+
+Regards,
+Jason
