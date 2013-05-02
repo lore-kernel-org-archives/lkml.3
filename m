@@ -1,81 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752254Ab3EBF7U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 01:59:20 -0400
-Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:3414
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751226Ab3EBF7R convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 01:59:17 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 3
-X-BigFish: VS3(zzc89bh1432Izz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1082kzzz2dh2a8h668h839h93fhe5bhf0ah1288h12a5h12a9h12bdh1354h137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19c3h1ad9h1b0ah1d0ch1d2eh1d3fh1889i1155h)
-Message-ID: <51820127.5060003@freescale.com>
-Date: Thu, 2 May 2013 14:01:11 +0800
-From: Huang Shijie <b32955@freescale.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
-MIME-Version: 1.0
-To: "Gupta, Pekon" <pekon@ti.com>
-CC: "computersforpeace@gmail.com" <computersforpeace@gmail.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dedekind1@gmail.com" <dedekind1@gmail.com>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>
-Subject: Re: [PATCH V4 5/9] mtd: replace the hardcode with the onfi_feature()
-References: <1366967337-5534-1-git-send-email-b32955@freescale.com> <1366967337-5534-6-git-send-email-b32955@freescale.com> <20980858CB6D3A4BAE95CA194937D5E73E9BF544@DBDE04.ent.ti.com> <5181CC19.8000904@freescale.com> <20980858CB6D3A4BAE95CA194937D5E73E9C09FC@DBDE04.ent.ti.com>
-In-Reply-To: <20980858CB6D3A4BAE95CA194937D5E73E9C09FC@DBDE04.ent.ti.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
+	id S1752015Ab3EBGBp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 02:01:45 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:48951 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751139Ab3EBGBl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 02:01:41 -0400
+Date: Thu, 2 May 2013 16:01:29 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Peter Hurley <peter@hurleysoftware.com>
+Subject: linux-next: manual merge of the akpm tree with Linus' tree
+Message-Id: <20130502160129.26eab084d5094c8aa416a9ae@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__2_May_2013_16_01_29_+1000_T2nMo7M22knAHL0v"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2013年05月02日 13:42, Gupta, Pekon 写道:
->>>> -	*busw = 0;
->>>> -	if (le16_to_cpu(p->features)&   1)
->>>> -		*busw = NAND_BUSWIDTH_16;
->>>> +
->>>> +	*busw = (onfi_feature(chip)&   ONFI_FEATURE_16_BIT_BUS) ?
->>>> +			NAND_BUSWIDTH_16 : 0;
->>> Is this really needed ? you have already checked the 'onfi_version'
->> above in
->>> nand_flash_detect_onfi() ..
->>> 	if (!chip->onfi_version) {
->>> 		pr_info("%s: unsupported ONFI version: %d\n",
->> __func__, val);
->>> 		return 0;
->>> 	}
->>>
->>>
->> I think checking the onfi_version has no relationship with this patch. :)
->> This patch is just replace the hardcode for 16-bit onfi nand check.
->>
-> [Pekon]: [Patch 3/9]: add a helper to get the supported features
-> I mean, do you really need this helper function ?
-> +static inline int onfi_feature(struct nand_chip *chip)
-> +{
-> +       return chip->onfi_version ? le16_to_cpu(chip->onfi_params.features) : 0;
-> + }
->
-> Following change should have been enough..
-> *busw = (le16_to_cpu(p->features)&   ONFI_FEATURE_16_BIT_BUS) ?
-> 			NAND_BUSWIDTH_16 : 0;
-yes. for this function, it's enough.
+--Signature=_Thu__2_May_2013_16_01_29_+1000_T2nMo7M22knAHL0v
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-But we may use the onfi_feature() in other places, such as some drivers. That's reason why i added this helper.
+Hi Andrew,
 
+Today's linux-next merge of the akpm tree got a conflict in ipc/msg.c
+between commit 8ac6ed5857c8 ("ipc: implement MSG_COPY as a new receive
+mode") from Linus' tree and commit "revert "ipc: don't allocate a copy
+larger than max"" from the akpm tree.
 
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-thanks
-Huang Shijie
+[  The whole patch looks like this, now:
 
+diff --git a/ipc/msg.c b/ipc/msg.c
+index d0c6d96..2978721 100644
+--- a/ipc/msg.c
++++ b/ipc/msg.c
+@@ -827,16 +827,15 @@ long do_msgrcv(int msqid, void __user *buf, size_t bu=
+fsz, long msgtyp,
+ 	struct ipc_namespace *ns;
+ 	struct msg_msg *copy =3D NULL;
+=20
+-	ns =3D current->nsproxy->ipc_ns;
+-
+ 	if (msqid < 0 || (long) bufsz < 0)
+ 		return -EINVAL;
+ 	if (msgflg & MSG_COPY) {
+-		copy =3D prepare_copy(buf, min_t(size_t, bufsz, ns->msg_ctlmax));
++		copy =3D prepare_copy(buf, bufsz);
+ 		if (IS_ERR(copy))
+ 			return PTR_ERR(copy);
+ 	}
+ 	mode =3D convert_mode(&msgtyp, msgflg);
++	ns =3D current->nsproxy->ipc_ns;
+=20
+ 	msq =3D msg_lock_check(ns, msqid);
+ 	if (IS_ERR(msq)) {
 
+]
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+diff --cc ipc/msg.c
+index d0c6d96,4eaf3fd..0000000
+--- a/ipc/msg.c
++++ b/ipc/msg.c
+@@@ -826,13 -818,12 +826,11 @@@ long do_msgrcv(int msqid, void __user *
+  	int mode;
+  	struct ipc_namespace *ns;
+  	struct msg_msg *copy =3D NULL;
+ -	unsigned long copy_number =3D 0;
+ =20
+  	if (msqid < 0 || (long) bufsz < 0)
+  		return -EINVAL;
+  	if (msgflg & MSG_COPY) {
+- 		copy =3D prepare_copy(buf, min_t(size_t, bufsz, ns->msg_ctlmax));
+ -		copy =3D prepare_copy(buf, bufsz, msgflg, &msgtyp, &copy_number);
+++		copy =3D prepare_copy(buf, bufsz);
+  		if (IS_ERR(copy))
+  			return PTR_ERR(copy);
+  	}
 
+--Signature=_Thu__2_May_2013_16_01_29_+1000_T2nMo7M22knAHL0v
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAEBCAAGBQJRggE5AAoJEECxmPOUX5FESDkQAJ9Opr3kCDRfwwnAtwCcanFe
+AqSpXTo9x2rhMT0hGPqQvf0Jt3wSjN1g96Rjm8irgBvmQmi00+BRcr0sSIuSKPTu
+cTv6VZSaAgV9RpEI6dNiJL4MMMraJXMO9lWyhfjy72Ks5RiS2rEIAP1/VLbfYx+8
+llj5vctZ9QC3Br7t51To0mbkpvRdVpDLJn3LTDdO/giWXSJmPzlXvTHnv9P+RxsR
+Jf23EqeWxSfDRMsGxjO+yMP8NhDojv4gaEIhLqfq2ihTIb9wobKxFicr074skjnr
+nrBzrtdug2FEqkDlo5JCt956mci4abs/fT8hd2JHP/yIcE5Wei12RY9sAUZljFZd
+D84i8nYS8bjkgBCQMDQEtNHESggqsIolHnKYxjyd5jhYtpC0KYGyrLUGh51bhpMT
+iUgcPkSmJ7m7HLI1uB+C8mR6IdQKJms6FXReiq937gHrNOYxvrdGsoPvk4cfEAJ5
+Zdkt34f1WMMUlLiQBuIm/s2PQH5w8rGrCbUqCLxDUOCrn47Fc9Nm/TOCiQKeh5bG
+3fxirMWMPug8b1fDckC2MaIpYqnZhMkM9C4oGBPxx5Cumpsibpm9sT3T3hRyczRv
+cAdCdyifziFdGLdaULVrmw4uwsonPX9ILFP2Rl2H9yBjLs2NGTD7Nd+4K5DcpZLa
+6+w3gMHjZ03sWuiMui1S
+=XIEL
+-----END PGP SIGNATURE-----
 
-
-
-
+--Signature=_Thu__2_May_2013_16_01_29_+1000_T2nMo7M22knAHL0v--
